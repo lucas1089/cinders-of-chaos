@@ -8,7 +8,7 @@
 -- counts as on, the server's default.
 -- One exception needs the client: a multi-use weapon (the stock "break furniture" use with) starts a use with on that
 -- click. The server sends at login which looks those are ({action = "multiuse", data = {ids = {client ids}}}:
--- equipment, not the tools such as the machete); for them, on the preset's use click in the inventory or an open
+-- equipment, tool weapons such as the crowbar included); for them, on the preset's use click in the inventory or an open
 -- container, the module sends a plain use instead (L.shouldEquip). "Use with ..." stays in the context menu.
 RightClickEquipLogic = {}
 local L = RightClickEquipLogic

@@ -110,6 +110,13 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   fica só em `/etc/chaos/discord.env` (modo 600, dono www-data); o app confere o formato antes de enviar e não mostra a URL
   de volta (só o final do id). Ativar instala as unidades `chaos-discord.service/.timer` e o logrotate do repositório e liga
   o timer. Passo a passo: docs/LAUNCH.md "Discord announcements". O app precisa ser recompilado para ter o cartão.
+- **Bot do Discord** (`discord-bot status | install | set NOME | start | stop | restart | logs [N] | patchnotes`; aba Comandos >
+  Ações rápidas > cartão Bot do Discord (bugs e patch notes); no desktop, aba Comandos > grupo Bot do Discord): lê o canal de
+  bugs com o Claude, avisa por DM os bugs críticos e ajuda a escrever os patch notes. Instalar cria o usuário `chaosbot`, o
+  virtualenv com as versões fixas e o `chaos-discordbot.service`; Salvar grava um valor em `/etc/chaos/discord-bot.env` (modo
+  600): o token e a chave da API vão pela entrada do comando, nunca na linha de comando nem em log, e o app não os mostra de
+  volta. Iniciar recusa com `config-missing` e os nomes que faltam. Levar patch notes ao jogo copia os arquivos novos para
+  `data/patchnotes`. Passo a passo para o dono: `server/deploy/discord_bot/README.md`. O app precisa ser recompilado para ter o cartão.
 - **Saúde e espaço** (`health`, `cleanup [--yes]`, `backups`): servidor, banco, serviços web (nginx, apache, php-fpm),
   disco e memória. Limpar mostra a lista e pede confirmação antes de apagar: pastas de trabalho de atualizações e
   publicações em `/var/tmp` com mais de um dia, pastas `srvNN` lá, `tfs.antes-*` além dos 2 mais novos,
@@ -230,7 +237,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
 update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `xp-rate`, `client-pair [show | set N]`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
-`account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
+`account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `discord-bot status | install | set NOME | start | stop | restart | logs [N] | patchnotes`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.
 

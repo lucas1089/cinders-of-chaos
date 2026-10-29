@@ -3,8 +3,8 @@
  "zip": {
   "name": "cinders-of-chaos-media-kit.zip",
   "path": "press/cinders-of-chaos-media-kit.zip",
-  "bytes": 1517502,
-  "sha256": "891b6a4d282335c2ce878d1df68e6405a11b67158474bd25945081285ba5ef02"
+  "bytes": 3725182,
+  "sha256": "96d39286a4297a736e4ba1d8caad9e69a6e6484dbd911e7aff4e6542ab460d73"
  },
  "files": [
   {
@@ -44,18 +44,163 @@
   },
   {
    "name": "fact-sheet.en.txt",
-   "bytes": 1424,
-   "sha256": "c070a6e4a786ef5693e4dbf01621b8a9d2eaf65264a268900cd5185c600372c5"
+   "bytes": 1570,
+   "sha256": "406f1766013cf2746eded581056f1f62821eb895b7c84a60b9987cc71714e573"
   },
   {
    "name": "ficha-tecnica.pt-BR.txt",
-   "bytes": 1493,
-   "sha256": "d5f1abfbcf4e7ed97d3d71cc5bd223f7e38aa7da98aec807985e6d291460c6a6"
+   "bytes": 1650,
+   "sha256": "6c5db006a78b3d7d1569cdc273c220de4b34ae8a980ad8ad55b37446a463fbea"
   },
   {
    "name": "logo.png",
    "bytes": 28134,
    "sha256": "1db25c5019d9bc89e76c4ae0f328d3f3308fd93da35e3786f17d1abfa301a954"
+  },
+  {
+   "name": "streamer/banners/offline.en.png",
+   "bytes": 142964,
+   "sha256": "4f9f1ccbad7caf1962734a0625a767e0c3b5b805cedee4221c92936fca1ede2e"
+  },
+  {
+   "name": "streamer/banners/offline.pt-BR.png",
+   "bytes": 144010,
+   "sha256": "eaa35696eed9b88fa61d274c95a47183eea5dccbfad75a72876b3e22f3ab70c3"
+  },
+  {
+   "name": "streamer/banners/social-1500x500.en.png",
+   "bytes": 454876,
+   "sha256": "bcac8254ab81549224de1a51ebc46044a0e40ab6464522c3b11a85d0e7c39c3c"
+  },
+  {
+   "name": "streamer/banners/social-1500x500.pt-BR.png",
+   "bytes": 454252,
+   "sha256": "41c11d60b358a90b9b2894cf38dd2df049272e7754c7d357f46251ae2659a66d"
+  },
+  {
+   "name": "streamer/banners/twitch-panel-about.en.png",
+   "bytes": 9324,
+   "sha256": "4a2a9952f57c270fa214b9da59b419862717a5fdd9c2ca0058f9dcacda4d305d"
+  },
+  {
+   "name": "streamer/banners/twitch-panel-code.en.png",
+   "bytes": 9281,
+   "sha256": "1f9d8bc18138b28ae41d9487b8a2a7c8a160f0918bd1ae03282396a0108253ef"
+  },
+  {
+   "name": "streamer/banners/twitch-panel-codigo.pt-BR.png",
+   "bytes": 9100,
+   "sha256": "ddc3c0835e5a3e2b08aa23711ffcde817fb7413a259cdfcbefb00f06bb0c8e7a"
+  },
+  {
+   "name": "streamer/banners/twitch-panel-discord.en.png",
+   "bytes": 8722,
+   "sha256": "736f20a080ee111b96eef97e6c6a9cbd04249142b7dcb3310357484f977a51fe"
+  },
+  {
+   "name": "streamer/banners/twitch-panel-discord.pt-BR.png",
+   "bytes": 8750,
+   "sha256": "c6a96e1725838ef83ccb57c683fc88f73d46c1ea3088d476f7611b96924fcce5"
+  },
+  {
+   "name": "streamer/banners/twitch-panel-regras.pt-BR.png",
+   "bytes": 8828,
+   "sha256": "ca874d6c7689b91c22d62af3eb9c5dbf34f0928f3a283fa1a7c0a75a71279b50"
+  },
+  {
+   "name": "streamer/banners/twitch-panel-rules.en.png",
+   "bytes": 8782,
+   "sha256": "2c4f3da1961a42428c2f0d9fa80262838e1985129401b390db2e6666ada4acc8"
+  },
+  {
+   "name": "streamer/banners/twitch-panel-sobre.pt-BR.png",
+   "bytes": 9416,
+   "sha256": "cdd2abc9f9c94178ecb647b8e79923a52c84e264240e5b4640fd72d6198e610a"
+  },
+  {
+   "name": "streamer/banners/youtube-thumbnail-template-1280x720.png",
+   "bytes": 62612,
+   "sha256": "34094ae13b4ae4a5994c67e99dbf9c328d5093dabfbc9397201f34cc9cacd689"
+  },
+  {
+   "name": "streamer/chat/chat-commands.txt",
+   "bytes": 2142,
+   "sha256": "e23347ad58e17ed91f0261550ac1e15490f94eceaf08e5f16ce2c05af2df0eb0"
+  },
+  {
+   "name": "streamer/discord/icon-circle-512.png",
+   "bytes": 41713,
+   "sha256": "16fd25514cc556b876ff6273492f46409ce31a02e242f7f29c08924dd36d2cc0"
+  },
+  {
+   "name": "streamer/guide/guia-do-parceiro.pt-BR.md",
+   "bytes": 5627,
+   "sha256": "b54136cfde24e3fa10cb90f115662d69e7b3bae9a7af04c42872db9a6334b9c0"
+  },
+  {
+   "name": "streamer/guide/partner-guide.en.md",
+   "bytes": 5380,
+   "sha256": "5a3942daf93f0bd33d448dd0e71e86921c0efbf28745b0a41b5b1ddd360f8ffc"
+  },
+  {
+   "name": "streamer/obs-overlay.html",
+   "bytes": 1242,
+   "sha256": "54b69245839db1bbb29ab607f28c4fe7b358276d96811d8e69cb41fa21a76de7"
+  },
+  {
+   "name": "streamer/obs-overlay.js",
+   "bytes": 793,
+   "sha256": "35d9db2eb0cf7ce64d4f6e0caaffa489420a86ec7b5314655fc7eb4e7d544792"
+  },
+  {
+   "name": "streamer/overlays/be-right-back.en.png",
+   "bytes": 127719,
+   "sha256": "a46a8c0f75f2de7dd6208301040dfd485d2993f07a355ae8c6a32d194482fa7e"
+  },
+  {
+   "name": "streamer/overlays/be-right-back.pt-BR.png",
+   "bytes": 126262,
+   "sha256": "843f5fb654ce30db9309b078ad76911fe5e2e461686c85e39182755768893a97"
+  },
+  {
+   "name": "streamer/overlays/bottom-bar.en.png",
+   "bytes": 10073,
+   "sha256": "517e779010742fad75b5bf8c21c306f35f33f5f4cda4116ec042b70ac154129b"
+  },
+  {
+   "name": "streamer/overlays/bottom-bar.pt-BR.png",
+   "bytes": 10564,
+   "sha256": "f6045d01270b78e5d9c8c9e0e23fc3238144be23ddac9295ee9db14adc276aae"
+  },
+  {
+   "name": "streamer/overlays/ending.en.png",
+   "bytes": 132415,
+   "sha256": "8e67fff152313d5c373109460a53b68476739ae7ae9f859f4507d45809b511f4"
+  },
+  {
+   "name": "streamer/overlays/ending.pt-BR.png",
+   "bytes": 131694,
+   "sha256": "db211ae7338f29b2cfebf795a540d73def4bbfb239b3f61ccaabb0be09c53e48"
+  },
+  {
+   "name": "streamer/overlays/starting-soon.en.png",
+   "bytes": 131544,
+   "sha256": "4a75050c27e59f006faab318b68891a6994c8e6853735c93404cbd20196fabde"
+  },
+  {
+   "name": "streamer/overlays/starting-soon.pt-BR.png",
+   "bytes": 134242,
+   "sha256": "c1616ce9e148b02f40a6b1a017535cb153835d4906067f2c58fc779758554130"
+  },
+  {
+   "name": "streamer/overlays/webcam-frame.png",
+   "bytes": 7904,
+   "sha256": "196e21568cc967873c52aa79c090a71a770ecc0b3675778822a84b058acda8a6"
+  },
+  {
+   "name": "streamer/slots.json",
+   "bytes": 1190,
+   "sha256": "b23db1f539bf8d7dc78f9484275b7489bfc35ad99967b8e72c8cbdb2271241ed"
   }
  ],
  "screenshots": 0

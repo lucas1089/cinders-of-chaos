@@ -1,0 +1,91 @@
+{
+ "note": "Boxes are [x0, y0, x1, y1] in pixels of the picture. Put a text source of your stream there.",
+ "slots": {
+  "banners/youtube-thumbnail-template-1280x720.png": {
+   "titleArea": [
+    60,
+    330,
+    1220,
+    640
+   ]
+  },
+  "overlays/be-right-back.en.png": {
+   "textSlot": [
+    600,
+    850,
+    1320,
+    970
+   ]
+  },
+  "overlays/be-right-back.pt-BR.png": {
+   "textSlot": [
+    600,
+    850,
+    1320,
+    970
+   ]
+  },
+  "overlays/bottom-bar.en.png": {
+   "codeSlot": [
+    832,
+    994,
+    1292,
+    1050
+   ]
+  },
+  "overlays/bottom-bar.pt-BR.png": {
+   "codeSlot": [
+    934,
+    994,
+    1394,
+    1050
+   ]
+  },
+  "overlays/ending.en.png": {
+   "textSlot": [
+    600,
+    850,
+    1320,
+    970
+   ]
+  },
+  "overlays/ending.pt-BR.png": {
+   "textSlot": [
+    600,
+    850,
+    1320,
+    970
+   ]
+  },
+  "overlays/starting-soon.en.png": {
+   "textSlot": [
+    600,
+    850,
+    1320,
+    970
+   ]
+  },
+  "overlays/starting-soon.pt-BR.png": {
+   "textSlot": [
+    600,
+    850,
+    1320,
+    970
+   ]
+  },
+  "overlays/webcam-frame.png": {
+   "camera": [
+    1380,
+    640,
+    1860,
+    910
+   ],
+   "nameSlot": [
+    1442,
+    940,
+    1860,
+    980
+   ]
+  }
+ }
+}

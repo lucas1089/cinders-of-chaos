@@ -1,0 +1,4 @@
+name,kind,pack,source,licence
+inbox_loot,item,PixelLab,"create image Pro 32x32, our own prompt (brown leather coin sack, gold coins spilling), gildcrown palette; candidate a of 3; art_import/inbox_icons/loot.png","made with our PixelLab subscription; docs/CREDITS.md"
+inbox_orbs,item,PixelLab,"create image Pro 32x32, our own prompt (violet velvet pouch, cyan orb in a gold bezel), rimewraith palette, style image = the old tile; candidate a of 3; art_import/inbox_icons/orbs.png","made with our PixelLab subscription; docs/CREDITS.md"
+inbox_ration,item,PixelLab,"create image Pro 32x32, our own prompt (roast chicken on a dark plate), cinderwrought palette; candidate a of 3; art_import/inbox_icons/ration.png","made with our PixelLab subscription; docs/CREDITS.md"

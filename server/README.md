@@ -879,6 +879,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103010 - 7103011 | early spike and pity (`retention_loot_config.lua`): 7103010 the first unique (-1 / 0 unset, 1..149 kills counted, 1000000 given), 7103011 the pity counter (kills without a Rare or better drop) |
 | 7103020 - 7103029 | the Weekly Chest (`weeklychest_config.lua` `storage`, `Chaos.storage.weeklyChest`): +0 the week (YYYYMMDD of its Monday), +1 activities done (bit mask), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all; +5..9 free |
 | 7103040 - 7103049 | the Weekend Ritual's GLOBAL storages (`Game.setStorageValue`, `weekend_config.lua` `globalStorage`, O321): +0 the staff switch (1 = off), +1 / +2 / +3 the weekend (YYYYMMDD of its first day) whose start, end warning and highlight were done; +4..9 free; no player storage |
+| 7103050 - 7103059 | Hunt warnings (`hunt_warnings_config.lua` `storage`, `Chaos.storage.huntWarnLast`, O323): +0 os.time of the last warning shown to the character; +1..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -4207,6 +4208,17 @@ A fixed weekend every week that players can count on (owner 2026-10-29). Friday 
 - **Tests.** `tests/weekend_test.lua`: the clock and the window at every edge (17:59:59, 18:00, Sunday 23:59:59, Monday 00:00, the new year), the rotation, the bonuses and the season rule, what is due and the late restart, the login preview, the calendar, the config check, the experience order against the cap, the pt-BR texts, and the glue on a mocked engine (callbacks, rift hook, highlight retry, switch, admin action, `/weekend`).
 - **Not run on a live server.** The glue's engine calls (`EventCallback`, `GlobalEvent`, `CreatureEvent`, `TalkAction`, `Game` storage, `ChaosWorldBoss.start`, `ChaosInvasion.start`) are the ones other scripts here use, but this file has only run against the mock. To check live: `/weekend status`, then `/weekend off` and `on`; wait for Friday 18:00 or move the clock; watch the console for `[Chaos weekend]` lines.
 
+## Hunt warnings (O323) (`hunt_warnings.lua`, `hunt_warnings_core.lua`, `hunt_warnings_config.lua`, `tools/audit_hunt_transitions.py`)
+
+Owner 2026-10-29: some low-level hunts have a hole or a portal inside them that drops the player into an area with much stronger, denser monsters. The entries stay. Players are warned. The list is `docs/HUNT_TRANSITIONS.md`.
+
+- **Audit.** `python3 -I server/tools/audit_hunt_transitions.py DATA_DIR --md docs/HUNT_TRANSITIONS.md --lua server/data/scripts/chaos/hunt_warnings_config.lua [--csv FILE]` reads the map, its spawn file and the monster files of a base or installed data folder (about a minute, numpy). It finds every teleport item with a destination and every floor change (holes, trapdoors, pitfalls, stairs, ramps, ladders, rope spots, grates) with a spawn within 6 tiles of the entry. Source and destination are each the known monsters of the same floor within 25 tiles (at least 4): median level (`gen_bounty_pool.py` estimate), average experience per kill and density (monsters per 100 walkable tiles within 12). `danger`: the destination level is 2 x the source level or more and 25 more, or from 1.5 x (and 15 more) its experience is over 3 x or its density over 3 x. `extreme`: 3 x and 40 more. A source under level 8 counts as 8. The thresholds are `THRESHOLDS` in the tool. Not in CI (needs the map); `audit_hunt_transitions_test.py` runs the maths on synthetic spawns.
+- **Warning.** `hunt_warnings.lua` ticks once a second (`tickMs`). Every `danger` and `extreme` entry flashes a magic effect (`effect` MORTAREA, extreme ones also BLACKSMOKE) every 2 ticks while a player is within 7 tiles on its floor. A player within 3 tiles of an entry gets one red message ("Perigo: monstros muito mais fortes adiante (nível N+)." / "Danger: much stronger monsters ahead (level N+)."); a player within 1 tile of a landing gets "Cuidado: você está numa área de nível N+..." (pt-BR through `Chaos.t`). One message per player per tick (the extreme area first), the same area again only after 10 minutes (`cooldownSeconds`, in memory), no two messages within 5 seconds (`minGapSeconds`, storage 7103050 so a relog keeps it). Ghost players are skipped. Nobody is blocked or moved.
+- **Config.** `hunt_warnings_config.lua` holds the numbers, the switch `enabled` and `places` between the `BEGIN places` and `END places` markers; the audit rewrites only that block (idempotent). Do not edit `places` by hand. `W.validate` prints problems at startup.
+- **Tests.** `tests/hunt_warnings_test.lua` (core rules, config, the key), `tests/i18n_test.lua` (the pt-BR texts), `tools/audit_hunt_transitions_test.py`.
+- **Install.** Nothing extra: the `files` step copies the scripts. No map change, so no base data is edited. A skull sign item on the map was not done: the effect works with the map as it is and the installed map is the owner's master.
+- **Not covered.** Teleports whose target a movement script sets (action or unique id) have no destination on the map; most teleport items of the base map are of that kind. Holes a player digs. Cliff edges without an item. The planned content hunts. Re-run the audit on the installed server's data folder when the map changes.
+
 ## Test kit (`admin/testkit.lua`)
 `/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
 Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is given): `mage` (Mystic, Elementalist, Illusionist with the rod; magic level 110), `knight` (Warrior, Juggernaut; melee 120, shielding 110), `berserker` (the knight set with Executioner's Reckoning, two-handed, no shield), `paladin` (Ranger, Deadeye; crossbow, distance 125, a Legendary Haloed Quiver rolled at the kit's item level), `beastmaster` (Doomtide Longbow and a Legendary Mercurial Quiver), `thief` (Thief, Samurai: Soulreaper and the paladin's armour, sword 120, distance 110, magic level 30, 100 assassin stars), `ninja` (the same plus Bloodmoon Edge in the shield hand; without `src-patches/0002` it goes to the backpack), `monk` (Monk line: no weapon, fist 120, club 110, the paladin's armour), `necromancer` (Necromancer line: the mage set with the wand) and `templar` (Templar line: the knight set, sword and club 120, shielding 110, magic level 25).
@@ -7335,8 +7347,9 @@ keys, containers and every item with a use of its own work as before.
   a plain use of one in an open container or the inventory through to `chaosUseEquip` (its use with is not run), and
   the client module sends that plain use for the multi-use weapons the server lists at login (`rightclick_equip.lua`:
   every multi-use item type that is equipment, minus those with any other action in `data/actions/actions.xml`, minus
-  `keepUseWith`; 384 looks on the test server). The machete, the crowbar and the scythe are weapons with tool actions:
-  they are not listed and keep their use with. "Use with ..." stays in the context menu of every multi-use weapon.
+  `keepUseWith`; 384 looks on the test server). Tools that are weapons here (crowbar, machete, scythe, pick, shovel, sickle, knife) are listed too and equip on a right-click
+  (config `toolWeaponsKeepUseWith = false`; before, they were left out and a right-click on the crowbar started a use with).
+  "Use with ..." stays in the context menu of every multi-use weapon, so prying and digging still work from there.
 - **The option** "Right-click equips items" (Options > Interface, client base patch 0037, on by default): the client
   sends extended opcode **188** `{"on": true | false}` at every login and when it changes; `rightclick_equip.lua` keeps
   storage 7101810 at 1 while it is off, and the engine then answers a use as before. Opcode 188 is free in the reference
@@ -26413,7 +26426,16 @@ The engine's vocation string hides an ascended class whose base class is listed,
 the Beastmaster (a bow class) cannot wield it. `T.vocationText` in `item_tooltip_core.lua` expands a listed Ranger or
 Warrior into the classes of the install rule (`add_vocations.py`): Ranger, Deadeye, and the Beastmaster only for bows,
 arrows and non-weapon gear; Warrior, Juggernaut, and the Berserker only for two-handed swords, axes, clubs and non-hand
-gear. Unknown names stay as the engine wrote them. Test: `tests/item_tooltip_test.lua`. Client spell lists: a Chaos
+gear. Unknown names stay as the engine wrote them.
+
+Every worn item gets the line (owner 2026-10-29: "alguns equipamentos ainda não mostram pra qual classe são"). The engine's
+vocation string is empty when the item's equip event lists no class, as for a stock Warrior Helmet, and the tooltip then
+printed nothing. `T.classLine` now gives: the class lines of a unique's own equip rule (`spec.equip.lines`, what
+`chaos_unique_equip.lua` enforces), else the engine list named by `T.vocationText`, else "all classes" for any item with a
+worn slot (helmet, armour, legs, boots, ring, amulet, weapon, shield, quiver). A backpack and a badge show no line. The
+client prints it as "For all classes"; no client change. The line only reports the rule, it never changes it: a stock
+Warrior Helmet is worn by every class. Tests: `tests/item_tooltip_test.lua`, `tests/class_line_test.lua` (walks the
+equipment sets, the uniques and the stock equipment of `data/items/base_item_values.csv`; fails when one renders no line). Client spell lists: a Chaos
 spell matches the exact server vocation ids (`ChaosSpellFix.allowsVocation`); `tools/ci/check_rotation_kit.py` compares
 spelldata.lua with the server spell XML.
 
@@ -26449,3 +26471,42 @@ over the aura's range for the Templar and its party members (client/MANIFEST.md 
   nothing twice). `tests/templar_test.lua` still covers the aura and the combat rules.
 - **Install.** Nothing: scripts only. Ship the client build with `game_chestaura` first (an older client ignores opcode 118 and shows
   no aura at all, as the effect is gone).
+
+## Discord bot for bug reports and patch notes (O324) (`deploy/discord_bot/`, `deploy/chaos-discordbot.service`, `chaos-ctl.sh discord-bot`)
+
+A Discord bot on the game VPS, separate from the announcement worker (`chaos-discord.timer`, webhooks). It reads the bugs channel,
+asks Claude what each message is, keeps a bug list and helps write patch notes. The owner's guide in pt-BR is
+`deploy/discord_bot/README.md`: Developer Portal, ids, API key, install, cost.
+
+- **Split.** `bot_core.py` is pure (settings, authorisation, images for vision, prompts, parsing, the SQLite store, duplicates, status
+  changes, patch note rendering, daily summary). `claude_client.py` makes the calls with an injected client. `bot.py` is the thin
+  discord.py layer. Tests: `bot_core_test.py`, `claude_client_test.py` (fakes, no network), and `test_discord_bot` in `chaos_ctl_test.py`.
+- **Claude.** Default model `claude-sonnet-5-5` (`DISCORD_BOT_MODEL`). Structured output (`output_config.format` json_schema), effort
+  `low` for a message and `medium` for patch notes and priorities, no thinking, sampling or forced tool_choice settings (the model
+  rejects them), screenshots as base64 image blocks (png, jpeg, gif, webp, at most 4 per message, 5 MB each). With
+  `DISCORD_BOT_FALLBACKS=1` (default) the request goes to `client.beta.messages` with `server-side-fallback-2026-07-01` and
+  `fallbacks: "default"`, so a request the safety classifiers decline is re-run server-side; `0` uses the plain endpoint. A refusal
+  or a cut answer is an error: the message is not recorded and the owner gets one DM an hour about it. The prompt is not cached: the
+  stable part is under the minimum cacheable size.
+- **Rules.** A kind `bug` is new or a duplicate of an open bug Claude names (an id that is not open is dropped). A player's second
+  report of a bug does not raise the count. A duplicate raises the bug's severity to the worst seen; a bug that becomes critical alerts
+  the owner once. Status changes follow `TRANSITIONS` in `bot_core.py`; `duplicado` needs the original, moves the reports and the count
+  there, and refuses an original that is itself a duplicate. A message is handled once (unique message id). One Claude call per author
+  per hour is capped (`DISCORD_BOT_USER_LIMIT_HOUR`, default 20), and messages are handled one at a time so two reports in a row see each other.
+- **Privacy.** The text of a message is never stored or logged: a bug keeps Claude's title, summary and steps, the author id, the
+  message id and its link. Logs hold ids and counters. The message text and the screenshots go to the Anthropic API.
+- **Patch notes.** `/patch gerar` takes the fixed bugs without a patch (`patched_in`) and the owner's extras and asks for Portuguese and
+  English notes together; `/patch escrever` is a modal (Lead :: text, one per line) and the English twin is translated at Publicar.
+  Publishing posts the embed(s) to `DISCORD_PATCH_CHANNEL_ID` and writes `<id>.md` and `<id>.pt-br.md` (format of
+  `patchnotes_core.lua`) into `DISCORD_BOT_DATA_DIR/patchnotes`, never over an existing id. The bot has no write access to the game, so
+  `chaos-ctl.sh discord-bot patchnotes` copies the new files into `SERVER/data/patchnotes` (the game lists it every 60 s at most).
+  Commit them to `server/data/patchnotes` as well, or the next install does not have them.
+- **Install.** `chaos-ctl.sh discord-bot install` (idempotent): user `chaosbot`, `CHAOS_BOT_DIR/venv` (default `/opt/chaos/discord-bot`)
+  from the pinned `requirements.txt`, the code copied to `CHAOS_BOT_DIR/app`, `/etc/chaos/discord-bot.env` (mode 600, from
+  `.env.example`), data dir `/var/lib/chaos/discord-bot` (750), `chaos-discordbot.service` (sandboxed like the other services, writes
+  only the data dir, exit 2 = settings missing is not restarted), logrotate. `set NAME` takes one value on stdin and checks it per name;
+  `start` refuses with `config-missing` until the five required ones are set. Settings in `ctl.conf`: `CHAOS_BOT_USER`,
+  `CHAOS_BOT_ENV`, `CHAOS_BOT_DIR`, `CHAOS_BOT_DATA`, `CHAOS_BOT_LOG`, `CHAOS_BOT_PYTHON`. Admin app: Comandos > Bot do Discord;
+  desktop table: `commands.rs` group Bot do Discord.
+- **Not done.** No live run (the fallbacks parameter together with structured output is untested against the real API), the Android card
+  is not compiled here, and the slash commands are checked in code only (no permission override in the server settings).

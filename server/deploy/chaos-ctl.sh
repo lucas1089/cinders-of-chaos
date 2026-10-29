@@ -157,6 +157,23 @@
 #   discord-status              key=value lines: channel_NAME=yes id_end=NNNN | no (never the URL), off_kinds, site_url,
 #                               env_file (mode owner), timer_installed / _enabled / _active; "@log" the last worker log
 #                               lines, "@queue" the last 10 rows of chaos_discord_queue (id kind status attempts error)
+#   discord-bot [status]        the Discord bot for bug reports and patch notes (server/deploy/discord_bot/, README.md pt-BR;
+#                               server/README.md "Discord bot"): key=value lines (installed, user, unit state, env_file mode,
+#                               set_NAME=yes|no for each required setting, never a value, db size), "@log" the last lines
+#   discord-bot install         idempotent: system user chaosbot, venv + pinned requirements in CHAOS_BOT_DIR (/opt/chaos/
+#                               discord-bot), the code copied from the repo checkout, /etc/chaos/discord-bot.env (mode 600,
+#                               root) from .env.example, data dir /var/lib/chaos/discord-bot, chaos-discordbot.service
+#                               (enabled, not started), logrotate. Restarts the bot when it runs and the code changed
+#   discord-bot set NAME        saves one setting into the env file, the value on stdin (one line, checked per NAME, never
+#                               printed, never on a command line). NAME: DISCORD_TOKEN ANTHROPIC_API_KEY DISCORD_OWNER_ID
+#                               DISCORD_BUGS_CHANNEL_ID DISCORD_PATCH_CHANNEL_ID DISCORD_GUILD_ID DISCORD_ADMIN_ROLE_ID
+#                               DISCORD_BOT_MODEL. Empty input removes the line
+#   discord-bot start | stop | restart
+#                               start refuses with config-missing (names only) until the five required settings are set
+#   discord-bot logs [N]        the last N (default 60, at most 500) lines of the bot log, tokens and keys masked
+#   discord-bot patchnotes      copies the patch note files the bot wrote (/var/lib/chaos/discord-bot/patchnotes) that the game
+#                               does not have yet into SERVER/data/patchnotes (never overwrites); the game lists the folder
+#                               at least every 60 s
 #   feedback [--days N] [--all] [--category C] [--names]
 #                               the players' bug reports and suggestions (chaos_reports, reason bug) as plain text to paste
 #                               into a chat, newest first (max 200): "#id | date UTC | category | open | pos x,y,z | lvl N
@@ -241,7 +258,8 @@ CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_EN
 CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPECTATE_STATE CHAOS_PAIR_BRANCH \
 CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STAGING CHAOS_CACHE_DIR \
 CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE \
-CHAOS_SERVER_USER_STATE CHAOS_SERVER_USER_LOG "
+CHAOS_SERVER_USER_STATE CHAOS_SERVER_USER_LOG CHAOS_BOT_USER CHAOS_BOT_ENV CHAOS_BOT_DIR CHAOS_BOT_DATA CHAOS_BOT_LOG \
+CHAOS_BOT_PYTHON "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -663,6 +681,37 @@ WEB_UNITS='apache2 nginx'
 unit_ok() {
   [[ $1 =~ ^chaos-[a-z0-9-]{1,40}(\.service|\.timer)?$ ]] || [ "$1" = "$UNIT" ] \
     || [[ $1 =~ ^(apache2|nginx|php[0-9.]{1,6}-fpm)(\.service)?$ ]]
+}
+
+# ---- Discord bot for bug reports and patch notes (discord-bot command; server/deploy/discord_bot/)
+BOTUSER=$(setting CHAOS_BOT_USER chaosbot)
+BOTENV=$(setting CHAOS_BOT_ENV /etc/chaos/discord-bot.env)
+BOTDIR=$(setting CHAOS_BOT_DIR "$ROOT/discord-bot")
+BOTDATA=$(setting CHAOS_BOT_DATA /var/lib/chaos/discord-bot)
+BOTLOG=$(setting CHAOS_BOT_LOG /var/log/chaos/discord-bot.log)
+BOTPY=$(setting CHAOS_BOT_PYTHON python3)
+BOTUNIT=chaos-discordbot
+BOT_REQUIRED="DISCORD_TOKEN ANTHROPIC_API_KEY DISCORD_OWNER_ID DISCORD_BUGS_CHANNEL_ID DISCORD_PATCH_CHANNEL_ID"
+BOT_KEYS="$BOT_REQUIRED DISCORD_GUILD_ID DISCORD_ADMIN_ROLE_ID DISCORD_BOT_MODEL"
+# whether KEY has a non-empty value in the bot's env file (the value is never printed)
+bot_has() { grep -q -- "^$1=[^[:space:]]" "$BOTENV" 2>/dev/null; }
+# tokens and API keys in a line of output are masked
+bot_redact() {
+  sed -E 's#[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{25,}#***#g; s#sk-ant-[A-Za-z0-9_-]+#sk-ant-***#g'
+}
+# the value on stdin fits the setting NAME (a pattern per name)
+bot_value_ok() {
+  case $1 in
+    DISCORD_TOKEN) [[ $2 =~ ^[A-Za-z0-9._-]{20,200}$ ]] ;;
+    ANTHROPIC_API_KEY) [[ $2 =~ ^sk-ant-[A-Za-z0-9_-]{20,300}$ ]] ;;
+    DISCORD_BOT_MODEL) [[ $2 =~ ^[A-Za-z0-9._-]{3,60}$ ]] ;;
+    *) [[ $2 =~ ^[0-9]{5,25}$ ]] ;;
+  esac
+}
+bot_unit_text() {
+  sed -e "s#/opt/chaos/discord-bot#$BOTDIR#g; s#/var/lib/chaos/discord-bot#$BOTDATA#g; s#/etc/chaos/discord-bot.env#$BOTENV#g" \
+      -e "s#/var/log/chaos/discord-bot.log#$BOTLOG#g; s#^User=chaosbot#User=$BOTUSER#; s#^Group=chaosbot#Group=$BOTGROUP#" \
+      "$REPO/server/deploy/$BOTUNIT.service"
 }
 
 # ---- Discord announcements (discord-* commands): CHAOS_DISCORD_WEBHOOK_<CHANNEL> lines of $DENV, mode 600
@@ -1724,6 +1773,171 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           echo "(the queue could not be read: is the database up?)"
         fi
         ;;
+    esac
+    ;;
+  discord-bot)
+    # the Discord bot for bug reports and patch notes. Secrets live only in $BOTENV (mode 600, root); they come in on
+    # stdin (set), are never put on a command line and never printed (status shows yes/no, logs mask tokens and keys).
+    sub=${1:-status}
+    [ $# -eq 0 ] || shift
+    case $sub in
+      status)
+        [ $# -eq 0 ] || die "discord-bot status (no arguments)"
+        if [ -x "$BOTDIR/venv/bin/python3" ] && [ -f "$BOTDIR/app/bot.py" ]; then echo installed=yes; else echo installed=no; fi
+        if id "$BOTUSER" >/dev/null 2>&1; then echo "user=$BOTUSER"; else echo "user=missing"; fi
+        if [ -f "$SYSD/$BOTUNIT.service" ]; then echo unit_installed=yes; else echo unit_installed=no; fi
+        echo "unit_enabled=$(systemctl is-enabled "$BOTUNIT" 2>/dev/null | head -n 1 || true)"
+        echo "unit_active=$(systemctl is-active "$BOTUNIT" 2>/dev/null | head -n 1 || true)"
+        echo "since=$(systemctl show "$BOTUNIT" -p ActiveEnterTimestamp --value 2>/dev/null | head -n 1)"
+        if [ -e "$BOTENV" ]; then echo "env_file=$(stat -c '%a %U:%G' "$BOTENV" 2>/dev/null)"; else echo "env_file=missing"; fi
+        for bk in $BOT_KEYS; do
+          if bot_has "$bk"; then echo "set_$bk=yes"; else echo "set_$bk=no"; fi
+        done
+        bmodel=$(sed -n 's/^DISCORD_BOT_MODEL=\([A-Za-z0-9._-]\{3,60\}\)[[:space:]]*$/\1/p' "$BOTENV" 2>/dev/null | head -n 1)
+        echo "model=${bmodel:-claude-sonnet-5-5}"
+        echo "data_dir=$BOTDATA"
+        if [ -f "$BOTDATA/bugs.sqlite3" ]; then echo "db_bytes=$(stat -c %s "$BOTDATA/bugs.sqlite3" 2>/dev/null)"; else echo "db_bytes=0"; fi
+        echo "@log"
+        if [ -r "$BOTLOG" ]; then tail -n 8 "$BOTLOG" 2>/dev/null | bot_redact; else echo "(no $BOTLOG yet)"; fi
+        ;;
+      install)
+        [ $# -eq 0 ] || die "discord-bot install (no arguments)"
+        bsrc="$REPO/server/deploy/discord_bot"
+        for bf in bot.py bot_core.py claude_client.py requirements.txt .env.example; do
+          [ -f "$bsrc/$bf" ] || die "no $bsrc/$bf (update the repository checkout first: update-apply)"
+        done
+        [ -f "$REPO/server/deploy/$BOTUNIT.service" ] || die "no $REPO/server/deploy/$BOTUNIT.service"
+        [[ $BOTUSER =~ ^[a-z][a-z0-9_-]{1,30}$ ]] || die "bad CHAOS_BOT_USER"
+        command -v "$BOTPY" >/dev/null 2>&1 || die "python3-not-found"
+        "$BOTPY" -c 'import venv, ensurepip' >/dev/null 2>&1 || die "python3-venv-missing: apt-get install python3-venv"
+        if ! id "$BOTUSER" >/dev/null 2>&1; then
+          adduser --system --group --no-create-home --home "$BOTDATA" --shell /usr/sbin/nologin "$BOTUSER" >/dev/null \
+            || die "adduser $BOTUSER failed"
+        fi
+        BOTGROUP=$(id -gn "$BOTUSER") || die "no group for $BOTUSER"
+        install -d -m 0755 "$BOTDIR" "$BOTDIR/app" || die "cannot create $BOTDIR"
+        install -d -m 0750 -o "$BOTUSER" -g "$BOTGROUP" "$BOTDATA" || die "cannot create $BOTDATA"
+        install -d -m 0755 "$(dirname "$BOTLOG")" "$(dirname "$BOTENV")" || die "cannot create the log or settings folder"
+        bchanged=0
+        for bf in bot.py bot_core.py claude_client.py; do
+          if ! cmp -s "$bsrc/$bf" "$BOTDIR/app/$bf"; then
+            install -m 0644 "$bsrc/$bf" "$BOTDIR/app/$bf" || die "cannot install $bf"
+            bchanged=1
+          fi
+        done
+        # the venv and the pinned requirements: made again only when the requirements changed (or the venv is gone)
+        if [ ! -x "$BOTDIR/venv/bin/pip" ] || ! cmp -s "$bsrc/requirements.txt" "$BOTDIR/requirements.installed"; then
+          rm -f "$BOTDIR/requirements.installed"
+          "$BOTPY" -m venv "$BOTDIR/venv" || die "could not create the virtualenv in $BOTDIR/venv"
+          "$BOTDIR/venv/bin/pip" install --disable-pip-version-check --quiet -r "$bsrc/requirements.txt" \
+            || die "pip install failed (is the VPS online?)"
+          install -m 0644 "$bsrc/requirements.txt" "$BOTDIR/requirements.installed" || die "cannot record the requirements"
+          bchanged=1
+          echo "requirements: installed"
+        else
+          echo "requirements: already installed"
+        fi
+        if [ ! -e "$BOTENV" ]; then
+          install -m 600 /dev/null "$BOTENV" || die "cannot create $BOTENV"
+          cat "$bsrc/.env.example" > "$BOTENV" || die "cannot write $BOTENV"
+          echo "settings file: created $BOTENV (mode 600)"
+        fi
+        chmod 0600 "$BOTENV"
+        btmp=$(mktemp) || die "mktemp failed"
+        bot_unit_text > "$btmp" || { rm -f "$btmp"; die "cannot build the unit"; }
+        if ! cmp -s "$btmp" "$SYSD/$BOTUNIT.service"; then
+          install -m 0644 "$btmp" "$SYSD/$BOTUNIT.service" || { rm -f "$btmp"; die "cannot install the unit"; }
+          systemctl daemon-reload || die "daemon-reload failed"
+          echo "unit: installed"
+        else
+          echo "unit: already installed"
+        fi
+        rm -f "$btmp"
+        if [ -f "$REPO/server/deploy/chaos.logrotate" ] && ! cmp -s "$REPO/server/deploy/chaos.logrotate" "$DLROT"; then
+          install -m 0644 "$REPO/server/deploy/chaos.logrotate" "$DLROT" || die "cannot install $DLROT"
+        fi
+        systemctl enable "$BOTUNIT" >/dev/null 2>&1 || die "could not enable $BOTUNIT"
+        if [ "$bchanged" -eq 1 ] && [ "$(systemctl is-active "$BOTUNIT" 2>/dev/null | head -n 1)" = active ]; then
+          systemctl restart "$BOTUNIT" || die "restart failed"
+          echo "the bot was running: restarted with the new code"
+        fi
+        bmiss=""
+        for bk in $BOT_REQUIRED; do bot_has "$bk" || bmiss="$bmiss $bk"; done
+        echo "discord-bot install: ok (user $BOTUSER, code in $BOTDIR/app, data in $BOTDATA)"
+        if [ -n "$bmiss" ]; then echo "missing settings:$bmiss (discord-bot set NAME, then discord-bot start)"; else echo "all settings present: discord-bot start"; fi
+        ;;
+      set)
+        bname=${1:-}
+        { [ $# -eq 1 ] && [[ " $BOT_KEYS " == *" $bname "* ]]; } || die "discord-bot set NAME (NAME: $BOT_KEYS; the value on stdin, empty removes it)"
+        [ -d "$BOTDIR/app" ] || die "not-installed: run discord-bot install first"
+        bval=""
+        IFS= read -r -t 30 -n 400 bval; brc=$?
+        [ "$brc" -le 128 ] || die "no value on stdin (timed out)"
+        bval=${bval%$'\r'}
+        bx=""
+        if IFS= read -r -t 2 -n 1 bx && [ -n "$bx" ]; then unset bval; die "one line only on stdin; nothing changed"; fi
+        bval=${bval#"${bval%%[![:space:]]*}"}
+        bval=${bval%"${bval##*[![:space:]]}"}
+        if [ -n "$bval" ] && ! bot_value_ok "$bname" "$bval"; then
+          unset bval
+          die "that value does not look like $bname; nothing changed"
+        fi
+        breal=$(readlink -m -- "$BOTENV")
+        [ -e "$breal" ] || { install -m 600 /dev/null "$breal" || die "cannot create $BOTENV"; }
+        btmp=$(mktemp "$breal.XXXXXX") || die "cannot write next to $BOTENV"
+        chmod 0600 "$btmp"
+        { grep -v -- "^$bname=" "$breal" 2>/dev/null || true
+          if [ -n "$bval" ]; then printf '%s=%s\n' "$bname" "$bval"; fi; } > "$btmp" \
+          || { rm -f "$btmp"; die "cannot write $BOTENV"; }
+        chown --reference="$breal" -- "$btmp" 2>/dev/null || true
+        mv -f -- "$btmp" "$breal" || { rm -f "$btmp"; die "cannot replace $BOTENV"; }
+        if [ -n "$bval" ]; then echo "discord-bot set: $bname saved (${#bval} characters); restart the bot to use it"; unset bval
+        else echo "discord-bot set: $bname removed"; fi
+        ;;
+      start|stop|restart)
+        [ $# -eq 0 ] || die "discord-bot $sub (no arguments)"
+        [ -f "$SYSD/$BOTUNIT.service" ] || die "not-installed: run discord-bot install first"
+        if [ "$sub" != stop ]; then
+          bmiss=""
+          for bk in $BOT_REQUIRED; do bot_has "$bk" || bmiss="$bmiss $bk"; done
+          [ -z "$bmiss" ] || die "config-missing:$bmiss (discord-bot set NAME)"
+        fi
+        systemctl "$sub" "$BOTUNIT" || die "$sub $BOTUNIT failed"
+        if [ "$sub" != stop ]; then
+          sleep "${CHAOS_BOT_WAIT:-3}"
+          bst=$(systemctl is-active "$BOTUNIT" 2>/dev/null | head -n 1)
+          echo "discord-bot $sub: $BOTUNIT is ${bst:-unknown}"
+          if [ "$bst" != active ]; then
+            [ -r "$BOTLOG" ] && tail -n 6 "$BOTLOG" 2>/dev/null | bot_redact
+            exit 1
+          fi
+        else
+          echo "discord-bot stop: $BOTUNIT stopped"
+        fi
+        ;;
+      logs)
+        { [ $# -le 1 ]; } || die "discord-bot logs [N]"
+        bn=$(lines_arg "${1:-60}")
+        if [ -r "$BOTLOG" ]; then
+          echo "== $BOTLOG"
+          tail -n "$bn" "$BOTLOG" | bot_redact
+        else
+          echo "== journal of $BOTUNIT"
+          journalctl -u "$BOTUNIT" -n "$bn" --no-pager 2>&1 | bot_redact
+        fi
+        ;;
+      patchnotes)
+        [ $# -eq 0 ] || die "discord-bot patchnotes (no arguments)"
+        [ -f "$BOTDIR/app/bot_core.py" ] || die "not-installed: run discord-bot install first"
+        command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+        bdst="$SERVER/data/patchnotes"
+        [ -d "$SERVER/data" ] || die "no $SERVER/data (CHAOS_SERVER_DIR)"
+        bown=$(stat -c '%u %g' "$SERVER/data" 2>/dev/null) || die "cannot read $SERVER/data"
+        python3 -I "$BOTDIR/app/bot_core.py" sync-notes "$BOTDATA/patchnotes" "$bdst" "${bown% *}" "${bown#* }" \
+          || die "could not copy the patch notes"
+        echo "folder: $bdst (the game reads it at least every 60 seconds; commit the files to server/data/patchnotes too)"
+        ;;
+      *) die "discord-bot status | install | set NAME | start | stop | restart | logs [N] | patchnotes" ;;
     esac
     ;;
   server-user)

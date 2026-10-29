@@ -51,7 +51,8 @@ $names = array();
 foreach ($kit['files'] as $f) {
 	$names[] = $f['name'];
 	$path = $f['name'] === 'logo.png' ? CHAOS_TEST_REPO . '/website/overlay/layouts/chaos/assets/img/logo.png'
-		: (strpos($f['name'], 'art/') === 0 ? CHAOS_TEST_REPO . '/website/' . $f['name'] : '');
+		: (strpos($f['name'], 'art/') === 0 ? CHAOS_TEST_REPO . '/website/' . $f['name']
+		: (preg_match('#^streamer/(.+\.(png|json|html|js))$#', $f['name'], $sm) ? $plugin . '/assets/streamer/' . $sm[1] : ''));
 	if ($path !== '') {
 		check(is_file($path) && hash_file('sha256', $path) === $f['sha256'] && filesize($path) === $f['bytes'], "kit file {$f['name']} matches the art on disk");
 	}

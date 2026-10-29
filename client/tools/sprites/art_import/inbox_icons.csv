@@ -1,0 +1,4 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+inbox_loot,item,look,loot bag,inbox_icons,0,0,1,1,1,1,copy:10325,redraw,32081,item=38608
+inbox_orbs,item,look,orbs pouch,inbox_icons,32,0,1,1,1,1,copy:8861,redraw,32082,item=38609
+inbox_ration,item,look,everfull ration,inbox_icons,64,0,1,1,1,1,copy:3583,redraw,32084,item=38611

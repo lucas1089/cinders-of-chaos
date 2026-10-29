@@ -1,0 +1,218 @@
+# Chaos: Android build with CMake (O313 phase 2; client/BASE.md "0163"; CMakeLists.txt, src/framework/CMakeLists.txt, src/android/pch.h,
+# core/logger.cpp, core/resourcemanager.cpp, platform/androidplatform.cpp, platform/androidwindow.cpp; after 0001-0162). The base had
+# a Visual Studio + Ant project only; this makes the engine build for android arm64 with the NDK's CMake toolchain
+# (client/android/, docs/ANDROID_CLIENT.md).
+#  * CMake with the NDK toolchain: ANDROID is a CMake variable there, the engine tests the macro ANDROID, so -DANDROID is added; OpenGL
+#    ES 2 (system EGL and GLESv2), no crash handler, no X11, no static libgcc, no -no-pie / map file, no unixplatform / x11 / win32
+#    sources; androidwindow.cpp, androidplatform.cpp and the app glue are in; the target is the SHARED library libcinders.so that
+#    NativeActivity loads (16 KB page size, relro, stack protector, debug info stripped outside Debug). Boost is header only (vcpkg's
+#    Boost 1.86 has no compiled boost_system).
+#  * src/android/pch.h (the Visual Studio project force-included it) is force-included in C++ files: JNI, EGL, the asset manager,
+#    the app glue, g_androidState. It included the OpenGL ES 1 header; now GLES2.
+#  * ALooper_pollAll is gone from current NDKs: ALooper_pollOnce(0, ...) in the same loop. std::bind of AndroidWindow::openUrl bound
+#    a copy of the window (does not compile); it binds the pointer.
+#  * ResourceManager::encrypt is declared and named by main.cpp but was compiled out on Android: an empty definition (link error).
+#  * logcat tag "CindersOfChaos".
+# Compiled and linked (libraries stubbed) with NDK r27d, android-26, arm64-v8a: no engine symbol is left undefined. Not run on a device.
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -23,7 +23,7 @@
+ include(src/client/CMakeLists.txt)
+ 
+ # functions map for reading backtraces (flags do linker GNU; nao aplicar no MSVC)
+-if(NOT APPLE AND NOT WASM AND NOT MSVC)
++if(NOT APPLE AND NOT WASM AND NOT MSVC AND NOT ANDROID)
+     set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -no-pie -Wl,-Map=${PROJECT_NAME}.map")
+ endif()
+ 
+@@ -52,8 +52,26 @@
+ endif()
+ 
+ # add client executable
+-add_executable(${PROJECT_NAME} ${framework_SOURCES} ${client_SOURCES} ${executable_SOURCES})
+-target_link_libraries(${PROJECT_NAME} ${framework_LIBRARIES})
++if(ANDROID)
++    # Android (O313, base patch 0163, client/android/): NativeActivity loads libcinders.so and calls android_main
++    # (main.cpp). Shared library, so no -no-pie, no map file. The glue's ANativeActivity_onCreate must stay exported.
++    add_library(${PROJECT_NAME} SHARED ${framework_SOURCES} ${client_SOURCES} ${executable_SOURCES})
++    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "cinders")
++    target_link_libraries(${PROJECT_NAME} ${framework_LIBRARIES})
++    target_link_options(${PROJECT_NAME} PRIVATE
++        -Wl,-u,ANativeActivity_onCreate
++        -Wl,-z,max-page-size=16384   # 16 KB pages (Android 15 and newer devices, Google Play)
++        -Wl,-z,relro -Wl,-z,now -Wl,--build-id=sha1
++        $<$<NOT:$<CONFIG:Debug>>:-Wl,--strip-debug>)
++    target_compile_options(${PROJECT_NAME} PRIVATE -fstack-protector-strong -fPIC
++        # the engine relies on this header the Visual Studio project force-included: JNI, EGL, the asset manager,
++        # the app glue and g_androidState (C++ files only: qrcodegen.c is C)
++        $<$<COMPILE_LANGUAGE:CXX>:-include${CMAKE_SOURCE_DIR}/src/android/pch.h>)
++    target_compile_definitions(${PROJECT_NAME} PRIVATE _FORTIFY_SOURCE=2)
++else()
++    add_executable(${PROJECT_NAME} ${framework_SOURCES} ${client_SOURCES} ${executable_SOURCES})
++    target_link_libraries(${PROJECT_NAME} ${framework_LIBRARIES})
++endif()
+ 
+ if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/data/images/splash.png")
+     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+--- a/src/android/pch.h
++++ b/src/android/pch.h
+@@ -15,9 +15,11 @@
+ #include <sys/resource.h>
+ 
+ #include <EGL/egl.h>
+-#include <GLES/gl.h>
++#include <GLES2/gl2.h>
+ 
+ #include <android/sensor.h>
++#include <android/asset_manager.h>
++#include <android/asset_manager_jni.h>
+ 
+ #include <android/log.h>
+ #include <android/native_window.h>
+--- a/src/framework/CMakeLists.txt
++++ b/src/framework/CMakeLists.txt
+@@ -156,7 +156,17 @@
+     set(LUAJIT OFF CACHE BOOL "LuaJIT is not used by WebAssembly builds" FORCE)
+     set(CRASH_HANDLER OFF CACHE BOOL "Crash handlers are unavailable in browsers" FORCE)
+ endif()
+-if(NOT APPLE)
++if(ANDROID)
++    # Android (O313, base patch 0163): one shared library that NativeActivity loads. The engine tests the macro
++    # ANDROID, which the NDK toolchain does not define (it defines __ANDROID__). OpenGL ES 2 and no crash handler
++    # (unixcrashhandler.cpp reads glibc backtraces; logcat and the Java shell report errors).
++    set(CRASH_HANDLER OFF)
++    set(USE_STATIC_LIBS ON)
++    set(USE_LIBCPP OFF)
++    set(USE_LTO OFF)
++    set(OPENGLES "2.0")
++    set(framework_DEFINITIONS ${framework_DEFINITIONS} -DANDROID)
++elseif(NOT APPLE)
+     option(CRASH_HANDLER "Generate crash reports" ON)
+     option(USE_STATIC_LIBS "Don't use shared libraries (dlls)" ON)
+     option(USE_LIBCPP "Use the new libc++ library instead of stdc++" OFF)
+@@ -207,7 +217,7 @@
+ 
+ # process options
+ if(USE_STATIC_LIBS)
+-        if(NOT APPLE AND NOT MSVC AND NOT WASM)
++        if(NOT APPLE AND NOT MSVC AND NOT WASM AND NOT ANDROID)
+             set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -static-libgcc -static-libstdc++")
+         endif()
+         message(STATUS "Link to static libraries: ON")
+@@ -239,6 +249,11 @@
+ if(NOT WASM)
+     # find boost
+     set(REQUIRED_BOOST_COMPONENTS system filesystem)
++    if(ANDROID)
++        # the Android libraries come from vcpkg (client/android/vcpkg/vcpkg.json): Boost 1.86 has no compiled
++        # boost_system, and the engine includes only Boost headers
++        set(REQUIRED_BOOST_COMPONENTS "")
++    endif()
+     set(Boost_USE_MULTITHREADED ON)
+     set(Boost_USE_STATIC_LIBS ${USE_STATIC_LIBS})
+     find_package(Boost 1.67.0 COMPONENTS ${REQUIRED_BOOST_COMPONENTS} REQUIRED)
+@@ -337,6 +352,10 @@
+     if(APPLE)
+         set(framework_DEFINITIONS ${framework_DEFINITIONS} -D_REENTRANT) # enable thread safe code
+         set(SYSTEM_LIBRARIES "")
++    elseif(ANDROID)
++        # bionic has pthread, dl and rt functions in libc; android_native_app_glue needs log and android
++        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
++        set(SYSTEM_LIBRARIES log android atomic OpenSLES)
+     elseif(NOT WASM)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+         set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -rdynamic -Wl,-rpath,./libs") # rdynamic is needed by backtrace.h used in crash handler
+@@ -355,6 +374,10 @@
+     if(WASM)
+         set(OPENGLES "2.0")
+         set(framework_DEFINITIONS ${framework_DEFINITIONS} -DOPENGL_ES=2)
++    ELSEif(ANDROID)
++        # the NDK sysroot has the headers; the libraries are system libraries (EGL, GLESv2)
++        set(framework_DEFINITIONS ${framework_DEFINITIONS} -DOPENGL_ES=2)
++        set(framework_LIBRARIES ${framework_LIBRARIES} EGL GLESv2)
+     ELSEif(OPENGLES STREQUAL "2.0")
+         find_package(OpenGLES2 REQUIRED)
+         find_package(EGL REQUIRED)
+@@ -404,7 +427,7 @@
+             set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -mwindows")
+             message(STATUS "Windows console: OFF")
+         endif()
+-    elseif(NOT WASM)
++    elseif(NOT WASM AND NOT ANDROID)
+         set(framework_LIBRARIES ${framework_LIBRARIES} X11)
+     endif()
+ 
+@@ -527,6 +550,28 @@
+             ${CMAKE_CURRENT_LIST_DIR}/platform/browserwindow.h
+         )
+     endif()
++    if(ANDROID)
++        # the window is the EGL window of androidwindow.cpp, the platform functions are androidplatform.cpp's; the
++        # desktop windows and unixplatform.cpp (which would define the same Platform functions) stay out
++        list(REMOVE_ITEM framework_SOURCES
++            ${CMAKE_CURRENT_LIST_DIR}/platform/x11window.cpp
++            ${CMAKE_CURRENT_LIST_DIR}/platform/x11window.h
++            ${CMAKE_CURRENT_LIST_DIR}/platform/win32window.cpp
++            ${CMAKE_CURRENT_LIST_DIR}/platform/win32window.h
++            ${CMAKE_CURRENT_LIST_DIR}/platform/sdlwindow.cpp
++            ${CMAKE_CURRENT_LIST_DIR}/platform/sdlwindow.h
++            ${CMAKE_CURRENT_LIST_DIR}/platform/unixplatform.cpp
++            ${CMAKE_CURRENT_LIST_DIR}/platform/win32platform.cpp
++            ${CMAKE_CURRENT_LIST_DIR}/platform/win32crashhandler.cpp
++        )
++        set(framework_SOURCES ${framework_SOURCES}
++            ${CMAKE_CURRENT_LIST_DIR}/platform/androidplatform.cpp
++            ${CMAKE_CURRENT_LIST_DIR}/platform/androidwindow.cpp
++            ${CMAKE_CURRENT_LIST_DIR}/platform/androidwindow.h
++            ${CMAKE_CURRENT_LIST_DIR}/../android/android_native_app_glue.cpp
++            ${CMAKE_CURRENT_LIST_DIR}/../android/android_native_app_glue.h
++        )
++    endif()
+     set(framework_DEFINITIONS ${framework_DEFINITIONS} -DFW_GRAPHICS)
+ else()
+     set(framework_SOURCES ${framework_SOURCES}
+--- a/src/framework/core/logger.cpp
++++ b/src/framework/core/logger.cpp
+@@ -54,7 +54,7 @@
+     std::string outmsg = logPrefixes[level] + message;
+ #ifdef ANDROID
+     const static int logPriorities[] = { ANDROID_LOG_INFO, ANDROID_LOG_INFO, ANDROID_LOG_WARN, ANDROID_LOG_ERROR, ANDROID_LOG_FATAL };
+-    __android_log_print(logPriorities[level], "AstraClient", "%s", outmsg.c_str());
++    __android_log_print(logPriorities[level], "CindersOfChaos", "%s", outmsg.c_str());
+ #else
+     std::cout << outmsg << std::endl;
+ 
+--- a/src/framework/core/resourcemanager.cpp
++++ b/src/framework/core/resourcemanager.cpp
+@@ -1925,6 +1925,9 @@
+         g_logger.info(stdext::format("%s - encrypted", it.string()));
+     }
+ }
++#elif defined(WITH_ENCRYPTION)
++// Android (base patch 0163): the --encrypt tool is for a desktop folder (std::filesystem); main.cpp still names it
++void ResourceManager::encrypt(const std::string&) {}
+ #endif 
+ 
+ bool ResourceManager::decryptBuffer(std::string& buffer) {
+--- a/src/framework/platform/androidplatform.cpp
++++ b/src/framework/platform/androidplatform.cpp
+@@ -97,7 +97,7 @@
+ 
+ bool Platform::openUrl(std::string url, bool now)
+ {
+-    g_graphicsDispatcher.addEvent(std::bind(&AndroidWindow::openUrl, g_androidWindow, url));
++    g_graphicsDispatcher.addEvent(std::bind(&AndroidWindow::openUrl, &g_androidWindow, url));
+     return true;
+ }
+ 
+--- a/src/framework/platform/androidwindow.cpp
++++ b/src/framework/platform/androidwindow.cpp
+@@ -279,7 +279,7 @@
+     // If not animating, we will block forever waiting for events.
+     // If animating, we loop until all events are read, then continue
+     // to draw the next frame of animation.
+-    while ((ident = ALooper_pollAll(0, NULL, &events, (void**)&source)) >= 0) {
++    while ((ident = ALooper_pollOnce(0, NULL, &events, (void**)&source)) >= 0) {
+         // Process this event.
+         if (source != NULL) {
+             source->process(g_androidState, source);

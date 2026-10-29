@@ -172,4 +172,64 @@ function chaos_creators_review(int $id, string $status, string $staff, ?int $now
 	}
 	return array(true, $status === 'approved' ? 'Application approved. Now create the code below.' : 'Application rejected.');
 }
+
+/** The streamer kit files the page lists: [folder => [file names]] read from plugins/chaos/assets/streamer (committed, website/tools/gen_streamer_kit.py). */
+function chaos_creators_streamer_files(): array {
+	$base = __DIR__ . '/assets/streamer';
+	$out = array();
+	foreach (array('overlays', 'banners', 'discord') as $dir) {
+		$names = is_dir($base . '/' . $dir) ? scandir($base . '/' . $dir) : array();
+		$out[$dir] = array_values(array_filter((array)$names, static function ($n) { return preg_match('/^[a-z0-9][a-z0-9.-]*\.png$/i', $n) === 1; }));
+	}
+	return $out;
+}
+
+/** The URL of a streamer kit file ('' for a path that is not one of ours). */
+function chaos_creators_streamer_url(string $path): string {
+	if (!preg_match('#^(overlays|banners|discord)/[a-z0-9][a-z0-9.-]*\.png$#i', $path) && !preg_match('#^obs-overlay\.html$#', $path)) {
+		return '';
+	}
+	return function_exists('znote_plugin_asset') ? (string)znote_plugin_asset('chaos', 'streamer/' . $path) : 'plugins/chaos/assets/streamer/' . $path;
+}
+
+/**
+ * The numbers the partner guide quotes, from creator_codes_config.lua (chaos_creator_config) and the Discord link
+ * (CHAOS_DISCORD_URL, only an https one). Mirrors website/tools/gen_streamer_kit.py code_numbers().
+ */
+function chaos_creators_guide_numbers(string $lang, string $discord = ''): array {
+	$cfg = chaos_creator_config();
+	$days = (int)$cfg['launchBonusDays'];
+	$dt = DateTimeImmutable::createFromFormat('!Y-m-d H:i', (string)$cfg['launchBonusStart'], new DateTimeZone('America/Sao_Paulo'));
+	$pt = $lang === 'pt-BR';
+	$fmt = $pt ? 'd/m/Y H:i' : 'd M Y, H:i';
+	$discordOk = preg_match('#^https://[^\s<>"\']+$#', $discord) === 1;
+	return array(
+		'share' => (int)$cfg['sharePct'], 'bonus' => (int)$cfg['launchBonusPct'], 'support' => (int)$cfg['supportDays'], 'hold' => (int)$cfg['holdDays'],
+		'orderCap' => (int)$cfg['orderCap'], 'monthlyCap' => (int)$cfg['monthlyCap'], 'bonusDays' => $days,
+		'launch' => $dt ? $dt->format($fmt) : '', 'end' => $dt ? $dt->modify('+' . $days . ' days')->format($fmt) : '',
+		'discord' => $discordOk ? $discord : ($pt ? 'o link será publicado nesta página' : 'the link will be posted on this page'),
+	);
+}
+
+/** partner_guide.json in one language with the {tokens} filled: {title, intro, sections: [{id, title, blocks: [[kind, text|[texts]]]}]}. */
+function chaos_creators_guide(string $lang, string $discord = ''): array {
+	$j = chaos_creators_json('partner_guide.json');
+	$nums = chaos_creators_guide_numbers($lang, $discord);
+	$fill = static function ($pair) use ($lang, $nums): string {
+		return (string)preg_replace_callback('/\{([A-Za-z]+)\}/', static function ($m) use ($nums) {
+			return (string)($nums[$m[1]] ?? $m[0]);
+		}, chaos_bi($pair, $lang));
+	};
+	$secs = array();
+	foreach ((array)($j['sections'] ?? array()) as $sec) {
+		$blocks = array();
+		foreach ((array)($sec['blocks'] ?? array()) as $blk) {
+			$kind = (string)array_key_first((array)$blk);
+			$val = $blk[$kind];
+			$blocks[] = in_array($kind, array('ul', 'ol', 'check'), true) ? array($kind, array_map($fill, (array)$val)) : array($kind, $fill($val));
+		}
+		$secs[] = array('id' => (string)($sec['id'] ?? ''), 'title' => $fill($sec['title'] ?? ''), 'blocks' => $blocks);
+	}
+	return array('title' => $fill($j['title'] ?? ''), 'intro' => $fill($j['intro'] ?? ''), 'updated' => (string)($j['updated'] ?? ''), 'sections' => $secs);
+}
 }

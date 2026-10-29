@@ -1,0 +1,273 @@
+# Hunt transitions (O323)
+
+Owner, 2026-10-29: some low-level hunts have a hole or a portal inside them that takes the player to a place
+with much stronger monsters and high density. This table is the audit. It is made by
+`server/tools/audit_hunt_transitions.py` from the base map and spawn file, and is not run in CI.
+
+## How to read it
+
+- **Source area**: the hunt of `tools/hall_hunts.csv` the entry belongs to (within 60 tiles of its destination, its hall level),
+  else `area x,y,z` with the level of the monsters round the entry. The entry has a spawn within 6 tiles.
+- **Kind**: `teleport`, or a floor change (`hole/down`, `stairs/up`, `ladder/up`, `grate/down`).
+- **Destination band**: level range (low to high, the 20th to 80th percentile of the monsters round the landing)
+  and the median level. Same maths as the hall order.
+- **Density**: monsters per 100 walkable tiles within 12 tiles. The source density is in brackets.
+- **Verdict**: `danger` when the destination level is 2 x the source level or more (and 25 more), or, from 1.5 x
+  (and 15 more), when the experience per kill is over 3 x or the density is over 3 x.
+  `extreme` is a destination 3 x the source level or more (and 40 more): a candidate for a level gate (none is added).
+  A source level under 8 counts as 8 (the level estimate of rats and fish is noise).
+
+## Totals
+
+8041 transitions at a monster area: 7821 ok, 123 danger, 97 extreme.
+
+Hall hunts with a dangerous entry: Behemoth (2), Elephant (10), Haunted Treeling (1), Saltkin Pincher Scout (1), Sandcrawler (1).
+
+Dangerous entries outside every hall hunt: 205, in 205 areas of their own.
+
+## What was done
+
+- Near each `danger` and `extreme` entry the game flashes a skull-like effect every few seconds for players in view
+  and shows a red warning once per player and area (`hunt_warnings.lua`, `hunt_warnings_config.lua`): "Perigo:
+  monstros muito mais fortes adiante (nível N+)" or "Danger: much stronger monsters ahead (level N+)".
+- After arriving by a floor change or teleport a second red message says the player is in a level N+ area.
+- The entries stay. No level gate was added and no one is blocked.
+
+## Dangerous entries (220)
+
+| Source area (level) | Position | Kind | Destination | Destination band (median) | Monsters | Density (source) | Verdict |
+|---|---|---|---|---|---|---|---|
+| area 32387,31075,7 (2) | 32387,31075,7 | hole/down | 32387,31075,8 | 25-30 (27) | Ice Golem | 0.2 (2.9) | danger |
+| area 33157,31720,7 (2) | 33157,31720,7 | ramp/down | 33156,31720,8 | 30-35 (34) | Earth Elemental | 1.7 (1.4) | danger |
+| area 33436,31326,14 (2) | 33436,31326,14 | ramp/up | 33437,31326,13 | 20-65 (51) | Deepling Scout, Deepling Spellsinger, Deepling Warrior | 11.2 (3.4) | extreme |
+| area 33446,31338,14 (2) | 33446,31338,14 | ramp/up | 33447,31338,13 | 20-55 (51) | Deepling Scout, Deepling Spellsinger, Deepling Warrior | 4.2 (2.9) | extreme |
+| area 33446,31339,14 (2) | 33446,31339,14 | ramp/up | 33447,31339,13 | 20-55 (51) | Deepling Scout, Deepling Spellsinger, Deepling Warrior | 4.3 (3.1) | extreme |
+| area 31642,31368,6 (5) | 31642,31368,6 | stairs/down | 31643,31368,7 | 425-440 (426) | Belomimus, Demibeast | 0.8 (1.4) | extreme |
+| area 31642,31369,6 (5) | 31642,31369,6 | stairs/down | 31643,31369,7 | 425-440 (426) | Belomimus, Demibeast | 0.8 (1.4) | extreme |
+| area 31642,31370,6 (5) | 31642,31370,6 | stairs/down | 31643,31370,7 | 425-440 (426) | Belomimus, Demibeast | 0.8 (1.4) | extreme |
+| area 32629,32837,7 (5) | 32629,32837,7 | other/down | 32629,32837,8 | 20-30 (26) | Corym Skirmisher, Corym Charlatan, Corym Vanguard | 1.1 (1.4) | danger |
+| area 32089,32181,10 (6) | 32089,32181,10 | trapdoor/down | 32089,32181,11 | 5-65 (63) | Wyrm, Poison Spider, Spider | 4.8 (3.6) | extreme |
+| area 31570,33043,7 (7) | 31570,33043,7 | ladder/up | 31570,33043,6 | 120-130 (120) | Bone Ruthless, Bone Knight, Bone Mage | 0.0 (4.2) | extreme |
+| area 32148,31180,2 (7) | 32148,31180,2 | stairs/down | 32149,31180,3 | 25-30 (27) | Ice Golem, Crystal Spider | 1.4 (2.0) | danger |
+| area 32357,31087,7 (7) | 32357,31087,7 | ramp/down | 32358,31087,8 | 25-30 (27) | Ice Golem | 0.5 (1.9) | danger |
+| area 33130,31353,7 (7) | 33130,31353,7 | ramp/down | 33130,31353,8 | 20-45 (27) | Lancer Beetle, Stampor, Orc Berserker | 1.3 (1.0) | danger |
+| area 33135,31510,7 (7) | 33135,31510,7 | ramp/up | 33136,31510,6 | 5-30 (28) | Death Blob, Sandcrawler, Gnarlhound | 3.4 (1.9) | danger |
+| area 33142,31522,7 (7) | 33142,31522,7 | ramp/up | 33142,31521,6 | 5-30 (28) | Death Blob, Sandcrawler, Gnarlhound | 3.8 (1.2) | danger |
+| Elephant (8) | 32942,32677,7 | pitfall/down | 32942,32677,8 | 45-75 (73) | Hydra, Lich | 5.5 (2.2) | extreme |
+| Elephant (8) | 32944,32670,7 | stairs/up | 32943,32670,6 | 80-105 (102) | Dawnfire Asura, Hellspawn, Midnight Asura | 4.1 (2.2) | extreme |
+| Elephant (8) | 32944,32700,7 | hole/down | 32945,32700,8 | 45-75 (73) | Hydra, Lich | 0.5 (0.3) | extreme |
+| Elephant (8) | 32944,32701,7 | hole/down | 32945,32701,8 | 45-75 (73) | Hydra, Lich | 0.5 (0.3) | extreme |
+| Elephant (8) | 32948,32689,7 | stairs/up | 32948,32688,6 | 80-105 (102) | Dawnfire Asura, Hellspawn, Midnight Asura | 2.9 (1.2) | extreme |
+| Elephant (8) | 32949,32689,7 | stairs/up | 32949,32688,6 | 80-105 (102) | Dawnfire Asura, Hellspawn, Midnight Asura | 3.2 (1.2) | extreme |
+| Elephant (8) | 32978,32635,7 | ramp/up | 32978,32634,6 | 40-75 (73) | Dragon Lord, Dragon | 0.0 (1.5) | extreme |
+| Elephant (8) | 32979,32635,7 | ramp/up | 32979,32634,6 | 40-75 (73) | Dragon Lord, Dragon | 0.0 (2.2) | extreme |
+| Elephant (8) | 32987,32680,7 | ramp/up | 32988,32680,6 | 70-105 (81) | Hydra, Dawnfire Asura, Hellspawn | 1.0 (2.8) | extreme |
+| Elephant (8) | 32987,32681,7 | ramp/up | 32988,32681,6 | 70-105 (81) | Hydra, Dawnfire Asura, Hellspawn | 1.0 (2.7) | extreme |
+| area 32022,31572,7 (8) | 32022,31572,7 | ramp/up | 32022,31571,6 | 5-40 (36) | Wyvern, Frost Troll | 3.2 (0.9) | danger |
+| area 32023,31572,7 (8) | 32023,31572,7 | ramp/up | 32023,31571,6 | 5-40 (36) | Wyvern, Frost Troll | 3.2 (0.9) | danger |
+| area 32059,31139,6 (8) | 32059,31139,6 | ramp/down | 32059,31139,7 | 25-40 (39) | Ice Golem, Ice Witch, Crystal Spider | 2.9 (2.7) | danger |
+| area 32070,31158,2 (8) | 32070,31158,2 | ramp/down | 32071,31158,3 | 25-50 (27) | Crystal Spider, Ice Golem | 2.2 (2.5) | danger |
+| area 32089,31090,5 (8) | 32089,31090,5 | stairs/down | 32088,31090,6 | 5-50 (44) | Crystal Spider, Frost Dragon Hatchling, Frost Troll | 0.0 (1.4) | danger |
+| area 32089,31091,5 (8) | 32089,31091,5 | stairs/down | 32088,31091,6 | 5-50 (44) | Crystal Spider, Frost Dragon Hatchling, Frost Troll | 0.0 (1.3) | danger |
+| area 32092,31189,4 (8) | 32092,31189,4 | ramp/up | 32093,31189,3 | 5-50 (27) | Crystal Spider, Mammoth, Polar Bear | 3.9 (2.3) | danger |
+| area 32098,31148,2 (8) | 32098,31148,2 | ramp/up | 32098,31147,1 | 25-50 (27) | Ice Golem, Crystal Spider, Polar Bear | 0.8 (1.2) | danger |
+| area 32099,31090,5 (8) | 32099,31090,5 | stairs/down | 32100,31090,6 | 5-50 (44) | Crystal Spider, Frost Dragon Hatchling, Frost Troll | 1.7 (1.1) | danger |
+| area 32099,31091,5 (8) | 32099,31091,5 | stairs/down | 32100,31091,6 | 5-50 (44) | Crystal Spider, Frost Dragon Hatchling, Frost Troll | 1.6 (1.1) | danger |
+| area 32103,31085,7 (8) | 32103,31085,7 | ramp/up | 32103,31086,6 | 5-50 (44) | Crystal Spider, Frost Dragon Hatchling, Frost Troll | 2.0 (2.2) | danger |
+| area 32104,31085,7 (8) | 32104,31085,7 | ramp/up | 32104,31086,6 | 5-50 (44) | Crystal Spider, Frost Dragon Hatchling, Frost Troll | 2.1 (2.4) | danger |
+| area 32131,31181,4 (8) | 32131,31181,4 | rope/up | 32131,31181,3 | 25-50 (27) | Ice Golem, Crystal Spider | 1.9 (1.1) | danger |
+| area 32664,31431,12 (8) | 32664,31431,12 | ramp/up | 32664,31430,11 | 20-45 (24) | Dragon, Dragon Hatchling, Fire Elemental | 2.4 (4.9) | danger |
+| area 32788,32318,13 (8) | 32788,32318,13 | rope/up | 32788,32318,12 | 40-75 (73) | Dragon Lord, Dragon | 2.5 (2.5) | extreme |
+| area 32795,32347,14 (8) | 32795,32347,14 | hole/down | 32795,32347,15 | 70-110 (74) | Nightmare, Phantasm, Demon (Goblin) | 3.8 (6.0) | extreme |
+| area 32797,32340,14 (8) | 32797,32340,14 | rope/up | 32797,32340,13 | 5-75 (74) | Demon (Goblin), Nightmare, Demon | 4.6 (5.6) | extreme |
+| area 32797,32347,14 (8) | 32797,32347,14 | rope/up | 32797,32347,13 | 5-75 (74) | Demon (Goblin), Nightmare, Demon | 4.5 (6.2) | extreme |
+| area 32801,32333,14 (8) | 32801,32333,14 | rope/up | 32801,32333,13 | 5-75 (74) | Demon (Goblin), Nightmare, Demon | 4.2 (5.3) | extreme |
+| area 32802,32353,14 (8) | 32802,32353,14 | hole/down | 32802,32353,15 | 70-110 (74) | Nightmare, Phantasm, Demon (Goblin) | 4.9 (5.4) | extreme |
+| area 32803,32358,14 (8) | 32803,32358,14 | hole/down | 32803,32358,15 | 70-75 (74) | Nightmare, Phantasm, Demon (Goblin) | 4.8 (3.3) | extreme |
+| area 32803,32365,14 (8) | 32803,32365,14 | hole/down | 32803,32365,15 | 70-110 (74) | Nightmare, Phantasm, Demon (Goblin) | 3.5 (4.3) | extreme |
+| area 32804,32338,14 (8) | 32804,32338,14 | hole/down | 32804,32338,15 | 70-110 (74) | Nightmare, Phantasm, Demon (Goblin) | 5.7 (4.6) | extreme |
+| area 32807,32355,14 (8) | 32807,32355,14 | hole/down | 32807,32355,15 | 70-110 (74) | Nightmare, Phantasm, Demon (Goblin) | 5.2 (4.8) | extreme |
+| area 32809,32333,14 (8) | 32809,32333,14 | hole/down | 32809,32333,15 | 70-110 (74) | Nightmare, Phantasm, Demon (Goblin) | 6.0 (5.1) | extreme |
+| area 32809,32344,14 (8) | 32809,32344,14 | hole/down | 32809,32344,15 | 70-110 (74) | Nightmare, Phantasm, Demon (Goblin) | 5.1 (5.2) | extreme |
+| area 32812,32330,14 (8) | 32812,32330,14 | rope/up | 32812,32330,13 | 5-75 (74) | Demon (Goblin), Nightmare, Demon | 6.4 (5.1) | extreme |
+| area 32812,32348,14 (8) | 32812,32348,14 | hole/down | 32812,32348,15 | 70-145 (106) | Nightmare, Phantasm, Blightwalker | 6.1 (5.5) | extreme |
+| area 32812,32355,14 (8) | 32812,32355,14 | hole/down | 32812,32355,15 | 70-140 (97) | Nightmare, Plaguesmith, Phantasm | 5.3 (4.1) | extreme |
+| area 32813,32342,14 (8) | 32813,32342,14 | rope/up | 32813,32342,13 | 5-140 (74) | Demon (Goblin), Nightmare, Demon | 5.2 (4.9) | extreme |
+| area 32813,32346,14 (8) | 32813,32346,14 | rope/up | 32813,32346,13 | 5-140 (74) | Demon (Goblin), Nightmare, Demon | 4.7 (4.9) | extreme |
+| area 32816,32335,14 (8) | 32816,32335,14 | hole/down | 32816,32335,15 | 70-145 (106) | Nightmare, Phantasm, Blightwalker | 6.6 (6.0) | extreme |
+| area 32816,32342,14 (8) | 32816,32342,14 | rope/up | 32816,32342,13 | 5-105 (74) | Demon (Goblin), Nightmare, Demon | 6.1 (5.2) | extreme |
+| area 32816,32364,14 (8) | 32816,32364,14 | rope/up | 32816,32364,13 | 5-140 (74) | Demon (Goblin), Nightmare, Demon | 4.7 (5.0) | extreme |
+| area 32817,32322,14 (8) | 32817,32322,14 | hole/down | 32817,32322,15 | 70-140 (106) | Nightmare, Phantasm, Blightwalker | 8.1 (4.7) | extreme |
+| area 32817,32358,14 (8) | 32817,32358,14 | rope/up | 32817,32358,13 | 5-105 (74) | Demon (Goblin), Nightmare, Demon | 3.6 (2.4) | extreme |
+| area 32822,32320,14 (8) | 32822,32320,14 | hole/down | 32822,32320,15 | 70-150 (137) | Blightwalker, Nightmare, Phantasm | 7.7 (3.0) | extreme |
+| area 32823,32321,14 (8) | 32823,32321,14 | rope/up | 32823,32321,13 | 70-80 (74) | Nightmare, Destroyer, Demon (Goblin) | 10.0 (2.0) | extreme |
+| area 32969,31477,2 (8) | 32969,31477,2 | trapdoor/down | 32969,31477,3 | 25-55 (39) | Vampire Bride, Giant Spider, Nightstalker | 3.2 (10.6) | danger |
+| area 33149,31639,10 (8) | 33149,31639,10 | trapdoor/down | 33149,31639,11 | 70-105 (95) | Betrayed Wraith, Giant Spider, Lost Soul | 1.9 (7.5) | extreme |
+| area 32089,32961,9 (9) | 32089,32961,9 | hole/down | 32089,32961,10 | 25-30 (27) | Zombie, Ghoul | 4.7 (3.7) | danger |
+| area 32127,32164,9 (9) | 32127,32164,9 | ladder/up | 32127,32164,8 | 5-40 (39) | Necromancer, Spider, Poison Spider | 4.6 (4.2) | danger |
+| area 32586,31361,12 (9) | 32586,31361,12 | stairs/down | 32586,31361,13 | 20-75 (36) | Dragon, Dragon Hatchling, Dragon Lord | 1.2 (4.1) | danger |
+| area 32587,31361,12 (9) | 32587,31361,12 | stairs/down | 32587,31361,13 | 20-75 (36) | Dragon, Dragon Hatchling, Dragon Lord | 1.2 (3.8) | danger |
+| area 32596,31359,12 (9) | 32596,31359,12 | stairs/down | 32597,31359,13 | 20-45 (36) | Wyvern, Dragon, Dragon Hatchling | 1.0 (4.9) | danger |
+| area 32596,31360,12 (9) | 32596,31360,12 | stairs/down | 32597,31360,13 | 20-45 (36) | Wyvern, Dragon, Dragon Hatchling | 1.0 (4.9) | danger |
+| area 32602,31366,12 (9) | 32602,31366,12 | stairs/down | 32602,31366,13 | 35-75 (36) | Wyvern, Dragon, Dragon Hatchling | 1.0 (4.2) | danger |
+| area 32603,31366,12 (9) | 32603,31366,12 | stairs/down | 32603,31366,13 | 35-75 (36) | Wyvern, Dragon, Dragon Hatchling | 1.0 (3.9) | danger |
+| area 32607,31429,12 (9) | 32607,31429,12 | ramp/up | 32607,31430,11 | 10-45 (27) | Dragon, Elder Bonelord, Skeleton Warrior | 1.4 (3.5) | danger |
+| area 32608,31429,12 (9) | 32608,31429,12 | ramp/up | 32608,31430,11 | 10-45 (27) | Dragon, Elder Bonelord, Skeleton Warrior | 1.4 (3.4) | danger |
+| area 32655,31406,12 (9) | 32655,31406,12 | ramp/up | 32654,31406,11 | 20-45 (24) | Dragon, Dragon Hatchling, Fire Elemental | 2.9 (1.8) | danger |
+| area 32818,32143,10 (9) | 32818,32143,10 | rope/up | 32818,32143,9 | 10-45 (42) | Dragon, Dragon Lord, Marsh Stalker | 1.0 (1.9) | danger |
+| area 33042,32632,6 (9) | 33042,32632,6 | trapdoor/down | 33042,32632,7 | 40-45 (42) | Dragon | 0.0 (3.1) | danger |
+| area 33044,32632,6 (9) | 33044,32632,6 | trapdoor/down | 33044,32632,7 | 40-45 (42) | Dragon | 0.0 (3.1) | danger |
+| area 33075,31186,8 (9) | 33075,31186,8 | stairs/up | 33074,31186,7 | 50-65 (61) | Lizard High Guard, Lizard Legionnaire, Dragon Hatchling | 3.8 (2.3) | extreme |
+| area 31929,31655,9 (10) | 31929,31655,9 | hole/down | 31928,31655,10 | 40-45 (41) | Water Elemental | 1.3 (1.2) | danger |
+| area 31961,32636,7 (10) | 31961,32636,7 | pitfall/down | 31961,32636,8 | 15-40 (32) | Quara Pincher Scout, Quara Constrictor Scout, Quara Mantassin Scout | 7.4 (1.8) | danger |
+| area 31967,32679,7 (10) | 31967,32679,7 | pitfall/down | 31967,32679,8 | 20-40 (32) | Quara Constrictor Scout, Quara Pincher Scout, Quara Mantassin Scout | 7.4 (2.2) | danger |
+| area 33013,32564,7 (10) | 33013,32564,7 | ramp/down | 33014,32564,8 | 80-85 (80) | Behemoth | 1.2 (3.3) | extreme |
+| area 33137,31449,7 (10) | 33137,31449,7 | ramp/down | 33137,31449,8 | 10-50 (48) | Killer Caiman, Gnarlhound | 1.7 (0.4) | danger |
+| area 32207,32100,12 (11) | 32207,32100,12 | stairs/down | 32207,32100,13 | 25-65 (52) | Vampire, Hero, Vampire Bride | 1.1 (4.1) | extreme |
+| area 32598,31395,12 (11) | 32598,31395,12 | stairs/down | 32598,31394,13 | 20-90 (36) | Wyvern, Diabolic Imp, Dragon Hatchling | 0.7 (1.7) | danger |
+| area 32598,31400,12 (11) | 32598,31400,12 | stairs/down | 32598,31400,13 | 5-90 (36) | Diabolic Imp, Skeleton, Wyvern | 0.4 (1.7) | danger |
+| area 32613,31390,12 (11) | 32613,31390,12 | stairs/down | 32613,31390,13 | 10-65 (36) | Wyrm, Wyvern, Rotworm | 1.4 (2.0) | danger |
+| area 32621,31381,12 (11) | 32621,31381,12 | ramp/up | 32622,31381,11 | 20-50 (39) | Bonebeast, Bonelord, Lich | 2.3 (1.2) | danger |
+| area 32621,31382,12 (11) | 32621,31382,12 | ramp/up | 32622,31382,11 | 20-50 (39) | Bonebeast, Bonelord, Lich | 1.5 (1.2) | danger |
+| area 32694,31229,7 (11) | 32694,31229,7 | stairs/down | 32694,31229,8 (Cave Rat) | 30-35 (34) | Mutated Rat | 1.6 (1.7) | danger |
+| area 32846,32165,5 (11) | 32846,32165,5 | stairs/down | 32846,32165,6 | 5-45 (42) | Dragon, Scorpion, Wolf | 0.0 (6.7) | danger |
+| area 32847,32165,5 (11) | 32847,32165,5 | stairs/down | 32847,32165,6 | 5-45 (42) | Dragon, Scorpion, Wolf | 0.0 (6.1) | danger |
+| area 33031,31274,8 (11) | 33031,31274,8 | ramp/up | 33031,31275,7 | 15-65 (26) | Lizard High Guard, Orc Leader, Orc Shaman | 1.8 (4.7) | danger |
+| area 32658,31224,7 (12) | 32658,31224,7 | stairs/down | 32659,31224,8 | 30-35 (34) | Mutated Rat | 0.8 (2.0) | danger |
+| area 32779,31935,10 (13) | 32779,31935,10 | hole/down | 32779,31935,11 | 20-40 (36) | Wyvern, Hunter, Poacher | 2.5 (3.1) | danger |
+| area 33557,31318,7 (13) | 33557,31318,7 | stairs/up | 33556,31318,6 | 1-55 (41) | Crawler, Insectoid Worker, Lesser Swarmer | 4.3 (3.7) | danger |
+| area 33558,31289,7 (13) | 33558,31289,7 | stairs/up | 33557,31289,6 | 1-55 (41) | Crawler, Lesser Swarmer, Insectoid Worker | 0.0 (2.1) | danger |
+| area 32041,32909,8 (15) | 32041,32909,8 | hole/down | 32042,32909,9 | 15-40 (36) | Pirate Skeleton, Wyvern, Crystal Spider | 1.4 (1.6) | danger |
+| area 32975,31423,5 (15) | 32975,31423,5 | ladder/up | 32975,31423,4 | 15-85 (73) | Ghoul, Hellspawn, Spectre | 1.2 (4.2) | extreme |
+| area 32824,31084,7 (16) | 32824,31084,7 | stairs/down | 32824,31084,8 | 25-85 (81) | Hellspawn, Acolyte of the Cult, Adept of the Cult | 2.3 (1.9) | extreme |
+| area 32857,31283,8 (16) | 32857,31283,8 | stairs/down | 32857,31283,9 | 40-60 (57) | Worker Golem, Damaged Worker Golem, Frost Dragon Hatchling | 0.8 (1.4) | extreme |
+| area 32879,31294,8 (16) | 32879,31294,8 | stairs/down | 32879,31294,9 | 20-60 (57) | Worker Golem, Fire Elemental, Mad Scientist | 1.1 (1.0) | extreme |
+| area 32897,31309,8 (16) | 32897,31309,8 | stairs/down | 32897,31309,9 | 20-60 (57) | Worker Golem, Fire Elemental, Mad Scientist | 4.4 (3.7) | extreme |
+| area 32900,31285,8 (16) | 32900,31285,8 | stairs/down | 32900,31285,9 | 20-60 (57) | Worker Golem, Fire Elemental, Damaged Worker Golem | 1.9 (1.3) | extreme |
+| area 32904,31074,5 (16) | 32904,31074,5 | stairs/up | 32904,31073,4 | 20-40 (39) | Necromancer, Dark Magician, Infernalist | 1.3 (1.1) | danger |
+| area 32909,31310,8 (16) | 32909,31310,8 | stairs/down | 32909,31310,9 | 20-60 (57) | Worker Golem, Fire Elemental, Mad Scientist | 1.6 (1.8) | extreme |
+| area 32913,31256,8 (16) | 32913,31256,8 | stairs/down | 32913,31256,9 | 55-60 (57) | Worker Golem | 1.1 (3.3) | extreme |
+| area 33156,31647,10 (16) | 33156,31647,10 | hole/down | 33156,31647,11 | 45-105 (95) | Betrayed Wraith, Lost Soul, Giant Spider | 3.5 (6.1) | extreme |
+| area 32921,32870,7 (17) | 32921,32870,7 | stairs/down | 32921,32870,8 | 70-75 (73) | Hydra | 2.9 (5.0) | extreme |
+| area 32922,32870,7 (17) | 32922,32870,7 | stairs/down | 32922,32870,8 | 70-75 (73) | Hydra | 3.0 (5.1) | extreme |
+| area 33028,31286,4 (17) | 33028,31286,4 | ladder/up | 33028,31286,3 | 25-45 (41) | Orc Warlord, Orc Leader, Orc Warrior | 10.6 (5.0) | danger |
+| area 33038,31289,4 (17) | 33038,31289,4 | ladder/up | 33038,31289,3 | 25-45 (41) | Orc Warlord, Orc Leader, Orc Warrior | 11.7 (5.8) | danger |
+| area 33045,31292,4 (17) | 33045,31292,4 | ladder/up | 33045,31292,3 | 25-45 (41) | Orc Warlord, Orc Leader, Draken Spellweaver | 15.6 (6.6) | danger |
+| area 32211,31924,14 (18) | 32211,31924,14 | trapdoor/down | 32211,31924,15 | 15-50 (48) | Banshee, Dragon Lord, Ghost | 0.0 (6.0) | danger |
+| area 32216,31931,14 (18) | 32216,31931,14 | trapdoor/down | 32216,31931,15 | 20-50 (48) | Banshee, Mummy, Dragon Lord | 0.0 (6.1) | danger |
+| area 32219,31948,14 (18) | 32219,31948,14 | trapdoor/down | 32219,31948,15 | 20-50 (48) | Banshee, Mummy | 0.9 (1.7) | danger |
+| area 32769,31099,2 (18) | 32769,31099,2 | stairs/up | 32769,31098,1 | 45-50 (48) | Giant Spider | 4.0 (5.5) | danger |
+| area 32784,31099,2 (18) | 32784,31099,2 | stairs/up | 32784,31098,1 | 45-50 (48) | Giant Spider | 2.9 (4.2) | danger |
+| area 32888,32872,9 (18) | 32888,32872,9 | hole/down | 32888,32872,10 | 15-50 (48) | Giant Spider, Tarantula | 5.0 (2.5) | danger |
+| area 33567,31213,14 (18) | 33567,31213,14 | stairs/down | 33567,31212,15 | 20-75 (51) | Deepling Guard, Deepling Scout, Deepling Spellsinger | 3.1 (1.8) | danger |
+| Haunted Treeling (20) | 32940,31450,7 | stairs/up | 32940,31449,6 | 25-55 (52) | Vampire Bride, Vampire, Hellspawn | 2.0 (2.2) | danger |
+| area 32241,31920,14 (20) | 32241,31920,14 | trapdoor/down | 32241,31920,15 | 45-75 (48) | Banshee, Dragon Lord, Fire Devil | 0.0 (5.5) | danger |
+| area 32481,31871,14 (20) | 32481,31871,14 | hole/down | 32481,31871,15 | 55-70 (68) | Lost Thrower, Lost Basher, Lost Husher | 1.2 (1.8) | extreme |
+| area 32684,31161,9 (20) | 32684,31161,9 | stairs/down | 32684,31161,10 | 45-140 (138) | Plaguesmith, Bog Raider | 2.7 (2.8) | extreme |
+| area 32689,31097,8 (20) | 32689,31097,8 | stairs/up | 32689,31096,7 | 25-45 (45) | Bog Raider, Death Blob, Mutated Tiger | 0.7 (2.0) | danger |
+| area 32781,32268,9 (20) | 32781,32268,9 | ramp/down | 32781,32268,10 | 40-45 (42) | Dragon, Dragon Lord | 2.5 (4.7) | danger |
+| area 32872,32833,7 (20) | 32872,32833,7 | stairs/up | 32871,32833,6 | 30-90 (44) | Clay Guardian, Omnivora, Serpent Spawn | 7.5 (5.9) | danger |
+| area 32872,32834,7 (20) | 32872,32834,7 | stairs/up | 32871,32834,6 | 30-90 (44) | Clay Guardian, Omnivora, Serpent Spawn | 7.3 (5.3) | danger |
+| area 32988,32523,7 (20) | 32988,32523,7 | hole/down | 32988,32523,8 | 15-80 (73) | Tarantula, Behemoth, Hydra | 0.8 (3.2) | extreme |
+| area 33049,32627,8 (20) | 33049,32627,8 | stairs/up | 33049,32626,7 | 40-45 (42) | Dragon | 0.0 (1.7) | danger |
+| area 33052,32693,8 (20) | 33052,32693,8 | ramp/up | 33053,32693,7 | 10-45 (42) | Dragon, Nomad, Dragon Lord | 0.0 (3.9) | danger |
+| area 33227,31698,12 (20) | 33227,31698,12 | ramp/down | 33227,31698,13 | 60-100 (100) | Hellfire Fighter, Massive Fire Elemental | 3.8 (5.1) | extreme |
+| area 33228,31698,12 (20) | 33228,31698,12 | ramp/down | 33228,31698,13 | 60-100 (100) | Hellfire Fighter, Massive Fire Elemental | 3.8 (5.1) | extreme |
+| area 33232,31698,12 (20) | 33232,31698,12 | ramp/down | 33232,31698,13 | 60-100 (100) | Hellfire Fighter, Massive Fire Elemental | 3.9 (5.1) | extreme |
+| area 33233,31698,12 (20) | 33233,31698,12 | ramp/down | 33233,31698,13 | 60-100 (100) | Hellfire Fighter, Massive Fire Elemental | 3.9 (5.1) | extreme |
+| area 33306,31569,7 (20) | 33306,31569,7 | stairs/up | 33306,31568,6 | 20-65 (53) | Lizard Templar, Lizard High Guard, Lizard Legionnaire | 3.5 (1.2) | danger |
+| area 33449,31223,14 (20) | 33449,31223,14 | ramp/up | 33449,31222,13 | 20-65 (51) | Deepling Spellsinger, Deepling Scout, Deepling Warrior | 9.1 (1.1) | danger |
+| area 33470,31279,13 (20) | 33470,31279,13 | stairs/down | 33469,31279,14 | 20-75 (62) | Deepling Warrior, Deepling Guard, Deepling Scout | 1.4 (6.0) | extreme |
+| area 33470,31281,13 (20) | 33470,31281,13 | stairs/down | 33469,31281,14 | 20-75 (62) | Deepling Warrior, Deepling Guard, Deepling Scout | 1.4 (5.8) | extreme |
+| area 33483,31274,13 (20) | 33483,31274,13 | stairs/down | 33482,31274,14 | 20-65 (62) | Deepling Warrior, Deepling Scout, Deepling Guard | 2.8 (4.5) | extreme |
+| area 33483,31275,13 (20) | 33483,31275,13 | stairs/down | 33482,31275,14 | 20-65 (62) | Deepling Warrior, Deepling Scout, Deepling Guard | 2.6 (4.4) | extreme |
+| area 33483,31284,13 (20) | 33483,31284,13 | stairs/down | 33482,31284,14 | 20-65 (62) | Deepling Warrior, Deepling Scout, Deepling Guard | 2.1 (4.9) | extreme |
+| area 33483,31285,13 (20) | 33483,31285,13 | stairs/down | 33482,31285,14 | 20-65 (62) | Deepling Warrior, Deepling Scout, Deepling Guard | 2.1 (4.7) | extreme |
+| area 33498,31274,13 (20) | 33498,31274,13 | stairs/down | 33497,31274,14 | 20-65 (62) | Deepling Warrior, Deepling Scout, Deepling Guard | 2.2 (3.2) | extreme |
+| area 33498,31275,13 (20) | 33498,31275,13 | stairs/down | 33497,31275,14 | 20-65 (62) | Deepling Warrior, Deepling Scout, Deepling Guard | 2.5 (3.4) | extreme |
+| area 33498,31286,13 (20) | 33498,31286,13 | stairs/down | 33497,31286,14 | 20-65 (62) | Deepling Warrior, Deepling Scout, Deepling Guard | 3.0 (4.1) | extreme |
+| area 33498,31287,13 (20) | 33498,31287,13 | stairs/down | 33497,31287,14 | 20-65 (62) | Deepling Warrior, Deepling Scout, Deepling Guard | 2.4 (4.4) | extreme |
+| area 32503,31577,15 (21) | 32503,31577,15 | stairs/up | 32503,31576,14 | 20-105 (101) | Warlock, Elf Arcanist | 2.0 (2.2) | extreme |
+| area 32504,31577,15 (21) | 32504,31577,15 | stairs/up | 32504,31576,14 | 20-105 (101) | Warlock, Elf Arcanist | 2.0 (2.7) | extreme |
+| area 32515,31577,15 (21) | 32515,31577,15 | stairs/up | 32515,31576,14 | 20-105 (101) | Warlock, Elf Arcanist | 2.0 (2.0) | extreme |
+| area 32516,31577,15 (21) | 32516,31577,15 | stairs/up | 32516,31576,14 | 20-105 (101) | Warlock, Elf Arcanist | 2.0 (1.4) | extreme |
+| area 32625,31851,14 (21) | 32625,31851,14 | hole/down | 32625,31851,15 | 10-70 (68) | Lost Husher, Dwarf Soldier, Lost Basher | 0.0 (3.3) | extreme |
+| area 32704,31156,9 (21) | 32704,31156,9 | stairs/down | 32704,31156,10 | 45-140 (74) | Plaguesmith, Bog Raider, Nightmare | 0.8 (1.6) | extreme |
+| area 32744,31284,10 (21) | 32744,31284,10 | ramp/down | 32745,31284,11 | 40-45 (42) | Dragon, Serpent Spawn | 0.8 (1.2) | danger |
+| area 32755,31279,10 (21) | 32755,31279,10 | ramp/down | 32756,31279,11 | 40-45 (42) | Dragon | 0.5 (0.9) | danger |
+| area 32829,31040,7 (21) | 32829,31040,7 | ramp/down | 32830,31040,8 | 80-140 (119) | Hellspawn, Grim Reaper, Plaguesmith | 1.4 (3.0) | extreme |
+| area 32839,31034,7 (21) | 32839,31034,7 | ramp/down | 32838,31034,8 | 80-140 (81) | Hellspawn, Plaguesmith | 2.1 (1.7) | extreme |
+| area 32058,32602,4 (22) | 32058,32602,4 | hole/down | 32057,32602,5 | 20-90 (73) | Diabolic Imp, Fire Elemental, Dragon Lord Hatchling | 5.0 (6.0) | extreme |
+| area 32804,32147,7 (22) | 32804,32147,7 | ramp/up | 32805,32147,6 | 20-45 (42) | Dragon, Dragon Hatchling | 5.7 (0.9) | danger |
+| area 32825,32143,7 (22) | 32825,32143,7 | ramp/up | 32826,32143,6 | 40-45 (42) | Dragon | 7.1 (1.6) | danger |
+| area 32838,32156,8 (22) | 32838,32156,8 | stairs/down | 32839,32156,9 | 40-75 (42) | Dragon, Dragon Lord, Dragon Lord Hatchling | 2.1 (2.6) | danger |
+| area 33226,31278,6 (22) | 33226,31278,6 | ramp/up | 33227,31278,5 | 70-75 (73) | Dragon Lord, Dragon Lord Hatchling | 1.8 (1.7) | extreme |
+| area 33238,31346,6 (22) | 33238,31346,6 | ramp/up | 33238,31347,5 | 40-75 (73) | Dragon Lord, Dragon Lord Hatchling | 2.6 (3.2) | extreme |
+| area 33314,31553,6 (22) | 33314,31553,6 | stairs/up | 33314,31552,5 | 60-70 (66) | Lizard Zaogun, Lizard High Guard | 3.0 (5.7) | extreme |
+| area 33336,31553,6 (22) | 33336,31553,6 | stairs/up | 33336,31552,5 | 60-70 (66) | Lizard Zaogun, Lizard High Guard | 3.6 (5.4) | extreme |
+| area 33150,31595,12 (23) | 33150,31595,12 | rope/up | 33150,31595,11 | 20-45 (42) | Dragon, Dragon Hatchling, Demon | 2.5 (5.0) | danger |
+| area 33265,31669,15 (23) | 33265,31669,15 | ramp/up | 33264,31669,14 (Behemoth) | 25-80 (80) | Behemoth, Cyclops Smith | 3.8 (3.8) | extreme |
+| area 33265,31721,15 (23) | 33265,31721,15 | ramp/up | 33264,31721,14 (Behemoth) | 25-80 (80) | Behemoth, Cyclops Smith | 4.1 (4.2) | extreme |
+| area 33306,31705,11 (23) | 33306,31705,11 | stairs/down | 33306,31705,12 | 20-45 (42) | Dragon, Fire Elemental, Dragon Lord | 1.9 (6.4) | danger |
+| area 33313,31583,7 (23) | 33313,31583,7 | stairs/up | 33313,31582,6 | 20-65 (58) | Lizard High Guard, Lizard Dragon Priest, Lizard Templar | 5.7 (1.5) | danger |
+| area 33321,31573,7 (23) | 33321,31573,7 | stairs/up | 33321,31572,6 | 20-65 (58) | Lizard Dragon Priest, Lizard High Guard, Lizard Templar | 5.1 (2.1) | danger |
+| area 33339,31685,15 (23) | 33339,31685,15 | ramp/up | 33340,31685,14 (Behemoth) | 80-85 (80) | Behemoth, Cyclops Drone | 4.5 (3.7) | extreme |
+| area 33345,31569,7 (23) | 33345,31569,7 | stairs/up | 33345,31568,6 | 20-65 (58) | Lizard Dragon Priest, Lizard High Guard, Lizard Templar | 3.8 (1.3) | danger |
+| area 33244,31603,12 (24) | 33244,31603,12 | trapdoor/down | 33244,31603,13 | 105-150 (107) | Fury, Blightwalker | 0.0 (4.0) | extreme |
+| area 33287,31592,14 (24) | 33287,31592,14 | stairs/up | 33287,31591,13 | 20-140 (137) | Demon, Fire Elemental | 2.9 (2.7) | extreme |
+| area 33301,31714,13 (24) | 33301,31714,13 | stairs/up | 33301,31713,12 | 20-45 (42) | Dragon, Fire Elemental, Dragon Lord | 2.2 (2.8) | danger |
+| area 32083,32799,13 (25) | 32083,32799,13 | ladder/up | 32083,32799,12 (Saltkin Mantassin) | 30-55 (45) | Quara Hydromancer, Quara Mantassin, Quara Constrictor | 1.8 (7.1) | danger |
+| area 32805,32636,12 (25) | 32805,32636,12 | stairs/up | 32805,32635,11 | 85-105 (88) | Serpent Spawn, Medusa, Bonebeast | 0.0 (5.9) | extreme |
+| area 32806,32636,12 (25) | 32806,32636,12 | stairs/up | 32806,32635,11 | 85-90 (88) | Serpent Spawn, Bonebeast, Medusa | 0.0 (5.5) | extreme |
+| area 33031,32449,11 (25) | 33031,32449,11 | stairs/down | 33032,32449,12 (Wyrm) | 30-120 (49) | Grim Reaper, Shadow Pupil, Gravedigger | 1.6 (4.9) | danger |
+| area 33031,32450,11 (25) | 33031,32450,11 | stairs/down | 33032,32450,12 (Wyrm) | 30-120 (49) | Grim Reaper, Shadow Pupil, Gravedigger | 1.9 (4.5) | danger |
+| Behemoth (26) | 33298,31650,14 | stairs/down | 33299,31650,15 | 20-80 (80) | Behemoth, Cyclops Drone | 2.9 (3.5) | extreme |
+| Behemoth (26) | 33300,31743,14 | stairs/down | 33299,31743,15 | 20-80 (80) | Behemoth, Cyclops Drone | 2.8 (4.6) | extreme |
+| area 32241,31045,10 (27) | 32241,31045,10 | hole/down | 32242,31045,11 | 35-50 (48) | Crystal Spider, Enlightened of the Cult, Nightmare | 3.7 (2.4) | danger |
+| area 33031,32451,11 (27) | 33031,32451,11 | stairs/down | 33032,32451,12 (Wyrm) | 30-120 (49) | Grim Reaper, Shadow Pupil, Gravedigger | 1.4 (3.9) | danger |
+| area 32649,31117,9 (28) | 32649,31117,9 | stairs/down | 32649,31117,10 | 20-80 (74) | Mutated Human, Destroyer, Nightmare | 4.2 (3.1) | danger |
+| area 32936,31483,5 (28) | 32936,31483,5 | stairs/up | 32936,31482,4 | 30-70 (59) | Werewolf, Hellspawn, Mutated Rat | 4.3 (3.7) | danger |
+| area 32911,31184,12 (32) | 32911,31184,12 | stairs/down | 32910,31184,13 | 45-65 (55) | Quara Pincher, Quara Predator, Quara Hydromancer | 1.9 (3.0) | danger |
+| area 32915,31170,12 (32) | 32915,31170,12 | stairs/down | 32914,31170,13 | 45-65 (55) | Quara Pincher, Quara Hydromancer, Quara Predator | 1.9 (2.5) | danger |
+| area 32915,31193,12 (32) | 32915,31193,12 | stairs/down | 32914,31193,13 | 45-65 (55) | Quara Pincher, Quara Predator, Quara Hydromancer | 1.4 (3.8) | danger |
+| area 32936,31161,12 (32) | 32936,31161,12 | stairs/down | 32935,31161,13 | 45-55 (55) | Quara Pincher, Quara Hydromancer, Quara Mantassin | 2.2 (2.1) | danger |
+| area 32936,31204,12 (32) | 32936,31204,12 | stairs/down | 32936,31204,13 | 45-65 (55) | Quara Pincher, Quara Predator, Quara Hydromancer | 2.0 (1.9) | danger |
+| area 32954,31152,12 (32) | 32954,31152,12 | stairs/down | 32954,31151,13 | 45-65 (55) | Quara Pincher, Quara Predator, Quara Hydromancer | 1.5 (2.8) | danger |
+| area 32083,31031,5 (36) | 32083,31031,5 | ramp/down | 32083,31031,6 | 40-75 (73) | Frost Dragon, Frost Dragon Hatchling, Wyvern | 2.0 (5.7) | danger |
+| Saltkin Pincher Scout (39) | 31928,32631,10 | stairs/down | 31928,32630,11 | 85-105 (88) | Serpent Spawn, Medusa | 0.6 (3.5) | danger |
+| area 32783,31059,8 (40) | 32783,31059,8 | trapdoor/down | 32783,31059,9 | 115-120 (119) | Grim Reaper | 0.7 (0.8) | danger |
+| area 32784,31023,8 (40) | 32784,31023,8 | trapdoor/down | 32784,31023,9 | 115-120 (119) | Grim Reaper | 2.3 (1.0) | danger |
+| Sandcrawler (42) | 33372,31339,7 | ladder/up | 33372,31339,6 | 140-150 (142) | Falcon Paladin, Falcon Knight | 4.0 (2.2) | extreme |
+| area 33157,31270,6 (42) | 33157,31270,6 | ramp/up | 33158,31270,5 | 70-75 (73) | Dragon Lord, Dragon Lord Hatchling | 1.6 (1.7) | danger |
+| area 33198,31284,6 (42) | 33198,31284,6 | ramp/up | 33199,31284,5 | 70-75 (73) | Dragon Lord, Dragon Lord Hatchling | 2.2 (2.8) | danger |
+| area 33249,31316,6 (42) | 33249,31316,6 | ramp/up | 33248,31316,5 | 70-75 (73) | Dragon Lord, Dragon | 2.1 (3.4) | danger |
+| area 33255,31293,6 (42) | 33255,31293,6 | ramp/up | 33254,31293,5 | 70-75 (73) | Dragon Lord, Dragon Lord Hatchling, Dragon | 2.3 (1.4) | danger |
+| area 32982,32483,13 (49) | 32982,32483,13 | stairs/up | 32982,32482,12 | 30-120 (119) | Grim Reaper, Demon Skeleton, Gravedigger | 1.6 (0.9) | danger |
+| area 32228,32120,13 (52) | 32228,32120,13 | stairs/down | 32228,32120,14 | 135-140 (137) | Demon | 0.8 (2.6) | danger |
+| area 31782,33127,9 (58) | 31782,33127,9 | stairs/down | 31783,33127,10 | 85-140 (130) | Ghastly Dragon, Undead Dragon, Demon | 2.6 (3.4) | danger |
+| area 31782,33129,9 (58) | 31782,33129,9 | stairs/down | 31783,33129,10 | 85-140 (130) | Ghastly Dragon, Undead Dragon, Demon | 2.6 (1.4) | danger |
+| area 32784,31049,7 (59) | 32784,31049,7 | stairs/down | 32785,31049,8 | 40-120 (119) | Grim Reaper, Mutated Bat, Banshee | 0.7 (1.0) | danger |
+| area 32785,31035,7 (59) | 32785,31035,7 | stairs/down | 32785,31035,8 | 40-120 (119) | Grim Reaper, Mutated Bat, Banshee | 0.8 (0.8) | danger |
+| area 32798,31030,7 (59) | 32798,31030,7 | stairs/down | 32798,31030,8 | 115-120 (119) | Grim Reaper | 0.6 (1.0) | danger |
+| area 32798,31044,7 (59) | 32798,31044,7 | stairs/down | 32798,31044,8 | 115-120 (119) | Grim Reaper | 1.2 (1.1) | danger |
+| area 32798,31057,7 (59) | 32798,31057,7 | stairs/down | 32799,31057,8 | 30-120 (119) | Grim Reaper, Acolyte of the Cult, Adept of the Cult | 1.5 (1.5) | danger |
+| area 32798,31058,7 (59) | 32798,31058,7 | stairs/down | 32799,31058,8 | 30-120 (119) | Grim Reaper, Acolyte of the Cult, Adept of the Cult | 1.6 (1.2) | danger |
+| area 33207,31661,12 (74) | 33207,31661,12 | ramp/up | 33207,31660,11 | 40-145 (132) | Son of Verminor, Ancient Scarab, Hellhound | 5.3 (1.6) | danger |
+| area 31648,32257,6 (101) | 31648,32257,6 | stairs/up | 31648,32256,5 | 135-335 (267) | Behemoth, Bonecleaver, Burster Spectre | 13.4 (12.4) | danger |
+| area 31720,32921,12 (125) | 31720,32921,12 | hole/down | 31720,32921,13 | 80-285 (284) | Juggernaut, Magma Crawler | 8.6 (13.0) | danger |
+| area 31722,32926,15 (142) | 31722,32926,15 | ladder/up | 31722,32926,14 | 160-285 (284) | Juggernaut, Feral Sphinx | 8.9 (5.1) | danger |
+| area 30875,31252,7 (225) | 30875,31252,7 | stairs/up | 30876,31252,6 | 360-440 (436) | Frost Hydra, Frosted Dragon | 0.8 (2.2) | danger |
+
+## Entries that are ok (7821)
+
+Too many to list (mostly the stairs of a cave to its own next floor). By kind: grate/down 19, hole/down 705, ladder/down 5, ladder/up 714, other/down 38, pitfall/down 58, ramp/down 189, ramp/up 1370, rope/up 770, stairs/down 1952, stairs/up 1403, teleport 1, trapdoor/down 597.
+
+## Limits
+
+- Only the base map and its spawn file. The planned content hunts are placed at their own origins and lead only to
+  their exit portal. Run the audit on the installed server's data folder too.
+- Levels are the hall's scale (`gen_bounty_pool.py` estimate, `baseLevelMult` applied). A level-scaled monster
+  uses the middle of its range.
+- Teleports whose target a movement script sets (an action or unique id in movements.xml) have no destination on the
+  map and are not in the table. Most teleport items of the base map are of that kind. Holes a player digs are not either.
+- Walking off a cliff edge onto a lower floor (a tile with no ground) is not a transition item and is not in the table.

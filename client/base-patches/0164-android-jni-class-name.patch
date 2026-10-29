@@ -1,0 +1,15 @@
+# Chaos: Android shell class name (O313 phase 2; client/BASE.md "0164"; platform/androidwindow.cpp; after 0001-0163). The Java side of
+# the commitText callback (text typed in the Java dialog) is now com.cindersofchaos.client.ChaosActivity (client/android/), so the JNI
+# export is renamed to match. The other Java calls (showTextEdit, displayFatalError, openUrl) look the method up on the activity's
+# class and need no change.
+--- a/src/framework/platform/androidwindow.cpp
++++ b/src/framework/platform/androidwindow.cpp
+@@ -604,7 +604,7 @@
+ 
+ extern "C"
+ {
+-    JNIEXPORT void JNICALL Java_com_otclientv8_OTClientV8_commitText(
++    JNIEXPORT void JNICALL Java_com_cindersofchaos_client_ChaosActivity_commitText(
+         JNIEnv* env, jobject obj, jstring text)
+     {
+         const char* newChar = env->GetStringUTFChars(text, NULL);

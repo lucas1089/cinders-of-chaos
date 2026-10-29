@@ -2,7 +2,7 @@
 # systemd appends the console output to these files and keeps them open, so they are copied and truncated in place
 # (copytruncate) instead of being moved; a few lines written during the copy can be lost, which is fine for a console log.
 # systemd (root) creates the files, so keep /var/log/chaos owned by root: sudo install -d -m 0755 /var/log/chaos
-/var/log/chaos/server.log /var/log/chaos/clientservices.log /var/log/chaos/backup.log /var/log/chaos/discord.log /var/log/chaos/helpai.log {
+/var/log/chaos/server.log /var/log/chaos/clientservices.log /var/log/chaos/backup.log /var/log/chaos/discord.log /var/log/chaos/helpai.log /var/log/chaos/discord-bot.log {
 	daily
 	rotate 14
 	maxsize 200M

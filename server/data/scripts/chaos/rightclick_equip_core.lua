@@ -10,7 +10,8 @@
 -- the client which of them to use plainly instead (the engine then equips them), at every login:
 --   server -> client  {action = "multiuse", data = {ids = {client ids}}}
 -- All carried equipment that is multi-use, minus the tools: an item with an action in actions.xml other than the
--- destroy script keeps its use with (machete, crowbar, scythe). Lua 5.1 / LuaJIT and 5.3.
+-- destroy script keeps its use with (machete, crowbar, scythe) only when the config toolWeaponsKeepUseWith is on; by
+-- default they equip like every weapon (owner report: the crowbar still offered "Use with"). Lua 5.1 / LuaJIT and 5.3.
 
 ChaosRightClickEquip = ChaosRightClickEquip or {}
 local R = ChaosRightClickEquip

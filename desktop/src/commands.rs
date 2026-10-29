@@ -181,6 +181,23 @@ const DISCORD_P: &[Param] = &[
     ),
     secret("url", "URL do webhook (vazio remove)"),
 ];
+const BOT_SET_P: &[Param] = &[
+    choice(
+        "key",
+        "Ajuste",
+        &[
+            "DISCORD_TOKEN",
+            "ANTHROPIC_API_KEY",
+            "DISCORD_OWNER_ID",
+            "DISCORD_BUGS_CHANNEL_ID",
+            "DISCORD_PATCH_CHANNEL_ID",
+            "DISCORD_GUILD_ID",
+            "DISCORD_ADMIN_ROLE_ID",
+            "DISCORD_BOT_MODEL",
+        ],
+    ),
+    secret("value", "Valor (vazio remove)"),
+];
 const FB_CLOSE_P: &[Param] = &[
     int("id", "Número do relatório", 1, 999_999_999, "1"),
     text("note", "Nota (200 caracteres)"),
@@ -244,6 +261,15 @@ pub static ACTIONS: &[Action] = &[
     act(C, "Discord", "Ligar avisos", "discord-enable").t(90),
     act(C, "Discord", "Desligar avisos", "discord-disable").t(90),
     act(C, "Discord", "Testar todos", "discord-test all").t(90),
+    // ---- Comandos: bot do Discord (bugs e patch notes)
+    act(C, "Bot do Discord", "Estado", "discord-bot status").t(40),
+    act(C, "Bot do Discord", "Instalar ou atualizar", "discord-bot install").ask().t(600).h("Cria o usuário chaosbot e o virtualenv; alguns minutos. De novo atualiza o código."),
+    act(C, "Bot do Discord", "Guardar ajuste", "discord-bot set {key}").p(BOT_SET_P).t(40).h("Token e chave vão pelo stdin, só ficam na VPS."),
+    act(C, "Bot do Discord", "Iniciar", "discord-bot start").t(60),
+    act(C, "Bot do Discord", "Reiniciar", "discord-bot restart").t(60),
+    act(C, "Bot do Discord", "Parar", "discord-bot stop").ask().t(60),
+    act(C, "Bot do Discord", "Logs", "discord-bot logs 80").t(40),
+    act(C, "Bot do Discord", "Levar patch notes ao jogo", "discord-bot patchnotes").t(60),
     // ---- Comandos: saúde e espaço
     act(C, "Saúde e espaço", "Ver sobras a limpar", "cleanup").t(120),
     act(C, "Saúde e espaço", "Limpar sobras", "cleanup --yes").ask().t(120),

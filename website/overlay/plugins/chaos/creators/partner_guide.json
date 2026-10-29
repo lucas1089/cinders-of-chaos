@@ -1,0 +1,396 @@
+{
+ "updated": "2026-10-29",
+ "title": {
+  "pt-BR": "Guia do parceiro: Cinders of Chaos",
+  "en": "Partner guide: Cinders of Chaos"
+ },
+ "intro": {
+  "pt-BR": "Este guia é para quem faz lives e vídeos do servidor. É curto: leia tudo antes da primeira live.",
+  "en": "This guide is for people who stream or post videos of the server. It is short: read it all before your first stream."
+ },
+ "sections": [
+  {
+   "id": "start",
+   "title": {
+    "pt-BR": "1. Baixar o cliente e o launcher",
+    "en": "1. Get the client and the launcher"
+   },
+   "blocks": [
+    {
+     "p": {
+      "pt-BR": "O jogo é grátis. Baixe o launcher na página Download do site, para Windows e Linux. Ele instala o cliente e o mantém atualizado.",
+      "en": "The game is free. Get the launcher on the Download page of the site, for Windows and Linux. It installs the client and keeps it up to date."
+     }
+    },
+    {
+     "ol": [
+      {
+       "pt-BR": "Abra a página Download e baixe o launcher.",
+       "en": "Open the Download page and get the launcher."
+      },
+      {
+       "pt-BR": "Crie uma conta e um personagem no site.",
+       "en": "Create an account and a character on the site."
+      },
+      {
+       "pt-BR": "Abra o launcher, deixe atualizar e entre com a sua conta.",
+       "en": "Open the launcher, let it update and log in with your account."
+      }
+     ]
+    },
+    {
+     "p": {
+      "pt-BR": "O beta de 31/10 e 07/11 é aberto, sem chave. Você pode transmitir o beta como qualquer pessoa.",
+      "en": "The beta of 31 Oct and 7 Nov is open, with no key. You may stream the beta like anyone else."
+     }
+    }
+   ]
+  },
+  {
+   "id": "apply",
+   "title": {
+    "pt-BR": "2. Como pedir para ser criador",
+    "en": "2. How to apply"
+   },
+   "blocks": [
+    {
+     "p": {
+      "pt-BR": "Os critérios estão na página Programa de Criadores do site:",
+      "en": "The criteria are on the Creator Program page of the site:"
+     }
+    },
+    {
+     "ul": [
+      {
+       "pt-BR": "Lives ou vídeos do jogo pelo menos 4 horas por semana.",
+       "en": "Streams or videos of the game at least 4 hours a week."
+      },
+      {
+       "pt-BR": "Pelo menos 10 espectadores ao vivo em média ou 500 seguidores.",
+       "en": "At least 10 average live viewers or 500 followers."
+      },
+      {
+       "pt-BR": "Sem venda de contas e sem RMT, que é dinheiro real por contas, itens ou moedas.",
+       "en": "No account trading and no RMT, which is real money for accounts, items or coins."
+      },
+      {
+       "pt-BR": "Dizer de forma clara que o jogo é grátis e que doar é voluntário.",
+       "en": "Say clearly that the game is free and that donating is voluntary."
+      }
+     ]
+    },
+    {
+     "p": {
+      "pt-BR": "Entre na sua conta, preencha o formulário da página e espere. A equipe confere o canal e responde pelo Discord do servidor ou pelo personagem. Se aprovar, ela cria o seu código.",
+      "en": "Log in, fill in the form on that page and wait. The staff checks the channel and answers on the server Discord or through the character. If approved, it creates your code."
+     }
+    }
+   ]
+  },
+  {
+   "id": "code",
+   "title": {
+    "pt-BR": "3. Código de criador e janela de lançamento",
+    "en": "3. Creator code and the launch window"
+   },
+   "blocks": [
+    {
+     "p": {
+      "pt-BR": "Quem usa o seu código ao doar não paga nada a mais: a doação e as moedas dele ficam iguais.",
+      "en": "Whoever uses your code when donating pays nothing extra: their donation and coins stay the same."
+     }
+    },
+    {
+     "ul": [
+      {
+       "pt-BR": "Durante {support} dias, {share}% das moedas de cada doação dele vão para você, em jogo, como Chaos Coins.",
+       "en": "For {support} days, {share}% of the coins of each of their donations go to you, in game, as Chaos Coins."
+      },
+      {
+       "pt-BR": "O pagamento sai {hold} dias depois da doação, para reembolsos e estornos virem primeiro.",
+       "en": "The payment comes {hold} days after the donation, so refunds and chargebacks come first."
+      },
+      {
+       "pt-BR": "Limites: {orderCap} moedas por doação e {monthlyCap} por mês.",
+       "en": "Caps: {orderCap} coins per donation and {monthlyCap} a month."
+      },
+      {
+       "pt-BR": "Janela de lançamento: nas doações creditadas nos primeiros {bonusDays} dias depois do lançamento, de {launch} até {end}, a sua parte é de {bonus}% em vez de {share}%.",
+       "en": "Launch window: for donations credited in the first {bonusDays} days after the launch, from {launch} to {end}, your share is {bonus}% instead of {share}%."
+      },
+      {
+       "pt-BR": "O seu próprio código, a mesma conexão e o mesmo pagador não contam.",
+       "en": "Your own account, the same connection and the same payer do not count."
+      }
+     ]
+    },
+    {
+     "p": {
+      "pt-BR": "Os números vêm da configuração do servidor e podem mudar. Vale o que a página Programa de Criadores mostra.",
+      "en": "The numbers come from the server configuration and may change. What the Creator Program page shows is what counts."
+     }
+    }
+   ]
+  },
+  {
+   "id": "rules",
+   "title": {
+    "pt-BR": "4. O que pode e o que não pode aparecer na live",
+    "en": "4. What may and may not be shown on stream"
+   },
+   "blocks": [
+    {
+     "p": {
+      "pt-BR": "Pode:",
+      "en": "You may:"
+     }
+    },
+    {
+     "ul": [
+      {
+       "pt-BR": "Jogar, mostrar o seu personagem, a árvore passiva, as classes, o beta e os recursos públicos do jogo.",
+       "en": "Play, show your character, the passive tree, the classes, the beta and the public features of the game."
+      },
+      {
+       "pt-BR": "Usar a arte e o logotipo do kit para divulgar o servidor.",
+       "en": "Use the art and the logo of the kit to promote the server."
+      },
+      {
+       "pt-BR": "Falar do código, do Discord e do site.",
+       "en": "Talk about the code, the Discord and the site."
+      }
+     ]
+    },
+    {
+     "p": {
+      "pt-BR": "Não pode:",
+      "en": "You may not:"
+     }
+    },
+    {
+     "ul": [
+      {
+       "pt-BR": "Mostrar ao vivo, ensinar ou usar bugs e falhas. Avise a equipe. Um bug que você mesmo informa nunca é punido.",
+       "en": "Show live, teach or use bugs and exploits. Report them to the staff. A bug you report yourself is never punished."
+      },
+      {
+       "pt-BR": "Vender, comprar ou trocar contas, itens, ouro ou moedas por dinheiro real, o RMT.",
+       "en": "Sell, buy or trade accounts, items, gold or coins for real money, which is RMT."
+      },
+      {
+       "pt-BR": "Citar o nome de outros servidores, jogos ou clientes na live do servidor, nem pedir que a audiência vá para eles.",
+       "en": "Name other servers, games or clients in the server stream, or send your audience to them."
+      },
+      {
+       "pt-BR": "Mostrar senha, e-mail, dados de pagamento ou o painel da equipe.",
+       "en": "Show a password, an e-mail, payment data or the staff panel."
+      },
+      {
+       "pt-BR": "Prometer vantagem de jogo por doação. A loja nunca vende vantagem de combate.",
+       "en": "Promise a game advantage for a donation. The store never sells a combat advantage."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "brand",
+   "title": {
+    "pt-BR": "5. Regras da marca",
+    "en": "5. Brand rules"
+   },
+   "blocks": [
+    {
+     "ul": [
+      {
+       "pt-BR": "Não altere o logotipo: sem trocar cores, esticar, cortar, girar, sombrear ou refazer.",
+       "en": "Do not alter the logo: no recolouring, stretching, cropping, rotating, shadows or redrawing."
+      },
+      {
+       "pt-BR": "Use os arquivos do kit como estão. Deixe espaço livre em volta do logotipo.",
+       "en": "Use the kit files as they are. Leave free space around the logo."
+      },
+      {
+       "pt-BR": "Não venda a arte e não use para outro jogo.",
+       "en": "Do not sell the art and do not use it for another game."
+      },
+      {
+       "pt-BR": "O código do canal vai no espaço em branco das telas e do painel. O resto da arte fica como está.",
+       "en": "Your channel code goes in the blank slot of the screens and the bar. The rest of the art stays as it is."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kit",
+   "title": {
+    "pt-BR": "6. Kit de arte para a live",
+    "en": "6. Art kit for your stream"
+   },
+   "blocks": [
+    {
+     "p": {
+      "pt-BR": "O kit de mídia tem a pasta streamer com tudo pronto. Os arquivos também estão soltos na página Programa de Criadores.",
+      "en": "The media kit has a streamer folder with everything ready. The files are also on the Creator Program page, one by one."
+     }
+    },
+    {
+     "ul": [
+      {
+       "pt-BR": "overlays: moldura da câmera, barra inferior com espaço para o código e as telas Começando em breve, Volto já e Fim, todas em 1920 por 1080. A moldura e a barra têm fundo transparente: ponha como imagem acima do jogo.",
+       "en": "overlays: camera frame, bottom bar with a slot for your code, and the Starting soon, Be right back and Ending screens, all 1920 by 1080. The frame and the bar are transparent: put them above the game as images."
+      },
+      {
+       "pt-BR": "banners: quatro painéis de 320 por 100 para a Twitch, que são Sobre o jogo, Código de criador, Discord e Regras, um banner social de 1500 por 500, a tela offline e um modelo de miniatura de 1280 por 720.",
+       "en": "banners: four Twitch panels of 320 by 100, which are About the game, Creator code, Discord and Rules, a social banner of 1500 by 500, the offline screen and a thumbnail template of 1280 by 720."
+      },
+      {
+       "pt-BR": "discord: o ícone do servidor em 512 por 512. O Discord corta o ícone em círculo, e a arte já fica toda dentro do círculo.",
+       "en": "discord: the server icon at 512 by 512. Discord crops icons to a circle, and the art already sits inside the circle."
+      },
+      {
+       "pt-BR": "slots.json: onde ficam os espaços em branco, para você pôr uma fonte de texto do OBS com o seu código.",
+       "en": "slots.json: where the blank slots are, so you can put an OBS text source with your code there."
+      }
+     ]
+    },
+    {
+     "p": {
+      "pt-BR": "Os nomes dos arquivos trazem o idioma: pt-BR ou en.",
+      "en": "File names carry the language: pt-BR or en."
+     }
+    }
+   ]
+  },
+  {
+   "id": "obs",
+   "title": {
+    "pt-BR": "7. Overlay para o OBS",
+    "en": "7. OBS overlay"
+   },
+   "blocks": [
+    {
+     "ol": [
+      {
+       "pt-BR": "No OBS, adicione uma fonte Navegador, em inglês Browser.",
+       "en": "In OBS, add a Browser source."
+      },
+      {
+       "pt-BR": "Endereço: SITE/plugins/chaos/assets/streamer/obs-overlay.html?code=SEUCODIGO e troque SITE pelo endereço do site e SEUCODIGO pelo seu código. Acrescente &lang=en para o texto em inglês.",
+       "en": "URL: SITE/plugins/chaos/assets/streamer/obs-overlay.html?code=YOURCODE and replace SITE with the site address and YOURCODE with your code. Add &lang=pt-BR for Portuguese text."
+      },
+      {
+       "pt-BR": "Tamanho 640 por 120. O fundo é transparente.",
+       "en": "Size 640 by 120. The background is transparent."
+      }
+     ]
+    },
+    {
+     "p": {
+      "pt-BR": "A página só mostra texto: o nome do servidor e o seu código. Ela não faz pedidos a outros sites.",
+      "en": "The page shows plain text only: the server name and your code. It makes no requests to other sites."
+     }
+    }
+   ]
+  },
+  {
+   "id": "promo",
+   "title": {
+    "pt-BR": "8. Título, tags e Discord",
+    "en": "8. Title, tags and Discord"
+   },
+   "blocks": [
+    {
+     "p": {
+      "pt-BR": "Títulos sugeridos. Troque SEUCODIGO pelo seu código:",
+      "en": "Suggested titles. Replace YOURCODE with your code:"
+     }
+    },
+    {
+     "ul": [
+      {
+       "pt-BR": "Cinders of Chaos | RPG de fantasia sombria grátis | use o código SEUCODIGO",
+       "en": "Cinders of Chaos | free dark fantasy RPG | use code YOURCODE"
+      },
+      {
+       "pt-BR": "Cinders of Chaos | primeira vez no servidor | use o código SEUCODIGO",
+       "en": "Cinders of Chaos | first time on the server | use code YOURCODE"
+      },
+      {
+       "pt-BR": "Cinders of Chaos | beta aberto, venha jogar comigo",
+       "en": "Cinders of Chaos | open beta, come play with me"
+      }
+     ]
+    },
+    {
+     "p": {
+      "pt-BR": "Tags sugeridas: RPG, MMORPG, Fantasia Sombria, Grátis para jogar, Português, Indie. Use a categoria de MMORPG que a plataforma oferecer.",
+      "en": "Suggested tags: RPG, MMORPG, Dark Fantasy, Free to Play, English, Indie. Use the MMORPG category that the platform offers."
+     }
+    },
+    {
+     "p": {
+      "pt-BR": "Link do Discord do servidor: {discord}. Ponha no painel do canal e no comando !discord.",
+      "en": "Server Discord link: {discord}. Put it in the channel panel and in the !discord command."
+     }
+    },
+    {
+     "p": {
+      "pt-BR": "Comandos de chat prontos estão em streamer/chat/chat-commands.txt, dentro do kit.",
+      "en": "Ready chat commands are in streamer/chat/chat-commands.txt, inside the kit."
+     }
+    }
+   ]
+  },
+  {
+   "id": "checklist",
+   "title": {
+    "pt-BR": "9. Checklist da primeira live",
+    "en": "9. Checklist for the first stream"
+   },
+   "blocks": [
+    {
+     "check": [
+      {
+       "pt-BR": "Você foi aprovado e tem o seu código.",
+       "en": "You are approved and have your code."
+      },
+      {
+       "pt-BR": "Launcher instalado, cliente atualizado, login testado.",
+       "en": "Launcher installed, client updated, login tested."
+      },
+      {
+       "pt-BR": "Cenas no OBS: começando em breve, jogo com moldura de câmera e barra, volto já, fim.",
+       "en": "OBS scenes: starting soon, game with camera frame and bar, be right back, ending."
+      },
+      {
+       "pt-BR": "Código digitado no espaço em branco da barra, ou o overlay do navegador com ?code=.",
+       "en": "Code typed in the blank slot of the bar, or the browser overlay with ?code=."
+      },
+      {
+       "pt-BR": "Comandos !server, !codigo e !discord criados no bot do chat.",
+       "en": "Commands !server, !code and !discord created in the chat bot."
+      },
+      {
+       "pt-BR": "Título da live com o código, e o painel do canal com Sobre, Código, Discord e Regras.",
+       "en": "Stream title with the code, and the channel panels About, Code, Discord and Rules."
+      },
+      {
+       "pt-BR": "Nada de senha, e-mail ou painel da equipe na tela.",
+       "en": "No password, e-mail or staff panel on screen."
+      },
+      {
+       "pt-BR": "Você sabe o que fazer se achar um bug: parar de mostrar e avisar a equipe.",
+       "en": "You know what to do if you find a bug: stop showing it and tell the staff."
+      },
+      {
+       "pt-BR": "Você disse na live que o jogo é grátis e que doar é voluntário.",
+       "en": "You said on stream that the game is free and that donating is voluntary."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

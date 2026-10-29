@@ -8449,5 +8449,9 @@ return {
 		[" The rest of the bag follows."] = " O resto da bolsa vem a seguir.",
 		["The bag changed: the salvage stopped. Check the list and confirm again."] =
 			"A bolsa mudou: a reciclagem parou. Confira a lista e confirme de novo.",
+		-- Hunt warnings (O323, hunt_warnings.lua)
+		["Danger: much stronger monsters ahead (level %d+)."] = "Perigo: monstros muito mais fortes adiante (nível %d+).",
+		["Caution: you are in an area of level %d+. Its monsters are much stronger."] =
+			"Cuidado: você está numa área de nível %d+. Os monstros daqui são muito mais fortes.",
 	},
 }

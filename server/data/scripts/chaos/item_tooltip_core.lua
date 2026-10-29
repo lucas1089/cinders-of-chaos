@@ -449,6 +449,28 @@ function T.vocationText(text, info)
 	return table.concat(names, ", ")
 end
 
+-- The class line of an item worn on the body or held in the hands (the "For ..." row of the tooltip). The owner saw
+-- armour with no line: the engine's vocation string is empty when the item's equip event lists no class (a stock
+-- Warrior Helmet is worn by everybody), and an empty string printed nothing. Now every worn item says who may use it:
+--   1. a unique with an own equip rule (spec.equip.lines) names those class lines, the rule onEquip enforces;
+--   2. else the engine's vocation string, named as T.vocationText does;
+--   3. else, for an item with a worn slot (helmet, armour, legs, boots, ring, amulet, weapon, shield, quiver), "all
+--      classes": the equip event lets every class wear it. A container (backpack) and a badge show nothing.
+-- slotName = tip.slot (T.slotsOf); returns nil for any other item.
+T.ALL_CLASSES = "all classes"
+function T.classLine(vocString, info, slotName, equip)
+	if type(equip) == "table" and type(equip.lines) == "table" and #equip.lines > 0 then
+		return clip(table.concat(equip.lines, ", "), 120)
+	end
+	if type(vocString) == "string" and vocString ~= "" then
+		return clip(T.vocationText(vocString, info), 120)
+	end
+	if slotName and slotName ~= "Container" and slotName ~= "Badge" then
+		return T.ALL_CLASSES
+	end
+	return nil
+end
+
 -- the key the client caches a tooltip under: "<item id>:<version>" from item:getClientAttributes() (engine patch
 -- 0003); nil when the item has none (plain items) or the engine lacks the method
 function T.cacheKey(attrs)
@@ -686,13 +708,10 @@ function T.build(item, opts)
 	if magic > 0 then
 		req.magic = magic
 	end
-	local voc = call(it, "getVocationString")
-	if type(voc) == "string" and voc ~= "" then
-		req.voc = clip(T.vocationText(voc, {
-			weaponType = int(call(it, "getWeaponType")), slot = int(call(it, "getSlotPosition")),
-			ammoType = int(call(it, "getAmmoType"))
-		}), 120)
-	end
+	req.voc = T.classLine(call(it, "getVocationString"), {
+		weaponType = int(call(it, "getWeaponType")), slot = int(call(it, "getSlotPosition")),
+		ammoType = int(call(it, "getAmmoType"))
+	}, tip.slot, unique and uniqueEntry and ChaosUniqueSpecs and ChaosUniqueSpecs[id] and ChaosUniqueSpecs[id].equip or nil)
 	if next(req) then
 		tip.req = req
 	end

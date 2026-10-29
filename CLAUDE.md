@@ -37,6 +37,7 @@ python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
 python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix)
 python3 -I tools/ci/check_desktop_commands.py   # desktop admin app (O312) table names the same chaos-ctl commands as android/
+python3 -I server/deploy/discord_bot/bot_core_test.py && python3 -I server/deploy/discord_bot/claude_client_test.py   # Discord bot for bug reports and patch notes (O324): classification parsing, duplicates, status changes, patch notes, daily summary, Claude calls with fakes; chaos_ctl_test.py covers chaos-ctl.sh discord-bot
 cd desktop && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked
 for d in crates/selfupdate launcher; do (cd $d && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked); done   # game launcher (O314) and its shared crate; launcher/tests/mass_update.rs updates a fake install many times from a local HTTP server (interrupted download, bad hash, bad signature, rollback, self-update); needs curl
 python3 -I client/tools/set_launcher_config_test.py && python3 -I server/deploy/publish_client_update_test.py   # launcher.json from init.lua; the publisher's "native" section for the launcher
@@ -48,6 +49,7 @@ python3 -I tools/ci/check_attack_counts.py   # every class and ascension has the
 python3 -I tools/ci/check_spell_icons.py && python3 -I tools/ci/check_spell_icons_test.py   # every spell of spelldata.lua has a drawn cell in the 3 spell icon sheets (O157)
 python3 -I tools/ci/check_rotation_kit.py && python3 -I tools/ci/check_rotation_kit_test.py   # every attack spell of the kit and of each class is in Auto setup's rotation data, area rule by shape (O157)
 cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check  # smooth leveling: stages, minutes per level 8-2200, hunts in reach (limits: data/scripts/chaos/progression_config.lua); no flag prints the table, --spells the unlock gaps
+python3 -I server/tools/audit_hunt_transitions_test.py   # hunt transition audit maths on synthetic spawns (O323; the run on a map: README "Hunt warnings (O323)"; warnings: tests/hunt_warnings_test.lua in the server loop)
 python3 -I server/tools/pack_model.py --check   # level-scaled late packs (hunting level 670+) die in at most 3x a base hunt pack of the median class (O138; pace_config.lua scaled.health)
 python3 -I server/tools/tower_model.py --check && python3 -I server/tools/tower_model_test.py   # Infinity Tower: seconds per floor, boss heals, breather after milestone floors, level 800 reaches floor 30-40 (O144; limits: data/scripts/chaos/infinitytower_balance_config.lua; --derive prints the generated curves, no flag the table)
 cd server && luajit tools/rift_layout_model.lua --check && lua5.3 tools/rift_layout_model.lua --check  # Rift maps: walkable tiles per monster, per live monster, full sweep seconds, size per band (O309; limits: data/scripts/chaos/rift_layout_balance_config.lua; no flag prints the table, --typical the layout.typical numbers); tests/rift_layout_model_test.lua runs in the server test loop
@@ -84,6 +86,7 @@ cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/w
 cd server && lua5.3 tools/gen_wiki_data.lua --check
 python3 -I server/tools/weapon_sim.py --power --check             # -> data/scripts/chaos/weapon_power_config.lua (--power --write)
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
+python3 -I website/tools/gen_streamer_kit.py                  # -> website plugins/chaos/assets/streamer: OBS overlays, Twitch panels, banners, Discord icon (--check in CI with the fx venv; O320)
 python3 -I website/tools/gen_calendar_data.py                  # -> website calendar/calendar_data.json from season_config.lua and others (--check in CI; O320)
 python3 -I website/tools/gen_calendar_data_test.py
 python3 -I website/tools/gen_media_kit.py                       # -> creators/media_kit_manifest.json (--check in CI; the zip is built by install_site.sh, not committed)

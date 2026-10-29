@@ -1,0 +1,109 @@
+// The game client for Android (O313, docs/ANDROID_CLIENT.md). The Java side is a thin NativeActivity shell; the engine
+// is libcinders.so, built by CMake from the assembled client tree (client/tools/assemble_client.sh, base patches 0163 and
+// 0164). No Gradle wrapper: run it with an installed Gradle 8.9 or newer (the workflow does).
+//
+// Inputs (Gradle properties, -Pname=value, or the environment variable of the same name in capitals):
+//   chaosClientDir   the assembled client folder (CMakeLists.txt, src/, init.lua ...). Required.
+//   chaosDepsPrefix  the vcpkg install folder of the arm64-android-chaos triplet (.../installed/arm64-android-chaos).
+//   chaosAssetsDir   a folder with data.zip (client/android/tools/make_assets.sh), packed into the APK assets. Optional.
+//   chaosCmakeExtra  more CMake arguments, separated by spaces (for example a different CMAKE_PREFIX_PATH entry). Optional.
+//   chaosClientBuild the client build number: versionCode, and CHAOS_CLIENT_BUILD baked into the engine (1..65535).
+//   chaosVersionName shown version name (default: "1.<build>").
+// The client guard key is read by CMake from the environment variable CHAOS_CLIENT_KEY (src/client/CMakeLists.txt);
+// without it the engine gets the public development key, which only a test server accepts.
+// The release signing key: CHAOS_KS_FILE, CHAOS_KS_PASS, CHAOS_KS_ALIAS (environment). Without them the release build is
+// unsigned; the workflow signs the debug build with the debug key then.
+plugins {
+    id 'com.android.application'
+}
+
+def prop = { String name ->
+    def v = project.findProperty(name) ?: System.getenv(name.replaceAll(/([A-Z])/, '_$1').toUpperCase())
+    return v ? v.toString() : null
+}
+def clientDir = prop('chaosClientDir')
+if (!clientDir) throw new GradleException('Set chaosClientDir (the assembled client folder), -PchaosClientDir=/path')
+def build = (prop('chaosClientBuild') ?: '1')
+if (!(build ==~ /\d+/) || build.toInteger() < 1 || build.toInteger() > 65535)
+    throw new GradleException('chaosClientBuild must be a number from 1 to 65535')
+def depsPrefix = prop('chaosDepsPrefix')
+def assetsDir = prop('chaosAssetsDir')
+def cmakeExtra = (prop('chaosCmakeExtra') ?: '').trim() ? prop('chaosCmakeExtra').trim().split(/\s+/) as List : []
+
+android {
+    namespace 'com.cindersofchaos.client'
+    compileSdk 35
+    ndkVersion '27.3.13750724'   // NDK r27d
+
+    defaultConfig {
+        applicationId 'com.cindersofchaos.client'
+        minSdk 26
+        targetSdk 35
+        versionCode = build.toInteger()
+        versionName = prop('chaosVersionName') ?: "1.${build}"
+        ndk { abiFilters 'arm64-v8a' }
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-26',
+                        "-DCHAOS_CLIENT_BUILD=${build}", '-DLUAJIT=ON',
+                        // the vcpkg tree is outside the NDK sysroot: search it for headers, libraries and packages
+                        '-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH', '-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH',
+                        '-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH',
+                        "-DCMAKE_PREFIX_PATH=${depsPrefix ?: ''}"
+                cmakeExtra.each { arguments it }
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("${clientDir}/CMakeLists.txt")
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (System.getenv('CHAOS_KS_FILE')) {
+                storeFile file(System.getenv('CHAOS_KS_FILE'))
+                storePassword System.getenv('CHAOS_KS_PASS')
+                keyAlias System.getenv('CHAOS_KS_ALIAS')
+                keyPassword System.getenv('CHAOS_KS_PASS')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv('CHAOS_KS_FILE')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    sourceSets {
+        main {
+            if (assetsDir) assets.srcDirs += [assetsDir]
+        }
+    }
+
+    // data.zip is read by the engine from the assets (ResourceManager::loadDataFromSelf), so it stays stored, not deflated
+    androidResources {
+        noCompress += ['zip']
+    }
+
+    packagingOptions {
+        jniLibs {
+            // the library is built page aligned (16 KB); keep it uncompressed so Android maps it from the APK
+            useLegacyPackaging = false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint {
+        abortOnError false
+    }
+}

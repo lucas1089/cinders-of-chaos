@@ -16,6 +16,10 @@ ChaosTheme = {
   skin = SkinCore.DEFAULT,
 }
 for k, v in pairs(SkinCore.PALETTES[SkinCore.DEFAULT]) do ChaosTheme.palette[k] = v end
+-- This module is sandboxed, so the table above is local to it. The Interface skin row of Options (base patch 0159) reads the
+-- global ChaosTheme, so the real global is set too; without it that row hides its button. Modules reach it as
+-- modules.client_chaos_theme.ChaosTheme as well. Plain Lua tests have no _G split, so the guard is harmless there.
+if rawget(_G, 'ChaosTheme') ~= ChaosTheme then _G.ChaosTheme = ChaosTheme end
 
 -- the skin the images on screen belong to (what skin_boot.lua applied at start; classic when it did not run)
 local function applyBootPalette()
@@ -414,6 +418,7 @@ function terminate()
   disconnect(UIWidget, { onStyleApply = onStyleApply })
   unwrapTooltip()
   unwrapPopupMenu()
+  _G.ChaosTheme = nil
   ChaosTheme = nil
 end
 

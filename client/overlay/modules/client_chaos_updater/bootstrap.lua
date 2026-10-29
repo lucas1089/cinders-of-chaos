@@ -4,6 +4,7 @@
 -- Mounts chaos_update/files (verified update files in the write dir, still encrypted) in front of the client's own
 -- files when the last apply finished ("status=ok"), was made for this client package and holds encrypted files: the
 -- engine decrypts them into memory (g_resources.mountUpdateOverlay, base patch 0103); nothing plain is ever mounted.
+-- A tree older than the package's baseline (Services.update.baseline) is not mounted either, and cleanup_boot.lua removes it.
 -- Otherwise the client starts with its own install files and the updater module checks again on the login screen.
 -- CHAOS_UPDATE_OFF=1 (CI start tests): never mounted.
 
@@ -23,12 +24,14 @@ if g_resources.fileExists('/' .. core.STATE) then
 end
 local st = core.parseState(text)
 local id = packageId()
+-- an update tree older than this package's own files (a pack built after that update) would hide the newer pack files
+local baseline = type(Services) == 'table' and type(Services.update) == 'table' and Services.update.baseline or 0
 CHAOS_UPDATE_BOOT = { packageId = id, mounted = false, state = st }
 
 if core.offByEnv(os.getenv) then
   -- test runs (CI start tests): the package's own files only (updater.lua makes no request either)
   g_logger.info('updater: off (' .. core.OFF_ENV .. ' is set): update folder not mounted')
-elseif core.shouldMount(st, id) then
+elseif core.shouldMount(st, id) and not core.olderThanPackage({ version = st.version }, baseline) then
   if not g_resources.mountUpdateOverlay then
     g_logger.warning('updater: this client cannot decrypt updates (base patch 0103); update folder not mounted')
   elseif g_resources.mountUpdateOverlay(core.TREE) then

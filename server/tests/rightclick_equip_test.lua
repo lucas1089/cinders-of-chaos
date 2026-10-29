@@ -159,6 +159,9 @@ eq(#R.listMessage(ids).data.ids, 3, "message ids")
 eq(#R.listMessage(nil).data.ids, 0, "empty list")
 local cfg = dofile("data/scripts/chaos/rightclick_equip_config.lua")
 eq(cfg.destroyScripts[1], "other/destroy.lua", "config: the base destroy script")
+eq(cfg.toolWeaponsKeepUseWith, false, "config: tool weapons (crowbar) equip on a right-click")
+local noTools = R.multiUseIds(items, {}, {[7004] = true}, C)
+ok(table.concat(noTools, ","):find("3308", 1, true), "no tool list: the machete look is listed")
 ok(cfg.firstItemId < 2376 and cfg.lastItemId > 40000, "config: the scan covers the base and the Chaos items")
 
 -- ------------------------------------------------------------------ glue against a mocked engine
@@ -222,7 +225,7 @@ eq(#sent, 1, "login sends the list")
 eq(sent[1] and sent[1][1], 188, "on the opcode")
 eq(sent[1] and sent[1][2], "ENCODED", "the encoded message")
 eq(encoded and encoded.action, "multiuse", "list message")
-eq(encoded and table.concat(encoded.data.ids, ","), "3264,3265,9000,9004", "the list from the item types and actions.xml (no kept ids in the config)")
+eq(encoded and table.concat(encoded.data.ids, ","), "3264,3265,3308,9000,9004", "the list from the item types: tool weapons (machete 3308) included, a rope is not a weapon")
 encoded = nil
 print = function() end
 events.ChaosRightClickEquipLogin.onLogin(pl)

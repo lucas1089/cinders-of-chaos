@@ -209,4 +209,14 @@ function V.moreLine(h)
   return tr('and %d more from earlier levels', n)
 end
 
+-- Where the tracker sits: left edge of the visible map (right edge of the left side panels when the root has them),
+-- half way down the map. A pure list of {edge, target id, target edge}, so a re-anchor after the side panels changed
+-- (Options > Interface > Show Left Horizontal Panel can add or remove a left panel) equals the first anchoring.
+function V.trackerAnchors(hasLeftPanels)
+  return {
+    { 'left', hasLeftPanels and 'gameLeftPanels' or 'gameMapPanel', hasLeftPanels and 'right' or 'left' },
+    { 'verticalCenter', 'gameMapPanel', 'verticalCenter' },
+  }
+end
+
 return V

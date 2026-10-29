@@ -19,7 +19,8 @@ CandlemarkCounter < UIButton
     color: #ffe7a6
 
 CandlemarkRow < UIWidget
-  height: 46
+  // the description wraps to two lines: one line cut "One extra charge for the pocket boss you choose."
+  height: 54
   background-color: #1a151a
   phantom: true
 
@@ -37,7 +38,7 @@ CandlemarkRow < UIWidget
     anchors.top: parent.top
     anchors.left: item.right
     anchors.right: price.left
-    margin-top: 5
+    margin-top: 4
     margin-left: 8
     height: 16
     color: #f6cf72
@@ -48,14 +49,15 @@ CandlemarkRow < UIWidget
     anchors.top: name.bottom
     anchors.left: name.left
     anchors.right: price.left
-    height: 16
-    text-align: left
+    height: 28
+    text-wrap: true
+    text-align: topLeft
 
   ChaosLabel
     id: price
     anchors.top: parent.top
     anchors.right: buy.left
-    margin-top: 5
+    margin-top: 9
     margin-right: 8
     width: 130
     color: #e8b84a
@@ -80,7 +82,8 @@ CandlemarkRow < UIWidget
 
 CandlemarkWindow < ChaosMainWindow
   id: candlemarkWindow
-  size: 480 344
+  // 480 px cut the offer name with a boss in it ("Pocket Boss Charge: <boss>")
+  size: 640 400
   !text: tr('Candlemarks')
   @onEscape: modules.game_candlemarks.hide()
 
@@ -146,7 +149,7 @@ CandlemarkWindow < ChaosMainWindow
       anchors.top: parent.top
       anchors.bottom: parent.bottom
       anchors.right: parent.right
-      step: 48
+      step: 56
       pixels-scroll: true
 
   ChaosLabel
