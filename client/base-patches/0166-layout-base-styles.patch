@@ -1,0 +1,46 @@
+# Chaos: base styles under a layout (O313 phase 2; client/BASE.md "0166"; modules/client_styles/styles.lua; after 0001-0165). The
+# client sets the layout "mobile" on Android. '/styles/' then resolves to /layouts/mobile/styles alone, which only overrides five
+# files, so Label, MainWindow, TopMenu and every other base style were missing and client_topmenu stopped the start (emulator smoke
+# test). With a layout, the files of /data/<dir> are imported first and the layout's own on top. Without one nothing changes.
+--- a/modules/client_styles/styles.lua
++++ b/modules/client_styles/styles.lua
+@@ -38,6 +38,17 @@
+ end
+ 
+ function importResources(dir, type)
++    -- Chaos (base patch 0166): with a layout (mobile on Android) '/styles/' resolves to the layout's folder alone, which
++    -- only overrides a few files; the base files in /data come first, then the layout's on top
++    local layout = g_resources.getLayout and g_resources.getLayout() or ""
++    if layout ~= "" then
++        for _, base in ipairs({'/data/' .. dir .. '/', '/layouts/' .. layout .. '/' .. dir .. '/'}) do
++            if g_resources.directoryExists(base) then
++                importFiles(base, type)
++            end
++        end
++        return
++    end
+     local path = '/' .. dir .. '/'
+     if not g_resources.directoryExists(path) then
+         return
+@@ -57,6 +68,21 @@
+     importFrom(path)
+ end
+ 
++function importFiles(path, type)
++    local function importFrom(path)
++        local files = g_resources.listDirectoryFiles(path, true)
++        table.sort(files)
++        for _, file in ipairs(files) do
++            if g_resources.isFileType(file, type) then
++                resourceLoaders[type](file)
++            elseif g_resources.directoryExists(file) then
++                importFrom(file)
++            end
++        end
++    end
++    importFrom(path)
++end
++
+ function reloadParticles()
+     g_particles.terminate()
+     importResources("particles", "otps")
