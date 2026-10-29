@@ -1238,6 +1238,24 @@ do
 	end
 	-- the discount follows an Everfull tier: 70 coins -> 35
 	eq(costOf(C3, "service:everfullUpgrade:32270"), 70, "an Everfull tier nobody owns: 70")
+	-- a service that says "not listed" (its item is not installed) is left out of the view, the others stay
+	do
+		local function listedKeys()
+			local seen = {}
+			for _, cat in ipairs(Shop.view(C3)) do
+				for _, e in ipairs(cat.offers) do
+					seen[(e.offer or e).key or ""] = true
+				end
+			end
+			return seen
+		end
+		ok(listedKeys()["service:everfullUpgrade:32264"], "the Ultimate Health tier is listed while no service hides it")
+		ChaosShopServices.services = {everfullUpgrade = {listed = function(o) return o.upgrade ~= 32264 end}}
+		local seen = listedKeys()
+		ok(not seen["service:everfullUpgrade:32264"], "an uninstalled Everfull tier is not listed")
+		ok(seen["service:everfullUpgrade:32265"], "an installed one is")
+		ChaosShopServices.services = nil
+	end
 	-- a character that no longer exists owns nothing
 	local D1 = newPlayer("Doomed", {level = 60})
 	local D2 = newPlayer("Survivor", {level = 60, account = D1.account})

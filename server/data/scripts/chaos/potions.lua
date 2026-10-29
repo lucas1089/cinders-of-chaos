@@ -171,6 +171,11 @@ function PT.registerService()
 	local S = ChaosShopServices
 	if S and S.services and not S.services.everfullUpgrade then
 		S.services.everfullUpgrade = {
+			-- the store lists a tier only when its item is in items.otb (shop.lua Shop.view)
+			listed = function(offer)
+				local id = upgradeId(offer)
+				return id ~= nil and PT.installed(id)
+			end,
 			check = function(player, offer)
 				local id = upgradeId(offer)
 				if not id then
@@ -203,6 +208,18 @@ PT.registerService()
 local svcStartup = GlobalEvent("ChaosPotionUpgradeStartup")
 function svcStartup.onStartup()
 	PT.registerService()
+	-- an Everfull item missing from items.otb (the potions step of install_all.py not run since O245 / O247) cannot be
+	-- drunk, held or bought: say so once at startup
+	local missing = {}
+	for _, e in ipairs(PT.cfg().everfull) do
+		if not PT.installed(e.id) then
+			missing[#missing + 1] = tostring(e.id)
+		end
+	end
+	if #missing > 0 then
+		print("[potions] WARNING: Everfull items missing from items.otb (run install_all.py --only potions): " ..
+			table.concat(missing, ", "))
+	end
 	return true
 end
 svcStartup:register()

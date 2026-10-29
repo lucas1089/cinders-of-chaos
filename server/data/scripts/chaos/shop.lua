@@ -501,6 +501,13 @@ function Shop.view(player, t)
 	local level = player:getLevel()
 	local at = ctx.now
 	local function visible(o)
+		-- a service may refuse to be listed (service.listed(offer) == false): the Everfull tiers whose item the server
+		-- does not have (install_potions.py not run) are not shown, so the store never offers what cannot exist
+		local svc = o.kind == "service" and ChaosShopServices and ChaosShopServices.services and
+			ChaosShopServices.services[o.service or ""]
+		if svc and svc.listed and svc.listed(o) == false then
+			return false
+		end
 		return not (o.oncePerAccount and bought[o.key]) and not (o.maxLevel and level > o.maxLevel) and
 			K.windowState(o, at) == nil -- a time-limited offer (Founder Pack): only inside its window
 	end

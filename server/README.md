@@ -5663,6 +5663,10 @@ The store's infinite food (Convenience, "Everfull Ration", 100 coins, decided 20
 
 Owner request 2026-10-16: "Remove the potion flasks and make the first pots infinite."
 
+- **Uninstalled Everfull tiers are hidden (2026-10-29).** An Everfull item exists only after the `potions` step of
+  `install_all.py` wrote it into items.otb. The store hides an `everfullUpgrade` offer whose item is missing (service hook
+  `listed`, read by `Shop.view`), and startup prints "[potions] WARNING: Everfull items missing from items.otb" with the
+  ids. Before, such an offer showed and every buy failed. Test: `tests/shop_test.lua`.
 - **No empty flasks.** No potion leaves an empty flask any more (strong 7634, great 7635, small 7636). The stock potion
   script (`data/actions/scripts/other/potions.lua`, `player:addItem(potion.flask, 1)`) and any other base Lua that adds a
   flask (an `addItem` / `createItem` / `doPlayerAddItem` call with an argument named like `flask` or a flask id) get that
@@ -20469,12 +20473,45 @@ every build started from the base map and the install steps, so an edit lived on
   --note "..."`, then commit `world/MAP_MASTER.json`, `world/SHA256SUMS` and every `world/map-master.otbm.xz.part*`
   on `windows-assets` (removed parts too) and push. The next package build and the next "Atualizar servidor" take it.
 
+## Monster level: no skull, no spread (O326, engine patch 0082)
+Owner 2026-10-29 (pt-BR): "monstros com caveira ainda estao muito fortes, tire a mecanica da caveira". Coordinator
+decision: no skull, and no weaker monsters on average; the complaint is the high rolls.
+- **Cause.** `Monster::Monster` rolls a level for a type with both `min` and `max` of `<level>` (XML) or `minLevel` /
+  `maxLevel` (Lua types: our 140 XML files and 210 base Lua types, the 100-600 portal sets among them). The tier
+  conditions of the roll are always true (`> 1 || < 20`), so it is uniform `min..max`. The level then adds
+  `monsterBonusHealth` x level to health (0.0074), `monsterBonusSpeed` x level to speed (0.0085) and, in `game.cpp`,
+  `monsterBonusDamage` x level (0.0015) to the damage it deals, and sets a skull by level (white 50-100, green 101-200,
+  yellow 201-300, orange 301-350, red 351-400, black 401+). Two monsters of one type differed by the whole range: at
+  level 400 from +0% to +296% health. The skull marked the high rolls.
+- **Fix, engine patch `0082-monster-level-no-skull-no-spread.patch`** (Monster::Monster only). (1) The skull block is
+  gone; the skull is the one the XML `<skull>` gives or a script sets (`creature:setSkull`, e.g. the nemesis look). A
+  config value cannot do this. (2) The level is the **middle** of the range, `(min + max) / 2`, not a roll: every monster
+  of a type has the same level, so the same bonus, equal to the mean the roll gave (health factor 1 + 0.0074 x mid).
+  The spread is gone, the average strength is not.
+- **Why not config bonuses 0 plus compensated data.** First tried (bonuses 0, XML health / speed / damage raised by the
+  factor at the mid level): it reaches only the 140 XML files, not the 210 base Lua types (base data, only editable
+  through patch tools), and it moves the numbers every model and scaling script divides by. The engine route needs no
+  data or config change; `config.lua` keeps `monsterBonusHealth` / `Speed` / `Damage` as they are.
+- **What did not change.** `tools/tune_monsters.py` rows, `pace_config.lua` curves (`scaled`, `generated`),
+  `areagen_core.lua` `A.levelScale`, `waystone_tiers_*`, `cursedchest_*`, `dungeons_difficulty.lua`, `tools/pack_model.py`,
+  `respec_income.py`, `armor_sim.py`: they assume the engine factor `1 + 0.0074 x level` on a monster of the type's level,
+  and a spawned monster has it at exactly the middle of the range (their `native` level is `getMonsterLevel()`, now the
+  middle; before it was the roll, so they were right only on average). Experience per kill is unchanged.
+- **Visible change.** The `[level]` after the name of a level-scaled type is the same for all its monsters (before, it
+  ranged over the type's span, e.g. 920-960); a look at one says "it is level 940". Rift, invasion and generated area
+  monsters keep the display level their system sets (patch 0044). Damage from Lua is still multiplied per level by the
+  engine as before.
+- **Install and rollback.** Engine rebuild with patches 0001-0082 (docs/LAUNCH.md section 1), `chaos_update.sh
+  --engine`; no step, no config, no restart of anything else. Without the rebuild nothing changes. Checked:
+  `patch -p1 --dry-run < src-patches/0082-monster-level-no-skull-no-spread.patch` on a copy of the patched source tree.
+  Guard test: `tools/monster_level_patch_test.py` (patch text, same mean health bonus).
+
 ## Monster levels in the name (`monster_levels.lua`, `monster_levels_core.lua`, engine patch 0040)
 Owner, 2026-10-16: "Black Stag [777]" showed its level, Hellflayer and Ashfang Wyrm did not. Cause: the engine rolls a
 level only for a monster type with both `min` and `max` of `<level>` in its XML (our level-scaled monsters, written by
 `tools/tune_monsters.py`) and puts " [level]" after the name only when that level is above 0; stock monsters have no
 `<level>`. Giving them one would change them: the engine's level adds health (`monsterBonusHealth` x level), speed,
-damage and a skull colour. So patch 0040 adds a display level instead (`monster:setDisplayLevel` /
+damage and a skull colour (the skull is gone and the roll is the middle of the range since O326, see above). So patch 0040 adds a display level instead (`monster:setDisplayLevel` /
 `getDisplayLevel`), shown after the name and in the look text only. At every spawn (`onSpawn`, before the
 placement) `monster_levels.lua` gives a monster without a level of its own its **hunting level** (owner 2026-10-27, "O272"):
 `ChaosLoot.monsterLevel`, the bounty pool's "fair hunt" level of its type (else the experience / health estimate), times
