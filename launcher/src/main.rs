@@ -94,6 +94,8 @@ fn run_cli(cfg: &Config, exe: PathBuf, lang: Lang, no_start: bool) -> i32 {
 #[cfg(feature = "gui")]
 mod gui {
     use super::*;
+    use cinders_launcher::feed::{self, Panel};
+    use cinders_launcher::i18n::{feed_text, FeedText};
     use cinders_launcher::install::Outcome;
     use eframe::egui;
     use std::sync::mpsc::{channel, Receiver, Sender};
@@ -101,6 +103,12 @@ mod gui {
     enum Msg {
         Ev(Event),
         Done(Result<Outcome, Error>),
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Tab {
+        News,
+        Changelog,
     }
 
     enum Phase {
@@ -121,6 +129,9 @@ mod gui {
         launch_error: Option<Error>,
         tx: Sender<Msg>,
         rx: Receiver<Msg>,
+        panel: Panel,
+        tab: Tab,
+        feed_rx: Option<Receiver<Panel>>,
     }
 
     impl App {
@@ -138,9 +149,95 @@ mod gui {
                 launch_error: None,
                 tx,
                 rx,
+                panel: Panel::Loading,
+                tab: Tab::News,
+                feed_rx: None,
             };
+            app.start_feed();
             app.start();
             app
+        }
+
+        /// News and Changelog: fetched on a thread of their own, after and apart from the update. A slow or dead feed
+        /// never holds the update, the Play button or the window.
+        fn start_feed(&mut self) {
+            if self.cfg.feed.is_none() {
+                self.panel = Panel::Unavailable;
+                return;
+            }
+            let (tx, rx) = channel();
+            self.feed_rx = Some(rx);
+            let (cfg, lang) = (self.cfg.clone(), self.lang);
+            std::thread::spawn(move || {
+                let _ = tx.send(feed::load(&Curl, &cfg, lang));
+            });
+        }
+
+        fn feed_ui(&mut self, ui: &mut egui::Ui) {
+            let lang = self.lang;
+            ui.horizontal(|ui| {
+                ui.selectable_value(&mut self.tab, Tab::News, feed_text(FeedText::TabNews, lang));
+                ui.selectable_value(&mut self.tab, Tab::Changelog, feed_text(FeedText::TabChangelog, lang));
+            });
+            ui.separator();
+            let mut open: Option<String> = None;
+            egui::ScrollArea::vertical()
+                .auto_shrink([false, false])
+                .show(ui, |ui| match &self.panel {
+                    Panel::Loading => {
+                        ui.label(feed_text(FeedText::Loading, lang));
+                    }
+                    Panel::Unavailable => {
+                        ui.weak(feed_text(FeedText::Unavailable, lang));
+                    }
+                    Panel::Ready { feed, cached } => {
+                        if *cached {
+                            ui.weak(feed_text(FeedText::SavedCopy, lang));
+                        }
+                        // feed text is shown as plain text, never parsed
+                        let link = |ui: &mut egui::Ui, url: &Option<String>, open: &mut Option<String>| {
+                            if let Some(u) = url {
+                                if ui.link(feed_text(FeedText::ReadMore, lang)).clicked() {
+                                    *open = Some(u.clone());
+                                }
+                            }
+                        };
+                        match self.tab {
+                            Tab::News if feed.news.is_empty() => {
+                                ui.weak(feed_text(FeedText::NoNews, lang));
+                            }
+                            Tab::News => {
+                                for n in &feed.news {
+                                    ui.label(egui::RichText::new(&n.title).strong());
+                                    ui.weak(feed::show_date(&n.date, lang));
+                                    if !n.text.is_empty() {
+                                        ui.label(&n.text);
+                                    }
+                                    link(ui, &n.url, &mut open);
+                                    ui.separator();
+                                }
+                            }
+                            Tab::Changelog if feed.changelog.is_empty() => {
+                                ui.weak(feed_text(FeedText::NoChanges, lang));
+                            }
+                            Tab::Changelog => {
+                                for e in &feed.changelog {
+                                    ui.label(egui::RichText::new(&e.title).strong());
+                                    ui.weak(feed::show_date(&e.date, lang));
+                                    for l in &e.lines {
+                                        ui.label(format!("\u{2022} {l}"));
+                                    }
+                                    link(ui, &e.url, &mut open);
+                                    ui.separator();
+                                }
+                            }
+                        }
+                    }
+                });
+            // checked again here: only an https link leaves the launcher
+            if let Some(u) = open.and_then(|u| feed::safe_link(&u)) {
+                ui.ctx().open_url(egui::OpenUrl::new_tab(u));
+            }
         }
 
         fn start(&mut self) {
@@ -175,6 +272,12 @@ mod gui {
                     Msg::Ev(Event::File(f)) => self.file = f,
                     Msg::Done(Ok(o)) => self.phase = Phase::Ready(o),
                     Msg::Done(Err(e)) => self.phase = Phase::Failed(e),
+                }
+            }
+            if let Some(rx) = &self.feed_rx {
+                if let Ok(p) = rx.try_recv() {
+                    self.panel = p;
+                    self.feed_rx = None;
                 }
             }
             let lang = self.lang;
@@ -233,9 +336,17 @@ mod gui {
                     ui.add_space(8.0);
                     ui.colored_label(egui::Color32::from_rgb(230, 90, 80), e.text(lang));
                 }
+                ui.add_space(10.0);
+                self.feed_ui(ui);
             });
+            if self.feed_rx.is_some() {
+                ctx.request_repaint_after(std::time::Duration::from_millis(200));
+            }
             if retry {
                 self.launch_error = None;
+                if !matches!(self.panel, Panel::Ready { cached: false, .. }) {
+                    self.start_feed();
+                }
                 self.start();
             }
             if let Some(g) = play {
@@ -247,7 +358,7 @@ mod gui {
     pub fn run(cfg: Config, exe: PathBuf, lang: Lang) -> eframe::Result<()> {
         let opts = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
-                .with_inner_size([520.0, 240.0])
+                .with_inner_size([560.0, 520.0])
                 .with_resizable(false)
                 .with_title(i18n::title(lang)),
             ..Default::default()

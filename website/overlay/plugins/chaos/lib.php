@@ -24,7 +24,7 @@ function chaos_h($value): string {
  */
 function chaos_clean_url(string $url): string {
 	if (!preg_match('~^(/?)([A-Za-z0-9_-]+)\.php([?#].*)?$~s', $url, $m)
-			|| in_array($m[2], array('chaos_client_api', 'chaos_pay_webhook', 'chaos_outfit'), true)) {
+			|| in_array($m[2], array('chaos_client_api', 'chaos_pay_webhook', 'chaos_outfit', 'chaos_launcher_feed'), true)) {
 		return $url;
 	}
 	$rest = $m[3] ?? '';

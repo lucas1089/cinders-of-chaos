@@ -90,6 +90,7 @@ if ($what === 'robots') {
 		. "Disallow: /chaos_client_api.php\n"
 		. "Disallow: /chaos_pay_webhook.php\n"
 		. "Disallow: /chaos_outfit.php\n"
+		. "Disallow: /chaos_launcher_feed.php\n"
 		. "Disallow: /page?plugin=chaos&p=accept\n"
 		. "Disallow: /page?plugin=chaos&p=reports\n"
 		. "Disallow: /page?plugin=chaos&p=botreview\n"

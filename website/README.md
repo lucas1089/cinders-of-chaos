@@ -72,8 +72,10 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/legal_lib.php`, `pages/legal.php` | the legal pages: Terms of Use, Privacy Policy, Donation Terms in Portuguese and English, from `docs/legal/` (see "Legal pages") |
 | `tests/chaos_legal_pages_test.php` | `php website/tests/chaos_legal_pages_test.php`: the pages, the renderer's escaping, the footer links, the Terms checkbox and its refusal, the acceptance row, the donation notes before and after payment (php-cli only, a fake database) |
 | `tests/chaos_legal_accept_test.php` | `php website/tests/chaos_legal_accept_test.php`: existing accounts accept the current texts: the gate (which requests pass), the way back (this site only), the form (token, checkbox), the row (no IP), a new version asking again, the setup writing the version for the game (php-cli only, SQLite in memory) |
+| `overlay/chaos_launcher_feed.php`, `overlay/plugins/chaos/launcher_feed_lib.php` | the public feed of the game launcher: latest news and the changelog (patch notes), pt-BR and en (see "Launcher feed") |
 | `overlay/chaos_client_api.php`, `overlay/plugins/chaos/client_api_lib.php` | the game client's account API: character looks for the character select, character creation in the client (see "Client API") |
 | `overlay/engine/function/chaos_character.php`, `patches/znotex-chaos-character-create.patch` | the character creation checks and insert of ZnoteX's `createcharacter.php`, moved unchanged into two functions that the form and the client API both call (see "Client API") |
+| `tests/chaos_launcher_feed_test.php` | `php website/tests/chaos_launcher_feed_test.php`: the launcher feed (plain text, links, news and patch notes in both languages, limits, cache, endpoint wiring) |
 | `tests/chaos_client_api_test.php` | `php website/tests/chaos_client_api_test.php`: the API's login, state and creation with every refusal (bad and taken names, locked class, slots, bad token, Terms, season mode, replays, the login guard, the hourly and per-minute limits, a password change), the patch moving the form's lines unchanged, and the class look table against `class_looks_core.lua` (php-cli with pdo_sqlite) |
 | `tests/chaos_mentors_page_test.php` | `php website/tests/chaos_mentors_page_test.php`: the Mentors page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/wiki_lib.php`, `pages/wiki.php`, `wiki/` | the player wiki: guides in Portuguese and English, the reference generated from the server data by `server/tools/gen_wiki_data.lua`, the search (see "Wiki") |
@@ -171,7 +173,7 @@ hardened on both servers:
   sent, so there is no loop. POST and every other method are never redirected (a form posting to `register.php` still
   works, and a POST to `/register` reaches `register.php` through the internal rewrite), nor the machine endpoints the
   game client and the payment providers call by their `.php` address: `chaos_client_api.php`,
-  `chaos_pay_webhook.php`, `chaos_outfit.php`, everything under `updates/` and the client services path
+  `chaos_pay_webhook.php`, `chaos_outfit.php`, `chaos_launcher_feed.php`, everything under `updates/` and the client services path
   (`/clientservices`, docs/LAUNCH.md). Only top-level names of letters, digits, `_` and `-` are matched, so no folder,
   dot file or denied file is reached through these rules. Our pages, menus, mails and the game's notices link the
   clean form (`plugins/chaos/lib.php` `chaos_clean_url`); setup turns the `.php` menu entries into the clean form once,
@@ -215,7 +217,7 @@ limit_req_zone $binary_remote_addr zone=chaos_forms:10m rate=30r/m;
 map "$request_method:$request_uri" $chaos_clean_url {
     default "";
     "~^(GET|HEAD):/index\.php(?<chaos_iq>\?.*)?$" "/$chaos_iq";
-    "~^(GET|HEAD):/(?!(chaos_client_api|chaos_pay_webhook|chaos_outfit)\.php)(?<chaos_page>[A-Za-z0-9_-]+)\.php(?<chaos_q>\?.*)?$" "/$chaos_page$chaos_q";
+    "~^(GET|HEAD):/(?!(chaos_client_api|chaos_pay_webhook|chaos_outfit|chaos_launcher_feed)\.php)(?<chaos_page>[A-Za-z0-9_-]+)\.php(?<chaos_q>\?.*)?$" "/$chaos_page$chaos_q";
 }
 
 server {
@@ -1059,6 +1061,34 @@ location ^~ /updates/ {
 On the VPS, `server/deploy/publish_client_update.sh` (or `chaos-ctl.sh publish-update winpkg-N`) fills `updates/live/`
 from a release's client zip and checks these headers and a Range request afterwards (docs/LAUNCH.md "Publishing a
 client update").
+
+## Launcher feed
+
+The game launcher (`launcher/`, ROADMAP O314) shows News and a Changelog next to the Play button. It reads one public
+JSON file, `GET /chaos_launcher_feed.php` (`overlay/chaos_launcher_feed.php`, logic in `plugins/chaos/launcher_feed_lib.php`).
+Nothing is written for it by hand:
+
+- **News** are ZnoteX's own (`znote_news`, the front page's news, the last 12 rows read, 6 shown): title, date, a short
+  plain text and the link `<site_url>/?view=<id>`. No author or account field is read. The staff write them in one
+  language, so both language blocks hold the same news.
+- **Changelog** is the weekly patch notes: `server/data/patchnotes/*.md` and the pt-BR twins `<id>.pt-br.md`, parsed
+  with the same rules as the Patch Notes page (`chaos_pn_parse`). Per note: id, date, title, up to 8 lines ("Lead.
+  text", sub-bullets left out) and the link to the full note. A note without a twin shows its English text in the
+  pt-BR block. Twins, `README.md` and `_drafts` are not entries of their own.
+- **Shape** (`format` 1): `{"format":1,"generated":<unix>,"en":{"news":[{id,date,title,text,url}],"changelog":[{id,date,title,lines,url}]},"pt-BR":{...}}`.
+  Plain text only (BBCode, HTML and control characters are removed); links are absolute `https://` addresses or empty.
+- **Limits and cache.** 6 news and 6 changelog entries, titles 80, news text 280 and lines 200 characters, the file at
+  most 64 KiB (the oldest items go first). A copy in the system temp folder for 5 minutes and `Cache-Control: public,
+  max-age=300`, so any number of launcher starts cost one query and a few files per 5 minutes. GET and HEAD only, no
+  cookie, nothing else is read from the request. A news query that fails gives an empty news list; the changelog stays.
+- **Web server.** Like the other machine endpoints (`chaos_client_api.php`): no clean-address redirect (`.htaccess`,
+  `setup/router.php`, the nginx `map` above), no SEO buffering, `Disallow` in `robots.txt`. Optional in nginx:
+  `location = /chaos_launcher_feed.php { limit_req zone=chaos_forms burst=10 nodelay; limit_req_status 429; include snippets/chaos-php.conf; }`.
+- **Launcher side.** `launcher.json` key `feed` (written by `client/tools/set_launcher_config.py`, default
+  `https://<site of the manifest>/chaos_launcher_feed.php`); see `launcher/README.md` "News and Changelog".
+
+Test: `php website/tests/chaos_launcher_feed_test.php` (plain text and links, news ordering and limits, the real patch
+notes in both languages, twins, size limit, cache file, a failing database, the endpoint wiring).
 
 ## Client API
 

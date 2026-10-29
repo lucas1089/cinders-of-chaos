@@ -4178,12 +4178,22 @@ runtime) and puts it in the client folder as `CindersLauncher.exe`; the separate
 before the pack is built; the full local package keeps `start-client.bat` and `Chaos.exe` (no live update site).
 `windows-client.yml` (exe only) is unchanged.
 
+**News and Changelog (owner request 2026-10-29).** Under the status and Play button the window has two tabs, "Notícias" /
+"News" and "Changelog", from the website's launcher feed (`chaos_launcher_feed.php`, website/README.md "Launcher feed":
+the site's news and the weekly patch notes, pt-BR and en, no second source). `launcher.json` gets the key `feed`
+(`set_launcher_config.py` writes `https://<site>/chaos_launcher_feed.php` from the manifest's site; `--feed URL`,
+`--no-feed`; an old file without the key derives the same address, or shows no panels). `src/feed.rs`: the system `curl`
+with a short limit (5 s connect, 10 s, 128 KiB) on a thread of its own, so it never gates the update or Play; the last good
+copy in `.cinders_launcher/feed.json` for an offline start; feed text shown as plain text (control and direction characters
+out, counts and lengths capped); links open in the browser only when `https://` without spaces; a broken, missing or
+oversize feed shows one short line, never a dialog. Texts in pt-BR and en in `i18n.rs` (`FeedText`). The window is 560x520.
+
 **Tests.** `launcher/tests/mass_update.rs` (fake server on 127.0.0.1, fake install, the real `curl`): 120 rounds with
 random trouble and a launcher update every few rounds, plus interrupted download (resume from the byte held), bad hash
 (nothing installed, the good files kept staged), bad signature (no download at all), bad path, rollback at every swap
-position, crash recovery, older manifest and baseline, unreachable server, launcher self-update. `launcher/tests/vector.rs`
+position, crash recovery, older manifest and baseline, unreachable server, launcher self-update, the feed (fresh, 404, server down, oversize, HTML, dead feed beside an update). `launcher/tests/vector.rs`
 reads a manifest signed by the Python tool. Python: `make_update_manifest_test.py` (class `Native`),
-`set_launcher_config_test.py`, `publish_client_update_test.py`. CI: "Native checks" job, step "Game launcher (O314)".
+`set_launcher_config_test.py`, `publish_client_update_test.py`; website `tests/chaos_launcher_feed_test.php`. CI: "Native checks" job, step "Game launcher (O314)".
 
 **Open.** A code-signing certificate (antivirus and SmartScreen), the install path (the folder needs write rights; no
 per-user installer yet), a run on Windows (renaming a loaded exe and DLL, `curl.exe`), no delta for `chaos.pack`.

@@ -18,6 +18,8 @@ pub struct Config {
     pub game: String,
     /// Extra arguments for the game.
     pub args: Vec<String>,
+    /// URL of the website's launcher feed (news and changelog), or `None` when the panels stay hidden.
+    pub feed: Option<String>,
     /// The install folder: where `launcher.json` lives.
     pub dir: PathBuf,
 }
@@ -51,6 +53,15 @@ pub fn loopback_http(url: &str) -> bool {
     .iter()
     .any(|p| url.starts_with(p))
 }
+
+/// The feed address of an old `launcher.json` without the key: the site root of the update URL
+/// (`https://site/updates/live/manifest.json` -> `https://site/chaos_launcher_feed.php`), or `None`.
+pub fn derive_feed(manifest_url: &str) -> Option<String> {
+    let at = manifest_url.find("/updates/")?;
+    Some(format!("{}/{}", &manifest_url[..at], FEED_NAME))
+}
+
+pub const FEED_NAME: &str = "chaos_launcher_feed.php";
 
 pub fn parse(text: &str, dir: &Path) -> Result<Config, Error> {
     let bad = |d: &str| Error::Config(d.to_string());
@@ -87,12 +98,22 @@ pub fn parse(text: &str, dir: &Path) -> Result<Config, Error> {
             .map(|x| x.as_str().map(str::to_string).ok_or_else(|| bad("args")))
             .collect::<Result<_, _>>()?,
     };
+    // "feed": the website's launcher feed. Absent: derived from the manifest URL. Empty or not an https:// URL: the
+    // panels stay hidden (a wrong feed setting never stops the update or the game).
+    let feed = match v.get("feed") {
+        None => derive_feed(&manifest_url),
+        Some(f) => f
+            .as_str()
+            .filter(|u| u.starts_with("https://") || loopback_http(u))
+            .map(str::to_string),
+    };
     Ok(Config {
         manifest_url,
         public_key,
         baseline,
         game,
         args,
+        feed,
         dir: dir.to_path_buf(),
     })
 }
@@ -140,6 +161,38 @@ mod tests {
         assert!(parse(&ok(r#","game":"..\\x.exe""#), d).is_err());
         assert!(parse(&ok(r#","game":"sub/x.exe""#), d).is_err());
         assert!(parse(&ok(r#","args":[1]"#), d).is_err());
+    }
+
+    #[test]
+    fn feed_setting() {
+        let d = Path::new("/g");
+        // absent: derived from the update URL
+        let c = parse(&ok(""), d).unwrap();
+        assert_eq!(c.feed.as_deref(), Some("https://x.test/chaos_launcher_feed.php"));
+        // given
+        let c = parse(&ok(r#","feed":"https://y.test/f.php""#), d).unwrap();
+        assert_eq!(c.feed.as_deref(), Some("https://y.test/f.php"));
+        // empty, wrong type or a plain http URL: no panels, no error
+        let bad = [
+            r##","feed":"""##,
+            r##","feed":5"##,
+            r##","feed":"http://y.test/f.php""##,
+            r##","feed":null"##,
+        ];
+        for b in bad {
+            assert_eq!(parse(&ok(b), d).unwrap().feed, None, "{b}");
+        }
+        assert!(parse(&ok(r#","feed":"http://127.0.0.1:81/f""#), d)
+            .unwrap()
+            .feed
+            .is_some());
+        // an update URL that is not under /updates/ gives no derived feed
+        let t = ok("").replace("/updates/live/manifest.json", "/m/manifest.json");
+        assert_eq!(parse(&t, d).unwrap().feed, None);
+        assert_eq!(
+            derive_feed("http://127.0.0.1:99/updates/live/manifest.json").as_deref(),
+            Some("http://127.0.0.1:99/chaos_launcher_feed.php")
+        );
     }
 
     #[test]
