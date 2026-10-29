@@ -249,7 +249,7 @@ jobs:
     needs: apk
     if: ${{ inputs.smoke_test }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -271,7 +271,7 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: bash -c 'adb logcat -c; adb install -r apk/CindersOfChaos-Android.apk && adb shell am start -W -n com.cindersofchaos.client/.ChaosActivity; sleep 45; adb shell pidof com.cindersofchaos.client && echo STILL RUNNING || echo NOT RUNNING; adb logcat -d -v threadtime > logcat.txt; grep -E "CindersOfChaos|AndroidRuntime|DEBUG|libc|linker|cindersofchaos|F/|E/" logcat.txt | tail -n 300'
+          script: bash -c 'adb logcat -c; adb install -r apk/CindersOfChaos-Android.apk && adb shell am start -W -n com.cindersofchaos.client/.ChaosActivity; sleep 150; adb shell pidof com.cindersofchaos.client && echo STILL RUNNING || echo NOT RUNNING; adb logcat -d -v threadtime > logcat.txt; grep -E "CindersOfChaos|AndroidRuntime|DEBUG|libc|linker|cindersofchaos|F/|E/" logcat.txt | tail -n 300'
 
       - name: Upload the logcat
         if: always()
