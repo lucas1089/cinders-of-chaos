@@ -319,7 +319,11 @@ local function stunPlayer(victim, monk, chi)
 	if ChaosPack29Vfx then -- pair 29 (switch off: nothing): the stunned aura while it lasts
 		pcall(ChaosPack29Vfx.hold, victim, "stunned", ms)
 	end
-	victim:say("Stunned!", TALKTYPE_MONSTER_SAY)
+	if Chaos and Chaos.yell then
+		Chaos.yell(victim, "Stunned!", TALKTYPE_MONSTER_SAY)
+	else
+		victim:say("Stunned!", TALKTYPE_MONSTER_SAY)
+	end
 	victim:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(victim, "You are stunned for %s s by %s.", secs, monk:getName()))
 	monk:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(monk, "%s is stunned for %s s.", victim:getName(), secs))
 	pushBuffBar(victim)

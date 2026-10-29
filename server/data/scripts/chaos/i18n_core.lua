@@ -406,6 +406,48 @@ function I.install(C)
 		end
 		return english
 	end
+
+	-- Chaos.partyMessage(party, messageType, what, ...): one line for the whole party (the party loot line of a kill), each
+	-- member reading it in own language. `what` is a key (with the arguments), a deferred text (I.msg) or a
+	-- function(lang) -> text. While every member reads English (or the members cannot be listed) it is the one
+	-- party:broadcastPartyLoot of before. Returns the English text.
+	function C.partyMessage(party, messageType, what, ...)
+		local args, n = {...}, select("#", ...)
+		local function textIn(lang)
+			if type(what) == "function" then
+				return what(lang)
+			end
+			if n == 0 then
+				return I.resolve(what, lang)
+			end
+			return I.resolve(I.msg(what, unpack(args, 1, n)), lang)
+		end
+		local english = textIn(I.DEFAULT)
+		local members = {}
+		local okL, leader = pcall(function() return party:getLeader() end)
+		if okL and leader then
+			members[#members + 1] = leader
+		end
+		local okM, list = pcall(function() return party:getMembers() end)
+		for _, m in ipairs(okM and type(list) == "table" and list or {}) do
+			members[#members + 1] = m
+		end
+		local other = false
+		for _, p in ipairs(members) do
+			if C.lang(p) ~= I.DEFAULT then
+				other = true
+				break
+			end
+		end
+		if not other then
+			party:broadcastPartyLoot(english)
+			return english
+		end
+		for _, p in ipairs(members) do
+			p:sendTextMessage(messageType, textIn(C.lang(p)))
+		end
+		return english
+	end
 end
 
 if Chaos then

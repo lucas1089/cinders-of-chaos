@@ -24308,10 +24308,33 @@ Round 7 (the server side of O147; the table has about 4,900 keys now):
 - **Still English on purpose**: names of items, uniques, bosses, places, orbs, classes, buffs, hideout decorations and
   themes, community stages and modifiers; the changelog, staff replies and diagnostics (`/community`, `/pocketboss`,
   `/guild`), "/command" syntax lines, config validation messages.
-- **Still English, not converted**: descriptions that scripts write which have no key (for example the rift key and
-  coffer texts, charm, cursed chest, memorial and faction offer texts, the guild hall and cosmetic shop offer
-  descriptions the store sends in the offer list); the look text around the description ("You see ...", weight, the
-  engine's own lines) comes from the engine; party loot lines, monster speech, and reasons that game logic reads as text.
+- **Still English, not converted**: the look text around the description ("You see ...", weight, the engine's own lines),
+  the `<voice>` lines of the Chaos monster XML (the engine picks and says them to everyone nearby; a line per listener needs an
+  engine patch), reasons that game logic reads as text, menu paths such as "Economy > Auto Seller" and the names of items,
+  outfits, buffs and monsters.
+
+Round 8 (the descriptions scripts write; about 410 keys more):
+
+- **Rift key and coffer, Omen Key, rift chests, cursed chest, charms, faction gear, store offers**: no new mechanism, the
+  look / tooltip / buff bar path above gets keys. `itemdesc_i18n_core.lua` learned the lists of a rift key: `Modifiers:`
+  (entries split on `; `, the tier is a Roman numeral) and `Rewards:` (split on `, `), next to `Prefixes:` and `Suffixes:`.
+  A text whose sentences all have a key is now translated sentence by sentence before the whole text is tried as a
+  template, so a key ending in `%s` ("It hums with the name %s") cannot swallow the sentences behind it.
+- **Store offers**: `shop.lua` `localDescription` runs the description of each offer through the same sentence translation
+  for the viewer (`clientOffer`); families are template keys (`The %s mount, yours for good`, `Full %s outfit with both
+  addons ...`, `Hideout decoration (%s) ...`). `tests/i18n_test.lua` walks every `description` of `shop_config.lua` (479 texts).
+  Faction offer rows take the language of the view (`factions_core.lua`: tabard, mount, recipe gold).
+- **Memorial plaza**: `memorial_core.lua` text functions take a `lang` (names list, dates with pt-BR months, counts);
+  `memorial.lua` writes the English text as the description and the pt-BR text as the custom attribute `memorial_pt`; an
+  `onLook` (priority 129, before the generic swap at 130) shows it to pt-BR players. Titles and causes in the entries stay English.
+- **Party loot lines**: `Chaos.partyMessage(party, type, what, ...)` (`i18n_core.lua`) sends one line to each member in own
+  language (`what` is a key, a deferred text or a function(lang)); while all read English it is the one
+  `party:broadcastPartyLoot` of before. Used by the Chaos bonus loot line (`loot.lua`) and the Treasure Goblin hoard.
+  The stock "Loot of ..." line was already per member (`lootline.lua`).
+- **Monster speech**: the Treasure Goblin taunts, appear and escape lines and the Monk stun shout use `Chaos.yell`. The
+  `<voice>` lines of the Chaos monster XML (227 lines) stay English: the engine says them to everyone, and each listener
+  needs a patch (server/src-patches), which is not part of this round.
+- **Left English on purpose**: staff replies and diagnostics, "/command" syntax lines, config validation messages.
 
 `tests/i18n_test.lua`: lookup, fallbacks, deferred texts, storage, the hello, broadcasts, NPC
 language and messages, one table without a key twice, every key of the converted sites (Chaos.t, msg, broadcast, core

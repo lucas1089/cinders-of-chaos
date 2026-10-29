@@ -803,6 +803,198 @@ do
 		"Cada acúmulo: +5% de dano (até 3 acúmulos). Um acúmulo some 8 s depois da morte.", "buff description with numbers in pt-BR")
 end
 
+-- round 8: the descriptions scripts write (rift key and coffer, charms, cursed chest, Memorial, faction offers, store offers),
+-- the party loot line and the voices of our own monster scripts
+do
+	dofile("data/scripts/chaos/itemdesc_i18n_core.lua")
+	local D = ChaosItemDescI18n
+	local function trp(t)
+		return I.translate("pt-BR", t)
+	end
+	-- the sentences of a text that have no pt-BR (a sentence counts as known when it changes)
+	local function left(text)
+		local out = {}
+		for i, part in ipairs(D.split(text)) do
+			if i % 2 == 1 and part:find("%a") and D.translate(part, trp) == part and pt[(D.normalize((part:gsub("%.$", ""))))] == nil then
+				out[#out + 1] = part -- no change and no entry (a name kept in English has an entry that equals its key)
+			end
+		end
+		return out
+	end
+	local function full(text, label)
+		local l = left(text)
+		check(#l == 0, label .. ": no pt-BR for \"" .. tostring(l[1]) .. "\"")
+	end
+
+	-- rift key: every modifier at both ends of its range, the labels, the rewards and the opening sentences
+	local rcfg = dofile("data/scripts/chaos/rift_config.lua")
+	local RC = ChaosRiftCore
+	local nMods = 0
+	for _, d in ipairs(rcfg.mods) do
+		for _, v in ipairs({d.range[1], d.range[2]}) do
+			local m = RC.modText(rcfg, {key = d.key, value = v})
+			local text = "Modifiers: " .. m .. " (II)."
+			local out = D.translate(text, trp)
+			check(out ~= text and not out:find(m, 1, true), "rift modifier in pt-BR: " .. d.key .. " " .. v)
+			nMods = nMods + 1
+		end
+	end
+	check(nMods >= 60, "the rift modifiers are checked (" .. nMods .. ")")
+	local key = {tier = 3, mods = {{key = rcfg.mods[1].key, value = rcfg.mods[1].tiers[2]}, {key = rcfg.mods[2].key, value = rcfg.mods[2].tiers[1]}}}
+	local d = RC.describe(rcfg, key)
+	full(d, "rift key text")
+	check(D.translate(d, trp):find("^Modificadores: Monstros têm %+45%% de vida %(II%); Monstros causam %+20%% de dano %(I%)%. Recompensas:"),
+		"rift key text in pt-BR: " .. D.translate(d, trp))
+	full(RC.describe(rcfg, {tier = 1, mods = {}}), "rift key without modifiers")
+	check(D.translate(RC.describe(rcfg, {tier = 1, mods = {}}), trp):find("^Modificadores: nenhum%. Recompensas: normais%. Abre um rift de tier 1"),
+		"rift key without modifiers in pt-BR")
+	-- the omen key, the rift chests and the coffer (the texts rift.lua writes)
+	for _, t in ipairs({"It hums with the name Ghorak. Opens the Ember guardian's arena (level 150+, 20 minutes). Use it in a protection zone; your party within 8 sqm comes along.",
+			"The guardian's hoard. Every finisher may open it once.", "The spoils of the rift. Every finisher may open it once.",
+			"A coffer sealed by the rift. Breaking the seal wakes its guards.", "The seal is broken. Its spoils are free for the taking."}) do
+		full(t, "rift text")
+	end
+	eq(D.translate("It hums with the name Ghorak. Opens the Ember guardian's arena (level 150+, 20 minutes). Use it in a protection zone; your party within 8 sqm comes along.", trp),
+		"Ele zumbe com o nome Ghorak. Abre a arena do guardião Ember (nível 150+, 20 minutos). Use numa zona de proteção; o seu grupo num raio de 8 sqm vai junto.",
+		"the omen key text keeps every sentence")
+
+	-- cursed chest
+	local ccfg = dofile("data/scripts/chaos/cursedchest_config.lua")
+	full(ccfg.chest.description, "cursed chest")
+	full("The curse is lifted. Use it to take your share.", "cursed chest opened")
+
+	-- charms: every effect, every unique, the header and the closing sentence
+	local chcfg = dofile("data/scripts/chaos/charms_config.lua")
+	dofile("data/scripts/chaos/charms_core.lua")
+	local CC = ChaosCharmsCore
+	local nCh = 0
+	for _, def in ipairs(chcfg.pool) do
+		full(table.concat(CC.describe(chcfg, {shape = "small", rarity = 1, ilvl = 10, mods = {{key = def.key, value = 3}}}), " "), "charm " .. def.key)
+		nCh = nCh + 1
+	end
+	for k in pairs(chcfg.extraKeys or {}) do
+		full(table.concat(CC.describe(chcfg, {shape = "small", rarity = 1, ilvl = 10, mods = {{key = k, value = 3}}}), " "), "charm " .. k)
+	end
+	for k, u in pairs(chcfg.uniques) do
+		full(table.concat(CC.describe(chcfg, {unique = k, shape = u.shape, ilvl = 1, mods = {}}), " "), "unique charm " .. k)
+		nCh = nCh + 1
+	end
+	check(nCh >= 20, "the charms are checked (" .. nCh .. ")")
+	eq(D.translate("Radiant, item level 12, 2x2 cells. Damage to Dragons +3%. Place it in your charm grid (Character > Charms).", trp),
+		"Radiant, nível de item 12, 2x2 células. Dano a Dragões +3%. Coloque na sua grade de charms (Personagem > Charms).", "a charm look in pt-BR")
+
+	-- faction offers: the gear line, the aura and the mount, the recipe gold
+	eq(D.translate("Issued by the quartermaster of Veiled Choir. Item Level: 5.", trp), "Emitido pelo intendente de Veiled Choir. Nível do item: 5.",
+		"faction gear description")
+	for _, t in ipairs({"The faction tabard: an aura around your character.", "A faction mount, yours for good.", "%s gold"}) do
+		check(pt[t] ~= nil, "faction offer text: " .. t)
+	end
+
+	-- the Memorial plaza: the texts in each language
+	dofile("data/scripts/chaos/memorial_core.lua")
+	local MC = ChaosMemorialCore
+	local t0 = os.time({year = 2026, month = 11, day = 14, hour = 12})
+	local grp = {title = "Ashen Sepulchre", names = {"Vexa", "Mira"}, hidden = 2, at = t0}
+	eq(MC.firstText(grp, "Season of Ash", "pt-BR"),
+		"Uma estátua guardiã. Primeiro do reino em Season of Ash: Ashen Sepulchre, derrotado por Vexa, Mira e 2 outros em 14 Nov 2026.", "statue in pt-BR")
+	eq(MC.firstText(grp, "Season of Ash"), "A guardian statue. Realm first of Season of Ash: Ashen Sepulchre, slain by Vexa, Mira and 2 others on 14 Nov 2026.",
+		"statue in English")
+	eq(MC.dateText(os.time({year = 2026, month = 10, day = 3, hour = 12}), "pt-BR"), "3 Out 2026", "date in pt-BR")
+	eq(MC.recordText({shown = false, title = "Fastest clear", detail = "3:21", at = t0}, "Season of Ash", "pt-BR"),
+		"Uma estátua. Recorde de Season of Ash em Fastest clear: 3:21, um herói que mantém o nome em segredo. Estabelecido em 14 Nov 2026.", "record in pt-BR")
+	eq(MC.fallenText({name = "High", level = 300, class = "Ranger", detail = "killed by a dragon lord", at = t0}, "Season of Ash", "pt-BR"),
+		"Uma pedra memorial. Aqui jaz High, nível 300 de Ranger, killed by a dragon lord em 14 Nov 2026. Caiu no Hardcore, Season of Ash.", "fallen in pt-BR")
+	eq(MC.stoneText("Season of Ash", {first = 1, record = 2, fallen = 3}, 2, 4, 600, "pt-BR"),
+		"O Ember Memorial, Season of Ash. 1 primeiro do reino, 2 recordes e 3 dos caídos são lembrados aqui. As estátuas giram a cada 10 minutos (página 2 de 4). Temporadas passadas: a página do Memorial no site.",
+		"stone in pt-BR")
+
+	-- store offers: every description of the store config, sentence by sentence
+	local count = 0
+	local mt = getmetatable(_G)
+	setmetatable(_G, {__index = function(t, k)
+		if type(k) == "string" and k:match("^[A-Z_0-9]+$") then
+			count = count + 1
+			rawset(t, k, count)
+			return count
+		end
+	end})
+	local okShop, shopCfg = pcall(dofile, "data/scripts/chaos/shop_config.lua")
+	setmetatable(_G, mt)
+	check(okShop, "shop_config.lua loads: " .. tostring(shopCfg))
+	if okShop then
+		local seen, n = {}, 0
+		local function walk(t, depth)
+			if depth > 8 then
+				return
+			end
+			for k, v in pairs(t) do
+				if k == "description" and type(v) == "string" and not seen[v] then
+					seen[v] = true
+					n = n + 1
+					full(v, "store offer")
+				elseif type(v) == "table" then
+					walk(v, depth + 1)
+				end
+			end
+		end
+		walk(shopCfg, 0)
+		check(n >= 400, "the store descriptions are checked (" .. n .. ")")
+	end
+	for _, t in ipairs({"Owned. Then use it in Character > Services, in a protection zone.", "Wings for every outfit, yours for good.",
+			"An aura around your character, yours for good.", "You own 2 of its parts: they are left out of the price.", "+30 days of Chaos Pact."}) do
+		full(t, "store text")
+	end
+	eq(D.translate("Use the chest to get a melee training weapon with 500 charges. Trains melee. Warrior, Thief and Templar lines.", trp),
+		"Use o baú para receber uma arma de treino corpo a corpo com 500 cargas. Treina melee. Linhas Warrior, Thief e Templar.", "a store description")
+
+	-- the party loot line: each member reads it in own language, all English is the one broadcast
+	local lootMsgs = {}
+	local function member(id, lang)
+		local m = newPlayer(id)
+		if lang == "pt-BR" then
+			m:setStorageValue(I.STORAGE, 1)
+		end
+		function m:sendTextMessage(t, text) lootMsgs[#lootMsgs + 1] = {id = id, type = t, text = text} end
+		return m
+	end
+	local broadcastLoot
+	local function party(leader, others)
+		return {getLeader = function() return leader end, getMembers = function() return others end,
+			broadcastPartyLoot = function(_, text) broadcastLoot = text end}
+	end
+	local pEn, pPt = member(801), member(802, "pt-BR")
+	local msgText = I.msg("%s hoard: %s", "Treasure Goblin", "120 gold coins")
+	eq(Chaos.partyMessage(party(pEn, {pPt}), 7, msgText), "Treasure Goblin hoard: 120 gold coins", "party message returns English")
+	eq(#lootMsgs, 2, "party message: one line per member")
+	eq(lootMsgs[1].text, "Treasure Goblin hoard: 120 gold coins", "party message: English member")
+	eq(lootMsgs[2].text, "Tesouro de Treasure Goblin: 120 gold coins", "party message: pt-BR member")
+	eq(lootMsgs[1].type, 7, "party message: the message type")
+	lootMsgs, broadcastLoot = {}, nil
+	Chaos.partyMessage(party(pEn, {member(803)}), 7, msgText)
+	eq(broadcastLoot, "Treasure Goblin hoard: 120 gold coins", "party message: all English is the party broadcast")
+	eq(#lootMsgs, 0, "party message: nothing sent one by one")
+	eq(Chaos.partyMessage(party(pPt, {}), 7, "%s hoard: %s", "Gem Goblin", "x"), "Gem Goblin hoard: x", "party message with a key and arguments")
+	eq(lootMsgs[1].text, "Tesouro de Gem Goblin: x", "party message with a key: pt-BR")
+
+	-- voices of our own monster scripts (Chaos.yell): the goblin taunts and the Monk stun shout
+	local gcfg = dofile("data/scripts/chaos/treasure_goblin_config.lua")
+	local voices = {gcfg.appearLine, gcfg.escapeLine, "Stunned!"}
+	for _, t in ipairs(gcfg.taunts) do
+		voices[#voices + 1] = t
+	end
+	for _, t in ipairs(voices) do
+		check(pt[t] ~= nil, "monster voice without pt-BR: " .. t)
+	end
+	local said = {}
+	local creature = {say = function(_, text, ty, ghost, who) said[#said + 1] = {text = text, who = who and who.id} end,
+		getPosition = function() return {} end}
+	Game.getSpectators = function() return {pEn, pPt} end
+	TALKTYPE_MONSTER_YELL, TALKTYPE_MONSTER_SAY = 1, 2
+	Chaos.yell(creature, "Mine! All mine!", TALKTYPE_MONSTER_SAY)
+	eq(said[1] and said[1].text, "Mine! All mine!", "goblin taunt: English listener")
+	eq(said[2] and said[2].text, "Meu! Tudo meu!", "goblin taunt: pt-BR listener")
+end
+
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))
 if failures > 0 then
 	os.exit(1)

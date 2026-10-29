@@ -1498,7 +1498,11 @@ local function processKill(monster, corpse)
 		local text = ChaosI18n.msg("Chaos bonus loot of %s: %s", Chaos.monsterNameDescription(monster), table.concat(bonus, ", "))
 		local party = owner:getParty()
 		if party then
-			party:broadcastPartyLoot(tostring(text)) -- one line for the whole party: English
+			if Chaos.partyMessage then
+				Chaos.partyMessage(party, MESSAGE_LOOT, text) -- one line for the whole party, in each member's language
+			else
+				party:broadcastPartyLoot(tostring(text))
+			end
 		else
 			owner:sendTextMessage(MESSAGE_LOOT, Chaos.t(owner, text))
 		end

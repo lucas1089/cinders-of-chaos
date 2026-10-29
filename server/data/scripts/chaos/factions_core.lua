@@ -789,7 +789,7 @@ function K.payload(cfg, idx, st, ctx)
 				ins[#ins + 1] = string.format("%d %s", cr.tokens, cr.tokens == 1 and tok.name or tok.plural)
 			end
 			if (cr.gold or 0) > 0 then
-				ins[#ins + 1] = thousands(cr.gold) .. " gold"
+				ins[#ins + 1] = T(ctx.lang, "%s gold", thousands(cr.gold))
 			end
 			local outs = {}
 			for _, it in ipairs(cr.output) do
@@ -798,9 +798,9 @@ function K.payload(cfg, idx, st, ctx)
 			row.desc = table.concat(ins, " + ") .. " -> " .. table.concat(outs, ", ")
 			row.craft = state == "owned" or nil
 		elseif o.kind == "aura" then
-			row.desc = "The faction tabard: an aura around your character."
+			row.desc = T(ctx.lang, "The faction tabard: an aura around your character.")
 		elseif o.kind == "mount" then
-			row.desc = "A faction mount, yours for good."
+			row.desc = T(ctx.lang, "A faction mount, yours for good.")
 		end
 		row.item = cid(row.item or (ctx.offerItemId and ctx.offerItemId(o)) or 0)
 		out.offers[#out.offers + 1] = row
