@@ -10,9 +10,9 @@
  "counts": {
   "opcode": 63,
   "out": 38,
-  "passive": 81,
+  "passive": 83,
   "place": 15,
-  "staff": 12
+  "staff": 13
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
  "keytest": {
@@ -8353,6 +8353,7 @@
   },
   "pact": {
    "actions": [
+    "marksBuy",
     "buildLoad",
     "buildSave",
     "buildDelete",
@@ -8364,8 +8365,11 @@
     "game_pact"
    ],
    "dataKeys": [
+    "key",
+    "month",
     "name",
-    "slot"
+    "slot",
+    "year"
    ],
    "files": [
     "pact.lua"
@@ -9534,6 +9538,15 @@
    "talkactions": [],
    "why": "the login handshake itself; every bot login runs it"
   },
+  "collection": {
+   "files": [
+    "collection.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "combatlog": {
    "files": [
     "combatlog.lua"
@@ -9794,6 +9807,15 @@
   "firsthour": {
    "files": [
     "firsthour.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "founder": {
+   "files": [
+    "founder.lua"
    ],
    "kind": "passive",
    "opcodes": [],
@@ -11312,6 +11334,17 @@
    "talkactions": [
     "/weather"
    ]
+  },
+  "weekend": {
+   "files": [
+    "weekend.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/weekend"
+   ],
+   "why": "staff command only (/weekend); testers are never staff"
   },
   "weeklychest": {
    "files": [

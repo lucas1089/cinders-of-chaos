@@ -234,7 +234,7 @@ eq(json.loads(sub.payload(Bot('Tester S', 9), 110, 'Stash', {})), {'action': 'St
 
 # O262: dispatch tables, silent actions, expected refusals, switches and hints (the first live run: "no answer, no error")
 ops_ = table['opcodes']
-eq(sorted(ops_['pact']['actions']), sorted(['open', 'sync', 'claim', 'buildSave', 'buildLoad', 'buildDelete']),
+eq(sorted(ops_['pact']['actions']), sorted(['open', 'sync', 'claim', 'buildSave', 'buildLoad', 'buildDelete', 'marksBuy']),
    'pact: the keys of its ACTIONS table, not the words of the file')
 ok({'open', 'place', 'take'} <= set(ops_['charms']['actions']), 'charms: the keys of its actions table')
 ok({'open', 'save', 'load'} <= set(ops_['loadouts']['actions']), 'loadouts: `actions.name = function` assignments')
