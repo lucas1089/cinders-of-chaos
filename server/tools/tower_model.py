@@ -137,6 +137,14 @@ def growth(cfg, rate, accel, f):
     return 1.0 if d <= 0 else math.exp(min(60.0, rate * d + accel * d * d / 2))
 
 
+def dmg_cap_floor(cfg):
+    """the first floor whose damage factor reaches damageMax (the climb and the growth together: no closed form)"""
+    f, top = int(cfg['maxFloor']), cfg['beyond']['damageMax']
+    while dmg_at(cfg, f) < top and f < 10 ** 7:
+        f += 1
+    return f
+
+
 def growth_floor(cfg, rate, accel, factor):
     """the first whole floor where the growth is at least `factor` (B.growthFloor)"""
     want, lo, hi = math.log(factor), 0.0, 1e9
@@ -170,8 +178,8 @@ def boss_hp_at(cfg, f):
 
 
 def climb_at(cfg, f):
-    """B.climb: 1 + climb x (floor - 1), held at maxFloor"""
-    return 1 + cfg.get('climb', 0) * (min(f, cfg['maxFloor']) - 1)
+    """B.climb: 1 + climb x (floor - 1) on every floor, never held"""
+    return 1 + cfg.get('climb', 0) * (f - 1)
 
 
 def dmg_at(cfg, f):
@@ -648,7 +656,7 @@ def endless(cfg, info, floors=None, out=None):
                                      b['healthMax'] / (lin(cfg['health'], start) * max(cfg['sawtooth']))),
               'boss health': growth_floor(cfg, b['bossHealthRate'], b['bossHealthAccel'],
                                           b['bossHealthMax'] / cfg['bossHealth'][max(cfg['bossHealth'])]),
-              'damage': growth_floor(cfg, b['damageRate'], b['damageAccel'], b['damageMax'] / (lin(cfg['damage'], start) * climb_at(cfg, start)))}
+              'damage': dmg_cap_floor(cfg)}
     for name, f in starts.items():
         if f <= lim['capMin']:
             bad.append('the %s cap starts at floor %d, wanted past %g' % (name, f, lim['capMin']))

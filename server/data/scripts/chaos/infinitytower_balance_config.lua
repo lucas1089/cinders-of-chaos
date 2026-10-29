@@ -97,7 +97,7 @@ return {
 	-- physical boost of the floor's level on top (ChaosTowerRun.levelOf).
 	damage = {{1, 7.27}, {5, 10.4}, {7, 11.1}, {8, 6.17}, {9, 6.33}, {13, 6.47}, {15, 6.45}, {16, 2.67}, {17, 2.66}, {21, 2.63}, {23, 2.61}, {24, 1.8}, {25, 1.78}, {29, 1.76}, {31, 1.74}, {32, 1.16}, {33, 1.16}, {37, 1.16}, {39, 1.17}, {40, 0.909}, {41, 0.911}, {45, 0.917}, {47, 0.929}, {48, 1.28}, {49, 1.29}, {53, 1.34}, {57, 1.39}, {61, 1.45}, {65, 1.49}, {69, 1.53}, {73, 1.57}, {77, 1.6}, {81, 1.64}, {85, 1.68}, {89, 1.72}, {93, 1.76}, {97, 1.79}, {101, 1.83}, {105, 1.86}, {109, 1.88}, {113, 1.91}, {117, 1.94}, {120, 1.96}},
 	-- the climb (owner 2026-10-29): on top of the hunt match above, every floor from the first hits `climb` more than the one
-	-- below it (factor 1 + climb x (floor - 1), held at maxFloor; above it the `beyond` growth takes over): the tower is a
+	-- below it (factor 1 + climb x (floor - 1) on every floor, never held; above maxFloor the `beyond` growth multiplies it): the tower is a
 	-- challenge, harder than a hunt of the same level, and a floor never hits softer than the one before it in the same band
 	climb = 0.015,
 	-- the stock hit of a monster by hunting level, the reference of the line above (O328): the maximum of one attack of a monster

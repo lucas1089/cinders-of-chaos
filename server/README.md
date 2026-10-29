@@ -4185,12 +4185,13 @@ level; only the ratio is used. Below level 140 its points are the stock species:
 points 1300 and 2200 extend the slope. `monster_damage.lua` still adds the late-game physical boost of the floor's level on top.
 `tower_model.py --derive` prints the `damage` line, with both edges of every band and every fourth floor; `--check` requires every
 floor within `damageTol`, 12%, of the formula; `--damage` prints this table. **The climb** (owner 2026-10-29): on top of the hunt match every floor from the first hits
-`climb` (1.5%) more than the one below it, `B.climb` = 1 + climb x (floor - 1), held at maxFloor: the tower is a challenge,
+`climb` (1.5%) more than the one below it, `B.climb` = 1 + climb x (floor - 1) on every floor, never held (above maxFloor the
+`beyond` growth multiplies it): the tower is a challenge,
 harder than a hunt of the same level, and inside a band no floor hits softer than the one before. The hit of a band species
 at its hunting level x the factor: floor 1 293, floor 30 653, floor 58 958, floor 120 2006 (was 293 / 455 / 516 / 720 with the
-hunt match alone). The damage cap now starts at floor 1310. Bosses are unchanged up to floor 120. They are named bosses with
+hunt match alone). The damage cap (`damageMax` 1000, the int32 hit limit) now starts at floor 1024 (`dmg_cap_floor`). Bosses are unchanged up to floor 120. They are named bosses with
 their own attacks, ordered by the floor they stand on. Above 120 they they grow with `damageRate` as before. The int32 and `damageMax` caps
-are unchanged; the damage cap now starts at floor 1456.
+are unchanged; the damage cap now starts at floor 1024 (with the climb below).
 
 | Floor | Shown level | Band level | Factor before | Factor after | Stock hit x factor before | after |
 |---|---|---|---|---|---|---|

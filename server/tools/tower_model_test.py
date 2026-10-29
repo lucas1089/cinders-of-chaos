@@ -148,7 +148,7 @@ check(T.hp_at(cfg, starts[0] - 1) < b["healthMax"] == T.hp_at(cfg, (starts[0] + 
 flat = T.balance(text.replace('healthRate = 0.007', 'healthRate = 0.0').replace('healthAccel = 0.000002', 'healthAccel = 0.0'))
 code, out = run_check(flat, T.tier_info(flat))
 check(code == 1 and 'does not rise' in out, 'a tower that stops growing above maxFloor fails')
-nodmg = T.balance(text.replace('damageRate = 0.002', 'damageRate = 0.0').replace('damageAccel = 0.000004', 'damageAccel = 0.0'))
+nodmg = T.balance(text.replace('damageRate = 0.002', 'damageRate = 0.0').replace('damageAccel = 0.000004', 'damageAccel = 0.0').replace('climb = 0.015', 'climb = 0'))
 code, out = run_check(nodmg, T.tier_info(nodmg))
 check(code == 1 and 'damage factor does not rise' in out, 'a damage factor that stops growing fails')
 big = T.balance(text.replace('healthMax = 580000000', 'healthMax = 900000000'))
