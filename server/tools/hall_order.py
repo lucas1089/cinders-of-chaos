@@ -49,7 +49,8 @@ FIELDS = ['id', 'z', 'x', 'y', 'dest_x', 'dest_y', 'dest_z', 'kind', 'name', 'le
           'monsters', 'note']
 KIND_HUNT, KIND_NOT, KIND_QUEST = 'hunt', 'not a hunt', 'quest'
 KINDS = (KIND_HUNT, KIND_NOT, KIND_QUEST)
-# hand decisions kept by a new derive (--force): the kind, a note and, for a hunt, its band
+# hand decisions kept by a new derive (--force): the kind, a note and, for a hunt whose note says `retargeted` or
+# `destination moved`, its destination (tools/audit_hunt_bands.py --apply writes such a note)
 KEEP = ('kind', 'note')
 
 
@@ -371,6 +372,8 @@ def derive(data_dir, cfg, map_path=None, log=print, keep=None):
     for pos, dest in hall_teleports(world.tele, room, hall):
         x, y, z = pos
         old = kept.get(base_id(z, x, y)) or {}
+        if old.get('dest_x') is not None and ('retargeted' in old.get('note', '') or 'destination moved' in old.get('note', '')):
+            dest = (old['dest_x'], old['dest_y'], old['dest_z'])  # a hand or audit decision (O333): the destination stays
         got = hunt_band(points, levels, dest)
         kind = old.get('kind') or KIND_HUNT
         if not got:

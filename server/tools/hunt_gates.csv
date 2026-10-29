@@ -1,0 +1,6 @@
+# Stock portals in reach of a base hunt arrival whose far side is far above the hunt's band (server/tools/audit_hunt_bands.py
+# --gates, server/README.md "Hunt bands (O333)"), the patch list of patch_hunt_gates.py (install step `huntgates`):
+# remove = the item goes off the tile; ground = the tile's ground IS the floor change, it becomes `ground`;
+# none = no plain ground near, left alone. Positions and item ids only, no map data.
+x,y,z,item,action,ground,kind,lands,far_level,hunt
+31928,32631,10,459,ground,103,stairs/down,"31928,32630,11",85,Saltkin Pincher Scout
