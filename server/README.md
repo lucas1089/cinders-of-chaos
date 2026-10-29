@@ -4170,6 +4170,67 @@ unit test (`tower_model_test.py`) breaks each of them. Lua: `tests/infinitytower
 floors up to 1e12, nan, rewards) and `tests/infinitytower_floor_test.lua` (plans at floors 121 to 100000 fit int32 with every tier).
 Not measured live; a level 2000 median class gets about 93 floors deep (unchanged), so floors above 120 are for the future.
 
+## Infinity Tower: damage and loot follow the floor, O328
+
+Tester report of 2026-10-29: at floors that show level ~1200 "the level scales but it is fake: it hits like its level 100 version, only
+its health grows", "the drops are those of the original level 100 version", so the tower was only good for AFK farming.
+
+**Damage.** The pool species keeps its own attacks, so the floor's `damage` factor has to carry the level. It is now per floor,
+in `tower_model.py dmg_target`, the pace damage curve at the shown level L, times `hit`(L) over `hit` at the band's hunting level, the
+median bounty pool level of the five species. `hit`, in `infinitytower_balance_config.lua`, is the stock hit of a monster by hunting
+level; only the ratio is used. Below level 140 its points are the stock species: troll 25 at level 7, dragon 160 at 42, demon 500 at
+137. From 300 they are the median attack maximum of the imported level-scaled monsters, about 780-900 up to level 900 and 1150 above 1000. The
+points 1300 and 2200 extend the slope. `monster_damage.lua` still adds the late-game physical boost of the floor's level on top.
+`tower_model.py --derive` prints the `damage` line, with both edges of every band and every fourth floor; `--check` requires every
+floor within `damageTol`, 12%, of the formula; `--damage` prints this table. Bosses are unchanged up to floor 120. They are named bosses with
+their own attacks, ordered by the floor they stand on. Above 120 they they grow with `damageRate` as before. The int32 and `damageMax` caps
+are unchanged; the damage cap now starts at floor 1456.
+
+| Floor | Shown level | Band level | Factor before | Factor after | Stock hit x factor before | after |
+|---|---|---|---|---|---|---|
+| 1 | 100 | 11 | 1.00 | 7.27 | 40 | 293 |
+| 19 | 516 | 48 | 0.88 | 2.65 | 159 | 479 |
+| 58 | 1215 | 100 | 0.81 | 1.40 | 296 | 516 |
+| 104 | 2000 | 100 | 0.85 | 1.85 | 310 | 680 |
+| 120 | 2200 | 100 | 0.86 | 1.96 | 316 | 720 |
+
+A level 1200 monster now hits about 1.8 times a level 100 one, which is the hunt curve itself. The hunt pace damage falls from 1.0
+at level 20 to 0.40 at level 1000, and the stock hit of the late monsters is nearly flat, about 900-1150 from level 650 to 1000. A
+hunt monster of level 1200 hits no more than that. The damage factor falls at each change of band, because the new species are stronger
+stock, and rises inside the last band from floor 48, where `--check` requires it to rise on every floor to 1000. Floors 1-7 hit
+about 7-10 times their stock species, as a level 100 monster of the hunts does. The player's armour and
+resistances are not modeled, as before.
+
+**Loot.** Three parts, all keyed to the floor.
+- Level. `ChaosTowerRun.lootLevelOf(monster)` is the floor's shown level, never above the level of floor 120, which is 2200, and a boss has it too. `ChaosLoot.monsterLevel` takes at least it now, so the item level of drops, gear by level (`rollLevelGear`), class weapons, the rarity
+  roll, and the orb, waystone and unique gates read the floor and not the level 7 troll. The displayed level is unchanged, it reads
+  `baseMonsterLevel`.
+- Thinning. `ChaosTowerRun.lootFactorsOf(monster)` serves normal monsters only. It gives the pace factors of that level, the base sets up to
+  `lootScaledFrom` 650 and the scaled sets above, with `loot` and `notable` times `lootShare`. `loot.lua` uses them like a paced
+  monster's, for the corpse in `corpseFactors` and for the extra rolls in `pace`. `lootShare` is the hunt's kills an hour over the tower's
+  kills an hour, at most 1, smoothed by the least within 5 floors. The tower's kills an hour are 3600 x monsters over the floor seconds plus engage plus the 6 s pause.
+  It is 1.00 up to floor 40 and 0.86-0.96 above, so the items an hour of the tower are at most those of a hunt of the same level.
+- Gold. `killGold` is 55 gold on floor 1, 270 on floor 20, 420 on floor 40 and 350-390 from floor 50. It is added to the corpse of a normal
+  monster as coins in `infinitytower_run.lua` onDropLoot, after `loot.lua`. It is `goldShare`, 0.5, of the gold an hour of a hunt
+  at that level over the tower's kills an hour. The hunt figure is `pace_config.lua` `lootLevel.goldPerHour`, flat above level 650. The floor gold
+  `floorGold` x floor of a floor above 120 is that of 120.
+- The tower drops (orbs, crystal coins) keep their chances; above floor 120 everything is at floor 120 (no inflation).
+
+`tower_model.py --derive` prints `lootShare` and `killGold`; `--check` bounds the items an hour, `lootRatio` 1.05 of a hunt at the
+loot level, and the gold an hour, `goldRatio` 1.05 of `goldShare` x a hunt, on every normal floor. The roulette, store, skill,
+progression, gear and weapon models do not read the tower and still pass. Tests: `tests/infinitytower_balance_test.lua`,
+`infinitytower_run_test.lua`, `loot_tower_test.lua`, `tools/tower_model_test.py`.
+
+**Experience (checked, not changed).** Tower kills pay the stock experience of the species, unthinned, times the stage. Per hour,
+before the stage, that is 0.06 M at floor 1, 3 M at floor 19 and 5 M from floor 40. A hunt at
+the same level pays about 1.9 M, 16 M and 35 M, from the median pool monster of the level, the pace xp curve, x0.03 L above 650 and the multikill bonus. The tower pays 0.03 to 0.35 of a
+hunt. The progression model (`tools/progression_model.lua`) needs about 63 hours of hunting for levels 8 to 750. The experience cap
+`xpcap_config.lua` holds a kill at 4x its base experience after every bonus, event, potion and world buff. So 750 in 7 hours is 2.3 times
+the pace of the model's median class even at the cap. That is a class or kill-rate question, or other sources such as contracts and quests, not the
+tower. No change; ask the tester for the hunt tracker and the class.
+
+**Deploy.** `files` step and a script reload or restart. No SQL, no engine patch, no client change.
+
 ## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
 
 The client window's "Top Rank Rewards" podium (Gold, Silver and Copper Tower Chest) is paid at the end of every tower

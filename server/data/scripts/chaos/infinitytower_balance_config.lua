@@ -90,8 +90,18 @@ return {
 	health = {{1, 574}, {4, 718}, {8, 1140}, {12, 1610}, {16, 2180}, {20, 2870}, {24, 3970}, {28, 5940}, {32, 7190}, {36, 7980}, {40, 8860}, {50, 10600}, {60, 11800}, {70, 13100}, {80, 14400}, {90, 15400}, {100, 15500}, {110, 16000}, {120, 16700}},
 	-- maximum health of the boss by boss floor (tower_model.py --derive)
 	bossHealth = {[10] = 32400, [20] = 59200, [30] = 92100, [40] = 120000, [50] = 155000, [60] = 186000, [70] = 210000, [80] = 242000, [90] = 276000, [100] = 315000, [110] = 317000, [120] = 319000},
-	-- damage of a floor's monsters to players (the pace_config.lua damage curve at the pool's hunting level)
-	damage = {{1, 1.0}, {12, 1.0}, {20, 0.86}, {28, 0.83}, {36, 0.79}, {44, 0.76}, {52, 0.8}, {120, 0.86}},
+	-- damage of a floor's monsters to players (tower_model.py --derive): a monster shown at level L hits like a hunt monster of
+	-- level L (O328). The pool species keeps its own attacks (they decide the looks and the kind of hit), so the factor is the
+	-- pace_config.lua damage curve at L times `hit` at L over `hit` at the band's hunting level (the median of the species'
+	-- bounty pool levels): a level 1200 troll no longer hits like the level 100 one. monster_damage.lua adds the late-game
+	-- physical boost of the floor's level on top (ChaosTowerRun.levelOf).
+	damage = {{1, 7.27}, {5, 10.4}, {7, 11.1}, {8, 6.17}, {9, 6.33}, {13, 6.47}, {15, 6.45}, {16, 2.67}, {17, 2.66}, {21, 2.63}, {23, 2.61}, {24, 1.8}, {25, 1.78}, {29, 1.76}, {31, 1.74}, {32, 1.16}, {33, 1.16}, {37, 1.16}, {39, 1.17}, {40, 0.909}, {41, 0.911}, {45, 0.917}, {47, 0.929}, {48, 1.28}, {49, 1.29}, {53, 1.34}, {57, 1.39}, {61, 1.45}, {65, 1.49}, {69, 1.53}, {73, 1.57}, {77, 1.6}, {81, 1.64}, {85, 1.68}, {89, 1.72}, {93, 1.76}, {97, 1.79}, {101, 1.83}, {105, 1.86}, {109, 1.88}, {113, 1.91}, {117, 1.94}, {120, 1.96}},
+	-- the stock hit of a monster by hunting level, the reference of the line above (O328): the maximum of one attack of a monster
+	-- of that level. Points below 140 are the stock species (troll 25 at level 7, dragon 160 at 42, demon 500 at 137); from 300
+	-- the imported level-scaled monsters of data/monster/monsters/chaos (the median of their attack maxima: about 780-900 up to
+	-- level 900, 1150 above 1000; the 1300 and 2200 points extend the slope). Only the ratio between two levels is used. Flat
+	-- beyond 2200: above maxFloor the `damageRate` growth below takes over.
+	hit = {{7, 25}, {42, 160}, {137, 500}, {300, 750}, {650, 880}, {1000, 1150}, {1300, 1350}, {2200, 1800}},
 
 	-- Above maxFloor (O172, owner 2026-10-24: "the higher the floor, the stronger the monsters, without end"): every value
 	-- keeps rising with the floor, never flat and never a repeat of an old boss. d = floor - maxFloor. `level` grows linearly
@@ -149,6 +159,19 @@ return {
 		}
 	},
 
+	-- Loot follows the floor (O328, tester 2026-10-29: "the drops are those of the original level 100 version"). A tower monster
+	-- counts at the level of its floor in loot.lua (ChaosLoot.monsterLevel: item level, gear by level, class weapons, rarity, orb
+	-- and unique gates), capped at the level of maxFloor (the economy does not inflate, O172). Its corpse is thinned like a hunt
+	-- monster of that level (pace_config.lua, the scaled sets above lootScaledFrom) times `lootShare`, so the items an hour of the
+	-- tower are those of a hunt of the same level (the tower kills 3600 x monsters / (clear + engage + pause) an hour, more than a
+	-- pack hunt). Gold: `killGold` is the gold of a normal monster's corpse in coins, goldShare x the gold an hour of the hunt at
+	-- that level (pace_config.lua lootLevel.goldPerHour, flat above its last band) over the kills an hour of the tower. Both
+	-- curves come from `tower_model.py --derive`.
+	lootScaledFrom = 650,
+	goldShare = 0.5,
+	lootShare = {{1, 1}, {4, 1}, {8, 1}, {12, 1}, {16, 1}, {20, 1}, {24, 1}, {28, 1}, {32, 1}, {36, 1}, {40, 1}, {50, 0.94}, {60, 0.95}, {70, 0.96}, {80, 0.96}, {90, 0.94}, {100, 0.86}, {110, 0.86}, {120, 0.88}},
+	killGold = {{1, 55}, {4, 55}, {8, 87}, {12, 110}, {16, 220}, {20, 270}, {24, 280}, {28, 370}, {32, 410}, {36, 410}, {40, 420}, {50, 380}, {60, 380}, {70, 390}, {80, 390}, {90, 390}, {100, 350}, {110, 350}, {120, 350}},
+
 	-- the model (tower_model.py): the damage of the classes of tools/pack_model.py with this share of the time in the target
 	packUptime = 1.0,
 	bossUptime = 0.75,
@@ -176,7 +199,9 @@ return {
 		weakReach = 20, -- the weakest class of the same level gets at least this deep
 		pairMax = 25, -- seconds: two players of level 500 and 800 on a normal floor up to floor 30
 		singleMax = 30, -- seconds: one legendary monster (the average modifiers) alone, for the median class at the floor's level
-		damageTol = 0.12, -- the damage curve against the pace curve at the pool's hunting level
+		damageTol = 0.12, -- the damage curve against pace(L) x hit(L) / hit(band level) on every floor (relative; O328)
+		lootRatio = 1.05, -- the items an hour of the tower against a hunt of the floor's level, at most (O328)
+		goldRatio = 1.05, -- the gold an hour of the tower against goldShare x a hunt of the floor's level, at most
 		endless = 1000, -- floors whose growth is checked strictly (health trend, boss health, damage, level; O172)
 		capMin = 1000 -- the floor where a cap (int32 health, damage factor) may start at the earliest
 	}

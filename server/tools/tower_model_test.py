@@ -7,7 +7,10 @@ usage: python3 -I server/tools/tower_model_test.py
 - the tier factor: no tiers is 1.0, the modifiers' health effect is read from monster_tiers.lua (Juggernaut, Stoneskin);
 - the planner of 2026-10-22 reproduces the beta report: the median class at level 800 gets stuck at floor 29, because the
   floor 30 boss (Zeburoth, 1,750 health a second) out-heals its one-target damage;
-- the committed config passes --check, and its `health` / `bossHealth` / `damage` lines are what --derive prints;
+- the committed config passes --check, and its `health` / `bossHealth` / `damage` / `lootShare` / `killGold` lines are what
+  --derive prints;
+- O328: a monster shown at level L hits like a hunt monster of level L (pace damage x hit(L) over hit(band level)), the hit of
+  a level 1200 monster is above the level 100 one's, the tower's items and gold an hour stay at a hunt of the same level;
 - a floor with the health doubled, a boss that heals more than the class deals, a missing breather and a wrong damage
   curve each fail --check;
 - O172: floors 1-1000 rise strictly (health trend, boss health, damage from floor 52, level), floor 100000 sits on the caps,
@@ -80,8 +83,8 @@ for f in range(1, 121):
     t, pack, boss = T.floor_time(new, cfg, f, [(None, T.lin(cfg['level'], f))], info)
     check(t < float('inf'), 'floor %d can be cleared at its level' % f)
     check(t < 300 + 1e-9, 'floor %d is far inside the floor limit (%.0f s of 300 / 600)' % (f, t))
-health, boss_health, damage = T.derive(cfg, info)
-for line in (health, boss_health, damage):
+health, boss_health, damage, share, gold = T.derive(cfg, info)
+for line in (health, boss_health, damage, share, gold):
     check(line in text, '--derive prints the committed line: ' + line[:60])
 
 # ---- what --check refuses
@@ -99,6 +102,32 @@ check(code == 1 and 'heals' in out, 'a boss that heals more than the class deals
 dmg = T.balance(re.sub(r'(?m)^\tdamage = \{\{.*$', '\tdamage = {{1, 1.0}, {400, 1.0}},', text))
 code, out = run_check(dmg, T.tier_info(dmg))
 check(code == 1 and 'pace curve' in out, 'monsters that hit like no hunt monster fail')
+
+# ---- O328: damage follows the shown level, loot stays at a hunt of that level
+def hit_at(f):
+    return T.lin(cfg['hit'], T.band_level(cfg, f)) * T.dmg_at(cfg, f)
+
+
+f100 = next(f for f in range(1, 121) if T.lin(cfg['level'], f) >= 100)
+f1200 = next(f for f in range(1, 121) if T.lin(cfg['level'], f) >= 1200)
+f2000 = next(f for f in range(1, 121) if T.lin(cfg['level'], f) >= 2000)
+check(hit_at(f1200) > 1.5 * hit_at(f100), 'a monster shown at level 1200 hits %.0f, the level 100 one %.0f' % (hit_at(f1200), hit_at(f100)))
+check(hit_at(f2000) > hit_at(f1200), 'level 2000 hits more than level 1200: %.0f against %.0f' % (hit_at(f2000), hit_at(f1200)))
+for f in (1, 8, 20, 40, 60, 120):
+    want = T.lin(T._PACE_DAMAGE(), T.lin(cfg['level'], f)) * T.lin(cfg['hit'], T.lin(cfg['level'], f))
+    check(abs(hit_at(f) - want) <= cfg['limits']['damageTol'] * want, 'floor %d hits like a hunt monster of its level: %.0f against %.0f' % (f, hit_at(f), want))
+check(T.band_level(cfg, 1) == 11 and T.band_level(cfg, 60) == 100, 'the band levels are the bounty pool medians: %d, %d' % (T.band_level(cfg, 1), T.band_level(cfg, 60)))
+check(T.loot_level(cfg, 500) == T.lin(cfg['level'], 120) and T.loot_level(cfg, 10) == 300, 'the loot level is capped at the level of maxFloor')
+check(all(0 < s <= 1 for _, s in cfg['lootShare']) and all(g > 0 for _, g in cfg['killGold']), 'lootShare is a share, killGold is positive')
+nothin = T.balance(re.sub(r'(?m)^\tlootShare = \{\{.*$', '\tlootShare = {{1, 1.0}},', text))
+code, out = run_check(nothin, T.tier_info(nothin))
+check(code == 1 and 'items an hour' in out, 'an unthinned tower corpse fails: it gives more items an hour than a hunt')
+rich = T.balance(re.sub(r'(?m)^(\tkillGold = \{\{.*)$', lambda m: re.sub(r'\{(\d+), (\d+)\}', lambda x: '{%s, %d}' % (x.group(1), int(x.group(2)) * 3), m.group(1)), text))
+code, out = run_check(rich, T.tier_info(rich))
+check(code == 1 and 'gold an hour' in out, 'three times the gold per kill fails')
+weak = T.balance(re.sub(r'(?m)^\thit = \{\{.*$', '\thit = {{7, 25}, {2200, 25}},', text))
+code, out = run_check(weak, T.tier_info(weak))
+check(code == 1 and 'pace curve' in out, 'a hit reference that does not follow the levels fails the damage check')
 
 # ---- O172: the tower never stops getting stronger
 b = cfg['beyond']

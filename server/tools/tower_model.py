@@ -3,23 +3,26 @@
 (computed, not measured; server/README.md "Infinity Tower balance and floor rewards", O144).
 
 usage: python3 -I server/tools/tower_model.py [--levels 100,300,500,800,1000] [--floors 1,5,10,...] [--before]
-                                              [--derive] [--check]
+                                              [--derive] [--check] [--damage]
 
 --check (CI): bounds the floors of infinitytower_balance_config.lua (limits there): the floor a player of the meant level
 meets dies in clearMin..clearMax seconds and in huntMin..huntMax times a base hunt pack of that level; a boss in
 bossMin..bossMax seconds and never healing more than a share of the median class's damage; the floor after a milestone
-floor is easier (breather) and no floor jumps more than stepMax over the one before; the damage curve follows the pace
-curve of the pool's hunting level; a median-class player of level `reachLevel` gets `reachMin`..`reachMax` floors deep,
+floor is easier (breather) and no floor jumps more than stepMax over the one before; the damage of a floor's monsters is
+what a hunt monster of the floor's shown level deals (pace damage curve x hit(L) / hit(band level), O328); the items and the
+gold an hour of the tower stay at a hunt of the same level (lootShare, killGold, O328); a median-class player of level `reachLevel` gets `reachMin`..`reachMax` floors deep,
 a weak class at least `weakReach`; a player of 60% of the floor's level still clears it in underMax seconds; nobody is
 stopped by a healing boss. Prints the tables.
---derive prints the `health` and `bossHealth` lines for the config from `clear`, `level`, `count` and the tiers.
+--derive prints the `health`, `bossHealth`, `damage`, `lootShare` and `killGold` lines for the config from `clear`, `level`,
+`count`, the tiers, `hit` and the hunt model.
+--damage prints the damage of the floors against the line of O285 (the stock hit of the species x the factor).
 --before prints the same table for the planner of 2026-10-22 (stock pool health, tier chances rising with every
 floor, up to 16 monsters, bosses on floors 10-120 in the old order): what the beta players met.
 
 Inputs (everything in the repo): tools/pack_model.py (the damage of every class in packs, the pack cleave, the base hunt
 pack of a level), data/scripts/chaos/monster_tiers.lua (tier health, modifier counts and the modifiers' health effect),
 data/scripts/chaos/infinitytower_balance_config.lua, data/scripts/chaos/bounty_pool.lua (stock health of the old pools),
-data/scripts/chaos/pace_config.lua (the damage curve).
+data/scripts/chaos/pace_config.lua (the damage curve, lootLevel.goldPerHour), infinitytower_run.lua (nextFloorDelay).
 
 The model, per floor and group: the monsters of the floor appear together around the group, so the floor dies like a pack,
 P x health / (damage of one target + (P - 1) x the gain of one more target), as pack_model.py does, with at most
@@ -27,6 +30,7 @@ pack_model.PCAP targets counted; a group adds the damage of its players. health 
 expected tier factor (tier chances x tier health x the modifiers' average health effect: Juggernaut x1.6, Stoneskin
 x1/0.7). A boss floor: its helpers, then the boss alone, boss health / (damage of one target x uptime - its heal).
 """
+import functools
 import math
 import os
 import re
@@ -42,6 +46,7 @@ BALANCE = os.path.join(CHAOS, 'infinitytower_balance_config.lua')
 TIERS = os.path.join(CHAOS, 'monster_tiers.lua')
 POOL = os.path.join(CHAOS, 'bounty_pool.lua')
 PACE = os.path.join(CHAOS, 'pace_config.lua')
+RUN = os.path.join(CHAOS, 'infinitytower_run.lua')
 
 CAP = PM.PCAP
 
@@ -91,11 +96,12 @@ def balance(text=None):
         'pools': pools, 'bosses': bosses, 'bossHealth': dict((int(k), float(v)) for k, v in re.findall(r'\[(\d+)\] = ([0-9.]+)', bh)),
         'count': curve(t, 'count'), 'magic': curve(t, 'magic'), 'rare': curve(t, 'rare'), 'legendary': curve(t, 'legendary'),
         'level': curve(t, 'level'), 'clear': curve(t, 'clear'), 'health': curve(t, 'health'), 'damage': curve(t, 'damage'),
+        'hit': curve(t, 'hit'), 'lootShare': curve(t, 'lootShare'), 'killGold': curve(t, 'killGold'),
         'bossSeconds': curve(t, 'bossSeconds'), 'sawtooth': saw, 'limits': limits,
         'beyond': dict((k, float(v)) for k, v in re.findall(r'\t\t(\w+) = ([-0-9.]+)', re.search(r'(?m)^\tbeyond = \{(.*?)\n\t\}', t, re.S).group(1))),
         'tierHealth': dict((k, float(v)) for k, v in re.findall(r'(magic|rare|legendary) = ([0-9.]+)',
                                                                 re.search(r'(?m)^\ttierHealth = \{(.*?)\}', t).group(1)))}
-    for k in ('bossEvery', 'milestoneEvery', 'bandFloors', 'bossHelperDivisor', 'perPlayer', 'maxFloor', 'packUptime', 'bossUptime', 'engageSeconds'):
+    for k in ('bossEvery', 'milestoneEvery', 'bandFloors', 'bossHelperDivisor', 'perPlayer', 'maxFloor', 'packUptime', 'bossUptime', 'engageSeconds', 'lootScaledFrom', 'goldShare'):
         cfg[k] = scalar(t, k)
     return cfg
 
@@ -317,8 +323,11 @@ def legendary_alone(sc, cfg, f, L, info, cls=None):
 
 
 # ------------------------------------------------------------------------------------------------ derive
+# the `damage` line of O144 / O285 (the pace curve at the band's hunting level only): --damage prints it against the new one
+LEGACY_DAMAGE = [(1, 1.0), (12, 1.0), (20, 0.86), (28, 0.83), (36, 0.79), (44, 0.76), (52, 0.8), (120, 0.86)]
+SMOOTH_WINDOW = 5  # --derive: lootShare and killGold are the least of the floors within this many floors (the sawtooth)
+
 MIN_STEP = 1.005  # --derive: the least rise of a point over the one before
-DAMAGE_RISE = 0.06  # --derive: the damage factor at maxFloor over the last band's
 DERIVE_FLOORS = (1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 50, 60, 70, 80, 90, 100, 110, 120)
 
 
@@ -362,13 +371,121 @@ def derive(cfg, info):
             v = sig(boss_prev * MIN_STEP)
         boss_prev = v
         out.append('[%d] = %d' % (f, v))
-    dmg = []
-    for band, names in enumerate(cfg['pools']):
-        dmg.append((band * int(cfg['bandFloors']) + int(cfg['bandFloors']) // 2,
-                    round(lin(_PACE_DAMAGE(), _pool_level(names)), 2)))
-    dmg[0] = (1, dmg[0][1])
-    dmg.append((int(cfg['maxFloor']), round(dmg[-1][1] + DAMAGE_RISE, 2)))  # past the last band the factor rises (O172)
-    return health, '\tbossHealth = {%s},' % ', '.join(out), '\tdamage = {%s},' % ', '.join('{%d, %s}' % d for d in dmg)
+    dmg = [(f, sig(dmg_target(cfg, f))) for f in damage_floors(cfg)]
+    share, gold = loot_curves(cfg, info)
+    return (health, '\tbossHealth = {%s},' % ', '.join(out),
+            '\tdamage = {%s},' % ', '.join('{%d, %g}' % d for d in dmg),
+            '\tlootShare = {%s},' % ', '.join('{%d, %g}' % d for d in share),
+            '\tkillGold = {%s},' % ', '.join('{%d, %g}' % d for d in gold))
+
+
+# ------------------------------------------------------------------------------------------------ O328: damage and loot
+def band_floors(cfg):
+    """[(first floor, last floor)] of every pool band; the last one runs to maxFloor"""
+    n, w = len(cfg['pools']), int(cfg['bandFloors'])
+    return [(max(1, b * w), (b + 1) * w - 1 if b < n - 1 else int(cfg['maxFloor'])) for b in range(n)]
+
+
+def damage_floors(cfg):
+    """the floors of the `damage` curve: both edges of every band (the species change there) and every fourth floor"""
+    fl = set(range(1, int(cfg['maxFloor']) + 1, 4)) | {int(cfg['maxFloor'])}
+    for a, z in band_floors(cfg):
+        fl |= {a, z}
+    return sorted(fl)
+
+
+def band_level(cfg, f):
+    """the hunting level of the species of floor f's band (the median of the bounty pool levels)"""
+    return _pool_level(tuple(cfg['pools'][min(len(cfg['pools']), int(f // cfg['bandFloors']) + 1) - 1]))
+
+
+def dmg_target(cfg, f):
+    """the damage factor a monster shown at the level of floor f needs to hit like a hunt monster of that level (O328): the pace
+    damage curve at the shown level L x hit(L) / hit(the band's hunting level), the stock hit of its species"""
+    L = lin(cfg['level'], f)
+    return lin(_PACE_DAMAGE(), L) * lin(cfg['hit'], L) / lin(cfg['hit'], band_level(cfg, f))
+
+
+def damage_table(cfg, floors=(1, 8, 20, 30, 40, 48, 60, 80, 120), extra_levels=(100, 500, 1200, 2000)):
+    """damage before (O285) and after (O328) at some floors, and at the floors that show the levels of extra_levels. The hit is
+    the maximum of an attack of the band's species at its hunting level times the factor (hit(band level) x factor)"""
+    rows = ['| Floor | Shown level | Band level | Factor before | Factor after | Hit before | Hit after |', '|---|---|---|---|---|---|---|']
+    fl = list(floors)
+    for L in extra_levels:
+        f = next((x for x in range(1, int(cfg['maxFloor']) + 1) if lin(cfg['level'], x) >= L), int(cfg['maxFloor']))
+        if f not in fl:
+            fl.append(f)
+    for f in sorted(fl):
+        l = band_level(cfg, f)
+        h = lin(cfg['hit'], l)
+        old, new = lin(LEGACY_DAMAGE, f), dmg_at(cfg, f)
+        rows.append('| %d | %d | %d | %.2f | %.2f | %d | %d |' % (f, round(lin(cfg['level'], f)), l, old, new, h * old, h * new))
+    return '\n'.join(rows)
+
+
+def loot_level(cfg, f):
+    """B.lootLevel: the shown level, never above the level of maxFloor"""
+    return min(lin(cfg['level'], f), lin(cfg['level'], cfg['maxFloor']))
+
+
+@functools.lru_cache(maxsize=None)
+def _gold_per_hour():
+    m = re.search(r'goldPerHour = \{(.*?)\}', read(PACE), re.S)
+    return sorted((float(a), float(b)) for a, b in re.findall(r'\[(\d+)\] = (\d+)', m.group(1)))
+
+
+def gold_per_hour(L):
+    """the gold an hour a hunt at level L is held to (pace_config.lua lootLevel.goldPerHour, flat above its last band)"""
+    return lin(_gold_per_hour(), L)
+
+
+@functools.lru_cache(maxsize=None)
+def _gap_seconds():
+    """the pause between two floors (infinitytower_run.lua nextFloorDelay)"""
+    return float(re.search(r'nextFloorDelay = (\d+)', read(RUN)).group(1))
+
+
+def tower_kills(cfg, info, f):
+    """kills an hour of the median class at the level of floor f, run after run floor after floor (a boss floor counts its
+    helpers and the boss): 3600 x monsters / (seconds of the floor + the pause before the next)"""
+    sc = new_scheme(cfg)
+    L = lin(cfg['level'], f)
+    total = floor_time(sc, cfg, f, [(None, L)], info)[0]
+    n = sc['count'](f)
+    n = n // sc['divisor'] + 1 if is_boss(sc, f) else n
+    return 3600.0 * n / (total + _gap_seconds())
+
+
+def hunt_kills(L):
+    """kills an hour of the median class in a base hunt pack at level L (the late sets from 670)"""
+    return PM.pack_clear(L, L >= 670, _PACE, _MONS)[2]
+
+
+def _smooth_min(cfg, raw):
+    """raw = {floor: value} for the normal floors: the least value within SMOOTH_WINDOW floors, for every floor 1..maxFloor"""
+    out = {}
+    for f in range(1, int(cfg['maxFloor']) + 1):
+        near = [raw[g] for g in range(f - SMOOTH_WINDOW, f + SMOOTH_WINDOW + 1) if g in raw]
+        out[f] = min(near)
+    return out
+
+
+def loot_curves(cfg, info):
+    """(lootShare points, killGold points) at DERIVE_FLOORS. lootShare: the share of the hunt's loot per kill that keeps the items
+    an hour of the tower at those of a hunt of the floor's level (at most 1). killGold: goldShare x the hunt's gold an hour over
+    the tower's kills an hour (2 significant digits, rounded down)"""
+    share, gold = {}, {}
+    for f in range(1, int(cfg['maxFloor']) + 1):
+        if f % int(cfg['bossEvery']) == 0:
+            continue
+        k = tower_kills(cfg, info, f)
+        Ll = loot_level(cfg, f)
+        share[f] = min(1.0, hunt_kills(Ll) / k)
+        gold[f] = cfg['goldShare'] * gold_per_hour(Ll) / k
+    sm, gm = _smooth_min(cfg, share), _smooth_min(cfg, gold)
+    return ([(f, math.floor(sm[f] * 100) / 100.0) for f in DERIVE_FLOORS],
+            [(f, math.floor(gm[f] / 10 ** max(0, int(math.floor(math.log10(gm[f]))) - 1)) * 10 ** max(0, int(math.floor(math.log10(gm[f]))) - 1))
+             for f in DERIVE_FLOORS])
 
 
 # ------------------------------------------------------------------------------------------------ the tables
@@ -447,14 +564,24 @@ def check(cfg, info, out=print):
         s = legendary_alone(sc, cfg, f, L, info)
         if s > lim['singleMax']:
             bad.append('floor %d: a legendary monster lives %.0f s for the median class at level %d (limit %g)' % (f, s, L, lim['singleMax']))
-    # the damage curve against pace_config.lua at the pool's hunting level
-    for band, names in enumerate(cfg['pools']):
-        lv = _pool_level(names)
-        want = lin(_PACE_DAMAGE(), lv)
-        f = band * int(cfg['bandFloors']) + int(cfg['bandFloors']) // 2
+    # O328: the damage of every floor against what a hunt monster of the shown level deals (pace curve x hit(L) / hit(band))
+    for f in range(1, int(cfg['maxFloor']) + 1):
+        want = dmg_target(cfg, f)
         got = sc['dmg'](f)
-        if abs(got - want) > lim['damageTol']:
-            bad.append('damage at floor %d is %.2f, the pace curve at hunting level %d is %.2f' % (f, got, lv, want))
+        if abs(got - want) > lim['damageTol'] * want:
+            bad.append('damage at floor %d is %.2f, the pace curve x hit at level %d over the band level %d is %.2f' % (
+                f, got, int(round(lin(cfg['level'], f))), band_level(cfg, f), want))
+    # O328: the items and the gold an hour of the tower against a hunt of the floor's level
+    for f in range(1, int(cfg['maxFloor']) + 1):
+        if f % int(cfg['bossEvery']) == 0:
+            continue
+        k, Ll = tower_kills(cfg, info, f), loot_level(cfg, f)
+        items = lin(cfg['lootShare'], f) * k / hunt_kills(Ll)
+        if items > lim['lootRatio']:
+            bad.append('floor %d: the tower gives %.2f x the items an hour of a hunt at level %d (limit %g)' % (f, items, int(Ll), lim['lootRatio']))
+        gold = lin(cfg['killGold'], f) * k / (cfg['goldShare'] * gold_per_hour(Ll))
+        if gold > lim['goldRatio']:
+            bad.append('floor %d: the tower gives %.2f x its share of the gold an hour at level %d (limit %g)' % (f, gold, int(Ll), lim['goldRatio']))
     if '--quiet' not in sys.argv:
         out('\n'.join(rows))
         out('')
@@ -470,8 +597,8 @@ def check(cfg, info, out=print):
 
 def endless(cfg, info, floors=None, out=None):
     """the checks of O172 (the tower never stops getting stronger), floors 1..N (limits.endless, 1000):
-    - the health trend (before the sawtooth), the level and the damage factor (from the floor where its curve is lowest,
-      the pace curve falls up to there) rise strictly, boss floor to boss floor the boss health and (above maxFloor) the
+    - the health trend (before the sawtooth), the level and the damage factor (from the first floor of the last pool band: the
+      species change before it and the factor restarts, O328) rise strictly, boss floor to boss floor the boss health and (above maxFloor) the
       boss damage too;
     - the health of a floor is above the floor a climb (milestoneEvery) before it and only the breather is easier than
       the floor before it (the sawtooth stays); above maxFloor no climb starts more than stepMax over the one before;
@@ -483,7 +610,7 @@ def endless(cfg, info, floors=None, out=None):
     top = int(floors or lim['endless'])
     m, bad = int(cfg['milestoneEvery']), []
     start, be = int(cfg['maxFloor']), int(cfg['bossEvery'])
-    low = min(cfg['damage'], key=lambda p: p[1])[0]
+    low = band_floors(cfg)[-1][0]  # the last band's first floor: the species change before it, the damage factor restarts
     caps = {'health': b['healthMax'], 'boss health': b['bossHealthMax'], 'damage': b['damageMax'], 'level': b['levelMax']}
     for f in range(1, top + 1):
         if f > 1:
@@ -549,13 +676,20 @@ def endless(cfg, info, floors=None, out=None):
     return bad
 
 
-def _PACE_DAMAGE():
+@functools.lru_cache(maxsize=None)
+def _pace_damage():
     m = re.search(r'\n\tdamage = \{((?:\{[0-9.]+, [0-9.]+\},?\s*)+)\}', read(PACE))
-    return [(float(a), float(b)) for a, b in re.findall(r'\{([0-9.]+), ([0-9.]+)\}', m.group(1))]
+    return tuple((float(a), float(b)) for a, b in re.findall(r'\{([0-9.]+), ([0-9.]+)\}', m.group(1)))
 
 
+def _PACE_DAMAGE():
+    return list(_pace_damage())
+
+
+@functools.lru_cache(maxsize=None)
 def _pool_level(names):
     """the median hunting level (the bounty pool's estimate, baseLevelMult 1 since O285) of a band's species"""
+    names = tuple(names)
     pool = dict((n.lower(), int(l)) for n, l in re.findall(r'\{name = "([^"]+)", level = (\d+),',
                                                           read(POOL).split('\tbosses = ')[0]))
     lv = sorted(pool[n] for n in names if n in pool and n != 'demon')
@@ -568,6 +702,9 @@ def main(argv):
     if '--derive' in argv:
         for line in derive(cfg, info):
             print(line)
+        return 0
+    if '--damage' in argv:
+        print(damage_table(cfg))
         return 0
     if '--check' in argv:
         return check(cfg, info)

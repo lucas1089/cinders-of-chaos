@@ -304,6 +304,64 @@ ok(up * C.drops.tierMult.legendary < 0.05 and fate * C.drops.tierMult.legendary 
 -- ---- the storage block is free of the Haunted Harvest (7102800-7102810) and the tester block (7102900-7102909)
 ok(C.rewards.storage >= 7102811 and C.rewards.storage < 7102900, "the reward storage lies in 7102811-7102899")
 
+-- ---- O328: loot follows the floor
+eq(B.lootLevel(C, 1), 100, "floor 1: loot level 100")
+eq(B.lootLevel(C, 60), B.level(C, 60), "inside the curve the loot level is the shown level")
+eq(B.lootLevel(C, 120), 2200, "floor 120: 2200")
+eq(B.lootLevel(C, 5000), 2200, "above maxFloor the loot level stays at maxFloor's (no inflation)")
+ok(B.level(C, 5000) > B.lootLevel(C, 5000), "while the shown level keeps climbing")
+for f = 2, 120 do
+	ok(B.lootLevel(C, f) >= B.lootLevel(C, f - 1), "the loot level never falls with the floor " .. f)
+end
+for f = 1, 150 do
+	local s = B.lootShare(C, f)
+	ok(s > 0 and s <= 1, "the loot share of floor " .. f .. " is a share")
+	ok(B.killGold(C, f) > 0, "floor " .. f .. " pays gold")
+end
+eq(B.lootShare(C, 1e9), B.lootShare(C, 120), "the share is that of maxFloor above it")
+eq(B.killGold(C, 1e9), B.killGold(C, 120), "so is the gold: the economy does not inflate")
+ok(B.killGold(C, 100) > B.killGold(C, 1) * 3, "gold per kill grows with the floor: " .. B.killGold(C, 1) .. " to " .. B.killGold(C, 100))
+-- the pace factors of the loot level, x lootShare on the loot and notable shares
+local asked
+local function pace(level, scaled)
+	asked = {level, scaled}
+	return {loot = 0.4, notable = 0.5, coins = 0.7, junkKeep = 1.1, cheap = 20}
+end
+local f1 = B.lootFactors(C, 1, pace)
+eq(asked[1], 100, "pace factors are asked at the loot level")
+eq(asked[2], false, "a level up to lootScaledFrom uses the base set")
+eq(f1.loot, 0.4 * B.lootShare(C, 1), "loot x lootShare")
+eq(f1.notable, 0.5 * B.lootShare(C, 1), "notable x lootShare")
+eq(f1.coins, 0.7, "coins, junkKeep and cheap stay the pace set's")
+eq(f1.junkKeep, 1.1, "junkKeep")
+B.lootFactors(C, 60, pace)
+eq(asked[1], B.level(C, 60), "floor 60 asks at its level")
+eq(asked[2], true, "a level above lootScaledFrom uses the scaled set")
+B.lootFactors(C, 900, pace)
+eq(asked[1], 2200, "floor 900 asks at maxFloor's level")
+eq(B.lootFactors(C, 1, nil), nil, "no pace layer, no factors")
+eq(B.lootFactors(C, 1, function() return nil end), nil, "a pace layer without a set, no factors")
+-- gold: whole, the expected value is killGold
+local sum, n = 0, 20000
+local seed = 12345
+local function lcg() seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648 end
+for _ = 1, n do
+	local g = B.goldRoll(C, 20, lcg)
+	ok(g == math.floor(g), "gold is a whole number")
+	sum = sum + g
+end
+ok(math.abs(sum / n - B.killGold(C, 20)) < 0.5 + B.killGold(C, 20) * 0.01, "the expected gold is the curve's: " .. sum / n .. " vs " .. B.killGold(C, 20))
+eq(B.goldRoll(C, 20, function() return 0.999999 end), math.floor(B.killGold(C, 20)) + (B.killGold(C, 20) % 1 > 0.999999 and 1 or 0), "a high roll rounds down")
+local noLoot = {maxFloor = 120, level = C.level, beyond = C.beyond}
+eq(B.lootFactors(noLoot, 1, pace), nil, "a config without lootShare has no tower loot")
+eq(B.killGold(noLoot, 5), 0, "and no gold")
+eq(B.lootShare(noLoot, 5), 1, "and a share of 1")
+
+-- ---- O328: the damage curve follows the shown level (floor 1 species are level 11 and hit 7x as hard at level 100)
+ok(B.damage(C, 1) > 5, "floor 1 hits much harder than its level 11 species: " .. B.damage(C, 1))
+ok(B.damage(C, 120) > B.damage(C, 60), "the factor keeps rising in the last band")
+ok(B.bossDamage(C, 100) == 1, "a boss up to maxFloor still hits with its own damage")
+
 print(string.format("infinitytower_balance_test: %d checks, %d failed", checks, failed))
 if failed > 0 then
 	os.exit(1)

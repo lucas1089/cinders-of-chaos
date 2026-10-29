@@ -24,6 +24,11 @@
 --   B.encode(season, floor)            the storage value
 --   B.firstClear(cfg, value, season, floor)   -> items to pay, new storage value (nil when the floor pays nothing now)
 --   B.dropRolls(cfg, floor, tier, rng) the tower drops of one kill: {{id, name, count}}
+--   B.lootLevel(cfg, floor)            the level the floor's loot counts at (the shown level, never above maxFloor's; O328)
+--   B.lootShare(cfg, floor)            the share of the hunt's loot per kill a tower corpse keeps (O328)
+--   B.lootFactors(cfg, floor, paceFactors)   the pace factors of the loot level x lootShare: {loot, notable, ...} (O328)
+--   B.killGold(cfg, floor)             the gold in coins of a normal monster's corpse (O328)
+--   B.goldRoll(cfg, floor, rng)        killGold rounded at random to whole gold
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosTowerBalanceCore = ChaosTowerBalanceCore or {}
@@ -331,6 +336,61 @@ function B.dropRolls(cfg, floor, tier, rng)
 		end
 	end
 	return out
+end
+
+-- ------------------------------------------------------------------------------------------------ loot by floor (O328)
+-- the loot of a tower monster counts at the level of its floor, capped at the level of maxFloor (the economy does not
+-- inflate above it, O172)
+function B.lootLevel(cfg, floor)
+	local top = B.level(cfg, cfg.maxFloor)
+	return math.min(B.level(cfg, floor) or 1, top or math.huge)
+end
+
+function B.lootShare(cfg, floor)
+	if not cfg.lootShare then
+		return 1
+	end
+	return math.max(0, math.min(1, B.curve(cfg.lootShare, math.min(sane(floor), cfg.maxFloor))))
+end
+
+-- paceFactors(level, scaled) -> the factor table of pace_core.lua P.factors (loot, coins, junkKeep, notable, cheap ...).
+-- The loot and notable shares are x lootShare: the tower kills faster than a hunt pack, so a corpse keeps less. nil when the
+-- layer is off (no pace factors): loot.lua then leaves the corpse alone.
+function B.lootFactors(cfg, floor, paceFactors)
+	if not cfg.lootShare or not paceFactors then
+		return nil
+	end
+	local level = B.lootLevel(cfg, floor)
+	local f = paceFactors(level, level > (cfg.lootScaledFrom or 650))
+	if type(f) ~= "table" then
+		return nil
+	end
+	local share = B.lootShare(cfg, floor)
+	local out = {}
+	for k, v in pairs(f) do
+		out[k] = v
+	end
+	out.loot = (tonumber(f.loot) or 1) * share
+	out.notable = (tonumber(f.notable) or tonumber(f.loot) or 1) * share
+	out.level = level
+	return out
+end
+
+function B.killGold(cfg, floor)
+	if not cfg.killGold then
+		return 0
+	end
+	return math.max(0, B.curve(cfg.killGold, math.min(sane(floor), cfg.maxFloor)))
+end
+
+function B.goldRoll(cfg, floor, rng)
+	rng = rng or math.random
+	local g = B.killGold(cfg, floor)
+	local whole = floorNum(g)
+	if rng() < g - whole then
+		whole = whole + 1
+	end
+	return whole
 end
 
 return B
