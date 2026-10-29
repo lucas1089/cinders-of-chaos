@@ -166,6 +166,9 @@ jobs:
             --x-install-root="$GITHUB_WORKSPACE/vcpkg_installed" \
             --overlay-triplets="$GITHUB_WORKSPACE/chaos/client/android/triplets" \
             --triplet "$VCPKG_TRIPLET" --host-triplet x64-linux --clean-after-build --disable-metrics
+          # the engine includes <luajit/lua.h> (the Windows layout); the make build installs include/luajit-2.1
+          INC="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET/include"
+          [ -e "$INC/luajit" ] || ln -s luajit-2.1 "$INC/luajit"
           ls "$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET/lib"
 
       - name: vcpkg build logs (on failure)
