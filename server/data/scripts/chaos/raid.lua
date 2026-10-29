@@ -50,6 +50,9 @@ if not ChaosFactionsCore then
 end
 ChaosRaidConfig = dofile("data/scripts/chaos/raid_config.lua")
 dofile("data/lib/chaos_dark_paint.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
 
 ChaosRaid = ChaosRaid or {}
 local X = ChaosRaid
@@ -455,6 +458,11 @@ local function placeItem(pos, id)
 	return tile and tile:getItemById(id)
 end
 
+-- the key of a slot's look in arenalook_core.lua
+local function lookKey(L)
+	return "raid" .. L.center.x .. "," .. L.center.y
+end
+
 local function buildSlot(slot)
 	local cfg = C()
 	local L = K.layout(cfg, slot)
@@ -472,7 +480,7 @@ local function buildSlot(slot)
 		for _, f in ipairs(list) do
 			local tile = Tile(P(f))
 			local gid = tile and groundId(tile)
-			if tile and gid and gid ~= cfg.groundId and not (ChaosDarkPaint and ChaosDarkPaint.isDark(gid)) then
+			if tile and gid and gid ~= cfg.groundId and not (ChaosDarkPaint and ChaosDarkPaint.isDark(gid)) and not ChaosArenaLook.isOwned(gid) then
 				return nil, string.format("tile %d,%d,%d already exists in the map", f.x, f.y, f.z)
 			end
 		end
@@ -486,25 +494,32 @@ local function buildSlot(slot)
 			end
 		end
 	end
-	if cfg.dark and cfg.dark.enabled and ChaosDarkPaint and ChaosDarkPaint.ready(cfg.dark.style) then
-		local reserved = {L.exit, L.start, L.fallen}
-		for _, r in ipairs(L.rooms) do
-			reserved[#reserved + 1] = r.center
-			for _, f in ipairs(r.fonts) do
-				reserved[#reserved + 1] = f
-			end
+	-- O276: the whole floor (hall, corridors and boss rooms, one shape) gets the shared arena look (arenalook_core.lua)
+	local lk = cfg.look or {}
+	local keep = {{x = L.exit.x, y = L.exit.y, r = 2}, {x = L.start.x, y = L.start.y, r = 3}, {x = L.fallen.x, y = L.fallen.y, r = 1}}
+	for i, r in ipairs(L.rooms) do
+		keep[#keep + 1] = {x = r.center.x, y = r.center.y, r = 3}
+		keep[#keep + 1] = {x = r.entry.x, y = r.entry.y, r = 2}
+		keep[#keep + 1] = {x = r.bossSpawn.x, y = r.bossSpawn.y, r = 2}
+		for _, f in ipairs(r.fonts) do
+			keep[#keep + 1] = {x = f.x, y = f.y, r = 1}
 		end
-		for _, b in ipairs(L.basins) do
-			reserved[#reserved + 1] = b
+		local cr = L.corridors[i]
+		for _, side in ipairs({"west", "east"}) do
+			local mid = cr[side][math.ceil(#cr[side] / 2)]
+			keep[#keep + 1] = {x = mid.x, y = mid.y, r = cfg.corridor.half} -- the doors
 		end
-		local walls = {}
-		for k in pairs(L.walls) do
-			walls[k] = true
+		for _, at in ipairs(cr.packAt) do
+			keep[#keep + 1] = {x = at.x, y = at.y, r = 1}
 		end
-		pcall(function()
-			ChaosDarkPaint.apply(ChaosDarkPaint.plan(L.floorList, cfg.dark.style, math.random, {walls = walls, reserved = reserved}), L.z)
-		end)
 	end
+	for _, b in ipairs(L.basins) do
+		keep[#keep + 1] = {x = b.x, y = b.y, r = 1}
+	end
+	local last = L.rooms[#L.rooms]
+	ChaosArenaLook.dressTiles(lookKey(L), L.floorList, L.z, lk.theme or "crypt", {keep = keep,
+		roads = {{from = L.start, to = last.bossSpawn}}, seed = lk.seed or 1, mirror = false, cover = lk.cover, lights = lk.lights,
+		wallSize = ChaosArenaLook.wallSizeOf(wall), groundIds = {[cfg.groundId] = true}, fallbackGround = cfg.groundId})
 	for _, f in ipairs(L.wallList) do
 		placeItem(P(f), wall)
 	end
@@ -575,7 +590,7 @@ local function cleanSlot(L)
 				end
 			end
 			for _, item in ipairs(tile:getItems() or {}) do
-				if not keep[item:getId()] then
+				if not keep[item:getId()] and not ChaosArenaLook.isOwned(item:getId()) then
 					item:remove()
 				end
 			end
@@ -597,6 +612,7 @@ end
 
 local function spawn(run, name, pos, kind, opts)
 	opts = opts or {}
+	pos = ChaosArenaLook.freeSpot(lookKey(run.L), pos) -- never inside a cover piece or a light
 	-- O177: the boss shows the raid's entry level (a species' experience / health estimate is far above any level)
 	local m = Chaos.createMonsterNamed(name, P(pos), true, true, nil, kind == "boss" and C().minLevel or nil)
 	if not m then

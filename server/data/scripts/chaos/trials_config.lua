@@ -77,7 +77,10 @@ return {
 		grid = {origin = {x = 9000, y = 9000, z = 7}, cols = 4, slots = 8, spacing = 40},
 		inner = 21, -- inner width / height (odd: a centre tile)
 		groundId = 407, wallId = 5648, basinId = 1481,
-		dark = {enabled = true, wall = "ruined_wall", basin = "brazier", style = "trial"}
+		dark = {enabled = true, wall = "ruined_wall", basin = "brazier", style = "trial"}, -- the dark set's wall and light (the floor paint is the look below since O276)
+		-- O276 look (arenalook_core.lua): a theme per tier (flagstone, slate and bones, the dark set that is ember when not
+		-- installed), a layout per vocation (seed + vocation mod variants)
+		look = {themes = {"stone", "crypt", "dark"}, seed = 7, variants = 3, cover = 3, lights = 4},
 	},
 
 	-- rewards. First clear of a tier: unlocks its node pair for that vocation (once per vocation) and pays `first`.

@@ -220,6 +220,54 @@ eq(m and m.size, 5, "5v5")
 eq(#B.queue, 0, "queue empty")
 check(created > 1000, "the map was built (" .. created .. " tiles)")
 local L = K.layout(cfg, m.slot)
+-- O276: the field wears the shared arena look (arenalook_core.lua), the same for both teams
+do
+  local AL = ChaosArenaLook
+  local room = AL.rooms["battleground" .. m.slot]
+  check(room ~= nil and room.look.covers > 0 and room.look.lights > 0, "look: the field has cover and lights")
+  local inField = {}
+  local spec = K.lookSpec(cfg, L)
+  for _, t in ipairs(spec.tiles) do inField[t.x .. "," .. t.y] = true end
+  local plain = {}
+  for _, t in ipairs(spec.plain) do plain[t.x .. "," .. t.y] = true end
+  local solid = {}
+  for k in pairs(room.look.blocked) do
+    local x, y = k:match("(-?%d+),(-?%d+)")
+    x, y = tonumber(x) + room.ox, tonumber(y) + room.oy
+    solid[x .. "," .. y] = true
+    check(inField[x .. "," .. y], "look: cover stands on the field, never on a wall or in a graveyard")
+    check(not plain[x .. "," .. y], "look: nothing solid on a base or a capture circle")
+    check(room.look.blocked[AL.key(L.x1 + L.x2 - x - room.ox, L.y1 + L.y2 - y - room.oy)], "look: cover is the same for both teams")
+  end
+  for _, t in ipairs(K.footprint(cfg, L)) do
+    local tile = Tile({x = t.x, y = t.y, z = t.z})
+    check(tile and tile:getGround(), "look: every tile has a ground")
+    if t.wall or K.graveOf(L, t) then
+      check(#tile:getItems() <= 1, "look: a wall or a graveyard tile carries no look piece")
+    end
+  end
+  for team = 1, 2 do
+    for _, sp in ipairs(L.spawns[team]) do check(not solid[sp.x .. "," .. sp.y], "look: a spawn tile is free") end
+    for _, gs in ipairs(L.graveSpots[team]) do check(not solid[gs.x .. "," .. gs.y], "look: a grave spot is free") end
+  end
+  for _, b in ipairs(L.braziers) do
+    for dx = -cfg.capture.radius, cfg.capture.radius do
+      for dy = -cfg.capture.radius, cfg.capture.radius do
+        check(not solid[(b.x + dx) .. "," .. (b.y + dy)] or (dx == 0 and dy == 0), "look: the capture circle is open")
+      end
+    end
+  end
+  local floorSet = {}
+  for _, t in ipairs(spec.tiles) do floorSet[AL.key(t.x, t.y)] = t end
+  local blockedAbs = {}
+  for k in pairs(solid) do blockedAbs[k] = true end
+  for _, p in ipairs(L.pillars) do blockedAbs[AL.key(p.x, p.y)] = true end
+  local reach = AL.reachable(floorSet, blockedAbs, L.spawns[1][1])
+  check(reach[AL.key(L.spawns[2][1].x, L.spawns[2][1].y)], "look: team 2's spawn is reachable from team 1's")
+  for _, b in ipairs(L.braziers) do
+    check(reach[AL.key(b.x, b.y)], "look: a well is reachable")
+  end
+end
 eq(m.players[healer:getId()].team, m.players[tank:getId()].team, "the party plays together")
 local tanks, heals = {0, 0}, {0, 0}
 for _, cid in ipairs(m.order) do

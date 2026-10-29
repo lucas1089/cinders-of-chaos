@@ -46,6 +46,10 @@ return {
 	-- and fills it again, so a run of 12 rooms needs one slot.
 	grid = {origin = {x = 10000, y = 10000, z = 7}, cols = 4, rows = 2, spacing = 64},
 	room = {half = 10},
+	-- O276 look (arenalook_core.lua): a theme per rift theme (rift_config.lua themes: Abyssal Rift, Obsidian Hall, Ashen Crypt,
+	-- Forsaken Sanctum). "dark" is the dark tile set and becomes "ember" when it is not installed. Every room repaints the
+	-- hall with one of `variants` layouts (seed + depth mod variants), so two rooms of a theme differ.
+	look = {themes = {"dark", "ember", "crypt", "stone"}, seed = 3, variants = 3, cover = 4, lights = 4},
 	wallId = 5648, -- stone wall (the rift's), the obsidian wall of the dark tile set when it is installed
 	basinId = 1481, -- coal basin in the hub corners
 	aid = {portal = 47701, exit = 47702, chest = 47703, shrine = 47704, merchant = 47705},

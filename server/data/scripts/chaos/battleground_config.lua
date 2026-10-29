@@ -114,6 +114,10 @@ return {
 		brazier = 1481, -- coal basin (the brazier itself; unwalkable)
 		flag = 1436 -- castle flag (base decoration)
 	},
+	-- O276 look (arenalook_core.lua): the field is dressed with scorched rock, basalt and lava cracks; cover and lights come in
+	-- pairs turned 180 degrees (the layout's own symmetry), so both teams get the same field. The bases, the graveyards
+	-- and the capture circles keep their grounds; spawns, bases, wells (radius + 1), pillars and flags stay open of cover.
+	look = {themes = {"ember"}, seed = 5, cover = 3, lights = 6},
 	braziers = {"West Well", "Heart Well", "East Well"},
 	teams = {
 		{name = "Emberguard", color = "#ff9a3c", effect = "CONST_ME_FIREAREA"},

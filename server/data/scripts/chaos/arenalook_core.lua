@@ -1,6 +1,6 @@
 -- The look of the runtime-built fight arenas (O276): pure logic, no engine calls (tests/arenalook_test.lua).
--- Used by the Infinity Tower, the world / pocket / guild / Ascended boss arenas, the ranked PvP arena and the other
--- rooms built with Game.createTile. The Scorched Marches (pvpzone_core.lua) was the model: varied ground with border
+-- Used by the Infinity Tower, the world / pocket / guild / Ascended boss arenas, the ranked PvP arena, the battleground,
+-- the Ember Descent hall, the Vocation Trial chamber and the Sepulchre raid (dressTiles / dress / freeSpot at the end). The Scorched Marches (pvpzone_core.lua) was the model: varied ground with border
 -- pieces, a road to the middle, mirrored cover, lights and decoration, all from a hash of the coordinates (no
 -- math.random), so every slot of a grid looks the same and a test can check it.
 --
@@ -738,29 +738,46 @@ function A.isOwned(id)
 end
 
 A.painted = A.painted or {} -- room key -> signature of what is painted there
+A.rooms = A.rooms or {} -- room key -> {look, ox, oy} of the last dressing (A.freeSpot)
 
 local function itemId(item)
 	return type(item) == "number" and item or (item and item:getId())
 end
 
--- Dress a rectangular room (floor x1..x2, y1..y2, height z) with the look of `themeName`. Everything the looks own on
--- those tiles (ground, borders, cover, lights, decoration) is removed first when the room was painted with another
--- theme or layout; loose items (loot, fields) and fixtures of the caller stay. The caller places its fixtures (basins,
--- pillars, gates) AFTER this call: a look's light may stand where a fixture goes.
+-- Dress a room of any shape (a list of absolute floor tiles {x, y}, height z) with the look of `themeName`. The first
+-- paint of a room, and every paint after a change of theme or layout, removes what the looks own on those tiles
+-- (ground, borders, cover, lights, decoration); loose items (loot, fields) and fixtures of the caller stay. The
+-- caller places its fixtures (basins, pillars, gates) AFTER this call: a look's light may stand where a fixture goes.
 --   o.keep   {{x, y, r}} absolute positions that stay open (arrival, boss, gates, fixtures), o.roads {{from, to}}
---   o.seed (default 1), o.mirror (default true), o.cover, o.lights, o.groundIds {id = true}: more grounds a repaint removes
--- Returns the look (local coordinates: x - x1 + 1, y - y1 + 1) and true when the room was (re)painted.
-function A.dress(roomKey, rect, z, themeName, o)
+--   o.seed (default 1), o.mirror (default true: turned 180 degrees about the middle of the tiles' bounding box),
+--   o.cover, o.lights, o.keepGap, o.wallSize, o.groundIds {id = true}: more grounds a repaint removes
+--   o.plain  {{x, y}} tiles whose own ground stays (a base, a capture circle): no border piece, no decoration, and the
+--            ground is neither removed nor painted; keep them open of cover with o.keep
+-- Returns the look (local coordinates: x - ox, y - oy; A.rooms[roomKey] holds ox, oy) and true when (re)painted.
+function A.dressTiles(roomKey, tiles, z, themeName, o)
 	o = o or {}
 	local theme = A.theme(themeName, A.darkIds)
 	local seed = o.seed or 1
+	local minx, miny, maxx, maxy = math.huge, math.huge, -math.huge, -math.huge
+	for _, t in ipairs(tiles) do
+		minx, miny = math.min(minx, t.x), math.min(miny, t.y)
+		maxx, maxy = math.max(maxx, t.x), math.max(maxy, t.y)
+	end
+	local ox, oy = minx - 1, miny - 1
+	local w, h = maxx - ox, maxy - oy
+	local local_ = {}
+	local shape = #tiles
+	for i, t in ipairs(tiles) do
+		local_[i] = {x = t.x - ox, y = t.y - oy}
+		shape = (shape * 31 + local_[i].x * 131 + local_[i].y * 7919) % 1000000007
+	end
 	local function loc(p, r)
-		return {x = p.x - rect.x1 + 1, y = p.y - rect.y1 + 1, r = r or p.r}
+		return {x = p.x - ox, y = p.y - oy, r = r or p.r}
 	end
 	local keep, kparts = {}, {}
 	for _, p in ipairs(o.keep or {}) do
 		local q = loc(p)
-		if q.x >= 1 and q.y >= 1 and q.x <= rect.x2 - rect.x1 + 1 and q.y <= rect.y2 - rect.y1 + 1 then
+		if q.x >= 1 and q.y >= 1 and q.x <= w and q.y <= h then
 			keep[#keep + 1] = q
 			kparts[#kparts + 1] = q.x .. "," .. q.y .. "," .. (q.r or 1)
 		end
@@ -771,53 +788,96 @@ function A.dress(roomKey, rect, z, themeName, o)
 		rparts[#rparts + 1] = roads[#roads].from.x .. "," .. roads[#roads].from.y .. ">" .. roads[#roads].to.x .. "," ..
 			roads[#roads].to.y
 	end
-	local w, h = rect.x2 - rect.x1 + 1, rect.y2 - rect.y1 + 1
-	local sig = table.concat({theme.name, seed, w, h, o.cover or "", o.lights or "", o.mirror == false and "n" or "m",
+	local plain, plainSet = {}, {}
+	for _, p in ipairs(o.plain or {}) do
+		plain[#plain + 1] = key(p.x, p.y)
+		plainSet[key(p.x, p.y)] = true
+	end
+	local sig = table.concat({theme.name, seed, w, h, shape, #plain, o.cover or "", o.lights or "", o.mirror == false and "n" or "m",
 		o.keepGap or "", o.wallSize or "", table.concat(kparts, ";"), table.concat(rparts, ";")}, "|")
 	local look = A.cached("room:" .. sig, function()
-		return {tiles = A.rectTiles(1, 1, w, h), theme = theme, seed = seed, mirror = o.mirror ~= false, keep = keep,
+		return {tiles = local_, theme = theme, seed = seed, mirror = o.mirror ~= false, keep = keep,
 			roads = roads, cover = o.cover, lights = o.lights, keepGap = o.keepGap, wallSize = o.wallSize}
 	end)
+	A.rooms[roomKey] = {look = look, ox = ox, oy = oy}
 	if A.painted[roomKey] == sig then
 		return look, false
 	end
+	-- the plain tiles keep their ground and carry no border piece or decoration (the look is shared and cached; the
+	-- strip is the same for every slot of a grid)
+	for _, p in ipairs(o.plain or {}) do
+		local t = look.tiles[key(p.x - ox, p.y - oy)]
+		if t then
+			t.edges, t.decor = {}, nil
+		end
+	end
 	-- clear what a former painting left
-	for dy = 1, h do
-		for dx = 1, w do
-			local tile = Tile(Position(rect.x1 + dx - 1, rect.y1 + dy - 1, z))
-			if tile then
-				for _, item in ipairs(tile:getItems() or {}) do
-					if A.isOwned(itemId(item)) then
-						item:remove()
-					end
+	for _, t in ipairs(tiles) do
+		local tile = Tile(Position(t.x, t.y, z))
+		if tile then
+			for _, item in ipairs(tile:getItems() or {}) do
+				if A.isOwned(itemId(item)) then
+					item:remove()
 				end
-				local g = tile:getGround()
-				if g and type(g) ~= "number" and g.remove then
-					local id = g:getId()
-					if A.isOwned(id) or (o.groundIds and o.groundIds[id]) then
-						g:remove()
-					end
+			end
+			local g = tile:getGround()
+			if g and type(g) ~= "number" and g.remove and not plainSet[key(t.x, t.y)] then
+				local id = g:getId()
+				if A.isOwned(id) or (o.groundIds and o.groundIds[id]) then
+					g:remove()
 				end
 			end
 		end
 	end
-	A.paint(look, z, rect.x1 - 1, rect.y1 - 1)
+	A.paint(look, z, ox, oy)
 	-- a tile the painter could not give a ground (an item the server does not know) gets the plain one: never a hole
-	for dy = 1, h do
-		for dx = 1, w do
-			local pos = Position(rect.x1 + dx - 1, rect.y1 + dy - 1, z)
-			local tile = Tile(pos)
-			if tile and not tile:getGround() then
-				pcall(Game.createItem, o.fallbackGround or 413, 1, pos)
-			end
+	for _, t in ipairs(tiles) do
+		local pos = Position(t.x, t.y, z)
+		local tile = Tile(pos)
+		if tile and not tile:getGround() then
+			pcall(Game.createItem, o.fallbackGround or 413, 1, pos)
 		end
 	end
 	A.painted[roomKey] = sig
 	return look, true
 end
 
+-- Dress a rectangular room (floor x1..x2, y1..y2, height z): dressTiles over its tiles.
+function A.dress(roomKey, rect, z, themeName, o)
+	return A.dressTiles(roomKey, A.rectTiles(rect.x1, rect.y1, rect.x2, rect.y2), z, themeName, o)
+end
+
+-- the nearest tile of a dressed room that carries no solid piece, within `maxR` (default 3) of `pos`: a monster made at
+-- a random spot never stands inside cover or a light. A position outside the room, or on open floor, comes back as is.
+function A.freeSpot(roomKey, pos, maxR)
+	local r = A.rooms[roomKey]
+	if not r then
+		return pos
+	end
+	local look = r.look
+	local lx, ly = pos.x - r.ox, pos.y - r.oy
+	local k = key(lx, ly)
+	if not look.tiles[k] or not look.blocked[k] then
+		return pos
+	end
+	for d = 1, maxR or 3 do
+		for dy = -d, d do
+			for dx = -d, d do
+				if math.max(math.abs(dx), math.abs(dy)) == d then
+					local nk = key(lx + dx, ly + dy)
+					if look.tiles[nk] and not look.blocked[nk] then
+						return {x = pos.x + dx, y = pos.y + dy, z = pos.z}
+					end
+				end
+			end
+		end
+	end
+	return pos
+end
+
 function A.forgetRoom(roomKey)
 	A.painted[roomKey] = nil
+	A.rooms[roomKey] = nil
 end
 
 -- The boss arenas built on uber_core.lua's layout (Ascended, guild boss, pocket bosses): theme from cfg.look (themes[key],

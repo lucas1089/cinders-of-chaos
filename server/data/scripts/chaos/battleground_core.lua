@@ -925,6 +925,44 @@ function K.footprint(cfg, L)
 	return list
 end
 
+-- O276: what the shared arena look (arenalook_core.lua) needs for a slot: the floor it paints (the fighting field and the
+-- bases; the closed graveyards and every wall are left out, so the look sees one connected field), the tiles that keep
+-- their own ground (bases, capture circles), the positions that stay open of cover (spawns, grave spots, bases, wells,
+-- pillars, flags) and the lane between the two spawns. The layout is turned 180 degrees for team 2, and the look is
+-- mirrored about the middle of the same box, so cover and lights come in pairs: both teams get the same field.
+-- Returns {tiles, plain, keep, roads} (absolute coordinates).
+function K.lookSpec(cfg, L)
+	local spec = {tiles = {}, plain = {}, keep = {}, roads = {}}
+	for _, t in ipairs(K.footprint(cfg, L)) do
+		if not t.wall and not K.graveOf(L, t) then
+			spec.tiles[#spec.tiles + 1] = {x = t.x, y = t.y}
+			if t.ground ~= "ground" then
+				spec.plain[#spec.plain + 1] = {x = t.x, y = t.y}
+			end
+		end
+	end
+	local function keep(p, r)
+		spec.keep[#spec.keep + 1] = {x = p.x, y = p.y, r = r}
+	end
+	for team = 1, 2 do
+		for _, sp in ipairs(L.spawns[team]) do
+			keep(sp, 1)
+		end
+		local b = L.bases[team]
+		keep({x = floor((b.x1 + b.x2) / 2), y = floor((b.y1 + b.y2) / 2)}, max(floor((b.x2 - b.x1) / 2), floor((b.y2 - b.y1) / 2)))
+	end
+	for _, b in ipairs(L.braziers) do
+		keep(b, cfg.capture.radius)
+	end
+	for _, list in ipairs({L.pillars, L.flags}) do
+		for _, p in ipairs(list) do
+			keep(p, 0)
+		end
+	end
+	spec.roads[1] = {from = L.spawns[1][1], to = L.spawns[2][1]}
+	return spec
+end
+
 -- slot index of a position, or nil
 function K.slotOfPos(cfg, pos)
 	for slot = 0, cfg.grid.slots - 1 do
