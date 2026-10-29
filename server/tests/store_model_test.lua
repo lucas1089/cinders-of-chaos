@@ -39,6 +39,18 @@ local function offer(pred)
 	end
 end
 
+-- the stash room (O316)
+local slotOne, slotPack = env.byKey["service:pactExtra:stashSlots"], env.byKey["service:pactExtra:stashSlots:4"]
+check(slotOne ~= nil and slotPack ~= nil, "the single expansion and the pack are offers")
+breaks("an expansion too dear per slot", "coins per slot", function() local v = slotOne.cost; slotOne.cost = 200; return function() slotOne.cost = v end end)
+breaks("an expansion too cheap per slot", "coins per slot", function() local v = slotOne.cost; slotOne.cost = 10; return function() slotOne.cost = v end end)
+breaks("a pack dearer than the singles", "not cheaper", function() local v = slotPack.cost; slotPack.cost = 220; return function() slotPack.cost = v end end)
+breaks("a pack with too deep a discount", "% off", function() local v = slotPack.cost; slotPack.cost = 100; return function() slotPack.cost = v end end)
+local orbsTab = env.byKey["service:pactExtra:stashOrbs"]
+breaks("an affinity tab dearer than the expansion per entry", "per entry", function() local v = orbsTab.cost; orbsTab.cost = 300; return function() orbsTab.cost = v end end)
+breaks("an old tab worth more than it cost", "old tab converts", function() local v = env.stash.slots.legacyPacksPerTab; env.stash.slots.legacyPacksPerTab = 4; return function() env.stash.slots.legacyPacksPerTab = v end end)
+breaks("a bigger free room", "one tab of 30", function() local v = env.stash.slots.free; env.stash.slots.free = 100; return function() env.stash.slots.free = v end end)
+
 -- coin packs
 local pack = env.coins.packs[3]
 breaks("a pack USD price off .98", "does not end in", function() local v = pack.usdCents; pack.usdCents = 1000; return function() pack.usdCents = v end end)

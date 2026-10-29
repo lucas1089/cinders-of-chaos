@@ -1,8 +1,9 @@
--- Depot tabs: the names and colours players give their depot tabs (data/scripts/chaos/depot.lua; see server/README.md
--- "Depot tabs"). One row per account and tab; a tab without a row has the default name and colour. Safe to run more
--- than once; depot.lua creates the same table at startup.
+-- RETIRED (O316, 2026-10-29): the depot window and its tabs are gone; nothing reads or creates this table any more. It
+-- stays for the rows that exist (nothing is dropped). Safe to leave as it is.
+-- Depot tabs: the names and colours players gave their depot tabs (server/README.md "Depot (retired)"). One row per account and tab; a tab without a row had the default
+-- name and colour.
 -- name: at most 16 characters, printable ASCII and Latin-1 (the client draws Latin-1), "" = the default name.
--- color: a key of depot_config.lua `palette`, "" = the default colour.
+-- color: a key of the old palette, "" = the default colour.
 
 CREATE TABLE IF NOT EXISTS `chaos_depot_tabs` (
   `account_id` int(11) NOT NULL,

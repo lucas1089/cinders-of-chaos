@@ -12,7 +12,7 @@ To many players the crafting orbs are worth more than gold. Use them on your ite
 
 ## The market
 
-- Economy > Market, or the market item in your depot. From level {{market.minLevel}}.
+- Economy > Market. From level {{market.minLevel}}.
 - Sell for gold, for Chaos Coins or for both. Offers last {{market.durations}} days.
 - A listing fee of {{market.listingFee}}% and a sales tax of {{market.tax}}%. They take gold out of the game and hold inflation back.
 - Equipped items, locked items and store items cannot be listed.

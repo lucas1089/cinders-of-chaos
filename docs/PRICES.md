@@ -47,7 +47,7 @@ show".
 | Convenience | Orbs Pouch / Rift Key Pouch / Gem Pouch (per character) | 200 / 150 / 150 | R$ 20 / 15 / 15 | was 300 / 250 for the first two; 100 slots each since 2026-10-28, the Gem Pouch (gems only, so they stay apart from orbs) is new, priced like the Rift Key Pouch |
 | Convenience | Everfull Ration (per character) | 100 | R$ 10 | was 150 |
 | Convenience | Everfull potion tiers (per character, once per tier): spirit tier 1 20, great health / mana / spirit 30, ultimate health / mana / spirit 50, supreme health / mana / spirit 70 | 20 / 30 / 50 / 70 | R$ 2 / 3 / 5 / 7 | new (O245), spirit tier 1 and the supreme mana and spirit added in O247. The same swap Veyra the Apothecary does for 40 stock potions of the tier (4,800-20,000 gold at her prices) and the previous flask; a whole line costs 150 coins |
-| Convenience | depot tab 150, 4 tabs 500, stash tabs 150-200, character slot 250, build slot 100 | | | kept |
+| Convenience | Stash Slot Expansion 50 (+25 slots), 4 for 180, stash tabs 100-200, character slot 250, build slot 100 | | | O316: the depot tabs (150, 4 for 500) and the Extra Stash Tab (150) left the store, see "Stash room (O316)" |
 | VIP | Chaos Pact, 30 days | 300 | R$ 30 | kept |
 | Premium | 30 / 90 / 180 days | 250 / 650 / 1200 | | kept |
 | Boosts | All Blessings 60 | | | kept; the Stamina Refill (40) and the Stamina Extension (8) were removed 2026-10-15 (pay to farm; low stamina now halves the loot instead of zeroing it) |
@@ -143,7 +143,7 @@ computed numbers, not measured in game: nobody has played the store yet (payment
 | Blessings | 60, Eternal 750 | Eternal is 12.5 purchases. The gold way (!bless) is 100,000 at level 120, 290,000 at 500 and 500,000 from level 920; late characters could pay that in 10 minutes, so the coins are only a shortcut. |
 | Services | 100 / 150 / 250 / 400 | Sex change, skull remover, name change, vocation change. No gold way exists to compare. |
 | Per-character convenience | 1,550 for all seven | Loot Bag 250, Auto Seller 400, Rarity Autoloot 300, Orbs Pouch 200, Key Pouch 150, Gem Pouch 150, Ration 100. The limit is pinned at 1,550 (it was 1,400 before the Gem Pouch). |
-| Storage and slots | 100 to 300 | Stash tab 150, orbs / gems 200, keys and the affinity tabs 150, collectibles 100, remote deposit 300 (the Pact lends it), character slot 250, build slot 100. Placeholders of 2026-10-15 reviewed: same range as the depot tab (150) and the character slot. |
+| Storage and slots | 50 to 300 | Stash Slot Expansion 50, pack of 4 180, orbs / gems 200, the other affinity tabs 150, collectibles 100, remote deposit 300 (the Pact lends it), character slot 250, build slot 100. Reviewed again in O316, see "Stash room (O316)". |
 | Cosmetics | 80 to 750 | Wings 200-350, auras 150-300, shaders 120-300, head accessories 150-200, capes 200-250, outfits 300 / 500 / 750, mounts 350-690. Pinned between 80 and 800. |
 | Bundles | 20-25% sets | Starter packs 23-43% off their parts (limit 55%). |
 | Season pass and packs | 600 (320 back) / 500 / 1500 / 2500 | The Ember Pack is the cheapest per cosmetic (four items for 500) but the looks exist only in the season and the owner cut these prices on 2026-10-14. The Inferno Pack gives 500 coins back. |
@@ -154,6 +154,39 @@ computed numbers, not measured in game: nobody has played the store yet (payment
 - **Pets** (400 each, per character) sell small abilities (a heal of 4 to 8%, gold find +2 to 7%). The same pets and abilities come
   free from achievements and bosses, so it is a time saver, not a new power.
 - **World Loot** extra roll: `loot_model.lua` does not model it. Watch it in the beta.
+
+## Stash room (O316, 2026-10-29)
+
+Owner 2026-10-29 (pt-BR): "Retire o depot do jogo, veja na store se tem coisa para o depot, retire também. No stash, coloque
+de graça apenas 1 aba de 30 slots e coloque na loja expansão de slot e aquelas abas próprias para cada tipo de item."
+The depot is retired and the stash is the only storage. Numbers: `stash_config.lua` (`slots`, `affinities`),
+`pact_config.lua` (`limits.stashSlots`, `store.storage`), `store_balance_config.lua` (`stash`, held by
+`tools/store_model.lua --check`).
+
+| What | Free | Price | Cap |
+|---|---|---|---|
+| The one general tab | 30 entries | free | |
+| Stash Slot Expansion | | 50 coins (R$ 5), +25 slots | 20 expansions, 530 slots in all (1,000 coins) |
+| 4 Stash Slot Expansions | | 180 coins (10% off), +100 slots | counts in the same cap |
+| Affinity tabs, 100 entries each | none | Orbs 200, Gems 200, Keys 150, Supplies 150, Weapons 150, Armor 150, Jewellery 150, Materials 150, Creature Products 150, Collectibles 100 | one of each |
+| Chaos Pact | one expansion (+25) while it runs | in the Pact | |
+
+- **Why 2 coins a slot.** An old tab of 100 entries cost 150 coins (1.5 a slot) and held a stack of 100 as one item. The
+  stash merges a stack into one entry, so an entry holds more than a depot slot did. The expansion costs a little more
+  per slot than an affinity tab (1.5 to 2 per entry): a specialised tab is the better deal, and it keeps the
+  general tab for the odd pieces. Checked by the model: 1 to 3 coins a slot, the pack at most 15% off, all expansions at
+  most 1,200 coins, an affinity tab never dearer per entry than an expansion slot.
+- **One tab, not extra general tabs.** A second general tab only splits the same room. The expansion grows the one tab,
+  so there is one thing to buy instead of two.
+- **The old tabs are kept.** An Extra Stash Tab, an Extra Depot Tab (a pack of 4 counts as 4) or one of the three
+  achievement tabs (`depot_tab_relics`, `depot_tab_trophies`, `depot_tab_vault`) is worth 3 expansions: 75 slots, the
+  150 coins the tab cost at 50 coins an expansion. They count outside the cap of 20. A player with 12 bought depot tabs
+  and 6 stash tabs gets 18 x 75 = 1,350 slots on top of the free 30.
+- **Free grants that left.** The free Supplies tab, the Creature Products tab lent by the Pact and the Collectibles tab of
+  the unique_50 achievement are bought now. An account that used one keeps it (one-time grant at the first login, see
+  server/README.md "Stash", "Grandfathering").
+- **The guild depot is another thing.** The guild hall chest (guild bank / depot upgrade, `guild_config.lua`) is shared
+  guild storage and is not the player depot. It stays as it is.
 
 ## Skill training (O150, 2026-10-23)
 
@@ -285,7 +318,7 @@ refuses a file of another shape.
 ## Where prices show
 
 - Configs: `shop_coins_config.lua`, `shop_config.lua`, `class_unlocks_core.lua`, `seasonpass_config.lua`,
-  `bazaar_config.lua`, `creator_codes_config.lua`, `referral_config.lua`, `pact_config.lua`, `depot_config.lua`,
+  `bazaar_config.lua`, `creator_codes_config.lua`, `referral_config.lua`, `pact_config.lua`,
   `cosmetics_config.lua`, `hideout_config.lua`, `shop_cosmetics.lua` (generated by `server/tools/gen_shop_cosmetics.py`).
 - The client store, the Donate page and the wiki's Store tab read the configs (`gen_wiki_data.lua`).
 - Donation Terms (`docs/legal/donations.*.md`): the pack table, the pass price, the creator share and the Bazaar fee.

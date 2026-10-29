@@ -1,7 +1,9 @@
 -- The stash window's texts and rules, without client API (tested by stashview_test.lua). The server
 -- (data/scripts/chaos/stash.lua) decides everything; this formats its messages:
 --   tabs {tabs = [{id, name, used, size, locked, affinity, icon, old, source}], limit, pact, tabSize, canWithdraw,
---         withdrawWhy = 'pz' | 'hideout' | nil}
+--         withdrawWhy = 'pz' | 'hideout' | nil, slots, freeSlots, perPack, packs, maxPacks, store, inbox}
+-- O316: one general tab of `slots` entries (30 free, Stash Slot Expansions from the store), the affinity tabs are bought,
+-- the depot is retired.
 --   StowReport {stowed, kept, reasons = [{reason, label, count, names}]}
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
@@ -30,7 +32,6 @@ end
 -- depositing: in town for everybody (the live protection zone state, or the server's hideout answer); anywhere with the
 -- remote deposit unlock (the server's `remote`: bought, or lent by an active Chaos Pact). The server checks again.
 function V.canDeposit(tabs, states)
-  if type(tabs) == 'table' and tabs.closed == true then return false end -- the depot is the storage (server toDepot)
   if V.hasFlag(states, V.PZ_FLAG) then return true end
   if type(tabs) ~= 'table' then return false end
   if tabs.remote then return true end
@@ -39,10 +40,48 @@ end
 
 -- the locked state of depositing: where to unlock it
 function V.depositLockedText(tabs)
-  if type(tabs) == 'table' and tabs.closed == true then
-    return tr('The stash is closed to new items: put them into your depot. It only gives items back.')
-  end
   return tr('Deposit only in a protection zone. Remote deposit from anywhere: Store > Storage & Slots, or an active Chaos Pact.')
+end
+
+-- the slot counts of the one general tab: "Stash: 12 of 55 slots (30 free + 1 expansion of 25)"
+function V.slotsText(d)
+  if type(d) ~= 'table' or n(d.slots) <= 0 then return '' end
+  local used = 0
+  for _, t in ipairs(type(d.tabs) == 'table' and d.tabs or {}) do
+    if t.id == 1 then used = n(t.used) end
+  end
+  local text = tr('Stash: %d of %d slots', used, n(d.slots))
+  local packs = n(d.packs)
+  if packs > 0 and n(d.perPack) > 0 then
+    text = text .. ' ' .. tr('(%d free + %d expansions of %d)', n(d.freeSlots), packs, n(d.perPack))
+  end
+  return text
+end
+
+-- the Buy Slots button: shown when the server names the store category
+function V.canBuy(d)
+  return type(d) == 'table' and type(d.store) == 'string' and d.store ~= ''
+end
+
+function V.buyTooltip(d)
+  if type(d) ~= 'table' then return '' end
+  return tr('Stash Slot Expansion: +%d slots on your stash tab for good, up to %d expansions. Store > %s. Affinity tabs for orbs, gems, keys, supplies and more are sold there too.',
+    n(d.perPack), n(d.maxPacks), tostring(d.store or ''))
+end
+
+-- the Inbox button: what waits in the inbox (mail, market, house transfers). It moves into the stash in a protection zone.
+function V.inboxLabel(d)
+  local c = type(d) == 'table' and n(d.inbox) or 0
+  if c > 0 then return tr('Inbox (%d)', c) end
+  return tr('Inbox')
+end
+
+function V.inboxTooltip(d, canWithdraw)
+  local text = tr('Move what waits in your inbox (mail, market, house transfers) into your stash, or your backpack when it cannot be stashed.')
+  if not canWithdraw then
+    text = text .. '\n' .. tr('Collect it in a protection zone.')
+  end
+  return text
 end
 
 -- the Stow Everything button's tooltip
@@ -62,15 +101,16 @@ function V.tabLabel(t)
   if type(t) ~= 'table' then return '' end
   if t.old then return tr('Old depot') end
   if t.affinity then return tr(t.name or '') end
-  return tostring(t.name or t.id or '')
+  if n(t.id) == 1 then return tr('Stash') end
+  return tr('Old tab %d', n(t.id))
 end
 
-local SOURCES = { free = 'free for everybody', pact = 'lent by your Chaos Pact', bought = 'bought', achievement = 'earned' }
+local SOURCES = { pact = 'lent by your Chaos Pact', bought = 'bought', achievement = 'earned' }
 
 function V.tabTooltip(t, pact)
   if type(t) ~= 'table' then return '' end
   if t.old then
-    return tr('Old depot: %d entries from your depot that fit no tab. Withdraw-only.', n(t.used))
+    return tr('Old depot: %d entries from your retired depot that fit no tab. Withdraw-only.', n(t.used))
   end
   local text
   if t.affinity then
@@ -79,17 +119,19 @@ function V.tabTooltip(t, pact)
     if t.source and SOURCES[t.source] then
       text = text .. '\n' .. tr(SOURCES[t.source])
     end
+  elseif n(t.id) == 1 then
+    text = tr('Stash tab: %d of %d slots. Slot Expansions in the Store make it bigger.', n(t.used), n(t.size))
   else
-    text = tr('Tab %s: %d of %d entries', tostring(t.name or t.id), n(t.used), n(t.size))
+    text = tr('Old tab %d: %d entries', n(t.id), n(t.used))
   end
   if t.locked then
     if t.affinity then
       text = text .. '\n' .. tr('Withdraw-only: your account does not own this tab now. Nothing is lost.')
-    elseif pact then
-      text = text .. '\n' .. tr('Withdraw-only: beyond your tabs.')
     else
-      text = text .. '\n' .. tr('Withdraw-only while your Chaos Pact is inactive. Nothing is lost.')
+      text = text .. '\n' .. tr('Withdraw-only: an old tab. Nothing is lost.')
     end
+  elseif n(t.used) > n(t.size) and not t.affinity then
+    text = text .. '\n' .. tr('Over the limit: you can take items out, and put none in until you are under it.')
   end
   return text
 end
@@ -115,15 +157,15 @@ function V.infoText(d, selected, canWithdraw, canDeposit)
       used = used + n(t.used)
       if t.locked then locked = locked + 1 end
     end
-    text = tr('%d entries. General tabs: %d (%d entries each)%s', used, n(d.limit), n(d.tabSize),
-      d.pact and tr(', Chaos Pact active') or '')
+    text = tr('%d entries.', used)
+    local slots = V.slotsText(d)
+    if slots ~= '' then text = text .. ' ' .. slots end
+    if d.pact then text = text .. tr(', Chaos Pact active') end
     if locked > 0 then
       text = text .. tr('. Withdraw-only tabs: %d', locked)
     end
   end
-  if d.closed == true then
-    text = text .. tr('. The stash is closed to new items: use your depot.')
-  elseif canDeposit == false then
+  if canDeposit == false then
     text = text .. tr('. Deposit and withdraw in a protection zone (remote deposit: Store > Storage & Slots).')
   elseif not canWithdraw then
     text = text .. tr('. Withdraw in a protection zone.')

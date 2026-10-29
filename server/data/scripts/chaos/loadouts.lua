@@ -15,8 +15,10 @@
 -- ascended run, siege), cfg.cooldownSeconds after the last switch; in a protection zone at once, elsewhere after a
 -- cfg.castMs channel (standing still, no combat; the cast bar of game_castbar shows it).
 -- Gear: equipped items, the backpack (all containers in it) and, in a protection zone, the store inbox. Items in a
--- depot are only named ("in your depot"): the engine saves depot chests only after the depot was opened in that
--- session, so taking an item out of an unopened depot could duplicate it after a crash. Missing items are reported.
+-- depot or in the stash are only named ("in your stash", O316; "in your depot" for what the retired depot still holds):
+-- the engine saves depot chests only after the depot was opened in that session, so taking an item out of an unopened
+-- depot could duplicate it after a crash, and the stash gives items out only in a protection zone through its own
+-- journal. Missing items are reported.
 --
 -- Crash safety: the switch writes the database first (slot 0 row: serial + 1 and an undo record), then the player
 -- storages (runes, active slot, serial) and saves the player at once. A login with the database one serial ahead
@@ -441,6 +443,19 @@ local function depotWhere(depots, want)
 	return nil
 end
 
+-- the stash holds the item (by item id): "in your stash" (O316: the stash is the storage)
+local function stashWhere(player, want)
+	local S = ChaosStash
+	if not (S and S.staffFind and want and tonumber(want.id)) then
+		return nil
+	end
+	local ok, plain, rows = pcall(S.staffFind, player:getGuid(), want.id)
+	if ok and ((plain and plain.count or 0) > 0 or (rows and #rows > 0)) then
+		return "in your stash"
+	end
+	return nil
+end
+
 -- the set of what is equipped now: {[slot] = {id, iid, name} | {empty = true}}
 local function snapshotGear(player)
 	local set = {}
@@ -527,7 +542,7 @@ local function applyGear(player, set, withInbox)
 		elseif step.action == "missing" then
 			depots = depots or depotItems(player)
 			report.missing = report.missing + 1
-			local where = depotWhere(depots, step.want) or (not withInbox and "not carried (the store inbox is only searched in a protection zone)") or "not found"
+			local where = depotWhere(depots, step.want) or stashWhere(player, step.want) or (not withInbox and "not carried (the store inbox is only searched in a protection zone)") or "not found"
 			report.lines[#report.lines + 1] = string.format("%s: %s.", step.want.name or "?", where)
 		end
 	end
@@ -631,7 +646,7 @@ local function slotView(player, slot, row, ctx)
 				want = s.want
 			end
 		end
-		m.where = depotWhere(ctx.depots, want) or "missing"
+		m.where = depotWhere(ctx.depots, want) or stashWhere(player, want) or "missing"
 	end
 	view.gear = summary
 	view.warnings = warnings

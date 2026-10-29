@@ -781,6 +781,17 @@ eq(res.ok, true, "switch with a missing item still switches the build")
 local joined = table.concat(res.lines, " ")
 has(joined, "in your depot (Emberfall)", "missing item reported with its place")
 eq(countIid("1790000000001"), 1, "still one sword (left in the depot)")
+-- O316: the stash is the storage; a sword that lies there is named "in your stash" (the depot is empty by then)
+do
+	local keepDepot = depot.items
+	depot.items = {}
+	ChaosStash = {staffFind = function() return {count = 0, tab = 0}, {{id = 1, tab = 1}} end}
+	request("open")
+	stM = lastOf("state").slots[1].gear.missing[1]
+	eq(stM and stM.where, "in your stash", "a missing item that lies in the stash is named")
+	ChaosStash = nil
+	depot.items = keepDepot
+end
 
 -- validation against changed tree data: slot 2's tree gets a node that left the tree and too many nodes
 storages[7100572] = os.time() - cfg.cooldownSeconds - 1

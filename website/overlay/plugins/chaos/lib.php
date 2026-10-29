@@ -45,7 +45,7 @@ function chaos_cfg(?string $key = null, $default = null) {
 		'staff_group'      => 4,                  // leaderboard_config.lua staffGroup
 		'staff_account_type' => 5,                // class_unlocks_core.lua bypass.minAccountType
 		'base_classes'     => array(4, 3, 1, 11), // offered to every account
-		'depot_boxes'      => false,              // the base server's new-player depot boxes (off: they block joining a season)
+		'depot_boxes'      => false,              // the base server's new-player depot boxes (off, and the depot is retired since O316: the stash is the storage)
 	);
 	if ($key === null) {
 		return $cfg;

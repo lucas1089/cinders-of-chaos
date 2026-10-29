@@ -264,13 +264,18 @@ return {
 	-- Gilded Trail: the goblin (treasure_goblin.lua, ChaosTreasureGoblin.spawn) appears in a random open room once
 	-- this percent range of the rift's kills is done (rolled per run), at the level of the rift's strongest type
 	gilded = {atKills = {25, 60}},
-	-- Sealed Coffer: a big treasure chest (12664: blue and silver, a container of 20, not moveable; was 1746, which could
-	-- be picked up) in a random open side room. Using it wakes a wave of rift monsters around it
+	-- Sealed Coffer: a big gold chest (32312 "sealed coffer", client 38657: the 2 x 2 chest art of pair 45 that the reward chest
+	-- left; a copy of the stock reward chest 21584, a container, not moveable; tools/install_reward_chest.py) in a random
+	-- open side room. It is an item of its own on purpose: 32310 wears the same art but is the reward chest's legacy id (the
+	-- map step moves it to 32311), and the coffer is told from the reward chest by its action id 47403 (the chest's is 47402).
+	-- fallbackId 12664 (the blue and silver treasure chest, a container of 20, not moveable; was 1746, which could be picked
+	-- up) is used while 32312 is not installed. The client draws a gold aura under client id 38657 (game_chestaura, O315).
+	-- Using it wakes a wave of rift monsters around it
 	-- (wave.base + wave.perExtraPlayer x (players - 1), at least `waveTier`); once they are dead it opens with: gold
 	-- coins goldPerTier2 x tier^2, Orbs of Upheaval and Fate and item rolls (as the reward chest, base + perTier x tier), all x
 	-- (1 + quantity bonus). Wave kills do not count towards the guardian. A coffer nobody woke crumbles when the rift is
 	-- sealed; a woken one opens then.
-	coffer = {itemId = 12664, actionId = 47403, wave = {base = 5, perExtraPlayer = 1, spread = 2}, waveTier = "magic",
+	coffer = {itemId = 32312, fallbackId = 12664, actionId = 47403, wave = {base = 5, perExtraPlayer = 1, spread = 2}, waveTier = "magic",
 		goldPerTier2 = 2000, chaos = {base = 0.25, perTier = 0.05}, divine = {base = 0, perTier = 0.03},
 		rolls = {base = 2, perTier = 0.25}},
 	-- Cinderdeath: delayMs after a (non-guardian) monster dies, every player within `radius` sqm of it takes fire damage:

@@ -54,7 +54,7 @@ for _, a in ipairs(cfg.affinities) do
 	tabs[a.tab], keys[a.key] = true, true
 	check(a.tab > cfg.maxGeneralTabs and a.tab < cfg.oldDepot.tab, "affinity tab id between the general tabs and Old depot: " .. a.key)
 	check(a.size > 0 and type(a.name) == "string" and a.icon, "affinity tab size, name, icon: " .. a.key)
-	check(a.free or a.pact or a.extra or a.achievements, "affinity tab has an owner source: " .. a.key)
+	check(a.extra and not a.free and not a.pact and not a.achievements, "affinity tab is store-sold only (O316): " .. a.key)
 	if a.extra then
 		check(pc.extras[a.extra] ~= nil, "affinity extra is a Pact extra: " .. a.extra)
 	end
@@ -65,9 +65,12 @@ end
 eq(K.affinity(cfg, "orbs").tab, 101, "Orbs keeps tab id 101 (rows of before)")
 eq(K.affinity(cfg, "gems").tab, 102, "Gems keeps tab id 102")
 eq(K.affinity(cfg, "keys").tab, 103, "Keys keeps tab id 103")
-check(pc.limits.stashTabs.free * cfg.tabSize + K.affinity(cfg, "supplies").size >= 496,
-	"the free room is at least the old free stash + depot (2 x 48 + 4 x 100)")
-eq(K.affinity(cfg, "supplies").free, true, "Supplies is free")
+eq(cfg.slots.free, 30, "O316: the free room is one tab of 30 slots") eq(cfg.generalTabs, 1, "O316: one general tab")
+eq(K.affinity(cfg, "supplies").extra, "stashSupplies", "Supplies is bought now")
+eq(K.affinity(cfg, "supplies").free, nil, "Supplies is no longer free")
+eq(K.affinity(cfg, "products").pact, nil, "Products is no longer lent by the Pact")
+eq(K.affinity(cfg, "cosmetics").achievements, nil, "Collectibles are no longer an achievement tab")
+eq(cfg.storage.legacy, 7100014, "the grandfather storage is in the stash block 7100011 - 7100019")
 eq(cfg.storage.seq, 7100011, "journal serial storage")
 eq(cfg.storage.migrated, 7100012, "migration storage")
 
@@ -113,24 +116,48 @@ eq(K.entryKey({id = 2400, plain = true, stackable = false}), nil, "a weapon is a
 eq(table.concat(K.unpackClasses(cfg, "weapons,bogus,armor,"), ","), "weapons,armor", "stored classes, unknown keys dropped")
 
 -- ====================================================================== ownership and room
-local L = pc.limits.stashTabs
-local v0 = K.view(cfg, {stashTabs = L.free})
-eq(v0.general, 4, "4 free general tabs")
-eq(v0.owned.supplies, "free", "Supplies owned by everybody")
+-- O316: the room of the one general tab = 30 free + 25 per expansion (bought + lent) + 75 per old tab honoured
+local v0 = K.view(cfg, {packs = pc.limits.stashSlots.free})
+eq(v0.general, 1, "one general tab") eq(v0.slots, 30, "30 free slots")
+eq(v0.owned.supplies, nil, "Supplies is not owned by everybody any more")
 eq(v0.owned.orbs, nil, "Orbs not owned")
-eq(v0.owned.products, nil, "Products not owned without the Pact")
-local vP = K.view(cfg, {stashTabs = L.free + L.pact, pact = true})
-eq(vP.general, 6, "the Pact adds 2 general tabs")
-eq(vP.owned.products, "pact", "the Pact lends the Products tab")
-local vB = K.view(cfg, {stashTabs = L.free, extras = {stashOrbs = 1, stashWeapons = 1}})
+eq(v0.owned.products, nil, "Products not owned without the store")
+eq(K.view(cfg, {packs = 3}).slots, 30 + 3 * 25, "3 expansions: 105 slots")
+eq(K.view(cfg, {packs = pc.limits.stashSlots.free + pc.limits.stashSlots.pact, pact = true}).slots, 55, "the Pact lends one expansion: 55")
+eq(K.view(cfg, {packs = pc.limits.stashSlots.free + pc.limits.stashSlots.pact, pact = true}).owned.products, nil, "the Pact lends no affinity tab")
+eq(K.view(cfg, {packs = 20}).slots, 530, "20 expansions: 530 slots")
+local vB = K.view(cfg, {packs = 0, extras = {stashOrbs = 1, stashWeapons = 1, stashSupplies = 1}})
 eq(vB.owned.orbs, "bought", "Orbs bought")
 eq(vB.owned.weapons, "bought", "Weapons bought")
-local vA = K.view(cfg, {stashTabs = L.free, achievements = {depot_tab_relics = true, depot_tab_vault = true, unique_50 = true}})
-eq(vA.general, 6, "two achievements: two more general tabs")
-eq(vA.owned.cosmetics, "achievement", "Collectibles earned by an achievement")
-eq(K.view(cfg, {stashTabs = L.free, depotTabs = 3}).general, 7, "bought depot tabs count as general tabs")
-eq(K.view(cfg, {stashTabs = 99, depotTabs = 99}).general, cfg.maxGeneralTabs, "capped at maxGeneralTabs")
-eq(K.view(cfg, {stashTabs = -5}).general, 0, "never negative")
+eq(vB.owned.supplies, "bought", "Supplies bought")
+-- the old tabs stay worth something: a bought Extra Stash Tab, a bought Extra Depot Tab and each achievement tab = 3 expansions
+eq(K.view(cfg, {packs = 0, stashTabs = 2}).slots, 30 + 2 * 3 * 25, "two old stash tabs: 150 more slots")
+eq(K.view(cfg, {packs = 0, depotTabs = 3}).slots, 30 + 3 * 3 * 25, "three old depot tabs: 225 more slots")
+eq(K.view(cfg, {packs = 0, achievements = {depot_tab_relics = true, depot_tab_vault = true, unique_50 = true}}).slots, 30 + 2 * 75,
+	"two achievement tabs: 150 more slots")
+eq(K.view(cfg, {packs = 0, achievements = {unique_50 = true}}).owned.cosmetics, nil, "unique_50 gives no tab any more (it is grandfathered once)")
+eq(K.view(cfg, {packs = 20, stashTabs = 6, depotTabs = 12}).general, 1, "never more than one general tab")
+eq(K.view(cfg, {packs = -5}).slots, 30, "never below the free slots")
+eq(K.slotsOf(cfg, {packs = 2, stashTabs = 1}), 30 + (2 + 3) * 25, "slotsOf")
+
+-- grandfathering: the tabs the old rules gave free are kept by the accounts that used them
+eq(table.concat(K.legacyGrants(cfg, {used = {[104] = 3}, extras = {}}), ","), "stashSupplies", "used Supplies: the extra")
+eq(table.concat(K.legacyGrants(cfg, {used = {[104] = 0, [109] = 2}, extras = {}}), ","), "stashProducts", "used Products: the extra")
+eq(table.concat(K.legacyGrants(cfg, {used = {[104] = 1, [109] = 1}, achievements = {unique_50 = true}, extras = {}}), ","),
+	"stashSupplies,stashProducts,stashCosmetics", "all three")
+eq(#K.legacyGrants(cfg, {used = {[104] = 1}, extras = {stashSupplies = 1}}), 0, "already owned: nothing")
+eq(#K.legacyGrants(cfg, {used = {}, extras = {}}), 0, "nothing used: nothing granted")
+eq(#K.legacyGrants(cfg, {used = {[101] = 9, [105] = 4}, extras = {}}), 0, "bought tabs are not granted")
+
+-- the generic tab mechanics below run on the 4 x 100 sizes of before O316 (the same rules, bigger numbers)
+local realCfg = cfg
+cfg = setmetatable({generalTabs = 4, slots = {free = 100, perPack = 25, legacyPacksPerTab = 3}}, {__index = realCfg})
+local L = {free = 0, pact = 0}
+v0 = K.view(cfg, {})
+eq(v0.general, 4, "(generic) 4 general tabs")
+local vP = K.view(cfg, {pact = true})
+vB = K.view(cfg, {extras = {stashOrbs = 1, stashWeapons = 1}})
+v0.owned.supplies = "bought" -- the generic routing tests below use an owned Supplies tab
 
 eq(K.writable(cfg, v0, 4), true, "general tab 4 writable")
 eq(K.writable(cfg, v0, 5), false, "general tab 5 withdraw-only")
@@ -138,6 +165,8 @@ eq(K.writable(cfg, v0, 104), true, "Supplies writable")
 eq(K.writable(cfg, v0, 101), false, "Orbs not owned: withdraw-only")
 eq(K.writable(cfg, v0, cfg.oldDepot.tab), false, "Old depot never takes items")
 eq(K.sizeOf(cfg, 1), cfg.tabSize, "general tab size")
+eq(K.sizeOf(cfg, 1, v0), 100, "tab 1 is the view's slots")
+eq(K.sizeOf(realCfg, 1, K.view(realCfg, {packs = 1})), 55, "O316: tab 1 of the real config")
 eq(K.sizeOf(cfg, 101), 100, "Orbs tab size")
 eq(K.sizeOf(cfg, cfg.oldDepot.tab), math.huge, "Old depot never full")
 
@@ -236,7 +265,7 @@ local sup
 for _, tb in ipairs(view) do
 	if tb.affinity == "supplies" then sup = tb end
 end
-check(sup ~= nil and sup.locked == false and sup.icon ~= nil and sup.source == "free", "Supplies shown, writable, with its icon")
+check(sup ~= nil and sup.locked == false and sup.icon ~= nil and sup.source == "bought", "Supplies shown, writable, with its icon")
 view = K.tabsView(cfg, v0, concat(lost, {{key = "z", tab = cfg.oldDepot.tab}}))
 local gemsShown, oldShown = false, false
 for _, tb in ipairs(view) do
@@ -506,7 +535,8 @@ local types = {
 	[2594] = {name = "depot chest", container = true},
 	[25453] = {name = "depot tab 1", container = true},
 	[25454] = {name = "depot tab 2", container = true},
-	[4000] = {name = "strange relic"}
+	[4000] = {name = "strange relic"},
+	[14404] = {name = "inbox", container = true}
 }
 local ITEM_ATTRIBUTE_NAME_ = 1
 ITEM_ATTRIBUTE_NAME = ITEM_ATTRIBUTE_NAME_
@@ -691,6 +721,7 @@ has(whyBlob, "0017", "a blob row without the patch says why")
 blobMethods(true)
 
 -- ====================================================================== stash.lua against a mocked engine
+cfg = realCfg
 dofile("data/scripts/chaos/chaos_constants.lua")
 local sent = {}
 Chaos.decode = function(b) return type(b) == "table" and b or nil end
@@ -789,6 +820,12 @@ local store = S.store
 -- 2026-10-17 (stash_config.lua toDepot, depot.migrate) has its own section at the end of this part
 Chaos.stashConfig.toDepot.enabled = false
 Chaos.stashConfig.depot.migrate = true
+-- the generic engine tests below run on the room of before O316 (4 general tabs of 100, an owned Supplies tab); the
+-- O316 numbers (one tab of 30, bought tabs only) have their own section after them
+local R316 = {slots = Chaos.stashConfig.slots.free, general = Chaos.stashConfig.generalTabs}
+Chaos.stashConfig.slots.free, Chaos.stashConfig.generalTabs = 100, 4
+ChaosPact = {limit = function() return 0 end, state = function() return {extras = {stashSupplies = 1}} end,
+	active = function() return false end}
 check(events.ChaosStashExtended ~= nil and events.ChaosStashLogin ~= nil, "events registered")
 check(ChaosCommands == nil or ChaosCommands.handlers == nil or ChaosCommands.handlers.stash == nil,
 	"no player command: Stow Everything is a button of the window (owner rule)")
@@ -1490,7 +1527,7 @@ eq(coin.removed, true, "then it goes in")
 
 -- affinity ownership through the Pact and achievements in the engine
 resetDB()
-ChaosPact = {limit = function() return 4 end, state = function() return {extras = {stashWeapons = 1}} end,
+ChaosPact = {limit = function() return 0 end, state = function() return {extras = {stashWeapons = 1, stashSupplies = 1}} end,
 	active = function() return true end}
 local h9 = newPlayer(10)
 local wpn = newItem(2400)
@@ -1502,12 +1539,13 @@ eq(wrow and wrow.tab, 105, "a weapon goes to the bought Weapons tab")
 has(lastText(h9), "(Weapons tab)", "the line names the tab")
 DB.ach.unique_50 = true
 local v9 = S.viewOf(h9, true)
-eq(v9.owned.cosmetics, "achievement", "Collectibles earned by an achievement")
-eq(v9.owned.products, "pact", "Products lent by the Pact")
+eq(v9.owned.cosmetics, nil, "Collectibles are not earned by an achievement any more (O316)")
+eq(v9.owned.products, nil, "Products are not lent by the Pact any more (O316)")
+eq(v9.owned.weapons, "bought", "Weapons bought")
 
 -- remote deposit (owner 2026-10-15): bought or lent by the Pact; withdraw stays in town for everybody
 local extras, pactOn = {}, true
-ChaosPact = {limit = function() return 4 end, state = function() return {extras = extras} end,
+ChaosPact = {limit = function() return 0 end, state = function() return {extras = extras} end,
 	active = function() return pactOn end}
 pz[key3(h9.pos)] = nil
 local function depositOutside(label, expectOk)
@@ -1813,6 +1851,223 @@ end)()
 	check(same(start, sums()), "after everything: the character and stash hold what they held at the start")
 end)()
 
+-- ====================================================================== O316: one tab of 30, expansions, delivery, inbox
+local function o316()
+	-- the real numbers again: one general tab of 30 entries, nothing owned
+	Chaos.stashConfig.slots.free, Chaos.stashConfig.generalTabs = R316.slots, R316.general
+	local packs, extrasO, pactOn316 = 0, {}, false
+	local granted = {}
+	ChaosPact = {limit = function(_, key) return key == "stashSlots" and packs or 0 end,
+		state = function() return {extras = extrasO} end, active = function() return pactOn316 end,
+		grantExtra = function(acc, key, n, src) granted[#granted + 1] = key; extrasO[key] = n; return true end}
+	function Items.moveTo(self, dest)
+		detach(self)
+		dest.children[#dest.children + 1] = self
+		self.parent = dest
+		return true
+	end
+
+	do
+	-- FREE: exactly 30 entries on the one tab, deposits refused after that with the store hint
+	resetDB()
+	local p1 = newPlayer(316)
+	pz[key3(p1.pos)] = true
+	local b1 = p1.bp()
+	for i = 1, 31 do
+		local it = newItem(4000)
+		it.custom.n = i
+		b1.children[#b1.children + 1] = it
+		it.parent = b1
+	end
+	req(p1, {make = "StashAllRequest"})
+	local rep = last("StowReport")
+	eq(rep.stowed, 30, "O316: 30 slots for free")
+	eq(activeRows(316), 30, "30 entries stored")
+	eq(#b1.children, 1, "the 31st stays in the backpack")
+	req(p1, {make = "Stash", Pos = {x = 65535, y = 64, z = 0}})
+	has(lastCancel(p1), "Stash Slot Expansion", "the refusal names the store offer")
+	req(p1, {make = "SendItems"})
+	local tabsMsg = last("tabs")
+	eq(tabsMsg.slots, 30, "the window gets the slots") eq(tabsMsg.freeSlots, 30, "and the free slots")
+	eq(tabsMsg.perPack, 25, "the pack size") eq(tabsMsg.maxPacks, 20, "the cap") eq(tabsMsg.store, "Storage & Slots", "and the store category")
+	eq(tabsMsg.tabs[1].size, 30, "tab 1 is 30 slots") eq(tabsMsg.tabs[1].used, 30, "full")
+	-- one expansion: 25 more entries, the 31st goes in
+	packs = 1
+	req(p1, {make = "Stash", Pos = {x = 65535, y = 64, z = 0}, UpdateList = true})
+	eq(activeRows(316), 31, "an expansion: room for one more")
+	eq(last("tabs").slots, 55, "30 + 25 slots")
+	eq(last("tabs").packs, 1, "one expansion owned")
+
+	end
+	do
+	-- more than the slots: a character that holds 100 entries keeps them; nothing new goes in; they come out
+	resetDB()
+	local p2 = newPlayer(317)
+	pz[key3(p2.pos)] = true
+	for i = 1, 100 do
+		DB.nextId = DB.nextId + 1
+		DB.rows[DB.nextId] = {id = DB.nextId, player = 317, item = 4000, count = 1, codec = "blob", data = "", tab = 1,
+			classes = "", name = "relic", info = "", rarity = 0, state = 0, seq = 0, source = "deposit"}
+	end
+	for i = 1, 3 do
+		DB.nextId = DB.nextId + 1
+		DB.rows[DB.nextId] = {id = DB.nextId, player = 317, item = 4000, count = 1, codec = "blob", data = "", tab = 2,
+			classes = "", name = "old", info = "", rarity = 0, state = 0, seq = 0, source = "deposit"}
+	end
+	packs = 0
+	S.sendItems(p2)
+	local t2 = last("tabs")
+	eq(t2.tabs[1].used, 100, "100 entries stay on tab 1 (over the 30)")
+	eq(t2.tabs[1].locked, false, "tab 1 itself is open") eq(t2.tabs[2].locked, true, "the old tab 2 is withdraw-only")
+	local it2 = newItem(4000)
+	it2.custom.n = "x"
+	p2.bp().children[#p2.bp().children + 1] = it2
+	it2.parent = p2.bp()
+	req(p2, {make = "Stash", Pos = {x = 65535, y = 64, z = 0}})
+	eq(it2.removed, nil, "over the limit: nothing new goes in")
+	eq(activeRows(317), 103, "and nothing is deleted")
+
+	-- the Pact lends one expansion while it runs; an affinity tab is bought only
+	packs, pactOn316 = 1, true
+	eq(S.viewOf(p2).slots, 55, "Pact: 55 slots") eq(S.viewOf(p2).owned.products, nil, "Pact: no Products tab")
+	pactOn316, packs = false, 0
+	extrasO = {stashTabs = 2, depotTabs = 1}
+	eq(S.viewOf(p2).slots, 30 + 3 * 75, "old bought tabs: 75 slots each, 3 tabs = 225")
+	extrasO = {stashTabs = 99, depotTabs = 99}
+	eq(S.viewOf(p2).slots, 30 + (6 + 12) * 75, "capped at what the old rules sold (6 + 12)")
+	extrasO = {}
+
+	end
+	do
+	-- grandfathering: used Supplies and Products tabs, the Collectibles achievement
+	resetDB()
+	granted = {}
+	local p3 = newPlayer(318)
+	DB.nextId = DB.nextId + 1
+	DB.rows[DB.nextId] = {id = DB.nextId, player = 318, item = 4000, count = 1, codec = "blob", data = "", tab = 104,
+		classes = "supplies,", name = "relic", info = "", rarity = 0, state = 0, seq = 0, source = "deposit"}
+	addPlain(318, 5880, 4, 109, true)
+	DB.ach.unique_50 = true
+	local got = S.grandfather(p3)
+	eq(table.concat(got, ","), "stashSupplies,stashProducts,stashCosmetics", "the three old grants")
+	eq(p3.storage[cfg.storage.legacy], cfg.legacyGrants.version, "marked done")
+	eq(#S.grandfather(p3), 0, "never twice")
+	extrasO = {}
+	DB.ach.unique_50 = nil
+	local p4 = newPlayer(319)
+	eq(#S.grandfather(p4), 0, "nothing used, nothing granted")
+	eq(p4.storage[cfg.storage.legacy], cfg.legacyGrants.version, "still marked")
+
+	-- the depot migration runs again for a character that did it before (version 2 brings back what 2026-10-17 moved out)
+	eq(cfg.depot.version, 2, "migration version 2 (O316)")
+	eq(cfg.depot.migrate, true, "the depot moves into the stash") eq(cfg.depot.withdrawOnly, true, "the depot is withdraw-only")
+	local p5 = newPlayer(320)
+	p5.storage[cfg.storage.migrated] = 1
+	eq(S.migrationDue(p5), true, "a character done with version 1 is due again")
+	p5.storage[cfg.storage.migrated] = 2
+	eq(S.migrationDue(p5), false, "version 2 done")
+
+	end
+	do
+	-- delivery (market): into the matching affinity tab when owned, else the general tab; exactly once through the journal
+	resetDB()
+	extrasO = {stashWeapons = 1}
+	local p6 = newPlayer(321)
+	local inbox6 = container(14404)
+	function p6:getInbox() return inbox6 end
+	local sword = newItem(2400)
+	inbox6.children[1] = sword
+	sword.parent = inbox6
+	p6.storage[777] = 5 -- the market's deliverSeq, set before the call
+	local ok6, where6 = S.deliverItem(p6, sword, {source = "market"})
+	eq(ok6, true, "delivered") eq(where6, "Weapons", "into the Weapons tab the account owns")
+	eq(DB.rows[DB.nextId].tab, 105, "the row is in tab 105")
+	eq(sword.removed, true, "the item left the inbox") eq(#inbox6.children, 0, "the inbox is empty")
+	eq(p6.saves, 1, "one save carries the removal and the caller's storage")
+	eq(p6.storage[777], 5, "the market's deliverSeq is in that save")
+	eq(openRows(), 0, "no journal row left")
+	has(S.deliveredText(p6, where6), "(Weapons tab)", "the line names the tab") has(S.deliveredText(p6, "stash"), "in your stash", "or the stash")
+	local helmet = newItem(2472)
+	inbox6.children[1] = helmet
+	helmet.parent = inbox6
+	local ok7, where7 = S.deliverItem(p6, helmet)
+	eq(ok7, true, "an armour without an Armor tab") eq(DB.rows[DB.nextId].tab, 1, "goes to the general tab")
+	-- a failed save: the item stays in the inbox, nothing is lost and nothing is doubled
+	local relic = newItem(4000)
+	relic.custom.n = 1
+	inbox6.children[1] = relic
+	relic.parent = inbox6
+	p6.saveOk = false
+	local ok8, _, why8 = S.deliverItem(p6, relic)
+	eq(ok8, false, "a failed save: not delivered") eq(why8, "busy", "busy")
+	eq(#inbox6.children, 1, "the item is back in the inbox (a copy: the stash never keeps it)") eq(inbox6.children[1].id, 4000, "the same item")
+	eq(activeRows(321), 2, "and no stash row was kept for it")
+	p6.saveOk = true
+	-- a full stash: the inbox keeps it
+	resetDB()
+	for i = 1, 30 do
+		DB.nextId = DB.nextId + 1
+		DB.rows[DB.nextId] = {id = DB.nextId, player = 321, item = 4000, count = 1, codec = "blob", data = "", tab = 1,
+			classes = "", name = "relic", info = "", rarity = 0, state = 0, seq = 0, source = "deposit"}
+	end
+	local ok9, _, why9 = S.deliverItem(p6, relic)
+	eq(ok9, false, "a full stash") eq(why9, "full", "says full")
+	eq(#inbox6.children, 1, "the inbox keeps the item")
+	local box9 = newItem(1987)
+	box9.children = {newItem(2148, 5)}
+	local ok10, _, why10 = S.deliverItem(p6, box9)
+	eq(ok10, false, "a bag with things in it is not stashed") eq(why10, "cannot", "cannot")
+
+	end
+	do
+	-- Collect inbox: in a protection zone; stash first, the backpack for what cannot be stashed
+	resetDB()
+	local p7 = newPlayer(322)
+	pz[key3(p7.pos)] = nil
+	local inbox7 = container(14404)
+	function p7:getInbox() return inbox7 end
+	local parcel = newItem(1987)
+	parcel.children = {newItem(2148, 5)}
+	local items7 = {newItem(2400), newItem(2472), parcel, newItem(2148, 10)}
+	for _, it in ipairs(items7) do
+		inbox7.children[#inbox7.children + 1] = it
+		it.parent = inbox7
+	end
+	req(p7, {make = "CollectInbox"})
+	has(lastCancel(p7), "protection zone", "outside a protection zone: refused")
+	eq(#inbox7.children, 4, "nothing moved")
+	pz[key3(p7.pos)] = true
+	req(p7, {make = "CollectInbox"})
+	eq(#inbox7.children, 0, "the inbox is empty")
+	eq(activeRows(322), 2, "the weapon and the armour are in the stash (rows)")
+	eq(DB.plain["322:2148"] and DB.plain["322:2148"].count, 10, "the gold is a merged stack")
+	eq(#p7.bp().children, 1, "the parcel went to the backpack")
+	has(lastText(p7), "Inbox: 3 item(s) into your stash, 1 into your backpack, 0 stay in the inbox", "the report")
+	req(p7, {make = "CollectInbox"})
+	has(lastText(p7), "empty", "an empty inbox says so")
+	eq(S.inboxCount(p7), 0, "the count")
+
+	end
+	do
+	-- a locker opening opens the stash window and tells the client which locker windows to close
+	local p8 = newPlayer(323)
+	sent = {}
+	S.openWindow(p8, {1589, 1590})
+	local tg = last("Toggle")
+	check(tg ~= nil and tg.open == true and tg.closeLockers and tg.closeLockers[2] == 1590, "Toggle carries the locker ids to close")
+	S.openWindow(p8)
+	eq(last("Toggle").closeLockers, nil, "a plain open closes nothing")
+
+	end
+	do
+	-- the Pact message and offers
+	Chaos.stashConfig.slots.free, Chaos.stashConfig.generalTabs = 100, 4
+	ChaosPact = {limit = function() return 0 end, state = function() return {extras = {stashSupplies = 1}} end,
+		active = function() return false end}
+end
+end
+o316()
+
 -- ====================================================================== the SQL
 -- the real store, against a recording database: integers formatted as integers, texts escaped
 dofile("data/scripts/chaos/stash.lua")
@@ -1834,7 +2089,7 @@ end
 check(#queries >= 5, "the store wrote its queries (" .. #queries .. ")")
 
 -- S.openWindow: a Toggle that keeps the window open (a depot locker uses it only with depot.openStash)
-eq(cfg.depot.openStash, false,"a depot locker does not open the stash window (owner report 2026-10-20)")
+eq(cfg.depot.openStash, true, "a depot locker opens the stash window (O316)")
 do
 	local p = newPlayer(9901)
 	sent = {}

@@ -91,6 +91,7 @@ jobs:
           python3 -m venv /tmp/fxenv
           /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
+          /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check   # chest and Templar aura strips of game_chestaura (O315)
           # pair 36 effects: specs, sources and sums agree, names free, missiles uint8 (the pack art is never in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_fx.py build --check
           # pair 41: pair 36's projectile missiles redrawn from the native 32 px renders and three appended: spec, sources

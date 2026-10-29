@@ -72,7 +72,7 @@ function V.specialText(s)
     parts[#parts + 1] = tr(t.name) .. (t.owned and tr(' (owned)') or tr(' (store)'))
   end
   if #parts == 0 then return '' end
-  return tr('Affinity stash tabs: %s. General tabs hold %s entries each.', table.concat(parts, ', '), n(s.tabSize))
+  return tr('Affinity stash tabs: %s. The free stash tab holds %s entries; Slot Expansions make it bigger.', table.concat(parts, ', '), n(s.tabSize))
 end
 
 -- saved builds: one row per slot from 1 to max(limit, highest saved slot); empty editable slots included

@@ -292,10 +292,12 @@ Stash.DataManager = function(protocol, opcode, buffer)
 		displayInfoBox(tr('Stow Everything'), V.reportText(buffer))
 	elseif buffer.make == "Toggle" then
 		Stash.remoteAccess = (buffer.remote == true)
-		-- open = true: the stash keeper NPC asks for the window (it stays open when it already is)
+		-- open = true: the stash keeper NPC or a depot locker asks for the window (it stays open when it already is)
 		if not (buffer.open == true and Stash.UI and Stash.UI:isVisible()) then
 			Stash.Toggle()
 		end
+		-- a depot locker (the depot is retired, O316): the locker window the engine opened is closed again
+		Stash.CloseLockers(buffer.closeLockers)
 	elseif buffer.make == "addCategorys" then
 		Stash.CategoryData = buffer
 		Stash.remoteAccess = (buffer.remote == true)
@@ -549,6 +551,7 @@ Stash.UpdateAccess = function()
 	if Stash.UI.TabInfo then
 		Stash.UI.TabInfo:setText(Stash.TabInfoText())
 	end
+	Stash.UpdateButtons()
 	-- Stow Everything: greyed out with the unlock hint while depositing is locked here
 	local dep = Stash.CanDeposit()
 	if Stash.UI.StashAllButton then
@@ -579,6 +582,42 @@ Stash.SelectTab = function(id)
 				Stash.CreateItem(Stash.Data[i].itemData)
 			end
 		end
+	end
+end
+
+-- closes the locker windows (the server names the lockers' client ids): the depot is retired, its stock window has
+-- nothing to show; the inbox is reached with the Inbox button of the stash window
+Stash.CloseLockers = function(ids)
+	if type(ids) ~= 'table' or #ids == 0 or not g_game.getContainers then
+		return
+	end
+	local set = {}
+	for _, id in ipairs(ids) do
+		set[id] = true
+	end
+	for _, c in pairs(g_game.getContainers()) do
+		local top = c and not c:isClosed() and c.getContainerItem and c:getContainerItem()
+		if top and set[top:getId()] then
+			g_game.close(c)
+		end
+	end
+end
+
+-- the buy and inbox buttons under the tab bar (their texts and rules: stashview.lua)
+Stash.UpdateButtons = function()
+	local ui = Stash.UI
+	if not ui then
+		return
+	end
+	local d = Stash.Tabs
+	if ui.BuySlotsButton then
+		ui.BuySlotsButton:setVisible(V.canBuy(d))
+		ui.BuySlotsButton:setTooltip(V.buyTooltip(d))
+	end
+	if ui.InboxButton then
+		ui.InboxButton:setText(V.inboxLabel(d))
+		ui.InboxButton:setOpacity(Stash.CanWithdraw() and 1 or 0.45)
+		ui.InboxButton:setTooltip(V.inboxTooltip(d, Stash.CanWithdraw()))
 	end
 end
 
@@ -753,6 +792,29 @@ end
 -- asks the server to open the stash (it answers "Toggle" with the remote-access flag)
 function vipToggle()
 	Stash.Communicate(json.encode({action = "Stash", data = {make = "Open"}}))
+end
+
+-- the Buy Slots button: the store at the category the server named (Storage & Slots: Stash Slot Expansion, the tabs)
+function buySlots()
+	local sm = modules.game_shop
+	local category = Stash.Tabs and Stash.Tabs.store
+	if not sm or not category or category == '' then return end
+	if type(sm.openCategory) == 'function' then
+		sm.openCategory(category)
+	elseif sm.toggle then
+		sm.toggle()
+	end
+end
+
+-- the Inbox button: the server moves the inbox into the stash (what cannot be stashed into the backpack)
+function collectInbox()
+	if not Stash.CanWithdraw() then
+		if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
+			modules.game_textmessage.displayFailureMessage(tr('You can collect your inbox only in a protection zone.'))
+		end
+		return
+	end
+	Stash.Communicate(json.encode({action = "Stash", data = {make = "CollectInbox"}}))
 end
 
 -- the "Stow Everything" button: everything of the backpack, through its bags, into its tab (the server's report comes back

@@ -14,28 +14,34 @@ eq(V.canWithdraw({ canWithdraw = true, withdrawWhy = 'hideout' }, 0), true, 'ins
 eq(V.canWithdraw({ canWithdraw = false }, 0), false, 'outside')
 
 -- tab buttons
-eq(V.tabLabel({ id = 3, name = '3' }), '3', 'a general tab: its number')
+eq(V.tabLabel({ id = 1, name = '1' }), 'Stash', 'the one general tab is the Stash')
+eq(V.tabLabel({ id = 3, name = '3' }), 'Old tab 3', 'an old general tab')
 eq(V.tabLabel({ id = 104, name = 'Supplies', affinity = 'supplies' }), 'Supplies', 'an affinity tab: its name')
 eq(V.tabLabel({ id = 200, name = 'Old depot', old = true }), 'Old depot', 'the Old depot tab')
-has(V.tabTooltip({ id = 104, name = 'Supplies', affinity = 'supplies', used = 3, size = 100, source = 'free' }), 'goes here first',
+has(V.tabTooltip({ id = 104, name = 'Supplies', affinity = 'supplies', used = 3, size = 100, source = 'bought' }), 'goes here first',
   'affinity tooltip')
-has(V.tabTooltip({ id = 104, name = 'Supplies', affinity = 'supplies', used = 3, size = 100, source = 'free' }), 'free for everybody',
+has(V.tabTooltip({ id = 104, name = 'Supplies', affinity = 'supplies', used = 3, size = 100, source = 'bought' }), 'bought',
   'affinity source')
 has(V.tabTooltip({ id = 105, name = 'Weapons', affinity = 'weapons', used = 3, size = 100, locked = true }), 'does not own',
   'a lost affinity tab')
-has(V.tabTooltip({ id = 5, name = '5', used = 10, size = 100, locked = true }, false), 'Chaos Pact is inactive', 'a locked general tab')
-has(V.tabTooltip({ id = 5, name = '5', used = 10, size = 100, locked = true }, true), 'beyond your tabs', 'beyond the tabs')
+has(V.tabTooltip({ id = 5, name = '5', used = 10, size = 100, locked = true }, false), 'an old tab', 'a locked old tab')
+has(V.tabTooltip({ id = 1, name = '1', used = 12, size = 55 }), '12 of 55 slots', 'the stash tab: its slots')
+has(V.tabTooltip({ id = 1, name = '1', used = 100, size = 30 }), 'Over the limit', 'more entries than slots: take out only')
 has(V.tabTooltip({ id = 200, old = true, used = 7 }), 'Withdraw-only', 'Old depot tooltip')
 eq(V.tabTooltip(nil), '', 'no tab')
 
 -- the line under the list
-local d = { tabs = { { id = 1, name = '1', used = 40, size = 100 }, { id = 5, name = '5', used = 2, size = 100, locked = true },
-  { id = 104, name = 'Supplies', affinity = 'supplies', used = 3, size = 100 } }, limit = 4, tabSize = 100, pact = true }
+local d = { tabs = { { id = 1, name = '1', used = 40, size = 55 }, { id = 5, name = '5', used = 2, size = 100, locked = true },
+  { id = 104, name = 'Supplies', affinity = 'supplies', used = 3, size = 100 } }, limit = 1, tabSize = 100, pact = true,
+  slots = 55, freeSlots = 30, perPack = 25, packs = 1, maxPacks = 20, store = 'Storage & Slots', inbox = 3 }
 local info = V.infoText(d, 0, true)
 has(info, '45 entries', 'every entry counted')
-has(info, 'General tabs: 4 (100 entries each)', 'the general tabs')
+has(info, 'Stash: 40 of 55 slots (30 free + 1 expansions of 25)', 'the slots of the one general tab')
+has(info, 'Chaos Pact active', 'the Pact')
 has(info, 'Withdraw-only tabs: 1', 'the withdraw-only count')
 has(V.infoText(d, 104, true), 'Supplies: 3 / 100 entries', 'one tab selected')
+eq(V.slotsText({ slots = 30, packs = 0, tabs = { { id = 1, used = 7 } } }), 'Stash: 7 of 30 slots', 'free room only')
+eq(V.slotsText(nil), '', 'no slots')
 has(V.infoText(d, 5, true), 'withdraw-only', 'a locked tab selected')
 has(V.infoText(d, 0, false), 'Withdraw in a protection zone', 'outside a protection zone')
 eq(V.infoText(nil, 0, true), '', 'no tabs yet')
@@ -65,12 +71,18 @@ eq(V.canDeposit({ canDeposit = true, depositWhy = 'pz' }, 0), false, 'left the z
 eq(V.canDeposit({ canDeposit = true, depositWhy = 'hideout' }, 0), true, 'inside a hideout')
 has(V.depositLockedText(), 'Storage & Slots', 'the locked state says where to unlock')
 has(V.stowTooltip(false, {}), 'Chaos Pact', 'Stow Everything locked: where to unlock')
-eq(V.canDeposit({ closed = true, canDeposit = false }, 0), false, 'closed: no deposit, not even in a protection zone')
-has(V.depositLockedText({ closed = true }), 'your depot', 'closed: the line names the depot')
-has(V.stowTooltip(false, { closed = true }), 'closed to new items', 'closed: Stow Everything says so')
-has(V.infoText({ tabs = {}, limit = 1, tabSize = 100, closed = true }, 0, true, false), 'use your depot', 'closed: the line under the list')
 has(V.stowTooltip(true, { remote = 'pact' }), 'lent by your Chaos Pact', 'Stow Everything: the unlock source')
 has(V.infoText(d, 0, false, false), 'remote deposit', 'the line under the list when locked')
+
+-- O316: the buy and inbox buttons
+eq(V.canBuy(d), true, 'the server names the store category: the Buy Slots button shows')
+eq(V.canBuy({ store = '' }), false, 'no category: no button')
+has(V.buyTooltip(d), '+25 slots', 'the tooltip names the pack')
+has(V.buyTooltip(d), 'Storage & Slots', 'and the category')
+eq(V.inboxLabel(d), 'Inbox (3)', 'the inbox count')
+eq(V.inboxLabel({ inbox = 0 }), 'Inbox', 'an empty inbox')
+has(V.inboxTooltip(d, false), 'protection zone', 'the inbox is collected in town')
+eq(V.inboxTooltip(d, true):find('protection zone', 1, true), nil, 'in town: no warning')
 
 -- a deposit names the dragged item, and the drop is handled once (player report 2026-10-22: one drag took the item
 -- to the right too)

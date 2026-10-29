@@ -1945,5 +1945,78 @@ local decodedBlob, why = MK2.decode(2400, 1, "blob", "00")
 eq(decodedBlob, nil, "a blob row on a server without the patch is not delivered")
 ok(why:find("0017"), "and says why")
 
+-- O316: the depot is retired, so the market delivers into the stash and keeps the inbox as the fallback; the
+-- deliveredSeq is set before the stash call, so the stash's own save carries it (exactly once)
+local function o316market()
+	local stashed, marksSeen = {}, {}
+	local refuse
+	ChaosStash = {
+		deliverItem = function(player, item, opts)
+			marksSeen[#marksSeen + 1] = player:getStorageValue(cfg.storage.deliverSeq)
+			if refuse then return false, nil, refuse end
+			-- the journal takes the item out of the inbox and saves the character with the mark
+			local found
+			for i, c in ipairs(player.inbox.children) do
+				if c == item then table.remove(player.inbox.children, i) found = true break end
+			end
+			if not found then -- the mock inbox merged the orbs into a stack: take them out of it
+				for _, c in ipairs(player.inbox.children) do
+					if c.id == item.id and c.count >= item.count then c.count = c.count - item.count break end
+				end
+			end
+			player:save()
+			stashed[#stashed + 1] = {id = item.id, count = item.count, source = opts and opts.source}
+			return true, "Orbs"
+		end,
+		deliveredText = function(player, where) return "in your stash (" .. tostring(where) .. " tab)" end
+	}
+	op(A, "list", {ref = "s3.0", sid = 29856, iid = "0", count = 5, gold = 2000, days = 1})
+	local o1 = lastSent(A, "done").id
+	local function orbsIn(p) local n = 0 for _, it in ipairs(p.inbox.children) do if it.id == 29856 then n = n + it.count end end return n end
+	local inboxBefore = orbsIn(B)
+	B.msgs = {}
+	op(B, "buy", {id = o1, cur = "gold"})
+	eq(#stashed, 1, "O316: the bought item went into the stash")
+	eq(stashed[1].id, 29856, "the orbs") eq(stashed[1].source, "market", "tagged as a market delivery")
+	eq(orbsIn(B), inboxBefore, "and not into the inbox")
+	ok(marksSeen[#marksSeen] ~= nil and marksSeen[#marksSeen] >= 0 and marksSeen[#marksSeen] == B.storage[cfg.storage.deliverSeq],
+		"the deliverSeq was set before the stash saved the character")
+	local told = table.concat(B.msgs, "\n")
+	ok(told:find("in your stash (Orbs tab)", 1, true) ~= nil, "the line says where it went")
+	ok(told:find("in your inbox", 1, true) == nil, "and not the inbox")
+	local savedOnce = B.saved and B.saved.inbox
+	ok(savedOnce ~= nil, "the character was saved")
+	-- the stash is full (or refuses): the item stays in the inbox and the line says so
+	refuse = "full"
+	A.msgs, A.sent = {}, {}
+	A:addItemEx(newItem(29856, 50))
+	op(A, "list", {ref = "s3.0", sid = 29856, iid = "0", count = 5, gold = 2000, days = 1})
+	local o2 = lastSent(A, "done").id
+	inboxBefore = orbsIn(B)
+	B.msgs = {}
+	op(B, "buy", {id = o2, cur = "gold"})
+	eq(#stashed, 1, "a full stash: nothing more stashed")
+	eq(orbsIn(B), inboxBefore + 5, "the inbox keeps it")
+	ok(table.concat(B.msgs, "\n"):find("in your inbox", 1, true) ~= nil, "and the line says the inbox")
+	-- a delivery already applied (replayed after a crash) is not delivered again
+	local delRow2
+	for _, r in ipairs(tbl("chaos_market_deliveries")) do if r.offer_id == o1 and r.kind == "item" then delRow2 = r end end
+	delRow2.delivered = 0
+	refuse = nil
+	local n0 = #stashed
+	eq(MK.deliver(B), 0, "a row at or below the saved mark is only marked")
+	eq(#stashed, n0, "never stashed twice")
+	-- a stash that errors (pcall) falls back to the inbox
+	ChaosStash.deliverItem = function() error("boom") end
+	A:addItemEx(newItem(29856, 50))
+	op(A, "list", {ref = "s3.0", sid = 29856, iid = "0", count = 5, gold = 2000, days = 1})
+	local o3 = lastSent(A, "done").id
+	inboxBefore = orbsIn(B)
+	op(B, "buy", {id = o3, cur = "gold"})
+	eq(orbsIn(B), inboxBefore + 5, "an error in the stash: the inbox keeps it")
+	ChaosStash = nil
+end
+o316market()
+
 print(string.format("market_test: %d checks, %d failed", checks, fails))
 os.exit(fails == 0 and 0 or 1)

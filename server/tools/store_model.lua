@@ -24,6 +24,7 @@ function M.load()
 	env.K = ChaosShopCore
 	env.shop = dofile("data/scripts/chaos/shop_config.lua")
 	env.pact = dofile("data/scripts/chaos/pact_config.lua")
+	env.stash = dofile("data/scripts/chaos/stash_config.lua")
 	env.season = dofile("data/scripts/chaos/seasonpass_config.lua")
 	env.death = dofile("data/scripts/chaos/gentledeath_config.lua")
 	env.xpcap = dofile("data/scripts/chaos/xpcap_config.lua")
@@ -347,6 +348,41 @@ function M.problems(env)
 		end
 	end
 
+	-- the stash room (O316): the expansion's price per slot, its pack, the cap, the affinity tabs and the old tabs
+	do
+		local St = R.stash
+		local sl = env.stash.slots
+		local one, pack = env.byKey["service:pactExtra:stashSlots"], env.byKey["service:pactExtra:stashSlots:4"]
+		local cap = env.pact.limits.stashSlots and env.pact.limits.stashSlots.maxExtra or 0
+		if not one then
+			bad("stash: no single Stash Slot Expansion offer")
+		else
+			local perSlot = one.cost / sl.perPack
+			if perSlot < St.minCoinsPerSlot or perSlot > St.maxCoinsPerSlot then
+				bad("stash: an expansion costs %.2f coins per slot (outside %.1f-%.1f)", perSlot, St.minCoinsPerSlot, St.maxCoinsPerSlot)
+			end
+			if cap * one.cost > St.maxFullCapCoins then bad("stash: all %d expansions cost %d coins (> %d)", cap, cap * one.cost, St.maxFullCapCoins) end
+			if pack then
+				local n = pack.amount or 1
+				local off = 100 * (1 - pack.cost / (n * one.cost))
+				if pack.cost >= n * one.cost then bad("stash: the pack of %d (%d coins) is not cheaper than %d singles", n, pack.cost, n) end
+				if off > St.maxPackDiscountPct then bad("stash: the pack of %d is %.0f%% off (> %d%%)", n, off, St.maxPackDiscountPct) end
+				if cap % n ~= 0 then bad("stash: the pack of %d does not divide the cap of %d", n, cap) end
+			end
+			local oldTab = sl.legacyPacksPerTab * one.cost
+			if oldTab > St.maxOldTabCoins then bad("stash: an old tab converts to %d coins of expansions (> %d)", oldTab, St.maxOldTabCoins) end
+			for _, a2 in ipairs(env.stash.affinities) do
+				local offer = a2.extra and env.byKey["service:pactExtra:" .. a2.extra]
+				if not offer then
+					bad("stash: the %s tab has no store offer", a2.key)
+				elseif offer.cost / a2.size > St.maxAffinityCoinsPerEntry + 1e-9 then
+					bad("stash: the %s tab costs %.2f coins per entry (> %.1f)", a2.key, offer.cost / a2.size, St.maxAffinityCoinsPerEntry)
+				end
+			end
+		end
+		if sl.free ~= 30 or env.stash.generalTabs ~= 1 then bad("stash: the free room must be one tab of 30 (owner, O316)") end
+	end
+
 	-- season packs
 	for _, pass in pairs(env.season.passes) do
 		local last = 0
@@ -499,6 +535,24 @@ function M.report(env)
 		for _, p in ipairs(pass.packs or {}) do line("- Season pack %s: %d coins", p.key, p.price) end
 		line("- Premium pass: %d coins", pass.premium.price)
 	end
+
+	-- the stash room (O316)
+	local sl = env.stash.slots
+	local one = env.byKey["service:pactExtra:stashSlots"]
+	local pk4 = env.byKey["service:pactExtra:stashSlots:4"]
+	local cap = env.pact.limits.stashSlots.maxExtra
+	print("\nStash room (O316): one free tab of " .. sl.free .. " entries")
+	print("| Offer | Coins | About | Gives | Coins per entry |")
+	print("|---|---|---|---|---|")
+	line("| %s | %d | %s | +%d slots | %.2f |", one.name, one.cost, real(one.cost), sl.perPack, one.cost / sl.perPack)
+	line("| %s | %d | %s | +%d slots | %.2f |", pk4.name, pk4.cost, real(pk4.cost), sl.perPack * pk4.amount, pk4.cost / (sl.perPack * pk4.amount))
+	line("| All %d expansions (the cap) | %d | %s | %d slots in all | %.2f |", cap, cap * one.cost, real(cap * one.cost), sl.free + cap * sl.perPack,
+		cap * one.cost / (cap * sl.perPack))
+	for _, a2 in ipairs(env.stash.affinities) do
+		local o = env.byKey["service:pactExtra:" .. a2.extra]
+		line("| %s | %d | %s | a tab of %d entries for %s | %.2f |", o.name, o.cost, real(o.cost), a2.size, a2.key, o.cost / a2.size)
+	end
+	line("| An old tab (bought or earned) | - | - | %d expansions = %d slots, outside the cap | - |", sl.legacyPacksPerTab, sl.legacyPacksPerTab * sl.perPack)
 end
 
 function M.main(args)

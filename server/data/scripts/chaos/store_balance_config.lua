@@ -47,6 +47,15 @@ return {
 	-- it (checked with goldPerCoin), and a whole line (health, mana or spirit) costs at most maxLineCoins in all.
 	-- Nothing a tier gives is for sale to an NPC (no coin -> gold loop).
 	everfull = {maxLineCoins = 200},
+	-- the stash (O316): the free tab is 30 entries; Stash Slot Expansions (pact_config.lua store, stash_config.lua slots) grow it,
+	-- the affinity tabs (100 entries each) are bought one by one. tools/store_model.lua --check holds the prices to these.
+	stash = {
+		minCoinsPerSlot = 1, maxCoinsPerSlot = 3,   -- an expansion, per slot it adds
+		maxPackDiscountPct = 15,                    -- the pack of expansions against the same number bought singly
+		maxFullCapCoins = 1200,                     -- all expansions up to the cap bought singly
+		maxAffinityCoinsPerEntry = 2.0,             -- a bought affinity tab, per entry: never dearer than an expansion slot (the specialised tab is the better deal)
+		maxOldTabCoins = 150                        -- an old tab (150 coins when it was sold) is worth this many coins of expansions, no more
+	},
 	perCharacterConvenienceMax = 1550,  -- Loot Bag + Auto Seller + Rarity Autoloot + pouches (Orbs, Rift Key, Gem) + Ration for one character
 	cosmetics = {min = 80, max = 800}  -- every cosmetic offer; a static plate frame costs no more than the cheapest wings
 }

@@ -8,6 +8,10 @@ and of the base server's quests) used the stock reward chest (server 21584, clie
 Pair 45 appends a look of its own (client id 38657, client/MANIFEST.md "Reward Chest look"); this step makes the server
 item that wears it: server id 32310, "reward chest" (2 x 2 tiles).
 
+A third item, server id 32312 "sealed coffer" (O315), wears the same 2 x 2 art (client id 38657) for the rift's Sealed Coffer.
+It is not a reward chest: rift_config.lua `coffer.itemId`, action id 47403, never `chest.legacyItemIds` (32310), which the map
+step moves to 32311. Two server ids share one client id; the coffer is never traded or sold, and rift.lua sets its name and description.
+
 A second look, one tile big, is installed the same way: pair 47 appends client id 38758 (client/MANIFEST.md "Reward Chest
 look, one tile"), server id 32311, also named "reward chest" with the same attributes. Pair 53 redraws client 38758 in place
 as a new front-facing chest (client/MANIFEST.md "Reward Chest, front look"): the id stays, so a server that has 32311 needs
@@ -16,10 +20,10 @@ rift_config.lua `chest.itemId`); 32310 stays installed as a legacy item type, an
 chests of it that an earlier run put on the map to 32311.
 
 1. data/items/items.otb: a copy of the node of server 21584 (group container, flags, every attribute) with server id 32310
-   and client id 38657, and another one with server id 32311 and client id 38758 (both: LOOKS). Appended at the end of the root; a node already there with the same bytes is left alone, one with
+   and client id 38657, another one with server id 32311 and client id 38758 and the coffer's 32312 / 38657 (all: LOOKS). Appended at the end of the root; a node already there with the same bytes is left alone, one with
    other bytes is replaced, a server id that belongs to another client id stops the script (nothing is written).
    items.otb.bak keeps the original the first time; the written file is parsed again and the node checked.
-2. data/items/items.xml: their two entries (article "a", name "reward chest", the attributes of 21584's entry: description,
+2. data/items/items.xml: their entries of the three items (article "a", name "reward chest", the attributes of 21584's entry: description,
    container size 32, not pickupable, not moveable) between two marker comments before </items>, rewritten when it
    changed. An id with an entry outside the block stops the script.
 
@@ -43,8 +47,12 @@ STOCK_SID = 21584                # the stock reward chest: container, blocks, no
 RANGE = (32310, 32319)           # reserved for this item
 LOOK = (32310, 38657)            # (server id, client id): pair 45, art_import/reward_chest.csv (2 x 2); a legacy look since pair 53
 LOOK_SMALL = (32311, 38758)      # pair 47, art_import/reward_chest_small.csv (1 x 1), redrawn in place by pair 53 (reward_chest_front.csv)
-LOOKS = (LOOK, LOOK_SMALL)
+LOOK_COFFER = (32312, 38657)     # the Sealed Coffer (O315): the 2 x 2 art of pair 45 again, an item of its own so the rift's reward chest
+                                 # rules (rift_config.lua chest, patch_reward_chests.py legacy 32310) never see a coffer
+LOOKS = (LOOK, LOOK_SMALL, LOOK_COFFER)
 NAME = 'reward chest'
+NAMES = {LOOK_COFFER[0]: 'sealed coffer'}                                       # the other looks are named NAME
+DESCRIPTIONS = {LOOK_COFFER[0]: 'A coffer sealed by the rift. Breaking the seal wakes its guards.'}
 DEFAULT_ATTRS = (('description', 'This chest contains your rewards earned in battles.'), ('containersize', '32'),
                  ('pickupable', '0'), ('moveable', '0'))
 XML_BEGIN = '\t<!-- Chaos Reward Chest look (server/tools/install_reward_chest.py, do not edit by hand) -->\n'
@@ -130,8 +138,10 @@ def stock_attrs(text):
 def xml_block(attrs):
     body = ''
     for sid, _cid in LOOKS:
-        body += '\t<item id="%d" article="a" name="%s">\n' % (sid, xml_escape(NAME))
+        body += '\t<item id="%d" article="a" name="%s">\n' % (sid, xml_escape(NAMES.get(sid, NAME)))
         for k, v in attrs:
+            if k == 'description' and sid in DESCRIPTIONS:
+                v = xml_escape(DESCRIPTIONS[sid])
             body += '\t\t<attribute key="%s" value="%s" />\n' % (k, v)
         body += '\t</item>\n'
     return XML_BEGIN + body + XML_END

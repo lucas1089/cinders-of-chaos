@@ -1593,6 +1593,18 @@ local function spawnGoblin(run)
 	end
 end
 
+-- the coffer's own item while it is installed (32312, the big gold chest look), else the stock treasure chest
+-- (cfg.coffer.fallbackId). Never the reward chest's ids: the two are told apart by item id and action id (47403 / 47402)
+local function cofferItemId()
+	local cfg = C()
+	local id = cfg.coffer.itemId
+	local ok, tid = pcall(function() return ItemType(id):getId() end)
+	if not (ok and tid ~= nil and tid ~= 0) then
+		id = cfg.coffer.fallbackId or id
+	end
+	return id
+end
+
 -- Sealed Coffer: placed at the start of the run in the section the plan picked
 local function placeCoffer(run)
 	local cfg = C()
@@ -1601,14 +1613,15 @@ local function placeCoffer(run)
 	if not pos then
 		return
 	end
-	local item = Game.createItem(cfg.coffer.itemId, 1, P(pos))
+	local itemId = cofferItemId()
+	local item = Game.createItem(itemId, 1, P(pos))
 	if item then
 		item:setActionId(cfg.coffer.actionId)
 		item:setAttribute(ITEM_ATTRIBUTE_NAME, "sealed coffer")
 		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "A coffer sealed by the rift. Breaking the seal wakes its guards.")
-		run.coffer = {state = "closed", room = room, pos = pos, waveLeft = 0, wave = {}, dir = compass(run.L.start, pos)}
+		run.coffer = {state = "closed", room = room, pos = pos, waveLeft = 0, wave = {}, dir = compass(run.L.start, pos), itemId = itemId}
 		if ChaosRewardSparkle and ChaosRewardSparkle.add then -- glints while nobody broke its seal
-			ChaosRewardSparkle.add("rift:coffer:" .. run.id, P(pos), cfg.coffer.itemId, function()
+			ChaosRewardSparkle.add("rift:coffer:" .. run.id, P(pos), itemId, function()
 				return not run.ended and run.coffer ~= nil and run.coffer.state == "closed"
 			end)
 		end
@@ -1617,7 +1630,7 @@ end
 
 local function cofferItem(run)
 	local tile = run.coffer and Tile(P(run.coffer.pos))
-	return tile and tile:getItemById(C().coffer.itemId) or nil
+	return tile and tile:getItemById(run.coffer.itemId or C().coffer.itemId) or nil
 end
 
 -- rolls one item of a random rift monster's loot table (as the reward chest does) into the container

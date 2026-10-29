@@ -5,7 +5,7 @@
 -- store resolvable: a price, a known id or look (wings, auras and shaders of the base XML and the Chaos blocks,
 -- generated outfits and mounts, plate frames that are no exclusives), a service with a handler, an unlock that its
 -- system knows, spell skins whose spells a class still casts (after the 15-spell cap), no empty or doubled category,
--- no doubled offer name, and no Depot Tabs while the depot is withdraw-only.
+-- no doubled offer name, and no Depot Tabs (the depot is retired, O316).
 
 local checks, failures = 0, 0
 local function check(cond, label)
@@ -139,9 +139,23 @@ check(order.Starter < order.Bundles and order.Bundles < order["Premium Time"] an
 for _, gone in ipairs({"Supplies", "Boosts", "Chaos Shaders", "Classes"}) do
 	eq(byName[gone], nil, "no category " .. gone .. " any more")
 end
--- Depot Tabs: only while the depot takes items
-local withdrawOnly = dofile("data/scripts/chaos/stash_config.lua").depot.withdrawOnly == true
-eq(byName["Depot Tabs"] ~= nil, not withdrawOnly, "Depot Tabs only while the depot is not withdraw-only")
+-- O316: the depot is retired, so there is no Depot Tabs category ever; the stash room is sold in Storage & Slots
+eq(byName["Depot Tabs"], nil, "no Depot Tabs category (the depot is retired)")
+local storage = byName["Storage & Slots"]
+check(storage ~= nil, "Storage & Slots is a category")
+eq(storage and storage.parent, "Premium & Services", "Storage & Slots stands under Premium & Services")
+local offerNames = {}
+for _, o in ipairs(storage and storage.offers or {}) do
+	offerNames[o.name] = o
+	check(not (o.name:lower():find("depot", 1, true)), "no depot offer in Storage & Slots: " .. o.name)
+	check(o.extra ~= "stashTabs" and o.extra ~= "depotTabs", "no retired tab offer: " .. o.name)
+end
+check(offerNames["Stash Slot Expansion"] ~= nil, "Stash Slot Expansion is sold")
+check(offerNames["4 Stash Slot Expansions"] ~= nil, "and the pack of 4")
+for _, name in ipairs({"Supplies", "Orbs", "Gems", "Keys", "Weapons", "Armor", "Jewellery", "Materials", "Creature Products", "Collectibles"}) do
+	check(offerNames[name .. " Stash Tab"] ~= nil, "the " .. name .. " tab is sold")
+end
+check(offerNames["Extra Stash Tab"] == nil, "no extra general tab: the expansion grows the one tab")
 
 -- ------------------------------------------------------------------ every offer resolvable
 -- the base XML (not in git; client/MANIFEST.md lists it): wings 1-15, auras 1-5, shaders 1-17; the Chaos blocks on top

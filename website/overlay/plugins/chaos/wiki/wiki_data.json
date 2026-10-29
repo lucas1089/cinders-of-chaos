@@ -392,8 +392,8 @@
 		"spell.count": 169,
 		"store.categories": 37,
 		"store.cosmetic": 627,
-		"store.offers": 763,
-		"store.service": 37,
+		"store.offers": 765,
+		"store.service": 39,
 		"store.unlockCost": 0,
 		"support.count": 20,
 		"support.sockets": 3,
@@ -44443,7 +44443,7 @@
 								["Bundles", "6", "-", "Bundle"],
 								["Premium Time", "3", "250-1200", "Premium time"],
 								["Chaos Pact", "1", "300", "Chaos Pact"],
-								["Storage & Slots", "13", "100-300", "Account storage"],
+								["Storage & Slots", "15", "50-300", "Account storage"],
 								["Season Pass", "4", "500-2500", "Season pass"],
 								["Services", "5", "100-400", "Service"],
 								["XP Boosts", "2", "50-225", "Boost"],
@@ -44526,7 +44526,7 @@
 								["Pet (small abilities)", "7"],
 								["Convenience", "8"],
 								["Service", "16"],
-								["Account storage", "13"],
+								["Account storage", "15"],
 								["Chaos Pact", "1"],
 								["Season pass", "4"],
 								["Boost", "7"],
@@ -44676,7 +44676,7 @@
 									"Chaos Pact (30 days)",
 									"300",
 									"Chaos Pact",
-									"30 days, stacks: +10% XP, stamina x1.5, remote stash deposit, Auto Seller, cosmetic."
+									"30 days: +10% XP, stamina x1.5, remote stash, +25 slots, Auto Seller, cosmetic."
 								]
 							],
 							"sprites": [{"item": 16101}]
@@ -44687,21 +44687,33 @@
 				{
 					"id": "store:5",
 					"name": "Storage & Slots",
-					"sub": "13 offers, 100-300 coins. Account storage.",
+					"sub": "15 offers, 50-300 coins. Account storage.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["13 offers, 100-300 Chaos Coins. Account storage."]},
+						{"h": "Category", "p": ["15 offers, 50-300 Chaos Coins. Account storage."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
 							"w": [24, 10, 16, 50],
 							"rows": [
 								[
-									"Extra Stash Tab",
+									"Stash Slot Expansion",
+									"50",
+									"Account storage",
+									"Permanent, account-wide: +25 slots on your stash tab. Up to 20 (500 more slots)."
+								],
+								[
+									"4 Stash Slot Expansions",
+									"180",
+									"Account storage",
+									"Permanent, account-wide: +100 slots on your stash tab, 10% off."
+								],
+								[
+									"Supplies Stash Tab",
 									"150",
 									"Account storage",
-									"Permanent, account-wide: one more general stash tab (100 entries). Up to 6."
+									"Permanent, account-wide: a stash tab for potions, runes, ammo and food."
 								],
 								[
 									"Orbs Stash Tab",
@@ -44749,13 +44761,13 @@
 									"Creature Products Stash Tab",
 									"150",
 									"Account storage",
-									"Permanent: an affinity stash tab for creature products (lent by the Pact)."
+									"Permanent, account-wide: a stash tab for creature products."
 								],
 								[
 									"Collectibles Stash Tab",
 									"100",
 									"Account storage",
-									"Permanent: an affinity stash tab for collectibles (or earn it: Reliquary)."
+									"Permanent, account-wide: a stash tab for collectibles."
 								],
 								[
 									"Remote Stash Deposit",
@@ -44778,6 +44790,8 @@
 							],
 							"sprites": [
 								{"item": 2365},
+								{"item": 2365},
+								{"item": 7618},
 								{"item": 29856},
 								{"item": 32005},
 								{"item": 32072},
