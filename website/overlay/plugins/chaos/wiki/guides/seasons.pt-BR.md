@@ -1,10 +1,10 @@
 # Temporadas e rankings
 
-Temporadas dão um recomeço justo para todos. Os rankings mostram quem foi mais longe a cada semana.
+Seu personagem é permanente, as temporadas são opcionais, o legado é cosmético. Temporadas dão um recomeço justo para quem quer. Os rankings mostram quem foi mais longe a cada semana.
 
 ## Temporadas
 
-Uma temporada é um recomeço do zero, com personagens novos e um ranking só deles. A primeira é a **{{season.name}}**, de {{season.start}} a {{season.finish}}. Bônus da temporada: **{{season.modifierName}}**, mais experiência de monstros para os personagens da temporada.
+Uma temporada é opcional: é um recomeço do zero para quem quiser, com personagens novos e um ranking só deles. A primeira é a **{{season.name}}**, de {{season.start}} a {{season.finish}}. Bônus da temporada: **{{season.modifierName}}**, mais experiência de monstros para os personagens da temporada.
 
 => @create | Personagem novo | Até o nível {{season.joinMaxLevel}}, depot vazio, sem grupo.
 => @season | Entre | Adventure > Season, depois escolha um modo.
@@ -13,6 +13,8 @@ Uma temporada é um recomeço do zero, com personagens novos e um ranking só de
 
 - Para entrar, abra Adventure > Season com um personagem novo, até o nível {{season.joinMaxLevel}}, com o depot vazio e sem grupo.
 - Personagens de temporada não recebem nada dos personagens normais.
+- Seus personagens normais nunca são apagados nem zerados por uma temporada. Quem não entra não perde nada.
+- Quando a temporada acaba, o personagem dela vira um personagem normal e mantém nível, skills, itens, árvore passiva e uniques da temporada. O legado que vai para a conta é cosmético: outfits, montarias e títulos da trilha.
 - Na entrada você escolhe um modo: Standard, Self-Found (só o que você mesmo encontra), Hardcore (uma morte encerra a corrida) ou Hardcore Self-Found. O modo não muda até a temporada acabar.
 - O Seasonal Journey guia o personagem pelo conteúdo, capítulo por capítulo.
 - As recompensas da trilha da temporada são da conta e ficam com você depois.

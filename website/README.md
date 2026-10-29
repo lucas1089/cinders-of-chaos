@@ -1272,8 +1272,49 @@ Facebook, X): `plugins/chaos/seo_lib.php`, test `tests/chaos_seo_test.php`.
 - **Check a preview**: paste the address in a WhatsApp chat (it shows the image, the title and the description), or
   use Facebook's Sharing Debugger / X's Card Validator to refresh a cached preview after a change.
 
+## Fair play, calendar and creator program (O320)
+Three public pages, each in Portuguese (Brazil) and English (`&l=`, see "Languages"). Short texts use `chaos_t()`
+(`i18n/pt-BR.php`). Long texts live in JSON files with both languages and are read with `chaos_bi()` (`i18n_lib.php`).
+All three are in the menu The World, the sitemap and the SEO descriptions.
+
+### Fair play
+- `page?plugin=chaos&p=fairplay`: "What the store never sells" (`fairplay_lib.php`, `pages/fairplay.php`). Never sold:
+  gear, luck orbs and finished items, random-result items, stats and levels, classes, combat advantage. Sold: cosmetics,
+  convenience, time savers with weekly limits, supplies near their gold value, services, subscriptions. A table lists
+  the time savers and their limits, the gray areas in the open: Pact +10% experience, Premium x1.5 on green stamina,
+  Double Experience Potion (14 hours a week), world buffs, exercise weapons, three crafting tools without luck.
+- One source: `fairplay/fairplay_data.json`. Each entry has `verify` rules (a repository file and a text it must contain).
+  `tests/chaos_fairplay_page_test.php` checks them against docs/PRICES.md and the shop configs, so a changed rule or limit
+  fails the test until the page follows. The page names no prices on purpose: they are in the Store.
+- Linked from the Donate page (`pages/coins.php`).
+
+### Calendar
+- `page?plugin=chaos&p=calendar` (`calendar_lib.php`, `pages/calendar.php`): the open betas, the wipe, the launch, the
+  season length with start and end, the PvP and Tower cycles, the patch note cadence, the wipe rules (beta to launch,
+  season to season) and the open questions. What is undecided shows "A definir" ("To be set").
+- Data: `calendar/calendar_data.json`, written by `python3 -I website/tools/gen_calendar_data.py` from
+  `season_config.lua`, `battleground_config.lua`, `chaos_constants.lua` and `server/data/patchnotes`. The hand-written
+  part is `website/tools/calendar_source.json` (events, wipe rules, open questions). The tool also checks its dates
+  against docs/OWNER_TODO.md and docs/BETA.md and fails when they disagree. `--check` runs in CI. Test:
+  `gen_calendar_data_test.py` and `tests/chaos_calendar_page_test.php`.
+- While `season_config.lua` starts Season 1 on another day than the launch, the page shows its dates as "A definir" with
+  the proposal (launch plus the config length). It follows the config by itself once the config starts with the launch.
+- The page, the home page and the wiki season guide say: your character is permanent, seasons are optional, the legacy is
+  cosmetic.
+
+### Creator program
+- `page?plugin=chaos&p=creators` ("Programa de Criadores"; `creators_lib.php`, `pages/creators.php`,
+  `creators/creators_data.json`): who qualifies (a proposal), what a creator gets, how to apply, the media kit.
+  The creator code is the system of "Creator codes" above; its numbers are checked by `tests/chaos_creators_page_test.php`.
+  Beta keys and the launch-window bonus do not exist in the code and show as "A definir". The beta is open, with no keys.
+- Media kit: `python3 -I website/tools/gen_media_kit.py --zip OUT.zip` packs `website/art/*.png`, the site logo and a
+  fact sheet in pt-BR and en (the dates come from the calendar data). The zip is stored without compression and is
+  deterministic. It is not committed: `install_site.sh` builds it into `<site>/press/`. Committed: only
+  `creators/media_kit_manifest.json` (names, sizes, sha256), checked by `--check` in CI and by the page test against the
+  art on disk. The repository has no gameplay screenshots, so the kit has none. All art is original (see "Art").
+
 ## Languages
-The donation (`coins`), Character Bazaar, creator and leaderboards / records pages speak Portuguese (Brazil) or
+The donation (`coins`), Character Bazaar, creator, leaderboards / records, fair play, calendar and creator program pages speak Portuguese (Brazil) or
 English (`plugins/chaos/i18n_lib.php`): `&l=pt-BR` / `&l=en` (kept in the `chaos_lang` cookie for a year), else the
 cookie, else the browser's Accept-Language, else English. `chaos_t('English %s', $x)` takes its text from
 `plugins/chaos/i18n/pt-BR.php`; each page has a link to the other language. The wiki and the legal pages keep their

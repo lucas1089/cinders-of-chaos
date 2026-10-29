@@ -9,7 +9,7 @@
           Prints only the public key (64 hex digits) of a private key file (server/deploy/publish_client_update.sh).
   build   CLIENT_DIR --out PUBLISH_DIR [--key PATH] [--version N] [--min-version N] [--min-package N]
           [--parallel N] [--channel NAME] [--roots modules,mods,data,layouts] [--dry-run] [--dev] [--key-index N]
-          [--with-single-spr]
+          [--with-single-spr] [--native-dir DIR --native-package N [--native-game NAME] [--native-launcher NAME]]
           Hashes every file under the roots of an assembled client folder (client/tools/assemble_client.sh, with
           the Tibia.dat/.spr pair in data/things/1098/; or a packed package unpacked with `unpack`), ENCRYPTS each
           distinct file once (update_crypt.py: AES-256-GCM, key = HKDF of the client guard secret CHAOS_CLIENT_KEY,
@@ -37,6 +37,14 @@
           builds already out refuses a whole manifest that lists a bigger file, so the limit cannot grow): a bigger
           .spr is refused with a hint to ship it as shards. All files together must fit the engine's update overlay,
           a ZIP without ZIP64 (base patch 0103: below 4 GiB).
+          Native files for the game launcher (O314, client/MANIFEST.md "Game launcher"): --native-dir is a folder with
+          the program files of the package (Chaos.exe, its DLLs, chaos.pack, the launcher exe; only .exe .dll .pack, no
+          sub-folders). They go into the signed payload as a separate "native" section and are published as PLAIN
+          blobs under PUBLISH_DIR/native/<sha[:2]>/<sha> (the package ships them plain anyway; chaos.pack is already
+          ciphertext). The client's Lua updater never reads that section and its "files" list is unchanged, so every
+          client already out keeps working. --native-package N is the package number (Services.update.package) of
+          these files and must be at least --min-package. --native-game is the exe the launcher starts (default
+          Chaos.exe), --native-launcher the launcher's own file in the folder (it updates itself at its next start).
   verify  PUBLISH_DIR --public HEX [--dev] [--key-index N]
           Checks the signature, the payload and every blob's size and SHA-256; with the blob key (CHAOS_CLIENT_KEY or
           --dev) also decrypts every blob and checks the plaintext SHA-256 the manifest signs.
@@ -53,6 +61,8 @@ The client refuses: a bad or missing signature, a manifest of another key, an ol
 paths outside modules/ mods/ data/ layouts/, "..", absolute paths, odd characters, and native code
 (.exe .dll .so ...). The same rules are applied here, so a manifest the client would refuse is never published.
 It also skips (never applies) a manifest whose version is below its package's baseline.
+The launcher refuses the same things and, for the native section: a path that is not one plain file name of
+.exe .dll .pack, a hash or size that does not match, more than NATIVE_MAX_FILES files or a file over NATIVE_MAX_FILE_SIZE.
 Uses the `cryptography` package when installed, else ed25519_ref.py (RFC 8032 reference code).
 """
 import argparse, datetime, hashlib, json, os, re, shutil, subprocess, sys, tempfile
@@ -80,6 +90,12 @@ ENCRYPTION = 'chaos-blob-1'
 BLOB_OVERHEAD = 44  # header 28 + GCM tag 16
 ENCRYPTED_MIN_PACKAGE = 13  # the first client build that decrypts updates
 KEY_ENV = 'CHAOS_CLIENT_KEY'
+# native files of the game launcher (O314): one section of the signed payload, plain blobs, never read by the Lua updater
+NATIVE_EXT = {'exe', 'dll', 'pack'}
+NATIVE_DIR = 'native'
+NATIVE_MAX_FILES = 64
+NATIVE_MAX_FILE_SIZE = 2 * 1024 ** 3  # chaos.pack is about 0.9 GB
+NATIVE_NAME = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$')
 
 
 # ---------------------------------------------------------------- Ed25519
@@ -290,9 +306,98 @@ def blob_key(args, need):
     return keys[0][1], False
 
 
+# ---------------------------------------------------------------- native files (game launcher, O314)
+
+def check_native_name(name):
+    """None when the launcher accepts the file name (one plain name in the install folder), else the reason."""
+    if not isinstance(name, str) or not NATIVE_NAME.match(name):
+        return 'bad file name'
+    if name.endswith('.'):
+        return 'trailing dot'
+    if name.lower().split('.')[0] in WINDOWS_RESERVED:
+        return 'device name'
+    ext = name.lower().rsplit('.', 1)[1] if '.' in name else ''
+    if ext not in NATIVE_EXT:
+        return 'only .exe .dll .pack'
+    return None
+
+
+def collect_native(native_dir):
+    """[(name, abspath)] of the program files in the folder (no sub-folders), plus a list of problems."""
+    files, problems, seen = [], [], {}
+    for name in sorted(os.listdir(native_dir)):
+        full = os.path.join(native_dir, name)
+        if name.startswith('.') or skipped(name):
+            continue
+        if not os.path.isfile(full):
+            problems.append(f'{name}: not a plain file')
+            continue
+        why = check_native_name(name)
+        if why:
+            problems.append(f'{name}: {why}')
+            continue
+        if name.lower() in seen:
+            problems.append(f'{name}: same name as {seen[name.lower()]} on Windows')
+            continue
+        seen[name.lower()] = name
+        if os.path.getsize(full) > NATIVE_MAX_FILE_SIZE:
+            problems.append(f'{name}: larger than {NATIVE_MAX_FILE_SIZE} bytes')
+            continue
+        files.append((name, full))
+    if len(files) > NATIVE_MAX_FILES:
+        problems.append(f'{len(files)} native files (at most {NATIVE_MAX_FILES})')
+    return files, problems
+
+
+def make_native(entries, package, game, launcher):
+    """entries: (name, sha256, size). The "native" payload section."""
+    n = {'package': package, 'game': game, 'files_url': NATIVE_DIR + '/',
+         'files': [{'path': p, 'sha256': h, 'size': s} for p, h, s in entries]}
+    if launcher:
+        n['launcher'] = launcher
+    return n
+
+
+def check_native(n):
+    """None when the launcher accepts the decoded "native" section (same rules as launcher/src/manifest.rs)."""
+    if not isinstance(n, dict):
+        return 'native is not an object'
+    if not isinstance(n.get('package'), int) or n['package'] < 0:
+        return 'native: bad package'
+    if n.get('files_url') != NATIVE_DIR + '/':
+        return 'native: bad files_url'
+    files = n.get('files')
+    if not isinstance(files, list) or not files or len(files) > NATIVE_MAX_FILES:
+        return 'native: bad file list'
+    names = set()
+    for f in files:
+        why = check_native_name(f.get('path'))
+        if why:
+            return f'native: refused path {f.get("path")!r}: {why}'
+        if f['path'].lower() in names:
+            return 'native: duplicate path ' + f['path']
+        names.add(f['path'].lower())
+        if not re.fullmatch(r'[0-9a-f]{64}', str(f.get('sha256'))):
+            return 'native: bad sha256 for ' + f['path']
+        if not isinstance(f.get('size'), int) or not 0 <= f['size'] <= NATIVE_MAX_FILE_SIZE:
+            return 'native: bad size for ' + f['path']
+    game = n.get('game')
+    if check_native_name(game) or not game.lower().endswith('.exe') or game.lower() not in names:
+        return 'native: game is not an .exe of the file list'
+    launcher = n.get('launcher')
+    if launcher is not None and (check_native_name(launcher) or not launcher.lower().endswith('.exe')
+                                 or launcher.lower() not in names or launcher.lower() == game.lower()):
+        return 'native: launcher is not another .exe of the file list'
+    return None
+
+
+def native_blob_path(out_dir, sha):
+    return os.path.join(out_dir, NATIVE_DIR, sha[:2], sha)
+
+
 # ---------------------------------------------------------------- manifest
 
-def make_payload(entries, version, min_version, min_package, parallel, channel, created):
+def make_payload(entries, version, min_version, min_package, parallel, channel, created, native=None):
     """entries: (path, plaintext sha256, plaintext size, blob sha256, blob size)"""
     payload = {
         'format': 1, 'product': PRODUCT, 'channel': channel, 'version': version, 'created': created,
@@ -300,6 +405,8 @@ def make_payload(entries, version, min_version, min_package, parallel, channel, 
         'encryption': ENCRYPTION,
         'files': [{'path': p, 'sha256': h, 'size': s, 'blob': b, 'blob_size': bs} for p, h, s, b, bs in entries],
     }
+    if native is not None:
+        payload['native'] = native
     return json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
 
 
@@ -342,6 +449,8 @@ def check_payload(m, last_version=None):
             return 'bad blob for ' + f['path']
         if f.get('blob_size') != f['size'] + BLOB_OVERHEAD:
             return 'bad blob_size for ' + f['path']
+    if 'native' in m:
+        return check_native(m['native'])
     return None
 
 
@@ -444,6 +553,9 @@ def build(args):
         else:
             sys.exit(problem)
 
+    native_entries, native_src = None, {}
+    if args.native_dir:
+        native_entries, native_src = read_native(args)
     prev = previous_version(args.out) if args.out else 0
     # the package's baseline (its release number, Services.update.baseline) IS the version of its files: clients never
     # apply a manifest below their own baseline, so a manifest of these files under another number would either be
@@ -462,14 +574,17 @@ def build(args):
     if min_version > version:
         sys.exit('--min-version cannot be above --version')
     created = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    native = (make_native(native_entries, args.native_package, args.native_game, args.native_launcher)
+              if native_entries is not None else None)
     summary = (f'{len(entries)} files, {len(blobs)} distinct, {total / 1024 / 1024:.1f} MB, version {version}'
+               + (f', native package {args.native_package} ({len(native_entries)} files)' if native else '')
                + (f' (package baseline {baseline})' if baseline else '') + ', '
                f'min_version {min_version}, min_package {args.min_package}, parallel {args.parallel}')
     if args.dry_run:
         # the blob hashes need the key: the payload rules are checked with stand-ins
         stand_in = [(p, h, s, h, s + BLOB_OVERHEAD) for p, h, s in entries]
         err = check_payload(json.loads(make_payload(stand_in, version, min_version, args.min_package, args.parallel,
-                                                    args.channel, created)))
+                                                    args.channel, created, native)))
         if err:
             sys.exit('internal: ' + err)
         print('dry run (unsigned, unencrypted, nothing written):', summary)
@@ -512,10 +627,12 @@ def build(args):
             raise
         enc[h] = (c, csize)
     full = [(p, h, s) + enc[h] for p, h, s in entries]
-    payload = make_payload(full, version, min_version, args.min_package, args.parallel, args.channel, created)
+    payload = make_payload(full, version, min_version, args.min_package, args.parallel, args.channel, created, native)
     err = check_payload(json.loads(payload))
     if err:
         sys.exit('internal: ' + err)
+    # plain native blobs first, like the encrypted ones: the manifest is written last
+    publish_native(out, native_entries or [], native_src)
     signature = sign(seed, payload.encode('ascii'))
     if not verify_sig(public, payload.encode('ascii'), signature):
         sys.exit('internal: the new signature does not verify')
@@ -525,15 +642,70 @@ def build(args):
     os.chmod(tmp, 0o644)
     os.replace(tmp, os.path.join(out, 'manifest.json'))
     removed = prune_blobs(files_dir, {c for c, _ in enc.values()})
+    removed += prune_blobs(os.path.join(out, NATIVE_DIR), {h for _, h, _ in native_entries or []})
     print(f'published {summary}; encrypted ({"DEVELOPMENT key" if dev else KEY_ENV}); {new} new blob(s), '
           f'{removed} old file(s) removed; public key {public.hex()}')
     return 0
+
+
+def read_native(args):
+    """([(name, sha256, size)], {sha256: abspath}) of --native-dir, or exits with the reason."""
+    if args.native_package is None:
+        sys.exit('--native-dir needs --native-package (the package number of these files, Services.update.package)')
+    if args.native_package < args.min_package:
+        sys.exit(f'--native-package {args.native_package} is below --min-package {args.min_package}: the launcher '
+                 f'would leave the player on a package the manifest calls too old')
+    nd = os.path.abspath(args.native_dir)
+    if not os.path.isdir(nd):
+        sys.exit(f'{nd}: not a folder')
+    files, problems = collect_native(nd)
+    if problems:
+        for p in problems:
+            print('refused:', p, file=sys.stderr)
+        sys.exit(f'{len(problems)} native file(s) the launcher would refuse')
+    if not files:
+        sys.exit(f'{nd}: no .exe .dll .pack files')
+    entries, src = [], {}
+    for name, full in files:
+        h = sha256_file(full)
+        entries.append((name, h, os.path.getsize(full)))
+        src.setdefault(h, full)
+    names = {n.lower() for n, _, _ in entries}
+    if args.native_game.lower() not in names:
+        sys.exit(f'--native-game {args.native_game}: not in {nd}')
+    if args.native_launcher and args.native_launcher.lower() not in names:
+        sys.exit(f'--native-launcher {args.native_launcher}: not in {nd}')
+    err = check_native(make_native(entries, args.native_package, args.native_game, args.native_launcher))
+    if err:
+        sys.exit('refused: ' + err)
+    return entries, src
+
+
+def publish_native(out, entries, src):
+    """copies the plain native blobs to OUT/native/<sha[:2]>/<sha> (atomic per file; a present blob is kept)"""
+    for _, h, size in entries:
+        dst = native_blob_path(out, h)
+        if os.path.isfile(dst) and os.path.getsize(dst) == size:
+            continue
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(dst), prefix='.native.')
+        try:
+            with os.fdopen(fd, 'wb') as f, open(src[h], 'rb') as s:
+                shutil.copyfileobj(s, f, 1 << 20)
+            os.chmod(tmp, 0o644)
+            os.replace(tmp, dst)
+        except BaseException:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+            raise
 
 
 def prune_blobs(files_dir, keep):
     """removes every file of PUBLISH_DIR/files/ the new manifest does not name (older blobs, the plain blobs of a
     publish before build 13, leftovers) and the folders left empty. Returns how many files went."""
     removed = 0
+    if not os.path.isdir(files_dir):
+        return 0
     for dirpath, dirnames, filenames in os.walk(files_dir, topdown=False):
         for name in filenames:
             if name not in keep or os.path.basename(dirpath) != name[:2]:
@@ -581,9 +753,16 @@ def verify(args):
                 why = plain[f['blob']] if plain[f['blob']].startswith('error') else 'another SHA-256'
                 print('bad blob for', f['path'], f'(does not decrypt to the signed content: {why})', file=sys.stderr)
                 bad += 1
+    nat = m.get('native')
+    for f in (nat or {}).get('files', []):
+        blob = native_blob_path(out, f['sha256'])
+        if not os.path.isfile(blob) or os.path.getsize(blob) != f['size'] or sha256_file(blob) != f['sha256']:
+            print('bad native file', f['path'], file=sys.stderr)
+            bad += 1
     if bad:
         sys.exit(f'{bad} blob(s) missing or changed')
-    print(f'ok: version {m["version"]}, {len(m["files"])} files, signature good, '
+    print(f'ok: version {m["version"]}, {len(m["files"])} files, '
+          + (f'{len(nat["files"])} native files (package {nat["package"]}), ' if nat else '') + 'signature good, '
           + ('every blob decrypts to its signed content' if found else
              f'blobs checked as ciphertext only (no {KEY_ENV}: plaintext not checked)'))
     return 0
@@ -695,6 +874,10 @@ def main(argv=None):
     b.add_argument('--dry-run', action='store_true')
     b.add_argument('--with-single-spr', action='store_true',
                    help='ship a single .spr next to its shard set (for clients built before base patch 0048)')
+    b.add_argument('--native-dir', help='folder with the package program files for the game launcher (O314)')
+    b.add_argument('--native-package', type=int, help='package number of the native files')
+    b.add_argument('--native-game', default='Chaos.exe')
+    b.add_argument('--native-launcher', help='file name of the launcher itself in --native-dir')
     b.add_argument('--dev', action='store_true',
                    help='encrypt with the public development key (tests, allow_dev_key packages; never for players)')
     b.add_argument('--key-index', type=int, help=f'which key of {KEY_ENV} ("old,new"), 1-based')
@@ -710,6 +893,8 @@ def main(argv=None):
     args = ap.parse_args(argv)
     if args.cmd == 'build' and not args.dry_run and not args.out:
         ap.error('build needs --out (or --dry-run)')
+    if args.cmd == 'build' and (args.native_package is not None or args.native_launcher) and not args.native_dir:
+        ap.error('--native-package and --native-launcher need --native-dir')
     if args.cmd == 'build' and not re.fullmatch(r'[a-z0-9-]{1,32}', args.channel):
         ap.error('--channel: lowercase letters, digits and dashes')
     return {'keygen': keygen, 'pubkey': pubkey, 'build': build, 'verify': verify, 'unpack': unpack}[args.cmd](args)

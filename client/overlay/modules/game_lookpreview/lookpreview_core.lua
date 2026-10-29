@@ -854,7 +854,8 @@ end
 -- the option of a Cosmetics row for the stage: {kind = 'effects', play} for a row with effects
 function P.fromPlayRow(r)
   if type(r) ~= 'table' or type(r.play) ~= 'table' or #r.play == 0 then return nil end
-  return { kind = 'effects', play = r.play, killfx = r.kind == 'killfx' or nil }
+  -- a kill effect and a rare-loot effect play on a troll that dies; the others on the figure itself
+  return { kind = 'effects', play = r.play, killfx = (r.kind == 'killfx' or r.kind == 'rarefx') or nil }
 end
 
 return P

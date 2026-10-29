@@ -7,13 +7,16 @@
 --     ChaosPact.limits(player)        every limit
 --     ChaosPact.stashKind(itemId)     "orbs" | "gems" | "keys" | nil (stash.lua ChaosStash.kindOf)
 --     ChaosPact.state(accountId)      the cached account state (pact_core.lua)
+--     ChaosPact.frameOf(player)       the name plate frame while the Pact is active (nameplate.lua), else nil
+--     ChaosPact.checkDays(player, days)  why `days` more Pact days cannot be added now (the cap), or nil (store bundles)
+--     ChaosPact.addMonthExp(player, n)   count n experience the +10% added (pact_perks.lua), flushed once a minute
 --
 -- Store: offers of kind "service" with service "pact" and "pactExtra" (pact_config.lua `store`, inserted by
 -- shop_config.lua); the handlers are put into ChaosShopServices.services at startup, at every login and after a reload.
 --
 -- Protocol (extended opcode ChaosOpcodes.pact = 222, JSON {action, data}):
---   client -> server  open | claim | buildSave {slot?, name} | buildRename {slot, name} | buildDelete {slot} |
---                     buildLoad {slot}
+--   client -> server  open | claim | marksBuy {key} | buildSave {slot?, name} | buildRename {slot, name} |
+--                     buildDelete {slot} | buildLoad {slot}
 --   server -> client  status {...see sendStatus...} (open = true when the window should show) |
 --                     buildCode {slot, code} (load: the client opens the passive tree and previews the code) |
 --                     message {text, error}
@@ -23,7 +26,11 @@
 -- excepted). Accounts that already had more characters when this was installed get the difference once
 -- (extra "charSlotsLegacy", server_config chaos_pact_legacy).
 --
--- Store bundles: ChaosPact.grantDays(player, days, source) (shop_config.lua `pact`), premium days in proportion.
+-- Store bundles: ChaosPact.grantDays(player, days, source) (shop_config.lua `pact`), premium days in proportion. The
+-- Pacto Completo (pact_config.lua store.complete) is such a bundle: Pact days here, premium days through the store.
+-- Pact Marks (O317): 5 a day while the Pact runs, claimed in the window like the coins were; they buy only the cosmetics
+-- of pact_config.lua marks.shelf (table chaos_pact_marks). Expiry warnings (3 days, 1 day) at login and online; the
+-- window also shows the experience the +10% gave this month (table chaos_pact_xp).
 -- Staff: /pact <player>, info | days <n> | end | extra <key> <amount> | claimreset
 -- See server/README.md "Chaos Pact and account storage". Lua 5.1 / LuaJIT compatible.
 
@@ -66,6 +73,11 @@ local SCHEMA = {
 	`player_id` int(11) NOT NULL DEFAULT 0, `action` varchar(16) NOT NULL, `detail` varchar(64) NOT NULL DEFAULT '',
 	`amount` int(11) NOT NULL DEFAULT 0, `at` bigint(20) NOT NULL, PRIMARY KEY (`id`), KEY `account_id` (`account_id`))
 	ENGINE=InnoDB DEFAULT CHARSET=utf8]],
+	[[CREATE TABLE IF NOT EXISTS `chaos_pact_marks` (`account_id` int(11) NOT NULL, `balance` int(11) NOT NULL DEFAULT 0,
+	`earned` int(11) NOT NULL DEFAULT 0, `spent` int(11) NOT NULL DEFAULT 0, `updated` bigint(20) NOT NULL DEFAULT 0,
+	PRIMARY KEY (`account_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8]],
+	[[CREATE TABLE IF NOT EXISTS `chaos_pact_xp` (`player_id` int(11) NOT NULL, `month` int(11) NOT NULL,
+	`exp` bigint(20) NOT NULL DEFAULT 0, PRIMARY KEY (`player_id`, `month`)) ENGINE=InnoDB DEFAULT CHARSET=utf8]],
 	[[ALTER TABLE `chaos_stash` ADD COLUMN IF NOT EXISTS `tab` smallint(5) unsigned NOT NULL DEFAULT 0]]
 }
 
@@ -110,6 +122,109 @@ end
 
 function Pact.active(player)
 	return Core.active(Pact.state(player:getAccountId()), os.time())
+end
+
+-- why `days` more Pact days cannot be added (the stacking cap), or nil: the store asks before it takes the coins of a bundle
+function Pact.checkDays(player, days)
+	local _, err = Core.extendPact(cfg, Pact.load(player:getAccountId()).pactEnds, os.time(), days)
+	return err
+end
+
+-- the name plate frame of an active Pact (nameplate.lua): below a frame the player wears, above the default one
+function Pact.frameOf(player)
+	if Pact.active(player) then
+		return cfg.pact.frame
+	end
+	return nil
+end
+
+-- ------------------------------------------------------------------ Pact Marks
+function Pact.loadMarks(accountId)
+	local r = Chaos.select(string.format("SELECT `balance`, `earned`, `spent` FROM `%s` WHERE `account_id` = %d", T.marks, accountId),
+		{{"balance", "n"}, {"earned", "n"}, {"spent", "n"}})[1]
+	return r or {balance = 0, earned = 0, spent = 0}
+end
+
+function Pact.marksOf(accountId)
+	return Pact.loadMarks(accountId).balance
+end
+
+local function addMarks(accountId, n)
+	return db.query(string.format("INSERT INTO `%s` (`account_id`, `balance`, `earned`, `updated`) VALUES (%d, %d, %d, %d) " ..
+		"ON DUPLICATE KEY UPDATE `balance` = LEAST(`balance` + %d, %d), `earned` = `earned` + %d, `updated` = %d",
+		T.marks, accountId, n, n, os.time(), n, cfg.marks.maxBalance, n, os.time()))
+end
+
+-- takes n Marks when the account has them (one guarded UPDATE); true when taken
+local function takeMarks(accountId, n)
+	if not db.query(string.format("UPDATE `%s` SET `balance` = `balance` - %d, `spent` = `spent` + %d, `updated` = %d " ..
+			"WHERE `account_id` = %d AND `balance` >= %d", T.marks, n, n, os.time(), accountId, n)) then
+		return false
+	end
+	local r = Chaos.select("SELECT ROW_COUNT() AS `n`", {{"n", "n"}})[1]
+	return r ~= nil and r.n == 1
+end
+
+-- ------------------------------------------------------------------ experience the +10% added (per character, per server month)
+local function monthKey(t)
+	local d = os.date("*t", t or os.time())
+	return d.year * 100 + d.month
+end
+
+Pact.xpPending = Pact.xpPending or {} -- guid -> {month, exp}: not written yet
+
+function Pact.addMonthExp(player, n)
+	n = math.floor(tonumber(n) or 0)
+	if n <= 0 then
+		return
+	end
+	local guid, month = player:getGuid(), monthKey()
+	local p = Pact.xpPending[guid]
+	if p and p.month ~= month then
+		Pact.flushXp(guid)
+		p = nil
+	end
+	if not p then
+		p = {month = month, exp = 0}
+		Pact.xpPending[guid] = p
+	end
+	p.exp = p.exp + n
+end
+
+-- writes the pending experience of one character (guid) or of everybody
+function Pact.flushXp(only)
+	for guid, p in pairs(Pact.xpPending) do
+		if (only == nil or only == guid) and p.exp > 0 then
+			if db.query(string.format("INSERT INTO `%s` (`player_id`, `month`, `exp`) VALUES (%d, %d, %d) ON DUPLICATE KEY UPDATE `exp` = `exp` + %d",
+					T.xp, guid, p.month, p.exp, p.exp)) then
+				Pact.xpPending[guid] = nil
+			end
+		elseif only == nil or only == guid then
+			Pact.xpPending[guid] = nil
+		end
+	end
+end
+
+-- {character, account} experience the +10% added this month (written rows plus what is pending)
+function Pact.monthExp(player)
+	local month = monthKey()
+	local guid, accountId = player:getGuid(), player:getAccountId()
+	local mine = Core.monthExp(Chaos.select(string.format("SELECT `month`, `exp` FROM `%s` WHERE `player_id` = %d AND `month` = %d",
+		T.xp, guid, month), {{"month", "n"}, {"exp", "n"}}), month)
+	local all = Core.monthExp(Chaos.select(string.format("SELECT x.`month` AS `month`, x.`exp` AS `exp` FROM `%s` x JOIN `players` p ON p.`id` = x.`player_id` " ..
+		"WHERE p.`account_id` = %d AND x.`month` = %d", T.xp, accountId, month), {{"month", "n"}, {"exp", "n"}}), month)
+	local p = Pact.xpPending[guid]
+	if p and p.month == month then
+		mine, all = mine + p.exp, all + p.exp
+	end
+	-- what the account's other characters online have not written yet (at most a minute of it)
+	for _, other in ipairs(Game and Game.getPlayers and Game.getPlayers() or {}) do
+		local q = other:getAccountId() == accountId and other:getGuid() ~= guid and Pact.xpPending[other:getGuid()]
+		if q and q.month == month then
+			all = all + q.exp
+		end
+	end
+	return mine, all, month
 end
 
 -- ------------------------------------------------------------------ stash kinds
@@ -174,12 +289,21 @@ local function sendStatus(player, open)
 			special[#special + 1] = {name = a.name, owned = owned[a.key] ~= nil, source = owned[a.key]}
 		end
 	end
+	local marks = Pact.loadMarks(accountId)
+	local owned = ChaosCosmetics and ChaosCosmetics.owns
+	local shelf = {}
+	for _, it in ipairs(cfg.marks.shelf) do
+		shelf[#shelf + 1] = {key = it.key, marks = it.marks, name = Pact.cosmeticName(it.key), owned = owned and owned(accountId, it.key) == true or false}
+	end
+	local monthMine, monthAll, monthNo = Pact.monthExp(player)
 	send(player, "status", {
 		open = open == true,
 		name = cfg.pact.name, active = active, endsAt = st.pactEnds,
 		ends = st.pactEnds > 0 and os.date("%Y-%m-%d %H:%M", st.pactEnds) or "",
 		daysLeft = Core.daysLeft(st.pactEnds, now), totalDays = st.totalDays,
-		dailyCoins = cfg.pact.dailyCoins, canClaim = canClaim, claimedTotal = st.claimedTotal,
+		dailyMarks = cfg.pact.dailyMarks, canClaim = canClaim, claimedTotal = st.claimedTotal,
+		marks = marks.balance, marksEarned = marks.earned, shelf = shelf,
+		monthExp = monthMine, monthExpAccount = monthAll, month = monthNo,
 		premiumDays = player:getPremiumDays(), coins = ChaosShop and ChaosShop.getCoins and ChaosShop.getCoins(accountId) or 0,
 		title = active and cfg.pact.title.text or "", titleText = cfg.pact.title.text,
 		limits = Core.breakdown(cfg, st, now), tabSize = tabSize, special = special,
@@ -187,6 +311,20 @@ local function sendStatus(player, open)
 	})
 end
 Pact.sendStatus = sendStatus
+
+-- the name of a shelf cosmetic for the window (cosmetics_config.lua); the key when the config is not loaded
+function Pact.cosmeticName(key)
+	if not Pact.cosNames then
+		Pact.cosNames = {}
+		local ok, cc = pcall(dofile, "data/scripts/chaos/cosmetics_config.lua")
+		if ok and type(cc) == "table" then
+			for _, c in ipairs(cc.cosmetics or {}) do
+				Pact.cosNames[c.key] = c.name
+			end
+		end
+	end
+	return Pact.cosNames[key] or key
+end
 
 -- ------------------------------------------------------------------ store services
 local function refreshPlayer(player)
@@ -274,8 +412,8 @@ local pactService = {
 		if not ends then
 			return "Something went wrong. Your coins were refunded."
 		end
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your Chaos Pact runs until %s. Claim your %d Chaos Coins every day in Character > Chaos Pact.",
-			os.date("%Y-%m-%d %H:%M", ends), cfg.pact.dailyCoins))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your Chaos Pact runs until %s. Claim your %d Pact Marks every day in Character > Chaos Pact.",
+			os.date("%Y-%m-%d %H:%M", ends), cfg.pact.dailyMarks))
 		refreshPlayer(player)
 		return true
 	end
@@ -335,7 +473,7 @@ function Pact.ensureHooks()
 	end
 end
 
--- ------------------------------------------------------------------ daily coins
+-- ------------------------------------------------------------------ daily Pact Marks
 local function claim(player)
 	local now = os.time()
 	local accountId = player:getAccountId()
@@ -354,11 +492,41 @@ local function claim(player)
 		message(player, MSG.alreadyClaimed, true)
 		return
 	end
-	if ChaosShop and ChaosShop.addCoins then
-		ChaosShop.addCoins(accountId, amount)
-	end
+	addMarks(accountId, amount)
 	log(accountId, player:getGuid(), "claim", tostring(day), amount)
 	message(player, ChaosI18n.msg(MSG.claimed, amount))
+	sendStatus(player, false)
+end
+
+-- ------------------------------------------------------------------ the Marks shelf
+-- Marks buy the cosmetics of cfg.marks.shelf, nothing else (Core.shelfCheck refuses any other key)
+local function marksBuy(player, data)
+	local key = tostring(data.key or "")
+	local accountId = player:getAccountId()
+	local C = ChaosCosmetics
+	if not (C and C.grant and C.owns) then
+		return message(player, "Cosmetics are not available.", true)
+	end
+	local err = Core.shelfCheck(cfg, Pact.marksOf(accountId), {[key] = C.owns(accountId, key) or nil}, key)
+	if err then
+		return message(player, err, true)
+	end
+	local item = Core.shelfItem(cfg, key)
+	if not takeMarks(accountId, item.marks) then
+		return message(player, ChaosI18n.msg(MSG.marksShort, item.marks, Pact.marksOf(accountId)), true)
+	end
+	local ok, why = C.grant(accountId, key, "marks")
+	if not ok then
+		addMarks(accountId, item.marks) -- the Marks go back (the grant said no)
+		db.query(string.format("UPDATE `%s` SET `earned` = `earned` - %d, `spent` = `spent` - %d WHERE `account_id` = %d",
+			T.marks, item.marks, item.marks, accountId))
+		return message(player, why or "Something went wrong. Your Marks were refunded.", true)
+	end
+	log(accountId, player:getGuid(), "marks", key, item.marks)
+	if C.sendState then
+		pcall(C.sendState, player, false)
+	end
+	message(player, ChaosI18n.msg(MSG.marksBought, Pact.cosmeticName(key), item.marks))
 	sendStatus(player, false)
 end
 
@@ -442,6 +610,7 @@ local ACTIONS = {
 	open = {RATE.open, function(player) sendStatus(player, true) end},
 	sync = {RATE.open, function(player) sendStatus(player, false) end},
 	claim = {RATE.claim, claim},
+	marksBuy = {RATE.claim, marksBuy},
 	buildSave = {RATE.build, buildSave},
 	buildRename = {RATE.build, buildRename},
 	buildDelete = {RATE.build, buildDelete},
@@ -468,6 +637,54 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 end
 ext:type("extendedopcode")
 ext:register()
+
+-- ------------------------------------------------------------------ expiry warnings (O317)
+-- 3 days, then 1 day before the Pact ends (Core.expiry): a chat line and a toast (game_chaosnotify, kind "pact"), in the
+-- player's language. At login every time in the window; while online once when the level changes. When the premium days
+-- end in the same window the text names both and the Pacto Completo that renews them.
+Pact.warned = Pact.warned or {} -- guid -> {ends, level} of the last warning in this session
+
+local function toast(player, text)
+	if ChaosNotify and ChaosNotify.send then
+		ChaosNotify.send(player, "", text, "pact")
+	elseif json and ChaosOpcodes and ChaosOpcodes.notifications then
+		player:sendExtendedOpcode(ChaosOpcodes.notifications, json.encode({action = "pact", message = text}))
+	end
+end
+
+function Pact.expiryText(player, w)
+	if w.both then
+		if w.level <= 1 then
+			return Chaos.t(player, "Your Chaos Pact and your Premium end within 24 hours. The Pacto Completo renews both: Store > Premium & Services.")
+		end
+		return Chaos.t(player, "Your Chaos Pact and your Premium end in %d days. The Pacto Completo renews both: Store > Premium & Services.", w.days)
+	end
+	if w.level <= 1 then
+		return Chaos.t(player, "Your Chaos Pact ends within 24 hours. Renew it in Store > Premium & Services.")
+	end
+	return Chaos.t(player, "Your Chaos Pact ends in %d days. Renew it in Store > Premium & Services.", w.days)
+end
+
+-- atLogin: send whenever a warning is due; online: only when the level fell since the last one. Returns true when sent.
+function Pact.warnExpiry(player, atLogin)
+	local now = os.time()
+	local st = Pact.state(player:getAccountId())
+	local w = Core.expiry(cfg, st.pactEnds, player:getPremiumDays(), now)
+	local guid = player:getGuid()
+	local last = Pact.warned[guid]
+	if not w then
+		Pact.warned[guid] = nil
+		return false
+	end
+	if not atLogin and last and last.ends == st.pactEnds and last.level <= w.level then
+		return false
+	end
+	Pact.warned[guid] = {ends = st.pactEnds, level = w.level}
+	local text = Pact.expiryText(player, w)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+	toast(player, text)
+	return true
+end
 
 -- ------------------------------------------------------------------ login: hooks, character slots, notices
 local function isStaff(player)
@@ -511,9 +728,10 @@ function login.onLogin(player)
 		local left = Core.daysLeft(st.pactEnds, now)
 		local text = Chaos.t(player, left == 1 and "Your Chaos Pact runs for %d more day." or "Your Chaos Pact runs for %d more days.", left)
 		if Core.claim(cfg, st, now, Chaos.dayKey(now)) then
-			text = text .. " " .. Chaos.t(player, "Today's %d Chaos Coins wait in Character > Chaos Pact.", cfg.pact.dailyCoins)
+			text = text .. " " .. Chaos.t(player, "Today's %d Pact Marks wait in Character > Chaos Pact.", cfg.pact.dailyMarks)
 		end
 		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, text)
+		Pact.warnExpiry(player, true)
 	elseif st.pactEnds > 0 and now - st.pactEnds < 14 * 86400 then
 		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, Chaos.t(player,
 			"Your Chaos Pact has ended. Nothing is lost: stash slots beyond your own expansions are withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted."))
@@ -547,6 +765,31 @@ local function legacyGrant()
 	Pact.accounts = {}
 	print(string.format("[Chaos pact] legacy character slots given to %d account(s)", granted))
 end
+
+-- online players: the warning when the window opens (or the level falls), and the experience counters written once a minute
+local think = GlobalEvent("ChaosPactThink")
+local thinkTicks = 0
+function think.onThink(interval)
+	thinkTicks = thinkTicks + 1
+	pcall(Pact.flushXp)
+	if thinkTicks % 10 == 0 then
+		for _, p in ipairs(Game.getPlayers()) do
+			pcall(Pact.warnExpiry, p, false)
+		end
+	end
+	return true
+end
+think:interval(60000)
+think:register()
+
+local logout = CreatureEvent("ChaosPactLogout")
+function logout.onLogout(player)
+	pcall(Pact.flushXp, player:getGuid())
+	Pact.warned[player:getGuid()] = nil
+	return true
+end
+logout:type("logout")
+logout:register()
 
 local startup = GlobalEvent("ChaosPactStartup")
 function startup.onStartup()

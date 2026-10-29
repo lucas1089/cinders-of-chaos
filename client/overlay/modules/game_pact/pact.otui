@@ -1,4 +1,4 @@
-// Chaos Pact window (game_pact): Pact status, daily coins, account limits, saved builds. Styles from client_chaos_theme.
+// Chaos Pact window (game_pact): Pact status, daily Pact Marks and their shelf, account limits, saved builds. Styles from client_chaos_theme.
 
 PactCell < ChaosLabel
   height: 18
@@ -58,9 +58,41 @@ PactBuildRow < ChaosPanelDark
     padding: 3 4 3 4
     !text: tr('Load')
 
+// one cosmetic of the Pact Marks shelf: name, price in Marks, Buy
+PactShelfRow < ChaosPanelDark
+  height: 24
+  margin-bottom: 2
+
+  ChaosLabel
+    id: name
+    anchors.left: parent.left
+    anchors.right: price.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    margin-right: 6
+    height: 15
+
+  ChaosLabelDim
+    id: price
+    anchors.right: buyButton.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 8
+    width: 76
+    height: 15
+    text-align: right
+
+  ChaosButton
+    id: buyButton
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    size: 56 20
+    padding: 3 4 3 4
+    !text: tr('Buy')
+
 PactWindow < ChaosMainWindow
   id: pactWindow
-  size: 560 560
+  size: 560 670
   !text: tr('Chaos Pact')
   @onEscape: modules.game_pact.hide()
 
@@ -94,8 +126,8 @@ PactWindow < ChaosMainWindow
       id: claimButton
       anchors.top: parent.top
       anchors.right: parent.right
-      size: 120 24
-      !text: tr('Daily coins')
+      size: 150 24
+      !text: tr('Daily Pact Marks')
       @onClick: modules.game_pact.claim()
 
     ChaosButton
@@ -158,8 +190,57 @@ PactWindow < ChaosMainWindow
     text-align: topLeft
 
   ChaosTitlePlate
-    id: buildsPlate
+    id: marksPlate
     anchors.top: special.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Pact Marks')
+
+  ChaosLabel
+    id: marksLine
+    anchors.top: marksPlate.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 15
+
+  ChaosLabelDim
+    id: monthLine
+    anchors.top: marksLine.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 28
+    text-wrap: true
+    text-align: topLeft
+
+  ScrollablePanel
+    id: shelf
+    anchors.top: monthLine.bottom
+    anchors.left: parent.left
+    anchors.right: shelfScroll.left
+    margin-top: 4
+    margin-right: 2
+    height: 78
+    vertical-scrollbar: shelfScroll
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: shelfScroll
+    anchors.top: shelf.top
+    anchors.bottom: shelf.bottom
+    anchors.right: parent.right
+    step: 20
+    pixels-scroll: true
+
+  ChaosTitlePlate
+    id: buildsPlate
+    anchors.top: shelf.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 4

@@ -97,7 +97,8 @@ def make_zip(path, public, url, package=13, build=13, extra=None, links=False, b
             z.writestr(info, '/etc/passwd')
 
 
-def make_packed_zip(path, tmp, public, url, key_hex=CLIENT_KEY, dev=False, package=13, baseline=None, shards=None):
+def make_packed_zip(path, tmp, public, url, key_hex=CLIENT_KEY, dev=False, package=13, baseline=None, shards=None,
+                    launcher=False):
     """the layout of a build-13 package: CindersOfChaos-Client/ with Chaos.exe and chaos.pack only. shards: None, a
     single Tibia.spr (builds 13, 14); 'only', the spr as a shard set (build 15, pair 37); 'both', the two"""
     tree = tempfile.mkdtemp(dir=tmp)
@@ -119,6 +120,10 @@ def make_packed_zip(path, tmp, public, url, key_hex=CLIENT_KEY, dev=False, packa
     with zipfile.ZipFile(path, 'w') as z:
         z.writestr('CindersOfChaos-Client/Chaos.exe', b'MZ' + b'\0' * 100)
         z.writestr('CindersOfChaos-Client/chaos.pack', pack)
+        if launcher:
+            z.writestr('CindersOfChaos-Client/CindersLauncher.exe', b'MZ launcher')
+            z.writestr('CindersOfChaos-Client/libssl-3-x64.dll', b'MZ dll')
+            z.writestr('CindersOfChaos-Client/launcher.json', '{}')
     shutil.rmtree(tree)
     return index
 
@@ -423,6 +428,29 @@ exec %s "$@"
         r = run('winpkg-71', extra={'STUB_ZIP': pkg71, 'CHAOS_UPDATE_URL': purl})
         check(r.returncode != 0 and 'older than the live update' in r.stderr and payload()['version'] == 72,
               'an older package than the live update refused')
+
+        # the launcher (O314): a package with CindersLauncher.exe publishes its program files as the native section
+        lz = os.path.join(zips, 'launcher.zip')
+        make_packed_zip(lz, tmp, public, url, package=15, shards='only', launcher=True)
+        r = run('--version', '80', lz, extra={'CHAOS_UPDATE_URL': purl})
+        m = payload()
+        nat = m.get('native') or {}
+        names = sorted(f['path'] for f in nat.get('files', []))
+        check(r.returncode == 0 and verify(), 'launcher package publishes: ' + r.stdout + r.stderr)
+        check(names == ['Chaos.exe', 'CindersLauncher.exe', 'chaos.pack', 'libssl-3-x64.dll'], 'native files: %s' % names)
+        check(nat.get('package') == 15 and nat.get('game') == 'Chaos.exe' and nat.get('launcher') == 'CindersLauncher.exe',
+              'native package, game and launcher')
+        check(not any(p.endswith(('.exe', '.dll', '.pack')) for p in (f['path'] for f in m['files'])),
+              'native files are not in the Lua updater list')
+        for f in nat.get('files', []):
+            b = os.path.join(live, 'native', f['sha256'][:2], f['sha256'])
+            check(os.path.isfile(b) and os.path.getsize(b) == f['size'], 'native blob of ' + f['path'])
+        # a package without the launcher publishes no native section (and the old native blobs go)
+        r = run('--version', '81', packed, extra={'CHAOS_UPDATE_URL': purl, 'CHAOS_ENV': envfile},
+                drop=('CHAOS_CLIENT_KEY',))
+        check(r.returncode == 0 and 'native' not in payload(), 'no launcher, no native section')
+        check(not os.path.isdir(os.path.join(live, 'native')) or not os.listdir(os.path.join(live, 'native')),
+              'old native blobs removed')
         plain.shutdown()
 
     print('publish_client_update_test: %d failures' % failures)

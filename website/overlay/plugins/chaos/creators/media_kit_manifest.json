@@ -1,0 +1,62 @@
+{
+ "generatedBy": "website/tools/gen_media_kit.py (do not edit by hand)",
+ "zip": {
+  "name": "cinders-of-chaos-media-kit.zip",
+  "path": "press/cinders-of-chaos-media-kit.zip",
+  "bytes": 1517423,
+  "sha256": "9d368c136fcbc970cc12b3a57046864d3cca8e1b43375d5f4914839212af465d"
+ },
+ "files": [
+  {
+   "name": "art/class-showcase-1400x900.png",
+   "bytes": 343609,
+   "sha256": "cc4f78e2daa29d920854f7052adb3e61cd9778b0d7c4a16b4a6f70d6b143de85"
+  },
+  {
+   "name": "art/discord-banner-960x540.png",
+   "bytes": 303134,
+   "sha256": "f935010c931c5394028dd21cd35dc117f6c1daaa445fac46e3d85a4521b3740d"
+  },
+  {
+   "name": "art/discord-icon-512.png",
+   "bytes": 48143,
+   "sha256": "9758572a3aba091e0f3f455967a556ff00f0bb4f041d7c13a3ffe60dec353877"
+  },
+  {
+   "name": "art/features-1200x1560.png",
+   "bytes": 358693,
+   "sha256": "f3d5d8890aac5e7a8260c35954555c7828d0f439b870b2f4301a47d6ebbaf0e1"
+  },
+  {
+   "name": "art/otlist-468x60.png",
+   "bytes": 16584,
+   "sha256": "dd67e6d8713492b16c61ec4c2e4a8e0ffdbef13b63da063b9d37c2f86398a9ab"
+  },
+  {
+   "name": "art/otlist-88x31.png",
+   "bytes": 2012,
+   "sha256": "403e186e97a26febe73124787f86ed89776718e94b8661996d2fd8a5224f7934"
+  },
+  {
+   "name": "art/social-share-1200x630.png",
+   "bytes": 412496,
+   "sha256": "ea67e904ed6e554c4b111df4ea72be347312dabe9d365d9e97922e313fa9e5c7"
+  },
+  {
+   "name": "fact-sheet.en.txt",
+   "bytes": 1387,
+   "sha256": "ec7e4d73811dd8b1338577da19e6a9544f65c31038ca5ff973905fe6b2264f53"
+  },
+  {
+   "name": "ficha-tecnica.pt-BR.txt",
+   "bytes": 1451,
+   "sha256": "7a8990caa7ef0afd918257b55717c478fdfad9f39d6ff48a445d7b4d32a7c1d6"
+  },
+  {
+   "name": "logo.png",
+   "bytes": 28134,
+   "sha256": "1db25c5019d9bc89e76c4ae0f328d3f3308fd93da35e3786f17d1abfa301a954"
+  }
+ ],
+ "screenshots": 0
+}

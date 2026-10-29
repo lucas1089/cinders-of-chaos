@@ -210,7 +210,7 @@ local function seasonBlocked(player)
 	if S and S.current and S.realmOf and S.current() and player:getGroup():getAccess() == false then
 		local ok, realm = pcall(S.realmOf, player)
 		if ok and realm and realm ~= 0 then
-			return "Season characters cannot use the guild bank or depot while the season runs."
+			return "Season characters cannot use the guild bank or stash while the season runs."
 		end
 	end
 	return nil

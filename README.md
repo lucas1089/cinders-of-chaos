@@ -725,12 +725,12 @@ what everyone has contributed this week.
 - **Guild levels (1-20):** the guild earns guild XP from what its members already do: a small share of your hunting
   experience (capped each day), bounty contracts, sealed rifts, world bosses, defended invasions and the guild siege.
 - **Perks for online members**, small but always on: up to +5% experience and +5% loot, cheaper respecs, a free guild
-  hall scroll every day, more guild depot space and a guild aura.
+  hall scroll every day, more Guild Stash space and a guild aura.
 - **Guild bank:** every member can deposit gold; the leader can withdraw it. Every movement is logged.
 - **The guild hall** (from guild level 5): the leader buys it, and members step through the portal next to the temple
   to reach it. Nobody else gets in.
 - **Hall upgrades:** a teleport hub to the hunting grounds, a training room with exercise dummies, a crafting bench,
-  a **guild depot** shared by the members (with a log of who put in and took out what), a trophy room with your siege
+  a **Guild Stash** shared by the members (with a log of who put in and took out what), a trophy room with your siege
   wins, world boss victories and records, and three decoration tiers.
 - **Rent:** the hall costs a weekly rent from the guild bank. If the bank runs dry the upgrades lock until it is paid;
   nothing is ever lost.

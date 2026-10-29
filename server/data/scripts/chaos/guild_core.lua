@@ -189,7 +189,7 @@ function C.perkText(step)
 		parts[#parts + 1] = string.format("respec %d%% cheaper", step.respec)
 	end
 	if step.depotSlots then
-		parts[#parts + 1] = string.format("+%d guild depot slots", step.depotSlots)
+		parts[#parts + 1] = string.format("+%d Guild Stash slots", step.depotSlots)
 	end
 	if step.scroll then
 		parts[#parts + 1] = "a guild hall scroll every day"
@@ -474,37 +474,37 @@ function C.depotCapacity(level, cfg)
 	return (cfg.depot.slots or 30) + C.perksAt(level, cfg).depotSlots
 end
 
--- info = {member, active (depot upgrade working), used, capacity, container, pickupable, count, stackable}
+-- info = {member, active (stash upgrade working), used, capacity, container, pickupable, count, stackable}
 function C.depotPutError(info, cfg)
 	if not info.member then
-		return "Only members of this guild can use its depot."
+		return "Only members of this guild can use its stash."
 	end
 	if not info.active then
-		return "The guild depot is locked (no depot upgrade, or the rent is unpaid)."
+		return "The Guild Stash is locked (no stash upgrade, or the rent is unpaid)."
 	end
 	if info.container then
-		return "Containers cannot go into the guild depot; put the items in one by one."
+		return "Containers cannot go into the Guild Stash; put the items in one by one."
 	end
 	if not info.pickupable then
-		return "That cannot go into the guild depot."
+		return "That cannot go into the Guild Stash."
 	end
 	-- the depot gives back a plain copy that keeps only the attributes of cfg.depot.customKeys: a store item, a
 	-- store-bound one (pouches, Everfull Ration, Nemesis items), a locked one or a quest item would come out
 	-- tradable (the player market refuses all of these, market_core.lua C.itemRefusal)
 	if info.store or info.storeBound then
-		return "That cannot go into the guild depot."
+		return "That cannot go into the Guild Stash."
 	end
 	if info.locked then
 		return "The item is locked. Unlock it first."
 	end
 	if (info.uniqueId or 0) > 0 or info.decaying then
-		return "That cannot go into the guild depot."
+		return "That cannot go into the Guild Stash."
 	end
 	if (info.count or 1) > (cfg.depot.maxStack or 100) then
 		return "That stack is too large."
 	end
 	if (info.used or 0) >= (info.capacity or 0) then
-		return string.format("The guild depot is full (%d / %d).", info.used or 0, info.capacity or 0)
+		return string.format("The Guild Stash is full (%d / %d).", info.used or 0, info.capacity or 0)
 	end
 	return nil
 end
@@ -512,20 +512,20 @@ end
 -- info = {member, active, rank, takenToday, exists}
 function C.depotTakeError(info, cfg)
 	if not info.member then
-		return "Only members of this guild can use its depot."
+		return "Only members of this guild can use its stash."
 	end
 	if not info.active then
-		return "The guild depot is locked (no depot upgrade, or the rent is unpaid)."
+		return "The Guild Stash is locked (no stash upgrade, or the rent is unpaid)."
 	end
 	if (info.rank or 0) < (cfg.depot.takeRank or 1) then
-		return "Your rank may not take items from the guild depot."
+		return "Your rank may not take items from the Guild Stash."
 	end
 	if not info.exists then
-		return "That item is no longer in the guild depot."
+		return "That item is no longer in the Guild Stash."
 	end
 	local limit = cfg.depot.takePerDay or 0
 	if limit > 0 and (info.rank or 0) < 2 and (info.takenToday or 0) >= limit then
-		return string.format("You took %d items from the guild depot today, the most a member may.", limit)
+		return string.format("You took %d items from the Guild Stash today, the most a member may.", limit)
 	end
 	return nil
 end

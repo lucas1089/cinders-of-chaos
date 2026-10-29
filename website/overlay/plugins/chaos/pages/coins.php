@@ -137,6 +137,7 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 				<a href="<?= chaos_h(chaos_legal_url('donations')) ?>">Termos de Doação</a></p>
 		</div>
 		<p class="chaos-lead"><?= chaos_h(chaos_t('Chaos Coins are our thank-you for your donation. They buy cosmetics, convenience and services in the in-game Store (Economy > Store) and belong to your account, so every character can spend them.')) ?></p>
+		<p id="chaos-fairplay-link"><a href="page?plugin=chaos&amp;p=fairplay"><?= chaos_h(chaos_t('What the store never sells: our fair-play pledge')) ?></a></p>
 
 		<?php if ($redirect !== ''): ?>
 			<meta http-equiv="refresh" content="0;url=<?= chaos_h($redirect) ?>">

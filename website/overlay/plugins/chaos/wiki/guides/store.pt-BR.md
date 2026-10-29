@@ -24,7 +24,12 @@ A lista completa, com o tipo de cada oferta, está na [referência da loja](wiki
 - **Pacotes de runas:** 100, 250 ou 500 runas das principais runas de ataque e de cura (menos de Shackle), por mais ou menos o preço dos vendedores de runas; o que não couber na mochila vai para a caixa de entrada da loja.
 - **Loot Bag:** uma bolsa sem fundo (Convenience). Enquanto você a carrega, todo o loot das suas mortes vai para ela: 255 espaços, e o que está nela não pesa nada. Ela é sua: fica com você ao deslogar e volta, vazia, depois de uma morte.
 - **Auto Seller:** no menu do topo, Economy > Auto Seller. "Sell all" vende o que está na sua Loot Bag pelo preço dos NPCs, uma vez a cada 30 segundos; o ouro vai para o banco. Marque as raridades que ele pode vender (Comum e Incomum por padrão; Mágica, Rara, Lendária e Divina quando você marcar). Itens travados, únicos, orbes, gemas e chaves nunca são vendidos. A mesma janela guarda uma lista de itens que ele vende direto das suas mortes.
-- **Chaos Pact (VIP):** além de mais espaço e coins diárias, enquanto durar: +10% de experiência de monstros, stamina volta 1,5 vez mais rápido (offline e no treinador de stamina), um slot de loadout a mais, o Auto Seller, uma cor de nome no chat e um cosmético por mês.
+- **Chaos Pact (VIP):** além de mais espaço e 5 Pact Marks por dia, enquanto durar: +10% de experiência de monstros, stamina volta 1,5 vez mais rápido (offline e no treinador de stamina), um slot de loadout a mais, o Auto Seller, uma cor de nome no chat, um cosmético por mês e uma moldura de nome Pactbound. A janela do Pact mostra a experiência que o +10% te deu neste mês. Você é avisado 3 dias e 1 dia antes de acabar.
+- **Pacto Completo:** o Chaos Pact e o Premium juntos, por 30, 90 ou 180 dias, mais barato que comprar os dois. É a primeira oferta de Premium & Services.
+- **Pact Marks:** 5 por dia enquanto o Pact durar, resgatados na janela do Pact. Compram alguns cosméticos da prateleira dessa janela e mais nada: nunca coins, bônus ou suprimentos.
+- **All Blessings:** o preço segue o seu level (60 coins até o level 200, 100 até o level 500, 150 acima).
+- **Segundo personagem:** a Loot Bag, as bolsas, a Everfull Ration, o Auto Seller, o Rarity Autoloot e os níveis das Everfull potions custam metade para um personagem quando outro personagem da sua conta já os tem.
+- **Armas Lasting Exercise:** duas por semana para a conta toda.
 
 ## Season Pass
 

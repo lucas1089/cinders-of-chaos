@@ -123,6 +123,12 @@ function E.calendar(t)
 			end
 		end
 	end
+	-- the Weekend Ritual (weekend.lua): Friday evening to Sunday night, not whole days
+	if ChaosWeekend and ChaosWeekend.calendarEntries then
+		for _, entry in ipairs(ChaosWeekend.calendarEntries(t)) do
+			out[#out + 1] = entry
+		end
+	end
 	table.sort(out, function(a, b)
 		return a.startdate.date < b.startdate.date
 	end)
@@ -130,10 +136,15 @@ function E.calendar(t)
 end
 
 -- one line per active event, used on login and by !events
-function E.describeActive(t)
+-- (an event with describe(player) writes its own line in the player's language: the Weekend Ritual)
+function E.describeActive(t, player)
 	local lines = {}
 	for _, event in ipairs(E.active(t)) do
-		lines[#lines + 1] = event.name .. ": " .. event.description
+		if type(event.describe) == "function" then
+			lines[#lines + 1] = event.describe(player)
+		else
+			lines[#lines + 1] = event.name .. ": " .. event.description
+		end
 	end
 	return lines
 end
@@ -152,7 +163,7 @@ xpCb:register()
 local login = CreatureEvent("ChaosEventsLogin")
 function login.onLogin(player)
 	if cfg().announceOnLogin then
-		for _, line in ipairs(E.describeActive()) do
+		for _, line in ipairs(E.describeActive(nil, player)) do
 			player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, Chaos.t(player, "Event active - %s", line))
 		end
 	end
@@ -162,7 +173,7 @@ login:register()
 
 local talk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "events")
 function talk.onSay(player, words, param)
-	local lines = E.describeActive()
+	local lines = E.describeActive(nil, player)
 	if #lines == 0 then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No event is active today. Check the calendar on the login screen."))
 	else

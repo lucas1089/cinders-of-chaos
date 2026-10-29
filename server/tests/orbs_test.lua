@@ -879,7 +879,7 @@ for _, row in ipairs(V.outcomes) do
 end
 ok(C.describe(rareSword()).preview.void:find("corrupted for good", 1, true), "bench preview")
 
--- the corrupted flag and the implicit go with the item: the copy keys (guild depot, key-list codec) and the codec
+-- the corrupted flag and the implicit go with the item: the copy keys (Guild Stash, key-list codec) and the codec
 local keys = {}
 for _, k in ipairs(C.attributeKeys()) do keys[k] = true end
 ok(keys[M.CORRUPTED] and keys[M.IMPLICIT], "attributeKeys lists the corruption")

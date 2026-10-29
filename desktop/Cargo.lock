@@ -303,8 +303,15 @@ dependencies = [
 name = "cinders-admin"
 version = "0.1.0"
 dependencies = [
+ "cinders-selfupdate",
  "eframe",
  "serde_json",
+]
+
+[[package]]
+name = "cinders-selfupdate"
+version = "0.1.0"
+dependencies = [
  "sha2",
 ]
 

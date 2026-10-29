@@ -1,5 +1,5 @@
 // Cosmetics (game_cosmetics): spell effect skins, kill effects, loot label accents, chat name colours, footprints,
-// outlines and the Collection of exclusives. Styles from client_chaos_theme.
+// outlines, level-up and rare-loot effects, victory emotes, the collection score and the Collection of exclusives. Styles from client_chaos_theme.
 
 CosmeticRow < ChaosPanelDark
   height: 40
@@ -72,7 +72,7 @@ CosmeticSampleLabel < UILabel
 
 ChaosMainWindow
   id: cosmeticsWindow
-  size: 930 480
+  size: 1100 500
   !text: tr('Cosmetics')
   @onEscape: modules.game_cosmetics.hide()
 
@@ -87,6 +87,18 @@ ChaosMainWindow
       type: horizontalBox
       spacing: 4
 
+  // the collection score and the next reward (server collection.lua)
+  ChaosLabelDim
+    id: scoreLabel
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 16
+    text-align: left
+    color: #5cc8c0
+    visible: false
+
   // game_unlocks: hide what this character has not unlocked (kept per character and tab)
   ChaosCheckBox
     id: onlyMineBox
@@ -100,7 +112,7 @@ ChaosMainWindow
 
   ChaosPanelDark
     id: listFrame
-    anchors.top: tabs.bottom
+    anchors.top: scoreLabel.bottom
     anchors.left: parent.left
     anchors.bottom: statusLabel.top
     margin-top: 6

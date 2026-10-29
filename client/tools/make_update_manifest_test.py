@@ -544,6 +544,176 @@ class Build(unittest.TestCase):
         self.assertEqual(mum.check_payload(m), 'manifest is not encrypted')
 
 
+class Native(unittest.TestCase):
+    """native files for the game launcher (O314): a separate section of the signed payload, plain blobs in native/,
+    nothing changed for the Lua updater of the clients already out"""
+    tearDown = Build.tearDown
+    payload, blob_files, keygen = Build.payload, Build.blob_files, Build.keygen
+
+    def _setup(self):
+        Build.setUp(self)
+        self.nat = os.path.join(self.tmp, 'native')
+        os.makedirs(self.nat)
+        self.nat_files = {'Chaos.exe': b'MZ' + os.urandom(3000), 'libssl-3-x64.dll': os.urandom(2000),
+                          'chaos.pack': b'CHPK' + os.urandom(9000), 'CindersLauncher.exe': b'MZ' + os.urandom(500)}
+        for name, data in self.nat_files.items():
+            open(os.path.join(self.nat, name), 'wb').write(data)
+        self.pub = self.keygen()
+
+    def setUp(self):  # noqa: F811
+        self._setup()
+
+    def publish(self, *extra, native=True):
+        argv = ['build', self.client, '--out', self.out, '--key', self.key, '--min-package', '13']
+        if native:
+            argv += ['--native-dir', self.nat, '--native-package', '14', '--native-launcher', 'CindersLauncher.exe']
+        return run(argv + list(extra))
+
+    def native_blobs(self):
+        return sorted(f for d, _, fs in os.walk(os.path.join(self.out, 'native')) for f in fs)
+
+    def test_section_and_plain_blobs(self):
+        code, out, err = self.publish()
+        self.assertEqual(code, 0, err)
+        n = self.payload()['native']
+        self.assertEqual((n['package'], n['game'], n['launcher'], n['files_url']),
+                         (14, 'Chaos.exe', 'CindersLauncher.exe', 'native/'))
+        self.assertEqual([f['path'] for f in n['files']], sorted(self.nat_files, key=lambda s: s))
+        for f in n['files']:
+            data = self.nat_files[f['path']]
+            self.assertEqual((f['sha256'], f['size']), (hashlib.sha256(data).hexdigest(), len(data)))
+            blob = os.path.join(self.out, 'native', f['sha256'][:2], f['sha256'])
+            self.assertEqual(open(blob, 'rb').read(), data, 'native blobs are plain')
+        code, out, err = run(['verify', self.out, '--public', self.pub])
+        self.assertEqual(code, 0, err)
+        self.assertIn('4 native files (package 14)', out)
+
+    def test_old_clients_see_the_same_files(self):
+        self.assertEqual(self.publish(native=False)[0], 0)
+        plain = self.payload()
+        shutil.rmtree(self.out)
+        self.assertEqual(self.publish()[0], 0)
+        withn = self.payload()
+        for k in ('files', 'format', 'product', 'version', 'min_version', 'min_package', 'files_url', 'encryption',
+                  'parallel'):
+            self.assertEqual(plain[k], withn[k], k)
+        self.assertNotIn('native', plain)
+        self.assertEqual(set(withn) - set(plain), {'native'})
+        # the Lua updater's path rules still hold: no native file leaks into "files"
+        self.assertFalse([f for f in withn['files'] if f['path'].lower().endswith(('.exe', '.dll', '.pack'))])
+        self.assertEqual(len(self.blob_files()), len({f['blob'] for f in withn['files']}))
+
+    def test_dry_run(self):
+        code, out, err = run(['build', self.client, '--dry-run', '--native-dir', self.nat, '--native-package', '14'])
+        self.assertEqual(code, 0, err)
+        self.assertIn('native package 14 (4 files)', out)
+
+    def test_tampered_native_blob_fails_verify(self):
+        self.assertEqual(self.publish()[0], 0)
+        f = [f for f in self.payload()['native']['files'] if f['path'] == 'Chaos.exe'][0]
+        blob = os.path.join(self.out, 'native', f['sha256'][:2], f['sha256'])
+        open(blob, 'ab').write(b'x')
+        code, out, err = run(['verify', self.out, '--public', self.pub])
+        self.assertNotEqual(code, 0)
+        self.assertIn('bad native file Chaos.exe', err)
+
+    def test_native_section_is_signed(self):
+        self.assertEqual(self.publish()[0], 0)
+        mpath = os.path.join(self.out, 'manifest.json')
+        env = json.load(open(mpath))
+        env['payload'] = env['payload'].replace('"package":14', '"package":15')
+        json.dump(env, open(mpath, 'w'))
+        code, out, err = run(['verify', self.out, '--public', self.pub])
+        self.assertNotEqual(code, 0)
+        self.assertIn('bad signature', err)
+
+    def test_refused_inputs(self):
+        def refused(msg, *extra):
+            code, out, err = self.publish(*extra)
+            self.assertNotEqual(code, 0, msg)
+            self.assertFalse(os.path.exists(os.path.join(self.out, 'manifest.json')), 'nothing published: ' + msg)
+            return err
+        open(os.path.join(self.nat, 'run.bat'), 'w').write('x')
+        self.assertIn('only .exe .dll .pack', refused('bat'))
+        os.remove(os.path.join(self.nat, 'run.bat'))
+        os.makedirs(os.path.join(self.nat, 'sub'))
+        self.assertIn('not a plain file', refused('folder'))
+        os.rmdir(os.path.join(self.nat, 'sub'))
+        open(os.path.join(self.nat, 'bad name.dll'), 'wb').write(b'x')
+        self.assertIn('bad file name', refused('space'))
+        os.remove(os.path.join(self.nat, 'bad name.dll'))
+        open(os.path.join(self.nat, 'nul.dll'), 'wb').write(b'x')
+        self.assertIn('device name', refused('device'))
+        os.remove(os.path.join(self.nat, 'nul.dll'))
+        # package below min-package, no package, missing game or launcher
+        code, _, err = run(['build', self.client, '--out', self.out, '--key', self.key, '--min-package', '13',
+                            '--native-dir', self.nat, '--native-package', '12'])
+        self.assertNotEqual(code, 0)
+        self.assertIn('below --min-package', err)
+        code, _, err = run(['build', self.client, '--out', self.out, '--key', self.key, '--min-package', '13',
+                            '--native-dir', self.nat])
+        self.assertNotEqual(code, 0)
+        self.assertIn('needs --native-package', err)
+        self.assertIn('--native-game Nope.exe', refused('game', '--native-game', 'Nope.exe'))
+        self.assertIn('--native-launcher', refused('launcher', '--native-launcher', 'Missing.exe'))
+
+    def test_payload_rules(self):
+        good = mum.make_native([('Chaos.exe', 'a' * 64, 5), ('x.dll', 'b' * 64, 0)], 14, 'Chaos.exe', None)
+        self.assertIsNone(mum.check_native(good))
+        def bad(**kw):
+            n = json.loads(json.dumps(good))
+            for k, v in kw.items():
+                if v is None:
+                    n.pop(k, None)
+                else:
+                    n[k] = v
+            self.assertIsNotNone(mum.check_native(n), kw)
+        bad(package=-1)
+        bad(package='14')
+        bad(game='x.dll')
+        bad(game='Missing.exe')
+        bad(launcher='Chaos.exe')
+        bad(files_url='files/')
+        bad(files=[])
+        bad(files=[{'path': '../Chaos.exe', 'sha256': 'a' * 64, 'size': 1}], game='Chaos.exe')
+        bad(files=[{'path': 'Chaos.exe', 'sha256': 'A' * 64, 'size': 1}])
+        bad(files=[{'path': 'Chaos.exe', 'sha256': 'a' * 64, 'size': mum.NATIVE_MAX_FILE_SIZE + 1}])
+        bad(files=[{'path': 'Chaos.exe', 'sha256': 'a' * 64, 'size': 1}] * 2)
+        for name in ('a.lua', 'a/b.exe', 'a\\b.exe', 'C:x.exe', '.hidden.exe', 'con.exe', 'a.exe.', ''):
+            self.assertIsNotNone(mum.check_native_name(name), name)
+        self.assertIsNone(mum.check_native_name('libGLESv2.dll'))
+
+    VECTOR = os.path.join(HERE, '..', '..', 'launcher', 'tests', 'data', 'python_manifest.json')
+
+    def test_launcher_vector(self):
+        """launcher/tests/data/python_manifest.json: a manifest this tool signs (fixed key, fixed time), read by
+        launcher/tests/vector.rs. UPDATE_LAUNCHER_VECTOR=1 rewrites it."""
+        seed = bytes([0x42]) * 32
+        entries = [('x/y.lua', 'a' * 64, 3, 'b' * 64, 3 + mum.BLOB_OVERHEAD)]
+        nat = mum.make_native([('Chaos.exe', hashlib.sha256(b'exe').hexdigest(), 3),
+                               ('CindersLauncher.exe', hashlib.sha256(b'launcher').hexdigest(), 8),
+                               ('libssl-3-x64.dll', hashlib.sha256(b'dll').hexdigest(), 3)],
+                              14, 'Chaos.exe', 'CindersLauncher.exe')
+        payload = mum.make_payload(entries, 7, 0, 13, 8, 'live', '2026-10-29T00:00:00Z', nat)
+        public = mum.public_from_seed(seed)
+        env = mum.make_envelope(payload, public.hex(), mum.sign(seed, payload.encode('ascii')).hex())
+        doc = json.dumps({'public_key': public.hex(), 'envelope': json.loads(env)}, indent=1, sort_keys=True) + '\n'
+        if os.environ.get('UPDATE_LAUNCHER_VECTOR') == '1':
+            with open(self.VECTOR, 'w', encoding='ascii') as f:
+                f.write(doc)
+        with open(self.VECTOR, encoding='ascii') as f:
+            self.assertEqual(f.read(), doc, 'regenerate with UPDATE_LAUNCHER_VECTOR=1')
+
+    def test_stale_native_blobs_are_pruned(self):
+        self.assertEqual(self.publish()[0], 0)
+        self.assertEqual(len(self.native_blobs()), 4)
+        open(os.path.join(self.nat, 'Chaos.exe'), 'wb').write(b'MZ new')
+        self.assertEqual(self.publish()[0], 0)
+        self.assertEqual(len(self.native_blobs()), 4, 'the old exe blob is gone, the new one is there')
+        self.assertEqual(self.publish(native=False)[0], 0)
+        self.assertEqual(self.native_blobs(), [])
+
+
 class Crypt(unittest.TestCase):
     """update_crypt.py: the blob format the engine decrypts (base patch 0103)"""
     key = bytes.fromhex(TEST_KEY)

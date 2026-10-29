@@ -606,7 +606,7 @@ working directory, as with the rest of the base server libs).
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, Social > Patch Notes / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). Changelog tab: every change that shipped (`changelog_core.lua`, `data/changelog/changelog.json` written at deploy time; see "Changelog"); not yet tested in game. |
 | game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Tested in game: under the character (the bottom of the map lies under the chat in the Chaos layout), fills and empties with the server's chi, empties after 12 s. |
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
-| game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, Social > Guild | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, depot), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
+| game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, Social > Guild | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, Guild Stash), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
 | game_guildwar | `guildwar.lua`, `guildwar_core.lua`, `guildwar_config.lua`, `guildboss.lua`, `guildboss_core.lua`, `guildboss_config.lua`, `sql/chaos_guildwar.sql`, monsters `monsters/chaos/guildboss/`, engine patch 0020 | **197**, Social > Guild Wars, the Summoning Stone in the guild hall | Guild wars declared and answered in game (terms, gold stake in escrow, anti-farming kill rules, frag limit / time / surrender, base `guild_wars` rows for the engine's war emblems, war board) and the weekly guild boss (fuel, summon, instanced fight, rewards, banner, weekly board); see "Guild wars in game" and "The weekly guild boss". Unit and mocked-engine tests; tested on a live test server with two clients. |
 | game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 173 in 10 categories (4170 points) with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, Character > Pets / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
@@ -856,7 +856,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101810 - 7101819 | right-click equips (`Chaos.storage.rightClickEquipOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0024) |
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7101830 - 7101839 | the player's language (`i18n_core.lua` `ChaosI18n.STORAGE`): +0 is 1 for pt-BR |
-| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline (`cosmetics_config.lua`), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
+| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline, +2 level-up effect, +3 rare-loot effect, +4 victory emote (`cosmetics_config.lua`, O318), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
 | 7102900 - 7102909 | tester bots (`Chaos.storage.tester`, "Tester bots"): +0 is 1 on a tester character (only `tools/testers.py` setup writes it; the engine reads it, src-patch 0059), +1 the TEST ONLY helper gave its supplies, +2/+3/+4 its hunt position x/y/z, +5 the day of its respec waiver and +6 the waivers used that day ("Respec waiver for testers"); +7..9 free |
 | 7102100 - 7102119 | the Ashen Chronicle's GLOBAL storages (`Game.setStorageValue`, `chronicle_config.lua` `globalStorage`): +1..+9 chapter n written, +10 chapters written, +11 the season; no player storage |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
@@ -878,6 +878,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of; 7103010 and up are for O260 and O261 |
 | 7103010 - 7103011 | early spike and pity (`retention_loot_config.lua`): 7103010 the first unique (-1 / 0 unset, 1..149 kills counted, 1000000 given), 7103011 the pity counter (kills without a Rare or better drop) |
 | 7103020 - 7103029 | the Weekly Chest (`weeklychest_config.lua` `storage`, `Chaos.storage.weeklyChest`): +0 the week (YYYYMMDD of its Monday), +1 activities done (bit mask), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all; +5..9 free |
+| 7103040 - 7103049 | the Weekend Ritual's GLOBAL storages (`Game.setStorageValue`, `weekend_config.lua` `globalStorage`, O321): +0 the staff switch (1 = off), +1 / +2 / +3 the weekend (YYYYMMDD of its first day) whose start, end warning and highlight were done; +4..9 free; no player storage |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -1073,7 +1074,7 @@ tables, objects must be tables), so a bad row cannot leave a window half drawn.
   (`Chaos.sweepIntruders`). Login inside a slot without a run already did that.
 - **Save before a database credit.** The stash goes one step further: every deposit and withdrawal is a journal row written
   BEFORE the item moves, with a serial saved with the character ("Stash", "Write order"). Value that leaves the character
-  in memory and is credited to a row (star bank deposit, gold transfer to an offline character, guild bank deposit, guild depot, guild boss gold and materials) is
+  in memory and is credited to a row (star bank deposit, gold transfer to an offline character, guild bank deposit, Guild Stash, guild boss gold and materials) is
   credited only after `player:save()` succeeded (`Chaos.saveCharacter`); a failed save gives it back and credits nothing, as the
   market and the orb exchange do. Otherwise a crash between the two duplicated it. The other way round, value credited to
   a character after a row or another saved character paid it (a gold transfer to an online character, a guild bank
@@ -4184,6 +4185,28 @@ season. Before 12 Oct 2026 no script paid it.
 - **Runtime events:** `ChaosEvents.dynamic[key] = {id, name, description, bonus, untilTime}` adds an event with an end time to `ChaosEvents.active` (and so to the bonuses, Adventure > Events and the login lines) until `untilTime`: the invasion Victory buff and the world events use it (see "Invasions and world events"). Scheduled invasions are whole-day entries of `Chaos.events.list`.
 - `server/tests/events_schedule_test.lua` checks the weekday/month-day rules, the bonus product, the calendar ranges sent to the client and the experience callback.
 
+## Weekend Ritual (O321) (`weekend.lua`, `weekend_core.lua`, `weekend_config.lua`)
+
+A fixed weekend every week that players can count on (owner 2026-10-29). Friday 18:00 to Sunday 23:59 server time: one theme bonus from a rotation, and a fixed Saturday highlight. It builds on what exists. There is no new opcode and no new client module.
+
+- **Time.** Server local time. The machine runs in `America/Sao_Paulo` (docs/OWNER_TODO.md), so the schedule is Sao Paulo time. `utcOffsetHours` in the config pins a fixed offset instead. The core works by arithmetic on the offset, not on `os.date`, so the tests do not depend on the machine zone. Weekday numbers are those of `os.date("*t").wday` (1 = Sunday).
+- **Themes.** `rotation` lists theme keys, one per weekend from the weekend of `epoch` (2026-01-02, a Friday): Ritual of Growth (+25% experience), Ritual of Plenty (+25% Chaos loot), Ritual of Training (+25% skill and magic level tries), Ritual of Rifts (rift chests 25% richer). The next weekend of 2026-10-30 is Rifts. `forceTheme` holds the rotation on one theme. All themes are free for everybody. Nothing is sold.
+- **Where each bonus plugs in.**
+  - Experience: an `EventCallback onGainExperience` at index 55, before the experience cap (`xpcap_config.lua`, index 85). The cap still clamps a kill to x4 of its base, whatever multiplies. A test checks the order.
+  - Skill: an `onGainSkillTries` callback at index 6, after the store's training buffs. A fraction of a try is a chance, so one try at a time keeps the bonus on average.
+  - Loot: `loot_config.lua` `rateMult` asks `ChaosWeekend.lootMult(ctx)`; the final rate stays under `maxRate`.
+  - Rift chests: `ChaosRiftCore.hooks.world` is wrapped. It returns the community modifier's answer with `riftReward` added to `rewardMult`.
+- **Overlap with other events.** Blood Moon (Saturday and Sunday, +50% experience) and Loot Frenzy (Friday, +50% loot) stay. They multiply with the theme: Growth on Saturday is x1.25 x1.5 before the other bonuses, and the experience cap still ends it at x4. `weekend_core.lua` `K.validate` keeps each theme small (experience and loot at most x1.5, skill at most x2, rift chests at most 50%).
+- **Season characters.** `seasonCharacters = false`: season characters get none of the personal theme bonuses (experience, loot, skill, rift chests), as they get no world buffs, rested hunting or returning boost (`season_config.lua`, `catchup_config.lua`). They see the announcements and may join the highlight. Set `true` to give them the bonus.
+- **Saturday highlight.** `highlight`: a world boss (`kind = "worldboss"`: the next boss of the rotation, or `boss` by name) or an invasion (`kind = "invasion"`, `area`, `faction`) at Saturday 19:00. 19:00 keeps clear of the scheduled world boss of every 6 hours (03:00, 09:00, 15:00, 21:00). The start calls `ChaosWorldBoss.start()` or `ChaosInvasion.start()`; both announce themselves. If another one is running, the start is tried again every tick for `graceMinutes` (20). Broadcasts 30 and 10 minutes before.
+- **Announcements.** A broadcast and a toast at the start (also when the server sees it up to `startGraceMinutes` late), one broadcast `endWarnMinutes` (60) before the end, and the highlight warnings. All in the player's language (pt-BR in `i18n_strings.lua`). The done weeks are kept in the global storages below, so a restart does not repeat a message. Login: while it runs, the line of the event login (`events_schedule.lua`, also `!events`) names the theme and the end. Up to `loginPreviewHours` (48) before the start, a login line says when it starts.
+- **Calendar.** `events_schedule.lua` `E.calendar` appends `ChaosWeekend.calendarEntries`: one "Weekend Ritual" entry per weekend (Friday 18:00:00 to Sunday 23:59:59), so the login screen and the client's Event Calendar show it with no client change. While it runs, `ChaosEvents.dynamic.weekend_ritual` carries it (`describe(player)` writes the line in the player's language). It has no `bonus` field, so `ChaosEvents.bonus` is not changed.
+- **Switch.** `enabled` in the config turns everything off. Staff can switch it off and on without a reload: the admin panel Events > Weekend Ritual (status, switch on, switch off; group 5), `/weekend [status|on|off]` (status from group 4), or Events > Start event / Stop event with the hook `weekend_ritual`. The staff choice is the global storage `off` and survives a restart. The config's `enabled = false` always wins.
+- **Website data.** `weekend_config.lua` `schedule`, `timezone`, `rotation`, `themes`, `highlight` and `calendar` are plain data for the website calendar (O320). `ChaosWeekendCore.upcoming(cfg, t, off, n)` lists the next weekends with their themes.
+- **Global storages 7103040 - 7103049** (`Game.setStorageValue`): +0 the staff switch (1 = off), +1 the weekend (YYYYMMDD of its first day) whose start was announced, +2 whose end warning was said, +3 whose highlight was started. +4..9 free.
+- **Tests.** `tests/weekend_test.lua`: the clock and the window at every edge (17:59:59, 18:00, Sunday 23:59:59, Monday 00:00, the new year), the rotation, the bonuses and the season rule, what is due and the late restart, the login preview, the calendar, the config check, the experience order against the cap, the pt-BR texts, and the glue on a mocked engine (callbacks, rift hook, highlight retry, switch, admin action, `/weekend`).
+- **Not run on a live server.** The glue's engine calls (`EventCallback`, `GlobalEvent`, `CreatureEvent`, `TalkAction`, `Game` storage, `ChaosWorldBoss.start`, `ChaosInvasion.start`) are the ones other scripts here use, but this file has only run against the mock. To check live: `/weekend status`, then `/weekend off` and `on`; wait for Friday 18:00 or move the clock; watch the console for `[Chaos weekend]` lines.
+
 ## Test kit (`admin/testkit.lua`)
 `/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
 Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is given): `mage` (Mystic, Elementalist, Illusionist with the rod; magic level 110), `knight` (Warrior, Juggernaut; melee 120, shielding 110), `berserker` (the knight set with Executioner's Reckoning, two-handed, no shield), `paladin` (Ranger, Deadeye; crossbow, distance 125, a Legendary Haloed Quiver rolled at the kit's item level), `beastmaster` (Doomtide Longbow and a Legendary Mercurial Quiver), `thief` (Thief, Samurai: Soulreaper and the paladin's armour, sword 120, distance 110, magic level 30, 100 assassin stars), `ninja` (the same plus Bloodmoon Edge in the shield hand; without `src-patches/0002` it goes to the backpack), `monk` (Monk line: no weapon, fist 120, club 110, the paladin's armour), `necromancer` (Necromancer line: the mage set with the wand) and `templar` (Templar line: the knight set, sword and club 120, shielding 110, magic level 25).
@@ -4521,6 +4544,68 @@ convenience only, never power. Every price was decided on 2026-10-14 (owner dele
   website `chaos_coins_test.php`, `chaos_pay_test.php`, `chaos_donation_page_test.php`, `chaos_legal_pages_test.php`.
 - **Beta:** while `Chaos.beta.enabled` is on, every account gets 5,000 Chaos Coins once, at its first new character's
   first login ("Beta starter coins"); they are wiped at launch.
+
+### Store price review: level prices, account discount, weekly groups (O317, owner 2026-10-29)
+
+Prices and reasons: docs/PRICES.md "Pacto Completo, Pact Marks and the store review (O317)". The code, all in `shop.lua` and
+`shop_core.lua`, tested by `tests/shop_test.lua` and `tools/store_model.lua --check` (`tests/store_model_test.lua`):
+
+- **A price per player.** `Shop.view` builds the offer list per player, so the price shown is the player's own and `buy`
+  charges the entry price the same view computed (the client echoes title and price; a stale price is "The store changed").
+  `Shop.personalOffer(player, offer, ownedByOthers)` returns a copy of an offer with the player's price; the offer in the
+  catalog never changes.
+- **`levelPrices`** on an offer: `{{upTo = 200, cost = 60}, {upTo = 500, cost = 100}, {cost = 150}}`, `cost` = the first tier
+  (`ChaosShopCore.levelCost(offer, level)`; `ChaosShopCore.validate` checks the shape). All Blessings uses it: 60 up to level
+  200, 100 up to 500, 150 above. A sale applies to the level price.
+- **`accountDiscount = 50`** on a per-character service or unlock (the Loot Bag, the three pouches, the Everfull Ration, the
+  Auto Seller, Rarity Autoloot, the ten Everfull tiers: 17 offers): the price is `ChaosShopCore.discountCost` (half, rounded up)
+  when another character of the account that still exists bought the offer for itself. `ownedByOthers` runs one query per
+  view on `chaos_shop_purchases` joined to `players`: the offer's own key, or a bundle holding it as a part (a starter pack);
+  gifts and the Pact's lent Auto Seller (storage 2) do not count. The entry carries the tag "Account -50%", the list price
+  as `oldCost`, and a sale that is cheaper wins. The discounted copy is never giftable.
+- **`weeklyGroup`** (with `weeklyLimit`, and `weeklyGroupName` for the refusal text): offers of one group share a weekly
+  limit counted in the purchase log (`boughtCount` with a list of keys). The six Lasting Exercise weapons (14,400 charges)
+  are one group: two a week for the account, the Double Experience Potion mechanism of O140.
+- **Bundle parts of kind `pact`** may be `required` (the store refuses the offer when the Pact system is not loaded) and
+  carry `source` (passed to `ChaosPact.grantDays`); `ChaosPact.checkDays` refuses a bundle that would pass the 365 day cap
+  before any coin is taken. `pactNote = false` on a bundle leaves out the "+N days of Chaos Pact" line of its text.
+- **Potion packs** (ultimate and supreme) rose 32 to 40%; the model ceiling is 1,400 gold a coin. Remote Stash Deposit: 400.
+- **Tests:** `tests/shop_test.lua` (levels 80 / 200 / 201 / 350 / 650, a stale tier price, the account discount for a second
+  and third character, another account, a deleted owner, a starter pack, sales against the discount, the weekly group, the
+  Completo bought and refused at the cap, no Pact system), `tests/store_model_test.lua` (every new rule fails when its number
+  breaks), `tests/season_test.lua` (the Pacto Completo is allowed for season characters, as the Pact and Premium are).
+
+### Founder Pack (O322, owner 2026-10-29)
+
+A time-limited sale of two packs of cosmetics that never return. Prices and reasons: docs/PRICES.md "Founder Pack (O322)".
+Files: `founder_config.lua` (dates, tiers, the store category), `founder_core.lua` (window, titles, checks), `founder.lua` (the
+title source), `tests/founder_test.lua`, the window and grant tests in `tests/shop_test.lua`, the limits in
+`store_balance_config.lua` `founder`, `tools/store_model.lua --check`.
+
+- **Window.** `start` 2026-11-20 15:00 and `end` 2026-12-18 15:00, server time. Both go to the offers as `availableFrom` and
+  `availableUntil`, a general offer field (`ChaosShopCore.windowState(offer, now)`, `windowNote`). `Shop.view` hides an offer
+  outside its window, `offerProblem` refuses it before any coin is taken ("is not on sale yet", "is no longer on sale"), and
+  the offer text starts with "Available until ..." (pt-BR "Disponível até 18/12/2026 15:00."). Move the end date in
+  `founder_config.lua` only; the calendar's `verify` rule fails until `website/tools/calendar_source.json` follows.
+- **Offers.** `founder:pack` (499 coins) and `founder:grand` (999). Bundles with a fixed price, `oncePerAccount`, not giftable,
+  no level gate. Parts: `{kind = "exclusive", exclusive = <key>}` for each piece and a `pact` part with `required = true`.
+  The category "Founder Pack" is second, after the Starter packs (`store_model.lua` reads the Starter packs as category 1).
+  A bundle whose pieces are not in `exclusives_config.lua` (the pair 33 switch off) is not sold.
+- **Part kind `exclusive`.** Owned when `ChaosExclusives.owns(account, key)`. Delivered last, by `ChaosExclusives.grant(account,
+  key, "founder", player)`, which gives it to every character of the account online and to the others at login. Refused
+  with "not available" when exclusives.lua is not loaded. The exclusives have source `founder`: no boss group, validated by
+  `ChaosExclusivesCore.validate(cfg, {founder = ...})` (each is given by exactly one tier).
+- **Pieces.** Pair 33 pieces from `chaos_pack33.lua` `M.founder` (taken out of the store like the boss exclusives) and the plate
+  frame `founder` (`frame_founder`, frame slot 17 of `ChaosShopCore.FRAMES`, picture `plate_founder.png` from
+  `client/tools/gen_nameplate_art.py`, listed in `nameplate_core.lua` and the client's `nameplatemath.lua`).
+- **Titles.** `ChaosTitles` source `founder`: "Founder" while the account owns the first pack's first piece, "Grand Founder" for
+  the grand pack. No storage key and no table.
+- **Storage keys.** None new. The frame uses slot 17 of the store frame keys (`shopFrameBase2 + 8`, 7102018).
+- **Tests.** `tests/founder_test.lua` (dates, tiers, validation, titles, the engine file), `tests/shop_test.lua` (before the
+  start, at the start, one second before and at the end, pt-BR text, both tiers, one per account, other characters, a stale
+  window, no Pact system, an owned piece, no gifts), `tests/exclusives_test.lua`, `tests/pack33_test.lua`,
+  `tests/store_model_test.lua`. The shop test pins the clock to 2026-10-29 so it does not depend on the date it runs.
+- **Not live.** Done in code and tests, not run live. Needs the pair 33 art on the client and the Pact system.
 
 ## Store services (`shop_services.lua`, `autosell.lua`, `sell_prices.lua`)
 
@@ -4928,6 +5013,100 @@ skin's}`, each `{id, dx, dy, ms, m, n}` resolved through the same tables the cas
 does not know is left out. The client plays them in a loop beside the list (client `MANIFEST.md` "Cosmetics effect
 previews"). `cosmetics_test.lua` checks the steps and the resolution.
 
+## Collection score, try on and combat cosmetics (O318) (`collection.lua`, `collection_core.lua`, `collection_config.lua`, `sql/chaos_collection.sql`, `cosmetics*.lua`, client `game_cosmetics`, `game_shop`)
+
+The owner wants players to buy cosmetics without pay-to-win. Three parts, all visual. Nothing here changes damage, area,
+timing, drops or any stat.
+
+### Collection score
+Every cosmetic an account owns gives points. Nothing is listed by hand. A store item is worth `ceil(price / 50)` points
+(`collection_config.lua` `pricePerPoint`, prices from `shop_config.lua`). An item no offer sells is worth the points of
+where it comes from: achievement 4, PvP 6, Candlemarks 4, Chaos Pact 3, boss drop 10 (`sourcePoints`), a wardrobe item or
+plate frame from `exclusives_config.lua` 10 (`exclusivePoints`). Titles are 2 points each, up to 10 titles. The rewards of
+the score are never counted.
+
+| Counted | Read from |
+|---|---|
+| spell skins, kill / level-up / rare-loot effects, emotes, loot labels, chat colours, footprints, outlines, Chaos outfit shaders | the account's `chaos_cosmetics` rows, live (`ChaosCosmetics.ownedOf`) |
+| outfits and addons, mounts, wings, auras, shaders | `ChaosWardrobe.list` of the character (`o` set); prices by client look from the store offers, mounts by `clientid`, wings and auras by XML id through the wardrobe catalogue |
+| name plate frames | the store's frame storages (`ChaosShopCore.frameStorage`) |
+| titles | `ChaosTitles.of` (the "collection" titles and staff are left out) |
+
+Wardrobe items, frames and titles are written to `chaos_collection` (`account_id`, `entry`, `at`) when first seen:
+`w:<kind>:<look>`, `f:<frame>`, `t:<title key>`. Every character of the account adds its own, so the score is the union
+over the characters, and a title that expired still counts. A character whose group has full access owns the whole
+wardrobe and counts none of it. `m:<milestone key>` rows are the milestones reached.
+
+The score is checked at login, when the Cosmetics window opens (`state` or `open`), and after a store delivery or a cosmetic
+grant (`collection.lua` wraps `ChaosShop.deliver` and `ChaosCosmetics.grant` once at startup, no edit in those files). One
+sweep after `syncDelayMs` however many events come together. No new opcode: `state` on the cosmetics opcode 225 carries
+`score` = `{score, groups = [{g, n, p}], next = {points, left}, milestones = [{key, points, done, rewards = [{k, n, f}]}]}`.
+No new storage key (the choices of the rewards use the cosmetics storages).
+
+| Milestone | Points | Reward (granted once, kept) |
+|---|---|---|
+| Collector | 20 | title "Collector" |
+| Trail | 60 | footprints "Laurel Steps" (`foot_collector`, art `laurel` from `gen_cosmeticfx_art.py`) |
+| Curator | 120 | title "Curator" |
+| Gold | 220 | chat colour "Collector's Gold" (`chat_collector`) |
+| Connoisseur | 400 | title "Connoisseur" with the plate frame `gallery` (`gen_nameplate_art.py`, never sold) |
+| Grand | 700 | title "Grand Collector", frame `gallery` |
+| Sovereign | 1200 | title "Hoard Sovereign", frame `gallery` |
+
+Titles come from the `collection` source of `ChaosTitles` (the newest is the default; the frame shows while the title is the
+active one, as for achievements). The two cosmetics have the source `collection` and the field `collection` = the points they
+are granted at (`cosmetics_config.lua`). The test refuses a reward that is sold, a milestone above what the catalogue gives,
+a plate frame the client lacks, a title over 24 characters and a `collection` cosmetic no milestone grants.
+**Assumptions.** A typical buyer with five purchases has 20 to 40 points, so the first reward comes early. The 1200 points of
+the last milestone are about a third of the catalogue (outfits, mounts, wings, auras and the cosmetics together are above 3500
+points). Wings, auras and shader prices need the installed `data/XML` files, so the test checks the cap with the outfits,
+mounts, frames and cosmetics only. If the owner wants a different pace, change `pricePerPoint` and the milestone numbers.
+
+### Try on in the store
+A TRY ON button on every cosmetic offer that can be shown (client `game_shop` `tryon.lua`). Client side where possible:
+the look preview beside the list pins the offer's look on the player's own character for 10 seconds (`Preview:setTry`),
+whatever the mouse does, with a countdown on the button. A cosmetic with an effect also plays it round the real character
+on the map for the asking player only (the existing `preview` action, `ChaosCosmetics.storePreview`; footprints and outlines
+go as `tryfx`). Nobody else sees any of it and nothing is granted.
+
+| Offer kind | Try on |
+|---|---|
+| outfits, addons, mounts, wings, auras, shaders, Chaos shaders, outlines, footprints | in the look preview on the own character; footprints and outlines also on the map (`tryfx`) |
+| spell skins, kill effects, level-up effects, rare-loot effects, victory emotes | the effect in the look preview and round the character on the map (server `preview`) |
+| bundles | in the look preview when a part is worn |
+| name plate frames | no: only the map draws plates. The offer keeps its icon and the preview prints a note |
+| chat colours, loot label accents | no: the row's title shows the colour or the accent |
+| pets | no: a pet is drawn alone, not on the character (hover still shows it) |
+| items, services, coins, pacts, hideout decorations | no |
+
+On the small mobile layout there is no look preview: only the cosmetics with an effect keep the button.
+
+### Combat cosmetics others see
+Already there (docs/PRICES.md): kill effects, footprints (the walking trail), outlines and loot label accents. Footprints are
+the walking trail, so no second trail was added. New, in the Cosmetics group of the store:
+
+| Kind | Effect | Store | Throttle (`cosmetics_config.lua` `combat`) |
+|---|---|---|---|
+| Level-up effects (5) | a chaos_vfx effect on the character when it gains a level | 150 to 250 | once per 4 s per character |
+| Rare loot effects (5) | an effect on the corpse when the character's kill drops a Legendary item or better (the corpse owner) | 150 to 250 | once per 3 s per character |
+| Victory emotes (5) | an effect on the character and a line over its head after a boss kill (the killer, the most damage dealer and their party members within 12 tiles, at most 5) | 200 to 250 | once per 30 s per character |
+
+Prices: Dawn / Ember / Frost Ascent 200, Verdant Ascent 150, Void Ascent 250; Gilded Glint, Crimson Gleam 200, Starfall
+Find, Royal Pyre 250, Holy Seal Find 150; Victory Roar, Warrior's Salute, Shadow Bow 200, Ember Flourish, Halo of Triumph 250.
+The effects are existing `chaos_vfx.lua` effects sent to every spectator of the tile (`Vfx`), so players nearby see them.
+The server sends no number and does no work per step. Storages 7102002 (level-up), 7102003 (rare loot), 7102004 (emote) in
+the wardrobe block. Hooks: a `CreatureEvent` `onAdvance` (`ChaosCosmeticsAdvance`), an `EventCallback.onDropLoot` at index 2.5
+(after the loot layer and the achievements scan, before the autoloot) and the monster death event cosmetics.lua already
+registers on every monster. The window has three more tabs (Level-ups, Rare Loot, Emotes) with the same Preview button.
+The emote lines are fixed English text (a chat line cannot be translated per viewer).
+
+**Tests.** `tests/collection_test.lua` (points from prices and sources, the score with the title cap, the catalogue maps,
+milestones due and next, the view, the validator refusals, `collection.lua` on a mocked engine: login sweep, claiming once,
+the cosmetic reward, staff, two characters of one account, rows read back, the title source, the hooks), `tests/cosmetics_test.lua`
+(the new kinds: throttle, rarity check, emote wearers, the level-up, rare-drop and victory paths, prices 150-250), client
+`game_shop/tryon_test.lua`, `game_cosmetics/cosmeticslogic_test.lua`, `game_lookpreview/lookpreview_core_test.lua`.
+**Not run in game.**
+
 ## Wardrobe catalogue (`wardrobe.lua`, `wardrobe_core.lua`, client `game_unlocks`, base patch 0060)
 
 The 10.98 outfit window packet lists only what the character owns; the Customise Character window shows everything
@@ -4951,6 +5130,8 @@ look, shaders `{n, o, s}` by shader name.
 ## Exclusives (`exclusives.lua`, `exclusives_core.lua`, `exclusives_config.lua`, `sql/chaos_exclusives.sql`, client `game_cosmetics` Collection tab)
 
 Every visual kind of the store also has options that are never sold, only earned from an achievement or a rare boss drop.
+A third source, `founder` (O322), is the Founder Pack: pieces given by buying that limited pack while it is on sale and never
+again (see "Founder Pack" in the Store section). It has no boss group.
 Unlocks are account-wide and not tradeable (table `chaos_exclusives`): a drop is a direct unlock for the account of the
 player who rolled it, never an item (the codebase has no tradeable cosmetic token, and an item would be lost to a trade or a
 death). What an unlock gives is applied at once to the account's characters online and to every character at its login
@@ -5194,7 +5375,7 @@ autoloot list is needed.
 
 | Pouch | Item id (look) | Slots | Coins | Collects |
 |---|---|---|---|---|
-| Loot Bag | 32081 (client 38608: a leather sack, gold coins spilling) | 255, weightless | 250 | all the loot of your kills by default (its rules, below, can narrow it); the Auto Seller sells what is in it |
+| Loot Bag | 32081 (client 38608: a leather sack, gold coins spilling) | 500 (paged), weightless | 250 | all the loot of your kills by default (its rules, below, can narrow it); the Auto Seller sells what is in it |
 | Orbs Pouch | 32082 (client 38609: a violet pouch with a glowing orb) | 100 (was 40) | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035), the gems only while no Gem Pouch is carried |
 | Rift Key Pouch | 32083 (client 38610: an iron strongbox, gold key, key ring) | 100 (was 30) | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
 | Gem Pouch | 32095 (the stock jewelled backpack's own look, no new sprite) | 100 | 150 | gems (32001-32035) only |
@@ -5225,15 +5406,36 @@ autoloot list is needed.
   even when the Gem Pouch is full (the overflow then is the Loot Bag, as for every specialist); without a Gem Pouch the Orbs
   Pouch takes gems as before. The Gem Pouch takes nothing but gems.
 - **The Loot Bag** (owner 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe automaticamente";
-  called Loot Pouch before). Bottomless: 255 slots (`capacity`; the 10.98 protocol sends a container's size as one byte, so
-  255 is the most a container can have) and **weightless** (`weightless = true`): engine src-patch 0038 keeps the weight of
+  called Loot Pouch before). Bottomless: 500 slots (`capacity`, owner 2026-10-29; was 255, see "500 slots" below) and **weightless** (`weightless = true`): engine src-patch 0038 keeps the weight of
   what lies in it (and in bags inside it) away from the character, and an item put into it skips the capacity check.
   `pouches.lua` registers the bag's item id with `Game.setWeightlessContainer` at load and at every login, only where the
   installed items.xml has it as a container; on an engine without 0038 the function is missing and the bag weighs as before.
   Its rules default to everything (`lootDefaults`: the autoloot list, coins, uniques, gear of any rarity, supplies, gems,
   everything else, overflow), so with no settings opened it takes all the loot of the character's kills; the rules window
   can still narrow it. It is a store item: kept at a relog, back (empty) after a death that drops the backpack (below), never
-  traded or sold. 255 different stacks is its only limit: a full bag passes the item to the backpack, then the corpse.
+  traded or sold. 500 different stacks is its only limit: a full bag passes the item to the backpack, then the corpse.
+- **The Loot Bag only gives items back** (owner 2026-10-29: "certifique que a Loot Bag não aceite itens de fora, não aceite
+  colocar itens, só tirar"). A player cannot move any item INTO it, at any depth: not from the backpack, the ground, another
+  container, the purse or another Loot Bag; not into a bag inside it; not dropped on the bag item or on a bag in it (the engine
+  descends into the container in the target slot, `PO.destinationOf` follows it); not a stack merged onto a stack in it. The
+  warning line is "The Loot Bag only gives items back: autoloot fills it." (pt-BR in `i18n_strings.lua`). The rule is
+  `ChaosPouchesCore.lootBagInRefusal` (pure: `intoLootBag`, `sameBag`), asked by `PO.checkOneWay` at the end of `PO.onMoveItem`,
+  which `Player:onMoveItem` already calls first (hook of `install_pouches.py`, nothing new to install). Taking out is free (to
+  the backpack, an inventory slot, the ground). Moving inside the same Loot Bag stays allowed (another slot, into a bag in it):
+  nothing enters from outside. A pouch moved into it still gets "A pouch cannot go into another pouch.". Autoloot, the rarity
+  sort, the loot channel click and the store delivery add by script (`moveTo`, `addItemEx`), never through a player move, so
+  they keep filling it. Other ways in: "use with" does not move items, the base engine has no quick loot, and the base engine's `Player:onMoveItem` is the only Lua event for a player's move, a trade or mail
+  cannot reach a store item. Tests: `tests/pouches_test.lua` (pure rule and the mocked moves). Not run live.
+- **500 slots, paged window** (owner 2026-10-29). The container packet writes the capacity in one byte (255 at most), so the
+  Loot Bag needed engine src-patch `0081-container-pages.patch`: a container over 250 slots (`Container::CHAOS_PAGE_SIZE`)
+  has pagination (the same packet mode as the depot locker and inbox: total size and first index as 16 bits) and is sent in
+  pages of 250 (`Container::pageSize()`: the byte, the items per packet, the seek, the add / update / remove updates and the
+  batch refresh use it; the real `capacity()` and every container of 250 slots or fewer are unchanged). The client already
+  enables `GameContainerPagination` (base patch 0006) and parses the page fields (0061); the stock container window draws the
+  page buttons, so no client patch was added. `install_pouches.py` writes `containerSize` from `capacity` (re-run it on an
+  installed server; the rewritten block carries the new size) and refuses a capacity over 250 without the patch file. Guard:
+  `tools/container_pages_patch_test.py` (CI). Rebuild the server with the patch; without it a 500 slot bag would send a wrong
+  byte. Not checked in a running client: open the bag with more than 250 items and use the page buttons.
 - **The Loot Bag stays in the purse** (owner 2026-10-17, "Loot bag não pode sair da purse"). The store delivers it to the purse
   (the engine's store inbox, item 26052, `purseIds`). From the purse it cannot be moved anywhere else: not into the backpack,
   an inventory slot, a depot, a container on the ground, not dropped, mailed or traded. `Player:onMoveItem` answers the warning
@@ -5838,15 +6040,47 @@ only come from a stale container slot in the client request (the slot is the ind
 
 Two things sold for Chaos Coins, both account-wide and comfort only: nothing here adds damage, defence or loot. Every
 number is in `pact_config.lua`; the rules are in `pact_core.lua` (tested by `tests/pact_test.lua`); `pact.lua` is the engine
-glue. Window: Character > Chaos Pact (client `game_pact`, extended opcode 222 `ChaosOpcodes.pact`).
+glue (mocked-engine test `tests/pact_engine_test.lua`: the Marks claim and shelf, the monthly experience, the expiry warnings,
+the cap and the frame; O317 is tested in code, not run on a live server). Window: Character > Chaos Pact (client `game_pact`, extended opcode 222 `ChaosOpcodes.pact`).
 
-**The Chaos Pact** (store category "Chaos Pact", 300 coins): 30 days; a purchase stacks on the time left, up to 365 days
-ahead (`maxStackDays`, refused before any coin is taken). While it runs the account gets the Pact bonus of every limit below,
-the name plate title **Pactbound** (`ChaosTitles` source `pact`) and **5 Chaos Coins a day**: claimed in the window once per
-server day (`Chaos.dayKey`), for the whole account, while the Pact runs; no back pay for missed days. A month of claims gives
-150 coins back, so a player who logs in daily pays 150 net for the month: cheaper than the 250 of 30 premium days alone, and
-never more coins than the Pact cost. Store bundles that contain Pact days (`shop_config.lua` `pact = {api = "ChaosPact",
-fn = "grantDays"}`) go through `ChaosPact.grantDays(player, days, source)`.
+**The Chaos Pact** (store category "Chaos Pact", 299 coins since O317, was 300): 30 days; a purchase stacks on the time
+left, up to 365 days ahead (`maxStackDays`, refused before any coin is taken). While it runs the account gets the Pact bonus
+of every limit below, the name plate title **Pactbound** (`ChaosTitles` source `pact`), the name plate frame **pactbound**
+and **5 Pact Marks a day** (O317, they replaced 5 Chaos Coins a day): claimed in the window once per server day
+(`Chaos.dayKey`), for the whole account, while the Pact runs; no back pay for missed days. Store bundles that contain
+Pact days (`shop_config.lua` `pact = {api = "ChaosPact", fn = "grantDays"}`) go through
+`ChaosPact.grantDays(player, days, source)`; `ChaosPact.checkDays(player, days)` is the cap check the store runs first.
+
+**Pacto Completo** (O317, owner 2026-10-29, store category "Pacto Completo", the first of Premium & Services): the Chaos
+Pact and Premium together, 30 / 90 / 180 days for 499 / 1350 / 2500 coins (`pact_config.lua` `store.complete`, inserted by
+`shop_config.lua` before Premium Time). Each offer is a bundle of a `{kind = "pact", days, cost, source = "complete",
+required = true}` part (Pact days through `ChaosPact.grantDays`, the stacking cap checked before the coins are taken) and the
+string key of the premium offer of the same days (`premium:30|90|180`; `addPremiumDays`, so its price follows the Premium
+Time offer and the bundle shows the list price of both). `required` makes the store refuse the offer when the Pact system is
+not loaded (the starter packs' small Pact parts are left out instead). Not giftable, `pactNote = false` (no "+N days" line).
+Prices and reasons: docs/PRICES.md "Pacto Completo (O317)".
+
+**Pact Marks** (O317): a second currency, per account, table `chaos_pact_marks` (balance, earned, spent). `pact.dailyMarks`
+(5) are claimed with the same button, once a day, no back pay. They buy only the cosmetics of `marks.shelf` in
+`pact_config.lua` (six store cosmetics today, 150 to 200 Marks), in the Pact window: action `marksBuy {key}`;
+`ChaosPactCore.shelfCheck` refuses any key off the shelf, an owned cosmetic and too few Marks; the Marks are taken with one
+guarded `UPDATE ... WHERE balance >= price`, then `ChaosCosmetics.grant(account, key, "marks")`, and given back when the grant
+fails. No store offer, service, boost or supply takes Marks, nothing turns Marks into coins (`tests/pact_test.lua`,
+`tools/store_model.lua --check` hold it). The balance is capped at 100,000.
+
+**Expiry warnings** (O317): `pact_config.lua` `pact.warnDays = {3, 1}`. At login while the Pact is active and ends within
+3 days, and again from the last day, `pact.lua` sends a chat line and a toast (`ChaosNotify.send(player, "", text, "pact")`,
+client toast type PACT) in the player's language; online it warns once when the level changes (every 10 minutes it checks).
+When the premium days end in the same window the text names both and the Pacto Completo (`ChaosPactCore.expiry`).
+
+**This month's experience** (O317): the +10% callback of `pact_perks.lua` counts what it added
+(`ChaosPactPerksCore.boost`) into `ChaosPact.addMonthExp`; `chaos_pact_xp` (character, YYYYMM, experience) is written once a
+minute and at logout. The window shows "this month the Pact gave you X extra experience" with the account total.
+
+**Looks** (O317): the plate frame `pactbound` (`nameplate_core.lua` `frameOf(title, extra, pact)`: a frame the player wears or a
+staff frame wins, then this one, then the default; `ChaosPact.frameOf`), drawn from `plate_pactbound.png`
+(`client/tools/gen_nameplate_art.py`). The client has no online players list, so there is no icon next to the name there.
+A subscriber spot in the hub (a map change) is not built: see ROADMAP.md O317.
 
 **VIP perks** (owner approval 2026-10-13, changed 2026-10-13: "Vip ganha +10% de exp e restaura stamina mais rápido.
 Retire o loot bag e autoloot."; `pact_config.lua` `perks`, `pact_perks.lua`, `pact_perks_core.lua`,
@@ -5899,8 +6133,8 @@ The loot rules count premium alone as the Pact (`premiumCounts`), because the ba
 
 **One-time extras** (store category "Storage & Slots", service `pactExtra`, table `chaos_account_extras`): Stash Slot Expansion 50
 (4 for 180), Orbs Stash Tab 200, Gems Stash Tab 200, Keys / Supplies / Weapons / Armor / Jewellery / Materials / Creature
-Products Stash Tab 150 each, Collectibles Stash Tab 100 and Remote Stash Deposit 300 (PLACEHOLDER price,
-docs/OWNER_TODO.md), Character Slot 250, Build Slot 100. The extras `stashTabs` and `depotTabs` are retired (no longer sold, kept as
+Products Stash Tab 150 each, Collectibles Stash Tab 100 and Remote Stash Deposit 400 (O317, was a 300 coin placeholder; dearer
+than a month of Pact), Character Slot 250, Build Slot 100. The extras `stashTabs` and `depotTabs` are retired (no longer sold, kept as
 names; "Stash" converts them). A purchase past the maximum is
 refused before the coins are taken.
 
@@ -5926,30 +6160,32 @@ past the account's slots (by creation order) gets a popup and is logged out; sta
 never stopped. At the first start with this feature every account that already had more characters than the free count
 gets the difference as `charSlotsLegacy` (once, `server_config` row `chaos_pact_legacy`).
 
-**Protocol** (opcode 222, JSON `{action, data}`): client `open | sync | claim | buildSave {slot?, name} | buildRename {slot,
-name} | buildDelete {slot} | buildLoad {slot}`; server `status {active, ends, daysLeft, dailyCoins, canClaim, claimedTotal,
-premiumDays, coins, title, limits = [{key, label, free, pact, extra, maxExtra, total, pactActive}], tabSize, special,
-buildLimit, builds}`, `buildCode {slot, code}`, `message {text, error}`. Rate limits in `pact_config.lua` `rate`.
+**Protocol** (opcode 222, JSON `{action, data}`): client `open | sync | claim | marksBuy {key} | buildSave {slot?, name} | buildRename {slot,
+name} | buildDelete {slot} | buildLoad {slot}`; server `status {active, ends, daysLeft, dailyMarks, canClaim, claimedTotal,
+marks, marksEarned, shelf = [{key, name, marks, owned}], monthExp, monthExpAccount, month, premiumDays, coins, title,
+limits = [{key, label, free, pact, extra, maxExtra, total, pactActive}], tabSize, special, buildLimit, builds}`, `buildCode {slot, code}`, `message {text, error}`. Rate limits in `pact_config.lua` `rate`.
 
 **Tables** (`sql/chaos_pact.sql`, also created at startup): `chaos_pact` (account, end, run start, days bought, last claim,
-coins claimed), `chaos_account_extras`, `chaos_build_slots`, `chaos_pact_log` (purchases, claims, legacy grants, staff
-changes). Staff: `/pact <player>, info | days <n> | end | extra <key> <amount> | claimreset`.
+Marks claimed), `chaos_account_extras`, `chaos_build_slots`, `chaos_pact_log` (purchases, claims, Marks purchases, legacy grants,
+staff changes), `chaos_pact_marks` and `chaos_pact_xp` (O317). Staff: `/pact <player>, info | days <n> | end | extra <key> <amount> | claimreset`.
 
 **Store hunk** (`shop_config.lua`, one block before "Premium Time"; the offers themselves are in `pact_config.lua` `store`):
 
 ```lua
 		-- >>> Chaos Pact and account storage (pact.lua): offers, prices and texts live in pact_config.lua `store`
-		dofile("data/scripts/chaos/pact_config.lua").store.pact,
-		dofile("data/scripts/chaos/pact_config.lua").store.storage,
+		under(P_PREMIUM, dofile("data/scripts/chaos/pact_config.lua").store.pact),
+		under(P_PREMIUM, dofile("data/scripts/chaos/pact_config.lua").store.storage),
 		-- <<< Chaos Pact and account storage
 ```
+
+and, before Premium Time, `under(P_PREMIUM, dofile("data/scripts/chaos/pact_config.lua").store.complete)` (the Pacto Completo).
 
 `pact.lua` puts the services `pact` and `pactExtra` into `ChaosShopServices.services` at startup, at every login and after a
 reload (shop_services.lua builds that table when it loads).
 
 **Tested in game** (own server copy and database, one client): the window without a Pact; a stash of 104 item types from
 before tabs placed into tabs 1-2 and a read-only tab 3; a new item refused while tabs are full; the Pact bought in the store
-(coins, premium days, log); the daily claim and the refused second claim; four builds saved; tab 3 writable with the Pact;
+(coins, premium days, log); the daily claim (Chaos Coins then, Pact Marks since O317) and the refused second claim; four builds saved; tab 3 writable with the Pact;
 the Orbs tab bought, the orbs moved into it, Stash All sending an Orb of Grafting there, a second purchase refused without
 taking coins; the Pact expired: limits back to the free counts, title gone, tab 3 withdraw-only (withdraw works, a deposit of
 that item moves it to tab 2), builds 3-4 read-only (a forged save refused), a read-only build loaded into the passive tree;
@@ -5987,7 +6223,7 @@ achievement tabs or store offers remain (`depot_config.lua` has the ids, the mes
 **Retired with it.** The store category "Depot Tabs" (Extra Depot Tab 150, 4 Depot Tabs 500; it had left the store on
 2026-10-21), the Pact limit `depotTabs`, the table `chaos_depot_tabs` (the rows stay, nothing reads them) and the depot
 window requests. Bought depot tabs are converted, see "Stash", "Room since O316". The guild hall chest ("Guild levels and
-guild halls", the guild depot upgrade and the `depotSlots` perk) is shared guild storage, not the player depot, and stays.
+guild halls", the Guild Stash upgrade and the `depotSlots` perk) is shared guild storage, not the player depot, and stays.
 
 **What the base has.** TFS 1.4.2 gives every town its own depot chest (`Player::getDepotChest(townId)`) inside the locker,
 next to the shared inbox and the market. The engine never makes depot boxes. The items `depot box I` .. `XXI` (25453-25469,
@@ -6268,7 +6504,7 @@ right-click an equipped item > Transmog. Numbers and sets: `transmog_config.lua`
   is stackable or a fluid / splash type is ignored by both sides. Decision: attribute + client drawing, not a different id
   in the packet (that would break the engine's client-id checks, the stack counts and every client module keyed on ids).
 - **It travels with the item.** Moves, trades, depots and logout keep custom attributes; the market escrow keeps it through
-  patch 0017 (or `chaos_tmog` in `market.lua` EXTRA_KEYS without it); the guild depot copies it (`guild_config.lua`
+  patch 0017 (or `chaos_tmog` in `market.lua` EXTRA_KEYS without it); the Guild Stash copies it (`guild_config.lua`
   `customKeys`). The 0003 version hash covers it, so tooltip caches refresh.
 - **Wherever the item is drawn from server data:** tooltips add "Appearance: <look>" (`item_tooltip_core.lua` `tip.look`,
   client `tooltiplogic.lua`); Inspect Player draws the look (`tip.look`); market rows, My Offers, History and the sell picker
@@ -6932,7 +7168,7 @@ generator and the tests read it). Arrows and bolts went the same way earlier ("I
   rarity** (it is stackable). Now `ChaosLoot.stripStackableRarity` clears the attribute in every corpse before the engine's
   stat pass and in `finalizeRarity` (autoloot, pouch), and the login walk of `rarity_migrate.lua` (version 2, so
   characters walked before are walked again) clears it on existing stacks in equipment, backpacks, purse, inbox and
-  depots. Not covered: stacks in house tiles, guild depots, market offers and stash tables (cleared when they pass a
+  depots. Not covered: stacks in house tiles, Guild Stashes, market offers and stash tables (cleared when they pass a
   player's hands again). The stock roll function itself lives in the base file and is not edited.
 - Tests: `tests/throwables_test.lua`, `tests/rarity_migrate_test.lua`, `tests/newplayer_test.lua`, `tests/class_kit_test.lua`,
   `tools/patch_base_throwables_test.py`.
@@ -10872,7 +11108,7 @@ Shard), and the **Void Orb** is item 32260, orb key `void`, a corruption orb (`C
   On a good item 59% improve it, 28% only lock it, 8% are a coin flip and 5% hurt: worth it on an item one step from
   done, a gamble on a finished one. The result is announced like every orb ("Void Orb: <item> is corrupted: ...") with
   the dark `CONST_ME_MORTAREA` cloud (red on the downside). `ChaosOrbs.forceVoid` is the test hook.
-- **Persistence.** `chaos_corrupted` and `chaos_cimp` are in `ChaosCrafting.attributeKeys()`, so the guild depot copy and
+- **Persistence.** `chaos_corrupted` and `chaos_cimp` are in `ChaosCrafting.attributeKeys()`, so the Guild Stash copy and
   the key-list item codec (market escrow and stash without engine patch 0017) keep them; the blob codec keeps every
   attribute anyway.
 - **Sources and worth.** Loot weight 2 (chance 1 / 3 / 8 / 160 / 320 per 10000 kills, normal to boss), salvage recipe 125
@@ -11597,13 +11833,13 @@ adjectives, suffixes "of ..." phrases; a new affix needs a word, `tests/item_nam
 the words are unique per side and hold no "orb"). `C.affixName(base, mods)` is the pure part; `C.applyName(item)` runs
 at the end of `C.rewriteDescription` (so every orb, forge and quality change renames): it sets `ITEM_ATTRIBUTE_NAME`
 and `ITEM_ATTRIBUTE_ARTICLE` ("an" before a vowel sound) from the **stock** name (`ItemType:getName()`, so it is
-idempotent, title-cased), marks the item `chaos_aname = 1` (copied by the guild depot and the item codec through
+idempotent, title-cased), marks the item `chaos_aname = 1` (copied by the Guild Stash and the item codec through
 `C.attributeKeys`), and removes name, article and mark when the item has no modifier left. Normal items, uniques,
 waystones, rift keys and an item another script named (no mark) keep their name. Existing items get their name the next
 time a modifier changes (there is no login pass). Readers audited: market (offer name and search use the new name; the
 category comes from the gear kind), item links (name limit 56), tooltips, loot line and pouch line (one id with
 different names merges into "2 longswords"), hunt summary (lists the stock name, one row per base), loot filter,
-autosell (rarity items go by rarity, not by name), jewelry (name only matters for uniques), guild depot and codec (copy
+autosell (rarity items go by rarity, not by name), jewelry (name only matters for uniques), Guild Stash and codec (copy
 name, article and mark). Item names are not translated to pt-BR (see "Still English on purpose" under internationalisation), so the
 names stay English.
 
@@ -11747,7 +11983,7 @@ and `lo` / `hi` (the range of that tier); the client shows "Item Level 57  (up t
 1/2" with "T3 Sword +2 [1-3]" lines in a colour per tier (`game_itemtooltip`). The bench shows the same per modifier
 (prefixes first, "T3  Sword +2  [1-3]") and the preview of each orb names the tiers the item level allows ("T1-T3").
 Salvage yields `floor(base x (1 + 0.5 x item level / 150))` shards plus one per modifier of T6 or better
-(`salvage_config.lua`). The guild depot copies the new attributes (`ChaosCrafting.attributeKeys`). The achievement
+(`salvage_config.lua`). The Guild Stash copies the new attributes (`ChaosCrafting.attributeKeys`). The achievement
 "Perfection" now asks for an item with 6 modifiers.
 
 **Storage and caps on the character** (`item_mods.lua`). Like `base_rarity.lua`, the totals of the equipped items (in a slot
@@ -11889,7 +12125,7 @@ modifiers, seven effects of their own), the player picks one and the choice is f
   client and in every Chaos script, see "Opcode collision check") checks the item's path, id and signature, then runs the
   bench's `craft()` with `{choice = n}`: one orb taken, the crafting log, the community goal, the look text rewritten.
 - **Item attributes.** `chaos_veil` (1 veiled, 2 unveiled), `chaos_veil_offer`, `chaos_veil_key`, `chaos_veil_tier`,
-  `chaos_veil_val`; in `ChaosCrafting.attributeKeys` (guild depot, market key list). The slot is not a prefix or suffix:
+  `chaos_veil_val`; in `ChaosCrafting.attributeKeys` (Guild Stash, market key list). The slot is not a prefix or suffix:
   `readMods` does not see it, no orb changes it, and `ChaosCrafting.recreate` copies it (Upheaval, Fate, Erasure keep it).
   Ruined items refuse the orb like every orb.
 - **Totals.** `item_mods.lua` sums the unveiled modifiers of the equipped items (`ChaosVeiled.totals`): catalogue keys go into
@@ -12516,7 +12752,7 @@ is never sold or trashed with a locked item in it):
 | The stock "Upgrade and Rarity Remover" (29623, makes a plain copy) | Refused: "This item is locked." (a guard added to `data/scripts/customs/upgrade/upgrade_slot_item.lua` by `tools/install_salvage.py`; Lua, works without the patch). |
 
 Unchanged on purpose: scripts that act on one specific item object (`item:remove()`: using a Rift Key or a scroll,
-the guild depot and the stash, which keep the item; salvage itself checks the lock), player-to-player trade and mail
+the Guild Stash and the stash, which keep the item; salvage itself checks the lock), player-to-player trade and mail
 (the item and its lock move to the other character), the season join's inventory wipe (confirmed by the player, "this
 cannot be undone") and staff tools. Without the patch the NPC trade window and turn-ins still take locked items. The lock
 never stops crafting.
@@ -14135,7 +14371,7 @@ they cannot find post a buy order (below).
 **Escrow.** The listed item leaves the seller and lives in its offer row (`chaos_market_offers.data`): with engine patch
 0017 as the engine's own binary form of every attribute (`item:serializeAttributes()`, the same bytes the engine saves
 items with; hex in the row, codec `blob`), else as a list of the standard attributes and every custom key the Chaos
-scripts set (codec `attrs`, the guild depot's method; a custom attribute outside the list would be lost, the reason for
+scripts set (codec `attrs`, the Guild Stash's method; a custom attribute outside the list would be lost, the reason for
 the patch). On purchase, cancel or expiry the item is created again (`Game.createItem` + `item:unserializeAttributes()`;
 a stackable keeps the count it was created with) and its per-item id `chaos_iid` is removed, so the engine gives the
 copy a new one when it is first sent: chat links and cached tooltips of the old copy never point at it. The offer also
@@ -14536,7 +14772,7 @@ are paid from it. Money safety: every change of the guild bank is one conditiona
 with `ROW_COUNT()` (never read-then-write); a purchase pays first and then writes its row with a conditional statement
 (`INSERT IGNORE` on the guild's key, `UPDATE ... WHERE tier = n`, `UPDATE ... WHERE paid_until = old`), and refunds and
 logs when that write changed nothing. Money requests are limited to one a second per player (`ChaosRateLimit`), the
-window requests that read the database to one per 300 ms. Season characters cannot use the guild bank or depot while
+window requests that read the database to one per 300 ms. Season characters cannot use the guild bank or Guild Stash while
 their season runs. Staff log: `chaos_guild_log` (deposit, withdraw, hall, upgrade, rent, put, take, refund, level,
 staff) and a console line for every gold movement; `/guild log <guild>` shows the last 20.
 
@@ -14559,24 +14795,24 @@ is not a member of the hall's guild (left the guild, logged in inside) is sent t
 | Teleport Hub | 6 | 2,000,000 | | 4 forcefields along the north wall to the hunting areas of `hall.hub` (lands on the nearest free walkable tile within 3; each area has a way back at its `back` tile, action id 47616, into the guild's hall, 2026-10-21). A portal's look text announces "level N+" and the step-in enforces it (`ChaosGuildCore.hubGate`: below the destination's `level` the player is pushed back with "<name> needs level N."); `tools/check_hub_destinations.py DATA_DIR` reads the map and lists the destinations with no landing tile (they would answer "This portal leads nowhere right now."); run it after the content areas are installed |
 | Training Room | 7 | 1,500,000 | | 3 exercise dummies of the base server (27751/27752; the store's exercise weapons work on them) and a damage dummy monster (the first of `dummyMonsters` the server knows) |
 | Crafting Bench | 8 | 1,000,000 | | an anvil that opens the crafting window (`crafting.lua`) |
-| Guild Depot | 9 | 2,500,000 | | a large trunk shared by the members, see below |
+| Guild Stash | 9 | 2,500,000 | | a large trunk shared by the members, see below |
 | Trophy Room | 10 | 1,000,000 | Teleport Hub | statues whose look text shows siege wins, world bosses, rift record, bounties, invasions, level and top contributors |
 | Decoration 1 / 2 / 3 | 12 / 16 / 20 | 1.5M / 3M / 6M | Trophy Room | floor and walls: white marble, obsidian (black marble), gilded stone |
 
 **Rent.** 300,000 gold a week + 100,000 per upgrade tier, paid from the guild bank: at purchase for the first week,
 then automatically when due (once a minute check). If the bank is short the hall has 24 hours of grace (members are
 reminded once an hour); after that the upgrades lock: their fixtures disappear (hub portals, dummies, bench, trunk,
-trophies, decoration) and the depot is closed, nothing is deleted. Paying (Social > Guild, the window's Pay rent, or the
+trophies, decoration) and the Guild Stash is closed, nothing is deleted. Paying (Social > Guild, the window's Pay rent, or the
 automatic try after a deposit) unlocks everything at once; a locked hall starts a new week from the payment (the locked
 weeks are not charged), a hall in its grace time keeps its period.
 
-**Guild depot.** Drop an item on the trunk inside your own hall: it is stored in `chaos_guild_depot` (item id, count and
+**Guild Stash** (called the guild depot until O319; the player depot is retired, see O316). Names in code and data stay as they were: the table `chaos_guild_depot`, `T.depot`, `depotSlots`, the upgrade key `depot` and its storage and action ids. No migration. Drop an item on the trunk inside your own hall: it is stored in `chaos_guild_depot` (item id, count and
 its attributes as text: description, name, text, charges, attack/defense/armor and the other standard attributes, the
 rarity system's custom attributes `rarity`, `combatPowerLevel`, every `rarity_*` modifier key of `ChaosCrafting`, uniques,
 rift keys) and removed. Take items back in the Guild window (in the hall). Containers are refused; 30 entries + the
-depot perks; members take at most 20 entries a day (leader and vice-leaders without limit). A take deletes the row with
+stash perks; members take at most 20 entries a day (leader and vice-leaders without limit). A take deletes the row with
 one conditional `DELETE` first and only then creates the item, so double clicks or repeated requests give one item; no
-room in the backpack -> the inbox; no room there either -> the row is put back. The window shows the depot's put/take
+room in the backpack -> the inbox; no room there either -> the row is put back. The window shows the Guild Stash's put/take
 log. Limitation: a custom attribute that is not in that list is not copied (the engine has no call to list them).
 
 **Weekly top guilds.** The window's Top Guilds tab ranks guilds by the GXP earned in the week (Monday 06:00, like the
@@ -14591,7 +14827,7 @@ Members tab shows every member's GXP this week and in total.
 **Client** (`game_guild`, JSON on 252): server -> client `state` {guild, perks, members, hall, depot, log, top},
 `none` (not in a guild), `message`, `openModule` (the bench); client -> server `open`, `refresh`, `deposit`,
 `withdraw`, `buyHall`, `upgrade`, `payRent`, `take`, `scroll`. Tabs: Overview (perks, scroll, guild bank, log),
-Members, Guild Hall (rent and upgrades, buttons for the leader and vice-leaders), Depot, Top Guilds.
+Members, Guild Hall (rent and upgrades, buttons for the leader and vice-leaders), Guild Stash, Top Guilds.
 
 **Tested in game** (test server, cropped map, guild Iron Wolves with a leader and a member on two accounts, one client):
 guild XP from kills (the experience share, 60 a day cap reached) and from a completed bounty contract (+15 through the
@@ -14599,7 +14835,7 @@ leaderboard hook); a level-up to 10 (staff XP on top) with the broadcast and the
 18,900 -> 19,467 experience at +3%); the loot perk (rateMult x1.04); deposit and withdraw (a triple-clicked withdraw
 paid once); buying the hall from the guild bank (a triple click bought it once); entering through the portal and
 leaving through the exit; a non-member refused at the portal and sent out when placed inside; the Teleport Hub and the
-Guild Depot bought from the window; the hub portal; a stack of Orbs of Upheaval and a Mythic dragon scale mail put on the trunk
+Guild Stash bought from the window; the hub portal; a stack of Orbs of Upheaval and a Mythic dragon scale mail put on the trunk
 and taken back with every modifier (three take requests in a row gave one item); a member taking an item; the depot
 log; rent paid from the window; rent past the grace time with an empty bank locking the upgrades (fixtures gone, depot
 closed, window red) and paying it unlocking them; the training room, bench (opens the crafting window), trophies and
@@ -14671,7 +14907,7 @@ the kill log, a surrender (1,800,000 to the winner, 200,000 burnt), emblems gone
 
 A guild-only instanced boss, Gorvath the Banner-Eater, once per guild and week (Monday 06:00). Window: the Guild Boss tab
 of `game_guildwar` (opcode 197), also opened by using the **Summoning Stone**, an obelisk (1560, action id 47609) that
-every guild hall gets on the east wall below the depot spot (`guild_hall.lua`'s `G.furnish` is wrapped, nothing edited
+every guild hall gets on the east wall below the Guild Stash spot (`guild_hall.lua`'s `G.furnish` is wrapped, nothing edited
 there). Numbers: `guildboss_config.lua`; pure rules: `guildboss_core.lua` (`tests/guildboss_test.lua`, also the engine
 file against mocks: donations, the summon, a failed attempt, the lockout).
 

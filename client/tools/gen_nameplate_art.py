@@ -4,7 +4,7 @@
   ids: default (blackened iron, ember accent), gold (staff), crimson (siege champions), violet, frost, ember, verdant
   and bone (store frames), ashen, sapphire, rose, jade, copper, obsidian, amber and storm (the second store set),
   laurel, sepulchre and infernal (never sold: exclusives_config.lua; a crowned ornament), cinderwrought (the season
-  pass premium track, crowned too). preview_nameplates.png (not shipped) shows them at 4x.
+  pass premium track, crowned too), gallery (the collection score's Connoisseur title, crowned), founder (the Grand Founder Pack, crowned). preview_nameplates.png (not shipped) shows them at 4x.
 python3 -I client/tools/gen_nameplate_art.py   (writes into client/overlay/modules/game_nameplate/images/)"""
 import os
 import sys
@@ -40,8 +40,14 @@ FRAMES = {
     'infernal':  ((150, 40, 16), (255, 150, 60), (40, 10, 4), (14, 3, 1), (255, 96, 24), (255, 220, 120)),
     # the season pass premium track (server seasonpass_config.lua, Ashen Pass tier 40): ash-grey iron, a cinder core
     'cinderwrought': ((92, 84, 80), (214, 160, 110), (30, 24, 22), (10, 8, 7), (230, 110, 40), (255, 214, 150)),
+    # the collection score (server collection_config.lua, O318): the Connoisseur title's frame, museum teal and brass
+    'gallery': ((60, 140, 134), (214, 196, 120), (14, 36, 36), (5, 12, 12), (200, 170, 80), (255, 240, 170)),
+    # the Chaos Pact (server pact_config.lua pact.frame, O317): the Pactbound title colour #c4553a as a rim, a deep red fill
+    'pactbound': ((196, 85, 58), (240, 150, 110), (46, 16, 12), (15, 5, 4), (214, 96, 64), (255, 200, 150)),
+    # the Grand Founder Pack (server founder_config.lua, O322): pale gilt rim, a warm dark fill, an ember ornament
+    'founder': ((226, 186, 96), (255, 244, 204), (42, 30, 18), (15, 10, 6), (232, 120, 80), (255, 238, 190)),
 }
-CROWNED = {'laurel', 'sepulchre', 'infernal', 'cinderwrought'}
+CROWNED = {'laurel', 'sepulchre', 'infernal', 'cinderwrought', 'gallery', 'pactbound', 'founder'}
 FILL_ALPHA = 225
 
 

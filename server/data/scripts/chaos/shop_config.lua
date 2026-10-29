@@ -24,6 +24,8 @@
 --   {kind = "unlock", unlock = "cosmetic_<key>", ...}  a cosmetic, per account (cosmetics.lua, cosmetics_store.lua)
 --   {kind = "bundle", parts = {<offer key> | <offer table>, ...}, pct = n | cost = n}   several offers at once, at
 --       pct % off their list prices (or a fixed cost); refused when one part is owned or cannot apply now
+--   {kind = "exclusive", exclusive = "<key of exclusives_config.lua>"}  (bundle part only) an exclusive of source "founder" for
+--       the account (exclusives.lua grant); owned when the account has it; delivered last
 --   {kind = "pact", days = n}  (bundle part only) days of the Chaos Pact when that system is loaded (`pact` below);
 --       without it the part is left out of the bundle
 -- Optional offer fields:
@@ -35,6 +37,8 @@
 --   maxLevel       hidden from (and refused to) characters above this level
 --   gift = false   not giftable (kinds outside ChaosShopCore.GIFTABLE never are)
 --   noSale         sales and the featured discount leave it alone
+--   availableFrom / availableUntil   "YYYY-MM-DD HH:MM" server time: sold only in this window; hidden and refused outside it,
+--                  and the offer text says "Available until ..." (shop_core.lua windowState; the Founder Pack, O322)
 -- Optional category fields: rotationOnly = true: its offers are sold only through the weekly rotation ("This week");
 --   parent = "<a name of `groups`>": a subcategory of that parent ("the category tree" below)
 -- Names, descriptions and the category icon are what the client shows. Cosmetics without a name take
@@ -129,17 +133,19 @@ local RUNE_PACKS = {
 }
 local okRunes, RUNES = pcall(dofile, "data/lib/chaos_rune_supply.lua")
 -- Potion packs (owner 2026-10-23: "coloque pots melhores a venda na store e packs maiores também"). The coins of a 100
--- pack are kept as they were (15-30); the ultimate mana and spirit potions (level 130) join at 25. Bigger packs take
+-- pack were 15-30 (now 15-42, see below); the ultimate mana and spirit potions (level 130) joined at 25. Bigger packs take
 -- the rune packs' discounts: 250 5% and 500 10% off the 100 pack, rounded up. The keys of the 100 packs stay
 -- "item:<id>x100". Delivery like every store item: stacks of 100 into the purse (server/README.md "Delivery to the purse").
 local POTION_PACKS = {
 	-- {potion id, coins for 100, plural name, what it does}
 	{7590, 15, "Great Mana Potions", "Restores a large amount of mana."},
 	{8472, 15, "Great Spirit Potions", "Restores health and mana."},
-	{8473, 20, "Ultimate Health Potions", "Restores a large amount of health."},
-	{26029, 25, "Ultimate Mana Potions", "Restores a huge amount of mana. Level 130."},
-	{26030, 25, "Ultimate Spirit Potions", "Restores a lot of health and mana. Level 130."},
-	{26031, 30, "Supreme Health Potions", "Restores a huge amount of health. Level 200."}
+	-- O317 (owner 2026-10-29): the ultimate and supreme packs +30-40% (they sold at 1,400-1,667 gold a coin, the others at
+	-- about 1,000-1,270): 20 -> 27, 25 -> 33, 25 -> 33, 30 -> 42; docs/PRICES.md "Pacto Completo (O317)"
+	{8473, 27, "Ultimate Health Potions", "Restores a large amount of health."},
+	{26029, 33, "Ultimate Mana Potions", "Restores a huge amount of mana. Level 130."},
+	{26030, 33, "Ultimate Spirit Potions", "Restores a lot of health and mana. Level 130."},
+	{26031, 42, "Supreme Health Potions", "Restores a huge amount of health. Level 200."}
 }
 local POTION_SIZES = {100, 250, 500}
 
@@ -266,6 +272,12 @@ local cfg = {
 						{kind = "pact", days = 14, cost = 140, name = "14 days of the Chaos Pact"}}}
 			}
 		},
+		-- >>> Founder Pack (O322, owner 2026-10-29): two time-limited packs of cosmetics that never return, one per account and
+		-- tier, sold only from 2026-11-20 15:00 to 2026-12-18 15:00 (server time); offers, prices, dates and texts live in
+		-- founder_config.lua. The category is hidden outside the window (offer availableFrom / availableUntil, shop.lua).
+		-- It stays second: tools/store_model.lua reads the Starter packs as categories[1].
+		dofile("data/scripts/chaos/founder_config.lua").store.pack,
+		-- <<< Founder Pack
 		{
 			-- cosmetic sets at 20-25% off the parts; the parts a player owns already are left out of the bundle and its
 			-- price (shop.lua Shop.personalBundle), a bundle whose parts are all owned is not shown
@@ -293,12 +305,16 @@ local cfg = {
 			}
 		},
 		-- ================================================================== Premium & Services
+		-- >>> Pacto Completo (O317): the Chaos Pact and Premium together, the top offer of Premium & Services; offers,
+		-- prices and texts live in pact_config.lua `store.complete`
+		under(P_PREMIUM, dofile("data/scripts/chaos/pact_config.lua").store.complete),
+		-- <<< Pacto Completo
 		{
 			name = "Premium Time", parent = P_PREMIUM, icon = {item = 16101},
 			offers = {
-				{kind = "premium", days = 30, cost = 250, name = "30 Days of Premium", description = "Premium account for 30 days."},
-				{kind = "premium", days = 90, cost = 650, name = "90 Days of Premium", description = "Premium account for 90 days."},
-				{kind = "premium", days = 180, cost = 1200, name = "180 Days of Premium", description = "Premium account for 180 days."}
+				{kind = "premium", days = 30, cost = 299, name = "30 Days of Premium", description = "Premium account for 30 days."},
+				{kind = "premium", days = 90, cost = 800, name = "90 Days of Premium", description = "Premium account for 90 days."},
+				{kind = "premium", days = 180, cost = 1500, name = "180 Days of Premium", description = "Premium account for 180 days."}
 			}
 		},
 		-- >>> Chaos Pact and account storage (pact.lua): offers, prices and texts live in pact_config.lua `store`
@@ -348,7 +364,10 @@ local cfg = {
 			name = "Blessings", parent = P_PREMIUM, icon = {item = 11260},
 			offers = {
 				{kind = "service", service = "blessings", icon = 11260, cost = 60, name = "All Blessings",
-					description = "All five blessings at once: less experience loss when you die (items are never lost without a red or black skull)."},
+					-- O317 (owner 2026-10-29): the price follows the character's level (shop.lua Shop.personalOffer; the store
+					-- shows each player their own price). `cost` is the first tier, the price from.
+					levelPrices = {{upTo = 200, cost = 60}, {upTo = 500, cost = 100}, {cost = 150}},
+					description = "All five blessings at once: less experience loss when you die (items are never lost without a red or black skull). 60 coins up to level 200, 100 up to level 500, 150 above."},
 				-- the Eternal Blessing (gentledeath.lua, owner decision 2026-10-15): one purchase per character, all five
 				-- blessings kept for good (given back at each login after a death). PLACEHOLDER price (docs/OWNER_TODO.md).
 				-- Not for season characters: a season ladder is not bought (season.lua realm > 0; !bless still works there).
@@ -402,12 +421,12 @@ local cfg = {
 				{kind = "item", id = 27772, count = 1, cost = 75, name = "Durable Exercise Rod (1800)", description = "Use the chest to get a rod with 1800 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
 				{kind = "item", id = 27773, count = 1, cost = 75, name = "Durable Exercise Wand (1800)", description = "Use the chest to get a wand with 1800 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
 				{kind = "item", id = 27774, count = 1, cost = 75, name = "Durable Exercise Shield (1800)", description = "Use the chest to get a shield with 1800 charges. Trains shielding. Every class."},
-				{kind = "item", id = 27775, count = 1, cost = 450, name = "Lasting Exercise Melee Weapon (14400)", description = "Use the chest to get a melee training weapon with 14400 charges. Trains melee. Warrior, Thief and Templar lines."},
-				{kind = "item", id = 27776, count = 1, cost = 450, name = "Lasting Exercise Fist Weapon (14400)", description = "Use the chest to get a fist training weapon with 14400 charges. Trains fist fighting. Monk line."},
-				{kind = "item", id = 27778, count = 1, cost = 450, name = "Lasting Exercise Bow (14400)", description = "Use the chest to get a bow with 14400 charges. Trains distance. Ranger and Thief lines."},
-				{kind = "item", id = 27779, count = 1, cost = 450, name = "Lasting Exercise Rod (14400)", description = "Use the chest to get a rod with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
-				{kind = "item", id = 27780, count = 1, cost = 450, name = "Lasting Exercise Wand (14400)", description = "Use the chest to get a wand with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
-				{kind = "item", id = 27781, count = 1, cost = 450, name = "Lasting Exercise Shield (14400)", description = "Use the chest to get a shield with 14400 charges. Trains shielding. Every class."}
+				{kind = "item", id = 27775, count = 1, cost = 450, weeklyLimit = 2, weeklyGroup = "lastingExercise", weeklyGroupName = "Lasting Exercise Weapons", name = "Lasting Exercise Melee Weapon (14400)", description = "Use the chest to get a melee training weapon with 14400 charges. Trains melee. Warrior, Thief and Templar lines. 2 a week in all Lasting weapons."},
+				{kind = "item", id = 27776, count = 1, cost = 450, weeklyLimit = 2, weeklyGroup = "lastingExercise", weeklyGroupName = "Lasting Exercise Weapons", name = "Lasting Exercise Fist Weapon (14400)", description = "Use the chest to get a fist training weapon with 14400 charges. Trains fist fighting. Monk line. 2 a week in all Lasting weapons."},
+				{kind = "item", id = 27778, count = 1, cost = 450, weeklyLimit = 2, weeklyGroup = "lastingExercise", weeklyGroupName = "Lasting Exercise Weapons", name = "Lasting Exercise Bow (14400)", description = "Use the chest to get a bow with 14400 charges. Trains distance. Ranger and Thief lines. 2 a week in all Lasting weapons."},
+				{kind = "item", id = 27779, count = 1, cost = 450, weeklyLimit = 2, weeklyGroup = "lastingExercise", weeklyGroupName = "Lasting Exercise Weapons", name = "Lasting Exercise Rod (14400)", description = "Use the chest to get a rod with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines. 2 a week in all Lasting weapons."},
+				{kind = "item", id = 27780, count = 1, cost = 450, weeklyLimit = 2, weeklyGroup = "lastingExercise", weeklyGroupName = "Lasting Exercise Weapons", name = "Lasting Exercise Wand (14400)", description = "Use the chest to get a wand with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines. 2 a week in all Lasting weapons."},
+				{kind = "item", id = 27781, count = 1, cost = 450, weeklyLimit = 2, weeklyGroup = "lastingExercise", weeklyGroupName = "Lasting Exercise Weapons", name = "Lasting Exercise Shield (14400)", description = "Use the chest to get a shield with 14400 charges. Trains shielding. Every class. 2 a week in all Lasting weapons."}
 			}
 		},
 		{
@@ -418,25 +437,25 @@ local cfg = {
 				-- the Everfull potion tiers (potions.lua, potions_config.lua upgrade): the same swap Veyra's task does, for
 				-- coins. Needs the previous tier and the stock potion's level, once per tier and character, nothing beyond
 				-- what the task gives (pay to skip the hunt for the potions, docs/PRICES.md)
-				{kind = "service", service = "everfullUpgrade", upgrade = 32268, icon = 32268, cost = 20, name = "Everfull Spirit Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32268, icon = 32268, cost = 20, name = "Everfull Spirit Potion",
 					description = "Upgrade of your Everfull Health Potion: health and mana a drink, one health and one mana charge. The charges stay."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32261, icon = 32261, cost = 30, name = "Everfull Great Health Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32261, icon = 32261, cost = 30, name = "Everfull Great Health Potion",
 					description = "Upgrade of your Everfull Health Potion (level 80): 425-575 health a drink. The charges stay."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32262, icon = 32262, cost = 30, name = "Everfull Great Mana Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32262, icon = 32262, cost = 30, name = "Everfull Great Mana Potion",
 					description = "Upgrade of your Everfull Mana Potion (level 80): 150-250 mana a drink. The charges stay."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32263, icon = 32263, cost = 30, name = "Everfull Great Spirit Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32263, icon = 32263, cost = 30, name = "Everfull Great Spirit Potion",
 					description = "Upgrade of your Everfull Spirit Potion (level 80): health and mana a drink. The charges stay."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32264, icon = 32264, cost = 50, name = "Everfull Ultimate Health Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32264, icon = 32264, cost = 50, name = "Everfull Ultimate Health Potion",
 					description = "Upgrade of your Everfull Great Health Potion (level 130): 650-850 health a drink. The charges stay."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32265, icon = 32265, cost = 50, name = "Everfull Ultimate Mana Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32265, icon = 32265, cost = 50, name = "Everfull Ultimate Mana Potion",
 					description = "Upgrade of your Everfull Great Mana Potion (level 130): 425-575 mana a drink. The charges stay."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32266, icon = 32266, cost = 50, name = "Everfull Ultimate Spirit Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32266, icon = 32266, cost = 50, name = "Everfull Ultimate Spirit Potion",
 					description = "Upgrade of your Everfull Great Spirit Potion (level 130): health and mana a drink. The charges stay."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32267, icon = 32267, cost = 70, name = "Everfull Supreme Health Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32267, icon = 32267, cost = 70, name = "Everfull Supreme Health Potion",
 					description = "Upgrade of your Everfull Ultimate Health Potion (level 200): 875-1125 health a drink. The charges stay."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32269, icon = 32269, cost = 70, name = "Everfull Supreme Mana Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32269, icon = 32269, cost = 70, name = "Everfull Supreme Mana Potion",
 					description = "Upgrade of your Everfull Ultimate Mana Potion (level 200): 575-775 mana a drink. The charges stay."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32270, icon = 32270, cost = 70, name = "Everfull Supreme Spirit Potion",
+				{kind = "service", service = "everfullUpgrade", accountDiscount = 50, upgrade = 32270, icon = 32270, cost = 70, name = "Everfull Supreme Spirit Potion",
 					description = "Upgrade of your Everfull Ultimate Spirit Potion (level 200): health and mana a drink. The charges stay."}
 			}
 		},
@@ -446,21 +465,21 @@ local cfg = {
 				-- the Temple Teleport Scroll is no longer sold: every character has the free Town Portal (townportal.lua);
 				-- scrolls bought earlier keep working (shop_services.lua)
 				-- store pouches (pouches.lua, pouches_config.lua): items, one of each per character, store-bound
-				{kind = "service", service = "pouch", pouch = "loot", icon = 32081, cost = 250, name = "Loot Bag",
+				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "loot", icon = 32081, cost = 250, name = "Loot Bag",
 					description = "Bottomless, store-bound: all your loot goes in, 255 slots, no weight. The Auto Seller sells it."},
-				{kind = "service", service = "pouch", pouch = "orbs", icon = 32082, cost = 200, name = "Orbs Pouch",
+				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "orbs", icon = 32082, cost = 200, name = "Orbs Pouch",
 					description = "100 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried (no gems with a Gem Pouch)."},
-				{kind = "service", service = "pouch", pouch = "keys", icon = 32083, cost = 150, name = "Rift Key Pouch",
+				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "keys", icon = 32083, cost = 150, name = "Rift Key Pouch",
 					description = "100 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."},
-				{kind = "service", service = "pouch", pouch = "gems", icon = 32095, cost = 150, name = "Gem Pouch",
+				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "gems", icon = 32095, cost = 150, name = "Gem Pouch",
 					description = "100 slots, store-bound. Collects only gems while carried, so they stay apart from your orbs."},
 				-- the infinite food (store_food.lua, store_food_config.lua): one per character, store-bound, never used up.
 				-- price decided 2026-10-14 (docs/PRICES.md)
-				{kind = "service", service = "storeFood", icon = 32084, cost = 100, name = "Everfull Ration",
+				{kind = "service", service = "storeFood", accountDiscount = 50, icon = 32084, cost = 100, name = "Everfull Ration",
 					description = "Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."},
-				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 400, name = "Auto Seller",
+				{kind = "unlock", unlock = "autoSeller", accountDiscount = 50, icon = 2160, iconCount = 100, cost = 400, name = "Auto Seller",
 					description = "Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."},
-				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 300, name = "Rarity Autoloot",
+				{kind = "unlock", unlock = "rarityAutoloot", accountDiscount = 50, icon = 2472, cost = 300, name = "Rarity Autoloot",
 					description = "Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."},
 				{kind = "item", id = 2365, count = 1, cost = 50, name = "Backpack of Holding", description = "A backpack with more room than any other."}
 			}
@@ -558,6 +577,11 @@ local cfg = {
 		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("footprint")),
 		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("outline")),
 		-- <<< Footprints and outlines
+		-- >>> Combat cosmetics others see (O318; cosmetics_config.lua kinds levelfx / rarefx / emote; 150-250 coins)
+		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("levelfx")),
+		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("rarefx")),
+		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("emote")),
+		-- <<< Combat cosmetics
 		-- >>> Cosmetics (cosmetics.lua): spell effect skins, kill effects, loot label accents, chat name colours; offers,
 		-- prices and texts live in cosmetics_config.lua (cosmetics_store.lua builds each category). Account-wide.
 		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("killfx")),

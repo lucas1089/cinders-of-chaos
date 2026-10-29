@@ -15,6 +15,7 @@ end
 eq(V.typeOfAction('sale'), 'SALE', 'sale kind')
 eq(V.typeOfAction('achievement'), 'ACHIEVEMENT', 'achievement kind')
 eq(V.typeOfAction('market'), 'MARKET', 'market kind')
+eq(V.typeOfAction('pact'), 'PACT', 'pact kind (the Chaos Pact expiry warning)')
 eq(V.typeOfAction('partyInvite'), nil, 'not a message kind')
 -- every kind the server's ChaosNotify.send accepts has a toast type here
 local src = io.open(here .. '/../../../../server/data/scripts/chaos/notifications.lua')

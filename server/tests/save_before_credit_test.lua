@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/save_before_credit_test.lua (and lua5.3; CI runs both). Mock engine API.
 -- Crash duplication: value that leaves the character in memory and is credited to a database row (star bank, an
--- offline receiver's balance, the guild bank, the guild depot) is credited only after player:save() succeeded; a
+-- offline receiver's balance, the guild bank, the Guild Stash) is credited only after player:save() succeeded; a
 -- failed save gives it back and credits nothing (chaos_constants.lua Chaos.saveCharacter). The stash and the guild
 -- boss stone are checked in security_test.lua and guildboss_test.lua.
 local n = 0
@@ -185,7 +185,7 @@ eq(bo.bank, bankBefore + 5000, "credited to the bank balance")
 eq(bo.saves, boSaves + 1, "saved after the credit")
 eq(bo.savedBank, bo.bank, "a crash now keeps the withdrawn gold")
 
--- ---------------------------------------------------------------- guild_hall.lua: the guild depot
+-- ---------------------------------------------------------------- guild_hall.lua: the Guild Stash
 function Position(x, y, z) return {x = x, y = y, z = z} end
 dofile("data/scripts/chaos/guild_hall.lua")
 G.inHall = function() return 1, 9 end

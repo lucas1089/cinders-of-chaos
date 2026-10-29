@@ -75,7 +75,7 @@ local function C()
 	return ChaosCrafting
 end
 
--- every custom attribute key of the system (ChaosCrafting.attributeKeys adds them: guild depot, market key list)
+-- every custom attribute key of the system (ChaosCrafting.attributeKeys adds them: Guild Stash, market key list)
 V.ATTRS = {A.state, A.offer, A.key, A.tier, A.value}
 
 -- ---------------------------------------------------------------------------------------------------------------

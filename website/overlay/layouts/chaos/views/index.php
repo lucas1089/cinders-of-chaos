@@ -85,6 +85,13 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 	</section>
 	<?php endif; ?>
 
+	<section class="chaos-box" id="chaos-seasons-optional">
+		<h2 class="chaos-heading">Temporadas opcionais <small>Optional seasons</small></h2>
+		<p class="chaos-lead" lang="pt-BR">Seu personagem é permanente, as temporadas são opcionais, o legado é cosmético. Nenhum personagem normal é apagado por uma temporada. Quem entra joga com um personagem novo e, no fim, ele vira um personagem normal; para a conta vão outfits, montarias e títulos.</p>
+		<p class="chaos-lead">Your character is permanent, seasons are optional, the legacy is cosmetic. A season never wipes a standard character. Whoever joins plays a new character that becomes a standard one at the end; the account keeps outfits, mounts and titles.</p>
+		<a class="chaos-btn chaos-btn--ghost" href="page?plugin=chaos&amp;p=calendar">Calendário / Calendar</a>
+	</section>
+
 	<?php if ($latest !== null): ?>
 	<section class="chaos-box">
 		<h2 class="chaos-heading">Latest patch notes <small><?= $h($latest['date'] ?? '') ?></small></h2>

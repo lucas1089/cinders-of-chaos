@@ -2,6 +2,7 @@
 --   local pv = modules.game_lookpreview.create(placeholder)    -- nil when the module or the placeholder is missing
 --   pv:setOption(opt)      the row picked (LookPreviewCore option; nil: the character as worn)
 --   pv:setHover(opt)       the row under the mouse, shown until pv:clearHover()
+--   pv:setTry(opt, ms)     a look kept on the character for ms milliseconds (the store's TRY ON); pv:clearTry()
 --   pv:setOwnOutfit(o)     draw this outfit as "own" instead of the local player's (nil: back to the player's)
 --   pv:refresh()           redraw (the player's outfit changed)
 --   pv:destroy()
@@ -487,7 +488,7 @@ end
 
 function Preview:refresh()
   if not alive(self.widget) then return end
-  local opt = self.hover or self.opt
+  local opt = self.hover or self.try or self.opt
   local outfit, outline, note = P.compose(self:mode(), self.own or localOutfit(), opt, shaderKnown)
   local cw = self.widget.stage.creature
   local ok = pcall(cw.setOutfit, cw, outfit)
@@ -542,7 +543,30 @@ end
 function Preview:setOption(opt)
   self.opt = opt
   self.hover = nil
+  self:clearTry(true)
   self:refresh()
+end
+
+-- A look kept on the character for `ms` milliseconds whatever the mouse does (the store's TRY ON button): it shows
+-- over the picked row and ends by itself, or at the next setOption. Nothing is bought or granted.
+function Preview:setTry(opt, ms)
+  if opt == nil then return self:clearTry() end
+  self.try = opt
+  self.tryToken = (self.tryToken or 0) + 1
+  local token = self.tryToken
+  self:refresh()
+  if type(scheduleEvent) == 'function' then
+    scheduleEvent(function()
+      if self.tryToken == token and self.widget then self:clearTry() end
+    end, tonumber(ms) or 10000)
+  end
+end
+
+function Preview:clearTry(silent)
+  if self.try == nil then return end
+  self.try = nil
+  self.tryToken = (self.tryToken or 0) + 1 -- the pending end of an earlier try does nothing
+  if not silent then self:refresh() end
 end
 
 function Preview:setHover(opt)

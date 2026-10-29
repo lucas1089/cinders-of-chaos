@@ -85,8 +85,9 @@ return {
 	-- decision here); shop.lua asks ChaosSeason.storeProblem for the buyer and for the receiver of a gift.
 	store = {
 		-- offer kinds a season character may get (shop_config.lua kinds; "pact" = the Chaos Pact days of a bundle)
+		-- "exclusive" = a Founder Pack piece (exclusives_config.lua source founder): a look for the account
 		kinds = {wings = true, aura = true, shader = true, outfit = true, addons = true, mount = true, frame = true,
-			premium = true, pact = true},
+			premium = true, pact = true, exclusive = true},
 		-- kind "service": by service. The Chaos Pact and its extras are account comfort (room, slots, coins);
 		-- stamina, blessings, the skull remover, resets, the vocation token, world buffs and pouches are refused
 		services = {nameToken = true, sexChange = true, pact = true, pactExtra = true},

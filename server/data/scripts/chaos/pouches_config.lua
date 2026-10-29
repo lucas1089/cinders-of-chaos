@@ -36,15 +36,15 @@ ChaosPouchesConfig = {
 	-- pair 34 by import_art_things.py with art_import/store_items.csv; client MANIFEST.md "Store item looks").
 	-- `oldClientId`: the earlier look (gen_pouch_art.py, art_import/pouches.csv, 33651-33653), replaced in place by
 	-- install_pouches.py. install_pouches.py --stock-looks keeps the stock bag looks.
-	-- capacity = containerSize in items.xml (slots, at most 255); weight in 1/100 oz (the contents weigh as usual, except
+	-- capacity = containerSize in items.xml (slots, at most 255, or up to 1000 with engine src-patch 0081 paging); weight in 1/100 oz (the contents weigh as usual, except
 	-- in a `weightless` one: engine src-patch 0038)
 	kinds = {
 		-- the Loot Bag (owner, 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe
-		-- automaticamente"): every rule on by default (lootDefaults), the most slots a container can have (255: one byte
-		-- in the protocol) and weightless (Game.setWeightlessContainer, pouches.lua at startup), so its contents never
+		-- automaticamente"): every rule on by default (lootDefaults), 500 slots (owner 2026-10-29; over 250 the
+		-- window is paged, engine src-patch 0081), takes no item a player moves in (pouches_core.lua P.lootBagRefusal) and weightless (Game.setWeightlessContainer, pouches.lua at startup), so its contents never
 		-- count against the character's capacity. The Auto Seller sells what is in it (autosell.lua, every 30 s).
 		loot = {id = 32081, sourceId = 11242, clientId = 38608, oldClientId = 33653,
-			capacity = 255, weight = 100, title = "Loot Bag", article = "a",
+			capacity = 500, weight = 100, title = "Loot Bag", article = "a",
 			name = "loot bag", plural = "loot bags", weightless = true,
 			collects = "all the loot of your kills, as its rules pick (Loot Filter > Loot Bag)",
 			description = "Store item: cannot be traded, sold or dropped. A bottomless bag: the loot of your kills goes " ..

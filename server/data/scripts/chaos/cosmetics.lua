@@ -8,6 +8,10 @@
 --   footprints          prints behind the walking character, for every viewer; outlines: a coloured line around the
 --                       character's silhouette, for every viewer. Both are drawn by each client (game_cosmeticfx)
 --                       from the "looks" this script sends (who wears which art); the server does nothing per step
+--   level-up effects    an effect on the character when it gains a level; rare-loot effects: an effect on the corpse when
+--                       the kill drops a Legendary item or better; victory emotes: an effect and a line after a boss
+--                       kill (O318). All three go to everyone near, are throttled per character (cfg.combat) and are
+--                       visual only
 -- Data: cosmetics_config.lua. Rules: cosmetics_core.lua (server/tests/cosmetics_test.lua). Unlocks are account-wide
 -- (table chaos_cosmetics, server/sql/chaos_cosmetics.sql, also created here at startup); the choice is per character
 -- (storages 7100940 - 7100949). Store offers: {kind = "unlock", unlock = "cosmetic_<key>"} (shop_services.lua asks
@@ -31,7 +35,8 @@
 --                     looks {names = {[name] = {f = print art, o = glow art, p = 1 pulse} | false}, full}  (footprints
 --                     and outlines of online characters; game_cosmetics hands them to game_cosmeticfx)
 --                     tryfx {kind, art, pulse}  (a preview the asking player's client draws on its own character)
---                     state also carries collection = the exclusives of every visual kind (exclusives.lua), when loaded
+--                     state also carries collection = the exclusives of every visual kind (exclusives.lua), when loaded,
+--                     and score = the collection score (collection.lua K.view: score, groups, next, milestones), when loaded
 --                     result {ok, text}
 -- Staff: /cosmetic <character>, <key | all>[, revoke]   /cosmetic <character>, sync   (achievement cosmetics and the
 -- reward track of achievements.lua: granted at login, when the window opens and after new achievement unlocks)
@@ -71,6 +76,7 @@ M.looks = M.looks or {} -- character name -> {f = print art, o = glow art, p = 1
 M.lookOwner = M.lookOwner or {} -- character name -> creature id of the session that set M.looks (a reconnect's old session
 -- may log out after the new one logged in: it must not clear the new session's look)
 local lastPreview = {} -- player id -> ms
+local lastFx = {} -- player id .. kind -> ms (the combat cosmetics' throttle, K.allowFx)
 
 local function nowMs()
 	return os.mtime and os.mtime() or os.time() * 1000
@@ -150,7 +156,7 @@ M.addOwnedShaders = addOwnedShaders
 local function chosenOf(player)
 	local st = cfg.storage
 	local chosen = {lines = {}}
-	for _, kind in ipairs({"killfx", "lootbeam", "chatcolor", "footprint", "outline"}) do
+	for _, kind in ipairs({"killfx", "lootbeam", "chatcolor", "footprint", "outline", "levelfx", "rarefx", "emote"}) do
 		chosen[kind] = math.max(0, player:getStorageValue(st[kind]))
 	end
 	for _, l in ipairs(cfg.lines) do
@@ -208,6 +214,11 @@ local function refresh(player, announce)
 	local a = {lines = {}}
 	local kill = chosen.killfx > 0 and owned(player, chosen.killfx)
 	a.killfx = kill and kill.kind == "killfx" and kill.vfx or nil
+	-- combat cosmetics others see (O318): the effect (and the emote's line) of the chosen one
+	for _, kind in ipairs({"levelfx", "rarefx", "emote"}) do
+		local cc = chosen[kind] > 0 and owned(player, chosen[kind])
+		a[kind] = cc and cc.kind == kind and {vfx = cc.vfx, say = cc.say} or nil
+	end
 	for line, id in pairs(chosen.lines) do
 		local c = id > 0 and owned(player, id)
 		if c and c.kind == "spellskin" and c.line == line then
@@ -344,6 +355,8 @@ local function playLookup(kind, name)
 end
 
 function M.sendState(player, open)
+	-- the collection score first: a milestone reached now grants a cosmetic that the rows below must show (collection.lua)
+	local score = ChaosCollection and ChaosCollection.view and ChaosCollection.view(player) or nil
 	local line = lineOf(player)
 	local rows = K.rows(cfg, ownedOf(player:getAccountId()), chosenOf(player), {line = line, achievementName = achievementName,
 		categoryName = function(key)
@@ -371,7 +384,8 @@ function M.sendState(player, open)
 		r.item, r.icon = clientId(r.icon), nil
 		collection[#collection + 1] = r
 	end
-	send(player, "state", {open = open or nil, line = line, lineName = l and l.name, rows = rows, collection = collection})
+	send(player, "state", {open = open or nil, line = line, lineName = l and l.name, rows = rows, collection = collection,
+		score = score})
 end
 
 local function reply(player, ok, text)
@@ -428,7 +442,7 @@ end
 
 -- the preview of a cosmetic: its effects one after another, seen by the asking player only
 function M.preview(player, c)
-	if not c or (c.kind ~= "spellskin" and c.kind ~= "killfx" and not K.DRAWN[c.kind]) then
+	if not c or (c.kind ~= "spellskin" and not K.VFX_KINDS[c.kind] and not K.DRAWN[c.kind]) then
 		return false
 	end
 	local pid, t = player:getId(), nowMs()
@@ -558,6 +572,7 @@ local login = CreatureEvent("ChaosCosmeticsLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosCosmeticsExtended")
 	player:registerEvent("ChaosCosmeticsLogout")
+	player:registerEvent("ChaosCosmeticsAdvance")
 	local ok, err = pcall(function()
 		sync(player)
 		addOwnedShaders(player)
@@ -584,6 +599,9 @@ local logout = CreatureEvent("ChaosCosmeticsLogout")
 function logout.onLogout(player)
 	M.active[player:getId()] = nil
 	lastPreview[player:getId()] = nil
+	for _, kind in ipairs({"levelfx", "rarefx", "emote"}) do
+		lastFx[player:getId() .. kind] = nil
+	end
 	M.colors[player:getName()] = nil
 	if M.lookOwner[player:getName()] == player:getId() then
 		M.looks[player:getName()] = nil
@@ -593,9 +611,152 @@ function logout.onLogout(player)
 end
 logout:register()
 
+-- ---------------------------------------------------------------- combat cosmetics others see (O318)
+local function isBoss(monster)
+	local okType, boss = pcall(function()
+		local mt = monster:getType()
+		return mt and mt:isBoss()
+	end)
+	return okType and boss == true
+end
+
+-- a chosen effect of `kind` for player `p` at `pos` unless it played for this character a moment ago; sent to every
+-- spectator of the tile (Vfx has no target player), so everyone near sees it
+local function playFx(p, kind, pos, ms)
+	local a = M.active[p:getId()]
+	local fx = a and a[kind]
+	if not fx or not Vfx or not pos then
+		return false
+	end
+	if not K.allowFx(lastFx, p:getId() .. kind, nowMs(), ms) then
+		return false
+	end
+	return Vfx(pos, fx.vfx) == true
+end
+
+-- the character gained a level (CreatureEvent onAdvance below)
+function M.levelUp(player)
+	return playFx(player, "levelfx", player:getPosition(), cfg.combat.levelMs)
+end
+
+-- a kill that dropped a rare item (EventCallback onDropLoot below): the effect on the corpse, for the corpse's owner
+function M.rareDrop(owner, corpse)
+	local R = ChaosRarity
+	if not (R and corpse and corpse.getItems) then
+		return false
+	end
+	local a = M.active[owner:getId()]
+	if not (a and a.rarefx) then
+		return false
+	end
+	local rarities = {}
+	local function scan(item)
+		local okR, r = pcall(function() return item:getCustomAttribute("rarity") end)
+		rarities[#rarities + 1] = okR and tonumber(r) or 0
+	end
+	for _, item in ipairs(corpse:getItems() or {}) do
+		scan(item)
+		if item:isContainer() then
+			for _, inner in ipairs(item:getItems() or {}) do
+				scan(inner)
+			end
+		end
+	end
+	local min = R.rank(R.idOf(cfg.combat.rarity))
+	if not K.hasRare(rarities, min, R.rank) then
+		return false
+	end
+	return playFx(owner, "rarefx", corpse:getPosition(), cfg.combat.rareMs)
+end
+
+-- a boss died: the killer and the party members near show their victory emote (an effect and a line over the head)
+function M.victory(creature, killer, mostDamageKiller)
+	if not creature or not creature.isMonster or not creature:isMonster() or creature:getMaster() or not isBoss(creature) then
+		return false
+	end
+	local candidates, byId = {}, {}
+	local function add(c)
+		if c and c.isPlayer and c:isPlayer() then
+			candidates[#candidates + 1] = c:getId()
+			byId[c:getId()] = c
+			local party = c:getParty()
+			if party then
+				for _, m in ipairs(party:getMembers() or {}) do
+					candidates[#candidates + 1] = m:getId()
+					byId[m:getId()] = m
+				end
+				local leader = party:getLeader()
+				if leader then
+					candidates[#candidates + 1] = leader:getId()
+					byId[leader:getId()] = leader
+				end
+			end
+		end
+	end
+	add(killer)
+	add(mostDamageKiller)
+	local pos = creature:getPosition()
+	local range = cfg.combat.range
+	local who = K.emoteWearers(cfg, candidates, function(id)
+		local a = M.active[id]
+		return a ~= nil and a.emote ~= nil
+	end, function(id)
+		local p = byId[id]
+		local pp = p and p:getPosition()
+		return pp ~= nil and pp.z == pos.z and math.abs(pp.x - pos.x) <= range and math.abs(pp.y - pos.y) <= range
+	end)
+	local n = 0
+	for _, id in ipairs(who) do
+		local p = byId[id]
+		local fx = M.active[id].emote
+		if K.allowFx(lastFx, id .. "emote", nowMs(), cfg.combat.emoteMs) then
+			n = n + 1
+			if Vfx then
+				Vfx(p:getPosition(), fx.vfx)
+			end
+			if fx.say and p.say then
+				p:say(fx.say, TALKTYPE_MONSTER_SAY)
+			end
+		end
+	end
+	return n > 0
+end
+
+local advance = CreatureEvent("ChaosCosmeticsAdvance")
+function advance.onAdvance(player, skill, oldLevel, newLevel)
+	if skill == SKILL_LEVEL and (tonumber(newLevel) or 0) > (tonumber(oldLevel) or 0) then
+		local ok, err = pcall(M.levelUp, player)
+		if not ok then
+			print("[Chaos cosmetics] level up failed: " .. tostring(err))
+		end
+	end
+	return true
+end
+advance:register()
+
+if EventCallback then
+	local rare = EventCallback
+	rare.onDropLoot = function(self, corpse)
+		local ok, err = pcall(function()
+			local owner = corpse and Player(corpse:getCorpseOwner())
+			if owner then
+				M.rareDrop(owner, corpse)
+			end
+		end)
+		if not ok then
+			print("[Chaos cosmetics] rare drop failed: " .. tostring(err))
+		end
+	end
+	rare:register(2.5) -- after the loot layer (1) and the achievements scan (2.4), before the autoloot takes items out
+end
+
 -- kill effects: the killing blow (the engine's last hit) of a character on a monster that is nobody's summon
 local death = CreatureEvent("ChaosCosmeticsDeath")
 function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjustified, mostDamageUnjustified)
+	local ok, err = pcall(M.victory, creature, killer, mostDamageKiller)
+	if not ok then
+		print("[Chaos cosmetics] victory failed: " .. tostring(err))
+	end
 	if not killer or not killer.isPlayer or not killer:isPlayer() then
 		return true
 	end

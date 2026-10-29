@@ -69,6 +69,14 @@ eq(N.frameOf(nil, nil), "default", "no title, no cosmetic")
 eq(N.frameOf(list[1], nil), "gold", "staff title frame")
 eq(N.frameOf(list[1], "frost"), "frost", "cosmetic beats title")
 eq(N.frameOf(list[2], "nope"), "default", "unknown cosmetic ignored")
+-- O317: an active Chaos Pact brings its frame (pact_config.lua pact.frame) below the frames the player wears
+eq(N.frameOf(nil, nil, "pactbound"), "pactbound", "the Pact's frame when nothing else")
+eq(N.frameOf(list[2], nil, "pactbound"), "pactbound", "the Pact's frame under a title without a frame")
+eq(N.frameOf(list[1], nil, "pactbound"), "gold", "a staff title frame beats the Pact's")
+eq(N.frameOf(nil, "frost", "pactbound"), "frost", "a bought frame beats the Pact's")
+eq(N.frameOf(nil, nil, "nope"), "default", "an unknown Pact frame is ignored")
+eq(dofile("data/scripts/chaos/pact_config.lua").pact.frame, "pactbound", "the Pact's frame")
+eq(N.FRAMES[dofile("data/scripts/chaos/pact_config.lua").pact.frame], true, "and the client has it")
 
 -- ---------------------------------------------------------------- wire
 eq(N.encode({cid = 268435461, title = "Administrator", color = "e0402c", guild = "Omar", frame = "gold"}),

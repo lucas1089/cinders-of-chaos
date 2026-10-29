@@ -6,9 +6,18 @@
 ChaosCosmeticsCore = ChaosCosmeticsCore or {}
 local C = ChaosCosmeticsCore
 
-C.KINDS = {spellskin = true, killfx = true, lootbeam = true, chatcolor = true, footprint = true, outline = true}
+C.KINDS = {spellskin = true, killfx = true, lootbeam = true, chatcolor = true, footprint = true, outline = true,
+	levelfx = true, rarefx = true, emote = true}
+-- the kinds that are one chaos_vfx.lua effect (`vfx`) other players see: killfx on the killed monster, levelfx on the
+-- character at a level up, rarefx on the corpse of a rare drop, emote on the character after a boss kill (cosmetics.lua)
+C.VFX_KINDS = {killfx = true, levelfx = true, rarefx = true, emote = true}
+-- the longest line a victory emote says
+C.EMOTE_MAX = 32
+-- the combat cosmetics others see (O318): sold at 150-250 coins
+C.COMBAT_KINDS = {levelfx = true, rarefx = true, emote = true}
 -- pvp: battleground.lua / arena_season.lua grant it; boss: a rare personal drop of a boss (exclusives.lua grants it)
-C.SOURCES = {store = true, achievement = true, pvp = true, boss = true, pact = true, candlemarks = true}
+-- collection: granted once when the account's collection score reaches `collection` points (collection.lua)
+C.SOURCES = {store = true, achievement = true, pvp = true, boss = true, pact = true, candlemarks = true, collection = true}
 -- the kinds every viewer's client draws itself (client game_cosmeticfx): the art key names the client's picture
 C.DRAWN = {footprint = "prints", outline = "glows"}
 C.SWAP_TYPES = {"fx", "missile", "vfx", "vmissile"}
@@ -125,7 +134,7 @@ function C.previewOf(c)
 	if not c then
 		return {}
 	end
-	if c.kind == "killfx" then
+	if C.VFX_KINDS[c.kind] then
 		return {{type = "vfx", name = c.vfx}}
 	elseif c.kind == "spellskin" then
 		local out = {}
@@ -151,7 +160,7 @@ function C.playOf(c)
 	if not c then
 		return {}
 	end
-	if c.kind == "killfx" then
+	if C.VFX_KINDS[c.kind] then
 		return type(c.vfx) == "string" and {{type = "vfx", to = c.vfx}} or {}
 	elseif c.kind ~= "spellskin" then
 		return {}
@@ -198,6 +207,46 @@ function C.playRows(c, lookup)
 		if b then
 			out[#out + 1] = {a = C.playSpec(s.type, s.from, lookup), b = b}
 		end
+	end
+	return out
+end
+
+-- ---------------------------------------------------------------- combat cosmetics others see (O318)
+-- Throttle: true (and `last[key]` = now) when at least `ms` passed since the key last played, else false. The tables
+-- are per server and kept small by the logout, which drops a character's keys (cosmetics.lua).
+function C.allowFx(last, key, now, ms)
+	local before = last[key]
+	if before ~= nil and now >= before and now - before < ms then
+		return false
+	end
+	last[key] = now
+	return true
+end
+
+-- true when one of the item rarities (stored ids, 0 = none) is at least `minRank` (rankOf(id) -> 0..7)
+function C.hasRare(rarities, minRank, rankOf)
+	for _, r in ipairs(rarities or {}) do
+		if rankOf(r) >= minRank and rankOf(r) > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+-- The characters that show their victory emote after a boss kill: the killer first, then the others, each once, only
+-- those with an emote chosen (wears(id) -> true) and within cfg.combat.range tiles (near(id) -> true), at most
+-- cfg.combat.maxPerKill. ids = candidates in order (the killer, the most damage dealer, then party members).
+function C.emoteWearers(cfg, ids, wears, near)
+	local out, seen = {}, {}
+	local max = (cfg.combat or {}).maxPerKill or 5
+	for _, id in ipairs(ids or {}) do
+		if #out >= max then
+			break
+		end
+		if not seen[id] and wears(id) and near(id) then
+			out[#out + 1] = id
+		end
+		seen[id] = true
 	end
 	return out
 end
@@ -364,6 +413,8 @@ function C.how(c, achievementName, categoryName)
 		return "Chaos Pact: " .. tostring(c.pact or "while subscribed")
 	elseif c.source == "candlemarks" then
 		return "Candlemarks: Osric the Chandler, in the teleport room's market"
+	elseif c.source == "collection" then
+		return "Collection score: " .. tostring(c.collection) .. " points"
 	elseif c.points then
 		return "Achievements: " .. tostring(c.points) .. " account points"
 	elseif c.category then
@@ -398,7 +449,7 @@ function C.rows(cfg, owned, chosen, opts)
 			row.lineName = l and l.name
 			row.mine = opts.line == c.line or nil
 		end
-		if c.kind == "spellskin" or c.kind == "killfx" then
+		if c.kind == "spellskin" or C.VFX_KINDS[c.kind] then
 			row.preview = true
 		elseif C.DRAWN[c.kind] then
 			-- footprints and outlines: the client draws the preview itself (game_cosmeticfx), no server effect
@@ -439,10 +490,11 @@ function C.offerLook(cfg, unlockName, lookup)
 			return {kind = "outline", art = c.art, pulse = c.pulse or nil, color = c.color}
 		elseif c.kind == "footprint" then
 			return {kind = "footprint", art = c.art, color = c.color}
-		elseif c.kind == "spellskin" or c.kind == "killfx" then
+		elseif c.kind == "spellskin" or C.VFX_KINDS[c.kind] then
 			local play = lookup and C.playRows(c, lookup) or {}
 			if #play > 0 then
-				return {kind = "effects", play = play, killfx = c.kind == "killfx" or nil}
+				-- a kill effect and a rare-loot effect play on a troll that dies; the others on the figure
+				return {kind = "effects", play = play, killfx = (c.kind == "killfx" or c.kind == "rarefx") or nil}
 			end
 		elseif c.kind == "chatcolor" then
 			return c.color and {kind = "swatch", color = c.color} or nil
@@ -716,6 +768,14 @@ function C.validate(cfg, opts)
 			if c.price ~= nil then
 				bad("%s: a Candlemark cosmetic has no Chaos Coin price (candlemarks_config.lua prices it)", w)
 			end
+		elseif c.source == "collection" then
+			-- a collection score reward (collection_config.lua milestones; collection_test.lua checks the link)
+			if type(c.collection) ~= "number" or c.collection < 1 or c.collection % 1 ~= 0 then
+				bad("%s: a collection cosmetic needs the whole number of points it is granted at (collection)", w)
+			end
+			if c.price ~= nil then
+				bad("%s: a collection cosmetic has no price (never sold)", w)
+			end
 		elseif c.source == "boss" then
 			-- a rare personal drop (exclusives_config.lua names it in one boss group; exclusives_test.lua checks that)
 			if type(c.boss) ~= "string" or c.boss == "" then
@@ -774,11 +834,18 @@ function C.validate(cfg, opts)
 			if swaps == 0 then
 				bad("%s: no effect swapped", w)
 			end
-		elseif c.kind == "killfx" then
+		elseif C.VFX_KINDS[c.kind] then
 			if type(c.vfx) ~= "string" then
 				bad("%s: vfx needed", w)
 			elseif catalog.vfx and not catalog.vfx[c.vfx] then
 				bad("%s: %s is not an effect of the client pair", w, c.vfx)
+			end
+			if c.kind == "emote" then
+				if type(c.say) ~= "string" or c.say == "" or #c.say > C.EMOTE_MAX or c.say:find("[%c|]") then
+					bad("%s: say is a line of 1 to %d characters", w, C.EMOTE_MAX)
+				end
+			elseif c.say ~= nil then
+				bad("%s: say is only for emotes", w)
 			end
 		elseif c.kind == "lootbeam" then
 			local r, g, b, a = hex(c.accent)

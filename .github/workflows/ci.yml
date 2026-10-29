@@ -662,6 +662,12 @@ jobs:
           cargo clippy --locked --all-targets -- -D warnings
           cargo test --locked
 
+      - name: Game launcher (O314; launcher/, shared crates/selfupdate; mass-update test against a local HTTP server)
+        run: |
+          for d in crates/selfupdate launcher; do
+            (cd "$d" && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked)
+          done
+
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -894,6 +900,9 @@ jobs:
       - name: Client updater tools (manifest builder, signer, path rules, blob encryption round trip / wrong key / determinism / tamper)
         run: python3 -I client/tools/make_update_manifest_test.py
 
+      - name: Launcher settings tool (launcher.json from the init.lua updater settings, O314)
+        run: python3 -I client/tools/set_launcher_config_test.py
+
       - name: 'Client pack tool (format 2: round trip, exclusions, compression, determinism, wrong key, tamper, zlib length checks)'
         run: python3 -I client/tools/pack_client_test.py
 
@@ -1101,6 +1110,9 @@ jobs:
       - name: Loot Bag carries its loot without weight (server src-patch 0038, guard)
         run: python3 -I server/tools/weightless_patch_test.py
 
+      - name: Loot Bag with 500 slots is paged (server src-patch 0081, guard)
+        run: python3 -I server/tools/container_pages_patch_test.py
+
       - name: Cooldown channels never hold each other (server src-patch 0042, guard)
         run: python3 -I server/tools/cooldown_channels_patch_test.py
 
@@ -1235,6 +1247,13 @@ jobs:
           cd server
           luajit tools/gen_wiki_data.lua --check
           lua5.3 tools/gen_wiki_data.lua --check  # Lua 5.3 must give the same bytes
+
+      - name: Website calendar data and creator media kit manifest are up to date (O320)
+        # calendar_data.json from season_config.lua and the other server files; the kit manifest from website/art
+        run: |
+          python3 -I website/tools/gen_calendar_data.py --check
+          python3 -I website/tools/gen_calendar_data_test.py
+          python3 -I website/tools/gen_media_kit.py --check
 
       - name: Attack speed lanes of the passive tree are in classlanes.lua (gen_class_lanes.lua --attack-speed)
         run: |

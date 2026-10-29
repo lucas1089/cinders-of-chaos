@@ -356,22 +356,29 @@
      "name": "eframe and egui",
      "author": "Emil Ernerfeldt, Rerun and the egui contributors",
      "licence": "MIT or Apache-2.0",
-     "use": "the window of the desktop admin app (with their dependencies, each under its own permissive licence in the crate's metadata)",
+     "use": "the window of the desktop admin app and of the game launcher (with their dependencies, each under its own permissive licence in the crate's metadata)",
      "source": "https://github.com/emilk/egui"
     },
     {
      "name": "serde_json",
      "author": "David Tolnay and the serde contributors",
      "licence": "MIT or Apache-2.0",
-     "use": "JSON in the desktop admin app",
+     "use": "JSON in the desktop admin app and the game launcher",
      "source": "https://github.com/serde-rs/json"
     },
     {
      "name": "sha2 (RustCrypto)",
      "author": "RustCrypto developers",
      "licence": "MIT or Apache-2.0",
-     "use": "the SHA-256 check of the desktop admin app's updates",
+     "use": "the SHA-256 check of the desktop admin app's updates and of every file the game launcher downloads",
      "source": "https://github.com/RustCrypto/hashes"
+    },
+    {
+     "name": "ed25519-compact",
+     "author": "Frank Denis",
+     "licence": "MIT",
+     "use": "checking the Ed25519 signature of the update manifest in the game launcher",
+     "source": "https://github.com/jedisct1/rust-ed25519-compact"
     },
     {
      "name": "json.lua",

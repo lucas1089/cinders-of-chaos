@@ -115,7 +115,7 @@ local PARENT = {
 		"Kill Effects", "Spell Effects", "Loot Labels", "Chat Colours", "Name Plates", "Pets", "Appearances",
 		"Portal Styles", "Hideout Decorations"}
 }
-local TOP = {Starter = true, Bundles = true, Crafting = true, ["Themed Sets"] = true}
+local TOP = {Starter = true, Bundles = true, Crafting = true, ["Themed Sets"] = true, ["Founder Pack"] = true}
 local byName = {}
 for _, c in ipairs(cfg.categories) do byName[c.name] = c end
 eq(#cfg.groups, 3, "three parents")

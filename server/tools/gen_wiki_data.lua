@@ -1583,11 +1583,25 @@ function W.offerSprite(o)
 	return false
 end
 
+-- a category whose offers all have a sale window (availableUntil, the Founder Pack, O322) is left out: the wiki lists what the
+-- store always sells, and a limited pack would stay on the page after its sale
+function W.timeLimited(cat)
+	for _, o in ipairs(cat.offers or {}) do
+		if not o.availableUntil then
+			return false
+		end
+	end
+	return #(cat.offers or {}) > 0
+end
+
 function W.storeEntries(D)
 	local out = {}
 	local summary, sumLinks = {}, {}
 	local typeCount = {}
 	for ci, cat in ipairs(D.shop.categories) do
+		if W.timeLimited(cat) then
+			cat = {name = cat.name, offers = {}}
+		end
 		local rows, sprites, anySprite = {}, {}, false
 		local lo, hi
 		local types = {}
@@ -1956,7 +1970,13 @@ function W.facts(D, vocs, spells, T, typeCount)
 	f["store.offers"] = offers
 	f["store.service"] = (typeCount.service or 0) + (typeCount.convenience or 0) + (typeCount.storage or 0)
 	f["store.unlockCost"] = cost or 0
-	f["store.categories"] = #D.shop.categories
+	local alwaysOn = 0
+	for _, cat in ipairs(D.shop.categories) do
+		if not W.timeLimited(cat) then
+			alwaysOn = alwaysOn + 1
+		end
+	end
+	f["store.categories"] = alwaysOn
 	-- new players
 	f["newplayer.tutorial"] = true
 	-- the milestone gifts (newplayer_config.lua milestones) and Next Goals (goals_config.lua; the progression guide)

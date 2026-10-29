@@ -10,6 +10,8 @@
 --     never touched; the store still sells it: S.unlocks owned = storage 1). Rarity Autoloot is no longer lent
 --     (perks.retired, owner 2026-10-13): a lent one (2) is taken back, a bought one stays
 --   * the Pactbound chat colour (taken back when the Pact ends) and the cosmetic of the month (kept for good)
+--   * the experience the +10% adds is counted per character and server month (ChaosPact.addMonthExp): the game_pact window
+--     shows "this month the Pact gave you X extra experience" (O317)
 -- No priority login queue: the engine has no login queue.
 -- Applied at login, right after a Pact purchase (ChaosPact.grantDays is wrapped, no edit there) and once a minute for
 -- the characters online (a Pact that ran out). Lua 5.1 / LuaJIT compatible.
@@ -171,7 +173,12 @@ xpCb.onGainExperience = function(self, source, exp, rawExp)
 	end
 	local ok, mult = pcall(PP.expMult, self)
 	if ok and mult and mult ~= 1 then
-		return math.floor(exp * mult)
+		local boosted = math.floor(exp * mult)
+		-- the monthly summary (game_pact): what the +10% added, per character and server month
+		if boosted > exp and ChaosPact and ChaosPact.addMonthExp then
+			pcall(ChaosPact.addMonthExp, self, boosted - exp)
+		end
+		return boosted
 	end
 	return exp
 end

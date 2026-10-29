@@ -213,12 +213,13 @@ ShopOffer < Panel
     text-align: center
     visible: false
 
-  // a cosmetic's preview (server cosmetics.lua): its effects around you, only you see them; cosmetics are not gifts,
-  // so it takes the gift button's place
+  // TRY ON (tryon.lua): the offer on your own character for ten seconds, only you see it, nothing is bought. A cosmetic
+  // with an effect also plays it round you on the map (server cosmetics.lua)
   Button
     id: previewButton
-    !text: tr('SHOW')
-    width: 40
+    !text: tr('TRY ON')
+    !tooltip: tr('Shows it on your character for 10 seconds. Only you see it. Nothing is bought.')
+    width: 56
     height: 25
     anchors.verticalCenter: parent.verticalCenter
     anchors.right: buyButton.left

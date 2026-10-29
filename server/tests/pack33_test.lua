@@ -117,13 +117,13 @@ eq(cats["Capes"].parent, "Cosmetics", "Capes: a subcategory of Cosmetics")
 eq(order["Head Accessories"], order["Auras"] + 1, "Head Accessories right after Auras")
 eq(order["Capes"], order["Auras"] + 2, "then Capes")
 eq(cats["Head Accessories"].icon.outfit.aura, M.piece("head_bone_crown").look, "category icon: a head accessory")
-eq(#cats["Head Accessories"].offers, 90, "90 head accessories sold (2 exclusives)")
-eq(#cats["Capes"].offers, 88, "88 capes sold (1 exclusive)")
+eq(#cats["Head Accessories"].offers, 88, "88 head accessories sold (2 boss and 2 Founder Pack exclusives)")
+eq(#cats["Capes"].offers, 87, "87 capes sold (1 boss and 1 Founder Pack exclusive)")
 local newWings = 0
 for _, o in ipairs(cats["Wings"].offers) do
 	if o.id >= 30 then newWings = newWings + 1 end
 end
-eq(newWings, 89, "89 pair 33 wings in the Wings category (3 exclusives)")
+eq(newWings, 87, "87 pair 33 wings in the Wings category (3 boss and 2 Founder Pack exclusives)")
 for _, o in ipairs(cats["Capes"].offers) do
 	eq(o.kind, "aura", "a cape is an aura offer")
 	eq(o.description:find("aura slot", 1, true) ~= nil, true, "the description says it takes the aura slot")
@@ -151,6 +151,22 @@ for _, e in ipairs(M.exclusives) do
 		end
 	end
 	eq(rolled, e.boss, e.key .. ": rolled by " .. e.boss)
+	if x.kind == "aura" then
+		eq(text:find("\n" .. x.id .. "," .. x.look .. "," .. x.name .. "\n", 1, true) ~= nil, true,
+			e.key .. ": in chaos_auras_pack33.csv")
+	end
+end
+-- the Founder Pack pieces (founder_config.lua): exclusives of source "founder", not rolled by any boss, not sold apart
+for _, e in ipairs(M.founder) do
+	local x = found[e.key]
+	eq(x ~= nil, true, e.key .. ": a Founder Pack exclusive when on")
+	eq(x.source, "founder", e.key .. ": source founder")
+	eq(sold[x.kind .. ":" .. x.id], nil, e.key .. ": not sold apart")
+	for _, b in ipairs(excl.bosses) do
+		for _, r in ipairs(b.rewards) do
+			eq(r ~= e.key, true, e.key .. ": no boss drops it")
+		end
+	end
 	if x.kind == "aura" then
 		eq(text:find("\n" .. x.id .. "," .. x.look .. "," .. x.name .. "\n", 1, true) ~= nil, true,
 			e.key .. ": in chaos_auras_pack33.csv")

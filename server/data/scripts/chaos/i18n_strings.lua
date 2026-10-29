@@ -1483,6 +1483,8 @@ return {
 		["Store items cannot be traded."] = "Itens da loja não podem ser negociados.",
 		["The Loot Bag stays in your purse: it cannot be moved out, dropped, traded or mailed."] =
 			"A Loot Bag fica na sua purse: ela não pode ser movida para fora, jogada fora, negociada ou enviada.",
+		["The Loot Bag only gives items back: autoloot fills it."] =
+			"A Loot Bag só devolve itens: o autoloot é que a enche.",
 		["%s: your %s is in your %s. It collects %s while you carry it."] =
 			"%s: seu %s está na sua %s. Ele coleta %s enquanto você o carrega.",
 		["%s: your %s is in your %s. It collects %s from now on, there or in your backpack."] =
@@ -1539,8 +1541,8 @@ return {
 		["You do not have enough money."] = "Você não tem dinheiro suficiente.",
 		["You have no room for it."] = "Você não tem espaço para ela.",
 		["%d days of the Chaos Pact added: it runs until %s."] = "%d dias de Chaos Pact adicionados: ele vale até %s.",
-		["Your Chaos Pact runs until %s. Claim your %d Chaos Coins every day in Character > Chaos Pact."] =
-			"Seu Chaos Pact vale até %s. Pegue suas %d Chaos Coins todo dia em Character > Chaos Pact.",
+		["Your Chaos Pact runs until %s. Claim your %d Pact Marks every day in Character > Chaos Pact."] =
+			"Seu Chaos Pact vale até %s. Pegue seus %d Pact Marks todo dia em Character > Chaos Pact.",
 		["%s added to your account (%d of %d)."] = "%s adicionado à sua conta (%d de %d).",
 		["Chaos Pact: a cosmetic for you, see Character > Cosmetics."] =
 			"Chaos Pact: um cosmético para você, veja Character > Cosmetics.",
@@ -2056,12 +2058,12 @@ return {
 			"Sua conta tem %d de no máximo %d %s; esta oferta adiciona %d. Compre menos de uma vez.",
 		["This account has %d character slots and this is character number %d. Buy a Character Slot in the store with another character, or ask the staff."] =
 			"Esta conta tem %d slots de personagem e este é o personagem número %d. Compre um Character Slot na loja com outro personagem, ou fale com a staff.",
-		["You claimed today's %d Chaos Coins of your Chaos Pact."] =
-			"Você pegou as %d Chaos Coins de hoje do seu Chaos Pact.",
+		["You claimed today's %d Pact Marks of your Chaos Pact."] =
+			"Você pegou os %d Pact Marks de hoje do seu Chaos Pact.",
 		["That build slot is read-only now (your account has %d build slots). Load or delete it."] =
 			"Esse slot de build agora é só leitura (sua conta tem %d slots de build). Carregue ou apague.",
-		["You already claimed today's Chaos Coins. Come back tomorrow."] =
-			"Você já pegou as Chaos Coins de hoje. Volte amanhã.",
+		["You already claimed today's Pact Marks. Come back tomorrow."] =
+			"Você já pegou os Pact Marks de hoje. Volte amanhã.",
 		["All your build slots are used (%d). Delete one, or get another slot."] =
 			"Todos os seus slots de build estão usados (%d). Apague um, ou pegue outro slot.",
 		["No world boss reward: another character from your connection was online during the fight."] =
@@ -2120,6 +2122,7 @@ return {
 			"Sua última resistência aguenta: o golpe letal te deixa de pé.",
 		["Cosmetic unlocked: %s. Choose it in Character > Cosmetics."] =
 			"Cosmético desbloqueado: %s. Escolha em Character > Cosmetics.",
+		["Collection reward unlocked: %s."] = "Prêmio de coleção desbloqueado: %s.",
 		["New appearance unlocked: %s."] = "Nova aparência desbloqueada: %s.",
 		["New appearances unlocked: %s."] = "Novas aparências desbloqueadas: %s.",
 		["Appearance set unlocked: %s."] = "Conjunto de aparência desbloqueado: %s.",
@@ -3509,14 +3512,37 @@ return {
 			"Seu Chaos Pact dura mais %d dia.",
 		["Your Chaos Pact runs for %d more days."] =
 			"Seu Chaos Pact dura mais %d dias.",
-		["Today's %d Chaos Coins wait in Character > Chaos Pact."] =
-			"Os %d Chaos Coins de hoje esperam em Character > Chaos Pact.",
+		["Today's %d Pact Marks wait in Character > Chaos Pact."] =
+			"Os %d Pact Marks de hoje esperam em Character > Chaos Pact.",
 		["Your Chaos Pact has ended. Nothing is lost: stash slots beyond your own expansions are withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted."] =
 			"Seu Chaos Pact acabou. Nada se perde: os slots de stash além das suas expansões só permitem retirar, as ofertas extras do mercado correm até terminar e as builds extras salvas podem ser carregadas ou apagadas.",
 		["Event active - %s"] =
 			"Evento ativo - %s",
 		["Active events:\n%s"] =
 			"Eventos ativos:\n%s",
+		-- Weekend Ritual (weekend.lua, weekend_config.lua; O321)
+		["Weekend Ritual"] = "Ritual do Fim de Semana",
+		["Ritual of Growth"] = "Ritual do Crescimento",
+		["Monsters give 25% more experience."] = "Os monstros dão 25% mais experiência.",
+		["Ritual of Plenty"] = "Ritual da Fartura",
+		["Monsters drop 25% more Chaos loot."] = "Os monstros largam 25% mais loot Chaos.",
+		["Ritual of Training"] = "Ritual do Treino",
+		["Skill and magic level training gives 25% more tries."] =
+			"O treino de skill e de magic level dá 25% mais tries.",
+		["Ritual of Rifts"] = "Ritual das Fendas",
+		["Rift chests are 25% richer."] = "Os baús das rifts ficam 25% mais ricos.",
+		["a world boss"] = "um world boss",
+		["an invasion"] = "uma invasão",
+		["Weekend Ritual - %s: %s Until %s at %s."] =
+			"Ritual do Fim de Semana - %s: %s Até %s às %s.",
+		["Weekend Ritual starts %s at %s (in %s): %s"] =
+			"O Ritual do Fim de Semana começa %s às %s (em %s): %s",
+		["WEEKEND RITUAL: the weekend begins! %s: %s It lasts until %s at %s."] =
+			"RITUAL DO FIM DE SEMANA: o fim de semana começou! %s: %s Dura até %s às %s.",
+		["WEEKEND RITUAL: it ends in %d minutes (%s at %s). Make the most of it!"] =
+			"RITUAL DO FIM DE SEMANA: termina em %d minutos (%s às %s). Aproveite!",
+		["WEEKEND RITUAL: the weekend highlight, %s, begins in %d minutes."] =
+			"RITUAL DO FIM DE SEMANA: o destaque do fim de semana, %s, começa em %d minutos.",
 		["Item sets: %s"] =
 			"Conjuntos de itens: %s",
 		["You do not belong to the group in there: you were sent to your temple."] =
@@ -4082,7 +4108,7 @@ return {
 		["The cursed chest crumbled before you took your share."] =
 			"O baú amaldiçoado se desfez antes de você pegar a sua parte.",
 		["The cursed chest vanished. Its hordes fade."] = "O baú amaldiçoado sumiu. As hordas desaparecem.",
-		-- Guild, guild hall and guild depot reasons (guild_core.lua, guild.lua, guild_hall.lua)
+		-- Guild, guild hall and Guild Stash reasons (guild_core.lua, guild.lua, guild_hall.lua)
 		["You are not in a guild."] =
 			"Você não está em uma guild.",
 		["Only the guild leader can buy the guild hall."] =
@@ -4111,26 +4137,26 @@ return {
 			"%s precisa de %s antes.",
 		["The guild bank holds %s gold; %s costs %s."] =
 			"O banco da guild tem %s de ouro; %s custa %s.",
-		["Only members of this guild can use its depot."] =
-			"Só membros desta guild podem usar o depot dela.",
-		["The guild depot is locked (no depot upgrade, or the rent is unpaid)."] =
-			"O depot da guild está trancado (sem a melhoria do depot, ou o aluguel não foi pago).",
-		["Containers cannot go into the guild depot; put the items in one by one."] =
-			"Containers não podem ir para o depot da guild; coloque os itens um por um.",
-		["That cannot go into the guild depot."] =
-			"Isso não pode ir para o depot da guild.",
+		["Only members of this guild can use its stash."] =
+			"Só membros desta guild podem usar o Stash dela.",
+		["The Guild Stash is locked (no stash upgrade, or the rent is unpaid)."] =
+			"O Stash da Guild está trancado (sem a melhoria do Stash, ou o aluguel não foi pago).",
+		["Containers cannot go into the Guild Stash; put the items in one by one."] =
+			"Containers não podem ir para o Stash da Guild; coloque os itens um por um.",
+		["That cannot go into the Guild Stash."] =
+			"Isso não pode ir para o Stash da Guild.",
 		["That stack is too large."] =
 			"Essa pilha é grande demais.",
-		["The guild depot is full (%d / %d)."] =
-			"O depot da guild está cheio (%d / %d).",
-		["Your rank may not take items from the guild depot."] =
-			"Seu cargo não pode retirar itens do depot da guild.",
-		["That item is no longer in the guild depot."] =
-			"Esse item não está mais no depot da guild.",
-		["You took %d items from the guild depot today, the most a member may."] =
-			"Você retirou %d itens do depot da guild hoje, o máximo que um membro pode.",
-		["Season characters cannot use the guild bank or depot while the season runs."] =
-			"Personagens da season não podem usar o banco ou o depot da guild enquanto a season durar.",
+		["The Guild Stash is full (%d / %d)."] =
+			"O Stash da Guild está cheio (%d / %d).",
+		["Your rank may not take items from the Guild Stash."] =
+			"Seu cargo não pode retirar itens do Stash da Guild.",
+		["That item is no longer in the Guild Stash."] =
+			"Esse item não está mais no Stash da Guild.",
+		["You took %d items from the Guild Stash today, the most a member may."] =
+			"Você retirou %d itens do Stash da Guild hoje, o máximo que um membro pode.",
+		["Season characters cannot use the guild bank or stash while the season runs."] =
+			"Personagens da season não podem usar o banco ou o Stash da Guild enquanto a season durar.",
 		["Your guild %s reached guild level %d!%s"] =
 			"Sua guild %s chegou ao level de guild %d!%s",
 		["Slow down."] =
@@ -4217,22 +4243,22 @@ return {
 			"O aluguel do guild hall (%s de ouro) não foi pago: as melhorias ficam trancadas até o pagamento (Social > Guild).",
 		["The guild hall's rent is due and the guild bank is short. The upgrades lock in %s."] =
 			"O aluguel do guild hall venceu e o banco da guild está sem fundos. As melhorias trancam em %s.",
-		["The item could not be moved into the guild depot."] =
-			"O item não pôde ser movido para o depot da guild.",
-		["The guild depot is busy. Try again in a moment."] =
-			"O depot da guild está ocupado. Tente de novo em instantes.",
-		["The guild depot could not take it."] =
-			"O depot da guild não pôde receber isto.",
-		["You put %d x %s into the guild depot."] =
-			"Você colocou %d x %s no depot da guild.",
+		["The item could not be moved into the Guild Stash."] =
+			"O item não pôde ser movido para o Stash da Guild.",
+		["The Guild Stash is busy. Try again in a moment."] =
+			"O Stash da Guild está ocupado. Tente de novo em instantes.",
+		["The Guild Stash could not take it."] =
+			"O Stash da Guild não pôde receber isto.",
+		["You put %d x %s into the Guild Stash."] =
+			"Você colocou %d x %s no Stash da Guild.",
 		["Take what?"] =
 			"Pegar o quê?",
-		["Take items at the guild depot in your guild hall."] =
-			"Retire itens no depot da guild, no seu guild hall.",
+		["Take items at the Guild Stash in your guild hall."] =
+			"Retire itens no Stash da Guild, no seu guild hall.",
 		["The item could not be created. Tell a gamemaster."] =
 			"O item não pôde ser criado. Avise um gamemaster.",
-		["You took %d x %s from the guild depot (%s)."] =
-			"Você retirou %d x %s do depot da guild (%s).",
+		["You took %d x %s from the Guild Stash (%s)."] =
+			"Você retirou %d x %s do Stash da Guild (%s).",
 		["Back to the guild hall (or your temple)."] =
 			"De volta ao guild hall (ou ao seu templo).",
 		-- Market: refusals, results and sale lines (market_core.lua, market_config.lua, market_orders_core.lua, market_notify_core.lua, market.lua)
@@ -7428,8 +7454,8 @@ return {
 			"Teleporte para %s (nível %d+).",
 		["The guild's crafting bench. Use it to craft."] =
 			"A crafting bench da guild. Use para criar itens.",
-		["The guild depot. Drop an item on it to store it for the guild; use it to see what is inside."] =
-			"O depot da guild. Solte um item nele para guardar para a guild; use para ver o que há dentro.",
+		["The Guild Stash. Drop an item on it to store it for the guild; use it to see what is inside."] =
+			"O Stash da Guild. Solte um item nele para guardar para a guild; use para ver o que há dentro.",
 		["Guild Siege wins: %d of %d."] =
 			"Vitórias em Guild Siege: %d de %d.",
 		["World bosses: %d victories shared by the members."] =
@@ -7736,6 +7762,38 @@ return {
 			"Um rift violeta do vazio se abre sob você",
 		["A violet skull rises from the monster you finish"] =
 			"Uma caveira violeta sobe do monstro que você acaba",
+		["A column of dawn light rises round you when you gain a level"] =
+			"Uma coluna de luz da aurora sobe em volta de você quando você sobe de nível",
+		["A crown of embers burns over you when you gain a level"] =
+			"Uma coroa de brasas queima sobre você quando você sobe de nível",
+		["A ring of ice crystals rises round you when you gain a level"] =
+			"Um anel de cristais de gelo sobe em volta de você quando você sobe de nível",
+		["Leaves bloom round you when you gain a level"] =
+			"Folhas desabrocham em volta de você quando você sobe de nível",
+		["A violet rift opens and closes round you when you gain a level"] =
+			"Uma fenda violeta abre e fecha em volta de você quando você sobe de nível",
+		["A golden burst flares over the corpse when it drops a Legendary item or better"] =
+			"Uma explosão dourada acende sobre o corpo quando ele solta um item Legendary ou melhor",
+		["A red burst flares over the corpse when it drops a Legendary item or better"] =
+			"Uma explosão vermelha acende sobre o corpo quando ele solta um item Legendary ou melhor",
+		["Stars fall over the corpse when it drops a Legendary item or better"] =
+			"Estrelas caem sobre o corpo quando ele solta um item Legendary ou melhor",
+		["A seal of light glows on the corpse when it drops a Legendary item or better"] =
+			"Um selo de luz brilha no corpo quando ele solta um item Legendary ou melhor",
+		["A dome of violet fire rises over the corpse when it drops a Legendary item or better"] =
+			"Uma cúpula de fogo violeta sobe sobre o corpo quando ele solta um item Legendary ou melhor",
+		["A red burst and a victory shout after you fell a boss"] =
+			"Uma explosão vermelha e um grito de vitória depois que você derruba um boss",
+		["A golden burst and a salute for the fallen after you fell a boss"] =
+			"Uma explosão dourada e uma continência aos caídos depois que você derruba um boss",
+		["A crown of embers and a flourish after you fell a boss"] =
+			"Uma coroa de brasas e um floreio depois que você derruba um boss",
+		["A dome of golden light and a cry of glory after you fell a boss"] =
+			"Uma cúpula de luz dourada e um grito de glória depois que você derruba um boss",
+		["You fade in a puff of shadow with a farewell after you fell a boss"] =
+			"Você some numa nuvem de sombra com uma despedida depois que você derruba um boss",
+		["Seen by players nearby"] =
+			"Visto pelos jogadores por perto",
 		["A walking box of fries"] =
 			"Uma caixa de batatas fritas ambulante",
 		["A warm amber frame round your name plate, for good"] =
@@ -8331,5 +8389,48 @@ return {
 			"O tabard da facção: uma aura em volta do seu personagem.",
 		["A faction mount, yours for good."] =
 			"Um mount da facção, seu para sempre.",
+		-- Round 9 (O317): Pacto Completo, Pact Marks, expiry warnings, store prices by level and for a second character
+		["That cosmetic is not on the Marks shelf."] =
+			"Esse cosmético não está na prateleira de Marks.",
+		["Your account owns that cosmetic already."] =
+			"Sua conta já tem esse cosmético.",
+		["You need %d Pact Marks for that and have %d."] =
+			"Você precisa de %d Pact Marks para isso e tem %d.",
+		["You bought %s with %d Pact Marks. See Character > Cosmetics."] =
+			"Você comprou %s com %d Pact Marks. Veja em Character > Cosmetics.",
+		["Something went wrong. Your Marks were refunded."] =
+			"Algo deu errado. Seus Marks foram devolvidos.",
+		["Your Chaos Pact ends in %d days. Renew it in Store > Premium & Services."] =
+			"Seu Chaos Pact termina em %d dias. Renove em Store > Premium & Services.",
+		["Your Chaos Pact ends within 24 hours. Renew it in Store > Premium & Services."] =
+			"Seu Chaos Pact termina em menos de 24 horas. Renove em Store > Premium & Services.",
+		["Your Chaos Pact and your Premium end in %d days. The Pacto Completo renews both: Store > Premium & Services."] =
+			"Seu Chaos Pact e seu Premium terminam em %d dias. O Pacto Completo renova os dois: Store > Premium & Services.",
+		["Your Chaos Pact and your Premium end within 24 hours. The Pacto Completo renews both: Store > Premium & Services."] =
+			"Seu Chaos Pact e seu Premium terminam em menos de 24 horas. O Pacto Completo renova os dois: Store > Premium & Services.",
+		-- store descriptions, sentence by sentence (shop.lua localDescription)
+		["Chaos Pact: +10% XP, stamina x1.5, remote stash, +25 slots, Auto Seller, 5 Marks a day"] =
+			"Chaos Pact: +10% XP, stamina x1,5, guardar de qualquer lugar, +25 vagas, Auto Seller, 5 Marks por dia",
+		["Premium: x1.5 XP on green stamina, premium outfits, mounts, houses, offline training"] =
+			"Premium: XP x1,5 com stamina verde, outfits e mounts premium, casas, treino offline",
+		["30 days: +10% XP, stamina x1.5, remote stash, +25 slots, Auto Seller, cosmetics"] =
+			"30 dias: +10% XP, stamina x1,5, guardar de qualquer lugar, +25 vagas, Auto Seller, cosméticos",
+		["60 coins up to level 200, 100 up to level 500, 150 above"] =
+			"60 coins até o level 200, 100 até o level 500, 150 acima",
+		["2 a week in all Lasting weapons"] =
+			"2 por semana em todas as armas Lasting",
+		["Another character of your account has it: %d%% off"] =
+			"Outro personagem da sua conta já tem: %d%% de desconto",
+		-- Founder Pack (O322, founder_config.lua, shop.lua)
+		["Once per account, never sold again"] =
+			"Uma vez por conta, nunca mais vendido",
+		["Gold Peacock Wings, the Royal Coronet and the Founder title, yours for good"] =
+			"Gold Peacock Wings, a Royal Coronet e o título Founder, seus para sempre",
+		["Pyre Seraph Wings, the Phoenix Plume Cape, the Double Halo, the Founder plate frame and the Grand Founder title, yours for good"] =
+			"Pyre Seraph Wings, a Phoenix Plume Cape, o Double Halo, a moldura de placa Founder e o título Grand Founder, seus para sempre",
+		["%s is not on sale yet."] =
+			"%s ainda não está à venda.",
+		["%s is no longer on sale."] =
+			"%s não está mais à venda.",
 	},
 }

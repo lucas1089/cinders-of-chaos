@@ -32,7 +32,7 @@ function chaos_seo_sitemap_pages(string $overlay): array {
 		'/houses' => '0.3', '/team' => '0.3', '/achievements' => '0.3', '/page?p=rules' => '0.5',
 	);
 	foreach (array('patchnotes' => '0.7', 'leaderboards' => '0.7', 'seasons' => '0.6', 'community' => '0.5', 'chronicle' => '0.5',
-		'memorial' => '0.4', 'guildwars' => '0.4', 'mentors' => '0.4', 'bazaar' => '0.5', 'creator' => '0.4', 'coins' => '0.5',
+		'memorial' => '0.4', 'guildwars' => '0.4', 'mentors' => '0.4', 'bazaar' => '0.5', 'creator' => '0.4', 'coins' => '0.5', 'fairplay' => '0.6', 'calendar' => '0.6', 'creators' => '0.5',
 		'credits' => '0.2', 'wiki' => '0.9') as $p => $prio) {
 		$pages['/page?plugin=chaos&p=' . $p] = $prio;
 	}

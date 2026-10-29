@@ -18,6 +18,8 @@
 --                 worldboss.lua, raid.lua, uber.lua and guildboss.lua for every player that gets the kill's rewards:
 --                 a personal roll (exclusives_core.lua K.roll); a hit unlocks one reward of the group the account
 --                 does not own yet
+--   founder       the Founder Pack (founder_config.lua, O322): the store's bundle part {kind = "exclusive"} calls
+--                 ChaosExclusives.grant(accountId, key, "founder", player) while the pack is on sale; never dropped
 -- The wardrobe (client game_cosmetics, Collection tab) gets ChaosExclusives.rows(player) in its state (cosmetics.lua).
 -- Staff: /exclusive <character>, <key | all>[, revoke]    /exclusive <character>, roll <kill key>   (group 4+)
 -- Lua 5.1 / LuaJIT compatible.
@@ -337,7 +339,9 @@ function startup.onStartup()
 	local okP, pets = pcall(dofile, "data/scripts/chaos/pets_config.lua")
 	local okR, portal = pcall(dofile, "data/scripts/chaos/townportal_config.lua")
 	local okC, cosmetics = pcall(dofile, "data/scripts/chaos/cosmetics_config.lua")
+	local okF, founder = pcall(dofile, "data/scripts/chaos/founder_config.lua")
 	for _, p in ipairs(K.validate(cfg, {achievements = data, shop = ok and shop or nil, transmog = okT and transmog or nil,
+		founder = okF and founder or nil,
 		pets = okP and pets or nil, portal = okR and portal or nil, cosmetics = okC and cosmetics or nil,
 		frames = ChaosNameplate and ChaosNameplate.FRAMES or nil})) do
 		print("[Warning - Chaos exclusives] " .. p)

@@ -91,6 +91,11 @@ repository (acceptable for a tool that runs only on the owner's PC; the checksum
 
 Not yet run on GitHub: the workflow and the swap on Windows are untested (the swap has a unit test on Linux).
 
+## Shared code
+
+SHA-256, version compare and the staged rename live in `../crates/selfupdate/`, shared with the game launcher
+(`../launcher/`, O314).
+
 ## Credits
 
 Crates that ship: eframe and egui (MIT or Apache-2.0), serde_json (MIT or Apache-2.0), sha2 (MIT or Apache-2.0), and

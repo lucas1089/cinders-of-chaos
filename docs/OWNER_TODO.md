@@ -40,8 +40,8 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
 
 - [ ] **Stash prices (PLACEHOLDER).** Seven new store offers in "Storage & Slots" (`server/data/scripts/chaos/pact_config.lua`
   `store.storage`): Weapons, Armor, Jewellery, Materials and Creature Products Stash Tab at 150 coins each, Collectibles
-  Stash Tab at 100, and Remote Stash Deposit at 300 (deposit into the stash from anywhere; also included while the
-  Chaos Pact is active). Payments are off in the beta; set the real prices before launch. Also decide: keep selling "Extra Depot
+  Stash Tab at 100, and Remote Stash Deposit at 400 (set in O317, was 300; deposit into the stash from anywhere; also
+  included while the Chaos Pact is active). Payments are off in the beta; set the real prices before launch. Also decide: keep selling "Extra Depot
   Tab" / "4 Depot Tabs" (each now also counts as a general stash tab) or remove the Depot Tabs store category, and when to
   remove the depot boxes for good (server/README.md "Stash", "Depot transition").
 

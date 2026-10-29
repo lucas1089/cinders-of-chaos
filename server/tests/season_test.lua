@@ -291,9 +291,10 @@ end
 local CATEGORY = {
 	["Outfits"] = true, ["Outfit Addons"] = true, ["Mounts"] = true, ["Wings"] = true, ["Auras"] = true,
 	["Outfit Shaders"] = true, ["Name Plates"] = true, ["Portal Styles"] = true, ["Bundles"] = true, -- "Classes" no longer sold (2026-10-15)
-	["Chaos Pact"] = true, ["Storage & Slots"] = true, ["Season Pass"] = true, ["Premium Time"] = true,
+	["Chaos Pact"] = true, ["Storage & Slots"] = true, ["Season Pass"] = true, ["Premium Time"] = true, ["Pacto Completo"] = true,
 	["Spell Effects"] = true, ["Kill Effects"] = true, ["Loot Labels"] = true, ["Chat Colours"] = true, ["Appearances"] = true,
 	["Footprints"] = true, ["Outlines"] = true, -- cosmetics.lua: looks only
+	["Level-up Effects"] = true, ["Rare Loot Effects"] = true, ["Victory Emotes"] = true, -- cosmetics.lua (O318): effects only
 	["Hideout Decorations"] = true, -- hideout_store.lua: looks only
 	["Depot Tabs"] = true, -- depot_config.lua: account room (service pactExtra, as Storage & Slots), while sold
 	["Themed Sets"] = true, -- chaos_theme_art.lua appearance sets (weekly rotation only): looks only
@@ -307,6 +308,8 @@ local CATEGORY = {
 if dofile("data/lib/chaos_pack33.lua").PAIR33 then
 	CATEGORY["Head Accessories"], CATEGORY["Capes"] = true, true
 end
+-- the Founder Pack (O322, founder_config.lua): looks, a title and Pact days for the account, allowed like the Pacto Completo
+CATEGORY["Founder Pack"] = true
 -- the pair 37 costumes (chaos_pack37_looks.lua): outfits, looks only, sold while ChaosPack37Looks.PAIR37 is on
 if dofile("data/lib/chaos_pack37_looks.lua").PAIR37 then
 	CATEGORY["Costumes"] = true

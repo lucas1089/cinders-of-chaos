@@ -92,6 +92,7 @@ function Item:getItems() local out = {} for i, x in ipairs(self.items) do out[i]
 function Item:getSize() return #self.items end
 function Item:getCapacity() return self.cap end
 function Item:getParent() return self.parent end
+function Item:getItem(i) return self.items[i + 1] end -- 0-based slot, as Container:getItem
 function Item:getCustomAttribute(k) return self.custom[k] end
 function Item:setCustomAttribute(k, v) self.custom[k] = v end
 function Item:getPosition() return {x = 100, y = 100, z = 7} end
@@ -210,7 +211,7 @@ local PO, P, cfg = ChaosPouches, ChaosPouchesCore, ChaosPouchesConfig
 local ST = cfg.storage
 
 -- the Loot Bag (2026-10-13): bottomless (255 slots, the protocol's most), weightless (src-patch 0038), every rule on
-eq(cfg.kinds.loot.title, "Loot Bag", "the Loot Bag") eq(cfg.kinds.loot.capacity, 255, "the most slots a container can have")
+eq(cfg.kinds.loot.title, "Loot Bag", "the Loot Bag") eq(cfg.kinds.loot.capacity, 500, "500 slots (paged window, src-patch 0081)")
 eq(cfg.kinds.loot.weightless, true, "weightless")
 eq(#weightlessIds >= 1 and weightlessIds[1], 32081, "registered as a weightless container at load")
 PO.registerWeightless()
@@ -230,7 +231,7 @@ local seenIds = {}
 for kind, k in pairs(cfg.kinds) do
 	ok((k.id >= 32081 and k.id <= 32083 or k.id == 32095) and not seenIds[k.id], "pouch ids 32081..32083 and 32095, distinct: " .. kind)
 	seenIds[k.id] = true
-	ok(k.capacity >= 100 and k.capacity <= 255, "capacity fits the protocol byte, at least 100: " .. kind)
+	ok(k.capacity >= 100 and k.capacity <= 1000 and (k.capacity <= 250 or kind == "loot"), "capacity at least 100; only the Loot Bag is paged: " .. kind)
 	ok(k.description:find("^Store item: cannot be traded"), "description says store item: " .. kind)
 end
 
@@ -691,7 +692,7 @@ do
 		end
 		return saved(self, target, flags)
 	end
-	local bag = item(32081); bag.cap = 255
+	local bag = item(32081); bag.cap = 500
 	local function mkRare(id, r, uniq)
 		local it = item(id, {cat = "equipment", rarity = r})
 		it.custom = it.custom or {}
@@ -733,6 +734,70 @@ eq(move(orbsPouch, {x = CONTAINER_POSITION, y = 0x42}, box), RETURNVALUE_NOERROR
 eq(move(orbsPouch, {x = CONTAINER_POSITION, y = 0x43}, bp2), RETURNVALUE_NOTPOSSIBLE, "into another player's backpack")
 eq(move(keysPouch, {x = CONTAINER_POSITION, y = 0x44}, lootPouch), RETURNVALUE_NOTPOSSIBLE, "pouch into pouch")
 ok(hero.msgs[#hero.msgs]:find("another pouch"), "reason told")
+-- the Loot Bag is one-way (owner 2026-10-29): nothing a player moves goes INTO it, at any depth; autoloot still fills it
+eq(P.lootBagInRefusal({intoLootBag = true}), P.LOOT_BAG_ONE_WAY, "pure: into a Loot Bag refused")
+eq(P.lootBagInRefusal({intoLootBag = true, sameBag = true}), nil, "pure: within the same Loot Bag allowed")
+eq(P.lootBagInRefusal({intoLootBag = false}), nil, "pure: any other destination is not this rule")
+eq(P.lootBagInRefusal(nil), nil, "pure: no move info")
+ok(P.LOOT_BAG_ONE_WAY:find("only gives items back"), "message text")
+do
+	local ownBag = item(32081, {custom = {chaos_pouch_owner = 7, chaos_storebound = 1}}); ownBag.parent = bp
+	bp.items[#bp.items + 1] = ownBag
+	local inner = item(1987); inner.parent = ownBag; ownBag.items[1] = inner
+	local deep = item(1987); deep.parent = inner; inner.items[1] = deep
+	local held = item(2400); held.parent = ownBag; ownBag.items[2] = held
+	local stackA = item(2148, {count = 5}); stackA.parent = ownBag; ownBag.items[3] = stackA
+	local loose = item(2401); loose.parent = bp
+	local looseStack = item(2148, {count = 3}); looseStack.parent = bp
+	local ground = item(2402); ground.parent = {}
+	local C = CONTAINER_POSITION
+	local nm = #hero.msgs
+	-- from the backpack, the ground, the purse and another container, into the bag window
+	eq(move(loose, {x = C, y = 0x46, z = 255}, ownBag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: a backpack item dropped into its window refused")
+	ok(hero.msgs[#hero.msgs]:find("only gives items back"), "Loot Bag: reason told")
+	ok(#hero.msgs == nm + 1, "Loot Bag: one message")
+	eq(move(ground, {x = C, y = 0x46, z = 255}, ownBag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: a ground item refused")
+	local pBox = item(26052); pBox.parent = hero; local purseItem = item(2403); purseItem.parent = pBox; pBox.items[1] = purseItem
+	eq(move(purseItem, {x = C, y = 0x46, z = 255}, ownBag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: a purse item refused")
+	eq(move(item(2404), {x = C, y = 0x46, z = 255}, ownBag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: an item with no parent (a looted one) refused")
+	-- any depth: the bag inside the bag, a bag inside that
+	eq(move(loose, {x = C, y = 0x47, z = 255}, inner), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: into a bag inside it refused")
+	eq(move(loose, {x = C, y = 0x48, z = 255}, deep), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: two bags deep refused")
+	-- dropped ON the bag item or ON a bag inside it (the engine descends into the container in the target slot)
+	eq(move(loose, {x = C, y = 0x40, z = 0}, bp), RETURNVALUE_NOERROR, "control: a plain backpack slot with no container is fine") -- slot 0 of bp is not the bag
+	local slotOfBag
+	for i, x in ipairs(bp.items) do if rawequal(x, ownBag) then slotOfBag = i - 1 end end
+	eq(move(loose, {x = C, y = 0x40, z = slotOfBag}, bp), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: dropped on the bag item in the backpack refused")
+	eq(move(loose, {x = C, y = 0x46, z = 0}, ownBag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: dropped on the bag inside it refused")
+	hero.slots[5] = ownBag
+	eq(move(loose, {x = C, y = 5}, hero), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: dropped on it in an inventory slot refused")
+	hero.slots[5] = nil
+	-- a stack merge onto an item inside it
+	eq(move(looseStack, {x = C, y = 0x46, z = 2}, ownBag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: a stack merged onto a stack in it refused")
+	-- a container with things inside moved in
+	local fullBag = item(1987); fullBag.parent = bp; local gem = item(2400); gem.parent = fullBag; fullBag.items[1] = gem
+	eq(move(fullBag, {x = C, y = 0x46, z = 255}, ownBag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: a bag with items refused")
+	-- the pouch rule keeps its own message
+	eq(move(keysPouch, {x = C, y = 0x46, z = 255}, ownBag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: a pouch refused")
+	ok(hero.msgs[#hero.msgs]:find("another pouch"), "Loot Bag: a pouch still gets the pouch reason")
+	-- taking out is free
+	eq(move(held, {x = C, y = 0x40, z = 255}, bp), RETURNVALUE_NOERROR, "Loot Bag: out into the backpack allowed")
+	eq(move(held, {x = 100, y = 100, z = 7}), RETURNVALUE_NOERROR, "Loot Bag: out to the ground allowed")
+	eq(move(held, {x = C, y = 1}, hero), RETURNVALUE_NOERROR, "Loot Bag: out into an inventory slot allowed")
+	-- inside the same Loot Bag: allowed (a slot of the window, into a bag in it)
+	eq(move(held, {x = C, y = 0x46, z = 255}, ownBag), RETURNVALUE_NOERROR, "Loot Bag: another slot of the same bag allowed")
+	eq(move(held, {x = C, y = 0x47, z = 255}, inner), RETURNVALUE_NOERROR, "Loot Bag: into a bag inside the same bag allowed")
+	eq(move(deep, {x = C, y = 0x46, z = 255}, ownBag), RETURNVALUE_NOERROR, "Loot Bag: a bag within it back to its top allowed")
+	-- another Loot Bag (the same character cannot own two, but a move between two is still an entry from outside)
+	local other = item(32081, {custom = {chaos_pouch_owner = 7, chaos_storebound = 1}}); other.parent = bp
+	local fromOther = item(2405); fromOther.parent = other; other.items[1] = fromOther
+	eq(move(fromOther, {x = C, y = 0x46, z = 255}, ownBag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: from another Loot Bag refused")
+	-- autoloot: the script adds with moveTo, not a player move, and still fills it
+	eq(loose:moveTo(ownBag, 0), true, "Loot Bag: a script move (autoloot) still fills it")
+	-- a plain backpack is not touched by the rule
+	eq(move(item(2406), {x = C, y = 0x40, z = 255}, bp), RETURNVALUE_NOERROR, "Loot Bag rule: other containers untouched")
+	eq(move(item(2406), {x = 100, y = 100, z = 7}), RETURNVALUE_NOERROR, "Loot Bag rule: the ground untouched")
+end
 -- the Loot Bag stays in the purse (owner 2026-10-17)
 eq(P.moveRefusal({holdsPouch = true, lootBag = true, inPurse = true, chain = {"item", "self"}}), P.LOOT_BAG_STAYS, "pure: out of the purse into the backpack")
 eq(P.moveRefusal({holdsPouch = true, lootBag = true, inPurse = true, toGround = true}), P.LOOT_BAG_STAYS, "pure: out of the purse to the ground")

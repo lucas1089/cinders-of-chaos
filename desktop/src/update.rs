@@ -3,8 +3,9 @@
 //! file (the running exe is renamed to `.old`, the new one takes its name; Windows allows that). The owner publishes a
 //! version with the workflow .github/workflows/admin-desktop.yml (manual). Downloads use curl (built into Windows 10+).
 use crate::version;
+pub use cinders_selfupdate::hash::{parse_sha, sha256_hex};
+pub use cinders_selfupdate::swap::swap;
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -65,16 +66,6 @@ pub fn pick(releases_json: &str, current: &str) -> Option<Found> {
     best.map(|(_, f)| f)
 }
 
-/// First 64 hex digits of a `.sha256` file ("HEX  name" or just "HEX"), lower case.
-pub fn parse_sha(text: &str) -> Option<String> {
-    let w = text.split_whitespace().next()?.to_ascii_lowercase();
-    (w.len() == 64 && w.chars().all(|c| c.is_ascii_hexdigit())).then_some(w)
-}
-
-pub fn sha256_hex(bytes: &[u8]) -> String {
-    Sha256::digest(bytes).iter().map(|b| format!("{b:02x}")).collect()
-}
-
 fn curl(url: &str, out: Option<&Path>) -> Result<Vec<u8>, String> {
     let mut c = Command::new("curl");
     c.args([
@@ -128,23 +119,6 @@ pub fn install(found: &Found) -> Result<PathBuf, String> {
     Ok(exe)
 }
 
-/// `exe` -> `exe.old`, `new` -> `exe`. Puts the old one back when the second rename fails.
-pub fn swap(exe: &Path, new: &Path) -> Result<(), String> {
-    let old = exe.with_extension("old");
-    let _ = std::fs::remove_file(&old);
-    std::fs::rename(exe, &old).map_err(|e| format!("cannot move the running program: {e}"))?;
-    if let Err(e) = std::fs::rename(new, exe) {
-        let _ = std::fs::rename(&old, exe);
-        return Err(format!("cannot put the new program in place: {e}"));
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(exe, std::fs::Permissions::from_mode(0o755));
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -172,33 +146,5 @@ mod tests {
         assert!(f.url.ends_with(ASSET) && f.sha_url.ends_with("/sha"));
         assert!(pick(&j, "0.10.0").is_none());
         assert!(pick("not json", "0.1.0").is_none());
-    }
-
-    #[test]
-    fn sha_parse_and_hash() {
-        let h = sha256_hex(b"abc");
-        assert_eq!(h, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
-        assert_eq!(
-            parse_sha(&format!("{}  cinders-admin.exe\n", h.to_uppercase())),
-            Some(h)
-        );
-        assert_eq!(parse_sha("short"), None);
-    }
-
-    #[test]
-    fn swap_replaces_and_keeps_old() {
-        let d = std::env::temp_dir().join(format!("cinders-admin-swap-{}", std::process::id()));
-        std::fs::create_dir_all(&d).unwrap();
-        let exe = d.join("app.exe");
-        let new = d.join("app.new");
-        std::fs::write(&exe, b"old").unwrap();
-        std::fs::write(&new, b"new").unwrap();
-        swap(&exe, &new).unwrap();
-        assert_eq!(std::fs::read(&exe).unwrap(), b"new");
-        assert_eq!(std::fs::read(d.join("app.old")).unwrap(), b"old");
-        // missing new file: the old program is put back
-        assert!(swap(&exe, &d.join("none")).is_err());
-        assert_eq!(std::fs::read(&exe).unwrap(), b"new");
-        let _ = std::fs::remove_dir_all(&d);
     }
 }

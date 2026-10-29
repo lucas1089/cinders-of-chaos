@@ -24,7 +24,12 @@ The full list, with the type of every offer, is in the [store reference](wiki:st
 - **Rune packs:** 100, 250 or 500 runes of the main attack and healing runes (fewer of Shackle), at about the rune sellers' price; what does not fit in your backpack goes to the store inbox.
 - **Loot Bag:** a bottomless bag (Convenience). While you carry it, all the loot of your kills goes into it: 255 slots, and what is in it weighs nothing. It stays yours: you keep it when you log out and get it back, empty, after a death.
 - **Auto Seller:** in the top menu, Economy > Auto Seller. "Sell all" sells what is in your Loot Bag at the NPC price, once every 30 seconds; the gold goes to your bank. Tick the rarities it may sell (Common and Uncommon by default; Magic, Rare, Legendary and Divine when you tick them). Locked items, uniques, orbs, gems and keys are never sold. The same window keeps a list of items it sells straight from your kills.
-- **Chaos Pact (VIP):** besides more storage and daily coins, while it lasts: +10% experience from monsters, stamina back 1.5 times faster (offline and on the stamina trainer), one more loadout slot, the Auto Seller, a chat colour and a cosmetic every month.
+- **Chaos Pact (VIP):** besides more storage and 5 Pact Marks a day, while it lasts: +10% experience from monsters, stamina back 1.5 times faster (offline and on the stamina trainer), one more loadout slot, the Auto Seller, a chat colour, a cosmetic every month and a Pactbound name plate frame. The Pact window shows the experience the +10% gave you this month. You are warned 3 days and 1 day before it ends.
+- **Pacto Completo:** the Chaos Pact and Premium together, 30, 90 or 180 days, cheaper than buying both. It is the first offer of Premium & Services.
+- **Pact Marks:** 5 a day while the Pact runs, claimed in the Pact window. They buy a few cosmetics from the shelf in that window and nothing else: never coins, boosts or supplies.
+- **All Blessings:** the price follows your level (60 coins up to level 200, 100 up to level 500, 150 above).
+- **Second character:** the Loot Bag, the pouches, the Everfull Ration, the Auto Seller, Rarity Autoloot and the Everfull potion tiers cost half for a character when another character of your account already has them.
+- **Lasting Exercise weapons:** two a week for the whole account.
 
 ## Season Pass
 

@@ -125,7 +125,7 @@ end
 
 -- ---------------------------------------------------------------- every visual kind has never-sold options
 -- kinds of the store and where their exclusives live (this file, or the kind's own catalogue)
-local ach, boss = {}, {}
+local ach, boss, founder = {}, {}, {}
 for _, e in ipairs(cfg.exclusives) do
 	local kind = e.kind
 	if kind == "cosmetic" then
@@ -135,7 +135,13 @@ for _, e in ipairs(cfg.exclusives) do
 			end
 		end
 	end
-	if e.source == "achievement" then ach[kind] = (ach[kind] or 0) + 1 else boss[kind] = (boss[kind] or 0) + 1 end
+	if e.source == "achievement" then
+		ach[kind] = (ach[kind] or 0) + 1
+	elseif e.source == "founder" then
+		founder[kind] = (founder[kind] or 0) + 1 -- the Founder Pack (O322): sold for a limited time, never dropped
+	else
+		boss[kind] = (boss[kind] or 0) + 1
+	end
 end
 for _, c in ipairs(cosmetics.cosmetics) do
 	if c.source == "achievement" then
@@ -169,6 +175,7 @@ end
 local P33 = dofile("data/lib/chaos_pack33.lua")
 eq(boss.wings, P33.PAIR33 and 8 or 5, "wings: five boss exclusives (eight with pair 33)")
 eq(ach.wings, 3, "wings: three achievement exclusives")
+eq(founder.wings, P33.PAIR33 and 2 or nil, "wings: two Founder Pack exclusives with pair 33")
 local picks = readFile("../client/tools/sprites/monster_looks/picks.csv")
 for _, e in ipairs(cfg.exclusives) do
 	if e.kind == "wings" then
@@ -332,7 +339,7 @@ for _, r in ipairs(rows) do
 		size = size + #tostring(k) + #tostring(v) + 6
 	end
 end
-eq(size < 16000, true, "the collection rows are small (" .. size .. " bytes)")
+eq(size < 18000, true, "the collection rows are small (" .. size .. " bytes)")
 -- SQL
 eq(K.sqlInsert(cfg, 7, "x';drop", "bo;ss", 1):find("'xdrop', 'boss'", 1, true) ~= nil, true, "keys sanitised")
 eq(K.sqlSelect(cfg, "3 or 1"), "SELECT `exclusive` FROM `chaos_exclusives` WHERE `account_id` = 0", "account id numeric")

@@ -129,6 +129,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#7a3a12",
         duration = 9000,
     },
+    -- Chaos Pact (server data/scripts/chaos/pact.lua, O317): the Pact (or the Pacto Completo) ends in 3 days / 1 day
+    PACT = {
+        icon = "images/toast/season_pass.png",
+        title = "CHAOS PACT",
+        titleColor = "#e07a4a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a3a12",
+        duration = 12000,
+    },
     -- Seasonal Journey (server data/scripts/chaos/season_journey.lua): an objective done, a chapter complete
     JOURNEY = {
         icon = "images/toast/journey.png",
@@ -1192,6 +1201,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         seasonpass = function(data)
             if data.message then
                 addNotification("SEASON_PASS", data.message)
+            end
+        end,
+
+        -- Chaos Pact expiry warning (server data/scripts/chaos/pact.lua)
+        pact = function(data)
+            if data.message then
+                addNotification("PACT", data.message)
             end
         end,
 

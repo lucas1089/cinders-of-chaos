@@ -51,7 +51,7 @@ foreach ($table as $en => $pt) {
 	check($formats($en) === $formats((string)$pt), "the sprintf conversions of '$en'");
 }
 $used = 0;
-foreach (array('coins', 'bazaar', 'creator', 'leaderboards') as $page) {
+foreach (array('coins', 'bazaar', 'creator', 'leaderboards', 'fairplay', 'calendar', 'creators') as $page) {
 	$tokens = token_get_all(file_get_contents($plugin . '/pages/' . $page . '.php'));
 	check(strpos(file_get_contents($plugin . '/pages/' . $page . '.php'), 'chaos_lang_link(') !== false, "$page: the language link");
 	for ($i = 0, $n = count($tokens); $i < $n; $i++) {

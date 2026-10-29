@@ -1,0 +1,9 @@
+{
+ "envelope": {
+  "format": "chaos-update-1",
+  "key": "2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12",
+  "payload": "{\"channel\":\"live\",\"created\":\"2026-10-29T00:00:00Z\",\"encryption\":\"chaos-blob-1\",\"files\":[{\"blob\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"blob_size\":47,\"path\":\"x/y.lua\",\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":3}],\"files_url\":\"files/\",\"format\":1,\"min_package\":13,\"min_version\":0,\"native\":{\"files\":[{\"path\":\"Chaos.exe\",\"sha256\":\"9095bdb859308b62acf04036ffd4adfe366d7f737d276eb6c46ae434f3816c9b\",\"size\":3},{\"path\":\"CindersLauncher.exe\",\"sha256\":\"ec9a6e9fe278eb1a471fbab6f40367d8548078b651d9c71581c57c2a6ca379e0\",\"size\":8},{\"path\":\"libssl-3-x64.dll\",\"sha256\":\"0343b13708cd52d33ecbb1043b5ae145e73a532bdccf7de6925db5cce6054fd3\",\"size\":3}],\"files_url\":\"native/\",\"game\":\"Chaos.exe\",\"launcher\":\"CindersLauncher.exe\",\"package\":14},\"parallel\":8,\"product\":\"cinders-of-chaos\",\"version\":7}",
+  "signature": "a9e32bb566d3f6ef1c640cce85e6877b508659a2fa3f3e825d1dd5ad384f583a52f965b4b424afce4ed2974acf91c6280b1eae82e18249a72196c14970006508"
+ },
+ "public_key": "2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12"
+}

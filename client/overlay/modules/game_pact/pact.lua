@@ -1,5 +1,5 @@
 -- Chaos Pact window (server data/scripts/chaos/pact.lua, extended opcode 222, JSON {action, data}).
---   client -> server  open | sync | claim | buildSave {slot?, name} | buildRename {slot, name} | buildDelete {slot} |
+--   client -> server  open | sync | claim | marksBuy {key} | buildSave {slot?, name} | buildRename {slot, name} | buildDelete {slot} |
 --                     buildLoad {slot}
 --   server -> client  status {...} (open = true: show the window) | buildCode {slot, code} | message {text, error}
 -- Menu: Character > Chaos Pact (added to client_chaos_topbar with ChaosTopBar.addEntry). Loading a saved build opens
@@ -46,7 +46,7 @@ end
 
 local function walletText()
   if not status then return '' end
-  return tr('Chaos Coins: %d   Premium days: %d   Coins claimed from the Pact so far: %d',
+  return tr('Chaos Coins: %d   Premium days: %d   Pact Marks claimed so far: %d',
     tonumber(status.coins) or 0, tonumber(status.premiumDays) or 0, tonumber(status.claimedTotal) or 0)
 end
 
@@ -76,6 +76,23 @@ local function fillLimits()
       if i == 5 then color = '#f6cf72' end
       cell(row, t, COLS[i], color, i == 1 and AlignLeft or nil)
     end
+  end
+end
+
+local function fillMarks()
+  window.marksLine:setText(V.marksLine(status))
+  window.monthLine:setText(V.monthLine(status))
+  local list = window.shelf
+  list:destroyChildren()
+  for _, r in ipairs(V.shelfRows(status)) do
+    local w = g_ui.createWidget('PactShelfRow', list)
+    w.name:setText(r.name)
+    w.price:setText(r.price)
+    w.name:setColor(r.owned and '#6b6258' or '#e8b84a')
+    w.buyButton:setText(r.button)
+    w.buyButton:setEnabled(r.canBuy)
+    local key = r.key
+    w.buyButton.onClick = safe('marksBuy', function() send('marksBuy', { key = key }) end)
   end
 end
 
@@ -136,6 +153,7 @@ local function refresh()
   window.header.storeButton:setText(status.active and tr('Extend in Store') or tr('Get it in Store'))
   note(walletText())
   fillLimits()
+  fillMarks()
   window.special:setText(V.specialText(status))
   fillBuilds()
 end
@@ -191,6 +209,10 @@ end
 
 function claim()
   send('claim')
+end
+
+function buyMarks(key)
+  send('marksBuy', { key = key })
 end
 
 function saveBuild()
