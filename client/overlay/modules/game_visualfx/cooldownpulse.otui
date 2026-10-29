@@ -1,0 +1,8 @@
+// A pale layer over an action bar slot for the pulse when its cooldown ends (game_visualfx, O229, base patch 0161). It takes no
+// clicks, fills the slot and is destroyed when the pulse is over.
+ChaosCooldownFlash < UIWidget
+  phantom: true
+  focusable: false
+  anchors.fill: parent
+  background-color: #ffecc8
+  opacity: 0

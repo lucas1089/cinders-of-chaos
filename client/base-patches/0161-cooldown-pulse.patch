@@ -1,0 +1,86 @@
+# Chaos: a short pulse on an action bar slot when its cooldown ends (O229; modules/game_actionbar/actionbar.lua removeCooldown,
+# mods/client_settings/classes/dataset.lua, options/graphics.otui; after 0001-0160). Lua and OTUI only, no engine code.
+# The action bar ends a slot's cooldown inside removeCooldown(button), called by a scheduleEvent set when the cooldown starts
+# (spell, group, preset and passive cooldowns alike) and also called to clear a slot (drag, change, bar setup). Those events and
+# the function are local to the base module, so no overlay could see a cooldown end. The patch adds one hook:
+#  * removeCooldown: when the global ChaosCooldownPulse exists and the slot still has its timer (removeCooldownEvent is set, so
+#    it is the scheduled end or a clear of a running cooldown) it calls ChaosCooldownPulse.onEnd(button, duration, elapsed)
+#    under pcall, with the numbers of the slot's UICooldown (getDuration, getTimeElapsed: both already used by this file), then
+#    the stock lines run unchanged. A hook that errors cannot break the cooldown reset.
+#  * the overlay (game_visualfx, cooldownpulse.lua and cooldownpulse_logic.lua) defines the global, decides what is a pulse (a
+#    cooldown of 3 s or more that is within 150 ms of its end: a slot cleared early is none, nor is a short exhaust) and draws
+#    it: a pale layer on the slot for 280 ms (rise 40 ms, squared fall), one 16 ms timer only while a pulse is alive.
+#  * dataset.lua: option cooldownPulse (default on), whose apply tells game_visualfx. graphics.otui: checkbox "Pulse when a
+#    cooldown ends" under "Flickering fire light"; the visual effects panel grows from 371 to 390 px (19 px per row).
+# Option off, or no overlay: the global is nil or disabled and removeCooldown does what it did (one global read).
+# Not run in a client; goes live with the next client build.
+--- a/modules/game_actionbar/actionbar.lua
++++ b/modules/game_actionbar/actionbar.lua
+@@ -1614,6 +1614,11 @@
+ 		return true
+ 	end
+ 
++	-- Chaos (base patch 0161): the timer of a cooldown ran out; game_visualfx decides whether the slot pulses (cooldownpulse.lua)
++	if ChaosCooldownPulse and button.cache.removeCooldownEvent and button.cooldown then
++		pcall(ChaosCooldownPulse.onEnd, button, button.cooldown:getDuration(), button.cooldown:getTimeElapsed())
++	end
++
+ 	button.cache.removeCooldownEvent = nil
+ 	if button.cooldown then
+ 		button.cooldown:stop()
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2234,6 +2234,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0161): a short pulse on an action bar slot when its cooldown ends (game_visualfx -> ChaosCooldownPulse)
++  cooldownPulse = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('cooldownPulse', value) end
++      return true
++    end,
++  },
++
+   -- Chaos (base patch 0154): show every entry of the top menu, not only the unlocked systems (client_chaos_topbar)
+   showWholeMenu = {
+     value = false,
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -467,7 +467,7 @@
+ 
+     FlatPanel
+       // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-      size: 505 371
++      size: 505 390
+       anchors.top: prev.bottom
+       anchors.right: parent.right
+       anchors.left: parent.left
+@@ -832,6 +832,25 @@
+           local value = modules.client_settings.getOption('lightFlicker')
+           self:setChecked(value ~= false)
+ 
++      SettingsCheckBox
++        id: cooldownPulse
++        size: 12 12
++        !text: tr('Pulse when a cooldown ends')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: lightFlicker.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('A slot of the action bar gives a short pale flash, about a quarter of a second, when a\ncooldown of 3 seconds or more ends, so you see the spell is ready. It costs almost nothing.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('cooldownPulse')
++          self:setChecked(value ~= false)
++
+       UIWidget
+         size: 12 12
+         anchors.top: parent.top

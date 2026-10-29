@@ -44,6 +44,14 @@ MapMarkerGameArrow < UIWidget
   image-smooth: true
   visible: false
 
+// the floor triangle next to a game view pin or arrow of a member on another floor
+MapMarkerGameFloor < UIWidget
+  size: 8 8
+  phantom: true
+  focusable: false
+  image-smooth: true
+  visible: false
+
 MapMarkerGameLabel < UILabel
   phantom: true
   focusable: false

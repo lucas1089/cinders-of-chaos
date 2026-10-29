@@ -10,7 +10,8 @@
 --   the character came near them ("Discovered on your map: ..."). Hover: the name.
 -- * Game view (settings.game): a party member on this floor outside the visible game area gets a coloured arrow on the
 --   edge of the game map panel with the name and the distance in tiles (MapMarkerMath.gameIndicator). Nothing for a
---   member in view or on another floor. Refreshed on a party update and on the player's step, every 150 ms at most.
+--   member in view. A member on another floor gets a hint too (MapMarkerMath.gameFloorHint): in view a pin on their
+--   tile, out of view the edge arrow, both with the gold floor triangle and the floors in the text (+1 up, -2 down). Refreshed on a party update and on the player's step, every 150 ms at most.
 -- * Settings (g_settings node 'mapMarkers'; window from the top menu, "Map Markers"): party members on / off, arrows on the game view on / off, points of
 --   interest on / off, one check box per category. Turning a kind off on the client also tells the server, which then
 --   stops sending it.
@@ -186,7 +187,8 @@ handlers.place = place
 local function gameWidgets(i)
   local g = gamePool[i]
   if not g or not alive(g.arrow) then
-    g = { arrow = g_ui.createWidget('MapMarkerGameArrow', gameLayer), label = g_ui.createWidget('MapMarkerGameLabel', gameLayer) }
+    g = { arrow = g_ui.createWidget('MapMarkerGameArrow', gameLayer), label = g_ui.createWidget('MapMarkerGameLabel', gameLayer),
+      floor = g_ui.createWidget('MapMarkerGameFloor', gameLayer) }
     gamePool[i] = g
   end
   return g
@@ -195,7 +197,7 @@ end
 local function hideGame(from)
   for i = from, #gamePool do
     local g = gamePool[i]
-    if g and alive(g.arrow) then g.arrow:hide() g.label:hide() end
+    if g and alive(g.arrow) then g.arrow:hide() g.label:hide() g.floor:hide() end
   end
 end
 
@@ -213,11 +215,14 @@ local function updateGame()
   local shown = 0
   for _, pm in pairs(party) do
     local r = M.gameIndicator(me, pm.e, vd, rect, keep)
+    local fh = (not r) and M.gameFloorHint(me, pm.e, vd, rect, keep) or nil
+    r = r or fh
     if r then
       shown = shown + 1
       local g = gameWidgets(shown)
       local color = M.color(pm.slot)
-      local image = 'party_arrow_' .. (r.dir or 'n')
+      -- a member on another floor inside the view: a pin on their tile; otherwise the edge arrow
+      local image = (r.kind == 'tile') and 'party_pin' or ('party_arrow_' .. (r.dir or 'n'))
       if g.image ~= image then
         g.arrow:setImageSource(ICONS .. image)
         g.image = image
@@ -225,7 +230,18 @@ local function updateGame()
       g.arrow:setImageColor(color)
       g.arrow:setPosition({ x = r.x - 6, y = r.y - 6 })
       g.arrow:show()
-      local text = M.gameText(pm.e.n, r.dist)
+      if fh then
+        local icon = 'floor_' .. fh.floor
+        if g.floorImage ~= icon then
+          g.floor:setImageSource(ICONS .. icon)
+          g.floorImage = icon
+        end
+        g.floor:setPosition({ x = r.x + 1, y = r.y - 10 })
+        g.floor:show()
+      else
+        g.floor:hide()
+      end
+      local text = M.gameText(pm.e.n, r.dist, fh and fh.delta or nil)
       if g.text ~= text then
         g.label:setText(text)
         g.text = text
@@ -233,7 +249,8 @@ local function updateGame()
       g.label:setColor(color)
       g.label:show()
       local lw, lh = g.label:getWidth(), g.label:getHeight()
-      local lx = (r.side == 'left') and (r.x - 8 - lw) or (r.x + 8)
+      local left = (r.side == 'left') or (r.kind == 'tile' and r.x > rect.x + rect.width / 2)
+      local lx = left and (r.x - 8 - lw) or (r.x + 8)
       g.label:setPosition({ x = lx, y = r.y - math.floor(lh / 2) })
     end
   end

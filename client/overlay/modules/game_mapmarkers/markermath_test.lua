@@ -140,5 +140,22 @@ eq(g.dir, 'e', 'kept aspect: still east'); ok(g.x <= panel.x + panel.width - M.G
 local tw, th = M.tileSize(panel, vd, true); eq(tw, th, 'aspect kept: square tiles'); eq(tw, 50, 'min of both')
 eq(M.gameText('Ann', 12), 'Ann 12', 'label text'); eq(M.gameText(nil, 3), '? 3', 'label without a name')
 
+-- game view hint for a member on another floor
+eq(M.gameFloorHint(me, { x = 1030, y = 1000, z = 7 }, vd, panel, false), nil, 'same floor: no floor hint')
+eq(M.floorDelta(me, { z = 6 }), 1, 'one floor up is +1'); eq(M.floorDelta(me, { z = 9 }), -2, 'two floors down is -2')
+local h = M.gameFloorHint(me, { x = 1002, y = 999, z = 6 }, vd, panel, false)
+eq(h.kind, 'tile', 'in view on another floor: a marker on the tile'); eq(h.floor, 'up', 'floor up'); eq(h.delta, 1, 'delta +1')
+eq(h.x, 100 + 375 + 2 * 50, 'tile x'); eq(h.y, 50 + 275 - 50, 'tile y'); eq(h.dist, 2, 'tile distance')
+h = M.gameFloorHint(me, { x = 1000, y = 1000, z = 9 }, vd, panel, false)
+eq(h.kind, 'tile', 'right above or below: still a marker'); eq(h.floor, 'down', 'floor down'); eq(h.delta, -2, 'delta -2')
+eq(h.x, 100 + 375, 'on the player x'); eq(h.dist, 0, 'distance zero')
+h = M.gameFloorHint(me, { x = 1030, y = 1000, z = 8 }, vd, panel, false)
+eq(h.kind, 'edge', 'out of view on another floor: edge arrow'); eq(h.dir, 'e', 'edge direction'); eq(h.floor, 'down', 'edge floor')
+eq(h.x, 100 + 750 - M.GAME_MARGIN, 'edge x clamped'); eq(h.side, 'left', 'edge label side'); eq(h.delta, -1, 'edge delta'); eq(h.dist, 30, 'edge dist')
+h = M.gameFloorHint(me, { x = 1008, y = 1000, z = 7 + 1 }, vd, panel, true)
+eq(h.kind, 'edge', 'kept aspect: one past the view'); ok(h.x <= panel.x + panel.width - M.GAME_MARGIN, 'kept aspect: inside')
+eq(M.gameText('Ann', 5, 1), 'Ann 5 +1', 'text with floors up'); eq(M.gameText('Ann', 5, -2), 'Ann 5 -2', 'text with floors down')
+eq(M.gameText('Ann', 0, -1), 'Ann -1', 'text without a distance'); eq(M.gameText('Ann', 3, 0), 'Ann 3', 'delta zero is the plain text')
+
 print(string.format('markermath_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end
