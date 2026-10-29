@@ -3818,6 +3818,13 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   The stat is a primary (Ranger, Deadeye, Thief, Ninja, Shadowfist) or secondary (others) stat in
   `passivetree_stats_config.lua`; the Speed Focus build (`mobility`) values it. Client: the node tooltip line, the totals
   panel line ("Attack speed: +N% (tree, gear)", `totalsview.lua`). Dexterity keeps its damage equal.
+- **Auto build audit (2026-10-29):** the builds had no cap for `attackSpeed` (the tree counts at most 8), so Speed Focus and
+  the weapon classes' fills collected up to 20; `caps.attackSpeed = 8` now, and a node whose stats are all at their cap earns no
+  base score (a build with 8 attack speed stops taking more of it on its fill; the most any build has is 15). The stat help
+  text said "at most +12, together +20" (the numbers before patch 0078); it says +8 / +12 now (pt-BR too). `passivetree_stats_test`
+  checks the caps of attack speed, absorb and speed against the effects file; `passive_builds_test` checks that every stat the
+  tree gives has a label or is ignored on purpose. Data regenerated. Past a cap the soft cap (O146) still gives a little; the
+  builds score that as 0 on purpose. Needs a server reload (data + texts); no client change.
 - Regenerate in this order after a tree or config change: `gen_class_lanes.lua`, `gen_passivetree_data.lua` (from the client
   treedata folder), `gen_passive_builds.lua`, `gen_wiki_data.lua`, `gen_codex_data.lua`.
 - Tests: `passive_builds_test`, `passivetree_stats_test`, `passivetree_paths_test`, `passivetree_plan_test`; client
@@ -26095,6 +26102,15 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
   tiers by `hordePlan` (rare and legendary leaders, shares in `event.hordes`), so rare and legendary husks are common. Test:
   `tests/ascension_quest_test.lua` (kill counting on a mocked engine), `tests/cursedchest_test.lua` (`levelOf`). A script reload
   is enough; a chest already open keeps its husks without a recorded level until its next horde, no restart needed.
+- **Ascension Proof, nameplate level (2026-10-29).** Owner report: a rare Rootling Nutshell above the asked level did not count.
+  Cause: `monsterLevel` in `ascension_quest.lua` recomputed a level (bounty pool 473, area point, pace) that can differ from the
+  one the nameplate shows (`monster_levels.lua`: area point, waystone, rift, invasion, engine roll, hunt floor). Rule now: the
+  monster's display level (`Monster:getDisplayLevel`, patches 0040/0044) is the level judged against the bar the tracker shows;
+  the old computation stays as the fallback. The tier also reads `ChaosTierDead` when the live state is already cleared.
+  Party and damage credit (O327): the first `onKill` of a monster credits the killer, every player in its damage map and the
+  party members of the killer within `proof.partyRange` (30 tiles, they need not have dealt damage), each once (a second
+  `onKill` of the same monster is ignored for 10 s); every player is judged by their own stage and bar.
+  Test: `tests/ascension_quest_test.lua`. A script reload is enough.
 - **Not done / assumptions.** Damage scale needs `ChaosAreaGen` (its hit hook); without it only health is scaled. Without `Monster:setDropLoot` the monsters would drop loot. Untested on a live server. No client part: server texts only. Tests: `tests/cursedchest_test.lua` (rules, state machine, loot against the gold model, and the glue on a mocked engine).
 
 ## Progress metrics (O253) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `sql/chaos_progress_metrics.sql`, `tools/progress_metrics.py`)

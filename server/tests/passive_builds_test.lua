@@ -138,6 +138,27 @@ for classKey, vocId in pairs(Chaos.classes.ids) do
 		end
 	end
 end
+-- every stat a node, a class lane or a mastery effect gives is scored (a label for the summary) or ignored on purpose;
+-- a stat added to the tree later must be added to passive_builds_config.lua too
+do
+	local ignoredSet, unknown = {}, {}
+	for _, stat in ipairs(cfg.ignored) do ignoredSet[stat] = true end
+	local function scan(stats)
+		for stat in pairs(stats or {}) do
+			if not stat:match("^ar%u") and not stat:match("^ks%u") and not stat:match("^ct%u")
+				and not ignoredSet[stat] and not cfg.statLabels[stat] then
+				unknown[stat] = true
+			end
+		end
+	end
+	for _, node in pairs(tree.nodes) do
+		scan(node.s)
+		for _, stats in pairs(node.v or {}) do scan(stats) end
+		for _, stats in pairs(node.m or {}) do scan(stats) end
+	end
+	for stat in pairs(unknown) do check(false, "tree stat " .. stat .. " has no label and is not ignored in passive_builds_config.lua") end
+	check(cfg.caps.attackSpeed ~= nil, "attack speed has a cap")
+end
 check(classCount == 21 and buildCount > 350, classCount .. " classes, " .. buildCount .. " builds")
 for classKey in pairs(cfg.roles) do
 	check(Chaos.classes.ids[classKey] ~= nil, "recipes for a class that does not exist: " .. classKey)

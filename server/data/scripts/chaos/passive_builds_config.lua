@@ -33,9 +33,9 @@ ChaosPassiveBuildsConfig = {
 	-- one preview per this many ms (its own limit: the client asks for one right after an Apply); a faster one is
 	-- answered with autobuildError {retry = true} and the client asks again
 	previewRateMs = 500,
-	-- the caps of the stats the effects apply (passivetree_effects.lua charStatCap / maxSpeed / maxAbsorb, in node units)
+	-- the caps of the stats the effects apply (passivetree_effects.lua charStatCap / maxSpeed / maxAbsorb / maxAttackSpeed, in node units)
 	caps = {strength = 120, intelligence = 120, dexterity = 80, vitality = 100, spirit = 100, wisdom = 0,
-		speed = 800, absorb = 75},
+		speed = 800, absorb = 75, attackSpeed = 8},
 	-- the two-tier value curve of the character stats (passivetree_effects.lua charStatKnee / charStatMax /
 	-- charStatKneeShare; the caps above): a node scores the value it adds where the build stands on the curve, so a point
 	-- past the knee scores what it is worth there (strength 0.2 of a point before the knee's 0.8)

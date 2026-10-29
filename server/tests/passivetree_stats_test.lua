@@ -100,6 +100,9 @@ local B = dofile("data/scripts/chaos/passive_builds_config.lua")
 PASSIVE_BUILDS_GEN_NO_MAIN = true
 local Gen = dofile("tools/gen_passive_builds.lua")
 check(B.statCurve.kneeShare == E.charStatKneeShare, "builds curve knee share = effects")
+check(B.caps.attackSpeed == E.maxAttackSpeed and B.caps.absorb == E.maxAbsorb and B.caps.speed == E.maxSpeed / E.speedPerPoint,
+	"builds caps for attack speed, absorb and speed = effects")
+check(cfg.stats.attackSpeed[2]:find("at most +" .. E.maxAttackSpeed .. ",", 1, true), "attack speed help names the tree cap")
 for _, stat in ipairs({"strength", "intelligence", "dexterity", "vitality", "spirit"}) do
 	check(B.caps[stat] == E.charStatCap[stat] and B.statCurve.knee[stat] == E.charStatKnee[stat]
 		and B.statCurve.max[stat] == E.charStatMax[stat], "builds config " .. stat .. " = effects")

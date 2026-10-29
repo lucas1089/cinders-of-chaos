@@ -228,6 +228,15 @@ end
 local poolLevels
 -- the hunting level of a monster (O284)
 local function monsterLevel(monster)
+	-- the level on the nameplate (engine getDisplayLevel, set by monster_levels.lua at the spawn: generated area point,
+	-- waystone tier, rift, invasion, the engine's own roll, the hunt floor) is what the tracker's bar is judged against.
+	-- The computed level below can differ from it (a rare Rootling Nutshell: pool level 473, shown 600 in Mossgrave Tangle).
+	if monster.getDisplayLevel then
+		local okD, shown = pcall(function() return monster:getDisplayLevel() end)
+		if okD and tonumber(shown) and tonumber(shown) > 0 then
+			return math.floor(tonumber(shown))
+		end
+	end
 	if not poolLevels then
 		poolLevels = {}
 		local ok, pool = pcall(dofile, "data/scripts/chaos/bounty_pool.lua")
@@ -278,20 +287,90 @@ function S.creditProof(player, tier, level)
 	return pts
 end
 
+-- onKill fires for the last hit and the most damage killer only (a summon resolves to its master, below). The first one
+-- credits every player of the death (killers, every damager that is a party member of a killer within
+-- proof.partyRange, as spellquest.lua); later ones of the same monster are ignored (creditedKills, 10 s).
+local creditedKills = {}
+
+local function playerOf(creature)
+	if not creature then
+		return nil
+	end
+	if creature:isPlayer() then
+		return creature
+	end
+	local master = creature:getMaster()
+	return master and master:isPlayer() and master or nil
+end
+
+function S.creditDeath(target, killer)
+	local tier = ChaosTierOf and ChaosTierOf(target) or "normal"
+	-- ChaosTierDeath clears the live state at the death; when it ran first the tier is in the dead record
+	local dead = ChaosTierDead and ChaosTierDead[target:getId()]
+	if dead and dead.tier and tier == "normal" then
+		tier = dead.tier
+	end
+	if tier ~= "rare" and tier ~= "legendary" then
+		return
+	end
+	local level = monsterLevel(target)
+	local damagers = {}
+	if target.getDamageMap then
+		for id in pairs(target:getDamageMap() or {}) do
+			local p = playerOf(Creature(id))
+			if p then
+				damagers[#damagers + 1] = p
+			end
+		end
+	end
+	-- credited: the killer, every player that dealt damage, and the party members of the killer within proof.partyRange
+	-- (they need not have dealt damage); each once
+	local range = C().proof.partyRange or 30
+	local credited, seen = {}, {}
+	local function add(p)
+		local id = p and p:getId()
+		if id and not seen[id] then
+			seen[id] = true
+			credited[#credited + 1] = p
+		end
+	end
+	add(killer)
+	for _, d in ipairs(damagers) do
+		add(d)
+	end
+	local party = killer.getParty and killer:getParty()
+	if party then
+		local members = party:getMembers() or {}
+		members[#members + 1] = party:getLeader()
+		local kpos = killer:getPosition()
+		for _, m in ipairs(members) do
+			local mpos = m:getPosition()
+			if mpos.z == kpos.z and math.abs(mpos.x - kpos.x) <= range and math.abs(mpos.y - kpos.y) <= range then
+				add(m)
+			end
+		end
+	end
+	for _, p in ipairs(credited) do
+		-- each player is judged by their own bar and stage
+		local ok, err = pcall(S.creditProof, p, tier, level)
+		if not ok then
+			log("kill: " .. tostring(err))
+		end
+	end
+end
+
 local kill = CreatureEvent("ChaosAscensionKill")
 function kill.onKill(player, target)
 	if not player:isPlayer() or not target or not target:isMonster() or target:getMaster() then
 		return true
 	end
-	if stageOf(player) ~= Q.STAGE.PROOF then
+	local tid = target:getId()
+	if creditedKills[tid] then
 		return true
 	end
-	local ok, err = pcall(function()
-		local tier = ChaosTierOf and ChaosTierOf(target) or "normal"
-		if tier == "rare" or tier == "legendary" then
-			S.creditProof(player, tier, monsterLevel(target))
-		end
-	end)
+	creditedKills[tid] = true
+	addEvent(function(id) creditedKills[id] = nil end, 10000, tid)
+	local ok, err = pcall(S.creditDeath, target, player)
 	if not ok then
 		log("kill: " .. tostring(err))
 	end

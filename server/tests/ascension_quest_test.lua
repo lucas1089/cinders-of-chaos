@@ -256,8 +256,12 @@ do
 	-- chest nao estao contando pro ascension"). The chest scales its monsters to 0.9 x the opener's level, but their
 	-- own hunting level stays the type's (a level 30 Rotworm in a chest for a level 200 player).
 	local stores = {}
+	local nextPid = 100
 	local function mkPlayer(level)
-		local p = {_level = level}
+		nextPid = nextPid + 1
+		local p = {_level = level, _pid = nextPid, _pos = {x = 100, y = 100, z = 7}}
+		function p:getId() return self._pid end
+		function p:getPosition() return self._pos end
 		function p:isPlayer() return true end
 		function p:getLevel() return self._level end
 		function p:getStorageValue(k) return stores[k] or -1 end
@@ -324,6 +328,91 @@ do
 	ChaosCursedChest = nil
 	tierOf[9] = "rare"
 	eq(kills(mkMonster(9, "Rotworm", 30)), 5, "without the cursed chest module: the own level")
+
+	-- party and damage credit (coordinator 2026-10-29): onKill fires for the last hit and the most damage killer only
+	do
+		local sAll = {}
+		local function mkP(level, x)
+			local p = mkPlayer(level)
+			p._pos = {x = x, y = 100, z = 7}
+			p.getStorageValue = function(_, k) return sAll[p._pid .. ":" .. k] or -1 end
+			p.setStorageValue = function(_, k, v) sAll[p._pid .. ":" .. k] = v end
+			p:setStorageValue(sk.stage, ChaosAscensionQuestCore.STAGE.PROOF)
+			p:setStorageValue(sk.proof, 0)
+			return p
+		end
+		local function proof(p) return p:getStorageValue(sk.proof) end
+		local creatures = {}
+		Creature = function(id) return creatures[id] end
+		local function partyOf(members)
+			local party = {getMembers = function() local c = {} for i = 2, #members do c[#c + 1] = members[i] end return c end,
+				getLeader = function() return members[1] end}
+			for _, m in ipairs(members) do m.getParty = function() return party end end
+		end
+		local nid = 300
+		local function rare(dmgPlayers)
+			nid = nid + 1
+			local m = mkMonster(nid, "Rootling Nutshell", 473)
+			tierOf[nid] = "rare"
+			function m:getDisplayLevel() return 600 end
+			local map = {}
+			for _, p in ipairs(dmgPlayers or {}) do map[p:getId()] = 10 creatures[p:getId()] = p end
+			function m:getDamageMap() return map end
+			return m
+		end
+		local killer, mate, far, solo, pet = mkP(1000, 100), mkP(1000, 110), mkP(1000, 200), mkP(1000, 105), mkP(1000, 100)
+		partyOf({killer, mate, far})
+		local m = rare({killer, solo})
+		kill.onKill(killer, m)
+		eq(proof(killer), 1, "the killer counts")
+		eq(proof(mate), 1, "a party member in range who dealt no damage counts")
+		eq(proof(far), 0, "a party member out of range does not count")
+		eq(proof(solo), 1, "a damager outside the party counts")
+		kill.onKill(killer, m)
+		kill.onKill(mate, m)
+		eq(proof(killer), 1, "no double count for the same monster"); eq(proof(mate), 1, "no double count (member)")
+		-- both killers (last hit and most damage) get an onKill
+		local m2 = rare({solo, killer})
+		kill.onKill(solo, m2); kill.onKill(killer, m2)
+		eq(proof(solo), 2, "a killer outside any party counts once"); eq(proof(killer), 2, "the other killer (a damager) once")
+		eq(proof(mate), 1, "mate is not credited by a stranger's kill")
+		-- own bar per player: a level 500 mate (bar 300) vs level 1000 killer (bar 600)
+		local low = mkP(100, 105) -- bar 60, shown 600 counts
+		local high = mkP(1100, 106) -- bar 660, shown 600 does not
+		partyOf({killer, low, high})
+		kill.onKill(killer, rare({}))
+		eq(proof(low), 1, "own bar: reached"); eq(proof(high), 0, "own bar: not reached"); eq(proof(killer), 3)
+		-- a damager who is a party member of the killer counts even when far? no: range
+		local m4 = rare({mate})
+		partyOf({solo, mate})
+		kill.onKill(solo, m4)
+		eq(proof(mate), 2, "a party member that dealt damage and is in range counts")
+	end
+
+	-- a rare Rootling Nutshell (pool level 473) in the generated area Mossgrave Tangle shows level 600 on its nameplate;
+	-- the bar of a level 1000 player is 600 (owner 2026-10-29: "rare rootling nutshell acima do level nao esta contando")
+	do
+		local big = mkPlayer(1000)
+		local function killsBig(m) kill.onKill(big, m) return stores[sk.proof] end
+		local before = stores[sk.proof]
+		tierOf[20] = "rare"
+		local nut = mkMonster(20, "Rootling Nutshell", 473) -- huntLevel: pool scale, below the shown level
+		function nut:getDisplayLevel() return 600 end
+		eq(killsBig(nut), before + 1, "a rare monster whose nameplate level reaches the bar counts")
+		tierOf[21] = "rare"
+		local low = mkMonster(21, "Rootling Nutshell", 700)
+		function low:getDisplayLevel() return 599 end
+		eq(killsBig(low), before + 1, "shown level under the bar does not count, whatever the computed one")
+		-- the tier record of the death when the live state is gone
+		local nut2 = mkMonster(22, "Rootling Nutshell", 473)
+		function nut2:getDisplayLevel() return 650 end
+		ChaosTierDead = {[22] = {tier = "legendary"}}
+		eq(killsBig(nut2), before + 4, "tier read from the dead record counts 3")
+		ChaosTierDead = nil
+		local nut3 = mkMonster(23, "Rootling Nutshell", 473)
+		function nut3:getDisplayLevel() return 650 end
+		eq(killsBig(nut3), before + 4, "a normal one with a high shown level does not count")
+	end
 
 	-- The guardian shows the level the Trial scaled it to (beta 2026-10-29: "Warden of Dawn [2]" for a level 600
 	-- player: the estimate of the type's experience and health). Chaos.createMonsterNamed passes the level to

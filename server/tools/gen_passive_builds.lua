@@ -164,7 +164,8 @@ local function score(ctx, node, id, w, nodeScores, acc, variant, choice)
 	for stat, v in pairs(statsOf(node, variant, choice)) do
 		if not isFlag(stat) and not ctx.ignored[stat] then
 			-- a stat the class never uses (passivetree_stats_config.lua irrelevant) earns no base score
-			plain = plain or not bad[stat]
+			-- ... nor one the build already has at the stat's cap (attack speed 8, the character stats 120 / 80 / 100)
+			plain = plain or (not bad[stat] and (acc[stat] or 0) < capOf(cfg, stat))
 			local weight = w[stat]
 			if weight then
 				-- a stat under its cap scores in full (the last node may overshoot, as in the game); at the cap it scores 0
