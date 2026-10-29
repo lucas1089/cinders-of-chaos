@@ -2,6 +2,7 @@
 -- power (server/README.md "Weapon coverage"; docs/CLASSES.md). Run from the server/ folder (the libraries dofile() their
 -- neighbours relative to it):
 --   luajit tools/weapon_coverage.lua                 the table (plain text) and the flags
+--   luajit tools/weapon_coverage.lua --access        the weapons whose class list leaves out a class that uses their family (O329)
 --   luajit tools/weapon_coverage.lua --md            the markdown table of server/README.md
 --   luajit tools/weapon_coverage.lua --list [Class]  every weapon option, per class (or one class)
 --   luajit tools/weapon_coverage.lua --check         exit 1 when a class has a band with too few weapons or only weak
@@ -446,6 +447,49 @@ function C.suits(class, w)
 	return true
 end
 
+-- Equip access (O329): a weapon whose class list leaves out a class that is documented to use its family cannot be equipped
+-- by that class ("not for your class"). Checked for every stock, equipment set and 800+ weapon with an explicit class list
+-- (no list = everyone; uniques have their own equip lines, a narrower list by design). Rules: C.suits (config `lines`:
+-- the families of a class, hands2 = the Berserker, bowOnly = the Beastmaster); a wand-family weapon is a wand (Elementalist)
+-- or a rod (Illusionist), so one of the two suffices. Also fails when a restricted class (hands2 / bowOnly) is listed on
+-- a weapon its rule excludes, which would contradict docs/CLASSES.md. Returns an array of strings.
+function C.accessProblems(cfg, D)
+	local out = {}
+	local exceptions = cfg.accessExceptions or {}
+	for _, w in ipairs(D.weapons) do
+		if w.classes and w.origin ~= "unique" and not exceptions[w.id] then
+			local copy = {}
+			for k, v in pairs(w) do
+				copy[k] = v
+			end
+			copy.classes = nil
+			local wandOk = false -- a wand is for the Elementalist, a rod for the Illusionist: one of them is listed
+			for _, l in ipairs(cfg.lines) do
+				for _, class in ipairs(l.classes) do
+					if C.suits(class, copy) then
+						wandOk = wandOk or (w.family == "wand" and (class.name == "Elementalist" or class.name == "Illusionist")
+							and w.classes[class.name] == true)
+					end
+				end
+			end
+			for _, l in ipairs(cfg.lines) do
+				for _, class in ipairs(l.classes) do
+					local suits, listed = C.suits(class, copy), w.classes[class.name] == true
+					local split = w.family == "wand" and (class.name == "Elementalist" or class.name == "Illusionist")
+					if suits and not listed and not (split and wandOk) then
+						out[#out + 1] = string.format("%s %s %d (level %d, %s): the %s class list leaves out %s",
+							w.kind, w.name, w.id, w.level, w.origin, class.families[1], class.name)
+					elseif listed and not suits and (class.hands2 or class.bowOnly) then
+						out[#out + 1] = string.format("%s %s %d (level %d, %s): lists %s, which does not use it", w.kind, w.name, w.id,
+							w.level, w.origin, class.name)
+					end
+				end
+			end
+		end
+	end
+	return out
+end
+
 -- audit.rows[i] = {line, class, cells = {{n, best, bestRatio, list}}}; weapons that are not obtainable are counted apart
 function C.audit(cfg, D)
 	local A = {rows = {}, unobtainable = {}, bands = cfg.bands}
@@ -636,6 +680,10 @@ function C.main(args)
 	local mode = args[1]
 	if mode == "--md" then
 		io.write(C.markdown(cfg, A))
+	elseif mode == "--access" then
+		local list = C.accessProblems(cfg, D)
+		io.write(table.concat(list, "\n") .. (#list > 0 and "\n" or ""))
+		io.write(string.format("%d weapons checked, %d access problems\n", #D.weapons, #list))
 	elseif mode == "--list" then
 		io.write(C.list(cfg, A, args[2]))
 	elseif mode == "--write" or mode == "--check" then
@@ -665,6 +713,10 @@ function C.main(args)
 		for _, n in ipairs(D.notes) do
 			bad = true
 			io.stderr:write("weapon coverage: " .. n .. "\n")
+		end
+		for _, p in ipairs(C.accessProblems(cfg, D)) do
+			bad = true
+			io.stderr:write("weapon access: " .. p .. "\n")
 		end
 		if bad then
 			os.exit(1)

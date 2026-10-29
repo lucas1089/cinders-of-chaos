@@ -26602,6 +26602,39 @@ equipment sets, the uniques and the stock equipment of `data/items/base_item_val
 spell matches the exact server vocation ids (`ChaosSpellFix.allowsVocation`); `tools/ci/check_rotation_kit.py` compares
 spelldata.lua with the server spell XML.
 
+## Class access audit: spells and weapons (O329)
+
+Tester report 2026-10-29 (Beastmaster, level 750, the same hole as O307): the spell pickers listed Hail of Dawn, Twin Verdict,
+Final Verdict and Skewering Line, and the server refused each cast ("not for your class"); he asked for a review of all classes.
+
+- **Cause.** The server was right: the spell XML lists exact vocation ids (`spells_chaos.xml`, `stock_spells.csv`). The client
+  decided with `translateVocation` (base patch 0016), which folds sibling classes onto one id (Beastmaster, Ranger, Deadeye to 7;
+  Warrior, Juggernaut, Berserker to 8; Mystic, Elementalist to 5). O307 removed the fold from `ChaosSpellFix.allowsVocation` for
+  Chaos spells only; `ChaosSpellCore.vocationOk` (the Spellbook window's picker context, `pickerContext`) and the stock entries
+  kept it. Leaks, by class: Beastmaster 4 (Skewering Line, Final Verdict, Hail of Dawn, Twin Verdict), Ranger 2 (Final Verdict,
+  Twin Verdict), Berserker 4 (Iron Bellow, Ironhold, Anvil Fall, Rift Cleaver), Warrior 1 (Anvil Fall), Mystic 4 (Forked Storm,
+  Frozen Crypt, Doomtide, Glacial Doom) and the stock Pyre Torrent and Tempest Fan (Elementalist only after the cap). The Thief,
+  Monk, Necromancer and Templar lines fold to themselves, the Deadeye, Juggernaut, Elementalist and Illusionist to ids their own
+  lists name, so they had no leak.
+- **Fix.** Both functions match the exact server id only. `remapStockVocations` (chaosspells.lua) already rewrites every stock entry
+  to server ids (old ids kept, the Chaos classes added, then the 15-spell cap), so the fold added nothing legitimate. The line
+  spell quests (Moonshard Rain level 500, Unblinking Gaze 800 ...) are `needlearn` spells and stay listed under "Available soon" for
+  the line, as designed.
+- **Weapons.** The installed class lists were already right: all 32 stock bows list Ranger, Deadeye and Beastmaster, the
+  Beastmaster has bows in every level band (`weapon_coverage.lua`). The tester's bow was most likely a crossbow, which is for the
+  Ranger and the Deadeye only (docs/CLASSES.md; the tooltip names the classes since O307). New `weapon_coverage.lua --access`
+  (also part of `--check`) fails when a stock, set or 800+ weapon with a class list leaves out a class that uses its family, or when
+  the Berserker (two-handed only) or the Beastmaster (bows only) is listed on a weapon the rule excludes. Uniques are skipped (their
+  equip lines are narrower by design; unique 25886 lists the Beastmaster on a crossbow and three one-handed uniques list the
+  Berserker, extra access, not a missing one). `accessExceptions` in `weapon_coverage_config.lua` holds the stock rook wand 19391.
+- **Checks.** `client/overlay/modules/game_spellbook/spellbook_access_test.lua` runs every path (Spellbook window and pickers,
+  action bar and hotkeys, Auto setup, helper pickers) for all 21 classes at levels 100, 750 and 1500 against the server lists, with the
+  real `translateVocation` read from base patch 0016 (81921 checks; it fails on the old code).
+  `tools/ci/check_class_access.py` compares the client's copy of the Chaos spells with the server XML (name, words, level, classes),
+  the installer's cap table with `stock_spells.csv` and with the client's `ChaosCappedSpells`, and every spell of Auto setup
+  (presets, extras, ultimate, heals) with the class lists.
+  Not checked in a live client.
+
 ## Templar aura on the client (`templar_combat.lua`, `templar_aura_core.lua`, client `game_chestaura`, O315)
 
 Owner request 2026-10-29: the Templar line's aura showed as a holy_spiral map effect on the Templar's tile every 4 s (`aura.fxMs`),

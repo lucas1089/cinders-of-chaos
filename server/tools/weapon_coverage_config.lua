@@ -28,6 +28,12 @@ return {
 		Thief = "dual daggers and more daggers (the Thief line)",
 		Monk = "Monk weapons (the Monk line)"
 	},
+	-- weapons the equip access audit (C.accessProblems, `--access`) skips: id -> why. The stock rook wand lists the vocation
+	-- "None" only (the old rook vocation, no Chaos class has it)
+	accessExceptions = {
+		[19391] = "stock rook wand: vocation None only"
+	},
+
 	-- cells that may stay below the threshold on purpose: {"Class", "band label", "why"}. Empty = none.
 	knownGaps = {},
 

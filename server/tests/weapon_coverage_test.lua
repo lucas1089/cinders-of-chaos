@@ -181,4 +181,51 @@ for _, name in ipairs({"Hoarfen Bow", "Moonlit Gallows Bow", "Hollow Throne Clay
 	eq(seen[name].obtainable, true, name .. " can be obtained")
 end
 
+-- ---------------------------------------------------------------- equip access (O329)
+do
+	local function w(kind, hands, list, extra)
+		local t = {id = 1, name = "t", kind = kind, family = ({sword = "melee", bow = "launcher", crossbow = "launcher", wand = "wand"})[kind],
+			hands = hands, level = 10, power = 1, origin = "stock", classes = {}}
+		for _, name in ipairs(list) do
+			t.classes[name] = true
+		end
+		for k, v in pairs(extra or {}) do
+			t[k] = v
+		end
+		return t
+	end
+	local RANGER = {"Ranger", "Deadeye", "Beastmaster"}
+	local MELEE2 = {"Warrior", "Juggernaut", "Berserker", "Thief", "Ninja", "Samurai", "Monk", "Shadowfist", "Iron Sage",
+		"Templar", "Inquisitor", "Sentinel"}
+	local function problems(...)
+		return C.accessProblems(cfg, {weapons = {...}})
+	end
+	eq(#problems(w("bow", 2, RANGER)), 0, "a bow for the Ranger line is fine")
+	local p = problems(w("bow", 2, {"Ranger", "Deadeye"}))
+	eq(#p, 1, "a bow without the Beastmaster is one problem")
+	eq(p[1]:find("Beastmaster", 1, true) ~= nil, true, "it names the Beastmaster")
+	eq(#problems(w("crossbow", 2, {"Ranger", "Deadeye"})), 0, "a crossbow is for the Ranger and the Deadeye only")
+	eq(#problems(w("crossbow", 2, RANGER)), 1, "a crossbow listing the Beastmaster contradicts the bow-only rule")
+	eq(#problems(w("sword", 2, MELEE2)), 0, "a two-handed sword for every melee class")
+	eq(#problems(w("sword", 1, MELEE2)), 1, "a one-handed sword listing the Berserker")
+	eq(#problems(w("sword", 2, {"Warrior", "Juggernaut", "Thief", "Ninja", "Samurai", "Monk", "Shadowfist", "Iron Sage",
+		"Templar", "Inquisitor", "Sentinel"})), 1, "a two-handed sword without the Berserker")
+	local WAND = {"Mystic", "Necromancer", "Lich", "Bone Lord"}
+	local function plus(list, name)
+		local t = {}
+		for _, v in ipairs(list) do
+			t[#t + 1] = v
+		end
+		t[#t + 1] = name
+		return t
+	end
+	eq(#problems(w("wand", 1, plus(WAND, "Elementalist"))), 0, "a wand for the Elementalist")
+	eq(#problems(w("wand", 1, plus(WAND, "Illusionist"))), 0, "a rod for the Illusionist")
+	eq(#problems(w("wand", 1, WAND)) >= 1, true, "a wand for neither")
+	eq(#problems(w("bow", 2, {"Ranger"}, {origin = "unique"})), 0, "uniques have their own equip lines")
+	local nolist = w("bow", 2, {"Ranger"})
+	nolist.classes = nil
+	eq(#problems(nolist), 0, "no list: everyone")
+end
+
 print("weapon_coverage_test: " .. n .. " checks ok")

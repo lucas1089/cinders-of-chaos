@@ -743,6 +743,12 @@ jobs:
           python3 -I tools/ci/check_attack_counts.py
           python3 -I tools/ci/check_attack_counts_test.py
 
+      - name: A class is offered what its server casts and equips (spell lists, weapon class lists; the client logic test is in the client loop; O329)
+        run: |
+          python3 -I tools/ci/check_class_access.py
+          python3 -I tools/ci/check_class_access_test.py
+          cd server && luajit tools/weapon_coverage.lua --access && lua5.3 tools/weapon_coverage.lua --access
+
       - name: Item prices (table up to date, every loot priced or unsellable, no arbitrage, Auto Seller table; installer)
         run: |
           python3 -I server/tools/gen_item_prices.py --check
