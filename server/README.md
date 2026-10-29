@@ -7826,8 +7826,9 @@ The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/o
   `--keystones`: the keystone and mastery test first (below, "Keystones and masteries").
   `--checks`: the system checks after it (below, "System checks"). Admin app: tab Comandos > card Testers > button
   "Iniciar testando os sistemas".
-  The helper loads at a server start. Without "[tester-helper] running" in the log since the newest start, `start`
-  refuses, unless `--restart SECONDS`: the usual restart countdown; the bots start 30 s after it.
+  The helper loads at a server start. Without "[tester-helper] running vN" (N = HELPER_VERSION in `tools/tester_helper.lua`, raised
+  with every change of the helper files) in the log since the newest start, `start` copies the files but counts the helper as not
+  loaded (a server still running an older copy prints no version) and refuses, unless `--restart SECONDS`: the usual restart countdown; the bots start 30 s after it.
   First run: `testers.py setup`. Then the run, detached (`setsid`, own process group), log `/var/log/chaos/testers.log`.
   When the minutes are over, the run calls `testers stop --finished` itself.
 - `stop`: SIGTERM to the run's group (the bots log out), the helper files removed.
@@ -25923,9 +25924,11 @@ the engine refuses each spawn (the first failing event is the one the log shows)
 points the three at the "Orc Leader" (registered in the base), only while the old name is not a known monster and the new one is;
 with no known replacement the line becomes an XML comment. Idempotent; `FIXES` in the tool is the place for more. Test:
 `tools/patch_base_raids_test.py` (CI). Install: Update in the admin app (all steps), or `install_all.py SERVER_DIR --only
-baseraids`. The same scan lists "Orc Sambackpack", "White Pale", "Chayenne", "Ocyakao" and "Hirintror" as raid names that
-`monsters.xml` and the Lua monsters of the base do not register; the live log did not show them (their raids may not have run yet,
-or the names are made elsewhere): add them to `FIXES` if `Cant create monster` names one.
+baseraids`. A scan of all 90 base raid files against every registered monster (monsters.xml, Lua monsters, our installs, the
+monster renames) found five more unknown names, now in `FIXES`: "Orc Sambackpack" (a `<monster>` line of an area spawn in
+`venore/orc_backpack.xml`) -> Orc Warlord, "White Pale" -> Spectre, "Chayenne" -> Dragon Lord, "Ocyakao" -> Yeti, "Hirintror" ->
+Frost Dragon. Targets are base monsters of the same theme and about the same health that `monsternames` does not rename. The
+raid files name no items, so no item errors can come from them.
 
 ## Unique loot names (`tools/install_decor49_items.py`, `tools/install_owner_decor.py`)
 

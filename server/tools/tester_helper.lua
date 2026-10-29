@@ -44,6 +44,9 @@ local LOCKER_SEARCH = 45 -- tiles around the temple for a depot locker (its floo
 -- NPCs with a trade window, tried first by "shop": the NPC nearest the temple may only talk
 local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
+-- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
+-- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
+HELPER_VERSION = 2
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -886,7 +889,7 @@ if not T.started then
 	T.started = true
 	addEvent(step, STEP_MS)
 end
-print("[tester-helper] running (TEST ONLY: chaos-ctl.sh testers stop removes data/scripts/zz_tester_helper*.lua)")
+print("[tester-helper] running v" .. HELPER_VERSION .. " (TEST ONLY: chaos-ctl.sh testers stop removes data/scripts/zz_tester_helper*.lua)")
 
 -- a /reload of the scripts while testers are online: pick them up again
 for _, p in ipairs(Game.getPlayers and Game.getPlayers() or {}) do

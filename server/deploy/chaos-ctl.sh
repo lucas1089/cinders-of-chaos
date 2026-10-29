@@ -717,11 +717,18 @@ testers_pid() {
   [ -n "$p" ] && kill -0 "$p" 2>/dev/null || return 1
   echo "$p"
 }
-# the helper printed "[tester-helper] running" after the newest server start in the log
+# the version of the helper file in the repo (HELPER_VERSION in tester_helper.lua)
+helper_version() {
+  sed -n 's/^HELPER_VERSION = \([0-9][0-9]*\).*/\1/p' "$REPO/server/tools/tester_helper.lua" 2>/dev/null | head -n 1
+}
+# the helper of the repo's version printed "[tester-helper] running vN" after the newest server start in the log
+# (an older copy prints no version, so a server that still runs it counts as not loaded)
 helper_loaded() {
-  tail -n 50000 "$LOG" 2>/dev/null | awk '
+  local want
+  want=$(helper_version)
+  tail -n 50000 "$LOG" 2>/dev/null | awk -v want="$want" '
     /Starting the game server \(|Loading config/ { start = NR }
-    /\[tester-helper\] running/ { run = NR }
+    index($0, "[tester-helper] running v" want " ") { run = NR }
     END { exit !(run > start) }'
 }
 dev_key_on() {

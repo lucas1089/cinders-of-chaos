@@ -273,7 +273,7 @@ check(events.TesterHelperLogin and events.TesterHelperHealth and events.TesterHe
 	"the creature events registered")
 eq(#timers, 1, "the target loop started at load")
 eq(timers[1].ms, 500, "every 500 ms")
-check(printed[#printed]:find("[tester-helper] running", 1, true) ~= nil, "the running line for chaos-ctl")
+check(printed[#printed]:find("[tester-helper] running v" .. tostring(HELPER_VERSION) .. " ", 1, true) ~= nil, "the running line for chaos-ctl carries the version")
 dofile("tools/tester_helper.lua")
 eq(#timers, 1, "a reload does not start a second loop")
 T.present = function() return true end -- the file is in data/scripts while the helper runs
