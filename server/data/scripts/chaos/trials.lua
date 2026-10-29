@@ -37,6 +37,9 @@ if not ChaosClasses then
 	dofile("data/scripts/chaos/classes.lua")
 end
 dofile("data/lib/chaos_dark_paint.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
 
 ChaosTrials = ChaosTrials or {}
 local T = ChaosTrials
@@ -324,7 +327,7 @@ function T.buildSlot(slot)
 		for _, f in ipairs(list) do
 			local tile = Tile(P(f))
 			local gid = tile and groundId(tile)
-			if tile and ((gid ~= r.groundId and not (dark and ChaosDarkPaint.isDark(gid))) or (tile.getHouse and tile:getHouse())) then
+			if tile and ((gid ~= r.groundId and not (dark and ChaosDarkPaint.isDark(gid)) and not ChaosArenaLook.isOwned(gid)) or (tile.getHouse and tile:getHouse())) then
 				T.bad[slot] = string.format("tile %d,%d,%d already exists in the map", f.x, f.y, f.z)
 				log("slot " .. slot .. ": " .. T.bad[slot])
 				return nil, T.bad[slot]
@@ -346,22 +349,29 @@ function T.buildSlot(slot)
 	for _, f in ipairs(L.basins) do
 		placeItem(P(f), r.basinId)
 	end
-	if dark then
-		local walls = {}
-		for _, f in ipairs(L.walls) do
-			walls[f.x .. "," .. f.y] = true
-		end
-		local reserved = {L.center, L.playerStart, L.bossStart}
-		for _, s in ipairs(L.seals) do
-			reserved[#reserved + 1] = s
-		end
-		for _, b in ipairs(L.basins) do
-			reserved[#reserved + 1] = b
-		end
-		ChaosDarkPaint.apply(ChaosDarkPaint.plan(L.floor, r.dark.style, math.random, {walls = walls, reserved = reserved}), L.z)
-	end
 	T.built[slot] = true
 	return L
+end
+
+-- O276: the floor of a chamber is the shared arena look (arenalook_core.lua), repainted when the theme (by tier) or the
+-- layout (by vocation) changes: varied ground with borders, a few cover pieces and lights, a paved lane between the
+-- player's start and the guardian. The start, the guardian's spot, the middle, the four seals and the corner basins
+-- stay open, so no mechanic (seals, marks, zones, the pyre) meets a solid piece on a tile it needs.
+local function paintRoom(L, tierIdx, voc)
+	local r, lk = C().room, C().room.look or {}
+	local themes = lk.themes or {"stone"}
+	local keep = {{x = L.playerStart.x, y = L.playerStart.y, r = 3}, {x = L.bossStart.x, y = L.bossStart.y, r = 2},
+		{x = L.center.x, y = L.center.y, r = 2}}
+	for _, s in ipairs(L.seals) do
+		keep[#keep + 1] = {x = s.x, y = s.y, r = 1}
+	end
+	for _, b in ipairs(L.basins) do
+		keep[#keep + 1] = {x = b.x, y = b.y, r = 1}
+	end
+	return ChaosArenaLook.dress("trial" .. L.slot, {x1 = L.x1, y1 = L.y1, x2 = L.x2, y2 = L.y2}, L.z,
+		themes[((tierIdx or 1) - 1) % #themes + 1], {keep = keep, roads = {{from = L.playerStart, to = L.bossStart}},
+		seed = (lk.seed or 1) + (voc or 0) % (lk.variants or 3), mirror = false, cover = lk.cover, lights = lk.lights,
+		wallSize = ChaosArenaLook.wallSizeOf(r.wallId), groundIds = {[r.groundId] = true}, fallbackGround = r.groundId})
 end
 
 local function cleanSlot(L)
@@ -378,7 +388,7 @@ local function cleanSlot(L)
 			end
 			for _, item in ipairs(tile:getItems() or {}) do
 				local id = item:getId()
-				if not keep[id] and not (r.darkActive and ChaosDarkPaint.isDark(id)) then
+				if not keep[id] and not (r.darkActive and ChaosDarkPaint.isDark(id)) and not ChaosArenaLook.isOwned(id) then
 					item:remove()
 				end
 			end
@@ -481,6 +491,7 @@ end
 
 local function spawnThrall(tr, pos, hp, opts)
 	local f = tr.fam
+	pos = ChaosArenaLook.freeSpot("trial" .. tr.L.slot, pos) -- never inside a cover piece or a light
 	local m = Game.createMonster("Trial Thrall", P(pos), true, true)
 	if not m then
 		return nil
@@ -1301,6 +1312,7 @@ function T.enter(player, tierIdx, opts)
 		end
 	end
 	cleanSlot(L)
+	paintRoom(L, spellKey and (M.spellTier(spellKey)) or tierIdx, voc)
 	local tierDef, scale, stages
 	if spellKey then
 		local _, def = M.spellTier(spellKey)

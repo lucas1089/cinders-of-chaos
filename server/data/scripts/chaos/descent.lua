@@ -39,6 +39,9 @@ end
 dofile("data/scripts/chaos/descent_core.lua")
 ChaosDescentConfig = dofile("data/scripts/chaos/descent_config.lua")
 dofile("data/lib/chaos_dark_paint.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
 
 ChaosDescent = ChaosDescent or {}
 local X = ChaosDescent
@@ -387,7 +390,7 @@ local function buildSlot(slot)
 		for _, f in ipairs(list) do
 			local tile = Tile(P(f))
 			local gid = tile and groundId(tile)
-			if tile and ((not ours[gid or 0] and not (ChaosDarkPaint.isDark(gid or 0))) or (tile.getHouse and tile:getHouse())) then
+			if tile and ((not ours[gid or 0] and not (ChaosDarkPaint.isDark(gid or 0)) and not ChaosArenaLook.isOwned(gid or 0)) or (tile.getHouse and tile:getHouse())) then
 				return nil, string.format("tile %d,%d,%d already exists in the map", f.x, f.y, f.z)
 			end
 		end
@@ -427,7 +430,7 @@ local function cleanSlot(L)
 				end
 			end
 			for _, item in ipairs(tile:getItems() or {}) do
-				if not keep[item:getId()] then
+				if not keep[item:getId()] and not ChaosArenaLook.isOwned(item:getId()) then
 					item:remove()
 				end
 			end
@@ -435,31 +438,27 @@ local function cleanSlot(L)
 	end
 end
 
--- the floor of a room: the theme's dark paint when the dark set is installed, else its stock grounds
-local function paint(L, th)
-	if th.darkStyle and ChaosDarkPaint.ready(th.darkStyle) then
-		local reserved = {L.start, L.exit, L.center}
-		for _, b in ipairs(L.basins) do
-			reserved[#reserved + 1] = b
-		end
-		ChaosDarkPaint.apply(ChaosDarkPaint.plan(L.floorList, th.darkStyle, math.random, {walls = L.walls, reserved = reserved}), L.z)
-		return
+-- the key of a hall's look in arenalook_core.lua
+local function lookKey(L)
+	return "descent" .. L.center.x .. "," .. L.center.y
+end
+
+-- O276: the floor of a room is the shared arena look (arenalook_core.lua): a theme per rift theme (descent_config.lua
+-- look), varied ground with borders, cover and lights, a paved lane from the arrival to the gate. A hall is repainted
+-- whenever the theme or the room's variant changes; the arrival, the gate, the middle (altar, stand, chest, boss) and
+-- the corner basins stay open. themeIndex is the room's rift theme (1..4), depth the room number.
+local function paint(L, th, themeIndex, depth)
+	local lk = C().look or {}
+	local name = (lk.themes or {})[themeIndex] or ChaosArenaLook.themeFor(th.name)
+	local keep = {{x = L.start.x, y = L.start.y, r = 3}, {x = L.exit.x, y = L.exit.y, r = 2}, {x = L.center.x, y = L.center.y, r = 2}}
+	for _, b in ipairs(L.basins) do
+		keep[#keep + 1] = {x = b.x, y = b.y, r = 1}
 	end
-	local grounds = th.stockGrounds or th.grounds
-	for _, f in ipairs(L.floorList) do
-		local tile = Tile(P(f))
-		if tile then
-			local want = grounds[math.random(1, #grounds)]
-			local g = tile:getGround()
-			if g and type(g) ~= "number" then
-				if g:getId() ~= want then
-					g:transform(want)
-				end
-			elseif not g then
-				Game.createItem(want, 1, P(f))
-			end
-		end
-	end
+	local wall = fixtures()
+	local base = (riftThemes()[1].stockGrounds or riftThemes()[1].grounds)[1]
+	return ChaosArenaLook.dress(lookKey(L), L.rect, L.z, name, {keep = keep, roads = {{from = L.start, to = L.exit}},
+		seed = (lk.seed or 1) + depth % (lk.variants or 3), mirror = false, cover = lk.cover, lights = lk.lights,
+		wallSize = ChaosArenaLook.wallSizeOf(wall), groundIds = {[base] = true}, fallbackGround = base})
 end
 
 local function takeSlot()
@@ -717,6 +716,7 @@ end
 local function spawnOne(run, name, pos, tier, opts)
 	opts = opts or {}
 	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
+	pos = ChaosArenaLook.freeSpot(lookKey(run.L), pos) -- never inside a cover piece or a light
 	local m = create(name, P(pos), true, false, opts.shown) or create(name, P(pos), true, true, opts.shown)
 	if not m then
 		return nil
@@ -894,7 +894,7 @@ startRoom = function(run)
 	run.monsters, run.alive, run.wave, run.bossId, run.bossName = {}, 0, 0, nil, nil
 	run.ready, run.used = {}, {}
 	local th = themeOf(run)
-	paint(run.L, th)
+	paint(run.L, th, math.min(#riftThemes(), roomOf(run).theme), run.idx)
 	run.level = partyLevel(run)
 	run.esc = DC.escalation(cfg, run.idx, run.level)
 	local states = {}

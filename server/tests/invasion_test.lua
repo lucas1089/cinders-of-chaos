@@ -440,6 +440,22 @@ do
 	eq(I.occupationOver(occ, 4000, 3), nil, "occupation lasts")
 	eq(I.occupationOver(occ, 4000, 0), "liberated", "all occupiers slain")
 	eq(I.occupationOver(occ, 5000, 2), "withdrawn", "time up")
+	-- NPC shop prices in an occupied town
+	local town = {kind = "town", from = {x = 100, y = 100}, to = {x = 190, y = 190}, z = 7}
+	local hunt = {kind = "hunt", from = {x = 100, y = 100}, to = {x = 190, y = 190}, z = 7}
+	local mults = {buyMult = 1.25, sellMult = 0.75}
+	eq(I.priceFactor(mults, town, {x = 150, y = 150, z = 7}, "buy"), 1.25, "occupied town: buy dearer")
+	eq(I.priceFactor(mults, town, {x = 150, y = 150, z = 7}, "sell"), 0.75, "occupied town: sell cheaper")
+	eq(I.priceFactor(mults, town, {x = 150, y = 150, z = 6}, "buy"), 1, "another floor: no change")
+	eq(I.priceFactor(mults, town, {x = 99, y = 150, z = 7}, "buy"), 1, "outside the town: no change")
+	eq(I.priceFactor(mults, hunt, {x = 150, y = 150, z = 7}, "buy"), 1, "a hunting area: no change")
+	eq(I.priceFactor({}, town, {x = 150, y = 150, z = 7}, "buy"), 1, "no multipliers: no change")
+	eq(I.priceFactor(nil, town, {x = 150, y = 150, z = 7}, "buy"), 1, "no occupation: no change")
+	eq(I.scalePrice(100, 1.25), 125, "a price scaled")
+	eq(I.scalePrice(1, 0.75), 1, "never below 1")
+	eq(I.scalePrice(-1, 1.25), -1, "not for sale stays")
+	eq(I.scalePrice(0, 0.75), 0, "zero stays")
+	eq(I.scalePrice(7, 1), 7, "factor 1: unchanged")
 	eq(I.occupationOver(nil, 1, 1), nil, "no occupation")
 	ok(I.buffActive({endsAt = 100}, 99), "buff active")
 	ok(not I.buffActive({endsAt = 100}, 100), "buff over")
@@ -557,6 +573,16 @@ do
 	ChaosInvasion.state.phase = "idle"
 	eq(invShield.hit(player, invader, 100), nil, "no invasion: does not apply")
 	ChaosInvasion.invaders[4242] = nil
+	-- NPC shop prices (install step occupiedprices asks these)
+	local st = ChaosInvasion.state
+	local oldArea = st.area
+	st.area = {kind = "town", from = {x = 100, y = 100}, to = {x = 190, y = 190}, z = 7}
+	eq(ChaosInvasion.npcPrice(100, {x = 150, y = 150, z = 7}, "buy"), 100, "not occupied: the base price")
+	st.phase = "occupied"
+	eq(ChaosInvasion.npcPrice(100, {x = 150, y = 150, z = 7}, "buy"), 125, "occupied: the config's buy factor")
+	eq(ChaosInvasion.npcPrice(100, {x = 150, y = 150, z = 7}, "sell"), 75, "occupied: the config's sell factor")
+	eq(ChaosInvasion.npcPrice(100, {x = 10, y = 10, z = 7}, "buy"), 100, "an NPC elsewhere: the base price")
+	st.phase, st.area = "idle", oldArea
 	setmetatable(_G, nil)
 end
 

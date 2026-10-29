@@ -27,6 +27,9 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 Chaos.battlegroundConfig = dofile("data/scripts/chaos/battleground_config.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
 if not (ChaosBattlegroundCore and ChaosBattlegroundCore.findMatches) then
 	dofile("data/scripts/chaos/battleground_core.lua")
 end
@@ -514,12 +517,13 @@ function B.buildSlot(slot)
 		end
 	end
 	local ids = cfg.ids
-	local grounds = {ground = ids.ground, base = ids.baseGround, ring = ids.ringGround}
+	local grounds = {base = ids.baseGround, ring = ids.ringGround}
 	for _, t in ipairs(foot) do
 		local pos = P(t)
 		local tile = Game.createTile(pos, true)
 		if tile then
-			if not tile:getGround() then
+			-- the field gets its ground from the look (below); bases, graveyards, capture circles and walls keep theirs
+			if not tile:getGround() and (grounds[t.ground] or t.wall) then
 				Game.createItem(grounds[t.ground] or ids.ground, 1, pos)
 			end
 			if t.wall and not tile:getItemById(ids.wall) then
@@ -527,6 +531,13 @@ function B.buildSlot(slot)
 			end
 		end
 	end
+	-- O276: the look of the field (arenalook_core.lua), mirrored for the two teams; a theme per slot in turn
+	local lk = cfg.look or {}
+	local themes = lk.themes or {"ember"}
+	local spec = K.lookSpec(cfg, L)
+	ChaosArenaLook.dressTiles("battleground" .. slot, spec.tiles, L.z, themes[slot % #themes + 1], {keep = spec.keep,
+		roads = spec.roads, plain = spec.plain, seed = lk.seed or 1, cover = lk.cover, lights = lk.lights, keepGap = lk.keepGap,
+		mirror = true, groundIds = {[ids.ground] = true}, fallbackGround = ids.ground})
 	for _, p in ipairs(L.pillars) do
 		placeItem(P(p), ids.pillar)
 	end
@@ -554,7 +565,7 @@ local function cleanSlot(slot)
 					end
 				end
 				for _, item in ipairs(tile:getItems() or {}) do
-					if not keep[item:getId()] then
+					if not keep[item:getId()] and not ChaosArenaLook.isOwned(item:getId()) then
 						item:remove()
 					end
 				end

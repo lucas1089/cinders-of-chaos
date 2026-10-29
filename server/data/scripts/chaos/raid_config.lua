@@ -49,7 +49,10 @@ return {
 	doorId = 1546, -- the doors of the corridors: iron bars (blocking), put back when a door closes
 	basinId = 1481, -- coal basins in the corners
 	groundId = 407, -- black marble floor (stock); the dark tile set paints the rooms when installed
-	dark = {enabled = true, style = "hall", wall = "obsidian_wall", basin = "brazier"},
+	dark = {enabled = true, style = "hall", wall = "obsidian_wall", basin = "brazier"}, -- the dark set's wall and light
+	-- O276 look (arenalook_core.lua): the whole floor in slate, rock and bones (the Sepulchre); the entry, the doors, the pack
+	-- spots, the boss spots and the fonts stay open, a lane runs from the hall to the last boss
+	look = {theme = "crypt", seed = 11, cover = 3, lights = 14},
 	aid = {portal = 47801, exit = 47802, font = 47803},
 	objects = {exit = 1387, font = 1360}, -- the exit forcefield in the hall; the Font of Ash (a fountain, used from next
 	-- to it) in the corners of the rooms with hexes

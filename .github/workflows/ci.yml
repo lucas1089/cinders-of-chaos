@@ -971,6 +971,9 @@ jobs:
       - name: The live cast port in config.lua (patch_cast_port.py, install_all step castport)
         run: python3 -I server/tools/patch_cast_port_test.py
 
+      - name: Occupied town NPC prices (patch_occupied_prices.py, install_all step occupiedprices)
+        run: python3 -I server/tools/patch_occupied_prices_test.py
+
       - name: Production config (prod_config.py idempotent; spawnNearPlayers of engine patch 0041)
         run: python3 -I server/tools/prod_config_test.py
 
@@ -1139,6 +1142,8 @@ jobs:
 
       - name: Base opcode handlers accept only a JSON object (patch_base_json_guards.py, synthetic copies)
         run: python3 -I server/tools/patch_base_json_guards_test.py
+      - name: Base opcode handlers check their fields (patch_base_opcode_inputs.py, synthetic copies)
+        run: python3 -I server/tools/patch_base_opcode_inputs_test.py
 
       - name: Gateway and backend firewall scripts (render and check, no changes)
         run: |

@@ -117,5 +117,28 @@ eq(#list, 2, 'two marks now')
 local hits = { { rect = { x = 0, y = 0, width = 10, height = 10 }, text = 'a' }, { rect = { x = 5, y = 5, width = 10, height = 10 }, text = 'b' } }
 eq(M.hit(hits, 7, 7).text, 'b', 'top marker'); eq(M.hit(hits, 2, 2).text, 'a', 'lower marker'); eq(M.hit(hits, 50, 50), nil, 'nothing')
 
+-- game view indicator
+eq(M.sanitize(nil).game, true, 'game view arrows on by default'); eq(M.sanitize({ game = false }).game, false, 'game view arrows off')
+local vd = { width = 15, height = 11 }
+ok(M.inView(7, 5, vd), 'edge tile is in view'); ok(not M.inView(8, 0, vd), 'one past sideways'); ok(not M.inView(0, 6, vd), 'one past down')
+ok(M.inView(-7, -5, vd), 'far corner in view')
+local panel = { x = 100, y = 50, width = 750, height = 550 }  -- 50 px tiles
+local me = { x = 1000, y = 1000, z = 7 }
+eq(M.gameIndicator(me, { x = 1003, y = 1002, z = 7 }, vd, panel, false), nil, 'in view: no arrow')
+eq(M.gameIndicator(me, { x = 1030, y = 1000, z = 6 }, vd, panel, false), nil, 'other floor: no arrow')
+eq(M.gameIndicator(me, { x = 1030, y = 1000, z = 8 }, vd, panel, false), nil, 'floor below: no arrow')
+local g = M.gameIndicator(me, { x = 1030, y = 1000, z = 7 }, vd, panel, false)
+eq(g.dir, 'e', 'east'); eq(g.dist, 30, 'distance'); eq(g.x, 100 + 750 - M.GAME_MARGIN, 'clamped to the right edge with margin')
+eq(g.y, 50 + 275, 'on the middle row'); eq(g.side, 'left', 'label left of an arrow on the right edge')
+g = M.gameIndicator(me, { x = 990, y = 985, z = 7 }, vd, panel, false)
+eq(g.dir, 'nw', 'north-west'); eq(g.dist, 15, 'larger axis'); eq(g.side, 'right', 'label right of an arrow on the left')
+ok(g.x >= panel.x + M.GAME_MARGIN and g.y >= panel.y + M.GAME_MARGIN, 'inside the inset rect')
+g = M.gameIndicator(me, { x = 1000, y = 1008, z = 7 }, vd, panel, false)
+eq(g.dir, 's', 'south'); eq(g.y, 50 + 550 - M.GAME_MARGIN, 'bottom edge'); eq(g.x, 100 + 375, 'centred column')
+g = M.gameIndicator(me, { x = 1008, y = 1000, z = 7 }, vd, panel, true)
+eq(g.dir, 'e', 'kept aspect: still east'); ok(g.x <= panel.x + panel.width - M.GAME_MARGIN, 'kept aspect: inside the panel')
+local tw, th = M.tileSize(panel, vd, true); eq(tw, th, 'aspect kept: square tiles'); eq(tw, 50, 'min of both')
+eq(M.gameText('Ann', 12), 'Ann 12', 'label text'); eq(M.gameText(nil, 3), '? 3', 'label without a name')
+
 print(string.format('markermath_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

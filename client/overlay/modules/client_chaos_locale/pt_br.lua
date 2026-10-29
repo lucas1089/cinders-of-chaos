@@ -1652,6 +1652,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- game_mapmarkers/mapmarkers.otui
   ["Map Markers"] = "Map Markers",
   ["Show party members"] = "Mostrar membros do grupo",
+  ["Arrows on the game view"] = "Setas na tela do jogo",
   ["A pin per member, an arrow on the edge when out of view, a triangle when on another floor."] = "Um alfinete por membro, uma seta na borda quando fora da vista, um triângulo quando em outro andar.",
   ["Mark points of interest"] = "Marcar pontos de interesse",
   ["Hunting areas, dungeons, boss places and remote shops appear once you have been near them."] = "Áreas de caça, dungeons, lugares de chefes e lojas distantes aparecem depois que você passou perto deles.",

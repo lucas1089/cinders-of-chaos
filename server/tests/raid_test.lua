@@ -925,6 +925,52 @@ for i = 1, 5 do
 end
 check(X.runOf[raiders[6].id] == nil, "the sixth was not in the party")
 eq(run.inst.id, 1, "raid #1"); eq(run.inst.week, 20261005, "of this week")
+-- O276: the whole floor wears the shared arena look (arenalook_core.lua): cover and lights, the key spots and the doors
+-- open, a lane to the last boss, nothing painted on a wall
+do
+	local AL = ChaosArenaLook
+	local room = AL.rooms["raid" .. run.L.center.x .. "," .. run.L.center.y]
+	check(room ~= nil and room.look.covers > 0 and room.look.lights > 0, "look: the raid has cover and lights")
+	check(room and room.look.theme == "crypt", "look: the Sepulchre is a crypt")
+	local function free(p, what)
+		check(not room.look.blocked[AL.key(p.x - room.ox, p.y - room.oy)], "look: open " .. what)
+	end
+	free(run.L.exit, "exit"); free(run.L.start, "start"); free(run.L.fallen, "fallen")
+	for i, r in ipairs(run.L.rooms) do
+		free(r.center, "room " .. i .. " centre"); free(r.entry, "room " .. i .. " entry"); free(r.bossSpawn, "room " .. i .. " boss")
+		for _, f in ipairs(r.fonts) do free(f, "room " .. i .. " font") end
+		for _, at in ipairs(run.L.corridors[i].packAt) do free(at, "corridor " .. i .. " pack spot") end
+		for _, side in ipairs({"west", "east"}) do
+			for _, f in ipairs(run.L.corridors[i][side]) do
+				-- a door tile is open or the lane around the door's middle tile is
+				if math.abs(f.y - run.L.center.y) <= cfg.corridor.half then free(f, "corridor " .. i .. " door") end
+			end
+		end
+	end
+	local floorSet, blocked = {}, {}
+	for _, f in ipairs(run.L.floorList) do floorSet[AL.key(f.x, f.y)] = f end
+	for k in pairs(room.look.blocked) do
+		local x, y = k:match("(-?%d+),(-?%d+)")
+		blocked[AL.key(tonumber(x) + room.ox, tonumber(y) + room.oy)] = true
+		check(floorSet[AL.key(tonumber(x) + room.ox, tonumber(y) + room.oy)], "look: solid pieces stand on the floor")
+	end
+	local reach = AL.reachable(floorSet, blocked, run.L.start)
+	for i, r in ipairs(run.L.rooms) do
+		check(reach[AL.key(r.bossSpawn.x, r.bossSpawn.y)], "look: boss " .. i .. " is reachable from the hall")
+	end
+	for _, w in ipairs(run.L.wallList) do
+		local t = Tile(w)
+		check(t and #t:getItems() == 1, "look: a wall tile carries only its wall")
+	end
+	-- a monster made on a cover piece moves to the nearest open tile
+	for k in pairs(blocked) do
+		local x, y = k:match("(-?%d+),(-?%d+)")
+		local at = AL.freeSpot("raid" .. run.L.center.x .. "," .. run.L.center.y, {x = tonumber(x), y = tonumber(y), z = run.L.z})
+		check(not blocked[AL.key(at.x, at.y)] and math.max(math.abs(at.x - tonumber(x)), math.abs(at.y - tonumber(y))) <= 3,
+			"look: freeSpot leaves a cover piece")
+		break
+	end
+end
 local function bars(i, side)
 	local n = 0
 	for _, f in ipairs(run.L.corridors[i][side]) do

@@ -24,7 +24,7 @@ M.KIND_CATEGORY = {
 M.COLORS = { '#ff9d2e', '#5fd0ff', '#8ee05a', '#e070ff', '#ffd84a', '#ff6464', '#5fffc8', '#c8a0ff',
              '#ffffff', '#ff9ad0' }
 
-M.DEFAULTS = { party = true, poi = true }
+M.DEFAULTS = { party = true, poi = true, game = true }
 
 local function clamp(v, lo, hi)
   if v < lo then return lo end
@@ -40,7 +40,8 @@ end
 -- settings from storage (any shape) -> a complete, valid table
 function M.sanitize(t)
   t = type(t) == 'table' and t or {}
-  local s = { party = flag(t.party, M.DEFAULTS.party), poi = flag(t.poi, M.DEFAULTS.poi), cats = {} }
+  local s = { party = flag(t.party, M.DEFAULTS.party), poi = flag(t.poi, M.DEFAULTS.poi), game = flag(t.game, M.DEFAULTS.game),
+    cats = {} }
   local cats = type(t.cats) == 'table' and t.cats or {}
   for _, c in ipairs(M.CATEGORIES) do
     s.cats[c] = flag(cats[c], true)
@@ -168,6 +169,45 @@ function M.memberText(e, me)
     end
   end
   return table.concat(parts, ', ')
+end
+
+-- ---------------------------------------------------------------- game view indicator
+M.GAME_MARGIN = 20     -- pixels between a game view arrow and the edge of the map panel
+M.GAME_MIN_MS = 150    -- the game view indicators are refreshed at most this often
+
+-- is the tile offset (dx, dy) from the player inside the visible tile range vd = {width, height}? The player is the
+-- centre tile, so an odd 15 x 11 view reaches 7 tiles sideways and 5 up and down.
+function M.inView(dx, dy, vd)
+  return math.abs(dx) <= (vd.width - 1) / 2 and math.abs(dy) <= (vd.height - 1) / 2
+end
+
+-- pixels per tile of the map panel (rect) showing vd tiles; one square size when the aspect ratio is kept
+function M.tileSize(rect, vd, keepAspect)
+  local tw, th = rect.width / math.max(1, vd.width), rect.height / math.max(1, vd.height)
+  if keepAspect then
+    local s = math.min(tw, th)
+    return s, s
+  end
+  return tw, th
+end
+
+-- the arrow for a member e = {x, y, z} seen from me = {x, y, z} on a game map panel (rect, vd visible tiles).
+-- nil when on another floor or inside the view. Else {x, y (centre of the arrow, rect coordinates), dir (8 ways),
+-- dist (tiles, the larger axis), side ('left' / 'right': where a label fits, away from the nearest edge)}.
+function M.gameIndicator(me, e, vd, rect, keepAspect, margin)
+  if e.z ~= me.z then return nil end
+  local dx, dy = e.x - me.x, e.y - me.y
+  if M.inView(dx, dy, vd) then return nil end
+  local tw, th = M.tileSize(rect, vd, keepAspect)
+  local cx, cy = rect.x + rect.width / 2, rect.y + rect.height / 2
+  local _, x, y, dir = M.edge(cx + dx * tw, cy + dy * th, rect, margin or M.GAME_MARGIN)
+  return { x = x, y = y, dir = dir or M.dir8(dx, dy), dist = math.max(math.abs(dx), math.abs(dy)),
+           side = (x > cx) and 'left' or 'right' }
+end
+
+-- the label next to a game view arrow: name and distance in tiles
+function M.gameText(name, dist)
+  return string.format('%s %d', tostring(name or '?'), dist)
 end
 
 -- the party list without the viewer and without broken entries

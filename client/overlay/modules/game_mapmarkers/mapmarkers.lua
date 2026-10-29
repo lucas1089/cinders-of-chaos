@@ -8,7 +8,10 @@
 -- * Points of interest (server poi.lua): temples, depots, banks, the Chaos NPCs, shops, travel, crafting, the guild
 --   hall, entrances and portals, dungeons, boss places, hunting areas. Some are always known, the others appear once
 --   the character came near them ("Discovered on your map: ..."). Hover: the name.
--- * Settings (g_settings node 'mapMarkers'; window from the top menu, "Map Markers"): party members on / off, points of
+-- * Game view (settings.game): a party member on this floor outside the visible game area gets a coloured arrow on the
+--   edge of the game map panel with the name and the distance in tiles (MapMarkerMath.gameIndicator). Nothing for a
+--   member in view or on another floor. Refreshed on a party update and on the player's step, every 150 ms at most.
+-- * Settings (g_settings node 'mapMarkers'; window from the top menu, "Map Markers"): party members on / off, arrows on the game view on / off, points of
 --   interest on / off, one check box per category. Turning a kind off on the client also tells the server, which then
 --   stops sending it.
 -- The markers sit in one layer inside the minimap widget and never take the mouse: clicks, drags and the wheel stay the
@@ -31,6 +34,8 @@ local hitList = {}
 local hoverText
 local animEvent, attachEvent
 local settingsWindow
+local mapPanel, gameLayer, gamePool = nil, nil, {}
+local gameLast, gameEvent = 0, nil
 local handlers = {}
 
 -- ---------------------------------------------------------------- settings and server
@@ -174,6 +179,99 @@ local function place()
 end
 handlers.place = place
 
+-- ---------------------------------------------------------------- game view arrows
+-- A party member on the same floor but outside the visible game area: an arrow on the edge of the map panel toward
+-- them, in their party colour, with the name and the distance in tiles next to it. Refreshed on a party update and on
+-- the player's own step, at most every M.GAME_MIN_MS; the widgets are pooled.
+local function gameWidgets(i)
+  local g = gamePool[i]
+  if not g or not alive(g.arrow) then
+    g = { arrow = g_ui.createWidget('MapMarkerGameArrow', gameLayer), label = g_ui.createWidget('MapMarkerGameLabel', gameLayer) }
+    gamePool[i] = g
+  end
+  return g
+end
+
+local function hideGame(from)
+  for i = from, #gamePool do
+    local g = gamePool[i]
+    if g and alive(g.arrow) then g.arrow:hide() g.label:hide() end
+  end
+end
+
+local function updateGame()
+  gameLast = g_clock.millis()
+  if not alive(gameLayer) or not alive(mapPanel) then return end
+  local me = myPosition()
+  local vd = mapPanel:getVisibleDimension()
+  if not settings.game or not settings.party or not me or not g_game.isOnline() or not vd or vd.width <= 0 then
+    hideGame(1)
+    return
+  end
+  local rect = mapPanel:getRect()
+  local keep = mapPanel:isKeepAspectRatioEnabled()
+  local shown = 0
+  for _, pm in pairs(party) do
+    local r = M.gameIndicator(me, pm.e, vd, rect, keep)
+    if r then
+      shown = shown + 1
+      local g = gameWidgets(shown)
+      local color = M.color(pm.slot)
+      local image = 'party_arrow_' .. (r.dir or 'n')
+      if g.image ~= image then
+        g.arrow:setImageSource(ICONS .. image)
+        g.image = image
+      end
+      g.arrow:setImageColor(color)
+      g.arrow:setPosition({ x = r.x - 6, y = r.y - 6 })
+      g.arrow:show()
+      local text = M.gameText(pm.e.n, r.dist)
+      if g.text ~= text then
+        g.label:setText(text)
+        g.text = text
+      end
+      g.label:setColor(color)
+      g.label:show()
+      local lw, lh = g.label:getWidth(), g.label:getHeight()
+      local lx = (r.side == 'left') and (r.x - 8 - lw) or (r.x + 8)
+      g.label:setPosition({ x = lx, y = r.y - math.floor(lh / 2) })
+    end
+  end
+  hideGame(shown + 1)
+end
+
+-- throttled: now when the last refresh is old enough, else one trailing refresh
+local function requestGame()
+  if gameEvent then return end
+  local wait = M.GAME_MIN_MS - (g_clock.millis() - gameLast)
+  if wait <= 0 then
+    updateGame()
+  else
+    gameEvent = scheduleEvent(function()
+      gameEvent = nil
+      updateGame()
+    end, wait)
+  end
+end
+handlers.requestGame = requestGame
+
+local function attachGame()
+  local gi = modules.game_interface
+  local panel = gi and gi.getMapPanel and gi.getMapPanel()
+  if not panel or panel:isDestroyed() then return end
+  if panel == mapPanel and alive(gameLayer) then return end
+  mapPanel = panel
+  gameLayer = g_ui.createWidget('MapMarkerGameLayer', mapPanel)
+  gameLayer:fill('parent')
+  gamePool = {}
+end
+
+local function detachGame()
+  if gameEvent then removeEvent(gameEvent) gameEvent = nil end
+  if alive(gameLayer) then gameLayer:destroy() end
+  gameLayer, mapPanel, gamePool = nil, nil, {}
+end
+
 -- ---------------------------------------------------------------- hover
 local hoverWatch
 local function hideHover()
@@ -281,6 +379,7 @@ local function clearParty()
     if alive(pm.widget) then pm.widget:destroy() end
   end
   party, slots = {}, {}
+  hideGame(1)
 end
 
 local function onParty(data)
@@ -308,6 +407,7 @@ local function onParty(data)
     end
   end
   place()
+  requestGame()
 end
 
 local function onPoi(data)
@@ -344,11 +444,13 @@ end
 
 local function onGameStart()
   ensureAttached()
+  attachGame()
   send('hello', { party = settings.party, poi = settings.poi })
 end
 
 local function onGameEnd()
   clearParty()
+  detachGame()
   pois, floors = {}, {}
   place()
 end
@@ -358,6 +460,8 @@ local function updateSettingsWindow()
   if not settingsWindow then return end
   settingsWindow.partyBox:setChecked(settings.party, true)
   settingsWindow.poiBox:setChecked(settings.poi, true)
+  settingsWindow.gameBox:setChecked(settings.game, true)
+  settingsWindow.gameBox:setEnabled(settings.party)
   for _, c in ipairs(M.CATEGORIES) do
     local box = settingsWindow.categories:getChildById(c)
     if box then
@@ -374,7 +478,17 @@ function setParty(on)
   saveSettings()
   if not on then clearParty() end
   send('set', { party = on })
+  updateGame()
   place()
+  updateSettingsWindow()
+end
+
+function setGame(on)
+  on = on == true
+  if settings.game == on then return end
+  settings.game = on
+  saveSettings()
+  updateGame()
   updateSettingsWindow()
 end
 
@@ -446,18 +560,22 @@ function init()
   g_ui.importStyle('mapmarkers')
   handlers.opcode = safe('opcode', onMessage)
   handlers.game = { onGameStart = safe('start', onGameStart), onGameEnd = safe('end', onGameEnd) }
+  handlers.player = { onPositionChange = safe('move', requestGame) }
   ProtocolGame.registerExtendedJSONOpcode(M.OPCODE, handlers.opcode)
   connect(g_game, handlers.game)
+  connect(LocalPlayer, handlers.player)
   if g_game.isOnline() then onGameStart() end
 end
 
 function terminate()
   disconnect(g_game, handlers.game or {})
+  disconnect(LocalPlayer, handlers.player or {})
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, M.OPCODE)
   if animEvent then removeEvent(animEvent) animEvent = nil end
   if attachEvent then removeEvent(attachEvent) attachEvent = nil end
   clearParty()
   detach()
+  detachGame()
   if settingsWindow then settingsWindow:destroy() settingsWindow = nil end
   pois, floors = {}, {}
   handlers = {}
