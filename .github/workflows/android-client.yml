@@ -168,6 +168,13 @@ jobs:
             --triplet "$VCPKG_TRIPLET" --host-triplet x64-linux --clean-after-build --disable-metrics
           ls "$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET/lib"
 
+      - name: vcpkg build logs (on failure)
+        if: failure()
+        run: |
+          find "$VCPKG_ROOT/buildtrees" -maxdepth 2 -name '*.log' -newer "$VCPKG_ROOT/vcpkg" -size +0 | while read -r f; do
+            echo "::group::$f"; tail -n 80 "$f"; echo "::endgroup::"
+          done
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.10.2"

@@ -245,10 +245,9 @@ UPGRADE = [
 ]
 
 # ---------------------------------------------------------------------------------------------- highscores (opcode 73)
-HIGHSCORES_OLD = ('  local vocs        = req.vocations or {}\n'
-                  '  if #vocs == 0 then vocs = { vocation } end\n')
-HIGHSCORES_NEW = ('  local vocs        = req.vocations or {}\n'
-                  '  if #vocs == 0 then vocs = { vocation } end\n'
+# anchored on the second line only: the opcodeinputs step rewrites the first one
+HIGHSCORES_OLD = '  if #vocs == 0 then vocs = { vocation } end\n'
+HIGHSCORES_NEW = ('  if #vocs == 0 then vocs = { vocation } end\n'
                   '  -- ' + MARK + ': numbers only (they go into the SQL); a stock id lists its classes too\n'
                   '  local chaosVocs, chaosSeen = {}, {}\n'
                   '  local function chaosAdd(id)\n'
