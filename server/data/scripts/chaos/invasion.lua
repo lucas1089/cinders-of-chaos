@@ -927,6 +927,18 @@ function V.isOccupied(areaKey)
 	return state.phase == "occupied" and (areaKey == nil or state.areaKey == areaKey)
 end
 
+-- the base ShopModule (install step occupiedprices) asks this for the NPC at pos: buy / sell price factor
+function V.npcPriceFactor(pos, kind)
+	if state.phase ~= "occupied" then
+		return 1
+	end
+	return I.priceFactor(C().occupation, state.area, pos, kind)
+end
+
+function V.npcPrice(price, pos, kind)
+	return I.scalePrice(price, V.npcPriceFactor(pos, kind))
+end
+
 -- ======================================================================== rewards
 local function giveStack(player, id, count)
 	local added = Chaos.giveItem(player, id, count)

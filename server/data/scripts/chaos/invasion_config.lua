@@ -90,9 +90,11 @@ return {
 	victory = {minutes = 60, xp = 1.10, scope = "server"},
 	-- a lost one: the invaders occupy the area. The survivors stop pushing and get hpMult more health, a garrison of
 	-- `garrison` rare / legendary invaders joins them at the target; they leave after `minutes` or when all are slain
-	-- (the area is liberated: everyone who fought them gets liberationMult of the rewards). NPC shop prices are not
-	-- changed (the NPC trade code is the base server's; see README).
-	occupation = {minutes = 30, garrison = 6, garrisonTiers = {rare = 70, legendary = 30}, hpMult = 1.5},
+	-- (the area is liberated: everyone who fought them gets liberationMult of the rewards). While a town is occupied its
+	-- NPC shops charge buyMult and pay sellMult (the base ShopModule asks ChaosInvasion.npcPriceFactor; install step
+	-- occupiedprices). Hunting areas have no shops.
+	occupation = {minutes = 30, garrison = 6, garrisonTiers = {rare = 70, legendary = 30}, hpMult = 1.5,
+		buyMult = 1.25, sellMult = 0.75},
 
 	-- ======================================================================= factions
 	-- monsters: existing monster types with their hunting level (bounty_pool.lua estimates). bosses: an existing

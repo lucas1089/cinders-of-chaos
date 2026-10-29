@@ -636,6 +636,28 @@ end
 
 -- ============================================================================ after the invasion
 
+-- NPC shop price factor at pos for "buy" or "sell": the occupation's buyMult / sellMult inside an occupied town area
+-- (its rectangle and floor, the temple too), 1 everywhere else
+function I.priceFactor(occ, area, pos, kind)
+	if not occ or not area or area.kind ~= "town" or not I.inArea(pos, area) then
+		return 1
+	end
+	local f = kind == "buy" and occ.buyMult or kind == "sell" and occ.sellMult or nil
+	if type(f) ~= "number" or f <= 0 then
+		return 1
+	end
+	return f
+end
+
+-- a price times the factor, rounded, never below 1 when the price was positive; 0 and negatives ("not for sale") stay
+function I.scalePrice(price, f)
+	if type(price) ~= "number" or price <= 0 or f == 1 then
+		return price
+	end
+	return math.max(1, math.floor(price * f + 0.5))
+end
+
+
 -- occupation of a lost area: nil while it lasts, "liberated" (every occupier slain) or "withdrawn" (time up)
 function I.occupationOver(occ, now, alive)
 	if not occ then

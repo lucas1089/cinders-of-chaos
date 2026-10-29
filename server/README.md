@@ -10111,9 +10111,16 @@ players inside the area (+10 tiles, effective healing only) + kills x 0.25 x the
 The breach meter at 100% or the time up: the area is **occupied** for 30 minutes. The survivors stop pushing and get
 x1.5 health, and a garrison of 6 rare (70%) / legendary (30%) invaders appears around the target. The HUD shows
 "<area> is occupied", the occupiers left and the time. All slain: the area is **liberated**, and everyone who fought
-them gets 25% of the gold and orbs (no unique, no board). Time up: they withdraw (removed). **NPC shop prices are not
-changed**: the trade code is the base server's NPC library (`npc/lib/npcsystem`), and a price penalty per town would
-mean editing it; skipped on purpose. `ChaosInvasion.isOccupied(areaKey)` is there for a later hook.
+them gets 25% of the gold and orbs (no unique, no board). Time up: they withdraw (removed).
+
+**NPC shop prices while occupied.** An NPC inside an occupied town (its rectangle and floor, the temple too) charges
+x1.25 and pays x0.75 (`invasion_config.lua` `occupation.buyMult` / `sellMult`), rounded, never below 1 gold; a hunting
+area has no shops. The trade code is the base server's NPC library, so install step `occupiedprices`
+(`tools/patch_occupied_prices.py`, after `shopprices`) makes its ShopModule ask `ChaosInvasion.npcPrice(price, npc
+position, kind)` in the trade window, the buy (and a part buy when the backpack is full), the sell and the talk trade
+("buy 5 torches"). Without `invasion.lua`, or when the call fails, the stock price is used. Travel prices and the Chaos
+NPCs with their own trade scripts are not changed. Tests: `tests/invasion_test.lua`, `tools/patch_occupied_prices_test.py`
+(runs the patched Lua). `ChaosInvasion.isOccupied(areaKey)` stays for other hooks.
 
 ### World events (`worldevents.lua`)
 

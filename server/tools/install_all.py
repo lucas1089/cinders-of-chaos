@@ -144,6 +144,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                "not bought": no buy or sell click on an item the NPC does not trade (README "NPC trade windows")
   castport     tools/patch_cast_port.py          config.lua castPort = 7179: the live cast for the admin app on 127.0.0.1 only
                (engine src-patch 0064, chaos-ctl.sh cast; README "Live spectator")
+  occupiedprices tools/patch_occupied_prices.py  modules.lua ShopModule: an NPC in an occupied town charges 1.25x and pays 0.75x
+               (ChaosInvasion.npcPrice; invasion_config.lua occupation; README "Invasions and world events")
   servicenpcs  tools/install_service_npcs.py    the five service NPCs (stash keeper, pocket boss NPC, banker, house broker, services
                clerk) and their shared dialogue in data/npc (README "Service NPCs")
   apothecary   tools/install_apothecary.py      Veyra the Apothecary, the hub's supplies seller (potions, runes, rope, shovel,
@@ -965,6 +967,13 @@ def step_castport(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('shopprices') + 1, 'castport')  # config.lua: the live cast port (127.0.0.1 only)
+
+
+def step_occupiedprices(server, data, ctx):
+    return tool_result(run_tool([tool('patch_occupied_prices.py'), server], 'patch_occupied_prices.py'))
+
+
+STEPS.insert(STEPS.index('castport') + 1, 'occupiedprices')  # modules.lua: occupied town shops 1.25x / 0.75x
 
 
 def step_supports(server, data, ctx):

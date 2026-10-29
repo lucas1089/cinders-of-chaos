@@ -971,6 +971,9 @@ jobs:
       - name: The live cast port in config.lua (patch_cast_port.py, install_all step castport)
         run: python3 -I server/tools/patch_cast_port_test.py
 
+      - name: Occupied town NPC prices (patch_occupied_prices.py, install_all step occupiedprices)
+        run: python3 -I server/tools/patch_occupied_prices_test.py
+
       - name: Production config (prod_config.py idempotent; spawnNearPlayers of engine patch 0041)
         run: python3 -I server/tools/prod_config_test.py
 
