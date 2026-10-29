@@ -293,6 +293,9 @@ def write(res, out):
         st.save(os.path.join(out, kind, key + '.png'))
 
 
+TOL = 2
+
+
 def check(res, out):
     """the committed strips equal the generated ones (decoded pixels), and no other picture lies in the folders"""
     bad = []
@@ -304,7 +307,8 @@ def check(res, out):
             bad.append('%s/%s.png: missing' % (kind, key))
             continue
         have = Image.open(path).convert('RGBA')
-        if have.size != st.size or have.tobytes() != st.tobytes():
+        # a tolerance of TOL per channel: numpy's exp and arctan round differently on other CPUs (vector paths)
+        if have.size != st.size or np.abs(np.asarray(have, np.int16) - np.asarray(st.convert('RGBA'), np.int16)).max() > TOL:
             bad.append('%s/%s.png: differs from the generator' % (kind, key))
     for kind in sorted(set(k for k, _ in res)):
         folder = os.path.join(out, kind)
