@@ -283,6 +283,7 @@ function init()
   if ok and ui then
     window = ui
     window:hide()
+    pcall(function() modules.game_howitworks.attach(window, 'factions') end) -- game_howitworks: the ? button
   else
     g_logger.warning('[factions] window not loaded: ' .. tostring(ui))
   end

@@ -1,0 +1,74 @@
+// How it works (game_howitworks): the card window and the small "?" button. Styles from client_chaos_theme.
+
+HowButton < UIButton
+  size: 22 20
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: center
+  text-offset: 0 1
+  image-source: /images/chaos/button_normal
+  image-border: 6
+  focusable: false
+  phantom: false
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    image-source: /images/chaos/button_hover
+    color: #f6cf72
+
+  $pressed:
+    image-source: /images/chaos/button_pressed
+    color: #e03a1e
+
+HowRowHead < UILabel
+  height: 16
+  margin-top: 8
+  font: verdana-11px-rounded
+  color: #e8b84a
+  text-align: left
+  phantom: true
+
+HowRowText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  margin-top: 2
+  phantom: true
+
+ChaosMainWindow
+  id: howWindow
+  size: 520 440
+  !text: tr('How it works')
+  @onEscape: modules.game_howitworks.hide()
+
+  UIScrollArea
+    id: list
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: scroll.left
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    margin-right: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: scroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: scroll
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    step: 24
+    pixels-scroll: true
+
+  ChaosButton
+    id: closeButton
+    !text: tr('Close')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    @onClick: modules.game_howitworks.hide()

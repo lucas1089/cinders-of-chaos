@@ -110,6 +110,15 @@ local function showWindow(a)
   local close = window:getChildById('close')
   close:setText(tr('Close'))
   close.onClick = function() U.hideWindow() end
+  -- game_howitworks: the card of this system (who it is for, what drops, what a death costs, how often)
+  local how = window:getChildById('how')
+  local hw = modules.game_howitworks
+  how:setText(tr('How it works'))
+  if hw and hw.hasUnlock and hw.hasUnlock(a.key) then
+    how.onClick = function() hw.showForUnlock(a.key) end
+  else
+    how:hide()
+  end
   window:raise()
   windowEvent = scheduleEvent(function()
     windowEvent = nil

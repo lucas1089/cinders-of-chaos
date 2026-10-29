@@ -1262,6 +1262,13 @@ jobs:
           lua5.3 tools/gen_codex_data.lua --check  # Lua 5.3 must write the same bytes
           git diff --exit-code ../client/overlay/modules/game_codex/codex_data.lua
 
+      - name: How it works cards are up to date with the server configs (O331)
+        run: |
+          cd server
+          luajit tools/gen_howitworks_data.lua
+          lua5.3 tools/gen_howitworks_data.lua --check  # Lua 5.3 must write the same bytes
+          git diff --exit-code ../client/overlay/modules/game_howitworks/howitworks_data.lua
+
       - name: Card descriptions are up to date with the card config (gen_card_descriptions.lua)
         run: |
           cd server

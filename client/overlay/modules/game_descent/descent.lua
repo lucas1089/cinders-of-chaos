@@ -404,6 +404,7 @@ function init()
   end
   hud = make('DescentHud', modules.game_interface.getMapPanel())
   offerWindow = make('DescentOfferWindow', rootWidget)
+  pcall(function() modules.game_howitworks.attach(offerWindow, 'descent') end) -- game_howitworks: the ? button
   shopWindow = make('DescentShopWindow', rootWidget)
   infoWindow = make('DescentInfoWindow', rootWidget)
   ProtocolGame.registerExtendedOpcode(OPCODE, handlers.opcode)

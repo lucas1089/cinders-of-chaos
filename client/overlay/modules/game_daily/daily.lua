@@ -113,6 +113,7 @@ function init()
 	})
 
 	DailyWindow = g_ui.displayUI("daily")
+	pcall(function() modules.game_howitworks.attach(DailyWindow, 'daily') end) -- game_howitworks: the ? button
 
 	DailyWindow:hide()
 	ProtocolGame.registerExtendedOpcode(OPCODE, onDailyReward)

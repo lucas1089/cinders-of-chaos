@@ -312,6 +312,7 @@ end
 
 function init()
   window = g_ui.displayUI('season')
+  pcall(function() modules.game_howitworks.attach(window, 'season') end) -- game_howitworks: the ? button
   window:hide()
   SeasonJourneyTab.setup(window)
   window.overviewTab:setChecked(true)

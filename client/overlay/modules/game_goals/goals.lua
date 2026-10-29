@@ -91,6 +91,12 @@ local function drawSide()
     for _, r in ipairs(st.upcoming) do
       local w = addSide('GoalSideLine', '- ' .. V.upcomingLine(r))
       w:setColor('#8c8070')
+      local hw = modules.game_howitworks
+      if hw and hw.hasGoal and hw.hasGoal(r.key) then -- game_howitworks: click for the card
+        w:setColor('#9ab8ff')
+        w:setTooltip(tr('Click: How it works'))
+        w.onClick = function() hw.showForGoal(r.key) end
+      end
     end
   end
 end
@@ -114,6 +120,7 @@ local function drawGoals()
       local where = r.where
       row.goButton.onClick = function() runWhere(where) end
     end
+    pcall(function() modules.game_howitworks.attachGoal(row, r.key) end) -- game_howitworks: the ? button
   end
   local more = V.moreLine(st.header)
   if more ~= '' then
@@ -366,6 +373,7 @@ end
 
 function init()
   window = g_ui.displayUI('goals')
+  pcall(function() modules.game_howitworks.attach(window, 'goals') end) -- game_howitworks: the ? button
   window:hide()
   window.trackerBox:setChecked(trackerEnabled())
 

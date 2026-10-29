@@ -512,6 +512,7 @@ function init()
   end
   hud = make('BgHud', modules.game_interface.getRootPanel())
   window = make('BgWindow', rootWidget)
+  pcall(function() modules.game_howitworks.attach(window, 'battleground') end) -- game_howitworks: the ? button
   board = make('BgBoard', rootWidget)
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, handlers.opcode)
   connect(g_game, handlers.game)

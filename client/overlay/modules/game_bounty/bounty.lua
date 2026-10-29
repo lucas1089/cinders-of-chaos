@@ -305,6 +305,7 @@ end
 
 function init()
   window = g_ui.displayUI('bounty')
+  pcall(function() modules.game_howitworks.attach(window, 'bounty') end) -- game_howitworks: the ? button
   window:hide()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd })

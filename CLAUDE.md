@@ -86,6 +86,8 @@ cd server && luajit tools/gen_codex_data.lua                 # -> client game_co
 cd server && lua5.3 tools/gen_codex_data.lua --check
 cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/wiki_data.json
 cd server && lua5.3 tools/gen_wiki_data.lua --check
+cd server && luajit tools/gen_howitworks_data.lua             # -> client game_howitworks/howitworks_data.lua (How it works cards, O331; sentences: tools/howitworks_config.lua)
+cd server && lua5.3 tools/gen_howitworks_data.lua --check
 python3 -I server/tools/weapon_sim.py --power --check             # -> data/scripts/chaos/weapon_power_config.lua (--power --write)
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
 python3 -I website/tools/gen_streamer_kit.py                  # -> website plugins/chaos/assets/streamer: OBS overlays, Twitch panels, banners, Discord icon (--check in CI with the fx venv; O320)

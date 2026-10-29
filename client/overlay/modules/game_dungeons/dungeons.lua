@@ -64,6 +64,7 @@ end
 function create()
   if window then return end
   window = g_ui.displayUI("dungeons")
+  pcall(function() modules.game_howitworks.attach(window, 'dungeons') end) -- game_howitworks: the ? button
   window:hide()
   windowButton = modules.client_topmenu.addRightGameToggleButton("dungeonsButton", tr("Dungeons Finder"), "/images/topbuttons/dungeon", toggle)
   windowButton:setOn(false)

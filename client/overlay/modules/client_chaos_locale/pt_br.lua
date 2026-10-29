@@ -5874,5 +5874,13 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Takes you in front of Vessa Hollowmark, the pocket boss NPC, in the market of the teleport room. Not in combat; a short wait between two trips."] = "Leva você até a frente de Vessa Hollowmark, a NPC dos pocket bosses, no mercado da sala de teleportes. Não vale em combate; há uma pequena espera entre duas viagens.",
   ["Takes you in front of the Material Broker, in the market of the teleport room. Not in combat; a short wait between two trips."] = "Leva você até a frente do Material Broker, no mercado da sala de teleportes. Não vale em combate; há uma pequena espera entre duas viagens.",
   ["You are already next to %s."] = "Você já está ao lado de %s.",
+  -- client/overlay/modules/game_howitworks
+  ["What it is"] = "O que é",
+  ["Who is it for"] = "Para quem é",
+  ["What drops"] = "O que cai",
+  ["If you die"] = "Se você morrer",
+  ["How often"] = "Quantas vezes",
+  ["How it works: who it is for, what drops, what a death costs."] = "Como funciona: para quem é, o que cai, o que a morte custa.",
+  ["Click: How it works"] = "Clique: Como funciona",
 }
 return ChaosLocaleStrings['pt-BR']

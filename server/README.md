@@ -26802,3 +26802,33 @@ cannot do it alone now has a **Go to NPC** button.
   a wall is possible in a town whose NPC stands next to a building; the first choice is the side of the temple). The 30 seconds
   and the no-protection-zone rule are a proposal: a free trip to the hub from anywhere out of combat competes with the Town
   Portal (its own cooldown and cast); raise `cooldownSeconds` or add a cast if that matters.
+## How it works cards (O331) (`tools/gen_howitworks_data.lua`, `tools/howitworks_config.lua`, client `game_howitworks`)
+
+Tester feedback: a feature opens at a level, but its screen did not say who it is for, which monster levels it has, what drops,
+what a death costs or how often it can be done. Every feature window now has a `?` button with a card of five short rows (who,
+monster levels, what drops, if you die, how often); the Next Goals rows and the "New" unlock window open the same card.
+
+- **Install.** Nothing on the server: the generator writes a client file. `cd server && luajit tools/gen_howitworks_data.lua` writes
+  `client/overlay/modules/game_howitworks/howitworks_data.lua` (commit it); `--check` exits 1 when it is stale (CI, LuaJIT and Lua 5.3,
+  the output is byte-identical). Run it again after any change to a config below.
+- **Derived from the configs (never typed).** Unlock levels (`unlocks_config.lua`, tied to each system's gate by `tests/unlocks_test.lua`);
+  Infinity Tower monster level per floor (`infinitytower_balance_config.lua` `level` curve), boss and prize floors, party size and time
+  limits (`infinitytower_run.lua`, read by pattern: it needs the engine to load); Rift tier levels, monster level window per tier, lives,
+  party bonus, time by map size (`rift_config.lua`); arena, battleground, Descent, raid, siege, invasion, bounty, daily, weekly chest, Ember
+  Cache, season, factions and Gambler numbers, weekdays and times; world boss hours (`Chaos.worldBoss`), pocket boss tries; the death rule
+  (`gentledeath_config.lua`: items kept, experience loss by level, first death of the day). The generator refuses to run when
+  `keepItems` is off, because the cards say nobody loses items.
+- **Hand-written** (`tools/howitworks_config.lua`): the plain sentences in English and pt-BR with `{name}` places, which client window gets
+  the `?`, which unlock keys and goal keys open the card, and the "no real death" lines of the modes that catch a lethal hit (arena,
+  battleground, Descent, raid, siege, pocket boss; see "Instance limits" and "Death recap"). These claims are checked by reading the code
+  and README, not by a test: when a mode's death rule changes, change its sentence.
+- **Cards without a hand-written one.** An unlock entry that no card claims (crafting, salvage, pets, market, passive tree) gets a card made
+  from the entry: its level and its own two lines (en and pt-BR).
+- **Not covered, on purpose.** Tower Defense and the roulette have no window of their own (a base event room and an NPC), so no `?`.
+  The Rift card sits on the Rift Atlas window (the rift itself only has a HUD).
+- **Known mismatch found.** The unlock card of the Infinity Tower says "a boss every fifth" floor; `bossEvery` is 10 (`milestoneEvery` 5 is
+  the prize floor). The How it works card uses the config.
+- **Tests.** `tests/howitworks_gen_test.lua` (helpers, placeholder rules, every unlock entry and window module has a card, en and pt-BR use the
+  same places, a changed config changes the text, byte stability, the committed file is current); client `howcore_test.lua` (real data: rows,
+  order, no leftover `{`, pt-BR converts to cp1252, lookups) and `howitworks_test.lua` (mocked widgets). Not run in a client.
+
