@@ -289,6 +289,16 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
   - Licence: MIT
   - Used for: checking the Ed25519 signature of the update manifest in the game launcher
   - Source: https://github.com/jedisct1/rust-ed25519-compact
+- **Libraries of the Android client (vcpkg ports)**
+  - Author: Boost authors; the OpenSSL Project; Mike Pall (LuaJIT); Ryan C. Gordon (PhysicsFS); Dieter Baron and Thomas Klausner (libzip); Chris Robinson (OpenAL Soft); Xiph.Org (libogg, libvorbis); Jean-loup Gailly and Mark Adler (zlib); Julian Seward (bzip2)
+  - Licence: Boost Software Licence 1.0 (Boost, headers only); Apache-2.0 (OpenSSL 3); MIT (LuaJIT); zlib licence (PhysicsFS, zlib); BSD-3-Clause (libzip, libogg, libvorbis); LGPL-2.0-or-later (OpenAL Soft); bzip2 licence (BSD style)
+  - Used for: the engine library of the Android client, built from source with the Android NDK (client/android/vcpkg/vcpkg.json pins the versions)
+  - Source: https://github.com/microsoft/vcpkg
+- **Android NDK and LLVM libc++**
+  - Author: Google and the LLVM Project
+  - Licence: Apache-2.0 with LLVM exceptions
+  - Used for: compiling the Android client; the C++ runtime is linked into its engine library
+  - Source: https://developer.android.com/ndk
 - **json.lua**
   - Author: rxi
   - Licence: MIT
@@ -329,8 +339,13 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 - **Anthropic Python SDK and the Claude API**
   - Author: Anthropic
   - Licence: MIT (the SDK); the API is a paid service under Anthropic's terms
-  - Used for: Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)
+  - Used for: Ember, the Help channel assistant, and the Discord bot for bug reports and patch notes (both installed on the server by the owner, not shipped in the packages)
   - Source: https://github.com/anthropics/anthropic-sdk-python
+- **discord.py, aiohttp and tzdata (Python packages)**
+  - Author: Rapptz and the discord.py contributors; the aiohttp contributors; the tzdata maintainers
+  - Licence: MIT (discord.py); Apache-2.0 (aiohttp, tzdata); their other pinned dependencies in server/deploy/discord_bot/requirements.txt each under a permissive licence
+  - Used for: the Discord bot for bug reports and patch notes (installed on the server by the owner, not shipped in the packages)
+  - Source: https://github.com/Rapptz/discord.py
 
 - **serde_json, serde_core, itoa, memchr, zmij (Rust crates) and the Rust standard library**
   - Author: David Tolnay, Erick Tryzelaar and the serde contributors; Andrew Gallant; the Rust Project contributors
@@ -353,7 +368,7 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 
 - **PixelLab**
   - Licence: paid subscription
-  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons)
+  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons) and the redrawn icons of the Loot Bag, Orbs Pouch and Everfull Ration
 - **AutoSprite**
   - Licence: paid account
   - Used for: drawing and animating the boss Vharzul the Verdant Eye and the Ashbound Thrall and Slagback Hound of the Embergut Rift

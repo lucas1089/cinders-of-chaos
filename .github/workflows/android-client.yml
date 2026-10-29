@@ -1,0 +1,230 @@
+# Android game client (O313 phase 2, docs/ANDROID_CLIENT.md): the engine for android arm64 with the NDK and CMake
+# (client base patches 0163 and 0164), packed into an APK by the Gradle project client/android/.
+#   workflow_dispatch only: nothing runs on push or pull request, and nothing is published. The APK is a workflow
+#   artifact (kept 14 days) with its SHA-256.
+#
+# Inputs of the base client come from the private branch windows-assets, as in windows-package.yml (client/base-client
+# tar parts and SHA256SUMS.parts). The sprite pair is NOT put into the APK: the phone downloads it on first start (a later
+# phase), so this APK starts without game data and shows the engine's missing-data error until that exists.
+#
+# Libraries: vcpkg, triplet arm64-android-chaos (client/android/triplets), manifest client/android/vcpkg/vcpkg.json
+# (builtin-baseline pins the registry; the vcpkg tool is checked out at the same commit). Binary cache: actions/cache.
+#
+# Signing. Secrets (names only; the values are never in the repository):
+#   ANDROID_CLIENT_KEYSTORE_B64   the release keystore file, base64
+#   ANDROID_CLIENT_KEYSTORE_PASS  its password (store and key)
+#   ANDROID_CLIENT_KEY_ALIAS      the key alias
+# With all three the run builds assembleRelease and signs it with that key. Without them it builds assembleDebug, signed
+# with the debug key of the runner (installs for testing; every run has another signature, so uninstall first).
+# Game secrets, as in windows-package.yml: CHAOS_CLIENT_KEY (64 hex digits, same as the game server) and CHAOS_RSA_PUBLIC
+# (secret or variable). Without them the run stops unless allow_dev_key is ticked (a test APK with the public development
+# keys, which a production server refuses).
+name: Android client
+
+on:
+  workflow_dispatch:
+    inputs:
+      assets_ref:
+        description: "Branch of the base client (and server, dat/spr)"
+        required: false
+        default: "windows-assets"
+      client_build:
+        description: "Client build number 1-65535 (CHAOS_CLIENT_BUILD and the APK versionCode). Raise it for every APK you give out"
+        required: false
+        default: "1"
+      server_host:
+        description: "Server address (DNS name or IPv4)"
+        required: false
+        default: "127.0.0.1"
+      site_url:
+        description: "Website, https://... (account API and login-screen services). Empty: both off"
+        required: false
+        default: ""
+      allow_dev_key:
+        description: "Test build only: allow a build without the secrets CHAOS_CLIENT_KEY / CHAOS_RSA_PUBLIC (public development keys; never for players)"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-client-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ASSETS_REF: ${{ inputs.assets_ref || 'windows-assets' }}
+  CLIENT_BUILD: ${{ inputs.client_build || '1' }}
+  SERVER_HOST: ${{ inputs.server_host || '127.0.0.1' }}
+  SITE_URL: ${{ inputs.site_url }}
+  ALLOW_DEV_KEY: ${{ inputs.allow_dev_key && 'true' || 'false' }}
+  # NDK r27d; the Gradle project (client/android/app/build.gradle) names the same version
+  NDK_VERSION: "27.3.13750724"
+  # the vcpkg tool is checked out at the builtin-baseline of client/android/vcpkg/vcpkg.json
+  VCPKG_TRIPLET: arm64-android-chaos
+
+jobs:
+  apk:
+    name: APK (NDK r27d, arm64-v8a, android-26)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Keep line endings as they are
+        run: git config --global core.autocrlf false
+
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the base client
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ASSETS_REF }}
+          path: assets
+          sparse-checkout: |
+            client
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Assemble the client (base + client/base-patches + client/overlay)
+        run: |
+          set -euo pipefail
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir base
+          cat assets/client/base-client.tar.xz.part* | xz -d -T0 | tar -xf - -C base
+          mv base/*/ base-client
+          # no things dir: the sprite pair is not part of the APK
+          bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
+          # the patches 0163 and 0164 are in: the Android CMake branch exists
+          grep -q 'Android (O313' game/CMakeLists.txt
+
+      - name: Client guard inputs and settings
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+          CHAOS_RSA_PUBLIC: ${{ secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$CLIENT_BUILD" =~ ^[0-9]+$ ]] || [ "$CLIENT_BUILD" -lt 1 ] || [ "$CLIENT_BUILD" -gt 65535 ]; then
+            echo "::error::client_build must be a number from 1 to 65535"; exit 1
+          fi
+          if [ -z "$CHAOS_CLIENT_KEY" ] && [ "$ALLOW_DEV_KEY" != true ]; then
+            echo "::error::No CHAOS_CLIENT_KEY secret. Set it (docs/SECURITY_CHECKLIST.md), or tick allow_dev_key for a test build."; exit 1
+          elif [ -z "$CHAOS_CLIENT_KEY" ]; then
+            echo "::warning::No CHAOS_CLIENT_KEY secret (allow_dev_key): this APK gets the public DEVELOPMENT key; a production server kicks it."
+          elif ! [[ "$CHAOS_CLIENT_KEY" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::The CHAOS_CLIENT_KEY secret must be 64 hex digits (openssl rand -hex 32)"; exit 1
+          fi
+          if [ -z "$CHAOS_RSA_PUBLIC" ] && [ "$ALLOW_DEV_KEY" != true ]; then
+            echo "::error::No CHAOS_RSA_PUBLIC (the game server's login key, server/tools/rsa_key.py public). Set it, or tick allow_dev_key for a test build."; exit 1
+          fi
+          # not compiled in: written into init.lua, which goes into data.zip
+          python3 -I chaos/client/tools/set_server_host.py game "$SERVER_HOST" --site-url "$SITE_URL"
+          python3 -I chaos/client/tools/set_rsa_key.py game --from-env CHAOS_RSA_PUBLIC \
+            $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
+
+      - name: data.zip for the APK assets
+        run: bash chaos/client/android/tools/make_assets.sh game "$GITHUB_WORKSPACE/apk-assets"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # the runner image ships the Android SDK (ANDROID_HOME); the NDK, CMake and the platform are installed at the pinned versions
+      - name: Android SDK packages
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager "ndk;$NDK_VERSION" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0" > /dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+
+      - name: Libraries with vcpkg
+        run: |
+          set -euo pipefail
+          BASELINE=$(python3 -I -c "import json;print(json.load(open('chaos/client/android/vcpkg/vcpkg.json'))['builtin-baseline'])")
+          git clone https://github.com/microsoft/vcpkg "$RUNNER_TEMP/vcpkg"
+          git -C "$RUNNER_TEMP/vcpkg" checkout "$BASELINE"
+          "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$RUNNER_TEMP/vcpkg" >> "$GITHUB_ENV"
+          echo "VCPKG_BASELINE=$BASELINE" >> "$GITHUB_ENV"
+
+      - name: Restore the vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-android-client-${{ hashFiles('chaos/client/android/vcpkg/vcpkg.json', 'chaos/client/android/triplets/*.cmake') }}-${{ github.run_id }}
+          restore-keys: |
+            vcpkg-android-client-${{ hashFiles('chaos/client/android/vcpkg/vcpkg.json', 'chaos/client/android/triplets/*.cmake') }}-
+
+      - name: Build the libraries (boost headers, openssl, luajit, physfs, libzip, openal-soft, vorbis)
+        run: |
+          set -euo pipefail
+          "$VCPKG_ROOT/vcpkg" install \
+            --x-manifest-root="$GITHUB_WORKSPACE/chaos/client/android/vcpkg" \
+            --x-install-root="$GITHUB_WORKSPACE/vcpkg_installed" \
+            --overlay-triplets="$GITHUB_WORKSPACE/chaos/client/android/triplets" \
+            --triplet "$VCPKG_TRIPLET" --host-triplet x64-linux --clean-after-build --disable-metrics
+          ls "$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET/lib"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Signing key
+        id: ks
+        env:
+          KS_B64: ${{ secrets.ANDROID_CLIENT_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_CLIENT_KEYSTORE_PASS }}
+          KS_ALIAS: ${{ secrets.ANDROID_CLIENT_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ] && [ -n "$KS_ALIAS" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/client.jks"
+            echo "::add-mask::$KS_PASS"
+            echo "release=yes" >> "$GITHUB_OUTPUT"
+            echo "file=$RUNNER_TEMP/client.jks" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::No ANDROID_CLIENT_KEYSTORE_B64 / _PASS / ANDROID_CLIENT_KEY_ALIAS secrets: this APK is a debug build with the runner's debug key."
+          fi
+
+      - name: Build the APK
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+          CHAOS_KS_FILE: ${{ steps.ks.outputs.file }}
+          CHAOS_KS_PASS: ${{ secrets.ANDROID_CLIENT_KEYSTORE_PASS }}
+          CHAOS_KS_ALIAS: ${{ secrets.ANDROID_CLIENT_KEY_ALIAS }}
+        working-directory: chaos/client/android
+        run: |
+          set -euo pipefail
+          TASK=assembleDebug
+          if [ "${{ steps.ks.outputs.release }}" = yes ]; then TASK=assembleRelease; fi
+          gradle --no-daemon ":app:$TASK" \
+            -PchaosClientDir="$GITHUB_WORKSPACE/game" \
+            -PchaosDepsPrefix="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" \
+            -PchaosAssetsDir="$GITHUB_WORKSPACE/apk-assets" \
+            -PchaosClientBuild="$CLIENT_BUILD"
+
+      - name: Check the APK
+        run: |
+          set -euo pipefail
+          APK=$(find chaos/client/android/app/build/outputs/apk -name '*.apk' | head -1)
+          [ -n "$APK" ] || { echo "::error::no APK built"; exit 1; }
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" | head -3
+          "$BT/zipalign" -c -P 16 4 "$APK"   # 16 KB page alignment of the native library
+          "$BT/aapt2" dump badging "$APK" | grep -E "^package:|native-code"
+          mkdir out
+          cp "$APK" out/CindersOfChaos-Android.apk
+          (cd out && sha256sum CindersOfChaos-Android.apk | tee CindersOfChaos-Android.apk.sha256)
+          echo "APK: $(du -h out/CindersOfChaos-Android.apk | cut -f1), signing: ${{ steps.ks.outputs.release == 'yes' && 'release key' || 'debug key' }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CindersOfChaos-Android
+          path: out/
+          retention-days: 14
+          if-no-files-found: error

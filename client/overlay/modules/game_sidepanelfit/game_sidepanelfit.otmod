@@ -1,0 +1,11 @@
+Module
+  name: game_sidepanelfit
+  description: The right and left horizontal panels take no space while they hold nothing visible
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 1000
+  dependencies: [ game_interface ]
+  scripts: [ sidepanelfit_logic, sidepanelfit ]
+  @onLoad: ChaosSidePanelFit.init()
+  @onUnload: ChaosSidePanelFit.terminate()

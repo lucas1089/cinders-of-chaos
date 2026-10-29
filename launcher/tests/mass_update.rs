@@ -632,3 +632,69 @@ fn a_dead_feed_does_not_touch_the_update() {
     w.assert_is(&r1);
     w.assert_clean();
 }
+
+#[test]
+fn old_files_of_an_earlier_release_are_removed() {
+    let w = World::new("stale");
+    rel(
+        1,
+        &[
+            ("Chaos.exe", b"exe v1"),
+            ("a.dll", b"dll v1"),
+            ("old.dll", b"old v1"),
+            ("oldpack.pack", b"pack v1"),
+        ],
+    )
+    .publish(&w.srv, &w.kp);
+    let o = run(&w, World::fast()).unwrap();
+    assert!(o.removed.is_empty(), "first run removes nothing: {:?}", o.removed);
+    // files the launcher never installed, and a folder with a native name, are not its to remove
+    std::fs::write(w.dir.join("mine.dll"), b"player file").unwrap();
+    std::fs::create_dir(w.dir.join("dir.dll")).unwrap();
+    std::fs::write(w.dir.join("dir.dll").join("x"), b"x").unwrap();
+    // a hand-edited owned list cannot reach outside the install folder or past the name rules
+    let owned = w.dir.join(STATE_DIR).join("owned.json");
+    let mut names: Vec<serde_json::Value> =
+        serde_json::from_str::<serde_json::Value>(&std::fs::read_to_string(&owned).unwrap()).unwrap()["files"]
+            .as_array()
+            .unwrap()
+            .clone();
+    for extra in ["mine.dll", "dir.dll", "../outside.dll", "sub/inner.dll", "notes.txt"] {
+        names.push(extra.into());
+    }
+    std::fs::write(&owned, serde_json::json!({"files": names}).to_string()).unwrap();
+    let outside = w.dir.parent().unwrap().join("outside.dll");
+    std::fs::write(&outside, b"not ours").unwrap();
+    std::fs::write(w.dir.join("notes.txt"), b"notes").unwrap();
+
+    let r2 = rel(
+        2,
+        &[("Chaos.exe", b"exe v2"), ("a.dll", b"dll v1"), ("new.pack", b"pack v2")],
+    );
+    r2.publish(&w.srv, &w.kp);
+    let o = run(&w, World::fast()).unwrap();
+    let mut gone = o.removed.clone();
+    gone.sort();
+    assert_eq!(
+        gone,
+        vec!["mine.dll", "old.dll", "oldpack.pack"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>()
+    );
+    assert!(w.read("old.dll").is_none() && w.read("oldpack.pack").is_none());
+    assert!(w.dir.join("dir.dll").join("x").is_file(), "a folder is never removed");
+    assert!(outside.is_file(), "nothing outside the install folder");
+    assert!(w.dir.join("notes.txt").is_file(), "only .exe .dll .pack names");
+    w.assert_is(&r2);
+    w.assert_clean();
+    let _ = std::fs::remove_file(&outside);
+
+    // the list now holds the current files: a third release that drops new.pack removes exactly that
+    let r3 = rel(3, &[("Chaos.exe", b"exe v2"), ("a.dll", b"dll v1")]);
+    r3.publish(&w.srv, &w.kp);
+    let o = run(&w, World::fast()).unwrap();
+    assert_eq!(o.removed, vec!["new.pack".to_string()]);
+    assert!(w.read("new.pack").is_none());
+    assert!(w.dir.join("dir.dll").is_dir());
+}

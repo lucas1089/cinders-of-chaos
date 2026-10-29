@@ -166,6 +166,10 @@ jobs:
           # pair 53 redraws the cursed chest 38642 as one 32 x 32 tile (PixelLab file K3, ours): source, atlas, things
           # file and sums match the generator, and the look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build-k3 --check
+          # the three store inbox icons (PixelLab redraws of items 38608, 38609, 38611): committed sources, atlas, things file and sums
+          # match the generator and each passes style_check against its theme
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_inbox_icons_art.py build --check
+          python3 -I client/tools/sprites/gen_inbox_icons_art_test.py
           python3 -I client/tools/sprites/gen_cursed_chest_art_test.py
           # the Everfull potion looks of pair 44 (twelve PixelLab flasks, 1 x 1 items): committed sources, atlas, things file
           # and sums match the generator, each look passes style_check, and the ids agree with potions_config.lua
@@ -928,6 +932,11 @@ jobs:
 
       - name: Help channel assistant sidecar (limits, budget, API errors, knowledge; fake client, no network) and its help.lua hook
         run: python3 -I server/tools/helpai_test.py
+
+      - name: Discord bot for bug reports and patch notes (O324; pure core and Claude wrapper with fakes, no Discord, no network)
+        run: |
+          python3 -I server/deploy/discord_bot/bot_core_test.py
+          python3 -I server/deploy/discord_bot/claude_client_test.py
 
       - name: Host trial (steal, fio and ping parsing, single-core maths, verdicts, load report; bash -n of the scripts)
         run: python3 -I server/tools/host_trial_test.py

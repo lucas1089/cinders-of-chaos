@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cinders of Chaos</string>
+    <string name="fatal_title">Cinders of Chaos: fatal error</string>
+    <string name="fatal_close">Close</string>
+    <string name="edit_ok">OK</string>
+    <string name="edit_cancel">Cancel</string>
+</resources>

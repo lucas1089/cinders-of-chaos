@@ -7347,8 +7347,9 @@ keys, containers and every item with a use of its own work as before.
   a plain use of one in an open container or the inventory through to `chaosUseEquip` (its use with is not run), and
   the client module sends that plain use for the multi-use weapons the server lists at login (`rightclick_equip.lua`:
   every multi-use item type that is equipment, minus those with any other action in `data/actions/actions.xml`, minus
-  `keepUseWith`; 384 looks on the test server). The machete, the crowbar and the scythe are weapons with tool actions:
-  they are not listed and keep their use with. "Use with ..." stays in the context menu of every multi-use weapon.
+  `keepUseWith`; 384 looks on the test server). Tools that are weapons here (crowbar, machete, scythe, pick, shovel, sickle, knife) are listed too and equip on a right-click
+  (config `toolWeaponsKeepUseWith = false`; before, they were left out and a right-click on the crowbar started a use with).
+  "Use with ..." stays in the context menu of every multi-use weapon, so prying and digging still work from there.
 - **The option** "Right-click equips items" (Options > Interface, client base patch 0037, on by default): the client
   sends extended opcode **188** `{"on": true | false}` at every login and when it changes; `rightclick_equip.lua` keeps
   storage 7101810 at 1 while it is off, and the engine then answers a use as before. Opcode 188 is free in the reference
@@ -26425,7 +26426,16 @@ The engine's vocation string hides an ascended class whose base class is listed,
 the Beastmaster (a bow class) cannot wield it. `T.vocationText` in `item_tooltip_core.lua` expands a listed Ranger or
 Warrior into the classes of the install rule (`add_vocations.py`): Ranger, Deadeye, and the Beastmaster only for bows,
 arrows and non-weapon gear; Warrior, Juggernaut, and the Berserker only for two-handed swords, axes, clubs and non-hand
-gear. Unknown names stay as the engine wrote them. Test: `tests/item_tooltip_test.lua`. Client spell lists: a Chaos
+gear. Unknown names stay as the engine wrote them.
+
+Every worn item gets the line (owner 2026-10-29: "alguns equipamentos ainda não mostram pra qual classe são"). The engine's
+vocation string is empty when the item's equip event lists no class, as for a stock Warrior Helmet, and the tooltip then
+printed nothing. `T.classLine` now gives: the class lines of a unique's own equip rule (`spec.equip.lines`, what
+`chaos_unique_equip.lua` enforces), else the engine list named by `T.vocationText`, else "all classes" for any item with a
+worn slot (helmet, armour, legs, boots, ring, amulet, weapon, shield, quiver). A backpack and a badge show no line. The
+client prints it as "For all classes"; no client change. The line only reports the rule, it never changes it: a stock
+Warrior Helmet is worn by every class. Tests: `tests/item_tooltip_test.lua`, `tests/class_line_test.lua` (walks the
+equipment sets, the uniques and the stock equipment of `data/items/base_item_values.csv`; fails when one renders no line). Client spell lists: a Chaos
 spell matches the exact server vocation ids (`ChaosSpellFix.allowsVocation`); `tools/ci/check_rotation_kit.py` compares
 spelldata.lua with the server spell XML.
 
@@ -26461,3 +26471,42 @@ over the aura's range for the Templar and its party members (client/MANIFEST.md 
   nothing twice). `tests/templar_test.lua` still covers the aura and the combat rules.
 - **Install.** Nothing: scripts only. Ship the client build with `game_chestaura` first (an older client ignores opcode 118 and shows
   no aura at all, as the effect is gone).
+
+## Discord bot for bug reports and patch notes (O324) (`deploy/discord_bot/`, `deploy/chaos-discordbot.service`, `chaos-ctl.sh discord-bot`)
+
+A Discord bot on the game VPS, separate from the announcement worker (`chaos-discord.timer`, webhooks). It reads the bugs channel,
+asks Claude what each message is, keeps a bug list and helps write patch notes. The owner's guide in pt-BR is
+`deploy/discord_bot/README.md`: Developer Portal, ids, API key, install, cost.
+
+- **Split.** `bot_core.py` is pure (settings, authorisation, images for vision, prompts, parsing, the SQLite store, duplicates, status
+  changes, patch note rendering, daily summary). `claude_client.py` makes the calls with an injected client. `bot.py` is the thin
+  discord.py layer. Tests: `bot_core_test.py`, `claude_client_test.py` (fakes, no network), and `test_discord_bot` in `chaos_ctl_test.py`.
+- **Claude.** Default model `claude-sonnet-5-5` (`DISCORD_BOT_MODEL`). Structured output (`output_config.format` json_schema), effort
+  `low` for a message and `medium` for patch notes and priorities, no thinking, sampling or forced tool_choice settings (the model
+  rejects them), screenshots as base64 image blocks (png, jpeg, gif, webp, at most 4 per message, 5 MB each). With
+  `DISCORD_BOT_FALLBACKS=1` (default) the request goes to `client.beta.messages` with `server-side-fallback-2026-07-01` and
+  `fallbacks: "default"`, so a request the safety classifiers decline is re-run server-side; `0` uses the plain endpoint. A refusal
+  or a cut answer is an error: the message is not recorded and the owner gets one DM an hour about it. The prompt is not cached: the
+  stable part is under the minimum cacheable size.
+- **Rules.** A kind `bug` is new or a duplicate of an open bug Claude names (an id that is not open is dropped). A player's second
+  report of a bug does not raise the count. A duplicate raises the bug's severity to the worst seen; a bug that becomes critical alerts
+  the owner once. Status changes follow `TRANSITIONS` in `bot_core.py`; `duplicado` needs the original, moves the reports and the count
+  there, and refuses an original that is itself a duplicate. A message is handled once (unique message id). One Claude call per author
+  per hour is capped (`DISCORD_BOT_USER_LIMIT_HOUR`, default 20), and messages are handled one at a time so two reports in a row see each other.
+- **Privacy.** The text of a message is never stored or logged: a bug keeps Claude's title, summary and steps, the author id, the
+  message id and its link. Logs hold ids and counters. The message text and the screenshots go to the Anthropic API.
+- **Patch notes.** `/patch gerar` takes the fixed bugs without a patch (`patched_in`) and the owner's extras and asks for Portuguese and
+  English notes together; `/patch escrever` is a modal (Lead :: text, one per line) and the English twin is translated at Publicar.
+  Publishing posts the embed(s) to `DISCORD_PATCH_CHANNEL_ID` and writes `<id>.md` and `<id>.pt-br.md` (format of
+  `patchnotes_core.lua`) into `DISCORD_BOT_DATA_DIR/patchnotes`, never over an existing id. The bot has no write access to the game, so
+  `chaos-ctl.sh discord-bot patchnotes` copies the new files into `SERVER/data/patchnotes` (the game lists it every 60 s at most).
+  Commit them to `server/data/patchnotes` as well, or the next install does not have them.
+- **Install.** `chaos-ctl.sh discord-bot install` (idempotent): user `chaosbot`, `CHAOS_BOT_DIR/venv` (default `/opt/chaos/discord-bot`)
+  from the pinned `requirements.txt`, the code copied to `CHAOS_BOT_DIR/app`, `/etc/chaos/discord-bot.env` (mode 600, from
+  `.env.example`), data dir `/var/lib/chaos/discord-bot` (750), `chaos-discordbot.service` (sandboxed like the other services, writes
+  only the data dir, exit 2 = settings missing is not restarted), logrotate. `set NAME` takes one value on stdin and checks it per name;
+  `start` refuses with `config-missing` until the five required ones are set. Settings in `ctl.conf`: `CHAOS_BOT_USER`,
+  `CHAOS_BOT_ENV`, `CHAOS_BOT_DIR`, `CHAOS_BOT_DATA`, `CHAOS_BOT_LOG`, `CHAOS_BOT_PYTHON`. Admin app: Comandos > Bot do Discord;
+  desktop table: `commands.rs` group Bot do Discord.
+- **Not done.** No live run (the fallbacks parameter together with structured output is untested against the real API), the Android card
+  is not compiled here, and the slash commands are checked in code only (no permission override in the server settings).

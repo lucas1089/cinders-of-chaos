@@ -44,7 +44,7 @@ local function list()
 				container = it:isContainer(), slotPosition = it:getSlotPosition(), weaponType = it:getWeaponType()}
 		end
 	end
-	local ids = R.multiUseIds(items, R.toolIds(xml, cfg.destroyScripts), keep, _G)
+	local ids = R.multiUseIds(items, cfg.toolWeaponsKeepUseWith and R.toolIds(xml, cfg.destroyScripts) or {}, keep, _G)
 	listJson = json.encode(R.listMessage(ids))
 	print(string.format("[Chaos right-click equip] %d multi-use weapon look(s) equip on a right-click", #ids))
 	return listJson

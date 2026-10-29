@@ -126,5 +126,12 @@ V.onSpellQuest(st, nil)
 eq(#st.spellquest, 0, 'spellquest: nil payload')
 eq(#V.new().spellquest, 0, 'new state has the section')
 
+-- tracker anchors: same result for the same panels, with and without left side panels
+local a = V.trackerAnchors(true)
+eq(a[1][2], 'gameLeftPanels', 'anchored to the left panels'); eq(a[1][3], 'right', 'their right edge')
+eq(a[2][2], 'gameMapPanel', 'centred on the map')
+a = V.trackerAnchors(false)
+eq(a[1][2], 'gameMapPanel', 'no left panels: map'); eq(a[1][3], 'left', 'map left edge')
+
 if fails > 0 then print('goalsview_test: ' .. fails .. ' failure(s)'); os.exit(1) end
 print('goalsview_test: ' .. checks .. ' checks OK')

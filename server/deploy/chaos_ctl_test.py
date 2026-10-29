@@ -581,6 +581,7 @@ def main():
     test_metrics()
     test_feedback()
     test_discord()
+    test_discord_bot()
     test_server_user()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
@@ -1520,6 +1521,203 @@ exit 0
 
         check(not any(token in t or token[::-1] in t for t in seen), 'no output of any discord command holds a webhook token')
         check('webhooks' not in calls(), 'no command line (stubs) saw a webhook URL')
+
+
+def test_discord_bot():
+    """discord-bot install | set | start | stop | restart | status | logs | patchnotes (server/deploy/discord_bot/)"""
+    token = 'MTA1NzAxMjM0NTY3ODkwMTIz.GaBcDe.' + 'x' * 30
+    key = 'sk-ant-api03-' + 'Z' * 40
+    sysctl = '''#!/usr/bin/env bash
+echo "systemctl $*" >> "$STUB/calls"
+case "$*" in
+  is-active*) [ -e "$STUB/active" ] && echo active || { echo inactive; exit 3; } ;;
+  is-enabled*) [ -e "$STUB/enabled" ] && echo enabled || echo disabled ;;
+  enable*) touch "$STUB/enabled" ;;
+  start*|restart*) touch "$STUB/active" ;;
+  stop*) rm -f "$STUB/active" ;;
+  show*) echo "Tue 2026-10-20 06:00:01 UTC" ;;
+esac
+exit 0
+'''
+    # CHAOS_BOT_PYTHON: -c checks pass, -m venv DIR makes DIR/bin/pip and DIR/bin/python3 stubs (no network, no pip)
+    py = '''#!/usr/bin/env bash
+echo "python $*" >> "$STUB/calls"
+if [ "$1" = "-m" ] && [ "$2" = "venv" ]; then
+  mkdir -p "$3/bin"
+  printf '#!/usr/bin/env bash\\necho "pip $*" >> "$STUB/calls"\\n[ -z "${STUB_PIP_FAIL:-}" ]\\n' > "$3/bin/pip"
+  printf '#!/usr/bin/env bash\\nexit 0\\n' > "$3/bin/python3"
+  chmod +x "$3/bin/pip" "$3/bin/python3"
+fi
+exit 0
+'''
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        bsrc = os.path.join(repo, 'server', 'deploy', 'discord_bot')
+        sysd = os.path.join(tmp, 'systemd')
+        server = os.path.join(tmp, 'server')
+        for d in (stub, bsrc, sysd, os.path.join(server, 'data')):
+            os.makedirs(d)
+        for f in ('bot.py', 'bot_core.py', 'claude_client.py', 'requirements.txt', '.env.example'):
+            shutil.copy(os.path.join(HERE, 'discord_bot', f), bsrc)
+        for f in ('chaos-discordbot.service', 'chaos.logrotate'):
+            shutil.copy(os.path.join(HERE, f), os.path.join(repo, 'server', 'deploy', f))
+        for name, body in (('systemctl', sysctl), ('fakepython', py)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        me = subprocess.run(['id', '-un'], capture_output=True, text=True).stdout.strip()
+        envf = os.path.join(tmp, 'etc', 'discord-bot.env')
+        botdir, data, blog = os.path.join(tmp, 'opt', 'bot'), os.path.join(tmp, 'var', 'bot'), os.path.join(tmp, 'bot.log')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=server, CHAOS_REPO=repo, CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'),
+                   CHAOS_BOT_USER=me, CHAOS_BOT_ENV=envf, CHAOS_BOT_DIR=botdir, CHAOS_BOT_DATA=data, CHAOS_BOT_LOG=blog,
+                   CHAOS_BOT_PYTHON=os.path.join(stub, 'fakepython'), CHAOS_BOT_WAIT='0', CHAOS_SYSTEMD_DIR=sysd,
+                   CHAOS_LOGROTATE_FILE=os.path.join(tmp, 'logrotate-chaos'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR'):
+            env.pop(k, None)
+        seen = []
+
+        def run(*args, stdin=None, extra=None):
+            r = subprocess.run(['bash', SCRIPT, 'discord-bot'] + list(args), env=dict(env, **(extra or {})), input=stdin,
+                               capture_output=True, text=True)
+            seen.append(r.stdout + r.stderr)
+            return r
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def kvs(r):
+            return dict(l.split('=', 1) for l in r.stdout.splitlines() if '=' in l and not l.startswith(('(', '@')))
+
+        # before the install: status works, start refuses, set refuses
+        k = kvs(run('status'))
+        check(k.get('installed') == 'no' and k.get('unit_installed') == 'no' and k.get('env_file') == 'missing'
+              and k.get('set_DISCORD_TOKEN') == 'no', 'status before install: %s' % k)
+        r = run('start')
+        check(r.returncode != 0 and 'not-installed' in r.stderr, 'start before install is refused: ' + r.stderr)
+        r = run('set', 'DISCORD_TOKEN', stdin=token + '\n')
+        check(r.returncode != 0 and 'not-installed' in r.stderr and not os.path.exists(envf), 'set before install is refused')
+
+        # install
+        r = run('install')
+        check(r.returncode == 0 and 'discord-bot install: ok' in r.stdout and 'missing settings: DISCORD_TOKEN' in r.stdout,
+              'install: ' + r.stdout + r.stderr)
+        for f in ('bot.py', 'bot_core.py', 'claude_client.py'):
+            check(os.path.exists(os.path.join(botdir, 'app', f)), 'install copies ' + f)
+        check(stat.S_IMODE(os.stat(envf).st_mode) == 0o600, 'the settings file is mode 600')
+        check('DISCORD_TOKEN=' in open(envf).read(), 'the settings file starts from .env.example')
+        unit = open(os.path.join(sysd, 'chaos-discordbot.service')).read()
+        check('User=%s' % me in unit and 'EnvironmentFile=' + envf in unit and botdir + '/venv/bin/python3 -I ' + botdir + '/app/bot.py' in unit
+              and 'ReadWritePaths=' + data in unit and 'append:' + blog in unit and 'User=chaosbot' not in unit and 'Group=chaosbot' not in unit,
+              'the unit gets the configured user and paths: ' + unit)
+        c = calls()
+        check('python -m venv ' + botdir + '/venv' in c and 'pip install' in c and '-r ' + bsrc + '/requirements.txt' in c,
+              'install makes the venv and installs the pinned requirements: ' + c)
+        check('systemctl enable chaos-discordbot' in c and 'systemctl daemon-reload' in c and 'systemctl start' not in c,
+              'install enables, does not start')
+        check(os.path.exists(os.path.join(tmp, 'logrotate-chaos')), 'install adds the logrotate file')
+        check(stat.S_IMODE(os.stat(data).st_mode) == 0o750, 'the data dir is mode 750')
+
+        # idempotent: nothing is redone, a changed file is copied
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('install')
+        c = calls()
+        check(r.returncode == 0 and 'requirements: already installed' in r.stdout and 'unit: already installed' in r.stdout
+              and 'pip install' not in c and '-m venv' not in c and 'restart' not in c, 'install twice changes nothing: ' + r.stdout + c)
+        with open(os.path.join(bsrc, 'bot.py'), 'a') as f:
+            f.write('# changed\n')
+        touch_active = open(os.path.join(stub, 'active'), 'w')
+        touch_active.close()
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('install')
+        check('systemctl restart chaos-discordbot' in calls() and 'pip install' not in calls()
+              and open(os.path.join(botdir, 'app', 'bot.py')).read().endswith('# changed\n'),
+              'new code is copied and the running bot restarted: ' + r.stdout)
+        os.remove(os.path.join(stub, 'active'))
+        r = run('install', extra={'STUB_PIP_FAIL': '1'})
+        check(r.returncode == 0, 'pip is not run again for the same requirements')
+        shutil.rmtree(os.path.join(botdir, 'venv'))
+        r = run('install', extra={'STUB_PIP_FAIL': '1'})
+        check(r.returncode != 0 and 'pip install failed' in r.stderr, 'a failed pip install fails the command')
+        r = run('install')
+        check(r.returncode == 0 and 'requirements: installed' in r.stdout, 'a missing venv is made again')
+        r = run('install', 'x')
+        check(r.returncode != 0, 'install takes no argument')
+
+        # set: validated per name, mode 600, only that line replaced, never printed
+        r = run('set', 'DISCORD_TOKEN', stdin=token + '\n')
+        check(r.returncode == 0 and 'saved' in r.stdout and token not in r.stdout + r.stderr, 'set token: ' + r.stdout + r.stderr)
+        r = run('set', 'ANTHROPIC_API_KEY', stdin=key + '\n')
+        check(r.returncode == 0 and key not in r.stdout + r.stderr, 'set key')
+        body = open(envf).read()
+        check(body.count('DISCORD_TOKEN=') == 1 and 'DISCORD_TOKEN=' + token in body and 'ANTHROPIC_API_KEY=' + key in body
+              and stat.S_IMODE(os.stat(envf).st_mode) == 0o600, 'values in the file, mode 600, one line each')
+        for name, bad in (('DISCORD_TOKEN', 'short'), ('DISCORD_TOKEN', token + '\nFOO=1'), ('ANTHROPIC_API_KEY', 'sk-xyz'),
+                          ('DISCORD_OWNER_ID', 'abc'), ('DISCORD_OWNER_ID', '12'), ('DISCORD_BOT_MODEL', 'a b'),
+                          ('DISCORD_OWNER_ID', '123456; id'), ('DISCORD_OWNER_ID', '$(id)')):
+            before = open(envf).read()
+            r = run('set', name, stdin=bad + '\n')
+            check(r.returncode != 0 and open(envf).read() == before, 'set refuses %s=%r' % (name, bad))
+        for bad in ('PATH', 'discord_token', 'DISCORD_TOKEN;id', '', 'A B'):
+            r = run('set', bad, stdin='123456\n')
+            check(r.returncode != 0, 'set refuses the name %r' % bad)
+        check(run('set', 'DISCORD_OWNER_ID', '123456').returncode != 0, 'a value on the command line is no input')
+        for name in ('DISCORD_OWNER_ID', 'DISCORD_BUGS_CHANNEL_ID'):
+            check(run('set', name, stdin='111111111111111111\n').returncode == 0, 'set ' + name)
+
+        # start needs all five settings
+        r = run('start')
+        check(r.returncode != 0 and 'config-missing: DISCORD_PATCH_CHANNEL_ID' in r.stderr and 'DISCORD_TOKEN' not in r.stderr
+              and 'systemctl start' not in calls(), 'start names only the missing settings: ' + r.stderr)
+        check(run('set', 'DISCORD_PATCH_CHANNEL_ID', stdin='222222222222222222\n').returncode == 0, 'set the last one')
+        r = run('start')
+        check(r.returncode == 0 and 'is active' in r.stdout and 'systemctl start chaos-discordbot' in calls(), 'start: ' + r.stdout + r.stderr)
+        r = run('restart')
+        check(r.returncode == 0 and 'systemctl restart chaos-discordbot' in calls(), 'restart')
+        k = kvs(run('status'))
+        check(k.get('installed') == 'yes' and k.get('unit_active') == 'active' and k.get('unit_enabled') == 'enabled'
+              and k.get('set_DISCORD_TOKEN') == 'yes' and k.get('set_DISCORD_GUILD_ID') == 'no'
+              and k.get('env_file', '').startswith('600') and k.get('model') == 'claude-sonnet-5-5', 'status after install: %s' % k)
+        check(run('set', 'DISCORD_BOT_MODEL', stdin='claude-opus-5-5\n').returncode == 0
+              and kvs(run('status')).get('model') == 'claude-opus-5-5', 'the model setting shows in status')
+        check(run('set', 'DISCORD_BOT_MODEL', stdin='\n').returncode == 0 and '\nDISCORD_BOT_MODEL=' not in open(envf).read(),
+              'an empty value removes the line')
+        r = run('stop')
+        check(r.returncode == 0 and not os.path.exists(os.path.join(stub, 'active')), 'stop')
+        r = run('start', extra={'STUB_NOPE': '1'})
+        check(r.returncode == 0, 'start again')
+
+        # logs: tokens and keys masked
+        with open(blog, 'w') as f:
+            f.write('line one\nlogin with %s\nkey %s\nlast\n' % (token, key))
+        r = run('logs', '3')
+        check(r.returncode == 0 and token not in r.stdout and key not in r.stdout and '***' in r.stdout and 'last' in r.stdout
+              and 'line one' not in r.stdout, 'logs mask tokens and keys: ' + r.stdout)
+        check('sk-ant-***' in run('logs').stdout, 'key masked as sk-ant-***')
+        check(run('logs', 'x').returncode != 0 and run('logs', '1', '2').returncode != 0, 'logs refuses bad arguments')
+        r = run('status')
+        check(token not in r.stdout and key not in r.stdout and 'last' in r.stdout, 'status log tail is masked')
+        check(run('nope').returncode != 0 and run('status', 'x').returncode != 0, 'unknown subcommand and arguments refused')
+
+        # patchnotes: new files copied into SERVER/data/patchnotes, existing ones kept
+        os.makedirs(os.path.join(data, 'patchnotes'))
+        for n, t in (('2026-10-29.md', 'en'), ('2026-10-29.pt-br.md', 'pt')):
+            open(os.path.join(data, 'patchnotes', n), 'w').write(t)
+        r = run('patchnotes')
+        check(r.returncode == 0 and '2 files copied' in r.stdout and open(os.path.join(server, 'data', 'patchnotes', '2026-10-29.md')).read() == 'en',
+              'patchnotes copies new notes: ' + r.stdout + r.stderr)
+        open(os.path.join(server, 'data', 'patchnotes', '2026-10-29.md'), 'w').write('edited')
+        r = run('patchnotes')
+        check('0 files copied' in r.stdout and open(os.path.join(server, 'data', 'patchnotes', '2026-10-29.md')).read() == 'edited',
+              'patchnotes never overwrites')
+
+        joined = '\n'.join(seen)
+        check(token not in joined and key not in joined, 'no output of any discord-bot command holds a token or a key')
+        check(token not in calls() and key not in calls(), 'no command line (stubs) saw a token or a key')
 
 
 SU_SYSTEMCTL = """#!/usr/bin/env bash

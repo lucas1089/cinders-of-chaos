@@ -4,6 +4,13 @@
 -- logic and the reason it runs here: images are cached by path, so it must happen before the first window is built.
 -- Sets the global ChaosSkinBoot = { selected, skin, copied, changed, error } for client_chaos_theme.
 
+-- First the clean start (client/MANIFEST.md "Clean start after an update"): on a new client package or update the write
+-- folder loses everything that is not the player's own data, the old skin copies and the skin state file among it, so
+-- the sync below copies the chosen skin's images fresh. It is run from here because this file is the one start-up step
+-- of the overlay that an update replaces (bootstrap.lua runs from the pack, before any update is mounted).
+local okClean, errClean = pcall(dofile, '/modules/client_chaos_updater/cleanup_boot.lua')
+if not okClean then g_logger.warning('clean start: ' .. tostring(errClean)) end
+
 local core = dofile('/modules/client_chaos_theme/skin_core.lua')
 
 local function saved()

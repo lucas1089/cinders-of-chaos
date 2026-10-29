@@ -267,6 +267,9 @@ eq(stats.attack.v, 50) eq(stats.rarity_criticalHitAmount.v, 1, "pair split into 
 eq(stats.rarity_elementfire.l, "Fire Damage") eq(stats.gem_dmg_fire.v, 9, "gem effect in the compare numbers")
 eq(stats.chaos_mod_lifeonkill.fmt, nil, "flat Chaos modifier") eq(stats.rarity_swordSkill.v, 1)
 eq(tip.req.level, 80) eq(tip.req.voc, "knights") eq(tip.weight, 45)
+-- a worn item with no engine class list is for every class (a stock Warrior Helmet printed no line)
+eq(T.build(newItem(2466)).req.voc, "all classes", "armour with no class list")
+eq(T.build(newItem(2206)).req.voc, "all classes", "ring with no class list")
 -- O307: the class text names who may use the item (the Beastmaster is no crossbow class)
 do
 	local D5, A_ARROW, A_BOLT = 5, 2, 1

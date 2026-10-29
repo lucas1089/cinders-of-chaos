@@ -381,6 +381,20 @@
      "source": "https://github.com/jedisct1/rust-ed25519-compact"
     },
     {
+     "name": "Libraries of the Android client (vcpkg ports)",
+     "author": "Boost authors; the OpenSSL Project; Mike Pall (LuaJIT); Ryan C. Gordon (PhysicsFS); Dieter Baron and Thomas Klausner (libzip); Chris Robinson (OpenAL Soft); Xiph.Org (libogg, libvorbis); Jean-loup Gailly and Mark Adler (zlib); Julian Seward (bzip2)",
+     "licence": "Boost Software Licence 1.0 (Boost, headers only); Apache-2.0 (OpenSSL 3); MIT (LuaJIT); zlib licence (PhysicsFS, zlib); BSD-3-Clause (libzip, libogg, libvorbis); LGPL-2.0-or-later (OpenAL Soft); bzip2 licence (BSD style)",
+     "use": "the engine library of the Android client, built from source with the Android NDK (client/android/vcpkg/vcpkg.json pins the versions)",
+     "source": "https://github.com/microsoft/vcpkg"
+    },
+    {
+     "name": "Android NDK and LLVM libc++",
+     "author": "Google and the LLVM Project",
+     "licence": "Apache-2.0 with LLVM exceptions",
+     "use": "compiling the Android client; the C++ runtime is linked into its engine library",
+     "source": "https://developer.android.com/ndk"
+    },
+    {
      "name": "json.lua",
      "author": "rxi",
      "licence": "MIT",
@@ -437,8 +451,15 @@
      "name": "Anthropic Python SDK and the Claude API",
      "author": "Anthropic",
      "licence": "MIT (the SDK); the API is a paid service under Anthropic's terms",
-     "use": "Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)",
+     "use": "Ember, the Help channel assistant, and the Discord bot for bug reports and patch notes (both installed on the server by the owner, not shipped in the packages)",
      "source": "https://github.com/anthropics/anthropic-sdk-python"
+    },
+    {
+     "name": "discord.py, aiohttp and tzdata (Python packages)",
+     "author": "Rapptz and the discord.py contributors; the aiohttp contributors; the tzdata maintainers",
+     "licence": "MIT (discord.py); Apache-2.0 (aiohttp, tzdata); their other pinned dependencies in server/deploy/discord_bot/requirements.txt each under a permissive licence",
+     "use": "the Discord bot for bug reports and patch notes (installed on the server by the owner, not shipped in the packages)",
+     "source": "https://github.com/Rapptz/discord.py"
     },
     {
      "name": "serde_json, serde_core, itoa, memchr, zmij (Rust crates) and the Rust standard library",
@@ -470,7 +491,7 @@
     {
      "name": "PixelLab",
      "licence": "paid subscription",
-     "use": "painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons)"
+     "use": "painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons) and the redrawn icons of the Loot Bag, Orbs Pouch and Everfull Ration"
     },
     {
      "name": "AutoSprite",

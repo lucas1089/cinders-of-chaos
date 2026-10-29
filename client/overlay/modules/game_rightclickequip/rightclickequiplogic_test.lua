@@ -83,7 +83,7 @@ eq(L.shouldEquip(base), true, 'a listed multi-use weapon, right-clicked in the b
 eq(L.shouldEquip(with('option', false)), false, 'option off: the base use with')
 eq(L.shouldEquip(with('option', nil)), true, 'no option (older settings): on')
 eq(L.shouldEquip(with('multiUse', false)), false, 'not multi-use: the base already sends a use')
-eq(L.shouldEquip(with('clientId', 3308)), false, 'a tool (machete): its use with')
+eq(L.shouldEquip(with('clientId', 3308)), false, 'a look the server did not list: its use with')
 eq(L.shouldEquip(with('pos', { x = 100, y = 100, z = 7 })), false, 'on the map: the base')
 eq(L.shouldEquip(with('pos', { x = 0xFFFF, y = 6, z = 0 })), true, 'worn: plain use (takes it off)')
 eq(L.shouldEquip(with('mods', ctrl)), false, 'ctrl + right in classic: the menu')

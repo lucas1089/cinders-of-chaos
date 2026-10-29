@@ -7,6 +7,8 @@
 //!   journal.json          present only while a swap runs; a start that finds it puts the old files back first
 //!   state.json            {"version", "package"} of the last manifest applied (no replay of an older one)
 //!   hashcache.txt         name, size, mtime and SHA-256 of installed files (a 900 MB pack is not read every start)
+//!   owned.json            {"files": [names]} the native files of the last manifest applied; a name that the next
+//!                         manifest no longer lists is an old file of this launcher and is removed (see `remove_stale`)
 use crate::config::Config;
 use crate::i18n::{Error, Status};
 use crate::manifest::{self, blob_url, Manifest, NativeFile};
@@ -39,6 +41,8 @@ pub struct Outcome {
     /// Files put in place by this run.
     pub replaced: Vec<String>,
     pub downloaded: u64,
+    /// Files of an older release that the new manifest no longer lists, deleted from the install folder.
+    pub removed: Vec<String>,
     /// A new launcher is staged and takes over at the next start.
     pub launcher_staged: bool,
     /// The program to start (`native.game` of the manifest, or the configured one).
@@ -139,6 +143,67 @@ impl<'a> Updater<'a> {
     fn save_state(&self, m: &Manifest) -> Result<(), Error> {
         let v = json!({"version": m.version, "package": m.native.as_ref().map(|n| n.package)});
         write_atomic(&self.state_dir().join("state.json"), &v.to_string())
+    }
+
+    fn owned_path(&self) -> PathBuf {
+        self.state_dir().join("owned.json")
+    }
+
+    /// The native files an earlier run put in the install folder (empty before the first run of this version).
+    fn load_owned(&self) -> Vec<String> {
+        std::fs::read_to_string(self.owned_path())
+            .ok()
+            .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+            .and_then(|v| v.get("files").and_then(Value::as_array).cloned())
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|n| n.as_str().map(str::to_string))
+            .collect()
+    }
+
+    /// Old files of this launcher's own releases: removes every name the last run installed that the manifest now
+    /// leaves out (a renamed DLL, a pack of an older name), so no old file stays beside the new ones and gets loaded
+    /// first. Safe by construction: only names that pass `check_native_name` (a plain file name with an .exe, .dll or
+    /// .pack ending), only names an earlier manifest listed, never the game, the launcher or the running program,
+    /// only a regular file directly in the install folder (a link, a folder or a missing file is left alone). A file
+    /// that cannot be removed now (still in use) stays on the list and is tried again at the next run.
+    fn remove_stale(&self, native: &manifest::Native) -> Vec<String> {
+        let current = |n: &str| native.files.iter().any(|f| f.path.eq_ignore_ascii_case(n));
+        let me = self
+            .exe
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        let mut keep: Vec<String> = native.files.iter().map(|f| f.path.clone()).collect();
+        let mut removed = Vec::new();
+        for name in self.load_owned() {
+            if current(&name) || manifest::check_native_name(&name).is_some() {
+                continue;
+            }
+            if name.eq_ignore_ascii_case(&native.game)
+                || name.eq_ignore_ascii_case(&me)
+                || native
+                    .launcher
+                    .as_deref()
+                    .is_some_and(|l| l.eq_ignore_ascii_case(&name))
+            {
+                continue;
+            }
+            let path = self.cfg.dir.join(&name);
+            match std::fs::symlink_metadata(&path) {
+                Ok(m) if m.is_file() => {
+                    if std::fs::remove_file(&path).is_ok() {
+                        removed.push(name);
+                    } else {
+                        keep.push(name);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let v = json!({"files": keep});
+        let _ = write_atomic(&self.owned_path(), &v.to_string());
+        removed
     }
 
     fn load_cache(&self) -> HashMap<String, (u64, u128, String)> {
@@ -333,6 +398,7 @@ impl<'a> Updater<'a> {
             self.save_cache(&cache);
         }
         self.save_state(&m)?;
+        let removed = self.remove_stale(&native);
         let mut staged = false;
         if let Some(f) = launcher {
             io(
@@ -353,6 +419,7 @@ impl<'a> Updater<'a> {
             version: m.version,
             package: Some(native.package),
             replaced,
+            removed,
             downloaded: total,
             launcher_staged: staged,
             game: native.game,

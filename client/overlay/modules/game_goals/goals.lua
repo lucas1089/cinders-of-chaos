@@ -323,6 +323,47 @@ local function onGameEnd()
   renderTracker()
 end
 
+local EDGES = { left = AnchorLeft, right = AnchorRight, verticalCenter = AnchorVerticalCenter }
+local anchorEvent
+
+-- The tracker sits at the left edge of the map, half way down. Anchors are dropped and set again, so after the side
+-- panels changed (Options > Interface > Show Left Horizontal Panel adds a left panel, hiding it leaves one) the tracker
+-- is back at its corner and not where the old layout left it. The tracker is not draggable, so no dragged place is kept.
+local function anchorTracker()
+  if not tracker or tracker:isDestroyed() then return end
+  local root = modules.game_interface.getRootPanel()
+  if not root then return end
+  tracker:breakAnchors()
+  for _, a in ipairs(V.trackerAnchors(root:getChildById('gameLeftPanels') ~= nil)) do
+    tracker:addAnchor(EDGES[a[1]], a[2], EDGES[a[3]])
+  end
+  tracker:setMarginLeft(10)
+end
+
+-- called on every geometry change of the panels it hangs on, one pass per frame at most
+local function scheduleAnchor()
+  if anchorEvent then return end
+  anchorEvent = addEvent(function()
+    anchorEvent = nil
+    anchorTracker()
+  end)
+end
+
+local function watchGeometry(connectIt)
+  local root = modules.game_interface.getRootPanel()
+  for _, id in ipairs({ 'gameLeftPanels', 'gameMapPanel', 'horizontalLeftPanel' }) do
+    local w = root and root:recursiveGetChildById(id)
+    if w then
+      if connectIt then
+        if w.insertLuaCall then w:insertLuaCall('onGeometryChange') end
+        connect(w, { onGeometryChange = scheduleAnchor })
+      else
+        disconnect(w, { onGeometryChange = scheduleAnchor })
+      end
+    end
+  end
+end
+
 function init()
   window = g_ui.displayUI('goals')
   window:hide()
@@ -332,13 +373,8 @@ function init()
   local root = modules.game_interface.getRootPanel()
   tracker = g_ui.loadUI('tracker', root)
   tracker:hide()
-  if root:getChildById('gameLeftPanels') then
-    tracker:addAnchor(AnchorLeft, 'gameLeftPanels', AnchorRight)
-  else
-    tracker:addAnchor(AnchorLeft, 'gameMapPanel', AnchorLeft)
-  end
-  tracker:addAnchor(AnchorVerticalCenter, 'gameMapPanel', AnchorVerticalCenter)
-  tracker:setMarginLeft(10)
+  anchorTracker()
+  watchGeometry(true)
 
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
@@ -346,6 +382,8 @@ function init()
 end
 
 function terminate()
+  if anchorEvent then removeEvent(anchorEvent); anchorEvent = nil end
+  pcall(watchGeometry, false)
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   if window then

@@ -1,0 +1,50 @@
+# Cinders of Chaos Discord bot for bug reports and patch notes (server/deploy/discord_bot/, README.md in pt-BR;
+# server/README.md "Discord bot"). Installed by: chaos-ctl.sh discord-bot install (the admin app: Comandos > Bot do
+# Discord). Not the announcement worker of chaos-discord.service: this one is a long-running Discord bot.
+# Runs as its own user, with no access to the game files; the secrets are in /etc/chaos/discord-bot.env (mode 600,
+# read by systemd as root before the process drops to the user). The code is copied to /opt/chaos/discord-bot/app,
+# the venv is /opt/chaos/discord-bot/venv, the SQLite file and the patch notes it writes are in /var/lib/chaos/discord-bot.
+
+[Unit]
+Description=Cinders of Chaos Discord bot (bugs and patch notes)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=chaosbot
+Group=chaosbot
+EnvironmentFile=/etc/chaos/discord-bot.env
+ExecStart=/opt/chaos/discord-bot/venv/bin/python3 -I /opt/chaos/discord-bot/app/bot.py
+# a crash restarts it; exit 2 is "settings missing", which a restart cannot fix
+Restart=on-failure
+RestartSec=20
+RestartPreventExitStatus=2
+StandardOutput=append:/var/log/chaos/discord-bot.log
+StandardError=append:/var/log/chaos/discord-bot.log
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/chaos/discord-bot
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ProtectKernelLogs=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+LimitCORE=0
+MemoryMax=384M
+
+[Install]
+WantedBy=multi-user.target

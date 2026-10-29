@@ -226,6 +226,7 @@ final class CommandsTab {
         buildClientServicesImpl();
         buildAccounts();
         buildDiscord();
+        buildDiscordBot();
         buildHealth();
         buildServerUser();
         buildVps();
@@ -524,6 +525,93 @@ final class CommandsTab {
         MaterialButton status = ui.secondary("Atualizar status", R.drawable.ic_refresh);
         status.setOnClickListener(v -> discordStatus(now, fields, true));
         b.addView(ui.evenRow(test, status), ui.gap(4));
+        quick.addView(c, ui.gap(10));
+    }
+
+    // Discord bot for bug reports and patch notes (chaos-ctl.sh discord-bot, server/deploy/discord_bot/README.md). The token
+    // and the API key are passwords: each goes on stdin of discord-bot set, never on a command line, and the field is
+    // emptied after saving.
+    private void buildDiscordBot() {
+        MaterialCardView c = ui.titledCard("Bot do Discord (bugs e patch notes)");
+        LinearLayout b = Ui.body(c);
+        b.addView(ui.hint("Lê o canal de bugs, classifica com o Claude e avisa você. Ordem: Instalar, salvar os cinco "
+                + "valores abaixo, Iniciar. Os dois primeiros são senhas: vão pelo SSH, ficam só na VPS (arquivo "
+                + "/etc/chaos/discord-bot.env, modo 600) e o app não os mostra de volta. Passo a passo: "
+                + "server/deploy/discord_bot/README.md."));
+        MaterialButton install = ui.primary("Instalar ou atualizar", 0);
+        install.setOnClickListener(v -> a.confirm("Instalar o bot do Discord?", "Cria o usuário chaosbot, o virtualenv e "
+                + "instala as bibliotecas (alguns minutos). Pode rodar de novo para atualizar o código: se o bot "
+                + "estiver ligado, reinicia.", "Instalar", false,
+                () -> ctl("Bot do Discord: instalar", "discord-bot install", 600, null)));
+        b.addView(install, ui.gap(8));
+        final Map<String, String> keys = new LinkedHashMap<>();
+        keys.put("DISCORD_TOKEN", "Token do bot (senha)");
+        keys.put("ANTHROPIC_API_KEY", "Chave da API da Anthropic (senha)");
+        keys.put("DISCORD_OWNER_ID", "Seu id de usuário no Discord");
+        keys.put("DISCORD_BUGS_CHANNEL_ID", "Id do canal de bugs");
+        keys.put("DISCORD_PATCH_CHANNEL_ID", "Id do canal de patch notes");
+        keys.put("DISCORD_GUILD_ID", "Id do servidor (comandos aparecem na hora)");
+        for (Map.Entry<String, String> e : keys.entrySet()) {
+            final String key = e.getKey();
+            final boolean secret = key.equals("DISCORD_TOKEN") || key.equals("ANTHROPIC_API_KEY");
+            TextInputLayout f = ui.field(e.getValue(), "Cole o valor. Vazio + Salvar remove.", "",
+                    secret ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
+                            | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS : InputType.TYPE_CLASS_NUMBER);
+            final android.widget.EditText pe = f.getEditText();
+            if (pe != null && secret) {
+                final String skey = "discordbot-" + key;
+                pe.setOnFocusChangeListener((v, focus) -> a.secret(skey, focus || pe.length() > 0));
+                pe.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int st, int cnt, int af) {
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int st, int bf, int cnt) {
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable ed) {
+                        a.secret(skey, pe.hasFocus() || ed.length() > 0);
+                    }
+                });
+            }
+            MaterialButton save = ui.secondary("Salvar", 0);
+            save.setOnClickListener(v -> {
+                if (!a.store.configured()) {
+                    a.snack("Configure o servidor na aba Config.", false);
+                    return;
+                }
+                String value = Ui.value(f).trim();
+                result.running("Bot do Discord: " + e.getValue());
+                a.ctlAction("discord-bot set " + key, 40, value + "\n", r -> {
+                    result.show("Bot do Discord", r);
+                    a.snack(e.getValue() + ": " + (r.ok ? (value.isEmpty() ? "removido" : "salvo") : r.title), r.ok);
+                    if (r.ok) {
+                        Ui.setValue(f, "");
+                    }
+                });
+            });
+            b.addView(f, ui.gap(8));
+            b.addView(save, ui.gap(2));
+        }
+        MaterialButton start = ui.primary("Iniciar", R.drawable.ic_play);
+        start.setOnClickListener(v -> ctl("Bot do Discord: iniciar", "discord-bot start", 60, null));
+        MaterialButton restart = ui.secondary("Reiniciar", R.drawable.ic_refresh);
+        restart.setOnClickListener(v -> ctl("Bot do Discord: reiniciar", "discord-bot restart", 60, null));
+        b.addView(ui.evenRow(start, restart), ui.gap(10));
+        MaterialButton status = ui.secondary("Estado", R.drawable.ic_refresh);
+        status.setOnClickListener(v -> ctl("Bot do Discord: estado", "discord-bot status", 40, null));
+        MaterialButton logs = ui.secondary("Logs", 0);
+        logs.setOnClickListener(v -> ctl("Bot do Discord: logs", "discord-bot logs 80", 40, null));
+        b.addView(ui.evenRow(status, logs), ui.gap(4));
+        MaterialButton notes = ui.secondary("Levar patch notes ao jogo", 0);
+        notes.setOnClickListener(v -> ctl("Bot do Discord: patch notes", "discord-bot patchnotes", 60, null));
+        MaterialButton stop = ui.danger("Parar", R.drawable.ic_stop);
+        stop.setOnClickListener(v -> a.confirm("Parar o bot do Discord?", "Ele para de ler o canal de bugs e de mandar o "
+                + "resumo diário até você iniciar de novo. Os bugs ficam salvos.", "Parar", true,
+                () -> ctl("Bot do Discord: parar", "discord-bot stop", 60, null)));
+        b.addView(ui.evenRow(notes, stop), ui.gap(4));
         quick.addView(c, ui.gap(10));
     }
 
