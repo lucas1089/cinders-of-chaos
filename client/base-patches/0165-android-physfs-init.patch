@@ -1,0 +1,19 @@
+# Chaos: PhysFS init on Android (O313 phase 2; client/BASE.md "0165"; core/resourcemanager.cpp; after 0001-0164). On Android PhysFS 3.x
+# reads the argv0 of PHYSFS_init as a PHYSFS_AndroidInit pointer. The engine passed the base's apk file name, so PhysFS used its first
+# bytes as a JNIEnv pointer and the app died at start (SIGSEGV, fault addr 0, emulator smoke test). NULL is the documented value
+# without JNI: the base dir is "/" and the engine never reads it on Android (data.zip comes from the asset manager, the write dir is
+# the activity's internalDataPath).
+--- a/src/framework/core/resourcemanager.cpp
++++ b/src/framework/core/resourcemanager.cpp
+@@ -195,7 +195,11 @@
+ #else
+     m_binaryPath = std::filesystem::absolute(argv0);    
+ #endif
++#if defined(ANDROID)
++    PHYSFS_init(nullptr); // PhysFS reads argv0 as a PHYSFS_AndroidInit* on Android, never as a path
++#else
+     PHYSFS_init(argv0);
++#endif
+     PHYSFS_permitSymbolicLinks(1);
+ }
+ 
