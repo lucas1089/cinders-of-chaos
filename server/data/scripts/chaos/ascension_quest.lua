@@ -246,7 +246,14 @@ local function monsterLevel(monster)
 		local mt = monster:getType()
 		lvl = mt and Q.estimateLevel(mt:experience(), mt:maxHealth()) or 0
 	end
-	return Chaos.monsterHuntingLevel(monster, Chaos.huntingLevel(lvl))
+	local hunting = Chaos.monsterHuntingLevel(monster, Chaos.huntingLevel(lvl))
+	-- a cursed chest monster is scaled to the opener's level (cursedchest.lua): that level counts, as the nameplate shows
+	local CCh = ChaosCursedChest
+	local scaled = CCh and CCh.levelOf and CCh.levelOf(monster)
+	if tonumber(scaled) and tonumber(scaled) > hunting then
+		hunting = tonumber(scaled)
+	end
+	return hunting
 end
 
 function S.creditProof(player, tier, level)
@@ -519,6 +526,15 @@ local function dress(monster, look, name)
 	end
 end
 
+-- Game.createMonster, with the level the Trial scaled the monster to shown after the name (monster_levels.lua reads
+-- Chaos.spawnLevel in onSpawn). Without it the guardian showed the estimate of its type's experience and health: "[2]".
+local function createScaled(typeName, pos, force, level)
+	if Chaos.createMonsterNamed then
+		return Chaos.createMonsterNamed(typeName, pos, force == nil and false or force, true, nil, level)
+	end
+	return Game.createMonster(typeName, pos, force == nil and false or force, true)
+end
+
 local function setHealth(monster, hp)
 	monster:setMaxHealth(hp)
 	local missing = hp - monster:getHealth()
@@ -534,7 +550,7 @@ local function spawnGuardian(pid)
 		return
 	end
 	local t = C().trial
-	local m = Game.createMonster(t.guardianMonster, P(tr.L.guardianStart), false, true)
+	local m = createScaled(t.guardianMonster, P(tr.L.guardianStart), false, tr.scale.level)
 	if not m then
 		log("cannot create " .. t.guardianMonster .. " (is data/monster/monsters/chaos/ascension registered?)")
 		S.finish(pid, "error", "The guardian did not answer the call. Nothing is lost; please tell the staff.")
@@ -568,6 +584,7 @@ local function hurt(tr, player, share, effect)
 	tr.raw = false
 end
 S.hurt = hurt -- tests
+S.spawnGuardian = spawnGuardian -- tests
 
 local function spawnAdds(tr, player)
 	local t = C().trial
@@ -586,7 +603,7 @@ local function spawnAdds(tr, player)
 		if not Q.inRoom(tr.L, pos) then
 			pos = P(tr.L.center)
 		end
-		local m = Game.createMonster(t.addMonster, pos, true, true)
+		local m = createScaled(t.addMonster, pos, true, tr.scale.level)
 		if m then
 			dress(m, tr.guardian.add and tr.guardian.add.look, tr.guardian.add and tr.guardian.add.name)
 			setHealth(m, tr.scale.addHealth)
@@ -600,6 +617,7 @@ local function spawnAdds(tr, player)
 	end
 	player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, Chaos.t(player, "The %s calls for aid!", tr.guardian.name))
 end
+S.spawnAdds = spawnAdds
 
 local function zones(tr, player)
 	local t = C().trial

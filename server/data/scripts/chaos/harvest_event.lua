@@ -232,7 +232,9 @@ end
 local function spawnAround(names, pos)
 	local n = 0
 	for _, name in ipairs(names) do
-		if Game.createMonster(name, pos, true, false) then
+		-- spawn_tile_core.lua: a monster of the ritual never appears on water or a blocked tile
+		local spot = ChaosSpawnTile.find(pos, {radius = 2, occupied = true, protection = true})
+		if spot and Game.createMonster(name, Position(spot.x, spot.y, spot.z), false, false) then
 			n = n + 1
 		end
 	end

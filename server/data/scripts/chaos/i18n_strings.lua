@@ -4603,6 +4603,8 @@ return {
 			"O item mudou de lugar. Tente de novo.",
 		["Only gear and Rift Keys can be locked."] =
 			"Só equipamentos e Rift Keys podem ser trancados.",
+		["This item is bound to you. It stays locked."] =
+			"Este item está vinculado a você. Ele continua trancado.",
 		["That cannot be made."] =
 			"Isso não pode ser feito.",
 		["That cannot be recycled."] =

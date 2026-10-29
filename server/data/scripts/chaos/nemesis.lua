@@ -430,6 +430,9 @@ local function freeTile(pos)
 	if Chaos.instanceAt and Chaos.instanceAt(pos) then
 		return false
 	end
+	if ChaosSpawnTile.isWater(tile) then
+		return false -- spawn_tile_core.lua: a land nemesis never appears on water
+	end
 	return try(function() return tile:isWalkable() end) ~= false
 end
 

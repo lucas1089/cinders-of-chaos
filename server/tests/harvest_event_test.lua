@@ -275,9 +275,12 @@ function Position(x, y, z)
 	function p.sendMagicEffect() end
 	return p
 end
+dofile("data/scripts/chaos/spawn_tile_core.lua")
 function Tile(p)
 	local t = tileAt(p, true)
 	return {getGround = function() return t.ground end,
+		hasFlag = function() return false end, hasProperty = function() return false end, getHouse = function() return nil end,
+		getCreatureCount = function() return 0 end,
 		getItemById = function(_, id)
 			for _, x in ipairs(t.items) do
 				if x.id == id then return x end

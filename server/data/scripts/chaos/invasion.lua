@@ -173,6 +173,9 @@ function V.tileOk(pos, area, allowCreature)
 	if tile:hasProperty(CONST_PROP_BLOCKSOLID) or tile:hasProperty(CONST_PROP_IMMOVABLEBLOCKSOLID) then
 		return false, "blocked"
 	end
+	if ChaosSpawnTile.isWater(tile) then
+		return false, "water" -- swimmable water has no blocking flag: a land invader would stand in the sea
+	end
 	if ITEM_TYPE_DEPOT and tile:getItemByType(ITEM_TYPE_DEPOT) then
 		return false, "depot"
 	end

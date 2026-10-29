@@ -5858,5 +5858,10 @@ ChaosLocaleStrings['pt-BR'] = {
   ["No emote after a boss kill."] = "Nenhum emote depois de abater um boss.",
   ["TRY ON"] = "EXPERIMENTAR",
   ["Shows it on your character for 10 seconds. Only you see it. Nothing is bought."] = "Mostra no seu personagem por 10 segundos. Só você vê. Nada é comprado.",
+  ["Average hit of your weapon's auto attack, with the bonuses of your passive tree. Wands, rods and fists have no attack hit."] = "Dano médio do ataque automático da sua arma, com os bônus da árvore passiva. Varinhas, cajados e punhos não têm esse golpe.",
+  ["Attack of the weapon in your hands, with the roll of the item. The Damage/Healing row shows what it hits for."] = "Ataque da arma em suas mãos, com o sorteio do item. A linha Damage/Healing mostra quanto ela acerta.",
+  ["How much of a hit your shield blocks (your weapon without one): (skill / 4 + 2.23) x defence x 0.15, with shielding or the weapon's skill."] = "Quanto de um golpe o seu escudo bloqueia (a arma, sem escudo): (skill / 4 + 2,23) x defesa x 0,15, com o shielding ou o skill da arma.",
+  ["The armour of all the pieces you wear. It takes a share of every physical hit; each point adds less than the one before."] = "A armadura de todas as peças que você veste. Ela tira uma parte de cada golpe físico; cada ponto rende menos que o anterior.",
+  ["The share of a physical hit from a monster that never lands: your armour, your physical resist from gear and the passive tree, and Damage Taken from Monsters."] = "A parte de um golpe físico de monstro que nunca acerta: sua armadura, a resistência física do equipamento e da árvore passiva, e o modificador Damage Taken from Monsters.",
 }
 return ChaosLocaleStrings['pt-BR']

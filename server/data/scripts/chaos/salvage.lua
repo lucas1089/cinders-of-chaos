@@ -698,14 +698,16 @@ local function lockAt(player, data)
 	if not item or not cid or not okType or clientId ~= cid then
 		return say("The item moved. Try again.")
 	end
-	if not (C.isGear(item) or C.isRiftKey(item)) then
-		return say("Only gear and Rift Keys can be locked.")
-	end
 	local on
 	if data.on == nil then
 		on = not S.isLocked(item)
 	else
 		on = data.on == true or data.on == 1
+	end
+	local lockable = C.isGear(item) or C.isRiftKey(item) or custom(item, "chaos_nemesis_owner") ~= nil
+	local allowed, why = K.lockChange(num(custom(item, LOCK)), lockable, on)
+	if not allowed then
+		return say(why == "bound" and "This item is bound to you. It stays locked." or "Only gear and Rift Keys can be locked.")
 	end
 	S.setLocked(item, on)
 	local name = C.itemName(item)

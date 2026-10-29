@@ -234,7 +234,7 @@ local function freeSpot(pos)
 		local p = Position(pos.x + d[1], pos.y + d[2], pos.z)
 		local tile = Tile(p)
 		if tile and tile:getGround() and not tile:getTopCreature() and not tile:hasFlag(TILESTATE_PROTECTIONZONE)
-				and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:hasProperty(CONST_PROP_IMMOVABLEBLOCKSOLID)
+				and not ChaosSpawnTile.isWater(tile) and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:hasProperty(CONST_PROP_IMMOVABLEBLOCKSOLID)
 				and not (TILESTATE_FLOORCHANGE and tile:hasFlag(TILESTATE_FLOORCHANGE))
 				and not (TILESTATE_TELEPORT and tile:hasFlag(TILESTATE_TELEPORT)) then
 			return p

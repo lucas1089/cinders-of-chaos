@@ -548,7 +548,21 @@ do
 	addEvent = function() return 1 end
 	Game = {getStorageValue = function() return -1 end, getPlayers = function() return {} end}
 	json = json or {encode = function() return "{}" end}
+	dofile("data/scripts/chaos/spawn_tile_core.lua")
 	dofile("data/scripts/chaos/invasion.lua")
+	-- an invader is never created on water: swimmable water has no blocking flag
+	do
+		local fluid = 1
+		Tile = function()
+			return {getGround = function() return {getType = function() return {getFluidSource = function() return fluid end} end} end,
+				hasFlag = function() return false end, hasProperty = function() return false end, getHouse = function() return nil end,
+				getCreatureCount = function() return 0 end}
+		end
+		local okTile, why = ChaosInvasion.tileOk({x = 100, y = 100, z = 7}, nil, false)
+		eq(okTile, false, "invasion tileOk: a water tile is refused")
+		eq(why, "water", "invasion tileOk: the reason")
+		Tile = nil
+	end
 	local asked = {}
 	ChaosLoot = {rollUniques = function(tier, name) asked[#asked + 1] = name return {} end,
 		uniqueList = function() return {} end}

@@ -59,6 +59,20 @@ function K.isLocked(value)
 	return value ~= ""
 end
 
+-- The lock from the item menu. Turning it ON needs lockable stuff (gear, Rift Key, a nemesis trophy); turning it OFF only
+-- needs the lock to be the plain one (1): another system may have locked an item that the menu cannot lock (the nemesis
+-- trophy is made locked, a bench lock stays), and the owner must be able to undo it. A bound item (value 2, the store
+-- pouches and potions, set again at login) stays. Returns ok, why ("notLockable" / "bound").
+function K.lockChange(value, lockable, on)
+	if on then
+		return lockable and true or false, not lockable and "notLockable" or nil
+	end
+	if K.isLocked(value) and tonumber(value) == 2 then
+		return false, "bound"
+	end
+	return true
+end
+
 function K.check(info, cfg)
 	if not info then
 		return "notGear"

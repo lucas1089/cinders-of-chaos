@@ -431,8 +431,9 @@ local function breach(run, name, pos)
 			return
 		end
 		for _ = 1, b.count do
-			local at = Position(p.x + math.random(-b.spread, b.spread), p.y + math.random(-b.spread, b.spread), p.z)
-			local m = Game.createMonster(n, at, true, false)
+			-- spawn_tile_core.lua: never on water or a blocked tile; no tile around the portal: this one is skipped
+			local spot = ChaosSpawnTile.find(p, {radius = b.spread, minRadius = 1})
+			local m = spot and Game.createMonster(n, Position(spot.x, spot.y, spot.z), false, false)
 			if m then
 				r.breachAlive = r.breachAlive + 1
 				WM.breachIds = WM.breachIds or {}
