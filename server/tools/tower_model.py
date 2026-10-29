@@ -101,7 +101,7 @@ def balance(text=None):
         'beyond': dict((k, float(v)) for k, v in re.findall(r'\t\t(\w+) = ([-0-9.]+)', re.search(r'(?m)^\tbeyond = \{(.*?)\n\t\}', t, re.S).group(1))),
         'tierHealth': dict((k, float(v)) for k, v in re.findall(r'(magic|rare|legendary) = ([0-9.]+)',
                                                                 re.search(r'(?m)^\ttierHealth = \{(.*?)\}', t).group(1)))}
-    for k in ('bossEvery', 'milestoneEvery', 'bandFloors', 'bossHelperDivisor', 'perPlayer', 'maxFloor', 'packUptime', 'bossUptime', 'engageSeconds', 'lootScaledFrom', 'goldShare'):
+    for k in ('bossEvery', 'milestoneEvery', 'bandFloors', 'bossHelperDivisor', 'perPlayer', 'maxFloor', 'packUptime', 'bossUptime', 'engageSeconds', 'lootScaledFrom', 'goldShare', 'climb'):
         cfg[k] = scalar(t, k)
     return cfg
 
@@ -169,10 +169,15 @@ def boss_hp_at(cfg, f):
     return math.floor(min(b['bossHealthMax'], v))
 
 
+def climb_at(cfg, f):
+    """B.climb: 1 + climb x (floor - 1), held at maxFloor"""
+    return 1 + cfg.get('climb', 0) * (min(f, cfg['maxFloor']) - 1)
+
+
 def dmg_at(cfg, f):
-    """B.damage: the curve, then x the growth, capped"""
+    """B.damage: the curve x the climb, then x the growth, capped"""
     b = cfg['beyond']
-    v = lin(cfg['damage'], f)
+    v = lin(cfg['damage'], f) * climb_at(cfg, f)
     return min(b['damageMax'], v * growth(cfg, b['damageRate'], b['damageAccel'], f)) if f > cfg['maxFloor'] else v
 
 
@@ -567,7 +572,7 @@ def check(cfg, info, out=print):
     # O328: the damage of every floor against what a hunt monster of the shown level deals (pace curve x hit(L) / hit(band))
     for f in range(1, int(cfg['maxFloor']) + 1):
         want = dmg_target(cfg, f)
-        got = sc['dmg'](f)
+        got = lin(cfg['damage'], f)  # the hunt match; the climb comes on top (dmg_at)
         if abs(got - want) > lim['damageTol'] * want:
             bad.append('damage at floor %d is %.2f, the pace curve x hit at level %d over the band level %d is %.2f' % (
                 f, got, int(round(lin(cfg['level'], f))), band_level(cfg, f), want))
@@ -643,7 +648,7 @@ def endless(cfg, info, floors=None, out=None):
                                      b['healthMax'] / (lin(cfg['health'], start) * max(cfg['sawtooth']))),
               'boss health': growth_floor(cfg, b['bossHealthRate'], b['bossHealthAccel'],
                                           b['bossHealthMax'] / cfg['bossHealth'][max(cfg['bossHealth'])]),
-              'damage': growth_floor(cfg, b['damageRate'], b['damageAccel'], b['damageMax'] / lin(cfg['damage'], start))}
+              'damage': growth_floor(cfg, b['damageRate'], b['damageAccel'], b['damageMax'] / (lin(cfg['damage'], start) * climb_at(cfg, start)))}
     for name, f in starts.items():
         if f <= lim['capMin']:
             bad.append('the %s cap starts at floor %d, wanted past %g' % (name, f, lim['capMin']))

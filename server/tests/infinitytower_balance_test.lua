@@ -193,7 +193,7 @@ eq(B.bossAt(C, 130).name, "the ashen count", "the names still repeat")
 -- the caps: start floors and extreme floors
 local hc = B.growthFloor(C, be.healthRate, be.healthAccel, be.healthMax / (B.curve(C.health, 120) * C.sawtooth[#C.sawtooth]))
 local bc = B.growthFloor(C, be.bossHealthRate, be.bossHealthAccel, be.bossHealthMax / C.bossHealth[120])
-local dc = B.growthFloor(C, be.damageRate, be.damageAccel, be.damageMax / B.curve(C.damage, 120))
+local dc = B.growthFloor(C, be.damageRate, be.damageAccel, be.damageMax / (B.curve(C.damage, 120) * B.climb(C, 120)))
 ok(hc > 1000 and bc > 1000 and dc > 1000, "no cap starts before floor 1000 (" .. hc .. ", " .. bc .. ", " .. dc .. ")")
 eq(B.bossHealth(C, bc - 1) < be.bossHealthMax and B.bossHealth(C, bc + 10) == be.bossHealthMax, true, "the boss health cap starts at floor " .. bc)
 eq(B.damage(C, dc + 1), be.damageMax, "the damage cap starts at floor " .. dc)
@@ -360,6 +360,15 @@ eq(B.lootShare(noLoot, 5), 1, "and a share of 1")
 -- ---- O328: the damage curve follows the shown level (floor 1 species are level 11 and hit 7x as hard at level 100)
 ok(B.damage(C, 1) > 5, "floor 1 hits much harder than its level 11 species: " .. B.damage(C, 1))
 ok(B.damage(C, 120) > B.damage(C, 60), "the factor keeps rising in the last band")
+-- the climb (owner 2026-10-29): +climb a floor from the first, held at maxFloor
+eq(B.climb(C, 1), 1, "floor 1: no climb")
+ok(math.abs(B.climb(C, 58) - (1 + C.climb * 57)) < 1e-9 and B.climb(C, 500) == B.climb(C, C.maxFloor), "the climb grows to maxFloor, then holds")
+ok(math.abs(B.damage(C, 58) - B.curve(C.damage, 58) * B.climb(C, 58)) < 1e-9, "the damage factor is the hunt match x the climb")
+for f = 2, C.maxFloor do
+	if math.floor(f / C.bandFloors) == math.floor((f - 1) / C.bandFloors) then
+		ok(B.damage(C, f) >= B.damage(C, f - 1) * 0.995, "inside a band no floor hits softer than the one before (" .. f .. ")")
+	end
+end
 ok(B.bossDamage(C, 100) == 1, "a boss up to maxFloor still hits with its own damage")
 
 print(string.format("infinitytower_balance_test: %d checks, %d failed", checks, failed))

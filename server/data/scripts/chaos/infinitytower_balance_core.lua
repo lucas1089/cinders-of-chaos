@@ -8,7 +8,8 @@
 --   B.sawtooth(cfg, floor)             the health factor of the floor in its climb of milestoneEvery floors
 --   B.health(cfg, floor)               maximum health of a normal monster of the floor (curve x sawtooth)
 --   B.bossHealth(cfg, floor)           maximum health of the floor's boss
---   B.damage(cfg, floor)               damage factor of the floor's monsters (curve, then growing past maxFloor, capped)
+--   B.damage(cfg, floor)               damage factor of the floor's monsters (curve x climb, then growing past maxFloor, capped)
+--   B.climb(cfg, floor)                the climb factor of a floor (1 + climb x (floor - 1), held at maxFloor)
 --   B.bossDamage(cfg, floor)           damage factor of the floor's boss: 1 up to maxFloor, then growing, capped
 --   B.level(cfg, floor)                the level shown and counted for the floor (linear past maxFloor, capped)
 --   B.bossAt(cfg, floor)               the boss of a boss floor: {name, heal}
@@ -168,9 +169,15 @@ function B.level(cfg, floor)
 	return math.max(1, floorNum(value + 0.5))
 end
 
+-- the climb: 1 + climb x (floor - 1), held at maxFloor (owner 2026-10-29)
+function B.climb(cfg, floor)
+	floor = sane(floor)
+	return 1 + (cfg.climb or 0) * (math.min(floor, cfg.maxFloor) - 1)
+end
+
 function B.damage(cfg, floor)
 	floor = sane(floor)
-	local value = B.curve(cfg.damage, floor)
+	local value = B.curve(cfg.damage, floor) * B.climb(cfg, floor)
 	local b = cfg.beyond
 	if b and floor > cfg.maxFloor then
 		value = math.min(b.damageMax, value * B.growth(cfg, b.damageRate, b.damageAccel, floor))
