@@ -1103,6 +1103,10 @@ Numbers, and why a client of build N accepts the update:
   newer package to an older exe is what min_package prevents: the modules may need the newer exe.
 - **Sprites:** the package keeps the single `Tibia.spr`, so no shard rule applies. A package with a shard set needs
   min_package at least the first build with base patch 0048 (the build step refuses a shard set with min_package 0).
+- **Phone data (O313):** `make_update_manifest.py build` adds the payload key `android`, the list of files the Android
+  client downloads on first start (all files except `layouts/mobile/`; `--android-exclude PREFIX` for desktop-only art,
+  `--no-android` to leave it out). Nothing to do for it: the next `publish-update` of a newer release writes it. The APK
+  (`android-client.yml`) reads the same manifest URL and public key (docs/ANDROID_CLIENT.md "Phase 3 status").
 - **A client without the updater** (built without `update_manifest` / `update_public_key`, or an exe without base
   patch 0031) never asks for the manifest: it keeps its files, is never blocked by the updater, and gets the update
   only by downloading a new package. Only the game server's client guard can turn it away (`clientGuardBuilds`, or

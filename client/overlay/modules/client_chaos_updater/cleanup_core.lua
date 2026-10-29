@@ -75,7 +75,9 @@ function M.treeUsable(st, packageId, baseline)
   return st.status == 'ok' and st.package == packageId and st.enc == M.ENCRYPTION and (tonumber(st.version) or 0) >= baseline
 end
 
--- ctx = { packageId, stamp (parsed), treeState (updater's parsed state.txt, {} when none), treeExists, baseline }
+-- ctx = { packageId, stamp (parsed), treeState (updater's parsed state.txt, {} when none), treeExists, baseline, android }
+-- android: a phone (O313). chaos_update there holds the downloaded game data (chaos_update/android, about a gigabyte,
+-- written by client_chaos_firststart, which prunes its own stale files at start), so the folder is always kept.
 -- Returns { run, keepTree, update, reason }: whether to sweep, whether chaos_update stays, the update number the stamp
 -- will record.
 function M.decide(ctx)
@@ -84,7 +86,7 @@ function M.decide(ctx)
   local update = usable and (tonumber(st.version) or 0) or 0
   -- a half-applied update of this package is the updater's to finish, not stale
   local applying = ctx.treeExists and st.status == 'applying' and st.package == ctx.packageId
-  local d = { keepTree = usable or applying or false, update = update, run = false }
+  local d = { keepTree = usable or applying or ctx.android == true or false, update = update, run = false }
   local stamp = ctx.stamp or M.parseStamp('')
   if stamp.package ~= ctx.packageId then
     d.run, d.reason = true, 'new client package'

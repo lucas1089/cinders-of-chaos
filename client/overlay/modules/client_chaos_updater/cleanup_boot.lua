@@ -37,6 +37,7 @@ local function run()
     treeState = updater.parseState(read('/' .. updater.STATE)),
     treeExists = g_resources.directoryExists('/' .. core.TREE_NAME),
     baseline = baseline,
+    android = updater.onAndroid(g_app),   -- a phone keeps chaos_update/android (the game data), see cleanup_core.lua
   })
   if not d.run then return end
 

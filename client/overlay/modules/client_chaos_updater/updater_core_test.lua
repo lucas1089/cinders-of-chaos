@@ -169,6 +169,12 @@ eq(C.restartMode({ restart = function() end, canRestart = function() return true
 eq(C.restartMode({ canRestart = function() return false end }), 'manual', 'engine says no')
 eq(C.restartMode({ canRestart = function() error('x') end }), 'manual', 'canRestart error')
 eq(C.restartMode(nil), 'manual', 'no g_app')
+eq(C.onAndroid({ getOs = function() return 'android' end }), true, 'phone')
+eq(C.onAndroid({ getOs = function() return 'Android' end }), true, 'phone, any case')
+eq(C.onAndroid({ getOs = function() return 'windows' end }), false, 'desktop')
+eq(C.onAndroid({ getOs = function() error('x') end }), false, 'getOs error')
+eq(C.onAndroid({}), false, 'no getOs')
+eq(C.onAndroid(nil), false, 'no g_app (onAndroid)')
 
 local ee = { path = 'modules/a/a.lua', sha256 = sha('a'), size = 1, blob = sha('e'), blob_size = 45 }
 eq(C.decide(ee, sha('e'), nil, true), 'keep', 'encrypted tree file: compared with the blob hash')

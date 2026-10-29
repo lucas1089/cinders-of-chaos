@@ -1003,6 +1003,7 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
 69zzzzzz. `0164` for `src/framework/platform/androidwindow.cpp`: **Android shell class name, O313 phase 2.** The Java side of the text dialog callback is `com.cindersofchaos.client.ChaosActivity.commitText` in `client/android/`, which replaces the base's own package and class. The JNI export `Java_com_..._commitText` is renamed to match. The other calls into Java, `showTextEdit`, `displayFatalError`, `openUrl` and the keyboard, look their method up on the activity's class and needed no change. Applies after `0001` to `0163`.
 69zzzzzzz. `0165` for `src/framework/core/resourcemanager.cpp`: **PhysFS init on Android, O313 phase 2.** On Android PhysFS 3.x reads the `argv0` of `PHYSFS_init` as a `PHYSFS_AndroidInit` pointer. The engine passed the base's apk file name, so PhysFS took its first bytes as a JNIEnv pointer and the app closed at once. The emulator smoke test of `android-client.yml` showed it: SIGSEGV with fault address 0 right after the window opened, and a register holding those bytes. On Android the engine now passes NULL, the documented value without JNI. The base dir is then `/`, which the engine never reads there: `data.zip` comes from the asset manager and the write dir is the activity's `internalDataPath`. Applies after `0001` to `0164`.
 69zzzzzzzz. `0166` for `modules/client_styles/styles.lua`: **base styles under a layout, O313 phase 2.** On Android the client sets the layout `mobile`. Then `/styles/` resolves to `/layouts/mobile/styles` alone, which only overrides five files. `Label`, `MainWindow`, `TopMenu` and every other base style were missing, and `client_topmenu` stopped the start, as the emulator smoke test showed. With a layout, the files of `/data/<dir>` are now imported first, in name order, and the layout's own on top. Without a layout nothing changes. Applies after `0001` to `0165`.
+69zzzzzzzzz. `0167` for `src/framework/core/resourcemanager.{h,cpp}`, `src/framework/luafunctions.cpp`, `src/main.cpp`, `src/framework/core/application.cpp`, `src/framework/platform/androidwindow.{h,cpp}`: **phone data without the pack, O313 phase 3** (see "Phone data" below). New Lua functions: `g_resources.unpackUpdateBlob(from, to)` (decrypts one verified update blob of `chaos_update/` in 1 MB blocks into a plain file of `chaos_update/android/`, written as `<to>.part` and renamed only after the GCM tag authenticated; returns the plaintext SHA-256 or `""`), `mountDataFolder(path)` (Android only; only `chaos_update/android`; PhysFS-mounts the real folder at `/` in front of `data.zip`, file-backed), `unmountDataFolder()` and `getFreeSpace()` (bytes free in the write dir, `-1` unknown). `updateBlobSha256` works on Android now, and `main()` sets the update blob key there too (no pack on a phone, same key derivation). The Android restart: `restartArgs` only sets `m_restartRequested` and closes the client the normal way; `main()` calls `relaunchIfRequested` after the runtime is shut down, which calls `AndroidWindow::restartApp`, a JNI call of `ChaosActivity.restartApp` (the Java shell starts a helper activity in its own process that ends the game process and starts the launch intent again). Applies after `0001` to `0166`. Checked here: applies on a fresh base after every older patch (`0001` to `0166`); `resourcemanager.cpp` and `application.cpp` pass `g++ -std=c++17 -fsyntax-only` (Linux headers; the Android-only `mountDataFolder` body also, with the guard flipped); the NDK build and any run on a device are not checked.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
@@ -1073,6 +1074,25 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `tools/chaosblob_test.cpp` (format, vector shared with `update_crypt.py`, tamper, streaming, ZIP writer) and
     `tools/chaosblob_mount_test.cpp` (the overlay ZIP mounted from memory by PhysFS in front of a folder) run in CI.
     Not built or run in a client.
+
+### Phone data (base patch 0167, `client_chaos_firststart`, O313 phase 3, 2026-10-29)
+An Android phone cannot use `chaos.pack` (the engine decrypts it into one RAM buffer of the whole ZIP, over 1 GiB) or the
+in-memory update overlay of `0103`, so the APK carries only the engine, the Lua and the UI (`data.zip` from the assets,
+about 71 MB, without `data/things` and `layouts/mobile`) and the sprite pair comes through the signed update.
+- **Files on the phone.** Plain files in the app's private folder (`chaos_update/android/` of the write dir, which is
+  `internalDataPath`). No AES blobs on the phone: the same protection as the Windows loose tree before build 13. This is the
+  chosen default; keeping the blobs encrypted on the phone would need a decrypting file layer in PhysFS and is not built.
+  The downloads are still the encrypted blobs of the site: they are verified (blob hash, GCM tag, plaintext hash) and then
+  unpacked by `g_resources.unpackUpdateBlob`, so a file has its final name only when it is complete and right.
+- **Mount.** `bootstrap.lua` (run by `init.lua` before any module is found) calls `client_chaos_firststart/boot.lua` on Android,
+  which mounts that folder through `g_resources.mountDataFolder` when `chaos_update/android_state.txt` says `status=ok`. PhysFS
+  reads the sprite shards from disk on demand, so no RAM is spent. On a new APK (another package id in the state) the old
+  APK's Lua and art in the folder are removed first, because they would hide the new `data.zip`; `data/things` stays.
+- **Restart.** After the unpack the module calls `g_app.restart()`. On Android that exits the engine and the Java shell starts
+  the game again (`ChaosActivity.restartApp` and `RestartActivity`, a no-screen activity in its own process `:restart`: it ends the game
+  process and starts the launch intent again). The restart was an `exit()` only before.
+- **Manifest.** The payload key `android` (`MANIFEST.md` "Phone data") lists the files the phone needs; see there.
+- **Not checked.** The NDK build of this patch, the JNI call, the restart helper and the whole download on a real phone.
 
 ### Client packs (base patch 0102, `tools/pack_client.py`, 2026-10-21)
 The shipped client folder is just the exe and one encrypted pack, `chaos.pack`, with the per-user write directory for

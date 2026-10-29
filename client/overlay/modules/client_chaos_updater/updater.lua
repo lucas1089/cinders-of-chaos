@@ -502,6 +502,11 @@ function U.init()
   cfg = Services and Services.update
   boot = CHAOS_UPDATE_BOOT or { packageId = '', mounted = false }
   if not enabled(cfg) then return end
+  if core.onAndroid(g_app) then
+    -- a phone has no pack and no desktop overlay: client_chaos_firststart downloads and mounts the game data
+    g_logger.info('updater: this is a phone; client_chaos_firststart updates the game data')
+    return
+  end
   if core.offByEnv(os.getenv) then
     g_logger.info('updater: off (' .. core.OFF_ENV .. ' is set): no update check')
     return

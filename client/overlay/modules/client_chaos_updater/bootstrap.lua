@@ -24,6 +24,14 @@ if g_resources.fileExists('/' .. core.STATE) then
 end
 local st = core.parseState(text)
 local id = packageId()
+if core.onAndroid(g_app) then
+  -- a phone has no pack and no encrypted overlay: its game data is a plain folder that the first-start screen
+  -- downloaded (client_chaos_firststart, client/MANIFEST.md "Phone data"); mounted file-backed in front of data.zip
+  CHAOS_UPDATE_BOOT = { packageId = id, mounted = false, state = core.parseState('') }
+  local ok, err = pcall(function() dofile('/modules/client_chaos_firststart/boot.lua')(id) end)
+  if not ok then g_logger.warning('phone data boot: ' .. tostring(err)) end
+  return
+end
 -- an update tree older than this package's own files (a pack built after that update) would hide the newer pack files
 local baseline = type(Services) == 'table' and type(Services.update) == 'table' and Services.update.baseline or 0
 CHAOS_UPDATE_BOOT = { packageId = id, mounted = false, state = st }

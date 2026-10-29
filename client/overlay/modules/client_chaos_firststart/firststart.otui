@@ -1,0 +1,111 @@
+// First-start screen of the Android client (client_chaos_firststart/firststart.lua). Chaos theme styles only.
+// 460 x 292 logical pixels: fits a phone held in landscape (the minimum height is 360).
+
+ChaosFirstStartBlocker < UIWidget
+  anchors.fill: parent
+  background-color: #0d0b0eb0
+  focusable: false
+
+ChaosFirstStartPanel < ChaosWindow
+  id: chaosFirstStartPanel
+  !text: tr('GAME DATA')
+  size: 460 292
+  anchors.centerIn: parent
+  draggable: false
+  &chaosOrnate: false
+
+  ChaosLabel
+    id: status
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-align: center
+    text-auto-resize: false
+    height: 18
+
+  ChaosLabelDim
+    id: detail
+    anchors.top: status.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    text-align: center
+    text-wrap: true
+    text-auto-resize: false
+    height: 48
+
+  ChaosProgressBar
+    id: bar
+    anchors.top: detail.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    percent: 0
+
+  ChaosLabelDim
+    id: progressText
+    anchors.top: bar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    text-align: center
+    text-wrap: true
+    text-auto-resize: false
+    height: 32
+
+  ChaosLabelDim
+    id: note
+    anchors.top: progressText.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-align: center
+    text-wrap: true
+    text-auto-resize: false
+    height: 32
+
+  ChaosButton
+    id: startButton
+    !text: tr('Download')
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 170
+    height: 28
+    visible: false
+
+  ChaosButton
+    id: pauseButton
+    !text: tr('Pause')
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 170
+    height: 28
+    visible: false
+
+  ChaosButton
+    id: retryButton
+    !text: tr('Retry')
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 130
+    height: 28
+    visible: false
+
+  ChaosButton
+    id: playButton
+    !text: tr('Play')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 130
+    height: 28
+    visible: false
+
+  ChaosButton
+    id: restartButton
+    !text: tr('Restart now')
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 170
+    height: 28
+    visible: false

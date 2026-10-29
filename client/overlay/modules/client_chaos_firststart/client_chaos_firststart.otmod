@@ -1,0 +1,14 @@
+Module
+  name: client_chaos_firststart
+  description: Cinders of Chaos phone data - the first-start screen of the Android client (downloads the game data through the signed update manifest, unpacks it into the app folder, restarts)
+  author: Cinders of Chaos
+  sandboxed: false
+  scripts: [ firststart_core, firststart ]
+  dependencies:
+    - client_chaos_theme
+    - client_entergame
+    - client_chaos_updater
+  autoload: true
+  autoload-priority: 1111
+  @onLoad: ChaosFirstStart.init()
+  @onUnload: ChaosFirstStart.terminate()

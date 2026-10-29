@@ -1,0 +1,307 @@
+# Chaos: phone data without the pack (O313 phase 3; client/BASE.md "0167"; core/resourcemanager.{h,cpp}, luafunctions.cpp, main.cpp,
+# core/application.cpp, platform/androidwindow.{h,cpp}; after 0001-0166). A phone cannot hold chaos.pack (a RAM buffer of the whole ZIP),
+# so the first-start screen (modules/client_chaos_firststart) downloads the signed update like the desktop updater and UNPACKS it:
+#  * unpackUpdateBlob(from, to): decrypts one verified blob of chaos_update/ (1 MB blocks, GCM tag checked) into a plain file of
+#    chaos_update/android/<modules|mods|data|layouts>/..., written as <to>.part and renamed only after the tag authenticated;
+#    returns the plaintext SHA-256 or "".
+#  * mountDataFolder(path): Android only, path must be chaos_update/android; PhysFS-mounts that real folder at / in FRONT of data.zip
+#    (file-backed, no RAM copy: the sprite shards are read from disk). unmountDataFolder(). getFreeSpace(): bytes free in the write dir.
+#  * updateBlobSha256 now works on Android too, and main() sets the update blob key there (no pack, same key derivation).
+#  * restart on Android: restartArgs only asks (m_restartRequested), main() runs relaunchIfRequested after the runtime is shut down,
+#    which calls AndroidWindow::restartApp, the JNI call of ChaosActivity.restartApp (a helper activity in its own process starts
+#    the game again and ends the old process).
+--- a/src/framework/core/resourcemanager.h
++++ b/src/framework/core/resourcemanager.h
+@@ -105,6 +105,13 @@
+     std::string updateBlobSha256(const std::string& path);
+     bool mountUpdateOverlay(const std::string& path);
+     bool unmountUpdateOverlay();
++
++    // Cinders of Chaos phone data (base patch 0167, client/BASE.md "Phone data"): on Android the downloaded game
++    // data is a plain folder in the app's private write dir, mounted file-backed (no RAM copy).
++    std::string unpackUpdateBlob(const std::string& from, const std::string& to);
++    bool mountDataFolder(const std::string& path);
++    bool unmountDataFolder();
++    int64_t getFreeSpace();
+     
+     std::map<std::string, std::string> filesChecksums();
+     std::string selfChecksum();
+@@ -148,6 +155,7 @@
+     bool m_packMounted = false; // Cinders of Chaos: chaos.pack was decrypted and mounted (base patch 0102)
+     std::string m_updateKey; // Cinders of Chaos: the update blob key (HKDF of the client guard key, base patch 0103)
+     std::shared_ptr<std::vector<uint8_t>> m_updateOverlay; // the decrypted update files, mounted (base patch 0103)
++    std::string m_dataFolderReal; // Android: the mounted phone data folder (real path), base patch 0167
+     std::shared_ptr<std::vector<uint8_t>> m_memoryData;
+     uint64 m_generation = 0;
+     uint32_t m_customEncryption = 0;
+--- a/src/framework/core/resourcemanager.cpp
++++ b/src/framework/core/resourcemanager.cpp
+@@ -1313,7 +1313,7 @@
+ // GCM tag is checked before the hash is returned). The updater compares it with the signed manifest.
+ std::string ResourceManager::updateBlobSha256(const std::string& path)
+ {
+-#if defined(ANDROID) || defined(__EMSCRIPTEN__)
++#if defined(__EMSCRIPTEN__)
+     (void)path;
+     return "";
+ #else
+@@ -1470,6 +1470,148 @@
+     return true;
+ }
+ 
++// ---- Cinders of Chaos phone data (base patch 0167, client/BASE.md "Phone data") ----
++// An Android phone cannot hold chaos.pack in RAM, so the first-start screen (modules/client_chaos_firststart) downloads
++// the signed update files like the desktop updater, but unpacks them: every verified blob is decrypted, in 1 MB
++// blocks, into a plain file of chaos_update/android/ (private to the app, same protection as the Windows loose tree
++// before build 13). That folder is mounted through PhysFS in front of data.zip, file-backed.
++namespace {
++const std::string CHAOS_DATA_FOLDER = "chaos_update/android";
++}
++
++// Decrypts the update blob `from` (inside chaos_update/) into the plain file `to`, which must lie in
++// chaos_update/android/ under modules/ mods/ data/ layouts/. The plaintext goes to "<to>.part" and is renamed only
++// after the GCM tag authenticated, so a half-written or tampered file never has its final name. Returns the SHA-256
++// (lowercase hex) of the plaintext, "" on any failure (nothing is left behind).
++std::string ResourceManager::unpackUpdateBlob(const std::string& from, const std::string& to)
++{
++#if defined(__EMSCRIPTEN__)
++    (void)from; (void)to;
++    return "";
++#else
++    if (!isChaosUpdatePath(from) || !isChaosUpdatePath(to) || m_updateKey.size() != 32)
++        return "";
++    std::string rel = to;
++    if (!rel.empty() && rel[0] == '/')
++        rel = rel.substr(1);
++    const std::string prefix = CHAOS_DATA_FOLDER + "/";
++    if (!stdext::starts_with(rel, prefix) || !isUpdateRoot(rel.substr(prefix.size()))) {
++        g_logger.warning(stdext::format("updater: refused to unpack into '%s'", to));
++        return "";
++    }
++    const auto src = chaosUpdateRealPath(from), dst = chaosUpdateRealPath(to);
++    std::error_code ec;
++    const auto size = (src.empty() || dst.empty()) ? 0 : std::filesystem::file_size(src, ec);
++    if (src.empty() || dst.empty() || ec || size < chaosblob::OVERHEAD)
++        return "";
++    std::ifstream f(src, std::ios::binary);
++    unsigned char header[chaosblob::HEADER_LEN];
++    if (!f || !f.read(reinterpret_cast<char*>(header), sizeof(header)))
++        return "";
++    chaosblob::Header h;
++    chaosblob::Decryptor d;
++    if (!d.begin(m_updateKey, header, h) || h.plainLen != size - chaosblob::OVERHEAD)
++        return "";
++    std::filesystem::create_directories(dst.parent_path(), ec);
++    if (ec)
++        return "";
++    std::filesystem::path part = dst;
++    part += ".part";
++    std::ofstream out(part, std::ios::binary | std::ios::trunc);
++    if (!out)
++        return "";
++    chaosupdate::Sha256Stream sha;
++    std::vector<unsigned char> buffer(1024 * 1024);
++    uint64_t left = h.plainLen;
++    bool ok = true;
++    while (ok && left > 0) {
++        const size_t n = static_cast<size_t>(std::min<uint64_t>(left, buffer.size()));
++        ok = f.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(n)) &&
++            d.update(buffer.data(), buffer.data(), n);
++        if (ok) {
++            sha.update(buffer.data(), n);
++            out.write(reinterpret_cast<const char*>(buffer.data()), static_cast<std::streamsize>(n));
++            ok = out.good();
++        }
++        left -= n;
++    }
++    unsigned char tag[chaosblob::TAG_LEN];
++    ok = ok && f.read(reinterpret_cast<char*>(tag), sizeof(tag)) && d.finish(tag);
++    out.close();
++    std::fill(buffer.begin(), buffer.end(), 0);
++    if (ok && !out.fail())
++        std::filesystem::rename(part, dst, ec);
++    if (!ok || out.fail() || ec) {
++        std::filesystem::remove(part, ec);
++        return "";
++    }
++    return sha.finishHex();
++#endif
++}
++
++// Android only: mounts the plain phone data folder chaos_update/android of the write dir at "/" in front of every
++// other search path (data.zip included), so its files override the APK's. Files are read from disk on demand.
++bool ResourceManager::mountDataFolder(const std::string& path)
++{
++#if !defined(ANDROID)
++    (void)path;
++    return false;
++#else
++    std::string rel = path;
++    while (!rel.empty() && rel.front() == '/')
++        rel.erase(0, 1);
++    while (!rel.empty() && rel.back() == '/')
++        rel.pop_back();
++    if (rel != CHAOS_DATA_FOLDER) {
++        g_logger.warning(stdext::format("updater: refused to mount '%s'", path));
++        return false;
++    }
++    const auto real = chaosUpdateRealPath(rel);
++    std::error_code ec;
++    if (real.empty() || !std::filesystem::is_directory(real, ec))
++        return false;
++    unmountDataFolder();
++    const std::string realStr = real.u8string();
++    if (!PHYSFS_mount(realStr.c_str(), "/", 0)) {
++        g_logger.warning(stdext::format("updater: unable to mount the phone data folder: %s",
++                                        PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())));
++        return false;
++    }
++    m_dataFolderReal = realStr;
++    ++m_generation;
++    g_logger.info(stdext::format("updater: phone data folder mounted ('%s')", realStr));
++    return true;
++#endif
++}
++
++bool ResourceManager::unmountDataFolder()
++{
++    if (m_dataFolderReal.empty())
++        return false;
++    const bool ok = PHYSFS_unmount(m_dataFolderReal.c_str()) != 0;
++    m_dataFolderReal.clear();
++    ++m_generation;
++    return ok;
++}
++
++// bytes free for the app on the disk of the write dir, -1 when unknown (the first-start screen checks it before a
++// download of about a gigabyte)
++int64_t ResourceManager::getFreeSpace()
++{
++#if defined(__EMSCRIPTEN__)
++    return -1;
++#else
++    const char* writeDir = PHYSFS_getWriteDir();
++    if (!writeDir)
++        return -1;
++    std::error_code ec;
++    const auto info = std::filesystem::space(std::filesystem::u8path(writeDir), ec);
++    if (ec)
++        return -1;
++    return static_cast<int64_t>(info.available);
++#endif
++}
++
+ std::map<std::string, std::string> ResourceManager::filesChecksums()
+ {
+     std::map<std::string, std::string> ret;
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -285,6 +285,11 @@
+     g_lua.bindSingletonFunction("g_resources", "updateBlobSha256", &ResourceManager::updateBlobSha256, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "mountUpdateOverlay", &ResourceManager::mountUpdateOverlay, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "unmountUpdateOverlay", &ResourceManager::unmountUpdateOverlay, &g_resources);
++    // Cinders of Chaos phone data (base patch 0167)
++    g_lua.bindSingletonFunction("g_resources", "unpackUpdateBlob", &ResourceManager::unpackUpdateBlob, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "mountDataFolder", &ResourceManager::mountDataFolder, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "unmountDataFolder", &ResourceManager::unmountDataFolder, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "getFreeSpace", &ResourceManager::getFreeSpace, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "updateData", &ResourceManager::updateData, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "updateExecutable", &ResourceManager::updateExecutable, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "createArchive", &ResourceManager::createArchive, &g_resources);
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -153,6 +153,15 @@
+         chaosguard::wipe(packKey);
+     }
+ #endif
++#if defined(ANDROID)
++    // Cinders of Chaos (base patch 0167): no pack on a phone, but the first-start download is the signed update, whose
++    // blobs are encrypted with the key derived from the client guard key; they are unpacked into plain files
++    {
++        std::string updateKey = chaosguard::builtInKey();
++        g_resources.setUpdateKey(updateKey);
++        chaosguard::wipe(updateKey);
++    }
++#endif
+ 
+     std::string compactName = g_resources.getCompactName();
+     g_logger.setLogFile(compactName + ".log");
+--- a/src/framework/core/application.cpp
++++ b/src/framework/core/application.cpp
+@@ -57,6 +57,9 @@
+ #endif
+ #endif
+ 
++#if defined(ANDROID)
++#include <framework/platform/androidwindow.h> // base patch 0167: restartApp() starts the activity again
++#endif
+ #include <framework/net/connection.h>
+ #include <framework/proxy/proxy.h>
+ 
+@@ -235,7 +238,13 @@
+     (void)args;
+     MAIN_THREAD_ASYNC_EM_ASM({ Module.astraReload(); });
+ #elif defined(ANDROID)
++    // Cinders of Chaos (base patch 0167): the process ends in android_main, so the Java shell starts the activity again
++    // from relaunchIfRequested, after the whole runtime is shut down
+     (void)args;
++    if (m_restartRequested)
++        return;
++    m_restartRequested = true;
++    g_logger.info("Restart requested: the client closes and starts again");
+     exit();
+ #else
+     if (m_restartRequested)
+@@ -286,8 +295,14 @@
+ // and no logger callback may run here. Starts the client again with the restart arguments; true when it started.
+ bool Application::relaunchIfRequested()
+ {
+-#if defined(__EMSCRIPTEN__) || defined(ANDROID)
++#if defined(__EMSCRIPTEN__)
+     return false;
++#elif defined(ANDROID)
++    if (!m_restartRequested)
++        return false;
++    m_restartRequested = false;
++    g_androidWindow.restartApp();
++    return true;
+ #else
+     if (!m_restartRequested)
+         return false;
+--- a/src/framework/platform/androidwindow.h
++++ b/src/framework/platform/androidwindow.h
+@@ -70,6 +70,7 @@
+     void updateSize();
+     void handleTextInput(std::string text);
+     void openUrl(std::string url);
++    void restartApp(); // base patch 0167: the Java shell starts the activity again in a new process
+ 
+ protected:
+     int internalLoadMouseCursor(const ImagePtr& image, const Point& hotSpot) override { return -1; };
+--- a/src/framework/platform/androidwindow.cpp
++++ b/src/framework/platform/androidwindow.cpp
+@@ -602,6 +602,24 @@
+     }
+ }
+ 
++// Cinders of Chaos (base patch 0167): the restart. Runs from main() after the runtime is shut down; the Java side
++// (ChaosActivity.restartApp) opens a helper activity in its own process that starts the game again and ends this one.
++void AndroidWindow::restartApp()
++{
++    JNIEnv* env = getJNIEnv();
++    JavaVM* vm = getJavaVM();
++    jint nResult = vm->AttachCurrentThread(&env, NULL);
++    if (nResult != JNI_ERR) {
++        jclass clazz = env->GetObjectClass(getClazz());
++        jmethodID methodID = env->GetMethodID(clazz, "restartApp", "()V");
++        if (methodID)
++            env->CallVoidMethod(getClazz(), methodID);
++        if (env->ExceptionCheck())
++            env->ExceptionClear();
++        vm->DetachCurrentThread();
++    }
++}
++
+ extern "C"
+ {
+     JNIEXPORT void JNICALL Java_com_cindersofchaos_client_ChaosActivity_commitText(

@@ -2,7 +2,7 @@
 """Tests of make_update_manifest.py, update_crypt.py and ed25519_ref.py:
 python3 -I client/tools/make_update_manifest_test.py
 Publishing encrypts every blob (update_crypt.py), which needs the `cryptography` package (CI has it)."""
-import hashlib, io, json, os, shutil, subprocess, sys, tempfile, unittest
+import hashlib, io, json, os, re, shutil, subprocess, sys, tempfile, unittest
 from contextlib import redirect_stdout, redirect_stderr
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -714,6 +714,111 @@ class Native(unittest.TestCase):
         self.assertEqual(self.native_blobs(), [])
 
 
+class Android(unittest.TestCase):
+    """phone data (O313): the "android" section lists the files a phone downloads on first start; old clients ignore it"""
+    tearDown = Build.tearDown
+    payload, blob_files, keygen = Build.payload, Build.blob_files, Build.keygen
+
+    def setUp(self):
+        Build.setUp(self)
+        for rel, data in {'layouts/mobile/styles/10-panels.otui': b'MobilePanel < UIWidget\n',
+                          'layouts/classic/a.otui': b'x', 'data/images/streamer/overlay.png': b'\x89PNG' + os.urandom(40)}.items():
+            path = os.path.join(self.client, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            open(path, 'wb').write(data)
+        self.pub = self.keygen()
+
+    def publish(self, *extra):
+        return run(['build', self.client, '--out', self.out, '--key', self.key, '--min-package', '13'] + list(extra))
+
+    def test_section_lists_the_phone_files(self):
+        code, out, err = self.publish()
+        self.assertEqual(code, 0, err)
+        m = self.payload()
+        a = m['android']
+        paths = {f['path'] for f in m['files']}
+        self.assertEqual(a['version'], 1)
+        self.assertEqual(a['files'], sorted(a['files']))
+        self.assertNotIn('layouts/mobile/styles/10-panels.otui', a['files'], 'the APK leaves layouts/mobile out')
+        self.assertIn('layouts/mobile/styles/10-panels.otui', paths, 'desktop clients still get it')
+        self.assertEqual(set(a['files']), paths - {'layouts/mobile/styles/10-panels.otui'})
+        self.assertIn('data/things/1098/Tibia.dat', a['files'])
+        self.assertEqual(a['count'], len(a['files']))
+        blobs = {f['blob']: f['blob_size'] for f in m['files'] if f['path'] in set(a['files'])}
+        self.assertEqual(a['bytes'], sum(blobs.values()), 'distinct encrypted blobs: the download size')
+        self.assertIsNone(mum.check_payload(m))
+        self.assertIn('phone data', out)
+        code, out, err = run(['verify', self.out, '--public', self.pub])
+        self.assertEqual(code, 0, err)
+        self.assertIn('%d phone files' % a['count'], out)
+
+    def test_exclude_prefix(self):
+        code, out, err = self.publish('--android-exclude', 'data/images/streamer/')
+        self.assertEqual(code, 0, err)
+        m = self.payload()
+        self.assertNotIn('data/images/streamer/overlay.png', m['android']['files'])
+        self.assertIn('data/images/streamer/overlay.png', {f['path'] for f in m['files']})
+        for bad in ('data/things', '../x/', 'bin/x/', 'data/a b$/'):
+            code, out, err = self.publish('--android-exclude', bad)
+            self.assertNotEqual(code, 0, bad)
+            self.assertIn('--android-exclude', err)
+
+    def test_old_clients_see_the_same_files(self):
+        self.assertEqual(self.publish('--no-android')[0], 0)
+        plain = self.payload()
+        self.assertNotIn('android', plain)
+        shutil.rmtree(self.out)
+        self.assertEqual(self.publish()[0], 0)
+        withp = self.payload()
+        for k in ('files', 'format', 'product', 'version', 'min_version', 'min_package', 'files_url', 'encryption',
+                  'parallel'):
+            self.assertEqual(plain[k], withp[k], k)
+
+    def test_section_is_signed(self):
+        self.assertEqual(self.publish()[0], 0)
+        path = os.path.join(self.out, 'manifest.json')
+        env = json.load(open(path))
+        m = json.loads(env['payload'])
+        m['android']['files'].pop()
+        m['android']['count'] -= 1
+        env['payload'] = json.dumps(m, sort_keys=True, separators=(',', ':'))
+        json.dump(env, open(path, 'w'))
+        code, out, err = run(['verify', self.out, '--public', self.pub])
+        self.assertNotEqual(code, 0)
+        self.assertIn('bad signature', err)
+
+    def test_dry_run_and_no_pair_warning(self):
+        code, out, err = run(['build', self.client, '--dry-run'])
+        self.assertEqual(code, 0, err)
+        self.assertIn('phone data', out)
+        self.assertNotIn('warning: no data/things', err)
+        os.remove(os.path.join(self.client, 'data/things/1098/Tibia.dat'))
+        code, out, err = run(['build', self.client, '--dry-run'])
+        self.assertEqual(code, 0, err)
+        self.assertIn('warning: no data/things/*.dat in the phone data list', err)
+
+    def test_payload_rules(self):
+        entries = [('modules/a/a.lua', 'a' * 64, 1, 'c' * 64, 45), ('layouts/mobile/x.otui', 'b' * 64, 2, 'd' * 64, 46),
+                   ('data/things/1098/Tibia.dat', 'e' * 64, 3, 'f' * 64, 47)]
+        m = json.loads(mum.make_payload(entries, 3, 0, 0, 4, 'live', 'now', android=()))
+        self.assertIsNone(mum.check_payload(m))
+        self.assertEqual(m['android']['files'], ['data/things/1098/Tibia.dat', 'modules/a/a.lua'])
+        self.assertEqual(m['android']['bytes'], 45 + 47)
+        self.assertNotIn('android', json.loads(mum.make_payload(entries, 3, 0, 0, 4, 'live', 'now')))
+
+        def broken(fn):
+            x = json.loads(json.dumps(m))
+            fn(x['android'])
+            return mum.check_payload(x)
+        self.assertIn('not a file of the update', broken(lambda a: a['files'].append('modules/zz/z.lua')))
+        self.assertIn('duplicate', broken(lambda a: a.update(files=a['files'] + [a['files'][0]], count=3)))
+        self.assertIn('never on a phone', broken(lambda a: a.update(files=['layouts/mobile/x.otui'], count=1, bytes=46)))
+        self.assertIn('bad count', broken(lambda a: a.update(count=9)))
+        self.assertIn('bad bytes', broken(lambda a: a.update(bytes=1)))
+        self.assertIn('bad version', broken(lambda a: a.update(version=2)))
+        self.assertIn('bad file list', broken(lambda a: a.update(files=[])))
+
+
 class Crypt(unittest.TestCase):
     """update_crypt.py: the blob format the engine decrypts (base patch 0103)"""
     key = bytes.fromhex(TEST_KEY)
@@ -879,6 +984,38 @@ class Workflow(unittest.TestCase):
         # the map editor gets the single file, not the shards
         self.assertNotIn('cp "$P/client/data/things/1098/"Tibia.*', text)
         self.assertIn('"$P/mapeditor/client/"', text)
+
+
+class AndroidWorkflow(unittest.TestCase):
+    """android-client.yml (O313): the APK gets the same manifest URL and public key as the Windows package, with the same
+    production defaults, writes them with set_update_config.py, and the emulator smoke test asserts the first-start screen"""
+    DIR = os.path.join(HERE, '..', '..', '.github', 'workflows')
+
+    @staticmethod
+    def default(text, name):
+        m = re.search(r'\n      %s:\n(?:        [^\n]*\n)*?        default: "([^"\n]*)"' % name, text)
+        return m.group(1) if m else None
+
+    def test_same_update_inputs_as_the_windows_package(self):
+        win = open(os.path.join(self.DIR, 'windows-package.yml'), encoding='utf-8').read()
+        apk = open(os.path.join(self.DIR, 'android-client.yml'), encoding='utf-8').read()
+        for name in ('update_manifest', 'update_public_key'):
+            self.assertIsNotNone(self.default(win, name), name)
+            self.assertEqual(self.default(apk, name), self.default(win, name), name + ': same production default')
+        self.assertEqual(self.default(apk, 'update_manifest'), 'https://www.cindersofchaos.com/updates/live/manifest.json')
+        self.assertEqual(self.default(apk, 'update_public_key'),
+                         '7f4ae1b812e3ca86ac4551683b987b8bf68d2256b36b1785c07cb4f3ffb72224')
+        self.assertIn('UPDATE_MANIFEST: ${{ inputs.update_manifest }}', apk)
+        self.assertIn('UPDATE_PUBLIC_KEY: ${{ inputs.update_public_key }}', apk)
+        self.assertIn('set_update_config.py game --manifest "$UPDATE_MANIFEST"', apk)
+        self.assertIn('--public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD"', apk)
+
+    def test_smoke_asserts_the_first_start_screen(self):
+        apk = open(os.path.join(self.DIR, 'android-client.yml'), encoding='utf-8').read()
+        self.assertIn('grep -q "firststart: screen shown" logcat.txt', apk)
+        src = open(os.path.join(HERE, '..', 'overlay', 'modules', 'client_chaos_firststart', 'firststart.lua'),
+                   encoding='utf-8').read()
+        self.assertIn("g_logger.info('firststart: screen shown (' .. tostring(why) .. ')')", src)
 
 
 if __name__ == '__main__':

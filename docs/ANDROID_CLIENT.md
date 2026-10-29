@@ -1,8 +1,9 @@
 # Android client (O313): study, plan and build
 
 Status: phase 1 done, study and plan. Phase 2 done as far as this machine can check: the engine builds for android
-arm64 with the NDK through CMake, and a Gradle project packs it into an APK. See "Phase 2 status" below. Nothing has run
-on a device yet.
+arm64 with the NDK through CMake, and a Gradle project packs it into an APK. See "Phase 2 status" below. Phase 3 (written
+2026-10-29, option B of section 3): the first-start download of the game data, the file-backed mount and the restart. See
+"Phase 3 status". Nothing has run on a device yet.
 Date of the study: 2026-10-29. Owner approval to start: 2026-10-29.
 The admin app in `android/` is a separate program and is not touched.
 
@@ -18,14 +19,76 @@ sprites, and an APK that updates itself.
   Three places need Android work: the encrypted pack (RAM), the update overlay (RAM) and the restart.
 - The real problems are the data size and the screen. The sprite pair is over 1 GiB and `chaos.pack` is about 0.9 GB.
   The engine decrypts the pack into one RAM buffer. 69 modules open windows taller than 360 logical pixels.
-- Recommended: a small APK (engine, Lua, UI, no sprite pair) with the game data downloaded on first start through the
-  signed manifest, and the APK itself updated by a versioned download that is checked twice, then installed by
+- Recommended, and built in phase 3 for the data: a small APK (engine, Lua, UI, no sprite pair) with the game data
+  downloaded on first start through the signed manifest, and, still to build, the APK itself updated by a versioned download that is checked twice, then installed by
   Android's package installer (sideload). A store comes later and needs decisions from the owner.
 - Honest estimate: 4 to 6 weeks of work for a client that starts, logs in and plays with a basic touch pad. Another
   6 to 10 weeks to make the Chaos windows usable on a phone. Details in "Estimate".
 
 Phase 1 added no CI workflow, because the base had no Android build to run from Linux. Phase 2 adds the build and the
 manual workflow `.github/workflows/android-client.yml`. See "Phase 2 status".
+
+## Phase 3 status
+
+Date: 2026-10-29. Build plan step 5 (data without the pack) and the restart are written and unit tested. The APK
+self-update (step 8), the release keystore and the touch layer are not.
+
+### What was added
+
+| Piece | Where | What it does |
+|---|---|---|
+| Manifest key `android` | `client/tools/make_update_manifest.py`, `client/MANIFEST.md` "Phone data" | The signed payload lists the files a phone needs: every path of the update except `layouts/mobile/` and the prefixes of `--android-exclude`. Written on every publish (`--no-android` leaves it out), checked by `verify`. Old clients and the launcher ignore it. |
+| Base patch `0167` | `client/base-patches/0167-android-phone-data.patch`, `client/BASE.md` | `g_resources.unpackUpdateBlob` (verified blob to a plain file), `mountDataFolder` (PhysFS mount of the downloaded folder in front of `data.zip`, file-backed), `getFreeSpace`, the update key on Android, and the Android restart request. |
+| First-start screen | `client/overlay/modules/client_chaos_firststart/` | Fetches the signed manifest, compares, shows size, Wi-Fi advice and the free-space check (data plus 0.5 GB), downloads with pause, resume and retry, unpacks, restarts. Uses the desktop updater's code for the signature, paths and the download pool. |
+| Restart | `ChaosActivity.restartApp`, `RestartActivity`, `AndroidManifest.xml` | After the engine has shut down, a helper activity in its own process ends the game process and starts the game again. |
+| Workflow | `.github/workflows/android-client.yml` | New inputs `update_manifest` and `update_public_key` (same production defaults as `windows-package.yml`, written with `set_update_config.py`; optional `update_baseline`, the release number of the APK's own Lua, so an older live update only brings the game data), `client_build` default 30 (the live build, else the manifest's `min_package` turns the phone away), and the smoke test asserts the first-start screen in logcat. |
+
+Decision taken (owner question 2, default to the simpler path): the verified files are **plain files in the app's private
+folder**, no AES blobs on the phone. Same protection as the Windows loose tree before client build 13. The downloads are
+the encrypted blobs of the site and are decrypted once, by the engine, when they are unpacked. To change it later, a
+decrypting file layer would have to sit under PhysFS.
+
+### How it behaves
+
+1. The APK starts from `data.zip` (Lua, UI, art). `bootstrap.lua` mounts `chaos_update/android` when a finished download
+   is there.
+2. No `data/things/1098/Tibia.dat`: the screen blocks the login, fetches the manifest and compares the phone list with the
+   phone. The Download button starts it. With an unreachable server the screen says so and keeps a Retry. With the game data
+   in place a failure is silent (log only) and the player goes on.
+3. The files land in `chaos_update/android/` one by one, each only after its hashes and GCM tag checked. A stop in the
+   middle resumes from `chaos_update/android_index.txt` and the finished parts in `chaos_update/staging/`.
+4. The client restarts and mounts the folder. A later start downloads only what changed (Lua, art, a sprite shard).
+5. A new APK removes the old APK's Lua and art from the folder (they would hide the new `data.zip`) and keeps the game data.
+
+### What was checked here
+
+- `client/overlay/modules/client_chaos_firststart/firststart_core_test.lua` (122 checks) and `boot_test.lua` (42 checks) under
+  LuaJIT and Lua 5.3; the older updater and clean start tests still pass with the Android cases added.
+- The publisher: `make_update_manifest_test.py` (the `android` section, its checks, `--android-exclude`, `--no-android`,
+  the old clients' view, the signature, the workflow inputs) and `publish_client_update_test.py` (the real script on a
+  synthetic sharded package).
+- Patch `0167` applies on a fresh base after `0001` to `0166`; `resourcemanager.cpp` and `application.cpp` pass a syntax check.
+
+### What is not checked
+
+- Everything on a device: the download over a mobile network, the PhysFS mount of the folder, the free-space call, how long
+  the unpack of about 1 GB takes, the JNI restart and the helper activity (Android may refuse a background activity start on
+  some versions; if so the player opens the app again, the data is in place), the Java code (no Android SDK here to compile it).
+- The NDK build of patch `0167` (the Linux syntax check used host headers).
+- The smoke test line on the emulator (written, not run).
+
+### What the owner does on the VPS
+
+The live manifest gets the `android` section with its next publish. It needs the new publisher on the VPS and a release
+newer than the live update (a publish of the same version is refused).
+1. Admin app: Painel > Atualizar servidor (runs `update-apply`), so `/opt/chaos/repo` has this change. Shell fallback:
+   `sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh update-apply`.
+2. Build the next Windows package (Actions > Windows package), as for any client update.
+3. Admin app: Comandos > card "Site e update do client" > field "Release do client" (for example `winpkg-N`) > button
+   "Publicar update". Shell fallback: `sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh publish-update winpkg-N`.
+4. Check: `make_update_manifest.py verify /var/www/chaos/updates/live --public KEY` prints "N phone files" (the key is the
+   public key of `Services.update.publicKey`). Then run Actions > Android client (the defaults point at the live manifest
+   and key).
 
 ## Phase 2 status
 
@@ -87,25 +150,25 @@ client has its own release key, not the key of the admin app.
 
 ### Still open
 
-1. **File-backed data.** `chaos.pack` is not mounted on Android, so the APK starts from `data.zip` in the assets, which
-   the engine reads into one RAM buffer, about 71 MB here. Fine for the Lua and UI files. The sprite pair has no path
-   yet: a new patch must mount downloaded files from the app folder through PhysFS without a RAM copy, with the
-   first-start download screen and the AES decision from the owner questions.
-2. **No game data in the APK.** Without the pair the client stops at the missing-data error. The first-start download
-   is step 5 of the plan.
-3. **Restart.** Patch 0101 makes the restart an `exit`. The Java shell must start the activity again before the process
-   ends. Not written.
+1. **File-backed data.** Done in phase 3 (patch `0167`) for the downloaded game data. `data.zip` in the assets is still
+   read into one RAM buffer, about 71 MB here. Fine for the Lua and UI files; a PhysFS mount of the APK asset would be
+   better and is not built.
+2. **No game data in the APK.** Done in phase 3: the first-start screen downloads it. Not run on a device.
+3. **Restart.** Done in phase 3 (Java `restartApp` and `RestartActivity`). Not run on a device.
 4. **Touch layout.** The walk pad and the action bar of `client_mobile`, tap and long press, hotkey buttons, safe areas,
    the 69 windows over 360 logical pixels. Section 2 is unchanged.
 5. **Window re-layout.** The engine resizes with the screen through `updateSize`. The Chaos windows have no mobile
    styles yet, except `game_event`. Phase 3.
 6. **Mobile defaults.** The heavy options should start off on Android. Not set.
-7. **APK self-update.** Step 8. The `android` manifest key, the installer hand-over and the publish script flag.
+7. **APK self-update.** Step 8. The `android` manifest key now lists the game data files (phase 3). Still to build: the
+   `android_apk` entry (version code, URL, SHA-256, size, signer), the Java installer hand-over through
+   `PackageInstaller` and its permission, and the publish script flag.
 8. **OpenAL Soft is LGPL.** It is linked statically into the engine library. Whoever has the APK cannot relink it. For
    a public release either link it dynamically, as a separate `.so` in the APK, or offer the object files. The owner
    should decide before any public download. The same question applies to the Windows package.
-9. **Encrypted data on the phone.** The Android pack path is plain: `data.zip` can be unzipped from the APK by anyone.
-   Same level as the Windows loose tree before client build 13. Owner question 2 still decides.
+9. **Encrypted data on the phone.** Decided as the default in phase 3: plain files in the app folder, and `data.zip` can
+   be unzipped from the APK by anyone. Same level as the Windows loose tree before client build 13. The owner can still
+   ask for encrypted storage (question 2); it would be a decrypting file layer under PhysFS.
 10. **Developer verification.** Owner question 1 is unchanged.
 
 ## 1. Feasibility of the base client
@@ -293,6 +356,7 @@ that Android also shares with other apps. It will be killed. So on Android:
 
 Recommendation: B. The APK carries the engine, the Lua and UI, and a minimal bootstrap. On first start it fetches
 the signed manifest and downloads the game data (shards, dat, art) the way the desktop updater does.
+Built in phase 3 (see "Phase 3 status"); the points below say how.
 
 ### How, with the signed manifest
 
@@ -304,13 +368,14 @@ resume, staging, a journaled apply (`client/MANIFEST.md` "Signed updater"). Plan
 2. Add an Android profile to the manifest. The same blobs, plus a list for the phone: the shard set, but not the
    desktop-only art. A new key `android` next to `native` (old clients ignore unknown keys, as they ignore `native`).
    The phone only downloads files listed in its section. This is the idea of the O314 `native` section reused.
-3. Make the overlay file-backed. Patch 0103 mounts the downloaded files as an in-memory ZIP. For Android a new patch
-   (number 0163 or higher) mounts the folder `chaos_update/files` directly through PhysFS and decrypts per file when
-   it is opened. On a phone the storage is app-private, so the encrypted blob step protects little. The simpler
-   choice is to store the verified plain files in the app folder. Decision for the owner: keep AES blobs on the
-   phone (more code) or not (less code, same level of protection as the Windows loose tree before build 13).
+   Done: the list holds paths of `files` (not copies), minus `layouts/mobile/`; `--android-exclude` takes more prefixes.
+3. Make the overlay file-backed. Patch 0103 mounts the downloaded files as an in-memory ZIP. For Android patch 0167
+   mounts the plain folder `chaos_update/android` directly through PhysFS. On a phone the storage is app-private, so
+   the encrypted blob step protects little: the verified files are stored plain in the app folder (default taken for
+   owner question 2; same protection as the Windows loose tree before build 13).
 4. Show a first-start screen in the client: size, Wi-Fi advice, progress, pause. Check free space first: about 1.1 GB
-   for the data and 0.5 GB for staging.
+   for the data and 0.5 GB for staging. Done (`client_chaos_firststart`). The Wi-Fi advice is a text: the client does not
+   ask Android whether the link is Wi-Fi.
 5. Shrink the pair for phones, later. Measure how many sprites the server content really uses (items, monsters,
    outfits, effects) against the library sprites the pair also holds. A "used set" shard list could cut the download.
    Not estimated here, because the share is not measured.
@@ -324,8 +389,8 @@ Two things update: game data and the APK itself.
 ### Game data
 
 The signed manifest, as on desktop. Lua and module-only changes are the cheap case: the in-game updater applies
-them and restarts. On Android a restart is `exit()` today (patch 0101). The Java shell must start the activity
-again. Small change in the shell: an `AlarmManager` or a `startActivity` before exit.
+them and restarts. On Android a restart was `exit()` (patch 0101). Done in phase 3: patch 0167 asks the Java shell,
+which starts a helper activity in its own process that ends the game process and starts the game again.
 
 ### The APK itself
 
@@ -384,14 +449,14 @@ Each step lists the result and a rough size. One person, with a phone and a CI r
    `com.cindersofchaos.client`, `minSdk 26`, current `targetSdk`, arm64-v8a only, the Java activity adapted (system
    bars, keyboard, text dialog, fatal dialog, restart), icons from `docs/brand`. The name `client/android/` is chosen
    so it never mixes with the admin app in `android/`. Size: 3 to 4 days.
-5. **Data without the pack.** Android patch for a file-backed overlay and for mounting the APK's Lua ZIP without
-   reading it into memory. First-start download screen. Size: 8 to 12 days. This is the biggest engine step.
+5. **Data without the pack.** Done for the downloaded data in phase 3 (patch 0167, `client_chaos_firststart`). Left:
+   mounting the APK's Lua ZIP without reading it into memory. Size was 8 to 12 days. This is the biggest engine step.
 6. **First boot on a device.** Login, map, walking, attack, chat. Mobile defaults for the heavy options. Size: 5 to
    8 days, mostly fixing what only a device shows.
 7. **Touch layer.** Walk pad and action bar from `client_mobile`, long press, tooltip replacement, hotkey buttons for
    the spells and the helper, safe areas. Size: 8 to 12 days.
-8. **APK updater.** The `android` manifest key, the Java installer step, publish script flag, tests in Python for
-   the manifest side. Size: 4 to 6 days.
+8. **APK updater.** The `android` manifest key (the game data list is done in phase 3; the APK entry is not), the Java
+   installer step, publish script flag, tests in Python for the manifest side. Size: 4 to 6 days.
 9. **CI workflow.** Written, see Phase 2 status. `.github/workflows/android-client.yml`, manual only (`workflow_dispatch`), `ubuntu-latest`:
    - check out this repository and the assets branch, as `windows-package.yml` does (base client archive in parts);
    - `assemble_client.sh` into a game folder, then a trimmed folder for the APK (no pair, no `chaos.pack`);
@@ -433,7 +498,8 @@ unknowns, because nobody has built this engine tree for Android in CI. Re-estima
 ## Open questions for the owner
 
 1. Direct download first, store later: agreed? And does the Brazil developer verification rule apply to us?
-2. Phone data: AES blobs on the phone, or plain verified files in the app folder?
+2. Phone data: AES blobs on the phone, or plain verified files in the app folder? (Built as plain files, the simpler
+   default; say if you want encryption.)
 3. Minimum device: Android 8 (API 26) and 3 GB RAM, or higher? This sets how much we cut.
 4. Accept a first-start download of about 1.1 GB on mobile data, or Wi-Fi only with a warning?
 5. Play Billing: if a store comes, the coin shop must change on that channel. Same answer for Apple later.
