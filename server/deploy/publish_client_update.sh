@@ -264,7 +264,7 @@ if [ "${#packs[@]}" -gt 0 ]; then
     mkdir "$NATIVE"
     find "$packdir" -maxdepth 1 -type f \( -name '*.exe' -o -name '*.dll' -o -name chaos.pack \) -print0 \
       | while IFS= read -r -d '' nf; do ln "$nf" "$NATIVE/" 2>/dev/null || cp "$nf" "$NATIVE/"; done
-    say "launcher: $(ls "$NATIVE" | wc -l) native files for the launcher"
+    say "launcher: $(find "$NATIVE" -mindepth 1 -maxdepth 1 | wc -l) native files for the launcher"
   fi
   rm -f "${packs[0]}"
   CLIENT="$WORK/tree"
