@@ -397,6 +397,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   jsonguards   tools/patch_base_json_guards.py   the base extended opcode handlers (store, tasks, upgrades, inspect, character
                stats, waystone device) accept only a JSON object: valid JSON that is not one was a Lua error per packet
                (README "Engine hardening (sanitizers, fuzzing)"; late: after the steps that patch the same files)
+  opcodeinputs tools/patch_base_opcode_inputs.py  the base opcode handlers check what a modified client sends: the store's
+               coin gift (whole amounts, conditional debit), highscores paging and filter, inspect of hidden players,
+               character stats, upgrades, tasks, item fusion (README "Opcode input audit (O252)"; right after jsonguards)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -1505,6 +1508,14 @@ def step_jsonguards(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'jsonguards')  # late: after events, waystonehideout and the other steps on those files
+
+
+def step_opcodeinputs(server, data, ctx):
+    args = [tool('patch_base_opcode_inputs.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_opcode_inputs.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'opcodeinputs')  # right after jsonguards: the anchors are lines the class, tester and hideout steps leave alone
 
 
 def step_autoloot(server, data, ctx):

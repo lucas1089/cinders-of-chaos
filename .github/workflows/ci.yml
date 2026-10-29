@@ -1142,6 +1142,8 @@ jobs:
 
       - name: Base opcode handlers accept only a JSON object (patch_base_json_guards.py, synthetic copies)
         run: python3 -I server/tools/patch_base_json_guards_test.py
+      - name: Base opcode handlers check their fields (patch_base_opcode_inputs.py, synthetic copies)
+        run: python3 -I server/tools/patch_base_opcode_inputs_test.py
 
       - name: Gateway and backend firewall scripts (render and check, no changes)
         run: |
