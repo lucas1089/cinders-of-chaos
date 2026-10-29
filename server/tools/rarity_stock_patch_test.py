@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """patch_base_events.py step 21: the stock rarity roll walks ChaosRarity.stockRolls (the seven rarities, 2026-10-18).
+Step 22: the "Loot of" line reads a text rarity (a shielded forged drop) through tonumber (live log 2026-10-28).
 Run: python3 -I server/tools/rarity_stock_patch_test.py"""
 import os
 import sys
@@ -59,6 +60,21 @@ check('ChaosRarity.stockRolls' in new and 'return rarities' in new, 'with the ba
 check(new.count(P.STOCK_MARKER) == 1, 'one marker')
 again, st = P.patch_stock_rarities(new)
 check(st == 'already' and again == new, 'idempotent')
+LINE = (
+    "local function getCustomLootDescription(corpse)\n"
+    "        local item = corpse:getItem(slot)\n"
+    "            local rarityId = item:getCustomAttribute(\"rarity\")\n"
+    "            if rarityId and rarityId > 0 then\n"
+    "            end\n"
+    "end\n")
+num, st = P.patch_loot_rarity_number(LINE)
+check(st == 'patched', 'step 22 patches: ' + st)
+check('            local rarityId = tonumber(item:getCustomAttribute("rarity"))\n' in num, 'the read goes through tonumber')
+check(num.count(P.RARNUM_MARKER) == 1, 'step 22: one marker')
+again, st = P.patch_loot_rarity_number(num)
+check(st == 'already' and again == num, 'step 22: idempotent')
+_, st = P.patch_loot_rarity_number(STOCK)
+check(st.startswith('unexpected'), 'step 22: a file without the read is refused')
 if failures:
     sys.exit(1)
 print('rarity_stock_patch_test: OK')
