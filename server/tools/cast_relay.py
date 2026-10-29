@@ -1112,9 +1112,11 @@ class Sheets:
             places.append(gsi.place(rm, mm))
         rects = []
         for rxy, mxy, _z in places:
-            rects.append((rxy[0], rxy[1], iv.w * 32, iv.h * 32))
+            for v in (iv, wv):
+                rects.append((rxy[0], rxy[1], v.w * 32, v.h * 32))
             if mxy is not None:
-                rects.append((mxy[0], mxy[1], mframes[0].w * 32, mframes[0].h * 32))
+                for v in (mframes[0], mframes[2]):
+                    rects.append((mxy[0], mxy[1], v.w * 32, v.h * 32))
         left = min(r[0] for r in rects)
         top = min(r[1] for r in rects)
         cw = max(r[0] + r[2] for r in rects) - left
