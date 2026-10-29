@@ -12,5 +12,15 @@ return {
 	-- true: only a character's first login grants (a character made before this switch was on does not); the
 	-- account still gets the coins once, with its next new character
 	firstLoginOnly = true,
-	delayMs = 3000 -- after login, so the message comes after the welcome lines
+	delayMs = 3000, -- after login, so the message comes after the welcome lines
+	-- The beta tester thank-you (owner decision 2026-10-29; beta_tester.lua). An account that logs in inside a window is
+	-- recorded in chaos_beta_testers, a table the wipe keeps (docs/BETA.md section 9). When the beta switch is off
+	-- (launch), those accounts hold the cosmetic name plate title below. Times: server local time, "YYYY-MM-DD HH:MM".
+	tester = {
+		windows = {
+			{from = "2026-10-31 15:00", to = "2026-11-01 23:00"}, -- beta weekend 1
+			{from = "2026-11-07 15:00", to = "2026-11-08 23:00"} -- beta weekend 2
+		},
+		title = {key = "betatester", text = "Beta Tester", color = "#7fd6a8"}
+	}
 }

@@ -34,6 +34,18 @@ check(fe.get("id") == "founder" and fe.get("start") == "2026-11-20T15:00:00-03:0
 check(data is not None and data["events"][0]["start"] == "2026-10-31T15:00:00-03:00", "beta 1 starts 31 Oct 15:00")
 check(data is not None and data["events"][-1]["start"] == "2026-11-20T15:00:00-03:00", "launch 20 Nov 15:00")
 check(data is not None and all(s["lengthWeeks"] * 7 <= s["lengthDays"] for s in data["seasons"]), "season length in weeks")
+s1 = data["seasons"][0]
+check(s1["start"] == "2026-11-20T15:00:00-03:00" and s1["finish"] == "2027-02-19T15:00:00-03:00" and s1["lengthWeeks"] == 13,
+      "Season 1: launch 20 Nov 2026 15:00 to 19 Feb 2027, 13 weeks")
+check(s1["startsAtLaunch"] and s1["firstSeason"], "Season 1 starts at the launch")
+check(data["nextSeason"]["start"] == "2027-02-20T15:00:00-03:00" and data["nextSeason"]["status"] == "plan",
+      "Season 2: 20 Feb 2027 15:00, planned")
+check(next(e for e in data["events"] if e["kind"] == "launch")["status"] == "confirmed", "the launch is confirmed")
+check(data["cycles"][0]["windows"][0]["start"] == "2026-11-20T15:00:00-03:00", "PvP season 1 starts at the launch")
+check(data["cycles"][0]["windows"][0]["end"] == "2027-01-15T15:00:00-03:00", "PvP season 1 ends 15 Jan 2027 15:00")
+check(data["patchnotes"]["weekday"] == 3 and data["patchnotes"]["firstRegular"] == "2026-11-25", "patch notes on Wednesday, the first on 25 Nov")
+check(set(data["wipe"]) == {"betaToLaunch", "afterLaunch", "seasonToSeason"}, "three wipe rules")
+check(all(q["id"] in ("season2", "beta-bans") for q in data["open"]), "only the open questions left")
 check(data is not None and g.render(data) == g.render(data), "rendering is stable")
 check(g.main(["--check"]) == 0, "the committed file is up to date")
 print("gen_calendar_data_test: %s" % ("FAILED" if failed else "OK"))

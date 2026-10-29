@@ -56,5 +56,26 @@ eq(pend[2] ~= nil, true, 'recent one kept')
 eq(pend[3], nil, 'given up after the last try')
 eq(pend[4], nil, 'gone from the screen')
 
+-- TRY ON of a store frame (O318)
+local real = { cid = 7, title = 'Hunter', color = '#aabbcc', guild = 'Ash', frame = 'gold' }
+local t = M.tryRecord(real, 'frost')
+eq(t.frame, 'frost', 'the tried frame') eq(t.title, 'Hunter', 'title kept') eq(t.guild, 'Ash', 'guild kept')
+eq(real.frame, 'gold', 'the real record is not changed')
+eq(M.tryRecord(nil, 'frost').frame, 'frost', 'a player without a plate yet') eq(M.tryRecord(real, 'nope'), nil, 'unknown frame')
+eq(M.tryRecord(real, 42), nil, 'not a name') eq(M.tryRecord(real, 'founder').frame, 'founder', 'a limited frame')
+local a = M.beginTry(nil, 7, 'frost', 1000, 10000)
+eq(a.token, 1, 'first token') eq(a.untilMs, 11000, 'ends after ten seconds') eq(M.beginTry(nil, 7, 'frost', 5).untilMs, 10005, 'default length')
+eq(M.beginTry(a, 7, 'ember', 2000, 10000).token, 2, 'token grows') eq(M.beginTry(nil, 0, 'frost', 1), nil, 'no creature')
+eq(M.beginTry(nil, 7, 'bad', 1), nil, 'no frame')
+eq(M.tryActive(a, 10999), true, 'running') eq(M.tryActive(a, 11000), false, 'over') eq(M.tryActive(nil, 1), false, 'no try')
+eq(M.shown(real, a, 7, 5000).frame, 'frost', 'own plate shows the try')
+eq(M.shown(real, a, 7, 12000).frame, 'gold', 'restored after the time')
+eq(M.shown(real, nil, 7, 1).frame, 'gold', 'no try')
+local other = { cid = 8, frame = 'rose' }
+eq(M.shown(other, a, 8, 5000), other, 'another player keeps own plate')
+local b = M.beginTry(a, 7, 'ember', 2000, 10000)
+eq(M.endTry(b, a.token), b, 'an old timer leaves the newer try') eq(M.endTry(b, b.token), nil, 'the newest timer ends it')
+eq(M.endTry(nil, 1), nil, 'nothing to end')
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('nameplatemath_test: OK')

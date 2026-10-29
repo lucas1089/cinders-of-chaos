@@ -1,7 +1,7 @@
 -- Creator codes: pure logic (no engine calls), shared by creator_codes.lua and server/tests/creator_codes_test.lua.
 --   codes      C.normalize(text, cfg) -> "ASHEN" or nil
 --   shares     C.share(coins, pct, cfg) -> coins the creator earns for a donation of `coins` (floor, at most orderCap);
---              C.pctOf(codeRow, cfg) -> the code's own % or cfg.sharePct
+--              C.pctOf(codeRow, cfg, at) -> the code's own %, the launch window % or cfg.sharePct
 --   support    C.supportCovers(support, orderCreated) -> true when the donor's pick covers a donation made then
 --   networks   C.netKey(ip) -> "a.b.c.d" (IPv4) or the /64 of an IPv6 address ("2001:db8:0:1"); C.sameNet(a, b);
 --              C.shareIp(listA, listB) -> true when any address of A is in a network of B
@@ -28,10 +28,29 @@ function C.normalize(text, cfg)
 end
 
 -- ---------------------------------------------------------------- shares
-function C.pctOf(codeRow, cfg)
+-- the launch window: launchBonusStart ("YYYY-MM-DD HH:MM", server local time) for launchBonusDays days.
+-- Returns the window's first and last unix second, or nil when the bonus is not set up.
+function C.bonusWindow(cfg)
+	local y, mo, d, h, mi = tostring(cfg.launchBonusStart or ""):match("^(%d+)-(%d+)-(%d+) (%d+):(%d+)$")
+	local days = tonumber(cfg.launchBonusDays) or 0
+	if not y or days <= 0 or (tonumber(cfg.launchBonusPct) or 0) <= 0 then
+		return nil
+	end
+	local first = os.time({year = tonumber(y), month = tonumber(mo), day = tonumber(d), hour = tonumber(h), min = tonumber(mi), sec = 0})
+	return first, first + days * 86400 - 1
+end
+
+-- the % a donation earns: the code's own % wins; else launchBonusPct for a donation credited inside the launch
+-- window (`at`, unix time, nil = no window check); else sharePct
+function C.pctOf(codeRow, cfg, at)
 	local own = codeRow and tonumber(codeRow.pct) or 0
 	if own and own > 0 then
 		return own
+	end
+	local first, last = C.bonusWindow(cfg)
+	at = tonumber(at)
+	if first and at and at >= first and at <= last then
+		return tonumber(cfg.launchBonusPct)
 	end
 	return tonumber(cfg.sharePct) or 0
 end

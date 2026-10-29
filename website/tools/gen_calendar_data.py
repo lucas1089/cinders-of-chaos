@@ -7,11 +7,14 @@ drift from them:
   - server/data/scripts/chaos/battleground_config.lua    the PvP season cycle (weeks, epoch)
   - server/data/scripts/chaos/chaos_constants.lua        the Infinity Tower cycle (seasonEpoch, seasonLengthDays)
   - server/data/patchnotes/*.md                          the patch notes that exist (a note a week)
-  - website/tools/calendar_source.json                   the events (betas, wipe, launch), the wipe rules, the open
-                                                         questions: the only hand-written file, in pt-BR and en
+  - website/tools/calendar_source.json                   the events (betas, wipe, launch), Season 2, the patch weekday, the
+                                                         wipe rules, the open questions: the only hand-written file, in
+                                                         pt-BR and en
 
 It also checks the source's dates against docs/OWNER_TODO.md and docs/BETA.md (the `verify` rules): when the owner
-changes a date there, this tool fails until calendar_source.json follows.
+changes a date there, this tool fails until calendar_source.json follows. It also fails when Season 1 or the PvP
+season 1 does not start with the launch, or when the launch is not marked confirmed (owner decision 2026-10-29).
+Season 2 starts the day after Season 1 ends (planned); the patch note day is Wednesday (weekday 3, ISO).
 Run:  python3 -I website/tools/gen_calendar_data.py            write the file
       python3 -I website/tools/gen_calendar_data.py --check    exit 1 when the file differs from the sources (CI)
 No clock and no network: the output depends on the files only. Times are server time, UTC-3 (no daylight saving).
@@ -132,6 +135,20 @@ def build():
         s["firstSeason"] = s["id"] == 1
     if not seas:
         problems.append("season_config.lua has no season")
+    elif not (seas[0]["firstSeason"] and seas[0]["startsAtLaunch"]):
+        problems.append("owner decision 2026-10-29: Season 1 starts with the launch (%s); season_config.lua says %s"
+                        % (launch["start"], seas[0]["start"]))
+    if launch.get("status") != "confirmed":
+        problems.append("calendar_source.json: the launch is confirmed by the owner (2026-10-29), its status must be confirmed")
+
+    # Season 2: the day after Season 1 ends, at the time of the source (planned, owner decision 2026-10-29)
+    nxt = None
+    if seas:
+        ns = src["nextSeason"]
+        day = datetime.datetime.strptime(seas[0]["finish"], "%Y-%m-%dT%H:%M:%S-03:00").replace(tzinfo=TZ) + datetime.timedelta(days=1)
+        hh, mm = (int(x) for x in ns["time"].split(":"))
+        nxt = {"id": ns["id"], "status": ns["status"], "title": ns["title"], "text": ns["text"],
+               "start": iso(day.replace(hour=hh, minute=mm))}
 
     bg = read(os.path.join(CHAOS, "battleground_config.lua"))
     pvp = block(bg, "season")
@@ -147,19 +164,17 @@ def build():
         {"id": "tower", "lengthDays": tower_days,
          "windows": cycle_windows(tuple(int(x) for x in tower_epoch.groups()), tower_days)},
     ]
+    if launch_dt != datetime.datetime(*pvp_epoch, tzinfo=TZ).replace(minute=0):
+        problems.append("owner decision 2026-10-29: PvP season 1 starts with the launch; battleground_config.lua epoch is %s" % (pvp_epoch,))
     for c in cycles:
         c.update(src["cycleTexts"][c["id"]])
     cycles.append(dict({"id": "weekly", "lengthDays": 7, "windows": []}, **src["cycleTexts"]["weekly"]))
 
-    # an open question that the files have answered is dropped, so the page never shows a settled one
-    open_q = []
-    first_pvp_end = cycles[0]["windows"][0]["end"]
-    for q in src["open"]:
-        if q["id"] == "season1-start" and any(s["firstSeason"] and s["startsAtLaunch"] for s in seas):
-            continue
-        if q["id"] == "pvp-season" and first_pvp_end >= iso(launch_dt + datetime.timedelta(days=21)):
-            continue
-        open_q.append(q)
+    # the first regular patch note: the first patch weekday after the launch day (Monday = 0, as datetime)
+    pc = src["patchCadence"]
+    first_note = launch_dt + datetime.timedelta(days=1)
+    while first_note.weekday() != pc["weekday"] - 1:
+        first_note += datetime.timedelta(days=1)
 
     data = {
         "generatedBy": "website/tools/gen_calendar_data.py (do not edit by hand)",
@@ -171,10 +186,12 @@ def build():
         "events": events,
         "seasons": seas,
         "cycles": cycles,
-        "patchnotes": {"cadence": "weekly", "count": len(notes), "latest": notes[-1] if notes else "",
-                       "title": src["patchCadence"]["title"], "text": src["patchCadence"]["text"]},
+        "nextSeason": nxt,
+        "patchnotes": {"cadence": "weekly", "weekday": pc["weekday"], "weekdayName": pc["weekdayName"],
+                       "firstRegular": first_note.strftime("%Y-%m-%d"), "count": len(notes), "latest": notes[-1] if notes else "",
+                       "title": pc["title"], "text": pc["text"]},
         "wipe": src["wipe"],
-        "open": open_q,
+        "open": src["open"],
     }
     return data, problems
 

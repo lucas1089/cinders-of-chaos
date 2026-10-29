@@ -44,12 +44,40 @@ function chaos_lua_config_fields(string $relative, array $defaults): array {
 	return $out;
 }
 
-/** creator_codes_config.lua: enabled, sharePct, supportDays, holdDays, orderCap, monthlyCap, adminGroup. */
+/**
+ * creator_codes_config.lua: enabled, sharePct, launchBonusPct, launchBonusStart, launchBonusDays, supportDays, holdDays,
+ * orderCap, monthlyCap, adminGroup.
+ */
 function chaos_creator_config(): array {
 	return chaos_lua_config_fields('scripts/chaos/creator_codes_config.lua', array(
-		'enabled' => true, 'sharePct' => 5, 'supportDays' => 30, 'holdDays' => 14, 'orderCap' => 500,
-		'monthlyCap' => 5000, 'adminGroup' => 5,
+		'enabled' => true, 'sharePct' => 10, 'launchBonusPct' => 15, 'launchBonusStart' => '2026-11-20 15:00', 'launchBonusDays' => 30,
+		'supportDays' => 30, 'holdDays' => 14, 'orderCap' => 500, 'monthlyCap' => 5000, 'adminGroup' => 5,
 	));
+}
+
+/**
+ * The launch window of the config as [first, last] unix seconds (server time, America/Sao_Paulo), or null when the
+ * bonus is off. The game server's twin: creator_codes_core.lua C.bonusWindow.
+ */
+function chaos_creator_bonus_window(array $cfg): ?array {
+	$days = (int)($cfg['launchBonusDays'] ?? 0);
+	if ($days <= 0 || (int)($cfg['launchBonusPct'] ?? 0) <= 0) {
+		return null;
+	}
+	$dt = DateTimeImmutable::createFromFormat('!Y-m-d H:i', (string)($cfg['launchBonusStart'] ?? ''), new DateTimeZone('America/Sao_Paulo'));
+	if (!$dt) {
+		return null;
+	}
+	return array($dt->getTimestamp(), $dt->getTimestamp() + $days * 86400 - 1);
+}
+
+/** The % a donation credited at `$at` earns for a code row: its own %, else the launch window %, else sharePct. */
+function chaos_creator_pct_at(array $code, array $cfg, int $at): int {
+	if ((int)($code['pct'] ?? 0) > 0) {
+		return (int)$code['pct'];
+	}
+	$w = chaos_creator_bonus_window($cfg);
+	return $w !== null && $at >= $w[0] && $at <= $w[1] ? (int)$cfg['launchBonusPct'] : (int)$cfg['sharePct'];
 }
 
 /** "ashen-2" -> "ASHEN2", or '' when it is not a code (3-16 letters and digits). */

@@ -217,6 +217,29 @@ CREATE TABLE IF NOT EXISTS `chaos_creator_log` (
   KEY `chaos_creator_log_code` (`code_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- Creator program applications (creators_lib.php, pages/creators.php; staff read them in the admin part of
+-- page.php?plugin=chaos&p=creator). Website only: the game server does not read this table. website/README.md "Creator program".
+CREATE TABLE IF NOT EXISTS `chaos_creator_applications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `character_name` varchar(29) NOT NULL,
+  `platform` varchar(16) NOT NULL,
+  `channel_url` varchar(255) NOT NULL,
+  `hours_week` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `viewers_avg` int(10) unsigned NOT NULL DEFAULT 0,
+  `followers` int(10) unsigned NOT NULL DEFAULT 0,
+  `message` varchar(1000) NOT NULL DEFAULT '',
+  `ip` varchar(64) NOT NULL DEFAULT '',
+  `status` varchar(8) NOT NULL DEFAULT 'new',
+  `created_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `reviewed_by` varchar(64) NOT NULL DEFAULT '',
+  `reviewed_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `chaos_creator_applications_account` (`account_id`, `created_at`),
+  KEY `chaos_creator_applications_ip` (`ip`, `created_at`),
+  KEY `chaos_creator_applications_status` (`status`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE IF NOT EXISTS `chaos_pay_payers` (
   `order_id` int(11) NOT NULL,
   `account_id` int(11) NOT NULL,

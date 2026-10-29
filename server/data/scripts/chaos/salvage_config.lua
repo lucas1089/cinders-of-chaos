@@ -100,10 +100,15 @@ return {
 	uniqueShards = 4,
 
 	-- "salvage all": items of rarity <= maxRarity (a stored id: 1, 2, 3, 4, 5 or 10) directly inside one container (the backpack or one bag in it),
-	-- at most batchCap items per action. 255 covers a page of the Loot Bag (500 slots, pages of 250): two clicks empty it. One
+	-- at most batchCap items per action. 255 covers a page of the Loot Bag (500 slots, pages of 250): one click empties it (the chain below). One
 	-- action removes up to 255 items in one tick and writes up to 255 rows in one INSERT (chaos_crafting_log), with
 	-- batchIntervalMs between two actions; tests/salvage_test.lua checks the cap against the Loot Bag size.
 	batchCap = 255,
+	-- O319: a full Loot Bag (500 slots) is emptied by one click. When a batch hit batchCap, the server takes the next
+	-- batch by itself after chainDelayMs (addEvent), at most chainMax batches in a row; it stops when the player logs
+	-- out, starts a batch of own, or the eligible items are not the ones left (salvage_core.lua K.chainStep).
+	chainDelayMs = 500,
+	chainMax = 8,
 	batchDefaultMaxRarity = 2,
 
 	-- ms between two actions of a player (single salvage / lock, a batch, a combine)

@@ -109,3 +109,44 @@ function NameplateMath.retries(pending, now, visible)
   table.sort(out)
   return out
 end
+
+-- ------------------------------------------------------------------ try on (O318, game_shop TRY ON)
+-- A store frame drawn on the player's own plate for a few seconds, this client only; then the real plate is back.
+-- A try is { cid, frame, untilMs, token }; the token tells an older restore timer from the newest try.
+NameplateMath.TRY_MS = 10000 -- as TryOn.MS of game_shop
+
+-- the plate record with the tried frame (title, colour and guild stay); nil for a frame that is not drawn
+function NameplateMath.tryRecord(rec, frame)
+  if type(frame) ~= 'string' or not NameplateMath.FRAMES[frame] then return nil end
+  local out = {}
+  for k, v in pairs(type(rec) == 'table' and rec or {}) do out[k] = v end
+  out.frame = frame
+  return out
+end
+
+-- the new try (prev = the running one or nil) or nil when the frame or the creature is no good
+function NameplateMath.beginTry(prev, cid, frame, nowMs, ms)
+  cid = tonumber(cid)
+  if not cid or cid <= 0 or type(frame) ~= 'string' or not NameplateMath.FRAMES[frame] then return nil end
+  return { cid = cid, frame = frame, untilMs = (tonumber(nowMs) or 0) + (tonumber(ms) or NameplateMath.TRY_MS),
+    token = (prev and prev.token or 0) + 1 }
+end
+
+-- is this try still running at `nowMs`
+function NameplateMath.tryActive(try, nowMs)
+  return type(try) == 'table' and (tonumber(nowMs) or 0) < try.untilMs
+end
+
+-- the record to draw for `cid`: the tried one while a try runs on it, else the real one (nil = none known)
+function NameplateMath.shown(rec, try, cid, nowMs)
+  if try and try.cid == cid and NameplateMath.tryActive(try, nowMs) then
+    return NameplateMath.tryRecord(rec, try.frame)
+  end
+  return rec
+end
+
+-- the restore timer of `token` ends the try only when it is still the newest one
+function NameplateMath.endTry(try, token)
+  if try and try.token == token then return nil end
+  return try
+end

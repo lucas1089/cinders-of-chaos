@@ -377,13 +377,13 @@
 		"rift.mods": 36,
 		"rift.omenKeyCost": 60,
 		"rift.omenMinTier": 6,
-		"season.finish": "2027-01-31",
+		"season.finish": "2027-02-19",
 		"season.joinMaxLevel": 7,
 		"season.modes": 1,
 		"season.modifier": "Season characters gain 10% more experience from monsters.",
 		"season.modifierName": "Ashfall",
 		"season.name": "Season of Ash",
-		"season.start": "2026-11-01",
+		"season.start": "2026-11-20",
 		"seasonpass.tiers": 50,
 		"siege.minLevel": 100,
 		"siege.on": true,
@@ -44448,7 +44448,7 @@
 								["Season Pass", "4", "500-2500", "Season pass"],
 								["Services", "5", "100-400", "Service"],
 								["XP Boosts", "2", "50-225", "Boost"],
-								["Blessings", "2", "60-750", "Boost, Service"],
+								["Blessings", "2", "60-300", "Boost, Service"],
 								["World Buffs", "4", "250-300", "Boost"],
 								["Potions", "18", "15-189", "Consumable item"],
 								["Runes", "29", "3-108", "Consumable item"],
@@ -44980,11 +44980,11 @@
 				{
 					"id": "store:11",
 					"name": "Blessings",
-					"sub": "2 offers, 60-750 coins. Boost, Service.",
+					"sub": "2 offers, 60-300 coins. Boost, Service.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["2 offers, 60-750 Chaos Coins. Boost, Service."]},
+						{"h": "Category", "p": ["2 offers, 60-300 Chaos Coins. Boost, Service."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -44998,9 +44998,9 @@
 								],
 								[
 									"Eternal Blessing",
-									"750",
+									"300",
 									"Service",
-									"This character keeps all five blessings for good: they come back after every death. Once per character. Not for season characters. (not for season characters)"
+									"This character keeps all five blessings for good: they come back after every death. 300 coins up to level 200, 500 up to level 500, 750 above. Once per character. Not for season characters. (not for season characters)"
 								]
 							],
 							"sprites": [{"item": 11260}, {"item": 11260}]

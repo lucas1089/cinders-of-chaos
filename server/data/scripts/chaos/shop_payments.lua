@@ -321,10 +321,10 @@ end
 
 function Pay.processReversals()
 	local rows = Chaos.select("SELECT p.`order_id`, p.`reversal`, p.`reversal_cents`, p.`amount_cents`, p.`currency`, p.`method`, " ..
-		"o.`account_id`, o.`pack_key`, o.`coins`, o.`bonus`, o.`first_bonus` FROM `" .. T_PAY .. "` p JOIN `" .. T_ORDERS ..
+		"o.`account_id`, o.`pack_key`, o.`coins`, o.`bonus`, o.`first_bonus`, o.`created` FROM `" .. T_PAY .. "` p JOIN `" .. T_ORDERS ..
 		"` o ON o.`id` = p.`order_id` WHERE p.`reversal_done` = 0 AND p.`reversal` <> '' AND o.`status` = 'credited' LIMIT 20",
 		{{"order_id", "n"}, {"reversal", "s"}, {"reversal_cents", "n"}, {"amount_cents", "n"}, {"currency", "s"}, {"method", "s"},
-		{"account_id", "n"}, {"pack_key", "s"}, {"coins", "n"}, {"bonus", "n"}, {"first_bonus", "n"}})
+		{"account_id", "n"}, {"pack_key", "s"}, {"coins", "n"}, {"bonus", "n"}, {"first_bonus", "n"}, {"created", "n"}})
 	for _, r in ipairs(rows) do
 		local credited = r.coins + r.bonus + r.first_bonus
 		db.query("START TRANSACTION")
@@ -382,6 +382,17 @@ function Pay.processReversals()
 			if clawed > 0 or unpaid > 0 then
 				log(string.format("order %d: %d coins taken back from gift receivers, %d gifted coins could not be recovered (staff: see %s)",
 					r.order_id, clawed, unpaid, T_COIN_GIFTS))
+			end
+			-- the Founder Pack bought with coins this donation paid for, when they are spent (founder.lua): taken back too, logged.
+			-- `unpaid` = the coins neither the balance nor the receivers of gifts could give back
+			if unpaid > 0 and ChaosFounder and ChaosFounder.onReversal then
+				local okF, lines = pcall(ChaosFounder.onReversal, r.account_id, {id = r.order_id, created = r.created}, unpaid)
+				for _, line in ipairs(okF and lines or {}) do
+					log(string.format("order %d: %s", r.order_id, line))
+				end
+				if not okF then
+					log(string.format("order %d: the Founder Pack check failed: %s", r.order_id, tostring(lines)))
+				end
 			end
 			if creatorAcc then
 				log(string.format("order %d: creator share reversed, %d of %d coins taken back from account %d", r.order_id, creatorTaken,

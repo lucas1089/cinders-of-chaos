@@ -16,6 +16,7 @@ local cache = {}   -- cid -> { title, color, guild, frame, at, stale }
 local pending = {} -- cid -> { at, tries }: asked, no answer yet (asked again, see NameplateMath.retries)
 local queue = {}   -- cid -> true: to ask in the next flush
 local flushEvent, retryEvent
+local try = nil    -- the store frame tried on the own plate (NameplateMath.beginTry), this client only
 
 local function now()
   return g_clock.seconds()
@@ -73,12 +74,21 @@ local function ask(id)
   end
 end
 
+local function nowMs()
+  return g_clock.millis()
+end
+
+-- what is drawn for a creature: the tried frame on the own plate during a try, else the cached plate
+local function shown(cid)
+  return M.shown(cache[cid], try, cid, nowMs())
+end
+
 local function onExtendedOpcode(protocol, opcode, buffer)
   for _, rec in ipairs(M.parse(buffer)) do
     rec.at = now()
     cache[rec.cid] = rec
     pending[rec.cid] = nil
-    apply(g_map.getCreatureById(rec.cid), rec)
+    apply(g_map.getCreatureById(rec.cid), shown(rec.cid))
   end
 end
 
@@ -87,7 +97,7 @@ local function onAppear(creature)
   local id = creature:getId()
   local rec = cache[id]
   -- draw what is known at once (the default frame for a player not known yet), ask for the rest
-  apply(creature, rec)
+  apply(creature, shown(id))
   local t = now()
   if M.needsQuery(rec, t, pending[id] ~= nil) then
     ask(id)
@@ -102,12 +112,13 @@ end
 local function onEmblemChange(creature)
   local rec = cache[creature:getId()]
   if rec and rec.guild and creature:isPlayer() then
-    apply(creature, rec)
+    apply(creature, shown(creature:getId()))
   end
 end
 
 local function onGameEnd()
   cache, pending, queue = {}, {}, {}
+  try = nil
   if flushEvent then
     removeEvent(flushEvent)
     flushEvent = nil
@@ -116,6 +127,25 @@ local function onGameEnd()
     removeEvent(retryEvent)
     retryEvent = nil
   end
+end
+
+-- TRY ON of a store plate frame (game_shop tryon.lua): the frame on the own plate for `ms` (10 s), then the real plate
+-- again. Only this client draws it; nothing is sent. Returns true when it started.
+function previewFrame(frame, ms)
+  local player = g_game.isOnline() and g_game.getLocalPlayer()
+  if not player or not player.setNameplate then return false end
+  local started = M.beginTry(try, player:getId(), frame, nowMs(), ms)
+  if not started then return false end
+  try = started
+  local cid, token = started.cid, started.token
+  apply(player, M.tryRecord(cache[cid], frame))
+  scheduleEvent(function()
+    try = M.endTry(try, token)
+    if try then return end -- a newer try runs, its own timer restores
+    local p = g_game.isOnline() and g_map.getCreatureById(cid)
+    if p then apply(p, cache[cid]) end
+  end, started.untilMs - nowMs())
+  return true
 end
 
 function init()

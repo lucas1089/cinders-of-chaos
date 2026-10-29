@@ -371,9 +371,12 @@ local cfg = {
 				-- the Eternal Blessing (gentledeath.lua, owner decision 2026-10-15): one purchase per character, all five
 				-- blessings kept for good (given back at each login after a death). PLACEHOLDER price (docs/OWNER_TODO.md).
 				-- Not for season characters: a season ladder is not bought (season.lua realm > 0; !bless still works there).
-				{kind = "service", service = "eternalBlessing", icon = 11260, cost = 750, seasonBlocked = true,
+				-- O317 follow-up (owner 2026-10-29): the price follows the level like All Blessings (5x each tier), the player's own
+				-- price is sent and a stale one is refused (shop.lua Shop.personalOffer).
+				{kind = "service", service = "eternalBlessing", icon = 11260, cost = 300, seasonBlocked = true,
 					name = "Eternal Blessing",
-					description = "This character keeps all five blessings for good: they come back after every death. Once per character. Not for season characters."}
+					levelPrices = {{upTo = 200, cost = 300}, {upTo = 500, cost = 500}, {cost = 750}},
+					description = "This character keeps all five blessings for good: they come back after every death. 300 coins up to level 200, 500 up to level 500, 750 above. Once per character. Not for season characters."}
 			}
 		},
 		{

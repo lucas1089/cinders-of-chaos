@@ -128,6 +128,7 @@ eq(#F.titles(cfg, owns), 0, "a single other piece is not the pack")
 local sources, granted = {}, {}
 CreatureEvent = function() return {register = function() end} end
 GlobalEvent = function() return {register = function() end} end
+db = {query = function() return true end, escapeString = function(x) return "'" .. tostring(x) .. "'" end}
 ChaosTitles = {register = function(name, fn) sources[name] = fn end}
 ChaosExclusives = {owns = function(acc, key) return (granted[acc] or {})[key] == true end}
 dofile("data/scripts/chaos/founder.lua")
@@ -140,12 +141,93 @@ eq(titles[1].text, "Founder", "the source answers for the account")
 granted[41].wings_pyre_seraph = true
 eq(#sources.founder(player), 2, "and for both packs")
 
+-- ---------------------------------------------------------------- a reversed donation takes the pack back
+do
+	local order = {id = 9, created = 1000}
+	local function tiers(list) local o = {} for i, t in ipairs(list) do o[i] = t.key end return table.concat(o, ",") end
+	local buys = {{id = 1, key = "founder:pack", created = 1500, gift = 0}, {id = 2, key = "founder:grand", created = 2000, gift = 0}}
+	eq(tiers(F.revokeTargets(cfg, order, 0, buys, {})), "", "the balance covered the reversal: nothing is taken back")
+	eq(tiers(F.revokeTargets(cfg, order, 999, buys, {})), "founder:grand,founder:pack", "both packs after the donation, dearest first")
+	eq(tiers(F.revokeTargets(cfg, order, 500, buys, {})), "founder:grand,founder:pack", "500 of 999 is half: the grand pack goes too")
+	eq(tiers(F.revokeTargets(cfg, order, 499, buys, {})), "founder:pack", "499 is under half of 999: only the first pack")
+	eq(tiers(F.revokeTargets(cfg, order, 249, buys, {})), "", "249 is under half of 499: a small refund keeps the pack")
+	eq(tiers(F.revokeTargets(cfg, order, 250, buys, {})), "founder:pack", "250 is half of 499")
+	eq(tiers(F.revokeTargets(cfg, order, 999, buys, {["founder:grand"] = true})), "founder:pack", "a tier taken back before is not taken again")
+	eq(tiers(F.revokeTargets(cfg, {id = 9, created = 1800}, 999, buys, {})), "founder:grand", "a pack bought before the donation was not paid by it")
+	eq(tiers(F.revokeTargets(cfg, order, 999, {{id = 1, key = "founder:pack", created = 1500, gift = 7}}, {})), "", "a gift is not the account's pack")
+	eq(tiers(F.revokeTargets(cfg, order, 999, {{id = 1, key = "service:pact:30", created = 1500, gift = 0}}, {})), "", "other offers are not touched")
+	eq(tiers(F.revokeTargets(cfg, order, nil, buys, nil)), "", "no shortfall given")
+end
+
+-- the engine side: the pieces, the Pact days and the record; once per account and tier
+do
+	local rows, queries, said, exclusive, pactLeft = {}, {}, {}, {}, {[41] = 44}
+	for _, k in ipairs({"wings_pyre_seraph", "cape_phoenix_plume_cape", "head_double_halo", "frame_founder", "wings_gold_peacock", "head_royal_coronet"}) do
+		exclusive[k] = true
+	end
+	local realSelect, realQuery = Chaos.select, db and db.query
+	db = {escapeString = function(x) return "'" .. tostring(x) .. "'" end,
+		query = function(q)
+			queries[#queries + 1] = q
+			local acc, tier = q:match("^INSERT INTO `chaos_founder_revokes`.- VALUES %((%d+), '([^']*)'")
+			if acc then rows[#rows + 1] = {account = tonumber(acc), tier = tier} end
+			return true
+		end}
+	Chaos.select = function(q, cols)
+		if q:find("FROM `chaos_founder_revokes`", 1, true) then
+			local out = {}
+			for _, r in ipairs(rows) do if q:find("`account_id` = " .. r.account, 1, true) then out[#out + 1] = {tier = r.tier} end end
+			return out
+		elseif q:find("FROM `chaos_shop_purchases`", 1, true) then
+			return {{id = 1, offer_key = "founder:grand", created = 2000, gift_player = 0}}
+		end
+		return {}
+	end
+	Chaos.t = function(_, text, ...) return string.format(text, ...) end
+	Chaos.storage = Chaos.storage or {}
+	local online = {getAccountId = function() return 41 end, sendTextMessage = function(_, _, text) said[#said + 1] = text end,
+		setStorageValue = function() end, getStorageValue = function() return 0 end}
+	Game = {getPlayers = function() return {online} end}
+	MESSAGE_EVENT_ADVANCE = 1
+	ChaosExclusives.revoke = function(acc, key) exclusive[key] = nil; return true end
+	ChaosExclusives.owns = function(acc, key) return exclusive[key] == true end
+	local pactCalls = {}
+	ChaosPact = {revokeDays = function(acc, days, why) pactCalls[#pactCalls + 1] = {acc, days, why}; return days end}
+	ChaosShopCore.frameIndex = ChaosShopCore.frameIndex
+	dofile("data/scripts/chaos/founder.lua")
+	local ok, line = ChaosFounder.revoke(41, "founder:grand", {orderId = 9, purchaseId = 1, reason = "donation 9 reversed"})
+	eq(ok, true, "taken back: " .. tostring(line))
+	eq(exclusive.wings_pyre_seraph, nil, "the wings are gone") eq(exclusive.frame_founder, nil, "the frame is gone")
+	eq(exclusive.head_double_halo, nil, "the halo is gone") eq(exclusive.cape_phoenix_plume_cape, nil, "the cape is gone")
+	eq(exclusive.wings_gold_peacock, true, "the other pack stays")
+	eq(#pactCalls, 1, "the Pact days") eq(pactCalls[1][2], 30, "30 days of the Grand Founder Pack") eq(pactCalls[1][1], 41, "of the account")
+	eq(#rows, 1, "one record") eq(rows[1].tier, "founder:grand", "of the tier")
+	eq(line:find("30 Pact days", 1, true) ~= nil and line:find("4 pieces", 1, true) ~= nil, true, "the line says what was taken: " .. line)
+	eq(#said, 1, "the player is told") eq(said[1]:find("Grand Founder Pack was taken back", 1, true) ~= nil, true, "in words")
+	ok2, why = ChaosFounder.revoke(41, "founder:grand", {})
+	eq(ok2, false, "a second time") eq(why:find("already", 1, true) ~= nil, true, "refused: " .. tostring(why))
+	eq(#pactCalls, 1, "no second Pact revoke")
+	eq(ChaosFounder.revoke(41, "founder:nope", {}), false, "an unknown tier")
+	-- the reversal hook: a purchase of the tier after the donation, a shortfall of 600
+	rows = {}
+	exclusive.wings_pyre_seraph = true
+	local lines = ChaosFounder.onReversal(41, {id = 9, created = 1000}, 600)
+	eq(#lines, 1, "one tier taken back by the reversal") eq(rows[1].tier, "founder:grand", "the grand pack")
+	lines = ChaosFounder.onReversal(41, {id = 10, created = 1000}, 600)
+	eq(#lines, 0, "and not twice")
+	lines = ChaosFounder.onReversal(41, {id = 11, created = 1000}, 100)
+	eq(#lines, 0, "a small shortfall keeps it")
+	Chaos.select = realSelect
+end
+
 -- ---------------------------------------------------------------- rules that fail when broken
 local function broken(change)
 	local copy = dofile("data/scripts/chaos/founder_config.lua")
 	change(copy)
 	return table.concat(F.validate(copy, {exclusives = excl, limits = limits, pactPrice = 299}), "\n")
 end
+eq(broken(function(c) c.revoke.minShortfallPct = 0 end):find("minShortfallPct", 1, true) ~= nil, true, "a revoke rule of zero")
+eq(broken(function(c) c.revoke.table = "players" end):find("chaos_*", 1, true) ~= nil, true, "a revoke table that is not ours")
 eq(broken(function(c) c["end"] = c.start end):find("ends before it starts", 1, true) ~= nil, true, "an empty window")
 eq(broken(function(c) c["end"] = "2026-11-21 15:00" end):find("days (", 1, true) ~= nil, true, "a window of one day")
 eq(broken(function(c) c["end"] = "2027-06-01 15:00" end):find("days (", 1, true) ~= nil, true, "a window of months")

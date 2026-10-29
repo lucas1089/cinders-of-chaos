@@ -45,7 +45,7 @@ function db() { return $GLOBALS['DB']; }
 
 // the website's install.sql tables, turned into SQLite (the same columns)
 $install = file_get_contents(__DIR__ . '/../overlay/plugins/chaos/install.sql');
-preg_match_all('/CREATE TABLE IF NOT EXISTS `(chaos_creator_[a-z]+|chaos_pay_payers)` \((.*?)\) ENGINE/s', $install, $mm, PREG_SET_ORDER);
+preg_match_all('/CREATE TABLE IF NOT EXISTS `(chaos_creator_(?!applications)[a-z]+|chaos_pay_payers)` \((.*?)\) ENGINE/s', $install, $mm, PREG_SET_ORDER);
 check(count($mm) === 5, 'install.sql has the five creator code tables');
 foreach ($mm as $m) {
 	$cols = array();
@@ -74,6 +74,18 @@ foreach (array('sharePct', 'supportDays', 'holdDays', 'orderCap', 'monthlyCap', 
 	check(preg_match('/\b' . $k . ' = (\d+)/', $lua, $m) && (int)$m[1] === $cfg[$k], "$k read from the Lua file");
 }
 check($cfg['enabled'] === true, 'enabled read');
+check($cfg['sharePct'] === 10, 'the base share is 10% (the stale default 5 is gone)');
+// the launch window (owner 2026-10-29): 15% instead of 10% for 30 days from 20 Nov 2026 15:00 (America/Sao_Paulo)
+check($cfg['launchBonusPct'] === 15 && $cfg['launchBonusStart'] === '2026-11-20 15:00' && $cfg['launchBonusDays'] === 30, 'launch window read from the Lua file');
+$launch = (new DateTimeImmutable('2026-11-20T15:00:00-03:00'))->getTimestamp();
+check(chaos_creator_bonus_window($cfg) === array($launch, $launch + 30 * 86400 - 1), 'the window: 30 days from the launch');
+check(chaos_creator_pct_at(array('pct' => 0), $cfg, $launch - 1) === 10, 'a second before the launch: 10');
+check(chaos_creator_pct_at(array('pct' => 0), $cfg, $launch) === 15, 'at the launch: 15');
+check(chaos_creator_pct_at(array('pct' => 0), $cfg, $launch + 30 * 86400 - 1) === 15, 'last second of the window: 15');
+check(chaos_creator_pct_at(array('pct' => 0), $cfg, $launch + 30 * 86400) === 10, 'after the window: 10');
+check(chaos_creator_pct_at(array('pct' => 8), $cfg, $launch + 5) === 8, 'a code with its own % keeps it');
+check(chaos_creator_bonus_window(array('launchBonusPct' => 0, 'launchBonusStart' => '2026-11-20 15:00', 'launchBonusDays' => 30)) === null, 'pct 0: off');
+check(chaos_creator_bonus_window(array('launchBonusPct' => 15, 'launchBonusStart' => 'soon', 'launchBonusDays' => 30)) === null, 'a bad date: off');
 check($cfg['adminGroup'] === 5, 'administrators: group 5');
 
 // ---------------------------------------------------------------- codes
@@ -150,6 +162,7 @@ check(chaos_referral_link(2, 'https://example.invalid') === '', 'no code yet: no
 $page = file_get_contents(__DIR__ . '/../overlay/plugins/chaos/pages/creator.php');
 check(strpos($page, 'hash_equals($csrf') !== false, 'the page checks its CSRF token');
 check(strpos($page, 'chaos_creator_is_admin') !== false && strpos($page, '$isAdmin && $_POST') !== false, 'admin actions only for administrators');
+check(strpos($page, 'chaos_creator_bonus_window') !== false && strpos($page, 'Launch bonus') !== false, 'the page names the launch bonus');
 check(strpos($page, 'costs you nothing') !== false && strpos($page, 'voluntary') !== false, 'the page says it costs the donor nothing and donations are voluntary');
 exec('php -l ' . escapeshellarg(__DIR__ . '/../overlay/plugins/chaos/pages/creator.php') . ' 2>&1', $out, $rc);
 check($rc === 0, 'php -l pages/creator.php');

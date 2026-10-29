@@ -570,7 +570,12 @@ local function giftable(offer)
 		return false
 	end
 	for _, p in ipairs(offer.resolved or {}) do
-		if not K.GIFTABLE[p.kind] or p.kind == "pact" then
+		-- a Pact part is giftable only when it says so (the Pacto Completo: the days go to the receiver's account)
+		if p.kind == "pact" then
+			if not p.giftable then
+				return false
+			end
+		elseif not K.GIFTABLE[p.kind] then
 			return false
 		end
 	end
@@ -870,6 +875,26 @@ local function nameOf(offer)
 	return x and x.name or offer.key
 end
 
+-- why the Pact days of a gift cannot go to an account whose player is offline (the stacking cap), or nil: asked before the
+-- coins are taken; the login delivery asks again (Shop.deliverGifts) and refunds when the cap was reached by then
+function Shop.offlinePactProblem(accountId, offer)
+	for _, part in ipairs(offer.kind == "bundle" and offer.resolved or {offer}) do
+		if part.kind == "pact" then
+			if part.required and not pactGrant() then
+				return "This offer is not available."
+			end
+			local api = _G[cfg.pact.api]
+			if api and api.checkDaysAccount then
+				local problem = api.checkDaysAccount(accountId, part.days)
+				if problem then
+					return problem
+				end
+			end
+		end
+	end
+	return nil
+end
+
 -- why `target` cannot get this offer now (nil = it can); gift = bought by someone else
 local function partProblem(target, offer, gift)
 	if offer.kind == "pact" then
@@ -1160,6 +1185,10 @@ local function buy(player, data)
 		-- >>> Seasons: an offline receiver
 		if not problem and not targetPlayer then
 			problem = Shop.seasonProblem(target.guid, offer, true, target.name)
+		end
+		-- the Pact days of a gift: the stacking cap of the receiver's account, before any coin is taken
+		if not problem and not targetPlayer then
+			problem = Shop.offlinePactProblem(target.account, offer)
 		end
 		-- <<< Seasons
 		if problem then

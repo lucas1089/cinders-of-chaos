@@ -111,6 +111,52 @@ check(P.shelfCheck(cfg, 9999, {loot_ember = true}, "loot_ember") ~= nil, "owned:
 for _, key in ipairs({"coins", "premium", "stamina", "service:blessings", "item:28095x1", "kill_voidring", "skin_warrior_void", "bogus", ""}) do
 	check(P.shelfCheck(cfg, 99999, {}, key) == cfg.messages.marksNoItem, "Marks buy nothing off the shelf: " .. key)
 end
+-- the month's slot (follow-up 2026-10-29): 6 fixed cosmetics plus one chosen by the server month from cfg.marks.monthly
+do
+	local list = cfg.marks.monthly
+	check(#list >= 6 and #list <= 12, "6 to 12 cosmetics in the rotation")
+	local kinds = {lootbeam = true, chatcolor = true, killfx = true, footprint = true, outline = true, levelfx = true, rarefx = true, emote = true}
+	local seen = {}
+	for _, it in ipairs(list) do
+		local c = cosOf[it.key]
+		check(c ~= nil, "monthly cosmetic exists: " .. it.key)
+		check(not seen[it.key], "monthly key once: " .. it.key) seen[it.key] = true
+		check(not seenShelf[it.key], "not on the fixed shelf: " .. it.key)
+		check(c and c.source == "store", "a store cosmetic: " .. it.key)
+		check(c and kinds[c.kind], "a look, not a spell: " .. it.key)
+		check(c and c.price and it.marks >= c.price and it.marks <= c.price * 1.5, "a Mark is worth about a coin: " .. it.key)
+		check(it.marks >= 150 and it.marks <= 250, "Marks in the range of the shelf: " .. it.key)
+		check(it.marks >= cfg.pact.dailyMarks * 28, "at least four weeks of Marks: " .. it.key)
+	end
+	local function at(y, m, d) return os.time({year = y, month = m, day = d or 15, hour = 12}) end
+	eq(P.monthIndex(12, 2026, 1), 1, "January is the first of twelve") eq(P.monthIndex(12, 2026, 12), 12, "December the last")
+	eq(P.monthIndex(12, 2027, 1), 1, "and the year starts again") eq(P.monthIndex(7, 2026, 1) ~= P.monthIndex(7, 2026, 2), true, "another month, another entry")
+	eq(P.monthIndex(0, 2026, 1), nil, "an empty list") eq(P.monthIndex(1, 2030, 5), 1, "one entry is always the one")
+	for m = 1, 12 do
+		local it = P.monthlyItem(cfg, at(2026, m))
+		eq(it.key, list[P.monthIndex(#list, 2026, m)].key, "month " .. m .. " picks its entry") eq(it.monthly, true, "flagged monthly")
+		eq(P.monthlyItem(cfg, at(2026, m, 1)).key, it.key, "the first of the month: the same") eq(P.monthlyItem(cfg, at(2026, m, 28)).key, it.key, "the 28th: the same")
+		local nextM = P.monthlyItem(cfg, at(m == 12 and 2027 or 2026, m == 12 and 1 or m + 1, 1))
+		eq(it.endsAt, os.time({year = m == 12 and 2027 or 2026, month = m == 12 and 1 or m + 1, day = 1, hour = 0}), "it ends at the start of the next month")
+		if #list > 1 then check(nextM.key ~= it.key, "the next month has another one") end
+	end
+	eq(P.monthlyItem(cfg, at(2026, 10)).key, "rare_crimson", "October 2026: the Crimson Rare Loot Effect") eq(P.monthlyItem(cfg, at(2026, 11)).key, "emote_salute", "November 2026")
+	-- the shelf: the 6 fixed rows then the month's
+	local shelf = P.shelf(cfg, at(2026, 11))
+	eq(#shelf, #cfg.marks.shelf + 1, "the fixed shelf and one slot") eq(shelf[#shelf].monthly, true, "the slot is last")
+	eq(shelf[1].key, cfg.marks.shelf[1].key, "the fixed rows keep their place") eq(shelf[1].monthly, nil, "a fixed row is not monthly")
+	-- only this month's cosmetic can be bought, and the same rules as the fixed shelf
+	eq(P.shelfCheck(cfg, 200, {}, "emote_salute", at(2026, 11)), nil, "November: 200 Marks buy the Salute")
+	check(P.shelfCheck(cfg, 199, {}, "emote_salute", at(2026, 11)) ~= nil, "199 are not enough")
+	check(P.shelfCheck(cfg, 9999, {emote_salute = true}, "emote_salute", at(2026, 11)) ~= nil, "owned: not twice")
+	eq(P.shelfCheck(cfg, 9999, {}, "emote_salute", at(2026, 12)), cfg.messages.marksNoItem, "in December the Salute is off the shelf")
+	eq(P.shelfCheck(cfg, 9999, {}, "kill_bloodbloom", at(2026, 11)), cfg.messages.marksNoItem, "another month's cosmetic cannot be bought")
+	eq(P.shelfCheck(cfg, 150, {}, "loot_ember", at(2026, 11)), nil, "the fixed shelf is the same every month")
+	-- a monthly cosmetic that is also fixed shows once (a config slip must not duplicate a row)
+	local dup = {marks = {shelf = {{key = "a", marks = 1}}, monthly = {{key = "a", marks = 1}}}, messages = cfg.messages}
+	eq(#P.shelf(dup, at(2026, 1)), 1, "no duplicate row")
+	eq(P.monthlyItem({marks = {shelf = {}, monthly = {}}}, at(2026, 1)), nil, "no list, no slot")
+end
 -- no store offer takes Marks, and the Pact tables name the Marks table
 for _, cat in pairs(cfg.store) do
 	for _, o in ipairs(cat.offers) do
@@ -244,7 +290,8 @@ eq(scfg.slots.perPack, 25, "an expansion adds 25 slots") eq(L.stashSlots.maxExtr
 eq(offer("service:pactExtra:stashSlots").cost, 50, "expansion price") eq(offer("service:pactExtra:stashSlots:4").cost, 180, "4 expansions price")
 eq(offer("service:pactExtra:stashSlots:4").amount, 4, "the pack adds 4")
 check(offer("service:pactExtra:stashSlots:4").cost < 4 * offer("service:pactExtra:stashSlots").cost, "the pack is cheaper")
-eq(scfg.slots.legacyPacksPerTab * offer("service:pactExtra:stashSlots").cost, 150, "an old tab (150 coins) = the same coins in expansions")
+eq(scfg.slots.legacyPacksPerTab, 4, "an old tab converts to 4 expansions (owner 2026-10-29)")
+eq(scfg.slots.legacyPacksPerTab * offer("service:pactExtra:stashSlots").cost, 200, "4 expansions = 200 coins, 50 over the 150 the old tab cost")
 eq(L.stashSlots.pact, 1, "the Pact lends one expansion (modest)")
 for _, a in ipairs(scfg.affinities) do
 	check(a.free == nil and a.pact == nil and a.achievements == nil, "affinity tab " .. a.key .. " is store-sold only")

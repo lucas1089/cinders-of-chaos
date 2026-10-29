@@ -13,7 +13,7 @@ function chaos_calendar_data(?string $file = null): array {
 	$file = $file ?? __DIR__ . '/calendar/calendar_data.json';
 	$text = is_file($file) ? file_get_contents($file) : false;
 	$json = $text === false ? null : json_decode((string)$text, true);
-	$out = array('events' => array(), 'seasons' => array(), 'cycles' => array(), 'patchnotes' => array(), 'wipe' => array(), 'open' => array());
+	$out = array('events' => array(), 'seasons' => array(), 'cycles' => array(), 'nextSeason' => array(), 'patchnotes' => array(), 'wipe' => array(), 'open' => array());
 	if (!is_array($json)) {
 		return $out;
 	}

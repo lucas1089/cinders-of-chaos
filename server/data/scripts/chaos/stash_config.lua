@@ -36,13 +36,15 @@ return {
 	-- Extra general tabs are not sold any more: a second general tab only splits the same room, so the expansion simply
 	-- grows the one tab (cleaner than two ways to buy the same thing).
 	-- Grandfathered (nothing deleted, nothing lost): an old tab bought in the store (Extra Stash Tab, Extra Depot Tab,
-	-- 4 Depot Tabs) or earned by an achievement is worth `slots.legacyPacksPerTab` expansions (3 x 25 = 75 slots, the
-	-- 150 coins the tab cost at 50 coins an expansion). Characters that hold more than their slots keep every item:
+	-- 4 Depot Tabs) or earned by an achievement is worth `slots.legacyPacksPerTab` expansions (4 x 25 = 100 slots; owner
+	-- 2026-10-29 raised it from 3: the tab cost 150 coins, 4 expansions are worth 200 at 50 coins). The conversion is
+	-- read live from the extras (stash.lua S.viewOf), never stored: accounts that were told 75 slots get 100 with no grant,
+	-- and a grant on top would count twice. Characters that hold more than their slots keep every item:
 	-- the old general tabs 2..30 and the entries above the size of tab 1 are withdraw-only.
 	slots = {
 		free = 30, -- entries of the one general tab, everybody
 		perPack = 25, -- entries one expansion adds
-		legacyPacksPerTab = 3, -- one old tab (bought or earned) = this many expansions, outside the cap of the store
+		legacyPacksPerTab = 4, -- one old tab (bought or earned) = this many expansions, outside the cap of the store
 		-- old extras that counted as a general tab each: extra key -> the most the old rules let an account own
 		legacyExtras = {stashTabs = 6, depotTabs = 12}
 	},
@@ -89,8 +91,10 @@ return {
 	-- the tabs the old rules gave for free are not given any more, but an account that used one keeps it.
 	--   used:   an old free or Pact tab where THIS character holds entries -> the account gets the extra (bought once)
 	--   earned: an achievement the account has -> the extra
+	-- version 2 (O316 follow-up): the old tabs went from 3 to 4 expansions; the step runs again once per character to tell
+	-- an account with old tabs about it (the grants themselves are never repeated: an extra already owned is skipped)
 	legacyGrants = {
-		version = 1,
+		version = 2,
 		used = {{tab = "supplies", extra = "stashSupplies"}, {tab = "products", extra = "stashProducts"}},
 		earned = {{achievement = "unique_50", extra = "stashCosmetics"}}
 	},
@@ -208,7 +212,8 @@ return {
 		-- delivery of market purchases (market.lua MK.deliver -> ChaosStash.deliverItem)
 		deliveredStash = "in your stash",
 		deliveredStashTab = "in your stash (%s tab)",
-		grandfathered = "The stash changed: your old tabs are worth extra slots, and the affinity tabs you used are yours to keep."
+		grandfathered = "The stash changed: your old tabs are worth extra slots, and the affinity tabs you used are yours to keep.",
+		tabsRaised = "Your old stash tabs are now worth %d slots each (%d Stash Slot Expansions). Your stash has %d slots."
 	},
 	-- the skip reasons of Stow Everything, as the report names them
 	reasons = {

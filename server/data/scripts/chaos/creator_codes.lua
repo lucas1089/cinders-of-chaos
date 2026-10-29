@@ -144,7 +144,7 @@ function CC.match()
 	for _, o in ipairs(rows) do
 		local code = codeRow(o.code_id)
 		if code then
-			local share = Core.share(o.coins, Core.pctOf(code, cfg), cfg)
+			local share = Core.share(o.coins, Core.pctOf(code, cfg, o.credited), cfg)
 			db.query(string.format("INSERT IGNORE INTO `%s` (`order_id`, `code_id`, `creator_account_id`, `buyer_account_id`, `coins_base`, `share`, " ..
 				"`state`, `created_at`, `credited_at`) VALUES (%d, %d, %d, %d, %d, %d, 'pending', %d, %d)", T.uses, o.id, code.id, code.account_id,
 				o.account_id, o.coins, share, os.time(), o.credited))
@@ -179,7 +179,7 @@ function CC.settle()
 			local code = codeRow(u.code_id)
 			local share = u.share
 			if share <= 0 and u.coins_base <= 0 and u.status == "credited" and code then -- a row of the donate page's hook
-				share = Core.share(u.coins, Core.pctOf(code, cfg), cfg)
+				share = Core.share(u.coins, Core.pctOf(code, cfg, u.credited), cfg)
 				db.query(string.format("UPDATE `%s` SET `share` = %d, `coins_base` = %d, `credited_at` = %d WHERE `order_id` = %d",
 					T.uses, share, u.coins, u.credited, u.order_id))
 			end

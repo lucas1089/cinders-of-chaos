@@ -16,7 +16,7 @@ $view = chaos_calendar_view($data, $now);
 $lang = chaos_lang();
 $tbd = chaos_t('To be set');
 $statusLabel = static function (string $status): string {
-	return $status === 'proposal' ? chaos_t('Proposed, to be confirmed') : chaos_t('Planned');
+	return $status === 'confirmed' ? chaos_t('Confirmed') : ($status === 'proposal' ? chaos_t('Proposed, to be confirmed') : chaos_t('Planned'));
 };
 ?>
 <div class="chaos-page" id="chaos-calendar">
@@ -70,7 +70,11 @@ $statusLabel = static function (string $status): string {
 				</dl>
 			</div>
 		<?php endforeach; ?>
-		<p id="chaos-calendar-next-season"><strong><?= chaos_h(chaos_t('The season after that')) ?>:</strong> <span class="chaos-gold"><?= chaos_h($tbd) ?></span> <span class="chaos-muted"><?= chaos_h(chaos_t('Dates, name and modifier are not decided.')) ?></span></p>
+		<?php if (!empty($data['nextSeason'])): $ns = $data['nextSeason']; ?>
+			<p id="chaos-calendar-next-season"><strong><?= chaos_h(chaos_bi($ns['title'])) ?>:</strong> <?= chaos_h(chaos_t('starts %s', chaos_calendar_fmt((string)$ns['start'], $lang))) ?> (<?= chaos_h($statusLabel((string)$ns['status'])) ?>). <span class="chaos-muted"><?= chaos_h(chaos_bi($ns['text'])) ?></span></p>
+		<?php else: ?>
+			<p id="chaos-calendar-next-season"><strong><?= chaos_h(chaos_t('The season after that')) ?>:</strong> <span class="chaos-gold"><?= chaos_h($tbd) ?></span> <span class="chaos-muted"><?= chaos_h(chaos_t('Dates, name and modifier are not decided.')) ?></span></p>
+		<?php endif; ?>
 
 		<h2 class="chaos-subheading"><?= chaos_h(chaos_t('Other cycles')) ?></h2>
 		<table class="chaos-table" id="chaos-calendar-cycles">
@@ -88,6 +92,9 @@ $statusLabel = static function (string $status): string {
 		</table>
 
 		<h2 class="chaos-subheading"><?= chaos_h(chaos_bi($data['patchnotes']['title'] ?? '')) ?></h2>
+		<?php $pn = $data['patchnotes']; if (!empty($pn['weekdayName'])): ?>
+			<p id="chaos-calendar-patchday"><strong><?= chaos_h(chaos_t('Patch note day: %s', chaos_bi($pn['weekdayName']))) ?></strong><?php if (!empty($pn['firstRegular'])): ?> <span class="chaos-muted"><?= chaos_h(chaos_t('The first regular one: %s.', chaos_calendar_fmt((string)$pn['firstRegular'] . 'T00:00:00-03:00', $lang, false))) ?></span><?php endif; ?></p>
+		<?php endif; ?>
 		<p id="chaos-calendar-patchnotes"><?= chaos_h(chaos_bi($data['patchnotes']['text'] ?? '')) ?> <a href="page?plugin=chaos&amp;p=patchnotes"><?= chaos_h(chaos_t('Read the patch notes')) ?></a></p>
 
 		<h2 class="chaos-subheading"><?= chaos_h(chaos_t('What stays and what resets')) ?></h2>
@@ -95,10 +102,16 @@ $statusLabel = static function (string $status): string {
 			<div class="chaos-box" id="wipe-<?= chaos_h($key) ?>">
 				<h3 class="chaos-season__name"><?= chaos_h(chaos_bi($w['title'])) ?></h3>
 				<p class="chaos-muted"><?= chaos_h(chaos_bi($w['status'])) ?></p>
+				<?php if (!empty($w['reset'])): ?>
 				<h4><?= chaos_h(chaos_t('Resets')) ?></h4>
 				<ul><?php foreach ($w['reset'] as $line): ?><li><?= chaos_h(chaos_bi($line)) ?></li><?php endforeach; ?></ul>
+				<?php endif; ?>
 				<h4><?= chaos_h(chaos_t('Stays')) ?></h4>
 				<ul><?php foreach ($w['kept'] as $line): ?><li><?= chaos_h(chaos_bi($line)) ?></li><?php endforeach; ?></ul>
+				<?php if (!empty($w['gift'])): ?>
+				<h4><?= chaos_h(chaos_t('Thank-you')) ?></h4>
+				<ul><?php foreach ($w['gift'] as $line): ?><li><?= chaos_h(chaos_bi($line)) ?></li><?php endforeach; ?></ul>
+				<?php endif; ?>
 				<p class="chaos-muted"><?= chaos_h(chaos_bi($w['why'])) ?></p>
 			</div>
 		<?php endforeach; ?>

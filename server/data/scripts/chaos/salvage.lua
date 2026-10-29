@@ -522,30 +522,9 @@ local function salvageOne(player, data)
 	b.sendState(player, false)
 end
 
-local function salvageBatch(player, data)
+-- takes the items of a batch result out and pays them; `more` = another batch follows by itself (the text says so)
+local function runBatch(player, res, more)
 	local b = bench()
-	if limited(player, "batch", cfg.batchIntervalMs) then
-		return refuse(player, "Wait a moment before the next batch.")
-	end
-	if not shardInstalled() then
-		return refuse(player, "Salvage is not installed on this server (no rune shard item).")
-	end
-	local bag = type(data.bag) == "string" and data.bag or ""
-	local maxRarity = Chaos.toInt(data.maxRarity, 1, ChaosRarity.MAX_LEGACY) -- a stored id (an old client's 6 .. 15 map)
-	if not maxRarity then
-		return refuse(player, "Choose a rarity.")
-	end
-	maxRarity = ChaosRarity.canon(maxRarity)
-	local res = batchOf(player, bag, maxRarity)
-	if not res then
-		return refuse(player, "That bag is not in your backpack any more.")
-	end
-	if res.count == 0 then
-		return refuse(player, "Nothing to salvage there.")
-	end
-	if type(data.sig) ~= "string" or data.sig ~= res.sig then
-		return refuse(player, "The items changed since the preview. Check the list and confirm again.")
-	end
 	local shards, orbs, rows, gotOrbs = 0, {}, {}, 0
 	-- remove from the end so the earlier indices stay valid
 	for n = #res.picked, 1, -1 do
@@ -574,10 +553,85 @@ local function salvageBatch(player, data)
 	local msg = Chaos.t(player, "Salvaged %d items: %d %s%s.%s", #rows, shards, cfg.shard.plural,
 		gotOrbs > 0 and (Chaos.t(player, " and ") .. table.concat(orbText, ", ")) or "",
 		inbox > 0 and Chaos.t(player, " Your backpack is full: some went to your inbox.") or "")
+	if more then
+		msg = msg .. Chaos.t(player, " The rest of the bag follows.")
+	end
 	player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT or 9)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, msg)
 	b.sendResult(player, true, "salvage", msg)
 	b.sendState(player, false)
+	return #rows
+end
+
+local chains = {} -- player id -> {token, left, batches, bag, maxRarity}: the batches that follow a capped one (O319)
+local chainCounter = 0
+
+local function stopChain(player)
+	chains[type(player) == "number" and player or player:getId()] = nil
+end
+
+local function chainNext(pid, token)
+	local c = chains[pid]
+	if not c or c.token ~= token then
+		return
+	end
+	local player = Player(pid)
+	if not player then
+		chains[pid] = nil
+		return
+	end
+	local res = batchOf(player, c.bag, c.maxRarity)
+	local step = K.chainStep(c, res, cfg)
+	if step ~= "go" then
+		chains[pid] = nil
+		if step == "changed" then
+			bench().sendResult(player, false, "salvage", Chaos.t(player, "The bag changed: the salvage stopped. Check the list and confirm again."))
+		end
+		return
+	end
+	local more = res.capped
+	runBatch(player, res, more)
+	c.batches = c.batches + 1
+	c.left = res.skipped.cap or 0
+	if more then
+		addEvent(chainNext, cfg.chainDelayMs, pid, token)
+	else
+		chains[pid] = nil
+	end
+end
+
+local function salvageBatch(player, data)
+	if limited(player, "batch", cfg.batchIntervalMs) then
+		return refuse(player, "Wait a moment before the next batch.")
+	end
+	if not shardInstalled() then
+		return refuse(player, "Salvage is not installed on this server (no rune shard item).")
+	end
+	local bag = type(data.bag) == "string" and data.bag or ""
+	local maxRarity = Chaos.toInt(data.maxRarity, 1, ChaosRarity.MAX_LEGACY) -- a stored id (an old client's 6 .. 15 map)
+	if not maxRarity then
+		return refuse(player, "Choose a rarity.")
+	end
+	maxRarity = ChaosRarity.canon(maxRarity)
+	local res = batchOf(player, bag, maxRarity)
+	if not res then
+		return refuse(player, "That bag is not in your backpack any more.")
+	end
+	if res.count == 0 then
+		return refuse(player, "Nothing to salvage there.")
+	end
+	if type(data.sig) ~= "string" or data.sig ~= res.sig then
+		return refuse(player, "The items changed since the preview. Check the list and confirm again.")
+	end
+	local more = res.capped and addEvent ~= nil
+	stopChain(player) -- a batch of the player's own ends an older chain
+	runBatch(player, res, more)
+	if more then
+		chainCounter = chainCounter + 1
+		local pid = player:getId()
+		chains[pid] = {token = chainCounter, left = res.skipped.cap or 0, batches = 1, bag = bag, maxRarity = maxRarity}
+		addEvent(chainNext, cfg.chainDelayMs, pid, chainCounter)
+	end
 end
 
 local function lockAction(player, data)
@@ -799,6 +853,7 @@ local logout = CreatureEvent("ChaosSalvageLogout")
 function logout.onLogout(player)
 	scope[player:getId()] = nil
 	last[player:getId()] = nil
+	chains[player:getId()] = nil
 	return true
 end
 logout:register()

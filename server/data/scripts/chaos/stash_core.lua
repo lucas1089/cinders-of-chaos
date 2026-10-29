@@ -229,14 +229,14 @@ function K.slotsOf(cfg, ctx)
 		old = old + math.max(0, int(ctx.depotTabs))
 	end
 	local packs = math.max(0, int(ctx.packs)) + old * int(s.legacyPacksPerTab)
-	return int(s.free) + packs * int(s.perPack), packs
+	return int(s.free) + packs * int(s.perPack), packs, old
 end
 
 function K.view(cfg, ctx)
 	ctx = ctx or {}
 	local extras = ctx.extras or {}
 	local achieved = ctx.achievements or {}
-	local slots, packs = K.slotsOf(cfg, ctx)
+	local slots, packs, oldTabs = K.slotsOf(cfg, ctx)
 	local general = math.max(0, math.min(int(cfg.generalTabs or 1), int(cfg.maxGeneralTabs)))
 	local owned = {}
 	for _, a in ipairs(cfg.affinities or {}) do
@@ -265,7 +265,7 @@ function K.view(cfg, ctx)
 			remote = "pact"
 		end
 	end
-	return {general = general, slots = slots, packs = packs, owned = owned, remote = remote}
+	return {general = general, slots = slots, packs = packs, oldTabs = oldTabs, owned = owned, remote = remote}
 end
 
 -- entries a tab holds: an affinity tab its size, the old depot tab no limit, the general tab 1 the view's slots (O316),

@@ -4575,6 +4575,41 @@ Prices and reasons: docs/PRICES.md "Pacto Completo, Pact Marks and the store rev
   Completo bought and refused at the cap, no Pact system), `tests/store_model_test.lua` (every new rule fails when its number
   breaks), `tests/season_test.lua` (the Pacto Completo is allowed for season characters, as the Pact and Premium are).
 
+### Follow-ups of O317 and O322 (owner 2026-10-29)
+
+Prices and reasons: docs/PRICES.md "Follow-ups the owner approved (2026-10-29)".
+
+- **Eternal Blessing by level.** `levelPrices {{upTo = 200, cost = 300}, {upTo = 500, cost = 500}, {cost = 750}}` on the
+  `eternalBlessing` offer, `cost` 300. The same per-player price and stale price refusal as All Blessings (`Shop.personalOffer`).
+  `store_model.lua` judges each tier against the All Blessings tier of its band (4 to 8 times, `store_balance_config.lua`
+  `services.eternalMinTimes` / `eternalMaxTimes`). Test: `tests/shop_test.lua` (levels 80 / 200 / 201 / 350 / 500 / 501 / 650, a
+  stale price), `tests/store_model_test.lua`.
+- **Pacto Completo as a gift.** Its Pact part carries `giftable = true`; `giftable()` in `shop.lua` lets a Pact part through only
+  with it, so the starter and Founder packs are still not giftable. The days are delivered by `Shop.deliver(receiver, offer)`:
+  `ChaosPact.grantDays` and the premium days go to the receiver's account. Before any coin is taken: `partProblem` checks the
+  cap for an online receiver (`ChaosPact.checkDays`) and `Shop.offlinePactProblem(account, offer)` for an offline one
+  (`ChaosPact.checkDaysAccount`). The login delivery (`Shop.deliverGifts`) checks again and refunds the giver. Test:
+  `tests/shop_test.lua` (online, offline, at the cap both ways, cap reached before the login, the starter pack still refused),
+  `tests/pact_engine_test.lua` (`checkDaysAccount`).
+- **Pact Marks monthly slot.** See "Chaos Pact and account storage". Test: `tests/pact_test.lua` (the list rules, every month
+  of the year, the first and last days, a month's end, other months' cosmetics refused), `tests/pact_engine_test.lua` (status
+  and purchase), client `game_pact/pactview_test.lua` ("(this month)"), `store_model.lua --check`.
+- **Pact toast icon.** `client/overlay/modules/game_chaosnotify/images/toast/pact.png`, an hourglass drawn by
+  `client/tools/gen_toast_art.py` (`--check` compares every picture).
+- **A reversed donation takes the Founder Pack back.** The only coin path back is `shop_payments.lua` `Pay.processReversals`
+  (refund or chargeback after crediting). After the coins are taken back, the coins neither the balance nor the receivers of
+  coin gifts could give back (`unpaid`) go to `ChaosFounder.onReversal(account, {id, created}, unpaid)`. A Founder purchase of the
+  account (`chaos_shop_purchases`, offer key `founder:*`, not a gift) made at or after the donation is taken back when `unpaid`
+  is at least `founder_config.lua` `revoke.minShortfallPct` (50) percent of its price (`ChaosFounderCore.revokeTargets`, pure).
+  `ChaosFounder.revoke(account, tier, opts)` removes the tier's exclusives (`ChaosExclusives.revoke`; the title goes with the
+  first one), clears the plate frame on the characters online, takes the tier's Pact days (`ChaosPact.revokeDays`, the Pact ends
+  earlier, never before the epoch) and writes one row to `chaos_founder_revokes` (`server/sql/chaos_founder.sql`, unique per
+  account and tier: the guard, and the log). The sale stays used up (the purchase log is not touched). Wings, auras and mounts a
+  character already has in the engine stay until the staff removes them (`/exclusive` has the same limit). Test:
+  `tests/founder_test.lua` (`revokeTargets`, `revoke`, the hook), `tests/shop_payments_test.lua` (when the hook is called),
+  `tests/pact_engine_test.lua` (`revokeDays`). No staff command was added: a path exists. To revoke by hand call
+  `ChaosFounder.revoke(accountId, "founder:pack" or "founder:grand", {reason = "staff"})` from a script; say if an admin action is wanted.
+
 ### Founder Pack (O322, owner 2026-10-29)
 
 A time-limited sale of two packs of cosmetics that never return. Prices and reasons: docs/PRICES.md "Founder Pack (O322)".
@@ -4605,6 +4640,7 @@ title source), `tests/founder_test.lua`, the window and grant tests in `tests/sh
   start, at the start, one second before and at the end, pt-BR text, both tiers, one per account, other characters, a stale
   window, no Pact system, an owned piece, no gifts), `tests/exclusives_test.lua`, `tests/pack33_test.lua`,
   `tests/store_model_test.lua`. The shop test pins the clock to 2026-10-29 so it does not depend on the date it runs.
+- **Chargeback.** A reversed donation can take a pack back, see "Follow-ups of O317 and O322".
 - **Not live.** Done in code and tests, not run live. Needs the pair 33 art on the client and the Pact system.
 
 ## Store services (`shop_services.lua`, `autosell.lua`, `sell_prices.lua`)
@@ -4651,7 +4687,7 @@ bonus are within 1.5% of 10 coins per real, bonuses rise 0-20%, the Starter pack
 the base rate; a supply pack is worth 700-2,000 gold per coin (a coin is 1,000 gold, store at most 2x cheaper than gold) and no store
 item sells to an NPC for more than 500 gold per coin; the Double Experience Potion has weekly limits that add up to at most 14 hours,
 the world buffs stay at 25% (Hunt 50%) and 3 hours, the experience cap at 4; the Passive Tree Reset is within 2x of its gold way up to
-level 800; the Eternal Blessing is 8-15 All Blessings; a static plate frame costs no more than the cheapest wings; the Pact days of a
+level 800; the Eternal Blessing is 4-8 All Blessings of the same level band (300 / 500 / 750 since the O317 follow-up); a static plate frame costs no more than the cheapest wings; the Pact days of a
 starter pack are listed at the Pact's price per day. Prices, before and after, and the reasons: docs/PRICES.md "Store balance (O140)".
 Changed: Double Experience Potion weekly limit (new), Passive Tree Reset 60 -> 100, plate frames 300 -> 200. Server: `files` step and a
 restart; the website wiki data is regenerated (`tools/gen_wiki_data.lua`).
@@ -5074,12 +5110,15 @@ go as `tryfx`). Nobody else sees any of it and nothing is granted.
 | outfits, addons, mounts, wings, auras, shaders, Chaos shaders, outlines, footprints | in the look preview on the own character; footprints and outlines also on the map (`tryfx`) |
 | spell skins, kill effects, level-up effects, rare-loot effects, victory emotes | the effect in the look preview and round the character on the map (server `preview`) |
 | bundles | in the look preview when a part is worn |
-| name plate frames | no: only the map draws plates. The offer keeps its icon and the preview prints a note |
+| name plate frames | on the player's own name plate on the map for 10 s, this client only (client `game_nameplate` `previewFrame`, nothing is sent), then the real plate is back; a bundle with a plate part too. Without `game_nameplate` the offer keeps its icon and the preview prints a note |
 | chat colours, loot label accents | no: the row's title shows the colour or the accent |
 | pets | no: a pet is drawn alone, not on the character (hover still shows it) |
 | items, services, coins, pacts, hideout decorations | no |
 
-On the small mobile layout there is no look preview: only the cosmetics with an effect keep the button.
+On the small mobile layout there is no look preview: only the cosmetics with an effect and the plate frames keep the button.
+The plate try: `NameplateMath.beginTry / tryRecord / shown / endTry` (pure, `nameplatemath_test.lua`) keep a try `{cid, frame, untilMs, token}`;
+the title, colour and guild stay, only the frame changes; a plate answer or the emblem change of the server during the try is drawn with the
+tried frame; a second try gets a new token so the older timer does not end it. `TryOn.plan(data, option, hasPanel, hasPlate)` returns `plate`.
 
 ### Combat cosmetics others see
 Already there (docs/PRICES.md): kill effects, footprints (the walking trail), outlines and loot label accents. Footprints are
@@ -5098,7 +5137,9 @@ The server sends no number and does no work per step. Storages 7102002 (level-up
 the wardrobe block. Hooks: a `CreatureEvent` `onAdvance` (`ChaosCosmeticsAdvance`), an `EventCallback.onDropLoot` at index 2.5
 (after the loot layer and the achievements scan, before the autoloot) and the monster death event cosmetics.lua already
 registers on every monster. The window has three more tabs (Level-ups, Rare Loot, Emotes) with the same Preview button.
-The emote lines are fixed English text (a chat line cannot be translated per viewer).
+The emote line is translated per viewer (2026-10-29): `Chaos.yell(player, line, TALKTYPE_MONSTER_SAY)` lists the players in speech range and
+sends each one `Creature:say(text, type, false, viewer, position)` in that viewer's language (`ChaosI18n`, `i18n_strings.lua`: the five lines have
+pt-BR texts, `tests/cosmetics_test.lua` checks it). While every viewer reads English it is the plain `say` of before.
 
 **Tests.** `tests/collection_test.lua` (points from prices and sources, the score with the title cap, the catalogue maps,
 milestones due and next, the view, the validator refusals, `collection.lua` on a mocked engine: login sweep, claiming once,
@@ -5823,8 +5864,10 @@ its room is sold in the store. Numbers: `stash_config.lua` `slots`, `generalTabs
   Jewellery 150, Materials 150, Creature Products 150, Collectibles 100. All store-sold (extra `stashSupplies` is new).
 - **Grandfathered, nothing lost.** (1) An old bought Extra Stash Tab (extra `stashTabs`, at most 6), a bought Extra Depot Tab or
   4 Depot Tabs (extra `depotTabs`, at most 12) and each of the three achievement tabs (`depot_tab_relics`, `depot_tab_trophies`,
-  `depot_tab_vault`, ids kept, texts changed) is worth 3 expansions: 75 slots (`slots.legacyPacksPerTab`), outside the cap of 20.
-  The 150 coins the tab cost buy 3 expansions. `stash.lua` `S.viewOf` reads the extras; no row is rewritten. (2) The free tabs
+  `depot_tab_vault`, ids kept, texts changed) is worth 4 expansions: 100 slots (`slots.legacyPacksPerTab`, owner 2026-10-29, it was 3 and 75 slots), outside the cap of 20.
+  The 150 coins the tab cost buy 3 expansions; the fourth is a gift (`store_balance_config.lua` `maxOldTabCoins` 200). The conversion is read live from
+  the extras, never stored, so an account that was told 75 slots has 100 at once; no grant is made (it would count twice). `legacyGrants.version`
+  is 2: each character that ran version 1 gets one message with the new number if its account has old tabs (`tabsRaised`). `stash.lua` `S.viewOf` reads the extras; no row is rewritten. (2) The free tabs
   the account used: `S.grandfather` runs once per character at login (storage `legacy` 7100014, `legacyGrants.version`): an
   affinity tab where the character holds entries (Supplies, Creature Products) and the Collectibles tab of the
   achievement `unique_50` become the bought extra (`ChaosPact.grantExtra`, never less than 1, logged as "legacy").
@@ -6062,8 +6105,11 @@ Prices and reasons: docs/PRICES.md "Pacto Completo (O317)".
 
 **Pact Marks** (O317): a second currency, per account, table `chaos_pact_marks` (balance, earned, spent). `pact.dailyMarks`
 (5) are claimed with the same button, once a day, no back pay. They buy only the cosmetics of `marks.shelf` in
-`pact_config.lua` (six store cosmetics today, 150 to 200 Marks), in the Pact window: action `marksBuy {key}`;
-`ChaosPactCore.shelfCheck` refuses any key off the shelf, an owned cosmetic and too few Marks; the Marks are taken with one
+`pact_config.lua` (six store cosmetics today, 150 to 200 Marks) and the month's slot `marks.monthly` (12 store cosmetics, one
+chosen by the server month: `ChaosPactCore.monthlyItem(cfg, now)`, entry `((year * 12 + month - 1) mod #list) + 1`, pure and
+tested; `ChaosPactCore.shelf` is the fixed rows then the slot, sent in `status.shelf` with `monthly = true` and `endsAt`), in the
+Pact window: action `marksBuy {key}`;
+`ChaosPactCore.shelfCheck` refuses any key off the shelf (another month's slot too), an owned cosmetic and too few Marks; the Marks are taken with one
 guarded `UPDATE ... WHERE balance >= price`, then `ChaosCosmetics.grant(account, key, "marks")`, and given back when the grant
 fails. No store offer, service, boost or supply takes Marks, nothing turns Marks into coins (`tests/pact_test.lua`,
 `tools/store_model.lua --check` hold it). The balance is capped at 100,000.
@@ -6291,6 +6337,15 @@ the new account's first character levels. Approved by the owner. Nothing in it g
 A streamer or content creator gets a code; a donor picks it on the website; for `supportDays` (30) every donation of that
 account gives the creator `sharePct` (10, decided 2026-10-14, docs/PRICES.md) % of the donation's coins (the pack's coins, not its bonus), as
 Chaos Coins in game. The donor's pack is never reduced. Owner decision 2026-10-13: paid in coins in game, not money.
+
+- **Launch window (owner, 2026-10-29).** A donation credited in the first `launchBonusDays` (30) days from
+  `launchBonusStart` (`"2026-11-20 15:00"`, the launch, server time) earns `launchBonusPct` (15) % instead of `sharePct` (10).
+  `C.pctOf(codeRow, cfg, at)` takes the donation's credited time (`o.credited` in `CC.match`, the settle fallback uses
+  `u.credited`); a code with its own % keeps it; `orderCap` (500) and `monthlyCap` still apply, so a 5000-coin pack is
+  capped in the window too. `launchBonusPct = 0` switches it off. The website reads the same three fields
+  (`chaos_creator_bonus_window`) and shows the bonus on the Creator Codes page. Test: `tests/creator_codes_test.lua`.
+- **Applications** are the website's (`chaos_creator_applications`, website/README.md "Creator program"); the game server
+  does not read them.
 
 - **Codes** are made on the website by an administrator (an admin panel account with a character of group `adminGroup`,
   5): code, the creator's character (its account is paid), a shown name, its own % (0 = the default), on / off. Donors
@@ -12715,6 +12770,12 @@ with gems, above the rarity, over the limit) and marks the items in the gear gri
 **255 items per action** (`batchCap`, was 50): a full Loot Bag in one click. One action removes up to 255 items in one tick and
 writes up to 255 rows in one `INSERT` into `chaos_crafting_log`, with `batchIntervalMs` (2 s) between two actions; nothing in
 the code needs a smaller number. The rest, if any, is listed as over the limit for the next one.
+**One click empties a full bag (O319 follow-up, 500 slots).** A batch that hit `batchCap` chains the next one by itself: `addEvent` after
+`chainDelayMs` (500), at most `chainMax` (8) batches in a row, each with its own result text ("The rest of the bag follows." until the last).
+The chain reads the bag again before each batch (`salvage_core.lua` `K.chainStep`) and stops when the player logs out (no `Player(id)`, and the
+logout event clears it), starts a batch of own (a new token), the bag is gone, nothing is left, or the eligible items are not the ones left
+("The bag changed: the salvage stopped. Check the list and confirm again."). Only the first batch needs the preview signature; the same
+rarity and bag carry on. Tests: `tests/salvage_test.lua` (25 items with a cap of 10: 10, 10, 5; logout, change, new batch, limit).
 **The Loot Bag** (tester feedback 2026-10-28: "Salvage All por qualidade na Loot Bag"): the bench only knew paths inside the
 main backpack (`ChaosCraftingBench.walk` / `itemAt`), but the Loot Bag lives in the purse (the store inbox) and never leaves it,
 so it was never in the container list and its items failed the backpack check, and the only way was to move them out one by
@@ -15125,7 +15186,7 @@ The weekly **Battleground** leaderboard counts wins (title Wellkeeper); achievem
 potions (60) and 50 ultimate health potions (120), and three cosmetics (`cosmetics_config.lua` source `pvp`): kill effect
 Honor Brand (3000), loot labels Warbanner (2000), chat name Gladiator Steel (2500). Nothing with power above PvE gear.
 
-**PvP seasons** (`arena_season.lua`, `ChaosPvpSeason`). 8 weeks each from the epoch Monday 5 Oct 2026 06:00 (`season.weeks`,
+**PvP seasons** (`arena_season.lua`, `ChaosPvpSeason`). 8 weeks each from the epoch, the launch, Fri 20 Nov 2026 15:00 (`season.weeks`,
 `season.epoch`). A rating per bracket (`1v1`, `2v2`, `3v3`, `bg`): **Glicko-lite**, start 1500, deviation 350; one rated
 match is one Glicko-1 period against the other team's average rating and root-mean-square deviation (a leaver scores 0);
 the deviation never drops below 75 (about +/-15 between equals) and grows by 35 per idle week. The first **5 matches** of
@@ -22206,6 +22267,24 @@ and `starterCoins` (5000).
 - **Tests:** `tests/beta_test.lua` (config, due check, SQL, then the engine on an in-memory table: first character
   granted once, relog, second character, restart, a second account in pt-BR, an older character, beta off, store missing).
 
+## Beta testers (`beta_tester.lua`, `beta_core.lua`, `beta_config.lua` `tester`, `sql/chaos_beta_testers.sql`)
+
+Owner decision 2026-10-29: accounts that played the beta get a cosmetic thank-you title, "Beta Tester", at launch. Nothing
+else (no coins, no items).
+
+- **Recording.** `beta_tester.lua` logs every login. When the time is inside one of `tester.windows` (31 Oct 15:00 to
+  1 Nov 23:00 and 7 Nov 15:00 to 8 Nov 23:00, server time) it writes the account into `chaos_beta_testers` with
+  `INSERT IGNORE`. The Friday staff smoke test (30 Oct) and the days between the weekends are outside the windows.
+- **Surviving the wipe.** docs/BETA.md section 9 truncates every `chaos_*` table except a short list; `chaos_beta_testers`
+  is on that list (and so are `chaos_admin_log`, `chaos_patchnotes`, `chaos_referral_codes`). The file must be installed
+  on the beta server from the first weekend: only logins inside a window are recorded. If it was not, the final beta backup
+  rebuilds the list from `players.lastlogin` inside the windows.
+- **The title.** `ChaosTitles.register("betatester", ...)` (the Founder Pack's way): the title shows only when the beta
+  switch is off (`Chaos.beta.enabled = false`, the launch config), so testers do not see it in the beta. It has the lowest
+  priority (`at = 0`), so any earned title wins the default plate. A manual row (`INSERT IGNORE INTO chaos_beta_testers
+  (account_id, first_at) VALUES (<account>, 0)`) grants it to one account after a restart (the answer is cached per account).
+- **Tests:** `tests/beta_tester_test.lua` (windows, SQL, the title only with the beta off, the engine on an in-memory table).
+
 ## Ascended Omens and the Cinderheart (`uber.lua`, `uber_core.lua`, `uber_config.lua`, `tools/install_ascended.py`)
 
 **Limits** (`uber_config.lua` `limits`, "Instance limits"): the boss's own limit (13 minutes after it appears, the Cinderheart 18) with warnings at 5 min, 1 min and 10 s; time up fails the run (out, the sigil is spent); at most 4 arenas, the wait and the waiting line when all are in use.
@@ -22824,7 +22903,7 @@ The story text and these sizes were approved on 2026-10-14 (owner delegated, doc
 Chronicler is Archivist Maelis (one name; she answers "chronicle" and "cronista", `archivist_maelis.lua`).
 
 **Goal sizes** (2026-10-14, after pack combat; computed, not measured). Assumptions: Season 1 starts with the launch
-(20 Nov) and ends 31 Jan (72 days); 150 online at the evening peak (the middle of the expected 100-300), about 2.5 x
+(20 Nov) and ends 31 Jan (72 days; the owner set 19 Feb, 91 days, on 2026-10-29, so the goals have more room than computed); 150 online at the evening peak (the middle of the expected 100-300), about 2.5 x
 that many players a day and 13 x it in player-hours a day (1,950 at 150); the leveling model of "Pack combat (pace)"
 (level 300 in 3-7 hours of play, 600 in 20-45, 800 in about 40, 925+ in about 55-70; boosted about 40% less). Only
 the open chapter counts, so each goal counts what happens in its own window (a level goal counts characters that cross

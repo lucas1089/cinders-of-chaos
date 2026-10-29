@@ -24,6 +24,11 @@ local function pactCost(days)
 end
 
 local cfg = {
+	-- a donation refunded or charged back (shop_payments.lua processReversals) whose coins the account no longer has takes the
+	-- Founder Pack bought after that donation back too (founder.lua revoke): the pieces, the title and the Pact days. Only when
+	-- the coins not recovered are at least minShortfallPct of the pack's price (a small refund must not cost a pack). The
+	-- sale stays used up: the account cannot buy the pack again.
+	revoke = {minShortfallPct = 50, table = "chaos_founder_revokes"},
 	start = START,
 	["end"] = END,
 	-- the "how" text of the pieces in the wardrobe's Collection tab

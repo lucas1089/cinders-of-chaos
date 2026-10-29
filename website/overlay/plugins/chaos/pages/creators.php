@@ -6,9 +6,30 @@
  * page?plugin=chaos&p=creators[&l=en|pt-BR]
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
+require_once __DIR__ . '/../creator_lib.php';
 require_once __DIR__ . '/../creators_lib.php';
 require_once __DIR__ . '/../i18n_lib.php';
 $GLOBALS['page_title'] = chaos_t('Creator Program');
+$accountId = function_exists('getSession') ? (int)getSession('user_id') : 0;
+if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['chaos_creators_csrf'])) {
+	$_SESSION['chaos_creators_csrf'] = bin2hex(random_bytes(16));
+}
+$csrf = (string)($_SESSION['chaos_creators_csrf'] ?? '');
+$message = '';
+$messageOk = true;
+$posted = array();
+if ($accountId > 0 && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['do'] ?? '') === 'apply') {
+	if ($csrf === '' || !hash_equals($csrf, (string)($_POST['csrf'] ?? ''))) {
+		[$messageOk, $message, $messageArgs] = array(false, 'The form expired. Please try again.', array());
+	} else {
+		$posted = $_POST;
+		[$messageOk, $message, $messageArgs] = chaos_creators_submit($accountId, $_POST, (string)($_SERVER['REMOTE_ADDR'] ?? '')) + array(2 => array());
+		if ($messageOk) { $posted = array(); }
+	}
+}
+$discord = trim((string)($GLOBALS['config']['chaos']['discord_url'] ?? '')); // CHAOS_DISCORD_URL; shown only when set
+$crit = chaos_creators_criteria();
+$val = static function (string $k) use ($posted): string { return chaos_h((string)($posted[$k] ?? '')); };
 
 $self = 'page?plugin=chaos&p=creators';
 $data = chaos_creators_data();
@@ -49,6 +70,35 @@ $state = static function (string $s): string {
 		<ol id="chaos-creators-apply">
 			<?php foreach ($data['apply']['steps'] as $line): ?><li><?= chaos_h(chaos_bi($line)) ?></li><?php endforeach; ?>
 		</ol>
+
+		<?php if ($discord !== '' && preg_match('#^https://#', $discord)): ?>
+			<p id="chaos-creators-discord"><?= chaos_h(chaos_t('Questions? Talk to the staff on the server Discord:')) ?> <a href="<?= chaos_h($discord) ?>" rel="noopener"><?= chaos_h(chaos_t('Discord')) ?></a></p>
+		<?php endif; ?>
+
+		<h3 class="chaos-subheading" id="chaos-creators-form-title"><?= chaos_h(chaos_t('Application form')) ?></h3>
+		<?php if ($message !== ''): ?>
+			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-creators-message"><?= chaos_h(chaos_t($message, ...$messageArgs)) ?></p>
+		<?php endif; ?>
+		<?php if ($accountId <= 0): ?>
+			<p class="chaos-muted" id="chaos-creators-login"><?= chaos_h(chaos_t('Log in to send an application. You need an account and a character.')) ?></p>
+		<?php else: ?>
+			<form method="post" action="<?= chaos_h($self) ?>#chaos-creators-form-title" id="chaos-creators-form">
+				<input type="hidden" name="csrf" value="<?= chaos_h($csrf) ?>">
+				<p><label><?= chaos_h(chaos_t('Platform')) ?>
+					<select name="platform" required>
+						<?php foreach (chaos_creators_platforms() as $pl): ?><option value="<?= chaos_h($pl) ?>"<?= ($posted['platform'] ?? '') === $pl ? ' selected' : '' ?>><?= chaos_h(ucfirst($pl)) ?></option><?php endforeach; ?>
+					</select></label></p>
+				<p><label><?= chaos_h(chaos_t('Channel link (https)')) ?> <input type="url" name="channel_url" maxlength="255" required value="<?= $val('channel_url') ?>"></label></p>
+				<p><label><?= chaos_h(chaos_t('Your character')) ?> <input type="text" name="character_name" maxlength="29" required value="<?= $val('character_name') ?>"></label></p>
+				<p><label><?= chaos_h(chaos_t('Hours a week of streams or videos of the game')) ?> <input type="number" name="hours_week" min="0" max="168" required value="<?= $val('hours_week') ?>"></label></p>
+				<p><label><?= chaos_h(chaos_t('Average live viewers')) ?> <input type="number" name="viewers_avg" min="0" required value="<?= $val('viewers_avg') ?>"></label></p>
+				<p><label><?= chaos_h(chaos_t('Followers')) ?> <input type="number" name="followers" min="0" required value="<?= $val('followers') ?>"></label></p>
+				<p><label><?= chaos_h(chaos_t('A few words about your channel (optional)')) ?><br><textarea name="message" rows="4" maxlength="1000"><?= $val('message') ?></textarea></label></p>
+				<p><label><input type="checkbox" name="agree" value="1" required> <?= chaos_h(chaos_t('I do not trade accounts, items or coins for real money, and I follow the Rules and the Donation Terms.')) ?></label></p>
+				<button type="submit" name="do" value="apply" class="chaos-button"><?= chaos_h(chaos_t('Send application')) ?></button>
+				<p class="chaos-muted"><?= chaos_h(chaos_t('Criteria: at least %d hours a week, and at least %d average live viewers or %d followers.', $crit['hoursWeek'], $crit['viewers'], $crit['followers'])) ?></p>
+			</form>
+		<?php endif; ?>
 
 		<h2 class="chaos-subheading"><?= chaos_h(chaos_t('Media kit')) ?></h2>
 		<?php if ($kit['zip']): ?>
