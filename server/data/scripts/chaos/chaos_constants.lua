@@ -2209,6 +2209,9 @@ ChaosOpcodes.unlocks = 115
 -- 7103020 - 7103029 (weeklychest_config.lua storage); no tables.
 ChaosOpcodes.weeklyChest = 117
 Chaos.storage.weeklyChest = 7103020
+-- Hunt warnings (hunt_warnings.lua, hunt_warnings_core.lua, hunt_warnings_config.lua; O323): player storage 7103050 = os.time
+-- of the last warning shown (7103051 - 7103059 free). No opcode, no table.
+Chaos.storage.huntWarnLast = 7103050
 -- The Templar line's foot aura (templar_combat.lua, templar_aura_core.lua M.syncEntries; client game_chestaura; O315): which
 -- Templar-line players in view have an aura, their line, radius and whether the viewer shares their party, server -> client
 -- `sync` only when that changed. 118 is free in the reference server, the base client, every Chaos script and every client

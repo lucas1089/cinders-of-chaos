@@ -10,7 +10,7 @@
  "counts": {
   "opcode": 63,
   "out": 38,
-  "passive": 83,
+  "passive": 84,
   "place": 15,
   "staff": 13
  },
@@ -9995,6 +9995,16 @@
    "opcodes": [],
    "place": "travel",
    "talkactions": []
+  },
+  "hunt_warnings": {
+   "files": [
+    "chaos_constants.lua",
+    "hunt_warnings.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "i18n": {
    "files": [

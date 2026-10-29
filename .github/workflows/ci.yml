@@ -824,6 +824,9 @@ jobs:
       - name: Waystone map audit parsers and rules (audit_waystone_maps.py; the base map itself is checked by hand)
         run: python3 -I server/tools/audit_waystone_maps_test.py
 
+      - name: Hunt transition audit rules on synthetic spawns (audit_hunt_transitions.py; the base map itself is audited by hand, docs/HUNT_TRANSITIONS.md; O323)
+        run: python3 -I server/tools/audit_hunt_transitions_test.py
+
       - name: Pack bands per role, Elementalist ahead on a pack, late packs die in at most 3x a base hunt pack (pack_model.py --check; boss_balance_config.lua packLimits, pace_config.lua scaled.health)
         run: python3 -I server/tools/pack_model.py --check
 
