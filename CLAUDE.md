@@ -84,6 +84,7 @@ cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/w
 cd server && lua5.3 tools/gen_wiki_data.lua --check
 python3 -I server/tools/weapon_sim.py --power --check             # -> data/scripts/chaos/weapon_power_config.lua (--power --write)
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
+python3 -I website/tools/gen_streamer_kit.py                  # -> website plugins/chaos/assets/streamer: OBS overlays, Twitch panels, banners, Discord icon (--check in CI with the fx venv; O320)
 python3 -I website/tools/gen_calendar_data.py                  # -> website calendar/calendar_data.json from season_config.lua and others (--check in CI; O320)
 python3 -I website/tools/gen_calendar_data_test.py
 python3 -I website/tools/gen_media_kit.py                       # -> creators/media_kit_manifest.json (--check in CI; the zip is built by install_site.sh, not committed)

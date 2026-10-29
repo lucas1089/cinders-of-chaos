@@ -34,6 +34,8 @@ $val = static function (string $k) use ($posted): string { return chaos_h((strin
 $self = 'page?plugin=chaos&p=creators';
 $data = chaos_creators_data();
 $kit = chaos_creators_kit();
+$streamer = chaos_creators_streamer_files();
+$guide = chaos_creators_guide(chaos_lang(), $discord);
 $state = static function (string $s): string {
 	return $s === 'built' ? chaos_t('Available') : ($s === 'proposal' ? chaos_t('Proposed, to be confirmed') : chaos_t('To be set'));
 };
@@ -109,6 +111,32 @@ $state = static function (string $s): string {
 		<?php else: ?>
 			<p class="chaos-muted"><?= chaos_h(chaos_t('The media kit is not available right now.')) ?></p>
 		<?php endif; ?>
+
+		<h2 class="chaos-subheading" id="chaos-creators-streamer"><?= chaos_h(chaos_t('Streamer kit')) ?></h2>
+		<p class="chaos-muted"><?= chaos_h(chaos_t('Overlays for OBS, Twitch panels, banners and the Discord icon, all original art. They are in the media kit too. File names end with pt-BR or en for the language.')) ?></p>
+		<div id="chaos-creators-streamer-files">
+		<?php foreach (array('overlays' => 'OBS overlays and scenes', 'banners' => 'Panels and banners', 'discord' => 'Discord icon') as $dir => $label): ?>
+			<?php if (!empty($streamer[$dir])): ?>
+			<h3 class="chaos-subheading"><?= chaos_h(chaos_t($label)) ?></h3>
+			<ul class="chaos-muted">
+				<?php foreach ($streamer[$dir] as $name): ?><li><a href="<?= chaos_h(chaos_creators_streamer_url($dir . '/' . $name)) ?>" download><?= chaos_h($name) ?></a></li><?php endforeach; ?>
+			</ul>
+			<?php endif; ?>
+		<?php endforeach; ?>
+		</div>
+		<p class="chaos-muted" id="chaos-creators-obs"><?= chaos_h(chaos_t('OBS browser source (shows the server name and your code, no cookies, no requests):')) ?> <code><?= chaos_h(chaos_creators_streamer_url('obs-overlay.html')) ?>?code=YOURCODE</code></p>
+
+		<h2 class="chaos-subheading" id="chaos-creators-guide"><?= chaos_h($guide['title']) ?></h2>
+		<p class="chaos-muted"><?= chaos_h($guide['intro']) ?></p>
+		<?php foreach ($guide['sections'] as $sec): ?>
+			<h3 class="chaos-subheading" id="guide-<?= chaos_h($sec['id']) ?>"><?= chaos_h($sec['title']) ?></h3>
+			<?php foreach ($sec['blocks'] as [$kind, $val]): ?>
+				<?php if ($kind === 'p'): ?><p><?= chaos_h($val) ?></p>
+				<?php else: $tag = $kind === 'ol' ? 'ol' : 'ul'; ?>
+				<<?= $tag ?>><?php foreach ($val as $line): ?><li><?= $kind === 'check' ? '&#9744; ' : '' ?><?= chaos_h($line) ?></li><?php endforeach; ?></<?= $tag ?>>
+				<?php endif; ?>
+			<?php endforeach; ?>
+		<?php endforeach; ?>
 
 		<h2 class="chaos-subheading"><?= chaos_h(chaos_t('Still to be decided')) ?></h2>
 		<ul id="chaos-creators-open">

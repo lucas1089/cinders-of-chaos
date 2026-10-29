@@ -386,4 +386,10 @@ return array(
 	'Applications are not available right now.' => 'Os pedidos não estão disponíveis agora.',
 	'Log in first.' => 'Entre na sua conta primeiro.',
 	'Launch bonus: for donations in the first %d days after the launch (until %s, UTC-3), the creator gets %d%% of the coins instead of %d%%. It still costs you nothing.' => 'Bônus de lançamento: nas doações dos primeiros %d dias depois do lançamento (até %s, UTC-3), o criador recebe %d%% das moedas em vez de %d%%. Continua sem custar nada para você.',
+	'Streamer kit' => 'Kit para streamers',
+	'Overlays for OBS, Twitch panels, banners and the Discord icon, all original art. They are in the media kit too. File names end with pt-BR or en for the language.' => 'Overlays para o OBS, painéis da Twitch, banners e o ícone do Discord, tudo arte original. Também estão no kit de mídia. Os nomes dos arquivos terminam em pt-BR ou en, o idioma.',
+	'OBS overlays and scenes' => 'Overlays e cenas para o OBS',
+	'Panels and banners' => 'Painéis e banners',
+	'Discord icon' => 'Ícone do Discord',
+	'OBS browser source (shows the server name and your code, no cookies, no requests):' => 'Fonte Navegador do OBS: mostra o nome do servidor e o seu código, sem cookies e sem pedidos a outros sites:',
 );

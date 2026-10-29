@@ -263,6 +263,10 @@ jobs:
         # icons, guide heroes and tab banners; the same pinned Pillow and numpy as the art checks above (WebP bytes)
         run: /tmp/fxenv/bin/python -I website/tools/gen_wiki_art.py --check
 
+      - name: Website streamer kit art is up to date (gen_streamer_kit.py, O320)
+        # overlays, Twitch panels, banners and the Discord icon under plugins/chaos/assets/streamer; the same pinned Pillow and numpy
+        run: /tmp/fxenv/bin/python -I website/tools/gen_streamer_kit.py --check
+
       - name: Dungeon banners match their plan and the dungeon maps (gen_dungeon_banners.py, no pair)
         # the plan's tiles, boss and monsters against a fresh areagen dump (LuaJIT), the banners' pixels against the plan
         run: /tmp/fxenv/bin/python -I client/tools/gen_dungeon_banners.py --check

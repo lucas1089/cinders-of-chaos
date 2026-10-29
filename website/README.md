@@ -1351,10 +1351,42 @@ All three are in the menu The World, the sitemap and the SEO descriptions.
   page (`page?plugin=chaos&p=creator`, group 5+), then create the code there. The Discord link shows on the page only
   when `CHAOS_DISCORD_URL` (`$config['chaos']['discord_url']`) is an https link. Tests: `tests/chaos_creators_apply_test.php`.
 - Media kit: `python3 -I website/tools/gen_media_kit.py --zip OUT.zip` packs `website/art/*.png`, the site logo and a
-  fact sheet in pt-BR and en (the dates come from the calendar data). The zip is stored without compression and is
+  fact sheet in pt-BR and en (the dates come from the calendar data), plus the streamer kit (see "Streamer kit"). The zip is stored without compression and is
   deterministic. It is not committed: `install_site.sh` builds it into `<site>/press/`. Committed: only
   `creators/media_kit_manifest.json` (names, sizes, sha256), checked by `--check` in CI and by the page test against the
   art on disk. The repository has no gameplay screenshots, so the kit has none. All art is original (see "Art").
+
+### Streamer kit
+- Art: `python3 -I website/tools/gen_streamer_kit.py` writes 24 files under `website/overlay/plugins/chaos/assets/streamer/`, and
+  `--check` verifies them. CI runs `--check` with the fx venv. The files:
+  - `overlays/`: webcam frame, bottom bar with a blank code slot in pt-BR and en, Starting soon, Be right back, Ending. All 1920x1080. The
+    frame and the bar are transparent.
+  - `banners/`: four Twitch panels of 320x100 (Sobre o jogo, Código de criador, Discord, Regras and the en twins), a social banner of 1500x500,
+    the offline screen and a thumbnail template of 1280x720.
+  - `discord/icon-circle-512.png`: the server icon. Discord crops icons to a circle, so the icon has a full-bleed ember background with opaque
+    corners and the key art inside the inscribed circle. The C spans 56% of the width and a ring sits at 94% of the radius. The test reads
+    the pixels.
+  - `slots.json`: the boxes of the blank slots.
+  Everything is procedural and original. It uses the site theme from `gen_site_art.py`, which gives the fonts, panels and class badges, and the
+  committed site logo `logo.png`. The generator reads the logo instead of calling the wordmark builder, so Pillow and numpy are enough.
+  Deterministic for the pinned versions.
+- Committed versus built: the PNGs and the OBS page are committed where the site serves them, so the creators page can link each file and
+  `install_site.sh` needs no Pillow. `gen_media_kit.py` packs them into the zip under `streamer/` together with the guide
+  `guide/guia-do-parceiro.pt-BR.md` and `guide/partner-guide.en.md` and with `chat/chat-commands.txt`. Those three are built from text at
+  install and not committed. Rerun `gen_media_kit.py` after the art changes, because it checks the manifest. Nothing goes under
+  `website/overlay/press/`. Every top-level overlay folder must be a reserved character name, which `tests/chaos_client_api_test.php`
+  checks, and the zip is built into `<site>/press/` at install.
+- OBS browser source: `plugins/chaos/assets/streamer/obs-overlay.html?code=YOURCODE`, optionally `&lang=pt-BR` or `&lang=en`. Size 640 by 120,
+  transparent. Static HTML and one script. The code is cleaned to 3-16 letters and digits and written as text. No cookies, no storage, no
+  requests, no account data. It shows no live server status: the site has no public status endpoint, and a source that polls one would add
+  requests.
+- Partner guide: `creators/partner_guide.json`, pt-BR and en. Sections: start, apply, code, rules, brand, kit, obs, promo, checklist. The numbers
+  are read from `creator_codes_config.lua` by `chaos_creators_guide()` on the page and by `gen_streamer_kit.py` for the zip, so they cannot
+  drift. They are the share, the launch window, the hold, the caps and the support days. The Discord link is `CHAOS_DISCORD_URL` when it is
+  https. The creators page lists each kit file and shows the guide.
+- Test: `php website/tests/chaos_streamer_kit_test.php` checks sizes, transparency, the circle-safe icon, the OBS page rules, the guide
+  tokens and numbers, the page, the manifest and where the files live.
+- Staff: set `discord/icon-circle-512.png` as the server icon in Discord, under Server Settings > Overview.
 
 ## Languages
 The donation (`coins`), Character Bazaar, creator, leaderboards / records, fair play, calendar and creator program pages speak Portuguese (Brazil) or

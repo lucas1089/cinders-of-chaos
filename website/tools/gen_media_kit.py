@@ -2,7 +2,9 @@
 """Media kit for streamers and press (page?plugin=chaos&p=creators; website/README.md "Creator program").
 
 Packs the art that is already in the repository (website/art/*.png and the site logo, all original and procedural,
-see gen_site_art.py) with a fact sheet in pt-BR and en into one zip. The zip itself is NOT committed: it is built at
+see gen_site_art.py), the streamer kit (gen_streamer_kit.py: the committed overlays, panels, banners and Discord icon under
+website/overlay/plugins/chaos/assets/streamer/, the partner guide and chat commands built from text) and a fact sheet in
+pt-BR and en into one zip. The zip itself is NOT committed: it is built at
 install time (website/install_site.sh) into <site>/press/cinders-of-chaos-media-kit.zip. What is committed is the
 manifest website/overlay/plugins/chaos/creators/media_kit_manifest.json (file names, sizes, sha256), which the page
 reads, and --check fails when the art or the fact sheet changed and the manifest did not.
@@ -22,6 +24,8 @@ import sys
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import gen_streamer_kit  # noqa: E402  (text files need no Pillow; the committed PNGs are read from disk)
 REPO = os.path.normpath(os.path.join(HERE, "..", ".."))
 ART = os.path.join(REPO, "website", "art")
 LOGO = os.path.join(REPO, "website", "overlay", "layouts", "chaos", "assets", "img", "logo.png")
@@ -57,6 +61,7 @@ O que tem neste kit
 - logo.png, o logotipo com o lema.
 - Banners: social, Discord, listas de servidores.
 - Uma imagem das classes e uma dos recursos do jogo.
+- streamer/: kit para streamers, com molduras e telas para o OBS, painéis da Twitch, banner social, ícone do Discord, guia do parceiro e comandos de chat.
 - Esta ficha em pt-BR e en.
 Não há capturas de tela de jogo neste kit. Peça à equipe quando houver uma versão estável.
 
@@ -88,6 +93,7 @@ What is in this kit
 - logo.png, the logo with the tagline.
 - Banners: social, Discord, server lists.
 - One image of the classes and one of the game features.
+- streamer/: the streamer kit, with OBS frames and scenes, Twitch panels, a social banner, the Discord icon, the partner guide and chat commands.
 - This sheet in pt-BR and en.
 There are no gameplay screenshots in this kit. Ask the team when a stable version exists.
 
@@ -128,6 +134,10 @@ def files():
     for name in sorted(os.listdir(ART)):
         if name.endswith(".png"):
             out.append((ROOT + "/art/" + name, read_bytes(os.path.join(ART, name))))
+    for name, data in sorted(gen_streamer_kit.text_files().items()):
+        out.append((ROOT + "/streamer/" + name, data))
+    for name, path in sorted(gen_streamer_kit.walk(gen_streamer_kit.OUT).items()):
+        out.append((ROOT + "/streamer/" + name, read_bytes(path)))
     for lang, name in (("pt-BR", "ficha-tecnica.pt-BR.txt"), ("en", "fact-sheet.en.txt")):
         out.append((ROOT + "/" + name, FACTS[lang].format(dates=dates_text(lang)).encode("utf-8")))
     out.sort(key=lambda x: x[0])
