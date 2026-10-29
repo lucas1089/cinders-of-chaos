@@ -124,6 +124,11 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    ChaosRarity.stockRolls instead (ids 1, 2, 3, 4, 5, 10 with the chances 15, 14, 12, 10, 7, 1) when that table exists.
    Without data/lib/chaos_rarity.lua the base rows are walked as before. server/README.md "Item rarities".
 
+22. data/scripts/eventcallbacks/monster/default_onDropLoot.lua: the "Loot of" line (getCustomLootDescription) compared
+   the corpse items' "rarity" with 0. A forged drop keeps its rarity as text while the engine's rarity pass runs
+   (ChaosCrafting.shield, data/lib/chaos_crafting.lua), so the compare raised "attempt to compare number with string"
+   and the loot line was lost (live log 2026-10-28). The read goes through tonumber.
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -223,6 +228,23 @@ def patch_stock_rarities(text):
               + '\treturn rarities' + nl
               + 'end' + nl + nl)
     return text[:m.start()] + helper + m.group(0) + body + text[end:], 'patched'
+
+
+RARNUM_MARKER = '-- Chaos: the loot line reads a text rarity as a number (patch_base_events.py)'
+RARNUM_RE = re.compile(r'^([ \t]*)local rarityId = item:getCustomAttribute\("rarity"\)([ \t]*)(\r?\n)', re.M)
+
+
+def patch_loot_rarity_number(text):
+    """default_onDropLoot.lua: getCustomLootDescription reads "rarity" through tonumber; returns (new text, status)"""
+    if RARNUM_MARKER in text:
+        return text, 'already'
+    m = list(RARNUM_RE.finditer(text))
+    if len(m) != 1:
+        return text, 'unexpected default_onDropLoot.lua (local rarityId = item:getCustomAttribute("rarity") not found once)'
+    m = m[0]
+    ind, nl = m.group(1), m.group(3)
+    line = ind + RARNUM_MARKER + nl + ind + 'local rarityId = tonumber(item:getCustomAttribute("rarity"))' + nl
+    return text[:m.start()] + line + text[m.end():], 'patched'
 
 
 COMBAT_MARKER = '-- Chaos: guild siege rules before the base PvP rules (patch_base_events.py)'
@@ -783,6 +805,8 @@ def main():
                patch_exercise_charges, dry) and ok
     ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
                patch_stock_rarities, dry) and ok
+    ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
+               patch_loot_rarity_number, dry) and ok
     return 0 if ok else 1
 
 

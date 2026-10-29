@@ -181,7 +181,11 @@ local function tell(pos, radius, text, msgType)
 end
 
 local function say(monster, text)
-	monster:say(text, TALKTYPE_MONSTER_SAY)
+	if Chaos and Chaos.yell then
+		Chaos.yell(monster, text, TALKTYPE_MONSTER_SAY) -- each listener reads it in own language
+	else
+		monster:say(text, TALKTYPE_MONSTER_SAY)
+	end
 end
 
 local function effect(pos, name, fallback)
@@ -573,7 +577,11 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 			local msgType = _G[c.loot.messageType] or MESSAGE_LOOT or MESSAGE_INFO_DESCR
 			local party = owner:getParty()
 			if party then
-				party:broadcastPartyLoot(tostring(text)) -- one line for the whole party: English
+				if Chaos.partyMessage then
+					Chaos.partyMessage(party, msgType, text) -- one line for the whole party, in each member's language
+				else
+					party:broadcastPartyLoot(tostring(text))
+				end
 			else
 				owner:sendTextMessage(msgType, Chaos.t(owner, text))
 			end

@@ -44,15 +44,20 @@ def run(folder, *extra):
 fixes = P.FIXES['raids/thais/orcs.xml']
 known = {'orc', 'orc leader'}
 new, done = P.patch(RAID, fixes, known)
-check(len(done) == 3 and all(r == 'Orc Leader' for _, r in done), 'three spawns renamed: %r' % done)
-check(new.count('name="Orc Leader"') == 3 and 'singlespawn delay="120000" name="Orc" ' in new, 'the Orc spawn is kept')
-check('<monster name="Orc Armor" amount="3" />' in new, 'only single spawns are touched')
+check(len(done) == 4 and all(r == 'Orc Leader' for _, r in done), 'three spawns and the area line renamed: %r' % done)
+check(new.count('name="Orc Leader"') == 4 and 'singlespawn delay="120000" name="Orc" ' in new, 'the Orc spawn is kept')
+check('<monster name="Orc Leader" amount="3" />' in new, 'the area spawn monster line is renamed too')
 check(P.patch(new, fixes, known) == (new, []), 'idempotent')
 check(P.patch(RAID, fixes, known | {'orc armor'})[1] == [('Orc Helmet', 'Orc Leader'), ('Orc Shield', 'Orc Leader')],
       'a name the server knows is kept')
 gone, done = P.patch(RAID, fixes, {'orc'})
-check(len(done) == 3 and all(r is None for _, r in done) and gone.count('<!-- <singlespawn') == 3
+check(len(done) == 4 and all(r is None for _, r in done) and gone.count('<!-- <singlespawn') == 3 and gone.count('<!-- <monster') == 1
       and '--' not in gone.replace('<!--', '').replace('-->', '').replace('<?xml', '').replace('?>', ''), 'no new monster: lines out as comments')
+
+for rel, want in (('raids/venore/orc_backpack.xml', 'Orc Warlord'), ('raids/darashia/white_pale.xml', 'Spectre'),
+                  ('raids/chayenne/chayenne.xml', 'Dragon Lord'), ('raids/svargrond/ocyakao.xml', 'Yeti'),
+                  ('raids/svargrond/hirintror.xml', 'Frost Dragon')):
+    check(want in P.FIXES.get(rel, {}).values(), 'fix for ' + rel)
 
 with tempfile.TemporaryDirectory() as d:
     os.makedirs(os.path.join(d, 'raids', 'thais'))

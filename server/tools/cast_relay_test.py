@@ -20,6 +20,7 @@ import struct
 import sys
 import tempfile
 import threading
+import types
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, '..', '..'))
@@ -716,6 +717,15 @@ def test_sheets(dat, spr, items, dims):
     c = gsi.outfit_colour(94)
     expect(red == tuple((200 * v + 127) // 255 for v in c), 'tinted as the client does')
     expect(sh.outfit(dict(o, t=9)) is None, 'an unknown look: nothing')
+    big = cr.Sheets(dat, spr)   # a walk group larger than the idle one: the cell holds both (look 24 live)
+    iv = cr.GroupView(dat.outfits[0], 0)
+    wv = types.SimpleNamespace(**{k: getattr(iv, k) for k in ('px', 'py', 'pz', 'layers', 'phases', 'flags', 'anim')})
+    wv.w, wv.h = iv.w + 1, iv.h + 1
+    big.frames = lambda t: (iv, [0], wv, [0])
+    real = big.draw
+    big.draw = lambda v, *a: (real(v, *a) if v is iv else big.np.full((v.h * 32, v.w * 32, 4), 255, big.np.uint8))
+    bl = big.outfit(o)
+    expect(bl['cw'] == wv.w * 32 and bl['ch'] == wv.h * 32, 'a larger walk frame: the cell fits it')
     expect(sh.need('x', lambda: {'t': 'spr'}) == {'t': 'spr'} and sh.need('x', lambda: {}) is None, 'once per run')
     bad = sh.need('y', lambda: 1 / 0)
     expect(bad['t'] == 'sprerr' and bad['key'] == 'y' and 'ZeroDivisionError' in bad['why'], 'a broken thing is said')

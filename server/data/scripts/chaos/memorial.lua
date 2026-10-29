@@ -341,7 +341,7 @@ local function itemAt(pos, aid)
 	return nil, tile
 end
 
-local function put(kind, slot, pos, text)
+local function put(kind, slot, pos, text, textPt)
 	local aid = cfg.aid[kind]
 	local it, tile = itemAt(pos, aid)
 	if not text then
@@ -365,6 +365,39 @@ local function put(kind, slot, pos, text)
 	if ITEM_ATTRIBUTE_DESCRIPTION then
 		it:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, text)
 	end
+	-- the same text in pt-BR, read by the look below (the item is shared by all players, the attribute is English)
+	pcall(function()
+		if textPt and textPt ~= text then
+			it:setCustomAttribute("memorial_pt", textPt)
+		else
+			it:removeCustomAttribute("memorial_pt")
+		end
+	end)
+end
+
+-- Look at a statue or a stone: the text in the player's language (put: custom attribute memorial_pt)
+if EventCallback then
+	local look = EventCallback
+	look.onLook = function(self, thing, position, distance, description)
+		if not (thing and thing.isItem and thing:isItem() and Chaos and Chaos.lang) or Chaos.lang(self) == "en" then
+			return description
+		end
+		local ok, out = pcall(function()
+			local pt = thing:getCustomAttribute("memorial_pt")
+			local raw = thing:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION)
+			if type(pt) ~= "string" or pt == "" or type(raw) ~= "string" or raw == "" then
+				return description
+			end
+			local a, b = description:find(raw, 1, true)
+			if not a then
+				return description
+			end
+			return description:sub(1, a - 1) .. pt .. description:sub(b + 1)
+		end)
+		return ok and out or description
+	end
+	-- before itemdesc_i18n.lua (130), which finds nothing left to swap
+	look:register(129)
 end
 
 -- every statue, stone and the Memorial stone of the plaza for the page now (force: also when the page did not turn)
@@ -378,11 +411,12 @@ function X.placePlaza(force)
 		return false
 	end
 	X.page = page
-	for _, p in ipairs(plan) do
+	local planPt = ChaosI18n and M.plan(cfg, X.entries, X.seasonName, now(), "pt-BR") or {}
+	for i, p in ipairs(plan) do
 		local off = p.kind == "stone" and cfg.slots.stone or cfg.slots[p.kind][p.slot]
 		local pos = M.slotPos(at, off)
 		if pos then
-			put(p.kind, p.slot, pos, p.text)
+			put(p.kind, p.slot, pos, p.text, planPt[i] and planPt[i].text)
 		end
 	end
 	return true, page, pages

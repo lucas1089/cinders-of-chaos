@@ -88,10 +88,15 @@ local function piece(text, tr)
 end
 
 -- "Sword +2 (T3); Fire +5% dmg (T2, bound)" -> each modifier on its own, the tier suffix kept
-local function modList(list, tr)
+local function modList(list, tr, sep)
+	sep = sep or "; "
 	local out, changed = {}, false
-	for mod in (list .. "; "):gmatch("(.-); ") do
+	for mod in (list .. sep):gmatch("(.-)" .. sep:gsub("%p", "%%%0")) do
 		local base, tier = mod:match("^(.-)( %(T%d+.-%))$")
+		if not base then
+			-- the tier of a rift modifier is a Roman numeral: "Monsters have +45% health (II)"
+			base, tier = mod:match("^(.-)( %([IVX]+%))$")
+		end
 		base = base or mod
 		local t = piece(base, tr)
 		if t then
@@ -104,10 +109,12 @@ local function modList(list, tr)
 		end
 		out[#out + 1] = (t or base) .. tier
 	end
-	return changed and table.concat(out, "; ") or nil
+	return changed and table.concat(out, sep) or nil
 end
 
-local LISTS = {"Corrupted implicit:", "Prefixes:", "Suffixes:"}
+-- the lists of labelled sentences; a rift key lists "Modifiers: a (II); b (I)." and "Rewards: +3% x, +5% y."
+local LISTS = {"Corrupted implicit:", "Prefixes:", "Suffixes:", "Modifiers:", "Rewards:"}
+local LIST_SEP = {["Rewards:"] = ", "}
 
 -- a sentence: the translation or nil
 local function sentence(text, tr)
@@ -125,7 +132,7 @@ local function sentence(text, tr)
 				rest, slots = head, tail
 			end
 			local dot = rest:match("%.$") and "." or ""
-			local list = modList(dot ~= "" and rest:sub(1, -2) or rest, tr)
+			local list = modList(dot ~= "" and rest:sub(1, -2) or rest, tr, LIST_SEP[label])
 			if list then
 				return tr(label) .. " " .. list .. dot .. slots
 			end
@@ -151,22 +158,29 @@ function D.translate(text, tr, uniques)
 	if u then
 		return u
 	end
-	local whole = tr(text)
-	if whole ~= text then
-		return whole
-	end
 	local parts = D.split(text)
-	local out, changed = {}, false
+	local out, changed, whole_ok = {}, false, true
 	for i, part in ipairs(parts) do
 		if i % 2 == 1 and part:find("%a") then
 			local t = sentence(part, tr)
 			if t then
 				changed = true
+			else
+				whole_ok = false
 			end
 			out[#out + 1] = t or part
 		else
 			out[#out + 1] = part
 		end
+	end
+	-- every sentence known: the sentence by sentence text (a whole-text template ending in %s, such as "It hums with
+	-- the name %s", would swallow the sentences behind it and leave them in English)
+	if #parts > 1 and whole_ok and changed then
+		return table.concat(out)
+	end
+	local whole = tr(text)
+	if whole ~= text then
+		return whole
 	end
 	if #parts == 0 then
 		return text

@@ -5,7 +5,9 @@ usage: python3 -I patch_base_raids.py DATA_DIR [--dry-run]
 
 DATA_DIR is the server's data folder. The engine runs a raid event that names an unknown monster as
 "[Error] Raids: Cant create monster NAME" and the raid loses that spawn. The Thais orc raid (raids/thais/orcs.xml) has
-three single spawns for monsters called "Orc Helmet", "Orc Shield" and "Orc Armor". None of them is registered in
+three single spawns for monsters called "Orc Helmet", "Orc Shield" and "Orc Armor". A scan of all 90 raid files found
+five more names no monster has: "Orc Sambackpack" (an area spawn line), "White Pale", "Chayenne", "Ocyakao" and "Hirintror".
+They get Orc Warlord, Spectre, Dragon Lord, Yeti and Frost Dragon. The raids use no items. None of them is registered in
 monsters.xml or made by a Lua monster, in the base or after our installs. Each such spawn now names "Orc Leader", the
 orc chief the base does have (one at each of the three spots, as the raid meant). The change is made only when the
 old name is not a known monster (registered in monsters.xml, or Game.createMonsterType("...") in a Lua monster) and the
@@ -19,10 +21,17 @@ import re
 import sys
 
 # raid file (relative to DATA_DIR) -> {old name: new name}
+# The new names are base monsters that monsternames does not rename and that match the old one in theme and strength.
 FIXES = {
     'raids/thais/orcs.xml': {'Orc Helmet': 'Orc Leader', 'Orc Shield': 'Orc Leader', 'Orc Armor': 'Orc Leader'},
+    'raids/venore/orc_backpack.xml': {'Orc Sambackpack': 'Orc Warlord'},
+    'raids/darashia/white_pale.xml': {'White Pale': 'Spectre'},
+    'raids/chayenne/chayenne.xml': {'Chayenne': 'Dragon Lord'},
+    'raids/svargrond/ocyakao.xml': {'Ocyakao': 'Yeti'},
+    'raids/svargrond/hirintror.xml': {'Hirintror': 'Frost Dragon'},
 }
-SPAWN = re.compile(r'(?P<head><singlespawn\b[^>]*?\bname=")(?P<name>[^"]*)(?P<tail>"[^>]*?/>)')
+# single spawns and the monster lines of area spawns
+SPAWN = re.compile(r'(?P<head><(?:singlespawn|monster)\b[^>]*?\bname=")(?P<name>[^"]*)(?P<tail>"[^>]*?/>)')
 
 
 def known_monsters(data):

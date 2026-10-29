@@ -11,6 +11,17 @@ ChaosMemorialCore = ChaosMemorialCore or {}
 local M = ChaosMemorialCore
 local floor = math.floor
 
+-- a text in `lang` (Chaos.t keys, i18n_strings.lua); English without ChaosI18n or without a language
+local function T(lang, key, ...)
+	if lang and ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 M.KINDS = {"first", "record", "fallen"}
 M.TEXT_MAX = 255
 
@@ -74,9 +85,10 @@ function M.formatValue(format, v)
 end
 
 local MONTHS = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
-function M.dateText(t)
+local MONTHS_PT = {"Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"}
+function M.dateText(t, lang)
 	local d = os.date("*t", tonumber(t) or 0)
-	return string.format("%d %s %d", d.day, MONTHS[d.month], d.year)
+	return string.format("%d %s %d", d.day, (lang == "pt-BR" and MONTHS_PT or MONTHS)[d.month], d.year)
 end
 
 local function cut(s, n)
@@ -89,7 +101,7 @@ end
 M.cut = cut
 
 -- "Vexa", "Vexa and Mira", "Vexa, Mira and Bryn", "Vexa, Mira and 2 others" (hidden members are counted, not named)
-function M.namesText(names, hidden)
+function M.namesText(names, hidden, lang)
 	names = names or {}
 	hidden = tonumber(hidden) or 0
 	local list = {}
@@ -98,45 +110,46 @@ function M.namesText(names, hidden)
 	end
 	local others = hidden + math.max(0, #names - 4)
 	if others > 0 then
-		list[#list + 1] = others == 1 and "1 other" or (others .. " others")
+		list[#list + 1] = others == 1 and T(lang, "1 other") or T(lang, "%d others", others)
 	end
 	if #list == 0 then
-		return "heroes who keep their names"
+		return T(lang, "heroes who keep their names")
 	end
 	if #list == 1 then
 		return list[1]
 	end
-	return table.concat(list, ", ", 1, #list - 1) .. " and " .. list[#list]
+	return table.concat(list, ", ", 1, #list - 1) .. T(lang, " and ") .. list[#list]
 end
 
--- the look text of an item of the plaza (at most 255 characters)
-function M.firstText(group, seasonName)
-	return cut(string.format("A guardian statue. Realm first of %s: %s, slain by %s on %s.", seasonName, group.title,
-		M.namesText(group.names, group.hidden), M.dateText(group.at)), M.TEXT_MAX)
+-- the look text of an item of the plaza (at most 255 characters); `lang`: the player's language (nil: English)
+function M.firstText(group, seasonName, lang)
+	return cut(T(lang, "A guardian statue. Realm first of %s: %s, slain by %s on %s.", seasonName, group.title,
+		M.namesText(group.names, group.hidden, lang), M.dateText(group.at, lang)), M.TEXT_MAX)
 end
 
-function M.recordText(e, seasonName)
+function M.recordText(e, seasonName, lang)
 	local who = e.shown and string.format("%s%s", e.name, e.class and e.class ~= "" and (", " .. e.class) or "") or
-		"a hero who keeps their name"
-	return cut(string.format("A statue. %s record of %s: %s, %s. Set on %s.", seasonName, e.title, e.detail, who,
-		M.dateText(e.at)), M.TEXT_MAX)
+		T(lang, "a hero who keeps their name")
+	return cut(T(lang, "A statue. %s record of %s: %s, %s. Set on %s.", seasonName, e.title, e.detail, who,
+		M.dateText(e.at, lang)), M.TEXT_MAX)
 end
 
-function M.fallenText(e, seasonName)
-	return cut(string.format("A memorial stone. Here lies %s, a level %d %s, %s on %s. Fallen in Hardcore, %s.", e.name,
-		tonumber(e.level) or 0, (e.class and e.class ~= "") and e.class or "adventurer", e.detail ~= "" and e.detail or "fallen",
-		M.dateText(e.at), seasonName), M.TEXT_MAX)
+function M.fallenText(e, seasonName, lang)
+	return cut(T(lang, "A memorial stone. Here lies %s, a level %d %s, %s on %s. Fallen in Hardcore, %s.", e.name,
+		tonumber(e.level) or 0, (e.class and e.class ~= "") and e.class or T(lang, "adventurer"),
+		e.detail ~= "" and e.detail or T(lang, "fallen"), M.dateText(e.at, lang), seasonName), M.TEXT_MAX)
 end
 
-function M.stoneText(seasonName, counts, page, pages, rotateSeconds)
-	local text = string.format("The Ember Memorial, %s. %d realm first%s, %d record%s and %d of the fallen are remembered here.",
-		seasonName, counts.first or 0, (counts.first or 0) == 1 and "" or "s", counts.record or 0,
-		(counts.record or 0) == 1 and "" or "s", counts.fallen or 0)
+function M.stoneText(seasonName, counts, page, pages, rotateSeconds, lang)
+	local firsts, records = counts.first or 0, counts.record or 0
+	local text = T(lang, "The Ember Memorial, %s. %s, %s and %d of the fallen are remembered here.", seasonName,
+		firsts == 1 and T(lang, "%d realm first", firsts) or T(lang, "%d realm firsts", firsts),
+		records == 1 and T(lang, "%d record", records) or T(lang, "%d records", records), counts.fallen or 0)
 	if (pages or 1) > 1 then
-		text = text .. string.format(" The statues turn every %d minutes (page %d of %d).", floor((rotateSeconds or 600) / 60),
+		text = text .. " " .. T(lang, "The statues turn every %d minutes (page %d of %d).", floor((rotateSeconds or 600) / 60),
 			page or 1, pages)
 	end
-	return cut(text .. " Past seasons: the website's Memorial page.", M.TEXT_MAX)
+	return cut(text .. " " .. T(lang, "Past seasons: the website's Memorial page."), M.TEXT_MAX)
 end
 
 -- ---------------------------------------------------------------- building the entries
@@ -328,7 +341,7 @@ function M.page(list, slots, page)
 end
 
 -- every item of the plaza for the time `now`: {{kind, slot (index), entry or nil, text}} plus the stone
-function M.plan(cfg, entries, seasonName, now)
+function M.plan(cfg, entries, seasonName, now, lang)
 	local out, counts, maxPages = {}, {}, 1
 	local lists = {}
 	for _, kind in ipairs(M.KINDS) do
@@ -346,13 +359,13 @@ function M.plan(cfg, entries, seasonName, now)
 			local e = slice[i]
 			local text
 			if e then
-				text = kind == "first" and M.firstText(e, seasonName) or kind == "record" and M.recordText(e, seasonName) or
-					M.fallenText(e, seasonName)
+				text = kind == "first" and M.firstText(e, seasonName, lang) or kind == "record" and M.recordText(e, seasonName, lang) or
+					M.fallenText(e, seasonName, lang)
 			end
 			out[#out + 1] = {kind = kind, slot = i, entry = e, text = text}
 		end
 	end
-	out[#out + 1] = {kind = "stone", slot = 1, text = M.stoneText(seasonName, counts, page, maxPages, cfg.rotateSeconds)}
+	out[#out + 1] = {kind = "stone", slot = 1, text = M.stoneText(seasonName, counts, page, maxPages, cfg.rotateSeconds, lang)}
 	return out, page, maxPages
 end
 

@@ -475,6 +475,21 @@ local function appearanceOf(offer, player)
 	return look, K.iconOutfit(look, PREVIEW, NEUTRAL)
 end
 
+-- the description of an offer in the player's language: sentence by sentence, numbers as %d (itemdesc_i18n_core.lua);
+-- a sentence without an entry stays English
+local function localDescription(player, text)
+	if not player or type(text) ~= "string" or text == "" or not (Chaos and Chaos.lang and Chaos.tx) or Chaos.lang(player) == "en" then
+		return text
+	end
+	if not ChaosItemDescI18n then
+		dofile("data/scripts/chaos/itemdesc_i18n_core.lua")
+	end
+	local ok, out = pcall(ChaosItemDescI18n.translate, text, function(t)
+		return Chaos.tx(player, t)
+	end)
+	return ok and out or text
+end
+
 local function clientOffer(e, player)
 	local offer = e.offer
 	local view = {cost = e.cost, oldCost = e.oldCost, title = offer.name, description = offer.description or ""}
@@ -550,6 +565,7 @@ local function clientOffer(e, player)
 		view.owned = true
 		view.description = "Owned. " .. view.description
 	end
+	view.description = localDescription(player, view.description)
 	return view
 end
 

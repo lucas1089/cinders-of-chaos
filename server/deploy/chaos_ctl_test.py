@@ -919,7 +919,7 @@ def test_testers():
             f.write(TESTERS_STUB)
         for name in ('tester_helper.lua', 'tester_helper_core.lua'):
             with open(os.path.join(repo, 'server', 'tools', name), 'w') as f:
-                f.write('-- ' + name + '\n')
+                f.write('-- ' + name + '\nHELPER_VERSION = 7\n')
         cfg = os.path.join(server, 'config.lua')
         with open(cfg, 'w') as f:
             f.write('-- clientGuardAllowDevKey = true\nclientGuardAllowDevKey = false\n')
@@ -974,6 +974,11 @@ def test_testers():
 
         with open(log, 'a') as f:
             f.write('[tester-helper] running (TEST ONLY)\n')
+        r = run('testers', 'start', '5', '2')
+        check(r.returncode != 0 and 'helper-not-loaded' in r.stderr, 'testers: an older helper copy without a version counts as not loaded')
+        hv = '7'
+        with open(log, 'a') as f:
+            f.write('[tester-helper] running v%s (TEST ONLY)\n' % hv)
         r = run('testers', 'start', '5', '2')
         check(r.returncode == 0 and 'tester bots: 5 for 2 minutes' in r.stdout, 'testers start: ' + r.stdout + r.stderr)
         check(os.path.exists(helper) and os.path.exists(helper.replace('helper.lua', 'helper_core.lua')),

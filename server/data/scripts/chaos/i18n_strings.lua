@@ -7465,5 +7465,836 @@ return {
 			"+20%% de reputação",
 		["+10%% experience"] =
 			"+10%% de experiência",
+		-- Round 8: descriptions that scripts write (rift keys and coffers, charms, cursed chest, store offers)
+		["Monsters have +%d%% health"] =
+			"Monstros têm +%d%% de vida",
+		["Monsters deal +%d%% damage"] =
+			"Monstros causam +%d%% de dano",
+		["Monsters move +%d faster"] =
+			"Monstros se movem +%d mais rápido",
+		["+%d%% magic, rare and legendary monsters"] =
+			"+%d%% de monstros mágicos, raros e lendários",
+		["Monsters reflect %d%% of the damage they take"] =
+			"Monstros refletem %d%% do dano que recebem",
+		["Monsters resist %d%% elemental damage"] =
+			"Monstros resistem a %d%% do dano elemental",
+		["Players do not regenerate health"] =
+			"Jogadores não regeneram vida",
+		["+%d monsters in every pack"] =
+			"+%d monstros em cada grupo",
+		["+%d%% monster packs"] =
+			"+%d%% de grupos de monstros",
+		["%d%% chance of a fleeing Treasure Goblin"] =
+			"%d%% de chance de um Treasure Goblin em fuga",
+		["%d%% of packs are rare warbands"] =
+			"%d%% dos grupos são warbands raras",
+		["%d%% chance of a guarded coffer"] =
+			"%d%% de chance de um cofre guardado",
+		["Twin guardians, %d%% health each"] =
+			"Guardiões gêmeos, %d%% de vida cada",
+		["%d%% chance of double loot"] =
+			"%d%% de chance de loot em dobro",
+		["Slain monsters burst for %d%% health"] =
+			"Monstros mortos explodem com %d%% da vida",
+		["Players receive %d%% less healing"] =
+			"Jogadores recebem %d%% menos cura",
+		["The rift closes %d%% sooner"] =
+			"O rift se fecha %d%% mais cedo",
+		["Guardian +%d%% health and damage"] =
+			"Guardião com +%d%% de vida e dano",
+		["%d fewer shared lives"] =
+			"%d vidas compartilhadas a menos",
+		["Monsters deal +%d%% of their damage as extra fire"] =
+			"Monstros causam +%d%% do próprio dano como fogo extra",
+		["Monsters deal +%d%% of their damage as extra ice"] =
+			"Monstros causam +%d%% do próprio dano como gelo extra",
+		["Monsters deal +%d%% of their damage as extra energy"] =
+			"Monstros causam +%d%% do próprio dano como energia extra",
+		["Monster hits have a %d%% chance to deal %d%% more"] =
+			"Golpes de monstros têm %d%% de chance de causar %d%% a mais",
+		["Monsters take %d%% less physical damage"] =
+			"Monstros recebem %d%% menos dano físico",
+		["Monster hits have a %d%% chance to fester for %d%% more as earth over %d s"] =
+			"Golpes de monstros têm %d%% de chance de supurar e causar %d%% a mais como terra em %d s",
+		["Monsters reflect %d%% of the elemental damage they take"] =
+			"Monstros refletem %d%% do dano elemental que recebem",
+		["Every pack is of the rift's strongest kind"] =
+			"Todo grupo é do tipo mais forte do rift",
+		["The guardian's nova hits for %d%% of max health every %d s"] =
+			"A nova do guardião causa %d%% da vida máxima a cada %d s",
+		["it calls thralls"] =
+			"ele convoca thralls",
+		["%d%% of slain monsters tear open a breach of two more"] =
+			"%d%% dos monstros mortos abrem uma brecha com mais dois",
+		["Players take %d%% more elemental damage"] =
+			"Jogadores recebem %d%% mais dano elemental",
+		["Players take %d%% more physical damage"] =
+			"Jogadores recebem %d%% mais dano físico",
+		["Players deal %d%% less damage"] =
+			"Jogadores causam %d%% menos dano",
+		["Players do not regenerate mana"] =
+			"Jogadores não regeneram mana",
+		["Burning ground under the players: %d%% of max health a second"] =
+			"Chão em chamas sob os jogadores: %d%% da vida máxima por segundo",
+		["Freezing ground under the players: %d%% of max health a second and slowed"] =
+			"Chão gelado sob os jogadores: %d%% da vida máxima por segundo e lentidão",
+		["Marked storm strikes near the players: %d%% of max health"] =
+			"Tempestades marcadas caem perto dos jogadores: %d%% da vida máxima",
+		["Modifiers:"] =
+			"Modificadores:",
+		["Rewards:"] =
+			"Recompensas:",
+		["Modifiers: none"] =
+			"Modificadores: nenhum",
+		["Rewards: normal"] =
+			"Recompensas: normais",
+		["+%d%% item quantity"] =
+			"+%d%% de quantidade de itens",
+		["+%d%% item rarity"] =
+			"+%d%% de raridade de itens",
+		["+%d%% experience"] =
+			"+%d%% de experiência",
+		["Opens a rift of tier %d (level %d+)"] =
+			"Abre um rift de tier %d (nível %d+)",
+		["Use it in a protection zone; your party within %d sqm comes along"] =
+			"Use numa zona de proteção; o seu grupo num raio de %d sqm vai junto",
+		["It hums with the name %s"] =
+			"Ele zumbe com o nome %s",
+		["Opens the %s guardian's arena (level %d+, %d minutes)"] =
+			"Abre a arena do guardião %s (nível %d+, %d minutos)",
+		["The guardian's hoard"] =
+			"O tesouro do guardião",
+		["The spoils of the rift"] =
+			"Os espólios do rift",
+		["Every finisher may open it once"] =
+			"Cada um que deu o golpe final pode abri-lo uma vez",
+		["A coffer sealed by the rift"] =
+			"Um cofre lacrado pelo rift",
+		["Breaking the seal wakes its guards"] =
+			"Quebrar o selo acorda os guardas",
+		["The seal is broken"] =
+			"O selo está quebrado",
+		["Its spoils are free for the taking"] =
+			"Os espólios estão livres para quem quiser",
+		["A chest wrapped in dark chains"] =
+			"Um baú envolto em correntes escuras",
+		["Something stirs inside"] =
+			"Algo se agita lá dentro",
+		["Whoever opened it first must face five hordes"] =
+			"Quem o abriu primeiro deve enfrentar cinco hordas",
+		["The curse is lifted"] =
+			"A maldição foi quebrada",
+		["Use it to take your share"] =
+			"Use-o para pegar a sua parte",
+		["%s, item level %d, %dx%d cells"] =
+			"%s, nível de item %d, %dx%d células",
+		["Place it in your charm grid (Character > Charms)"] =
+			"Coloque na sua grade de charms (Personagem > Charms)",
+		["%d days, stacks: +%d%% XP, stamina x%d.%d, remote stash deposit, Auto Seller, cosmetic"] =
+			"%d dias, acúmulos: +%d%% de XP, stamina x%d.%d, depósito remoto no stash, Auto Seller, cosmético",
+		["%d hour of double experience per potion (Character > Character Info)"] =
+			"%d hora de experiência em dobro por poção (Personagem > Info do personagem)",
+		["%d per week"] =
+			"%d por semana",
+		["%d slots, store-bound"] =
+			"%d espaços, preso à loja",
+		["%d%% off the %d pack"] =
+			"%d%% de desconto no pacote de %d",
+		["+%d%% Chaos loot and an extra loot roll for every standard (not season) character, %d hour"] =
+			"+%d%% de loot Chaos e um sorteio de loot extra para todo personagem padrão (não de temporada), %d hora",
+		["+%d%% experience for every standard (not season) character for %d hour"] =
+			"+%d%% de experiência para todo personagem padrão (não de temporada) por %d hora",
+		["+%d%% skill and magic level training for every standard (not season) character for %d hour"] =
+			"+%d%% de treino de skill e magic level para todo personagem padrão (não de temporada) por %d hora",
+		["A backpack with more room than any other"] =
+			"Uma mochila com mais espaço que qualquer outra",
+		["A black obsidian frame with violet light round your name plate, for good"] =
+			"Uma moldura de obsidiana negra com luz violeta em volta da sua placa de nome, para sempre",
+		["A blood-red line traces your outline"] =
+			"Uma linha rubra como sangue contorna a sua silhueta",
+		["A blood-red war beast"] =
+			"Uma fera de guerra rubra como sangue",
+		["A breathing cloak of shadow"] =
+			"Um manto de sombra que respira",
+		["A burnished copper frame round your name plate, for good"] =
+			"Uma moldura de cobre polido em volta da sua placa de nome, para sempre",
+		["A calm white glow with rising sparks and a halo on the ground"] =
+			"Um brilho branco e calmo com faíscas que sobem e um halo no chão",
+		["A cold blue haze"] =
+			"Uma névoa azul e fria",
+		["A cold blue line traces your outline"] =
+			"Uma linha azul e fria contorna a sua silhueta",
+		["A cold white haze"] =
+			"Uma névoa branca e fria",
+		["A crackling storm mantle"] =
+			"Um manto de tempestade crepitante",
+		["A crown of embers burns round you"] =
+			"Uma coroa de brasas arde à sua volta",
+		["A deep sapphire frame round your name plate, for good"] =
+			"Uma moldura de safira profunda em volta da sua placa de nome, para sempre",
+		["A deep violet line traces your outline"] =
+			"Uma linha violeta profunda contorna a sua silhueta",
+		["A frost-blue frame round your name plate, for good"] =
+			"Uma moldura azul-gelo em volta da sua placa de nome, para sempre",
+		["A golden dome of dawn light"] =
+			"Uma cúpula dourada de luz da alvorada",
+		["A golden flame of ki that burns round you"] =
+			"Uma chama dourada de ki que arde à sua volta",
+		["A golden light breathes through your outfit, rays crossing it slowly"] =
+			"Uma luz dourada respira pelo seu outfit, com raios que o cruzam devagar",
+		["A golden outline that breathes in and out"] =
+			"Um contorno dourado que respira",
+		["A green mist rises round you"] =
+			"Uma névoa verde sobe à sua volta",
+		["A grey ash frame round your name plate, for good"] =
+			"Uma moldura de cinza acinzentada em volta da sua placa de nome, para sempre",
+		["A heartbeat floods your outfit red and lights the veins beneath"] =
+			"Um batimento cardíaco inunda o seu outfit de vermelho e acende as veias por baixo",
+		["A jade-green frame round your name plate, for good"] =
+			"Uma moldura verde-jade em volta da sua placa de nome, para sempre",
+		["A leaf-green frame round your name plate, for good"] =
+			"Uma moldura verde-folha em volta da sua placa de nome, para sempre",
+		["A living green line traces your outline"] =
+			"Uma linha de um verde vivo contorna a sua silhueta",
+		["A pale bone frame round your name plate, for good"] =
+			"Uma moldura de osso pálido em volta da sua placa de nome, para sempre",
+		["A pale, ghostly pulse"] =
+			"Um pulso pálido e fantasmagórico",
+		["A pet that finds more gold in your kills and later more items"] =
+			"Um pet que acha mais ouro nas suas mortes e, depois, mais itens",
+		["A pet that mends you below half health and later wards you"] =
+			"Um pet que cura você abaixo de metade da vida e, depois, o protege",
+		["A pulsing circle of blood and fangs at your feet"] =
+			"Um círculo pulsante de sangue e presas aos seus pés",
+		["A pulsing crimson glow"] =
+			"Um brilho carmesim pulsante",
+		["A pulsing golden glow"] =
+			"Um brilho dourado pulsante",
+		["A pulsing icy glow"] =
+			"Um brilho gelado pulsante",
+		["A pulsing violet glow"] =
+			"Um brilho violeta pulsante",
+		["A radiant spirit steed"] =
+			"Uma montaria espiritual radiante",
+		["A ring of fire flares where your killing blow lands"] =
+			"Um anel de fogo se acende onde cai o seu golpe final",
+		["A ring of ice crystals guards you"] =
+			"Um anel de cristais de gelo protege você",
+		["A rose-pink frame round your name plate, for good"] =
+			"Uma moldura rosa em volta da sua placa de nome, para sempre",
+		["A sickly green haze"] =
+			"Uma névoa verde e doentia",
+		["A skeletal horse wreathed in grave-light"] =
+			"Um cavalo esquelético envolto em luz de túmulo",
+		["A smouldering orange frame round your name plate, for good"] =
+			"Uma moldura laranja em brasa em volta da sua placa de nome, para sempre",
+		["A smouldering red haze"] =
+			"Uma névoa vermelha em brasa",
+		["A spiky burst of blood marks every kill"] =
+			"Um jorro de sangue em espinhos marca cada morte",
+		["A spiky crimson flame, the look of a powered-up fighter"] =
+			"Uma chama carmesim em espinhos, o visual de um lutador no auge do poder",
+		["A storm-blue frame edged in white round your name plate, for good"] =
+			"Uma moldura azul-tempestade com borda branca em volta da sua placa de nome, para sempre",
+		["A tyrant of the swamps"] =
+			"Um tirano dos pântanos",
+		["A violet frame round your name plate, for good"] =
+			"Uma moldura violeta em volta da sua placa de nome, para sempre",
+		["A violet outline of darkness that swells and fades"] =
+			"Um contorno violeta de escuridão que cresce e se apaga",
+		["A violet rift of the void opens under you"] =
+			"Um rift violeta do vazio se abre sob você",
+		["A violet skull rises from the monster you finish"] =
+			"Uma caveira violeta sobe do monstro que você acaba",
+		["A walking box of fries"] =
+			"Uma caixa de batatas fritas ambulante",
+		["A warm amber frame round your name plate, for good"] =
+			"Uma moldura âmbar quente em volta da sua placa de nome, para sempre",
+		["A warm golden line traces your outline"] =
+			"Uma linha dourada e quente contorna a sua silhueta",
+		["A white sun ring shines over your kills"] =
+			"Um anel de sol branco brilha sobre as suas mortes",
+		["A white-robed seer with a violet crescent"] =
+			"Um vidente de túnica branca com um crescente violeta",
+		["A wyrm of living ice"] =
+			"Um wyrm de gelo vivo",
+		["Account-wide"] =
+			"Vale para toda a conta",
+		["Addons: a crescent charm and a moonlit blade"] =
+			"Addons: um amuleto crescente e uma lâmina ao luar",
+		["Addons: a crescent charm and a pair of glowing moons"] =
+			"Addons: um amuleto crescente e um par de luas brilhantes",
+		["Addons: a crescent charm and a trailing star chart"] =
+			"Addons: um amuleto crescente e um mapa estelar que se arrasta",
+		["Addons: a crescent charm and violet moonflames"] =
+			"Addons: um amuleto crescente e chamas lunares violetas",
+		["All five blessings at once: less experience loss when you die (items are never lost without a red or black skull)"] =
+			"As cinco bênçãos de uma vez: menos perda de experiência ao morrer (itens nunca se perdem sem caveira vermelha ou preta)",
+		["An orange, fiery pulse"] =
+			"Um pulso alaranjado e flamejante",
+		["Appearance set (%d looks), account-wide"] =
+			"Conjunto de aparência (%d visuais), para toda a conta",
+		["Ashen Fist, Sundering Palm and Pressure Points strike in red"] =
+			"Ashen Fist, Sundering Palm e Pressure Points atingem em vermelho",
+		["Ashen Fist, Sundering Palm and Pressure Points strike in violet"] =
+			"Ashen Fist, Sundering Palm e Pressure Points atingem em violeta",
+		["Become a small violet plush bear"] =
+			"Vire um pequeno urso de pelúcia violeta",
+		["Become a small white plush bear"] =
+			"Vire um pequeno urso de pelúcia branco",
+		["Binds one modifier: the orbs that change modifiers leave it alone"] =
+			"Prende um modificador: os orbs que mudam modificadores o deixam em paz",
+		["Blaze Pack, Chaos Acolyte outfit, Wrathfire Pegasus, title Inferno-Crowned, %d coins, %d tier skips"] =
+			"Blaze Pack, outfit Chaos Acolyte, Wrathfire Pegasus, título Inferno-Crowned, %d coins, %d saltos de tier",
+		["Blue glacier crystal that never melts"] =
+			"Cristal azul de geleira que nunca derrete",
+		["Blue lightning crawls up your sides"] =
+			"Relâmpagos azuis sobem pelo seu corpo",
+		["Blue sparks dancing on your outfit"] =
+			"Faíscas azuis dançam no seu outfit",
+		["Blue waves rolling over your outfit"] =
+			"Ondas azuis rolam sobre o seu outfit",
+		["Bone and grave iron lit by green soul fire"] =
+			"Osso e ferro de túmulo iluminados por fogo de alma verde",
+		["Both addons of the Barbarian outfit, male and female look"] =
+			"Os dois addons do outfit Barbarian, visual masculino e feminino",
+		["Both addons of the Citizen outfit, male and female look"] =
+			"Os dois addons do outfit Citizen, visual masculino e feminino",
+		["Both addons of the Druid outfit, male and female look"] =
+			"Os dois addons do outfit Druid, visual masculino e feminino",
+		["Both addons of the Hunter outfit, male and female look"] =
+			"Os dois addons do outfit Hunter, visual masculino e feminino",
+		["Both addons of the Noble outfit, male and female look"] =
+			"Os dois addons do outfit Noble, visual masculino e feminino",
+		["Both addons of the Oriental outfit, male and female look"] =
+			"Os dois addons do outfit Oriental, visual masculino e feminino",
+		["Both addons of the Summoner outfit, male and female look"] =
+			"Os dois addons do outfit Summoner, visual masculino e feminino",
+		["Both addons of the Warrior outfit, male and female look"] =
+			"Os dois addons do outfit Warrior, visual masculino e feminino",
+		["Both addons of the Wizard outfit, male and female look"] =
+			"Os dois addons do outfit Wizard, visual masculino e feminino",
+		["Both addons, male and female look"] =
+			"Os dois addons, visual masculino e feminino",
+		["Bottomless, store-bound: all your loot goes in, %d slots, no weight"] =
+			"Sem fundo, preso à loja: todo o seu loot entra, %d espaços, sem peso",
+		["Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, Arboreal transmog"] =
+			"Outfit Brotherhood com addons, mount Cinderhoof, título Emberkin, transmog Arboreal",
+		["Call it in Character > Pets from level %d"] =
+			"Chame-o em Personagem > Pets a partir do nível %d",
+		["Character > Cosmetics"] =
+			"Personagem > Cosméticos",
+		["Character > Hideout"] =
+			"Personagem > Hideout",
+		["Character > Transmog"] =
+			"Personagem > Transmog",
+		["Clears your unjustified kills and removes a red or black skull"] =
+			"Apaga as suas mortes injustificadas e remove uma caveira vermelha ou preta",
+		["Collects Rift Keys, Omen Keys and omen fragments while carried"] =
+			"Coleta Rift Keys, Omen Keys e fragmentos de omen enquanto estiver com você",
+		["Collects only gems while carried, so they stay apart from your orbs"] =
+			"Coleta só gemas enquanto estiver com você, para ficarem separadas dos seus orbs",
+		["Collects orbs, whetstones, rune shards and gems while carried (no gems with a Gem Pouch)"] =
+			"Coleta orbs, whetstones, rune shards e gemas enquanto estiver com você (sem gemas se tiver uma Gem Pouch)",
+		["Cosmetic only: it changes how your hideout looks and nothing else"] =
+			"Só cosmético: muda a aparência do seu hideout e mais nada",
+		["Crackling sparks jump from every step"] =
+			"Faíscas crepitantes saltam a cada passo",
+		["Dark cape, animated"] =
+			"Capa sombria, animada",
+		["Dark head accessory, animated"] =
+			"Acessório de cabeça sombrio, animado",
+		["Dark wings, animated"] =
+			"Asas sombrias, animadas",
+		["Death damage to a single target"] =
+			"Dano de morte em um único alvo",
+		["Doomtide and Falling Pyre burn blood red"] =
+			"Doomtide e Falling Pyre queimam em vermelho-sangue",
+		["Doomtide, Forked Storm and Falling Pyre burn and crackle in violet"] =
+			"Doomtide, Forked Storm e Falling Pyre queimam e crepitam em violeta",
+		["Dreadbone Spectra, the Umbral Smoke aura, the Spectral Pulse shader and the Bone Steed mount"] =
+			"Dreadbone Spectra, a aura Umbral Smoke, o shader Spectral Pulse e o mount Bone Steed",
+		["Drops of blood mark your way"] =
+			"Gotas de sangue marcam o seu caminho",
+		["Each Whetstone adds %d%% quality to an item with modifiers (up to %d%%, %d%% from Divine rarity)"] =
+			"Cada Whetstone soma %d%% de qualidade a um item com modificadores (até %d%%, %d%% a partir da raridade Divine)",
+		["Each step leaves a print of rime"] =
+			"Cada passo deixa uma marca de geada",
+		["Earth cape, animated"] =
+			"Capa de terra, animada",
+		["Earth damage in an area"] =
+			"Dano de terra em área",
+		["Earth head accessory, animated"] =
+			"Acessório de cabeça de terra, animado",
+		["Earth wings, animated"] =
+			"Asas de terra, animadas",
+		["Ember Pack, premium Ashen Pass, Doom Knight outfit and addons, Flamesteed, Pyre Gate portal"] =
+			"Ember Pack, Ashen Pass premium, outfit Doom Knight com addons, Flamesteed, portal Pyre Gate",
+		["Energy damage in an area"] =
+			"Dano de energia em área",
+		["Energy damage to a single target"] =
+			"Dano de energia em um único alvo",
+		["Every class"] =
+			"Todas as classes",
+		["Every outfit and addon you own comes along"] =
+			"Todos os outfits e addons que você tem vão junto",
+		["Fire cape, animated"] =
+			"Capa de fogo, animada",
+		["Fire damage in an area"] =
+			"Dano de fogo em área",
+		["Fire head accessory, animated"] =
+			"Acessório de cabeça de fogo, animado",
+		["Fire wings, animated"] =
+			"Asas de fogo, animadas",
+		["Five hours of double experience, one potion at a time"] =
+			"Cinco horas de experiência em dobro, uma poção por vez",
+		["Food that never runs out: %d minutes of regeneration a bite, like the best food, until you are full"] =
+			"Comida que nunca acaba: %d minutos de regeneração por mordida, como a melhor comida, até você ficar satisfeito",
+		["Full %s outfit with both addons, male and female look"] =
+			"Outfit %s completo com os dois addons, visual masculino e feminino",
+		["Glowing ember prints smoulder where you walk"] =
+			"Marcas de brasa incandescente ardem por onde você anda",
+		["Gold sparks dancing on your outfit"] =
+			"Faíscas douradas dançam no seu outfit",
+		["Golden prints that sparkle a moment"] =
+			"Marcas douradas que cintilam por um instante",
+		["Green leaf armour on orange heartwood"] =
+			"Armadura de folhas verdes sobre cerne alaranjado",
+		["Green venom drips from your steps"] =
+			"Veneno verde pinga dos seus passos",
+		["Green waves rolling over your outfit"] =
+			"Ondas verdes rolam sobre o seu outfit",
+		["Grey ash settles in your footprints"] =
+			"Cinza acinzentada se assenta nas suas pegadas",
+		["Gusts and leaves circle you"] =
+			"Rajadas de vento e folhas giram à sua volta",
+		["Heals a large amount of health"] =
+			"Cura uma grande quantidade de vida",
+		["Heals health"] =
+			"Cura vida",
+		["Heavy smoke with dark veins wraps round you"] =
+			"Fumaça densa com veios escuros envolve você",
+		["Hideout decoration (%s), for every character of your account"] =
+			"Decoração de hideout (%s), para todos os personagens da sua conta",
+		["Ice damage in an area"] =
+			"Dano de gelo em área",
+		["Iron Bellow, Red Frenzy and Bloodrage burst in storm blue"] =
+			"Iron Bellow, Red Frenzy e Bloodrage explodem em azul-tempestade",
+		["Iron Bellow, Red Frenzy and Bloodrage burst in violet; the bellow's rune turns arcane"] =
+			"Iron Bellow, Red Frenzy e Bloodrage explodem em violeta; a runa do bellow se torna arcana",
+		["It does not animate: it glides"] =
+			"Não é animada: desliza",
+		["It takes the aura slot: one aura, head accessory or cape at a time"] =
+			"Ocupa o espaço da aura: uma aura, acessório de cabeça ou capa por vez",
+		["Leaves and blossoms bloom at your feet"] =
+			"Folhas e flores desabrocham aos seus pés",
+		["Level %d"] =
+			"Nível %d",
+		["Light cape, animated"] =
+			"Capa de luz, animada",
+		["Light head accessory, animated"] =
+			"Acessório de cabeça de luz, animado",
+		["Light wings, animated"] =
+			"Asas de luz, animadas",
+		["Living wood, bark and leaf of the old groves, bound in bronze"] =
+			"Madeira viva, casca e folha dos antigos bosques, presas em bronze",
+		["Magic and rare monsters appear %d%% more often everywhere, for everyone, for %d hour"] =
+			"Monstros mágicos e raros aparecem %d%% mais vezes em todo lugar, para todos, por %d hora",
+		["Monk line"] =
+			"Linha Monk",
+		["Mystic, Necromancer and Templar lines"] =
+			"Linhas Mystic, Necromancer e Templar",
+		["Nimbus Wings, the Frost Bastion aura, the Frost Pulse shader and the Glacier Wyrm mount"] =
+			"Nimbus Wings, a aura Frost Bastion, o shader Frost Pulse e o mount Glacier Wyrm",
+		["No colours, no addons"] =
+			"Sem cores, sem addons",
+		["Not for season characters"] =
+			"Não vale para personagens de temporada",
+		["Not usable in combat"] =
+			"Não pode ser usado em combate",
+		["Once per account, up to level %d: Auto Seller, Discoverer outfit with addons, %d Supreme Health Potions"] =
+			"Uma vez por conta, até o nível %d: Auto Seller, outfit Discoverer com addons, %d Supreme Health Potions",
+		["Once per account, up to level %d: Gale Ring aura, %d Great Spirit Potions, %d Supreme Health Potions"] =
+			"Uma vez por conta, até o nível %d: aura Gale Ring, %d Great Spirit Potions, %d Supreme Health Potions",
+		["Once per account, up to level %d: Loot Bag, Armoured War Horse, %d Ultimate Health and %d Great Mana Potions"] =
+			"Uma vez por conta, até o nível %d: Loot Bag, Armoured War Horse, %d Ultimate Health Potions e %d Great Mana Potions",
+		["Once per character"] =
+			"Uma vez por personagem",
+		["One look for both sexes"] =
+			"Um visual para os dois sexos",
+		["Outfit window"] =
+			"Janela de outfits",
+		["Pact: included"] =
+			"Pact: incluído",
+		["Pale silver and night-blue cloth under a crescent moon"] =
+			"Tecido prateado pálido e azul-noite sob uma lua crescente",
+		["Permanent, account-wide: an affinity stash tab for Rift Keys, omens, keys, maps"] =
+			"Permanente, para toda a conta: uma aba de afinidade no stash para Rift Keys, omens, chaves e mapas",
+		["Permanent, account-wide: an affinity stash tab for armour pieces and shields"] =
+			"Permanente, para toda a conta: uma aba de afinidade no stash para peças de armadura e escudos",
+		["Permanent, account-wide: an affinity stash tab for every gem you deposit"] =
+			"Permanente, para toda a conta: uma aba de afinidade no stash para todas as gemas que você depositar",
+		["Permanent, account-wide: an affinity stash tab for orbs, whetstones, rune shards"] =
+			"Permanente, para toda a conta: uma aba de afinidade no stash para orbs, whetstones e rune shards",
+		["Permanent, account-wide: an affinity stash tab for ores, herbs and shards"] =
+			"Permanente, para toda a conta: uma aba de afinidade no stash para minérios, ervas e fragmentos",
+		["Permanent, account-wide: an affinity stash tab for rings and amulets"] =
+			"Permanente, para toda a conta: uma aba de afinidade no stash para anéis e amuletos",
+		["Permanent, account-wide: an affinity stash tab for weapons and quivers"] =
+			"Permanente, para toda a conta: uma aba de afinidade no stash para armas e aljavas",
+		["Permanent, account-wide: deposit into the stash from anywhere"] =
+			"Permanente, para toda a conta: deposite no stash de qualquer lugar",
+		["Permanent, account-wide: one more general stash tab (%d entries)"] =
+			"Permanente, para toda a conta: mais uma aba geral no stash (%d entradas)",
+		["Permanent, account-wide: one more saved passive tree build"] =
+			"Permanente, para toda a conta: mais uma build salva da árvore passiva",
+		["Permanent: an affinity stash tab for collectibles (or earn it: Reliquary)"] =
+			"Permanente: uma aba de afinidade no stash para colecionáveis (ou conquiste: Reliquary)",
+		["Permanent: an affinity stash tab for creature products (lent by the Pact)"] =
+			"Permanente: uma aba de afinidade no stash para produtos de criaturas (emprestada pelo Pact)",
+		["Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk"] =
+			"Permanente: autoloot por raridade no Loot Filter: pegue o equipamento bom, deixe o lixo",
+		["Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank"] =
+			"Permanente: o loot da sua lista de venda automática (Economy > Auto Seller) é vendido pelo preço dos NPCs, com o ouro indo para o seu banco",
+		["Permanent: one more character on your account, created on the website"] =
+			"Permanente: mais um personagem na sua conta, criado no site",
+		["Pink petals fall where you step"] =
+			"Pétalas rosa caem por onde você pisa",
+		["Plain cape, animated"] =
+			"Capa simples, animada",
+		["Plain head accessory, animated"] =
+			"Acessório de cabeça simples, animado",
+		["Plain wings, animated"] =
+			"Asas simples, animadas",
+		["Premium account for %d days"] =
+			"Conta premium por %d dias",
+		["Premium account needed to wear it"] =
+			"É preciso conta premium para usar",
+		["Premium track of the Ashen Pass for your whole account: cosmetics only (titles, shaders, a frame, Everblight), %d coins back"] =
+			"Trilha premium do Ashen Pass para toda a sua conta: só cosméticos (títulos, shaders, uma moldura, Everblight), com %d coins de volta",
+		["Ranger and Thief lines"] =
+			"Linhas Ranger e Thief",
+		["Rarity colours stay"] =
+			"As cores de raridade continuam",
+		["Red waves rolling over your outfit"] =
+			"Ondas vermelhas rolam sobre o seu outfit",
+		["Refunds every passive tree and Paragon point at once, without the gold cost of the normal resets"] =
+			"Devolve de uma vez todos os pontos da árvore passiva e do Paragon, sem o custo em ouro dos resets normais",
+		["Removes a magic field"] =
+			"Remove um campo mágico",
+		["Removes the modifier you choose at the crafting bench"] =
+			"Remove o modificador que você escolher na bancada de crafting",
+		["Restores a huge amount of health"] =
+			"Restaura uma quantidade enorme de vida",
+		["Restores a huge amount of mana"] =
+			"Restaura uma quantidade enorme de mana",
+		["Restores a large amount of health"] =
+			"Restaura uma grande quantidade de vida",
+		["Restores a large amount of mana"] =
+			"Restaura uma grande quantidade de mana",
+		["Restores a lot of health and mana"] =
+			"Restaura muita vida e mana",
+		["Restores health and mana"] =
+			"Restaura vida e mana",
+		["Royal gold set with cut emeralds"] =
+			"Ouro real cravejado de esmeraldas lapidadas",
+		["Runes orbit you in a violet ring"] =
+			"Runas orbitam você num anel violeta",
+		["Scuttle about as a green grave hand with an eye in its palm"] =
+			"Escorra por aí como uma mão de túmulo verde com um olho na palma",
+		["Scuttle about as a pink severed hand with an eye in its palm"] =
+			"Escorra por aí como uma mão decepada rosa com um olho na palma",
+		["Scuttle about as an icy blue severed hand with an eye in its palm"] =
+			"Escorra por aí como uma mão decepada azul-gelo com um olho na palma",
+		["Seen by all"] =
+			"Visto por todos",
+		["Shadow Veil, Shadow Step and Shadow Mend vanish in a pillar of light"] =
+			"Shadow Veil, Shadow Step e Shadow Mend somem num pilar de luz",
+		["Skewering Line flies golden arrows, Feral Command fiery bolts, Wild Bond a storm vortex"] =
+			"Skewering Line dispara flechas douradas, Feral Command virotes flamejantes e Wild Bond um vórtice de tempestade",
+		["Skills are kept, the passive tree is reset for free"] =
+			"As skills são mantidas e a árvore passiva é reiniciada de graça",
+		["Slows a target down a lot"] =
+			"Deixa um alvo muito mais lento",
+		["Smoke Bomb and Shadow Mend leave a green, venomous smoke"] =
+			"Smoke Bomb e Shadow Mend deixam uma fumaça verde e venenosa",
+		["Stacks up to %d hours"] =
+			"Acumula até %d horas",
+		["Stars fall round you in a slow crown"] =
+			"Estrelas caem à sua volta numa coroa lenta",
+		["Stones orbit you"] =
+			"Pedras orbitam você",
+		["Store-bound"] =
+			"Preso à loja",
+		["Storm cape, animated"] =
+			"Capa de tempestade, animada",
+		["Storm head accessory, animated"] =
+			"Acessório de cabeça de tempestade, animado",
+		["Storm wings, animated"] =
+			"Asas de tempestade, animadas",
+		["Sundering Palm, Pressure Points and Shadowfist Flurry strike in gold"] =
+			"Sundering Palm, Pressure Points e Shadowfist Flurry atingem em dourado",
+		["The %s mount, yours for good"] =
+			"O mount %s, seu para sempre",
+		["The Astral Electric outfit with both addons, the Stormkeep mount, wings and the storm mantle aura"] =
+			"O outfit Astral Electric com os dois addons, o mount Stormkeep, asas e a aura do manto de tempestade",
+		["The Astral Fire outfit with both addons, the Crimson Fang mount, Vorondor Flames and the Ember Crown aura"] =
+			"O outfit Astral Fire com os dois addons, o mount Crimson Fang, Vorondor Flames e a aura Ember Crown",
+		["The Astral Ice outfit with both addons, the Glacier Wyrm mount, Nimbus Wings and the Frost Bastion aura"] =
+			"O outfit Astral Ice com os dois addons, o mount Glacier Wyrm, Nimbus Wings e a aura Frost Bastion",
+		["The Auto Seller sells it"] =
+			"O Auto Seller vende tudo",
+		["The charges stay"] =
+			"As cargas continuam",
+		["Then pick the vocation in Character > Services"] =
+			"Depois escolha a vocação em Personagem > Serviços",
+		["Then use it in Character > Services, in a protection zone"] =
+			"Depois use em Personagem > Serviços, numa zona de proteção",
+		["This character keeps all five blessings for good: they come back after every death"] =
+			"Este personagem mantém as cinco bênçãos para sempre: elas voltam depois de toda morte",
+		["Town Portal style: a frame of blue ice that hums with cold"] =
+			"Estilo de Town Portal: uma moldura de gelo azul que zumbe de frio",
+		["Town Portal style: a gate of molten rock that spills embers"] =
+			"Estilo de Town Portal: um portal de rocha derretida que espalha brasas",
+		["Town Portal style: a gate overgrown with living green"] =
+			"Estilo de Town Portal: um portal tomado por verde vivo",
+		["Town Portal style: a golden arch full of sunlight"] =
+			"Estilo de Town Portal: um arco dourado cheio de luz do sol",
+		["Town Portal style: a red gate under a blood moon"] =
+			"Estilo de Town Portal: um portal vermelho sob uma lua de sangue",
+		["Town Portal style: a white palace door with a red veil"] =
+			"Estilo de Town Portal: uma porta de palácio branca com um véu vermelho",
+		["Trains distance"] =
+			"Treina distance",
+		["Trains fist fighting"] =
+			"Treina fist fighting",
+		["Trains magic level"] =
+			"Treina magic level",
+		["Trains melee"] =
+			"Treina melee",
+		["Trains shielding"] =
+			"Treina shielding",
+		["Transmog looks: a crested circlet, plate and greaves of the old falconers"] =
+			"Visuais de transmog: um diadema com crista, a armadura e as grevas dos antigos falcoeiros",
+		["Transmog looks: a green mothwing helmet, plate, legs and boots"] =
+			"Visuais de transmog: um elmo verde de asa de mariposa, armadura, calças e botas",
+		["Transmog looks: grand sanguine blade, cudgel, hatchet, bow and coil"] =
+			"Visuais de transmog: lâmina sanguínea imponente, clava, machadinha, arco e espiral",
+		["Transmog looks: hooded skull, bone-ribbed plate, legs and boots"] =
+			"Visuais de transmog: caveira encapuzada, armadura de costelas de osso, calças e botas",
+		["Transmog looks: soulshell plate, soulshanks, soulwalkers, soulbastion"] =
+			"Visuais de transmog: armadura soulshell, soulshanks, soulwalkers e soulbastion",
+		["Transmog looks: the cobra hood, sword, wand and rod"] =
+			"Visuais de transmog: o capuz de cobra, espada, wand e rod",
+		["Transmog looks: the gilded lion helmet, plate, shield and spellbook"] =
+			"Visuais de transmog: o elmo de leão dourado, armadura, escudo e livro de magias",
+		["Transmog looks: the lion longsword, axe, hammer, longbow, rod and wand"] =
+			"Visuais de transmog: a espada longa de leão, machado, martelo, arco longo, rod e wand",
+		["Transmog looks: the soulshroud, soulstrider legs, soulstalker boots"] =
+			"Visuais de transmog: o soulshroud, as calças soulstrider e as botas soulstalker",
+		["Up to %d"] =
+			"Até %d",
+		["Up to %d hours"] =
+			"Até %d horas",
+		["Upgrade of your Everfull Great Health Potion (level %d): %d-%d health a drink"] =
+			"Melhoria da sua Everfull Great Health Potion (nível %d): %d-%d de vida por gole",
+		["Upgrade of your Everfull Great Mana Potion (level %d): %d-%d mana a drink"] =
+			"Melhoria da sua Everfull Great Mana Potion (nível %d): %d-%d de mana por gole",
+		["Upgrade of your Everfull Great Spirit Potion (level %d): health and mana a drink"] =
+			"Melhoria da sua Everfull Great Spirit Potion (nível %d): vida e mana por gole",
+		["Upgrade of your Everfull Health Potion (level %d): %d-%d health a drink"] =
+			"Melhoria da sua Everfull Health Potion (nível %d): %d-%d de vida por gole",
+		["Upgrade of your Everfull Health Potion: health and mana a drink, one health and one mana charge"] =
+			"Melhoria da sua Everfull Health Potion: vida e mana por gole, uma carga de vida e uma de mana",
+		["Upgrade of your Everfull Mana Potion (level %d): %d-%d mana a drink"] =
+			"Melhoria da sua Everfull Mana Potion (nível %d): %d-%d de mana por gole",
+		["Upgrade of your Everfull Spirit Potion (level %d): health and mana a drink"] =
+			"Melhoria da sua Everfull Spirit Potion (nível %d): vida e mana por gole",
+		["Upgrade of your Everfull Ultimate Health Potion (level %d): %d-%d health a drink"] =
+			"Melhoria da sua Everfull Ultimate Health Potion (nível %d): %d-%d de vida por gole",
+		["Upgrade of your Everfull Ultimate Mana Potion (level %d): %d-%d mana a drink"] =
+			"Melhoria da sua Everfull Ultimate Mana Potion (nível %d): %d-%d de mana por gole",
+		["Upgrade of your Everfull Ultimate Spirit Potion (level %d): health and mana a drink"] =
+			"Melhoria da sua Everfull Ultimate Spirit Potion (nível %d): vida e mana por gole",
+		["Use the chest to get a bow with %d charges"] =
+			"Use o baú para receber um bow com %d cargas",
+		["Use the chest to get a fist training weapon with %d charges"] =
+			"Use o baú para receber uma arma de treino de punho com %d cargas",
+		["Use the chest to get a melee training weapon with %d charges"] =
+			"Use o baú para receber uma arma de treino corpo a corpo com %d cargas",
+		["Use the chest to get a rod with %d charges"] =
+			"Use o baú para receber um rod com %d cargas",
+		["Use the chest to get a shield with %d charges"] =
+			"Use o baú para receber um shield com %d cargas",
+		["Use the chest to get a wand with %d charges"] =
+			"Use o baú para receber um wand com %d cargas",
+		["Violet streaks race round your body"] =
+			"Faixas violeta correm pelo seu corpo",
+		["Violet wisps of shadow curl behind you"] =
+			"Fiapos violeta de sombra se enroscam atrás de você",
+		["Vorondor Flames, the Ember Crown aura, the Infernal Pulse shader and the Crimson Fang mount"] =
+			"Vorondor Flames, a aura Ember Crown, o shader Infernal Pulse e o mount Crimson Fang",
+		["Warrior, Thief and Templar lines"] =
+			"Linhas Warrior, Thief e Templar",
+		["Water cape, animated"] =
+			"Capa de água, animada",
+		["Water head accessory, animated"] =
+			"Acessório de cabeça de água, animado",
+		["Water wings, animated"] =
+			"Asas de água, animadas",
+		["Wear them with any aura, head accessory or cape"] =
+			"Use com qualquer aura, acessório de cabeça ou capa",
+		["White waves rolling over your outfit"] =
+			"Ondas brancas rolam sobre o seu outfit",
+		["Wind cape, animated"] =
+			"Capa de vento, animada",
+		["Wind head accessory, animated"] =
+			"Acessório de cabeça de vento, animado",
+		["Wind wings, animated"] =
+			"Asas de vento, animadas",
+		["You are logged out and return renamed"] =
+			"Você é desconectado e volta com o novo nome",
+		["Your character changes sex at once"] =
+			"Seu personagem muda de sexo na hora",
+		["Your highlighted loot labels sit on deep green"] =
+			"Seus rótulos de loot em destaque ficam sobre verde profundo",
+		["Your highlighted loot labels sit on night blue"] =
+			"Seus rótulos de loot em destaque ficam sobre azul-noite",
+		["Your highlighted loot labels sit on royal violet"] =
+			"Seus rótulos de loot em destaque ficam sobre violeta real",
+		["Your highlighted loot labels sit on smouldering ember"] =
+			"Seus rótulos de loot em destaque ficam sobre brasa incandescente",
+		["Your kills shatter into shards of ice"] =
+			"Suas mortes se estilhaçam em cacos de gelo",
+		["Your name in chat glows cinder orange for everyone"] =
+			"Seu nome no chat brilha em laranja-cinza para todos",
+		["Your name in chat shows amethyst for everyone"] =
+			"Seu nome no chat aparece em ametista para todos",
+		["Your name in chat shows frost blue for everyone"] =
+			"Seu nome no chat aparece em azul-gelo para todos",
+		["Your name in chat shows leaf green for everyone"] =
+			"Seu nome no chat aparece em verde-folha para todos",
+		["Your name in chat shows rose for everyone"] =
+			"Seu nome no chat aparece em rosa para todos",
+		["Your outfit fades to a pale, see-through ghost with a cold glow"] =
+			"Seu outfit esmaece num fantasma pálido e translúcido com um brilho frio",
+		["Your outfit sinks into violet dark; its edge flickers and slips away"] =
+			"Seu outfit mergulha numa escuridão violeta; a borda tremula e escorrega",
+		["Your outfit smoulders: a flickering ember edge and sparks drifting up"] =
+			"Seu outfit arde em brasa: uma borda de brasas tremulantes e faíscas que sobem",
+		["Your outfit turns to ice, rimed at the edges, with crystals that glint"] =
+			"Seu outfit vira gelo, coberto de geada nas bordas, com cristais que reluzem",
+		["Your outline runs deep blue below, white lightning above"] =
+			"Seu contorno vai de azul profundo embaixo a relâmpagos brancos em cima",
+		["Your outline runs red at your feet, burning gold at your crown"] =
+			"Seu contorno vai de vermelho nos pés a ouro ardente na coroa",
+		["Zealotry and Purging Nova burn in red and fire"] =
+			"Zealotry e Purging Nova queimam em vermelho e fogo",
+		["Zealotry, Purging Nova and Vow of Mending glow in violet"] =
+			"Zealotry, Purging Nova e Vow of Mending brilham em violeta",
+		["Switch frames in Info & Services > Services"] =
+			"Troque de moldura em Info & Serviços > Serviços",
+		["Wings for every outfit, yours for good"] =
+			"Asas para todo outfit, suas para sempre",
+		["An aura around your character, yours for good"] =
+			"Uma aura em volta do seu personagem, sua para sempre",
+		["You own %d of its parts: they are left out of the price"] =
+			"Você já tem %d das peças: elas ficam fora do preço",
+		["+%d days of Chaos Pact"] =
+			"+%d dias de Chaos Pact",
+		["Damage to Dragons +%d%%"] =
+			"Dano a Dragões +%d%%",
+		["Damage to Demons +%d%%"] =
+			"Dano a Demônios +%d%%",
+		["Damage to Undead +%d%%"] =
+			"Dano a Mortos-vivos +%d%%",
+		["Damage to Humans +%d%%"] =
+			"Dano a Humanos +%d%%",
+		["Damage to Humanoids +%d%%"] =
+			"Dano a Humanoides +%d%%",
+		["Damage to Beasts +%d%%"] =
+			"Dano a Feras +%d%%",
+		["Damage to Elementals +%d%%"] =
+			"Dano a Elementais +%d%%",
+		["Damage to Insects and Arachnids +%d%%"] =
+			"Dano a Insetos e Aracnídeos +%d%%",
+		["Fire Resistance +%d%%"] =
+			"Resistência a fogo +%d%%",
+		["Ice Resistance +%d%%"] =
+			"Resistência a gelo +%d%%",
+		["Energy Resistance +%d%%"] =
+			"Resistência a energia +%d%%",
+		["Earth Resistance +%d%%"] =
+			"Resistência a terra +%d%%",
+		["Death Resistance +%d%%"] =
+			"Resistência a morte +%d%%",
+		["Holy Resistance +%d%%"] =
+			"Resistência sagrada +%d%%",
+		["Orb Find +%d%%"] =
+			"Orb Find +%d%%",
+		["Movement Speed out of Combat +%d%%"] =
+			"Velocidade de Movimento fora de Combate +%d%%",
+		["Reputation +%d%%"] =
+			"Reputação +%d%%",
+		-- Round 8: the Memorial statues, Treasure Goblin taunts and the Monk stun shout
+		["1 other"] =
+			"1 outro",
+		["%d others"] =
+			"%d outros",
+		["heroes who keep their names"] =
+			"heróis que mantêm os nomes em segredo",
+		["A guardian statue. Realm first of %s: %s, slain by %s on %s."] =
+			"Uma estátua guardiã. Primeiro do reino em %s: %s, derrotado por %s em %s.",
+		["a hero who keeps their name"] =
+			"um herói que mantém o nome em segredo",
+		["A statue. %s record of %s: %s, %s. Set on %s."] =
+			"Uma estátua. Recorde de %s em %s: %s, %s. Estabelecido em %s.",
+		["adventurer"] =
+			"aventureiro",
+		["fallen"] =
+			"caído",
+		["A memorial stone. Here lies %s, a level %d %s, %s on %s. Fallen in Hardcore, %s."] =
+			"Uma pedra memorial. Aqui jaz %s, nível %d de %s, %s em %s. Caiu no Hardcore, %s.",
+		["The Ember Memorial, %s. %s, %s and %d of the fallen are remembered here."] =
+			"O Ember Memorial, %s. %s, %s e %d dos caídos são lembrados aqui.",
+		["%d realm first"] =
+			"%d primeiro do reino",
+		["%d realm firsts"] =
+			"%d primeiros do reino",
+		["%d record"] =
+			"%d recorde",
+		["%d records"] =
+			"%d recordes",
+		["The statues turn every %d minutes (page %d of %d)."] =
+			"As estátuas giram a cada %d minutos (página %d de %d).",
+		["Past seasons: the website's Memorial page."] =
+			"Temporadas passadas: a página do Memorial no site.",
+		["Ha! Too slow!"] =
+			"Ha! Lento demais!",
+		["Mine! All mine!"] =
+			"Meu! Tudo meu!",
+		["You'll never catch me!"] =
+			"Você nunca vai me pegar!",
+		["Shiny, shiny!"] =
+			"Brilhante, brilhante!",
+		["Nyah nyah!"] =
+			"Nyah nyah!",
+		["Hands off my sack!"] =
+			"Mãos fora da minha sacola!",
+		["Hee hee hee!"] =
+			"Hi hi hi!",
+		["Catch me if you can!"] =
+			"Me pegue se for capaz!",
+		["Ooh, shiny..."] =
+			"Ooh, brilhante...",
+		["Ha ha!"] =
+			"Ha ha!",
+		["Stunned!"] =
+			"Atordoado!",
+		-- Round 8: faction offer texts
+		["The faction tabard: an aura around your character."] =
+			"O tabard da facção: uma aura em volta do seu personagem.",
+		["A faction mount, yours for good."] =
+			"Um mount da facção, seu para sempre.",
 	},
 }

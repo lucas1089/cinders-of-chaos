@@ -22,8 +22,8 @@ Lines (each a JSON object with "t"):
   d        changes since the last line (at most ~20 a second): "c", "tiles", "cr", "walk", "fx", "mi", "tx", "say",
            "st", "light", only the keys that changed; protocol 3: "fl" (when the range changed), "fc" (floors that
            came into view whole: forget their tiles first), "ft", "fxf", "mif" (effects / missiles of other floors)
-  sprerr   {"t":"sprerr","key","why"}: a sheet that could not be drawn (the pair lacks the thing, the 600 limit, or the
-           error text); the app counts them and says so instead of showing black
+  sprerr   {"t":"sprerr","key","why"}: a sheet that could not be drawn (the pair lacks the thing, the MAX_SHEETS
+           limit, or the error text); the app counts them and says so instead of showing black
   hb       nothing happened for a second
   end      {"t":"end","why"}: the relay stops
 Protocol 3 (phase 3, the hello's "v"; older lines are read as 2): every addition is a new key, so an older app keeps
@@ -71,7 +71,7 @@ SEA_FLOOR = 7
 UNDERGROUND = 8
 AWARE_UNDER = 2
 MAX_Z = 15
-MAX_SHEETS = 600
+MAX_SHEETS = 4000       # sheets per run; a death trip to the temple with every floor in view passed 600 (2026-10-29)
 MAX_CELLS = 256
 FLUSH_MS = 50
 CREATURE_OPS = (0x61, 0x62, 0x63)
@@ -1112,9 +1112,11 @@ class Sheets:
             places.append(gsi.place(rm, mm))
         rects = []
         for rxy, mxy, _z in places:
-            rects.append((rxy[0], rxy[1], iv.w * 32, iv.h * 32))
+            for v in (iv, wv):
+                rects.append((rxy[0], rxy[1], v.w * 32, v.h * 32))
             if mxy is not None:
-                rects.append((mxy[0], mxy[1], mframes[0].w * 32, mframes[0].h * 32))
+                for v in (mframes[0], mframes[2]):
+                    rects.append((mxy[0], mxy[1], v.w * 32, v.h * 32))
         left = min(r[0] for r in rects)
         top = min(r[1] for r in rects)
         cw = max(r[0] + r[2] for r in rects) - left
