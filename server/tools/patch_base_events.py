@@ -129,6 +129,10 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    (ChaosCrafting.shield, data/lib/chaos_crafting.lua), so the compare raised "attempt to compare number with string"
    and the loot line was lost (live log 2026-10-28). The read goes through tonumber.
 
+23. data/scripts/eventcallbacks/player/default_onLook.lua: the "You see" prefix named the 15 old rarities (an item of
+   rarity 3 read "Rare", today Magic). It now takes ChaosRarity.name (data/lib/chaos_rarity.lua), which maps old ids
+   too; without that library the base names stay. A text rarity is read as a number.
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -244,6 +248,27 @@ def patch_loot_rarity_number(text):
     m = m[0]
     ind, nl = m.group(1), m.group(3)
     line = ind + RARNUM_MARKER + nl + ind + 'local rarityId = tonumber(item:getCustomAttribute("rarity"))' + nl
+    return text[:m.start()] + line + text[m.end():], 'patched'
+
+
+LOOKNAME_MARKER = '-- Chaos: the look text names the seven rarities (patch_base_events.py)'
+LOOKNAME_RE = re.compile(r'^([ \t]*)local rarity = rarities\[rarityValue\]([ \t]*)(\r?\n)', re.M)
+
+
+def patch_look_rarity_name(text):
+    """default_onLook.lua: the "You see" prefix reads ChaosRarity.name; returns (new text, status)"""
+    if LOOKNAME_MARKER in text:
+        return text, 'already'
+    m = list(LOOKNAME_RE.finditer(text))
+    if len(m) != 1:
+        return text, 'unexpected default_onLook.lua (local rarity = rarities[rarityValue] not found once)'
+    m = m[0]
+    ind, nl = m.group(1), m.group(3)
+    line = (ind + LOOKNAME_MARKER + nl
+            + ind + 'local rarity = rarities[tonumber(rarityValue)]' + nl
+            + ind + 'if ChaosRarity and ChaosRarity.name then' + nl
+            + ind + '    rarity = ChaosRarity.name(rarityValue)' + nl
+            + ind + 'end' + nl)
     return text[:m.start()] + line + text[m.end():], 'patched'
 
 
@@ -807,6 +832,8 @@ def main():
                patch_stock_rarities, dry) and ok
     ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
                patch_loot_rarity_number, dry) and ok
+    ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'player', 'default_onLook.lua'),
+               patch_look_rarity_name, dry) and ok
     return 0 if ok else 1
 
 

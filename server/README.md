@@ -11543,9 +11543,10 @@ and the forge also write the stored id.
 Loot filter thresholds, pouch `minRarity` and the market filter are stored as canonical ids (a saved old id is clamped on
 read). The achievements "rarity_7 / 9 / 12" are retired (points kept, `data.retired`), "rarity_15" is "Divine Find".
 
-**Known limits.** The base files not in this repo (`default_onLook`, `reroll_rarity_stats`, the stock loot-line names) are
-not patched: the loot line translates the stock names (`lootline_core.lua`), the look text of the stock script may still
-print an old name until the owner supplies the file. Server-built text shows English rarity names; pt-BR names come from the
+**Known limits.** The base files not in this repo are patched where they name rarities: the look text of
+`default_onLook` takes `ChaosRarity.name` (`patch_base_events.py` step 23), the loot line translates the stock names
+(`lootline_core.lua`) and reads a text rarity as a number (step 22), and `reroll_rarity_stats` is skipped for the Chaos
+orbs (`install_crafting.py`). Server-built text shows English rarity names; pt-BR names come from the
 client `tr()`. Gear set bonuses are not scaled by the value raise.
 
 **Value raise (owner item 78).** Modifier ranges were small; every tier of every Chaos and engine modifier is now 1.5x to
