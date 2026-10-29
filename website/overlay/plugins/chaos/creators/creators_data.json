@@ -1,0 +1,49 @@
+{
+  "updated": "2026-10-29",
+  "qualify": {
+    "status": "proposal",
+    "intro": {"pt-BR": "Proposta de critérios, ainda a confirmar pelo dono:", "en": "Proposed criteria, still to be confirmed by the owner:"},
+    "items": [
+      {"pt-BR": "Você faz lives ou vídeos públicos de Cinders of Chaos, ou quer fazer.", "en": "You stream or post public videos of Cinders of Chaos, or want to."},
+      {"pt-BR": "Você cumpre as Regras do servidor e os Termos de Doação, e não divulga trapaças, bots nem contas vendidas.", "en": "You follow the server Rules and the Donation Terms, and you do not promote cheats, bots or sold accounts."},
+      {"pt-BR": "Você diz de forma clara que a doação é voluntária e que o jogo é grátis.", "en": "You say clearly that donating is voluntary and that the game is free."},
+      {"pt-BR": "A equipe aprova cada pedido. Um tamanho mínimo de audiência é a definir.", "en": "The staff approves each request. A minimum audience size is to be set."}
+    ]
+  },
+  "benefits": [
+    {"id": "code", "status": "built",
+      "verify": [
+        {"file": "server/data/scripts/chaos/creator_codes_config.lua", "has": "sharePct = 10"},
+        {"file": "server/data/scripts/chaos/creator_codes_config.lua", "has": "supportDays = 30"},
+        {"file": "server/data/scripts/chaos/creator_codes_config.lua", "has": "holdDays = 14"},
+        {"file": "server/data/scripts/chaos/creator_codes_config.lua", "has": "orderCap = 500"},
+        {"file": "server/data/scripts/chaos/creator_codes_config.lua", "has": "monthlyCap = 5000"}],
+      "title": {"pt-BR": "Código de criador", "en": "Creator code"},
+      "text": {"pt-BR": "Quem escolhe seu código recebe nada a menos: a doação e as moedas dele ficam iguais. Durante 30 dias, 10% das moedas de cada doação dele vão para você, em jogo, como Chaos Coins, 14 dias depois (para reembolsos e estornos virem primeiro). No máximo 500 moedas por doação e 5000 por mês. O próprio código, a mesma conexão e o mesmo pagador não contam.", "en": "Whoever picks your code pays nothing extra: their donation and coins stay the same. For 30 days, 10% of the coins of each of their donations go to you, in game, as Chaos Coins, 14 days later (so refunds and chargebacks come first). At most 500 coins per donation and 5000 a month. Your own account, the same connection and the same payer do not count."}},
+    {"id": "betakeys", "status": "open",
+      "title": {"pt-BR": "Chaves de beta", "en": "Beta keys"},
+      "text": {"pt-BR": "O beta de 31/10 e 07/11 é aberto, sem chave: qualquer pessoa joga. Chaves ou acesso antecipado para criadores não existem no código e são a definir.", "en": "The beta of 31 Oct and 7 Nov is open, with no key: anyone can play. Keys or early access for creators do not exist in the code and are to be set."}},
+    {"id": "launchbonus", "status": "open",
+      "title": {"pt-BR": "Bônus da janela de lançamento", "en": "Launch-window bonus"},
+      "text": {"pt-BR": "A ideia é um bônus nas primeiras semanas após o lançamento para os espectadores que usarem seu código. Ainda não está no código nem decidido: valor e duração são a definir. Hoje vale a regra do código acima.", "en": "The idea is a bonus in the first weeks after launch for viewers who use your code. It is not in the code and not decided: amount and length are to be set. Today the rule of the code above applies."}},
+    {"id": "mediakit", "status": "built",
+      "title": {"pt-BR": "Kit de mídia", "en": "Media kit"},
+      "text": {"pt-BR": "Logotipo, banners, imagens das classes e dos recursos, e a ficha técnica em pt-BR e en, num zip. Sem capturas de tela de jogo por enquanto.", "en": "Logo, banners, images of the classes and features, and the fact sheet in pt-BR and en, in one zip. No gameplay screenshots for now."}}
+  ],
+  "apply": {
+    "intro": {"pt-BR": "Ainda não há formulário no site. Para pedir um código:", "en": "There is no form on the site yet. To ask for a code:"},
+    "steps": [
+      {"pt-BR": "Crie uma conta e um personagem no site.", "en": "Create an account and a character on the site."},
+      {"pt-BR": "Fale com a equipe no Discord do servidor e envie o link do seu canal e o nome do personagem.", "en": "Talk to the staff on the server Discord and send the link to your channel and your character's name."},
+      {"pt-BR": "A equipe confere o canal e cria o código para a sua conta pelo painel de administração.", "en": "The staff checks the channel and creates the code for your account in the admin panel."},
+      {"pt-BR": "Depois disso a página Códigos de Criador mostra seus apoiadores e o que você ganhou.", "en": "After that the Creator Codes page shows your supporters and what you earned."}
+    ]
+  },
+  "open": [
+    {"id": "criteria", "text": {"pt-BR": "Critérios finais para ser criador, incluindo audiência mínima: a definir.", "en": "Final criteria to be a creator, including a minimum audience: to be set."}},
+    {"id": "betakeys", "text": {"pt-BR": "Chaves de beta ou acesso antecipado para criadores. Hoje o beta é aberto. Se for preciso, o desenho é uma tabela de chaves de uso único por conta, criada pela equipe.", "en": "Beta keys or early access for creators. Today the beta is open. If needed, the design is a table of single-use keys per account, created by the staff."}},
+    {"id": "launchbonus", "text": {"pt-BR": "Bônus da janela de lançamento para os espectadores do criador: valor e duração a definir.", "en": "Launch-window bonus for a creator's viewers: amount and length to be set."}},
+    {"id": "application", "text": {"pt-BR": "Formulário de pedido no site e o link do Discord: a definir.", "en": "An application form on the site and the Discord link: to be set."}},
+    {"id": "legal", "text": {"pt-BR": "As regras de divulgação do criador ainda precisam da revisão jurídica dos Termos de Doação.", "en": "The creator disclosure rules still need the legal review of the Donation Terms."}}
+  ]
+}

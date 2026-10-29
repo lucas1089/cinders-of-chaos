@@ -38,6 +38,8 @@ python3 -I tools/ci/check_names.py     # no other server/game/client names anywh
 python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix)
 python3 -I tools/ci/check_desktop_commands.py   # desktop admin app (O312) table names the same chaos-ctl commands as android/
 cd desktop && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked
+for d in crates/selfupdate launcher; do (cd $d && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked); done   # game launcher (O314) and its shared crate; launcher/tests/mass_update.rs updates a fake install many times from a local HTTP server (interrupted download, bad hash, bad signature, rollback, self-update); needs curl
+python3 -I client/tools/set_launcher_config_test.py && python3 -I server/deploy/publish_client_update_test.py   # launcher.json from init.lua; the publisher's "native" section for the launcher
 python3 -I tools/ci/check_credits.py   # every pack of the art *sources.csv files is in docs/CREDITS.md; pt-BR headings
 python3 -I tools/ci/check_credits_test.py && python3 -I client/tools/gen_credits_test.py
 cd server && luajit tools/weapon_coverage.lua --check && lua5.3 tools/weapon_coverage.lua --check  # every class has 3+ weapons per level band (thresholds: tools/weapon_coverage_config.lua); table in server/README.md (--write)
@@ -81,6 +83,9 @@ cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/w
 cd server && lua5.3 tools/gen_wiki_data.lua --check
 python3 -I server/tools/weapon_sim.py --power --check             # -> data/scripts/chaos/weapon_power_config.lua (--power --write)
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
+python3 -I website/tools/gen_calendar_data.py                  # -> website calendar/calendar_data.json from season_config.lua and others (--check in CI; O320)
+python3 -I website/tools/gen_calendar_data_test.py
+python3 -I website/tools/gen_media_kit.py                       # -> creators/media_kit_manifest.json (--check in CI; the zip is built by install_site.sh, not committed)
 python3 -I client/tools/sprites/gen_owner_art.py build --check  # owner art of pair 26 (CI uses the fx venv)
 python3 -I server/tools/install_owner_decor.py --lua --check     # -> data/lib/chaos_owner_decor.lua
 python3 -I client/tools/sprites/style_check.py build-palettes --check  # -> style_palettes.json; check new sprites: docs/SPRITE_STYLE.md

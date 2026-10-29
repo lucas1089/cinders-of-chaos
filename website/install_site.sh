@@ -115,6 +115,8 @@ fi
 rm -rf "$SITE/layouts/chaos" "$SITE/plugins/chaos"
 cp -R "$HERE/overlay/." "$SITE/"
 python3 -I "$HERE/tools/recolor_layout.py" "$SITE/layouts/void" "$SITE/layouts/chaos"
+# the creator program's media kit (README "Creator program"): the art and the fact sheets in one zip, not kept in git
+python3 -I "$HERE/tools/gen_media_kit.py" --zip "$SITE/press/cinders-of-chaos-media-kit.zip"
 # the legal texts (docs/legal/, README "Legal pages"): the plugin's legal page reads them; .md is denied by the web server
 mkdir -p "$SITE/plugins/chaos/legal"
 for doc in terms privacy donations; do

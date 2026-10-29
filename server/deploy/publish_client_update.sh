@@ -19,6 +19,9 @@
 #                     At least 13: the update blobs are encrypted and only build 13 and newer decrypt them.
 #   --key-index N     which key of CHAOS_CLIENT_KEY ("old,new" during a rotation) encrypts the blobs, 1-based. A
 #                     packed package (chaos.pack) needs none: the key that opens its pack is the one.
+#   (launcher, O314) a packed client folder that also holds CindersLauncher.exe: its .exe, .dll and chaos.pack files are
+#                     published as the manifest's "native" section (client/MANIFEST.md "Game launcher"), plain blobs
+#                     under updates/live/native/, for the launcher; the Lua updater never reads that section.
 #   --check-only      no publish: only the web server check of the published manifest (below)
 #   --no-check        skip the web server check
 #   --keep            keep the work folder (the download and the extracted client) for a look afterwards
@@ -165,7 +168,7 @@ fi
 [ -n "${CHAOS_CLIENT_KEY:-}" ] || die "no CHAOS_CLIENT_KEY (the environment, or a CHAOS_CLIENT_KEY= line in $ENVFILE): the update blobs are encrypted with it and are never published plain"
 export CHAOS_CLIENT_KEY
 
-TAG="" ZIP=""
+TAG="" ZIP="" NATIVE=""
 if [ -f "$SRC" ]; then
   ZIP=$(readlink -f "$SRC")
 elif [[ $SRC =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] && [[ $SRC != *..* ]]; then
@@ -254,6 +257,15 @@ if [ "${#packs[@]}" -gt 0 ]; then
   fi
   KEYIDX=$idx
   say "pack: opened with key $KEYIDX of CHAOS_CLIENT_KEY"
+  # the launcher's files (O314): the program files of the package beside chaos.pack, when it ships the launcher
+  packdir=$(dirname "${packs[0]}")
+  if [ -f "$packdir/CindersLauncher.exe" ]; then
+    NATIVE="$WORK/native"
+    mkdir "$NATIVE"
+    find "$packdir" -maxdepth 1 -type f \( -name '*.exe' -o -name '*.dll' -o -name chaos.pack \) -print0 \
+      | while IFS= read -r -d '' nf; do ln "$nf" "$NATIVE/" 2>/dev/null || cp "$nf" "$NATIVE/"; done
+    say "launcher: $(find "$NATIVE" -mindepth 1 -maxdepth 1 | wc -l) native files for the launcher"
+  fi
   rm -f "${packs[0]}"
   CLIENT="$WORK/tree"
   { [ -f "$CLIENT/init.lua" ] && [ -d "$CLIENT/modules" ] && [ -d "$CLIENT/data/things/1098" ]; } \
@@ -374,6 +386,10 @@ fi
 args=(build "$CLIENT" --out "$LIVE" --key "$KEY" --min-package "$MINPKG")
 vargs=(verify "$LIVE" --public "$PUBLIC")
 [ -n "$VERSION" ] && args+=(--version "$VERSION")
+if [ -n "$NATIVE" ]; then
+  isnum "$PKG_PACKAGE" || die "the launcher's files need Services.update.package in init.lua"
+  args+=(--native-dir "$NATIVE" --native-package "$((10#$PKG_PACKAGE))" --native-launcher CindersLauncher.exe)
+fi
 if [ -n "$KEYIDX" ]; then args+=(--key-index "$KEYIDX"); vargs+=(--key-index "$KEYIDX"); fi
 say "build: version ${VERSION:-$((PREV + 1))}, min_package $MINPKG, encrypted -> $LIVE"
 python3 -I "$TOOL" "${args[@]}" || die "make_update_manifest.py build failed; nothing new was published"

@@ -8,6 +8,10 @@
 --   C.excluded(offer, ex)                 reason text when the offer sells one of them, else nil
 --   C.outfitLooks(offer)                  the look types an outfit offer gives (male and female), each once
 --   C.parseTime(v)                        "YYYY-MM-DD HH:MM" (server time) or a number -> unix time; nil when invalid
+--   C.windowState(offer, now)             nil while the offer is on sale; "early" before offer.availableFrom, "late" from
+--                                         offer.availableUntil on ("YYYY-MM-DD HH:MM" server time; O322 Founder Pack)
+--   C.windowNote(offer, lang)             "Available until 18/12/2026 15:00." (pt-BR) / "Available until 2026-12-18 15:00."
+--                                         for an offer with availableUntil, else nil
 --   C.weekKey(t, hour)                    week number; weeks start on Monday at `hour` (server time)
 --   C.featured(pool, week, count)         `count` keys of `pool`, a different choice every week (deterministic)
 --   C.weekEnds(t, hour)                   when the week of t ends (the weekly rotation's countdown)
@@ -19,6 +23,10 @@
 --   C.addSubcategory(cfg, parent, category, after?)  puts a category under a parent of cfg.groups (after a sibling)
 --   C.search(list, query, titleOf, limit) offers whose title, category or parent hold every word of query: {{c, i}}
 --   C.bundleCost(bundle, listSum)         a bundle's price: its own cost, or listSum minus its pct
+--   C.levelCost(offer, level)             the price of an offer with levelPrices {{upTo?, cost}, ...} at a level (O317: All
+--                                         Blessings 60 / 100 / 150); offer.cost when it has none
+--   C.discountCost(cost, pct)             the price after pct % off, rounded up, at least 1 (O317: another character of the
+--                                         account owns the per-character convenience: offer.accountDiscount = pct)
 --   C.giftProblem(t)                      why a gift to this target is refused, or nil
 --   C.coinGiftProblem(rules, f, lang?)    why a Chaos Coin gift is refused (hold after a donation, daily cap, ban), or nil
 --                                         (in `lang` through ChaosI18n when it is loaded; English otherwise)
@@ -189,10 +197,10 @@ end
 
 -- ------------------------------------------------------------------ name plate frames
 -- index = the frame's slot: never reorder, only append. 1-5 the first store frames, 6-13 the second set of store frames,
--- 14-16 never sold (exclusives_config.lua). Slots 1-8 own storage Chaos.storage.shopFrameBase + i (7100761-7100768),
+-- 14-17 never sold (exclusives_config.lua; 17 = the Grand Founder Pack's frame, O322). Slots 1-8 own storage Chaos.storage.shopFrameBase + i (7100761-7100768),
 -- slots 9 and up Chaos.storage.shopFrameBase2 + i - 9 (7102010-7102039); Chaos.storage.shopFrameActive = the slot shown.
 C.FRAMES = {"violet", "frost", "ember", "verdant", "bone", "ashen", "sapphire", "rose", "jade", "copper", "obsidian",
-	"amber", "storm", "laurel", "sepulchre", "infernal"}
+	"amber", "storm", "laurel", "sepulchre", "infernal", "founder"}
 C.FRAME_SLOTS2 = 30 -- 7102010 - 7102039
 
 function C.frameIndex(frame)
@@ -260,6 +268,8 @@ function C.offerKey(o)
 		return "unlock:" .. tostring(o.unlock)
 	elseif k == "pact" then
 		return "pact:" .. tostring(o.days)
+	elseif k == "exclusive" then
+		return "exclusive:" .. tostring(o.exclusive)
 	end
 	return tostring(k) .. ":" .. tostring(o.name)
 end
@@ -381,6 +391,32 @@ function C.parseTime(v)
 	return os.time({year = tonumber(y), month = tonumber(mo), day = tonumber(d), hour = tonumber(h), min = tonumber(mi), sec = 0})
 end
 
+-- a time-limited offer (O322 Founder Pack): offer.availableFrom / availableUntil, "YYYY-MM-DD HH:MM" server time, either
+-- may be left out. Returns nil while it is on sale, "early" before the start, "late" from the end on.
+function C.windowState(offer, now)
+	local from, to = C.parseTime(offer.availableFrom), C.parseTime(offer.availableUntil)
+	now = now or os.time()
+	if from and now < from then
+		return "early"
+	end
+	if to and now >= to then
+		return "late"
+	end
+	return nil
+end
+
+-- the sentence that tells the buyer when an offer ends, in the buyer's language (the date written the local way)
+function C.windowNote(offer, lang)
+	local y, mo, d, h, mi = tostring(offer.availableUntil or ""):match("^(%d%d%d%d)%-(%d%d)%-(%d%d)%s+(%d%d):(%d%d)$")
+	if not y then
+		return nil
+	end
+	if lang == "pt-BR" then
+		return string.format("Disponível até %s/%s/%s %s:%s.", d, mo, y, h, mi)
+	end
+	return string.format("Available until %s-%s-%s %s:%s.", y, mo, d, h, mi)
+end
+
 -- 1970-01-05 was a Monday
 function C.weekKey(t, hour)
 	local monday = os.time({year = 1970, month = 1, day = 5, hour = hour or 0, min = 0, sec = 0})
@@ -479,6 +515,26 @@ function C.bundleCost(bundle, listSum)
 	end
 	local pct = math.max(0, math.min(90, tonumber(bundle.pct) or 0))
 	return math.max(1, math.floor(listSum * (100 - pct) / 100))
+end
+
+-- the price of an offer with levelPrices at `level`: the first tier whose upTo covers the level; the last tier has no upTo
+function C.levelCost(offer, level)
+	local tiers = offer.levelPrices
+	if type(tiers) ~= "table" or #tiers == 0 then
+		return offer.cost
+	end
+	level = tonumber(level) or 1
+	for _, t in ipairs(tiers) do
+		if not t.upTo or level <= t.upTo then
+			return t.cost
+		end
+	end
+	return tiers[#tiers].cost
+end
+
+function C.discountCost(cost, pct)
+	pct = math.max(0, math.min(90, tonumber(pct) or 0))
+	return math.max(1, math.ceil(cost * (100 - pct) / 100))
 end
 
 -- ------------------------------------------------------------------ category tree
@@ -726,6 +782,44 @@ function C.validate(cfg, ex)
 			keys[key] = cat.name
 			if o.kind ~= "bundle" and (type(o.cost) ~= "number" or o.cost < 1) then
 				bad("offer " .. key .. ": no cost")
+			end
+			if o.levelPrices ~= nil then
+				local last = 0
+				for i, t in ipairs(o.levelPrices) do
+					if type(t.cost) ~= "number" or t.cost < 1 then
+						bad("offer " .. key .. ": levelPrices[" .. i .. "] has no cost")
+					end
+					if t.upTo and t.upTo <= last then
+						bad("offer " .. key .. ": levelPrices must rise by level")
+					end
+					if not t.upTo and i ~= #o.levelPrices then
+						bad("offer " .. key .. ": only the last levelPrices tier may have no upTo")
+					end
+					last = t.upTo or last
+				end
+				if #o.levelPrices == 0 or o.levelPrices[#o.levelPrices].upTo then
+					bad("offer " .. key .. ": the last levelPrices tier needs no upTo")
+				elseif o.cost ~= o.levelPrices[1].cost then
+					bad("offer " .. key .. ": cost must be the first levelPrices tier (the price from)")
+				end
+			end
+			if o.accountDiscount ~= nil and (type(o.accountDiscount) ~= "number" or o.accountDiscount < 1 or o.accountDiscount > 90) then
+				bad("offer " .. key .. ": accountDiscount 1..90")
+			end
+			if o.accountDiscount and C.GIFTABLE[o.kind] then
+				bad("offer " .. key .. ": an account discount is for per-character offers, which are not giftable")
+			end
+			for _, field in ipairs({"availableFrom", "availableUntil"}) do
+				if o[field] ~= nil and not C.parseTime(o[field]) then
+					bad("offer " .. key .. ": bad time in " .. field)
+				end
+			end
+			if o.availableFrom and o.availableUntil and C.parseTime(o.availableFrom) and C.parseTime(o.availableUntil) and
+				C.parseTime(o.availableUntil) <= C.parseTime(o.availableFrom) then
+				bad("offer " .. key .. ": availableUntil is not after availableFrom")
+			end
+			if o.weeklyGroup and not o.weeklyLimit then
+				bad("offer " .. key .. ": weeklyGroup needs a weeklyLimit")
 			end
 			local why = ex and C.excluded(o, ex)
 			if why then

@@ -75,8 +75,9 @@ eq(crownR.orb .. "/" .. crownR.input .. "/" .. crownR.cost, "crown/29853/1000", 
 eq(emberR.cost, crownR.cost, "the same shard count for both orbs")
 local voidR = K.shardRecipe("voidshard", cfg)
 eq(voidR.orb .. "/" .. voidR.input .. "/" .. voidR.cost, "void/29854/1000", "Void Shards -> Void Orb (the same count)")
-local lootSlots = dofile("data/scripts/chaos/pouches_config.lua").kinds.loot.capacity
-assert(cfg.batchCap >= lootSlots, "one batch covers a full Loot Bag: " .. cfg.batchCap)
+local lootSlots = math.min(dofile("data/scripts/chaos/pouches_config.lua").kinds.loot.capacity, 255) -- a bag filled to one batch
+-- the Loot Bag has 500 slots since 2026-10-29 (paged window of 250): one batch covers a page, a second click the rest
+assert(cfg.batchCap >= lootSlots, "one batch covers a filled bag: " .. cfg.batchCap)
 assert(cfg.batchCap <= 255, "a batch stays inside one container's slots")
 assert(not cfg.allowUniques, "uniques are not salvaged")
 

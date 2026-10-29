@@ -8,12 +8,12 @@
 --              everyone else is refused; the daily guild hall scroll (level perk) does the same. The exit forcefield
 --              (aid.exit) leads to the player's temple. Players cannot attack players inside a hall.
 --   upgrades   (leader and vice-leaders, gold from the guild bank) teleport hub (portals to hunting areas), training
---              room (exercise dummies + a damage dummy), crafting bench (opens the crafting window), guild depot,
+--              room (exercise dummies + a damage dummy), crafting bench (opens the crafting window), Guild Stash,
 --              trophy room (statues with the guild's records), decoration tiers (floor and walls change look)
 --   rent       weekly, paid from the guild bank when due (once a minute check). A bank that is short gives graceHours;
 --              after that the upgrades are locked (their fixtures disappear, the depot is closed) until the rent is
 --              paid (!guild rent, the window, or the next automatic try after a deposit). Nothing is deleted.
---   depot      drop an item on the guild depot (the large trunk) inside your hall: it is stored in chaos_guild_depot
+--   depot      drop an item on the Guild Stash (the large trunk) inside your hall: it is stored in chaos_guild_depot
 --              (item id, count and attributes) and the item is removed; take it back from the Guild window. Every put
 --              and take is logged. A take deletes the row first (one conditional DELETE) and only then creates the
 --              item, so two fast clicks cannot duplicate it.
@@ -316,7 +316,7 @@ function G.furnish(gid)
 	end
 	fixture(L.bench, active.crafting and H.ids.bench or nil, A.bench, "The guild's crafting bench. Use it to craft.")
 	fixture(L.depot, active.depot and H.ids.depot or nil, A.depot,
-		"The guild depot. Drop an item on it to store it for the guild; use it to see what is inside.")
+		"The Guild Stash. Drop an item on it to store it for the guild; use it to see what is inside.")
 	local texts = active.trophy and trophyTexts(gid) or {}
 	for i, p in ipairs(L.trophies) do
 		fixture(p, active.trophy and H.ids.trophies[i] or nil, A.trophy, texts[i])
@@ -904,7 +904,7 @@ local function depotUsed(gid)
 	return r and r.n or 0
 end
 
--- put an item into the guild depot; the player must stand in their own hall
+-- put an item into the Guild Stash; the player must stand in their own hall
 function G.depotPut(player, item)
 	local gid, rank = rankOf(player)
 	local slot, hallGid = G.inHall(player:getPosition())
@@ -949,19 +949,19 @@ function G.depotPut(player, item)
 		end
 	end
 	if not item:remove() then
-		return false, "The item could not be moved into the guild depot."
+		return false, "The item could not be moved into the Guild Stash."
 	end
 	if not Chaos.saveCharacter(player) then
 		giveBack()
-		return false, "The guild depot is busy. Try again in a moment."
+		return false, "The Guild Stash is busy. Try again in a moment."
 	end
 	if not db.query(string.format("INSERT INTO `%s` (`guild_id`, `item_id`, `count`, `name`, `attrs`, `added_by`, `added_at`) VALUES (%d, %d, %d, %s, %s, %d, %d)",
 			T.depot, gid, itemId, count, db.escapeString(name), db.escapeString(attrs), player:getGuid(), now())) then
 		giveBack()
-		return false, "The guild depot could not take it."
+		return false, "The Guild Stash could not take it."
 	end
 	G.logRow(gid, player, "put", 0, it:getId(), count, name)
-	return true, string.format("You put %d x %s into the guild depot.", count, name)
+	return true, string.format("You put %d x %s into the Guild Stash.", count, name)
 end
 
 function G.depotTake(player, id)
@@ -987,13 +987,13 @@ function G.depotTake(player, id)
 		takenToday = taken, exists = row ~= nil}, cfg)
 	if err then
 		if err:find("members of this guild") then
-			err = "Take items at the guild depot in your guild hall."
+			err = "Take items at the Guild Stash in your guild hall."
 		end
 		return false, err
 	end
 	-- the row goes first: a second click finds nothing
 	if G.exec(string.format("DELETE FROM `%s` WHERE `id` = %d AND `guild_id` = %d", T.depot, id, gid)) ~= 1 then
-		return false, "That item is no longer in the guild depot."
+		return false, "That item is no longer in the Guild Stash."
 	end
 	local item = Game.createItem(row.item_id, row.count)
 	if not item then
@@ -1014,7 +1014,7 @@ function G.depotTake(player, id)
 		end
 	end
 	G.logRow(gid, player, "take", 0, row.item_id, row.count, row.name)
-	return true, string.format("You took %d x %s from the guild depot (%s).", row.count, row.name, where)
+	return true, string.format("You took %d x %s from the Guild Stash (%s).", row.count, row.name, where)
 end
 
 -- drop on the depot chest (on its tile, or into it)

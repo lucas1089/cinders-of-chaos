@@ -5,15 +5,25 @@
 -- The engine also loads this file as a script because it lives under data/scripts; it only returns a table.
 -- See server/README.md "Chaos Pact and account storage". Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 --
--- Every perk is comfort only: room, slots, a title and a coin drip. Nothing here changes combat.
+-- Every perk is comfort only: room, slots, a title, a Marks drip for cosmetics and a little experience. Nothing here
+-- changes combat.
 -- A limit is  free + (pact while the Pact is active) + bought extras (at most maxExtra), per account.
+
+-- the Chaos Pact for 30 days costs this many Chaos Coins (O317: 300 -> 299; the Pacto Completo lists it as a part)
+local PACT_PRICE = 299
+-- what the Pacto Completo gives, both lists (the store shows about three lines of an offer's text)
+local COMPLETE_TEXT = "Chaos Pact: +10% XP, stamina x1.5, remote stash, +25 slots, Auto Seller, 5 Marks a day. " ..
+	"Premium: x1.5 XP on green stamina, premium outfits, mounts, houses, offline training."
+
 return {
 	-- DB tables (server/sql/chaos_pact.sql; pact.lua creates them at startup too)
 	tables = {
 		pact = "chaos_pact", -- one row per account: Pact end time, run start, last daily claim
 		extras = "chaos_account_extras", -- one-time purchases per account: (account_id, extra_key) -> amount
 		builds = "chaos_build_slots", -- saved passive tree builds per account: (account_id, slot) -> name, code
-		log = "chaos_pact_log" -- purchases, claims, staff grants
+		log = "chaos_pact_log", -- purchases, claims, staff grants
+		marks = "chaos_pact_marks", -- Pact Marks per account: balance, earned, spent (O317)
+		xp = "chaos_pact_xp" -- experience the Pact's +10% added, per character and server month (O317)
 	},
 
 	-- ------------------------------------------------------------------ the Pact
@@ -25,7 +35,16 @@ return {
 		--                   which is power, not comfort) with each purchase (stock premium content: premium outfits and
 		--                   mounts, houses, boats, premium areas, offline training, VIP list 100, premium autoloot).
 		--                   0 = the Pact does not touch premium. Premium itself stays on sale in the store.
-		dailyCoins = 5, -- Chaos Coins claimable once per server day while the Pact is active (no back pay)
+		-- Pact Marks (O317, owner 2026-10-29): claimable once per server day while the Pact is active (no back pay), in
+		-- the game_pact window. They replace the 5 Chaos Coins a day of before. Marks buy the cosmetics of `marks.shelf`
+		-- below and nothing else: never coins, services, boosts or supplies.
+		dailyMarks = 5,
+		-- expiry warning: at login (a chat line and a toast) from this many days before the end, then again from the
+		-- last day; once more while the character is online when the level changes (pact.lua)
+		warnDays = {3, 1},
+		-- name plate frame while the Pact is active (nameplate_core.lua frames, client plate_pactbound.png): below a
+		-- frame the player bought or wears as staff, above the default one
+		frame = "pactbound",
 		title = {key = "pact", text = "Pactbound", color = "#c4553a"} -- name plate title while active (titles.lua)
 	},
 
@@ -64,6 +83,19 @@ return {
 			[202611] = "kill_pact_ember", [202612] = "loot_pact_frost", [202701] = "kill_pact_venom",
 			[202702] = "loot_pact_rose", [202703] = "kill_pact_frost", [202704] = "loot_pact_gold"
 		}
+	},
+
+	-- ------------------------------------------------------------------ Pact Marks (O317)
+	-- A second currency, per account, for cosmetics only. The shelf is a small list in the game_pact window: a Mark is
+	-- worth about a coin of the same cosmetic in the store (marks >= price in coins, pact_test.lua checks it against
+	-- cosmetics_config.lua), so five Marks a day is about a loot label every month. Only these keys can be bought:
+	-- pact.lua refuses anything else, and no store offer, service, boost or supply takes Marks.
+	marks = {
+		shelf = {
+			{key = "loot_ember", marks = 150}, {key = "loot_verdant", marks = 150}, {key = "loot_azure", marks = 150},
+			{key = "chat_cinder", marks = 200}, {key = "chat_frost", marks = 200}, {key = "kill_soulspark", marks = 200}
+		},
+		maxBalance = 100000 -- a sanity cap for the column, far above what a Pact earns in years
 	},
 
 	-- ------------------------------------------------------------------ limits
@@ -132,8 +164,26 @@ return {
 		pact = {
 			name = "Chaos Pact", icon = {item = 16101},
 			offers = {
-				{kind = "service", service = "pact", key = "service:pact:30", icon = 16101, cost = 300, name = "Chaos Pact (30 days)",
-					description = "30 days: +10% XP, stamina x1.5, remote stash, +25 slots, Auto Seller, cosmetic."}
+				{kind = "service", service = "pact", key = "service:pact:30", icon = 16101, cost = PACT_PRICE, name = "Chaos Pact (30 days)",
+					description = "30 days: +10% XP, stamina x1.5, remote stash, +25 slots, Auto Seller, cosmetics."}
+			}
+		},
+		-- Pacto Completo (O317, owner 2026-10-29): the Pact and Premium together, the best way to buy both. A bundle of a
+		-- {kind = "pact"} part (ChaosPact.grantDays) and the premium offer of the same days (the string key resolves to
+		-- shop_config.lua's own offer, so its price follows). The Pact's own price per day is the part's list price; the
+		-- discount shown is against buying both apart. Not giftable. Prices: docs/PRICES.md "Pacto Completo (O317)".
+		complete = {
+			name = "Pacto Completo", icon = {item = 16101},
+			offers = {
+				{kind = "bundle", key = "complete:30", icon = 16101, cost = 499, gift = false, pactNote = false,
+					name = "Pacto Completo (30 days)", description = COMPLETE_TEXT,
+					parts = {{kind = "pact", days = 30, cost = PACT_PRICE, source = "complete", required = true}, "premium:30"}},
+				{kind = "bundle", key = "complete:90", icon = 16101, cost = 1350, gift = false, pactNote = false,
+					name = "Pacto Completo (90 days)", description = COMPLETE_TEXT,
+					parts = {{kind = "pact", days = 90, cost = PACT_PRICE * 3, source = "complete", required = true}, "premium:90"}},
+				{kind = "bundle", key = "complete:180", icon = 16101, cost = 2500, gift = false, pactNote = false,
+					name = "Pacto Completo (180 days)", description = COMPLETE_TEXT,
+					parts = {{kind = "pact", days = 180, cost = PACT_PRICE * 6, source = "complete", required = true}, "premium:180"}}
 			}
 		},
 		storage = {
@@ -164,8 +214,8 @@ return {
 					description = "Permanent, account-wide: a stash tab for creature products."},
 				{kind = "service", service = "pactExtra", extra = "stashCosmetics", key = "service:pactExtra:stashCosmetics", icon = 5929, cost = 100, name = "Collectibles Stash Tab",
 					description = "Permanent, account-wide: a stash tab for collectibles."},
-				-- remote stash deposit (owner 2026-10-15; stash_config.lua remoteDeposit): PLACEHOLDER price (docs/OWNER_TODO.md)
-				{kind = "service", service = "pactExtra", extra = "stashRemote", key = "service:pactExtra:stashRemote", icon = 2365, cost = 300, name = "Remote Stash Deposit",
+				-- remote stash deposit (owner 2026-10-15; stash_config.lua remoteDeposit): 400 coins since O317 (docs/PRICES.md "Pacto Completo (O317)")
+				{kind = "service", service = "pactExtra", extra = "stashRemote", key = "service:pactExtra:stashRemote", icon = 2365, cost = 400, name = "Remote Stash Deposit",
 					description = "Permanent, account-wide: deposit into the stash from anywhere. Pact: included."},
 				{kind = "service", service = "pactExtra", extra = "charSlots", key = "service:pactExtra:charSlots", icon = 1949, cost = 250, name = "Character Slot",
 					description = "Permanent: one more character on your account, created on the website. Up to 10."},
@@ -183,8 +233,12 @@ return {
 		pactCap = "Your Chaos Pact already runs for more than %d days. Buy more later.",
 		extraMax = "Your account already has the most of %s it can have (%d).",
 		extraOver = "Your account has %d of at most %d %s; this offer adds %d. Buy fewer at once.",
-		claimed = "You claimed today's %d Chaos Coins of your Chaos Pact.",
-		alreadyClaimed = "You already claimed today's Chaos Coins. Come back tomorrow.",
+		claimed = "You claimed today's %d Pact Marks of your Chaos Pact.",
+		alreadyClaimed = "You already claimed today's Pact Marks. Come back tomorrow.",
+		marksNoItem = "That cosmetic is not on the Marks shelf.",
+		marksOwned = "Your account owns that cosmetic already.",
+		marksShort = "You need %d Pact Marks for that and have %d.",
+		marksBought = "You bought %s with %d Pact Marks. See Character > Cosmetics.",
 		noPact = "You have no active Chaos Pact.",
 		buildFull = "All your build slots are used (%d). Delete one, or get another slot.",
 		buildLocked = "That build slot is read-only now (your account has %d build slots). Load or delete it.",

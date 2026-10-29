@@ -1,0 +1,356 @@
+{
+ "generatedBy": "website/tools/gen_calendar_data.py (do not edit by hand)",
+ "sources": [
+  "server/data/scripts/chaos/season_config.lua",
+  "server/data/scripts/chaos/battleground_config.lua",
+  "server/data/scripts/chaos/chaos_constants.lua",
+  "server/data/patchnotes/*.md",
+  "website/tools/calendar_source.json"
+ ],
+ "timezone": "UTC-3",
+ "timezoneName": "America/Sao_Paulo",
+ "events": [
+  {
+   "id": "beta1",
+   "kind": "beta",
+   "status": "plan",
+   "patchnote": "2026-10-31",
+   "title": {
+    "pt-BR": "Beta aberto, fim de semana 1",
+    "en": "Open beta, weekend 1"
+   },
+   "text": {
+    "pt-BR": "Qualquer pessoa cria uma conta no site e joga com o cliente oficial. Não há chave: o beta é aberto. Doações ficam desligadas e cada conta recebe moedas de teste.",
+    "en": "Anyone makes an account on the site and plays with the official client. There is no key: the beta is open. Donations are off and every account gets test coins."
+   },
+   "start": "2026-10-31T15:00:00-03:00",
+   "hasTime": true,
+   "end": "2026-11-01T23:00:00-03:00",
+   "patchnoteReady": true
+  },
+  {
+   "id": "beta2",
+   "kind": "beta",
+   "status": "plan",
+   "patchnote": "2026-11-07",
+   "title": {
+    "pt-BR": "Beta aberto, fim de semana 2",
+    "en": "Open beta, weekend 2"
+   },
+   "text": {
+    "pt-BR": "Os personagens do primeiro fim de semana continuam. Entre os dois fins de semana saem as correções, com uma nota de patch curta.",
+    "en": "Characters from the first weekend stay. Fixes ship between the two weekends, with a short patch note."
+   },
+   "start": "2026-11-07T15:00:00-03:00",
+   "hasTime": true,
+   "end": "2026-11-08T23:00:00-03:00",
+   "patchnoteReady": false
+  },
+  {
+   "id": "wipe",
+   "kind": "wipe",
+   "status": "proposal",
+   "patchnote": "",
+   "title": {
+    "pt-BR": "Wipe do beta e instalação de lançamento",
+    "en": "Beta wipe and launch install"
+   },
+   "text": {
+    "pt-BR": "Proposta do plano de beta. As regras do que fica e do que zera estão mais abaixo.",
+    "en": "Proposal of the beta plan. The rules for what stays and what resets are further down."
+   },
+   "start": "2026-11-18T00:00:00-03:00",
+   "hasTime": false,
+   "patchnoteReady": false
+  },
+  {
+   "id": "launch",
+   "kind": "launch",
+   "status": "proposal",
+   "patchnote": "2026-11-20",
+   "title": {
+    "pt-BR": "Lançamento",
+    "en": "Launch"
+   },
+   "text": {
+    "pt-BR": "Data proposta, ainda a confirmar. Sai a nota de patch do lançamento e a Season 1 deve começar junto.",
+    "en": "Proposed date, still to be confirmed. The launch patch note goes out and Season 1 should start with it."
+   },
+   "start": "2026-11-20T15:00:00-03:00",
+   "hasTime": true,
+   "patchnoteReady": false
+  },
+  {
+   "id": "founder",
+   "kind": "sale",
+   "status": "plan",
+   "patchnote": "",
+   "title": {
+    "pt-BR": "Pacote Fundador (venda limitada)",
+    "en": "Founder Pack (limited sale)"
+   },
+   "text": {
+    "pt-BR": "Dois pacotes de cosméticos que nunca voltam, com título de Fundador, uma moldura de placa e dias de Chaos Pact. Um por conta e por pacote, só do lançamento até 18/12/2026 às 15:00. Sem poder, sem orbs de sorte, sem itens prontos.",
+    "en": "Two packs of cosmetics that never return, with a Founder title, a name plate frame and days of Chaos Pact. One per account and pack, sold only from the launch until 18 Dec 2026 at 15:00. No power, no luck orbs, no finished items."
+   },
+   "start": "2026-11-20T15:00:00-03:00",
+   "hasTime": true,
+   "end": "2026-12-18T15:00:00-03:00",
+   "patchnoteReady": false
+  }
+ ],
+ "seasons": [
+  {
+   "id": 1,
+   "name": "Season of Ash",
+   "tag": "[S1]",
+   "start": "2026-11-01T12:00:00-03:00",
+   "finish": "2027-01-31T12:00:00-03:00",
+   "lengthDays": 91,
+   "lengthWeeks": 13,
+   "startsAtLaunch": false,
+   "proposed": {
+    "start": "2026-11-20T15:00:00-03:00",
+    "finish": "2027-02-19T15:00:00-03:00"
+   },
+   "firstSeason": true
+  }
+ ],
+ "cycles": [
+  {
+   "id": "pvp",
+   "lengthDays": 56,
+   "windows": [
+    {
+     "n": 1,
+     "start": "2026-10-05T06:00:00-03:00",
+     "end": "2026-11-30T06:00:00-03:00"
+    },
+    {
+     "n": 2,
+     "start": "2026-11-30T06:00:00-03:00",
+     "end": "2027-01-25T06:00:00-03:00"
+    },
+    {
+     "n": 3,
+     "start": "2027-01-25T06:00:00-03:00",
+     "end": "2027-03-22T06:00:00-03:00"
+    }
+   ],
+   "title": {
+    "pt-BR": "Temporadas de PvP (arena e battleground)",
+    "en": "PvP seasons (arena and battleground)"
+   },
+   "text": {
+    "pt-BR": "Ciclos fixos de 8 semanas, contados a partir de uma segunda-feira às 06:00.",
+    "en": "Fixed 8-week cycles, counted from a Monday at 06:00."
+   }
+  },
+  {
+   "id": "tower",
+   "lengthDays": 30,
+   "windows": [
+    {
+     "n": 1,
+     "start": "2026-11-20T15:00:00-03:00",
+     "end": "2026-12-20T15:00:00-03:00"
+    },
+    {
+     "n": 2,
+     "start": "2026-12-20T15:00:00-03:00",
+     "end": "2027-01-19T15:00:00-03:00"
+    },
+    {
+     "n": 3,
+     "start": "2027-01-19T15:00:00-03:00",
+     "end": "2027-02-18T15:00:00-03:00"
+    }
+   ],
+   "title": {
+    "pt-BR": "Temporadas da Infinity Tower",
+    "en": "Infinity Tower seasons"
+   },
+   "text": {
+    "pt-BR": "Ciclos fixos de 30 dias. Pontos e ranking zeram no fim de cada um e o top 3 recebe os baús.",
+    "en": "Fixed 30-day cycles. Points and ranking reset at the end of each one and the top 3 get their chests."
+   }
+  },
+  {
+   "id": "weekly",
+   "lengthDays": 7,
+   "windows": [],
+   "title": {
+    "pt-BR": "Reset semanal",
+    "en": "Weekly reset"
+   },
+   "text": {
+    "pt-BR": "Toda segunda-feira às 06:00: limites semanais da loja, rotação da semana e bônus do mundo.",
+    "en": "Every Monday at 06:00: store weekly limits, the week's rotation and world bonuses."
+   }
+  }
+ ],
+ "patchnotes": {
+  "cadence": "weekly",
+  "count": 6,
+  "latest": "2026-10-31",
+  "title": {
+   "pt-BR": "Notas de patch",
+   "en": "Patch notes"
+  },
+  "text": {
+   "pt-BR": "Uma nota de patch por semana, a mesma do jogo (menu Social > Patch Notes) e da página Patch Notes do site. O dia fixo da semana ainda é a definir.",
+   "en": "One patch note a week, the same as in the game (Social > Patch Notes menu) and on the Patch Notes page of the site. The fixed weekday is still to be set."
+  }
+ },
+ "wipe": {
+  "betaToLaunch": {
+   "title": {
+    "pt-BR": "Do beta para o lançamento",
+    "en": "From beta to launch"
+   },
+   "status": {
+    "pt-BR": "Proposta do plano de beta, a confirmar pelo dono",
+    "en": "Proposal of the beta plan, to be confirmed by the owner"
+   },
+   "source": "docs/BETA.md section 3",
+   "reset": [
+    {
+     "pt-BR": "Todos os personagens e tudo neles: nível, skills, itens, depósito, magias, mortes",
+     "en": "Every character and everything on it: level, skills, items, storage, spells, deaths"
+    },
+    {
+     "pt-BR": "Casas, guildas, halls e guerras de guilda",
+     "en": "Houses, guilds, guild halls and guild wars"
+    },
+    {
+     "pt-BR": "Chaos Coins de teste e tudo que foi comprado com eles (cosméticos, desbloqueios de conta, extras do Pact)",
+     "en": "Test Chaos Coins and everything bought with them (cosmetics, account unlocks, Pact extras)"
+    },
+    {
+     "pt-BR": "Mercado, conquistas, rankings, ratings e o estado das seasons",
+     "en": "Market, achievements, leaderboards, ratings and the state of the seasons"
+    }
+   ],
+   "kept": [
+    {
+     "pt-BR": "As contas: nome da conta, senha e e-mail",
+     "en": "Accounts: account name, password and e-mail"
+    },
+    {
+     "pt-BR": "Os códigos de convite (referral) compartilhados durante o beta",
+     "en": "Referral codes shared during the beta"
+    },
+    {
+     "pt-BR": "Banimentos de conta e o histórico deles (recomendação, a confirmar)",
+     "en": "Account bans and their history (recommendation, to be confirmed)"
+    }
+   ],
+   "why": {
+    "pt-BR": "As moedas e os itens do beta foram grátis e o beta acha bugs de balanceamento. Mantê-los poria quem testou à frente no lançamento. Doações ficam desligadas no beta, então nenhum dinheiro real se perde.",
+    "en": "Beta coins and items were free and the beta finds balance bugs. Keeping them would put testers ahead at launch. Donations are off in the beta, so no real money is lost."
+   }
+  },
+  "seasonToSeason": {
+   "title": {
+    "pt-BR": "De uma season para a próxima",
+    "en": "From one season to the next"
+   },
+   "status": {
+    "pt-BR": "Regras do código, já implementadas",
+    "en": "Rules of the code, already built"
+   },
+   "source": "server/data/scripts/chaos/season_config.lua, seasonpass_config.lua, server/README.md Seasons",
+   "reset": [
+    {
+     "pt-BR": "A escada da season e os modos Self-Found e Hardcore: o modo acaba e o personagem vira um personagem normal",
+     "en": "The season ladder and the Self-Found and Hardcore modes: the mode ends and the character becomes a standard character"
+    },
+    {
+     "pt-BR": "O modificador da season (na Season 1, Ashfall: +10% de experiência para personagens da season)",
+     "en": "The season modifier (in Season 1, Ashfall: +10% experience for season characters)"
+    },
+    {
+     "pt-BR": "A trilha do passe de temporada: começa do zero na season seguinte",
+     "en": "The season pass track: it starts from zero in the next season"
+    },
+    {
+     "pt-BR": "Quem entra na nova season começa do zero, com um personagem novo de nível 7 ou menos",
+     "en": "Whoever joins the new season starts from zero, with a new character of level 7 or lower"
+    }
+   ],
+   "kept": [
+    {
+     "pt-BR": "Nível, skills, itens, árvore passiva e uniques de season do personagem: ele passa a ser um personagem normal",
+     "en": "The character's level, skills, items, passive tree and season uniques: it becomes a standard character"
+    },
+    {
+     "pt-BR": "As recompensas da trilha da season (outfits, montarias, títulos): da conta, para sempre",
+     "en": "The season track rewards (outfits, mounts, titles): kept by the account forever"
+    },
+    {
+     "pt-BR": "Cosméticos e Chaos Coins, que pertencem à conta",
+     "en": "Cosmetics and Chaos Coins, which belong to the account"
+    },
+    {
+     "pt-BR": "O registro da Crônica das Cinzas e do Memorial da Capital",
+     "en": "The record of the Ashen Chronicle and the Capital Memorial"
+    }
+   ],
+   "why": {
+    "pt-BR": "O sistema de seasons nunca apaga personagens normais. Quem quer largar do zero cria um personagem de season. Uma regra pública de wipe para depois do lançamento ainda é a definir.",
+    "en": "The season system never wipes standard characters. Whoever wants a fresh start makes a season character. A public wipe rule for after launch is still to be set."
+   }
+  }
+ },
+ "open": [
+  {
+   "id": "launch-date",
+   "text": {
+    "pt-BR": "A data de lançamento (20/11/2026, 15:00) é uma proposta e ainda precisa da confirmação do dono.",
+    "en": "The launch date (20 Nov 2026, 15:00) is a proposal and still needs the owner's confirmation."
+   }
+  },
+  {
+   "id": "season1-start",
+   "text": {
+    "pt-BR": "A Season 1 deve começar junto com o lançamento, mas a configuração do servidor ainda marca outra data. As datas dela aparecem como a definir até isso mudar.",
+    "en": "Season 1 should start with the launch, but the server configuration still has another date. Its dates show as to be set until that changes."
+   }
+  },
+  {
+   "id": "pvp-season",
+   "text": {
+    "pt-BR": "A primeira temporada de PvP termina em 30/11/2026, dez dias depois do lançamento. A proposta é mover o início para 16/11/2026.",
+    "en": "The first PvP season ends on 30 Nov 2026, ten days after launch. The proposal is to move its start to 16 Nov 2026."
+   }
+  },
+  {
+   "id": "beta-wipe",
+   "text": {
+    "pt-BR": "O wipe entre o beta e o lançamento é uma proposta. A recompensa para quem testou o beta (título ou cosmético) é a definir, e manter ou não os banimentos também.",
+    "en": "The wipe between beta and launch is a proposal. A reward for beta testers (a title or a cosmetic) is to be set, and so is whether bans are kept."
+   }
+  },
+  {
+   "id": "season2",
+   "text": {
+    "pt-BR": "Datas, nome, modificador e o que passa para a Season 2: a definir.",
+    "en": "Dates, name, modifier and what carries into Season 2: to be set."
+   }
+  },
+  {
+   "id": "wipe-after-launch",
+   "text": {
+    "pt-BR": "A regra pública de wipe depois do lançamento: a definir.",
+    "en": "The public wipe rule after launch: to be set."
+   }
+  },
+  {
+   "id": "patch-day",
+   "text": {
+    "pt-BR": "O dia fixo da semana para a nota de patch: a definir.",
+    "en": "The fixed weekday for the patch note: to be set."
+   }
+  }
+ ]
+}

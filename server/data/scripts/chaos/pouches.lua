@@ -644,11 +644,82 @@ local function chainOf(player, toPosition, toCylinder)
 	return out
 end
 
+-- the Loot Bag this cylinder is, or lies in (any depth), else nil
+function PO.lootBagOf(c)
+	local n = 0
+	while c and type(c) ~= "boolean" and n < 30 do
+		n = n + 1
+		if isPlayerCyl(c) or not isItemCyl(c) then
+			return nil
+		end
+		if PO.isLootBag(c) then
+			return c
+		end
+		local ok, parent = pcall(function() return c:getParent() end)
+		if not ok then
+			return nil
+		end
+		c = parent
+	end
+	return nil
+end
+
+-- where a moved item lands: the container of the target window, or the container item that lies in the target slot
+-- (the engine descends into a bag dropped on: Container::queryDestination), or an inventory slot's container
+local function destinationOf(player, toPosition, toCylinder)
+	if toPosition.x ~= CONTAINER_POS then
+		return toCylinder
+	end
+	if toPosition.y < 0x40 then
+		local ok, slotItem = pcall(function() return player:getSlotItem(toPosition.y) end)
+		if ok and slotItem and slotItem.isContainer and slotItem:isContainer() then
+			return slotItem
+		end
+		return nil
+	end
+	local c = toCylinder
+	if not c or type(c) == "boolean" then
+		c = player:getContainerById(toPosition.y - 0x40)
+	end
+	if c and isItemCyl(c) and c.getItem then
+		local ok, inSlot = pcall(function() return c:getItem(toPosition.z) end)
+		if ok and inSlot and inSlot.isContainer and inSlot:isContainer() then
+			return inSlot
+		end
+	end
+	return c
+end
+
+-- the Loot Bag is one-way: a player's move of any item into it, at any depth, is refused (stack merges onto an item
+-- inside it too: the destination container is the bag). A move inside the same bag is allowed. Autoloot, the sort and
+-- the store delivery add by script and never reach this hook. Returns a RETURNVALUE.
+function PO.checkOneWay(player, item, toPosition, toCylinder)
+	local okD, dest = pcall(destinationOf, player, toPosition, toCylinder)
+	if not okD or not dest then
+		return NOERR
+	end
+	local bag = PO.lootBagOf(dest)
+	if not bag then
+		return NOERR
+	end
+	local okP, parent = pcall(function() return item:getParent() end)
+	local from = okP and PO.lootBagOf(parent) or nil
+	local why = P.lootBagInRefusal({intoLootBag = true, sameBag = from ~= nil and from == bag})
+	if why then
+		player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, Chaos.t and Chaos.t(player, why) or why)
+		return NOTPOSSIBLE
+	end
+	return NOERR
+end
+
 -- called first in Player:onMoveItem (data/events/scripts/player.lua, hook written by install_pouches.py); a script
 -- callback could not refuse a move reliably (only the last onMoveItem callback's value counts). Returns a RETURNVALUE.
 function PO.onMoveItem(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
-	if not item or not PO.holdsPouch(item) then
+	if not item then
 		return NOERR
+	end
+	if not PO.holdsPouch(item) then
+		return PO.checkOneWay(player, item, toPosition, toCylinder)
 	end
 	local m = {holdsPouch = true, toGround = toPosition.x ~= CONTAINER_POS}
 	if PO.isLootBag(item) then
@@ -663,7 +734,7 @@ function PO.onMoveItem(player, item, count, fromPosition, toPosition, fromCylind
 		player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, Chaos.t and Chaos.t(player, why) or why)
 		return NOTPOSSIBLE
 	end
-	return NOERR
+	return PO.checkOneWay(player, item, toPosition, toCylinder)
 end
 
 local trade = EventCallback

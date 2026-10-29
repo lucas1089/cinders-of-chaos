@@ -62,6 +62,10 @@ eq(p.sent[6].payload.message, "While you were away: 3 items sold for 4.2M gold: 
 -- the callers' guarded pcall form works
 local okCall = pcall(ChaosNotify.send, p, "Guild level 6", "text")
 ok(okCall and #p.sent == 7, "pcall(ChaosNotify.send, p, title, text) as guild.lua / guildwar.lua call it")
+-- O317: the Chaos Pact expiry warning is a kind of its own (header CHAOS PACT in the client)
+ChaosNotify.send(p, "", "Your Chaos Pact ends in 3 days.", "pact")
+eq(p.sent[8].payload.action, "pact", "the Chaos Pact expiry warning is a kind of its own")
+eq(p.sent[8].payload.message, "Your Chaos Pact ends in 3 days.", "an empty title: the text alone")
 
 print(string.format("notify_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

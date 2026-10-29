@@ -272,18 +272,23 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 - **eframe and egui**
   - Author: Emil Ernerfeldt, Rerun and the egui contributors
   - Licence: MIT or Apache-2.0
-  - Used for: the window of the desktop admin app (with their dependencies, each under its own permissive licence in the crate's metadata)
+  - Used for: the window of the desktop admin app and of the game launcher (with their dependencies, each under its own permissive licence in the crate's metadata)
   - Source: https://github.com/emilk/egui
 - **serde_json**
   - Author: David Tolnay and the serde contributors
   - Licence: MIT or Apache-2.0
-  - Used for: JSON in the desktop admin app
+  - Used for: JSON in the desktop admin app and the game launcher
   - Source: https://github.com/serde-rs/json
 - **sha2 (RustCrypto)**
   - Author: RustCrypto developers
   - Licence: MIT or Apache-2.0
-  - Used for: the SHA-256 check of the desktop admin app's updates
+  - Used for: the SHA-256 check of the desktop admin app's updates and of every file the game launcher downloads
   - Source: https://github.com/RustCrypto/hashes
+- **ed25519-compact**
+  - Author: Frank Denis
+  - Licence: MIT
+  - Used for: checking the Ed25519 signature of the update manifest in the game launcher
+  - Source: https://github.com/jedisct1/rust-ed25519-compact
 - **json.lua**
   - Author: rxi
   - Licence: MIT

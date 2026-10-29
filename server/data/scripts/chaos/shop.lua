@@ -151,6 +151,16 @@ local function exclusions()
 end
 Shop.exclusions = exclusions()
 
+-- >>> Founder Pack (O322): the exclusives a bundle part {kind = "exclusive"} gives (exclusives_config.lua), by key
+local EXCLUSIVE_BY_KEY = {}
+do
+	local okE, exCfg = pcall(dofile, "data/scripts/chaos/exclusives_config.lua")
+	for _, e in ipairs(okE and type(exCfg) == "table" and exCfg.exclusives or {}) do
+		EXCLUSIVE_BY_KEY[e.key] = e
+	end
+end
+-- <<< Founder Pack
+
 -- ------------------------------------------------------------------ catalog (static part)
 local byKey, CATS = {}, {}
 for _, category in ipairs(cfg.categories) do
@@ -159,6 +169,12 @@ for _, category in ipairs(cfg.categories) do
 	for _, offer in ipairs(category.offers) do
 		offer.key = K.offerKey(offer)
 		local why = K.excluded(offer, Shop.exclusions)
+		-- Founder Pack: a bundle of pieces the exclusives config does not have (the pair 33 switch is off) is not sold
+		for _, p in ipairs(not why and offer.kind == "bundle" and offer.parts or {}) do
+			if type(p) == "table" and p.kind == "exclusive" and not EXCLUSIVE_BY_KEY[p.exclusive] then
+				why = "the exclusive " .. tostring(p.exclusive) .. " does not exist"
+			end
+		end
 		if why then
 			log("not sold: " .. offer.key .. " (" .. why .. ")")
 		else
@@ -178,6 +194,14 @@ for _, cat in ipairs(CATS) do
 				local part = type(p) == "string" and byKey[p] or (type(p) == "table" and p or nil)
 				if part then
 					part.key = K.offerKey(part)
+					if part.kind == "exclusive" then
+						local e = EXCLUSIVE_BY_KEY[part.exclusive]
+						if e then
+							part.name = part.name or e.name
+						else
+							log("bundle " .. offer.key .. ": exclusive " .. tostring(part.exclusive) .. " does not exist")
+						end
+					end
 					parts[#parts + 1] = part
 					sum = sum + (part.cost or 0)
 				else
@@ -193,6 +217,47 @@ for _, problem in ipairs(K.validate(cfg, Shop.exclusions)) do
 	log("shop_config.lua: " .. problem)
 end
 Shop.byKey = byKey
+
+-- >>> Account discount (O317): a per-character convenience (Loot Bag, pouches, Auto Seller ...) costs offer.accountDiscount %
+-- less when another character of the account owns it. "Owns it" is read from the purchase log: the offer's own key or a
+-- bundle that contains it (a starter pack), bought by another character that still exists. DISC_KEYS: offer key -> keys.
+local DISC_KEYS, DISC_LIST = {}, {}
+for key, offer in pairs(byKey) do
+	if offer.accountDiscount then
+		DISC_KEYS[key] = {key}
+	end
+end
+for _, cat in ipairs(CATS) do
+	for _, offer in ipairs(cat.offers) do
+		if offer.kind == "bundle" then
+			for _, part in ipairs(offer.resolved or {}) do
+				if part.key and DISC_KEYS[part.key] then
+					DISC_KEYS[part.key][#DISC_KEYS[part.key] + 1] = offer.key
+				end
+			end
+		end
+	end
+end
+for _, keys in pairs(DISC_KEYS) do
+	for _, k in ipairs(keys) do
+		DISC_LIST[k] = true
+	end
+end
+-- <<< Account discount
+
+-- >>> Weekly groups (O317): offers sharing weeklyGroup share one weekly limit (the Lasting Exercise weapons: 2 a week in all)
+local WEEK_GROUPS = {}
+for key, offer in pairs(byKey) do
+	if offer.weeklyGroup then
+		WEEK_GROUPS[offer.weeklyGroup] = WEEK_GROUPS[offer.weeklyGroup] or {}
+		table.insert(WEEK_GROUPS[offer.weeklyGroup], key)
+	end
+end
+for _, list in pairs(WEEK_GROUPS) do
+	table.sort(list)
+end
+Shop.weekGroups = WEEK_GROUPS
+-- <<< Weekly groups
 
 -- ------------------------------------------------------------------ helpers
 local function now()
@@ -253,6 +318,8 @@ function Shop.owns(player, offer)
 		return player:hasMount(offer.id)
 	elseif offer.kind == "unlock" and ChaosShopServices and ChaosShopServices.owns then
 		return ChaosShopServices.owns(player, offer) -- Cosmetics: unlocks owned show as owned
+	elseif offer.kind == "exclusive" and ChaosExclusives and ChaosExclusives.owns then
+		return ChaosExclusives.owns(player:getAccountId(), offer.exclusive) -- Founder Pack: account-wide
 	end
 	return false
 end
@@ -262,10 +329,26 @@ local function weekStart(t)
 	return os.time({year = 1970, month = 1, day = 5, hour = hour, min = 0, sec = 0}) + K.weekKey(t, hour) * 604800
 end
 
+-- key: one offer key, or a list of keys (a weekly group counts its offers together)
 local function boughtCount(accountId, key, since)
+	local where
+	if type(key) == "table" then
+		local list = {}
+		for i, k in ipairs(key) do
+			list[i] = db.escapeString(k)
+		end
+		where = "`offer_key` IN (" .. table.concat(list, ", ") .. ")"
+	else
+		where = "`offer_key` = " .. db.escapeString(key)
+	end
 	local rows = Chaos.select("SELECT COUNT(*) AS `n` FROM `" .. T_PURCHASES .. "` WHERE `account_id` = " .. accountId ..
-		" AND `offer_key` = " .. db.escapeString(key) .. " AND `created` >= " .. (since or 0), {{"n", "n"}})
+		" AND " .. where .. " AND `created` >= " .. (since or 0), {{"n", "n"}})
 	return rows[1] and rows[1].n or 0
+end
+
+-- the keys a weekly limit counts for this offer: its group, or itself
+local function weeklyKeys(offer)
+	return offer.weeklyGroup and WEEK_GROUPS[offer.weeklyGroup] or offer.key
 end
 
 -- keys of the oncePerAccount offers the account bought
@@ -275,6 +358,26 @@ for key, offer in pairs(byKey) do
 		ONCE[#ONCE + 1] = db.escapeString(key)
 	end
 end
+-- the offer keys (DISC_LIST) another character of the account bought for itself and still has
+local function ownedByOthers(player)
+	local set = {}
+	if next(DISC_LIST) == nil then
+		return set
+	end
+	local list = {}
+	for k in pairs(DISC_LIST) do
+		list[#list + 1] = db.escapeString(k)
+	end
+	table.sort(list)
+	local rows = Chaos.select("SELECT DISTINCT p.`offer_key` AS `offer_key` FROM `" .. T_PURCHASES .. "` p JOIN `players` c ON c.`id` = p.`player_id` " ..
+		"WHERE p.`account_id` = " .. player:getAccountId() .. " AND p.`player_id` <> " .. player:getGuid() ..
+		" AND p.`gift_player` = 0 AND p.`offer_key` IN (" .. table.concat(list, ", ") .. ")", {{"offer_key", "s"}})
+	for _, r in ipairs(rows) do
+		set[r.offer_key] = true
+	end
+	return set
+end
+
 local function onceBought(accountId)
 	local set = {}
 	if #ONCE == 0 then
@@ -308,6 +411,17 @@ end
 
 local function entry(offer, ctx)
 	local cost, oldCost, tags = K.price(offer, offer.category, ctx, offer.parent)
+	-- another character of the account owns it (Shop.personalOffer): the account discount, when it beats a sale
+	if offer.accountPct then
+		local reduced = K.discountCost(offer.cost, offer.accountPct)
+		if reduced < cost then
+			if oldCost then
+				table.remove(tags, 1) -- the sale's tag: the account discount replaces it
+			end
+			oldCost, cost = offer.cost, reduced
+			table.insert(tags, 1, "Account -" .. offer.accountPct .. "%")
+		end
+	end
 	if offer.kind == "bundle" and offer.listSum and offer.listSum > cost then
 		oldCost = offer.listSum
 		table.insert(tags, 1, (offer.oncePerAccount and "Starter" or "Bundle") .. " -" ..
@@ -348,13 +462,47 @@ function Shop.personalBundle(player, o)
 	return c
 end
 
+-- What this player sees of an offer besides bundles (personalBundle): the price by level (levelPrices) and the account
+-- discount (accountDiscount, `owned` = ownedByOthers). A copy; the offer itself never changes.
+function Shop.personalOffer(player, o, owned)
+	if o.levelPrices then
+		local cost = K.levelCost(o, player:getLevel())
+		if cost ~= o.cost then
+			local c = {}
+			for k, v in pairs(o) do
+				c[k] = v
+			end
+			c.cost = cost
+			o = c
+		end
+	end
+	if o.accountDiscount and owned then
+		for _, k in ipairs(DISC_KEYS[o.key] or {}) do
+			if owned[k] then
+				local c = {}
+				for key, v in pairs(o) do
+					c[key] = v
+				end
+				c.accountPct = o.accountDiscount
+				c.gift = false
+				c.description = (o.description or "") .. string.format(" Another character of your account has it: %d%% off.", o.accountDiscount)
+				return c
+			end
+		end
+	end
+	return o
+end
+
 -- the categories this player sees now, in tree order (K.arrange): {{name, icon, parent?, endsIn?, offers = {entry, ...}}}
 function Shop.view(player, t)
 	local ctx = Shop.context(t)
 	local bought = onceBought(player:getAccountId())
+	local owned = ownedByOthers(player)
 	local level = player:getLevel()
+	local at = ctx.now
 	local function visible(o)
-		return not (o.oncePerAccount and bought[o.key]) and not (o.maxLevel and level > o.maxLevel)
+		return not (o.oncePerAccount and bought[o.key]) and not (o.maxLevel and level > o.maxLevel) and
+			K.windowState(o, at) == nil -- a time-limited offer (Founder Pack): only inside its window
 	end
 	local list = {}
 	local function add(cat, offers)
@@ -367,7 +515,7 @@ function Shop.view(player, t)
 		for _, o in ipairs(cat.rotationOnly and {} or cat.offers) do -- rotationOnly: sold only through "This week"
 			local mine = visible(o) and Shop.personalBundle(player, o) or nil
 			if mine then
-				offers[#offers + 1] = entry(mine, ctx)
+				offers[#offers + 1] = entry(Shop.personalOffer(player, mine, owned), ctx)
 			end
 		end
 		add(cat, offers)
@@ -377,14 +525,14 @@ function Shop.view(player, t)
 	for _, k in ipairs(ctx.featuredKeys) do
 		local o = byKey[k]
 		if visible(o) then
-			local e = entry(o, ctx)
+			local e = entry(Shop.personalOffer(player, o, owned), ctx)
 			featured[#featured + 1] = e
 		end
 	end
 	if #featured > 0 then
 		-- right after the Starter packs, or first when none is for sale to this player
-		local at = (list[1] and CATS[1].starter and list[1].name == CATS[1].name) and 2 or 1
-		table.insert(list, at, {name = (SF.featured or {}).name or "Featured", icon = Shop.iconOf(featured[1].offer),
+		local pos = (list[1] and CATS[1].starter and list[1].name == CATS[1].name) and 2 or 1
+		table.insert(list, pos, {name = (SF.featured or {}).name or "Featured", icon = Shop.iconOf(featured[1].offer),
 			offers = featured, endsIn = ctx.rotationEndsIn})
 	end
 	return list
@@ -547,7 +695,7 @@ local function clientOffer(e, player)
 	if view.type == "outfit" and offer.kind ~= "unlock" then
 		view.kind = offer.kind
 	end
-	if offer.kind == "bundle" and pactGrant() then
+	if offer.kind == "bundle" and pactGrant() and offer.pactNote ~= false then
 		for _, p in ipairs(offer.resolved or {}) do
 			if p.kind == "pact" then
 				view.description = view.description .. " +" .. p.days .. " days of Chaos Pact."
@@ -566,6 +714,11 @@ local function clientOffer(e, player)
 		view.description = "Owned. " .. view.description
 	end
 	view.description = localDescription(player, view.description)
+	-- a time-limited offer says when it ends, first (the store shows about three lines): "Disponível até 18/12/2026 15:00."
+	local note = K.windowNote(offer, player and Chaos.lang and Chaos.lang(player) or "en")
+	if note then
+		view.description = note .. " " .. view.description
+	end
 	return view
 end
 
@@ -720,7 +873,20 @@ end
 -- why `target` cannot get this offer now (nil = it can); gift = bought by someone else
 local function partProblem(target, offer, gift)
 	if offer.kind == "pact" then
+		-- Pact days of a bundle: a `required` part (the Pacto Completo) needs the Pact system loaded, else it would be sold
+		-- and not given; and the days must fit under the stacking cap (a Pacto Completo of 180 days on top of a long Pact is
+		-- refused, nothing taken). The starter packs' small parts are left out when the system is not there.
+		if offer.required and not pactGrant() then
+			return "This offer is not available."
+		end
+		local api = _G[cfg.pact.api]
+		if type(target) ~= "number" and api and api.checkDays then
+			return api.checkDays(target, offer.days)
+		end
 		return nil
+	end
+	if offer.kind == "exclusive" and not (ChaosExclusives and ChaosExclusives.grant) then
+		return "This offer is not available."
 	end
 	if Shop.owns(target, offer) then
 		if gift then
@@ -753,6 +919,14 @@ function Shop.partsProblem(target, offer, gift)
 end
 
 local function offerProblem(player, offer, gift)
+	-- a time-limited offer (Founder Pack): refused before its start and from its end on, whatever the client shows
+	local window = K.windowState(offer, now())
+	if window then
+		if window == "early" then
+			return ChaosI18n.msg("%s is not on sale yet.", nameOf(offer))
+		end
+		return ChaosI18n.msg("%s is no longer on sale.", nameOf(offer))
+	end
 	-- >>> Seasons: the buyer, or the receiver of a gift
 	local seasonal = Shop.seasonProblem(gift or player, offer, gift ~= nil)
 	if seasonal then
@@ -770,8 +944,8 @@ local function offerProblem(player, offer, gift)
 	-- the store sells for Chaos Coins (real money): beta test mode lifts a weekly limit only for the offers the owner named in
 	-- beta_mode_config.lua storeOfferKeys (empty by default; beta_mode_core.lua)
 	local betaLifted = ChaosBetaMode and ChaosBetaMode.storeLifted(offer.key)
-	if offer.weeklyLimit and not betaLifted and boughtCount(player:getAccountId(), offer.key, weekStart(now())) >= offer.weeklyLimit then
-		return ChaosI18n.msg("You bought %s %s times this week; the limit resets on Monday.", nameOf(offer), offer.weeklyLimit)
+	if offer.weeklyLimit and not betaLifted and boughtCount(player:getAccountId(), weeklyKeys(offer), weekStart(now())) >= offer.weeklyLimit then
+		return ChaosI18n.msg("You bought %s %s times this week; the limit resets on Monday.", offer.weeklyGroupName or nameOf(offer), offer.weeklyLimit)
 	end
 	return Shop.partsProblem(gift or player, offer, gift ~= nil)
 end
@@ -824,13 +998,22 @@ local function deliverOne(player, offer, receipt)
 	elseif offer.kind == "pact" then
 		local grant = pactGrant()
 		if grant then
-			grant(player, offer.days, "store")
+			grant(player, offer.days, offer.source or "store")
 		end
 	elseif offer.kind == "service" or offer.kind == "unlock" then
 		if not ChaosShopServices then
 			return "This offer is not available."
 		end
 		return ChaosShopServices.deliver(player, offer)
+	elseif offer.kind == "exclusive" then
+		-- Founder Pack: the piece for the whole account, applied to the characters online (exclusives.lua)
+		if not (ChaosExclusives and ChaosExclusives.grant) then
+			return "This offer is not available."
+		end
+		local granted, err = ChaosExclusives.grant(player:getAccountId(), offer.exclusive, "founder", player)
+		if not granted and not ChaosExclusives.owns(player:getAccountId(), offer.exclusive) then
+			return err or "The offer could not be delivered."
+		end
 	else
 		return "This offer cannot be bought."
 	end
@@ -843,7 +1026,7 @@ end
 
 -- items first (they can fail: no room), then services and unlocks, then cosmetics; a failing item takes back the
 -- items of the bundle given so far
-local ORDER = {item = 1, service = 2, unlock = 2}
+local ORDER = {item = 1, service = 2, unlock = 2, exclusive = 4}
 function Shop.deliver(player, offer)
 	local receipt = delivery().newReceipt()
 	if offer.kind ~= "bundle" then
@@ -971,7 +1154,8 @@ local function buy(player, data)
 		if targetPlayer then
 			problem = offerProblem(player, offer, targetPlayer)
 		elseif offer.weeklyLimit then
-			problem = offerProblem(player, {key = offer.key, weeklyLimit = offer.weeklyLimit, name = offer.name})
+			problem = offerProblem(player, {key = offer.key, weeklyLimit = offer.weeklyLimit, name = offer.name,
+				weeklyGroup = offer.weeklyGroup, weeklyGroupName = offer.weeklyGroupName})
 		end
 		-- >>> Seasons: an offline receiver
 		if not problem and not targetPlayer then

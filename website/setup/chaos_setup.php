@@ -280,6 +280,11 @@ $out .= "menu: The World > Character Bazaar\n";
 // creator codes and the account's referral link (plugins/chaos/pages/creator.php, creator_lib.php)
 $menu('Creator Codes', 'page?plugin=chaos&p=creator', 'fa-star', 10, $world);
 $out .= "menu: The World > Creator Codes\n";
+// the fair-play pledge, the calendar and the creator program (plugins/chaos/pages/fairplay.php, calendar.php, creators.php)
+$menu('Calendar', 'page?plugin=chaos&p=calendar', 'fa-calendar', 11, $world);
+$menu('Creator Program', 'page?plugin=chaos&p=creators', 'fa-video-camera', 12, $world);
+$menu('Fair Play', 'page?plugin=chaos&p=fairplay', 'fa-balance-scale', 13, $world);
+$out .= "menu: The World > Calendar, Creator Program, Fair Play\n";
 // the donation page (plugins/chaos/pages/coins.php): Chaos Coins are a thank-you for a voluntary donation
 $menu('Donate', 'page?plugin=chaos&p=coins', 'fa-heart', 16);
 $out .= "menu: Donate\n";

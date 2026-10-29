@@ -40,6 +40,8 @@ from install_gems import (scan, escape, attr, xml_escape, START, END, A_SERVERID
 CONFIG = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'pouches_config.lua')
 XML_BEGIN = '\t<!-- Chaos store pouches (server/tools/install_pouches.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos store pouches -->\n'
+MAX_PAGED = 1000  # the paged container window (src-patch 0081); one byte (255) without it
+PAGES_PATCH = os.path.join(os.path.dirname(HERE), 'src-patches', '0081-container-pages.patch')
 NAMES = ('loot', 'orbs', 'keys', 'gems')
 GROUP_CONTAINER = 2
 
@@ -75,7 +77,9 @@ def read_config(path=CONFIG):
                'name': string('name'), 'plural': string('plural'), 'article': string('article'),
                'description': string('description')}
         assert cfg['id'] > 0 and cfg['sourceId'] > 0 and cfg['name'], 'pouches_config.lua: kinds.%s incomplete' % name
-        assert cfg['clientId'] >= 0 and 1 <= cfg['capacity'] <= 255, 'pouches_config.lua: kinds.%s capacity 1..255 (one byte in the protocol)' % name
+        assert cfg['clientId'] >= 0 and 1 <= cfg['capacity'] <= MAX_PAGED, 'pouches_config.lua: kinds.%s capacity 1..%d' % (name, MAX_PAGED)
+        # one byte in the container packet: over 250 slots the engine pages the window (src-patch 0081)
+        assert cfg['capacity'] <= 250 or os.path.exists(PAGES_PATCH), 'pouches_config.lua: kinds.%s capacity over 250 needs server/src-patches/0081-container-pages.patch' % name
         out[name] = cfg
     ids = [out[n]['id'] for n in NAMES]
     assert len(set(ids)) == len(ids), 'pouches_config.lua: the pouches need three ids'

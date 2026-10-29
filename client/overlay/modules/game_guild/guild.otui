@@ -1,4 +1,4 @@
-// Guild window (game_guild): level and XP bar, tabs Overview / Members / Hall / Depot / Top Guilds. Styles: client_chaos_theme.
+// Guild window (game_guild): level and XP bar, tabs Overview / Members / Hall / Stash / Top Guilds. Styles: client_chaos_theme.
 GuildTab < ChaosTabButton
   size: 104 24
   margin-right: 4

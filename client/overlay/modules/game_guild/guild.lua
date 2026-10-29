@@ -1,5 +1,5 @@
 -- Guild window: guild level and XP bar, perks, members' contribution, guild bank, guild hall (status, rent, upgrades
--- with buttons for the leader and vice-leaders), guild depot with its log, and the weekly "Top guild" board.
+-- with buttons for the leader and vice-leaders), Guild Stash with its log, and the weekly "Top guild" board.
 -- Server: server/data/scripts/chaos/guild.lua + guild_hall.lua, extended opcode 252 (JSON {action, data}).
 --   server -> client  state {open, tab, guild, perks = {now, list}, members, hall, depot, log, top}
 --                     none {open, text}          (not in a guild)
@@ -14,7 +14,7 @@ local TABS = {
   { key = 'overview', text = 'Overview' },
   { key = 'members', text = 'Members' },
   { key = 'hall', text = 'Guild Hall' },
-  { key = 'depot', text = 'Depot' },
+  { key = 'depot', text = 'Guild Stash' },
   { key = 'top', text = 'Top Guilds' },
 }
 
@@ -150,11 +150,11 @@ end
 local function fillDepot(d)
   local dep = d.depot or {}
   if not dep.owned then
-    section(tr('Guild depot'))
-    text(tr('Your guild hall has no guild depot yet (a hall upgrade).'), '#8c8070')
+    section(tr('Guild Stash'))
+    text(tr('Your guild hall has no Guild Stash yet (a hall upgrade).'), '#8c8070')
     return
   end
-  section(tr('Guild depot (%d / %d)%s', tonumber(dep.used) or 0, tonumber(dep.capacity) or 0, dep.active and '' or tr(' - LOCKED')))
+  section(tr('Guild Stash (%d / %d)%s', tonumber(dep.used) or 0, tonumber(dep.capacity) or 0, dep.active and '' or tr(' - LOCKED')))
   text(tr('Drop an item on the large trunk in your guild hall to store it. Take items back here (in the hall).'), '#8c8070')
   local items = list(dep.items)
   if #items == 0 then text(tr('Empty.'), '#8c8070') end
@@ -166,7 +166,7 @@ local function fillDepot(d)
     w.button:setEnabled(dep.active == true)
     w.button.onClick = function() send('take', { id = it.id }) end
   end
-  section(tr('Depot log'))
+  section(tr('Stash log'))
   local log = list(dep.log)
   if #log == 0 then text(tr('Nothing yet.'), '#8c8070') end
   for _, line in ipairs(log) do text(tostring(line)) end

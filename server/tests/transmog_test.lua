@@ -308,9 +308,9 @@ eq(client ~= nil, true, "client patch 0030")
 eq(client:find("ITEM_CUSTOM_ATTR_APPEARANCE = 8", 1, true) ~= nil, true, "client key 8")
 local lua = readFile("data/scripts/chaos/transmog.lua")
 eq(lua:find('local ATTR = "chaos_tmog"', 1, true) ~= nil, true, "transmog.lua writes chaos_tmog")
--- the look survives the market escrow without engine patch 0017 and the guild depot (their attribute key lists)
+-- the look survives the market escrow without engine patch 0017 and the Guild Stash (their attribute key lists)
 eq(readFile("data/scripts/chaos/market.lua"):find('"chaos_tmog"', 1, true) ~= nil, true, "market keeps the look")
-eq(readFile("data/scripts/chaos/guild_config.lua"):find('"chaos_tmog"', 1, true) ~= nil, true, "guild depot keeps the look")
+eq(readFile("data/scripts/chaos/guild_config.lua"):find('"chaos_tmog"', 1, true) ~= nil, true, "Guild Stash keeps the look")
 
 -- ---------------------------------------------------------------- set looks are given nowhere else
 local setLooks = {}

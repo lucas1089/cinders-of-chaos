@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/guild_flood_test.lua (and lua5.3; CI runs both). Mock engine API.
 -- Crash duplication: value that leaves the character in memory and is credited to a database row (star bank, an
--- offline receiver's balance, the guild bank, the guild depot) is credited only after player:save() succeeded; a
+-- offline receiver's balance, the guild bank, the Guild Stash) is credited only after player:save() succeeded; a
 -- Guild window: (1) a refused spend must not leave the cached guild bank wrong (G.spend), (2) a flood of action requests
 -- must not cost a full state (database reads) each.
 local n = 0

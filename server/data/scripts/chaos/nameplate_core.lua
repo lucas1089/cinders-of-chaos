@@ -6,7 +6,8 @@
 --   ChaosNameplate.pick(list, choice)       the active title: choice nil = the first, "none" = nil, a key = that title
 --                                           (falls back to the first when the chosen title is gone)
 --   ChaosNameplate.find(list, query)        a title by key or by text (exact, then prefix; case-insensitive)
---   ChaosNameplate.frameOf(title, extra)    frame id: a cosmetic frame (extra) beats the title's own, else "default"
+--   ChaosNameplate.frameOf(title, extra, pact)  frame id: a cosmetic frame (extra) beats the title's own, which beats the frame of an
+--                                           active Chaos Pact (pact, O317), else "default"
 --   ChaosNameplate.clean(s, max)            text safe for the wire (no separators or control characters), trimmed
 --   ChaosNameplate.encode(rec)              one plate on the wire: "cid|title|color|guild|frame"
 --   ChaosNameplate.decodeQuery(buffer, max) "q|id,id,..." from the client -> list of ids (unique, at most max)
@@ -35,7 +36,10 @@ N.COLORS = {
 N.FRAMES = {default = true, gold = true, crimson = true, violet = true, frost = true, ember = true, verdant = true,
 	bone = true, ashen = true, sapphire = true, rose = true, jade = true, copper = true, obsidian = true, amber = true,
 	storm = true, laurel = true, sepulchre = true, infernal = true,
-	cinderwrought = true} -- cinderwrought: the season pass premium track (seasonpass_config.lua), never sold
+	cinderwrought = true, -- cinderwrought: the season pass premium track (seasonpass_config.lua), never sold
+	gallery = true, -- gallery: the collection score's Connoisseur title (collection_config.lua), never sold
+	pactbound = true, -- pactbound: worn by every character of an account with an active Chaos Pact (pact_config.lua pact.frame), never sold
+	founder = true} -- founder: the Grand Founder Pack (founder_config.lua, exclusives_config.lua frame_founder), sold 2026-11-20 to 2026-12-18 only
 
 -- frame a title of this source brings when it is the active title
 N.SOURCE_FRAME = {staff = "gold", champion = "crimson"}
@@ -200,11 +204,17 @@ function N.find(list, query)
 	return nil
 end
 
-function N.frameOf(title, extra)
+function N.frameOf(title, extra, pact)
 	if extra and N.FRAMES[extra] then
 		return extra
 	end
-	return title and title.frame or "default"
+	if title and title.frame then
+		return title.frame
+	end
+	if pact and N.FRAMES[pact] then
+		return pact
+	end
+	return "default"
 end
 
 -- rec = {cid, title, color, guild, frame}

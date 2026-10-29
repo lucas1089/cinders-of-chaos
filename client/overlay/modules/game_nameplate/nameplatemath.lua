@@ -5,7 +5,10 @@ NameplateMath = {}
 NameplateMath.FRAMES = { default = true, gold = true, crimson = true, violet = true, frost = true, ember = true,
   verdant = true, bone = true, ashen = true, sapphire = true, rose = true, jade = true, copper = true, obsidian = true,
   amber = true, storm = true, laurel = true, sepulchre = true, infernal = true,
-  cinderwrought = true } -- cinderwrought: the season pass premium track (server seasonpass_config.lua)
+  cinderwrought = true, -- cinderwrought: the season pass premium track (server seasonpass_config.lua)
+  gallery = true, -- gallery: the collection score (server collection_config.lua)
+  pactbound = true, -- pactbound: an active Chaos Pact (server pact_config.lua pact.frame)
+  founder = true } -- founder: the Grand Founder Pack (server founder_config.lua), a limited sale
 NameplateMath.NAME_COLOR = '#e8c372'      -- the name on its plate: gold
 NameplateMath.GUILD_COLOR = '#d9a441'     -- {Guild}: deep gold
 NameplateMath.WAR_GUILD_COLOR = '#e8643c' -- guild of a war enemy (red emblem)

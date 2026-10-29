@@ -103,6 +103,80 @@ breaks("a lasting exercise weapon far too cheap", "coins per hunting hour", func
 breaks("an exercise rod far too dear", "Double Experience Potion", function() local v = small500.cost; small500.cost = 300; return function() small500.cost = v end end)
 breaks("a deep tier discount", "cheaper per charge", function() local v = small500.cost; small500.cost = 40; return function() small500.cost = v end end)
 
+-- O317 (owner 2026-10-29): Pacto Completo, the Pact and Premium prices, Blessings by level, potion packs, Lasting weapons,
+-- the account discount, the Remote Stash Deposit, Pact Marks
+local c30, c90, c180 = env.byKey["complete:30"], env.byKey["complete:90"], env.byKey["complete:180"]
+check(c30 and c90 and c180, "three Pacto Completo offers")
+check(c30.cost == 499 and c90.cost == 1350 and c180.cost == 2500, "the Completo is 499 / 1350 / 2500")
+local pactOffer = offer(function(o) return o.service == "pact" end)
+local p30o, p90o, p180o = env.byKey["premium:30"], env.byKey["premium:90"], env.byKey["premium:180"]
+check(pactOffer.cost == 299 and p30o.cost == 299, "the Pact and a month of Premium are 299 each")
+check(p90o.cost == 800 and p180o.cost == 1500, "Premium 90 / 180 days are 800 / 1500")
+breaks("a Completo month too dear", "monthly target", function() local v = c30.cost; c30.cost = 560; return function() c30.cost = v end end)
+breaks("a Completo month as dear as both apart", "less than both apart", function() local v = c30.cost; c30.cost = 598; return function() c30.cost = v end end)
+breaks("a Completo no better than Premium alone", "clearly better", function() local v = c90.cost; c90.cost = 1550; return function() c90.cost = v end end)
+breaks("a Completo with a deep discount", "off buying both apart", function() local v = c180.cost; c180.cost = 2300; return function() c180.cost = v end end)
+breaks("Premium 90 days nearly as good as the Completo", "clearly better", function() local v = p90o.cost; p90o.cost = 740; return function() p90o.cost = v end end)
+breaks("a Completo part at the wrong Pact price", "listed at", function() local v = c30.parts[1].cost; c30.parts[1].cost = 400; return function() c30.parts[1].cost = v end end)
+breaks("a giftable Completo", "giftable", function() local v = c30.gift; c30.gift = nil; return function() c30.gift = v end end)
+breaks("a Completo pact part that is not required", "not required", function() local v = c30.parts[1].required; c30.parts[1].required = nil; return function() c30.parts[1].required = v end end)
+local bless = offer(function(o) return o.service == "blessings" end)
+check(bless.levelPrices and #bless.levelPrices == 3, "All Blessings has three level tiers")
+check(bless.levelPrices[1].cost == 60 and bless.levelPrices[1].upTo == 200, "60 coins up to level 200")
+check(bless.levelPrices[2].cost == 100 and bless.levelPrices[2].upTo == 500, "100 coins up to level 500")
+check(bless.levelPrices[3].cost == 150 and bless.levelPrices[3].upTo == nil, "150 coins above")
+check(env.K.levelCost(bless, 1) == 60 and env.K.levelCost(bless, 200) == 60 and env.K.levelCost(bless, 201) == 100 and
+	env.K.levelCost(bless, 500) == 100 and env.K.levelCost(bless, 501) == 150 and env.K.levelCost(bless, 2000) == 150, "the price at each level")
+breaks("a blessing tier far under its gold", "cheaper than", function() local v = bless.levelPrices[3].cost; bless.levelPrices[3].cost = 90; return function() bless.levelPrices[3].cost = v end end)
+breaks("blessing tiers that do not rise", "not dearer", function() local v = bless.levelPrices[2].cost; bless.levelPrices[2].cost = 60; return function() bless.levelPrices[2].cost = v end end)
+breaks("an Eternal Blessing too cheap for the top tier", "dearest All Blessings", function() local v = eternal.cost; eternal.cost = 500; return function() eternal.cost = v end end)
+local ult = offer(function(o) return o.kind == "item" and o.id == 26029 and o.count == 100 end)
+local sup = offer(function(o) return o.kind == "item" and o.id == 26031 and o.count == 100 end)
+local uhp = offer(function(o) return o.kind == "item" and o.id == 8473 and o.count == 100 end)
+local gpc = function(o) return M.askOf(env, o.id) * o.count / o.cost end
+check(uhp.cost == 27 and ult.cost == 33 and sup.cost == 42, "ultimate health 27, ultimate mana 33, supreme health 42 for 100")
+check(gpc(uhp) >= 1000 and gpc(uhp) <= 1250 and gpc(ult) >= 1000 and gpc(ult) <= 1250 and gpc(sup) >= 1000 and gpc(sup) <= 1250, "100 packs at about 1000-1250 gold a coin")
+breaks("an ultimate pack under its new price", "gold per coin", function() local v = ult.cost; ult.cost = 24; return function() ult.cost = v end end)
+local lastingOffers = {}
+for _, o in ipairs(env.offers) do
+	if o.kind == "item" and o.name and o.name:find("Lasting Exercise", 1, true) then lastingOffers[#lastingOffers + 1] = o end
+end
+check(#lastingOffers == 6, "six Lasting Exercise weapons")
+for _, o in ipairs(lastingOffers) do check(o.weeklyLimit == 2 and o.weeklyGroup == "lastingExercise", o.name .. ": 2 a week, one shared group") end
+breaks("a Lasting weapon without a limit", "weekly limit", function() local v = lastingOffers[1].weeklyLimit; lastingOffers[1].weeklyLimit = nil; return function() lastingOffers[1].weeklyLimit = v end end)
+breaks("a Lasting weapon with a bigger limit", "weekly limit", function() local v = lastingOffers[2].weeklyLimit; lastingOffers[2].weeklyLimit = 5; return function() lastingOffers[2].weeklyLimit = v end end)
+breaks("a Lasting weapon outside the shared limit", "weeklyGroup", function() local v = lastingOffers[3].weeklyGroup; lastingOffers[3].weeklyGroup = nil; return function() lastingOffers[3].weeklyGroup = v end end)
+local rs = env.byKey["service:pactExtra:stashRemote"]
+check(rs.cost == 400, "Remote Stash Deposit is 400 coins")
+breaks("a Remote Stash Deposit under a month of Pact", "Remote Stash Deposit", function() local v = rs.cost; rs.cost = 250; return function() rs.cost = v end end)
+breaks("a Remote Stash Deposit above the Auto Seller", "Remote Stash Deposit", function() local v = rs.cost; rs.cost = 600; return function() rs.cost = v end end)
+local lootBag = env.byKey["service:pouch:loot"]
+check(lootBag.accountDiscount == 50, "the Loot Bag is half price for another character")
+breaks("a deeper account discount", "account discount", function() local v = lootBag.accountDiscount; lootBag.accountDiscount = 70; return function() lootBag.accountDiscount = v end end)
+breaks("a convenience without the account discount", "without the account discount", function() local v = lootBag.accountDiscount; lootBag.accountDiscount = nil; return function() lootBag.accountDiscount = v end end)
+local shelf1 = env.pact.marks.shelf[1]
+breaks("a Marks shelf item cheaper than its coins", "Marks shelf", function() local v = shelf1.marks; shelf1.marks = 100; return function() shelf1.marks = v end end)
+breaks("a Marks shelf item that is not a cosmetic", "no cosmetic", function() local v = shelf1.key; shelf1.key = "premium:30"; return function() shelf1.key = v end end)
+breaks("the Pact paying coins again", "Chaos Coins a day", function() env.pact.pact.dailyCoins = 5; return function() env.pact.pact.dailyCoins = nil end end)
+breaks("too many Marks a day", "month of Marks", function() local v = env.pact.pact.dailyMarks; env.pact.pact.dailyMarks = 8; return function() env.pact.pact.dailyMarks = v end end)
+
+-- Founder Pack (O322): two time-limited packs of cosmetics that never return, about R$ 50 and R$ 100
+local fp, fg = env.byKey["founder:pack"], env.byKey["founder:grand"]
+check(fp and fg and fp.cost == 499 and fg.cost == 999, "the Founder Packs are 499 and 999 coins")
+breaks("a Founder Pack off its price anchor", "the anchor is 499", function() local v = fp.cost; fp.cost = 560; return function() fp.cost = v end end)
+breaks("a grand pack at the first pack's price", "x the first", function() local v = fg.cost; fg.cost = 600; return function() fg.cost = v end end)
+breaks("a Founder Pack that can be gifted", "must not be giftable", function() local v = fp.gift; fp.gift = nil; return function() fp.gift = v end end)
+breaks("a Founder Pack bought twice", "once per account", function() local v = fp.oncePerAccount; fp.oncePerAccount = nil; return function() fp.oncePerAccount = v end end)
+breaks("a Founder Pack without its window", "window differs", function() local v = fp.availableUntil; fp.availableUntil = nil; return function() fp.availableUntil = v end end)
+breaks("a Founder Pack with an item in it", "neither a cosmetic piece nor Pact days", function()
+	fp.parts[#fp.parts + 1] = {kind = "item", id = 7590, count = 100, cost = 50}
+	return function() fp.parts[#fp.parts] = nil end end)
+breaks("a Founder Pack with too many Pact days", "Pact days", function() local v = env.founder.tiers[1].pactDays; env.founder.tiers[1].pactDays = 30; return function() env.founder.tiers[1].pactDays = v end end)
+breaks("a Founder Pack sold for too long", "days (", function() local v = env.founder["end"]; env.founder["end"] = "2027-03-01 15:00"; return function() env.founder["end"] = v end end)
+breaks("a Founder piece that is not a cosmetic", "not a cosmetic", function()
+	local e; for _, x in ipairs(env.exclusives.exclusives) do if x.key == "wings_gold_peacock" then e = x end end
+	local v = e.kind; e.kind = "pet"; return function() e.kind = v end end)
+
 -- the real numbers of O140
 check(reset.cost == 100, "Passive Tree Reset is 100 coins")
 check(frame.cost == 200, "plate frames are 200 coins")

@@ -5,6 +5,8 @@
 --       -> {grant = {keys}, revoke = {keys}, setStorage = {{unlock, value}}}
 --   ChaosPactPerksCore.loadoutBonus(perks, active)    loadout slots added while the Pact is active
 --   ChaosPactPerksCore.expMult(perks, active)         monster experience multiplier (1 + expBonus while active)
+--   ChaosPactPerksCore.boost(perks, active, exp)      -> experience after the bonus, and the extra the bonus added (the
+--                                                     monthly summary of the game_pact window counts the extra)
 --   ChaosPactPerksCore.staminaMult(perks, active)     stamina regeneration speed (staminaRegen while active, else 1)
 --   ChaosPactPerksCore.restMs(perks, active, ms)      one stamina minute on the trainer tile takes ms / staminaMult
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible. server/README.md "Chaos Pact and account storage", VIP perks.
@@ -23,6 +25,12 @@ end
 function K.expMult(perks, active)
 	local b = active and perks and tonumber(perks.expBonus) or 0
 	return 1 + math.max(0, b)
+end
+
+function K.boost(perks, active, exp)
+	exp = tonumber(exp) or 0
+	local new = math.floor(exp * K.expMult(perks, active))
+	return new, math.max(0, new - exp)
 end
 
 function K.staminaMult(perks, active)

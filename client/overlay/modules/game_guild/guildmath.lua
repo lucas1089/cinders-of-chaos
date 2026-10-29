@@ -42,7 +42,7 @@ function GuildMath.perksNow(p)
   if (tonumber(p.xp) or 0) > 0 then parts[#parts + 1] = '+' .. p.xp .. '% experience' end
   if (tonumber(p.loot) or 0) > 0 then parts[#parts + 1] = '+' .. p.loot .. '% loot' end
   if (tonumber(p.respec) or 0) > 0 then parts[#parts + 1] = 'respec -' .. p.respec .. '%' end
-  if (tonumber(p.depotSlots) or 0) > 0 then parts[#parts + 1] = tr('+%s depot slots', p.depotSlots) end
+  if (tonumber(p.depotSlots) or 0) > 0 then parts[#parts + 1] = tr('+%s stash slots', p.depotSlots) end
   if p.scroll then parts[#parts + 1] = 'daily hall scroll' end
   if p.aura then parts[#parts + 1] = 'guild aura' end
   if #parts == 0 then return tr('No perks yet: they start at guild level 2.') end

@@ -14,6 +14,9 @@ CL.KINDS = {
   { key = 'chatcolor', name = 'Chat Colours' },
   { key = 'footprint', name = 'Footprints' },
   { key = 'outline', name = 'Outlines' },
+  { key = 'levelfx', name = 'Level-ups' },
+  { key = 'rarefx', name = 'Rare Loot' },
+  { key = 'emote', name = 'Emotes' },
   { key = 'collection', name = 'Collection' },
 }
 -- footprints and outlines: drawn by game_cosmeticfx on every client; the window's settings hide other players' ones
@@ -25,6 +28,9 @@ CL.DEFAULT_TEXT = {
   chatcolor = 'Your name in chat keeps the colour of the message.',
   footprint = 'You leave no footprints.',
   outline = 'No outline around you.',
+  levelfx = 'No effect when you gain a level.',
+  rarefx = 'No effect when a kill drops a rare item.',
+  emote = 'No emote after a boss kill.',
 }
 CL.SAMPLE_RARITY = { { name = 'Legendary', color = '#ffd040' }, { name = 'Magic', color = '#4a90ff' },
   { name = 'Divine', color = '#c8e8ff' } }
@@ -72,7 +78,7 @@ end
 
 -- the Collection tab (server exclusives_core.lua K.rows): owned ones first, then the rest, each in the server's order;
 -- filter = nil | 'owned' | 'missing'
-function CL.collectionRows(collection, filter)
+function CL.collectionRows(collection, filter, scoreView)
   local owned, missing = {}, {}
   for _, r in ipairs(type(collection) == 'table' and collection or {}) do
     if type(r) == 'table' and type(r.key) == 'string' then
@@ -84,6 +90,8 @@ function CL.collectionRows(collection, filter)
     end
   end
   local out = {}
+  local score = CL.scoreRow(scoreView)
+  if score then out[1] = score end
   if filter ~= 'missing' then for _, r in ipairs(owned) do out[#out + 1] = r end end
   if filter ~= 'owned' then for _, r in ipairs(missing) do out[#out + 1] = r end end
   return out
@@ -103,6 +111,7 @@ end
 
 -- the line text of a row in the list
 function CL.subText(r)
+  if r.id == CL.SCORE_ROW then return tr('Rewards for owning cosmetics') end
   if r.collection then
     return (r.kindName or r.kind or '') .. (r.owned and ' - Unlocked' or (' - ' .. (r.how or 'Locked')))
   end
@@ -116,6 +125,78 @@ end
 -- can the row be chosen now (the server checks again)
 function CL.canUse(r)
   return r ~= nil and r.owned == true and not r.selected and not r.otherLine and not r.collection
+end
+
+-- ---------------------------------------------------------------- the collection score
+-- view = the server's `state.score` (collection_core.lua K.view): {score, groups = {{g, n, p}}, next = {points, left},
+-- milestones = {{key, points, done, rewards = {{k, n, f}}}}}. Only plain numbers and names are read.
+CL.SCORE_ROW = 'x:score'
+
+local function whole(v) return math.floor(tonumber(v) or 0) end
+
+-- the short line above the lists: "Collection score: 142 - next reward at 220 (78 to go)"
+function CL.scoreLine(view)
+  if type(view) ~= 'table' then return '' end
+  local text = tr('Collection score: %d', whole(view.score))
+  if type(view.next) == 'table' then
+    text = text .. ' - ' .. tr('next reward at %d (%d to go)', whole(view.next.points), whole(view.next.left))
+  else
+    text = text .. ' - ' .. tr('every reward earned')
+  end
+  return text
+end
+
+-- the words for one reward: {k = 'title', n, f} or {k = <cosmetic kind>, n}
+function CL.rewardLabel(r)
+  if type(r) ~= 'table' then return '' end
+  local name = tostring(r.n or '')
+  if r.k == 'title' then
+    return r.f and tr('Title %s and a plate frame', name) or tr('Title %s', name)
+  elseif r.k == 'footprint' then
+    return tr('Footprints %s', name)
+  elseif r.k == 'chatcolor' then
+    return tr('Chat colour %s', name)
+  elseif r.k == 'killfx' then
+    return tr('Kill effect %s', name)
+  elseif r.k == 'outline' then
+    return tr('Outline %s', name)
+  end
+  return tr('Cosmetic %s', name)
+end
+
+-- the milestones as lines, lowest first: "[x] 20 points: Title Collector" / "[ ] 60 points: ..."
+function CL.milestoneLines(view)
+  local out = {}
+  for _, m in ipairs(type(view) == 'table' and type(view.milestones) == 'table' and view.milestones or {}) do
+    local rewards = {}
+    for _, r in ipairs(type(m.rewards) == 'table' and m.rewards or {}) do rewards[#rewards + 1] = CL.rewardLabel(r) end
+    out[#out + 1] = (m.done and '[x] ' or '[ ] ') .. tr('%d points', whole(m.points)) .. ': ' .. table.concat(rewards, ', ')
+  end
+  return out
+end
+
+-- what the points come from: "Outfits 12 (34 points), Mounts 3 (27 points) ..." in the server's order
+function CL.groupLine(view)
+  local out = {}
+  for _, g in ipairs(type(view) == 'table' and type(view.groups) == 'table' and view.groups or {}) do
+    local name = CL.GROUP_NAMES[g.g]
+    if name then out[#out + 1] = tr(name) .. ' ' .. whole(g.n) .. ' (' .. whole(g.p) .. ')' end
+  end
+  return table.concat(out, ', ')
+end
+CL.GROUP_NAMES = { outfit = 'Outfits', mount = 'Mounts', wings = 'Wings', aura = 'Auras', shader = 'Shaders', frame = 'Plate frames',
+  spellskin = 'Spell skins', killfx = 'Kill effects', levelfx = 'Level-up effects', rarefx = 'Rare loot effects',
+  emote = 'Emotes', lootbeam = 'Loot labels', chatcolor = 'Chat colours', footprint = 'Footprints', outline = 'Outlines',
+  title = 'Titles' }
+
+-- the first row of the Collection tab: the score, its next reward and all rewards in the detail (nil without a score)
+function CL.scoreRow(view)
+  if type(view) ~= 'table' or view.score == nil then return nil end
+  local lines = CL.milestoneLines(view)
+  return { id = CL.SCORE_ROW, key = 'score', collection = true, owned = true, kind = 'score',
+    name = tr('Collection score: %d', whole(view.score)),
+    desc = table.concat(lines, '\n'),
+    how = CL.groupLine(view) }
 end
 
 -- ---------------------------------------------------------------- chat name colours

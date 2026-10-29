@@ -1,0 +1,9 @@
+[package]
+name = "cinders-selfupdate"
+version = "0.1.0"
+edition = "2021"
+description = "Shared update helpers of the desktop admin app (O312) and the game launcher (O314): SHA-256, version compare, staged rename"
+publish = false
+
+[dependencies]
+sha2 = "0.10"

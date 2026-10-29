@@ -1,12 +1,17 @@
 -- Chaos Pact and account storage (data/scripts/chaos/pact.lua; numbers in pact_config.lua; see server/README.md
 -- "Chaos Pact and account storage"). Safe to run more than once; pact.lua creates the same tables at startup.
 -- chaos_pact: one row per account. ends_at = end of the Pact (unix time; stacked purchases add 30 days to it),
---   started_at = start of the current unbroken run (the title's date), last_claim = YYYYMMDD of the last daily coins.
+--   started_at = start of the current unbroken run (the title's date), last_claim = YYYYMMDD of the last daily claim of
+--   Pact Marks (before O317: Chaos Coins), claimed_total = the Marks (earlier: coins) claimed in all.
 -- chaos_account_extras: one-time purchases per account (stashTabs, stashOrbs, stashGems, stashKeys, charSlots,
 --   buildSlots) and the character slots given once to accounts that already had more characters (charSlotsLegacy).
 --   The website reads charSlots + charSlotsLegacy for the character limit.
 -- chaos_build_slots: saved passive tree builds (build codes of buildshare_core.lua) per account and slot.
--- chaos_pact_log: purchases, daily claims, legacy grants and staff changes.
+-- chaos_pact_log: purchases, daily claims, Marks purchases, legacy grants and staff changes.
+-- chaos_pact_marks (O317): Pact Marks per account. balance = what the account can spend, earned and spent = totals. Marks buy
+--   only the cosmetics of the shelf in pact_config.lua `marks` (pact.lua marksBuy); no store offer takes them.
+-- chaos_pact_xp (O317): the experience the Pact's +10% added, per character and server month (YYYYMM); the game_pact window
+--   shows this month's sum. pact.lua keeps it in memory and writes it once a minute and at logout.
 -- chaos_stash.tab: the stash tab of each entry (0 = not placed yet; stash.lua places it at the next opening).
 
 CREATE TABLE IF NOT EXISTS `chaos_pact` (
@@ -49,6 +54,22 @@ CREATE TABLE IF NOT EXISTS `chaos_pact_log` (
   `at` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_pact_marks` (
+  `account_id` int(11) NOT NULL,
+  `balance` int(11) NOT NULL DEFAULT 0,
+  `earned` int(11) NOT NULL DEFAULT 0,
+  `spent` int(11) NOT NULL DEFAULT 0,
+  `updated` bigint(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_pact_xp` (
+  `player_id` int(11) NOT NULL,
+  `month` int(11) NOT NULL,
+  `exp` bigint(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`player_id`, `month`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- MariaDB (the game database): ADD COLUMN IF NOT EXISTS keeps this repeatable

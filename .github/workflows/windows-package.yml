@@ -48,6 +48,10 @@
 # CHAOS_RSA_PUBLIC (public, but kept out of the repository); client/tools/set_rsa_key.py writes it into init.lua. Without
 # it the run fails unless allow_dev_key is ticked (then the public default key, a warning). The full Windows zip keeps
 # the default key: its own server folder has the stock key.pem.
+# Game launcher (O314, launcher/README.md): the separate client download starts with CindersLauncher.exe (built in the
+# client job, launcher.json written next to it from the init.lua settings). The launcher updates the exe, the DLLs and
+# chaos.pack from the "native" section of the signed manifest, which publish_client_update.sh adds when the zip holds
+# CindersLauncher.exe. The full local package keeps start-client.bat and Chaos.exe.
 # Signed updater (client/MANIFEST.md "Signed updater"): it updates only modules/ mods/ data/ layouts/, which both clients
 # share, so update_manifest / update_public_key go into the Windows and the Linux client alike, with the baseline
 # Services.update.baseline = this run's number (winpkg-N -> N, the version publish_client_update.sh gives the update made
@@ -560,6 +564,16 @@ jobs:
           path: built
           key: client-win-bin-v2-${{ steps.ckey.outputs.hash }}
 
+      # the game launcher (O314, launcher/README.md): the entry point of the separate client download. It updates the
+      # exe, the DLLs and chaos.pack from the signed manifest ("native" section) and starts the game. Rust, the Windows
+      # runner has the toolchain; its tests run on Linux in ci.yml (Native checks)
+      - name: Build the launcher (O314)
+        shell: bash
+        working-directory: chaos/launcher
+        run: |
+          cargo build --locked --release
+          test -s target/release/cinders-launcher.exe
+
       # the exe and DLLs come from built/ (build or cache); init.lua, data, modules, mods and layouts always from game/
       - name: Put the client folder together
         shell: bash
@@ -569,6 +583,7 @@ jobs:
           mkdir -p out/client
           cp built/Chaos.exe out/client/Chaos.exe
           cp built/*.dll out/client/ 2>/dev/null || true
+          cp chaos/launcher/target/release/cinders-launcher.exe out/client/CindersLauncher.exe
           for p in init.lua data modules mods layouts; do
             if [ -e "game/$p" ]; then cp -r "game/$p" out/client/; fi
           done
@@ -715,6 +730,8 @@ jobs:
           # keep the configured, unpacked tree (updater settings already written) for the separate client download,
           # which sets the server host and RSA key into init.lua before packing
           cp -a "$P/client" clienttree
+          # the full local package starts Chaos.exe with start-client.bat and has no live update site: no launcher
+          rm -f "$P/client/CindersLauncher.exe"
           # pack with the same key the exe was built with (pack_client.py falls back to the dev key when the secret is
           # absent, matching an allow_dev_key exe); then strip the loose tree, leaving the exe, its DLLs and chaos.pack
           python3 -I chaos/client/tools/pack_client.py build "$P/client" chaos.pack
@@ -753,6 +770,11 @@ jobs:
             python3 -I chaos/client/tools/set_rsa_key.py "$C" --from-env CHAOS_RSA_PUBLIC \
               $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
             python3 -I chaos/client/tools/make_update_manifest.py build "$C" --dry-run --min-package "$CLIENT_BUILD"
+            # the launcher (O314) reads the same manifest, key and baseline as the in-game updater (written before the
+            # pack hides init.lua); a package whose updater is off has nothing to update from: no launcher
+            rc=0
+            python3 -I chaos/client/tools/set_launcher_config.py "$C" || rc=$?
+            if [ "$rc" -eq 2 ]; then rm -f "$C/CindersLauncher.exe"; elif [ "$rc" -ne 0 ]; then exit "$rc"; fi
             python3 -I chaos/client/tools/pack_client.py build "$C" "$C.pack"
             rm -rf "$C/init.lua" "$C/data" "$C/modules" "$C/mods" "$C/layouts"
             mv "$C.pack" "$C/chaos.pack"

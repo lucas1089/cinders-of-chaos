@@ -11,8 +11,7 @@ reads 0038 and checks that
   * Container::queryAdd asks the top parent with FLAG_NOLIMIT when the target lies in a weightless container,
   * Game.setWeightlessContainer is registered, declared and refuses an item type that is not a container,
   * no later patch rewrites these functions back,
-and that the Lua side matches: pouches_config.lua marks the Loot Bag weightless with at most 255 slots (one byte in the
-10.98 container packets), pouches.lua registers it only where the engine has the function.
+and that the Lua side matches: pouches_config.lua marks the Loot Bag weightless with up to 1000 slots (over 255: paged, src-patch 0081), pouches.lua registers it only where the engine has the function.
 
 Run: python3 -I server/tools/weightless_patch_test.py (standard library only)."""
 import os
@@ -86,7 +85,7 @@ def main():
     loot = m.group(1) if m else ''
     check('weightless = true' in loot, 'the Loot Bag is weightless')
     cap = re.search(r'capacity = (\d+)', loot)
-    check(cap is not None and 0 < int(cap.group(1)) <= 255, 'Loot Bag slots at most 255')
+    check(cap is not None and 0 < int(cap.group(1)) <= 1000, 'Loot Bag slots at most 1000 (over 255 needs src-patch 0081)')
     for kind in ('orbs', 'keys'):
         m = re.search(r'\n\t\t%s = \{(.*?)\}' % kind, cfg, re.S)
         check(m is not None and 'weightless' not in m.group(1), kind + ' pouch keeps its weight')

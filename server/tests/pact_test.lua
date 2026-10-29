@@ -73,19 +73,76 @@ eq(P.daysLeft(NOW + 10 * DAY, NOW), 10, "days left")
 eq(P.daysLeft(NOW + 1, NOW), 1, "days left rounds up")
 eq(P.daysLeft(NOW - 5, NOW), 0, "days left when over")
 
--- ---------------------------------------------------------------- daily coins
+-- ---------------------------------------------------------------- daily Pact Marks (O317: they replace the daily coins)
 local st = {pactEnds = NOW + DAY, lastClaim = 0, extras = {}}
-eq(P.claim(cfg, st, NOW, 20270115), cfg.pact.dailyCoins, "claim")
+eq(cfg.pact.dailyCoins, nil, "no daily Chaos Coins any more")
+eq(cfg.pact.dailyMarks, 5, "5 Pact Marks a day")
+eq(P.claim(cfg, st, NOW, 20270115), cfg.pact.dailyMarks, "claim")
 st.lastClaim = 20270115
 local amount, why = P.claim(cfg, st, NOW, 20270115)
 check(amount == nil and why == cfg.messages.alreadyClaimed, "one claim a day")
-eq(P.claim(cfg, st, NOW, 20270116), cfg.pact.dailyCoins, "next day")
+eq(P.claim(cfg, st, NOW, 20270116), cfg.pact.dailyMarks, "next day")
 amount, why = P.claim(cfg, {pactEnds = NOW - 1, lastClaim = 0}, NOW, 20270116)
 check(amount == nil and why == cfg.messages.noPact, "no claim without the Pact")
--- the drip is a discount, not a profit: a month of claims is less than the price
 local offer = cfg.store.pact.offers[1]
-check(cfg.pact.dailyCoins * cfg.pact.days < offer.cost, "coin drip below the Pact price")
-check(cfg.pact.dailyCoins > 0, "coin drip")
+eq(offer.cost, 299, "the Pact is 299 coins (O317)")
+check(cfg.pact.dailyMarks > 0, "a Marks drip")
+
+-- ---------------------------------------------------------------- the Marks shelf: cosmetics only, never power or coins
+local ccfg = dofile("data/scripts/chaos/cosmetics_config.lua")
+local cosOf = {}
+for _, c in ipairs(ccfg.cosmetics) do cosOf[c.key] = c end
+check(#cfg.marks.shelf >= 3 and #cfg.marks.shelf <= 8, "a small shelf")
+local seenShelf = {}
+local COSMETIC_KINDS = {lootbeam = true, chatcolor = true, killfx = true, footprint = true, outline = true}
+for _, it in ipairs(cfg.marks.shelf) do
+	local c = cosOf[it.key]
+	check(c ~= nil, "shelf cosmetic exists: " .. it.key)
+	check(not seenShelf[it.key], "shelf key once: " .. it.key) seenShelf[it.key] = true
+	check(c and c.source == "store", "a shelf cosmetic is a store cosmetic: " .. it.key)
+	check(c and COSMETIC_KINDS[c.kind], "a look, not a spell: " .. it.key)
+	check(c and c.price and it.marks >= c.price and it.marks <= c.price * 1.5, "a Mark is worth about a coin: " .. it.key)
+	-- a month of Pact Marks (150) buys at most about one cosmetic: nothing is cheaper in Marks than in coins
+	check(it.marks >= cfg.pact.dailyMarks * 28, "at least four weeks of Marks: " .. it.key)
+end
+eq(P.shelfCheck(cfg, 150, {}, "loot_ember"), nil, "150 Marks buy an Ember Label")
+check(P.shelfCheck(cfg, 149, {}, "loot_ember") ~= nil, "149 are not enough")
+check(P.shelfCheck(cfg, 9999, {loot_ember = true}, "loot_ember") ~= nil, "owned: not twice")
+for _, key in ipairs({"coins", "premium", "stamina", "service:blessings", "item:28095x1", "kill_voidring", "skin_warrior_void", "bogus", ""}) do
+	check(P.shelfCheck(cfg, 99999, {}, key) == cfg.messages.marksNoItem, "Marks buy nothing off the shelf: " .. key)
+end
+-- no store offer takes Marks, and the Pact tables name the Marks table
+for _, cat in pairs(cfg.store) do
+	for _, o in ipairs(cat.offers) do
+		check(o.marks == nil and o.cost ~= nil, "store offers cost coins only: " .. o.name)
+	end
+end
+eq(cfg.tables.marks, "chaos_pact_marks", "Marks table") eq(cfg.tables.xp, "chaos_pact_xp", "experience table")
+eq(P.monthExp({{month = 202611, exp = 500}, {month = 202610, exp = 900}, {month = 202611, exp = 250}}, 202611), 750, "the month's rows add up")
+eq(P.monthExp({}, 202611), 0, "no rows") eq(P.monthExp(nil, 202611), 0, "no table")
+
+-- ---------------------------------------------------------------- expiry warnings: 3 days, then 1 day
+eq(cfg.pact.warnDays[1], 3, "first warning 3 days") eq(cfg.pact.warnDays[2], 1, "second warning 1 day")
+eq(P.expiry(cfg, NOW + 10 * DAY, 0, NOW), nil, "10 days left: no warning")
+eq(P.expiry(cfg, NOW + 4 * DAY, 0, NOW), nil, "4 days left: none yet")
+local w = P.expiry(cfg, NOW + 3 * DAY, 0, NOW)
+eq(w.level, 3, "3 days left: level 3") eq(w.days, 3, "3 days") eq(w.both, false, "the Pact alone")
+w = P.expiry(cfg, NOW + 2 * DAY + 100, 0, NOW)
+eq(w.level, 3, "2 days and a bit: still level 3") eq(w.days, 3, "rounded up")
+w = P.expiry(cfg, NOW + DAY, 0, NOW)
+eq(w.level, 1, "1 day left: level 1") eq(w.days, 1, "1 day")
+w = P.expiry(cfg, NOW + 3600, 0, NOW)
+eq(w.level, 1, "hours left: level 1")
+eq(P.expiry(cfg, NOW - 1, 0, NOW), nil, "ended: no warning (the login line says it ended)")
+eq(P.expiry(cfg, 0, 0, NOW), nil, "never had the Pact")
+eq(P.expiry(cfg, NOW + 2 * DAY, 2, NOW).both, true, "the Pact and Premium end together: the Completo text")
+eq(P.expiry(cfg, NOW + 2 * DAY, 40, NOW).both, false, "Premium runs on: the Pact alone")
+eq(P.expiry(cfg, NOW + 2 * DAY, 0, NOW).both, false, "no premium days left is not a Completo")
+-- a bundle's days stack with the same cap: 180 days on top of 190 is refused, 30 on top of 335 fits
+eq(P.extendPact(cfg, NOW, NOW, 180), NOW + 180 * DAY, "a bundle of 180 days")
+check(P.extendPact(cfg, NOW + 190 * DAY, NOW, 180) == nil, "180 days on 190 days left pass the cap (370)")
+check(P.extendPact(cfg, NOW + 335 * DAY, NOW, 30) ~= nil, "30 days on 335 days left fit exactly")
+check(P.extendPact(cfg, NOW + 336 * DAY, NOW, 30) == nil, "30 days on 336 days left do not")
 
 -- ---------------------------------------------------------------- one-time extras
 eq(P.extraCheck(cfg, free, "stashSlots"), nil, "an expansion can be bought")

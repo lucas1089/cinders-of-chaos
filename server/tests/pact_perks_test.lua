@@ -50,6 +50,16 @@ eq(K.staminaMult(pk, true), 1.5, "stamina x1.5 while active") eq(K.staminaMult(p
 eq(K.restMs(pk, true, 120000), 80000, "trainer tile: a stamina minute every 80 s")
 eq(K.restMs(pk, false, 120000), 120000, "every 120 s without")
 eq(K.expMult(nil, true), 1, "no perks table: x1")
+do -- boost: the experience after the bonus and the extra the bonus added (the monthly summary counts the extra)
+	local new, extra = K.boost(pk, true, 1000)
+	eq(new, 1100, "boost: 1100") eq(extra, 100, "boost: the +10% added 100")
+	new, extra = K.boost(pk, true, 7)
+	eq(new, 7, "boost: a tiny gain rounds down, nothing added") eq(extra, 0, "boost: 0 extra")
+	new, extra = K.boost(pk, false, 1000)
+	eq(new, 1000, "no Pact: x1") eq(extra, 0, "no Pact: no extra")
+	new, extra = K.boost(nil, true, 500)
+	eq(new, 500, "no perks table: unchanged") eq(extra, 0, "no perks table: no extra")
+end
 
 -- ---------------------------------------------------------------- the plan
 local function has(list, x)
@@ -116,7 +126,9 @@ do
 	ChaosShopServices = {unlocks = {autoSeller = {storage = 7100101}, rarityAutoloot = {storage = 7100106}}}
 	local activeUntil = 0
 	local purchases = 0
+	local counted = 0
 	ChaosPact = {active = function(player) return activeUntil > os.time() end,
+		addMonthExp = function(player, n) counted = counted + n end,
 		grantDays = function(player, days) purchases = purchases + 1 activeUntil = os.time() + days * 86400 return true end}
 	local pl = {st = {}, msgs = {}}
 	function pl:getAccountId() return 5 end
@@ -147,10 +159,13 @@ do
 	eq(pl.st[7100106], -1, "the old lent Rarity Autoloot taken back, never lent again")
 	eq(ChaosShopServices.unlocks.rarityAutoloot.owned(pl), false, "store: Rarity Autoloot to buy")
 	eq(gain(pl, monster, 1000, 100), 1100, "Pact: +10% monster experience")
+	eq(counted, 100, "Pact: the 100 experience the +10% added is counted for the month")
 	eq(gain(pl, playerSrc, 1000, 100), 1000, "Pact: player kills unchanged")
+	eq(counted, 100, "player kills are not counted")
 	eq(gain(pl, nil, 1000, 100), 1000, "Pact: no source, unchanged")
 	realm = 3
 	eq(gain(pl, monster, 1000, 100), 1000, "Pact: a season character gets no bonus")
+	eq(counted, 100, "a season character adds nothing to the month")
 	realm = 0
 	eq(PP.staminaMult(pl), 1.5, "Pact: offline stamina x1.5") eq(PP.staminaRestMs(pl, 120000), 80000, "Pact: 80 s")
 	eq(ChaosShopServices.unlocks.autoSeller.owned(pl), false, "a lent unlock can still be bought")

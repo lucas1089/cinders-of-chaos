@@ -266,7 +266,7 @@ A duplicated item or currency is a server bug first and a ban second. Do not tel
    | `chaos_orbx_log`, `chaos_orbx_trades`, `chaos_orbx_deliveries` | Orb Exchange orders and fills |
    | `chaos_crafting_log` | crafting orbs and salvage |
    | `chaos_shop_purchases`, `chaos_shop_history`, `chaos_shop_gifts`, `chaos_coin_gifts`, `chaos_coin_orders`, `chaos_coin_payments` | store purchases, gifts, donations |
-   | `chaos_guild_log` | guild bank and guild depot |
+   | `chaos_guild_log` | guild bank and Guild Stash |
    | `chaos_pact_log`, `chaos_seasonpass_log`, `chaos_referral_log`, `chaos_mentor_log`, `chaos_season_log` | Pact, pass, referral, mentor and season grants |
    | `chaos_stash`, `chaos_bank` | stash contents and bank stars (current state, no history) |
    | `/var/log/chaos/server.log` | the console: script errors, `[Chaos staff]` lines, rift interruptions, save failures |

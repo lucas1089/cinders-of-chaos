@@ -19,7 +19,7 @@ local K = ChaosExclusivesCore
 
 K.KINDS = {outfit = true, addons = true, mount = true, wings = true, aura = true, shader = true, frame = true,
 	portal = true, transmog = true, pet = true, cosmetic = true}
-K.SOURCES = {achievement = true, boss = true}
+K.SOURCES = {achievement = true, boss = true, founder = true}
 -- the fields each kind needs: number, string
 local FIELDS = {
 	outfit = {n = {"male", "female"}}, addons = {n = {"male", "female"}}, mount = {n = {"id", "look"}},
@@ -152,6 +152,9 @@ function K.how(cfg, e, data, owned)
 		local g = K.index(cfg).groupOf[e.key]
 		return "Boss: " .. (g and g.name or "a boss") .. ", rare drop"
 	end
+	if e.source == "founder" then
+		return cfg.founderHow or "Founder Pack, sold for a limited time only"
+	end
 	local a = K.achievementOf(data, e.key)
 	if not a then
 		return "Achievement"
@@ -195,6 +198,7 @@ end
 -- opts (each optional; nil = not checked):
 --   achievements  achievements_data.lua: every achievement exclusive named by exactly one reward, with the right name;
 --                 every reward.exclusives entry is an achievement exclusive
+--   founder       founder_config.lua: every source "founder" exclusive is given by exactly one tier, every tier piece exists
 --   shop          shop_config.lua: nothing of here is sold (outfit / addons looks, mount, wings, aura, shader ids, frames,
 --                 portal / transmog unlocks, pet store keys)
 --   storeLooks    {looks = {[look] = true}, mounts = {[id] = true}} of shop_cosmetics.lua (the generated list)
@@ -289,11 +293,13 @@ function K.validate(cfg, opts)
 			ids[idKey] = e.key
 		end
 		if not K.SOURCES[e.source] then
-			bad("%s: source must be achievement or boss", w)
+			bad("%s: source must be achievement, boss or founder", w)
 		elseif e.source == "boss" and not inGroups[e.key] then
 			bad("%s: a boss exclusive needs a boss group that drops it", w)
 		elseif e.source == "achievement" and inGroups[e.key] then
 			bad("%s: an achievement exclusive is not a boss drop", w)
+		elseif e.source == "founder" and inGroups[e.key] then
+			bad("%s: a founder exclusive is not a boss drop", w)
 		end
 	end
 	for key, g in pairs(inGroups) do
@@ -326,6 +332,26 @@ function K.validate(cfg, opts)
 		for _, e in ipairs(cfg.exclusives or {}) do
 			if e.source == "achievement" and (named[e.key] or 0) ~= 1 then
 				bad("exclusive %s: needs exactly one achievement with it in reward.exclusives, has %d", e.key, named[e.key] or 0)
+			end
+		end
+	end
+	-- the Founder Pack (founder_config.lua): each founder exclusive is given by exactly one tier, each tier piece exists
+	if opts.founder then
+		local given = {}
+		for _, t in ipairs(opts.founder.tiers or {}) do
+			for _, key in ipairs(t.exclusives or {}) do
+				local e = K.byKey(cfg, key)
+				if not e then
+					bad("founder tier %s: exclusive %s does not exist", tostring(t.key), tostring(key))
+				elseif e.source ~= "founder" then
+					bad("founder tier %s: %s is not a founder exclusive", tostring(t.key), key)
+				end
+				given[key] = (given[key] or 0) + 1
+			end
+		end
+		for _, e in ipairs(cfg.exclusives or {}) do
+			if e.source == "founder" and (given[e.key] or 0) ~= 1 then
+				bad("exclusive %s: needs exactly one Founder Pack tier that gives it, has %d", e.key, given[e.key] or 0)
 			end
 		end
 	end

@@ -46,7 +46,9 @@ return {
 	-- class line for the spell skins (skinBase + line slot, slots 0..6); 0 / unset = the default
 	storage = {killfx = 7100940, lootbeam = 7100941, chatcolor = 7100942, skinBase = 7100943,
 		-- footprints and outlines: the wardrobe block 7102000 - 7102049 (chaos_constants.lua Chaos.storage.wardrobe)
-		footprint = 7102000, outline = 7102001},
+		footprint = 7102000, outline = 7102001,
+		-- combat cosmetics others see (O318): the level-up effect, the rare-loot effect and the victory emote
+		levelfx = 7102002, rarefx = 7102003, emote = 7102004},
 	staffGroup = 4, -- /cosmetic <character>, <key | all>[, revoke]
 	previewCooldownMs = 1500, -- a store / window preview (an effect only the asking player sees)
 	consoleBackground = "#1c1a18", -- chat colours must stay readable on this (contrast 4.5 or more)
@@ -60,13 +62,32 @@ return {
 		{key = "lootbeam", name = "Loot Labels", store = "Loot Labels"},
 		{key = "chatcolor", name = "Chat Name Colours", store = "Chat Colours"},
 		{key = "footprint", name = "Footprints", store = "Footprints"},
-		{key = "outline", name = "Outlines", store = "Outlines"}
+		{key = "outline", name = "Outlines", store = "Outlines"},
+		{key = "levelfx", name = "Level-up Effects", store = "Level-up Effects"},
+		{key = "rarefx", name = "Rare Loot Effects", store = "Rare Loot Effects"},
+		{key = "emote", name = "Victory Emotes", store = "Victory Emotes"}
+	},
+
+	-- Combat cosmetics others see (O318, cosmetics.lua). Visual only: an effect on a tile (and, for the emote, a line the
+	-- character says), sent to everyone who stands near, never a number. Throttled on the server per character and kind:
+	--   levelup  the effect of `levelfx` on the character's tile when it gains a level (once per levelMs)
+	--   rare     the effect of `rarefx` on the corpse's tile when the kill drops an item of `rarity` or better (the
+	--            data/lib/chaos_rarity.lua key), for the character that owns the corpse (once per rareMs)
+	--   emote    the effect and the line of `emote` after a boss kill, for the killer and the party members within
+	--            `range` tiles of the boss (once per emoteMs; at most `maxPerKill` characters per kill)
+	combat = {
+		levelMs = 4000,
+		rareMs = 3000,
+		rarity = "legendary",
+		emoteMs = 30000,
+		range = 12,
+		maxPerKill = 5
 	},
 
 	-- the pictures of the client (client/tools/gen_cosmeticfx_art.py -> game_cosmeticfx/images/prints|glows/<art>.png);
 	-- a footprint / outline names one of these
 	prints = {"ember", "frost", "blood", "ash", "petal", "shadow", "gilded", "venom", "spark",
-		"hunter", "chronicle", "rime", "omen"},
+		"hunter", "chronicle", "rime", "omen", "laurel"},
 	glows = {"gold", "crimson", "void", "frost", "ember", "verdant", "radiant", "abyssal", "storm",
 		"absolute", "chronicle", "corona", "cinder"},
 
@@ -372,6 +393,49 @@ return {
 			art = "corona", pulse = true, color = "#5a2a90", name = "Void Corona", desc = "A dark outline burning to violet, torn from the Void Archon."},
 		{id = 554, key = "glow_cinder", kind = "outline", icon = 2353, source = "boss", boss = "Ysgrath the Cinderheart",
 			art = "cinder", pulse = true, color = "#ff5a1a", name = "Cinderheart Blaze", desc = "The Cinderheart's own fire, flaring along your outline."},
+		-- ------------------------------------------------------------------ combat cosmetics others see (O318; store 150-250)
+		-- level-up effects: `vfx` rises on the character's tile when it gains a level (cfg.combat.levelMs apart)
+		{id = 601, key = "lvl_dawn", kind = "levelfx", icon = 2145, source = "store", price = 200, vfx = "holy_smite",
+			name = "Dawn Ascent", desc = "A column of dawn light rises round you when you gain a level."},
+		{id = 602, key = "lvl_ember", kind = "levelfx", icon = 2187, source = "store", price = 200, vfx = "ember_crown",
+			name = "Ember Ascent", desc = "A crown of embers burns over you when you gain a level."},
+		{id = 603, key = "lvl_frost", kind = "levelfx", icon = 2146, source = "store", price = 200, vfx = "frost_bastion",
+			name = "Frost Ascent", desc = "A ring of ice crystals rises round you when you gain a level."},
+		{id = 604, key = "lvl_grove", kind = "levelfx", icon = 2149, source = "store", price = 150, vfx = "verdant_bloom",
+			name = "Verdant Ascent", desc = "Leaves bloom round you when you gain a level."},
+		{id = 605, key = "lvl_void", kind = "levelfx", icon = 2153, source = "store", price = 250, vfx = "void_rift",
+			name = "Void Ascent", desc = "A violet rift opens and closes round you when you gain a level."},
+		-- rare-loot effects: `vfx` on the corpse's tile when your kill drops a Legendary item or better
+		{id = 701, key = "rare_gilded", kind = "rarefx", icon = 2154, source = "store", price = 200, vfx = "aura_burst_gold",
+			name = "Gilded Glint", desc = "A golden burst flares over the corpse when it drops a Legendary item or better."},
+		{id = 702, key = "rare_crimson", kind = "rarefx", icon = 2156, source = "store", price = 200, vfx = "aura_burst_red",
+			name = "Crimson Gleam", desc = "A red burst flares over the corpse when it drops a Legendary item or better."},
+		{id = 703, key = "rare_starfall", kind = "rarefx", icon = 2150, source = "store", price = 250, vfx = "starfall_crown",
+			name = "Starfall Find", desc = "Stars fall over the corpse when it drops a Legendary item or better."},
+		{id = 704, key = "rare_seal", kind = "rarefx", icon = 2145, source = "store", price = 150, vfx = "holy_seal",
+			name = "Holy Seal Find", desc = "A seal of light glows on the corpse when it drops a Legendary item or better."},
+		{id = 705, key = "rare_royal", kind = "rarefx", icon = 18414, source = "store", price = 250, vfx = "dome_blast_violet",
+			name = "Royal Pyre", desc = "A dome of violet fire rises over the corpse when it drops a Legendary item or better."},
+		-- victory emotes: after a boss kill, `vfx` on you and the line `say` over your head (cfg.combat.emoteMs apart)
+		{id = 801, key = "emote_roar", kind = "emote", icon = 2400, source = "store", price = 200, vfx = "aura_burst_red",
+			say = "Victory!", name = "Victory Roar", desc = "A red burst and a victory shout after you fell a boss."},
+		{id = 802, key = "emote_salute", kind = "emote", icon = 2392, source = "store", price = 200, vfx = "aura_burst_gold",
+			say = "For the fallen!", name = "Warrior's Salute", desc = "A golden burst and a salute for the fallen after you fell a boss."},
+		{id = 803, key = "emote_flourish", kind = "emote", icon = 2187, source = "store", price = 250, vfx = "ember_crown",
+			say = "Burn bright!", name = "Ember Flourish", desc = "A crown of embers and a flourish after you fell a boss."},
+		{id = 804, key = "emote_halo", kind = "emote", icon = 2145, source = "store", price = 250, vfx = "dawn_aegis",
+			say = "Glory!", name = "Halo of Triumph", desc = "A dome of golden light and a cry of glory after you fell a boss."},
+		{id = 805, key = "emote_shadow", kind = "emote", icon = 2150, source = "store", price = 200, vfx = "shade_vanish",
+			say = "Until next time.", name = "Shadow Bow", desc = "You fade in a puff of shadow with a farewell after you fell a boss."},
+
+		-- ------------------------------------------------------------------ the collection score rewards (O318,
+		-- collection_config.lua milestones; source "collection": granted once when the account reaches `collection`
+		-- points, never sold, never counted in the score)
+		{id = 460, key = "foot_collector", kind = "footprint", icon = 18415, source = "collection", collection = 60, art = "laurel",
+			color = "#c8e070", name = "Laurel Steps", desc = "Pale laurel leaves mark your steps. Collection score: 60 points."},
+		{id = 340, key = "chat_collector", kind = "chatcolor", icon = 2154, source = "collection", collection = 220,
+			color = "#f2d27a", name = "Collector's Gold", desc = "Your name in chat shows museum gold for everyone. Collection score: 220 points."},
+
 		-- the Chaos Pact (VIP) perks (pact_config.lua perks): the chat colour while active, one cosmetic a month
 		{id = 315, key = "chat_pactbound", kind = "chatcolor", icon = 16101, source = "pact", pact = "While the Chaos Pact is active",
 			color = "#e0664a", name = "Pactbound Name", desc = "Your name in chat burns Pact red for everyone while your Chaos Pact lasts."},

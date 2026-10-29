@@ -6,8 +6,12 @@
 --   ChaosPactCore.limit(cfg, state, key, now)           the account's limit for a cfg.limits key
 --   ChaosPactCore.limits(cfg, state, now)               every limit
 --   ChaosPactCore.breakdown(cfg, state, now)            rows for the client: {key, label, free, pact, extra, total, max}
---   ChaosPactCore.extendPact(cfg, endsAt, now)          new end time of one purchase, or nil + error text
---   ChaosPactCore.claim(cfg, state, now, dayKey)        coins of today's claim, or nil + error text
+--   ChaosPactCore.extendPact(cfg, endsAt, now, days?)   new end time of one purchase (cfg.pact.days, or `days` of a bundle),
+--                                                       or nil + error text
+--   ChaosPactCore.claim(cfg, state, now, dayKey)        Pact Marks of today's claim, or nil + error text
+--   ChaosPactCore.expiry(cfg, endsAt, premiumDays, now) the warning due now: {level = 3 | 1, days, both} or nil
+--   ChaosPactCore.shelfCheck(cfg, marks, owned, key)    nil when the Marks shelf item can be bought, else the error text
+--   ChaosPactCore.monthExp(rows, month)                 experience the +10% added in `month` from rows {month, exp}
 --   ChaosPactCore.extraMax(cfg, key)                    how many of an extra an account may own (nil: no such extra)
 --   ChaosPactCore.extraCheck(cfg, state, key, amount)   nil when `amount` (default 1) more can be bought, else the error text
 --   ChaosPactCore.daysLeft(endsAt, now)                 whole days left, rounded up (0 when over)
@@ -110,11 +114,13 @@ function P.breakdown(cfg, state, now)
 	return rows
 end
 
-function P.extendPact(cfg, endsAt, now)
+-- days: how many days one purchase adds (default cfg.pact.days; a store bundle such as the Pacto Completo adds 30 / 90 / 180)
+function P.extendPact(cfg, endsAt, now, days)
+	days = days and int(days) or int(cfg.pact.days)
 	local base = math.max(int(endsAt), now)
-	local new = base + int(cfg.pact.days) * DAY
+	local new = base + days * DAY
 	if new > now + int(cfg.pact.maxStackDays) * DAY then
-		return nil, string.format(cfg.messages.pactCap, int(cfg.pact.maxStackDays) - int(cfg.pact.days))
+		return nil, string.format(cfg.messages.pactCap, math.max(0, int(cfg.pact.maxStackDays) - days))
 	end
 	return new
 end
@@ -126,7 +132,67 @@ function P.claim(cfg, state, now, dayKey)
 	if int(state.lastClaim) >= dayKey then
 		return nil, cfg.messages.alreadyClaimed
 	end
-	return int(cfg.pact.dailyCoins)
+	return int(cfg.pact.dailyMarks)
+end
+
+-- The warning due for a Pact that ends at endsAt: cfg.pact.warnDays is {3, 1}. level 3 from three days before the end,
+-- level 1 from the last day (a smaller level replaces a bigger one). days = whole days left. both = the premium days
+-- run out in the same window too (a Pacto Completo ends together: the text offers the Completo again).
+-- nil when the Pact is over, not active or more than the first warning away.
+function P.expiry(cfg, endsAt, premiumDays, now)
+	endsAt = int(endsAt)
+	if endsAt <= now then
+		return nil
+	end
+	local days = P.daysLeft(endsAt, now)
+	local level
+	for _, w in ipairs(cfg.pact.warnDays or {}) do
+		if days <= w and (level == nil or w < level) then
+			level = w
+		end
+	end
+	if not level then
+		return nil
+	end
+	local prem = int(premiumDays)
+	return {level = level, days = days, both = prem > 0 and prem <= level}
+end
+
+-- ---------------------------------------------------------------- Pact Marks
+-- shelf item: cfg.marks.shelf rows {key, marks}; owned = set of cosmetic keys the account has. Marks buy only the cosmetics
+-- of the shelf (never coins, services, boosts or supplies): the check is against that list, nothing else.
+function P.shelfItem(cfg, key)
+	for _, it in ipairs(cfg.marks.shelf or {}) do
+		if it.key == key then
+			return it
+		end
+	end
+	return nil
+end
+
+function P.shelfCheck(cfg, marks, owned, key)
+	local it = P.shelfItem(cfg, key)
+	if not it then
+		return cfg.messages.marksNoItem
+	end
+	if owned and owned[key] then
+		return cfg.messages.marksOwned
+	end
+	if int(marks) < int(it.marks) then
+		return string.format(cfg.messages.marksShort, int(it.marks), int(marks))
+	end
+	return nil
+end
+
+-- experience the +10% added: rows {month = YYYYMM, exp}; the sum of the rows of `month`
+function P.monthExp(rows, month)
+	local sum = 0
+	for _, r in ipairs(rows or {}) do
+		if int(r.month) == int(month) then
+			sum = sum + math.max(0, int(r.exp))
+		end
+	end
+	return sum
 end
 
 function P.extraCheck(cfg, state, key, amount)

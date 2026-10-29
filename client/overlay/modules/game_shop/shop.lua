@@ -769,15 +769,22 @@ function addOffer(category, data, sel)
   else
     offer.buyButton:hide()
   end
-  -- a cosmetic's preview (server cosmetics.lua): the SHOW button plays its effects for this player only; a chat colour
-  -- tints the title, a loot label accent sits behind it
+  -- TRY ON (tryon.lua): the offer on the player's own character for ten seconds, nothing bought. A look goes into the
+  -- look preview beside the list; a cosmetic with an effect also plays it round the character on the map (server
+  -- cosmetics.lua, this player only).
   local preview = type(data["preview"]) == "table" and data["preview"] or nil
-  if preview and sel then
-    if preview.effect and offer.previewButton and not data["gift"] then
+  if sel and offer.previewButton then
+    local plan = TryOn.plan(data, offer.lookOption, lookPreview ~= nil)
+    if plan.show then
+      local m = TryOn.margins(data["gift"] == true)
       offer.previewButton:setVisible(true)
-      offer.previewButton.onClick = function() previewOffer(offer) end
-      offer.description:setMarginRight(104)
+      offer.previewButton:setMarginRight(m.button)
+      offer.previewButton.onClick = function() tryOffer(offer) end
+      offer.description:setMarginRight(m.description)
     end
+  end
+  -- a chat colour tints the title, a loot label accent sits behind it
+  if preview and sel then
     if type(preview.color) == "string" and preview.color:match("^#%x%x%x%x%x%x$") then
       offer.title:setColor(preview.color)
     end
@@ -785,6 +792,27 @@ function addOffer(category, data, sel)
       offer.title:setBackgroundColor(preview.accent)
     end
   end
+end
+
+-- the countdown on the button while a try runs
+local function tickTry(widget, untilMs, token)
+  if not widget or widget.tryToken ~= token or widget:isDestroyed() then return end
+  local left = TryOn.secondsLeft(untilMs, g_clock.millis())
+  local text = TryOn.countdown(left)
+  widget.previewButton:setText(text or tr('TRY ON'))
+  if text then scheduleEvent(function() tickTry(widget, untilMs, token) end, 500) end
+end
+
+-- the TRY ON button: pin the offer's look on the character for TryOn.MS, and play the cosmetic's effect on the map
+function tryOffer(widget)
+  local plan = TryOn.plan(widget.offerData, widget.lookOption, lookPreview ~= nil)
+  if not plan.show then return end
+  if plan.panel and lookPreview then
+    lookPreview:setTry(widget.lookOption, TryOn.MS)
+    widget.tryToken = (widget.tryToken or 0) + 1
+    tickTry(widget, g_clock.millis() + TryOn.MS, widget.tryToken)
+  end
+  if plan.server then previewOffer(widget) end
 end
 
 function previewOffer(widget)

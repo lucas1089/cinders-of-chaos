@@ -34,6 +34,8 @@ PRINTS = {
     'chronicle': ('runes', (120, 228, 216), (40, 140, 132)),
     'rime': ('crystals', (240, 252, 255), (150, 210, 255)),
     'omen': ('motes', (196, 132, 255), (90, 40, 150)),
+    # the collection score's footstep trail (server collection_config.lua, O318); appended last so the seeds above stay
+    'laurel': ('petals', (214, 236, 128), (84, 150, 52)),
 }
 # art key -> (bottom colour, top colour, peak alpha 0..255, ring: None or ring colour)
 GLOWS = {

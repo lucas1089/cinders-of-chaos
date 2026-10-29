@@ -16,6 +16,7 @@ V.MESSAGE_TYPES = {
   market = 'MARKET',
   sale = 'SALE', -- a listing of the player sold (market.lua, orbexchange.lua): at once or "While you were away"
   seasonpass = 'SEASON_PASS',
+  pact = 'PACT', -- the Chaos Pact (or the Pacto Completo) ends soon (pact.lua, O317)
   journey = 'JOURNEY',
   invasion = 'INVASION'
 }

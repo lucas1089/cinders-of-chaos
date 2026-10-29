@@ -13,6 +13,12 @@ PLAYERSEX_FEMALE, PLAYERSEX_MALE = 0, 1
 local function eq(a, b, m) if a ~= b then error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
 local function ok(v, m) if not v then error(m or "check failed", 2) end end
 
+-- the store's clock: a fixed day before the Founder Pack window (O322), so the tests do not depend on the date they run on;
+-- the Founder Pack tests move it (os.time with a table still converts a date)
+local realTime, clock = os.time, nil
+clock = realTime({year = 2026, month = 10, day = 29, hour = 15, min = 0, sec = 0})
+os.time = function(t) if t then return realTime(t) end return clock or realTime() end
+
 dofile("data/scripts/chaos/shop_core.lua")
 local K = ChaosShopCore
 
@@ -126,7 +132,12 @@ for _, cat in ipairs(cfg.categories) do
 		if o.kind == "item" and o.id == 28095 then
 			ok(o.seasonBlocked, "double experience potions are not for season characters")
 		end
-		if o.oncePerAccount then
+		if o.oncePerAccount and o.availableUntil then
+			ok(o.gift == false and o.availableFrom and not o.maxLevel, "limited packs: a window, not giftable") -- Founder Pack (O322)
+			for _, p in ipairs(o.parts) do
+				ok(p.kind == "exclusive" or p.kind == "pact", "a limited pack gives cosmetics and Pact days only")
+			end
+		elseif o.oncePerAccount then
 			ok(o.maxLevel and o.gift == false, "starter packs: level gate, not giftable")
 			for _, p in ipairs(o.parts) do
 				local key = type(p) == "string" and p or K.offerKey(p)
@@ -326,11 +337,24 @@ Chaos.select = function(q, cols)
 		local key, since = q:match("`offer_key` = '([^']*)'"), tonumber(q:match("`created` >= (%d+)")) or 0
 		local count = 0
 		for _, r in ipairs(DB.purchases) do
-			if r.account == acc and (not key or r.key == key) and r.created >= since and (not q:find("`gift_player` > 0", 1, true) or r.giftPlayer > 0) then
+			if r.account == acc and (not key or r.key == key) and (key or not q:find("`offer_key` IN", 1, true) or inList(q, r.key)) and r.created >= since and (not q:find("`gift_player` > 0", 1, true) or r.giftPlayer > 0) then
 				count = count + 1
 			end
 		end
 		return {{n = count}}
+	elseif q:find("JOIN `players` c ON", 1, true) then
+		-- ownedByOthers (O317): offers another character of the account bought for itself and that still exists
+		local account, me = tonumber(q:match("p%.`account_id` = (%d+)")), tonumber(q:match("p%.`player_id` <> (%d+)"))
+		local out, seen = {}, {}
+		for _, r in ipairs(DB.purchases) do
+			local alive = players[r.player] ~= nil
+			for _, p in pairs(DB.offline or {}) do alive = alive or p.guid == r.player end
+			if r.account == account and r.player ~= me and r.giftPlayer == 0 and alive and inList(q, r.key) and not seen[r.key] then
+				seen[r.key] = true
+				out[#out + 1] = {offer_key = r.key}
+			end
+		end
+		return out
 	elseif q:find("SELECT DISTINCT `offer_key`", 1, true) then
 		local out = {}
 		for _, r in ipairs(DB.purchases) do if r.account == acc and inList(q, r.key) then out[#out + 1] = {offer_key = r.key} end end
@@ -388,7 +412,14 @@ ChaosSeason = {realmOf = function(p) return p.realm or 0 end,
 -- <<< Seasons
 ChaosRateLimit = {allow = function() return true end}
 local pactDays = 0
-ChaosPact = {grantDays = function(p, days, source) pactDays = pactDays + days; eq(source, "store", "pact source") end}
+local pactSources, pactCapBlock = {}, false
+ChaosPact = {grantDays = function(p, days, source)
+		pactDays = pactDays + days
+		pactSources[#pactSources + 1] = source
+		ok(source == "store" or source == "complete", "pact source")
+	end,
+	-- the stacking cap (pact.lua Pact.checkDays): the test switches it on
+	checkDays = function(p, days) if pactCapBlock then return "Your Chaos Pact already runs for more than 185 days. Buy more later." end end}
 
 local nextGuid = 0
 local function newPlayer(name, opt)
@@ -991,11 +1022,330 @@ eq(buy(A, "outfit:1237"), "Not possible", "still owned after a reload")
 
 -- potion packs (2026-10-23): six potions in 100 / 250 / 500, the 100 packs keep their keys and coins, bigger packs
 -- cost less a potion
-for id, c100 in pairs({[7590] = 15, [8472] = 15, [8473] = 20, [26029] = 25, [26030] = 25, [26031] = 30}) do
+for id, c100 in pairs({[7590] = 15, [8472] = 15, [8473] = 27, [26029] = 33, [26030] = 33, [26031] = 42}) do
 	local a, b, c = Shop.byKey["item:" .. id .. "x100"], Shop.byKey["item:" .. id .. "x250"], Shop.byKey["item:" .. id .. "x500"]
 	ok(a and b and c, "potion " .. id .. ": three packs")
 	eq(a.cost, c100, "potion " .. id .. ": 100 pack coins")
 	ok(b.cost / 250 < a.cost / 100 and c.cost / 500 < b.cost / 250, "potion " .. id .. ": bigger packs cost less a potion")
+end
+
+
+-- ------------------------------------------------------------------ O317: Pacto Completo, prices by level, account discount,
+-- the weekly group of the Lasting Exercise weapons
+-- core: the price of a level tier, the discount, and the validation
+do
+	local tiers = {cost = 60, levelPrices = {{upTo = 200, cost = 60}, {upTo = 500, cost = 100}, {cost = 150}}}
+	eq(K.levelCost(tiers, 1), 60, "level 1: 60") eq(K.levelCost(tiers, 200), 60, "level 200: 60")
+	eq(K.levelCost(tiers, 201), 100, "level 201: 100") eq(K.levelCost(tiers, 500), 100, "level 500: 100")
+	eq(K.levelCost(tiers, 501), 150, "level 501: 150") eq(K.levelCost(tiers, 3000), 150, "level 3000: 150")
+	eq(K.levelCost({cost = 77}, 800), 77, "no tiers: the cost")
+	eq(K.discountCost(250, 50), 125, "half of 250") eq(K.discountCost(75, 50), 38, "rounded up") eq(K.discountCost(1, 50), 1, "at least 1")
+	eq(K.discountCost(100, 150), 10, "capped at 90% off")
+	local function problemsOf(offer)
+		return K.validate({categories = {{name = "C", offers = {offer}}}}, nil)
+	end
+	local function has(list, text) for _, p in ipairs(list) do if p:find(text, 1, true) then return true end end return false end
+	ok(has(problemsOf({kind = "service", service = "x", cost = 60, levelPrices = {{upTo = 200, cost = 60}, {upTo = 100, cost = 90}, {cost = 150}}}), "must rise"), "tiers that fall are caught")
+	ok(has(problemsOf({kind = "service", service = "x", cost = 60, levelPrices = {{upTo = 200, cost = 60}, {upTo = 500, cost = 100}}}), "needs no upTo"), "a last tier with an upTo is caught")
+	ok(has(problemsOf({kind = "service", service = "x", cost = 70, levelPrices = {{upTo = 200, cost = 60}, {cost = 150}}}), "first levelPrices"), "a cost that is not the first tier is caught")
+	ok(has(problemsOf({kind = "service", service = "x", cost = 60, accountDiscount = 95}), "accountDiscount"), "a discount of 95 is caught")
+	ok(has(problemsOf({kind = "item", id = 1, count = 1, cost = 60, accountDiscount = 50}), "per-character"), "a discount on a giftable kind is caught")
+	ok(has(problemsOf({kind = "item", id = 1, count = 1, cost = 60, weeklyGroup = "g"}), "weeklyLimit"), "a weekly group without a limit is caught")
+	eq(#problemsOf({kind = "service", service = "x", cost = 60, levelPrices = {{upTo = 200, cost = 60}, {cost = 150}}, accountDiscount = 50}), 0, "a good one")
+end
+
+-- Pacto Completo: the top offer of Premium & Services, 499 / 1350 / 2500, Pact days and premium days, not giftable
+do
+	local E = newPlayer("Elda", {level = 120, premium = true})
+	DB.coins[E.account] = 10000
+	local firstOfPremium
+	for _, cat in ipairs(Shop.view(E)) do
+		if cat.parent == "Premium & Services" and not firstOfPremium then firstOfPremium = cat end
+	end
+	eq(firstOfPremium.name, "Pacto Completo", "the Pacto Completo is the first category of Premium & Services")
+	eq(#firstOfPremium.offers, 3, "three lengths")
+	local c, page, o, e = find(E, "complete:30")
+	eq(e.cost, 499, "30 days: 499") eq(e.oldCost, 598, "listed at the Pact (299) plus Premium (299)")
+	eq(Shop.byKey["complete:90"].cost, 1350, "90 days: 1350") eq(Shop.byKey["complete:180"].cost, 2500, "180 days: 2500")
+	eq(Shop.byKey["complete:90"].listSum, 897 + 800, "90 days: three Pacts apart and the 90 day Premium") eq(Shop.byKey["complete:180"].listSum, 1794 + 1500, "180 days apart")
+	request(E, "get_page", {category = c, page = page})
+	local view = last("category_page").data.offers[o]
+	eq(view.gift, nil, "not giftable")
+	ok(view.description:find("+10% XP", 1, true) and view.description:find("Premium:", 1, true) and view.description:find("Chaos Pact:", 1, true), "both benefit lists")
+	ok(not view.description:find("days of Chaos Pact", 1, true), "no second Pact line")
+	ok(#view.description <= 200, "short enough for three lines of the store")
+	local days0, prem0, srcs0 = pactDays, E.premDays or 0, #pactSources
+	eq(buy(E, "complete:30"), "Purchase complete", "bought")
+	eq(pactDays - days0, 30, "30 Pact days") eq((E.premDays or 0) - prem0, 30, "30 premium days")
+	eq(pactSources[srcs0 + 1], "complete", "the Pact days say where they came from")
+	eq(DB.coins[E.account], 10000 - 499, "499 coins")
+	eq(DB.purchases[#DB.purchases].key, "complete:30", "logged under the bundle key")
+	-- the stacking cap: nothing is taken, nothing is given
+	pactCapBlock = true
+	local coinsBefore, daysBefore, premBefore = DB.coins[E.account], pactDays, E.premDays
+	local title, msg = buy(E, "complete:180")
+	eq(title, "Not possible", "refused at the cap") ok(msg:find("185 days", 1, true), msg)
+	eq(DB.coins[E.account], coinsBefore, "no coins taken") eq(pactDays, daysBefore, "no Pact days") eq(E.premDays, premBefore, "no premium days")
+	pactCapBlock = false
+	eq(buy(E, "complete:180"), "Purchase complete", "180 days")
+	eq(pactDays - days0, 210, "30 + 180 Pact days") eq(E.premDays - prem0, 210, "30 + 180 premium days")
+	-- a starter pack's Pact part stays tolerant of a missing Pact system, the Completo does not
+	local saved = ChaosPact
+	ChaosPact = nil
+	title = buy(E, "complete:30")
+	eq(title, "Not possible", "no Pact system: the Completo is not sold")
+	ChaosPact = saved
+	-- the Pact and Premium alone: 299 each
+	eq(Shop.byKey["premium:30"].cost, 299, "Premium 30 days: 299") eq(Shop.byKey["premium:90"].cost, 800, "Premium 90 days: 800")
+	eq(Shop.byKey["premium:180"].cost, 1500, "Premium 180 days: 1500")
+end
+
+-- All Blessings: the price follows the level, the store shows each player their own, a stale price is refused
+do
+	local function blessCost(p) local _, _, _, e = find(p, "service:blessings"); return e.cost end
+	local L1, L2, L3, L4 = newPlayer("Lowbie", {level = 80}), newPlayer("Midlevel", {level = 350}), newPlayer("Highlevel", {level = 650}),
+		newPlayer("Border", {level = 200})
+	eq(blessCost(L1), 60, "level 80: 60") eq(blessCost(L4), 60, "level 200: 60") eq(blessCost(L2), 100, "level 350: 100") eq(blessCost(L3), 150, "level 650: 150")
+	DB.coins[L3.account] = 1000
+	local c, page, o, e = find(L3, "service:blessings")
+	request(L3, "get_page", {category = c, page = page})
+	local view = last("category_page").data.offers[o]
+	eq(view.cost, 150, "the client is sent 150 for a level 650 character")
+	request(L3, "buy", {category = c, page = page, offer = o, title = view.title, cost = 60})
+	eq(last("message").data.title, "Error", "a price from another level tier is refused")
+	eq(DB.coins[L3.account], 1000, "no coins taken")
+	local title = buy(L3, "service:blessings")
+	eq(title, "Purchase complete", "bought") eq(DB.coins[L3.account], 850, "150 coins taken")
+	eq(DB.purchases[#DB.purchases].price, 150, "logged at the level price")
+	-- the character levels up past a border while the window is open: the old price is refused
+	DB.coins[L4.account] = 1000
+	local cat4, page4, off4, ent4 = find(L4, "service:blessings")
+	L4.level = 201
+	request(L4, "buy", {category = cat4, page = page4, offer = off4, title = "All Blessings", cost = ent4.cost})
+	eq(last("message").data.title, "Error", "60 is refused once the character is level 201")
+	eq(blessCost(L4), 100, "and the store shows 100 now")
+end
+
+-- the account discount: another character of the account owns it (or a starter pack with it)
+do
+	local function costOf(p, key) local _, _, _, e = find(p, key); return e.cost, e end
+	local C1 = newPlayer("Cinder One", {level = 60})
+	local C2 = newPlayer("Cinder Two", {level = 60, account = C1.account})
+	local C3 = newPlayer("Cinder Three", {level = 60, account = C1.account})
+	local Other = newPlayer("Other Account", {level = 60})
+	for _, p in ipairs({C1, C2, C3, Other}) do DB.coins[p.account] = 5000 end
+	eq(costOf(C2, "service:pouch:loot"), 250, "nobody owns it: the list price")
+	eq(buy(C1, "service:pouch:loot"), "Purchase complete", "the first character pays 250")
+	eq(DB.coins[C1.account], 4750, "250 taken")
+	local cost, e = costOf(C2, "service:pouch:loot")
+	eq(cost, 125, "another character of the account: half") eq(e.oldCost, 250, "the list price is struck through")
+	eq(e.tags[1], "Account -50%", "tagged")
+	ok(e.offer.description:find("Another character of your account has it: 50% off.", 1, true), "the description says why")
+	eq(costOf(C1, "service:pouch:orbs"), 200, "an offer nobody owns: full price")
+	eq(costOf(Other, "service:pouch:loot"), 250, "another account: full price")
+	c, page, o = find(C2, "service:pouch:loot")
+	request(C2, "get_page", {category = c, page = page})
+	local view = last("category_page").data.offers[o]
+	eq(view.cost, 125, "the client is sent 125") eq(view.oldCost, 250, "and the old price") eq(view.gift, nil, "not giftable")
+	request(C2, "buy", {category = c, page = page, offer = o, title = view.title, cost = 250})
+	eq(last("message").data.title, "Error", "the list price is refused for a discounted offer (the store changed)")
+	eq(buy(C2, "service:pouch:loot"), "Purchase complete", "the second character pays 125")
+	eq(DB.coins[C2.account], 4750 - 125, "125 taken")
+	eq(DB.purchases[#DB.purchases].price, 125, "logged at 125") eq(DB.purchases[#DB.purchases].list, 250, "list price kept in the log")
+	eq(costOf(C3, "service:pouch:loot"), 125, "a third character: half too")
+	-- every per-character convenience of the store carries the discount: the pouches, the ration, the unlocks, ten Everfull tiers
+	local n = 0
+	for key, offer in pairs(Shop.byKey) do
+		if offer.accountDiscount then
+			n = n + 1
+			eq(offer.accountDiscount, 50, key .. ": 50%")
+			ok(offer.kind == "service" or offer.kind == "unlock", key .. ": a per-character kind")
+		end
+	end
+	eq(n, 17, "17 offers: 4 pouches, the ration, Auto Seller, Rarity Autoloot, 10 Everfull tiers")
+	for _, key in ipairs({"service:pouch:loot", "service:pouch:orbs", "service:pouch:keys", "service:pouch:gems", "service:storeFood",
+			"unlock:autoSeller", "unlock:rarityAutoloot", "service:everfullUpgrade:32268", "service:everfullUpgrade:32270"}) do
+		ok(Shop.byKey[key] and Shop.byKey[key].accountDiscount == 50, key .. " has the discount")
+	end
+	-- the discount follows an Everfull tier: 70 coins -> 35
+	eq(costOf(C3, "service:everfullUpgrade:32270"), 70, "an Everfull tier nobody owns: 70")
+	-- a character that no longer exists owns nothing
+	local D1 = newPlayer("Doomed", {level = 60})
+	local D2 = newPlayer("Survivor", {level = 60, account = D1.account})
+	DB.coins[D1.account] = 5000
+	eq(buy(D1, "unlock:autoSeller"), "Purchase complete", "Auto Seller on the first character")
+	eq(costOf(D2, "unlock:autoSeller"), 200, "half for the second")
+	players[D1.guid] = nil
+	eq(costOf(D2, "unlock:autoSeller"), 400, "the owner was deleted: full price")
+	-- a starter pack with the Loot Bag counts as owning it
+	local S1 = newPlayer("Starter One", {level = 30})
+	local S2 = newPlayer("Starter Two", {level = 30, account = S1.account})
+	DB.coins[S1.account] = 5000
+	eq(costOf(S2, "service:pouch:loot"), 250, "before the pack: full price")
+	eq(buy(S1, "starter:adventurer"), "Purchase complete", "the Adventurer Pack (Loot Bag inside)")
+	eq(costOf(S2, "service:pouch:loot"), 125, "the pack's Loot Bag counts: half for the other character")
+	-- a sale that beats the account discount keeps its own tag; a bigger account discount replaces a smaller sale
+	local sale = ChaosShopConfig.storefront.sales
+	sale[#sale + 1] = {offers = {"service:pouch:keys"}, pct = 60, tag = "Test sale"}
+	DB.coins[Other.account] = 5000
+	local O2 = newPlayer("Other Two", {level = 60, account = Other.account})
+	eq(buy(Other, "service:pouch:keys"), "Purchase complete", "keys pouch (sale 60%: 60 coins)")
+	cost, e = costOf(O2, "service:pouch:keys")
+	eq(cost, 60, "the 60% sale beats the 50% account discount") eq(e.tags[1], "Test sale -60%", "the sale's tag stays")
+	sale[#sale] = nil
+	cost, e = costOf(O2, "service:pouch:keys")
+	eq(cost, 75, "no sale: 150 / 2") eq(e.tags[1], "Account -50%", "the account tag")
+	sale[#sale + 1] = {offers = {"service:pouch:keys"}, pct = 20, tag = "Small sale"}
+	cost, e = costOf(O2, "service:pouch:keys")
+	eq(cost, 75, "a 20% sale loses to the account discount") eq(e.tags[1], "Account -50%", "the account tag replaced the sale tag") eq(e.oldCost, 150, "struck-through list price")
+	sale[#sale] = nil
+end
+
+-- Lasting Exercise weapons: 2 a week in all, one shared limit (the Double Experience Potion mechanism)
+do
+	local W = newPlayer("Weaponsmith", {level = 400})
+	DB.coins[W.account] = 10000
+	eq(buy(W, "item:27775x1"), "Purchase complete", "the first Lasting weapon")
+	eq(buy(W, "item:27779x1"), "Purchase complete", "a second, of another kind")
+	local title, msg = buy(W, "item:27781x1")
+	eq(title, "Not possible", "the third in a week is refused, whichever kind") ok(msg:find("Lasting Exercise Weapons", 1, true) and msg:find("this week", 1, true), msg)
+	title = buy(W, "item:27775x1")
+	eq(title, "Not possible", "also the same kind again")
+	eq(DB.coins[W.account], 10000 - 900, "only two were paid")
+	local W2 = newPlayer("Second Account", {level = 400})
+	DB.coins[W2.account] = 1000
+	eq(buy(W2, "item:27776x1"), "Purchase complete", "another account has its own two")
+	-- a gift to an offline character counts against the giver's week (the limit is the buyer's)
+	for _, key in ipairs({"item:27775x1", "item:27776x1", "item:27778x1", "item:27779x1", "item:27780x1", "item:27781x1"}) do
+		local o = Shop.byKey[key]
+		eq(o.weeklyLimit, 2, key .. ": 2 a week") eq(o.weeklyGroup, "lastingExercise", key .. ": one group")
+		eq(#Shop.weekGroups.lastingExercise, 6, "six offers in the group")
+	end
+	local smaller = Shop.byKey["item:27768x1"]
+	eq(smaller.weeklyLimit, nil, "the 1800 charge weapons have no weekly limit")
+end
+
+-- ------------------------------------------------------------------ Founder Pack (O322): a window, one per account and tier, the grant
+do
+	local FC = dofile("data/scripts/chaos/founder_config.lua")
+	local T0, T1 = K.parseTime(FC.start), K.parseTime(FC["end"])
+	eq(FC.start, "2026-11-20 15:00", "the launch: 20/11/2026 15:00") eq(FC["end"], "2026-12-18 15:00", "four weeks later")
+	eq(T1 - T0, 28 * 86400, "the sale lasts four weeks")
+	-- core: the window
+	local offer = {availableFrom = FC.start, availableUntil = FC["end"]}
+	eq(K.windowState(offer, T0 - 1), "early", "one second before the start") eq(K.windowState(offer, T0), nil, "at the start")
+	eq(K.windowState(offer, T1 - 1), nil, "one second before the end") eq(K.windowState(offer, T1), "late", "at the end")
+	eq(K.windowState({}, T1 + 99999), nil, "an offer without a window is always on")
+	eq(K.windowState({availableUntil = FC["end"]}, T0 - 99999), nil, "no start: on until the end")
+	eq(K.windowNote(offer, "en"), "Available until 2026-12-18 15:00.", "the end date, English")
+	eq(K.windowNote(offer, "pt-BR"), "Disponível até 18/12/2026 15:00.", "the end date, pt-BR")
+	eq(K.windowNote({}, "en"), nil, "no note without an end")
+	local bad = table.concat(K.validate({categories = {{name = "X", offers = {{kind = "premium", days = 1, cost = 1,
+		availableFrom = "2026-12-18 15:00", availableUntil = "2026-11-20 15:00"}}}}}), ";")
+	ok(bad:find("not after availableFrom", 1, true), "an end before the start is a problem")
+
+	-- the exclusives of the pack: a mocked ChaosExclusives (exclusives.lua) records the grants
+	local granted = {}
+	ChaosExclusives = {owns = function(acc, key) return (granted[acc] or {})[key] == true end,
+		grant = function(acc, key, source, player)
+			granted[acc] = granted[acc] or {}
+			if granted[acc][key] then return false, "owned" end
+			ok(source == "founder", "the grant names the Founder Pack as its source")
+			granted[acc][key] = true
+			return true
+		end}
+	local F1, F2 = Shop.byKey["founder:pack"], Shop.byKey["founder:grand"]
+	ok(F1 and F2, "both tiers are store offers")
+	eq(F1.cost, 499, "the first pack: about R$ 50") eq(F2.cost, 999, "the grand pack: about R$ 100")
+	eq(F1.availableFrom, FC.start, "the offer carries the window") eq(F1.gift, false, "not giftable") eq(F1.oncePerAccount, true, "once")
+	for _, o in ipairs({F1, F2}) do
+		for _, part in ipairs(o.resolved) do
+			ok(part.kind == "exclusive" or part.kind == "pact", "cosmetics and Pact days only")
+			if part.kind == "exclusive" then ok(part.name, "a piece has the exclusive's name") end
+		end
+	end
+
+	local P = newPlayer("Founder", {level = 400})
+	DB.coins[P.account] = 3000
+	local before = pactDays
+	-- before the start: not in the view, not sold
+	clock = T0 - 1
+	ok(not find(P, "founder:pack") and not find(P, "founder:grand"), "hidden before the start")
+	for _, cat in ipairs(Shop.view(P)) do ok(cat.name ~= "Founder Pack", "no Founder Pack category before the start") end
+	-- at the start: shown with the end date first in its text, the price echoed
+	clock = T0
+	local c, page, i, e = find(P, "founder:pack")
+	ok(c, "shown at the start") eq(e.cost, 499, "price 499")
+	request(P, "get_page", {category = c, page = page})
+	local view = last("category_page").data.offers[i]
+	eq(view.description:find("Available until 2026-12-18 15:00.", 1, true), 1, "the end date leads the text")
+	ok(view.description:find("14 days of Chaos Pact", 1, true), "the Pact days are told")
+	ok(Chaos.setLang, "the language switch is there")
+	do
+		Chaos.setLang(P, "pt-BR")
+		request(P, "get_page", {category = c, page = page})
+		local pt = last("category_page").data.offers[i].description
+		eq(pt:find("Disponível até 18/12/2026 15:00.", 1, true), 1, "pt-BR: disponível até")
+		ok(pt:find("Uma vez por conta, nunca mais vendido", 1, true), "pt-BR text: " .. pt)
+		Chaos.setLang(P, "en")
+	end
+	-- buying the first pack: coins, both pieces for the account, 14 Pact days, logged
+	eq(buy(P, "founder:pack"), "Purchase complete", "the first pack")
+	eq(DB.coins[P.account], 3000 - 499, "499 coins")
+	ok(granted[P.account].wings_gold_peacock and granted[P.account].head_royal_coronet, "both pieces for the account")
+	eq(granted[P.account].wings_pyre_seraph, nil, "not the grand pack's pieces")
+	eq(pactDays - before, 14, "14 days of the Chaos Pact")
+	-- one per account and tier: gone for the whole account, also for another character
+	ok(not find(P, "founder:pack"), "hidden once bought")
+	local P2 = newPlayer("Founder Alt", {level = 30, account = P.account})
+	ok(not find(P2, "founder:pack"), "hidden for the other characters of the account")
+	ok(find(P2, "founder:grand"), "the grand pack is its own tier")
+	-- the grand pack: a separate purchase
+	eq(buy(P, "founder:grand"), "Purchase complete", "the grand pack")
+	eq(DB.coins[P.account], 3000 - 499 - 999, "999 coins")
+	for _, key in ipairs(F2.parts and {"wings_pyre_seraph", "cape_phoenix_plume_cape", "head_double_halo", "frame_founder"}) do
+		ok(granted[P.account][key], "grand pack piece " .. key)
+	end
+	eq(pactDays - before, 14 + 30, "30 more Pact days")
+	ok(not find(P, "founder:grand"), "hidden once bought")
+
+	-- another account: sold up to the last second, then never
+	local Q = newPlayer("Late Founder", {level = 120})
+	DB.coins[Q.account] = 2000
+	clock = T1 - 1
+	ok(find(Q, "founder:pack"), "still sold one second before the end")
+	local qc, qp, qo = find(Q, "founder:pack")
+	request(Q, "get_page", {category = qc, page = qp})
+	local qv = last("category_page").data.offers[qo]
+	clock = T1
+	ok(not find(Q, "founder:pack") and not find(Q, "founder:grand"), "gone at the end")
+	request(Q, "buy", {category = qc, page = qp, offer = qo, title = qv.title, cost = qv.cost})
+	eq(last("message").data.title, "Error", "a stale window cannot buy it after the end")
+	eq(DB.coins[Q.account], 2000, "no coins taken")
+	eq((granted[Q.account] or {}).wings_gold_peacock, nil, "nothing granted")
+	clock = T1 + 365 * 86400
+	ok(not find(Q, "founder:pack"), "never again")
+
+	-- no Pact system: the pack is not sold (the Pact days are part of what is paid for)
+	clock = T0 + 86400
+	local R = newPlayer("No Pact", {level = 50})
+	DB.coins[R.account] = 2000
+	local savedPact = ChaosPact
+	ChaosPact = nil
+	local t2, m2 = buy(R, "founder:pack")
+	eq(t2, "Not possible", "no Pact system, no sale") eq(DB.coins[R.account], 2000, "nothing taken")
+	ChaosPact = savedPact
+	-- a piece the account has (a staff grant): the pack is refused, nothing taken
+	granted[R.account] = {wings_gold_peacock = true}
+	local t3 = buy(R, "founder:pack")
+	eq(t3, "Not possible", "an owned piece") eq(DB.coins[R.account], 2000, "no coins taken")
+	-- a gift is refused: the packs are for one's own account
+	local G = newPlayer("Gifter", {level = 50})
+	DB.coins[G.account] = 2000
+	local t4 = buy(G, "founder:pack", "Founder Alt")
+	ok(t4 ~= "Purchase complete", "no gifts of the Founder Pack")
+	eq(DB.coins[G.account], 2000, "no coins taken for a gift")
+	clock = realTime({year = 2026, month = 10, day = 29, hour = 15, min = 0, sec = 0})
 end
 
 print("shop_test: ok")

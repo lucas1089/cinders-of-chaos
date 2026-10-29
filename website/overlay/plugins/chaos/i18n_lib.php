@@ -111,6 +111,27 @@ function chaos_t(string $en, ...$args): string {
 	return chaos_t_in(null, $en, ...$args);
 }
 
+/**
+ * The text of a data file that carries both languages: array('pt-BR' => ..., 'en' => ...). The page's language
+ * (or $lang), else Portuguese, else the first text, else ''. Used by the fair-play, calendar and creator pages,
+ * whose long texts live in JSON files (fairplay/, calendar/, creators/), not in pt-BR.php.
+ */
+function chaos_bi($pair, ?string $lang = null): string {
+	if (is_string($pair)) {
+		return $pair;
+	}
+	if (!is_array($pair)) {
+		return '';
+	}
+	$lang = $lang ?? chaos_lang();
+	foreach (array($lang, 'pt-BR', 'en') as $l) {
+		if (isset($pair[$l]) && is_string($pair[$l]) && $pair[$l] !== '') {
+			return $pair[$l];
+		}
+	}
+	return '';
+}
+
 /** <a> to $url in the other language. */
 function chaos_lang_link(string $url, ?string $lang = null): string {
 	$lang = $lang ?? chaos_lang();

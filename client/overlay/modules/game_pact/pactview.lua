@@ -1,8 +1,10 @@
 -- Chaos Pact window: the texts and rows, without client API (tested by pactview_test.lua).
 -- The server (data/scripts/chaos/pact.lua) decides everything; this only formats its `status`:
---   {active, ends, daysLeft, dailyCoins, canClaim, claimedTotal, premiumDays, coins, title, titleText,
+--   {active, ends, daysLeft, dailyMarks, canClaim, claimedTotal, premiumDays, coins, title, titleText,
+--    marks, marksEarned, shelf = [{key, name, marks, owned}], monthExp, monthExpAccount, month,
 --    limits = [{key, label, free, pact, extra, maxExtra, total, pactActive}], tabSize, special = [{name, owned, source}],
 --    buildLimit, builds = [{slot, name, nodes, cls, editable, updated}]}
+-- Pact Marks (O317): 5 a day while the Pact runs; they buy the cosmetics of the shelf and nothing else.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 PactView = {}
@@ -26,18 +28,62 @@ function V.status(s)
   if n(s.endsAt) > 0 then
     return tr('Chaos Pact ended'), tr('Ended %s. Nothing is lost: extra tabs are withdraw-only, extra builds read-only.', (s.ends or ''))
   end
-  return tr('No Chaos Pact'), tr('Perks for 30 days: +10%% XP, stamina x1.5, remote stash deposit, room, slots, %s coins a day and a title.', n(s.dailyCoins))
+  return tr('No Chaos Pact'), tr('Perks for 30 days: +10%% XP, stamina x1.5, remote stash deposit, room, slots, %s Pact Marks a day and a title.', n(s.dailyMarks))
 end
 
 -- the claim button: text and whether it is enabled
 function V.claim(s)
   if type(s) ~= 'table' or not s.active then
-    return tr('Daily coins'), false
+    return tr('Daily Pact Marks'), false
   end
   if s.canClaim then
-    return 'Claim ' .. n(s.dailyCoins) .. ' coins', true
+    return tr('Claim %d Pact Marks', n(s.dailyMarks)), true
   end
   return tr('Claimed today'), false
+end
+
+-- 12345678 -> "12,345,678"
+function V.thousands(v)
+  local str = tostring(n(v))
+  local out = str:reverse():gsub('(%d%d%d)', '%1,'):reverse()
+  return (out:gsub('^,', ''))
+end
+
+-- the Pact Marks section: the balance line and the month's experience line
+function V.marksLine(s)
+  if type(s) ~= 'table' then return '' end
+  return tr('Pact Marks: %s (earned so far: %s). They buy only the cosmetics below.', V.thousands(s.marks), V.thousands(s.marksEarned))
+end
+
+function V.monthLine(s)
+  if type(s) ~= 'table' then return '' end
+  if n(s.monthExp) <= 0 and n(s.monthExpAccount) <= 0 then
+    return tr('This month the Pact has given you no extra experience yet.')
+  end
+  if n(s.monthExpAccount) > n(s.monthExp) then
+    return tr('This month the Pact gave you %s extra experience (%s on all your characters).', V.thousands(s.monthExp), V.thousands(s.monthExpAccount))
+  end
+  return tr('This month the Pact gave you %s extra experience.', V.thousands(s.monthExp))
+end
+
+-- the shelf rows: {key, name, marks, owned, canBuy, button, price}; the button text says why a row cannot be bought
+function V.shelfRows(s)
+  local rows = {}
+  local have = n(type(s) == 'table' and s.marks)
+  for _, it in ipairs(type(s) == 'table' and s.shelf or {}) do
+    local price = n(it.marks)
+    local button, canBuy
+    if it.owned then
+      button, canBuy = tr('Owned'), false
+    elseif have < price then
+      button, canBuy = tr('Buy'), false
+    else
+      button, canBuy = tr('Buy'), true
+    end
+    rows[#rows + 1] = { key = it.key, name = it.name or it.key, marks = price, owned = it.owned == true, canBuy = canBuy, button = button,
+      price = tr('%d Marks', price) }
+  end
+  return rows
 end
 
 -- one row of the limits table: {label, free, pact, bought, total} as texts

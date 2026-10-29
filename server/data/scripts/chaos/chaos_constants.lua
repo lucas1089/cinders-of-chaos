@@ -248,7 +248,8 @@ Chaos.botReviewTables = {daily = "chaos_bot_daily", actions = "chaos_bot_actions
 -- Wardrobe: footprints and outlines (cosmetics.lua kinds footprint / outline, client game_cosmeticfx) and the visual
 -- exclusives (exclusives.lua, exclusives_core.lua, exclusives_config.lua, sql/chaos_exclusives.sql; the Collection tab
 -- of client game_cosmetics, cosmetics opcode 225, no new opcode). Storages 7102000 - 7102049 reserved: +0 the chosen
--- footprint, +1 the chosen outline (cosmetics_config.lua storage), +10 .. +39 name plate frame slots 9 and up
+-- footprint, +1 the chosen outline, +2 the level-up effect, +3 the rare-loot effect, +4 the victory emote
+-- (cosmetics_config.lua storage), +10 .. +39 name plate frame slots 9 and up
 -- (shopFrameBase2 above)
 Chaos.storage.wardrobe = 7102000
 

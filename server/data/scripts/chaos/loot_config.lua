@@ -32,7 +32,9 @@ return {
 		local blessing = ChaosBlessings and ChaosBlessings.mult and ChaosBlessings.mult(ctx and ctx.player, "loot") or 1
 		-- the quantity bonus of the waystone run the monster died in (waystone_mods.lua); 1 outside
 		local waystone = ChaosWaystoneMods and ChaosWaystoneMods.lootMult and ChaosWaystoneMods.lootMult(ctx) or 1
-		return event * buff * rift * world * community * marches * blessing * waystone
+		-- the Weekend Ritual's loot theme (weekend.lua; not for season characters); 1 on other weekends and weekdays
+		local weekend = ChaosWeekend and ChaosWeekend.lootMult and ChaosWeekend.lootMult(ctx) or 1
+		return event * buff * rift * world * community * marches * blessing * waystone * weekend
 	end,
 	-- cap on the final rate (rateMult, guild perk wrapper included; loot.lua clamps it). The bonuses multiply: all at
 	-- once came to ~8-10x. The rift's own Quantity rules still apply, under this cap.

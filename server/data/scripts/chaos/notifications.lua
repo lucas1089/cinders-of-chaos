@@ -89,7 +89,7 @@ end
 -- guildwar.lua (war toasts). "sale" (header ITEM SOLD) is a listing of the player that sold: market.lua and the Orb
 -- Exchange (orbexchange.lua), at once or at the next login.
 local SEND_KINDS = {achievement = true, bounty = true, newplayer = true, bestiary = true, bosspoints = true,
-	ascension = true, market = true, sale = true, seasonpass = true, journey = true, invasion = true}
+	ascension = true, market = true, sale = true, seasonpass = true, journey = true, invasion = true, pact = true}
 
 function ChaosNotify.send(player, title, text, kind)
 	if not player then

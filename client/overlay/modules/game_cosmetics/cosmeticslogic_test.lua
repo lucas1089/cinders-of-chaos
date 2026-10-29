@@ -91,7 +91,7 @@ eq(tab[1].selected, true, 'no outline chosen') eq(CL.subText(tab[2]), 'Store: 25
 eq(CL.DRAWN.footprint and CL.DRAWN.outline, true, 'drawn kinds')
 local keys = {}
 for _, k in ipairs(CL.KINDS) do keys[#keys + 1] = k.key end
-eq(table.concat(keys, ','), 'spellskin,killfx,lootbeam,chatcolor,footprint,outline,collection', 'tabs')
+eq(table.concat(keys, ','), 'spellskin,killfx,lootbeam,chatcolor,footprint,outline,levelfx,rarefx,emote,collection', 'tabs')
 
 -- the Collection tab (server exclusives_core.lua rows): owned first, never usable here
 local col = { { key = 'mount_tuskhide', kind = 'mount', kindName = 'Mount', name = 'Tuskhide Boar',
@@ -109,5 +109,42 @@ eq(#CL.collectionRows(col, 'owned'), 1, 'owned filter') eq(#CL.collectionRows(co
 local have, all = CL.collectionCount(col)
 eq(have, 1, 'one earned') eq(all, 3, 'of the rows sent (junk skipped)')
 eq(col[1].id, nil, 'the server rows are not changed')
+
+-- the combat cosmetics tabs (O318): a default row and the rows of their kind
+local combat = { { id = 601, kind = 'levelfx', name = 'Dawn Ascent', owned = true, preview = true },
+  { id = 701, kind = 'rarefx', name = 'Gilded Glint', owned = false, how = 'Store: 200 Chaos Coins', preview = true },
+  { id = 801, kind = 'emote', name = 'Victory Roar', owned = true, selected = true, preview = true } }
+tab = CL.tabRows(combat, 'levelfx')
+eq(#tab, 2, 'default + the level-up effect') eq(tab[1].desc, 'No effect when you gain a level.', 'level-up default text')
+eq(tab[1].selected, true, 'none chosen')
+tab = CL.tabRows(combat, 'emote')
+eq(tab[1].selected, false, 'an emote is in use') eq(CL.canUse(tab[1]), true, 'switch it off') eq(CL.canUse(tab[2]), false, 'already in use')
+eq(CL.tabRows(combat, 'rarefx')[2].how, 'Store: 200 Chaos Coins', 'how to get it')
+
+-- the collection score (server collection_core.lua K.view)
+local view = { score = 142, groups = { { g = 'outfit', n = 3, p = 18 }, { g = 'mount', n = 2, p = 18 }, { g = 'bogus', n = 1, p = 1 } },
+  next = { points = 220, left = 78 },
+  milestones = { { key = 'collector', points = 20, done = true, rewards = { { k = 'title', n = 'Collector' } } },
+    { key = 'trail', points = 60, done = true, rewards = { { k = 'footprint', n = 'Laurel Steps' } } },
+    { key = 'curator', points = 120, done = true, rewards = { { k = 'title', n = 'Curator' } } },
+    { key = 'gold', points = 220, rewards = { { k = 'chatcolor', n = "Collector's Gold" } } },
+    { key = 'connoisseur', points = 400, rewards = { { k = 'title', n = 'Connoisseur', f = 'gallery' } } } } }
+eq(CL.scoreLine(view), 'Collection score: 142 - next reward at 220 (78 to go)', 'the strip')
+eq(CL.scoreLine({ score = 5000 }), 'Collection score: 5000 - every reward earned', 'nothing left')
+eq(CL.scoreLine(nil), '', 'no score yet')
+local lines = CL.milestoneLines(view)
+eq(#lines, 5, 'a line per milestone') eq(lines[1], '[x] 20 points: Title Collector', 'a reached milestone')
+eq(lines[4], "[ ] 220 points: Chat colour Collector's Gold", 'one ahead') eq(lines[5], '[ ] 400 points: Title Connoisseur and a plate frame', 'with a frame')
+eq(lines[2], '[x] 60 points: Footprints Laurel Steps', 'footprints')
+eq(CL.groupLine(view), 'Outfits 3 (18), Mounts 2 (18)', 'groups in the server order, unknown ones skipped')
+local row = CL.scoreRow(view)
+eq(row.id, 'x:score', 'row id') eq(row.collection, true, 'never usable') eq(row.name, 'Collection score: 142', 'name')
+eq(CL.canUse(row), false, 'not usable') eq(CL.subText(row), 'Rewards for owning cosmetics', 'sub text')
+eq(CL.scoreRow(nil), nil, 'no row without a score') eq(CL.scoreRow({}), nil, 'no row for junk')
+local rows2 = CL.collectionRows(col, nil, view)
+eq(#rows2, 4, 'the score row and the three exclusives') eq(rows2[1].id, 'x:score', 'the score comes first')
+eq(rows2[2].key, 'wings_cinderplumes', 'then the owned ones')
+eq(CL.collectionRows(col, 'owned', view)[1].id, 'x:score', 'also with a filter')
+eq(#CL.collectionRows(col, nil, nil), 3, 'no score: only the exclusives')
 
 print('cosmeticslogic_test: ' .. n .. ' checks OK')

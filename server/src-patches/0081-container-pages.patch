@@ -1,0 +1,114 @@
+# Paged containers over 250 slots: the Loot Bag with 500 slots (data/scripts/chaos/pouches_config.lua kinds.loot capacity;
+# server/README.md "Store pouches"). The container packet (ProtocolGame::sendContainer) writes the capacity in ONE byte,
+# so a container could have at most 255 slots. The packet also has a page mode (hasPagination: uint16 size and first
+# index, the client draws page buttons; the stock depot locker and the inbox use it). Now a container whose capacity is
+# over 250 (Container::CHAOS_PAGE_SIZE) has pagination, and its page size is 250 (Container::pageSize()): the byte sent,
+# the number of items per packet, the seek (Game::playerSeekInContainer), the add / update / remove updates of an open
+# page (Player::send*ContainerItem) and the batched refresh (Player::flushContainerBatch) all use pageSize() where they
+# used capacity(). Every container of 250 slots or fewer has pageSize() == capacity(): nothing changes for them.
+# The real capacity (queryAdd, free slots, Lua container:getCapacity()) is untouched. No save format change.
+# Guard: tools/container_pages_patch_test.py (CI). Applies after 0001-0080.
+diff --git a/src/container.h b/src/container.h
+--- a/src/container.h
++++ b/src/container.h
+@@ -119,7 +119,14 @@ class Container : public Item, public Cylinder
+ 			return unlocked;
+ 		}
+ 		bool hasPagination() const {
+-			return pagination;
++			return pagination || capacity() > CHAOS_PAGE_SIZE; // Chaos (patch 0081): a bag too big for one byte is paged
++		}
++		// Chaos (patch 0081): the slots one page of the client window shows. The container packet sends the capacity
++		// in ONE byte, so a container of more than CHAOS_PAGE_SIZE slots (the Loot Bag, 500) is sent in pages of
++		// CHAOS_PAGE_SIZE; every other container keeps its capacity as the page size (no change).
++		static constexpr uint32_t CHAOS_PAGE_SIZE = 250;
++		uint32_t pageSize() const {
++			return capacity() > CHAOS_PAGE_SIZE ? CHAOS_PAGE_SIZE : capacity();
+ 		}
+ 
+ 		//cylinder implementations
+diff --git a/src/game.cpp b/src/game.cpp
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -2972,7 +2972,7 @@ void Game::playerSeekInContainer(uint32_t playerId, uint8_t containerId, uint16_
+ 		return;
+ 	}
+ 
+-	if ((index % container->capacity()) != 0 || index >= container->size()) {
++	if ((index % container->pageSize()) != 0 || index >= container->size()) {
+ 		return;
+ 	}
+ 
+diff --git a/src/player.cpp b/src/player.cpp
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -1098,7 +1098,7 @@ void Player::flushContainerBatch()
+ 			}
+ 			OpenContainer& openContainer = it.second;
+ 			const Container* container = openContainer.container;
+-			uint32_t capacity = std::max<uint32_t>(1, container->capacity());
++			uint32_t capacity = std::max<uint32_t>(1, container->pageSize());
+ 			uint32_t size = container->size();
+ 			if (openContainer.index > 0 && openContainer.index >= size) {
+ 				// the page the window showed is gone: the last page that has items
+@@ -1162,14 +1162,14 @@ void Player::sendAddContainerItem(const Container* container, const Item* item)
+ 		uint16_t slot = openContainer.index;
+ 		if (container->getID() == ITEM_BROWSEFIELD) {
+ 			uint16_t containerSize = container->size() - 1;
+-			uint16_t pageEnd = openContainer.index + container->capacity() - 1;
++			uint16_t pageEnd = openContainer.index + container->pageSize() - 1;
+ 			if (containerSize > pageEnd) {
+ 				slot = pageEnd;
+ 				item = container->getItemByIndex(pageEnd);
+ 			} else {
+ 				slot = containerSize;
+ 			}
+-		} else if (openContainer.index >= container->capacity()) {
++		} else if (openContainer.index >= container->pageSize()) {
+ 			item = container->getItemByIndex(openContainer.index);
+ 		}
+ 
+@@ -1199,7 +1199,7 @@ void Player::sendUpdateContainerItem(const Container* container, uint16_t slot,
+ 			continue;
+ 		}
+ 
+-		uint16_t pageEnd = openContainer.index + container->capacity();
++		uint16_t pageEnd = openContainer.index + container->pageSize();
+ 		if (slot >= pageEnd) {
+ 			continue;
+ 		}
+@@ -1226,11 +1226,11 @@ void Player::sendRemoveContainerItem(const Container* container, uint16_t slot)
+ 
+ 		uint16_t& firstIndex = openContainer.index;
+ 		if (firstIndex > 0 && firstIndex >= container->size() - 1) {
+-			firstIndex -= container->capacity();
++			firstIndex -= container->pageSize();
+ 			sendContainer(it.first, container, false, firstIndex);
+ 		}
+ 
+-		client->sendRemoveContainerItem(it.first, std::max<uint16_t>(slot, firstIndex), container->getItemByIndex(container->capacity() + firstIndex));
++		client->sendRemoveContainerItem(it.first, std::max<uint16_t>(slot, firstIndex), container->getItemByIndex(container->pageSize() + firstIndex));
+ 	}
+ }
+ 
+diff --git a/src/protocolgame.cpp b/src/protocolgame.cpp
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -1935,7 +1935,7 @@ void ProtocolGame::sendContainer(uint8_t cid, const Container* container, bool h
+ 		msg.addString(container->getName());
+ 	}
+ 
+-	msg.addByte(container->getName() == "Quiver" ? 4 : container->capacity());
++	msg.addByte(container->getName() == "Quiver" ? 4 : container->pageSize());
+ 
+ 	msg.addByte(hasParent ? 0x01 : 0x00);
+ 
+@@ -1946,7 +1946,7 @@ void ProtocolGame::sendContainer(uint8_t cid, const Container* container, bool h
+ 	msg.add<uint16_t>(containerSize);
+ 	msg.add<uint16_t>(firstIndex);
+ 	if (firstIndex < containerSize) {
+-		uint8_t itemsToSend = std::min<uint32_t>(std::min<uint32_t>(container->capacity(), containerSize - firstIndex), std::numeric_limits<uint8_t>::max());
++		uint8_t itemsToSend = std::min<uint32_t>(std::min<uint32_t>(container->pageSize(), containerSize - firstIndex), std::numeric_limits<uint8_t>::max());
+ 
+ 		msg.addByte(itemsToSend);
+ 		for (auto it = container->getItemList().begin() + firstIndex, end = it + itemsToSend; it != end; ++it) {

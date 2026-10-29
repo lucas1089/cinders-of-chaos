@@ -11,6 +11,7 @@
 --   ChaosPouchesCore.rank(rarity, unique)           the sort rank of an item of the Loot Bag (uniques above every rarity)
 --   ChaosPouchesCore.sortPlan(ranks, limit)         which items of a bag to move to the front, in order, to sort it by rarity
 --   ChaosPouchesCore.moveRefusal(m)                 nil (allowed) or the reason a pouch move is refused
+--   ChaosPouchesCore.lootBagInRefusal(m)            nil (allowed) or the reason an item may not go INTO a Loot Bag (one-way bag)
 --   ChaosPouchesCore.summary(cfg, looted, backpack, left, full, overflow, t)   the per-kill loot line, or nil
 --   ChaosPouchesCore.lootList(looted, opts, t)   "10 gold coins, {[Rare] wyrmscale helmet} and 2 more"
 --   ChaosPouchesCore.bindLock(cfg) / needsRebind(cfg, value)   the chaos_locked value of a pouch; must it change to it?
@@ -290,6 +291,18 @@ function P.moveRefusal(m)
 		end
 	end
 	return "Store items stay with you: keep them in your backpack or your depot."
+end
+
+-- The Loot Bag only gives items back (owner 2026-10-29: "nao aceite itens de fora, nao aceite colocar itens, so tirar").
+-- Autoloot fills it from script (pouches.lua), never through a player's move. m = {intoLootBag = bool (the destination is a
+-- Loot Bag or lies anywhere inside one), sameBag = bool (the moved item already lies in that very Loot Bag)}.
+-- A move within the same Loot Bag (to another slot or into a bag inside it) stays allowed: nothing enters from outside.
+P.LOOT_BAG_ONE_WAY = "The Loot Bag only gives items back: autoloot fills it."
+function P.lootBagInRefusal(m)
+	if m and m.intoLootBag and not m.sameBag then
+		return P.LOOT_BAG_ONE_WAY
+	end
+	return nil
 end
 
 -- the loot line's item list. looted = the items taken this kill, in corpse order: {id, name, plural, count, rarity,

@@ -7,7 +7,7 @@
 -- rarity of a stackable item: a stack has none), one container per tick so
 -- a big depot does not stall the server. Only that number changes (rarity_migrate_core.lua). The result is remembered per
 -- character (storage 7102490), so it runs once; a GM can run it again with /lua ChaosRarityMigrate.walk(Player("Name")) (it is safe to repeat).
--- Items elsewhere (a house floor, the guild depot, a market offer) are fixed when they pass through a player's hands again,
+-- Items elsewhere (a house floor, the Guild Stash, a market offer) are fixed when they pass through a player's hands again,
 -- or by sql/chaos_zz_rarity_migrate.sql for the market and stash tables.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 

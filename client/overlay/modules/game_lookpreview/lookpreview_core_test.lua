@@ -398,6 +398,9 @@ eq(steps[1].opacity > steps[4].opacity, true, 'older prints fade')
 eq(steps[2].x < steps[1].x, true, 'behind the walker')
 eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } } }).killfx, true, 'kill effect row')
 eq(P.fromPlayRow({ kind = 'spellskin', play = {} }), nil, 'nothing to play')
+eq(P.fromPlayRow({ kind = 'rarefx', play = { { b = { id = 468 } } } }).killfx, true, 'rare-loot effect row: on a dying troll')
+eq(P.fromPlayRow({ kind = 'levelfx', play = { { b = { id = 468 } } } }).killfx, nil, 'level-up effect row: on the figure')
+eq(P.fromPlayRow({ kind = 'emote', play = { { b = { id = 468 } } } }).killfx, nil, 'emote row: on the figure')
 eq(P.showable({ kind = 'effects' }), true, 'effects are shown')
 
 -- store offers carry their own look (server shop_core.lua K.lookOf): every kind becomes an option

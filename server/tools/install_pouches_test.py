@@ -33,7 +33,7 @@ def otb(nodes):
 cfg = T.read_config()
 check(list(T.NAMES) == ['loot', 'orbs', 'keys', 'gems'], 'four pouches')
 check(cfg['orbs']['capacity'] == 100 and cfg['keys']['capacity'] == 100 and cfg['gems']['capacity'] == 100
-      and cfg['loot']['capacity'] == 255, 'capacities: orbs, keys, gems 100, loot 255')
+      and cfg['loot']['capacity'] == 500, 'capacities: orbs, keys, gems 100, loot 500')
 check(cfg['gems']['id'] == 32095 and cfg['gems']['sourceId'] == 5801 and cfg['gems']['clientId'] == 0, 'the Gem Pouch: id 32095, stock look')
 check(len({c['id'] for c in cfg.values()}) == 4, 'four distinct server ids')
 

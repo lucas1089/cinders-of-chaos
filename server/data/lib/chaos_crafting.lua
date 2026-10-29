@@ -266,7 +266,7 @@ function C.affixes()
 end
 
 -- every custom attribute key a rolled item may carry (rarity, item level, each modifier and its tier mark): what a
--- script that copies an item by hand (the guild depot) must copy
+-- script that copies an item by hand (the Guild Stash) must copy
 function C.attributeKeys()
 	local out = {"rarity", M.ILVL, "combatPowerLevel", M.QUALITY, M.RUINED, M.EXTRA, M.CORRUPTED, M.IMPLICIT, M.NAME_MARK}
 	for _, a in ipairs(C.affixes()) do

@@ -1,6 +1,6 @@
 -- Cosmetics (server: server/data/scripts/chaos/cosmetics.lua, extended opcode 225, JSON {action, data}).
 --   client -> server  open | select {kind, id, line} | preview {id} | hello (once in the game) | close
---   server -> client  state {open, line, lineName, rows, collection}   style {accent}   colors {names, full}
+--   server -> client  state {open, line, lineName, rows, collection, score}   style {accent}   colors {names, full}
 --                     looks {names, full}   tryfx {kind, art, pulse}   result {ok, text}
 -- The window (Character > Cosmetics): spell effect skins of the character's class line, kill effects, loot label
 -- accents, chat name colours, footprints and outlines; unlocks are account-wide, the choice per character. Preview
@@ -17,6 +17,8 @@
 -- skins and kill effects, the default effects too with "Compare with default"), walks the character over a
 -- footprint's prints and draws an outline on it. List icons: a generated picture of the row's main effect
 -- (images/fx/<name>.png, client/tools/sprites/gen_cosmetic_fx_icons.py), else its best frame from the sprites.
+-- The collection score (server collection.lua): `state.score` shows in a strip above the lists (score, next reward) and as
+-- the first row of the Collection tab (every milestone with its reward, and where the points come from).
 -- Every tab follows game_unlocks (one rule for every appearance list): rows not owned are greyed out with their source
 -- in the tooltip, cannot be used, and "Only mine" (kept per character and tab) hides them.
 -- The server's "wardrobe" answer (wardrobe.lua, the full outfit catalogue) comes on this opcode and goes to
@@ -67,7 +69,7 @@ end
 local function tabRows()
   local rows
   if currentTab == 'collection' then
-    rows = CL.collectionRows(state and state.collection or {})
+    rows = CL.collectionRows(state and state.collection or {}, nil, state and state.score)
   else
     rows = CL.tabRows(state and state.rows or {}, currentTab, state and state.line, state and state.lineName)
   end
@@ -206,6 +208,10 @@ local function showDetail()
   showLook(d, r)
   d.nameLabel:setText(r.name .. (r.selected and ('  (' .. tr('in use') .. ')') or ''))
   d.descLabel:setText((r.desc or '') .. (r.collection and r.use and ('\n' .. r.use) or ''))
+  -- the collection score lists its milestones and where the points come from: more room than a row's text
+  local isScore = r.id == CL.SCORE_ROW
+  d.descLabel:setHeight(isScore and 130 or 48)
+  d.howLabel:setHeight(isScore and 56 or 34)
   local how = r.how or ''
   if r.id == 0 then
     how = ''
@@ -301,7 +307,10 @@ local function showList()
     box:setChecked(currentTab == 'footprint' and st.othersFootprints or (currentTab == 'outline' and st.othersOutlines))
     settingBox = false
   end
-  pick(rowOf(selectedId) and selectedId or inUse or 0)
+  -- the strip above the lists: the collection score and the next reward (server collection.lua)
+  window.scoreLabel:setText(state.score and CL.scoreLine(state.score) or '')
+  window.scoreLabel:setVisible(state.score ~= nil)
+  pick(rowOf(selectedId) and selectedId or inUse or (currentTab == 'collection' and rowOf(CL.SCORE_ROW) and CL.SCORE_ROW) or 0)
 end
 
 function selectTab(key)
@@ -487,7 +496,7 @@ function init()
   for _, k in ipairs(CL.KINDS) do
     local b = g_ui.createWidget('ChaosTabButton', window.tabs)
     b:setText(tr(k.name))
-    b:setWidth(96)
+    b:setWidth(90)
     local key = k.key
     b.onClick = function() selectTab(key) end
     tabButtons[key] = b

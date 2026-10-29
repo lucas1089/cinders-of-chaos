@@ -25,6 +25,11 @@ function M.load()
 	env.shop = dofile("data/scripts/chaos/shop_config.lua")
 	env.pact = dofile("data/scripts/chaos/pact_config.lua")
 	env.stash = dofile("data/scripts/chaos/stash_config.lua")
+	env.cosmetics = dofile("data/scripts/chaos/cosmetics_config.lua")
+	dofile("data/scripts/chaos/founder_core.lua")
+	env.founderCore = ChaosFounderCore
+	env.founder = dofile("data/scripts/chaos/founder_config.lua")
+	env.exclusives = dofile("data/scripts/chaos/exclusives_config.lua")
 	env.season = dofile("data/scripts/chaos/seasonpass_config.lua")
 	env.death = dofile("data/scripts/chaos/gentledeath_config.lua")
 	env.xpcap = dofile("data/scripts/chaos/xpcap_config.lua")
@@ -242,14 +247,32 @@ function M.problems(env)
 	local bless = find(env, function(o) return o.service == "blessings" end)[1]
 	local eternal = find(env, function(o) return o.service == "eternalBlessing" end)[1]
 	if bless then
-		local goldWay = 5 * M.blessGold(env, sv.blessingLevel)
-		if bless.cost * R.goldPerCoin * R.maxCheaperThanGold < goldWay then
-			bad("All Blessings %d coins is more than %dx cheaper than %d gold at level %d", bless.cost, R.maxCheaperThanGold, goldWay, sv.blessingLevel)
+		-- All Blessings by level (O317): the tiers rise with the level and each is judged at a typical level of its band
+		local tiers = bless.levelPrices or {{cost = bless.cost}}
+		if #sv.blessingTiers ~= #tiers then
+			bad("All Blessings has %d price tiers, the rules judge %d", #tiers, #sv.blessingTiers)
 		end
-	end
-	if bless and eternal then
-		local t = eternal.cost / bless.cost
-		if t < sv.eternalMinTimes or t > sv.eternalMaxTimes then bad("Eternal Blessing is %.1f All Blessings (limits %d-%d)", t, sv.eternalMinTimes, sv.eternalMaxTimes) end
+		local lastCost = 0
+		for i, t in ipairs(tiers) do
+			local rule = sv.blessingTiers[i]
+			if t.cost <= lastCost then bad("All Blessings tier %d (%d coins) is not dearer than the tier before", i, t.cost) end
+			lastCost = t.cost
+			if rule then
+				local goldWay = 5 * M.blessGold(env, rule.level)
+				if t.cost * R.goldPerCoin * rule.maxCheaper < goldWay then
+					bad("All Blessings %d coins (tier %d) is more than %.1fx cheaper than %d gold at level %d", t.cost, i, rule.maxCheaper, goldWay, rule.level)
+				end
+				if t.upTo and rule.level > t.upTo then bad("All Blessings tier %d is judged at level %d, above its band (up to %d)", i, rule.level, t.upTo) end
+			end
+		end
+		if bless.cost ~= tiers[1].cost then bad("All Blessings cost %d is not its first tier (%d)", bless.cost, tiers[1].cost) end
+		if eternal then
+			local first, top = tiers[1].cost, tiers[#tiers].cost
+			local t1, t2 = eternal.cost / first, eternal.cost / top
+			if t1 > sv.eternalMaxTimes then bad("Eternal Blessing is %.1f of the cheapest All Blessings (limit %d)", t1, sv.eternalMaxTimes) end
+			if t2 < sv.eternalMinTimesTop then bad("Eternal Blessing is %.1f of the dearest All Blessings (at least %d)", t2, sv.eternalMinTimesTop) end
+			if t1 < sv.eternalMinTimes then bad("Eternal Blessing is %.1f of the cheapest All Blessings (at least %d)", t1, sv.eternalMinTimes) end
+		end
 	end
 
 	-- premium and the Pact
@@ -273,6 +296,142 @@ function M.problems(env)
 		end
 	end
 
+	-- Pacto Completo (O317): the Pact and Premium together
+	do
+		local C = R.complete
+		local pactOffer = find(env, function(o) return o.service == "pact" end)[1]
+		local completes = find(env, function(o) return o.kind == "bundle" and o.key and o.key:match("^complete:%d+$") end)
+		if #completes ~= 3 then bad("Pacto Completo: %d offers (want 30 / 90 / 180 days)", #completes) end
+		table.sort(completes, function(a, b) return tonumber(a.key:match("%d+")) < tonumber(b.key:match("%d+")) end)
+		local lastPerDay = math.huge
+		for _, o in ipairs(completes) do
+			local days = tonumber(o.key:match("%d+"))
+			local pactPart, premiumPart
+			for _, p in ipairs(o.parts or {}) do
+				if type(p) == "table" and p.kind == "pact" then pactPart = p
+				elseif type(p) == "string" and p:match("^premium:") then premiumPart = env.byKey[p] end
+			end
+			if not (pactPart and premiumPart) then
+				bad("%s: needs a pact part and a premium part", o.name)
+			else
+				if pactPart.days ~= days or premiumPart.days ~= days then bad("%s: parts of %d and %d days, not %d", o.name, pactPart.days, premiumPart.days, days) end
+				if o.gift ~= false then bad("%s is giftable (a Pact part cannot be)", o.name) end
+				if not pactPart.required then bad("%s: the pact part is not required (it would sell premium alone)", o.name) end
+				local want = pactOffer.cost * days / 30
+				if math.abs(pactPart.cost - want) > want * C.pactPartTolerancePct / 100 then
+					bad("%s: %d days of the Pact listed at %d, the Pact's own price is %.0f", o.name, days, pactPart.cost, want)
+				end
+				local apart = pactPart.cost + premiumPart.cost
+				local disc = 100 * (1 - o.cost / apart)
+				if disc < C.minDiscountPct or disc > C.maxDiscountPct then bad("%s: %.1f%% off buying both apart (limits %d-%d)", o.name, disc, C.minDiscountPct, C.maxDiscountPct) end
+				local premDisc = 100 * (1 - premiumPart.cost / (days / 30) / find(env, function(x) return x.kind == "premium" and x.days == 30 end)[1].cost)
+				if disc < premDisc + C.minOverPremiumPct then
+					bad("%s: %.1f%% off is not clearly better than Premium alone (%.1f%% off for %d days)", o.name, disc, premDisc, days)
+				end
+				if o.cost / days >= lastPerDay then bad("%s: a day costs more than in the shorter offer", o.name) end
+				lastPerDay = o.cost / days
+				if days == 30 and math.abs(o.cost - C.monthlyCoins) > C.monthlyCoins * C.monthlyTolerancePct / 100 then
+					bad("%s: %d coins, the monthly target is about %d (R$ 50)", o.name, o.cost, C.monthlyCoins)
+				end
+			end
+			for _, p in ipairs(o.parts or {}) do
+				if type(p) == "table" and p.kind ~= "pact" then bad("%s: a part that is not the Pact or a premium offer", o.name) end
+			end
+		end
+		-- a month of the Pact alone and of Premium alone: both below the Completo, and the Completo below their sum
+		local p30 = find(env, function(o) return o.kind == "premium" and o.days == 30 end)[1]
+		if completes[1] and pactOffer and p30 then
+			if completes[1].cost <= math.max(pactOffer.cost, p30.cost) then bad("the Completo (%d) must cost more than either part alone", completes[1].cost) end
+			if completes[1].cost >= pactOffer.cost + p30.cost then bad("the Completo (%d) must cost less than both apart (%d)", completes[1].cost, pactOffer.cost + p30.cost) end
+		end
+		-- the Completo is the top offer of Premium & Services
+		local first
+		for _, cat in ipairs(env.shop.categories) do
+			if cat.parent == "Premium & Services" then first = cat break end
+		end
+		if not first or first.name ~= "Pacto Completo" then bad("the Pacto Completo is not the first category of Premium & Services") end
+	end
+
+	-- Remote Stash Deposit (O317): dearer than a month of the Pact that lends it
+	do
+		local St = R.stash
+		local remote = env.byKey["service:pactExtra:stashRemote"]
+		if not remote then
+			bad("no Remote Stash Deposit offer")
+		elseif remote.cost < St.remoteMinCoins or remote.cost > St.remoteMaxCoins then
+			bad("Remote Stash Deposit %d coins outside %d-%d", remote.cost, St.remoteMinCoins, St.remoteMaxCoins)
+		end
+	end
+
+	-- Lasting Exercise weapons (O317): one weekly limit together
+	do
+		local seen = 0
+		for _, o in ipairs(env.offers) do
+			if o.kind == "item" and env.catOf[o] == "Training" and (tonumber((o.name or ""):match("%((%d+)%)")) or 0) >= R.lastingMinCharges then
+				seen = seen + 1
+				if not o.weeklyLimit or o.weeklyLimit > R.lastingMaxPerWeek then bad("%s: weekly limit %s (at most %d)", o.name, tostring(o.weeklyLimit), R.lastingMaxPerWeek) end
+				if not o.weeklyGroup then bad("%s: no weeklyGroup (the limit must be shared by all Lasting weapons)", o.name) end
+			end
+		end
+		if seen == 0 then bad("no Lasting Exercise weapon found") end
+	end
+
+	-- the account discount (O317): per-character services and unlocks only, at most accountDiscountMaxPct
+	do
+		local n, convenience = 0, {}
+		for _, o in ipairs(env.offers) do
+			if o.accountDiscount then
+				n = n + 1
+				if o.accountDiscount > R.accountDiscountMaxPct then bad("%s: %d%% account discount (limit %d%%)", o.name or o.key, o.accountDiscount, R.accountDiscountMaxPct) end
+				if o.kind ~= "service" and o.kind ~= "unlock" then bad("%s: an account discount on a %s", o.name or o.key, o.kind) end
+				convenience[env.catOf[o]] = true
+				if o.service == "everfullUpgrade" then
+					local PC = env.potions
+					for _, e in ipairs(PC.everfull) do
+						if o.upgrade == e.id then
+							local mat = M.materialOf(PC, e)
+							local ask = M.askOf(env, mat.id)
+							if ask and (o.cost * (100 - o.accountDiscount) / 100) * R.goldPerCoin * R.maxCheaperThanGold < mat.count * ask then
+								bad("%s: with the account discount %d coins is more than %dx cheaper than the task's gold", o.name, o.cost, R.maxCheaperThanGold)
+							end
+						end
+					end
+				end
+			end
+		end
+		-- every per-character convenience offer carries it: the pouches, the ration, the two unlocks, the ten Everfull tiers
+		for _, o in ipairs(env.offers) do
+			local isConv = (env.catOf[o] == "Convenience" and (o.service == "pouch" or o.service == "storeFood" or
+				(o.kind == "unlock" and (o.unlock == "autoSeller" or o.unlock == "rarityAutoloot")))) or o.service == "everfullUpgrade"
+			if isConv and not o.accountDiscount then bad("%s: a per-character convenience without the account discount", o.name or o.key) end
+		end
+		if n ~= 17 then bad("%d offers carry the account discount (want 17: 4 pouches, the ration, 2 unlocks, 10 Everfull tiers)", n) end
+	end
+
+	-- Pact Marks (O317): cosmetics of the shelf only, a Mark worth about a coin
+	do
+		local M2 = R.marks
+		local cosOf = {}
+		for _, c in ipairs(env.cosmetics.cosmetics) do cosOf[c.key] = c end
+		for _, it in ipairs(env.pact.marks.shelf) do
+			local c = cosOf[it.key]
+			if not c then
+				bad("Marks shelf: no cosmetic %s", it.key)
+			else
+				if c.source ~= "store" then bad("Marks shelf: %s is not a store cosmetic", it.key) end
+				if c.kind == "spellskin" then bad("Marks shelf: %s changes a spell", it.key) end
+				local per = it.marks / (c.price or 1)
+				if per < M2.minMarksPerCoin - 1e-9 or per > M2.maxMarksPerCoin + 1e-9 then bad("Marks shelf: %s costs %d Marks for %s coins", it.key, it.marks, tostring(c.price)) end
+				if it.marks < env.pact.pact.dailyMarks * 28 then bad("Marks shelf: %s costs less than four weeks of Marks", it.key) end
+			end
+		end
+		if env.pact.pact.dailyMarks * 31 > M2.maxMonthlyMarks then bad("a month of Marks is %d (limit %d)", env.pact.pact.dailyMarks * 31, M2.maxMonthlyMarks) end
+		if env.pact.pact.dailyCoins then bad("the Pact still pays Chaos Coins a day") end
+		for _, o in ipairs(env.offers) do
+			if o.marks then bad("%s: a store offer that takes Marks", o.name or o.key) end
+		end
+	end
+
 	-- bundles
 	for _, o in ipairs(env.offers) do
 		if o.kind == "bundle" then
@@ -284,6 +443,50 @@ function M.problems(env)
 			elseif o.pct and o.pct > R.bundles.maxSetDiscountPct then
 				bad("%s: %d%% off (limit %d%%)", o.name, o.pct, R.bundles.maxSetDiscountPct)
 			end
+		end
+	end
+	-- Founder Pack (O322): two time-limited packs of cosmetics that never return. Anchors about R$ 50 and R$ 100, the grand pack
+	-- about twice the first with more pieces, one per account, not giftable, a window, cosmetic pieces and Pact days only
+	do
+		local FR = R.founder
+		local pactOffer = find(env, function(o) return o.service == "pact" end)[1]
+		for _, p in ipairs(env.founderCore.validate(env.founder, {exclusives = env.exclusives, limits = FR,
+			pactPrice = pactOffer and pactOffer.cost or nil})) do
+			bad("Founder Pack: %s", p)
+		end
+		local offers = find(env, function(o) return o.key and o.key:match("^founder:") end)
+		if #offers ~= #env.founder.tiers then bad("Founder Pack: %d store offers for %d tiers", #offers, #env.founder.tiers) end
+		local pieces = {}
+		for _, o in ipairs(offers) do
+			local anchor = FR.anchors[o.key]
+			if not anchor then
+				bad("%s: no price anchor in store_balance_config.lua founder.anchors", o.key)
+			elseif math.abs(o.cost - anchor) > anchor * FR.anchorTolerancePct / 100 then
+				bad("%s: %d coins, the anchor is %d (R$ %.1f)", o.key, o.cost, anchor, anchor / 10)
+			end
+			if o.kind ~= "bundle" or not o.oncePerAccount then bad("%s: must be a bundle bought once per account", o.key) end
+			if o.gift ~= false then bad("%s: must not be giftable", o.key) end
+			if o.availableFrom ~= env.founder.start or o.availableUntil ~= env.founder["end"] then bad("%s: the sale window differs from founder_config.lua", o.key) end
+			pieces[o.key] = 0
+			for _, p in ipairs(o.parts or {}) do
+				if type(p) ~= "table" or (p.kind ~= "exclusive" and p.kind ~= "pact") then
+					bad("%s: a part that is neither a cosmetic piece nor Pact days (%s)", o.key, type(p) == "table" and tostring(p.kind) or tostring(p))
+				elseif p.kind == "exclusive" then
+					pieces[o.key] = pieces[o.key] + 1
+				elseif pactOffer then
+					local want = pactOffer.cost / 30 * p.days
+					if math.abs(p.cost - want) > want * R.pactDayTolerancePct / 100 then bad("%s: %d Pact days listed at %d, the Pact's own price is %.0f", o.key, p.days, p.cost, want) end
+				end
+			end
+			if pieces[o.key] < FR.minPieces then bad("%s: %d cosmetic pieces (want %d or more)", o.key, pieces[o.key], FR.minPieces) end
+		end
+		local one, grand = env.byKey["founder:pack"], env.byKey["founder:grand"]
+		if one and grand then
+			local ratio = grand.cost / one.cost
+			if ratio < FR.ratioMin or ratio > FR.ratioMax then bad("the grand pack costs %.2fx the first (want %.1f to %.1f)", ratio, FR.ratioMin, FR.ratioMax) end
+			if pieces["founder:grand"] <= pieces["founder:pack"] then bad("the grand pack has no more pieces than the first") end
+		else
+			bad("Founder Pack: founder:pack and founder:grand needed")
 		end
 	end
 	local conv = 0
@@ -520,8 +723,41 @@ function M.report(env)
 			L * env.resetPerLevel / R.goldPerCoin, R.goldPerCoin, reset.cost)
 	end
 	local bless = find(env, function(o) return o.service == "blessings" end)[1]
-	for _, L in ipairs({50, 120, 500, 1000}) do
-		line("- All Blessings at level %d: %d gold by !bless = %.0f coins; the store asks %d", L, 5 * M.blessGold(env, L), 5 * M.blessGold(env, L) / R.goldPerCoin, bless.cost)
+	for _, L in ipairs({50, 120, 200, 201, 350, 500, 501, 700, 1000}) do
+		line("- All Blessings at level %d: %d gold by !bless = %.0f coins; the store asks %d", L, 5 * M.blessGold(env, L), 5 * M.blessGold(env, L) / R.goldPerCoin,
+			env.K.levelCost(bless, L))
+	end
+
+	print("\nPacto Completo (the Pact and Premium together) against buying both apart")
+	print("| Offer | Coins | About | Both apart | Off | Premium alone, same days | Off | Coins a day |")
+	print("|---|---|---|---|---|---|---|---|")
+	local p30 = find(env, function(o) return o.kind == "premium" and o.days == 30 end)[1]
+	for _, o in ipairs(find(env, function(x) return x.kind == "bundle" and x.key and x.key:match("^complete:") end)) do
+		local days = tonumber(o.key:match("%d+"))
+		local apart = M.partsValue(env, o)
+		local prem
+		for _, p in ipairs(o.parts) do if type(p) == "string" then prem = env.byKey[p] end end
+		line("| %s | %d | %s | %d | %.1f%% | %d | %.1f%% | %.1f |", o.name, o.cost, real(o.cost), apart, 100 * (1 - o.cost / apart), prem.cost,
+			100 * (1 - prem.cost / (days / 30) / p30.cost), o.cost / days)
+	end
+	print("\nPer-character convenience for a second character of the account (accountDiscount)")
+	do
+		local list, half = 0, 0
+		for _, o in ipairs(env.offers) do
+			if env.catOf[o] == "Convenience" and o.accountDiscount and o.cost then
+				list = list + o.cost
+				half = half + math.ceil(o.cost * (100 - o.accountDiscount) / 100)
+			end
+		end
+		line("- Loot Bag + Auto Seller + Rarity Autoloot + pouches + Ration: %d coins for the first character, %d for each other one", list, half)
+	end
+
+	print("\nFounder Pack (O322): on sale " .. env.founder.start .. " to " .. env.founder["end"] .. " (server time), then never again")
+	print("| Pack | Coins | About | Pieces | Pact days | Pact days worth | Title |")
+	print("|---|---|---|---|---|---|---|")
+	for _, t in ipairs(env.founder.tiers) do
+		line("| %s | %d | %s | %d | %d | %d | %s |", t.name, t.cost, real(t.cost), #t.exclusives, t.pactDays,
+			math.floor(env.byKey[t.key].parts[#env.byKey[t.key].parts].cost), t.title.text)
 	end
 
 	print("\nBundles (parts at list price)")

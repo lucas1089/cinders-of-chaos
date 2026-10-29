@@ -42,6 +42,21 @@ M.exclusives = {
 		desc = "A high-collared blood-red cape of the Blood Colossus's thralls."}
 }
 
+-- the Founder Pack exclusives (founder_config.lua, owner 2026-10-29): sold only inside the Founder Pack while it is on
+-- sale, never again, never in the store as single pieces. Source "founder" in exclusives_config.lua; icon as above
+M.founder = {
+	{key = "wings_gold_peacock", icon = 2160,
+		desc = "Gold peacock wings with eyes of light. Founders only, never sold again."},
+	{key = "head_royal_coronet", icon = 2160,
+		desc = "A small royal coronet. Founders only, never sold again."},
+	{key = "wings_pyre_seraph", icon = 2353,
+		desc = "Wings of a seraph burning on its own pyre. Grand Founders only, never sold again."},
+	{key = "cape_phoenix_plume_cape", icon = 2353,
+		desc = "A cape of phoenix plumes. Grand Founders only, never sold again."},
+	{key = "head_double_halo", icon = 2160,
+		desc = "Two halos of light, one inside the other. Grand Founders only, never sold again."}
+}
+
 -- the store's categories: slug -> (offer kind, category name, the piece the category icon shows)
 M.CATEGORIES = {
 	{slug = "heads", name = "Head Accessories", icon = "head_bone_crown"},
@@ -54,6 +69,9 @@ local ELEMENT = {fire = "Fire", water = "Water", wind = "Wind", earth = "Earth",
 local function exclusiveKeys()
 	local out = {}
 	for _, e in ipairs(M.exclusives) do
+		out[e.key] = e
+	end
+	for _, e in ipairs(M.founder) do
 		out[e.key] = e
 	end
 	return out
@@ -153,6 +171,14 @@ function M.addExclusives(cfg)
 	for _, b in ipairs(cfg.bosses or {}) do
 		for _, key in ipairs(byBoss[b.key] or {}) do
 			b.rewards[#b.rewards + 1] = key
+		end
+	end
+	-- the Founder Pack pieces: source "founder", no boss group
+	for _, e in ipairs(M.founder) do
+		local p, kind = M.piece(e.key)
+		if p then
+			cfg.exclusives[#cfg.exclusives + 1] = {key = e.key, kind = kind, id = p.id, look = p.look, icon = e.icon,
+				source = "founder", name = p.name, desc = e.desc}
 		end
 	end
 	return cfg

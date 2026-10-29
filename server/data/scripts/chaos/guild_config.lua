@@ -94,7 +94,7 @@ return {
 			basin = 1481, -- coal basin (light)
 			flag = 1436, -- castle flag
 			bench = 2555, -- anvil: the crafting bench
-			depot = 1750, -- large trunk: the guild depot
+			depot = 1750, -- large trunk: the Guild Stash
 			dummies = {27751, 27752}, -- exercise dummies of the base server (work with the store's exercise weapons)
 			trophies = {1444, 1445, 1444, 1445} -- hero statue, monument: their look text is the trophy
 		},
@@ -124,7 +124,7 @@ return {
 				tiers = {{level = 7, cost = 1500000}}},
 			{key = "crafting", name = "Crafting Bench", info = "An anvil that opens the crafting bench.",
 				tiers = {{level = 8, cost = 1000000}}},
-			{key = "depot", name = "Guild Depot", info = "A chest shared by the members, with a log of who put in and took out what.",
+			{key = "depot", name = "Guild Stash", info = "A chest shared by the members, with a log of who put in and took out what.",
 				tiers = {{level = 9, cost = 2500000}}},
 			{key = "trophy", name = "Trophy Room", info = "Statues with the guild's siege wins, world bosses and records.",
 				tiers = {{level = 10, cost = 1000000, requires = {"hub"}}}},
@@ -141,7 +141,7 @@ return {
 		}
 	},
 
-	-- ------------------------------------------------------------------ guild depot
+	-- ------------------------------------------------------------------ Guild Stash
 	depot = {
 		slots = 30, -- entries (one item or one stack each) before the depot perks
 		maxStack = 100,

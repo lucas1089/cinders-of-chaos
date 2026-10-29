@@ -89,7 +89,7 @@ function N.plateOf(player)
 		title = title and title.text or "",
 		color = title and title.color or "",
 		guild = guild and guild:getName() or "",
-		frame = N.frameOf(title, T.frameOf(player))
+		frame = N.frameOf(title, T.frameOf(player), ChaosPact and ChaosPact.frameOf and ChaosPact.frameOf(player) or nil)
 	}
 end
 

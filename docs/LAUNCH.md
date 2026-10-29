@@ -1117,6 +1117,13 @@ root only: `chaos-ctl.sh` takes release tags only, so the admin user can never s
 The web server: Apache reads `updates/.htaccess` (`install_site.sh` copies it); nginx needs the `location` block of
 website/README.md "Client updates". The site's `dl` folder is not involved.
 
+**The game launcher (O314).** A client zip that holds `CindersLauncher.exe` is published with a `native` section: its
+exe, DLLs and `chaos.pack` go to `updates/live/native/` as plain blobs and the signed manifest lists them. Players who
+start the game through the launcher then get a new exe or pack at their next start, with no new download from the
+website; `min_package` still keeps old clients without the launcher out. Nothing changes in how you publish. Keep the
+update signing key offline: it now also decides which programs the launchers run. Release steps and open items:
+`launcher/README.md`.
+
 **Packaging never uses the live update.** The `windows-package.yml` start test runs the client with
 `CHAOS_UPDATE_OFF=1` (no manifest request, no update folder mounted) and fails when the log lacks
 `updater: off (CHAOS_UPDATE_OFF is set)`. The same switch works for any local test run of a package.

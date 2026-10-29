@@ -4,7 +4,7 @@
 --
 -- Escrow: a listed item leaves the seller and lives in its offer row: with engine patch 0017 as the engine's own
 -- binary form of every attribute (item:serializeAttributes(), hex in `data`, codec "blob"), else as a key list (codec
--- "attrs", the guild depot's method). It is created again (item:unserializeAttributes()) for the buyer, or for the
+-- "attrs", the Guild Stash's method). It is created again (item:unserializeAttributes()) for the buyer, or for the
 -- seller after a cancel or the expiry, and always goes to the character's inbox. The re-created item loses its per-item
 -- id (chaos_iid), so the engine gives it a new one: links and tooltips of the old copy never point at it.
 --

@@ -13,13 +13,15 @@ eq(line:find('Pactbound', 1, true) ~= nil, true, 'title shown')
 head, line = V.status({ active = false, endsAt = 5, ends = '2026-10-01 10:00' })
 eq(head, 'Chaos Pact ended', 'ended headline')
 eq(line:find('withdraw-only', 1, true) ~= nil, true, 'ended: nothing lost')
-head = V.status({ active = false, endsAt = 0, dailyCoins = 5 })
+head = V.status({ active = false, endsAt = 0, dailyMarks = 5 })
 eq(head, 'No Chaos Pact', 'never bought')
-eq(select(2, V.status({ active = false, endsAt = 0, dailyCoins = 5 })):find('remote stash deposit', 1, true) ~= nil, true,
+eq(select(2, V.status({ active = false, endsAt = 0, dailyMarks = 5 })):find('remote stash deposit', 1, true) ~= nil, true,
   'the perks name remote stash deposit')
 
-local text, on = V.claim({ active = true, canClaim = true, dailyCoins = 5 })
-eq(text, 'Claim 5 coins', 'claim text') eq(on, true, 'claim on')
+eq(select(2, V.status({ active = false, endsAt = 0, dailyMarks = 5 })):find('5 Pact Marks a day', 1, true) ~= nil, true,
+  'the perks name the Marks, not coins')
+local text, on = V.claim({ active = true, canClaim = true, dailyMarks = 5 })
+eq(text, 'Claim 5 Pact Marks', 'claim text') eq(on, true, 'claim on')
 text, on = V.claim({ active = true, canClaim = false })
 eq(text, 'Claimed today', 'claimed') eq(on, false, 'claimed off')
 text, on = V.claim({ active = false })
@@ -48,4 +50,25 @@ eq(rows[3].editable, false, 'slot over the limit') eq(rows[3].sub, '', 'empty lo
 eq(rows[4].sub:find('read-only', 1, true) ~= nil, true, 'kept build read-only')
 eq(rows[4].sub:find('1 node,', 1, true) == nil, true, 'singular node')
 eq(V.buildHeader({ buildLimit = 2, builds = { {} } }), 'Saved builds: 1 of 2 slots (account-wide)', 'header')
+-- Pact Marks (O317): the balance line, the shelf, the monthly experience
+eq(V.thousands(0), '0', 'zero') eq(V.thousands(999), '999', 'three digits') eq(V.thousands(1000), '1,000', 'a thousand')
+eq(V.thousands(1234567), '1,234,567', 'millions') eq(V.thousands(nil), '0', 'no value') eq(V.thousands('12500'), '12,500', 'a string')
+eq(V.marksLine({ marks = 1250, marksEarned = 3000 }), 'Pact Marks: 1,250 (earned so far: 3,000). They buy only the cosmetics below.', 'balance line')
+eq(V.marksLine(nil), '', 'no status')
+eq(V.monthLine({ monthExp = 0, monthExpAccount = 0 }), 'This month the Pact has given you no extra experience yet.', 'nothing yet')
+eq(V.monthLine({ monthExp = 1234567, monthExpAccount = 1234567 }), 'This month the Pact gave you 1,234,567 extra experience.', 'this character')
+eq(V.monthLine({ monthExp = 5000, monthExpAccount = 90000 }),
+  'This month the Pact gave you 5,000 extra experience (90,000 on all your characters).', 'and the account')
+eq(V.monthLine({ monthExp = 0, monthExpAccount = 700 }), 'This month the Pact gave you 0 extra experience (700 on all your characters).',
+  'only another character earned it')
+local shelf = V.shelfRows({ marks = 160, shelf = {
+  { key = 'loot_ember', name = 'Ember Labels', marks = 150 },
+  { key = 'chat_cinder', name = 'Cinder Name', marks = 200 },
+  { key = 'loot_azure', name = 'Azure Labels', marks = 150, owned = true } } })
+eq(#shelf, 3, 'three rows')
+eq(shelf[1].canBuy, true, 'enough Marks') eq(shelf[1].price, '150 Marks', 'price text') eq(shelf[1].button, 'Buy', 'buy button')
+eq(shelf[2].canBuy, false, 'not enough Marks') eq(shelf[2].button, 'Buy', 'still says Buy, disabled')
+eq(shelf[3].canBuy, false, 'owned: no buy') eq(shelf[3].button, 'Owned', 'owned button') eq(shelf[3].owned, true, 'owned flag')
+eq(shelf[1].name, 'Ember Labels', 'name') eq(#V.shelfRows({}), 0, 'no shelf') eq(#V.shelfRows(nil), 0, 'no status')
+eq(V.shelfRows({ shelf = { { key = 'x', marks = 1 } } })[1].name, 'x', 'the key when the name is missing')
 print('pactview_test: ' .. n .. ' checks OK')

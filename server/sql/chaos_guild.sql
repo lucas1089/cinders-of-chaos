@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `chaos_guild_contrib` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Staff-visible log of everything that moves gold or items, and of the hall: deposit, withdraw, hall, upgrade, rent,
--- put / take (guild depot), refund, level. amount = gold; item_id / count for the depot.
+-- put / take (Guild Stash), refund, level. amount = gold; item_id / count for the stash.
 CREATE TABLE IF NOT EXISTS `chaos_guild_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `guild_id` int(11) NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS `chaos_guild_upgrades` (
   CONSTRAINT `chaos_guild_upgrades_guilds_fk` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- Guild depot: one row per item or stack. attrs = the item's attributes as text (guild_core.lua encodeAttrs).
+-- Guild Stash: one row per item or stack. attrs = the item's attributes as text (guild_core.lua encodeAttrs).
 -- No foreign key: the items of a disbanded guild stay for the staff.
 CREATE TABLE IF NOT EXISTS `chaos_guild_depot` (
   `id` int(11) NOT NULL AUTO_INCREMENT,

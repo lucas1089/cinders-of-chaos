@@ -9,7 +9,7 @@ return {
 	-- multiplies into it and counts: the store potion (doubled in base player.lua; halved back for season characters
 	-- by shop_services.lua), stamina, Blood Moon, Victory, World Experience, blessings, professions, community, the
 	-- Marches and the shrine, the passive tree, item mods, waystones, bestiary, guild, siege, mentor, the Chaos Pact
-	-- (pact_perks.lua, index 7), season modifier and the admin double_exp event (admin/actions_events.lua, index 50).
+	-- (pact_perks.lua, index 7), the Weekend Ritual (weekend.lua, index 55), season modifier and the admin double_exp event (admin/actions_events.lua, index 50).
 	cap = 4.0,
 
 	-- EventCallback onGainExperience index of the cap: after every bonus (0-50), before the dungeon difficulty (90:

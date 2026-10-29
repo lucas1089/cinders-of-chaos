@@ -11,7 +11,9 @@
 -- An exclusive: {key, kind, name, desc, icon, source, ...}
 --   key      stable text, unique ([%w_], 40 at most; stored in chaos_exclusives.exclusive)
 --   icon     server item id drawn in the wardrobe's Collection tab (a picture only)
---   source   "achievement": achievements_data.lua names it in one achievement's reward.exclusives (key and shown name);
+--   source   "founder": a piece of the Founder Pack (founder_config.lua tiers), given by the purchase while it is on sale
+--            (the store part {kind = "exclusive"}), never dropped, never sold again
+--            "achievement": achievements_data.lua names it in one achievement's reward.exclusives (key and shown name);
 --            the account owns it once any character has that achievement (also for older unlocks)
 --            "boss": one group of `bosses` below lists it; a rare personal roll at that boss's kill
 -- Kinds and their fields (every look is existing art of the client pair, sold nowhere; exclusives_test.lua checks the
@@ -30,7 +32,11 @@
 --   cosmetic cosmetic            a footprint / outline (any cosmetic) of cosmetics_config.lua with source "boss"
 -- Where it is chosen, for the window: `use` of the kind in KINDS below.
 
+-- the Founder Pack: its dates give the "how" text of its pieces in the Collection tab
+local okFounder, founderCfg = pcall(dofile, "data/scripts/chaos/founder_config.lua")
+
 local cfg = {
+	founderHow = okFounder and type(founderCfg) == "table" and founderCfg.how or nil,
 	table = "chaos_exclusives", -- one row per account and exclusive (server/sql/chaos_exclusives.sql)
 	staffGroup = 4, -- /exclusive <character>, <key | all>[, revoke] and /exclusive <character>, roll <kill key>
 
@@ -140,6 +146,9 @@ local cfg = {
 			name = "Sepulchre", desc = "Grave-ash iron with violet rivets round your name plate."},
 		{key = "frame_infernal", kind = "frame", frame = "infernal", icon = 2353, source = "boss",
 			name = "Infernal", desc = "A frame of molten iron round your name plate."},
+		-- the Grand Founder Pack (founder_config.lua, sold 2026-11-20 to 2026-12-18 only)
+		{key = "frame_founder", kind = "frame", frame = "founder", icon = 2160, source = "founder",
+			name = "Founder", desc = "A crowned gilded frame round your name plate. Grand Founders only, never sold again."},
 
 		-- ------------------------------------------------------------------ boss drops of the other catalogues
 		{key = "portal_drowned", kind = "portal", style = "drowned", icon = 29638, source = "boss",

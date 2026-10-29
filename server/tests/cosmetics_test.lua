@@ -142,7 +142,10 @@ end
 local count, store = {}, {}
 for _, c in ipairs(cfg.cosmetics) do
 	count[c.kind] = (count[c.kind] or 0) + 1
-	if c.source == "store" then
+	if c.source == "store" and K.COMBAT_KINDS and K.COMBAT_KINDS[c.kind] then
+		-- combat cosmetics others see (O318): 150-250 coins, docs/PRICES.md
+		eq(c.price >= 150 and c.price <= 250, true, "combat cosmetic price 150-250: " .. c.key)
+	elseif c.source == "store" then
 		store[c.kind] = store[c.kind] or c.price
 		eq(c.price, store[c.kind], "one price per kind: " .. c.key)
 	end
@@ -150,7 +153,7 @@ end
 eq(count.spellskin, 12, "12 spell skins")
 eq(count.killfx, 24, "24 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 8 reward track, 3 Pact months, 1 Candlemarks)")
 eq(count.lootbeam, 16, "16 label accents (three PvP, 4 reward track, 3 Pact months, 1 Candlemarks)")
-eq(count.chatcolor, 16, "16 chat colours (three PvP, 5 reward track, the Pact's, 1 Candlemarks)")
+eq(count.chatcolor, 17, "17 chat colours (three PvP, 5 reward track, the Pact's, 1 Candlemarks, the collection reward)")
 -- the Chaos Pact (VIP) perks: never sold, every monthly key and the chat colour are pact cosmetics
 local pactCfg = dofile("data/scripts/chaos/pact_config.lua")
 local byKeyC = {}
@@ -168,7 +171,7 @@ eq(nMonthly, 6, "six months planned")
 eq(K.how(byKeyC.kill_pact_ember), "Chaos Pact: Chaos Pact, November 2026", "the window's line")
 eq(store.spellskin, 250, "skins 250") eq(store.killfx, 200, "kill effects 200")
 eq(store.lootbeam, 150, "label accents 150") eq(store.chatcolor, 200, "chat colours 200")
-eq(count.footprint, 13, "13 footprints (9 store, an achievement, the reward track, two boss drops)")
+eq(count.footprint, 14, "14 footprints (9 store, an achievement, the reward track, two boss drops, the collection reward)")
 eq(count.outline, 13, "13 outlines (9 store, an achievement, the reward track, two boss drops)")
 eq(store.footprint, 200, "footprints 200") eq(store.outline, 250, "outlines 250")
 -- every line but the Necromancer's has 2-3 skins of 2-3 spells
@@ -1027,6 +1030,112 @@ do
 	for i, s in ipairs(live.list) do
 		s.price = shipped.prices[i]
 	end
+end
+
+-- ---------------------------------------------------------------- combat cosmetics others see (O318)
+do
+	dofile("data/lib/chaos_rarity.lua")
+	SKILL_LEVEL, TALKTYPE_MONSTER_SAY = 8, 34
+	-- the pure rules: throttle, rare check, who shows an emote
+	local last = {}
+	eq(K.allowFx(last, "a", 1000, 500), true, "first play") eq(K.allowFx(last, "a", 1200, 500), false, "too soon")
+	eq(K.allowFx(last, "a", 1500, 500), true, "after the wait") eq(K.allowFx(last, "b", 1500, 500), true, "another key")
+	eq(K.allowFx(last, "a", 100, 500), true, "a clock that went back plays")
+	eq(K.hasRare({0, 4, 5}, 5, ChaosRarity.rank), true, "Legendary found") eq(K.hasRare({0, 4}, 5, ChaosRarity.rank), false, "Rare is not")
+	eq(K.hasRare({}, 5, ChaosRarity.rank), false, "nothing dropped") eq(K.hasRare({0}, 0, ChaosRarity.rank), false, "none is no rarity")
+	local wearers = K.emoteWearers({combat = {maxPerKill = 2}}, {1, 2, 2, 3, 4}, function(id) return id ~= 3 end,
+		function(id) return id ~= 1 end)
+	eq(#wearers, 2, "at most maxPerKill") eq(wearers[1], 2, "in order, once each, near only") eq(wearers[2], 4, "skips the one without an emote")
+	-- the shipped combat cosmetics: visual only, 150-250, a real effect, one price band, store offers, rewards
+	local kinds = {levelfx = 0, rarefx = 0, emote = 0}
+	for _, c in ipairs(cfg.cosmetics) do
+		if kinds[c.kind] then
+			kinds[c.kind] = kinds[c.kind] + 1
+			eq(c.source, "store", c.key .. " is sold") eq(ChaosVfx[c.vfx] ~= nil, true, c.key .. " plays a known effect")
+			eq(c.kind == "emote" and #c.say >= 1 and #c.say <= K.EMOTE_MAX or c.say == nil, true, c.key .. " line")
+		end
+	end
+	eq(kinds.levelfx >= 3 and kinds.rarefx >= 3 and kinds.emote >= 3, true, "three or more of each kind")
+	eq(cfg.storage.levelfx >= 7102000 and cfg.storage.emote <= 7102009, true, "storages in the wardrobe block")
+	eq(cfg.storage.levelfx ~= cfg.storage.rarefx and cfg.storage.rarefx ~= cfg.storage.emote, true, "storages differ")
+	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "emote_roar" then c.say = ("x"):rep(40) end end end)
+		:find("say is a line", 1, true) ~= nil, true, "a long emote line is refused")
+	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "lvl_dawn" then c.vfx = "no_such" end end end)
+		:find("not an effect", 1, true) ~= nil, true, "an unknown effect is refused")
+	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "foot_collector" then c.price = 100 end end end)
+		:find("no price", 1, true) ~= nil, true, "a collection reward is never sold")
+
+	local eve, fay = newPlayer(70, "Eve", 70, "Monk"), newPlayer(71, "Fay", 71, "Ranger")
+	local said = {}
+	local party
+	for _, p in ipairs({eve, fay}) do
+		function p:say(text) said[#said + 1] = {who = self.name, text = text} end
+		function p:getParty() return party end
+	end
+	party = {getMembers = function() return {eve, fay} end, getLeader = function() return eve end}
+	registered.ChaosCosmeticsLogin.onLogin(eve)
+	registered.ChaosCosmeticsLogin.onLogin(fay)
+	for _, key in ipairs({"lvl_dawn", "rare_gilded", "emote_roar"}) do
+		eq(M.storeUnlock("cosmetic_" .. key).grant(eve), true, key .. " bought")
+	end
+	M.storeUnlock("cosmetic_emote_salute").grant(fay)
+	opcode(eve, "select", {kind = "levelfx", id = 601}) eq(lastTo("Eve", "result").ok, true, "level-up effect chosen")
+	opcode(eve, "select", {kind = "rarefx", id = 701}) opcode(eve, "select", {kind = "emote", id = 801})
+	opcode(fay, "select", {kind = "emote", id = 802})
+	eq(storages[70][cfg.storage.levelfx], 601, "stored") eq(storages[70][cfg.storage.emote], 801, "emote stored")
+	opcode(eve, "select", {kind = "levelfx", id = 602}) eq(lastTo("Eve", "result").ok, false, "one not owned is refused")
+	eq(lastTo("Eve", "state").rows[1].id ~= nil, true, "rows still sent")
+
+	-- level up: everybody near sees it, once per levelMs, only for a gained character level
+	local before = #effects
+	registered.ChaosCosmeticsAdvance.onAdvance(eve, 0, 20, 21)
+	eq(#effects, before, "a skill is no level")
+	registered.ChaosCosmeticsAdvance.onAdvance(eve, SKILL_LEVEL, 21, 20)
+	eq(#effects, before, "a lost level plays nothing")
+	registered.ChaosCosmeticsAdvance.onAdvance(fay, SKILL_LEVEL, 20, 21)
+	eq(#effects, before, "no level-up effect chosen: nothing")
+	registered.ChaosCosmeticsAdvance.onAdvance(eve, SKILL_LEVEL, 20, 21)
+	eq(#effects, before + 1, "the level-up effect") eq(effects[#effects].id, ChaosVfx.holy_smite.id, "Dawn Ascent")
+	eq(effects[#effects].only, nil, "seen by players nearby")
+	registered.ChaosCosmeticsAdvance.onAdvance(eve, SKILL_LEVEL, 21, 22)
+	eq(#effects, before + 1, "throttled")
+
+	-- rare loot: Legendary or better, on the corpse, once per rareMs; a Rare plays nothing
+	local function corpseOf(rarities, nested)
+		local function item(r, children)
+			return {getCustomAttribute = function() return r end, isContainer = function() return children ~= nil end,
+				getItems = function() return children or {} end}
+		end
+		local list = {}
+		for _, r in ipairs(rarities) do
+			list[#list + 1] = nested and item(0, {item(r)}) or item(r)
+		end
+		return {getItems = function() return list end, getPosition = function() return Position(300, 310, 7) end}
+	end
+	before = #effects
+	eq(M.rareDrop(eve, corpseOf({0, 4})), false, "a Rare drop plays nothing") eq(#effects, before, "no effect")
+	eq(M.rareDrop(fay, corpseOf({5})), false, "no rare-loot effect chosen") eq(#effects, before, "none")
+	eq(M.rareDrop(eve, corpseOf({1, 5}, true)), true, "a Legendary in a bag plays") eq(#effects, before + 1, "one effect")
+	eq(effects[#effects].id, ChaosVfx.aura_burst_gold.id, "Gilded Glint") eq(effects[#effects].x, 300 + ChaosVfx.aura_burst_gold.dx, "at the corpse")
+	eq(M.rareDrop(eve, corpseOf({10})), false, "throttled") eq(#effects, before + 1, "still one")
+
+	-- victory emote: a boss only, the killer and the party near, once per emoteMs
+	local function monsterAt(x, boss, master)
+		return {isMonster = function() return true end, getMaster = function() return master end,
+			getType = function() return {isBoss = function() return boss end} end,
+			getPosition = function() return Position(x, 100, 7) end}
+	end
+	before = #effects
+	eq(M.victory(monsterAt(101, false), eve, eve), false, "an ordinary monster: no emote")
+	eq(M.victory(monsterAt(101, true, {}), eve, eve), false, "a summon: no emote")
+	eq(M.victory(monsterAt(101, true), eve, nil), true, "a boss fell") eq(#effects, before + 2, "Eve's and Fay's effects")
+	eq(#said, 2, "two lines said") eq(said[1].who, "Eve", "the killer first") eq(said[1].text, "Victory!", "her line")
+	eq(said[2].who, "Fay", "then the party member") eq(said[2].text, "For the fallen!", "Warrior's Salute")
+	eq(effects[#effects].only, nil, "seen by players nearby")
+	eq(M.victory(monsterAt(101, true), eve, nil), false, "throttled") eq(#said, 2, "no more lines")
+	registered.ChaosCosmeticsLogout.onLogout(eve)
+	registered.ChaosCosmeticsLogout.onLogout(fay)
+	eq(M.active[70], nil, "logout clears the cache")
 end
 
 -- the client side files exist
