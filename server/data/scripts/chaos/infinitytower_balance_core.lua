@@ -79,7 +79,7 @@ end
 function B.growthFloor(cfg, rate, accel, factor)
 	local want = math.log(factor)
 	local lo, hi = 0, 1e9
-	while hi - lo > 0.5 do
+	while hi - lo > 1e-6 do -- 0.5 could leave hi half a floor past the crossing: ceil one floor late
 		local mid = (lo + hi) / 2
 		if rate * mid + accel * mid * mid / 2 >= want then
 			hi = mid
