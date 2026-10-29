@@ -78,23 +78,23 @@ on:
       update_manifest:
         description: "Signed updater: https URL of updates/live/manifest.json on the website (empty: updater off)"
         required: false
-        default: ""
+        default: "https://www.cindersofchaos.com/updates/live/manifest.json"
       update_public_key:
         description: "Signed updater: the operator's Ed25519 public key, 64 hex digits (never the private key)"
         required: false
-        default: ""
+        default: "7f4ae1b812e3ca86ac4551683b987b8bf68d2256b36b1785c07cb4f3ffb72224"
       client_build:
-        description: "Client build number 1-65535 (CHAOS_CLIENT_BUILD; also Services.update.package). Raise it for every new exe. 13+ ships the encrypted chaos.pack (client/BASE.md 'Client packs')"
+        description: "Client build number 1-65535 (CHAOS_CLIENT_BUILD; also Services.update.package). Raise it for every new exe, here too (the default is the live build). 13+ ships the encrypted chaos.pack (client/BASE.md 'Client packs')"
         required: false
-        default: "13"
+        default: "30"
       server_host:
         description: "Server address of the separate client and server downloads (DNS name or IPv4; the full Windows zip keeps 127.0.0.1)"
         required: false
-        default: "127.0.0.1"
+        default: "play.cindersofchaos.com"
       site_url:
         description: "Website of the separate client downloads, https://... (account API: character looks and Create character; login-screen services through <site>/clientservices). Empty: both off"
         required: false
-        default: ""
+        default: "https://www.cindersofchaos.com"
       allow_dev_key:
         description: "Test build only: allow clients without the secrets CHAOS_CLIENT_KEY / CHAOS_RSA_PUBLIC (public development keys; never for players)"
         type: boolean
@@ -113,6 +113,7 @@ concurrency:
 
 env:
   ASSETS_REF: ${{ inputs.assets_ref || 'windows-assets' }}
+  # the live values are the defaults, so a dispatch without inputs (gh, API) still makes a package players get
   UPDATE_MANIFEST: ${{ inputs.update_manifest }}
   UPDATE_PUBLIC_KEY: ${{ inputs.update_public_key }}
   CLIENT_BUILD: ${{ inputs.client_build || '1' }}
