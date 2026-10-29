@@ -25247,7 +25247,11 @@ owner is root. An unit with no `User=` (very old install) runs as root too. The 
      for a database it cannot ping and give up.
   4. `chown -R` of only the folders the service writes: kit: `server/`, `database/`, `run/`, `logs/`, `crashes/`, plus
      `chaos.env` (owner only, mode kept); repo layout: the server folder. Never the checkout, the kit root or the
-     binaries (`mariadb/`, `start-server.sh`), which stay root-owned.
+     binaries (`mariadb/`, `start-server.sh`), which stay root-owned. Also the RSA login keys named in
+     `CHAOS_RSA_KEY_FILE` of the env file (`chown -h`, mode kept) and a folder of them that holds only `.pem` files
+     (what `rsa_key.py gen` makes, e.g. `/opt/chaos-trial/rsa`). The engine reads them at start; a root-owned key of mode
+     600 stopped the start with `ERROR: Missing file <key>` (2026-10-29). A folder with other files keeps its owner.
+     `server-user status` prints `login_keys=N`, the key files found.
   5. The unit: the repository's unit of the same layout with `User=` and `Group=` set (the kit folder replaced when it is not
      `/opt/chaos-trial`), written next to the old one and moved in; the old one is kept as
      `CHAOS_SERVER_USER_STATE/chaos-server.service.before-DATE` (default `/var/lib/chaos/server-user`, the newest 5),
