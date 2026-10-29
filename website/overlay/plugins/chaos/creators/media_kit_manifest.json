@@ -3,8 +3,8 @@
  "zip": {
   "name": "cinders-of-chaos-media-kit.zip",
   "path": "press/cinders-of-chaos-media-kit.zip",
-  "bytes": 1517423,
-  "sha256": "9d368c136fcbc970cc12b3a57046864d3cca8e1b43375d5f4914839212af465d"
+  "bytes": 1517524,
+  "sha256": "63fac442f31fa683a71b2f21636461dc9a24f6c7f58cb41393adc2a25d26422b"
  },
  "files": [
   {
@@ -44,13 +44,13 @@
   },
   {
    "name": "fact-sheet.en.txt",
-   "bytes": 1387,
-   "sha256": "ec7e4d73811dd8b1338577da19e6a9544f65c31038ca5ff973905fe6b2264f53"
+   "bytes": 1435,
+   "sha256": "abe05d34d328e227899cfe895cb2e127c4d81a46442f767f41e9c806bf81b3cf"
   },
   {
    "name": "ficha-tecnica.pt-BR.txt",
-   "bytes": 1451,
-   "sha256": "7a8990caa7ef0afd918257b55717c478fdfad9f39d6ff48a445d7b4d32a7c1d6"
+   "bytes": 1504,
+   "sha256": "a7f78e2f09a487d7b2f703b91cf1438585b69bbdeec38ddceb2225f53d3a9d52"
   },
   {
    "name": "logo.png",
