@@ -397,6 +397,51 @@ function M.reworkedSince(list, seen, tree, variantKey)
 	return set, newest, any
 end
 
+-- ------------------------------------------------------------------------------------------------ lane change (O305)
+-- The plain nodes read the class lane of the character's variant key, so an ascension (or a switch between ascended
+-- classes) changes what an allocated node gives. The saved tree is refunded once for free instead of silently changing.
+-- laneChangeFrom(stored, vocId, keyOf, baseOf) -> the variant key the saved tree was made under, or nil when nothing
+-- needs refunding. `stored` is the recorded vocation id (< 0 = none: a character that ascended before the record is
+-- taken to have planned under its base class's lane; an unascended one just gets recorded). A change between two
+-- vocations of the same variant key (Mystic / Elementalist) needs nothing.
+function M.laneChangeFrom(stored, vocId, keyOf, baseOf)
+	stored = tonumber(stored) or -1
+	local from = stored
+	if from < 0 then
+		local base = baseOf and baseOf[vocId]
+		if not base or base == vocId then
+			return nil
+		end
+		from = base
+	end
+	local oldKey, newKey = keyOf(from), keyOf(vocId)
+	if not oldKey or not newKey or oldKey == newKey then
+		return nil
+	end
+	return oldKey
+end
+
+-- laneDiff(tree, oldKey, newKey) -> set of the plain nodes (shared stats, no mastery) that give other stats under
+-- the two keys
+function M.laneDiff(tree, oldKey, newKey)
+	local function same(a, b)
+		for k, v in pairs(a or {}) do
+			if (b or {})[k] ~= v then return false end
+		end
+		for k, v in pairs(b or {}) do
+			if (a or {})[k] ~= v then return false end
+		end
+		return true
+	end
+	local set = {}
+	for id, node in pairs(tree.nodes) do
+		if node.s and not node.m and not same(M.nodeStats(node, oldKey), M.nodeStats(node, newKey)) then
+			set[id] = true
+		end
+	end
+	return set
+end
+
 -- dropNodes(tree, ids, drop) -> kept (list, in the order of ids), removed (list of {id, why = "reworked" |
 -- "disconnected"}). The ids are a saved allocation (root excluded); drop is a set of ids.
 function M.dropNodes(tree, ids, drop)

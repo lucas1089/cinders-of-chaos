@@ -157,6 +157,11 @@ function C.afterVocationChange(player)
 	if ChaosMonk and ChaosMonk.sendChi and ChaosMonk.getChi then
 		ChaosMonk.sendChi(player, ChaosMonk.getChi(player), true)
 	end
+	-- the new class reads the plain passive nodes with its own lane: the saved tree is refunded once, for free
+	-- (passivetree.lua refundLaneChange, O305)
+	if ChaosPassiveTree and ChaosPassiveTree.refundLaneChange then
+		ChaosPassiveTree.refundLaneChange(player, true)
+	end
 	C.sendBasicData(player)
 end
 

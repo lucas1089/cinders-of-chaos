@@ -63,13 +63,17 @@ local cfg = Chaos.passive
 
 local function mkPlayer(vocId, level)
 	local st = {[Chaos.storage.passiveRework] = 6} -- the rework refunds of old versions are done (not what is tested)
+	if vocId then st[Chaos.storage.passiveLane] = vocId end -- the lane refund of an ascension is done (O305, below)
 	local p = {msgs = {}}
 	function p:getGuid() return 1 end
 	function p:getId() return 1 end
 	function p:getLevel() return level end
 	function p:getStorageValue(k) local v = st[k]; if v == nil then return -1 end return v end
 	function p:setStorageValue(k, v) st[k] = v end
-	function p:getVocation() if vocId == nil then return nil end return {getId = function() return vocId end} end
+	function p:getVocation()
+		if vocId == nil then return nil end
+		return {getId = function() return vocId end, getName = function() return "Voc" .. vocId end}
+	end
 	function p:sendExtendedOpcode() return true end
 	function p:registerEvent() end
 	function p:sendTextMessage(_, text) self.msgs[#self.msgs + 1] = text end
@@ -125,7 +129,7 @@ for _, c in ipairs(classes) do
 end
 assert(count > 1000, "matrix size " .. count)
 
--- the Ninja: a tree built as a Thief is still whole after the ascension to Ninja and a death
+-- the Ninja: a tree kept through the ascension (the lane refund is done, see below) is still whole after a death
 do
 	local alloc = allocate("thief", points(1000))
 	local saved = Core.formatAlloc(alloc, {})
@@ -162,6 +166,56 @@ do
 	eq(ids, nil, "a save while over budget is refused")
 	ids = ChaosPassiveTree.internal.validateNodes(mkPlayer(Chaos.classes.ids.ninja, level), alloc)
 	assert(ids and #ids == #alloc, "the same tree validates again at the old level")
+end
+
+-- O305: the ascended class reads the plain nodes with its own lane; the ascension refunds the differing nodes once
+do
+	local RANGER, BEAST = Chaos.classes.ids.ranger or 3, Chaos.classes.ids.beastmaster or 15
+	local CC = ChaosClasses
+	local drop = Core.laneDiff(tree, CC.keystoneKey(RANGER), CC.keystoneKey(BEAST))
+	local alloc = allocate("beastmaster", 120)
+	local function expected()
+		local kept = Core.dropNodes(tree, alloc, drop)
+		return Core.formatAlloc(kept, {}), #alloc - #kept
+	end
+	local keptText, removedCount = expected()
+	assert(removedCount > 5 and removedCount < #alloc, "the test tree has plain lane nodes and others (" .. removedCount .. ")")
+	local function player(vocId, marker)
+		local p = mkPlayer(vocId, 1000)
+		p:setStorageValue(Chaos.storage.passiveLane, marker)
+		setmetatable(p, {__index = function() return function() return true end end})
+		return p
+	end
+	local saved = Core.formatAlloc(alloc, {})
+
+	-- a character that ascended before the fix: one refund at the next login, none after
+	rows = {{preset = 1, name = "Preset 1", nodes = saved}}
+	local p = player(BEAST, -1)
+	login.onLogin(p)
+	eq(rows[1].nodes, keptText, "pre-fix Beastmaster: the nodes the lane changes are refunded at login")
+	eq(p:getStorageValue(Chaos.storage.passiveLane), BEAST, "the lane is recorded")
+	eq(#p.msgs, 1, "one message")
+	assert(p.msgs[1]:find("Voc" .. BEAST, 1, true) and p.msgs[1]:find(tostring(removedCount), 1, true), "message names the class and the count: " .. p.msgs[1])
+	local after = rows[1].nodes
+	local p2 = player(BEAST, p:getStorageValue(Chaos.storage.passiveLane))
+	login.onLogin(p2)
+	eq(rows[1].nodes, after, "the next login refunds nothing")
+	eq(#p2.msgs, 0, "and says nothing")
+
+	-- a Ranger with no record is only recorded, never refunded
+	rows = {{preset = 1, name = "Preset 1", nodes = saved}}
+	p = player(RANGER, -1)
+	login.onLogin(p)
+	eq(rows[1].nodes, saved, "unascended Ranger keeps every node")
+	eq(p:getStorageValue(Chaos.storage.passiveLane), RANGER, "its lane is recorded")
+
+	-- the ascension itself (ascension.lua afterVocationChange): refund once, at that moment
+	rows = {{preset = 1, name = "Preset 1", nodes = saved}}
+	p = player(BEAST, RANGER)
+	eq(ChaosPassiveTree.refundLaneChange(p, true), removedCount, "ascending refunds the differing nodes")
+	eq(rows[1].nodes, keptText, "the preset lost exactly those nodes")
+	eq(ChaosPassiveTree.refundLaneChange(p, true), 0, "a second call refunds nothing")
+	eq(rows[1].nodes, keptText, "the preset is unchanged by the second call")
 end
 
 eq(Core.debt(10, 4), 6, "debt")

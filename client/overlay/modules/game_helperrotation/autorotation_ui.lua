@@ -77,7 +77,7 @@ local function classAllows(s, voc)
   end
   -- the same rule as the pickers (ChaosSpellFix.allowsVocation: the server id, also through the client's fold)
   if ChaosSpellFix and ChaosSpellFix.allowsVocation then
-    return ChaosSpellFix.allowsVocation({ vocations = s.vocations }, voc, rawget(_G, 'translateVocation'))
+    return ChaosSpellFix.allowsVocation({ id = s.id, vocations = s.vocations }, voc, rawget(_G, 'translateVocation'))
   end
   return table.contains(s.vocations, voc)
 end

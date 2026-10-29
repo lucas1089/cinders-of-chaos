@@ -41,6 +41,16 @@ def main():
     c2 = copy.deepcopy(classes)
     c2['Thief']['spells'].discard(names['Last Breath'])
     assert any('Last Breath' in b and 'Thief' in b for b in bad(spells, c2))
+    # O307: client vocations against the server's
+    server, client = C.load_server_vocations(), C.load_client_vocations()
+    assert len(client) > 100 and C.client_problems(server, client, classes) == []
+    fv = [i for i, v in client.items() if v == server[i] and 7 in v and 15 not in v][0]
+    c3 = copy.deepcopy(client)
+    c3[fv].add(15)
+    assert any('spell %d' % fv in b for b in C.client_problems(server, c3, classes))
+    c4 = copy.deepcopy(classes)
+    c4['Beastmaster']['spells'].add(fv)
+    assert any('Beastmaster' in b and 'does not let' in b for b in C.client_problems(server, client, c4))
     print('check_rotation_kit_test: OK')
 
 

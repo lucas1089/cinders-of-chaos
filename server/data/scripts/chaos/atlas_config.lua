@@ -65,8 +65,8 @@ local cfg = {
 	-- the Swift time of a tier (atlas_core.lua A.swiftSeconds; server/README.md "Rift Atlas"): the rift model's clear
 	-- time of the tier on its size band's typical map (rift_core.lua R.clearSeconds: packs, guardian, walk) for a solo
 	-- player with swiftDps x the model player's damage, rounded down to swiftRound seconds, and never less than a lower
-	-- tier's time. Tiers 1-10 (160 and 200 tiles, 12:00 and 13:00 limits) 5:15, tiers 11-15 (240 tiles, 15:00)
-	-- 5:30-7:45; the model player takes about 5:40-6:15, 5:40-5:50 and 6:40-9:30. Earned Swift cells stay whatever the
+	-- tier's time. Since the smaller maps of O309 (144 / 176 / 208 tiles) tiers 1-10 5:00, tiers 11-15 5:15-7:30;
+	-- before (160 / 200 / 240 tiles) tiers 1-10 5:15 and tiers 11-15 5:30-7:45. Earned Swift cells stay whatever the
 	-- times were.
 	swiftDps = 1.25,
 	swiftRound = 15,

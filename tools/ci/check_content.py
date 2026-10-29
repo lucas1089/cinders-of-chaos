@@ -727,6 +727,12 @@ for f, r in XML_DOCS:
     check_monster_rules(f, r)
 for f, _n, t in LUA_DOCS:
     check_lua_rules(f, t)
+# rift monsters wear looks set at runtime (rift_config.lua looks); one the pair leaves blank is an invisible monster (O309)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import rift_looks
+RIFT_CFG = 'server/data/scripts/chaos/rift_config.lua'
+for msg in rift_looks.problems(open(RIFT_CFG, encoding='utf-8').read(), BLANK_OUTFITS, PAIR_OUTFITS):
+    fail(f'{RIFT_CFG}: [look.rift] {msg}')
 for key in sorted(set(ALLOW) - allow_used):
     fail(f'tools/ci/check_content.py: ALLOW entry {key} matches nothing any more (remove it)')
 print('content check:', 'OK' if not bad else f'{bad} problem(s)')

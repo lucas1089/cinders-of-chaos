@@ -785,7 +785,26 @@ do
 	-- the shipped switches are on since 2026-10-13 (things_custom24 with looks 2200-2212 is on windows-assets at
 	-- 407ad9b6); the plain look plan is tested with both off, the on paths below
 	eq(L.variantsOn, true, "rank variants on: looks 2200-2207 are in the live client pair")
-	eq(L.bigGuardiansOn, true, "big guardians on: looks 2208-2212 are in the live client pair")
+	eq(L.bigGuardiansOn, false, "big guardians off: looks 2208-2212 are blank in pairs 51-56 (O309)")
+	-- looks the pair leaves blank are never worn (O309): every look of a plan goes through looks.undrawn
+	local blank = {[2101] = true, [2102] = true, [2105] = true, [2106] = true, [2109] = true, [2110] = true, [2112] = true,
+		[2113] = true, [2208] = true, [2209] = true, [2210] = true, [2211] = true, [2212] = true}
+	for from, to in pairs(L.undrawn) do
+		ok(blank[from] and not blank[to] and not L.undrawn[to], from .. " -> " .. to .. ": replaced by a drawn look")
+	end
+	for _, th in ipairs(cfg.themes) do
+		local types = {{name = "a"}, {name = "b"}, {name = "c"}}
+		local lp = R.lookPlan(cfg, th.name, types)
+		for _, nm in ipairs({"a", "b", "c"}) do
+			ok(not blank[lp.byName[nm]], th.name .. " " .. nm .. ": a drawn look " .. tostring(lp.byName[nm]))
+		end
+		ok(not blank[lp.guardian], th.name .. ": a drawn guardian look")
+		for _, rank in ipairs({"minion", "brute", "elite"}) do
+			for _, v in ipairs(L.variants[th.name][rank] or {}) do
+				ok(not blank[v.look], th.name .. " " .. rank .. ": a drawn variant")
+			end
+		end
+	end
 	L.variantsOn, L.bigGuardiansOn = false, false
 	ok(L and L.enabled, "rift looks on")
 	local all = {}
@@ -805,15 +824,15 @@ do
 	local plan = R.lookPlan(cfg, "Abyssal Rift", types)
 	local fam = L.families["Abyssal Rift"]
 	eq(R.lookOf(plan, "weak one", false), fam.minion, "weakest type: minion")
-	eq(R.lookOf(plan, "MIDDLE", false), fam.brute, "middle type: brute (any case)")
-	eq(R.lookOf(plan, "Strong", false), fam.elite, "strongest type: elite")
+	eq(R.lookOf(plan, "MIDDLE", false), R.drawn(L, fam.brute), "middle type: brute (any case)")
+	eq(R.lookOf(plan, "Strong", false), R.drawn(L, fam.elite), "strongest type: elite")
 	eq(R.lookOf(plan, "Strong", true), fam.guardian, "guardian: the guardian look")
 	eq(R.lookOf(plan, "Treasure Goblin", false), nil, "a monster of no rift type keeps its look")
 	local two = R.lookPlan(cfg, "Ashen Crypt", {types[1], types[3]})
-	eq(R.lookOf(two, "weak one", false), L.families["Ashen Crypt"].brute, "two types: brute")
-	eq(R.lookOf(two, "strong", false), L.families["Ashen Crypt"].elite, "two types: elite")
+	eq(R.lookOf(two, "weak one", false), R.drawn(L, L.families["Ashen Crypt"].brute), "two types: brute")
+	eq(R.lookOf(two, "strong", false), R.drawn(L, L.families["Ashen Crypt"].elite), "two types: elite")
 	local one = R.lookPlan(cfg, "Obsidian Hall", {types[2]})
-	eq(R.lookOf(one, "middle", false), L.families["Obsidian Hall"].elite, "one type: elite")
+	eq(R.lookOf(one, "middle", false), R.drawn(L, L.families["Obsidian Hall"].elite), "one type: elite")
 	eq(R.lookPlan(cfg, "No Such Theme", types), nil, "no family: no looks")
 	eq(R.lookOf(nil, "x", true), nil, "no plan: own look")
 	-- names: one per rank and theme, the family word first; credit stays with the type (only the shown name changes)
@@ -1100,7 +1119,9 @@ do
 	local last = 0
 	for t = 1, cfg.maxTier do
 		local d1, d5 = R.density(cfg, t, 1), R.density(cfg, t, 5)
-		ok(d1.count > last, "more monsters every tier " .. t)
+		-- the plan only grows with the tier (the floor of tilesPerMonster rounds to packs of 5-7, so a step can be flat)
+		ok(d1.count >= last, "never fewer monsters at a higher tier " .. t)
+		ok(t < 4 or d1.count > R.density(cfg, t - 3, 1).count, "more monsters than three tiers down, tier " .. t)
 		last = d1.count
 		ok(near(d1.count, R.densityCount(cfg, t, 1), 4), "solo count near the curve, tier " .. t .. ": " .. d1.count)
 		ok(near(d5.count / d1.count, 2, 0.15), "party of 5: twice the monsters, tier " .. t)
@@ -1134,14 +1155,18 @@ do
 	end
 	-- the health of a pack monster grows with the tier up to 10; the guardian's base too
 	for t = 2, 10 do
-		ok(R.packHealth(cfg, t) > R.packHealth(cfg, t - 1), "pack health grows, tier " .. t)
+		-- a bigger band holds more monsters on its bigger map (a monster for as many tiles), so its first tier's budget is
+		-- shared out wider (O309); everywhere else it grows
+		if t ~= cfg.layout.sizes[1][1] + 1 then
+			ok(R.packHealth(cfg, t) > R.packHealth(cfg, t - 1), "pack health grows, tier " .. t)
+		end
 		ok(R.guardianBase(cfg, t) > R.guardianBase(cfg, t - 1), "guardian grows, tier " .. t)
 	end
-	-- live cap: 60 (+10 per extra player) + 0.5 per 100 walkable tiles; the worst case of all 16 slots (server/README.md
+	-- live cap: 60 (+10 per extra player) + 1 per 100 walkable tiles; the worst case of all 16 slots (server/README.md
 	-- "Instance limits", Load: the monsters away from every player are idle)
 	eq(R.liveCap(cfg, 1, 0), 60, "60 alive solo without area")
 	eq(R.liveCap(cfg, 5, 0), 100, "100 for 5 without area")
-	eq(R.liveCap(cfg, 1, 20000), 160, "a layout of 20,000 walkable tiles: 160 solo")
+	eq(R.liveCap(cfg, 1, 12000), 180, "a layout of 12,000 walkable tiles: 180 solo")
 	eq(R.liveCap(cfg, 1), 60 + math.floor(cfg.density.live.per100 * cfg.layout.typical[1].walkable / 100),
 		"no area: the typical layout of tier 1's band")
 	eq(R.liveCap(cfg, 5, 60000), cfg.density.live.max, "capped")
@@ -1153,8 +1178,8 @@ do
 	ok(R.densityCount(cfg, 10, 1, 20000) > R.densityCount(cfg, 10, 1, 8000), "a bigger layout plans more monsters")
 	ok(R.packHealth(cfg, 10, 20000) < R.packHealth(cfg, 10, 8000), "and each one is weaker (the same health budget)")
 	local typ15 = R.density(cfg, 15, 1)
-	ok(typ15.count >= 350 and typ15.count <= 450, "tier 15 solo on a typical big layout: 350-450 monsters (" .. typ15.count .. ")")
-	ok(R.density(cfg, 1, 1).count >= 120 and R.density(cfg, 1, 1).count <= 150, "tier 1 solo: 120-150 monsters")
+	ok(typ15.count >= 450 and typ15.count <= 550, "tier 15 solo on a typical big layout: 450-550 monsters (" .. typ15.count .. ")")
+	ok(R.density(cfg, 1, 1).count >= 160 and R.density(cfg, 1, 1).count <= 200, "tier 1 solo: 160-200 monsters")
 	-- walking speed (engine patch 0018 table: 3.70 tiles/s at level 100, 5.88 at 300, 7.69 at 1000)
 	ok(math.abs(R.tilesPerSecond(100) - 1000 / 270) < 1e-9, "level 100: 270 ms a step")
 	ok(math.abs(R.tilesPerSecond(300) - 1000 / 170) < 1e-9, "level 300: 170 ms")
@@ -1217,13 +1242,13 @@ do
 	eq(R.reinforceRoom(centres, {{x = 18, y = 0}}, 9), "west", "away from the player")
 	eq(R.reinforceRoom(centres, {{x = 0, y = 0}}, 30), nil, "every room too close")
 	eq(R.reinforceRoom(centres, {}, 9), "east", "no players: any (by name)")
-	-- the big layouts spread the live cap: about 1 monster a 100 walkable tiles solo, the plan 1.5-2
+	-- the big layouts spread the live cap: 1-2 monsters a 100 walkable tiles solo, the plan 2.6-3.9 (a monster per 27-33 tiles)
 	for b, typ in ipairs(cfg.layout.typical) do
 		local tier = cfg.layout.sizes[b][1]
 		local live = R.liveCap(cfg, 1, typ.walkable) / typ.walkable * 100
-		ok(live >= 0.7 and live <= 1.3, string.format("band %d: %.2f alive a 100 tiles solo", b, live))
+		ok(live >= 0.9 and live <= 2.3, string.format("band %d: %.2f alive a 100 tiles solo", b, live))
 		local plan = R.density(cfg, tier, 1, nil, typ.walkable).count / typ.walkable * 100
-		ok(plan >= 1.5 and plan <= 2.4, string.format("band %d: %.2f planned a 100 tiles solo", b, plan))
+		ok(plan >= 2.6 and plan <= 3.9, string.format("band %d: %.2f planned a 100 tiles solo", b, plan))
 	end
 end
 

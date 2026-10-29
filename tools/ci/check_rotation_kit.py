@@ -16,7 +16,11 @@ Checks:
    table, and in at least one preset or in the extras of each class that has it, so Auto setup can reach it;
  - every class with an ultimate (line spell quest 3, flag `ultimate` in rotation_model.csv) lists it as `ultimate = id`, and
    no preset or extras holds it (it takes no slot of the 5);
- - every preset spell belongs to its class (no spell of another class).
+ - every preset spell belongs to its class (no spell of another class);
+ - (O307) what the client lists for a vocation can be cast by it: the vocations of game_chaosspells/spelldata.lua are the
+   vocations of server/data/spells/chaos/spells_chaos.xml (the list the server checks on a cast), and every spell in a
+   class's presets, extras or ultimate names that class in both. Tester report: a Beastmaster was offered Final Verdict
+   (Deadeye only) in Auto setup and on the action bar and got "not your class".
 usage: python3 -I tools/ci/check_rotation_kit.py
 """
 import os
@@ -59,6 +63,48 @@ def load_data(path=DATA):
             ids.update(int(x) for x in p.group(1).split(','))
         classes[m.group(2)] = {'voc': int(m.group(1)), 'spells': ids | ({ult} if ult else set()), 'slots': ids, 'ultimate': ult}
     return spells, classes
+
+
+XML = os.path.join(REPO, 'server', 'data', 'spells', 'chaos', 'spells_chaos.xml')
+SPELLDATA = os.path.join(REPO, 'client', 'overlay', 'modules', 'game_chaosspells', 'spelldata.lua')
+
+
+def load_server_vocations(path=XML):
+    """{spell id: set of server vocation ids} of the Chaos spells, by the vocation names of the spell XML"""
+    sys.path.insert(0, os.path.join(REPO, 'client', 'tools'))
+    from gen_spell_data import VOC
+    text = open(path, encoding='utf-8').read()
+    out = {}
+    for m in re.finditer(r'<instant ([^>]*)>(.*?)</instant>', text, re.S):
+        sid = int(re.search(r'spellid="(\d+)"', m.group(1)).group(1))
+        out[sid] = {VOC[v] for v in re.findall(r'<vocation name="([^"]+)"', m.group(2))}
+    return out
+
+
+def load_client_vocations(path=SPELLDATA):
+    """{spell id: set of vocation ids} the client lists (ChaosSpellData)"""
+    out = {}
+    text = open(path, encoding='utf-8').read().split('ChaosSpellNames')[0]
+    for m in re.finditer(r'\{ id = (\d+), name = "[^"]+".*?vocations = \{ ([\d, ]*) \}', text):
+        out[int(m.group(1))] = {int(x) for x in m.group(2).split(',') if x.strip()}
+    return out
+
+
+def client_problems(server, client, classes):
+    bad = []
+    for sid, voc in sorted(client.items()):
+        if sid not in server:
+            bad.append('spell %d is in spelldata.lua but not in the server spell XML' % sid)
+        elif voc != server[sid]:
+            bad.append('spell %d: the client lists vocations %s, the server %s (run client/tools/gen_spell_data.py)' % (
+                sid, sorted(voc), sorted(server[sid])))
+    for cls, have in sorted(classes.items()):
+        for sid in sorted(have['spells']):
+            if sid in server and have['voc'] not in server[sid]:
+                bad.append('%s (%d): Auto setup holds spell %d, which the server does not let this class cast' % (cls, have['voc'], sid))
+            if sid in client and have['voc'] not in client[sid]:
+                bad.append('%s (%d): Auto setup holds spell %d, which the client does not list for this class' % (cls, have['voc'], sid))
+    return bad
 
 
 def problems(kit, spells, classes, model_spells, model):
@@ -104,6 +150,7 @@ def main():
     spells, classes = load_data()
     model_spells, model = R.load_all()
     bad = problems(kit, spells, classes, model_spells, model)
+    bad += client_problems(load_server_vocations(), load_client_vocations(), classes)
     for b in bad:
         print('FAIL ' + b)
     if bad:

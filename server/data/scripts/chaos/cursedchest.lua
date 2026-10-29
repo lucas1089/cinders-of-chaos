@@ -673,7 +673,15 @@ local function itemName(id)
 	return ok and name or tostring(id)
 end
 
--- stack to the player's backpack; the rest to the inbox. Returns true when the inbox was used.
+-- where the rest of a loot went when it did not fit the backpack: "inbox", or "ground" when the inbox could not take it
+-- either (the player is told in both cases; nothing is lost)
+local function dropAt(player, id, n)
+	local item = Game.createItem(id, n, player:getPosition())
+	return item ~= nil
+end
+
+-- stack to the player's backpack; the rest to the inbox, else to the ground under the player. Returns "inbox",
+-- "ground" or false (everything fitted).
 local function giveStack(player, id, count)
 	if count <= 0 then
 		return false
@@ -682,13 +690,24 @@ local function giveStack(player, id, count)
 	if rest <= 0 then
 		return false
 	end
+	local where = "inbox"
 	local inbox = player:getInbox()
 	while inbox and rest > 0 do
 		local n = math.min(rest, 100)
-		inbox:addItem(id, n, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+		if not inbox:addItem(id, n, INDEX_WHEREEVER or -1, FLAG_NOLIMIT) then
+			break
+		end
 		rest = rest - n
 	end
-	return true
+	while rest > 0 do
+		local n = math.min(rest, 100)
+		if not dropAt(player, id, n) then
+			break
+		end
+		where = "ground"
+		rest = rest - n
+	end
+	return where
 end
 
 local function giveEx(player, item)
@@ -696,83 +715,128 @@ local function giveEx(player, item)
 		return false
 	end
 	local inbox = player:getInbox()
-	if inbox then
-		inbox:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+	if inbox and inbox:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT) == (RETURNVALUE_NOERROR or 0) then
+		return "inbox"
 	end
-	return true
+	if item.moveTo then
+		item:moveTo(player:getPosition())
+	end
+	return "ground"
 end
 
 local function stackText(id, n)
 	return (n > 1 and (n .. "x ") or "") .. itemName(id)
 end
 
--- one player's roll. Returns the text pieces and whether the inbox was used.
+-- one player's roll. Returns the text pieces and where the rest went when the backpack was full ("inbox", "ground" or
+-- false). Every part is its own step: one that breaks (a missing item type, a crafting error) is logged and the other
+-- parts are still given, so a loot never ends empty and silent because of one bad roll.
 function CC.giveLoot(player, ch)
 	local c = cfg()
 	local ev = ch.ev
 	local L = ChaosLoot
 	local level, players = ch.level, ev.players
-	local itemFind = L and L.itemFindMult and L.itemFindMult(player) or 1
-	local parts, inbox = {}, false
+	local itemFind = try("itemFind", function() return L and L.itemFindMult and L.itemFindMult(player) or 1 end) or 1
+	local parts, spill = {}, false
+	local function note(where)
+		if where == "ground" or (where and not spill) then
+			spill = where
+		end
+	end
 	local function stack(id, n)
 		if n > 0 then
-			inbox = giveStack(player, id, n) or inbox
+			note(giveStack(player, id, n))
 			parts[#parts + 1] = stackText(id, n)
 		end
 	end
-	local value = K.goldValue(c, level, players, rand)
-	if value > 0 then
-		for _, coin in ipairs(K.coins(value)) do
-			inbox = giveStack(player, coin.id, coin.count) or inbox
-		end
-		parts[#parts + 1] = value .. " gold"
-	end
-	stack(c.loot.chaosOrb.id, K.chaosOrbs(c, level, players, rand))
-	if K.divineOrb(c, itemFind, players, rand) then
-		stack(c.loot.divineOrb.id, 1)
-	end
-	stack(c.loot.shards.id, K.shardCount(c, level, players, rand))
-	local orbCounts, order = {}, {}
-	for _, key in ipairs(K.orbKeys(c, rand)) do
-		local orb = ChaosCrafting and ChaosCrafting.orbByKey and ChaosCrafting.orbByKey[key]
-		if orb then
-			if not orbCounts[orb.id] then
-				order[#order + 1] = orb.id
+	try("gold", function()
+		local value = K.goldValue(c, level, players, rand)
+		if value > 0 then
+			for _, coin in ipairs(K.coins(value)) do
+				note(giveStack(player, coin.id, coin.count))
 			end
-			orbCounts[orb.id] = (orbCounts[orb.id] or 0) + 1
+			parts[#parts + 1] = value .. " gold"
 		end
-	end
-	for _, id in ipairs(order) do
-		stack(id, orbCounts[id])
-	end
-	local ilvl = ChaosItemMods and ChaosItemMods.sourceLevel and ChaosItemMods.sourceLevel({monsterLevel = level, tier = "rare"})
+	end)
+	try("orbs", function()
+		stack(c.loot.chaosOrb.id, K.chaosOrbs(c, level, players, rand))
+		if K.divineOrb(c, itemFind, players, rand) then
+			stack(c.loot.divineOrb.id, 1)
+		end
+	end)
+	try("shards", function() stack(c.loot.shards.id, K.shardCount(c, level, players, rand)) end)
+	try("crafting orbs", function()
+		local orbCounts, order = {}, {}
+		for _, key in ipairs(K.orbKeys(c, rand)) do
+			local orb = ChaosCrafting and ChaosCrafting.orbByKey and ChaosCrafting.orbByKey[key]
+			if orb then
+				if not orbCounts[orb.id] then
+					order[#order + 1] = orb.id
+				end
+				orbCounts[orb.id] = (orbCounts[orb.id] or 0) + 1
+			end
+		end
+		for _, id in ipairs(order) do
+			stack(id, orbCounts[id])
+		end
+	end)
+	local ilvl = try("item level", function()
+		return ChaosItemMods and ChaosItemMods.sourceLevel and ChaosItemMods.sourceLevel({monsterLevel = level, tier = "rare"})
+	end)
 	for _, id in ipairs(K.pickGear(c, level, ev.gear, K.itemCount(c, players, rand), rand)) do
-		local t = K.pickItemTier(c, rand)
-		local r = t.floor or 0
-		if L and L.upgradeRarity then
-			r = math.max(r, L.upgradeRarity(t.tier, L.stockRarity(), itemFind * c.loot.rarityMult, level))
-		end
-		local item = ChaosCrafting and ChaosCrafting.createItem and ChaosCrafting.createItem(id, r, ilvl)
-		item = item or Game.createItem(id, 1)
-		if item then
-			inbox = giveEx(player, item) or inbox
-			parts[#parts + 1] = itemName(id)
-		end
+		try("gear", function()
+			local t = K.pickItemTier(c, rand)
+			local r = t.floor or 0
+			if L and L.upgradeRarity then
+				r = math.max(r, L.upgradeRarity(t.tier, L.stockRarity(), itemFind * c.loot.rarityMult, level))
+			end
+			local item = try("forge", function()
+				return ChaosCrafting and ChaosCrafting.createItem and ChaosCrafting.createItem(id, r, ilvl)
+			end)
+			item = item or Game.createItem(id, 1)
+			if item then
+				note(giveEx(player, item))
+				parts[#parts + 1] = itemName(id)
+			end
+		end)
 	end
 	if L and L.rollUniques then
 		local uniques = try("uniques", L.rollUniques, c.loot.unique.tier, ev.killed or "", level, itemFind * c.loot.unique.mult) or {}
 		for _, e in ipairs(uniques) do
-			local item = Game.createItem(e.id, 1)
-			if item then
-				if ChaosMakeUnique then
-					ChaosMakeUnique(item)
+			try("unique", function()
+				local item = Game.createItem(e.id, 1)
+				if item then
+					if ChaosMakeUnique then
+						ChaosMakeUnique(item)
+					end
+					note(giveEx(player, item))
+					parts[#parts + 1] = "{" .. e.name .. "}"
 				end
-				inbox = giveEx(player, item) or inbox
-				parts[#parts + 1] = "{" .. e.name .. "}"
-			end
+			end)
 		end
 	end
-	return parts, inbox
+	return parts, spill
+end
+
+-- the one message of a claim, on screen (MESSAGE_LOOT lines are kept off the game screen by game_lootscreen, so the
+-- chest's outcome is an event line plus a toast; the loot line of the console follows)
+local function claimReport(player, parts, spill)
+	local text
+	if #parts == 0 then
+		text = Chaos.t(player, "The cursed chest held nothing for you this time.")
+	else
+		local tail = ""
+		if spill == "ground" then
+			tail = Chaos.t(player, " Your backpack and inbox were full: the rest lies on the ground at your feet.")
+		elseif spill == "inbox" then
+			tail = Chaos.t(player, " Your backpack was full: the rest is in your inbox.")
+		end
+		text = Chaos.t(player, "Cursed Chest loot: %s.%s", table.concat(parts, ", "), tail)
+	end
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text)
+	if ChaosNotify and ChaosNotify.gmBroadcast then
+		pcall(ChaosNotify.gmBroadcast, player, text)
+	end
 end
 
 local function claim(player, ch)
@@ -796,10 +860,15 @@ local function claim(player, ch)
 	if not K.claim(ev, player:getId()) then -- the mark first: nothing below can run twice for one player
 		return
 	end
-	local parts, inbox = CC.giveLoot(player, ch)
-	local msgType = constant(c.loot.messageType) or MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR
-	player:sendTextMessage(msgType, Chaos.t(player, "Cursed Chest loot: %s.%s", table.concat(parts, ", "),
-		inbox and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or ""))
+	local okLoot, parts, spill = pcall(CC.giveLoot, player, ch)
+	if not okLoot then
+		-- the whole roll broke: the mark goes back so the player can use the chest again, and is told
+		print("[Chaos cursed chest] loot: " .. tostring(parts))
+		K.unclaim(ev, player:getId())
+		player:sendCancelMessage(Chaos.t(player, "The cursed chest could not give its loot. Use it again."))
+		return
+	end
+	claimReport(player, parts, spill)
 	fx(player:getPosition(), c.chest.openEffect)
 end
 
@@ -839,6 +908,7 @@ function useAction.onUse(player, item, fromPosition, target, toPosition, isHotke
 	local ok, res = pcall(CC.use, player, item)
 	if not ok then
 		print("[Chaos cursed chest] use: " .. tostring(res))
+		pcall(function() player:sendCancelMessage(Chaos.t(player, "The cursed chest could not be used. Try again.")) end)
 	end
 	return true
 end
@@ -887,13 +957,35 @@ function think.onThink(interval)
 			expired[#expired + 1] = ch
 		elseif not chestItem(ch) then
 			expired[#expired + 1] = ch
+		elseif ch.ev and ch.ev.state == "won" and not ch.ev.reminded and ch.ev.claimUntil - now <= (c.event.remindSec or 30) * 1000 then
+			ch.ev.reminded = true
+			for _, pid in ipairs(K.unclaimed(ch.ev)) do
+				local p = Player(pid)
+				if p then
+					say(p, "The cursed chest still holds your share: use it within %d seconds or it crumbles.",
+						math.max(1, math.floor((ch.ev.claimUntil - now) / 1000)))
+				end
+			end
+			fx(ch.pos, (loopCount % 3 == 0) and c.chest.loopEffectAlt or c.chest.loopEffect)
 		else
 			fx(ch.pos, (loopCount % 3 == 0) and c.chest.loopEffectAlt or c.chest.loopEffect)
 		end
 	end
 	for _, ch in ipairs(expired) do
-		if ch.ev and ch.ev.state == "running" then
-			clearMonsters(ch.ev, true)
+		local ev = ch.ev
+		if ev and ev.state == "running" then
+			clearMonsters(ev, true)
+			K.fail(ev, "lost")
+			tellAll(ev, "The cursed chest vanished. Its hordes fade.")
+		elseif ev and ev.state == "won" then
+			-- nobody is left unserved without being told
+			for _, pid in ipairs(K.unclaimed(ev)) do
+				local p = Player(pid)
+				if p then
+					say(p, "The cursed chest crumbled before you took your share.")
+					toast(p, "The cursed chest crumbled before you took your share.")
+				end
+			end
 		end
 		remove(ch)
 	end

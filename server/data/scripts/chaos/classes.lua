@@ -355,6 +355,68 @@ function M.biteValuesFor(player)
 		1 + ChaosClassTree.value(player, "ksPackAlpha", "bonus"))
 end
 
+-- O306: the companion's own bite (beastmaster.lua): the same shape on autoLevel / autoSkill. Feral Command and Pack
+-- Frenzy keep biteValues (a spell's maul).
+function M.autoBiteValues(level, distanceSkill, factor)
+	local c = cfg().companion
+	local avg = (level * c.autoLevel + (distanceSkill or 0) * c.autoSkill) * (factor or 1)
+	return math.floor(avg * (1 - c.spread)), math.floor(avg * (1 + c.spread))
+end
+
+function M.autoBiteValuesFor(player)
+	return M.autoBiteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE),
+		1 + ChaosClassTree.value(player, "ksPackAlpha", "bonus"))
+end
+
+-- the level shown after a companion's name: its owner's (a spawned wolf got the wild War Wolf's level, 12, or the level
+-- of the hunt it stood in, because the spawn callback of monster_levels.lua runs before the summon is bound)
+function M.companionLevel(ownerLevel)
+	return math.max(1, math.floor(tonumber(ownerLevel) or 1))
+end
+
+-- damage after the companion's own cut (cfg.companion.taken) and the Pack Alpha cut (a share, 0 .. 1); `damage` has the
+-- sign the engine gives it (a negative health change keeps its sign)
+function M.companionDamageTaken(damage, packAlphaCut)
+	local f = cfg().companion.taken * (1 - (packAlphaCut or 0))
+	return damage - math.floor(damage * (1 - f))
+end
+
+-- the health a companion keeps when its maximum changes: the same share, at least 1
+function M.companionRescale(oldMax, health, newMax)
+	if not oldMax or oldMax <= 0 then
+		return newMax
+	end
+	return math.max(1, math.min(newMax, math.floor(health * newMax / oldMax + 0.5)))
+end
+
+-- Every path of a companion (Wild Bond's spawn, the call-back of one already out, the owner's level-ups seen by the
+-- 0.5 s tick of beastmaster.lua) goes through here, so a companion is always at its owner's level: shown level and
+-- maximum health. `fresh`: a newly summoned one, full health. Returns true when something changed. Engine methods used:
+-- Monster:getMaxHealth / setMaxHealth / getHealth / addHealth, setDisplayLevel / getDisplayLevel (patches 0040, 0056).
+function M.syncCompanion(owner, companion, fresh)
+	local level = owner:getLevel()
+	local changed = false
+	if companion.setDisplayLevel then
+		local want = M.companionLevel(level)
+		if not (companion.getDisplayLevel and companion:getDisplayLevel() == want) then
+			pcall(companion.setDisplayLevel, companion, want)
+			changed = true
+		end
+	end
+	local want = M.companionHealth(level)
+	local oldMax = companion:getMaxHealth()
+	if fresh or want ~= oldMax then
+		local health = fresh and want or M.companionRescale(oldMax, companion:getHealth(), want)
+		companion:setMaxHealth(want) -- the engine caps the health at the new maximum
+		local now = companion:getHealth()
+		if health > now then
+			companion:addHealth("healing", health - now) -- this engine: (damage type, amount)
+		end
+		changed = true
+	end
+	return changed
+end
+
 -- ------------------------------------------------------------------------------------------------ weapons
 -- A "dagger-type" weapon for the dual wield: any one-handed sword (daggers and light blades).
 -- weaponType / slotPosition as ItemType:getWeaponType() / getSlotPosition() return them.

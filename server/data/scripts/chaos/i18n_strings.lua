@@ -2127,6 +2127,10 @@ return {
 		["Your passive tree: %d nodes whose effect changed or that left the tree were refunded for free%s."] =
 			"Sua árvore passiva: %d nós cujo efeito mudou (ou que saíram da árvore) foram devolvidos de graça%s.",
 		["; your saved loadouts lost %d"] = "; seus loadouts salvos perderam %d",
+		["Your ascension changed your passive tree to the %s lane: your %d point was refunded for free. Open the tree to spend it, or use Auto build."] =
+			"Sua ascensão mudou sua árvore passiva para a linha de %s: %d ponto seu foi devolvido de graça. Abra a árvore para gastá-lo, ou use o Auto build.",
+		["Your ascension changed your passive tree to the %s lane: your %d points were refunded for free. Open the tree to spend them, or use Auto build."] =
+			"Sua ascensão mudou sua árvore passiva para a linha de %s: %d pontos seus foram devolvidos de graça. Abra a árvore para gastá-los, ou use o Auto build.",
 		["First kill of %s: +1 passive point! %s."] = "Primeira morte de %s: +1 ponto passivo! %s.",
 		["Boss passive points: +%d for bosses you had already slain (%s). %s."] =
 			"Pontos passivos de boss: +%d por bosses que você já tinha matado (%s). %s.",
@@ -4052,6 +4056,17 @@ return {
 		["You were not there when the curse was lifted."] = "Você não estava lá quando a maldição foi quebrada.",
 		["You are too far from the cursed chest."] = "Você está longe demais do baú amaldiçoado.",
 		["Cursed Chest loot: %s.%s"] = "Tesouro do Baú Amaldiçoado: %s.%s",
+		["The cursed chest held nothing for you this time."] = "O baú amaldiçoado não tinha nada para você desta vez.",
+		[" Your backpack and inbox were full: the rest lies on the ground at your feet."] =
+			" Sua mochila e sua caixa de entrada estavam cheias: o resto está no chão, aos seus pés.",
+		["The cursed chest could not give its loot. Use it again."] =
+			"O baú amaldiçoado não conseguiu entregar o tesouro. Use-o de novo.",
+		["The cursed chest could not be used. Try again."] = "Não foi possível usar o baú amaldiçoado. Tente de novo.",
+		["The cursed chest still holds your share: use it within %d seconds or it crumbles."] =
+			"O baú amaldiçoado ainda guarda a sua parte: use-o em %d segundos ou ele se desfaz.",
+		["The cursed chest crumbled before you took your share."] =
+			"O baú amaldiçoado se desfez antes de você pegar a sua parte.",
+		["The cursed chest vanished. Its hordes fade."] = "O baú amaldiçoado sumiu. As hordas desaparecem.",
 		-- Guild, guild hall and guild depot reasons (guild_core.lua, guild.lua, guild_hall.lua)
 		["You are not in a guild."] =
 			"Você não está em uma guild.",

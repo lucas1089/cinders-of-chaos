@@ -412,6 +412,32 @@ do
   end
 end
 
+-- O307: a Chaos spell is offered to exactly the classes on its list, with the real fold of base patch 0016 (the Beastmaster
+-- folds to 7, the Deadeye: Final Verdict, Twin Verdict, Hail of Dawn and Skewering Line were listed for it)
+do
+  local function realFold(id)
+    if id == 4 or id == 8 or id == 14 then return 8 end
+    if id == 3 or id == 7 or id == 15 then return 7 end
+    if id == 1 or id == 5 then return 5 end
+    if id == 10 then return 6 end
+    if id == 11 or id == 12 or id == 13 or (id >= 17 and id <= 25) then return id end
+    return 0
+  end
+  for _, s in ipairs(ChaosSpellData) do
+    local on = {}
+    for _, v in ipairs(s.vocations) do on[v] = true end
+    for v = 1, 25 do
+      eq(F.allowsVocation(s, v, realFold), on[v] == true, s.name .. ' for vocation ' .. v .. ' follows its list')
+    end
+  end
+  local fv
+  for _, s in ipairs(ChaosSpellData) do if s.name == 'Final Verdict' then fv = s end end
+  eq(F.allowsVocation(fv, 15, realFold), false, 'Final Verdict: not for the Beastmaster')
+  eq(F.allowsVocation(fv, 7, realFold), true, 'Final Verdict: the Deadeye')
+  -- the helper's Auto setup passes the id with the list
+  eq(F.allowsVocation({ id = fv.id, vocations = fv.vocations }, 15, realFold), false, 'by id: not for the Beastmaster')
+end
+
 -- slots and hotkeys of retired spells are cleared (O145, base patch 0123)
 do
   local set = F.retiredWordSet(ChaosRemovedSpells, ChaosCappedSpells, ChaosRetiredSpells, ChaosSpellNames, ChaosSpellData)

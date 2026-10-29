@@ -413,6 +413,23 @@ function K.claim(ev, playerId)
 	return true
 end
 
+-- takes a claim mark back: the loot of that player failed as a whole, so the player may use the chest again
+function K.unclaim(ev, playerId)
+	ev.claimed[playerId] = nil
+end
+
+-- the participants (creature ids) who have not taken their share
+function K.unclaimed(ev)
+	local out = {}
+	for id in pairs(ev.participants) do
+		if not ev.claimed[id] then
+			out[#out + 1] = id
+		end
+	end
+	table.sort(out)
+	return out
+end
+
 -- every participant claimed, or the time ran out
 function K.claimDone(ev, nowMs)
 	if ev.state ~= "won" then
