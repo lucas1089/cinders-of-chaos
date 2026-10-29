@@ -715,7 +715,8 @@ function M.victory(creature, killer, mostDamageKiller)
 				Vfx(p:getPosition(), fx.vfx)
 			end
 			if fx.say and p.say then
-				p:say(fx.say, TALKTYPE_MONSTER_SAY)
+				-- each player in range reads the line in own language (Chaos.yell: creature:say with a target)
+				Chaos.yell(p, fx.say, TALKTYPE_MONSTER_SAY)
 			end
 		end
 	end

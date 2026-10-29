@@ -71,4 +71,7 @@ eq(shelf[2].canBuy, false, 'not enough Marks') eq(shelf[2].button, 'Buy', 'still
 eq(shelf[3].canBuy, false, 'owned: no buy') eq(shelf[3].button, 'Owned', 'owned button') eq(shelf[3].owned, true, 'owned flag')
 eq(shelf[1].name, 'Ember Labels', 'name') eq(#V.shelfRows({}), 0, 'no shelf') eq(#V.shelfRows(nil), 0, 'no status')
 eq(V.shelfRows({ shelf = { { key = 'x', marks = 1 } } })[1].name, 'x', 'the key when the name is missing')
+local slot = V.shelfRows({ marks = 500, shelf = { { key = 'foot_ember', name = 'Ember Footprints', marks = 200, monthly = true, endsAt = 1 } } })[1]
+eq(slot.name, 'Ember Footprints (this month)', 'the month slot is named') eq(slot.monthly, true, 'flag kept') eq(slot.canBuy, true, 'and bought like the others')
+eq(V.shelfRows({ shelf = { { key = 'x', marks = 1 } } })[1].monthly, false, 'a fixed row is not monthly')
 print('pactview_test: ' .. n .. ' checks OK')

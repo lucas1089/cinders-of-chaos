@@ -474,6 +474,15 @@ ChaosCraftingBench = {
 }
 local clock = 0
 os.mtime = function() return clock end
+-- addEvent / Player for the batch chain (O319): events wait in a list until the test runs them
+local unpack = table.unpack or unpack
+local events, online = {}, true
+function addEvent(fn, delay, ...) events[#events + 1] = {fn = fn, delay = delay, args = {...}} end
+local function runEvent()
+	local e = table.remove(events, 1)
+	if e then e.fn(unpack(e.args)) end
+	return e ~= nil
+end
 
 dofile("data/scripts/chaos/salvage.lua")
 local S = ChaosSalvage
@@ -588,6 +597,110 @@ S.benchState(player, state)
 eq(state.salvage.batch.count, 0, "none left")
 act("salvageBatch", {bag = "", maxRarity = 1, sig = state.salvage.batch.sig})
 eq(lastResult().ok, false, "nothing to salvage")
+
+-- O319: a capped batch chains the next one by itself (a small cap stands in for 255)
+do
+	local cfg = S.config -- the one salvage.lua reads
+	local realCap = cfg.batchCap
+	cfg.batchCap = 10
+	events = {}
+	function Player(id) return online and player:getId() == id and player or nil end
+	local function commons(n)
+		for _ = 1, n do put(backpack, newItem(2405, {custom = {rarity = 1, combatPowerLevel = 1}})) end
+	end
+	local function commonsLeft()
+		local c = 0
+		for _, it in ipairs(backpack.items) do
+			if it.id == 2405 then c = c + 1 end
+		end
+		return c
+	end
+	local function clean()
+		for i = #backpack.items, 1, -1 do
+			if backpack.items[i].id == 2405 then table.remove(backpack.items, i) end
+		end
+		events = {}
+	end
+	local function preview()
+		act("salvageScope", {mode = "salvage", bag = "", maxRarity = 1})
+		local st = {items = {}}
+		S.benchState(player, st)
+		return st.salvage.batch
+	end
+	-- 25 Commons: 10, then 10, then 5, one click
+	commons(25)
+	local pv = preview()
+	eq(pv.capped, true, "capped") eq(pv.cap, 10, "the small cap")
+	act("salvageBatch", {bag = "", maxRarity = 1, sig = pv.sig})
+	eq(lastResult().ok, true, "first batch of the chain") eq(commonsLeft(), 15, "10 salvaged")
+	eq(lastResult().text:find("The rest of the bag follows.", 1, true) ~= nil, true, "the text says more follows")
+	eq(#events, 1, "the next batch is scheduled") eq(events[1].delay, cfg.chainDelayMs, "after the short delay")
+	runEvent()
+	eq(commonsLeft(), 5, "the second batch ran by itself") eq(#events, 1, "and chained the third")
+	runEvent()
+	eq(commonsLeft(), 0, "the third batch emptied it") eq(#events, 0, "the chain ends") eq(lastResult().ok, true, "result ok")
+	eq(lastResult().text:find("follows", 1, true), nil, "the last batch says nothing follows")
+	eq(runEvent(), false, "nothing left to run")
+	-- exactly one batch: no chain
+	commons(10)
+	pv = preview()
+	act("salvageBatch", {bag = "", maxRarity = 1, sig = pv.sig})
+	eq(pv.capped, false, "10 fit the cap") eq(#events, 0, "not capped: no chain") eq(commonsLeft(), 0, "gone")
+	-- the player logs out between two batches
+	commons(25)
+	pv = preview()
+	act("salvageBatch", {bag = "", maxRarity = 1, sig = pv.sig})
+	online = false
+	runEvent()
+	online = true
+	eq(commonsLeft(), 15, "no batch for a player who logged out") eq(#events, 0, "and no more events")
+	clean()
+	-- the logout handler clears the chain too
+	commons(25)
+	pv = preview()
+	act("salvageBatch", {bag = "", maxRarity = 1, sig = pv.sig})
+	for _, r in ipairs(registered) do
+		if r.name == "ChaosSalvageLogout" then r.onLogout(player) end
+	end
+	runEvent()
+	eq(commonsLeft(), 15, "the logout event cleared the chain")
+	clean()
+	-- the bag changes between two batches: the chain stops and says so
+	commons(25)
+	pv = preview()
+	act("salvageBatch", {bag = "", maxRarity = 1, sig = pv.sig})
+	commons(1)
+	runEvent()
+	eq(commonsLeft(), 16, "nothing salvaged after a change") eq(#events, 0, "the chain stopped")
+	eq(lastResult().ok, false, "a refusal is sent") eq(lastResult().text:find("bag changed", 1, true) ~= nil, true, "it says why")
+	clean()
+	-- a batch of the player's own ends the older chain
+	commons(25)
+	pv = preview()
+	act("salvageBatch", {bag = "", maxRarity = 1, sig = pv.sig})
+	local old = events[1]
+	events = {}
+	pv = preview()
+	act("salvageBatch", {bag = "", maxRarity = 1, sig = pv.sig})
+	eq(commonsLeft(), 5, "two batches by hand") eq(#events, 1, "the new chain")
+	old.fn(unpack(old.args))
+	eq(commonsLeft(), 5, "the old timer does nothing")
+	runEvent()
+	eq(commonsLeft(), 0, "the new chain finishes")
+	clean()
+	-- K.chainStep alone
+	local st = {left = 5, batches = 1}
+	eq(K.chainStep(st, nil, {chainMax = 8}), "gone", "no bag")
+	eq(K.chainStep(st, {count = 0, skipped = {}}, {chainMax = 8}), "done", "nothing eligible")
+	eq(K.chainStep(st, {count = 5, skipped = {}}, {chainMax = 8}), "go", "the five left")
+	eq(K.chainStep(st, {count = 4, skipped = {cap = 1}}, {chainMax = 8}), "go", "a capped rest counts too")
+	eq(K.chainStep(st, {count = 6, skipped = {}}, {chainMax = 8}), "changed", "one more than left")
+	eq(K.chainStep(st, {count = 3, skipped = {}}, {chainMax = 8}), "changed", "fewer than left")
+	eq(K.chainStep({left = 5, batches = 8}, {count = 5, skipped = {}}, {chainMax = 8}), "limit", "the batch limit")
+	cfg.batchCap = realCap
+	assert(cfg.chainMax >= math.ceil(500 / cfg.batchCap), "the chain covers a 500 slot bag")
+	assert(cfg.chainDelayMs >= 100 and cfg.chainDelayMs <= 2000, "a short delay")
+end
 -- the Loot Bag (a store pouch in the purse, outside the backpack): offered after the main backpack, salvaged by key
 local purse = newItem(26052, {container = true, size = 50})
 local lootBag = put(purse, newItem(32081, {container = true, size = 255}))

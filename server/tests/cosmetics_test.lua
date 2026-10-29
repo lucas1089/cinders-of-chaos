@@ -1069,7 +1069,7 @@ do
 	local said = {}
 	local party
 	for _, p in ipairs({eve, fay}) do
-		function p:say(text) said[#said + 1] = {who = self.name, text = text} end
+		function p:say(text, _, _, target) said[#said + 1] = {who = self.name, text = text, to = target and target.name} end
 		function p:getParty() return party end
 	end
 	party = {getMembers = function() return {eve, fay} end, getLeader = function() return eve end}
@@ -1126,13 +1126,25 @@ do
 			getPosition = function() return Position(x, 100, 7) end}
 	end
 	before = #effects
+	-- Eve reads English, Fay pt-BR; both stand in range: every line goes out once per viewer, in the viewer's language
+	Chaos.setLang(eve, "en") Chaos.setLang(fay, "pt-BR")
+	Game.getSpectators = function() return {eve, fay} end
 	eq(M.victory(monsterAt(101, false), eve, eve), false, "an ordinary monster: no emote")
 	eq(M.victory(monsterAt(101, true, {}), eve, eve), false, "a summon: no emote")
 	eq(M.victory(monsterAt(101, true), eve, nil), true, "a boss fell") eq(#effects, before + 2, "Eve's and Fay's effects")
-	eq(#said, 2, "two lines said") eq(said[1].who, "Eve", "the killer first") eq(said[1].text, "Victory!", "her line")
-	eq(said[2].who, "Fay", "then the party member") eq(said[2].text, "For the fallen!", "Warrior's Salute")
+	eq(#said, 4, "two lines, each sent to two viewers") eq(said[1].who, "Eve", "the killer first") eq(said[1].to, "Eve", "to the English viewer")
+	eq(said[1].text, "Victory!", "her line in English") eq(said[2].to, "Fay", "then the pt-BR viewer") eq(said[2].text, "Vit\xc3\xb3ria!", "her line in pt-BR")
+	eq(said[3].who, "Fay", "then the party member") eq(said[3].text, "For the fallen!", "Warrior's Salute in English")
+	eq(said[4].text, "Pelos ca\xc3\xaddos!", "Warrior's Salute in pt-BR")
 	eq(effects[#effects].only, nil, "seen by players nearby")
-	eq(M.victory(monsterAt(101, true), eve, nil), false, "throttled") eq(#said, 2, "no more lines")
+	eq(M.victory(monsterAt(101, true), eve, nil), false, "throttled") eq(#said, 4, "no more lines")
+	Game.getSpectators = nil
+	Chaos.setLang(fay, "en")
+	for _, c in ipairs(cfg.cosmetics) do
+		if c.kind == "emote" then
+			eq(ChaosI18n.text("pt-BR", c.say) ~= c.say, true, c.key .. " line has a pt-BR text")
+		end
+	end
 	registered.ChaosCosmeticsLogout.onLogout(eve)
 	registered.ChaosCosmeticsLogout.onLogout(fay)
 	eq(M.active[70], nil, "logout clears the cache")

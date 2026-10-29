@@ -16,6 +16,12 @@ return {
 	-- % of the donation's coins the creator earns (decided 2026-10-14, owner delegated; docs/PRICES.md): 10, so the
 	-- Vault's 5000 coins reach orderCap exactly
 	sharePct = 10,
+	-- launch window (owner decision 2026-10-29): a donation credited in the first launchBonusDays days from
+	-- launchBonusStart (server local time, the launch) earns launchBonusPct % instead of sharePct. A code with its own
+	-- % keeps it. orderCap and monthlyCap still apply. launchBonusPct = 0 switches the bonus off.
+	launchBonusPct = 15,
+	launchBonusStart = "2026-11-20 15:00",
+	launchBonusDays = 30,
 	-- a code chosen by a donor applies to that account's donations for this many days (then the donor picks again)
 	supportDays = 30,
 	-- a share is paid this many days after the donation was credited, when it was not refunded or charged back

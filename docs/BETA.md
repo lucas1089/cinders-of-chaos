@@ -1,7 +1,9 @@
 # Open beta plan (draft for the owner)
 
-Status: **draft, nothing here is decided.** Every choice is marked **Owner decides**, with a recommendation. The dates
-are the proposal of docs/OWNER_TODO.md and are not confirmed. All times are UTC-3 (`America/Sao_Paulo`, the server's
+Status: **partly decided.** On 2026-10-29 the owner confirmed: launch on Fri 20 Nov 2026 at 15:00; Season 1 and PvP
+Season 1 start with the launch; one full wipe between the beta and the launch (section 3); a "Beta Tester" title for
+accounts that played; no beta keys (the beta stays open). The other choices are still marked **Owner decides**, with a
+recommendation. All times are UTC-3 (`America/Sao_Paulo`, the server's
 timezone; docs/OWNER_TODO.md "On the live server").
 
 Related: docs/LAUNCH.md (install, backups, launch day), docs/GM_HANDBOOK.md (staff rules), ROADMAP.md (what is open),
@@ -9,7 +11,8 @@ server/README.md "Patch notes" (the notes players see).
 
 ## 1. Dates and times
 
-**Owner decides.** Recommendation:
+**Decided 2026-10-29:** the launch (Fri 20 Nov, 15:00) and the open beta weekends. The rest of the schedule is the
+recommendation:
 
 | When | What |
 |---|---|
@@ -34,7 +37,7 @@ Notes:
 
 ## 2. Who can join
 
-**Owner decides.** Recommendation: an **open beta**. Anyone makes an account on the website and plays with the official
+**Decided 2026-10-29:** an **open beta**, no beta keys. Anyone makes an account on the website and plays with the official
 client (the client guard is on, `clientGuardMode = "enforce"`, docs/LAUNCH.md section 3).
 - `maxPlayers` 300: run `prod_config.py` with `--max-players 300` on the beta server (decided 2026-10-12; docs/LAUNCH.md
   section 3). The full-map load test (docs/LAUNCH.md section 9, server/README.md "Load test on the full map") filled the
@@ -46,14 +49,16 @@ client (the client guard is on, `clientGuardMode = "enforce"`, docs/LAUNCH.md se
 
 ## 3. What is wiped at launch
 
-**Owner decides.** Recommendation: **characters, items, gold, Chaos Coins and the market are wiped; accounts are kept.**
+**Decided 2026-10-29:** one full wipe between the beta and the launch. Every beta character and item is deleted.
+Accounts are kept. The wipe happens once: after the launch, permanent characters are never wiped (seasons are optional
+separate characters; `season_config.lua`). The table below is the scope; the ban history is still **Owner decides**.
 
 | Wiped | Kept |
 |---|---|
 | every character and everything on it: level, skills, items, depot, inbox, storages, spells, deaths | accounts (name, password, e-mail) and the website's account rows |
 | houses (owners, items, access lists) | account bans and their history (**Owner decides**; recommendation: keep them) |
 | guilds, guild halls, guild banks, guild wars | the admin audit log (`chaos_admin_log`) |
-| every `chaos_*` table with game progress: bank stars, stash, market, Orb Exchange, store coins and purchases, the Chaos Pact, cosmetics, transmog, exclusives, class unlocks, achievements, seasons, leaderboards, ratings, reports, ... | the patch notes "seen" state and auto-open setting (`chaos_patchnotes`; the launch note is newer, so it opens anyway) |
+| every `chaos_*` table with game progress: bank stars, stash, market, Orb Exchange, store coins and purchases, the Chaos Pact, cosmetics, transmog, exclusives, class unlocks, achievements, seasons, leaderboards, ratings, reports, ... | the patch notes "seen" state and auto-open setting (`chaos_patchnotes`; the launch note is newer, so it opens anyway) and the beta testers (`chaos_beta_testers`, for the "Beta Tester" title) |
 | premium time (the Chaos Pact grants premium days, bought with beta coins) | referral codes (`chaos_referral_codes`; codes shared during the beta keep working) |
 | the season, community, world buff and leaderboard state rows of `server_config` | the other `server_config` rows (one-time migrations and index builds) |
 
@@ -62,8 +67,12 @@ put beta players ahead at launch. Keeping accounts saves everyone a new sign-up.
 - Account-wide unlocks bought with beta coins (class unlocks, cosmetics, depot tabs, Pact extras) are wiped too.
 - Accounts made in the beta are older than the referral program's 7-day entry window at launch, so they cannot enter a
   referral code any more (server/README.md "Referral program").
-- A thank-you for testers (a title or a cosmetic for accounts that played the beta) is not built. **Owner decides**;
-  if wanted, it needs a small script that reads the final beta backup.
+- **Beta Tester title (decided 2026-10-29, built):** `beta_tester.lua` records every account that logs in during a beta
+  window (`beta_config.lua` `tester.windows`: 31 Oct 15:00 to 1 Nov 23:00 and 7 Nov 15:00 to 8 Nov 23:00) in
+  `chaos_beta_testers`. The wipe of section 9 keeps that table. At launch, with the beta switch off, those accounts hold
+  the cosmetic name plate title "Beta Tester". Nothing else is given. Make sure the file is installed on the beta server
+  from the first weekend, because only logins inside a window are recorded (the final beta backup can rebuild the list:
+  `players.lastlogin` inside the windows).
 
 ## 4. Store and donations in the beta
 
@@ -114,31 +123,22 @@ put beta players ahead at launch. Keeping accounts saves everyone a new sign-up.
 
 ## 5. Season 1 and the PvP seasons
 
-`server/data/scripts/chaos/season_config.lua` has Season 1 (Season of Ash) from 1 Nov 2026 12:00 to 31 Jan 2027: it
-would start in the middle of beta weekend 1.
-
-**Owner decides.** Recommendation: Season 1 starts **with the launch, Fri 20 Nov 15:00**, and keeps its 13 weeks (the
-season pass is sized for 13 weeks, `seasonpass_config.lua`). Change, before 31 Oct:
+**Decided 2026-10-29.** Season 1 (Season of Ash) starts **with the launch, Fri 20 Nov 2026 15:00**, and runs 13 weeks
+to Fri 19 Feb 2027 15:00 (the season pass is sized for 13 weeks, `seasonpass_config.lua`). Season 2 is planned for the
+day after, 20 Feb 2027 15:00. `season_config.lua` now says:
 
 ```lua
-seasons = {
-	{
-		id = 1,
-		name = "Season of Ash",
-		tag = "[S1]",
-		start = 20261120,  -- was 20261101
-		finish = 20270219, -- was 20270131 (13 weeks after the start)
-		hour = 15,         -- was 12; server local time (UTC-3)
-		...
+start = 20261120,  -- was 20261101
+finish = 20270219, -- was 20270131 (13 weeks after the start)
+hour = 15,         -- was 12; server local time (UTC-3)
 ```
 
 - The dates are read at startup; `/season start [id] | end | status` (god accounts) overrides them in `server_config`
   (`chaos_season_1_start` / `_end`). To test season characters in the beta, start it by hand on weekend 2
   (`/season start 1`); the wipe deletes those rows and every season table, so Season 1 starts clean at launch.
-- PvP seasons (arena and battleground, `battleground_config.lua` `season.epoch`) count 8-week seasons from Mon 5 Oct
-  2026 06:00, so PvP Season 1 would end on 30 Nov, ten days after launch. **Owner decides**; recommendation:
-  `epoch = {year = 2026, month = 11, day = 16, hour = 6}` (the Monday before launch, so PvP Season 1 runs 16 Nov to
-  11 Jan). The epoch must not lie after the launch: before the epoch the season number is 0. The wipe deletes
+- PvP Season 1 (arena and battleground, `battleground_config.lua` `season.epoch`) also starts **with the launch**:
+  `epoch = {year = 2026, month = 11, day = 20, hour = 15}`. Seasons are 8 weeks, so PvP Season 1 runs 20 Nov to
+  15 Jan 2027 15:00. The epoch must not lie after the launch: before it, the season counts as Season 1, not started. The wipe deletes
   `chaos_pvp_season_done`, so the new server counts from there.
 - Infinity Tower seasons (`Chaos.tower` in `chaos_constants.lua`) are their own 30-day cycle, not the realm Season:
   points, milestones and the ranking reset every 30 days and the top 3 get their chests then, while a realm Season
@@ -279,7 +279,7 @@ for it); per-account settings may stay. Note the premium column name of `account
 mysql -N "$CHAOS_DB_NAME" > /root/chaos-wipe.sql <<'SQL'
 SELECT CONCAT('TRUNCATE TABLE `', table_name, '`;') FROM information_schema.tables
 WHERE table_schema = DATABASE() AND table_name LIKE 'chaos\_%'
-  AND table_name NOT IN ('chaos_admin_log', 'chaos_patchnotes', 'chaos_referral_codes')
+  AND table_name NOT IN ('chaos_admin_log', 'chaos_patchnotes', 'chaos_referral_codes', 'chaos_beta_testers')
 ORDER BY table_name;
 SQL
 less /root/chaos-wipe.sql

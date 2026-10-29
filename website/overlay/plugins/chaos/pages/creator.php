@@ -12,6 +12,7 @@
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once __DIR__ . '/../creator_lib.php';
+require_once __DIR__ . '/../creators_lib.php';
 require_once __DIR__ . '/../i18n_lib.php';
 $GLOBALS['page_title'] = chaos_t('Creator Codes');
 
@@ -37,6 +38,9 @@ if ($accountId > 0 && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset(
 		require_once __DIR__ . '/../reports_lib.php';
 		[$messageOk, $message] = chaos_creator_admin_create((string)($_POST['code'] ?? ''), (string)($_POST['character'] ?? ''),
 			(string)($_POST['display'] ?? ''), (int)($_POST['pct'] ?? 0), (string)($_POST['note'] ?? ''), chaos_report_staff_name($accountId));
+	} elseif ($isAdmin && in_array($_POST['do'], array('app_approved', 'app_rejected'), true)) {
+		require_once __DIR__ . '/../reports_lib.php';
+		[$messageOk, $message] = chaos_creators_review((int)($_POST['id'] ?? 0), substr((string)$_POST['do'], 4), chaos_report_staff_name($accountId));
 	} elseif ($isAdmin && in_array($_POST['do'], array('on', 'off', 'pct'), true)) {
 		require_once __DIR__ . '/../reports_lib.php';
 		[$messageOk, $message] = chaos_creator_admin_update((int)($_POST['id'] ?? 0), (string)$_POST['do'], (int)($_POST['pct'] ?? 0),
@@ -53,6 +57,9 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d', $t) :
 		<h1 class="chaos-heading"><?= chaos_h(chaos_t('Creator Codes')) ?></h1>
 		<p class="chaos-muted chaos-lang-row"><?= chaos_lang_link($self) ?></p>
 		<p class="chaos-lead"><?= chaos_h(chaos_t('Support a streamer or content creator of Cinders of Chaos: pick their code and, for %d days, %d%% of the Chaos Coins of each of your donations goes to them in game, as a thank-you from the server. It costs you nothing: your donation and your coins stay exactly the same. Donations are always voluntary.', (int)$cfg['supportDays'], (int)$cfg['sharePct'])) ?></p>
+		<?php $bonus = chaos_creator_bonus_window($cfg); if ($bonus !== null): ?>
+			<p class="chaos-gold" id="chaos-creator-bonus"><?= chaos_h(chaos_t('Launch bonus: for donations in the first %d days after the launch (until %s, UTC-3), the creator gets %d%% of the coins instead of %d%%. It still costs you nothing.', (int)$cfg['launchBonusDays'], (new DateTimeImmutable('@' . $bonus[1]))->setTimezone(new DateTimeZone('America/Sao_Paulo'))->format('Y-m-d'), (int)$cfg['launchBonusPct'], (int)$cfg['sharePct'])) ?></p>
+		<?php endif; ?>
 		<?php if ($message !== ''): ?>
 			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-creator-message"><?= chaos_h(chaos_t($message)) ?></p>
 		<?php endif; ?>
@@ -126,6 +133,28 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d', $t) :
 							<input type="number" name="pct" min="0" max="50" value="<?= (int)$c['pct'] ?>" style="width:4em;">
 							<button type="submit" name="do" value="pct" class="chaos-button">Set %</button>
 						</form></td>
+					</tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
+			<h2 id="chaos-creator-applications-title">Applications</h2>
+			<p class="chaos-muted">Sent on the creator program page. Approve, then create the code above for the character.</p>
+			<table class="chaos-table" id="chaos-creator-applications">
+				<thead><tr><th>Sent</th><th>Character</th><th>Channel</th><th class="num">Hours</th><th class="num">Viewers</th><th class="num">Followers</th><th>Message</th><th>State</th><th></th></tr></thead>
+				<tbody>
+				<?php foreach (chaos_creators_applications() as $a): ?>
+					<tr>
+						<td><?= chaos_h($time((int)$a['created_at'])) ?></td>
+						<td><?= chaos_h((string)$a['character_name']) ?></td>
+						<td><?= chaos_h((string)$a['platform']) ?>: <a href="<?= chaos_h((string)$a['channel_url']) ?>" rel="noopener nofollow"><?= chaos_h((string)$a['channel_url']) ?></a></td>
+						<td class="num"><?= (int)$a['hours_week'] ?></td><td class="num"><?= (int)$a['viewers_avg'] ?></td><td class="num"><?= (int)$a['followers'] ?></td>
+						<td class="chaos-muted"><?= chaos_h((string)$a['message']) ?></td>
+						<td><?= chaos_h((string)$a['status']) ?><?= $a['reviewed_by'] !== '' ? ' <span class="chaos-muted">(' . chaos_h((string)$a['reviewed_by']) . ')</span>' : '' ?></td>
+						<td><?php if ($a['status'] === 'new'): ?><form method="post" action="<?= chaos_h($self) ?>">
+							<input type="hidden" name="csrf" value="<?= chaos_h($csrf) ?>"><input type="hidden" name="id" value="<?= (int)$a['id'] ?>">
+							<button type="submit" name="do" value="app_approved" class="chaos-button">Approve</button>
+							<button type="submit" name="do" value="app_rejected" class="chaos-button">Reject</button>
+						</form><?php endif; ?></td>
 					</tr>
 				<?php endforeach; ?>
 				</tbody>

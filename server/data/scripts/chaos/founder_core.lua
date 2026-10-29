@@ -6,6 +6,7 @@
 --   F.tier(cfg, key)                      a tier by its offer key ("founder:pack")
 --   F.titles(cfg, owns)                   the titles an account holds: owns(exclusive key) -> bool; the tier's title is held
 --                                         when the account owns the tier's first exclusive (only the pack gives it)
+--   F.revokeTargets(cfg, order, shortfall, purchases, revoked)  the Founder purchases a reversed donation takes back
 --   F.validate(cfg, opts)                 problems (see the function)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -53,6 +54,31 @@ function F.titles(cfg, owns)
 	return out
 end
 
+-- Which Founder purchases a refunded or charged back donation takes back. order = {created} (when the donation was made),
+-- shortfall = the coins of it that could not be taken back from the account's balance (they were spent), purchases = rows of
+-- the purchase log {id, key, created, gift} of the account, revoked = {[tier key] = true} for those taken back before.
+-- A purchase counts when it is a tier of the pack, bought for the account itself, at or after the donation (earlier purchases
+-- cannot be paid by it), not taken back already, and the shortfall is at least cfg.revoke.minShortfallPct of its price.
+-- Returns the tiers, dearest first: {{key, purchase = id}}.
+function F.revokeTargets(cfg, order, shortfall, purchases, revoked)
+	local out = {}
+	local rule = cfg.revoke or {}
+	shortfall = tonumber(shortfall) or 0
+	if shortfall <= 0 then
+		return out
+	end
+	revoked = revoked or {}
+	for _, p in ipairs(purchases or {}) do
+		local tier = F.tier(cfg, p.key)
+		if tier and (tonumber(p.gift) or 0) == 0 and (tonumber(p.created) or 0) >= (tonumber(order.created) or 0) and not revoked[tier.key] and
+				shortfall * 100 >= tier.cost * (tonumber(rule.minShortfallPct) or 100) then
+			out[#out + 1] = {key = tier.key, purchase = p.id, cost = tier.cost}
+		end
+	end
+	table.sort(out, function(a, b) return a.cost > b.cost end)
+	return out
+end
+
 -- opts (each optional):
 --   exclusives   exclusives_config.lua: every piece exists, has source "founder" and a cosmetic kind
 --   pactPrice    the Pact's coins for 30 days (pact_config.lua): the Pact days of a tier are worth at most limits.pactSharePct
@@ -75,6 +101,13 @@ function F.validate(cfg, opts)
 		if days < F.MIN_DAYS or days > F.MAX_DAYS then
 			bad("the sale lasts %.1f days (%d to %d)", days, F.MIN_DAYS, F.MAX_DAYS)
 		end
+	end
+	local rv = cfg.revoke
+	if type(rv) ~= "table" or type(rv.minShortfallPct) ~= "number" or rv.minShortfallPct < 1 or rv.minShortfallPct > 100 then
+		bad("revoke.minShortfallPct must be 1 to 100")
+	end
+	if type(rv) ~= "table" or type(rv.table) ~= "string" or not rv.table:match("^chaos_[%w_]+$") then
+		bad("revoke.table must be a chaos_* table name")
 	end
 	if type(cfg.how) ~= "string" or cfg.how == "" then
 		bad("how (the Collection tab text) needed")

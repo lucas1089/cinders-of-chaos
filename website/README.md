@@ -45,7 +45,7 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `payments.env.example` | the donation settings (the credentials stay outside the repository) |
 | `tests/chaos_pay_test.php`, `tests/chaos_donation_page_test.php` | the donation flow and page (php-cli with pdo_sqlite, a mocked provider) |
 | `overlay/plugins/chaos/creator_lib.php`, `pages/creator.php` | creator codes: a donor's pick, the creator's totals, the administrators' codes, the account's referral link (see "Creator codes") |
-| `tests/chaos_creator_test.php` | `php website/tests/chaos_creator_test.php`: settings from `creator_codes_config.lua`, picks (unknown, off, own code), totals, the admin check and actions, the referral link (php-cli with pdo_sqlite) |
+| `tests/chaos_creator_test.php` | `php website/tests/chaos_creator_test.php`: settings (and the launch window) from `creator_codes_config.lua`, picks (unknown, off, own code), totals, the admin check and actions, the referral link (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/delete_lib.php`, `pages/deletecharacter.php`, `tests/chaos_delete_character_test.php` | deleting a character (see "Deleting a character"); `php website/tests/chaos_delete_character_test.php` |
 | `overlay/plugins/chaos/bazaar_lib.php`, `pages/bazaar.php`, `bazaar_worker.php` | the Character Bazaar: character auctions for Chaos Coins with escrow, fee and transfer (see "Character Bazaar") |
 | `tests/chaos_bazaar_test.php` | `php website/tests/chaos_bazaar_test.php`: every blocked listing, bids and escrow, the fee and the transfer, expiry, buyout, cancel, a failed transfer, coins kept whole (php-cli with pdo_sqlite) |
@@ -931,7 +931,7 @@ page says so, and that donations are voluntary.
   - administrators (`chaos_creator_is_admin`: an admin panel account, `CHAOS_ADMIN_ACCOUNTS`, **and** a character of
     group `adminGroup`, 5): create a code for a character's account (with a shown name, its own %, a note), switch it
     off / on, set its %, read the log. Every write is a POST with the page's CSRF token; every value is escaped.
-- Settings: `server/data/scripts/chaos/creator_codes_config.lua` (`sharePct` 5 is a placeholder, docs/OWNER_TODO.md).
+- Settings: `server/data/scripts/chaos/creator_codes_config.lua` (`sharePct` 10 and the launch window `launchBonusPct` 15, decided 2026-10-14 and 2026-10-29; docs/PRICES.md).
 - Tables: `chaos_creator_codes`, `chaos_creator_support`, `chaos_creator_uses`, `chaos_creator_log`, `chaos_pay_payers`
   (`install.sql`, `server/sql/chaos_creator_codes.sql`; the game server creates them too).
 - **Hooks (done, 2026-10-13):**
@@ -1290,23 +1290,36 @@ All three are in the menu The World, the sitemap and the SEO descriptions.
 
 ### Calendar
 - `page?plugin=chaos&p=calendar` (`calendar_lib.php`, `pages/calendar.php`): the open betas, the wipe, the launch, the
-  season length with start and end, the PvP and Tower cycles, the patch note cadence, the wipe rules (beta to launch,
-  season to season) and the open questions. What is undecided shows "A definir" ("To be set").
+  season length with start and end, Season 2 (planned), the PvP and Tower cycles, the patch note day (Wednesday), the wipe
+  rules (beta to launch, after launch, season to season) and the open questions. The launch shows "Confirmado"
+  (confirmed by the owner on 2026-10-29). What is still undecided shows as "to be set".
 - Data: `calendar/calendar_data.json`, written by `python3 -I website/tools/gen_calendar_data.py` from
   `season_config.lua`, `battleground_config.lua`, `chaos_constants.lua` and `server/data/patchnotes`. The hand-written
   part is `website/tools/calendar_source.json` (events, wipe rules, open questions). The tool also checks its dates
   against docs/OWNER_TODO.md and docs/BETA.md and fails when they disagree. `--check` runs in CI. Test:
   `gen_calendar_data_test.py` and `tests/chaos_calendar_page_test.php`.
-- While `season_config.lua` starts Season 1 on another day than the launch, the page shows its dates as "A definir" with
-  the proposal (launch plus the config length). It follows the config by itself once the config starts with the launch.
+- Season 1 starts with the launch (20 Nov 2026 15:00) and ends 19 Feb 2027, PvP season 1 starts with the launch, and
+  Season 2 is the day after Season 1 ends (planned). `gen_calendar_data.py` fails when the config or the source drifts
+  from that (a season that does not start at the launch, a launch not marked confirmed). The patch note weekday
+  (Wednesday) is in `calendar_source.json`; the page shows it and the first regular note after the launch.
 - The page, the home page and the wiki season guide say: your character is permanent, seasons are optional, the legacy is
   cosmetic.
 
 ### Creator program
 - `page?plugin=chaos&p=creators` ("Programa de Criadores"; `creators_lib.php`, `pages/creators.php`,
-  `creators/creators_data.json`): who qualifies (a proposal), what a creator gets, how to apply, the media kit.
+  `creators/creators_data.json`): who qualifies, what a creator gets, how to apply, the media kit.
   The creator code is the system of "Creator codes" above; its numbers are checked by `tests/chaos_creators_page_test.php`.
-  Beta keys and the launch-window bonus do not exist in the code and show as "A definir". The beta is open, with no keys.
+  Criteria (owner, 2026-10-29): streams or videos of the game at least 4 hours a week, at least 10 average live viewers
+  or 500 followers, no account trading or RMT. The numbers are in `creators_data.json` "criteria", and the form uses them.
+  Launch window: 15% instead of 10% for donations credited in the first 30 days after the launch
+  (`launchBonusPct`, `launchBonusStart`, `launchBonusDays` of `creator_codes_config.lua`; the page and the Creator Codes
+  page read them). There are no beta keys: the beta is open.
+  Application form (logged in): platform, channel link (https), the account's character, hours a week, viewers,
+  followers, a message and the no-RMT promise. A POST needs the page's CSRF token. Limits: one open application per
+  account, 3 per account a day, 5 per address an hour (IPv6 by /64). It stores into `chaos_creator_applications`
+  (`install.sql`, website only). Staff read, approve or reject the applications in the admin part of the Creator Codes
+  page (`page?plugin=chaos&p=creator`, group 5+), then create the code there. The Discord link shows on the page only
+  when `CHAOS_DISCORD_URL` (`$config['chaos']['discord_url']`) is an https link. Tests: `tests/chaos_creators_apply_test.php`.
 - Media kit: `python3 -I website/tools/gen_media_kit.py --zip OUT.zip` packs `website/art/*.png`, the site logo and a
   fact sheet in pt-BR and en (the dates come from the calendar data). The zip is stored without compression and is
   deterministic. It is not committed: `install_site.sh` builds it into `<site>/press/`. Committed: only

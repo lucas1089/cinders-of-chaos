@@ -10,7 +10,8 @@
 --                                                       or nil + error text
 --   ChaosPactCore.claim(cfg, state, now, dayKey)        Pact Marks of today's claim, or nil + error text
 --   ChaosPactCore.expiry(cfg, endsAt, premiumDays, now) the warning due now: {level = 3 | 1, days, both} or nil
---   ChaosPactCore.shelfCheck(cfg, marks, owned, key)    nil when the Marks shelf item can be bought, else the error text
+--   ChaosPactCore.shelfCheck(cfg, marks, owned, key, now?)  nil when the Marks shelf item can be bought, else the error text
+--   ChaosPactCore.monthlyItem(cfg, now?) / monthIndex(count, year, month) / shelf(cfg, now?)  the month's slot of the shelf (server month)
 --   ChaosPactCore.monthExp(rows, month)                 experience the +10% added in `month` from rows {month, exp}
 --   ChaosPactCore.extraMax(cfg, key)                    how many of an extra an account may own (nil: no such extra)
 --   ChaosPactCore.extraCheck(cfg, state, key, amount)   nil when `amount` (default 1) more can be bought, else the error text
@@ -159,10 +160,50 @@ function P.expiry(cfg, endsAt, premiumDays, now)
 end
 
 -- ---------------------------------------------------------------- Pact Marks
--- shelf item: cfg.marks.shelf rows {key, marks}; owned = set of cosmetic keys the account has. Marks buy only the cosmetics
--- of the shelf (never coins, services, boosts or supplies): the check is against that list, nothing else.
-function P.shelfItem(cfg, key)
+-- The month's slot of the shelf (cfg.marks.monthly, O317 follow-up): a pure function of the server month. The entry at
+-- ((year * 12 + month - 1) mod #list) + 1; with 12 entries that is the month number. `now` is a unix time (default os.time()).
+function P.monthIndex(count, year, month)
+	count = int(count)
+	if count < 1 then
+		return nil
+	end
+	return ((int(year) * 12 + int(month) - 1) % count) + 1
+end
+
+-- {key, marks, monthly = true, endsAt = the first second of the next month} or nil when the list is empty
+function P.monthlyItem(cfg, now)
+	local list = cfg.marks.monthly or {}
+	now = int(now or os.time())
+	local d = os.date("*t", now)
+	local i = P.monthIndex(#list, d.year, d.month)
+	local it = i and list[i]
+	if not it then
+		return nil
+	end
+	local nextMonth = os.time({year = d.year + (d.month == 12 and 1 or 0), month = d.month == 12 and 1 or d.month + 1, day = 1, hour = 0, min = 0, sec = 0})
+	return {key = it.key, marks = it.marks, monthly = true, endsAt = nextMonth}
+end
+
+-- the whole shelf now: the fixed rows, then the month's slot (a monthly cosmetic that is also on the fixed shelf shows once)
+function P.shelf(cfg, now)
+	local out = {}
+	local seen = {}
 	for _, it in ipairs(cfg.marks.shelf or {}) do
+		out[#out + 1] = {key = it.key, marks = it.marks}
+		seen[it.key] = true
+	end
+	local m = P.monthlyItem(cfg, now)
+	if m and not seen[m.key] then
+		out[#out + 1] = m
+	end
+	return out
+end
+
+-- shelf item: the rows of P.shelf (cfg.marks.shelf and the month's slot); owned = set of cosmetic keys the account has.
+-- Marks buy only the cosmetics of the shelf (never coins, services, boosts or supplies): the check is against that list,
+-- nothing else. A monthly cosmetic of another month is not on the shelf.
+function P.shelfItem(cfg, key, now)
+	for _, it in ipairs(P.shelf(cfg, now)) do
 		if it.key == key then
 			return it
 		end
@@ -170,8 +211,8 @@ function P.shelfItem(cfg, key)
 	return nil
 end
 
-function P.shelfCheck(cfg, marks, owned, key)
-	local it = P.shelfItem(cfg, key)
+function P.shelfCheck(cfg, marks, owned, key, now)
+	local it = P.shelfItem(cfg, key, now)
 	if not it then
 		return cfg.messages.marksNoItem
 	end

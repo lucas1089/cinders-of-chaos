@@ -143,7 +143,7 @@ computed numbers, not measured in game: nobody has played the store yet (payment
 | Double Experience Potion | 50 | 1 hour of x2 saves 73 levels at level 100, 8 at level 500, 3.3 at level 1000. It costs 0.36 hours of gold at level 100 and 0.02 at level 1000: coins are not gold, so no gold loop. |
 | World Experience / Loot / Training / Hunt | 300 / 300 / 250 / 300 | A gift to everybody online: per player hour 40 coins with 30 online, 120 with 10. Bonus 25% (50% for Hunt), 3 hours at most. World Loot also adds an extra roll that no model measures (open). |
 | Potion and rune packs | 767 to 1,852 gold per coin | All between 700 and 2,000 (2x of 1,000) at any size; a coin buys 0.8 to 1.9x its gold in supplies. NPC bid per coin stays under 500 (buy at least twice sell). |
-| Blessings | 60 / 100 / 150 by level (O317), Eternal 750 | Eternal is 12.5 purchases of the first tier and 5 of the top one. The gold way (!bless) is 100,000 at level 120, 290,000 at 500 and 500,000 from level 920; late characters could pay that in 10 minutes, so the coins are only a shortcut. |
+| Blessings | 60 / 100 / 150 by level (O317), Eternal 300 / 500 / 750 by level | Eternal is 5 purchases of the tier of the same level band. The gold way (!bless) is 100,000 at level 120, 290,000 at 500 and 500,000 from level 920; late characters could pay that in 10 minutes, so the coins are only a shortcut. |
 | Services | 100 / 150 / 250 / 400 | Sex change, skull remover, name change, vocation change. No gold way exists to compare. |
 | Per-character convenience | 1,550 for all seven | Loot Bag 250, Auto Seller 400, Rarity Autoloot 300, Orbs Pouch 200, Key Pouch 150, Gem Pouch 150, Ration 100. The limit is pinned at 1,550 (it was 1,400 before the Gem Pouch). |
 | Storage and slots | 50 to 300 | Stash Slot Expansion 50, pack of 4 180, orbs / gems 200, the other affinity tabs 150, collectibles 100, remote deposit 400 (O317; the Pact lends it), character slot 250, build slot 100. Reviewed again in O316, see "Stash room (O316)". |
@@ -182,9 +182,9 @@ The depot is retired and the stash is the only storage. Numbers: `stash_config.l
 - **One tab, not extra general tabs.** A second general tab only splits the same room. The expansion grows the one tab,
   so there is one thing to buy instead of two.
 - **The old tabs are kept.** An Extra Stash Tab, an Extra Depot Tab (a pack of 4 counts as 4) or one of the three
-  achievement tabs (`depot_tab_relics`, `depot_tab_trophies`, `depot_tab_vault`) is worth 3 expansions: 75 slots, the
-  150 coins the tab cost at 50 coins an expansion. They count outside the cap of 20. A player with 12 bought depot tabs
-  and 6 stash tabs gets 18 x 75 = 1,350 slots on top of the free 30.
+  achievement tabs (`depot_tab_relics`, `depot_tab_trophies`, `depot_tab_vault`) is worth 4 expansions: 100 slots (owner
+  2026-10-29; the tab cost 150 coins, 4 expansions are worth 200 at 50 coins). They count outside the cap of 20. A player
+  with 12 bought depot tabs and 6 stash tabs gets 18 x 100 = 1,800 slots on top of the free 30.
 - **Free grants that left.** The free Supplies tab, the Creature Products tab lent by the Pact and the Collectibles tab of
   the unique_50 achievement are bought now. An account that used one keeps it (one-time grant at the first login, see
   server/README.md "Stash", "Grandfathering").
@@ -244,8 +244,10 @@ R$ 50 a month (one coin is about R$ 0,10, so about 500 coins). Rules in `store_b
   them. Someone who wants only one of the two pays R$ 29,90 for either.
 - **299, not 300.** The Pact and Premium end in 9 like the Pix pack prices. The starter packs list their Pact days at
   30 / 70 / 140 coins (the model allows 10% either way), so nothing changed there.
-- **Not giftable, capped.** A Pact part cannot be a gift (the Pact is per account and stacks). The Pact cannot run for more
-  than 365 days from now (`maxStackDays`): the store refuses a Completo that would pass it and takes no coins.
+- **Giftable, capped.** Since the follow-up of 2026-10-29 the Completo can be a gift (the Starter and Founder packs cannot). The
+  Pact days and the premium days go to the receiver's account. The Pact cannot run for more than 365 days from now
+  (`maxStackDays`): the store refuses a Completo that would pass it, for the receiver, and takes no coins. An offline receiver is
+  checked at once by account (`ChaosPact.checkDaysAccount`) and again at login, when a gift that no longer fits is refunded.
 - **Option A holds.** Premium keeps its x1.5 experience on green stamina and the Pact its +10%. The Completo gives both;
   the experience cap of `xpcap_config.lua` (4.0) stays.
 
@@ -295,8 +297,8 @@ coins were.
   player, so no extra offers are needed; the buy request echoes the price, and a character that levels past a border while
   the window is open gets "the store changed" and no charge). The model judges each tier at a typical level of its band
   (120, 350, 700) and allows the store to be at most 2.0, 2.5 and 3.0 times cheaper than the gold way. The ratio grows with
-  the level because gold comes faster there. The Eternal Blessing (750) did not change: it is now 12.5 purchases of the
-  first tier and 5 of the top one (the model asks for at most 15 and at least 4).
+  the level because gold comes faster there. The Eternal Blessing follows the level too since the follow-up of
+  2026-10-29 (below).
 - **Potion packs.** The ultimate and supreme 100 packs sold at 1,400 to 1,667 gold a coin and the others at 800 to 1,270, so
   the dear potions were the cheap ones. They now sit at 1,060 to 1,190, like the others. The 250 and 500 packs keep their
   5% and 10% discounts (500 packs: 122, 149, 149 and 189 coins, 1,174 to 1,323 gold a coin). The model ceiling for any
@@ -320,10 +322,38 @@ coins were.
 
 ### Open questions for the owner
 
-- The Eternal Blessing stayed at 750. At level 800 it is only 5 purchases; raise it by level too?
-- Marks shelf: six cosmetics today. Which others, and should a new one be added every month?
-- The Completo is not giftable (it holds Pact days). Allow a gift?
 - A subscriber spot in the hub needs a map change, see ROADMAP.md O317.
+- The three questions that stood here (Eternal by level, a rotating Marks slot, a gifted Completo) are answered below.
+
+### Follow-ups the owner approved (2026-10-29)
+
+- **Eternal Blessing by level: 300 / 500 / 750.** Up to level 200 it costs 300, up to level 500 it costs 500, above that 750
+  (`levelPrices` on the offer, the same mechanism and the same per-player price as All Blessings: the store sends each player
+  their own price and a price from another tier is "The store changed", no coins taken). It is 5 times the All Blessings tier of
+  the same band (60 / 100 / 150), so a character needs 5 deaths to get its money back at any level. It was 750 for everyone
+  (12.5 times the first tier, 5 times the top one): a level 80 character paid 12.5 deaths of blessings. The model judges each
+  tier against the tier of its band, at least 4 and at most 8 times (`eternalMinTimes`, `eternalMaxTimes`; the old
+  `eternalMinTimesTop` is gone). It still holds for level 800: 750 is 5 purchases of 150.
+- **Pacto Completo as a gift.** The store's gift path takes it (`giftable = true` on its Pact part; a Pact part without the flag
+  still blocks a gift, so the Starter and Founder packs stay as they were). The receiver gets the Pact days (source `complete`)
+  and the premium days; the giver's Pact does not change. The 365 day cap is checked for the receiver before any coin is taken,
+  for an online receiver (`partProblem`) and for an offline one (`Shop.offlinePactProblem`, by account). The offline gift is
+  checked again at login and refunded if the cap was reached meanwhile. Nothing is stacked on the giver. The model now requires
+  the Completo to be giftable.
+- **Pact Marks: a monthly slot.** The shelf keeps its six fixed cosmetics and adds one more, chosen by the server month from
+  `pact_config.lua` `marks.monthly` (`ChaosPactCore.monthlyItem`, a pure function of the date: entry
+  `((year * 12 + month - 1) mod 12) + 1`, so each month of the year has its own and the year starts again). Twelve store
+  cosmetics that are not on the fixed shelf: January Ember Footprints (200), February Roar (200), March Grove level-up (150),
+  April Seal rare loot (150), May Shatter kill effect (200), June Verdant chat colour (200), July Royal loot label (150),
+  August Shadow footprints (200), September Dawn level-up (200), October Crimson rare loot (200), November Salute (200),
+  December Bloodbloom kill effect (200). Prices are the coin price (1.0 Mark a coin, in the 1.0 to 1.5 range of the model), so
+  150 to 200 Marks, four to six weeks of Marks. Only this month's cosmetic can be bought; last month's is off the shelf again (it
+  is still sold for coins). No spell effects. The model checks the list (6 to 12, store cosmetics, no spell skin, none on the
+  fixed shelf, the Mark price rule).
+- **Marks tell.** Month rotation is deterministic and stores nothing. The window names the slot "(this month)".
+- **A Pact icon for the expiry toast.** The toast used the season pass medallion; it has its own hourglass now
+  (`client/tools/gen_toast_art.py`, our own art).
+- **Chargeback of a Founder Pack.** See "Founder Pack", below.
 
 ## Founder Pack (O322, 2026-10-29)
 
@@ -366,8 +396,13 @@ texts are in `server/data/scripts/chaos/founder_config.lua`. The limits are in `
   same for every store price (up to 2.1 coins per real more), but the Starter pack is the bigger hole. Options: let the Founder
   Packs take only coins from packs other than the Starter pack (needs coin origin tracking), raise the first pack, or accept it
   as the entry hook the Starter pack is meant to be.
-- A charged-back coin order takes the coins back (`shop_payments.lua`), but the pieces already given stay. Revoke them
-  (`/exclusive <character>, <key>, revoke`) by hand, or add a rule?
+- **Chargeback (decided 2026-10-29).** A refunded or charged back donation takes the coins back (`shop_payments.lua`). When
+  the account cannot give them back (no balance, and nothing left to take from the receivers of coin gifts), the Founder Pack
+  bought after that donation is taken back too: its pieces, so the title, and the Pact days, logged in
+  `chaos_founder_revokes` and the game log. The rule only acts when the missing coins are at least half of the pack's price
+  (`founder_config.lua` `revoke.minShortfallPct = 50`), so a refund of a small pack of coins does not cost a pack. The sale
+  stays used up: the account cannot buy the pack again. The Pact days are taken as days, not the Pact: other days the account
+  paid for stay. Open: is half the right limit? Should coins that covered the refund but were meant for the pack also count?
 - Four weeks is a proposal. Is a longer sale wanted (the model allows 14 to 60 days)?
 
 ## Skill training (O150, 2026-10-23)

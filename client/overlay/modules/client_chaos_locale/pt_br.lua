@@ -2035,6 +2035,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["This month the Pact has given you no extra experience yet."] = "Neste mês o Pact ainda não te deu experiência extra.",
   ["This month the Pact gave you %s extra experience."] = "Neste mês o Pact te deu %s de experiência extra.",
   ["This month the Pact gave you %s extra experience (%s on all your characters)."] = "Neste mês o Pact te deu %s de experiência extra (%s em todos os seus personagens).",
+  ["%s (this month)"] = "%s (deste mês)",
   ["Pacto Completo"] = "Pacto Completo",
   ["Affinity stash tabs: %s. The free stash tab holds %s entries; Slot Expansions make it bigger."] = "Abas de afinidade do stash: %s. A aba grátis do stash guarda %s entradas; as Expansões de Slots deixam ela maior.",
   [" (owned)"] = " (sua)",

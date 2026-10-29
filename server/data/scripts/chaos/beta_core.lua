@@ -44,6 +44,47 @@ function B.dueAtLogin(cfg, lastLoginSaved)
 	return true
 end
 
+-- ---------------------------------------------------------------- beta testers (beta_tester.lua)
+B.TESTERS = "chaos_beta_testers"
+
+B.TESTERS_SCHEMA = "CREATE TABLE IF NOT EXISTS `chaos_beta_testers` (`account_id` int(11) NOT NULL, " ..
+	"`first_at` bigint(20) NOT NULL DEFAULT 0, `player_id` int(11) NOT NULL DEFAULT 0, " ..
+	"PRIMARY KEY (`account_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+
+-- "YYYY-MM-DD HH:MM" (server local time) -> unix time, nil when it is not that
+function B.parseTime(text)
+	local y, mo, d, h, mi = tostring(text or ""):match("^(%d%d%d%d)-(%d%d)-(%d%d) (%d%d):(%d%d)$")
+	if not y then
+		return nil
+	end
+	return os.time({year = tonumber(y), month = tonumber(mo), day = tonumber(d), hour = tonumber(h), min = tonumber(mi), sec = 0})
+end
+
+-- is `now` inside one of the tester windows (both ends included)?
+function B.inTesterWindow(cfg, now)
+	local t = type(cfg) == "table" and cfg.tester
+	if type(t) ~= "table" or type(t.windows) ~= "table" then
+		return false
+	end
+	now = tonumber(now) or 0
+	for _, w in ipairs(t.windows) do
+		local from, to = B.parseTime(w.from), B.parseTime(w.to)
+		if from and to and now >= from and now <= to then
+			return true
+		end
+	end
+	return false
+end
+
+-- the title of a recorded tester: nil while the beta is still on (the thank-you comes at launch) or when not recorded
+function B.testerTitle(cfg, isTester)
+	local t = type(cfg) == "table" and cfg.tester
+	if B.enabled(cfg) or not isTester or type(t) ~= "table" or type(t.title) ~= "table" then
+		return nil
+	end
+	return {key = t.title.key, text = t.title.text, color = t.title.color, at = 0}
+end
+
 local function id(n)
 	n = math.floor(tonumber(n) or 0)
 	return n > 0 and n or nil
@@ -58,6 +99,16 @@ function B.claimSql(accountId, playerId, coins, now)
 	return string.format("INSERT IGNORE INTO `%s` (`account_id`, `kind`, `coins`, `player_id`, `granted_at`) " ..
 		"VALUES (%d, '%s', %d, %d, %d)", B.TABLE, accountId, B.KIND_STARTER, math.max(0, math.floor(tonumber(coins) or 0)),
 		id(playerId) or 0, math.floor(tonumber(now) or 0))
+end
+
+-- records the account as a beta tester (once; the first login in a window wins)
+function B.testerSql(accountId, playerId, now)
+	accountId = id(accountId)
+	if not accountId then
+		return nil
+	end
+	return string.format("INSERT IGNORE INTO `%s` (`account_id`, `first_at`, `player_id`) VALUES (%d, %d, %d)",
+		B.TESTERS, accountId, math.floor(tonumber(now) or 0), id(playerId) or 0)
 end
 
 function B.grantedSql(accountId)

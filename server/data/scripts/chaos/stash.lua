@@ -45,7 +45,7 @@
 --           withdrawWhy = "pz" | "hideout" | nil, canDeposit, depositWhy = "pz" | "hideout" | "remote" | nil,
 --           remote = "bought" | "pact" | nil (the remote deposit unlock)}
 --     addItems {isFirst, isLast, items=[{sprite, count, name, tooltip, id, uniqueId, typee, tab, row?, rarity?}]}
---     addCategorys {list=[{name, value}], remote}   forceBlockList {items}   addBlockItem {status, itemData}
+--     addCategorys {list=[{name, value}], remote, lockers? = client ids of the depot lockers whose window the client closes}   forceBlockList {items}   addBlockItem {status, itemData}
 --     Toggle {remote}                   StashAll {status}  (the progress overlay)
 --     StowReport {stowed, kept, reasons=[{reason, label, count, names}]}
 --     access {canWithdraw} | {canDeposit}   after a refused withdrawal or deposit
@@ -908,8 +908,33 @@ local function blockEntry(itemType)
 	return {sprite = itemType:getClientId(), name = itemType:getName(), id = itemType:getId()}
 end
 
+-- The client ids of the depot lockers (depot_config.lua lockerIds), while a locker opens the stash window
+-- (cfg.depot.openStash): the client closes a locker window the moment the engine opens it, so it never shows beside the
+-- stash (O316: the window flashed). nil when lockers keep their own window.
+local lockerIdsCache
+local function lockerClientIds()
+	if not (cfg.depot and cfg.depot.openStash) or not ItemType then
+		return nil
+	end
+	if lockerIdsCache == nil then
+		lockerIdsCache = false
+		local ok, dc = pcall(dofile, "data/scripts/chaos/depot_config.lua")
+		if ok and type(dc) == "table" and type(dc.lockerIds) == "table" then
+			local ids = {}
+			for _, id in ipairs(dc.lockerIds) do
+				local okT, cid = pcall(function() return ItemType(id):getClientId() end)
+				if okT and int(cid) > 0 then
+					ids[#ids + 1] = int(cid)
+				end
+			end
+			lockerIdsCache = #ids > 0 and ids or false
+		end
+	end
+	return lockerIdsCache or nil
+end
+
 local function sendCategories(player, withBlocks)
-	send(player, {make = "addCategorys", list = CATEGORIES, remote = isRemote(player)})
+	send(player, {make = "addCategorys", list = CATEGORIES, remote = isRemote(player), lockers = lockerClientIds()})
 	if withBlocks then
 		local items = {}
 		for id in pairs(blockedSet(player:getGuid())) do
@@ -1713,7 +1738,8 @@ end
 -- Returns the extra keys granted now.
 function S.grandfather(player)
 	local g = cfg.legacyGrants
-	if not g or int(player:getStorageValue(cfg.storage.legacy)) >= int(g.version) then
+	local done = g and int(player:getStorageValue(cfg.storage.legacy)) or 0
+	if not g or done >= int(g.version) then
 		return {}
 	end
 	if not (ChaosPact and ChaosPact.grantExtra and ChaosPact.state) then
@@ -1739,6 +1765,16 @@ function S.grandfather(player)
 		warn(string.format("%s: %d old stash tab(s) kept (%s)", player:getName(), #granted, table.concat(granted, ", ")))
 		store.log(player:getGuid(), "legacy", #granted, 0, 0, table.concat(granted, ","))
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, Chaos.t(player, M.grandfathered))
+	end
+	-- the old tabs were worth 3 expansions before version 2: a character that had the old conversion hears the new one once
+	-- (the slots are read live from the extras, so there is nothing to grant)
+	if done >= 1 then
+		local v = S.viewOf(player, true)
+		if int(v.oldTabs) > 0 then
+			local per = int((cfg.slots or {}).legacyPacksPerTab)
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR,
+				Chaos.t(player, M.tabsRaised, per * int(cfg.slots.perPack), per, v.slots))
+		end
 	end
 	return granted
 end

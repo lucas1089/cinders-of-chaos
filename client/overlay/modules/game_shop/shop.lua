@@ -774,7 +774,7 @@ function addOffer(category, data, sel)
   -- cosmetics.lua, this player only).
   local preview = type(data["preview"]) == "table" and data["preview"] or nil
   if sel and offer.previewButton then
-    local plan = TryOn.plan(data, offer.lookOption, lookPreview ~= nil)
+    local plan = TryOn.plan(data, offer.lookOption, lookPreview ~= nil, plateTryable())
     if plan.show then
       local m = TryOn.margins(data["gift"] == true)
       offer.previewButton:setVisible(true)
@@ -794,6 +794,12 @@ function addOffer(category, data, sel)
   end
 end
 
+-- game_nameplate can draw a tried frame on the own plate (O318)
+function plateTryable()
+  local np = modules.game_nameplate
+  return np ~= nil and type(np.previewFrame) == 'function'
+end
+
 -- the countdown on the button while a try runs
 local function tickTry(widget, untilMs, token)
   if not widget or widget.tryToken ~= token or widget:isDestroyed() then return end
@@ -805,10 +811,14 @@ end
 
 -- the TRY ON button: pin the offer's look on the character for TryOn.MS, and play the cosmetic's effect on the map
 function tryOffer(widget)
-  local plan = TryOn.plan(widget.offerData, widget.lookOption, lookPreview ~= nil)
+  local plan = TryOn.plan(widget.offerData, widget.lookOption, lookPreview ~= nil, plateTryable())
   if not plan.show then return end
   if plan.panel and lookPreview then
     lookPreview:setTry(widget.lookOption, TryOn.MS)
+    widget.tryToken = (widget.tryToken or 0) + 1
+    tickTry(widget, g_clock.millis() + TryOn.MS, widget.tryToken)
+  end
+  if plan.plate and plateTryable() and modules.game_nameplate.previewFrame(plan.plate, TryOn.MS) then
     widget.tryToken = (widget.tryToken or 0) + 1
     tickTry(widget, g_clock.millis() + TryOn.MS, widget.tryToken)
   end

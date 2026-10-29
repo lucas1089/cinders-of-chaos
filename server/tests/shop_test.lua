@@ -412,14 +412,16 @@ ChaosSeason = {realmOf = function(p) return p.realm or 0 end,
 -- <<< Seasons
 ChaosRateLimit = {allow = function() return true end}
 local pactDays = 0
-local pactSources, pactCapBlock = {}, false
+local pactSources, pactCapBlock, pactCapAccounts = {}, false, {}
 ChaosPact = {grantDays = function(p, days, source)
 		pactDays = pactDays + days
 		pactSources[#pactSources + 1] = source
 		ok(source == "store" or source == "complete", "pact source")
 	end,
 	-- the stacking cap (pact.lua Pact.checkDays): the test switches it on
-	checkDays = function(p, days) if pactCapBlock then return "Your Chaos Pact already runs for more than 185 days. Buy more later." end end}
+	checkDays = function(p, days) if pactCapBlock then return "Your Chaos Pact already runs for more than 185 days. Buy more later." end end,
+	-- the same for an account whose player is offline (a gifted Completo); pactCapAccounts[account] = true: that account is at the cap
+	checkDaysAccount = function(account, days) if pactCapAccounts[account] then return "Your Chaos Pact already runs for more than 185 days. Buy more later." end end}
 
 local nextGuid = 0
 local function newPlayer(name, opt)
@@ -1070,7 +1072,7 @@ do
 	eq(Shop.byKey["complete:90"].listSum, 897 + 800, "90 days: three Pacts apart and the 90 day Premium") eq(Shop.byKey["complete:180"].listSum, 1794 + 1500, "180 days apart")
 	request(E, "get_page", {category = c, page = page})
 	local view = last("category_page").data.offers[o]
-	eq(view.gift, nil, "not giftable")
+	eq(view.gift, true, "giftable (owner follow-up 2026-10-29)")
 	ok(view.description:find("+10% XP", 1, true) and view.description:find("Premium:", 1, true) and view.description:find("Chaos Pact:", 1, true), "both benefit lists")
 	ok(not view.description:find("days of Chaos Pact", 1, true), "no second Pact line")
 	ok(#view.description <= 200, "short enough for three lines of the store")
@@ -1095,6 +1097,54 @@ do
 	title = buy(E, "complete:30")
 	eq(title, "Not possible", "no Pact system: the Completo is not sold")
 	ChaosPact = saved
+	-- a gift: the Pact days and the premium days go to the receiver's account, the buyer's own Pact does not change
+	local Giver, Recv = newPlayer("Pact Giver", {}), newPlayer("Pact Receiver", {})
+	DB.coins[Giver.account] = 5000
+	days0, prem0, srcs0 = pactDays, Recv.premDays or 0, #pactSources
+	local giverPrem0 = Giver.premDays or 0
+	eq(buy(Giver, "complete:30", "Pact Receiver"), "Gift sent", "the Completo is a gift")
+	eq(DB.coins[Giver.account], 5000 - 499, "the giver paid 499")
+	eq(pactDays - days0, 30, "30 Pact days") eq(pactSources[srcs0 + 1], "complete", "from the bundle")
+	eq((Recv.premDays or 0) - prem0, 30, "30 premium days for the receiver") eq((Giver.premDays or 0) - giverPrem0, 0, "none for the giver")
+	eq(DB.purchases[#DB.purchases].giftPlayer, Recv.guid, "logged as a gift")
+	-- the receiver is at the cap: nothing is taken (online and offline)
+	pactCapBlock = true
+	local before = DB.coins[Giver.account]
+	local gt, gm = buy(Giver, "complete:90", "Pact Receiver")
+	eq(gt, "Not possible", "online receiver at the cap") ok(gm:find("185 days", 1, true), gm)
+	eq(DB.coins[Giver.account], before, "no coins taken for an online receiver at the cap")
+	pactCapBlock = false
+	local g0 = #DB.gifts
+	DB.offline = {{name = "Pact Sleeper", guid = 970, account = 970, group = 1}}
+	pactCapAccounts[970] = true
+	gt, gm = buy(Giver, "complete:90", "Pact Sleeper")
+	eq(gt, "Not possible", "offline receiver at the cap") ok(gm:find("185 days", 1, true), gm)
+	eq(DB.coins[Giver.account], before, "no coins taken for an offline receiver at the cap")
+	eq(#DB.gifts, g0, "no gift queued")
+	-- an offline receiver below the cap: queued, delivered at login to that account
+	pactCapAccounts[970] = nil
+	eq(buy(Giver, "complete:90", "Pact Sleeper"), "Gift sent", "offline gift queued")
+	eq(DB.coins[Giver.account], before - 1350, "1350 coins taken")
+	nextGuid = 969
+	local Sleeper = newPlayer("Pact Sleeper", {account = 970})
+	DB.offline = nil
+	days0 = pactDays
+	Shop.deliverGifts(Sleeper)
+	eq(DB.gifts[g0 + 1].status, 1, "delivered at login") eq(pactDays - days0, 90, "90 Pact days for the receiver") eq(Sleeper.premDays, 90, "90 premium days")
+	-- the cap was reached between the gift and the login: refused at login, the coins go back
+	DB.offline = {{name = "Pact Late", guid = 980, account = 980, group = 1}}
+	eq(buy(Giver, "complete:30", "Pact Late"), "Gift sent", "second offline gift")
+	local paid = DB.coins[Giver.account]
+	nextGuid = 979
+	local Late = newPlayer("Pact Late", {account = 980})
+	DB.offline = nil
+	pactCapBlock = true
+	days0 = pactDays
+	Shop.deliverGifts(Late)
+	pactCapBlock = false
+	eq(DB.gifts[g0 + 2].status, 2, "refused at login") eq(DB.coins[Giver.account], paid + 499, "coins back to the giver") eq(pactDays, days0, "no Pact days")
+	-- a starter pack with Pact days stays not giftable
+	eq(buy(Giver, "starter:novice", "Pact Receiver"), "Not possible", "a starter pack is not a gift")
 	-- the Pact and Premium alone: 299 each
 	eq(Shop.byKey["premium:30"].cost, 299, "Premium 30 days: 299") eq(Shop.byKey["premium:90"].cost, 800, "Premium 90 days: 800")
 	eq(Shop.byKey["premium:180"].cost, 1500, "Premium 180 days: 1500")
@@ -1124,6 +1174,25 @@ do
 	request(L4, "buy", {category = cat4, page = page4, offer = off4, title = "All Blessings", cost = ent4.cost})
 	eq(last("message").data.title, "Error", "60 is refused once the character is level 201")
 	eq(blessCost(L4), 100, "and the store shows 100 now")
+	-- the Eternal Blessing follows the level too: 300 up to 200, 500 up to 500, 750 above
+	local function eternalCost(p) local _, _, _, e = find(p, "service:eternalBlessing"); return e.cost end
+	eq(eternalCost(L1), 300, "Eternal, level 80: 300") eq(eternalCost(newPlayer("Border Two", {level = 200})), 300, "Eternal, level 200: 300")
+	eq(eternalCost(L4), 500, "Eternal, level 201: 500") eq(eternalCost(L2), 500, "Eternal, level 350: 500")
+	eq(eternalCost(newPlayer("Border Three", {level = 500})), 500, "Eternal, level 500: 500")
+	eq(eternalCost(newPlayer("Border Four", {level = 501})), 750, "Eternal, level 501: 750") eq(eternalCost(L3), 750, "Eternal, level 650: 750")
+	local ce, pe, oe, ee = find(L3, "service:eternalBlessing")
+	request(L3, "get_page", {category = ce, page = pe})
+	eq(last("category_page").data.offers[oe].cost, 750, "the client is sent 750 for a level 650 character")
+	DB.coins[L3.account] = 2000
+	request(L3, "buy", {category = ce, page = pe, offer = oe, title = "Eternal Blessing", cost = 300})
+	eq(last("message").data.title, "Error", "the Eternal price of another tier is refused")
+	eq(DB.coins[L3.account], 2000, "no coins taken for a stale Eternal price")
+	local cl, pl, ol = find(L1, "service:eternalBlessing")
+	DB.coins[L1.account] = 2000
+	L1.level = 250
+	request(L1, "buy", {category = cl, page = pl, offer = ol, title = "Eternal Blessing", cost = 300})
+	eq(last("message").data.title, "Error", "300 is refused once the character passed level 200 with the window open")
+	eq(DB.coins[L1.account], 2000, "no coins taken")
 end
 
 -- the account discount: another character of the account owns it (or a starter pack with it)

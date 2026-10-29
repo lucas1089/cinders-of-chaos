@@ -27,6 +27,8 @@ Stash.Init = function()
 		onWalk = Stash.OnWalkClose,
 		onStatesChange = Stash.OnStatesChange
 	})
+	-- a depot locker window is closed the moment it opens, before it is drawn (O316: it flashed beside the stash)
+	connect(Container, { onOpen = Stash.OnContainerOpen })
 
 	-- the extra-menu button only exists in the client this module came from; the Chaos top bar has a stash icon
 	if modules.game_extramenu and modules.game_extramenu.Menu then
@@ -106,6 +108,7 @@ Stash.Terminate = function()
 		onGameStart = Stash.OnStart,
 		onGameEnd = Stash.OnEnd
 	})
+	disconnect(Container, { onOpen = Stash.OnContainerOpen })
 	-- Was passing the global `destroy` (nil) here, so the hooks were never
 	-- actually disconnected. Use the same reference we connected with.
 	disconnect(LocalPlayer, {
@@ -186,6 +189,8 @@ end
 
 
 Stash.Destroy = function()
+	Stash.opening = false
+	Stash.openToken = (Stash.openToken or 0) + 1
 	if Stash.UI then
 		Stash.UI:destroy()
 		Stash.UI = nil
@@ -205,6 +210,9 @@ Stash.Toggle = function()
 	if not Stash.UI then
 		Stash.CreateUI()
 	end
+	if Stash.opening then
+		return false -- already asked: the window shows once the list is drawn (Stash.Reveal)
+	end
 	if Stash.UI:isVisible() then
 		Stash.UI:hide()
 		Stash.UIConfirm:hide()
@@ -215,7 +223,13 @@ Stash.Toggle = function()
 			return false
 		end
 		Stash.UI.SupplyList:destroyChildren()
-		Stash.UI:show()
+		-- not shown yet (O316): an empty window that fills a moment later flashed. Stash.Reveal shows it, filled.
+		Stash.opening = true
+		local token = (Stash.openToken or 0) + 1
+		Stash.openToken = token
+		scheduleEvent(function()
+			if Stash.openToken == token and V.revealReady(false, V.REVEAL_MS) then Stash.Reveal() end
+		end, V.REVEAL_MS)
 		-- sem :focus() ao abrir: nao rouba o teclado do jogo (Escape via game_windowfocus)
 		-- walk-through: andar (WASD/setas) enquanto deposita/saca na janela
 		if modules.game_windowfocus and modules.game_windowfocus.enableWalkThrough then
@@ -230,6 +244,28 @@ Stash.Toggle = function()
 			make = "SendItems", 
 		}}))
 	end
+end
+
+-- shows the window opened by Stash.Toggle, once (called when the last item packet was drawn, or by the timer)
+Stash.Reveal = function()
+	if not Stash.opening then return end
+	Stash.opening = false
+	if Stash.UI then
+		Stash.UI:show()
+	end
+end
+
+-- a depot locker opened by the engine: closed at once (again one cycle later, in case the container window was made
+-- after this handler ran); the stash window replaces it
+Stash.OnContainerOpen = function(container)
+	local top = container and container.getContainerItem and container:getContainerItem()
+	if not (top and V.isLocker(Stash.LockerIds, top:getId())) then
+		return
+	end
+	g_game.close(container)
+	scheduleEvent(function()
+		if container and not container:isClosed() then g_game.close(container) end
+	end, 0)
 end
 
 Stash.DataManager = function(protocol, opcode, buffer)
@@ -270,6 +306,9 @@ Stash.DataManager = function(protocol, opcode, buffer)
 			elseif Stash.CreateList then
 				Stash.CreateList(Stash.Data)
 			end
+			if Stash.opening and V.revealReady(true, 0) then
+				Stash.Reveal()
+			end
 		end
 	elseif buffer.make == "tabs" then
 		Stash.Tabs = buffer
@@ -292,8 +331,11 @@ Stash.DataManager = function(protocol, opcode, buffer)
 		displayInfoBox(tr('Stow Everything'), V.reportText(buffer))
 	elseif buffer.make == "Toggle" then
 		Stash.remoteAccess = (buffer.remote == true)
+		if buffer.closeLockers then
+			Stash.LockerIds = V.lockerSet(buffer.closeLockers)
+		end
 		-- open = true: the stash keeper NPC or a depot locker asks for the window (it stays open when it already is)
-		if not (buffer.open == true and Stash.UI and Stash.UI:isVisible()) then
+		if not (buffer.open == true and Stash.UI and (Stash.UI:isVisible() or Stash.opening)) then
 			Stash.Toggle()
 		end
 		-- a depot locker (the depot is retired, O316): the locker window the engine opened is closed again
@@ -301,6 +343,9 @@ Stash.DataManager = function(protocol, opcode, buffer)
 	elseif buffer.make == "addCategorys" then
 		Stash.CategoryData = buffer
 		Stash.remoteAccess = (buffer.remote == true)
+		if buffer.lockers then
+			Stash.LockerIds = V.lockerSet(buffer.lockers) -- the depot lockers whose window is closed on opening
+		end
 		Stash.FillCategories()
 	elseif buffer.make == "StashAll" then
 		Stash.StashAll(buffer)
@@ -832,6 +877,7 @@ function ReturnWindow()
 end
 
 function closeWalk()
+	Stash.opening = false
 	if Stash.UI and Stash.UI:isVisible() then
 		Stash.UI:hide()
 		if Stash.UIConfirm then

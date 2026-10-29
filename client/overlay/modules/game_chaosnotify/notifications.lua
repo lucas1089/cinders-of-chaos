@@ -131,7 +131,7 @@ local NOTIFICATION_TYPES = {
     },
     -- Chaos Pact (server data/scripts/chaos/pact.lua, O317): the Pact (or the Pacto Completo) ends in 3 days / 1 day
     PACT = {
-        icon = "images/toast/season_pass.png",
+        icon = "images/toast/pact.png",
         title = "CHAOS PACT",
         titleColor = "#e07a4a",
         backgroundColor = "#ccbebb",

@@ -8417,6 +8417,10 @@ return {
 			"30 dias: +10% XP, stamina x1,5, guardar de qualquer lugar, +25 vagas, Auto Seller, cosméticos",
 		["60 coins up to level 200, 100 up to level 500, 150 above"] =
 			"60 coins até o level 200, 100 até o level 500, 150 acima",
+		["300 coins up to level 200, 500 up to level 500, 750 above"] =
+			"300 coins até o level 200, 500 até o level 500, 750 acima",
+		["%s was taken back: the donation that paid for it was refunded or charged back."] =
+			"%s foi retirado: a doação que o pagou foi reembolsada ou contestada.",
 		["2 a week in all Lasting weapons"] =
 			"2 por semana em todas as armas Lasting",
 		["Another character of your account has it: %d%% off"] =
@@ -8432,5 +8436,18 @@ return {
 			"%s ainda não está à venda.",
 		["%s is no longer on sale."] =
 			"%s não está mais à venda.",
+		-- Victory emote lines (O318, cosmetics_config.lua emote say; Chaos.yell sends each viewer the line in own language)
+		["Victory!"] = "Vitória!",
+		["For the fallen!"] = "Pelos caídos!",
+		["Burn bright!"] = "Brilhe em chamas!",
+		["Glory!"] = "Glória!",
+		["Until next time."] = "Até a próxima.",
+		-- Old stash tabs worth 4 expansions (O316 follow-up, stash_config.lua messages.tabsRaised)
+		["Your old stash tabs are now worth %d slots each (%d Stash Slot Expansions). Your stash has %d slots."] =
+			"Suas abas antigas do stash agora valem %d espaços cada (%d Stash Slot Expansions). Seu stash tem %d espaços.",
+		-- Salvage of a full bag in a chain of batches (O319, salvage.lua)
+		[" The rest of the bag follows."] = " O resto da bolsa vem a seguir.",
+		["The bag changed: the salvage stopped. Check the list and confirm again."] =
+			"A bolsa mudou: a reciclagem parou. Confira a lista e confirme de novo.",
 	},
 }

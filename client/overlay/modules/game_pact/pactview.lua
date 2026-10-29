@@ -1,7 +1,7 @@
 -- Chaos Pact window: the texts and rows, without client API (tested by pactview_test.lua).
 -- The server (data/scripts/chaos/pact.lua) decides everything; this only formats its `status`:
 --   {active, ends, daysLeft, dailyMarks, canClaim, claimedTotal, premiumDays, coins, title, titleText,
---    marks, marksEarned, shelf = [{key, name, marks, owned}], monthExp, monthExpAccount, month,
+--    marks, marksEarned, shelf = [{key, name, marks, owned, monthly?, endsAt?}], monthExp, monthExpAccount, month,
 --    limits = [{key, label, free, pact, extra, maxExtra, total, pactActive}], tabSize, special = [{name, owned, source}],
 --    buildLimit, builds = [{slot, name, nodes, cls, editable, updated}]}
 -- Pact Marks (O317): 5 a day while the Pact runs; they buy the cosmetics of the shelf and nothing else.
@@ -66,7 +66,8 @@ function V.monthLine(s)
   return tr('This month the Pact gave you %s extra experience.', V.thousands(s.monthExp))
 end
 
--- the shelf rows: {key, name, marks, owned, canBuy, button, price}; the button text says why a row cannot be bought
+-- the shelf rows: {key, name, marks, owned, canBuy, button, price, monthly}; the button text says why a row cannot be bought.
+-- The month's slot (monthly = true, the server picks it by month) is named "<name> (this month)".
 function V.shelfRows(s)
   local rows = {}
   local have = n(type(s) == 'table' and s.marks)
@@ -80,8 +81,12 @@ function V.shelfRows(s)
     else
       button, canBuy = tr('Buy'), true
     end
-    rows[#rows + 1] = { key = it.key, name = it.name or it.key, marks = price, owned = it.owned == true, canBuy = canBuy, button = button,
-      price = tr('%d Marks', price) }
+    local name = it.name or it.key
+    if it.monthly then
+      name = tr('%s (this month)', name)
+    end
+    rows[#rows + 1] = { key = it.key, name = name, marks = price, owned = it.owned == true, canBuy = canBuy, button = button,
+      price = tr('%d Marks', price), monthly = it.monthly == true }
   end
   return rows
 end

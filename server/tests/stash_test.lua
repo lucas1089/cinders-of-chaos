@@ -116,7 +116,7 @@ eq(K.entryKey({id = 2400, plain = true, stackable = false}), nil, "a weapon is a
 eq(table.concat(K.unpackClasses(cfg, "weapons,bogus,armor,"), ","), "weapons,armor", "stored classes, unknown keys dropped")
 
 -- ====================================================================== ownership and room
--- O316: the room of the one general tab = 30 free + 25 per expansion (bought + lent) + 75 per old tab honoured
+-- O316: the room of the one general tab = 30 free + 25 per expansion (bought + lent) + 100 per old tab honoured
 local v0 = K.view(cfg, {packs = pc.limits.stashSlots.free})
 eq(v0.general, 1, "one general tab") eq(v0.slots, 30, "30 free slots")
 eq(v0.owned.supplies, nil, "Supplies is not owned by everybody any more")
@@ -130,15 +130,18 @@ local vB = K.view(cfg, {packs = 0, extras = {stashOrbs = 1, stashWeapons = 1, st
 eq(vB.owned.orbs, "bought", "Orbs bought")
 eq(vB.owned.weapons, "bought", "Weapons bought")
 eq(vB.owned.supplies, "bought", "Supplies bought")
--- the old tabs stay worth something: a bought Extra Stash Tab, a bought Extra Depot Tab and each achievement tab = 3 expansions
-eq(K.view(cfg, {packs = 0, stashTabs = 2}).slots, 30 + 2 * 3 * 25, "two old stash tabs: 150 more slots")
-eq(K.view(cfg, {packs = 0, depotTabs = 3}).slots, 30 + 3 * 3 * 25, "three old depot tabs: 225 more slots")
-eq(K.view(cfg, {packs = 0, achievements = {depot_tab_relics = true, depot_tab_vault = true, unique_50 = true}}).slots, 30 + 2 * 75,
-	"two achievement tabs: 150 more slots")
+-- the old tabs stay worth something: a bought Extra Stash Tab, a bought Extra Depot Tab and each achievement tab = 4 expansions (owner 2026-10-29, was 3)
+eq(cfg.slots.legacyPacksPerTab, 4, "an old tab = 4 expansions")
+eq(K.view(cfg, {packs = 0, stashTabs = 2}).slots, 30 + 2 * 4 * 25, "two old stash tabs: 200 more slots")
+eq(K.view(cfg, {packs = 0, depotTabs = 3}).slots, 30 + 3 * 4 * 25, "three old depot tabs: 300 more slots")
+eq(K.view(cfg, {packs = 0, achievements = {depot_tab_relics = true, depot_tab_vault = true, unique_50 = true}}).slots, 30 + 2 * 100,
+	"two achievement tabs: 200 more slots")
 eq(K.view(cfg, {packs = 0, achievements = {unique_50 = true}}).owned.cosmetics, nil, "unique_50 gives no tab any more (it is grandfathered once)")
 eq(K.view(cfg, {packs = 20, stashTabs = 6, depotTabs = 12}).general, 1, "never more than one general tab")
 eq(K.view(cfg, {packs = -5}).slots, 30, "never below the free slots")
-eq(K.slotsOf(cfg, {packs = 2, stashTabs = 1}), 30 + (2 + 3) * 25, "slotsOf")
+eq(K.slotsOf(cfg, {packs = 2, stashTabs = 1}), 30 + (2 + 4) * 25, "slotsOf")
+eq(select(3, K.slotsOf(cfg, {packs = 2, stashTabs = 1, depotTabs = 0})), 1, "slotsOf also returns the old tab count")
+eq(K.view(cfg, {stashTabs = 2}).oldTabs, 2, "the view tells how many old tabs count")
 
 -- grandfathering: the tabs the old rules gave free are kept by the accounts that used them
 eq(table.concat(K.legacyGrants(cfg, {used = {[104] = 3}, extras = {}}), ","), "stashSupplies", "used Supplies: the extra")
@@ -1932,9 +1935,9 @@ local function o316()
 	eq(S.viewOf(p2).slots, 55, "Pact: 55 slots") eq(S.viewOf(p2).owned.products, nil, "Pact: no Products tab")
 	pactOn316, packs = false, 0
 	extrasO = {stashTabs = 2, depotTabs = 1}
-	eq(S.viewOf(p2).slots, 30 + 3 * 75, "old bought tabs: 75 slots each, 3 tabs = 225")
+	eq(S.viewOf(p2).slots, 30 + 3 * 100, "old bought tabs: 100 slots each, 3 tabs = 300")
 	extrasO = {stashTabs = 99, depotTabs = 99}
-	eq(S.viewOf(p2).slots, 30 + (6 + 12) * 75, "capped at what the old rules sold (6 + 12)")
+	eq(S.viewOf(p2).slots, 30 + (6 + 12) * 100, "capped at what the old rules sold (6 + 12)")
 	extrasO = {}
 
 	end
@@ -1952,6 +1955,28 @@ local function o316()
 	eq(table.concat(got, ","), "stashSupplies,stashProducts,stashCosmetics", "the three old grants")
 	eq(p3.storage[cfg.storage.legacy], cfg.legacyGrants.version, "marked done")
 	eq(#S.grandfather(p3), 0, "never twice")
+	-- version 2: a character marked with version 1 (it was told 3 expansions) hears 4 once, nothing is granted twice
+	DB.ach.unique_50 = nil
+	extrasO = {stashTabs = 2}
+	local p6 = newPlayer(330)
+	p6.storage[cfg.storage.legacy] = 1
+	local nBefore = #p6.texts
+	eq(#S.grandfather(p6), 0, "version 1 -> 2 grants nothing")
+	eq(p6.storage[cfg.storage.legacy], 2, "marked version 2")
+	eq(#p6.texts, nBefore + 1, "told once") eq(p6.texts[#p6.texts]:find("100 slots each", 1, true) ~= nil, true, "100 slots each")
+	eq(p6.texts[#p6.texts]:find("4 Stash Slot Expansions", 1, true) ~= nil, true, "4 expansions")
+	S.grandfather(p6) eq(#p6.texts, nBefore + 1, "never twice")
+	local p7 = newPlayer(331)
+	p7.storage[cfg.storage.legacy] = 1
+	extrasO = {}
+	local n7 = #p7.texts
+	S.grandfather(p7)
+	eq(#p7.texts, n7, "no old tabs: nothing to tell")
+	local p8 = newPlayer(332)
+	extrasO = {stashTabs = 2}
+	S.grandfather(p8)
+	eq(#p8.texts, 0, "a new character is told nothing about 3 or 4")
+	extrasO = {}
 	extrasO = {}
 	DB.ach.unique_50 = nil
 	local p4 = newPlayer(319)

@@ -267,11 +267,20 @@ function M.problems(env)
 		end
 		if bless.cost ~= tiers[1].cost then bad("All Blessings cost %d is not its first tier (%d)", bless.cost, tiers[1].cost) end
 		if eternal then
-			local first, top = tiers[1].cost, tiers[#tiers].cost
-			local t1, t2 = eternal.cost / first, eternal.cost / top
-			if t1 > sv.eternalMaxTimes then bad("Eternal Blessing is %.1f of the cheapest All Blessings (limit %d)", t1, sv.eternalMaxTimes) end
-			if t2 < sv.eternalMinTimesTop then bad("Eternal Blessing is %.1f of the dearest All Blessings (at least %d)", t2, sv.eternalMinTimesTop) end
-			if t1 < sv.eternalMinTimes then bad("Eternal Blessing is %.1f of the cheapest All Blessings (at least %d)", t1, sv.eternalMinTimes) end
+			-- the Eternal Blessing follows the level too (O317 follow-up): every tier is eternalMinTimes to eternalMaxTimes
+			-- of the All Blessings tier of the same band (a level 800 character still needs several deaths to get its money back)
+			local et = eternal.levelPrices or {{cost = eternal.cost}}
+			if #et ~= #tiers then
+				bad("Eternal Blessing has %d price tiers, All Blessings %d", #et, #tiers)
+			else
+				for i, t in ipairs(et) do
+					if (t.upTo or 0) ~= (tiers[i].upTo or 0) then bad("Eternal Blessing tier %d ends at level %s, All Blessings at %s", i, tostring(t.upTo), tostring(tiers[i].upTo)) end
+					local times = t.cost / tiers[i].cost
+					if times > sv.eternalMaxTimes then bad("Eternal Blessing tier %d is %.1f of All Blessings (limit %d)", i, times, sv.eternalMaxTimes) end
+					if times < sv.eternalMinTimes then bad("Eternal Blessing tier %d is %.1f of All Blessings (at least %d)", i, times, sv.eternalMinTimes) end
+				end
+			end
+			if eternal.cost ~= et[1].cost then bad("Eternal Blessing cost %d is not its first tier (%d)", eternal.cost, et[1].cost) end
 		end
 	end
 
@@ -315,7 +324,8 @@ function M.problems(env)
 				bad("%s: needs a pact part and a premium part", o.name)
 			else
 				if pactPart.days ~= days or premiumPart.days ~= days then bad("%s: parts of %d and %d days, not %d", o.name, pactPart.days, premiumPart.days, days) end
-				if o.gift ~= false then bad("%s is giftable (a Pact part cannot be)", o.name) end
+				if o.gift == false then bad("%s is not giftable (owner 2026-10-29: the Completo is a gift)", o.name) end
+				if not pactPart.giftable then bad("%s: the pact part is not marked giftable (the gift would be refused)", o.name) end
 				if not pactPart.required then bad("%s: the pact part is not required (it would sell premium alone)", o.name) end
 				local want = pactOffer.cost * days / 30
 				if math.abs(pactPart.cost - want) > want * C.pactPartTolerancePct / 100 then
@@ -413,7 +423,19 @@ function M.problems(env)
 		local M2 = R.marks
 		local cosOf = {}
 		for _, c in ipairs(env.cosmetics.cosmetics) do cosOf[c.key] = c end
-		for _, it in ipairs(env.pact.marks.shelf) do
+		-- the fixed shelf and the month's rotation (pact_config.lua marks.monthly, 6 to 12 cosmetics, none on the fixed shelf)
+		local rows, fixed = {}, {}
+		for _, it in ipairs(env.pact.marks.shelf) do rows[#rows + 1] = it; fixed[it.key] = true end
+		local monthly = env.pact.marks.monthly or {}
+		if #monthly < 6 or #monthly > 12 then bad("Marks shelf: %d cosmetics in the monthly rotation (6 to 12)", #monthly) end
+		local seenMonthly = {}
+		for _, it in ipairs(monthly) do
+			if fixed[it.key] then bad("Marks shelf: monthly %s is on the fixed shelf", it.key) end
+			if seenMonthly[it.key] then bad("Marks shelf: monthly %s twice", it.key) end
+			seenMonthly[it.key] = true
+			rows[#rows + 1] = it
+		end
+		for _, it in ipairs(rows) do
 			local c = cosOf[it.key]
 			if not c then
 				bad("Marks shelf: no cosmetic %s", it.key)

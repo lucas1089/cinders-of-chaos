@@ -9,10 +9,14 @@ Item 6 of 2026-10-14 ("Decida tudo sobre o item 6"): the developers decided ever
 each is under "Decided" with its reason. Left here: what needs the owner's own answer or a real-world action.
 
 - [ ] **Dates.**
-  - Proposal: launch on 20 Nov 2026 at 15:00 (UTC-3).
-  - Open betas on the weekends of 31 Oct and 7 Nov.
-  - The Season 1 start (now 1 Nov in `season_config.lua`) moves to the launch date. The Chronicle's goal sizes assume
-    it does (server/README.md "The Ashen Chronicle", "Goal sizes").
+  - **Confirmed by the owner, 2026-10-29:** launch on 20 Nov 2026 at 15:00 (UTC-3).
+  - Open betas on the weekends of 31 Oct and 7 Nov. The beta is open, with no keys.
+  - Season 1 runs from the launch, 20 Nov 2026 15:00, to 19 Feb 2027 (13 weeks); done in `season_config.lua`. PvP
+    Season 1 starts at the launch too (`battleground_config.lua`). Season 2 is planned for 20 Feb 2027 15:00.
+    The Chronicle's goal sizes assume the launch start (server/README.md "The Ashen Chronicle", "Goal sizes").
+  - Patch notes come out every Wednesday.
+  - Wipe: one full wipe between the beta and the launch (all beta characters and items). After the launch, permanent
+    characters are never wiped; seasons are optional separate characters.
 - [ ] **The beta plan.** Who joins, the wipe before launch, coins and donations in the beta, the Season 1 start and
   the staff schedule: every decision is in [docs/BETA.md](BETA.md) (draft), each marked "Owner decides" with a
   recommendation. The go / no-go list for the beta, with owner and dev items: [docs/BETA_READINESS.md](BETA_READINESS.md).
@@ -21,6 +25,19 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   `[REGRAS DE DIVULGAÇÃO DO CRIADOR]` and the review itself (docs/legal/README.md "Placeholders" and "Check" item 17). It
   must be reviewed before the Bazaar and creator codes are switched on for players. The Terms' new helper sentence
   (section 6) and the pack prices go to the same review.
+- [ ] **Beta Tester title (built 2026-10-29, a check).** `beta_tester.lua` records the accounts that log in during the
+  two beta weekends and keeps them through the wipe (`chaos_beta_testers`, kept by the wipe list of docs/BETA.md section
+  9). At launch the accounts get the cosmetic title "Beta Tester" when the beta switch is off. Make sure the beta server
+  has the commit from the first weekend (admin app: Painel > Atualizar servidor > Aplicar e reiniciar; shell fallback:
+  `chaos_update.sh`). At launch set `beta_config.lua` `enabled = false` (docs/LAUNCH.md section 11; the admin app has no button for
+  that file, the Modo beta card is another switch, the weekly limits). Then log in with a beta account and look at `!title`.
+- [ ] **Creator applications (built 2026-10-29).** Creators apply on the site (page Creator Program, a form for a logged
+  in account). Staff read them on the site, not in the admin app: Creator Codes page > Administration > Applications
+  (Approve or Reject), then create the code in the form above it. Shell fallback:
+  `SELECT id, character_name, platform, channel_url, hours_week, viewers_avg, followers, status FROM chaos_creator_applications WHERE status = 'new' ORDER BY id;`.
+  The Discord link on that page shows when `CHAOS_DISCORD_URL` is set in `site.env` (the invite item below).
+  The launch window pays 15% instead of 10% for 30 days from the launch: tell the lawyer (item above), Donation Terms
+  section 7 names 10%.
 - [ ] **Referral link.** Set `shareUrl` in `server/data/scripts/chaos/referral_config.lua` to
   `https://<site>/register.php?ref=` once the domain exists, so the client shows the link too.
 - [ ] **Character Bazaar cron.** Add the cron line of `website/README.md` "Character Bazaar" on the live site.

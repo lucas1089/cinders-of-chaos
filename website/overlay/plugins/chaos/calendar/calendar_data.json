@@ -49,15 +49,15 @@
   {
    "id": "wipe",
    "kind": "wipe",
-   "status": "proposal",
+   "status": "plan",
    "patchnote": "",
    "title": {
     "pt-BR": "Wipe do beta e instalação de lançamento",
     "en": "Beta wipe and launch install"
    },
    "text": {
-    "pt-BR": "Proposta do plano de beta. As regras do que fica e do que zera estão mais abaixo.",
-    "en": "Proposal of the beta plan. The rules for what stays and what resets are further down."
+    "pt-BR": "Um único wipe completo entre o beta e o lançamento: todos os personagens e itens do beta são apagados. As regras do que fica e do que zera estão mais abaixo.",
+    "en": "One full wipe between the beta and the launch: all beta characters and items are deleted. The rules for what stays and what resets are further down."
    },
    "start": "2026-11-18T00:00:00-03:00",
    "hasTime": false,
@@ -66,15 +66,15 @@
   {
    "id": "launch",
    "kind": "launch",
-   "status": "proposal",
+   "status": "confirmed",
    "patchnote": "2026-11-20",
    "title": {
     "pt-BR": "Lançamento",
     "en": "Launch"
    },
    "text": {
-    "pt-BR": "Data proposta, ainda a confirmar. Sai a nota de patch do lançamento e a Season 1 deve começar junto.",
-    "en": "Proposed date, still to be confirmed. The launch patch note goes out and Season 1 should start with it."
+    "pt-BR": "Data confirmada pelo dono. Sai a nota de patch do lançamento e a Season 1 começa junto, no mesmo horário.",
+    "en": "Date confirmed by the owner. The launch patch note goes out and Season 1 starts with it, at the same time."
    },
    "start": "2026-11-20T15:00:00-03:00",
    "hasTime": true,
@@ -104,11 +104,11 @@
    "id": 1,
    "name": "Season of Ash",
    "tag": "[S1]",
-   "start": "2026-11-01T12:00:00-03:00",
-   "finish": "2027-01-31T12:00:00-03:00",
+   "start": "2026-11-20T15:00:00-03:00",
+   "finish": "2027-02-19T15:00:00-03:00",
    "lengthDays": 91,
    "lengthWeeks": 13,
-   "startsAtLaunch": false,
+   "startsAtLaunch": true,
    "proposed": {
     "start": "2026-11-20T15:00:00-03:00",
     "finish": "2027-02-19T15:00:00-03:00"
@@ -123,18 +123,18 @@
    "windows": [
     {
      "n": 1,
-     "start": "2026-10-05T06:00:00-03:00",
-     "end": "2026-11-30T06:00:00-03:00"
+     "start": "2026-11-20T15:00:00-03:00",
+     "end": "2027-01-15T15:00:00-03:00"
     },
     {
      "n": 2,
-     "start": "2026-11-30T06:00:00-03:00",
-     "end": "2027-01-25T06:00:00-03:00"
+     "start": "2027-01-15T15:00:00-03:00",
+     "end": "2027-03-12T15:00:00-03:00"
     },
     {
      "n": 3,
-     "start": "2027-01-25T06:00:00-03:00",
-     "end": "2027-03-22T06:00:00-03:00"
+     "start": "2027-03-12T15:00:00-03:00",
+     "end": "2027-05-07T15:00:00-03:00"
     }
    ],
    "title": {
@@ -142,8 +142,8 @@
     "en": "PvP seasons (arena and battleground)"
    },
    "text": {
-    "pt-BR": "Ciclos fixos de 8 semanas, contados a partir de uma segunda-feira às 06:00.",
-    "en": "Fixed 8-week cycles, counted from a Monday at 06:00."
+    "pt-BR": "Ciclos fixos de 8 semanas. A temporada 1 de PvP começa junto com o lançamento.",
+    "en": "Fixed 8-week cycles. PvP season 1 starts with the launch."
    }
   },
   {
@@ -189,8 +189,27 @@
    }
   }
  ],
+ "nextSeason": {
+  "id": 2,
+  "status": "plan",
+  "title": {
+   "pt-BR": "Season 2",
+   "en": "Season 2"
+  },
+  "text": {
+   "pt-BR": "Começa no dia seguinte ao fim da Season 1. Nome, modificador e o que passa para ela ainda são a definir.",
+   "en": "Starts the day after Season 1 ends. Its name, modifier and what carries into it are still to be set."
+  },
+  "start": "2027-02-20T15:00:00-03:00"
+ },
  "patchnotes": {
   "cadence": "weekly",
+  "weekday": 3,
+  "weekdayName": {
+   "pt-BR": "quarta-feira",
+   "en": "Wednesday"
+  },
+  "firstRegular": "2026-11-25",
   "count": 6,
   "latest": "2026-10-31",
   "title": {
@@ -198,8 +217,8 @@
    "en": "Patch notes"
   },
   "text": {
-   "pt-BR": "Uma nota de patch por semana, a mesma do jogo (menu Social > Patch Notes) e da página Patch Notes do site. O dia fixo da semana ainda é a definir.",
-   "en": "One patch note a week, the same as in the game (Social > Patch Notes menu) and on the Patch Notes page of the site. The fixed weekday is still to be set."
+   "pt-BR": "Uma nota de patch por semana, sempre na quarta-feira. É a mesma do jogo (menu Social > Patch Notes) e da página Patch Notes do site.",
+   "en": "One patch note a week, always on Wednesday. It is the same as in the game (Social > Patch Notes menu) and on the Patch Notes page of the site."
   }
  },
  "wipe": {
@@ -209,14 +228,14 @@
     "en": "From beta to launch"
    },
    "status": {
-    "pt-BR": "Proposta do plano de beta, a confirmar pelo dono",
-    "en": "Proposal of the beta plan, to be confirmed by the owner"
+    "pt-BR": "Regra confirmada pelo dono em 29/10/2026",
+    "en": "Rule confirmed by the owner on 29 Oct 2026"
    },
    "source": "docs/BETA.md section 3",
    "reset": [
     {
-     "pt-BR": "Todos os personagens e tudo neles: nível, skills, itens, depósito, magias, mortes",
-     "en": "Every character and everything on it: level, skills, items, storage, spells, deaths"
+     "pt-BR": "Todos os personagens do beta e tudo neles: nível, skills, itens, depósito, magias, mortes",
+     "en": "Every beta character and everything on it: level, skills, items, storage, spells, deaths"
     },
     {
      "pt-BR": "Casas, guildas, halls e guerras de guilda",
@@ -246,9 +265,15 @@
     }
    ],
    "why": {
-    "pt-BR": "As moedas e os itens do beta foram grátis e o beta acha bugs de balanceamento. Mantê-los poria quem testou à frente no lançamento. Doações ficam desligadas no beta, então nenhum dinheiro real se perde.",
-    "en": "Beta coins and items were free and the beta finds balance bugs. Keeping them would put testers ahead at launch. Donations are off in the beta, so no real money is lost."
-   }
+    "pt-BR": "Haverá um único wipe completo, entre o beta e o lançamento. As moedas e os itens do beta foram grátis e o beta acha bugs de balanceamento. Mantê-los poria quem testou à frente no lançamento. Doações ficam desligadas no beta, então nenhum dinheiro real se perde.",
+    "en": "There is one full wipe, between the beta and the launch. Beta coins and items were free and the beta finds balance bugs. Keeping them would put testers ahead at launch. Donations are off in the beta, so no real money is lost."
+   },
+   "gift": [
+    {
+     "pt-BR": "O título cosmético \"Beta Tester\" na conta de quem entrou no jogo durante os fins de semana do beta. Só cosmético, sem poder e sem moedas.",
+     "en": "The cosmetic title \"Beta Tester\" on the account of everyone who logged in during the beta weekends. Cosmetic only, no power and no coins."
+    }
+   ]
   },
   "seasonToSeason": {
    "title": {
@@ -297,59 +322,50 @@
     }
    ],
    "why": {
-    "pt-BR": "O sistema de seasons nunca apaga personagens normais. Quem quer largar do zero cria um personagem de season. Uma regra pública de wipe para depois do lançamento ainda é a definir.",
-    "en": "The season system never wipes standard characters. Whoever wants a fresh start makes a season character. A public wipe rule for after launch is still to be set."
+    "pt-BR": "O sistema de seasons nunca apaga personagens normais. Quem quer largar do zero cria um personagem de season.",
+    "en": "The season system never wipes standard characters. Whoever wants a fresh start makes a season character."
+   }
+  },
+  "afterLaunch": {
+   "title": {
+    "pt-BR": "Depois do lançamento",
+    "en": "After the launch"
+   },
+   "status": {
+    "pt-BR": "Regra confirmada pelo dono em 29/10/2026",
+    "en": "Rule confirmed by the owner on 29 Oct 2026"
+   },
+   "source": "docs/OWNER_TODO.md",
+   "reset": [],
+   "kept": [
+    {
+     "pt-BR": "Personagens permanentes nunca são apagados: nível, skills, itens e tudo mais ficam para sempre",
+     "en": "Permanent characters are never wiped: level, skills, items and everything else stay for good"
+    },
+    {
+     "pt-BR": "As temporadas são opcionais e usam personagens separados; entrar ou não em uma temporada não muda seus personagens permanentes",
+     "en": "Seasons are optional and use separate characters; joining or not joining a season does not change your permanent characters"
+    }
+   ],
+   "why": {
+    "pt-BR": "O wipe do beta é o único. Depois dele, o que você conquista no jogo fica.",
+    "en": "The beta wipe is the only one. After it, what you earn in the game stays."
    }
   }
  },
  "open": [
   {
-   "id": "launch-date",
-   "text": {
-    "pt-BR": "A data de lançamento (20/11/2026, 15:00) é uma proposta e ainda precisa da confirmação do dono.",
-    "en": "The launch date (20 Nov 2026, 15:00) is a proposal and still needs the owner's confirmation."
-   }
-  },
-  {
-   "id": "season1-start",
-   "text": {
-    "pt-BR": "A Season 1 deve começar junto com o lançamento, mas a configuração do servidor ainda marca outra data. As datas dela aparecem como a definir até isso mudar.",
-    "en": "Season 1 should start with the launch, but the server configuration still has another date. Its dates show as to be set until that changes."
-   }
-  },
-  {
-   "id": "pvp-season",
-   "text": {
-    "pt-BR": "A primeira temporada de PvP termina em 30/11/2026, dez dias depois do lançamento. A proposta é mover o início para 16/11/2026.",
-    "en": "The first PvP season ends on 30 Nov 2026, ten days after launch. The proposal is to move its start to 16 Nov 2026."
-   }
-  },
-  {
-   "id": "beta-wipe",
-   "text": {
-    "pt-BR": "O wipe entre o beta e o lançamento é uma proposta. A recompensa para quem testou o beta (título ou cosmético) é a definir, e manter ou não os banimentos também.",
-    "en": "The wipe between beta and launch is a proposal. A reward for beta testers (a title or a cosmetic) is to be set, and so is whether bans are kept."
-   }
-  },
-  {
    "id": "season2",
    "text": {
-    "pt-BR": "Datas, nome, modificador e o que passa para a Season 2: a definir.",
-    "en": "Dates, name, modifier and what carries into Season 2: to be set."
+    "pt-BR": "Nome, modificador e o que passa para a Season 2: a definir. As datas estão planejadas.",
+    "en": "Name, modifier and what carries into Season 2: to be set. The dates are planned."
    }
   },
   {
-   "id": "wipe-after-launch",
+   "id": "beta-bans",
    "text": {
-    "pt-BR": "A regra pública de wipe depois do lançamento: a definir.",
-    "en": "The public wipe rule after launch: to be set."
-   }
-  },
-  {
-   "id": "patch-day",
-   "text": {
-    "pt-BR": "O dia fixo da semana para a nota de patch: a definir.",
-    "en": "The fixed weekday for the patch note: to be set."
+    "pt-BR": "Manter ou não os banimentos de conta no wipe do beta: a confirmar pelo dono.",
+    "en": "Whether account bans are kept at the beta wipe: to be confirmed by the owner."
    }
   }
  ]

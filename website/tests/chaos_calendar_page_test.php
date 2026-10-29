@@ -25,13 +25,19 @@ check(isset($byId['beta1'], $byId['beta2'], $byId['launch'], $byId['wipe']), 'be
 check(chaos_calendar_fmt($byId['beta1']['start'], 'pt-BR') === '31/10/2026 15:00 (UTC-3)', 'beta 1: 31/10 15:00');
 check(chaos_calendar_fmt($byId['beta2']['start'], 'pt-BR') === '07/11/2026 15:00 (UTC-3)', 'beta 2: 07/11 15:00');
 check(chaos_calendar_fmt($byId['launch']['start'], 'en') === '20 Nov 2026, 15:00 (UTC-3)', 'launch: 20 Nov 15:00');
-check($byId['launch']['status'] === 'proposal', 'the launch is a proposal until the owner confirms');
+check($byId['launch']['status'] === 'confirmed', 'the launch is confirmed by the owner (2026-10-29)');
 check(!empty($byId['beta1']['patchnoteReady']), 'the beta 1 patch note exists');
 check(isset($byId['founder']) && chaos_calendar_fmt($byId['founder']['start'], 'pt-BR') === '20/11/2026 15:00 (UTC-3)', 'the Founder Pack sale starts at the launch');
 check(chaos_calendar_fmt($byId['founder']['end'], 'pt-BR') === '18/12/2026 15:00 (UTC-3)', 'the Founder Pack sale ends 18/12/2026 15:00');
 check(count($d['seasons']) >= 1 && $d['seasons'][0]['lengthWeeks'] === 13, 'Season 1 is 13 weeks');
 check(isset($d['wipe']['betaToLaunch'], $d['wipe']['seasonToSeason']), 'both wipe rules');
-check(count($d['open']) >= 5, 'open questions are listed');
+check(count($d['open']) >= 1 && count($d['open']) <= 3, 'only the open questions left are listed');
+check(isset($d['wipe']['afterLaunch']) && $d['wipe']['afterLaunch']['reset'] === array(), 'after launch nothing resets: permanent characters are never wiped');
+check(!empty($d['wipe']['betaToLaunch']['gift']), 'the Beta Tester thank-you is listed');
+check(chaos_calendar_fmt($d['seasons'][0]['start'], 'pt-BR') === '20/11/2026 15:00 (UTC-3)' && chaos_calendar_fmt($d['seasons'][0]['finish'], 'pt-BR') === '19/02/2027 15:00 (UTC-3)', 'Season 1: 20/11/2026 15:00 to 19/02/2027 15:00');
+check($d['seasons'][0]['startsAtLaunch'] === true, 'Season 1 starts at the launch');
+check(chaos_calendar_fmt($d['nextSeason']['start'], 'pt-BR') === '20/02/2027 15:00 (UTC-3)' && $d['nextSeason']['status'] === 'plan', 'Season 2: 20/02/2027 15:00, planned');
+check($d['patchnotes']['weekday'] === 3 && chaos_bi($d['patchnotes']['weekdayName'], 'en') === 'Wednesday', 'patch notes on Wednesday');
 foreach (array('events', 'cycles', 'open') as $list) {
 	foreach ($d[$list] as $e) {
 		foreach (array('title', 'text') as $f) {
@@ -53,18 +59,20 @@ $v = chaos_calendar_view($d, $t('2026-11-01T00:00:00-03:00'));
 check($v['next']['id'] === 'beta2', 'on 1 Nov the next is beta 2');
 $v = chaos_calendar_view($d, $t('2026-12-01T00:00:00-03:00'));
 check($v['next'] === null, 'after the launch there is no next event');
-check($v['seasons'][0]['state'] === ($v['seasons'][0]['known'] ? 'running' : 'tbd'), 'a season with undecided dates is "tbd"');
+check($v['seasons'][0]['known'] === true && $v['seasons'][0]['state'] === 'running', 'on 1 Dec Season 1 is running, with known dates');
+$v = chaos_calendar_view($d, $t('2026-11-01T00:00:00-03:00'));
+check($v['seasons'][0]['state'] === 'coming', 'before the launch Season 1 is coming');
 check($v['cycles'][0]['show'] !== null && $v['cycles'][1]['show'] !== null, 'the PvP and Tower cycles show a window');
 
 // the page
 $now = $t('2026-10-29T12:00:00-03:00');
 $en = chaos_render_page('calendar', 'en', $now);
 $pt = chaos_render_page('calendar', 'pt-BR', $now);
-foreach (array('Calendar', 'Open beta, weekend 1', 'Launch', '13 weeks (91 days)', 'To be set', 'What stays and what resets', 'Still to be decided', 'seasons are optional') as $w) {
+foreach (array('Calendar', 'Open beta, weekend 1', 'Launch', '13 weeks (91 days)', 'Confirmed', 'Season 2', 'Patch note day: Wednesday', 'After the launch', 'Beta Tester', 'What stays and what resets', 'Still to be decided', 'seasons are optional') as $w) {
 	check(strpos($en, $w) !== false, "page en says: $w");
 }
 check(strpos($pt, 'Pacote Fundador') !== false && strpos($en, 'Founder Pack') !== false, 'the page lists the Founder Pack in both languages');
-foreach (array('Calendário', 'Beta aberto, fim de semana 1', 'Lançamento', '13 semanas (91 dias)', 'A definir', 'O que fica e o que zera', 'Ainda a decidir', 'as temporadas são opcionais', '20/11/2026 15:00') as $w) {
+foreach (array('Calendário', 'Beta aberto, fim de semana 1', 'Lançamento', '13 semanas (91 dias)', 'Confirmado', 'Season 2', 'Dia da nota de patch: quarta-feira', 'Depois do lançamento', 'Beta Tester', '20/02/2027 15:00', 'O que fica e o que zera', 'Ainda a decidir', 'as temporadas são opcionais', '20/11/2026 15:00') as $w) {
 	check(strpos($pt, $w) !== false, "page pt-BR says: $w");
 }
 foreach (array($en, $pt) as $html) {

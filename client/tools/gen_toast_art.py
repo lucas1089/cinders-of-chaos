@@ -2,6 +2,7 @@
 """Art of the game_chaosnotify toasts: the answer buttons and every toast icon of our own.
 
 usage: python3 -I client/tools/gen_toast_art.py [OUTDIR] [--sheet SHEET.png]
+       python3 -I client/tools/gen_toast_art.py --check     (draws into a temporary folder, fails when a shipped file differs)
        default OUTDIR: client/overlay/modules/game_chaosnotify/images/toast
        --sheet also writes a contact sheet at 3x on a toast-coloured backdrop (not shipped)
 
@@ -26,6 +27,7 @@ Files:
     bestiary.png      BESTIARY: a leather tome torn by three claw marks
     journey.png       JOURNEY: a compass, gold ring, ember north needle
     boss_point.png    BOSS_POINT: a crowned skull with ember eyes
+    pact.png          PACT: the Chaos Pact runs out soon (O317): a gold-capped hourglass, ember sand, an ember stone
 
 The plates carry no text: the client draws the label in its own font (the Chaos heading font when it is loaded), so
 one image serves Accept and Start, another Decline and Cancel, and the text stays crisp.
@@ -825,6 +827,35 @@ def icon_bosspoint():
     return _frame(out)
 
 
+# -- Chaos Pact: a gold-capped hourglass, ember sand running down, an ember stone on the top cap (the Pact is running out)
+def icon_pact():
+    out = _backdrop(211, '#8a3a0c', k=0.55)
+
+    def glass(d, P, s):
+        # two cones that meet at a narrow neck
+        d.polygon([P(15.5, 11.5), P(32.5, 11.5), P(25.2, 23.2), P(25.2, 24.8), P(32.5, 36.5), P(15.5, 36.5), P(22.8, 24.8), P(22.8, 23.2)],
+                  fill=255)
+    gm = _mask(glass)
+    glassc = np.clip(hexc('#9db4b8')[None, None, :] * (0.55 + 0.45 * np.clip((XX - 14) / 20.0, 0, 1))[..., None], 0, 1)
+    _piece(out, gm, glassc, hs=1.2, spec=0.9, shin=14, shadow=0.5)
+    # the sand: the top cone is nearly empty, the bottom cone holds most of it, a thread falls through the neck
+    top = gm & (YY >= 17.5) & (YY <= 22.8)
+    bottom = gm & (YY >= 31.0)
+    thread = (np.abs(XX - CC) < 0.6) & (YY >= 22.5) & (YY <= 30.5)
+    for m, col in ((top, '#ff7a1c'), (bottom, '#ff7a1c'), (thread, '#ffb04a')):
+        _paint(out, m, hexc(col))
+    _paint(out, bottom & (YY <= 31.9), hexc('#ffd27a'))
+    _paint(out, top & (YY <= 18.4), hexc('#ffd27a'))
+    for cy in (9.5, 38.5):
+        cap = _mask(lambda d, P, s, cy=cy: d.rectangle([*P(12.5, cy - 2.2), *P(35.5, cy + 2.2)], fill=255))
+        _piece(out, cap, sk.mat_gold(N, N, 212 + int(cy), tone=1.06), hs=2.0, spec=0.9, shin=10)
+    for px in (14.5, 33.5):
+        post = _mask(lambda d, P, s, px=px: d.rectangle([*P(px - 0.9, 11.7), *P(px + 0.9, 36.3)], fill=255))
+        _piece(out, post, sk.mat_gold(N, N, 214, tone=0.95), hs=1.4, spec=0.8, shadow=0.5)
+    _gem(out, CC, 9.5, r=1.5)
+    return _frame(out)
+
+
 # file name -> drawing, in the order of the contact sheet
 MESSAGE_ICONS = (
     ('announce.png', icon_announce),
@@ -838,6 +869,7 @@ MESSAGE_ICONS = (
     ('bestiary.png', icon_bestiary),
     ('journey.png', icon_journey),
     ('boss_point.png', icon_bosspoint),
+    ('pact.png', icon_pact),
 )
 
 
@@ -868,8 +900,38 @@ def sheet(images, path):
     print('wrote', path)
 
 
+def check():
+    """Draw every file into a temporary folder and compare with the shipped ones (pixels, not bytes)."""
+    import tempfile
+    bad = []
+    with tempfile.TemporaryDirectory() as tmp:
+        stdout, sys.stdout = sys.stdout, open(os.devnull, 'w')
+        try:
+            main(['gen_toast_art.py', tmp])
+        finally:
+            sys.stdout.close()
+            sys.stdout = stdout
+        for name in sorted(os.listdir(tmp)):
+            shipped = os.path.join(DEFAULT_OUT, name)
+            if not os.path.exists(shipped):
+                bad.append(name + ': missing')
+                continue
+            a, b = Image.open(os.path.join(tmp, name)).convert('RGBA'), Image.open(shipped).convert('RGBA')
+            if a.size != b.size or a.tobytes() != b.tobytes():
+                bad.append(name + ': differs')
+    for line in bad:
+        print('gen_toast_art --check:', line)
+    if bad:
+        print('run: python3 -I client/tools/gen_toast_art.py')
+        return 1
+    print('toast art: up to date')
+    return 0
+
+
 def main(argv):
     args = argv[1:]
+    if '--check' in args:
+        return check()
     sheet_path = None
     if '--sheet' in args:
         i = args.index('--sheet')
@@ -886,4 +948,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    sys.exit(main(sys.argv) or 0)

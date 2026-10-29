@@ -9,6 +9,7 @@
 --     ChaosPact.state(accountId)      the cached account state (pact_core.lua)
 --     ChaosPact.frameOf(player)       the name plate frame while the Pact is active (nameplate.lua), else nil
 --     ChaosPact.checkDays(player, days)  why `days` more Pact days cannot be added now (the cap), or nil (store bundles)
+--     ChaosPact.checkDaysAccount(accountId, days)  the same for an account whose player is offline (a gifted Pacto Completo)
 --     ChaosPact.addMonthExp(player, n)   count n experience the +10% added (pact_perks.lua), flushed once a minute
 --
 -- Store: offers of kind "service" with service "pact" and "pactExtra" (pact_config.lua `store`, inserted by
@@ -125,9 +126,13 @@ function Pact.active(player)
 end
 
 -- why `days` more Pact days cannot be added (the stacking cap), or nil: the store asks before it takes the coins of a bundle
-function Pact.checkDays(player, days)
-	local _, err = Core.extendPact(cfg, Pact.load(player:getAccountId()).pactEnds, os.time(), days)
+function Pact.checkDaysAccount(accountId, days)
+	local _, err = Core.extendPact(cfg, Pact.load(accountId).pactEnds, os.time(), days)
 	return err
+end
+
+function Pact.checkDays(player, days)
+	return Pact.checkDaysAccount(player:getAccountId(), days)
 end
 
 -- the name plate frame of an active Pact (nameplate.lua): below a frame the player wears, above the default one
@@ -292,8 +297,9 @@ local function sendStatus(player, open)
 	local marks = Pact.loadMarks(accountId)
 	local owned = ChaosCosmetics and ChaosCosmetics.owns
 	local shelf = {}
-	for _, it in ipairs(cfg.marks.shelf) do
-		shelf[#shelf + 1] = {key = it.key, marks = it.marks, name = Pact.cosmeticName(it.key), owned = owned and owned(accountId, it.key) == true or false}
+	for _, it in ipairs(Core.shelf(cfg, now)) do
+		shelf[#shelf + 1] = {key = it.key, marks = it.marks, name = Pact.cosmeticName(it.key), owned = owned and owned(accountId, it.key) == true or false,
+			monthly = it.monthly or nil, endsAt = it.endsAt}
 	end
 	local monthMine, monthAll, monthNo = Pact.monthExp(player)
 	send(player, "status", {
@@ -377,6 +383,37 @@ function Pact.grantDays(player, days, source)
 		Pact.sendStatus(player, false)
 	end)
 	return true
+end
+
+-- takes Pact days back (the Founder Pack of a charged-back donation, founder.lua): the Pact ends `days` earlier, never before
+-- the epoch, and total_days falls by the same; returns the days taken (0 when there was no Pact), logged as "revoke"
+function Pact.revokeDays(accountId, days, source)
+	days = math.floor(tonumber(days) or 0)
+	if days <= 0 then
+		return 0
+	end
+	local st = Pact.load(accountId)
+	if st.pactEnds <= 0 then
+		return 0
+	end
+	local ends = math.max(0, st.pactEnds - days * 86400)
+	if not db.query(string.format("UPDATE `%s` SET `ends_at` = %d, `total_days` = GREATEST(0, `total_days` - %d) WHERE `account_id` = %d",
+			T.pact, ends, days, accountId)) then
+		return 0
+	end
+	Pact.load(accountId)
+	log(accountId, 0, "revoke", source or "", days)
+	for _, p in ipairs(Game.getPlayers()) do
+		if p:getAccountId() == accountId then
+			pcall(function()
+				if ChaosNameplate and ChaosNameplate.refresh then
+					ChaosNameplate.refresh(p)
+				end
+				Pact.sendStatus(p, false)
+			end)
+		end
+	end
+	return days
 end
 
 -- grants an extra without a purchase (stash.lua grandfathering, O316): the account ends with at least `amount` of it

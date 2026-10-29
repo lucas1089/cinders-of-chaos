@@ -41,6 +41,12 @@ db = {
 			DB.pact[acc] = r
 			return true
 		end
+		local rEnds, rDays, rAcc = q:match("^UPDATE `chaos_pact` SET `ends_at` = (%d+), `total_days` = GREATEST%(0, `total_days` %- (%d+)%) WHERE `account_id` = (%d+)")
+		if rEnds then
+			local r = DB.pact[tonumber(rAcc)]
+			r.ends, r.total = tonumber(rEnds), math.max(0, r.total - tonumber(rDays))
+			return true
+		end
 		local day, amount, a2 = q:match("UPDATE `chaos_pact` SET `last_claim` = (%d+), `claimed_total` = `claimed_total` %+ (%d+) WHERE `account_id` = (%d+) AND")
 		if day then
 			local r = DB.pact[tonumber(a2)]
@@ -242,7 +248,22 @@ check(lastMessage().error, "a failed grant is an error") eq(DB.marks[10].balance
 eq(DB.marks[10].spent, 150, "and the spent total") eq(DB.marks[10].earned, 400 - 400 + DB.marks[10].earned, "earned unchanged")
 cosmeticsFail = false
 st = statusOf(A)
-eq(#st.shelf, #cfg.marks.shelf, "the status carries the shelf")
+eq(#st.shelf, #cfg.marks.shelf + 1, "the status carries the shelf and the month's slot")
+local slot = st.shelf[#st.shelf]
+eq(slot.monthly, true, "the last row is the month's") eq(slot.key, Core.monthlyItem(cfg, os.time()).key, "this month's cosmetic")
+check(slot.endsAt > os.time(), "with the time it ends") eq(st.shelf[1].monthly, nil, "a fixed row is not monthly")
+-- the month's cosmetic can be bought with Marks, the same way
+DB.marks[10].balance = 400
+local before = DB.marks[10].balance
+request(A, "marksBuy", {key = slot.key})
+eq(DB.marks[10].balance, before - slot.marks, "the monthly cosmetic costs its Marks") eq(grants[#grants], slot.key .. ":marks", "granted with the source marks")
+-- one of another month is refused
+local otherKey
+for _, it in ipairs(cfg.marks.monthly) do if it.key ~= slot.key then otherKey = it.key end end
+request(A, "marksBuy", {key = otherKey})
+check(lastMessage().error and lastMessage().text:find("shelf", 1, true), "another month's cosmetic is not on the shelf")
+eq(DB.marks[10].balance, before - slot.marks, "nothing taken for it")
+DB.marks[10].balance = 250
 eq(st.shelf[1].owned, true, "Ember Labels shown as owned") eq(st.shelf[4].owned, false, "Cinder not owned")
 check(st.shelf[1].name ~= nil and st.shelf[1].name ~= "", "with names")
 -- the Marks cap and accrual limit
@@ -341,6 +362,23 @@ DB.pact[40].ends = 0
 Pact.load(40)
 eq(Pact.checkDays(C, 180), nil, "180 days fit on no Pact")
 eq(Pact.frameOf(C), nil, "no Pact: no frame")
+-- the same cap for an account whose player is offline (a gifted Pacto Completo)
+DB.pact[40].ends = NOW + 190 * DAY
+Pact.load(40)
+check(Pact.checkDaysAccount(40, 180) ~= nil, "offline account: 180 days on top of 190 pass the cap")
+eq(Pact.checkDaysAccount(40, 30), nil, "offline account: 30 days fit")
+eq(Pact.checkDaysAccount(999, 180), nil, "an account without a Pact: 180 days fit")
+-- taking Pact days back (the Founder Pack of a charged-back donation)
+DB.pact[40].total = 60
+Pact.load(40)
+eq(Pact.revokeDays(40, 30, "founder revoke"), 30, "30 days taken")
+eq(DB.pact[40].ends, NOW + 160 * DAY, "the Pact ends 30 days earlier") eq(DB.pact[40].total, 30, "total days fall by the same")
+eq(Pact.revokeDays(40, 500, "founder revoke"), 500, "more than the Pact has: it ends")
+check(DB.pact[40].ends >= 0 and DB.pact[40].ends < NOW, "the Pact is over, never negative") eq(DB.pact[40].total, 0, "total days stop at zero")
+eq(Pact.revokeDays(998, 30, "x"), 0, "an account without a Pact: nothing to take")
+eq(Pact.revokeDays(40, 0, "x"), 0, "zero days")
+DB.pact[40].ends = 0
+Pact.load(40)
 DB.pact[40].ends = NOW + DAY
 Pact.load(40)
 eq(Pact.frameOf(C), "pactbound", "an active Pact: the Pactbound frame")

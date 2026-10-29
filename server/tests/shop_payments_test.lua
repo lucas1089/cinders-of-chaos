@@ -331,6 +331,8 @@ DB.orders[#DB.orders + 1] = {id = 3, account_id = 77, pack_key = "coins250", pro
 ChaosShopPay.poll(); eq(DB.orders[3].status, "failed", "stale pending order failed")
 
 -- refund after crediting: unspent coins taken back once
+local founderCalls = {}
+ChaosFounder = {onReversal = function(acc, order, short) founderCalls[#founderCalls + 1] = {acc = acc, id = order.id, created = order.created, short = short}; return {"taken"} end}
 DB.coins[77] = 6000
 DB.pay[2].reversal = "refunded"
 sent = {}
@@ -338,12 +340,15 @@ ChaosShopPay.poll()
 eq(DB.coins[77], 200, "5800 taken back"); eq(DB.pay[2].reversal_done, 1, "handled"); eq(DB.pay[2].reversal_coins, 5800, "logged")
 eq(sent[#sent].action, "pay_reversal", "player told"); eq(sent[#sent].data.coins, 5800, "with the coins"); ok(sent[#sent].status, "and the new balance")
 ChaosShopPay.poll(); eq(DB.coins[77], 200, "only once")
+eq(#founderCalls, 0, "the balance covered the refund: the Founder Pack stays")
 -- a chargeback when most coins were spent: only the rest
 DB.orders[#DB.orders + 1] = {id = 4, account_id = 77, pack_key = "coins250", provider = "paypal", provider_ref = "y", status = "credited",
 	coins = 250, bonus = 0, first_bonus = 0, created = now}
 DB.pay[4] = {order_id = 4, method = "paypal", amount_cents = 499, currency = "USD", reversal = "charged_back", reversal_cents = 0, reversal_done = 0}
 ChaosShopPay.poll()
 eq(DB.coins[77], 0, "what was left"); eq(DB.pay[4].reversal_coins, 200, "200 of 250")
+eq(#founderCalls, 1, "50 coins could not be taken back: the Founder Pack is asked") eq(founderCalls[1].acc, 77, "for the account")
+eq(founderCalls[1].id, 4, "with the order") eq(founderCalls[1].created, now, "and when the donation was made") eq(founderCalls[1].short, 50, "and the shortfall")
 
 -- a chargeback after the coins were gifted on: taken back from the receiver (shop.lua's chaos_coin_gifts ledger)
 DB.gifts = {{id = 1, from = 77, to = 88, amount = 300, order = 5, clawed = 0}}
@@ -375,6 +380,7 @@ ChaosShopPay.poll()
 eq(DB.coins[77], 0, "the donor had nothing left")
 eq(DB.coins[88], 750, "250 taken back from the gift's receiver")
 eq(DB.gifts[1].clawed, 250, "the ledger records the clawback")
+eq(#founderCalls, 1, "coins taken back from a gift's receiver were not spent on a pack: no second call")
 ChaosShopPay.poll()
 eq(DB.coins[88], 750, "only once")
 Chaos.select, db.query = baseSelect, baseQuery

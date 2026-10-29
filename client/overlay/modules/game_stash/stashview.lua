@@ -233,4 +233,32 @@ end
 -- (player report 2026-10-22).
 V.DROP_HANDLED = true
 
+-- ------------------------------------------------------------------ opening without a flash (O316)
+-- The window used to be shown at once, empty, and filled when the server answered (tabs, then the item stream; the
+-- tab bar and the list were destroyed and drawn again): it flashed. Now Stash.Toggle keeps it hidden and Stash.Reveal
+-- shows it when the last item packet has been drawn, or after REVEAL_MS if the server never answers.
+V.REVEAL_MS = 1500
+
+-- should the hidden window be shown now: the list is drawn (listDrawn) or waitedMs reached REVEAL_MS
+function V.revealReady(listDrawn, waitedMs)
+  return listDrawn == true or n(waitedMs) >= V.REVEAL_MS
+end
+
+-- The locker windows the engine opens for a depot locker (the depot is retired): the client ids the server names in
+-- addCategorys (`lockers`) and in the Toggle that closes them -> a set. Anything but positive numbers is dropped.
+function V.lockerSet(ids)
+  local set = {}
+  if type(ids) ~= 'table' then return set end
+  for _, id in ipairs(ids) do
+    local v = n(id)
+    if v > 0 then set[v] = true end
+  end
+  return set
+end
+
+-- should a container that just opened be closed again at once: its top item is a known locker
+function V.isLocker(set, topId)
+  return type(set) == 'table' and set[n(topId)] == true
+end
+
 return V

@@ -95,6 +95,25 @@ return {
 			{key = "loot_ember", marks = 150}, {key = "loot_verdant", marks = 150}, {key = "loot_azure", marks = 150},
 			{key = "chat_cinder", marks = 200}, {key = "chat_frost", marks = 200}, {key = "kill_soulspark", marks = 200}
 		},
+		-- One more slot on the shelf, chosen by the server month from this list (pact_core.lua monthlyItem): the entry at
+		-- ((year * 12 + month - 1) mod #list) + 1, so with 12 entries it is the month number and every month of the year has its
+		-- own, then the year starts again. Server time, deterministic, nothing stored. Same rules as the fixed shelf: store
+		-- cosmetics (no spell effects), a Mark is 1 to 1.5 coins (store_model.lua, pact_test.lua), none of them on the fixed shelf.
+		-- They are sold for coins in the store as well; the Marks are a second way to get one, for the month it is on the shelf.
+		monthly = {
+			{key = "foot_ember", marks = 200},    -- January
+			{key = "emote_roar", marks = 200},    -- February
+			{key = "lvl_grove", marks = 150},     -- March
+			{key = "rare_seal", marks = 150},     -- April
+			{key = "kill_shatter", marks = 200},  -- May
+			{key = "chat_verdant", marks = 200},  -- June
+			{key = "loot_royal", marks = 150},    -- July
+			{key = "foot_shadow", marks = 200},   -- August
+			{key = "lvl_dawn", marks = 200},      -- September
+			{key = "rare_crimson", marks = 200},  -- October
+			{key = "emote_salute", marks = 200},  -- November
+			{key = "kill_bloodbloom", marks = 200} -- December
+		},
 		maxBalance = 100000 -- a sanity cap for the column, far above what a Pact earns in years
 	},
 
@@ -171,19 +190,20 @@ return {
 		-- Pacto Completo (O317, owner 2026-10-29): the Pact and Premium together, the best way to buy both. A bundle of a
 		-- {kind = "pact"} part (ChaosPact.grantDays) and the premium offer of the same days (the string key resolves to
 		-- shop_config.lua's own offer, so its price follows). The Pact's own price per day is the part's list price; the
-		-- discount shown is against buying both apart. Not giftable. Prices: docs/PRICES.md "Pacto Completo (O317)".
+		-- discount shown is against buying both apart. Giftable (follow-up 2026-10-29): the Pact days and the premium days go to
+		-- the receiver's account, `giftable = true` on the pact part; the cap is checked for the receiver first. Prices: docs/PRICES.md "Pacto Completo (O317)".
 		complete = {
 			name = "Pacto Completo", icon = {item = 16101},
 			offers = {
-				{kind = "bundle", key = "complete:30", icon = 16101, cost = 499, gift = false, pactNote = false,
+				{kind = "bundle", key = "complete:30", icon = 16101, cost = 499, pactNote = false,
 					name = "Pacto Completo (30 days)", description = COMPLETE_TEXT,
-					parts = {{kind = "pact", days = 30, cost = PACT_PRICE, source = "complete", required = true}, "premium:30"}},
-				{kind = "bundle", key = "complete:90", icon = 16101, cost = 1350, gift = false, pactNote = false,
+					parts = {{kind = "pact", days = 30, cost = PACT_PRICE, source = "complete", required = true, giftable = true}, "premium:30"}},
+				{kind = "bundle", key = "complete:90", icon = 16101, cost = 1350, pactNote = false,
 					name = "Pacto Completo (90 days)", description = COMPLETE_TEXT,
-					parts = {{kind = "pact", days = 90, cost = PACT_PRICE * 3, source = "complete", required = true}, "premium:90"}},
-				{kind = "bundle", key = "complete:180", icon = 16101, cost = 2500, gift = false, pactNote = false,
+					parts = {{kind = "pact", days = 90, cost = PACT_PRICE * 3, source = "complete", required = true, giftable = true}, "premium:90"}},
+				{kind = "bundle", key = "complete:180", icon = 16101, cost = 2500, pactNote = false,
 					name = "Pacto Completo (180 days)", description = COMPLETE_TEXT,
-					parts = {{kind = "pact", days = 180, cost = PACT_PRICE * 6, source = "complete", required = true}, "premium:180"}}
+					parts = {{kind = "pact", days = 180, cost = PACT_PRICE * 6, source = "complete", required = true, giftable = true}, "premium:180"}}
 			}
 		},
 		storage = {

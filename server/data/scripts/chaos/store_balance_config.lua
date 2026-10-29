@@ -42,9 +42,9 @@ return {
 		-- that gold. The ratio may grow with the level because gold comes faster there (loot_model.lua); it may not fall
 		-- under the first tier's 2x. Tier prices must rise with the level.
 		blessingTiers = {{level = 120, maxCheaper = 2.0}, {level = 350, maxCheaper = 2.5}, {level = 700, maxCheaper = 3.0}},
-		-- the Eternal Blessing in All Blessings purchases: at most eternalMaxTimes of the first (cheapest) tier, at least
-		-- eternalMinTimesTop of the dearest tier (a level 800 character still needs several deaths to get its money back)
-		eternalMinTimes = 8, eternalMaxTimes = 15, eternalMinTimesTop = 4
+		-- the Eternal Blessing in All Blessings purchases of the same level band (O317 follow-up: 300 / 500 / 750 = 5x each tier):
+		-- eternalMinTimes to eternalMaxTimes per tier (a level 800 character still needs several deaths to get its money back)
+		eternalMinTimes = 4, eternalMaxTimes = 8
 	},
 
 	premium = {minDiscountPct90 = 5, maxDiscountPct90 = 20, maxDiscountPct180 = 25},
@@ -75,7 +75,7 @@ return {
 		maxPackDiscountPct = 15,                    -- the pack of expansions against the same number bought singly
 		maxFullCapCoins = 1200,                     -- all expansions up to the cap bought singly
 		maxAffinityCoinsPerEntry = 2.0,             -- a bought affinity tab, per entry: never dearer than an expansion slot (the specialised tab is the better deal)
-		maxOldTabCoins = 150,                       -- an old tab (150 coins when it was sold) is worth this many coins of expansions, no more
+		maxOldTabCoins = 200,                       -- an old tab (150 coins when it was sold) converts to 4 expansions = 200 coins at 50 (owner 2026-10-29), no more
 		-- the Remote Stash Deposit (O317): bought once for the account, it is dearer than a month of the Chaos Pact that lends it
 		-- (else one month of Pact would be enough for good) and no more than the Auto Seller, the other convenience the Pact lends
 		remoteMinCoins = 300, remoteMaxCoins = 450

@@ -26,9 +26,9 @@ return {
 			id = 1,
 			name = "Season of Ash",
 			tag = "[S1]",
-			start = 20261101,
-			finish = 20270131,
-			hour = 12,
+			start = 20261120, -- the launch, Fri 20 Nov 2026 15:00 (owner 2026-10-29)
+			finish = 20270219, -- 13 weeks; Season 2 starts the next day, 20 Feb 2027 15:00 (planned)
+			hour = 15,
 			modifier = {
 				name = "Ashfall",
 				description = "Season characters gain 10% more experience from monsters.",

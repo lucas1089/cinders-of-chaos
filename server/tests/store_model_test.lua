@@ -48,7 +48,7 @@ breaks("a pack dearer than the singles", "not cheaper", function() local v = slo
 breaks("a pack with too deep a discount", "% off", function() local v = slotPack.cost; slotPack.cost = 100; return function() slotPack.cost = v end end)
 local orbsTab = env.byKey["service:pactExtra:stashOrbs"]
 breaks("an affinity tab dearer than the expansion per entry", "per entry", function() local v = orbsTab.cost; orbsTab.cost = 300; return function() orbsTab.cost = v end end)
-breaks("an old tab worth more than it cost", "old tab converts", function() local v = env.stash.slots.legacyPacksPerTab; env.stash.slots.legacyPacksPerTab = 4; return function() env.stash.slots.legacyPacksPerTab = v end end)
+breaks("an old tab worth more than it cost", "old tab converts", function() local v = env.stash.slots.legacyPacksPerTab; env.stash.slots.legacyPacksPerTab = 5; return function() env.stash.slots.legacyPacksPerTab = v end end)
 breaks("a bigger free room", "one tab of 30", function() local v = env.stash.slots.free; env.stash.slots.free = 100; return function() env.stash.slots.free = v end end)
 
 -- coin packs
@@ -83,7 +83,7 @@ breaks("a bigger experience cap", "xp cap", function() local v = env.xpcap.cap; 
 local reset = offer(function(o) return o.service == "passiveReset" end)
 breaks("a passive reset far below its gold", "Passive Tree Reset", function() local v = reset.cost; reset.cost = 40; return function() reset.cost = v end end)
 local eternal = offer(function(o) return o.service == "eternalBlessing" end)
-breaks("an Eternal Blessing too dear", "Eternal Blessing", function() local v = eternal.cost; eternal.cost = 1500; return function() eternal.cost = v end end)
+breaks("an Eternal Blessing too dear", "Eternal Blessing", function() local t = eternal.levelPrices[3]; local v = t.cost; t.cost = 1500; return function() t.cost = v end end)
 
 -- cosmetics and bundles
 local frame = offer(function(o) return o.kind == "frame" end)
@@ -118,7 +118,8 @@ breaks("a Completo no better than Premium alone", "clearly better", function() l
 breaks("a Completo with a deep discount", "off buying both apart", function() local v = c180.cost; c180.cost = 2300; return function() c180.cost = v end end)
 breaks("Premium 90 days nearly as good as the Completo", "clearly better", function() local v = p90o.cost; p90o.cost = 740; return function() p90o.cost = v end end)
 breaks("a Completo part at the wrong Pact price", "listed at", function() local v = c30.parts[1].cost; c30.parts[1].cost = 400; return function() c30.parts[1].cost = v end end)
-breaks("a giftable Completo", "giftable", function() local v = c30.gift; c30.gift = nil; return function() c30.gift = v end end)
+breaks("a Completo that cannot be gifted", "not giftable", function() local v = c30.gift; c30.gift = false; return function() c30.gift = v end end)
+breaks("a Completo pact part that is not giftable", "marked giftable", function() local v = c30.parts[1].giftable; c30.parts[1].giftable = nil; return function() c30.parts[1].giftable = v end end)
 breaks("a Completo pact part that is not required", "not required", function() local v = c30.parts[1].required; c30.parts[1].required = nil; return function() c30.parts[1].required = v end end)
 local bless = offer(function(o) return o.service == "blessings" end)
 check(bless.levelPrices and #bless.levelPrices == 3, "All Blessings has three level tiers")
@@ -129,7 +130,14 @@ check(env.K.levelCost(bless, 1) == 60 and env.K.levelCost(bless, 200) == 60 and 
 	env.K.levelCost(bless, 500) == 100 and env.K.levelCost(bless, 501) == 150 and env.K.levelCost(bless, 2000) == 150, "the price at each level")
 breaks("a blessing tier far under its gold", "cheaper than", function() local v = bless.levelPrices[3].cost; bless.levelPrices[3].cost = 90; return function() bless.levelPrices[3].cost = v end end)
 breaks("blessing tiers that do not rise", "not dearer", function() local v = bless.levelPrices[2].cost; bless.levelPrices[2].cost = 60; return function() bless.levelPrices[2].cost = v end end)
-breaks("an Eternal Blessing too cheap for the top tier", "dearest All Blessings", function() local v = eternal.cost; eternal.cost = 500; return function() eternal.cost = v end end)
+check(eternal.levelPrices and #eternal.levelPrices == 3 and eternal.cost == 300, "the Eternal Blessing has three level tiers, from 300")
+check(eternal.levelPrices[1].cost == 300 and eternal.levelPrices[1].upTo == 200, "300 coins up to level 200")
+check(eternal.levelPrices[2].cost == 500 and eternal.levelPrices[2].upTo == 500, "500 coins up to level 500")
+check(eternal.levelPrices[3].cost == 750 and eternal.levelPrices[3].upTo == nil, "750 coins above")
+breaks("an Eternal Blessing too cheap for the top tier", "tier 3", function() local t = eternal.levelPrices[3]; local v = t.cost; t.cost = 450; return function() t.cost = v end end)
+breaks("an Eternal Blessing too cheap for the first tier", "tier 1", function() local t = eternal.levelPrices[1]; local v = t.cost; t.cost = 120; return function() t.cost = v end end)
+breaks("an Eternal Blessing with fewer tiers", "price tiers", function() local v = eternal.levelPrices; eternal.levelPrices = {{upTo = 200, cost = 300}, {cost = 750}}; return function() eternal.levelPrices = v end end)
+breaks("an Eternal Blessing cost that is not its first tier", "first tier", function() local v = eternal.cost; eternal.cost = 310; return function() eternal.cost = v end end)
 local ult = offer(function(o) return o.kind == "item" and o.id == 26029 and o.count == 100 end)
 local sup = offer(function(o) return o.kind == "item" and o.id == 26031 and o.count == 100 end)
 local uhp = offer(function(o) return o.kind == "item" and o.id == 8473 and o.count == 100 end)
@@ -158,6 +166,12 @@ local shelf1 = env.pact.marks.shelf[1]
 breaks("a Marks shelf item cheaper than its coins", "Marks shelf", function() local v = shelf1.marks; shelf1.marks = 100; return function() shelf1.marks = v end end)
 breaks("a Marks shelf item that is not a cosmetic", "no cosmetic", function() local v = shelf1.key; shelf1.key = "premium:30"; return function() shelf1.key = v end end)
 breaks("the Pact paying coins again", "Chaos Coins a day", function() env.pact.pact.dailyCoins = 5; return function() env.pact.pact.dailyCoins = nil end end)
+local mon1 = env.pact.marks.monthly[1]
+breaks("a monthly Marks cosmetic cheaper than its coins", "Marks shelf", function() local v = mon1.marks; mon1.marks = 100; return function() mon1.marks = v end end)
+breaks("a monthly Marks cosmetic that does not exist", "no cosmetic", function() local v = mon1.key; mon1.key = "foot_nobody"; return function() mon1.key = v end end)
+breaks("a monthly Marks cosmetic that is a spell effect", "changes a spell", function() local v = mon1.key; mon1.key = "skin_warrior_void"; mon1.marks = 250; return function() mon1.key = v; mon1.marks = 200 end end)
+breaks("a monthly Marks cosmetic from the fixed shelf", "fixed shelf", function() local v = mon1.key; mon1.key = shelf1.key; return function() mon1.key = v end end)
+breaks("a monthly rotation of two", "monthly rotation", function() local v = env.pact.marks.monthly; env.pact.marks.monthly = {v[1], v[2]}; return function() env.pact.marks.monthly = v end end)
 breaks("too many Marks a day", "month of Marks", function() local v = env.pact.pact.dailyMarks; env.pact.pact.dailyMarks = 8; return function() env.pact.pact.dailyMarks = v end end)
 
 -- Founder Pack (O322): two time-limited packs of cosmetics that never return, about R$ 50 and R$ 100

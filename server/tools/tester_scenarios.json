@@ -9319,6 +9319,7 @@
   "beta": {
    "files": [
     "beta.lua",
+    "beta_tester.lua",
     "chaos_constants.lua"
    ],
    "kind": "out",

@@ -9,7 +9,9 @@
 --   on the map       the server's preview of a cosmetic with an effect (preview.effect): spell skins, kill, level-up,
 --                    rare-loot effects, emotes (an effect round you), footprints and outlines (game_cosmeticfx draws them
 --                    on you for a few seconds)
---   not tried        name plate frames (the map draws plates; the panel prints a note), chat colours and loot label
+--   on the plate     a name plate frame (O318): game_nameplate draws it on the own plate for TryOn.MS, this client
+--                    only (previewFrame), when that module is loaded
+--   not tried        chat colours and loot label
 --                    accents (the row's title shows the colour), pets (drawn alone, not on you), items, services,
 --                    coins, pacts, hideout decorations: the offer keeps its icon or preview and has no button
 TryOn = {}
@@ -21,7 +23,7 @@ T.MS = 10000 -- how long the look stays on the character
 T.WORN = { outfit = true, addons = true, mount = true, wings = true, aura = true, shader = true, outline = true,
   effects = true, footprint = true }
 -- the kinds that keep their icon (the list above, for the report and the manifest; nothing reads it)
-T.NOT_TRIED = { 'nameplate', 'subject', 'swatch', 'item', 'service', 'premium', 'pact' }
+T.NOT_TRIED = { 'subject', 'swatch', 'item', 'service', 'premium', 'pact' }
 
 local function worn(opt)
   if type(opt) ~= 'table' then return false end
@@ -35,13 +37,30 @@ local function worn(opt)
 end
 T.worn = worn
 
+-- the frame a name plate offer (or a bundle's plate part) shows, or nil
+function T.plateFrame(opt)
+  if type(opt) ~= 'table' then return nil end
+  if opt.kind == 'nameplate' then
+    return type(opt.frame) == 'string' and opt.frame ~= '' and opt.frame or nil
+  end
+  if opt.kind == 'bundle' then
+    for _, p in ipairs(type(opt.parts) == 'table' and opt.parts or {}) do
+      local f = T.plateFrame(p)
+      if f and type(p) == 'table' and p.kind == 'nameplate' then return f end
+    end
+  end
+  return nil
+end
+
 -- data = the offer as the server sent it (preview.effect), option = LookPreviewCore.fromShopOffer(data), hasPanel = the
--- look preview exists (not on the small mobile layout). Returns {panel, server, show}.
-function T.plan(data, option, hasPanel)
+-- look preview exists (not on the small mobile layout), hasPlate = game_nameplate can draw a tried frame (optional).
+-- Returns {panel, server, plate, show}; plate = the frame to draw on the own plate, or nil.
+function T.plan(data, option, hasPanel, hasPlate)
   local plan = { panel = hasPanel == true and worn(option), server = false }
   local pv = type(data) == 'table' and data.preview
   plan.server = type(pv) == 'table' and pv.effect == true
-  plan.show = plan.panel or plan.server
+  plan.plate = hasPlate == true and T.plateFrame(option) or nil
+  plan.show = plan.panel or plan.server or plan.plate ~= nil
   return plan
 end
 

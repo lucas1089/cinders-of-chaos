@@ -215,6 +215,26 @@ function K.batch(entries, maxRarity, cfg)
 	return out
 end
 
+-- The chain of "salvage all" (O319): when a batch hit batchCap, the server takes the next batch by itself. `state` is
+-- {left = eligible items still in the bag after the last batch, batches = batches done}; `res` = K.batch of the bag now
+-- (nil = the bag is gone). Returns "go" or the reason to stop: "gone" (no bag), "done" (nothing eligible), "changed"
+-- (the eligible items are not the ones left: the player moved items in or out), "limit" (cfg.chainMax batches).
+function K.chainStep(state, res, cfg)
+	if not res then
+		return "gone"
+	end
+	if res.count == 0 then
+		return "done"
+	end
+	if res.count + (res.skipped.cap or 0) ~= state.left then
+		return "changed"
+	end
+	if state.batches >= (cfg.chainMax or 1) then
+		return "limit"
+	end
+	return "go"
+end
+
 -- a short hash of the picked items: list of strings (path .. ":" .. item signature), order kept
 function K.signature(list)
 	local h = 5381
