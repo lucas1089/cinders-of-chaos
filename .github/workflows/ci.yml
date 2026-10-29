@@ -91,6 +91,7 @@ jobs:
           python3 -m venv /tmp/fxenv
           /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
+          /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check   # chest and Templar aura strips of game_chestaura (O315)
           # pair 36 effects: specs, sources and sums agree, names free, missiles uint8 (the pack art is never in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_fx.py build --check
           # pair 41: pair 36's projectile missiles redrawn from the native 32 px renders and three appended: spec, sources
@@ -856,9 +857,6 @@ jobs:
 
       - name: Liquid orb art is up to date (gen_orb_art.py, one ring and mask per orb size at 2x)
         run: python3 client/tools/gen_orb_art.py --check  # not -I: Pillow from the user site (installed above)
-
-      - name: Chest and Templar aura art is up to date (gen_aura_art.py, the strips of game_chestaura, O315)
-        run: /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check  # numpy float maths: the pinned fx venv made above
 
       - name: Interface skins are up to date (gen_skin_variants.py, forge and abyss pixels, classic sizes, manifests, orb rings and its test)
         run: |
