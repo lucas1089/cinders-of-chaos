@@ -63,6 +63,7 @@ python3 -I client/tools/check_text_fit.py          # options menu entries fit th
 python3 -I client/tools/gen_orb_art.py --check     # liquid orb art, one ring and mask per orb size
 python3 client/tools/gen_rain_art.py --check        # rain tiles of game_chaosweather (O208)
 python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lua (install_all step baserain)
+python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
 for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests

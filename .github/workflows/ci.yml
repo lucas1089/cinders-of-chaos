@@ -1153,6 +1153,8 @@ jobs:
         run: python3 -I server/tools/patch_base_json_guards_test.py
       - name: Base opcode handlers check their fields (patch_base_opcode_inputs.py, synthetic copies)
         run: python3 -I server/tools/patch_base_opcode_inputs_test.py
+      - name: Base item fusion fuses only the ids of the Chaos list (patch_base_fusion_allowlist.py, stock excerpt)
+        run: python3 -I server/tools/patch_base_fusion_allowlist_test.py
 
       - name: Gateway and backend firewall scripts (render and check, no changes)
         run: |

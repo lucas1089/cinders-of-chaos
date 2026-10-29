@@ -400,6 +400,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   opcodeinputs tools/patch_base_opcode_inputs.py  the base opcode handlers check what a modified client sends: the store's
                coin gift (whole amounts, conditional debit), highscores paging and filter, inspect of hidden players,
                character stats, upgrades, tasks, item fusion (README "Opcode input audit (O252)"; right after jsonguards)
+  fusionlist   tools/patch_base_fusion_allowlist.py  item fusion (opcode 67) fuses only the client ids of
+               data/scripts/chaos/item_fusion_config.lua, else "invalid_item"; no list, no fusion (README "Item fusion
+               allowlist (O310)"; right after opcodeinputs)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -1516,6 +1519,14 @@ def step_opcodeinputs(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'opcodeinputs')  # right after jsonguards: the anchors are lines the class, tester and hideout steps leave alone
+
+
+def step_fusionlist(server, data, ctx):
+    args = [tool('patch_base_fusion_allowlist.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_fusion_allowlist.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'fusionlist')  # right after opcodeinputs: it anchors on the entry check that step adds
 
 
 def step_autoloot(server, data, ctx):
