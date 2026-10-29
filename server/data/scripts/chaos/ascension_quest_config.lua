@@ -37,6 +37,7 @@ return {
 		needed = 10,
 		points = {rare = 1, legendary = 3},
 		levelShare = 0.6,
+		partyRange = 30, -- tiles: a party member of a killer within it is credited (as spellquest_config hunt.partyRange)
 		minMonsterLevel = 40
 	},
 
