@@ -1007,6 +1007,131 @@ do
 	eq(Tile(c5.pos):getItemById(12664), nil, "and it crumbles")
 end
 
+-- ---- O308: a won chest always tells its players what happened (tester report: the last chests gave no loot and no message)
+do
+	local live = ChaosCursedChestConfig
+	local function winChest(owner)
+		createFail.Troll = true
+		for _, name in ipairs(cfg.event.pool.themed[1][2]) do createFail[name] = true end
+		local c2 = freshChest(owner)
+		openIt(c2, owner)
+		for _ = 1, 40 do
+			if c2.state == "won" then break end
+			T = T + 4000
+			runQueue()
+		end
+		createFail = {}
+		eq(c2.state, "won", "O308: the chest is won")
+		return c2
+	end
+	local function lastMsg(p) return p._msgs[#p._msgs] or "" end
+	local function msgCount(p, needle)
+		local n = 0
+		for _, m in ipairs(p._msgs) do if m:find(needle, 1, true) then n = n + 1 end end
+		return n
+	end
+	hero._party, friend._party = nil, nil
+	hero._pos = Position(101, 100, 7)
+
+	-- one broken part of the roll must not end it empty and silent
+	local realSource, realCreate = ChaosItemMods.sourceLevel, ChaosCrafting.createItem
+	ChaosItemMods.sourceLevel = function() error("no item level") end
+	ChaosCrafting.createItem = function() error("forge broke") end
+	local c1 = winChest(hero)
+	hero._msgs, toasts = {}, {}
+	use(hero, Tile(c1.pos):getItemById(12664))
+	ok(msgCount(hero, "Cursed Chest loot") == 1, "O308: a loot message follows although two parts broke")
+	ok(totalGiven(hero) > 0, "O308: and the loot is given")
+	ok(#toasts >= 1, "O308: with a toast")
+	ChaosItemMods.sourceLevel, ChaosCrafting.createItem = realSource, realCreate
+	think(1500)
+	T = T + (cfg.event.claimSec + 5) * 1000
+	think(1500)
+
+	-- a full backpack and no inbox: the loot lies at the player's feet and the player is told
+	local realGive = Chaos.giveItem
+	Chaos.giveItem = function() return 0 end
+	local created = {}
+	local realCreateItem = Game.createItem
+	Game.createItem = function(id, count, pos)
+		if pos then created[#created + 1] = {id = id, count = count} end
+		return realCreateItem(id, count, pos)
+	end
+	local c2 = winChest(hero)
+	hero._msgs = {}
+	use(hero, Tile(c2.pos):getItemById(12664))
+	ok(#created > 0, "O308: no room and no inbox: the loot goes to the ground")
+	ok(lastMsg(hero):find("ground", 1, true), "O308: and the player is told where it is")
+	Chaos.giveItem = realGive
+	Game.createItem = realCreateItem
+	think(1500)
+	T = T + (cfg.event.claimSec + 5) * 1000
+	think(1500)
+
+	-- the whole roll broken: the claim mark goes back and the player is told, then a second use works
+	local items = live.loot.items
+	live.loot.items = nil
+	local c3 = winChest(hero)
+	hero._msgs, hero._cancels = {}, {}
+	use(hero, Tile(c3.pos):getItemById(12664))
+	ok(hero._cancels[#hero._cancels] and hero._cancels[#hero._cancels]:find("could not give"), "O308: a broken roll is told")
+	eq(c3.ev.claimed[hero:getId()], nil, "O308: and the claim mark is back")
+	live.loot.items = items
+	use(hero, Tile(c3.pos):getItemById(12664))
+	ok(msgCount(hero, "Cursed Chest loot") == 1, "O308: the second use gives the loot")
+	think(1500)
+	T = T + (cfg.event.claimSec + 5) * 1000
+	think(1500)
+
+	-- nothing to give: still a message
+	local c4 = winChest(hero)
+	hero._msgs = {}
+	local gm, gM, so = live.loot.goldMin, live.loot.goldMax, live.loot.shards
+	live.loot.goldMin, live.loot.goldMax = 0, 0
+	live.loot.shards = {id = 32051, base = 0, perLevel = 100000, cap = 0}
+	live.loot.chaosOrb = {id = 29856, min = 0, max = 0, perLevels = 100000, cap = 0}
+	live.loot.divineOrb.chance = 0
+	live.loot.orbs = {count = 0, weights = {}}
+	live.loot.items = {min = 0, max = 0}
+	live.loot.unique = {tier = "rare", mult = 0}
+	use(hero, Tile(c4.pos):getItemById(12664))
+	ok(lastMsg(hero):find("held nothing", 1, true), "O308: an empty roll says so")
+	think(1500)
+	T = T + (cfg.event.claimSec + 5) * 1000
+	think(1500)
+end
+
+-- ---- O308: a party member who never took the share is reminded, then told when the chest crumbles
+do
+	local c5
+	do
+		createFail.Troll = true
+		for _, name in ipairs(cfg.event.pool.themed[1][2]) do createFail[name] = true end
+		c5 = freshChest(hero)
+		hero._party = nil
+		openIt(c5, hero)
+		for _ = 1, 40 do
+			if c5.state == "won" then break end
+			T = T + 4000
+			runQueue()
+		end
+		createFail = {}
+	end
+	eq(c5.state, "won", "O308: won, nobody has claimed")
+	hero._msgs = {}
+	T = T + (cfg.event.claimSec - cfg.event.remindSec + 1) * 1000
+	think(1500)
+	local reminded = false
+	for _, m in ipairs(hero._msgs) do if m:find("still holds your share", 1, true) then reminded = true end end
+	ok(reminded, "O308: a reminder before it crumbles")
+	hero._msgs = {}
+	T = T + cfg.event.claimSec * 1000
+	think(1500)
+	local told = false
+	for _, m in ipairs(hero._msgs) do if m:find("crumbled before you took", 1, true) then told = true end end
+	ok(told, "O308: and a note when it crumbled unclaimed")
+end
+
 print(string.format("cursedchest_test: %d checks, %d failures", checks, fails))
 if fails > 0 then
 	os.exit(1)

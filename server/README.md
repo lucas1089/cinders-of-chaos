@@ -3794,6 +3794,20 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   `autobuildview_test.lua`, `autobuild_test.lua` (the window's requests against a mocked client), `statinfoview_test.lua`.
   Not checked in game: the dropdown, the node borders (`setBorderColor`), the
   tree preview of a build, the lane balance (damage and resist caps are reached with fewer points).
+- Ascension refunds the tree once (O305). The plain nodes (shared stats `s`) are read with the character's own lane key, and
+  the ascended lanes differ from the base class's on 289 nodes (Ranger -> Beastmaster turned Vitality / Dexterity nodes into
+  Spirit, tester report), so the lanes stay (Auto build and the presets are built on them) but an ascension no longer
+  changes allocated nodes silently. `ChaosPassiveTree.refundLaneChange(player, live)` (`passivetree.lua`) runs from
+  `ChaosClasses.afterVocationChange` (ascension, `!ascend` switch, store class change) and at every login. Storage
+  `Chaos.storage.passiveLane` (7100029) records the vocation id the tree was made under, -1 = none. When the variant key of
+  the recorded vocation differs from the current one (`Core.laneChangeFrom`), the allocated nodes that give other stats under
+  the new key (`Core.laneDiff`) and the nodes only connected through them are removed from every preset and saved loadout, for
+  free, once, with a message (pt-BR in `i18n_strings.lua`): "Your ascension changed your passive tree to the <Class> lane:
+  your N points were refunded for free. Open the tree to spend them, or use Auto build." A character that ascended before the
+  record existed (-1 and an ascended vocation) is taken to have planned under its base class's lane and is refunded at its
+  next login; an unascended character is only recorded. Mystic / Elementalist share a key and get nothing. Assumption: a
+  pre-fix ascended character that already re-planned under the ascended lane loses the differing nodes too (once; free).
+  Tests: `passivetree_death_test` (login and ascension, once, not for an unascended class), `passivetree_paths_test` "ascension".
 
 ## Passive tree pick statistics (`treestats.lua`, `treestats_core.lua`, `treestats_config.lua`)
 Beta telemetry of the tree: how often each node is taken, per class line and level band, read from the saved trees on
@@ -16112,6 +16126,23 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   +0/75/100/200/300/400%, gold coins +0/75/100/200/300/400%, extra loot roll +0/0/15/30/45/60% of each entry's chance.
   Applied to every monster in the dungeon box during a run (also respawns). Also fixed: the queue called a missing
   Game.getPlayerByGUID, so queued runs never started.
+- **Invisible rift monsters (O309, 2026-10-29).** Tester report: "bastante bicho invisivel tambem, missing sprite
+  provavelmente" (a Forsaken Sanctum). Cause: pair 51 (O269) retired 42 outfits nothing "uses", scanning monster files,
+  NPCs, outfit lists and scripts; the rift looks are set at runtime from `rift_config.lua`, so the scan missed 13 of
+  them, and pairs 52-56 keep them blank: 2101, 2102 (Abyssal brute, elite), 2105, 2106 (Obsidian), 2109, 2110 (Crypt),
+  2112, 2113 (Sanctum minion, brute) and the five big guardians 2208-2212. Every monster of those ranks drew nothing
+  (the Sanctum: two of its three ranks; only the 40% that wore a variant, looks 2200-2207, showed). Pool monsters,
+  summons and Omen guardians are fine: the 709 hunt entries of `bounty_pool.lua` and every Chaos monster file are checked
+  against the pair's blank outfits. Interim fix, no new pair needed: `looks.undrawn` maps each blank look to one the pair
+  draws (our rank variants 2200, 2203, 2204, 2201, 2206 painted over the same bases, else the family's minion look) and
+  `R.drawn` applies it in the look plan; `looks.bigGuardiansOn = false` (the guardians wear the family look again).
+  The real fix is a pair 57 that restores the 13 outfits (`prune_pair.py restore --ids outfit:2101,...` from the pair 51
+  archive on windows-assets; the rows moved from `pair51_removed.csv` to `pair51_keep.csv`), then delete `undrawn`, turn
+  `bigGuardiansOn` back on and drop the 13 ids from `PAIR_BLANK` in `tools/ci/check_content.py`. CI: `check_content.py`
+  now reads every look of `rift_config.lua` `looks` (families, variants, big guardians when on) through
+  `tools/ci/rift_looks.py` and fails on a look above the pair or blank in it (after `undrawn`); the same check on the
+  config of before fails with 13 problems. Test: `tools/ci/rift_looks_test.py`, `tests/rift_test.lua` (no look plan wears a
+  blank look).
 - **Rift looks** (`rift_config.lua` `looks`, `R.lookPlan` / `R.lookOf` in `rift_core.lua`). Inside a rift every
   monster wears a look that nothing outside the rifts uses (client outfits 2100-2115 of things_custom11, donor creature
   art; `client/tools/sprites/monster_looks/picks.csv`). The theme sets the family; the run's types, sorted by level, become
@@ -16454,10 +16485,28 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   `areagen_config.lua`; owner request 2026-10-12). Every run gets a map of its own from the area generator ("Generated
   areas"): the arrival in one corner, the guardian's arena (a chamber of radius 9 kept clear, in a dungeon a 21 x 21
   room) in the opposite one, loops and side branches, holes and ladders between two floors where the theme has them.
-  - *Size by tier*: tiers 1-5 160 x 160, 6-10 200 x 200, 11-15 240 x 240 (a two-floor map 0.8 x the side on each floor,
-    about 1.3 x the area). 48 maps measured (4 themes x 3 bands x 4 seeds, dark set): 6,000-28,000 walkable tiles,
-    9,700-50,500 tiles built, a walk of 140-490 steps from the arrival to the arena; the hunting areas of item 109 are
-    66 x 52 to 100 x 80 with 1,000-5,000 walkable tiles.
+  - *Size by tier* (O309, 2026-10-29): tiers 1-5 144 x 144, 6-10 176 x 176, 11-15 208 x 208 (a two-floor map 0.72 x the
+    side on each floor, about the area of one floor; an open waste 0.85 x, it fills more of its square). Was 160 / 200 /
+    240, two floors 0.8, no kind scale. 48 maps measured (4 themes x 3 bands x 4 seeds, `tools/rift_layout_model.lua`),
+    before -> now: walkable tiles 7,100-12,200 -> 4,800-6,900 (band 1), 11,700-19,200 -> 8,200-10,500 (band 2),
+    15,200-27,700 -> 12,100-14,500 (band 3); a walk of up to 423 steps from the arrival to the arena (was up to 412, the way is not the problem); the
+    hunting areas of item 109 are 66 x 52 to 100 x 80 with 1,000-5,000 walkable tiles.
+  - *Size against monsters* (O309; tester report: "mapas absurdamente grandes e com densidade muito baixa pelo tamanho,
+    fiquei 10min so andando", a tier 6 Forsaken Sanctum, 168 of 214 slain, mostly empty floor). The plan grew with the
+    map only by (walkable / 1081) ^ 0.25, so a bigger map was a thinner one: before, 39-84 walkable tiles a planned
+    monster (band 2 at tier 6: 54-65) and 101-140 a live one. Now `density.area.tilesPerMonster` = {33, 27} (tier 1, tier 15, linear) is a floor of the
+    plan (`R.densityCount`: at least walkable / that many monsters solo, a party's growth on top; the tier's own count still
+    rules on a small map), and `density.live.per100` is 1.0 (was 0.5): 27-33 tiles a monster and 45-71 a live one
+    everywhere (band 1 144-222 monsters, band 2 264-360, band 3 420-534; the pack health budget is per run, so the
+    monsters are weaker and the clear time is the same; the first tier of a band has weaker monsters than the last of
+    the band before, its map holding more of them). The full sweep of a map (walkable / 8 steps of width at the
+    tier's walking speed) took up to 410 / 359 / 449 s in the three bands (the same width on the old maps) and now takes at
+    most 232 / 198 / 235 s. `layout.typical` was refitted (5,875 / 9,133 / 13,463 walkable, route 159 / 203 / 263).
+    The model is `server/tools/rift_layout_model.lua` (no flag: the table per layout and band tier; `--check` in CI,
+    both interpreters; `--typical` the new `layout.typical`), the limits `rift_layout_balance_config.lua` (tiles per
+    monster 34, per live monster 75, sweep 300 s and 30% of the time limit, way to the arena 150 s, walkable per band,
+    spread of a band 1.5x, `typical` within 15% of the mean); `tests/rift_layout_model_test.lua` pins the floor, the
+    kind scale and that the layouts of before fail the check (271 problems on the 48 maps of before, 0 now).
   - *Kind and floors by theme* (`layout.themes`, weighted per run): Abyssal Rift an open waste (55) or a cave system
     (45), one floor; Obsidian Hall a ruined complex (65) or marble halls cut into rock (mixed, 35), one or two floors;
     Ashen Crypt catacombs: a cave with ruined chambers (50) or a ruined complex (50), always two floors; Forsaken
@@ -20298,6 +20347,21 @@ server folder (the engine's working folder), the same idea as the stop request f
   `server/deploy/chaos_ctl_test.py` for the script that writes the lines. Untested: the engine calls (`Player(name)`,
   `player:remove()`, `Game.setGameState`) have not run on a real server.
 
+## Desktop admin app (O312) (`desktop/`)
+Owner, 2026-10-29: the Android admin app's job on the PC, live where possible, self-updating. Phase 1 is a Rust egui app
+in `desktop/` (README there). It adds nothing to the server: it runs the system `ssh` with the phone's key and user and
+calls `chaos-ctl.sh`, so the commands, `remote.cmd` and the audit log stay the only way in.
+- **Live apply.** Actions are marked live, needs restart, restarts the server or next install. "Apply live" runs the
+  admin panel action `reload` (`chaos-ctl.sh panel ACTOR reload '{"system":"scripts"}'`) after a command that only
+  wrote a file (beta mode). The `reload` action reloads a whole system; there is no per-file reload yet, and the XP
+  rate buttons stay "needs restart" until `Game.reload(config)` is checked on a live server.
+- **Command table.** `desktop/src/commands.rs`; `tools/ci/check_desktop_commands.py` compares it with the commands the
+  Android app calls and with `chaos-ctl.sh`.
+- **Updates.** Releases `admin-desktop-vX.Y.Z` made by `.github/workflows/admin-desktop.yml` (manual); the app checks
+  them at start and swaps its own `.exe` after a SHA-256 check.
+- **Untested.** Not run against a live VPS, not built on Windows, the workflow has not run. `cargo test` covers the
+  command table, quoting, settings, version compare, update choice, checksum and the swap.
+
 ## Live spectator (`spectate.lua`, `spectate_core.lua`, `spectate_config.lua`, `tools/spectate_render.py`)
 Owner, 2026-10-20 (ROADMAP "Open decisions": a live view of a player in the admin app). Phase 1: the owner watches one
 online character from the phone (docs/ADMIN_APP.md "Assistir jogador"), drawn with the real client sprites. Read only:
@@ -20659,6 +20723,45 @@ registry with mocked leaderboard / siege / season / login-streak tables) and `ga
 line disappearing live after leaving the guild, the Achievements window list / switch (Bossbane, Siege Champions with the crimson frame)
 / none / auto, the choice kept after a relog, monsters unchanged. Not checked: 30 players on screen (the drawing cost is a
 few quads per player), war colours (no guild war on the test server).
+
+## Beastmaster companion (O306, 2026-10-29; `beastmaster.lua`, `classes.lua`, `companion_balance_config.lua`)
+
+Tester report (Beastmaster near level 400): the wolf was 4% of the damage, died in 3 hits and 5 s of 2 monsters of the hunting level,
+died again right after Wild Bond, and was shown at level 12 or 300.
+
+* **Level bug, root cause.** The monster-level callback (`monster_levels.lua`, `onSpawn`) runs when the monster is created,
+  before Wild Bond binds it to its owner, so it never sees a player's summon. It gave the War Wolf the level of a wild War
+  Wolf (the bounty pool's 12), or, when the wolf stood in a hunt whose lower level is above 120 (a pool level below a tenth
+  of the hunt: `raisedLevel`), the lower end of that hunt (300). Hence 12 near a town and 300 in a hunt. The Necromancer fixed the same
+  thing for its minions (`necro_lib.lua showLevel`); the Beastmaster never did, and set the health once at the spawn only,
+  so a level-up or a call-back left the wolf behind. Now every path calls `ChaosClasses.syncCompanion(owner, companion, fresh)`:
+  Wild Bond's spawn, Wild Bond's call-back of a wolf already out, and the 0.5 s tick of `beastmaster.lua` (level-ups,
+  logins). It sets the shown level to the owner's level and the maximum health to `companionHealth(level)` (the same share of
+  health kept on a level-up). Tested in `tests/classes_test.lua` with a mock monster born at level 12 and 300.
+* **Survival.** Health is `800 + 30 x level` (was `500 + 15 x level`) and a hit on a companion is x0.6 (`companion.taken`,
+  `ChaosClasses.companionDamageTaken`, applied in the guard before Pack Alpha's extra 20% cut).
+* **Damage.** The companion's own bite (every 2 s, physical, dealt as the owner) is `level x 1.1 + distance skill x 2.0`
+  (`autoLevel`, `autoSkill`; was `0.12` and `0.6`). Feral Command and Pack Frenzy keep the old bite (`biteLevel`,
+  `biteSkill`: their rotation numbers are unchanged). The measured class totals held the old bites (4-8%), so the class damage
+  factor (`class_tree.lua classDamage.beastmaster`, now 0.85-1.05 by level) takes the gain back and the cleave's high end
+  (`pace_config.lua`, Beastmaster, the companion's hits cleave too) went from 1 to 2: the pack and boss bands of
+  `boss_balance_config.lua` hold (`pack_model.py --check`, `boss_model.py --check`). `pack_model.py damage()` calls
+  `companion_model.apply` for the Beastmaster.
+* **Model.** `server/tools/companion_model.py --check` (CI) with `companion_balance_config.lua`: seconds alive under 2
+  monsters of the hunting level (the necro model's `monsterDps` x a burst of 1.5), hits taken, the share of the pack fight
+  alive, the bites' share of the Beastmaster's damage (20-30%), the class total against before. No flag prints the table,
+  `--legacy` the numbers before. Computed, not measured in game.
+
+| Level | Alive under 2 monsters | Bites (alive, in contact) | Share of damage | Health |
+|---|---|---|---|---|
+| 100 | 5.7 s -> 18.2 s | 18 -> 81 dps | 6% -> 24% | 2000 -> 3800 |
+| 400 | 6.7 s -> 22.0 s | 70 -> 402 dps (2 wolves) | 6% -> 27% | 6500 -> 12800 |
+| 1000 | 5.3 s -> 17.4 s | 122 -> 828 dps (2 wolves) | 4% -> 21% | 15500 -> 30800 |
+
+Class total with the change, against before: 1 target +9..+15%, pack of 5 within 1%. Assumptions: contact 0.6 and burst 1.5 are
+fitted to the report (the old model said 6% and 7 s, the tester saw 4% and under 5 s); the model counts the companion's own bites only
+(the spells' mauls are in the rotation model). Needs a live check: the shown level on a spawn, a level-up and Wild Bond
+on a wolf already out; a hunt of 2 attackers at level 400.
 
 ## Pets (`pets.lua`, `pets_core.lua`, `pets_config.lua`, `sql/chaos_pets.sql`, client `game_pets`)
 
@@ -25605,6 +25708,7 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 - **Win and loot.** After horde 5 the chest unseals for 120 s. Each participant (by creature id, recorded at the use) takes one roll, delivered to the backpack (inbox when full): gold = 3 minutes of hunting gold at the chest's level (the Respec table, same numbers as `gamble_config.lua`, checked by the test), 1 Orb of Upheaval (+1 per 400 levels, at most 4), 3% Orb of Fate, Rune Shards (4 + level/25, at most 30), 1 crafting orb, 1-2 gear pieces rolled at rarity floors Magic / Rare / Legendary (30 / 50 / 20) with the hunting level's rarity roll and item find x1.5, and the unique roll as a rare kill. A party's rolls are x1.0 / 0.75 / 0.6 / 0.5 / 0.45 by size.
 - **Economy.** About 4-5 chests an hour of hunting (the cooldown caps 10). The gold is about 22% of an hour's, and the fights (about 3 minutes, monsters are husks) cost the same in lost corpse loot, so gold is neutral; orbs are about 5 an hour, against 24-33 from tier 15 rifts. No model config was changed; `store_model`, `roulette_model`, `progression_model`, `skill_model`, `pack_model` pass.
 - **Abuse.** Event monsters are husks (`Monster:setDropLoot(false)`, as rift husks): no corpse loot, so no `onDropLoot` (no chest, blessing, Chaos roll) and they are never treasure goblins (artificial spawns). They are also tagged and refused by the chest roll. One claim per participant (the mark is set before the loot). Everything is checked on the server. Nothing is stored (no storage keys, no table): after a restart or `/reload` no monster remains and a chest item left on the map is unknown to the table and crumbles at its next use.
+- **Outcome messages (O308).** Tester report: chests opened with no loot and no line. Every claim now ends with an event line and a toast (`MESSAGE_LOOT` is kept off the game screen by `game_lootscreen`, so it is not the only line): the loot list, or "held nothing for you". Each part of the roll (gold, orbs, shards, crafting orbs, gear, uniques) is its own step, so one error is logged and the rest is still given; a roll that breaks as a whole gives the claim mark back and tells the player to use the chest again. Backpack full: the inbox, else the ground at the player's feet, and the line says which. A won chest reminds players who have not claimed `event.remindSec` (30) before it crumbles and tells them when it does; a chest item that disappears mid-event fails the event with a line. An error in the use itself is a cancel message, not silence.
 - **Staff.** `/cursedchest` makes a chest next to you; `/cursedchest roll <tier>, <level>[, <n>]` shows the chance.
 - **Not done / assumptions.** Damage scale needs `ChaosAreaGen` (its hit hook); without it only health is scaled. Without `Monster:setDropLoot` the monsters would drop loot. Untested on a live server. No client part: server texts only. Tests: `tests/cursedchest_test.lua` (rules, state machine, loot against the gold model, and the glue on a mocked engine).
 
@@ -25656,7 +25760,7 @@ Checked and found sound: shop and gifts (guarded `UPDATE` plus `ROW_COUNT`, refu
 | item fusion (67) | JSON decoded without `pcall`; `item` and the entries of `items` indexed without a type check | low | `pcall`, tables with a whole-number `clientId` |
 | waystone device (202) | `teleport` opened the portal pads before taking the tier tablet, so a client naming a tablet it did not own got the pads | high | already fixed by `patch_waystone_hideout.py` part 2 (checked here, the pick is refused before any pad); not repeated |
 | crafting (91) | `fetch` naming one of the script's own functions, wrong types in `data`, double crafts | medium | already fixed by `patch_base_crafting.py` and `patch_base_crafting_ui.py` v2 (checked here) |
-| item fusion (67) | any 3 identical items the player holds (also cheap equipment, the server has no list) become an Upgrade Rune v1-v4 or the Upgrade and Rarity Remover; the client window may offer only some items, a modified client any id | medium | no: design decision of the owner (a list of fusable ids would change the feature); the three items are really taken (`removeItem` result checked) |
+| item fusion (67) | any 3 identical items the player holds (also cheap equipment, the server had no list) became an Upgrade Rune v1-v4 or the Upgrade and Rarity Remover; the client window may offer only some items, a modified client any id | medium | yes (O310): only the client ids of `item_fusion_config.lua`, else "invalid_item" before an item is taken; no list, no fusion; the three items are really taken (`removeItem` result checked); `patch_base_fusion_allowlist_test.py` |
 | party icons (136) | one request sends the party list (names, vocations, positions) to every member, so one packet costs the party size | low | no: members only, bounded by the packet rate |
 | tier maps `wrap` (202) | the device chosen by `show` is kept as a Lua object until `wrap` or `teleport`, even when it was moved meanwhile | low | no: changes only the device's own look |
 | reputation (99) | none: no field is read | none | none |
@@ -25664,6 +25768,14 @@ Checked and found sound: shop and gifts (guarded `UPDATE` plus `ROW_COUNT`, refu
 Checked and sound in the base handlers: upgrades `purchase` (price and level from the server's tables, points and item count checked before the level is raised, single game thread), store `buy` (offer, category and price compared with the server's tables), tasks `cancel`, tier maps `choice_apply` (ownership of the visual per storage), the base `extendedopcode.lua` (DB read throttled by `patch_base_stalls.py`).
 
 Verification: `patch_base_json_guards.py`, the class, tester, crafting and hideout patches and then `patch_base_opcode_inputs.py` were run twice on a copy of the base data folder (second run: nothing to change); every changed file loads in LuaJIT (`luajit -bl`) and Lua 5.3 (`loadfile`); the highscores handler was run against a mocked engine with hostile requests under both interpreters (only numbers in the SQL, page and size clamped). Not run on a live server.
+
+## Item fusion allowlist (O310) (`item_fusion_config.lua`, `tools/patch_base_fusion_allowlist.py`)
+
+Owner decision 2026-10-29: "Pode limitar a fusão a uma lista de ids". The base item fusion (opcode 67) fused any 3 identical items a player held. Now `scripts/customs/item_fusion/item_fusion.lua` loads `data/scripts/chaos/item_fusion_config.lua` once (`pcall`, `clientIds`: a set of client ids) and a "fuse" request with any `clientId` outside it gets `{action = "invalid_item", message = "This item cannot be fused."}` before an item is counted or taken. A missing, broken or wrong-typed list is an empty set: nothing fuses.
+
+- **The list.** The 194 keys of the base script's own `clientToServerMapping` (late-game weapons, armor, shields, boots, spellbooks, rods). The base client has no fusion window in its modules to read an offer list from, so that table is the only statement of what the fusion is for, and the narrowest sensible set. Client ids, as the client sends them; the server ids the table maps to are not on it. Because every listed id is equipment, the Upgrade and Rarity Remover branch of the base script stays unreachable (it was "not used" there too). To fuse another item, add its client id (and a mapping row if its server id differs) and restart.
+- **Client.** The window is base client code, not overlaid or patched here, so it is not filtered: it may still offer other items, and the server answers "cannot be fused". The server is the gate.
+- **Install.** Step `fusionlist` (right after `opcodeinputs`, whose entry check it needs: it refuses a file without it). Idempotent, marker line, CRLF kept, unknown text refused. Test: `python3 -I server/tools/patch_base_fusion_allowlist_test.py` (stock excerpt, and a LuaJIT run: a listed id fuses and takes 3, a cheap id, a mixed list and the mapped server id are refused, a missing or broken list refuses all).
 
 ## Funnel metrics (O258) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `tools/progress_metrics.py`)
 
@@ -26004,3 +26116,13 @@ sheets and manifests keep their names. Tests: `install_decor49_items_test.py` (t
 of our monsters), `install_owner_decor_test.py`. Owner, VPS: Update in the admin app, or `install_all.py SERVER_DIR --only
 decor49items,ownerdecor` and a restart; the blocks in items.xml are rewritten, no SQL, no client change (the names show in the
 client tooltips only).
+
+## Item tooltips: who may use it (O307)
+
+The engine's vocation string hides an ascended class whose base class is listed, so a crossbow read "For rangers" while
+the Beastmaster (a bow class) cannot wield it. `T.vocationText` in `item_tooltip_core.lua` expands a listed Ranger or
+Warrior into the classes of the install rule (`add_vocations.py`): Ranger, Deadeye, and the Beastmaster only for bows,
+arrows and non-weapon gear; Warrior, Juggernaut, and the Berserker only for two-handed swords, axes, clubs and non-hand
+gear. Unknown names stay as the engine wrote them. Test: `tests/item_tooltip_test.lua`. Client spell lists: a Chaos
+spell matches the exact server vocation ids (`ChaosSpellFix.allowsVocation`); `tools/ci/check_rotation_kit.py` compares
+spelldata.lua with the server spell XML.

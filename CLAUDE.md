@@ -36,6 +36,8 @@ python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
 python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix)
+python3 -I tools/ci/check_desktop_commands.py   # desktop admin app (O312) table names the same chaos-ctl commands as android/
+cd desktop && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked
 python3 -I tools/ci/check_credits.py   # every pack of the art *sources.csv files is in docs/CREDITS.md; pt-BR headings
 python3 -I tools/ci/check_credits_test.py && python3 -I client/tools/gen_credits_test.py
 cd server && luajit tools/weapon_coverage.lua --check && lua5.3 tools/weapon_coverage.lua --check  # every class has 3+ weapons per level band (thresholds: tools/weapon_coverage_config.lua); table in server/README.md (--write)
@@ -46,7 +48,10 @@ python3 -I tools/ci/check_rotation_kit.py && python3 -I tools/ci/check_rotation_
 cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check  # smooth leveling: stages, minutes per level 8-2200, hunts in reach (limits: data/scripts/chaos/progression_config.lua); no flag prints the table, --spells the unlock gaps
 python3 -I server/tools/pack_model.py --check   # level-scaled late packs (hunting level 670+) die in at most 3x a base hunt pack of the median class (O138; pace_config.lua scaled.health)
 python3 -I server/tools/tower_model.py --check && python3 -I server/tools/tower_model_test.py   # Infinity Tower: seconds per floor, boss heals, breather after milestone floors, level 800 reaches floor 30-40 (O144; limits: data/scripts/chaos/infinitytower_balance_config.lua; --derive prints the generated curves, no flag the table)
+cd server && luajit tools/rift_layout_model.lua --check && lua5.3 tools/rift_layout_model.lua --check  # Rift maps: walkable tiles per monster, per live monster, full sweep seconds, size per band (O309; limits: data/scripts/chaos/rift_layout_balance_config.lua; no flag prints the table, --typical the layout.typical numbers); tests/rift_layout_model_test.lua runs in the server test loop
+python3 -I tools/ci/rift_looks_test.py   # check_content.py: every rift look (rift_config.lua looks) is an outfit the client pair draws, not a blank one (O309)
 python3 -I server/tools/minion_model.py --check && python3 -I server/tools/minion_model_test.py   # Necromancer minions: alive share in a hunt pack cycle, damage against the median class, minion share (O160; limits: data/scripts/chaos/necro_balance_config.lua; no flag prints the tables, --legacy the numbers before the fix)
+python3 -I server/tools/companion_model.py --check && python3 -I server/tools/companion_model_test.py   # Beastmaster companion: seconds alive under 2 hunt-level monsters, bites' share of the class damage, class total against before (O306; limits: data/scripts/chaos/companion_balance_config.lua; no flag prints the table, --legacy the numbers before)
 cd server && luajit tools/store_model.lua --check && lua5.3 tools/store_model.lua --check  # store prices: coin packs, boost caps, gold per coin, no coin -> gold loop (limits: data/scripts/chaos/store_balance_config.lua; no flag prints the tables; docs/PRICES.md)
 cd server && luajit tools/skill_model.lua --check && lua5.3 tools/skill_model.lua --check  # skill training: tries per hour of hunting / exercise weapons / offline training, hours per skill level, a dummy hour in hunting hours (inputs and limits: data/scripts/chaos/skill_model_config.lua; no flag prints the tables, --sensitivity the assumptions; also bounds exercise weapon prices in store_model.lua; docs/PRICES.md "Skill training (O150)")
 python3 -I server/tools/patch_skill_stages_test.py   # skills_stages.lua x5 from skill / magic level 101 (O154; factor: data/scripts/chaos/skill_stages_config.lua; the skill model reads it)
@@ -60,6 +65,7 @@ python3 -I client/tools/check_text_fit.py          # options menu entries fit th
 python3 -I client/tools/gen_orb_art.py --check     # liquid orb art, one ring and mask per orb size
 python3 client/tools/gen_rain_art.py --check        # rain tiles of game_chaosweather (O208)
 python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lua (install_all step baserain)
+python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
 for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests

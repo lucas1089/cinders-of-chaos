@@ -153,7 +153,10 @@ M.classDamage = {
 	-- level 300 with tree builds (3441 against 3349), the Beastmaster's came within 4% at level 1000; the identity pass keeps
 	-- the Elementalist 8% ahead in area damage (boss_model.py / pack_model.py --check)
 	berserker = {{300, 0.78}, {800, 1.09}, {1000, 1.21}},
-	beastmaster = {{250, 1.0}, {300, 1.14}, {800, 0.97}, {1000, 0.95}},
+	-- O306: the companion's own bites became a real share of the damage (20-30%, tools/companion_model.py); the measured
+	-- totals held the old bites (4-8%), so the factor takes the gain back (and the pack cleave's high end went from 1 to 2, pace_config.lua) so the class keeps its pack and boss bands
+	-- (was {{250, 1.0}, {300, 1.14}, {800, 0.97}, {1000, 0.95}})
+	beastmaster = {{50, 0.90}, {100, 0.90}, {200, 0.92}, {300, 1.05}, {400, 0.99}, {550, 0.95}, {700, 0.91}, {800, 0.87}, {1000, 0.85}, {1200, 0.81}},
 	ranger = {{300, 1.0}, {1000, 0.95}},
 	deadeye = {{300, 1.0}, {1000, 0.95}},
 }

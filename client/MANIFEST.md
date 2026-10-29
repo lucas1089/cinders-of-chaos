@@ -3306,6 +3306,12 @@ Archive pair: dat a19ebfdf56b9970d4a3fafc7993bf125 (4,737,560 bytes), spr b54054
   interior 1-3, n, s, e, w, nw, ne, sw, se) stand on the installed map now (server/README.md "Hunt roofs", install step `huntroofs`), so
   their 11 rows left `pair51_removed.csv` and are in `pair51_keep.csv`. The built pair 51 still has them blank: `prune_pair.py restore ...
   --ids item:38477-38487` on it (command in the README section) before the server step runs. Done: see "Pair 52" below.
+- **Rift looks put back (O309, 2026-10-29, open).** The scan did not see looks that `rift_config.lua` sets at runtime: 13 outfits
+  of the rifts were retired and are blank in pairs 51-56 (2101, 2102, 2105, 2106, 2109, 2110, 2112, 2113 and the big guardians
+  2208-2212), so rift monsters of those ranks were invisible. Their rows moved to `pair51_keep.csv`. Until a pair 57 restores them
+  (`prune_pair.py restore --ids outfit:2101,2102,2105,2106,2109,2110,2112,2113,2208-2212` on the pair 56, archive on windows-assets),
+  the server wears replacements (`rift_config.lua` `looks.undrawn`, `bigGuardiansOn = false`). Then drop the 13 ids from `PAIR_BLANK`
+  in `tools/ci/check_content.py`.
 
 ### Pair 51 missiles (`tools/sprites/import_pair51_missiles.py`; built 2026-10-27, on the 62-id list)
 The 62 freed missile ids hold the best 62 of the 169 missiles of the two purchased sprite sources (source G 43, source F 126) that
@@ -4404,6 +4410,20 @@ hint above it; a click on it ends the blink and runs Auto setup as usual. Nothin
 helpers `O.plan` / `O.blinkFrames`, `onboarding_test.lua`. Server side: `newplayer.lua` `NP.showWelcome`,
 `newplayer_config.lua` `welcome.helper`.
 
+### Helper spell lists (`game_helper/spellinfo_logic.lua`, O311)
+The helper's spell pickers (shooter slots, healing rows, mana training, haste) list a spell as `Name   120 mana | AOE circle 3 | 4 s`
+(mana or its share of the maximum, single target / AOE with the shape and size / self, cooldown) and show the whole data in a
+tooltip: mana, target (`Area (circle 3)`, shapes circle, around, line, wave `3x3`), cooldown, group cooldown, range, level,
+element, kind. The tooltip is on each popup row, on the closed box (the chosen spell) and on the slot icon. The closed box keeps
+the plain name (it is 170 wide); `helper.lua` `decoratePopup` widens the combo box's own popup after it opens and sets each row's
+text and tooltip. A field the spell entry lacks (a stock spell has no shape or element) is left out without a word.
+`spellinfo_logic.lua` (`ChaosHelperSpellInfo`: `compact`, `lines`, `tooltip`, `optionText`, `area`) is pure Lua with `tr` passed in;
+`spellinfo_logic_test.lua` covers single target, every shape, missing fields, pt-BR and every spell of `spelldata.lua`.
+Data: `gen_spell_data.py` writes `areaShape` (single, self, circle, around, wave, line), `areaSize` (radius, length or depth),
+`areaWidth` (a wave's tiles across) and `element` per spell, from the attack kit (`attack_kit_config.lua`), the Spellbook's area
+rows (`spellbook_areas_config.lua`), the area the spell script creates and its damage type; `game_chaosspells/chaosspells.lua` copies
+them into the spell entries. The popup is as wide as its widest row (text width plus 24, kept on the screen). Not run live.
+
 ### Helper Auto setup (`game_helperrotation/autosetup.lua`, `autosetup_ui.lua`)
 The "Auto setup" button sits in the top row of the helper window (`autoSetupHost`). One click,
 for the character's class and level (`ChaosAutoSetup.plan`, tested per class in `autosetup_test.lua`):
@@ -4900,3 +4920,9 @@ path and a style reads its images when a widget is built, so windows already ope
 **Colours in Lua.** `ChaosTheme.palette` is the active skin's table (`skin_core.lua` `PALETTES`): window titles, mini window titles, the tooltip text and the menu bar colours (new / locked / normal) read it.
 
 **Still classic or fixed (the honest list).** OTUI has no variables, so text and state colours written in `.otui` files stay as they are: the gold button hover text of `Button` (`#ffe7a6`), `ChaosButton` and `ChaosPrimaryButton` text, the `ChaosProgressBar` / `ChaosHealthBar` / `ChaosManaBar` fills, the colours in `topbar.otui` and `chaoshud.otui` (HUD name and numbers), and about 230 more gold literals of module `.otui` / `.lua` files. Not redrawn: equipment slot silhouettes (`game/slots/*`), the ~500 other images of `RESKIN_FILES.txt` (stock icons, bars, flags), the login screen, character list, map markers, monster bars, top bar icons and every module's own art. An update that replaces a file a skin also draws shows the classic file until the skin files are copied again (the next start with a changed choice or revision). Not run in a client.
+
+## Spell lists by class (O307)
+
+`ChaosSpellFix.allowsVocation` (game_chaosspells/spellfix.lua) is the one class rule of the action bar, the hotkey pickers
+and Auto setup. Chaos spells match their exact server ids; only stock entries also match the folded id of
+`translateVocation`, which put the Beastmaster on the Deadeye's spells.

@@ -169,21 +169,21 @@ do
 	eq(table.concat(k, ","), "c3.4,f4,s4", "a fast flawless Ashen tier 4")
 	k = A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 12, deaths = 2, secs = 361})
 	eq(table.concat(k, ","), "c1.12", "deaths and slow: only the cell")
-	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 465})
+	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 450})
 	eq(table.concat(k, ","), "c2.15,f15,s15", "exactly the tier's Swift time is swift")
-	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 466})
+	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 451})
 	eq(table.concat(k, ","), "c2.15,f15", "a second over is not")
 	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 420})
 	eq(table.concat(k, ","), "c2.15,f15,s15", "tier 15 in 7:00: swift (was out of reach at 5:00)")
 	k = A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 5, deaths = 0, secs = 330})
-	eq(table.concat(k, ","), "c1.5,f5", "tier 5 in 5:30: not swift (5:15, the time of tier 1)")
+	eq(table.concat(k, ","), "c1.5,f5", "tier 5 in 5:30: not swift (5:00, the time of tier 1)")
 	k = A.runCells(cfg, rcfg, {omen = "storm", tier = 15, deaths = 3, secs = 900})
 	eq(table.concat(k, ","), "ostorm", "omen kill")
 	eq(#A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 16, deaths = 0, secs = 1}), 0, "off the grid")
 	-- the Swift times: the rift model's clear time of the tier on its band's typical map for a player with swiftDps x
 	-- the model's damage, rounded down to swiftRound seconds (atlas_config.lua swiftDps / swiftRound)
 	-- and never less than a lower tier's time (the model's own time falls inside a size band)
-	local want = {315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 330, 360, 390, 435, 465}
+	local want = {300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 315, 345, 375, 405, 450}
 	local swiftT = A.swiftTable(cfg, rcfg)
 	eq(#swiftT, 15, "a Swift time per tier")
 	for tier = 1, 15 do
@@ -565,7 +565,7 @@ do
 	eq(#tree.grid.omens, 3, "three omens")
 	eq(tree.grid.swift, 300, "swift seconds of an older client (the base 5:00)")
 	eq(#tree.grid.swiftTiers, 15, "swift seconds per tier")
-	eq(tree.grid.swiftTiers[1], 315, "swift tier 1"); eq(tree.grid.swiftTiers[15], 465, "swift tier 15")
+	eq(tree.grid.swiftTiers[1], 300, "swift tier 1"); eq(tree.grid.swiftTiers[15], 450, "swift tier 15")
 	eq(tree.max, 96, "max points")
 	local st = {alloc = {[2] = true}, done = {["c1.1"] = true, ["f1"] = true}}
 	local sp = A.statePayload(cfg, rcfg, st, "hi")

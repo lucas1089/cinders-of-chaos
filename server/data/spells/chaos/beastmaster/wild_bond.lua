@@ -58,13 +58,13 @@ function onCastSpell(creature, variant, isHotkey)
 				s:teleportTo(spots[1].pos, true)
 			end
 		end
+		C.syncCompanion(player, s, false)
 		s:addHealth("healing", math.floor(s:getMaxHealth() / 2)) -- this engine: (damage type, amount)
 		ChaosSpell.fx(s:getPosition(), "heal_sparkle", CONST_ME_MAGIC_GREEN)
 	end
 	local want = C.companionCap(player:getLevel()) - #have
 	local created = 0
 	if want > 0 then
-		local hp = C.companionHealth(player:getLevel())
 		for _, spot in ipairs(ChaosSpell.freeAround(pos, pos)) do
 			if created >= want then
 				break
@@ -74,8 +74,7 @@ function onCastSpell(creature, variant, isHotkey)
 				ChaosSpell.bindSummon(player, m) -- an ally of its owner: no target of its own from the start
 				m:setDropLoot(false)
 				m:registerEvent("ChaosCompanionGuard")
-				m:setMaxHealth(hp)
-				m:addHealth("healing", hp)
+				C.syncCompanion(player, m, true) -- shown level and health of the owner's level, as on every other path
 				local speed = player:getBaseSpeed() - m:getBaseSpeed()
 				if speed > 0 then
 					m:changeSpeed(speed)

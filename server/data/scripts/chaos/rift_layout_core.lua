@@ -84,6 +84,11 @@ function RL.plan(cfg, req)
 	if floors > 1 then
 		side = floor(side * lc.twoFloorScale + 0.5)
 	end
+	-- a kind that fills more of its square (the open waste) gets a smaller square: the walkable tiles of a band stay close
+	-- (tools/rift_layout_model.lua, rift_layout_balance_config.lua spreadMax)
+	if lc.kindScale and lc.kindScale[kind] then
+		side = floor(side * lc.kindScale[kind] + 0.5)
+	end
 	local corner = r:int(1, 4)
 	local ax, ay = cornerAt(corner, side, lc.arrivalInset)
 	local bx, by = cornerAt((corner + 1) % 4 + 1, side, lc.arena.inset)

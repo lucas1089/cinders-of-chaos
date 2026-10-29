@@ -267,6 +267,22 @@ eq(stats.attack.v, 50) eq(stats.rarity_criticalHitAmount.v, 1, "pair split into 
 eq(stats.rarity_elementfire.l, "Fire Damage") eq(stats.gem_dmg_fire.v, 9, "gem effect in the compare numbers")
 eq(stats.chaos_mod_lifeonkill.fmt, nil, "flat Chaos modifier") eq(stats.rarity_swordSkill.v, 1)
 eq(tip.req.level, 80) eq(tip.req.voc, "knights") eq(tip.weight, 45)
+-- O307: the class text names who may use the item (the Beastmaster is no crossbow class)
+do
+	local D5, A_ARROW, A_BOLT = 5, 2, 1
+	eq(T.vocationText("rangers", {weaponType = D5, slot = 2048, ammoType = A_BOLT}), "Ranger, Deadeye", "crossbow")
+	eq(T.vocationText("rangers", {weaponType = D5, slot = 2048, ammoType = A_ARROW}), "Ranger, Deadeye, Beastmaster", "bow")
+	eq(T.vocationText("rangers", {weaponType = D5, slot = 512, ammoType = A_ARROW}), "Ranger, Deadeye, Beastmaster", "arrow")
+	eq(T.vocationText("rangers", {weaponType = D5, slot = 512, ammoType = A_BOLT}), "Ranger, Deadeye", "bolt")
+	eq(T.vocationText("rangers", {weaponType = 0, slot = 8, ammoType = 0}), "Ranger, Deadeye, Beastmaster", "armour: the whole line")
+	eq(T.vocationText("warriors", {weaponType = 1, slot = 16, ammoType = 0}), "Warrior, Juggernaut", "one-handed sword")
+	eq(T.vocationText("warriors", {weaponType = 1, slot = 2048, ammoType = 0}), "Warrior, Juggernaut, Berserker", "two-handed sword")
+	eq(T.vocationText("warriors", {weaponType = 4, slot = 32, ammoType = 0}), "Warrior, Juggernaut", "shield")
+	eq(T.vocationText("warriors", {weaponType = 0, slot = 8, ammoType = 0}), "Warrior, Juggernaut, Berserker", "armour")
+	eq(T.vocationText("deadeyes", {weaponType = D5, slot = 2048, ammoType = A_BOLT}), "Deadeye", "an ascension alone stays alone")
+	eq(T.vocationText("rangers, thieves and monks", {slot = 8}), "Ranger, Thief, Monk, Deadeye, Beastmaster", "a list")
+	eq(T.vocationText("knights", {}), "knights", "unknown names stay")
+end
 eq(tip.desc, nil, "a rolled item's description is its modifiers, not repeated")
 eq(tip.unique, nil) eq(tip.locked, nil)
 

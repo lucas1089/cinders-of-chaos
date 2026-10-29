@@ -559,6 +559,12 @@ local function eliteTier(cfg, fx, tier, rand, scale)
 end
 R.eliteTier = eliteTier
 
+-- the look the client draws for a configured look: looks.undrawn lists the outfits a pair leaves blank and what to wear
+-- instead (rift_config.lua)
+function R.drawn(L, look)
+	return L and L.undrawn and L.undrawn[look] or look
+end
+
 -- the looks of a run (rift-exclusive outfits, cfg.looks): {byName = {[lowercase type name] = lookType}, guardian =
 -- lookType, names = {[lowercase type name] = shown name}, guardianName}, or nil (looks off, or a theme without a
 -- family). `types` sorted by level (R.pickTypes): the weakest is the minion, the strongest the elite, the rest brutes;
@@ -570,7 +576,7 @@ function R.lookPlan(cfg, themeName, types)
 		return nil
 	end
 	local names = L.names and L.names[themeName] or {}
-	local plan = {byName = {}, guardian = R.bigLook(L, fam.guardian), names = {}, guardianName = names.guardian}
+	local plan = {byName = {}, guardian = R.bigLook(L, R.drawn(L, fam.guardian)), names = {}, guardianName = names.guardian}
 	local n = #types
 	for i, e in ipairs(types) do
 		local rank = "brute"
@@ -579,7 +585,7 @@ function R.lookPlan(cfg, themeName, types)
 		elseif i == 1 and n >= 3 then
 			rank = "minion"
 		end
-		plan.byName[e.name:lower()] = fam[rank]
+		plan.byName[e.name:lower()] = R.drawn(L, fam[rank])
 		plan.names[e.name:lower()] = names[rank]
 		local var = L.variantsOn and L.variants and L.variants[themeName] and L.variants[themeName][rank]
 		if var and #var > 0 then
@@ -773,8 +779,26 @@ end
 function R.densityCount(cfg, tier, players, area)
 	local c = cfg.density.count
 	players = math.max(1, floor(tonumber(players) or 1))
-	return (c.base + c.perTier * (R.clampTier(cfg, tier) - 1)) * (1 + c.perExtraPlayer * (players - 1))
+	local n = (c.base + c.perTier * (R.clampTier(cfg, tier) - 1)) * (1 + c.perExtraPlayer * (players - 1))
 		* R.areaMult(cfg, area, tier)
+	-- never thinner than density.area.tilesPerMonster walkable tiles a monster (solo; a party's growth comes on top): {tier 1,
+	-- last tier}, linear in between, so a band's monsters still grow with the tier (the number may also be one value)
+	local a = cfg.density.area
+	local tpm = a and a.tilesPerMonster
+	if tpm then
+		if type(tpm) == "table" then
+			local t = R.clampTier(cfg, tier)
+			tpm = tpm[1] + (tpm[2] - tpm[1]) * (t - 1) / math.max(1, cfg.maxTier - 1)
+		end
+		if not area then
+			local t = R.typicalLayout(cfg, tier or 1)
+			area = t and t.walkable
+		end
+		if area then
+			n = math.max(n, area / tpm * (1 + c.perExtraPlayer * (players - 1)))
+		end
+	end
+	return n
 end
 
 -- expected monsters of the packs of before (density off) with the run's Teeming / atlas density and Swarm

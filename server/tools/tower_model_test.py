@@ -131,7 +131,7 @@ check(code == 1 and ('cap starts' in out or 'cliff' in out or 'jumps' in out), '
 repeat = T.balance(text.replace('bossHealthRate = 0.007', 'bossHealthRate = 0.0').replace('bossHealthAccel = 0.000002', 'bossHealthAccel = 0.0'))
 code, out = run_check(repeat, T.tier_info(repeat))
 check(code == 1 and 'boss floor' in out, 'bosses that repeat their health above maxFloor fail')
-dip = T.balance(text.replace('[110] = 315000', '[110] = 187000'))
+dip = T.balance(re.sub(r'\[110\] = \d+', '[110] = 187000', text, count=1))
 code, out = run_check(dip, T.tier_info(dip))
 check(code == 1 and 'boss floor 110' in out, 'a boss with less health than the one 10 floors before fails (the old 110 dip)')
 

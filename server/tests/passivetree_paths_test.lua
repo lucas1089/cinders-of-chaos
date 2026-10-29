@@ -222,5 +222,31 @@ do
 	for _, id in ipairs(kept) do check(not set[id], "kept node " .. id .. " has no lane") end
 end
 
+-- ------------------------------------------------------------------------------------------------ ascension (O305)
+-- Tester report: after Ranger -> Beastmaster the allocated Vitality / Dexterity / Physical Damage nodes gave other stats.
+-- The ascended lanes are intended (Auto build, presets), so the ascension refunds the tree once (passivetree.lua
+-- refundLaneChange); the core finds the nodes the new lane changes and decides when the refund is due.
+do
+	local C2, CC = ChaosPassiveTreeCore, ChaosClasses
+	local RANGER, DEADEYE, BEAST = 3, 7, 15
+	local base = CC.keystoneKey(RANGER)
+	local diff = C2.laneDiff(tree, base, CC.keystoneKey(BEAST))
+	local count = 0
+	for id in pairs(diff) do
+		count = count + 1
+		check(tree.nodes[id].s ~= nil, "lane diff node " .. id .. " is a plain node")
+	end
+	check(count > 100, "the Beastmaster lane differs from the Ranger's on many nodes (" .. count .. ")")
+	check(diff[2], "node 2 (Strength for the Ranger, Spirit for the Beastmaster) is in the lane diff")
+	check(next(C2.laneDiff(tree, base, base)) == nil, "the same key changes no node")
+	local baseOf = Chaos.classes.baseOf
+	eq(C2.laneChangeFrom(RANGER, BEAST, CC.keystoneKey, baseOf), base, "recorded Ranger -> Beastmaster: refund from the Ranger lane")
+	eq(C2.laneChangeFrom(BEAST, BEAST, CC.keystoneKey, baseOf), nil, "recorded Beastmaster, still Beastmaster: nothing")
+	eq(C2.laneChangeFrom(-1, BEAST, CC.keystoneKey, baseOf), base, "ascended before the record: refund from the base lane")
+	eq(C2.laneChangeFrom(-1, RANGER, CC.keystoneKey, baseOf), nil, "unascended without a record: nothing, only recorded")
+	eq(C2.laneChangeFrom(nil, DEADEYE, CC.keystoneKey, baseOf), base, "no record at all reads as -1")
+	eq(C2.laneChangeFrom(1, 5, CC.keystoneKey, baseOf), nil, "Mystic -> Elementalist share a key: nothing")
+end
+
 print(string.format("passivetree_paths_test: %d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)

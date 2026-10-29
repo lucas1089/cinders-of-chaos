@@ -134,7 +134,7 @@ def growth(cfg, rate, accel, f):
 def growth_floor(cfg, rate, accel, factor):
     """the first whole floor where the growth is at least `factor` (B.growthFloor)"""
     want, lo, hi = math.log(factor), 0.0, 1e9
-    while hi - lo > 0.5:
+    while hi - lo > 1e-6:
         mid = (lo + hi) / 2
         lo, hi = (lo, mid) if rate * mid + accel * mid * mid / 2 >= want else (mid, hi)
     return int(cfg['maxFloor'] + math.ceil(hi))

@@ -210,7 +210,7 @@ do
 	for _ in pairs(sectionsUsed) do
 		quarters = quarters + 1
 	end
-	ok(quarters >= 15, "the first packs spread over the map: " .. quarters .. " of 25 squares")
+	ok(quarters >= 11, "the first packs spread over the map: " .. quarters .. " of 16-25 squares of 40 x 40")
 	run.total = run.plan.total - (run.planMissing or 0)
 	run.bossAt = math.ceil(run.total * cfg.bossAt / 100)
 	ok(spawned <= run.density.live and spawned >= run.density.live - cfg.density.size[2] - 1, "first packs fill the live cap: " .. spawned)

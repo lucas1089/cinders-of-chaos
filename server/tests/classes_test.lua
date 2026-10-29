@@ -126,6 +126,57 @@ local avg = 1000 * cfg.companion.biteLevel + 140 * cfg.companion.biteSkill
 eq(lo, math.floor(avg * (1 - cfg.companion.spread)), "bite min"); eq(hi, math.floor(avg * (1 + cfg.companion.spread)), "bite max")
 local lo3, hi3 = C.biteValues(300, 110)
 assert(hi3 < hi and lo3 < lo, "bites scale with level and skill")
+-- O306: auto bites on their own constants, the spells' bite untouched
+local alo, ahi = C.autoBiteValues(1000, 140)
+local aavg = 1000 * cfg.companion.autoLevel + 140 * cfg.companion.autoSkill
+eq(alo, math.floor(aavg * (1 - cfg.companion.spread)), "auto bite min"); eq(ahi, math.floor(aavg * (1 + cfg.companion.spread)), "auto bite max")
+assert(ahi > hi, "the companion's own bite is above a spell's bite")
+local blo, bhi = C.autoBiteValues(1000, 140, 1.35)
+assert(bhi > ahi and blo > alo, "Pack Alpha raises the auto bite")
+eq(C.companionLevel(412), 412, "the companion shows its owner's level"); eq(C.companionLevel(0), 1, "at least 1")
+-- a hit on a companion: cfg.taken of it, less with Pack Alpha
+eq(C.companionDamageTaken(1000, 0), math.floor(1000 * cfg.companion.taken + 0.5), "taken share")
+assert(C.companionDamageTaken(1000, 0.25) < C.companionDamageTaken(1000, 0), "Pack Alpha cuts more")
+eq(C.companionDamageTaken(0, 0.25), 0, "no damage")
+eq(C.companionRescale(1000, 500, 2000), 1000, "same share"); eq(C.companionRescale(1000, 1, 10), 1, "at least 1")
+eq(C.companionRescale(0, 0, 700), 700, "no old maximum: full")
+
+-- every path of a companion scales the same (O306 beta report: a wolf was shown at level 12 or 300, the level of the wild
+-- War Wolf or of the hunt it stood in, never its owner's). A mock monster born as the spawn callback leaves it.
+local function mockMonster(shown, maxHp, hp)
+	local m = {shown = shown, maxHp = maxHp, hp = hp}
+	function m:getMaxHealth() return self.maxHp end
+	function m:setMaxHealth(v) self.maxHp = v; self.hp = math.min(self.hp, v) end
+	function m:getHealth() return self.hp end
+	function m:addHealth(_, v) self.hp = math.min(self.maxHp, self.hp + v) end
+	function m:setDisplayLevel(v) self.shown = v end
+	function m:getDisplayLevel() return self.shown end
+	return m
+end
+local function owner(level) return {getLevel = function() return level end} end
+local wild = {{12, 140, 140}, {300, 140, 140}, {12, 6500, 6500}} -- the spawn callback's level (wild, or the hunt's) and health
+for _, w in ipairs(wild) do
+	local o = owner(400)
+	local m = mockMonster(w[1], w[2], w[3])
+	eq(C.syncCompanion(o, m, true), true, "a fresh companion changes")
+	eq(m.shown, 400, "spawn: shown level is the owner's (" .. w[1] .. ")")
+	eq(m.maxHp, C.companionHealth(400), "spawn: maximum health"); eq(m.hp, m.maxHp, "spawn: full health")
+	eq(C.syncCompanion(o, m, false), false, "the tick leaves a synced companion alone")
+	-- the owner levels up: the tick, the call-back (Wild Bond with a companion out) and a login all end in the same state
+	m.hp = m.maxHp / 2
+	o = owner(450)
+	eq(C.syncCompanion(o, m, false), true, "level up: changed")
+	eq(m.shown, 450, "level up: shown level"); eq(m.maxHp, C.companionHealth(450), "level up: maximum health")
+	eq(m.hp, math.floor(C.companionHealth(450) / 2 + 0.5), "level up: the same share of health")
+	local fresh = mockMonster(w[1], w[2], w[3])
+	C.syncCompanion(o, fresh, true)
+	eq(fresh.shown, m.shown, "same shown level on every path"); eq(fresh.maxHp, m.maxHp, "same maximum health on every path")
+end
+local old = mockMonster(nil, 6500, 100) -- an engine without setDisplayLevel: health still scales
+old.setDisplayLevel, old.getDisplayLevel = nil, nil
+C.syncCompanion(owner(100), old, true)
+eq(old.maxHp, C.companionHealth(100), "no display method: health scales")
+
 eq(C.isBerserker(14), true); eq(C.isBeastmaster(15), true); eq(C.isBeastmaster(7), false)
 
 -- ------------------------------------------------------------------ light blades and dual wield

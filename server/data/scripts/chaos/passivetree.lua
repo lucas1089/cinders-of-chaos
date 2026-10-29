@@ -568,9 +568,57 @@ local function refundReworked(player)
 end
 ChaosPassiveTree.refundReworked = refundReworked
 
+-- the class lane of the plain nodes changed (an ascension, a switch between ascended classes, or an ascension made before
+-- this record existed): the nodes that give other stats under the new lane are refunded once, for free, with a message
+-- (O305). Chaos.storage.passiveLane records the vocation id the tree was made under. `live` = the player is in the game.
+local function refundLaneChange(player, live)
+	local key = Chaos.storage.passiveLane
+	local vocation = player:getVocation()
+	if not key or not vocation then
+		return 0
+	end
+	local vocId = vocation:getId()
+	local baseOf = Chaos.classes and Chaos.classes.baseOf
+	local oldKey = Core.laneChangeFrom(player:getStorageValue(key), vocId, ChaosClasses.keystoneKey, baseOf)
+	local total = 0
+	if oldKey then
+		local tree = getTree()
+		local drop = Core.laneDiff(tree, oldKey, ChaosPassiveTree.vocationKey(player))
+		for _, row in ipairs(loadPresets(player:getGuid())) do
+			local kept, removed = Core.dropNodes(tree, row.nodes, drop)
+			if #removed > 0 then
+				savePreset(player:getGuid(), row.preset, row.name, kept, row.masteries)
+				total = total + #removed
+			end
+		end
+		if ChaosLoadouts and ChaosLoadouts.dropNodes then
+			local ok, err = pcall(ChaosLoadouts.dropNodes, player, drop)
+			if not ok then
+				print("[ChaosPassiveTree] lane change in loadouts: " .. tostring(err))
+			end
+		end
+	end
+	player:setStorageValue(key, vocId)
+	if total > 0 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, total == 1 and
+			"Your ascension changed your passive tree to the %s lane: your %d point was refunded for free. Open the tree to spend it, or use Auto build." or
+			"Your ascension changed your passive tree to the %s lane: your %d points were refunded for free. Open the tree to spend them, or use Auto build.",
+			vocation:getName(), total))
+		if live then
+			applyBonuses(player)
+			local rows = loadPresets(player:getGuid())
+			sendNodes(player, rows)
+			sendPoints(player, rows)
+		end
+	end
+	return total
+end
+ChaosPassiveTree.refundLaneChange = refundLaneChange
+
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosPassiveTreeExtended")
 	refundReworked(player)
+	refundLaneChange(player, false)
 	refundForeignNodes(player)
 	noteOverBudget(player)
 	applyBonuses(player)

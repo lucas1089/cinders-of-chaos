@@ -190,6 +190,7 @@ Chaos.storage = {
 	-- the fix (paragon.lua P.grantLegacy), -1 = not yet; the O135 cut wiped allocations through the login refund
 	paragonLegacy = 7102501,
 	paragonConverted = 7102500, -- free passive tree points the character exchanged for Paragon points (paragon.lua, O146); 7102500 - 7102509 reserved
+	passiveLane = 7100029, -- the vocation id whose class lane the saved passive tree was made under, -1 = not recorded (passivetree.lua refundLaneChange, O305)
 	archetypeFlags = 7100024, -- the build archetype keystones held, a bit each (archetypes_config.lua storage)
 	vigils = 7100025, -- the vigils switched on, a bit each (vigils_config.lua storage)
 	snareElement = 7100026, -- the element the snares carry, chosen last (snares_config.lua storage.element)
@@ -1249,12 +1250,18 @@ Chaos.classes = {
 	-- Beastmaster companion: a real monster type (the first of `monsters` that exists), summoned by Wild Bond.
 	-- Health base + perLevel x level; a bite every biteMs on the owner's target when next to it, physical damage
 	-- dealt as the owner: avg = level x biteLevel + distance skill x biteSkill, min/max = avg x (1 -/+ spread).
-	-- Feral Command: every companion leaps to the target and mauls it for mauls x a bite.
+	-- Feral Command: every companion leaps to the target and mauls it for mauls x a bite (biteLevel / biteSkill: the
+	-- spells' bite, unchanged since O160). O306: the companion's own bite every biteMs uses autoLevel / autoSkill (a
+	-- real share of the Beastmaster's damage, tools/companion_model.py), its health is base + perLevel x level (shown
+	-- level and health are set the same way at every spawn and kept in step with the owner's level:
+	-- ChaosClasses.syncCompanion) and a hit on it is x taken (before the Pack Alpha keystone's cut).
 	companion = {
 		monsters = {"War Wolf", "Wolf"},
 		caps = {{level = 0, count = 1}, {level = 400, count = 2}},
-		health = {base = 500, perLevel = 15},
+		health = {base = 800, perLevel = 30},
+		taken = 0.6,
 		biteMs = 2000, biteLevel = 0.12, biteSkill = 0.6, spread = 0.2,
+		autoLevel = 1.1, autoSkill = 2.0,
 		mauls = 1.5,
 		leashRange = 7, -- a companion farther than this from its owner (or on another floor) is brought back
 		thinkMs = 500

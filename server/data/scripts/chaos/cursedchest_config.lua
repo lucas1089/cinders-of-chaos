@@ -83,6 +83,7 @@ return {
 		aliveCap = 30, -- no horde while this many of the event's monsters live (the horde waits)
 		tickMs = 1000,
 		claimSec = 120, -- the open chest waits this long for its party, then crumbles
+		remindSec = 30, -- whoever has not taken a share is reminded this long before it crumbles
 		spreadMin = 2, spreadMax = 5, -- tiles from the chest a horde appears at
 		-- extra monsters per extra player in the party: +this share of the horde (rounded), up to maxPartyScale
 		partyHorde = 0.35, maxPartyScale = 2.0,

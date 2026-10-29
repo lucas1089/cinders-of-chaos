@@ -15631,7 +15631,7 @@ CodexData = {
 						},
 						{
 							h = "The run",
-							p = {"Every rift is a new generated map: a cave system, an open waste, a ruined complex or a cave with ruined chambers, sometimes on two floors, with the guardian's arena in the far corner. Its size follows the key's tier: tiers 1-5 160 x 160 tiles, 16 minutes; tiers 6-10 200 x 200 tiles, 18 minutes; tiers 11-15 240 x 240 tiles, 21 minutes.", "The guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.", "About 132 monsters solo at tier 1 up to 402 at tier 15 on a map of typical size (+25% per extra player; a bigger map holds more), in packs of 5-7 over the whole map; about 102-166 alive at once, the rest gather ahead of you as you advance. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.", "Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."}
+							p = {"Every rift is a new generated map: a cave system, an open waste, a ruined complex or a cave with ruined chambers, sometimes on two floors, with the guardian's arena in the far corner. Its size follows the key's tier: tiers 1-5 144 x 144 tiles, 16 minutes; tiers 6-10 176 x 176 tiles, 18 minutes; tiers 11-15 208 x 208 tiles, 21 minutes.", "The guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.", "About 180 monsters solo at tier 1 up to 498 at tier 15 on a map of typical size (+25% per extra player; a bigger map holds more), in packs of 5-7 over the whole map; about 118-194 alive at once, the rest gather ahead of you as you advance. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.", "Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."}
 						},
 						{
 							h = "Chest (per player)",
@@ -17348,7 +17348,7 @@ CodexData = {
 								{"Berserker", "0%", "4"},
 								{"Ranger", "19% -> 15%", "4"},
 								{"Deadeye", "18% -> 11%", "4"},
-								{"Beastmaster", "9% -> 1%", "4"},
+								{"Beastmaster", "9% -> 2%", "4"},
 								{"Mystic", "0% -> 1%", "4"},
 								{"Illusionist", "3% -> 2%", "4"},
 								{"Thief", "5% -> 0%", "4"},

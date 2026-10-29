@@ -4,7 +4,6 @@ client's spell list and action bar know the same words, levels, mana and cooldow
 usage (from the repo root): python3 -I client/tools/gen_spell_data.py"""
 import os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gen_spell_icons import ICONS
 
 FIRST_ICON = 201  # Chaos cells in the spell icon sheets (client/tools/gen_all_spell_icons.py draws them)
 VOC = {'Mystic': 1, 'Ranger': 3, 'Warrior': 4, 'Elementalist': 5, 'Deadeye': 7, 'Juggernaut': 8, 'Illusionist': 10,
@@ -21,6 +20,86 @@ CLIENT_ONLY_REMOVED = [('exevo gran mort', 'Conjure Wand of Darkness')]
 RETIRED_STOCK = [('utito tempo san', 'Sharpshooter'), ('utamo tempo', 'Protector'), ('utamo tempo san', 'Swift Foot'),
                  ('utevo lux', 'Lantern'), ('utevo gran lux', 'Greater Lantern'), ('utevo vis lux', 'Radiant Lantern')]
 
+KIT_CFG = 'server/data/scripts/chaos/attack_kit_config.lua'
+AREAS_CFG = 'server/data/scripts/chaos/spellbook_areas_config.lua'
+ELEMENT = {'PHYSICALDAMAGE': 'physical', 'FIREDAMAGE': 'fire', 'ICEDAMAGE': 'ice', 'ENERGYDAMAGE': 'energy',
+           'EARTHDAMAGE': 'earth', 'DEATHDAMAGE': 'death', 'HOLYDAMAGE': 'holy', 'DROWNDAMAGE': 'drown'}
+# a stock-style area constant of a spell script -> (shape, size): AREA_CIRCLE3X3 is the 3x3 disc (radius 1), AREA_SQUARE1X1 the
+# 3x3 square around the caster, AREA_BEAMn a line of n tiles
+AREA_SHAPE = re.compile(r'AREA_(CIRCLE|SQUARE|BEAM|WAVE)(\d+)(?:X\d+)?$')
+
+def _lua_rows(path, row_re):
+    """{spell name: {field: value}} of the one-line rows / blocks of a server Lua config (numbers and strings only)"""
+    out = {}
+    text = open(path, encoding='utf-8').read()
+    for m in re.finditer(row_re, text, re.S):
+        block = m.group('body')
+        fields = {}
+        for k, v in re.findall(r'(\w+) = ("[^"]*"|-?[\d.]+)', block):
+            fields[k] = v.strip('"') if v.startswith('"') else float(v)
+        out[m.group('name')] = fields
+    return out
+
+def area_hints():
+    """{spell name: {shape, radius/length/depth/halfWidth, ctype}}: the attack kit (shape, radius, length, ctype) and the
+    Spellbook's area rows (spellbook_areas_config.lua), the same sources server/data/scripts/chaos/spellbook.lua reads"""
+    kit = _lua_rows(KIT_CFG, r'\n\t\t\w+ = \{(?P<body>\s+id = \d+, name = "(?P<name>[^"]+)".*?)\n\t\t\}')
+    rows = _lua_rows(AREAS_CFG, r'\["(?P<name>[^"]+)"\] = \{(?P<body>[^}]*)\}')
+    out = dict(kit)
+    out.update({k: v for k, v in rows.items()})
+    return out
+
+def spell_area(a, script_text, hints):
+    """(shape, size, width) of a spell: shape single | self | circle | around | wave | line, size = radius / length /
+    depth, width = the wave's tiles across; None when the data does not say"""
+    h = hints.get(a['name'])
+    if h and 'shape' in h:
+        shape = h['shape']
+        if shape == 'dot':
+            return 'single', 0, 0
+        if shape in ('circle', 'around'):
+            return shape, int(h.get('radius', 1)), 0
+        if shape == 'line':
+            return 'line', int(h.get('length', 1)), 0
+        if shape == 'wave':
+            return 'wave', int(h.get('depth', 2)), 2 * int(h.get('halfWidth', 1)) + 1
+        if shape == 'single':
+            return 'single', 0, 0
+    m = re.search(r'createCombatArea\((AREA_[A-Z0-9_]+)\)', script_text or '')
+    if m:
+        am = AREA_SHAPE.match(m.group(1))
+        if am:
+            kind, n = am.group(1), int(am.group(2))
+            if kind == 'CIRCLE':
+                return ('circle' if a.get('needtarget') == '1' or a.get('selftarget') != '1' else 'around'), max(1, n // 2), 0
+            if kind == 'SQUARE':
+                return 'around', n, 0
+            return 'line', n, 0  # BEAM / WAVE
+    # a matrix written in the script: 1 hit, 3 the caster / centre (spellbook.lua reads the same)
+    m = re.search(r'createCombatArea\(\{(.*?)\n?\}\s*\)', script_text or '', re.S)
+    rows = [[int(x) for x in r.split(',') if x.strip()] for r in re.findall(r'\{([\d,\s]+)\}', m.group(1))] if m else []
+    if rows and len({len(r) for r in rows}) == 1 and sum(map(sum, rows)) > 3:
+        h, w = len(rows), len(rows[0])
+        if w == 1:
+            return 'line', h - 1, 0
+        if 3 in rows[-1] and h > 1 and 3 not in sum(rows[:-1], []):
+            return 'wave', h - 1, w
+        return ('circle' if a.get('needtarget') == '1' else 'around'), max(h, w) // 2, 0
+    if a.get('needtarget') == '1' or int(a.get('range', '0') or 0) > 0:
+        return 'single', 0, 0
+    if a.get('selftarget') == '1' or a.get('group') != 'attack':
+        return 'self', 0, 0
+    return None
+
+def spell_element(name, script_text, hints):
+    """the element word of a spell: the kit's ctype, else the damage type its script sets (COMBAT_PARAM_TYPE first)"""
+    h = hints.get(name)
+    if h and h.get('ctype') in ELEMENT.values():
+        return h['ctype']
+    text = script_text or ''
+    m = re.search(r'COMBAT_PARAM_TYPE,\s*COMBAT_([A-Z]+DAMAGE)', text) or re.search(r'COMBAT_([A-Z]+DAMAGE)', text)
+    return ELEMENT.get(m.group(1)) if m else None
+
 def quest_numbers():
     """{spell name: 1..3} of the line spell quests' spells (server spellquest_config.lua `spells = {quest 1, 2, 3}` per line)"""
     text = open('server/data/scripts/chaos/spellquest_config.lua', encoding='utf-8').read()
@@ -33,7 +112,9 @@ def quest_numbers():
 def main():
     quests = quest_numbers()
     xml = open('server/data/spells/chaos/spells_chaos.xml', encoding='utf-8').read()
+    from gen_spell_icons import ICONS  # Pillow: imported here so the checks that read VOC run without it
     icon_of = {name: i for i, (name, _, _) in enumerate(ICONS)}
+    hints = area_hints()
     out = ['-- GENERATED by client/tools/gen_spell_data.py from server/data/spells/chaos/spells_chaos.xml. Do not edit.',
            '-- first icon cell: %d (see client/tools/gen_all_spell_icons.py)' % FIRST_ICON, 'ChaosSpellData = {']
     for m in re.finditer(r'<instant ([^>]*)>(.*?)</instant>', xml, re.S):
@@ -51,6 +132,25 @@ def main():
             am = re.search(r'createCombatArea\((AREA_[A-Z0-9_]+)\)', open(script, encoding='utf-8').read())
             if am:
                 directional += ', areaName = "%s"' % am.group(1)
+        # the helper's spell list shows where a spell hits and what it is made of (game_helper/spellinfo_logic.lua): the
+        # area shape (areaShape single | self | circle | around | wave | line; areaSize = radius, length or depth; areaWidth =
+        # tiles across a wave) and the damage element, from the attack kit, the Spellbook's area rows and the spell script
+        try:
+            script_text = open(os.path.join('server', 'data', 'spells', a['script']), encoding='utf-8').read()
+        except OSError:
+            script_text = ''
+        extra = ''
+        area = spell_area(a, script_text, hints)
+        if area:
+            extra += ', areaShape = "%s"' % area[0]
+            if area[1]:
+                extra += ', areaSize = %d' % area[1]
+            if area[2]:
+                extra += ', areaWidth = %d' % area[2]
+        element = spell_element(name, script_text, hints)
+        if element:
+            extra += ', element = "%s"' % element
+        directional += extra
         out.append('  {{ id = {id}, name = "{name}", words = "{words}", level = {level}, mana = {mana}, '
                    'group = {g}, groupCooldown = {gcd}, cooldown = {cd}, premium = {prem}, '
                    'needTarget = {nt}, range = {rng}, vocations = {{ {voc} }}, iconKey = "chaos_{key}", clientId = {cid}{pct}{dr}{qs} }},'.format(

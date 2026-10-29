@@ -371,6 +371,27 @@ end
 -- in the hotbar list, only a paladin summon that does not work"). A spell matches by the server id or the folded id (so
 -- nothing the base listed disappears); an entry the server does not have (notOnServer) never matches.
 -- spell: a SpellInfo entry; vocation: the player's server vocation id; translate: translateVocation (default: the global)
+local chaosIdSet, chaosIdSource = nil, nil
+function F.isChaosSpell(spell)
+  if type(spell) ~= 'table' then
+    return false
+  end
+  if spell.chaos then
+    return true
+  end
+  local data = rawget(_G, 'ChaosSpellData')
+  if type(data) ~= 'table' or not tonumber(spell.id) then
+    return false
+  end
+  if chaosIdSource ~= data then
+    chaosIdSource, chaosIdSet = data, {}
+    for _, c in ipairs(data) do
+      chaosIdSet[tonumber(c.id)] = true
+    end
+  end
+  return chaosIdSet[tonumber(spell.id)] == true
+end
+
 function F.allowsVocation(spell, vocation, translate)
   if type(spell) ~= 'table' or spell.notOnServer then
     return false
@@ -381,6 +402,11 @@ function F.allowsVocation(spell, vocation, translate)
   end
   translate = translate or rawget(_G, 'translateVocation')
   local folded = translate and translate(vocation) or nil
+  -- a Chaos spell lists exact server ids: the fold would hand it to the sibling class that shares the folded id (the
+  -- Beastmaster folds to 7, the Deadeye's id: Final Verdict, Twin Verdict; O307). Only stock entries use the fold.
+  if F.isChaosSpell(spell) then
+    folded = nil
+  end
   for _, v in ipairs(list) do
     if v == vocation or (folded ~= nil and folded ~= 0 and v == folded) then
       return true

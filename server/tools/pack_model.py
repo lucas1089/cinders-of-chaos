@@ -219,7 +219,18 @@ def median_health(mons, L):
 # ------------------------------------------------------------------------------------------------ the model
 def damage(cls, L, kit=True, tune=True):
     """(1-target, 5-target) damage per second at level L; tune=False leaves the identity pass out (minion_model.py
-    applies the class damage factor itself)"""
+    applies the class damage factor itself). The Beastmaster's measured total held the companion's old bites: with the
+    tuning on, companion_model.py replaces them with today's (O306)"""
+    d = _damage(cls, L, kit, tune)
+    if tune and cls == 'Beastmaster':
+        if HERE not in sys.path:
+            sys.path.insert(0, HERE)
+        import companion_model
+        return companion_model.apply(L, d, _damage(cls, L, kit, False))
+    return d
+
+
+def _damage(cls, L, kit=True, tune=True):
     a1, a5, b1, b5 = C4[cls]
     g, t = tuning(cls, L) if tune else (1.0, 1.0)
     if kit and cls in KIT:

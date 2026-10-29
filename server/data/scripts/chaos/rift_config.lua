@@ -76,9 +76,10 @@ return {
 	-- Big generated layouts (2026-10-12, `layout` below): the plan and the live cap grow with the layout's walkable
 	-- tiles, the run's walking is part of the clear time:
 	--   area      count x (walkable / ref) ^ exp, 1 to maxMult (ref = the open floor of the old three-room slot);
-	--             typical layouts (layout.typical): band 1 x1.67, band 2 x1.92, band 3 x2.10. Tier 1 solo 134, tier
-	--             10 292, tier 15 403 (a party of 5 twice that).
-	--   live      + per100 per 100 walkable tiles: about 100 / 130 / 165 alive solo in the three bands, max 260
+	--             typical layouts (layout.typical): band 1 x1.67, band 2 x1.92, band 3 x2.10, but never fewer than
+	--             walkable / tilesPerMonster ({tier 1, tier 15}, O309): tier 1 solo 178, tier 10 ~290, tier 15 498
+	--             (a party of 5 twice that).
+	--   live      + per100 per 100 walkable tiles: about 120 / 150 / 195 alive solo in the three bands, max 260
 	--   reinforce packs come in the section farthest from the players among the unvisited ones up to `window`
 	--             walking steps past the party's progress, at least minDistance sqm from each player (out of
 	--             sight); `visit` = a section counts as reached when a player comes this close to its centre
@@ -87,10 +88,10 @@ return {
 	density = {
 		enabled = true,
 		count = {base = 80, perTier = 8, perExtraPlayer = 0.25},
-		area = {ref = 1081, exp = 0.25, maxMult = 2.5},
+		area = {ref = 1081, exp = 0.25, maxMult = 2.5, tilesPerMonster = {33, 27}},
 		size = {5, 7},
 		spread = 3,
-		live = {base = 60, perExtraPlayer = 10, per100 = 0.5, max = 260},
+		live = {base = 60, perExtraPlayer = 10, per100 = 1.0, max = 260},
 		reinforce = {perTick = 2, minDistance = 16, window = 90, visit = 10},
 		populate = {perStep = 20, stepMs = 100},
 		model = {dps5 = 5240, dps5Exp = 1.35, dps1 = 2600, dps1Exp = 1.1, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
@@ -414,11 +415,13 @@ return {
 		enabled = true,
 		-- side of the square layout by key tier and the run's time limit (seconds): {up to tier, side, limit}. A two
 		-- floor layout has twoFloorScale x the side on each floor (about 1.3x the area of one floor).
-		sizes = {{5, 160, 1000}, {10, 200, 1100}, {15, 240, 1260}},
+		sizes = {{5, 144, 1000}, {10, 176, 1100}, {15, 208, 1260}},
 		-- walkable tiles and walking distance arrival -> arena of a typical layout per band (the mean of 16 layouts
 		-- per band over the four themes, tests/rift_layout_test.lua keeps them honest): the density's model
-		typical = {{walkable = 8500, route = 200}, {walkable = 14800, route = 265}, {walkable = 21200, route = 340}},
-		twoFloorScale = 0.8,
+		typical = {{walkable = 5875, route = 159}, {walkable = 9133, route = 203}, {walkable = 13463, route = 263}},
+		twoFloorScale = 0.72,
+		-- the open waste fills more of its square than a cave: its side x this (tools/rift_layout_model.lua)
+		kindScale = {waste = 0.85},
 		links = 2, -- holes (with a ladder below) per floor change
 		arrivalInset = 10, -- the arrival this many cells from its corner
 		-- the guardian's arena in the opposite corner: a chamber of `radius` (nothing in it within `clear`), in a
@@ -492,6 +495,15 @@ return {
 			["Forsaken Sanctum"] = {minion = "Sanctum Sporeling", brute = "Sanctum Creeper", elite = "Sanctum Blightstone",
 				guardian = "Sanctum Warden"}
 		},
+		-- looks the client pair does not draw: pair 51 retired the outfits 2101, 2102, 2105, 2106, 2109, 2110, 2112, 2113 and
+		-- 2208-2212 as "unused" (the rift looks are set at runtime, so its scan of monster files did not see them), and pairs
+		-- 52-56 keep them blank: a monster in such a look is invisible (tester report 2026-10-29, O309). Until a pair
+		-- restores them (client/MANIFEST.md "Pair 57", prune_pair.py restore), the look plan wears the replacement listed
+		-- here: our own rank variants, painted over the same base (2200 = base 2101, 2203 = 2102, 2204 = 2106, 2201 = 2112,
+		-- 2206 = 2113), or the family's minion look where no variant exists. Delete the entries once the pair has the
+		-- outfits again. tools/ci/check_content.py fails on any look of this block that the pair leaves blank.
+		undrawn = {[2101] = 2200, [2102] = 2203, [2105] = 2104, [2106] = 2204, [2109] = 2108, [2110] = 2108,
+			[2112] = 2201, [2113] = 2206},
 		-- rank variants: our own looks painted over the rank's look (same size, frames and timing; client looks 2200-2207,
 		-- client/tools/sprites/rift_variants.py, art_import/rift_variants.csv, monster_looks/rift_variant_picks.csv). A
 		-- pack monster of a rank listed here wears one of its variants (evenly) with chance variantShare, else the rank's
@@ -522,7 +534,8 @@ return {
 		-- 2208-2212). With bigGuardiansOn a rift guardian (and both Twin Guardians) and an Omen guardian whose own look is
 		-- listed here wear the big look; name, stats, spells and loot stay. bigGuardiansOn: on since 2026-10-13 (pair
 		-- 24 at 407ad9b6 has looks 2208-2212; an older pair draws nothing).
-		bigGuardiansOn = true,
+		-- OFF since 2026-10-29 (O309): 2208-2212 are blank in pairs 51-56 (see `undrawn`); the guardians wear the family look.
+		bigGuardiansOn = false,
 		bigGuardians = {
 			[2103] = 2208, -- Abyssal Sovereign: void spectre, 8-frame walk (was 3 phases)
 			[2107] = 2209, -- Obsidian Colossus: magma golem, 8-frame walk (was 2 phases)

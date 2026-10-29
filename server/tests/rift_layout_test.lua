@@ -41,7 +41,7 @@ for _, th in ipairs(cfg.themes) do
 	end
 end
 for i, row in ipairs(lc.sizes) do
-	ok(row[2] >= 160 and row[2] <= 250, "band " .. i .. " side 160-250")
+	ok(row[2] >= 140 and row[2] <= 250, "band " .. i .. " side 140-250")
 	ok(row[3] >= 600 and row[3] <= 1300, "band " .. i .. " limit 10-21 minutes")
 	if i > 1 then
 		ok(row[1] > lc.sizes[i - 1][1] and row[2] > lc.sizes[i - 1][2], "bands grow with the tier")
@@ -78,6 +78,9 @@ for ti, th in ipairs(cfg.themes) do
 		if #L.floors > 1 then
 			side = math.floor(side * lc.twoFloorScale + 0.5)
 		end
+		if lc.kindScale and lc.kindScale[L.kind] then
+			side = math.floor(side * lc.kindScale[L.kind] + 0.5)
+		end
 		eq(L.side, side, tag .. ": side of the band")
 		ok(#L.floors >= 1 and #L.floors <= 2, tag .. ": one or two floors")
 		-- every tile inside the slot's square and floors
@@ -110,7 +113,7 @@ for ti, th in ipairs(cfg.themes) do
 		end
 		ok(arenaOpen >= 150, tag .. ": an open arena (" .. arenaOpen .. " walkable cells)")
 		-- size: much bigger than the areas of the generated hunts (100 x 80 at most)
-		ok(L.walkable >= 5000, tag .. ": walkable " .. L.walkable)
+		ok(L.walkable >= 4500, tag .. ": walkable " .. L.walkable)
 		-- sections: spread, never in the safe radius or the arena, cells walkable
 		ok(#L.sections >= 40, tag .. ": sections " .. #L.sections)
 		local inSafe, notFloor, cells = 0, 0, 0
@@ -201,7 +204,7 @@ do
 	for _ in pairs(corners) do
 		nc = nc + 1
 	end
-	eq(nc, 4, "the arrival in any of the four corners")
+	ok(nc >= 4 and nc <= 8, "the arrival in any of the four corners (two kinds, two sides): " .. nc)
 end
 
 -- ====================================================================== run helpers

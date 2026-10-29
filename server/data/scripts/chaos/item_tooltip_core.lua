@@ -369,6 +369,86 @@ local function clip(s, n)
 	return s
 end
 
+-- Who may use the item (O307). The engine's vocation string hides an ascended class whose base class is listed, so a
+-- crossbow (Ranger, Deadeye; not the Beastmaster, a bow class) read "rangers" and a Beastmaster did not know why it was
+-- refused ("You don't have the required profession"). The text names the classes of the rule that
+-- server/tools/add_vocations.py applied: a listed base class stands for itself and its ascensions, except the ones the
+-- item kind leaves out (the Beastmaster takes bows and arrows only of the launchers, the Berserker two-handed melee
+-- weapons only and no shield). Names the table does not know ("knights") stay as the engine wrote them.
+T.VOC_FAMILY = {
+	{base = "Ranger", ascended = {"Deadeye", "Beastmaster"}},
+	{base = "Warrior", ascended = {"Juggernaut", "Berserker"}}
+}
+local VOC_PLURAL = {thieves = "Thief", thiefs = "Thief"}
+for _, name in ipairs({"Mystic", "Ranger", "Warrior", "Elementalist", "Deadeye", "Juggernaut", "Illusionist", "Thief",
+	"Ninja", "Samurai", "Berserker", "Beastmaster", "Monk", "Shadowfist", "Iron Sage", "Necromancer", "Lich", "Bone Lord",
+	"Templar", "Inquisitor", "Sentinel"}) do
+	VOC_PLURAL[name:lower() .. "s"] = name
+end
+
+-- does the item kind leave the ascended class out of the base class's list. info = {weaponType, slot, ammoType}
+local function leavesOut(ascended, info)
+	info = info or {}
+	local slot = int(info.slot)
+	local function has(bit)
+		return floor(slot / bit) % 2 == 1
+	end
+	local twoHand = has(2048)
+	local hand = has(16) or has(32) or twoHand
+	local wt = int(info.weaponType)
+	local ammo = int(info.ammoType)
+	local distance = wt == int(WEAPON_DISTANCE or 5)
+	if ascended == "Beastmaster" then
+		-- weapons, hand items and ammunition: bows and arrows only (crossbows, bolts, throwing weapons and shields not)
+		if distance or hand or has(512) then
+			return ammo ~= int(AMMO_ARROW or 2)
+		end
+		return false
+	elseif ascended == "Berserker" then
+		-- weapons and hand items: two-handed swords, axes and clubs only, never a shield
+		local melee = wt == int(WEAPON_SWORD or 1) or wt == int(WEAPON_CLUB or 2) or wt == int(WEAPON_AXE or 3)
+		if melee or hand or distance or wt == int(WEAPON_SHIELD or 4) then
+			return not (melee and twoHand)
+		end
+		return false
+	end
+	return false
+end
+
+function T.vocationText(text, info)
+	local names, seen = {}, {}
+	local function add(n)
+		if not seen[n] then
+			seen[n] = true
+			names[#names + 1] = n
+		end
+	end
+	local known = false
+	for part in (tostring(text):gsub(" and ", ", ")):gmatch("[^,]+") do
+		local raw = part:match("^%s*(.-)%s*$")
+		local name = VOC_PLURAL[raw:lower()]
+		if name then
+			known = true
+			add(name)
+		elseif raw ~= "" then
+			add(raw)
+		end
+	end
+	if not known then
+		return tostring(text)
+	end
+	for _, fam in ipairs(T.VOC_FAMILY) do
+		if seen[fam.base] then
+			for _, a in ipairs(fam.ascended) do
+				if not leavesOut(a, info) then
+					add(a)
+				end
+			end
+		end
+	end
+	return table.concat(names, ", ")
+end
+
 -- the key the client caches a tooltip under: "<item id>:<version>" from item:getClientAttributes() (engine patch
 -- 0003); nil when the item has none (plain items) or the engine lacks the method
 function T.cacheKey(attrs)
@@ -608,7 +688,10 @@ function T.build(item, opts)
 	end
 	local voc = call(it, "getVocationString")
 	if type(voc) == "string" and voc ~= "" then
-		req.voc = clip(voc, 120)
+		req.voc = clip(T.vocationText(voc, {
+			weaponType = int(call(it, "getWeaponType")), slot = int(call(it, "getSlotPosition")),
+			ammoType = int(call(it, "getAmmoType"))
+		}), 120)
 	end
 	if next(req) then
 		tip.req = req
