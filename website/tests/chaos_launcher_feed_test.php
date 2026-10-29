@@ -151,6 +151,8 @@ foreach (array('overlay/.htaccess', 'setup/router.php', 'overlay/plugins/chaos/l
 	check(strpos((string)file_get_contents($repo . '/website/' . $f), 'chaos_launcher_feed') !== false, "wiring: $f names the endpoint");
 }
 check(chaos_clean_url('chaos_launcher_feed.php') === 'chaos_launcher_feed.php', 'the endpoint address is not turned into a clean address');
+$pnIds = array_map(static function (array $n): string { return (string)$n['id']; }, chaos_patchnotes());
+check($pnIds !== array() && !preg_grep('~\.pt-br$~i', $pnIds), 'the Patch Notes page does not list a pt-BR twin as a note: ' . implode(', ', $pnIds));
 check(!$notices, 'no PHP notice: ' . implode(' | ', $notices));
 foreach (glob($dir . '/*') as $f) {
 	@unlink($f);

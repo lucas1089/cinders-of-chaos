@@ -1047,6 +1047,10 @@ function chaos_patchnotes(): array {
 		if (strtolower(substr($name, -3)) !== '.md' || strtolower($name) === 'readme.md' || $name[0] === '_') {
 			continue;
 		}
+		// The pt-BR twin of a note is not a note of its own.
+		if (strtolower(substr($name, -9)) === '.pt-br.md') {
+			continue;
+		}
 		$id = substr($name, 0, -3);
 		if (!chaos_pn_valid_id($id) || !is_file($dir . '/' . $name)) {
 			continue;
