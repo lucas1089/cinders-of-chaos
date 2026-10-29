@@ -73,16 +73,14 @@ client has its own release key, not the key of the admin app.
 
 ### What is not checked
 
-- The vcpkg build of the real libraries. The sandbox proxy refuses GitHub source archives, which vcpkg downloads, so the
-  ports for `arm64-android-chaos` were not built here. Known risks: the vcpkg `luajit` port has no Android branch and
-  relies on the NDK compiler being the cross compiler. The `openal-soft` override 1.23.1 pins an older release than the
-  baseline's 1.24.0. Boost 1.86 may warn about the older `io_service` calls of the engine. Treat the first workflow run
-  as the real test of step 2.
-- The link with the real libraries. The base `Find*.cmake` modules find them by file name in the vcpkg tree. The names
-  in the install are standard, but nobody has run it. OpenAL Soft needs `OpenSLES`, which is in the link list.
+- Nothing on a device yet. The first CI build ran 2026-10-29 (`android-client.yml`, debug key): every vcpkg port
+  built, `libcinders.so` linked against the real libraries, and the APK passed `apksigner`, `zipalign -P 16` and
+  `aapt2`. Two fixes it needed: the triplet passes `ANDROID_ABI=arm64-v8a` (the NDK toolchain fell back to armv7
+  and luajit did not assemble), and the workflow links `include/luajit` to `luajit-2.1`, because the engine
+  includes `<luajit/lua.h>`.
 - Everything at run time. The APK was never installed. LuaJIT on Android, the EGL window, the soft keyboard dialog,
   immersive mode, sound and the network stack are untested.
-- A release signature and the 16 KB alignment of the final library from the real build.
+- A release signature.
 
 ### Still open
 
@@ -375,7 +373,7 @@ Each step lists the result and a rough size. One person, with a phone and a CI r
    (0163 or the next free number): `SHARED` library, `-DANDROID`, `OPENGLES=2.0`, `androidwindow.cpp`,
    `androidplatform.cpp`, `src/android/dependencies.cpp` and the native app glue in, X11, `unixcrashhandler.cpp`,
    `-no-pie` and the `-Wl,-Map` flags out. Result: it configures with the NDK toolchain file. Size: 3 to 4 days.
-2. **Dependencies.** Manifest and triplet written, not built here. vcpkg `arm64-android` or scripts, static libraries, versions pinned, a cache in CI. Result:
+2. **Dependencies.** Done: built in CI 2026-10-29. vcpkg `arm64-android` or scripts, static libraries, versions pinned, a cache in CI. Result:
    `libcinders.so` links. Size: 4 to 6 days. Then add each library to `docs/CREDITS.md` and run `gen_credits.py`.
 3. **Compile fixes.** Done for the engine in 0163. The 147 older patches compiled without change; the compiler found only the four
    problems that 0163 fixes, all in base code. Left from the original list: run time problems that only a device shows.
