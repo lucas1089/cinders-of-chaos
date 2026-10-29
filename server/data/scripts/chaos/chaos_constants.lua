@@ -2222,6 +2222,11 @@ ChaosOpcodes.templarAura = 118
 -- equip, a level, a skill or the passive tree changed; client -> server `get`. 119 is free in the reference server, the base
 -- client's ExtendedIds, every Chaos script and every client module (README "Opcode collision check"). No storage, no table.
 ChaosOpcodes.combatStats = 119
+-- Travel to an NPC (npc_travel.lua, npc_travel_core.lua, npc_travel_config.lua; client game_npctravel; server/README.md "Travel
+-- to an NPC"): the "Go to NPC" button of the panels that front an NPC's service, client -> server `travel {k}`; the answer is a
+-- game message. 121 is free in the reference server, the base client's ExtendedIds, every Chaos script and every client module
+-- (README "Opcode collision check"). No storage, no table.
+ChaosOpcodes.npcTravel = 121
 -- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,

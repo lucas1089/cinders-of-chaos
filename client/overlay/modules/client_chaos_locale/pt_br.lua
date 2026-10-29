@@ -5863,5 +5863,16 @@ ChaosLocaleStrings['pt-BR'] = {
   ["How much of a hit your shield blocks (your weapon without one): (skill / 4 + 2.23) x defence x 0.15, with shielding or the weapon's skill."] = "Quanto de um golpe o seu escudo bloqueia (a arma, sem escudo): (skill / 4 + 2,23) x defesa x 0,15, com o shielding ou o skill da arma.",
   ["The armour of all the pieces you wear. It takes a share of every physical hit; each point adds less than the one before."] = "A armadura de todas as peças que você veste. Ela tira uma parte de cada golpe físico; cada ponto rende menos que o anterior.",
   ["The share of a physical hit from a monster that never lands: your armour, your physical resist from gear and the passive tree, and Damage Taken from Monsters."] = "A parte de um golpe físico de monstro que nunca acerta: sua armadura, a resistência física do equipamento e da árvore passiva, e o modificador Damage Taken from Monsters.",
+  -- Go to NPC (O330, game_npctravel, the buttons of the NPC panels)
+  ["Go to NPC"] = "Ir até o NPC",
+  ["%s is listening: turn in your %s and deliveries here."] = "%s está ouvindo: entregue aqui os seus %s e as entregas.",
+  ["Hand in %s and deliveries to %s. Use Go to NPC to be taken there."] = "Entregue %s e as entregas a %s. Use Ir até o NPC para ser levado até lá.",
+  ["Takes you in front of %s. Not in combat; a short wait between two trips."] = "Leva você até a frente de %s. Não vale em combate; há uma pequena espera entre duas viagens.",
+  ["Takes you in front of Mordecai Ashwager, the Gambler, in the market of the teleport room. Not in combat; a short wait between two trips."] = "Leva você até a frente de Mordecai Ashwager, o Gambler, no mercado da sala de teleportes. Não vale em combate; há uma pequena espera entre duas viagens.",
+  ["Takes you in front of Osric the Chandler, in the market of the teleport room. Not in combat; a short wait between two trips."] = "Leva você até a frente de Osric the Chandler, no mercado da sala de teleportes. Não vale em combate; há uma pequena espera entre duas viagens.",
+  ["Takes you in front of Tavish Coldhand, the stash keeper, in the market of the teleport room. Not in combat; a short wait between two trips."] = "Leva você até a frente de Tavish Coldhand, o guardião do stash, no mercado da sala de teleportes. Não vale em combate; há uma pequena espera entre duas viagens.",
+  ["Takes you in front of Vessa Hollowmark, the pocket boss NPC, in the market of the teleport room. Not in combat; a short wait between two trips."] = "Leva você até a frente de Vessa Hollowmark, a NPC dos pocket bosses, no mercado da sala de teleportes. Não vale em combate; há uma pequena espera entre duas viagens.",
+  ["Takes you in front of the Material Broker, in the market of the teleport room. Not in combat; a short wait between two trips."] = "Leva você até a frente do Material Broker, no mercado da sala de teleportes. Não vale em combate; há uma pequena espera entre duas viagens.",
+  ["You are already next to %s."] = "Você já está ao lado de %s.",
 }
 return ChaosLocaleStrings['pt-BR']

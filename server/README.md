@@ -46,6 +46,7 @@ server/
     monk_chi_core.lua  monk_combat.lua             the Monk line: ids, numbers, chi; unarmed combat, evasion, focus, stun
     templar_aura_core.lua  templar_combat.lua      the Templar line: ids, numbers, rules; the aura, Radiant Strikes
     combat_stats_core.lua  combat_stats.lua        the combat stat rows of the client's Skills window (opcode 119)
+    npc_travel_core.lua  npc_travel.lua  npc_travel_config.lua   Go to NPC: the teleport button of the NPC panels (opcode 121)
     class_unlocks_core.lua  class_unlocks.lua      the class lock (store unlock per account; sql/chaos_class_unlocks.sql)
     ascension_quest.lua  ascension_quest_core.lua  ascension_quest_config.lua
                                                    the ascension quest (the Oracle's stages, the Trial, ChaosAscension.ascend)
@@ -672,6 +673,7 @@ collision check") and be added here.
 | 117 | `weeklyChest` | `weeklychest.lua`, `weeklychest_core.lua` | `game_weeklychest` | client -> server `open` / `close` / `get`, server -> client `state {open?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}` (see "The Weekly Chest (O261)") |
 | 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)") |
 | 119 | `combatStats` | `combat_stats.lua`, `combat_stats_core.lua` | `game_skillstats` | client -> server `get`; server -> client `stats {damage?, attack?, defense, armor, mitigation}` (mitigation a share 0 .. 1), at login, after an equip, a level or skill advance or a passive tree change, only when a number changed (see "Combat stat rows of the Skills window") |
+| 121 | `npcTravel` | `npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua` | `game_npctravel` | client -> server `travel {k}` (a key of `npc_travel_config.lua` `npcs`); the answer is a game message (status line, or the reason as a cancel message), see "Travel to an NPC (O330)" |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -822,7 +824,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -26743,3 +26745,60 @@ Value 0, Defence Value 0, Armor Value 0, Mantra Value 0 and Mitigation +0% whate
 - **Tests.** `tests/combat_stats_test.lua` (opcode uniqueness, the pure rules, the glue against a mocked player: weapon, shield,
   armour, tree factor, wand, bare hands, when a message goes out); client `skillstatsview_test.lua`, `skillstats_glue_test.lua`.
   Not checked in a live client or on a live server.
+
+## Travel to an NPC (O330) (`npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua`, client `game_npctravel`)
+
+Tester feedback 2026-10-29: new players cannot find the NPCs. One of them never found a faction NPC, picked up faction
+tokens in the Rift, could not hand them in and threw them away; he asked for a button in the faction window that takes
+him in front of the NPC, "like the Pocket Boss panel already teleports". Every panel that shows an NPC's service but
+cannot do it alone now has a **Go to NPC** button.
+
+- **One helper, one line per panel.** Opcode **121** (`ChaosOpcodes.npcTravel`), client -> server `travel {k}`. The key
+  names an entry of `npc_travel_config.lua` `npcs` (19 NPCs: the hub's service and progression NPCs, the four faction
+  NPCs). A panel adds `@onClick: modules.game_npctravel.travel('<key>')` to a button of its `.otui`; the key list is
+  `npctravellogic.lua` `KEYS` (the test holds it equal to the config). The answer is an ordinary game message, so no
+  panel needs a handler. No storage key, no table; the cooldown is in memory.
+- **Where the NPC is (never typed in).** `T.locate` / `K.resolve`, in this order: (1) the live NPC (`Creature(name)`, any
+  town); (2) its stall in the hub (`npc_booths_config.lua`), with the carpet tile in front of it worked out from
+  `hub.walkY` (north row: the tile two south, south row: two north: players talk across the counter); (3) an optional
+  `pos` of the entry (none set); (4) the temple of its `townId` (`Town(id):getTemplePosition()`, the same temples as
+  `data/chaos_poi.lua`). With none of them the player reads "X is not at their post right now" and the server logs the key.
+  The landing tile is the best free standable tile within `maxRing` 2 of the NPC (`K.candidates`: for a stall by the distance to
+  the carpet, otherwise the nearest ring first, then toward the temple; no house, wall, field, stairs or creature).
+  Every service range is 3 or more (Osric 3, Gambler / Iselde / Material Broker 4, factions 6), so the landing tile is in range.
+- **Safety, the rules of the Town Portal and the Pocket Boss.** Refused: the tutorial island, an arena match, the world boss
+  arena, a guild siege, a rift, a dungeon, the Infinity Tower, a hideout, the Scorched Marches, any other registered instance
+  (`Chaos.inAnyInstance`, same facts as `townportal.lua`, which now exports `T.blockFacts`), while the Town Portal channels, in
+  combat (pz lock or `CONDITION_INFIGHT`, as `pocketboss.lua` `inCombat`), with a skull. A **30 second cooldown** after a journey
+  (`cooldownSeconds`; a refusal never starts it), a request limit of one a second per player (`ChaosRateLimit`), and no journey
+  (and no cooldown) when the player stands within 2 tiles of the NPC already. Unlike the Pocket Boss it needs no protection zone:
+  the point is to get a player out of the wild to the NPC. All texts have pt-BR (`i18n_strings.lua`).
+- **Panels with the button (6):** Factions (per faction, in the detail next to Turn in: key `faction_<key>`), the Gambler
+  (`gambler`), the Supply Stash (`stash`), Boss Spawns (`pocketboss`: the pocket boss NPC), Candlemarks (`candlemarks`:
+  Osric, buying needs him within 3 tiles) and Professions (`materials`: selling needs the Material Broker within 4). The config
+  also lists the banker, house broker, services clerk, Conquest vendor, Loot Buyer, Keeper of Trials, Ascendant Oracle, both
+  Archivists and the Apothecary for the next panel. Not given a button on purpose: the Bank (works from the panel), Conquest
+  (buying works in any protection zone, "or next to Iselde Varrow"), the Auto Seller (sells from anywhere), the Info & Services
+  pages.
+- **Factions: what was wrong.** The four faction NPCs are placed at startup by `factions.lua` `F.placeNpcs`: Warden Ysolde in
+  Cinderhold (a stall of the hub, `npc_booths_config.lua`), Forgemaster Brannoc next to the temple of Mirewake (town 1),
+  Cantor Velith next to the temple of Bellwatch (town 11), Elder Bramwyn next to the temple of Thornmere (town 4). The repo
+  has no placement bug: the XML, the script and the install (`install_factions.py`, step `factions`) are in place, and the test
+  now checks that the names, towns and stalls of `npc_travel_config.lua` equal `factions_config.lua`, that every NPC has its XML and
+  script, and that every town has a temple in `data/chaos_poi.lua` (the town ids and names of `tools/base_towns.csv`). What was
+  wrong for a player: three of the four NPCs stand in other towns, the window only said "Find <name>", nothing said which
+  town, and the tokens (which drop from rift seals, invasion rewards, world bosses and monsters) can only be turned in
+  next to the NPC (`factions.lua` `needNpc`, `npcRange` 6). The window now has a line "Hand in <tokens> and deliveries to
+  <NPC, place>. Use Go to NPC to be taken there." (the place text is `row.at` in the payload, from `T.where`) and the
+  button. Not verified on a running server: that the startup placement found a free tile in Mirewake, Bellwatch and
+  Thornmere (the server log says "could not place <name>" when it did not); with the NPC missing the button takes the
+  player to the town's temple and says so.
+- **After a server update.** Reload the scripts (or restart) for the server side, and update the client (a new module
+  `game_npctravel` and changed `.otui` files). No install step, no SQL, no engine patch. A player who threw tokens away does not get them back.
+- **Tests.** `tests/npc_travel_test.lua` (config against the hub stalls, the factions, the temples, the XML files; the client key
+  list; pt-BR; resolve, tiles, refusals, cooldown; the glue on a mocked engine), `game_npctravel/npctravellogic_test.lua`,
+  `game_factions/factionsview_test.lua` (the hand-in line and the button).
+- **Not done / risks.** The landing tile is chosen from the tiles around the NPC and is not checked for a path to it (a tile behind
+  a wall is possible in a town whose NPC stands next to a building; the first choice is the side of the temple). The 30 seconds
+  and the no-protection-zone rule are a proposal: a free trip to the hub from anywhere out of combat competes with the Town
+  Portal (its own cooldown and cast); raise `cooldownSeconds` or add a cast if that matters.

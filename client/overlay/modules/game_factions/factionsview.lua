@@ -138,6 +138,23 @@ function V.tokenButton(f, cap)
   return true, tr('Give every %s to %s.', f.tn or 'token', f.npc or tr('the NPC'))
 end
 
+-- the line under the token row: where to hand tokens and deliveries in. f.at is the server's place text ("Warden Ysolde, in
+-- the market of the teleport room in Cinderhold", in the player's language); without it the NPC's name
+function V.handInText(f)
+  if not f then return '' end
+  if f.near then
+    return tr('%s is listening: turn in your %s and deliveries here.', f.npc or tr('the faction NPC'), f.tn or 'tokens')
+  end
+  return tr('Hand in %s and deliveries to %s. Use Go to NPC to be taken there.', f.tn or 'tokens', f.at or f.npc or tr('the faction NPC'))
+end
+
+-- the Go to NPC button: enabled, tooltip
+function V.goButton(f)
+  if not f then return false, '' end
+  if f.near then return false, tr('You are already next to %s.', f.npc or tr('the faction NPC')) end
+  return true, tr('Takes you in front of %s. Not in combat; a short wait between two trips.', f.npc or tr('the faction NPC'))
+end
+
 -- contracts of one faction: daily first, open ones first, then by key
 function V.contractsFor(data, key)
   local out = {}

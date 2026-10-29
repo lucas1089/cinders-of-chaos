@@ -169,8 +169,11 @@ local function renderDetail()
   local enabled, tip = V.tokenButton(f, data.weekCap)
   d.turnInButton:setEnabled(enabled)
   d.turnInButton:setTooltip(tip)
-  d.npcLabel:setText(f.near and tr('%s is listening', f.npc or '') or tr('Find %s', f.npc or ''))
-  d.npcLabel:setColor(f.near and '#6fd86f' or '#8c8070')
+  d.handInLabel:setText(V.handInText(f))
+  d.handInLabel:setColor(f.near and '#6fd86f' or '#d6c9ae')
+  local goOn, goTip = V.goButton(f)
+  d.goNpcButton:setEnabled(goOn)
+  d.goNpcButton:setTooltip(goTip)
   renderList(f)
 end
 
@@ -237,6 +240,12 @@ end
 
 function turnIn()
   if selected then send('turnin', { f = selected }) end
+end
+
+-- the Go to NPC button: teleports in front of the shown faction's NPC (server npc_travel.lua, key "faction_<key>")
+function goToNpc()
+  local nt = modules.game_npctravel
+  if selected and nt and nt.travel then nt.travel('faction_' .. selected) end
 end
 
 -- for other modules and tests: load a payload as if the server had sent it

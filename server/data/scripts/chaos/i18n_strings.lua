@@ -8455,5 +8455,63 @@ return {
 		["Danger: much stronger monsters ahead (level %d+)."] = "Perigo: monstros muito mais fortes adiante (nível %d+).",
 		["Caution: you are in an area of level %d+. Its monsters are much stronger."] =
 			"Cuidado: você está numa área de nível %d+. Os monstros daqui são muito mais fortes.",
+		-- Travel to an NPC (O330, npc_travel.lua, npc_travel_core.lua, npc_travel_config.lua)
+		["Travel to an NPC is switched off."] = "A viagem até um NPC está desligada.",
+		["Finish opening your portal first."] = "Termine de abrir o seu portal primeiro.",
+		["You can travel to an NPC again in 1 second."] = "Você poderá viajar até um NPC de novo em 1 segundo.",
+		["You can travel to an NPC again in %d seconds."] = "Você poderá viajar até um NPC de novo em %d segundos.",
+		["Finish or skip the tutorial first: the NPCs of the city wait for you after the island."] =
+			"Termine ou pule o tutorial primeiro: os NPCs da cidade esperam por você depois da ilha.",
+		["You cannot travel to an NPC from %s: leave through its own exit."] =
+			"Você não pode viajar até um NPC a partir de %s: saia pela saída própria.",
+		["an arena match"] = "uma partida de arena",
+		["a guild siege"] = "um cerco de guilda",
+		["your hideout"] = "o seu esconderijo",
+		["the Scorched Marches"] = "as Scorched Marches",
+		["You cannot travel to an NPC while you are in combat."] = "Você não pode viajar até um NPC em combate.",
+		["You cannot travel to an NPC while you carry a skull."] = "Você não pode viajar até um NPC com uma caveira.",
+		["That place is not on the map."] = "Esse lugar não está no mapa.",
+		["%s is not at their post right now."] = "%s não está no seu posto agora.",
+		["You are already next to %s."] = "Você já está ao lado de %s.",
+		["There is no free spot in front of %s right now. Try again in a moment."] =
+			"Não há lugar livre diante de %s agora. Tente de novo em instantes.",
+		["%s was not found: you stand at the temple of the town."] =
+			"%s não foi encontrado: você está no templo da cidade.",
+		["You stand before %s."] = "Você está diante de %s.",
+		["Tavish Coldhand, the stash keeper, in the market of the teleport room in Cinderhold"] =
+			"Tavish Coldhand, o guardião do stash, no mercado da sala de teleportes de Cinderhold",
+		["Vessa Hollowmark, the pocket boss NPC, in the market of the teleport room in Cinderhold"] =
+			"Vessa Hollowmark, a NPC dos pocket bosses, no mercado da sala de teleportes de Cinderhold",
+		["Cassian Auric, the banker, in the market of the teleport room in Cinderhold"] =
+			"Cassian Auric, o banqueiro, no mercado da sala de teleportes de Cinderhold",
+		["Halvard Deedkeeper, the house broker, in the market of the teleport room in Cinderhold"] =
+			"Halvard Deedkeeper, o corretor de casas, no mercado da sala de teleportes de Cinderhold",
+		["Pell Ashmere, the services clerk, in the market of the teleport room in Cinderhold"] =
+			"Pell Ashmere, o atendente de serviços, no mercado da sala de teleportes de Cinderhold",
+		["Mordecai Ashwager, the Gambler, in the market of the teleport room in Cinderhold"] =
+			"Mordecai Ashwager, o Gambler, no mercado da sala de teleportes de Cinderhold",
+		["Iselde Varrow, the Conquest vendor, in the market of the teleport room in Cinderhold"] =
+			"Iselde Varrow, a vendedora de Conquest, no mercado da sala de teleportes de Cinderhold",
+		["Osric the Chandler, in the market of the teleport room in Cinderhold"] =
+			"Osric the Chandler, no mercado da sala de teleportes de Cinderhold",
+		["the Material Broker, in the market of the teleport room in Cinderhold"] =
+			"o Material Broker, no mercado da sala de teleportes de Cinderhold",
+		["the Loot Buyer, in the market of the teleport room in Cinderhold"] =
+			"o Loot Buyer, no mercado da sala de teleportes de Cinderhold",
+		["the Keeper of Trials, in the market of the teleport room in Cinderhold"] =
+			"o Keeper of Trials, no mercado da sala de teleportes de Cinderhold",
+		["the Ascendant Oracle, in the market of the teleport room in Cinderhold"] =
+			"o Ascendant Oracle, no mercado da sala de teleportes de Cinderhold",
+		["Archivist Maelis, in the market of the teleport room in Cinderhold"] =
+			"Archivist Maelis, no mercado da sala de teleportes de Cinderhold",
+		["Archivist Odrenna, in the market of the teleport room in Cinderhold"] =
+			"Archivist Odrenna, no mercado da sala de teleportes de Cinderhold",
+		["Veyra the Apothecary, in the market of the teleport room in Cinderhold"] =
+			"Veyra the Apothecary, no mercado da sala de teleportes de Cinderhold",
+		["Warden Ysolde, in the market of the teleport room in Cinderhold"] =
+			"Warden Ysolde, no mercado da sala de teleportes de Cinderhold",
+		["Forgemaster Brannoc, next to the temple of Mirewake"] = "Forgemaster Brannoc, ao lado do templo de Mirewake",
+		["Cantor Velith, next to the temple of Bellwatch"] = "Cantor Velith, ao lado do templo de Bellwatch",
+		["Elder Bramwyn, next to the temple of Thornmere"] = "Elder Bramwyn, ao lado do templo de Thornmere",
 	},
 }
