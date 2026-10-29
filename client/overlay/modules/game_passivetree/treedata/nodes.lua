@@ -12478,7 +12478,7 @@ function getTreeNodes()
 					ksPackAlpha = 1
 				},
 				stats = {
-					"Your companions' bites and Feral Command deal",
+					"Your companions' bites and wolf spells deal",
 					"+35% damage, and companions take 20% less."
 				}
 			},

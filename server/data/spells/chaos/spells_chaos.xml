@@ -596,7 +596,15 @@
 	<instant group="attack" spellid="146" name="Glacial Doom" words="drai hyr infr doma" level="420" mana="1650" premium="0" selftarget="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/glacial_doom.lua">
 		<vocation name="Elementalist" />
 	</instant>
-	<instant group="attack" spellid="147" name="Pack Frenzy" words="kah ferh vas" level="320" mana="270" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/pack_frenzy.lua">
+	<instant group="attack" spellid="147" name="Pack Frenzy" words="kah ferh vas" level="320" mana="270" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/pack_frenzy.lua">
+		<vocation name="Beastmaster" />
+	</instant>
+	<!-- O332: the Beastmaster's wolf area spells, in place of Arrowstorm and Gale Volley (ids 35 and 39 of the spell id pool,
+	     data/scripts/chaos/spell_id_pool_config.lua spare). Cast: chaos/_wolves.lua; numbers: Chaos.classes.companion.spells. -->
+	<instant group="attack" spellid="35" name="Pack Howl" words="drai ferh ulv" level="220" mana="160" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/pack_howl.lua">
+		<vocation name="Beastmaster" />
+	</instant>
+	<instant group="attack" spellid="39" name="Rending Pounce" words="kah ferh rax" level="240" mana="200" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/rending_pounce.lua">
 		<vocation name="Beastmaster" />
 	</instant>
 	<instant group="attack" spellid="164" name="Shuriken Tempest" words="kah sai vas hyr" level="270" mana="360" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shuriken_tempest.lua">
@@ -620,7 +628,6 @@
 	<instant group="attack" spellid="134" name="Gale Volley" words="ruan vert" level="240" mana="110" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/paladin/gale_volley.lua">
 		<vocation name="Ranger" />
 		<vocation name="Deadeye" />
-		<vocation name="Beastmaster" />
 	</instant>
 <!-- BEGIN attack kit (owner 2026-10-23: every class has the same number of attack spells; numbers: data/scripts/chaos/attack_kit_config.lua) -->
 	<instant group="attack" spellid="2" name="Gorehook" words="kah sang hrak" level="130" mana="45" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/knight/gorehook.lua">
@@ -639,9 +646,8 @@
 	</instant>
 	<instant group="attack" spellid="22" name="Arrowstorm" words="drai sag vex" level="220" mana="85" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/paladin/arrowstorm.lua">
 		<vocation name="Ranger" />
-		<vocation name="Beastmaster" />
 	</instant>
-	<instant group="attack" spellid="23" name="Packhunter's Dart" words="kah ferh sag" level="140" mana="50" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/packhunters_dart.lua">
+	<instant group="attack" spellid="23" name="Packhunter's Dart" words="kah ferh sag" level="140" mana="50" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/packhunters_dart.lua">
 		<vocation name="Beastmaster" />
 	</instant>
 	<instant group="attack" spellid="24" name="Phantom Needles" words="kah mynd sag" level="130" mana="275" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/phantom_needles.lua">

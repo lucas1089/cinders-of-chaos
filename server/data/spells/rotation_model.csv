@@ -87,7 +87,7 @@ drai skai hrun,Skyfall Cleave,"avg(l+P*0.06+20,l+P*0.105+40)",5,,chaos/berserker
 kah nyx putr,Soul Rot,"6*avg(l+ML*1.2+20,l+ML*1.6+40)*1.15",1.5,,necro_config soulRot (6 ticks; jumps)
 kah mynd dhun,Pressure Points,"avg(l+P*0.05+20,l+P*0.08+40)",1,keep;chi1,ChaosMonk.formula.pressurePoints (+1 chi; +5% per stack)
 kah mynd frak,Shattered Psyche,"avg(l+ML*5.7+55,l+ML*9.7+100)*1.4+5*(ML*0.3+4)",1,,chaos/illusionist/mind_fracture.lua (+ curse)
-kah ferh,Feral Command,1.5*BITE*PETS,1,,Chaos.classes.companion (1.5 bites per companion)
+kah ferh,Feral Command,1.5*BITE*PETS*WOLF,1,,Chaos.classes.companion.spells.feral (1.5 mauls per companion; WOLF = the owner's wolf factor)
 kah gal kaen,Iaijutsu,"avg(l+P*0.20+60,l+P*0.30+120)",1,,chaos/samurai/iaijutsu.lua
 kah brak dhun,Iron Palm,"avg(l+P*0.12+40,l+P*0.18+80)",1,chi,ChaosMonk.formula.ironPalm (finisher)
 drai gal sol orr,Purging Nova,"avg(l+P*0.08+ML*1.0+20,l+P*0.13+ML*1.5+40)",5,,chaos/inquisitor/purging_nova.lua
@@ -120,7 +120,7 @@ kah gal brak thun,Anvil Fall,"avg(l+P*0.085+40,l+P*0.15+80)",5,,chaos/knight/anv
 kah gal sol judh vael,Twin Verdict,"2*1.3*avg(L+P*0.143+ML*3+60,L+P*0.234+ML*5+110)",1,,chaos/paladin/twin_verdict.lua (2 strikes x1.3)
 drai skai hrun vas,Rampage Leap,"avg(l+P*0.095+40,l+P*0.165+80)",5,,chaos/berserker/rampage_leap.lua (5x5 square)
 drai hyr infr doma,Glacial Doom,"3*avg(l+ML*3.5+80,l+ML*6.5+160)*1.9",5,,chaos/sorcerer/glacial_doom.lua (3 waves)
-kah ferh vas,Pack Frenzy,3.3*BITE*PETS,1,,Chaos.classes.companion (1.5 bites x2.2 per companion)
+kah ferh vas,Pack Frenzy,3.3*BITE*PETS*WOLF,1,,Chaos.classes.companion.spells.frenzy (3.3 mauls per companion)
 kah sai vas hyr,Shuriken Tempest,"2*1.1*avg(l+P*0.05+20,l+P*0.08+40)",9,,chaos/ninja/shuriken_tempest.lua (target + 8, 2 strikes x1.1)
 kah sang hrak,Gorehook,"5*avg(l+P*0.0199+8,l+P*0.0318+16)",1,,chaos/knight/gorehook.lua (attack_kit_config.lua gorehook: dot)
 kah rhim brak,Rift Cleaver,"avg(l+P*0.1271+20,l+P*0.2034+40)",2,,chaos/knight/rift_cleaver.lua (attack_kit_config.lua riftcleaver: line)
@@ -180,3 +180,5 @@ drai ecl zhul vorn,Eclipse of Ruin,"6.4*avg(l+ML*3.5+80,l+ML*6.5+160)",5,ultimat
 drai oss mor kyng,Funeral of Kings,"2*avg(l+ML*15.85+20,l+ML*25.36+40)",5,ultimate,chaos/necromancer/funeral_of_kings.lua (attack_kit_config.lua funeralofkings: circle; Splinter Volley x 3.5 cut to scale 2; level 1200 line quest ultimate)
 kah nin dhun sol,Heaven's Ninth Gate,"2.5*avg(l+P*0.3086+20,l+P*0.4938+40)",1,chi;ultimate,chaos/monk/heavens_ninth_gate.lua (attack_kit_config.lua heavensninthgate: single; Skysplitter Fist x 3.5 cut to scale 2.5; level 1200 line quest ultimate)
 kah sol emb hamr,Hammer of Ember Dawn,"2*avg(l+P*0.3565+ML*0.5+20,l+P*0.5704+ML*0.8+40)",3,ultimate,chaos/templar/hammer_of_ember_dawn.lua (attack_kit_config.lua hammerofemberdawn: circle; Sanctum Verdict x 3.5 cut to 2 on the target (scale 1, main 2), half on the others; level 1200 line quest ultimate)
+drai ferh ulv,Pack Howl,3*BITE*PETS*WOLF,5,,chaos/beastmaster/pack_howl.lua (Chaos.classes.companion.spells.howl: 3 mauls per companion on every monster within 2 sqm of the target)
+kah ferh rax,Rending Pounce,2.5*BITE*PETS*WOLF,3,,chaos/beastmaster/rending_pounce.lua (Chaos.classes.companion.spells.pounce: 2.5 mauls per companion on every monster within 1 sqm of the target)

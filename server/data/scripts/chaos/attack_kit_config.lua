@@ -35,7 +35,7 @@ ChaosAttackKit.cfg = {
 		},
 		arrowstorm = {
 			id = 22, name = "Arrowstorm", words = "drai sag vex", level = 220, mana = 85,
-			vocations = {"Ranger", "Beastmaster"}, school = "distance", power = "distance", ctype = "physical",
+			vocations = {"Ranger"}, school = "distance", power = "distance", ctype = "physical",
 			pMin = 0.0669, pMax = 0.107, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "circle",
 			range = 7, radius = 2, shot = "gale_arrow", fx = "crit_burst"
 		},
@@ -248,7 +248,7 @@ ChaosAttackKit.cfg = {
 		},
 		galevolley = {
 			id = 134, name = "Gale Volley", words = "ruan vert", level = 240, mana = 110,
-			vocations = {"Ranger", "Deadeye", "Beastmaster"}, school = "distance", power = "distance", ctype = "physical",
+			vocations = {"Ranger", "Deadeye"}, school = "distance", power = "distance", ctype = "physical",
 			pMin = 0.1352, pMax = 0.2163, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "line", range = 6,
 			length = 6, shot = "gale_arrow", fx = "crit_burst"
 		},

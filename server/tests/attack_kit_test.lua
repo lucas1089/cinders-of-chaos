@@ -56,13 +56,13 @@ for _, k in ipairs(keys) do ok(ordered[k], k .. " is in the order") end
 -- every class line gets what it needs: the per-vocation kit counts
 -- (+1 everywhere since the level 500 line quest spells, phase 2 of the line spell quests, and +1 again with the level 1200
 -- ultimates, phase 3)
-local COUNT = {Warrior = 5, Juggernaut = 5, Berserker = 4, Ranger = 5, Deadeye = 4, Beastmaster = 6, Illusionist = 6,
+local COUNT = {Warrior = 5, Juggernaut = 5, Berserker = 4, Ranger = 5, Deadeye = 4, Beastmaster = 4, Illusionist = 6,
 	Mystic = 3, Elementalist = 3, Thief = 8, Ninja = 6, Samurai = 7, Monk = 9, Shadowfist = 6, ["Iron Sage"] = 7,
 	Necromancer = 9, Lich = 8, ["Bone Lord"] = 10, Templar = 10, Inquisitor = 9, Sentinel = 10}
-do -- 140 class slots: the shortfall to 13 attack spells per class (docs/CLASSES.md "Attack spell parity")
+do -- 138 class slots (O332: the Beastmaster has Pack Howl and Rending Pounce of its own, two kit slots fewer): the shortfall to 13 attack spells per class (docs/CLASSES.md "Attack spell parity")
 	local total = 0
 	for _, v in pairs(COUNT) do total = total + v end
-	eq(total, 140, "the kit fills 140 class slots")
+	eq(total, 138, "the kit fills 138 class slots")
 end
 local byVoc = K.byVocation(cfg)
 for voc, want in pairs(COUNT) do

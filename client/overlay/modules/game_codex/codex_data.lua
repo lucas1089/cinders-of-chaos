@@ -17348,7 +17348,7 @@ CodexData = {
 								{"Berserker", "0%", "4"},
 								{"Ranger", "19% -> 15%", "4"},
 								{"Deadeye", "18% -> 11%", "4"},
-								{"Beastmaster", "9% -> 2%", "4"},
+								{"Beastmaster", "9% -> 0%", "4"},
 								{"Mystic", "0% -> 1%", "4"},
 								{"Illusionist", "3% -> 2%", "4"},
 								{"Thief", "5% -> 0%", "4"},

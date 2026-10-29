@@ -38,7 +38,8 @@ F.STOCK = {
   -- they have no fix now: the removed-spell rule keeps their entries off the Chaos ids.
   ["saen tin brak"] = { id = 175 },                                 -- Salve of Scars (170)
   ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3, mana = 95 }, exhaustion = 9000 }, -- Radiant Shard (258)
-  ["drai zar nyx"] = { id = 35, level = 300, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Lance of the Grave (260)
+  -- Lance of the Grave (client 260, server 35) is retired by the cap (patch_spell_cap.py CAP) and its id 35 is the Chaos spell
+  -- Pack Howl's since O332: no fix, the removed-spell rule keeps its entry off the Chaos id (as with Bog Splatter above).
   ["kah rek sang"] = { id = 37, level = 300, mana = 25, range = 7, vocations = { 4, 8, 14 }, exhaustion = 13000 }, -- Headsman's Hurl (261)
   ["drai orr hyr"] = { id = 40, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Shatterfrost (263/262)
   ["drai orr gor"] = { id = 41, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Quakeburst (262/263)

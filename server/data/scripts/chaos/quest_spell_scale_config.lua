@@ -14,8 +14,8 @@
 ChaosQuestSpellScale = {
 	["Keepfall"] = {["Warrior"] = 0.95, ["Juggernaut"] = 0.89, ["Berserker"] = 0.98},
 	["Judgment of Iron"] = {["Warrior"] = 0.86, ["Juggernaut"] = 0.84, ["Berserker"] = 0.85},
-	["Moonshard Rain"] = {["Ranger"] = 0.77, ["Deadeye"] = 0.75, ["Beastmaster"] = {{500, 0.77}, {800, 0.67}, {1000, 0.63}, {1200, 0.58}}},
-	["Dawnbreaker Shot"] = {["Ranger"] = 0.78, ["Deadeye"] = 1.08, ["Beastmaster"] = 0.39},
+	["Moonshard Rain"] = {["Ranger"] = 0.77, ["Deadeye"] = 0.75, ["Beastmaster"] = {{500, 0.70}, {800, 0.61}, {1000, 0.57}, {1200, 0.54}}},
+	["Dawnbreaker Shot"] = {["Ranger"] = 0.78, ["Deadeye"] = 1.08, ["Beastmaster"] = 0.43},
 	["Prismatic Rupture"] = {["Mystic"] = 0.89, ["Elementalist"] = 1.06, ["Illusionist"] = 1.18},
 	["Eclipse of Ruin"] = {["Mystic"] = 0.78, ["Elementalist"] = 1.29, ["Illusionist"] = 0.87},
 	["Eclipse Edge"] = {["Thief"] = 1.37, ["Ninja"] = 0.58, ["Samurai"] = 0.83},

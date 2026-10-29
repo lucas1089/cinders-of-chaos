@@ -380,6 +380,11 @@ local function applyAll(player, bonuses)
 	if find then
 		player:setStorageValue(find, ChaosPassiveItemFind(bonuses))
 	end
+	-- the Trials' minion damage (percent) for the wolf spells (O332, ChaosClasses.wolfFactor: another Lua state)
+	local wolves = Chaos and Chaos.classes and Chaos.classes.companion and Chaos.classes.companion.minionStorage
+	if wolves then
+		player:setStorageValue(wolves, math.max(0, math.floor(bonuses.dealMinion or 0)))
+	end
 	applyCharStats(player, bonuses)
 	if ChaosItemMods and ChaosItemMods.setPlayerAttackSpeed then
 		ChaosItemMods.setPlayerAttackSpeed(player, "tree", ChaosPassiveAttackSpeed(bonuses))

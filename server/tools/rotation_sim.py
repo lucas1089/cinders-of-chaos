@@ -121,6 +121,29 @@ ANCHORS = {
 }
 
 
+# the Beastmaster's wolves (O332): BITE is the bite of a wolf spell's maul, ChaosClasses.biteValues (biteLevel x level + biteSkill x
+# distance skill of Chaos.classes.companion); WOLF is the owner's wolf factor (Pack Alpha and the Trials' minion damage,
+# ChaosClasses.wolfFactor): 1 here, so presets, the ladder and the C4 comparison are those of a character with neither.
+# companion_model.py sets it to look at an invested one (and clears the analyse cache, set_wolf below).
+WOLF = 1.0
+WOLF_LEVEL = 400  # the level of the second companion (Chaos.classes.companion.caps); PETS below
+COMPANION_CONSTANTS = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'chaos_constants.lua')
+
+
+@functools.lru_cache(maxsize=None)
+def wolf_bite():
+    """(biteLevel, biteSkill) of Chaos.classes.companion, a wolf spell's bite"""
+    text = open(COMPANION_CONSTANTS, encoding='utf-8').read()
+    return (float(re.search(r'biteLevel = ([0-9.]+)', text).group(1)), float(re.search(r'biteSkill = ([0-9.]+)', text).group(1)))
+
+
+def set_wolf(factor):
+    """look at a Beastmaster with this wolf factor (the sets found so far are forgotten)"""
+    global WOLF
+    WOLF = float(factor)
+    _ANALYSED.clear()
+
+
 def interp(points, x):
     if x <= points[0][0]:
         return float(points[0][1])
@@ -137,8 +160,9 @@ def stats(cls, level):
     atk = interp(ANCHORS['atk_distance' if kind == 'distance' else 'atk_melee'], level)
     fist = min(60.0, 40 + 0.025 * level)
     p = sk * (fist if kind == 'fist' else atk)
+    bite = wolf_bite()
     return {'L': float(level), 'l': level / 5.0, 'ML': ml, 'SK': sk, 'ATK': atk, 'P': p, 'FIST': fist,
-            'BITE': 0.12 * level + 0.6 * sk, 'PETS': 2 if level >= 400 else 1, 'cls': cls,
+            'BITE': bite[0] * level + bite[1] * sk, 'PETS': 2 if level >= WOLF_LEVEL else 1, 'WOLF': WOLF, 'cls': cls,
             'SMITE': smite_for(cls, level), 'TOSS': toss_for(cls, level), 'FLURRY': flurry_for(cls, level),
             'SWEEP': sweep_scale(), 'OFFHAND': OFFHAND.get(cls, 1.0), 'FAN': pack_scale('fan'),
             'SANCT': pack_scale('sanctified'), 'WAVE': pack_scale('shieldWave')}
@@ -655,7 +679,10 @@ def breakpoints(spells, model, cls):
     """the levels where the class gets a new attack spell the rotation can use, and the level bands (the stats grow)"""
     lv = {s['level'] for s in spells if s['group'] == 'attack' and cls in s['vocations'] and
           not model[s['words']]['flags'] & set(NO_PRESET + (ULTIMATE,))}
-    return sorted(lv | ({b for b in BANDS if b >= min(lv)} if lv else set()))
+    steps = {b for b in BANDS if b >= min(lv)} if lv else set()
+    if cls == 'Beastmaster' and lv:
+        steps.add(WOLF_LEVEL)  # the second companion (O332): the wolf spells deal twice as much, so the best set changes
+    return sorted(lv | steps)
 
 
 def creatures(rotation, model):

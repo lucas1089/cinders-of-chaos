@@ -208,8 +208,13 @@ eq(binds, 2, "effigy and reliquary warden bind")
 assert(not arch:find("m:setMaster(player)", 1, true), "no raw setMaster left in archetypes.lua")
 assert(read("data/scripts/chaos/pets.lua"):find("ChaosSummonsCore.bind(player, pet)", 1, true), "pets")
 local feral = read("data/spells/chaos/beastmaster/feral_command.lua")
-assert(feral:find("Sides.isAlly(player, target)", 1, true) and feral:find("Sides.nearestEnemy", 1, true),
-	"Feral Command never takes an ally for its target")
+local wolves = read("data/spells/chaos/_wolves.lua")
+assert(wolves:find("Sides.isAlly(player, target)", 1, true) and wolves:find("Sides.nearestEnemy", 1, true),
+	"the wolf spells never take an ally for their target")
+for _, name in ipairs({"feral_command", "pack_frenzy", "pack_howl", "rending_pounce"}) do
+	assert(read("data/spells/chaos/beastmaster/" .. name .. ".lua"):find("Wolves.cast(", 1, true), name .. " casts through _wolves.lua")
+end
+assert(feral:find("_wolves.lua", 1, true), "Feral Command casts through _wolves.lua")
 local beast = read("data/scripts/chaos/beastmaster.lua")
 assert(beast:find("ChaosSummonsCore.isAlly(owner, target)", 1, true), "the companion's bite skips an ally target")
 local common = read("data/spells/chaos/_common.lua")

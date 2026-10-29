@@ -7,7 +7,7 @@ unlocked for the account once one of its characters reaches level 200 (see "Clas
 | Base class | Plays as | Ascended choice A | Ascended choice B |
 |---|---|---|---|
 | **Warrior** | melee, heavy armour, most health | **Juggernaut**: tank. Taunts, damage reduction, shield block/reflect | **Berserker**: two-handed area damage. Cleave, rage that grows as health drops |
-| **Ranger** | bows and crossbows | **Deadeye**: top single-target damage. Crossbow, marks, crit | **Beastmaster**: pets that fight beside you, bow with arrow splash |
+| **Ranger** | bows and crossbows | **Deadeye**: top single-target damage. Crossbow, marks, crit | **Beastmaster**: wolves that fight beside you and are most of its damage (pack spells that hit everything around the target), the bow is the support |
 | **Mystic** | spells, wands and rods | **Elementalist**: top area damage. Fire/ice/energy combos | **Illusionist**: the best healer, plus party attack buffs. Mirror Mend, Lucid Reverie, weakens targets |
 | **Thief** | fast light-weapon attacks, shurikens, stealth | **Ninja**: the line's burst single target. Dual-wields daggers, very fast hits, shadow step | **Samurai**: duelist off-tank. One katana-style sword, a counter stance that parries, guards and taunts |
 | **Necromancer** | summoner: skeletons and spirits, curses, corpses | **Lich**: curses, damage over time, life drain, corpse explosion; one strong shade or none | **Bone Lord**: the army: more skeletons, the Bone Golem, an aura, sacrifices |
@@ -69,7 +69,17 @@ because its slow kept the bow from firing (server/README.md "Hawkeye retired, Ta
 (level 55, +50% speed for 12 s on top of Haste), which replaced the stock Swift Foot / Windrunner (retired the same day: it
 pacified the caster for 10 s), became the attack spell Gale Volley in O254 (below).
 - **Deadeye**: crossbow, Final Verdict, marks.
-- **Beastmaster**: a wolf/bear companion that scales with level, arrow splash, Ricochet.
+- **Beastmaster**: a wolf companion (two from level 400) that scales with level, a bow with arrow splash, Ricochet. O332 (2026-10-29,
+  tester: "a necromancer, but with wolves"): the wolves are the main damage when invested in. Every wolf hit (the companion's bite and
+  the spells' mauls) takes the **wolf factor**: Pack Alpha (+35%, now on every wolf spell) times the Vocation Trials' minion damage
+  (Alpha Bond +25%, Apex Predator +40%, which never reached a wolf before). Four wolf spells, all cast by every companion at once:
+  Feral Command (110, one target), **Pack Howl** (220, `drai ferh ulv`: every monster within 2 sqm of the target, 3 mauls each, 7 s),
+  **Rending Pounce** (240, `kah ferh rax`: every monster within 1 sqm of the target, 2.5 mauls each, 6 s) and Pack Frenzy (320, one
+  target, 8 s). Pack Howl and Rending Pounce took the places of Arrowstorm and Gale Volley, which the Beastmaster no longer has (the
+  Ranger and Deadeye keep them; 13 attack spells per class). Computed shares of the damage that are wolves (bites and wolf
+  spells, Auto setup rotation, level 750): 47% with neither keystone nor Trials, 54% with Pack Alpha, 66% with Pack Alpha and both
+  Trials nodes (Ranger's Hail of Dawn is 69% of the Ranger's spells, the Necromancer's minions 48%). A plain Beastmaster stays a bow
+  class (0.86 of the tree build); the class stays in its pack and boss bands. Server/README.md "Wolves as the main damage (O332)".
   The companion (Wild Bond) and every other player summon is an ally of its owner and party: it never hits them, they never
   take it as a target, Feral Command goes at the nearest enemy when its target is an ally (server/README.md "Player summons are
   allies"). Wild Bond and Feral Command show in the action bar's and hotkeys' Assign Spell lists (client base patch 0079).
@@ -145,8 +155,9 @@ Reaping Gyre > Bonebreaker; Thief line 8: Shuriken Toss; Ranger line 8: Phantom 
 - **Deadeye**: 100: Blessed Earth > Sanctum Burst > Skewering Line > Dawnpiercer > Phantom Javelin; 300: Blessed Earth >
   Hail of Dawn > Final Verdict > Skewering Line > Dawnpiercer; 1000: Blessed Earth > Hail of Dawn > Twin Verdict > Final
   Verdict > Dawnpiercer.
-- **Beastmaster**: 100: Blessed Earth > Sanctum Burst > Dawnpiercer > Phantom Javelin; 1000: Blessed Earth > Sanctum
-  Burst > Pack Frenzy > Dawnpiercer > Feral Command.
+- **Beastmaster**: 100: Blessed Earth > Sanctum Burst > Dawnpiercer > Phantom Javelin; 300: Blessed Earth > Sanctum Burst >
+  Pack Howl > Sunspear > Dawnpiercer; 1000: Blessed Earth > Pack Howl > Sanctum Burst > Rending Pounce > Sunspear (O332; was
+  Blessed Earth > Sanctum Burst > Pack Frenzy > Dawnpiercer > Feral Command).
 - **Mystic**: 100: Blightswarm > Arcane Ripple > Bewitching Hex; 300: Falling Pyre > Briar Prison > Blightswarm > Arcane
   Ripple > Bewitching Hex; 1000: Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Shattered Psyche.
 - **Elementalist**: 100: Tempest Fan > Forked Storm > Rime Bloom > Pyre Torrent; 300: Doomtide > Frozen Crypt > Falling
@@ -198,9 +209,10 @@ below are the current ones ("rung n": the class's own rung when a shared spell t
   Radiant Shard 9 s < Arrowstorm 10 s < Blessed Earth 9 s (rung 8) < Sunspear 10 s (rung 9) < Hail of Dawn 13 s.
 - **Deadeye**: Phantom Javelin 2 s < Snare Trap 4 s < Dawnpiercer 6 s < Sanctum Burst 7 s < Skewering Line 8 s <
   Blessed Earth 9 s < Sunspear 10 s < Final Verdict 11 s < Twin Verdict 12 s < Hail of Dawn 13 s.
-- **Beastmaster**: Phantom Javelin 2 s < Feral Command 4 s < Pack Frenzy 6 s < Snare Trap 4 s (rung 4) < Dawnpiercer 6
-  s (rung 5) < Sanctum Burst 7 s (rung 6) < Packhunter's Dart 10 s < Arrowstorm 10 s (rung 8) < Blessed Earth 9 s
-  (rung 9) < Sunspear 10 s (rung 10).
+- **Beastmaster**: Phantom Javelin 2 s < Feral Command 4 s < Rending Pounce 6 s < Pack Howl 7 s < Pack Frenzy 8 s < Snare Trap
+  4 s (rung 6) < Dawnpiercer 6 s (rung 7) < Sanctum Burst 7 s (rung 8) < Packhunter's Dart 12 s < Blessed Earth 9 s (rung
+  10) < Sunspear 10 s (rung 11) < Moonshard Rain 13 s (O332: the wolf spells hit for the least per cast, so they take the short
+  rungs; Pack Frenzy was 6 s, Packhunter's Dart 10 s).
 - **Mystic**: Kindling Spark 2 s < Rime Bloom 4 s < Blightswarm 6 s < Witchfire Bolt 7 s < Briar Prison 8 s < Arcane
   Ripple 4 s (rung 6) < Umbral Stride 10 s < Bewitching Hex 6 s (rung 8) < Shattered Psyche 9 s (rung 9) < Falling
   Pyre 10 s (rung 10).
@@ -285,7 +297,7 @@ have one spell more (pinned in `server/tools/patch_spell_cap_test.py`; the most 
 | Old support (id) | Now (attack kit key) | Line | Level | Shape |
 |---|---|---|---|---|
 | Bastion Cry (29), a taunt and a heal | Bastion Cry (`bastioncry`) | Warrior, Juggernaut, Berserker | 340 | wave 3 sqm |
-| Wildstride (134), a 12 s haste | Gale Volley (`galevolley`) | Ranger, Deadeye, Beastmaster | 240 | arrow line 6 sqm |
+| Wildstride (134), a 12 s haste | Gale Volley (`galevolley`) | Ranger, Deadeye (the Beastmaster until O332: Rending Pounce has its place) | 240 | arrow line 6 sqm |
 | Crimson Covenant (203), health for magic level | Crimson Covenant (`crimsoncovenant`) | Mystic, Elementalist, Illusionist | 200 | death damage over 6 s |
 | Smoke Bomb (241), a blinding cloud | Smoke Bomb (`smokebomb`) | Thief, Ninja, Samurai | 200 | burst around the caster |
 | Raise Bone Archer (193), a third minion | Splinter Volley (`splintervolley`) | Necromancer, Lich, Bone Lord | 270 | bone circle, radius 1 |
@@ -380,7 +392,7 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Berserker | 30 | 15 | Bonebreaker 8, Reaping Gyre 14, Earthbreaker 20, Scything Arc 70, Butcher's Gyre 90, Skyfall Cleave 190, Colossus Fall 260, Headsman's Hurl 300, Rampage Leap 380 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Bloodlust 60, Red Frenzy 100, Bloodrage 120 |
 | Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280, Radiant Shard 300 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140, Hallowed Ground 300 |
 | Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Skewering Line 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140 |
-| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Blessed Earth 100, Feral Command 110, Pack Frenzy 320 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
+| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Blessed Earth 100, Feral Command 110, Pack Howl 220, Rending Pounce 240, Pack Frenzy 320 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
 | Mystic | 74 | 15 | Kindling Spark 8, Rime Bloom 14, Arcane Ripple 14, Blightswarm 25, Witchfire Bolt 20, Bewitching Hex 60, Briar Prison 70, Umbral Stride 70, Shattered Psyche 110, Falling Pyre 150 | Minor Mending 8, Grand Mending 30, Purifying Wellspring 20 | Ward of the Mind 14*, Galeborne Stride 20, Ironbark Hide 60 |
 | Elementalist | 45 | 14 | Kindling Spark 8, Rime Bloom 14, Witchfire Bolt 20, Pyre Torrent 38, Tempest Fan 38, Forked Storm 50, Falling Pyre 150, Frozen Crypt 220, Doomtide 300, Glacial Doom 420 | Minor Mending 8, Grand Mending 30 | Ward of the Mind 14*, Galeborne Stride 20, Crimson Covenant 90 |
 | Illusionist | 57 | 15 | Kindling Spark 8, Arcane Ripple 14, Bewitching Hex 60, Shattered Psyche 110, Nightburst 210, Primordial Squall 250, Tear in the Weave 280 | Minor Mending 8, Purifying Wellspring 20, Mirror Mend 60, Lucid Reverie 120, Verdant Sanctuary 180 | Ward of the Mind 14*, Hall of Mirrors 40, Moonfang Pack 120, Wraithshroud 150 |
@@ -944,7 +956,7 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Berserker | Cleaving Arc | **Undying Rage**: melee weapon hits heal 4% of the damage, 8% below 50% health |
   | Ranger | Ricochet | Deadeye |
   | Deadeye | **Hunter's Focus**: bow / crossbow hits on one target +4% each, up to +20% | Deadeye |
-  | Beastmaster | Ricochet | **Pack Alpha**: companion bites and Feral Command +35%, companions take 20% less |
+  | Beastmaster | Ricochet | **Pack Alpha**: companion bites and wolf spells +35% (O332; was bites and Feral Command), companions take 20% less |
   | Mystic, Elementalist | Arcane Echo | Elemental Overload |
   | Illusionist | Shared Phantasm | Inspiring Illusion |
   | Iron Sage (since 2026-10-12) | **Overgrowth**: heals on others heal 10% more over 6 s (3 pulses) | **Piercing Palm** (since 2026-10-20) |

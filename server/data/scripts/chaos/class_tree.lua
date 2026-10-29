@@ -57,7 +57,7 @@ M.fx = {
 	ksUndyingRage = {heal = 0.04, lowHeal = 0.08, lowHealth = 0.5},
 	-- Deadeye (621): distance weapon hits on the same target +perHit each, at most maxBonus; another target resets
 	ksHuntersFocus = {perHit = 0.04, maxBonus = 0.20, resetMs = 6000},
-	-- Beastmaster (624): companion bites and Feral Command x (1 + bonus); companions take -reduction damage
+	-- Beastmaster (624): every wolf hit (the companions' bites and the wolf spells) x (1 + bonus), ChaosClasses.wolfFactor (O332; was bites and Feral Command); companions take -reduction damage
 	ksPackAlpha = {bonus = 0.35, reduction = 0.20},
 	-- Ninja: a dodge or leaving Shadow Veil opens a window of durationMs: weapon hits and strikes +bonus
 	ksLivingShadow = {bonus = 0.25, durationMs = 4000},
@@ -153,10 +153,14 @@ M.classDamage = {
 	-- level 300 with tree builds (3441 against 3349), the Beastmaster's came within 4% at level 1000; the identity pass keeps
 	-- the Elementalist 8% ahead in area damage (boss_model.py / pack_model.py --check)
 	berserker = {{300, 0.78}, {800, 1.09}, {1000, 1.21}},
-	-- O306: the companion's own bites became a real share of the damage (20-30%, tools/companion_model.py); the measured
-	-- totals held the old bites (4-8%), so the factor takes the gain back (and the pack cleave's high end went from 1 to 2, pace_config.lua) so the class keeps its pack and boss bands
-	-- (was {{250, 1.0}, {300, 1.14}, {800, 0.97}, {1000, 0.95}})
-	beastmaster = {{50, 0.90}, {100, 0.90}, {200, 0.92}, {300, 1.05}, {400, 0.99}, {550, 0.95}, {700, 0.91}, {800, 0.87}, {1000, 0.85}, {1200, 0.81}},
+	-- O306: the companion's own bites became a real share of the damage (tools/companion_model.py); the measured
+	-- totals held the old bites (4-8%), so the factor took the gain back (and the pack cleave's high end went from 1 to 2,
+	-- pace_config.lua). O332: the wolves became the main source of damage (Pack Howl and Rending Pounce took the place of two
+	-- arrow spells, the wolf factor reaches every wolf hit): the factor applies to the rest of the damage (the bows, the
+	-- spells and the auto attack; the bites are dealt without an event, so it never touched them) and puts the class
+	-- back into its pack and boss bands (pack_model.py / boss_model.py --check call companion_model.apply).
+	-- Was {{50, 0.90}, {100, 0.90}, {200, 0.92}, {300, 1.05}, {400, 0.99}, {550, 0.95}, {700, 0.91}, {800, 0.87}, {1000, 0.85}, {1200, 0.81}} until O332.
+	beastmaster = {{50, 0.97}, {100, 0.97}, {200, 1.09}, {300, 1.17}, {400, 0.84}, {550, 0.81}, {700, 0.78}, {800, 0.75}, {1000, 0.78}, {1200, 0.73}},
 	ranger = {{300, 1.0}, {1000, 0.95}},
 	deadeye = {{300, 1.0}, {1000, 0.95}},
 }
