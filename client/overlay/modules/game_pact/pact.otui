@@ -232,9 +232,10 @@ PactWindow < ChaosMainWindow
 
   ChaosScrollBar
     id: shelfScroll
-    anchors.top: shelf.top
-    anchors.bottom: shelf.bottom
+    anchors.top: monthLine.bottom
     anchors.right: parent.right
+    margin-top: 4
+    height: 78
     step: 20
     pixels-scroll: true
 
