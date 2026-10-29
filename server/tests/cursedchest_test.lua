@@ -492,7 +492,9 @@ function Tile(pos)
 	local tl = tiles[key]
 	if not tl then
 		tl = {items = {}, flags = {}}
-		tl.getGround = function() return {} end
+		tl.getGround = function()
+			return {getType = function() return {getFluidSource = function() return blocked[key] == "water" and 1 or 0 end} end}
+		end
 		tl.hasFlag = function(self, f)
 			return self.flags[f] == true or (blocked[key] == "solid" and f == TILESTATE_BLOCKSOLID)
 		end
@@ -644,6 +646,7 @@ ChaosRift = {runOf = rifts, monsterRun = {}}
 ChaosAreaGen = {scaled = {}, pointOf = {}}
 
 dofile("data/scripts/chaos/chaos_constants.lua")
+dofile("data/scripts/chaos/spawn_tile_core.lua")
 Chaos.giveItem = function(player, id, count)
 	player._given[id] = (player._given[id] or 0) + count
 	return count
@@ -764,16 +767,26 @@ ok(hero._cancels[#hero._cancels]:find("awake"), "a second use while it runs is r
 use(friend, item)
 ok(friend._cancels[#friend._cancels]:find("awake"), "the party member too")
 ok(#queue >= 1, "a tick is scheduled")
--- the first horde
+-- the first horde; a third of the tiles around the chest are water (swimmable: no blocking flag)
+for dx = -6, 6 do
+	for dy = -6, 6 do
+		if (ch.pos.x + dx) % 3 == 0 then
+			blocked[(ch.pos.x + dx) .. ":" .. (ch.pos.y + dy) .. ":" .. ch.pos.z] = "water"
+		end
+	end
+end
 T = T + 3000
 runQueue()
 eq(ch.ev.horde, 1, "horde 1 after the delay")
 local alive = 0
 for _, m in pairs(monsters) do
 	alive = alive + 1
+	ok(blocked[m._pos.x .. ":" .. m._pos.y .. ":" .. m._pos.z] ~= "water", "a husk is never created on water")
 	ok(m._dropLoot == false, "a husk: no corpse loot")
 	ok(m._events.ChaosCursedChestDeath, "tagged with the death event")
 	ok(CC.tagged[m._id] == ch, "tagged in the table")
+	ok(CC.levelOf(m) ~= nil and CC.levelOf(m) >= 1, "the level the chest scaled it to is known (Ascension Proof counts it)")
+	ok(CC.levelOf({getId = function() return -1 end}) == nil, "no level for a monster of another system")
 	ok(paced[m._id] == true, "paced like a hunt")
 	ok(ChaosAreaGen.scaled[m._id] ~= nil, "damage scale registered")
 	eq(ChaosAreaGen.scaled[m._id].experience, 1, "experience stays normal")

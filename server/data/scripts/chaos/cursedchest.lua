@@ -36,6 +36,7 @@ local CC = ChaosCursedChest
 local K = ChaosCursedChestCore
 CC.chests = CC.chests or {} -- "x:y:z" -> chest record
 CC.tagged = CC.tagged or {} -- monster id -> chest record (the event's monsters)
+CC.levels = CC.levels or {} -- monster id -> the hunting level the chest scaled it to (CC.levelOf)
 CC.state = CC.state or K.newState()
 CC.seq = CC.seq or 0
 
@@ -456,18 +457,9 @@ end
 -- ------------------------------------------------------------------ the hordes
 local function randomSpot(ch)
 	local e = cfg().event
-	for _ = 1, 14 do
-		local dx = rand(-e.spreadMax, e.spreadMax)
-		local dy = rand(-e.spreadMax, e.spreadMax)
-		if math.max(math.abs(dx), math.abs(dy)) >= e.spreadMin then
-			local pos = {x = ch.pos.x + dx, y = ch.pos.y + dy, z = ch.pos.z}
-			local tile = Tile(P(pos))
-			if tile and tile:getGround() and not tile:hasFlag(TILESTATE_PROTECTIONZONE) and not tile:hasFlag(TILESTATE_BLOCKSOLID) then
-				return pos
-			end
-		end
-	end
-	return nil
+	-- spawn_tile_core.lua: ground, no water (a land horde never left it), not blocked, no protection zone, house or
+	-- floor change; nil (the monster is skipped) when 14 tries find none
+	return ChaosSpawnTile.find(ch.pos, {radius = e.spreadMax, minRadius = e.spreadMin, tries = 14, rand = rand, occupied = true})
 end
 
 local TIER_EVENTS = {"ChaosTierRollMagic", "ChaosTierRollRare", "ChaosTierRollLegendary"}
@@ -485,6 +477,7 @@ local function spawnMonster(ev, ch, name, tier, plan, target)
 	end
 	local id = m:getId()
 	CC.tagged[id] = ch
+	CC.levels[id] = target
 	ev.monsters[id] = true
 	m:registerEvent("ChaosCursedChestDeath")
 	if m.setDropLoot then
@@ -514,6 +507,15 @@ local function spawnMonster(ev, ch, name, tier, plan, target)
 	return m
 end
 
+-- the hunting level a chest monster was scaled to (health and damage follow it, the nameplate shows it), nil for any
+-- other monster. The monster's own level stays the type's, so a counter that reads levels (the Ascension Proof of
+-- Strength, ascension_quest.lua) asks here: a rare Rotworm of a chest for a level 200 player is a level 180 beast.
+-- Kept a few seconds past the death (the kill events of the players run around the death event).
+function CC.levelOf(monster)
+	local ok, id = pcall(function() return monster:getId() end)
+	return ok and CC.levels[id] or nil
+end
+
 local function aliveCount(ev)
 	local n = 0
 	for id in pairs(ev.monsters) do
@@ -523,6 +525,9 @@ local function aliveCount(ev)
 		else
 			ev.monsters[id] = nil
 			CC.tagged[id] = nil
+			if not m then
+				CC.levels[id] = nil
+			end
 			if ChaosAreaGen and ChaosAreaGen.scaled then
 				ChaosAreaGen.scaled[id] = nil
 			end
@@ -567,6 +572,7 @@ local function clearMonsters(ev, despawn)
 			m:remove()
 		end
 		CC.tagged[id] = nil
+		CC.levels[id] = nil
 		if ChaosAreaGen and ChaosAreaGen.scaled then
 			ChaosAreaGen.scaled[id] = nil
 		end
@@ -935,6 +941,9 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 		ch.ev.monsters[id] = nil
 	end
 	CC.tagged[id] = nil
+	if CC.levels[id] then
+		addEvent(function(cid) CC.levels[cid] = nil end, 10000, id)
+	end
 	if ChaosAreaGen and ChaosAreaGen.scaled then
 		ChaosAreaGen.scaled[id] = nil
 	end

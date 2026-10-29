@@ -505,12 +505,13 @@ function Position(x, y, z) return setmetatable({x = x, y = y, z = z}, PosMT) end
 local effects = {}
 function PosMT:sendMagicEffect(e) effects[#effects + 1] = e end
 function PosMT:getDistance(o) return math.max(math.abs(self.x - o.x), math.abs(self.y - o.y)) end
-local blockedTiles, pzTiles, occupied = {}, {}, {}
+dofile("data/scripts/chaos/spawn_tile_core.lua")
+local blockedTiles, pzTiles, occupied, waterTiles = {}, {}, {}, {}
 local function key(p) return p.x .. ":" .. p.y .. ":" .. p.z end
 function Tile(p)
 	if blockedTiles[key(p)] then return nil end
 	return {
-		getGround = function() return true end,
+		getGround = function() return {getType = function() return {getFluidSource = function() return waterTiles[key(p)] and 1 or 0 end} end} end,
 		getTopCreature = function() return occupied[key(p)] end,
 		hasFlag = function(_, f) return pzTiles[key(p)] == true and f == TILESTATE_PROTECTIONZONE end,
 		getHouse = function() return nil end,

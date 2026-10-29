@@ -1,0 +1,12 @@
+Module
+  name: game_skillstats
+  description: Fills the combat stat rows of the Skills window (Damage/Healing, Attack Value, Defence Value, Armor Value, Mitigation) from the server (extended opcode 119) and hides the Mantra row
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ skillstatsview, skillstats ]
+  dependencies:
+    - game_skills
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

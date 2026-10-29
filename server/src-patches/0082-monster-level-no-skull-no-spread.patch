@@ -1,0 +1,77 @@
+# Monster level: no skull, no spread (server/README.md "Monster level: no skull, no spread (O326)"). Owner 2026-10-29
+# (pt-BR): "monstros com caveira ainda estao muito fortes, tire a mecanica da caveira". Monster::Monster rolled a level
+# uniformly in the <level min max> of a level-scaled type and then (a) set a skull by it (white 50-100, green 101-200,
+# yellow 201-300, orange 301-350, red 351-400, black 401+) and (b) the level added health, speed and damage
+# (config.lua monsterBonusHealth / Speed / Damage x level), so two monsters of one type differed by up to the whole range
+# (a level 400 type: +0% to +296% health); the skull marked the high rolls. Now:
+#   1. the skull block is gone: the skull is the one the XML <skull> gives (mType->info.skull) or a script sets later
+#      (creature:setSkull, e.g. the nemesis look);
+#   2. the level is the MIDDLE of the range, not a roll: every monster of a type has the same level, so the same health,
+#      speed and damage bonus, equal to the mean the roll gave. Nothing that scales by the level changes on average
+#      (pace curves, areagen / waystone / cursed chest scaling, the models); the spread is gone. The level is also what
+#      is shown after the name (patches 0040 / 0044) and what getMonsterLevel() returns, now the same for the whole type.
+# The config keys stay as they are: no config change, no data change. Applies to XML and Lua monster types alike.
+# Guard: tools/monster_level_patch_test.py (CI). Applies after 0001-0081 (and after 0044 in particular).
+--- a/src/monster.cpp
++++ b/src/monster.cpp
+@@ -45,29 +45,13 @@
+ 	defaultOutfit = mType->info.outfit;
+ 	currentOutfit = mType->info.outfit;
+ 	skull = mType->info.skull;
+-	// level = uniform_random(mType->info.minLevel, mType->info.maxLevel);
+-
+-	int randomChance = std::rand() % 100;
+-
++	// Chaos (patch 0082): a monster of a level-scaled type has the MIDDLE of its <level> range, not a roll in it (stock: a
++	// uniform roll, so two monsters of a type differed by the health / speed / damage of up to the whole range: a
++	// level 400 type had from +0% to +296% health). The mean is the same, the spread is gone.
+ 	if (mType->info.minLevel != 0 && mType->info.maxLevel != 0) {
+-		if (randomChance > 1 || randomChance < 20) {
+-			level = std::rand() % (mType->info.maxLevel - mType->info.minLevel + 1) + mType->info.minLevel;
+-		}
+-		else if (randomChance > 20 || randomChance < 40) {
+-			level = std::rand() % (mType->info.maxLevel - mType->info.minLevel - 70 + 1) + (mType->info.minLevel + 71);
+-		}
+-		else if (randomChance > 40 || randomChance < 70) {
+-			level = std::rand() % (mType->info.maxLevel - mType->info.minLevel - 150 + 1) + (mType->info.minLevel + 151);
+-		}
+-		else if (randomChance > 70 || randomChance < 90) {
+-			level = std::rand() % (mType->info.maxLevel - mType->info.minLevel - 300 + 1) + (mType->info.minLevel + 301);
+-		}
+-		else if (randomChance > 90 || randomChance < 99) {
+-			level = std::rand() % (mType->info.maxLevel - mType->info.minLevel - 450 + 1) + (mType->info.minLevel + 451);
+-		}
++		level = (mType->info.minLevel + mType->info.maxLevel) / 2;
+ 	}
+ 
+-
+ 	health = mType->info.health;
+ 	healthMax = mType->info.healthMax;
+ 	baseSpeed = mType->info.baseSpeed;
+@@ -84,24 +68,8 @@
+ 			baseSpeed += baseSpeed * bonusSpeed;
+ 		}
+ 	}
+-	if (level >= 50 && level <= 100) {
+-		skull = SKULL_WHITE;
+-	}
+-	else if (level >= 101 && level <= 200) {
+-		skull = SKULL_GREEN;
+-	}
+-	else if (level >= 201 && level <= 300) {
+-		skull = SKULL_YELLOW;
+-	}
+-	else if (level >= 301 && level <= 350) {
+-		skull = SKULL_ORANGE;
+-	}
+-	else if (level >= 351 && level <= 400) {
+-		skull = SKULL_RED;
+-	}
+-	else if (level >= 401 && level <= 500000) {
+-		skull = SKULL_BLACK;
+-	}
++	// Chaos (patch 0082): no skull from the level (stock: white 50-100, green, yellow, orange, red, black 401+). The skull
++	// stays what the monster's XML <skull> or a script (creature:setSkull) gives it.
+ 
+ 	// register creature events
+ 	for (const std::string& scriptName : mType->info.scripts) {

@@ -8,9 +8,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 63,
+  "opcode": 64,
   "out": 38,
-  "passive": 84,
+  "passive": 85,
   "place": 15,
   "staff": 13
  },
@@ -7286,6 +7286,24 @@
     "combatlog"
    ]
   },
+  "combatStats": {
+   "actions": [
+    "get"
+   ],
+   "client": [
+    "game_skillstats"
+   ],
+   "dataKeys": [],
+   "files": [
+    "combat_stats.lua"
+   ],
+   "opcode": 119,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "combat_stats"
+   ]
+  },
   "community": {
    "actions": [],
    "client": [
@@ -9548,6 +9566,17 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "combat_stats": {
+   "files": [
+    "chaos_constants.lua",
+    "combat_stats.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "combatStats"
+   ],
+   "talkactions": []
+  },
   "combatlog": {
    "files": [
     "combatlog.lua"
@@ -10991,6 +11020,13 @@
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "snares": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "spawn_tile": {
    "files": [],
    "kind": "passive",
    "opcodes": [],

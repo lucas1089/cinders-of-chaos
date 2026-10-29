@@ -964,6 +964,22 @@ do
 	player.open[2] = foreign
 	refused({pos = pos(0x42, 0), cid = cidOf(strange), on = true}, "a container that is not the player's")
 	eq(strange.custom.chaos_locked, nil, "lockAt: kept unlocked")
+	-- owner report: a nemesis trophy is made locked by its script and the menu could not unlock it (not gear)
+	local trophy = fresh({id = 3001, custom = {chaos_locked = 1, chaos_storebound = 1, chaos_nemesis_owner = 7}})
+	act("lockAt", {pos = pos(0x40, at(trophy)), cid = cidOf(trophy), on = false})
+	eq(trophy.custom.chaos_locked, nil, "lockAt: a locked non-gear item (nemesis trophy) can be unlocked")
+	act("lockAt", {pos = pos(0x40, at(trophy)), cid = cidOf(trophy), on = true})
+	eq(trophy.custom.chaos_locked, 1, "lockAt: and locked again (symmetric)")
+	local oddity = fresh({id = 3002, custom = {chaos_locked = 1}})
+	act("lockAt", {pos = pos(0x40, at(oddity)), cid = cidOf(oddity)})
+	eq(oddity.custom.chaos_locked, nil, "lockAt: any plain-locked item flips off")
+	act("lockAt", {pos = pos(0x40, at(oddity)), cid = cidOf(oddity), on = true})
+	eq(oddity.custom.chaos_locked, nil, "lockAt: a random item still cannot be locked")
+	local bound = fresh({id = 3003, custom = {chaos_locked = 2}})
+	act("lockAt", {pos = pos(0x40, at(bound)), cid = cidOf(bound), on = false})
+	eq(bound.custom.chaos_locked, 2, "lockAt: a bound item (2) stays locked")
+	assert(say():find("bound", 1, true), "lockAt: says why")
+	eq(select(2, K.lockChange(nil, false, true)), "notLockable", "core: not lockable")
 	-- the rate limit: the same action twice inside singleIntervalMs does the second one never
 	clock = clock + 5000
 	S.onAction(player, "lockAt", {pos = pos(0x40, at(gearItem)), cid = cidOf(gearItem), on = true})

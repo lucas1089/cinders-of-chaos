@@ -45,6 +45,7 @@ server/
                                                    the Necromancer line: numbers, rules, minions, curses, the bone shield
     monk_chi_core.lua  monk_combat.lua             the Monk line: ids, numbers, chi; unarmed combat, evasion, focus, stun
     templar_aura_core.lua  templar_combat.lua      the Templar line: ids, numbers, rules; the aura, Radiant Strikes
+    combat_stats_core.lua  combat_stats.lua        the combat stat rows of the client's Skills window (opcode 119)
     class_unlocks_core.lua  class_unlocks.lua      the class lock (store unlock per account; sql/chaos_class_unlocks.sql)
     ascension_quest.lua  ascension_quest_core.lua  ascension_quest_config.lua
                                                    the ascension quest (the Oracle's stages, the Trial, ChaosAscension.ascend)
@@ -670,6 +671,7 @@ collision check") and be added here.
 | 116 | `everfull` | `potions_helper.lua`, `data/lib/chaos_potions.lua`, `potions_core.lua` | `game_helperrotation` | server -> client `held {v = 1, health? = {look, tier, level, line, ready}, mana? = {...}}` (the Everfull each slot carries, by its client look; at login, after an upgrade and when it changes, checked every 3 s), client -> server `sync` (see "Potions", "The helper and the tiers (O246)") |
 | 117 | `weeklyChest` | `weeklychest.lua`, `weeklychest_core.lua` | `game_weeklychest` | client -> server `open` / `close` / `get`, server -> client `state {open?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}` (see "The Weekly Chest (O261)") |
 | 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)") |
+| 119 | `combatStats` | `combat_stats.lua`, `combat_stats_core.lua` | `game_skillstats` | client -> server `get`; server -> client `stats {damage?, attack?, defense, armor, mitigation}` (mitigation a share 0 .. 1), at login, after an equip, a level or skill advance or a passive tree change, only when a number changed (see "Combat stat rows of the Skills window") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -820,7 +822,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -1061,6 +1063,31 @@ tables, objects must be tables), so a bad row cannot leave a window half drawn.
 - Values the client sent are echoed only after a check (`seq` of the market, the item link request number, the loot filter
   kill id, the command page id, the crafting orb key): inf or a table made `json.encode` raise, a 60 KB string made the
   answer too big to send.
+
+## Spawn tiles: no land monsters on water (`spawn_tile_core.lua`, `tests/spawn_tile_test.lua`)
+
+Owner report: three Ogre Rowdy [104] stood in the sea next to a beach. They came from a cursed chest horde.
+Root cause: `Game.createMonster(name, pos, extended, force)` puts the monster on `pos` whenever the tile has a ground.
+`Map::placeCreature` asks the first tile with `FLAG_IGNOREBLOCKITEM`, and `force` skips the check. The chest picked a random
+tile 2 to 5 sqm away and only tested ground, protection zone and `TILESTATE_BLOCKSOLID`. Swimmable water has no blocking
+flag, so it passed, and a land monster never walks out of it.
+
+`ChaosSpawnTile` is the one rule for a script that picks a spawn tile itself:
+
+- `ChaosSpawnTile.ok(pos[, opts])` needs a ground, no water, no blocking item, no floor change or teleport, no house, no
+  protection zone and no creature. Water is a trash holder tile or a ground whose item type has a fluid source.
+  Options `protection`, `house`, `occupied` and `water` (a water monster) allow one case each.
+- `ChaosSpawnTile.find(center[, opts])` returns the centre if it fits, else tries `tries` random tiles within `radius`
+  (and at least `minRadius` away). It returns nil when none fits, and the caller skips that spawn.
+
+Systems that use it: cursed chest hordes (`cursedchest.lua`), invasion waves (`invasion.lua` `tileOk`), waystone breach
+monsters (`waystone_mods.lua`), Haunted Harvest ritual monsters (`harvest_event.lua`), nemesis appearances
+(`nemesis.lua`) and the pet spot (`pets.lua`). Not touched: monsters placed inside generated or built arenas (rift, raid,
+descent, tower, guild boss, world boss, dungeons), which stand on floors the script built, and staff commands with an
+explicit position. A new script that places a monster by a computed position must call the helper.
+
+Deploy: script reload is enough (`/reload scripts`), no restart, no SQL, no client change. Tests load the core with
+`dofile("data/scripts/chaos/spawn_tile_core.lua")` before the engine file.
 
 ## Shared security rules (`chaos_constants.lua`)
 
@@ -5636,6 +5663,10 @@ The store's infinite food (Convenience, "Everfull Ration", 100 coins, decided 20
 
 Owner request 2026-10-16: "Remove the potion flasks and make the first pots infinite."
 
+- **Uninstalled Everfull tiers are hidden (2026-10-29).** An Everfull item exists only after the `potions` step of
+  `install_all.py` wrote it into items.otb. The store hides an `everfullUpgrade` offer whose item is missing (service hook
+  `listed`, read by `Shop.view`), and startup prints "[potions] WARNING: Everfull items missing from items.otb" with the
+  ids. Before, such an offer showed and every buy failed. Test: `tests/shop_test.lua`.
 - **No empty flasks.** No potion leaves an empty flask any more (strong 7634, great 7635, small 7636). The stock potion
   script (`data/actions/scripts/other/potions.lua`, `player:addItem(potion.flask, 1)`) and any other base Lua that adds a
   flask (an `addItem` / `createItem` / `doPlayerAddItem` call with an argument named like `flask` or a flask id) get that
@@ -12803,7 +12834,11 @@ confirm again").
 `lockmenu.lua`, two `addMenuHook` entries; the menu shows the one that fits the `chaos_locked` key 3 the item packet carries): action
 `lockAt {pos, cid, on}` on the salvage opcode. The server finds the item by its client position (inventory slot or open
 container, `ChaosItemTooltip.decodePos`; never the ground), requires that it hangs on the player himself (`getTopParent`), that
-its client id is `cid`, and that it is gear or a Rift Key (also when worn); it answers with a text message and one
+its client id is `cid`, and that turning the lock on fits (gear, a Rift Key or a nemesis trophy, also when worn;
+`ChaosSalvageCore.lockChange`). Turning it off works for every item whose lock is the plain 1, whatever the item is: other
+scripts lock items the menu cannot lock (the nemesis trophy is made locked), and the owner report "Unlock did nothing" on a
+trophy came from the gear-only check refusing the unlock. A bound item (`chaos_locked` 2: store pouches, Everfull potions,
+set again at login) stays locked and says so. It answers with a text message and one
 rate-limited action per `singleIntervalMs`. The bench's `lock` action only takes a real `on = true`. **Locked items cannot be sold nor melted.** A locked item is refused by salvage, skipped by "salvage
 all", and never sold by the **Auto Seller**, whatever rarities are ticked (`autosell.lua` reads the attribute,
 `ChaosShopServices.sellBlocked` returns "locked"; "Auto seller: kept a locked item."). The look text says "It is locked:
@@ -17382,6 +17417,8 @@ characters of one account (a base client character-list error), so this is cover
 
 **Limits** (`ascension_quest_config.lua` `trial.limits`, "Instance limits"): the Trial's 3 minutes (unchanged, a line every 30 s); at most 8 rooms, the wait and the waiting line when all are in use; a staff close ends a Trial without a cooldown.
 
+**Shown level (2026-10-29).** The Trial's guardian and its adds are spawned through `Chaos.createMonsterNamed` with `trialScale(level).level` (the player's level clamped to `trial.scaleMin`-`scaleMax`, 100-130, the level their health and damage are scaled to) as the shown level, so the nameplate and target bar read "Warden of Dawn [130]" (monster_levels.lua, `Chaos.spawnLevel`). Before, the type's experience and health gave an estimate ("[2]"). Display only; every class' guardian shares the call. Test: `tests/ascension_quest_test.lua`.
+
 Players ascend through a quest, not a command (docs/CLASSES.md "Ascension quest"). Install: step 4b (the NPC and the promotion
 patch) plus the scripts (step 1) and the guardian monsters (`data/monster/monsters/chaos/ascension/`, registered with the
 other Chaos monsters). Settings: `ascension_quest_config.lua` (`Chaos.ascensionQuest`); the level rule and the two ascended classes
@@ -17398,6 +17435,8 @@ of every line are read at run time from `Chaos.classes.ascension`, so a new clas
   level, min 40; `Q.minHuntingLevel`, against the kill's `Chaos.monsterHuntingLevel`: its own level, else the pool level
   x `Chaos.huntingMult()`. Before 2026-10-28 the pool level was compared, so the bar was 1.2 x the player's level: a
   level 202 Monk saw 242),
+  a Cursed Chest monster counts at the level the chest scaled it to (`ChaosCursedChest.levelOf`, 2026-10-29), never lower than
+  its own: see "Cursed Chest", "Ascension Proof",
   3 the Trial, 4 the Choice (a list of the two classes, then a confirmation; near the Oracle, no PvP lock).
 - **The Trial**: "trial" at the Oracle -> a modal -> a runtime-built room (13 x 13, slots at x/y 7000+, `Game.createTile`,
   refused when the footprint is not empty; 8 slots) with the class's guardian: `Ascension Warden` renamed and dressed per line
@@ -20434,12 +20473,45 @@ every build started from the base map and the install steps, so an edit lived on
   --note "..."`, then commit `world/MAP_MASTER.json`, `world/SHA256SUMS` and every `world/map-master.otbm.xz.part*`
   on `windows-assets` (removed parts too) and push. The next package build and the next "Atualizar servidor" take it.
 
+## Monster level: no skull, no spread (O326, engine patch 0082)
+Owner 2026-10-29 (pt-BR): "monstros com caveira ainda estao muito fortes, tire a mecanica da caveira". Coordinator
+decision: no skull, and no weaker monsters on average; the complaint is the high rolls.
+- **Cause.** `Monster::Monster` rolls a level for a type with both `min` and `max` of `<level>` (XML) or `minLevel` /
+  `maxLevel` (Lua types: our 140 XML files and 210 base Lua types, the 100-600 portal sets among them). The tier
+  conditions of the roll are always true (`> 1 || < 20`), so it is uniform `min..max`. The level then adds
+  `monsterBonusHealth` x level to health (0.0074), `monsterBonusSpeed` x level to speed (0.0085) and, in `game.cpp`,
+  `monsterBonusDamage` x level (0.0015) to the damage it deals, and sets a skull by level (white 50-100, green 101-200,
+  yellow 201-300, orange 301-350, red 351-400, black 401+). Two monsters of one type differed by the whole range: at
+  level 400 from +0% to +296% health. The skull marked the high rolls.
+- **Fix, engine patch `0082-monster-level-no-skull-no-spread.patch`** (Monster::Monster only). (1) The skull block is
+  gone; the skull is the one the XML `<skull>` gives or a script sets (`creature:setSkull`, e.g. the nemesis look). A
+  config value cannot do this. (2) The level is the **middle** of the range, `(min + max) / 2`, not a roll: every monster
+  of a type has the same level, so the same bonus, equal to the mean the roll gave (health factor 1 + 0.0074 x mid).
+  The spread is gone, the average strength is not.
+- **Why not config bonuses 0 plus compensated data.** First tried (bonuses 0, XML health / speed / damage raised by the
+  factor at the mid level): it reaches only the 140 XML files, not the 210 base Lua types (base data, only editable
+  through patch tools), and it moves the numbers every model and scaling script divides by. The engine route needs no
+  data or config change; `config.lua` keeps `monsterBonusHealth` / `Speed` / `Damage` as they are.
+- **What did not change.** `tools/tune_monsters.py` rows, `pace_config.lua` curves (`scaled`, `generated`),
+  `areagen_core.lua` `A.levelScale`, `waystone_tiers_*`, `cursedchest_*`, `dungeons_difficulty.lua`, `tools/pack_model.py`,
+  `respec_income.py`, `armor_sim.py`: they assume the engine factor `1 + 0.0074 x level` on a monster of the type's level,
+  and a spawned monster has it at exactly the middle of the range (their `native` level is `getMonsterLevel()`, now the
+  middle; before it was the roll, so they were right only on average). Experience per kill is unchanged.
+- **Visible change.** The `[level]` after the name of a level-scaled type is the same for all its monsters (before, it
+  ranged over the type's span, e.g. 920-960); a look at one says "it is level 940". Rift, invasion and generated area
+  monsters keep the display level their system sets (patch 0044). Damage from Lua is still multiplied per level by the
+  engine as before.
+- **Install and rollback.** Engine rebuild with patches 0001-0082 (docs/LAUNCH.md section 1), `chaos_update.sh
+  --engine`; no step, no config, no restart of anything else. Without the rebuild nothing changes. Checked:
+  `patch -p1 --dry-run < src-patches/0082-monster-level-no-skull-no-spread.patch` on a copy of the patched source tree.
+  Guard test: `tools/monster_level_patch_test.py` (patch text, same mean health bonus).
+
 ## Monster levels in the name (`monster_levels.lua`, `monster_levels_core.lua`, engine patch 0040)
 Owner, 2026-10-16: "Black Stag [777]" showed its level, Hellflayer and Ashfang Wyrm did not. Cause: the engine rolls a
 level only for a monster type with both `min` and `max` of `<level>` in its XML (our level-scaled monsters, written by
 `tools/tune_monsters.py`) and puts " [level]" after the name only when that level is above 0; stock monsters have no
 `<level>`. Giving them one would change them: the engine's level adds health (`monsterBonusHealth` x level), speed,
-damage and a skull colour. So patch 0040 adds a display level instead (`monster:setDisplayLevel` /
+damage and a skull colour (the skull is gone and the roll is the middle of the range since O326, see above). So patch 0040 adds a display level instead (`monster:setDisplayLevel` /
 `getDisplayLevel`), shown after the name and in the look text only. At every spawn (`onSpawn`, before the
 placement) `monster_levels.lua` gives a monster without a level of its own its **hunting level** (owner 2026-10-27, "O272"):
 `ChaosLoot.monsterLevel`, the bounty pool's "fair hunt" level of its type (else the experience / health estimate), times
@@ -26013,6 +26085,16 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 - **Abuse.** Event monsters are husks (`Monster:setDropLoot(false)`, as rift husks): no corpse loot, so no `onDropLoot` (no chest, blessing, Chaos roll) and they are never treasure goblins (artificial spawns). They are also tagged and refused by the chest roll. One claim per participant (the mark is set before the loot). Everything is checked on the server. Nothing is stored (no storage keys, no table): after a restart or `/reload` no monster remains and a chest item left on the map is unknown to the table and crumbles at its next use.
 - **Outcome messages (O308).** Tester report: chests opened with no loot and no line. Every claim now ends with an event line and a toast (`MESSAGE_LOOT` is kept off the game screen by `game_lootscreen`, so it is not the only line): the loot list, or "held nothing for you". Each part of the roll (gold, orbs, shards, crafting orbs, gear, uniques) is its own step, so one error is logged and the rest is still given; a roll that breaks as a whole gives the claim mark back and tells the player to use the chest again. Backpack full: the inbox, else the ground at the player's feet, and the line says which. A won chest reminds players who have not claimed `event.remindSec` (30) before it crumbles and tells them when it does; a chest item that disappears mid-event fails the event with a line. An error in the use itself is a cancel message, not silence.
 - **Staff.** `/cursedchest` makes a chest next to you; `/cursedchest roll <tier>, <level>[, <n>]` shows the chance.
+- **Ascension Proof (2026-10-29).** Owner report: the monsters of a cursed chest did not count for the Ascension Proof of Strength.
+  Cause: the tier was applied (`ChaosApplyTier`), but the Proof compares the monster's hunting level, and a chest monster keeps
+  its type's own level (a level 30 Rotworm scaled in health and damage to 0.9 x the opener's level, `event.scale.levelShare`).
+  The nameplate showed the scaled level, the counter read the native one, so a rare husk stayed under the bar of 0.6 x the
+  player's level. Rule now: a chest monster that is rare or legendary counts 1 or 3 points when its scaled level
+  (`ChaosCursedChest.levelOf`, kept in `CC.levels` from the spawn to 10 s after the death) or its own hunting level, the higher
+  one, reaches the bar. Normal and magic ones, summons of a chest monster and bosses still do not count. Chest hordes roll their
+  tiers by `hordePlan` (rare and legendary leaders, shares in `event.hordes`), so rare and legendary husks are common. Test:
+  `tests/ascension_quest_test.lua` (kill counting on a mocked engine), `tests/cursedchest_test.lua` (`levelOf`). A script reload
+  is enough; a chest already open keeps its husks without a recorded level until its next horde, no restart needed.
 - **Not done / assumptions.** Damage scale needs `ChaosAreaGen` (its hit hook); without it only health is scaled. Without `Monster:setDropLoot` the monsters would drop loot. Untested on a live server. No client part: server texts only. Tests: `tests/cursedchest_test.lua` (rules, state machine, loot against the gold model, and the glue on a mocked engine).
 
 ## Progress metrics (O253) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `sql/chaos_progress_metrics.sql`, `tools/progress_metrics.py`)
@@ -26510,3 +26592,40 @@ asks Claude what each message is, keeps a bug list and helps write patch notes. 
   desktop table: `commands.rs` group Bot do Discord.
 - **Not done.** No live run (the fallbacks parameter together with structured output is untested against the real API), the Android card
   is not compiled here, and the slash commands are checked in code only (no permission override in the server settings).
+
+## Combat stat rows of the Skills window (`combat_stats.lua`, `combat_stats_core.lua`, `combat_stats_config.lua`, client `game_skillstats`)
+
+Owner report 2026-10-29 ("essas stats ainda não funcionam"): below the skill bars the Skills window showed Damage/Healing 0, Attack
+Value 0, Defence Value 0, Armor Value 0, Mantra Value 0 and Mitigation +0% whatever the character wore.
+
+- **Why 0.** The rows belong to the base client's `game_skills`, which fills them from a newer protocol's packet (the
+  `onUpdateOffenceStats` / `onUpdateDefenceStats` callbacks of the engine) and from a JSON message on the base `ExtendedIds.WheelSkills`
+  (145). A 10.98 server sends neither, so the otui defaults stayed. 145 is reserved (see "Opcode collision check") and its handler
+  has no Mantra field, so a new opcode was cheaper than feeding it. The repo had no earlier attempt (searched ROADMAP.md,
+  client/MANIFEST.md, the client modules): the only trace was base patch 0019 shortening the numbers the rows would show.
+- **Opcode 119** (`ChaosOpcodes.combatStats`). Client -> server `get` (answered at once, at most one per `getEveryMs` 2000 ms).
+  Server -> client `stats {damage?, attack?, defense, armor, mitigation}`. Sent 1.5 s after login, and after an equip change
+  (`EventCallback.onItemMoved`, priority 13, slots only), a level or skill advance (`onAdvance`) and a passive tree apply (a
+  `ChaosPassiveTree.listeners` entry), one message for a burst (`debounceMs` 250) and only when a number changed (`S.signature`).
+  No storage, no table. Reload the server scripts to get it (`/reload scripts` or a restart); no engine patch, no new item data.
+- **What each row shows** (rules in `combat_stats_core.lua`, inputs read by `S.gather`):
+
+| Row | Value | From |
+|---|---|---|
+| Attack Value | attack of the weapon in the hands | the item's `ITEM_ATTRIBUTE_ATTACK` (a rarity roll or a unique writes it) over the type, as the tooltip. Absent for a wand, a rod, a quiver or empty hands |
+| Damage/Healing | average auto attack hit, display scale applied | `ChaosWeaponDps.estimate` at a 1 s interval (the engine's max hit with level and the best melee or the distance skill, the weapon style and power factors, the launcher's hit chance), x the passive tree factor of `passivetree_effects.lua` (damage percent with its soft cap, strength, dexterity, Paragon damage, the class factor), x `ChaosDisplayScale.factor(level)`. Absent where Attack Value is |
+| Defence Value | the engine's block value | `Player::getDefense`: (skill / 4 + 2.23) x defence x 0.15, defence of the shield (the weapon's with the extra defence when none; 7 bare), skill shielding with a shield, else the weapon's skill, else fist; 1 at skill 0; defence stance factor 1 |
+| Armor Value | sum of the armour of the worn pieces | `Player::getArmor` slots (head, necklace, armour, legs, boots, both rings, deck, badge, ship, belt, gloves), each the item's `ITEM_ATTRIBUTE_ARMOR` over the type; the vocation multiplier is 1 (no vocation sets one) |
+| Mitigation | share of a physical monster hit that never lands | armour / (armour + K) at most the cap (engine patch 0016, `configKeys.ARMOR_PERCENT_CONSTANT` and `_MAX`, 250 and 80; none when `armorPercent` is false), then the physical absorb in effect (`ChaosItemMods.effectiveAbsorb` of the worn types' physical protection and the two absorb storages 977545 gear rolls and 977563 tree / Paragon, engine patch 0049's 75 cap), then the gear modifier Damage Taken from Monsters (`ChaosItemMods.playerBonus(player, "monsterreduction")`), each taking its share of what is left |
+| Mantra Value | none | a newer protocol's elemental protection. This game has per-element resists and no Mantra stat (the Iron Sage's Mantra of Stone is a spell), so the client hides the row and the server sends nothing |
+
+- **Left out on purpose.** Gear modifiers that raise damage (element and physical percent mods, crit), spells, Monk chi, the
+  attack stance's halved defence, a shield's block chance modifier (`block`) and dodge: the rows are the plain numbers, not a
+  simulation. Mitigation is for a physical hit from a monster; elemental hits use the per-element resist rows.
+- **Client** (`game_skillstats`, no base patch). Rows `damageHealing`, `attackValue`, `defenseValue`, `armorValue`,
+  `mitigationValue` of the base window. Until a message arrives (an older server, a fresh login) they read "-", never 0. A row with
+  nothing to show (a wand, bare hands) is hidden and the window refits. The Mantra row is always hidden. Each row got a
+  tooltip that says where the number comes from (pt-BR in `client_chaos_locale`). See client/MANIFEST.md.
+- **Tests.** `tests/combat_stats_test.lua` (opcode uniqueness, the pure rules, the glue against a mocked player: weapon, shield,
+  armour, tree factor, wand, bare hands, when a message goes out); client `skillstatsview_test.lua`, `skillstats_glue_test.lua`.
+  Not checked in a live client or on a live server.

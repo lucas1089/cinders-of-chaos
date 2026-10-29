@@ -221,9 +221,10 @@ assert(cfg.modal.confirmBase > cfg.modal.choice and cfg.modal.confirmBase > cfg.
 -- ------------------------------------------------------------------ the Trial's percent hits (ascension_quest.lua)
 -- the chamber's telegraphs take Chaos.percentBase: a Hollow Vessel counts health + maximum energy shield
 do
+	local registered = {}
 	local function eventMock(name)
 		local e = setmetatable({name = name}, {__index = function() return function() end end})
-		e.register = function() end
+		e.register = function() registered[name] = e end
 		return e
 	end
 	CreatureEvent, GlobalEvent, TalkAction = eventMock, eventMock, eventMock
@@ -250,6 +251,123 @@ do
 	hits = {}
 	AQ.hurt(tr, vessel, 0.2)
 	eq(hits[1] and hits[1].mn, -20, "without the archetypes module: the health alone")
+
+	-- Proof of Strength kill counting, with cursed chest monsters (owner 2026-10-29: "os monstros que spawnam do cursed
+	-- chest nao estao contando pro ascension"). The chest scales its monsters to 0.9 x the opener's level, but their
+	-- own hunting level stays the type's (a level 30 Rotworm in a chest for a level 200 player).
+	local stores = {}
+	local function mkPlayer(level)
+		local p = {_level = level}
+		function p:isPlayer() return true end
+		function p:getLevel() return self._level end
+		function p:getStorageValue(k) return stores[k] or -1 end
+		function p:setStorageValue(k, v) stores[k] = v end
+		function p:sendTextMessage() end
+		function p:sendExtendedOpcode() end
+		return p
+	end
+	local function mkMonster(id, name, native)
+		local m = {_id = id, _native = native}
+		function m:isPlayer() return false end
+		function m:isMonster() return true end
+		function m:getId() return self._id end
+		function m:getName() return name end
+		function m:getMaster() return self._master end
+		function m:getType() return {name = function() return name end, experience = function() return 10 end,
+			maxHealth = function() return 100 end} end
+		return m
+	end
+	local cfgQ = ChaosAscensionQuestCore.cfg()
+	local sk = cfgQ.storage
+	local tierOf = {}
+	ChaosTierOf = function(m) return tierOf[m:getId()] or "normal" end
+	-- the monster's own hunting level (pace.lua): native for every monster here
+	ChaosLoot = {huntLevel = function(m, fallback) return m._native or fallback end}
+	local kill = registered.ChaosAscensionKill
+	assert(kill and kill.onKill, "kill event registered")
+	local player = mkPlayer(200) -- needs hunting level 120
+	stores[sk.stage] = ChaosAscensionQuestCore.STAGE.PROOF
+	stores[sk.proof] = 0
+	local function kills(m) kill.onKill(player, m) return stores[sk.proof] end
+
+	tierOf[1] = "rare"
+	eq(kills(mkMonster(1, "Rotworm", 30)), 0, "a rare level 30 map monster is under the bar")
+	tierOf[2] = "rare"
+	eq(kills(mkMonster(2, "Demon", 700)), 1, "a rare level 700 counts")
+
+	-- cursed chest monster: native level 30, scaled to 180 by the chest
+	ChaosCursedChest = {levelOf = function(m) return m._chestLevel end}
+	tierOf[3] = "rare"
+	local husk = mkMonster(3, "Rotworm", 30)
+	husk._chestLevel = 180
+	eq(kills(husk), 2, "a rare cursed chest monster scaled to 180 counts 1")
+	tierOf[4] = "legendary"
+	local legend = mkMonster(4, "Rotworm", 30)
+	legend._chestLevel = 180
+	eq(kills(legend), 5, "a legendary cursed chest monster counts 3")
+	tierOf[5] = "magic"
+	local magic = mkMonster(5, "Rotworm", 30)
+	magic._chestLevel = 180
+	eq(kills(magic), 5, "a magic one does not count")
+	local normal = mkMonster(6, "Rotworm", 30)
+	normal._chestLevel = 180
+	eq(kills(normal), 5, "a normal one does not count")
+	tierOf[7] = "rare"
+	local low = mkMonster(7, "Rotworm", 30)
+	low._chestLevel = 100 -- scaled to a level under the bar (a lower level opener's chest)
+	eq(kills(low), 5, "a chest monster scaled under the bar does not count")
+	tierOf[8] = "rare"
+	local minion = mkMonster(8, "Rotworm", 30)
+	minion._chestLevel = 180
+	minion._master = {}
+	eq(kills(minion), 5, "a summon of a chest monster does not count")
+	ChaosCursedChest = nil
+	tierOf[9] = "rare"
+	eq(kills(mkMonster(9, "Rotworm", 30)), 5, "without the cursed chest module: the own level")
+
+	-- The guardian shows the level the Trial scaled it to (beta 2026-10-29: "Warden of Dawn [2]" for a level 600
+	-- player: the estimate of the type's experience and health). Chaos.createMonsterNamed passes the level to
+	-- monster_levels.lua as Chaos.spawnLevel. Every class' guardian goes through the same call.
+	do
+		local shown = {}
+		local origCreate = Chaos.createMonsterNamed
+		Chaos.createMonsterNamed = function(typeName, pos, ext, force, name, level)
+			shown[#shown + 1] = {type = typeName, level = level}
+			local m = {_id = #shown + 100}
+			function m:getId() return self._id end
+			function m:getPosition() return {x = 1, y = 1, z = 7, sendMagicEffect = function() end} end
+			function m:getOutfit() return {} end
+			function m:setOutfit() end
+			function m:rename() end
+			function m:setMaxHealth() end
+			function m:setHealth() end
+			function m:getMaxHealth() return 1 end
+			function m:getHealth() return 1 end
+			function m:registerEvent() end
+			return m
+		end
+		Position = Position or function(x, y, z) return {x = x, y = y, z = z, sendMagicEffect = function() end} end
+		local pl = mkPlayer(600)
+		function pl:getPosition() return {x = 0, y = 0, z = 0} end
+		Player = function() return pl end
+		local Q = ChaosAscensionQuestCore
+		local L = {guardianStart = {x = 1, y = 1, z = 7}, center = {x = 1, y = 1, z = 7}}
+		for _, base in ipairs({4, 3, 1, 11, 17, 20, 23, 0}) do
+			shown = {}
+			local g = Q.guardianFor(base)
+			local scale = Q.trialScale(600)
+			AQ.trials[77] = {pid = 77, L = L, guardian = g, scale = scale, adds = {}}
+			AQ.spawnGuardian(77)
+			eq(shown[1] and shown[1].type, cfgQ.trial.guardianMonster, g.name .. ": the guardian was spawned")
+			eq(shown[1] and shown[1].level, scale.level, g.name .. ": shows the Trial's level")
+			assert(shown[1].level >= cfgQ.trial.scaleMin, g.name .. ": at least the ascension level")
+			AQ.trials[77] = nil
+		end
+		eq(Q.trialScale(600).level, cfgQ.trial.scaleMax, "a level 600 player meets the level cap guardian")
+		eq(Q.trialScale(110).level, 110, "a level 110 player meets a level 110 guardian")
+		Chaos.createMonsterNamed = origCreate
+		Player = nil
+	end
 end
 
 print("ascension_quest_test: OK")
