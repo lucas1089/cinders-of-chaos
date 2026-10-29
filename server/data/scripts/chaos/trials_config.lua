@@ -36,6 +36,27 @@ return {
 			pyreShare = 0.30, zoneShare = 0.30, stillShare = 0.26, tokenReward = 0}
 	},
 	hpExponent = 1.5,
+
+	-- the trials of the line spell quests (spellquest_config.lua, spellquest.lua; ChaosTrials.spellHook). The family and the
+	-- mechanics are the character's own line's; the run is `spellStages` stage(s) of the family plus the guardian. Same
+	-- fields as `tiers`, with:
+	--   key       the quest's trial (spellquest_config.lua quests[n].trial)
+	--   hpShare   guardian health at minLevel = the hp of tier `spellHpBase` x this; x (level / minLevel) ^ hpExponent, the
+	--             level clamped to minLevel..maxLevel (the window)
+	--   hit       share of the player's maximum health of one guardian hit, addHit of one thrall hit
+	spellHpBase = 3, -- the Merciless tier's hp
+	spellStages = 1,
+	spellTiers = {
+		{key = "s1", name = "Spell Trial I", minLevel = 500, maxLevel = 800, hpShare = 0.8, hit = 0.09, addHit = 0.035,
+			time = 300, lives = 3, addHp = 0.09, wave = 6, extraWaves = 0, seals = 4, marks = 4, markSeconds = 12,
+			pyreShare = 0.24, zoneShare = 0.22, stillShare = 0.20},
+		{key = "s2", name = "Spell Trial II", minLevel = 800, maxLevel = 1200, hpShare = 1.0, hit = 0.12, addHit = 0.05,
+			time = 360, lives = 3, addHp = 0.09, wave = 7, extraWaves = 0, seals = 5, marks = 5, markSeconds = 10,
+			pyreShare = 0.28, zoneShare = 0.26, stillShare = 0.24},
+		{key = "s3", name = "Spell Trial III", minLevel = 1200, maxLevel = 1600, hpShare = 1.2, hit = 0.15, addHit = 0.065,
+			time = 420, lives = 2, addHp = 0.09, wave = 8, extraWaves = 0, seals = 5, marks = 5, markSeconds = 9,
+			pyreShare = 0.32, zoneShare = 0.30, stillShare = 0.28}
+	},
 	enrageBelow = 0.30, enrageMult = 1.5, -- "enrage": the boss hits harder below this share of its health
 	-- mechanics (timings in ms)
 	stillWarnMs = 2000, stillMs = 3000, -- "stillness": standing on one tile this long is punished

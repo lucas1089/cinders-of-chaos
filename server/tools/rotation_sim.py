@@ -46,6 +46,11 @@ fixed mana cost of spells_chaos.xml, the base health of the data.
 --ladder [--check]: the cooldown ladder per class (owner, 2026-10-20: the attack spells at 2, 4, 6 s ... from the
 first to the strongest; O176, 2026-10-24: 2, 4, 6, 7 ... 13 s, LADDER_COOLDOWNS; ladder() below, server/data/spells/README.md "Cooldown ladder"); --check exits 1 when a spell's
 cooldown or group cooldown is off it.
+--quest: per class the gain of the level 500 attack (Q1) and of the level 1200 ultimate (Q3) over a character without the line spell
+quests; --check also fails when Q1 adds less than 3% or more than 6% (mean of levels 500-800), less than 1.5% or more than 9% at any of
+500, 600, 800, 1000 and 1200, Q3 less than 6% or more than 12% (level 1200), or both together less than 12% or more than 15% at 1200.
+Every other number of this tool (best sets, reports, mana) is that character without quests; the helper data holds the presets of a
+character with all of them.
 --write / --check: client/overlay/modules/game_helperrotation/autorotation_data.lua (the helper's "Auto rotation"
 button: the best set for every level where the class gets a new attack spell, and its heals).
 """
@@ -67,6 +72,7 @@ START_STATS = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'start_st
 # the class factor on spell damage the server applies (passivetree_effects.lua, spell_factor_core.lua)
 SPELL_FACTOR = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'spell_factor_config.lua')
 
+QUEST_SCALE = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'quest_spell_scale_config.lua')
 GCD = 2.0                     # the attack group cooldown of nearly every attack spell
 HORIZON = 120.0               # seconds simulated from a fresh start
 MAX_SPELLS = 5
@@ -74,6 +80,11 @@ BANDS = (15, 30, 60, 100, 300, 600, 1000)
 MANA_RUNWAY = 15.0                # a class's best set must run this many seconds on a full mana pool (see mana_runway)
 MANA_MAX_LEVEL = 1000             # checked at the bands and preset levels up to here (fixed costs, 2026-10-21: up to 1000)
 NO_PRESET = ('skip', 'utility')  # flags that keep a spell out of every rotation the simulator builds
+# `ultimate` (line spell quests, level 1200): a spell that is not one of the 5 of a set. The helper casts it when it is ready, on
+# top of the 5 (owner 2026-10-28: exempt from the rotation cap). It has no ladder rung and a fixed cooldown of ULT_COOLDOWN ms.
+ULTIMATE = 'ultimate'
+ULT_COOLDOWN = (35000, 50000)
+ULT_LEVEL = 1200
 MIN_PLAYER_ATTACK_INTERVAL = 1.0  # config.lua minPlayerAttackInterval (src-patch 0011), seconds
 CHI_HIT_INTERVAL = 2.0            # one chi per melee hit, at most one per 2 s (ChaosMonk.cfg.chi)
 KEEP_SHARE = 0.95                 # a best set keeps 95% of the measured kit's damage when it can
@@ -275,6 +286,8 @@ def spell_row(a, vocs, chaos):
         'groupcooldown': int(a.get('groupcooldown') or 0), 'secondarygroup': a.get('secondarygroup', ''),
         'secondarygroupcooldown': int(a.get('secondarygroupcooldown') or 0),
         'params': a.get('params') == '1', 'vocations': vocs, 'chaos': chaos,
+        # a line spell quest spell (needlearn="1": only its quest teaches it; server/README.md "Line spell quests")
+        'quest': chaos and a.get('needlearn') == '1',
         'cast': cast_ms(a.get('script', '')) if chaos else 0,
     }
 
@@ -348,6 +361,8 @@ def load_all():
     missing = [s['words'] for s in attack if s['words'] not in model]
     if missing:
         raise SystemExit('rotation_model.csv has no row for: %s' % ', '.join(sorted(set(missing))))
+    for s in spells:
+        s['ultimate'] = s['group'] == 'attack' and ULTIMATE in model[s['words']]['flags']
     return spells, model
 
 
@@ -360,12 +375,36 @@ class Spell(object):
     __slots__ = ('chaos', 'words', 'name', 'id', 'cd', 'gcd', 'sec', 'seccd', 'cast', 'dmg', 'dmg5', 'chi', 'gain', 'keep', 'area')
 
 
-def prepare(spells, model, cls, level):
+@functools.lru_cache(maxsize=None)
+def quest_scales():
+    """{spell name: {class name: factor}} of quest_spell_scale_config.lua: the class factor of a line spell quest spell (the spell
+    is shared by three classes whose best sets differ; the factors put the gain of each class in bounds). A factor is a number or
+    a curve [(level, factor), ...] (flat below the first point, linear between points, the last point's value above it), for a
+    class whose best set drifts away from the spell with the level (the Necromancer line, the Beastmaster)"""
+    text = open(QUEST_SCALE, encoding='utf-8').read() if os.path.isfile(QUEST_SCALE) else ''
+    out = {}
+    for name, body in re.findall(r'(?m)^\t\["([^"]+)"\]\s*=\s*\{(.*)\},?\s*$', text):
+        row = {}
+        for c, v in re.findall(r'\["([^"]+)"\]\s*=\s*(\{\{[^=]*?\}\}|[0-9.]+)', body):
+            row[c] = [(float(a), float(b)) for a, b in re.findall(r'\{([0-9.]+),\s*([0-9.]+)\}', v)] if v.startswith('{') else float(v)
+        out[name] = row
+    return out
+
+
+def quest_factor(name, cls, level):
+    """the class factor of a quest spell at a level (quest_scales: a number, or a curve)"""
+    f = quest_scales().get(name, {}).get(cls, 1.0)
+    return interp(f, level) if isinstance(f, list) else f
+
+
+def prepare(spells, model, cls, level, ultimates=False):
+    """the simulator's spells of a class at a level; the ultimates (flag `ultimate`) only with ultimates=True and then only
+    them: they are no part of a set of 5"""
     env = stats(cls, level)
     out = []
     for s in spells:
         m = model[s['words']]
-        if m['flags'] & set(NO_PRESET):
+        if m['flags'] & set(NO_PRESET) or (ULTIMATE in m['flags']) != ultimates:
             continue
         p = Spell()
         p.words, p.name, p.id, p.chaos = s['words'], s['name'], s['id'], s['chaos']
@@ -375,6 +414,8 @@ def prepare(spells, model, cls, level):
         p.seccd = s['secondarygroupcooldown'] / 1000.0
         p.cast = s['cast'] / 1000.0
         p.dmg = evaluate(m['dmg'], env) * spell_factor(cls, level)  # the class spell factor (spell_factor_config.lua)
+        if s.get('quest'):
+            p.dmg *= quest_factor(s['name'], cls, level)  # quest_spell_scale_config.lua
         p.dmg5 = p.dmg * m['t5']
         p.chi = 'chi' in m['flags']
         p.gain = 2 if 'chi2' in m['flags'] else (1 if 'chi1' in m['flags'] else 0)
@@ -395,8 +436,9 @@ def order(spells):
     return sorted(spells, key=lambda s: (not s.keep, not s.area, -s.cd, -score(s.dmg, s.dmg5), s.words))
 
 
-def simulate(rotation, horizon=HORIZON):
-    """cast times of a priority rotation; returns (casts, gap, dmg1 per second, dmg5 per second)"""
+def simulate(rotation, horizon=HORIZON, hits=None):
+    """cast times of a priority rotation; returns (casts, gap, dmg1 per second, dmg5 per second). `hits`, a list, collects
+    (landing time, hit on 1 target, hit on 5 targets, words) of every cast that lands inside the horizon (weakness_model.py)"""
     ready = [0.0] * len(rotation)
     group = {}
     t = 0.0
@@ -437,6 +479,8 @@ def simulate(rotation, horizon=HORIZON):
         if t + s.cast <= horizon:
             d1 += hit
             d5 += hit * (s.dmg5 / s.dmg if s.dmg else 0)
+            if hits is not None:
+                hits.append((t + s.cast, hit, hit * (s.dmg5 / s.dmg if s.dmg else 0), s.words))
         t = t + max(s.gcd, s.cast, 1e-3)
     times = [c[0] for c in casts]
     gaps = [b - a for a, b in zip(times, times[1:])]
@@ -536,20 +580,81 @@ def harness(pool):
 _ANALYSED = {}
 
 
-def analyse(spells, model, cls, level):
-    key = (id(spells), id(model), cls, level)  # the callers pass the same loaded lists: the search runs once per class and level
+def quest_spell_ok(s, quest):
+    """is the spell part of a character with `quest` quests done: 0 none (the baseline every balance model measures), 1 the
+    level 500 attack, 3 the level 500 attack and the level 1200 ultimate"""
+    if not s.get('quest'):
+        return True
+    return quest >= (3 if s.get('ultimate') else 1)
+
+
+def analyse(spells, model, cls, level, quest=0):
+    """the best set of a class at a level. `quest` 0 (default) is a character without the line spell quests: every balance model
+    (pack_model, minion_model, boss_model, weapon_sim, tower_model) measures that baseline. quest 1 adds the level 500 attack,
+    quest 3 the level 500 attack and the ultimate on top of the 5 (quest_report below prints the gains)."""
+    key = (id(spells), id(model), cls, level, quest)  # the callers pass the same loaded lists: the search runs once per class and level
     if key not in _ANALYSED:
-        pool = prepare(class_spells(spells, cls, level), model, cls, level)
-        best = best_set(pool)
-        _ANALYSED[key] = {'pool': pool, 'best': mana_fit(best, pool, spells, cls, level), 'all': harness(pool)}
+        if quest:
+            base = analyse(spells, model, cls, level, 0)
+            have = [s for s in class_spells(spells, cls, level) if s.get('quest') and quest_spell_ok(s, quest)]
+            best = with_quest_attack(base['best'], prepare(have, model, cls, level))
+            best = with_ultimates(best, prepare(have, model, cls, level, True))
+            _ANALYSED[key] = {'pool': base['pool'], 'best': best, 'all': base['all']}
+        else:
+            have = [s for s in class_spells(spells, cls, level) if quest_spell_ok(s, 0)]
+            pool = prepare(have, model, cls, level)
+            best = best_set(pool)
+            best = with_ultimates(mana_fit(best, pool, spells, cls, level), [])
+            _ANALYSED[key] = {'pool': pool, 'best': best, 'all': harness(pool)}
     return _ANALYSED[key]
+
+
+def with_quest_attack(best, quest_spells):
+    """The best set of a character with the level 500 attack: the baseline set, or the baseline set with one of its spells swapped
+    for the attack when that scores more (a fixed swap, not a new search: the set search keeps a gap and a share of the measured
+    kit, so a new search jumps between sets and the gain of the attack would be noise). The set stays at most 5 spells."""
+    if not best or not quest_spells:
+        return best
+    top = (score(best['dps1'], best['dps5']), None)
+    for q in quest_spells:
+        for drop in best['spells']:
+            rot = order([s for s in best['spells'] if s is not drop] + [q])
+            _, gap, d1, d5 = simulate(rot)
+            if score(d1, d5) > top[0]:
+                top = (score(d1, d5), {'spells': rot, 'gap': gap, 'dps1': d1, 'dps5': d5})
+        if len(best['spells']) < MAX_SPELLS:  # a free slot: the attack joins the set
+            rot = order(best['spells'] + [q])
+            _, gap, d1, d5 = simulate(rot)
+            if score(d1, d5) > top[0]:
+                top = (score(d1, d5), {'spells': rot, 'gap': gap, 'dps1': d1, 'dps5': d5})
+    return top[1] or best
+
+
+def with_ultimates(best, ults):
+    """The class's ultimates on top of its best set of 5 (owner 2026-10-28: they take no preset slot). An ultimate casts once
+    per cooldown and the cast takes one attack group cooldown (GCD) away from the set, whose rotation casts on every group
+    cooldown, so it adds (its hit - GCD x the set's damage per second) / cooldown, no more. best['dps1'] and ['dps5'] include
+    it; best['base1'], ['base5'] are the set alone and best['ult1'], ['ult5'] what the ultimate adds, best['ultimates'] the
+    spells. A chi finisher counts at 4 chi (the least it waits for)."""
+    if not best:
+        return best
+    best = dict(best, base1=best['dps1'], base5=best['dps5'], ult1=0.0, ult5=0.0, ultimates=list(ults))
+    if not ults:
+        return best
+    for u in ults:
+        k = (0.30 + 0.14 * 4) if u.chi else 1.0
+        best['ult1'] += max(0.0, u.dmg * k - GCD * best['base1']) / u.cd
+        best['ult5'] += max(0.0, u.dmg5 * k - GCD * best['base5']) / u.cd
+    best['dps1'] += best['ult1']
+    best['dps5'] += best['ult5']
+    return best
 
 
 # ---------------------------------------------------------------------------------------------------------- client
 def breakpoints(spells, model, cls):
     """the levels where the class gets a new attack spell the rotation can use, and the level bands (the stats grow)"""
     lv = {s['level'] for s in spells if s['group'] == 'attack' and cls in s['vocations'] and
-          not model[s['words']]['flags'] & set(NO_PRESET)}
+          not model[s['words']]['flags'] & set(NO_PRESET + (ULTIMATE,))}
     return sorted(lv | ({b for b in BANDS if b >= min(lv)} if lv else set()))
 
 
@@ -580,6 +685,7 @@ def client_data(spells, model):
            '-- ChaosAutoRotationData.classes[serverVocationId] = { name, presets = { { level, gap, spells = { id, ... },',
            '--   creatures = { n, ... } } },',
            '--   extras = { id, ... } (the attack spells no preset holds, newest first; the helper tops up with them last),',
+           '--   ultimate = id (the class line\'s level 1200 ultimate: not one of the 5, the helper casts it when ready),',
            '--   heals = { { id, level }, ... } }; a preset is the best rotation of at most 5 attack spells from its level on',
            '-- (the first spell first), gap = its longest time between two casts in seconds. spells[id] = the spell numbers of every attack spell.',
            'ChaosAutoRotationData = {', '  gcd = %.1f,' % GCD, '  classes = {']
@@ -604,9 +710,12 @@ def client_data(spells, model):
         # attack spells of the class no preset holds (a weaker single hit, a chi builder): the helper's top-up takes them
         # last, newest first, so every attack spell can be in Auto setup's rotation (O157)
         extra = sorted((x for x in spells if x['group'] == 'attack' and cls in x['vocations'] and x['id'] not in held and
-                        not model[x['words']]['flags'] & set(NO_PRESET)), key=lambda x: (-x['level'], x['id']))
-        out.append('    }, extras = { %s }, heals = {' % ', '.join(str(x['id']) for x in extra) if extra
-                   else '    }, heals = {')
+                        not model[x['words']]['flags'] & set(NO_PRESET + (ULTIMATE,))), key=lambda x: (-x['level'], x['id']))
+        # the class's ultimate (one per class line; not one of the 5 of a preset, cast by the helper when it is ready)
+        ult = [x for x in spells if x['group'] == 'attack' and cls in x['vocations'] and
+               ULTIMATE in model[x['words']]['flags']]
+        out.append('    }, %s%sheals = {' % ('extras = { %s }, ' % ', '.join(str(x['id']) for x in extra) if extra else '',
+                                             'ultimate = %d, ' % ult[0]['id'] if ult else ''))
         for h in heals(spells, cls)[:3]:
             out.append('      { id = %d, level = %d },' % (h['id'], h['level']))
         out.append('    } },')
@@ -846,12 +955,78 @@ def report(spells, model, only_cls=None, only_level=None):
     return rows
 
 
+# ----------------------------------------------------------------------------------------------------- quest gain
+QUEST1_LEVELS = (500, 600, 800, 1000)   # the levels the level 500 attack's gain is printed at
+QUEST1_CHECK = (500, 600, 800)          # and checked at: the mean of these is in Q1_GAIN and none is outside Q1_EDGE
+Q1_GAIN = (0.03, 0.06)                  # the level 500 attack adds this much of the baseline best-set score (--check)
+Q1_EDGE = (0.015, 0.09)                 # no single level of QUEST1_EDGE_LEVELS is further out than this (class identity pass 2026-10-28: 1000
+                                        # and 1200 count too; a class whose best set drifts away from the spell has a factor curve, see
+                                        # quest_spell_scale_config.lua)
+QUEST1_EDGE_LEVELS = (500, 600, 800, 1000, 1200)
+Q_BOTH = (0.12, 0.15)                   # both quests together at level 1200 add this much (a full quester; --check)
+Q3_GAIN = (0.06, 0.12)                  # the level 1200 ultimate adds this much on top (--check)
+
+
+def quest_gain(spells, model, cls, level):
+    """(gain of the level 500 attack, gain of the ultimate on top of it) as a share of the baseline best-set score (1 target +
+    0.25 x pack) of a character without quests: (S1 - S0) / S0 and (S3 - S1) / S0. The ultimate counts from level 1200 only."""
+    s = []
+    for q in (0, 1, 3):
+        b = analyse(spells, model, cls, level, q)['best']
+        s.append(score(b['dps1'], b['dps5']) if b else 0.0)
+    if not s[0]:
+        return 0.0, 0.0
+    return (s[1] - s[0]) / s[0], (s[2] - s[1]) / s[0]
+
+
+def quest_bad(spells, model):
+    """the classes whose quest gain is out of bounds (quest_report without the printing)"""
+    import io, contextlib
+    with contextlib.redirect_stdout(io.StringIO()):
+        return quest_report(spells, model)
+
+
+def quest_report(spells, model, only_cls=None, check=False):
+    """prints per class the gain of Q1 (levels 500-1000) and of Q3 (level 1200, on top of Q1) over the baseline best set; with
+    check=True returns the classes out of Q1_GAIN / Q3_GAIN"""
+    bad = []
+    for cls, _, _ in CLASSES:
+        if only_cls and cls != only_cls:
+            continue
+        row = []
+        for lv in QUEST1_LEVELS:
+            q1, _ = quest_gain(spells, model, cls, lv)
+            row.append(q1)
+            if lv in QUEST1_EDGE_LEVELS and not Q1_EDGE[0] <= q1 <= Q1_EDGE[1]:
+                bad.append('%s level %d: the level 500 attack adds %.1f%%, not %.1f-%.1f%%' % (
+                    cls, lv, 100 * q1, 100 * Q1_EDGE[0], 100 * Q1_EDGE[1]))
+        mean = sum(g for g, lv in zip(row, QUEST1_LEVELS) if lv in QUEST1_CHECK) / len(QUEST1_CHECK)
+        if not Q1_GAIN[0] <= mean <= Q1_GAIN[1]:
+            bad.append('%s: the level 500 attack adds %.1f%% on average (levels %s), not %d-%d%%' % (
+                cls, 100 * mean, ', '.join(map(str, QUEST1_CHECK)), 100 * Q1_GAIN[0], 100 * Q1_GAIN[1]))
+        q1, q3 = quest_gain(spells, model, cls, ULT_LEVEL)
+        if not Q1_EDGE[0] <= q1 <= Q1_EDGE[1]:
+            bad.append('%s level %d: the level 500 attack adds %.1f%%, not %.1f-%.1f%%' % (
+                cls, ULT_LEVEL, 100 * q1, 100 * Q1_EDGE[0], 100 * Q1_EDGE[1]))
+        if not Q_BOTH[0] <= q1 + q3 <= Q_BOTH[1]:
+            bad.append('%s level %d: both quests add %.1f%%, not %d-%d%%' % (
+                cls, ULT_LEVEL, 100 * (q1 + q3), 100 * Q_BOTH[0], 100 * Q_BOTH[1]))
+        if not Q3_GAIN[0] <= q3 <= Q3_GAIN[1]:
+            bad.append('%s level %d: the ultimate adds %.1f%%, not %d-%d%%' % (cls, ULT_LEVEL, 100 * q3, 100 * Q3_GAIN[0], 100 * Q3_GAIN[1]))
+        print('%-12s Q1 %s   level %d: Q1 %+5.1f%%  Q3 %+5.1f%%  both %+5.1f%%' % (
+            cls, ' '.join('%5.1f%%' % (100 * g) for g in row), ULT_LEVEL, 100 * q1, 100 * q3, 100 * (q1 + q3)))
+    return bad
+
+
 LADDER_LEVEL = 300   # the damage per cast the cooldown ladder ranks by (the C4 measurement level)
 LADDER_STEP = 2000   # ms between two rungs of the first LADDER_FLAT rungs
 # the cooldown of rung 1, 2, 3 ... 10 (ms). O176 (owner 2026-10-24: "diminua o cooldown das magias mais fortes, para aumentar
 # a DPS de todas as classes"): 2, 4, 6 s as before (O94), then one second a rung instead of two: 7, 8 ... 13 s. The strongest
 # rungs lose 25 to 35% (was 12, 14, 16, 18, 20 s: 9, 10, 11, 12, 13 s); a rung stays above the one below it.
 LADDER_COOLDOWNS = (2000, 4000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000)
+
+
+QUEST_COOLDOWN = 13000   # a line spell quest attack (level 500) is not ranked: it sits above the ladder at the last rung's 13 s
 
 
 def rung_cooldown(rung):
@@ -865,8 +1040,9 @@ def ladder(spells, model, level=LADDER_LEVEL):
     attack spell (the lowest level, the class's level 8 spell) is rung 1, the others follow from the weakest to the
     strongest by the damage of one cast on one target at `level` (rotation_model.csv with the class's stats; an area
     spell by its main-target hit). A spell several classes share has one cooldown: the rung most of them give it (a tie:
-    the lower). The cooldown of a rung is LADDER_COOLDOWNS (O176). Returns ({name: cooldown ms}, {class: [(name, rung, damage)]}, [(name, {class: rung}, rung)])."""
-    attack = [s for s in spells if s['group'] == 'attack']
+    the lower). The cooldown of a rung is LADDER_COOLDOWNS (O176). The line spell quest attacks (needlearn="1") are not ranked: they are the last rung of their classes at QUEST_COOLDOWN. Returns ({name: cooldown ms}, {class: [(name, rung, damage)]}, [(name, {class: rung}, rung)])."""
+    attack = [s for s in spells if s['group'] == 'attack' and not s.get('quest')]
+    quest = [s for s in spells if s['group'] == 'attack' and s.get('quest') and not s.get('ultimate')]
     rungs, per_class = {}, {}
     for cls, _, _ in CLASSES:
         env = stats(cls, level)
@@ -876,6 +1052,10 @@ def ladder(spells, model, level=LADDER_LEVEL):
         first = min(rows, key=lambda r: (r[1], r[0]))
         rows = [first] + sorted(r for r in rows if r is not first)
         per_class[cls] = [(n, i + 1, d) for i, (d, _, n) in enumerate(rows)]
+        # the quest spells (level 500) come last whatever they deal: the line's reward is above its whole ladder
+        for s in quest:
+            if cls in s['vocations']:
+                per_class[cls].append((s['name'], len(per_class[cls]) + 1, evaluate(model[s['words']]['dmg'], env)))
         for n, rung, _ in per_class[cls]:
             rungs.setdefault(n, {})[cls] = rung
     final, conflicts = {}, []
@@ -884,7 +1064,7 @@ def ladder(spells, model, level=LADDER_LEVEL):
         for r in by.values():
             counts[r] = counts.get(r, 0) + 1
         rung = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
-        final[n] = rung_cooldown(rung)
+        final[n] = QUEST_COOLDOWN if n in {s['name'] for s in quest} else rung_cooldown(rung)
         if len(counts) > 1:
             conflicts.append((n, by, rung))
     return final, per_class, sorted(conflicts)
@@ -901,6 +1081,14 @@ def ladder_report(spells, model, check=False):
         print('shared: %s %s -> rung %d (%d s)' % (n, ', '.join('%s %d' % kv for kv in sorted(by.items())), rung,
                                                     rung_cooldown(rung) // 1000))
     wrong = ['%s: cooldown %d, the ladder %d' % (n, cd[n], c) for n, c in sorted(final.items()) if cd[n] != c]
+    # an ultimate (line spell quest 3) has no rung: its cooldown is one fixed number between ULT_COOLDOWN
+    for s in spells:
+        if s.get('ultimate'):
+            print('ultimate %s %d s, level %d' % (s['name'], s['cooldown'] // 1000, s['level']))
+            if not ULT_COOLDOWN[0] <= s['cooldown'] <= ULT_COOLDOWN[1]:
+                wrong.append('%s: ultimate cooldown %d, not %d to %d' % (s['name'], s['cooldown'], *ULT_COOLDOWN))
+            if s['level'] != ULT_LEVEL:
+                wrong.append('%s: ultimate level %d, not %d' % (s['name'], s['level'], ULT_LEVEL))
     wrong += ['%s: group cooldown %d, not %d' % (n, g, int(GCD * 1000)) for n, g in sorted(gcd.items())
               if g != int(GCD * 1000)]
     for w in wrong:
@@ -931,6 +1119,14 @@ def main(argv):
         return 0
     if '--report' in argv or cls or lv:
         report(spells, model, cls, lv)
+    if '--quest' in argv or '--check' in argv:
+        print('gain of the line spell quests over a character without them (best-set score, levels %s, ultimate at %d):' %
+              (', '.join(map(str, QUEST1_LEVELS)), ULT_LEVEL))
+        bad = quest_report(spells, model, cls)
+        for b in bad:
+            print('OUT OF BOUNDS ' + b)
+        if bad and '--check' in argv:
+            return 1
     if '--write' in argv or '--check' in argv:
         text = client_data(spells, model)
         old = open(CLIENT_DATA, encoding='utf-8').read() if os.path.isfile(CLIENT_DATA) else ''

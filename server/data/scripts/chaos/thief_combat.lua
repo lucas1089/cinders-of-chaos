@@ -32,6 +32,10 @@ end
 if not ChaosSpell then
 	pcall(dofile, "data/spells/scripts/chaos/_common.lua")
 end
+if not ChaosQuestBuffs then
+	dofile("data/scripts/chaos/quest_buffs_core.lua")
+end
+local QB = ChaosQuestBuffs
 local C = ChaosClasses
 local CT = ChaosClassTree -- the class nodes of the passive tree (classes.lua loads class_tree.lua)
 local function cfg()
@@ -277,7 +281,8 @@ local function onDefence(player, attacker, primaryDamage, primaryType, secondary
 	end
 
 	-- Evasion
-	if C.dodges(voc, isWeapon, math.random(), CT.value(player, "ctFleetShadow", "evasion"),
+	-- Shroud of Knives adds its evasion to the line's (quest_buffs_core.lua)
+	if C.dodges(voc, isWeapon, math.random(), CT.value(player, "ctFleetShadow", "evasion") + QB.evadeBonus(player),
 			CT.value(player, "ksBlackbloodCreed", "evasionScale", 1)) then
 		if ChaosCombatFx then
 			ChaosCombatFx.dodge(player)

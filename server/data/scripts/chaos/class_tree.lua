@@ -120,26 +120,42 @@ M.fx = {
 -- line's spellLevelScale, the Monk's, the Templar's, necro_config.lua levelScale). Keyed by class key, else by the line's
 -- key. Measured: server/data/spells/README.md "Classes with the passive trees". Classes without an entry: 1.
 M.classDamage = {
-	thief = {{300, 0.48}, {1000, 0.53}},
-	ninja = {{300, 0.45}, {1000, 0.57}},
-	samurai = {{300, 0.30}, {1000, 0.37}}, -- the duelist off-tank: damage at the Juggernaut's
+	-- Class identity pass (2026-10-28, owner: every class a clear strength and a real weakness; docs/CLASSES.md "Class identity
+	-- (2026-10-28)"): the boss damage of each class against the Deadeye's moved into a band per role (server/tools/boss_model.py,
+	-- data/scripts/chaos/boss_balance_config.lua) and the pack cleave (pace_config.lua) into a band per role
+	-- (server/tools/pack_model.py). Every class that moved has a point at level 250 with its old level 300 value, so the levels
+	-- below 250 play as before, and a point at 800 (the curve between 300 and 1000 was a straight line). The Warrior, Mystic and
+	-- Illusionist lines now have entries: the Juggernaut and the Elementalist keep a flat 1 under their own keys (a class entry
+	-- wins over the line's).
+	warrior = {{300, 1.01}, {800, 1.24}, {1000, 1.32}},
+	juggernaut = {{300, 1.0}, {1000, 1.0}},
+	mystic = {{300, 1.0}, {800, 1.09}, {1000, 1.14}},
+	elementalist = {{300, 1.0}, {1000, 1.0}},
+	illusionist = {{250, 1.0}, {300, 1.03}, {800, 1.28}, {1000, 1.36}},
+	thief = {{250, 0.48}, {300, 0.56}, {800, 0.72}, {1000, 0.78}},
+	ninja = {{300, 0.45}, {800, 0.52}, {1000, 0.55}},
+	-- the duelist off-tank: a burst class now (damage between the Juggernaut's and the Ninja's on one target)
+	samurai = {{250, 0.30}, {300, 0.38}, {800, 0.54}, {1000, 0.61}},
 	-- the Necromancer and the Bone Lord at level 300: 1.0 / 0.75 until 2026-10-12; a build that takes the path to Covenant
 	-- of the Grave (physical nodes the C4 build skipped) put both level with or ahead of the Deadeye (README "Line keystones,
-	-- masteries and weapons measured in game")
-	necromancer = {{300, 0.93}, {1000, 0.64}},
-	lich = {{300, 0.50}, {1000, 0.57}},
-	bonelord = {{300, 0.63}, {1000, 0.61}},
-	monk = {{300, 0.63}, {1000, 0.75}},
+	-- masteries and weapons measured in game"); 0.93 / 0.63 until the identity pass (the Bone Lord's boss damage came down:
+	-- 0.88-0.91 of the Deadeye's, a pure area class now)
+	necromancer = {{250, 0.93}, {300, 0.89}, {800, 0.80}, {1000, 0.80}},
+	lich = {{300, 0.50}, {800, 0.53}, {1000, 0.54}},
+	bonelord = {{250, 0.63}, {300, 0.54}, {800, 0.52}, {1000, 0.51}},
+	monk = {{250, 0.63}, {300, 0.60}, {800, 0.89}, {1000, 1.02}},
 	shadowfist = {{300, 0.49}, {1000, 0.69}},
-	ironsage = {{300, 0.61}, {1000, 0.75}}, -- the second healer: damage below the Warrior's
-	templar = {{300, 0.78}, {1000, 0.60}},
+	ironsage = {{300, 0.61}, {800, 0.92}, {1000, 1.05}}, -- the second healer: damage below the Warrior's at 300, level with it at 1000
+	templar = {{250, 0.78}, {300, 0.70}, {800, 0.76}, {1000, 0.78}},
 	inquisitor = {{300, 0.65}, {1000, 0.58}},
-	sentinel = {{300, 0.73}, {1000, 0.60}},
+	sentinel = {{250, 0.73}, {300, 0.76}, {800, 0.81}, {1000, 0.84}},
 	-- the leaders keep a lead of 8-10% (the owner, 2026-10): the Berserker's area damage passed the Elementalist's at
-	-- level 300 with tree builds (3441 against 3349), the Beastmaster's came within 4% at level 1000
-	berserker = {{300, 0.78}, {1000, 1.0}},
-	beastmaster = {{300, 1.0}, {1000, 0.95}},
+	-- level 300 with tree builds (3441 against 3349), the Beastmaster's came within 4% at level 1000; the identity pass keeps
+	-- the Elementalist 8% ahead in area damage (boss_model.py / pack_model.py --check)
+	berserker = {{300, 0.78}, {800, 1.09}, {1000, 1.21}},
+	beastmaster = {{250, 1.0}, {300, 1.14}, {800, 0.97}, {1000, 0.95}},
 	ranger = {{300, 1.0}, {1000, 0.95}},
+	deadeye = {{300, 1.0}, {1000, 0.95}},
 }
 function M.damageFactor(classKey, lineKey, level)
 	local pts = (classKey and M.classDamage[classKey]) or (lineKey and M.classDamage[lineKey])

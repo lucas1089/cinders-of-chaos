@@ -308,6 +308,13 @@ function N.distance(a, b)
 	return max(abs(a.x - b.x), abs(a.y - b.y))
 end
 
+-- How long a freshly raised minion waits before its first hit, in ms (minions.firstStrikeMs of its owner's class, 0 when
+-- the class has none or the config does not say).
+function N.firstStrike(cfg, classKey)
+	local list = cfg.minions and cfg.minions.firstStrikeMs
+	return list and list[classKey] or 0
+end
+
 -- the leash: "teleport" when a minion strays farther than leashRange or onto another floor, else "stay"
 function N.leash(cfg, minionPos, ownerPos)
 	if N.distance(minionPos, ownerPos) > cfg.minions.leashRange then

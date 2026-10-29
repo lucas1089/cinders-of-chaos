@@ -136,6 +136,12 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                Candlemarks (the stock 15 kicks them after 16 minutes; README "Candlemarks")
   baserain     tools/patch_base_rain.py          config.lua weatherRain = false: the base weather's rain (an effect per player every 100 ms) is
                off; the Chaos weather (weather.lua, client game_chaosweather) replaces it (README "Weather on the client (O208)")
+  baseraids    tools/patch_base_raids.py         the Thais orc raid's three single spawns name monsters that do not exist ("Cant create
+               monster Orc Armor"): they name the Orc Leader (README "Base raid fixes"; after monsternames)
+  widespellids tools/patch_wide_spell_ids.py     config.lua chaosWideSpellIds = false when the key is missing (the owner's value is kept): 16-bit spell
+               ids on the wire for a client that asks, engine src-patch 0079 (README "Wide spell ids")
+  shopprices   tools/patch_shop_prices.py        modules.lua ShopModule.requestTrade: the trade window gets 0, not -1 (sent as 4294967295), for "not sold" /
+               "not bought": no buy or sell click on an item the NPC does not trade (README "NPC trade windows")
   castport     tools/patch_cast_port.py          config.lua castPort = 7179: the live cast for the admin app on 127.0.0.1 only
                (engine src-patch 0064, chaos-ctl.sh cast; README "Live spectator")
   servicenpcs  tools/install_service_npcs.py    the five service NPCs (stash keeper, pocket boss NPC, banker, house broker, services
@@ -156,8 +162,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the small fire without damage, on the map: no monster is immune to fire since C7, so the start could not
                place them ("Couldn't spawn monster", README "Spawns on fire fields"; with --dry-run it reads the real
                map and writes nothing)
-  spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells, Hawkeye, Bulwark and
-                                                 Windrunner go; their ids are free (C6, 2026-10-20)
+  spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells, Hawkeye, Bulwark,
+                                                 Windrunner and the three light spells go; their ids are free
+                                                 (C6, 2026-10-20; the light spells 2026-10-28)
                tools/patch_spell_cap.py          the 15-spell cap: classes leave the stock spells they no longer
                                                  have, stock spells no class keeps are retired (docs/CLASSES.md
                                                  "Spell cap", 2026-10-20)
@@ -931,11 +938,33 @@ def step_baserain(server, data, ctx):
 STEPS.insert(STEPS.index('idlekick') + 1, 'baserain')  # config.lua: the base weather's rain off (the Chaos weather replaces it)
 
 
+def step_baseraids(server, data, ctx):
+    args = [tool('patch_base_raids.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_raids.py'))
+
+
+STEPS.insert(STEPS.index('baserain') + 1, 'baseraids')  # raids that name a monster the server does not have
+
+
+def step_shopprices(server, data, ctx):
+    return tool_result(run_tool([tool('patch_shop_prices.py'), server], 'patch_shop_prices.py'))
+
+
+def step_widespellids(server, data, ctx):
+    return tool_result(run_tool([tool('patch_wide_spell_ids.py'), server], 'patch_wide_spell_ids.py'))
+
+
+STEPS.insert(STEPS.index('baseraids') + 1, 'widespellids')  # config.lua: chaosWideSpellIds = false is written once, never overwritten
+
+
+STEPS.insert(STEPS.index('widespellids') + 1, 'shopprices')  # modules.lua: the trade window prices -1 as 0
+
+
 def step_castport(server, data, ctx):
     return tool_result(run_tool([tool('patch_cast_port.py'), server], 'patch_cast_port.py'))
 
 
-STEPS.insert(STEPS.index('baserain') + 1, 'castport')  # config.lua: the live cast port (127.0.0.1 only)
+STEPS.insert(STEPS.index('shopprices') + 1, 'castport')  # config.lua: the live cast port (127.0.0.1 only)
 
 
 def step_supports(server, data, ctx):

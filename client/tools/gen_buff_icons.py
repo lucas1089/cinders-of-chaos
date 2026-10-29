@@ -34,6 +34,9 @@ DEFAULT_OUT = os.path.join(ROOT, 'client', 'overlay', 'data', 'images', 'game', 
 REGISTRY = os.path.join(ROOT, 'server', 'data', 'lib', 'chaos_buffs.lua')
 SPELLDATA = os.path.join(ROOT, 'client', 'overlay', 'modules', 'game_chaosspells', 'spelldata.lua')
 SPELL_ART = os.path.join(HERE, 'spell_icon_art', 'spell_icons_32.png')
+# a spell with no drawn art yet (the placeholder glyphs of gen_spell_icons.py, e.g. the level 800 quest buffs) takes its cell of the
+# generated sheet instead
+SPELL_SHEET = os.path.join(ROOT, 'client', 'overlay', 'data', 'images', 'game', 'spells', 'spell-icons-32x32.png')
 
 N = 26          # icon size (BuffMath.ICON_SIZE)
 K = 4           # the motifs are drawn at K x and reduced by majority
@@ -854,6 +857,10 @@ SPELL_ICONS = {
     'chi_ward': 'tor qhal', 'mantra': 'tor vas qhal', 'breath': 'saen qhal',
     'aegis_faith': 'tor gal sol aeg',
     'moonfang_pack': 'vael luth wyrd', 'mirror_image': 'drai spek',
+    # the level 800 buffs of the line spell quests (2026-10-28)
+    'ironbound_oath': 'vok brak ael ruun', 'unblinking_gaze': 'vyr oth sag ael', 'veil_of_whispers': 'tor zhul vael nyx',
+    'shroud_of_knives': 'fen nyx kaen umh', 'dirge_of_the_legion': 'tor oss vael kyng', 'lotus_stance': 'saen qhal mil dhun',
+    'mantle_of_dawn': 'tor sol aur emb',
 }
 
 DEBUFFS = {'poison', 'burning', 'energy', 'bleeding', 'drowning', 'freezing', 'dazzled', 'cursed', 'paralyze', 'drunk',
@@ -870,10 +877,12 @@ def spell_cells():
     return {m.group(1): int(m.group(2)) for m in re.finditer(r'words = "([^"]+)".*?clientId = (\d+)', text)}
 
 
-def from_spell(sheet, cell, kind):
+def from_spell(sheet, cell, kind, fallback=None):
     n = cell - 1
-    icon = sheet.crop(((n % 20) * 32, (n // 20) * 32, (n % 20) * 32 + 32, (n // 20) * 32 + 32))
-    inner = icon.crop((2, 2, 30, 30)).resize((IN1 - IN0, IN1 - IN0), Image.BOX)
+    box = ((n % 20) * 32, (n // 20) * 32, (n % 20) * 32 + 32, (n // 20) * 32 + 32)
+    inner = sheet.crop(box).crop((2, 2, 30, 30)).resize((IN1 - IN0, IN1 - IN0), Image.BOX)
+    if inner.getextrema()[3][1] == 0 and fallback is not None:
+        inner = fallback.crop(box).crop((2, 2, 30, 30)).resize((IN1 - IN0, IN1 - IN0), Image.BOX)
     if inner.getextrema()[3][1] == 0:
         raise SystemExit('spell icon cell %d is empty' % cell)
     im = plate(kind, R['coal'])
@@ -900,10 +909,11 @@ def build_all():
             if sheet is None:
                 cells = spell_cells()
                 sheet = Image.open(SPELL_ART).convert('RGBA')
+                generated = Image.open(SPELL_SHEET).convert('RGBA')
             cell = cells.get(SPELL_ICONS[name])
             if not cell:
                 raise SystemExit('%s: no spell "%s" in spelldata.lua' % (name, SPELL_ICONS[name]))
-            out[name] = from_spell(sheet, cell, 'buff')
+            out[name] = from_spell(sheet, cell, 'buff', generated)
         else:
             out[name] = draw(name)
     return out

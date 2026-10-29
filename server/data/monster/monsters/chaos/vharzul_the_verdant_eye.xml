@@ -7,7 +7,7 @@
      writes 3361 here; server/README.md "AutoSprite looks (pair 54)"). -->
 <monster name="Vharzul the Verdant Eye" nameDescription="Vharzul the Verdant Eye" race="fire" experience="32000" speed="70" manacost="0">
 	<health now="96000" max="96000"/>
-	<look type="35" corpse="6068"/>
+	<look type="3361" corpse="6068"/>
 	<level min="690" max="710"/>
 	<targetchange interval="4000" chance="12"/>
 	<flags>

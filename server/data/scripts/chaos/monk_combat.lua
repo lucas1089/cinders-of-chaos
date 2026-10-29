@@ -46,6 +46,10 @@ if not ChaosWeaponPower then
 	dofile("data/scripts/chaos/weapon_power_core.lua") -- the auto attack keeps up with the level and the skill
 end
 local WP = ChaosWeaponPower
+if not ChaosQuestBuffs then
+	dofile("data/scripts/chaos/quest_buffs_core.lua") -- Lotus Stance (level 800 line spell quest buff)
+end
+local QB = ChaosQuestBuffs
 
 local function hasCond(creature, ctype, subId)
 	return creature:getCondition(ctype, CONDITIONID_COMBAT, subId) ~= nil
@@ -126,7 +130,7 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 		local id, now = player:getId(), M.now()
 		if M.weaponHitGivesChi(M.lastWeaponChi[id], now) then
 			M.lastWeaponChi[id] = now
-			M.addChi(player, M.cfg.chi.perWeaponHit)
+			M.addChi(player, QB.chiPerHit(M.cfg.chi.perWeaponHit, hasCond(player, CONDITION_ATTRIBUTES, QB.cfg().subId.lotus)))
 		end
 	end
 
@@ -181,7 +185,7 @@ local function onDefence(player, attacker, primaryDamage, secondaryDamage, prima
 	-- evasion (Monk line; melee and ranged hits of creatures)
 	if attacker and M.isMonkLine(voc) and origin ~= ORIGIN_CONDITION then
 		local isWeapon = origin == ORIGIN_MELEE or origin == ORIGIN_RANGED
-		if M.dodges(voc, isWeapon, math.random(), scar ~= nil) then
+		if M.dodges(voc, isWeapon, math.random(), scar ~= nil, QB.evadeBonus(player)) then
 			if ChaosCombatFx then
 				ChaosCombatFx.dodge(player)
 			end

@@ -734,8 +734,10 @@ jobs:
           python3 -I server/tools/rarity_stock_patch_test.py  # the seven rarities: the stock roll of default_onDropLoot.lua
           python3 -I server/tools/patch_base_throwables_test.py  # stackable throwing weapons leave loot, shops and rewards
           python3 -I server/tools/retire_cure_spells_test.py  # the stock cure spells and Hawkeye leave spells.xml
-          python3 -I server/tools/patch_spell_cap_test.py  # the 15-spell cap: kits of at most 15 spells per class
+          python3 -I server/tools/patch_spell_cap_test.py  # the spell cap: kits of at most 24 spells per class
+          python3 -I server/tools/install_class_ascension_test.py  # the NPC folder copy (hub NPCs, Archivist Odrenna)
           python3 -I server/tools/monster_spells_test.py  # retired spells a monster names stay, monster-only
+          python3 -I server/tools/patch_wide_spell_ids_test.py  # config key chaosWideSpellIds and engine src-patch 0079 (16-bit spell ids, gated)
           python3 -I server/tools/patch_spell_timings_test.py  # stock cooldowns (the ladder) and the two script cooldowns
           python3 -I server/tools/patch_badges_test.py  # the badge slot; retired slots: hooks, descriptions, death loss
           python3 -I server/tools/patch_prizes_test.py  # base prizes into the backpack: roulettes, task rewards, crafting, ship NPC
@@ -802,8 +804,14 @@ jobs:
       - name: Waystone map audit parsers and rules (audit_waystone_maps.py; the base map itself is checked by hand)
         run: python3 -I server/tools/audit_waystone_maps_test.py
 
-      - name: Late packs die in at most 3x a base hunt pack (pack_model.py --check; pace_config.lua scaled.health)
+      - name: Pack bands per role, Elementalist ahead on a pack, late packs die in at most 3x a base hunt pack (pack_model.py --check; boss_balance_config.lua packLimits, pace_config.lua scaled.health)
         run: python3 -I server/tools/pack_model.py --check
+
+      - name: Boss damage per class stays inside its limits, Deadeye ahead (boss_model.py --check and its test; boss_balance_config.lua)
+        run: python3 -I server/tools/boss_model.py --check && python3 -I server/tools/boss_model_test.py
+
+      - name: Class weaknesses pinned, the frailest and the slowest to ramp up stay so (weakness_model.py --check and its test; weakness_config.lua)
+        run: python3 -I server/tools/weakness_model.py --check && python3 -I server/tools/weakness_model_test.py
 
       - name: Infinity Tower floors clear in bounded time, level 800 reaches floor 30-40 (tower_model.py --check and its test; infinitytower_balance_config.lua)
         run: python3 -I server/tools/tower_model.py --check && python3 -I server/tools/tower_model_test.py
@@ -813,6 +821,9 @@ jobs:
 
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
+
+      - name: Quest spell icons match their source sheet (gen_quest_spell_icons.py, cells 349-369 of the spell icon sheets)
+        run: python3 client/tools/gen_quest_spell_icons.py --check  # not -I: Pillow from the user site (installed above)
 
       - name: Rain art is up to date (gen_rain_art.py, three seamless tiles of game_chaosweather)
         run: python3 client/tools/gen_rain_art.py --check  # not -I: Pillow from the user site (installed above)
@@ -933,6 +944,9 @@ jobs:
       - name: Ground pickups install (globes and ember items, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pickups_test.py
 
+      - name: Store pouches install (four pouches, capacities, the Gem Pouch look, synthetic items.otb / items.xml)
+        run: python3 -I server/tools/install_pouches_test.py
+
       - name: Client pair guard and the pair 55 and 56 item installs (chaosClientPair in config.lua, pickups 55, fist weapons and weapons above level 800 56)
         run: |
           python3 -I server/tools/client_pair_test.py
@@ -947,6 +961,12 @@ jobs:
 
       - name: Base rain off in config.lua (patch_base_rain.py, install_all step baserain)
         run: python3 -I server/tools/patch_base_rain_test.py
+
+      - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
+        run: python3 -I server/tools/patch_base_raids_test.py
+
+      - name: NPC shop prices of -1 sent as 0 (patch_shop_prices.py, install_all step shopprices)
+        run: python3 -I server/tools/patch_shop_prices_test.py
 
       - name: The live cast port in config.lua (patch_cast_port.py, install_all step castport)
         run: python3 -I server/tools/patch_cast_port_test.py

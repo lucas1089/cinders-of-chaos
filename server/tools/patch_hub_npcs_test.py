@@ -87,7 +87,7 @@ def main():
         check({t[1] for t in tiles} == {32230, 32236} and {t[2] for t in tiles} == {7}, 'two rows on floor 7')
         names = [b['npc'] for b in real['booths'] if b['npc']]
         check(len(names) == len(set(names)), 'every Chaos NPC in one stall: %s' % names)
-        for need in ('Ascendant Oracle', 'Keeper of Trials', 'Archivist Maelis', 'Warden Ysolde', 'Loot Buyer'):
+        for need in ('Ascendant Oracle', 'Keeper of Trials', 'Archivist Maelis', 'Archivist Odrenna', 'Warden Ysolde', 'Loot Buyer'):
             check(need in names, '%s has a stall' % need)
     finally:
         shutil.rmtree(root, ignore_errors=True)

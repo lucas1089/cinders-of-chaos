@@ -51,10 +51,16 @@ do
 	eq(rows[32236], 8, "eight stalls on the south row")
 	for _, n in ipairs({"Ascendant Oracle", "Keeper of Trials", "Archivist Maelis", "Warden Ysolde", "Loot Buyer",
 		"Material Broker", "Osric the Chandler", "Iselde Varrow", "Mordecai Ashwager", "Cassian Auric", "Tavish Coldhand",
-		"Halvard Deedkeeper", "Vessa Hollowmark", "Pell Ashmere", "Veyra the Apothecary"}) do
+		"Halvard Deedkeeper", "Vessa Hollowmark", "Pell Ashmere", "Veyra the Apothecary", "Archivist Odrenna"}) do
 		check(names[n], n .. " has a stall in the hub")
 	end
-	eq(#K.booths(cfg), 15, "fifteen NPCs, one empty stall")
+	eq(#K.booths(cfg), 16, "sixteen NPCs, every stall filled (Archivist Odrenna took the last one, 2026-10-28)")
+	-- every stall's NPC gets a map mark (poi.lua looks at the stall tiles; the temple scan is 700 tiles away)
+	dofile("data/scripts/chaos/poi_core.lua")
+	local marks = ChaosPoi.hubMarks(dofile("data/scripts/chaos/poi_config.lua"), K.booths(cfg), function(b)
+		return {{name = b.name, x = b.x, y = b.y, z = b.z}}
+	end)
+	eq(#marks, 16, "all sixteen hub NPCs get a map mark")
 	-- the temple's portal gallery holds no NPC any more
 	local gallery = dofile("data/scripts/chaos/temple_portals_config.lua")
 	for _, t in ipairs(gallery.towns) do
@@ -157,8 +163,10 @@ dofile("data/scripts/chaos/npc_booths.lua")
 local X = ChaosNpcBooths
 
 local s = X.spot("Archivist Maelis", 2)
-check(s and s.x == 31628 and s.y == 32236, "the Archivist's stall (a Position)")
+check(s and s.x == 31672 and s.y == 32236, "the Archivist's stall (a Position)")
 eq(X.spot("Archivist Maelis", 1), nil, "none in Mirewake")
+s = X.spot("Archivist Odrenna", 2)
+check(s and s.x == 31628 and s.y == 32236, "Odrenna's stall, next to the Keeper of Trials")
 eq(X.spotForTemple("Keeper of Trials", temples[2]).x, 31636, "the Keeper by the temple position")
 
 -- relocation at login
@@ -196,7 +204,7 @@ for dx = -4, 4 do
 end
 dofile("data/scripts/chaos/npc_place.lua")
 local npc = ChaosNpcPlace.place("Archivist Maelis", temples[2], {{1, 1}})
-check(npc and npc.pos.x == 31628 and npc.pos.y == 32236, "ChaosNpcPlace.place puts the NPC in its stall")
+check(npc and npc.pos.x == 31672 and npc.pos.y == 32236, "ChaosNpcPlace.place puts the NPC in its stall")
 eq(ChaosNpcPlace.place("Archivist Maelis", temples[2], {{1, 1}}), npc, "found again in its stall (no second NPC)")
 local other = ChaosNpcPlace.place("Loot Buyer", temples[1], {{2, 2}})
 check(other and other.pos.x == 32959 and other.pos.y == 32078, "another town: next to its temple")

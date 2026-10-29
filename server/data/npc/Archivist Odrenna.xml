@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Archivist Odrenna: gives the line spell quests (server/README.md "Line spell quests",
+     server/data/scripts/chaos/spellquest.lua). Placed at startup (Chaos.spellQuest.npc): in her stall in the hub in the main city (npc_booths_config.lua). -->
+<npc name="Archivist Odrenna" script="archivist_odrenna.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="140" head="78" body="95" legs="114" feet="95" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="Welcome, |PLAYERNAME|. The archive keeps what the great classes once knew. Ask me about a {spell} or a {quest}." />
+		<parameter key="message_farewell" value="May your pages never burn, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The archive is patient." />
+	</parameters>
+</npc>

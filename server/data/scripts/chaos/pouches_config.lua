@@ -2,7 +2,7 @@
 -- `kinds` block for items.otb / items.xml). The engine also loads this file as a script because it lives under
 -- data/scripts; it only returns a table.
 --
--- Three physical containers sold in the store (Convenience): each one collects its own kind of loot from the corpses
+-- Four physical containers sold in the store (Convenience): each one collects its own kind of loot from the corpses
 -- the character owns, while the character carries it. Rules: pouches_core.lua; engine glue: pouches.lua; README
 -- "Store pouches".
 ChaosPouchesConfig = {
@@ -14,14 +14,14 @@ ChaosPouchesConfig = {
 	storage = {
 		lootRules = 7100107, -- the Loot Pouch rules, packed (pouches_core.lua P.packRules); unset = defaults
 		legacyGrant = 7100108, -- 1 = the free Loot Pouch for a former Bottomless Loot Pouch owner was given
-		regrant = 7100109 -- bits (1 loot, 2 orbs, 4 keys): a pouch lost with a dropped backpack, given back at login
+		regrant = 7100109 -- bits (1 loot, 2 orbs, 4 keys, 8 gems): a pouch lost with a dropped backpack, given back at login
 	},
 	legacyUnlock = 7100100, -- the retired Bottomless Loot Pouch unlock (Chaos.storage.shopLootPouch), read only
 
 	-- custom attributes on every pouch
 	attr = {
 		owner = "chaos_pouch_owner", -- guid of the character it belongs to (only the owner's pouch collects)
-		kind = "chaos_pouch", -- "loot" | "orbs" | "keys"
+		kind = "chaos_pouch", -- "loot" | "orbs" | "keys" | "gems"
 		storebound = "chaos_storebound", -- 1: a store item (trade, mail, ground, player market refuse it)
 		lock = "chaos_locked" -- not 0: the item lock (engine patch 0009): NPCs do not buy it, trash refuses it, stock market too
 	},
@@ -50,30 +50,40 @@ ChaosPouchesConfig = {
 			description = "Store item: cannot be traded, sold or dropped. A bottomless bag: the loot of your kills goes " ..
 				"into it while you carry it, its contents weigh nothing, and the Auto Seller sells what is in it."},
 		orbs = {id = 32082, sourceId = 9775, clientId = 38609, oldClientId = 33651,
-			capacity = 40, weight = 100, title = "Orbs Pouch", article = "an",
+			capacity = 100, weight = 100, title = "Orbs Pouch", article = "an",
 			name = "orbs pouch", plural = "orbs pouches",
 			collects = "orbs, whetstones, rune shards and gems",
 			description = "Store item: cannot be traded, sold or dropped. Collects orbs, whetstones, rune shards and " ..
-				"gems from your kills while you carry it."},
+				"gems from your kills while you carry it (no gems while you carry a Gem Pouch)."},
 		keys = {id = 32083, sourceId = 7343, clientId = 38610, oldClientId = 33652,
-			capacity = 30, weight = 100, title = "Rift Key Pouch", article = "a",
+			capacity = 100, weight = 100, title = "Rift Key Pouch", article = "a",
 			name = "rift key pouch", plural = "rift key pouches",
 			collects = "Rift Keys, Omen Keys and omen fragments",
 			description = "Store item: cannot be traded, sold or dropped. Collects Rift Keys, Omen Keys and omen " ..
-				"fragments from your kills while you carry it."}
+				"fragments from your kills while you carry it."},
+		-- the Gem Pouch (tester feedback 2026-10-28: "uma bag so pra gema, que nao misturasse com orb"): only gems. While the
+		-- character carries it the Orbs Pouch takes no gems (pouches_core.lua plan); without it the Orbs Pouch does.
+		-- clientId 0 = the stock bag's own look (the jewelled backpack): no new sprite, install_pouches.py keeps the node's
+		-- client id as the stock bag has it.
+		gems = {id = 32095, sourceId = 5801, clientId = 0,
+			capacity = 100, weight = 100, title = "Gem Pouch", article = "a",
+			name = "gem pouch", plural = "gem pouches",
+			collects = "gems",
+			description = "Store item: cannot be traded, sold or dropped. Collects only gems from your kills while you " ..
+				"carry it; the Orbs Pouch then leaves gems to it."}
 	},
-	-- the specialist pouches, in priority order: an item of their kind (orbs, rune shards, gems / Rift Keys, omen items)
-	-- always goes to them first, before the Loot Pouch, whatever the Loot Pouch rules say. Full: the Loot Pouch takes it
+	-- the specialist pouches, in priority order: an item of their kind (gems / orbs, rune shards, gems / Rift Keys, omen
+	-- items) always goes to the first CARRIED one that wants it (a gem to the Gem Pouch before the Orbs Pouch), first, before the Loot Pouch, whatever the Loot Pouch rules say. Full: the Loot Pouch takes it
 	-- only with its "overflow" rule (default on), else the backpack, else it stays in the corpse (pouches_core.lua plan)
-	priority = {"orbs", "keys"},
-	order = {"orbs", "keys", "loot"}, -- the order of the per-kill chat line
+	priority = {"gems", "orbs", "keys"},
+	order = {"gems", "orbs", "keys", "loot"}, -- the order of the per-kill chat line
 
 	-- Orbs Pouch: these ids, plus every currency entry of loot_config.lua and the loot filter's orbIds
 	orbIds = {29851, 29852, 29853, 29854, 29855, 29856, 29857, 29858, 29859, -- the currency orbs
 		24688, 24691, 24692, 24697, -- Erasure, Gilding, Sockets, Unmaking
 		32251, 32252, 32253, 32254, 32255, 32256, 32258, 32259, 32260, -- orbs v2, the Whetstone, Ember, Crown and Void
 		32051}, -- the rune shard (salvage)
-	orbGems = true, -- gems (data/lib/chaos_gems.lua, 32001..32035) go to the Orbs Pouch too
+	orbGems = true, -- gems (data/lib/chaos_gems.lua, 32001..32035) go to the Orbs Pouch too, unless a Gem Pouch is carried
 
 	-- Rift Key Pouch: the Rift Key (item + action id, rift_config.lua key) and the omen items (rift_config.lua omen)
 	riftKey = {itemId = 10155, actionId = 47401},

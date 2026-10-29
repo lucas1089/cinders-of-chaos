@@ -179,7 +179,8 @@ do
 	local f = T.nearest({x = 10, y = 10, z = 7}, cands, 5, 3, 2)
 	ok(#f == 1 and f[1].id == 3, "the fan: within reach, not the skipped target")
 	for key, c in pairs(C) do
-		ok(c.pack and c.pack >= 1, key .. ": the pack takes at least the plain hit")
+		-- the class identity pass (2026-10-28) cut the Thief's fan to half the hit: a burst class (pack farming 0.80-0.86)
+		ok(c.pack and c.pack >= 0.5, key .. ": the pack takes at least half the plain hit")
 	end
 end
 

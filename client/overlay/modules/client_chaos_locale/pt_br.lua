@@ -2807,6 +2807,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Your level or magic level is too low."] = "Seu nível ou magic level é baixo demais.",
   ["Not learned yet."] = "Ainda não aprendida.",
   ["Not a spell of your vocation."] = "Não é magia da sua vocação.",
+  -- game_spellbook/spellbook.lua: the line spell quest spells not learned yet (locked)
+  ["Quest"] = "Missão",
+  ["Locked. %s teaches this spell in a quest, from level %d."] = "Bloqueada. %s ensina esta magia em uma missão, a partir do nível %d.",
   -- game_spellbook/spellbook_core.lua (the spell pickers, base patch 0057)
   ["Only show learned spells"] = "Mostrar só magias aprendidas",
   ["Select a spell from the list."] = "Escolha uma magia da lista.",
@@ -3409,6 +3412,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Goal Tracker"] = "Rastreador de objetivos",
   ["Next Goals (%d) +"] = "Próximos objetivos (%d) +",
   ["Ascension (%d) +"] = "Ascensão (%d) +",
+  ["Spell Quest (%d) +"] = "Missão de Magia (%d) +",
+  ["Spell Quest"] = "Missão de Magia",
   ["Level %d-%d: %s"] = "Nível %d-%d: %s",
   ["Level %d+: %s"] = "Nível %d+: %s",
   ["Level %d: %s"] = "Nível %d: %s",

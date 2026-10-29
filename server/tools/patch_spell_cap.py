@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The spell cap: every class keeps at most MAX_SPELLS (20) spells of its own (idempotent). install_all.py step `spells`, second
+"""The spell cap: every class keeps at most MAX_SPELLS (24) spells of its own (idempotent). install_all.py step `spells`, second
 (after retire_cure_spells.py, before register_spells.py).
 
 usage: python3 -I patch_spell_cap.py DATA_DIR [--dry-run]       (python3 -I patch_spell_cap.py --list prints the table)
@@ -8,10 +8,12 @@ Owner decision (2026-10-20, "mysthic tem magias demais. abaixe pra 15. faça iss
 and ascension (docs/CLASSES.md vocation ids) can learn and cast at most 15 spells (raised to 20 on 2026-10-23: the owner
 asked for the same number of attack spells in every class, "devem ter a mesma quantidade", so every class has 10 and the
 Bone Lord, the class with most other spells, reaches 20; docs/CLASSES.md "Attack spell parity"): attack, healing and support, the
-stock spells it kept and the Chaos spells. Not counted (UNIVERSAL below): the 15 spells every character shares (light,
-great light, find person, rope, levitate, haste, Town Portal, Flickerdash, Hunter's Instinct, the four vigils, Banner
-Call, Soulward) and Radiant Lantern (a light spell like the other two), nor Ward of the Mind (OUTSIDE_CAP: the classic
-mana shield of the Mystic, Necromancer and Ranger lines, owner 2026-10-21). An ascension's 15 include the base spells it keeps. The kits per class are in
+stock spells it kept and the Chaos spells. Not counted (UNIVERSAL below): the 12 spells every character shares (Bloodtrail,
+Ghost Rope, Wraith Step, Fleetfoot, Town Portal, Flickerdash, Hunter's Instinct, the four vigils, Banner Call), nor the two mana
+shields (OUTSIDE_CAP: Ward of the Mind, the classic mana shield of the Mystic, Necromancer and Ranger lines, owner 2026-10-21, and
+Soulward, its 15 s cousin of the same lines and the Templar line, owner 2026-10-28: "Deixe o mana shield somente pra classes de magia e
+híbridas"). The three light spells (Lantern, Greater Lantern, Radiant Lantern) are retired for every class (retire_cure_spells.py,
+owner 2026-10-28). An ascension's 15 include the base spells it keeps. The kits per class are in
 docs/CLASSES.md "Spell cap"; tests/spell_cap_test.lua counts them from the repo data.
 
 CAP names each stock instant of DATA_DIR/spells/spells.xml the cap changes, by script (rename_spells.py never changes a
@@ -34,14 +36,15 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import monster_spells as MS  # noqa: E402
 
 MARK = 'Chaos: spell cap (patch_spell_cap.py): '
-UNIVERSAL = ("Town Portal", "Bloodtrail", "Lantern", "Greater Lantern", "Ghost Rope", "Wraith Step", "Fleetfoot",
+UNIVERSAL = ("Town Portal", "Bloodtrail", "Ghost Rope", "Wraith Step", "Fleetfoot",
              "Hunter's Instinct", "Flickerdash", "Vigil of Clarity", "Vigil of Haste", "Vigil of Iron", "Vigil of Wrath",
-             "Banner Call", "Soulward", "Radiant Lantern")
-MAX_SPELLS = 20  # was 15 until 2026-10-23 (the attack kit: 10 attack spells in every class)
+             "Banner Call")
+MAX_SPELLS = 24  # was 20 (2026-10-23): the biggest kit, Bone Lord, has 21 now (22 with its level 800 buff)
 # kept by some classes but not counted in their 15 (owner 2026-10-21: the classic Magic Shield back "somente pra mages e
 # rangers", the Necromancer counted as a mage; add_vocations.py LINE_STOCK_SPELLS gives it to the Mystic, Necromancer
-# and Ranger lines, CAP keeps exactly those nine)
-OUTSIDE_CAP = ("Ward of the Mind",)
+# and Ranger lines, CAP keeps exactly those nine; Soulward, a Chaos spell, lists the same nine and the Templar line in
+# spells_chaos.xml, owner 2026-10-28)
+OUTSIDE_CAP = ("Ward of the Mind", "Soulward")
 # script (relative to data/spells/scripts) -> (spell id, Chaos name, the classes that keep it; () = retired)
 CAP = {
     'healing/light_healing.lua': (1, 'Minor Mending', ('Ranger', 'Deadeye', 'Beastmaster', 'Mystic', 'Elementalist', 'Illusionist', 'Necromancer', 'Lich', 'Bone Lord')),

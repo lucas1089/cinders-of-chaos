@@ -86,7 +86,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 132 | Ironhold | `tor brak` | W, J, B | 55 | 200 | 30s | +40% shielding for 12s; no pacify, no lock. In place of the stock Bulwark, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | 223 | Iron Bellow | `vok vas rhov` | W, J | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
 | 224 | Vaulting Cleave | `kah brak skai` | W, J, B | 170 | 250 | 7s | Jump next to the target and strike it with weapon attack and skill. |
-| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 400 | 10s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
+| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 400 | 10s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 5x5 circle (7x7 before 2026-10-28); enemies slowed 70% for 4s. |
 | **illusionist** | | | | | | | |
 | 226 | Hall of Mirrors | `drai spek` | M, I | 40 | 250 | 30s | Up to 3 decoy clones in your outfit for 10s (needs the Clone monster). |
 | 227 | Umbral Stride | `ruan nyx umh` | M, I | 70 | 120 | 10s | Teleport to the far side of the target and stab it for death damage. |
@@ -822,7 +822,163 @@ Mystic's 3363 / 4812; "Healing" above). The Samurai deals a bit less than the Ju
 in game: a hit of 727 -> 509) and taunts: about 15.4 effective health per level against the Sentinel's 17.3 and the Juggernaut's
 19.6 (21.3 with Immovable) in the toughness model of "Templar line". The Iron Sage's damage is below the Warrior's.
 
+### Boss damage per class (2026-10-28; computed, not measured in game)
+
+`server/tools/boss_model.py` (the mirror of `pack_model.py`; limits in `data/scripts/chaos/boss_balance_config.lua`).
+Boss damage per second is the class's 1-target number of `pack_model.py` (C4 measurement plus the kit change, linear
+between 300 and 1000, plus 2.41 a level above 1000, times the class identity pass: `class_tree.lua` `classDamage` now over then,
+`pack_model.tuning`), so the tree, gear, spell factor and the Necromancer line's minions are in it. The pack cleave never hits a boss
+and the pack tools hit a lone target like the filler. No existing model has boss uptime, so every class has full uptime. Ratio is to the
+Deadeye. `--check` (CI) keeps each class inside its `limits` row at 300, 800, 1000 and 1200 (the window at 800 is 0.03 below) and the
+Deadeye at least 8% ahead of every other class.
+
+The state before the class identity pass (the final table is in docs/CLASSES.md "Class identity (2026-10-28)"):
+
+| Class | Boss 300 | Boss 1000 | Pack 300 | Pack 1000 |
+|---|---|---|---|---|
+| Warrior | 0.68 | 0.51 | 1.00 | 1.00 |
+| Juggernaut | 0.60 | 0.56 | 1.00 | 1.00 |
+| Berserker | 0.74 | 0.58 | 1.03 | 1.01 |
+| Ranger | 0.82 | 0.80 | 1.00 | 1.00 |
+| Deadeye | 1.00 | 1.00 | 1.00 | 1.00 |
+| Beastmaster | 0.63 | 0.71 | 1.00 | 0.99 |
+| Mystic | 0.61 | 0.53 | 1.01 | 1.00 |
+| Elementalist | 0.70 | 0.65 | 1.07 | 1.08 |
+| Illusionist | 0.58 | 0.44 | 1.00 | 1.00 |
+| Thief | 0.66 | 0.52 | 1.00 | 1.00 |
+| Ninja | 0.86 | 0.79 | 1.01 | 1.00 |
+| Samurai | 0.57 | 0.44 | 1.00 | 1.00 |
+| Necromancer | 0.77 | 0.57 | 1.00 | 0.99 |
+| Lich | 0.89 | 0.88 | 1.01 | 1.01 |
+| Bone Lord | 0.88 | 0.90 | 1.01 | 1.00 |
+| Monk | 0.73 | 0.51 | 1.00 | 0.99 |
+| Shadowfist | 0.90 | 0.81 | 1.01 | 1.00 |
+| Iron Sage | 0.63 | 0.45 | 1.00 | 1.00 |
+| Templar | 0.69 | 0.46 | 1.00 | 1.00 |
+| Inquisitor | 0.83 | 0.78 | 1.00 | 1.00 |
+| Sentinel | 0.57 | 0.43 | 1.00 | 1.00 |
+
+**Class identity pass (2026-10-28).** Boss and pack bands per role, levers and the final table: docs/CLASSES.md "Class identity
+(2026-10-28)". The model gained two things here. `pack_model.tuning(class, level)` multiplies the C4 + KIT numbers by the class damage
+factor now over then (`DAMAGE_BASE` holds the state before the pass) and the KIT area gain by the tool scale (`TOOL_WEIGHT`: Fan of
+Knives holds 0.7 and Iaido Sweep 0.75 of its class's area gain, measured with `rotation_sim.py` by taking the tool's t5 to 1; a tool counts
+from its level, 80 and 200). `pack_model.reference()` is the median class before the pass (untuned numbers, `BASE_CLEAVE`): the yardstick
+of every pack band and of the base hunt pack (`pack_clear`), so the tower, the late sets and the pace curves stay where they were. A band
+is `packLimits` of `boss_balance_config.lua`, a boss band `limits`; `pack_model.py --check` also keeps the Elementalist 8% ahead of every
+class on a pack of 5 with the cleave.
+
+### Class weaknesses (measured) (2026-10-28; computed, not measured in game)
+
+`server/tools/weakness_model.py` (step 3 of the class identity plan; inputs and pins in `data/scripts/chaos/weakness_config.lua`,
+`--check` and `weakness_model_test.py` are in CI). It measures what a class pays for its strength from models and data that exist,
+and sets no balance number. Per class at 300, 800, 1000 and 1200 (`--levels` picks others, `--findings` prints the verdicts):
+
+- Mana pressure. The best rotation of `rotation_sim.py` spends so much mana a minute. The vocation regenerates its own
+  amount (`chaos_vocations*.xml`), the level mana flow (`mana_flow_config.lua`) comes on top. Runway is the pool
+  (`start_stats.lua`) over the net drain, seconds from a full pool. "Runway own" is the number of `rotation_sim.py --mana`. No potion is
+  assumed, as that check assumes none. "Pools a min" is mana spent a minute over the pool.
+- Ramp-up. Seconds until the damage dealt since the pull stays at 80% or more of the damage of an average span of the same
+  length in the steady fight. Cold start: no buff, no chi, no minion. Chi comes from `rotation_sim.simulate` (+1 per 2 s auto attack
+  hit, a finisher waits for 4). The Necromancer line adds its minions from `minion_model.py`, raised in the best order by the support
+  group (2 s) and each spell's cooldown, with no corpse around, 1 s to walk to the target and the class's first strike delay (`necro_config.lua` `minions.firstStrikeMs`). Damage buffs are cast before the pull in every
+  balance model, so they stay out. "Minions out" is the second the last minion stands next to the caster.
+- Exposure. Share of the damage on one target dealt from reach 1 (near) and 3 or more (far): the best rotation's hits by the reach of each
+  spell, plus the weapon (35% of the damage for melee, fist and distance classes, 13% for a wand; reach 1 for the sword, fist and dagger,
+  far for bow, crossbow and wand). A spell's reach is its `range` in `spells_chaos.xml`; a spell cast on the caster's tile has the
+  radius of its area. Effective health per level is the vocation's health gain over the damage taken factor of the toughness model
+  (Juggernaut 0.765, Sentinel 0.81, Samurai 0.844 from "Templar line" and "Classes with the passive trees"; every other class has no
+  toughness number and counts 1.0). No gear, tree or evasion.
+
+Table, base values of the class after the second identity pass (below; levels 300 and 1000, the model also prints 800 and 1200):
+
+| Class | Runway s 300 / 1000 | Pools a min 300 / 1000 | Ramp s 300 / 1000 | Minions out s | Near / far 300 | Near / far 1000 | Health per level | Health 300 / 1000 |
+|---|---|---|---|---|---|---|---|---|
+| Warrior | 76 / 208 | 0.82 / 0.30 | 0.0 / 0.0 | - | 59% / 15% | 61% / 13% | 15.0 | 4670 / 15170 |
+| Juggernaut | 83 / 201 | 0.82 / 0.33 | 0.0 / 0.0 | - | 59% / 15% | 50% / 25% | 19.6 | 6104 / 19830 |
+| Berserker | 114 / 257 | 0.61 / 0.26 | 0.0 / 0.0 | - | 59% / 23% | 56% / 25% | 14.0 | 4371 / 14171 |
+| Ranger | 63 / 180 | 0.97 / 0.34 | 5.0 / 5.0 | - | 0% / 100% | 0% / 94% | 10.0 | 3155 / 10155 |
+| Deadeye | 49 / 122 | 1.28 / 0.51 | 5.0 / 3.0 | - | 0% / 94% | 0% / 95% | 10.0 | 3155 / 10155 |
+| Beastmaster | 81 / 189 | 0.78 / 0.33 | 0.0 / 0.0 | - | 0% / 87% | 0% / 85% | 11.0 | 3454 / 11154 |
+| Mystic | 58 / 191 | 1.05 / 0.32 | 0.0 / 0.0 | - | 0% / 100% | 0% / 100% | 5.0 | 1645 / 5145 |
+| Elementalist | 37 / 110 | 1.63 / 0.55 | 0.0 / 0.0 | - | 0% / 100% | 0% / 100% | 5.0 | 1645 / 5145 |
+| Illusionist | 34 / 112 | 1.81 / 0.55 | 5.5 / 0.0 | - | 0% / 100% | 0% / 100% | 6.0 | 1944 / 6144 |
+| Thief | 66 / 256 | 0.94 / 0.24 | 0.0 / 0.0 | - | 79% / 10% | 47% / 41% | 12.0 | 3763 / 12163 |
+| Ninja | 62 / 209 | 1.03 / 0.31 | 0.0 / 0.0 | - | 56% / 44% | 47% / 53% | 12.0 | 3763 / 12163 |
+| Samurai | 54 / 195 | 1.19 / 0.33 | 0.0 / 0.0 | - | 47% / 28% | 60% / 30% | 15.4 | 4812 / 15594 |
+| Necromancer | 87 / 288 | 0.70 / 0.21 | 4.0 / 8.0 | 7 | 0% / 100% | 0% / 100% | 8.0 | 2547 / 8147 |
+| Lich | 88 / 292 | 0.72 / 0.22 | 0.0 / 0.0 | 5 | 0% / 100% | 0% / 100% | 7.0 | 2248 / 7148 |
+| Bone Lord | 78 / 265 | 0.81 / 0.24 | 14.8 / 15.0 | 13 | 0% / 83% | 0% / 81% | 9.0 | 2846 / 9146 |
+| Monk | 74 / 245 | 0.83 / 0.25 | 4.0 / 4.0 | - | 78% / 13% | 78% / 13% | 12.0 | 3763 / 12163 |
+| Shadowfist | 54 / 188 | 1.17 / 0.34 | 14.0 / 14.0 | - | 75% / 25% | 76% / 24% | 12.0 | 3763 / 12163 |
+| Iron Sage | 57 / 187 | 1.13 / 0.34 | 4.0 / 4.0 | - | 67% / 33% | 67% / 33% | 14.0 | 4361 / 14161 |
+| Templar | 63 / 217 | 0.98 / 0.29 | 0.0 / 0.0 | - | 35% / 10% | 35% / 10% | 14.0 | 4366 / 14166 |
+| Inquisitor | 91 / 301 | 0.73 / 0.22 | 0.0 / 0.0 | - | 35% / 35% | 35% / 33% | 13.0 | 4067 / 13167 |
+| Sentinel | 53 / 175 | 1.20 / 0.36 | 0.0 / 0.0 | - | 50% / 7% | 49% / 7% | 17.3 | 5390 / 17488 |
+
+Lines, the mean of the line's three classes (far share: weapon included, then the spells alone in brackets):
+
+| Line | Runway s 300 / 1000 | Ramp s 300 / 1000 | Far share 300 / 1000 (spells alone) | Health per level |
+|---|---|---|---|---|
+| Warrior | 91 / 222 | 0.0 / 0.0 | 18% / 21% (27% / 33%) | 16.2 |
+| Ranger | 64 / 164 | 3.3 / 2.7 | 94% / 91% (91% / 87%) | 10.3 |
+| Mystic | 43 / 138 | 1.8 / 0.0 | 100% / 100% (100% / 100%) | 5.3 |
+| Thief | 60 / 220 | 0.0 / 0.0 | 27% / 42% (42% / 64%) | 13.1 |
+| Necromancer | 84 / 282 | 6.2 / 7.7 | 94% / 94% (94% / 93%) | 8.0 |
+| Monk | 62 / 207 | 7.3 / 7.3 | 24% / 23% (37% / 36%) | 12.7 |
+| Templar | 69 / 231 | 0.0 / 0.0 | 17% / 17% (27% / 26%) | 14.8 |
+
+Line runway at 800 / 1200 (seconds): Warrior 185 / 266, Ranger 131 / 196, Mystic 110 / 165, Thief 171 / 263, Necromancer 224 / 338, Monk 166 / 248, Templar 185 / 277.
+
+Intended weaknesses against the numbers, judged on the lines at all four levels. First measurement (2026-10-28, nothing applied) and now:
+
+| Intended weakness | First measurement | Now |
+|---|---|---|
+| Mystic line: the most mana pressure | did not hold: runway 56 s at 300, third shortest, against the Templar line 34 s and the Warrior line 35 s; 176 s at 1000 against 113 s and 87 s | holds: shortest of the seven lines at all four levels, 43 / 110 / 138 / 165 s; the Warrior line 91 / 185 / 222 / 266 s and the Templar line 69 / 185 / 231 / 277 s are no longer among the three shortest |
+| Mystic line: the least effective health | held: 5, 5 and 7 health per level, line mean 5.7 | holds: 5, 5 and 6, line mean 5.3; the Illusionist is below every class outside the line (Lich 7, Necromancer 8) |
+| Ranger line: low effective health but ranged | held | holds: 10.3 health per level, third lowest line; 91-94% of the damage from reach 3 or more |
+| Warrior and Templar lines: melee with little range | held only through the weapon; their spells reached 3 or more for 57-68% of the damage | holds: spells alone 26-31% (Warrior line) and 26-27% (Templar line) at reach 3 or more, with the weapon 17-21% |
+| Monk and Necromancer lines: the slowest ramp-up | held on the Monk line (7.3 s) and the Bone Lord and Shadowfist; the Necromancer and the Lich did not ramp (0 s) | holds: Monk line 7.3 s, Necromancer line 6.2-7.7 s, the rest 3.3 s or less; the Necromancer 4 / 8 / 8 / 8 s; the Lich shade strikes 5 s after the raise but its ramp is 0 s (its spell opening pays for the one shade) |
+| Thief line: low sustained mana efficiency | not checked, burst classes may be mana-light | not checked; the Thief line runs 60 s at 300 and 220 s at 1000 |
+
+What was applied (owner 2026-10-28, "apply the recommended changes so gameplay is more fun and balanced"):
+
+1. Mana identity. The Mystic line spells that fill its best sets cost more (Falling Pyre 420 to 700, Crimson Covenant 350 to 450, Briar Prison 145
+   to 200, Arcane Ripple 105 to 150, Blightswarm 65 to 90, Frozen Crypt 540 to 650, Doomtide 900 to 1150, Glacial Doom 1320 to 1650). The
+   Illusionist's sets are not touched (34 s at 300, the floor is 30 s). The Warrior line spells in its best sets cost 40% of what they did (Colossus Fall 240 to 95,
+   Bastion Cry 200 to 80, Gorehook 115 to 45, Rift Cleaver 135 to 55, Vaulting Cleave 150 to 60, Anvil Fall 270 to 110, Rampage Leap 240 to 95,
+   Skyfall Cleave 60 to 25, Headsman's Hurl 60 to 25, Scything Arc 35 to 15, Butcher's Gyre 60 to 25) and the Templar line spells 50%
+   (Crusader's Sweep 230 to 115, Sanctum Verdict 290 to 145, Lance of Vigil 185 to 90, Martyr's Pyre 145 to 70, Consecration and Sanctified Ground 95 to 50,
+   Judgement 150 to 75, Zealot's Wrath 170 to 85, Bell of Reckoning 165 to 80, Censer Swing 135 to 70, Shield Wave 150 to 75, Bulwark Slam 125 to 60,
+   Rampart Quake 175 to 90, Hallowed Cut 115 to 60, Penitent Lash 145 to 70, Purging Nova 210 to 105, Heretic's Brand 175 to 90). The first pass was 50% and 55%; the owner
+   asked for cheaper ("Pode baratear o templar") so that neither line is among the three shortest runways. The mana gain per level and the
+   regeneration are untouched. `rotation_sim.py --mana --check`: no row under 15 s; no class under 30 s at level 300 (Illusionist 34 s the lowest).
+   The Mystic base class gets 58 / 153 / 191 / 229 s, the Elementalist 37 / 88 / 110 / 132 s.
+2. Ramp-up. A freshly raised minion waits `minions.firstStrikeMs` before its first hit: Necromancer 2000, Lich 4000, Bone Lord 0 (its army takes 13 s). A hunt
+   pays it once, the minions persist between packs; a boss pull, a death or a rest in a protection zone pays it again. The steady damage and
+   `minion_model.py` are unchanged. The Lich was 6000 first (ramp 8 s); the owner asked for a shorter wait ("Abaixe a espera do lich"). At 4000 the Lich ramp is 0 s (its one shade is 27-30% of its damage and its opening pays for it), so the Lich pin is on the seconds from the raise to the shade's first hit (5 s) and the 3 s ramp pin is the Necromancer's.
+3. Range. Rift Cleaver cast range 4 to 2 (line 4 to 3 tiles), Crusader's Sweep 3 to 2, Sanctum Verdict 3 to 2, Lance of Vigil 5 to 3 (line 5 to 3 tiles), Colossus Fall area 7x7 to 5x5.
+   Bastion Cry is a wave of 3 in front of the caster, not a self nova, and keeps range 3. Compensation where the area shrank: Lance of Vigil x1.1
+   (`scale` 1.1 and the `*1.1` of its `rotation_model.csv` row). Rift Cleaver and Colossus Fall got none: a pack of 5 takes the same hits in the model (`t5` is an integer:
+   2, 2, 5) and a raise would have reordered the damage per cast the cooldown ladder ranks by (`rotation_sim_test.py` failed with x1.1 on both). Pack, boss
+   and quest bands hold with no other change.
+4. Health. Illusionist 7 to 6 health per level (`start_stats.lua`, `chaos_vocations.xml`). A character already past its level keeps its health: the login
+   correction (`newplayer_core.lua` `statsFix`) only raises a character below its class.
+
+Findings that were not changed: the Ranger and the Deadeye show a 3-5 s ramp that is an artifact of the opening order, not a weakness. Do not tune it.
+
+Limits of the model. The weapon share is one number per kind of stats, not a measurement per class. The stock spells of the Warrior, Ranger and
+Mystic lines are not in the repo, their reach is a table in `weakness_config.lua`. A self-cast area counts at its radius, so a Mystic nova
+of 6 is far. No fight length, no healing, no potion, no mana for replacing a dead minion. `--check` pins orders and four limits: the two base Mystic classes
+the least health and the Illusionist third lowest, the Mystic line lowest and the Ranger line third lowest, the tanks the most, the Mystic, Necromancer and Ranger lines the three
+most ranged, the Warrior, Templar, Monk and Thief lines the four least ranged, the Monk and Necromancer lines the two slowest ramp lines, the Bone
+Lord and the Shadowfist the two slowest classes, the Mystic line the shortest runway with the Warrior and Templar lines outside the three shortest, the
+Necromancer a ramp of at least 3 s, the Lich shade a first strike 4 s after the raise, the Warrior and Templar lines at most 45% of their spell damage from reach 3 or more.
+
 ### Pack farming for every class (2026-10-15; computed, not measured in game)
+
+Superseded in part (2026-10-28, class identity pass): every class's cleave share changed, Fan of Knives is 0.5x and Iaido Sweep 0.9x on the
+rest of the pack, and the goal of one rate for all classes is gone (bands per role: docs/CLASSES.md "Class identity (2026-10-28)"). The
+model, the pack tools and the method below stand.
 
 Owner goal: every class farms packs comfortably (the game is a grind: many monsters at once, with some danger); RNG and
 min-maxing decide the top, not whether a class can farm. Owner decision (2026-10-15): the strongest pack classes keep
@@ -845,8 +1001,8 @@ than about 25% at level 1000 get pack tools of their lore and a cleave of at mos
 
 | Spell | Class | Level, cooldown | What the pack takes | On the target |
 |---|---|---|---|---|
-| Fan of Knives (136) | Thief | 80, 6 s | the nearest 5 monsters within 4 sqm of the Thief, 1x | a Shuriken Toss of the Thief |
-| Iaido Sweep (74, changed) | Samurai | 200, 8 s (was 12) | the 3 x 2 tiles in front, 1.5x | half an Iaijutsu |
+| Fan of Knives (136) | Thief | 80, 6 s | the nearest 5 monsters within 4 sqm of the Thief, 1x (0.5x since 2026-10-28) | a Shuriken Toss of the Thief |
+| Iaido Sweep (74, changed) | Samurai | 200, 8 s (was 12) | the 3 x 2 tiles in front, 1.5x (0.9x since 2026-10-28) | half an Iaijutsu |
 | Blade Flurry (73, changed) | Thief, Ninja, Samurai | 50, 8 s | every monster within 2 sqm (was 1), 1x | a Shuriken Toss of the class |
 | Palm Shockwave (194) | Monk, Shadowfist, Iron Sage | 50, 4 s | every monster within 2 sqm of the target, 2x | an Ashen Fist, +2 chi |
 | Shadow Ricochet (195) | Shadowfist | 150, 8 s | 4 jumps, each within 3 sqm of the last, 2.5x | an Ashen Fist, +2 chi |
@@ -3312,6 +3468,179 @@ high levels together. (2) Level 200 spikes: Illusionist +42%, Ranger +27%, Deade
 Lich, Bone Lord, Templar and Sentinel. `rotation_sim.py --ladder --check` and `--mana --check` pass. The
 `weapon_power_config.lua` `distance` row fell at levels 500 and up when regenerated (`weapon_sim.py --power --write`):
 its reference is the Ranger rotation, which changed.
+
+### Line spell quests, level 500 attacks (phase 2, 2026-10-28; computed, not measured in game)
+
+Seven attack spells, one per line, `needlearn="1"` and level 500: only the quest teaches them (server/README.md "Line spell quests").
+Every class and ascension has 12 attack spells; cooldown 13 s, group cooldown 2 s, mana 1.2 x the reference spell (the costs in the table follow the references of 2026-10-28), coefficients 1.25 x it
+(`attack_kit_config.lua`, `quest = 1`; `rotation_model.csv` has the matching rows; `attack_kit_test.lua` checks both). The reference
+and the numbers:
+
+| Spell (id) | Reference | Kit terms | Mana |
+|---|---|---|---|
+| Keepfall (142) | Headsman's Hurl | P 0.17-0.20, base 17-40, scale 1.6 (1.28 x 1.25) | 30 (72 before 2026-10-28) |
+| Moonshard Rain (149) | one volley of Hail of Dawn (4 arrows x 1.1) | scale 27.5 (4 x 1.1 x 1.25 x 5: the kit's level term is level / 5), P 0.0042-0.0068, ML 0.1-0.16, base 3-6 | 576 |
+| Prismatic Rupture (152) | Falling Pyre, without its burn | ML 6.6-10.8, base 145-265, scale 1.5 (1.2 x 1.25) | 840 (504) |
+| Eclipse Edge (155) | Last Breath | P 0.1808-0.2893, base 20-40, scale 1.25 | 180 |
+| Soulflay Wave (158) | Crypt Collapse | ML 15.325-24.52, base 20-40, scale 1.25 | 498 |
+| Thousand-Echo Palm (172) | Skysplitter Fist | P 0.3086-0.4938, base 20-40, scale 1.25, finisher | 264 |
+| Pyre of Absolution (177) | Sanctum Verdict | P 0.3565-0.5704, ML 0.5-0.8, base 20-40, scale 1.25 | 174 (348) |
+
+Deviation: the spec says 1.25 x Hail of Dawn for the Ranger. Hail of Dawn is three volleys and already about 64% of the Ranger's
+best set at level 300; 1.25 x the whole cast as a circle would raise that set by about 80% and the distance weapon power to 2.1 at
+level 500. Moonshard Rain takes one volley (a third). (Phase 3 undid these side effects: the quest spells are measured apart from the baseline, `weapon_power_config.lua` and the factor knots are back to their pre-quest values.) Effect on the rest in phase 2, all regenerated then: the distance weapon power at level 500
+1.25 -> 1.40, the wand 1.92 -> 2.07, melee 1.00 -> 1.01 (`weapon_power_config.lua`); one knot {500, 0.55} for the Necromancer in
+`spell_factor_config.lua` (its 5-target total at level 500 was 1.26 of the median class, limit 1.25). Phase 3 trimmed these coefficients and added class factors (below, "Line spell quests, level 1200 ultimates"). The ladder does not rank these spells (`rotation_sim.py` `QUEST_COOLDOWN`).
+
+### Line spell quests, level 1200 ultimates (phase 3, 2026-10-28; computed, not measured in game)
+
+Seven ultimate attack spells, one per line, `needlearn="1"`, level 1200, `quest = 3` (`attack_kit_config.lua`, `rotation_model.csv` flag
+`ultimate`, `attack_kit_test.lua` checks both). Every class and ascension has **13** attack spells. Cooldown 35 to 50 s, group
+cooldown 2 s, mana 3 x the reference spell, off the cooldown ladder. The spec said 3.5 x the coefficients of the line's 13 s spell; the
+owner then asked for class flavor (2026-10-28), so each scale is fitted to the line's role. Target: the ultimate adds about 9% of the
+best set's score at level 1200 (score = 1 target + 0.25 x pack, `rotation_sim.py`).
+
+| Spell (id) | Line, role | Reference (x 3.5 would add) | Kit terms | Shape | Cooldown | Mana |
+|---|---|---|---|---|---|---|
+| Judgment of Iron (148) | Warrior, mixed | Colossus Fall, two blows (15.5%) | P 0.052-0.093, base 20-40, scale 4.7 | around, radius 3 | 45 s | 285 (720) |
+| Dawnbreaker Shot (151) | Ranger, boss burst | Sunspear (3.5%) | P 0.1235-0.1976, base 20-40, scale 6.6 | piercing line of 8 | 40 s | 345 |
+| Eclipse of Ruin (154) | Mystic, area | Glacial Doom, three waves of x 1.9 (37%) | ML 3.5-6.5, base 80-160, scale 6.4 | circle radius 5, range 7 | 50 s | 4950 (3960) |
+| Death Between Heartbeats (157) | Thief, boss burst | Last Breath (19%) | P 0.1808-0.2893, base 20-40, scale 1.2, critical x 1.75 | single, melee | 35 s | 450 |
+| Funeral of Kings (160) | Necromancer, area | Splinter Volley (18%) | ML 15.85-25.36, base 20-40, scale 2 | circle radius 5, range 6 | 50 s | 1200 |
+| Heaven's Ninth Gate (174) | Monk, boss burst | Skysplitter Fist (14.5%) | P 0.3086-0.4938, base 20-40, scale 2.5, finisher | single, melee | 40 s | 660 |
+| Hammer of Ember Dawn (237) | Templar, mixed | Sanctum Verdict (19%) | P 0.3565-0.5704, ML 0.5-0.8, base 20-40, scale 1, main 2 | circle radius 2, range 3 | 45 s | 435 (870) |
+
+Scales below 3.5 x overshot (measured as a fixed share of the best set, before the class factors) (the percentages in the table are what 3.5 x added to the line's mean); the Ranger line is the one that
+needed more (the line's sets are the strongest of the game and Sunspear is a 10 s single hit).
+
+**Shapes by role.** Boss bursts (Thief, Monk, Ranger): one heavy hit, little or no area. Area lines (Mystic, Necromancer): the biggest
+radius (5) at a lower hit per target. Mixed (Warrior, Templar): a ring or a circle around a heavy centre. Mechanics, all in the
+attack kit: Death Between Heartbeats hits x 1.75 (`critAbove = {hp = 50, mult = 1.75}`) a target above half health, with the crit
+effect of `ChaosCombatFx`; Heaven's Ninth Gate is a chi finisher (the hit grows with the chi spent, `ChaosMonk.finisherScale`);
+Hammer of Ember Dawn hits its target x 2 (`main = 2`) and every other enemy within 2 sqm once; Dawnbreaker Shot is a line that hits
+every enemy in its 8 tiles. Effects: big 7x7 and 9x9 effects swap in by name (`chaos_big_fx.lua`, spells 148, 151, 154, 160, 237).
+
+**Shape of the gain at level 1200, measured with the line coefficients before the class factors (best-set damage the ultimate adds, in percent of the set, mean of the line's three classes; the model counts
+the cast as one attack group cooldown the set loses: gain = (hit - 2 s x set damage per second) / cooldown; a chi finisher at 4 chi).**
+
+| Line | Role | 1 target | 5 targets | Score |
+|---|---|---|---|---|
+| Warrior | mixed | 7.1 | 10.9 | 8.9 |
+| Ranger | boss burst | 11.4 | 6.0 | 8.8 |
+| Mystic | area | 7.6 | 10.7 | 9.0 |
+| Thief | boss burst | 16.8 | 0.6 | 9.2 |
+| Necromancer | area | 6.0 | 12.5 | 8.7 |
+| Monk | boss burst | 18.1 | 0.4 | 8.9 |
+| Templar | mixed | 11.1 | 7.0 | 9.0 |
+
+Single classes inside a line differ (the classes of one line share the spell and have different sets): Ranger 8.1 / Deadeye 5.9 /
+Beastmaster 20.1 percent on one target, Mystic 10.5 / Elementalist 5.0 / Illusionist 7.2.
+
+**The rotation cap.** The ultimate is not one of the 5 (owner 2026-10-28). `rotation_sim.py`: the flag `ultimate` keeps it out of
+every pool, set and preset (`prepare(..., ultimates=True)` returns it), `with_ultimates` adds its gain on top of the best set
+(`analyse()['best']`: `dps1` / `dps5` include it, `base1`, `ult1` ... are the parts), the data file lists it as `ultimate = id` per
+class, and `--ladder --check` fails on an ultimate whose cooldown is not 35 to 50 s or whose level is not 1200. The client helper
+(`autorotation.lua`) puts it first in the rules, one monster, when the character can cast it, and `MAX_SPELLS` stays 5.
+
+**Quest gain, measured apart from the baseline (owner 2026-10-28).** A character without the quests must not pay for them, so the
+class factor knots of `spell_factor_config.lua` are exactly what they were before the quest spells (commit 6ee032d5; the Necromancer
+knot {500, 0.55} of phase 2 is gone, `minion_model.py` does not need it on the baseline). Every balance model (`rotation_sim.py`
+default, `pack_model`, `minion_model`, `boss_model`, `weapon_sim --power`, `tower_model`, `progression_model`) measures a
+character **without** quest spells: `analyse(..., quest=0)`, `weapon_power_config.lua` is back to its pre-quest values. The quest gain is
+reported on its own: `python3 -I server/tools/rotation_sim.py --quest` prints per class the gain of the level 500 attack (Q1) at levels
+500, 600, 800 and 1000 and of the ultimate (Q3) at 1200 over the baseline best-set score; `--check` fails when the mean of Q1 at 500,
+600 and 800 is outside 3-6%, a single one of those levels outside 1.5-9%, or Q3 outside 6-12%. Q1 is a fixed swap into the baseline
+set (the set search jumps between sets, so a new search made the gain noise); level 1000 was printed, not checked, because a 13 s
+attack often finds no slot there that keeps the 2 s rhythm (checked since 2026-10-28, with a factor curve where one number cannot hold it).
+
+**Trimmed Q1, class factors.** Q1 at 1.25 x the reference added 8 to 33% to the best set; the coefficients were cut to about a half
+(Keepfall scale 1.6 -> 0.98, Moonshard Rain 27.5 -> 9.4, Prismatic Rupture 1.5 -> 1.18, Eclipse Edge 1.25 -> 1, Soulflay Wave 1.25 ->
+1.1, Thousand-Echo Palm 1.25 -> 0.65, Pyre of Absolution 1.25 -> 0.62). A spell is shared by three classes whose sets differ, so one
+coefficient added 0 to 12% inside a line; `quest_spell_scale_config.lua` holds a factor per class and spell (0.24 to 1.37; the attack
+kit applies it, `A.classFactor`; the tool reads it). Q1 is fitted to about 4.5% of the class at levels 500-800, Q3 to about 9% at
+1200 on top of Q1. The factor of the Beastmaster's Dawnbreaker Shot is 0.39 (its set is the weakest of the Ranger line), the
+Shadowfist's Thousand-Echo Palm 0.25 (a finisher the small Shadowfist set uses very well). Gains (percent of the baseline best-set
+score; the table is the state after the class identity pass of 2026-10-28, see below the table):
+
+| Class | Q1 at 500 / 600 / 800 / 1000 | Q1 at 1200 | Q3 | Both |
+|---|---|---|---|---|
+| Warrior | 5.1% / 4.6% / 4.0% / 3.8% | +3.5% | +9.0% | +12.5% |
+| Juggernaut | 4.8% / 4.5% / 4.0% / 5.8% | +5.5% | +9.0% | +14.6% |
+| Berserker | 3.8% / 3.6% / 6.2% / 5.8% | +5.3% | +9.0% | +14.3% |
+| Ranger | 3.2% / 3.7% / 4.7% / 5.2% | +6.1% | +7.5% | +13.7% |
+| Deadeye | 4.4% / 4.5% / 4.7% / 4.8% | +4.9% | +9.0% | +13.9% |
+| Beastmaster | 4.5% / 4.6% / 4.4% / 4.4% | +4.6% | +9.2% | +13.8% |
+| Mystic | 5.9% / 5.4% / 4.7% / 4.1% | +3.4% | +10.2% | +13.6% |
+| Elementalist | 4.8% / 4.5% / 4.1% / 3.8% | +3.5% | +9.0% | +12.4% |
+| Illusionist | 3.8% / 4.4% / 5.2% / 5.9% | +6.1% | +7.6% | +13.6% |
+| Thief | 6.1% / 5.8% / 5.2% / 4.8% | +4.1% | +9.7% | +13.8% |
+| Ninja | 5.2% / 5.0% / 3.6% / 3.4% | +3.0% | +10.5% | +13.5% |
+| Samurai | 5.2% / 5.0% / 4.6% / 3.0% | +2.7% | +10.4% | +13.1% |
+| Necromancer | 4.5% / 4.5% / 4.5% / 4.6% | +4.5% | +8.7% | +13.3% |
+| Lich | 4.9% / 4.7% / 4.2% / 3.9% | +3.4% | +9.0% | +12.4% |
+| Bone Lord | 4.5% / 4.5% / 4.5% / 4.4% | +4.6% | +8.8% | +13.4% |
+| Monk | 4.6% / 4.6% / 4.6% / 4.5% | +4.3% | +8.9% | +13.2% |
+| Shadowfist | 4.6% / 4.6% / 4.6% / 4.6% | +4.6% | +9.1% | +13.6% |
+| Iron Sage | 4.6% / 4.5% / 4.3% / 3.9% | +3.4% | +9.0% | +12.4% |
+| Templar | 5.0% / 4.7% / 4.0% / 3.4% | +2.6% | +10.4% | +12.9% |
+| Inquisitor | 5.0% / 4.7% / 4.2% / 3.8% | +3.2% | +9.0% | +12.2% |
+| Sentinel | 4.7% / 4.6% / 4.3% / 4.1% | +3.8% | +9.1% | +12.9% |
+
+A full quester is +12 to 15% at level 1200 for every class (the pass of 2026-10-28; before it the Beastmaster was +19%, the Necromancer and
+the Bone Lord +9% with 0% from Q1 at 1000 and 1200: Soulflay Wave found no slot, and the Bone Lord's best set changes between levels 880
+and 900). Cleave and pack targets were not touched in phase 3. The numbers above in this section for the ultimates' scales (4.7, 6.6, 6.4, 1.2, 2, 2.5, 1) are the line coefficients; the
+class factor is on top (about 0.8 to 1.0 for most classes).
+
+**Quest gains after the class identity pass (2026-10-28).** A factor in `quest_spell_scale_config.lua` is a number or a curve `{{level,
+factor}, ...}` (flat below the first point, linear between points, the last point's value above it; `A.classFactor` and
+`rotation_sim.py` `quest_factor`). One number could not hold a class whose best set drifts away from the spell as the level grows:
+Soulflay Wave needs 0.29 / 0.44 / 0.53 / 0.65 for the Necromancer at levels 500 / 800 / 1000 / 1200 and 0.17 / 0.32 / 0.36 (at 880) /
+1.26 (at 900) / 1.30 / 1.45 for the Bone Lord (Q1 about 4.5% at every level from 500 to 1200 now), Moonshard Rain 0.77 / 0.67 / 0.63 /
+0.58 for the Beastmaster (it gained 3% at 500 and 10% at 1200). Flat changes: the Ranger Moonshard Rain 0.81 -> 0.77 and Dawnbreaker
+Shot 0.87 -> 0.78, the Mystic Prismatic Rupture 0.85 -> 0.89 and Eclipse of Ruin 0.71 -> 0.78, the Illusionist Eclipse of Ruin 0.97 ->
+0.87, the Ninja Death Between Heartbeats 0.81 -> 0.89, the Templar Hammer of Ember Dawn 0.88 -> 0.97. `rotation_sim.py --check` now
+holds Q1 at 1.5-9% at levels 500, 600, 800, 1000 and 1200 (was 500-800), both quests at 12-15% at level 1200, Q3 at 6-12%. The Thief's
+and the Samurai's gains moved a little with the pack tool change of the same pass.
+
+### Line spell quests, level 800 buffs (phase 4, 2026-10-28; computed, not measured in game)
+
+Seven buffs, one per line, `needlearn="1"`, level 800, support group, cooldown 90 s, group cooldown 2 s, no pacify and no lock on other
+spells (`quest = 2` in `spellquest_config.lua`). They are no attack spells: the count of 13 stays, `rotation_model.csv` has no row (the
+simulator reads attack spells only) and every balance model measures a character without quest spells, so no model moves. The
+numbers are the spec's and live in `data/scripts/chaos/quest_buffs_config.lua`.
+
+| Buff (id) | Line | Time | Mana | Effect |
+|---|---|---|---|---|
+| Ironbound Oath (143) | Warrior | 20 s | 150 | melee skill +20%, shielding +25% |
+| Unblinking Gaze (150) | Ranger | 20 s | 300 | distance skill +25%, critical chance +10 points |
+| Veil of Whispers (153) | Mystic | 20 s | 400 | magic level +15%, 1% of the maximum mana every second |
+| Shroud of Knives (156) | Thief | 15 s | 200 | melee and distance skill +20%, evasion +10 points |
+| Dirge of the Legion (159) | Necromancer | 20 s | 300 | minion hits +25%, death spell damage +10% |
+| Lotus Stance (173) | Monk | 15 s | 200 | +1 chi on a weapon or fist hit, evasion +10 points |
+| Mantle of Dawn (178) | Templar | 20 s | 250 | damage taken -15%, the holy strike after a melee hit +20% |
+
+**How big.** Each buff is up 15 to 20 s of every 90 s, about a fifth of the time when the helper recasts it at the cooldown. The
+percents are the spec's and were not cut; their effect on damage was not measured (the models do not see support spells). The skill
+percents act through the skill level, the critical chance of the Gaze is +10 points on the x1.5 hit. The evasion is added to the line's
+(Thief 8, Ninja 12, Samurai 5, Monk 6, Shadowfist 8, Iron Sage 4 percent). If play data says a buff is too strong, the knobs are the
+numbers in `quest_buffs_config.lua`; a change needs no other file.
+
+**Mechanics that were missing and their hooks.**
+- Evasion on top of the line's: `ChaosClasses.dodges(voc, isWeapon, roll, extra, scale)` (the Thief line) already took `extra`; the
+  caller adds `ChaosQuestBuffs.evadeBonus(player)`. `ChaosMonk.dodges(voc, isWeapon, roll, noDodge, extra)` gained `extra` (Scarred
+  Discipline still removes the evasion, buff included).
+- Chi: `monk_combat.lua` gives `perWeaponHit` plus Lotus Stance's 1 on a melee weapon or fist hit (the same interval rule).
+  "Basic strikes" are the auto attack; the builder spell is as before.
+- Minions: `ChaosNecro.hitBonus(player, banner)` is Banner of Bones' bonus plus Dirge's, passed to `ChaosNecroCore.minionHit`.
+- Death spells: `ChaosPassiveDealt` (`passivetree_effects.lua`) multiplies the death part of an `ORIGIN_SPELL` hit of a caster under
+  Dirge by 1.1, never inside the spell factor guard (minion hits) or a keystone proc. One condition lookup, only for death spell hits.
+- Templar: `ChaosTemplar.damageTakenFactor(aura, aegis, share, extra)` and `radiantDamage(vocation, hit, isPlayer, share, mult)`.
+  "Holy strike" is the Radiant Strike after a melee hit, not the line's holy spells.
+- Veil of Whispers adds a regeneration condition (sub id 72077) beside the buff's own; the buff bar shows the buff only.
+
+**Helper.** `game_helpersupport/supportspells.lua` `KINDS` lists the seven as `auto = 'timer'`: Auto setup writes a Timer rule for the
+buff the character knows, first among the class buffs (the highest level), cooldown 91 s, cast in fights. The 5-spell attack rotation
+is not touched.
 
 ### Support to attack (O254, 2026-10-26; owner: faster, more fluid fights, more attack spells and fewer support spells; computed, not measured in game)
 

@@ -38,7 +38,7 @@
      tell all of them apart (client/base-patches/0016-chaos-vocation-ids.patch maps the bytes back to these ids).
 
      Gains and skills: Warrior / Juggernaut, Ranger / Deadeye, Mystic / Elementalist are the Knight / Elite Knight, Paladin /
-     Royal Paladin and Sorcerer / Master Sorcerer values; the Illusionist keeps the Arch Illusionist's (health 7, mana 27).
+     Royal Paladin and Sorcerer / Master Sorcerer values; the Illusionist keeps the Arch Illusionist's mana 27 and has health 6 (7 before 2026-10-28, the Mystic line is the frailest).
      Berserker: the Elite Knight's skills, health 14 / mana 6 per level, weapon hits x1.05, defense and armor x0.9 (it
      trades defence for damage; Rage adds up to +30% as health drops). Beastmaster: the Royal Paladin's skills,
      health 11 / mana 14 / cap 21 per level, distance hits x0.9 (its companion deals the rest).
@@ -156,7 +156,7 @@
 		<skill id="12" multiplier="1.1" />
 		<skill id="13" multiplier="1.1" />
 	</vocation>
-	<vocation id="10" clientid="23" name="Illusionist" description="an illusionist" gaincap="12" gainhp="7" gainmana="27" gainhpticks="2" gainhpamount="8" gainmanaticks="2" gainmanaamount="8" manamultiplier="1.1" attackspeed="2000" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="1" noPongKickTime="40">
+	<vocation id="10" clientid="23" name="Illusionist" description="an illusionist" gaincap="12" gainhp="6" gainmana="27" gainhpticks="2" gainhpamount="8" gainmanaticks="2" gainmanaamount="8" manamultiplier="1.1" attackspeed="2000" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="1" noPongKickTime="40">
 		<formula meleeDamage="1.0" distDamage="1.0" defense="1.1" armor="1.1" />
 		<skill id="0" multiplier="1.5" />
 		<skill id="1" multiplier="1.8" />

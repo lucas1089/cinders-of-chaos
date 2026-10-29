@@ -2,9 +2,14 @@
 """The pack model: experience per hour of every class in packs, against the median class at the same level (computed,
 not measured; server/README.md "Pack combat (pace)", data/spells/README.md "Pack farming for every class").
 
-usage: python3 -I server/tools/pack_model.py [--levels 300,800,1000] [--no-cleave] [--no-kit] [--rounded] [--top] [--check]
+usage: python3 -I server/tools/pack_model.py [--levels 300,800,1000] [--no-cleave] [--no-kit] [--rounded] [--top] [--median] [--check]
 
---check (CI, O138): the pack of the median class in the level-scaled late sets (hunting level 670 and up) dies in at most
+Without a flag the table is against the reference: the median class before the class identity pass (2026-10-28; BASE_CLEAVE,
+the C4 and KIT numbers without TUNE), the yardstick of the pack bands; --median against the median class of today.
+
+--check (CI, class identity pass): every class's kills per hour in packs against the reference stays inside its `packLimits` row of
+boss_balance_config.lua at every level of `levels` (the windows at 800 and 1200 widen it), and no class has more than 1 / (1 +
+lead) of the Elementalist's damage on a pack of 5 (with the cleave). Also (CI, O138): the pack of the median class in the level-scaled late sets (hunting level 670 and up) dies in at most
 LATE_MAX (3.0) times the time of a base hunt's pack at the same level (at most level 1000); prints the table. O285: the
 hunting level of a base monster is its pool level, so no base monster is above 657; above it the base pack is the top
 monsters' with their health grown with the level (median_health).
@@ -66,8 +71,89 @@ TIER_HEALTH = 1.11
 # the level-scaled late sets: health at their level (server/README.md "Pack combat (pace)")
 SCALED_HEALTH = [(670, 88600), (800, 130000), (980, 200000), (1300, 324000), (2000, 593000)]
 ABOVE_1000 = 2.41  # damage per level above 1000 (README "Solo kill times")
+
+# ---- the class identity pass (2026-10-28): what changed after C4 + KIT, read from the configs ---------------------------
+# class: (class key, line key) of chaos_constants.lua Chaos.classes (class_tree.lua damageFactor looks the class up first,
+# then its line)
+KEYS = {'Warrior': ('warrior', 'warrior'), 'Juggernaut': ('juggernaut', 'warrior'), 'Berserker': ('berserker', 'warrior'),
+        'Ranger': ('ranger', 'ranger'), 'Deadeye': ('deadeye', 'ranger'), 'Beastmaster': ('beastmaster', 'ranger'),
+        'Mystic': ('mystic', 'mystic'), 'Elementalist': ('elementalist', 'mystic'), 'Illusionist': ('illusionist', 'mystic'),
+        'Thief': ('thief', 'thief'), 'Ninja': ('ninja', 'thief'), 'Samurai': ('samurai', 'thief'),
+        'Necromancer': ('necromancer', 'necromancer'), 'Lich': ('lich', 'necromancer'),
+        'Bone Lord': ('bonelord', 'necromancer'), 'Monk': ('monk', 'monk'), 'Shadowfist': ('shadowfist', 'monk'),
+        'Iron Sage': ('ironsage', 'monk'), 'Templar': ('templar', 'templar'), 'Inquisitor': ('inquisitor', 'templar'),
+        'Sentinel': ('sentinel', 'templar')}
+CLASS_TREE = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'class_tree.lua')
+PACKTOOLS = os.path.join(SERVER, 'data', 'spells', 'chaos', '_packtools.lua')
+BLADES = os.path.join(SERVER, 'data', 'spells', 'chaos', '_blades.lua')
+# the class damage factor (class_tree.lua classDamage: all damage of the class, points {level, factor}) of every class before
+# the identity pass, i.e. the state of pack_model's C4 + KIT numbers; the model multiplies them by now / then at the level
+DAMAGE_BASE = {'Warrior': [(300, 1.0), (1000, 1.0)], 'Juggernaut': [(300, 1.0), (1000, 1.0)],
+               'Berserker': [(300, 0.78), (1000, 1.0)], 'Ranger': [(300, 1.0), (1000, 0.95)],
+               'Deadeye': [(300, 1.0), (1000, 0.95)], 'Beastmaster': [(300, 1.0), (1000, 0.95)],
+               'Mystic': [(300, 1.0), (1000, 1.0)], 'Elementalist': [(300, 1.0), (1000, 1.0)],
+               'Illusionist': [(300, 1.0), (1000, 1.0)], 'Thief': [(300, 0.48), (1000, 0.53)],
+               'Ninja': [(300, 0.45), (1000, 0.57)], 'Samurai': [(300, 0.30), (1000, 0.37)],
+               'Necromancer': [(300, 0.93), (1000, 0.64)], 'Lich': [(300, 0.50), (1000, 0.57)],
+               'Bone Lord': [(300, 0.63), (1000, 0.61)], 'Monk': [(300, 0.63), (1000, 0.75)],
+               'Shadowfist': [(300, 0.49), (1000, 0.69)], 'Iron Sage': [(300, 0.61), (1000, 0.75)],
+               'Templar': [(300, 0.78), (1000, 0.60)], 'Inquisitor': [(300, 0.65), (1000, 0.58)],
+               'Sentinel': [(300, 0.73), (1000, 0.60)]}
+# the pack tools' `pack` multiples before the pass (_packtools.lua, _blades.lua sweep); a class's tools scale the area gain
+# its KIT row holds, each by its weight (the share of that gain the tool holds: rotation_sim.py, the best set's 5-target damage
+# with the tool's t5 at 1 against full: Samurai Iaido Sweep 0.74-0.77, Thief Fan of Knives 0.62-0.78, the rest is Blade Flurry
+# and the other area spells); tool scale = 1 - weight x (1 - now / then), the mean over the class's tools
+TOOLS = {'Thief': ('fan',), 'Samurai': ('sweep',), 'Monk': ('shockwave',), 'Shadowfist': ('shockwave', 'ricochet'),
+         'Iron Sage': ('shockwave', 'chain'), 'Necromancer': ('shrapnel',), 'Templar': ('sanctified',),
+         'Sentinel': ('shieldWave',)}
+TOOL_WEIGHT = {'fan': 0.7, 'sweep': 0.75}  # a tool not listed: 1
+TOOL_LEVEL = {'fan': 80, 'sweep': 200}  # the level a tool is learned at (spells_chaos.xml); its scale counts from there
+TOOLS_BASE = {'fan': 1.0, 'sweep': 1.5, 'shockwave': 2.0, 'ricochet': 2.5, 'chain': 2.0, 'shrapnel': 2.5,
+              'sanctified': 2.5, 'shieldWave': 2.0}
+
+
+def class_damage(text=None):
+    """{class key: [(level, factor), ...]} of class_tree.lua classDamage"""
+    text = text if text is not None else open(CLASS_TREE, encoding='utf-8').read()
+    block = text.split('M.classDamage = {', 1)[1].split('\n}', 1)[0]
+    return {k: [(int(a), float(b)) for a, b in re.findall(r'\{(\d+), ([0-9.]+)\}', v)]
+            for k, v in re.findall(r'(\w+) = \{(\{[^=]*?\})\}', block)}
+
+
+def tool_packs():
+    """{tool: pack multiple now} from _packtools.lua and _blades.lua"""
+    out = {}
+    for path, keys in ((PACKTOOLS, [k for k in TOOLS_BASE if k != 'sweep']), (BLADES, ['sweep'])):
+        text = open(path, encoding='utf-8').read()
+        for k in keys:
+            m = re.search(r'\n\t(?:--[^\n]*\n\t)*' + k + r' = \{(.*?)\n\t\},', text, re.S)
+            out[k] = float(re.search(r'\bpack = ([0-9.]+)', m.group(1)).group(1))
+    return out
+
+
+_TUNING = {}
+
+
+def tuning(cls, L):
+    """(damage factor change at level L, area-tool change) of a class since C4 + KIT: classDamage now over then (class_tree.lua
+    damageFactor: linear between its points, flat outside), and its pack tools' scale (TOOL_WEIGHT; 1 for a class with none). Both are multiplied into the class's numbers (damage())."""
+    if not _TUNING:
+        now, packs = class_damage(), tool_packs()
+        for c, (ck, lk) in KEYS.items():
+            f = now.get(ck) or now.get(lk) or [(300, 1.0), (1000, 1.0)]
+            _TUNING[c] = (f, DAMAGE_BASE[c], {k: 1 - TOOL_WEIGHT.get(k, 1.0) * (1 - packs[k] / TOOLS_BASE[k])
+                                              for k in TOOLS.get(c, ())})
+    f, b, tools = _TUNING[cls]
+    here = [t for k, t in tools.items() if L >= TOOL_LEVEL.get(k, 0)]
+    return lin(f, L) / lin(b, L), (sum(here) / len(tools) + (len(tools) - len(here)) / len(tools) if tools else 1.0)
+
 LATE_MAX = 3.0  # --check: late pack clear time / base pack clear time, at most (O138: 2.0-2.5 today, was 4-11)
 LATE_LEVELS = (670, 800, 1000, 1300, 1600, 2000)
+# the pack cleave of pace_config.lua before the identity pass {vocation id: (percent, targets, high)} (the reference)
+BASE_CLEAVE = {4: (6, 4, 11), 8: (15, 4, 26), 14: (0, 4, 3), 3: (23, 4, 20), 7: (28, 4, 21), 15: (9, 4, 0), 1: (0, 4, 2),
+               10: (12, 4, 17), 11: (10, 4, 11), 12: (12, 4, 6), 13: (17, 4, 19), 20: (2, 4, 14), 21: (10, 4, 7),
+               22: (6, 4, 6), 17: (6, 4, 12), 18: (16, 4, 16), 19: (11, 4, 15), 23: (3, 4, 16), 24: (8, 4, 13),
+               25: (6, 4, 16)}
 CLEAVE_FROM, CLEAVE_TO = 300, 1000  # a cleave's `percent` up to level 300, linear to its `high` at 1000 (pace_config)
 
 
@@ -131,11 +217,16 @@ def median_health(mons, L):
 
 
 # ------------------------------------------------------------------------------------------------ the model
-def damage(cls, L, kit=True):
+def damage(cls, L, kit=True, tune=True):
+    """(1-target, 5-target) damage per second at level L; tune=False leaves the identity pass out (minion_model.py
+    applies the class damage factor itself)"""
     a1, a5, b1, b5 = C4[cls]
+    g, t = tuning(cls, L) if tune else (1.0, 1.0)
     if kit and cls in KIT:
         k = KIT[cls]
-        a1, a5, b1, b5 = a1 + k[0], a5 + k[1], b1 + k[2], b5 + k[3]
+        a1, a5, b1, b5 = a1 + k[0], a5 + k[1] * t, b1 + k[2], b5 + k[3] * t
+    if tune:
+        a1, a5, b1, b5 = a1 * g, a5 * g, b1 * g, b5 * g
     if L <= 300:
         return a1 * L / 300.0, a5 * L / 300.0
     if L <= 1000:
@@ -151,8 +242,8 @@ def multikill(P, steps, rounded):
     return lin(pts, P) if P >= pts[0][0] else 0
 
 
-def kills_per_hour(cls, L, scaled, cfg, health, cleave=True, kit=True, rounded=False):
-    d1, d5 = damage(cls, L, kit)
+def kills_per_hour(cls, L, scaled, cfg, health, cleave=True, kit=True, rounded=False, tune=True):
+    d1, d5 = damage(cls, L, kit, tune)
     if cleave and VOC[cls] in cfg['cleave']:
         e = cfg['cleave'][VOC[cls]]
         pc, n, hi = e[0], e[1], e[2] if len(e) > 2 else e[0]
@@ -169,36 +260,115 @@ def kills_per_hour(cls, L, scaled, cfg, health, cleave=True, kit=True, rounded=F
     return 3600 * P / (clear + walk) * (1 + multikill(P, cfg['steps'], rounded) / 100.0), P
 
 
+def reference(L, scaled, cfg, health, rounded=False):
+    """kills per hour of the median class before the identity pass (C4 + KIT numbers, the cleave of BASE_CLEAVE): the fixed
+    yardstick of the pack bands, so a band does not move when the classes around the median do"""
+    base = dict(cfg, cleave=BASE_CLEAVE)
+    return statistics.median(kills_per_hour(c, L, scaled, base, health, True, True, rounded, False)[0] for c in C4)
+
+
 def spread(levels=((300, False), (800, False), (1000, True)), cleave=True, kit=True, rounded=False, cfg=None,
            mons=None, against='median'):
-    """{class: [(ratio to the median class (or the top class: against='top'), pack, kills per hour), ...] per level}"""
+    """{class: [(ratio to the median class (or the top class: against='top'; or the median class before the identity
+    pass: against='reference'), pack, kills per hour), ...] per level}"""
     cfg = cfg or pace()
     mons = mons if mons is not None else monsters()
     out = {c: [] for c in C4}
     for L, scaled in levels:
         health = lin(SCALED_HEALTH, L) if scaled else median_health(mons, L)
         k = {c: kills_per_hour(c, L, scaled, cfg, health, cleave, kit, rounded) for c in C4}
-        ref = max(v[0] for v in k.values()) if against == 'top' else statistics.median(v[0] for v in k.values())
+        if against == 'reference':
+            ref = reference(L, scaled, cfg, health, rounded)
+        else:
+            ref = max(v[0] for v in k.values()) if against == 'top' else statistics.median(v[0] for v in k.values())
         for c in C4:
             out[c].append((k[c][0] / ref, k[c][1], k[c][0]))
     return out
 
 
 def pack_clear(L, scaled, cfg, mons):
-    """(seconds the pack of the median class (by kills per hour) takes, pack size P, kills per hour) at level L"""
+    """(seconds the pack of the median class (by kills per hour) takes, pack size P, kills per hour) at level L. The median
+    class is that of the state before the class identity pass (C4 + KIT numbers, BASE_CLEAVE): the pace curves, the late sets and
+    the tower are calibrated against it, and a pass that moves classes around the median does not move the yardstick"""
     health = lin(SCALED_HEALTH, L) if scaled else median_health(mons, L)
-    rows = sorted((kills_per_hour(c, L, scaled, cfg, health) + (c,) for c in C4))
+    base = dict(cfg, cleave=BASE_CLEAVE)
+    rows = sorted((kills_per_hour(c, L, scaled, base, health, True, True, False, False) + (c,) for c in C4))
     k, P, c = rows[len(rows) // 2]
-    d1, d5 = damage(c, L)
-    if VOC[c] in cfg['cleave']:
-        e = cfg['cleave'][VOC[c]]
+    d1, d5 = damage(c, L, True, False)
+    if VOC[c] in base['cleave']:
+        e = base['cleave'][VOC[c]]
         d5 *= 1 + lin([(CLEAVE_FROM, e[0]), (CLEAVE_TO, e[2])], L) / 100.0 * min(e[1], 4)
-    m = lin(cfg['scaled'] if scaled else cfg['base'], L)
+    m = lin(base['scaled'] if scaled else base['base'], L)
     return P * health * m / (d1 + (P - 1) * max(0.0, (d5 - d1) / 4)), P, k
+
+
+BALANCE = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'boss_balance_config.lua')
+
+
+def identity_config(text=None):
+    """the class identity bands of boss_balance_config.lua: {'levels': [...], 'limits': {class: (lo, hi)} (boss),
+    'packLimits': {...}, 'bossWindows': {level: (below, above)}, 'packWindows': {...}, 'lead': float}"""
+    text = text if text is not None else open(BALANCE, encoding='utf-8').read()
+    out = {'levels': [int(x) for x in re.search(r'levels = \{([0-9, ]+)\}', text).group(1).split(',') if x.strip()],
+           'lead': float(re.search(r'\blead = ([0-9.]+)', text).group(1))}
+    for key in ('limits', 'packLimits'):
+        block = re.search(r'\b' + key + r' = \{(.*?)\n\t\}', text, re.S).group(1)
+        out[key] = {c: (float(a), float(b)) for c, a, b in re.findall(r'\["([^"]+)"\] = \{([0-9.]+), ([0-9.]+)\}', block)}
+    for key in ('bossWindows', 'packWindows'):
+        block = re.search(key + r' = \{(.*?)\},?\n', text).group(1)
+        out[key] = {int(L): (float(a), float(b)) for L, a, b in re.findall(r'\[(\d+)\] = \{([0-9.]+), ([0-9.]+)\}', block)}
+    return out
+
+
+def window(ratio_row, level, rows, windows):
+    """the row of a class at a level, widened by the level's window"""
+    lo, hi = rows
+    below, above = windows.get(level, (0.0, 0.0))
+    return lo - below, hi + above
+
+
+def area_power(cls, L, cfg=None):
+    """damage per second on a pack of 5 with the pack cleave (the share at L, up to 4 targets): the area leader's measure"""
+    cfg = cfg or pace()
+    d5 = damage(cls, L)[1]
+    e = cfg['cleave'].get(VOC[cls])
+    if e:
+        d5 *= 1 + lin([(CLEAVE_FROM, e[0]), (CLEAVE_TO, e[2])], L) / 100.0 * min(e[1], 4)
+    return d5
+
+
+def check_identity(conf=None, cfg=None, mons=None):
+    """the pack bands and the area lead (0 ok, 1 fail); prints what is outside"""
+    conf = conf or identity_config()
+    cfg, mons = cfg or pace(), mons if mons is not None else monsters()
+    levels = conf['levels']
+    t = spread(tuple((L, L >= 1000) for L in levels), cfg=cfg, mons=mons, against='reference')
+    bad = 0
+    for c in C4:
+        if c not in conf['packLimits']:
+            print('FAIL %s has no packLimits row' % c)
+            bad += 1
+            continue
+        for L, (r, _, _) in zip(levels, t[c]):
+            lo, hi = window(None, L, conf['packLimits'][c], conf['packWindows'])
+            if not lo - 1e-9 <= r <= hi + 1e-9:
+                print('FAIL %s at %d: pack ratio %.2f outside %.2f-%.2f' % (c, L, r, lo, hi))
+                bad += 1
+    for L in levels:
+        top = area_power('Elementalist', L, cfg)
+        for c in C4:
+            if c != 'Elementalist' and area_power(c, L, cfg) * (1 + conf['lead']) > top + 1e-9:
+                print('FAIL %s at %d: area damage on a pack %.0f is within %d%% of the Elementalist\'s %.0f' % (
+                    c, L, area_power(c, L, cfg), round(100 * conf['lead']), top))
+                bad += 1
+    print('pack band check: %s (%d classes, levels %s, Elementalist %d%% ahead on a pack)' % (
+        'FAIL' if bad else 'ok', len(C4), ','.join(str(L) for L in levels), round(100 * conf['lead'])))
+    return 1 if bad else 0
 
 
 def check():
     cfg, mons = pace(), monsters()
+    bands = check_identity(None, cfg, mons)
     bad = 0
     print('| Level | Base pack | Late pack | Late / base | P | Kills/h base | Kills/h late |')
     print('|---|---|---|---|---|---|---|')
@@ -209,7 +379,7 @@ def check():
         bad += bool(flag)
         print('| %d | %.1f s | %.1f s | %.2f%s | %.1f | %d | %d |' % (L, b, s, s / b, flag, sp, bk, sk))
     print('late pack check: %s (limit %.1fx a base hunt pack)' % ('FAIL' if bad else 'ok', LATE_MAX))
-    return 1 if bad else 0
+    return 1 if bad or bands else 0
 
 
 def main(argv):
@@ -221,7 +391,7 @@ def main(argv):
         levels = tuple((L, L >= 1000) for L in ls)
     top = '--top' in argv
     t = spread(levels, cleave='--no-cleave' not in argv, kit='--no-kit' not in argv, rounded='--rounded' in argv,
-               against='top' if top else 'median')
+               against='top' if top else ('median' if '--median' in argv else 'reference'))
     print('| Class | ' + ' | '.join('%d%s' % (L, ' (late set)' if s else '') for L, s in levels) + ' |')
     print('|---|' + '---|' * len(levels))
     for c, v in t.items():

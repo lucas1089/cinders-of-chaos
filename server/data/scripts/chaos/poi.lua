@@ -4,7 +4,7 @@
 -- The marks: data/chaos_poi.lua (generated at install by tools/gen_poi.py from the map, items, NPC files and spawn data:
 -- temples, depots, crafting tables, service NPCs, hunting areas, boss places) plus what the systems place when the
 -- server starts, found cfg.firstScanMs after the start and every cfg.rescanMs: the Chaos NPCs and the portals next to
--- the temples, and the dungeons of the base dungeon system. Rules (keys, reveal, view): poi_core.lua
+-- the temples, the Chaos NPCs in the stalls of the hub (npc_booths_config.lua) and the dungeons of the base dungeon system. Rules (keys, reveal, view): poi_core.lua
 -- (tests/poi_test.lua); numbers and names: poi_config.lua.
 -- Discovery: marks with r = 1 are shown once the character came within cfg.revealRange squares (checked every
 -- cfg.checkMs for every online character, also when its client shows no markers, so turning them on later shows what
@@ -152,6 +152,24 @@ local function scanRuntime()
 					end
 				end
 			end
+		end
+	end
+	-- the Chaos NPCs in the stalls of the hub: far from every temple, found at their stall tiles
+	if ChaosNpcBoothsCore or pcall(dofile, "data/scripts/chaos/npc_booths_core.lua") then
+		local K = ChaosNpcBoothsCore
+		local hubR = cfg.hubRadius or 1
+		local stalls = K.booths(K.cfg())
+		for _, m in ipairs(I.hubMarks(cfg, stalls, function(b)
+			local found = {}
+			for _, c in ipairs(Game.getSpectators(Position(b.x, b.y, b.z), false, false, hubR, hubR, hubR, hubR) or {}) do
+				if c:isNpc() then
+					local pos = c:getPosition()
+					found[#found + 1] = {name = c:getName(), x = pos.x, y = pos.y, z = pos.z}
+				end
+			end
+			return found
+		end)) do
+			list[#list + 1] = m
 		end
 	end
 	if cfg.dungeons and type(DUNGEON_SYSTEM) == "table" and type(DUNGEON_SYSTEM.Dungeons) == "table" then

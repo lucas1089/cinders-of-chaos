@@ -40,19 +40,22 @@ local hl = {}
 H.pushHit(hl, 100, {damage = 40, by = "wolf"})
 H.pushHit(hl, 103, {damage = 120, by = "bear"})
 H.pushHit(hl, 104, {damage = -5, by = "rat"})
-local rec = H.deathRecord(hl, 105, {who = "Tester Aaa", level = 30, killer = "bear", maxHealth = 400, online = 12})
+local rec = H.deathRecord(hl, 105, {who = "Tester Aaa", level = 30, killer = "bear", maxHealth = 400, secsOnline = 12})
 eq(rec.hits, 3, "death record: three hits")
 eq(rec.damage, 160, "their sum (a negative one counts 0)")
 eq(rec.damagePct, 40, "as a percent of the maximum")
 eq(rec.biggest, 120, "the biggest hit")
 eq(rec.biggestPct, 30, "its percent")
 eq(rec.biggestBy, "bear", "and who dealt it")
-eq(rec.online, 12, "seconds online")
+eq(rec.secsOnline, 12, "seconds online")
 eq(H.deathRecord(hl, 109, {who = "x", maxHealth = 400}).hits, 1, "hits older than 5 seconds are not in the record")
 eq(H.deathRecord(nil, 109, {who = "x", maxHealth = 0}).hits, 0, "no hits: an empty record")
 eq(H.deathRecord({}, 1, {who = "x"}).killer, "?", "no killer: ?")
 for i = 1, 100 do H.pushHit(hl, 200 + i, {damage = 1}) end
 check(#hl <= H.HIT_KEEP, "the list stays short")
+eq(H.hotSpot(40, {{"a", 30}, {"b", 90}, {"c", 500}})[1], "c", "hotSpot: the highest above the level")
+eq(H.hotSpot(40, {{"a", 30}, {"b", 40}}), nil, "hotSpot: nothing above")
+eq(H.hotSpot(40, nil), nil, "hotSpot: no monsters")
 eq(H.xpAnomaly(100, -1), "negative experience gain", "negative xp")
 eq(H.xpAnomaly(100, 300000000), "absurd experience gain", "absurd xp")
 eq(H.xpAnomaly(100, 50000), nil, "normal xp")
@@ -132,6 +135,12 @@ eq(H.directionTo(o, {x = 95, y = 101}), 3, "west")
 
 -- ------------------------------------------------------------------ a mocked engine
 MESSAGE_INFO_DESCR, COMBAT_HEALING, COMBAT_PHYSICALDAMAGE = 22, 128, 1
+-- the engine passes damage negative: the record must still see it
+eq(H.damageOf(-40, COMBAT_PHYSICALDAMAGE, -10, COMBAT_FIREDAMAGE), 50, "negative engine damage counts as its size")
+eq(H.damageOf(40, COMBAT_HEALING, 0, 0), 0, "healing is no damage")
+eq(H.damageOf(-40, COMBAT_PHYSICALDAMAGE, 15, COMBAT_HEALING), 40, "a healing second part is left out")
+eq(H.damageOf(nil, 0, 0 / 0, 0), 0, "nothing, nan: 0")
+COMBAT_FIREDAMAGE = COMBAT_FIREDAMAGE or 2
 CONST_SLOT_BACKPACK, CONST_SLOT_LEFT, CONST_SLOT_RIGHT = 3, 6, 5
 TILESTATE_BLOCKSOLID = 1
 TILESTATE_FLOORCHANGE = 2
@@ -323,6 +332,17 @@ eq(tester.log.teleports[#tester.log.teleports].x, 50, "town: to the temple")
 check(tester.log.msgs[#tester.log.msgs]:find('^%[tester%-helper%] town {"pos":') ~= nil, "town: the answer line")
 talks["!tester"].onSay(tester, "!tester", "hunt")
 eq(tester.pos.x, 100, "hunt: back to the hunt spot")
+-- a hunt spot with a monster above the tester (a spot from before the safe-spawn fix): the tester stays where it is
+local lvl = {wolf = 9999}
+local realMhl = Chaos.monsterHuntingLevel
+Chaos.monsterHuntingLevel = function(m) return lvl[m:getName()] or 0 end
+talks["!tester"].onSay(tester, "!tester", "town")
+talks["!tester"].onSay(tester, "!tester", "hunt")
+eq(tester.pos.x, 50, "hunt spot with a monster far above the level: no teleport")
+check(tester.log.msgs[#tester.log.msgs]:find('"err":"hunt spot too high: ', 1, true) ~= nil, "and the answer names it")
+Chaos.monsterHuntingLevel = realMhl
+talks["!tester"].onSay(tester, "!tester", "hunt")
+eq(tester.pos.x, 100, "a spot within the level: teleport")
 talks["!tester"].onSay(tester, "!tester", "fly")
 check(tester.log.msgs[#tester.log.msgs]:find("unknown command", 1, true) ~= nil, "an unknown command answers an error")
 talks["!tester"].onSay(tester, "!tester", "depot")
@@ -421,6 +441,15 @@ check(printed[#printed]:find('[tester-event] {', 1, true) ~= nil and printed[#pr
 	"the death event")
 check(printed[#printed]:find('"hits":1', 1, true) ~= nil and printed[#printed]:find('"biggestBy":"wolf"', 1, true) ~= nil,
 	"with the hits of the last seconds (the 130M one)")
+-- the engine's negative damage reaches the death record (the bug of the first live death lines: hits 2, damage 0)
+T.hits[tester.id] = nil
+events.TesterHelperHealth.onHealthChange(tester, wolf, -30, COMBAT_PHYSICALDAMAGE, -20, COMBAT_FIREDAMAGE, 0)
+events.TesterHelperHealth.onHealthChange(tester, wolf, -70, COMBAT_PHYSICALDAMAGE, 0, 0, 0)
+before = #printed
+events.TesterHelperDeath.onDeath(tester, nil, wolf, wolf)
+local line = printed[before + 1] or ""
+check(line:find('"hits":2', 1, true) and line:find('"damage":120', 1, true) and line:find('"biggest":70', 1, true)
+	and line:find('"biggestBy":"wolf"', 1, true), "death line of negative engine damage: " .. line)
 check(T.hits[tester.id] == nil, "and the tester's hits are forgotten")
 
 -- stopped: chaos-ctl removed the file, the helper does nothing more
@@ -536,6 +565,88 @@ do
 	eq(#ana.log.msgs, 0, "a real player's summons are not probed")
 	talks["!tester"].onSay(t2, "!tester", "chest")
 	check(t2.log.msgs[#t2.log.msgs]:find('chest {"err":"no cursed chest system"}', 1, true) ~= nil, "chest: no system, an error answer")
+end
+
+-- ------------------------------------------------------------------ the line spell quests (!tester spellquest)
+do
+	local sq = H.parseSpellQuest
+	eq(sq("").sub, "state", "spellquest: no argument is the state")
+	eq(sq("set 1 1 0 0").quest, 1, "set: quest"); eq(sq("set 1 1 0 0").kills, 0, "set: kills"); eq(sq("set 2 3").fragments, nil, "set: no fragments")
+	eq(sq("kill").n, 1, "kill: one by default"); eq(sq("kill 45").n, 45, "kill: a number"); eq(sq("kill boss").boss, true, "kill boss")
+	eq(sq("kill 3 boss").n, 3, "kill 3 boss")
+	check(select(2, sq("kill 999")) ~= nil, "kill: capped"); check(select(2, sq("set 0 1")) ~= nil, "set: quest 0")
+	check(select(2, sq("set 1 4")) ~= nil, "set: step 4"); check(select(2, sq("set 1 1 x")) ~= nil, "set: kills not a number")
+	check(select(2, sq("state now")) ~= nil, "state takes no argument"); check(select(2, sq("give")) ~= nil, "an unknown command")
+	check(H.COMMANDS.spellquest, "spellquest is a registered command")
+
+	-- the engine file of the quests (a mocked engine) and a tester of the Warrior line at level 600
+	local savedTrials = ChaosTrials
+	ChaosTrials = {runs = {}, enter = function(player) ChaosTrials.runs[player:getId()] = {} return true end,
+		leave = function(player) local was = ChaosTrials.runs[player:getId()] ~= nil; ChaosTrials.runs[player:getId()] = nil; return was end}
+	function GlobalEvent() return {register = function() end} end
+	Game.createNpc = function() return nil end
+	dofile("data/scripts/chaos/spellquest.lua")
+	local qt = creature(268435490, "Tester Aqb", {store = {[ST] = 1}})
+	qt.level, qt.learned = 600, {}
+	function qt:getLevel() return self.level end
+	function qt:getParty() return nil end
+	function qt:hasLearnedSpell(name) return self.learned[name] == true end
+	function qt:learnSpell(name) self.learned[name] = true return true end
+	function qt:forgetSpell(name) self.learned[name] = nil return true end
+	local odrenna = {getName = function() return "Archivist Odrenna" end, isNpc = function() return true end}
+	local near
+	Game.getSpectators = function() return near and {odrenna} or {} end
+	local function say(cmd)
+		talks["!tester"].onSay(qt, "!tester", "spellquest " .. cmd)
+		local line = qt.log.msgs[#qt.log.msgs]
+		return line:match("^%[tester%-helper%] spellquest (.*)$"), line
+	end
+	local function has(body, part, label) check(body and body:find(part, 1, true) ~= nil, label .. ": " .. tostring(body)) end
+	local body = say("state")
+	has(body, '"quest":1', "state: quest 1"); has(body, '"step":0', "state: not started"); has(body, '"learned":false', "state: spell unknown")
+	has(body, '"spell":"Keepfall"', "state: the Warrior line's first spell")
+	body = say("set 1 1 0 0")
+	has(body, '"step":1', "set: on the hunt"); has(body, '"kills":0', "set: no kills")
+	body = say("kill 3")
+	has(body, '"counted":3', "kill: three count"); has(body, '"kills":3', "kill: the storage counts"); has(body, '"pity":3', "kill: the pity counts")
+	body = say("kill 45")
+	has(body, '"counted":45', "kill: 45 count"); has(body, '"kills":48', "kill: 48 in all")
+	check(body:find('"fragments":0', 1, true) == nil, "kill: the pity gives a fragment within 41 counted kills: " .. tostring(body))
+	has(body, '"rolled":', "kill: the fragments are listed")
+	qt.level = 450
+	body = say("kill 2")
+	has(body, '"counted":0', "kill: a level under the quest counts nothing")
+	qt.level = 600
+	body = say("kill boss")
+	has(body, '"weight":25', "kill boss: 25 kills")
+	body = say("set 1 2")
+	has(body, '"step":2', "set: the trial step"); has(body, '"kills":400', "set: the kills filled")
+	near = false
+	body = say("trial")
+	has(body, '"entered":false', "trial: away from Odrenna the door is shut"); has(body, '"running":false', "trial: nothing runs")
+	near = true
+	body = say("trial")
+	has(body, '"entered":true', "trial: at Odrenna the trial opens"); has(body, '"running":true', "trial: it runs")
+	body = say("leave")
+	has(body, '"left":true', "leave: the run ends"); has(body, '"running":false', "leave: nothing runs")
+	local bank = qt:getBankBalance()
+	body = say("complete")
+	has(body, '"taught":"Keepfall"', "complete: Keepfall"); has(body, '"taughtKnown":true', "complete: the spell is learned")
+	eq(qt:getBankBalance() - bank, 600 * 2000, "complete: 2000 gold per level to the bank")
+	body = say("complete")
+	has(body, '"err":"the quest is not on its trial step"', "complete: nothing to complete a second time")
+	body = say("reset")
+	has(body, '"step":0', "reset: back to the start"); check(not qt.learned.Keepfall, "reset: the spell is forgotten")
+	body = say("bogus")
+	has(body, '"err":"unknown spellquest command"', "an unknown sub command is an error")
+	local nl = creature(268435491, "Tester Aqc", {store = {[ST] = 1}})
+	function nl:getVocation() return {getId = function() return 0 end} end
+	talks["!tester"].onSay(nl, "!tester", "spellquest state")
+	check(nl.log.msgs[#nl.log.msgs]:find('"code":"noline"', 1, true) ~= nil, "no line: an error answer")
+	local msgs = #ana.log.msgs
+	check(talks["!tester"].onSay(ana, "!tester", "spellquest reset") == true, "a player's !tester spellquest is left to the game")
+	eq(#ana.log.msgs, msgs, "a player is never answered")
+	ChaosTrials = savedTrials
 end
 
 print = origPrint

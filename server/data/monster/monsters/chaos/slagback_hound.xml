@@ -5,7 +5,7 @@
      of pair 54 (data/lib/chaos_autosprite_art.lua: the stock look 240 until ChaosAutospriteArt.PAIR54 goes on). -->
 <monster name="Slagback Hound" nameDescription="a slagback hound" race="blood" experience="3550" speed="72" manacost="0">
 	<health now="11440" max="11440"/>
-	<look type="240" corpse="6068"/>
+	<look type="3363" corpse="6068"/>
 	<level min="580" max="600"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

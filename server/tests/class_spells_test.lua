@@ -41,6 +41,25 @@ eq(#plan.forget + #plan.learn, 0, "a second pass changes nothing")
 eq(#C.plan(nil, DEADEYE, 100, knows).forget, 0, "no spell list")
 eq(C.lists({vocations = {1, 5}}, 5), true, "lists"); eq(C.lists({}, 5), false, "no vocations listed")
 
+-- the line spell quests' spells (spellquest.lua): needlearn spells the line lists, but only the quest teaches them
+do
+	local qspells = {
+		{name = "Keepfall", level = 500, needLearn = true, vocations = {DEADEYE, 3, BEAST}},
+		{name = "Other Line", level = 500, needLearn = true, vocations = {MYSTIC}},
+		{name = "Quiver Rain", level = 50, needLearn = true, vocations = {DEADEYE, 3}},
+	}
+	local quest = {isQuest = function(name) return name == "Keepfall" or name == "Other Line" end}
+	local k = {["Other Line"] = true}
+	local p2 = C.plan(qspells, DEADEYE, 900, function(name) return k[name] end, quest)
+	eq(table.concat(p2.learn, ","), "Quiver Rain", "a quest spell is never taught by the class change")
+	eq(table.concat(p2.forget, ","), "Other Line", "a quest spell of another line is forgotten")
+	k = {["Keepfall"] = true}
+	p2 = C.plan(qspells, DEADEYE, 900, function(name) return k[name] end, quest)
+	eq(#p2.forget, 0, "a quest spell of the line stays"); eq(p2.keep, 1, "and counts as kept")
+	eq(table.concat(C.plan(qspells, DEADEYE, 900, function() return false end).learn, ","), "Keepfall,Quiver Rain",
+		"without the quest hook the old rule applies")
+end
+
 -- ------------------------------------------------------------------ the engine part
 dofile("data/scripts/chaos/class_spells.lua")
 local S = ChaosClassSpells
@@ -69,12 +88,40 @@ eq(S.sync(player, true).forget, 0, "a failing forgetSpell is skipped")
 ChaosSpellbook = nil
 eq(S.sync(player, true).learn, 0, "without the spellbook: nothing to do")
 
+-- the engine part with the spell quest: its sync teaches the done spells of the line and forgets the others
+do
+	local forgot, taught = {}, {}
+	ChaosSpellQuest = {
+		isQuestSpell = function(name) return name == "Keepfall" end,
+		sync = function() return {forget = 2, learn = 1} end
+	}
+	local qplayer = {}
+	function qplayer:getVocation() return {getId = function() return DEADEYE end} end
+	function qplayer:getLevel() return 900 end
+	function qplayer:hasLearnedSpell() return false end
+	function qplayer:learnSpell(name) taught[#taught + 1] = name; return true end
+	function qplayer:forgetSpell(name) forgot[#forgot + 1] = name; return true end
+	ChaosSpellbook = {get = function() return {{name = "Keepfall", level = 500, needLearn = true, vocations = {DEADEYE}}} end,
+		refresh = function() end}
+	local res = S.sync(qplayer)
+	eq(#taught, 0, "the class sync does not teach a quest spell")
+	eq(res.forget, 2, "the quest sync's numbers are added"); eq(res.learn, 1, "learn too")
+	ChaosSpellQuest = nil
+end
+
 -- ------------------------------------------------------------------ every Chaos spell is needlearn="0"
 local xml = read("data/spells/chaos/spells_chaos.xml")
+-- except the line spell quests' spells (spellquest_config.lua): only their quest teaches them
+dofile("data/scripts/chaos/chaos_constants.lua")
+local questNames = {}
+for _, line in ipairs(dofile("data/scripts/chaos/spellquest_config.lua").lines) do
+	for _, name in ipairs(line.spells) do questNames[name:lower()] = true end
+end
 local total, learn = 0, 0
 for tag in xml:gmatch("<instant ([^>]*)>") do
 	total = total + 1
-	if tag:find('needlearn="1"', 1, true) then learn = learn + 1 end
+	local name = tag:match('name="([^"]*)"')
+	if tag:find('needlearn="1"', 1, true) and not (name and questNames[name:lower()]) then learn = learn + 1 end
 end
 assert(total > 90, "the spell file is read")
 eq(learn, 0, "no Chaos spell needs teaching: the vocation and the level decide, so a class change swaps them at once")

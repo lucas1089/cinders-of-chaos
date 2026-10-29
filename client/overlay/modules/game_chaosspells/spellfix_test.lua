@@ -59,6 +59,10 @@ for _, e in pairs(info) do
 end
 local runes = { [3180] = { id = 86, group = 3, name = 'Bastion Rune' }, [3189] = { id = 15, group = 1, premium = true } }
 local server = F.serverWords(ChaosSpellData, ChaosSpellNames)
+-- the swap of two stock ids (Bog Splatter 174 -> 172, Arcane Stitch 172 -> 174) is a fixture of this test: the shipped table has
+-- no entry for them any more (the ids went to the line spell quests), but the mechanism stays tested
+F.STOCK['kah tin gor'] = { id = 172 }
+F.STOCK['saen tin'] = { id = 174 }
 local undo, idMap = F.apply(info, icons, runes, server)
 eq(info['Pyre Torrent'].id, 163, 'Pyre Torrent gets the server id')
 eq(info['Shadow Step'].id, 240, 'Shadow Step keeps its id')

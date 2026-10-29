@@ -75,8 +75,45 @@ function A.power(player, spec)
 	return 0
 end
 
+-- The class factor of a line spell quest spell (quest_spell_scale_config.lua): the spell is shared by the base class and both
+-- ascensions, whose best sets differ, so each class has its own factor that puts the gain of the spell in bounds (rotation_sim.py
+-- --quest). 1 for every other spell and for a class the table does not list.
+function A.classFactor(player, spec)
+	if not spec.quest then
+		return 1
+	end
+	if not ChaosQuestSpellScale then
+		pcall(dofile, 'data/scripts/chaos/quest_spell_scale_config.lua')
+	end
+	local row = ChaosQuestSpellScale and ChaosQuestSpellScale[spec.name]
+	local okVoc, voc = pcall(function() return player:getVocation():getName() end)
+	local f = row and okVoc and row[voc]
+	if type(f) == "table" then
+		-- a curve {{level, factor}, ...}: flat below the first point, linear between, the last point's value above it
+		local okLv, level = pcall(function() return player:getLevel() end)
+		level = okLv and tonumber(level) or 0
+		if level <= f[1][1] then
+			return f[1][2]
+		end
+		for i = 2, #f do
+			if level <= f[i][1] then
+				local a, b = f[i - 1], f[i]
+				return a[2] + (b[2] - a[2]) * (level - a[1]) / (b[1] - a[1])
+			end
+		end
+		return f[#f][2]
+	end
+	return f or 1
+end
+
 -- positive min, max of one hit (one tick of a DoT) for the caster; `chiScale` is the finisher scale of a Monk finisher
 function A.values(player, spec, chiScale)
+	local lo, hi = A.rawValues(player, spec, chiScale)
+	local k = A.classFactor(player, spec)
+	return lo * k, hi * k
+end
+
+function A.rawValues(player, spec, chiScale)
 	local scale = spec.scale or 1
 	if spec.school == "templar" then
 		local lo, hi = TemplarSpell.values(player, spec.pMin, spec.pMax, spec.mMin, spec.mMax, spec.bMin, spec.bMax)
@@ -158,6 +195,29 @@ local function burst(pos, spec, dir, fxOnly)
 	end
 end
 
+-- the second effect of an ultimate (vfx2) at the target tile (the caster's own tile for a self-centred one)
+local function burst2(pos, spec)
+	if spec.vfx2 then
+		ChaosSpell.vfx(pos, spec.vfx2)
+	end
+end
+
+-- Death Between Heartbeats: a hit on a target above critAbove.hp percent health is a critical hit (x critAbove.mult)
+local function critMult(player, target, spec)
+	local c = spec.critAbove
+	if not c then
+		return 1
+	end
+	local max = target:getMaxHealth()
+	if max and max > 0 and target:getHealth() * 100 > max * c.hp then
+		if ChaosCombatFx and ChaosCombatFx.crit then
+			ChaosCombatFx.crit(target:getPosition(), player:getId())
+		end
+		return c.mult
+	end
+	return 1
+end
+
 -- ------------------------------------------------------------------------------------------- damage over time
 local function startDot(player, target, key, spec, lo, hi, effect)
 	if spec.school == "necro" then
@@ -223,6 +283,7 @@ function A.cast(key, creature, variant)
 		end
 		local lo, hi = A.values(player, spec, chiScale)
 		burst(pos, spec, nil)
+		burst2(pos, spec)
 		for _, c in ipairs(victims(player, spec, pos, nil, true)) do
 			A.hit(player, c, spec, lo, hi, effect)
 		end
@@ -253,14 +314,19 @@ function A.cast(key, creature, variant)
 
 	if spec.shape == "single" then
 		burst(tpos, spec, dir)
-		A.hit(player, target, spec, lo, hi, effect)
+		burst2(tpos, spec)
+		local m = critMult(player, target, spec)
+		A.hit(player, target, spec, lo * m, hi * m, effect)
 	elseif spec.shape == "dot" then
 		burst(tpos, spec, dir)
 		startDot(player, target, key, spec, lo, hi, effect)
 	elseif spec.shape == "circle" then
 		burst(tpos, spec, dir)
+		burst2(tpos, spec)
 		for _, c in ipairs(victims(player, spec, tpos, nil, false, target)) do
-			A.hit(player, c, spec, lo, hi, effect)
+			-- spec.main: the target at the centre takes a heavier hit than the rest of the circle (Hammer of Ember Dawn)
+			local m = (spec.main and c == target) and spec.main or 1
+			A.hit(player, c, spec, lo * m, hi * m, effect)
 		end
 	else -- wave, line: from the caster toward the target
 		local first = true
@@ -269,6 +335,7 @@ function A.cast(key, creature, variant)
 			burst(p, spec, dir, not first)
 			first = false
 		end
+		burst2(tpos, spec)
 		for _, c in ipairs(victims(player, spec, pos, dir, false)) do
 			A.hit(player, c, spec, lo, hi, effect)
 		end

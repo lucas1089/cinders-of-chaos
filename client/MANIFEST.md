@@ -312,6 +312,12 @@ In the world a tiered monster's name is coloured by tier and its modifiers are d
 
 ## Chaos spells in the client (new)
 `game_chaosspells` adds the 110 Chaos spells to the spell list, action bar, hotkeys and cooldown display (`SpellInfo.Default`, `SpellIcons`, `SpelllistSettings.Default.spellOrder`). The data (`spelldata.lua`) is generated from `server/data/spells/chaos/spells_chaos.xml` by `tools/gen_spell_data.py` (CI fails if it is out of date). All three spell icon sheets (`overlay/data/images/game/spells/spell-icons-32x32.png`, `-22x24.png`, `-20x20.png`, 20 columns, 320 cells: 16 rows) are our own generated art and replace the base client's sheets when `tools/assemble_client.sh` copies the overlay: `tools/gen_all_spell_icons.py --spells-lua <client>/modules/gamelib/spells.lua --out-dir overlay/data/images/game/spells` draws every cell the client's `SpellIcons` table names from the spell's words (element from flam/frigo/vis/tera/mort/san/pox/kor/ico/..., kind from exori/exevo hur/lux/mas/exura/exana/utani/utamo/utevo/ad... runes, tier from infir/min, gran, max), the 77 Chaos spells at cells 201 to 277 (the Thief line's nine at 237-245, Berserker and Beastmaster at 246-249, the Necromancer line The snares (Snare Trap, Seeker Mine, Detonate Mines) and the four vigils of the second round of build archetypes (2026-10-12) are icon cells 282-288 (`client/tools/gen_spell_icons.py`, the sheets regenerated with `gen_all_spell_icons.py`; only those cells changed). The Necromancer's summon spells Raise Bone Warrior, Archer and Mage (2026-10-18) are cells 298-300; the 2026-10-20 level 340-460 spells (Bastion Cry, Anvil Fall, Twin Verdict, Rampage Leap, Glacial Doom, Pack Frenzy, Shuriken Tempest) are cells 301-307 (a 16th row; only those cells changed), Tautstring (2026-10-20, the Ranger line's buff in place of the retired stock Hawkeye) cell 308 (only that cell changed; the stock entry `utito tempo san` leaves the spell list through `ChaosRetiredSpells` of `spelldata.lua`), Ironhold and Wildstride (2026-10-20, the Warrior and Ranger lines' buffs in place of the retired stock Bulwark and Windrunner, which pacified the caster) cells 309-310 (only those cells changed; `utamo tempo` and `utamo tempo san` are in `ChaosRetiredSpells`; the 15-spell cap of 2026-10-20 adds `ChaosCappedSpells`: Chaos words of 79 stock spells -> the class ids that keep them, `{}` for the 68 the server retired, which leave the spell list and are never cast; no icon changed), the previous last three of the 300-cell sheets (drawn by `gen_spell_icons.py`, bone sword / bone arrows / necrotic eye; only those cells changed). The Thief line's area strikes Blade Flurry (73) and Iaido Sweep (74, 2026-10-15) are cells 289-290 (new kit glyphs
+
+Line spell quest icons, phase 7 (2026-10-28): the 21 quest spells have real icons in cells 349-369 of the three sheets (the placeholder glyphs of `gen_spell_icons.py` `ICONS` stay as the fallback of `gen_all_spell_icons.py --no-art`). Made with PixelLab "Create Image (Pro)", 21 calls at 32 x 32 with no reference image (one description per spell, 64 candidates each, $0.08 a call), one candidate chosen by eye per spell; the raw results stay outside git. Source, committed: `tools/quest_spell_art/quest_spell_32.png` (7 x 3 cells) and `quest_spell_icons.csv` (cell, spell, frame colour, call, candidate). `tools/gen_quest_spell_icons.py` builds them deterministically: the centre 28 x 28 of the candidate (no resampling) inside the 2 px frame of the first Chaos spell cell (201-279) with the same frame colour (grey, orange, purple, red, green, cyan; the stud and cut corners come with it), 22 x 24 and 20 x 20 redrawn with `gen_all_spell_icons.art_small` like the other art cells. It writes cells 349-369 of `tools/spell_icon_art/spell_icons_32.png` (the art sheet, now 19 rows, which `gen_all_spell_icons.py` and `gen_buff_icons.py` read) and pastes the same cells into the three client sheets (every other cell is untouched; `gen_all_spell_icons.py` needs the base client's `spells.lua`, so it is not the path). `--check` (CI step "Quest spell icons") compares the 21 cells in all four files; `pack --raw DIR` rebuilds the source sheet from raw results (`DIR/<call>/<NN>.png`); `--sheet OUT.png` writes a labelled contact sheet. The seven buff bar icons (`buffs/<key>.png`) are those cells in the buff frame (`gen_buff_icons.py` `SPELL_ICONS`, rerun, only the seven files changed). Painted icons (2026-10-28): `gen_painted_icons.py` builds the 21 spells as `spells_painted/349-369.png` and the seven buffs as `buffs_painted/<key>.png` straight from `quest_spell_32.png` (the finished art, centre 28 x 28, no repaint and no palette clamp, in the buff frame; the buffs box-reduced to 22 px), so the sheet `painted_64.png` and the csv are unchanged and no new art was made. The wiki (`gen_wiki_data.lua`, then `gen_wiki_art.py`) shows them as `sp-349` to `sp-369` instead of kit glyphs. A new look: change the csv candidate (or the frame), `pack`, run the build, rerun `gen_buff_icons.py`. Credit: docs/CREDITS.md, PixelLab.
+Line spell quests, phases 4 and 5 (2026-10-28): the seven level 800 buffs (ids 143, 150, 153, 156, 159, 173, 178; server/README.md "Line spell quests") are in `spelldata.lua` with `quest = 2` and icon cells 363-369 in the three sheets (placeholder glyphs of `gen_spell_icons.py` `ICONS`, regenerated with `gen_all_spell_icons.py`; the sheets stay at 19 rows), each has a buff bar icon (`overlay/data/images/game/buffs/<key>.png`, `gen_buff_icons.py` `SPELL_ICONS`: the spell's cell, taken from the generated sheet until art is drawn) and a Timer rule in `game_helpersupport/supportspells.lua` `KINDS` (`auto = 'timer'`, so Auto setup keeps the buff up). `game_spellbook` shows a quest spell the character has not learned as locked (`spellbook_core.lua` status `quest`, `Core.questOf` reads `quest` from the spell data): the row says "Locked", the tooltip and the description name Archivist Odrenna and the level (500 / 800 / 1200), the details have a "Quest" row, and locked quest spells of the character's line are always in "Available soon". pt-BR texts in `client_chaos_locale/pt_br.lua`; tests `spellbook_core_test.lua`, `supportspells_test.lua`.
+Line spell quests, phase 3 (2026-10-28): the seven level 1200 ultimates (ids 148, 151, 154, 157, 160, 174, 237) are in `spelldata.lua` with `quest = 3`, icon cells 356-362 (placeholder glyphs of `gen_spell_icons.py` `ICONS`; the three sheets got a 19th row, cells 363-380 are the filler plate) and in `autorotation_data.lua`, where each class has `ultimate = id` (not in a preset or the extras). `game_helperrotation/autorotation.lua` `select` puts the ultimate first, for one monster, when the character can cast it, on top of the 5 spells (`MAX_SPELLS` stays 5); `sel.ultimate` names it.
+Line spell quests, phase 2 (2026-10-28): seven level 500 attack spells (ids 142, 149, 152, 155, 158, 172, 177; server/README.md "Line spell quests") are in `spelldata.lua` with `quest = 1` (`gen_spell_data.py` reads the quest numbers of the spells from `server/data/scripts/chaos/spellquest_config.lua`), icon cells 349-355 in the three sheets (placeholder glyphs of `gen_spell_icons.py` `ICONS`, pasted into the sheets; PixelLab art comes later) and in `game_helperrotation/autorotation_data.lua`. `spellfix.lua` has no fix entry for the retired Bog Splatter and Arcane Stitch any more (their ids 172 and 174 belong to the quest spells).
+
 The helper's own per-vocation lists get every castable spell of the client's table, not only the Chaos spells (owner 2026-10-17: "some spells appear in the spellbook but not in the helper"): `ChaosSpellFix.extendHelperLists` adds the Chaos spells, the base spells of `F.EXTRA` (never added before: their entries came after the helper pass) and any other instant the server has that the helper's lists lack (`castableFromInfo`; the helper's ignored ids and `F.HELPER_EXCLUDE` stay out).
 `flurry` and `sweep` in `gen_spell_icons.py`), the pack tools of the second pass cells 291-297 (Palm Shockwave, Shadow
 Ricochet, Iron Chain, Bone Shrapnel, Sanctified Ground, Shield Wave, Fan of Knives; glyphs `palmwave`, `ricochet`,
@@ -2404,6 +2410,9 @@ pixel-identical to the sheets and every old thing byte-identical. Built twice: i
   tool). Not run in a client.
 
 ## Store item looks (pair 34: items 38608-38611, `tools/sprites/gen_store_items_art.py`, `art_import/store_items.*`; on windows-assets 584dab51 since 2026-10-21)
+The Gem Pouch (server id 32095, 2026-10-28) adds no sprite: `pouches_config.lua` `clientId = 0` keeps the stock jewelled
+backpack's own client id on its node (`install_pouches.py`).
+
 Owner report 2026-10-22 with screenshots: the Loot Bag, Orbs Pouch, Rift Key Pouch and Everfull Ration showed grey in the
 backpack and the purse ("ícones ainda estão cinzas"), while the store window drew them in colour.
 - **Cause.** Not the art and not the client ids: the store window draws the same sprites (33651-33653, 33904). The
@@ -3388,7 +3397,7 @@ Output **pair 53**: dat ed39f8452177e0ef503c97fd5f7df764 (8,835,386 bytes), spr 
     Extracting the parts gives the dat and spr md5 above (checked).
 
 
-### Pair 54: pair 53 with three AutoSprite looks (`gen_autosprite_art.py`; built 2026-10-28, not pushed yet)
+### Pair 54: pair 53 with three AutoSprite looks (`gen_autosprite_art.py`; built 2026-10-28, shipped inside pair 56)
 Owner requests 2026-10-28: the owner's AutoSprite character "Verdant Eye Demon" in the game as the boss Vharzul the Verdant Eye,
 then "mais 2 monstros ... pra hunt" that fit the game: the Ashbound Thrall and the Slagback Hound (server/README.md "AutoSprite
 looks (pair 54)"). Three outfits are appended; nothing else changes.
@@ -3420,7 +3429,7 @@ Output **pair 54** (8 directions; rebuilt 2026-10-28): dat bd8d87f8b4950e01e65ee
   3,000 sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair53`: 0 errors, 3,964 warnings (the same
   as pair 53; `outfit-directions` accepts 8). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 54 change only the dat
   md5 line (not committed yet: CI checks them against the pair on windows-assets). Not run in a client.
-- **Archive parts** (same recipe as pair 53; not pushed to windows-assets yet, waiting for the owner's approval):
+- **Archive parts** (same recipe as pair 53; built, never pushed: pair 56 holds pair 54 and went up instead):
   - part00 99,614,720 bytes, sha256 `2f0d08946c9a91db611e7931e9dd24c08cf8cb2734c0ab796885088f933adfcd`
   - part01 30,155,764 bytes, sha256 `5136b1ae07bbe2a1f553cc40fa53f88c3f511829345f47bec18ec090d8b246d3`
   - joined `things-1098.tar.xz` (129,770,484 bytes) sha256 `e0ec06cdf8834789ae2016993ee40a1666c0f78bdf297471fc1ff351198b23d2`;
@@ -3430,7 +3439,7 @@ Output **pair 54** (8 directions; rebuilt 2026-10-28): dat bd8d87f8b4950e01e65ee
   the three files), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 54 / 3363, `outfit_anchors.lua` and
   `info_lifts.lua` regenerated from pair 54. Until then the three wear stock looks and a client on pair 53 needs nothing new.
 
-### Pair 55: pair 54 with the pickup looks, Ember portal and health / mana globes (`gen_portal_art.py`; built 2026-10-28, not pushed yet)
+### Pair 55: pair 54 with the pickup looks, Ember portal and health / mana globes (`gen_portal_art.py`; built 2026-10-28, shipped inside pair 56)
 Owner requests 2026-10-28: the Ember Blessing ground pickup (server 32090) wore the Ember Orb sprite (client id 25045); it gets a
 violet arcane portal in a carved stone ring. Then the health and mana globes (server 32088 / 32089, they wore the stock potion
 looks 7618 / 7620) get looks of their own (option 3 of the owner's pick). Three items are appended; nothing else changes. The Ember Orb
@@ -3466,9 +3475,9 @@ Output **pair 55**: dat 26670034d86dab36a59ecd955bb158c7 (8,842,607 bytes), spr 
   sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair54`: 0 errors, 3,964 warnings (the same as pair 54).
   `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 55 change only the dat md5 line (not committed yet, as for pair 54: CI checks
   them against the pair on windows-assets). `gen_fx_send_offsets.py --check`: up to date. Not run in a client.
-- **Archive parts.** Not built, not pushed to windows-assets: waiting for the owner's approval of the pair.
+- **Archive parts.** Not built: pair 56 holds pair 55 and went up instead (owner approved 2026-10-28).
 
-### Pair 56: pair 55 with the Monk fist weapon looks and the 34 weapons above level 800 (`gen_fist2_art.py`, `gen_weapons800_art.py`; built 2026-10-28, not pushed yet)
+### Pair 56: pair 55 with the Monk fist weapon looks and the 34 weapons above level 800 (`gen_fist2_art.py`, `gen_weapons800_art.py`; built 2026-10-28, on windows-assets 79be63dc)
 Owner 2026-10-28 ("me mande fotos das armas do monk", approved all with "aprovo todas"): redraws of the six claws and the four
 uniques of the Monk line, and three new fist weapons. 13 items are appended (client ids 44399-44411); then, owner 2026-10-28
 ("pode criar mais armas pros levels acima de 800"), 34 weapons above level 800 (client ids 44412-44445, below). 47 items in all; nothing else changes.
@@ -3580,7 +3589,16 @@ outfits, 4,701 effects, 253 missiles. Built, not pushed yet.
   (`gen_fist2_art.py --preview`, `gen_weapons800_art.py --preview`): all 47 draw as in the tables. The second import (34 items, 34 sprites
   appended): output parses, the 34 slots are pixel-identical to the art, every other thing byte-identical, append-only guard passed;
   `check_pair.py --old pair55` again 0 errors and 3,964 warnings; `gen_fx_send_offsets.py --check` up to date. Not run in a client.
-- **Archive parts.** Not built, not pushed to windows-assets: waiting for the owner's approval of the pair.
+- **Archive parts** (same recipe as pair 53; owner approved 2026-10-28, pushed to windows-assets as **79be63dc**, only the two part
+  files and their lines of `SHA256SUMS.parts` changed):
+  - part00 99,614,720 bytes, sha256 `6d403b3f7c12a775432db340ddc78b497f4147f08713f36191d5f5c6bd10eed5`
+  - part01 30,170,616 bytes, sha256 `f7e358eab54ed39b9d94c3a508400ff3f511c1ed490758a295d1d856ab0a35ae`
+  - joined `things-1098.tar.xz` (129,785,336 bytes) sha256 `0241527e754920b6c93a168c4ca2f8bbc5f7feb5ba89ff6ba20e25ce13dbed33`;
+    `things-1098.tar` sha256 `4e4b9d586c36566dc947bf0fd31bce5f7b08ef6ab8da7fafcd38b3f62e5cb58b`. Extracting the parts gives the dat and spr md5 above (checked).
+- **Switched on** with the push: `ChaosAutospriteArt.PAIR54 = true`, the AutoSprite rows in `picks.csv` (looks 3361-3363 in the three
+  monster files), `check_content.py` at pair 56 / 3363 outfits (blank set recounted), `outfit_anchors.lua` and `info_lifts.lua` from pair 56.
+  Against pair 56: `check_pair.py` 0 errors, recolour, anchors, lifts, dungeon banners and site images pass. The pickups, fist weapons and
+  weapons above 800 still wait for `chaosClientPair` 56 (server/README.md "Client pair guard"): record it once the client update is out.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

@@ -55,7 +55,7 @@ local TYPES = {
 	[1988] = {container = true, capacity = 20}, -- backpack
 	[1987] = {container = true, capacity = 8}, -- bag
 	[3058] = {container = true, capacity = 30}, -- a corpse
-	[32081] = {container = true, capacity = 60}, [32082] = {container = true, capacity = 3}, [32083] = {container = true, capacity = 30},
+	[32081] = {container = true, capacity = 60}, [32082] = {container = true, capacity = 3}, [32083] = {container = true, capacity = 100}, [32095] = {container = true, capacity = 100},
 	[29856] = {stackable = true}, [32256] = {stackable = true}, [2148] = {stackable = true}, [32071] = {stackable = true},
 }
 function ItemType(id)
@@ -228,9 +228,9 @@ for _, key in pairs(cfg.storage) do
 end
 local seenIds = {}
 for kind, k in pairs(cfg.kinds) do
-	ok(k.id >= 32081 and k.id <= 32083 and not seenIds[k.id], "pouch ids 32081..32083, distinct: " .. kind)
+	ok((k.id >= 32081 and k.id <= 32083 or k.id == 32095) and not seenIds[k.id], "pouch ids 32081..32083 and 32095, distinct: " .. kind)
 	seenIds[k.id] = true
-	ok(k.capacity >= 30 and k.capacity <= 255, "capacity fits the protocol byte")
+	ok(k.capacity >= 100 and k.capacity <= 255, "capacity fits the protocol byte, at least 100: " .. kind)
 	ok(k.description:find("^Store item: cannot be traded"), "description says store item: " .. kind)
 end
 
@@ -265,7 +265,7 @@ local function route(info, rules) return table.concat(P.route(info, rules or dNo
 eq(route({id = 29856, category = "currency"}), "orbs", "orb -> Orbs Pouch")
 eq(route({id = 12345, category = "currency"}), "orbs", "loot_config currency entry -> Orbs Pouch")
 eq(route({id = 32051}), "orbs", "rune shard -> Orbs Pouch")
-eq(route({id = 32010, gem = true}), "orbs", "gem -> Orbs Pouch")
+eq(route({id = 32010, gem = true}), "gems", "gem -> Gem Pouch when every pouch is carried")
 eq(route({id = 10155, actionId = 47401}), "keys", "Rift Key -> Rift Key Pouch")
 eq(route({id = 10155, actionId = 0}), "", "the stock item behind the key is not a key")
 eq(route({id = 32071}), "keys", "omen fragment -> Rift Key Pouch")
@@ -293,11 +293,25 @@ local function plan(info, rules, carried)
 	local kinds, spill = P.plan(info, rules or d, sets, cfg, carried or all)
 	return table.concat(kinds, ",") .. (spill and (" <" .. spill) or "")
 end
-eq(cfg.priority[1], "orbs", "Orbs Pouch first") eq(cfg.priority[2], "keys", "then the Rift Key Pouch")
+eq(cfg.priority[1], "gems", "Gem Pouch first") eq(cfg.priority[2], "orbs", "then the Orbs Pouch")
+eq(cfg.priority[3], "keys", "then the Rift Key Pouch")
 eq(cfg.order[#cfg.order], "loot", "the Loot Bag last")
+eq(cfg.kinds.orbs.capacity, 100, "Orbs Pouch: 100 slots") eq(cfg.kinds.keys.capacity, 100, "Rift Key Pouch: 100 slots")
+eq(cfg.kinds.gems.capacity, 100, "Gem Pouch: 100 slots") eq(cfg.kinds.gems.id, 32095, "Gem Pouch id")
+eq(P.kindOfId(cfg, 32095), "gems", "the Gem Pouch id is a pouch")
 local gemsRules = P.sanitizeRules(cfg, {gems = true, list = true})
 eq(plan({id = 32010, gem = true}, gemsRules), "orbs,loot <orbs", "gem with the Loot Bag gems rule: Orbs Pouch first")
 eq(plan({id = 32010, gem = true, onList = true}, gemsRules), "orbs,loot <orbs", "a gem on the autoloot list: Orbs Pouch first")
+-- the Gem Pouch: gems only, and the Orbs Pouch leaves gems to it while one is carried
+local withGem = {loot = true, orbs = true, keys = true, gems = true}
+eq(plan({id = 32010, gem = true}, gemsRules, withGem), "gems,loot <gems", "Gem Pouch carried: the gem goes there first")
+eq(plan({id = 32010, gem = true}, d, {orbs = true, gems = true}), "gems", "Gem Pouch full or not, never the Orbs Pouch")
+eq(plan({id = 32010, gem = true}, d, {orbs = true}), "orbs", "no Gem Pouch: the Orbs Pouch keeps taking gems")
+eq(plan({id = 32010, gem = true}, d, {orbs = true, keys = true}), "orbs", "no Gem Pouch, Rift Key Pouch carried: still the Orbs Pouch")
+eq(plan({id = 29856}, d, withGem), "orbs,loot <orbs", "an orb is not a gem: the Orbs Pouch")
+eq(plan({id = 32051}, d, withGem), "orbs,loot <orbs", "a rune shard: the Orbs Pouch")
+eq(plan({id = 29856}, d, {gems = true}), "", "a Gem Pouch alone takes no orb")
+eq(plan({id = 2400, category = "equipment", rarity = 3}, d, {gems = true}), "", "a Gem Pouch takes only gems")
 eq(plan({id = 10155, actionId = 47401, onList = true}), "keys,loot <keys", "a listed Rift Key: Rift Key Pouch first")
 local noSpill = P.sanitizeRules(cfg, {gems = true, list = true, overflow = false})
 eq(plan({id = 32010, gem = true, onList = true}, noSpill), "orbs", "overflow off: never the Loot Bag, even if its rules match")
@@ -437,6 +451,32 @@ local cAll = corpse(hero.id, {junk2, rare2, plain2})
 drop(nil, cAll)
 eq(junk2.parent, lootPouch, "defaults: other loot -> Loot Bag") eq(rare2.parent, lootPouch, "defaults: rare gear -> Loot Bag")
 eq(plain2.parent, lootPouch, "defaults: plain gear -> Loot Bag")
+-- the Gem Pouch: gems go there, the Orbs Pouch keeps orbs and shards; without it the Orbs Pouch takes gems again
+do
+	local gemPouch = PO.create(hero, "gems")
+	eq(gemPouch.id, 32095, "Gem Pouch created") eq(gemPouch.custom.chaos_pouch, "gems", "kind attribute")
+	eq(gemPouch.custom.chaos_storebound, 1, "store-bound") eq(gemPouch.custom.chaos_locked, 2, "bound lock")
+	eq(PO.kindOfId(32095), "gems", "kindOfId")
+	eq(PO.neverSell(32010), true, "gems never auto-sold")
+	gemPouch.parent = nil gemPouch:moveTo(bp, 0)
+	eq(PO.carried(hero).gems, gemPouch, "a Gem Pouch in the backpack counts as carried")
+	local g = item(32010)
+	local orbsSize = #orbsPouch.items
+	drop(nil, corpse(hero.id, {g}))
+	eq(g.parent, gemPouch, "gem -> Gem Pouch, not the Orbs Pouch")
+	eq(#orbsPouch.items, orbsSize, "the Orbs Pouch got nothing")
+	for i, it in ipairs(bp.items) do
+		if it == gemPouch then table.remove(bp.items, i) break end
+	end
+	gemPouch.parent = nil
+	eq(PO.carried(hero).gems, nil, "Gem Pouch gone")
+	local g2 = item(32010)
+	drop(nil, corpse(hero.id, {g2}))
+	eq(g2.parent, orbsPouch, "no Gem Pouch carried: the Orbs Pouch takes the gem as before")
+	for i, it in ipairs(orbsPouch.items) do
+		if it == g2 then table.remove(orbsPouch.items, i) break end
+	end
+end
 -- the stow and the sort of one kill are one held batch of container updates (engine patch 0054, Chaos.containerBatch)
 do
 	local begins, ends, depth, maxDepth = 0, 0, 0, 0

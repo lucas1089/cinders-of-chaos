@@ -1,11 +1,11 @@
 -- Store pouches: pure rules (no engine calls), shared by pouches.lua and server/tests/pouches_test.lua.
---   ChaosPouchesCore.kindOfId(cfg, id)              "loot" | "orbs" | "keys" for a pouch item id, else nil
+--   ChaosPouchesCore.kindOfId(cfg, id)              "loot" | "orbs" | "keys" | "gems" for a pouch item id, else nil
 --   ChaosPouchesCore.defaults(cfg)                  the Loot Bag rules of a character that never set them
 --   ChaosPouchesCore.packRules(r) / unpackRules(cfg, v)   rules <-> one int32 storage value (unset = defaults)
 --   ChaosPouchesCore.sanitizeRules(cfg, t)          rules from client input (booleans, minRarity 1..15)
 --   ChaosPouchesCore.sets(cfg, extraOrbIds)         {orbs = set, omens = set, coins = set} of item ids
 --   ChaosPouchesCore.wants(kind, info, rules, sets, cfg)   true when that pouch collects the corpse item
---   ChaosPouchesCore.specialistOf(info, sets, cfg)  the first specialist pouch (cfg.priority: orbs, keys) whose kind it is
+--   ChaosPouchesCore.specialistOf(info, sets, cfg)  the first specialist pouch (cfg.priority: gems, orbs, keys) whose kind it is
 --   ChaosPouchesCore.plan(info, rules, sets, cfg, carried)   the carried pouches to try, in order, and the overflow kind
 --   ChaosPouchesCore.route(info, rules, sets, cfg)  plan() with every pouch carried: the kinds, in order
 --   ChaosPouchesCore.rank(rarity, unique)           the sort rank of an item of the Loot Bag (uniques above every rarity)
@@ -124,6 +124,8 @@ function P.wants(kind, info, rules, sets, cfg)
 	end
 	if kind == "keys" then
 		return P.isRiftKey(info, cfg) or sets.omens[info.id] == true
+	elseif kind == "gems" then
+		return info.gem == true
 	elseif kind == "orbs" then
 		return sets.orbs[info.id] == true or (cfg.orbGems and info.gem == true) or false
 	elseif kind == "loot" then
@@ -168,17 +170,25 @@ end
 
 -- carried = {[kind] = truthy} for the pouches the character carries. Returns the kinds to try, in order, and the
 -- specialist kind when the Loot Bag is in the list only as its overflow (else nil).
---   1. An item of a specialist kind (orbs, rune shards, gems / Rift Keys, omen items) goes to that pouch first, always,
---      whatever the Loot Bag rules say (its "gems" rule, the autoloot list).
+--   1. An item of a specialist kind (gems / orbs, rune shards, gems / Rift Keys, omen items) goes to the first CARRIED
+--      pouch of cfg.priority that wants it, always, whatever the Loot Bag rules say (its "gems" rule, the autoloot
+--      list). A gem is wanted by both the Gem Pouch and the Orbs Pouch, and the Gem Pouch comes first: with one
+--      carried, the Orbs Pouch never gets a gem (they do not mix); without one the Orbs Pouch takes gems as before.
 --   2. That pouch full: the Loot Bag takes it only with its "overflow" rule (default on); else the caller passes it
---      to the backpack, then leaves it in the corpse.
+--      to the backpack, then leaves it in the corpse. A full Gem Pouch does not pass gems to the Orbs Pouch.
 --   3. No specialist pouch carried for it: the Loot Bag rules decide as for any item (gems rule, autoloot list).
 function P.plan(info, rules, sets, cfg, carried)
 	carried = carried or {}
 	rules = rules or P.defaults(cfg)
 	local out = {}
-	local spec = P.specialistOf(info, sets, cfg)
-	if spec and carried[spec] then
+	local spec
+	for _, kind in ipairs(cfg.priority) do
+		if carried[kind] and P.wants(kind, info, nil, sets, cfg) then
+			spec = kind
+			break
+		end
+	end
+	if spec then
 		out[1] = spec
 		if rules.overflow and carried.loot then
 			out[2] = "loot"

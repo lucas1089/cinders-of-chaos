@@ -32,7 +32,7 @@ local EMPTY_COLOR = '#1a1416'
 local MAX_CELL, MIN_CELL = 14, 5
 local MAX_SINGLE_RANGE = 5 -- single-target preview: the target at most this many tiles away
 
-local STATE_COLORS = { ready = '#8c8070', level = '#e03a1e', learn = '#e8902a', vocation = '#5a5048', cooldown = '#7fd3f0' }
+local STATE_COLORS = { ready = '#8c8070', level = '#e03a1e', learn = '#e8902a', quest = '#d9b04a', vocation = '#5a5048', cooldown = '#7fd3f0' }
 
 local TYPE_TEXT = { damage = 'Damage', heal = 'Healing', buff = 'Support', summon = 'Summon', conjure = 'Conjure', utility = 'Utility' }
 local TARGET_TEXT = { single = 'Single target', area = 'Area', self = 'Self', front = 'Area in front' }
@@ -314,6 +314,11 @@ local function addStat(key, value, tooltip)
   return row
 end
 
+-- the hint of a locked quest spell: the NPC and the level
+local function questTip(level)
+  return tr('Locked. %s teaches this spell in a quest, from level %d.', Core.QUEST_NPC, level)
+end
+
 local function showDetails(spell)
   selected = spell
   local d = window.details
@@ -366,13 +371,22 @@ local function showDetails(spell)
   end
   local short, full = vocationText(spell)
   addStat(tr('Vocations'), short, full)
+  local questLevel = Core.questLevel(spell)
   if spell.needLearn then
-    local learned = Core.status(spell, { learned = Core.learnedNames }) ~= 'learn'
+    local status = Core.status(spell, { learned = Core.learnedNames })
+    local learned = status ~= 'learn' and status ~= 'quest'
     local learnRow = addStat(tr('Learned spell'), learned and tr('Yes') or tr('No'))
-    if learnRow and not learned then learnRow.value:setColor(STATE_COLORS.learn) end
+    if learnRow and not learned then learnRow.value:setColor(STATE_COLORS[status]) end
+    if questLevel then
+      addStat(tr('Quest'), tr('Lv %s', formatShortNumber(questLevel)), status == 'quest' and questTip(questLevel) or nil)
+    end
   end
 
   local text = spell.description or ''
+  -- a quest spell the character has not learned: who teaches it and from which level (the full hint; the row has the short one)
+  if questLevel and Core.status(spell, { learned = Core.learnedNames }) == 'quest' then
+    text = (text ~= '' and (text .. '\n\n') or '') .. questTip(questLevel)
+  end
   -- the spell's support runes (game_spellsupports), when that module knows the spell: a short line here, the effects
   -- in the tooltip; that module also shortens a description too long for its box (full text in the tooltip)
   local sup = modules.game_spellsupports
@@ -404,8 +418,12 @@ local function currentFilter()
   return Core.normalizeFilter(option and option.data)
 end
 
-local function stateTip(status)
+local function stateTip(status, spell)
   if status == 'level' then return tr('Your level or magic level is too low.') end
+  if status == 'quest' then
+    local level = Core.questLevel(spell)
+    if level then return questTip(level) end
+  end
   if status == 'learn' then return tr('Not learned yet.') end
   if status == 'vocation' then return tr('Not a spell of your vocation.') end
   return tr('You can cast it.')
@@ -422,11 +440,14 @@ local function updateRowState(row, spell, ctx, now)
   elseif status == 'learn' then
     row.level:setText(tr('Learn'))
     row.level:setColor(STATE_COLORS.learn)
+  elseif status == 'quest' then
+    row.level:setText(tr('Locked'))
+    row.level:setColor(STATE_COLORS.quest)
   else
     row.level:setText(tr('Lv %s', formatShortNumber(tonumber(spell.level) or 0)))
     row.level:setColor(STATE_COLORS[status] or STATE_COLORS.ready)
   end
-  row:setTooltip((spell.name or '?') .. '\n' .. stateTip(status))
+  row:setTooltip((spell.name or '?') .. '\n' .. stateTip(status, spell))
   return left ~= nil and left ~= false
 end
 

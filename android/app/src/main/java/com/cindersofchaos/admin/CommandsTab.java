@@ -221,6 +221,7 @@ final class CommandsTab {
         quick.addView(upCard, ui.gap(10));
 
         buildXp();
+        buildClientPair();
         buildBeta();
         buildClientServicesImpl();
         buildAccounts();
@@ -286,6 +287,47 @@ final class CommandsTab {
         } else {
             ctl("XP x" + n, args, 30, null);
         }
+    }
+
+    // client pair guard: config.lua chaosClientPair = the sprite pair the shipped client is on (chaos-ctl.sh client-pair)
+    private void buildClientPair() {
+        MaterialCardView c = ui.titledCard("Par do cliente");
+        LinearLayout b = Ui.body(c);
+        TextView now = ui.text("Toque em Ver para ler o config.lua.");
+        b.addView(now);
+        b.addView(ui.hint("O par de sprites (dat/spr) do cliente que os jogadores baixam. Itens que precisam de um par "
+                + "mais novo esperam: Atualizar servidor os pula com um aviso até este número chegar lá. Grave só "
+                + "depois de publicar o cliente novo. Não desce."), ui.gap(4));
+        TextInputLayout pair = ui.field("Par", "1 a 999, ex.: 56.", "", InputType.TYPE_CLASS_NUMBER);
+        b.addView(pair, ui.gap(8));
+        MaterialButton see = ui.secondary("Ver", R.drawable.ic_refresh);
+        see.setOnClickListener(v -> a.ctlAction("client-pair show", 30, f -> {
+            if (!f.ok) {
+                result.show("Par do cliente", f);
+                return;
+            }
+            String n = "";
+            for (String line : f.raw.split("\n")) {
+                if (line.startsWith("chaosClientPair=")) {
+                    n = line.substring(16).trim();
+                }
+            }
+            now.setText("Agora: " + (n.isEmpty() || n.equals("missing") ? "sem registro" : "par " + n));
+        }));
+        MaterialButton save = ui.secondary("Gravar", 0);
+        save.setOnClickListener(v -> {
+            int n = UpdateInfo.num(Ui.value(pair));
+            if (n < 1 || n > 999) {
+                pair.setError("De 1 a 999.");
+                return;
+            }
+            pair.setError(null);
+            a.confirm("Gravar o par " + n + "?", "Só se o cliente publicado já está no par " + n + ". Depois rode "
+                    + "Atualizar servidor para instalar os itens que esperavam.", "Gravar", false,
+                    () -> ctl("Par do cliente " + n, "client-pair set " + n, 30, null));
+        });
+        b.addView(ui.evenRow(see, save), ui.gap(6));
+        quick.addView(c, ui.gap(10));
     }
 
     // beta test mode: lifts the weekly / daily gameplay limits for testers, never the store's (chaos-ctl.sh beta-mode)
@@ -644,9 +686,9 @@ final class CommandsTab {
                 + "o relatório no fim. Ficam as 20 últimas rodadas na VPS."), ui.gap(4));
         MaterialButton clean = ui.flat("Apagar os testers", 0);
         clean.setOnClickListener(v -> a.confirm("Apagar todas as contas de tester?", "Apaga as contas, os "
-                + "personagens e tudo deles. Precisa de 2 minutos desde que pararam (se rodando, para agora: toque "
-                + "de novo depois). O próximo Iniciar cria novos, com os níveis atuais.", "Apagar", true,
-                () -> ctl("Apagar testers", "testers cleanup --yes", 120, null)));
+                + "personagens e tudo deles. Se estão rodando, para agora e espera 2 minutos antes de apagar (um "
+                + "toque só). O próximo Iniciar cria novos, com os níveis atuais.", "Apagar", true,
+                () -> ctl("Apagar testers", "testers cleanup --yes", 240, null)));
         b.addView(clean, ui.gap(6));
         quick.addView(c, ui.gap(10));
     }

@@ -353,6 +353,13 @@ function M.validate()
 			end
 		end
 	end
+	local cfg = M.cfg()
+	for i, t in ipairs(cfg.spellTiers or {}) do
+		if not (cfg.tiers[cfg.spellHpBase] and t.key and t.hpShare and t.hit and t.addHit and t.time and t.lives and t.minLevel
+				and t.maxLevel and t.maxLevel >= t.minLevel and t.wave) then
+			problems[#problems + 1] = "spell tier " .. i .. " is incomplete"
+		end
+	end
 	return problems
 end
 
@@ -449,6 +456,66 @@ function M.stages(familyKey, tierIdx)
 	if waves > 0 then
 		for _ = 1, t.extraWaves do
 			table.insert(out, #out + 1, {kind = "wave"})
+		end
+	end
+	out[#out + 1] = {kind = "boss"}
+	return out
+end
+
+-- ------------------------------------------------------------------------------------------------ spell quest trials
+-- The trials of the line spell quests (spellTiers in trials_config.lua) use the same run as the tiers: a tier def with the
+-- same fields. M.spellTier(key) -> index, def (hp filled in); M.spellScale / M.spellStages are M.scale / M.stages for it.
+function M.spellTier(key)
+	local c = M.cfg()
+	for i, t in ipairs(c.spellTiers or {}) do
+		if t.key == key then
+			local base = c.tiers[c.spellHpBase]
+			local def = {}
+			for k, v in pairs(t) do
+				def[k] = v
+			end
+			def.hp = floor(base.hp * t.hpShare + 0.5)
+			return i, def
+		end
+	end
+	return nil
+end
+
+-- numbers of a spell trial for a player of `level` as vocation `voc`
+function M.spellScale(key, level, voc)
+	local i, t = M.spellTier(key)
+	if not i then
+		return nil
+	end
+	local c = M.cfg()
+	local v = M.variant(voc or 0)
+	local lvl = max(t.minLevel, min(t.maxLevel, floor(tonumber(level) or 0)))
+	local factor = (lvl / t.minLevel) ^ c.hpExponent
+	local hp = floor(t.hp * factor * (v.hp or 1) + 0.5)
+	return {
+		level = lvl, hp = hp, addHp = max(50, floor(hp * t.addHp + 0.5)),
+		hit = t.hit * (v.hit or 1), addHit = t.addHit * (v.hit or 1),
+		time = t.time, lives = t.lives,
+		waveSize = max(1, floor(t.wave * (v.adds or 1) + 0.5))
+	}, t
+end
+
+-- the stages of a spell trial: the first `spellStages` stage(s) of the family, then the guardian
+function M.spellStages(familyKey, key)
+	local i, t = M.spellTier(key)
+	local f = M.cfg().families[familyKey]
+	if not i or not f then
+		return nil
+	end
+	local out = {}
+	for n = 1, min(M.cfg().spellStages or 1, #f.stages) do
+		local kind = f.stages[n]
+		if kind == "seals" then
+			out[#out + 1] = {kind = "seals", count = t.seals}
+		elseif kind == "marks" then
+			out[#out + 1] = {kind = "marks", count = t.marks}
+		else
+			out[#out + 1] = {kind = "wave"}
 		end
 	end
 	out[#out + 1] = {kind = "boss"}

@@ -140,6 +140,15 @@ H.KINDS = {
   [133] = { auto = 'timer', dur = 10 },  -- Blood Rage (stock)
   [132] = { auto = 'timer', dur = 12 },  -- Ironhold (the Chaos id 132 of the retired stock Bulwark, 2026-10-20)
   [135] = { auto = 'timer', dur = 12 },  -- Tautstring (the Chaos id 135 of the retired stock Hawkeye, 2026-10-20)
+  -- the level 800 buffs of the line spell quests (2026-10-28; cooldown 90 s, so the timer rule waits cooldown + 1 s): a character
+  -- that knows one keeps it up in the fights; Auto setup ranks the higher level first
+  [143] = { auto = 'timer', dur = 20 },  -- Ironbound Oath
+  [150] = { auto = 'timer', dur = 20 },  -- Unblinking Gaze
+  [153] = { auto = 'timer', dur = 20 },  -- Veil of Whispers
+  [156] = { auto = 'timer', dur = 15 },  -- Shroud of Knives
+  [159] = { auto = 'timer', dur = 20 },  -- Dirge of the Legion
+  [173] = { auto = 'timer', dur = 15 },  -- Lotus Stance
+  [178] = { auto = 'timer', dur = 20 },  -- Mantle of Dawn
   -- the hastes: offered, but the Tools tab keeps them up (Auto setup sets that), so Auto setup leaves them out here
   [6] = { auto = false, kind = 'buff', dur = 33, bar = { 'haste' }, haste = true },
   [39] = { auto = false, kind = 'buff', dur = 22, bar = { 'haste' }, haste = true },

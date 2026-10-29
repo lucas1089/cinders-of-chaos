@@ -426,6 +426,10 @@ end
 if not ChaosSpellFactor or not ChaosSpellFactor.factor then
 	dofile("data/scripts/chaos/spell_factor_core.lua")
 end
+-- Dirge of the Legion (quest_buffs_core.lua): +10% on the death damage of the Necromancer's own spells
+if not ChaosQuestBuffs then
+	dofile("data/scripts/chaos/quest_buffs_core.lua")
+end
 
 -- ---------------------------------------------------------------- damage dealt / healing
 local dealt = CreatureEvent("ChaosPassiveDealt")
@@ -444,6 +448,20 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		end
 		if f2 ~= 1 then
 			secondaryDamage = scale(secondaryDamage, f2)
+		end
+		-- Dirge of the Legion: only a spell hit of death type pays for the condition lookup; a minion hit (inside the spell
+		-- factor's guard) does not count, the minions have their own bonus
+		if origin == ORIGIN_SPELL and (primaryType == COMBAT_DEATHDAMAGE or secondaryType == COMBAT_DEATHDAMAGE)
+				and ChaosQuestBuffs.has(attacker, "dirge") then
+			local guarded = (ChaosSpellFactor.depth or 0) > 0
+			local d1 = ChaosQuestBuffs.deathFactor(true, primaryType, COMBAT_DEATHDAMAGE, origin, ORIGIN_SPELL, guarded)
+			local d2 = ChaosQuestBuffs.deathFactor(true, secondaryType, COMBAT_DEATHDAMAGE, origin, ORIGIN_SPELL, guarded)
+			if d1 ~= 1 then
+				primaryDamage = scale(primaryDamage, d1)
+			end
+			if d2 ~= 1 then
+				secondaryDamage = scale(secondaryDamage, d2)
+			end
 		end
 		local bonuses = ChaosPassiveCache[attacker:getId()]
 		if bonuses then

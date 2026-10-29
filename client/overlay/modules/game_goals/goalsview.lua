@@ -7,6 +7,7 @@
 --     where = {k = window | info | tasks | finder | npc | temple | hunts | plan | room, m, f, page, q, id, pos, label}
 --   tracker {rows = [{key, title, progress, target}]}
 --   ascension {rows = [{key, title, progress, target, state}]}
+--   spellquest {rows = [{key, title, progress, target, state}]}
 --   done {text}
 -- The window code (goals.lua) keeps one GoalsView state and draws from it.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
@@ -31,7 +32,7 @@ local function num(v, d)
 end
 
 function V.new()
-  return { header = nil, goals = {}, upcoming = {}, gear = {}, hunts = {}, here = nil, tracker = {}, ascension = {} }
+  return { header = nil, goals = {}, upcoming = {}, gear = {}, hunts = {}, here = nil, tracker = {}, ascension = {}, spellquest = {} }
 end
 
 function V.onGoals(st, data)
@@ -54,6 +55,13 @@ end
 -- ascension_tracker.lua); no rows hides the section
 function V.onAscension(st, data)
   st.ascension = list(type(data) == 'table' and data.rows or nil)
+  return st
+end
+
+-- spellquest {rows = [...]}: the steps of the line spell quest the character is on (server spellquest_tracker.lua); same
+-- rows as the ascension section (V.ascensionLine draws them); no rows hides the section
+function V.onSpellQuest(st, data)
+  st.spellquest = list(type(data) == 'table' and data.rows or nil)
   return st
 end
 

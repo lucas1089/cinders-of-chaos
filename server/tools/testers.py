@@ -309,6 +309,7 @@ def setup_statements(bots, pw_hash_of):
 
 
 SNAP_REACH = 30  # sqm round a hunt mark in which a spawn centre safe for the level is looked for
+SNAP_CLEAR = 14  # sqm round the chosen centre in which every other spawn centre must be safe too (their monsters aggro)
 
 
 def place_testers(levels, hunts, temples, index=None, centres=None):
@@ -320,7 +321,8 @@ def place_testers(levels, hunts, temples, index=None, centres=None):
         return pos
     out = []
     for i, (p, lv) in enumerate(zip(pos, levels)):
-        q = LT.snap_to_spawn(p, index, reach=SNAP_REACH if centres is not None else 12, centre_levels=centres, max_level=lv)
+        q = LT.snap_to_spawn(p, index, reach=SNAP_REACH if centres is not None else 12, centre_levels=centres, max_level=lv,
+                             clear=SNAP_CLEAR)
         if centres is not None and centres.get(q, 10 ** 9) > lv and q not in temples:
             q = tuple(temples[i % len(temples)])  # no safe spawn within reach: the temple, a player's start
         out.append(q)
@@ -399,6 +401,29 @@ def cleanup_targets(state_bots, db_rows):
     return players, accounts
 
 
+KICK_WAIT = 8  # seconds: remote_cmd.lua takes remote.cmd every 2.5 s, a kicked character is saved on its way out
+
+
+def kick_lines(names):
+    """remote.cmd lines that kick the given characters: only exact "Tester Xxx" names (server/README.md "Tester bots")"""
+    return ['kick %s' % n for n in sorted(set(names)) if safe_name(n)]
+
+
+def kick_online(server_dir, names, wait):
+    """Delete a character that is still in game and the engine cannot save it any more: its `players` row is gone
+    (Game::saveIncremental logs "Could not save player", at shutdown "Error while saving player"). So the testers are
+    kicked first, through the server's remote commands, and cleanup waits for their save. No server folder or no
+    server running: remote.cmd is not read, and the server removes a leftover file at its start."""
+    lines = kick_lines(names)
+    if not lines or not server_dir or not os.path.isdir(server_dir):
+        return 0
+    with open(os.path.join(server_dir, 'remote.cmd'), 'a') as f:
+        f.write('\n'.join(lines) + '\n')
+    if wait > 0:
+        time.sleep(wait)
+    return len(lines)
+
+
 def cleanup(a):
     st = load_state(a.state)
     pids = [int(b['player_id']) for b in st.get('bots', []) if b.get('player_id')]
@@ -434,6 +459,10 @@ def cleanup(a):
     if a.dry:
         print('\n'.join(stmts))
         return
+    names = [r[1] for r in cand if len(r) == 5 and int(r[0]) in players]
+    kicked = kick_online(a.server_dir, names, a.kick_wait)
+    if kicked:
+        print('kicked %d tester characters still in game, waited %d s for their save' % (kicked, a.kick_wait))
     sql(stmts)
     st['bots'] = []
     st['cleaned'] = int(time.time())
@@ -468,6 +497,10 @@ NPC_CHANNEL = 12  # TALKTYPE_PRIVATE_PN: words to the NPC a player is talking to
 SHOP_NOTHING = 'shop: Loot Buyer buys nothing the tester carries'  # expected (tester_core.EXPECTED)
 
 
+NO_PRICE = 0xFFFFFFFF
+SHOP_UNSET = 'shop: the trade window prices an item the NPC does not trade as 4294967295 (-1 as u32; install_all step shopprices)'
+
+
 def parse_shop(plain, npc):
     """the NPC trade window (0x7A, the NPC's name, u16 count, items: u16 client id, u8 sub, string name, u32 weight,
     u32 buy, u32 sell) in a decrypted message, or None"""
@@ -485,7 +518,11 @@ def parse_shop(plain, npc):
             name, i = LT.read_string(plain, i + 3)
             weight, buy, sell = struct.unpack_from('<III', plain, i)
             i += 12
-            items.append({'id': cid, 'sub': sub, 'name': name, 'buy': buy, 'sell': sell})
+            # the stock ShopModule prices "not sold / not bought" as -1 and the engine sends it as a u32: 4294967295
+            # (patch_shop_prices.py makes it 0). Such a price is no offer: a trade on it raises a Lua error in the NPC
+            unset = NO_PRICE in (buy, sell)
+            items.append({'id': cid, 'sub': sub, 'name': name, 'buy': 0 if buy == NO_PRICE else buy,
+                          'sell': 0 if sell == NO_PRICE else sell, 'unset': unset})
         return items
     except (struct.error, IndexError):
         return None
@@ -1130,6 +1167,8 @@ class TesterBot(LT.Bot):
         await asyncio.sleep(1.5)
         ok = self.shop is not None  # the trade window opened: what the shop system must do
         if self.shop:
+            if any(i.get('unset') for i in self.shop):
+                self.results.count('failures', SHOP_UNSET, self)
             buy = [i for i in self.shop if i['buy'] > 0]
             buy = [i for i in buy if 'potion' in i['name'].lower()] or buy
             if buy:
@@ -1536,8 +1575,8 @@ def parse(argv):
     defaults = {'--count': TC.DEFAULT_BOTS if a.cmd == 'setup' else None, '--state': DEFAULT_STATE, '--server-dir': '',
                 '--levels': ','.join(str(v) for v in LEVELS), '--classes': 'auto', '--hash-iterations': 120000, '--town': 1,
                 '--minutes': TC.DEFAULT_MINUTES, '--host': '127.0.0.1', '--port': 7171, '--log': '',
-                '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0}
-    types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float}
+                '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT}
+    types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float, '--kick-wait': int}
     vals = dict(defaults)
     flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False}
     i = 1

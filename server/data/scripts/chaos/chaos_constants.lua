@@ -2201,6 +2201,14 @@ ChaosOpcodes.unlocks = 115
 -- 7103020 - 7103029 (weeklychest_config.lua storage); no tables.
 ChaosOpcodes.weeklyChest = 117
 Chaos.storage.weeklyChest = 7103020
+-- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
+-- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
+-- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,
+-- +5 trial cooldown (os.time), +6 done time (os.time of the first completion, the gold is paid once), +7 lines done
+-- (a bit per line), +8 and +9 free. 7101070 - 7101099 stays free. No opcode: the tracker rows go over the goals channel.
+Chaos.storage.spellQuest = 7101040
+Chaos.storage.spellQuestSlots = 10
+Chaos.storage.spellQuestCount = 3
 -- Hunting level on screen (owner 2026-10-27): the bounty pool's level (ChaosLoot.monsterLevel) is half of the level
 -- players hunt a monster at; every text that prints a pool-scale level (monster level thresholds, map marks) prints
 -- Chaos.huntingLevel(n) = n x pace_config.lua baseLevelMult. A gate that compares a monster with a share of the

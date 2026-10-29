@@ -5,7 +5,7 @@
      of pair 54 (data/lib/chaos_autosprite_art.lua: the stock look 40 until ChaosAutospriteArt.PAIR54 goes on). -->
 <monster name="Ashbound Thrall" nameDescription="an ashbound thrall" race="fire" experience="3800" speed="50" manacost="0">
 	<health now="11820" max="11820"/>
-	<look type="40" corpse="6068"/>
+	<look type="3362" corpse="6068"/>
 	<level min="600" max="620"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

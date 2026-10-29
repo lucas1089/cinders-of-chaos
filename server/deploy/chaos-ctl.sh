@@ -2111,10 +2111,18 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         remove_helper
         if [ -r "$TSTATE/stopped" ]; then
           ago=$(( $(date +%s) - $(tr -dc 0-9 < "$TSTATE/stopped") ))
-          [ "$ago" -ge 120 ] || die "the bots stopped $ago s ago: wait $((120 - ago)) s (a character in a fight stays in game)"
+          # a character in a fight stays in game up to 2 minutes after the bots stop: wait it out here (the admin
+          # app's Apagar stops running bots and deletes in one tap; it allows 240 s)
+          # CHAOS_TESTERS_STOP_WAIT: the wait in seconds (tests set it short)
+          wait_s=${CHAOS_TESTERS_STOP_WAIT:-120}
+          num "$wait_s" || wait_s=120
+          if [ "$ago" -lt "$wait_s" ]; then
+            echo "the bots stopped $ago s ago: waiting $((wait_s - ago)) s (a character in a fight stays in game)"
+            sleep $((wait_s - ago))
+          fi
         fi
         if [ $yes -eq 1 ]; then
-          testers_py cleanup --state "$TSTATE"
+          testers_py cleanup --state "$TSTATE" --server-dir "$SERVER"
         else
           testers_py cleanup --state "$TSTATE" --dry-run
           echo "(nothing deleted: chaos-ctl.sh testers cleanup --yes)"

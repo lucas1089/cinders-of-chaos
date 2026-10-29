@@ -363,17 +363,20 @@ import xml.etree.ElementTree as ET
 def _opt(flag):
     return sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv[:-1] else None
 
-# the client pair the monsters are drawn with: pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"), 2681 outfits
-# (pair 37 adds the moon outfits and costumes 2668-2681, no blank padding; pairs 34-36 added none); pair 33 had 2667 (it adds
+# the client pair the monsters are drawn with: pair 56 (client/MANIFEST.md "Pair 56"), 3363 outfits (pair 54 adds the
+# AutoSprite looks 3361-3363; pairs 38-53 added outfits up to 3360 and pair 51 blanked unused things, the extra blank
+# ranges from 1146 on); pair 37 had 2681 (it adds the moon outfits and costumes 2668-2681, no blank padding; pairs 34-36 added none); pair 33 had 2667 (it adds
 # the wings 2385-2476, head accessories 2477-2568, capes 2569-2657 and the harvest kit looks 2658-2667, no blank
 # padding; pairs 31 and 32 added none); things_custom30 had 2384 (pair 30 adds the
 # 75 sheet looks 2237-2311 and the 73 strip looks 2312-2384, art_import/pack30_looks.csv and pack30_strips.csv, no
 # blank padding; pair 29 added the Archmage 2235 / 2236); the blank ones have no sprite at all (stock gaps, 1562-1999 and 2082-2099 reserved, 2143-2160
 # and 2194-2199 padding). --pair recounts both.
-PAIR_NAME, PAIR_OUTFITS = 'pair 37', 2681
+PAIR_NAME, PAIR_OUTFITS = 'pair 56', 3363
 PAIR_BLANK = ('135 161-191 411 415 424 439-440 468-469 474-485 501 518-520 524-525 536 543 549 581-582 597 616 623 '
               '625 638-643 645-646 652-663 678 700-711 713 715 718-719 722-723 737 741-744 748 751-758 764-841 861 '
-              '864-867 871-872 880 891-898 1562-1999 2082-2099 2143-2160 2194-2199')
+              '864-867 871-872 880 891-898 1146-1147 1193 1281 1285 1290 1292-1293 1295 1297 1369 1440 1442-1443 '
+              '1447-1448 1451-1454 1460-1463 1535 1543 1546-1547 1562-1999 2058 2082-2099 2101-2102 2105-2106 '
+              '2109-2110 2112-2113 2143-2160 2194-2199 2208-2212')
 def _ranges(text):
     out = set()
     for part in text.split():

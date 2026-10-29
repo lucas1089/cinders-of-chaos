@@ -75,7 +75,9 @@ eq(crownR.orb .. "/" .. crownR.input .. "/" .. crownR.cost, "crown/29853/1000", 
 eq(emberR.cost, crownR.cost, "the same shard count for both orbs")
 local voidR = K.shardRecipe("voidshard", cfg)
 eq(voidR.orb .. "/" .. voidR.input .. "/" .. voidR.cost, "void/29854/1000", "Void Shards -> Void Orb (the same count)")
-assert(cfg.batchCap == 50, "hard cap of 50 items per batch")
+local lootSlots = dofile("data/scripts/chaos/pouches_config.lua").kinds.loot.capacity
+assert(cfg.batchCap >= lootSlots, "one batch covers a full Loot Bag: " .. cfg.batchCap)
+assert(cfg.batchCap <= 255, "a batch stays inside one container's slots")
 assert(not cfg.allowUniques, "uniques are not salvaged")
 
 -- ---------------------------------------------------------------- yields
@@ -205,16 +207,17 @@ assert(chaosCost / shards >= 8, "at least 8 rolled items per Orb of Upheaval: " 
 
 -- ---------------------------------------------------------------- salvage all
 local list = {}
-for i = 1, 60 do
+local CAP = cfg.batchCap
+for i = 1, CAP + 10 do
 	list[i] = gear(1 + (i % 2), nil) -- Common / Uncommon
 end
 local b = K.batch(list, 2, cfg)
-eq(b.count, 50, "cap of 50 items")
+eq(b.count, CAP, "cap of batchCap items")
 eq(b.capped, true, "capped")
 eq(b.skipped.cap, 10, "10 left for the next batch")
-eq(b.shards, 50, "1 shard each")
+eq(b.shards, CAP, "1 shard each")
 eq(b.picked[1], 1, "in container order")
-eq(b.picked[50], 50, "the first fifty")
+eq(b.picked[CAP], CAP, "the first batchCap")
 list = {gear(1), gear(3), gear(2, nil, {locked = true}), gear(1, nil, {unique = true}), gear(2, nil, {gems = 1, sockets = 1}),
 	gear(0), gear(0, 0, {gear = false, stackable = true}), gear(0, 0, {riftKey = true, gear = false}), gear(2, 20)}
 b = K.batch(list, 2, cfg)
@@ -358,7 +361,7 @@ local function put(container, item)
 	return item
 end
 
-local backpack = newItem(1988, {container = true, size = 80})
+local backpack = newItem(1988, {container = true, size = 400})
 local inbox = newItem(14404, {container = true, size = 1000})
 function inbox:addItemEx(item) put(self, item) return RETURNVALUE_NOERROR end
 local full = false
@@ -456,7 +459,14 @@ ChaosCraftingBench = {
 	walk = function(pl, fn)
 		for i, it in ipairs(backpack.items) do fn(it, tostring(i - 1)) end
 	end,
-	inBackpack = function(pl, item) return item ~= equipped and item.parent ~= nil end,
+	inBackpack = function(pl, item)
+		local p = item.parent
+		while p do
+			if p == backpack then return item ~= equipped end
+			p = p.parent
+		end
+		return false
+	end,
 	sendState = function() states = states + 1 end,
 	sendResult = function(pl, ok, orb, text) results[#results + 1] = {ok = ok, text = text} end,
 	select = function(pl, sel) selection = sel end
@@ -533,7 +543,7 @@ eq(quick.removed, true, "the first went through")
 
 -- a batch: 55 Commons and a few others directly in the backpack, the cap and the confirm
 local shardsBefore = player:getItemCount(cfg.shard.id)
-for _ = 1, 55 do
+for _ = 1, cfg.batchCap + 5 do
 	put(backpack, newItem(2405, {custom = {rarity = 1, combatPowerLevel = 1}}))
 end
 put(backpack, newItem(2406, {custom = {rarity = 9, combatPowerLevel = 81}}))
@@ -541,25 +551,30 @@ act("salvageScope", {mode = "salvage", bag = "", maxRarity = 1})
 state = {items = {}}
 S.benchState(player, state)
 local batch = state.salvage.batch
-eq(batch.count, 50, "50 of the 55 Commons")
+eq(batch.count, cfg.batchCap, "batchCap of the Commons")
 eq(batch.capped, true, "capped")
 eq(batch.skipped.above, 1, "the Eternal is above Common")
 eq(batch.skipped.locked, 1, "the locked item")
 eq(batch.skipped.gems, 1, "the socketed one")
 eq(batch.skipped.unique, nil, "uniques have no rarity: not candidates")
-eq(#batch.paths, 50, "the paths for the grid")
+eq(#batch.paths, cfg.batchCap, "the paths for the grid")
 act("salvageBatch", {bag = "", maxRarity = 1, sig = "0:1"})
 eq(lastResult().ok, false, "a wrong signature is refused")
 local before = #backpack.items
 queries = {}
 act("salvageBatch", {bag = "", maxRarity = 1, sig = batch.sig})
 eq(lastResult().ok, true, "batch: " .. tostring(lastResult().text))
-eq(#backpack.items, before - 50 + 1, "50 items gone, one shard stack more (or merged)")
-eq(player:getItemCount(cfg.shard.id), shardsBefore + 50, "50 shards")
+local left = 0
+for _, it in ipairs(backpack.items) do
+	if it.id == 2405 then left = left + 1 end
+end
+eq(left, 5, "batchCap Commons gone, the five over the cap left")
+assert(#backpack.items <= before - cfg.batchCap + 1 + 20, "shards and a few orbs came in")
+eq(player:getItemCount(cfg.shard.id), shardsBefore + cfg.batchCap, "1 shard each")
 eq(#queries, 1, "one INSERT for the batch")
 local rows = 0
 for _ in queries[1]:gmatch("'Salvage'") do rows = rows + 1 end
-eq(rows, 50, "a log row per item")
+eq(rows, cfg.batchCap, "a log row per item")
 eq(locked.removed, nil, "the locked item stayed")
 eq(socketed.removed, nil, "the socketed item stayed")
 eq(unique.removed, nil, "the unique stayed")
@@ -572,6 +587,71 @@ S.benchState(player, state)
 eq(state.salvage.batch.count, 0, "none left")
 act("salvageBatch", {bag = "", maxRarity = 1, sig = state.salvage.batch.sig})
 eq(lastResult().ok, false, "nothing to salvage")
+-- the Loot Bag (a store pouch in the purse, outside the backpack): offered after the main backpack, salvaged by key
+local purse = newItem(26052, {container = true, size = 50})
+local lootBag = put(purse, newItem(32081, {container = true, size = 255}))
+local carriedPouches = {loot = lootBag}
+ChaosPouches = {carried = function() return carriedPouches end}
+local plainBag = put(backpack, newItem(1987, {container = true, size = 20})) -- an ordinary bag, listed after the Loot Bag
+local plainPath
+for i, it in ipairs(backpack.items) do
+	if it == plainBag then plainPath = tostring(i - 1) end
+end
+local lootLock = put(lootBag, newItem(2410, {custom = {rarity = 1, combatPowerLevel = 1, chaos_locked = 1}}))
+local lootUnique = put(lootBag, newItem(2411, {custom = {chaos_unique = 1}}))
+local lootSocket = put(lootBag, newItem(2412, {custom = {rarity = 1, combatPowerLevel = 1, chaos_sockets = 1, chaos_gem1 = 32001}}))
+local lootRare = put(lootBag, newItem(2413, {custom = {rarity = 3, combatPowerLevel = 25}}))
+local lootCommon = {}
+for _ = 1, lootSlots - 4 do
+	lootCommon[#lootCommon + 1] = put(lootBag, newItem(2414, {custom = {rarity = 1, combatPowerLevel = 1}}))
+end
+eq(#lootBag.items, lootSlots, "a full Loot Bag")
+state = {items = {}}
+S.benchState(player, state)
+eq(state.salvage.bags[1].path, "", "the main backpack first")
+eq(state.salvage.bags[2].path, "loot", "the Loot Bag second")
+eq(state.salvage.bags[2].name, "Loot Bag", "named")
+eq(state.salvage.bags[3].path, plainPath, "an ordinary bag after it (a numeric path)")
+carriedPouches.loot = nil
+state = {items = {}}
+S.benchState(player, state)
+eq(state.salvage.bags[2].path, plainPath, "no Loot Bag carried: not offered")
+eq(S.inScope(player, lootCommon[1]), false, "and its items are out of scope")
+carriedPouches.loot = lootBag
+act("salvageScope", {mode = "salvage", bag = "loot", maxRarity = 1})
+state = {items = {}}
+S.benchState(player, state)
+batch = state.salvage.batch
+eq(batch.bag, "loot", "the scope is the Loot Bag")
+eq(batch.count, #lootCommon, "every Common of the full bag in one action")
+eq(batch.capped, false, "not capped")
+eq(batch.skipped.locked, 1, "the locked item")
+eq(batch.skipped.gems, 1, "the socketed one")
+eq(batch.skipped.above, 1, "the Rare is above Common")
+eq(batch.paths[1]:sub(1, 5), "loot.", "paths are Loot Bag addresses")
+local shardsLoot = player:getItemCount(cfg.shard.id)
+queries = {}
+act("salvageBatch", {bag = "loot", maxRarity = 1, sig = "bad"})
+eq(lastResult().ok, false, "a wrong signature is refused for the Loot Bag too")
+act("salvageBatch", {bag = "loot", maxRarity = 1, sig = batch.sig})
+eq(lastResult().ok, true, "Loot Bag batch: " .. tostring(lastResult().text))
+eq(#lootBag.items, 4, "only the four kept items are left")
+eq(lootLock.removed, nil, "locked kept")
+eq(lootUnique.removed, nil, "unique kept")
+eq(lootSocket.removed, nil, "socketed kept")
+eq(lootRare.removed, nil, "above the rarity kept")
+eq(player:getItemCount(cfg.shard.id), shardsLoot + #lootCommon, "1 shard each")
+eq(#queries, 1, "one INSERT")
+-- a rarity up to Rare takes the Rare as well
+act("salvageScope", {mode = "salvage", bag = "loot", maxRarity = 3})
+S.benchState(player, state)
+act("salvageBatch", {bag = "loot", maxRarity = 3, sig = state.salvage.batch.sig})
+eq(lootRare.removed, true, "the Rare goes with a higher max rarity")
+-- an item that is neither in the backpack nor in the Loot Bag is refused
+local stray = newItem(2415, {custom = {rarity = 1, combatPowerLevel = 1}})
+put(purse, stray)
+eq(S.inScope(player, stray), false, "the purse itself is no salvage scope")
+act("salvageScope", {mode = "orbs", bag = "", maxRarity = 1})
 -- a batch rate limit
 clock = clock + 5000
 S.onAction(player, "salvageBatch", {bag = "", maxRarity = 1, sig = "x"})
@@ -580,11 +660,13 @@ eq(lastResult().text, "Wait a moment before the next batch.", "one batch per int
 
 -- combining
 local have = player:getItemCount(cfg.shard.id)
+local chaosBefore = player:getItemCount(29856) -- salvage may have rolled whole orbs
 assert(have >= 25, "enough shards for an Orb of Upheaval: " .. have)
 act("combine", {key = "chaos", count = 1})
 eq(lastResult().ok, true, "combined")
 eq(player:getItemCount(cfg.shard.id), have - 25, "25 shards spent")
-eq(player:getItemCount(29856), 1, "an Orb of Upheaval")
+eq(player:getItemCount(29856), chaosBefore + 1, "an Orb of Upheaval")
+player:removeItem(cfg.shard.id, player:getItemCount(cfg.shard.id) - 5) -- the big batches left plenty
 act("combine", {key = "exalted", count = 1})
 eq(lastResult().ok, false, "not enough for an Orb of Grafting")
 eq(player:getItemCount(29855), 0, "no Orb of Grafting")
@@ -606,6 +688,7 @@ for _ = 1, 8 do
 end
 eq(player:getItemCount(29852), 1600, "1,600 Ember Shards in two places")
 queries = {}
+if player:getItemCount(32258) > 0 then player:removeItem(32258, player:getItemCount(32258)) end -- a batch may have rolled one
 act("combine", {key = "embershard", count = 1})
 eq(lastResult().ok, true, "Ember Shards combined: " .. tostring(lastResult().text))
 eq(player:getItemCount(29852), 600, "1,000 taken from both places")

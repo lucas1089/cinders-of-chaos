@@ -1,15 +1,16 @@
--- Store pouches (README "Store pouches"): three containers sold in the store, each collecting its own kind of loot from
+-- Store pouches (README "Store pouches"): four containers sold in the store, each collecting its own kind of loot from
 -- the corpses the character owns while the character carries it (in the backpack or a bag inside it).
 --   Loot Bag      the loot its rules pick (default: the items on the autoloot list, gold, uniques); settings window
 --                   (client game_pouches, extended opcode ChaosOpcodes.pouches)
---   Orbs Pouch      orbs, whetstones, rune shards and gems
+--   Orbs Pouch      orbs, whetstones, rune shards and gems (no gems while a Gem Pouch is carried)
+--   Gem Pouch       gems only
 --   Rift Key Pouch  Rift Keys (with their tier and modifiers), Omen Keys and omen fragments
 -- Rules: pouches_core.lua (tested by server/tests/pouches_test.lua). Tunables and item ids: pouches_config.lua; the
 -- items are installed by server/tools/install_pouches.py.
 --
 -- onDropLoot (lower index first): 0 stock loot, 1 Chaos loot layer, 1.5 Echoing Spoils, 2 auto seller + rift key drop
 -- + paragon gold, 2.4 hunt / achievements read, 2.45 pet fetch, 2.5 loot filter snapshot, 2.7 POUCHES, 3 base autoloot,
--- 3.5 Rarity Autoloot pickup, 4.5 loot filter finish. Priority (pouches_core.lua plan): orbs, rune shards and gems go
+-- 3.5 Rarity Autoloot pickup, 4.5 loot filter finish. Priority (pouches_core.lua plan): gems go to the Gem Pouch, else orbs, rune shards and gems go
 -- to the Orbs Pouch, Rift Keys and omen items to the Rift Key Pouch, always before the Loot Bag. A full (or too
 -- heavy) specialist pouch passes the item to the Loot Bag only with its "overflow" rule (default on), then to the
 -- backpack, else it stays in the corpse. The same order holds for click-to-loot in the loot channel (PO.stow). Orbs
@@ -46,7 +47,7 @@ local OPCODE = ChaosOpcodes.pouches
 local NOERR = RETURNVALUE_NOERROR or 0
 local NOTPOSSIBLE = RETURNVALUE_NOTPOSSIBLE or 1
 local CONTAINER_POS = CONTAINER_POSITION or 0xFFFF
-local KIND_BIT = {loot = 1, orbs = 2, keys = 4}
+local KIND_BIT = {loot = 1, orbs = 2, keys = 4, gems = 8}
 
 local function cfg()
 	return ChaosPouchesConfig

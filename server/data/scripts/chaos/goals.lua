@@ -623,6 +623,9 @@ if CreatureEvent then
 			if ChaosAscensionTracker and ChaosAscensionTracker.sent then
 				ChaosAscensionTracker.sent[player:getId()] = nil -- the next sweep sends the ascension rows too
 			end
+			if ChaosSpellQuestTracker and ChaosSpellQuestTracker.sent then
+				ChaosSpellQuestTracker.sent[player:getId()] = nil -- and the spell quest rows
+			end
 		end
 	end
 	ext:type("extendedopcode")

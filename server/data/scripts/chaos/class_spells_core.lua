@@ -24,8 +24,12 @@ end
 M.lists = lists
 
 -- spells: the spellbook's list ({name, level, needLearn, vocations = {ids}}); vocationId, level: the character's;
--- knows(name) -> bool. Returns {forget = {names}, learn = {names}, keep = n} (names sorted).
-function M.plan(spells, vocationId, level, knows)
+-- knows(name) -> bool. quest (optional): {isQuest(name) -> bool, unlocked(name) -> bool}, the line spell quests'
+-- spells (spellquest.lua): they are needlearn spells the vocations of the line list, but only the quest teaches them, so
+-- they are never taught here; the done ones are taught again by the quest's own sync (ChaosSpellQuest.sync), and the
+-- forgetting below still applies (a spell of another line goes). Returns {forget = {names}, learn = {names}, keep = n}
+-- (names sorted).
+function M.plan(spells, vocationId, level, knows, quest)
 	local forget, learn, keep = {}, {}, 0
 	for _, spell in ipairs(spells or {}) do
 		if spell.needLearn and spell.name then
@@ -33,7 +37,8 @@ function M.plan(spells, vocationId, level, knows)
 			local mine = lists(spell, vocationId)
 			if known and not mine then
 				forget[#forget + 1] = spell.name
-			elseif mine and not known and (tonumber(spell.level) or 0) <= (tonumber(level) or 0) then
+			elseif mine and not known and (tonumber(spell.level) or 0) <= (tonumber(level) or 0)
+					and not (quest and quest.isQuest(spell.name)) then
 				learn[#learn + 1] = spell.name
 			elseif known then
 				keep = keep + 1

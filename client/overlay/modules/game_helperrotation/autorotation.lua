@@ -13,7 +13,7 @@ local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) 
 ChaosAutoRotation = ChaosAutoRotation or {}
 local A = ChaosAutoRotation
 
-A.MAX_SPELLS = 5
+A.MAX_SPELLS = 5         -- attack spells in a rotation, the class's ultimate (autorotation_data.lua `ultimate`) not counted
 A.HORIZON = 120          -- seconds the gap check simulates
 A.HEAL_PERCENTS = { 45, 65, 85 } -- the healing tab's slots: the strongest heal at the lowest health
 A.MARKER = 'chaosAutoRotation'  -- the shooter profile key that remembers the spell ids the button set last
@@ -180,6 +180,15 @@ function A.select(vocId, level, canCast, opts)
       end
     end
   end
+  -- The class's ultimate (the line spell quest 3 spell, level 1200; autorotation_data.lua `ultimate`) is not one of the 5
+  -- (owner 2026-10-28: exempt from the rotation cap): it takes no preset slot, and when the character can cast it, it
+  -- comes first, so the helper casts it the moment it is ready (its cooldown is 35 to 50 s; the 5 below keep their rhythm).
+  local ultimate = c.ultimate
+  if ultimate and canCast(ultimate) and not seen[ultimate] then
+    seen[ultimate] = true
+  else
+    ultimate = nil
+  end
   if #ids == 0 then
     return nil, 'spells'
   end
@@ -190,7 +199,12 @@ function A.select(vocId, level, canCast, opts)
   local moved = false
   ids, creatures, moved = A.areaFirst(ids, creatures, spells)
   local gap = (changed or added or moved) and A.gap(ids) or preset.gap
-  return { level = preset.level, ids = ids, creatures = creatures, gap = gap, changed = changed }
+  if ultimate then
+    -- one creature is enough: a lone boss gets the ultimate too
+    table.insert(ids, 1, ultimate)
+    table.insert(creatures, 1, 1)
+  end
+  return { level = preset.level, ids = ids, creatures = creatures, gap = gap, changed = changed, ultimate = ultimate }
 end
 
 -- the helper's shooter rules (magic_shooter_panel.lua getFormData) of a selection; nameOf(id), wordsOf(id)

@@ -10,6 +10,7 @@ return {
 	firstScanMs = 20000, -- the runtime marks are looked for this long after the start (the systems place their NPCs and
 	rescanMs = 300000, -- portals at startup) and again this often (an event portal comes and goes)
 	templeRadius = 12, -- the runtime scan: NPCs and portals this close to a temple
+	hubRadius = 1, -- the runtime scan also looks this close to each stall of the hub (npc_booths_config.lua; any Chaos NPC there)
 	setMs = 500, -- a client's "set" at most this often
 	staffGroup = 4, -- /poi (status | reset | all) for this group and up
 
@@ -24,7 +25,8 @@ return {
 		["cantor velith"] = "Cantor Velith (faction quartermaster)",
 		["elder bramwyn"] = "Elder Bramwyn (faction quartermaster)",
 		["wandering merchant"] = "Wandering Merchant",
-		["archivist maelis"] = "Archivist Maelis (tales and lore)"
+		["archivist maelis"] = "Archivist Maelis (tales and lore)",
+		["archivist odrenna"] = "Archivist Odrenna (line spell quests)"
 	},
 
 	-- the portals the systems put next to the temples, found by their action id, read from the owning system's config

@@ -72,14 +72,31 @@ ok(#templar300.spells <= 5, 'Templar 300: at most 5 spells')
 
 -- select: every spell castable gives the preset
 local p300 = A.presetFor(5, 300) -- Elementalist
-local sel = A.select(5, 300, function() return true end)
+-- (154, Eclipse of Ruin, is the Mystic line's level 1200 ultimate: a level 300 character does not know it)
+local ULT = D.classes[5].ultimate
+eq(ULT, 154, 'the Elementalist ultimate is Eclipse of Ruin')
+local sel = A.select(5, 300, function(id) return id ~= ULT end)
 local p300ids, _, p300moved = A.areaFirst(p300.spells, p300.creatures or {})
 eq(table.concat(sel.ids, ','), table.concat(p300ids, ','), 'the preset, area spells first')
 eq(sel.gap, p300moved and A.gap(sel.ids) or p300.gap, 'its gap')
 eq(sel.changed, false, 'unchanged')
+-- the ultimate takes no slot: with it castable the rotation is the same five, the ultimate first with one creature
+do
+  local withUlt = A.select(5, 300, function() return true end)
+  eq(withUlt.ultimate, ULT, 'the ultimate is picked when it can be cast')
+  eq(withUlt.ids[1], ULT, 'and comes first')
+  eq(withUlt.creatures[1], 1, 'for one monster')
+  eq(#withUlt.ids, #sel.ids + 1, 'on top of the same rotation')
+  eq(table.concat(withUlt.ids, ',', 2), table.concat(sel.ids, ','), 'the five unchanged below it')
+  eq(withUlt.gap, sel.gap, 'the gap of the five')
+  local rules = A.rules(withUlt)
+  eq(rules[1].spellId, ULT, 'the first shooter rule is the ultimate')
+  eq(rules[1].creatures, 1, 'with one creature')
+  eq(A.select(5, 300, function(id) return id ~= ULT end).ultimate, nil, 'not castable: none')
+end
 -- a spell the character cannot cast (not learned, a lower level) is replaced from an earlier preset
 local missing = p300.spells[1]
-local sel2 = A.select(5, 300, function(id) return id ~= missing end)
+local sel2 = A.select(5, 300, function(id) return id ~= missing and id ~= ULT end)
 eq(sel2.changed, true, 'changed')
 for _, id in ipairs(sel2.ids) do
   ok(id ~= missing, 'the missing spell is out')
@@ -335,7 +352,8 @@ do
   -- that fill every 2 s slot, Razor Rain among them; Last Breath (one target, 12 s) scores less than any of them
   -- (rotation_sim.py), so it is an extra: it joins the rotation as soon as a slot is free
   ok(got[56], 'Razor Rain is in the level 230 Thief rotation')
-  local free = A.select(11, 230, function(id) return thiefSpells[id] and id ~= 57 and id ~= 62 and id ~= 236 and id ~= 45 end)
+  -- (155, Eclipse Edge, is a level 500 quest spell: a level 230 Thief does not know it)
+  local free = A.select(11, 230, function(id) return thiefSpells[id] and id ~= 57 and id ~= 62 and id ~= 236 and id ~= 45 and id ~= 155 end)
   local gotFree = {}
   for _, id in ipairs(free.ids) do gotFree[id] = true end
   ok(gotFree[80] and gotFree[56], 'Last Breath fills a free slot of the level 230 Thief rotation')

@@ -549,6 +549,53 @@ do
 	ok((M.cfg().markMaxFlees or 0) >= 1, "markMaxFlees is configured")
 end
 
+-- ---------------------------------------------------------------- the spell quest trials (spellTiers)
+do
+	local merc = cfg.tiers[cfg.spellHpBase]
+	eq(merc.key, "merciless", "spellHpBase is the Merciless tier")
+	eq(#cfg.spellTiers, 3, "three spell trials")
+	local keys = {"s1", "s2", "s3"}
+	local share, hit, addHit, minutes, lives = {0.8, 1.0, 1.2}, {0.09, 0.12, 0.15}, {0.035, 0.05, 0.065}, {5, 6, 7}, {3, 3, 2}
+	local gate = {500, 800, 1200}
+	for i, key in ipairs(keys) do
+		local idx, t = M.spellTier(key)
+		eq(idx, i, key .. " index")
+		eq(t.hp, math.floor(merc.hp * share[i] + 0.5), key .. " hp = the Merciless hp x " .. share[i])
+		eq(t.hit, hit[i], key .. " guardian hit"); eq(t.addHit, addHit[i], key .. " thrall hit")
+		eq(t.time, minutes[i] * 60, key .. " minutes"); eq(t.lives, lives[i], key .. " lives"); eq(t.minLevel, gate[i], key .. " gate")
+		-- the level is clamped to the window: health x (level / minLevel) ^ 1.5
+		local at = M.spellScale(key, gate[i], 8)
+		local below = M.spellScale(key, 100, 8)
+		local above = M.spellScale(key, 99999, 8)
+		eq(below.hp, at.hp, key .. ": below the window the minimum counts"); eq(above.level, t.maxLevel, key .. ": above it the maximum")
+		local mid = math.floor((t.minLevel + t.maxLevel) / 2)
+		local sc = M.spellScale(key, mid, 4)
+		ok(math.abs(sc.hp - t.hp * (mid / t.minLevel) ^ cfg.hpExponent) <= 1, key .. " health follows (level / minLevel) ^ 1.5")
+		eq(M.spellScale(key, gate[i], 4).hit, hit[i], key .. " base hit for a variant-less vocation")
+		ok(M.spellScale(key, gate[i], 8).hit > hit[i], key .. ": the Juggernaut's variant applies")
+		-- one wave (or seals / marks) of the family, then the guardian
+		for famKey, fam in pairs(cfg.families) do
+			local stages = M.spellStages(famKey, key)
+			eq(#stages, 2, famKey .. ": one stage plus the guardian"); eq(stages[#stages].kind, "boss", famKey .. " ends with the guardian")
+			eq(stages[1].kind, fam.stages[1], famKey .. " keeps the family's first stage")
+		end
+	end
+	ok(M.spellStages("warrior", "nope") == nil and M.spellScale("nope", 600, 4) == nil, "an unknown trial key")
+	eq(M.spellTier("nope"), nil, "unknown key")
+	ok(M.spellScale("s3", 1200, 4).hp > M.spellScale("s2", 800, 4).hp and M.spellScale("s2", 800, 4).hp > M.spellScale("s1", 500, 4).hp, "later trials are harder at their gate levels")
+	eq(#M.validate(), 0, "the config validates with spell tiers")
+	local saved = cfg.spellTiers[1].hit
+	cfg.spellTiers[1].hit = nil
+	ok(#M.validate() > 0, "an incomplete spell tier is reported")
+	cfg.spellTiers[1].hit = saved
+	-- the run uses the shared engine: the wiring in trials.lua
+	local f = assert(io.open("data/scripts/chaos/trials.lua", "r")); local src = f:read("*a"); f:close()
+	ok(src:find("opts.spell", 1, true) and src:find("M.spellScale(spellKey", 1, true) and src:find("M.spellStages(famKey, spellKey)", 1, true),
+		"T.enter takes a spell trial")
+	ok(src:find("T.spellHook", 1, true) and src:find("hook.won", 1, true) and src:find("hook.failed", 1, true), "finish() calls the quest hook")
+	ok(src:find("tr.spell then", 1, true), "a spell trial pays no tier reward")
+end
+
 print(string.format("trials_test: %d checks, %d failures", checks, fails))
 if fails > 0 then
 	os.exit(1)

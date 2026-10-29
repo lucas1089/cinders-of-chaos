@@ -14,7 +14,8 @@ Refuses (exit 1) if a chaos spellid, words or name is already used by a spell ou
 A base spell whose script is one of the ammunition conjure scripts (chaos_archery_config.lua conjureScripts: Arrow Call
 176, Fletch Crystal Arrows 192, Fletch Wraith Bolts 193 ...) does not hold its spellid: the "archery" step
 (patch_base_archery.py, right after this one) comments those spells out of spells.xml, so the ids are free for the
-Chaos block. The Necromancer's three summon spells use 176, 192 and 193 (every other id below 256 is taken).
+Chaos block. The Necromancer's three summon spells use 176, 192 and 193. Ids the retiring tools freed and no spell uses yet
+are listed in data/scripts/chaos/spell_id_pool_config.lua (tests/spell_ids_test.lua checks them).
 The same for the other conjure spells the "runes" step removes (chaos_rune_supply.lua R.otherConjures: Conjure Rations
 42, Hallow Spear 110, Charge Staff 92; no rune carries their ids): Grave Nova uses 42.
 """

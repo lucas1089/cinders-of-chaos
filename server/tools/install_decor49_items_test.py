@@ -6,6 +6,7 @@ change, refused when an id is taken outside it; the kit lists). No base server n
 import csv
 import glob
 import os
+import re
 import struct
 import sys
 import tempfile
@@ -47,6 +48,15 @@ check(per['celestial'] >= 20 and per['cursed'] >= 20 and sum(per.values()) <= 10
 check(all(r['otb_flags'] & 32 == 0 for r in rows), 'no item is pickupable')
 check(all(r['server_id'] <= 0xFFFF for r in rows), 'server ids fit 16 bits')
 check(len({r['name'] for r in rows}) == len(rows), 'names are unique')
+by_key = {r['key']: r['name'] for r in rows}
+check(by_key['decor49_cursed_39171'] == 'Cursed witch broom' and by_key['decor49_cursed_39174'] == 'Cursed witch hat',
+      'the two items that shared a stock loot name are renamed')
+check(not {r['name'].lower() for r in rows} & {'witch broom', 'witch hat'}, 'no item takes the name of the Witch loot')
+loot = set()
+for f in glob.glob(os.path.join(os.path.dirname(os.path.dirname(T.DEFAULT_MANIFEST)), 'monster', '**', '*.xml'), recursive=True):
+    with open(f, encoding='utf-8', errors='replace') as fh:
+        loot |= {n.lower() for n in re.findall(r'<item\s+name="([^"]+)"', fh.read())}
+check(not {r['name'].lower() for r in rows} & loot, 'no item of the manifest has the name of a loot item of our monsters')
 check(all(r['name'] and r['name'][0].isupper() for r in rows), 'names are capitalised')
 block = [r for r in rows if {'notwalkable', 'blockpath'} & set(r['dat_flags'].split())]
 check(block and all(r['otb_flags'] & 1 for r in block), 'notwalkable / blockpath items are otb solid')

@@ -444,7 +444,19 @@ ICONS = [  # (spell name, theme, glyph)
     ('Censer Swing', 'holy', 'ring'), ('Penitent Lash', 'holy', 'sweep'), ("Martyr's Pyre", 'holy', 'flame'),
     ('Bell of Reckoning', 'holy', 'burst'), ('Lance of Vigil', 'holy', 'missile'), ('Sanctum Verdict', 'holy', 'hammer'),
     ("Heretic's Brand", 'holy', 'cross'), ("Zealot's Wrath", 'fire', 'burst'), ('Bulwark Slam', 'steel', 'shield'),
-    ('Rampart Quake', 'steel', 'mountain')]
+    ('Rampart Quake', 'steel', 'mountain'),
+    # the level 500 spells of the line spell quests (2026-10-28, cells 349-355): placeholder glyphs until the PixelLab art
+    ('Keepfall', 'steel', 'slam'), ('Moonshard Rain', 'frost', 'shrapnel'), ('Prismatic Rupture', 'arcane', 'burst'),
+    ('Eclipse Edge', 'shadow', 'sweep'), ('Soulflay Wave', 'necrotic', 'wave'), ('Thousand-Echo Palm', 'ember', 'palmwave'),
+    ('Pyre of Absolution', 'holy', 'flame'),
+    # the level 1200 ultimates of the line spell quests (2026-10-28, cells 356-362): placeholder glyphs until the PixelLab art
+    ('Judgment of Iron', 'steel', 'hammer'), ('Dawnbreaker Shot', 'holy', 'ricochet'), ('Eclipse of Ruin', 'frost', 'gravenova'),
+    ('Death Between Heartbeats', 'shadow', 'knives'), ('Funeral of Kings', 'necrotic', 'gravenova'),
+    ("Heaven's Ninth Gate", 'ember', 'gate'), ('Hammer of Ember Dawn', 'ember', 'hammer'),
+    # the level 800 buffs of the line spell quests (2026-10-28, cells 363-369): placeholder glyphs until the PixelLab art
+    ('Ironbound Oath', 'steel', 'shield'), ('Unblinking Gaze', 'nature', 'eye'), ('Veil of Whispers', 'arcane', 'ghost'),
+    ('Shroud of Knives', 'shadow', 'knives'), ('Dirge of the Legion', 'necrotic', 'skull'), ('Lotus Stance', 'ember', 'ring'),
+    ('Mantle of Dawn', 'holy', 'shield')]
 
 def render(theme, glyph):
     c = COL[theme]

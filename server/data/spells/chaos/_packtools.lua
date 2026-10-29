@@ -68,7 +68,8 @@ T.cfg = {
 		extra = 5, reach = 4,
 		minK = 0.050, minBase = 20, maxK = 0.080, maxBase = 40,
 		scale = 1.33,
-		pack = 1.0,
+		-- class identity pass (2026-10-28): 1.0 -> 0.5, the Thief is a burst class (pack farming 0.80-0.86 of the reference)
+		pack = 0.5,
 	},
 }
 

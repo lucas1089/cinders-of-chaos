@@ -93,6 +93,19 @@ local atk = {isPlayer = function() return true end, getId = function() return 7 
 -- b: fire +13%, physical +7%, strength 200 (capped at 120: value 60 -> x1.2609), no intelligence, no dexterity
 local d1, t1, d2, t2 = ev.onHealthChange({}, atk, -100, COMBAT_FIREDAMAGE, -50, COMBAT_PHYSICALDAMAGE, 0)
 assertEq(d1, -113, "fire dealt"); assertEq(d2, -67, "phys dealt with strength (50 x 1.07 x 1.2609)")
+-- Dirge of the Legion (level 800 line spell quest buff): +10% on the death damage of a spell of the caster, nothing else
+local dirge = {isPlayer = function() return true end, getId = function() return 7 end,
+  getCondition = function(_, ctype, cid, sub) if sub == ChaosQuestBuffsConfig.subId.dirge then return {} end end}
+local base1, _, base2 = ev.onHealthChange({}, atk, -100, COMBAT_DEATHDAMAGE, -50, COMBAT_FIREDAMAGE, ORIGIN_SPELL)
+d1, t1, d2, t2 = ev.onHealthChange({}, dirge, -100, COMBAT_DEATHDAMAGE, -50, COMBAT_FIREDAMAGE, ORIGIN_SPELL)
+assert(math.abs(d1 - base1 * 1.1) <= 1, "Dirge: +10% death spell damage: " .. d1 .. " against " .. base1)
+assertEq(d2, base2, "Dirge: the fire part is as before")
+d1 = ev.onHealthChange({}, dirge, -100, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+assertEq(d1, (ev.onHealthChange({}, atk, -100, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)), "Dirge: a weapon hit of death type (no spell) is as before")
+ChaosSpellFactor.depth = 1
+d1 = ev.onHealthChange({}, dirge, -100, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+assertEq(d1, (ev.onHealthChange({}, atk, -100, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)), "Dirge: a minion hit (inside the spell factor's guard) has its own bonus")
+ChaosSpellFactor.depth = 0
 assertEq(ChaosPassiveStatMultiplier({intelligence = 60}, COMBAT_FIREDAMAGE, 0), 1 + 48 / 230, "intelligence 60 (the knee: value 48) -> +20.9%")
 assertEq(ChaosPassiveStatMultiplier({dexterity = 80}, COMBAT_FIREDAMAGE, 0), 1, "dexterity ignores spells")
 assertEq(ChaosPassiveStatMultiplier({dexterity = 80}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), 1.25, "dexterity 80 (the cap: value 20) on a weapon hit")

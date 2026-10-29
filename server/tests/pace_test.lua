@@ -147,7 +147,7 @@ eq(P.lin(pts, "x"), 1, "a bad level counts as 0")
 local f = P.factors(cfg, 20, false)
 near(f.health, 0.28, 1e-9, "level 20 health")
 near(f.xp, 0.20, 1e-9, "level 20 xp")
-eq(f.damage, 1, "level 20 damage")
+near(f.damage, 0.9, 1e-9, "level 20 damage (base.damage, O297)")
 f = P.factors(cfg, 5, false)
 eq(f.health, 1, "level 5 untouched")
 eq(f.xp, 1, "level 5 xp untouched")
@@ -155,21 +155,25 @@ eq(f.goal, 1, "level 5 goal 1")
 f = P.factors(cfg, 300, false)
 near(f.health, 0.082, 1e-9, "300 health")
 near(f.xp, 0.0715, 1e-9, "300 xp")
-near(f.loot, 0.19, 1e-9, "300 loot (O285: capped at the notable share, 0.19 x scale.loot 1.2 = 0.228)")
+near(f.loot, 0.1509, 1e-9, "300 loot (O298: smooth curve, 0.1509 x scale.loot 1.2 = 0.181, under the notable share 0.228)")
 near(f.goal, 5, 1e-9, "300 goal")
-near(f.damage, 0.65, 1e-9, "300 damage")
+near(f.damage, 0.55, 1e-9, "300 damage (base.damage: the shared curve at 600, O297)")
 f = P.factors(cfg, 100, false)
 near(f.health, 0.105, 1e-9, "100 health")
-near(f.damage, 0.85 + (0.75 - 0.85) * 50 / 100, 1e-9, "100 damage between 50 and 150")
+near(f.damage, 0.75 + (0.65 - 0.75) * 25 / 75, 1e-9, "100 damage between 75 and 150")
 f = P.factors(cfg, 3000, false)
 near(f.health, 0.11, 1e-9, "flat health past 650")
 near(f.xp, 0.066, 1e-9, "flat xp past 600")
-near(f.damage, 0.40, 1e-9, "flat damage past 1000")
+near(f.damage, 0.40, 1e-9, "flat damage past 500")
 f = P.factors(cfg, 1000, true)
 near(f.health, 0.08, 1e-9, "scaled 1000 health (O138)")
 near(f.xp, 0.0323, 1e-9, "scaled 1000 xp (x0.03 L on top: O108, O138 divided by the kill rate gain)")
 near(f.goal, 25.8, 1e-9, "scaled 1000 goal (O108: sized on the kill rate of today's health, O138)")
 near(f.damage, 0.40, 1e-9, "scaled monsters share the damage curve")
+-- O297: a base monster of pool level P hits as the shared curve did at 2P (baseLevelMult 2 before O285)
+for _, p in ipairs({10, 25, 50, 100, 200, 300, 450, 600, 657}) do
+	near(P.factors(cfg, p, false).damage, P.lin(cfg.damage, 2 * p, 1), 1e-9, "base damage at pool " .. p .. " = shared curve at " .. 2 * p)
+end
 f = P.factors(cfg, 50, true)
 near(f.health, 0.10, 1e-9, "scaled flat below 100")
 -- switch
@@ -184,7 +188,7 @@ do
 	local c2 = {enabled = true, base = cfg.base, scaled = cfg.scaled, damage = cfg.damage, scale = {xp = 1.3, loot = 2}}
 	local f2 = P.factors(c2, 300, false)
 	near(f2.xp, 0.0715 * 1.3, 1e-9, "scale.xp")
-	near(f2.loot, 0.19 * 2, 1e-9, "scale.loot")
+	near(f2.loot, 0.1509 * 2, 1e-9, "scale.loot")
 	near(f2.health, 0.082, 1e-9, "scale leaves health")
 	eq(P.factors(c2, 5, false).xp, 1, "scale never above 1 per kill")
 	eq(cfg.scale.xp, 1.0, "shipped: xp scale 1")
@@ -372,13 +376,18 @@ do
 	-- pack class, has none; every other class cleaves 4 monsters, its share growing from level 300 to 1000
 	ok(P.cleaveOf(cfg, 5) == nil, "Elementalist: no cleave")
 	local c = P.cleaveOf(cfg, 7)
-	ok(c and c.percent == 28 and c.high == 21 and c.targets == 4, "Deadeye: 28% at 300, 21% at 1000, to 4")
+	-- 28 / 21 until the class identity pass (2026-10-28: the Deadeye is a burst class, pack farming 0.80-0.86 of the reference)
+	ok(c and c.percent == 18 and c.high == 11 and c.targets == 4, "Deadeye: 18% at 300, 11% at 1000, to 4")
 	ok(P.cleaveOf(cfg, nil) == nil, "no vocation: none")
 	ok(P.cleaveOf(off, 7) == nil, "layer off: no cleave")
 	ok(P.cleaveOf({enabled = true, cleave = {enabled = false, byVocation = {[7] = {percent = 1, targets = 1}}}}, 7) == nil,
 		"cleave off")
 	for _, v in ipairs({4, 8, 14, 3, 7, 15, 1, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25}) do
 		local e = P.cleaveOf(cfg, v)
+		local row = cfg.cleave.byVocation[v]
+		if e == nil and row and row.percent == 0 and (row.high or 0) == 0 then -- the Berserker: none (class identity pass, 2026-10-28)
+			e = {percent = 0, high = 0, targets = 4}
+		end
 		ok(e and e.percent >= 0 and e.percent <= 70 and (e.high or e.percent) <= 70 and e.targets == 4,
 			"cleave of " .. v .. " sane")
 	end
@@ -522,8 +531,8 @@ do
 	ok(PC.isPaced(m), "marked as paced")
 	think(m)
 	eq(m._max, want300, "never twice")
-	near(PC.lootMultOf(m), 0.19 * (shippedScale.loot or 1), 1e-9, "loot factor (x the shipped calibration)")
-	near(PC.damageMultOf(m), 0.65, 1e-9, "damage factor")
+	near(PC.lootMultOf(m), 0.1509 * (shippedScale.loot or 1), 1e-9, "loot factor (x the shipped calibration)")
+	near(PC.damageMultOf(m), 0.55, 1e-9, "damage factor")
 	near(PC.goalMultOf(m), 5, 1e-9, "goal factor")
 
 	-- a script-made monster (artificial) is not paced
@@ -641,7 +650,11 @@ do
 	combats = {}
 	player._level = 1000
 	events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)
-	eq(combats[1] and combats[1].dmg, -math.floor(1000 * thief.high / 100), "level 1000: the high share")
+	if thief.high > 0 then
+		eq(combats[1] and combats[1].dmg, -math.floor(1000 * thief.high / 100), "level 1000: the high share")
+	else
+		eq(#combats, 0, "level 1000: the Thief's share is 0 (class identity pass): no cleave")
+	end
 	combats = {}
 	events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_CONDITION)
 	eq(#combats, 0, "damage over time: no cleave")
@@ -660,11 +673,11 @@ do
 	-- a summon's hit cleaves by its master's class and level (the Necromancer's minions)
 	combats = {}
 	player._voc = 20
-	player._level = 300
+	player._level = 1000 -- the Necromancer's share is 0 up to level 300 since the class identity pass
 	local nec = ChaosPaceConfig.cleave.byVocation[20]
 	events.ChaosPaceCleave.onHealthChange(m, pet, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)
 	eq(#combats, 3, "a minion's hit cleaves the 3 around (never the pet itself)")
-	eq(combats[1] and combats[1].dmg, -math.floor(1000 * nec.percent / 100), "by the master's class")
+	eq(combats[1] and combats[1].dmg, -math.floor(1000 * nec.high / 100), "by the master's class")
 	combats = {}
 	player._voc = 5
 	events.ChaosPaceCleave.onHealthChange(m, pet, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)

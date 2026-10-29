@@ -31,6 +31,45 @@ Core.PICKER_SETTING = 'chaosPickerLearnedOnly' -- the pickers' "Only show learne
 
 Core.learnedNames = {} -- lower-case names of the learned needlearn spells (server reply)
 
+-- The line spell quest spells (server/README.md "Line spell quests"): a needlearn spell that a quest teaches. Archivist Odrenna gives
+-- the three quests of a line at these levels; the quest number of a spell (1..3) is `quest` in the spell data (spelldata.lua, made
+-- by gen_spell_data.py from the server's spellquest_config.lua). An unlearned quest spell has its own status, 'quest' (locked).
+Core.QUEST_NPC = 'Archivist Odrenna'
+Core.QUEST_LEVELS = { 500, 800, 1200 }
+Core.questByName = nil -- lower-case spell name -> quest number, built from the spell data on first use
+
+-- list: spell data rows ({name, quest}); nil reads the global ChaosSpellData of game_chaosspells
+function Core.setQuestSpells(list)
+  local map = {}
+  if type(list) == 'table' then
+    for _, s in pairs(list) do
+      local q = type(s) == 'table' and tonumber(s.quest) or nil
+      if q and Core.QUEST_LEVELS[q] and type(s.name) == 'string' then map[s.name:lower()] = q end
+    end
+  end
+  Core.questByName = map
+  return map
+end
+
+-- the quest number (1..3) of a spell, nil for every other spell. A spell row may carry `quest` itself.
+function Core.questOf(spell)
+  if type(spell) ~= 'table' then return nil end
+  local q = tonumber(spell.quest)
+  if q and Core.QUEST_LEVELS[q] then return q end
+  if not Core.questByName then
+    local data = rawget(_G, 'ChaosSpellData')
+    if type(data) ~= 'table' then return nil end -- not loaded yet: ask again later
+    Core.setQuestSpells(data)
+  end
+  return Core.questByName[tostring(spell.name or ''):lower()]
+end
+
+-- the level the quest of a spell opens at (Archivist Odrenna), nil for a spell of no quest
+function Core.questLevel(spell)
+  local q = Core.questOf(spell)
+  return q and Core.QUEST_LEVELS[q] or nil
+end
+
 local function lower(s)
   return tostring(s or ''):lower()
 end
@@ -93,13 +132,14 @@ local function spellMagicLevel(spell)
 end
 
 -- ctx = {vocation, level, magicLevel, learned = set of lower-case names}
--- 'ready' castable now; 'vocation' not of this vocation; 'learn' needs learning; 'level' level or magic level too low
+-- 'ready' castable now; 'vocation' not of this vocation; 'learn' needs learning; 'quest' a quest spell not learned yet (locked:
+-- Archivist Odrenna teaches it); 'level' level or magic level too low
 function Core.status(spell, ctx)
   ctx = ctx or {}
   if not Core.vocationOk(spell, ctx.vocation, ctx.fold) then return 'vocation' end
   if spell.needLearn then
     local learned = ctx.learned or Core.learnedNames
-    if not learned[lower(spell.name)] then return 'learn' end
+    if not learned[lower(spell.name)] then return Core.questOf(spell) and 'quest' or 'learn' end
   end
   local level, ml = tonumber(ctx.level), tonumber(ctx.magicLevel)
   if level and spellLevel(spell) > level then return 'level' end
@@ -127,8 +167,10 @@ function Core.filterMatches(spell, ctx, filter)
   local status = Core.status(spell, ctx)
   if filter == 'learned' then return status == 'ready' end
   if filter == 'vocation' then return status ~= 'vocation' end
-  -- soon: of this vocation, not castable yet, at most SOON_LEVELS above the character's level
+  -- soon: of this vocation, not castable yet, at most SOON_LEVELS above the character's level; a locked quest spell is always
+  -- listed here (a goal of the character, whatever its level)
   if status == 'ready' or status == 'vocation' then return false end
+  if status == 'quest' then return true end
   local level = tonumber(ctx and ctx.level) or 0
   return spellLevel(spell) <= level + Core.SOON_LEVELS
 end

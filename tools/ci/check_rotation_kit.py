@@ -14,6 +14,8 @@ Checks:
    and line;
  - every attack spell of every class and ascension the rotation model can use (no skip / utility flag) is in the
    table, and in at least one preset or in the extras of each class that has it, so Auto setup can reach it;
+ - every class with an ultimate (line spell quest 3, flag `ultimate` in rotation_model.csv) lists it as `ultimate = id`, and
+   no preset or extras holds it (it takes no slot of the 5);
  - every preset spell belongs to its class (no spell of another class).
 usage: python3 -I tools/ci/check_rotation_kit.py
 """
@@ -48,13 +50,14 @@ def load_data(path=DATA):
     for m in re.finditer(r'\[(\d+)\] = \{ name = "([^"]+)", words = "([^"]+)".*?area = (true|false)', table):
         spells[int(m.group(1))] = {'name': m.group(2), 'words': m.group(3), 'area': m.group(4) == 'true'}
     classes = {}
-    for m in re.finditer(r'\[(\d+)\] = \{ name = "([^"]+)", presets = \{(.*?)\}, (?:extras = \{ ([\d, ]*) \}, )?heals', head, re.S):
+    for m in re.finditer(r'\[(\d+)\] = \{ name = "([^"]+)", presets = \{(.*?)\}, (?:extras = \{ ([\d, ]*) \}, )?(?:ultimate = (\d+), )?heals', head, re.S):
         ids = set()
         if m.group(4):
             ids.update(int(x) for x in m.group(4).split(','))
+        ult = int(m.group(5)) if m.group(5) else None  # the class's ultimate (line spell quest 3): the helper casts it on top of the 5
         for p in re.finditer(r'spells = \{ ([\d, ]+) \}', m.group(3)):
             ids.update(int(x) for x in p.group(1).split(','))
-        classes[m.group(2)] = {'voc': int(m.group(1)), 'spells': ids}
+        classes[m.group(2)] = {'voc': int(m.group(1)), 'spells': ids | ({ult} if ult else set()), 'slots': ids, 'ultimate': ult}
     return spells, classes
 
 
@@ -85,6 +88,11 @@ def problems(kit, spells, classes, model_spells, model):
                 bad.append('%s (%d, %s) is not in the rotation data spells' % (s['name'], sid, cls))
             elif sid not in have['spells']:
                 bad.append('%s (%d) is in no preset or extras of %s: Auto setup never casts it' % (s['name'], sid, cls))
+        ults = {sid for sid, s in mine.items() if R.ULTIMATE in model[s['words']]['flags']}
+        if ults != ({have['ultimate']} if have['ultimate'] else set()):
+            bad.append('%s: the rotation data ultimate is %s, the model has %s' % (cls, have['ultimate'], sorted(ults) or None))
+        for sid in have['slots'] & ults:
+            bad.append('%s: the ultimate %d is in a preset or the extras: it takes no slot of the 5' % (cls, sid))
         for sid in have['spells']:
             if sid not in mine:
                 bad.append('%s preset holds spell %d, which is not an attack spell of %s' % (cls, sid, cls))

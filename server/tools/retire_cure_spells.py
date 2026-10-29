@@ -21,6 +21,12 @@ way it stopped the bow: a slowed Ranger in Chase Opponent mode keeps stepping af
 a distance swing (engine 0042, stepEndTime), while the helper kept the buff up. Its id 135 belongs to the Chaos replacement
 Tautstring (data/spells/chaos/paladin/tautstring.lua, no slow, no lock).
 
+Owner decision (2026-10-28, "Tire também as magias de luz, já que são inúteis"): the three stock light spells go too (OTHERS:
+Light, Great Light, Ultimate Light; Chaos names Lantern, Greater Lantern, Radiant Lantern; ids 10, 11 and 75 are free). No class
+can learn or cast them. The tool finds them by script, so an install that has them with every vocation row loses them on the next
+run. A character that knew one has nothing to cast: the instant is gone, the words are unknown to the server (a spell is not
+stored per character when needlearn is 0). Torches and light items are items and stay.
+
 Owner decision (2026-10-20, "pode trocar essas duas também"): the stock Protector (Chaos name Bulwark, "utamo tempo" /
 "tor ira", id 132, Warrior line) and Swift Foot (Windrunner, "utamo tempo san" / "tor ira sol", id 134, Ranger line) go
 too. Both scripts add CONDITION_PACIFIED for 10 s (no auto attack at all) and a 10 s attack group cooldown; the helper's
@@ -50,6 +56,11 @@ OTHERS = {
     'support/sharpshooter.lua': (135, 'Hawkeye'),
     'support/protector.lua': (132, 'Bulwark'),
     'support/swift_foot.lua': (134, 'Windrunner'),
+    # the three light spells (owner 2026-10-28, "Tire também as magias de luz, já que são inúteis"): Light (Lantern, "utevo lux"), Great
+    # Light (Greater Lantern, "utevo gran lux") and Ultimate Light (Radiant Lantern, "utevo vis lux"). Light sources stay: torches
+    'support/light.lua': (10, 'Lantern'),
+    'support/great_light.lua': (11, 'Greater Lantern'),
+    'support/ultimate_light.lua': (75, 'Radiant Lantern'),
 }
 OTHER_MARK = 'Chaos: spell retired (retire_cure_spells.py): '
 FREED_IDS = sorted(i for i, _ in list(CURES.values()) + list(OTHERS.values()))
@@ -104,9 +115,9 @@ def main(argv):
     if new != text and '--dry-run' not in argv:
         open(path, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
     if new == text:
-        print('cure spells, Hawkeye, Bulwark and Windrunner: nothing to retire')
+        print('cure spells, Hawkeye, Bulwark, Windrunner and the light spells: nothing to retire')
     else:
-        print('cure spells, Hawkeye, Bulwark and Windrunner: %d retired, %d kept or brought back for monsters only%s'
+        print('cure spells, Hawkeye, Bulwark, Windrunner and the light spells: %d retired, %d kept or brought back for monsters only%s'
               % (n, kept, ' (dry run)' if '--dry-run' in argv else ''))
     return 0
 

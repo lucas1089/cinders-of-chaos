@@ -17,6 +17,8 @@
 --     next to an NPC of the town, back to the hunt spot; each answer is a text line
 --     "[tester-helper] <kind> <json>" with the client ids and positions the bot needs (its own creature id, the potion
 --     client ids, the locker, the NPC's name)
+--   * "!tester spellquest <state | reset | set | kill | trial | leave | complete>": the line spell quests of the tester (the
+--     checks of tools/tester_checks.py spell_quest; the staff command /spellquest is closed to testers)
 --   * "!tester bag": empties the tester's own backpack of loot (everything but the potions) and tops the potions up
 --   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
 --     the count changed, and every 5 minutes anyway
@@ -36,6 +38,7 @@ local GROUPS, STEP_MS, RANGE = 4, 500, 5
 local SUPPLIES = {{7618, 100}, {7620, 100}} -- stock health / mana potion
 local GOLD = 20000 -- into the bank: NPC purchases pay from it (Chaos.pay)
 local LOCKERS = {2589, 2590, 2591, 2592} -- depot_config.lua lockerIds
+local HUNT_CHECK = 7 -- tiles round the hunt spot checked for monsters above the tester's level
 local SEARCH = 30 -- tiles around the temple for an NPC
 local LOCKER_SEARCH = 45 -- tiles around the temple for a depot locker (its floor and the ones above and below)
 -- NPCs with a trade window, tried first by "shop": the NPC nearest the temple may only talk
@@ -211,6 +214,17 @@ function commands.hunt(player)
 		tell(player, "hunt", {err = "no hunt spot"})
 		return
 	end
+	local near = {}
+	for _, c in ipairs(Game.getSpectators(p, false, false, HUNT_CHECK, HUNT_CHECK, HUNT_CHECK, HUNT_CHECK) or {}) do
+		if c:isMonster() and not c:getMaster() then
+			near[#near + 1] = {c:getName(), Chaos.monsterHuntingLevel(c, 0)}
+		end
+	end
+	local hot = H.hotSpot(player:getLevel(), near)
+	if hot then -- stale spot from before the safe-spawn fix: stay in the temple, the report shows it
+		tell(player, "hunt", {err = "hunt spot too high: " .. hot[1] .. " level " .. hot[2]})
+		return
+	end
 	player:teleportTo(p)
 	tell(player, "hunt", {pos = posOf(player:getPosition())})
 end
@@ -311,6 +325,112 @@ function commands.enter(player, arg)
 	end
 	player:teleportTo(spot)
 	tell(player, "enter", {kind = place.kind, name = mark.n, count = count, pos = posOf(player:getPosition())})
+end
+
+-- !tester spellquest <state | reset | set | kill | trial | leave | complete> (H.parseSpellQuest): the line spell quests
+-- (spellquest.lua) for the tester itself, on the same code the game runs: the same storages as the staff's /spellquest, a
+-- credited death through ChaosSpellQuest.credit, the trial question through ChaosSpellQuest.enterTrial (needs Archivist
+-- Odrenna within range: `!tester enter npc Archivist Odrenna` first), the reward through ChaosSpellQuest.complete.
+-- Answers {quest, step, code, kills, fragments, need = {kills, fragments, level}, spell, learned, ...}.
+local function spellQuestState(player, extra)
+	local S, Q = ChaosSpellQuest, ChaosSpellQuestCore
+	local n, step, code = S.current(player)
+	local data = {level = player:getLevel(), quest = n, step = step, code = code}
+	local idx = Q.lineOf(player:getVocation():getId())
+	if n and idx then
+		local k = Q.keys(n)
+		local qc = Q.quest(n)
+		data.kills, data.fragments = Q.count0(player:getStorageValue(k.kills)), Q.count0(player:getStorageValue(k.fragments))
+		data.pity = Q.count0(player:getStorageValue(k.pity))
+		data.need = {kills = qc.kills, fragments = qc.fragments, level = qc.level}
+		data.spell = Q.spellName(idx, n)
+		data.learned = data.spell and player:hasLearnedSpell(data.spell) and true or false
+	end
+	for key, v in pairs(extra or {}) do
+		data[key] = v
+	end
+	return data
+end
+
+function commands.spellquest(player, arg)
+	local S, Q = ChaosSpellQuest, ChaosSpellQuestCore
+	if not (S and Q and S.credit and S.complete and S.enterTrial) then
+		tell(player, "spellquest", {err = "no spell quest system"})
+		return
+	end
+	local a, why = H.parseSpellQuest(arg)
+	if not a then
+		tell(player, "spellquest", {err = why})
+		return
+	end
+	local idx = Q.lineOf(player:getVocation():getId())
+	if not idx then
+		tell(player, "spellquest", {err = "no class line", code = "noline"})
+		return
+	end
+	if a.sub == "state" then
+		tell(player, "spellquest", spellQuestState(player))
+	elseif a.sub == "reset" then
+		for n = 1, Q.count() do
+			for _, key in pairs(Q.keys(n)) do
+				player:setStorageValue(key, -1)
+			end
+		end
+		S.sync(player)
+		tell(player, "spellquest", spellQuestState(player))
+	elseif a.sub == "set" then
+		if not Q.quest(a.quest) then
+			tell(player, "spellquest", {err = "no such quest", quest = a.quest})
+			return
+		end
+		local k = Q.keys(a.quest)
+		local out = Q.applySet({mask = player:getStorageValue(k.lines), pity = player:getStorageValue(k.pity)}, idx, a.quest,
+			a.step, a.kills, a.fragments)
+		player:setStorageValue(k.step, out.step)
+		player:setStorageValue(k.kills, out.kills)
+		player:setStorageValue(k.fragments, out.fragments)
+		player:setStorageValue(k.pity, out.pity)
+		player:setStorageValue(k.lines, out.mask)
+		player:setStorageValue(k.cooldown, 0)
+		S.sync(player)
+		tell(player, "spellquest", spellQuestState(player))
+	elseif a.sub == "kill" then
+		local weight, counted = 0, 0
+		local fragments = {}
+		for _ = 1, a.n do
+			local before = spellQuestState(player)
+			local w = S.credit(player, {boss = a.boss, monsterLevel = player:getLevel(), hunt = true, tier = "normal"})
+			if w > 0 then
+				counted = counted + 1
+				weight = weight + w
+			end
+			local after = spellQuestState(player)
+			if after.quest == before.quest and (after.fragments or 0) > (before.fragments or 0) then
+				fragments[#fragments + 1] = after.fragments
+			end
+		end
+		tell(player, "spellquest", spellQuestState(player, {counted = counted, weight = weight, rolled = #fragments}))
+	elseif a.sub == "trial" then
+		local ok, text = S.enterTrial(player)
+		local running = ChaosTrials and ChaosTrials.runs and ChaosTrials.runs[player:getId()] ~= nil
+		tell(player, "spellquest", spellQuestState(player, {entered = ok and true or false, text = text, running = running,
+			near = S.archivistNear(player) ~= nil}))
+	elseif a.sub == "leave" then
+		local left = ChaosTrials and ChaosTrials.leave and ChaosTrials.leave(player) or false
+		tell(player, "spellquest", spellQuestState(player, {left = left,
+			running = ChaosTrials and ChaosTrials.runs and ChaosTrials.runs[player:getId()] ~= nil or false}))
+	elseif a.sub == "complete" then
+		local n, step, code = S.current(player)
+		if code ~= "ok" or step ~= Q.STEP.TRIAL then
+			tell(player, "spellquest", spellQuestState(player, {err = "the quest is not on its trial step"}))
+			return
+		end
+		local spell = Q.spellName(idx, n)
+		local gold = player:getBankBalance()
+		local lines = S.complete(player, n)
+		tell(player, "spellquest", spellQuestState(player, {completed = n, taught = spell,
+			taughtKnown = player:hasLearnedSpell(spell) and true or false, gold = player:getBankBalance() - gold, lines = #lines}))
+	end
 end
 
 T.commands = commands
@@ -580,7 +700,7 @@ logout:register()
 local health = CreatureEvent("TesterHelperHealth")
 function health.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if primaryType ~= COMBAT_HEALING and eligible(creature) then
-		local dmg = math.max(0, primaryDamage or 0) + math.max(0, secondaryDamage or 0)
+		local dmg = H.damageOf(primaryDamage, primaryType, secondaryDamage, secondaryType)
 		local hit = {kind = "taken", damage = dmg, health = creature:getHealth(), maxHealth = creature:getMaxHealth(),
 			level = creature:getLevel()}
 		local id = creature:getId()
@@ -608,7 +728,7 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			p = p:getMaster()
 		end
 		if eligible(p) then
-			local dmg = math.max(0, primaryDamage or 0) + math.max(0, secondaryDamage or 0)
+			local dmg = H.damageOf(primaryDamage, primaryType, secondaryDamage, secondaryType)
 			local hit = {kind = "dealt", damage = dmg, level = p:getLevel()}
 			local rule = H.hitAnomaly(hit)
 			if rule then
@@ -630,7 +750,7 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller)
 		local started = T.loginAt[id]
 		print("[tester-event] " .. H.json(H.deathRecord(T.hits[id], os.time(), {who = creature:getName(),
 			level = creature:getLevel(), killer = killer and killer:getName() or "?", maxHealth = creature:getMaxHealth(),
-			online = started and os.time() - started or nil})))
+			secsOnline = started and os.time() - started or nil})))
 		T.hits[id] = nil
 	end
 	return true

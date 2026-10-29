@@ -14,6 +14,14 @@ ChaosManaShieldConfig = {
 	-- the client spell data name the same classes.
 	vocations = {1, 5, 10, 20, 21, 22, 3, 7, 15},
 
+	-- the classes of Soulward (spell 234, level 80, the 15 s shield with mana regeneration; owner 2026-10-28, "Deixe o mana
+	-- shield somente pra classes de magia e híbridas"): the magic lines (Mystic, Necromancer), the hybrid lines (Ranger, an
+	-- archer with spells; Templar, holy melee with spells), ascensions included. The Warrior, Thief and Monk lines have no mana
+	-- shield at all. Ward of the Mind stays the nine classes above, NOT the Templar line. spells_chaos.xml lists the same
+	-- classes (a character of another line who casts it gets the engine's vocation message; Soulward needs no learning, so no
+	-- stored spell is left behind). tests/manashield_test.lua checks the xml and the client data against this list.
+	soulwardVocations = {1, 5, 10, 20, 21, 22, 3, 7, 15, 23, 24, 25},
+
 	-- parity: the Chaos systems that make a monster hit a player harder (monster tiers, boss mechanics, the raid, the
 	-- pocket boss, the invasion, the Vocation Trials, Rampage, Shadow Twin) scale the part the mana shield takes too.
 	-- Without it a mana shield skipped every one of them (they are onHealthChange events, which the engine runs only on

@@ -112,6 +112,11 @@ return {
 		-- Before, only the Bone Lord's banner healed them, so a minion went into every pack with what the last pack left.
 		incoming = {pace = true, factor = 1.0},
 		regen = {combat = 0.005, idle = 0.10, idleAfterMs = 2000},
+		-- first strike (class identity pass, 2026-10-28): a minion that has just risen waits this long before its first hit, per
+		-- class, so the minion classes start slower and win long fights (a ramp of 4-8 s; weakness_model.py reads it). The Bone
+		-- Lord needs none: its army takes 13 s to raise. Minions persist between packs, so a hunt pays it once; a boss pull, a
+		-- death or a protection zone rest pays it again.
+		firstStrikeMs = {necromancer = 2000, lich = 4000, bonelord = 0},
 		-- leash: a minion farther than this from its owner, or on another floor, is brought next to it
 		leashRange = 7,
 		thinkMs = 500,
