@@ -11,7 +11,7 @@ The game is fully playable for free. Nobody is required to donate.
 
 ## What the store has
 
-The store has {{store.offers}} offers in {{store.categories}} categories. Most of them, {{store.cosmetic}}, are cosmetic: outfits, mounts, wings, auras, effects and decoration. The rest are account services and conveniences, such as extra storage and depot tabs, plus boosts, consumables, pets, the Season Pass and the unlock of the {{class.lockedNames}} classes.
+The store has {{store.offers}} offers in {{store.categories}} categories. Most of them, {{store.cosmetic}}, are cosmetic: outfits, mounts, wings, auras, effects and decoration. The rest are account services and conveniences, such as stash slots and stash tabs, plus boosts, consumables, pets, the Season Pass and the unlock of the {{class.lockedNames}} classes.
 
 The full list, with the type of every offer, is in the [store reference](wiki:store:about).
 

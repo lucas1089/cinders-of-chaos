@@ -77,7 +77,7 @@ StashTabIcon < UIItem
   phantom: true
 
 ChaosMainWindow
-  size: 690 470
+  size: 760 470
   !text: tr('Supply Stash')
   @onEscape: modules.game_stash.toggle()
 
@@ -124,13 +124,15 @@ ChaosMainWindow
   UILabel
     id: TabInfo
     anchors.left: InsideWindow.left
-    anchors.right: StashAllButton.left
+    anchors.right: BuySlotsButton.left
     anchors.bottom: parent.bottom
     margin-left: 5
     margin-right: 8
-    margin-bottom: 4
+    margin-bottom: 0
+    height: 28
     font: verdana-11px-rounded
     color: #a89878
+    text-wrap: true
     text-auto-resize: false
 
   UIWidget
@@ -215,6 +217,26 @@ ChaosMainWindow
     anchors.bottom: parent.bottom
     margin-right: 15
     margin-bottom: 0
+
+  Button
+    id: BuySlotsButton
+    !text: tr("Buy Slots")
+    anchors.right: InboxButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    margin-bottom: 0
+    width: 90
+    @onClick: modules.game_stash.buySlots()
+
+  Button
+    id: InboxButton
+    !text: tr("Inbox")
+    anchors.right: StashAllButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    margin-bottom: 0
+    width: 90
+    @onClick: modules.game_stash.collectInbox()
 
   Button
     id: StashAllButton

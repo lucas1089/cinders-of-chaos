@@ -2,7 +2,7 @@
 --
 -- Everything is per account: the Pact (chaos_pact), the one-time extras bought in the store (chaos_account_extras) and
 -- the saved passive tree builds (chaos_build_slots). Other systems ask for their limit:
---     ChaosPact.limit(player, key)    key of pact_config.lua `limits` (stashTabs, stashRemote, depotTabs, marketListings,
+--     ChaosPact.limit(player, key)    key of pact_config.lua `limits` (stashSlots, stashRemote, marketListings,
 --                                     marketAccount, buildSlots, lootRules, charSlots)
 --     ChaosPact.limits(player)        every limit
 --     ChaosPact.stashKind(itemId)     "orbs" | "gems" | "keys" | nil (stash.lua ChaosStash.kindOf)
@@ -164,7 +164,7 @@ local function sendStatus(player, open)
 		sc = okC and type(res) == "table" and res or nil
 	end
 	if sc then
-		tabSize = sc.tabSize
+		tabSize = sc.slots and sc.slots.free or sc.tabSize
 		local owned = {}
 		if ChaosStash and ChaosStash.viewOf then
 			local okV, view = pcall(ChaosStash.viewOf, player)
@@ -193,8 +193,8 @@ local function refreshPlayer(player)
 	if ChaosNameplate and ChaosNameplate.refresh then
 		pcall(ChaosNameplate.refresh, player)
 	end
-	if ChaosDepot and ChaosDepot.onLimitsChanged then
-		pcall(ChaosDepot.onLimitsChanged, player) -- depot tabs (depot.lua): the client's lock marks
+	if ChaosStash and ChaosStash.onLimitsChanged then
+		pcall(ChaosStash.onLimitsChanged, player) -- the stash window's slot counts (O316)
 	end
 	sendStatus(player, false)
 end
@@ -241,6 +241,23 @@ function Pact.grantDays(player, days, source)
 	return true
 end
 
+-- grants an extra without a purchase (stash.lua grandfathering, O316): the account ends with at least `amount` of it
+-- and never less; true when the row is written
+function Pact.grantExtra(accountId, key, amount, source)
+	amount = math.floor(tonumber(amount) or 0)
+	if amount <= 0 or not cfg.extras[key] then
+		return false
+	end
+	local now = os.time()
+	if not db.query(string.format("INSERT INTO `%s` (`account_id`, `extra_key`, `amount`, `updated`) VALUES (%d, %s, %d, %d) " ..
+			"ON DUPLICATE KEY UPDATE `amount` = GREATEST(`amount`, %d), `updated` = %d", T.extras, accountId, q(key), amount, now, amount, now)) then
+		return false
+	end
+	Pact.load(accountId)
+	log(accountId, 0, source or "grant", key, amount)
+	return true
+end
+
 local pactService = {
 	check = function(player)
 		local st = Pact.load(player:getAccountId())
@@ -264,7 +281,7 @@ local pactService = {
 	end
 }
 
--- offer.amount: how many of the extra one purchase adds (default 1; depot_config.lua sells a pack of 4 depot tabs)
+-- offer.amount: how many of the extra one purchase adds (default 1; pact_config.lua sells a pack of 4 stash slot expansions)
 local function offerAmount(offer)
 	return math.max(1, math.floor(tonumber(offer.amount) or 1))
 end
@@ -499,7 +516,7 @@ function login.onLogin(player)
 		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, text)
 	elseif st.pactEnds > 0 and now - st.pactEnds < 14 * 86400 then
 		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, Chaos.t(player,
-			"Your Chaos Pact has ended. Nothing is lost: extra stash and depot tabs are withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted."))
+			"Your Chaos Pact has ended. Nothing is lost: stash slots beyond your own expansions are withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted."))
 	end
 	return true
 end

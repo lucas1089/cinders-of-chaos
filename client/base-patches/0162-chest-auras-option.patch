@@ -1,0 +1,64 @@
+# Chaos: chest and Templar auras option (O315; client/BASE.md "0162"; mods/client_settings/classes/dataset.lua, options/graphics.otui;
+# after 0001-0161). Lua and OTUI only, no engine code: the overlay module game_chestaura puts a looping aura on the floor under reward
+# chests, cursed chests and the Sealed Coffer (Tile:setFloorWidget, patch 0078), a sigil under the feet of the Templar line (a creature
+# bottom widget) and, in a party, a faint range frame on the floor, and reads this option.
+#  * dataset.lua: `chestAuras` (default on); its apply tells game_chestaura (`onOption(name, value)`).
+#  * options/graphics.otui: one checkbox "Auras on chests and Templars" under "Pulse when a cooldown ends" (the visual effects panel
+#    grows from 390 to 409 px, 19 px a row); pt-BR in client_chaos_locale.
+# Without the patch the option counts as on (the module's default). Not run in a client; goes live with the next client build.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2244,6 +2244,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0162): auras on chests and under the Templar line (game_chestaura)
++  chestAuras = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_chestaura
++      if m and m.onOption then m.onOption('chestAuras', value) end
++      return true
++    end,
++  },
++
+   -- Chaos (base patch 0154): show every entry of the top menu, not only the unlocked systems (client_chaos_topbar)
+   showWholeMenu = {
+     value = false,
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -467,7 +467,7 @@
+ 
+     FlatPanel
+       // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-      size: 505 390
++      size: 505 409
+       anchors.top: prev.bottom
+       anchors.right: parent.right
+       anchors.left: parent.left
+@@ -851,6 +851,25 @@
+           local value = modules.client_settings.getOption('cooldownPulse')
+           self:setChecked(value ~= false)
+ 
++      SettingsCheckBox
++        id: chestAuras
++        size: 12 12
++        !text: tr('Auras on chests and Templars')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: cooldownPulse.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('A slow glow on the floor under reward chests, cursed chests and the Sealed Coffer, and a sigil under the feet of\nthe Templar line. In a party, a faint frame on the floor shows how far a Templar's aura reaches. It costs a few small pictures.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('chestAuras')
++          self:setChecked(value ~= false)
++
+       UIWidget
+         size: 12 12
+         anchors.top: parent.top

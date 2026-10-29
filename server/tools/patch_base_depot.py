@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Depot tabs: make the base server's depot boxes the tabs of the depot chest (server/README.md "Depot tabs").
+"""The retired depot: the base server's depot boxes, the locker hook and the move hook (server/README.md "Depot (retired)").
+
+O316 (2026-10-29): the depot is retired and the stash is the only storage. Nothing makes depot tabs any more; this step
+stays because the boxes of the depots that exist must stay readable (pickupable, so the stash migration can walk them),
+the locker hook starts the migration of a depot into the stash, and the move hook keeps new items out of the chest.
 
 usage: python3 -I patch_base_depot.py DATA_DIR [--dry-run]
 
@@ -15,11 +19,12 @@ boxName, boxSlots), the same file the Lua side (depot.lua) uses.
    a tab has a slot for every item it may hold. Other attributes of the entry are kept. A box id inside a fromid/toid
    range stops the script (nothing written).
 3. data/scripts/customs/actions/sounds/depot.lua (the base locker Action, it plays a sound): its onUse first calls
-   ChaosDepot.onOpenLocker(player, item), which makes the boxes, sorts loose items of before tabs into them and updates
-   the look texts and the client. The Action's return value is unchanged (the engine then opens the locker). When the
+   ChaosDepot.onOpenLocker(player, item), which loads the depot chest and, one event later, moves the depot into the
+   stash, opens the stash window and tells the client to close the locker window. The Action's return value is
+   unchanged (the engine still opens the locker: the migration needs the chest in it). When the
    file does not exist, nothing is written: depot.lua registers its own locker Action then.
-4. data/events/scripts/player.lua: Player:onMoveItem asks ChaosDepot.onMoveItem first (a move that adds to a locked or
-   full tab, or loose into the depot chest, is refused with a message). Only a refusal returns early; otherwise the base
+4. data/events/scripts/player.lua: Player:onMoveItem asks ChaosDepot.onMoveItem first (a move that adds to the depot
+   chest or one of its boxes is refused with a message). Only a refusal returns early; otherwise the base
    function runs exactly as before. A script callback cannot refuse a move reliably (the base EventCallback dispatcher
    keeps only the last onMoveItem callback's value), hence the hook, as for the store pouches.
 

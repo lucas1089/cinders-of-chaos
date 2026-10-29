@@ -87,20 +87,29 @@ check(type(cfg.effect) == "string" and cfg.effect:match("^CONST_ME_") ~= nil, "e
 -- 32311 "reward chest" (the one-tile look: client 38758, redrawn in pair 53; a copy of 21584: container 32, not moveable /
 -- pickupable); 32310 is its 2 x 2 look of pair 45, only a legacy id now (the map step moves its chests to 32311)
 -- 21584 the stock reward chest it falls back to while 32311 is not installed
--- 12664 "treasure chest" (2x2, blue and silver, container 20, not moveable): the rift's sealed coffer (needs a container)
-local REWARD, STOCK, COFFER = 32311, 21584, 12664
+-- 32312 "sealed coffer" (O315: the 2 x 2 big gold chest art of pair 45, client 38657; a copy of 21584, install_reward_chest.py) is
+-- the rift's sealed coffer (needs a container); it is not 32310, the reward chest's legacy id, so the map step never moves it
+-- 12664 "treasure chest" (2x2, blue and silver, container 20, not moveable): the coffer's fallback while 32312 is not installed
+local REWARD, STOCK, COFFER, COFFER_FALLBACK = 32311, 21584, 32312, 12664
 local rift = dofile("data/scripts/chaos/rift_config.lua")
 eq(rift.chest.itemId, REWARD, "rift chest: the reward chest")
 eq(rift.chest.fallbackId, STOCK, "rift chest: falls back to the stock reward chest")
 eq(table.concat(rift.chest.legacyItemIds, ","), "32310", "rift chest: the 2 x 2 look is a legacy id (only the map patch reads it)")
 check(rift.chest.legacyItemIds[1] ~= rift.chest.itemId and rift.chest.legacyItemIds[1] ~= rift.chest.fallbackId, "the legacy look is not the reward chest")
 eq(rift.chest.smallItemId, nil, "no second look any more: every reward chest is the one-tile look")
-eq(rift.coffer.itemId, COFFER, "rift coffer: the big treasure chest")
+eq(rift.coffer.itemId, COFFER, "rift coffer: the big gold chest look, an item of its own")
+eq(rift.coffer.fallbackId, COFFER_FALLBACK, "rift coffer: falls back to the stock treasure chest")
+check(rift.coffer.actionId == 47403 and rift.chest.actionId == 47402, "coffer and chest keep their own action ids")
+for _, id in ipairs(rift.chest.legacyItemIds) do
+	check(id ~= rift.coffer.itemId, "the coffer is not a legacy reward chest id (the map step moves those to 32311)")
+end
 local descent = dofile("data/scripts/chaos/descent_config.lua")
 eq(descent.objects.chest, REWARD, "Descent treasure room chest: the reward chest")
 eq(descent.objects.chestFallback, STOCK, "Descent treasure room chest: falls back to the stock reward chest")
 check(rift.chest.itemId ~= rift.coffer.itemId, "chest and coffer differ (the coffer is looked up by id on its tile)")
-check(rift.chest.fallbackId ~= rift.coffer.itemId, "the fallback is not the coffer either")
+check(rift.chest.fallbackId ~= rift.coffer.itemId and rift.chest.fallbackId ~= rift.coffer.fallbackId,
+	"the reward chest's fallback is not the coffer, nor the coffer's fallback")
+check(rift.chest.itemId ~= rift.coffer.fallbackId, "the reward chest is not the coffer's fallback")
 
 if fails > 0 then
 	print(string.format("reward_sparkle_test: %d of %d checks failed", fails, count))

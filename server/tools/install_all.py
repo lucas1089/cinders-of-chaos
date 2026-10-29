@@ -101,7 +101,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                items.otb / items.xml (README "Cursed Chest")
   rewardchest  tools/install_reward_chest.py    the Reward Chest's own looks (copies of the stock reward chest 21584's node: client id
                38758 / server id 32311, one tile, the look every reward chest wears since pair 53; client id 38657 / server id 32310,
-               the retired 2 x 2 look of pair 45) in items.otb / items.xml (README "Reward chests"; before rewardchests)
+               the retired 2 x 2 look of pair 45; server id 32312 "sealed coffer", client id 38657 again, the rift's Sealed Coffer, O315)
+               in items.otb / items.xml (README "Reward chests"; before rewardchests)
   decor48items tools/install_decor48_items.py    the 352 ice, swamp, lava and cave decoration items of client pair 48 (props of a
                donor pair, "source B") in items.otb / items.xml (server ids 42759..43110 = client id + 4000, from
                data/items/decor48_items.csv; used by the map studio kits and map makers; README "Decoration of pair 48")
@@ -124,8 +125,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (README "Store pouches")
   storefood    tools/install_store_food.py       the Everfull Ration (the store's infinite food) in items.otb / items.xml
                (README "Store pouches and the Everfull Ration")
-  depot        tools/patch_base_depot.py         depot tabs: the depot boxes pickupable in items.otb and named "depot tab n" with
-               100 slots in items.xml, the locker hook and the move hook in Player:onMoveItem (README "Depot tabs")
+  depot        tools/patch_base_depot.py         the retired depot: the old depot boxes pickupable in items.otb and named "depot tab n"
+               in items.xml, the locker hook (the depot moves into the stash) and the move hook in Player:onMoveItem
+               (README "Depot (retired)")
   charms       tools/install_charms.py           the charms and the charm shard in items.otb / items.xml (README "Charms")
   professions  tools/install_professions.py      the profession materials and gathering nodes in items.otb / items.xml, the
                Material Broker in data/npc and the hooks in the stock pick / sickle / skinning / fishing scripts

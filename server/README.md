@@ -663,12 +663,13 @@ collision check") and be added here.
 | 91 | none (base server) | the base crafting script (`tools/patch_base_crafting_ui.py`) | `game_craftingtable` | the base server's own crafting opcode; listed so no module takes it |
 | 109 | `dungeons` | `dungeons.lua` | `game_dungeons` | `dungeon` may carry `health = {monsters = {6 %}, boss = {6 %}}` (a dungeon with its own health curves, `dungeons_difficulty.lua` `D.healthCurves`); without it the client shows the table |
 | 110 | `stash` | `stash.lua` | `game_stash` | |
-| 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
+| 111 | `depotTabs` | none (retired, O316) | none (`game_depottabs` deleted) | reserved: nothing sends or reads it, no new opcode takes it |
 | 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
 | 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226), m = "ice" / "swamp" / "desert" / "fire" / "crypt" (optional, O234)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)", "Area colour mood (O234)") |
 | 115 | `unlocks` | `unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua` | `client_chaos_topbar` | server -> client `state {entries = [{key, level, menu}], unlocked = [key], seen = [key], next? = {key, level}, all? = true}` (login, `hello`, every level change) and `new {key, level, menu, title, why = [line1, line2]}` (one entry just unlocked, one per 75 s); client -> server `hello` and `seen {key}` (see "The top menu reveals systems by level (O259)") |
 | 116 | `everfull` | `potions_helper.lua`, `data/lib/chaos_potions.lua`, `potions_core.lua` | `game_helperrotation` | server -> client `held {v = 1, health? = {look, tier, level, line, ready}, mana? = {...}}` (the Everfull each slot carries, by its client look; at login, after an upgrade and when it changes, checked every 3 s), client -> server `sync` (see "Potions", "The helper and the tiers (O246)") |
 | 117 | `weeklyChest` | `weeklychest.lua`, `weeklychest_core.lua` | `game_weeklychest` | client -> server `open` / `close` / `get`, server -> client `state {open?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}` (see "The Weekly Chest (O261)") |
+| 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -819,7 +820,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -839,7 +840,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 |---|---|
 | 80000 + n | autoloot list, shared on purpose with the base autoloot (`Chaos.storage.autolootBase`) |
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
-| 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (retired), 7100013 the stash -> depot migration version done; +3..+8 free |
+| 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free. 7101070 - 7101099 stays free |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
@@ -4509,8 +4510,9 @@ convenience only, never power. Every price was decided on 2026-10-14 (owner dele
   every store item ("Delivery to the purse" below; `overflowInbox` is no longer read). Not for season characters
   (items). Tests: `tests/shop_test.lua` (prices against the supply list, sizes, the Supplies move, delivery to the
   purse, the depot inbox, the backpack, refund).
-- **Convenience.** The Everfull Ration (infinite food, "Store pouches and the Everfull Ration"). Depot tabs, stash tabs,
-  build and character slots were already sold ("Chaos Pact and account storage", "Depot tabs"). Loadout slots are per
+- **Convenience.** The Everfull Ration (infinite food, "Store pouches and the Everfull Ration"). Stash Slot Expansions, the
+  stash tabs, build and character slots are sold ("Chaos Pact and account storage"). The "Depot Tabs" category is gone
+  with the depot (O316, "Depot (retired)"); the new offers are in "Storage & Slots" under Premium & Services. Loadout slots are per
   character and earned by level ("Loadouts"): not sold; the VIP gets one more while it lasts ("Chaos Pact", VIP perks).
 - **Tests:** `tests/shop_test.lua` (This week first, its countdown, rotationOnly hidden, personal bundle price, regalia,
   the double first donation, the new packs), `tests/theme_art_test.lua` (12 / 6 split, rotation pool, no boss
@@ -5603,11 +5605,53 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
 
 ## Stash (`stash.lua`, `stash_core.lua`, `stash_config.lua`, `item_codec.lua`, `sql/chaos_stash.sql`, `tools/migrate_depot_stash.py`, client `game_stash`)
 
+**Room since O316 (owner 2026-10-29, pt-BR: "No stash, coloque de graça apenas 1 aba de 30 slots e coloque na loja expansão de slot e
+aquelas abas próprias para cada tipo de item").** The depot is retired ("Depot (retired)"); the stash is the only storage and
+its room is sold in the store. Numbers: `stash_config.lua` `slots`, `generalTabs`, `affinities`; limit `stashSlots` in
+`pact_config.lua`; prices in docs/PRICES.md "Stash room (O316)".
+- **Free:** exactly one general tab of 30 entries (`slots.free`, `generalTabs = 1`), for everybody. No free affinity tab: the
+  Supplies tab is no longer free, the Pact no longer lends the Creature Products tab, the Collectibles tab is no longer an
+  achievement tab.
+- **Stash Slot Expansion** (store, Storage & Slots, 50 coins): +25 slots on the general tab (`slots.perPack`), up to 20 per
+  account (`limits.stashSlots.maxExtra`), 530 slots in all; "4 Stash Slot Expansions" 180 coins. The Chaos Pact lends one
+  expansion (+25) while it runs (`limits.stashSlots.pact`). Extra general tabs are not sold: a second general tab only splits
+  the same room, so the expansion grows the one tab. `ChaosStashCore.slotsOf` / `view.slots`; `K.sizeOf(cfg, tab, view)` is
+  the size of tab 1.
+- **Affinity tabs** (100 entries each, one per item type): Orbs 200, Gems 200, Keys 150, Supplies 150, Weapons 150, Armor 150,
+  Jewellery 150, Materials 150, Creature Products 150, Collectibles 100. All store-sold (extra `stashSupplies` is new).
+- **Grandfathered, nothing lost.** (1) An old bought Extra Stash Tab (extra `stashTabs`, at most 6), a bought Extra Depot Tab or
+  4 Depot Tabs (extra `depotTabs`, at most 12) and each of the three achievement tabs (`depot_tab_relics`, `depot_tab_trophies`,
+  `depot_tab_vault`, ids kept, texts changed) is worth 3 expansions: 75 slots (`slots.legacyPacksPerTab`), outside the cap of 20.
+  The 150 coins the tab cost buy 3 expansions. `stash.lua` `S.viewOf` reads the extras; no row is rewritten. (2) The free tabs
+  the account used: `S.grandfather` runs once per character at login (storage `legacy` 7100014, `legacyGrants.version`): an
+  affinity tab where the character holds entries (Supplies, Creature Products) and the Collectibles tab of the
+  achievement `unique_50` become the bought extra (`ChaosPact.grantExtra`, never less than 1, logged as "legacy").
+- **More than the room.** A character that holds more entries than its slots keeps all of them: the entries above the size of
+  tab 1 and the old general tabs 2-30 are withdraw-only (nothing new goes in until it is under the limit; a merged stack still
+  grows); tabs the account does not own are withdraw-only as before.
+- **The depot moves in.** `depot.version = 2` (it was 1): a character that migrated its depot before, then had its stash moved
+  into the depot by the 2026-10-17 step (`toDepot`, off since), runs the migration again at the next locker opening, so what
+  went to the depot comes back. Journalled and crash safe as before (`K.deposit`, the saved serial); what does not fit goes to
+  the withdraw-only "Old depot" tab; nothing is deleted.
+- **Delivery and the inbox.** `ChaosStash.deliverItem(player, item)` puts an item that is on the character (the market adds it
+  to the inbox in memory) into the stash through the same journal: the matching affinity tab when the account owns it, else
+  the general tab. The market's `deliverSeq` is set before the call, so the journal's one save carries the removal and the
+  mark: a crash delivers once. A full stash, a bag with things in it, a store-bound item or a failed save keep the item in
+  the inbox (a failed save puts a copy back into the inbox, `rec.restoreTo`), and the delivery line says where each item
+  went ("in your stash (Weapons tab)", "in your inbox"). `market.lua` `MK.deliver` keeps its `deliveryPlan` / mark logic and
+  the `delivered` flag. Store purchases go to the purse first (`store_delivery.lua`), not to the depot, so they are unchanged.
+  "Collect inbox" (the window's Inbox button, make `CollectInbox`, a protection zone or a hideout) moves the inbox
+  into the stash, and what cannot be stashed (a bag, a refused item, a full stash) into the backpack, at most
+  `inbox.batch` (60) items per press. The window shows the number waiting (`tabs.inbox`).
+- **Messages the window gets:** `tabs` adds `slots`, `freeSlots`, `perPack`, `packs`, `maxPacks`, `store` (the category the
+  Buy Slots button opens) and `inbox`; `Toggle` adds `closeLockers`. Tests: `tests/stash_test.lua` (section O316),
+  `tests/pact_test.lua`, `tests/market_test.lua`, `game_stash/stashview_test.lua`.
+
 **Reversed again 2026-10-17 (later)** (owner: "remova o depot e deixe só o stash", "quando a gente abrir o baú, abra o stash"): the stash is the one
 storage. `stash_config.lua` has `depot.migrate = true`, `depot.withdrawOnly = true` and `toDepot.enabled = false` (the stash -> depot
 migration below stays in the code, off). The chest still lists what is left to take out.
 
-**Locker opens the depot only (2026-10-20)** (owner beta report: clicking a depot chest opened the depot window and the stash
+**Locker opens the depot only (2026-10-20, replaced by O316: the locker opens the stash)** (owner beta report: clicking a depot chest opened the depot window and the stash
 window together). A depot locker opens the depot window alone and shows the withdraw-only line. The stash opens from its own
 entry points: the top bar (Economy > Supply Stash), the "Toggle Stash" keybind and the stash keeper NPC. `depot.lua` `afterOpen`
 asks `depot_core.lua` `D.lockerOpen`; it calls `ChaosStash.openWindow` (a `Toggle` with `open = true`) only when
@@ -5690,7 +5734,8 @@ affinity tabs take one class and every deposit of that class goes to the first o
 | Collectibles (110) | dolls, figurines, trophies, configured ids | bought, or earned (Reliquary, 50 uniques) |
 | Old depot (200) | what the depot migration could not place | never takes items: withdraw-only |
 
-General tabs = `stashTabs` (4 free, +2 Pact, up to +6 bought) + 1 per depot tab achievement (Cabinet of Curiosities, Hall
+(O316 replaced the free room below: one general tab of 30 entries, see "Room since O316" above; the rest of this paragraph is
+the 2026-10-15 design.) General tabs = `stashTabs` (4 free, +2 Pact, up to +6 bought) + 1 per depot tab achievement (Cabinet of Curiosities, Hall
 of Trophies, Keeper of the Vault) + 1 per depot tab bought before (`depotTabsCount`), at most 30. Ids 101-103 are the
 special tabs of before: their rows keep working. A tab beyond the count, an affinity tab no longer owned (the Pact ended)
 and Old depot are withdraw-only; nothing is deleted when a limit shrinks. A merged stack in a withdraw-only tab moves with
@@ -5825,7 +5870,7 @@ November 2026 to April 2027 planned: kill effects and loot label accents), grant
 month and kept for good. Applied at login, at once after a purchase (`ChaosPact.grantDays` is wrapped, no edit of
 `pact.lua`) and once a minute for the characters online. Still no premium days (`premiumDays = 0`). Remote stash deposit (deposit into the stash from anywhere, "Stash") is
 included while the Pact runs (limit `stashRemote`, 2026-10-15); the store offer and the window's perk line say so. No priority login:
-the engine has no login queue. Depot tabs: the Pact's +1 was already in `limits.depotTabs`.
+the engine has no login queue. Stash room: the Pact lends one Stash Slot Expansion (+25 slots, `limits.stashSlots.pact`; O316).
 
 **Premium.** The Pact gives no premium days (`pact.premiumDays = 0`, the owner's decision: the stamina bonus below is
 power, not comfort). A value above 0 would add that many premium days per purchase. With `freePremium = false`,
@@ -5840,33 +5885,33 @@ stamina bonus is the one premium effect that is not pure comfort, and it comes w
 
 | Limit | Free | Chaos Pact | Bought (max) | Used by |
 |---|---|---|---|---|
-| General stash tabs (100 entries each; +1 per depot tab achievement and per bought depot tab, see "Stash") | 4 | +2 | +6 | `stash.lua` |
-| Depot tabs (100 items each; +1 per depot tab achievement, see "Depot tabs") | 4 | +1 | +9 | `depot.lua` |
+| Stash Slot Expansions (+25 slots each on the one 30-slot general tab; old tabs count 3 each outside the cap, see "Stash") | 0 | +1 | +20 | `stash.lua` |
 | Market listings per character | 20 | +10 | - | `market.lua` `ChaosMarket.maxActive` |
 | Market listings per account | 40 | +20 | - | `market.lua` |
 | Saved passive tree builds | 2 | +3 | +6 | `pact.lua` |
 | Loot rules (the autoloot list) | 10 | +10 (premium too) | - | `autoloot.lua`, `lootfilter.lua` |
 | Character slots | 5 | - | +10 | website, `pact.lua` at login |
-| Affinity stash tabs (Orbs, Gems, Keys, Weapons, Armor, Jewellery, Materials, Creature Products, Collectibles; Supplies is free) | - | Creature Products lent | 1 each | `stash.lua` |
+| Affinity stash tabs (Orbs, Gems, Keys, Supplies, Weapons, Armor, Jewellery, Materials, Creature Products, Collectibles; all bought since O316) | - | - | 1 each | `stash.lua` |
 | Remote stash deposit (limit `stashRemote`; deposit from anywhere while > 0; withdraw stays in town) | 0 | +1 | 1 | `stash.lua` |
 
 The loot rules count premium alone as the Pact (`premiumCounts`), because the base server's own autoloot callback
 (`data/scripts/creaturescripts/autoloot.lua`) loots 10 / 20 by premium; keep free + Pact at most 20 or change that callback.
 
-**One-time extras** (store category "Storage & Slots", service `pactExtra`, table `chaos_account_extras`): Extra Stash Tab 150,
-Orbs Stash Tab 200, Gems Stash Tab 200, Keys Stash Tab 150, Weapons / Armor / Jewellery / Materials / Creature Products Stash
-Tab 150 each, Collectibles Stash Tab 100 and Remote Stash Deposit 300 (these seven: PLACEHOLDER prices,
-docs/OWNER_TODO.md), Character Slot 250, Build Slot 100. A purchase past the maximum is
+**One-time extras** (store category "Storage & Slots", service `pactExtra`, table `chaos_account_extras`): Stash Slot Expansion 50
+(4 for 180), Orbs Stash Tab 200, Gems Stash Tab 200, Keys / Supplies / Weapons / Armor / Jewellery / Materials / Creature
+Products Stash Tab 150 each, Collectibles Stash Tab 100 and Remote Stash Deposit 300 (PLACEHOLDER price,
+docs/OWNER_TODO.md), Character Slot 250, Build Slot 100. The extras `stashTabs` and `depotTabs` are retired (no longer sold, kept as
+names; "Stash" converts them). A purchase past the maximum is
 refused before the coins are taken.
 
-**When the Pact ends nothing is deleted.** Stash tabs above the limit become withdraw-only (an item whose entry sits there and
-is deposited again moves to a writable tab with room, if there is one); market offers above the smaller limit stay until
+**When the Pact ends nothing is deleted.** The lent expansion goes: entries above the smaller room become withdraw-only (an item whose
+entry sits there and is deposited again moves to a writable tab with room, if there is one); market offers above the smaller limit stay until
 they sell, expire or are cancelled (only new listings are refused); saved builds above the limit stay and can be loaded or
 deleted, not overwritten or renamed; autoloot entries above the limit stay stored and work again after a renewal. A login
 in the 14 days after the end says so.
 
 **Stash tabs.** The tabs, what goes where and the depot transition are in "Stash" (`stash_config.lua`, `stash_core.lua`);
-this file keeps the limit `stashTabs` and the extras that buy tabs. `pact.lua` sends the affinity tabs and who owns them in
+this file keeps the limit `stashSlots` and the extras that buy room. `pact.lua` sends the affinity tabs and who owns them in
 `status.special = [{name, owned, source}]` (the Chaos Pact window's tab line).
 
 **Saved builds** (`chaos_build_slots`, per account): Save stores the passive tree build code of the character
@@ -5911,134 +5956,46 @@ that item moves it to tab 2), builds 3-4 read-only (a forged save refused), a re
 `grantDays` from a bundle; the Pactbound name plate; a sixth character refused at login, then let in after a Character Slot
 was bought; the window from another character of the account; the autoloot window with 20 rules.
 
-## Depot tabs (`depot.lua`, `depot_core.lua`, `depot_config.lua`, `tools/patch_base_depot.py`, client `game_depottabs`)
+## Depot (retired) (`depot.lua`, `depot_core.lua`, `depot_config.lua`, `tools/patch_base_depot.py`)
 
-The owner's decision: the depot works like a limited stash with tabs. Every number and text is in `depot_config.lua`; the
-rules are pure functions in `depot_core.lua` (tested by `tests/depot_test.lua`, which also runs `depot.lua` against a
-mocked engine); `depot.lua` is the engine glue.
+**O316 (owner 2026-10-29, pt-BR: "Retire o depot do jogo, veja na store se tem coisa para o depot, retire também").** The
+depot is retired. The stash ("Stash") is the only item storage. The owner chose to migrate what is in the depots into the
+stash. History: the depot tabs of 2026-10-13 (ROADMAP row 85) and the stash -> depot move of 2026-10-17 (row 193) are
+superseded by O316. What this section keeps is what the base engine still needs.
+
+**What a player sees.** No depot window (the client module `game_depottabs` was deleted, opcode 111 is reserved and unused). A
+depot locker still opens in the engine: the migration needs the chest in its locker. One event later `ChaosDepot.afterOpen`
+moves the depot into the stash, opens the stash window and the Toggle message carries the client ids of the lockers
+(`closeLockers`), so the client closes the locker window the engine just opened. A hideout locker (`hideout.lua`) calls
+`ChaosDepot.onOpenLocker(player, locker, townId)` the same way. The Market has its top bar entry (Economy > Market); the
+inbox is reached with the stash window's Inbox button ("Stash", "Delivery and the inbox").
+
+**What stays for the engine.** The lockers hold the inbox (mail, house transfers, market and store fallbacks) and the market
+item; the depot chest (item 2594) and the old boxes (25453-25469) stay where they are, empty after the migration. The
+stock Market item still works (`market.lua` registers its Action); nothing of the inbox or the market was changed. The
+store purchases go to the purse (the store inbox) first, and to the depot inbox only as a fallback
+(`store_delivery.lua`), as before.
+
+**The move rule.** `tools/patch_base_depot.py` (step `depot` of `install_all.py`, idempotent, unchanged in what it writes:
+the boxes pickupable in `items.otb`, named "depot tab n" with 100 slots in `items.xml`, the locker hook in the sound Action,
+the move hook first in `Player:onMoveItem`) stays, so that old depots can be walked and read. `ChaosDepot.onMoveItem`
+(rules in `depot_core.lua` `D.decide`) refuses every move that adds to the chest or a box ("The depot is retired: store
+items in the stash"); taking items out and tidying inside one box stay possible. `ChaosDepot.checkAdd` is the same rule for
+scripts. The inbox and the market are not part of the chest and take items as before. No tab limits, names, colours,
+achievement tabs or store offers remain (`depot_config.lua` has the ids, the messages and the locker script path only).
+
+**Retired with it.** The store category "Depot Tabs" (Extra Depot Tab 150, 4 Depot Tabs 500; it had left the store on
+2026-10-21), the Pact limit `depotTabs`, the table `chaos_depot_tabs` (the rows stay, nothing reads them) and the depot
+window requests. Bought depot tabs are converted, see "Stash", "Room since O316". The guild hall chest ("Guild levels and
+guild halls", the guild depot upgrade and the `depotSlots` perk) is shared guild storage, not the player depot, and stays.
 
 **What the base has.** TFS 1.4.2 gives every town its own depot chest (`Player::getDepotChest(townId)`) inside the locker,
 next to the shared inbox and the market. The engine never makes depot boxes. The items `depot box I` .. `XXI` (25453-25469,
 29841-29844) exist in `items.otb` / `items.xml` as plain containers (32 slots, not pickupable, not moveable); the base only
 put them into new characters' depots through an optional website SQL snippet (off here: `!season join` needs an empty depot).
 
-**Tabs.** Boxes I-XVII are the tabs 1-17 (`boxIds`). `tools/patch_base_depot.py` (step `depot` of `install_all.py`, after
-`pouches`; idempotent; `items.otb.bak` keeps the original) does four things: the 17 boxes get the pickupable flag in
-`items.otb` (the engine refuses any non-pickupable item in a container, so no script could put a box into a chest; they
-stay not moveable, so a player cannot drag one out), `items.xml` names them `depot tab 1` .. `17` with 100 slots, the base
-locker Action (`data/scripts/customs/actions/sounds/depot.lua`, it plays a sound) calls `ChaosDepot.onOpenLocker` first, and
-`Player:onMoveItem` calls `ChaosDepot.onMoveItem` first. When a locker opens, the missing boxes of that town's chest are
-added (tab 1 first). No engine patch: Lua makes the boxes when the locker opens. `depot.lua` warns at startup when a hook
-is missing, and registers its own locker Action when the base locker script does not exist.
-
-**Limits.** An account may fill `ChaosDepot.tabs(player)` tabs: `pact_config.lua` limit `depotTabs` (1 free since 2026-10-17, +1 while the
-Chaos Pact runs, up to 9 bought) + one per achievement of `achievementTabs` that any character of the account has, at most
-17. A tab holds 100 items: every item counts once, a container counts as 1 plus everything in it (nested), a stack counts
-as 1. Tabs above the count are withdraw-only. Nothing is ever deleted: contents above a limit stay, only adding is refused.
-The tab count is the same in every town; each town's chest has its own 17 tabs.
-
-| Source | Tabs |
-|---|---|
-| Free | 1 |
-| Chaos Pact (while active) | +1 |
-| Store "Depot Tabs" (Premium & Services; not sold while the depot is withdraw-only, "Store"): Extra Depot Tab, 150 coins (a stash tab costs 150 too); 4 Depot Tabs, 500 coins | up to +12 |
-| Achievements: Cabinet of Curiosities (25 unique items), Hall of Trophies (100 bestiary entries), Keeper of the Vault (50 sealed rifts) | +1 each |
-
-The store offers are service `pactExtra` with `extra = "depotTabs"` and `amount` 1 or 4 (`pact.lua` adds `amount`; a pack
-that would pass the cap is refused before the coins are taken). They live in `depot_config.lua` `store`, inserted in
-`shop_config.lua` as their own block:
-
-```lua
-		-- >>> Depot tabs (depot.lua): a single tab and a pack of 4 (service pactExtra); offers, prices and texts live in
-		-- depot_config.lua `store`
-		dofile("data/scripts/chaos/depot_config.lua").store,
-		-- <<< Depot tabs
-```
-
-**Enforcement.** `Player:onMoveItem` runs for every move a player makes (the event is raised in `Game::internalMoveItem`
-with the player as actor): from the inventory or the ground, a throw, dragging a bag in, dropping onto a box icon in the
-chest window or onto the chest in the locker window (the destination is worked out as `Container::queryDestination` does),
-into a bag nested inside a tab, between tabs, and the swap move. The rule (`ChaosDepotCore.decide`): into a tab from outside
-it, the tab must be open and have room for the item and everything in it; inside the same tab every move is allowed (also
-in a locked or over-full tab), except splitting a stack, which needs one free item; nothing new goes loose into the chest
-itself or into an old container lying loose in it. The refusal is a warning line ("Depot tab 5 is locked: ... Buy more
-tabs in the Store", "Depot tab 1 is full: 100 of 100 items, this needs 5 ...", "Put items into a depot tab, not loose into
-the depot chest") and RETURNVALUE_NOTPOSSIBLE / CONTAINERNOTENOUGHROOM. Paths that add items without a player move, checked
-in the base engine and the scripts: the market (sold items leave the depot chest and its tabs, bought and cancelled ones go
-to the inbox), mail and parcels (inbox), the house transfer (inbox), the store and every Chaos script (inbox, or the
-character), our stash (withdraws to the character). The engine never adds to a depot box itself. The inbox stays unlimited
-(players cannot put anything into it; the engine refuses without FLAG_NOLIMIT). A script that ever puts an item straight
-into a container that may be a tab must ask `ChaosDepot.checkAdd(player, container, item, count)` first;
-`Item:moveTo` and `Container:addItem` skip `onMoveItem`. Not covered: such a script that does not ask.
-
-**One default tab** (2026-10-17, "Diminuir as tabs do depot padrão para 1"): the free count is 1 (`pact_config.lua`
-`depotTabs.free`; the bought maximum rose from 9 to 12 so the total stays 17 boxes). A locker opening makes only the boxes of
-the account's open tabs (`Depot.ensure(chest, tabs)`), boxes that exist stay (a locked tab with items keeps its box), and the
-`tabs` message's `max` is the number of boxes that exist, so a default depot shows one tab. Buying a tab or earning an
-achievement makes its box at the next locker opening. The stash tabs (`stashTabs` free 4) are unchanged.
-
-**The stash takes over** (2026-10-15, "Stash"; reversed 2026-10-17, see "Stash"): with `stash_config.lua` `depot.withdrawOnly` the boxes and the chest
-are withdraw-only (the move rule answers "closed"; taking out and tidying inside a tab work, the inbox and the market as
-before), and with `depot.migrate` the first locker opening moves the character's depots into the stash
-(`ChaosStash.migrateDepot`). The locker line says the depot is withdraw-only. The depot tab achievements and bought depot
-tabs now count as general stash tabs. The rules below stay for a rollback (both flags false).
-
-**Old depots.** At the first locker opening with tabs, everything loose in that chest is placed into tabs in chest order:
-open tabs first, then locked ones (withdraw-only), as the stash did with its tabs. An item that fits no tab (a backpack
-holding more than 100 items, or every tab full) stays loose in the chest, withdraw-only. Nothing is deleted or merged
-away. The player gets a line ("Your depot was sorted into tabs: ..."). The sort waits until the engine has put the chest
-into its locker: before that the engine treats the chest's contents as removed and `Item:moveTo` does nothing.
-`!season join` still sees an empty depot (it counts items that are not containers).
-
-**Client: the depot window.** `game_depottabs` (opcode **111**, `ChaosOpcodes.depotTabs`). Opening a depot locker
-opens one centred window, "<town> Depot", instead of the stock locker, chest and box windows: 17 tab buttons in rows of 6
-(the tab's name or number, a colour accent, a lock on locked tabs, a tooltip with the count or the store hint) and a
-"+ Tabs" button while tabs can be bought; the active tab's 100 slots in a 10x10 grid; "87/100 items", "4 of 17 tabs";
-Inbox, Market, Buy Tabs (the Store at its Depot Tabs category; hidden while the depot is withdraw-only and tabs are not sold) and Close. The locker, its chest and one box stay real
-containers: the client opens them with the engine's own use packet and only hides the stock windows (it wraps
-`game_containers`' onOpen handler at runtime; no base file, no base patch). So container ids, the range check and every
-move rule above stay as they were: drag and drop, stacking, use and look in the grid are the stock Item widget's.
-Switching tabs: the client sends `open {tab}`; `ChaosDepot.requestOpen` answers `open {tab, ok, text}` after a rate limit
-(`Chaos.limited`, `openMs` 250) and checks that the player has the chest of the locker last opened (`Depot.at`, set by
-`onOpenLocker`) open (`player:getContainerId(chest)`), stands next to that locker on its floor, and that the box exists
-(`ChaosDepotCore.openRefusal`); then the client opens that box into the tab's container id. A locked tab opens too
-(withdraw-only by the move rule). The engine has no Lua call that opens a container for a player; doing it server-side
-would need an engine patch, so the open itself stays the client's use packet. Walking away closes the containers (the
-engine's own auto-close) and the window with them. Without the module the depot works as before.
-
-**Tab names and colours.** Right-click a tab button (or the pencil above the grid): a dialog with the name (at most 16
-characters; empty = the tab number) and 13 colour swatches (default + `palette` in `depot_config.lua`: gold, ember,
-crimson, rose, violet, frost, azure, jade, moss, bone, ash grey, bronze; no free colours). Client -> server
-`style {tab, name, color}`, rate limited (`styleMs` 1000); `ChaosDepotCore.styleRequest` trims the name, makes runs of
-spaces one, turns UTF-8 Latin-1 letters into Latin-1 (the client draws Latin-1) and refuses control characters, anything
-outside Latin-1, more than 16 characters and unknown colour keys (the refusal is a warning line and the stored style is
-sent back). There is no shared name filter in the scripts to reuse (pet names have their own letters-only rule), so tab
-names allow printable ASCII and Latin-1. Locked tabs can be styled too. Stored per account and tab in
-`chaos_depot_tabs (account_id, tab, name, color)` (`sql/chaos_depot_tabs.sql`, `Chaos.tables.depotTabs`; `depot.lua`
-also creates it at startup; a reset deletes the row), cached per account, loaded at login and at every locker opening:
-every character of the account sees the same names. The name shows on the tab button, in the line above the grid and in
-the box's title and look text ("Potions. 87 of 100 items.").
-
-Server -> client `tabs {tabs, max, size, used, ids, chest, lockers, inbox, market, hint, store, names, colors, palette,
-nameMax, town}` (at login, at every locker opening, after every move into or out of the depot, after a purchase and after
-a style change). Each box's look text says the count ("87 of 100 items.", "Locked: ... Buy more in the Store."). A locker
-opening prints "Depot: 4 of 17 tabs open, 100 items each ...". A box opened in a stock window (with the module off, or
-the window closed) gets "Tab 3 (87/100)" or "Potions (locked)" as its title. Opcode 111 was checked free like the others
-(base server list, base client ExtendedIds, every Chaos opcode; `tests/depot_test.lua`). No storages; one table.
-
-**Tested in game** (own server copy and database, full map, one client): a depot of 133 loose items from before tabs
-(130 items, a backpack of 4 stacks, a backpack holding 147 items) sorted into tab 1 (100) and tab 2 (35), the big backpack
-left loose; tabs 5-17 dimmed; a move into locked tab 5 refused with the store hint; a move into the full tab 1 refused;
-a move into tab 3 accepted and its count updated; the 4 Depot Tabs pack bought through the service (8 tabs), then tab 5
-took an item.
-
-**Depot window, tested in game** (own server copy and database on a private port, full map, the things_custom15 pair,
-one client): the locker opened one window and no stock container windows; items dropped into tab 1 through the grid's
-Item widgets (count 0 -> 6/100); a gold stack moved in with the stock count dialog and stacked to 100; an item dragged
-from the grid to the backpack (6 -> 5); tabs 3 and 6 opened through `open {tab}`; a move into locked tab 6 refused;
-tabs 1, 3 and 6 renamed and coloured (rows in `chaos_depot_tabs`), the names and colours shown on another character of
-the account; Inbox opened the inbox, Market the market, Buy Tabs the Store at Depot Tabs; three steps away from the
-locker closed every depot container and the window.
+**Tests.** `tests/depot_test.lua` (the config, the rules, `depot.lua` on a mocked engine: the locker flow with the migration
+and the stash window, the hideout locker, the move hook), `tools/migrate_depot_stash_test.py` (the offline tool).
 
 ## Referral program (`referral.lua`, `referral_core.lua`, `referral_config.lua`, `sql/chaos_referral.sql`, client `game_referral`)
 
@@ -7081,7 +7038,7 @@ keys, containers and every item with a use of its own work as before.
   as drag and drop: `Player:onMoveItem`, every onMoveItem and onItemMoved callback, `Player::queryAdd` (the hand rules,
   the quiver, the might ring), the base two-handed swap in `default_onMoveItem.lua` (a two-handed weapon or bow puts the
   shield into the container it came from, a shield puts the two-handed weapon away, a quiver stays beside a launcher),
-  the exchange with the worn item, the depot tab limits. A refusal shows its message.
+  the exchange with the worn item, the depot chest rule (nothing new goes into the retired depot). A refusal shows its message.
 - **Multi-use weapons.** The stock weapons are multi-use (their action, `other/destroy.lua`, breaks furniture with a
   use with), so the client starts a use with on them and the engine refuses a plain use of a multi-use item. 0024 lets
   a plain use of one in an open container or the inventory through to `chaosUseEquip` (its use with is not run), and
@@ -14212,7 +14169,7 @@ client (`mod` = one key) is one row. The request stays far below the extended op
 numbers); the answer is the usual page.
 
 **Buying.** Gold comes from the bank (`players.balance`), coins from the account's Chaos Coins (`chaos_shop_coins`). The
-item always goes to the buyer's inbox; the seller gets the gold minus the tax in the bank, the coins minus the tax on
+item goes to the buyer's stash since O316 (the inbox when the stash cannot take it, "Stash", "Delivery and the inbox"); the seller gets the gold minus the tax in the bank, the coins minus the tax on
 the account, with a text message, a toast and a line in My Offers. A seller who is offline gets the gold, the returned
 items and the notices at the next login.
 
@@ -14240,7 +14197,7 @@ a marker storage that the engine saves in the same transaction as the items (`pl
   leaves the bank in memory. Buying with coins: one transaction moves the coins between the accounts, marks the offer
   sold and writes the deliveries.
 - delivery (`chaos_market_deliveries`, one row per item / gold / coin notice, unique per offer and kind): owed rows are
-  applied in id order (item into the inbox, gold into the bank), storage 7100971 (deliverSeq) = the row id, then
+  applied in id order (item into the stash, else the inbox; gold into the bank), storage 7100971 (deliverSeq) = the row id, then
   `player:save()`, then the rows are marked delivered. A row at or below the saved deliverSeq only gets marked (it
   reached the character before a crash). Characters with `players.save = 0` cannot use the market (nothing of theirs
   would be saved).
@@ -16050,7 +16007,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   | Teeming | +20-50% packs | 80, 1+ | quantity 0.5x, experience 0.3x |
   | Gilded Trail (boon) | 30-70% chance that the existing Treasure Goblin (`ChaosTreasureGoblin.spawn`) appears in a random open room after 25-60% of the kills, at the level of the strongest type | 40, 1+ | - |
   | Warbands | 10-30% of packs: every member rare, the first legendary | 60, 2+ | rarity 1x, quantity 0.3x |
-  | Sealed Coffer (boon) | 40-100% chance of a coffer (big treasure chest 12664, action id 47403; "Reward chests") in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 2,000 x tier^2, Orbs of Upheaval 0.25 + 0.05 x tier, Orbs of Fate 0.03 x tier and 2 + 0.25 x tier item rolls, all x quantity and x the party's loot bonus (one coffer for the party). An unwoken coffer crumbles at the seal | 50, 1+ | - |
+  | Sealed Coffer (boon) | 40-100% chance of a coffer (the big gold chest, item 32312 / client 38657, fallback 12664, action id 47403; "Reward chests") in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 2,000 x tier^2, Orbs of Upheaval 0.25 + 0.05 x tier, Orbs of Fate 0.03 x tier and 2 + 0.25 x tier item rolls, all x quantity and x the party's loot bonus (one coffer for the party). An unwoken coffer crumbles at the seal | 50, 1+ | - |
   | Twin Guardians | two guardians, each with 55-75% of the guardian health; both must die | 50, 3+ | rarity 0.25x, quantity 0.2x |
   | Echoing Spoils (boon) | 5-15% of kills: every corpse item is copied once (onDropLoot 1.5, before the loot snapshot so rays and autoloot see the copies; Rift Keys are not copied) | 35, 2+ | - |
   | Cinderdeath | 1.5 s after a kill, players within 1 sqm take fire damage: 5-15% of the monster's max health, at most 300 + 150 x tier | 70, 3+ | quantity 1.2x, rarity 0.8x |
@@ -19376,7 +19333,25 @@ sprite pair (gold and readable on dark floors, 2x2, not moveable, not pickupable
 | Chest | Item | Was | Where |
 |---|---|---|---|
 | reward chest (own look: a gold chest overflowing with coins and gems; container 32) | 32311 (client 38758, pair 53; 32310 and client 38657 are the retired 2 x 2 look); falls back to 21584 (the stock gold chest on a stone plinth) while 32311 is not installed | 1740, then 21584 | the rift chest where the guardian died (`rift_config.lua` `chest`), the Ember Descent's treasure room chest (`descent_config.lua` `objects.chest`), the quest chests of every planned area (`tools/areaplan_build.lua` hands the rift chest to the planner), and every quest chest of the base server's map (see "Install") |
-| treasure chest (blue and silver, container 20) | 12664 | 1746 | the rift's Sealed Coffer (`rift_config.lua` `coffer`): it must be a container, its spoils go inside |
+| sealed coffer (the big gold chest of pair 45, 2 x 2; container 32) | 32312 (client 38657); falls back to 12664, the blue and silver treasure chest (container 20), while 32312 is not installed | 12664, 1746 | the rift's Sealed Coffer (`rift_config.lua` `coffer`): it must be a container, its spoils go inside |
+
+**The Sealed Coffer wears the big gold chest (O315, owner request 2026-10-29).** The 2 x 2 art of pair 45 (client 38657) is
+still in the sprite pair after the reward chest moved to the one-tile look, and the owner wants the coffer to wear it. The
+coffer is an item of its own: server **32312** "sealed coffer", a third node made by `install_reward_chest.py` (a copy of the
+stock reward chest 21584, container 32, not moveable, its own description) with the same client id as the legacy 32310. It
+is not 32310 on purpose: `rift_config.lua` `chest.legacyItemIds = {32310}` is the list of reward chest looks that
+`patch_reward_chests.py` moves to 32311 on the map, and a coffer on 32310 would sit in that list. The two are kept apart three
+ways: a different item id (`coffer.itemId` 32312, never in `legacyItemIds`; `rift.lua` has no code that reads
+`legacyItemIds`, only the map step does), a different action id (coffer 47403, chest 47402; each has its own `Action`) and a
+different lookup (`cofferItem` finds the item by the id stored in `run.coffer.itemId`). The map
+step has no rule for 32312, so a coffer on a saved map would stay (tested in `patch_reward_chests_test.py`). While 32312 is not
+installed `rift.lua` `cofferItemId()` falls back to `coffer.fallbackId` 12664 (`ItemType(id):getId() ~= 0`, as the chest does)
+and the client draws no aura for it. The glint (`reward_sparkle`) follows the id actually placed. The client draws a gold smoke
+aura under the coffer and a gold sigil aura under every reward chest (client module `game_chestaura`, client/MANIFEST.md
+"Chest and Templar auras (O315)"). Ship order: the client build with `game_chestaura` and the `rewardchest` step, then a rift
+run. A client on an older build shows the coffer without the aura. Tests: `tests/reward_sparkle_test.lua` (ids, fallback,
+action ids, the coffer is no legacy id), `tools/install_reward_chest_test.py` (node, items.xml entry), `tools/patch_reward_chests_test.py`
+(a 32312 on the map stays).
 
 **Own look (owner request 2026-10-26: "make a reward chest and give every quest chest this sprite"; pair 45).** The stock
 21584 is a gold chest on a stone plinth. Item **32310** "reward chest" is a copy of its node (group container, flags,
@@ -26126,3 +26101,36 @@ arrows and non-weapon gear; Warrior, Juggernaut, and the Berserker only for two-
 gear. Unknown names stay as the engine wrote them. Test: `tests/item_tooltip_test.lua`. Client spell lists: a Chaos
 spell matches the exact server vocation ids (`ChaosSpellFix.allowsVocation`); `tools/ci/check_rotation_kit.py` compares
 spelldata.lua with the server spell XML.
+
+## Templar aura on the client (`templar_combat.lua`, `templar_aura_core.lua`, client `game_chestaura`, O315)
+
+Owner request 2026-10-29: the Templar line's aura showed as a holy_spiral map effect on the Templar's tile every 4 s (`aura.fxMs`),
+a "beat" the owner did not like. The effect, `lastFx` and `fxMs` are gone. The defence aura itself (who is covered, the reduction,
+the Sentinel's regeneration, the passive tree's bonuses) is unchanged. The client draws the aura instead: a slow sigil under the
+feet of every Templar-line player in view, in the line's tint, and, while the Templar is in a party, a faint square frame on the floor
+over the aura's range for the Templar and its party members (client/MANIFEST.md "Chest and Templar auras (O315)").
+
+- **Message.** Extended opcode **118** (`ChaosOpcodes.templarAura`; free in the reference server, the base client, every Chaos script
+  and every client module, "Opcode collision check"; `tests/templar_aura_sync_test.lua` checks that no other script or module names
+  it and that no two `ChaosOpcodes` share a value). Server -> client JSON `{action = "sync", data = {t = [{i, l, r, p}]}}`: `i` the
+  Templar-line player's creature id, `l` the line (1 Templar, 2 Inquisitor, 3 Sentinel), `r` the aura's radius in sqm (Chebyshev, as
+  `M.distance`; 4, 3 and 5, plus Bastion's bonus radius), `p` 1 when the Templar is in a party and the viewer is that Templar or in
+  the same party (the frame), else 0 (the sigil only). An empty `t` tells the client that the last Templar is gone.
+- **Who gets it.** `templar_aura_core.lua` `M.syncEntries(templars, viewers)`: a viewer sees every living Templar-line player on its
+  floor within `aura.sync.viewRange` (16 sqm, a bit more than the widest screen), and always itself. A viewer with none in view has no
+  entry. A dead Templar has no aura and is not listed.
+- **When.** The aura think (`aura.thinkMs`, 1 s) calls `syncClients` after the aura check. `M.syncDecide` keeps, per viewer, the key of
+  the list it last got (`M.syncSent`) and returns the list only when it differs, or `{}` once when the viewer had one and now has none.
+  So a message goes out on login (the next check), when a Templar comes into or leaves the 16 sqm, when a party forms, changes or
+  breaks, when the line or the radius changes (an ascension, Bastion), when a Templar dies or logs out, and never otherwise. `M.syncDue`
+  allows one check per `aura.sync.minGapMs` (900 ms: the think runs every 1000 ms, the margin absorbs timer jitter), so at most one
+  message a second per player. Viewers far from every Templar are never sent anything. Logout forgets the viewer (`M.clear`); a check
+  also forgets every viewer that is not online. No storage, no table, no new script file.
+- **Cost.** One pass over the online players per second (the aura check already does it) plus `syncEntries`, O(Templars x players)
+  like `collectAuras`; no map effect and no message while nothing changes.
+- **Tests.** `tests/templar_aura_sync_test.lua` (both interpreters): the opcode, the core rules (range, floor, party flag, passive
+  tree radius, dead and other vocations, send-on-change, empty list, prune, the check gap) and the glue against a mocked engine
+  (no map effect any more; messages on login, party change, a player coming near and leaving, Bastion, death, logout and login again;
+  nothing twice). `tests/templar_test.lua` still covers the aura and the combat rules.
+- **Install.** Nothing: scripts only. Ship the client build with `game_chestaura` first (an older client ignores opcode 118 and shows
+  no aura at all, as the effect is gone).

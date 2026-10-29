@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Small icons of the depot window (client module game_depottabs).
+"""Small icons once drawn for the depot window (client module game_depottabs, deleted in O316). The lock is still used by the
+top bar (client_chaos_topbar: an entry locked until its level); edit.png and store.png are kept as they were.
 
 Run: python3 -I client/tools/gen_depot_art.py [OUTDIR]
      default OUTDIR: client/overlay/data/images/game/depot  ->  lock.png (10x12, a locked tab), edit.png (12x12, the

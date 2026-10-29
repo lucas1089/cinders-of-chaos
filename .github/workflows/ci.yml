@@ -857,6 +857,9 @@ jobs:
       - name: Liquid orb art is up to date (gen_orb_art.py, one ring and mask per orb size at 2x)
         run: python3 client/tools/gen_orb_art.py --check  # not -I: Pillow from the user site (installed above)
 
+      - name: Chest and Templar aura art is up to date (gen_aura_art.py, the strips of game_chestaura, O315)
+        run: /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check  # numpy float maths: the pinned fx venv made above
+
       - name: Interface skins are up to date (gen_skin_variants.py, forge and abyss pixels, classic sizes, manifests, orb rings and its test)
         run: |
           python3 client/tools/gen_skin_variants.py --check  # not -I: Pillow from the user site (installed above)

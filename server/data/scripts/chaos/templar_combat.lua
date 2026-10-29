@@ -10,6 +10,7 @@
 --   * Penitent's Wrath (the line's keystone in the main tree, node 376): a melee / ranged hit taken is answered with a
 --     holy strike on the attacker (40% of what was taken + 4 x magic level, one every 0.5 s); the own aura's reduction
 --     is halved (its party members' too).
+-- The aura is shown by the client, not by a map effect: see "the aura check" below (O315).
 -- Scripted strikes (the holy strike) are dealt with origin ORIGIN_SPELL inside a guard flag, so they never trigger the
 -- weapon-hit rules again. Not ORIGIN_NONE: the engine runs no onHealthChange event for it, so Judgement and the curse never saw the strike.
 
@@ -53,7 +54,56 @@ local function fx(pos, name, fallback)
 end
 
 -- ------------------------------------------------------------------------------------------------ the aura check
-local lastFx = {} -- [templar id] = ms of the last aura effect
+-- The aura has no periodic effect on the map any more (it was a "beat" every 4 s, holy_spiral on the Templar's tile). The
+-- client draws it (a sigil under the feet of every Templar-line player and, in a party, a frame over the range; client
+-- game_chestaura, O315), told by one small message on ChaosOpcodes.templarAura (118), sent only when the list of what a
+-- player sees changed: action "sync", data {t = [{i = creature id, l = 1 Templar | 2 Inquisitor | 3 Sentinel, r = radius,
+-- p = 1 when the viewer is that Templar or shares its party, and the Templar is in a party}]}. An empty t clears the
+-- player's list. templar_aura_core.lua M.syncEntries / syncDecide hold the rules.
+local OPCODE = (ChaosOpcodes and ChaosOpcodes.templarAura) or 118
+
+local function sendSync(player, entries)
+	if Chaos and Chaos.send then
+		return Chaos.send(player, OPCODE, "sync", {t = entries})
+	end
+	return player:sendExtendedOpcode(OPCODE, json.encode({action = "sync", data = {t = entries}}))
+end
+
+-- templars/players as auraTick built them, byId[id] = the player. Sends what changed; true when a check ran.
+local function syncClients(templars, players, byId, now)
+	if not T.syncDue(now) then
+		return false
+	end
+	local sent = T.syncSent
+	local online = {}
+	for _, e in ipairs(players) do
+		online[e.id] = true
+	end
+	T.syncPrune(sent, online)
+	local lists = {}
+	if #templars > 0 then
+		lists = T.syncEntries(templars, players)
+	end
+	-- viewers with a Templar in view, and the ones that had one (the empty list tells them it is gone)
+	local ids = {}
+	for id in pairs(lists) do
+		ids[id] = true
+	end
+	for id in pairs(sent) do
+		ids[id] = true
+	end
+	for id in pairs(ids) do
+		local entries = T.syncDecide(sent, id, lists[id])
+		local p = entries and byId[id]
+		if p then
+			local ok, err = pcall(sendSync, p, entries)
+			if not ok then
+				print("[ChaosTemplar] sync: " .. tostring(err))
+			end
+		end
+	end
+	return true
+end
 
 local function partyKey(player)
 	local party = player:getParty()
@@ -88,6 +138,7 @@ local function auraTick()
 	end
 	if #templars == 0 then
 		T.applyAuras({}, now)
+		syncClients(templars, players, byId, now)
 		return
 	end
 	local fresh = T.collectAuras(templars, players, now)
@@ -109,12 +160,7 @@ local function auraTick()
 			end
 		end
 	end
-	for _, t in ipairs(templars) do
-		if now - (lastFx[t.id] or 0) >= cfg().aura.fxMs then
-			lastFx[t.id] = now
-			fx(t.pos, "holy_spiral", CONST_ME_YELLOW_RINGS)
-		end
-	end
+	syncClients(templars, players, byId, now)
 end
 
 local think = GlobalEvent("ChaosTemplarAura")
@@ -300,8 +346,7 @@ login:register()
 
 local logout = CreatureEvent("ChaosTemplarLogout")
 function logout.onLogout(player)
-	T.clear(player:getId())
-	lastFx[player:getId()] = nil
+	T.clear(player:getId()) -- also forgets what the player was told about Templars in view
 	return true
 end
 logout:register()

@@ -32,7 +32,7 @@ for _, u in ipairs(pk.unlocks) do
 	check(u ~= "rarityAutoloot" and u ~= "lootPouch" and u ~= "lootBag", "no autoloot or loot bag perk: " .. u)
 end
 eq(pk.loadoutSlots, 1, "+1 loadout slot")
-eq(cfg.limits.depotTabs.pact, 1, "+1 depot tab while active")
+eq(cfg.limits.stashSlots.pact, 1, "+1 stash expansion while active")
 eq(pk.chatColor, "chat_pactbound", "the Pact chat colour")
 local loadouts = dofile("data/scripts/chaos/loadouts_config.lua") or ChaosLoadoutsConfig
 eq((loadouts or ChaosLoadoutsConfig).pactSlots, pk.loadoutSlots, "loadouts_config.lua pactSlots matches")

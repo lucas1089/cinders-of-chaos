@@ -108,6 +108,7 @@ melee hit adds a holy strike). Radiant Smite, Consecration, Vow of Mending.
 - **Inquisitor**: Judgement (the target takes +20% holy damage), Purging Nova (holy area that heals a little), Crusader's
   Sweep (a holy wave; it took the id of Zealotry in O254).
 - **Sentinel**: a stronger aura with regeneration, Rebuke (taunt), Aegis of Faith (-40% damage taken with a shield), Lay on Hands.
+- **The aura on screen (O315).** The client draws a slow sigil under the feet of every Templar-line player, in the line's tint (gold, white and ember, steel and blue). In a party, the Templar and its party members also see a faint square frame on the floor over the aura's range: radius 4 (Templar), 3 (Inquisitor), 5 (Sentinel), more with the passive tree. The old effect every 4 s is gone. Server/README.md "Templar aura on the client (O315)".
 
 **Runes (2026-10-13, owner: "Tire as spells de fazer runa. Deixa as runas serem de vendedores e craft.")**: no class
 conjures runes any more. The stock kits of the Mystic, Elementalist, Illusionist and Ranger lose the 36 rune conjure

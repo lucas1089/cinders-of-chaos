@@ -41,7 +41,7 @@ return {
 	--                 tools/patch_base_events.py to ask ChaosPactPerks
 	--   loadoutSlots  +N loadout slots (loadouts_config.lua pactSlots; per character, read through ChaosPact.active;
 	--                 owner 2026-10-13: "Pode manter")
-	--   (depot tabs: limits.depotTabs.pact below; stash tabs, listings, builds and loot rules likewise)
+	--   (stash slot expansions: limits.stashSlots.pact below; listings, builds and loot rules likewise)
 	--   unlocks       the store unlocks that work for the character while it lasts (shop_services.lua S.unlocks keys):
 	--                 the storage is set to 2 (a bought unlock is 1 and stays); back to unset when the Pact ends
 	--   retired       unlocks the Pact lent before and no longer does: a lent one (2) is taken back at the next apply,
@@ -69,13 +69,12 @@ return {
 	-- ------------------------------------------------------------------ limits
 	-- key = {label, free, pact (bonus while active), maxExtra (one-time extras that can be bought), unit}
 	limits = {
-		-- general stash tabs of stash_config.lua tabSize (100) entries; the depot boxes retired into the stash
-		-- (2026-10-15), so the free count grew from 2 tabs of 48 to 4 of 100 (stash_config.lua "Free sizing")
-		stashTabs = {label = "Stash tabs (100 entries)", free = 4, pact = 2, maxExtra = 6},
-		-- depot tabs (depot.lua, depot_config.lua): 100 items each; achievement tabs come on top (depot_config.lua
-		-- achievementTabs, at most 3): free + pact + maxExtra + 3 = 17, the number of depot boxes. One free tab (owner
-		-- 2026-10-17: the default depot has a single tab); the rest is bought, earned or lent by the Pact
-		depotTabs = {label = "Depot tabs (100 items)", free = 1, pact = 1, maxExtra = 12},
+		-- O316 (owner 2026-10-29): the stash has ONE general tab of stash_config.lua slots.free (30) entries for everybody.
+		-- Each unit here is one Stash Slot Expansion of slots.perPack (25) entries: bought in the store (free 0, at most
+		-- maxExtra 20 = 500 more entries) and one lent while the Chaos Pact runs (the Pact's modest bonus, +25). The old
+		-- extras stashTabs / depotTabs (retired, no longer sold) are read by stash.lua and count at slots.legacyPacksPerTab
+		-- expansions each, outside this cap.
+		stashSlots = {label = "Stash slot expansions (+25 entries)", free = 0, pact = 1, maxExtra = 20},
 		marketListings = {label = "Market listings (character)", free = 20, pact = 10, maxExtra = 0},
 		marketAccount = {label = "Market listings (account)", free = 40, pact = 20, maxExtra = 0},
 		buildSlots = {label = "Saved builds", free = 2, pact = 3, maxExtra = 6},
@@ -88,16 +87,19 @@ return {
 		-- the Pact lends it, the store sells it once (withdraw stays in town for everybody)
 		stashRemote = {label = "Remote stash deposit", free = 0, pact = 1, maxExtra = 1}
 	},
-	order = {"stashTabs", "stashRemote", "depotTabs", "marketListings", "marketAccount", "buildSlots", "lootRules", "charSlots"},
+	order = {"stashSlots", "stashRemote", "marketListings", "marketAccount", "buildSlots", "lootRules", "charSlots"},
 
 	-- stash tabs: stash_config.lua (tab size, the affinity tabs and which extra, Pact or achievement owns each)
 
 	-- one-time extras: extra key -> what a purchase adds and the most an account can own (maxExtra of the limit
 	-- above, or 1 for an affinity tab; stash_config.lua affinities name the extra of each tab)
 	extras = {
-		stashTabs = {limit = "stashTabs", name = "Extra Stash Tab"},
-		depotTabs = {limit = "depotTabs", name = "Extra Depot Tab"}, -- sold by depot_config.lua `store` (1 or 4 at once);
-		-- each one also counts as a general stash tab (stash_config.lua depotTabsCount)
+		stashSlots = {limit = "stashSlots", name = "Stash Slot Expansion"},
+		-- retired by O316, never sold again: they stay here so that an account's rows keep a name. stash.lua turns each
+		-- one into slots.legacyPacksPerTab expansions (stash_config.lua slots.legacyExtras says how many count)
+		stashTabs = {retired = true, max = 0, name = "Extra Stash Tab (retired)"},
+		depotTabs = {retired = true, max = 0, name = "Extra Depot Tab (retired)"},
+		stashSupplies = {max = 1, name = "Supplies Stash Tab"},
 		stashOrbs = {max = 1, name = "Orbs Stash Tab"},
 		stashGems = {max = 1, name = "Gems Stash Tab"},
 		stashKeys = {max = 1, name = "Keys Stash Tab"},
@@ -131,14 +133,18 @@ return {
 			name = "Chaos Pact", icon = {item = 16101},
 			offers = {
 				{kind = "service", service = "pact", key = "service:pact:30", icon = 16101, cost = 300, name = "Chaos Pact (30 days)",
-					description = "30 days, stacks: +10% XP, stamina x1.5, remote stash deposit, Auto Seller, cosmetic."}
+					description = "30 days: +10% XP, stamina x1.5, remote stash, +25 slots, Auto Seller, cosmetic."}
 			}
 		},
 		storage = {
 			name = "Storage & Slots", icon = {item = 2365},
 			offers = {
-				{kind = "service", service = "pactExtra", extra = "stashTabs", key = "service:pactExtra:stashTabs", icon = 2365, cost = 150, name = "Extra Stash Tab",
-					description = "Permanent, account-wide: one more general stash tab (100 entries). Up to 6."},
+				{kind = "service", service = "pactExtra", extra = "stashSlots", key = "service:pactExtra:stashSlots", icon = 2365, cost = 50, name = "Stash Slot Expansion",
+					description = "Permanent, account-wide: +25 slots on your stash tab. Up to 20 (500 more slots)."},
+				{kind = "service", service = "pactExtra", extra = "stashSlots", amount = 4, key = "service:pactExtra:stashSlots:4", icon = 2365, cost = 180, name = "4 Stash Slot Expansions",
+					description = "Permanent, account-wide: +100 slots on your stash tab, 10% off."},
+				{kind = "service", service = "pactExtra", extra = "stashSupplies", key = "service:pactExtra:stashSupplies", icon = 7618, cost = 150, name = "Supplies Stash Tab",
+					description = "Permanent, account-wide: a stash tab for potions, runes, ammo and food."},
 				{kind = "service", service = "pactExtra", extra = "stashOrbs", key = "service:pactExtra:stashOrbs", icon = 29856, cost = 200, name = "Orbs Stash Tab",
 					description = "Permanent, account-wide: an affinity stash tab for orbs, whetstones, rune shards."},
 				{kind = "service", service = "pactExtra", extra = "stashGems", key = "service:pactExtra:stashGems", icon = 32005, cost = 200, name = "Gems Stash Tab",
@@ -155,9 +161,9 @@ return {
 				{kind = "service", service = "pactExtra", extra = "stashMaterials", key = "service:pactExtra:stashMaterials", icon = 5880, cost = 150, name = "Materials Stash Tab",
 					description = "Permanent, account-wide: an affinity stash tab for ores, herbs and shards."},
 				{kind = "service", service = "pactExtra", extra = "stashProducts", key = "service:pactExtra:stashProducts", icon = 36010, cost = 150, name = "Creature Products Stash Tab",
-					description = "Permanent: an affinity stash tab for creature products (lent by the Pact)."},
+					description = "Permanent, account-wide: a stash tab for creature products."},
 				{kind = "service", service = "pactExtra", extra = "stashCosmetics", key = "service:pactExtra:stashCosmetics", icon = 5929, cost = 100, name = "Collectibles Stash Tab",
-					description = "Permanent: an affinity stash tab for collectibles (or earn it: Reliquary)."},
+					description = "Permanent, account-wide: a stash tab for collectibles."},
 				-- remote stash deposit (owner 2026-10-15; stash_config.lua remoteDeposit): PLACEHOLDER price (docs/OWNER_TODO.md)
 				{kind = "service", service = "pactExtra", extra = "stashRemote", key = "service:pactExtra:stashRemote", icon = 2365, cost = 300, name = "Remote Stash Deposit",
 					description = "Permanent, account-wide: deposit into the stash from anywhere. Pact: included."},

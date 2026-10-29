@@ -181,7 +181,7 @@ Chaos.storage = {
 	dailyLastClaim = 7100002, -- YYYYMMDD of the last claim (int32 safe)
 
 	stashRemote = 7100010, -- >0 : player may keep the stash window open while walking
-	-- the stash (stash_config.lua storage): 7100011 - 7100019 reserved; 7100011 journal serial, 7100012 depot -> stash migration (retired), 7100013 stash -> depot migration
+	-- the stash (stash_config.lua storage): 7100011 - 7100019 reserved; 7100011 journal serial, 7100012 depot -> stash migration, 7100013 stash -> depot migration (off), 7100014 grandfather version (O316)
 	passiveExtraPoints = 7100020, -- bonus passive points granted by quests/GM
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
@@ -361,10 +361,10 @@ Chaos.tables.pocketBoss = "chaos_pocketboss"
 ChaosOpcodes.loadouts = 206
 Chaos.storage.loadouts = 7100570
 Chaos.tables.loadouts = "chaos_loadouts"
--- Depot tabs (client game_depottabs; depot.lua, depot_core.lua, depot_config.lua, tools/patch_base_depot.py): the depot
--- window (tab counts, tab switch requests, tab names and colours); no storages (tabs bought are pact.lua extras)
+-- Depot tabs, RETIRED by O316 (the depot window and its module game_depottabs are gone): nothing sends or reads opcode 111
+-- or the table any more; the numbers stay reserved so that no new opcode collides with an old client or an old database
 ChaosOpcodes.depotTabs = 111
-Chaos.tables.depotTabs = "chaos_depot_tabs" -- depot tab names and colours per account (depot.lua, sql/chaos_depot_tabs.sql)
+Chaos.tables.depotTabs = "chaos_depot_tabs" -- depot tab names and colours per account (kept for the rows that exist, sql/chaos_depot_tabs.sql)
 -- Hideouts (client game_hideout; hideout.lua, hideout_core.lua, hideout_config.lua, hideout_store.lua,
 -- sql/chaos_hideout.sql): decoration window, placement, permissions, visits and likes on one opcode; storages
 -- 7100180 - 7100189 reserved (hideout_config.lua storage: the spot a character entered from); map grid x/y 12288 - 12799
@@ -2208,6 +2208,11 @@ ChaosOpcodes.unlocks = 115
 -- 7103020 - 7103029 (weeklychest_config.lua storage); no tables.
 ChaosOpcodes.weeklyChest = 117
 Chaos.storage.weeklyChest = 7103020
+-- The Templar line's foot aura (templar_combat.lua, templar_aura_core.lua M.syncEntries; client game_chestaura; O315): which
+-- Templar-line players in view have an aura, their line, radius and whether the viewer shares their party, server -> client
+-- `sync` only when that changed. 118 is free in the reference server, the base client, every Chaos script and every client
+-- module (README "Opcode collision check"). No storage, no table.
+ChaosOpcodes.templarAura = 118
 -- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,

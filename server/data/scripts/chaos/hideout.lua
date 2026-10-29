@@ -1301,7 +1301,8 @@ enterStep:type("stepin")
 enterStep:aid(A.enter)
 enterStep:register()
 
--- the depot locker: the owner's depot of their home town (the engine opens it when this returns false)
+-- the depot locker: the owner's depot of their home town (the engine opens it when this returns false; it is withdraw-only
+-- and its content moves into the stash, depot.lua)
 local depotUse = Action()
 function depotUse.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local _, room = M.roomAt(item:getPosition())
@@ -1312,6 +1313,10 @@ function depotUse.onUse(player, item, fromPosition, target, toPosition, isHotkey
 	if not room.depotOk then
 		player:sendCancelMessage(Chaos.t(player, "This depot cannot open here. Use a town depot."))
 		return true
+	end
+	-- the depot is retired (O316): its content moves into the stash and the stash opens (depot.lua)
+	if ChaosDepot and ChaosDepot.onOpenLocker and room.town and room.town > 0 then
+		ChaosDepot.onOpenLocker(player, item, room.town)
 	end
 	return false
 end

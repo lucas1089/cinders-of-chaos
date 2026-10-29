@@ -36,7 +36,7 @@ eq(V.limitRows({ active = false, limits = { { pact = 10, pactActive = true } } }
 
 eq(V.specialText({ special = { { name = 'Orbs', owned = true }, { name = 'Gems' } }, tabSize = 100 }):find('Orbs (owned), Gems (store)', 1, true) ~= nil,
   true, 'affinity tabs')
-eq(V.specialText({ special = { { name = 'Supplies', owned = true } }, tabSize = 100 }):find('100 entries', 1, true) ~= nil, true,
+eq(V.specialText({ special = { { name = 'Supplies', owned = true } }, tabSize = 30 }):find('30 entries', 1, true) ~= nil, true,
   'general tab size in entries')
 eq(V.specialText({}), '', 'no special tabs sent')
 

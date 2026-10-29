@@ -30,7 +30,7 @@ Safety (live server with real players):
 What a bot does, by the weighted behaviours of tester_core.BEHAVIOURS: hunts (the helper server/tools/tester_helper.lua,
 TEST ONLY, gives it a target), casts its class rotation, heals itself with its best healing spell and with potions (the
 hotkey packet: use with creature at position 0xFFFF on its own creature id), really dies and logs in again, goes to town,
-the depot (opens a locker), an NPC (hi, trade, buy potions, sell, bye), parties, private messages, client module
+a depot locker (the retired depot: it opens the stash), an NPC (hi, trade, buy potions, sell, bye), parties, private messages, client module
 requests (--scenarios tester_scenarios.json: tester_scenarios.py, also places and NPC dialogs through the helper's
 `!tester enter`), loot filter takes, opens its backpack, logs out and in. A dropped connection (server restart) is
 retried with a growing pause, so the bots come back after a restart.

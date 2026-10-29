@@ -17,7 +17,8 @@
 --             players.balance, marks the offer sold and writes the deliveries (item -> buyer, gold -> seller); then the
 --             same price leaves the bank balance in memory. Coins: one transaction moves the coins between the two
 --             accounts (chaos_shop_coins), marks the offer sold and writes the item delivery.
---   delivery  owed rows (chaos_market_deliveries) are applied in id order: the item into the inbox / the gold into the
+--   delivery  owed rows (chaos_market_deliveries) are applied in id order: the item into the stash (O316; the inbox when
+--             the stash cannot take it) / the gold into the
 --             bank, the storage deliverSeq = row id, then player:save(), then the rows are marked delivered. A row at or
 --             below the saved deliverSeq is only marked (it reached the character before a crash).
 --   sold      the seller's "sold" row is its notification queue too: told when applied (online at once, else at the
@@ -648,13 +649,31 @@ function MK.deliver(player, away)
 				logRow("error", {offer = r.offer_id, player = guid, text = "delivery " .. r.id .. ": " .. tostring(why or "no inbox")})
 				break -- keep the order: later rows wait for this one
 			end
-			local ret = inbox:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1)
+			-- with the stash in play the item must stay its own object (never merged into a stack of the inbox, which would
+			-- release it): FLAG_IGNOREAUTOSTACK, as the stash does for what it gives out
+			local addFlags = FLAG_NOLIMIT or 1
+			if ChaosStash and ChaosStash.deliverItem then
+				addFlags = addFlags + (FLAG_IGNOREAUTOSTACK or 128)
+			end
+			local ret = inbox:addItemEx(item, INDEX_WHEREEVER or -1, addFlags)
 			if ret ~= (RETURNVALUE_NOERROR or 0) then
 				logRow("error", {offer = r.offer_id, player = guid, text = "delivery " .. r.id .. ": inbox refused (" .. tostring(ret) .. ")"})
 				break
 			end
-			lines[#lines + 1] = Chaos.t(player, "%s%s in your inbox (%s)", o.count > 1 and (o.count .. "x ") or "", o.name,
-				Chaos.t(player, REASON_TEXT[r.reason] or r.reason))
+			-- O316: the depot is retired, so the item goes on into the stash (the matching affinity tab when the account owns
+			-- it, else the general tab) through the stash journal: the character is saved with the new deliverSeq and
+			-- without the item in ONE transaction, so a crash delivers it once. A full stash, a refused item or a busy
+			-- journal keep it in the inbox, and the line says where it went.
+			local where
+			player:setStorageValue(S_DELIVER, r.id)
+			if ChaosStash and ChaosStash.deliverItem then
+				local okS, stashed, tab = pcall(ChaosStash.deliverItem, player, item, {source = "market"})
+				if okS and stashed then
+					where = ChaosStash.deliveredText(player, tab)
+				end
+			end
+			lines[#lines + 1] = Chaos.t(player, "%s%s %s (%s)", o.count > 1 and (o.count .. "x ") or "", o.name,
+				where or Chaos.t(player, "in your inbox"), Chaos.t(player, REASON_TEXT[r.reason] or r.reason))
 		elseif (r.kind == "gold" or r.kind == "coins") and r.reason == "refund" then
 			-- what a closed buy order did not spend (offer_id = -order id; coins were already put back on the account)
 			if r.kind == "gold" then
@@ -708,7 +727,7 @@ function MK.deliver(player, away)
 		notify(player, sold.title, sold.text, "sale")
 	end
 	if #lines > 0 then
-		tell(player, Chaos.t(player, "%s. Items are in your inbox, gold in your bank.", table.concat(lines, "; ")))
+		tell(player, Chaos.t(player, "%s. Items are in your stash or inbox as each line says, gold in your bank.", table.concat(lines, "; ")))
 		toast(player, #lines == 1 and lines[1] or Chaos.t(player, "%d market deliveries: see the Server Log.", #lines))
 	end
 	if sold or #lines > 0 then

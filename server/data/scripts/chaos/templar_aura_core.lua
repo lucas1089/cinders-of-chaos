@@ -48,7 +48,12 @@ M.cfg = {
 	aura = {
 		thinkMs = 1000,
 		holdMs = 1500,
-		fxMs = 4000, -- how often the aura shows around a Templar
+		-- What the clients are told (O315, the foot aura): the client draws the sigil under a Templar-line player's feet and,
+		-- inside a party, a faint frame over the aura's range, so the server sends no periodic effect any more (it was the
+		-- "beat" every 4 s). A player near a Templar gets the list of Templar-line players within `viewRange` sqm (same
+		-- floor; a bit more than the widest screen) with the line, the radius and whether the viewer shares a party with it,
+		-- only when that list changed (checked every think, never faster than minGapMs, so at most one message a second).
+		sync = {viewRange = 16, minGapMs = 900}, -- the think runs every 1000 ms; 900 absorbs timer jitter
 		byVocation = {
 			[23] = {radius = 4, reduction = 0.06, regenPct = 0},
 			[24] = {radius = 3, reduction = 0.04, regenPct = 0},
@@ -161,6 +166,106 @@ function M.coveredBy(templar, players)
 		end
 	end
 	return out
+end
+
+-- ------------------------------------------------------------------------------------------------ what the clients see
+-- The client draws the foot aura of every Templar-line player it sees (a sigil in the line's tint) and, while the Templar
+-- is in a party, a frame over the aura's range for the Templar and its party members (client game_chestaura, O315).
+
+-- 1 Templar, 2 Inquisitor, 3 Sentinel; nil for any other vocation
+function M.lineOf(vocId)
+	if vocId == V.templar then
+		return 1
+	elseif vocId == V.inquisitor then
+		return 2
+	elseif vocId == V.sentinel then
+		return 3
+	end
+	return nil
+end
+
+-- templars = list of {id, voc, pos, party, bonus, dead} (the ones M.collectAuras takes), viewers = list of {id, pos, party}.
+-- Returns [viewer id] = list of {i = Templar id, l = line, r = radius, p = 1 when the Templar is in a party and the viewer
+-- is the Templar or shares that party, else 0}, sorted by Templar id. A viewer sees a Templar within sync.viewRange sqm on its
+-- floor, and always itself; a viewer without any Templar in view has no entry. r includes the passive tree's bonus radius.
+function M.syncEntries(templars, viewers)
+	local range = cfg().aura.sync.viewRange
+	local out = {}
+	for _, t in ipairs(templars) do
+		local line = M.lineOf(t.voc)
+		local aura = line and not t.dead and M.auraOf(t.voc, t.bonus) or nil
+		if aura then
+			for _, v in ipairs(viewers) do
+				if v.id == t.id or M.distance(t.pos, v.pos) <= range then
+					local shared = t.party ~= nil and (v.id == t.id or v.party == t.party)
+					local list = out[v.id]
+					if not list then
+						list = {}
+						out[v.id] = list
+					end
+					list[#list + 1] = {i = t.id, l = line, r = aura.radius, p = shared and 1 or 0}
+				end
+			end
+		end
+	end
+	for _, list in pairs(out) do
+		table.sort(list, function(a, b) return a.i < b.i end)
+	end
+	return out
+end
+
+-- a string that is equal for equal lists (nil or empty: "")
+function M.syncKey(entries)
+	local parts = {}
+	for _, e in ipairs(entries or {}) do
+		parts[#parts + 1] = e.i .. ":" .. e.l .. ":" .. e.r .. ":" .. e.p
+	end
+	return table.concat(parts, ";")
+end
+
+-- sent[viewer id] = the key of the list the viewer last got (absent: it knows no Templar). Returns the list to send
+-- ({} to tell the viewer that the last Templar is gone) when it differs from what the viewer has, else nil.
+function M.syncDecide(sent, viewerId, entries)
+	local key = M.syncKey(entries)
+	local had = sent[viewerId]
+	if key == "" then
+		if had == nil then
+			return nil
+		end
+		sent[viewerId] = nil
+		return {}
+	end
+	if had == key then
+		return nil
+	end
+	sent[viewerId] = key
+	return entries
+end
+
+-- forget a viewer (logout); syncPrune forgets every viewer that is not in `online` (set of ids)
+function M.syncForget(sent, viewerId)
+	sent[viewerId] = nil
+end
+
+function M.syncPrune(sent, online)
+	for id in pairs(sent) do
+		if not online[id] then
+			sent[id] = nil
+		end
+	end
+end
+
+-- state of the sender: what each viewer got, and when the last check ran
+M.syncSent = M.syncSent or {}
+M.syncLastMs = M.syncLastMs or nil
+
+-- true when a check may run now (at most one per sync.minGapMs); marks the time when it does
+function M.syncDue(now)
+	if M.syncLastMs and now - M.syncLastMs < cfg().aura.sync.minGapMs then
+		return false
+	end
+	M.syncLastMs = now
+	return true
 end
 
 -- a is a stronger aura than b
@@ -363,6 +468,7 @@ end
 function M.clear(id)
 	M.auraState[id] = nil
 	M.penitentLast[id] = nil
+	M.syncSent[id] = nil
 end
 
 return M

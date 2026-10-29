@@ -9,13 +9,16 @@
 --   K.classify(cfg, f)                  the affinity keys f matches, in routing order
 --   K.entryKey(f)                       "s<id>" for a plain stack (merged by type), nil for a whole item (a row each)
 --
--- Tabs. General tabs 1..n (n = K.view general) take anything; affinity tabs (cfg.affinities, ids 101..) take their
+-- Tabs. The one general tab 1 (O316: view.general = 1, view.slots entries) takes anything; the old general tabs 2..30 are
+-- withdraw-only; affinity tabs (cfg.affinities, ids 101..) take their
 -- class; the Old depot tab (cfg.oldDepot.tab) holds what the depot migration could not place: withdraw-only, never full.
 -- A tab beyond the general count, an affinity tab no longer owned and the Old depot tab are withdraw-only. Nothing is
 -- ever deleted when a limit shrinks.
---   K.view(cfg, ctx)                    {general = n, owned = {key = source}, remote = "bought" | "pact" | nil}; ctx = {stashTabs (pact limit), extras =
+--   K.view(cfg, ctx)                    {general = 1, slots, packs, owned = {key = source}, remote = "bought" | "pact" | nil};
+--                                       ctx = {packs (pact limit stashSlots), stashTabs / depotTabs (old bought tabs), extras =
 --                                       {key = n}, pact = bool, achievements = {id = true}}
---   K.writable(cfg, view, tab), K.sizeOf(cfg, tab), K.counts(entries)
+--   K.writable(cfg, view, tab), K.sizeOf(cfg, tab, view), K.counts(entries)
+--   K.slotsOf(cfg, ctx)                 the entries of the one general tab (O316): free + expansions + old tabs honoured
 --   K.layout(cfg, view, entries)        places entries of tab 0 / an unknown tab (writable tabs first, then e.overflow
 --                                       or a withdraw-only general tab), moves entries of a general tab into their owned
 --                                       affinity tab while it has room; returns {{key, tab}} moves
@@ -209,20 +212,32 @@ function K.unpackClasses(cfg, text)
 end
 
 -- ---------------------------------------------------------------- tabs
+-- K.slotsOf(cfg, ctx): the entries of the one general tab (O316): the free slots + the expansions (ctx.packs: the
+-- Pact limit stashSlots, bought + lent) + the old tabs still honoured (ctx.stashTabs and ctx.depotTabs: bought, an
+-- achievement each) at slots.legacyPacksPerTab expansions each
+function K.slotsOf(cfg, ctx)
+	ctx = ctx or {}
+	local s = cfg.slots or {}
+	local achieved = ctx.achievements or {}
+	local old = math.max(0, int(ctx.stashTabs))
+	for _, id in ipairs(cfg.generalAchievements or {}) do
+		if achieved[id] then
+			old = old + 1
+		end
+	end
+	if cfg.depotTabsCount then
+		old = old + math.max(0, int(ctx.depotTabs))
+	end
+	local packs = math.max(0, int(ctx.packs)) + old * int(s.legacyPacksPerTab)
+	return int(s.free) + packs * int(s.perPack), packs
+end
+
 function K.view(cfg, ctx)
 	ctx = ctx or {}
 	local extras = ctx.extras or {}
 	local achieved = ctx.achievements or {}
-	local general = int(ctx.stashTabs)
-	for _, id in ipairs(cfg.generalAchievements or {}) do
-		if achieved[id] then
-			general = general + 1
-		end
-	end
-	if cfg.depotTabsCount then
-		general = general + math.max(0, int(ctx.depotTabs))
-	end
-	general = math.max(0, math.min(general, int(cfg.maxGeneralTabs)))
+	local slots, packs = K.slotsOf(cfg, ctx)
+	local general = math.max(0, math.min(int(cfg.generalTabs or 1), int(cfg.maxGeneralTabs)))
 	local owned = {}
 	for _, a in ipairs(cfg.affinities or {}) do
 		local source
@@ -250,15 +265,23 @@ function K.view(cfg, ctx)
 			remote = "pact"
 		end
 	end
-	return {general = general, owned = owned, remote = remote}
+	return {general = general, slots = slots, packs = packs, owned = owned, remote = remote}
 end
 
-function K.sizeOf(cfg, tab)
+-- entries a tab holds: an affinity tab its size, the old depot tab no limit, the general tab 1 the view's slots (O316),
+-- an old general tab cfg.tabSize
+function K.sizeOf(cfg, tab, view)
 	if isOld(cfg, tab) then
 		return math.huge
 	end
 	local a = K.affinityByTab(cfg, tab)
-	return a and int(a.size) or int(cfg.tabSize)
+	if a then
+		return int(a.size)
+	end
+	if view and view.slots and int(tab) == 1 then
+		return int(view.slots)
+	end
+	return int(cfg.tabSize)
 end
 
 function K.writable(cfg, view, tab)
@@ -290,14 +313,14 @@ function K.counts(entries)
 	return used
 end
 
-local function room(cfg, used, tab)
-	return (used[tab] or 0) < K.sizeOf(cfg, tab)
+local function room(cfg, view, used, tab)
+	return (used[tab] or 0) < K.sizeOf(cfg, tab, view)
 end
 
 local function affinityTab(cfg, view, used, classes)
 	for _, key in ipairs(classes or {}) do
 		local a = K.affinity(cfg, key)
-		if a and view.owned[key] and room(cfg, used, a.tab) then
+		if a and view.owned[key] and room(cfg, view, used, a.tab) then
 			return a.tab
 		end
 	end
@@ -312,7 +335,7 @@ local function generalTab(cfg, view, used, allowLocked)
 		if not writable and not allowLocked then
 			return nil
 		end
-		if room(cfg, used, t) then
+		if room(cfg, view, used, t) then
 			return t
 		end
 	end
@@ -443,7 +466,7 @@ function K.tabsView(cfg, view, entries)
 		end
 	end
 	for t = 1, highest do
-		out[#out + 1] = {id = t, name = tostring(t), used = used[t] or 0, size = K.sizeOf(cfg, t),
+		out[#out + 1] = {id = t, name = tostring(t), used = used[t] or 0, size = K.sizeOf(cfg, t, view),
 			locked = not K.writable(cfg, view, t)}
 	end
 	for _, a in ipairs(cfg.affinities or {}) do
@@ -456,6 +479,34 @@ function K.tabsView(cfg, view, entries)
 	if old and (used[old.tab] or 0) > 0 then
 		out[#out + 1] = {id = old.tab, name = old.name, used = used[old.tab], size = 0, locked = true, old = true,
 			icon = old.icon}
+	end
+	return out
+end
+
+-- O316 grandfathering: the extras (account level, bought once) an account is owed for the tabs the old rules gave free.
+-- info = {used = {[tab id] = entries this character holds there}, achievements = {id = true}, extras = {key = n}};
+-- returns the extra keys to grant (each once, none the account already owns), in config order
+function K.legacyGrants(cfg, info)
+	local g = cfg.legacyGrants or {}
+	info = info or {}
+	local extras, used, achieved = info.extras or {}, info.used or {}, info.achievements or {}
+	local out, seen = {}, {}
+	local function add(extra)
+		if extra and not seen[extra] and int(extras[extra]) <= 0 then
+			seen[extra] = true
+			out[#out + 1] = extra
+		end
+	end
+	for _, u in ipairs(g.used or {}) do
+		local a = K.affinity(cfg, u.tab)
+		if a and int(used[a.tab]) > 0 then
+			add(u.extra)
+		end
+	end
+	for _, e in ipairs(g.earned or {}) do
+		if achieved[e.achievement] then
+			add(e.extra)
+		end
 	end
 	return out
 end

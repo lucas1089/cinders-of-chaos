@@ -12,7 +12,7 @@ Os orbes de criação valem mais que ouro para muitos jogadores. Use-os nos seus
 
 ## O mercado
 
-- Economy > Market, ou o item de mercado no depot. A partir do nível {{market.minLevel}}.
+- Economy > Market. A partir do nível {{market.minLevel}}.
 - Venda por ouro, por Chaos Coins ou pelos dois. Ofertas duram {{market.durations}} dias.
 - Taxa de anúncio de {{market.listingFee}}% e taxa de venda de {{market.tax}}%. Elas tiram ouro do jogo e seguram a inflação.
 - Itens equipados, travados e itens da loja não vão para o mercado.

@@ -373,7 +373,7 @@ local cfg = {
 		-- the "Classes" category (Necromancer, Monk, Templar at 500 coins each) was removed on 2026-10-15 (owner rule
 		-- "follow your recommendations"): classes are earned by play only, free for the account at level 200
 		-- (class_unlocks_core.lua). Nobody had bought one yet.
-		-- Depot Tabs: only while the depot takes items (the end of this file)
+		-- Depot Tabs: removed with the depot (O316, 2026-10-29). Stash Slot Expansion and the stash tabs are in Storage & Slots.
 		-- ================================================================== Consumables
 		{
 			-- the Supplies category of before (the Backpack of Holding moved to Convenience)
@@ -696,22 +696,6 @@ local cfg = {
 		}
 	}
 }
-
--- Depot Tabs (depot.lua; an extra tab 150, four tabs 500, depot_config.lua `store`) are sold only while the depot takes
--- items: since the stash took over it is withdraw-only (stash_config.lua depot.withdrawOnly), a bought tab could hold
--- nothing, so the category left the store on 2026-10-21 (store clean-up). Tabs bought before stay on the account; when
--- the depot opens again the category comes back under Premium & Services, after Storage & Slots.
-local okStash, STASH = pcall(dofile, "data/scripts/chaos/stash_config.lua")
-if not (okStash and type(STASH) == "table" and type(STASH.depot) == "table" and STASH.depot.withdrawOnly == true) then
-	local depot = dofile("data/scripts/chaos/depot_config.lua").store
-	for i, c in ipairs(cfg.categories) do
-		if c.name == "Storage & Slots" then
-			depot.parent = P_PREMIUM
-			table.insert(cfg.categories, i + 1, depot)
-			break
-		end
-	end
-end
 
 -- the wings, head accessories and capes of client pair 33 (data/lib/chaos_pack33.lua; nothing while its switch
 -- ChaosPack33.PAIR33 is off): the wings go at the end of the Wings category, the heads and capes (auras) into two

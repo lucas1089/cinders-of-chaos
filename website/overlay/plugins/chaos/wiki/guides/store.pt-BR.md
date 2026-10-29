@@ -11,7 +11,7 @@ O jogo é totalmente jogável de graça. Ninguém é obrigado a doar.
 
 ## O que tem na loja
 
-A loja tem {{store.offers}} ofertas em {{store.categories}} categorias. A maior parte, {{store.cosmetic}} delas, é cosmética: roupas, montarias, asas, auras, efeitos e decoração. O resto são serviços e conveniências da conta, como espaço extra e abas de depot, além de boosts, consumíveis, pets, o Season Pass e o desbloqueio das classes {{class.lockedNames}}.
+A loja tem {{store.offers}} ofertas em {{store.categories}} categorias. A maior parte, {{store.cosmetic}} delas, é cosmética: roupas, montarias, asas, auras, efeitos e decoração. O resto são serviços e conveniências da conta, como slots extras e abas do stash, além de boosts, consumíveis, pets, o Season Pass e o desbloqueio das classes {{class.lockedNames}}.
 
 A lista completa, com o tipo de cada oferta, está na [referência da loja](wiki:store:about).
 

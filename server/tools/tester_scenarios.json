@@ -1,16 +1,17 @@
 {
  "clientOnly": [
   "game_chaosnotify",
+  "game_chestaura",
   "game_energyshield",
   "game_levelwings",
   "game_monkchi",
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 64,
+  "opcode": 63,
   "out": 38,
   "passive": 81,
-  "place": 14,
+  "place": 15,
   "staff": 12
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
@@ -7444,27 +7445,6 @@
     "deathrecap"
    ]
   },
-  "depotTabs": {
-   "actions": [
-    "open",
-    "style"
-   ],
-   "client": [
-    "game_depottabs"
-   ],
-   "dataKeys": [
-    "tab"
-   ],
-   "files": [
-    "depot.lua"
-   ],
-   "opcode": 111,
-   "out": false,
-   "skip": [],
-   "systems": [
-    "depot"
-   ]
-  },
   "descent": {
    "actions": [
     "pick",
@@ -8944,7 +8924,8 @@
      "Stash",
      "ChangeStash",
      "Open",
-     "StashAllRequest"
+     "StashAllRequest",
+     "CollectInbox"
     ]
    },
    "systems": [
@@ -9725,13 +9706,10 @@
   },
   "depot": {
    "files": [
-    "chaos_constants.lua",
     "depot.lua"
    ],
-   "kind": "opcode",
-   "opcodes": [
-    "depotTabs"
-   ],
+   "kind": "place",
+   "opcodes": [],
    "place": "depot",
    "talkactions": []
   },

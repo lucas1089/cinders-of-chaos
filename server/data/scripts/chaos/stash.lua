@@ -1,5 +1,6 @@
 -- The stash (game_stash, extended opcode ChaosOpcodes.stash = 110): the one item storage of a character. The depot
--- boxes retire into it (stash_config.lua `depot`). Rules: stash_core.lua; numbers and texts: stash_config.lua; tests:
+-- is retired (O316): its boxes move into it (stash_config.lua `depot`). Free room is ONE general tab of 30 entries;
+-- Stash Slot Expansions (+25, store) grow it, the affinity tabs are bought one by one (stash_config.lua `slots`). Rules: stash_core.lua; numbers and texts: stash_config.lua; tests:
 -- server/tests/stash_test.lua (the rules, the journal with crashes, this file against a mocked engine). Overview:
 -- server/README.md "Stash".
 --
@@ -12,8 +13,12 @@
 --             of patch 0017, else the key list) and comes back exactly as it went in
 --   tabs      general tabs (any item) and affinity tabs (one class each: weapons, armor, jewellery, supplies, creature
 --             products, materials, orbs, gems, keys, collectibles); a deposit goes to the first owned affinity tab of its
---             class with room, else a general tab. Limits per account (pact_config.lua stashTabs, the extras bought,
---             the Pact, achievements). Withdraw-only tabs keep their items; nothing is deleted when a limit shrinks.
+--             class with room, else the general tab. Limits per account (pact_config.lua stashSlots, the extras bought,
+--             the Pact, the old tabs honoured). Withdraw-only tabs keep their items; nothing is deleted when a limit shrinks.
+--   deliver   ChaosStash.deliverItem puts a market delivery into the stash (matching affinity tab, else the general tab)
+--             through the same journal; the inbox stays the fallback (O316)
+--   inbox     "Collect inbox" (opcode CollectInbox, a protection zone): the inbox items go into the stash, what cannot
+--             into the backpack; the depot lockers no longer show the inbox to players
 --   journal   every deposit and withdrawal is first a row in a journal state with a serial, saved with the character in
 --             one transaction (stash_core.lua "The journal"): no item lost or doubled by a crash or a failed save
 --   depot     at the first depot locker opening (the engine saves the depot only once one was opened this session),
@@ -32,7 +37,11 @@
 --     StashAllRequest                   Stow Everything
 --     Open                              -> Toggle
 --   server -> client data.make:
+--     CollectInbox                      move the inbox into the stash / backpack (a protection zone)
+--     Store                             -> the client opens the store at the Storage & Slots category (no server action)
 --     tabs {tabs=[{id, name, used, size, locked, affinity, icon, old, source}], limit, pact, tabSize, canWithdraw,
+--           slots (entries of the general tab), freeSlots, perPack, packs (expansions owned), maxPacks, store (the store category),
+--           inbox (items waiting in the inbox),
 --           withdrawWhy = "pz" | "hideout" | nil, canDeposit, depositWhy = "pz" | "hideout" | "remote" | nil,
 --           remote = "bought" | "pact" | nil (the remote deposit unlock)}
 --     addItems {isFirst, isLast, items=[{sprite, count, name, tooltip, id, uniqueId, typee, tab, row?, rarity?}]}
@@ -335,6 +344,9 @@ local function wantedAchievements()
 			ids[#ids + 1] = id
 		end
 	end
+	for _, e in ipairs((cfg.legacyGrants or {}).earned or {}) do
+		ids[#ids + 1] = e.achievement
+	end
 	return ids
 end
 
@@ -371,13 +383,13 @@ end
 function S.viewOf(player, fresh)
 	local accountId = int(call(player, "getAccountId"))
 	local pc = pactConfig()
-	local ctx = {extras = {}, pact = false}
+	local ctx = {extras = {}, pact = false, packs = 0}
 	local limits = pc.limits or {}
-	ctx.stashTabs = limits.stashTabs and limits.stashTabs.free or 0
+	ctx.packs = limits.stashSlots and limits.stashSlots.free or 0
 	if ChaosPact and ChaosPact.limit then
-		local ok, lim = pcall(ChaosPact.limit, player, "stashTabs")
+		local ok, lim = pcall(ChaosPact.limit, player, "stashSlots")
 		if ok and lim then
-			ctx.stashTabs = lim
+			ctx.packs = lim
 		end
 		local okS, st = pcall(ChaosPact.state, accountId)
 		if okS and st then
@@ -386,10 +398,17 @@ function S.viewOf(player, fresh)
 		local okA, active = pcall(ChaosPact.active, player)
 		ctx.pact = okA and active == true
 	end
-	local dt = limits.depotTabs
-	ctx.depotTabs = math.min(int(ctx.extras.depotTabs), dt and int(dt.maxExtra) or 0)
+	-- the old bought tabs (retired extras) count at slots.legacyPacksPerTab expansions each, capped at what the old rules sold
+	local le = (cfg.slots or {}).legacyExtras or {}
+	ctx.stashTabs = math.min(int(ctx.extras.stashTabs), int(le.stashTabs))
+	ctx.depotTabs = math.min(int(ctx.extras.depotTabs), int(le.depotTabs))
 	ctx.achievements = achievementsOf(accountId, fresh)
 	return Core.view(cfg, ctx)
+end
+
+-- pact.lua calls it after a store purchase: the window shows the new counts
+function S.onLimitsChanged(player)
+	S.sendItems(player)
 end
 
 -- ---------------------------------------------------------------- the store (database access)
@@ -583,6 +602,17 @@ end
 
 -- ---------------------------------------------------------------- the journal, bound to a player (stash_core.lua env)
 local function giveBack(player, rec)
+	-- a delivery (O316) comes out of the inbox: a failed save puts it back there, not into the backpack
+	if rec.restoreTo then
+		local copy = IC.decode(rec.itemId, rec.count, rec.codec, rec.data)
+		if copy then
+			local ret = call(rec.restoreTo, "addItemEx", copy, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1)
+			if ret == NOERR or ret == true then
+				return
+			end
+			call(copy, "remove")
+		end
+	end
 	if rec.plain then
 		player:addItem(rec.itemId, rec.count)
 		return
@@ -923,8 +953,12 @@ function S.sendItems(player)
 			t.icon = S.typeFacts(t.icon).clientId -- the client draws client ids
 		end
 	end
+	local pl = pactConfig().limits or {}
+	local maxPacks = pl.stashSlots and int(pl.stashSlots.maxExtra) or 0
 	send(player, {make = "tabs", tabs = tabList, limit = view.general, pact = active,
-		tabSize = cfg.tabSize, canWithdraw = can, withdrawWhy = can and (place.pz and "pz" or "hideout") or nil,
+		tabSize = cfg.tabSize, slots = view.slots, freeSlots = int(cfg.slots.free), perPack = int(cfg.slots.perPack),
+		packs = view.packs, maxPacks = maxPacks, store = cfg.storeCategory, inbox = S.inboxCount(player),
+		canWithdraw = can, withdrawWhy = can and (place.pz and "pz" or "hideout") or nil,
 		canDeposit = canDep, depositWhy = depWhy, remote = view.remote, closed = S.depositClosed() or nil})
 	if #list == 0 then
 		send(player, {make = "addItems", isFirst = true, isLast = true, items = {}})
@@ -1079,6 +1113,7 @@ local function depositList(player, items, opts)
 		local it = items[p.ref]
 		local rec = recordOf(it.item, it.facts, p.tab, it.classes, opts.source)
 		rec.ref = p.ref
+		rec.restoreTo = opts.restoreTo
 		recs[#recs + 1] = rec
 	end
 	if #recs == 0 then
@@ -1090,7 +1125,7 @@ local function depositList(player, items, opts)
 	end
 	local stowed = {}
 	for _, rec in ipairs(done) do
-		stowed[#stowed + 1] = {name = rec.name, count = rec.count, tab = rec.tab}
+		stowed[#stowed + 1] = {name = rec.name, count = rec.count, tab = rec.tab, ref = rec.ref}
 	end
 	return stowed, skipped
 end
@@ -1121,7 +1156,7 @@ function S.deposit(player, item, quiet)
 				local entries = S.entries(player, view)
 				local _, kind = Core.route(cfg, view, Core.counts(entries), nil, Core.classify(cfg, f))
 				if kind == "locked" then
-					player:sendCancelMessage(Chaos.t(player, ChaosI18n.msg(M.locked, view.general)))
+					player:sendCancelMessage(Chaos.t(player, ChaosI18n.msg(M.locked, view.slots)))
 				else
 					player:sendCancelMessage(Chaos.t(player, ChaosI18n.msg(M.full, #entries)))
 				end
@@ -1556,6 +1591,158 @@ function S.migrateToDepot(player, slots)
 	return moved, left, not more
 end
 
+-- ---------------------------------------------------------------- delivery and the inbox (O316)
+local function inboxOf(player)
+	local ok, box = pcall(function() return player:getInbox() end)
+	if ok and box and call(box, "isContainer") == true then
+		return box
+	end
+	return nil
+end
+
+-- The depot is retired, so what the market delivers (and the inbox collects) lands in the stash first. An item that is
+-- already on the character (the market adds it to the inbox in memory) is deposited through the same journal as a drag
+-- onto the window: the removal from the character and the caller's storages (the market's deliverSeq) are saved in ONE
+-- transaction, so a crash leaves the item either in the saved inbox with the old deliverSeq (delivered again) or in the
+-- stash with the new one (never both, never none). Returns ok, where ("stash" | tab name), reason:
+-- "full" | "cannot" | "busy". The caller keeps the item in the inbox when this says no.
+function S.deliverItem(player, item, opts)
+	opts = opts or {}
+	local f = S.factsOf(player, item)
+	local why = Core.depositRefusal(cfg, f)
+	if why or f.bound then
+		return false, nil, "cannot"
+	end
+	local stowed, skipped = depositList(player, {{item = item, facts = f}},
+		{source = opts.source or "delivery", restoreTo = inboxOf(player)})
+	if #stowed == 0 then
+		local reason = skipped[1] and skipped[1].reason
+		return false, nil, (reason == "full" or reason == "limit") and "full" or (reason == "busy" and "busy" or "cannot")
+	end
+	local tn = tabName(stowed[1].tab)
+	return true, tn or "stash", nil
+end
+
+-- the line a delivery adds for a stashed item: "in your stash" / "in your stash (Gems tab)"
+function S.deliveredText(player, where)
+	if where and where ~= "stash" then
+		return Chaos.t(player, M.deliveredStashTab, where)
+	end
+	return Chaos.t(player, M.deliveredStash)
+end
+
+function S.inboxCount(player)
+	local box = inboxOf(player)
+	if not box then
+		return 0
+	end
+	return #(call(box, "getItems", false) or {})
+end
+
+-- Collect inbox: the items of the inbox (its top level; a parcel or bag goes whole to the backpack, a container is
+-- never stashed) go into the stash, else into the backpack, in a protection zone or a hideout. At most inbox.batch
+-- items per press. Returns the counts.
+function S.collectInbox(player)
+	local place = S.place(player)
+	if not Core.canWithdraw(cfg, place) then
+		player:sendCancelMessage(Chaos.t(player, M.inboxPz))
+		send(player, {make = "access", canWithdraw = false})
+		return nil
+	end
+	local box = inboxOf(player)
+	local list = box and call(box, "getItems", false) or {}
+	if #list == 0 then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, M.inboxEmpty))
+		return {stash = 0, backpack = 0, left = 0}
+	end
+	local batch = math.max(1, int((cfg.inbox or {}).batch))
+	local items, loose, left = {}, {}, 0
+	for i, it in ipairs(list) do
+		if i > batch then
+			left = left + 1
+		else
+			local f = S.factsOf(player, it)
+			if Core.depositRefusal(cfg, f) or f.bound or f.container then
+				loose[#loose + 1] = it
+			else
+				items[#items + 1] = {item = it, facts = f}
+			end
+		end
+	end
+	local toStash, toBag = 0, 0
+	local stowed, skipped = {}, {}
+	if #items > 0 then
+		stowed, skipped = depositList(player, items, {source = "inbox", restoreTo = box})
+	end
+	toStash = #stowed
+	-- what did not go into the stash (no room, a container, a refused item) goes to the backpack when it fits
+	local taken = {}
+	for _, st in ipairs(stowed) do
+		taken[st.ref or 0] = true
+	end
+	local rest = {}
+	for _, it in ipairs(loose) do
+		rest[#rest + 1] = it
+	end
+	for i, it in ipairs(items) do
+		if not taken[i] then
+			rest[#rest + 1] = it.item
+		end
+	end
+	local backpack = player:getSlotItem(CONST_SLOT_BACKPACK)
+	for _, it in ipairs(rest) do
+		if backpack and call(it, "moveTo", backpack) then
+			toBag = toBag + 1
+		else
+			left = left + 1
+		end
+	end
+	if toStash + toBag == 0 then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, M.inboxNone))
+	else
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, M.inboxDone, toStash, toBag, left,
+			left > 0 and Chaos.t(player, M.inboxMore) or "-"))
+	end
+	S.sendItems(player)
+	return {stash = toStash, backpack = toBag, left = left}
+end
+
+-- ---------------------------------------------------------------- grandfathering (O316)
+-- Once per character (storage `legacy`): the tabs the old rules gave for free are kept by the accounts that used them
+-- (stash_config.lua legacyGrants): an extra is granted through ChaosPact.grantExtra, never twice, never taken back.
+-- Returns the extra keys granted now.
+function S.grandfather(player)
+	local g = cfg.legacyGrants
+	if not g or int(player:getStorageValue(cfg.storage.legacy)) >= int(g.version) then
+		return {}
+	end
+	if not (ChaosPact and ChaosPact.grantExtra and ChaosPact.state) then
+		return {}
+	end
+	local accountId = int(call(player, "getAccountId"))
+	local used = {}
+	for _, e in ipairs(store.plainRows(player:getGuid())) do
+		used[int(e.tab)] = (used[int(e.tab)] or 0) + 1
+	end
+	for _, e in ipairs(store.itemRows(player:getGuid())) do
+		used[int(e.tab)] = (used[int(e.tab)] or 0) + 1
+	end
+	local st = ChaosPact.state(accountId)
+	local granted = {}
+	for _, extra in ipairs(Core.legacyGrants(cfg, {used = used, achievements = achievementsOf(accountId, true), extras = st.extras})) do
+		if ChaosPact.grantExtra(accountId, extra, 1, "legacy") then
+			granted[#granted + 1] = extra
+		end
+	end
+	player:setStorageValue(cfg.storage.legacy, g.version) -- saved with the character; a crash before it grants again, harmless
+	if #granted > 0 then
+		warn(string.format("%s: %d old stash tab(s) kept (%s)", player:getName(), #granted, table.concat(granted, ", ")))
+		store.log(player:getGuid(), "legacy", #granted, 0, 0, table.concat(granted, ","))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, Chaos.t(player, M.grandfathered))
+	end
+	return granted
+end
+
 -- ---------------------------------------------------------------- events
 local LoginEvent = CreatureEvent("ChaosStashLogin")
 
@@ -1573,13 +1760,17 @@ function LoginEvent.onLogin(player)
 	if not ok then
 		warn("login: " .. tostring(err))
 	end
+	local okG, errG = pcall(S.grandfather, player)
+	if not okG then
+		warn("grandfather: " .. tostring(errG))
+	end
 	return true
 end
 
--- opens the stash window (it stays open when it already is). A depot locker calls it only with stash_config.lua
--- depot.openStash (off since 2026-10-20: the locker opens the depot window alone)
-function S.openWindow(player)
-	send(player, {make = "Toggle", remote = isRemote(player), open = true})
+-- opens the stash window (it stays open when it already is). A depot locker calls it (stash_config.lua depot.openStash,
+-- O316); `closeLockers` makes the client close the locker window the engine just opened (the depot is retired)
+function S.openWindow(player, closeLockers)
+	send(player, {make = "Toggle", remote = isRemote(player), open = true, closeLockers = closeLockers or nil})
 end
 
 -- player id -> the last deposit that went in {x, y, z, stackpos, at}: a repeated drop is not a second deposit
@@ -1600,7 +1791,7 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	-- (a deposit) needs a real item each time; its list echo is limited below
 	local R = cfg.rate
 	local limit = ({SendCategories = R.list, SendItems = R.list, Redeem = R.withdraw, ChangeStash = R.block, Open = R.open,
-		StashAllRequest = R.stow})[data.make]
+		StashAllRequest = R.stow, CollectInbox = (cfg.inbox or {}).rateMs or 1500})[data.make]
 	if limit and ChaosRateLimit and not ChaosRateLimit.allow(player, "stash." .. data.make, limit) then
 		return
 	end
@@ -1640,6 +1831,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		send(player, {make = "Toggle", remote = isRemote(player)})
 	elseif data.make == "StashAllRequest" then
 		S.stow(player)
+	elseif data.make == "CollectInbox" then
+		S.collectInbox(player)
 	end
 end
 
@@ -1782,8 +1975,8 @@ function S.staffGive(player, itemId, count, tab, source)
 			end
 		end
 		local need = key and (1 - own) or #items
-		if (used[tab] or 0) + need > Core.sizeOf(cfg, tab) then
-			return false, string.format("%s is full (%d / %d).", staffTabName(tab), used[tab] or 0, Core.sizeOf(cfg, tab))
+		if (used[tab] or 0) + need > Core.sizeOf(cfg, tab, view) then
+			return false, string.format("%s is full (%d / %d).", staffTabName(tab), used[tab] or 0, Core.sizeOf(cfg, tab, view))
 		end
 		for _, it in ipairs(items) do
 			recs[#recs + 1] = recordOf(it.item, it.facts, tab, it.classes, source or "staff")

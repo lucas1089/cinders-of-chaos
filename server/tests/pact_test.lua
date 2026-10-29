@@ -26,7 +26,7 @@ local L = cfg.limits
 -- ---------------------------------------------------------------- limits
 local free = {pactEnds = 0, extras = {}}
 local pact = {pactEnds = NOW + 10 * DAY, extras = {}}
-local ended = {pactEnds = NOW - 1, extras = {stashTabs = 2, buildSlots = 1}}
+local ended = {pactEnds = NOW - 1, extras = {stashSlots = 2, buildSlots = 1}}
 eq(P.active(free, NOW), false, "no Pact")
 eq(P.active(pact, NOW), true, "Pact active")
 eq(P.active(ended, NOW), false, "Pact ended")
@@ -35,24 +35,31 @@ for key, l in pairs(L) do
 	eq(P.limit(cfg, free, key, NOW), l.free, "free limit " .. key)
 	eq(P.limit(cfg, pact, key, NOW), l.free + l.pact, "Pact limit " .. key)
 end
-eq(P.limit(cfg, ended, "stashTabs", NOW), L.stashTabs.free + 2, "bought tabs stay after the Pact")
+eq(P.limit(cfg, ended, "stashSlots", NOW), L.stashSlots.free + 2, "bought expansions stay after the Pact")
 eq(P.limit(cfg, ended, "buildSlots", NOW), L.buildSlots.free + 1, "bought build slot stays")
-eq(P.limit(cfg, {pactEnds = 0, extras = {stashTabs = 99}}, "stashTabs", NOW), L.stashTabs.free + L.stashTabs.maxExtra, "extras capped at maxExtra")
-eq(P.limit(cfg, {pactEnds = 0, extras = {stashTabs = -3}}, "stashTabs", NOW), L.stashTabs.free, "negative extras ignored")
+eq(P.limit(cfg, {pactEnds = 0, extras = {stashSlots = 99}}, "stashSlots", NOW), L.stashSlots.free + L.stashSlots.maxExtra, "extras capped at maxExtra")
+eq(P.limit(cfg, {pactEnds = 0, extras = {stashSlots = -3}}, "stashSlots", NOW), L.stashSlots.free, "negative extras ignored")
+-- O316: the retired extras are not limits any more and cannot be bought; the stash reads them as old tabs
+eq(P.limit(cfg, {pactEnds = 0, extras = {stashTabs = 6, depotTabs = 12}}, "stashTabs", NOW), 0, "no stashTabs limit any more")
+eq(L.stashTabs, nil, "no stashTabs limit") eq(L.depotTabs, nil, "no depotTabs limit")
+check(P.extraCheck(cfg, free, "stashTabs") ~= nil, "Extra Stash Tab is not sold any more")
+check(P.extraCheck(cfg, free, "depotTabs") ~= nil, "Extra Depot Tab is not sold any more")
+check(P.extraCheck(cfg, free, "depotTabs", 4) ~= nil, "4 Depot Tabs are not sold any more")
+eq(cfg.extras.stashTabs.retired, true, "stashTabs kept as a name only") eq(cfg.extras.depotTabs.retired, true, "depotTabs kept as a name only")
 eq(P.limit(cfg, free, "nope", NOW), 0, "unknown limit")
 -- premium alone gives the loot rule bonus (the base autoloot callback does too), not the other perks
 local prem = {pactEnds = 0, extras = {}, premium = true}
 eq(P.limit(cfg, prem, "lootRules", NOW), L.lootRules.free + L.lootRules.pact, "premium counts for loot rules")
-eq(P.limit(cfg, prem, "stashTabs", NOW), L.stashTabs.free, "premium does not count for stash tabs")
+eq(P.limit(cfg, prem, "stashSlots", NOW), L.stashSlots.free, "premium does not count for stash slots")
 check(L.lootRules.free + L.lootRules.pact <= 20, "loot rules within the base callback's 20 storages")
 -- character slots: bought (capped) + legacy (not capped)
 local chars = {pactEnds = NOW + DAY, extras = {charSlots = 3, charSlotsLegacy = 4}}
 eq(P.limit(cfg, chars, "charSlots", NOW), L.charSlots.free + 3 + 4, "character slots: bought + legacy, Pact adds none")
 local rows = P.breakdown(cfg, ended, NOW)
 eq(#rows, #cfg.order, "breakdown rows")
-eq(rows[1].key, "stashTabs", "breakdown order")
+eq(rows[1].key, "stashSlots", "breakdown order")
 eq(rows[1].extra, 2, "breakdown extra")
-eq(rows[1].total, L.stashTabs.free + 2, "breakdown total")
+eq(rows[1].total, L.stashSlots.free + 2, "breakdown total")
 eq(rows[1].pactActive, false, "breakdown Pact off")
 
 -- ---------------------------------------------------------------- the Pact: stacking, cap
@@ -81,19 +88,17 @@ check(cfg.pact.dailyCoins * cfg.pact.days < offer.cost, "coin drip below the Pac
 check(cfg.pact.dailyCoins > 0, "coin drip")
 
 -- ---------------------------------------------------------------- one-time extras
-eq(P.extraCheck(cfg, free, "stashTabs"), nil, "extra tab can be bought")
-check(P.extraCheck(cfg, {extras = {stashTabs = L.stashTabs.maxExtra}}, "stashTabs") ~= nil, "extra tabs capped")
+eq(P.extraCheck(cfg, free, "stashSlots"), nil, "an expansion can be bought")
+check(P.extraCheck(cfg, {extras = {stashSlots = L.stashSlots.maxExtra}}, "stashSlots") ~= nil, "expansions capped")
 check(P.extraCheck(cfg, {extras = {stashOrbs = 1}}, "stashOrbs") ~= nil, "special tab once")
 check(P.extraCheck(cfg, free, "marketListings") ~= nil, "listings are not sold")
 check(P.extraCheck(cfg, free, "bogus") ~= nil, "unknown extra")
--- packs (depot_config.lua sells 4 depot tabs at once): the whole pack must fit under maxExtra
-eq(P.extraCheck(cfg, free, "depotTabs", 4), nil, "a pack of 4 depot tabs can be bought")
-eq(P.extraCheck(cfg, {extras = {depotTabs = L.depotTabs.maxExtra - 4}}, "depotTabs", 4), nil, "a pack that just fits")
-check(P.extraCheck(cfg, {extras = {depotTabs = L.depotTabs.maxExtra - 3}}, "depotTabs", 4) ~= nil, "a pack past the cap is refused")
-eq(P.extraCheck(cfg, {extras = {depotTabs = L.depotTabs.maxExtra - 3}}, "depotTabs", 1), nil, "a single tab still fits")
-check(P.extraCheck(cfg, {extras = {depotTabs = L.depotTabs.maxExtra}}, "depotTabs") ~= nil, "depot tabs capped")
-eq(P.limit(cfg, {pactEnds = 0, extras = {depotTabs = 99}}, "depotTabs", NOW), L.depotTabs.free + L.depotTabs.maxExtra, "bought depot tabs capped")
-eq(P.limit(cfg, {pactEnds = NOW + DAY, extras = {}}, "depotTabs", NOW), L.depotTabs.free + L.depotTabs.pact, "Pact depot tab")
+-- packs (pact_config.lua sells 4 expansions at once): the whole pack must fit under maxExtra
+eq(P.extraCheck(cfg, free, "stashSlots", 4), nil, "a pack of 4 expansions can be bought")
+eq(P.extraCheck(cfg, {extras = {stashSlots = L.stashSlots.maxExtra - 4}}, "stashSlots", 4), nil, "a pack that just fits")
+check(P.extraCheck(cfg, {extras = {stashSlots = L.stashSlots.maxExtra - 3}}, "stashSlots", 4) ~= nil, "a pack past the cap is refused")
+eq(P.extraCheck(cfg, {extras = {stashSlots = L.stashSlots.maxExtra - 3}}, "stashSlots", 1), nil, "a single expansion still fits")
+eq(P.limit(cfg, {pactEnds = NOW + DAY, extras = {}}, "stashSlots", NOW), L.stashSlots.free + L.stashSlots.pact, "Pact expansion")
 eq(P.extraMax(cfg, "charSlots"), L.charSlots.maxExtra, "character slot max")
 eq(P.extraMax(cfg, "stashGems"), 1, "special tab max")
 
@@ -145,17 +150,19 @@ for _, cat in ipairs(shop.categories) do
 		end
 	end
 end
-local depotStore = dofile("data/scripts/chaos/depot_config.lua").store
--- the depot tabs only while the depot takes items (shop_config.lua, stash_config.lua depot.withdrawOnly)
-local depotSold = dofile("data/scripts/chaos/stash_config.lua").depot.withdrawOnly ~= true
-eq(#found, #cfg.store.pact.offers + #cfg.store.storage.offers + (depotSold and #depotStore.offers or 0),
-	"every Pact and depot tab offer is in the store")
+-- O316: the depot is retired, so no depot tab is sold: the store has the Pact and Storage & Slots offers only
+eq(dofile("data/scripts/chaos/depot_config.lua").store, nil, "depot_config.lua sells nothing")
+eq(#found, #cfg.store.pact.offers + #cfg.store.storage.offers, "every Pact and storage offer is in the store")
+for _, o in ipairs(found) do
+	check(o.extra ~= "stashTabs" and o.extra ~= "depotTabs", "no retired tab offer: " .. o.name)
+	check(not o.name:lower():find("depot", 1, true), "no depot in " .. o.name)
+end
 for key, x in pairs(cfg.extras) do
 	local sold = false
 	for _, o in ipairs(found) do
 		sold = sold or o.extra == key
 	end
-	check(sold or (key == "depotTabs" and not depotSold), "extra " .. key .. " is sold")
+	check(sold or x.retired == true, "extra " .. key .. " is sold or retired")
 	check(x.name ~= nil, "extra " .. key .. " has a name")
 end
 -- the affinity stash tabs (stash_config.lua): each bought one is an extra sold here, ids above the general tabs
@@ -166,8 +173,26 @@ for _, a in ipairs(scfg.affinities) do
 	end
 	check(a.tab > 100 and a.tab < scfg.oldDepot.tab, "affinity tab id above the general tabs")
 end
-check(L.stashTabs.free + L.stashTabs.pact + L.stashTabs.maxExtra <= scfg.maxGeneralTabs, "the general tabs fit maxGeneralTabs")
 check(scfg.maxGeneralTabs < 100, "general tab ids stay below the affinity ones")
+-- O316 prices: 1 expansion 50 coins (+25 slots), 4 for 180 (10% off); the old tab (150 coins) is worth 3 expansions
+local function offer(key)
+	for _, o in ipairs(found) do
+		if o.key == key then
+			return o
+		end
+	end
+end
+eq(scfg.slots.free, 30, "FREE: one tab of 30 slots") eq(scfg.generalTabs, 1, "FREE: exactly one general tab")
+eq(scfg.slots.perPack, 25, "an expansion adds 25 slots") eq(L.stashSlots.maxExtra, 20, "at most 20 expansions")
+eq(offer("service:pactExtra:stashSlots").cost, 50, "expansion price") eq(offer("service:pactExtra:stashSlots:4").cost, 180, "4 expansions price")
+eq(offer("service:pactExtra:stashSlots:4").amount, 4, "the pack adds 4")
+check(offer("service:pactExtra:stashSlots:4").cost < 4 * offer("service:pactExtra:stashSlots").cost, "the pack is cheaper")
+eq(scfg.slots.legacyPacksPerTab * offer("service:pactExtra:stashSlots").cost, 150, "an old tab (150 coins) = the same coins in expansions")
+eq(L.stashSlots.pact, 1, "the Pact lends one expansion (modest)")
+for _, a in ipairs(scfg.affinities) do
+	check(a.free == nil and a.pact == nil and a.achievements == nil, "affinity tab " .. a.key .. " is store-sold only")
+	check(offer("service:pactExtra:" .. a.extra) ~= nil, "affinity tab " .. a.key .. " has a store offer")
+end
 
 print(string.format("pact_test: %d checks, %d failures", count, failures))
 if failures > 0 then

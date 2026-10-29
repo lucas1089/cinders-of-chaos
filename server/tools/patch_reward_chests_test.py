@@ -73,6 +73,7 @@ KEEP = {
     (60, 10, 7): dict(ground=GROUND, items=[(1740, {'uid': 3164 + 1})], flags=0),                         # just past a script's unique id
     (62, 10, 7): dict(ground=GROUND, items=[(STOCK, {})], flags=0),                                        # a bare stock chest
     (64, 10, 7): dict(ground=GROUND, items=[(29327, {'uid': 34801})], flags=0),                           # the plaza's royal chest
+    (78, 10, 7): dict(ground=GROUND, items=[(32312, {'aid': 47403})], flags=0),                           # a Sealed Coffer (O315): not a reward chest, never moved
     (66, 10, 7): dict(ground=GROUND, items=[(1740, {'aid': 55555, 'uid': 4, 'kids': [2160]})], flags=0),  # an unknown action id
 }
 tiles.update(BASE)
@@ -123,7 +124,7 @@ try:
     check(open(mp + '.bak', 'rb').read() == orig, 'backup of the old map')
     check(new == open(out, 'rb').read(), 'the same bytes as the --out copy')
     check(len(new) == len(orig), 'same length (an id without escaped bytes)')
-    got = {p: i for i, p in G.find_items(new, [OLD, NEW, LEGACY, 1387, STOCK, 1738, 1741, 1410, 12664, 1748, 1749, 18473, 29327])}
+    got = {p: i for i, p in G.find_items(new, [OLD, NEW, LEGACY, 1387, STOCK, 1738, 1741, 1410, 12664, 1748, 1749, 18473, 29327, 32312])}
     check(all(got.get(p) == NEW for p in SWAP), 'planned area chests, the stock chest, base quest chests and boxes are the reward chest now: %s' % [(p, got.get(p)) for p in SWAP])
     check(got[(46, 10, 7)] == NEW and got[(48, 10, 7)] == NEW, 'a system.lua box and a system2.lua box are swapped')
     check(not any(i == LEGACY for _p, i in G.find_items(new, [LEGACY])), 'no 2 x 2 look is left')
@@ -132,7 +133,7 @@ try:
     check(got.get((18, 10, 7)) == 1387, 'other items stay')
     stays = {(50, 10, 7): OLD, (52, 10, 7): 1738, (54, 10, 7): 1410, (56, 10, 7): OLD, (58, 10, 7): OLD, (60, 10, 7): OLD,
              (62, 10, 7): STOCK, (64, 10, 7): 29327, (66, 10, 7): OLD, (68, 10, 7): 1738, (70, 10, 7): 1741, (72, 10, 7): 1738,
-             (74, 10, 7): 1738}
+             (74, 10, 7): 1738, (78, 10, 7): 32312}
     for p, want in stays.items():
         check(got.get(p) == want, 'not a quest chest, stays: %s (%s)' % (p, got.get(p)))
     check(sorted(G.find_action_items(new, [AID, 2000, 2215, 33735])) == sorted(G.find_action_items(orig, [AID, 2000, 2215, 33735])),

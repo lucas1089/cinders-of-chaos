@@ -1334,12 +1334,12 @@ return {
 		["Be alive in Hardcore when your season ends."] = "Esteja vivo no Hardcore quando sua temporada acabar.",
 		["Reach level 100 in a Self-Found season."] = "Alcance o nível 100 numa temporada Self-Found.",
 		["Still be Self-Found when your season ends."] = "Continue Self-Found quando sua temporada acabar.",
-		["Find 25 unique items. Opens a stash tab for your account."] =
-			"Encontre 25 itens únicos. Abre uma aba do stash para a sua conta.",
-		["Complete 100 bestiary entries. Opens a stash tab for your account."] =
-			"Complete 100 entradas do bestiário. Abre uma aba do stash para a sua conta.",
-		["Seal 50 rifts. Opens a stash tab for your account."] =
-			"Sele 50 rifts. Abre uma aba do stash para a sua conta.",
+		["Find 25 unique items. Adds 75 stash slots for your account."] =
+			"Encontre 25 itens únicos. Dá 75 slots de stash para a sua conta.",
+		["Complete 100 bestiary entries. Adds 75 stash slots for your account."] =
+			"Complete 100 entradas do bestiário. Dá 75 slots de stash para a sua conta.",
+		["Seal 50 rifts. Adds 75 stash slots for your account."] =
+			"Sele 50 rifts. Dá 75 slots de stash para a sua conta.",
 		["Kill a rat at level 500 or higher."] = "Mate um rato no nível 500 ou mais.",
 		["Die 50 times."] = "Morra 50 vezes.",
 		["Kill a legendary monster between midnight and 1 am."] =
@@ -1388,10 +1388,10 @@ return {
 		["You cannot put that item into the stash."] = "Você não pode colocar esse item no stash.",
 		["That item is on your never-stash list."] = "Esse item está na sua lista de nunca guardar.",
 		["Your stash cannot hold that many of this item."] = "Seu stash não comporta tantos desse item.",
-		["Your stash is full (%d entries). Withdraw something, or get another tab."] =
-			"Seu stash está cheio (%d entradas). Retire algo, ou pegue outra aba.",
-		["Your stash is full: the tabs beyond your %d general tabs and the tabs you no longer own are withdraw-only."] =
-			"Seu stash está cheio: as abas além das suas %d abas gerais e as abas que você não tem mais só permitem retirar.",
+		["Your stash is full (%d entries). Withdraw something, or get a Stash Slot Expansion in the Store (Storage & Slots)."] =
+			"Seu stash está cheio (%d entradas). Retire algo, ou compre uma Expansão de Slots do Stash na Loja (Storage & Slots).",
+		["Your stash is full: the entries above your %d slots and the tabs you do not own are withdraw-only. Get a Stash Slot Expansion in the Store (Storage & Slots)."] =
+			"Seu stash está cheio: as entradas acima dos seus %d slots e as abas que você não tem só permitem retirar. Compre uma Expansão de Slots do Stash na Loja (Storage & Slots).",
 		["Could not take the item."] = "Não foi possível pegar o item.",
 		["The stash is busy. Try again in a moment."] = "O stash está ocupado. Tente de novo daqui a pouco.",
 		["That item moved before it reached the stash. Drag it again."] = "Esse item mudou de lugar antes de chegar ao stash. Arraste de novo.",
@@ -1422,6 +1422,21 @@ return {
 			"Mais itens do seu stash vão para o depot quando você abrir um depot locker de novo.",
 		["The stash is closed to new items: put them into your depot. It only gives items back."] =
 			"O stash está fechado para novos itens: coloque-os no seu depot. Ele só devolve itens.",
+		["The depot is retired: your things are in the stash. Open it from Economy > Supply Stash."] =
+			"O depot foi aposentado: suas coisas estão no stash. Abra-o em Economy > Supply Stash.",
+		["The depot is retired: store items in the stash (Economy > Supply Stash). You can still take items out."] =
+			"O depot foi aposentado: guarde os itens no stash (Economy > Supply Stash). Você ainda pode retirar itens.",
+		["Your inbox is empty."] = "Seu inbox está vazio.",
+		["You can collect your inbox only in a protection zone."] = "Você só pode coletar o seu inbox numa zona de proteção.",
+		["Inbox: %d item(s) into your stash, %d into your backpack, %d stay in the inbox (%s)."] =
+			"Inbox: %d item(ns) para o seu stash, %d para a mochila, %d ficam no inbox (%s).",
+		["Nothing from the inbox could be moved."] = "Nada do inbox pôde ser movido.",
+		["More inbox items wait: collect again."] = "Mais itens esperam no inbox: colete de novo.",
+		["in your stash"] = "no seu stash",
+		["in your stash (%s tab)"] = "no seu stash (aba %s)",
+		["in your inbox"] = "no seu inbox",
+		["The stash changed: your old tabs are worth extra slots, and the affinity tabs you used are yours to keep."] =
+			"O stash mudou: suas abas antigas valem slots extras, e as abas de afinidade que você usava continuam suas.",
 		["containers"] = "recipientes",
 		["cannot be moved"] = "não podem ser movidos",
 		["store-bound"] = "presos à conta (loja)",
@@ -3496,8 +3511,8 @@ return {
 			"Seu Chaos Pact dura mais %d dias.",
 		["Today's %d Chaos Coins wait in Character > Chaos Pact."] =
 			"Os %d Chaos Coins de hoje esperam em Character > Chaos Pact.",
-		["Your Chaos Pact has ended. Nothing is lost: extra stash and depot tabs are withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted."] =
-			"Seu Chaos Pact acabou. Nada se perde: as abas extras de stash e depot só permitem retirar, as ofertas extras do mercado correm até terminar e as builds extras salvas podem ser carregadas ou apagadas.",
+		["Your Chaos Pact has ended. Nothing is lost: stash slots beyond your own expansions are withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted."] =
+			"Seu Chaos Pact acabou. Nada se perde: os slots de stash além das suas expansões só permitem retirar, as ofertas extras do mercado correm até terminar e as builds extras salvas podem ser carregadas ou apagadas.",
 		["Event active - %s"] =
 			"Evento ativo - %s",
 		["Active events:\n%s"] =
@@ -4353,8 +4368,8 @@ return {
 			"... e mais %d vendas (veja Minhas ofertas).",
 		["%d items sold for %s: %s."] =
 			"%d itens vendidos por %s: %s.",
-		["%s%s in your inbox (%s)"] =
-			"%s%s na sua inbox (%s)",
+		["%s%s %s (%s)"] =
+			"%s%s %s (%s)",
 		["bought"] =
 			"comprado",
 		["offer cancelled"] =
@@ -4371,8 +4386,8 @@ return {
 			"+%s de volta da sua ordem de compra %d",
 		["+%s (sold %s%s to %s)"] =
 			"+%s (vendeu %s%s para %s)",
-		["%s. Items are in your inbox, gold in your bank."] =
-			"%s. Os itens estão na sua inbox, o ouro no seu banco.",
+		["%s. Items are in your stash or inbox as each line says, gold in your bank."] =
+			"%s. Os itens estão no seu stash ou inbox como cada linha diz, o ouro no seu banco.",
 		["%d market deliveries: see the Server Log."] =
 			"%d entregas do mercado: veja o Server Log.",
 		["Listed %s%s for %s. Listing fee: %s gold."] =
@@ -7605,8 +7620,8 @@ return {
 			"%s, nível de item %d, %dx%d células",
 		["Place it in your charm grid (Character > Charms)"] =
 			"Coloque na sua grade de charms (Personagem > Charms)",
-		["%d days, stacks: +%d%% XP, stamina x%d.%d, remote stash deposit, Auto Seller, cosmetic"] =
-			"%d dias, acúmulos: +%d%% de XP, stamina x%d.%d, depósito remoto no stash, Auto Seller, cosmético",
+		["%d days: +%d%% XP, stamina x%d.%d, remote stash, +%d slots, Auto Seller, cosmetic"] =
+			"%d dias: +%d%% de XP, stamina x%d.%d, stash remoto, +%d slots, Auto Seller, cosmético",
 		["%d hour of double experience per potion (Character > Character Info)"] =
 			"%d hora de experiência em dobro por poção (Personagem > Info do personagem)",
 		["%d per week"] =
@@ -7959,14 +7974,19 @@ return {
 			"Permanente, para toda a conta: uma aba de afinidade no stash para armas e aljavas",
 		["Permanent, account-wide: deposit into the stash from anywhere"] =
 			"Permanente, para toda a conta: deposite no stash de qualquer lugar",
-		["Permanent, account-wide: one more general stash tab (%d entries)"] =
-			"Permanente, para toda a conta: mais uma aba geral no stash (%d entradas)",
+		["Permanent, account-wide: +%d slots on your stash tab"] =
+			"Permanente, para toda a conta: +%d slots na sua aba do stash",
+		["Permanent, account-wide: +%d slots on your stash tab, %d%% off"] =
+			"Permanente, para toda a conta: +%d slots na sua aba do stash, %d%% de desconto",
+		["Up to %d (%d more slots)"] = "Até %d (%d slots a mais)",
+		["Permanent, account-wide: a stash tab for potions, runes, ammo and food"] =
+			"Permanente, para toda a conta: uma aba do stash para poções, runas, munição e comida",
+		["Permanent, account-wide: a stash tab for creature products"] =
+			"Permanente, para toda a conta: uma aba do stash para produtos de criaturas",
+		["Permanent, account-wide: a stash tab for collectibles"] =
+			"Permanente, para toda a conta: uma aba do stash para colecionáveis",
 		["Permanent, account-wide: one more saved passive tree build"] =
 			"Permanente, para toda a conta: mais uma build salva da árvore passiva",
-		["Permanent: an affinity stash tab for collectibles (or earn it: Reliquary)"] =
-			"Permanente: uma aba de afinidade no stash para colecionáveis (ou conquiste: Reliquary)",
-		["Permanent: an affinity stash tab for creature products (lent by the Pact)"] =
-			"Permanente: uma aba de afinidade no stash para produtos de criaturas (emprestada pelo Pact)",
 		["Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk"] =
 			"Permanente: autoloot por raridade no Loot Filter: pegue o equipamento bom, deixe o lixo",
 		["Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank"] =
