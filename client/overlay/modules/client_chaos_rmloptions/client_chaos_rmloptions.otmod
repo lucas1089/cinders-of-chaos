@@ -1,0 +1,11 @@
+Module
+  name: client_chaos_rmloptions
+  description: Options window in RmlUi (docs/RMLUI_SPIKE.md phase 3), driving the classic client_settings pages. Does nothing in a client built without CHAOS_RMLUI (no g_rml).
+  author: Cinders of Chaos
+  sandboxed: false
+  reloadable: true
+  scripts: [ rmloptions ]
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

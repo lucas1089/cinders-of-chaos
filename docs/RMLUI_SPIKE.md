@@ -109,6 +109,29 @@ Built with `-DCHAOS_RMLUI=OFF` after patch 0173 (162 ninja steps, `rmlmanager.cp
 - An OTUI dialog above an RmlUi window, per-file hot reload watching, the cp1252 conversion of typed text, batching of draw calls, the render interface features listed in Risks.
 - The GitHub workflow run, the vcpkg `rmlui` feature.
 
+## Phase 3: the Options window (2026-10-30, base patch 0175)
+
+Owner 2026-10-30: "Faça pelo menos a janela de opções em rmlui". Module `client_chaos_rmloptions`, still behind
+`CHAOS_RMLUI` (release builds keep it off).
+
+- The classic window (`client_settings`) stays the source of truth. The RmlUi window reads the controls of its loaded
+  pages (`loadedWindows`) and builds one RML page from them: check boxes, horizontal scroll bars (a range input),
+  combo boxes (a select), buttons, labels, help icons (a "?" that opens the tooltip text under the panel). A FlatPanel
+  is one panel; a label right before a slider or combo box shares its row.
+- A change in RmlUi calls the classic widget's own click or setter (`onClick`, `setValue`, `setCurrentIndex`), so
+  `setTempOption`, the auto apply, dependent controls and the saved settings run as before. After each change the window
+  reads every control again (values, enabled state, labels such as "Ambient Light: 78 %").
+- `openOptions` of `client_settings` is wrapped: the top menu button opens (or closes) the RmlUi window. The hotkey pages
+  (General, Action Bar, Custom Hotkeys: key capture and lists) and the hotkey shortcuts open the classic window; the
+  footer button "Classic window" opens it too. Closing calls the classic `closeOptions` (apply and save).
+- Patch 0175 binds `g_rml.getValue`, `setValue`, `isChecked`, `setChecked`, `setDisabled` (form controls, in the overlay
+  `rmlmanager.cpp`).
+- Not mirrored: the HUD page's condition list (a `TextList`), tooltips on hover (RmlUi has none; the "?" opens the text).
+- Test: `rmloptions_test.lua` (mock widgets, fake `g_rml` and `client_settings`: page build, sync, change, disabled,
+  buttons, help, menu, the hook and its removal). Checked under Xvfb at 1280x720 and 960x540: Graphics, Effects and
+  Interface pages drawn with the real values; a check box click, a help icon, a slider drag (the label followed to 78 %),
+  the menu and Close worked.
+
 ## Effort
 
 All numbers below are estimates unless marked measured. The base for them (measured by counting files):

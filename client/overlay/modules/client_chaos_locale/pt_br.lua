@@ -5937,5 +5937,10 @@ ChaosLocaleStrings['pt-BR'] = {
   ["RmlUi test window"] = "Janela de teste do RmlUi",
   ["Test row %d"] = "Linha de teste %d",
   ["%d rows, refreshed %d times"] = "%d linhas, atualizada %d vezes",
+  -- client/overlay/modules/client_chaos_rmloptions/rmloptions.lua (Options window in RmlUi)
+  ["Options"] = "Opções",
+  ["Classic window"] = "Janela clássica",
+  ["Hotkeys are set in the classic window."] = "Os atalhos são configurados na janela clássica.",
+  ["Open the classic window"] = "Abrir a janela clássica",
 }
 return ChaosLocaleStrings['pt-BR']

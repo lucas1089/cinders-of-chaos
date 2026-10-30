@@ -502,6 +502,58 @@ bool RmlManager::setProperty(int doc, const std::string& elementId, const std::s
     return ok;
 }
 
+std::string RmlManager::getValue(int doc, const std::string& elementId)
+{
+    auto* fc = rmlui_dynamic_cast<Rml::ElementFormControl*>(find(doc, elementId));
+    return fc ? fc->GetValue() : std::string();
+}
+
+bool RmlManager::setValue(int doc, const std::string& elementId, const std::string& value)
+{
+    auto* fc = rmlui_dynamic_cast<Rml::ElementFormControl*>(find(doc, elementId));
+    if (!fc)
+        return false;
+    fc->SetValue(value);
+    requestRepaint();
+    return true;
+}
+
+bool RmlManager::isChecked(int doc, const std::string& elementId)
+{
+    Rml::Element* e = find(doc, elementId);
+    return e && e->HasAttribute("checked");
+}
+
+bool RmlManager::setChecked(int doc, const std::string& elementId, bool checked)
+{
+    Rml::Element* e = find(doc, elementId);
+    if (!e)
+        return false;
+    if (checked != e->HasAttribute("checked")) {
+        if (checked)
+            e->SetAttribute("checked", "");
+        else
+            e->RemoveAttribute("checked");
+    }
+    requestRepaint();
+    return true;
+}
+
+bool RmlManager::setDisabled(int doc, const std::string& elementId, bool disabled)
+{
+    Rml::Element* e = find(doc, elementId);
+    if (!e)
+        return false;
+    if (disabled != e->HasAttribute("disabled")) {
+        if (disabled)
+            e->SetAttribute("disabled", "");
+        else
+            e->RemoveAttribute("disabled");
+    }
+    requestRepaint();
+    return true;
+}
+
 float RmlManager::getScrollTop(int doc, const std::string& elementId)
 {
     Rml::Element* e = find(doc, elementId);

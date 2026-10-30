@@ -1,0 +1,15 @@
+diff -ruN a/src/framework/luafunctions.cpp b/src/framework/luafunctions.cpp
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -500,6 +500,11 @@
+     g_lua.bindSingletonFunction("g_rml", "injectMouse", &RmlManager::injectMouse, &g_rml);
+     g_lua.bindSingletonFunction("g_rml", "escape", &RmlManager::escape, &g_rml);
+     g_lua.bindSingletonFunction("g_rml", "getDocumentCount", &RmlManager::getDocumentCount, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "getValue", &RmlManager::getValue, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setValue", &RmlManager::setValue, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "isChecked", &RmlManager::isChecked, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setChecked", &RmlManager::setChecked, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setDisabled", &RmlManager::setDisabled, &g_rml);
+ #endif
+ 
+     g_lua.registerSingletonClass("g_ui");

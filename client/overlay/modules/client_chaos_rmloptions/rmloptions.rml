@@ -1,0 +1,22 @@
+<rml>
+<head>
+	<title>Options</title>
+	<link type="text/rcss" href="rmloptions.rcss"/>
+</head>
+<body>
+	<div id="window">
+		<div id="titlebar">
+			<span id="title"></span>
+			<button id="x" class="icon">X</button>
+		</div>
+		<div id="main">
+			<div id="nav"></div>
+			<div id="content"></div>
+		</div>
+		<div id="footer">
+			<button id="classic"></button>
+			<button id="done" class="primary"></button>
+		</div>
+	</div>
+</body>
+</rml>

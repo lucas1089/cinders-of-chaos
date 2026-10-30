@@ -5303,3 +5303,7 @@ One test window in HTML and RCSS, to measure what RmlUi costs. Report and recomm
   reload (`@onLoad`/`@onUnload` added: the spike module never ran `init`), has a text field, a scripted run through the
   environment variable `CHAOS_RMLTEST` and the touch and scale checks (Ctrl+Alt+F11, F12). CI build of the layer:
   `.github/workflows/rmlui-client.yml` (manual).
+- Phase 3 (base patch 0175): `client_chaos_rmloptions` (`rmloptions.rml`, `rmloptions.rcss`, `rmloptions.lua`), the
+  Options window in RmlUi. It reads the classic `client_settings` pages and drives their widgets, so the options apply
+  and save as before; the top menu Options button opens it, hotkey pages stay in the classic window. Fonts from
+  `client_chaos_rmltest/fonts/`. Test: `rmloptions_test.lua`.
