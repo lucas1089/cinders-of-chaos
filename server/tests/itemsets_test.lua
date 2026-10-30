@@ -728,7 +728,30 @@ for _, set in ipairs(S.sets) do
 		end
 	end
 end
-eq(open, 10, "ten open sets (seven art sets and three later tiers)")
+eq(open, 10, "ten open sets (seven art sets and three later tiers); the relic sets wait for their own switch")
+-- the five relic sets (pair 58): the same rules, live with ChaosGearSets.PAIR58
+G.PAIR58 = true
+S.load()
+local relicOpen = 0
+for _, set in ipairs(S.sets) do
+	if set.open and G.items.sets[set.key].relic then
+		relicOpen = relicOpen + 1
+		eq(set.total, 6, set.key .. ": six pieces reach the last bonus")
+		eq(#set.bonuses, 3, set.key .. ": tiers 2, 4, 6")
+		eq(#set.pieces, 13, set.key .. ": thirteen pieces")
+		for i, b in ipairs(set.bonuses) do
+			eq(b.n, 2 * i, set.key .. ": thresholds")
+			for k, v in pairs(b.stats) do
+				ok(S.COND[k] or S.RES[k] or M.byKey[k], set.key .. ": a known stat " .. k)
+				local def = M.byKey[k]
+				ok(not def or not def.cap or v * 2 <= def.cap, set.key .. ": " .. k .. " well under its cap")
+			end
+		end
+	end
+end
+eq(relicOpen, 5, "relic switch on: five more open sets")
+G.PAIR58 = false
+S.load()
 -- the engine's view of the pieces used below
 local SLOTP = {helmet = SLOTP_HEAD, armor = SLOTP_ARMOR, legs = SLOTP_LEGS, boots = SLOTP_FEET, amulet = SLOTP_NECKLACE,
 	ring = SLOTP_RING, shield = 48}

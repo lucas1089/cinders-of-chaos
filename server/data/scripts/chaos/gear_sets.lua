@@ -2,6 +2,8 @@
 -- The items themselves (items.otb, items.xml, equip and weapon entries) are installed by server/tools/install_gear_sets.py;
 -- the switch, the sources and the rules are data/lib/chaos_gear_sets.lua.
 --
+-- The five relic sets (pair 58) are in the same rows but their pieces are added only while ChaosGearSets.PAIR58 is on.
+--
 -- Only while ChaosGearSets.PAIR28 is on: at startup every row of ChaosGearSets.lootRows() (monster, item id, chance per
 -- 100000) is added to that monster type with MonsterType:addLoot, as fist_weapons.lua does, so no monster file changes.
 -- Monster types are loaded after data/scripts, hence the startup event. A missing monster or item is reported and
@@ -21,7 +23,10 @@ function ChaosGearSetLoot.addAll(rows)
 		local mon, id, chance = row[1], row[2], row[3]
 		local mt = MonsterType(mon)
 		local it = ItemType(id)
-		if mt and it and it:getId() == id then
+		local piece = ChaosGearSets.piece(id)
+		if piece and piece.relic and not ChaosGearSets.PAIR58 then
+			-- the relic sets (pair 58) wait for their own switch: nothing is added, nothing is reported
+		elseif mt and it and it:getId() == id then
 			local loot = Loot()
 			loot:setId(id)
 			loot:setChance(chance)

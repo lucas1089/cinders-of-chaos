@@ -3695,6 +3695,59 @@ Output **pair 57**: dat 56c34d0121264ba6fb26076f95c35701 (8,846,011 bytes), spr 
   3364-3370 in the seven monster files), `check_content.py` at pair 57 / 3370 outfits, `outfit_anchors.lua` and `info_lifts.lua`
   from pair 57. A client on pair 56 draws nothing for the seven until it updates; they spawn in nine hunt plans (server/README.md "AI Sprite Studio monsters (pair 57)").
 
+### Pair 58: pair 57 with the 65 pieces of five relic sets (`gen_relic_sets_art.py`; built 2026-10-30, on windows-assets 29b9a09)
+Owner 2026-10-30 ("Aprovo, pode importar os sets como itens"): five approved PixelLab gear sets become items with stats, set bonuses and
+loot (server/README.md "Relic sets (pair 58)"). 65 items are appended (client ids 44446-44510, server ids 48446-48510); nothing else changes.
+- **Art.** 65 PixelLab pictures, owner approved (32 x 32 RGBA, alpha 0 / 255, `create_image_pro`, our own prompts; the review folders ember,
+  gilded, rime, abyssal and venom of 2026-10-30; the job id of each first pick is in `art_import/relic_sets_sources.csv`, ten pictures were
+  re-rolled or fixed afterwards and the ember set's ids were not kept). Pixels are PixelLab's: not repainted, snapped or mirrored (only the
+  colour under fully transparent pixels is cleared). `gen_relic_sets_art.py build --from-dir DIR` (or `--src KEY=FILE`) copies each to
+  `art_import/relic_sets/<key>.png`; committed too: `relic_sets.png` (atlas, 2080 x 32, 65 cells), `relic_sets.csv` (things file, 1 x 1,
+  one phase, flags `copy:<stock item of the kind>` as `gen_gear_sets_art.py` does, mode new; `extra` = set, kind, fit, level,
+  description), `relic_sets.sums`, `relic_sets_sources.csv` (credit: docs/CREDITS.md "Tools", PixelLab). `build --check` and
+  `gen_relic_sets_art_test.py` (CI) rebuild from the committed sources. Each look passes `style_check.py` on its own colours (not snapped to a
+  theme palette) except 19, listed in `WAIVED` and printed: 17 have a dark coloured rim (navy, teal or brown) instead of a near-black one
+  (0-17% near-black, min 30%), four are flat (8-9 colours, min 11: the Venomcoil and Deepdirge bows, the Kilnforged amulet, the Halogild
+  legs; two of them also fail the rim rule) and the Halogild amulet's chain has two lone pixels and two specks.
+  The server manifest `server/data/items/relic_sets.csv` is the importer's `--manifest-out` of the things file (`--server-offset 4000`).
+
+  | Client ids | Set | Level | Element | Slots (in order) |
+  |---|---|---|---|---|
+  | 44446-44458 | Venomcoil (venom folder) | 640 | earth | helm, cuirass, greaves, boots, shield, tome, blade, greataxe, warhammer, bow, scepter (wand), ring, amulet |
+  | 44459-44471 | Hoarglass (rime) | 860 | ice | the same, scepter (wand) |
+  | 44472-44484 | Kilnforged (ember) | 1400 | fire | the same, scepter (wand) |
+  | 44485-44497 | Halogild (gilded) | 1700 | holy | the same, staff (rod) |
+  | 44498-44510 | Deepdirge (abyssal) | 2050 | death | the same, staff (rod) |
+- **Server.** `install_relic_sets.py` (items.otb, items.xml, movements.xml and weapons.xml blocks), `chaos_relic_sets_items.lua`, the sources,
+  bonuses and the switch `PAIR58` (off) in `chaos_gear_sets.lua`; the `relicsets` step waits for `config.lua` `chaosClientPair >= 58`
+  (server/README.md "Client pair guard").
+- **Rebuild:**
+```
+python3 -I client/tools/sprites/gen_relic_sets_art.py build [--from-dir REVIEW_DIR] [--preview DIR --dat pair58/Tibia.dat --spr pair58/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair57/Tibia.dat --ours-spr pair57/Tibia.spr --out-dir pair58 \
+    --things client/tools/sprites/art_import/relic_sets.csv --first-item 44446 --expect-items 44445 --server-offset 4000 \
+    --manifest-out server/data/items/relic_sets.csv
+python3 -I client/tools/sprites/check_pair.py pair58/Tibia.dat pair58/Tibia.spr --old pair57/Tibia.dat pair57/Tibia.spr
+```
+Input pair 57 (dat 56c34d0121264ba6fb26076f95c35701, spr 95a6b7fc0c5c2a16b36057f3441fa646).
+Output **pair 58**: dat af634150c86240eaf8566e930e845819 (8,847,086 bytes), spr 0c3465bd54c72802c89510acc7ddbe48 (1,132,690,387 bytes,
+947,179 sprites: 65 appended), 44,510 items (65 appended), 3,370 outfits, 4,701 effects, 253 missiles.
+- **Checked.** The importer: the output parses, the 65 sprite slots are pixel-identical to the art, every other thing byte-identical, 3,000
+  sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair57`: 0 errors, 3,964 warnings (the same as pairs 54-57).
+  `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 58 change only the dat md5 lines (committed with the push). `gen_fx_send_offsets.py --check`: up to date. All 65 items were drawn from the built pair (preview in the scratchpad, not
+  committed) and look as the art. Not run in a client.
+- **Archive parts** (same recipe as pair 53: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of
+  `Tibia.dat Tibia.spr` into `things-1098.tar`, `xz -9 -T3`, `split -b 95M -d -a 2`; built 2026-10-30; owner approved 2026-10-30, pushed to windows-assets
+  as **29b9a09**, only the two part files and their lines of `SHA256SUMS.parts` change):
+  - part00 99,614,720 bytes, sha256 `3f0a62527a2a103b33af600f0c421d74adf04039a9b528d826d33a94225b83f6`
+  - part01 30,290,580 bytes, sha256 `89b4bb65463c30575a5e300c5ef989b7feba8d8ad4d230ddb4f95eb8462c4620`
+  - joined `things-1098.tar.xz` (129,905,300 bytes) sha256 `551828778c460b55fba1a607deda46494ba3182fb1d95abe5bd0881786914cec`;
+    `things-1098.tar` sha256 `586063123ac999ba2ad68488c2a68d2ac76ec27212ceea775dac7a9529fa1706`. Decompressing the joined parts gives that tar sha256 and the dat and spr md5s above (checked).
+- **Switch on** once the client update is published: record `chaosClientPair` 58 (admin app, tab Comandos > card "Par do cliente" >
+  Gravar 58; or `chaos-ctl.sh client-pair set 58`), set `ChaosGearSets.PAIR58 = true`, regenerate `gen_codex_data.lua` and
+  `gen_wiki_data.lua`, run the update (server/README.md "Relic sets (pair 58)"). No client Lua changes: the codex shows the five sets
+  from the regenerated `codex_data.lua`.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

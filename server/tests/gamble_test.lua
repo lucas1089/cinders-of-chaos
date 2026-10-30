@@ -270,8 +270,12 @@ do
 	eq(G.PAIR28, true, "sets: the pair switch is on as shipped")
 	check(cfg.sets and cfg.sets.enabled, "sets: on in the config as shipped")
 	eq(cfg.sets.share, 20, "sets: 20% of the picks")
-	for key in pairs(G.items.sets) do
-		check(type(cfg.sets.weight[key]) == "number" and cfg.sets.weight[key] > 0, "sets: a weight for " .. key)
+	for key, set in pairs(G.items.sets) do
+		if set.relic then -- the relic sets (pair 58) are drops only: the Gambler does not sell them
+			check(cfg.sets.weight[key] == nil, "sets: no weight for the relic set " .. key)
+		else
+			check(type(cfg.sets.weight[key]) == "number" and cfg.sets.weight[key] > 0, "sets: a weight for " .. key)
+		end
 	end
 	for key in pairs(cfg.sets.weight) do
 		check(G.items.sets[key] ~= nil, "sets: the weight of " .. key .. " names a real set")
