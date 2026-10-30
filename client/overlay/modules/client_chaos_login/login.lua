@@ -56,6 +56,11 @@ local function alive(w)
   return w ~= nil and not w:isDestroyed()
 end
 
+-- a phone: the stock OTUI "$mobile:" rules apply to the stock widgets (the sign-in window gets 320x300 there)
+local function isMobile()
+  return g_app ~= nil and g_app.isMobile ~= nil and g_app.isMobile() == true
+end
+
 local function try(fn, ...)
   local ok, err = pcall(fn, ...)
   if not ok then g_logger.warning('[chaos_login] ' .. tostring(err)) end
@@ -128,6 +133,22 @@ end
 
 local layoutInfo, placeStatus, barTick
 
+-- the sign-in window: pinned by all four anchors, so the stock "$mobile: size: 320 300" cannot shrink it to a third of
+-- the width (the runes and fields spilled out of it) or stretch it below the screen
+local function placePanel(top)
+  local pw, ph = bg:getWidth(), bg:getHeight()
+  local left = math.max(0, math.floor((pw - PANEL_W) / 2))
+  enterGame:breakAnchors()
+  enterGame:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  enterGame:addAnchor(AnchorRight, 'parent', AnchorRight)
+  enterGame:addAnchor(AnchorTop, 'parent', AnchorTop)
+  enterGame:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+  enterGame:setMarginLeft(left)
+  enterGame:setMarginRight(math.max(0, pw - PANEL_W - left))
+  enterGame:setMarginTop(top)
+  enterGame:setMarginBottom(math.max(0, ph - top - PANEL_H))
+end
+
 local function relayout()
   if not alive(bg) then return end
   local w, h = bg:getWidth(), bg:getHeight()
@@ -141,14 +162,22 @@ local function relayout()
   -- the logo layer on the logo of the picture
   local x, y, lw, lh = artBox(LOGO_BOX)
   -- a short screen (a phone, about 540 interface pixels high) puts the panel over the logo's lower half: over the
-  -- living scene, which hides the painted logo, the layer shrinks into the room above the panel instead
+  -- living scene, which hides the painted logo, the layer shrinks into the room above the panel instead; on a phone
+  -- it also stays below 42% of the height, centred in that room
   local panelTop = math.min(artY(PANEL_Y), h - PANEL_H - 10)
-  if LoginScene and LoginScene.isActive() and LoginScene.opacity() >= 0.99 and y + lh > panelTop - 4 then
+  local phone = isMobile()
+  if LoginScene and LoginScene.isActive() and LoginScene.opacity() >= 0.99
+      and (y + lh > panelTop - 4 or (phone and lh > h * 0.42)) then
     local y0 = math.max(y, LOGO_TOP_MIN)
-    local k = (panelTop - 4 - y0) / lh
+    local room = panelTop - 4 - y0
+    local target = math.min(lh, room)
+    if phone then target = math.min(target, math.floor(h * 0.42)) end
+    local k = target / lh
     if k > 0.3 and k < 1 then
       local nw, nh = math.floor(lw * k), math.floor(lh * k)
-      x, y, lw, lh = x + math.floor((lw - nw) / 2), y0, nw, nh
+      local ny = y0
+      if phone then ny = y0 + math.floor((room - nh) / 2) end
+      x, y, lw, lh = x + math.floor((lw - nw) / 2), ny, nw, nh
     end
   end
   place(logo, x, y, lw, lh)
@@ -162,7 +191,10 @@ local function relayout()
   place(spinner, artX(SPIN_X) - math.floor(d / 2), artY(SPIN_Y) - math.floor(d / 2), d, d)
 
   -- the sign-in panel at the bottom centre, under the logo
-  enterGame:setMarginTop(math.max(0, panelTop))
+  placePanel(math.max(0, panelTop))
+  if LoginScene and LoginScene.isActive() and LoginScene.setPanelBox then
+    LoginScene.setPanelBox(math.floor((w - PANEL_W) / 2), math.max(0, panelTop), PANEL_W, PANEL_H)
+  end
   if placeStatus then placeStatus() end
   if layoutInfo then layoutInfo() end
   if LoginScene and LoginScene.isActive() then LoginScene.relayout() end
@@ -546,10 +578,13 @@ local function createDecor()
   medL:addAnchor(AnchorVerticalCenter, 'enterGame', AnchorTop)
   medL:addAnchor(AnchorHorizontalCenter, 'enterGame', AnchorLeft)
   medL:setMarginTop(46)
+  -- a phone: the runes sit fully outside the fields (the field row is 28 px from the panel edge)
+  if isMobile() then medL:setMarginLeft(-12) end
   medR = deco('medallion_right', 64, 64, 'chaosMedR')
   medR:addAnchor(AnchorVerticalCenter, 'enterGame', AnchorTop)
   medR:addAnchor(AnchorHorizontalCenter, 'enterGame', AnchorRight)
   medR:setMarginTop(46)
+  if isMobile() then medR:setMarginRight(-12) end
   crestT = deco('crest', 96, 22, 'chaosCrestT')
   crestT:addAnchor(AnchorHorizontalCenter, 'enterGame', AnchorHorizontalCenter)
   crestT:addAnchor(AnchorTop, 'enterGame', AnchorTop)
@@ -713,12 +748,18 @@ local function elideRow(ui)
   end
 end
 
+local SCHEDULE_ROWS = 4   -- rows that fit the stock list (68 px of 15 px rows): the grid puts a 5th one in a new column
+
 local function elideSchedule(widget)
   if not alive(widget) then return end
   for _, id in ipairs({ 'activeEvent', 'upcomingEvent' }) do
     local list = widget:recursiveGetChildById(id)
     if list then
-      for _, ui in ipairs(list:getChildren()) do try(elideRow, ui) end
+      for i, ui in ipairs(list:getChildren()) do
+        try(elideRow, ui)
+        -- the tooltip of every row lists all events; the rows that do not fit stay out of the grid
+        ui:setVisible(i <= SCHEDULE_ROWS)
+      end
     end
   end
 end
