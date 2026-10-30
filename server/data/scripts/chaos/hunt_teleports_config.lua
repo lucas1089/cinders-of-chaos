@@ -170,12 +170,12 @@ return {
 		{id = "corsairs_reach", monster = "Scourgejaw"},
 		{id = "mirefang_basin", monster = "Elite Tidecrest Serpent"},
 		{id = "rimecrown_depths", monster = "Vorkhaz"}, -- 2x2; the 3x3 Celestial Wyrm spilled
-		{id = "cinderglass_sanctum", monster = "Spiky Carnivor"},
+		{id = "cinderglass_sanctum", monster = "Gloamgeode Shellback"},
 		{id = "slagmourn_foundry", monster = "Twisted Shaper"}, -- 2x2; the 5x4 Scaleborn spilled
 		{id = "hollowmass_reliquary", monster = "Silicron"},
-		{id = "gallowfen_mire", monster = "Facetis"},
+		{id = "gallowfen_mire", monster = "Marshlight Hollowseer"},
 		{id = "voidscar_chasm", monster = "Winterstride"},
-		{id = "gravehorn_deeps", monster = "Cinderhorn Juggernaut"},
+		{id = "gravehorn_deeps", monster = "Redmane Anvilbreaker"},
 		{id = "duskmarrow_crater", monster = "Mirecoil Wyrm"}, -- not the 5x5 Pyrewing Tyrant in a one-tile cell
 		-- pair 27 trial area (levels 300-400); its boss is the Hollow Rider. 2x2; the 3x3 Bonecrusher spilled
 		{id = "hollow_crypt", monster = "Sopping Carcass"},
@@ -187,7 +187,7 @@ return {
 		{id = "thornmantle_glade", monster = "Slagborer"},
 		{id = "embergut_rift", monster = "Slagback Hound"}, -- the rift's own hound (pair 54 look 3363 once ChaosAutospriteArt.PAIR54 is on)
 		{id = "frostvein_reach", monster = "Orclops Ravager"},
-		{id = "graveknell_catacombs", monster = "Mercenary Ranger"},
+		{id = "graveknell_catacombs", monster = "Wickstaff Hexmage"},
 		{id = "umbral_sink", monster = "Garack"},
 		{id = "cinderscour_barrens", monster = "Blazebringer"},
 		{id = "grimlock_vaults", monster = "Grove Keeper"},
@@ -206,7 +206,7 @@ return {
 		{id = "obsidian_colonnade", monster = "Blight Bloom"},
 		{id = "mildewveil_sanctum", monster = "Reedgrave"},
 		{id = "deepgrudge_warrens", monster = "Bloom Husk"},
-		{id = "sorrowfen_marsh", monster = "Deepforge Fiend"},
+		{id = "sorrowfen_marsh", monster = "Coralcrown Brinecaller"},
 		{id = "shroudhallow_tomb", monster = "Ice Lich"},
 		{id = "hagthorn_weald", monster = "Lady bug"},
 		{id = "pyreglass_chasm", monster = "Elite Twisted Shaper"},
@@ -219,7 +219,7 @@ return {
 		{id = "hushbone_barrows", monster = "Hollowhorn"},
 		{id = "carrionwood", monster = "Bloodantler Fiend"},
 		{id = "dreadcoffer_vaults", monster = "Gnawbone Swarm"},
-		{id = "paleflame_sanctum", monster = "Wraithbone Stalker"},
+		{id = "paleflame_sanctum", monster = "Gravecrown Oathbreaker"},
 		{id = "blightmaw_bog", monster = "Gnarlback"},
 		{id = "worldscar_abyss", monster = "Ironmask Warbreaker"},
 		-- O139 (owner, 2026-10-23: hunts for the levels 200, 450, 700, 1000, 1500 and 2000; server/README.md "Hall coverage
@@ -232,7 +232,7 @@ return {
 		{id = "azuregate_reliquary", monster = "Azure Guard"},
 		{id = "drownbell_depths", monster = "Frost Larva"},
 		{id = "wanwick_cloister", monster = "Distorted Phantom"},
-		{id = "brinescar_strand", monster = "Saltkin Raider"},
+		{id = "brinescar_strand", monster = "Bogtusk Cleaver"},
 		{id = "rustcog_warrens", monster = "Mechanic Goblin"},
 		{id = "mossgrave_tangle", monster = "Waterglow Conjurer"},
 		-- the imported hunts (server/tools/area_import.py, docs/MAP_GUIDE.md "Imported hunts"): cuts of a free community map
