@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fatal_title">Cinders of Chaos: erro fatal</string>
+    <string name="fatal_close">Fechar</string>
+    <string name="edit_cancel">Cancelar</string>
+    <string name="splash_loading">Carregando...</string>
+</resources>

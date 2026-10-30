@@ -5,4 +5,5 @@
     <string name="fatal_close">Close</string>
     <string name="edit_ok">OK</string>
     <string name="edit_cancel">Cancel</string>
+    <string name="splash_loading">Loading...</string>
 </resources>
