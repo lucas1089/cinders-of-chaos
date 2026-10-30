@@ -92,7 +92,7 @@ C.boss = {
 --   set       set pieces: their unique entries (loot.lua) and every chase roll (rift, raid, Descent, dungeon)
 --   raid      the Ashen Sepulchre's raid uniques (raid.lua, per boss loot)
 C.pity = {
-	monster = {slot = 1, step = 0.01, cap = 3, label = "Monster uniques"},
+	monster = {slot = 1, step = 0.02, cap = 3, label = "Monster uniques"},
 	boss = {slot = 2, step = 0.10, cap = 4, label = "Boss uniques"},
 	set = {slot = 3, step = 0.05, cap = 4, label = "Set pieces"},
 	raid = {slot = 4, step = 0.25, cap = 5, label = "Raid uniques"}

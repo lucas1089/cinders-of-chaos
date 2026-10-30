@@ -14004,7 +14004,7 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
   drop from the monsters of the band; the 1500+ ones from legendary monsters of the top hunts and the boss Vhalkareth
   Mortal Shell. Chance before the tier multiplier: 30 for levels up to 38 (0.3% per kill of a magic monster), 12 for 450
   to 1200 (0.24% on a rare one), 6 above (0.24% on a legendary one). The bad-luck protection of `conquest_config.lua`
-  `pity` (monster uniques: +1% per miss, up to 3 times) already covers every unique, so none waits forever; it needed
+  `pity` (monster uniques: +1% per miss, up to 3 times; +2% since O342) already covers every unique, so none waits forever; it needed
   no change.
 - **Wands and rods.** A unique keeps the damage of its base item and no tool sets it, so no wand or rod unique was added.
   Wand and rod coverage comes from the class loot rows above and the weapon audit's sets.
@@ -14429,7 +14429,7 @@ drop could not happen):
 monster of that level or more, whatever its name, at `mult` (0.5) x its chance (below the level nothing changes; the lists still
 rule the lower uniques). (b) `ChaosLoot.uniquePace`: the unique roll reads the notable share of the corpse (`L.corpseFactors`), at
 least the loot factor. (c) The roll gets `max(getMonsterLevel, ChaosLoot.monsterLevel)`. The Conquest bad-luck protection already
-covered these rolls (group `monster`: +1% per miss, up to x3); an open drop now counts as an eligible roll, so it works for the
+covered these rolls (group `monster`: +1% per miss, up to x3, +2% since O342); an open drop now counts as an eligible roll, so it works for the
 hunts too (`conquest_config.lua` `pity`, unchanged).
 
 **Numbers** (level 1500, the hunt monsters of `late_game_spawns.csv`, Rare : Legendary kills 150 : 25 as spawned, exact sums over the
@@ -14447,6 +14447,68 @@ level 1500; the rest wait for a higher level or a trade. `tools/loot_model.lua -
 stay green (uniques are not in the gold or item model; the coverage tool reads the entries' own chance, unchanged).
 `tests/unique_hunt_test.lua` (luajit and lua5.3) proves it: before below 1 per 1000, now 10-25, one every 2.5-6 hours, the level and
 list rules, boss-only entries keep their bosses, `open.enabled = false` brings the old behaviour back.
+
+## Unique pace: the leveling uniques open by level (O342)
+
+Owner 2026-10-30 (pt-BR "pode fazer sim"): the 97 leveling uniques (entries of `chaos_unique_items.lua` that are not boss-only, have no
+`minMonsterLevel` and no season) dropped only from the monsters of their own `monsters` list. Measured with
+`tools/unique_pace_model.lua --legacy`: one unique in about 380 kills in a level 10 hunt, 1 in 800 at level 20, 1 in 20,000 to
+1,000,000 at levels 40-600 (the average over the hunt's monsters; most monsters list none), and 13 of the 29 hall hunts of level 20 and
+up listed no leveling-unique monster at all.
+
+**The rule** (`loot_config.lua` `unique.openLevel`, `ChaosLoot.openLevelMult`, `ChaosLoot.rollUniques`): a leveling unique also drops from
+ANY monster whose level (`ChaosLoot.monsterLevel`, the same level the O148 rule reads) lies in the window around the unique's `level`:
+
+* from `level x 0.90` (`below` 0.10) to `level x 2 + 10` (`above` 2.0, `aboveFlat` 10). The item stays worth wearing for a long stretch
+  of hunting levels, and the sparse entries above level 180 (12 of the 97) need the wide upper side to cover every hunt level; the
+  window is the same for all entries, so a level 100 item drops in level 90-210 hunts, a level 400 item in 360-810 hunts;
+* at `mult` x its chance, `mult` being a curve of the MONSTER level (linear between the points, 0.1 up to level 30, rising to 13.6 at
+  300 and falling to 3.5 at 650). The curve is the reason the pace is flat: the entries are dense below level 150 (about 50 in the
+  window of a level 100 hunt) and sparse above (7 around level 400), and the unique roll reads the pack factor (`loot` 0.05-0.15
+  in most of the range, the `notable` share 0.23-0.32 up to level 335, 1 from 350), so one multiplier could not serve every band;
+* a monster that lists the unique keeps the full chance (the window only adds monsters); the item level cap `maxItemLevel` (700)
+  leaves the 10 entries of item level 750-1900 to their lists; tier rules (`minTier`, normal never), boss-only entries, season
+  rules, `maxPerKill` and the Conquest pity are untouched (an open drop counts as an eligible roll, like the O148 one).
+
+**The model** (`tools/unique_pace_model.lua`, limits in `unique_pace_config.lua`, `--check` in CI under luajit and lua5.3, `--derive`
+prints the multiplier that gives 2,000 kills per unique at each level, `--legacy` the numbers without the rule). Expected values from
+the loot layer's own rules: the tier mix of the kills from `monster_tiers.lua` (the spawn numbers are thresholds of one roll, so
+Magic is 4.5%, Rare 1.25%, Legendary 0.25%, plus the ambush copies at their chance x the pack factor, two generations), the pack
+factor of the unique roll (`ChaosLoot.uniquePace`), the monsters of `bounty_pool.lua` within +-15% of the band weighted by their spawns,
+and every hunt of `tools/hall_hunts.csv` (the average over its monsters). No item find, a paced hunt.
+
+| Band | Monsters | Before | Before, pity +1% | Now | Now, pity +1% | Now, pity +2% |
+|---|---|---|---|---|---|---|
+| 10 | 40 | 378 | 315 | 368 | 294 | 259 |
+| 20 | 68 | 820 | 638 | 612 | 448 | 385 |
+| 40 | 51 | 97,644 | 42,238 | 2,017 | 1,203 | 1,010 |
+| 60 | 46 | 1,074,031 | 371,443 | 2,026 | 1,251 | 1,053 |
+| 100 | 51 | 51,188 | 19,803 | 2,231 | 1,171 | 1,020 |
+| 150 | 52 | 44,561 | 16,945 | 2,051 | 1,090 | 963 |
+| 200 | 20 | 309,178 | 116,103 | 2,125 | 1,387 | 1,262 |
+| 300 | 53 | 105,135 | 39,055 | 2,427 | 1,456 | 1,311 |
+| 400 | 72 | 77,234 | 37,009 | 1,900 | 1,576 | 1,410 |
+| 500 | 57 | 78,249 | 37,863 | 2,038 | 1,665 | 1,481 |
+| 600 | 19 | 21,470 | 12,061 | 1,877 | 1,548 | 1,382 |
+
+Kills per unique of the hunt's average, no item find. "Before" and "Now" are the base chance (the target); the pity columns are what a
+player who keeps missing sees on average with the protection. Every band from 40 up is inside 1,500-2,500 and every hall hunt of
+level 30 and up inside 1,200-3,500 (1,614-3,272 measured). The starter bands (10, 20 and the hall hunts under level 30: Fire Elemental
+966, Demon Skeleton 445) were already generous through their name lists and are left as they were (the multiplier is only 0.1 there,
+so the window adds little); their limits are looser. The worst monster of a band (the one with the fewest entries in its window) is up
+to 6,300 kills; the table is the hunt's average.
+
+**Bad-luck protection** (`conquest_config.lua` `pity.monster`): step 0.01 -> 0.02, cap stays 3. A miss is a Magic or better kill with an
+eligible entry, so the multiplier reaches x3 after 100 such rolls. At the new pace a player meets about 30 such rolls per unique in a
+Rare+ only band, so the protection matters mostly for the unlucky tail: the average pace the player sees is 1,000-1,500 kills (the
+model takes the renewal process of the rolls). The target (1,500-2,500) is the base chance, the figure of `ChaosLootRoll`.
+
+`tests/unique_open_level_test.lua` (luajit and lua5.3): the window edges, the curve, boss-only / endgame rules, the tier rule, listed
+against open chance sampled with `rollUniques`, the model against `rollUniques`, every band and the pity numbers. Dependent data
+regenerated: the codex and wiki text of the bad-luck protection (`gen_codex_data.lua`, `gen_wiki_data.lua`). `loot_model.lua`,
+`roulette_model.lua`, `store_model.lua`, `progression_model.lua` and `pack_model.py` do not read the unique chances. Going live: loot.lua
+is a script, not a config table, so "Reload one file" does not apply; admin app: Painel > Atualizar servidor > Aplicar e reiniciar
+(`update-apply`, after the release), or Server > Reload system > scripts for a live reload; fallback `chaos-ctl.sh update-apply`.
 
 ## Roulette prizes against token drops (O151)
 

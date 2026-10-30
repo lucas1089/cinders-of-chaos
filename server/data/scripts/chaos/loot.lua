@@ -666,6 +666,47 @@ local function monsterListed(monsters, name)
 	return false
 end
 
+-- linear between points {{x, y}, ...} (sorted by x), flat beyond the ends
+local function curveAt(points, x)
+	if type(points) ~= "table" or #points == 0 then
+		return 0
+	end
+	if x <= points[1][1] then
+		return points[1][2]
+	end
+	for i = 2, #points do
+		local a, b = points[i - 1], points[i]
+		if x <= b[1] then
+			return a[2] + (b[2] - a[2]) * (x - a[1]) / (b[1] - a[1])
+		end
+	end
+	return points[#points][2]
+end
+
+-- O342: the multiplier of a leveling unique (no minMonsterLevel, not boss-only, an item `level` up to
+-- unique.openLevel.maxItemLevel) on a monster that does not list it: any monster whose level lies in the window around the
+-- item's level drops it at mult(monster level) x its chance. The window runs from level x (1 - below) to level x above +
+-- aboveFlat. nil = outside the window (or the rule is off): the name list holds.
+function L.openLevelMult(e, monsterLevel)
+	local o = cfg().unique.openLevel
+	local lv = tonumber(e.level)
+	monsterLevel = tonumber(monsterLevel)
+	if not (o and o.enabled and lv and lv > 0 and monsterLevel and monsterLevel > 0) then
+		return nil
+	end
+	if e.bossOnly or e.minMonsterLevel or lv > (tonumber(o.maxItemLevel) or 0) then
+		return nil
+	end
+	if monsterLevel < lv * (1 - (tonumber(o.below) or 0)) or monsterLevel > lv * (tonumber(o.above) or 1) + (tonumber(o.aboveFlat) or 0) then
+		return nil
+	end
+	local m = curveAt(o.mult, monsterLevel)
+	if m <= 0 then
+		return nil
+	end
+	return m
+end
+
 -- the bad-luck protection group of a unique entry (conquest_config.lua pity): set pieces, boss uniques, the rest
 function L.pityGroup(e)
 	if e.set then
@@ -720,12 +761,16 @@ function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 		-- O148: an entry with a minimum monster level is not held to its monster list on a monster of that level
 		-- (beta 2026-10-23: ~1000 Rare / Legendary kills in the level 1500 hunts, no unique: the endgame uniques listed
 		-- twelve waystone monsters, no hunt monster); such a drop gets u.open.mult on its chance
-		local open = false
+		local open, openMult = false, nil
 		if ok and not monsterListed(e.monsters, monsterName) then
 			if e.minMonsterLevel and u.open and u.open.enabled and not e.bossOnly then
 				open = true
 			else
-				ok = false
+				-- O342: a leveling unique also drops from a monster near its level (L.openLevelMult)
+				openMult = L.openLevelMult(e, monsterLevel)
+				if not openMult then
+					ok = false
+				end
 			end
 		end
 		if ok and e.season and ChaosSeason and ChaosSeason.uniqueBlocked and ChaosSeason.uniqueBlocked(e.season, owner) then
@@ -736,6 +781,8 @@ function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 			local chance = e.chance * mult * (itemFind or 1) * (group and pity(group) or 1)
 			if open then
 				chance = chance * (tonumber(u.open.mult) or 1)
+			elseif openMult then
+				chance = chance * openMult
 			end
 			if chance > u.maxChance then
 				chance = u.maxChance

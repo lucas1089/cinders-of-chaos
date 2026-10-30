@@ -183,6 +183,14 @@ return {
 		-- entry drops from ANY monster of that level or more (the name list only matters below it), at mult x its chance
 		-- (the x tier multiplier and item find stay). Boss-only entries keep their bosses.
 		open = {enabled = true, mult = 0.5},
+		-- O342: the leveling uniques (no minMonsterLevel, not boss-only, an item level up to maxItemLevel) also drop from ANY
+		-- monster whose level lies near the item's: from item level x (1 - below) to item level x above + aboveFlat. A
+		-- monster that lists the unique keeps the full chance; any other monster in the window gets mult (a curve of the
+		-- monster's level, linear between the points) x the chance. The curve is fitted by tools/unique_pace_model.lua
+		-- (--derive) to one unique per 1500-2500 kills of a hunt of the right level (server/README.md "Unique pace").
+		openLevel = {enabled = true, maxItemLevel = 700, below = 0.10, above = 2.0, aboveFlat = 10, mult = {{1, 0.1}, {30, 0.1}, {40, 0.25}, {50, 0.45}, {60, 0.65}, {70, 0.95}, {80, 1.2}, {90, 1.5}, {100, 2.0},
+			{120, 2.8}, {150, 3.3}, {175, 3.7}, {200, 5.5}, {225, 7.1}, {250, 9.3}, {300, 13.6}, {350, 11.4}, {400, 6.5}, {450, 6.3},
+			{500, 6.4}, {550, 5.9}, {600, 3.8}, {650, 3.5}}},
 		maxChance = 10000, -- clamp after multipliers
 		effect = "CONST_ME_FIREWORK_YELLOW", -- magic effect name looked up in _G at runtime (fallback 49)
 		fallbackEffect = 49,
