@@ -4400,6 +4400,13 @@ copy in `.cinders_launcher/feed.json` for an offline start; feed text shown as p
 out, counts and lengths capped); links open in the browser only when `https://` without spaces; a broken, missing or
 oversize feed shows one short line, never a dialog. Texts in pt-BR and en in `i18n.rs` (`FeedText`). The window is 560x520.
 
+**Look (O339).** Dark fantasy window: warm black, ember accent, gold headings (`launcher/src/theme.rs`). A hero banner
+with the brand logo, an ember Play button (hover, pressed, cold while the update runs), a styled progress bar, News and
+Changelog as cards under ember-underline tabs, a footer with the version and a link to the site (the origin of `feed`).
+The window icon is the brand icon. Art: `launcher/tools/gen_launcher_art.py` writes `launcher/assets/banner.rgba` (960x300)
+and `icon.rgba` (128x128), raw RGBA from `docs/brand/cinders_logo*.png`, embedded with `include_bytes!`
+(`--check` in CI, fx venv). No new crate, no new font (egui's default fonts). Window 760x700, resizable, minimum 600x560.
+
 **Tests.** `launcher/tests/mass_update.rs` (fake server on 127.0.0.1, fake install, the real `curl`): 120 rounds with
 random trouble and a launcher update every few rounds, plus interrupted download (resume from the byte held), bad hash
 (nothing installed, the good files kept staged), bad signature (no download at all), bad path, rollback at every swap
