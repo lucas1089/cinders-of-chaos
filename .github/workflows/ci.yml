@@ -858,7 +858,7 @@ jobs:
           # system numpy: patch_hunt_gates.py reads the map with tools/map/otbm.py (python3 -I does not see pip's user site)
           sudo apt-get install -y -qq python3-numpy
           python3 -I server/tools/patch_hunt_gates_test.py
-      - name: Hunt audit rules on synthetic data (audit_hunts.py: monsters, density, size of every hunt; the installed map is audited by hand, docs/HUNT_AUDIT.md; O337)
+      - name: "Hunt audit rules on synthetic data (audit_hunts.py, monsters, density, size of every hunt; the installed map is audited by hand, docs/HUNT_AUDIT.md; O337)"
         run: python3 -I server/tools/audit_hunts_test.py
 
       - name: Pack bands per role, Elementalist ahead on a pack, late packs die in at most 3x a base hunt pack (pack_model.py --check; boss_balance_config.lua packLimits, pace_config.lua scaled.health)
@@ -1404,7 +1404,7 @@ jobs:
           cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C "$RUNNER_TEMP/pair"
           python3 -I chaos/client/tools/sprites/check_pair.py "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
-      - name: Item wire table matches the pair (check_item_wire.py --table-check: FLAG_ANIMATION and splash / fluid groups per dat thing)
+      - name: Item wire table matches the pair (check_item_wire.py --table-check, FLAG_ANIMATION and splash / fluid groups per dat thing)
         run: python3 -I chaos/server/tools/check_item_wire.py --table-check "$RUNNER_TEMP/pair/Tibia.dat" chaos/server/data/items/item_wire.csv
 
       - name: Recolour variants match the generator (gen_theme_art.py recolour reads the pair's own monster looks)
