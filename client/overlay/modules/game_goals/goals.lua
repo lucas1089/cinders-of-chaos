@@ -11,6 +11,7 @@ local SETTING_TRACKER = 'chaos_goals_tracker'
 local SETTING_FOLDED = 'chaos_goals_tracker_folded'
 
 local window, tracker
+local scheduleAnchor
 local st = V.new()
 local menuAdded = false
 local buffer = ''
@@ -157,14 +158,46 @@ local function trackerEnabled()
   return g_settings.getBoolean(SETTING_TRACKER, true)
 end
 
--- the tracker's text area is 208 px wide (220 - padding): about 28 characters of verdana 11 per line, 14 px a line
-local TRACKER_CHARS, TRACKER_LINE = 28, 14
+-- the tracker's text area is 208 px wide (220 - padding): about 28 characters of verdana 11 per line, 14 px a line.
+-- Phone: 150 px wide, verdana 9, 3 rows at most and a "+N more" line, header click folds it, header drag moves it.
+local TRACKER_DESKTOP = { chars = 28, line = 14, width = 220, rowGap = 12, font = 'verdana-11px-antialised', title = 'verdana-11px-rounded', titleH = 16, maxRows = nil }
+local TRACKER_PHONE = { chars = 24, line = 11, width = 150, rowGap = 8, font = 'verdana-9px', title = 'verdana-9px-rounded', titleH = 20, maxRows = 3 }
+
+local function isPhone()
+  local ok, m = pcall(function() return g_app.isMobile() end)
+  return ok and m and true or false
+end
+
+local function trackerLook()
+  return isPhone() and TRACKER_PHONE or TRACKER_DESKTOP
+end
+
+local function addTrackerRow(parent, text, look, color, pct)
+  local w = g_ui.createWidget('GoalTrackerRow', parent)
+  local wrapped, lines = V.wrapLine(text, look.chars)
+  w.label:setFont(look.font)
+  w.label:setText(wrapped)
+  if color then w.label:setColor(color) end
+  w.label:setHeight(lines * look.line)
+  w:setHeight(lines * look.line + look.rowGap)
+  w.bar:setPercent(pct)
+  w.bar:setBackgroundColor(pct >= 100 and '#3f6e24' or '#a3844b')
+  if isPhone() then w.bar:setHeight(4) end
+  w.onClick = function() show() end
+  return w
+end
 
 local function renderTracker()
   if not tracker then return end
   local shown = trackerEnabled() and (#st.tracker > 0 or #st.ascension > 0 or #st.spellquest > 0) and g_game.isOnline()
   tracker:setVisible(shown)
   if not shown then return end
+  local look = trackerLook()
+  tracker:setWidth(look.width)
+  tracker.title:setFont(look.title)
+  tracker.title:setHeight(look.titleH)
+  tracker.ascTitle:setFont(look.title)
+  tracker.sqTitle:setFont(look.title)
   local folded = g_settings.getBoolean(SETTING_FOLDED, false)
   local hasGoals, hasAsc, hasSq = #st.tracker > 0, #st.ascension > 0, #st.spellquest > 0
   if hasGoals then
@@ -177,51 +210,49 @@ local function renderTracker()
   tracker.rows:destroyChildren()
   tracker.ascRows:destroyChildren()
   tracker.sqRows:destroyChildren()
+  if tracker.moreLine then tracker.moreLine:destroy() tracker.moreLine = nil end
+  local take, hidden = V.budget({ #st.tracker, #st.ascension, #st.spellquest }, look.maxRows)
   tracker.rows:setVisible(not folded)
-  tracker.ascTitle:setVisible(hasAsc and hasGoals and not folded)
+  tracker.ascTitle:setVisible(hasAsc and hasGoals and not folded and take[2] > 0)
   tracker.ascRows:setVisible(not folded)
-  tracker.sqTitle:setVisible(hasSq and (hasGoals or hasAsc) and not folded)
+  tracker.sqTitle:setVisible(hasSq and (hasGoals or hasAsc) and not folded and take[3] > 0)
   tracker.sqRows:setVisible(not folded)
   if folded then
     tracker.rows:setHeight(0)
     tracker.ascRows:setHeight(0)
     tracker.sqRows:setHeight(0)
+    scheduleAnchor()
     return
   end
-  for _, r in ipairs(st.spellquest) do
-    local w = g_ui.createWidget('GoalTrackerRow', tracker.sqRows)
-    local text, pct, color = V.ascensionLine(r)
-    local wrapped, lines = V.wrapLine(text, TRACKER_CHARS)
-    w.label:setText(wrapped)
-    w.label:setColor(color)
-    w.label:setHeight(lines * TRACKER_LINE)
-    w:setHeight(lines * TRACKER_LINE + 12)
-    w.bar:setPercent(pct)
-    w.bar:setBackgroundColor(pct >= 100 and '#3f6e24' or '#a3844b')
-    w.onClick = function() show() end
+  for i, r in ipairs(st.spellquest) do
+    if i <= take[3] then
+      local text, pct, color = V.ascensionLine(r)
+      addTrackerRow(tracker.sqRows, text, look, color, pct)
+    end
   end
-  for _, r in ipairs(st.ascension) do
-    local w = g_ui.createWidget('GoalTrackerRow', tracker.ascRows)
-    local text, pct, color = V.ascensionLine(r)
-    local wrapped, lines = V.wrapLine(text, TRACKER_CHARS)
-    w.label:setText(wrapped)
-    w.label:setColor(color)
-    w.label:setHeight(lines * TRACKER_LINE)
-    w:setHeight(lines * TRACKER_LINE + 12)
-    w.bar:setPercent(pct)
-    w.bar:setBackgroundColor(pct >= 100 and '#3f6e24' or '#a3844b')
-    w.onClick = function() show() end
+  for i, r in ipairs(st.ascension) do
+    if i <= take[2] then
+      local text, pct, color = V.ascensionLine(r)
+      addTrackerRow(tracker.ascRows, text, look, color, pct)
+    end
   end
-  for _, r in ipairs(st.tracker) do
-    local w = g_ui.createWidget('GoalTrackerRow', tracker.rows)
-    local text, pct = V.trackerLine(r)
-    local wrapped, lines = V.wrapLine(text, TRACKER_CHARS)
-    w.label:setText(wrapped)
-    w.label:setHeight(lines * TRACKER_LINE)
-    w:setHeight(lines * TRACKER_LINE + 12)
-    w.bar:setPercent(pct)
-    w.onClick = function() show() end
+  for i, r in ipairs(st.tracker) do
+    if i <= take[1] then
+      local text, pct = V.trackerLine(r)
+      addTrackerRow(tracker.rows, text, look, nil, pct)
+    end
   end
+  if hidden > 0 then
+    local l = g_ui.createWidget('UILabel', tracker)
+    l:setFont(look.font)
+    l:setColor('#8c8070')
+    l:setHeight(look.line + 2)
+    l:setText(V.hiddenLine(hidden))
+    l.onClick = function() show() end
+    l:setPhantom(false)
+    tracker.moreLine = l
+  end
+  scheduleAnchor()
 end
 
 function setTrackerEnabled(on)
@@ -322,6 +353,7 @@ local function onGameStart()
   buffer = ''
   addMenu()
   renderTracker()
+  scheduleAnchor() -- the dragged place is per character
 end
 
 local function onGameEnd()
@@ -330,25 +362,64 @@ local function onGameEnd()
   renderTracker()
 end
 
-local EDGES = { left = AnchorLeft, right = AnchorRight, verticalCenter = AnchorVerticalCenter }
+local EDGES = { left = AnchorLeft, right = AnchorRight, top = AnchorTop, verticalCenter = AnchorVerticalCenter }
 local anchorEvent
 
--- The tracker sits at the left edge of the map, half way down. Anchors are dropped and set again, so after the side
--- panels changed (Options > Interface > Show Left Horizontal Panel adds a left panel, hiding it leaves one) the tracker
--- is back at its corner and not where the old layout left it. The tracker is not draggable, so no dragged place is kept.
+local SETTING_POS = 'chaosGoalsTracker' -- g_settings node {[character name] = {x, y}}: where the player dragged the tracker
+local dragOffset, dragStart, dragMoved
+
+local function charName()
+  local ok, p = pcall(function() return g_game.getLocalPlayer() end)
+  local name = ok and p and p:getName() or ''
+  return name
+end
+
+local function savedPos()
+  local ok, node = pcall(g_settings.getNode, SETTING_POS)
+  return V.savedPosition(ok and node or nil, charName())
+end
+
+local function savePos(x, y)
+  local ok, node = pcall(g_settings.getNode, SETTING_POS)
+  node = (ok and type(node) == 'table') and node or {}
+  node[charName()] = { x = x, y = y }
+  pcall(g_settings.setNode, SETTING_POS, node)
+  pcall(g_settings.save)
+end
+
+local function setPos(root, x, y)
+  tracker:breakAnchors()
+  tracker:addAnchor(AnchorTop, 'parent', AnchorTop)
+  tracker:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  x, y = V.clampPosition(x, y, tracker:getWidth(), tracker:getHeight(), root:getWidth(), root:getHeight())
+  tracker:setMarginLeft(x)
+  tracker:setMarginTop(y)
+  return x, y
+end
+
+-- The tracker sits at the left edge of the map, half way down until the player drags it. Anchors are dropped and set
+-- again, so after the side panels changed (Options > Interface > Show Left Horizontal Panel adds a left panel, hiding
+-- it leaves one) an undragged tracker is back at its corner. A dragged place is kept per character (top left corner in
+-- the root panel) and clamped inside the screen.
 local function anchorTracker()
-  if not tracker or tracker:isDestroyed() then return end
+  if not tracker or tracker:isDestroyed() or dragOffset then return end
   local root = modules.game_interface.getRootPanel()
   if not root then return end
+  local x, y = savedPos()
+  if x then
+    setPos(root, x, y)
+    return
+  end
   tracker:breakAnchors()
   for _, a in ipairs(V.trackerAnchors(root:getChildById('gameLeftPanels') ~= nil)) do
     tracker:addAnchor(EDGES[a[1]], a[2], EDGES[a[3]])
   end
   tracker:setMarginLeft(10)
+  tracker:setMarginTop(0)
 end
 
 -- called on every geometry change of the panels it hangs on, one pass per frame at most
-local function scheduleAnchor()
+function scheduleAnchor()
   if anchorEvent then return end
   anchorEvent = addEvent(function()
     anchorEvent = nil
@@ -371,6 +442,43 @@ local function watchGeometry(connectIt)
   end
 end
 
+-- the title is the handle: a click folds, a drag moves (the position is saved per character)
+local function onTitlePress(w, pos, button)
+  if button ~= MouseLeftButton then return false end
+  dragStart = { x = pos.x, y = pos.y }
+  dragOffset = { x = pos.x - tracker:getX(), y = pos.y - tracker:getY() }
+  dragMoved = false
+  w:grabMouse()
+  return true
+end
+
+local function onTitleMove(w, pos)
+  if not dragOffset then return false end
+  if not dragMoved and not V.isDrag(pos.x - dragStart.x, pos.y - dragStart.y) then return true end
+  dragMoved = true
+  local root = tracker:getParent()
+  local keep = dragOffset
+  dragOffset = nil -- setPos re-anchors; the guard is for anchorTracker only
+  setPos(root, pos.x - keep.x - root:getX(), pos.y - keep.y - root:getY())
+  dragOffset = keep
+  return true
+end
+
+local function onTitleRelease(w)
+  if not dragOffset then return false end
+  w:ungrabMouse()
+  local moved = dragMoved
+  dragOffset, dragStart, dragMoved = nil, nil, false
+  if moved then
+    local root = tracker:getParent()
+    savePos(tracker:getX() - root:getX(), tracker:getY() - root:getY())
+    scheduleAnchor()
+  else
+    foldTracker()
+  end
+  return true
+end
+
 function init()
   window = g_ui.displayUI('goals')
   pcall(function() modules.game_howitworks.attach(window, 'goals') end) -- game_howitworks: the ? button
@@ -381,6 +489,9 @@ function init()
   local root = modules.game_interface.getRootPanel()
   tracker = g_ui.loadUI('tracker', root)
   tracker:hide()
+  tracker.title.onMousePress = onTitlePress
+  tracker.title.onMouseMove = onTitleMove
+  tracker.title.onMouseRelease = onTitleRelease
   anchorTracker()
   watchGeometry(true)
 

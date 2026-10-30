@@ -1,6 +1,6 @@
 // Next Goals tracker HUD (game_goals): the first open goals of the character, at the left edge of the visible map,
 // half way down (the other HUDs: top left character plate, rift and invasion; top centre siege, arena and monster bar;
-// top right toasts; bottom right the task tracker; bottom centre monk chi). Click the title to fold it, a row to open
+// top right toasts; bottom right the task tracker; bottom centre monk chi). Drag the title to move it (saved per character), click it to fold it, a row to open
 // the Next Goals window; below the goals the Ascension section (the steps of the ascension quest, same rows) shows
 // while the character can ascend, then the Spell Quest section (the line spell quest the character is on); the window's "Tracker on screen" box (or Adventure > Goal Tracker) hides it.
 GoalTrackerRow < UIWidget
@@ -48,7 +48,6 @@ ChaosPanelDark
     text-align: left
     !text: tr('Next Goals')
     phantom: false
-    @onClick: modules.game_goals.foldTracker()
 
   UIWidget
     id: rows

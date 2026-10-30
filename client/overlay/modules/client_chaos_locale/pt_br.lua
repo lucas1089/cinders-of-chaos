@@ -3499,6 +3499,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Conquest vendor: %s tokens"] = "Vendedor Conquest: %s tokens",
   ["Used in: %s"] = "Usado em: %s",
   ["%s +%d more"] = "%s +%d outros",
+  ["+%d more"] = "+%d outros",
   -- game_passivetree bosspoints.lua: where the boss points come from
   ["First kill of each major boss: +1 passive point (kept through resets)."] = "Primeira morte de cada grande chefe: +1 ponto passivo (mantido nos resets).",
   ["Where to get them:"] = "Onde conseguir:",
