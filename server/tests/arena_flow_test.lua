@@ -167,7 +167,9 @@ check(not S.join(a1, "2v2"), "2v2 without a party is refused")
 party(a1, a2)
 party(b1, b2)
 a2.infight = true
+tiles[key(a2.pos)].pz = false
 check(not S.join(a1, "2v2"), "2v2 refused while the partner is in combat")
+tiles[key(a2.pos)].pz = true
 a2.infight = false
 tiles[key(b2.pos)].pz = false
 check(not S.join(b1, "2v2"), "2v2 refused while the partner is outside a protection zone")

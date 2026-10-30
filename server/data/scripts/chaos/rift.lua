@@ -119,6 +119,9 @@ local function P(t)
 end
 
 local function inCombat(player)
+	if Chaos.inCombat then
+		return Chaos.inCombat(player)
+	end
 	return player:isPzLocked() or player:hasCondition(CONDITION_INFIGHT)
 end
 

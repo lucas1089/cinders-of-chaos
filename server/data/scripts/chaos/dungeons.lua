@@ -560,7 +560,7 @@ local function entryProblem(player, id, dg, difficulty)
 	end
 	-- the run teleports from wherever the player stands: without this a fight (or a chase) could be left by queueing.
 	-- Checked again on every queue tick (tryMatch), so fighting while queued drops the player from the queue
-	if player:isPzLocked() or player:hasCondition(CONDITION_INFIGHT) then
+	if (Chaos.inCombat and Chaos.inCombat(player)) or (not Chaos.inCombat and (player:isPzLocked() or player:hasCondition(CONDITION_INFIGHT))) then
 		return Chaos.t(player, "You cannot enter a dungeon while you are in a fight.")
 	end
 	if Chaos.isMultiClient(player) then

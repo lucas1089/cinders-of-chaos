@@ -651,7 +651,7 @@ function BR.leave(player)
 	local cd = tonumber(RC().leaveCooldown) or 0
 	local reason, n = K.leaveReason({
 		inside = key ~= nil and RC().enabled ~= false,
-		fight = player:isPzLocked() or (CONDITION_INFIGHT ~= nil and player:hasCondition(CONDITION_INFIGHT)),
+		fight = Chaos.inCombat and Chaos.inCombat(player) or (not Chaos.inCombat and (player:isPzLocked() or (CONDITION_INFIGHT ~= nil and player:hasCondition(CONDITION_INFIGHT)))),
 		cooldownLeft = BR.leftAt[guid] and (BR.leftAt[guid] + cd - now) or 0
 	})
 	if reason then
