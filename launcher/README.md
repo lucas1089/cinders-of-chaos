@@ -31,6 +31,28 @@ The launcher never replaces a file the manifest does not name, and only `.exe`, 
 folder itself (no sub-folders). It never deletes files. It refuses a manifest older than `baseline` of
 `launcher.json` or than the last one it applied.
 
+## Look (O339)
+
+Owner, 2026-10-30 (pt-BR): "faça um launcher mais bonito". The window is dark fantasy: warm black background, ember
+(orange-red) accent, gold headings, rounded cards. All colours and widgets are in `src/theme.rs`; `main.rs` only lays
+them out.
+
+- Hero banner with the brand logo, then a status card: status line (or progress bar) on the left, the big **Jogar**
+  button on the right. The button has hover and pressed looks, and is drawn cold and unclickable while the update runs.
+  After an error the card turns red and shows **Tentar de novo** / **Jogar assim mesmo**.
+- News and Changelog are cards (title, date, text, "Abrir no site") under tabs with an ember underline. A changelog
+  line starts with an ember diamond. The text is still plain text.
+- Footer: the version (`v` + `Cargo.toml`) and "Site do jogo" / "Game website", the origin of the `feed` address (hidden
+  when there is no feed or it fails the link rules).
+- The window icon is the brand icon (`docs/brand/cinders_logo_icon.png`). Size 760x700, resizable, minimum 600x560.
+- Art: `tools/gen_launcher_art.py` makes `assets/banner.rgba` (960x300) and `assets/icon.rgba` (128x128) from
+  `docs/brand/`, raw RGBA, embedded with `include_bytes!`. `python3 -I launcher/tools/gen_launcher_art.py --check` runs in
+  CI (needs Pillow and numpy, the fx venv); `--preview out.png` saves the banner. Change the colours in `theme.rs` and
+  `BG` in the generator together.
+- Look at it without Windows: build with the default features and run under `xvfb-run` (needs `libxkbcommon-x11-0` and
+  Mesa), then take the root window with ImageMagick `import -window root shot.png`.
+- No new crate and no new font: egui's built-in fonts.
+
 ## Files
 
 - `launcher.json` (beside the exe, written by `client/tools/set_launcher_config.py` from the `Services.update`
@@ -45,6 +67,7 @@ folder itself (no sub-folders). It never deletes files. It refuses a manifest ol
 - `src/`: `manifest.rs` (envelope, signature, `native` rules), `install.rs` (diff, download, swap, rollback, recovery),
   `selfupdate.rs`, `net.rs` (the system `curl`, built into Windows 10 and 11), `config.rs`, `feed.rs` (News and Changelog), `i18n.rs`, `launch.rs`,
   `main.rs` (egui window, or `--cli [--no-start] [--dir DIR] [--lang pt|en]` for tests and scripts).
+- `theme.rs` (window look), `assets/` (embedded art), `tools/gen_launcher_art.py` (makes the art).
 - `../crates/selfupdate/`: SHA-256, version compare and the staged rename, shared with `desktop/`.
 
 ## News and Changelog

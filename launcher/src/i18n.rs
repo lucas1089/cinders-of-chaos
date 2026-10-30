@@ -90,6 +90,14 @@ pub fn title(l: Lang) -> &'static str {
     }
 }
 
+/// Footer link to the game's website.
+pub fn website(l: Lang) -> &'static str {
+    match l {
+        Lang::Pt => "Site do jogo",
+        Lang::En => "Game website",
+    }
+}
+
 /// Texts of the News and Changelog panels (src/feed.rs).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum FeedText {
