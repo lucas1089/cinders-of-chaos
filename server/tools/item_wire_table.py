@@ -64,9 +64,11 @@ def adjust(sid, cid, group, flags, table=None):
 
 def adjust_rows(rows, table=None):
     """the manifest rows (dicts with server_id, client_id, otb_group, otb_flags) with the table applied, in place; the
-    flags the manifest says stay in otb_flags_manifest (what the art was made as, for generated tables that list it)"""
+    flags the manifest says stay in otb_flags_manifest (what the art was made as, for generated tables that list it), the
+    group in otb_group_manifest (an installer still knows a node it wrote before the table listed it)"""
     for r in rows:
         r['otb_flags_manifest'] = r['otb_flags']
+        r['otb_group_manifest'] = r['otb_group']
         r['otb_group'], r['otb_flags'] = adjust(r['server_id'], r['client_id'], r['otb_group'], r['otb_flags'], table)
     return rows
 

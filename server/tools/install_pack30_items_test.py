@@ -84,6 +84,13 @@ with tempfile.TemporaryDirectory() as td:
     again, c2 = patch_otb(new, rows)
     check(again == new and c2['new'] == 0 and c2['updated'] == 0, 'otb: a second run changes nothing')
     raises(lambda: patch_otb(otb([item_node(rows[0]['server_id'], 5, 999, 3)]), rows), 'otb: an id of another item stops')
+    # item_wire.csv took FLAG_ANIMATION off a node an earlier install wrote with it: the old node is still ours
+    import item_wire_table as W
+    flask = [dict(r) for r in rows if r['key'] == 'flask_lava_small']
+    W.adjust_rows(flask, {flask[0]['server_id']: (flask[0]['client_id'], 0, None)})
+    old_node = item_node(flask[0]['server_id'], flask[0]['client_id'], flask[0]['otb_flags_manifest'], flask[0]['otb_group'])
+    wired, c3 = patch_otb(otb([old_node]), flask)
+    check(c3['updated'] == 1 and verify_otb(wired, flask) == 1, 'otb: a node with the flags before item_wire.csv is replaced')
 
     # xml
     xml = '<?xml version="1.0"?>\n<items>\n\t<item id="2671" name="a ham" />\n</items>\n'

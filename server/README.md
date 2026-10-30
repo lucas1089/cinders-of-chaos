@@ -20857,7 +20857,9 @@ other bytes than the server wrote, and drops the rest of that server message, a 
      donor items, pair 50, pack 30, pack 33, the art items) write the node right the first time and verify it, and the
      install step `itemwire` (`tools/patch_item_wire.py`, after all item steps, before `sql`) rewrites every other node
      (the base's own). A row applies only to the node with that server id **and** client id. items.otb.bak keeps the
-     original; a second run changes nothing. Group 11 / 12 makes the server write the fluid byte 0 (empty): same look (these
+     original; a second run changes nothing. On a server installed before the table, `install_pack_items` still knows a
+     node it wrote with the manifest's group and flags and rewrites it (update of 2026-10-30 failed at `packitems`:
+     "server id 36460 belongs to another item"). Group 11 / 12 makes the server write the fluid byte 0 (empty): same look (these
      dat things have one pattern), the look text says "of unknown" like any splash. The lua tables generated from the
      manifests (`chaos_pack33_kit.lua` `anim`) keep the manifest's own flag.
   2. Client base patch **0174** (`client/BASE.md`): `Item::isQuiver` loses the id list; a quiver is the item type's weapon
