@@ -1,0 +1,179 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "fangclaw_den",
+  "name": "Fangclaw Den",
+  "biome": "cave",
+  "size": [
+    144,
+    124
+  ],
+  "floors": 1,
+  "level": [
+    305,
+    390
+  ],
+  "seed": 33706,
+  "origin": {
+    "x": 15540,
+    "y": 15500,
+    "z": 9
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "claw_pits",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "scale_run",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "lurk_hollow",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "fang_ledge",
+      "floor": 1,
+      "size": "large",
+      "place": "south"
+    },
+    {
+      "id": "breaker_den",
+      "floor": 1,
+      "size": "large",
+      "place": "southwest"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "claw_pits",
+      "width": 3
+    },
+    {
+      "from": "claw_pits",
+      "to": "scale_run",
+      "width": 3
+    },
+    {
+      "from": "claw_pits",
+      "to": "lurk_hollow",
+      "width": 3
+    },
+    {
+      "from": "scale_run",
+      "to": "fang_ledge",
+      "width": 3
+    },
+    {
+      "from": "lurk_hollow",
+      "to": "breaker_den",
+      "width": 3
+    },
+    {
+      "from": "breaker_den",
+      "to": "scale_run",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp",
+    "to": {
+      "x": 32413,
+      "y": 31488,
+      "z": 7
+    }
+  },
+  "spawns": [
+    {
+      "zone": "claw_pits",
+      "monster": "Fangclaw",
+      "count": 13,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "claw_pits",
+      "monster": "Scalebreaker",
+      "count": 7,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "scale_run",
+      "monster": "Scalebreaker",
+      "count": 13,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "scale_run",
+      "monster": "Lurkskin",
+      "count": 7,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "lurk_hollow",
+      "monster": "Lurkskin",
+      "count": 13,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "lurk_hollow",
+      "monster": "Fangclaw",
+      "count": 7,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "fang_ledge",
+      "monster": "Fangclaw",
+      "count": 9,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "fang_ledge",
+      "monster": "Scalebreaker",
+      "count": 5,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "breaker_den",
+      "monster": "Scalebreaker",
+      "count": 9,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "breaker_den",
+      "monster": "Lurkskin",
+      "count": 5,
+      "pack": 3,
+      "respawn": 75
+    }
+  ],
+  "notes": "Annex of the base hunt fangclaw (O337): the hunt had too few monsters and too little ground for the hunt audit. A portal in the hunt leads here (tools/hunt_annexes.json), the exit portal leads back. Same monsters and level band as the hunt (server/README.md \"Hunt annexes\")."
+}

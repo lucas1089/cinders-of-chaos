@@ -1803,6 +1803,23 @@ function Chaos.isStaff(player)
 	return ok and v == true
 end
 
+-- in combat for the "not in combat" gates (trials, rift, arena, shop services ...): PZ-locked, or the battle condition
+-- outside a protection zone. The engine keeps the battle condition for its full time after the player walks into a
+-- protection zone, where no fight can reach them (owner 2026-10-30: "You cannot enter a trial in combat." in a PZ).
+function Chaos.inCombat(player)
+	local ok, v = pcall(function()
+		if player:isPzLocked() then
+			return true
+		end
+		if CONDITION_INFIGHT == nil or not player:hasCondition(CONDITION_INFIGHT) then
+			return false
+		end
+		local tile = Tile and Tile(player:getPosition())
+		return not (tile and TILESTATE_PROTECTIONZONE and tile:hasFlag(TILESTATE_PROTECTIONZONE))
+	end)
+	return ok and v == true
+end
+
 -- how often an instance's tick sweeps its slot for strangers (Chaos.sweepDue keeps the time per run table)
 Chaos.instanceSweepMs = 3000
 function Chaos.sweepDue(run, nowMs)

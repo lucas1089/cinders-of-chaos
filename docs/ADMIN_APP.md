@@ -216,6 +216,9 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `echo 'ssh-rsa AAAA...' | sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh install-admin --full -`
 (a chave pública vem de **Copiar chave pública**). Quem pegar o celular desbloqueado fica com a VPS inteira.
 
+O `install-admin` **adiciona** a chave e mantém as que já estão lá (desde 2026-10-30): o celular e o app de admin do
+Windows podem ter cada um a sua chave. Rodar de novo com a mesma chave não duplica nada.
+
 ## Segurança
 
 - A chave privada fica criptografada com uma chave do Keystore do Android. Não vai para backup da nuvem.

@@ -376,6 +376,16 @@ function H.dropUtilities(slots, spellOf)
   return out, dropped
 end
 
+-- the rows to bring back when a saved list is empty: kept (the last list with rows, saved with it) unless the player
+-- emptied the list (cleared). nil: nothing to bring back.
+function H.restoreKept(slots, kept, cleared)
+  if cleared or type(kept) ~= 'table' or #kept == 0 then return nil end
+  if type(slots) == 'table' and #slots > 0 then return nil end
+  local out = {}
+  for i, s in ipairs(kept) do out[i] = { id = s.id, enabled = s.enabled ~= false } end
+  return out
+end
+
 -- the list after Auto setup. mode 'replace': the plan's ids; 'add': the player's rows stay, planned ids not there yet go
 -- below (up to SUPPORT_MAX)
 function H.mergeSlots(current, planned, mode)

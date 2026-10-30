@@ -1,0 +1,154 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "scaledrake_roost",
+  "name": "Scaledrake Roost",
+  "biome": "lava",
+  "size": [
+    104,
+    92
+  ],
+  "floors": 1,
+  "level": [
+    300,
+    320
+  ],
+  "seed": 33702,
+  "origin": {
+    "x": 14640,
+    "y": 15500,
+    "z": 9
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "cinder_ledge",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "scale_hollow",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "clutch_pit",
+      "floor": 1,
+      "size": "large",
+      "place": "east"
+    },
+    {
+      "id": "ash_rookery",
+      "floor": 1,
+      "size": "large",
+      "place": "south"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "cinder_ledge",
+      "width": 3
+    },
+    {
+      "from": "cinder_ledge",
+      "to": "scale_hollow",
+      "width": 3
+    },
+    {
+      "from": "cinder_ledge",
+      "to": "clutch_pit",
+      "width": 3
+    },
+    {
+      "from": "scale_hollow",
+      "to": "ash_rookery",
+      "width": 3
+    },
+    {
+      "from": "ash_rookery",
+      "to": "scale_hollow",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp",
+    "to": {
+      "x": 33016,
+      "y": 31932,
+      "z": 7
+    }
+  },
+  "spawns": [
+    {
+      "zone": "cinder_ledge",
+      "monster": "Scaledrake",
+      "count": 10,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "cinder_ledge",
+      "monster": "Cinderclaw",
+      "count": 6,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "scale_hollow",
+      "monster": "Cinderclaw",
+      "count": 10,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "scale_hollow",
+      "monster": "Scaledrake",
+      "count": 6,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "clutch_pit",
+      "monster": "Scaledrake",
+      "count": 7,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "clutch_pit",
+      "monster": "Cinderclaw",
+      "count": 4,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "ash_rookery",
+      "monster": "Cinderclaw",
+      "count": 7,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "ash_rookery",
+      "monster": "Scaledrake",
+      "count": 4,
+      "pack": 3,
+      "respawn": 75
+    }
+  ],
+  "notes": "Annex of the base hunt Scaledrake (O337): the hunt had too few monsters and too little ground for the hunt audit. A portal in the hunt leads here (tools/hunt_annexes.json), the exit portal leads back. Same monsters and level band as the hunt (server/README.md \"Hunt annexes\")."
+}

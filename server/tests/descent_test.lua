@@ -400,16 +400,26 @@ eq(D.spendDaily(cfg, {}, now), 20261005, "a new character spends from a full ban
 
 -- ====================================================================== monster types and spawning (beta report 2026-10-24)
 -- A room whose window lies above the monster pool had no type and counted as cleared at once ("a room bonus right after
--- entering"). The bounty pool ends at level 980, the window of a level 1500+ party is 900-1800 and more.
+-- entering"). The bounty pool ended at level 980 then and the window of a level 1500+ party is 900-1800 and more. O337: the pool
+-- lists the monsters of the planned hunts now (829 monsters up to level 2000) and escalation.maxLevel is 2000, the top of it, so
+-- the real pool holds a window everywhere; the old situation is kept as a test on the pool cut at level 980.
 do
 	local pool = dofile("data/scripts/chaos/bounty_pool.lua").hunt
 	local top = 0
 	for _, m in ipairs(pool) do
 		top = math.max(top, m.level)
 	end
+	eq(top, cfg.escalation.maxLevel, "the strongest monster of the pool is the ceiling of the window (escalation.maxLevel)")
+	local short = {}
+	for _, m in ipairs(pool) do
+		if m.level <= 980 then
+			short[#short + 1] = m
+		end
+	end
+	ok(#pool > 800 and #pool - #short >= 50, "the pool holds the planned hunts' monsters above 980: " .. #pool .. " against " .. #short)
 	local anyKnown = function() return true end
 	-- the old pick (widen the window five times, nothing else) as the reproduction
-	local function oldPick(window)
+	local function oldPick(pool, window)
 		local e = cfg.escalation
 		local w = {window[1], window[2]}
 		local function count()
@@ -429,27 +439,43 @@ do
 		end
 		return n
 	end
-	local seen = 0
+	local seen, shortTop = 0, 0
+	for _, m in ipairs(short) do
+		shortTop = math.max(shortTop, m.level)
+	end
 	for _, level in ipairs({100, 300, 800, 1000, 1500, 2000, 2200}) do
 		for depth = 1, 12 do
 			local esc = D.escalation(cfg, depth, level)
+			-- the real pool: a full set of types, inside the window or the widened one
 			local types = D.pickTypes(cfg, pool, esc.window, anyKnown, D.roomRng(7, depth, "types"))
 			ok(#types == cfg.types, string.format("level %d depth %d: %d monster types (window %d-%d)", level, depth, #types,
 				esc.window[1], esc.window[2]))
+			ok(oldPick(pool, esc.window) >= cfg.types, string.format("level %d depth %d: the real pool needs no fallback (window %d-%d)",
+				level, depth, esc.window[1], esc.window[2]))
 			for _, m in ipairs(types) do
 				ok(m.health >= cfg.escalation.minPoolHealth, "a fallback type is no weakling: " .. m.name)
 			end
-			if oldPick(esc.window) == 0 then
+			-- the pool cut at 980 (the pool of the beta report): the fallback fills the room
+			local cut = D.pickTypes(cfg, short, esc.window, anyKnown, D.roomRng(7, depth, "types"))
+			ok(#cut == cfg.types, string.format("the short pool, level %d depth %d: %d monster types", level, depth, #cut))
+			if oldPick(short, esc.window) == 0 then
 				seen = seen + 1
-				ok(#types > 0, "the old pick found nothing at level " .. level .. " depth " .. depth .. ", the new one does")
+				ok(#cut > 0, "the old pick found nothing at level " .. level .. " depth " .. depth .. ", the new one does")
 			end
 		end
 	end
-	ok(seen > 0, "the old pick really left rooms empty (pool tops at " .. top .. ")")
+	ok(seen > 0, "the old pick really left rooms empty on the short pool (it tops at " .. shortTop .. ")")
 	-- the fallback takes the nearest levels: above the pool that is the strongest monsters
-	local hi = D.pickTypes(cfg, pool, {1500, 1800}, anyKnown, D.roomRng(7, 12, "types"))
-	for _, m in ipairs(hi) do
-		ok(m.level >= top - 150, "above the pool: the strongest, got " .. m.name .. " level " .. m.level)
+	for _, p in ipairs({{short, shortTop}, {pool, top}}) do
+		local hi = D.pickTypes(cfg, p[1], {p[2] + 520, p[2] + 820}, anyKnown, D.roomRng(7, 12, "types"))
+		eq(#hi, cfg.types, "above the pool: a full set of types")
+		for _, m in ipairs(hi) do
+			ok(m.level >= p[2] - 150, "above the pool: the strongest, got " .. m.name .. " level " .. m.level)
+		end
+	end
+	-- a level 2200 party never gets a window above the pool: the clamp keeps it on the strongest monsters
+	for depth = 1, 12 do
+		ok(D.escalation(cfg, depth, 2200).window[2] <= top + 10, "level 2200, depth " .. depth .. ": the window ends at the pool's top")
 	end
 	-- same draws as before when the window holds enough
 	local esc = D.escalation(cfg, 3, 400)

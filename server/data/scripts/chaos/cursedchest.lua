@@ -560,7 +560,44 @@ local function spawnHorde(ev, ch, n)
 		pcall(ChaosCombatFx.label, ch.pos, function(p) return Chaos.t(p, "HORDE %d/%d", n, total) end, c.chest.labelColor)
 	end
 	fx(ch.pos, "CONST_ME_MORTAREA")
+	try("aura", CC.syncAuras)
 	return made
+end
+
+-- ------------------------------------------------------------------ the monsters' aura (O341)
+-- Tells each player which event monsters they can see, so the client draws the chest's smoke under them. Only when a
+-- viewer's list changed; runs from the think loop (1.5 s), after a horde spawns and when an event ends.
+CC.auraSent = CC.auraSent or {}
+local AURA_VIEW = {x = 10, y = 8}
+
+function CC.syncAuras()
+	local monsters = {}
+	for id in pairs(CC.tagged) do
+		local m = Monster(id)
+		if m and m:getHealth() > 0 then
+			monsters[#monsters + 1] = {id = id, pos = m:getPosition()}
+		end
+	end
+	if #monsters == 0 and next(CC.auraSent) == nil then
+		return
+	end
+	local op = (ChaosOpcodes and ChaosOpcodes.templarAura) or 118
+	local online = {}
+	for _, p in ipairs(Game.getPlayers()) do
+		local pid = p:getId()
+		online[pid] = true
+		local ids = K.auraList({id = pid, pos = p:getPosition()}, monsters, AURA_VIEW)
+		local out = K.auraDecide(CC.auraSent, pid, ids)
+		if out then
+			try("aura sync", function()
+				if Chaos and Chaos.send then
+					return Chaos.send(p, op, "cursed", {c = out})
+				end
+				return p:sendExtendedOpcode(op, json.encode({action = "cursed", data = {c = out}}))
+			end)
+		end
+	end
+	K.auraPrune(CC.auraSent, online)
 end
 
 -- ------------------------------------------------------------------ the end
@@ -587,6 +624,7 @@ function CC.failEvent(ch, reason)
 	end
 	K.fail(ev, reason)
 	clearMonsters(ev, true)
+	try("aura", CC.syncAuras)
 	if reason == "time" then
 		tellAll(ev, "The curse wins: time is up. The cursed chest crumbles and its hordes fade.")
 	else
@@ -600,6 +638,7 @@ function CC.winEvent(ch)
 	local ev = ch.ev
 	K.win(c, ev, nowMs())
 	clearMonsters(ev, false)
+	try("aura", CC.syncAuras)
 	ch.state = "won"
 	local item = chestItem(ch)
 	if item then
@@ -980,6 +1019,7 @@ function think.onThink(interval)
 			fx(ch.pos, (loopCount % 3 == 0) and c.chest.loopEffectAlt or c.chest.loopEffect)
 		end
 	end
+	try("aura", CC.syncAuras)
 	for _, ch in ipairs(expired) do
 		local ev = ch.ev
 		if ev and ev.state == "running" then

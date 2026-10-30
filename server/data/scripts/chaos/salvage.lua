@@ -264,6 +264,8 @@ local function rowText(info, roll, player)
 		kind = Chaos.t(player, "Set piece")
 	elseif info.unique then
 		kind = Chaos.t(player, "Unique")
+	elseif (info.rarity or 0) < 1 then
+		kind = Chaos.t(player, "Normal")
 	else
 		kind = C.rarityName(info.rarity)
 		if player and Chaos.lang(player) == "pt-BR" and ChaosRarity.namePt then

@@ -573,6 +573,7 @@ ItemType = function(id)
 	return {getName = function() return "item" .. id end, getId = function() return (installedIds[id] or id < 30000) and id or 0 end}
 end
 
+json = json or {encode = function(t) return t end} -- the mock sends the table itself
 local given = {}
 local function mkPlayer(id, guid, name)
 	local p = {_id = id, _guid = guid, _name = name, _msgs = {}, _cancels = {}, _pos = Position(100, 100, 7), _level = 100,
@@ -592,6 +593,7 @@ local function mkPlayer(id, guid, name)
 	function p:getAccountType() return ACCOUNT_TYPE_GOD end
 	function p:sendTextMessage(t, text) self._msgs[#self._msgs + 1] = text end
 	function p:sendCancelMessage(text) self._cancels[#self._cancels + 1] = text end
+	function p:sendExtendedOpcode(op, buf) self._ext = self._ext or {}; self._ext[#self._ext + 1] = {op = op, buf = buf} end
 	function p:getItemCount(id2) return self._given[id2] or 0 end
 	function p:addItem(id2, count) self._given[id2] = (self._given[id2] or 0) + count; return {} end
 	function p:addItemEx(item) self._items[#self._items + 1] = item; return 0 end
@@ -795,6 +797,29 @@ end
 eq(alive, math.floor(4 * 1.35 + 0.5), "horde 1 size for two players")
 ok(labels[#labels].text(hero):find("HORDE 1/5"), "label: horde 1/5")
 ok(hero._msgs[#hero._msgs]:find("Horde 1/5"), "message: Horde 1/5")
+-- O341: the monsters carry the chest's aura on the client: told to the players in view, only when the list changed
+do
+	local function auraMsgs(p)
+		local out = {}
+		for _, e in ipairs(p._ext or {}) do
+			if e.op == 118 then
+				local d = e.buf
+				if d.action == "cursed" then out[#out + 1] = d.data.c end
+			end
+		end
+		return out
+	end
+	local got = auraMsgs(hero)
+	ok(#got >= 1, "O341: the hero was told about the horde")
+	eq(#got[#got], alive, "O341: every husk in view is in the list")
+	for _, id in ipairs(got[#got]) do ok(CC.tagged[id] ~= nil, "O341: only event monsters are named") end
+	local n = #got
+	CC.syncAuras()
+	eq(#auraMsgs(hero), n, "O341: no new message when nothing changed")
+	CC.auraSent = {}
+	CC.syncAuras()
+	eq(#auraMsgs(hero), n + 1, "O341: a player who logged in later gets the list")
+end
 -- a tagged monster never leaves a chest, nor does it count for another system
 local anyMonster
 for _, m in pairs(monsters) do anyMonster = m end
@@ -1143,6 +1168,34 @@ do
 	local told = false
 	for _, m in ipairs(hero._msgs) do if m:find("crumbled before you took", 1, true) then told = true end end
 	ok(told, "O308: and a note when it crumbled unclaimed")
+end
+
+-- ------------------------------------------------------------------ the monsters' aura (O341)
+do
+	local view = {x = 10, y = 8}
+	local viewer = {id = 1, pos = {x = 100, y = 100, z = 7}}
+	local mons = {
+		{id = 30, pos = {x = 105, y = 100, z = 7}},
+		{id = 12, pos = {x = 100, y = 108, z = 7}},
+		{id = 40, pos = {x = 100, y = 109, z = 7}}, -- too far south
+		{id = 50, pos = {x = 100, y = 100, z = 6}}, -- another floor
+		{id = 60, pos = {x = 111, y = 100, z = 7}}, -- too far east
+	}
+	local ids = K.auraList(viewer, mons, view)
+	eq(table.concat(ids, ","), "12,30", "aura list: in view on the floor, sorted")
+	eq(#K.auraList(viewer, {}, view), 0, "aura list: no monsters")
+	local sent = {}
+	eq(K.auraDecide(sent, 1, {}), nil, "aura: nothing to clear for a viewer never told")
+	local out = K.auraDecide(sent, 1, ids)
+	eq(#out, 2, "aura: first list is sent")
+	eq(K.auraDecide(sent, 1, {12, 30}), nil, "aura: same list is not resent")
+	eq(#K.auraDecide(sent, 1, {12}), 1, "aura: a changed list is sent")
+	eq(#K.auraDecide(sent, 1, {}), 0, "aura: the empty list clears")
+	eq(K.auraDecide(sent, 1, {}), nil, "aura: and is sent once")
+	K.auraDecide(sent, 2, {5})
+	K.auraDecide(sent, 3, {5})
+	K.auraPrune(sent, {[2] = true})
+	ok(sent[2] ~= nil and sent[3] == nil, "aura: a viewer who left is forgotten")
 end
 
 print(string.format("cursedchest_test: %d checks, %d failures", checks, fails))

@@ -6,7 +6,7 @@ Limits and the rules are in the tool's header and in `server/README.md` "Hunt au
 
 ## Totals
 
-37 base, 1 data, 4 late, 67 planned, 12 waystone. 18 hunts with a defect (18 of them accepted in `tools/hunt_audit_known.csv`).
+37 base, 4 late, 71 planned, 12 waystone. 8 hunts with a defect (8 of them accepted in `tools/hunt_audit_known.csv`).
 
 Columns: Mon = monsters (spawn entries), Walk = walkable tiles of the region, /100 = monsters per 100 walkable tiles,
 /screen = mean monsters per 15 x 11 screen, T/mon = walkable tiles per monster, Peak = most monsters on one screen,
@@ -46,12 +46,12 @@ Dead = ground with no monster on the screen of a player standing there, Sweep = 
 | Skeleton Elite Warrior (130) | 130-135 | 100% | 0% | 130 | 78 | 1808 | 4.3 | 3.1 | 23.2 | 9 | 1% | 54 | ok |
 | Usurper Archer (134) | 110-140 | 87% | 13% | 132 | 703 | 21098 | 3.3 | 3.2 | 30.0 | 12 | 3% | 632 | ok |
 | Fleshcarver (154) | 145-231 | 100% | 0% | 154 | 80 | 1957 | 4.1 | 2.6 | 24.5 | 7 | 2% | 56 | ok |
-| Emerald Mage (225) | 180-270 | 100% | 0% | 225 | 58 | 1729 | 3.4 | 2.2 | 29.8 | 7 | 4% | 41 | small* |
-| Blackblade (275) | 150-300 | 100% | 0% | 275 | 12 | 546 | 2.2 | 2.0 | 45.5 | 4 | 6% | 12 | sparse*, small* |
+| Emerald Mage (225) | 180-270 | 100% | 0% | 225 | 80 | 2254 | 3.5 | 2.4 | 28.2 | 11 | 13% | 53 | ok |
+| Blackblade (275) | 150-300 | 100% | 0% | 275 | 93 | 2455 | 3.8 | 2.5 | 26.4 | 15 | 33% | 55 | ok |
 | Aeliana (283) | 280-310 | 90% | 0% | 283 | 129 | 2971 | 4.3 | 3.4 | 23.0 | 7 | 0% | 66 | ok |
-| deathrattle (289) | 230-300 | 95% | 5% | 289 | 22 | 783 | 2.8 | 1.5 | 35.6 | 6 | 8% | 16 | sparse*, small* |
-| Scaledrake (308) | 305-310 | 100% | 0% | 308 | 30 | 1369 | 2.2 | 1.6 | 45.6 | 3 | 3% | 29 | sparse*, small* |
-| fangclaw (308) | 305-390 | 100% | 0% | 312 | 14 | 424 | 3.3 | 1.8 | 30.3 | 2 | 3% | 9 | small* |
+| deathrattle (289) | 230-300 | 95% | 5% | 289 | 84 | 2263 | 3.7 | 2.2 | 26.9 | 8 | 28% | 48 | ok |
+| Scaledrake (308) | 305-310 | 100% | 0% | 308 | 84 | 2580 | 3.3 | 2.3 | 30.7 | 9 | 20% | 54 | ok |
+| fangclaw (308) | 305-390 | 100% | 0% | 312 | 102 | 2465 | 4.1 | 3.0 | 24.2 | 15 | 32% | 52 | ok |
 | grothar (331) | 300-335 | 100% | 0% | 331 | 94 | 2153 | 4.4 | 3.0 | 22.9 | 7 | 0% | 45 | ok |
 
 ## Planned hunts
@@ -64,7 +64,9 @@ Dead = ground with no monster on the screen of a player standing there, Sweep = 
 | Drownbell Depths (218) | 196-240 | 100% | 0% | 192 | 181 | 4267 | 4.2 | 3.0 | 23.6 | 14 | 28% | 106 | ok |
 | Bonechoir Catacomb (245) | 200-290 | 100% | 0% | 267 | 152 | 3502 | 4.3 | 2.9 | 23.0 | 10 | 20% | 83 | ok |
 | Sulphur Gallery (257) | 215-299 | 100% | 0% | 233 | 179 | 4112 | 4.4 | 3.3 | 23.0 | 11 | 29% | 92 | ok |
-| Hollow Crypt (350) | 300-400 | 100% | 0% | 350 | 38 | 1637 | 2.3 | 1.7 | 43.1 | 5 | 36% | 34 | sparse*, dead*, small* |
+| Brickhold Depths (300) | 260-340 | 100% | 0% | 263 | 144 | 4488 | 3.2 | 2.5 | 31.2 | 8 | 20% | 95 | ok |
+| Hollow Crypt (350) | 300-400 | 100% | 0% | 350 | 90 | 2296 | 3.9 | 2.9 | 25.5 | 9 | 24% | 48 | ok |
+| Cinderbrick Halls (385) | 300-470 | 100% | 0% | 419 | 168 | 5332 | 3.2 | 2.1 | 31.7 | 6 | 19% | 106 | ok |
 | Wanwick Cloister (400) | 370-430 | 100% | 0% | 379 | 229 | 5306 | 4.3 | 3.4 | 23.2 | 12 | 19% | 106 | ok |
 | Brinescar Strand (420) | 390-450 | 100% | 0% | 401 | 195 | 4008 | 4.9 | 3.1 | 20.6 | 10 | 22% | 80 | ok |
 | Rustcog Warrens (450) | 420-480 | 100% | 0% | 436 | 211 | 4428 | 4.8 | 3.7 | 21.0 | 11 | 24% | 88 | ok |
@@ -79,6 +81,7 @@ Dead = ground with no monster on the screen of a player standing there, Sweep = 
 | Pyrarch Crucible (605) | 520-690 | 100% | 0% | 509 | 175 | 3820 | 4.6 | 3.2 | 21.8 | 14 | 29% | 71 | ok |
 | Embergut Rift (617) | 560-675 | 100% | 0% | 650 | 184 | 4252 | 4.3 | 2.9 | 23.1 | 14 | 26% | 79 | ok |
 | Frostvein Reach (632) | 575-690 | 100% | 0% | 670 | 211 | 4686 | 4.5 | 3.2 | 22.2 | 14 | 25% | 87 | ok |
+| Dunereach Isle (635) | 570-700 | 100% | 0% | 610 | 126 | 6252 | 2.0 | 2.4 | 49.6 | 6 | 20% | 109 | sparse* |
 | Graveknell Catacombs (647) | 590-705 | 100% | 0% | 700 | 199 | 4540 | 4.4 | 3.1 | 22.8 | 14 | 21% | 79 | ok |
 | Umbral Sink (662) | 605-720 | 100% | 0% | 730 | 204 | 4514 | 4.5 | 3.3 | 22.1 | 10 | 22% | 78 | ok |
 | Cinderscour Barrens (677) | 620-735 | 100% | 0% | 720 | 195 | 4365 | 4.5 | 3.2 | 22.4 | 13 | 30% | 76 | ok |
@@ -102,6 +105,7 @@ Dead = ground with no monster on the screen of a player standing there, Sweep = 
 | Deepgrudge Warrens (917) | 860-975 | 100% | 0% | 930 | 202 | 4585 | 4.4 | 3.0 | 22.7 | 12 | 30% | 74 | ok |
 | Sorrowfen Marsh (932) | 875-990 | 100% | 0% | 930 | 191 | 4324 | 4.4 | 3.1 | 22.6 | 8 | 28% | 70 | ok |
 | Mirefang Basin (939) | 880-999 | 100% | 0% | 950 | 177 | 3916 | 4.5 | 3.2 | 22.1 | 12 | 28% | 63 | ok |
+| Rimewind Isle (950) | 900-1000 | 100% | 0% | 960 | 138 | 7545 | 1.8 | 1.3 | 54.7 | 4 | 49% | 122 | sparse*, dead* |
 | Hagthorn Weald (962) | 905-1020 | 100% | 0% | 980 | 215 | 4894 | 4.4 | 3.1 | 22.8 | 12 | 31% | 79 | ok |
 | Pyreglass Chasm (977) | 920-1035 | 100% | 0% | 980 | 186 | 4248 | 4.4 | 2.7 | 22.8 | 11 | 34% | 69 | ok |
 | Rimeblood Glacier (992) | 935-1050 | 100% | 0% | 1020 | 209 | 4515 | 4.6 | 3.1 | 21.6 | 11 | 24% | 73 | ok |
@@ -113,7 +117,7 @@ Dead = ground with no monster on the screen of a player standing there, Sweep = 
 | Cinderglass Sanctum (1210) | 1120-1300 | 100% | 0% | 1180 | 276 | 6730 | 4.1 | 2.7 | 24.4 | 13 | 34% | 100 | ok |
 | Hollowmass Reliquary (1225) | 1150-1300 | 100% | 0% | 1200 | 300 | 7028 | 4.3 | 3.1 | 23.4 | 14 | 27% | 105 | ok |
 | Vespergloom Halls (1225) | 1150-1300 | 100% | 0% | 1240 | 204 | 4971 | 4.1 | 2.7 | 24.4 | 11 | 30% | 74 | ok |
-| Wormcoil Depths (1325) | 1250-1400 | 100% | 0% | 1280 | 236 | 5620 | 4.2 | 3.0 | 23.8 | 13 | 35% | 84 | dead* |
+| Wormcoil Depths (1325) | 1250-1400 | 100% | 0% | 1280 | 254 | 5620 | 4.5 | 3.2 | 22.1 | 13 | 31% | 84 | ok |
 | Gallowfen Mire (1375) | 1300-1450 | 100% | 0% | 1260 | 256 | 5620 | 4.6 | 3.1 | 22.0 | 15 | 26% | 84 | ok |
 | Shiverspine Ridge (1425) | 1350-1500 | 100% | 0% | 1400 | 186 | 4302 | 4.3 | 3.2 | 23.1 | 10 | 26% | 59 | ok |
 | Voidscar Chasm (1450) | 1400-1500 | 100% | 0% | 1260 | 305 | 7005 | 4.4 | 3.0 | 23.0 | 13 | 32% | 96 | ok |
@@ -132,53 +136,37 @@ Dead = ground with no monster on the screen of a player standing there, Sweep = 
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Waystone map 1 (tier 1, Underground) (540) | 468-612 | 100% | 0% | 474 | 136 | 4126 | 3.3 | 2.2 | 30.3 | 8 | 12% | 77 | ok |
 | Waystone map 10 (tier 5, Floor) (540) | 468-612 | 100% | 0% | 498 | 260 | 8585 | 3.0 | 2.6 | 33.0 | 11 | 11% | 160 | ok |
-| Waystone map 11 (tier 6, Underground) (540) | 468-612 | 100% | 0% | 495 | 255 | 8970 | 2.8 | 2.4 | 35.2 | 11 | 13% | 168 | sparse* |
-| Waystone map 12 (tier 6, Floor) (540) | 468-612 | 100% | 0% | 495 | 389 | 20896 | 1.9 | 2.2 | 53.7 | 11 | 27% | 391 | sparse*, big* |
+| Waystone map 11 (tier 6, Underground) (540) | 468-612 | 100% | 0% | 495 | 283 | 8970 | 3.2 | 2.6 | 31.7 | 11 | 6% | 168 | ok |
+| Waystone map 12 (tier 6, Floor) (540) | 468-612 | 100% | 0% | 495 | 659 | 20896 | 3.2 | 3.6 | 31.7 | 11 | 3% | 391 | big* |
 | Waystone map 2 (tier 1, Floor) (540) | 468-612 | 100% | 0% | 474 | 116 | 2727 | 4.3 | 1.9 | 23.5 | 5 | 14% | 51 | ok |
-| Waystone map 3 (tier 2, Floor) (540) | 468-612 | 100% | 0% | 480 | 131 | 5547 | 2.4 | 2.0 | 42.3 | 10 | 21% | 104 | sparse* |
+| Waystone map 3 (tier 2, Floor) (540) | 468-612 | 100% | 0% | 480 | 175 | 5547 | 3.2 | 2.7 | 31.7 | 10 | 6% | 104 | ok |
 | Waystone map 4 (tier 2, Underground) (540) | 468-612 | 100% | 0% | 537 | 78 | 1882 | 4.1 | 2.0 | 24.1 | 6 | 7% | 35 | small* |
-| Waystone map 5 (tier 3, Floor) (540) | 468-612 | 100% | 0% | 498 | 262 | 13647 | 1.9 | 2.5 | 52.1 | 11 | 28% | 255 | sparse* |
+| Waystone map 5 (tier 3, Floor) (540) | 468-612 | 100% | 0% | 480 | 430 | 13647 | 3.2 | 4.0 | 31.7 | 11 | 3% | 255 | ok |
 | Waystone map 6 (tier 3, Underground) (540) | 468-612 | 100% | 0% | 498 | 158 | 3904 | 4.0 | 2.4 | 24.7 | 8 | 8% | 73 | ok |
 | Waystone map 7 (tier 4, Floor) (540) | 468-612 | 100% | 0% | 480 | 266 | 7554 | 3.5 | 3.3 | 28.4 | 10 | 8% | 141 | ok |
 | Waystone map 8 (tier 4, Underground) (540) | 468-612 | 100% | 0% | 498 | 122 | 3522 | 3.5 | 2.0 | 28.9 | 6 | 8% | 66 | ok |
-| Waystone map 9 (tier 5, Floor) (540) | 468-612 | 100% | 0% | 498 | 487 | 16224 | 3.0 | 3.6 | 33.3 | 14 | 12% | 304 | big* |
+| Waystone map 9 (tier 5, Floor) (540) | 468-612 | 100% | 0% | 498 | 511 | 15738 | 3.2 | 3.8 | 30.8 | 16 | 7% | 295 | ok |
 
 ## Late game areas
 
 | Hunt (level) | Band | In band | Far | Median | Mon | Walk | /100 | /screen | T/mon | Peak | Dead | Sweep | Flags |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Putrefactory (670) | 169-676 | 93% | 0% | 670 | 58 | 1027 | 5.6 | 2.6 | 17.7 | 4 | 0% | 17 | small* |
-| Gloom Pillars (700) | 176-706 | 83% | 1% | 700 | 149 | 1454 | 10.2 | 5.1 | 9.8 | 8 | 1% | 25 | packed*, small* |
+| Gloom Pillars (700) | 176-706 | 92% | 0% | 700 | 78 | 1454 | 5.4 | 2.5 | 18.6 | 5 | 1% | 25 | small* |
 | Jaded Roots (810) | 169-676 | 69% | 1% | 810 | 305 | 5327 | 5.7 | 3.8 | 17.5 | 10 | 0% | 93 | band* |
 | Nightglass Core (940) | 172-688 | 40% | 2% | 940 | 146 | 2630 | 5.6 | 3.1 | 18.0 | 10 | 1% | 42 | band*, small* |
-
-## References and generated tables
-
-| Place | Problem |
-|---|---|
-| bounty_pool | 112 monsters of the map are not in the file (acid hydra, ashbound thrall, ashmaw bonecaller, ashmaw raider, ...); 0 listed ones do not spawn; 578 counts differ |
 
 ## Defects
 
 | Hunt | Flags | Detail |
 |---|---|---|
-| Emerald Mage | small |  |
-| Blackblade | sparse, small | thin: arrival at a cave mouth |
-| deathrattle | sparse, small |  |
-| Scaledrake | sparse, small |  |
-| fangclaw | small | thin: arrival at a cave mouth |
-| bounty_pool | stale | 112 monsters of the map are not in the file (acid hydra, ashbound thrall, ashmaw bonecaller, ashmaw raider, ...); 0 listed ones do not spawn; 578 counts differ |
 | Putrefactory | small |  |
-| Gloom Pillars | packed, small |  |
+| Gloom Pillars | small |  |
 | Jaded Roots | band | late game monsters median 810, the rest of the area 338 |
 | Nightglass Core | band, small | late game monsters median 940, the rest of the area 344 |
-| Hollow Crypt | sparse, dead, small |  |
-| Wormcoil Depths | dead |  |
-| Waystone map 11 (tier 6, Underground) | sparse |  |
-| Waystone map 12 (tier 6, Floor) | sparse, big |  |
-| Waystone map 3 (tier 2, Floor) | sparse |  |
+| Dunereach Isle | sparse |  |
+| Rimewind Isle | sparse, dead |  |
+| Waystone map 12 (tier 6, Floor) | big |  |
 | Waystone map 4 (tier 2, Underground) | small |  |
-| Waystone map 5 (tier 3, Floor) | sparse |  |
-| Waystone map 9 (tier 5, Floor) | big |  |
 
 A star marks a defect listed in `tools/hunt_audit_known.csv` (accepted or waiting for a map edit).

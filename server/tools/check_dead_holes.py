@@ -47,7 +47,7 @@ LAND = {k: (-v[0], -v[1]) for k, v in STEP.items()}
 UP_NAME = re.compile(r'^(ladder|rope-ladder|rope spot)$', re.I)
 DOWN_NAME = re.compile(r'^(jammed )?sewer grate$', re.I)
 ROPE_SPOTS = (384, 418, 8278, 8592)   # the grounds a rope climbs from (their name is just the floor's)
-PLAN_DIRS = ('plans', 'chronicle', 'rooms', 'events', 'inbox')
+PLAN_DIRS = ('plans', 'chronicle', 'rooms', 'annexes', 'events', 'inbox')
 AREA_BASE = 'base map'
 
 

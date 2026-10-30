@@ -49,5 +49,60 @@ eq(L.shouldLog(s, 43), true, 'another id logs')
 L.reset(s)
 eq(L.shouldLog(s, 42), true, 'after reset logs again')
 
+-- the sweep
+local A, B, C = {}, {}, {}
+local function ent(id, obj, hp, over)
+  local t = { id = id, obj = obj, isPlayer = false, isLocalPlayer = false, healthPercent = hp, removed = false, onMap = true }
+  for k, v in pairs(over or {}) do t[k] = v end
+  return t
+end
+local function canonOf(map) return function(id) return map[id] end end
+local st = L.newState()
+-- a duplicate: the map knows A for id 5, B is the leftover
+local r = L.sweep(st, { ent(5, A, 40), ent(5, B, 40), ent(6, C, 100) }, canonOf({ [5] = A, [6] = C }), 0)
+eq(#r, 1, 'one leftover of a duplicate')
+eq(r[1].entry.obj, B, 'the non canon object goes')
+eq(r[1].why, 'duplicate', 'reason duplicate')
+-- the wrappers are not stable: the canon object is none of the two: nothing is touched
+r = L.sweep(st, { ent(5, A, 40), ent(5, B, 40) }, canonOf({ [5] = C }), 0)
+eq(#r, 0, 'no canon among the objects: nothing removed')
+-- both are the canon (equal wrappers): nothing
+r = L.sweep(st, { ent(5, A, 40), ent(5, A, 40) }, canonOf({ [5] = A }), 0)
+eq(#r, 0, 'two equal wrappers: nothing removed')
+-- no canon known
+r = L.sweep(st, { ent(5, A, 40), ent(5, B, 40) }, canonOf({}), 0)
+eq(#r, 0, 'the map does not know the id: nothing removed')
+-- a single object is never a duplicate
+r = L.sweep(st, { ent(7, A, 80) }, canonOf({ [7] = B }), 0)
+eq(#r, 0, 'a single object is left alone even when canon differs')
+-- zero health: only after the grace, counted from the first sweep that saw it
+st = L.newState()
+r = L.sweep(st, { ent(8, A, 0) }, canonOf({ [8] = A }), 1000)
+eq(#r, 0, 'first sight at 0: wait')
+r = L.sweep(st, { ent(8, A, 0) }, canonOf({ [8] = A }), 3999)
+eq(#r, 0, 'inside the grace: wait')
+r = L.sweep(st, { ent(8, A, 0) }, canonOf({ [8] = A }), 4000)
+eq(#r, 1, 'after the grace: remove')
+eq(r[1].why, 'zero', 'reason zero')
+-- healed or gone resets the clock
+st = L.newState()
+L.sweep(st, { ent(8, A, 0) }, canonOf({ [8] = A }), 1000)
+L.sweep(st, {}, canonOf({}), 2000)
+r = L.sweep(st, { ent(8, A, 0) }, canonOf({ [8] = A }), 4500)
+eq(#r, 0, 'the clock restarted after it left the list')
+-- players, removed and off map entries are never swept
+st = L.newState()
+L.sweep(st, { ent(9, A, 0, { isPlayer = true }), ent(10, B, 0, { removed = true }), ent(11, C, 0, { onMap = false }) }, canonOf({}), 0)
+r = L.sweep(st, { ent(9, A, 0, { isPlayer = true }), ent(10, B, 0, { removed = true }), ent(11, C, 0, { onMap = false }) }, canonOf({}), 9000)
+eq(#r, 0, 'players, removed and off map creatures are skipped')
+-- a duplicate at 0 percent is reported once
+st = L.newState()
+L.sweep(st, { ent(12, A, 0), ent(12, B, 0) }, canonOf({ [12] = A }), 0)
+r = L.sweep(st, { ent(12, A, 0), ent(12, B, 0) }, canonOf({ [12] = A }), 5000)
+local n = 0
+for _, v in ipairs(r) do if v.entry.obj == B then n = n + 1 end end
+eq(n, 1, 'a leftover at 0 percent is listed once')
+eq(L.SWEEP_MS, 1000, 'sweep every second')
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('deadguard_logic_test ok (' .. checks .. ' checks)')

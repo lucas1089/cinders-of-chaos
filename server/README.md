@@ -4352,7 +4352,7 @@ Owner 2026-10-30: "check again whether every hunt points to the right monsters, 
 - **Density.** Monsters per 100 walkable tiles and per screen (15 x 11), tiles per monster, spawns stacked on a tile, ground with no monster on the screen of a player standing on it. Limits are numbers the repo already sets (constants at the top of the tool): `sparse` under 3.0 per 100 (`gen_spawn_density.py`, and 34 tiles per monster is 2.9: the rift layout limit), `packed` over 6.0 per 100 or 10 per screen (`area_plan_compile.py` warns above 6), `stacked` over 3 on one tile (a pack is 3), `dead` 35% of the ground (the planned hunts run 8-36%, median 27%: corridors and camps by design, so the limit only catches the outlier).
 - **Size.** Walkable tiles of the region and the full sweep, `tiles / 8 / walking speed at the hunt's level` (the model of `rift_layout_model.lua`). `small` under 45 s, 400 tiles or 12 monsters (`gen_spawn_density.POCKET`, `audit_hunt_bands.SUGGEST_MIN`), `big` over 300 s (`rift_layout_balance_config.lua`; not judged for base hunts, whose region is a cluster of neighbouring caves). Region: planned hunts and waystone maps the walkable ground (waystone: what the arrival reaches, `clearPath` items taken as gone); base hunts the ground within 6 tiles of the monsters of the hunt (spawns on one floor at most 12 tiles apart, as `content_audit.py` groups them); late game the ground within 6 tiles of the monsters.
 - **Run.** `python3 -I server/tools/audit_hunts.py SERVER_DIR/data [--kind base,planned,waystone,late,refs,data] [--md docs/HUNT_AUDIT.md] [--csv FILE] [--check]`. `--check` exits 1 for a defect that is not in `tools/hunt_audit_known.csv` (id, flag, reason: accepted by the owner or waiting for a map edit) and for a listed defect that is gone, so the list only shrinks. `--suggest` looks for a better arrival for every base hunt with `display`, `sparse`, `small`, `packed` or an O333 flag: a hunt of the sign's monster (the CSV's `display` and `name`) whose band is the monster's own level (level / 1.5 to level x 1.5), not sparse, small or packed as a whole and round the arrival, at least 4 of the sign's monsters in view, no gate portal, 40 tiles from the other arrivals; `--apply` writes the best one to `hall_hunts.csv` (note `retargeted O337 from ...`) and prints the `returns` lines for `hunt_teleports_config.lua`; a `display` hunt with no such area is renamed to the monster most in view (`renamed O337 from ...`). After a run: add the `returns` lines, run `install_all.py` (step `contentareas` rewrites the teleports), `audit_hunt_bands.py DATA --md docs/HUNT_BANDS.md --installed`, `audit_hunt_transitions.py DATA --md docs/HUNT_TRANSITIONS.md --lua .../hunt_warnings_config.lua`, `gen_bestiary_spawns.py DATA`. The owner does not run the audit, so it has no admin app button; the changed hunts reach the server with `chaos-ctl.sh update-apply` (admin app: tab Painel > card Atualizar servidor > button Aplicar e reiniciar), whose install rewrites the hall's teleports and the hunt gates. Nothing else to run.
-- **Result on the installed map (2026-10-30).** Planned hunts: all 67 pass monsters, band, arrival and reach (the display monster of `wyrmspine_hollows` is a declared stand-in); 2 flagged for density or size (Hollow Crypt 2.3 per 100 and a 35 s sweep, Wormcoil Depths 36% dead ground). The base hunts were the problem: 18 of 37 had a defect, 13 fixed, 5 left.
+- **Result on the installed map (2026-10-30).** Planned hunts: all 67 pass monsters, band, arrival and reach (the display monster of `wyrmspine_hollows` is a declared stand-in); 2 flagged for density or size (Hollow Crypt 2.3 per 100 and a 35 s sweep, Wormcoil Depths 36% dead ground). The base hunts were the problem: 18 of 37 had a defect, 13 fixed, 5 left. The owner answered the four open items on the same day (below, "Owner's answers"): the five became annexes, Hollow Crypt and Wormcoil Depths were fixed, the waystone maps and Gloom Pillars filled or thinned, the bounty pool regenerated.
 
 | Base hunt | Problem found | Fix |
 |---|---|---|
@@ -4367,8 +4367,59 @@ Owner 2026-10-30: "check again whether every hunt points to the right monsters, 
 | Ice Witch, Gutworm, Novice of the Cult | 14, 12 and 9 monsters (Ice Witch and the Novice also sparse) | arrivals 32197,30997,14 (264), 32124,32371,9 (135), 32070,31078,9 (484) |
 
   The ways back are listed under `returns` in `hunt_teleports_config.lua` (`check_hunt_returns.py`). The stairs of the Saltkin Pincher Scout cave (O333) still led down: the stairs' ground went plain, but a stair piece on the tile (item 8210) has its own floor change. `hunt_gates.csv` has a `remove` row for it, and `audit_hunt_bands.py --gates` writes such rows itself now. `hunt_warnings_config.lua` (231 places) and the two docs were regenerated on the installed map (`docs/HUNT_BANDS.md`: 37 hunts, 0 flagged, 0 gates in reach). `bestiary_spawns.lua` was generated before the fill and the planned hunts: 984 monsters spawn on the map, the file knew 872 and most counts were behind; regenerated, so the Bestiary's areas and kill goals follow the installed map.
-- **Left (listed with reasons in `tools/hunt_audit_known.csv`).** Owner calls: five rare high level base hunts that have no bigger area of their monster (Emerald Mage 41 s sweep, Scaledrake 30 monsters, deathrattle 22, Blackblade 12, fangclaw 14); Hollow Crypt (a placed plan's spawns cannot change without restoring the map: the decoration keeps off spawn points, so its tiles change too); waystone maps 5 and 12 (1.9 per 100, 52-54 tiles per monster against the rift limit of 34, 392 s sweep for map 12; more spawns lengthen the runs), maps 3 and 11 a little over; the late game areas are small (18-43 s sweeps) and Gloom Pillars holds 10 per 100; `bounty_pool.lua` does not know the 112 monsters only the planned hunts spawn (regenerating it adds 109 hunt monsters up to level 1700 and changes the Descent window and the pool size, `tests/descent_test.lua`, `tests/progression_test.lua`). Not covered: monsters behind a quest wall, holes a player digs, teleports whose target a script sets, the planned hunts' monster levels beyond the pool estimate.
+- **Left (listed with reasons in `tools/hunt_audit_known.csv`).** Waystone map 4 (Tier II cave, a 35 s sweep: 2020 walkable tiles in its whole rectangle), waystone map 12 (open forest and desert, a 392 s sweep: no dead ends worth cutting), the late game areas Putrefactory, Nightglass Core and Gloom Pillars (17, 43 and 25 s sweeps: one compact hall each, the box holds no more ground; Nightglass and Jaded Roots also `band` by design) and the two imported open islands (O335, 2.0 per 100 by the guide's open land number). Not covered: monsters behind a quest wall, holes a player digs, teleports whose target a script sets, the planned hunts' monster levels beyond the pool estimate.
 - **Tests.** `tools/audit_hunts_test.py` (CI: walking speed, spawn and places readers, density and size maths, a planned hunt with each defect, waystone and late areas, references, suggestions and renames on a synthetic map, stale tables), `tools/audit_hunt_bands_test.py` (gate rows, the real CSV), `tests/hunt_teleports_test.lua`.
+
+### Owner's answers of 2026-10-30 (O337)
+The audit left four items; the owner answered in pt-BR and all four are done. Numbers from `audit_hunts.py` on a fresh install (monsters / walkable tiles / per 100 / full sweep in seconds):
+
+| Item | Before | After |
+|---|---|---|
+| Emerald Mage (annex) | 58 / 1729 / 3.4 / 41 s | 80 / 2254 / 3.5 / 53 s |
+| Scaledrake (annex) | 30 / 1369 / 2.2 / 29 s | 84 / 2580 / 3.3 / 54 s |
+| deathrattle (annex) | 22 / 783 / 2.8 / 17 s | 84 / 2263 / 3.7 / 48 s |
+| Blackblade (annex) | 12 / 546 / 2.2 / 12 s | 93 / 2455 / 3.8 / 55 s |
+| fangclaw (annex) | 14 / 424 / 3.3 / 9 s | 102 / 2465 / 4.1 / 52 s |
+| Hollow Crypt (bigger plan) | 38 / 1637 / 2.3 / 35 s, dead ground 36% | 90 / 2296 / 3.9 / 48 s, dead 24% |
+| Wormcoil Depths (spawns on 6 paths) | 236 / 5620 / 4.2, dead ground 35.3% | 254 / 5620 / 4.5, dead 31% |
+| Waystone map 3 | 131 / 5547 / 2.4 | 175 / 5547 / 3.2 |
+| Waystone map 5 | 262 / 13647 / 1.9 | 430 / 13647 / 3.2 (sweep 255 s) |
+| Waystone map 9 | 487 / 16224 / 3.0 / 304 s | 511 / 15738 / 3.2 / 295 s (4 dead ends closed) |
+| Waystone map 11 | 255 / 8970 / 2.8 | 283 / 8970 / 3.2 |
+| Waystone map 12 | 389 / 20896 / 1.9 / 392 s | 659 / 20896 / 3.2 / 392 s (left `big`) |
+| Gloom Pillars | 149 / 1454 / 10.2 | 78 / 1454 / 5.4 |
+| `bounty_pool.lua` | 709 monsters with 6+ spawns, top level 980 | 829, top level 2000 |
+
+- **1. Annexes ("expanda o mapa deles").** The five rare high level base hunts sit in compact caves with no room around them (the map is dense, solid rock or other hunts), so ground is added elsewhere and linked by a portal: see "Hunt annexes (O337)".
+- **2. Hollow Crypt and Wormcoil Depths ("pode arrumar").** `plans/hollow_crypt.json` grew from 112 x 96 to 132 x 110 with two more zones (weeping cloister, sepulchre hall) and 1.4 times the spawns; `plans/wormcoil_depths.json` got 18 monsters along six of its paths (the ground between the zones had no monster in view). Both change tiles, and a placed plan whose tiles changed is refused (`install_content_areas.py`), so a server that has them needs the map restored first: see "Restore the map".
+- **3. Waystone maps, Gloom Pillars ("faca o que achar melhor").** See "Spawn fills of the waystone maps and the late game areas (O337)". Least balance change: more monsters on the sparse maps (the same tier monsters, the same respawn) instead of longer runs; four dead ends of map 9 closed (38 tiles of stone wall); Gloom Pillars thinned where other monsters cover the ground. Kept as they are, with the reasons in `hunt_audit_known.csv`: map 12 (open land, no dead ends: closing 4,700 tiles would take 300 tiles of fence), map 4 and the late game areas (compact, the box holds no more ground).
+- **4. Bounty pool ("pode atualizar").** `bounty_pool.lua` regenerated on the installed map (`gen_bounty_pool.py`): 829 hunt monsters, 33 bosses; `bestiary_spawns.lua` too (995 names). What the new pool changed, checked and not just made to pass: (a) the Descent window is `party level x (0.55 + 0.05 x depth) .. x (0.8 + 0.05 x depth)` clamped to `escalation.maxLevel`; the ceiling 1500 was a guess for a pool that ended at 980, the pool now ends at 2000 (Gloomsilt Mire), so `maxLevel` is 2000: a level 1500 party at depth 1 meets 900-1275 as before, a level 2000 party 1200-1700 instead of 1200-1500, and a level 2200 party at depth 12 gets 2000-2000 (the monsters of level 2000 and the nearest ones); `tests/descent_test.lua` checks the real pool (a full set of types in every window of levels 100-2200 and depths 1-12, ceiling = the pool's top) and keeps the beta report of 2026-10-24 as a test on the pool cut at level 980. (b) The progression model had no hunts above level 980 in its pool and so paced levels 1000-2200 at 13-60 minutes a level (777 hours to 2200); with the planned hunts it is 10-14.5 minutes a level and 347 hours (116.6 hours to level 1000 as before, `progression_config.lua`). A hunt of the 1700s entering the window of level 1580 speeds the journey up by a fifth at once (14.5 to 10.4 minutes a level) and another 12% at level 1630: the lower bound of the 25-level block ratio is 0.78 now (was 0.88, made for the 5x cliff of O135); the XP stage table is untouched. The planned hunts of 1700-2000 pay more per hour than the ones of the 1500s; that is the plans' balance, not changed here.
+
+#### Hunt annexes (O337) (`tools/areaplan/annexes/`, `tools/hunt_annexes.json`, `tools/patch_hunt_annexes.py`, install step `huntannexes`)
+The five rare base hunts (Emerald Mage 41 s sweep, Scaledrake 30 monsters, deathrattle 22, Blackblade 12, fangclaw 14) have no bigger area of their monster. Their caves sit inside solid rock or the dense overland map, with no ground to add beside them (measured: free space only for Emerald Mage, and a cave there has no rim to join). Each gets an annex instead: a planned cave (`areaplan/annexes/<id>.json`, the planner's asymmetric lobes, same monsters and level band as the hunt, 3.3-4.3 monsters per 100) at the annex row of the map (x 14336-17663, y 15400-16383, floor 9; `schema.json` allows it), placed by `install_content_areas.py` as a fixed area (own origin, spawns, no hall teleport). The way in is a magic forcefield (item 1387) with a destination on a tile two steps from the hunt's arrival, put there by `patch_hunt_annexes.py` (step `huntannexes`, after `huntgates`; idempotent; `<map>.otbm.bak` first); the way out is the annex's exit portal, which leads back to the arrival tile.
+
+| Annex | Hunt | Portal in the hunt | Arrival of the annex | Walkable | Monsters |
+|---|---|---|---|---|---|
+| `emerald_vaults` | Emerald Mage (180-270) | 31906,32029,5 | 14375,15519,9 | 552 | 22 |
+| `scaledrake_roost` | Scaledrake (305-310) | 33018,31933,7 | 14696,15513,9 | 1242 | 54 |
+| `deathrattle_ossuary` | deathrattle (230-300) | 32977,30979,7 | 14988,15512,9 | 1520 | 62 |
+| `blackblade_warren` | Blackblade (150-300) | 32827,31434,7 | 15311,15530,9 | 1936 | 81 |
+| `fangclaw_den` | fangclaw (305-390) | 32411,31488,7 | 15619,15523,9 | 2083 | 88 |
+
+The audit counts a hunt with an annex as one hunt (`audit_hunts.py`: the annex plan's walkable ground and spawns join the region; `annex` flag when the plan is not on the map, the portal is not there or the arrival does not walk). `tools/hunt_annexes_test.py` (CI) compiles each plan: asymmetric, in the annex row, 10 tiles from the others, `dest` is the plan's arrival, the exit leads to `back`, the monsters are the hunt's; `tools/patch_hunt_annexes_test.py` runs the portal step on a synthetic map. Blackblade's arrival is a sealed 2 x 2 protection cell with the return forcefield (band audit: "thin"): its portal is the cell's free tile beside the arrival.
+
+#### Restore the map (a placed plan whose tiles changed)
+`install_content_areas.py` places a plan once; when only its spawns changed it writes the tiles again ("update"), when its size or shape changed it refuses (some of the new tiles land on tiles the map has). O337 changed the shape of `hollow_crypt` (and the decoration of `wormcoil_depths`, which keeps off spawn points). `install_all.py` now restores the map itself when the marker file `<map>.otbm.restore` is next to it: the base map `<map>.otbm.bak` is copied over `<map>.otbm` before the first step (through a temporary file), every map step runs again on it (each is idempotent), and the marker is removed after a run with no failed step. The update flow installs on a staging copy of the server folder (`chaos_kit_update.sh`: the live server keeps running and its map is not touched; a failed install leaves the live folder as it was). **Steps for the owner on the VPS** (no admin app button makes the marker; the update itself is the button):
+1. In a shell on the VPS, in the server folder: `touch data/world/MAPNAME.otbm.restore` (MAPNAME is the `mapName` of `config.lua`; the file next to the map that ends in `.otbm`).
+2. Admin app: tab Painel > card Atualizar servidor > button Aplicar e reiniciar (shell fallback: `chaos-ctl.sh update-apply`). The install takes about 20 minutes on the copy; the game keeps running until the swap.
+3. After the restart: `data/world/MAPNAME.otbm.restore` is gone and the log of the update says "restore marker removed".
+If the VPS runs a map master (`data/world/<map>.otbm.master.json` exists, "Map master") the marker is no use: the master holds the old plan, so the master has to be packed again from a map made with this commit (docs/MAP_GUIDE.md "Editing the live map").
+
+#### Spawn fills of the waystone maps and the late game areas (O337) (`tools/gen_spawn_expand.py`, `tools/spawn_expand.json`, `tools/waystone_trim.json`, `tools/patch_waystone_trim.py`, install step `waystonetrim`)
+- **Fill.** Waystone maps 3, 5, 9, 11 and 12 reach 3.15 monsters per 100 walkable tiles (sparse is under 3.0; the rift layout limit of 34 tiles per monster is 2.94): `gen_spawn_expand.py` (on an installed server, `--check` compares) writes spawn blocks of three on the tiles farthest from every monster, at least 4 sqm apart, each copying the nearest monster of the tier with its final spawntime. The file is the second entry of `spawn_tuning.json` `fill` (a list now, `spawn_density.json` first): `patch_base_spawns.py` adds the blocks (marker `chaosadd="XW.."`) and takes out the rows of `remove`. +44, +168, +24, +28 and +270 monsters.
+- **Trim.** Waystone maps over 296 s of full sweep lose dead-end lobes behind a neck of 10 tiles or less (no boss lever or entrance in them, at most 40 monsters), largest first, all or nothing. Map 9 had four (38 neck tiles get a stone wall, `waystone_trim.json`, step `waystonetrim` after `huntannexes`); map 12 is open land whose dead ends hold 1,108 of the 5,110 tiles that would have to go, so it stays whole (392 s, `big` in the known list). The lobes' stock monsters are in `remove`; the ones another step added (`chaosadd`) and the ones `spawn_tuning.json` copies or moves stay.
+- **Thin.** Gloom Pillars (149 monsters on 1454 tiles) loses 71 stock entries, each time the one whose ground other monsters cover (no tile uncovered), never a `late_game_spawns.csv` row: 78 monsters, 5.4 per 100, the same 1454 tiles.
+- `audit_hunts.py` skips XML comments now (the entries `chaosremoved` and the blocks `chaosemptied` are not on the map); `gen_spawn_density.py` ignores the `X` blocks like its own `F` ones. Tests: `tools/gen_spawn_expand_test.py` (CI), `tools/patch_waystone_trim_test.py` (CI), `tests/base_spawns_patch_test.lua` (a list of fill files, a `remove` list).
 
 ## Test kit (`admin/testkit.lua`)
 `/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
@@ -12918,6 +12969,14 @@ Rolled gear you do not want becomes crafting currency instead of NPC gold. A **S
 small chance of a whole orb, and turns shards into the existing orbs. Every number is in `salvage_config.lua`; the pure
 rules are `salvage_core.lua` (tests: `tests/salvage_test.lua`, which also drives `salvage.lua` against a mocked engine).
 
+**Normal gear (O340).** Two of three stock gear drops roll no rarity (`ChaosRarity.stockRollChance` 70, 33% carry one), so
+most of the new weapons from monster loot (the Mercurial line among them) were Normal and the bench refused them
+("Only items with a rarity can be salvaged.") and "salvage all" skipped them without a word. Now gear without a rarity
+(no unique, no set piece) gives `normalShards` (1) rune shard, no level bonus and no orb chance; the single bench action,
+the preview and "salvage all" (any chosen rarity takes Normal gear along) agree. `normalShards = 0` brings the old
+refusal back. Economy: an average gear drop gave ~1.1 shards (33% x 3.3); the Normal two thirds add ~0.67, so about
+1.8 per gear drop; the orb chance is untouched. Test: `tests/salvage_test.lua`.
+
 **Install.** `python3 -I server/tools/install_salvage.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
 `salvage`, after `gems`). It adds one items.otb node, the **rune shard** (server id **32051**), a copy of the stock node
 of the violet crystal shard (18414, client 16120: stackable, so the client needs no change), and its items.xml entry
@@ -13945,7 +14004,7 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
   drop from the monsters of the band; the 1500+ ones from legendary monsters of the top hunts and the boss Vhalkareth
   Mortal Shell. Chance before the tier multiplier: 30 for levels up to 38 (0.3% per kill of a magic monster), 12 for 450
   to 1200 (0.24% on a rare one), 6 above (0.24% on a legendary one). The bad-luck protection of `conquest_config.lua`
-  `pity` (monster uniques: +1% per miss, up to 3 times) already covers every unique, so none waits forever; it needed
+  `pity` (monster uniques: +1% per miss, up to 3 times; +2% since O342) already covers every unique, so none waits forever; it needed
   no change.
 - **Wands and rods.** A unique keeps the damage of its base item and no tool sets it, so no wand or rod unique was added.
   Wand and rod coverage comes from the class loot rows above and the weapon audit's sets.
@@ -14370,7 +14429,7 @@ drop could not happen):
 monster of that level or more, whatever its name, at `mult` (0.5) x its chance (below the level nothing changes; the lists still
 rule the lower uniques). (b) `ChaosLoot.uniquePace`: the unique roll reads the notable share of the corpse (`L.corpseFactors`), at
 least the loot factor. (c) The roll gets `max(getMonsterLevel, ChaosLoot.monsterLevel)`. The Conquest bad-luck protection already
-covered these rolls (group `monster`: +1% per miss, up to x3); an open drop now counts as an eligible roll, so it works for the
+covered these rolls (group `monster`: +1% per miss, up to x3, +2% since O342); an open drop now counts as an eligible roll, so it works for the
 hunts too (`conquest_config.lua` `pity`, unchanged).
 
 **Numbers** (level 1500, the hunt monsters of `late_game_spawns.csv`, Rare : Legendary kills 150 : 25 as spawned, exact sums over the
@@ -14388,6 +14447,68 @@ level 1500; the rest wait for a higher level or a trade. `tools/loot_model.lua -
 stay green (uniques are not in the gold or item model; the coverage tool reads the entries' own chance, unchanged).
 `tests/unique_hunt_test.lua` (luajit and lua5.3) proves it: before below 1 per 1000, now 10-25, one every 2.5-6 hours, the level and
 list rules, boss-only entries keep their bosses, `open.enabled = false` brings the old behaviour back.
+
+## Unique pace: the leveling uniques open by level (O342)
+
+Owner 2026-10-30 (pt-BR "pode fazer sim"): the 97 leveling uniques (entries of `chaos_unique_items.lua` that are not boss-only, have no
+`minMonsterLevel` and no season) dropped only from the monsters of their own `monsters` list. Measured with
+`tools/unique_pace_model.lua --legacy`: one unique in about 380 kills in a level 10 hunt, 1 in 800 at level 20, 1 in 20,000 to
+1,000,000 at levels 40-600 (the average over the hunt's monsters; most monsters list none), and 13 of the 29 hall hunts of level 20 and
+up listed no leveling-unique monster at all.
+
+**The rule** (`loot_config.lua` `unique.openLevel`, `ChaosLoot.openLevelMult`, `ChaosLoot.rollUniques`): a leveling unique also drops from
+ANY monster whose level (`ChaosLoot.monsterLevel`, the same level the O148 rule reads) lies in the window around the unique's `level`:
+
+* from `level x 0.90` (`below` 0.10) to `level x 2 + 10` (`above` 2.0, `aboveFlat` 10). The item stays worth wearing for a long stretch
+  of hunting levels, and the sparse entries above level 180 (12 of the 97) need the wide upper side to cover every hunt level; the
+  window is the same for all entries, so a level 100 item drops in level 90-210 hunts, a level 400 item in 360-810 hunts;
+* at `mult` x its chance, `mult` being a curve of the MONSTER level (linear between the points, 0.1 up to level 30, rising to 13.6 at
+  300 and falling to 3.5 at 650). The curve is the reason the pace is flat: the entries are dense below level 150 (about 50 in the
+  window of a level 100 hunt) and sparse above (7 around level 400), and the unique roll reads the pack factor (`loot` 0.05-0.15
+  in most of the range, the `notable` share 0.23-0.32 up to level 335, 1 from 350), so one multiplier could not serve every band;
+* a monster that lists the unique keeps the full chance (the window only adds monsters); the item level cap `maxItemLevel` (700)
+  leaves the 10 entries of item level 750-1900 to their lists; tier rules (`minTier`, normal never), boss-only entries, season
+  rules, `maxPerKill` and the Conquest pity are untouched (an open drop counts as an eligible roll, like the O148 one).
+
+**The model** (`tools/unique_pace_model.lua`, limits in `unique_pace_config.lua`, `--check` in CI under luajit and lua5.3, `--derive`
+prints the multiplier that gives 2,000 kills per unique at each level, `--legacy` the numbers without the rule). Expected values from
+the loot layer's own rules: the tier mix of the kills from `monster_tiers.lua` (the spawn numbers are thresholds of one roll, so
+Magic is 4.5%, Rare 1.25%, Legendary 0.25%, plus the ambush copies at their chance x the pack factor, two generations), the pack
+factor of the unique roll (`ChaosLoot.uniquePace`), the monsters of `bounty_pool.lua` within +-15% of the band weighted by their spawns,
+and every hunt of `tools/hall_hunts.csv` (the average over its monsters). No item find, a paced hunt.
+
+| Band | Monsters | Before | Before, pity +1% | Now | Now, pity +1% | Now, pity +2% |
+|---|---|---|---|---|---|---|
+| 10 | 40 | 378 | 315 | 368 | 294 | 259 |
+| 20 | 68 | 820 | 638 | 612 | 448 | 385 |
+| 40 | 51 | 97,644 | 42,238 | 2,017 | 1,203 | 1,010 |
+| 60 | 46 | 1,074,031 | 371,443 | 2,026 | 1,251 | 1,053 |
+| 100 | 51 | 51,188 | 19,803 | 2,231 | 1,171 | 1,020 |
+| 150 | 52 | 44,561 | 16,945 | 2,051 | 1,090 | 963 |
+| 200 | 20 | 309,178 | 116,103 | 2,125 | 1,387 | 1,262 |
+| 300 | 53 | 105,135 | 39,055 | 2,427 | 1,456 | 1,311 |
+| 400 | 72 | 77,234 | 37,009 | 1,900 | 1,576 | 1,410 |
+| 500 | 57 | 78,249 | 37,863 | 2,038 | 1,665 | 1,481 |
+| 600 | 19 | 21,470 | 12,061 | 1,877 | 1,548 | 1,382 |
+
+Kills per unique of the hunt's average, no item find. "Before" and "Now" are the base chance (the target); the pity columns are what a
+player who keeps missing sees on average with the protection. Every band from 40 up is inside 1,500-2,500 and every hall hunt of
+level 30 and up inside 1,200-3,500 (1,614-3,272 measured). The starter bands (10, 20 and the hall hunts under level 30: Fire Elemental
+966, Demon Skeleton 445) were already generous through their name lists and are left as they were (the multiplier is only 0.1 there,
+so the window adds little); their limits are looser. The worst monster of a band (the one with the fewest entries in its window) is up
+to 6,300 kills; the table is the hunt's average.
+
+**Bad-luck protection** (`conquest_config.lua` `pity.monster`): step 0.01 -> 0.02, cap stays 3. A miss is a Magic or better kill with an
+eligible entry, so the multiplier reaches x3 after 100 such rolls. At the new pace a player meets about 30 such rolls per unique in a
+Rare+ only band, so the protection matters mostly for the unlucky tail: the average pace the player sees is 1,000-1,500 kills (the
+model takes the renewal process of the rolls). The target (1,500-2,500) is the base chance, the figure of `ChaosLootRoll`.
+
+`tests/unique_open_level_test.lua` (luajit and lua5.3): the window edges, the curve, boss-only / endgame rules, the tier rule, listed
+against open chance sampled with `rollUniques`, the model against `rollUniques`, every band and the pity numbers. Dependent data
+regenerated: the codex and wiki text of the bad-luck protection (`gen_codex_data.lua`, `gen_wiki_data.lua`). `loot_model.lua`,
+`roulette_model.lua`, `store_model.lua`, `progression_model.lua` and `pack_model.py` do not read the unique chances. Going live: loot.lua
+is a script, not a config table, so "Reload one file" does not apply; admin app: Painel > Atualizar servidor > Aplicar e reiniciar
+(`update-apply`, after the release), or Server > Reload system > scripts for a live reload; fallback `chaos-ctl.sh update-apply`.
 
 ## Roulette prizes against token drops (O151)
 
@@ -23100,7 +23221,7 @@ crash marker, a clean shutdown during a run.
 
 
 **Empty rooms (2026-10-24).** `descent_core.lua` `pickTypes` picks the room's monsters from the bounty pool; when the level window
-(clamped to `escalation.maxLevel`) lies above the pool (it ends at level 980) it takes the nearest levels, so a room always has
+(clamped to `escalation.maxLevel`, 2000 since O337: the top of the pool) lies above the pool (it ended at level 980 in the beta report, 2000 now) it takes the nearest levels, so a room always has
 monster types while the pool has one valid monster. `spawnSet` lets a type the engine cannot create give way to the others. A wave that
 made 0 monsters is retried (`spawn.retries`, `spawn.retrySeconds`) with the types picked again and is never a cleared room; after the
 retries the run ends with result `error` (depth rewards) and one `[Chaos descent] ERROR` line in the log.
@@ -23746,6 +23867,10 @@ tiles tried), creates the item, starts a glow. Rules:
   it stays for a hurt party member; the ember refuses a PvP place.
 - **Lifetime.** A half-second look-out (`tickMs`) ends a pickup at its time: the item goes with a fade effect
   (`CONST_ME_POFF`) and grants nothing. The glow pulses (a red, blue or violet magic effect) every 1.5 s so it is easy to see.
+- **Under the feet (O343).** A step event fires when a creature enters a tile, never for one that already stands there. A pickup that lands on a tile with a
+  player on it is taken at once by the owner, else by the first party member who may take it (`ChaosPickupsCore.firstTaker`); a refusing callback keeps it
+  as before. The look-out also sweeps: every tile an item of ours was put on is tracked, and an item whose record is gone (taken, ended, a refused removal)
+  is removed with all its copies (`K.track`, `K.strays`). Owner report 2026-10-30: "the buff did not disappear after I picked it up".
 - **Not an item to keep.** The nodes are neither pickupable nor moveable (`install_pickups.py`), so they cannot go into a
   bag, be pushed, traded or sold; they hold no game value. Nothing is saved: the record is in memory, and a map save does
   not keep ground items outside houses. **After a restart or a reload** the record is gone; an item that is still on a tile
@@ -26498,6 +26623,7 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
   party members of the killer within `proof.partyRange` (30 tiles, they need not have dealt damage), each once (a second
   `onKill` of the same monster is ignored for 10 s); every player is judged by their own stage and bar.
   Test: `tests/ascension_quest_test.lua`. A script reload is enough.
+- **Monster aura (O341).** The event monsters wear the chest's dark smoke on the client. `CC.syncAuras` (every 1.5 s in the think loop, after a horde spawns and when an event ends) lists `CC.tagged` and tells each player the ones within 10 x 8 tiles on their floor: extended opcode `ChaosOpcodes.templarAura` (118, the chest aura module's), JSON `{action = "cursed", data = {c = [creature id]}}`, the whole list, only when a viewer's list changed (`K.auraList`, `K.auraDecide`, `K.auraPrune`; an empty list clears; a player who logs in or walks into view gets it at the next check). No new opcode, storage or table. Client: client/MANIFEST.md "Chest and Templar auras (O315)". Test: `tests/cursedchest_test.lua`. A script reload is enough; needs the client with the O341 `game_chestaura`.
 - **Not done / assumptions.** Damage scale needs `ChaosAreaGen` (its hit hook); without it only health is scaled. Without `Monster:setDropLoot` the monsters would drop loot. Untested on a live server. No client part: server texts only. Tests: `tests/cursedchest_test.lua` (rules, state machine, loot against the gold model, and the glue on a mocked engine).
 
 ## Progress metrics (O253) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `sql/chaos_progress_metrics.sql`, `tools/progress_metrics.py`)

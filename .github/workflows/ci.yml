@@ -851,6 +851,9 @@ jobs:
       - name: A roulette spin is worth its token in hunting minutes (roulette_model.lua; roulette_value_config.lua band, O151)
         run: cd server && luajit tools/roulette_model.lua --check && lua5.3 tools/roulette_model.lua --check
 
+      - name: Leveling uniques open by level, 1500-2500 kills per unique (unique_pace_model.lua; unique_pace_config.lua limits, O342)
+        run: cd server && luajit tools/unique_pace_model.lua --check && lua5.3 tools/unique_pace_model.lua --check
+
       - name: Rifts pay orbs and waystones pay gear, per hour above hunting but inside bounds (content_reward_model.lua; content_rewards_config.lua bounds)
         run: cd server && luajit tools/content_reward_model.lua --check && lua5.3 tools/content_reward_model.lua --check
 
@@ -867,6 +870,13 @@ jobs:
           python3 -I server/tools/patch_hunt_gates_test.py
       - name: "Hunt audit rules on synthetic data (audit_hunts.py, monsters, density, size of every hunt; the installed map is audited by hand, docs/HUNT_AUDIT.md; O337)"
         run: python3 -I server/tools/audit_hunts_test.py
+      - name: Hunt annexes (the five annex plans compile, asymmetric, the rows of hunt_annexes.json; the portal step on a synthetic map; the spawn fills; O337)
+        run: |
+          sudo apt-get install -y -qq luajit python3-numpy
+          python3 -I server/tools/hunt_annexes_test.py
+          python3 -I server/tools/patch_hunt_annexes_test.py
+          python3 -I server/tools/patch_waystone_trim_test.py
+          python3 -I server/tools/gen_spawn_expand_test.py
 
       - name: Pack bands per role, Elementalist ahead on a pack, late packs die in at most 3x a base hunt pack (pack_model.py --check; boss_balance_config.lua packLimits, pace_config.lua scaled.health)
         run: python3 -I server/tools/pack_model.py --check

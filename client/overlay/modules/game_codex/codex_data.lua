@@ -6046,7 +6046,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6091,7 +6091,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6137,7 +6137,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2550 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1250. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6179,7 +6179,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6224,7 +6224,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3450 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1850. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6270,7 +6270,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3900 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2150. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6316,7 +6316,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3900 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2150. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6361,7 +6361,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6645,7 +6645,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6687,7 +6687,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6729,7 +6729,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6771,7 +6771,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "680 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6816,7 +6816,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6900,7 +6900,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "900 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 150. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6942,7 +6942,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "650 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -6984,7 +6984,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -7425,7 +7425,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1600. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -7467,7 +7467,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -7509,7 +7509,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2930 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1500. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -7554,7 +7554,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -7599,7 +7599,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3600 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1950. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -7645,7 +7645,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -7687,7 +7687,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8013,7 +8013,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8056,7 +8056,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1950 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 850. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8102,7 +8102,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3530 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1900. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8189,7 +8189,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1500 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8276,7 +8276,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8400,7 +8400,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8443,7 +8443,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "610 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8486,7 +8486,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8687,7 +8687,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8729,7 +8729,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8771,7 +8771,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8816,7 +8816,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1580 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): always on sale. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8862,7 +8862,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3300 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1750. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8908,7 +8908,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1500 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8951,7 +8951,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -8996,7 +8996,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9041,7 +9041,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2400 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1150. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9083,7 +9083,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1600. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9128,7 +9128,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "650 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9173,7 +9173,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9218,7 +9218,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9260,7 +9260,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9305,7 +9305,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9347,7 +9347,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "680 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9392,7 +9392,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9438,7 +9438,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9524,7 +9524,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3450 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1850. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9570,7 +9570,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2930 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1500. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9613,7 +9613,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9656,7 +9656,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "980 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9854,7 +9854,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "630 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9896,7 +9896,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -9980,7 +9980,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10022,7 +10022,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10067,7 +10067,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3150 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1650. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10112,7 +10112,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10158,7 +10158,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3300 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1750. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10200,7 +10200,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10245,7 +10245,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10523,7 +10523,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3450 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1850. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10569,7 +10569,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1950 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 850. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10614,7 +10614,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10656,7 +10656,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10698,7 +10698,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10743,7 +10743,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "650 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10789,7 +10789,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2480 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1200. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10834,7 +10834,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10877,7 +10877,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2400 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1150. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10919,7 +10919,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -10962,7 +10962,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "870 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 130. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11004,7 +11004,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11046,7 +11046,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11088,7 +11088,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "630 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11130,7 +11130,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1280 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 400. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11173,7 +11173,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11215,7 +11215,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1550. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11257,7 +11257,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11303,7 +11303,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2050. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11346,7 +11346,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1730 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 700. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11392,7 +11392,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1550. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11438,7 +11438,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2850 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1450. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11480,7 +11480,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "930 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 170. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11522,7 +11522,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11564,7 +11564,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11606,7 +11606,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11691,7 +11691,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11733,7 +11733,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11776,7 +11776,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11819,7 +11819,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11864,7 +11864,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11909,7 +11909,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11951,7 +11951,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "800 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -11993,7 +11993,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12036,7 +12036,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "1050 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12078,7 +12078,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12124,7 +12124,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1550. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12169,7 +12169,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12211,7 +12211,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12421,7 +12421,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12463,7 +12463,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3300 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1750. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12544,7 +12544,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "870 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 130. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12590,7 +12590,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3600 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1950. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12632,7 +12632,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12719,7 +12719,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "800 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12761,7 +12761,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12807,7 +12807,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "3750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2050. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12849,7 +12849,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "630 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12894,7 +12894,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12939,7 +12939,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -12981,7 +12981,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -13027,7 +13027,7 @@ CodexData = {
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
 								{"Conquest vendor", "2850 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1450. Bought pieces are made like a drop."},
-								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
@@ -17272,7 +17272,7 @@ CodexData = {
 							cols = {"Group", "Each miss", "At most"},
 							w = {35, 40, 25},
 							rows = {
-								{"Monster uniques", "+1% of the base per miss", "x3"},
+								{"Monster uniques", "+2% of the base per miss", "x3"},
 								{"Boss uniques", "+10% of the base per miss", "x4"},
 								{"Set pieces", "+5% of the base per miss", "x4"},
 								{"Raid uniques", "+25% of the base per miss", "x5"}

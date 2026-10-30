@@ -502,5 +502,63 @@ callbacks.onDropLoot[1].fn(mkMonster(580), mkCorpse(99999, 96, 96))
 callbacks.onDropLoot[1].fn(mkMonster(581), mkCorpse(40, 96, 96))
 ok(true, "the callback survives")
 
+
+-- ---- a pickup that lands under a player's feet is taken at once (no step event fires for a player already there), and
+-- an item whose record is gone is swept (owner report 2026-10-30: "the buff did not disappear after I picked it up")
+do
+	local K = ChaosPickupsCore
+	local e = {ownerId = 7, bornMs = 1000, untilMs = 31000, ownerWindowMs = 6000}
+	eq(K.firstTaker(e, {{id = 9, sameParty = true}, {id = 7, sameParty = false}}, 2000), 7, "firstTaker: the owner first")
+	eq(K.firstTaker(e, {{id = 9, sameParty = true}, {id = 8, sameParty = false}}, 2000), nil, "firstTaker: party inside the owner window: nobody")
+	eq(K.firstTaker(e, {{id = 8, sameParty = false}, {id = 9, sameParty = true}}, 8000), 9, "firstTaker: party after the owner window")
+	eq(K.firstTaker(e, {{id = 7, sameParty = false}}, 40000), nil, "firstTaker: nobody after the end")
+	eq(K.firstTaker(e, {}, 2000), nil, "firstTaker: empty")
+	local reg, tracked = K.new(), {}
+	local a = K.add(reg, {kind = "x", itemKey = "ember", x = 1, y = 2, z = 7, ownerId = 1, ttlMs = 1000}, 0)
+	K.track(tracked, a)
+	eq(#K.strays(reg, tracked), 0, "strays: a live record is no stray")
+	K.take(reg, a.uid)
+	local st = K.strays(reg, tracked)
+	eq(#st, 1, "strays: a taken record leaves its tile to sweep")
+	eq(st[1].x .. st[1].itemKey, "1ember", "strays: the tile and the item")
+	eq(#K.strays(reg, tracked), 0, "strays: untracked once reported")
+end
+do
+	reset()
+	local ownerP = mkPlayer(70, 101, 101)
+	local mate = mkPlayer(71, 101, 101)
+	local tile = tiles["101:101:7"]
+	tile._cr = {ownerP}
+	function tile:getCreatures() return self._cr end
+	local took = 0
+	local e = P.drop({itemKey = "ember", pos = Pos(101, 101, 7), ownerId = 70, ttlMs = 30000, ownerWindowMs = 6000,
+		onTake = function() took = took + 1 return true end})
+	ok(e ~= nil, "under feet: dropped")
+	eq(took, 1, "under feet: the owner standing on the tile takes it at once")
+	eq(#itemsOn(101, 101), 0, "under feet: and it is gone from the tile")
+	eq(P.countOf(70, "ember"), 0, "under feet: out of the record")
+	-- a party member standing there inside the owner window: it stays
+	mkParty(ownerP, mate)
+	tile._cr = {mate}
+	took = 0
+	P.drop({itemKey = "ember", pos = Pos(101, 101, 7), ownerId = 70, ttlMs = 30000, ownerWindowMs = 6000,
+		onTake = function() took = took + 1 return true end})
+	eq(took, 0, "under feet: a party member inside the owner window does not take it")
+	eq(#itemsOn(101, 101), 1, "under feet: it lies there")
+	tile._cr = {}
+	-- the sweep removes an item whose record is gone
+	P.reg.byUid = {}
+	tick()
+	eq(#itemsOn(101, 101), 0, "the sweep removes an item whose record is gone")
+	-- a refusing callback keeps the pickup, the sweep leaves it alone
+	tile._cr = {ownerP}
+	P.drop({itemKey = "ember", pos = Pos(101, 101, 7), ownerId = 70, ttlMs = 30000, ownerWindowMs = 0,
+		onTake = function() return false end})
+	tick()
+	eq(#itemsOn(101, 101), 1, "a refusing callback keeps it and the sweep leaves it")
+	tile._cr = {}
+	tile.getCreatures = nil
+end
+
 print(string.format("globes_test: %d checks, %d failed", checks, fails))
 os.exit(fails == 0 and 0 or 1)

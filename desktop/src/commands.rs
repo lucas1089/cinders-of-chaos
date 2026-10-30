@@ -158,6 +158,10 @@ use Tab::{Commands as C, Logs as L, Panel as P};
 
 const TEXT_P: &[Param] = &[text("text", "Mensagem")];
 const NAME_P: &[Param] = &[text("name", "Nome do personagem")];
+const GM_P: &[Param] = &[
+    text("name", "Nome do personagem"),
+    int("g", "Grupo (1 jogador, 4 GM, 6 God)", 1, 6, "6"),
+];
 const TAG_P: &[Param] = &[text("tag", "Tag da release (ex.: winpkg-123)")];
 const APK_P: &[Param] = &[text("tag", "Tag da release do app (ex.: android-31)")];
 const N_P: &[Param] = &[int("n", "Linhas", 1, 500, "100")];
@@ -258,6 +262,7 @@ pub static ACTIONS: &[Action] = &[
     // ---- Comandos: contas
     act(C, "Contas", "Criar conta", "account-create {name}").p(ACC_P).t(60),
     act(C, "Contas", "Trocar senha", "account-password {name}").p(ACC_P).ask().t(60),
+    act(C, "Contas", "Direitos de staff", "gm-set {name} {g}").p(GM_P).ask().t(60).h("O personagem precisa estar offline. 4 = GM, 6 = God; 1 tira os direitos."),
     // ---- Comandos: Discord
     act(C, "Discord", "Estado", "discord-status").t(60),
     act(C, "Discord", "Guardar webhook", "discord-set {channel}").p(DISCORD_P).t(60),

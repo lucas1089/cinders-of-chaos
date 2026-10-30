@@ -92,7 +92,8 @@ function K.check(info, cfg)
 	if not info.gear then
 		return "notGear"
 	end
-	if (info.rarity or 0) < 1 and not info.setPiece and not (info.unique and (info.tokens or 0) > 0) then
+	if (info.rarity or 0) < 1 and not info.setPiece and not (info.unique and (info.tokens or 0) > 0)
+		and (tonumber(cfg.normalShards) or 0) < 1 then
 		return "normal"
 	end
 	if (info.gems or 0) > 0 then
@@ -129,6 +130,11 @@ function K.levelFraction(level, cfg)
 	return math.min(1, level / max)
 end
 
+-- gear without a rarity (not a set piece, not a unique): salvaged for cfg.normalShards when that is 1 or more
+function K.isNormal(info)
+	return (info.rarity or 0) < 1 and not info.setPiece and not info.unique
+end
+
 function K.shards(info, cfg)
 	if info.setPiece then
 		-- an item set piece (data/lib/chaos_item_sets.lua): a fixed number, it has no rarity to price it
@@ -137,6 +143,10 @@ function K.shards(info, cfg)
 	if info.unique then
 		-- a unique salvaged for Conquest Tokens (info.tokens): a fixed number of shards on top
 		return math.max(1, floor(tonumber(cfg.uniqueShards) or 1))
+	end
+	if K.isNormal(info) then
+		-- gear without a rarity (two of three stock drops): a fixed small number, no level bonus
+		return math.max(1, floor(tonumber(cfg.normalShards) or 1))
 	end
 	local r = rarityIndex(info, cfg)
 	local base = cfg.baseShards[r]
@@ -147,6 +157,9 @@ function K.shards(info, cfg)
 end
 
 function K.orbChance(info, cfg)
+	if K.isNormal(info) then
+		return 0
+	end
 	return cfg.orbChance[rarityIndex(info, cfg)] or 0
 end
 
@@ -204,7 +217,7 @@ function K.batch(entries, maxRarity, cfg)
 	local out = {picked = {}, shards = 0, orbs = 0, capped = false, skipped = {}, count = 0, maxRarity = maxRarity}
 	for i, info in ipairs(entries) do
 		local why
-		if info.riftKey or info.stackable or not info.gear or (info.rarity or 0) < 1 then
+		if info.riftKey or info.stackable or not info.gear or ((info.rarity or 0) < 1 and (not K.isNormal(info) or (tonumber(cfg.normalShards) or 0) < 1)) then
 			why = "ignore"
 		else
 			why = K.check(info, cfg)
@@ -347,7 +360,7 @@ function K.historyRow(orb, text, t, kindName)
 	local word, orbPart = rest:match("^(.-)( %+ 1 .*)$")
 	word = word or rest
 	local kindT
-	if kind == "Set piece" or kind == "Unique" then
+	if kind == "Set piece" or kind == "Unique" or kind == "Normal" then
 		kindT = t(kind)
 	else
 		kindT = kindName and kindName(kind) or kind

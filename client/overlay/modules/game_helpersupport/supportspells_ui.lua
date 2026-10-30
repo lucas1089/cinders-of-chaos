@@ -11,7 +11,7 @@ local S = ChaosHelperSupport
 
 U.HOST_ID = 'supportHost'
 U.PANEL_ID = 'chaosSupportPanel'
-local SETTINGS_NODE = 'chaos_helper_support' -- [character] = { enabled, reserve, slots = { {id, enabled}, ... } }
+local SETTINGS_NODE = 'chaos_helper_support' -- [character] = { enabled, reserve, slots = { {id, enabled}, ... }, keep, cleared }
 local cfg = S.defaultConfig()
 local cfgFor = nil           -- the character the config was loaded for
 local lastPos = nil          -- the player's position at the last tick (a jump is a teleport)
@@ -61,13 +61,27 @@ local function spellEntry(id)
 end
 
 local pruned = false      -- the saved list was checked against the spell table
+local keep = {}           -- the last list with rows (S.restoreKept)
+local cleared = false     -- the player emptied the list (Clear, or the last row set to empty by hand)
 local save
 local function load()
   local name = charName()
-  if not name then return false end
+  -- a login sends the game start before the player's name: '' is not a character
+  if type(name) ~= 'string' or name == '' then return false end
   if cfgFor == name then return true end
   local node = g_settings.getNode(SETTINGS_NODE)
-  cfg = S.sanitize(type(node) == 'table' and node[name] or nil) -- checked: config.otml can be edited by hand
+  local saved = type(node) == 'table' and node[name] or nil
+  cfg = S.sanitize(saved) -- checked: config.otml can be edited by hand
+  -- owner 2026-10-30, "it still clears the support list on death", the fourth report: whatever emptied it, a list the
+  -- player did not empty comes back from its last rows
+  keep = type(saved) == 'table' and S.sanitize({ slots = saved.keep }).slots or {}
+  cleared = type(saved) == 'table' and saved.cleared == true
+  local restored = S.restoreKept(cfg.slots, keep, cleared)
+  if restored then
+    g_logger.warning('[helper support] the saved list of ' .. name .. ' was empty: its last ' .. #restored ..
+      ' rows are back')
+    cfg.slots = restored
+  end
   cfgFor = name
   state = S.newState()
   userOffNote = false
@@ -100,7 +114,14 @@ save = function()
   if type(node) ~= 'table' then node = {} end
   local slots = {}
   for i, s in ipairs(cfg.slots) do slots[i] = { id = s.id, enabled = s.enabled } end
-  node[name] = { enabled = cfg.enabled, reserve = cfg.reserve, slots = slots }
+  if #slots > 0 then
+    keep, cleared = slots, false
+  elseif #keep > 0 and not cleared then
+    -- an empty list the player did not ask for: the log says who wrote it (the next report shows the cause)
+    g_logger.warning('[helper support] an empty list was saved over ' .. #keep .. ' rows: ' ..
+      tostring(debug and debug.traceback and debug.traceback('', 2) or ''))
+  end
+  node[name] = { enabled = cfg.enabled, reserve = cfg.reserve, slots = slots, keep = keep, cleared = cleared }
   g_settings.setNode(SETTINGS_NODE, node)
   if g_settings.save then g_settings.save() end -- on disk now: a crash or a death screen close keeps it
 end
@@ -119,6 +140,7 @@ function U.setSlots(slots, enabled)
   load()
   slots = S.dropUtilities(slots, spellEntry) -- a utility never gets in, whoever asks (Auto setup, 'add' mode)
   cfg = S.sanitize({ enabled = enabled == nil and cfg.enabled or enabled, reserve = cfg.reserve, slots = slots })
+  if #cfg.slots == 0 then cleared = true end -- Auto setup or its undo asked for an empty list
   state = S.newState()
   save()
   U.rebuild()
@@ -299,9 +321,10 @@ local function readRows()
   local p = panel()
   if not p then return end
   local slots, seen = {}, {}
-  for _, row in ipairs(rowsOf(p)) do
+  for i, row in ipairs(rowsOf(p)) do
     local opt = row:getChildById('spell'):getCurrentOption()
-    local id = opt and tonumber(opt.data) or 0
+    -- a box with no option chosen (not filled yet) is not the player's "(empty)": the row stays as it was
+    local id = opt and tonumber(opt.data) or (cfg.slots[i] and cfg.slots[i].id) or 0
     if id and id > 0 and not seen[id] then
       seen[id] = true
       -- a spell just picked in an empty row (its box is greyed) starts ticked
@@ -313,8 +336,12 @@ local function readRows()
 end
 
 local function changed()
+  -- only the player edits the rows, and only in the open window: a hidden panel's events are not theirs
   if building then return end
+  local p = panel()
+  if not p or not p:isVisible() then return end
   readRows()
+  if #cfg.slots == 0 then cleared = true end
   state = S.newState()
   userOffNote = false
   save()
@@ -390,6 +417,8 @@ local function buildPanel(parent)
     if previous then row:addAnchor(AnchorTop, previous:getId(), AnchorBottom) else row:addAnchor(AnchorTop, 'parent', AnchorTop) end
     previous = row
     row:getChildById('number'):setText(tostring(i))
+    -- the mouse wheel over a box changed its spell (scrolling up to "(empty)" took the row out)
+    row:getChildById('spell').mouseScroll = false
     row:getChildById('spell').onOptionChange = function() changed() end
     row:getChildById('enable').onCheckChange = function() changed() end
   end
@@ -409,6 +438,7 @@ local function buildPanel(parent)
   p:recursiveGetChildById('fill').onClick = function() U.fillForClass() end
   p:recursiveGetChildById('clear').onClick = function()
     cfg.slots = {}
+    cleared = true
     state = S.newState()
     save()
     U.rebuild()
@@ -492,7 +522,7 @@ local function onDeath()
   S.reset(state)
   S.noteClear(state, g_clock.millis(), S.SESSION_GRACE_MS)
 end
-U.onGameStart, U.onDeath = onGameStart, onDeath -- for the tests
+
 
 local function onGameEnd()
   lastPos = nil
@@ -500,6 +530,8 @@ local function onGameEnd()
   state = S.newState()
   overall = ''
 end
+
+U.onGameStart, U.onDeath, U.onGameEnd = onGameStart, onDeath, onGameEnd -- for the tests
 
 -- a level-up can open new spells for the dropdowns
 local function onLevelChange(localPlayer, level, levelPercent, oldLevel)

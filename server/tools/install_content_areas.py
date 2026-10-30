@@ -13,6 +13,8 @@ Memorial's plaza) and of server/tools/areaplan/rooms/ (the Idle Hall) is placed 
 its spawns and chest script, but gets no teleport and no line in the places file: its way in is a runtime portal of its
 own (chronicle_config.lua `areas` gate, memorial_config.lua `plaza.portal`; tools/chronicle_areas_test.py checks that
 their `at` is the plan's origin) or, for the Idle Hall, idlehall.lua's move (tools/idle_hall_test.py). The plans of
+server/tools/areaplan/annexes/ (the caves behind the five rare base hunts, README "Hunt annexes (O337)") are fixed areas too: their
+way in is a map portal that patch_hunt_annexes.py (step huntannexes) puts into the base hunt. The plans of
 server/tools/areaplan/events/ (the Haunted Harvest, server/README.md "Haunted Harvest") are fixed areas too, but only
 while ChaosHarvestArt.PAIR33 (data/lib/chaos_harvest_art.lua) is on: their tiles are the pair 33 kit's; their ways in
 are the event's Harvest Portals and the crypt seal (harvest_event.lua).
@@ -77,7 +79,8 @@ def harvest_on(path=HARVEST_SWITCH):
         return False
 
 
-FIXED_DIRS = (os.path.join(HERE, 'areaplan', 'chronicle'), os.path.join(HERE, 'areaplan', 'rooms')) + (
+FIXED_DIRS = (os.path.join(HERE, 'areaplan', 'chronicle'), os.path.join(HERE, 'areaplan', 'rooms'),
+              os.path.join(HERE, 'areaplan', 'annexes')) + (
     (EVENTS_DIR,) if harvest_on() else ())
 CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'hunt_teleports_config.lua')
 PLACES_REL = os.path.join('lib', 'chaos_hunt_places.lua')
@@ -616,9 +619,11 @@ def area_state(world, pid, tiles, keep_edited=False, free=None):
         if not keep_edited:
             return 'update'
         raise InstallError('%s: placed before, but %d tile(s) differ from the plan now (first %d,%d,%d): the plan changed; '
-                           'restore the map from <map>.otbm.bak and install again' % ((pid, len(diff)) + diff[0]))
-    raise InstallError('%s: %d of its %d tiles land on tiles the map has (first %d,%d,%d); move its origin'
-                       % ((pid, len(have), len(tiles)) + have[0]))
+                           'restore the map from <map>.otbm.bak and install again (`touch <map>.otbm.restore` and install_all.py does it first)'
+                           % ((pid, len(diff)) + diff[0]))
+    raise InstallError('%s: %d of its %d tiles land on tiles the map has (first %d,%d,%d); move its origin, or, when the plan '
+                       'changed size or shape since it was placed, restore the map from <map>.otbm.bak and install again '
+                       '(`touch <map>.otbm.restore` and install_all.py does it first)' % ((pid, len(have), len(tiles)) + have[0]))
 
 
 # ------------------------------------------------------------------------------------------------ OTBM writing

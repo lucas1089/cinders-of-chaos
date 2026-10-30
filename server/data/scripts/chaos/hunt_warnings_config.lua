@@ -43,7 +43,7 @@ C.places = {
 	{id = 3, kind = "floor", pos = {x = 31570, y = 33043, z = 7}, to = {x = 31570, y = 33043, z = 6}, group = 26, level = 120, from = "area 31570,33043,7", verdict = "extreme"},
 	{id = 4, kind = "floor", pos = {x = 31616, y = 31383, z = 6}, to = {x = 31616, y = 31383, z = 5}, group = 12, level = 425, from = "area 31616,31383,6", verdict = "extreme"},
 	{id = 5, kind = "floor", pos = {x = 31616, y = 31387, z = 6}, to = {x = 31616, y = 31387, z = 7}, group = 45, level = 425, from = "area 31616,31387,6", verdict = "extreme"},
-	{id = 6, kind = "floor", pos = {x = 31648, y = 32253, z = 7}, to = {x = 31648, y = 32252, z = 6}, group = 27, level = 720, from = "area 31648,32253,7", verdict = "extreme"},
+	{id = 6, kind = "floor", pos = {x = 31648, y = 32253, z = 7}, to = {x = 31648, y = 32252, z = 6}, group = 27, level = 710, from = "area 31648,32253,7", verdict = "extreme"},
 	{id = 7, kind = "floor", pos = {x = 31648, y = 32257, z = 6}, to = {x = 31648, y = 32256, z = 5}, group = 13, level = 1180, from = "area 31648,32257,6", verdict = "danger"},
 	{id = 8, kind = "floor", pos = {x = 31720, y = 32921, z = 12}, to = {x = 31720, y = 32921, z = 13}, group = 115, level = 80, from = "area 31720,32921,12", verdict = "danger"},
 	{id = 9, kind = "floor", pos = {x = 31722, y = 32926, z = 15}, to = {x = 31722, y = 32926, z = 14}, group = 134, level = 160, from = "area 31722,32926,15", verdict = "danger"},

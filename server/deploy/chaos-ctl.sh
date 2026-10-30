@@ -119,6 +119,9 @@
 #   account-create NAME         a game account; the password is read from stdin (one line, 6-64 characters), stored
 #                               as a PBKDF2 hash (never on a command line or in a log)
 #   account-password NAME       a new password for an account, read from stdin the same way
+#   gm-set NAME GROUP           staff rights: the character's group (1 player, 2 tutor, 3 senior tutor, 4 gamemaster,
+#                               5 community manager, 6 god) and its account's type to the same number. The character must
+#                               be offline (the server writes the group back when it saves); it holds at the next login.
 #   publish-update TAG [--version N] [--min-package N]
 #                               publish_client_update.sh TAG in the background (publish-log): the release's client zip
 #                               becomes the signed client update on the site (docs/LAUNCH.md "Publishing a client
@@ -130,7 +133,8 @@
 #                               changes the number below which a phone cannot play (docs/ANDROID_CLIENT.md section 4).
 #   publish-log [N]             the last N lines of the publish log
 #   install-admin [--full] KEYFILE|-
-#                               creates the user "chaosadmin" with that ssh public key (a file, or - for stdin) and the
+#                               creates the user "chaosadmin" and adds that ssh public key (a file, or - for stdin; keys
+#                               already there stay: one per device) and the
 #                               right to run this script as root; --full also gives it passwordless sudo for everything
 #   testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks]
 #                               tester bots (server/README.md "Tester bots"): N characters "Tester Xxx" (default 100, at
@@ -1712,6 +1716,22 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
       echo "password of $name changed"
     fi
     ;;
+  gm-set)
+    [ $# -eq 2 ] || die "gm-set NAME GROUP (1 player, 2 tutor, 3 senior tutor, 4 gamemaster, 5 community manager, 6 god)"
+    name=$1; grp=$2
+    if ! [[ $name =~ ^[A-Za-z][A-Za-z\ \'-]{2,28}$ ]] || [[ $name == *' ' ]] || [[ $name == *'  '* ]]; then
+      die "gm-set NAME: a character name (letters, spaces, ' and -, 3 to 29 characters)"
+    fi
+    [[ $grp =~ ^[1-6]$ ]] || die "gm-set GROUP: 1 to 6"
+    q=${name//\'/\'\'}
+    pid=$(mysql_q "SELECT id FROM players WHERE name = '$q'") || die "database-down: the database did not answer"
+    num "${pid:-}" || die "character-not-found: no character $name"
+    on=$(mysql_q "SELECT COUNT(*) FROM players_online WHERE player_id = $pid") || die "database-down: the database did not answer"
+    [ "$on" = 0 ] || die "online: $name is logged in; log out first (the server writes the group back when it saves)"
+    mysql_q "UPDATE players SET group_id = $grp WHERE id = $pid; UPDATE accounts a JOIN players p ON p.account_id = a.id SET a.type = $grp WHERE p.id = $pid" \
+      || die "the database refused the change"
+    echo "$name: group $grp, account type $grp (from the next login)"
+    ;;
   install-admin)
     full=0
     if [ "${1:-}" = "--full" ]; then full=1; shift; fi
@@ -1725,7 +1745,10 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
       || adduser --disabled-password --gecos "Cinders of Chaos admin" "$ADMIN" >/dev/null || die "adduser failed"
     home=$(getent passwd "$ADMIN" | cut -d: -f6)
     install -d -m 0700 -o "$ADMIN" -g "$ADMIN" "$home/.ssh"
-    printf '%s\n' "$key" > "$home/.ssh/authorized_keys"
+    # add the key, keep the others (the phone and the Windows admin app each have one); the same key twice stays once
+    ak="$home/.ssh/authorized_keys"
+    touch "$ak"
+    grep -qxF -- "$key" "$ak" || printf '%s\n' "$key" >> "$ak"
     chown "$ADMIN:$ADMIN" "$home/.ssh/authorized_keys"
     chmod 0600 "$home/.ssh/authorized_keys"
     tmp=$(mktemp)

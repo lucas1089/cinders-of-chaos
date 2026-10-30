@@ -1,29 +1,13 @@
 # Defects of tools/audit_hunts.py that were looked at and left: the owner accepted them or they need a map edit (server/README.md "Hunt audit (O337)").
 # tools/audit_hunts.py --check fails on a defect that is not listed here and on a listed one that is gone, so the list only shrinks.
 id,flag,reason
-base_5_31654_32254,small,"Emerald Mage: 58 monsters on 1729 tiles, a full sweep takes 41 s (limit 45). The arrival is a cave under stairs; --suggest finds no larger area of the sign monster in its band. Owner call: more spawns (map edit) or accept."
-base_5_31662_32258,sparse,"Scaledrake (level 308): all its spawns on the map are this one group, 30 monsters on 1369 tiles. --suggest finds no larger area of the sign monster. Owner call: more spawns of Scaledrake and Cinderclaw (map edit), another hunt for the slot, or accept."
-base_5_31662_32258,small,"Same as the sparse flag: 30 monsters, 29 s sweep."
-base_5_31666_32254,sparse,"deathrattle (level 289): 22 monsters on 783 tiles, one bonelich in view of the arrival. No larger area of the sign monster. Owner call as Scaledrake."
-base_5_31666_32254,small,"Same as the sparse flag: 22 monsters, 17 s sweep."
-base_5_31666_32258,sparse,"Blackblade (level 275, invisible: the room shows Urzog): 12 monsters on 546 tiles. No larger area of the sign monsters. Owner call as Scaledrake."
-base_5_31666_32258,small,"Same as the sparse flag: 12 monsters, 12 s sweep."
-base_5_31667_32256,small,"fangclaw (level 308): 14 monsters on 424 tiles, a 9 s sweep, no larger area of the sign monster in its band. Owner call as Scaledrake."
-hollow_crypt,sparse,"Plan: 37 spawn points on 1637 walkable tiles (2.3 per 100, limit 3.0), a 35 s sweep. Changing the spawns of a placed plan changes its tiles (the decoration keeps off spawn points), so install_content_areas.py refuses it until the map is restored from its backup. Owner call: give the plan more spawns before launch and restore the map once, or accept the small trial area."
-hollow_crypt,dead,Same plan: 45% of its ground has no monster in view.
-hollow_crypt,small,"Same plan: 35 s sweep (limit 45), 38 monsters."
-wormcoil_depths,dead,"36% of the ground has no monster in view (limit 35%). Same remedy as hollow_crypt (a plan change needs a map restore); the density is 4.4 per 100, so only the layout is lopsided. Accept."
-waystone_3,sparse,"Tier II plain: 131 spawns on 5547 reachable tiles (2.4 per 100, 42 tiles per monster; the rift limit is 34). The monsters are the base tier files; more spawns lengthen every run. Owner call: balance of the waystone runs."
-waystone_4,small,"Tier II cave: 78 spawns, a 35 s sweep. Small by design (a cave map). Accept."
-waystone_5,sparse,"Tier III plain: 262 spawns on 13647 reachable tiles (1.9 per 100, 52 tiles per monster; the rift limit is 34), the map the rift report of 2026-10-29 describes. Owner call: add about 150 spawns of the tier or retire the map (waystone_tiers_config.lua `retired`)."
-waystone_9,big,"Tier V desert: 487 spawns on 16224 reachable tiles, a 304 s sweep (limit 300). Within 2 percent of the limit. Accept."
-waystone_11,sparse,"Tier VI undead cave: 255 spawns on 8970 tiles (2.8 per 100, 35 tiles per monster). One tile over the rift limit. Accept."
-waystone_12,sparse,"Tier VI forest and desert: 389 spawns on 20896 reachable tiles (1.9 per 100, 54 tiles per monster) and a 392 s sweep. The largest and emptiest map. Owner call: add about 230 spawns of the tier or retire the map."
-waystone_12,big,Same map: 392 s sweep (limit 300).
+waystone_4,small,"Tier II cave: 78 spawns on 1882 tiles, a 35 s sweep (limit 45). The whole rectangle of the map holds 2020 walkable tiles (136 of them cut off), so there is no ground to count; a bigger cave would be new map ground inside a waystone rectangle that the boss script and the cleanup read. O337 call: left, the smallest of the 12 maps by design."
+waystone_12,big,"Tier VI forest and desert: 20,896 walkable tiles, a 392 s sweep (limit 300). O337: the fill brought it to 3.15 monsters per 100 (659 monsters, was 1.9). It is open land: the dead ends behind necks of up to 10 tiles hold 1,108 of the 5,110 tiles that would have to go, the lobes worth 4,700 tiles sit behind necks of 40 to 90 tiles (300 tiles of fence). Left whole; the run to the boss is route-limited, not sweep-limited."
 nightglass_core,band,By design: the late game monsters (level 940) replace weaker spawns in an area of level 344 monsters (tools/late_game.py).
-nightglass_core,small,"Four floors of stone halls: 146 monsters, a 43 s sweep (limit 45). Owner call: a bigger late game area needs map editing."
+nightglass_core,small,"Four floors of stone halls: 146 monsters, a 43 s sweep (limit 45); the box holds 3161 walkable tiles and 2630 are in reach of a monster. O337 call: a bigger late game area needs new ground; left, 2 s under the limit."
 jaded_roots,band,By design: late game monsters (level 810) among level 338 ones.
-gloom_pillars,packed,"149 monsters on 1454 tiles (10 per 100, limit 6): the base map's own density, left by the late game spawns (README ""Not done"": 88 areas over 8 per 100). Owner call: thin it with spawn_tuning.json `remove` rows."
-gloom_pillars,small,Same area: a 25 s sweep.
-putrefactory,small,"58 monsters on 1027 tiles, an 18 s sweep. Owner call: a bigger late game area needs map editing."
-bounty_pool,stale,"112 monsters that only the planned hunts spawn are not in bounty_pool.lua, so no bounty contract can name them. Regenerating it (gen_bounty_pool.py on the installed server) adds 109 hunt monsters up to level 1700 and fails tests/descent_test.lua and tests/progression_test.lua (the Descent window and the pool size). Owner call: the bounty and Descent balance. bestiary_spawns.lua is regenerated (O337)."
+gloom_pillars,small,"O337: thinned from 149 to 78 monsters (5.4 per 100, was 10.2; spawn_expand.json `remove` rows, never a late_game_spawns.csv row), the region stays 1454 tiles. A 25 s sweep (limit 45): one compact hall of three floors whose box holds no more walkable ground; a bigger area needs map editing."
+putrefactory,small,"58 monsters on 1027 tiles, an 18 s sweep; the box (two floors) holds 1107 walkable tiles in all. O337 call: a bigger late game area needs new ground and level 700+ monsters to fill it; left."
+dunereach_isle,sparse,"Imported open island (O335): 2.0 monsters per 100 is the guide's open land number for islands (docs/MAP_GUIDE.md ""Imported hunts (O335)""). Not part of the O337 answers; a change of the plan needs a map restore."
+rimewind_isle,sparse,"Imported open island (O335): 2.0 monsters per 100, the guide's open land number. Same as dunereach_isle."
+rimewind_isle,dead,"Imported open island (O335): the ground between the packs has no monster in view (an open island, not a hall). Same as dunereach_isle."

@@ -51,7 +51,7 @@ def monster_names():
 
 def boxes():
     out = []
-    for d in ('plans', 'chronicle', 'rooms', 'events'):
+    for d in ('plans', 'chronicle', 'rooms', 'annexes', 'events'):
         for p in glob.glob(os.path.join(HERE, 'areaplan', d, '*.json')):
             plan = json.load(open(p, encoding='utf-8'))
             o = plan.get('origin')

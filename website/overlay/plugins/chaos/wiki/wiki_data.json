@@ -9110,7 +9110,7 @@
 							"cols": ["Group", "Each miss", "At most"],
 							"w": [35, 40, 25],
 							"rows": [
-								["Monster uniques", "+1% of the base per miss", "x3"],
+								["Monster uniques", "+2% of the base per miss", "x3"],
 								["Boss uniques", "+10% of the base per miss", "x4"],
 								["Set pieces", "+5% of the base per miss", "x4"],
 								["Raid uniques", "+25% of the base per miss", "x5"]
@@ -19764,7 +19764,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -19836,7 +19836,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -19919,7 +19919,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -19988,7 +19988,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -20072,7 +20072,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -20154,7 +20154,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -20235,7 +20235,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -20307,7 +20307,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -20771,7 +20771,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -20840,7 +20840,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -20909,7 +20909,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -20978,7 +20978,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -21050,7 +21050,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -21198,7 +21198,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -21267,7 +21267,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -21336,7 +21336,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -22076,7 +22076,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -22145,7 +22145,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -22214,7 +22214,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -22286,7 +22286,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -22368,7 +22368,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -22449,7 +22449,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -22518,7 +22518,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -23054,7 +23054,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -23124,7 +23124,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -23206,7 +23206,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -23351,7 +23351,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -23493,7 +23493,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -23706,7 +23706,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -23776,7 +23776,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -23846,7 +23846,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24174,7 +24174,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24243,7 +24243,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24312,7 +24312,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24390,7 +24390,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24473,7 +24473,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24554,7 +24554,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24624,7 +24624,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24705,7 +24705,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24783,7 +24783,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24852,7 +24852,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -24929,7 +24929,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25001,7 +25001,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25073,7 +25073,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25142,7 +25142,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25214,7 +25214,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25283,7 +25283,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25355,7 +25355,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25437,7 +25437,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25583,7 +25583,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25665,7 +25665,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25735,7 +25735,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -25805,7 +25805,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -26130,7 +26130,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -26199,7 +26199,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -26338,7 +26338,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -26407,7 +26407,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -26487,7 +26487,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -26559,7 +26559,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -26640,7 +26640,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -26709,7 +26709,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -26781,7 +26781,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27245,7 +27245,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27328,7 +27328,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27407,7 +27407,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27476,7 +27476,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27546,7 +27546,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27618,7 +27618,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27700,7 +27700,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27778,7 +27778,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27848,7 +27848,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27917,7 +27917,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -27987,7 +27987,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28059,7 +28059,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28128,7 +28128,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28197,7 +28197,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28266,7 +28266,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28336,7 +28336,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28405,7 +28405,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28474,7 +28474,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28552,7 +28552,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28622,7 +28622,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28695,7 +28695,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28777,7 +28777,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28846,7 +28846,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28915,7 +28915,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -28985,7 +28985,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29054,7 +29054,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29194,7 +29194,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29263,7 +29263,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29333,7 +29333,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29403,7 +29403,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29481,7 +29481,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29559,7 +29559,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29628,7 +29628,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29697,7 +29697,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29767,7 +29767,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29836,7 +29836,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29919,7 +29919,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -29991,7 +29991,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -30063,7 +30063,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -30412,7 +30412,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -30481,7 +30481,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -30616,7 +30616,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -30698,7 +30698,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -30767,7 +30767,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -30915,7 +30915,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -30984,7 +30984,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -31067,7 +31067,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -31136,7 +31136,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -31208,7 +31208,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -31280,7 +31280,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -31350,7 +31350,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},
@@ -31432,7 +31432,7 @@
 								],
 								[
 									"Bad-luck protection",
-									"Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."
+									"Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."
 								]
 							]
 						},

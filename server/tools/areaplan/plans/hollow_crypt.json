@@ -4,8 +4,8 @@
  "name": "Hollow Crypt",
  "biome": "catacomb",
  "size": [
-  112,
-  96
+  132,
+  110
  ],
  "floors": 1,
  "level": [
@@ -54,6 +54,18 @@
    "place": "south"
   },
   {
+   "id": "weeping_cloister",
+   "floor": 1,
+   "size": "huge",
+   "place": "southwest"
+  },
+  {
+   "id": "sepulchre_hall",
+   "floor": 1,
+   "size": "huge",
+   "place": "northeast"
+  },
+  {
    "id": "riders_ring",
    "floor": 1,
    "size": [
@@ -94,6 +106,26 @@
    "from": "sexton_nave",
    "to": "riders_ring",
    "width": 3
+  },
+  {
+   "from": "west_ossuary",
+   "to": "weeping_cloister",
+   "width": 3
+  },
+  {
+   "from": "weeping_cloister",
+   "to": "sexton_nave",
+   "width": 3
+  },
+  {
+   "from": "east_ossuary",
+   "to": "sepulchre_hall",
+   "width": 3
+  },
+  {
+   "from": "sepulchre_hall",
+   "to": "grave_rows",
+   "width": 3
   }
  ],
  "entry": {
@@ -106,58 +138,86 @@
   {
    "zone": "grave_rows",
    "monster": "Bonecrusher",
-   "count": 6,
+   "count": 8,
    "pack": 3,
    "respawn": 100
   },
   {
    "zone": "grave_rows",
    "monster": "Rotten Corpse-grub",
-   "count": 4,
+   "count": 6,
    "pack": 2,
    "respawn": 100
   },
   {
    "zone": "west_ossuary",
    "monster": "Sopping Carcass",
-   "count": 6,
+   "count": 8,
    "pack": 3,
    "respawn": 110
   },
   {
    "zone": "west_ossuary",
    "monster": "Bonecrusher",
-   "count": 4,
+   "count": 6,
    "pack": 2,
    "respawn": 110
   },
   {
    "zone": "east_ossuary",
    "monster": "Sopping Corpus",
-   "count": 6,
+   "count": 8,
    "pack": 3,
    "respawn": 110
   },
   {
    "zone": "east_ossuary",
    "monster": "Bloated Corpse-grub",
-   "count": 4,
+   "count": 6,
    "pack": 2,
    "respawn": 110
   },
   {
    "zone": "sexton_nave",
    "monster": "Bonecrusher",
-   "count": 4,
+   "count": 6,
    "pack": 2,
    "respawn": 120
   },
   {
    "zone": "sexton_nave",
    "monster": "Sopping Carcass",
-   "count": 3,
+   "count": 4,
    "pack": 3,
    "respawn": 120
+  },
+  {
+   "zone": "weeping_cloister",
+   "monster": "Sopping Carcass",
+   "count": 11,
+   "pack": 3,
+   "respawn": 110
+  },
+  {
+   "zone": "weeping_cloister",
+   "monster": "Bonecrusher",
+   "count": 8,
+   "pack": 3,
+   "respawn": 110
+  },
+  {
+   "zone": "sepulchre_hall",
+   "monster": "Sopping Corpus",
+   "count": 11,
+   "pack": 3,
+   "respawn": 110
+  },
+  {
+   "zone": "sepulchre_hall",
+   "monster": "Bloated Corpse-grub",
+   "count": 8,
+   "pack": 3,
+   "respawn": 110
   }
  ],
  "boss": {
@@ -166,5 +226,5 @@
   "respawn": 7200,
   "title": "the Hollow Rider"
  },
- "notes": "Content plan (pair 27 trial, catacomb kit): a small one-floor crypt for levels 300-400, the undead gap between the Bonechoir Catacomb (200-290) and the Ossuary Stair (400-520). Six zones: a loop through the two ossuaries to the sexton nave, the boss ring past it; the Hollow Rider holds the ring at the south end. With ChaosAssetsArt.PAIR27 on, the catacomb kit's sarcophagi, crypt hatches and portal ring join the decoration (areaplan/decor_assets_art.json)."
+ "notes": "Content plan (pair 27 trial, catacomb kit): a small one-floor crypt for levels 300-400, the undead gap between the Bonechoir Catacomb (200-290) and the Ossuary Stair (400-520). Eight zones (O337: two cloisters added, 132 x 110, 2.3 -> about 3.8 monsters per 100 and a sweep over 45 s): a loop through the two ossuaries, the weeping cloister and the sepulchre hall to the sexton nave, the boss ring past it; the Hollow Rider holds the ring at the south end. With ChaosAssetsArt.PAIR27 on, the catacomb kit's sarcophagi, crypt hatches and portal ring join the decoration (areaplan/decor_assets_art.json)."
 }

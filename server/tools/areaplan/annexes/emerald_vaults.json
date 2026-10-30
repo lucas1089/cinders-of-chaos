@@ -1,0 +1,99 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "emerald_vaults",
+  "name": "Emerald Vaults",
+  "biome": "cave",
+  "size": [
+    84,
+    72
+  ],
+  "floors": 1,
+  "level": [
+    180,
+    270
+  ],
+  "seed": 33701,
+  "origin": {
+    "x": 14340,
+    "y": 15500,
+    "z": 9
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "glass_nave",
+      "floor": 1,
+      "size": "large",
+      "place": "center"
+    },
+    {
+      "id": "mage_stacks",
+      "floor": 1,
+      "size": "large",
+      "place": "west"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "glass_nave",
+      "width": 3
+    },
+    {
+      "from": "glass_nave",
+      "to": "mage_stacks",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp",
+    "to": {
+      "x": 31907,
+      "y": 32027,
+      "z": 5
+    }
+  },
+  "spawns": [
+    {
+      "zone": "glass_nave",
+      "monster": "Ruby Archer",
+      "count": 7,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "glass_nave",
+      "monster": "Emerald Mage",
+      "count": 4,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "mage_stacks",
+      "monster": "Emerald Mage",
+      "count": 7,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "mage_stacks",
+      "monster": "Sapphire Warrior",
+      "count": 4,
+      "pack": 3,
+      "respawn": 60
+    }
+  ],
+  "notes": "Annex of the base hunt Emerald Mage (O337): the hunt had too few monsters and too little ground for the hunt audit. A portal in the hunt leads here (tools/hunt_annexes.json), the exit portal leads back. Same monsters and level band as the hunt (server/README.md \"Hunt annexes\")."
+}

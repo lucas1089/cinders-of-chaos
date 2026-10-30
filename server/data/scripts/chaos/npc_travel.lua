@@ -157,7 +157,7 @@ local function facts(player)
 		f.instance = select(2, Chaos.inAnyInstance(player))
 	end
 	f.disabled = cfg.enabled == false
-	f.inFight = try(function() return player:isPzLocked() or player:hasCondition(CONDITION_INFIGHT) end) and true or false
+	f.inFight = try(function() if Chaos.inCombat then return Chaos.inCombat(player) end return player:isPzLocked() or player:hasCondition(CONDITION_INFIGHT) end) and true or false
 	f.cooldownLeft = K.cooldownLeft(cfg, now(), T.last[player:getGuid()])
 	return f
 end

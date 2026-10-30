@@ -252,6 +252,34 @@ eq(readFile(regPath), regStock, "remove: monsters.xml byte for byte")
 out, rc = run("--remove")
 ok(out:find("unchanged", 1, true) ~= nil, "remove twice: unchanged")
 
+-- ------------------------------------------------------------------ a list of fill files (spawn_expand.json: fills and removals)
+do
+	writeFile(spawnPath, stock)
+	writeFile(root .. "/expand.json", [==[
+{"areas": [{"id": "XW01", "z": 8, "likes": [[2000, 2000]], "add": [[2008, 2008, 0, 1, 0]]}], "remove": [[2001, 1998, 8]]}
+]==])
+	local t2 = tuning:gsub('"fill": "fill.json",', '"fill": ["fill.json", "expand.json"],')
+	local tp2 = root .. "/tuning2.json"
+	writeFile(tp2, t2)
+	local p = io.popen("python3 -I " .. tool .. " '" .. data .. "' --tuning '" .. tp2 .. "' 2>&1; echo \"rc=$?\"")
+	local o = p:read("*a")
+	p:close()
+	ok(o:find("rc=0", 1, true) ~= nil, "the list of fill files: ok " .. o)
+	local txt = readFile(spawnPath)
+	ok(txt:find('chaosadd="XW01"', 1, true) ~= nil, "the second file's area is added (a block of 2)")
+	ok(txt:find('<!-- chaosremoved: <monster name="Test Mid" x="1" y="-2" z="8" spawntime="900" /> -->', 1, true) ~= nil,
+		"an entry of the second file's remove list is taken out like a tuning remove")
+	p = io.popen("python3 -I " .. tool .. " '" .. data .. "' --tuning '" .. tp2 .. "' 2>&1")
+	o = p:read("*a")
+	p:close()
+	ok(o:find("unchanged", 1, true) ~= nil, "the list of fill files: a second run changes nothing (" .. o .. ")")
+	p = io.popen("python3 -I " .. tool .. " '" .. data .. "' --tuning '" .. tp2 .. "' --remove 2>&1")
+	p:read("*a")
+	p:close()
+	eq(readFile(spawnPath), stock, "the list of fill files: --remove gives the stock file back byte for byte")
+	writeFile(spawnPath, first)
+end
+
 -- ------------------------------------------------------------------ CRLF files
 local crlf = stock:gsub("\n", "\r\n")
 writeFile(spawnPath, crlf)

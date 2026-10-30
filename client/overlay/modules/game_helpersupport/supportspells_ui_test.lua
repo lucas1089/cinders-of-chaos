@@ -128,7 +128,7 @@ g_game = {
 g_settings = { getNode = function() return {} end, setNode = function() end, save = function() end }
 g_clock = { millis = function() return 0 end }
 local logged = {}
-g_logger = { error = function(e) logged[#logged + 1] = e end }
+g_logger = { error = function(e) logged[#logged + 1] = e end, warning = function(e) logged[#logged + 1] = e end }
 tr = function(s) return s end
 scheduleEvent = function(f) scheduled[#scheduled + 1] = f return #scheduled end
 cycleEvent = function() return 1 end
@@ -227,6 +227,43 @@ do
   U.prune()
   eq(ids(), '9301+,9303+', 'the full table: only the retired spell leaves')
   eq(#store.chaos_helper_support.Dead.slots, 2, 'saved without it')
+end
+
+-- owner 2026-10-30, "it still clears the support list on death": a saved list that came back empty without the player
+-- emptying it is restored from its last rows; an empty list the player made stays empty
+do
+  local store = { chaos_helper_support = { Lost = { enabled = true, reserve = 20, slots = {},
+    keep = { { id = 9401, enabled = true }, { id = 9402, enabled = false } } },
+    Wiped = { enabled = true, reserve = 20, slots = {}, keep = { { id = 9401, enabled = true } }, cleared = true } } }
+  g_settings = { getNode = function(n) return store[n] end, setNode = function(n, v) store[n] = v end, save = function() end }
+  local name = 'Lost'
+  g_game.getLocalPlayer = function() return { getName = function() return name end } end
+  Spells = { getSpellList = function() return {} end, getSpellDataById = function() return nil end }
+  local function ids()
+    local out = {}
+    for _, sl in ipairs(U.slots()) do out[#out + 1] = sl.id .. (sl.enabled and '+' or '-') end
+    return table.concat(out, ',')
+  end
+  U.onGameEnd()
+  U.onGameStart()
+  eq(ids(), '9401+,9402-', 'an empty list the player did not make: its last rows are back')
+  U.onGameEnd()
+  name = 'Wiped'
+  U.onGameStart()
+  eq(ids(), '', 'a list the player cleared stays empty')
+  -- a login sends the game start before the name: '' is no character, nothing is loaded or saved for it
+  U.onGameEnd()
+  name = ''
+  U.onGameStart()
+  eq(store.chaos_helper_support[''], nil, 'nothing saved for a nameless player')
+  -- the Clear button marks the list as the player's
+  U.onGameEnd()
+  name = 'Lost'
+  U.onGameStart()
+  U.setSlots({ { id = 9401, enabled = true } })
+  eq(store.chaos_helper_support.Lost.keep[1].id, 9401, 'a list with rows is kept')
+  U.setSlots({})
+  eq(store.chaos_helper_support.Lost.cleared, true, 'an empty list asked for is the player\'s')
 end
 
 if fails > 0 then error(fails .. ' failure(s)') end

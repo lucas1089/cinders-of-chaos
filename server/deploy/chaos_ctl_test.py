@@ -77,6 +77,8 @@ grep -E '^(socket|host|port)=' "${1#--defaults-extra-file=}" | sed 's/^/  cnf /'
 case " $* " in *" -e "*) ;; *) cat > "$STUB/stdin" ;; esac
 case "$*" in
   *"FROM accounts"*) echo "${STUB_ACCOUNTS:-0}" ;;
+  *"SELECT id FROM players WHERE"*) echo "${STUB_PID:-}" ;;
+  *"FROM players_online WHERE player_id"*) echo "${STUB_ONLINE:-0}" ;;
   *"DISTINCT player_name"*) echo Gma; echo "Bad;Name" ;;
   *chaos_admin_log*) printf '2026-10-21 10:00\\tGma\\tplayers.kick\\tBob\\tok\\tdone\\n' ;;
   *COUNT*) echo 7 ;;
@@ -838,6 +840,20 @@ def test_admin_commands():
                         (('account-create', 'Okname'), 'short'), (('account-create', 'Okname'), 'x' * 70),
                         (('account-create', 'Okname', 'extra'), 'hunter22'), (('account-create', 'Okname'), '')):
             check(run(*bad, stdin=pw + '\n').returncode != 0, 'account refuses %r / %d characters' % (bad, len(pw)))
+
+        # gm-set: staff group and account type, only for an offline character; the name is quoted for SQL
+        r = run('gm-set', "Sir O'Neil", '6', extra={'STUB_PID': '42'})
+        check(r.returncode == 0 and 'group 6' in r.stdout, 'gm-set: ' + r.stdout + r.stderr)
+        c = calls()
+        check("name = 'Sir O''Neil'" in c and 'SET group_id = 6 WHERE id = 42' in c and 'a.type = 6 WHERE p.id = 42' in c,
+              'gm-set: quoted name, group and account type: ' + c)
+        r = run('gm-set', 'Bob', '4', extra={'STUB_PID': '42', 'STUB_ONLINE': '1'})
+        check(r.returncode != 0 and 'online' in r.stderr, 'gm-set: an online character is refused')
+        r = run('gm-set', 'Ghost', '4')
+        check(r.returncode != 0 and 'character-not-found' in r.stderr, 'gm-set: no such character')
+        for bad in (('gm-set', 'Bob', '7'), ('gm-set', 'Bob', '0'), ('gm-set', 'Bob'), ('gm-set', 'Bob;x', '4'),
+                    ('gm-set', 'Bob', '4', 'x'), ('gm-set', 'ab', '4')):
+            check(run(*bad, extra={'STUB_PID': '42'}).returncode != 0, 'gm-set refuses %r' % (bad,))
 
         # gm-logs: the base command logs and the admin panel's audit rows, a validated name, no other file
         logs = os.path.join(server, 'data', 'logs')

@@ -11,7 +11,10 @@
 --   stepping on it   MoveEvent stepin on the item ids: the owner (and the owner's party after the owner window) takes it:
 --                    onTake runs once; a stranger gets a message; a monster or summon walks over it untouched. An item
 --                    with no record (a crash, a reload) is removed and grants nothing.
---   the look-out     GlobalEvent every tickMs: runs out -> the item is removed with a fade effect; the glow pulses.
+--   under the feet   a pickup that lands on a tile where a player stands is taken at once by whoever may (no step event
+--                    fires for a player already there).
+--   the look-out     GlobalEvent every tickMs: runs out -> the item is removed with a fade effect; the glow pulses; a sweep
+--                    removes any item of ours whose record is gone (every tile an item was put on is tracked).
 -- State is in memory only: a restart or reload forgets every pickup, and an item left on the map is removed by the
 -- first step on it (or by its failsafe decay). Lua 5.1 / LuaJIT compatible.
 
@@ -28,6 +31,7 @@ ChaosPickups = ChaosPickups or {}
 local X = ChaosPickups
 local K = ChaosPickupsCore
 X.reg = X.reg or K.new()
+X.tracked = X.tracked or {} -- every tile an item of ours was put on, until the sweep finds it empty (pickups_core.lua)
 
 local function cfg()
 	return ChaosPickupsConfig
@@ -147,19 +151,26 @@ function X.drop(spec)
 		ownerId = spec.ownerId, ttlMs = spec.ttlMs, ownerWindowMs = spec.ownerWindowMs, onTake = spec.onTake,
 		data = spec.data
 	}, nowMs())
+	K.track(X.tracked, entry)
 	sendEffect(pos.x, pos.y, pos.z, row.glow)
+	X.takeUnderFeet(entry, item, pos)
 	return entry
 end
 
 local function removeItemAt(entry)
 	local row = itemRow(entry.itemKey)
 	local tile = row and Tile(Position(entry.x, entry.y, entry.z))
-	local item = tile and tile:getItemById(row.id)
-	if item then
+	local removed = false
+	-- a stackable look can lie twice on a tile (two creations merge or stack): take every one
+	for _ = 1, 4 do
+		local item = tile and tile:getItemById(row.id)
+		if not item then
+			break
+		end
 		item:remove()
-		return true
+		removed = true
 	end
-	return false
+	return removed
 end
 
 -- ---------------------------------------------------------------- taking
@@ -170,6 +181,63 @@ local function sameParty(ownerId, taker)
 	end
 	local pa, pb = owner:getParty(), taker:getParty()
 	return pa ~= nil and pb ~= nil and pa:getLeader():getId() == pb:getLeader():getId()
+end
+
+-- the take of one entry by one player (a step onto the tile, or a pickup that lands under a player's feet)
+local function attempt(player, item, entry, position, now)
+	local ok, why = K.canTake(entry, player:getId(), sameParty(entry.ownerId, player), now)
+	if not ok then
+		if why == "expired" then
+			K.take(X.reg, entry.uid)
+			item:remove()
+		else
+			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, Chaos.t(player, cfg().notYours))
+		end
+		return false
+	end
+	K.take(X.reg, entry.uid) -- out of the record first: it can be taken once
+	local keep = false
+	if entry.onTake then
+		local okCb, res = pcall(entry.onTake, player, entry)
+		if not okCb then
+			print("[Chaos pickups] onTake " .. tostring(entry.itemKey) .. ": " .. tostring(res))
+		elseif res == false then
+			keep = true
+		end
+	end
+	if keep then
+		K.restore(X.reg, entry)
+		return false
+	end
+	local row = itemRow(entry.itemKey)
+	sendEffect(position.x, position.y, position.z, row and row.take)
+	item:remove()
+	return true
+end
+
+-- A pickup that lands on a tile where a player stands: no step event will ever fire for that player (it fires on entering a
+-- tile), so the pickup used to lie under the feet until the player left and came back (owner report 2026-10-30: "the buff did
+-- not disappear after I picked it up"). The owner, else the first party member who may take it, takes it now.
+function X.takeUnderFeet(entry, item, pos)
+	local tile = Tile(pos)
+	local okC, creatures = pcall(function() return tile and tile:getCreatures() end)
+	if not okC or type(creatures) ~= "table" then
+		return false
+	end
+	local who, byId = {}, {}
+	for _, c in ipairs(creatures) do
+		local p = c.getPlayer and c:getPlayer()
+		if p then
+			who[#who + 1] = {id = p:getId(), sameParty = sameParty(entry.ownerId, p)}
+			byId[p:getId()] = p
+		end
+	end
+	local now = nowMs()
+	local id = K.firstTaker(entry, who, now)
+	if not id then
+		return false
+	end
+	return attempt(byId[id], item, entry, pos, now)
 end
 
 local step = MoveEvent()
@@ -192,33 +260,7 @@ function step.onStepIn(creature, item, position, fromPosition)
 		item:remove() -- not in the record: left over, grants nothing
 		return true
 	end
-	local ok, why = K.canTake(entry, player:getId(), sameParty(entry.ownerId, player), now)
-	if not ok then
-		if why == "expired" then
-			K.take(X.reg, entry.uid)
-			item:remove()
-		else
-			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, Chaos.t(player, cfg().notYours))
-		end
-		return true
-	end
-	K.take(X.reg, entry.uid) -- out of the record first: it can be taken once
-	local keep = false
-	if entry.onTake then
-		local okCb, res = pcall(entry.onTake, player, entry)
-		if not okCb then
-			print("[Chaos pickups] onTake " .. tostring(entry.itemKey) .. ": " .. tostring(res))
-		elseif res == false then
-			keep = true
-		end
-	end
-	if keep then
-		K.restore(X.reg, entry)
-		return true
-	end
-	local row = itemRow(entry.itemKey)
-	sendEffect(position.x, position.y, position.z, row and row.take)
-	item:remove()
+	attempt(player, item, entry, position, now)
 	return true
 end
 local registered = 0
@@ -241,6 +283,10 @@ function think.onThink(interval)
 			if removeItemAt(e) then
 				sendEffect(e.x, e.y, e.z, cfg().fadeEffect)
 			end
+		end
+		-- the sweep: an item whose record is gone (taken, ended, a refused removal) and that still lies on its tile
+		for _, t in ipairs(K.strays(X.reg, X.tracked)) do
+			removeItemAt(t)
 		end
 		for _, e in ipairs(K.pulses(X.reg, now, cfg().pulseMs)) do
 			local row = itemRow(e.itemKey)

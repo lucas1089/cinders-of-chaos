@@ -719,7 +719,7 @@ room for 14 plans and 6 spare. Each teleport has the plan's name and band on its
 monsters of the plan in the cells beside it, like the room's own. Below the band's floor
 it refuses (in the player's language); the camp portal of a placed plan leads back to the middle of the room. Safe to
 re-run; it reads the plans at run time (a moved or resized plan that was placed already is refused: restore
-`<map>.otbm.bak` and install again). Details: server/README.md "Hunt teleports".
+`<map>.otbm.bak` and install again: `touch <map>.otbm.restore` and `install_all.py` restores it itself, server/README.md "Restore the map"). Details: server/README.md "Hunt teleports".
 ```
 python3 -I server/tools/install_content_areas.py SERVER_DIR/data --dry-run      # what it would do
 python3 -I server/tools/install_all.py SERVER_DIR --only contentareas            # do it
@@ -740,6 +740,9 @@ python3 -I server/tools/area_planner.py install OUT SERVER_DIR      # the chest 
   (server/data/monster/CUSTOM_MONSTERS.md).
 - After placing, rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`, so the bounty board, the
   bestiary and the map markers know the new spawns, and `content_audit.py` to see the bands again.
+
+### Hunt annexes (O337)
+Five rare base hunts (Emerald Mage, Scaledrake, deathrattle, Blackblade, fangclaw) were too small for the hunt audit and have no room beside them, so each has a planned cave of its own: `server/tools/areaplan/annexes/<id>.json`, x 14336-17663, y 15400-16383 (the annex row below the first content block and the hall-fill block; `schema.json` allows it), floor 9, a fixed area (no hall teleport). Its way in is a portal in the base hunt (`tools/hunt_annexes.json`, `patch_hunt_annexes.py`), its way out the plan's exit portal. Same rules as every plan: asymmetric lobes, the hunt's monsters and band, 3.3-4.3 monsters per 100. A new annex: a plan in the folder, a row in the JSON, `python3 -I server/tools/hunt_annexes_test.py`. server/README.md "Hunt annexes (O337)".
 
 ### Imported hunts (O335)
 Four hunts are cuts of free community maps (author RyuKage, docs/CREDITS.md), not generated: `server/tools/area_import.py`,

@@ -12,7 +12,9 @@ three minutes and 4 GB; tools/audit_hunts_test.py runs the same maths on synthet
 The hunts (one row each)
   base      the base server's hunts of tools/hall_hunts.csv (kind `hunt`) at the destination of their teleport. Right
             monsters: tools/audit_hunt_bands.py's view (known monsters walked to from the arrival, share inside the band,
-            far outside it, the hunt's own monsters). Region: the walked tiles within REGION_R of those monsters
+            far outside it, the hunt's own monsters). Region: the walked tiles within REGION_R of those monsters; for the five hunts
+            with an annex (tools/hunt_annexes.json, areaplan/annexes/) also the annex plan's walkable ground and its spawns, and
+            `annex` when the annex is not on the map, the hunt has no portal at its row's tile or the arrival does not walk
   planned   the generated hunts (tools/areaplan/plans/<id>.json placed at its origin, listed in data/lib/chaos_hunt_places.lua).
             Region: every walkable tile of the plan's box that is not a protection zone. Monsters: the spawn entries of the
             box
@@ -60,6 +62,8 @@ import audit_waystone_maps as WM  # noqa: E402
 import hall_order as HO  # noqa: E402
 
 PLANS = os.path.join(HERE, 'areaplan', 'plans')
+ANNEX_PLANS = os.path.join(HERE, 'areaplan', 'annexes')
+ANNEX_ROWS = os.path.join(HERE, 'hunt_annexes.json')
 KNOWN = os.path.join(HERE, 'hunt_audit_known.csv')
 DOC = os.path.join(ROOT, 'docs', 'HUNT_AUDIT.md')
 
@@ -86,7 +90,7 @@ FOREIGN_SHARE = 0.05    # share of the box's monsters that may belong to no plan
 WAYSTONE_BAND = (468, 612)   # waystone_tiers_config.lua: "hunting level 468-612" in every tier
 KINDS = ('base', 'planned', 'waystone', 'late', 'refs', 'data')
 FLAGS = ('empty', 'few', 'spread', 'far', 'named', 'mixed', 'missing', 'foreign', 'display', 'arrival', 'cut', 'band',
-         'sparse', 'packed', 'stacked', 'dead', 'small', 'big', 'teleport', 'gate', 'ref', 'stale')
+         'sparse', 'packed', 'stacked', 'dead', 'small', 'big', 'teleport', 'gate', 'ref', 'stale', 'annex')
 
 # the late game areas (server/README.md "Late game"): name, box (x1, y1, x2, y2, z1, z2)
 LATE_AREAS = (
@@ -227,8 +231,10 @@ def reach_all(walk, trans_at, start, box):
 # ------------------------------------------------------------------------------------------------ readers
 def parse_spawn_entries(text):
     """[dict(x, y, z, name, content, hunt)] of every monster of a spawn file; content / hunt: the block's chaoscontent /
-    chaoshunt mark ('' without)"""
+    chaoshunt mark ('' without). XML comments are skipped: the entries patch_base_spawns.py took out (chaosremoved) and the blocks
+    it emptied (chaosemptied) are not on the map"""
     out = []
+    text = re.sub(r'<!--.*?-->', '', text, flags=re.S)
     for m in HO.SPAWN_RE.finditer(text):
         head, body = m.group(1), m.group(2)
         try:
@@ -297,6 +303,42 @@ def read_plans(plans_dir=PLANS):
                 p = json.load(open(os.path.join(plans_dir, fn), encoding='utf-8'))
                 out[p['id']] = p
     return out
+
+
+def read_annexes(path=ANNEX_ROWS, plans_dir=ANNEX_PLANS):
+    """({hunt id: row dict(id, name, hunt, portal, dest, back)}, {plan id: plan}) of tools/hunt_annexes.json and the annex plans;
+    ({}, {}) without the file"""
+    import json
+    if not os.path.isfile(path):
+        return {}, {}
+    rows = json.load(open(path, encoding='utf-8'))['annexes']
+    by = {}
+    for r in rows:
+        by[r['hunt']] = dict(r, portal=tuple(r['portal']), dest=tuple(r['dest']), back=tuple(r['back']))
+    return by, read_plans(plans_dir)
+
+
+def audit_annex(row, plan, entries, walk, spot, stack):
+    """(extra monster entries, extra tiles, [problem text]) of the annex of a base hunt: the annex plan's own spawns and its
+    walkable ground off the protection zone; problems: the annex is not on the map, the hunt has no portal at `portal`, the
+    arrival or the way back does not walk"""
+    bad = []
+    if plan is None:
+        return [], set(), ['no annex plan %s' % row['id']]
+    box = plan_box(plan)
+    mine = [(e['x'], e['y'], e['z']) for e in entries if e['content'] == plan['id']]
+    tiles = {(x, y, z) for z in range(box[4], box[5] + 1) for y in range(box[1], box[3] + 1) for x in range(box[0], box[2] + 1)
+             if walk((x, y, z)) and spot((x, y, z))}
+    if not mine or not tiles:
+        bad.append('the annex %s is not on the map' % row['id'])
+    if not walk(row['dest']):
+        bad.append('the annex arrival %s does not walk' % (row['dest'],))
+    if not walk(row['back']):
+        bad.append('the way back %s does not walk' % (row['back'],))
+    st = stack(row['portal'])
+    if st is None or 1387 not in [int(i) for i in st]:
+        bad.append('no portal at %s' % (row['portal'],))
+    return mine, tiles, bad
 
 
 def plan_box(plan):
@@ -395,11 +437,12 @@ def coords(spawns, idx):
     return [(int(spawns.x[i]), int(spawns.y[i]), int(spawns.z[i])) for i in idx]
 
 
-def audit_base(rows_b, spawns, walk, spot, places_base, trans_at, display_of=None, level_of=None):
+def audit_base(rows_b, spawns, walk, spot, places_base, trans_at, display_of=None, level_of=None, annex=None):
     """base hunts: rows_b are audit_hunt_bands.audit rows. The right-monster flags are the band audit's (the monsters
     walked to within 20 tiles of the arrival); density and size are those of the whole hunt (hunt_cluster) on the
     ground within REGION_R of its monsters. The teleport check compares the map's teleport (trans_at) with the places
-    file's destination"""
+    file's destination. annex: a callable hunt id -> (entries, tiles, problems) of the hunt's annex (audit_annex) or None; the
+    annex's spawns and ground count with the hunt's"""
     out = []
     np = spawns.np
     byid = {p['id']: p for p in places_base}
@@ -411,6 +454,12 @@ def audit_base(rows_b, spawns, walk, spot, places_base, trans_at, display_of=Non
         members = hunt_cluster(spawns, st['idx'])
         ents = coords(spawns, members)
         tiles = region_tiles(ents, walk, spot)
+        extra = annex(h['id']) if annex else None
+        if extra:
+            ents, tiles = ents + list(extra[0]), tiles | extra[1]
+            if extra[2]:
+                flags.append('annex')
+                detail.append('; '.join(extra[2]))
         m = metrics(ents, tiles, h['level'])
         flags += density_flags(m) + size_flags(m, big=False)
         if r['info']:
@@ -818,7 +867,14 @@ def run(data_dir, kinds=KINDS, md=None, csv_path=None, known_path=KNOWN, check=F
         hall = B.hall_box(HO.read_csv(hunts_csv))
         rb = B.audit(hunts, spawns, walk, spot, w['trans'], hall, lambda *_: None, False)
         disp = {r['id']: r.get('display') or '' for r in HO.read_csv(hunts_csv)}
-        base_rows = audit_base(rb, spawns, walk, spot, places['base'], trans_at, disp, level_of)
+        annex_rows, annex_plans = read_annexes()
+
+        def annex_of(hid):
+            row = annex_rows.get(hid)
+            if row is None:
+                return None
+            return audit_annex(row, annex_plans.get(row['id']), entries, walk, spot, lambda p: w['m'].stack(w['m'].find(*p)) if w['m'].find(*p) >= 0 else ())
+        base_rows = audit_base(rb, spawns, walk, spot, places['base'], trans_at, disp, level_of, annex_of)
         rows += base_rows
         log('%d base hunts' % len(rb))
         if suggest:

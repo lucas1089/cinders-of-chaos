@@ -1,0 +1,179 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "blackblade_warren",
+  "name": "Blackblade Warren",
+  "biome": "cave",
+  "size": [
+    136,
+    112
+  ],
+  "floors": 1,
+  "level": [
+    150,
+    300
+  ],
+  "seed": 33704,
+  "origin": {
+    "x": 15240,
+    "y": 15500,
+    "z": 9
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "forge_floor",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "urzog_pens",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "malice_row",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "blade_yard",
+      "floor": 1,
+      "size": "large",
+      "place": "south"
+    },
+    {
+      "id": "smoke_den",
+      "floor": 1,
+      "size": "large",
+      "place": "southwest"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "forge_floor",
+      "width": 3
+    },
+    {
+      "from": "forge_floor",
+      "to": "urzog_pens",
+      "width": 3
+    },
+    {
+      "from": "forge_floor",
+      "to": "malice_row",
+      "width": 3
+    },
+    {
+      "from": "urzog_pens",
+      "to": "blade_yard",
+      "width": 3
+    },
+    {
+      "from": "malice_row",
+      "to": "smoke_den",
+      "width": 3
+    },
+    {
+      "from": "smoke_den",
+      "to": "urzog_pens",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp",
+    "to": {
+      "x": 32827,
+      "y": 31433,
+      "z": 7
+    }
+  },
+  "spawns": [
+    {
+      "zone": "forge_floor",
+      "monster": "Blackblade",
+      "count": 12,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "forge_floor",
+      "monster": "Urzog",
+      "count": 7,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "urzog_pens",
+      "monster": "Urzog",
+      "count": 12,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "urzog_pens",
+      "monster": "Malevolent",
+      "count": 7,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "malice_row",
+      "monster": "Malevolent",
+      "count": 12,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "malice_row",
+      "monster": "Blackblade",
+      "count": 7,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "blade_yard",
+      "monster": "Blackblade",
+      "count": 8,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "blade_yard",
+      "monster": "Urzog",
+      "count": 4,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "smoke_den",
+      "monster": "Urzog",
+      "count": 8,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "smoke_den",
+      "monster": "Malevolent",
+      "count": 4,
+      "pack": 3,
+      "respawn": 60
+    }
+  ],
+  "notes": "Annex of the base hunt Blackblade (O337): the hunt had too few monsters and too little ground for the hunt audit. A portal in the hunt leads here (tools/hunt_annexes.json), the exit portal leads back. Same monsters and level band as the hunt (server/README.md \"Hunt annexes\")."
+}

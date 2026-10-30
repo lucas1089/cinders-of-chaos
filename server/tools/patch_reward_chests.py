@@ -72,7 +72,7 @@ RULE_NAMES = {'planned': 'planned area quest chest', 'system': 'base quest syste
               'system2': 'base quest system 2 (fixed reward, chest or box)', 'script': 'base quest script (unique id)',
               'stock': 'base reward chest 21584 with an action id'}
 RIFT_CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'rift_config.lua')
-PLAN_DIRS = [os.path.join(HERE, 'areaplan', d) for d in ('plans', 'chronicle', 'rooms', 'examples')]
+PLAN_DIRS = [os.path.join(HERE, 'areaplan', d) for d in ('plans', 'chronicle', 'rooms', 'annexes', 'examples')]
 
 
 class ChestError(Exception):

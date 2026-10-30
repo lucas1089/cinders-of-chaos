@@ -33,6 +33,10 @@ return {
 	perHighTier = 1,
 	perSocket = 1,
 
+	-- gear without a rarity (O340: two of three stock drops, the new weapons among them, rolled none and could not be
+	-- salvaged): this many shards, no orb chance, no level bonus. 0 = Normal gear is refused again ("normal").
+	normalShards = 1,
+
 	-- chance (per 10000) of a whole orb on top of the shards, by rarity (same order; it was 50 .. 500 over the 15)
 	orbChance = {50, 50, 75, 100, 150, 300},
 	-- which orb (ChaosCrafting orb keys), by weight

@@ -170,6 +170,26 @@ try:
     out2 = H.audit_base(brows, sp, lambda p: p in gnd, lambda p: True, [dict(id='base_1', teleport=(9, 9, 7), dest=(115, 115, 7))],
                         {(9, 9, 7): [dict(land=(115, 115, 7))]})
     check('teleport' not in out2[0]['flags'], 'the teleport matches')
+    # the annex of a base hunt (hunt_annexes.json): its ground and spawns join the hunt; problems are flagged
+    aplan = dict(id='annex_1', origin=dict(x=500, y=500, z=9), size=[30, 20], floors=1)
+    agnd = {(x, y, 9) for x in range(502, 526) for y in range(502, 516)}
+    aent = [dict(x=505 + 4 * i, y=505, z=9, name='Rat', content='annex_1', hunt='') for i in range(6)]
+    arow = dict(id='annex_1', hunt='base_1', portal=(112, 115, 7), dest=(503, 503, 9), back=(115, 115, 7))
+    stack_ok = lambda p: [100, 1387] if p == (112, 115, 7) else [100]
+    ents_, tiles_, bad_ = H.audit_annex(arow, aplan, aent, lambda p: p in agnd or p in gnd, lambda p: True, stack_ok)
+    check(len(ents_) == 6 and len(tiles_) == len(agnd) and not bad_, 'annex: spawns and ground counted, nothing wrong: %r' % (bad_,))
+    ents_, tiles_, bad_ = H.audit_annex(arow, aplan, [], lambda p: p in gnd, lambda p: True, lambda p: [100])
+    check(any('not on the map' in b for b in bad_) and any('arrival' in b for b in bad_) and any('no portal' in b for b in bad_),
+          'annex: missing area, arrival and portal reported: %r' % (bad_,))
+    check(H.audit_annex(arow, None, [], lambda p: True, lambda p: True, stack_ok)[2] == ['no annex plan annex_1'], 'annex: no plan')
+    plain = out2[0]['m']
+    aent_xyz = [(e['x'], e['y'], e['z']) for e in aent]
+    with_annex = H.audit_base(brows, sp, lambda p: p in gnd, lambda p: True, [], {}, None, None,
+                              lambda hid: (aent_xyz, set(agnd), []) if hid == 'base_1' else None)
+    check(with_annex[0]['m']['monsters'] == plain['monsters'] + 6 and with_annex[0]['m']['walkable'] == plain['walkable'] + len(agnd),
+          'annex: the hunt\'s numbers include the annex: %r vs %r' % (with_annex[0]['m']['monsters'], plain['monsters']))
+    broken = H.audit_base(brows, sp, lambda p: p in gnd, lambda p: True, [], {}, None, None, lambda hid: ([], set(), ['no portal at x']))
+    check('annex' in broken[0]['flags'], 'annex: a broken annex is flagged: %r' % broken[0]['flags'])
 except ImportError:
     print('numpy missing: the base hunt test is skipped')
 

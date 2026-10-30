@@ -1,0 +1,10 @@
+{
+ "_doc": "Read by tools/patch_hunt_annexes.py (install step huntannexes) and tools/audit_hunts.py. One row per annex of a base hunt (server/README.md 'Hunt annexes (O337)'): id = the plan in tools/areaplan/annexes/, name = the hunt's sign monster, hunt = its id in tools/hall_hunts.csv, portal = the tile of the hunt where the forcefield goes, dest = the annex's arrival (tools/hunt_annexes_test.py compiles the plan and checks it), back = where the annex's exit portal leads (the plan's exit.to).",
+ "annexes": [
+  {"id": "emerald_vaults", "name": "Emerald Mage", "hunt": "base_5_31654_32254", "portal": [31906, 32029, 5], "dest": [14375, 15519, 9], "back": [31907, 32027, 5]},
+  {"id": "scaledrake_roost", "name": "Scaledrake", "hunt": "base_5_31662_32258", "portal": [33018, 31933, 7], "dest": [14696, 15513, 9], "back": [33016, 31932, 7]},
+  {"id": "deathrattle_ossuary", "name": "deathrattle", "hunt": "base_5_31666_32254", "portal": [32977, 30979, 7], "dest": [14988, 15512, 9], "back": [32978, 30977, 7]},
+  {"id": "blackblade_warren", "name": "Blackblade", "hunt": "base_5_31666_32258", "portal": [32827, 31434, 7], "dest": [15311, 15530, 9], "back": [32827, 31433, 7]},
+  {"id": "fangclaw_den", "name": "fangclaw", "hunt": "base_5_31667_32256", "portal": [32411, 31488, 7], "dest": [15619, 15523, 9], "back": [32413, 31488, 7]}
+ ]
+}

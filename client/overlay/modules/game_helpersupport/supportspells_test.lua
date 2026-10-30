@@ -713,5 +713,16 @@ do
   end
 end
 
+-- restoreKept: an empty list comes back from its kept rows unless the player emptied it
+do
+  local kept = { { id = 5, enabled = true }, { id = 6, enabled = false } }
+  local r = H.restoreKept({}, kept, false)
+  eq(r and #r, 2, 'restoreKept: the kept rows')
+  eq(r and r[2].enabled, false, 'restoreKept: the ticks stay')
+  eq(H.restoreKept({}, kept, true), nil, 'restoreKept: cleared by the player')
+  eq(H.restoreKept({ { id = 1 } }, kept, false), nil, 'restoreKept: a list with rows is not touched')
+  eq(H.restoreKept({}, {}, false), nil, 'restoreKept: nothing kept')
+end
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('supportspells_test: OK')

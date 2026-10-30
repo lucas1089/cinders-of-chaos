@@ -15,6 +15,11 @@
 -- The server (templar_combat.lua) sends extended opcode 118, JSON {action = 'sync', data = {t = [{i = creature id, l = line 1..3,
 -- r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one}]}}, only when the list changed.
 --
+--   cursed monsters  (O341) the chest's own smoke ('cursed_smoke', 12 frames, 200 ms) under every monster of a Cursed Chest event the
+--                  server names: a creature bottom widget like the foot aura, scaled to the outfit's width (Creature:getExactSize when the
+--                  engine has it, else one tile). The server sends extended opcode 118, JSON {action = 'cursed', data = {c = [creature id]}}:
+--                  the whole list the viewer sees, only when it changed, empty when the event ends. Gone with the creature, a floor change,
+--                  the option off and the end of the game. The same option covers it.
 -- How chests are found: the engine calls Tile.onAddThing / onRemoveThing (g_game.enableTileThingLuaCallback, shared with
 -- game_tileoverlays and game_chaossound); the handler is one table lookup for an item and returns for everything else. A chest
 -- is remembered by its position (a few entries), its widget exists only while it is inside the visible tiles of the player's
@@ -32,6 +37,8 @@ local chests = {}             -- tile key -> {pos, id, def, widget, tile, shown}
 local feet = {}               -- creature id -> {widget, creature, line, shown}
 local frames = {}             -- templar id -> {widget, tile, host, line, radius}: the range frame of a Templar
 local server = {}             -- the last list of the server: creature id -> {id, line, radius, party}
+local cursed = {}             -- creature ids the server named as Cursed Chest monsters (O341): id -> true
+local smoke = {}              -- creature id -> {widget, creature, shown}: the chest's smoke under a cursed monster
 local animEvent, maintainEvent
 local lastFloor
 local myId
@@ -122,6 +129,17 @@ local function animate()
         c.widget:setImageClip(L.clip(cf, c.def.px))
         c.shown = cf
       end
+    end
+  end
+  for id, f in pairs(smoke) do
+    if alive(f.widget) then
+      any = true
+      if f.shown ~= cf then
+        f.widget:setImageClip(L.clip(cf, L.FOOT_PX))
+        f.shown = cf
+      end
+    else
+      smoke[id] = nil
     end
   end
   for id, f in pairs(feet) do
@@ -234,6 +252,52 @@ local function ensureFoot(creature, entry)
   creature:addBottomWidget(w)
   feet[id] = { widget = w, creature = creature, line = entry.line, shown = nil }
   startAnim()
+end
+
+-- ---------------------------------------------------------------- cursed chest monsters (O341)
+local function dropSmoke(id)
+  local f = smoke[id]
+  smoke[id] = nil
+  if not f or not alive(f.widget) then return end
+  local c = f.creature
+  local mine = c and not c:isRemoved() and c:getBottomWidgets() or {}
+  if c and #mine == 1 and mine[1] == f.widget then
+    c:clearBottomWidgets()
+  else
+    f.widget:setOpacity(0)
+    f.widget:setImageSource('')
+  end
+end
+
+-- tiles across of a creature, from the engine when it can tell (a pixel width), else one
+local function creatureTiles(creature, spr)
+  local ok, px = pcall(function() return creature:getExactSize() end)
+  return L.cursedTiles(ok and px or nil, spr)
+end
+
+local function ensureSmoke(creature, id)
+  local f = smoke[id]
+  if f and f.creature == creature and alive(f.widget) then return end
+  if f then dropSmoke(id) end
+  local spr = spriteSize()
+  local size, ml, mt = L.cursedBox(spr, creatureTiles(creature, spr))
+  local w = g_ui.createWidget('UIWidget')
+  w:setImageSource(L.chestPath(L.CURSED_ART))
+  w:setImageClip(L.clip(L.frameIndex(now(), L.CHEST_FRAME_MS, L.CHEST_FRAMES), L.FOOT_PX))
+  w:setImageSmooth(true)
+  w:resize(size, size)
+  pcall(function() w:setMarginLeft(ml) end)
+  pcall(function() w:setMarginTop(mt) end)
+  w:setPhantom(true)
+  creature:addBottomWidget(w)
+  smoke[id] = { widget = w, creature = creature, shown = nil }
+  startAnim()
+end
+
+local function refreshCursed(id)
+  local creature = cursed[id] and g_map.getCreatureById(id) or nil
+  local visible = creature ~= nil and not creature:isRemoved()
+  if L.showCursed(enabled, id, cursed, visible) then ensureSmoke(creature, id) else dropSmoke(id) end
 end
 
 -- the foot aura and the frame of one Templar-line player the server named
@@ -378,6 +442,10 @@ local function maintain()
   for id in pairs(frames) do
     if not server[id] then dropFrame(id) end
   end
+  for id in pairs(cursed) do refreshCursed(id) end
+  for id in pairs(smoke) do
+    if not cursed[id] then dropSmoke(id) end
+  end
 end
 
 -- ---------------------------------------------------------------- all at once
@@ -386,19 +454,23 @@ local function dropAll()
   for key, c in pairs(chests) do dropChestWidget(c) end
   for id in pairs(feet) do dropFoot(id) end
   for id in pairs(frames) do dropFrame(id) end
+  for id in pairs(smoke) do dropSmoke(id) end
 end
 
 local function forgetAll()
   dropAll()
   chests = {}
   server = {}
+  cursed = {}
   lastFloor = nil
   myId = nil
 end
 
 -- ---------------------------------------------------------------- hooks
 local function onAppear(creature)
-  if enabled and server[creature:getId()] then refreshTempar(creature:getId()) end
+  local id = creature:getId()
+  if enabled and server[id] then refreshTempar(id) end
+  if enabled and cursed[id] then refreshCursed(id) end
 end
 
 local function onDisappear(creature)
@@ -407,6 +479,7 @@ local function onDisappear(creature)
     dropFoot(id)
     dropFrame(id)
   end
+  if smoke[id] then dropSmoke(id) end
 end
 
 local function onPositionChange(creature, newPos, oldPos)
@@ -419,6 +492,7 @@ local function onPositionChange(creature, newPos, oldPos)
       scanView()
       maintainChests()
       for tid in pairs(server) do refreshTempar(tid) end
+      for cid in pairs(cursed) do refreshCursed(cid) end
     else
       maintainChests()
       for tid, e in pairs(server) do
@@ -432,7 +506,19 @@ local function onPositionChange(creature, newPos, oldPos)
   if e and e.party then syncFrame(id, e, creature) end -- the frame follows its Templar
 end
 
+local function onCursed(list)
+  local old = cursed
+  cursed = list
+  if not enabled then return end
+  for id in pairs(old) do
+    if not list[id] then dropSmoke(id) end
+  end
+  for id in pairs(list) do refreshCursed(id) end
+end
+
 local function onSync(_, _, msg)
+  local cl = L.parseCursed(msg)
+  if cl then return onCursed(cl) end
   local list = L.parseSync(msg)
   if not list then return end
   local diff = L.syncDiff(server, list)
@@ -479,6 +565,7 @@ local function start()
   scanView()
   maintainChests()
   for id in pairs(server) do refreshTempar(id) end
+  for id in pairs(cursed) do refreshCursed(id) end
   if not maintainEvent then maintainEvent = cycleEvent(safe('maintain', maintain), 1000) end
 end
 
@@ -511,11 +598,12 @@ local function onGameEnd()
 end
 
 function getStats()
-  local nc, nf, ns = 0, 0, 0
+  local nc, nf, ns, nm = 0, 0, 0, 0
   for _ in pairs(chests) do nc = nc + 1 end
   for _ in pairs(feet) do nf = nf + 1 end
   for _ in pairs(server) do ns = ns + 1 end
-  return { enabled = enabled, chests = nc, feet = nf, frames = frameCount(), templars = ns, floorApi = floorApi(), callback = callbackOn() }
+  for _ in pairs(smoke) do nm = nm + 1 end
+  return { enabled = enabled, chests = nc, feet = nf, frames = frameCount(), templars = ns, smoke = nm, floorApi = floorApi(), callback = callbackOn() }
 end
 
 function init()

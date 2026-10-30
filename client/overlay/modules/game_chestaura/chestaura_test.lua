@@ -178,6 +178,40 @@ eq(table.concat(sd.added, ','), '3', 'added'); eq(table.concat(sd.removed, ','),
 sd = L.syncDiff(a, a)
 eq(#sd.added + #sd.removed + #sd.changed, 0, 'no change'); eq(#L.syncDiff(nil, a).added, 2, 'from nothing')
 
+-- ---------------------------------------------------------------- cursed chest monsters (O341)
+local cs = L.parseCursed({ action = 'cursed', data = { c = { 5, 9, 9, 0, 'x', -3, '12' } } })
+eq(cs[5], true, 'cursed id 5'); eq(cs[9], true, 'cursed id 9'); eq(cs[12], true, 'a numeric string id is taken')
+eq(cs[0], nil, 'id 0 dropped'); eq(cs[-3], nil, 'a negative id dropped')
+local cn = 0
+for _ in pairs(cs) do cn = cn + 1 end
+eq(cn, 3, 'duplicates and junk dropped')
+eq(next(L.parseCursed({ action = 'cursed', data = { c = {} } })), nil, 'an empty cursed list clears')
+eq(next(L.parseCursed({ action = 'cursed' })), nil, 'no data is an empty cursed list')
+eq(L.parseCursed({ action = 'sync', data = { t = {} } }), nil, 'a Templar sync is not a cursed list')
+eq(L.parseCursed(nil), nil, 'nil'); eq(L.parseCursed('x'), nil, 'a string')
+local many = {}
+for i = 1, 200 do many[i] = i end
+cn = 0
+for _ in pairs(L.parseCursed({ action = 'cursed', data = { c = many } })) do cn = cn + 1 end
+eq(cn, L.CURSED_MAX, 'at most ' .. L.CURSED_MAX .. ' ids')
+eq(L.parseSync({ action = 'cursed', data = { c = { 1 } } }), nil, 'the Templar parser ignores a cursed message')
+eq(L.cursedTiles(32), 1, 'a 32 px outfit is one tile'); eq(L.cursedTiles(33), 2, '33 px is two tiles'); eq(L.cursedTiles(64), 2, '64 px is two tiles')
+eq(L.cursedTiles(nil), 1, 'unknown size: one tile'); eq(L.cursedTiles(0), 1, 'zero size: one tile'); eq(L.cursedTiles(900), L.CURSED_MAX_TILES, 'capped')
+local csz, cml, cmt = L.cursedBox(32, 1)
+eq(csz, 64, 'smoke under a 1x1 monster is 64 px'); eq(cml, 0, 'no left shift for 1x1'); eq(cmt, L.FOOT_DY, 'feet offset for 1x1')
+local fsz, fdy = L.footBox(32)
+eq(csz, fsz, 'the same size as the Templar foot picture'); eq(cmt, fdy, 'and the same feet margin')
+csz, cml, cmt = L.cursedBox(32, 2)
+eq(csz, 128, 'a 2x2 monster: 128 px'); eq(cml, -16, '2x2 pulled half a tile up and left'); eq(cmt, L.FOOT_DY - 16, '2x2 top margin')
+eq(L.cursedBox(32, 9), L.cursedBox(32, L.CURSED_MAX_TILES), 'tiles are capped in the box')
+eq(L.chestPath(L.CURSED_ART), '/modules/game_chestaura/images/chest/cursed_smoke.png', 'the same picture as the cursed chest')
+eq(L.CHESTS[38642].art, L.CURSED_ART, 'the cursed chest uses that art')
+eq(L.showCursed(true, 5, cs, true), true, 'shown for a named visible creature')
+eq(L.showCursed(false, 5, cs, true), false, 'not with the option off')
+eq(L.showCursed(true, 6, cs, true), false, 'not for an unnamed creature')
+eq(L.showCursed(true, 5, cs, false), false, 'not for a creature out of view')
+eq(L.showCursed(true, 5, nil, true), false, 'not without a list')
+
 if fails > 0 then
   print(string.format('chestaura_test: %d of %d checks failed', fails, checks))
   os.exit(1)

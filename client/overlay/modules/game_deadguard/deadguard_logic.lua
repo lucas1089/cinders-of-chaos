@@ -25,7 +25,7 @@ function L.wantsWatch(state, id, isPlayer, isLocalPlayer, percent)
   return not state.pending[id]
 end
 
-function L.newState() return { pending = {}, warned = {} } end
+function L.newState() return { pending = {}, warned = {}, zeroSince = {} } end
 
 -- one warning per removal: true the first time an id is reported, false while it stays warned
 function L.shouldLog(state, id)
@@ -42,4 +42,55 @@ end
 function L.reset(state)
   state.pending = {}
   state.warned = {}
+  state.zeroSince = {}
+end
+
+-- The sweep (every SWEEP_MS), for the two ways a dead monster stays that the health event cannot see:
+--  * 'zero': a monster at 0 percent whose health event never reached the watch (it was on the map before the module
+--    started, the event came while the module was off): seen at 0 for GRACE_MS in a row.
+--  * 'duplicate': two objects of one creature id on the map (a refresh that made a second object, server src-patch 0083
+--    fixes the server side). The map's own entry for the id (canon) is the live one; the other is a leftover that no later
+--    packet reaches, so it keeps its old health and never moves. Only when exactly one of the objects IS the canon one:
+--    if the engine hands out a different wrapper for every call, nothing is touched.
+-- list: { { id, obj, isPlayer, isLocalPlayer, healthPercent, removed, onMap } ... }; canon(id) -> the map's object or nil.
+-- Returns the entries to remove, { entry, why }.
+L.SWEEP_MS = 1000
+
+function L.sweep(state, list, canon, now)
+  local out = {}
+  local byId = {}
+  for _, e in ipairs(list or {}) do
+    if type(e) == 'table' and e.id and not e.isPlayer and not e.isLocalPlayer and not e.removed and e.onMap then
+      byId[e.id] = byId[e.id] or {}
+      table.insert(byId[e.id], e)
+    end
+  end
+  local seenZero = {}
+  for id, group in pairs(byId) do
+    local live = canon and canon(id) or nil
+    if #group > 1 and live ~= nil then
+      local canonCount = 0
+      for _, e in ipairs(group) do if e.obj == live then canonCount = canonCount + 1 end end
+      if canonCount == 1 then
+        for _, e in ipairs(group) do
+          if e.obj ~= live then out[#out + 1] = { entry = e, why = 'duplicate' } end
+        end
+      end
+    end
+    for _, e in ipairs(group) do
+      if e.healthPercent ~= nil and e.healthPercent <= 0 then
+        seenZero[id] = true
+        state.zeroSince[id] = state.zeroSince[id] or now
+        if now - state.zeroSince[id] >= L.GRACE_MS then
+          local already = false
+          for _, o in ipairs(out) do if o.entry == e then already = true end end
+          if not already then out[#out + 1] = { entry = e, why = 'zero' } end
+        end
+      end
+    end
+  end
+  for id in pairs(state.zeroSince) do
+    if not seenZero[id] then state.zeroSince[id] = nil end
+  end
+  return out
 end
