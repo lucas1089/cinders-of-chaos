@@ -139,6 +139,13 @@ InfinityTowerWindow < NewHeadlessWindow
   &static: true
   @onEscape: modules.game_infinitytower.hide()
 
+  // phone interface is 540 high and 960 wide. Width 950: left column 16 + 310, right column 16 + 600 (milestone
+  // places follow the track width, infinity_tower.lua). Height 536: top 29, rank 225, gap 10, season / rewards 220 =
+  // 484; separator 6 + 3; buttons 6 + 22 = 521, inside the 5 px frame
+  $mobile:
+    width: 950
+    height: 536
+
   UIWidget
     size: 145 56
     anchors.top: parent.top
@@ -243,6 +250,10 @@ InfinityTowerWindow < NewHeadlessWindow
     draggable: false
     &static: true
     !text: tr('Season Informations')
+
+    $mobile:
+      height: 220
+
     anchors.top: rankPanel.bottom
     anchors.left: parent.left
     margin-top: 10
@@ -315,6 +326,10 @@ InfinityTowerWindow < NewHeadlessWindow
     id: towerInformation
     size: 641 225
     draggable: false
+
+    $mobile:
+      width: 600
+
     &static: true
     !text: tr('Tower Information')
     anchors.top: parent.top
@@ -363,6 +378,11 @@ InfinityTowerWindow < NewHeadlessWindow
     draggable: false
     &static: true
     !text: tr('Rewards')
+
+    $mobile:
+      width: 600
+      height: 220
+
     anchors.top: towerInformation.bottom
     anchors.left: rankPanel.right
     margin-top: 10
@@ -440,6 +460,9 @@ InfinityTowerWindow < NewHeadlessWindow
       size: 2 220
       margin-left: 10
 
+      $mobile:
+        height: 190
+
     Panel
       id: milestoneTrack
       anchors.top: parent.top
@@ -489,6 +512,9 @@ InfinityTowerWindow < NewHeadlessWindow
     anchors.top: rewardPanel.bottom
     margin-top: 10
 
+    $mobile:
+      margin-top: 6
+
   // 104 px: the skin button's 64 px cut "Enter Tower" / "Leave Tower" (and the longer pt-BR texts)
   Button
     id: enterButton
@@ -499,6 +525,9 @@ InfinityTowerWindow < NewHeadlessWindow
     margin-top: 10
     margin-right: 8
     @onClick: modules.game_infinitytower.enterTower()
+
+    $mobile:
+      margin-top: 6
 
   Button
     id: leaveButton
@@ -511,6 +540,9 @@ InfinityTowerWindow < NewHeadlessWindow
     margin-right: 8
     @onClick: modules.game_infinitytower.leaveTower()
 
+    $mobile:
+      margin-top: 6
+
   Button
     id: closeButton
     !text: tr('Close')
@@ -519,6 +551,9 @@ InfinityTowerWindow < NewHeadlessWindow
     margin-top: 10
     margin-right: 18
     @onClick: modules.game_infinitytower.hide()
+
+    $mobile:
+      margin-top: 6
 
 InfinityTowerWindow
   id: infinityTowerWindow

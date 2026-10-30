@@ -154,6 +154,10 @@ CommunityModRow < UIWidget
 ChaosMainWindow
   id: communityWindow
   size: 720 600
+  // phone interface is 540 high: inside the frame (536 - 54 = 482) goal name 16, text 32, bar 28, stages 62,
+  // frames 200, week title 20, week list 92 (2 modifier rows of 38 and the padding), buttons 28
+  $mobile:
+    height: 536
   !text: tr('Community')
   @onEscape: modules.game_community.hide()
 
@@ -191,6 +195,9 @@ ChaosMainWindow
     height: 24
     phantom: true
 
+    $mobile:
+      margin-top: 4
+
     ChaosProgressBar
       id: goalBar
       anchors.fill: parent
@@ -208,12 +215,18 @@ ChaosMainWindow
     layout:
       type: horizontalBox
 
+    $mobile:
+      margin-top: 4
+
   ChaosPanelDark
     id: mineFrame
     anchors.top: stagePanel.bottom
     anchors.left: parent.left
     margin-top: 10
     size: 340 196
+
+    $mobile:
+      margin-top: 4
 
     ChaosLabel
       id: mineTitle
@@ -300,6 +313,9 @@ ChaosMainWindow
     text-auto-resize: true
     color: #e8b84a
 
+    $mobile:
+      margin-top: 4
+
   ChaosPanelDark
     id: weekFrame
     anchors.top: weekTitle.bottom
@@ -308,6 +324,9 @@ ChaosMainWindow
     anchors.bottom: closeButton.top
     margin-top: 4
     margin-bottom: 8
+
+    $mobile:
+      margin-bottom: 4
 
     UIWidget
       id: modList

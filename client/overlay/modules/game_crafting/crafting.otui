@@ -216,6 +216,14 @@ CraftHistoryLabel < CraftWrapLabel
 ChaosMainWindow
   id: craftingWindow
   size: 700 664
+  // phone interface is 540 high and 960 wide: 950 wide, so the right side keeps its texts in few lines. Inside the
+  // frame (536 - 54 = 482). Left: item panel 270, gear title 22, gear frame 156 (3 rows of gear) with 4 + 8 around
+  // it, status line 22. Right: tabs 24, orb list or salvage panel 4 + 290 (the salvage boxes need 215, the recipes
+  // keep 75), recent crafts title 20, its panel 4 + 110 + 8, status line 22 (crafting.lua grows the boxes and the
+  // status line from their texts, the lists scroll)
+  $mobile:
+    width: 950
+    height: 536
   !text: tr('Crafting Bench')
   @onEscape: modules.game_crafting.hide()
 
@@ -226,6 +234,9 @@ ChaosMainWindow
     anchors.left: parent.left
     width: 320
     height: 340
+
+    $mobile:
+      height: 270
 
   ChaosItemSlot
     id: itemSlot
@@ -419,6 +430,9 @@ ChaosMainWindow
     layout:
       type: verticalBox
 
+    $mobile:
+      height: 290
+
   ChaosScrollBar
     id: orbScroll
     anchors.top: orbLabel.bottom
@@ -427,6 +441,9 @@ ChaosMainWindow
     height: 378
     step: 47
     pixels-scroll: true
+
+    $mobile:
+      height: 290
 
   // ------------------------------------------------------------ salvage (the Salvage tab, in the place of the orbs)
   // the boxes take the height their wrapped texts need (crafting.lua); the recipe grid gets the rest and scrolls
@@ -439,6 +456,9 @@ ChaosMainWindow
     height: 378
     visible: false
     phantom: true
+
+    $mobile:
+      height: 290
 
     ChaosPanelDark
       id: shardRow

@@ -205,6 +205,10 @@ PassPage < UIWidget
 ChaosMainWindow
   id: seasonPassWindow
   size: 760 560
+  // phone interface is 540 high: the pages fill the inside (482 - name 14 - tier panel 64 - tabs 36 - hint 34 = 334);
+  // the challenges page needs 328 at most (3 titles, 2 lists of 111, text 36, margins 28, 20 on the phone)
+  $mobile:
+    height: 536
   !text: tr('Season Pass')
   @onEscape: modules.game_battlepass.hide()
 
@@ -368,6 +372,9 @@ ChaosMainWindow
       text-auto-resize: true
       color: #e8b84a
 
+      $mobile:
+        margin-top: 4
+
     UIWidget
       id: weeklyList
       anchors.top: weeklyTitle.bottom
@@ -386,6 +393,9 @@ ChaosMainWindow
       text-auto-resize: true
       color: #e8b84a
       !text: tr('Pass XP from play today (daily caps)')
+
+      $mobile:
+        margin-top: 4
 
     ChaosLabel
       id: sourcesLabel
