@@ -1,9 +1,12 @@
-// RmlUi spike. See rmlmanager.h and docs/RMLUI_SPIKE.md.
+// RmlUi layer. See rmlmanager.h and docs/RMLUI_SPIKE.md.
 #ifdef CHAOS_RMLUI
 
 #include "rmlmanager.h"
 
 #include <RmlUi/Core.h>
+#include <RmlUi/Core/Factory.h>
+#include <RmlUi/Core/ObserverPtr.h>
+#include <framework/core/graphicalapplication.h>
 #include <framework/core/clock.h>
 #include <framework/core/logger.h>
 #include <framework/core/resourcemanager.h>
@@ -17,6 +20,7 @@
 #include <framework/ui/uiwidget.h>
 
 #include <cstring>
+#include <cstdint>
 
 RmlManager g_rml;
 
@@ -34,6 +38,7 @@ struct RmlGeometry {
     std::vector<float> uv;  // 0..1
     std::vector<float> rgba; // 4 per vertex, 0..1, premultiplied
     int vertexCount = 0;
+    uint64_t serial = 0; // a new number per compiled geometry (a freed address can come back, a serial does not)
 };
 
 const std::string kRmlVertex = "\n\
@@ -130,9 +135,12 @@ struct DrawQueueItemRml : public DrawQueueItem {
 class RmlRenderInterface : public Rml::RenderInterface
 {
 public:
+    explicit RmlRenderInterface(chaosrml::FrameSignature* sig) : m_sig(sig) {}
+
     Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) override
     {
         auto geo = std::make_shared<RmlGeometry>();
+        geo->serial = ++m_serial;
         const size_t n = indices.size();
         geo->xy.reserve(n * 2);
         geo->uv.reserve(n * 2);
@@ -163,6 +171,16 @@ public:
         TexturePtr tex;
         if (texture)
             tex = *reinterpret_cast<TexturePtr*>(texture);
+        if (m_sig) {
+            // the frame signature: what is drawn, where, with which texture and clip
+            auto bits = [](float f) { uint32_t u; std::memcpy(&u, &f, 4); return static_cast<unsigned long long>(u); };
+            m_sig->add(geo->serial);
+            m_sig->add(bits(translation.x) << 32 | bits(translation.y));
+            m_sig->add(static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(tex.get())));
+            if (m_scissor)
+                m_sig->add(static_cast<unsigned long long>(m_scissorRect.x()) << 48 | static_cast<unsigned long long>(m_scissorRect.y()) << 32 |
+                           static_cast<unsigned long long>(m_scissorRect.width()) << 16 | static_cast<unsigned long long>(m_scissorRect.height()));
+        }
         g_drawQueue->add(std::make_unique<DrawQueueItemRml>(geo, tex, translation.x, translation.y, m_scissor, m_scissorRect));
     }
 
@@ -202,8 +220,15 @@ public:
     }
 
 private:
+    chaosrml::FrameSignature* m_sig;
+    uint64_t m_serial = 0;
     bool m_scissor = false;
     Rect m_scissorRect;
+};
+
+// the element under a finger; an observer pointer, so a closed document leaves it empty
+struct RmlTouchTarget {
+    Rml::ObserverPtr<Rml::Element> element;
 };
 
 class RmlSystemInterface : public Rml::SystemInterface
@@ -315,6 +340,10 @@ Rml::Input::KeyIdentifier mapKey(Fw::Key k)
 
 } // namespace
 
+// The engine builds the UI picture again on input and at a fixed interval only; RmlUi asks for a repaint whenever its
+// state changed (a Lua call, a hover, a scroll) and, in render(), whenever the frame it drew differs from the last one.
+static void requestRepaint() { g_app.repaint(); }
+
 RmlManager::RmlManager() = default;
 RmlManager::~RmlManager() = default;
 
@@ -324,7 +353,7 @@ bool RmlManager::init()
         return true;
     if (m_failed)
         return false;
-    m_render = std::make_unique<RmlRenderInterface>();
+    m_render = std::make_unique<RmlRenderInterface>(&m_sig);
     m_system = std::make_unique<RmlSystemInterface>();
     m_files = std::make_unique<RmlFileInterface>();
     m_relay = std::make_unique<RmlRelay>();
@@ -397,6 +426,7 @@ bool RmlManager::show(int doc)
     if (it == m_docs.end())
         return false;
     it->second->Show();
+    requestRepaint();
     return true;
 }
 
@@ -406,6 +436,8 @@ bool RmlManager::hide(int doc)
     if (it == m_docs.end())
         return false;
     it->second->Hide();
+    syncHoverBlock();
+    requestRepaint();
     return true;
 }
 
@@ -416,6 +448,12 @@ bool RmlManager::close(int doc)
         return false;
     it->second->Close();
     m_docs.erase(it);
+    if (m_docs.empty()) {
+        m_pressedInside = m_touchInside = m_overRml = false;
+        m_touchTarget.reset();
+        g_ui.setHoverBlocked(false);
+    }
+    requestRepaint();
     return true;
 }
 
@@ -431,6 +469,7 @@ bool RmlManager::setText(int doc, const std::string& elementId, const std::strin
     if (!e)
         return false;
     e->SetInnerRML(escape(text));
+    requestRepaint();
     return true;
 }
 
@@ -440,6 +479,7 @@ bool RmlManager::setInnerRml(int doc, const std::string& elementId, const std::s
     if (!e)
         return false;
     e->SetInnerRML(rml);
+    requestRepaint();
     return true;
 }
 
@@ -449,20 +489,108 @@ bool RmlManager::setClass(int doc, const std::string& elementId, const std::stri
     if (!e)
         return false;
     e->SetClass(className, on);
+    requestRepaint();
     return true;
 }
 
 bool RmlManager::setProperty(int doc, const std::string& elementId, const std::string& name, const std::string& value)
 {
     Rml::Element* e = find(doc, elementId);
-    return e && e->SetProperty(name, value);
+    const bool ok = e && e->SetProperty(name, value);
+    if (ok)
+        requestRepaint();
+    return ok;
 }
 
+float RmlManager::getScrollTop(int doc, const std::string& elementId)
+{
+    Rml::Element* e = find(doc, elementId);
+    return e ? e->GetScrollTop() : 0.f;
+}
+
+bool RmlManager::setScrollTop(int doc, const std::string& elementId, float value)
+{
+    Rml::Element* e = find(doc, elementId);
+    if (!e)
+        return false;
+    e->SetScrollTop(value);
+    requestRepaint();
+    return true;
+}
+
+Rect RmlManager::getRect(int doc, const std::string& elementId)
+{
+    Rml::Element* e = find(doc, elementId);
+    if (!e)
+        return Rect();
+    const Rml::Vector2f off = e->GetAbsoluteOffset(Rml::BoxArea::Border);
+    const Rml::Vector2f size = e->GetBox().GetSize(Rml::BoxArea::Border);
+    return Rect(static_cast<int>(off.x), static_cast<int>(off.y), static_cast<int>(size.x), static_cast<int>(size.y));
+}
+
+bool RmlManager::injectMouse(const std::string& kind, int x, int y, const std::string& button)
+{
+    InputEvent ev;
+    if (kind == "move") ev.reset(Fw::MouseMoveInputEvent);
+    else if (kind == "press") ev.reset(Fw::MousePressInputEvent);
+    else if (kind == "release") ev.reset(Fw::MouseReleaseInputEvent);
+    else if (kind == "wheelup" || kind == "wheeldown") {
+        ev.reset(Fw::MouseWheelInputEvent);
+        ev.wheelDirection = kind == "wheelup" ? Fw::MouseWheelUp : Fw::MouseWheelDown;
+    } else
+        return false;
+    ev.mouseMoved = Point(x, y) - m_lastInjected;
+    ev.mousePos = Point(x, y);
+    m_lastInjected = ev.mousePos;
+    if (button == "left") ev.mouseButton = Fw::MouseLeftButton;
+    else if (button == "right") ev.mouseButton = Fw::MouseRightButton;
+    else if (button == "touch") ev.mouseButton = Fw::MouseTouch;
+    return inputEvent(ev);
+}
+
+// Hot reload: the style sheets and templates are cached by path; a module reload (terminate, init) closes the documents
+// and loads them again, and calls this first so an edited .rcss is read again. Fonts and images stay cached.
+void RmlManager::clearCaches()
+{
+    Rml::Factory::ClearStyleSheetCache();
+    Rml::Factory::ClearTemplateCache();
+}
+
+// UI scale. The engine (g_app.scale, base patch 0129) draws the whole interface into a picture of window size / N and
+// stretches it N times, so one interface pixel is already N screen pixels: the root widget is viewport / N, and so is the
+// RmlUi context (updateScale). The dp ratio therefore stays 1 for any N; multiplying it by N again would draw every
+// document N times too big. setScale is an extra factor on top (a text size option).
 void RmlManager::setScale(float scale)
 {
     m_scale = scale > 0.1f ? scale : 1.f;
     if (m_context)
         m_context->SetDensityIndependentPixelRatio(m_scale);
+    requestRepaint();
+}
+
+void RmlManager::updateScale()
+{
+    auto root = g_ui.getRootWidget();
+    if (!root || !m_context)
+        return;
+    const Size s = root->getSize();
+    const Rml::Vector2i want(std::max(1, s.width()), std::max(1, s.height()));
+    const Size vp = g_graphics.getViewportSize();
+    const float engine = vp.width() > 0 ? std::max(1.f, static_cast<float>(vp.width()) / static_cast<float>(want.x)) : 1.f;
+    if (std::fabs(engine - m_engineScale) > 0.01f) {
+        m_engineScale = engine;
+        g_logger.info("[RmlUi] interface scale " + std::to_string(m_engineScale) + ", dp ratio " + std::to_string(m_scale));
+    }
+    if (m_context->GetDimensions() != want) {
+        m_context->SetDimensions(want); // the new size also re-lays-out every document
+        m_sig.forget();
+        requestRepaint();
+    }
+    if (m_context->GetDensityIndependentPixelRatio() != m_scale) {
+        m_context->SetDensityIndependentPixelRatio(m_scale);
+        m_sig.forget();
+        requestRepaint();
+    }
 }
 
 // The engine draws and stores text as cp1252 (patch 0028, client_chaos_locale), RmlUi wants UTF-8. Bytes below 0x80 are
@@ -525,14 +653,16 @@ void RmlManager::render()
 {
     if (!m_context || m_docs.empty())
         return;
-    if (auto root = g_ui.getRootWidget()) {
-        const Size s = root->getSize();
-        const Rml::Vector2i want(std::max(1, s.width()), std::max(1, s.height()));
-        if (m_context->GetDimensions() != want)
-            m_context->SetDimensions(want);
+    updateScale();
+    // a finger fling goes on after the release
+    if (m_touch.flinging()) {
+        applyScroll(m_touch.tick(stdext::micros() / 1000000.0));
     }
+    m_sig.beginFrame();
     m_context->Update();
     m_context->Render();
+    if (m_sig.endFrame())
+        requestRepaint(); // a hover, an animation, a changed text or a scroll made a different picture
 }
 
 bool RmlManager::hoverInDocument()
@@ -550,54 +680,159 @@ bool RmlManager::focusInTextField()
     return tag == "input" || tag == "textarea" || tag == "select";
 }
 
+bool RmlManager::hasTextFocus() { return m_context && focusInTextField(); }
+
+chaosrml::RouteState RmlManager::routeState()
+{
+    chaosrml::RouteState s;
+    s.overRml = hoverInDocument();
+    s.textFocus = focusInTextField();
+    s.pressedInside = m_pressedInside || m_touchInside;
+    return s;
+}
+
+// OTUI shows no hover and no tooltip for a widget that lies under an RmlUi element
+void RmlManager::syncHoverBlock()
+{
+    const chaosrml::RouteState s = routeState();
+    m_overRml = s.overRml;
+    g_ui.setHoverBlocked(chaosrml::blocksOtuiHover(s));
+}
+
+// Scrolls the nearest overflow ancestor of the element under the finger that can move in the direction of the drag
+// (one whose end is reached passes the rest to its parent, like a phone list inside a page).
+void RmlManager::applyScroll(const chaosrml::Delta& d)
+{
+    if (!d.any() || !m_touchTarget || !m_touchTarget->element)
+        return;
+    bool moved = false;
+    for (Rml::Element* e = m_touchTarget->element.get(); e && !moved; e = e->GetParentNode()) {
+        const Rml::ComputedValues& cv = e->GetComputedValues();
+        auto scrolls = [](Rml::Style::Overflow o) { return o == Rml::Style::Overflow::Auto || o == Rml::Style::Overflow::Scroll; };
+        if (d.y != 0 && scrolls(cv.overflow_y()) && e->GetScrollHeight() > e->GetClientHeight() + 0.5f) {
+            const float before = e->GetScrollTop();
+            e->SetScrollTop(before + static_cast<float>(d.y));
+            moved = e->GetScrollTop() != before;
+        }
+        if (d.x != 0 && !moved && scrolls(cv.overflow_x()) && e->GetScrollWidth() > e->GetClientWidth() + 0.5f) {
+            const float before = e->GetScrollLeft();
+            e->SetScrollLeft(before + static_cast<float>(d.x));
+            moved = e->GetScrollLeft() != before;
+        }
+    }
+    if (moved)
+        requestRepaint();
+    else
+        m_touch.stopFling();
+}
+
+// Which events RmlUi takes and which fall through to OTUI: chaosrml::consumes (rmlinputlogic.h, unit tested).
 bool RmlManager::inputEvent(const InputEvent& e)
 {
+    using chaosrml::Event;
     if (!m_context || m_docs.empty())
         return false;
     const int mods = mapModifiers(e.keyboardModifiers);
+    const double now = stdext::micros() / 1000000.0;
+    const bool touchButton = e.mouseButton == Fw::MouseTouch || e.mouseButton == Fw::MouseTouch2 || e.mouseButton == Fw::MouseTouch3;
+    const int button = e.mouseButton == Fw::MouseRightButton ? 1 : e.mouseButton == Fw::MouseMidButton ? 2 : 0;
     switch (e.type) {
-        case Fw::MouseMoveInputEvent:
+        case Fw::MouseMoveInputEvent: {
+            Rml::Element* before = m_context->GetHoverElement();
             m_context->ProcessMouseMove(e.mousePos.x, e.mousePos.y, mods);
-            return hoverInDocument() || m_pressedInside;
+            if (m_touchInside)
+                applyScroll(m_touch.move(static_cast<float>(e.mousePos.x), static_cast<float>(e.mousePos.y), now));
+            const chaosrml::RouteState s = routeState();
+            syncHoverBlock();
+            if (m_context->GetHoverElement() != before || s.pressedInside)
+                requestRepaint(); // the engine repaints on a move only by its interval
+            return chaosrml::consumes(Event::Move, s);
+        }
         case Fw::MousePressInputEvent: {
             m_context->ProcessMouseMove(e.mousePos.x, e.mousePos.y, mods);
-            if (!hoverInDocument())
+            const chaosrml::RouteState s = routeState();
+            if (chaosrml::blursOnPress(s)) {
+                if (Rml::Element* f = m_context->GetFocusElement())
+                    f->Blur();
+            }
+            if (e.mouseButton == Fw::MouseTouch) {
+                // a finger: the drag scrolls; the click comes later as a left click (tap) or after the slop (drag)
+                m_touch.begin(static_cast<float>(e.mousePos.x), static_cast<float>(e.mousePos.y), now, s.overRml);
+                m_touchInside = s.overRml;
+                m_touchTarget.reset();
+                if (s.overRml) {
+                    m_touchTarget = std::make_unique<RmlTouchTarget>();
+                    m_touchTarget->element = m_context->GetHoverElement()->GetObserverPtr();
+                }
+                syncHoverBlock();
+                return s.overRml;
+            }
+            if (touchButton) // second and third finger: nothing for RmlUi
+                return s.overRml;
+            if (!chaosrml::consumes(Event::Press, s)) {
+                syncHoverBlock();
                 return false;
+            }
             m_pressedInside = true;
-            int button = e.mouseButton == Fw::MouseRightButton ? 1 : e.mouseButton == Fw::MouseMidButton ? 2 : 0;
             m_context->ProcessMouseButtonDown(button, mods);
+            syncHoverBlock();
+            requestRepaint();
             return true;
         }
         case Fw::MouseReleaseInputEvent: {
-            if (!m_pressedInside)
+            if (e.mouseButton == Fw::MouseTouch) {
+                const bool inside = m_touchInside;
+                m_touchInside = false;
+                m_touch.end(now); // may start a fling; the hover is cleared at the release of the left button that follows
+                if (!m_touch.flinging())
+                    m_touchTarget.reset();
+                syncHoverBlock();
+                return inside;
+            }
+            if (touchButton)
                 return false;
-            m_pressedInside = false;
-            int button = e.mouseButton == Fw::MouseRightButton ? 1 : e.mouseButton == Fw::MouseMidButton ? 2 : 0;
-            m_context->ProcessMouseButtonUp(button, mods);
-            return true;
+            const chaosrml::RouteState s = routeState();
+            const bool take = chaosrml::consumes(Event::Release, s);
+            if (take) {
+                m_pressedInside = false;
+                m_context->ProcessMouseButtonUp(button, mods);
+            }
+            // The finger is gone: RmlUi has no touch, so without this the element last touched stays :hover.
+            if (m_touch.buttonReleased())
+                m_context->ProcessMouseLeave();
+            syncHoverBlock();
+            requestRepaint();
+            return take;
         }
-        case Fw::MouseWheelInputEvent:
+        case Fw::MouseWheelInputEvent: {
             m_context->ProcessMouseMove(e.mousePos.x, e.mousePos.y, mods);
-            if (!hoverInDocument())
+            const chaosrml::RouteState s = routeState();
+            syncHoverBlock();
+            if (!chaosrml::consumes(Event::Wheel, s))
                 return false;
             m_context->ProcessMouseWheel(Rml::Vector2f(0.f, e.wheelDirection == Fw::MouseWheelUp ? -1.f : 1.f), mods);
+            requestRepaint();
             return true;
+        }
         case Fw::KeyDownInputEvent:
-            if (!focusInTextField())
+            if (!chaosrml::consumes(Event::KeyDown, routeState()))
                 return false;
             m_context->ProcessKeyDown(mapKey(e.keyCode), mods);
+            requestRepaint();
             return true;
         case Fw::KeyUpInputEvent:
-            if (!focusInTextField())
+            if (!chaosrml::consumes(Event::KeyUp, routeState()))
                 return false;
             m_context->ProcessKeyUp(mapKey(e.keyCode), mods);
+            requestRepaint();
             return true;
         case Fw::KeyPressInputEvent:
-            return focusInTextField();
+            return chaosrml::consumes(Event::KeyPress, routeState());
         case Fw::KeyTextInputEvent:
-            if (!focusInTextField())
+            if (!chaosrml::consumes(Event::KeyText, routeState()))
                 return false;
             m_context->ProcessTextInput(Rml::String(e.keyText));
+            requestRepaint();
             return true;
         default:
             return false;

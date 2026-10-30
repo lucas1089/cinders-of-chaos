@@ -1,0 +1,76 @@
+diff -ruN a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -29,7 +29,8 @@
+     find_package(RmlUi CONFIG REQUIRED)
+     list(APPEND framework_SOURCES
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/framework/rml/rmlmanager.cpp
+-        ${CMAKE_CURRENT_SOURCE_DIR}/src/framework/rml/rmlmanager.h)
++        ${CMAKE_CURRENT_SOURCE_DIR}/src/framework/rml/rmlmanager.h
++        ${CMAKE_CURRENT_SOURCE_DIR}/src/framework/rml/rmlinputlogic.h)
+     list(APPEND framework_LIBRARIES RmlUi::RmlUi)
+     add_definitions(-DCHAOS_RMLUI)
+     message(STATUS "RmlUi: ON")
+diff -ruN a/src/framework/luafunctions.cpp b/src/framework/luafunctions.cpp
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -489,6 +489,15 @@
+     g_lua.bindSingletonFunction("g_rml", "setProperty", &RmlManager::setProperty, &g_rml);
+     g_lua.bindSingletonFunction("g_rml", "setEventCallback", &RmlManager::setEventCallback, &g_rml);
+     g_lua.bindSingletonFunction("g_rml", "setScale", &RmlManager::setScale, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "getDpRatio", &RmlManager::getDpRatio, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "getEngineScale", &RmlManager::getEngineScale, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "clearCaches", &RmlManager::clearCaches, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "isPointerOver", &RmlManager::isPointerOver, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "hasTextFocus", &RmlManager::hasTextFocus, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "getScrollTop", &RmlManager::getScrollTop, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setScrollTop", &RmlManager::setScrollTop, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "getRect", &RmlManager::getRect, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "injectMouse", &RmlManager::injectMouse, &g_rml);
+     g_lua.bindSingletonFunction("g_rml", "escape", &RmlManager::escape, &g_rml);
+     g_lua.bindSingletonFunction("g_rml", "getDocumentCount", &RmlManager::getDocumentCount, &g_rml);
+ #endif
+diff -ruN a/src/framework/ui/uimanager.cpp b/src/framework/ui/uimanager.cpp
+--- a/src/framework/ui/uimanager.cpp
++++ b/src/framework/ui/uimanager.cpp
+@@ -293,6 +293,10 @@
+         hoveredWidget = m_rootWidget->recursiveGetChildByPos(g_window.getMousePosition(), false);
+         if(hoveredWidget && !hoveredWidget->isEnabled())
+             hoveredWidget = nullptr;
++#ifdef CHAOS_RMLUI
++        if(m_hoverBlocked)
++            hoveredWidget = nullptr;
++#endif
+ 
+         if(hoveredWidget != m_hoveredWidget) {
+             UIWidgetPtr oldHovered = m_hoveredWidget;
+diff -ruN a/src/framework/ui/uimanager.h b/src/framework/ui/uimanager.h
+--- a/src/framework/ui/uimanager.h
++++ b/src/framework/ui/uimanager.h
+@@ -63,6 +63,16 @@
+     void setKeyboardReceiver(const UIWidgetPtr& widget) { m_keyboardReceiver = widget; }
+     void setDebugBoxesDrawing(bool enabled) { m_drawDebugBoxes = enabled; }
+     void resetMouseReceiver() { m_mouseReceiver = m_rootWidget; }
++#ifdef CHAOS_RMLUI
++    // true while the pointer is over an RmlUi element (or a press that started there is held): no OTUI widget is hovered
++    void setHoverBlocked(bool blocked)
++    {
++        if (m_hoverBlocked == blocked)
++            return;
++        m_hoverBlocked = blocked;
++        updateHoveredWidget(true);
++    }
++#endif
+     void resetKeyboardReceiver() { m_keyboardReceiver = m_rootWidget; }
+     UIWidgetPtr getMouseReceiver() { return m_mouseReceiver; }
+     UIWidgetPtr getKeyboardReceiver() { return m_keyboardReceiver; }
+@@ -132,6 +142,9 @@
+     std::string m_hoveredText;
+     UIWidgetPtr m_pressedWidget[Fw::MouseButtonLast + 1];
+     stdext::boolean<false> m_hoverUpdateScheduled;
++#ifdef CHAOS_RMLUI
++    bool m_hoverBlocked = false;
++#endif
+     stdext::boolean<false> m_hoverTextUpdateScheduled;
+     stdext::boolean<false> m_drawDebugBoxes;
+     std::unordered_map<std::string, OTMLNodePtr> m_styles;

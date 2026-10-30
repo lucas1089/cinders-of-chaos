@@ -7,3 +7,5 @@ Module
   scripts: [ rmltest ]
   autoload: true
   autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

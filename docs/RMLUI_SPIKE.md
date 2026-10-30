@@ -34,8 +34,8 @@ The engine runs two threads: the dispatcher thread (Lua, widgets, builds a `Draw
 - **Input.** `UIManager::inputEvent` first asks `g_rml.inputEvent`. A mouse press, release, wheel or move over a
   visible RmlUi element is consumed, anything else falls through to OTUI. Keys and text are consumed only while the
   focused RmlUi element is an `input`, `textarea` or `select`. A document body has `pointer-events: none`, so a
-  full-screen document does not eat clicks meant for the game. Touch needs nothing extra: the engine already turns a
-  tap into a left click (`MouseLeftButton`, `MouseTouch2/3`).
+  full-screen document does not eat clicks meant for the game. A tap is turned into a left click by the engine; a finger drag
+  and the hover after a tap are handled in phase 2 (below).
 - **Z order.** RmlUi draws after the OTUI root of the foreground pane, so its documents are above every OTUI window.
   One layer only. Interleaving (an OTUI dialog above an RmlUi window) needs more work: either two Rml passes around the
   OTUI root or a rule that RmlUi documents are always on top.
@@ -68,11 +68,46 @@ Environment: Ubuntu 24.04 container, g++ 13.3, 4 cores, Mesa software GL (llvmpi
 | Drawing | window, border, background colours, rounded corners, TrueType text, 30 rows with zebra, scroll bar, buttons: drawn correctly over the login screen. Seen in screenshots at 960x540 and 1920x1080 (client window resized with `xdotool`). |
 | Input | hover colour on a row and a button, click on Refresh reached Lua (`onEvent`, subtitle went from "refreshed 0 times" to "refreshed 1 times"), mouse wheel scrolled the list. Clicks outside the window reached the OTUI login screen (not exercised in detail). |
 | Lua test `rmltest_test.lua` | passes under luajit and lua5.3 (fake `g_rml`, 13 checks). `check_names`, `check_credits`, `gen_credits --check`, `check_locales`, `check_modules` pass. |
-| Option OFF | not built in this run. By construction nothing changes (every hook is inside `#ifdef CHAOS_RMLUI`, the CMake block is inside `if(CHAOS_RMLUI ...)`, the vcpkg entry is an optional feature). |
+| Option OFF | built in phase 2, see "Option OFF" below. |
 
 Not done: vcpkg install of the `rmlui` port (network not available for it here, so the port version at the manifest's
 baseline `389e18e8...` is unchecked), Windows (MSVC), Android (NDK), any measurement of frame time or memory (software
 GL says nothing about a GPU), the on-screen keyboard, touch, the `cp1252` conversion with real pt-BR text.
+
+## Phase 2: production ready layer (2026-10-30, base patch 0173)
+
+Still behind `CHAOS_RMLUI` (off by default). Same test window, same recommendation: this makes the layer fit for one module
+that wants HTML, it does not start a port.
+
+| Item | What it does now |
+| --- | --- |
+| UI cache | The engine builds the UI picture again only on input (except a mouse move) and at a 16 ms interval. RmlUi asks for a repaint (`g_app.repaint()`) on every Lua call that changes a document, on every consumed input event, when the hovered element changes, and in `render()` when the frame it just drew differs from the last one. "Differs" is a hash of every draw call (geometry serial, translation, texture, clip), `chaosrml::FrameSignature`. So hover colours, animations, text changes, scrolling and a fling all repaint, and a still window asks for nothing. |
+| UI scale | The engine draws the whole interface into a picture of window size / N and stretches it N times (`g_app.scale`, patch 0129). One interface pixel is already N screen pixels, so the RmlUi context takes the root widget size (viewport / N) and the dp ratio stays 1 for every N. Setting the dp ratio to N as well would draw every document N times too big. `g_rml.setScale(f)` is an extra factor on top (a text size option). The manager reads N as viewport width / root width, so a scale change (resize, `g_app.scale`) updates the dimensions, lays the documents out again and repaints; it is logged as `[RmlUi] interface scale ...`. `g_rml.getEngineScale()` and `getDpRatio()` read both. Text is rasterised at interface size and then stretched, as the OTUI bitmap fonts are (a vector font looks soft at 2x; a sharper text path would need the UI picture at window size, not done). |
+| Z order and routing | RmlUi documents draw above every OTUI widget (one layer; an OTUI dialog above an RmlUi window is not possible). The rule is `chaosrml::consumes` (unit tested): move and wheel go to RmlUi when the pointer is over a visible RmlUi element (`pointer-events: auto`), a press the same, a release and the moves of a drag that started inside stay with RmlUi, keys and text only while an RmlUi `input`, `textarea` or `select` has the focus. Everything else reaches OTUI. A press that RmlUi does not take, while one of its fields has the focus, blurs the field. `UIManager::setHoverBlocked` (patch 0173) stops OTUI from hovering widgets under an RmlUi window. |
+| Touch | Android sends Move, Press(touch), Moves, after 8 px a Press(left) at the start point, then Release(touch) and Release(left) (a tap or long press: Press and Release of left or right after the touch release). `chaosrml::TouchScroll` (pure, unit tested) turns the drag into whole-pixel scroll deltas (content follows the finger, remainders carried), with a fling after a fast release (decay 0.3 s, stops under 20 px/s). The manager applies them to the nearest overflow `auto` or `scroll` ancestor of the element under the finger that can still move, and passes the rest up. `ProcessMouseLeave` runs at the first left or right release after the finger lifted, so no element stays hovered. The touch press itself is not forwarded as a left button down (the left press that follows is). |
+| Hot reload | `g_rml.clearCaches()` drops the style sheet and template caches. The test module calls it in `terminate()` and opens its window again in `init()` when it was open, so the module reloader (terminate, init) picks up edited `.rml` and `.rcss`. Fonts and images stay cached. Per-file watching is not done. |
+| CI | `.github/workflows/rmlui-client.yml`, manual only: assembles the client, builds RmlUi 6.0 from its release tag (apt has no RmlUi), builds the client with `CHAOS_RMLUI=ON` and `OFF` and checks that the OFF binary has no `Rml::` symbols. It cannot run on push because the base client sources are not in the repository (same reason as `windows-client.yml`); the repository variable `CHAOS_BASE_CLIENT_REPO` must be set. The workflow has not run on GitHub; its steps are the ones run by hand here (the Ubuntu `libphysfs.a` needs `ranlib`). The vcpkg feature `rmlui` is still not installed by any job (port version at the manifest baseline unchecked). `rmlinputlogic_test.cpp` runs in the normal `native` job of `ci.yml`. |
+
+### Checked here (Linux, g++ 13, RmlUi 6.0 built from its tag, Mesa software GL, Xvfb)
+
+- Engine with `CHAOS_RMLUI=ON`: compiles and links. With `OFF`: builds, see "Option OFF" below.
+- `rmlinputlogic_test.cpp`: routing table, drag and sub-pixel carry, fling and its stop, leave after release, frame signature (`g++ -std=c++17 -Wall -Wextra -Werror`).
+- Client run under Xvfb at 960x540: the window opens over the login screen; hover on a row and on a button; a click on Refresh reached Lua (count 0 to 1); six wheel clicks scrolled the list to row 25; the text field took `abc`; a click on an OTUI area blurred it (the following `zz` did not enter it); a key with no RmlUi field focused went to OTUI (space dismissed the start screen under the window).
+- Touch: the Android event sequence fed through `g_rml.injectMouse` (Ctrl+Alt+F11 or `CHAOS_RMLTEST=touch`): `scrollTop 0 -> 95` for a 90 px drag (5 px of fling), `isPointerOver` false after the release, no row hovered in the screenshot.
+- Scale: 1920x1080 at `g_app.scale(2)` (interface 960x540): the log shows `interface scale 2.0, dp ratio 1.0`, the window has the size it has at scale 1, times two on screen; hover, click and wheel work (pointer positions given in interface pixels, see the next point). At 960x540 the engine caps the scale at 1.5 and the layer followed it.
+- X11 and the scale: `x11window.cpp` does not divide the pointer by the scale, so with xdotool the pointer must be given in interface pixels at scale 2. The same is true for OTUI; not changed here.
+- The spike module never ran its `init`: its `.otmod` had no `@onLoad: init()`, so the hotkey was never bound (found now, fixed).
+
+### Option OFF
+
+Built with `-DCHAOS_RMLUI=OFF` after patch 0173 (162 ninja steps, `rmlmanager.cpp` is not one of them): it links, starts to the login screen under Xvfb, the log has no `RmlUi` or `RMLTEST` line and the test module does nothing. The binary has no `g_rml` string (the ON binary has two) and is 21.6 MB against 24.4 MB with the layer. The only code in the OFF tree that differs from the base are the `#ifdef CHAOS_RMLUI` blocks of patches 0172 and 0173.
+
+### Not done
+
+- Windows (MSVC) and Android (NDK) builds, a GPU, frame time and APK size, the soft keyboard and IME for `<input>`.
+- Real touch on a phone: the touch logic is unit tested and driven with synthetic events, not with a finger.
+- An OTUI dialog above an RmlUi window, per-file hot reload watching, the cp1252 conversion of typed text, batching of draw calls, the render interface features listed in Risks.
+- The GitHub workflow run, the vcpkg `rmlui` feature.
 
 ## Effort
 
