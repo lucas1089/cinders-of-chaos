@@ -14,6 +14,7 @@ import area_plan_core as C
 import area_plan_compile as PC
 import area_plan_kb as KB
 import area_plan_ai as AI
+import area_plan_shape as SH
 
 checks = fails = 0
 
@@ -711,6 +712,66 @@ for pid in ('hollow_crypt', 'bonechoir_catacomb', 'bonewright_galleries', 'grave
     if STAIN_PATCH & set(seen) or not seen.get(13189):
         crypt_bad.append('%s %s' % (pid, sorted(STAIN_PATCH & set(seen))))
 ok(not crypt_bad, 'catacomb hunts: crypt corridors are 13189 only, no stain patch tile: %s' % crypt_bad)
+
+
+# ------------------------------------------------------------------------------------------------ asymmetric areas
+# (docs/MAP_GUIDE.md "Asymmetric areas"): the scores on synthetic masks, then the generator on a real plan
+import math
+import random as _random
+cfg_sh = SH.rules()
+
+
+def disc(cx, cy, rx, ry=None):
+    ry = ry or rx
+    return {(x, y) for x in range(int(cx - rx) - 1, int(cx + rx) + 2) for y in range(int(cy - ry) - 1, int(cy + ry) + 2)
+            if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1}
+
+
+def box(x0, y0, w, h):
+    return {(x, y) for x in range(x0, x0 + w) for y in range(y0, y0 + h)}
+
+
+for what, mask in (('a circle', disc(30, 30, 20)), ('a square', box(0, 0, 40, 40)), ('a rectangle', box(0, 0, 60, 35)),
+                   ('an ellipse', disc(30, 30, 28, 16)), ('a plus', box(0, 20, 60, 20) | box(20, 0, 20, 60))):
+    sc = SH.scores(mask)
+    ok(SH.breaches(sc, cfg_sh), '%s fails the outline rule: %s' % (what, sc))
+ok(SH.scores(box(0, 0, 40, 40))['bbox_fill'] == 1.0 and SH.scores(box(0, 0, 40, 40))['sym_lr'] == 1.0, 'a square fills its box and mirrors fully')
+ok(SH.longest_straight_run(box(0, 0, 12, 5)) == 12, 'the longest straight run of a 12x5 box is 12')
+rg = _random.Random(7)
+blobs = set()
+bx, by = 20.0, 20.0
+for k in range(6):
+    blobs |= disc(bx, by, rg.uniform(5, 10), rg.uniform(4, 9))
+    bx += rg.choice((-1, 1)) * rg.uniform(6, 11)
+    by += rg.choice((-1, 1)) * rg.uniform(5, 9)
+sc = SH.scores(blobs)
+ok(sc['sym_lr'] < 0.8 and sc['sym_tb'] < 0.8 and sc['hull_fill'] < 0.86, 'a lobed synthetic outline is neither mirrored nor convex: %s' % sc)
+
+asym = json.load(open(os.path.join(HERE, 'areaplan', 'asym', 'asym_forest_test.json')))
+ok(not SH.is_legacy(asym['id']), 'the test area is not a legacy plan')
+res = PC.compile_plan(asym, pair24=False)
+oz_ = res['origin'][2]
+cells_ = {(x, y) for x, y, z in res['footprint'] if z == oz_}
+sc = SH.scores(cells_)
+ok(not SH.breaches(sc, cfg_sh), 'the generated 60x50 forest passes the outline rule: %s %s' % (sc, SH.breaches(sc, cfg_sh)))
+ok(not PC.qa_errors(res), 'the generated forest passes QA: %s' % PC.qa_errors(res))
+ok(sc['sym_lr'] < 0.6 and sc['sym_tb'] < 0.6 and sc['bbox_fill'] < 0.5 and sc['hull_fill'] < 0.7,
+   'the generated forest is well inside the limits: %s' % sc)
+res2 = PC.compile_plan(asym, pair24=False)
+ok(res['otbm'] == res2['otbm'], 'asymmetric outline: same seed, same bytes')
+other = copy.deepcopy(asym)
+other['seed'] = 777
+res3 = PC.compile_plan(other, pair24=False)
+ok(res3['otbm'] != res['otbm'], 'asymmetric outline: another seed, another outline')
+# every zone of a new plan defaults to lobes outside a dungeon; a legacy plan keeps the old cave blobs
+ok(C.zone_shape({}, {'kind': 'cave'}, 'asym_forest_test') == 'lobes', 'new plan, open zone: lobes')
+ok(C.zone_shape({}, {'kind': 'cave'}, 'gallowroot_wilds') == 'cave', 'legacy plan, open zone: cave blobs as before')
+ok(C.zone_shape({}, {'kind': 'dungeon'}, 'asym_forest_test') == 'room', 'dungeon zones stay rooms')
+# the gate: a new plan breaching the rule is an ERROR, a legacy plan only a WARN
+box_walk = {(x, y, 7) for x, y in box(0, 0, 40, 40)}
+ok([l for l, _m in SH.check_floors(box_walk, 'brand_new_square', [7])] == ['ERROR'] * 5, 'a new square area: errors %s' % SH.check_floors(box_walk, 'brand_new_square', [7]))
+ok({l for l, _m in SH.check_floors(box_walk, 'gallowroot_wilds', [7])} == {'WARN'}, 'a legacy square area: warnings only')
+ok(SH.check_floors({(x, y, 7) for x, y in box(0, 0, 10, 10)}, 'brand_new_square', [7]) == [], 'a floor under min_floor_tiles is skipped')
 
 print('area planner: %d checks, %d failed' % (checks, fails))
 sys.exit(1 if fails else 0)
