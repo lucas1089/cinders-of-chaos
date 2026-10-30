@@ -3,41 +3,41 @@
 # level band (lo hi, from the monsters around the destination), its display monster and the top monsters.
 id,z,x,y,dest_x,dest_y,dest_z,kind,name,level,lo,hi,display,spawntime,monsters,note
 base_5_31629_32256,5,31629,32256,33646,31468,6,hunt,Usurper Archer,134,110,140,Usurper Archer,120,Usurper Archer|Usurper Warlock|Usurper Knight,
-base_5_31630_32254,5,31630,32254,34149,31340,8,hunt,Freakish Lost Soul,120,115,135,Freakish Lost Soul,75,Freakish Lost Soul|Cursed Prospector|Mean Lost Soul,"beta report 2026-10-22: the base teleport led where Freakish Lost Soul cannot be reached; destination moved to the Freakish Lost Soul spawn (way back: hunt_teleports_config.lua returns)"
-base_5_31630_32258,5,31630,32258,32599,31346,15,hunt,Fire Elemental,41,40,75,Fire Elemental,120,Fire Elemental|Behemoth|Dragon Lord,"retargeted O333 from 32119,32715,7 (mixed)"
+base_5_31630_32254,5,31630,32254,34149,31340,8,hunt,Freakish Lost Soul,120,115,135,Freakish Lost Soul,75,Freakish Lost Soul|Cursed Prospector|Mean Lost Soul,beta report 2026-10-22: the base teleport led where Freakish Lost Soul cannot be reached; destination moved to the Freakish Lost Soul spawn (way back: hunt_teleports_config.lua returns)
+base_5_31630_32258,5,31630,32258,32041,32611,9,hunt,Fire Elemental,24,16,36,Fire Elemental,120,Fire Elemental|Behemoth|Dragon Lord,"retargeted O335 from 32599,31346,15 (display); retargeted O333 from 32119,32715,7 (mixed)"
 base_5_31634_32254,5,31634,32254,33026,32417,11,hunt,Demon Skeleton,25,15,40,Demon Skeleton,75,Demon Skeleton|Ghoul|Necromancer,"retargeted O333 from 34174,31201,10 (mixed)"
 base_5_31634_32258,5,31634,32258,33620,31627,13,hunt,Wyrm,63,50,80,Wyrm,120,Wyrm|Behemoth|Elder Wyrm,
 base_5_31638_32254,5,31638,32254,33756,31381,7,hunt,Ogre rowdy,119,100,150,Ogre rowdy,75,Ogre rowdy|Ogre sage|Feral Sphinx,
-base_5_31638_32258,5,31638,32258,32261,32479,10,hunt,Sandcrawler,42,40,45,Sandcrawler,45,Sandcrawler|Dragon|Talon Knight,"retargeted O333 from 33321,31349,7 (mixed)"
-base_5_31642_32254,5,31642,32254,33898,31156,9,hunt,Skeleton Elite Warrior,130,130,135,Skeleton Elite Warrior,120,Skeleton Elite Warrior|Undead Elite Gladiator,"beta report 2026-10-22: the base teleport led where Skeleton Elite Warrior cannot be reached; destination moved to the Skeleton Elite Warrior spawn (way back: hunt_teleports_config.lua returns)"
-base_5_31642_32258,5,31642,32258,33295,32645,7,hunt,Nomad,7,5,15,Nomad,120,Nomad|Sandcrawler|Dromedary,
+base_5_31638_32258,5,31638,32258,33012,32366,7,hunt,Sandcrawler,7,5,11,Sandcrawler,45,Sandcrawler|Dragon|Talon Knight,"retargeted O335 from 32261,32479,10 (display); retargeted O333 from 33321,31349,7 (mixed)"
+base_5_31642_32254,5,31642,32254,33898,31156,9,hunt,Skeleton Elite Warrior,130,130,135,Skeleton Elite Warrior,120,Skeleton Elite Warrior|Undead Elite Gladiator,beta report 2026-10-22: the base teleport led where Skeleton Elite Warrior cannot be reached; destination moved to the Skeleton Elite Warrior spawn (way back: hunt_teleports_config.lua returns)
+base_5_31642_32258,5,31642,32258,32681,31294,7,hunt,Nomad,12,8,15,Nomad,120,Nomad|Sandcrawler|Dromedary,"retargeted O335 from 33295,32645,7 (sparse)"
 base_5_31654_32254,5,31654,32254,31907,32027,5,hunt,Emerald Mage,225,180,270,Emerald Mage,45,Emerald Mage|Ruby Archer|Sapphire Warrior,
 base_5_31654_32258,5,31654,32258,33454,31822,4,hunt,Aeliana,283,280,310,Aeliana,45,Aeliana|Archon|Oroniel,
-base_5_31658_32254,5,31658,32254,32189,31429,7,hunt,Frost Dragon,73,40,75,Frost Dragon,75,Frost Dragon|Frost Dragon Hatchling|Penguin,"beta report 2026-10-22: the base teleport led where Frost Dragon cannot be reached; destination moved to the Frost Dragon spawn (way back: hunt_teleports_config.lua returns)"
-base_5_31658_32258,5,31658,32258,33195,32115,4,hunt,grothar,304,300,335,grothar,75,grothar|krag'lok|grugnor,
-base_5_31662_32254,5,31662,32254,32583,31039,7,hunt,Fleshcarver,150,145,155,Fleshcarver,45,Fleshcarver|Fleshrend|Giant Tortoise,
+base_5_31658_32254,5,31658,32254,32189,31429,7,hunt,Frost Dragon,73,40,75,Frost Dragon,75,Frost Dragon|Frost Dragon Hatchling|Penguin,beta report 2026-10-22: the base teleport led where Frost Dragon cannot be reached; destination moved to the Frost Dragon spawn (way back: hunt_teleports_config.lua returns)
+base_5_31658_32258,5,31658,32258,33227,32115,9,hunt,grothar,331,300,335,grothar,75,grothar|krag'lok|grugnor,"retargeted O335 from 33195,32115,4 (small)"
+base_5_31662_32254,5,31662,32254,32540,31045,6,hunt,Fleshcarver,154,145,231,Fleshcarver,45,Fleshcarver|Fleshrend|Giant Tortoise,"retargeted O335 from 32583,31039,7 (sparse small)"
 base_5_31662_32258,5,31662,32258,33016,31932,7,hunt,Scaledrake,308,305,310,Scaledrake,75,Scaledrake|Cinderclaw|Goblin,"retargeted O333 from 33043,31911,6 (mixed)"
 base_5_31666_32254,5,31666,32254,32978,30977,7,hunt,deathrattle,289,230,300,deathrattle,75,deathrattle|bonelich|tombwraith,
 base_5_31666_32258,5,31666,32258,32826,31434,7,hunt,Blackblade,275,150,300,Urzog,75,Blackblade|Malevolent|Urzog,Blackblade turns invisible: the room shows Urzog
 base_5_31667_32256,5,31667,32256,32413,31488,7,hunt,fangclaw,308,305,390,fangclaw,120,fangclaw|scalebreaker|lurkskin,
 base_6_31630_32254,6,31630,32254,31927,32632,10,hunt,Saltkin Pincher Scout,39,30,40,Saltkin Pincher Scout,120,Saltkin Pincher Scout|Saltkin Predator Scout|Saltkin Hydromancer Scout,
 base_6_31630_32258,6,31630,32258,33592,32434,8,hunt,Demon Outcast,126,120,140,Demon Outcast,120,Demon Outcast|Dark Torturer|Plaguesmith,
-base_6_31634_32254,6,31634,32254,32630,31691,9,hunt,Elephant,8,5,10,Elephant,120,Elephant|Wasp|Bug,"retargeted O333 from 32951,32690,7 (mixed)"
+base_6_31634_32254,6,31634,32254,32936,32773,7,hunt,Wasp,8,5,12,Wasp,120,Wasp|Bug,"retargeted O335 from 32630,31691,9 (small); renamed O335 from Elephant (the sign monster does not spawn at the arrival); retargeted O333 from 32951,32690,7 (mixed)"
 base_6_31634_32258,6,31634,32258,32962,31499,7,hunt,Haunted Treeling,20,10,30,Haunted Treeling,120,Haunted Treeling|Slime|Bat,
 base_6_31637_32258,6,31637,32258,33211,32726,11,hunt,Cave Rat,9,5,15,Cave Rat,120,Cave Rat|Minotaur Guard|Blood Crab,"retargeted O333 from 32752,31288,8 (mixed)"
-base_6_31638_32254,6,31638,32254,32881,31052,6,hunt,Ice Witch,39,35,40,Ice Witch,120,Ice Witch|Enlightened of the Cult|Necromancer,
-base_6_31639_32258,6,31639,32258,33264,32277,7,hunt,Minotaur,11,5,15,Minotaur,120,Minotaur|Lion|Sandcrawler,
-base_6_31642_32254,6,31642,32254,32795,32547,11,hunt,Dawnfire Asura,73,70,90,Dawnfire Asura,120,Dawnfire Asura|Hydra|Hellspawn,"retargeted O333 from 32977,32625,5 (spread named mixed)"
+base_6_31638_32254,6,31638,32254,32197,30997,14,hunt,Ice Witch,39,35,40,Ice Witch,120,Ice Witch|Enlightened of the Cult|Necromancer,"retargeted O335 from 32881,31052,6 (sparse small)"
+base_6_31639_32258,6,31639,32258,32738,31326,7,hunt,Minotaur,11,10,15,Minotaur,120,Minotaur|Lion|Sandcrawler,"retargeted O335 from 33264,32277,7 (sparse)"
+base_6_31642_32254,6,31642,32254,32795,32547,11,hunt,Hydra,73,70,90,Hydra,120,Hydra|Hellspawn,"renamed O335 from Dawnfire Asura (the sign monster does not spawn at the arrival); retargeted O333 from 32977,32625,5 (spread named mixed)"
 base_6_31642_32258,6,31642,32258,32787,31768,10,not a hunt,Poison Spider,8,5,15,Lava Golem,45,Poison Spider|Ghoul|Carrion Worm,"leads to the gnome city of the base quest (its City teleport 9 tiles away, crystal halls, no spawn within 59 tiles); stays in place, unordered"
-base_6_31654_32254,6,31654,32254,32514,31622,8,hunt,Gutworm,10,5,10,Gutworm,120,Gutworm|Poison Spider|Wolf,
-base_6_31654_32258,6,31654,32258,33194,31777,12,hunt,Blightwalker,97,95,150,Blightwalker,120,Defiler|Blightwalker|Plaguesmith,"beta report 2026-10-22: the base teleport led where Blightwalker cannot be reached; destination moved to the Blightwalker spawn (way back: hunt_teleports_config.lua returns)"
-base_6_31657_32254,6,31657,32254,32375,32767,6,hunt,Novice of the Cult,16,15,20,Novice of the Cult,120,Novice of the Cult|Bonelord|Dark Monk,
+base_6_31654_32254,6,31654,32254,32124,32371,9,hunt,Gutworm,10,10,15,Gutworm,120,Gutworm|Poison Spider|Wolf,"retargeted O335 from 32514,31622,8 (small)"
+base_6_31654_32258,6,31654,32258,33194,31777,12,hunt,Blightwalker,97,95,150,Blightwalker,120,Defiler|Blightwalker|Plaguesmith,beta report 2026-10-22: the base teleport led where Blightwalker cannot be reached; destination moved to the Blightwalker spawn (way back: hunt_teleports_config.lua returns)
+base_6_31657_32254,6,31657,32254,32070,31078,9,hunt,Novice of the Cult,16,10,20,Novice of the Cult,120,Novice of the Cult|Bonelord|Dark Monk,"retargeted O335 from 32375,32767,6 (sparse small)"
 base_6_31658_32258,6,31658,32258,32045,31044,8,hunt,Frost Dragon Hatchling,44,25,75,Frost Dragon Hatchling,120,Frost Dragon Hatchling|Frost Dragon|Rimekin Toolshaper,
 base_6_31659_32254,6,31659,32254,33066,32395,12,hunt,Wyrm,63,60,65,Wyrm,120,Wyrm|Grim Reaper,
 base_6_31662_32254,6,31662,32254,32880,32636,11,hunt,Serpent Spawn,88,35,105,Serpent Spawn,120,Serpent Spawn|Medusa|Bonebeast,
-base_6_31662_32258,6,31662,32258,33635,31690,13,hunt,Rustheap Golem,75,60,80,Rustheap Golem,120,Sludgebrass Golem|Rustheap Golem|Sludgebrass Blob,"beta report 2026-10-22: the base teleport led where Rustheap Golem cannot be reached; destination moved to the Rustheap Golem spawn (way back: hunt_teleports_config.lua returns)"
-base_6_31666_32254,6,31666,32254,33261,31646,10,hunt,Behemoth,23,20,30,Behemoth,120,Behemoth|Cyclops Smith|Cyclops Drone,"retargeted O333 from 33284,31698,14 (mixed)"
-base_6_31666_32258,6,31666,32258,33357,31601,14,hunt,Hellspawn,122,95,125,Hellspawn,120,Hellspawn|Dark Torturer|Grim Reaper,"retargeted O333 from 33458,31724,9 (few)"
+base_6_31662_32258,6,31662,32258,33635,31690,13,hunt,Rustheap Golem,75,60,80,Rustheap Golem,120,Sludgebrass Golem|Rustheap Golem|Sludgebrass Blob,beta report 2026-10-22: the base teleport led where Rustheap Golem cannot be reached; destination moved to the Rustheap Golem spawn (way back: hunt_teleports_config.lua returns)
+base_6_31666_32254,6,31666,32254,33590,31648,15,hunt,Behemoth,80,60,80,Behemoth,120,Behemoth|Cyclops Smith|Cyclops Drone,"retargeted O335 from 33261,31646,10 (small display); retargeted O333 from 33284,31698,14 (mixed)"
+base_6_31666_32258,6,31666,32258,32010,31056,9,hunt,Hellspawn,81,80,122,Hellspawn,120,Hellspawn|Dark Torturer|Grim Reaper,"retargeted O335 from 33357,31601,14 (packed small display); retargeted O333 from 33458,31724,9 (few)"
 base_7_31630_32254,7,31630,32254,33305,31706,12,quest,Behemoth Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
 base_7_31630_32258,7,31630,32258,32798,31958,7,quest,Black Knight Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
 base_7_31634_32254,7,31634,32254,33208,31642,13,quest,Demon Helmet Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"

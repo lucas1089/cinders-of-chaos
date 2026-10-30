@@ -146,6 +146,27 @@ try:
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
+# ---- gate rows: stairs whose ground goes plain take a stair piece with a floor change of its own off the tile too (O335)
+import check_dead_holes as CDH
+
+
+class _Kinds:
+    fc = {459: 1, 8210: 1}
+
+
+class _World:
+    def tile(self, x, y, z):
+        return [459, 8260, 8210]
+
+
+_old_plain = CDH.plain_ground
+CDH.plain_ground = lambda kinds, world, pos: 103
+try:
+    gr0 = B.gate_rows([((5, 6, 7), (5, 6, 8), 85, 'Hunt', 40, 'stairs/down', 459)], _Kinds(), _World())
+    check([(g[3], g[4], g[5]) for g in gr0] == [(459, 'ground', 103), (8210, 'remove', '')], 'gate rows: the stairs ground and the stair piece: %r' % gr0)
+finally:
+    CDH.plain_ground = _old_plain
+
 # ---- the real CSV and config: every retargeted hunt has its way back listed, the gate list is well formed
 rows_csv = HO.read_csv(AT.HUNTS_CSV)
 cfg = open(os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'hunt_teleports_config.lua'), encoding='utf-8').read()

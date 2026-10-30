@@ -849,6 +849,8 @@ jobs:
           # system numpy: patch_hunt_gates.py reads the map with tools/map/otbm.py (python3 -I does not see pip's user site)
           sudo apt-get install -y -qq python3-numpy
           python3 -I server/tools/patch_hunt_gates_test.py
+      - name: Hunt audit rules on synthetic data (audit_hunts.py: monsters, density, size of every hunt; the installed map is audited by hand, docs/HUNT_AUDIT.md; O335)
+        run: python3 -I server/tools/audit_hunts_test.py
 
       - name: Pack bands per role, Elementalist ahead on a pack, late packs die in at most 3x a base hunt pack (pack_model.py --check; boss_balance_config.lua packLimits, pace_config.lua scaled.health)
         run: python3 -I server/tools/pack_model.py --check
