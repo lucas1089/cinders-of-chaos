@@ -1113,7 +1113,10 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     [ $# -eq 0 ] || die "reload-files"
     cdir="$SERVER/data/scripts/chaos"
     [ -d "$cdir" ] || die "no $cdir (CHAOS_SERVER_DIR; run install_all.py)"
-    ls -1 "$cdir" | grep -E '^[a-z][a-z0-9_]{0,63}_config\.lua$' | sed 's/\.lua$//' | LC_ALL=C sort
+    for f in "$cdir"/*_config.lua; do
+      f=${f##*/}
+      if [[ $f =~ ^[a-z][a-z0-9_]{0,63}_config\.lua$ ]]; then printf '%s\n' "${f%.lua}"; fi
+    done | LC_ALL=C sort
     ;;
   reload-file)
     actor=${1:-}
