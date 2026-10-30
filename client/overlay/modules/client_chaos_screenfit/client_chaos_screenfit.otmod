@@ -1,0 +1,10 @@
+Module
+  name: client_chaos_screenfit
+  description: A window taller or wider than the screen scrolls instead of being cut off - drag it or turn the mouse wheel; it opens with its title in view (O313, every window, phone and desktop)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ screenfit_logic, screenfit ]
+  autoload: true
+  autoload-priority: 5
+  @onLoad: init()
+  @onUnload: terminate()
