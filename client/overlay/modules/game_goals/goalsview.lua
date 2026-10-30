@@ -219,4 +219,48 @@ function V.trackerAnchors(hasLeftPanels)
   }
 end
 
+-- Phone tracker: at most `max` rows over the sections in order (goals, ascension, spell quest). Returns the rows shown per
+-- section and the count left out ("+N" line). max nil or below 1 shows everything (desktop).
+function V.budget(counts, max)
+  local shown, hidden, left = {}, 0, tonumber(max) and math.floor(max) or nil
+  if left and left < 1 then left = nil end
+  for i, n in ipairs(counts) do
+    n = math.max(0, num(n))
+    local take = left and math.min(n, left) or n
+    shown[i] = take
+    hidden = hidden + (n - take)
+    if left then left = left - take end
+  end
+  return shown, hidden
+end
+
+-- "+3 more"
+function V.hiddenLine(n)
+  n = num(n)
+  if n <= 0 then return '' end
+  return tr('+%d more', n)
+end
+
+-- a tracker position (x, y of the top left, pixels in the root panel) that keeps the whole tracker of w x h inside the
+-- parent of pw x ph
+function V.clampPosition(x, y, w, h, pw, ph)
+  local function clamp(v, lo, hi) return math.max(lo, math.min(hi, v)) end
+  return clamp(math.floor(num(x)), 0, math.max(0, num(pw) - num(w))), clamp(math.floor(num(y)), 0, math.max(0, num(ph) - num(h)))
+end
+
+-- a saved position of one character from the settings node {[name] = {x, y}}; nil when there is none
+function V.savedPosition(node, name)
+  local e = type(node) == 'table' and node[tostring(name or '')] or nil
+  if type(e) ~= 'table' then return nil end
+  local x, y = tonumber(e.x), tonumber(e.y)
+  if not x or not y then return nil end
+  return math.floor(x), math.floor(y)
+end
+
+-- a press and a release closer than this (pixels) is a click on the title (fold), farther is a drag
+V.DRAG_THRESHOLD = 4
+function V.isDrag(dx, dy)
+  return math.abs(num(dx)) >= V.DRAG_THRESHOLD or math.abs(num(dy)) >= V.DRAG_THRESHOLD
+end
+
 return V
