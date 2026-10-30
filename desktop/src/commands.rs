@@ -249,6 +249,8 @@ pub static ACTIONS: &[Action] = &[
     act(C, "Modo beta", "Desligar", "beta-mode off").live(Live::Reload("scripts")).t(30).h("Apply live recarrega os scripts."),
     act(C, "Modo beta", "Ligar e reiniciar", "beta-mode on restart").ask().live(Live::Restarts).t(240),
     act(C, "Modo beta", "Desligar e reiniciar", "beta-mode off restart").ask().live(Live::Restarts).t(240),
+    // ---- Comandos: recarregar um arquivo (o cartão com a escolha e o botão está no Painel do jogo; reload-file ACTOR NOME)
+    act(C, "Recarregar um arquivo", "Listar tabelas de configuração", "reload-files").t(30).h("Recarregar uma delas: Painel do jogo > Recarregar um arquivo."),
     // ---- Comandos: serviços da tela de login
     act(C, "Serviços de login", "Ver", "clientservices-impl status").t(30),
     act(C, "Serviços de login", "Rust ligado", "clientservices-impl rust").ask().t(900).h("Compila com cargo na VPS; pode levar minutos."),

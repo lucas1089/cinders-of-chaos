@@ -320,7 +320,7 @@
     },
     {
       "zone": "fenlight_marsh",
-      "monster": "Thal",
+      "monster": "Marshlight Hollowseer",
       "count": 8,
       "respawn": 75,
       "pack": 3
@@ -334,7 +334,7 @@
     },
     {
       "zone": "bogbone_sink",
-      "monster": "Winterstride",
+      "monster": "Marshlight Hollowseer",
       "count": 8,
       "respawn": 75,
       "pack": 3

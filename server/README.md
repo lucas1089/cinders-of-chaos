@@ -4343,6 +4343,33 @@ Tester 2026-10-29: some hunt teleports send the player to the wrong place. A tel
 - **Tests.** `tools/audit_hunt_bands_test.py` (band maths, reach, portals, suggestions, outputs, and the real CSV: every `retargeted` row has its way back in `hunt_teleports_config.lua` and a band under 3 x), `tools/patch_hunt_gates_test.py` (synthetic map), `tests/hunt_teleports_test.lua`.
 - **Not covered.** Teleports whose target a movement script sets (an action or unique id): the base map has 99 teleport items with a destination and about 1700 without one, mostly inert forcefield items. Monsters of a hunt that sit behind a door or a quest wall (the flood fill only knows ground and blocking items). The levels are the pool estimate (`gen_bounty_pool.py`), not the level a script shows. The planned hunts.
 
+## Hunt audit (O337) (`tools/audit_hunts.py`, `tools/hunt_audit_known.csv`, `docs/HUNT_AUDIT.md`)
+
+Owner 2026-10-30: "check again whether every hunt points to the right monsters, the monster density of those hunts and their size". The O333 audit judged the arrival by the level band and let any of a row's top monsters count as "the hunt's own", on the base copy of the map. This audit runs on an INSTALLED server (`python3 -I tools/install_all.py SERVER_DIR`, then the tool on `SERVER_DIR/data`), so it sees the fill, the late game spawns, the planned hunts and the hall as they ship. About one minute and 4 GB, numpy; not in CI (`tools/audit_hunts_test.py` is).
+
+- **What it audits.** Base hunts (`hall_hunts.csv`, 37), planned hunts (`areaplan/plans/`, 67, placed at their origin, listed in `data/lib/chaos_hunt_places.lua`), the 12 waystone maps, the 4 late game areas, the places that name a hunt (`goals_config.lua` `hunts`, the leveling guide) and the generated spawn tables the bestiary and the bounty board read (`bestiary_spawns.lua`, `bounty_pool.lua`).
+- **Right monsters.** Base: the O333 view (known monsters walked to from the arrival, share inside the band, far outside it) plus `display` (the monster the sign names and the room shows does not spawn in the hunt), `band` (the sign monster's own level is outside the sign's band), `teleport` (the map teleport and the places file disagree), `gate` (a stock portal in reach into far stronger monsters). Planned: `missing` (a monster of the plan has no spawn), `foreign` (spawns in the box that are not the plan's), `display` (a sign monster that is not in the area; `standIn` plans are exempt), `arrival` (does not walk or outside the box), `cut` (spawns or ground no walk from the arrival reaches, floor changes and teleports taken), `band` (under 60% of the monsters inside the plan's level, 25% or more far outside it, or the places file disagrees). Waystone maps: the tier's five monsters against what spawns in the rectangle, levels 468-612. Late game: every row of `late_game_spawns.csv` is on the map, the Chaos monsters against the area's other monsters. References: `goals_config.lua` and the leveling guide against the plans. Data: the committed generated tables against what the installed map gives.
+- **Density.** Monsters per 100 walkable tiles and per screen (15 x 11), tiles per monster, spawns stacked on a tile, ground with no monster on the screen of a player standing on it. Limits are numbers the repo already sets (constants at the top of the tool): `sparse` under 3.0 per 100 (`gen_spawn_density.py`, and 34 tiles per monster is 2.9: the rift layout limit), `packed` over 6.0 per 100 or 10 per screen (`area_plan_compile.py` warns above 6), `stacked` over 3 on one tile (a pack is 3), `dead` 35% of the ground (the planned hunts run 8-36%, median 27%: corridors and camps by design, so the limit only catches the outlier).
+- **Size.** Walkable tiles of the region and the full sweep, `tiles / 8 / walking speed at the hunt's level` (the model of `rift_layout_model.lua`). `small` under 45 s, 400 tiles or 12 monsters (`gen_spawn_density.POCKET`, `audit_hunt_bands.SUGGEST_MIN`), `big` over 300 s (`rift_layout_balance_config.lua`; not judged for base hunts, whose region is a cluster of neighbouring caves). Region: planned hunts and waystone maps the walkable ground (waystone: what the arrival reaches, `clearPath` items taken as gone); base hunts the ground within 6 tiles of the monsters of the hunt (spawns on one floor at most 12 tiles apart, as `content_audit.py` groups them); late game the ground within 6 tiles of the monsters.
+- **Run.** `python3 -I server/tools/audit_hunts.py SERVER_DIR/data [--kind base,planned,waystone,late,refs,data] [--md docs/HUNT_AUDIT.md] [--csv FILE] [--check]`. `--check` exits 1 for a defect that is not in `tools/hunt_audit_known.csv` (id, flag, reason: accepted by the owner or waiting for a map edit) and for a listed defect that is gone, so the list only shrinks. `--suggest` looks for a better arrival for every base hunt with `display`, `sparse`, `small`, `packed` or an O333 flag: a hunt of the sign's monster (the CSV's `display` and `name`) whose band is the monster's own level (level / 1.5 to level x 1.5), not sparse, small or packed as a whole and round the arrival, at least 4 of the sign's monsters in view, no gate portal, 40 tiles from the other arrivals; `--apply` writes the best one to `hall_hunts.csv` (note `retargeted O337 from ...`) and prints the `returns` lines for `hunt_teleports_config.lua`; a `display` hunt with no such area is renamed to the monster most in view (`renamed O337 from ...`). After a run: add the `returns` lines, run `install_all.py` (step `contentareas` rewrites the teleports), `audit_hunt_bands.py DATA --md docs/HUNT_BANDS.md --installed`, `audit_hunt_transitions.py DATA --md docs/HUNT_TRANSITIONS.md --lua .../hunt_warnings_config.lua`, `gen_bestiary_spawns.py DATA`. The owner does not run the audit, so it has no admin app button; the changed hunts reach the server with `chaos-ctl.sh update-apply` (admin app: tab Painel > card Atualizar servidor > button Aplicar e reiniciar), whose install rewrites the hall's teleports and the hunt gates. Nothing else to run.
+- **Result on the installed map (2026-10-30).** Planned hunts: all 67 pass monsters, band, arrival and reach (the display monster of `wyrmspine_hollows` is a declared stand-in); 2 flagged for density or size (Hollow Crypt 2.3 per 100 and a 35 s sweep, Wormcoil Depths 36% dead ground). The base hunts were the problem: 18 of 37 had a defect, 13 fixed, 5 left.
+
+| Base hunt | Problem found | Fix |
+|---|---|---|
+| Fire Elemental | the arrival (O333) held Dragon Lords, no Fire Elemental (level 24; the band said 40-75) | arrival 32041,32611,9, 113 monsters, band 16-36 |
+| Sandcrawler | the arrival held Dragons (level 42); a Sandcrawler is level 7 | arrival 33012,32366,7, 204 monsters, band 5-11 |
+| Behemoth | the arrival held Cyclopes (band 20-30); a Behemoth is level 80, 21 monsters | arrival 33590,31648,15, 310 monsters, band 60-80 |
+| Hellspawn | no Hellspawn at the arrival, 6.3 per 100, 37 monsters | arrival 32010,31056,9, 484 monsters, band 80-122 |
+| Dawnfire Asura | the arrival holds 32 Hydras and no Asura; no Asura area of its band has a clean arrival | the sign names the Hydra (level 73, band 70-90), same arrival |
+| Elephant | the arrival held 13 Wasps; no elephant area is big enough | the sign names the Wasp, arrival 32936,32773,7 (3.1 per 100), band 5-12 |
+| Nomad, Minotaur | sparse: 1.1 and 1.5 per 100 | arrivals 32681,31294,7 and 32738,31326,7, 3.8 per 100 |
+| grothar, Fleshcarver | 18 and 20 monsters, a 6 s and 21 s sweep (Fleshcarver also 2.8 per 100) | arrivals 33227,32115,9 (94 monsters) and 32540,31045,6 (80 monsters) |
+| Ice Witch, Gutworm, Novice of the Cult | 14, 12 and 9 monsters (Ice Witch and the Novice also sparse) | arrivals 32197,30997,14 (264), 32124,32371,9 (135), 32070,31078,9 (484) |
+
+  The ways back are listed under `returns` in `hunt_teleports_config.lua` (`check_hunt_returns.py`). The stairs of the Saltkin Pincher Scout cave (O333) still led down: the stairs' ground went plain, but a stair piece on the tile (item 8210) has its own floor change. `hunt_gates.csv` has a `remove` row for it, and `audit_hunt_bands.py --gates` writes such rows itself now. `hunt_warnings_config.lua` (231 places) and the two docs were regenerated on the installed map (`docs/HUNT_BANDS.md`: 37 hunts, 0 flagged, 0 gates in reach). `bestiary_spawns.lua` was generated before the fill and the planned hunts: 984 monsters spawn on the map, the file knew 872 and most counts were behind; regenerated, so the Bestiary's areas and kill goals follow the installed map.
+- **Left (listed with reasons in `tools/hunt_audit_known.csv`).** Owner calls: five rare high level base hunts that have no bigger area of their monster (Emerald Mage 41 s sweep, Scaledrake 30 monsters, deathrattle 22, Blackblade 12, fangclaw 14); Hollow Crypt (a placed plan's spawns cannot change without restoring the map: the decoration keeps off spawn points, so its tiles change too); waystone maps 5 and 12 (1.9 per 100, 52-54 tiles per monster against the rift limit of 34, 392 s sweep for map 12; more spawns lengthen the runs), maps 3 and 11 a little over; the late game areas are small (18-43 s sweeps) and Gloom Pillars holds 10 per 100; `bounty_pool.lua` does not know the 112 monsters only the planned hunts spawn (regenerating it adds 109 hunt monsters up to level 1700 and changes the Descent window and the pool size, `tests/descent_test.lua`, `tests/progression_test.lua`). Not covered: monsters behind a quest wall, holes a player digs, teleports whose target a script sets, the planned hunts' monster levels beyond the pool estimate.
+- **Tests.** `tools/audit_hunts_test.py` (CI: walking speed, spawn and places readers, density and size maths, a planned hunt with each defect, waystone and late areas, references, suggestions and renames on a synthetic map, stale tables), `tools/audit_hunt_bands_test.py` (gate rows, the real CSV), `tests/hunt_teleports_test.lua`.
+
 ## Test kit (`admin/testkit.lua`)
 `/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
 Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is given): `mage` (Mystic, Elementalist, Illusionist with the rod; magic level 110), `knight` (Warrior, Juggernaut; melee 120, shielding 110), `berserker` (the knight set with Executioner's Reckoning, two-handed, no shield), `paladin` (Ranger, Deadeye; crossbow, distance 125, a Legendary Haloed Quiver rolled at the kit's item level), `beastmaster` (Doomtide Longbow and a Legendary Mercurial Quiver), `thief` (Thief, Samurai: Soulreaper and the paladin's armour, sword 120, distance 110, magic level 30, 100 assassin stars), `ninja` (the same plus Bloodmoon Edge in the shield hand; without `src-patches/0002` it goes to the backpack), `monk` (Monk line: no weapon, fist 120, club 110, the paladin's armour), `necromancer` (Necromancer line: the mage set with the wand) and `templar` (Templar line: the knight set, sword and club 120, shielding 110, magic level 25).
@@ -11520,6 +11547,62 @@ Rift; then two hunt monsters that fit the game. All three live in the Embergut R
   each file's look, `lookOf` on and off, the boss flag, the boss room and both hunt monsters in the plan; `tests/bossspawns_test.lua`
   covers the new row. Not run live.
 
+## AI Sprite Studio monsters (pair 57) (`data/lib/chaos_aiss_art.lua`, switch `ChaosAissArt.PAIR57`, on)
+
+Owner request 2026-10-30: the seven creature sheets of a free AI-generated sample pack (docs/CREDITS.md "AI Sprite Studio") become
+seven new hunt monsters, each with a name of its own. The art is client pair 57 (client/MANIFEST.md "Pair 57"; on
+windows-assets 1ecba64), outfits 3364-3370. The pack's eighth sheet is not used (the owner: it looks like a famous comic character).
+- **Files.** `data/monster/monsters/chaos/<key>.xml`, registered by the `monsters` step with the rest of the folder. All seven are
+  hunt monsters, none a boss. **Where they spawn (2026-10-30)**: in nine planned hunts
+  (`tools/areaplan/plans/*.json`), each by swapping whole spawn entries to the new monster (counts and packs of 3 kept, so the
+  density of every plan is unchanged, `area_planner.py validate` 0 errors, 0 warnings). The table below lists the plan, band and
+  count. The wiki, codex and How it works data read the monster files and did not change (`--check` passes); the Bestiary spawn
+  table, the bounty pool and the map markers are regenerated from the installed spawn file on the server.
+  A plan already placed on a live map takes the new spawn list at the next `contentareas` run (the spawn blocks are written again,
+  no tile changes, no `.bak` restore).
+
+| Monster | Hunt (band) | Spawns |
+|---|---|---|
+| Bogtusk Cleaver | brinescar_strand (390-450): scorched_bluff, ashen_pan | 13 of 195 |
+| Wickstaff Hexmage | graveknell_catacombs (590-705): bone_galleries, collapsed_halls; sablemourn_ossuary (530-645): silent_shrine, candle_crypts | 16 of 199; 15 of 229 |
+| Coralcrown Brinecaller | sorrowfen_marsh (875-990): sunken_mire, brackish_reeds; deepgrudge_warrens (860-975): sunken_den, dripping_gallery | 14 of 191; 12 of 202 |
+| Gloamgeode Shellback | cinderglass_sanctum (1120-1300): glass_nave, facet_chapel | 20 of 276 |
+| Marshlight Hollowseer | gallowfen_mire (1300-1450): fenlight_marsh, bogbone_sink | 16 of 256 |
+| Redmane Anvilbreaker | gravehorn_deeps (1500-1750): marrow_forge, smouldering_cloister, cinderbone_vault | 30 of 300 |
+| Gravecrown Oathbreaker | paleflame_sanctum (1700-1850): moldy_cell, tainted_nave | 25 of 546 |
+
+  No bog, forge or grave-hall plan sits in the exact band, so the match is by band first and theme second: Bogtusk (no swamp plan at
+  390-410) is in a waste camp, Redmane (no forge plan at 1530-1570) in the crypt plan with a `marrow_forge` zone, Gravecrown (no
+  crypt plan at 1830-1870) at the top of the sanctum plan, which opens at 1700.
+- **Numbers.** The same rules as every other hunting monster, in `tools/tune_monsters.py` (`AISS_BAND`): under level 650 the pack 30
+  template (the Cunning Hyaena scaled by L / 650: health x L/650, experience x (L/650)^2, strongest hit x L/650), from 650 the late-game
+  curves (`late_targets`, health, experience, speed, strongest hit and heal at the level). Level range = level +-10 below 650, +-20 above.
+  The strongest hit of each file is exactly the table's, the other attacks are 25-95% of it, so the 3x attack rule of
+  `check_content.py` holds. Loot: the coin block and the equipment pool of the nearest band (`pack30/gibbet_fledgling.xml`, the Ashmaw
+  Warlord's for the pack 30 band; the Acid Hydra's, the Gloamfang Ravager's and so on above), platinum like the band
+  (50 up to level 1150, 55, 65, 80 at 1350, 1550, 1850); `loot_model.lua --check` passes. The seven stand in bands at least 200 levels
+  apart (400, 630, 930, 1150, 1350, 1550, 1850), mostly in the stretches where the chaos folder has a monster only every 100 levels
+  (1330-1370, 1530-1570 and 1830-1870 sit between two existing ones).
+
+| Monster | Look (stock) | Level | Health | Experience | Speed | Strongest hit | Biome and attacks |
+|---|---|---|---|---|---|---|---|
+| Bogtusk Cleaver | 3366 (7) | 390-410 | 7,750 | 1,650 | 58 | 500 | bog and orc camps. Melee, axe sweep (length 2, physical), a bleed; a war cry haste. Strong to physical and earth, weak to ice and holy |
+| Wickstaff Hexmage | 3365 (9) | 620-640 | 12,210 | 4,050 | 50 | 790 | haunted towns, mage towers. Stays at range 4: candle flame (fire ball, range 6), a death hex (range 5) and a slow. Strong to fire, weak to ice |
+| Coralcrown Brinecaller | 3370 (47) | 910-950 | 20,900 | 12,800 | 48 | 1,020 | coast, reef, flooded halls. Melee, trident thrust (length 3), a tidal surge round it (ice), a brine bolt (range 6). Strong to ice, weak to energy |
+| Gloamgeode Shellback | 3364 (197) | 1130-1170 | 25,300 | 21,100 | 34 | 1,200 | crystal caves. Slow, armor 130: shell slam (radius 2), crystal burst (energy, radius 3). Strong to physical, earth and energy; weak to holy and death |
+| Marshlight Hollowseer | 3368 (99) | 1330-1370 | 28,200 | 29,100 | 40 | 1,360 | marsh and fen hunts. Range 4: swamp-gas ball (earth, range 7), a death drain, a slow. Strong to earth and death; weak to holy and fire |
+| Redmane Anvilbreaker | 3367 (253) | 1530-1570 | 30,400 | 37,350 | 39 | 1,520 | forges and slag halls. Melee, a hammer slam throwing sparks (fire, radius 2), a thrown hammer (range 5), a haste. Strong to fire and physical, weak to ice |
+| Gravecrown Oathbreaker | 3369 (131) | 1830-1870 | 32,800 | 49,950 | 34 | 1,760 | crypts and grave halls. Melee, great sword arc (length 3), soul-fire round it (death, radius 3), a life drain. Strong to death and physical, weak to holy |
+
+- **Looks.** Pair 57 is on windows-assets (1ecba64, owner approved 2026-10-30) and the switch is on (`M.PAIR57 = true`): the
+  files wear 3364-3370 (the stock look of the column above is the rollback). A client on pair 56 or older has no outfits 3364-3370
+  and draws nothing for them until it updates. Rollback: `M.PAIR57 = false`, drop the aiss rows from `picks.csv`, run
+  `tools/apply_monster_looks.py`.
+- **Tests.** `tests/aiss_art_test.lua` (luajit and lua5.3): the picks rows in look order, the switch against picks.csv and each file's
+  look, `lookOf` on and off, each file's level band, health and experience, loot and attacks. `client/tools/sprites/gen_aiss_art.py
+  build --check` checks the sheets against the spec. `tune_monsters.py --check`, `check_content.py`, `apply_monster_looks.py --check`,
+  `loot_model.lua --check`, `progression_model.lua --check` and `pack_model.py --check` pass. Not run live.
+
 ## Themed sets, auras and grounds (`data/lib/chaos_theme_art.lua`, `data/lib/chaos_theme_items.lua`, `tools/install_theme_items.py`)
 
 Our own art of client pair things_custom24 (client/MANIFEST.md "Themed sets, auras and grounds"): ten equipment sets,
@@ -12663,6 +12746,7 @@ Guard for any item: `python3 -I server/tools/check_item_wire.py <server>/data/it
 the bytes the server writes per item (count or fluid byte, phase byte) with what the client reads (stackable / quiver /
 fluid / splash, more than one phase); on things_custom28 with the fixed items.otb: 31147 nodes, 0 disagree (27 before).
 Rules tested by `tools/check_item_wire_test.py` (CI).
+Since 2026-10-30 the fix list is `data/items/item_wire.csv` and the step `itemwire` ("Item wire bytes and the creature refresh").
 The Codex gem pages and the wiki icons show the new art already (images, not sprites).
 
 **Sockets on an item**: custom attributes `chaos_sockets` (count) and `chaos_gem1..3` (the gem's server id). The most
@@ -20607,6 +20691,69 @@ decision: no skull, and no weaker monsters on average; the complaint is the high
   `patch -p1 --dry-run < src-patches/0082-monster-level-no-skull-no-spread.patch` on a copy of the patched source tree.
   Guard test: `tools/monster_level_patch_test.py` (patch text, same mean health bonus).
 
+## Item wire bytes and the creature refresh (`item_wire.csv`, `tools/patch_item_wire.py`, engine patch 0083; 2026-10-30)
+Owner, phone: a dead monster stayed drawn for good. Cause: the client throws when one item of a tile or map packet takes
+other bytes than the server wrote, and drops the rest of that server message, a creature removal after it too.
+- **The wire rule.** After the client id and the mark the server writes a count byte when the items.otb node is stackable
+  (a fluid byte for group splash / fluid), then a phase byte when the node has `FLAG_ANIMATION` (`networkmessage.cpp`
+  `addItem`). The client reads a count byte when the dat thing is stackable, a quiver or chargeable (fluid byte for fluid /
+  splash) and a phase byte when the thing has more than one phase (`protocolgameparse.cpp` `getItem`).
+- **True state, full install** (`install_all.py` on a fresh copy of the base, every step, client pair 56, before this fix):
+  `check_item_wire.py` found **429 of 40722 nodes** disagreeing.
+  1. **Phase byte, 391 nodes.** `FLAG_ANIMATION` on a dat thing with one phase. 112 are the base's own (shallow water,
+     cauldrons and the like, 6651-28925: the pair holds the stock looks still), 118 are rows of `pack30_anim.csv` (server
+     39459-39758: the manifest says 2 or more phases, but pair 56 is **pruned** (`prune_pair.py`) and holds one blank 1x1
+     frame for these 118 of its 168 rows; the other 50 have their phases and agree), 146 are rows of `art_items.csv`
+     (shore, lagoon and other decor, e.g. 36460-36625), 12 of `pack30_grounds.csv` and 3 of the pack 33 kit (41424, 41425,
+     41568: portcullis rising, sarcophagus lid). Which side is wrong: the dat. It is what the client draws; the manifests say
+     what the art was made as.
+  2. **Fluid byte, 32 nodes.** The dat thing is `splash` or `fluid`, the node is a plain decoration: blood splashes
+     44541-44564, blood splatters 47544-47549, the black hole vortex 48007 and a barrel 44812 (pair 50; the importer copied
+     the flag from the source art). The client reads a fluid byte the server never wrote.
+  3. **Count byte, 6 nodes** (server 38524, 38562, 38848, 38849, 43150, 43160 = client 35524, 35562, 35848, 35849, 39150,
+     39160): `Item::isQuiver` of the client had eight hard-coded ids and read a count byte for them; in our pair they are
+     plain decoration, not stackable. The quiver market category (25) matches no node of ours. Which side is wrong: the
+     client code.
+- **Fix, per case.**
+  1. `data/items/item_wire.csv` (server, client, animation 0/1, group): the node follows the dat. A row is a pure
+     function of the dat thing (`animation = phases > 1`; `group` 11 / 12 for a splash / fluid thing). Applied in two places:
+     the manifest readers of the item installers (`install_dark_tiles.read_manifest`, `install_pack_items.read_manifest`:
+     donor items, pair 50, pack 30, pack 33, the art items) write the node right the first time and verify it, and the
+     install step `itemwire` (`tools/patch_item_wire.py`, after all item steps, before `sql`) rewrites every other node
+     (the base's own). A row applies only to the node with that server id **and** client id. items.otb.bak keeps the
+     original; a second run changes nothing. Group 11 / 12 makes the server write the fluid byte 0 (empty): same look (these
+     dat things have one pattern), the look text says "of unknown" like any splash. The lua tables generated from the
+     manifests (`chaos_pack33_kit.lua` `anim`) keep the manifest's own flag.
+  2. Client base patch **0174** (`client/BASE.md`): `Item::isQuiver` loses the id list; a quiver is the item type's weapon
+     type or the dat's market category 25. Phones need the new client build for these 6 nodes.
+  3. Engine patch **0083** (below).
+- **Keeping it true.** `python3 -I tools/check_item_wire.py ITEMS_OTB TIBIA_DAT` lists the disagreeing nodes (exit 1). It
+  needs an installed items.otb and the pair; neither is in the repository, so CI cannot run the whole check: the owner (or the
+  agent) runs it after an install or a pair change. After the fix, same full install (and again with `chaosClientPair=56`, which adds the
+  fist and 800+ weapon nodes: 40762 nodes): 0 disagree (with base patch 0174 in the client). `--write-table` rewrites `item_wire.csv` from an installed items.otb and the pair (rows already in
+  the file stay, worked out again): run it after a new pair, a `prune_pair.py` prune or restore, or a new item block, then
+  commit. CI: `check_item_wire_test.py` and `patch_item_wire_test.py` (rules, table, tool, installer hook, synthetic) and, in
+  the live-pair job, `check_item_wire.py --table-check` (every row against the live dat, no server needed). What CI cannot
+  see: a NEW node that disagrees and is not in the table yet.
+- **Restoring pruned art.** `prune_pair.py restore` brings a thing back with its phases: run `--write-table` again, the row
+  flips to `animation 1`, the next install (or `--only itemwire` plus the item step) turns the flag back on.
+- **Creature refresh on a tile (engine patch `0083-creature-refresh-by-id.patch`).** `ProtocolGame::sendUpdateTileCreature`
+  (`Monster::setName`, `monster:setDisplayLevel` of patch 0056) wrote `0x6B`, the position and the stack position as ONE
+  byte, then the creature in full with "remove 0". It could leave a creature on the client's tile for good: stack position
+  -1 (the player does not see the creature) went out as 0xFF; 10 or more went out as a byte the client's tile may not
+  have (the client keeps the first 10 things of a tile), so another thing was replaced and the creature stood twice; and the
+  full form with "remove 0" made the client create a second object and replace its known creature, so a later removal by id
+  took the new object and the old one stayed. Now: nothing for a player that cannot see the creature or never got it
+  (`knownCreatureSet`; the call no longer makes a creature known), the thing is addressed by id (`0xFFFF` + id, the form
+  `sendCreatureTurn` uses from stack position 10), and the full form removes the creature's own id so the client keeps its
+  object and refreshes it. `Player::sendUpdateTileCreature` refuses a creature without a tile. The add path
+  (`sendAddCreature`) already sent a tile refresh at stack position 10 or more; this call matched neither it nor
+  `sendCreatureTurn`.
+  Install: engine rebuild with patches 0001-0083 (docs/LAUNCH.md section 1), `chaos_update.sh --engine`. Checked: `patch -p1`
+  on a copy of the patched source tree and `g++ -std=c++17 -fsyntax-only protocolgame.cpp`. Guard test:
+  `tools/creature_refresh_patch_test.py`. Not run against a live client: log in on a phone, level up next to a risen
+  skeleton (the display level refresh) and kill it.
+
 ## Monster levels in the name (`monster_levels.lua`, `monster_levels_core.lua`, engine patch 0040)
 Owner, 2026-10-16: "Black Stag [777]" showed its level, Hellflayer and Ashfang Wyrm did not. Cause: the engine rolls a
 level only for a monster type with both `min` and `max` of `<level>` in its XML (our level-scaled monsters, written by
@@ -20786,7 +20933,7 @@ server folder (the engine's working folder), the same idea as the stop request f
   `spectate NAME` (same name rule) starts or renews the live view of a character (see "Live spectator"); a renewal is
   not logged. `cast NAME` (same name rule) names the player of the cast port and `caststop` clears it (src-patch 0064;
   an engine without it answers "this engine has no cast port"). Control characters, long lines and every other word are refused and logged.
-- The whole admin panel (`chaos/admin`, 179 actions) is reachable too, through two more lines: `catalog ACTOR` writes the
+- The whole admin panel (`chaos/admin`, 180 actions) is reachable too, through two more lines: `catalog ACTOR` writes the
   catalog of the panel for ACTOR's group to `remote.catalog` (JSON, same as the in-game panel gets), and
   `panel RID ACTION|ACTOR|JSON` runs one action (`ChaosAdmin.execute`: group check, parameter validation, audit log) and
   appends `{"rid","ok","message","lines"}` to `remote.result` (restarted above `maxResultBytes`). ACTOR is an admin
@@ -20811,14 +20958,50 @@ in `desktop/` (README there). It adds nothing to the server: it runs the system 
 calls `chaos-ctl.sh`, so the commands, `remote.cmd` and the audit log stay the only way in.
 - **Live apply.** Actions are marked live, needs restart, restarts the server or next install. "Apply live" runs the
   admin panel action `reload` (`chaos-ctl.sh panel ACTOR reload '{"system":"scripts"}'`) after a command that only
-  wrote a file (beta mode). The `reload` action reloads a whole system; there is no per-file reload yet, and the XP
-  rate buttons stay "needs restart" until `Game.reload(config)` is checked on a live server.
+  wrote a file (beta mode). The `reload` action reloads a whole system; one config table has its own reload (below,
+  "Reload one config table"). The XP rate buttons stay "needs restart" until `Game.reload(config)` is checked on a live
+  server.
+- **Live view.** The page "Ao vivo" runs `status`, `players` and `logs N` in one ssh call (a marker line between the
+  three) every 2 to 60 s while the page is open: server state, players online and a console tail with a filter, error
+  and warning colours and follow; pause, "Atualizar agora". One refresh at a time. No daemon, no new command.
 - **Command table.** `desktop/src/commands.rs`; `tools/ci/check_desktop_commands.py` compares it with the commands the
   Android app calls and with `chaos-ctl.sh`.
-- **Updates.** Releases `admin-desktop-vX.Y.Z` made by `.github/workflows/admin-desktop.yml` (manual); the app checks
-  them at start and swaps its own `.exe` after a SHA-256 check.
+- **Updates.** Releases `admin-desktop-vX.Y.Z` made by `.github/workflows/admin-desktop.yml` (manual) with the `.exe`,
+  its `.sig` and a `.sha256`. The app checks them at start and swaps its own `.exe` only after an Ed25519 signature
+  check (`desktop/src/sign.rs`, same scheme as the game updater and the launcher; the public key is compiled in from
+  `desktop/update_public_key.hex`, the private key is the repository secret `ADMIN_DESKTOP_SIGNING_KEY`). The signature
+  covers product, version, file name, size and SHA-256. No key in the build, a bad signature, a changed byte, a version
+  that is not the release tag or not newer than the running app: the update is refused.
 - **Untested.** Not run against a live VPS, not built on Windows, the workflow has not run. `cargo test` covers the
-  command table, quoting, settings, version compare, update choice, checksum and the swap.
+  command table, quoting, settings, version compare, update choice, the signature (good, bad signature, bad hash, no
+  key, replay and downgrade), the live view timer and split, the reload name rules and the swap.
+
+## Reload one config table (O312) (`reload_file_core.lua`, `reload_file_config.lua`, panel action `server.reload_file`)
+Owner, 2026-10-29 (O312): config and balance changes should apply without a full `/reload`. Revscripts cannot be reloaded
+one by one in TFS 1.4.2 (`Game.reload(scripts)` runs them all again and the scripts register events, so some state is
+lost). A `*_config.lua` file is different: it returns a plain table.
+- **How.** `chaos_constants.lua` (loaded first by every system) installs a thin wrapper around `dofile`
+  (`ChaosReloadFile.install`, idempotent). Every `data/scripts/chaos/*_config.lua` that a script loads returns a table;
+  the wrapper keeps it (the live copy; at most `maxTracked` per file, the same table once). A reload runs the file with
+  `loadfile` and, only if it parses, runs and returns a table, copies the new values INTO the live tables (identity kept
+  for nested tables, keys the file lost are removed). A script that holds the table reads the new numbers at its next
+  read. A file with an error, no table, or no live copy changes nothing and says why.
+- **Entry points.** Panel action `server.reload_file` (group 6 like the system `reload`, `dangerous`; the file is empty
+  to list the live tables), `chaos-ctl.sh reload-file ACTOR [CONFIG]` (checks the name with `^[a-z][a-z0-9_]{0,63}$`,
+  then `panel ACTOR server.reload_file '{"file":"NAME"}'`) and `chaos-ctl.sh reload-files` (the config names on disk).
+  The desktop app has the card "Recarregar um arquivo" on its Painel do jogo page; the Android app reaches the same panel
+  action through its Painel do jogo list (the catalog shows it, no new code).
+- **Safe by construction.** Only a bare name is accepted (a-z, 0-9, `_`; `pace_config`, `pace_config.lua` or the full
+  folder path of the same file); anything with a slash, dot segment, space, quote or `$` is refused in the app, in
+  `chaos-ctl.sh` and in the game, and the file read is always `data/scripts/chaos/NAME.lua`.
+- **What needs a restart, and the UI says so.** A script (not `*_config`): not reloaded alone, use Server > Reload system
+  > scripts or restart. `restartOnly` in `reload_file_config.lua` (`remote_cmd_config`, whose interval is read once).
+  A value a script copied out of the table when it loaded (`local N = cfg.n`) keeps the old number until the next scripts
+  reload; a config nobody loaded with `dofile` since the start has no live copy. The answer lists the first changed
+  keys, so the owner sees what moved.
+- **Tests.** `tests/reload_file_test.lua` (names, classes, tracking, in-place copy with identity, cycles, a broken file
+  changes nothing, every shipped `*_config.lua` reloads into itself without a change, the panel action) and the
+  `reload-file` cases of `server/deploy/chaos_ctl_test.py`. Not run on a live server.
 
 ## Live spectator (`spectate.lua`, `spectate_core.lua`, `spectate_config.lua`, `tools/spectate_render.py`)
 Owner, 2026-10-20 (ROADMAP "Open decisions": a live view of a player in the admin app). Phase 1: the owner watches one
@@ -21542,7 +21725,7 @@ is in `bestiary_config.lua`; the pure rules in `bestiary_core.lua`.
   category, difficulty, level, kills, stage, lookType]` in parts of about 6.5 KB, one per 50 ms), `entry` (what the stage
   reveals, the task offer), `kill` (one entry's kills and stage after each kill), `board`, `tracker`, `show {tab}`.
 - **Spawn data:** `bestiary_spawns.lua` is generated by `python3 -I server/tools/gen_bestiary_spawns.py <server>/data` from
-  the loaded map's spawn file (871 names from the full map in the repo). Rerun it after spawn changes, with
+  the loaded map's spawn file (984 names from the installed map; O337). Rerun it after spawn changes, with
   `gen_bounty_pool.py`.
 - **Shared-file lines.** `chaos_constants.lua` (`bestiary = 253`, `Chaos.storage.bestiary`), `achievements_data.lua` (4
   entries and the stats comment), client `client_chaos_topbar` (3 Hunt entries), `game_chaosnotify` (toast type

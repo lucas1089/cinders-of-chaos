@@ -1,6 +1,12 @@
 # Desktop admin app for the PC (O312, desktop/): builds cinders-admin.exe on Windows and publishes it as the release
-# admin-desktop-vX.Y.Z with cinders-admin.exe and cinders-admin.exe.sha256. The app checks these releases at start
-# (desktop/src/update.rs) and replaces itself.
+# admin-desktop-vX.Y.Z with cinders-admin.exe, cinders-admin.exe.sig (the Ed25519 signature the app verifies before it
+# replaces itself) and cinders-admin.exe.sha256 (for a human). The app checks these releases at start
+# (desktop/src/update.rs, sign.rs).
+#
+# SIGNING (once): python3 -I client/tools/make_update_manifest.py keygen --private ~/cinders-admin-update.key (outside the
+# repository), put the public key it prints in desktop/update_public_key.hex and commit, and put the TEXT of the private
+# key file in the repository secret ADMIN_DESKTOP_SIGNING_KEY. The workflow refuses to run without the secret or while
+# the public key file holds no key, and the signer refuses a secret that is not the key of that file.
 #
 # MANUAL ONLY (workflow_dispatch), like windows-package.yml: it never runs on push or pull_request.
 # To publish: raise `version` in desktop/Cargo.toml (and desktop/Cargo.lock by building once), commit, then run this
@@ -29,26 +35,52 @@ jobs:
           have=$(sed -n 's/^version = "\(.*\)"/\1/p' desktop/Cargo.toml | head -1)
           [ "$want" = "$have" ] || { echo "input $want differs from desktop/Cargo.toml $have"; exit 1; }
           if git ls-remote --tags origin "admin-desktop-v$want" | grep -q .; then echo "tag exists"; exit 1; fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Signing key is set up
+        shell: bash
+        env:
+          SIGNING_KEY: ${{ secrets.ADMIN_DESKTOP_SIGNING_KEY }}
+        run: |
+          [ -n "$SIGNING_KEY" ] || { echo "the secret ADMIN_DESKTOP_SIGNING_KEY is not set (see the top of this file)"; exit 1; }
+          pub=$(tr -d '[:space:]' < desktop/update_public_key.hex)
+          zeros=$(printf '0%.0s' $(seq 64))
+          if [ "${#pub}" -ne 64 ] || [ "$pub" = "$zeros" ]; then
+            echo "desktop/update_public_key.hex holds no key: the app would refuse every update"
+            exit 1
+          fi
       - name: Test and build
         shell: bash
         run: |
+          python3 -I desktop/tools/sign_release_test.py
           cd desktop
           cargo test --locked
           cargo build --locked --release
-      - name: Checksum
+      - name: Checksum and signature
         shell: bash
+        env:
+          SIGNING_KEY: ${{ secrets.ADMIN_DESKTOP_SIGNING_KEY }}
         run: |
           cd desktop/target/release
           cp cinders-admin.exe ../../../cinders-admin.exe
           cd ../../..
           sha256sum cinders-admin.exe > cinders-admin.exe.sha256
           cat cinders-admin.exe.sha256
+          # the private key goes to a file outside the checkout (the signer refuses a key inside a git work tree)
+          keyfile="$RUNNER_TEMP/admin-signing.key"
+          ( umask 077; printf '%s\n' "$SIGNING_KEY" > "$keyfile" )
+          python3 -I desktop/tools/sign_release.py sign --key "$keyfile" --exe cinders-admin.exe \
+            --version "${{ inputs.version }}" --out cinders-admin.exe.sig
+          rm -f "$keyfile"
+          python3 -I desktop/tools/sign_release.py verify --exe cinders-admin.exe --sig cinders-admin.exe.sig \
+            --public desktop/update_public_key.hex --version "${{ inputs.version }}"
       - name: Release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "admin-desktop-v${{ inputs.version }}" cinders-admin.exe cinders-admin.exe.sha256 \
+          gh release create "admin-desktop-v${{ inputs.version }}" cinders-admin.exe cinders-admin.exe.sig cinders-admin.exe.sha256 \
             --title "Cinders Admin for the PC ${{ inputs.version }}" \
-            --notes "Desktop admin app (desktop/README.md). The app updates itself from this release." \
+            --notes "Desktop admin app (desktop/README.md). The app updates itself from this release after it checks the signature (.sig)." \
             --target "${{ github.sha }}"

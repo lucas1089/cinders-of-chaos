@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hunt monster (level 1850): a knight in skull-studded plate and a small gold crown, a torn red cape, blue soul-fire in
+     the joints and a great sword in its hands. It broke every oath it ever swore.
+     Numbers on the late-game curves at its level (server/tools/tune_monsters.py; loot of the band). Look 3369: art of the
+     free AI Sprite Studio sample pack, 2x2, of pair 57 (data/lib/chaos_aiss_art.lua: the stock look 131 until
+     ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
+<monster name="Gravecrown Oathbreaker" nameDescription="a gravecrown oathbreaker" race="undead" experience="49950" speed="34" manacost="0">
+	<health now="32800" max="32800"/>
+	<look type="3369" corpse="6068"/>
+	<level min="1830" max="1870"/>
+	<targetchange interval="4000" chance="10"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1800" min="-880" max="-1410"/>
+		<!-- the great sword sweeps a wide arc -->
+		<attack name="physical" interval="2000" chance="25" length="3" spread="1" min="-1140" max="-1760">
+			<attribute key="areaEffect" value="blackspark"/>
+		</attack>
+		<!-- the soul-fire flares round it -->
+		<attack name="death" interval="2000" chance="20" radius="3" target="0" min="-970" max="-1580">
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="lifedrain" interval="2000" chance="12" range="1" target="1" min="-620" max="-970">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</attack>
+	</attacks>
+	<defenses armor="110" defense="110">
+		<defense name="healing" interval="2000" chance="10" min="1970" max="3280">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element deathPercent="45"/>
+		<element physicalPercent="30"/>
+		<element icePercent="20"/>
+		<element energyPercent="10"/>
+		<element holyPercent="-25"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="I swore nothing."/>
+		<voice sentence="Kneel to the grave crown."/>
+		<voice sentence="My oath is dust."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="80" chance="65000"/><!-- platinum coin -->
+		<item id="8888" chance="444"/>
+		<item id="2500" chance="444"/>
+		<item id="2472" chance="444"/>
+		<item id="8885" chance="444"/>
+		<item id="8884" chance="444"/>
+		<item id="3983" chance="444"/>
+		<item id="2495" chance="444"/>
+		<item id="2469" chance="444"/>
+		<item id="7894" chance="444"/>
+		<item id="5462" chance="429"/>
+		<item id="2644" chance="429"/>
+		<item id="11118" chance="429"/>
+		<item id="11240" chance="429"/>
+		<item id="2537" chance="429"/>
+		<item id="2514" chance="429"/>
+		<item id="2499" chance="429"/>
+	</loot>
+</monster>

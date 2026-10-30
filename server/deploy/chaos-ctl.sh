@@ -28,6 +28,13 @@
 #   kick NAME | open | close    kick one character / let players log in / close the server for login
 #   catalog ACTOR               the admin panel's catalog (all actions and their parameters) for the admin character ACTOR
 #   panel ACTOR ACTION JSON     run one admin panel action as ACTOR (an admin character, online or not); prints the answer line (JSON)
+#   reload-files                the config tables that can be reloaded one by one (O312): the names of the
+#                               data/scripts/chaos/*_config.lua files of the server folder, one per line (disk only)
+#   reload-file ACTOR [CONFIG]  reload ONE config table into the running game, no /reload (server/README.md "Reload one
+#                               config table (O312)"): the panel action server.reload_file as ACTOR (group 6, like the system
+#                               reload). CONFIG is a bare name like pace_config (a-z, 0-9, _), anything else is refused here
+#                               and again in the game; a script file is refused with the way to reload it. No CONFIG: lists
+#                               the tables the game can reload now. Prints the panel's answer line (JSON)
 #   spectate NAME               the app's live view of a character (server/README.md "Live spectator"): queues "spectate
 #                               NAME" (again after 5 s; the engine keeps a watch 20 s and writes remote.spectate every
 #                               second), waits up to 8 s for a fresh snapshot of NAME and prints the one JSON line of
@@ -1101,6 +1108,23 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
       sleep 0.5
     done
     die "no answer in 15 s: is $actor an admin character, and is the server running the remote command script?"
+    ;;
+  reload-files)
+    [ $# -eq 0 ] || die "reload-files"
+    cdir="$SERVER/data/scripts/chaos"
+    [ -d "$cdir" ] || die "no $cdir (CHAOS_SERVER_DIR; run install_all.py)"
+    for f in "$cdir"/*_config.lua; do
+      f=${f##*/}
+      if [[ $f =~ ^[a-z][a-z0-9_]{0,63}_config\.lua$ ]]; then printf '%s\n' "${f%.lua}"; fi
+    done | LC_ALL=C sort
+    ;;
+  reload-file)
+    actor=${1:-}
+    file=${2:-}
+    { [ $# -ge 1 ] && [ $# -le 2 ]; } || die "reload-file ACTOR [CONFIG]"
+    [[ $actor =~ ^[A-Za-z][A-Za-z\ \'-]{2,28}$ ]] || die "reload-file ACTOR [CONFIG]: ACTOR is the name of an admin character"
+    [[ -z $file || $file =~ ^[a-z][a-z0-9_]{0,63}$ ]] || die "CONFIG is a bare config name like pace_config (a-z, 0-9, _)"
+    CHAOS_CTL_NO_SUDO=1 exec "$SELF" panel "$actor" server.reload_file "{\"file\":\"$file\"}"
     ;;
   spectate)
     [ $# -eq 1 ] || die "spectate NAME"

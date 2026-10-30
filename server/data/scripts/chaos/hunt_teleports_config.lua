@@ -170,12 +170,12 @@ return {
 		{id = "corsairs_reach", monster = "Scourgejaw"},
 		{id = "mirefang_basin", monster = "Elite Tidecrest Serpent"},
 		{id = "rimecrown_depths", monster = "Vorkhaz"}, -- 2x2; the 3x3 Celestial Wyrm spilled
-		{id = "cinderglass_sanctum", monster = "Spiky Carnivor"},
+		{id = "cinderglass_sanctum", monster = "Gloamgeode Shellback"},
 		{id = "slagmourn_foundry", monster = "Twisted Shaper"}, -- 2x2; the 5x4 Scaleborn spilled
 		{id = "hollowmass_reliquary", monster = "Silicron"},
-		{id = "gallowfen_mire", monster = "Facetis"},
+		{id = "gallowfen_mire", monster = "Marshlight Hollowseer"},
 		{id = "voidscar_chasm", monster = "Winterstride"},
-		{id = "gravehorn_deeps", monster = "Cinderhorn Juggernaut"},
+		{id = "gravehorn_deeps", monster = "Redmane Anvilbreaker"},
 		{id = "duskmarrow_crater", monster = "Mirecoil Wyrm"}, -- not the 5x5 Pyrewing Tyrant in a one-tile cell
 		-- pair 27 trial area (levels 300-400); its boss is the Hollow Rider. 2x2; the 3x3 Bonecrusher spilled
 		{id = "hollow_crypt", monster = "Sopping Carcass"},
@@ -187,7 +187,7 @@ return {
 		{id = "thornmantle_glade", monster = "Slagborer"},
 		{id = "embergut_rift", monster = "Slagback Hound"}, -- the rift's own hound (pair 54 look 3363 once ChaosAutospriteArt.PAIR54 is on)
 		{id = "frostvein_reach", monster = "Orclops Ravager"},
-		{id = "graveknell_catacombs", monster = "Mercenary Ranger"},
+		{id = "graveknell_catacombs", monster = "Wickstaff Hexmage"},
 		{id = "umbral_sink", monster = "Garack"},
 		{id = "cinderscour_barrens", monster = "Blazebringer"},
 		{id = "grimlock_vaults", monster = "Grove Keeper"},
@@ -206,7 +206,7 @@ return {
 		{id = "obsidian_colonnade", monster = "Blight Bloom"},
 		{id = "mildewveil_sanctum", monster = "Reedgrave"},
 		{id = "deepgrudge_warrens", monster = "Bloom Husk"},
-		{id = "sorrowfen_marsh", monster = "Deepforge Fiend"},
+		{id = "sorrowfen_marsh", monster = "Coralcrown Brinecaller"},
 		{id = "shroudhallow_tomb", monster = "Ice Lich"},
 		{id = "hagthorn_weald", monster = "Lady bug"},
 		{id = "pyreglass_chasm", monster = "Elite Twisted Shaper"},
@@ -219,7 +219,7 @@ return {
 		{id = "hushbone_barrows", monster = "Hollowhorn"},
 		{id = "carrionwood", monster = "Bloodantler Fiend"},
 		{id = "dreadcoffer_vaults", monster = "Gnawbone Swarm"},
-		{id = "paleflame_sanctum", monster = "Wraithbone Stalker"},
+		{id = "paleflame_sanctum", monster = "Gravecrown Oathbreaker"},
 		{id = "blightmaw_bog", monster = "Gnarlback"},
 		{id = "worldscar_abyss", monster = "Ironmask Warbreaker"},
 		-- O139 (owner, 2026-10-23: hunts for the levels 200, 450, 700, 1000, 1500 and 2000; server/README.md "Hall coverage
@@ -232,7 +232,7 @@ return {
 		{id = "azuregate_reliquary", monster = "Azure Guard"},
 		{id = "drownbell_depths", monster = "Frost Larva"},
 		{id = "wanwick_cloister", monster = "Distorted Phantom"},
-		{id = "brinescar_strand", monster = "Saltkin Raider"},
+		{id = "brinescar_strand", monster = "Bogtusk Cleaver"},
 		{id = "rustcog_warrens", monster = "Mechanic Goblin"},
 		{id = "mossgrave_tangle", monster = "Waterglow Conjurer"},
 		-- the imported hunts (server/tools/area_import.py, docs/MAP_GUIDE.md "Imported hunts"): cuts of a free community map
@@ -268,15 +268,23 @@ return {
 			{id = "base_6_31662_32258", at = {x = 33634, y = 31689, z = 13}}, -- Rustheap Golem
 			-- hunts whose arrival moved to a monster area of their band (O333, tools/audit_hunt_bands.py --apply: a mixed
 			-- band, few monsters or a stock portal into far stronger ones); the base way back stays at the old arrival
-			{id = "base_5_31630_32258", at = {x = 32600, y = 31345, z = 15}}, -- Fire Elemental
+			{id = "base_5_31630_32258", at = {x = 32041, y = 32610, z = 9}}, -- Fire Elemental
 			{id = "base_5_31634_32254", at = {x = 33025, y = 32417, z = 11}}, -- Demon Skeleton
-			{id = "base_5_31638_32258", at = {x = 32260, y = 32479, z = 10}}, -- Sandcrawler
+			{id = "base_5_31638_32258", at = {x = 33011, y = 32366, z = 7}}, -- Sandcrawler
 			{id = "base_5_31662_32258", at = {x = 33019, y = 31932, z = 7}}, -- Scaledrake
-			{id = "base_6_31634_32254", at = {x = 32629, y = 31691, z = 9}}, -- Elephant
+			{id = "base_6_31634_32254", at = {x = 32936, y = 32772, z = 7}}, -- Wasp (was the Elephant hunt)
 			{id = "base_6_31637_32258", at = {x = 33210, y = 32726, z = 11}}, -- Cave Rat
 			{id = "base_6_31642_32254", at = {x = 32795, y = 32546, z = 11}}, -- Dawnfire Asura
-			{id = "base_6_31666_32254", at = {x = 33261, y = 31645, z = 10}}, -- Behemoth
-			{id = "base_6_31666_32258", at = {x = 33356, y = 31601, z = 14}} -- Hellspawn
+			{id = "base_6_31666_32254", at = {x = 33589, y = 31648, z = 15}}, -- Behemoth
+			{id = "base_6_31666_32258", at = {x = 32009, y = 31056, z = 9}}, -- Hellspawn
+			-- O337 (tools/audit_hunts.py --suggest --apply): the sign monster was not at the arrival, or the hunt was sparse or tiny
+			{id = "base_5_31642_32258", at = {x = 32680, y = 31294, z = 7}}, -- Nomad
+			{id = "base_5_31658_32258", at = {x = 33226, y = 32115, z = 9}}, -- grothar
+			{id = "base_5_31662_32254", at = {x = 32539, y = 31045, z = 6}}, -- Fleshcarver
+			{id = "base_6_31638_32254", at = {x = 32196, y = 30997, z = 14}}, -- Ice Witch
+			{id = "base_6_31639_32258", at = {x = 32737, y = 31326, z = 7}}, -- Minotaur
+			{id = "base_6_31654_32254", at = {x = 32123, y = 32371, z = 9}}, -- Gutworm
+			{id = "base_6_31657_32254", at = {x = 32069, y = 31078, z = 9}} -- Novice of the Cult
 		}
 	},
 

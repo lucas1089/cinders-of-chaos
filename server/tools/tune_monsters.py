@@ -205,6 +205,31 @@ for _f, _L, _dspeed in HIGH_BAND:
     _row['level'] = (_L - 20, _L + 20)
 
 
+def pack30_targets(L):
+    """a hunting monster under level 650 on the pack 30 template: the Cunning Hyaena (650: health 12,600, experience 4,300,
+    strongest hit 820) scaled by L / 650 (health and hit x L/650, experience x (L/650)^2), as the ten pack 30 monsters above"""
+    health = round(12600 * L / 650 / 10) * 10
+    return {'health': health, 'experience': round(4300 * (L / 650) ** 2 / 50) * 50, 'hit': round(820 * L / 650 / 10) * 10,
+            'heal': round(health * 0.10 / 10) * 10}
+
+
+# seven hunting monsters of the free AI Sprite Studio looks (2026-10-30, owner request "turn the 7 monsters into new
+# monsters"; server/README.md "AI Sprite Studio monsters (pair 57)"): level, speed (None: the late curve's plus the step)
+AISS_BAND = [('bogtusk_cleaver', 400, 58), ('wickstaff_hexmage', 630, 50), ('coralcrown_brinecaller', 930, 0),
+             ('gloamgeode_shellback', 1150, -8), ('marshlight_hollowseer', 1350, 1), ('redmane_anvilbreaker', 1550, 2),
+             ('gravecrown_oathbreaker', 1850, 0)]
+for _f, _L, _sp in AISS_BAND:
+    _row = TUNING.setdefault(_f + '.xml', {})
+    if _L < 650:
+        _row.update(pack30_targets(_L))
+        _row['speed'] = _sp
+        _row['level'] = (_L - 10, _L + 10)
+    else:
+        _row.update(late_targets(_L))
+        _row['speed'] += _sp
+        _row['level'] = (_L - 20, _L + 20)
+
+
 # ------------------------------------------------------------------------------------------------ text operations
 def _root(t, key, value):
     m = re.search(r'<monster\s[^>]*>', t)

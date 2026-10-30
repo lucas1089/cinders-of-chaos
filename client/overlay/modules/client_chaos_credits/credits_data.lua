@@ -52,7 +52,7 @@ ChaosCreditsData = {
   {
     title = "Free assets",
     pt = "Recursos gratuitos",
-    note = "Free effect, icon and font packs. Their files name no author.",
+    note = "Free effect, icon, font and sprite packs. Their files name no author, except the AI Sprite Studio pack.",
     entries = {
       { name = "FX Pack 1-4", author = "free asset pack", licence = "free to use" },
       { name = "64x64 Explo and Power", author = "free asset pack", licence = "free to use" },
@@ -66,6 +66,7 @@ ChaosCreditsData = {
       { name = "Gem set", author = "free asset pack", licence = "free to use", use = "gem looks in five tiers" },
       { name = "Text effects set", author = "free asset pack", licence = "free to use", use = "status words over creatures" },
       { name = "Hunting area maps", author = "RyuKage", licence = "free map, shared as free to use; the map files carry no licence text", use = "the terrain of four hunts (Brickhold Depths, Cinderbrick Halls, Rimewind Isle, Dunereach Isle), cut from free community maps" },
+      { name = "AI Sprite Studio", author = "AI Sprite Studio, AI-generated free sample pack (the art is AI-generated and is not claimed to be hand-drawn)", licence = "personal and commercial use allowed, no exclusivity; terms at https://aispritestudio.com/terms/", use = "seven monster looks (a crystal tortoise, a purple mage, an orc warrior, an armored berserker, a teal mage, a crowned knight and a sea naga), their colours reduced and used as monsters of the hunts", source = "https://aispritestudio.com/terms/" },
     },
   },
   {
@@ -102,7 +103,7 @@ ChaosCreditsData = {
       { name = "eframe and egui", author = "Emil Ernerfeldt, Rerun and the egui contributors", licence = "MIT or Apache-2.0", use = "the window of the desktop admin app and of the game launcher (with their dependencies, each under its own permissive licence in the crate's metadata)", source = "https://github.com/emilk/egui" },
       { name = "serde_json", author = "David Tolnay and the serde contributors", licence = "MIT or Apache-2.0", use = "JSON in the desktop admin app and the game launcher", source = "https://github.com/serde-rs/json" },
       { name = "sha2 (RustCrypto)", author = "RustCrypto developers", licence = "MIT or Apache-2.0", use = "the SHA-256 check of the desktop admin app's updates and of every file the game launcher downloads", source = "https://github.com/RustCrypto/hashes" },
-      { name = "ed25519-compact", author = "Frank Denis", licence = "MIT", use = "checking the Ed25519 signature of the update manifest in the game launcher", source = "https://github.com/jedisct1/rust-ed25519-compact" },
+      { name = "ed25519-compact", author = "Frank Denis", licence = "MIT", use = "checking the Ed25519 signature of the update manifest in the game launcher and of the releases of the desktop admin app", source = "https://github.com/jedisct1/rust-ed25519-compact" },
       { name = "RmlUi", author = "Peter Curry, Michael R. P. Ragazzon and the RmlUi contributors", licence = "MIT", use = "the RmlUi spike (HTML and RCSS test window of the client, only in builds made with CHAOS_RMLUI=ON)", source = "https://github.com/mikke89/RmlUi" },
       { name = "FreeType", author = "David Turner, Robert Wilhelm, Werner Lemberg and the FreeType Project", licence = "FreeType Licence (BSD style, or GPL-2.0)", use = "drawing the TrueType fonts of RmlUi in the RmlUi spike", source = "https://freetype.org/" },
       { name = "Libraries of the Android client (vcpkg ports)", author = "Boost authors; the OpenSSL Project; Mike Pall (LuaJIT); Ryan C. Gordon (PhysicsFS); Dieter Baron and Thomas Klausner (libzip); Chris Robinson (OpenAL Soft); Xiph.Org (libogg, libvorbis); Jean-loup Gailly and Mark Adler (zlib); Julian Seward (bzip2)", licence = "Boost Software Licence 1.0 (Boost, headers only); Apache-2.0 (OpenSSL 3); MIT (LuaJIT); zlib licence (PhysicsFS, zlib); BSD-3-Clause (libzip, libogg, libvorbis); LGPL-2.0-or-later (OpenAL Soft); bzip2 licence (BSD style)", use = "the engine library of the Android client, built from source with the Android NDK (client/android/vcpkg/vcpkg.json pins the versions)", source = "https://github.com/microsoft/vcpkg" },

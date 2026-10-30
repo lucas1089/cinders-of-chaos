@@ -1,0 +1,184 @@
+# Hunt audit (O337)
+
+Owner, 2026-10-30: check again whether every hunt points to the right monsters, the monster density of the hunts
+and their size. Made by `server/tools/audit_hunts.py` on an installed server (not run in CI, it needs the map).
+Limits and the rules are in the tool's header and in `server/README.md` "Hunt audit (O337)".
+
+## Totals
+
+37 base, 1 data, 4 late, 67 planned, 12 waystone. 18 hunts with a defect (18 of them accepted in `tools/hunt_audit_known.csv`).
+
+Columns: Mon = monsters (spawn entries), Walk = walkable tiles of the region, /100 = monsters per 100 walkable tiles,
+/screen = mean monsters per 15 x 11 screen, T/mon = walkable tiles per monster, Peak = most monsters on one screen,
+Dead = ground with no monster on the screen of a player standing there, Sweep = full sweep seconds at the hunt's level.
+
+## Base hunts
+
+| Hunt (level) | Band | In band | Far | Median | Mon | Walk | /100 | /screen | T/mon | Peak | Dead | Sweep | Flags |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Sandcrawler (7) | 5-11 | 95% | 0% | 7 | 204 | 5568 | 3.7 | 3.6 | 27.3 | 8 | 2% | 299 | ok |
+| Wasp (8) | 5-12 | 62% | 0% | 8 | 1678 | 53981 | 3.1 | 3.1 | 32.2 | 11 | 2% | 2901 | ok |
+| Cave Rat (9) | 5-15 | 96% | 0% | 9 | 64 | 1124 | 5.7 | 2.8 | 17.6 | 5 | 3% | 60 | ok |
+| Gutworm (10) | 10-15 | 100% | 0% | 10 | 135 | 4209 | 3.2 | 2.8 | 31.2 | 6 | 1% | 220 | ok |
+| Minotaur (11) | 10-15 | 97% | 0% | 11 | 1176 | 31094 | 3.8 | 3.8 | 26.4 | 11 | 2% | 1632 | ok |
+| Nomad (12) | 8-15 | 95% | 0% | 12 | 1176 | 31094 | 3.8 | 3.8 | 26.4 | 11 | 2% | 1632 | ok |
+| Novice of the Cult (16) | 10-20 | 100% | 0% | 16 | 484 | 11888 | 4.1 | 2.8 | 24.6 | 11 | 1% | 609 | ok |
+| Howler Ape (17) | 15-20 | 100% | 0% | 17 | 229 | 5218 | 4.4 | 3.9 | 22.8 | 8 | 0% | 260 | ok |
+| Haunted Treeling (20) | 10-30 | 87% | 1% | 20 | 212 | 5398 | 3.9 | 4.1 | 25.5 | 10 | 2% | 269 | ok |
+| Fire Elemental (24) | 16-36 | 100% | 0% | 24 | 113 | 2739 | 4.1 | 3.6 | 24.2 | 10 | 2% | 133 | ok |
+| Demon Skeleton (25) | 15-40 | 92% | 0% | 25 | 277 | 6529 | 4.2 | 3.5 | 23.6 | 11 | 1% | 310 | ok |
+| Saltkin Mantassin (32) | 25-55 | 100% | 0% | 38 | 336 | 7591 | 4.4 | 3.7 | 22.6 | 7 | 0% | 351 | ok |
+| Saltkin Pincher Scout (39) | 30-40 | 92% | 0% | 39 | 105 | 2233 | 4.7 | 2.5 | 21.3 | 6 | 2% | 97 | ok |
+| Ice Witch (39) | 35-40 | 100% | 0% | 39 | 264 | 6746 | 3.9 | 4.0 | 25.6 | 12 | 1% | 295 | ok |
+| Frost Dragon Hatchling (44) | 25-75 | 100% | 0% | 58 | 53 | 1259 | 4.2 | 3.6 | 23.8 | 11 | 1% | 53 | ok |
+| Wyrm (63) | 50-80 | 100% | 0% | 63 | 493 | 11280 | 4.4 | 4.3 | 22.9 | 12 | 0% | 437 | ok |
+| Wyrm (63) | 60-65 | 93% | 0% | 63 | 213 | 5069 | 4.2 | 3.9 | 23.8 | 9 | 0% | 196 | ok |
+| Frost Dragon (73) | 40-75 | 89% | 11% | 73 | 109 | 2932 | 3.7 | 2.9 | 26.9 | 7 | 5% | 109 | ok |
+| Hydra (73) | 70-90 | 100% | 0% | 73 | 284 | 6720 | 4.2 | 3.5 | 23.7 | 8 | 0% | 252 | ok |
+| Rustheap Golem (75) | 60-80 | 76% | 0% | 75 | 250 | 5833 | 4.3 | 4.1 | 23.3 | 10 | 0% | 218 | ok |
+| Behemoth (80) | 60-80 | 100% | 0% | 80 | 310 | 7098 | 4.4 | 5.3 | 22.9 | 10 | 0% | 257 | ok |
+| Hellspawn (81) | 80-122 | 100% | 0% | 81 | 484 | 11888 | 4.1 | 2.8 | 24.6 | 11 | 1% | 430 | ok |
+| Serpent Spawn (88) | 35-105 | 100% | 0% | 88 | 284 | 6720 | 4.2 | 3.5 | 23.7 | 8 | 0% | 235 | ok |
+| Blightwalker (97) | 95-150 | 100% | 0% | 148 | 130 | 2897 | 4.5 | 4.7 | 22.3 | 13 | 0% | 97 | ok |
+| Ogre rowdy (119) | 100-150 | 89% | 11% | 104 | 570 | 16552 | 3.4 | 3.8 | 29.0 | 11 | 3% | 517 | ok |
+| Freakish Lost Soul (120) | 115-135 | 100% | 0% | 134 | 104 | 2765 | 3.8 | 3.1 | 26.6 | 8 | 2% | 86 | ok |
+| Demon Outcast (126) | 120-140 | 84% | 3% | 126 | 236 | 5795 | 4.1 | 3.9 | 24.6 | 12 | 1% | 181 | ok |
+| Skeleton Elite Warrior (130) | 130-135 | 100% | 0% | 130 | 78 | 1808 | 4.3 | 3.1 | 23.2 | 9 | 1% | 54 | ok |
+| Usurper Archer (134) | 110-140 | 87% | 13% | 132 | 703 | 21098 | 3.3 | 3.2 | 30.0 | 12 | 3% | 632 | ok |
+| Fleshcarver (154) | 145-231 | 100% | 0% | 154 | 80 | 1957 | 4.1 | 2.6 | 24.5 | 7 | 2% | 56 | ok |
+| Emerald Mage (225) | 180-270 | 100% | 0% | 225 | 58 | 1729 | 3.4 | 2.2 | 29.8 | 7 | 4% | 41 | small* |
+| Blackblade (275) | 150-300 | 100% | 0% | 275 | 12 | 546 | 2.2 | 2.0 | 45.5 | 4 | 6% | 12 | sparse*, small* |
+| Aeliana (283) | 280-310 | 90% | 0% | 283 | 129 | 2971 | 4.3 | 3.4 | 23.0 | 7 | 0% | 66 | ok |
+| deathrattle (289) | 230-300 | 95% | 5% | 289 | 22 | 783 | 2.8 | 1.5 | 35.6 | 6 | 8% | 16 | sparse*, small* |
+| Scaledrake (308) | 305-310 | 100% | 0% | 308 | 30 | 1369 | 2.2 | 1.6 | 45.6 | 3 | 3% | 29 | sparse*, small* |
+| fangclaw (308) | 305-390 | 100% | 0% | 312 | 14 | 424 | 3.3 | 1.8 | 30.3 | 2 | 3% | 9 | small* |
+| grothar (331) | 300-335 | 100% | 0% | 331 | 94 | 2153 | 4.4 | 3.0 | 22.9 | 7 | 0% | 45 | ok |
+
+## Planned hunts
+
+| Hunt (level) | Band | In band | Far | Median | Mon | Walk | /100 | /screen | T/mon | Peak | Dead | Sweep | Flags |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Ironhorn Slagworks (170) | 155-185 | 100% | 0% | 157 | 183 | 4171 | 4.4 | 2.9 | 22.8 | 12 | 29% | 114 | ok |
+| Venomthread Fen (180) | 165-195 | 100% | 0% | 167 | 191 | 4719 | 4.0 | 2.7 | 24.7 | 10 | 34% | 123 | ok |
+| Azuregate Reliquary (200) | 180-220 | 100% | 0% | 200 | 204 | 4421 | 4.6 | 3.6 | 21.7 | 13 | 22% | 110 | ok |
+| Drownbell Depths (218) | 196-240 | 100% | 0% | 192 | 181 | 4267 | 4.2 | 3.0 | 23.6 | 14 | 28% | 106 | ok |
+| Bonechoir Catacomb (245) | 200-290 | 100% | 0% | 267 | 152 | 3502 | 4.3 | 2.9 | 23.0 | 10 | 20% | 83 | ok |
+| Sulphur Gallery (257) | 215-299 | 100% | 0% | 233 | 179 | 4112 | 4.4 | 3.3 | 23.0 | 11 | 29% | 92 | ok |
+| Hollow Crypt (350) | 300-400 | 100% | 0% | 350 | 38 | 1637 | 2.3 | 1.7 | 43.1 | 5 | 36% | 34 | sparse*, dead*, small* |
+| Wanwick Cloister (400) | 370-430 | 100% | 0% | 379 | 229 | 5306 | 4.3 | 3.4 | 23.2 | 12 | 19% | 106 | ok |
+| Brinescar Strand (420) | 390-450 | 100% | 0% | 401 | 195 | 4008 | 4.9 | 3.1 | 20.6 | 10 | 22% | 80 | ok |
+| Rustcog Warrens (450) | 420-480 | 100% | 0% | 436 | 211 | 4428 | 4.8 | 3.7 | 21.0 | 11 | 24% | 88 | ok |
+| Mossgrave Tangle (478) | 450-506 | 100% | 0% | 457 | 181 | 4670 | 3.9 | 2.5 | 25.8 | 10 | 33% | 93 | ok |
+| Sunken Mirewood (510) | 480-540 | 99% | 0% | 512 | 199 | 5516 | 3.6 | 3.0 | 27.7 | 7 | 8% | 103 | ok |
+| Gloomtooth Caverns (557) | 500-615 | 100% | 0% | 590 | 211 | 4816 | 4.4 | 3.4 | 22.8 | 11 | 30% | 90 | ok |
+| Widowmere (560) | 480-640 | 100% | 0% | 509 | 174 | 3867 | 4.5 | 3.4 | 22.2 | 13 | 27% | 72 | ok |
+| Wyrmspine Hollows (570) | 500-640 | 100% | 0% | 498 | 180 | 4048 | 4.4 | 3.2 | 22.5 | 11 | 25% | 75 | ok |
+| Brackwater Sloughs (572) | 515-630 | 100% | 0% | 590 | 208 | 4733 | 4.4 | 3.4 | 22.8 | 9 | 20% | 88 | ok |
+| Sablemourn Ossuary (587) | 530-645 | 100% | 0% | 590 | 229 | 5207 | 4.4 | 3.1 | 22.7 | 12 | 19% | 97 | ok |
+| Thornmantle Glade (602) | 545-660 | 100% | 0% | 630 | 181 | 4164 | 4.3 | 2.9 | 23.0 | 11 | 26% | 78 | ok |
+| Pyrarch Crucible (605) | 520-690 | 100% | 0% | 509 | 175 | 3820 | 4.6 | 3.2 | 21.8 | 14 | 29% | 71 | ok |
+| Embergut Rift (617) | 560-675 | 100% | 0% | 650 | 184 | 4252 | 4.3 | 2.9 | 23.1 | 14 | 26% | 79 | ok |
+| Frostvein Reach (632) | 575-690 | 100% | 0% | 670 | 211 | 4686 | 4.5 | 3.2 | 22.2 | 14 | 25% | 87 | ok |
+| Graveknell Catacombs (647) | 590-705 | 100% | 0% | 700 | 199 | 4540 | 4.4 | 3.1 | 22.8 | 14 | 21% | 79 | ok |
+| Umbral Sink (662) | 605-720 | 100% | 0% | 730 | 204 | 4514 | 4.5 | 3.3 | 22.1 | 10 | 22% | 78 | ok |
+| Cinderscour Barrens (677) | 620-735 | 100% | 0% | 720 | 195 | 4365 | 4.5 | 3.2 | 22.4 | 13 | 30% | 76 | ok |
+| Grimlock Vaults (692) | 635-750 | 100% | 0% | 720 | 207 | 4644 | 4.5 | 3.4 | 22.4 | 11 | 20% | 81 | ok |
+| Bramblegrave Reach (700) | 630-770 | 100% | 0% | 730 | 183 | 4153 | 4.4 | 3.1 | 22.7 | 12 | 21% | 72 | ok |
+| Blackmarble Halls (707) | 650-765 | 100% | 0% | 750 | 196 | 4415 | 4.4 | 3.1 | 22.5 | 11 | 24% | 77 | ok |
+| Rotbloom Sanctum (722) | 665-780 | 100% | 0% | 770 | 213 | 4858 | 4.4 | 3.2 | 22.8 | 13 | 27% | 85 | ok |
+| Hollowmaw Grotto (737) | 680-795 | 100% | 0% | 780 | 193 | 4383 | 4.4 | 3.2 | 22.7 | 11 | 30% | 76 | ok |
+| Leechwater Fen (752) | 695-810 | 100% | 0% | 810 | 199 | 4477 | 4.4 | 3.0 | 22.5 | 13 | 30% | 78 | ok |
+| Dreadmourn Crypt (767) | 710-825 | 100% | 0% | 830 | 223 | 5104 | 4.4 | 3.3 | 22.9 | 14 | 25% | 89 | ok |
+| Hexwood Thicket (780) | 720-840 | 100% | 0% | 770 | 190 | 4202 | 4.5 | 3.2 | 22.1 | 13 | 31% | 73 | ok |
+| Scorchpit Delve (797) | 740-855 | 100% | 0% | 830 | 188 | 4212 | 4.5 | 2.9 | 22.4 | 11 | 31% | 73 | ok |
+| Glacierfang Shelf (812) | 755-870 | 100% | 0% | 850 | 209 | 4575 | 4.6 | 3.0 | 21.9 | 11 | 28% | 80 | ok |
+| Bonewright Galleries (827) | 770-885 | 100% | 0% | 880 | 197 | 4474 | 4.4 | 3.1 | 22.7 | 10 | 22% | 72 | ok |
+| Corsairs' Reach (840) | 780-900 | 100% | 0% | 870 | 204 | 4543 | 4.5 | 3.2 | 22.3 | 14 | 28% | 73 | ok |
+| Nightrend Abyss (842) | 785-900 | 100% | 0% | 880 | 181 | 4133 | 4.4 | 3.2 | 22.8 | 9 | 26% | 67 | ok |
+| Sunderstone Wastes (857) | 800-915 | 100% | 0% | 890 | 188 | 4249 | 4.4 | 2.8 | 22.6 | 11 | 30% | 69 | ok |
+| Ironwick Treasury (872) | 815-930 | 100% | 0% | 910 | 222 | 4945 | 4.5 | 3.5 | 22.3 | 11 | 18% | 80 | ok |
+| Obsidian Colonnade (887) | 830-945 | 100% | 0% | 930 | 232 | 5170 | 4.5 | 3.1 | 22.3 | 11 | 25% | 84 | ok |
+| Mildewveil Sanctum (902) | 845-960 | 100% | 0% | 940 | 204 | 4525 | 4.5 | 3.2 | 22.2 | 15 | 25% | 73 | ok |
+| Deepgrudge Warrens (917) | 860-975 | 100% | 0% | 930 | 202 | 4585 | 4.4 | 3.0 | 22.7 | 12 | 30% | 74 | ok |
+| Sorrowfen Marsh (932) | 875-990 | 100% | 0% | 930 | 191 | 4324 | 4.4 | 3.1 | 22.6 | 8 | 28% | 70 | ok |
+| Mirefang Basin (939) | 880-999 | 100% | 0% | 950 | 177 | 3916 | 4.5 | 3.2 | 22.1 | 12 | 28% | 63 | ok |
+| Hagthorn Weald (962) | 905-1020 | 100% | 0% | 980 | 215 | 4894 | 4.4 | 3.1 | 22.8 | 12 | 31% | 79 | ok |
+| Pyreglass Chasm (977) | 920-1035 | 100% | 0% | 980 | 186 | 4248 | 4.4 | 2.7 | 22.8 | 11 | 34% | 69 | ok |
+| Rimeblood Glacier (992) | 935-1050 | 100% | 0% | 1020 | 209 | 4515 | 4.6 | 3.1 | 21.6 | 11 | 24% | 73 | ok |
+| Lanternless Catacombs (1000) | 950-1050 | 100% | 0% | 1020 | 219 | 5140 | 4.3 | 2.9 | 23.5 | 12 | 28% | 83 | ok |
+| Hollowbell Mausoleum (1000) | 900-1100 | 100% | 0% | 980 | 206 | 4632 | 4.4 | 3.3 | 22.5 | 10 | 16% | 75 | ok |
+| Rimecrown Depths (1060) | 1000-1120 | 100% | 0% | 1040 | 219 | 4758 | 4.6 | 3.6 | 21.7 | 13 | 26% | 77 | ok |
+| Slagmourn Foundry (1075) | 1000-1150 | 100% | 0% | 1060 | 233 | 5119 | 4.6 | 3.0 | 22.0 | 11 | 30% | 76 | ok |
+| Scaldmoor Expanse (1125) | 1050-1200 | 100% | 0% | 1140 | 196 | 4622 | 4.2 | 2.9 | 23.6 | 14 | 30% | 69 | ok |
+| Cinderglass Sanctum (1210) | 1120-1300 | 100% | 0% | 1180 | 276 | 6730 | 4.1 | 2.7 | 24.4 | 13 | 34% | 100 | ok |
+| Hollowmass Reliquary (1225) | 1150-1300 | 100% | 0% | 1200 | 300 | 7028 | 4.3 | 3.1 | 23.4 | 14 | 27% | 105 | ok |
+| Vespergloom Halls (1225) | 1150-1300 | 100% | 0% | 1240 | 204 | 4971 | 4.1 | 2.7 | 24.4 | 11 | 30% | 74 | ok |
+| Wormcoil Depths (1325) | 1250-1400 | 100% | 0% | 1280 | 236 | 5620 | 4.2 | 3.0 | 23.8 | 13 | 35% | 84 | dead* |
+| Gallowfen Mire (1375) | 1300-1450 | 100% | 0% | 1260 | 256 | 5620 | 4.6 | 3.1 | 22.0 | 15 | 26% | 84 | ok |
+| Shiverspine Ridge (1425) | 1350-1500 | 100% | 0% | 1400 | 186 | 4302 | 4.3 | 3.2 | 23.1 | 10 | 26% | 59 | ok |
+| Voidscar Chasm (1450) | 1400-1500 | 100% | 0% | 1260 | 305 | 7005 | 4.4 | 3.0 | 23.0 | 13 | 32% | 96 | ok |
+| Antlerwight Brake (1500) | 1350-1650 | 100% | 0% | 1500 | 220 | 5015 | 4.4 | 2.9 | 22.8 | 15 | 31% | 68 | ok |
+| Hushbone Barrows (1525) | 1450-1600 | 100% | 0% | 1500 | 561 | 12755 | 4.4 | 3.1 | 22.7 | 16 | 25% | 175 | ok |
+| Gravehorn Deeps (1625) | 1500-1750 | 100% | 0% | 1600 | 300 | 7186 | 4.2 | 2.6 | 24.0 | 13 | 28% | 98 | ok |
+| Dreadcoffer Vaults (1700) | 1625-1775 | 100% | 0% | 1700 | 538 | 12254 | 4.4 | 3.1 | 22.8 | 16 | 23% | 168 | ok |
+| Paleflame Sanctum (1775) | 1700-1850 | 100% | 0% | 1800 | 546 | 12335 | 4.4 | 3.1 | 22.6 | 16 | 29% | 169 | ok |
+| Duskmarrow Crater (1875) | 1750-2000 | 100% | 0% | 1900 | 289 | 6333 | 4.6 | 2.7 | 21.9 | 12 | 34% | 79 | ok |
+| Worldscar Abyss (1925) | 1850-2000 | 100% | 0% | 1900 | 521 | 11828 | 4.4 | 3.3 | 22.7 | 14 | 26% | 147 | ok |
+| Gloomsilt Mire (2000) | 1800-2200 | 100% | 0% | 1900 | 184 | 4335 | 4.2 | 2.8 | 23.6 | 13 | 29% | 54 | ok |
+
+## Waystone maps
+
+| Hunt (level) | Band | In band | Far | Median | Mon | Walk | /100 | /screen | T/mon | Peak | Dead | Sweep | Flags |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Waystone map 1 (tier 1, Underground) (540) | 468-612 | 100% | 0% | 474 | 136 | 4126 | 3.3 | 2.2 | 30.3 | 8 | 12% | 77 | ok |
+| Waystone map 10 (tier 5, Floor) (540) | 468-612 | 100% | 0% | 498 | 260 | 8585 | 3.0 | 2.6 | 33.0 | 11 | 11% | 160 | ok |
+| Waystone map 11 (tier 6, Underground) (540) | 468-612 | 100% | 0% | 495 | 255 | 8970 | 2.8 | 2.4 | 35.2 | 11 | 13% | 168 | sparse* |
+| Waystone map 12 (tier 6, Floor) (540) | 468-612 | 100% | 0% | 495 | 389 | 20896 | 1.9 | 2.2 | 53.7 | 11 | 27% | 391 | sparse*, big* |
+| Waystone map 2 (tier 1, Floor) (540) | 468-612 | 100% | 0% | 474 | 116 | 2727 | 4.3 | 1.9 | 23.5 | 5 | 14% | 51 | ok |
+| Waystone map 3 (tier 2, Floor) (540) | 468-612 | 100% | 0% | 480 | 131 | 5547 | 2.4 | 2.0 | 42.3 | 10 | 21% | 104 | sparse* |
+| Waystone map 4 (tier 2, Underground) (540) | 468-612 | 100% | 0% | 537 | 78 | 1882 | 4.1 | 2.0 | 24.1 | 6 | 7% | 35 | small* |
+| Waystone map 5 (tier 3, Floor) (540) | 468-612 | 100% | 0% | 498 | 262 | 13647 | 1.9 | 2.5 | 52.1 | 11 | 28% | 255 | sparse* |
+| Waystone map 6 (tier 3, Underground) (540) | 468-612 | 100% | 0% | 498 | 158 | 3904 | 4.0 | 2.4 | 24.7 | 8 | 8% | 73 | ok |
+| Waystone map 7 (tier 4, Floor) (540) | 468-612 | 100% | 0% | 480 | 266 | 7554 | 3.5 | 3.3 | 28.4 | 10 | 8% | 141 | ok |
+| Waystone map 8 (tier 4, Underground) (540) | 468-612 | 100% | 0% | 498 | 122 | 3522 | 3.5 | 2.0 | 28.9 | 6 | 8% | 66 | ok |
+| Waystone map 9 (tier 5, Floor) (540) | 468-612 | 100% | 0% | 498 | 487 | 16224 | 3.0 | 3.6 | 33.3 | 14 | 12% | 304 | big* |
+
+## Late game areas
+
+| Hunt (level) | Band | In band | Far | Median | Mon | Walk | /100 | /screen | T/mon | Peak | Dead | Sweep | Flags |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Putrefactory (670) | 169-676 | 93% | 0% | 670 | 58 | 1027 | 5.6 | 2.6 | 17.7 | 4 | 0% | 17 | small* |
+| Gloom Pillars (700) | 176-706 | 83% | 1% | 700 | 149 | 1454 | 10.2 | 5.1 | 9.8 | 8 | 1% | 25 | packed*, small* |
+| Jaded Roots (810) | 169-676 | 69% | 1% | 810 | 305 | 5327 | 5.7 | 3.8 | 17.5 | 10 | 0% | 93 | band* |
+| Nightglass Core (940) | 172-688 | 40% | 2% | 940 | 146 | 2630 | 5.6 | 3.1 | 18.0 | 10 | 1% | 42 | band*, small* |
+
+## References and generated tables
+
+| Place | Problem |
+|---|---|
+| bounty_pool | 112 monsters of the map are not in the file (acid hydra, ashbound thrall, ashmaw bonecaller, ashmaw raider, ...); 0 listed ones do not spawn; 578 counts differ |
+
+## Defects
+
+| Hunt | Flags | Detail |
+|---|---|---|
+| Emerald Mage | small |  |
+| Blackblade | sparse, small | thin: arrival at a cave mouth |
+| deathrattle | sparse, small |  |
+| Scaledrake | sparse, small |  |
+| fangclaw | small | thin: arrival at a cave mouth |
+| bounty_pool | stale | 112 monsters of the map are not in the file (acid hydra, ashbound thrall, ashmaw bonecaller, ashmaw raider, ...); 0 listed ones do not spawn; 578 counts differ |
+| Putrefactory | small |  |
+| Gloom Pillars | packed, small |  |
+| Jaded Roots | band | late game monsters median 810, the rest of the area 338 |
+| Nightglass Core | band, small | late game monsters median 940, the rest of the area 344 |
+| Hollow Crypt | sparse, dead, small |  |
+| Wormcoil Depths | dead |  |
+| Waystone map 11 (tier 6, Underground) | sparse |  |
+| Waystone map 12 (tier 6, Floor) | sparse, big |  |
+| Waystone map 3 (tier 2, Floor) | sparse |  |
+| Waystone map 4 (tier 2, Underground) | small |  |
+| Waystone map 5 (tier 3, Floor) | sparse |  |
+| Waystone map 9 (tier 5, Floor) | big |  |
+
+A star marks a defect listed in `tools/hunt_audit_known.csv` (accepted or waiting for a map edit).

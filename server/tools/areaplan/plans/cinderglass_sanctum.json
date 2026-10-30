@@ -276,7 +276,7 @@
     },
     {
       "zone": "glass_nave",
-      "monster": "Jungle Warrior",
+      "monster": "Gloamgeode Shellback",
       "count": 12,
       "respawn": 75,
       "pack": 3
@@ -339,7 +339,7 @@
     },
     {
       "zone": "facet_chapel",
-      "monster": "Thal",
+      "monster": "Gloamgeode Shellback",
       "count": 8,
       "respawn": 75,
       "pack": 3

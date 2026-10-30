@@ -159,7 +159,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 
 ## Free assets {pt-BR: Recursos gratuitos}
 
-Free effect, icon and font packs. Their files name no author.
+Free effect, icon, font and sprite packs. Their files name no author, except the AI Sprite Studio pack.
 
 - **FX Pack 1-4**
   - Author: free asset pack
@@ -201,6 +201,11 @@ Free effect, icon and font packs. Their files name no author.
   - Author: RyuKage
   - Licence: free map, shared as free to use; the map files carry no licence text
   - Used for: the terrain of four hunts (Brickhold Depths, Cinderbrick Halls, Rimewind Isle, Dunereach Isle), cut from free community maps
+- **AI Sprite Studio**
+  - Author: AI Sprite Studio, AI-generated free sample pack (the art is AI-generated and is not claimed to be hand-drawn)
+  - Licence: personal and commercial use allowed, no exclusivity; terms at https://aispritestudio.com/terms/
+  - Used for: seven monster looks (a crystal tortoise, a purple mage, an orc warrior, an armored berserker, a teal mage, a crowned knight and a sea naga), their colours reduced and used as monsters of the hunts
+  - Source: https://aispritestudio.com/terms/
 
 ## Fonts {pt-BR: Fontes}
 
@@ -291,7 +296,7 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 - **ed25519-compact**
   - Author: Frank Denis
   - Licence: MIT
-  - Used for: checking the Ed25519 signature of the update manifest in the game launcher
+  - Used for: checking the Ed25519 signature of the update manifest in the game launcher and of the releases of the desktop admin app
   - Source: https://github.com/jedisct1/rust-ed25519-compact
 - **RmlUi**
   - Author: Peter Curry, Michael R. P. Ragazzon and the RmlUi contributors

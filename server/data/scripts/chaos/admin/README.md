@@ -155,7 +155,9 @@ minutes (24 h, default 60); a ban of 30 days or more (3650 = permanent) is refus
 shorter one (default 7 days) works from group 4. `tests/staff_permissions_test.lua` checks both.
 
 Server: broadcast, save, reload (talkactions, scripts, monsters, npcs, config, actions, movements, creaturescripts,
-globalevents, spells, weapons, items, quests, raids, mounts, chat, events, global, all; dangerous), shutdown / restart with
+globalevents, spells, weapons, items, quests, raids, mounts, chat, events, global, all; dangerous), reload_file (one
+`*_config.lua` table into the running game, no full reload; dangerous; `reload_file_core.lua`, README "Reload one config
+table (O312)"), shutdown / restart with
 countdown (dangerous; announces at 60/30/10/5/... marks, saves, then `GAME_STATE_SHUTDOWN` - TFS cannot restart itself,
 use a supervisor), cancel_countdown, set_state (open/close), online, stats.
 
