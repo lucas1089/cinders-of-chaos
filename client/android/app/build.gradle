@@ -73,12 +73,13 @@ android {
     }
 
     buildTypes {
-        // the engine is always built optimised: a Debug native build keeps the engine's VALIDATE checks, which end the
-        // game on a deep Lua stack (getTop() <= 20) that the desktop release build ignores, and runs at -O0
+        // the engine never keeps its VALIDATE checks: they end the game on a deep Lua stack (getTop() <= 20) that the
+        // desktop release build ignores. A debug APK stays an -O0 engine with NDEBUG: an optimised engine died with SIGILL
+        // on the CI emulator (2026-10-30), not yet explained.
         debug {
             externalNativeBuild {
                 cmake {
-                    arguments '-DCMAKE_BUILD_TYPE=Release'
+                    cppFlags '-DNDEBUG'
                 }
             }
         }

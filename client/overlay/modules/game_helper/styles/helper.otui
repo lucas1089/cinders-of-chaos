@@ -267,6 +267,9 @@ ChaosHelperTab < ChaosTabButton
 ChaosHelperWindow < ChaosMainWindow
   id: helperWindow
   size: 640 600
+  // a phone at 2x has 540 interface pixels of height: the tallest tab, Support, needs about 385 of the content panel
+  $mobile:
+    height: 536
   !text: tr('Helper')
 
   Panel

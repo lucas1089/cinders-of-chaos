@@ -20,7 +20,6 @@ game_gamble/gamble.otui:GambleWindow 690x610
 game_goals/goals.otui:ChaosMainWindow#goalsWindow 880x600
 game_guild/guild.otui:ChaosMainWindow#guildWindow 620x600
 game_guildwar/guildwar.otui:ChaosMainWindow#guildWarWindow 660x620
-game_helper/styles/helper.otui:ChaosHelperWindow 640x600
 game_hunt/hunt.otui:ChaosMainWindow#huntWindow 440x560
 game_infinitytower/infinity_tower.otui:InfinityTowerWindow 1000x572
 game_itemfinder/itemfinder.otui:ChaosMainWindow#itemFinderWindow 820x580
