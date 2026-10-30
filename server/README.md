@@ -12656,6 +12656,7 @@ Guard for any item: `python3 -I server/tools/check_item_wire.py <server>/data/it
 the bytes the server writes per item (count or fluid byte, phase byte) with what the client reads (stackable / quiver /
 fluid / splash, more than one phase); on things_custom28 with the fixed items.otb: 31147 nodes, 0 disagree (27 before).
 Rules tested by `tools/check_item_wire_test.py` (CI).
+Since 2026-10-30 the fix list is `data/items/item_wire.csv` and the step `itemwire` ("Item wire bytes and the creature refresh").
 The Codex gem pages and the wiki icons show the new art already (images, not sprites).
 
 **Sockets on an item**: custom attributes `chaos_sockets` (count) and `chaos_gem1..3` (the gem's server id). The most
@@ -20595,6 +20596,69 @@ decision: no skull, and no weaker monsters on average; the complaint is the high
   --engine`; no step, no config, no restart of anything else. Without the rebuild nothing changes. Checked:
   `patch -p1 --dry-run < src-patches/0082-monster-level-no-skull-no-spread.patch` on a copy of the patched source tree.
   Guard test: `tools/monster_level_patch_test.py` (patch text, same mean health bonus).
+
+## Item wire bytes and the creature refresh (`item_wire.csv`, `tools/patch_item_wire.py`, engine patch 0083; 2026-10-30)
+Owner, phone: a dead monster stayed drawn for good. Cause: the client throws when one item of a tile or map packet takes
+other bytes than the server wrote, and drops the rest of that server message, a creature removal after it too.
+- **The wire rule.** After the client id and the mark the server writes a count byte when the items.otb node is stackable
+  (a fluid byte for group splash / fluid), then a phase byte when the node has `FLAG_ANIMATION` (`networkmessage.cpp`
+  `addItem`). The client reads a count byte when the dat thing is stackable, a quiver or chargeable (fluid byte for fluid /
+  splash) and a phase byte when the thing has more than one phase (`protocolgameparse.cpp` `getItem`).
+- **True state, full install** (`install_all.py` on a fresh copy of the base, every step, client pair 56, before this fix):
+  `check_item_wire.py` found **429 of 40722 nodes** disagreeing.
+  1. **Phase byte, 391 nodes.** `FLAG_ANIMATION` on a dat thing with one phase. 112 are the base's own (shallow water,
+     cauldrons and the like, 6651-28925: the pair holds the stock looks still), 118 are rows of `pack30_anim.csv` (server
+     39459-39758: the manifest says 2 or more phases, but pair 56 is **pruned** (`prune_pair.py`) and holds one blank 1x1
+     frame for these 118 of its 168 rows; the other 50 have their phases and agree), 146 are rows of `art_items.csv`
+     (shore, lagoon and other decor, e.g. 36460-36625), 12 of `pack30_grounds.csv` and 3 of the pack 33 kit (41424, 41425,
+     41568: portcullis rising, sarcophagus lid). Which side is wrong: the dat. It is what the client draws; the manifests say
+     what the art was made as.
+  2. **Fluid byte, 32 nodes.** The dat thing is `splash` or `fluid`, the node is a plain decoration: blood splashes
+     44541-44564, blood splatters 47544-47549, the black hole vortex 48007 and a barrel 44812 (pair 50; the importer copied
+     the flag from the source art). The client reads a fluid byte the server never wrote.
+  3. **Count byte, 6 nodes** (server 38524, 38562, 38848, 38849, 43150, 43160 = client 35524, 35562, 35848, 35849, 39150,
+     39160): `Item::isQuiver` of the client had eight hard-coded ids and read a count byte for them; in our pair they are
+     plain decoration, not stackable. The quiver market category (25) matches no node of ours. Which side is wrong: the
+     client code.
+- **Fix, per case.**
+  1. `data/items/item_wire.csv` (server, client, animation 0/1, group): the node follows the dat. A row is a pure
+     function of the dat thing (`animation = phases > 1`; `group` 11 / 12 for a splash / fluid thing). Applied in two places:
+     the manifest readers of the item installers (`install_dark_tiles.read_manifest`, `install_pack_items.read_manifest`:
+     donor items, pair 50, pack 30, pack 33, the art items) write the node right the first time and verify it, and the
+     install step `itemwire` (`tools/patch_item_wire.py`, after all item steps, before `sql`) rewrites every other node
+     (the base's own). A row applies only to the node with that server id **and** client id. items.otb.bak keeps the
+     original; a second run changes nothing. Group 11 / 12 makes the server write the fluid byte 0 (empty): same look (these
+     dat things have one pattern), the look text says "of unknown" like any splash. The lua tables generated from the
+     manifests (`chaos_pack33_kit.lua` `anim`) keep the manifest's own flag.
+  2. Client base patch **0173** (`client/BASE.md`): `Item::isQuiver` loses the id list; a quiver is the item type's weapon
+     type or the dat's market category 25. Phones need the new client build for these 6 nodes.
+  3. Engine patch **0083** (below).
+- **Keeping it true.** `python3 -I tools/check_item_wire.py ITEMS_OTB TIBIA_DAT` lists the disagreeing nodes (exit 1). It
+  needs an installed items.otb and the pair; neither is in the repository, so CI cannot run the whole check: the owner (or the
+  agent) runs it after an install or a pair change. After the fix, same full install (and again with `chaosClientPair=56`, which adds the
+  fist and 800+ weapon nodes: 40762 nodes): 0 disagree (with base patch 0173 in the client). `--write-table` rewrites `item_wire.csv` from an installed items.otb and the pair (rows already in
+  the file stay, worked out again): run it after a new pair, a `prune_pair.py` prune or restore, or a new item block, then
+  commit. CI: `check_item_wire_test.py` and `patch_item_wire_test.py` (rules, table, tool, installer hook, synthetic) and, in
+  the live-pair job, `check_item_wire.py --table-check` (every row against the live dat, no server needed). What CI cannot
+  see: a NEW node that disagrees and is not in the table yet.
+- **Restoring pruned art.** `prune_pair.py restore` brings a thing back with its phases: run `--write-table` again, the row
+  flips to `animation 1`, the next install (or `--only itemwire` plus the item step) turns the flag back on.
+- **Creature refresh on a tile (engine patch `0083-creature-refresh-by-id.patch`).** `ProtocolGame::sendUpdateTileCreature`
+  (`Monster::setName`, `monster:setDisplayLevel` of patch 0056) wrote `0x6B`, the position and the stack position as ONE
+  byte, then the creature in full with "remove 0". It could leave a creature on the client's tile for good: stack position
+  -1 (the player does not see the creature) went out as 0xFF; 10 or more went out as a byte the client's tile may not
+  have (the client keeps the first 10 things of a tile), so another thing was replaced and the creature stood twice; and the
+  full form with "remove 0" made the client create a second object and replace its known creature, so a later removal by id
+  took the new object and the old one stayed. Now: nothing for a player that cannot see the creature or never got it
+  (`knownCreatureSet`; the call no longer makes a creature known), the thing is addressed by id (`0xFFFF` + id, the form
+  `sendCreatureTurn` uses from stack position 10), and the full form removes the creature's own id so the client keeps its
+  object and refreshes it. `Player::sendUpdateTileCreature` refuses a creature without a tile. The add path
+  (`sendAddCreature`) already sent a tile refresh at stack position 10 or more; this call matched neither it nor
+  `sendCreatureTurn`.
+  Install: engine rebuild with patches 0001-0083 (docs/LAUNCH.md section 1), `chaos_update.sh --engine`. Checked: `patch -p1`
+  on a copy of the patched source tree and `g++ -std=c++17 -fsyntax-only protocolgame.cpp`. Guard test:
+  `tools/creature_refresh_patch_test.py`. Not run against a live client: log in on a phone, level up next to a risen
+  skeleton (the display level refresh) and kill it.
 
 ## Monster levels in the name (`monster_levels.lua`, `monster_levels_core.lua`, engine patch 0040)
 Owner, 2026-10-16: "Black Stag [777]" showed its level, Hellflayer and Ashfang Wyrm did not. Cause: the engine rolls a

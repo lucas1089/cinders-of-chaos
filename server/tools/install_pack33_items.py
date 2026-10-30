@@ -292,7 +292,7 @@ def lua_text(rows):
         ex = r['ex']
         L.append('\t\t%s = {id = %d, w = %d, h = %d, kind = %s, block = %s, light = %d, anim = %s, family = %s, name = %s},' % (
             r['key'], r['server_id'], w, h, lq(r['kind']), 'true' if r['otb_flags'] & SOLID else 'false',
-            r['light_level'], 'true' if r['otb_flags'] & ANIM else 'false', lq(ex.get('family', r['kind'])),
+            r['light_level'], 'true' if r.get('otb_flags_manifest', r['otb_flags']) & ANIM else 'false', lq(ex.get('family', r['kind'])),
             lq(r['name'])))
         mech = ex.get('mechanic')
         if mech and mech != 'event_decor':

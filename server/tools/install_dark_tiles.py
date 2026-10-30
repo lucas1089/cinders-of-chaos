@@ -23,6 +23,8 @@ returns the fallback while the items are not installed).
 import csv, os, re, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from item_wire_table import adjust_rows  # noqa: E402
 DEFAULT_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'items', 'dark_tiles.csv')
 ESC, START, END = 0xFD, 0xFE, 0xFF
 A_SERVERID, A_CLIENTID, A_SPEED, A_LIGHT2, A_TOPORDER = 0x10, 0x11, 0x14, 0x2A, 0x2B
@@ -36,7 +38,7 @@ def read_manifest(path):
     for r in rows:
         for k in ('client_id', 'server_id', 'speed', 'otb_group', 'otb_flags', 'top_order', 'light_level', 'light_color'):
             r[k] = int(r[k])
-    return rows
+    return adjust_rows(rows)   # the nodes the client pair needs other wire bytes for (item_wire_table.py)
 
 
 def escape(data):

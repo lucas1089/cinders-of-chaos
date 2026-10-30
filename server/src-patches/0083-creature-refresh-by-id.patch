@@ -1,0 +1,81 @@
+# Creature refresh on a tile cannot strand a creature (server/README.md "Creature refresh on a tile (src-patch 0083)").
+# sendUpdateTileCreature (Monster::setName, patch 0056's monster:setDisplayLevel) wrote a 0x6B with the creature's tile
+# position and its stack position as ONE BYTE, then the creature in full with "remove 0". Three ways to leave a creature
+# on the client's tile for good (a dead monster that stays drawn):
+#   - stack position -1 (the player does not see the creature, Tile::getClientIndexOfCreature) went out as 0xFF;
+#   - stack position 10 or more (a long stack; the client holds the first 10 things of a tile) went out as a byte the
+#     client's tile may not have: another thing was replaced, or none, and the creature stood on the tile twice;
+#   - the creature was put into the known set as a side effect and sent as a new creature although the client knew it:
+#     the client made a second object and replaced its known-creature entry, so the removal that came later (by id) took
+#     the new object and the old one stayed.
+# Now the creature is addressed by id (0xFFFF + id, the form sendCreatureTurn and RemoveTileCreature use), is sent only to
+# a player who can see it and was sent it before, and is written with "remove = its own id" so the client keeps its
+# object and only refreshes it. Player::sendUpdateTileCreature also refuses a creature without a tile (no null read).
+# Applies after 0001-0082.
+diff -ruN a/src/protocolgame.cpp b/src/protocolgame.cpp
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -2850,21 +2850,29 @@
+ 	writeToOutputBuffer(msg);
+ }
+ 
+-void ProtocolGame::sendUpdateTileCreature(const Position& pos, uint32_t stackpos, const Creature* creature)
+-{
+-	if (!canSee(pos)) {
++void ProtocolGame::sendUpdateTileCreature(const Position& pos, int32_t stackpos, const Creature* creature)
++{
++	// Chaos (patch 0083). The client replaces the thing it holds for this creature by the full creature below. Before:
++	// (a) a stack position of -1 (the player does not see the creature) went out as 0xFF, an index the client refuses,
++	// (b) a stack position of 10 or more went out as a byte, an index the client's tile may not have (it holds at most the
++	//     first 10 things of a tile description): it removed another thing or none, and the new creature stood beside the
++	//     old one, a creature drawn twice that nothing removes later,
++	// (c) the refresh put a creature the client never got into the known set, and the packet carried the
++	//     full form with "remove 0" even for a known one: the client made a second object, replaced its known creature
++	//     with it and left the old object on the tile if the index missed.
++	// Now: nothing for a creature this player cannot see or never got (the first packet that carries it carries the new
++	// name); the creature is addressed by its id (0xFFFF + id, as sendCreatureTurn does from stack position 10), which
++	// reaches the object the client draws whatever its stack position; and the full form removes the creature's own id,
++	// so the client keeps that object and only refreshes it (name, health, outfit, speed).
++	if (stackpos < 0 || !canSee(pos) || knownCreatureSet.find(creature->getID()) == knownCreatureSet.end()) {
+ 		return;
+ 	}
+ 
+ 	NetworkMessage msg;
+ 	msg.addByte(0x6B);
+-	msg.addPosition(pos);
+-	msg.addByte(stackpos);
+-
+-	bool known;
+-	uint32_t removedKnown;
+-	checkCreatureAsKnown(creature->getID(), known, removedKnown);
+-	AddCreature(msg, creature, false, removedKnown);
++	msg.add<uint16_t>(0xFFFF);
++	msg.add<uint32_t>(creature->getID());
++	AddCreature(msg, creature, false, creature->getID());
+ 
+ 	writeToOutputBuffer(msg);
+ }
+diff -ruN a/src/protocolgame.h b/src/protocolgame.h
+--- a/src/protocolgame.h
++++ b/src/protocolgame.h
+@@ -266,7 +266,7 @@
+ 		void sendAddTileItem(const Position& pos, uint32_t stackpos, const Item* item);
+ 		void sendUpdateTileItem(const Position& pos, uint32_t stackpos, const Item* item);
+ 		void sendRemoveTileThing(const Position& pos, uint32_t stackpos);
+-		void sendUpdateTileCreature(const Position& pos, uint32_t stackpos, const Creature* creature);
++		void sendUpdateTileCreature(const Position& pos, int32_t stackpos, const Creature* creature);
+ 		void sendRemoveTileCreature(const Creature* creature, const Position& pos, uint32_t stackpos);
+ 		void sendUpdateTile(const Tile* tile, const Position& pos);
+ 
+diff -ruN a/src/player.h b/src/player.h
+--- a/src/player.h
++++ b/src/player.h
+@@ -804,7 +804,7 @@
+ 			}
+ 		}
+ 		void sendUpdateTileCreature(const Creature* creature) {
+-			if (client) {
++			if (client && creature->getTile()) { // Chaos (patch 0083): a creature not on a tile has nothing to refresh
+ 				client->sendUpdateTileCreature(creature->getPosition(), creature->getTile()->getClientIndexOfCreature(this, creature), creature);
+ 			}
+ 		}

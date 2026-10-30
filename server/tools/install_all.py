@@ -409,6 +409,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   fusionlist   tools/patch_base_fusion_allowlist.py  item fusion (opcode 67) fuses only the client ids of
                data/scripts/chaos/item_fusion_config.lua, else "invalid_item"; no list, no fusion (README "Item fusion
                allowlist (O310)"; right after opcodeinputs)
+  itemwire     tools/patch_item_wire.py          the items.otb nodes of data/items/item_wire.csv write the bytes the client pair
+               reads (FLAG_ANIMATION only on a dat thing with more than one phase, group splash / fluid where the dat says so;
+               README "Item wire bytes"; after every step that writes item nodes)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -1547,6 +1550,14 @@ def step_fusionlist(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'fusionlist')  # right after opcodeinputs: it anchors on the entry check that step adds
+
+
+def step_itemwire(server, data, ctx):
+    args = [tool('patch_item_wire.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_item_wire.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'itemwire')  # last of the item steps: the table fixes the nodes the others wrote (and the base's own)
 
 
 def step_autoloot(server, data, ctx):

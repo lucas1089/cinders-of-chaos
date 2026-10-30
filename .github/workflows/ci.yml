@@ -1148,6 +1148,12 @@ jobs:
       - name: Item bytes agree between server and client (check_item_wire rules, synthetic)
         run: python3 -I server/tools/check_item_wire_test.py
 
+      - name: Item wire table, its installer step and the items.otb nodes it rewrites (synthetic, shipped item_wire.csv)
+        run: python3 -I server/tools/patch_item_wire_test.py
+
+      - name: Creature refresh on a tile cannot strand a creature (server src-patch 0083, guard)
+        run: python3 -I server/tools/creature_refresh_patch_test.py
+
       - name: Loot Bag carries its loot without weight (server src-patch 0038, guard)
         run: python3 -I server/tools/weightless_patch_test.py
 
@@ -1385,6 +1391,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/pair"
           cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C "$RUNNER_TEMP/pair"
           python3 -I chaos/client/tools/sprites/check_pair.py "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Item wire table matches the pair (check_item_wire.py --table-check: FLAG_ANIMATION and splash / fluid groups per dat thing)
+        run: python3 -I chaos/server/tools/check_item_wire.py --table-check "$RUNNER_TEMP/pair/Tibia.dat" chaos/server/data/items/item_wire.csv
 
       - name: Recolour variants match the generator (gen_theme_art.py recolour reads the pair's own monster looks)
         run: |
