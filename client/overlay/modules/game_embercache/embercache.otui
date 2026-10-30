@@ -55,6 +55,9 @@ EmberBookRow < UIWidget
 ChaosMainWindow
   id: emberCacheWindow
   size: 400 560
+  // phone interface is 540 high: content is 440 of the 482 inside the frame
+  $mobile:
+    height: 536
   !text: tr('Ember Cache')
   @onEscape: modules.game_embercache.hide()
 

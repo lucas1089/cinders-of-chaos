@@ -75,6 +75,9 @@ SupportSocket < UIWidget
   background-color: #0d0b0e66
   padding: 3
 
+  $mobile:
+    height: 56
+
   ChaosItemSlot
     id: slot
     anchors.left: parent.left
@@ -115,6 +118,9 @@ SupportSocket < UIWidget
     font: verdana-11px-antialised
     color: #8c8070
     phantom: true
+
+    $mobile:
+      height: 28
 
   UIWidget
     id: buttons
@@ -172,6 +178,12 @@ SupportRuneCell < UIWidget
 ChaosMainWindow
   id: supportsWindow
   size: 760 616
+  // phone interface is 540 high and 960 wide: 950 wide, so the texts need two lines and not three. Inside the frame
+  // (536 - 54 = 482) the right column is details 264 (3 sockets of 56 and 4 spacing, header 63, padding 16),
+  // runes title 20, runes frame 100 (2 rows of runes), rune text 32, answer 28 + 6, buttons 24: 474
+  $mobile:
+    width: 950
+    height: 536
   !text: tr('Spell Supports')
   @onEscape: modules.game_spellsupports.hide()
 
@@ -222,6 +234,9 @@ ChaosMainWindow
     anchors.right: parent.right
     height: 294
     margin-left: 8
+
+    $mobile:
+      height: 264
 
     UIWidget
       id: icon
@@ -340,6 +355,9 @@ ChaosMainWindow
     margin-top: 4
     height: 42
     text-align: topleft
+
+    $mobile:
+      height: 28
     text-wrap: true
     font: verdana-11px-antialised
     color: #d6c9ae
@@ -353,6 +371,9 @@ ChaosMainWindow
     margin-bottom: 6
     height: 42
     text-align: topleft
+
+    $mobile:
+      height: 28
     text-wrap: true
     font: verdana-11px-antialised
     color: #9fdc7f
