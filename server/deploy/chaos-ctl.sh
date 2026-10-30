@@ -119,6 +119,9 @@
 #   account-create NAME         a game account; the password is read from stdin (one line, 6-64 characters), stored
 #                               as a PBKDF2 hash (never on a command line or in a log)
 #   account-password NAME       a new password for an account, read from stdin the same way
+#   gm-set NAME GROUP           staff rights: the character's group (1 player, 2 tutor, 3 senior tutor, 4 gamemaster,
+#                               5 community manager, 6 god) and its account's type to the same number. The character must
+#                               be offline (the server writes the group back when it saves); it holds at the next login.
 #   publish-update TAG [--version N] [--min-package N]
 #                               publish_client_update.sh TAG in the background (publish-log): the release's client zip
 #                               becomes the signed client update on the site (docs/LAUNCH.md "Publishing a client
@@ -1712,6 +1715,22 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
     else
       echo "password of $name changed"
     fi
+    ;;
+  gm-set)
+    [ $# -eq 2 ] || die "gm-set NAME GROUP (1 player, 2 tutor, 3 senior tutor, 4 gamemaster, 5 community manager, 6 god)"
+    name=$1; grp=$2
+    if ! [[ $name =~ ^[A-Za-z][A-Za-z\ \'-]{2,28}$ ]] || [[ $name == *' ' ]] || [[ $name == *'  '* ]]; then
+      die "gm-set NAME: a character name (letters, spaces, ' and -, 3 to 29 characters)"
+    fi
+    [[ $grp =~ ^[1-6]$ ]] || die "gm-set GROUP: 1 to 6"
+    q=${name//\'/\'\'}
+    pid=$(mysql_q "SELECT id FROM players WHERE name = '$q'") || die "database-down: the database did not answer"
+    num "${pid:-}" || die "character-not-found: no character $name"
+    on=$(mysql_q "SELECT COUNT(*) FROM players_online WHERE player_id = $pid") || die "database-down: the database did not answer"
+    [ "$on" = 0 ] || die "online: $name is logged in; log out first (the server writes the group back when it saves)"
+    mysql_q "UPDATE players SET group_id = $grp WHERE id = $pid; UPDATE accounts a JOIN players p ON p.account_id = a.id SET a.type = $grp WHERE p.id = $pid" \
+      || die "the database refused the change"
+    echo "$name: group $grp, account type $grp (from the next login)"
     ;;
   install-admin)
     full=0
