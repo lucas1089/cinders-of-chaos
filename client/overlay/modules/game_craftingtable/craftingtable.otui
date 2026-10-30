@@ -110,6 +110,9 @@ CraftTableLine < UILabel
 ChaosMainWindow
   id: craftingTableWindow
   size: 860 600
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Crafting Table')
   @onEscape: modules.game_craftingtable.hide()
 

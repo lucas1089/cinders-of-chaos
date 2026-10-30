@@ -82,6 +82,9 @@ CodexCell < CodexText
 ChaosMainWindow
   id: codexWindow
   size: 940 620
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Codex')
   @onEscape: modules.game_codex.hide()
 

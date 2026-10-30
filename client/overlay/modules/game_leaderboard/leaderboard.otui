@@ -106,6 +106,9 @@ HeaderLabel < UILabel
 ChaosMainWindow
   id: leaderboardWindow
   size: 620 560
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Leaderboards')
   @onEscape: modules.game_leaderboard.hide()
 

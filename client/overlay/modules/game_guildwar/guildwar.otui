@@ -193,6 +193,9 @@ GuildWarItemRow < UIWidget
 ChaosMainWindow
   id: guildWarWindow
   size: 660 620
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Guild Wars')
   @onEscape: modules.game_guildwar.hide()
 

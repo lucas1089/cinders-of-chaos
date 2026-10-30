@@ -209,6 +209,9 @@ FactionOfferRow < UIWidget
 ChaosMainWindow
   id: factionsWindow
   size: 820 590
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Factions')
   @onEscape: modules.game_factions.hide()
 
