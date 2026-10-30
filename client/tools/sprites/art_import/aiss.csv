@@ -1,0 +1,8 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+gloamgeode_shellback,outfit,creature,Gloamgeode Shellback,aiss/gloamgeode_shellback,0,0,2,2,4,1+4,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=150/150/150/150|anim1=0:0:0
+wickstaff_hexmage,outfit,creature,Wickstaff Hexmage,aiss/wickstaff_hexmage,0,0,2,2,4,1+4,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=150/150/150/150|anim1=0:0:0
+bogtusk_cleaver,outfit,creature,Bogtusk Cleaver,aiss/bogtusk_cleaver,0,0,2,2,4,1+4,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=150/150/150/150|anim1=0:0:0
+redmane_anvilbreaker,outfit,creature,Redmane Anvilbreaker,aiss/redmane_anvilbreaker,0,0,2,2,4,1+4,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=150/150/150/150|anim1=0:0:0
+marshlight_hollowseer,outfit,creature,Marshlight Hollowseer,aiss/marshlight_hollowseer,0,0,2,2,4,1+4,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=150/150/150/150|anim1=0:0:0
+gravecrown_oathbreaker,outfit,creature,Gravecrown Oathbreaker,aiss/gravecrown_oathbreaker,0,0,2,2,4,1+4,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=150/150/150/150|anim1=0:0:0
+coralcrown_brinecaller,outfit,creature,Coralcrown Brinecaller,aiss/coralcrown_brinecaller,0,0,2,2,4,1+4,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=150/150/150/150|anim1=0:0:0

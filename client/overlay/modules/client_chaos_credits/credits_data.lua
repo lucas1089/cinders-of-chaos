@@ -52,7 +52,7 @@ ChaosCreditsData = {
   {
     title = "Free assets",
     pt = "Recursos gratuitos",
-    note = "Free effect, icon and font packs. Their files name no author.",
+    note = "Free effect, icon, font and sprite packs. Their files name no author, except the AI Sprite Studio pack.",
     entries = {
       { name = "FX Pack 1-4", author = "free asset pack", licence = "free to use" },
       { name = "64x64 Explo and Power", author = "free asset pack", licence = "free to use" },
@@ -66,6 +66,7 @@ ChaosCreditsData = {
       { name = "Gem set", author = "free asset pack", licence = "free to use", use = "gem looks in five tiers" },
       { name = "Text effects set", author = "free asset pack", licence = "free to use", use = "status words over creatures" },
       { name = "Hunting area maps", author = "RyuKage", licence = "free map, shared as free to use; the map files carry no licence text", use = "the terrain of four hunts (Brickhold Depths, Cinderbrick Halls, Rimewind Isle, Dunereach Isle), cut from free community maps" },
+      { name = "AI Sprite Studio", author = "AI Sprite Studio, AI-generated free sample pack (the art is AI-generated and is not claimed to be hand-drawn)", licence = "personal and commercial use allowed, no exclusivity; terms at https://aispritestudio.com/terms/", use = "seven monster looks (a crystal tortoise, a purple mage, an orc warrior, an armored berserker, a teal mage, a crowned knight and a sea naga), their colours reduced and used as monsters of the hunts", source = "https://aispritestudio.com/terms/" },
     },
   },
   {

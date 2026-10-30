@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hunt monster of the coasts and flooded halls (level 930): a teal serpent-tailed siren with a crown of pink coral
+     and a coral trident. Water hunts: it fits a reef or a drowned hall.
+     Numbers on the late-game curves at its level (server/tools/tune_monsters.py; loot of the band). Look 3370: art of the
+     free AI Sprite Studio sample pack, 2x2, of pair 57 (data/lib/chaos_aiss_art.lua: the stock look 47 until
+     ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
+<monster name="Coralcrown Brinecaller" nameDescription="a coralcrown brinecaller" race="blood" experience="12800" speed="48" manacost="0">
+	<health now="20900" max="20900"/>
+	<look type="47" corpse="6068"/>
+	<level min="910" max="950"/>
+	<targetchange interval="4000" chance="15"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="2"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-510" max="-820"/>
+		<!-- the trident thrust -->
+		<attack name="physical" interval="2000" chance="25" length="3" spread="0" min="-660" max="-1020">
+			<attribute key="shootEffect" value="spear"/>
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</attack>
+		<!-- a tidal surge round it -->
+		<attack name="ice" interval="2000" chance="22" radius="3" target="0" min="-560" max="-920">
+			<attribute key="areaEffect" value="icearea"/>
+		</attack>
+		<!-- a bolt of brine -->
+		<attack name="ice" interval="2000" chance="18" range="6" radius="1" target="1" min="-460" max="-760">
+			<attribute key="shootEffect" value="smallice"/>
+			<attribute key="areaEffect" value="iceattack"/>
+		</attack>
+	</attacks>
+	<defenses armor="70" defense="70">
+		<defense name="healing" interval="2000" chance="10" min="1250" max="2090">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element icePercent="30"/>
+		<element physicalPercent="5"/>
+		<element deathPercent="10"/>
+		<element energyPercent="-15"/>
+		<element holyPercent="-5"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The tide takes all."/>
+		<voice sentence="Come down to the deep."/>
+		<voice sentence="Sssalt and bone..."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- platinum coin -->
+		<item id="8888" countmax="1" chance="444"/>
+		<item id="2500" countmax="1" chance="444"/>
+		<item id="2472" countmax="1" chance="444"/>
+		<item id="8885" countmax="1" chance="444"/>
+		<item id="8884" countmax="1" chance="444"/>
+		<item id="3983" countmax="1" chance="444"/>
+		<item id="2495" countmax="1" chance="444"/>
+		<item id="2469" countmax="1" chance="444"/>
+		<item id="7894" countmax="1" chance="444"/>
+		<item id="5462" countmax="1" chance="429"/>
+		<item id="2644" countmax="1" chance="429"/>
+		<item id="11118" countmax="1" chance="429"/>
+		<item id="11240" countmax="1" chance="429"/>
+		<item id="2537" countmax="1" chance="429"/>
+		<item id="2514" countmax="1" chance="429"/>
+		<item id="2499" countmax="1" chance="429"/>
+	</loot>
+</monster>

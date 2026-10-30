@@ -11520,6 +11520,45 @@ Rift; then two hunt monsters that fit the game. All three live in the Embergut R
   each file's look, `lookOf` on and off, the boss flag, the boss room and both hunt monsters in the plan; `tests/bossspawns_test.lua`
   covers the new row. Not run live.
 
+## AI Sprite Studio monsters (pair 57) (`data/lib/chaos_aiss_art.lua`, switch `ChaosAissArt.PAIR57`, off)
+
+Owner request 2026-10-30: the seven creature sheets of a free AI-generated sample pack (docs/CREDITS.md "AI Sprite Studio") become
+seven new hunt monsters, each with a name of its own. The art is client pair 57 (client/MANIFEST.md "Pair 57"; built, **not on
+windows-assets yet**), outfits 3364-3370. The pack's eighth sheet is not used (the owner: it looks like a famous comic character).
+- **Files.** `data/monster/monsters/chaos/<key>.xml`, registered by the `monsters` step with the rest of the folder. All seven are
+  hunt monsters, none a boss. **No spawn is placed here**: the hunt plans (`tools/areaplan/plans/*.json`) take them in a later change,
+  which is also when the Bestiary spawn table, the wiki (`gen_wiki_data.lua` lists the Chaos monsters that spawn somewhere) and the
+  codex data pick them up. Until then `gen_wiki_data.lua`, `gen_codex_data.lua` and `gen_howitworks_data.lua --check` stay unchanged.
+- **Numbers.** The same rules as every other hunting monster, in `tools/tune_monsters.py` (`AISS_BAND`): under level 650 the pack 30
+  template (the Cunning Hyaena scaled by L / 650: health x L/650, experience x (L/650)^2, strongest hit x L/650), from 650 the late-game
+  curves (`late_targets`, health, experience, speed, strongest hit and heal at the level). Level range = level +-10 below 650, +-20 above.
+  The strongest hit of each file is exactly the table's, the other attacks are 25-95% of it, so the 3x attack rule of
+  `check_content.py` holds. Loot: the coin block and the equipment pool of the nearest band (`pack30/gibbet_fledgling.xml`, the Ashmaw
+  Warlord's for the pack 30 band; the Acid Hydra's, the Gloamfang Ravager's and so on above), platinum like the band
+  (50 up to level 1150, 55, 65, 80 at 1350, 1550, 1850); `loot_model.lua --check` passes. The seven stand in bands at least 200 levels
+  apart (400, 630, 930, 1150, 1350, 1550, 1850), mostly in the stretches where the chaos folder has a monster only every 100 levels
+  (1330-1370, 1530-1570 and 1830-1870 sit between two existing ones).
+
+| Monster | Look (stock) | Level | Health | Experience | Speed | Strongest hit | Biome and attacks |
+|---|---|---|---|---|---|---|---|
+| Bogtusk Cleaver | 3366 (7) | 390-410 | 7,750 | 1,650 | 58 | 500 | bog and orc camps. Melee, axe sweep (length 2, physical), a bleed; a war cry haste. Strong to physical and earth, weak to ice and holy |
+| Wickstaff Hexmage | 3365 (9) | 620-640 | 12,210 | 4,050 | 50 | 790 | haunted towns, mage towers. Stays at range 4: candle flame (fire ball, range 6), a death hex (range 5) and a slow. Strong to fire, weak to ice |
+| Coralcrown Brinecaller | 3370 (47) | 910-950 | 20,900 | 12,800 | 48 | 1,020 | coast, reef, flooded halls. Melee, trident thrust (length 3), a tidal surge round it (ice), a brine bolt (range 6). Strong to ice, weak to energy |
+| Gloamgeode Shellback | 3364 (197) | 1130-1170 | 25,300 | 21,100 | 34 | 1,200 | crystal caves. Slow, armor 130: shell slam (radius 2), crystal burst (energy, radius 3). Strong to physical, earth and energy; weak to holy and death |
+| Marshlight Hollowseer | 3368 (99) | 1330-1370 | 28,200 | 29,100 | 40 | 1,360 | marsh and fen hunts. Range 4: swamp-gas ball (earth, range 7), a death drain, a slow. Strong to earth and death; weak to holy and fire |
+| Redmane Anvilbreaker | 3367 (253) | 1530-1570 | 30,400 | 37,350 | 39 | 1,520 | forges and slag halls. Melee, a hammer slam throwing sparks (fire, radius 2), a thrown hammer (range 5), a haste. Strong to fire and physical, weak to ice |
+| Gravecrown Oathbreaker | 3369 (131) | 1830-1870 | 32,800 | 49,950 | 34 | 1,760 | crypts and grave halls. Melee, great sword arc (length 3), soul-fire round it (death, radius 3), a life drain. Strong to death and physical, weak to holy |
+
+- **Looks.** Pair 57 is not on windows-assets (the push needs the owner's approval), so the files carry the stock looks of the column
+  above and the switch is off, as the AutoSprite looks were before pair 56. A client on pair 56 or older has no outfits 3364-3370.
+  Switching on (after the push) is one change: `M.PAIR57 = true`, the rows of `client/tools/sprites/monster_looks/aiss_picks.csv` into
+  `picks.csv`, `tools/apply_monster_looks.py` (family `hunt`), `tools/ci/check_content.py` to pair 57 / 3370 outfits, and the two client
+  files regenerated from the pair.
+- **Tests.** `tests/aiss_art_test.lua` (luajit and lua5.3): the picks rows in look order, the switch against picks.csv and each file's
+  look, `lookOf` on and off, each file's level band, health and experience, loot and attacks. `client/tools/sprites/gen_aiss_art.py
+  build --check` checks the sheets against the spec. `tune_monsters.py --check`, `check_content.py`, `apply_monster_looks.py --check`,
+  `loot_model.lua --check`, `progression_model.lua --check` and `pack_model.py --check` pass. Not run live.
+
 ## Themed sets, auras and grounds (`data/lib/chaos_theme_art.lua`, `data/lib/chaos_theme_items.lua`, `tools/install_theme_items.py`)
 
 Our own art of client pair things_custom24 (client/MANIFEST.md "Themed sets, auras and grounds"): ten equipment sets,

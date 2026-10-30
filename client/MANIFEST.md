@@ -3647,6 +3647,52 @@ outfits, 4,701 effects, 253 missiles. Built, not pushed yet.
   Against pair 56: `check_pair.py` 0 errors, recolour, anchors, lifts, dungeon banners and site images pass. The pickups, fist weapons and
   weapons above 800 still wait for `chaosClientPair` 56 (server/README.md "Client pair guard"): record it once the client update is out.
 
+### Pair 57: pair 56 with seven monster looks of the free AI Sprite Studio sample pack (`gen_aiss_art.py`; built 2026-10-30, NOT on windows-assets yet)
+Owner request 2026-10-30 (pt-BR "transforme os 7 monstros em monstros novos"): seven creature sheets of a free AI-generated sample pack
+become seven hunt monsters (server/README.md "AI Sprite Studio monsters (pair 57)"). Seven 2x2 outfits are appended (3364-3370); nothing
+else changes. The eighth sheet of the pack (a hammer warrior) is left out on purpose: the owner says it looks like a famous comic
+character. Credit: docs/CREDITS.md "AI Sprite Studio" (AI-generated free sample pack, https://aispritestudio.com/terms/; personal and
+commercial use allowed; the art is not claimed to be hand-drawn).
+- **Art.** Each sheet has 4 direction columns and 3 pose rows (idle, walk 1, walk 2), 64 px cells (the sea naga: 128 px cells, a
+  pixel-exact doubling, so every second pixel gives its 64 px art back). The column order was read off the crystal tortoise (head up,
+  right, down, left): north, east, south, west, our order, so the columns are used as they are. `gen_aiss_art.py` pins the seven PNGs by
+  SHA-256 (they are not committed) and writes `art_import/aiss/<key>.png` (one sheet per look: idle, then the walk phases idle, walk 1,
+  idle, walk 2, 150 ms each; 4 patterns), `art_import/aiss.csv`, `aiss_sources.csv` and `monster_looks/aiss_picks.csv`. The first
+  `style_check.py check FILE --palette FILE --cell 64` run failed every cell (5,000-8,500 colours a sheet against a limit of 68, speckle
+  and one-pixel holes); two clean-ups fix it and change no outline: the colours of a sheet are reduced to 48 by a k-means in CIE Lab with
+  no dithering, and a one-pixel hole inside the body takes the colour of its neighbours (the naga's walk 2 frames had eight). All seven
+  sheets now pass (20 cells each, 0 failed). `build --check` (CI) checks the committed files against the spec.
+
+  | Outfit | Key | Pack sheet | Monster | Level band |
+  |---|---|---|---|---|
+  | 3364 | gloamgeode_shellback | crystal tortoise | Gloamgeode Shellback | 1130-1170 |
+  | 3365 | wickstaff_hexmage | purple mage | Wickstaff Hexmage | 620-640 |
+  | 3366 | bogtusk_cleaver | orc warrior | Bogtusk Cleaver | 390-410 |
+  | 3367 | redmane_anvilbreaker | armored berserker | Redmane Anvilbreaker | 1530-1570 |
+  | 3368 | marshlight_hollowseer | teal mage | Marshlight Hollowseer | 1330-1370 |
+  | 3369 | gravecrown_oathbreaker | crowned knight | Gravecrown Oathbreaker | 1830-1870 |
+  | 3370 | coralcrown_brinecaller | sea naga | Coralcrown Brinecaller | 910-950 |
+```
+python3 -I client/tools/sprites/gen_aiss_art.py build --src PACK_DIR      # PACK_DIR/<the seven *-sheet.png files>
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair56/Tibia.dat --ours-spr pair56/Tibia.spr --out-dir pair57 \
+    --things client/tools/sprites/art_import/aiss.csv --first-item 44446 --first-outfit 3364 --expect-items 44445
+python3 -I client/tools/sprites/check_pair.py pair57/Tibia.dat pair57/Tibia.spr --old pair56/Tibia.dat pair56/Tibia.spr
+```
+Input pair 56 (dat cafd10c030c87eeab28ec4ca0e4806b8, spr 875ead25023f579ba30e925f3d3b608d).
+Output **pair 57**: dat 56c34d0121264ba6fb26076f95c35701 (8,846,011 bytes), spr 95a6b7fc0c5c2a16b36057f3441fa646 (1,132,584,502 bytes,
+947,114 sprites: 336 appended, the other slots of the 560 reuse them), 44,445 items, 3,370 outfits (7 appended), 4,701 effects, 253 missiles.
+- **Checked.** The importer: the output parses, 560 sprite slots pixel-identical to the art, every other thing byte-identical, 3,000 sampled
+  old sprites unchanged, append-only guard passed. `check_pair.py --old pair56`: 0 errors, 3,964 warnings (the same as pairs 54-56).
+  The seven outfits were read back out of the built dat and spr (every direction, the idle phase and the four walk phases) and match the
+  committed sheets pixel for pixel; previews of all seven were drawn from the pair (not committed). Not run in a client.
+- **Not pushed.** `windows-assets` is untouched: the push needs the owner's approval. `outfit_anchors.lua` and `info_lifts.lua` are NOT
+  regenerated here (CI checks them against the pair on windows-assets, still pair 56): `gen_outfit_anchors.py` against pair 57 adds
+  seven rows (3364-3370) and changes the dat md5 line, `gen_info_lift.py` changes only the md5 line. Archive parts are not built.
+- **To ship** (one change, after the push): `ChaosAissArt.PAIR57 = true` (server/data/lib/chaos_aiss_art.lua), the rows of
+  `monster_looks/aiss_picks.csv` appended to `picks.csv` and `server/tools/apply_monster_looks.py` run (looks 3364-3370 into the seven
+  monster files), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 57 / 3370, `outfit_anchors.lua` and `info_lifts.lua`
+  regenerated from pair 57. Until then the seven wear stock looks and a client on pair 56 needs nothing new.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hunt monster (level 630): an old hexmage in a wine-red robe who keeps a candle burning on his staff and curses
+     whatever walks into the light. Stays at range.
+     Numbers on the pack 30 template at its level (server/tools/tune_monsters.py; loot of the band). Look 3365: art of the
+     free AI Sprite Studio sample pack, 2x2, of pair 57 (data/lib/chaos_aiss_art.lua: the stock look 9 until
+     ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
+<monster name="Wickstaff Hexmage" nameDescription="a wickstaff hexmage" race="blood" experience="4050" speed="50" manacost="0">
+	<health now="12210" max="12210"/>
+	<look type="9" corpse="6068"/>
+	<level min="620" max="640"/>
+	<targetchange interval="4000" chance="25"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="4"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonfire="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-240" max="-400"/>
+		<!-- the candle flame -->
+		<attack name="fire" interval="2000" chance="30" range="6" radius="1" target="1" min="-510" max="-790">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<!-- the hex -->
+		<attack name="death" interval="2000" chance="18" range="5" target="1" min="-400" max="-630">
+			<attribute key="shootEffect" value="death"/>
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<!-- the hex slows what it does not burn -->
+		<attack name="speed" interval="2000" chance="12" range="5" target="1" speedchange="-400" duration="3000">
+			<attribute key="shootEffect" value="death"/>
+			<attribute key="areaEffect" value="redsmoke"/>
+		</attack>
+	</attacks>
+	<defenses armor="45" defense="45">
+		<defense name="healing" interval="2000" chance="10" min="730" max="1220">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element firePercent="30"/>
+		<element deathPercent="10"/>
+		<element physicalPercent="-5"/>
+		<element icePercent="-15"/>
+		<element holyPercent="-10"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The candle never gutters."/>
+		<voice sentence="Hold still, it will not hurt long."/>
+		<voice sentence="Burn, little wick!"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="100" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- platinum coin -->
+		<item id="11302" chance="375"/>
+		<item id="11301" chance="375"/>
+		<item id="11304" chance="375"/>
+		<item id="11303" chance="375"/>
+		<item id="8891" chance="375"/>
+		<item id="9931" chance="375"/>
+		<item id="11356" chance="375"/>
+		<item id="2645" chance="375"/>
+		<item id="8889" chance="250"/>
+		<item id="8887" chance="250"/>
+		<item id="12607" chance="250"/>
+		<item id="8880" chance="250"/>
+		<item id="2522" chance="250"/>
+		<item id="2520" chance="250"/>
+		<item id="11117" chance="250"/>
+		<item id="5741" chance="250"/>
+	</loot>
+</monster>

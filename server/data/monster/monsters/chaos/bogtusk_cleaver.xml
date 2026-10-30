@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hunt monster (level 400): a green-skinned bog orc with a double-bladed axe, one of the tuskmen the bogs breed
+     for the war camps.
+     Numbers on the pack 30 template at its level (server/tools/tune_monsters.py; loot of the band). Look 3366: art of the
+     free AI Sprite Studio sample pack, 2x2, of pair 57 (data/lib/chaos_aiss_art.lua: the stock look 7 until
+     ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
+<monster name="Bogtusk Cleaver" nameDescription="a bogtusk cleaver" race="blood" experience="1650" speed="58" manacost="0">
+	<health now="7750" max="7750"/>
+	<look type="7" corpse="6068"/>
+	<level min="390" max="410"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-300" max="-500"/>
+		<!-- the axe sweeps two tiles ahead -->
+		<attack name="physical" interval="2000" chance="25" length="2" spread="0" min="-280" max="-480">
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<attack name="bleedcondition" interval="2000" chance="18" range="1" target="1" min="-110" max="-190" tick="2000">
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+	</attacks>
+	<defenses armor="60" defense="60">
+		<defense name="healing" interval="2000" chance="8" min="470" max="780">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</defense>
+		<defense name="speed" interval="2000" chance="10" speedchange="200" duration="4000">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="10"/>
+		<element earthPercent="10"/>
+		<element holyPercent="-10"/>
+		<element icePercent="-10"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Chop! Chop!"/>
+		<voice sentence="Fresh meat for the bog!"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="100" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- platinum coin -->
+		<item id="11302" chance="375"/>
+		<item id="11301" chance="375"/>
+		<item id="11304" chance="375"/>
+		<item id="11303" chance="375"/>
+		<item id="8891" chance="375"/>
+		<item id="9931" chance="375"/>
+		<item id="11356" chance="375"/>
+		<item id="2645" chance="375"/>
+		<item id="8889" chance="250"/>
+		<item id="8887" chance="250"/>
+		<item id="12607" chance="250"/>
+		<item id="8880" chance="250"/>
+		<item id="2522" chance="250"/>
+		<item id="2520" chance="250"/>
+		<item id="11117" chance="250"/>
+		<item id="5741" chance="250"/>
+	</loot>
+</monster>

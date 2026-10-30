@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hunt monster of the crystal caves (level 1150): a huge blue-shelled tortoise with a violet crystal cluster grown
+     out of its back. Slow, very hard to hurt, hits in a ring round itself.
+     Numbers on the late-game curves at its level (server/tools/tune_monsters.py; loot of the band). Look 3364: art of the
+     free AI Sprite Studio sample pack, 2x2, of pair 57 (data/lib/chaos_aiss_art.lua: the stock look 197 until
+     ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
+<monster name="Gloamgeode Shellback" nameDescription="a gloamgeode shellback" race="blood" experience="21100" speed="34" manacost="0">
+	<health now="25300" max="25300"/>
+	<look type="197" corpse="6068"/>
+	<level min="1130" max="1170"/>
+	<targetchange interval="4000" chance="10"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2200" min="-600" max="-1020"/>
+		<!-- the shell slam -->
+		<attack name="physical" interval="2000" chance="20" radius="2" target="0" min="-600" max="-1080">
+			<attribute key="areaEffect" value="groundshaker"/>
+		</attack>
+		<!-- the crystals burst -->
+		<attack name="energy" interval="2000" chance="22" radius="3" target="0" min="-780" max="-1200">
+			<attribute key="areaEffect" value="purpleenergy"/>
+		</attack>
+	</attacks>
+	<defenses armor="130" defense="130">
+		<defense name="healing" interval="2000" chance="12" min="1520" max="2530">
+			<attribute key="areaEffect" value="purpleenergy"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="40"/>
+		<element earthPercent="25"/>
+		<element energyPercent="20"/>
+		<element icePercent="15"/>
+		<element holyPercent="-15"/>
+		<element deathPercent="-10"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Krrrrunch..."/>
+		<voice sentence="The geode hums."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- platinum coin -->
+		<item id="8888" countmax="1" chance="444"/>
+		<item id="2500" countmax="1" chance="444"/>
+		<item id="2472" countmax="1" chance="444"/>
+		<item id="8885" countmax="1" chance="444"/>
+		<item id="8884" countmax="1" chance="444"/>
+		<item id="3983" countmax="1" chance="444"/>
+		<item id="2495" countmax="1" chance="444"/>
+		<item id="2469" countmax="1" chance="444"/>
+		<item id="7894" countmax="1" chance="444"/>
+		<item id="5462" countmax="1" chance="429"/>
+		<item id="2644" countmax="1" chance="429"/>
+		<item id="11118" countmax="1" chance="429"/>
+		<item id="11240" countmax="1" chance="429"/>
+		<item id="2537" countmax="1" chance="429"/>
+		<item id="2514" countmax="1" chance="429"/>
+		<item id="2499" countmax="1" chance="429"/>
+	</loot>
+</monster>
