@@ -99,6 +99,9 @@ AchievementCategory < ChaosTabButton
 ChaosMainWindow
   id: achievementsWindow
   size: 720 620
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Achievements')
   @onEscape: modules.game_achievements.hide()
 

@@ -179,6 +179,9 @@ BestiarySectionTitle < ChaosTitle
 ChaosMainWindow
   id: bestiaryWindow
   size: 840 590
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Bestiary')
   @onEscape: modules.game_bestiary.hide()
 

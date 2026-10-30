@@ -11,6 +11,9 @@ SiegeListLabel < UILabel
 ChaosMainWindow
   id: siegeWindow
   size: 580 580
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Guild Siege')
   @onEscape: modules.game_siege.hide()
 

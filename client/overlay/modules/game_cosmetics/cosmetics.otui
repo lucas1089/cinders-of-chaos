@@ -73,6 +73,9 @@ CosmeticSampleLabel < UILabel
 ChaosMainWindow
   id: cosmeticsWindow
   size: 1100 500
+  // phone interface is 960 wide: the detail panel takes the rest
+  $mobile:
+    width: 950
   !text: tr('Cosmetics')
   @onEscape: modules.game_cosmetics.hide()
 

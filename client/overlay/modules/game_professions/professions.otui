@@ -188,6 +188,9 @@ MaterialRow < UIWidget
 ProfessionsWindow < ChaosMainWindow
   id: professionsWindow
   size: 820 580
+  // phone interface is 540 high: the lists anchored to the bottom shrink (the gather list scrolls)
+  $mobile:
+    height: 536
   !text: tr('Professions')
   @onEscape: modules.game_professions.hide()
 

@@ -148,6 +148,9 @@ LootChannelPanel < UIWidget
 ChaosMainWindow
   id: lootFilterWindow
   size: 1000 526
+  // phone interface is 960 wide: the rules panel is 20 narrower so the two checkbox columns (2 x 290) fit
+  $mobile:
+    width: 950
   !text: tr('Loot Filter')
   @onEscape: modules.game_lootfilter.hide()
 
@@ -393,6 +396,8 @@ ChaosMainWindow
     anchors.bottom: closeButton.top
     margin-bottom: 8
     width: 340
+    $mobile:
+      width: 320
     padding: 8
 
     LootFilterHeader
