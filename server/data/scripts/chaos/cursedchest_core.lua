@@ -639,4 +639,51 @@ function K.pickGear(cfg, level, gear, n, rand)
 	return out
 end
 
+-- ------------------------------------------------------------------ the monsters' aura (O341)
+-- The client draws the chest's smoke under every event monster a player can see (client game_chestaura, opcode
+-- ChaosOpcodes.templarAura, action "cursed", data {c = [creature id, ...]}). viewRange = {x, y}: how far a viewer sees.
+-- monsters = list of {id, pos}; viewer = {id, pos}. Returns the sorted ids in view (same floor).
+function K.auraList(viewer, monsters, viewRange)
+	local out = {}
+	local vp = viewer.pos
+	for _, m in ipairs(monsters) do
+		local p = m.pos
+		if p and vp and p.z == vp.z and math.abs(p.x - vp.x) <= viewRange.x and math.abs(p.y - vp.y) <= viewRange.y then
+			out[#out + 1] = m.id
+		end
+	end
+	table.sort(out)
+	return out
+end
+
+function K.auraKey(ids)
+	return table.concat(ids, ",")
+end
+
+-- what to send to a viewer: nil when nothing changed since `sent[viewerId]`, else the id list (empty = clear). Updates sent.
+function K.auraDecide(sent, viewerId, ids)
+	local key = K.auraKey(ids)
+	local had = sent[viewerId]
+	if key == "" then
+		if had == nil then
+			return nil
+		end
+		sent[viewerId] = nil
+		return {}
+	end
+	if had == key then
+		return nil
+	end
+	sent[viewerId] = key
+	return ids
+end
+
+function K.auraPrune(sent, online)
+	for id in pairs(sent) do
+		if not online[id] then
+			sent[id] = nil
+		end
+	end
+end
+
 return K

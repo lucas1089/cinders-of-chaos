@@ -231,3 +231,50 @@ function L.syncDiff(old, new)
   table.sort(changed)
   return { added = added, removed = removed, changed = changed }
 end
+
+-- ---------------------------------------------------------------- cursed chest monsters (O341)
+-- The monsters of a Cursed Chest event wear the chest's smoke (the same 'cursed_smoke' strip, 12 frames, 200 ms) as a creature
+-- bottom widget, drawn under the outfit. The server names them on the same opcode: {action = 'cursed', data = {c = [creature id]}},
+-- the whole list a viewer sees, only when it changed (an empty list clears).
+L.CURSED_ART = 'cursed_smoke'
+L.CURSED_MAX = 64         -- creature ids taken from one message
+L.CURSED_MAX_TILES = 4    -- widest outfit the smoke is scaled to
+
+-- the ids of a 'cursed' message as a set {[id] = true}, nil for any other message
+function L.parseCursed(msg)
+  if type(msg) ~= 'table' or msg.action ~= 'cursed' then return nil end
+  local data = type(msg.data) == 'table' and msg.data or {}
+  local rows = type(data.c) == 'table' and data.c or {}
+  local out, n = {}, 0
+  for _, v in ipairs(rows) do
+    local id = tonumber(v)
+    if id and id > 0 and n < L.CURSED_MAX and not out[id] then
+      out[id] = true
+      n = n + 1
+    end
+  end
+  return out
+end
+
+-- tiles across of a creature drawn `px` map pixels wide (nil or junk: one tile), 1..CURSED_MAX_TILES
+function L.cursedTiles(px, spriteSize)
+  local spr = spriteSize or L.SPRITE
+  px = tonumber(px)
+  if not px or px <= 0 then return 1 end
+  return math.max(1, math.min(L.CURSED_MAX_TILES, math.ceil(px / spr - 0.01)))
+end
+
+-- size and margins (left, top) of the smoke under a creature `tiles` wide: the 64 px strip scaled by tiles; the ring's centre sits at
+-- the feet (FOOT_DY), and a wider outfit, which the engine draws up and to the left of its tile, pulls the picture the same way
+function L.cursedBox(spriteSize, tiles)
+  local spr = spriteSize or L.SPRITE
+  tiles = math.max(1, math.min(L.CURSED_MAX_TILES, tiles or 1))
+  local size = math.floor(spr * (L.FOOT_PX / L.SPRITE) * tiles + 0.5)
+  local shift = math.floor(-(tiles - 1) * spr / 2 + 0.5)
+  local dy = math.floor(L.FOOT_DY * spr / L.SPRITE + 0.5) + shift
+  return size, shift, dy
+end
+
+function L.showCursed(enabled, id, set, creatureVisible)
+  return enabled == true and set ~= nil and set[id] == true and creatureVisible == true
+end
