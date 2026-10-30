@@ -23805,6 +23805,10 @@ tiles tried), creates the item, starts a glow. Rules:
   it stays for a hurt party member; the ember refuses a PvP place.
 - **Lifetime.** A half-second look-out (`tickMs`) ends a pickup at its time: the item goes with a fade effect
   (`CONST_ME_POFF`) and grants nothing. The glow pulses (a red, blue or violet magic effect) every 1.5 s so it is easy to see.
+- **Under the feet (O343).** A step event fires when a creature enters a tile, never for one that already stands there. A pickup that lands on a tile with a
+  player on it is taken at once by the owner, else by the first party member who may take it (`ChaosPickupsCore.firstTaker`); a refusing callback keeps it
+  as before. The look-out also sweeps: every tile an item of ours was put on is tracked, and an item whose record is gone (taken, ended, a refused removal)
+  is removed with all its copies (`K.track`, `K.strays`). Owner report 2026-10-30: "the buff did not disappear after I picked it up".
 - **Not an item to keep.** The nodes are neither pickupable nor moveable (`install_pickups.py`), so they cannot go into a
   bag, be pushed, traded or sold; they hold no game value. Nothing is saved: the record is in memory, and a map save does
   not keep ground items outside houses. **After a restart or a reload** the record is gone; an item that is still on a tile

@@ -14,6 +14,11 @@
 --   K.expired(reg, now)                       removes and returns the entries whose time is up
 --   K.pulses(reg, now, pulseMs)               the entries due for a glow (and notes the time)
 --   K.countOf(reg, ownerId, kind)             how many live entries an owner has of a kind
+--   K.firstTaker(entry, who, now)             who = {{id, sameParty}, ...} (the players standing on the tile): the id that
+--                                             may take the entry now, the owner first, else the first in the list; nil
+--   K.track(tracked, entry) / K.strays(reg, tracked)
+--                                             every item ever put on a tile is tracked; strays gives (and untracks) the
+--                                             tracked ones whose record is gone: the item left on the tile, to remove
 -- The take rule: the owner at any time; the owner's party members once ownerWindowMs has passed (0: at once); nobody
 -- else, ever. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -85,6 +90,43 @@ function K.canTake(entry, takerId, sameParty, now)
 		return false, "party"
 	end
 	return true
+end
+
+-- The players standing on the tile when a pickup lands there: a step event never fires for them (stepin is a move onto the
+-- tile), so the pickup would lie under their feet until they leave and come back.
+function K.firstTaker(entry, who, now)
+	local found
+	for _, w in ipairs(who or {}) do
+		if K.canTake(entry, w.id, w.sameParty, now) then
+			if w.id == entry.ownerId then
+				return w.id
+			end
+			found = found or w.id
+		end
+	end
+	return found
+end
+
+-- tracked: tileKey .. "/" .. itemKey -> {x, y, z, itemKey}
+function K.track(tracked, entry)
+	tracked[key(entry.x, entry.y, entry.z) .. "/" .. entry.itemKey] = {x = entry.x, y = entry.y, z = entry.z, itemKey = entry.itemKey}
+end
+
+function K.strays(reg, tracked)
+	local live, out = {}, {}
+	for _, e in pairs(reg.byUid) do
+		live[key(e.x, e.y, e.z) .. "/" .. e.itemKey] = true
+	end
+	for k, t in pairs(tracked) do
+		if not live[k] then
+			out[#out + 1] = t
+		end
+	end
+	for _, t in ipairs(out) do
+		tracked[key(t.x, t.y, t.z) .. "/" .. t.itemKey] = nil
+	end
+	table.sort(out, function(a, b) return key(a.x, a.y, a.z) .. a.itemKey < key(b.x, b.y, b.z) .. b.itemKey end)
+	return out
 end
 
 function K.take(reg, uid)
