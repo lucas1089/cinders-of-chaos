@@ -67,6 +67,10 @@ DifficultyButton < Panel
   $disabled:
     color: #ababab88
 
+  // phone: six buttons share the 705 px of the info panel
+  $mobile:
+    width: 114
+
 DifficultyIcon < Panel
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
@@ -86,6 +90,10 @@ DifficultyInfo < Label
   margin-top: 20
   text-align: top
   color: #ababab
+
+  $mobile:
+    margin-top: 4
+    font: verdana-9px
 
 PlayersTableRow < TableRow
   height: 19
@@ -150,6 +158,13 @@ LootItem < UIItem
 MainWindow
   !text: tr('Dungeons')
   size: 1219 720
+  // phone interface is 540 high and 960 wide: 950 x 536. The info panel (705 x 444) has two pages behind the tabs
+  // at its top (dungeons.lua setMobilePage): page 1 banner 26+72, difficulties 150, requirements 168 (to 417) with the
+  // queue to the right of it; page 2 boss loot 26+162 with the challenges below it, the two rank tables on the right
+  // (half of the height each). The menu on the left keeps its 190.
+  $mobile:
+    width: 950
+    height: 536
 
   ScrollablePanel
     id: dungeonsMenu
@@ -192,6 +207,10 @@ MainWindow
       height: 100
       background: #555555
 
+      $mobile:
+        margin-top: 26
+        height: 72
+
     MiniPanel
       id: difficulties
       anchors.top: parent.top
@@ -202,6 +221,10 @@ MainWindow
       !text: tr('Difficulty')
       layout:
         type: horizontalBox
+
+      $mobile:
+        margin-top: 98
+        height: 150
 
       DifficultyButton
         !text: tr('Normal')
@@ -478,6 +501,11 @@ MainWindow
         cell-size: 34 34
         flow: true
 
+      $mobile:
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 26
+
       LootItem
       LootItem
       LootItem
@@ -516,7 +544,15 @@ MainWindow
       image-border-top: 30
       image-border-bottom: 5
       width: 250
+      id: soloPanel
       !text: tr('Top Solo Runners')
+
+      $mobile:
+        anchors.top: parent.top
+        anchors.left: bossLoot.right
+        anchors.right: parent.right
+        anchors.bottom: parent.verticalCenter
+        margin-top: 26
 
       Table
         id: soloTable
@@ -568,7 +604,13 @@ MainWindow
       image-border-top: 30
       image-border-bottom: 5
       width: 250
+      id: groupPanel
       !text: tr('Top Group Runners')
+
+      $mobile:
+        anchors.top: parent.verticalCenter
+        anchors.left: bossLoot.right
+        anchors.right: parent.right
 
       Table
         id: groupTable
@@ -620,7 +662,14 @@ MainWindow
       image-border: 10
       image-border-top: 30
       image-border-bottom: 5
+      id: queuePanel
       !text: tr('Queue')
+
+      $mobile:
+        anchors.top: requirements.top
+        anchors.left: requirements.right
+        anchors.right: parent.right
+        margin-left: 4
 
       Label
         anchors.top: parent.top
@@ -727,6 +776,33 @@ MainWindow
       margin-right: 4
       step: 24
       pixels-scroll: true
+
+    // phone only: the two pages of the info panel (dungeons.lua setMobilePage)
+    ChaosTabButton
+      id: pageInfoTab
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: 170
+      visible: false
+      checked: true
+      !text: tr('Difficulty and queue')
+      @onClick: modules.game_dungeons.setMobilePage(1)
+
+      $mobile:
+        visible: true
+
+    ChaosTabButton
+      id: pageLootTab
+      anchors.top: parent.top
+      anchors.left: prev.right
+      margin-left: 4
+      width: 170
+      visible: false
+      !text: tr('Loot and ranks')
+      @onClick: modules.game_dungeons.setMobilePage(2)
+
+      $mobile:
+        visible: true
 
   HorizontalSeparator
     id: separator

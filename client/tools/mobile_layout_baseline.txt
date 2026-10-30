@@ -1,3 +1,2 @@
 # O313: windows over 960x540 logical pixels with no $mobile rule. The list may only shrink.
 # Regenerate with: python3 -I client/tools/check_mobile_layout.py --write-baseline
-game_dungeons/dungeons.otui:MainWindow 1219x720

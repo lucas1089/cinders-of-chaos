@@ -61,6 +61,26 @@ function terminate()
   destroy()
 end
 
+-- phone only (g_app.isMobile): the info panel shows page 1 (difficulty, requirements, queue) or page 2 (boss loot, rank
+-- tables, challenges); the desktop layout never calls this and keeps everything visible
+local MOBILE_PAGES = {
+  { 'banner', 'difficulties', 'requirements', 'queuePanel' },
+  { 'bossLoot', 'soloPanel', 'groupPanel', 'challenges', 'challengesScroll' }
+}
+
+function setMobilePage(n)
+  if not dungeonInfo or not (g_app and g_app.isMobile and g_app.isMobile()) then return end
+  for page, ids in ipairs(MOBILE_PAGES) do
+    for _, id in ipairs(ids) do
+      local w = dungeonInfo:getChildById(id)
+      if w then w:setVisible(page == n) end
+    end
+  end
+  local a, b = dungeonInfo:getChildById('pageInfoTab'), dungeonInfo:getChildById('pageLootTab')
+  if a then a:setChecked(n == 1) end
+  if b then b:setChecked(n == 2) end
+end
+
 function create()
   if window then return end
   window = g_ui.displayUI("dungeons")
@@ -70,6 +90,7 @@ function create()
   windowButton:setOn(false)
 
   dungeonInfo = window:getChildById("dungeonInfo")
+  setMobilePage(1)
 
   killCounter = g_ui.loadUI("killcounter", modules.game_interface.getMapPanel())
   killCounter:hide()
