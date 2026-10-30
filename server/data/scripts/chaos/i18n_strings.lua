@@ -3837,6 +3837,7 @@ return {
 		["Raid uniques"] = "Únicos de raid",
 		["Sepulchre boss"] = "chefe do Sepulcro",
 		["Set piece"] = "Peça de set",
+		["Normal"] = "Normal",
 		["Set pieces"] = "Peças de set",
 		["boss"] = "chefe",
 		["dungeon boss"] = "chefe de masmorra",

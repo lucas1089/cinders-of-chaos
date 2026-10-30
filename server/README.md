@@ -12969,6 +12969,14 @@ Rolled gear you do not want becomes crafting currency instead of NPC gold. A **S
 small chance of a whole orb, and turns shards into the existing orbs. Every number is in `salvage_config.lua`; the pure
 rules are `salvage_core.lua` (tests: `tests/salvage_test.lua`, which also drives `salvage.lua` against a mocked engine).
 
+**Normal gear (O340).** Two of three stock gear drops roll no rarity (`ChaosRarity.stockRollChance` 70, 33% carry one), so
+most of the new weapons from monster loot (the Mercurial line among them) were Normal and the bench refused them
+("Only items with a rarity can be salvaged.") and "salvage all" skipped them without a word. Now gear without a rarity
+(no unique, no set piece) gives `normalShards` (1) rune shard, no level bonus and no orb chance; the single bench action,
+the preview and "salvage all" (any chosen rarity takes Normal gear along) agree. `normalShards = 0` brings the old
+refusal back. Economy: an average gear drop gave ~1.1 shards (33% x 3.3); the Normal two thirds add ~0.67, so about
+1.8 per gear drop; the orb chance is untouched. Test: `tests/salvage_test.lua`.
+
 **Install.** `python3 -I server/tools/install_salvage.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
 `salvage`, after `gems`). It adds one items.otb node, the **rune shard** (server id **32051**), a copy of the stock node
 of the violet crystal shard (18414, client 16120: stackable, so the client needs no change), and its items.xml entry

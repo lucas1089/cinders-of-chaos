@@ -127,7 +127,26 @@ do
 	eq(K.check(u, off), "unique", "switched off: refused")
 	eq(K.batch({u}, 15, cfg).count, 0, "salvage all never takes a unique")
 end
-eq(K.check(gear(0), cfg), "normal", "no rarity")
+eq(K.check(gear(0), cfg), nil, "no rarity: salvaged for normalShards (O340)")
+eq(K.shards(gear(0, 85), cfg), 1, "Normal gear: 1 shard, whatever the level")
+eq(K.orbChance(gear(0, 85), cfg), 0, "Normal gear: no orb chance")
+eq(K.preview(gear(0, 85), cfg).ok, true, "the bench previews Normal gear")
+eq(K.preview(gear(0, 85), cfg).orbChance, "0", "no orb chance shown")
+do
+	local rolls = 0
+	for _ = 1, 200 do
+		local r = K.roll(gear(0, 85), cfg, function(a, b) return a end) -- rand = lowest: any chance would hit
+		if r.orb then rolls = rolls + 1 end
+	end
+	eq(rolls, 0, "Normal gear never gives an orb")
+	local off = {}
+	for k, v in pairs(cfg) do off[k] = v end
+	off.normalShards = 0
+	eq(K.check(gear(0), off), "normal", "normalShards = 0: refused again")
+	eq(K.batch({gear(0)}, 5, off).count, 0, "and not taken by salvage all")
+	eq(K.check(gear(0, 0, {gear = false}), cfg), "notGear", "a Normal non-gear item is still refused")
+	eq(K.check(gear(0, 0, {locked = true}), cfg), "locked", "a locked Normal item is kept")
+end
 eq(K.check(gear(3, nil, {gems = 1, sockets = 2}), cfg), "gems", "socketed gems: take them out first")
 eq(K.check(gear(3, nil, {sockets = 2}), cfg), nil, "empty sockets are fine")
 eq(K.check(gear(0, 0, {riftKey = true, gear = false}), cfg), "riftKey", "Rift Key")
@@ -222,17 +241,18 @@ eq(b.picked[CAP], CAP, "the first batchCap")
 list = {gear(1), gear(3), gear(2, nil, {locked = true}), gear(1, nil, {unique = true}), gear(2, nil, {gems = 1, sockets = 1}),
 	gear(0), gear(0, 0, {gear = false, stackable = true}), gear(0, 0, {riftKey = true, gear = false}), gear(2, 20)}
 b = K.batch(list, 2, cfg)
-eq(b.count, 2, "two of the list")
+eq(b.count, 3, "three of the list: the Normal gear comes with the Common and the Uncommon (O340)")
 eq(b.picked[1], 1, "the Common")
-eq(b.picked[2], 9, "the Uncommon")
+eq(b.picked[2], 6, "the Normal")
+eq(b.picked[3], 9, "the Uncommon")
 eq(b.skipped.above, 1, "the Rare is above the chosen rarity")
 eq(b.skipped.locked, 1, "locked skipped")
 eq(b.skipped.unique, 1, "unique skipped")
 eq(b.skipped.gems, 1, "socketed skipped")
-eq(b.skipped.normal, nil, "normal items are not counted")
+eq(b.skipped.normal, nil, "Normal gear is picked, not skipped")
 eq(b.capped, false, "not capped")
 b = K.batch(list, 15, cfg)
-eq(b.count, 3, "with every rarity the Rare comes too")
+eq(b.count, 4, "with every rarity the Rare comes too")
 eq(K.batch(list, 0, cfg).maxRarity, 1, "maxRarity clamped to 1..15")
 eq(K.batch({}, 3, cfg).count, 0, "an empty bag")
 -- the confirm signature
