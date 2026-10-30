@@ -99,6 +99,9 @@ GoalSideTitle < UILabel
 ChaosMainWindow
   id: goalsWindow
   size: 880 600
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Next Goals')
   @onEscape: modules.game_goals.hide()
 

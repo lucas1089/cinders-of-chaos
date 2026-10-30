@@ -1107,6 +1107,10 @@ Numbers, and why a client of build N accepts the update:
   client downloads on first start (all files except `layouts/mobile/`; `--android-exclude PREFIX` for desktop-only art,
   `--no-android` to leave it out). Nothing to do for it: the next `publish-update` of a newer release writes it. The APK
   (`android-client.yml`) reads the same manifest URL and public key (docs/ANDROID_CLIENT.md "Phase 3 status").
+- **App update of the Android client (O313 step 8):** the manifest key `android_apk` names the newest APK of the
+  `android-client.yml` workflow (release `android-N`). Admin app: Comandos > "Site e update do client" > "Release do app Android"
+  > "Publicar app Android"; shell fallback `chaos-ctl.sh publish-apk android-N [--min-version-code N]`. It does not need a new
+  Windows package and does not change the manifest version. docs/ANDROID_CLIENT.md "Step 8 status".
 - **A client without the updater** (built without `update_manifest` / `update_public_key`, or an exe without base
   patch 0031) never asks for the manifest: it keeps its files, is never blocked by the updater, and gets the update
   only by downloading a new package. Only the game server's client guard can turn it away (`clientGuardBuilds`, or

@@ -234,6 +234,9 @@ MentorList < ScrollablePanel
 MentorWindow < ChaosMainWindow
   id: mentorWindow
   size: 680 580
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Mentors')
   @onEscape: modules.game_mentor.hide()
 

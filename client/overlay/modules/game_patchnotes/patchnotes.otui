@@ -148,6 +148,9 @@ ChangelogFilter < ChaosTabButton
 ChaosMainWindow
   id: patchNotesWindow
   size: 780 560
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Patch Notes')
   @onEscape: modules.game_patchnotes.hide()
 

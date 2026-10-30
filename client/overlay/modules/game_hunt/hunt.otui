@@ -79,6 +79,9 @@ HuntTab < ChaosTabButton
 ChaosMainWindow
   id: huntWindow
   size: 440 560
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Hunt Tracker')
   @onEscape: modules.game_hunt.hide()
 

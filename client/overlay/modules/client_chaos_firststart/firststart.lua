@@ -11,6 +11,11 @@
 -- A small update (Lua, art) with the game data in place starts by itself, with the progress screen but without asking.
 -- Logcat lines: "firststart: screen shown (...)" when the screen first appears (the emulator smoke test of
 -- android-client.yml looks for it).
+-- The app itself (O313 step 8): when the manifest's "android_apk" entry has a version code above the running package
+-- (Services.update.package) the screen says "New app version" with an Update button (and Later, unless the running app
+-- is below the entry's min_version_code or the server's min_package: then it is the only way on). The Java shell does
+-- the download, the checks and the PackageInstaller (g_resources.startApkUpdate / apkUpdateStatus, base patch 0169);
+-- this module polls its status. The decisions are in firststart_core.lua (apkEntry, apkDecision).
 
 ChaosFirstStart = ChaosFirstStart or {}
 local F = ChaosFirstStart
@@ -29,6 +34,9 @@ local shownLogged = false
 local job, unpackJob, hashEvent
 local origDoLogin
 local manifest, plan, blobs, summary
+local apkEntry, apkKind, apkLater = nil, nil, false
+local apkPoll
+local APK_PHASES = { apkoffer = true, apkrequired = true, apkbusy = true, apkwait = true, apkerror = true }
 local pausing = false
 local result = {}
 
@@ -123,11 +131,13 @@ local function showPanel(why)
     panel:getChildById('startButton').onClick = function() F.start() end
     panel:getChildById('pauseButton').onClick = function() F.togglePause() end
     panel:getChildById('retryButton').onClick = function() F.check() end
-    panel:getChildById('playButton').onClick = function() F.dismiss() end
+    panel:getChildById('playButton').onClick = function() F.playOrLater() end
     panel:getChildById('restartButton').onClick = function() F.restart() end
   end
   blocker:raise()
   panel:raise()
+  panel:getChildById('startButton'):setText(tr('Download'))
+  panel:getChildById('playButton'):setText(tr('Play'))
   buttons(false, false, false, false, false)
   if not shownLogged then
     shownLogged = true
@@ -152,10 +162,149 @@ function F.blocking()
   return C.blocksLogin(phase, needsData)
 end
 
+-- Later button of an app update offer: on with the game data check
+local proceed
+
+function F.later()
+  if apkKind ~= 'offer' or not (phase == 'apkoffer' or phase == 'apkerror' or phase == 'apkwait') then return end
+  if phase == 'apkwait' then setPhase('fail') end
+  if not setPhase('later') then return end
+  apkLater = true
+  hidePanel()
+  if needsData then
+    showPanel('no game data')
+    setText('status', tr('Checking for game data'))
+    setText('detail', '')
+    progress(0, '', '')
+  end
+  proceed(manifest)
+end
+
+function F.playOrLater()
+  if APK_PHASES[phase] then return F.later() end
+  return F.dismiss()
+end
+
 function F.dismiss()
-  if phase == 'blocked' or needsData then return end
+  if phase == 'blocked' or needsData or APK_PHASES[phase] then return end
   phase = 'uptodate'
   hidePanel()
+end
+
+-- ---------------------------------------------------------------- the app update (O313 step 8)
+
+-- the failure codes of ApkUpdater.java
+local function apkFailText(code)
+  if code == 'net' then return tr('The download failed. Check the connection and try again.') end
+  if code == 'size' then return tr('The downloaded file has the wrong size. Try again.') end
+  if code == 'hash' then return tr('The downloaded file does not match the update. Try again later.') end
+  if code == 'signer' then return tr('The downloaded app is not signed by us. It was not installed.') end
+  if code == 'package' then return tr('The downloaded file is not a newer version of this app. It was not installed.') end
+  if code == 'storage' then return tr('Not enough free space on the phone to download the app.') end
+  if code == 'aborted' then return tr('The installation was canceled.') end
+  if code == 'blocked' then return tr('Android blocked the installation. Check the install settings of this app.') end
+  return tr('The app update failed.')
+end
+
+-- the screen of an offer or of a required update; the buttons are Update app and, for an offer, Later
+local function apkScreen(kind)
+  apkKind = kind
+  showPanel('app update')
+  setText('status', tr('New app version'))
+  setText('detail', tr('Version %s of the app is ready (%s). Use Wi-Fi: it is a big download.', apkEntry.version_name,
+    U.formatBytes(apkEntry.size)))
+  progress(0, '', kind == 'required' and tr('This version of the app is too old for the server. Update it to play.')
+    or tr('You can update now or play with this version.'))
+  panel:getChildById('startButton'):setText(tr('Update app'))
+  panel:getChildById('playButton'):setText(tr('Later'))
+  buttons(true, false, false, kind == 'offer', false)
+  g_logger.info(('firststart: new app version %s (code %d), running package %d, %s'):format(apkEntry.version_name,
+    apkEntry.version_code, cfg.package, kind))
+end
+
+local function apkShowStatus(st)
+  progress(C.apkPercent(st), '', nil)
+  if st.state == 'downloading' then
+    setText('status', tr('Downloading the new app'))
+    setText('progressText', ('%s / %s'):format(U.formatBytes(st.done), U.formatBytes(st.total)))
+    setText('note', tr('Keep the screen on.'))
+  elseif st.state == 'verifying' then
+    setText('status', tr('Checking the new app'))
+    setText('progressText', '')
+  elseif st.state == 'installing' or st.state == 'done' then
+    setText('status', tr('Installing the new app'))
+    setText('progressText', '')
+    setText('note', tr('The game closes when it is done. Open it again then.'))
+  elseif st.state == 'confirm' then
+    setText('status', tr('Confirm the installation'))
+    setText('progressText', '')
+    setText('note', tr('Android asks you to confirm. Touch Install in its window. If it went away, press Update app.'))
+  elseif st.state == 'permission' then
+    setText('status', tr('Allow the installation'))
+    setText('progressText', '')
+    setText('note', tr('Turn on "Allow from this source" for this app in the Android settings, come back and press Update app.'))
+  end
+end
+
+local function pollApkStatus()
+  apkPoll = nil
+  if not APK_PHASES[phase] then return end
+  local ok, text = pcall(g_resources.apkUpdateStatus)
+  local st = C.parseApkStatus(ok and text or nil)
+  result.apk = st.state
+  if st.state == 'failed' or st.state == 'idle' then
+    -- idle after a start: the shell lost the job (the process restarted)
+    setPhase('fail')
+    local code = st.state == 'failed' and st.message or 'other'
+    result.apkFailure = code
+    g_logger.warning('firststart: app update failed (' .. tostring(code) .. ')')
+    showPanel('app update failed')
+    setText('status', tr('The app update failed'))
+    setText('detail', '')
+    progress(0, apkFailText(code), apkKind == 'required' and tr('Update the app to play.') or tr('You can play with this version.'))
+    panel:getChildById('startButton'):setText(tr('Update app'))
+    panel:getChildById('playButton'):setText(tr('Later'))
+    buttons(true, false, false, apkKind == 'offer', false)
+    return
+  end
+  if st.state == 'permission' or st.state == 'confirm' then
+    if phase == 'apkbusy' then setPhase('wait') end
+    apkShowStatus(st)
+    buttons(true, false, false, apkKind == 'offer', false)
+    if alive(panel) then
+      panel:getChildById('startButton'):setText(tr('Update app'))
+      panel:getChildById('playButton'):setText(tr('Later'))
+    end
+    -- the shell waits for the player; polling goes on (he may confirm and the state moves)
+  else
+    if phase == 'apkwait' then setPhase('install') end
+    apkShowStatus(st)
+    buttons(false, false, false, false, false)
+  end
+  apkPoll = later(500, pollApkStatus)
+end
+
+-- Update app button
+function F.installApp()
+  if not (phase == 'apkoffer' or phase == 'apkrequired' or phase == 'apkwait' or phase == 'apkerror') or not apkEntry then return end
+  if not setPhase('install') then return end
+  g_logger.info('firststart: app update started')
+  local ok, accepted = pcall(g_resources.startApkUpdate, C.apkUrl(cfg.manifest, apkEntry), apkEntry.sha256,
+    apkEntry.size, apkEntry.signer_sha256)
+  if not ok or not accepted then
+    g_logger.warning('firststart: the shell refused the app update (' .. tostring(accepted) .. ')')
+    setPhase('fail')
+    showPanel('app update failed')
+    setText('status', tr('The app update failed'))
+    setText('detail', '')
+    progress(0, apkFailText('other'), '')
+    panel:getChildById('startButton'):setText(tr('Update app'))
+    panel:getChildById('playButton'):setText(tr('Later'))
+    buttons(true, false, false, apkKind == 'offer', false)
+    return
+  end
+  buttons(false, false, false, false, false)
+  if not apkPoll then apkPoll = later(300, pollApkStatus) end
 end
 
 -- ---------------------------------------------------------------- problems
@@ -312,6 +461,7 @@ end
 
 -- Download button
 function F.start()
+  if APK_PHASES[phase] then return F.installApp() end
   if phase ~= 'ready' then return end
   setPhase('start')
   download()
@@ -401,36 +551,8 @@ local function ready()
   end
 end
 
-local function onManifest(r)
-  if phase ~= 'checking' then return end
-  if (r.error and r.error ~= '') or r.status ~= 200 then
-    return problem(tr('Update server unreachable'), (r.error and r.error ~= '') and r.error or ('HTTP ' .. tostring(r.status)),
-      'offline')
-  end
-  local envelope, jerr = U.jsonDecode(r.body)
-  if type(envelope) ~= 'table' then
-    return problem(tr('Update refused'), 'manifest is not valid JSON (' .. tostring(jerr) .. ')', 'fail')
-  end
-  local payload, why = U.checkEnvelope(envelope, cfg.publicKey, function(key, msg, sig)
-    return g_crypt.ed25519Verify(key, msg, sig)
-  end)
-  if not payload then return problem(tr('Update refused'), why, 'fail') end
-  local m, perr = U.jsonDecode(payload)
-  if type(m) ~= 'table' then return problem(tr('Update refused'), 'payload is not valid JSON (' .. tostring(perr) .. ')', 'fail') end
-  local st = loadState()
-  local valid, reason = U.validateManifest(m, st.version > 0 and st.version or nil)
-  if not valid then return problem(tr('Update refused'), reason, 'fail') end
-  if (m.min_package or 0) > (cfg.package or 0) then
-    -- the APK is too old for this server: a new APK is needed (APK self-update is not built yet)
-    phase = 'blocked'
-    showPanel('blocked')
-    setText('status', tr('A new client download is required'))
-    setText('detail', '')
-    progress(0, cfg.download ~= '' and cfg.download or tr('Download the new client from the website.'),
-      tr('The game files of this client are too old for the server.'))
-    buttons(false, false, true, false, false)
-    return
-  end
+-- the part of the manifest handling after the app update question: the phone list against the phone
+function proceed(m)
   local entries, eerr = C.androidEntries(m)
   if not entries then return problem(tr('Update refused'), eerr, 'fail') end
   manifest = m
@@ -482,6 +604,50 @@ local function onManifest(r)
   end)
 end
 
+local function onManifest(r)
+  if phase ~= 'checking' then return end
+  if (r.error and r.error ~= '') or r.status ~= 200 then
+    return problem(tr('Update server unreachable'), (r.error and r.error ~= '') and r.error or ('HTTP ' .. tostring(r.status)),
+      'offline')
+  end
+  local envelope, jerr = U.jsonDecode(r.body)
+  if type(envelope) ~= 'table' then
+    return problem(tr('Update refused'), 'manifest is not valid JSON (' .. tostring(jerr) .. ')', 'fail')
+  end
+  local payload, why = U.checkEnvelope(envelope, cfg.publicKey, function(key, msg, sig)
+    return g_crypt.ed25519Verify(key, msg, sig)
+  end)
+  if not payload then return problem(tr('Update refused'), why, 'fail') end
+  local m, perr = U.jsonDecode(payload)
+  if type(m) ~= 'table' then return problem(tr('Update refused'), 'payload is not valid JSON (' .. tostring(perr) .. ')', 'fail') end
+  local st = loadState()
+  local valid, reason = U.validateManifest(m, st.version > 0 and st.version or nil)
+  if not valid then return problem(tr('Update refused'), reason, 'fail') end
+  -- the app update (O313 step 8): a newer APK in the manifest, or the running one too old for the server
+  local entry, ewhy = C.apkEntry(m)
+  if ewhy then g_logger.warning('firststart: app update ignored (' .. ewhy .. ')') end
+  local decision = (F.canUpdateApp and entry) and C.apkDecision(entry, cfg.package, m.min_package) or 'none'
+  result.apkDecision = decision
+  if decision == 'required' or (decision == 'offer' and not apkLater) then
+    apkEntry, manifest = entry, m
+    phase = 'checking'
+    setPhase(decision == 'required' and 'apkrequired' or 'apkoffer')
+    return apkScreen(decision)
+  end
+  if (m.min_package or 0) > (cfg.package or 0) then
+    -- the APK is too old for this server and the manifest has no app that fixes it: a new download from the website
+    phase = 'blocked'
+    showPanel('blocked')
+    setText('status', tr('A new client download is required'))
+    setText('detail', '')
+    progress(0, cfg.download ~= '' and cfg.download or tr('Download the new client from the website.'),
+      tr('The game files of this client are too old for the server.'))
+    buttons(false, false, true, false, false)
+    return
+  end
+  proceed(m)
+end
+
 -- ---------------------------------------------------------------- check
 
 function F.check()
@@ -503,7 +669,7 @@ end
 -- for the tests (devexec) and the terminal
 function F.status()
   return { phase = phase, needsData = needsData, result = result, mounted = boot and boot.mounted,
-           version = loadState().version }
+           version = loadState().version, appUpdate = apkKind, appVersion = apkEntry and apkEntry.version_code }
 end
 
 -- ---------------------------------------------------------------- module
@@ -531,6 +697,8 @@ function F.init()
     g_logger.warning('firststart: this client build cannot unpack game data (base patches 0031, 0103 and 0167)')
     return
   end
+  -- the app update needs the Java shell and the functions of base patch 0169; an older engine just does not offer it
+  F.canUpdateApp = (g_resources.startApkUpdate and g_resources.apkUpdateStatus) and true or false
   cfg.package = tonumber(cfg.package) or 0
   cfg.baseline = U.baseline(cfg.baseline)
   cfg.download = cfg.download or ''
@@ -550,6 +718,7 @@ function F.terminate()
   if hashEvent then removeEvent(hashEvent); hashEvent = nil end
   if job then job.cancel(); job = nil end
   if unpackJob then unpackJob.cancel(); unpackJob = nil end
+  apkPoll = nil
   for id in pairs(httpOps) do g_http.cancel(id) end
   httpOps = {}
   for ev in pairs(timers) do removeEvent(ev) end

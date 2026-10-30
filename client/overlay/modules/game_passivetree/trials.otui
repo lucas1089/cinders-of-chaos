@@ -107,6 +107,9 @@ ChaosWindow
   id: trialsWindow
   !text: tr('Vocation Trials')
   size: 780 650
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   anchors.centerIn: parent
   @onEscape: modules.game_passivetree.closeTrials()
 

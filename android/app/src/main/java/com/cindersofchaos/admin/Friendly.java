@@ -169,6 +169,9 @@ final class Friendly {
         if (t.startsWith("started (publish-update")) {
             return "Começou a publicar o update do client. Acompanhe em Logs, Atualização, log da publicação.";
         }
+        if (t.startsWith("started (publish-apk")) {
+            return "Começou a publicar o app Android. Acompanhe em Logs, Atualização, log da publicação.";
+        }
         if (t.startsWith("areas-published") || t.contains("\nareas-published")) {
             Matcher u = Pattern.compile("(?m)^url=(\\S+)").matcher(t);
             return "Áreas publicadas. Endereço para o fetch-areas.bat: " + (u.find() ? u.group(1) : "veja os detalhes")

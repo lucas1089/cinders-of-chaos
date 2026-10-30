@@ -239,6 +239,9 @@ MarketChartRect < UIWidget
 ChaosMainWindow
   id: chaosMarketWindow
   size: 900 600
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Market')
   @onEscape: modules.game_market.hide()
 

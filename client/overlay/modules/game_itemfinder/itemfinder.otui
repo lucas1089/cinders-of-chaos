@@ -166,6 +166,9 @@ ItemFinderMat < UIItem
 ChaosMainWindow
   id: itemFinderWindow
   size: 820 580
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Item Finder')
   @onEscape: modules.game_itemfinder.hide()
 

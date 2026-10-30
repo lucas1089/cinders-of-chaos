@@ -1,0 +1,103 @@
+/* Dark theme of the client (client_chaos_theme): bg #0d0b0e, iron #3a3339, parchment #d6c9ae, ember gold #e8b84a. */
+body {
+	/* the document fills the screen but lets clicks through to the OTUI windows below */
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	font-family: "Alegreya Sans";
+	font-size: 16dp;
+	color: #d6c9ae;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+#window {
+	pointer-events: auto;
+	display: flex;
+	flex-direction: column;
+	/* 960x540: 60% = 576, min 360. 1920x1080: 60% = 1152, capped at 640. Height 70%, never taller than the screen. */
+	width: 60%;
+	min-width: 360dp;
+	max-width: 640dp;
+	height: 70%;
+	min-height: 260dp;
+	max-height: 90%;
+	box-sizing: border-box;
+	padding: 10dp 12dp;
+	background-color: #14111a;
+	border: 2dp #3a3339;
+	border-radius: 4dp;
+}
+
+#titlebar {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	padding-bottom: 6dp;
+	border-bottom: 1dp #3a3339;
+}
+
+#title {
+	font-family: "Alegreya SC";
+	font-weight: bold;
+	font-size: 22dp;
+	color: #e8b84a;
+}
+
+#subtitle {
+	padding: 6dp 0dp;
+	color: #8c8070;
+	font-size: 14dp;
+}
+
+#list {
+	flex: 1 1 0dp;       /* takes the room left between the title and the buttons */
+	min-height: 0dp;
+	overflow-y: auto;    /* scrolls with the wheel, the bar and a drag */
+	background-color: #0d0b0e;
+	border: 1dp #3a3339;
+}
+
+.row {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	padding: 5dp 10dp;
+}
+.row.alt { background-color: #171319; }
+.row:hover { background-color: #2a2128; color: #f6cf72; }
+.row .name { flex: 1 1 auto; }
+.row .value { color: #e8b84a; margin-left: 12dp; }
+
+#footer {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-end;
+	padding-top: 8dp;
+}
+
+button {
+	display: block;
+	box-sizing: border-box;
+	min-width: 96dp;
+	padding: 6dp 14dp;
+	margin-left: 8dp;
+	text-align: center;
+	color: #d6c9ae;
+	background-color: #2a2128;
+	border: 1dp #7d7176;
+	border-radius: 2dp;
+}
+button:hover { color: #f6cf72; border-color: #e8b84a; }
+button:active { background-color: #5a0a0a; color: #f4ead6; }
+button.primary { background-color: #8a1010; border-color: #e03a1e; }
+button.primary:hover { background-color: #b8160f; }
+button.icon { min-width: 28dp; padding: 2dp 6dp; margin-left: 0dp; }
+
+/* scroll bar */
+scrollbarvertical { width: 12dp; background-color: #14111a; }
+scrollbarvertical sliderbar { width: 12dp; min-height: 24dp; background-color: #3a3339; border-radius: 3dp; }
+scrollbarvertical sliderbar:hover { background-color: #7d7176; }
+scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc { width: 0dp; height: 0dp; }

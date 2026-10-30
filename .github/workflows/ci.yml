@@ -677,6 +677,12 @@ jobs:
             (cd "$d" && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked)
           done
 
+      - name: Android app update download (O313 step 8; ApkFetcher on a plain JVM against a local HTTP server)
+        run: |
+          mkdir "$RUNNER_TEMP/apkt"
+          javac -d "$RUNNER_TEMP/apkt" client/android/app/src/main/java/com/cindersofchaos/client/ApkFetcher.java client/android/tests/com/cindersofchaos/client/ApkFetcherTest.java
+          java -cp "$RUNNER_TEMP/apkt" com.cindersofchaos.client.ApkFetcherTest
+
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 25

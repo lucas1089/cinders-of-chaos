@@ -237,6 +237,24 @@ def main():
         check('args --min-package 11 -- winpkg-46' in out and 'site=/srv/site key=' in out,
               'publish-update passes the tag, the options and the settings: ' + out)
 
+        # publish-apk (O313 step 8): the Android app update, release tags only, same background log
+        for bad in (('publish-apk',), ('publish-apk', '/tmp/x.apk'), ('publish-apk', 'a;b'), ('publish-apk', 'v1..2'),
+                    ('publish-apk', 'android-31', 'android-32'), ('publish-apk', '--min-version-code', 'x'),
+                    ('publish-apk', 'android-31', '--key', '/tmp/k')):
+            check(run(*bad, extra=pe).returncode != 0, 'publish-apk refuses %r' % (bad,))
+        for argv, want in ((('android-31',), 'args --apk android-31'),
+                           (('android-31', '--min-version-code', '30'), 'args --apk android-31 --apk-min-version-code 30'),
+                           (('--remove',), 'args --no-apk'),
+                           (('--min-version-code', '31'), 'args --apk-min-version-code 31')):
+            r = run('publish-apk', *argv, extra=pe)
+            check(r.returncode == 0 and 'publish-log' in r.stdout, 'publish-apk %r starts: %s' % (argv, r.stdout + r.stderr))
+            for _ in range(50):
+                if os.path.exists(plog) and 'site=' in open(plog).read():
+                    break
+                time.sleep(0.1)
+            out = run('publish-log', extra=pe).stdout
+            check(want in out and 'site=/srv/site' in out, 'publish-apk %r passes %r: %s' % (argv, want, out))
+
 
         # catalog and panel: a thread plays the engine and answers what the script queued
         import threading

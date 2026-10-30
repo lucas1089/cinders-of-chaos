@@ -111,6 +111,9 @@ GuildBankRow < UIWidget
 ChaosMainWindow
   id: guildWindow
   size: 620 600
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Guild')
   @onEscape: modules.game_guild.hide()
 

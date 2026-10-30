@@ -211,12 +211,12 @@ them are named by role, so they carry no Reserved Font Name.
 - **Alegreya SC**
   - Author: Copyright 2011 The Alegreya Project Authors, Huerta Tipográfica
   - Licence: SIL Open Font License 1.1
-  - Used for: Codex titles and headings
+  - Used for: Codex titles and headings, and the title of the RmlUi test window
   - Source: https://github.com/huertatipografica/Alegreya
 - **Alegreya Sans**
   - Author: Copyright 2013 The Alegreya Sans Project Authors, Huerta Tipográfica
   - Licence: SIL Open Font License 1.1
-  - Used for: text over the game picture
+  - Used for: text over the game picture, and the text of the RmlUi test window
   - Source: https://github.com/huertatipografica/Alegreya-Sans
 - **IM Fell English**
   - Author: Copyright (c) 2010, Igino Marini
@@ -289,6 +289,16 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
   - Licence: MIT
   - Used for: checking the Ed25519 signature of the update manifest in the game launcher
   - Source: https://github.com/jedisct1/rust-ed25519-compact
+- **RmlUi**
+  - Author: Peter Curry, Michael R. P. Ragazzon and the RmlUi contributors
+  - Licence: MIT
+  - Used for: the RmlUi spike (HTML and RCSS test window of the client, only in builds made with CHAOS_RMLUI=ON)
+  - Source: https://github.com/mikke89/RmlUi
+- **FreeType**
+  - Author: David Turner, Robert Wilhelm, Werner Lemberg and the FreeType Project
+  - Licence: FreeType Licence (BSD style, or GPL-2.0)
+  - Used for: drawing the TrueType fonts of RmlUi in the RmlUi spike
+  - Source: https://freetype.org/
 - **Libraries of the Android client (vcpkg ports)**
   - Author: Boost authors; the OpenSSL Project; Mike Pall (LuaJIT); Ryan C. Gordon (PhysicsFS); Dieter Baron and Thomas Klausner (libzip); Chris Robinson (OpenAL Soft); Xiph.Org (libogg, libvorbis); Jean-loup Gailly and Mark Adler (zlib); Julian Seward (bzip2)
   - Licence: Boost Software Licence 1.0 (Boost, headers only); Apache-2.0 (OpenSSL 3); MIT (LuaJIT); zlib licence (PhysicsFS, zlib); BSD-3-Clause (libzip, libogg, libvorbis); LGPL-2.0-or-later (OpenAL Soft); bzip2 licence (BSD style)

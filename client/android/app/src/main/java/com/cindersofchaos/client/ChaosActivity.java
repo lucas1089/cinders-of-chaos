@@ -33,6 +33,7 @@ import java.util.concurrent.Semaphore;
  * (src/framework/platform/androidwindow.cpp); commitText is the way back (patch 0164 names its C function).
  * restartApp is called after the game data download (patch 0167): it starts the game again in a new process.
  * splashProgress and splashHide drive the loading screen shown until the first frame (patch 0168).
+ * apkUpdate is the way to ApkUpdater, the app updating itself (patch 0169).
  */
 public class ChaosActivity extends android.app.NativeActivity {
     static {
@@ -263,6 +264,25 @@ public class ChaosActivity extends android.app.NativeActivity {
         helper.putExtra(RestartActivity.EXTRA_NEXT, launch);
         helper.putExtra(RestartActivity.EXTRA_PID, android.os.Process.myPid());
         startActivity(helper);
+    }
+
+    // The app update (client base patch 0169): the engine calls this by name through JNI (androidApkUpdate in
+    // androidwindow.cpp). op "start": a = url, b = SHA-256 of the APK, c = SHA-256 of its signing certificate, n = size;
+    // answers "1" or "0". op "status": the status text of ApkUpdater. op "cancel". Runs on the engine thread; the work
+    // is in ApkUpdater's own thread.
+    public String apkUpdate(String op, String a, String b, String c, long n) {
+        ApkUpdater updater = ApkUpdater.get(this);
+        switch (op) {
+            case "start":
+                return updater.start(a, b, n, c) ? "1" : "0";
+            case "status":
+                return updater.status();
+            case "cancel":
+                updater.cancel();
+                return "1";
+            default:
+                return "";
+        }
     }
 
     public void openUrl(String url) {

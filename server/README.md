@@ -21017,6 +21017,15 @@ script re-runs itself with `sudo -n`, which drops the environment.
   phone fetches the same encrypted blobs) and old clients ignore it, so no step changes for the operator: the next
   `publish-update` of a newer release writes it. `publish_client_update_test.py` checks it on a sharded package
   (layouts/mobile on the site but not on the phone list, the shard set and the dat on it, count and download bytes).
+  **App update (O313 step 8, 2026-10-30):** `publish-apk APKTAG [--min-version-code N]`, `publish-apk --remove` and
+  `publish-apk --min-version-code N` run `publish_client_update.sh --apk APKTAG ...` in the same background log. It downloads
+  `CindersOfChaos-Android.apk` and `CindersOfChaos-Android.json` from the release `android-N` of `android-client.yml`
+  (settings `CHAOS_UPDATE_APK_ASSET`, `CHAOS_UPDATE_APK_INFO_ASSET`, `CHAOS_UPDATE_APK_MIN_MB`), puts the APK as a plain file
+  under `updates/live/apk/` and signs the manifest again with the key entry `android_apk` (`make_update_manifest.py set-apk`):
+  same manifest version and game files, no Windows package needed. With a client zip the same flags go into that publish
+  (`publish_client_update.sh --apk android-31 winpkg-60`), and a publish without them keeps the published app entry. Admin app:
+  Comandos > "Site e update do client" > "Publicar app Android" and "Tirar o app do update". The web check asks the APK URL
+  with a range request and warns unless it answers 206. client/MANIFEST.md "APK updater"; docs/ANDROID_CLIENT.md "Step 8 status".
   Tests: `chaos_ctl_test.py` (refusals, the arguments and settings reaching a stub) and `publish_client_update_test.py`
   (the real script on synthetic loose and packed packages with throwaway keys: the manifest verifies, every blob is
   ciphertext that decrypts to its signed content, version and min_package, unsafe zips, key mismatches, a missing or

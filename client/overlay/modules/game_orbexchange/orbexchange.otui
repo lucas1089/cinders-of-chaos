@@ -198,6 +198,9 @@ OrbxRect < UIWidget
 ChaosMainWindow
   id: orbExchangeWindow
   size: 900 600
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Orb Exchange')
   @onEscape: modules.game_orbexchange.hide()
 

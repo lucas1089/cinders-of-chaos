@@ -1,0 +1,9 @@
+Module
+  name: client_chaos_rmltest
+  description: RmlUi spike (docs/RMLUI_SPIKE.md): one HTML/RCSS test window. Does nothing in a client built without CHAOS_RMLUI (no g_rml).
+  author: Cinders of Chaos
+  sandboxed: false
+  reloadable: true
+  scripts: [ rmltest ]
+  autoload: true
+  autoload-priority: 1000
