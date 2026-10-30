@@ -1926,7 +1926,16 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         [ -f "$REPO/server/deploy/$BOTUNIT.service" ] || die "no $REPO/server/deploy/$BOTUNIT.service"
         [[ $BOTUSER =~ ^[a-z][a-z0-9_-]{1,30}$ ]] || die "bad CHAOS_BOT_USER"
         command -v "$BOTPY" >/dev/null 2>&1 || die "python3-not-found"
-        "$BOTPY" -c 'import venv, ensurepip' >/dev/null 2>&1 || die "python3-venv-missing: apt-get install python3-venv"
+        if ! "$BOTPY" -c 'import venv, ensurepip' >/dev/null 2>&1; then
+          # owner 2026-10-30: the admin app's install stopped here; the package is put in once, as for the server's own
+          if command -v apt-get >/dev/null 2>&1; then
+            echo "installing python3-venv (apt-get)"
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -q python3-venv >/dev/null 2>&1 \
+              || DEBIAN_FRONTEND=noninteractive apt-get install -y -q "python3.$("$BOTPY" -c 'import sys; print(sys.version_info[1])' 2>/dev/null)-venv" >/dev/null 2>&1 \
+              || true
+          fi
+          "$BOTPY" -c 'import venv, ensurepip' >/dev/null 2>&1 || die "python3-venv-missing: apt-get install python3-venv"
+        fi
         if ! id "$BOTUSER" >/dev/null 2>&1; then
           adduser --system --group --no-create-home --home "$BOTDATA" --shell /usr/sbin/nologin "$BOTUSER" >/dev/null \
             || die "adduser $BOTUSER failed"
