@@ -715,10 +715,12 @@ request("load", {slot = 1})
 has(lastOf("result").text, "seconds", "cooldown")
 storages[7100572] = os.time() - cfg.cooldownSeconds - 1
 
--- combat
+-- combat: the battle condition counts outside a protection zone; in one it does not (Chaos.inCombat)
 player.combat = true
+pzFlag = false
 request("load", {slot = 1})
 has(lastOf("result").text, "combat", "combat refused")
+pzFlag = true
 player.combat = false
 
 -- out of a protection zone: a channel; moving interrupts it

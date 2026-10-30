@@ -4762,8 +4762,13 @@ window exists (polled every second, like the Auto setup button), and any other h
   (Casting, On, On cooldown, Not enough mana, Waits for a fight ...). The first row that may go out goes first. Beside
   the list: a switch for the whole tab, the mana reserve (dropdown 0 to 50 %, default 20 %: a spell is cast only if that
   share of the maximum mana is left after it) and the buttons Fill for my class (adds what Auto setup would) and Clear
-  list. Saved per character in the client settings node `chaos_helper_support` (`{enabled, reserve, slots}`), like the
-  other helper additions; Auto setup fills it (Undo restores it).
+  list. Saved per character in the client settings node `chaos_helper_support` (`{enabled, reserve, slots, keep,
+  cleared}`), like the other helper additions; Auto setup fills it (Undo restores it).
+- The list survives a death (owner 2026-10-30, the fourth "it clears the list" report). Only the player's own edits in
+  the open window change rows (a hidden panel's events are ignored), a box with no option chosen keeps its row, the
+  mouse wheel no longer changes a box, and a nameless login (`''`, before the name packet) loads nothing. `keep` holds
+  the last list with rows: a list saved empty without Clear (or an empty Auto setup) comes back from it at the next load
+  (`ChaosHelperSupport.restoreKept`), and an empty save over kept rows logs a warning with a traceback.
 - What may stand in the list comes from the spell data, not from a class list (`ChaosHelperSupport.eligible`): a
   support spell (group 3 without the attack group 1) with no typed name and no target, on the server, and not a utility
   (stock light, rope, food, find, challenge ... by words, the stock words and their Chaos words from
