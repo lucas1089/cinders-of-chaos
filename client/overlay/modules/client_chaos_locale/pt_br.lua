@@ -5902,5 +5902,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["How often"] = "Quantas vezes",
   ["How it works: who it is for, what drops, what a death costs."] = "Como funciona: para quem é, o que cai, o que a morte custa.",
   ["Click: How it works"] = "Clique: Como funciona",
+  -- client/overlay/modules/client_chaos_rmltest/rmltest.lua (RmlUi spike)
+  ["RmlUi test window"] = "Janela de teste do RmlUi",
+  ["Test row %d"] = "Linha de teste %d",
+  ["%d rows, refreshed %d times"] = "%d linhas, atualizada %d vezes",
 }
 return ChaosLocaleStrings['pt-BR']

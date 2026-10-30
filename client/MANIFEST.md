@@ -5134,3 +5134,12 @@ the folders `images`, `modules` and `data` in that folder if they exist. Keep `c
 `ChaosSpellFix.allowsVocation` (game_chaosspells/spellfix.lua) is the one class rule of the action bar, the hotkey pickers
 and Auto setup. Chaos spells match their exact server ids; only stock entries also match the folded id of
 `translateVocation`, which put the Beastmaster on the Deadeye's spells.
+
+## RmlUi spike (`client_chaos_rmltest`, base patch 0172, 2026-10-30)
+One test window in HTML and RCSS, to measure what RmlUi costs. Report and recommendation: `docs/RMLUI_SPIKE.md`.
+- `client_chaos_rmltest`: `rmltest.rml`, `rmltest.rcss` (dark theme, flex, percent widths, a scrolling list of 30 rows, two
+  buttons plus a close button), `rmltest.lua` (opens it, fills it with `g_rml`, texts through `tr()`), `fonts/` (Alegreya
+  Sans Medium and Alegreya SC Bold TTF with their OFL texts). Open: `ChaosRmlTest.open()` or Ctrl+Alt+F10. In a client
+  built without `-DCHAOS_RMLUI=ON` there is no `g_rml` and the module does nothing.
+- Engine side: overlay `src/framework/rml/rmlmanager.{h,cpp}` (render, system and file interfaces, input mapping, the
+  `g_rml` Lua binding), hooked in by base patch 0172. Test: `rmltest_test.lua` (fake `g_rml`).

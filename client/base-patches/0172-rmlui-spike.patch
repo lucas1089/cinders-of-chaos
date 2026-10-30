@@ -1,0 +1,145 @@
+diff -ruN a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -22,6 +22,19 @@
+ include(src/framework/CMakeLists.txt)
+ include(src/client/CMakeLists.txt)
+ 
++# RmlUi documents next to the OTUI windows (spike, docs/RMLUI_SPIKE.md). Off: no RmlUi code, nothing linked.
++# On: RmlUi comes from vcpkg (port "rmlui", FreeType font engine) or any CMake package named RmlUi.
++option(CHAOS_RMLUI "RmlUi documents next to OTUI (spike)" OFF)
++if(CHAOS_RMLUI AND FRAMEWORK_GRAPHICS AND NOT WASM)
++    find_package(RmlUi CONFIG REQUIRED)
++    list(APPEND framework_SOURCES
++        ${CMAKE_CURRENT_SOURCE_DIR}/src/framework/rml/rmlmanager.cpp
++        ${CMAKE_CURRENT_SOURCE_DIR}/src/framework/rml/rmlmanager.h)
++    list(APPEND framework_LIBRARIES RmlUi::RmlUi)
++    add_definitions(-DCHAOS_RMLUI)
++    message(STATUS "RmlUi: ON")
++endif()
++
+ # functions map for reading backtraces (flags do linker GNU; nao aplicar no MSVC)
+ if(NOT APPLE AND NOT WASM AND NOT MSVC AND NOT ANDROID)
+     set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -no-pie -Wl,-Map=${PROJECT_NAME}.map")
+diff -ruN a/src/framework/core/application.cpp b/src/framework/core/application.cpp
+--- a/src/framework/core/application.cpp
++++ b/src/framework/core/application.cpp
+@@ -21,6 +21,9 @@
+  */
+ 
+ #include "application.h"
++#ifdef CHAOS_RMLUI
++#include <framework/rml/rmlmanager.h>
++#endif
+ #include <csignal>
+ #include <framework/core/clock.h>
+ #include <framework/core/resourcemanager.h>
+@@ -172,6 +175,9 @@
+ 
+ void Application::terminate()
+ {
++#ifdef CHAOS_RMLUI
++    g_rml.terminate();
++#endif
+     // terminate network
+     Connection::terminate();
+ 
+diff -ruN a/src/framework/luafunctions.cpp b/src/framework/luafunctions.cpp
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -21,6 +21,9 @@
+  */
+ 
+ #include <framework/core/application.h>
++#ifdef CHAOS_RMLUI
++#include <framework/rml/rmlmanager.h>
++#endif
+ #include <framework/core/adaptiverenderer.h>
+ #include <framework/luaengine/luainterface.h>
+ #include <framework/core/eventdispatcher.h>
+@@ -465,6 +468,27 @@
+     g_lua.bindSingletonFunction("g_shaders", "setMapGrade", &ShaderManager::setMapGrade, &g_shaders);
+ 
+     // UI
++#ifdef CHAOS_RMLUI
++    // RmlUi documents: g_rml.loadDocument(path) -> id, show/hide/close(id), setText/setInnerRml(id, elementId, ..)
++    g_lua.registerSingletonClass("g_rml");
++    g_lua.bindSingletonFunction("g_rml", "init", &RmlManager::init, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "isReady", &RmlManager::isReady, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "loadFont", &RmlManager::loadFont, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "loadDocument", &RmlManager::loadDocument, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "show", &RmlManager::show, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "hide", &RmlManager::hide, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "close", &RmlManager::close, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "isVisible", &RmlManager::isVisible, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setText", &RmlManager::setText, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setInnerRml", &RmlManager::setInnerRml, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setClass", &RmlManager::setClass, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setProperty", &RmlManager::setProperty, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setEventCallback", &RmlManager::setEventCallback, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "setScale", &RmlManager::setScale, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "escape", &RmlManager::escape, &g_rml);
++    g_lua.bindSingletonFunction("g_rml", "getDocumentCount", &RmlManager::getDocumentCount, &g_rml);
++#endif
++
+     g_lua.registerSingletonClass("g_ui");
+     g_lua.bindSingletonFunction("g_ui", "clearStyles", &UIManager::clearStyles, &g_ui);
+     g_lua.bindSingletonFunction("g_ui", "importStyle", &UIManager::importStyle, &g_ui);
+diff -ruN a/src/framework/ui/uimanager.cpp b/src/framework/ui/uimanager.cpp
+--- a/src/framework/ui/uimanager.cpp
++++ b/src/framework/ui/uimanager.cpp
+@@ -31,6 +31,9 @@
+ #include <framework/core/application.h>
+ #include <framework/core/resourcemanager.h>
+ #include <framework/util/extras.h>
++#ifdef CHAOS_RMLUI
++#include <framework/rml/rmlmanager.h>
++#endif
+ 
+ UIManager g_ui;
+ 
+@@ -91,6 +94,11 @@
+ void UIManager::render(Fw::DrawPane drawPane)
+ {
+     m_rootWidget->draw(m_rootWidget->getRect(), drawPane);
++#ifdef CHAOS_RMLUI
++    // RmlUi documents draw over the OTUI windows
++    if (drawPane == Fw::ForegroundPane)
++        g_rml.render();
++#endif
+ }
+ 
+ void UIManager::resize(const Size& size)
+@@ -102,6 +110,11 @@
+ void UIManager::inputEvent(const InputEvent& event)
+ {
+     UIWidgetList widgetList;
++#ifdef CHAOS_RMLUI
++    // RmlUi sees the event first; true = it was over an RmlUi document or a text field of one
++    if (g_rml.inputEvent(event))
++        return;
++#endif
+     switch(event.type) {
+         case Fw::KeyTextInputEvent:
+             g_lua.callGlobalField("g_ui", "onKeyText", event.keyText);
+diff -ruN a/vcpkg.json b/vcpkg.json
+--- a/vcpkg.json
++++ b/vcpkg.json
+@@ -36,6 +36,17 @@
+             "platform": "windows"
+         }
+     ],
++    "features": {
++        "rmlui": {
++            "description": "RmlUi documents next to the OTUI windows (CMake option CHAOS_RMLUI, spike)",
++            "dependencies": [
++                {
++                    "name": "rmlui",
++                    "default-features": true
++                }
++            ]
++        }
++    },
+     "overrides": [
+         {
+             "name": "openal-soft",

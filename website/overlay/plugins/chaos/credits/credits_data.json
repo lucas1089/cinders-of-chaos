@@ -269,14 +269,14 @@
      "name": "Alegreya SC",
      "author": "Copyright 2011 The Alegreya Project Authors, Huerta Tipográfica",
      "licence": "SIL Open Font License 1.1",
-     "use": "Codex titles and headings",
+     "use": "Codex titles and headings, and the title of the RmlUi test window",
      "source": "https://github.com/huertatipografica/Alegreya"
     },
     {
      "name": "Alegreya Sans",
      "author": "Copyright 2013 The Alegreya Sans Project Authors, Huerta Tipográfica",
      "licence": "SIL Open Font License 1.1",
-     "use": "text over the game picture",
+     "use": "text over the game picture, and the text of the RmlUi test window",
      "source": "https://github.com/huertatipografica/Alegreya-Sans"
     },
     {
@@ -379,6 +379,20 @@
      "licence": "MIT",
      "use": "checking the Ed25519 signature of the update manifest in the game launcher",
      "source": "https://github.com/jedisct1/rust-ed25519-compact"
+    },
+    {
+     "name": "RmlUi",
+     "author": "Peter Curry, Michael R. P. Ragazzon and the RmlUi contributors",
+     "licence": "MIT",
+     "use": "the RmlUi spike (HTML and RCSS test window of the client, only in builds made with CHAOS_RMLUI=ON)",
+     "source": "https://github.com/mikke89/RmlUi"
+    },
+    {
+     "name": "FreeType",
+     "author": "David Turner, Robert Wilhelm, Werner Lemberg and the FreeType Project",
+     "licence": "FreeType Licence (BSD style, or GPL-2.0)",
+     "use": "drawing the TrueType fonts of RmlUi in the RmlUi spike",
+     "source": "https://freetype.org/"
     },
     {
      "name": "Libraries of the Android client (vcpkg ports)",

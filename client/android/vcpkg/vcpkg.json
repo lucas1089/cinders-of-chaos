@@ -20,6 +20,17 @@
         "openal-soft",
         "luajit"
     ],
+    "features": {
+        "rmlui": {
+            "description": "RmlUi documents next to the OTUI windows (CMake option CHAOS_RMLUI, spike)",
+            "dependencies": [
+                {
+                    "name": "rmlui",
+                    "default-features": true
+                }
+            ]
+        }
+    },
     "overrides": [
         {
             "name": "openal-soft",
