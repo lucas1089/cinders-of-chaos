@@ -359,7 +359,7 @@
     },
     {
       "zone": "silent_shrine",
-      "monster": "Ashmaw Bonecaller",
+      "monster": "Wickstaff Hexmage",
       "count": 9,
       "respawn": 45,
       "pack": 3
@@ -464,7 +464,7 @@
     },
     {
       "zone": "candle_crypts",
-      "monster": "Ashmaw Bonecaller",
+      "monster": "Wickstaff Hexmage",
       "count": 6,
       "respawn": 45,
       "pack": 3

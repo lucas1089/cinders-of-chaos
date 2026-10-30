@@ -375,7 +375,7 @@
     },
     {
       "zone": "ashen_pan",
-      "monster": "Saltkin Plunderer",
+      "monster": "Bogtusk Cleaver",
       "count": 5,
       "respawn": 75,
       "pack": 3
@@ -389,7 +389,7 @@
     },
     {
       "zone": "scorched_bluff",
-      "monster": "Bony Sea Devil",
+      "monster": "Bogtusk Cleaver",
       "count": 8,
       "respawn": 75,
       "pack": 3

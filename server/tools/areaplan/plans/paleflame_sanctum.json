@@ -583,14 +583,14 @@
     },
     {
       "zone": "moldy_cell",
-      "monster": "Oathbroken Colossus",
+      "monster": "Gravecrown Oathbreaker",
       "count": 8,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "moldy_cell",
-      "monster": "Wraithbone Stalker",
+      "monster": "Gravecrown Oathbreaker",
       "count": 11,
       "respawn": 75,
       "pack": 3
@@ -618,7 +618,7 @@
     },
     {
       "zone": "tainted_nave",
-      "monster": "Wraithbone Stalker",
+      "monster": "Gravecrown Oathbreaker",
       "count": 6,
       "respawn": 75,
       "pack": 3
