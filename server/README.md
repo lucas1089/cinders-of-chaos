@@ -11547,11 +11547,11 @@ Rift; then two hunt monsters that fit the game. All three live in the Embergut R
   each file's look, `lookOf` on and off, the boss flag, the boss room and both hunt monsters in the plan; `tests/bossspawns_test.lua`
   covers the new row. Not run live.
 
-## AI Sprite Studio monsters (pair 57) (`data/lib/chaos_aiss_art.lua`, switch `ChaosAissArt.PAIR57`, off)
+## AI Sprite Studio monsters (pair 57) (`data/lib/chaos_aiss_art.lua`, switch `ChaosAissArt.PAIR57`, on)
 
 Owner request 2026-10-30: the seven creature sheets of a free AI-generated sample pack (docs/CREDITS.md "AI Sprite Studio") become
-seven new hunt monsters, each with a name of its own. The art is client pair 57 (client/MANIFEST.md "Pair 57"; built, **not on
-windows-assets yet**), outfits 3364-3370. The pack's eighth sheet is not used (the owner: it looks like a famous comic character).
+seven new hunt monsters, each with a name of its own. The art is client pair 57 (client/MANIFEST.md "Pair 57"; on
+windows-assets 1ecba64), outfits 3364-3370. The pack's eighth sheet is not used (the owner: it looks like a famous comic character).
 - **Files.** `data/monster/monsters/chaos/<key>.xml`, registered by the `monsters` step with the rest of the folder. All seven are
   hunt monsters, none a boss. **Where they spawn (2026-10-30)**: in nine planned hunts
   (`tools/areaplan/plans/*.json`), each by swapping whole spawn entries to the new monster (counts and packs of 3 kept, so the
