@@ -83,7 +83,7 @@
      g_lua.bindSingletonFunction("g_resources", "createArchive", &ResourceManager::createArchive, &g_resources);
 --- a/src/framework/platform/androidwindow.cpp
 +++ b/src/framework/platform/androidwindow.cpp
-@@ -19,6 +19,50 @@
+@@ -19,6 +19,53 @@
      }
  }
  
@@ -94,12 +94,15 @@
 +std::string androidApkUpdate(const std::string& op, const std::string& a, const std::string& b, const std::string& c, int n)
 +{
 +    std::string answer;
++    if (!g_androidState || !g_androidState->activity)
++        return answer;
 +    JNIEnv* env = nullptr;
-+    JavaVM* vm = getJavaVM();
++    JavaVM* vm = g_androidState->activity->vm;
++    jobject activity = g_androidState->activity->clazz;
 +    const bool attachedBefore = vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) == JNI_OK;
 +    if (!attachedBefore && vm->AttachCurrentThread(&env, NULL) == JNI_ERR)
 +        return answer;
-+    jclass clazz = env->GetObjectClass(getClazz());
++    jclass clazz = env->GetObjectClass(activity);
 +    jmethodID methodID = env->GetMethodID(clazz, "apkUpdate",
 +                                          "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;J)Ljava/lang/String;");
 +    if (methodID) {
@@ -107,7 +110,7 @@
 +        jstring ja = env->NewStringUTF(a.c_str());
 +        jstring jb = env->NewStringUTF(b.c_str());
 +        jstring jc = env->NewStringUTF(c.c_str());
-+        jstring result = static_cast<jstring>(env->CallObjectMethod(getClazz(), methodID, jop, ja, jb, jc, static_cast<jlong>(n)));
++        jstring result = static_cast<jstring>(env->CallObjectMethod(activity, methodID, jop, ja, jb, jc, static_cast<jlong>(n)));
 +        if (env->ExceptionCheck()) {
 +            env->ExceptionClear();
 +        } else if (result) {
