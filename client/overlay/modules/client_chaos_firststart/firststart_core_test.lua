@@ -233,5 +233,71 @@ C.unpack({ blobs = {}, io = w.io, onDone = function(ok) doneOk = ok end })
 w.run()
 eq(doneOk, true, 'unpack: empty list is done')
 
+-- ---------------------------------------------------------------- the app update (O313 step 8)
+local function apk(over)
+  local a = { version_code = 31, version_name = '1.31', min_version_code = 0, sha256 = sha('9'), size = 4096,
+              signer_sha256 = sha('5') }
+  a.url = ('apk/%s/%s.apk'):format(a.sha256:sub(1, 2), a.sha256)
+  for k, v in pairs(over or {}) do a[k] = v end
+  return a
+end
+local function withApk(a) return { format = 1, product = U.PRODUCT, version = 5, files = files, android_apk = a } end
+local entry, aerr = C.apkEntry(withApk(apk()))
+eq(entry ~= nil and entry.version_code, 31, 'apk entry accepted: ' .. tostring(aerr))
+eq(select(2, C.apkEntry({ files = files })), nil, 'no apk entry: nothing to say'); eq(C.apkEntry({ files = files }), nil, 'no apk entry: nil')
+eq(C.apkEntry(nil), nil, 'no manifest: no apk entry')
+for what, bad in pairs({
+  string = 'x', versionCode0 = apk({ version_code = 0 }), versionCodeBig = apk({ version_code = 65536 }),
+  versionCodeText = apk({ version_code = '31' }), versionCodeFraction = apk({ version_code = 31.5 }),
+  nameSpace = apk({ version_name = '1 31' }), nameEmpty = apk({ version_name = '' }), nameLong = apk({ version_name = ('x'):rep(33) }),
+  nameNumber = apk({ version_name = 131 }), minAbove = apk({ min_version_code = 32 }), minNegative = apk({ min_version_code = -1 }),
+  shaUpper = apk({ sha256 = ('A'):rep(64) }), shaShort = apk({ sha256 = ('a'):rep(63) }),
+  signerShort = apk({ signer_sha256 = 'ab' }), signerUpper = apk({ signer_sha256 = ('A'):rep(64) }),
+  sizeZero = apk({ size = 0 }), sizeBig = apk({ size = C.APK_MAX_SIZE + 1 }), sizeText = apk({ size = '4096' }),
+  urlAbsolute = apk({ url = 'https://example.org/a.apk' }), urlUp = apk({ url = 'apk/../a.apk' }),
+  urlOther = apk({ url = 'apk/00/' .. sha('9') .. '.apk' }), extraKey = apk({ extra = 1 }),
+}) do
+  local e, why = C.apkEntry(withApk(bad))
+  eq(e, nil, 'apk entry refused: ' .. what); eq(type(why), 'string', 'apk entry refused with a reason: ' .. what)
+end
+local missing = apk(); missing.signer_sha256 = nil
+eq(C.apkEntry(withApk(missing)), nil, 'apk entry without a signer refused')
+
+local e31 = apk(); local e31min = apk({ min_version_code = 30 })
+eq(C.apkDecision(nil, 30, 0), 'none', 'decision: no entry')
+eq(C.apkDecision(e31, 31, 0), 'none', 'decision: same code'); eq(C.apkDecision(e31, 40, 0), 'none', 'decision: phone is newer')
+eq(C.apkDecision(e31, 30, 0), 'offer', 'decision: newer app is an offer'); eq(C.apkDecision(e31, 0, 0), 'offer', 'decision: unknown package')
+eq(C.apkDecision(e31min, 29, 0), 'required', 'decision: below the minimum is required')
+eq(C.apkDecision(e31min, 30, 0), 'offer', 'decision: at the minimum is an offer')
+eq(C.apkDecision(e31, 30, 31), 'required', 'decision: the server min_package is reached by the entry')
+eq(C.apkDecision(e31, 29, 32), 'none', 'decision: the entry does not reach min_package: the website download screen')
+eq(C.apkDecision(e31, 30, 30), 'offer', 'decision: min_package equal to the package is no block')
+eq(C.apkDecision(e31, '30', '0'), 'offer', 'decision: numbers as text')
+
+eq(C.apkUrl('https://example.org/updates/live/manifest.json?t=5', e31), 'https://example.org/updates/live/' .. e31.url, 'apk url next to the manifest')
+eq(C.apkUrl('manifest.json', e31), e31.url, 'apk url: bare manifest name')
+
+local st = C.parseApkStatus('downloading\t1048576\t4194304\t')
+eq(st.state, 'downloading', 'status: state'); eq(st.done, 1048576, 'status: done'); eq(st.total, 4194304, 'status: total')
+eq(C.apkPercent(st), 25, 'status: percent')
+st = C.parseApkStatus('failed\t0\t0\thash')
+eq(st.state, 'failed', 'status: failed'); eq(st.message, 'hash', 'status: failure code')
+eq(C.parseApkStatus('permission\t0\t0').state, 'permission', 'status: no message field')
+eq(C.parseApkStatus('').state, 'idle', 'status: empty is idle'); eq(C.parseApkStatus(nil).state, 'idle', 'status: nil is idle')
+eq(C.parseApkStatus('weird\t1\t2\tx').state, 'failed', 'status: unknown state is a failure')
+eq(C.parseApkStatus('garbage').state, 'failed', 'status: garbage is a failure')
+eq(C.apkPercent({ done = 5, total = 0 }), 0, 'percent: no total'); eq(C.apkPercent({ done = 9, total = 4 }), 100, 'percent: capped')
+
+eq(C.nextPhase('checking', 'apkoffer'), 'apkoffer', 'checking -> apk offer'); eq(C.nextPhase('checking', 'apkrequired'), 'apkrequired', 'checking -> apk required')
+eq(C.nextPhase('apkoffer', 'install'), 'apkbusy', 'offer -> busy'); eq(C.nextPhase('apkoffer', 'later'), 'checking', 'offer: later goes on with the game data')
+eq(C.nextPhase('apkrequired', 'later'), nil, 'a required update has no later'); eq(C.nextPhase('apkrequired', 'install'), 'apkbusy', 'required -> busy')
+eq(C.nextPhase('apkbusy', 'wait'), 'apkwait', 'busy -> wait'); eq(C.nextPhase('apkwait', 'install'), 'apkbusy', 'wait -> busy again')
+eq(C.nextPhase('apkbusy', 'fail'), 'apkerror', 'busy -> error'); eq(C.nextPhase('apkerror', 'install'), 'apkbusy', 'error: try again')
+eq(C.nextPhase('apkerror', 'later'), 'checking', 'error: later'); eq(C.nextPhase('apkerror', 'retry'), 'checking', 'error: check again')
+for _, ph in ipairs({ 'apkoffer', 'apkrequired', 'apkbusy', 'apkwait', 'apkerror' }) do
+  eq(C.blocksLogin(ph, false), true, 'blocks login: ' .. ph)
+  eq(C.blocksLogin(ph, true), true, 'blocks login without data: ' .. ph)
+end
+
 print(('firststart_core_test: %d checks, %s'):format(checks, fails == 0 and 'OK' or (fails .. ' FAILED')))
 if fails > 0 then os.exit(1) end

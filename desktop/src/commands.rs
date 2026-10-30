@@ -159,6 +159,7 @@ use Tab::{Commands as C, Logs as L, Panel as P};
 const TEXT_P: &[Param] = &[text("text", "Mensagem")];
 const NAME_P: &[Param] = &[text("name", "Nome do personagem")];
 const TAG_P: &[Param] = &[text("tag", "Tag da release (ex.: winpkg-123)")];
+const APK_P: &[Param] = &[text("tag", "Tag da release do app (ex.: android-31)")];
 const N_P: &[Param] = &[int("n", "Linhas", 1, 500, "100")];
 const SECS_P: &[Param] = &[int("secs", "Segundos de aviso", 30, 900, "300")];
 const MINS_P: &[Param] = &[int("mins", "Minutos", 1, 60, "5")];
@@ -292,6 +293,8 @@ pub static ACTIONS: &[Action] = &[
     // ---- Comandos: site e update do client
     act(C, "Site e update do client", "Reinstalar o site", "site-install").ask().t(30),
     act(C, "Site e update do client", "Publicar update do client", "publish-update {tag}").p(TAG_P).ask().t(30),
+    act(C, "Site e update do client", "Publicar app Android", "publish-apk {tag}").p(APK_P).ask().t(30),
+    act(C, "Site e update do client", "Tirar o app Android do update", "publish-apk --remove").ask().t(30),
     act(C, "Site e update do client", "Trocar os downloads", "update-downloads").ask().t(30),
     act(C, "Mapa", "Publicar áreas da caixa de entrada", "areas-publish").t(120),
     act(C, "Mapa", "Novo endereço das áreas", "areas-publish --rotate").ask().t(120),

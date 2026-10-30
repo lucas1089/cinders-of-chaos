@@ -1095,6 +1095,27 @@ final class CommandsTab {
             a.logs.openUpdate("publish-log");
         });
         b.addView(ui.evenRow(pub, pubLog), ui.gap(6));
+        TextInputLayout apkTag = ui.field("Release do app Android", "Ex.: android-31. O app do celular baixa e instala "
+                + "o APK dessa release (do workflow Android client) quando abre. Não precisa de um update novo do client.",
+                "", 0);
+        b.addView(apkTag, ui.gap(8));
+        MaterialButton apkPub = ui.primary("Publicar app Android", R.drawable.ic_send);
+        apkPub.setOnClickListener(v -> {
+            String t = Ui.value(apkTag);
+            if (!t.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}") || t.contains("..")) {
+                apkTag.setError("Uma tag de release, ex.: android-31.");
+                return;
+            }
+            apkTag.setError(null);
+            a.confirm("Publicar o app Android " + t + "?", "Os celulares oferecem a troca do app na próxima vez que "
+                    + "abrirem o client.", "Publicar", false,
+                    () -> ctl("Publicar app " + t, "publish-apk " + Ssh.sq(t), 30, null));
+        });
+        MaterialButton apkOff = ui.secondary("Tirar o app do update", 0);
+        apkOff.setOnClickListener(v -> a.confirm("Tirar o app Android do update?", "Os celulares deixam de ver a "
+                + "oferta de um app novo. O APK publicado é apagado do site.", "Tirar", true,
+                () -> ctl("Tirar o app Android", "publish-apk --remove", 30, null)));
+        b.addView(ui.evenRow(apkPub, apkOff), ui.gap(6));
         MaterialButton dl = ui.secondary("Trocar os downloads do site", 0);
         dl.setOnClickListener(v -> a.confirm("Trocar os downloads do site?", "Baixa o pacote Windows e o Linux da release "
                 + "mais nova para a página de downloads. Não reinicia o servidor e não mexe no update do client. "

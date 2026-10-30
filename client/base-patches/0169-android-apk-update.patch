@@ -1,0 +1,136 @@
+# Chaos: the Android app updates itself (O313 step 8, docs/ANDROID_CLIENT.md section 4; client/BASE.md "0169";
+# core/resourcemanager.{h,cpp}, luafunctions.cpp, platform/androidwindow.cpp; after 0001-0168). The signed update manifest has an
+# "android_apk" entry (version code, url, SHA-256, size, signer certificate SHA-256, make_update_manifest.py). The first-start
+# screen (modules/client_chaos_firststart) decides, and these functions pass the job to the Java shell (ChaosActivity.apkUpdate,
+# ApkUpdater: download with resume, size and SHA-256 check, signer certificate check, PackageInstaller):
+#  * g_resources.startApkUpdate(url, sha256, size, signerSha256) -> bool: starts (or restarts) the update, or the step that asks
+#    the player to allow installs from this app. False when the shell refuses the arguments or this is not Android.
+#  * g_resources.apkUpdateStatus() -> "state<TAB>done<TAB>total<TAB>message" ("" off Android); cancelApkUpdate().
+#  The JNI call is androidApkUpdate in androidwindow.cpp (one Java method, op = start | status | cancel).
+--- a/src/framework/core/resourcemanager.h
++++ b/src/framework/core/resourcemanager.h
+@@ -8,6 +8,12 @@
+     bool mountDataFolder(const std::string& path);
+     bool unmountDataFolder();
+     int64_t getFreeSpace();
++
++    // Cinders of Chaos app update (base patch 0169, client/BASE.md "APK updater"): the Android shell downloads and installs
++    // the APK named by the signed manifest; Lua starts it and polls the status text
++    bool startApkUpdate(const std::string& url, const std::string& sha256, int size, const std::string& signerSha256);
++    std::string apkUpdateStatus();
++    void cancelApkUpdate();
+     
+     std::map<std::string, std::string> filesChecksums();
+     std::string selfChecksum();
+--- a/src/framework/core/resourcemanager.cpp
++++ b/src/framework/core/resourcemanager.cpp
+@@ -151,6 +151,43 @@
+ #endif
+ }
+ 
++// ---- Cinders of Chaos app update (base patch 0169, client/BASE.md "APK updater") ----
++// The Android app updating itself: the Java shell (ChaosActivity.apkUpdate, ApkUpdater) downloads the APK the signed
++// manifest names, checks its size, SHA-256 and signing certificate and hands it to the PackageInstaller. These calls only
++// pass the request on through JNI (androidApkUpdate in androidwindow.cpp); on other platforms they do nothing.
++#if defined(ANDROID)
++std::string androidApkUpdate(const std::string& op, const std::string& a, const std::string& b, const std::string& c, int n);
++#endif
++
++bool ResourceManager::startApkUpdate(const std::string& url, const std::string& sha256, int size, const std::string& signerSha256)
++{
++#if defined(ANDROID)
++    return androidApkUpdate("start", url, sha256, signerSha256, size) == "1";
++#else
++    (void)url;
++    (void)sha256;
++    (void)size;
++    (void)signerSha256;
++    return false;
++#endif
++}
++
++std::string ResourceManager::apkUpdateStatus()
++{
++#if defined(ANDROID)
++    return androidApkUpdate("status", "", "", "", 0);
++#else
++    return "";
++#endif
++}
++
++void ResourceManager::cancelApkUpdate()
++{
++#if defined(ANDROID)
++    androidApkUpdate("cancel", "", "", "", 0);
++#endif
++}
++
+ std::map<std::string, std::string> ResourceManager::filesChecksums()
+ {
+     std::map<std::string, std::string> ret;
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -6,6 +6,10 @@
+     g_lua.bindSingletonFunction("g_resources", "mountDataFolder", &ResourceManager::mountDataFolder, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "unmountDataFolder", &ResourceManager::unmountDataFolder, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "getFreeSpace", &ResourceManager::getFreeSpace, &g_resources);
++    // Cinders of Chaos app update (base patch 0169)
++    g_lua.bindSingletonFunction("g_resources", "startApkUpdate", &ResourceManager::startApkUpdate, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "apkUpdateStatus", &ResourceManager::apkUpdateStatus, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "cancelApkUpdate", &ResourceManager::cancelApkUpdate, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "updateData", &ResourceManager::updateData, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "updateExecutable", &ResourceManager::updateExecutable, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "createArchive", &ResourceManager::createArchive, &g_resources);
+--- a/src/framework/platform/androidwindow.cpp
++++ b/src/framework/platform/androidwindow.cpp
+@@ -19,6 +19,50 @@
+     }
+ }
+ 
++// Cinders of Chaos (base patch 0169): the app update. One call into ChaosActivity.apkUpdate(op, a, b, c, n) and its answer
++// as text (op "start": a url, b SHA-256 of the APK, c SHA-256 of its signing certificate, n size, answer "1" or "0";
++// "status": the status line of ApkUpdater; "cancel"). Called from the engine thread; the download runs in the shell's
++// own thread. A thread the glue already attached stays attached.
++std::string androidApkUpdate(const std::string& op, const std::string& a, const std::string& b, const std::string& c, int n)
++{
++    std::string answer;
++    JNIEnv* env = nullptr;
++    JavaVM* vm = getJavaVM();
++    const bool attachedBefore = vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) == JNI_OK;
++    if (!attachedBefore && vm->AttachCurrentThread(&env, NULL) == JNI_ERR)
++        return answer;
++    jclass clazz = env->GetObjectClass(getClazz());
++    jmethodID methodID = env->GetMethodID(clazz, "apkUpdate",
++                                          "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;J)Ljava/lang/String;");
++    if (methodID) {
++        jstring jop = env->NewStringUTF(op.c_str());
++        jstring ja = env->NewStringUTF(a.c_str());
++        jstring jb = env->NewStringUTF(b.c_str());
++        jstring jc = env->NewStringUTF(c.c_str());
++        jstring result = static_cast<jstring>(env->CallObjectMethod(getClazz(), methodID, jop, ja, jb, jc, static_cast<jlong>(n)));
++        if (env->ExceptionCheck()) {
++            env->ExceptionClear();
++        } else if (result) {
++            const char* chars = env->GetStringUTFChars(result, nullptr);
++            if (chars) {
++                answer = chars;
++                env->ReleaseStringUTFChars(result, chars);
++            }
++            env->DeleteLocalRef(result);
++        }
++        env->DeleteLocalRef(jop);
++        env->DeleteLocalRef(ja);
++        env->DeleteLocalRef(jb);
++        env->DeleteLocalRef(jc);
++    } else if (env->ExceptionCheck()) {
++        env->ExceptionClear();
++    }
++    env->DeleteLocalRef(clazz);
++    if (!attachedBefore)
++        vm->DetachCurrentThread();
++    return answer;
++}
++
+ extern "C"
+ {
+     JNIEXPORT void JNICALL Java_com_cindersofchaos_client_ChaosActivity_commitText(

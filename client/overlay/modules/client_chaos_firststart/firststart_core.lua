@@ -192,11 +192,88 @@ function M.prunePaths(topNames, dataNames)
   return out
 end
 
+-- ---------------------------------------------------------------- the app update (O313 step 8)
+
+-- The manifest key "android_apk" names the newest APK: {version_code, version_name, min_version_code, url, sha256, size,
+-- signer_sha256}. The Java shell downloads it (ranges, resume), checks size, SHA-256 and the signer certificate of the
+-- file, and hands it to the PackageInstaller (client/android/.../ApkUpdater.java); this module only decides and shows.
+-- The same rules as the publisher (make_update_manifest.py check_apk).
+M.APK_MAX_CODE = 65535
+M.APK_MAX_SIZE = 1024 * 1024 * 1024
+M.APK_STATES = { idle = true, downloading = true, verifying = true, permission = true, installing = true, confirm = true,
+                 failed = true, done = true }
+
+local function isInt(v) return type(v) == 'number' and v == math.floor(v) end
+local function isHex64(v) return type(v) == 'string' and #v == 64 and v:find('^[0-9a-f]+$') ~= nil end
+
+-- the entry of the decoded payload, or nil, reason. No entry at all is nil, nil (nothing to offer); a broken entry is
+-- ignored with its reason (the game data download goes on, the app is not offered).
+function M.apkEntry(m)
+  local a = type(m) == 'table' and m.android_apk or nil
+  if a == nil then return nil, nil end
+  if type(a) ~= 'table' then return nil, 'android_apk is not an object' end
+  local n = 0
+  for _ in pairs(a) do n = n + 1 end
+  if n ~= 7 then return nil, 'android_apk: unexpected keys' end
+  if not isInt(a.version_code) or a.version_code < 1 or a.version_code > M.APK_MAX_CODE then
+    return nil, 'android_apk: bad version_code'
+  end
+  if type(a.version_name) ~= 'string' or not a.version_name:find('^[%w._+-]+$') or #a.version_name > 32 then
+    return nil, 'android_apk: bad version_name'
+  end
+  if not isInt(a.min_version_code) or a.min_version_code < 0 or a.min_version_code > a.version_code then
+    return nil, 'android_apk: bad min_version_code'
+  end
+  if not isHex64(a.sha256) then return nil, 'android_apk: bad sha256' end
+  if not isHex64(a.signer_sha256) then return nil, 'android_apk: bad signer_sha256' end
+  if not isInt(a.size) or a.size < 1 or a.size > M.APK_MAX_SIZE then return nil, 'android_apk: bad size' end
+  if a.url ~= ('apk/%s/%s.apk'):format(a.sha256:sub(1, 2), a.sha256) then return nil, 'android_apk: bad url' end
+  return a
+end
+
+-- What to do with the entry for the running package (Services.update.package = the APK's versionCode):
+--   'none'      nothing newer, or the entry cannot help
+--   'offer'     a newer app exists; the player may go on without it
+--   'required'  the running app is below min_version_code, or the server's min_package, and the entry fixes that
+-- minPackage: the manifest's min_package (an app below it cannot play; the entry helps only when it reaches it).
+function M.apkDecision(entry, package, minPackage)
+  if not entry then return 'none' end
+  package = tonumber(package) or 0
+  if entry.version_code <= package then return 'none' end
+  if (tonumber(minPackage) or 0) > package then
+    return entry.version_code >= minPackage and 'required' or 'none'
+  end
+  if entry.min_version_code > package then return 'required' end
+  return 'offer'
+end
+
+-- the absolute url of the APK, next to the manifest (like the blobs: the url of the entry is relative)
+function M.apkUrl(manifestUrl, entry)
+  local dir = manifestUrl:gsub('[?#].*$', ''):match('^(.*/)') or ''
+  return dir .. entry.url
+end
+
+-- "state<TAB>done<TAB>total<TAB>message" from g_resources.apkUpdateStatus(); anything else reads as a failure
+function M.parseApkStatus(text)
+  if text == nil or text == '' then return { state = 'idle', done = 0, total = 0, message = '' } end
+  local state, done, total, message = tostring(text):match('^([a-z]+)\t(%d+)\t(%d+)\t?([^\r\n]*)')
+  if not state or not M.APK_STATES[state] then
+    return { state = 'failed', done = 0, total = 0, message = 'other' }
+  end
+  return { state = state, done = tonumber(done), total = tonumber(total), message = message or '' }
+end
+
+-- the percent of a download (0 to 100)
+function M.apkPercent(st)
+  if not st or st.total <= 0 then return 0 end
+  return math.max(0, math.min(100, 100 * st.done / st.total))
+end
+
 -- ---------------------------------------------------------------- the phases
 
 M.TRANSITIONS = {
   checking = { ready = 'ready', start = 'downloading', fail = 'error', uptodate = 'uptodate', blocked = 'blocked',
-               offline = 'offline' },
+               offline = 'offline', apkoffer = 'apkoffer', apkrequired = 'apkrequired' },
   ready = { start = 'downloading', fail = 'error', retry = 'checking' },
   downloading = { pause = 'paused', fail = 'error', done = 'unpacking' },
   paused = { resume = 'downloading' },
@@ -206,6 +283,13 @@ M.TRANSITIONS = {
   offline = { retry = 'checking' },
   uptodate = {},
   restart = {},
+  -- the app update: an offer the player may leave ("later" goes on with the game data), a required update, the shell
+  -- working (download, check, install), a wait for the player (the install permission, the system confirmation) and a failure
+  apkoffer = { install = 'apkbusy', later = 'checking' },
+  apkrequired = { install = 'apkbusy', retry = 'checking' },
+  apkbusy = { wait = 'apkwait', fail = 'apkerror' },
+  apkwait = { install = 'apkbusy', fail = 'apkerror' },
+  apkerror = { install = 'apkbusy', later = 'checking', retry = 'checking' },
 }
 
 -- the phase after an event, or nil when the event does not apply

@@ -146,7 +146,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | client_chaos_charselect | none (HTTPS to the website's account API) | base patch 0050 (`Services.account`); base patch 0025 (the 10.98 list's outfits) | The character select and Create character (see "Character select" below); `charselect_core_test.lua` runs in CI; art from `tools/gen_charselect_art.py`; tested in the Linux client at 1280x720 and 1920x1080. A locked class now says "Reach level 200 with any character of your account to unlock it." (classes are not sold since 2026-10-15) |
 | client_chaos_infolift | none | base patch 0111 (`Creature.setInformationLift`) | Names and bars over the head of tall looks (see "Name over tall looks" below): hands the per-look lifts of `info_lifts.lua` (generated from the pair by `tools/sprites/gen_info_lift.py`) to the engine once at start; `infolift_core_test.lua` runs in CI. Without the patch it does nothing |
 | client_chaos_updater | none (HTTPS from the website) | base patches 0031, 0101, 0103 | Signed updater on the login screen (see "Signed updater" below), encrypted update files (base patch 0103); `updater_core_test.lua` runs in CI; tested in the Linux client (before the encryption) |
-| client_chaos_firststart | none (HTTPS from the website) | base patches 0031, 0103, 0167 | Android only: the first-start screen of the phone client (see "Phone data" below): downloads the game data through the signed manifest's `android` section, unpacks it into the app folder, restarts; `firststart_core_test.lua` and `boot_test.lua` run in CI; not run on a phone |
+| client_chaos_firststart | none (HTTPS from the website) | base patches 0031, 0103, 0167, 0169 | Android only: the first-start screen of the phone client (see "Phone data" below): downloads the game data through the signed manifest's `android` section, unpacks it into the app folder, restarts; `firststart_core_test.lua` and `boot_test.lua` run in CI; not run on a phone |
 | game_chaosguard | extended opcode 190 (JSON `hello {build, modules}`, client -> server, once per login) | base patch 0035 (`g_game.getChaosClientBuild`; the HMAC answer on opcode 189 is C++ only) | The client guard's Lua hello (server/README.md "Client guard"): the build and how many of our modules (`game_*`, `client_chaos_*`) are loaded; the server expects it within 30 s and at least 20 modules. `guardhello_test.lua` runs in CI; tested in the Linux client. Also holds `opcode_fuzz_test.lua`, the client half of the protocol fuzz test (every module's opcode handlers through base patch 0043's dispatcher, server/README.md "Protocol fuzz test") |
 
 Opcode numbers above do not collide with the ones the base server already uses (106, 91, 181, 107, 202, 1, 136, 99, 201, 92, 89). The stash uses 110 and the season pass (game_battlepass) 227.
@@ -3994,11 +3994,48 @@ Logcat lines start with `firststart:`; `firststart: screen shown (...)` is what 
 `android-client.yml` waits for.
 
 **Files.** `firststart_core.lua` (phone list, index, decide, summary, space check, phases, prune on a new APK, unpack; tests
-`firststart_core_test.lua`, 122 checks), `boot.lua` (+ `boot_test.lua`, 42 checks, also runs `bootstrap.lua` on a fake phone and
+`firststart_core_test.lua`, 219 checks), `boot.lua` (+ `boot_test.lua`, 42 checks, also runs `bootstrap.lua` on a fake phone and
 a fake desktop), `firststart.lua` + `firststart.otui` (screen), `client_chaos_firststart.otmod`.
 
 **Not checked.** Everything on a real phone: the download over a mobile network, the free-space call on Android, the PhysFS
 mount of the folder, the unpack time of 1 GB on a phone, the restart helper.
+
+## APK updater (new, base patch 0169, `client_chaos_firststart`, O313 step 8)
+
+The Android client updates its own APK when the signed manifest says a newer one exists (docs/ANDROID_CLIENT.md section 4,
+"Step 8 status"). Desktop clients and the launcher ignore all of it.
+
+**Manifest key `android_apk`.** `{"version_code", "version_name", "min_version_code", "url", "sha256", "size", "signer_sha256"}`
+in the signed payload, next to `android`. `version_code` 1 to 65535 is the APK versionCode, equal to the client build and to
+`Services.update.package` of that APK. `version_name` is 1 to 32 characters of `A-Za-z0-9._+-`. `min_version_code` is 0 to
+`version_code`: a phone with a package below it cannot play until it updates. `sha256` and `signer_sha256` are 64 lowercase
+hex digits, the second the SHA-256 of the DER signing certificate. `size` is 1 byte to 1 GiB. `url` is exactly
+`apk/<sha[:2]>/<sha>.apk`, relative to the manifest. Exactly these seven keys. `make_update_manifest.py check_apk` and
+`firststart_core.lua apkEntry` apply the same rules; a broken entry is ignored by the phone (log line, no offer).
+
+**Publisher.** `build --apk FILE --apk-info JSON [--apk-min-version-code N] [--no-apk]`; `set-apk PUBLISH_DIR (--apk ... |
+--remove | --apk-min-version-code N)` changes only the entry of the published manifest and signs it again, same version and
+files. The JSON is `CindersOfChaos-Android.json` of `android-client.yml`: `version_code`, `version_name`, `signer_sha256`, and
+optional `sha256`, `size` and `min_version_code`; sha256 and size must match the file. The APK is published plain, because it
+carries its own signature, under `apk/` of the publish folder; older APK files are removed. A publish without `--apk` keeps the
+published entry while its file is intact. A lower version code than the published one, or the same code with another file, is
+refused. `verify` checks the file. `server/deploy/publish_client_update.sh --apk android-31` and `chaos-ctl.sh publish-apk`.
+
+**Screen** (`firststart_core.lua apkDecision`). Entry code above the running package: an offer ("New app version", Update app,
+Later; Later goes on with the game data check). Required, with only Update app: the running package is below the entry's
+`min_version_code`, or below the manifest's `min_package` and the entry reaches `min_package` (without a reaching entry the old
+"A new client download is required" screen stays). Equal or lower: nothing. The status text of the shell
+(`state TAB done TAB total TAB message`) is parsed by `parseApkStatus`: downloading, verifying, permission, installing, confirm,
+failed (message is a code the screen turns into text: net, size, hash, signer, package, storage, aborted, blocked, other), done.
+
+**Shell checks, in order.** Permission "install unknown apps" granted; size and SHA-256 of the download; the file is a package
+of this app's name with a higher version code; exactly one signing certificate with the SHA-256 of `signer_sha256`; the
+`PackageInstaller` session. `ApkFetcherTest` (plain JVM, `client/android/tests`) covers the download part.
+
+**Files.** `firststart_core_test.lua` has 97 more checks for the entry, the decision, the url, the status text and the phases.
+`make_update_manifest_test.py` class `AndroidApk`, `publish_client_update_test.py`, `chaos_ctl_test.py`.
+
+**Not checked.** The Java installer on a real phone, the NDK build of `0169`, the permission page on each Android version.
 
 ## Sharded sprites (new, base patch 0048, `tools/sprites/spr_shards.py`)
 The 600 MB `Tibia.spr` can ship as shard files that the client reads on several threads and the updater replaces one
