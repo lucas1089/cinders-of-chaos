@@ -130,7 +130,8 @@
 #                               changes the number below which a phone cannot play (docs/ANDROID_CLIENT.md section 4).
 #   publish-log [N]             the last N lines of the publish log
 #   install-admin [--full] KEYFILE|-
-#                               creates the user "chaosadmin" with that ssh public key (a file, or - for stdin) and the
+#                               creates the user "chaosadmin" and adds that ssh public key (a file, or - for stdin; keys
+#                               already there stay: one per device) and the
 #                               right to run this script as root; --full also gives it passwordless sudo for everything
 #   testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks]
 #                               tester bots (server/README.md "Tester bots"): N characters "Tester Xxx" (default 100, at
@@ -1725,7 +1726,10 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
       || adduser --disabled-password --gecos "Cinders of Chaos admin" "$ADMIN" >/dev/null || die "adduser failed"
     home=$(getent passwd "$ADMIN" | cut -d: -f6)
     install -d -m 0700 -o "$ADMIN" -g "$ADMIN" "$home/.ssh"
-    printf '%s\n' "$key" > "$home/.ssh/authorized_keys"
+    # add the key, keep the others (the phone and the Windows admin app each have one); the same key twice stays once
+    ak="$home/.ssh/authorized_keys"
+    touch "$ak"
+    grep -qxF -- "$key" "$ak" || printf '%s\n' "$key" >> "$ak"
     chown "$ADMIN:$ADMIN" "$home/.ssh/authorized_keys"
     chmod 0600 "$home/.ssh/authorized_keys"
     tmp=$(mktemp)
