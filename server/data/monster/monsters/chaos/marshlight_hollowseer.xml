@@ -6,7 +6,7 @@
      ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
 <monster name="Marshlight Hollowseer" nameDescription="a marshlight hollowseer" race="venom" experience="29100" speed="40" manacost="0">
 	<health now="28200" max="28200"/>
-	<look type="99" corpse="6068"/>
+	<look type="3368" corpse="6068"/>
 	<level min="1330" max="1370"/>
 	<targetchange interval="4000" chance="25"/>
 	<flags>

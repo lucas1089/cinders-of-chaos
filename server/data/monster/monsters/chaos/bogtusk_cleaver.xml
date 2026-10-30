@@ -6,7 +6,7 @@
      ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
 <monster name="Bogtusk Cleaver" nameDescription="a bogtusk cleaver" race="blood" experience="1650" speed="58" manacost="0">
 	<health now="7750" max="7750"/>
-	<look type="7" corpse="6068"/>
+	<look type="3366" corpse="6068"/>
 	<level min="390" max="410"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

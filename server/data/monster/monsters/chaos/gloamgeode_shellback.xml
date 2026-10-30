@@ -6,7 +6,7 @@
      ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
 <monster name="Gloamgeode Shellback" nameDescription="a gloamgeode shellback" race="blood" experience="21100" speed="34" manacost="0">
 	<health now="25300" max="25300"/>
-	<look type="197" corpse="6068"/>
+	<look type="3364" corpse="6068"/>
 	<level min="1130" max="1170"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

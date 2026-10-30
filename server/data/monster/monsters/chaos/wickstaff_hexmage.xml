@@ -6,7 +6,7 @@
      ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
 <monster name="Wickstaff Hexmage" nameDescription="a wickstaff hexmage" race="blood" experience="4050" speed="50" manacost="0">
 	<health now="12210" max="12210"/>
-	<look type="9" corpse="6068"/>
+	<look type="3365" corpse="6068"/>
 	<level min="620" max="640"/>
 	<targetchange interval="4000" chance="25"/>
 	<flags>

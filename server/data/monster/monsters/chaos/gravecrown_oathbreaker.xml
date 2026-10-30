@@ -6,7 +6,7 @@
      ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
 <monster name="Gravecrown Oathbreaker" nameDescription="a gravecrown oathbreaker" race="undead" experience="49950" speed="34" manacost="0">
 	<health now="32800" max="32800"/>
-	<look type="131" corpse="6068"/>
+	<look type="3369" corpse="6068"/>
 	<level min="1830" max="1870"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

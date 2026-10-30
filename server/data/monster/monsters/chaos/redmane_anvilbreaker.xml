@@ -6,7 +6,7 @@
      ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
 <monster name="Redmane Anvilbreaker" nameDescription="a redmane anvilbreaker" race="blood" experience="37350" speed="39" manacost="0">
 	<health now="30400" max="30400"/>
-	<look type="253" corpse="6068"/>
+	<look type="3367" corpse="6068"/>
 	<level min="1530" max="1570"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

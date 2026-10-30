@@ -2,7 +2,7 @@
 -- one switch. Loaded with  ChaosAissArt = dofile("data/lib/chaos_aiss_art.lua")  (server/tests/aiss_art_test.lua). Plain
 -- Lua, no engine calls at load.
 --
--- Pair switch (M.PAIR57, OFF: pair 57 is built, but not on windows-assets yet; client/MANIFEST.md "Pair 57"). A client on pair
+-- Pair switch (M.PAIR57, ON since 2026-10-30: pair 57 is on windows-assets; client/MANIFEST.md "Pair 57"). A client on pair
 -- 56 or older has no outfits 3364..3370 (it would draw nothing, or stop on a look id past its last outfit). On: the rows of
 -- client/tools/sprites/monster_looks/aiss_picks.csv are appended to picks.csv (server/tools/apply_monster_looks.py writes
 -- the looks below into the monsters' files), tools/ci/check_content.py PAIR_OUTFITS follows the pair (3370 outfits) and the
@@ -14,7 +14,7 @@
 
 local M = {}
 
-M.PAIR57 = false
+M.PAIR57 = true
 
 -- monster name -> {look once the switch is on, stock look the file has before}
 M.monsters = {

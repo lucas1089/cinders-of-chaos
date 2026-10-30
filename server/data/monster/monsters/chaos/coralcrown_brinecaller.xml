@@ -6,7 +6,7 @@
      ChaosAissArt.PAIR57 goes on). Spawns: none yet. -->
 <monster name="Coralcrown Brinecaller" nameDescription="a coralcrown brinecaller" race="blood" experience="12800" speed="48" manacost="0">
 	<health now="20900" max="20900"/>
-	<look type="47" corpse="6068"/>
+	<look type="3370" corpse="6068"/>
 	<level min="910" max="950"/>
 	<targetchange interval="4000" chance="15"/>
 	<flags>
