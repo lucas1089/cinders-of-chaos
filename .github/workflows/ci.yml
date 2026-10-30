@@ -305,6 +305,12 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosdisplay_test.cpp -o "$d/chaosdisplay_test"
           "$d/chaosdisplay_test"
 
+      - name: RmlUi layer input logic (C++; routing between OTUI and RmlUi, touch scroll, repaint signature; O334)
+        run: |
+          d=$(mktemp -d)
+          g++ -std=c++17 -Wall -Wextra -Werror client/overlay/src/framework/rml/rmlinputlogic_test.cpp -o "$d/rmlinputlogic_test"
+          "$d/rmlinputlogic_test"
+
       - name: Packet compression round trip (C++ and zlib; header from server src-patch 0069)
         run: |
           sudo apt-get install -y -qq zlib1g-dev

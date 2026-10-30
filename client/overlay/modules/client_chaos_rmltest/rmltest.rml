@@ -12,6 +12,7 @@
 		<div id="subtitle"></div>
 		<div id="list"></div>
 		<div id="footer">
+			<input id="note" type="text"/>
 			<button id="refresh" class="primary"></button>
 			<button id="done"></button>
 		</div>

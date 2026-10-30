@@ -1,0 +1,114 @@
+# Linux build of the client with the RmlUi layer (CMake option CHAOS_RMLUI, docs/RMLUI_SPIKE.md "Phase 2"): the base client
+# sources + client/base-patches/* + client/overlay (client/tools/assemble_client.sh), built twice with g++ and Ninja:
+# CHAOS_RMLUI=ON (RmlUi 6.0 built from its git tag, FreeType font engine) and CHAOS_RMLUI=OFF (must build as before).
+#
+# MANUAL ONLY (workflow_dispatch), like windows-client.yml: the base client sources are not in this repository
+# (client/BASE.md), so a push or pull request cannot run it. Set the repository variable CHAOS_BASE_CLIENT_REPO (owner/name)
+# and optionally CHAOS_BASE_CLIENT_REF, or give the inputs; for a private base repository the secret BASE_CLIENT_TOKEN.
+#
+# Why apt and not vcpkg here: the vcpkg manifest of the base is for the Windows build; this job only has to prove that the
+# C++ of the layer (client/overlay/src/framework/rml/) compiles and links against RmlUi 6.0 on Linux. The vcpkg feature
+# "rmlui" of the desktop and Android manifests is not exercised by any job yet (the port version at the manifest baseline
+# is unchecked: docs/RMLUI_SPIKE.md Risks "vcpkg version"). The pure input logic has its own unit test in ci.yml (native).
+name: RmlUi client (Linux)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_repo:
+        description: "Base client repository, owner/name (empty: repository variable CHAOS_BASE_CLIENT_REPO)"
+        required: false
+        default: ""
+      base_ref:
+        description: "Branch, tag or commit of the base client (empty: variable CHAOS_BASE_CLIENT_REF, else its default branch)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rmlui-client-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RMLUI_TAG: "6.0"
+
+jobs:
+  build:
+    name: Build with CHAOS_RMLUI ON and OFF (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      BASE_REPO: ${{ inputs.base_repo || vars.CHAOS_BASE_CLIENT_REPO }}
+      BASE_REF: ${{ inputs.base_ref || vars.CHAOS_BASE_CLIENT_REF }}
+    steps:
+      - name: Check the inputs
+        run: |
+          if [ -z "$BASE_REPO" ]; then
+            echo "::error::No base client repository: give the base_repo input or set the repository variable CHAOS_BASE_CLIENT_REPO (owner/name, see client/BASE.md)."
+            exit 1
+          fi
+
+      - name: Keep line endings as they are
+        run: git config --global core.autocrlf false
+
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the base client
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.BASE_REPO }}
+          ref: ${{ env.BASE_REF }}
+          token: ${{ secrets.BASE_CLIENT_TOKEN || github.token }}
+          path: base
+
+      - name: Assemble the client (base + client/base-patches + client/overlay)
+        run: bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base" "$GITHUB_WORKSPACE/game"
+
+      - name: Libraries (apt)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            ninja-build cmake g++ git pkg-config \
+            libboost-system-dev libboost-filesystem-dev libluajit-5.1-dev libphysfs-dev libssl-dev libzip-dev zlib1g-dev libbz2-dev \
+            libglew-dev libgl1-mesa-dev libegl-dev libx11-dev libxrandr-dev libopenal-dev libvorbis-dev libogg-dev \
+            libfreetype-dev libpng-dev libbrotli-dev
+          # the Ubuntu 24.04 libphysfs.a ships without an archive index and the link stops ("archive has no index")
+          sudo ranlib /usr/lib/x86_64-linux-gnu/libphysfs.a
+
+      - name: RmlUi from its git tag (core + FreeType font engine, static, about 30 s)
+        run: |
+          git clone --depth 1 --branch "$RMLUI_TAG" https://github.com/mikke89/RmlUi.git "$RUNNER_TEMP/rmlui-src"
+          # the engine links static libraries (CMAKE_FIND_LIBRARY_SUFFIXES .a) and the static libfreetype needs libraries it does
+          # not link: RmlUi gets the shared FreeType (docs/RMLUI_SPIKE.md Risks "Linux link")
+          cmake -S "$RUNNER_TEMP/rmlui-src" -B "$RUNNER_TEMP/rmlui-build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF -DRMLUI_SAMPLES=OFF -DRMLUI_BACKEND=native -DRMLUI_FONT_ENGINE=freetype \
+            -DRMLUI_LUA_BINDINGS=OFF -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/rmlui" \
+            -DFREETYPE_LIBRARY_RELEASE=/usr/lib/x86_64-linux-gnu/libfreetype.so
+          cmake --build "$RUNNER_TEMP/rmlui-build"
+          cmake --install "$RUNNER_TEMP/rmlui-build"
+
+      - name: Build with CHAOS_RMLUI=ON
+        run: |
+          cmake -S game -B game/build-on -G Ninja -DCMAKE_BUILD_TYPE=Release -DCHAOS_RMLUI=ON \
+            -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/rmlui" \
+            -DFREETYPE_LIBRARY_RELEASE=/usr/lib/x86_64-linux-gnu/libfreetype.so \
+            -DOPENAL_LIBRARY=/usr/lib/x86_64-linux-gnu/libopenal.so | tee "$RUNNER_TEMP/configure-on.txt"
+          grep -q "RmlUi: ON" "$RUNNER_TEMP/configure-on.txt" || { echo "::error::RmlUi was not switched on"; exit 1; }
+          cmake --build game/build-on
+          find game/build-on -maxdepth 1 -type f -executable -exec ls -l {} +
+
+      - name: Build with CHAOS_RMLUI=OFF (the default; nothing of RmlUi is compiled or linked)
+        run: |
+          cmake -S game -B game/build-off -G Ninja -DCMAKE_BUILD_TYPE=Release -DCHAOS_RMLUI=OFF \
+            -DOPENAL_LIBRARY=/usr/lib/x86_64-linux-gnu/libopenal.so
+          cmake --build game/build-off
+          exe=$(find game/build-off -maxdepth 1 -type f -executable ! -name '*.so' | head -n 1)
+          echo "OFF build: $exe"
+          if nm -C "$exe" 2>/dev/null | grep -q "Rml::"; then
+            echo "::error::the OFF build contains RmlUi symbols"; exit 1
+          fi

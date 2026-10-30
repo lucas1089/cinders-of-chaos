@@ -5184,3 +5184,8 @@ One test window in HTML and RCSS, to measure what RmlUi costs. Report and recomm
   built without `-DCHAOS_RMLUI=ON` there is no `g_rml` and the module does nothing.
 - Engine side: overlay `src/framework/rml/rmlmanager.{h,cpp}` (render, system and file interfaces, input mapping, the
   `g_rml` Lua binding), hooked in by base patch 0172. Test: `rmltest_test.lua` (fake `g_rml`).
+- Phase 2 (base patch 0173): `rmlinputlogic.h` (pure: routing between OTUI and RmlUi, touch scroll with fling and hover
+  clear, repaint signature) with `rmlinputlogic_test.cpp` (CI `native`); the module reopens its window after a module
+  reload (`@onLoad`/`@onUnload` added: the spike module never ran `init`), has a text field, a scripted run through the
+  environment variable `CHAOS_RMLTEST` and the touch and scale checks (Ctrl+Alt+F11, F12). CI build of the layer:
+  `.github/workflows/rmlui-client.yml` (manual).
