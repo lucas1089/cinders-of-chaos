@@ -1,5 +1,5 @@
-# Chaos: the Android app updates itself (O313 step 8, docs/ANDROID_CLIENT.md section 4; client/BASE.md "0168";
-# core/resourcemanager.{h,cpp}, luafunctions.cpp, platform/androidwindow.cpp; after 0001-0167). The signed update manifest has an
+# Chaos: the Android app updates itself (O313 step 8, docs/ANDROID_CLIENT.md section 4; client/BASE.md "0169";
+# core/resourcemanager.{h,cpp}, luafunctions.cpp, platform/androidwindow.cpp; after 0001-0168). The signed update manifest has an
 # "android_apk" entry (version code, url, SHA-256, size, signer certificate SHA-256, make_update_manifest.py). The first-start
 # screen (modules/client_chaos_firststart) decides, and these functions pass the job to the Java shell (ChaosActivity.apkUpdate,
 # ApkUpdater: download with resume, size and SHA-256 check, signer certificate check, PackageInstaller):
@@ -14,7 +14,7 @@
      bool unmountDataFolder();
      int64_t getFreeSpace();
 +
-+    // Cinders of Chaos app update (base patch 0168, client/BASE.md "APK updater"): the Android shell downloads and installs
++    // Cinders of Chaos app update (base patch 0169, client/BASE.md "APK updater"): the Android shell downloads and installs
 +    // the APK named by the signed manifest; Lua starts it and polls the status text
 +    bool startApkUpdate(const std::string& url, const std::string& sha256, int size, const std::string& signerSha256);
 +    std::string apkUpdateStatus();
@@ -28,7 +28,7 @@
  #endif
  }
  
-+// ---- Cinders of Chaos app update (base patch 0168, client/BASE.md "APK updater") ----
++// ---- Cinders of Chaos app update (base patch 0169, client/BASE.md "APK updater") ----
 +// The Android app updating itself: the Java shell (ChaosActivity.apkUpdate, ApkUpdater) downloads the APK the signed
 +// manifest names, checks its size, SHA-256 and signing certificate and hands it to the PackageInstaller. These calls only
 +// pass the request on through JNI (androidApkUpdate in androidwindow.cpp); on other platforms they do nothing.
@@ -74,7 +74,7 @@
      g_lua.bindSingletonFunction("g_resources", "mountDataFolder", &ResourceManager::mountDataFolder, &g_resources);
      g_lua.bindSingletonFunction("g_resources", "unmountDataFolder", &ResourceManager::unmountDataFolder, &g_resources);
      g_lua.bindSingletonFunction("g_resources", "getFreeSpace", &ResourceManager::getFreeSpace, &g_resources);
-+    // Cinders of Chaos app update (base patch 0168)
++    // Cinders of Chaos app update (base patch 0169)
 +    g_lua.bindSingletonFunction("g_resources", "startApkUpdate", &ResourceManager::startApkUpdate, &g_resources);
 +    g_lua.bindSingletonFunction("g_resources", "apkUpdateStatus", &ResourceManager::apkUpdateStatus, &g_resources);
 +    g_lua.bindSingletonFunction("g_resources", "cancelApkUpdate", &ResourceManager::cancelApkUpdate, &g_resources);
@@ -87,7 +87,7 @@
      }
  }
  
-+// Cinders of Chaos (base patch 0168): the app update. One call into ChaosActivity.apkUpdate(op, a, b, c, n) and its answer
++// Cinders of Chaos (base patch 0169): the app update. One call into ChaosActivity.apkUpdate(op, a, b, c, n) and its answer
 +// as text (op "start": a url, b SHA-256 of the APK, c SHA-256 of its signing certificate, n size, answer "1" or "0";
 +// "status": the status line of ApkUpdater; "cancel"). Called from the engine thread; the download runs in the shell's
 +// own thread. A thread the glue already attached stays attached.

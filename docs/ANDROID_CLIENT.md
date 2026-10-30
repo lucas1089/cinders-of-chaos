@@ -43,7 +43,7 @@ not built with the NDK and Gradle here.
 | Publish script | `server/deploy/publish_client_update.sh`, `chaos-ctl.sh publish-apk` | `--apk android-31` downloads `CindersOfChaos-Android.apk` and `.json` from the release, alone it runs `set-apk`, with a client release it goes into that publish. `--apk-min-version-code N`, `--no-apk`. The web check asks the APK URL with a range request. |
 | Admin app | `android/` Comandos > Site e update do client; `desktop/` same card | Field "Release do app Android", buttons "Publicar app Android" and "Tirar o app do update". |
 | Screen logic | `client/overlay/modules/client_chaos_firststart/firststart_core.lua`, `firststart.lua` | `apkEntry` checks the entry like the publisher, `apkDecision` says none, offer or required. An offer shows "New app version" with Update app and Later. Required (running package below `min_version_code`, or below the server's `min_package` and the entry reaches it) has no Later and blocks play. The screen polls the shell. |
-| Base patch `0168` | `client/base-patches/0168-android-apk-update.patch`, `client/BASE.md` | `g_resources.startApkUpdate(url, sha256, size, signerSha256)`, `apkUpdateStatus()`, `cancelApkUpdate()` over one JNI call to `ChaosActivity.apkUpdate`. |
+| Base patch `0169` | `client/base-patches/0169-android-apk-update.patch`, `client/BASE.md` | `g_resources.startApkUpdate(url, sha256, size, signerSha256)`, `apkUpdateStatus()`, `cancelApkUpdate()` over one JNI call to `ChaosActivity.apkUpdate`. |
 | Java shell | `client/android/app/src/main/java/com/cindersofchaos/client/` `ApkFetcher`, `ApkUpdater`, `InstallResultReceiver` | `ApkFetcher`: download to the app cache with range resume, exact size and SHA-256. `ApkUpdater`: the "install unknown apps" permission prompt, then checks the file (same package name, higher version code, exactly one signing certificate whose SHA-256 is `signer_sha256`), then a `PackageInstaller` session. The receiver starts the system confirmation window and records the result. `REQUEST_INSTALL_PACKAGES` is in the manifest. |
 | Workflow | `.github/workflows/android-client.yml` | Prints sha256 and the signer certificate sha256, writes `CindersOfChaos-Android.json`, and with `publish_release` on a release-signed build attaches APK, JSON and sha256 file to the prerelease `android-<client_build>` (never overwritten). |
 
@@ -58,7 +58,7 @@ not built with the NDK and Gradle here.
    file. Any mismatch deletes the file and shows a reason; nothing is installed.
 5. The `PackageInstaller` session is committed. Android asks the player to confirm, except on Android 12 and newer when this
    app installed the running version. After the install Android ends the process. The player opens the app again.
-6. A package equal to or above `version_code` sees nothing. A phone whose engine lacks patch `0168` does not offer the update.
+6. A package equal to or above `version_code` sees nothing. A phone whose engine lacks patch `0169` does not offer the update.
 
 ### What was checked here
 
@@ -69,7 +69,7 @@ not built with the NDK and Gradle here.
 - `ApkFetcherTest` on a plain JVM against a local server: fresh, resume, no range support, dropped connection, wrong
   hash, too many bytes, wrong length, errors, cancel, no space.
 - The Java classes compile against an Android 14 `android.jar` (only the generated `R` is missing).
-- `0168` applies without fuzz on the lines patch `0167` leaves, and the JNI function passes a syntax check with the JDK
+- `0169` applies without fuzz on the lines patch `0168` leaves, and the JNI function passes a syntax check with the JDK
   `jni.h`.
 
 ### What is not checked
@@ -77,7 +77,7 @@ not built with the NDK and Gradle here.
 - Everything on a device: the permission settings page, `getPackageArchiveInfo` signing info on each Android version,
   the session commit, the confirmation window, the silent update path on Android 12 and newer, how the phone reacts to the
   process ending, Play Protect warnings.
-- The NDK build of `0168` and the Gradle build of the new Java and manifest entries.
+- The NDK build of `0169` and the Gradle build of the new Java and manifest entries.
 - The Lua screen itself (no harness for `firststart.lua`; the logic is in the core).
 - A real release key: the secrets below do not exist yet.
 
@@ -109,6 +109,7 @@ self-update (step 8), the release keystore and the touch layer are not.
 |---|---|---|
 | Manifest key `android` | `client/tools/make_update_manifest.py`, `client/MANIFEST.md` "Phone data" | The signed payload lists the files a phone needs: every path of the update except `layouts/mobile/` and the prefixes of `--android-exclude`. Written on every publish (`--no-android` leaves it out), checked by `verify`. Old clients and the launcher ignore it. |
 | Base patch `0167` | `client/base-patches/0167-android-phone-data.patch`, `client/BASE.md` | `g_resources.unpackUpdateBlob` (verified blob to a plain file), `mountDataFolder` (PhysFS mount of the downloaded folder in front of `data.zip`, file-backed), `getFreeSpace`, the update key on Android, and the Android restart request. |
+| Base patch `0168` | `client/base-patches/0168-android-loading-splash.patch`, `client/BASE.md`, `ChaosActivity.java` | Loading screen until the first frame: logo, "Loading...", a progress bar from the module load; the native splash calls of the Windows build as JNI calls of `ChaosActivity.splashProgress` and `splashHide`. |
 | First-start screen | `client/overlay/modules/client_chaos_firststart/` | Fetches the signed manifest, compares, shows size, Wi-Fi advice and the free-space check (data plus 0.5 GB), downloads with pause, resume and retry, unpacks, restarts. Uses the desktop updater's code for the signature, paths and the download pool. |
 | Restart | `ChaosActivity.restartApp`, `RestartActivity`, `AndroidManifest.xml` | After the engine has shut down, a helper activity in its own process ends the game process and starts the game again. |
 | Workflow | `.github/workflows/android-client.yml` | New inputs `update_manifest` and `update_public_key` (same production defaults as `windows-package.yml`, written with `set_update_config.py`; optional `update_baseline`, the release number of the APK's own Lua, so an older live update only brings the game data), `client_build` default 30 (the live build, else the manifest's `min_package` turns the phone away), and the smoke test asserts the first-start screen in logcat. |
@@ -228,10 +229,15 @@ client has its own release key, not the key of the admin app.
 4. **Touch layout.** The walk pad and the action bar of `client_mobile`, tap and long press, hotkey buttons, safe areas,
    the 69 windows over 360 logical pixels. Section 2 is unchanged.
 5. **Window re-layout.** The engine resizes with the screen through `updateSize`. The Chaos windows have no mobile
-   styles yet, except `game_event`. Phase 3.
-6. **Mobile defaults.** The heavy options should start off on Android. Not set.
+   styles yet, except `game_event`. The guard `client/tools/check_mobile_layout.py` now keeps the list from growing: 39
+   windows are over 960 x 540 logical pixels without a `$mobile` rule and sit in `client/tools/mobile_layout_baseline.txt`.
+   Each fixed window removes its line. The re-layout itself needs a device. Phase 3.
+6. **Mobile defaults.** Done, not run on a device. On the first start on Android `game_visualfx` switches off
+   `spellLight`, `liquidShimmer`, `weather`, `ambientParticles`, `missileTrails`, `lightFlicker`, `deathFade` and
+   `rarityOutlineMap` through the settings module, once (flag `chaosMobileDefaults`). `screenGrade`, `bloom` and
+   `hoverOutline` are off everywhere already. Desktop defaults are unchanged. The player can turn any back on.
 7. **APK self-update.** Done in step 8, see "Step 8 status": the `android_apk` entry, the publish script and admin app button,
-   the Java download and `PackageInstaller` hand-over with the permission prompt, the screen, patch `0168`. Not run on a
+   the Java download and `PackageInstaller` hand-over with the permission prompt, the screen, patch `0169`. Not run on a
    device. Still needed: the release keystore secrets.
 8. **OpenAL Soft is LGPL.** It is linked statically into the engine library. Whoever has the APK cannot relink it. For
    a public release either link it dynamically, as a separate `.so` in the APK, or offer the object files. The owner
@@ -382,8 +388,11 @@ Screen facts to design for: landscape only, 1280 x 720 at 5.0 inches and up. Saf
 `g_app.scale(...)` and `scaleUp` or `scaleDown` set the zoom. A 20:9 phone has little vertical room, so a window
 must fit in about 360 to 540 logical pixels.
 
-A tool to add: `client/tools/check_mobile_layout.py`, which reads every window size and fails when a window is
-over the limit and has no `$mobile` rule. CI can then keep the list from growing.
+The tool exists: `client/tools/check_mobile_layout.py` (test `check_mobile_layout_test.py`, CI step next to the text fit
+check). It reads the top-level windows of `client/overlay/modules/**/*.otui` and fails when a window with a fixed size is
+taller than 540 or wider than 960 logical pixels and has no `$mobile` rule, except the windows in
+`mobile_layout_baseline.txt`. Windows with `anchors.fill` or a size set only by an expression are skipped. A baseline
+entry that now fits is reported as removable. It is a text scan, not a measured layout.
 
 ## 3. Assets on a phone
 
@@ -526,7 +535,7 @@ Each step lists the result and a rough size. One person, with a phone and a CI r
 7. **Touch layer.** Walk pad and action bar from `client_mobile`, long press, tooltip replacement, hotkey buttons for
    the spells and the helper, safe areas. Size: 8 to 12 days.
 8. **APK updater.** Done 2026-10-30, see "Step 8 status": the `android_apk` manifest key, the Java download and installer
-   step (patch `0168`), the publish script and admin app button, tests. Not run on a device. Size was 4 to 6 days.
+   step (patch `0169`), the publish script and admin app button, tests. Not run on a device. Size was 4 to 6 days.
 9. **CI workflow.** Written, see Phase 2 status. `.github/workflows/android-client.yml`, manual only (`workflow_dispatch`), `ubuntu-latest`:
    - check out this repository and the assets branch, as `windows-package.yml` does (base client archive in parts);
    - `assemble_client.sh` into a game folder, then a trimmed folder for the APK (no pair, no `chaos.pack`);

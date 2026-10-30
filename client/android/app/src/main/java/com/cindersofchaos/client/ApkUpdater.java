@@ -21,7 +21,7 @@ import java.security.MessageDigest;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * The app updating itself (O313 step 8, docs/ANDROID_CLIENT.md section 4, client base patch 0168). The first-start
+ * The app updating itself (O313 step 8, docs/ANDROID_CLIENT.md section 4, client base patch 0169). The first-start
  * screen (Lua) reads the signed manifest and calls start with the manifest's "android_apk" entry; this class downloads
  * the APK to the cache (ApkFetcher: resume, size and SHA-256), checks the file (same package name, a higher version
  * code, exactly the signing certificate the manifest names), and hands it to the PackageInstaller. Lua polls status().

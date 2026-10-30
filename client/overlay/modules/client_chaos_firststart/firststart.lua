@@ -14,7 +14,7 @@
 -- The app itself (O313 step 8): when the manifest's "android_apk" entry has a version code above the running package
 -- (Services.update.package) the screen says "New app version" with an Update button (and Later, unless the running app
 -- is below the entry's min_version_code or the server's min_package: then it is the only way on). The Java shell does
--- the download, the checks and the PackageInstaller (g_resources.startApkUpdate / apkUpdateStatus, base patch 0168);
+-- the download, the checks and the PackageInstaller (g_resources.startApkUpdate / apkUpdateStatus, base patch 0169);
 -- this module polls its status. The decisions are in firststart_core.lua (apkEntry, apkDecision).
 
 ChaosFirstStart = ChaosFirstStart or {}
@@ -697,7 +697,7 @@ function F.init()
     g_logger.warning('firststart: this client build cannot unpack game data (base patches 0031, 0103 and 0167)')
     return
   end
-  -- the app update needs the Java shell and the functions of base patch 0168; an older engine just does not offer it
+  -- the app update needs the Java shell and the functions of base patch 0169; an older engine just does not offer it
   F.canUpdateApp = (g_resources.startApkUpdate and g_resources.apkUpdateStatus) and true or false
   cfg.package = tonumber(cfg.package) or 0
   cfg.baseline = U.baseline(cfg.baseline)

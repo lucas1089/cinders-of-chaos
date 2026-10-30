@@ -1,12 +1,15 @@
 package com.cindersofchaos.client;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +18,10 @@ import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import java.util.concurrent.Semaphore;
 
@@ -25,7 +32,8 @@ import java.util.concurrent.Semaphore;
  * showTextEdit, displayFatalError, openUrl, showKeyboard and hideKeyboard by name through JNI
  * (src/framework/platform/androidwindow.cpp); commitText is the way back (patch 0164 names its C function).
  * restartApp is called after the game data download (patch 0167): it starts the game again in a new process.
- * apkUpdate is the way to ApkUpdater, the app updating itself (patch 0168).
+ * splashProgress and splashHide drive the loading screen shown until the first frame (patch 0168).
+ * apkUpdate is the way to ApkUpdater, the app updating itself (patch 0169).
  */
 public class ChaosActivity extends android.app.NativeActivity {
     static {
@@ -34,6 +42,9 @@ public class ChaosActivity extends android.app.NativeActivity {
 
     private AlertDialog activeDialog = null;
     private final Semaphore fatalClosed = new Semaphore(0, true);
+    private Dialog splash = null;
+    private ProgressBar splashBar = null;
+    private TextView splashText = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +54,91 @@ public class ChaosActivity extends android.app.NativeActivity {
             getWindow().getAttributes().layoutInDisplayCutoutMode =
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
+        showSplash();
+    }
+
+    // The loading screen (client base patch 0168). The first load takes a while before the engine draws a frame.
+    // A dialog window over the game: never focusable or touchable, so the game window keeps the focus the engine
+    // needs to draw at all. The engine hides it after its first frame.
+    @SuppressWarnings("deprecation")
+    private void showSplash() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        box.setBackgroundColor(Color.BLACK);
+        int pad = (int) (24 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, pad, pad, pad);
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.splash_logo);
+        logo.setAdjustViewBounds(true);
+        logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        int logoHeight = getResources().getDisplayMetrics().heightPixels / 2;
+        box.addView(logo, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, logoHeight));
+        splashText = new TextView(this);
+        splashText.setText(R.string.splash_loading);
+        splashText.setTextColor(Color.rgb(0xe8, 0xc8, 0x8a));
+        splashText.setTextSize(20);
+        splashText.setGravity(Gravity.CENTER);
+        splashText.setPadding(0, pad, 0, pad / 2);
+        box.addView(splashText, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        splashBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        splashBar.setMax(100);
+        splashBar.setProgress(0);
+        int barWidth = getResources().getDisplayMetrics().widthPixels / 3;
+        box.addView(splashBar, new LinearLayout.LayoutParams(barWidth, LinearLayout.LayoutParams.WRAP_CONTENT));
+        splash = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        splash.setCancelable(false);
+        splash.setContentView(box);
+        splash.getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+            | WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            splash.getWindow().getAttributes().layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
+        splash.getWindow().getDecorView().setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_FULLSCREEN);
+        splash.show();
+    }
+
+    // engine thread: the module progress of the start (stage text is English and only logged)
+    public void splashProgress(final int percent, final String stage) {
+        runOnUiThread(new Runnable() {
+            public void run() {
+                if (splashBar != null) {
+                    splashBar.setProgress(Math.max(0, Math.min(100, percent)));
+                }
+            }
+        });
+    }
+
+    // engine thread: after the first frame, and when the engine shuts down
+    public void splashHide() {
+        runOnUiThread(new Runnable() {
+            public void run() {
+                dismissSplash();
+            }
+        });
+    }
+
+    private void dismissSplash() {
+        if (splash != null) {
+            splash.dismiss();
+            splash = null;
+            splashBar = null;
+            splashText = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        dismissSplash();
+        super.onDestroy();
     }
 
     @Override
@@ -88,6 +184,7 @@ public class ChaosActivity extends android.app.NativeActivity {
         final ChaosActivity activity = this;
         runOnUiThread(new Runnable() {
             public void run() {
+                dismissSplash();
                 AlertDialog.Builder builder = new AlertDialog.Builder(activity);
                 builder.setTitle(R.string.fatal_title);
                 builder.setMessage(message);
@@ -169,7 +266,7 @@ public class ChaosActivity extends android.app.NativeActivity {
         startActivity(helper);
     }
 
-    // The app update (client base patch 0168): the engine calls this by name through JNI (androidApkUpdate in
+    // The app update (client base patch 0169): the engine calls this by name through JNI (androidApkUpdate in
     // androidwindow.cpp). op "start": a = url, b = SHA-256 of the APK, c = SHA-256 of its signing certificate, n = size;
     // answers "1" or "0". op "status": the status text of ApkUpdater. op "cancel". Runs on the engine thread; the work
     // is in ApkUpdater's own thread.
