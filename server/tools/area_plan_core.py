@@ -279,10 +279,15 @@ def biome_of(plan, cat):
     return cat['biomes'].get(plan.get('biome'))
 
 
-def zone_shape(z, biome):
+def zone_shape(z, biome, plan_id=None):
+    """room in a dungeon biome; elsewhere lobes (the asymmetric outline, areagen_core.lua lobeOutline), or the old
+    cave blobs for the plans of the legacy list (areaplan/shape_rules.json)"""
     if z.get('shape'):
         return z['shape']
-    return 'room' if biome and biome['kind'] == 'dungeon' else 'cave'
+    if biome and biome['kind'] == 'dungeon':
+        return 'room'
+    import area_plan_shape as SH
+    return 'cave' if plan_id and SH.is_legacy(plan_id) else 'lobes'
 
 
 def zone_dims(z, biome):
@@ -623,6 +628,9 @@ def layout(plan, cat):
     W_, H_ = plan['size']
     seed = plan_seed(plan)
     rng = random.Random(seed * 31 + 7)
+    jit = random.Random(seed * 53 + 11)
+    import area_plan_shape as SH
+    legacy = SH.is_legacy(plan.get('id'))
     zones = plan['zones']
     byid = {z['id']: z for z in zones}
     rects = {}
@@ -696,6 +704,9 @@ def layout(plan, cat):
                 place(z, incoming[z['id']], must=incoming[z['id']])
             elif z.get('place'):
                 fx, fy = COMPASS[z['place']]
+                if not legacy:      # asymmetric areas: the compass points are only a direction; each zone drifts by the seed
+                    fx += jit.uniform(-0.09, 0.09)
+                    fy += jit.uniform(-0.09, 0.09)
                 place(z, (int(W_ * fx), int(H_ * fy)))
             else:
                 nb = [rects[b] for b in adj.get(z['id'], []) if b in rects and byid[b]['floor'] == f]

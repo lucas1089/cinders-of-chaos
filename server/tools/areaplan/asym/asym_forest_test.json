@@ -1,0 +1,35 @@
+{
+ "schema": "chaos-area-plan/1",
+ "id": "asym_forest_test",
+ "name": "Lopsided Thicket Test",
+ "biome": "forest",
+ "size": [60, 50],
+ "floors": 1,
+ "level": [150, 250],
+ "seed": 4242,
+ "origin": {"x": 17000, "y": 15000, "z": 7},
+ "decoration": "normal",
+ "light": "normal",
+ "zones": [
+  {"id": "camp", "floor": 1, "size": "small", "place": "east", "role": "camp", "pz": true},
+  {"id": "heartwood", "floor": 1, "size": [18, 13], "place": "center", "ragged": true},
+  {"id": "glade", "floor": 1, "size": [14, 11], "place": "northwest", "ragged": true},
+  {"id": "hollow", "floor": 1, "size": [15, 11], "place": "southwest", "ragged": true},
+  {"id": "oaks", "floor": 1, "size": [12, 10], "place": "southeast", "ragged": true}
+ ],
+ "paths": [
+  {"from": "camp", "to": "heartwood", "width": 4, "style": "wild"},
+  {"from": "heartwood", "to": "glade", "width": 4, "style": "wild"},
+  {"from": "heartwood", "to": "hollow", "width": 4, "style": "wild"},
+  {"from": "hollow", "to": "oaks", "width": 4, "style": "wild"},
+  {"from": "oaks", "to": "camp", "width": 4, "style": "wild"}
+ ],
+ "entry": {"zone": "camp"},
+ "exit": {"zone": "camp"},
+ "spawns": [
+  {"zone": "heartwood", "monster": "Venom Spider", "count": 6, "respawn": 60, "pack": 1, "spread": true},
+  {"zone": "glade", "monster": "Giant Hornet", "count": 4, "respawn": 60, "pack": 1, "spread": true},
+  {"zone": "hollow", "monster": "Venom Spider", "count": 5, "respawn": 60, "pack": 1, "spread": true},
+  {"zone": "oaks", "monster": "Giant Hornet", "count": 3, "respawn": 60, "pack": 1, "spread": true}
+ ]
+}

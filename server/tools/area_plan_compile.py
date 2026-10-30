@@ -18,6 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import area_plan_core as C
 import area_plan_decor as D
+import area_plan_shape as SH
 import areagen_export as AX
 
 FLAG_PZ = 1
@@ -69,10 +70,10 @@ def job_def(plan, cat, lay):
         for z in plan['zones']:
             if z['floor'] == f:
                 r = lay['rects'][z['id']]
-                zones.append(dict(x1=r[0], y1=r[1], x2=r[2], y2=r[3], shape=C.zone_shape(z, biome),
+                zones.append(dict(x1=r[0], y1=r[1], x2=r[2], y2=r[3], shape=C.zone_shape(z, biome, plan['id']),
                                   kind='boss' if z.get('role') == 'boss' else 'hunt', ragged=bool(z.get('ragged'))))
         paths = [dict(width=p['width'], style=p['style'], points=[list(q) for q in p['points']]) for p in lay['paths'][f]]
-        per_floor[f] = dict(zones=zones, paths=paths, spots=[list(s) for s in lay['spots'][f]],
+        per_floor[f] = dict(zones=zones, paths=paths, meander=not SH.is_legacy(plan['id']), spots=[list(s) for s in lay['spots'][f]],
                             anchor=list(lay['anchors'][f]))
     ax, ay = lay['arrival']
     return dict(id=plan['id'], name=plan['name'], origin=dict(x=ox, y=oy, z=oz), size=[W, H], floors=plan['floors'],
@@ -563,7 +564,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 a = absp(x, y, f)
                 if not any(r[4] == a[2] and r[0] <= a[0] <= r[2] and r[1] <= a[1] <= r[3] for r in zrect.values()):
                     corridor.add(a)
-    zone_list = [dict(id=zid, rect=zrect[zid], shape=C.zone_shape(z, biome), role=z.get('role', 'hunt'))
+    zone_list = [dict(id=zid, rect=zrect[zid], shape=C.zone_shape(z, biome, plan['id']), role=z.get('role', 'hunt'))
                  for zid, z in sorted(zones.items())]
     reach_before = set(C.tile_reach(walk, arrival, (), edges))
     dresser = D.Dresser(tiles, walk, zone_list, meta['kind'], plan['biome'], protected, keep, corridor, plain, wall_kind,
@@ -780,6 +781,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                            per_screen_max=mx, screens=nscr))
         if mons and not 1.0 <= 100.0 * mons / max(1, len(hunt)) <= 6.0:
             Wn('floor %d: %.2f monsters per 100 walkable tiles (the guide asks 1.5-5)' % (f, 100.0 * mons / max(1, len(hunt))))
+    footprint = walk | dresser.blocked | special      # walkable before the trees and bushes took tiles: the outline
+    qa.extend(SH.check_floors(footprint, plan['id'], [oz + f for f in range(plan['floors'])]))
     stats = dict(tiles=len(tiles), walkable=len(walk), monsters=total_mon, spawn_points=len(spawn_out),
                  per100=round(100.0 * total_mon / max(1, len(walk - pz)), 2), floors=floors,
                  entry_to_boss=boss_steps, zone_steps=zone_steps,
@@ -810,7 +813,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     manifest['stubs'] = sorted(stubs)
     return dict(otbm=data, frame_otbm=frame_data, frame=frame, spawn_xml=spawn_xml(spawn_out, boss_out, npc_out, walk), manifest=manifest, tiles=tiles,
                 stubs=stubs, dresser=dresser,
-                walk=walk, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
+                walk=walk, footprint=footprint, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
                 teleports=tele_out, exit=exit_out, arrival=arrival, zrect=zrect, origin=(ox, oy, oz), qa=qa,
                 stats=stats, plan_issues=issues)
 

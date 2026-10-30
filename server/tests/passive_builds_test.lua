@@ -52,6 +52,17 @@ local function needsChoice(node)
 	return false
 end
 
+-- the flags a class gets from a node (its variant on 621 / 624, else its own stats) that the config tags for a theme
+local function tagged(node, classKey, themeKey)
+	local stats = (node.v and node.v[ChaosClasses.keystoneKey(Chaos.classes.ids[classKey])]) or node.s or {}
+	for stat in pairs(stats) do
+		for _, key in ipairs(cfg.keystoneThemes[stat] or {}) do
+			if key == themeKey then return true end
+		end
+	end
+	return false
+end
+
 -- ------------------------------------------------------------------------------------------------ every build
 local classCount, buildCount = 0, 0
 local focusPerClass = {}
@@ -108,7 +119,8 @@ for classKey, vocId in pairs(Chaos.classes.ids) do
 			check(theme ~= nil, b.id .. ": a theme of the config")
 			for _, id in ipairs(b.order) do
 				if needsChoice(tree.nodes[id]) then
-					check(theme and theme.nodes and theme.nodes[id], b.id .. ": flagged node " .. id .. " not named by the theme")
+					check(theme and ((theme.nodes and theme.nodes[id]) or tagged(tree.nodes[id], classKey, theme.key)),
+						b.id .. ": flagged node " .. id .. " not named or tagged by the theme")
 				end
 			end
 			if theme and theme.classes then
@@ -210,6 +222,62 @@ local a = Gen.grow(ctx, {weights = Gen.weights(cfg, cfg.themes[1], "warrior"), t
 local b2 = Gen.grow(ctx, {weights = Gen.weights(cfg, cfg.themes[1], "warrior"), targets = {}, classKey = "warrior", lineKey = "warrior",
 	variant = "knight", budget = 40})
 check(#a.order == 40 and table.concat(a.order, ",") == table.concat(b2.order, ","), "the generator is deterministic")
+-- keystones tagged for a theme (Poison is earth): the Ninja's earth builds take the poison keystones, Contagion Rite
+-- (the poison spread on a poisoned monster's death), Viper's Verdict and the Blackblood Creed, early enough for a real
+-- character (owner report: the Poison build skipped them)
+local function positionOf(build, id)
+	for i, v in ipairs(build.order) do if v == id then return i end end
+end
+local ninjaEarth = Core.find(data, "ninja", "focus_earth")
+local ninjaPlague = Core.find(data, "ninja", "ninja_plaguebearer")
+check(ninjaEarth and ninjaPlague, "ninja has the earth focus and the Plaguebearer build")
+for _, id in ipairs({107, 383, 624}) do
+	local at = positionOf(ninjaEarth, id)
+	check(at and at <= 100, "ninja earth focus takes poison keystone " .. id .. " within 100 points (at " .. tostring(at) .. ")")
+	at = positionOf(ninjaPlague, id)
+	check(at and at <= 60, "ninja Plaguebearer takes poison keystone " .. id .. " within 60 points (at " .. tostring(at) .. ")")
+end
+check(cfg.keystoneThemes.arContagion and cfg.keystoneThemes.arContagion[1] == "earth", "Contagion Rite is tagged earth")
+-- without the tags the earth build skips all three (the report)
+local noTags = {}
+for k, v in pairs(cfg) do noTags[k] = v end
+noTags.keystoneThemes = {}
+local ctx0 = Gen.context(tree, noTags)
+ctx0.statsCfg = statsCfg
+ctx0.bad = {}
+local earthTheme
+for _, t in ipairs(cfg.themes) do if t.key == "earth" then earthTheme = t end end
+local ninjaVariant = ChaosClasses.keystoneKey(Chaos.classes.ids.ninja)
+local bare = Gen.grow(ctx0, {weights = Gen.weights(noTags, earthTheme, "thief"), nodeScores = Gen.themeNodeScores(earthTheme, "ninja", tree, noTags, ninjaVariant),
+	targets = {}, classKey = "ninja", lineKey = "thief", variant = ninjaVariant, budget = cfg.maxPoints})
+local bareHas = false
+for _, id in ipairs(bare.order) do bareHas = bareHas or id == 107 or id == 383 or id == 624 end
+check(not bareHas, "without keystoneThemes the earth build takes none of the poison keystones")
+
+-- general: no build skips a keystone tagged for its theme (a Focus build of the theme, a Recommended build that fills
+-- with it) when the class may hold the node: it is in the build, within the points of the cap
+local tagChecks = 0
+for classKey in pairs(Chaos.classes.ids) do
+	for _, b in ipairs(data.classes[classKey]) do
+		local themeKey = nil
+		if b.kind == "focus" then
+			themeKey = b.id:gsub("^focus_", "")
+		else
+			for _, role in ipairs(cfg.roles[classKey]) do
+				if classKey .. "_" .. role.id == b.id then themeKey = role.fill end
+			end
+		end
+		local inBuild = {}
+		for _, id in ipairs(b.order) do inBuild[id] = true end
+		for id, node in pairs(tree.nodes) do
+			if not node.m and (not node.c or node.c[classKey]) and tagged(node, classKey, themeKey) then
+				tagChecks = tagChecks + 1
+				check(inBuild[id], b.id .. " (" .. classKey .. ") skips the keystone " .. id .. " tagged for " .. themeKey)
+			end
+		end
+	end
+end
+check(tagChecks >= 20, "the tags are checked on builds (" .. tagChecks .. ")")
 local _, err = Gen.grow(ctx, {weights = {}, targets = {626}, classKey = "warrior", lineKey = "warrior", variant = "knight", budget = 10})
 check(err and err:find("not a node of class"), "a target of another class is an error: " .. tostring(err))
 
