@@ -235,6 +235,16 @@ class RmlSystemInterface : public Rml::SystemInterface
 {
 public:
     double GetElapsedTime() override { return stdext::micros() / 1000000.0; }
+    // client paths are absolute in the engine file system ("/images/ui/checkbox.png", the active skin first):
+    // RmlUi's default would drop the leading slash
+    void JoinPath(Rml::String& translated, const Rml::String& documentPath, const Rml::String& path) override
+    {
+        if (!path.empty() && path[0] == '/') {
+            translated = path;
+            return;
+        }
+        Rml::SystemInterface::JoinPath(translated, documentPath, path);
+    }
     bool LogMessage(Rml::Log::Type type, const Rml::String& message) override
     {
         switch (type) {

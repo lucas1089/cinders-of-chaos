@@ -126,6 +126,12 @@ Owner 2026-10-30: "Faça pelo menos a janela de opções em rmlui". Module `clie
   footer button "Classic window" opens it too. Closing calls the classic `closeOptions` (apply and save).
 - Patch 0175 binds `g_rml.getValue`, `setValue`, `isChecked`, `setChecked`, `setDisabled` (form controls, in the overlay
   `rmlmanager.cpp`).
+- Skin: `rmloptions.rcss` draws the window with the images of the classic one (popupwindow frame, the gold corner pieces
+  and crest of `client_chaos_theme`, the menu tabs of `/images/optionstab/`, FlatPanel, Button, CheckBox, ComboBox, both
+  scroll bars, the help icon) through sprite sheets and `ninepatch` decorators, with the same rects and borders as
+  `data/styles/10-*.otui`. The paths are the client's absolute paths, so the skin the player chose is drawn (its images
+  come first in the file system). For that the manager keeps a leading `/` in `JoinPath` (RmlUi's default drops it).
+  The text stays in Alegreya: the classic Verdana is a bitmap font that RmlUi cannot load.
 - Not mirrored: the HUD page's condition list (a `TextList`), tooltips on hover (RmlUi has none; the "?" opens the text).
 - Test: `rmloptions_test.lua` (mock widgets, fake `g_rml` and `client_settings`: page build, sync, change, disabled,
   buttons, help, menu, the hook and its removal). Checked under Xvfb at 1280x720 and 960x540: Graphics, Effects and

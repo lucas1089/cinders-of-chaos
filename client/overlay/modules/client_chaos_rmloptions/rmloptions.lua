@@ -40,7 +40,7 @@ end
 
 -- The controls of one classic page, in reading order. Pure walk over the widget API (getChildren, getClassName,
 -- getStyleName, isExplicitlyVisible, getText, getTooltip), so the test runs it on mock widgets. Kinds: group/endgroup
--- (a FlatPanel), label, check, range, select, button, help (a "?" icon with a tooltip).
+-- (a FlatPanel), label, check, range, select, button, help (the help icon with a tooltip).
 function ChaosRmlOptions.collect(root)
   local items = {}
   local function add(item) items[#items + 1] = item end
@@ -84,7 +84,7 @@ function ChaosRmlOptions.collect(root)
   return items
 end
 
--- RML of one page. Controls get the ids c<N>, help icons h<N> with their text in t<N>; items[N].el is set to the id.
+-- RML of one page. Controls get the ids c<N>, help icons h<N> (the skin's help image) with their text in t<N>; items[N].el is set to the id.
 -- Loose items (outside any FlatPanel) go into rows of their own like a group. Pure: escape and the strings come in.
 function ChaosRmlOptions.pageRml(items, escape)
   local out, helps = {}, {}
@@ -140,7 +140,7 @@ function ChaosRmlOptions.pageRml(items, escape)
         it.el = id
         out[#out + 1] = string.format('<button class="act" id="%s">%s</button>', id, escape(it.text)) -- i18n-ok: markup
       elseif it.kind == 'help' then
-        out[#out + 1] = string.format('<span class="help" id="h%d">?</span>', n) -- i18n-ok: markup
+        out[#out + 1] = string.format('<span class="help" id="h%d"></span>', n) -- i18n-ok: markup
         helps[#helps + 1] = string.format('<div class="helptext" id="t%d">%s</div>', n, -- i18n-ok: markup
           (escape(it.text):gsub('\n', '<br/>')))
       end

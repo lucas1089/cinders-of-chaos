@@ -5306,4 +5306,5 @@ One test window in HTML and RCSS, to measure what RmlUi costs. Report and recomm
 - Phase 3 (base patch 0175): `client_chaos_rmloptions` (`rmloptions.rml`, `rmloptions.rcss`, `rmloptions.lua`), the
   Options window in RmlUi. It reads the classic `client_settings` pages and drives their widgets, so the options apply
   and save as before; the top menu Options button opens it, hotkey pages stay in the classic window. Fonts from
-  `client_chaos_rmltest/fonts/`. Test: `rmloptions_test.lua`.
+  `client_chaos_rmltest/fonts/`. Drawn with the skin images of the classic window (sprite sheets in `rmloptions.rcss`).
+  Test: `rmloptions_test.lua`.

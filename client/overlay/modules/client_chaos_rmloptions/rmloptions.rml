@@ -5,14 +5,16 @@
 </head>
 <body>
 	<div id="window">
+		<div class="orn tl"></div><div class="orn tr"></div><div class="orn bl"></div><div class="orn br"></div>
+		<div id="crest"></div>
 		<div id="titlebar">
 			<span id="title"></span>
-			<button id="x" class="icon">X</button>
 		</div>
 		<div id="main">
 			<div id="nav"></div>
 			<div id="content"></div>
 		</div>
+		<div id="sep"></div>
 		<div id="footer">
 			<button id="classic"></button>
 			<button id="done" class="primary"></button>
