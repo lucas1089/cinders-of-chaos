@@ -280,7 +280,7 @@ library.
 | `game_event` | Full `$mobile` styles (10 places). Fits 540 logical pixels, asks `client_mobile` to hide the walk pad while it is open. The only fully ported window. |
 | `game_shop` | One `$mobile` rule in `shop.otui`. The look preview column is skipped (`shop.lua`, `tryon.lua`). |
 | `game_chatpanel` | Does nothing on mobile (returns early). The base console keeps working. |
-| `game_chaosuiscale` | Does nothing on mobile. The phone client sets its own zoom. |
+| `game_chaosuiscale` | Sets the phone zoom 1.5 s after start and on a size change: the highest whole step that leaves 960x540 interface pixels (1080 high: 2x). The base phone zoom of 3x left 780x360 and cut the login and the windows. The zoom buttons still change it. |
 | `game_shaderfx` | The health and mana orbs sit in the window corner when there is no chat panel. |
 
 The base modules `client_mobile` (zoom, walk pad), `game_interface`, `game_console`, `game_battle`,

@@ -394,6 +394,11 @@ local function ready()
   end
   g_logger.info(('firststart: ready: %d files, download %s, free %s, needed %s'):format(summary.files,
     U.formatBytes(summary.blobBytes), U.formatBytes(free), U.formatBytes(needed)))
+  -- emulator test only (android-client.yml smoke_download): a marker file in the write folder presses Download
+  if fits and g_resources.fileExists('/' .. C.AUTOSTART) then
+    g_logger.info('firststart: autostart marker found: download starts')
+    later(500, F.start)
+  end
 end
 
 local function onManifest(r)

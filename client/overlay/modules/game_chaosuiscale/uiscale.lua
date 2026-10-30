@@ -16,8 +16,16 @@ local function windowSize()
   return 0, 0
 end
 
+local function applyPhone()
+  local f = L.phoneFactor(windowSize())
+  if f and f ~= applied then
+    applied = f
+    g_app.scale(f)
+  end
+end
+
 local function apply()
-  if g_app.isMobile and g_app.isMobile() then return end   -- the phone client sets its own zoom
+  if g_app.isMobile and g_app.isMobile() then return applyPhone() end
   -- only the Windows window divides the mouse position by the scale (win32window.cpp); elsewhere clicks would land off
   if g_app.getOs and g_app.getOs() ~= 'windows' then return end
   local w, h = windowSize()
@@ -67,6 +75,10 @@ function init()
   lastW, lastH = windowSize()
   apply()
   watchEvent = cycleEvent(watch, 500)
+  -- the base phone module zooms to 3x shortly after its start: the phone step goes in after it
+  if g_app.isMobile and g_app.isMobile() then
+    scheduleEvent(function() applied = nil; applyPhone() end, 1500)
+  end
 end
 
 function terminate()

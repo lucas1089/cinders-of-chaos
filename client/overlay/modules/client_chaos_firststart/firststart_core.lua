@@ -21,6 +21,7 @@ ChaosFirstStartCore = M
 
 M.TREE = 'chaos_update/android'               -- plain files, mounted by boot.lua (g_resources.mountDataFolder)
 M.STATE = 'chaos_update/android_state.txt'    -- key=value: status (applying|ok), version, package, applied
+M.AUTOSTART = 'firststart_autostart'           -- emulator test marker (android-client.yml smoke_download): starts the download
 M.INDEX = 'chaos_update/android_index.txt'    -- "<path>\t<sha256>\t<size>" per file placed in the tree
 M.STAGING = U.STAGING
 M.PROBE = 'data/things/1098/Tibia.dat'        -- the file that says the game data is there
