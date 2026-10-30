@@ -3,6 +3,7 @@ pub mod cards;
 pub mod catalog;
 pub mod commands;
 pub mod config;
+pub mod infos;
 pub mod keys;
 pub mod live;
 pub mod reload;

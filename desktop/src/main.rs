@@ -3,6 +3,7 @@ use cinders_admin::cards::{self, Count, Metrics, Player, State, Status};
 use cinders_admin::catalog::{self, PanelAction};
 use cinders_admin::commands::{self, Action, Kind, Live, Tab, ACTIONS};
 use cinders_admin::config::{self, Config};
+use cinders_admin::infos::{self, Report, UpdateInfo};
 use cinders_admin::live::{self, Level, Poller};
 use cinders_admin::{keys, reload, ssh, update};
 use eframe::egui;
@@ -30,11 +31,22 @@ struct LiveData {
     at: i64,
 }
 
+/// How the answer of a command is shown besides the output pane.
+#[derive(Clone, Copy, PartialEq)]
+enum Answer {
+    Plain,
+    /// `update-check`: the update card.
+    Update,
+    /// `feedback`: one card per report.
+    Feedback,
+}
+
 enum Msg {
     Done {
         title: String,
         text: String,
         ok: bool,
+        answer: Answer,
     },
     Catalog(Result<(Vec<PanelAction>, i64), String>),
     Update(Result<Option<update::Found>, String>),
@@ -57,6 +69,7 @@ struct Pending {
     warn: String,
     /// The answer is the JSON line of a panel action: show its message and lines.
     panel_answer: bool,
+    answer: Answer,
 }
 
 struct App {
@@ -64,6 +77,10 @@ struct App {
     page: Page,
     values: HashMap<usize, Vec<String>>,
     output: String,
+    /// Last good `update-check`, drawn in the group "Atualizar servidor".
+    update_info: Option<UpdateInfo>,
+    /// Last good `feedback`, drawn in the group "Bugs e sugestões".
+    reports: Option<Vec<Report>>,
     busy: usize,
     tx: Sender<Msg>,
     rx: Receiver<Msg>,
@@ -113,6 +130,8 @@ impl App {
             cfg,
             values: HashMap::new(),
             output: String::new(),
+            update_info: None,
+            reports: None,
             busy: 0,
             tx,
             rx,
@@ -504,6 +523,7 @@ impl App {
                 title: p.title,
                 text: o.text,
                 ok,
+                answer: p.answer,
             });
             ctx.request_repaint();
         });
@@ -535,6 +555,11 @@ impl App {
                     reload,
                     warn,
                     panel_answer: false,
+                    answer: match a.template.split(' ').next() {
+                        Some("update-check") => Answer::Update,
+                        Some("feedback") => Answer::Feedback,
+                        _ => Answer::Plain,
+                    },
                 };
                 if a.confirm {
                     self.confirm = Some(p);
@@ -608,9 +633,102 @@ impl App {
                                 }
                             });
                         }
+                        match g {
+                            "Atualizar servidor" => self.update_card_ui(ui),
+                            "Bugs e sugestões" => self.reports_ui(ui),
+                            _ => {}
+                        }
                     });
             });
             ui.add_space(8.0);
+        }
+    }
+
+    /// The answer of "Verificar" as a card: headline, summary lines and the last run.
+    fn update_card_ui(&mut self, ui: &mut egui::Ui) {
+        let Some(u) = &self.update_info else { return };
+        ui.add_space(6.0);
+        theme::well().show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            let (colour, badge) = if u.available() {
+                (theme::WARN, "ATUALIZAÇÃO DISPONÍVEL")
+            } else {
+                (theme::OK, "EM DIA")
+            };
+            ui.horizontal(|ui| {
+                ui.label(egui::RichText::new(badge).strong().color(colour));
+                if u.running() {
+                    ui.label(egui::RichText::new("EM ANDAMENTO").strong().color(theme::EMBER_HI));
+                }
+            });
+            for line in u.summary_lines() {
+                let colour = if line.starts_with("Atenção") || line.contains("não consegui") {
+                    theme::WARN
+                } else if line.starts_with("  •") {
+                    theme::MUTED
+                } else {
+                    theme::TEXT
+                };
+                ui.label(egui::RichText::new(line).color(colour));
+            }
+            let last = u.last_run();
+            if !last.is_empty() {
+                ui.label(theme::caption(&last));
+            }
+        });
+        ui.add_space(6.0);
+    }
+
+    /// One card per report. "Usar no Fechar relatório" fills the id of the action below, like a typed value.
+    fn reports_ui(&mut self, ui: &mut egui::Ui) {
+        let Some(list) = &self.reports else { return };
+        let close = ACTIONS.iter().position(|a| a.template.starts_with("feedback-close"));
+        let mut fill: Option<u32> = None;
+        ui.add_space(6.0);
+        ui.label(theme::caption(&infos::reports_summary(list)));
+        for r in list {
+            theme::well().show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(theme::card_title(&format!("#{}", r.id)));
+                    ui.label(
+                        egui::RichText::new(infos::category_label(&r.category))
+                            .strong()
+                            .color(theme::TEXT),
+                    );
+                    let (colour, word) = if r.closed {
+                        (theme::MUTED, "FECHADO")
+                    } else {
+                        (theme::WARN, "ABERTO")
+                    };
+                    ui.label(egui::RichText::new(word).strong().color(colour));
+                    ui.label(theme::caption(&r.when));
+                });
+                let mut meta = format!("posição {}", r.pos);
+                if !r.who.is_empty() {
+                    meta.push_str(&format!("  ·  {}", r.who));
+                }
+                ui.label(theme::caption(&meta));
+                ui.label(egui::RichText::new(&r.text).color(theme::TEXT));
+                if r.closed {
+                    ui.label(theme::caption(&format!("Fechado: {}", r.closed_note)));
+                } else if close.is_some() && ui.button("Usar no Fechar relatório").clicked() {
+                    fill = Some(r.id);
+                }
+            });
+            ui.add_space(4.0);
+        }
+        if let (Some(id), Some(i)) = (fill, close) {
+            let a = &ACTIONS[i];
+            let vals = self
+                .values
+                .entry(i)
+                .or_insert_with(|| a.params.iter().map(|p| p.default.to_string()).collect());
+            if let Some(v) = vals.first_mut() {
+                *v = id.to_string();
+            }
+            self.status =
+                format!("Relatório #{id} no campo de Fechar relatório (confira a nota e clique em Fechar relatório).");
         }
     }
 
@@ -748,6 +866,7 @@ impl App {
                                 String::new()
                             },
                             panel_answer: false,
+                            answer: Answer::Plain,
                         };
                         if a.risky {
                             self.confirm = Some(p);
@@ -1032,6 +1151,7 @@ impl App {
                         "Recarregar {name} no jogo em andamento? Os valores novos valem para todos os jogadores agora."
                     ),
                     panel_answer: true,
+                    answer: Answer::Plain,
                 };
                 if name.is_empty() {
                     self.run(ctx, p);
@@ -1136,8 +1256,21 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         while let Ok(m) = self.rx.try_recv() {
             match m {
-                Msg::Done { title, text, ok } => {
+                Msg::Done {
+                    title,
+                    text,
+                    ok,
+                    answer,
+                } => {
                     self.busy = self.busy.saturating_sub(1);
+                    match answer {
+                        Answer::Update if ok => {
+                            let u = UpdateInfo::parse(&text);
+                            self.update_info = u.valid().then_some(u);
+                        }
+                        Answer::Feedback if ok => self.reports = Some(infos::parse_reports(&text)),
+                        _ => {}
+                    }
                     self.output = format!("{} {}\n{}", if ok { "OK" } else { "ERRO" }, title, text.trim_end());
                     self.status = format!("{title}: {}", if ok { "feito" } else { "falhou" });
                 }
@@ -1342,6 +1475,7 @@ impl eframe::App for App {
                                                 reload: None,
                                                 warn: String::new(),
                                                 panel_answer: false,
+                                                answer: Answer::Plain,
                                             };
                                             self.run(ctx, p);
                                         }

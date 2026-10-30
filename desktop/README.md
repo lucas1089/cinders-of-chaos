@@ -78,6 +78,16 @@ It uses the existing `remote.cmd` path, so nothing new runs on the server.
 - Per-script state is lost on `reload scripts` (tables built at load are rebuilt; running events restart).
 - The phone's picture views (`spectate`, `cast`) are not in the desktop app: they need a long ssh stream and a picture view.
 
+## Update and bug report cards (Painel)
+
+Two answers show as cards under their group, next to the raw text in the output pane. Painel > Atualizar servidor >
+Verificar draws a card with "Há atualização" or "Tudo em dia", the new commits, engine, map master, client update,
+downloads, site and the last run (`src/infos.rs`, the wording of the phone's `UpdateInfo.java`). Painel > Bugs e
+sugestões > Abertos (30 dias) or Todos draws one card per report: number, category, open or closed, date, position,
+level and class, text and the closing note (`FeedbackInfo.java` and `server/tools/feedback_format.py`). The `from:` name
+line is never read. An open report has the button "Usar no Fechar relatório", which writes its number into the id field
+of the action Fechar relatório; add a note and press that button. The cards keep the last good answer until the next one.
+
 ## Reload one file (Painel do jogo > Recarregar um arquivo)
 
 Pick a config table (`Listar arquivos` fills the list from `chaos-ctl.sh reload-files`; type to filter) and press
