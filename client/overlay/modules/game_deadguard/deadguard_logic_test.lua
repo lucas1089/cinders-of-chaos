@@ -104,5 +104,20 @@ for _, v in ipairs(r) do if v.entry.obj == B then n = n + 1 end end
 eq(n, 1, 'a leftover at 0 percent is listed once')
 eq(L.SWEEP_MS, 1000, 'sweep every second')
 
+-- the own character off its tile
+st = L.newState()
+eq(L.selfOffTile(st, { onMap = true, walking = false, listed = false }, 0), nil, 'off the tile: wait')
+eq(L.selfOffTile(st, { onMap = true, walking = false, listed = false }, 1499), nil, 'still inside the time')
+eq(L.selfOffTile(st, { onMap = true, walking = false, listed = false }, 1500), 'readd', 'after the time: put it back')
+eq(L.selfOffTile(st, { onMap = true, walking = false, listed = false }, 1600), nil, 'the clock restarts after a re-add')
+st = L.newState()
+L.selfOffTile(st, { onMap = true, walking = false, listed = false }, 0)
+eq(L.selfOffTile(st, { onMap = true, walking = true, listed = false }, 1000), nil, 'walking: the engine draws it, reset')
+eq(L.selfOffTile(st, { onMap = true, walking = false, listed = false }, 2000), nil, 'the clock started again')
+eq(L.selfOffTile(st, { onMap = true, walking = false, listed = true }, 9000), nil, 'listed: fine')
+eq(L.selfOffTile(st, { onMap = true, walking = false, listed = nil }, 9000), nil, 'unknown: nothing')
+eq(L.selfOffTile(st, { onMap = false, walking = false, listed = false }, 9000), nil, 'not on a map tile: nothing')
+eq(L.selfOffTile(st, nil, 9000), nil, 'no info')
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('deadguard_logic_test ok (' .. checks .. ' checks)')

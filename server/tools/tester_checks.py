@@ -3,7 +3,8 @@
 
 testers.py run --checks: each bot, once per run, takes the checks that apply to its class and asserts something about a
 system the coverage layer (tester_scenarios.py: requests and places) only touches: summons and pets, the Necromancer's
-minions, the Beastmaster's wolf, party play, rifts, waystones, the cursed chest, reward chests, and the Auto setup spell
+minions, the Beastmaster's wolf, party play and its shared experience, rifts and their layouts, waystone runs (tier and
+modifiers), the content rewards of both, waystones, the cursed chest, reward chests, and the Auto setup spell
 list of the class, and the line spell quest (O263: hunt, fragments, the trial at Archivist Odrenna, the spell in the class's spell
 and Auto setup data). A check that fails prints one line, "BUG <check>: <what> (<bot>, <class>)", in the report, in
 run.json ("checks") and in the log. A check that cannot run (no spell yet, no partner, no pet, the system is not in the
@@ -21,7 +22,7 @@ No god command, no development key: the checks use the helper's `!tester` comman
 The pure flow lives here and talks to the game through an `io` object (testers.py CheckIO): async helper(command, kind,
 wait) -> the helper's answer dict or None; async say(text); async sleep(seconds); alive(); async request(opname, action,
 data, expect, timeout) -> the answer or None ("*" in expect: any action); async party(action, other) with action
-"form" | "leave" (True when both packets could be sent); async partner() -> the name of another bot in game or None;
+"form" | "share" | "unshare" | "leave" (True when both packets could be sent); async partner() -> the name of another bot in game or None;
 go(place) -> True ('town' / 'hunt' through the helper); autosetup() -> the rotation table (load_table) or None; spells() ->
 {id: {level, vocations, name}} of the server. The tests (tester_checks_test.py) give it a
 mocked server. Standard library only.
@@ -214,6 +215,266 @@ async def check_opcode(io, name, cls, level, check, opname, action, data=None):
 
 async def check_waystone(io, name, cls, level):
     return await check_opcode(io, name, cls, level, 'waystone', 'waystoneAtlas', 'open')
+
+
+# ------------------------------------------------------------------------------------------ O110: runs and rewards
+WAYSTONE_TIERS = (2, 8, 14)   # one tier per band of waystone_tiers_config.lua (low 1-5, mid 6-10, high 11-15)
+LOOT_TIER = 8
+HELPER_WAIT = 15.0
+
+
+def tier_level(tier):
+    """the level of a waystone run: 1100 at tier I, 100 more per tier up to 2500 (owner 2026-10-23; waystone_tiers_config.lua)"""
+    return 1000 + 100 * tier
+
+
+def bonus_percent(lines):
+    """the party frames' bonus in percent for n class lines (party_xp_core.lua bonusPercent); the stock 20 % for none"""
+    if lines < 1:
+        return 20
+    if lines == 1:
+        return 20
+    n = min(lines, 5)
+    return n * (5 * (n - 1) + 10)
+
+
+def share_expected(lines, size, exp=1000):
+    """what Party:onShareExperience pays one member for `exp`: ceil(exp x (100 + bonus) / 100 / members)"""
+    return -(-(exp * (100 + bonus_percent(lines))) // (100 * max(1, size)))
+
+
+def party_share_problems(p):
+    """[text] for one `!tester party` answer of a party whose leader switched shared experience on"""
+    out = []
+    if not p.get('shareActive'):
+        out.append('the leader switched shared experience on, the party says it is off')
+    lines, size = int(p.get('lines') or 0), int(p.get('size') or 0)
+    if p.get('shareOf1000') is not None and lines >= 1:
+        want = share_expected(lines, size)
+        if int(p['shareOf1000']) != want:
+            out.append('1000 experience pays %s to a member, the rule (%d class line(s), %d members, +%d%%) gives %d' % (
+                p['shareOf1000'], lines, size, bonus_percent(lines), want))
+    hard = [x for x in p.get('problems') or [] if x.get('kind') in ('level', 'range')]
+    if p.get('shareEnabled') and hard:
+        out.append('shared experience works while %s %s' % (hard[0].get('name', '?'), 'is below two thirds of the highest level'
+                                                             if hard[0].get('kind') == 'level' else 'is out of range'))
+    if p.get('shareActive') and not p.get('shareEnabled') and not (p.get('problems') or []):
+        out.append('shared experience is off while every member passes level, range and fight')
+    return out
+
+
+async def check_party_xp(io, name, cls, level):
+    """party XP sharing: two bots form a party, the leader (this bot) switches shared experience on (packet 0xA8); the helper
+    reads the party: the switch took, what the game's Party:onShareExperience pays for 1000 experience is
+    ceil(1000 x (1 + class line bonus) / members), and the engine's verdict agrees with the rules (nobody below two
+    thirds of the highest level, within 30 tiles and 1 floor, in a fight): not working while a member fails level or
+    range, working when all pass. A verdict seen in two looks 3 s apart. Left again at the end."""
+    other = await io.partner()
+    if not other:
+        return Result('party_xp', name, cls, SKIP, 'no other bot in game')
+    if not await io.party('form', other):
+        return Result('party_xp', name, cls, SKIP, 'the invite could not be sent')
+    await io.sleep(SETTLE)
+    try:
+        p = await io.helper('party', 'party', ANSWER)
+        if not p or p.get('err'):
+            return Result('party_xp', name, cls, SKIP, 'no answer to !tester party')
+        if int(p.get('size') or 0) < 2:
+            return Result('party_xp', name, cls, SKIP, 'the party was not formed (%s member(s))' % p.get('size'))
+        if p.get('leader') != name:
+            return Result('party_xp', name, cls, SKIP, 'this bot is not the leader (%s is)' % p.get('leader'))
+        if 'shareActive' not in p:
+            return Result('party_xp', name, cls, SKIP, 'the helper does not report the shared experience (old helper file)')
+        await io.party('share', other)
+        await io.sleep(SETTLE)
+        first = await io.helper('party', 'party', ANSWER)
+        await io.sleep(3.0)
+        second = await io.helper('party', 'party', ANSWER)
+        if not first or not second or first.get('err') or second.get('err'):
+            return Result('party_xp', name, cls, SKIP, 'no answer to !tester party after the switch')
+        a, b = party_share_problems(first), party_share_problems(second)
+        bad = [x for x in a if x in b]    # the engine's own update lags a tick: only what both looks saw
+        if bad:
+            return Result('party_xp', name, cls, FAIL, '; '.join(bad[:3]))
+        verdict = 'working' if second.get('shareEnabled') else 'off: %s' % (
+            ', '.join('%s %s' % (x.get('name'), x.get('kind')) for x in second.get('problems') or [])[:60] or 'none')
+        return Result('party_xp', name, cls, PASS, 'switch took, 1000 xp pays %s (%s class line(s), %s members), engine %s' % (
+            second.get('shareOf1000'), second.get('lines'), second.get('size'), verdict))
+    finally:
+        await io.party('unshare', other)
+        await io.party('leave', other)
+        await io.sleep(1.0)
+
+
+def waystone_problems(a):
+    """[text] for one `!tester waystone <tier>` answer (a run of that tier, read back)"""
+    out = []
+    t = int(a.get('tier') or 0)
+    if int(a.get('tierLevel') or 0) != tier_level(t):
+        out.append('tier %d runs at level %s, expected %d' % (t, a.get('tierLevel'), tier_level(t)))
+    held, take, run = a.get('held') or {}, a.get('take') or {}, a.get('run') or {}
+    n = int(a.get('nrolled') or 0)
+    if held.get('tier') != t or int(held.get('mods') or 0) != n:
+        out.append('the waystone written with %d modifiers reads back as tier %s with %s' % (n, held.get('tier'), held.get('mods')))
+    if held.get('rarity') != 'Rare' or held.get('expectRarity') != 'Rare':
+        out.append('a waystone with %d modifiers is %s, expected Rare' % (n, held.get('rarity')))
+    if not take.get('ok'):
+        out.append('the device could not take the waystone it was given')
+    else:
+        if int(take.get('before') or 0) - int(take.get('after') or 0) != 1:
+            out.append('taking one waystone changed the count %s -> %s' % (take.get('before'), take.get('after')))
+        if int(take.get('mods') or 0) != n:
+            out.append('the take returned %s modifiers, the waystone has %d' % (take.get('mods'), n))
+    if take.get('ok'):
+        if not run.get('live'):
+            out.append('the run with %d modifiers is not registered' % n)
+        else:
+            if run.get('tier') != t or int(run.get('mods') or 0) != n:
+                out.append('the run is tier %s with %s modifiers, expected %d with %d' % (run.get('tier'), run.get('mods'), t, n))
+            if not 0 < int(run.get('seconds') or 0) <= 3600:
+                out.append('the run lasts %s s' % run.get('seconds'))
+        if run.get('active') != t:
+            out.append('the map counts at tier %s during the run, expected %d' % (run.get('active'), t))
+    for m in a.get('monsters') or []:
+        if m.get('level') != tier_level(t) or m.get('expectLevel') != tier_level(t):
+            out.append('%s is level %s (rule %s) in a tier %d run, expected %d' % (
+                m.get('name'), m.get('level'), m.get('expectLevel'), t, tier_level(t)))
+            break
+    for m in a.get('monsters') or []:
+        r, e = m.get('ratio'), m.get('expectRatio')
+        if r and e and abs(r / e - 1) > 0.03:
+            out.append('%s health x%.3f in the run, the level and modifiers give x%.3f' % (m.get('name'), r, e))
+            break
+    return out
+
+
+def waystone_loot_problems(loot):
+    out = []
+    if not loot.get('paid'):
+        out.append('the run\'s boss kill paid nothing through the content rewards')
+        return out
+    if int(loot.get('pieces') or 0) < int(loot.get('minPieces') or 0):
+        out.append('boss table: %s gear piece(s) of Legendary or better, the config guarantees %s' % (loot.get('pieces'), loot.get('minPieces')))
+    if int(loot.get('badRarity') or 0) > 0:
+        out.append('boss table: %s piece(s) below Legendary' % loot['badRarity'])
+    for o in loot.get('orbs') or []:
+        if int(o.get('count') or 0) < int(o.get('min') or 0):
+            out.append('boss table: %s x%s, the config guarantees at least %s' % (o.get('name'), o.get('count'), o.get('min')))
+    if int(loot.get('waystones') or 0) < int(loot.get('minWaystones') or 0):
+        out.append('boss table: %s waystone(s) of the run\'s tier, the config guarantees %s' % (loot.get('waystones'), loot.get('minWaystones')))
+    return out
+
+
+async def check_waystone_run(io, name, cls, level):
+    """waystone tiers and modifiers in a run, on the game's own code (the helper does what the device does: writes a Rare
+    waystone, takes it, starts the run on a map of the band): for one tier of each band the waystone reads back with its
+    tier and modifiers, the device takes exactly one, the run is registered with the tier and the modifiers, and the map's
+    monsters in range are at the tier's level (1100 + 100 a tier) with health following the level and modifiers. The pads
+    and the teleport (base code) are not walked."""
+    seen, notes = 0, []
+    for t in WAYSTONE_TIERS:
+        a = await io.helper('waystone %d' % t, 'waystone', HELPER_WAIT)
+        if not isinstance(a, dict):
+            return Result('waystone_run', name, cls, SKIP, 'no answer to !tester waystone %d' % t)
+        err = str(a.get('err') or '')
+        if err.startswith('startRun'):
+            return Result('waystone_run', name, cls, FAIL, 'tier %d: ChaosWaystoneTiers.%s' % (t, err[:90]))
+        if err:
+            if err == 'no waystone system':
+                return Result('waystone_run', name, cls, SKIP, err)
+            notes.append('tier %d: %s' % (t, err[:40]))
+            continue
+        bad = waystone_problems(a)
+        if bad:
+            return Result('waystone_run', name, cls, FAIL, 'tier %d: %s' % (t, '; '.join(bad[:3])))
+        seen += 1
+        notes.append('tier %d: %d mods, %d monster(s) sampled' % (t, int(a.get('nrolled') or 0), len(a.get('monsters') or [])))
+    if not seen:
+        return Result('waystone_run', name, cls, SKIP, '; '.join(notes) or 'no run could start')
+    return Result('waystone_run', name, cls, PASS, '; '.join(notes))
+
+
+async def check_rift_layout(io, name, cls, level):
+    """the layout of a real rift run (the helper opens one as a player does, in the temple, with a key of the highest tier the
+    character may open): its theme, kind and floors are in the config of the theme, the size band is the tier's, the walkable
+    cells are inside the band's limits, the arrival, the guardian's spot and the arena's mouth are walkable cells, the bot
+    stands on one, 40 cells spread over the map have a ground and do not block, and the run closes with the slot freed."""
+    a = await io.helper('riftrun layout', 'riftrun', 20.0)
+    if not isinstance(a, dict):
+        return Result('rift_layout', name, cls, SKIP, 'no answer to !tester riftrun')
+    err = str(a.get('err') or '')
+    if err and not a.get('theme'):
+        return Result('rift_layout', name, cls, SKIP, err[:80])
+    bad = rift_layout_problems(a)
+    if bad:
+        return Result('rift_layout', name, cls, FAIL, '; '.join(bad[:3]))
+    return Result('rift_layout', name, cls, PASS, 'tier %s %s (%s), band %s, %s walkable, route %s, %s sampled tiles on the ground' % (
+        a.get('tier'), a.get('theme'), a.get('kind'), a.get('band'), a.get('walkable'), a.get('route'), (a.get('sample') or {}).get('n')))
+
+
+def rift_layout_problems(a):
+    out = []
+    if a.get('err'):
+        out.append(str(a['err'])[:80])
+    if a.get('kind') not in (a.get('kinds') or []):
+        out.append('%s has the layout kind %s, its config allows %s' % (a.get('theme'), a.get('kind'), '/'.join(a.get('kinds') or [])))
+    if a.get('floors') not in (a.get('floorCounts') or []):
+        out.append('%s has %s floor(s), its config allows %s' % (a.get('theme'), a.get('floors'), a.get('floorCounts')))
+    if a.get('band') != a.get('bandExpected'):
+        out.append('tier %s made a band %s layout, the config says band %s' % (a.get('tier'), a.get('band'), a.get('bandExpected')))
+    lim = a.get('limits') or {}
+    w = int(a.get('walkable') or 0)
+    if lim and not (lim.get('walkableMin', 0) <= w <= lim.get('walkableMax', 10 ** 9)):
+        out.append('%d walkable tiles, the band holds %s to %s' % (w, lim.get('walkableMin'), lim.get('walkableMax')))
+    if not int(a.get('route') or 0) > 0:
+        out.append('no walking route from the arrival to the guardian (%s)' % a.get('route'))
+    for key, what in (('startWalk', 'the arrival'), ('bossWalk', 'the guardian\'s spot'), ('mouthWalk', 'the arena\'s mouth'),
+                      ('playerWalk', 'the bot after entering')):
+        if a.get(key) is not True:
+            out.append('%s is not a walkable cell of the layout' % what)
+    s = a.get('sample') or {}
+    if int(s.get('bare') or 0) or int(s.get('blocked') or 0):
+        out.append('of %s walkable cells sampled %s have no ground and %s block' % (s.get('n'), s.get('bare'), s.get('blocked')))
+    after = a.get('after') or {}
+    if after.get('inRun') or after.get('slotFree') is False:
+        out.append('the run did not close (bot inside: %s, slot free: %s)' % (after.get('inRun'), after.get('slotFree')))
+    return out
+
+
+async def check_content_rewards(io, name, cls, level):
+    """the passive rewards (content_rewards.lua: no window, the kill pays): a boss kill of a waystone run of tier VIII and the
+    guardian's kill of a rift, each through ChaosContentRewards.onKill with a stand-in monster (nothing is spawned): the
+    corpse holds what the config guarantees (Legendary or better gear pieces, the sure orbs and a waystone of the run's
+    tier; the guardian's orbs). The first unique and the pity of retention_loot.lua are not checked: they skip testers by rule."""
+    parts, ran = [], 0
+    a = await io.helper('waystone %d loot' % LOOT_TIER, 'waystone', HELPER_WAIT)
+    if not isinstance(a, dict):
+        return Result('content_rewards', name, cls, SKIP, 'no answer to !tester waystone %d loot' % LOOT_TIER)
+    loot = a.get('loot')
+    if a.get('err') or not loot:
+        parts.append('waystone boss not checked: %s' % str(a.get('err') or 'no loot answer')[:50])
+    elif loot.get('err'):
+        parts.append('waystone boss not checked: %s' % str(loot['err'])[:50])
+    else:
+        bad = waystone_loot_problems(loot)
+        if bad:
+            return Result('content_rewards', name, cls, FAIL, 'waystone boss: ' + '; '.join(bad[:3]))
+        ran += 1
+        parts.append('waystone boss: %s piece(s), %s sure orb kinds, %s waystone(s)' % (loot.get('pieces'), len(loot.get('orbs') or []), loot.get('waystones')))
+    r = await io.helper('riftrun loot', 'riftrun', 20.0)
+    rl = r.get('loot') if isinstance(r, dict) else None
+    if not isinstance(r, dict) or not rl or rl.get('err'):
+        why = (r or {}).get('err') or (rl or {}).get('err') or 'no answer'
+        parts.append('rift guardian not checked: %s' % str(why)[:50])
+    else:
+        if not rl.get('paid') or int(rl.get('orbs') or 0) < int(rl.get('minOrbs') or 0):
+            return Result('content_rewards', name, cls, FAIL, 'rift guardian: %s orb(s) (paid %s), the config guarantees %s' % (
+                rl.get('orbs'), rl.get('paid'), rl.get('minOrbs')))
+        ran += 1
+        parts.append('rift guardian: %s orbs' % rl.get('orbs'))
+    if not ran:
+        return Result('content_rewards', name, cls, SKIP, '; '.join(parts))
+    return Result('content_rewards', name, cls, PASS, '; '.join(parts))
 
 
 async def check_reward_chest(io, name, cls, level):
@@ -428,6 +689,10 @@ CHECKS = [
     ('pets', check_pets, lambda c: True),
     ('party', check_party, lambda c: True),
     ('rift', check_rift, lambda c: True),
+    ('rift_layout', check_rift_layout, lambda c: True),
+    ('waystone_run', check_waystone_run, lambda c: True),
+    ('content_rewards', check_content_rewards, lambda c: True),
+    ('party_xp', check_party_xp, lambda c: True),
     ('waystone', check_waystone, lambda c: True),
     ('reward_chest', check_reward_chest, lambda c: True),
     ('cursed_chest', check_cursed_chest, lambda c: True),

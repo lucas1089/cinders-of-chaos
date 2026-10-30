@@ -19,6 +19,9 @@
 --     client ids, the locker, the NPC's name)
 --   * "!tester spellquest <state | reset | set | kill | trial | leave | complete>": the line spell quests of the tester (the
 --     checks of tools/tester_checks.py spell_quest; the staff command /spellquest is closed to testers)
+--   * "!tester waystone <1-15> [loot]" and "!tester riftrun <layout | loot>": a waystone run of that tier on the device's own
+--     functions, a real rift run opened as a player does; the facts the checks waystone_run, rift_layout and content_rewards
+--     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience
 --   * "!tester bag": empties the tester's own backpack of loot (everything but the potions) and tops the potions up
 --   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
 --     the count changed, and every 5 minutes anyway
@@ -46,7 +49,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 2
+HELPER_VERSION = 3
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -550,6 +553,50 @@ function commands.summons(player)
 	tell(player, "summons", snap)
 end
 
+-- the shared experience of the party (O110 party XP): the switch, the engine's verdict, the rules of party_xp_core.lua on
+-- the members' facts, the class lines, and what the game's own Party:onShareExperience pays for 1000 experience
+local function partyShare(party, data)
+	local leader = party:getLeader()
+	local okA, active = pcall(function() return party:isSharedExperienceActive() end)
+	local okE, enabled = pcall(function() return party:isSharedExperienceEnabled() end)
+	data.shareActive, data.shareEnabled = okA and active == true, okE and enabled == true
+	local KX = ChaosPartyXpCore
+	if not (KX and leader) then
+		return
+	end
+	local function facts(p)
+		local pos = p:getPosition()
+		local line
+		pcall(function() line = p:getVocation():getBase():getId() end)
+		return {name = p:getName(), level = p:getLevel(), pos = {x = pos.x, y = pos.y, z = pos.z}, line = line,
+			fighting = p:getCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT) ~= nil}
+	end
+	local lf, members, all = facts(leader), {}, {}
+	all[1] = lf
+	for _, m in ipairs(party:getMembers()) do
+		local f = facts(m)
+		members[#members + 1], all[#all + 1] = f, f
+	end
+	-- the rules without the engine's verdict: who fails which one
+	local diag = KX.diagnose({active = true, enabled = false, leader = lf, members = members})
+	data.problems, data.levels = {}, {}
+	for _, p in ipairs(diag.problems or {}) do
+		data.problems[#data.problems + 1] = {name = p.name, kind = p.kind}
+	end
+	local highest = 0
+	for _, f in ipairs(all) do
+		data.levels[#data.levels + 1] = f.level
+		highest = math.max(highest, f.level)
+	end
+	data.minLevel = KX.minLevel(highest)
+	data.lines = KX.lineCount(all)
+	data.bonusPct = KX.bonusPercent(data.lines)
+	local okS, share = pcall(function() return party:onShareExperience(1000) end)
+	if okS then
+		data.shareOf1000 = tonumber(share)
+	end
+end
+
 function commands.party(player)
 	local party = player:getParty()
 	local data = {size = 0, members = {}}
@@ -560,6 +607,7 @@ function commands.party(player)
 		for _, m in ipairs(party:getMembers()) do
 			data.members[#data.members + 1] = m:getName()
 		end
+		pcall(partyShare, party, data)
 	end
 	tell(player, "party", data)
 end
@@ -625,6 +673,322 @@ function commands.chest(player, arg)
 	end
 	tell(player, "chest", {state = ch and ch.state or "none", left = #mine, monsters = monsters,
 		horde = ch and ch.ev and ch.ev.horde or 0})
+end
+
+-- ---------------------------------------------------------------- O110: waystone runs, rift layouts, content rewards
+local CORPSE = 1988 -- a plain backpack stands in for a corpse
+
+-- the items of a container, deep: {id, count, rarity}
+local function itemsOf(container)
+	local out = {}
+	local ok, list = pcall(function() return container:getItems(true) end)
+	for _, it in ipairs(ok and list or {}) do
+		local row = {id = it:getId(), count = it:getCount()}
+		local okR, r = pcall(function() return it:getCustomAttribute("rarity") end)
+		row.rarity = okR and tonumber(r) or nil
+		out[#out + 1] = row
+	end
+	return out
+end
+
+-- a monster as the content rewards see it (name, place, id); there is no real monster, so nothing in the world is spawned
+local function standIn(name, pos, id)
+	return {isMonster = function() return true end, isPlayer = function() return false end,
+		getMaster = function() return nil end, getName = function() return name end,
+		getPosition = function() return pos end, getId = function() return id end}
+end
+
+-- one kill of a stand-in boss through the game's own ChaosContentRewards.onKill into a backpack on the tester's tile;
+-- the items it holds, or nil and the reason. The backpack is removed.
+local function standInKill(player, monster, ctx)
+	local CR, L = ChaosContentRewards, ChaosLoot
+	if not (CR and CR.onKill and L and L.addToCorpse) then
+		return nil, "no content rewards or loot system"
+	end
+	local corpse = Game.createItem(CORPSE, 1, player:getPosition())
+	if not corpse then
+		return nil, "no corpse"
+	end
+	ctx.monster, ctx.player, ctx.itemFind = monster, player, 1
+	local ok, paid = pcall(CR.onKill, monster, corpse, player, ctx, L, {})
+	local items = itemsOf(corpse)
+	pcall(function() corpse:remove() end)
+	return items, nil, ok and paid == true
+end
+
+local function countOf(items, id)
+	local n = 0
+	for _, it in ipairs(items) do
+		if it.id == id then
+			n = n + (it.count or 1)
+		end
+	end
+	return n
+end
+
+local function areaOf(m)
+	local cx, cy = math.floor((m.from.x + m.to.x) / 2), math.floor((m.from.y + m.to.y) / 2)
+	local hx, hy = math.ceil(math.abs(m.to.x - m.from.x) / 2), math.ceil(math.abs(m.to.y - m.from.y) / 2)
+	return Position(cx, cy, m.from.z), hx, hy
+end
+
+-- the creatures of a waystone map: onlyPlayers or monsters of the tier lists (no summons)
+local function spectatorsOf(m, onlyPlayers)
+	local centre, hx, hy = areaOf(m)
+	local ok, list = pcall(Game.getSpectators, centre, false, onlyPlayers, hx, hx, hy, hy)
+	return ok and list or {}
+end
+
+-- !tester waystone <tier> [loot]: a run of that tier on the game's own code, as the device runs it (tier_maps.lua): a
+-- Rare waystone is written (WM.write), used (WM.choose) and taken (WM.take), the run starts (WT.startRun) on a map of the
+-- tier's band; then it is read back: the item, the take, the run's modifiers, the level and health of the map's monsters
+-- in range. With "loot" a stand-in boss of the map dies through ChaosContentRewards.onKill. The tester is not moved and
+-- the pads, the teleport and the map's own device are not walked (base code); the map is put back as it was.
+local function waystoneRun(player, arg)
+	local WT, WM = ChaosWaystoneTiers, ChaosWaystoneMods
+	local WK, KK = ChaosWaystoneModsCore, ChaosWaystoneTiersCore
+	if not (WT and WM and WK and KK and WT.startRun and WM.take and WM.write and WM.config) then
+		return {err = "no waystone system"}
+	end
+	local opts, bad = H.parseWaystone(arg)
+	if not opts then
+		return {err = bad}
+	end
+	local cfg, mcfg, t = WT.config, WM.config, opts.tier
+	local tierRow = cfg.tiers[t]
+	local mapIdx
+	for _, bt in ipairs(KK.baseTiersOf(cfg, t)) do
+		for i, m in ipairs(cfg.maps) do
+			if mapIdx == nil and m.tier == bt and not KK.isRetired(cfg, m.from) then
+				mapIdx = i
+			end
+		end
+	end
+	if not (tierRow and mapIdx) then
+		return {err = "no map for tier " .. t}
+	end
+	local m = cfg.maps[mapIdx]
+	if WM.runOf(mapIdx) or #spectatorsOf(m, true) > 0 then
+		return {err = "map in use", map = mapIdx}
+	end
+	local sid = tierRow.item
+	local ws = WK.roll(mcfg, t, "Rare", math.random)
+	local item = player:addItem(sid, 1)
+	if not item then
+		return {err = "no room for the waystone"}
+	end
+	WM.write(item, ws)
+	local rd = WM.read(item) or {mods = {}}
+	local ans = {tier = t, tierLevel = tierRow.level, map = mapIdx, nrolled = #ws.mods,
+		held = {tier = rd.tier, mods = #rd.mods, rarity = WK.rarityName(mcfg, WK.rarityOf(mcfg, rd.mods)),
+			expectRarity = WK.rarityName(mcfg, WK.rarityOf(mcfg, ws.mods))}}
+	local before = player:getItemCount(sid)
+	WM.choose(player, item)
+	local ok, mods = WM.take(player, sid)
+	ans.take = {ok = ok == true, mods = #(mods or {}), before = before, after = player:getItemCount(sid)}
+	if not ok then
+		return ans
+	end
+	-- the map's monsters that went through the init event: their health and level before the run
+	local before_ = {}
+	for _, c in ipairs(spectatorsOf(m, false)) do
+		if #before_ < 8 and c:isMonster() and not c:getMaster() and WT.applied[c:getId()] then
+			local e = WT.entryOf(c)
+			if e and not e.boss then
+				local mon = WM.mon and WM.mon[c:getId()]
+				before_[#before_ + 1] = {c = c, id = c:getId(), name = c:getName(), max = c:getMaxHealth(),
+					level = WT.applied[c:getId()], hp = mon and mon.hp or 1}
+			end
+		end
+	end
+	local prior = WT.active[mapIdx]
+	local okRun, n = pcall(WT.startRun, {fromPos = m.from}, sid, mods)
+	ans.rescaled = okRun and n or nil
+	if not okRun then
+		ans.err = "startRun: " .. tostring(n)
+	end
+	local run = WM.runs and WM.runs[mapIdx]
+	ans.run = {active = WT.active[mapIdx], live = run ~= nil}
+	if run then
+		ans.run.tier, ans.run.mods = run.tier, #run.mods
+		ans.run.seconds = (run.untilAt or 0) - os.time()
+		ans.run.fxHealth = run.fx and run.fx.health or nil
+		ans.run.bonus = run.bonus
+	end
+	ans.monsters = {}
+	for _, b in ipairs(before_) do
+		local row = {name = b.name, levelBefore = b.level, level = WT.applied[b.id]}
+		local okM, max2 = pcall(function() return b.c:getMaxHealth() end)
+		if okM and b.max > 0 then
+			row.ratio = max2 / b.max
+			local f = KK.scale(cfg, b.level, tierRow.level)
+			row.expectRatio = f.health * ((run and run.fx and run.fx.health or 1) / b.hp)
+		end
+		local e = WT.entryOf(b.c)
+		row.expectLevel = e and KK.level(cfg, e) or nil
+		ans.monsters[#ans.monsters + 1] = row
+	end
+	if opts.loot then
+		local centre = areaOf(m)
+		local boss = standIn(cfg.bosses[m.tier] or "", centre, 2000000000)
+		local e = WT.entryOf(boss)
+		local CR = ChaosContentRewards
+		if not (e and e.boss and CR and CR.config) then
+			ans.loot = {err = "the stand-in boss is not a boss of the map"}
+		else
+			local c = CR.config.waystone
+			local items, why, paid = standInKill(player, boss, {tier = "boss", orbLevel = tierRow.level})
+			if not items then
+				ans.loot = {err = why}
+			else
+				local allowed = {}
+				for _, r in ipairs(c.boss.rarity) do
+					allowed[r[1]] = true
+				end
+				local pieces, badRarity = 0, 0
+				for _, it in ipairs(items) do
+					if it.rarity and allowed[it.rarity] then
+						pieces = pieces + 1
+					elseif it.rarity and it.rarity < 5 then
+						badRarity = badRarity + 1
+					end
+				end
+				local orbs = {}
+				for _, o in ipairs(c.boss.orbs) do
+					if o.chance >= 100 then
+						orbs[#orbs + 1] = {id = o.id, name = o.name, min = o.min, count = countOf(items, o.id)}
+					end
+				end
+				ans.loot = {paid = paid == true, items = #items, pieces = pieces,
+					minPieces = math.floor(c.boss.pieces.base + c.boss.pieces.perTier * (t - 1)), badRarity = badRarity,
+					orbs = orbs, waystones = countOf(items, sid), minWaystones = c.boss.waystones.same}
+			end
+		end
+	end
+	-- the map back as it was: the run ends, the monsters go to the level they had (the band's first tier, or the last run's)
+	pcall(WM.finish, mapIdx)
+	local back = prior or (KK.defaultTier(cfg, mapIdx) or 1)
+	pcall(WT.startRun, {fromPos = m.from}, cfg.tiers[back].item, {})
+	WT.active[mapIdx] = prior
+	pcall(WM.finish, mapIdx)
+	return ans
+end
+
+function commands.waystone(player, arg)
+	local ok, ans = pcall(waystoneRun, player, arg)
+	tell(player, "waystone", ok and ans or {err = tostring(ans):sub(1, 120)})
+end
+
+-- !tester riftrun <layout | loot>: a rift of the highest tier the tester may open, opened as a player does (a tier key
+-- into the backpack, ChaosRift.open in the temple's protection zone), then read: the layout of the run (kind, floors,
+-- walkable cells, arrival, guardian, a sample of tiles on the ground), or (loot) the guardian's reward through
+-- ChaosContentRewards.onKill with a stand-in guardian; then the run is closed (RF.interrupt: the key comes back).
+local function riftRun(player, arg)
+	local RF, cfg, RL = ChaosRift, ChaosRiftConfig, ChaosRiftLayout
+	local R = ChaosRiftCore
+	if not (RF and RF.open and RF.giveKey and cfg and cfg.key and R and RL and RF.runOf and RF.interrupt) then
+		return {err = "no rifts on this server"}
+	end
+	local what, bad = H.parseRiftRun(arg)
+	if not what then
+		return {err = bad}
+	end
+	if RF.runOf[player:getId()] then
+		return {err = "already inside a rift"}
+	end
+	local tier = H.riftTierFor(player:getLevel(), cfg.maxTier or 15, function(t) return R.tierInfo(cfg, t).minLevel end)
+	if not tier then
+		return {err = "level too low for a rift", level = player:getLevel()}
+	end
+	player:teleportTo(temple(player))
+	RF.giveKey(player, {tier = tier, mods = {}}, "Tester key")
+	local key = player:getItemById(cfg.key.itemId, true)
+	if not key then
+		return {err = "no key in the backpack"}
+	end
+	local okOpen, opened = pcall(RF.open, player, key)
+	local run = RF.runOf[player:getId()]
+	if not (okOpen and opened and run and run.L) then
+		return {err = "the rift did not open (a slot is busy or being built)", busy = true, tier = tier}
+	end
+	local ans = {tier = tier, theme = run.L.theme, kind = run.L.kind}
+	local okRead, errRead = pcall(function()
+		if what == "layout" then
+			local L = run.L
+			local lay = cfg.layout
+			ans.band, ans.bandExpected = L.band, (RL.band(cfg, tier))
+			ans.floors, ans.side, ans.walkable, ans.route = #L.floors, L.side, L.walkable, L.route
+			local th = lay.themes[L.theme]
+			ans.kinds, ans.floorCounts = {}, {}
+			for _, k in ipairs(th and th.kinds or {}) do
+				ans.kinds[#ans.kinds + 1] = k[1]
+			end
+			for _, f in ipairs(th and th.floors or {}) do
+				ans.floorCounts[#ans.floorCounts + 1] = f[1]
+			end
+			local bal = dofile("data/scripts/chaos/rift_layout_balance_config.lua")
+			ans.limits = {walkableMin = bal.limits.walkableMin[L.band], walkableMax = bal.limits.walkableMax[L.band]}
+			ans.startWalk = RL.isFloor(L, L.start.x, L.start.y, L.start.z)
+			ans.bossWalk = RL.isFloor(L, L.bossSpawn.x, L.bossSpawn.y, L.bossSpawn.z)
+			ans.mouthWalk = RL.isFloor(L, L.arenaStart.x, L.arenaStart.y, L.arenaStart.z)
+			local p = player:getPosition()
+			ans.playerWalk = RL.isFloor(L, p.x, p.y, p.z)
+			-- 40 walkable cells spread over the whole list: each must be a tile with a ground that does not block
+			local n, bare, blocked = 0, 0, 0
+			local total = #L.walkKeys
+			for i = 1, 40 do
+				local k = L.walkKeys[math.max(1, math.floor(i * total / 40))]
+				local x, y, z = RL.unkey(k)
+				local tile = Tile(Position(x, y, z))
+				n = n + 1
+				if not tile or not tile:getGround() then
+					bare = bare + 1
+				elseif tile:hasFlag(TILESTATE_BLOCKSOLID) then
+					blocked = blocked + 1
+				end
+			end
+			ans.sample = {n = n, bare = bare, blocked = blocked}
+		else
+			local CRC = ChaosContentRewards
+			if not (CRC and CRC.config) then
+				ans.loot = {err = "no content rewards"}
+				return
+			end
+			local gid = 2000000001
+			RF.bossDead[gid] = true
+			local items, why, paid = standInKill(player, standIn("Rift Guardian", player:getPosition(), gid),
+				{tier = "boss", orbLevel = player:getLevel()})
+			RF.bossDead[gid] = nil
+			if not items then
+				ans.loot = {err = why}
+				return
+			end
+			local g = CRC.config.rift.guardian
+			local ids, orbs = {}, 0
+			for _, o in ipairs(CRC.config.rift.orbs) do
+				ids[o.id] = true
+			end
+			for _, it in ipairs(items) do
+				if ids[it.id] then
+					orbs = orbs + (it.count or 1)
+				end
+			end
+			ans.loot = {paid = paid == true, items = #items, orbs = orbs,
+				minOrbs = math.floor(g.orbs.base + g.orbs.perTier * tier)}
+		end
+	end)
+	if not okRead then
+		ans.err = "read: " .. tostring(errRead):sub(1, 100)
+	end
+	-- out again, whatever happened
+	pcall(RF.interrupt, run)
+	ans.after = {inRun = RF.runOf[player:getId()] ~= nil, slotFree = RF.runs[run.slot] ~= run}
+	return ans
+end
+
+function commands.riftrun(player, arg)
+	local ok, ans = pcall(riftRun, player, arg)
+	tell(player, "riftrun", ok and ans or {err = tostring(ans):sub(1, 120)})
 end
 
 -- ---------------------------------------------------------------- login: supplies once, hunt spot, info

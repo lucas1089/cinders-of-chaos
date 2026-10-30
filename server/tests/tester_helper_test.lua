@@ -649,6 +649,348 @@ do
 	ChaosTrials = savedTrials
 end
 
+-- ------------------------------------------------------------------ O110: party XP, waystone runs, rift layouts, rewards
+do
+	local p, perr = H.parseWaystone("8 loot")
+	check(p and p.tier == 8 and p.loot == true, "waystone: tier and loot")
+	eq(H.parseWaystone("3").loot, false, "waystone: no loot by default")
+	check(select(2, H.parseWaystone("0")) ~= nil and select(2, H.parseWaystone("16")) ~= nil and select(2, H.parseWaystone("x")) ~= nil
+		and select(2, H.parseWaystone("3 gold")) ~= nil and select(2, H.parseWaystone(nil)) ~= nil, "waystone: bad arguments are refused")
+	eq(H.parseRiftRun(nil), "layout", "riftrun: layout by default")
+	eq(H.parseRiftRun("LOOT"), "loot", "riftrun: loot")
+	check(select(2, H.parseRiftRun("open")) ~= nil, "riftrun: an unknown mode is refused")
+	eq(H.riftTierFor(99, 15, function(t) return 100 + (t - 1) * 50 end), nil, "no tier under the first level")
+	eq(H.riftTierFor(210, 15, function(t) return 100 + (t - 1) * 50 end), 3, "the highest tier the level opens")
+	check(H.COMMANDS.waystone and H.COMMANDS.riftrun, "waystone and riftrun are registered commands")
+
+	CONDITION_INFIGHT, CONDITIONID_DEFAULT = 1, 0
+	dofile("data/scripts/chaos/party_xp_core.lua")
+	local function lastBody(pl, kind)
+		local line = pl.log.msgs[#pl.log.msgs] or ""
+		return line:match("^%[tester%-helper%] " .. kind .. " (.*)$"), line
+	end
+	local function has(body, part, label) check(body and body:find(part, 1, true) ~= nil, label .. ": " .. tostring(body)) end
+
+	-- ---------------------------------------------------------------- party XP sharing
+	local function mkPartyMember(id, name, level, line, pos, fighting)
+		local m = creature(id, name, {store = {[ST] = 1}, pos = pos})
+		m.getLevel = function() return level end
+		m.getVocation = function() return {getBase = function() return {getId = function() return line end} end} end
+		m.getCondition = function() return fighting and {} or nil end
+		return m
+	end
+	local function mkParty(leader, members, active, enabled)
+		local pt = {getLeader = function() return leader end, getMembers = function() return members end,
+			isSharedExperienceActive = function() return active end, isSharedExperienceEnabled = function() return enabled end}
+		-- the stock Party:onShareExperience (events/scripts/party.lua, class lines patched in by patch_base_classes.py)
+		function pt:onShareExperience(exp)
+			local ids = {}
+			for _, who in ipairs({leader, members[1]}) do
+				ids[who:getVocation():getBase():getId()] = true
+			end
+			local n = 0
+			for _ in pairs(ids) do n = n + 1 end
+			local mult = n > 1 and (1 + (n * (5 * (n - 1) + 10)) / 100) or 1.2
+			return math.ceil(exp * mult / (#members + 1))
+		end
+		leader.getParty = function() return pt end
+		for _, m in ipairs(members) do m.getParty = function() return pt end end
+		return pt
+	end
+	local lead = mkPartyMember(268435600, "Tester Pxa", 100, 4, {x = 100, y = 100, z = 7}, true)
+	local mate = mkPartyMember(268435601, "Tester Pxb", 90, 3, {x = 110, y = 100, z = 7}, true)
+	mkParty(lead, {mate}, true, true)
+	talks["!tester"].onSay(lead, "!tester", "party")
+	local body = lastBody(lead, "party")
+	has(body, '"shareActive":true', "party xp: the switch is reported")
+	has(body, '"shareEnabled":true', "party xp: the engine's verdict is reported")
+	has(body, '"shareOf1000":650', "party xp: 1000 experience pays ceil(1000 x 1.3 / 2)")
+	has(body, '"lines":2', "party xp: two class lines")
+	has(body, '"bonusPct":30', "party xp: +30 %")
+	has(body, '"problems":[]', "party xp: everyone passes")
+	has(body, '"minLevel":67', "party xp: two thirds of the highest level")
+	-- a member far below two thirds of the highest level and one out of range are named with their rule
+	local weak = mkPartyMember(268435602, "Tester Pxc", 30, 3, {x = 150, y = 100, z = 7}, false)
+	mkParty(lead, {weak}, true, false)
+	talks["!tester"].onSay(lead, "!tester", "party")
+	body = lastBody(lead, "party")
+	has(body, '"kind":"level"', "party xp: the level rule fails for the weak member")
+	has(body, '"kind":"range"', "party xp: the range rule fails for the far member")
+	has(body, '"kind":"idle"', "party xp: the fight rule fails for the idle member")
+	has(body, '"shareEnabled":false', "party xp: not working")
+	-- a party without the helper's probes still answers its size
+	local plain = mkPartyMember(268435603, "Tester Pxd", 100, 4, {x = 1, y = 1, z = 7}, true)
+	plain.getParty = function() return {getLeader = function() return plain end, getMembers = function() return {} end} end
+	talks["!tester"].onSay(plain, "!tester", "party")
+	has((lastBody(plain, "party")), '"size":1', "party xp: a party the probes cannot read still answers its size")
+
+	-- ---------------------------------------------------------------- the mocked waystone and loot systems
+	local saved = {Tile = Tile, Game = Game, WT = ChaosWaystoneTiers, WM = ChaosWaystoneMods, WTC = ChaosWaystoneTilesCore,
+		CR = ChaosContentRewards, L = ChaosLoot, GS = ChaosGearSets, RF = ChaosRift, RFC = ChaosRiftConfig, RL = ChaosRiftLayout,
+		RC = ChaosRiftCore}
+	dofile("data/scripts/chaos/waystone_tiers_core.lua")
+	dofile("data/scripts/chaos/waystone_mods_core.lua")
+	local KK, WK = ChaosWaystoneTiersCore, ChaosWaystoneModsCore
+	local tcfg = dofile("data/scripts/chaos/waystone_tiers_config.lua")
+	local mcfg = dofile("data/scripts/chaos/waystone_mods_config.lua")
+	local index = KK.index(tcfg)
+	local faults = {}
+	local WT = {config = tcfg, applied = {}, active = {}}
+	local WM = {config = mcfg, runs = {}, mon = {}}
+	ChaosWaystoneTiers, ChaosWaystoneMods = WT, WM
+	local monsters = {}
+	function WT.entryOf(c) return KK.classify(tcfg, index, c:getName(), c:getPosition(), WT.active) end
+	function WT.addWaystone(corpse, t) corpse:addItem(tcfg.tiers[t].item, 1) end
+	function WT.startRun(area, sid, mods)
+		local t, i = KK.tierOfItem(tcfg, sid), KK.mapOfArea(tcfg, area.fromPos)
+		if not t or not i then return nil end
+		WT.active[i] = t
+		WM.begin(i, t, mods or {})
+		if faults.noRescale then return 0 end
+		local n = 0
+		for _, c in ipairs(monsters) do
+			local e = WT.entryOf(c)
+			if WT.applied[c.id] and e then
+				local target = KK.level(tcfg, e)
+				if target ~= WT.applied[c.id] then
+					local f = KK.scale(tcfg, WT.applied[c.id], target)
+					c.max = math.floor(c.max * f.health + 0.5)
+					WT.applied[c.id] = target
+					n = n + 1
+				end
+				local run = WM.runs[i]
+				if run and not faults.noHealthMod then c.max = math.floor(c.max * run.fx.health + 0.5) end
+			end
+		end
+		return n
+	end
+	function WM.runOf(i) return WM.runs[i] end
+	function WM.write(item, ws)
+		local mods = {}
+		for _, m in ipairs(ws.mods) do mods[#mods + 1] = m end
+		item.ws = {tier = ws.tier, mods = mods}
+	end
+	function WM.read(item) return item.ws or {tier = KK.tierOfItem(tcfg, item.id), mods = {}} end
+	function WM.choose(p, item) WM.chosen = item end
+	function WM.take(p, sid)
+		local item = WM.chosen
+		for i, it in ipairs(p.bag) do
+			if it == item then table.remove(p.bag, i) end
+		end
+		local mods = {}
+		for _, m in ipairs(item.ws and item.ws.mods or {}) do mods[#mods + 1] = m end
+		mods.opener = 1
+		return true, mods
+	end
+	function WM.begin(i, t, mods)
+		WM.runs[i] = nil
+		if #mods == 0 then return nil end
+		WM.runs[i] = {tier = t, mods = mods, fx = WK.effects(mcfg, mods, t), bonus = WK.bonuses(mcfg, mods, t), untilAt = os.time() + 1860}
+	end
+	function WM.finish(i) WM.runs[i] = nil end
+	function WM.lootMult() return 1 end
+
+	local mapFrom = tcfg.maps[1].from
+	local function mkMonster(id, name, pos, max)
+		local c = {id = id, name = name, pos = pos, max = max}
+		function c:isMonster() return true end
+		function c:getMaster() return nil end
+		function c:getId() return self.id end
+		function c:getName() return self.name end
+		function c:getPosition() return self.pos end
+		function c:getMaxHealth() return self.max end
+		return c
+	end
+	monsters = {mkMonster(900001, "Armorcoil", {x = mapFrom.x + 50, y = mapFrom.y + 30, z = mapFrom.z}, 10000),
+		mkMonster(900002, "Blazefang", {x = mapFrom.x + 60, y = mapFrom.y + 40, z = mapFrom.z}, 12000)}
+	for _, c in ipairs(monsters) do WT.applied[c.id] = 1100 end
+	local playersInMap = {}
+	Game = {getPlayers = function() return {} end,
+		getSpectators = function(pos, multi, onlyPlayers) return onlyPlayers and playersInMap or monsters end,
+		createItem = function(id, n, pos)
+			local box = {id = id, items = {}}
+			function box:addItem(itemId, k)
+				local it = {id = itemId, count = k or 1, attrs = {}}
+				function it:getId() return self.id end
+				function it:getCount() return self.count end
+				function it:setCustomAttribute(a, v) self.attrs[a] = v end
+				function it:getCustomAttribute(a) return self.attrs[a] end
+				self.items[#self.items + 1] = it
+				return it
+			end
+			function box:getItems() return self.items end
+			function box:remove() self.removed = true end
+			return box
+		end}
+	ChaosGearSets = {items = {pieces = {{id = 50001, set = "sunderthrone", level = 2400, name = "Sunder Piece"},
+		{id = 50002, set = "lumenhallow", level = 1700, name = "Lumen Piece"}}}}
+	ChaosLoot = {addToCorpse = function(corpse, id, n)
+		local it = corpse:addItem(id, n)
+		return it, n
+	end, rollUniques = function() return {} end}
+	ChaosContentRewards, ChaosContentRewardsCore = nil, nil
+	dofile("data/scripts/chaos/content_rewards.lua")
+	local wp = creature(268435700, "Tester Wsa", {store = {[ST] = 1}})
+	wp.bag = {}
+	function wp:addItem(id, n)
+		local it = {id = id, count = n, ws = nil}
+		function it:getId() return self.id end
+		self.bag[#self.bag + 1] = it
+		return it
+	end
+	function wp:getItemCount(id)
+		local c = 0
+		for _, it in ipairs(self.bag) do if it.id == id then c = c + it.count end end
+		return c
+	end
+	wp:addItem(tcfg.tiers[2].item, 1) -- a plain waystone the tester carries: the take must leave it
+	local function ask(pl, cmd, kind)
+		talks["!tester"].onSay(pl, "!tester", cmd)
+		return lastBody(pl, kind)
+	end
+
+	body = ask(wp, "waystone 2", "waystone")
+	has(body, '"tier":2', "waystone: tier 2")
+	has(body, '"tierLevel":1200', "waystone: tier 2 runs at level 1200")
+	has(body, '"rarity":"Rare"', "waystone: a Rare waystone reads back")
+	has(body, '"expectRarity":"Rare"', "waystone: ... as written")
+	has(body, '"ok":true', "waystone: the device took it")
+	has(body, '"live":true', "waystone: the run is registered")
+	has(body, '"active":2', "waystone: the map counts at the waystone's tier")
+	has(body, '"level":1200', "waystone: the map's monsters are at the tier's level")
+	has(body, '"levelBefore":1100', "waystone: ... from the level they had")
+	has(body, '"expectLevel":1200', "waystone: ... which is the rule's level")
+	check(body:find('"err"', 1, true) == nil, "waystone: no error: " .. tostring(body))
+	eq(wp:getItemCount(tcfg.tiers[2].item), 1, "waystone: the tester's own plain waystone is untouched, the written one is gone")
+	eq(WT.active[1], nil, "waystone: the map counts as before after the command")
+	eq(WM.runs[1], nil, "waystone: the run is closed")
+	eq(WT.applied[900001], 1100, "waystone: the monsters are back at their level")
+
+	-- a run that does not rescale the monsters shows in the answer (the check names it)
+	faults.noRescale = true
+	monsters[1].max, monsters[2].max = 10000, 12000
+	body = ask(wp, "waystone 3", "waystone")
+	has(body, '"level":1100', "waystone fault: the monsters stayed at 1100 in a tier 3 run")
+	has(body, '"expectLevel":1300', "waystone fault: the rule says 1300")
+	faults.noRescale = nil
+	-- a busy map and a missing system
+	playersInMap = {ana}
+	has((ask(wp, "waystone 3", "waystone")), '"err":"map in use"', "waystone: players in the map: refused")
+	playersInMap = {}
+	WM.runs[1] = {tier = 1, mods = {{}}, fx = {}, untilAt = os.time() + 100}
+	has((ask(wp, "waystone 3", "waystone")), '"err":"map in use"', "waystone: a live run on the map: refused")
+	WM.runs[1] = nil
+	has((ask(wp, "waystone 99", "waystone")), '"err":"usage', "waystone: a bad tier is refused")
+	-- the boss table through the content rewards
+	body = ask(wp, "waystone 8 loot", "waystone")
+	has(body, '"paid":true', "loot: the boss kill paid")
+	has(body, '"minPieces":4', "loot: tier 8 guarantees floor(3 + 0.25 x 7) pieces")
+	has(body, '"minWaystones":1', "loot: and a waystone of the tier")
+	local pieces = tonumber(body:match('"pieces":(%d+)'))
+	check(pieces and pieces >= 4, "loot: at least 4 gear pieces in the corpse: " .. tostring(pieces))
+	eq(tonumber(body:match('"badRarity":(%d+)')), 0, "loot: no piece under Legendary")
+	check(body:find('"name":"Orb of Awakening"', 1, true) and body:find('"min":2', 1, true), "loot: the sure orbs are listed with their minimum")
+	local orbCount = tonumber(body:match('"count":(%d+)[^}]-"id":29851')) or tonumber(body:match('"id":29851[^}]-"count":(%d+)'))
+	check(orbCount and orbCount >= 2, "loot: Orb of Awakening x" .. tostring(orbCount))
+	eq(tonumber(body:match('"waystones":(%d+)')) >= 1, true, "loot: the waystone of the run's tier is in the corpse")
+	-- content rewards switched off: the kill pays nothing and the answer says so
+	ChaosContentRewards.config.enabled = false
+	body = ask(wp, "waystone 8 loot", "waystone")
+	has(body, '"paid":false', "loot fault: a disabled content reward pays nothing")
+	ChaosContentRewards.config.enabled = true
+	-- no system
+	ChaosWaystoneTiers = nil
+	has((ask(wp, "waystone 2", "waystone")), '"err":"no waystone system"', "waystone: no system, an error answer")
+	ChaosWaystoneTiers = WT
+
+	-- ---------------------------------------------------------------- rift layouts and the guardian's reward
+	dofile("data/scripts/chaos/rift_layout_core.lua")
+	ChaosRiftConfig = dofile("data/scripts/chaos/rift_config.lua")
+	local RL, rcfg = ChaosRiftLayout, ChaosRiftConfig
+	local walkKeys = {}
+	for y = 100, 179 do
+		for x = 100, 179 do walkKeys[#walkKeys + 1] = RL.key(x, y, 7) end
+	end
+	table.sort(walkKeys)
+	local L = {theme = "Obsidian Hall", kind = "dungeon", band = 1, side = 144, floors = {7}, walkKeys = walkKeys, walkable = #walkKeys,
+		route = 160, start = {x = 101, y = 101, z = 7}, bossSpawn = {x = 178, y = 178, z = 7}, arenaStart = {x = 170, y = 170, z = 7}}
+	local rp = creature(268435701, "Tester Rfa", {store = {[ST] = 1}})
+	rp.getLevel = function() return 600 end
+	rp.bag = {}
+	function rp:getItemById(id)
+		for _, it in ipairs(self.bag) do if it.id == id then return it end end
+	end
+	function rp:getItemCount() return 0 end
+	local RF = {runOf = {}, runs = {}, bossDead = {}, busy = false}
+	ChaosRift = RF
+	function RF.giveKey(p, key) p.bag[#p.bag + 1] = {id = rcfg.key.itemId, tier = key.tier} end
+	function RF.open(p, item)
+		if RF.busy then return false end
+		local run = {L = L, slot = 3, key = {tier = item.tier}, state = "running"}
+		RF.runOf[p:getId()], RF.runs[3] = run, run
+		p.opened = item.tier
+		p:teleportTo(L.start)
+		return true
+	end
+	function RF.interrupt(run)
+		for id in pairs(RF.runOf) do RF.runOf[id] = nil end
+		if not faults.stuck then RF.runs[run.slot] = nil end
+		rp:teleportTo({x = 50, y = 50, z = 7})
+	end
+	function RF.contentOf(monster, player)
+		local run = RF.runOf[player:getId()]
+		if not run then return nil end
+		return {tier = run.key.tier, omen = false, guardian = RF.bossDead[monster:getId()] == true, quantity = 1}
+	end
+	local ground = true
+	Tile = function(pos) return {getGround = function() return ground and {} or nil end, hasFlag = function() return faults.blocked end} end
+	TILESTATE_BLOCKSOLID = 1
+	body = ask(rp, "riftrun layout", "riftrun")
+	has(body, '"theme":"Obsidian Hall"', "rift: the theme")
+	eq(rp.opened, 7, "rift: a level 600 tester opens the highest tier it may (tier 7 needs level 600)")
+	has(body, '"startWalk":true', "rift: the arrival is a walkable cell")
+	has(body, '"bossWalk":true', "rift: the guardian's spot is a walkable cell")
+	has(body, '"mouthWalk":true', "rift: the arena's mouth is a walkable cell")
+	has(body, '"playerWalk":true', "rift: the tester stands on a walkable cell")
+	has(body, '"walkable":6400', "rift: the walkable count")
+	has(body, '"walkableMin":4500', "rift: the band's limits come from the balance config")
+	has(body, '"bare":0', "rift: every sampled cell has a ground")
+	has(body, '"inRun":false', "rift: the run is closed")
+	has(body, '"slotFree":true', "rift: the slot is free again")
+	check(body:find('"kinds":["dungeon","mixed"]', 1, true) ~= nil, "rift: the theme's kinds come from the config")
+	eq(next(RF.runOf), nil, "rift: the tester is out")
+	ground = false
+	has((ask(rp, "riftrun layout", "riftrun")), '"bare":40', "rift fault: tiles without a ground are counted")
+	ground = true
+	faults.blocked = true
+	has((ask(rp, "riftrun layout", "riftrun")), '"blocked":40', "rift fault: blocking walkable tiles are counted")
+	faults.blocked = nil
+	faults.stuck = true
+	has((ask(rp, "riftrun layout", "riftrun")), '"slotFree":false', "rift fault: a slot that stays busy is reported")
+	faults.stuck = nil
+	RF.runs[3] = nil
+	RF.busy = true
+	has((ask(rp, "riftrun layout", "riftrun")), '"busy":true', "rift: a slot that is busy: an error with busy")
+	RF.busy = false
+	rp.getLevel = function() return 50 end
+	has((ask(rp, "riftrun layout", "riftrun")), '"err":"level too low for a rift"', "rift: a low level: an error")
+	rp.getLevel = function() return 600 end
+	body = ask(rp, "riftrun loot", "riftrun")
+	has(body, '"paid":true', "rift loot: the guardian's kill paid")
+	local orbs, minOrbs = tonumber(body:match('"orbs":(%d+)')), tonumber(body:match('"minOrbs":(%d+)'))
+	check(orbs and minOrbs and orbs >= minOrbs and minOrbs >= 4, "rift loot: orbs " .. tostring(orbs) .. " >= " .. tostring(minOrbs))
+	eq(RF.bossDead[2000000001], nil, "rift loot: the stand-in guardian is forgotten")
+	-- the real player's words are left alone, as for every command
+	local msgs = #ana.log.msgs
+	check(talks["!tester"].onSay(ana, "!tester", "waystone 3") == true and talks["!tester"].onSay(ana, "!tester", "riftrun") == true,
+		"a player's !tester waystone / riftrun is left to the game")
+	eq(#ana.log.msgs, msgs, "a player is never answered")
+
+	Tile, Game, ChaosWaystoneTiers, ChaosWaystoneMods = saved.Tile, saved.Game, saved.WT, saved.WM
+	ChaosContentRewards, ChaosLoot, ChaosGearSets = saved.CR, saved.L, saved.GS
+	ChaosRift, ChaosRiftConfig = saved.RF, saved.RFC
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

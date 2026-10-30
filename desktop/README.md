@@ -85,6 +85,29 @@ the game can reload now. The card says what a reload cannot do: a script file (n
 (use Server > Reload system > scripts below, or restart), a value a script copied when it loaded changes only after
 a scripts reload or restart, and `remote_cmd_config` needs a restart. The reload button is off for anything but a config.
 
+## Look (O344)
+
+Owner, 2026-10-30 (pt-BR): "melhore esse design também". Same family as the game launcher (`launcher/README.md` "Look
+(O339)"), tightened for a dense tool: warm black window, ember accent, gold headings, rounded cards.
+
+- Slim header (52 px) with the brand icon and the title over a strip of ember glow and sparks, then a tab bar with an
+  ember underline under the selected tab (Painel, Comandos, Logs, Ao vivo, Painel do jogo, Config) and a hairline.
+- Every group of commands, the server and metrics cards, the live page and the settings are cards. Settings has aligned
+  labels and inputs (paths in monospace) and a second card for the update checkbox and the buttons.
+- Buttons: ember for the one main action of a card (Salvar, Executar, Rodar, update), plain for the rest, red-edged for
+  a command that asks for a confirmation (restart, rollback, kick).
+- Status colours are the same everywhere: ok green, warning amber, error red (`theme.rs` `OK`, `WARN`, `ERROR`): server
+  badge, errors count, update banner, console `[Warning` and `[Error` lines, the status text at the bottom ("feito"
+  green, "falhou" red).
+- Logs and command output sit in dark monospace wells. Footer: status, version and update note, Copiar.
+- Window icon is the brand icon (`docs/brand/cinders_logo_icon.png`). 1000x740, resizable, minimum 720x520.
+- Art: `tools/gen_admin_art.py` makes `assets/icon.rgba` (128x128) and `assets/header.rgba` (1280x64) from `docs/brand/`,
+  raw RGBA, embedded with `include_bytes!`. `python3 -I desktop/tools/gen_admin_art.py --check` runs in CI (needs
+  Pillow and numpy, the fx venv); `--preview out.png` saves the header. Change the colours in `src/theme.rs` and `BG` in
+  the generator together. `theme.rs` is adapted from `launcher/src/theme.rs` (no shared crate: two small files).
+- Look at it without Windows: build and run under `xvfb-run` (needs `libxkbcommon-x11-0` and Mesa), then
+  `import -window root shot.png`. No new crate and no new font. No new text: only styling, strings unchanged.
+
 ## Build and run
 
 ```

@@ -93,6 +93,9 @@ def main():
         check(len(s) == len(tiles), 'the tile count stays')
         data_bytes = open(mp, 'rb').read()
         check(b'A portal to the deeper part of this hunt (Alpha).' in data_bytes, 'the description is on the item')
+        text = b'A portal to the deeper part of this hunt (Alpha).'
+        check(bytes([7]) + struct.pack('<H', len(text)) + text in data_bytes,
+              'the description is the item attribute 7 (ATTR_DESC); 1 made the engine refuse the map')
         check(os.path.exists(mp + '.bak') and open(mp + '.bak', 'rb').read() == before, '.bak written first')
         after = open(mp, 'rb').read()
         log = []
