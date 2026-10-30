@@ -562,7 +562,10 @@ eq(P.players[7].levels.delving.xp, 10, "10 profession experience")
 check(player.exp > 0, "a little character experience")
 -- the same node again: the per-player cooldown
 nodeAct.onUse(player, nodeOnMap, {x = 501, y = 500, z = 7})
-has(player.messages[#player.messages], "ready for you again in 6:00", "node cooldown")
+-- the cooldown is counted on the wall clock: a second may tick between the gather and this use (CI read 5:59)
+local cdText = player.messages[#player.messages] or ""
+check(cdText:find("ready for you again in 6:00", 1, true) or cdText:find("ready for you again in 5:59", 1, true),
+	"node cooldown (" .. cdText .. ")")
 -- another player may gather it at once (per-player cooldown, not shared depletion)
 local other = newPlayer(8, 60, 500, 501)
 events.ChaosProfessionsLogin.onLogin(other)
