@@ -316,7 +316,7 @@ def wing_ground_checks(root):
              (12, 11, Z): tile(G, PORTAL, STONE, tele=(700, 700, 7)),
              (701, 700, 7): tile(G, PORTAL, tele=(12, 12, Z))}
     for y in range(ROWS[0] - 1, ROWS[1] + 2):  # the ground floor: its end (two columns) and the lawn east of it
-        for x in range(14, 22):
+        for x in range(14, 27):
             corridor = 12 <= y <= 14
             if x in (14, 15) and ROWS[0] <= y <= ROWS[1]:
                 extra[(x, y, 7)] = tile(G) if corridor else tile(G, WALL)
@@ -327,8 +327,8 @@ def wing_ground_checks(root):
     H.write_csv([dict(id='base_6_12_11', z=Z, x=12, y=11, dest_x=700, dest_y=700, dest_z=7, name='Rat', lo=10, hi=40,
                       level=20, display='Rat', spawntime=120, monsters='Rat')], csvp)
 
-    def go():
-        return T.run(os.path.join(srv, 'data'), plans_dir=plans, config=cfg, compiled=comp, log=lambda s: None,
+    def go(c=cfg, log=lambda s: None):
+        return T.run(os.path.join(srv, 'data'), plans_dir=plans, config=c, compiled=comp, log=log,
                      fixed_dirs=(), hall_csv=csvp, kinds=({G}, set()))
     res = go()
     stacks, tele, _f = map_state(srv)
@@ -343,6 +343,18 @@ def wing_ground_checks(root):
     once = digest(srv)
     go()
     check(digest(srv) == once, 'wing ground: a second run changes nothing')
+    # the config raised the wing's modules since (2026-10-30, z 7: 8 to 9): its grown alcove is not lawn to sweep, the
+    # wing grows on from its ends (the sweep check refused the alcove's teleport before)
+    cfg2 = json.loads(json.dumps(cfg))
+    cfg2['room']['wings'][0]['east']['modules'] = 2
+    logs = []
+    go(cfg2, logs.append)
+    check(any('grown by east 1 modules already' in l for l in logs), 'wing regrow: %s' % logs[-6:])
+    stacks, tele, _f = map_state(srv)
+    check(tele.get((701, 700, 7)) == H.front_of(cfg['room'], at), 'wing regrow: the base hunt keeps its teleport')
+    twice = digest(srv)
+    go(cfg2)
+    check(digest(srv) == twice, 'wing regrow: a second run changes nothing')
 
 
 def floor_rule_checks():
