@@ -3828,6 +3828,13 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   checks the caps of attack speed, absorb and speed against the effects file; `passive_builds_test` checks that every stat the
   tree gives has a label or is ignored on purpose. Data regenerated. Past a cap the soft cap (O146) still gives a little; the
   builds score that as 0 on purpose. Needs a server reload (data + texts); no client change.
+- **Auto build keystones (2026-10-30):** a flagged keystone carries a price, so no stat weight could reach it and a Focus build
+  never took one (the Ninja's Poison build skipped Contagion Rite, Viper's Verdict and the Blackblood Creed; Poison is earth
+  damage). `keystoneThemes` in `passive_builds_config.lua` tags each damage-type keystone with the theme keys it feeds (earth,
+  fire, ice, energy, holy, death) and `keystoneScore` (40) is the score the generator gives it for those themes
+  (`Gen.themeNodeScores`; the variants of 621 / 624 by the class's variant key). Plaguebearer (Ninja) walks to 383, 107, 624
+  and fills with Earth. `passive_builds_test` fails when a build skips a keystone tagged for its theme that the class may hold.
+  A new damage keystone needs a tag. Data regenerated; needs a server reload, no client change.
 - Regenerate in this order after a tree or config change: `gen_class_lanes.lua`, `gen_passivetree_data.lua` (from the client
   treedata folder), `gen_passive_builds.lua`, `gen_wiki_data.lua`, `gen_codex_data.lua`.
 - Tests: `passive_builds_test`, `passivetree_stats_test`, `passivetree_paths_test`, `passivetree_plan_test`; client
