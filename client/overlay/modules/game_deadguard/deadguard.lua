@@ -86,6 +86,18 @@ local function sweep()
         }
       end
     end
+    -- the own character missing from its tile's list of things (see DeadGuardLogic.selfOffTile): put back
+    local mp = me:getPosition()
+    local tile = g_map.getTile(mp)
+    local listed = nil
+    if tile and tile.getThingStackPos then
+      listed = tile:getThingStackPos(me) >= 0
+    end
+    local act = L.selfOffTile(state, { onMap = tile ~= nil and mp.x > 0 and mp.x ~= 65535, walking = me:isWalking(), listed = listed }, g_clock.millis())
+    if act == 'readd' then
+      g_logger.warning('[deadguard] own character was not on its tile, put back at ' .. mp.x .. ',' .. mp.y .. ',' .. mp.z)
+      g_map.addThing(me, mp, -1)
+    end
     local verdicts = L.sweep(state, list, function(id) return g_map.getCreatureById(id) end, g_clock.millis())
     for _, v in ipairs(verdicts) do
       local c = v.entry.obj

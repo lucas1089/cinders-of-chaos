@@ -25,7 +25,7 @@ function L.wantsWatch(state, id, isPlayer, isLocalPlayer, percent)
   return not state.pending[id]
 end
 
-function L.newState() return { pending = {}, warned = {}, zeroSince = {} } end
+function L.newState() return { pending = {}, warned = {}, zeroSince = {}, offSince = nil } end
 
 -- one warning per removal: true the first time an id is reported, false while it stays warned
 function L.shouldLog(state, id)
@@ -43,6 +43,7 @@ function L.reset(state)
   state.pending = {}
   state.warned = {}
   state.zeroSince = {}
+  state.offSince = nil
 end
 
 -- The sweep (every SWEEP_MS), for the two ways a dead monster stays that the health event cannot see:
@@ -93,4 +94,26 @@ function L.sweep(state, list, canon, now)
     if not seenZero[id] then state.zeroSince[id] = nil end
   end
   return out
+end
+
+-- The own character off its tile (owner report 2026-10-30: "invisible while standing still, visible while walking", always
+-- together with a ghost dead monster). The engine draws a creature that stands from its tile's list of things, and one
+-- that walks from the tile's list of walking creatures (tile.cpp drawCreatures). A stack position that missed (a packet
+-- that removed or replaced the thing at an index where the client holds the character) takes the character out of the
+-- first list while the object lives on and keeps walking: not drawn standing, drawn walking. If the character stands
+-- (not walking) on a tile that does not list it for OFF_TILE_MS in a row, it is put back on that tile.
+-- info: { onMap, walking, listed } (listed: the tile's list of things holds the object). Returns 'readd' or nil.
+L.OFF_TILE_MS = 1500
+
+function L.selfOffTile(state, info, now)
+  if type(info) ~= 'table' or not info.onMap or info.walking or info.listed ~= false then
+    state.offSince = nil
+    return nil
+  end
+  state.offSince = state.offSince or now
+  if now - state.offSince >= L.OFF_TILE_MS then
+    state.offSince = nil
+    return 'readd'
+  end
+  return nil
 end
