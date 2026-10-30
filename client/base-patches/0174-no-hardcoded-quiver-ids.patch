@@ -1,0 +1,35 @@
+# Chaos: no quiver by hard-coded id (client/BASE.md "0173"; src/client/item.cpp; after 0001-0172).
+# Item::isQuiver named eight client ids (35524, 35562, 35848, 35849, 36666, 39150, 39160, 45644) and getItem reads a count
+# byte for a quiver. In our pair those ids are plain decoration (server 38524, 38562, 38848, 38849, 43150, 43160 are not
+# stackable, so the server writes no count byte): the client read one byte too many, threw, and dropped the rest of that
+# server message (a tile or map packet with such an item in it; a creature removal after it stayed unprocessed: a dead
+# monster stayed drawn, 2026-10-30). A quiver is now what the item type says (weapon type quiver) or what the dat's market
+# category says (category 25), nothing else. server/tools/check_item_wire.py has the same rule.
+diff -ruN a/src/client/item.cpp b/src/client/item.cpp
+--- a/src/client/item.cpp
++++ b/src/client/item.cpp
+@@ -471,19 +471,11 @@
+             return true;
+     }
+ 
+-    switch (getId()) {
+-    case 35524: // jungle quiver
+-    case 35562: // quiver
+-    case 35848: // blue quiver
+-    case 35849: // red quiver
+-    case 36666: // eldritch quiver
+-    case 39150: // alicorn quiver
+-    case 39160: // naga quiver
+-    case 45644: // candy-coated quiver
+-        return true;
+-    default:
+-        return false;
+-    }
++    // Chaos (base patch 0173): no quiver by id. The client ids this list named (35524, 35562, 35848, 35849, 36666, 39150,
++    // 39160, 45644) are plain decoration in our pair; the server writes no count byte for them (they are not stackable),
++    // and the client read one: the rest of a tile, map or container packet was lost. A quiver is what the item type says
++    // (weapon type) or what the dat's market category says (ItemQuiversMarketCategory), both above.
++    return false;
+ }
+ 
+ bool Item::isAmmo()

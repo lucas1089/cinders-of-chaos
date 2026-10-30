@@ -31,6 +31,7 @@ import csv, os, re, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+from item_wire_table import adjust_rows  # noqa: E402
 from install_dark_tiles import scan, node_bytes, xml_escape, ESC, START, END, A_CLIENTID  # noqa: E402
 
 REPO_DATA = os.path.join(os.path.dirname(HERE), 'data')
@@ -51,7 +52,7 @@ def read_manifest(path):
         for k in ('otb_group', 'otb_flags', 'top_order'):
             r[k] = int(r[k]) if r[k] != '' else None
         r['ex'] = dict(p.split('=', 1) for p in (r['extra'] or '').split('|') if '=' in p)
-    return rows
+    return adjust_rows(rows)   # the nodes the client pair needs other wire bytes for (item_wire_table.py)
 
 
 def unescape(raw):

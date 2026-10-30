@@ -79,7 +79,6 @@ FLAG_STACKABLE = 1 << 7
 FLAG_ANIMATION = 1 << 24
 GROUP_SPLASH, GROUP_FLUID = 11, 12
 QUIVER_CATEGORY = 25
-QUIVER_IDS = {35524, 35562, 35848, 35849, 36666, 39150, 39160, 45644}
 # the client's colour of a fluid byte (GameNewFluids: the byte is read as a fluid kind)
 NEW_FLUID = (0, 1, 7, 3, 3, 2, 4, 3, 5, 6, 7, 2, 5, 3, 5, 6, 3, 3)
 PUBLIC_TALK = (1, 3, 36, 37)
@@ -190,7 +189,7 @@ def item_types(dat, otb_nodes=None):
         else:
             prio = 5
         market = f.get('market')
-        quiver = t.id in QUIVER_IDS or (market is not None and market[0] == QUIVER_CATEGORY)
+        quiver = market is not None and market[0] == QUIVER_CATEGORY   # base patch 0174: no hard-coded quiver ids
         stack = 'stackable' in f
         fluid = 'fluid' in f or 'splash' in f
         out[t.id] = ItemType(prio, stack or quiver or fluid, t.phases > 1, stack, fluid and not stack,
