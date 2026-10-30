@@ -32,7 +32,7 @@ import patch_map_fixes as PM  # noqa: E402
 
 ROWS = os.path.join(HERE, 'hunt_annexes.json')
 PORTAL = 1387  # the magic forcefield the hunt teleports and the plans' exit portals use
-ATTR_DESC = 1
+ATTR_DESC = 7  # the engine's item attribute ATTR_DESC (1 is the map header's description: the map failed to load)
 TEXT = 'A portal to the deeper part of this hunt (%s).'
 
 
