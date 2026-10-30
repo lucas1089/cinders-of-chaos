@@ -1258,6 +1258,7 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     echo "started ($cmd ${args[*]}); follow it with: chaos-ctl.sh update-log"
     ;;
   update-log)
+    [ -f "$ULOG" ] || { echo "no update log yet ($ULOG): no update was run"; exit 0; }
     tail -n "$(lines_arg "${1:-60}")" "$ULOG" 2>&1
     ;;
   publish-update)
@@ -1316,6 +1317,7 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     echo "started (publish-apk ${args[*]}); follow it with: chaos-ctl.sh publish-log"
     ;;
   publish-log)
+    [ -f "$PLOG" ] || { echo "no publish log yet ($PLOG): nothing was published"; exit 0; }
     tail -n "$(lines_arg "${1:-60}")" "$PLOG" 2>&1
     ;;
   update-check|update-apply|update-rollback|update-downloads)
@@ -1599,6 +1601,11 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     fi
     ;;
   site-log)
+    if [ ! -f "$SITELOG" ]; then
+      # update-apply installs the site in its own log (step 10); this one is for site-install alone
+      echo "no site install log yet ($SITELOG): site-install was never run alone; update-apply logs the site in update-log"
+      exit 0
+    fi
     tail -n "$(lines_arg "${1:-60}")" "$SITELOG" 2>&1
     ;;
   health|cleanup)

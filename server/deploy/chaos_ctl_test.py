@@ -906,6 +906,10 @@ def test_admin_commands():
               'update-status: ' + r.stdout + r.stderr)
         r = run('site-install', extra={'CHAOS_SITE_ENV': os.path.join(tmp, 'nope.env')})
         check(r.returncode != 0, 'site-install without a site settings file is refused')
+        r = run('site-log', extra={'CHAOS_SITE_LOG': os.path.join(tmp, 'no-site.log')})
+        check(r.returncode == 0 and 'no site install log yet' in r.stdout, 'site-log without a log: ' + r.stdout + r.stderr)
+        r = run('publish-log', extra={'CHAOS_PUBLISH_LOG': os.path.join(tmp, 'no-publish.log')})
+        check(r.returncode == 0 and 'no publish log yet' in r.stdout, 'publish-log without a log: ' + r.stdout + r.stderr)
 
         # areas-publish: the map inbox into CHAOS_DL_DIR/areas-TOKEN (a stub area_inbox.py), a token kept in a 600 file
         atool = os.path.join(repo, 'server', 'tools')
