@@ -3695,7 +3695,7 @@ Output **pair 57**: dat 56c34d0121264ba6fb26076f95c35701 (8,846,011 bytes), spr 
   3364-3370 in the seven monster files), `check_content.py` at pair 57 / 3370 outfits, `outfit_anchors.lua` and `info_lifts.lua`
   from pair 57. A client on pair 56 draws nothing for the seven until it updates; they spawn in nine hunt plans (server/README.md "AI Sprite Studio monsters (pair 57)").
 
-### Pair 58: pair 57 with the 65 pieces of five relic sets (`gen_relic_sets_art.py`; built 2026-10-30, not on windows-assets yet)
+### Pair 58: pair 57 with the 65 pieces of five relic sets (`gen_relic_sets_art.py`; built 2026-10-30, on windows-assets 29b9a09)
 Owner 2026-10-30 ("Aprovo, pode importar os sets como itens"): five approved PixelLab gear sets become items with stats, set bonuses and
 loot (server/README.md "Relic sets (pair 58)"). 65 items are appended (client ids 44446-44510, server ids 48446-48510); nothing else changes.
 - **Art.** 65 PixelLab pictures, owner approved (32 x 32 RGBA, alpha 0 / 255, `create_image_pro`, our own prompts; the review folders ember,
@@ -3734,16 +3734,15 @@ Output **pair 58**: dat af634150c86240eaf8566e930e845819 (8,847,086 bytes), spr 
 947,179 sprites: 65 appended), 44,510 items (65 appended), 3,370 outfits, 4,701 effects, 253 missiles.
 - **Checked.** The importer: the output parses, the 65 sprite slots are pixel-identical to the art, every other thing byte-identical, 3,000
   sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair57`: 0 errors, 3,964 warnings (the same as pairs 54-57).
-  `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 58 change only the dat md5 lines (written to the scratchpad, not committed, as
-  for pairs 54-57). `gen_fx_send_offsets.py --check`: up to date. All 65 items were drawn from the built pair (preview in the scratchpad, not
+  `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 58 change only the dat md5 lines (committed with the push). `gen_fx_send_offsets.py --check`: up to date. All 65 items were drawn from the built pair (preview in the scratchpad, not
   committed) and look as the art. Not run in a client.
 - **Archive parts** (same recipe as pair 53: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of
-  `Tibia.dat Tibia.spr` into `things-1098.tar`, `xz -9 -T3`, `split -b 95M -d -a 2`; built 2026-10-30, **not pushed**: the owner pushes to
-  windows-assets and only the two part files and their lines of `SHA256SUMS.parts` change):
+  `Tibia.dat Tibia.spr` into `things-1098.tar`, `xz -9 -T3`, `split -b 95M -d -a 2`; built 2026-10-30; owner approved 2026-10-30, pushed to windows-assets
+  as **29b9a09**, only the two part files and their lines of `SHA256SUMS.parts` change):
   - part00 99,614,720 bytes, sha256 `3f0a62527a2a103b33af600f0c421d74adf04039a9b528d826d33a94225b83f6`
   - part01 30,290,580 bytes, sha256 `89b4bb65463c30575a5e300c5ef989b7feba8d8ad4d230ddb4f95eb8462c4620`
   - joined `things-1098.tar.xz` (129,905,300 bytes) sha256 `551828778c460b55fba1a607deda46494ba3182fb1d95abe5bd0881786914cec`;
-    `things-1098.tar` sha256 `586063123ac999ba2ad68488c2a68d2ac76ec27212ceea775dac7a9529fa1706`. Decompressing the joined parts gives that tar sha256 (checked).
+    `things-1098.tar` sha256 `586063123ac999ba2ad68488c2a68d2ac76ec27212ceea775dac7a9529fa1706`. Decompressing the joined parts gives that tar sha256 and the dat and spr md5s above (checked).
 - **Switch on** once the client update is published: record `chaosClientPair` 58 (admin app, tab Comandos > card "Par do cliente" >
   Gravar 58; or `chaos-ctl.sh client-pair set 58`), set `ChaosGearSets.PAIR58 = true`, regenerate `gen_codex_data.lua` and
   `gen_wiki_data.lua`, run the update (server/README.md "Relic sets (pair 58)"). No client Lua changes: the codex shows the five sets
