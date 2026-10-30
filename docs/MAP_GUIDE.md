@@ -187,6 +187,11 @@ Owner rule, 2026-10-30: **every new area is asymmetric.** Never one round area, 
 rectangle. The outline is irregular, lopsided and grown, not drawn. This holds for hunts, caves, forests and every
 other new map. The planner does it by default and QA fails a new plan that breaks it.
 
+Reference look, owner approved 2026-10-30 ("ficou excelente"): `server/tools/areaplan/asym/asym_forest_test.json`
+(forest, 60x50, seed 4242). It was a small test; real hunts use the same rules at their band size. Match this look:
+lobed outline with a hook and a notch, a rock island inside, rough rock rim, mixed ground patches, trees and bushes
+spread, no straight side.
+
 How the planner builds it (`server/data/scripts/chaos/areagen_core.lua`, `server/tools/area_plan_core.py`):
 - A zone without a `shape` is `lobes` outside dungeon biomes: 3-6 overlapping lobes of different size and stretch,
   each beside the one before, off the centre, with a different reach per direction, a rough rim and a smoothing pass.
