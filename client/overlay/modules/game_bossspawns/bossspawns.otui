@@ -143,6 +143,9 @@ BossSpawnsHeader < UILabel
 ChaosMainWindow
   id: bossSpawnsWindow
   size: 700 560
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Boss Spawns')
   @onEscape: modules.game_bossspawns.hide()
 

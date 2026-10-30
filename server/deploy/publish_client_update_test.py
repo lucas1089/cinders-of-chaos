@@ -210,8 +210,11 @@ for a in "$@"; do
 done
 if [ -n "$url" ]; then
   echo "$url" >> "$STUB_DIR/urls"
-  [ -n "${STUB_ZIP:-}" ] || exit 22
-  cp "$STUB_ZIP" "$out"
+  case $url in
+    *.apk) [ -n "${STUB_APK:-}" ] || exit 22; cp "$STUB_APK" "$out" ;;
+    *.json) [ -n "${STUB_APK_INFO:-}" ] || exit 22; cp "$STUB_APK_INFO" "$out" ;;
+    *) [ -n "${STUB_ZIP:-}" ] || exit 22; cp "$STUB_ZIP" "$out" ;;
+  esac
   exit 0
 fi
 exec %s "$@"
@@ -466,6 +469,95 @@ exec %s "$@"
         check(r.returncode == 0 and 'native' not in payload(), 'no launcher, no native section')
         check(not os.path.isdir(os.path.join(live, 'native')) or not os.listdir(os.path.join(live, 'native')),
               'old native blobs removed')
+
+        # the app update (O313 step 8): the Android client's own APK, plain under apk/, the entry in the signed manifest
+        def make_apk_files(name, code, version, signer='ab' * 32, body=None):
+            apk = os.path.join(zips, name + '.apk')
+            open(apk, 'wb').write(b'PK\x03\x04' + (body if body is not None else os.urandom(2000)))
+            info = os.path.join(zips, name + '.json')
+            json.dump({'version_code': code, 'version_name': version, 'signer_sha256': signer}, open(info, 'w'))
+            return apk, info
+
+        def apk_files():
+            return sorted(f for _, _, fs in os.walk(os.path.join(live, 'apk')) for f in fs)
+
+        env_apk = {'CHAOS_UPDATE_URL': purl, 'CHAOS_UPDATE_APK_MIN_MB': '0'}
+        base_version = payload()['version']
+        apk1, info1 = make_apk_files('app31', 31, '1.31')
+        # alone: only the entry changes, same version and game files, signed again
+        before_m = payload()
+        r = run('--apk', apk1, '--apk-info', info1, extra=env_apk)
+        a = payload().get('android_apk') or {}
+        check(r.returncode == 0 and verify(), 'apk alone publishes: ' + r.stdout + r.stderr)
+        check(a.get('version_code') == 31 and a.get('signer_sha256') == 'ab' * 32 and a.get('min_version_code') == 0,
+              'apk alone: the entry')
+        check(payload()['version'] == base_version and payload()['files'] == before_m['files'],
+              'apk alone: same version and files')
+        check(apk_files() == [a.get('sha256', '') + '.apk'], 'apk alone: one plain file under apk/')
+        check('Range GET of the app update' in r.stdout, 'apk alone: the web check asks the APK URL with a Range: ' + r.stdout)
+        check(blobs_ok(), 'apk alone: the game blobs are untouched')
+        # a release tag: the APK and its JSON come from the release assets
+        apk2, info2 = make_apk_files('app32', 32, '1.32')
+        r = run('--apk', 'android-32', '--apk-min-version-code', '31',
+                extra=dict(env_apk, STUB_APK=apk2, STUB_APK_INFO=info2))
+        a = payload().get('android_apk') or {}
+        urls = open(os.path.join(stub, 'urls')).read()
+        check(r.returncode == 0 and a.get('version_code') == 32 and a.get('min_version_code') == 31,
+              'apk tag publishes: ' + r.stdout + r.stderr)
+        check('releases/download/android-32/CindersOfChaos-Android.apk' in urls
+              and 'releases/download/android-32/CindersOfChaos-Android.json' in urls, 'apk tag: both assets downloaded')
+        check(len(apk_files()) == 1 and verify(), 'apk tag: the old APK is removed')
+        # a publish of new game files keeps the app update
+        r = run('--version', '90', good, extra=env_apk)
+        a = payload().get('android_apk') or {}
+        check(r.returncode == 0 and payload()['version'] == 90 and a.get('version_code') == 32 and len(apk_files()) == 1
+              and verify(), 'game files keep the app update: ' + r.stdout + r.stderr)
+        # a publish with the APK of the same run
+        apk3, info3 = make_apk_files('app33', 33, '1.33')
+        r = run('--version', '91', good, '--apk', apk3, '--apk-info', info3, extra=env_apk)
+        a = payload().get('android_apk') or {}
+        check(r.returncode == 0 and a.get('version_code') == 33 and 'app update: 1.33 code 33' in r.stdout and verify(),
+              'game files and APK in one publish: ' + r.stdout + r.stderr)
+        # refusals change nothing
+        before = open(os.path.join(live, 'manifest.json')).read()
+        low, lowi = make_apk_files('app30', 30, '1.30')
+        r = run('--apk', low, '--apk-info', lowi, extra=env_apk)
+        check(r.returncode != 0 and 'below the published 33' in r.stderr, 'a lower version code refused: ' + r.stderr)
+        same, samei = make_apk_files('app33b', 33, '1.33')
+        r = run('--apk', same, '--apk-info', samei, extra=env_apk)
+        check(r.returncode != 0 and 'another file' in r.stderr, 'the same code with another file refused')
+        r = run('--apk', apk3, extra=env_apk)
+        check(r.returncode != 0 and '--apk-info' in r.stderr, 'a local APK without its JSON refused')
+        r = run('--apk', 'android-34', extra=dict(env_apk, STUB_APK=apk3))
+        check(r.returncode != 0 and 'download failed' in r.stderr, 'a missing info asset refused')
+        r = run('--apk', 'android-34', extra=dict(env_apk, STUB_APK_INFO=info3))
+        check(r.returncode != 0 and 'download failed' in r.stderr, 'a missing APK asset refused')
+        tiny = os.path.join(zips, 'tiny.apk')
+        open(tiny, 'wb').write(b'PK\x03\x04')
+        r = run('--apk', tiny, '--apk-info', info3, extra={'CHAOS_UPDATE_APK_MIN_MB': '1'})
+        check(r.returncode != 0 and 'below 1 MB' in r.stderr, 'a tiny APK refused')
+        r = run('--apk', apk3, '--apk-info', info3, '--no-apk', extra=env_apk)
+        check(r.returncode != 0 and 'together' in r.stderr, '--apk with --no-apk refused')
+        r = run('--apk', 'bad tag!', extra=env_apk)
+        check(r.returncode != 0 and 'not a local file and not a release tag' in r.stderr, 'an odd tag refused')
+        check(open(os.path.join(live, 'manifest.json')).read() == before and os.listdir(work) == [],
+              'refused APK runs change nothing')
+        # the minimum alone, and removing it
+        r = run('--apk-min-version-code', '33', extra=env_apk)
+        check(r.returncode == 0 and payload()['android_apk']['min_version_code'] == 33 and verify(),
+              'the minimum alone: ' + r.stdout + r.stderr)
+        r = run('--no-apk', extra=env_apk)
+        check(r.returncode == 0 and 'android_apk' not in payload() and apk_files() == [] and verify(),
+              'no-apk alone removes the entry and the file: ' + r.stdout + r.stderr)
+        # another private key cannot sign over the published manifest
+        keys2 = os.path.join(tmp, 'keys2')
+        os.makedirs(keys2)
+        key2 = os.path.join(keys2, 'update-key.hex')
+        subprocess.run([sys.executable, '-I', TOOL, 'keygen', '--private', key2], capture_output=True, text=True)
+        r = run('--apk', apk3, '--apk-info', info3, extra=dict(env_apk, CHAOS_UPDATE_KEY=key2))
+        check(r.returncode != 0 and 'not signed by this key' in r.stderr, 'a manifest of another key is not changed')
+        r = run()
+        check(r.returncode != 0 and 'TAG or ZIP' in r.stderr, 'nothing to do: refused')
         plain.shutdown()
 
     print('publish_client_update_test: %d failures' % failures)

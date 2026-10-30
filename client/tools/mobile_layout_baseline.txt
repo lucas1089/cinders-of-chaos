@@ -1,0 +1,11 @@
+# O313: windows over 960x540 logical pixels with no $mobile rule. The list may only shrink.
+# Regenerate with: python3 -I client/tools/check_mobile_layout.py --write-baseline
+game_battlepass/battlepass.otui:ChaosMainWindow#seasonPassWindow 760x560
+game_community/community.otui:ChaosMainWindow#communityWindow 720x600
+game_crafting/crafting.otui:ChaosMainWindow#craftingWindow 700x664
+game_dungeons/dungeons.otui:MainWindow 1219x720
+game_embercache/embercache.otui:ChaosMainWindow#emberCacheWindow 400x560
+game_infinitytower/infinity_tower.otui:InfinityTowerWindow 1000x572
+game_pact/pact.otui:PactWindow 560x670
+game_riftatlas/riftatlas.otui:ChaosMainWindow#riftAtlasWindow 980x620
+game_spellsupports/spellsupports.otui:ChaosMainWindow#supportsWindow 760x616

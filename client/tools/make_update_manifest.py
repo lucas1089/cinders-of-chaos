@@ -10,7 +10,7 @@
   build   CLIENT_DIR --out PUBLISH_DIR [--key PATH] [--version N] [--min-version N] [--min-package N]
           [--parallel N] [--channel NAME] [--roots modules,mods,data,layouts] [--dry-run] [--dev] [--key-index N]
           [--with-single-spr] [--native-dir DIR --native-package N [--native-game NAME] [--native-launcher NAME]]
-          [--no-android] [--android-exclude PREFIX ...]
+          [--no-android] [--android-exclude PREFIX ...] [--apk FILE --apk-info JSON [--apk-min-version-code N]] [--no-apk]
           Hashes every file under the roots of an assembled client folder (client/tools/assemble_client.sh, with
           the Tibia.dat/.spr pair in data/things/1098/; or a packed package unpacked with `unpack`), ENCRYPTS each
           distinct file once (update_crypt.py: AES-256-GCM, key = HKDF of the client guard secret CHAOS_CLIENT_KEY,
@@ -44,6 +44,15 @@
           purpose) and the prefixes given with --android-exclude (desktop-only art); "bytes" is the size of the
           distinct encrypted blobs (the download). The paths refer to the "files" entries, so the sizes and hashes
           stay under the same signature. Clients built before the key existed ignore it. --no-android leaves it out.
+          Android app update (O313 step 8, client/MANIFEST.md "APK updater"): --apk is the signed release APK of
+          android-client.yml and --apk-info its JSON (version_code, version_name, signer_sha256, optional sha256 and size,
+          which must match the file). The payload gets "android_apk": {version_code, version_name, min_version_code, url,
+          sha256, size, signer_sha256}; the APK is published as a PLAIN file under PUBLISH_DIR/apk/<sha[:2]>/<sha>.apk (it
+          carries its own signature; the client checks size, SHA-256 and the signer certificate before it installs).
+          A phone running a package below version_code is offered the new app, below min_version_code (default 0) it
+          cannot play. Without --apk the entry of the manifest already published is kept while its file is there (a
+          publish of new game files must not drop the app update); --no-apk removes it. A lower version code than the
+          published one, or the same code with another file, is refused. Clients built before the key existed ignore it.
           Native files for the game launcher (O314, client/MANIFEST.md "Game launcher"): --native-dir is a folder with
           the program files of the package (Chaos.exe, its DLLs, chaos.pack, the launcher exe; only .exe .dll .pack, no
           sub-folders). They go into the signed payload as a separate "native" section and are published as PLAIN
@@ -52,6 +61,10 @@
           client already out keeps working. --native-package N is the package number (Services.update.package) of
           these files and must be at least --min-package. --native-game is the exe the launcher starts (default
           Chaos.exe), --native-launcher the launcher's own file in the folder (it updates itself at its next start).
+  set-apk PUBLISH_DIR [--key PATH] (--apk FILE --apk-info JSON | --remove | --apk-min-version-code N)
+          Changes only the "android_apk" entry of the manifest already published and signs it again with the same
+          version and the same files: a new app without a new game package (the desktop updater sees nothing new).
+          The key must be the one that signed the manifest. Same rules and files as build --apk.
   verify  PUBLISH_DIR --public HEX [--dev] [--key-index N]
           Checks the signature, the payload and every blob's size and SHA-256; with the blob key (CHAOS_CLIENT_KEY or
           --dev) also decrypts every blob and checks the plaintext SHA-256 the manifest signs.
@@ -108,6 +121,13 @@ ANDROID_SECTION_VERSION = 1
 # never on a phone: the APK leaves layouts/mobile out on purpose (client/android/tools/make_assets.sh; its console style
 # has no readOnly widget and stopped game_console at start), so the phone keeps the default layout
 ANDROID_EXCLUDE = ('layouts/mobile/',)
+# the Android app update (O313 step 8): the "android_apk" section of the signed payload, the APK as a plain file
+APK_DIR = 'apk'
+APK_MAX_SIZE = 1024 ** 3
+APK_MAX_CODE = 65535  # versionCode = the client build, 1..65535 (client/android/app/build.gradle)
+APK_KEYS = {'version_code', 'version_name', 'min_version_code', 'url', 'sha256', 'size', 'signer_sha256'}
+APK_NAME = re.compile(r'^[A-Za-z0-9._+-]{1,32}$')
+HEX64 = re.compile(r'^[0-9a-f]{64}$')
 
 
 # ---------------------------------------------------------------- Ed25519
@@ -446,13 +466,167 @@ def check_android(a, files):
     return None
 
 
+def apk_blob_path(out_dir, sha):
+    return os.path.join(out_dir, APK_DIR, sha[:2], sha + '.apk')
+
+
+def apk_url(sha):
+    """the url of the section: relative to the manifest, so it follows the site (firststart_core.lua apkUrl)"""
+    return f'{APK_DIR}/{sha[:2]}/{sha}.apk'
+
+
+def make_apk(info, sha, size, min_version_code):
+    """info: version_code, version_name, signer_sha256. The "android_apk" payload section."""
+    return {'version_code': info.get('version_code'), 'version_name': info.get('version_name'),
+            'min_version_code': min_version_code, 'url': apk_url(sha), 'sha256': sha, 'size': size,
+            'signer_sha256': info.get('signer_sha256')}
+
+
+def _int(v):
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
+def check_apk(a):
+    """None when the phone client accepts the decoded "android_apk" section (same rules as firststart_core.lua apkEntry)"""
+    if not isinstance(a, dict) or set(a) != APK_KEYS:
+        return 'android_apk: not an object with the expected keys'
+    vc, mv = a['version_code'], a['min_version_code']
+    if not _int(vc) or not 1 <= vc <= APK_MAX_CODE:
+        return 'android_apk: bad version_code'
+    if not isinstance(a['version_name'], str) or not APK_NAME.match(a['version_name']):
+        return 'android_apk: bad version_name'
+    if not _int(mv) or not 0 <= mv <= vc:
+        return 'android_apk: bad min_version_code'
+    if not isinstance(a['sha256'], str) or not HEX64.match(a['sha256']):
+        return 'android_apk: bad sha256'
+    if not isinstance(a['signer_sha256'], str) or not HEX64.match(a['signer_sha256']):
+        return 'android_apk: bad signer_sha256'
+    if not _int(a['size']) or not 1 <= a['size'] <= APK_MAX_SIZE:
+        return 'android_apk: bad size'
+    if a['url'] != apk_url(a['sha256']):
+        return 'android_apk: bad url'
+    return None
+
+
+def prepare_apk(args):
+    """(info, sha, size, source path) of --apk, checked against --apk-info; exits with the reason"""
+    if not args.apk_info:
+        sys.exit('--apk needs --apk-info (the JSON android-client.yml wrote next to the APK)')
+    path = os.path.abspath(args.apk)
+    if not os.path.isfile(path):
+        sys.exit(f'--apk {args.apk}: not a file')
+    try:
+        info = json.load(open(args.apk_info, encoding='utf-8'))
+    except (OSError, ValueError) as e:
+        sys.exit(f'--apk-info {args.apk_info}: {e}')
+    if not isinstance(info, dict):
+        sys.exit(f'--apk-info {args.apk_info}: not a JSON object')
+    sha, size = sha256_file(path), os.path.getsize(path)
+    if info.get('sha256') is not None and info['sha256'] != sha:
+        sys.exit(f'--apk {args.apk}: SHA-256 {sha} is not the {info["sha256"]} of --apk-info (another file?)')
+    if info.get('size') is not None and info['size'] != size:
+        sys.exit(f'--apk {args.apk}: {size} bytes, --apk-info says {info["size"]}')
+    with open(path, 'rb') as f:
+        if f.read(4) != b'PK\x03\x04':
+            sys.exit(f'--apk {args.apk}: not a ZIP (an APK is one)')
+    return info, sha, size, path
+
+
+def previous_apk(out_dir):
+    """the android_apk section of the published manifest, or None"""
+    try:
+        env = json.load(open(os.path.join(out_dir, 'manifest.json'), encoding='utf-8'))
+        a = json.loads(env['payload']).get('android_apk')
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+    return a if isinstance(a, dict) else None
+
+
+def decide_apk(args, out_dir):
+    """(section or None, source path or None). The new --apk, else the published one while its file is intact."""
+    prev = previous_apk(out_dir) if out_dir else None
+    if prev is not None and check_apk(prev) is not None:
+        print('warning: the published android_apk section is invalid; ignored', file=sys.stderr)
+        prev = None
+    if args.apk:
+        info, sha, size, path = prepare_apk(args)
+        mv = args.apk_min_version_code
+        if mv is None:
+            mv = info.get('min_version_code', 0)
+        a = make_apk(info, sha, size, mv)
+        err = check_apk(a)
+        if err:
+            sys.exit('--apk-info: ' + err[len('android_apk: '):])
+        if prev:
+            if a['version_code'] < prev['version_code']:
+                sys.exit(f'--apk: version code {a["version_code"]} is below the published {prev["version_code"]}; '
+                         f'phones ignore a lower one (raise client_build in android-client.yml, or --no-apk)')
+            if a['version_code'] == prev['version_code'] and a['sha256'] != prev['sha256']:
+                sys.exit(f'--apk: version code {a["version_code"]} is published with another file; '
+                         f'a new APK needs a higher client_build')
+        return a, path
+    if args.apk_min_version_code is not None and not prev:
+        sys.exit('--apk-min-version-code needs --apk (no app update is published)')
+    if args.no_apk or not prev:
+        return None, None
+    blob = apk_blob_path(out_dir, prev['sha256'])
+    if not os.path.isfile(blob) or os.path.getsize(blob) != prev['size'] or sha256_file(blob) != prev['sha256']:
+        print('warning: the published APK file is missing or changed; the app update entry is dropped', file=sys.stderr)
+        return None, None
+    if args.apk_min_version_code is not None:
+        prev = dict(prev, min_version_code=args.apk_min_version_code)
+        err = check_apk(prev)
+        if err:
+            sys.exit('--apk-min-version-code: ' + err[len('android_apk: '):])
+    return prev, blob
+
+
+def publish_apk(out, apk, src):
+    """copies the plain APK to OUT/apk/<sha[:2]>/<sha>.apk (atomic; a present intact file is kept)"""
+    if not apk:
+        return
+    dst = apk_blob_path(out, apk['sha256'])
+    if os.path.isfile(dst) and os.path.getsize(dst) == apk['size']:
+        return
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(dst), prefix='.apk.')
+    try:
+        with os.fdopen(fd, 'wb') as f, open(src, 'rb') as s:
+            shutil.copyfileobj(s, f, 1 << 20)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, dst)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
+
+
+def prune_apks(out, apk):
+    """removes every file of OUT/apk/ the new manifest does not name; returns how many went"""
+    root = os.path.join(out, APK_DIR)
+    keep = apk_blob_path(out, apk['sha256']) if apk else None
+    removed = 0
+    if not os.path.isdir(root):
+        return 0
+    for dirpath, _, names in os.walk(root, topdown=False):
+        for n in names:
+            if os.path.join(dirpath, n) != keep:
+                os.remove(os.path.join(dirpath, n))
+                removed += 1
+        if dirpath != root and not os.listdir(dirpath):
+            os.rmdir(dirpath)
+    if not os.listdir(root):
+        os.rmdir(root)
+    return removed
+
+
 def native_blob_path(out_dir, sha):
     return os.path.join(out_dir, NATIVE_DIR, sha[:2], sha)
 
 
 # ---------------------------------------------------------------- manifest
 
-def make_payload(entries, version, min_version, min_package, parallel, channel, created, native=None, android=None):
+def make_payload(entries, version, min_version, min_package, parallel, channel, created, native=None, android=None, apk=None):
     """entries: (path, plaintext sha256, plaintext size, blob sha256, blob size). android: None leaves the phone
     section out, a tuple of extra path prefixes (maybe empty) writes it."""
     payload = {
@@ -465,6 +639,8 @@ def make_payload(entries, version, min_version, min_package, parallel, channel, 
         payload['native'] = native
     if android is not None:
         payload['android'] = make_android(entries, android)
+    if apk is not None:
+        payload['android_apk'] = apk
     return json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
 
 
@@ -509,6 +685,10 @@ def check_payload(m, last_version=None):
             return 'bad blob_size for ' + f['path']
     if 'android' in m:
         err = check_android(m['android'], files)
+        if err:
+            return err
+    if 'android_apk' in m:
+        err = check_apk(m['android_apk'])
         if err:
             return err
     if 'native' in m:
@@ -642,6 +822,10 @@ def build(args):
     for x in android or ():
         if not re.fullmatch(r'(modules|mods|data|layouts)/[A-Za-z0-9 ._()+,/-]*/', x) or '..' in x:
             sys.exit(f'--android-exclude {x!r}: a folder prefix like data/images/streamer/ (with the final slash)')
+    apk, apk_src = decide_apk(args, os.path.abspath(args.out) if args.out else None)
+    if apk and apk['version_code'] < args.min_package:
+        print(f'warning: the APK (version code {apk["version_code"]}) is below --min-package {args.min_package}: '
+              f'a phone could not get past the block with it', file=sys.stderr)
     if android is not None and not any(e[0].startswith('data/things/') and e[0].lower().endswith('.dat')
                                        and not android_excluded(e[0], android) for e in entries):
         print('warning: no data/things/*.dat in the phone data list (a phone could not start from this update)',
@@ -650,13 +834,14 @@ def build(args):
                + (f', native package {args.native_package} ({len(native_entries)} files)' if native else '')
                + (f' (package baseline {baseline})' if baseline else '') + ', '
                f'min_version {min_version}, min_package {args.min_package}, parallel {args.parallel}'
+               + (f', app update {apk["version_name"]} (code {apk["version_code"]})' if apk else '')
                + (f', phone data {sum(1 for e in entries if not android_excluded(e[0], android))} files'
                   if android is not None else ''))
     if args.dry_run:
         # the blob hashes need the key: the payload rules are checked with stand-ins
         stand_in = [(p, h, s, h, s + BLOB_OVERHEAD) for p, h, s in entries]
         err = check_payload(json.loads(make_payload(stand_in, version, min_version, args.min_package, args.parallel,
-                                                    args.channel, created, native, android)))
+                                                    args.channel, created, native, android, apk)))
         if err:
             sys.exit('internal: ' + err)
         print('dry run (unsigned, unencrypted, nothing written):', summary)
@@ -700,12 +885,13 @@ def build(args):
         enc[h] = (c, csize)
     full = [(p, h, s) + enc[h] for p, h, s in entries]
     payload = make_payload(full, version, min_version, args.min_package, args.parallel, args.channel, created, native,
-                           android)
+                           android, apk)
     err = check_payload(json.loads(payload))
     if err:
         sys.exit('internal: ' + err)
     # plain native blobs first, like the encrypted ones: the manifest is written last
     publish_native(out, native_entries or [], native_src)
+    publish_apk(out, apk, apk_src)
     signature = sign(seed, payload.encode('ascii'))
     if not verify_sig(public, payload.encode('ascii'), signature):
         sys.exit('internal: the new signature does not verify')
@@ -716,6 +902,7 @@ def build(args):
     os.replace(tmp, os.path.join(out, 'manifest.json'))
     removed = prune_blobs(files_dir, {c for c, _ in enc.values()})
     removed += prune_blobs(os.path.join(out, NATIVE_DIR), {h for _, h, _ in native_entries or []})
+    removed += prune_apks(out, apk)
     print(f'published {summary}; encrypted ({"DEVELOPMENT key" if dev else KEY_ENV}); {new} new blob(s), '
           f'{removed} old file(s) removed; public key {public.hex()}')
     return 0
@@ -832,13 +1019,67 @@ def verify(args):
         if not os.path.isfile(blob) or os.path.getsize(blob) != f['size'] or sha256_file(blob) != f['sha256']:
             print('bad native file', f['path'], file=sys.stderr)
             bad += 1
+    apk = m.get('android_apk')
+    if apk:
+        blob = apk_blob_path(out, apk['sha256'])
+        if not os.path.isfile(blob) or os.path.getsize(blob) != apk['size'] or sha256_file(blob) != apk['sha256']:
+            print('bad APK file', apk['url'], file=sys.stderr)
+            bad += 1
     if bad:
         sys.exit(f'{bad} blob(s) missing or changed')
     print(f'ok: version {m["version"]}, {len(m["files"])} files, '
           + (f'{len(nat["files"])} native files (package {nat["package"]}), ' if nat else '')
-          + (f'{m["android"]["count"]} phone files, ' if m.get('android') else '') + 'signature good, '
+          + (f'{m["android"]["count"]} phone files, ' if m.get('android') else '')
+          + (f'app update {apk["version_name"]} (code {apk["version_code"]}), ' if apk else '') + 'signature good, '
           + ('every blob decrypts to its signed content' if found else
              f'blobs checked as ciphertext only (no {KEY_ENV}: plaintext not checked)'))
+    return 0
+
+
+def set_apk(args):
+    out = os.path.abspath(args.publish_dir)
+    if not (args.apk or args.remove or args.apk_min_version_code is not None):
+        sys.exit('set-apk needs --apk with --apk-info, --remove, or --apk-min-version-code')
+    if args.apk and args.remove:
+        sys.exit('--apk and --remove together')
+    if args.apk_info and not args.apk:
+        sys.exit('--apk-info needs --apk')
+    key_path = args.key or os.environ.get('CHAOS_UPDATE_KEY')
+    if not key_path:
+        sys.exit('no private key: give --key PATH or set CHAOS_UPDATE_KEY to its path')
+    seed = read_seed(key_path)
+    public = public_from_seed(seed)
+    try:
+        env = json.load(open(os.path.join(out, 'manifest.json'), encoding='utf-8'))
+        m = json.loads(env['payload'])
+        old_sig = bytes.fromhex(env['signature'])
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        sys.exit(f'manifest.json: {e}')
+    if env.get('key') != public.hex() or not verify_sig(public, env['payload'].encode('utf-8'), old_sig):
+        sys.exit('refused: the published manifest is not signed by this key')
+    args.no_apk = args.remove
+    apk, src = decide_apk(args, out)
+    if apk is None:
+        m.pop('android_apk', None)
+    else:
+        m['android_apk'] = apk
+    err = check_payload(m)
+    if err:
+        sys.exit('internal: ' + err)
+    payload = json.dumps(m, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
+    publish_apk(out, apk, src)
+    signature = sign(seed, payload.encode('ascii'))
+    if not verify_sig(public, payload.encode('ascii'), signature):
+        sys.exit('internal: the new signature does not verify')
+    fd, tmp = tempfile.mkstemp(dir=out, prefix='.manifest.')
+    with os.fdopen(fd, 'w', encoding='ascii') as f:
+        f.write(make_envelope(payload, public.hex(), signature.hex()))
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, os.path.join(out, 'manifest.json'))
+    removed = prune_apks(out, apk)
+    print(f'manifest version {m["version"]} signed again: '
+          + (f'app update {apk["version_name"]} (code {apk["version_code"]}, minimum {apk["min_version_code"]})'
+             if apk else 'no app update') + f'; {removed} old file(s) removed')
     return 0
 
 
@@ -955,6 +1196,10 @@ def main(argv=None):
     b.add_argument('--no-android', action='store_true', help='leave the "android" (phone data) section out')
     b.add_argument('--android-exclude', action='append', metavar='PREFIX',
                    help='a folder the phone does not download, e.g. data/images/streamer/ (repeatable; desktop-only art)')
+    b.add_argument('--apk', help='the signed release APK for the Android app update (O313 step 8)')
+    b.add_argument('--apk-info', help='JSON next to the APK: version_code, version_name, signer_sha256 (android-client.yml)')
+    b.add_argument('--apk-min-version-code', type=int, help='phones below this code cannot play until they update the app')
+    b.add_argument('--no-apk', action='store_true', help='remove the published "android_apk" entry')
     b.add_argument('--dev', action='store_true',
                    help='encrypt with the public development key (tests, allow_dev_key packages; never for players)')
     b.add_argument('--key-index', type=int, help=f'which key of {KEY_ENV} ("old,new"), 1-based')
@@ -963,6 +1208,13 @@ def main(argv=None):
     v.add_argument('--public', required=True)
     v.add_argument('--dev', action='store_true')
     v.add_argument('--key-index', type=int)
+    sa = sub.add_parser('set-apk')
+    sa.add_argument('publish_dir')
+    sa.add_argument('--key')
+    sa.add_argument('--apk')
+    sa.add_argument('--apk-info')
+    sa.add_argument('--apk-min-version-code', type=int)
+    sa.add_argument('--remove', action='store_true')
     u = sub.add_parser('unpack')
     u.add_argument('pack')
     u.add_argument('dest')
@@ -972,9 +1224,14 @@ def main(argv=None):
         ap.error('build needs --out (or --dry-run)')
     if args.cmd == 'build' and (args.native_package is not None or args.native_launcher) and not args.native_dir:
         ap.error('--native-package and --native-launcher need --native-dir')
+    if args.cmd == 'build' and args.apk_info and not args.apk:
+        ap.error('--apk-info needs --apk')
+    if args.cmd == 'build' and args.apk and args.no_apk:
+        ap.error('--apk and --no-apk together')
     if args.cmd == 'build' and not re.fullmatch(r'[a-z0-9-]{1,32}', args.channel):
         ap.error('--channel: lowercase letters, digits and dashes')
-    return {'keygen': keygen, 'pubkey': pubkey, 'build': build, 'verify': verify, 'unpack': unpack}[args.cmd](args)
+    return {'keygen': keygen, 'pubkey': pubkey, 'build': build, 'verify': verify, 'unpack': unpack,
+            'set-apk': set_apk}[args.cmd](args)
 
 
 if __name__ == '__main__':

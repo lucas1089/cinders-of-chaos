@@ -1,0 +1,49 @@
+# Chaos: deep Lua stack guard (client/BASE.md "0171"; luaengine/luainterface.{h,cpp}; after 0001-0170).
+# Every engine push checked getTop() <= 20 with VALIDATE: fatal in a build without NDEBUG (a phone, Helper Auto setup,
+# 2026-10-30), unchecked in a release build. Lua guarantees only 20 free slots without asking. Now a deeper stack asks
+# lua_checkstack for 20 more and logs the first time, then every 1000th, with the Lua traceback, in every build.
+diff -ruN a/src/framework/luaengine/luainterface.cpp b/src/framework/luaengine/luainterface.cpp
+--- a/src/framework/luaengine/luainterface.cpp
++++ b/src/framework/luaengine/luainterface.cpp
+@@ -1179,6 +1179,25 @@
+     return v;
+ }
+ 
++void LuaInterface::onDeepStack()
++{
++    // room for the next pushes of this frame (Lua guarantees only LUA_MINSTACK, 20, without asking)
++    lua_checkstack(L, 20);
++
++    static bool logging = false;
++    static int seen = 0;
++    if(logging)
++        return;
++    ++seen;
++    if(seen != 1 && seen % 1000 != 0)
++        return;
++    logging = true;
++    const int top = getTop();
++    g_logger.warning(stdext::format("Lua stack holds %d values in one call (seen %d times): %s", top, seen,
++                                    traceback("deep Lua stack", 1)));
++    logging = false;
++}
++
+ void LuaInterface::pushNil()
+ {
+     lua_pushnil(L);
+diff -ruN a/src/framework/luaengine/luainterface.h b/src/framework/luaengine/luainterface.h
+--- a/src/framework/luaengine/luainterface.h
++++ b/src/framework/luaengine/luainterface.h
+@@ -247,7 +247,11 @@
+     void remove(int index);
+     bool next(int index = -2);
+ 
+-    void checkStack() { VALIDATE(getTop() <= 20); }
++    // Cinders of Chaos (base patch 0171): a push over 20 values in one call frame used to be a fatal error in a build
++    // without NDEBUG and unchecked in a release build. Now the stack grows and the first deep stack is logged with its
++    // Lua traceback, in every build.
++    void checkStack() { if(getTop() > 20) onDeepStack(); }
++    void onDeepStack();
+     void getStackFunction(int level = 0);
+ 
+     void getRef(int ref);

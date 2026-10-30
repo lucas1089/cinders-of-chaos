@@ -10,6 +10,20 @@ local L = VisualFxLogic
 L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer', 'weather', 'bloom', 'numberMotion', 'targetOutline', 'hoverOutline', 'sceneFade', 'deathFade', 'ambientParticles', 'smoothBars', 'missileTrails', 'lightFlicker', 'cooldownPulse' }
 L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true, missileTrails = true, lightFlicker = true, cooldownPulse = true }
 
+-- phones (O313): the options that cost the most fill rate or draw calls start off on Android, once. The plan is pure: the glue in
+-- visualfx.lua applies it with the settings module's own setOption, so the checkbox, the stored value and the effect agree.
+-- screenGrade, bloom and hoverOutline are off by default already. rarityOutlineMap belongs to the settings module, not to this one.
+L.MOBILE_OFF = { 'spellLight', 'liquidShimmer', 'weather', 'ambientParticles', 'missileTrails', 'lightFlicker', 'deathFade', 'rarityOutlineMap' }
+L.MOBILE_FLAG = 'chaosMobileDefaults'
+
+-- the option names to switch off now: none on a desktop, none once the flag says it was done (the player may turn any back on)
+function L.mobileDefaultPlan(isMobile, done)
+  local out = {}
+  if isMobile ~= true or done == true then return out end
+  for i, name in ipairs(L.MOBILE_OFF) do out[i] = name end
+  return out
+end
+
 -- ---------------------------------------------------------------- missile arcs (O230, base patch 0147)
 -- Distance effect ids (missiles) that fly in a slight arc: the thrown and shot ones, which are physical. The ids are the
 -- ShootType numbers of the base server (TFS 1.4.2 const.h, the dat's missile ids of protocol 10.98; the server tests pin

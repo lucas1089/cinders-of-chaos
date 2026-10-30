@@ -33,6 +33,9 @@ CreditsCredit < CreditsLine
 ChaosMainWindow
   id: creditsWindow
   size: 620 560
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   !text: tr('Credits')
   @onEscape: modules.client_chaos_credits.hide()
 

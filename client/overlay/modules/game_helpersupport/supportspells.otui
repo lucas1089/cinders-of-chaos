@@ -127,6 +127,9 @@ ChaosSupportPanel < Panel
       anchors.right: parent.right
       margin: 10 14 0 14
       height: 232
+      // 8 rows of 28 exactly: the phone helper window is shorter
+      $mobile:
+        height: 224
 
     Label
       id: statusLine

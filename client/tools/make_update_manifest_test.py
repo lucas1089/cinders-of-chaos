@@ -819,6 +819,241 @@ class Android(unittest.TestCase):
         self.assertIn('bad file list', broken(lambda a: a.update(files=[])))
 
 
+class AndroidApk(unittest.TestCase):
+    """Android app update (O313 step 8): the "android_apk" section, the plain APK file, the carry over and the refusals"""
+    tearDown = Build.tearDown
+    payload, blob_files, keygen = Build.payload, Build.blob_files, Build.keygen
+    SIGNER = 'ab' * 32
+
+    def setUp(self):
+        Build.setUp(self)
+        self.pub = self.keygen()
+        self.work = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.work, True)
+
+    def make_apk(self, name, code, version='1.31', extra=None, body=None):
+        path = os.path.join(self.work, name + '.apk')
+        open(path, 'wb').write(b'PK\x03\x04' + (body if body is not None else os.urandom(300)))
+        info = {'version_code': code, 'version_name': version, 'signer_sha256': self.SIGNER}
+        info.update(extra or {})
+        info_path = os.path.join(self.work, name + '.json')
+        json.dump(info, open(info_path, 'w'))
+        return path, info_path
+
+    def publish(self, *extra):
+        return run(['build', self.client, '--out', self.out, '--key', self.key, '--min-package', '13'] + list(extra))
+
+    def apk_files(self):
+        found = []
+        for d, _, names in os.walk(os.path.join(self.out, 'apk')):
+            found += [os.path.join(d, n) for n in names]
+        return found
+
+    def test_publish_and_verify(self):
+        apk, info = self.make_apk('a', 31)
+        code, out, err = self.publish('--apk', apk, '--apk-info', info, '--apk-min-version-code', '30')
+        self.assertEqual(code, 0, err)
+        a = self.payload()['android_apk']
+        sha = hashlib.sha256(open(apk, 'rb').read()).hexdigest()
+        self.assertEqual(a, {'version_code': 31, 'version_name': '1.31', 'min_version_code': 30,
+                             'url': 'apk/%s/%s.apk' % (sha[:2], sha), 'sha256': sha, 'size': os.path.getsize(apk),
+                             'signer_sha256': self.SIGNER})
+        self.assertEqual(open(os.path.join(self.out, a['url']), 'rb').read(), open(apk, 'rb').read(), 'plain file')
+        self.assertIsNone(mum.check_payload(self.payload()))
+        self.assertIn('app update 1.31', out)
+        code, out, err = run(['verify', self.out, '--public', self.pub])
+        self.assertEqual(code, 0, err)
+        self.assertIn('app update 1.31 (code 31)', out)
+        # a changed or missing file fails verify
+        open(os.path.join(self.out, a['url']), 'ab').write(b'x')
+        code, out, err = run(['verify', self.out, '--public', self.pub])
+        self.assertNotEqual(code, 0)
+        self.assertIn('bad APK file', err)
+
+    def test_signed_with_the_manifest(self):
+        apk, info = self.make_apk('a', 31)
+        self.assertEqual(self.publish('--apk', apk, '--apk-info', info)[0], 0)
+        path = os.path.join(self.out, 'manifest.json')
+        env = json.load(open(path))
+        m = json.loads(env['payload'])
+        m['android_apk']['signer_sha256'] = 'cd' * 32
+        env['payload'] = json.dumps(m, sort_keys=True, separators=(',', ':'))
+        json.dump(env, open(path, 'w'))
+        code, out, err = run(['verify', self.out, '--public', self.pub])
+        self.assertNotEqual(code, 0)
+        self.assertIn('bad signature', err)
+
+    def test_kept_by_the_next_publish_and_removed_on_request(self):
+        apk, info = self.make_apk('a', 31)
+        self.assertEqual(self.publish('--apk', apk, '--apk-info', info)[0], 0)
+        first = self.payload()['android_apk']
+        code, out, err = self.publish()
+        self.assertEqual(code, 0, err)
+        self.assertEqual(self.payload()['android_apk'], first, 'a publish of game files keeps the app update')
+        self.assertEqual(len(self.apk_files()), 1)
+        code, out, err = self.publish('--apk-min-version-code', '31')
+        self.assertEqual(code, 0, err)
+        self.assertEqual(self.payload()['android_apk']['min_version_code'], 31)
+        code, out, err = self.publish('--no-apk')
+        self.assertEqual(code, 0, err)
+        self.assertNotIn('android_apk', self.payload())
+        self.assertEqual(self.apk_files(), [], 'the old APK file is removed')
+        self.assertFalse(os.path.exists(os.path.join(self.out, 'apk')))
+
+    def test_published_file_gone_drops_the_entry(self):
+        apk, info = self.make_apk('a', 31)
+        self.assertEqual(self.publish('--apk', apk, '--apk-info', info)[0], 0)
+        os.remove(self.apk_files()[0])
+        code, out, err = self.publish()
+        self.assertEqual(code, 0, err)
+        self.assertNotIn('android_apk', self.payload())
+        self.assertIn('missing or changed', err)
+
+    def test_new_apk_replaces_and_prunes_the_old(self):
+        a1, i1 = self.make_apk('a', 31)
+        a2, i2 = self.make_apk('b', 32, '1.32')
+        self.assertEqual(self.publish('--apk', a1, '--apk-info', i1)[0], 0)
+        self.assertEqual(self.publish('--apk', a2, '--apk-info', i2)[0], 0)
+        self.assertEqual(self.payload()['android_apk']['version_code'], 32)
+        self.assertEqual(len(self.apk_files()), 1)
+
+    def test_refusals(self):
+        a1, i1 = self.make_apk('a', 31)
+        self.assertEqual(self.publish('--apk', a1, '--apk-info', i1)[0], 0)
+
+        def refused(why, *args):
+            code, out, err = self.publish(*args)
+            self.assertNotEqual(code, 0, why)
+            return err
+        lower, li = self.make_apk('low', 30)
+        self.assertIn('below the published 31', refused('lower', '--apk', lower, '--apk-info', li))
+        same, si = self.make_apk('same', 31)
+        self.assertIn('another file', refused('same code', '--apk', same, '--apk-info', si))
+        self.assertIn('needs --apk-info', refused('no info', '--apk', a1))
+        self.assertIn('needs --apk', refused('info only', '--apk-info', i1))
+        self.assertIn('together', refused('both', '--apk', a1, '--apk-info', i1, '--no-apk'))
+        bad_sha, bi = self.make_apk('c', 40, extra={'sha256': '0' * 64})
+        self.assertIn('another file?', refused('sha', '--apk', bad_sha, '--apk-info', bi))
+        bad_size, bs = self.make_apk('d', 40, extra={'size': 5})
+        self.assertIn('bytes, --apk-info says 5', refused('size', '--apk', bad_size, '--apk-info', bs))
+        notzip = os.path.join(self.work, 'nz.apk')
+        open(notzip, 'wb').write(b'<html>not found</html>')
+        self.assertIn('not a ZIP', refused('html', '--apk', notzip, '--apk-info', i1))
+        self.assertIn('not a file', refused('missing', '--apk', os.path.join(self.work, 'nope.apk'), '--apk-info', i1))
+        for key, val, text in (('version_code', 0, 'version_code'), ('version_code', 70000, 'version_code'),
+                               ('version_code', '40', 'version_code'), ('version_name', 'a b', 'version_name'),
+                               ('signer_sha256', 'AB' * 32, 'signer_sha256'), ('signer_sha256', 'ab', 'signer_sha256'),
+                               ('min_version_code', 99, 'min_version_code')):
+            a, i = self.make_apk('x', 40, extra={key: val})
+            self.assertIn(text, refused(key, '--apk', a, '--apk-info', i))
+
+    def test_min_version_code_without_an_apk_is_refused(self):
+        code, out, err = self.publish('--apk-min-version-code', '5')
+        self.assertNotEqual(code, 0)
+        self.assertIn('needs --apk', err)
+
+    def test_warns_when_below_min_package(self):
+        apk, info = self.make_apk('a', 12)
+        code, out, err = run(['build', self.client, '--out', self.out, '--key', self.key, '--min-package', '13',
+                              '--apk', apk, '--apk-info', info])
+        self.assertEqual(code, 0, err)
+        self.assertIn('below --min-package 13', err)
+
+    def test_dry_run_checks_the_apk(self):
+        apk, info = self.make_apk('a', 31)
+        code, out, err = run(['build', self.client, '--dry-run', '--apk', apk, '--apk-info', info])
+        self.assertEqual(code, 0, err)
+        self.assertIn('app update 1.31', out)
+        self.assertEqual(self.apk_files(), [], 'nothing written')
+
+    def test_set_apk_changes_only_the_entry(self):
+        self.assertEqual(self.publish()[0], 0)
+        before = self.payload()
+        apk, info = self.make_apk('a', 31)
+        code, out, err = run(['set-apk', self.out, '--key', self.key, '--apk', apk, '--apk-info', info])
+        self.assertEqual(code, 0, err)
+        after = self.payload()
+        self.assertEqual(after['android_apk']['version_code'], 31)
+        for k in before:
+            self.assertEqual(before[k], after[k], k)
+        self.assertEqual(run(['verify', self.out, '--public', self.pub])[0], 0)
+        code, out, err = run(['set-apk', self.out, '--key', self.key, '--apk-min-version-code', '31'])
+        self.assertEqual(code, 0, err)
+        self.assertEqual(self.payload()['android_apk']['min_version_code'], 31)
+        code, out, err = run(['set-apk', self.out, '--key', self.key, '--remove'])
+        self.assertEqual(code, 0, err)
+        self.assertNotIn('android_apk', self.payload())
+        self.assertEqual(self.apk_files(), [])
+        self.assertEqual(run(['verify', self.out, '--public', self.pub])[0], 0)
+
+    def test_set_apk_refusals(self):
+        self.assertEqual(self.publish()[0], 0)
+        apk, info = self.make_apk('a', 31)
+        self.assertNotEqual(run(['set-apk', self.out, '--key', self.key])[0], 0)
+        code, out, err = run(['set-apk', self.out, '--key', self.key, '--apk', apk, '--apk-info', info, '--remove'])
+        self.assertNotEqual(code, 0)
+        other = os.path.join(self.work, 'other.key')
+        run(['keygen', '--private', other])
+        code, out, err = run(['set-apk', self.out, '--key', other, '--apk', apk, '--apk-info', info])
+        self.assertNotEqual(code, 0)
+        self.assertIn('not signed by this key', err)
+        code, out, err = run(['set-apk', os.path.join(self.work, 'none'), '--key', self.key, '--remove'])
+        self.assertNotEqual(code, 0)
+
+    def test_payload_rules(self):
+        sha = 'c' * 64
+        good = {'version_code': 31, 'version_name': '1.31', 'min_version_code': 0, 'url': 'apk/cc/%s.apk' % sha,
+                'sha256': sha, 'size': 100, 'signer_sha256': 'a' * 64}
+        self.assertIsNone(mum.check_apk(good))
+
+        def bad(**kw):
+            x = dict(good)
+            for k, v in kw.items():
+                if v is None:
+                    x.pop(k, None)
+                else:
+                    x[k] = v
+            self.assertIsNotNone(mum.check_apk(x), kw)
+        bad(version_code=None)
+        bad(version_code=True)
+        bad(version_code=0)
+        bad(version_code=65536)
+        bad(version_name='')
+        bad(version_name='1 31')
+        bad(version_name='x' * 33)
+        bad(min_version_code=32)
+        bad(min_version_code=-1)
+        bad(min_version_code=True)
+        bad(url='apk/../x.apk')
+        bad(url='https://example.org/a.apk')
+        bad(url='apk/cc/' + 'd' * 64 + '.apk')
+        bad(sha256='C' * 64)
+        bad(sha256='c' * 63)
+        bad(signer_sha256='a' * 63)
+        bad(size=0)
+        bad(size=mum.APK_MAX_SIZE + 1)
+        bad(size='100')
+        bad(extra_key=1)
+        self.assertIsNotNone(mum.check_apk('apk'))
+        entries = [('data/things/1098/Tibia.dat', 'e' * 64, 3, 'f' * 64, 47)]
+        m = json.loads(mum.make_payload(entries, 3, 0, 0, 4, 'live', 'now', apk=good))
+        self.assertIsNone(mum.check_payload(m))
+        m['android_apk']['size'] = 0
+        self.assertIn('android_apk', mum.check_payload(m))
+        self.assertNotIn('android_apk', json.loads(mum.make_payload(entries, 3, 0, 0, 4, 'live', 'now')))
+
+    def test_old_clients_see_the_same_files(self):
+        self.assertEqual(self.publish()[0], 0)
+        plain = self.payload()
+        shutil.rmtree(self.out)
+        apk, info = self.make_apk('a', 31)
+        self.assertEqual(self.publish('--apk', apk, '--apk-info', info)[0], 0)
+        withp = self.payload()
+        for k in ('files', 'format', 'product', 'version', 'min_version', 'min_package', 'files_url', 'encryption',
+                  'parallel', 'android'):
+            self.assertEqual(plain[k], withp[k], k)
+
+
 class Crypt(unittest.TestCase):
     """update_crypt.py: the blob format the engine decrypts (base patch 0103)"""
     key = bytes.fromhex(TEST_KEY)
@@ -1016,6 +1251,27 @@ class AndroidWorkflow(unittest.TestCase):
         src = open(os.path.join(HERE, '..', 'overlay', 'modules', 'client_chaos_firststart', 'firststart.lua'),
                    encoding='utf-8').read()
         self.assertIn("g_logger.info('firststart: screen shown (' .. tostring(why) .. ')')", src)
+
+    def test_apk_entry_for_the_updater(self):
+        """O313 step 8: the workflow writes the JSON make_update_manifest.py --apk-info reads, prints the hashes, and a
+        release job (write permission only there) attaches both to a prerelease that publish_client_update.sh --apk downloads"""
+        apk = open(os.path.join(self.DIR, 'android-client.yml'), encoding='utf-8').read()
+        for key in ("'version_code'", "'version_name'", "'signer_sha256'", "'sha256'", "'size'"):
+            self.assertIn(key, apk)
+        self.assertIn('Signer #1 certificate SHA-256 digest', apk)
+        self.assertIn('CindersOfChaos-Android.json', apk)
+        self.assertIn('publish_release:', apk)
+        self.assertIn("needs.apk.outputs.release_signed == 'yes'", apk)
+        self.assertEqual(apk.count('contents: write'), 1, 'write permission only in the release job')
+        self.assertIn('android-$CLIENT_BUILD', apk)
+        self.assertIn('exists. A version code is published once', apk)
+        pub = open(os.path.join(HERE, '..', '..', 'server', 'deploy', 'publish_client_update.sh'), encoding='utf-8').read()
+        self.assertIn('CHAOS_UPDATE_APK_ASSET:-CindersOfChaos-Android.apk', pub)
+        self.assertIn('CHAOS_UPDATE_APK_INFO_ASSET:-CindersOfChaos-Android.json', pub)
+        # the keys the workflow writes are the keys the publisher reads
+        for key in ('version_code', 'version_name', 'signer_sha256'):
+            self.assertIn(key, open(mum.__file__, encoding='utf-8').read())
+
 
 
 if __name__ == '__main__':

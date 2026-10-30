@@ -51,6 +51,9 @@ ChaosWindow
   id: adminWindow
   !text: tr('Cinders of Chaos Administration')
   size: 900 620
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   padding-top: 28
   padding-left: 12
   padding-right: 12

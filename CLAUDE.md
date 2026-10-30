@@ -41,6 +41,7 @@ python3 -I server/deploy/discord_bot/bot_core_test.py && python3 -I server/deplo
 cd desktop && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked
 for d in crates/selfupdate launcher; do (cd $d && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked); done   # game launcher (O314) and its shared crate; launcher/tests/mass_update.rs updates a fake install many times from a local HTTP server (interrupted download, bad hash, bad signature, rollback, self-update); needs curl
 python3 -I client/tools/set_launcher_config_test.py && python3 -I server/deploy/publish_client_update_test.py   # launcher.json from init.lua; the publisher's "native" section for the launcher
+mkdir /tmp/apkt && javac -d /tmp/apkt client/android/app/src/main/java/com/cindersofchaos/client/ApkFetcher.java client/android/tests/com/cindersofchaos/client/ApkFetcherTest.java && java -cp /tmp/apkt com.cindersofchaos.client.ApkFetcherTest   # Android APK updater download: resume, size, SHA-256 (O313 step 8; plain JVM)
 python3 -I tools/ci/check_credits.py   # every pack of the art *sources.csv files is in docs/CREDITS.md; pt-BR headings
 python3 -I tools/ci/check_credits_test.py && python3 -I client/tools/gen_credits_test.py
 cd server && luajit tools/weapon_coverage.lua --check && lua5.3 tools/weapon_coverage.lua --check  # every class has 3+ weapons per level band (thresholds: tools/weapon_coverage_config.lua); table in server/README.md (--write)
@@ -67,6 +68,7 @@ cd server && luajit tools/gen_card_descriptions.lua --check   # -> data/items/ca
 python3 -I server/tools/survey_base_weapons_test.py   # base_weapons.csv: re-run server/tools/survey_base_weapons.py on an installed server when a base weapon changes
 python3 client/tools/make_fonts_test.py
 python3 -I client/tools/check_text_fit.py          # options menu entries fit their buttons (en + pt-BR)
+python3 -I client/tools/check_mobile_layout.py && python3 -I client/tools/check_mobile_layout_test.py   # windows over 960x540 logical pixels need a $mobile rule or an entry in client/tools/mobile_layout_baseline.txt; the list may only shrink (O313; --write-baseline)
 python3 -I client/tools/gen_orb_art.py --check     # liquid orb art, one ring and mask per orb size
 python3 client/tools/gen_rain_art.py --check        # rain tiles of game_chaosweather (O208)
 python3 -I client/tools/gen_aura_art.py --check     # chest and Templar aura strips of game_chestaura (O315; CI uses the fx venv)

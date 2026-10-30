@@ -1,0 +1,15 @@
+# Chaos: the chest aura tooltip parses again (client/BASE.md "0170"; mods/client_settings/options/graphics.otui; after 0001-0168).
+# Patch 0162's tooltip held "Templar's" inside a single-quoted tr(): the apostrophe ended the Lua string, the style failed to
+# apply ("')' expected near 's'") and the checkbox lost its tooltip. Escaped as \'; the text, so the pt-BR key, is unchanged.
+diff -ruN a/mods/client_settings/options/graphics.otui b/mods/client_settings/options/graphics.otui
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -865,7 +865,7 @@
+         margin-left: 16
+         image-source: /images/ui/checkbox
+         image-clip: 0 0 12 12
+-        !tooltip: tr('A slow glow on the floor under reward chests, cursed chests and the Sealed Coffer, and a sigil under the feet of\nthe Templar line. In a party, a faint frame on the floor shows how far a Templar's aura reaches. It costs a few small pictures.')
++        !tooltip: tr('A slow glow on the floor under reward chests, cursed chests and the Sealed Coffer, and a sigil under the feet of\nthe Templar line. In a party, a faint frame on the floor shows how far a Templar\'s aura reaches. It costs a few small pictures.')
+         @onSetup: |
+           local value = modules.client_settings.getOption('chestAuras')
+           self:setChecked(value ~= false)

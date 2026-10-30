@@ -68,6 +68,9 @@ ChaosWindow
   id: paragonWindow
   !text: tr('Paragon')
   size: 470 548
+  // phone interface is 540 high: the lists anchored to the bottom shrink
+  $mobile:
+    height: 536
   anchors.centerIn: parent
   @onEscape: modules.game_passivetree.closeParagon()
 
