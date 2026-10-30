@@ -12,7 +12,8 @@ id that no other spell of the base server, the Chaos block or the client's spell
 overlay game_chaosspells/spellfix.lua uses the same ids). Three base scripts also start their own cooldown condition
 with the old id as sub id; that number is changed with it.
 Refuses (exit 1) when a new id is already taken by another spell or a script is missing from spells.xml. A spell the
-15-spell cap retired (patch_spell_cap.py, a comment by then) is not missing: it keeps no id.
+15-spell cap retired (patch_spell_cap.py, a comment by then) is not missing: it keeps no id, so a Chaos spell may hold
+its new id (Pack Howl holds 35, the id of the retired Lance of the Grave).
 """
 import os, re, sys
 
@@ -73,7 +74,7 @@ def main():
     for script, new in NEW_IDS.items():
         if script not in found and script not in CAP_RETIRED:
             errors.append(f'{script}: no spell with this script in spells.xml')
-        if new in taken:
+        if script in found and new in taken:
             errors.append(f'{script}: spellid {new} is already used by {", ".join(taken[new])}')
     if errors:
         sys.exit('refusing to renumber spells:\n  ' + '\n  '.join(errors))

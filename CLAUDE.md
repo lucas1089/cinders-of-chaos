@@ -72,6 +72,7 @@ python3 client/tools/gen_rain_art.py --check        # rain tiles of game_chaoswe
 python3 -I client/tools/gen_aura_art.py --check     # chest and Templar aura strips of game_chestaura (O315; CI uses the fx venv)
 python3 -I client/tools/gen_toast_art.py --check    # toast icons of game_chaosnotify (O317; CI uses the fx venv)
 python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lua (install_all step baserain)
+python3 -I server/tools/patch_spell_ids_test.py      # stock spell ids below 256; a retired spell's new id is free for a Chaos spell (install_all step spells)
 python3 -I server/tools/monster_level_patch_test.py   # src-patch 0082: monster level = middle of the <level> range, no level skull (O326)
 python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test

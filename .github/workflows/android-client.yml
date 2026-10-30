@@ -300,9 +300,10 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           # the last command checks the first-start screen (client_chaos_firststart logs "firststart: screen shown" when it
-          # appears: the APK holds no sprite pair, so it always shows, with or without a network to the update server)
+          # appears: the APK holds no sprite pair, so it always shows, with or without a network to the update server).
+          # It waits for that line up to 8 minutes, then 20 s more: module loading on the emulator varies by minutes.
           script: |
-            bash -c 'adb logcat -c; adb install -r apk/CindersOfChaos-Android.apk && adb shell am start -W -n com.cindersofchaos.client/.ChaosActivity; sleep 150; adb shell pidof com.cindersofchaos.client && echo STILL RUNNING || echo NOT RUNNING; adb logcat -d -v threadtime > logcat.txt; grep -E "CindersOfChaos|AndroidRuntime|DEBUG|libc|linker|cindersofchaos|F/|E/" logcat.txt | tail -n 300; grep -E "CindersOfChaos.*firststart: " logcat.txt | tail -n 20; grep -q "firststart: screen shown" logcat.txt && echo "FIRST START SCREEN: ok" || { echo "FIRST START SCREEN: not shown"; exit 1; }'
+            bash -c 'adb logcat -c; adb install -r apk/CindersOfChaos-Android.apk && adb shell am start -W -n com.cindersofchaos.client/.ChaosActivity; for i in $(seq 96); do adb logcat -d | grep -q "firststart: screen shown" && break; sleep 5; done; sleep 20; adb shell pidof com.cindersofchaos.client && echo STILL RUNNING || echo NOT RUNNING; adb logcat -d -v threadtime > logcat.txt; grep -E "CindersOfChaos|AndroidRuntime|DEBUG|libc|linker|cindersofchaos|F/|E/" logcat.txt | tail -n 300; grep -E "CindersOfChaos.*firststart: " logcat.txt | tail -n 20; grep -q "firststart: screen shown" logcat.txt && echo "FIRST START SCREEN: ok" || { echo "FIRST START SCREEN: not shown"; exit 1; }'
 
       - name: Upload the logcat
         if: always()
