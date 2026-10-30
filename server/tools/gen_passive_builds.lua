@@ -399,7 +399,11 @@ local function topStats(ctx, st, weights)
 	return out
 end
 
-local function themeNodeScores(theme, classKey, tree)
+-- the nodes a theme names (theme.nodes) and the flagged keystones / notables the config tags for the theme
+-- (cfg.keystoneThemes[flag] = {theme keys}): a flag counts when the node gives it to this class (its variant, else its own
+-- stats). Without the tags a theme build could never take a keystone: Poison (earth) skipped Contagion Rite, Viper's
+-- Verdict and the Blackblood Creed.
+function Gen.themeNodeScores(theme, classKey, tree, cfg, variant)
 	local out = {}
 	for id, s in pairs(theme.nodes or {}) do
 		local node = tree.nodes[id]
@@ -407,8 +411,25 @@ local function themeNodeScores(theme, classKey, tree)
 			out[id] = s
 		end
 	end
+	local tags = cfg and cfg.keystoneThemes
+	if tags then
+		local score = cfg.keystoneScore or 0
+		for _, id in ipairs(sortedKeys(tree.nodes)) do
+			local node = tree.nodes[id]
+			if out[id] == nil and (not node.c or node.c[classKey] == true) and not node.m then
+				for stat in pairs(statsOf(node, variant)) do
+					for _, key in ipairs(tags[stat] or {}) do
+						if key == theme.key then
+							out[id] = score
+						end
+					end
+				end
+			end
+		end
+	end
 	return out
 end
+local themeNodeScores = Gen.themeNodeScores
 
 local function classListed(theme, classKey)
 	if not theme.classes then
@@ -439,7 +460,7 @@ function Gen.classBuilds(ctx, classKey, lineKey, variant)
 			weights[stat] = nil
 		end
 		local st, err = Gen.grow(ctx, {
-			weights = weights, nodeScores = themeNodeScores(theme, classKey, ctx.tree), targets = role.targets,
+			weights = weights, nodeScores = themeNodeScores(theme, classKey, ctx.tree, cfg, variant), targets = role.targets,
 			masteries = role.masteries, classKey = classKey, lineKey = lineKey, variant = variant, budget = cfg.maxPoints
 		})
 		if st then
@@ -455,7 +476,7 @@ function Gen.classBuilds(ctx, classKey, lineKey, variant)
 			for stat in pairs(ctx.bad) do
 				weights[stat] = nil
 			end
-			local nodeScores = themeNodeScores(theme, classKey, ctx.tree)
+			local nodeScores = themeNodeScores(theme, classKey, ctx.tree, cfg, variant)
 			local st = Gen.grow(ctx, {
 				weights = weights, nodeScores = nodeScores, targets = {}, classKey = classKey, lineKey = lineKey,
 				variant = variant, budget = cfg.maxPoints

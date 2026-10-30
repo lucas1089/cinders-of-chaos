@@ -66,6 +66,17 @@ ChaosPassiveBuildsConfig = {
 	},
 	shieldLines = {warrior = true, templar = true, thief = true},
 
+	-- Flagged keystones and notables score for the themes that name their damage type (a flag stat carries a price, so no
+	-- plain weight can reach it): keystoneThemes[flag] = {theme keys}. A theme or role build of that theme takes the node
+	-- when the class may hold it (its variant on 621 / 624), at keystoneScore. Poison is earth damage here.
+	-- tests/passive_builds_test.lua: every tagged keystone a class can hold is in the builds of its theme.
+	keystoneScore = 40,
+	keystoneThemes = {
+		arContagion = {"earth"}, ksBlackbloodCreed = {"earth"}, ksViperVerdict = {"earth"},
+		arPyreOath = {"fire"}, arCinderSigil = {"fire", "holy"}, arWinterLattice = {"ice"}, arStormstring = {"energy"},
+		ksRadiantRebuke = {"holy"}, ksDawnchain = {"holy"}, ksCorpseBlast = {"death"}, ksReapersToll = {"death"}
+	},
+
 	-- Focus themes. stats = {stat or group name = weight}; nodes = {[id] = score} for the nodes a theme names (they may
 	-- be flagged nodes); classes = only these classes get the theme. text = the line under the name.
 	themes = {
@@ -182,7 +193,7 @@ ChaosPassiveBuildsConfig = {
 		ninja = {
 			{id = "twin_fangs", name = "Twin Fangs", kind = "damage", targets = {629, 631}, fill = "crit"},
 			{id = "phantom", name = "Phantom", kind = "mobility", targets = {630, 631}, fill = "mobility"},
-			{id = "plaguebearer", name = "Plaguebearer", kind = "damage", targets = {383, 107}, fill = "damage"}
+			{id = "plaguebearer", name = "Plaguebearer", kind = "damage", targets = {383, 107, 624}, fill = "earth"}
 		},
 		samurai = {
 			{id = "duelist", name = "Duelist", kind = "tank", targets = {633, 634}, fill = "defense"},
