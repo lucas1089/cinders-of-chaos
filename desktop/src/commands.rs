@@ -158,7 +158,10 @@ use Tab::{Commands as C, Logs as L, Panel as P};
 
 const TEXT_P: &[Param] = &[text("text", "Mensagem")];
 const NAME_P: &[Param] = &[text("name", "Nome do personagem")];
-const GM_P: &[Param] = &[text("name", "Nome do personagem"), int("g", "Grupo (1 jogador, 4 GM, 6 God)", 1, 6, "6")];
+const GM_P: &[Param] = &[
+    text("name", "Nome do personagem"),
+    int("g", "Grupo (1 jogador, 4 GM, 6 God)", 1, 6, "6"),
+];
 const TAG_P: &[Param] = &[text("tag", "Tag da release (ex.: winpkg-123)")];
 const APK_P: &[Param] = &[text("tag", "Tag da release do app (ex.: android-31)")];
 const N_P: &[Param] = &[int("n", "Linhas", 1, 500, "100")];

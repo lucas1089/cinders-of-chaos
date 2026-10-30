@@ -56,7 +56,7 @@ local function tile(x, y, z, h)
 	function t:getHouse() return self.house end
 	function t:getThing(i) return self.things[i + 1] end
 	function t:hasProperty() return self.solid == true end
-	function t:hasFlag() return true end -- every tile a protection zone: the reach rules are under test here (the
+	function t:hasFlag() return not self.open end -- every tile a protection zone unless opened: the reach rules are under test here (the
 	-- town-only deposit rule of the stash: tests/stash_test.lua)
 	tiles[key(x, y, z)] = t
 	return t
@@ -220,6 +220,9 @@ local DOP = ChaosOpcodes.dungeons
 local fighter = newPlayer(3, Position(100, 100, 7))
 byGuid[fighter:getGuid()] = fighter
 fighter.inFight = true
+-- the battle condition counts outside a protection zone only (Chaos.inCombat): the fighter stands on an open tile
+local fighterTile = Tile(fighter:getPosition())
+fighterTile.open = true
 local function queue(p)
 	sent = {}
 	dungeonEvent.onExtendedOpcode(p, DOP, {action = "queue", data = {id = 1, difficulty = 1}})
@@ -230,6 +233,7 @@ end
 eq(queue(fighter), false, "queued while in a fight")
 eq(fighter.cancels[#fighter.cancels]:find("fight", 1, true) ~= nil, true, "told why")
 fighter.inFight, fighter.pzLocked = false, true
+fighterTile.open = nil
 eq(queue(fighter), false, "queued while protection-zone locked")
 fighter.pzLocked = false
 eq(queue(fighter), true, "queued out of combat")
