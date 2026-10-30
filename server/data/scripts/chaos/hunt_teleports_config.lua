@@ -54,7 +54,7 @@ return {
 		-- ends are the floor's own; `sweep`: the new tiles may replace the open lawn beside the hall (checked: no
 		-- house, nothing but decoration). 8 modules a side: 32 new slots, 48 on z 7.
 		wings = {
-			{z = 7, from = 6, sweep = true, east = {modules = 8}, west = {modules = 8}}
+			{z = 7, from = 6, sweep = true, east = {modules = 9}, west = {modules = 9}}
 		}
 	},
 
@@ -85,7 +85,7 @@ return {
 		-- the hunt slots of each floor as the install counts them on the live map (2 a module a side, plus the base
 		-- room's); install_content_areas_test.py refuses more hunts on a floor (the base hunts of hall_hunts.csv and every
 		-- plan, by `levels`) than it has, so CI says "grow it" before an update fails on the server. Raise it with the room.
-		capacity = {{z = 7, slots = 48}, {z = 6, slots = 41}, {z = 5, slots = 18}},
+		capacity = {{z = 7, slots = 52}, {z = 6, slots = 41}, {z = 5, slots = 18}},
 		quests = {
 			z = 7,
 			north = {y = 32263, x = {31630, 31634, 31638, 31642, 31654, 31658, 31662, 31666}},
@@ -234,7 +234,12 @@ return {
 		{id = "wanwick_cloister", monster = "Distorted Phantom"},
 		{id = "brinescar_strand", monster = "Saltkin Raider"},
 		{id = "rustcog_warrens", monster = "Mechanic Goblin"},
-		{id = "mossgrave_tangle", monster = "Waterglow Conjurer"}
+		{id = "mossgrave_tangle", monster = "Waterglow Conjurer"},
+		-- the imported hunts (server/tools/area_import.py, docs/MAP_GUIDE.md "Imported hunts"): cuts of a free community map
+		{id = "brickhold_depths", monster = "Phantom Shade"},
+		{id = "cinderbrick_halls", monster = "Fire Man"},
+		{id = "dunereach_isle", monster = "Cunning Hyaena"},
+		{id = "rimewind_isle", monster = "Elite Yeti"}
 	},
 
 	-- The ways back (owner, 2026-10-20: "many teleports to hunts have no teleport back"; server/README.md "Hall order",

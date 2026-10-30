@@ -65,6 +65,7 @@ ChaosCreditsData = {
       { name = "Future Millennium font", author = "free asset pack", licence = "free to use" },
       { name = "Gem set", author = "free asset pack", licence = "free to use", use = "gem looks in five tiers" },
       { name = "Text effects set", author = "free asset pack", licence = "free to use", use = "status words over creatures" },
+      { name = "Hunting area maps", author = "RyuKage", licence = "free map, shared as free to use; the map files carry no licence text", use = "the terrain of four hunts (Brickhold Depths, Cinderbrick Halls, Rimewind Isle, Dunereach Isle), cut from free community maps" },
     },
   },
   {

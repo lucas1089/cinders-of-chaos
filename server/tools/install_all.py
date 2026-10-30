@@ -300,7 +300,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                sees its placed areas unchanged; the base server's own quest chests and quest boxes (the base quest system's
                action ids and quest unique ids); every placed 32310 moves to 32311, README "Reward chests"; right before
                contentareas)
-  contentareas tools/install_content_areas.py   the planned content hunts (tools/areaplan/plans/) into the map at their
+  contentareas tools/install_content_areas.py   the planned content hunts (tools/areaplan/plans/, the imported ones too: tools/area_import.py, O335) into the map at their
                origins, their spawns and chest scripts; the teleport room of Cinderhold grows by copies of its alcove
                modules on floor 6, the display monsters beside each new teleport go into the spawn file, and
                data/lib/chaos_hunt_places.lua tells hunt_teleports.lua where each teleport leads (README "Hunt
