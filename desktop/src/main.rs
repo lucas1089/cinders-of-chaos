@@ -4,7 +4,7 @@ use cinders_admin::catalog::{self, PanelAction};
 use cinders_admin::commands::{self, Action, Kind, Live, Tab, ACTIONS};
 use cinders_admin::config::{self, Config};
 use cinders_admin::live::{self, Level, Poller};
-use cinders_admin::{reload, ssh, update};
+use cinders_admin::{keys, reload, ssh, update};
 use eframe::egui;
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -1089,7 +1089,45 @@ impl App {
             });
             ui.add_space(2.0);
             ui.label(theme::caption(&format!("Arquivo: {}", config::path().display())));
-            ui.label(theme::caption("A chave é a mesma do app Android (aba Config > Copiar comando de instalação, ou ssh-keygen e chaos-ctl.sh install-admin)."));
+        });
+        ui.add_space(8.0);
+        theme::card_full(ui, |ui| {
+            ui.label(theme::card_title("Chave deste PC"));
+            ui.label(theme::caption(
+                "Cada aparelho tem a sua chave: o celular e este PC. O comando de instalação adiciona esta e mantém as outras.",
+            ));
+            ui.add_space(4.0);
+            ui.horizontal(|ui| {
+                if self.cfg.key_path.trim().is_empty() && ui.button("Gerar chave").clicked() {
+                    let path = keys::default_path();
+                    self.status = match keys::generate(&path) {
+                        Ok(_) => {
+                            self.cfg.key_path = path.to_string_lossy().into_owned();
+                            match config::save(&self.cfg) {
+                                Ok(()) => "Chave gerada e salva. Agora copie o comando de instalação.".into(),
+                                Err(e) => format!(
+                                    "Chave gerada em {}, mas as configurações não salvaram: {e}",
+                                    path.display()
+                                ),
+                            }
+                        }
+                        Err(e) => format!("Não gerou a chave: {e}"),
+                    };
+                }
+                if theme::primary_button(ui, "Copiar comando de instalação").clicked() {
+                    self.status = match keys::public_of(std::path::Path::new(self.cfg.key_path.trim())) {
+                        Ok(public) => {
+                            ui.ctx().copy_text(keys::install_command(&public, &self.cfg.ctl_path));
+                            "Comando copiado. Cole no terminal da VPS como root (ou com sudo).".into()
+                        }
+                        Err(e) => format!("Sem comando: {e}"),
+                    };
+                }
+            });
+            ui.add_space(2.0);
+            ui.label(theme::caption(
+                "Sem arquivo de chave? Gerar chave cria uma ao lado das configurações. O comando sai da chave privada, nunca de um .pub antigo.",
+            ));
         });
     }
 }

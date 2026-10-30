@@ -235,6 +235,7 @@ return {
 		{id = "brinescar_strand", monster = "Bogtusk Cleaver"},
 		{id = "rustcog_warrens", monster = "Mechanic Goblin"},
 		{id = "mossgrave_tangle", monster = "Waterglow Conjurer"},
+		{id = "sunken_mirewood", monster = "Hodag"}, -- the auto pick until 2026-10-30 (the plan's most frequent monster)
 		-- the imported hunts (server/tools/area_import.py, docs/MAP_GUIDE.md "Imported hunts"): cuts of a free community map
 		{id = "brickhold_depths", monster = "Phantom Shade"},
 		{id = "cinderbrick_halls", monster = "Fire Man"},

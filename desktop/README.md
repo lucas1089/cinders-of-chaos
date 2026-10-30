@@ -26,8 +26,12 @@ VPS `sudo -n chaos-ctl.sh ARGS`, exactly like the phone. No new port, service or
 is pinned on first use (`StrictHostKeyChecking=accept-new`); a changed key is refused. Passwords (accounts, Discord
 webhook) go to the command's stdin, never on a command line.
 
-Install the key on the VPS the way the Android app does (Config tab, "Copiar comando de instalação", or
-`chaos-ctl.sh install-admin KEYFILE`). Use the same key file as the phone or a new one: `ssh-keygen -t ed25519`.
+Install the key on the VPS the way the Android app does. Config page, card "Chave deste PC": "Gerar chave" (only while
+the key path is empty) makes an ed25519 key without passphrase next to the settings file (`cinders_admin_ed25519`) and
+saves its path; "Copiar comando de instalação" copies `echo 'PUBLIC KEY' | sudo 'CHAOS-CTL' install-admin -` for the VPS
+root shell. The public key comes from the private key file (`ssh-keygen -y`), never from a `.pub` beside it (a stale `.pub`
+made the VPS refuse the PC on 2026-10-30). `install-admin` adds the key and keeps the others, so the phone and the PC each
+keep theirs. `src/keys.rs`, tests in `cargo test`. Fallback: `ssh-keygen -t ed25519` and `chaos-ctl.sh install-admin KEYFILE`.
 
 ## Settings
 
