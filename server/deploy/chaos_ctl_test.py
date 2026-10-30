@@ -260,10 +260,12 @@ def main():
         import threading
 
         def engine(kind):
+            seen = len(spool())  # only a line queued after this call counts
+
             def go():
                 for _ in range(40):
                     time.sleep(0.1)
-                    m = re.findall(r'^(catalog .*|panel (\d+) .*)$', spool(), re.M)
+                    m = re.findall(r'^(catalog .*|panel (\d+) .*)$', spool()[seen:], re.M)
                     if kind == 'catalog' and any(x[0].startswith('catalog ') for x in m):
                         open(os.path.join(server, 'remote.catalog'), 'w').write('{"categories":[]}')
                         return
@@ -292,6 +294,34 @@ def main():
                     ('panel', 'Gma', 'a.b', '[]'), ('panel', 'Gma', 'a.b', '{' + 'x' * 950 + '}'), ('panel', 'G', 'a.b', '{}')):
             check(run(*bad).returncode != 0, 'refused: %r' % (bad[:3],))
         check(spool() == before, 'refused panel commands queue nothing')
+
+        # reload-files / reload-file (O312): the config names on disk, the panel action server.reload_file with one bare name
+        cdir = os.path.join(server, 'data', 'scripts', 'chaos')
+        os.makedirs(cdir, exist_ok=True)
+        for fname in ('pace_config.lua', 'arena_config.lua', 'arena_core.lua', 'Bad_config.lua', 'x-y_config.lua', 'notes.txt'):
+            open(os.path.join(cdir, fname), 'w').write('return {}\n')
+        r = run('reload-files')
+        check(r.returncode == 0 and r.stdout.split() == ['arena_config', 'pace_config'], 'reload-files lists only config names: ' + r.stdout + r.stderr)
+        check(run('reload-files', 'x').returncode != 0, 'reload-files takes no argument')
+        before = spool()
+        t = engine('panel')
+        r = run('reload-file', 'Gma', 'pace_config')
+        t.join()
+        check(r.returncode == 0 and '"message":"done"' in r.stdout, 'reload-file prints the panel answer: ' + r.stdout + r.stderr)
+        check(re.search(r'panel \d{9} server\.reload_file\|Gma\|\{"file":"pace_config"\}\n$', spool()) is not None,
+              'reload-file queues the panel action with the bare name')
+        t = engine('panel')
+        r = run('reload-file', 'Gma')
+        t.join()
+        check(re.search(r'panel \d{9} server\.reload_file\|Gma\|\{"file":""\}\n$', spool()) is not None, 'reload-file without a name lists')
+        before = spool()
+        for bad in (('reload-file',), ('reload-file', 'Gma', '../pace_config'), ('reload-file', 'Gma', 'pace_config.lua'),
+                    ('reload-file', 'Gma', 'Pace_config'), ('reload-file', 'Gma', 'a;b'), ('reload-file', 'Gma', 'a b'),
+                    ('reload-file', 'Gma', 'a"b'), ('reload-file', 'Gma', '$(id)'), ('reload-file', 'Gma', 'a\nb'),
+                    ('reload-file', 'Gma', '/etc/passwd'), ('reload-file', 'Gma', 'a', 'b'), ('reload-file', 'x', 'a_config'),
+                    ('reload-file', 'Gma;x', 'a_config'), ('reload-file', 'Gma', 'a' * 70)):
+            check(run(*bad).returncode != 0, 'reload-file refuses %r' % (bad,))
+        check(spool() == before, 'refused reload-file queues nothing')
 
         # spectate: the name checked, "spectate NAME" queued (again only after 5 s), a fresh snapshot of that name
         # awaited, the renderer (a stub) run with the name as one argument; busy, no answer; spectate-pair

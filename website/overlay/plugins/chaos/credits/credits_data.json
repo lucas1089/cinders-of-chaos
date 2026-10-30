@@ -390,7 +390,7 @@
      "name": "ed25519-compact",
      "author": "Frank Denis",
      "licence": "MIT",
-     "use": "checking the Ed25519 signature of the update manifest in the game launcher",
+     "use": "checking the Ed25519 signature of the update manifest in the game launcher and of the releases of the desktop admin app",
      "source": "https://github.com/jedisct1/rust-ed25519-compact"
     },
     {

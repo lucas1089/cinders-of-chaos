@@ -6,7 +6,18 @@ same `chaos-ctl.sh` commands, the same SSH key and user. Rust with egui/eframe: 
 Phase 1 (this folder): tabs Painel, Comandos, Logs, Painel do jogo, Config. The Painel tab starts with cards: server state and
 uptime, players online (with the list), errors, memory, disk, load, last backup, and the progress metrics (churn, stops,
 deaths, first session, time to level, returns, first use). They call `status`, `players` and `metrics --json`; the
-parsing is pure code in `src/cards.rs` with fixture tests. Not yet: live view (spectate, cast), the key generator.
+parsing is pure code in `src/cards.rs` with fixture tests. Also: the page Ao vivo (below), the card Recarregar um
+arquivo on Painel do jogo (below) and signed self-updates (below). Not yet: the phone's picture views (spectate, cast),
+the key generator.
+
+## Live view (Ao vivo)
+
+A page that refreshes by itself while it is open: the server state (badge, uptime, players, errors, memory, load, disk),
+the players online and the tail of the console log. One ssh call runs the existing `status`, `players` and `logs N`
+back to back (a marker line between them, `src/live.rs`), so there is no new command and no daemon on the VPS. Refresh
+every 2, 5, 10, 30 or 60 seconds, "Pausar" stops all requests, "Atualizar agora" asks at once, one refresh at a time (a
+slow ssh never piles calls up). The log pane shows 40 to 400 lines, filters by text, colours `[Error` and `[Warning`
+lines, follows the end or not, and copies what is shown. Nothing is asked while another page is open.
 
 ## How it reaches the VPS
 
@@ -58,11 +69,21 @@ It uses the existing `remote.cmd` path, so nothing new runs on the server.
 
 - XP rates (`experienceStages` in `config.lua`): whether `Game.reload(config)` re-reads the stages is not checked on a
   live server. Until then the buttons say "needs restart".
-- Content and balance edits (spell, item, monster numbers) are changed by `install_all.py` and `update-apply`, which
-  restart. A hot reload of one script or one `*_config.lua` needs an admin action that reloads one file; `reload`
-  reloads a whole system (`scripts` reloads every revscript and clears event callbacks).
+- Content edits (spell, item, monster data) are changed by `install_all.py` and `update-apply`, which restart. Balance
+  numbers in a `*_config.lua` can be reloaded one file at a time (next section).
 - Per-script state is lost on `reload scripts` (tables built at load are rebuilt; running events restart).
-- The phone's live view (`spectate`, `cast`) is not in phase 1: it needs a long ssh stream and a picture view.
+- The phone's picture views (`spectate`, `cast`) are not in the desktop app: they need a long ssh stream and a picture view.
+
+## Reload one file (Painel do jogo > Recarregar um arquivo)
+
+Pick a config table (`Listar arquivos` fills the list from `chaos-ctl.sh reload-files`; type to filter) and press
+`Recarregar NOME`: `chaos-ctl.sh reload-file ACTOR NAME` runs the panel action `server.reload_file`, which copies the new
+values of `data/scripts/chaos/NAME.lua` into the running game's tables (server/README.md "Reload one config table
+(O312)"). Needs the admin character of Config in group 6, like the system reload. The name is checked here
+(`src/reload.rs`: a-z, 0-9, `_`, nothing else), in `chaos-ctl.sh` and in the game. `Quais estão vivos?` lists the tables
+the game can reload now. The card says what a reload cannot do: a script file (not `*_config`) is not reloaded alone
+(use Server > Reload system > scripts below, or restart), a value a script copied when it loaded changes only after
+a scripts reload or restart, and `remote_cmd_config` needs a restart. The reload button is off for anything but a config.
 
 ## Build and run
 
@@ -78,20 +99,40 @@ Windows needs the Rust toolchain (`rustup`, MSVC target). Linux needs a desktop 
 ## Updates
 
 At start (and with the Config page button "Procurar versão nova") the app reads the GitHub releases of this repository,
-takes the newest release tagged `admin-desktop-vX.Y.Z` that has `cinders-admin.exe` and `cinders-admin.exe.sha256`,
-and if the version is higher than its own offers "Atualizar e reiniciar o app". It downloads with `curl` (in Windows
-10 and 11), checks the SHA-256, renames the running program to `cinders-admin.old`, puts the new one in its place and
-starts it. A wrong checksum refuses the update. No signing key yet: the trust is GitHub release access of the
-repository (acceptable for a tool that runs only on the owner's PC; the checksum catches broken downloads only).
+takes the newest release tagged `admin-desktop-vX.Y.Z` that has `cinders-admin.exe` and `cinders-admin.exe.sig`,
+and if the version is higher than its own offers "Atualizar e reiniciar o app". It downloads both with `curl` (in
+Windows 10 and 11), verifies the signature, renames the running program to `cinders-admin.old`, puts the new one in its
+place (the very bytes that were verified) and starts it.
+
+Signed: the same scheme as the game updater and the launcher (`client/MANIFEST.md` "Signed updater"). The `.sig` is an
+envelope `{format, key, signature, payload}`; the Ed25519 signature covers the exact bytes of `payload`, a JSON text with
+product, version, file name, size and SHA-256. The public key is compiled in from `update_public_key.hex` (never read
+from settings, a release or the network). The app refuses (and replaces nothing) when: the build has no key, the
+signature is wrong or by another key, the file differs by one byte (hash or size), the signed file name or product is
+another, the signed version is not the release tag (a replayed old signature under a new tag) or is not newer than the
+running app (downgrade). A release without a `.sig` is not offered. The `.sha256` asset stays for a human to compare.
+
+### One-time key setup
+
+1. `python3 -I client/tools/make_update_manifest.py keygen --private ~/cinders-admin-update.key` (outside the
+   repository; the tool refuses a path inside a git work tree). It prints the public key.
+2. Put the public key (64 hex digits) in `desktop/update_public_key.hex` instead of the zeros and commit. Until then
+   every build refuses every update (and the workflow refuses to publish).
+3. GitHub > Settings > Secrets > Actions: `ADMIN_DESKTOP_SIGNING_KEY` = the text of the private key file. Back the file up
+   offline. Losing it means shipping a new build by hand with a new public key; old apps then cannot self-update.
 
 ### Publish a new version
 
 1. Raise `version` in `desktop/Cargo.toml`, run `cargo build` once so `Cargo.lock` follows, commit.
 2. GitHub > Actions > "admin-desktop" > Run workflow, input the same version.
-3. The workflow (manual only, like `windows-package.yml`) tests, builds on Windows and creates the release
-   `admin-desktop-vX.Y.Z` with the `.exe` and its `.sha256`. Open apps pick it up at the next start.
+3. The workflow (manual only, like `windows-package.yml`) tests, builds on Windows, signs with
+   `tools/sign_release.py` (it refuses a key that is not the one in `update_public_key.hex`, then verifies its own
+   output) and creates the release `admin-desktop-vX.Y.Z` with the `.exe`, the `.sig` and the `.sha256`. Open apps pick
+   it up at the next start.
 
-Not yet run on GitHub: the workflow and the swap on Windows are untested (the swap has a unit test on Linux).
+Not yet run on GitHub: the workflow and the swap on Windows are untested (the swap has a unit test on Linux). The Python
+signer and the Rust verifier share one test vector (`testdata/sign_vector.json`, checked by both
+`tools/sign_release_test.py` and `cargo test`).
 
 ## Shared code
 
@@ -100,5 +141,5 @@ SHA-256, version compare and the staged rename live in `../crates/selfupdate/`, 
 
 ## Credits
 
-Crates that ship: eframe and egui (MIT or Apache-2.0), serde_json (MIT or Apache-2.0), sha2 (MIT or Apache-2.0), and
-their dependencies. Listed in `docs/CREDITS.md`.
+Crates that ship: eframe and egui (MIT or Apache-2.0), serde_json (MIT or Apache-2.0), sha2 (MIT or Apache-2.0),
+ed25519-compact (MIT), and their dependencies. Listed in `docs/CREDITS.md`.
