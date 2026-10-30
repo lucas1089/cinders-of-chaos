@@ -104,7 +104,10 @@ return {
 	-- party level x (lo + perDepth x depth) .. party level x (hi + perDepth x depth), clamped to minLevel .. maxLevel;
 	-- monster health x (1 + health x (depth - 1)), their damage x (1 + damage x (depth - 1)); the tier mix (percent per
 	-- monster, monster_tiers.lua) is base + perDepth x depth for each tier.
-	escalation = {lo = 0.55, hi = 0.8, perDepth = 0.05, minLevel = 20, maxLevel = 1500, widen = 60, minPoolHealth = 100,
+	-- maxLevel is the top of the pool: 2000 (Gloomsilt Mire, the last planned hunt; the pool ended at 980 before the planned hunts were
+	-- in it, O337, and the ceiling was 1500). A party of level 1300 and more meets the strongest monsters of the pool from depth 1 to 12
+	-- instead of the ones of level 1500; a level 2200 party at depth 12 gets the window 2000-2010.
+	escalation = {lo = 0.55, hi = 0.8, perDepth = 0.05, minLevel = 20, maxLevel = 2000, widen = 60, minPoolHealth = 100,
 		health = 0.08, damage = 0.06,
 		tiers = {magic = {8, 3}, rare = {2, 1.5}, legendary = {-3.2, 0.8}}},
 

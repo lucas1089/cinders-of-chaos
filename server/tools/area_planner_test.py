@@ -624,7 +624,7 @@ print(reg.id, first, #got, gold, last)
 # storage per chest quest, and every area 10+ tiles from every other in x or y, whatever the floor (docs/MAP_GUIDE.md
 # "Content plans"; the hall fill of 2026-10-22 brought 41 plans and two storage clashes the install found late)
 placed = []
-for sub in ('plans', 'chronicle', 'rooms'):
+for sub in ('plans', 'chronicle', 'rooms', 'annexes'):
     d = os.path.join(HERE, 'areaplan', sub)
     for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
         if f.endswith('.json'):

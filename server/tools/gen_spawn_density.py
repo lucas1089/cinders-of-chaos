@@ -7,7 +7,7 @@ usage: python3 -I gen_spawn_density.py DATA_DIR ITEMS_OTB [--map PATH.otbm|.npz]
 DATA_DIR is a scratch install of the base server (install_all.py steps files, lib, monsternames, lategame, monsters,
 spawns; docs/CONTENT.md). Needs numpy and the map reader of tools/map/ (otbm.py, itemdb.py); ITEMS_OTB defaults to
 DATA_DIR/items/items.otb. The spawn file is read as the spawns step wrote it, without the fill this tool made before
-(spawns marked chaosadd="F..." are ignored), so a second run on the same data gives the same JSON byte for byte.
+(spawns marked chaosadd="F..." or "X..." are ignored), so a second run on the same data gives the same JSON byte for byte.
 --check compares instead of writing (exit status 1 when the JSON differs). --stats PATH writes every hunt (also those
 not filled) with its numbers, for the README tables.
 
@@ -226,7 +226,7 @@ def hunts_of(data_dir, spawn_text):
     rows, npcs = [], []
     for blk in pbs.SPAWN_RE.finditer(spawn_text):
         head = blk.group(1)
-        if (pbs.attr(head, 'chaosadd') or '').startswith('F'):
+        if (pbs.attr(head, 'chaosadd') or '').startswith(('F', 'X')):   # F: this tool's fill, X: gen_spawn_expand.py's (waystone maps)
             continue
         if pbs.attr(head, 'chaoscontent') is not None or pbs.attr(head, 'chaoshunt') is not None:
             continue  # a planned area (install step contentareas, after spawns): sized by its own plan

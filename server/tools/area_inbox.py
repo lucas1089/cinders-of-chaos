@@ -44,7 +44,7 @@ sys.path.insert(0, HERE)
 
 INBOX = os.path.join(HERE, 'areaplan', 'inbox')
 PLANS = os.path.join(HERE, 'areaplan', 'plans')
-OTHER_PLAN_DIRS = [os.path.join(HERE, 'areaplan', d) for d in ('chronicle', 'rooms', 'events')]
+OTHER_PLAN_DIRS = [os.path.join(HERE, 'areaplan', d) for d in ('chronicle', 'rooms', 'annexes', 'events')]
 SCHEMA = 'chaos-area-inbox/1'
 STATUSES = ('pending', 'approved', 'installed')
 ID_RE = re.compile(r'^[a-z][a-z0-9_]{2,39}$')

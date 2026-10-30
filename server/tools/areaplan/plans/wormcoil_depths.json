@@ -469,6 +469,66 @@
       "count": 15,
       "respawn": 75,
       "pack": 3
+    },
+    {
+      "path": [
+        "mossy_crawl",
+        "camp"
+      ],
+      "monster": "Gorebristle",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "split_den",
+        "echoing_pocket"
+      ],
+      "monster": "Maw Grub",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "hollow_chamber",
+        "lowroof_pit"
+      ],
+      "monster": "Limb Hoarder",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "split_den",
+        "sunken_cleft"
+      ],
+      "monster": "Blightcrown Matron",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "gloomy_shaft",
+        "twisted_grotto"
+      ],
+      "monster": "Nailcrown Regent",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "hollow_chamber",
+        "shale_warren"
+      ],
+      "monster": "Corpselight Lurker",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "chests": [
@@ -488,5 +548,5 @@
     }
   ],
   "chest_action": 47986,
-  "notes": "Content plan (hall fill, 2026-10-22): a cave hunt for levels 1250-1400 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Gorebristle, Blightcrown Matron, Maw Grub, Nailcrown Regent, Limb Hoarder, Corpselight Lurker. Display monster: Maw Grub."
+  "notes": "Content plan (hall fill, 2026-10-22): a cave hunt for levels 1250-1400 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Gorebristle, Blightcrown Matron, Maw Grub, Nailcrown Regent, Limb Hoarder, Corpselight Lurker. Display monster: Maw Grub. O337: 18 monsters along six of the paths (the ground between the zones had no monster in view: dead ground 35.3% -> 31%)."
 }

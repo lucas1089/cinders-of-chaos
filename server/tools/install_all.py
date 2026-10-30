@@ -9,6 +9,10 @@ SERVER_DIR is the base server folder: the one with config.lua and data/ (only th
 change the map .otbm: the names of its towns, the texts of its signs and books). Its map may also be a map master (the
 owner's edited installed map, tools/map_master.py install, README "Map master"): every map step then finds its work in
 place, and contentareas keeps a placed area the owner edited by hand.
+Restore marker (O337): a file <map>.otbm.restore next to the map (empty; `touch` makes it) makes the run copy <map>.otbm.bak (the base
+map before the first content install) over the map before the first step, so every map step runs on a fresh map: the way to install a
+placed plan whose tiles changed (install_content_areas.py refuses it otherwise). The marker is removed after a run with no failed step.
+A map master has no use for it (the master holds the old plan: server/README.md "Hunt annexes (O337)").
 
 Steps, in this order (each one is idempotent on its own; a second run of the whole script changes nothing):
   files        copy server/data from this repo into SERVER_DIR/data: scripts/chaos/**, lib/chaos_*.lua,
@@ -333,6 +337,14 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                portals (teleports, holes, stairs) in reach of a base hunt's arrival whose far side has monsters far above
                the hunt's band (tools/hunt_gates.csv, found by tools/audit_hunt_bands.py) lose their item or turn into
                plain ground (after deadholes, before poi; with --dry-run it reads the real map and writes nothing)
+  huntannexes  tools/patch_hunt_annexes.py       the owner's answer of 2026-10-30 ("expanda o mapa deles", README "Hunt annexes (O337)"): the portal
+               into the annex cave (areaplan/annexes/, placed by contentareas) of each of the five rare high level base hunts
+               (Emerald Mage, Scaledrake, deathrattle, Blackblade, fangclaw), tools/hunt_annexes.json (after huntgates, before poi;
+               with --dry-run it reads the real map and writes nothing)
+  waystonetrim tools/patch_waystone_trim.py      the owner's answer of 2026-10-30 (README "Spawn fills of the waystone maps and the late game areas (O337)"):
+               the necks in front of the dead-end lobes of waystone maps 9 and 12 get a bush, a palm or a wall
+               (tools/waystone_trim.json), so their full sweep is under 300 s (after huntannexes, before poi; with --dry-run it
+               reads the real map and writes nothing)
   lavaedges    tools/patch_lava_edges.py         the owner's report of 2026-10-28 ("some hunts have wrong floors", README "Lava edge strips (O288)"): the
                lava edge items 5840-5843 the old lava decoration kit laid on the placed lava hunts' floors are taken off
                (after deadholes, before poi; with --dry-run it reads the real map and writes nothing)
@@ -1416,6 +1428,32 @@ def step_huntgates(server, data, ctx):
 STEPS.insert(STEPS.index('deadholes') + 1, 'huntgates')  # after deadholes (the map's own dead ends), before poi
 
 
+def step_huntannexes(server, data, ctx):
+    if ctx['dry']:
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_hunt_annexes.py'), real, '--dry-run', '--map', mp], 'patch_hunt_annexes.py'))
+    return tool_result(run_tool([tool('patch_hunt_annexes.py'), data], 'patch_hunt_annexes.py'))
+
+
+STEPS.insert(STEPS.index('huntgates') + 1, 'huntannexes')  # after huntgates (the hunts' own portals), before poi
+
+
+def step_waystonetrim(server, data, ctx):
+    if ctx['dry']:
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_waystone_trim.py'), real, '--dry-run', '--map', mp], 'patch_waystone_trim.py'))
+    return tool_result(run_tool([tool('patch_waystone_trim.py'), data], 'patch_waystone_trim.py'))
+
+
+STEPS.insert(STEPS.index('huntannexes') + 1, 'waystonetrim')  # after huntannexes (map steps), before poi
+
+
 def step_lavaedges(server, data, ctx):
     if ctx['dry']:
         # the dry copy has no map: read the real one, write nothing
@@ -1477,6 +1515,39 @@ def tool_map_path(data_dir):
     sys.path.insert(0, HERE)
     import patch_base_towns
     return patch_base_towns.map_path(data_dir)
+
+
+RESTORE_SUFFIX = '.restore'
+
+
+def restore_marker(data):
+    """(map path, marker path) when the marker file <map>.otbm.restore exists next to the map, else (None, None). The marker is
+    how a plan that changed after it was placed gets its map back (server/README.md "Hunt annexes (O337)", "Restore the map"):
+    install_content_areas.py refuses a placed plan whose tiles changed and asks for the map from <map>.otbm.bak"""
+    mp = tool_map_path(data)
+    if mp and os.path.exists(mp + RESTORE_SUFFIX):
+        return mp, mp + RESTORE_SUFFIX
+    return None, None
+
+
+def restore_map(data, dry, log):
+    """the marker: <map>.otbm.bak (the base map before the first content install) replaces <map>.otbm, written through a
+    temporary file. Returns the marker path to remove after a successful run, or None. Nothing is written in a dry run"""
+    mp, marker = restore_marker(data)
+    if not marker:
+        return None
+    bak = mp + '.bak'
+    if not os.path.isfile(bak):
+        log('restore marker %s found but there is no %s: the map stays; remove the marker' % (marker, bak))
+        return None
+    if dry:
+        log('restore marker found: the map would be restored from %s first' % bak)
+        return None
+    tmp = mp + '.restore.tmp'
+    shutil.copyfile(bak, tmp)
+    os.replace(tmp, mp)
+    log('restore marker found: %s restored from %s (every map step runs again on it)' % (os.path.basename(mp), os.path.basename(bak)))
+    return marker
 
 
 def step_commands(server, data, ctx):
@@ -1798,6 +1869,7 @@ def main(argv):
         say()
         total_changed, warnings, failed = 0, [], None
         t_start = time.monotonic()
+        marker = restore_map(data, dry, say)
         snap = snapshot(target)
         t_snap = time.monotonic() - t_start
         times = []  # (step, seconds of the step, seconds of the change report after it)
@@ -1841,6 +1913,9 @@ def main(argv):
                                                'FAILED at step "%s"' % failed if failed else 'every step succeeded'))
         if warnings:
             say('%d warning(s), see above.' % len(warnings))
+        if not failed and marker:
+            os.remove(marker)
+            say('restore marker removed')
         if not failed and not dry:
             say('Next: restart the server (or /reload scripts) and read the console for Lua errors. See docs/LAUNCH.md.')
         return 1 if failed else 0

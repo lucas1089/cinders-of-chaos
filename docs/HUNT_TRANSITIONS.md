@@ -261,13 +261,13 @@ Dangerous entries outside every hall hunt: 226, in 226 areas of their own.
 | area 31782,33127,9 (58) | 31782,33127,9 | stairs/down | 31783,33127,10 | 85-140 (130) | Ghastly Dragon, Undead Dragon, Demon | 2.6 (3.4) | danger |
 | area 31782,33129,9 (58) | 31782,33129,9 | stairs/down | 31783,33129,10 | 85-140 (130) | Ghastly Dragon, Undead Dragon, Demon | 2.6 (1.4) | danger |
 | area 32785,31035,7 (59) | 32785,31035,7 | stairs/down | 32785,31035,8 | 40-120 (119) | Grim Reaper, Mutated Bat, Banshee | 0.8 (0.8) | danger |
-| area 31648,32253,7 (104) | 31648,32253,7 | stairs/up | 31648,32252,6 | 720-930 (810) | Black Stag, Blazebringer, Blight Bloom | 13.1 (5.8) | extreme |
 | area 31720,32921,12 (125) | 31720,32921,12 | hole/down | 31720,32921,13 | 80-285 (284) | Juggernaut, Magma Crawler | 8.6 (13.0) | danger |
+| area 31648,32253,7 (130) | 31648,32253,7 | stairs/up | 31648,32252,6 | 710-920 (790) | Azure Dragon, Black Stag, Blazebringer | 13.1 (5.8) | extreme |
 | area 31722,32926,15 (142) | 31722,32926,15 | ladder/up | 31722,32926,14 | 160-285 (284) | Juggernaut, Feral Sphinx | 8.9 (5.1) | danger |
 | area 30798,31209,7 (225) | 30798,31209,7 | stairs/up | 30799,31209,6 | 225-440 (436) | Frost Hydra, Frost Larva | 5.0 (1.1) | danger |
 | area 30875,31252,7 (225) | 30875,31252,7 | stairs/up | 30876,31252,6 | 360-440 (436) | Frost Hydra, Frosted Dragon | 0.8 (2.2) | danger |
 | area 34276,31058,14 (346) | 34276,31058,14 | stairs/up | 34276,31057,13 | 340-960 (880) | Azure Dragon, Jungle Beasts, Nightglass Matter | 5.7 (3.4) | danger |
-| area 31648,32257,6 (810) | 31648,32257,6 | stairs/up | 31648,32256,5 | 1180-1800 (1280) | Bloodantler Fiend, Bonepicker, Carrion Drake | 13.4 (13.1) | danger |
+| area 31648,32257,6 (790) | 31648,32257,6 | stairs/up | 31648,32256,5 | 1180-1800 (1280) | Bloodantler Fiend, Bonepicker, Carrion Drake | 13.4 (13.1) | danger |
 
 ## Entries that are ok (8126)
 

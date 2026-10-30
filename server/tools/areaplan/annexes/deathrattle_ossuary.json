@@ -1,0 +1,154 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "deathrattle_ossuary",
+  "name": "Deathrattle Ossuary",
+  "biome": "cave",
+  "size": [
+    120,
+    100
+  ],
+  "floors": 1,
+  "level": [
+    230,
+    300
+  ],
+  "seed": 33703,
+  "origin": {
+    "x": 14940,
+    "y": 15500,
+    "z": 9
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "rattle_hall",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "bone_stacks",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "doom_nave",
+      "floor": 1,
+      "size": "large",
+      "place": "east"
+    },
+    {
+      "id": "wraith_aisle",
+      "floor": 1,
+      "size": "large",
+      "place": "south"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "rattle_hall",
+      "width": 3
+    },
+    {
+      "from": "rattle_hall",
+      "to": "bone_stacks",
+      "width": 3
+    },
+    {
+      "from": "rattle_hall",
+      "to": "doom_nave",
+      "width": 3
+    },
+    {
+      "from": "bone_stacks",
+      "to": "wraith_aisle",
+      "width": 3
+    },
+    {
+      "from": "wraith_aisle",
+      "to": "bone_stacks",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp",
+    "to": {
+      "x": 32978,
+      "y": 30977,
+      "z": 7
+    }
+  },
+  "spawns": [
+    {
+      "zone": "rattle_hall",
+      "monster": "Deathrattle",
+      "count": 12,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "rattle_hall",
+      "monster": "Bonelich",
+      "count": 7,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "bone_stacks",
+      "monster": "Bonelich",
+      "count": 12,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "bone_stacks",
+      "monster": "Doombone",
+      "count": 7,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "doom_nave",
+      "monster": "Doombone",
+      "count": 8,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "doom_nave",
+      "monster": "Tombwraith",
+      "count": 4,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "wraith_aisle",
+      "monster": "Tombwraith",
+      "count": 8,
+      "pack": 3,
+      "respawn": 60
+    },
+    {
+      "zone": "wraith_aisle",
+      "monster": "Grimbone",
+      "count": 4,
+      "pack": 3,
+      "respawn": 60
+    }
+  ],
+  "notes": "Annex of the base hunt deathrattle (O337): the hunt had too few monsters and too little ground for the hunt audit. A portal in the hunt leads here (tools/hunt_annexes.json), the exit portal leads back. Same monsters and level band as the hunt (server/README.md \"Hunt annexes\")."
+}

@@ -27,12 +27,14 @@ What spawn_tuning.json asks for, in this order (server/README.md "Spawn density 
   add              {"area": id, "at": [x, y, z], "like": [x, y, z]}: a new one-monster spawn at `at` with the monster
                    and the final spawntime of the existing entry at `like`; `at` must lie in the area's box. The
                    positions were checked against the map (walkable, no protection zone, no house, no floor change)
-  fill             the name of a JSON file next to this one (tools/spawn_density.json, written by
+  fill             the name of a JSON file next to this one, or a list of names (tools/spawn_density.json, written by
                    tools/gen_spawn_density.py from the map): per hunt {"id", "z", "likes": [[x, y], ...], "add":
                    [[x, y, index in likes, dx, dy, ...], ...]}; each add is a new spawn block on floor z (marked
                    chaosadd="<id>") with the monster and final spawntime of the like entry at its centre and at each
                    further dx, dy (the pack fill's blocks of 3), so every base-map hunt reaches the density of
-                   server/README.md "Fill" and "Pack combat (pace)"
+                   server/README.md "Fill" and "Pack combat (pace)". A fill file may also hold "remove": [[x, y, z], ...],
+                   entries taken out like the `remove` rows (tools/spawn_expand.json, written by tools/gen_spawn_expand.py:
+                   the waystone maps' and the late game areas' fills, Gloom Pillars thinned)
 Monster names are never written in the JSON: an entry is named by its position, a new one copies an existing one.
 
 Every change carries a marker, so a run first undoes the previous run and then applies the JSON again: a second run
@@ -501,7 +503,14 @@ def main(argv):
     tuning_path = opts.get('--tuning', DEFAULT_TUNING)
     tuning = json.loads(read(tuning_path))
     if tuning.get('fill'):
-        tuning['_fill'] = json.loads(read(os.path.join(os.path.dirname(os.path.abspath(tuning_path)), tuning['fill'])))['areas']
+        fills = tuning['fill'] if isinstance(tuning['fill'], list) else [tuning['fill']]
+        tuning['_fill'], more = [], []
+        for fn in fills:
+            doc = json.loads(read(os.path.join(os.path.dirname(os.path.abspath(tuning_path)), fn)))
+            tuning['_fill'] += doc.get('areas') or []
+            more += [{'at': r} for r in doc.get('remove') or []]  # a fill file may also take entries out (spawn_expand.json: thinning)
+        if more:
+            tuning['remove'] = list(tuning.get('remove') or []) + more
     dry = opts.get('--dry-run')
     reg_path = os.path.join(data, 'monster', 'monsters.xml')
     if os.path.isfile(reg_path):

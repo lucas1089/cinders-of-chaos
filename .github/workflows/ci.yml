@@ -867,6 +867,13 @@ jobs:
           python3 -I server/tools/patch_hunt_gates_test.py
       - name: "Hunt audit rules on synthetic data (audit_hunts.py, monsters, density, size of every hunt; the installed map is audited by hand, docs/HUNT_AUDIT.md; O337)"
         run: python3 -I server/tools/audit_hunts_test.py
+      - name: Hunt annexes (the five annex plans compile, asymmetric, the rows of hunt_annexes.json; the portal step on a synthetic map; the spawn fills; O337)
+        run: |
+          sudo apt-get install -y -qq luajit python3-numpy
+          python3 -I server/tools/hunt_annexes_test.py
+          python3 -I server/tools/patch_hunt_annexes_test.py
+          python3 -I server/tools/patch_waystone_trim_test.py
+          python3 -I server/tools/gen_spawn_expand_test.py
 
       - name: Pack bands per role, Elementalist ahead on a pack, late packs die in at most 3x a base hunt pack (pack_model.py --check; boss_balance_config.lua packLimits, pace_config.lua scaled.health)
         run: python3 -I server/tools/pack_model.py --check

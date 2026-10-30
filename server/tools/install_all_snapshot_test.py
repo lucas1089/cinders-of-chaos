@@ -70,6 +70,34 @@ check(callable(getattr(I, 'step_pack30items', None)), 'step_pack30items exists')
 check(I.STEPS.index('rewardchests') + 1 == I.STEPS.index('contentareas'), 'step rewardchests right before contentareas')
 check(callable(getattr(I, 'step_rewardchests', None)), 'step_rewardchests exists')
 check(len(I.STEPS) == len(set(I.STEPS)), 'no step twice')
+check(I.STEPS.index('huntannexes') == I.STEPS.index('huntgates') + 1, 'step huntannexes follows huntgates (after contentareas, before poi)')
+check(callable(getattr(I, 'step_huntannexes', None)), 'step_huntannexes exists')
+
+# the restore marker (O337): <map>.otbm.restore puts <map>.otbm.bak back before the first step, once
+root = tempfile.mkdtemp(prefix='install_restore_test_')
+try:
+    mp = os.path.join(root, 'data', 'world', 'map.otbm')
+    write(os.path.join(root, 'config.lua'), b'mapName = "map"\n')
+    write(mp, b'installed map')
+    write(mp + '.bak', b'base map')
+    data = os.path.join(root, 'data')
+    log = []
+    check(I.restore_map(data, False, log.append) is None and open(mp, 'rb').read() == b'installed map', 'no marker: the map stays')
+    write(mp + I.RESTORE_SUFFIX, b'')
+    log = []
+    check(I.restore_map(data, True, log.append) is None and open(mp, 'rb').read() == b'installed map', 'a dry run restores nothing')
+    check(any('would be restored' in l for l in log), 'a dry run says so: %s' % log)
+    log = []
+    marker = I.restore_map(data, False, log.append)
+    check(marker == mp + I.RESTORE_SUFFIX and open(mp, 'rb').read() == b'base map', 'the marker puts the backup back: %s' % log)
+    check(open(mp + '.bak', 'rb').read() == b'base map' and not os.path.exists(mp + '.restore.tmp'), 'the backup stays, no temporary file')
+    os.remove(mp + '.bak')
+    write(mp, b'installed map')
+    log = []
+    check(I.restore_map(data, False, log.append) is None and open(mp, 'rb').read() == b'installed map', 'a marker without a backup leaves the map')
+    check(any('no ' in l for l in log), 'and says so: %s' % log)
+finally:
+    shutil.rmtree(root, ignore_errors=True)
 
 print('install_all_snapshot_test: %s' % ('ok' if not failed else '%d failed' % failed))
 sys.exit(1 if failed else 0)

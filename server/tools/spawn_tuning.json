@@ -15,7 +15,7 @@
     {"id": 4, "boxes": [[31564, 31614, 8, 31586, 31623, 8], [31452, 31495, 8, 31736, 31644, 12]], "keep": 100}
   ],
   "_fill": "every base-map hunt under 3.25 monsters per 100 walkable tiles raised to 3.4 (at most x2 entries, +400): written by tools/gen_spawn_density.py from the map, README 'Spawn density and respawn', Fill",
-  "fill": "spawn_density.json",
+  "fill": ["spawn_density.json", "spawn_expand.json"],
   "model": {
     "_doc": "the capacity model of --report: README 'The leveling model and the hours' and 'Respec' (kills per hour)",
     "bands": [[1, 50], [50, 150], [150, 300], [300, 600], [600, 1000], [1000, 100000]],

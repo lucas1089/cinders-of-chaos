@@ -4,7 +4,7 @@
 --
 -- The model (computed, not measured): minutes per level at level L = the experience to the next level (the engine's
 -- formula) / (the median experience per hour of the hunts at the level x the multikill chain bonus x the experience
--- stage of the level). A hunt of the pool (bounty_pool.lua, 709 monsters with 6+ spawns) pays its pace-curve experience
+-- stage of the level). A hunt of the pool (bounty_pool.lua, 829 monsters with 6+ spawns, O337) pays its pace-curve experience
 -- per kill (pace_config.lua) at the pack model's kills per hour (spawn_tuning.json paceKillsPerHour).
 return {
 	-- the chain bonus of a median pack (pace_config.lua: the xp curves are divided by it)
@@ -31,7 +31,11 @@ return {
 		-- the mean minutes per level of consecutive blocks of `short` levels change by a ratio inside shortRatio, blocks
 		-- of `long` levels inside longRatio (before O135: 0.37 to 1.26 over 10 levels, the cliff at level 21)
 		short = 10, shortRatio = {0.75, 1.25},
-		long = 25, longRatio = {0.88, 1.35},
+		-- O337: the pool lists the monsters of the planned hunts (829 monsters, was 709 and ended at hunting level 980), so levels 1000-2200
+		-- are paced by the hunts that exist (10-14.5 minutes a level; the pool without them gave 13-60, 777 hours to 2200 instead of
+		-- 347). A hunt of the 1700s entering the window of level 1580 (0.8-1.1 x L) speeds the journey up by a fifth at once (14.5 to
+		-- 10.4 minutes a level): the lower bound of the long blocks is 0.78 (was 0.88, made for the 5x cliff of O135)
+		long = 25, longRatio = {0.78, 1.35},
 		-- hunts of the pool inside the window, every level (the window widens first)
 		minPoolHunts = 4
 	}
