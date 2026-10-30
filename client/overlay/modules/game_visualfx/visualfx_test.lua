@@ -518,6 +518,27 @@ do
   eq(src:find("optionValue('glow", 1, true), nil, 'no option of its own')
 end
 
+-- phones (O313): the heavy options start off once
+do
+  local plan = L.mobileDefaultPlan(true, false)
+  eq(#plan, #L.MOBILE_OFF, 'a phone gets the whole list')
+  eq(#L.mobileDefaultPlan(false, false), 0, 'a desktop gets nothing')
+  eq(#L.mobileDefaultPlan(nil, false), 0, 'unknown platform gets nothing')
+  eq(#L.mobileDefaultPlan(true, true), 0, 'done once, never again')
+  local known = {}
+  for _, n in ipairs(L.OPTIONS) do known[n] = true end
+  for _, n in ipairs(L.MOBILE_OFF) do
+    eq(known[n] == true or n == 'rarityOutlineMap', true, 'phone option ' .. n .. ' is a known option')
+    eq(L.DEFAULTS[n] ~= false, true, 'phone option ' .. n .. ' is on by default (else the entry is dead)')
+  end
+  plan[1] = 'x'
+  eq(L.MOBILE_OFF[1], 'spellLight', 'the plan is a copy')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  eq(src:find('L.mobileDefaultPlan', 1, true) ~= nil, true, 'the glue asks the plan')
+end
+
 if fails > 0 then
   print(fails .. ' of ' .. checks .. ' checks failed')
   os.exit(1)

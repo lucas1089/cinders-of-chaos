@@ -158,8 +158,13 @@ client has its own release key, not the key of the admin app.
 4. **Touch layout.** The walk pad and the action bar of `client_mobile`, tap and long press, hotkey buttons, safe areas,
    the 69 windows over 360 logical pixels. Section 2 is unchanged.
 5. **Window re-layout.** The engine resizes with the screen through `updateSize`. The Chaos windows have no mobile
-   styles yet, except `game_event`. Phase 3.
-6. **Mobile defaults.** The heavy options should start off on Android. Not set.
+   styles yet, except `game_event`. The guard `client/tools/check_mobile_layout.py` now keeps the list from growing: 39
+   windows are over 960 x 540 logical pixels without a `$mobile` rule and sit in `client/tools/mobile_layout_baseline.txt`.
+   Each fixed window removes its line. The re-layout itself needs a device. Phase 3.
+6. **Mobile defaults.** Done, not run on a device. On the first start on Android `game_visualfx` switches off
+   `spellLight`, `liquidShimmer`, `weather`, `ambientParticles`, `missileTrails`, `lightFlicker`, `deathFade` and
+   `rarityOutlineMap` through the settings module, once (flag `chaosMobileDefaults`). `screenGrade`, `bloom` and
+   `hoverOutline` are off everywhere already. Desktop defaults are unchanged. The player can turn any back on.
 7. **APK self-update.** Step 8. The `android` manifest key now lists the game data files (phase 3). Still to build: the
    `android_apk` entry (version code, URL, SHA-256, size, signer), the Java installer hand-over through
    `PackageInstaller` and its permission, and the publish script flag.
@@ -312,8 +317,11 @@ Screen facts to design for: landscape only, 1280 x 720 at 5.0 inches and up. Saf
 `g_app.scale(...)` and `scaleUp` or `scaleDown` set the zoom. A 20:9 phone has little vertical room, so a window
 must fit in about 360 to 540 logical pixels.
 
-A tool to add: `client/tools/check_mobile_layout.py`, which reads every window size and fails when a window is
-over the limit and has no `$mobile` rule. CI can then keep the list from growing.
+The tool exists: `client/tools/check_mobile_layout.py` (test `check_mobile_layout_test.py`, CI step next to the text fit
+check). It reads the top-level windows of `client/overlay/modules/**/*.otui` and fails when a window with a fixed size is
+taller than 540 or wider than 960 logical pixels and has no `$mobile` rule, except the windows in
+`mobile_layout_baseline.txt`. Windows with `anchors.fill` or a size set only by an expression are skipped. A baseline
+entry that now fits is reported as removable. It is a text scan, not a measured layout.
 
 ## 3. Assets on a phone
 
