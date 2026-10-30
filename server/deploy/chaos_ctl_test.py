@@ -1606,6 +1606,8 @@ exit 0
     # CHAOS_BOT_PYTHON: -c checks pass, -m venv DIR makes DIR/bin/pip and DIR/bin/python3 stubs (no network, no pip)
     py = '''#!/usr/bin/env bash
 echo "python $*" >> "$STUB/calls"
+# STUB_NOVENV: no venv module until the apt-get stub put the package in
+if [ "$1" = "-c" ] && [ -n "${STUB_NOVENV:-}" ] && [ ! -e "$STUB/venv_ok" ]; then exit 1; fi
 if [ "$1" = "-m" ] && [ "$2" = "venv" ]; then
   mkdir -p "$3/bin"
   printf '#!/usr/bin/env bash\\necho "pip $*" >> "$STUB/calls"\\n[ -z "${STUB_PIP_FAIL:-}" ]\\n' > "$3/bin/pip"
@@ -1626,7 +1628,8 @@ exit 0
             shutil.copy(os.path.join(HERE, 'discord_bot', f), bsrc)
         for f in ('chaos-discordbot.service', 'chaos.logrotate'):
             shutil.copy(os.path.join(HERE, f), os.path.join(repo, 'server', 'deploy', f))
-        for name, body in (('systemctl', sysctl), ('fakepython', py)):
+        aptget = '#!/usr/bin/env bash\necho "apt-get $*" >> "$STUB/calls"\n[ -n "${STUB_APT_FAIL:-}" ] && exit 100\ntouch "$STUB/venv_ok"\n'
+        for name, body in (('systemctl', sysctl), ('fakepython', py), ('apt-get', aptget)):
             p = os.path.join(stub, name)
             with open(p, 'w') as f:
                 f.write(body)
@@ -1666,10 +1669,15 @@ exit 0
         r = run('set', 'DISCORD_TOKEN', stdin=token + '\n')
         check(r.returncode != 0 and 'not-installed' in r.stderr and not os.path.exists(envf), 'set before install is refused')
 
+        # no python3-venv: the install puts it in with apt-get; when apt-get fails, it stops with the hint
+        r = run('install', extra={'STUB_NOVENV': '1', 'STUB_APT_FAIL': '1'})
+        check(r.returncode != 0 and 'python3-venv-missing' in r.stderr and 'apt-get install -y -q python3-venv' in calls(),
+              'no venv and apt-get fails: refused with the hint: ' + r.stderr)
         # install
-        r = run('install')
+        r = run('install', extra={'STUB_NOVENV': '1'})
         check(r.returncode == 0 and 'discord-bot install: ok' in r.stdout and 'missing settings: DISCORD_TOKEN' in r.stdout,
               'install: ' + r.stdout + r.stderr)
+        check('installing python3-venv' in r.stdout, 'the install put python3-venv in first')
         for f in ('bot.py', 'bot_core.py', 'claude_client.py'):
             check(os.path.exists(os.path.join(botdir, 'app', f)), 'install copies ' + f)
         check(stat.S_IMODE(os.stat(envf).st_mode) == 0o600, 'the settings file is mode 600')

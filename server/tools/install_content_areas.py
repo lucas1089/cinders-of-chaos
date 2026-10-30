@@ -522,8 +522,13 @@ def room_grow(world, room, portal, portal_at=None, wing=None, skip=(), keep_edit
     grown before by fewer modules a side (the config raised `modules` since, 2026-10-25) grows on from the ends where
     they stand now (room_layout `grown`). Raises with room_state's reason when neither fits."""
     lay = room_layout(world, room, portal, portal_at, wing)
+    refused = None
     try:
-        return lay, room_state(world, lay, portal, skip, keep_edited)
+        st = room_state(world, lay, portal, skip, keep_edited)
+        # a sweeping wing grown before reads as open lawn to sweep (its alcoves too, teleports and all): look for the
+        # grown modules first (update of 2026-10-30: z 7 went from 8 to 9 modules a side)
+        if st != 'todo' or not (wing or {}).get('sweep'):
+            return lay, st
     except InstallError as e:
         refused = e
     grown = {}
@@ -538,6 +543,8 @@ def room_grow(world, room, portal, portal_at=None, wing=None, skip=(), keep_edit
             except InstallError:
                 pass
     if not grown:
+        if refused is None:
+            return lay, st
         raise refused
     lay = room_layout(world, room, portal, portal_at, wing, grown=grown)
     lay['grown'] = grown

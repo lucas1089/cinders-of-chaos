@@ -70,7 +70,7 @@ O bot usa o modelo `claude-sonnet-5-5`. Para trocar, salve `DISCORD_BOT_MODEL`.
 
 ## 4. Instalar na VPS
 
-Pré-requisitos. A VPS tem o repositório em `/opt/chaos/repo`, o mesmo que o app usa em Atualizar servidor. E tem `python3-venv`. Se faltar, rode `sudo apt-get install python3-venv`.
+Pré-requisitos. A VPS tem o repositório em `/opt/chaos/repo`, o mesmo que o app usa em Atualizar servidor. O `install` instala o `python3-venv` sozinho com o `apt-get` quando falta (desde 2026-10-30). Se o `apt-get` falhar, rode `sudo apt-get install python3-venv`.
 
 ### Pelo app de admin
 
@@ -108,7 +108,7 @@ O `read -rs` não deixa a senha no histórico do shell. O arquivo de ajustes é 
 ### O que a instalação faz
 
 - Cria o usuário de sistema `chaosbot`, sem login e sem acesso aos arquivos do jogo.
-- Copia o código para `/opt/chaos/discord-bot/app` e cria o ambiente em `/opt/chaos/discord-bot/venv` com as versões fixas de `requirements.txt`.
+- Copia o código para `/opt/chaos/discord-bot/app` e cria o ambiente em `/opt/chaos/discord-bot/venv` com as versões fixas de `requirements.txt`. O arquivo vale do Python 3.10 ao 3.13: as linhas com `; python_full_version` escolhem a versão certa para o Python da VPS (gerado com `uv pip compile --universal --python-version 3.10`; o `audioop-lts` só entra no 3.13).
 - Cria `/etc/chaos/discord-bot.env`, modo 600, dono root. O systemd lê o arquivo antes de baixar os privilégios.
 - Instala `chaos-discordbot.service` com as proteções de sandbox dos outros serviços. O bot só escreve em `/var/lib/chaos/discord-bot`.
 - Roda de novo sem estragar nada.
@@ -157,7 +157,7 @@ Mensagens curtas demais e sem print não chamam o Claude. Cada `/patch gerar` e 
 | `config-missing` ao iniciar | O app lista os nomes que faltam. Salve esses valores |
 | O bot reage mas não responde | Falta a permissão de enviar mensagens ou ver o histórico no canal |
 | Você recebe "Falha ao classificar" | Veja **Logs**. Quase sempre é chave inválida, sem crédito ou limite de uso. O aviso vem no máximo uma vez por hora |
-| `python3-venv-missing` | `sudo apt-get install python3-venv` e instale de novo |
+| `python3-venv-missing` | o `apt-get` não conseguiu instalar: `sudo apt-get install python3-venv` e instale de novo |
 
 ## Testes
 

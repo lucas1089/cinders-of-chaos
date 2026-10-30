@@ -112,7 +112,9 @@ def patch_otb(data, rows):
         if k is None:
             append.append(want); counts['new'] += 1
         elif data[k[0]:k[1]] != want:
-            if (k[4], k[5]) != (r['otb_group'], r['otb_flags']):
+            mine = {(r['otb_group'], r['otb_flags']),   # a node written before item_wire.csv listed it is still ours
+                    (r.get('otb_group_manifest', r['otb_group']), r.get('otb_flags_manifest', r['otb_flags']))}
+            if (k[4], k[5]) not in mine:
                 raise SystemExit('items.otb: server id %d belongs to another item (client id %s); nothing written'
                                  % (r['server_id'], k[3]))
             replace.append((k[0], k[1], want)); counts['updated'] += 1
