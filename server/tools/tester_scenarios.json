@@ -10,7 +10,7 @@
  "counts": {
   "opcode": 65,
   "out": 38,
-  "passive": 85,
+  "passive": 86,
   "place": 15,
   "staff": 13
  },
@@ -10820,6 +10820,16 @@
     "/referral"
    ],
    "why": "links real accounts"
+  },
+  "reload_file": {
+   "files": [
+    "admin/actions_server.lua",
+    "chaos_constants.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "remote_cmd": {
    "files": [
