@@ -2,7 +2,7 @@
 """Audit the level band of every base hunt teleport's destination (server/README.md "Hunt bands (O333)").
 
 usage: python3 -I server/tools/audit_hunt_bands.py DATA_DIR [--map FILE] [--hunts FILE] [--md FILE] [--csv FILE]
-                                                   [--gates FILE] [--suggest [--apply]] [--quiet]
+                                                   [--gates FILE] [--suggest [--apply]] [--installed] [--quiet]
 
 Tester report, 2026-10-29: "some hunt teleports send you to the wrong place". The sign said level 25 (Demon Skeleton),
 the arrival held two Demon Skeletons and random monsters of level 15-20. In the same zone a stock portal led among
@@ -439,12 +439,19 @@ def gate_rows(gates, kinds, world):
     out = []
     for pos, land, need, name, _hi, kind, item in gates:
         ids = world.tile(*pos) or []
+        extra = []
         if ids and ids[0] == item:
             g = CD.plain_ground(kinds, world, pos)
             action, ground = ('ground', g) if g else ('none', '')
+            if g:
+                # the stairs' ground goes plain, but a stair piece on top with a floor change of its own would still lead
+                # down (O337: the stairs at 31928,32631,10 kept item 8210): those items go off the tile as well
+                extra = [i for i in ids[1:] if i in kinds.fc]
         else:
             action, ground = 'remove', ''
         out.append((pos[0], pos[1], pos[2], item, action, ground, kind, pos_text(land), need, clean(name)))
+        for i in extra:
+            out.append((pos[0], pos[1], pos[2], i, 'remove', '', kind, pos_text(land), need, clean(name)))
     return out
 
 
@@ -493,7 +500,7 @@ def read_hunts(path=AT.HUNTS_CSV):
             for r in rows if r.get('kind') == 'hunt']
 
 
-def apply_retargets(rows, hunts_csv, log=print):
+def apply_retargets(rows, hunts_csv, log=print, tag='O333'):
     """move every flagged hunt that has a suggestion to its best one in hall_hunts.csv; returns [(id, name, old, new, band, at)]"""
     mult = HO.base_level_mult()
     if mult != 1:
@@ -508,7 +515,7 @@ def apply_retargets(rows, hunts_csv, log=print):
         old = (row['dest_x'], row['dest_y'], row['dest_z'])
         row['dest_x'], row['dest_y'], row['dest_z'] = sg['arrival']
         row['lo'], row['hi'], row['level'] = sg['band']
-        row['note'] = ('retargeted O333 from %s (%s); ' % (pos_text(old), ' '.join(r['flags'])) + row['note']).strip('; ')
+        row['note'] = ('retargeted %s from %s (%s); ' % (tag, pos_text(old), ' '.join(r['flags'])) + row['note']).strip('; ')
         done.append((row['id'], row['name'], old, sg['arrival'], sg['band'], sg['at']))
     if done:
         HO.write_csv(raw, hunts_csv)
@@ -518,7 +525,7 @@ def apply_retargets(rows, hunts_csv, log=print):
 
 
 def run(data_dir, map_path=None, md=None, gates=None, csv_path=None, hunts_csv=AT.HUNTS_CSV, want_suggest=False,
-        apply=False, log=print):
+        apply=False, log=print, mark=''):
     import otbm
     from itemdb import ItemDB
     import check_dead_holes as CD
@@ -576,7 +583,7 @@ def run(data_dir, map_path=None, md=None, gates=None, csv_path=None, hunts_csv=A
         done = apply_retargets(rows, hunts_csv, log)
         log('%d hunt(s) moved in %s' % (len(done), hunts_csv))
     if md:
-        open(md, 'w', encoding='utf-8', newline='\n').write(render_md(rows, ''))
+        open(md, 'w', encoding='utf-8', newline='\n').write(render_md(rows, mark))
         log('wrote %s' % md)
     if gates:
         log('%s %s' % (gates, 'updated' if write_gates(gates, gate_rows(g, kinds, CD.MapWorld(m))) else 'unchanged'))
@@ -595,7 +602,7 @@ def main(argv):
                 return 1
             opts[a] = argv[i + 1]
             i += 1
-        elif a in ('--quiet', '--suggest', '--apply'):
+        elif a in ('--quiet', '--suggest', '--apply', '--installed'):
             opts[a] = True
         elif a in ('-h', '--help'):
             print(__doc__)
@@ -611,7 +618,7 @@ def main(argv):
         return 1
     try:
         run(pos[0], map_path=opts.get('--map'), md=opts.get('--md'), gates=opts.get('--gates'), csv_path=opts.get('--csv'),
-            hunts_csv=opts.get('--hunts', AT.HUNTS_CSV), want_suggest=bool(opts.get('--suggest')), apply=bool(opts.get('--apply')),
+            hunts_csv=opts.get('--hunts', AT.HUNTS_CSV), want_suggest=bool(opts.get('--suggest')), apply=bool(opts.get('--apply')), mark=' of an installed server' if opts.get('--installed') else '',
             log=(lambda *_: None) if opts.get('--quiet') else print)
     except (BandError, AT.AuditError, HO.HallError, OSError) as e:
         print('refused: %s' % e)
