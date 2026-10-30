@@ -3647,7 +3647,7 @@ outfits, 4,701 effects, 253 missiles. Built, not pushed yet.
   Against pair 56: `check_pair.py` 0 errors, recolour, anchors, lifts, dungeon banners and site images pass. The pickups, fist weapons and
   weapons above 800 still wait for `chaosClientPair` 56 (server/README.md "Client pair guard"): record it once the client update is out.
 
-### Pair 57: pair 56 with seven monster looks of the free AI Sprite Studio sample pack (`gen_aiss_art.py`; built 2026-10-30, NOT on windows-assets yet)
+### Pair 57: pair 56 with seven monster looks of the free AI Sprite Studio sample pack (`gen_aiss_art.py`; built 2026-10-30, on windows-assets 1ecba64)
 Owner request 2026-10-30 (pt-BR "transforme os 7 monstros em monstros novos"): seven creature sheets of a free AI-generated sample pack
 become seven hunt monsters (server/README.md "AI Sprite Studio monsters (pair 57)"). Seven 2x2 outfits are appended (3364-3370); nothing
 else changes. The eighth sheet of the pack (a hammer warrior) is left out on purpose: the owner says it looks like a famous comic
@@ -3685,13 +3685,15 @@ Output **pair 57**: dat 56c34d0121264ba6fb26076f95c35701 (8,846,011 bytes), spr 
   old sprites unchanged, append-only guard passed. `check_pair.py --old pair56`: 0 errors, 3,964 warnings (the same as pairs 54-56).
   The seven outfits were read back out of the built dat and spr (every direction, the idle phase and the four walk phases) and match the
   committed sheets pixel for pixel; previews of all seven were drawn from the pair (not committed). Not run in a client.
-- **Not pushed.** `windows-assets` is untouched: the push needs the owner's approval. `outfit_anchors.lua` and `info_lifts.lua` are NOT
-  regenerated here (CI checks them against the pair on windows-assets, still pair 56): `gen_outfit_anchors.py` against pair 57 adds
-  seven rows (3364-3370) and changes the dat md5 line, `gen_info_lift.py` changes only the md5 line. Archive parts are not built.
-- **To ship** (one change, after the push): `ChaosAissArt.PAIR57 = true` (server/data/lib/chaos_aiss_art.lua), the rows of
-  `monster_looks/aiss_picks.csv` appended to `picks.csv` and `server/tools/apply_monster_looks.py` run (looks 3364-3370 into the seven
-  monster files), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 57 / 3370, `outfit_anchors.lua` and `info_lifts.lua`
-  regenerated from pair 57. Until then the seven wear stock looks and a client on pair 56 needs nothing new.
+- **Archive parts** (same recipe as pair 53; owner approved 2026-10-30, pushed to windows-assets as **1ecba64**, only the two part
+  files and their lines of `SHA256SUMS.parts` changed):
+  - part00 99,614,720 bytes, sha256 `0cc7cb5224a045233aaca2ac180c1fd4c46c6ca798b5ee10499ce3c3d0c69e88`
+  - part01 30,248,924 bytes, sha256 `25e6037e6c2f1ced3ac8973af881c4fe592b9048e277acc694100066d7132ed1`
+  - joined `things-1098.tar.xz` (129,863,644 bytes) sha256 `454a57c520beb9a6344eed99f9c08efa772691c74668d79c45ba51b85b7850fa`;
+    `things-1098.tar` sha256 `88436d0002aa39f72796dd25ada1abe5a5463ad2ba3363be5229d543eda59925`. Extracting the parts gives the dat md5 above (checked).
+- **Switched on** with the push: `ChaosAissArt.PAIR57 = true`, the rows of `monster_looks/aiss_picks.csv` in `picks.csv` (looks
+  3364-3370 in the seven monster files), `check_content.py` at pair 57 / 3370 outfits, `outfit_anchors.lua` and `info_lifts.lua`
+  from pair 57. A client on pair 56 draws nothing for the seven until it updates; none of them is placed on a map yet.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

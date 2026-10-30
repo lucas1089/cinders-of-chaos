@@ -11549,11 +11549,10 @@ windows-assets yet**), outfits 3364-3370. The pack's eighth sheet is not used (t
 | Redmane Anvilbreaker | 3367 (253) | 1530-1570 | 30,400 | 37,350 | 39 | 1,520 | forges and slag halls. Melee, a hammer slam throwing sparks (fire, radius 2), a thrown hammer (range 5), a haste. Strong to fire and physical, weak to ice |
 | Gravecrown Oathbreaker | 3369 (131) | 1830-1870 | 32,800 | 49,950 | 34 | 1,760 | crypts and grave halls. Melee, great sword arc (length 3), soul-fire round it (death, radius 3), a life drain. Strong to death and physical, weak to holy |
 
-- **Looks.** Pair 57 is not on windows-assets (the push needs the owner's approval), so the files carry the stock looks of the column
-  above and the switch is off, as the AutoSprite looks were before pair 56. A client on pair 56 or older has no outfits 3364-3370.
-  Switching on (after the push) is one change: `M.PAIR57 = true`, the rows of `client/tools/sprites/monster_looks/aiss_picks.csv` into
-  `picks.csv`, `tools/apply_monster_looks.py` (family `hunt`), `tools/ci/check_content.py` to pair 57 / 3370 outfits, and the two client
-  files regenerated from the pair.
+- **Looks.** Pair 57 is on windows-assets (1ecba64, owner approved 2026-10-30) and the switch is on (`M.PAIR57 = true`): the
+  files wear 3364-3370 (the stock look of the column above is the rollback). A client on pair 56 or older has no outfits 3364-3370
+  and draws nothing for them until it updates. Rollback: `M.PAIR57 = false`, drop the aiss rows from `picks.csv`, run
+  `tools/apply_monster_looks.py`.
 - **Tests.** `tests/aiss_art_test.lua` (luajit and lua5.3): the picks rows in look order, the switch against picks.csv and each file's
   look, `lookOf` on and off, each file's level band, health and experience, loot and attacks. `client/tools/sprites/gen_aiss_art.py
   build --check` checks the sheets against the spec. `tune_monsters.py --check`, `check_content.py`, `apply_monster_looks.py --check`,
