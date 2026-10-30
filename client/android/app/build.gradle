@@ -75,7 +75,8 @@ android {
     buildTypes {
         // the engine never keeps its VALIDATE checks: they end the game on a deep Lua stack (getTop() <= 20) that the
         // desktop release build ignores. A debug APK stays an -O0 engine with NDEBUG: an optimised engine died with SIGILL
-        // on the CI emulator (2026-10-30), not yet explained.
+        // on the CI emulator (2026-10-30): the emulator's arm64 translator stopped on a NEON instruction it does not know
+        // (logcat: ndk_translation DecodeSimdScalarTwoRegMisc). A real arm64 phone runs it; the -O0 build keeps the smoke test.
         debug {
             externalNativeBuild {
                 cmake {

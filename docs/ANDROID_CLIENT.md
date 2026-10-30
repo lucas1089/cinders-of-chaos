@@ -194,7 +194,10 @@ package, and for a release signature `ANDROID_CLIENT_KEYSTORE_B64`, `ANDROID_CLI
 client has its own release key, not the key of the admin app. The engine inside always has `NDEBUG`,
 also in a debug APK: without it the `VALIDATE` checks end the game on a deep Lua stack (`getTop() <= 20`, 2026-10-30 on
 a phone, Helper Auto setup). The workflow fails if the CMake cache shows no `NDEBUG`. A debug APK's engine is still
-`-O0`: an optimised one died with SIGILL on the CI emulator (arm64 translated on x86), not yet explained.
+`-O0`: an optimised one died with SIGILL on the CI emulator. Cause, from the logcat backtrace: the emulator runs arm64
+code through a translator on x86 (`libndk_translation.so`), and its interpreter stopped on a NEON instruction it does
+not decode (`DecodeSimdScalarTwoRegMisc`). A real arm64 phone has that instruction, so a release APK (`-O2`) should run
+there; not yet tried on a phone. The debug APK stays `-O0` so the emulator smoke test keeps working.
 
 ### What was checked here
 
