@@ -35,7 +35,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -87,6 +87,43 @@ function H.parseCommand(param)
 		return nil
 	end
 	return cmd, arg ~= "" and arg or nil
+end
+
+-- !tester waystone <tier 1-15> [loot]: a waystone run of that tier on the game's own code; riftrun <layout | loot>
+H.WAYSTONE_MAX = 15
+function H.parseWaystone(arg)
+	local tier, rest = tostring(arg or ""):match("^%s*(%d+)%s*(%a*)%s*$")
+	tier = tonumber(tier)
+	if not tier or tier < 1 or tier > H.WAYSTONE_MAX then
+		return nil, "usage: waystone <1-15> [loot]"
+	end
+	if rest ~= "" and rest:lower() ~= "loot" then
+		return nil, "usage: waystone <1-15> [loot]"
+	end
+	return {tier = tier, loot = rest ~= ""}
+end
+
+function H.parseRiftRun(arg)
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == "" then
+		what = "layout"
+	end
+	what = what and what:lower()
+	if what ~= "layout" and what ~= "loot" then
+		return nil, "usage: riftrun <layout | loot>"
+	end
+	return what
+end
+
+-- the highest rift tier (1..maxTier) a character of `level` may open; tierMin(t) is the minLevel of tier t; nil: none
+function H.riftTierFor(level, maxTier, tierMin)
+	local best
+	for t = 1, maxTier do
+		if (tierMin(t) or math.huge) <= level then
+			best = t
+		end
+	end
+	return best
 end
 
 -- the places `!tester enter` brings a tester to: map mark kinds (poi_core.lua P.KINDS, guild halls left out: guilds

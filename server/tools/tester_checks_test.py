@@ -98,7 +98,8 @@ class Pure(unittest.TestCase):
         self.assertNotIn('necro_minions', keys('Beastmaster'))
         self.assertIn('necro_minions', keys('Lich'))
         self.assertNotIn('beastmaster_wolf', keys('Ninja'))
-        for k in ('pets', 'party', 'rift', 'waystone', 'reward_chest', 'cursed_chest', 'auto_setup', 'spell_quest'):
+        for k in ('pets', 'party', 'rift', 'waystone', 'reward_chest', 'cursed_chest', 'auto_setup', 'spell_quest',
+                  'rift_layout', 'waystone_run', 'content_rewards', 'party_xp'):
             self.assertIn(k, keys('Ninja'))
 
 
@@ -258,6 +259,245 @@ class Others(unittest.TestCase):
         self.assertEqual(run(TX.check_cursed_chest(FakeIO(), 'a', 'Ninja', 100)).status, TX.SKIP)
         io = FakeIO({'chest spawn': {'err': 'no cursed chest system'}})
         self.assertEqual(run(TX.check_cursed_chest(io, 'a', 'Ninja', 100)).status, TX.SKIP)
+
+
+def waystone_answer(tier, **over):
+    """what `!tester waystone <tier>` says on a correct server: a Rare waystone of 4 modifiers, a run, 2 monsters"""
+    a = {'tier': tier, 'tierLevel': 1000 + 100 * tier, 'map': 1, 'nrolled': 4,
+         'held': {'tier': tier, 'mods': 4, 'rarity': 'Rare', 'expectRarity': 'Rare'},
+         'take': {'ok': True, 'mods': 4, 'before': 3, 'after': 2}, 'rescaled': 2,
+         'run': {'active': tier, 'live': True, 'tier': tier, 'mods': 4, 'seconds': 1850, 'fxHealth': 1.3},
+         'monsters': [{'name': 'Armorcoil', 'levelBefore': 1100, 'level': 1000 + 100 * tier,
+                       'expectLevel': 1000 + 100 * tier, 'ratio': 1.4, 'expectRatio': 1.41}]}
+    a.update(over)
+    return a
+
+
+class WaystoneRun(unittest.TestCase):
+    def io(self, **over):
+        return FakeIO({'waystone %d' % t: (lambda io, t=t: waystone_answer(t, **over)) for t in TX.WAYSTONE_TIERS})
+
+    def test_a_correct_run_passes_in_every_band(self):
+        r = run(TX.check_waystone_run(self.io(), 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        for t in TX.WAYSTONE_TIERS:
+            self.assertIn('tier %d' % t, r.detail)
+
+    def test_each_wrong_fact_is_a_bug(self):
+        cases = {
+            'held': ({'held': {'tier': 3, 'mods': 2, 'rarity': 'Magic', 'expectRarity': 'Rare'}}, 'reads back'),
+            'take': ({'take': {'ok': True, 'mods': 4, 'before': 3, 'after': 3}}, 'changed the count'),
+            'taken': ({'take': {'ok': False}}, 'could not take'),
+            'run': ({'run': {'active': 2, 'live': False}}, 'not registered'),
+            'runmods': ({'run': {'active': 2, 'live': True, 'tier': 2, 'mods': 0, 'seconds': 1800}}, 'with 0 modifiers'),
+            'active': ({'run': {'active': 1, 'live': True, 'tier': 2, 'mods': 4, 'seconds': 1800}}, 'counts at tier'),
+            'level': ({'monsters': [{'name': 'Armorcoil', 'level': 1100, 'expectLevel': 1200, 'ratio': 1, 'expectRatio': 1}]}, 'is level 1100'),
+            'health': ({'monsters': [{'name': 'Armorcoil', 'level': 1200, 'expectLevel': 1200, 'ratio': 1.0, 'expectRatio': 1.5}]}, 'health x1.000'),
+            'ladder': ({'tierLevel': 1500}, 'runs at level 1500'),
+        }
+        for label, (over, text) in cases.items():
+            r = run(TX.check_waystone_run(self.io(**over), 'Tester Aaa', 'Ninja', 100))
+            self.assertEqual(r.status, TX.FAIL, label)
+            self.assertIn(text, r.detail, label)
+            self.assertTrue(r.bug_line().startswith('BUG waystone_run: tier 2:'), label)
+
+    def test_skips_and_start_run_errors(self):
+        self.assertEqual(run(TX.check_waystone_run(FakeIO(), 'a', 'Ninja', 100)).status, TX.SKIP)
+        io = FakeIO({'waystone %d' % t: {'err': 'map in use'} for t in TX.WAYSTONE_TIERS})
+        r = run(TX.check_waystone_run(io, 'a', 'Ninja', 100))
+        self.assertEqual((r.status, 'map in use' in r.detail), (TX.SKIP, True))
+        io = FakeIO({'waystone 2': {'err': 'no waystone system'}})
+        self.assertEqual(run(TX.check_waystone_run(io, 'a', 'Ninja', 100)).status, TX.SKIP)
+        io = FakeIO({'waystone 2': {'err': 'startRun: boom'}})
+        r = run(TX.check_waystone_run(io, 'a', 'Ninja', 100))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('ChaosWaystoneTiers.startRun: boom', r.detail)
+
+    def test_a_map_in_use_does_not_hide_the_others(self):
+        answers = {'waystone 2': {'err': 'map in use'}, 'waystone 8': waystone_answer(8), 'waystone 14': waystone_answer(14)}
+        r = run(TX.check_waystone_run(FakeIO(answers), 'a', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS)
+        self.assertIn('tier 2: map in use', r.detail)
+
+    def test_no_monster_in_range_still_checks_the_rest(self):
+        r = run(TX.check_waystone_run(self.io(monsters=[]), 'a', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS)
+        self.assertIn('0 monster(s) sampled', r.detail)
+
+
+def layout_answer(**over):
+    a = {'tier': 3, 'theme': 'Obsidian Hall', 'kind': 'dungeon', 'band': 1, 'bandExpected': 1, 'floors': 1, 'side': 144,
+         'walkable': 5600, 'route': 160, 'kinds': ['dungeon', 'mixed'], 'floorCounts': [1, 2],
+         'limits': {'walkableMin': 4500, 'walkableMax': 7500}, 'startWalk': True, 'bossWalk': True, 'mouthWalk': True,
+         'playerWalk': True, 'sample': {'n': 40, 'bare': 0, 'blocked': 0}, 'after': {'inRun': False, 'slotFree': True}}
+    a.update(over)
+    return a
+
+
+class RiftLayout(unittest.TestCase):
+    def check(self, **over):
+        return run(TX.check_rift_layout(FakeIO({'riftrun layout': layout_answer(**over)}), 'Tester Aaa', 'Ninja', 600))
+
+    def test_a_valid_layout_passes(self):
+        r = self.check()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Obsidian Hall', r.detail)
+
+    def test_each_broken_fact_is_a_bug(self):
+        cases = {
+            'kind': ({'kind': 'cave'}, 'layout kind cave'),
+            'floors': ({'floors': 3}, '3 floor(s)'),
+            'band': ({'band': 2}, 'band 2 layout'),
+            'big': ({'walkable': 20000}, '20000 walkable tiles'),
+            'small': ({'walkable': 100}, '100 walkable tiles'),
+            'route': ({'route': -1}, 'no walking route'),
+            'start': ({'startWalk': False}, 'the arrival is not a walkable'),
+            'boss': ({'bossWalk': False}, 'guardian'),
+            'mouth': ({'mouthWalk': False}, 'arena'),
+            'player': ({'playerWalk': False}, 'the bot after entering'),
+            'bare': ({'sample': {'n': 40, 'bare': 3, 'blocked': 0}}, '3 have no ground'),
+            'blocked': ({'sample': {'n': 40, 'bare': 0, 'blocked': 2}}, '2 block'),
+            'stuck': ({'after': {'inRun': True, 'slotFree': True}}, 'did not close'),
+            'slot': ({'after': {'inRun': False, 'slotFree': False}}, 'did not close'),
+            'read': ({'err': 'read: boom'}, 'read: boom'),
+        }
+        for label, (over, text) in cases.items():
+            r = self.check(**over)
+            self.assertEqual(r.status, TX.FAIL, label)
+            self.assertIn(text, r.detail, label)
+            self.assertTrue(r.bug_line().startswith('BUG rift_layout:'), label)
+
+    def test_skips(self):
+        self.assertEqual(run(TX.check_rift_layout(FakeIO(), 'a', 'Ninja', 600)).status, TX.SKIP)
+        for err in ('level too low for a rift', 'the rift did not open (a slot is busy or being built)', 'no rifts on this server'):
+            io = FakeIO({'riftrun layout': {'err': err}})
+            self.assertEqual(run(TX.check_rift_layout(io, 'a', 'Ninja', 30)).status, TX.SKIP, err)
+
+
+def loot_answer(**over):
+    a = {'paid': True, 'items': 12, 'pieces': 4, 'minPieces': 3, 'badRarity': 0, 'waystones': 1, 'minWaystones': 1,
+         'orbs': [{'id': 29851, 'name': 'Orb of Awakening', 'min': 2, 'count': 3},
+                  {'id': 24691, 'name': 'Orb of Gilding', 'min': 1, 'count': 1}]}
+    a.update(over)
+    return a
+
+
+class ContentRewards(unittest.TestCase):
+    def io(self, loot=None, rift=None, waystone_err=None):
+        way = {'tier': 8, 'loot': loot if loot is not None else loot_answer()}
+        if waystone_err:
+            way = {'err': waystone_err}
+        return FakeIO({'waystone 8 loot': way, 'riftrun loot': rift if rift is not None else
+                       {'tier': 5, 'loot': {'paid': True, 'items': 6, 'orbs': 7, 'minOrbs': 6}}})
+
+    def test_both_pay_what_the_config_guarantees(self):
+        r = run(TX.check_content_rewards(self.io(), 'Tester Aaa', 'Ninja', 600))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('waystone boss', r.detail)
+        self.assertIn('rift guardian: 7 orbs', r.detail)
+
+    def test_a_short_waystone_boss_is_a_bug(self):
+        cases = {'pieces': ({'pieces': 1}, '1 gear piece'), 'rarity': ({'badRarity': 2}, 'below Legendary'),
+                 'orb': ({'orbs': [{'name': 'Orb of Awakening', 'min': 2, 'count': 0}]}, 'Orb of Awakening x0'),
+                 'waystone': ({'waystones': 0}, '0 waystone(s)'), 'paid': ({'paid': False}, 'paid nothing')}
+        for label, (over, text) in cases.items():
+            r = run(TX.check_content_rewards(self.io(loot=loot_answer(**over)), 'a', 'Ninja', 600))
+            self.assertEqual(r.status, TX.FAIL, label)
+            self.assertIn(text, r.detail, label)
+            self.assertTrue(r.bug_line().startswith('BUG content_rewards: waystone boss:'), label)
+
+    def test_a_short_rift_guardian_is_a_bug(self):
+        r = run(TX.check_content_rewards(self.io(rift={'loot': {'paid': True, 'orbs': 2, 'minOrbs': 6}}), 'a', 'Ninja', 600))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('rift guardian: 2 orb(s)', r.detail)
+        r = run(TX.check_content_rewards(self.io(rift={'loot': {'paid': False, 'orbs': 9, 'minOrbs': 6}}), 'a', 'Ninja', 600))
+        self.assertEqual(r.status, TX.FAIL)
+
+    def test_a_level_30_bot_checks_the_waystone_half_only(self):
+        r = run(TX.check_content_rewards(self.io(rift={'err': 'level too low for a rift'}), 'a', 'Ninja', 30))
+        self.assertEqual(r.status, TX.PASS)
+        self.assertIn('rift guardian not checked: level too low', r.detail)
+
+    def test_nothing_checked_is_a_skip(self):
+        r = run(TX.check_content_rewards(self.io(waystone_err='no waystone system', rift={'err': 'no rifts on this server'}),
+                                         'a', 'Ninja', 30))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertEqual(run(TX.check_content_rewards(FakeIO(), 'a', 'Ninja', 30)).status, TX.SKIP)
+
+
+class PartyXp(unittest.TestCase):
+    def party(self, io, **over):
+        """the helper's party answer: a pair of Tester bots, shared experience switched on after the 'share' packet"""
+        on = ('share', 'Tester Bbb') in io.partied
+        d = {'size': 2, 'leader': 'Tester Aaa', 'members': ['Tester Bbb'], 'shareActive': on, 'shareEnabled': on,
+             'levels': [100, 90], 'minLevel': 67, 'lines': 2, 'bonusPct': 30, 'shareOf1000': 650, 'problems': []}
+        d.update(over)
+        return d
+
+    def run_check(self, **over):
+        io = FakeIO({'party': lambda io: self.party(io, **over)})
+        return io, run(TX.check_party_xp(io, 'Tester Aaa', 'Ninja', 100))
+
+    def test_the_share_is_what_the_rule_pays(self):
+        self.assertEqual(TX.share_expected(2, 2), 650)       # ceil(1000 x 1.3 / 2)
+        self.assertEqual(TX.share_expected(1, 3), 400)       # ceil(1000 x 1.2 / 3)
+        self.assertEqual(TX.share_expected(5, 5), 500)       # x2.5 / 5
+        self.assertEqual(TX.share_expected(7, 7), 358)       # seven lines count as five: ceil(2500 / 7)
+        io, r = self.run_check()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.partied, [('form', 'Tester Bbb'), ('share', 'Tester Bbb'), ('unshare', 'Tester Bbb'), ('leave', 'Tester Bbb')])
+        self.assertIn('1000 xp pays 650', r.detail)
+
+    def test_a_wrong_share_is_a_bug(self):
+        _, r = self.run_check(shareOf1000=500)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('1000 experience pays 500', r.detail)
+        self.assertTrue(r.bug_line().startswith('BUG party_xp:'))
+
+    def test_the_switch_that_did_not_take(self):
+        io = FakeIO({'party': lambda io: self.party(io, shareActive=False, shareEnabled=False,
+                                                    problems=[{'name': 'Tester Bbb', 'kind': 'idle'}])})
+        r = run(TX.check_party_xp(io, 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('says it is off', r.detail)
+
+    def test_the_engine_verdict_must_follow_the_rules(self):
+        # working while a member is far below the highest level
+        _, r = self.run_check(problems=[{'name': 'Tester Bbb', 'kind': 'level'}], levels=[1000, 30], minLevel=667)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('Tester Bbb is below two thirds', r.detail)
+        _, r = self.run_check(problems=[{'name': 'Tester Bbb', 'kind': 'range'}])
+        self.assertIn('is out of range', r.detail)
+        # off with every rule passing
+        _, r = self.run_check(shareEnabled=False)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('every member passes', r.detail)
+
+    def test_off_for_a_real_reason_is_a_pass(self):
+        io = FakeIO({'party': lambda io: self.party(io, shareEnabled=False, problems=[{'name': 'Tester Bbb', 'kind': 'level'}],
+                                                    shareOf1000=650)})
+        r = run(TX.check_party_xp(io, 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('engine off: Tester Bbb level', r.detail)
+
+    def test_a_verdict_seen_once_is_not_a_bug(self):
+        calls = {'n': 0}
+
+        def answer(io):
+            calls['n'] += 1
+            return self.party(io, shareEnabled=(calls['n'] != 3))   # the first look after the switch only
+        r = run(TX.check_party_xp(FakeIO({'party': answer}), 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+
+    def test_skips(self):
+        self.assertEqual(run(TX.check_party_xp(FakeIO(partner=None), 'Tester Aaa', 'Ninja', 100)).status, TX.SKIP)
+        self.assertEqual(run(TX.check_party_xp(FakeIO(), 'Tester Aaa', 'Ninja', 100)).status, TX.SKIP)
+        r = run(TX.check_party_xp(FakeIO({'party': {'size': 1}}), 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.SKIP)
+        io = FakeIO({'party': {'size': 2, 'leader': 'Tester Bbb'}})
+        self.assertIn('not the leader', run(TX.check_party_xp(io, 'Tester Aaa', 'Ninja', 100)).detail)
+        io = FakeIO({'party': {'size': 2, 'leader': 'Tester Aaa'}})
+        self.assertIn('old helper file', run(TX.check_party_xp(io, 'Tester Aaa', 'Ninja', 100)).detail)
 
 
 def client_spells():

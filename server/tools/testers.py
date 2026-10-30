@@ -38,7 +38,7 @@ retried with a growing pause, so the bots come back after a restart.
 O249): allocates every node of its class the points allow, as the tree window does, checks that the effect shows (the
 totals of the tree window, the keystone's own row of the combat log) or says it cannot be seen, and resets the tree.
 --checks: each bot then runs the system checks of its class once (tester_checks.py, O110): pets, the Necromancer's minions,
-the Beastmaster's wolf (O86: no summon takes its owner or a party member for a target), party play, a rift, the waystone
+the Beastmaster's wolf (O86: no summon takes its owner or a party member for a target), party play and its shared experience, a rift and its layout, waystone runs by tier and modifiers, the content rewards, the waystone
 atlas, the reward chest, the cursed chest and the Auto setup spell list. A failed check is a "BUG ..." line in the report.
 """
 import asyncio
@@ -678,6 +678,9 @@ class CheckIO(KeyIO):
             await asyncio.sleep(1.0)
             other.conn.send(b'\xA4' + struct.pack('<I', bot.cid))       # join the leader
             await other.conn.w.drain()
+        elif action in ('share', 'unshare'):
+            bot.conn.send(b'\xA8' + (b'\x01' if action == 'share' else b'\x00'))   # the leader's shared experience switch
+            await bot.conn.w.drain()
         else:
             other.conn.send(b'\xA7')                                    # leave
             bot.conn.send(b'\xA7')

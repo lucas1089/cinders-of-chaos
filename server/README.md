@@ -8197,8 +8197,8 @@ Not under `data/`, so no install step ships it. `chaos-ctl.sh testers start` cop
 - Gives a target: the nearest unowned monster within 5 tiles, then faces it. Never a player, never a summon.
 - Once: a backpack, the plain weapon of its class kit (`ChaosTestKit`, no unique roll), 100 health and mana
   potions, 20000 gold in the bank.
-- `!tester info | town | depot | hunt | shop | bag | summons | party | chest | spellquest`: answers one line `[tester-helper] <kind> <json>`
-  (`summons`, `party` and `chest` are the probes of the system checks, below).
+- `!tester info | town | depot | hunt | shop | bag | summons | party | chest | spellquest | waystone | riftrun`: answers one line `[tester-helper] <kind> <json>`
+  (`summons`, `party`, `chest`, `waystone` and `riftrun` are the probes of the system checks, below).
   Teleports to the temple, next to a depot locker, next to an NPC, back to the hunt spot.
 - `!tester places`: the map mark counts by kind (`ChaosPoi`). `!tester enter <kind> [N]`: next to the N-th mark of
   that kind (temple, depot, craft, bank, bless, travel, shop, boss, hunt, portal, dungeon; guild halls refused).
@@ -8384,6 +8384,10 @@ the system is not installed): never faked. A death in the middle drops the check
 | `party` | all | the bot invites another bot (0xA3), the other joins (0xA4): the helper sees a party of 2; a summoner casts its summon in the party and keeps the sides rule; after leaving (0xA7) the helper sees no party |
 | `rift` | all | `!tester enter rift 1` (a key of tier 1, then the temple) answers without an error, the rift window answers |
 | `waystone` | all | the atlas (`waystoneAtlas` `open`) answers without an error |
+| `waystone_run` | all | a run on the game's own code, for one tier of each band (2, 8, 14): `!tester waystone N` writes a Rare waystone (`WM.write`), uses and takes it as the device does (`WM.choose`, `WM.take`) and starts the run (`WT.startRun`) on a map of the band. BUG when the item does not read back as tier N with its modifiers and Rare, when the take does not remove exactly one waystone, when the run is not registered with the tier and the modifier count, when the map does not count at tier N, when a map monster in range is not at the tier's level (1100 + 100 a tier) or its health is off the level and modifier factor by more than 3 %. A busy map (a live run or a player in it) is a note, not a result. The pads, the teleport and the map's device are base code and are not walked; the map is put back as it was |
+| `rift_layout` | all, level 100 and up | `!tester riftrun layout` opens a real rift as a player does (key of the highest tier the level may open, temple, `ChaosRift.open`) and reads its layout. BUG when the kind or the floor count is not in the config of the theme, the size band is not the tier's, the walkable cells are outside the band limits of `rift_layout_balance_config.lua`, the arrival, the guardian's spot, the arena's mouth or the bot is not a walkable cell, 40 sampled walkable cells have no ground or block, or the run or its slot stays open after `RF.interrupt` (the key comes back). Level under 100, a busy slot or a layout still being built is a skip |
+| `content_rewards` | all | the passive rewards of `content_rewards.lua` through `ChaosContentRewards.onKill` with a stand-in monster (nothing is spawned, a backpack is the corpse): a boss kill of a tier 8 waystone run (`!tester waystone 8 loot`) holds the config's guaranteed gear pieces of Legendary or better, none below, the sure orbs (Awakening, Gilding) at their minimum and a waystone of the run's tier; the guardian kill of a rift (`!tester riftrun loot`) holds at least `floor(base + perTier x tier)` orbs. A level under 100 checks the waystone half only. The first unique and the pity of `retention_loot.lua` are not checked: they skip testers by rule |
+| `party_xp` | all | the bot invites another bot and switches shared experience on (packet 0xA8): the party says it is on; `Party:onShareExperience(1000)` pays `ceil(1000 x (100 + bonus) / 100 / members)` with the bonus of `ChaosPartyXpCore.bonusPercent` for the class lines; the engine's verdict follows the rules (nobody under two thirds of the highest level, within 30 tiles and 1 floor, in a fight): working while a member fails level or range, or off while all pass, is a BUG when two looks 3 s apart agree. Switched off and left again at the end |
 | `reward_chest` | all | the weekly chest (`weeklyChest` `open`) answers without an error, then `close` |
 | `cursed_chest` | all | `!tester chest spawn` puts a chest next to the bot (`idle`), `use` starts the event (`running`, monsters tagged), `abort` ends it and leaves no chest and no monster |
 | `auto_setup` | all | the preset of the client's Auto setup table (`autorotation_data.lua`) for the bot's class and level holds only spells that exist on the server (`spells_chaos.xml`, `stock_spells.csv`), are open to the class and are not gated higher (`auto_setup_problems`) |
@@ -8392,7 +8396,11 @@ the system is not installed): never faked. A death in the middle drops the check
 The helper commands (TEST ONLY, only for a `Tester Xxx` character with the tester storage): `!tester summons` answers the
 bot's summons with the target of each (`none`, `owner`, `summon`, `ally`, `monster`, `player`, seen from the owner), how
 many creatures are in each summon's engine target list and how many of them are allies; `!tester party` the party size,
-leader and members; `!tester chest [spawn | use | state | abort]` a cursed chest of the bot (`ChaosCursedChest.spawnChest`,
+leader and members, and for a party the shared experience: the leader's switch, the engine's verdict, the members' levels,
+the rules of `ChaosPartyXpCore.diagnose` (who fails level, range or fight), the class lines and what the game's
+`Party:onShareExperience` pays for 1000 experience; `!tester waystone <1-15> [loot]` and `!tester riftrun [layout | loot]`
+the runs of `waystone_run`, `rift_layout` and `content_rewards` above (each is one atomic command that cleans up in all
+cases: the waystone map is put back, the rift run is closed; a rift needs level 100); `!tester chest [spawn | use | state | abort]` a cursed chest of the bot (`ChaosCursedChest.spawnChest`,
 `use`, `failEvent`); `!tester spellquest [state | reset | set Q STEP [KILLS [FRAGMENTS]] | kill [N] [boss] | trial | leave |
 complete]` the line spell quests of the bot (`ChaosSpellQuest`; the staff command `/spellquest` is not open to a tester, so
 the helper writes the same storages with `ChaosSpellQuestCore.applySet`). `kill` credits N hunt kills of the bot's own level
@@ -8407,9 +8415,16 @@ throttled to one per rule and tester per 30 s: `[tester-anomaly] {"rule":"summon
 under the anomalies. Pure rules: `ChaosTesterHelperCore.targetKind` and `summonAnomalies` (`tests/tester_helper_test.lua`).
 To run only what matters for the wolf: 20 or more testers (every class gets one), at least two in game at once for the party.
 
+Not checked, and why. The waystone pads and the device's own window are base code and need a walking client, so the run
+starts through the functions the device calls. Modifier effects on the players (Withering, the brands, Veilstorm) need a
+fight with a known outcome. The first unique and the pity (`retention_loot.lua`) skip testers by rule and stop at level 60.
+The share of a real kill by experience (not the formula) needs both bots to kill the same monster. A run of the helper
+file with an older `HELPER_VERSION` answers none of the new commands: `chaos-ctl.sh testers start` replaces it (version 3).
+Needs a live run to confirm: the 3 % health tolerance, the rift slot wait, the share verdict timing.
+
 Tests: `tools/tester_checks_test.py` (mocked game: every check passes, fails with its BUG line, and skips; the Auto setup
 rule against the real client data; the spell quest on a stateful mock with a switch per rule, and the first quest spell of
-every class against the real Auto setup data), `tests/tester_helper_test.lua` (the probes on a mocked engine, a real player's
+every class against the real Auto setup data), `tests/tester_helper_test.lua` (the probes on a mocked engine, the waystone run on mocked tier and modifier systems with the real cores and configs, the rift layout, the party share, the content rewards on the real `content_rewards.lua`, a real player's
 summons are never probed, and `!tester spellquest` on the real `spellquest.lua`), `testers_test.py` (flag, report section, flush).
 
 ### Keystones and masteries (O249, `tools/tester_keytree.py`, `tools/tester_keystones.py`)
