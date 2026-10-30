@@ -63,3 +63,18 @@ end
 function L.factor(wanted, w, h)
   return L.STEPS[L.effectiveIndex(wanted, w, h)] / 100
 end
+
+-- phones (O313): the base client zooms a phone to 3x, which leaves a 1080-pixel-high screen 360 interface pixels and
+-- cuts the login panel and the windows. A phone gets the highest whole step whose interface still has PHONE_W x
+-- PHONE_H pixels (a 1080-pixel-high phone: 2x, about 1170 x 540); the zoom buttons still change it afterwards
+L.PHONE_W, L.PHONE_H = 960, 540
+function L.phoneFactor(w, h)
+  if type(w) ~= 'number' or type(h) ~= 'number' or w <= 0 or h <= 0 then return nil end
+  if w < h then w, h = h, w end                   -- the game is landscape; a portrait size during a turn counts the same
+  local best = 1
+  for _, p in ipairs(L.STEPS) do
+    local f = p / 100
+    if w / f >= L.PHONE_W and h / f >= L.PHONE_H then best = f end
+  end
+  return best
+end

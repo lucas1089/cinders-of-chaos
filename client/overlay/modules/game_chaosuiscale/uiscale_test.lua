@@ -68,5 +68,13 @@ eq(L.factor(3, 3840, 2160), 3.0, 'factor 3.0')
 eq(L.factor(3, 1920, 1080), 1.0, 'factor 1.0 on a small window')
 eq(L.factor('junk', 3840, 2160), 1.0, 'junk wanted -> 1.0')
 
+-- phones
+eq(L.phoneFactor(2340, 1080), 2.0, 'S23 class phone 2340x1080 -> 2x (1170x540)')
+eq(L.phoneFactor(1080, 2340), 2.0, 'the same phone reported portrait -> 2x')
+eq(L.phoneFactor(1600, 720), 1.0, '720p phone -> 1x')
+eq(L.phoneFactor(3088, 1440), 2.0, '1440p phone -> 2x (720 high)')
+eq(L.phoneFactor(3840, 1800), 3.0, 'very tall phone or tablet -> 3x')
+eq(L.phoneFactor(0, 0), nil, 'no size yet -> nothing')
+
 print(string.format('uiscale_test: %d checks, %d failed', checks, fails))
 os.exit(fails == 0 and 0 or 1)

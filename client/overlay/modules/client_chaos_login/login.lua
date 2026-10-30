@@ -31,6 +31,7 @@ local STATUS_Y, SPIN_X, SPIN_Y, SPIN_D = 624, 687.5, 657, 30   -- painted "conne
 local MARK_BOX = { 1284, 678, 1356, 746 }    -- the generator's sparkle mark: kept free of widgets and particles
 local PANEL_Y = 540                    -- top of the sign-in panel (just under the logo's lower spike)
 local PANEL_W, PANEL_H = 540, 180
+local LOGO_TOP_MIN = 32                -- a shrunk logo stays under the top bar (server, System, version)
 local EMBER_COUNT = 22                 -- embers rising through the scene (the picture has its own)
 local ASH_COUNT = 10                   -- ash flakes falling through it
 local SPARK_COUNT = 12                 -- sparks rising off the burning letters
@@ -139,6 +140,17 @@ local function relayout()
 
   -- the logo layer on the logo of the picture
   local x, y, lw, lh = artBox(LOGO_BOX)
+  -- a short screen (a phone, about 540 interface pixels high) puts the panel over the logo's lower half: over the
+  -- living scene, which hides the painted logo, the layer shrinks into the room above the panel instead
+  local panelTop = math.min(artY(PANEL_Y), h - PANEL_H - 10)
+  if LoginScene and LoginScene.isActive() and LoginScene.opacity() >= 0.99 and y + lh > panelTop - 4 then
+    local y0 = math.max(y, LOGO_TOP_MIN)
+    local k = (panelTop - 4 - y0) / lh
+    if k > 0.3 and k < 1 then
+      local nw, nh = math.floor(lw * k), math.floor(lh * k)
+      x, y, lw, lh = x + math.floor((lw - nw) / 2), y0, nw, nh
+    end
+  end
   place(logo, x, y, lw, lh)
   if LoginScene and LoginScene.isActive() then LoginScene.setLogoBox(x, y, lw, lh) end
   mark.x0, mark.y0, mark.x1, mark.y1 = artX(MARK_BOX[1]), artY(MARK_BOX[2]), artX(MARK_BOX[3]), artY(MARK_BOX[4])
@@ -150,8 +162,7 @@ local function relayout()
   place(spinner, artX(SPIN_X) - math.floor(d / 2), artY(SPIN_Y) - math.floor(d / 2), d, d)
 
   -- the sign-in panel at the bottom centre, under the logo
-  local top = math.min(artY(PANEL_Y), h - PANEL_H - 10)
-  enterGame:setMarginTop(math.max(0, top))
+  enterGame:setMarginTop(math.max(0, panelTop))
   if placeStatus then placeStatus() end
   if layoutInfo then layoutInfo() end
   if LoginScene and LoginScene.isActive() then LoginScene.relayout() end
