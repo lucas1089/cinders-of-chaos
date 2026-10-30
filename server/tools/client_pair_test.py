@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """python3 -I server/tools/client_pair_test.py : the client pair guard (client_pair.py) and the steps it holds back
 (install_pickups.py needs pair 55, install_fist_weapons.py pair 56 for its repoint and new4 rows, install_weapons800.py
-pair 56): the key read / written in config.lua, set refusing a lower value, a missing or low record skipping with a
+pair 56, install_relic_sets.py pair 58): the key read / written in config.lua, set refusing a lower value, a missing or low record skipping with a
 message and writing nothing, a high enough record installing, a second run changing nothing. No base server needed."""
 import os, struct, subprocess, sys, tempfile
 
@@ -168,6 +168,13 @@ x = os.path.join(d, 'data', 'items', 'items.xml')
 open(x, 'w').write('<items>\n\t<item id="40003" name="claw 4" />\n</items>\n')
 rc, out = run(os.path.join(HERE, 'install_fist_weapons.py'), os.path.join(d, 'data'))
 check(rc == 0 and open(x).read().count('id="40003"') == 1, 'a bare donor entry of a repointed claw is taken over (%s)' % out.strip()[-120:])
+
+# the relic sets (pair 58): the guard number and the end-to-end guard are in install_relic_sets_test.py
+check(C.PAIR_RELIC == 58 and C.PAIR_RELIC > C.PAIR_W800 > C.PAIR_PICKUPS - 1, 'the relic sets need pair 58')
+d = server('chaosClientPair = 57\n')
+ok, msg = C.allows(os.path.join(d, 'data'), C.PAIR_RELIC, 'relicsets')
+check(not ok and msg.startswith('WARNING: relicsets skipped') and 'client pair 58' in msg and 'client-pair set 58' in msg, 'relicsets, pair 57: skipped with how to set it')
+check(C.allows(os.path.join(server('chaosClientPair = 58\n'), 'data'), C.PAIR_RELIC, 'relicsets')[0], 'relicsets, pair 58: runs')
 
 print('client_pair_test: %s' % ('ok' if not failed else '%d failed' % failed))
 sys.exit(1 if failed else 0)

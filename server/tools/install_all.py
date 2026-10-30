@@ -70,6 +70,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                two-handed sword, axe and maul; client pair 56, client ids 44412-44445, server ids 48412-48445) in items.otb /
                items.xml, their equip entries in movements.xml and weapon entries in weapons.xml (README "Weapons above level
                800"; after vocations; waits for config.lua chaosClientPair >= 56, README "Client pair guard"; nothing is sold)
+  relicsets    tools/install_relic_sets.py       the five relic sets (65 pieces: helmet, chest, legs, boots, shield, spellbook, sword, axe,
+               hammer, bow, wand or rod, ring and amulet of Venomcoil, Hoarglass, Kilnforged, Halogild and Deepdirge; client pair
+               58, client ids 44446-44510, server ids 48446-48510) in items.otb / items.xml, their equip entries in movements.xml
+               and weapon entries in weapons.xml (README "Relic sets (pair 58)"; after vocations; waits for config.lua
+               chaosClientPair >= 58, README "Client pair guard"; nothing is sold; drops: ChaosGearSets.PAIR58)
   themeitems   tools/install_theme_items.py      the themed set pieces and grounds of client pair things_custom24 in
                items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; used since
                ChaosThemeArt.PAIR24 is on, 2026-10-13; README "Themed sets, auras and grounds")
@@ -783,6 +788,14 @@ def step_weapons800(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('fistweapons') + 1, 'weapons800')  # right after the fist weapons (client ids appended after theirs, pair 56)
+
+
+def step_relicsets(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 58) is in the tool; its warning reaches the report
+    return tool_result_warn(run_tool([tool('install_relic_sets.py'), data], 'install_relic_sets.py'))
+
+
+STEPS.insert(STEPS.index('weapons800') + 1, 'relicsets')  # right after the weapons above 800 (client ids appended after theirs, pair 58)
 
 
 def step_ownerdecor(server, data, ctx):

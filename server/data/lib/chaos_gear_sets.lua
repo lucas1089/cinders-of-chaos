@@ -35,8 +35,28 @@ local M = {}
 
 M.PAIR28 = true
 
+-- Pair switch of the five relic sets (2026-10-30, O338, server/README.md "Relic sets (pair 58)"): OFF as shipped. They are 65 pieces
+-- of client pair 58 (ids 48446..48510, data/lib/chaos_relic_sets_items.lua, install_relic_sets.py): Venomcoil 640, Hoarglass 860,
+-- Kilnforged 1400, Halogild 1700, Deepdirge 2050, 13 pieces each (helmet, chest, legs, boots, shield, spellbook, sword, axe, hammer,
+-- bow, wand or rod, ring, amulet). A client on pair 57 or older has no looks for them. Off: the items exist once installed (the
+-- `relicsets` step waits for config.lua chaosClientPair >= 58) but no monster drops them, the transmog catalogue skips their ids and
+-- the item sets leave the five sets out. On: gear_sets.lua adds their loot rows, the sets and their bonuses are live and the pieces are
+-- ordinary transmog looks. The audits (tools/weapon_coverage.lua, tools/gear_coverage.lua) count them either way, as they count the
+-- weapons above level 800. They are NOT part of the level gear pool (levelPieces): more pieces there would thin every set weapon's chance.
+M.PAIR58 = false
+
 local ok, items = pcall(dofile, "data/lib/chaos_gear_sets_items.lua")
 M.items = ok and items or {first = 36995, last = 37442, sets = {}, pieces = {}}
+local okRelic, relic = pcall(dofile, "data/lib/chaos_relic_sets_items.lua")
+if okRelic and type(relic) == "table" then
+	M.items.relicFirst, M.items.relicLast = relic.first, relic.last
+	for key, set in pairs(relic.sets or {}) do
+		M.items.sets[key] = set
+	end
+	for _, p in ipairs(relic.pieces or {}) do
+		M.items.pieces[#M.items.pieces + 1] = p
+	end
+end
 
 M.config = {
 	-- total chance per kill (per 100000, the loot unit) that one of the eligible pieces drops, shared by them
@@ -93,6 +113,31 @@ M.sources = {
 		monsters = {{"Winterstride", 1220}, {"Bloodantler Fiend", 1600},
 			{"Mirecoil Wyrm", 1900}, {"Pyrewing Tyrant", 2000}, {"Pyre Stork", 2000}},
 		bosses = {{"Vaelith the Fallen Seraph", 1700}, {"Azhkarrath the Chained Wyrm", 2100}}
+	},
+	-- the relic sets (pair 58): monsters of the theme inside the window [level - 50, level + 300] of the set's one level
+	venomcoil = {
+		monsters = {{"Grove Keeper", 700}, {"Elite Spider", 730}, {"Gallows Oak", 750}, {"Webbound Crawler", 770},
+			{"Blight Hound", 790}, {"Rootbound Pilgrim", 830}, {"Acid Hydra", 930}, {"Blight Bloom", 930}},
+		bosses = {{"Vharzul the Verdant Eye", 700}}
+	},
+	hoarglass = {
+		monsters = {{"Frost Maiden", 820}, {"Tundra Troll", 830}, {"Azure Dragon", 880}, {"Ice Lich", 1000}, {"Rimecairn", 1020},
+			{"Quicksilver Wraith", 1040}},
+		bosses = {{"Ossivane the Gravecage", 1100}}
+	},
+	kilnforged = {
+		monsters = {{"Cinderskull Reaver", 1500}, {"Ashveil Hierarch", 1500}, {"Redmane Anvilbreaker", 1550},
+			{"Cinderhorn Juggernaut", 1700}},
+		bosses = {{"Forgewarden Kharzun", 1400}}
+	},
+	halogild = {
+		monsters = {{"Oathbroken Colossus", 1700}, {"Siege Behemoth", 1700}, {"Ironmask Warbreaker", 1800},
+			{"Gravecrown Oathbreaker", 1850}},
+		bosses = {{"Vaelith the Fallen Seraph", 1700}}
+	},
+	deepdirge = {
+		monsters = {{"Pyre Stork", 2000}, {"Pyrewing Tyrant", 2000}},
+		bosses = {{"Azhkarrath the Chained Wyrm", 2100}}
 	}
 }
 
@@ -129,11 +174,13 @@ function M.levelPieces(level, cfg)
 	-- above the highest piece the window stays at the top: a monster of 2400 drops what a monster of 2050 does
 	local top = 0
 	for _, p in ipairs(M.items.pieces or {}) do
-		top = math.max(top, p.level)
+		if not p.relic then
+			top = math.max(top, p.level)
+		end
 	end
 	local from = math.min(level, top) - o.below
 	for _, p in ipairs(M.items.pieces or {}) do
-		if p.level <= level + o.above and p.level >= from then
+		if not p.relic and p.level <= level + o.above and p.level >= from then
 			out[#out + 1] = p
 		end
 	end
@@ -195,7 +242,7 @@ end
 function M.levelDrop(p, cfg)
 	cfg = cfg or M.config
 	local o = cfg.open
-	if not o or not M.PAIR28 then
+	if not o or not M.PAIR28 or p.relic then
 		return nil
 	end
 	local access = math.max(o.minLevel, p.level - o.above)
@@ -293,6 +340,32 @@ M.bonuses = {
 		{n = 2, stats = {goldfind = 14}},
 		{n = 4, stats = {rarityfind = 10, itemfind = 7}},
 		{n = 6, stats = {bossdamage = 8}}
+	},
+	-- the relic sets (2026-10-30, pair 58): one level each, about one modifier roll of the tier of that level per step
+	venomcoil = { -- poison and the rot (640)
+		{n = 2, stats = {poisonchance = 7, res_earth = 6}},
+		{n = 4, stats = {dot = 10}},
+		{n = 6, stats = {poisonchance = 5, dot = 8}}
+	},
+	hoarglass = { -- frost and piercing cold (860)
+		{n = 2, stats = {chillchance = 9}},
+		{n = 4, stats = {res_ice = 8}},
+		{n = 6, stats = {elepen = 5, chillchance = 5}}
+	},
+	kilnforged = { -- the forge fire (1400)
+		{n = 2, stats = {ignitechance = 10}},
+		{n = 4, stats = {elepen = 7}},
+		{n = 6, stats = {ignitechance = 6, dot = 14}}
+	},
+	halogild = { -- gilded holy light (1700)
+		{n = 2, stats = {res_holy = 10}},
+		{n = 4, stats = {healing = 7}},
+		{n = 6, stats = {maxhealthpct = 5, monsterreduction = 3}}
+	},
+	deepdirge = { -- the abyss: life from the dead (2050)
+		{n = 2, stats = {lifeonhit = 14, res_death = 8}},
+		{n = 4, stats = {execute = 5}},
+		{n = 6, stats = {bossdamage = 6, lifeonkill = 80}}
 	}
 }
 
@@ -303,8 +376,10 @@ local SLOT = {helmet = "head", armor = "body", legs = "legs", boots = "feet", am
 function M.itemSets()
 	local out = {}
 	local keys = {}
-	for key in pairs(M.items.sets or {}) do
-		keys[#keys + 1] = key
+	for key, s in pairs(M.items.sets or {}) do
+		if not s.relic or M.PAIR58 then -- the relic sets are live with their own switch
+			keys[#keys + 1] = key
+		end
 	end
 	table.sort(keys)
 	for _, key in ipairs(keys) do
@@ -340,6 +415,11 @@ function M.addTransmog(cfg)
 	if M.items.tier2First then
 		cfg.excludeRanges = cfg.excludeRanges or {}
 		cfg.excludeRanges[#cfg.excludeRanges + 1] = {M.items.tier2First, M.items.tier2Last}
+	end
+	-- the relic sets (pair 58) are looks of their own once their switch is on
+	if M.items.relicFirst and not M.PAIR58 then
+		cfg.excludeRanges = cfg.excludeRanges or {}
+		cfg.excludeRanges[#cfg.excludeRanges + 1] = {M.items.relicFirst, M.items.relicLast}
 	end
 	return cfg
 end

@@ -13853,27 +13853,27 @@ Owner question: does every class have enough weapons? The audit answers it from 
 
 | Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
-| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
-| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 10/101 | 7/101 | 12/122 | 7/107 | 9/108 |
-| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 12/101 | 9/106 | 13/101 | 12/107 | 13/107 |
-| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 12/101 | 9/106 | 13/101 | 12/107 | 13/107 |
-| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 6/101 | 6/106 | 8/101 | 8/107 | 8/107 |
-| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 12/100 | 17/153 | 16/100 | 18/100 |
-| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 9/145 | 6/100 | 9/153 | 8/100 | 9/100 |
-| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 10/145 | 6/100 | 9/153 | 8/100 | 9/100 |
-| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 25/113 | 11/101 | 25/122 | 17/114 | 21/113 |
-| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 25/113 | 11/101 | 25/122 | 17/114 | 21/113 |
-| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 25/113 | 11/101 | 25/122 | 17/114 | 21/113 |
-| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 12/100 | 17/153 | 16/100 | 18/100 |
-| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 12/100 | 17/153 | 16/100 | 18/100 |
-| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 12/100 | 17/153 | 16/100 | 18/100 |
-| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 14/106 | 27/122 | 19/114 | 24/113 |
-| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 14/106 | 27/122 | 19/114 | 24/113 |
-| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 14/106 | 27/122 | 19/114 | 24/113 |
-| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
-| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
-| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
+| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
+| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
+| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 11/101 | 8/101 | 12/122 | 8/107 | 11/108 |
+| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 13/101 | 10/106 | 13/101 | 13/107 | 15/107 |
+| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 13/101 | 10/106 | 13/101 | 13/107 | 15/107 |
+| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 7/101 | 7/106 | 8/101 | 9/107 | 10/107 |
+| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
+| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 10/145 | 7/100 | 9/153 | 9/100 | 11/100 |
+| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 11/145 | 7/100 | 9/153 | 9/100 | 11/100 |
+| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 28/113 | 14/101 | 25/122 | 20/114 | 27/113 |
+| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 28/113 | 14/101 | 25/122 | 20/114 | 27/113 |
+| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 28/113 | 14/101 | 25/122 | 20/114 | 27/113 |
+| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
+| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
+| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
+| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 29/113 | 17/106 | 27/122 | 22/114 | 30/113 |
+| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 29/113 | 17/106 | 27/122 | 22/114 | 30/113 |
+| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 29/113 | 17/106 | 27/122 | 22/114 | 30/113 |
+| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
+| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
+| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
 
 <!-- weapon-coverage:end -->
 
@@ -13956,27 +13956,27 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
 
 | Slot | Classes | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Helmet | Warrior, Juggernaut, Berserker | 25/100 | 20/187 | 13/243 | 11/215 | 27/133 | 11/114 | 4/100 | 13/114 | 6/105 | 6/103 |
-| Helmet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 11/127 | 4/100 | 13/123 | 6/119 | 6/117 |
-| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 25/100 | 20/255 | 12/295 | 10/255 | 27/171 | 10/149 | 3/100 | 11/145 | 5/135 | 5/129 |
-| Helmet | Monk, Shadowfist, Iron Sage | 25/100 | 20/207 | 13/255 | 11/250 | 28/150 | 11/127 | 4/100 | 13/123 | 6/119 | 6/117 |
-| Helmet | Templar, Inquisitor, Sentinel | 25/100 | 20/187 | 13/243 | 11/215 | 28/133 | 11/114 | 4/100 | 13/114 | 6/105 | 6/103 |
-| Armor | Warrior, Juggernaut, Berserker | 26/100 | 13/126 | 23/144 | 19/185 | 31/106 | 13/100 | 17/100 | 9/100 | 6/100 | 6/106 |
-| Armor | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 26/100 | 13/141 | 23/160 | 19/209 | 31/119 | 13/100 | 17/100 | 9/100 | 6/109 | 5/100 |
-| Armor | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 26/100 | 13/156 | 22/182 | 18/234 | 31/136 | 12/100 | 16/100 | 7/100 | 4/123 | 5/112 |
-| Armor | Monk, Shadowfist, Iron Sage | 26/100 | 13/141 | 23/160 | 19/209 | 32/119 | 13/100 | 17/100 | 9/100 | 6/109 | 5/100 |
-| Armor | Templar, Inquisitor, Sentinel | 26/100 | 13/126 | 23/144 | 19/185 | 32/106 | 13/100 | 17/100 | 9/100 | 6/100 | 6/106 |
-| Legs | Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel | 15/166 | 8/100 | 8/186 | 7/257 | 18/122 | 7/100 | 4/100 | 10/100 | 7/107 | 5/107 |
-| Legs | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage | 15/166 | 8/100 | 8/217 | 7/257 | 18/138 | 6/104 | 3/100 | 9/100 | 7/107 | 5/107 |
-| Legs | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 15/229 | 8/100 | 7/260 | 6/300 | 18/157 | 6/117 | 3/100 | 9/100 | 6/107 | 5/107 |
-| Boots | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 6 | 8/150 | 8/200 | 8/200 | 14/100 | 12/100 | 5/100 | 12/120 | 6/100 | 10/100 |
-| Boots | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 6 | 8/150 | 8/200 | 9/200 | 14/100 | 12/100 | 5/100 | 12/120 | 6/100 | 10/100 |
-| Shield | Warrior, Juggernaut, Templar, Inquisitor, Sentinel | 23/100 | 13/142 | 5/118 | 15/125 | 11/100 | 9/100 | 8/100 | 11/100 | 8/113 | 9/100 |
-| Spellbook | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 4/100 | 7/100 | 7/106 | 5/100 |
+| Helmet | Warrior, Juggernaut, Berserker | 25/100 | 20/187 | 13/243 | 11/215 | 27/133 | 11/127 | 6/100 | 13/114 | 7/105 | 8/103 |
+| Helmet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 11/133 | 6/100 | 13/123 | 7/119 | 8/117 |
+| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 25/100 | 20/255 | 12/295 | 10/255 | 27/171 | 10/143 | 5/100 | 11/145 | 6/117 | 7/129 |
+| Helmet | Monk, Shadowfist, Iron Sage | 25/100 | 20/207 | 13/255 | 11/250 | 28/150 | 11/133 | 6/100 | 13/123 | 7/119 | 8/117 |
+| Helmet | Templar, Inquisitor, Sentinel | 25/100 | 20/187 | 13/243 | 11/215 | 28/133 | 11/127 | 6/100 | 13/114 | 7/105 | 8/103 |
+| Armor | Warrior, Juggernaut, Berserker | 26/100 | 13/126 | 23/144 | 19/185 | 31/106 | 13/100 | 19/100 | 9/100 | 7/100 | 8/106 |
+| Armor | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 26/100 | 13/141 | 23/160 | 19/209 | 31/119 | 13/100 | 19/100 | 9/100 | 7/109 | 7/100 |
+| Armor | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 26/100 | 13/156 | 22/182 | 18/234 | 31/136 | 12/100 | 18/100 | 7/100 | 5/109 | 7/112 |
+| Armor | Monk, Shadowfist, Iron Sage | 26/100 | 13/141 | 23/160 | 19/209 | 32/119 | 13/100 | 19/100 | 9/100 | 7/109 | 7/100 |
+| Armor | Templar, Inquisitor, Sentinel | 26/100 | 13/126 | 23/144 | 19/185 | 32/106 | 13/100 | 19/100 | 9/100 | 7/100 | 8/106 |
+| Legs | Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel | 15/166 | 8/100 | 8/186 | 7/257 | 18/122 | 7/100 | 6/100 | 10/100 | 8/107 | 7/107 |
+| Legs | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage | 15/166 | 8/100 | 8/217 | 7/257 | 18/138 | 6/104 | 5/100 | 9/100 | 8/107 | 7/107 |
+| Legs | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 15/229 | 8/100 | 7/260 | 6/300 | 18/157 | 6/117 | 5/100 | 9/100 | 7/107 | 7/107 |
+| Boots | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 6 | 8/150 | 8/200 | 8/200 | 14/100 | 12/100 | 7/100 | 12/120 | 7/100 | 12/100 |
+| Boots | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 6 | 8/150 | 8/200 | 9/200 | 14/100 | 12/100 | 7/100 | 12/120 | 7/100 | 12/100 |
+| Shield | Warrior, Juggernaut, Templar, Inquisitor, Sentinel | 23/100 | 13/142 | 5/118 | 15/125 | 11/100 | 9/100 | 10/100 | 11/100 | 9/113 | 11/100 |
+| Spellbook | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 6/100 | 7/100 | 8/106 | 7/100 |
 | Quiver | Ranger, Deadeye, Beastmaster | 2 | 2 | 2 | 2 | 4 | 2 | 2 | 2 | 2 | 2 |
-| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 16 | 8 | 15 | 14 | 10 | 7 | 5 | 10 | 6 | 8 |
-| Amulet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 16 | 8 | 15 | 15 | 10 | 7 | 5 | 10 | 6 | 8 |
-| Ring | all 21 | 21 | 5 | 7 | 13 | 8 | 8 | 5 | 11 | 6 | 8 |
+| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 16 | 8 | 15 | 14 | 10 | 7 | 7 | 10 | 7 | 10 |
+| Amulet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 16 | 8 | 15 | 15 | 10 | 7 | 7 | 10 | 7 | 10 |
+| Ring | all 21 | 21 | 5 | 7 | 13 | 8 | 8 | 7 | 11 | 7 | 10 |
 
 <!-- gear-coverage:end -->
 
@@ -26769,6 +26769,7 @@ README warned.
   | `fistweapons`, rows of mode `repoint` (claws and uniques 40003-40012) | 56 | written with the donor looks (client id = server id - 12000, as before pair 56): the items keep working on a pair 54 / 55 client |
   | `fistweapons`, rows of mode `new4` (48409-48411) | 56 | not installed (no node, no `items.xml` entry, no shop, no equip entry) |
   | `weapons800` (the 34 weapons above level 800, "Weapons above level 800") | 56 | the whole step is skipped |
+  | `relicsets` (the 65 pieces of the five relic sets, "Relic sets (pair 58)") | 58 | the whole step is skipped |
 
   The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
   `ItemType(id)` exists, and the scaled class roll (`loot.lua` `classWeapons`) drops an id the server has no item for.
@@ -26875,6 +26876,103 @@ nine wands, nine rods and three two-handed melee weapons (a greatsword, a greata
 * Tests: `tools/install_weapons800_test.py` (rows, ids, the curve, the class lists, the three xml blocks, the guard end to end),
   `tests/weapons800_test.lua`, `tests/class_loot_test.lua`, `tests/loot_level_gear_test.lua` (the scaled roll skips a base with no item),
   `client/tools/sprites/gen_weapons800_art_test.py`. Not tested live: the looks in a client (pair 56 is not shipped), the drops.
+
+## Relic sets (pair 58) (`install_relic_sets.py`, `chaos_relic_sets_items.lua`, `chaos_gear_sets.lua`, switch `ChaosGearSets.PAIR58`, off, O338)
+
+Owner 2026-10-30 ("Aprovo, pode importar os sets como itens"): five approved PixelLab sets of 13 pieces become items with stats, set
+bonuses and loot. Each set is a helmet, a chest armour, legs, boots, a shield, a spellbook, a one-handed sword, a two-handed axe, a
+one-handed war hammer, a bow, a wand or a rod, a ring and an amulet. They join the equipment sets ("Equipment sets (pair 28)"): the same
+curves, class lists, loot rules, set bonuses at 2, 4 and 6 pieces, audits and tests, so nothing new has to be learned or kept in step.
+
+* **Art and ids.** 65 PixelLab 32 x 32 looks, client ids 44446-44510 appended to pair 58 (`client/tools/sprites/gen_relic_sets_art.py`,
+  `art_import/relic_sets*`, client/MANIFEST.md "Pair 58"). Server ids = client id + 4000 = **48446-48510** (the pair 50 rule; free: checked
+  against every csv of `data/items`, the `chaos_*.lua` libs and the id tables of this README). The server manifest
+  `data/items/relic_sets.csv` is the importer's `--manifest-out` of the things file; the generated lib is
+  `data/lib/chaos_relic_sets_items.lua` (`install_relic_sets.py --lua`), read by `chaos_gear_sets.lua`, which appends the pieces to
+  `ChaosGearSets.items` (a piece and a set carry `relic = true`; `items.relicFirst` and `items.relicLast`).
+* **Bands.** One level per set, chosen where `tools/gear_coverage.lua` and `tools/weapon_coverage.lua` showed the fewest options
+  (700-1000 had 3-5 helmets, legs, boots, spellbooks, amulets and rings per class; 1300-1700 and 1700-2400+ 5-7 chest armours; weapons of
+  the Beastmaster, Elementalist and Illusionist 6-9 per band) and where hunt monsters of the theme live inside the loot window
+  [level - 50, level + 300]:
+
+| Set | Level (audit band) | Damage element | Resists / weak to | Look | Staff | Key stats at that level |
+|---|---|---|---|---|---|---|
+| Venomcoil (`venomcoil`, ids 48446-48458) | 640 (400-700) | earth | earth / fire | dark green scales, gold trim | wand | helm 10, cuirass 19, boots 4 + speed 24, shield 42, blade 36 + earth 20, greataxe 38 + earth 21, bow 75 / hit 96, scepter 90-122 mana 23 |
+| Hoarglass (`hoarglass`, 48459-48471) | 860 (700-1000) | ice | ice / fire | pale ice-blue steel | wand | helm 12, cuirass 21, boots 5 + speed 28, shield 45, blade 38 + ice 21, greataxe 40 + ice 22, bow 78 / hit 97, scepter 96-130 mana 26 |
+| Kilnforged (`kilnforged`, 48472-48484) | 1400 (1300-1700) | fire | fire / ice | blackened iron, ember seams | wand | helm 14, cuirass 25, boots 6 + speed 34, shield 50, blade 42 + fire 22, greataxe 44 + fire 23, bow 81 / hit 97, scepter 107-145 mana 29 |
+| Halogild (`halogild`, 48485-48497) | 1700 (1700-2400+) | holy | death / earth | polished gold, blue and red gems | rod | helm 15, cuirass 26, boots 6 + speed 37, shield 53, blade 44 + holy 23, greataxe 45 + holy 25, bow 83 / hit 97, staff 112-152 mana 31 |
+| Deepdirge (`deepdirge`, 48498-48510) | 2050 (1700-2400+) | death | death / holy | dark steel, teal abyssal gems | rod | helm 16, cuirass 28, boots 7 + speed 40, shield 55, blade 45 + death 24, greataxe 47 + death 25, bow 85 / hit 98, staff 117-159 mana 33 |
+
+  The pieces of a set share its level (a set is worn whole), so the audits see 100% of the tier at every slot. The element, the resisted
+  and the weak element and the missiles of a set are in `install_relic_sets.py` `SETS` (a pseudo entry of `install_gear_sets.py`
+  `SET_BY_KEY`, as `install_weapons800.py` does for its elements).
+* **Numbers.** `install_relic_sets.py` calls `install_gear_sets.py`'s `stats_of` (the same CURVES, ANCHORS and STEPS). Helmet, chest and
+  legs are fit **A** (anyone wears them: one of a kind per set cannot dress three armour weights; 90% of the heavy armour like the later
+  tiers' legs, so no armour skill steps). Boots carry speed, shields defense and shield skill, spellbooks defense and magic level, the
+  one-handed sword and hammer 35% of the attack as the set element, extra defense and the weapon skill, the two-handed axe +3 attack, +4
+  defense and 3000 ms, the bow the attack and hit chance of the curve (3000 ms, no ammunition), the wand or rod damage, mana and magic
+  level, ring and amulet armour and absorb. The weapon audit's 80% rule and the weapon_sim power factors (`weapon_power_config.lua`) need
+  nothing new: both are by level (`weapon_sim.py --power --check` passes unchanged).
+* **Who wears what** (`install_gear_sets.py` FITS): helmet, chest, legs, boots, ring and amulet everyone; shield the Warrior, Juggernaut
+  and the Templar line; spellbook the Mystic and Necromancer lines; sword and war hammer every melee class except the Berserker, the axe all
+  twelve melee classes; bow the Ranger, Deadeye and Beastmaster; the wand or rod of a set every caster (the Mystic, Elementalist and
+  Illusionist and the Necromancer line): a set has one staff, and the stock rule "a wand is the Elementalist's, a rod the Illusionist's"
+  would leave one of them unarmed (`tests/gear_sets_test.lua`: every set arms every class). Venomcoil, Hoarglass and Kilnforged carry a
+  wand, Halogild and Deepdirge a rod.
+* **Set bonuses** (`ChaosGearSets.bonuses`, open item sets of `chaos_item_sets.lua`: any 2, 4 and 6 pieces worn at their level, the same
+  item twice counts once, a two-handed weapon twice; about one modifier roll of the tier of the set's level per step, below the
+  matching uniques):
+
+| Set | 2 pieces | 4 pieces | 6 pieces |
+|---|---|---|---|
+| Venomcoil | poison chance +7%, earth resistance +6% | damage over time +10% | poison chance +5%, damage over time +8% |
+| Hoarglass | chill chance +9% | ice resistance +8% | elemental penetration +5%, chill chance +5% |
+| Kilnforged | ignite chance +10% | elemental penetration +7% | ignite chance +6%, damage over time +14% |
+| Halogild | holy resistance +10% | healing +7% | maximum health +5%, monster damage reduction 3% |
+| Deepdirge | life on hit +14, death resistance +8% | execute +5% | boss damage +6%, life on kill +80 |
+
+* **Loot.** The sets' own rules (`chaos_gear_sets.lua` `sources`, `lootRows`, `eligible`): a hunt monster of the theme inside the window
+  drops one of the 13 pieces with a total chance of 600 per 100,000 per kill (46 per piece), the themed boss 15,000 (1,153 per piece).
+  All 13 pieces of a set are inside the window of each of its sources (one level per set), 377 rows in all. `chaos/gear_sets.lua` adds
+  them to the monster types at startup only while `ChaosGearSets.PAIR58` is on and only for items the server has. A monster that two
+  sets list (Ice Lich, Frost Maiden, Ossivane, Vaelith, Azhkarrath, Pyre Stork, Pyrewing Tyrant) shares each set's chance on its own.
+
+| Set | Hunt monsters (hunting level) | Boss |
+|---|---|---|
+| Venomcoil | Grove Keeper 700, Elite Spider 730, Gallows Oak 750, Webbound Crawler 770, Blight Hound 790, Rootbound Pilgrim 830, Acid Hydra 930, Blight Bloom 930 | Vharzul the Verdant Eye |
+| Hoarglass | Frost Maiden 820, Tundra Troll 830, Azure Dragon 880, Ice Lich 1000, Rimecairn 1020, Quicksilver Wraith 1040 | Ossivane the Gravecage |
+| Kilnforged | Cinderskull Reaver 1500, Ashveil Hierarch 1500, Redmane Anvilbreaker 1550, Cinderhorn Juggernaut 1700 | Forgewarden Kharzun |
+| Halogild | Oathbroken Colossus 1700, Siege Behemoth 1700, Ironmask Warbreaker 1800, Gravecrown Oathbreaker 1850 | Vaelith the Fallen Seraph |
+| Deepdirge | Pyre Stork 2000, Pyrewing Tyrant 2000 | Azhkarrath the Chained Wyrm |
+
+  They are **not** in the level gear pool (`levelPieces` and `levelDrop` skip a relic piece, as the weapons above 800 are outside it): the
+  pool gives 1600 / n per kill and more pieces there would thin every set weapon's chance below the audit's minimum. The Gambler does not
+  sell them (`gamble_config.lua` `sets.weight` has no entry for them), no NPC sells or buys them (`gen_item_prices.py` reads the manifest:
+  the Auto Seller pays the equipment formula at their level, docs/PRICES.md), and no waystone or content reward lists them.
+* **The pair 58 switch (off as shipped).** `ChaosGearSets.PAIR58 = false`: the items exist once installed, but no monster drops them, the
+  transmog catalogue skips ids 48446-48510 and the item sets, codex and wiki leave the five sets out. The `relicsets` install step
+  (`install_all.py`, right after `weapons800`, after `vocations`) writes the `items.otb` nodes, the `items.xml` entries, the Equip /
+  DeEquip entries of `movements.xml` and the `weapons.xml` entries in marked blocks, and **waits for the client pair guard**
+  (`config.lua` `chaosClientPair` 58 or more, "Client pair guard"). The audits count the sets either way (like the weapons above 800).
+  **Switch on, once the client update with pair 58 is out:**
+  1. Admin app (tab Comandos > card "Par do cliente" > field "Par" > **Gravar** 58), or `chaos-ctl.sh client-pair set 58`.
+  2. In the repo: `ChaosGearSets.PAIR58 = true` in `data/lib/chaos_gear_sets.lua`, then `cd server && luajit tools/gen_codex_data.lua &&
+     luajit tools/gen_wiki_data.lua` (the sets list grows from 20 to 25) and `python3 -I client/tools/gen_credits.py --check`; commit and
+     deploy (`tests/relic_sets_test.lua` and `tests/itemsets_test.lua` run both states).
+  3. Admin app **Update** (or `install_all.py`): installs the 65 items; the loot rows, item sets and transmog looks go live at the next
+     start.
+* **Audit after the change** (`weapon_coverage.lua --write`, `gear_coverage.lua --write`, the tables of "Gear coverage"): obtainable
+  options per class in the bands where the sets sit (before the change in brackets). Warrior line: helmets 700-1000 6 (4), 1300-1700 7 (6),
+  1700-2400+ 8 (6); legs 6 (4), 8 (7); chest armours 19 (17), 7 (6); shields 10 (8), 9 (8), 11 (9). Mystic line: spellbooks 700-1000 6
+  (4), 1300-1700 8 (7). Everyone: amulets 700-1000 7 (5), rings 7 (5). Weapons, Elementalist and Illusionist: 700-1000 7 (6), 1300-1700 9
+  (8), 1700-2400+ 11 (9); Beastmaster 7 (6), 9 (8), 10 (8); the best of each at 100-107% of the tier. `gear_coverage.lua --check` (fairness:
+  every class and loadout 28.0 usable weapons per 1,000 kills in every band) and `weapon_coverage.lua --check` pass under both
+  interpreters without a new anchor.
+* Tests: `tools/install_relic_sets_test.py` (rows, ids, the curve, the class lists, the three xml blocks, the guard end to end),
+  `tests/relic_sets_test.lua` (data, every class dressed and armed by every set, windows and rows, not in the level gear pool, bonuses, both
+  states of the switch, transmog, the startup script), `tests/gear_sets_test.lua`, `tests/itemsets_test.lua` (the five sets as open item
+  sets), `tests/gamble_test.lua`, `client/tools/sprites/gen_relic_sets_art_test.py`. Not tested live: the looks in a client (pair 58 is
+  not shipped), the drops.
 
 ## Base raid fixes (`tools/patch_base_raids.py`, install step `baseraids`)
 

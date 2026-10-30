@@ -30,6 +30,7 @@ COMMENT = ' -- Cinders of Chaos: the client sprite pair the shipped client is on
 PAIR_PICKUPS = 55   # the Ember portal, health and mana globe looks (install_pickups.py)
 PAIR_FIST = 56      # the fist weapon redraws and the three new fist weapons (install_fist_weapons.py)
 PAIR_W800 = 56      # the 34 weapons above level 800 (install_weapons800.py)
+PAIR_RELIC = 58     # the 65 pieces of the five relic sets (install_relic_sets.py)
 
 
 def parse(text):

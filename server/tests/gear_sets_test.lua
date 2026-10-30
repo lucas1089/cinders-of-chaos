@@ -30,7 +30,12 @@ for line in f:lines() do
 end
 f:close()
 eq(#rows, 448, "448 pieces in the manifest")
-eq(#P.pieces, 643, "643 pieces in chaos_gear_sets_items.lua: 448 of the art sets, 192 of the later tiers and 3 extra Rimewraith legs (O285)")
+local A = dofile("data/lib/chaos_gear_sets_items.lua")
+eq(#A.pieces, 643, "643 pieces in chaos_gear_sets_items.lua: 448 of the art sets, 192 of the later tiers and 3 extra Rimewraith legs (O285)")
+eq(#P.pieces, 643 + 65, "708 pieces in the sets: those 643 and the 65 of the five relic sets (chaos_relic_sets_items.lua, pair 58)")
+eq(P.relicFirst, 48446, "first server id of the relic sets")
+eq(P.relicLast, 48510, "last server id of the relic sets")
+eq(M.PAIR58, false, "the pair 58 switch of the relic sets is off as shipped")
 eq(P.first, 36995, "first server id")
 eq(P.last, 37442, "last server id")
 eq(P.tier2First, 52000, "first server id of the later tiers")
@@ -96,7 +101,7 @@ for key, s in pairs(P.sets) do
 		eq(not has.boots or got.boots, true, key .. ": " .. class .. " finds boots")
 	end
 end
-eq(nSets, 10, "ten sets: seven art sets and three later tiers")
+eq(nSets, 15, "fifteen sets: seven art sets, three later tiers and five relic sets")
 eq(P.sets.blightfang.band[1], 8, "the first set starts at level 8 (noob friendly)")
 eq(P.sets.gildcrown.band[2], 2000, "the last art set reaches level 2000")
 eq(P.sets.sunderthrone.band[2] >= 2000, true, "the last later tier reaches level 2000 and more")
@@ -219,19 +224,24 @@ end
 p:close()
 local lootRows = M.lootRows()
 local perMonster = {}
+-- per monster and set: a monster that two sets list (the relic sets share bosses with the art sets) shares each set's chance on its own
+local function slot(mon, set)
+	return mon .. "|" .. set
+end
 for _, r in ipairs(lootRows) do
-	perMonster[r[1]] = perMonster[r[1]] or {total = 0, n = 0}
-	perMonster[r[1]].total = perMonster[r[1]].total + r[3]
-	perMonster[r[1]].n = perMonster[r[1]].n + 1
-	eq(r[3] >= M.config.minChance, true, r[1] .. ": chance at least the minimum")
 	eq(M.piece(r[2]) ~= nil, true, r[1] .. ": the row names a piece")
+	local k = slot(r[1], M.piece(r[2]).set)
+	perMonster[k] = perMonster[k] or {total = 0, n = 0}
+	perMonster[k].total = perMonster[k].total + r[3]
+	perMonster[k].n = perMonster[k].n + 1
+	eq(r[3] >= M.config.minChance, true, r[1] .. ": chance at least the minimum")
 end
 for key, src in pairs(M.sources) do
 	eq(P.sets[key] ~= nil, true, key .. ": a source of a real set")
 	for _, group in ipairs({{src.monsters, M.config.monsterChance}, {src.bosses, M.config.bossChance}}) do
 		for _, m in ipairs(group[1]) do
 			eq(known[m[1]], true, m[1] .. ": a monster of the installed server (bounty pool or a chaos file)")
-			local pm = perMonster[m[1]]
+			local pm = perMonster[slot(m[1], key)]
 			eq(pm ~= nil, true, m[1] .. ": has loot rows")
 			local cap = math.max(group[2], M.config.minChance * pm.n)
 			eq(pm.total <= cap and pm.total > group[2] - pm.n, true, m[1] .. ": the total chance is shared")
@@ -253,11 +263,16 @@ for _, r in ipairs(shipped.excludeRanges) do
 end
 eq(found, false, "shipped (on): the pieces are in the transmog catalogue")
 M.PAIR28 = false
-eq(#M.addTransmog({excludeRanges = {}}).excludeRanges, 2, "off: the pieces are out of the catalogue, with the later tiers")
+eq(#M.addTransmog({excludeRanges = {}}).excludeRanges, 3, "off: the pieces are out of the catalogue, with the later tiers and the relic sets")
 M.PAIR28 = true
 local c = M.addTransmog({excludeRanges = {}})
-eq(#c.excludeRanges, 1, "on: only the later tiers (they wear the art sets' looks) are excluded")
+eq(#c.excludeRanges, 2, "on: the later tiers (they wear the art sets' looks) and the relic sets (own switch, off) are excluded")
 eq(c.excludeRanges[1][1], 52000, "the excluded range is the later tiers'")
+eq(c.excludeRanges[2][1] == 48446 and c.excludeRanges[2][2] == 48510, true, "and the relic sets' ids")
+M.PAIR58 = true
+c = M.addTransmog({excludeRanges = {}})
+eq(#c.excludeRanges, 1, "relic switch on: only the later tiers are excluded, the relic pieces are looks")
+M.PAIR58 = false
 
 -- ---------------------------------------------------------------- the startup script on mocks
 local added = {}
@@ -295,18 +310,33 @@ local real = print
 print = function() end
 registered.onStartup()
 print = real
-local skipped = 0
+local skipped, relicRows = 0, 0
 for _, r in ipairs(lootRows) do
-	if r[1] == "Fennra" then
+	if M.piece(r[2]).relic then
+		relicRows = relicRows + 1
+	elseif r[1] == "Fennra" then
 		skipped = skipped + 1
 	end
 end
-eq(#added, #lootRows - skipped, "on: every row added, a missing monster skipped")
+eq(relicRows > 100, true, "the relic sets have loot rows (" .. relicRows .. ")")
+eq(#added, #lootRows - skipped - relicRows, "on: every row added, a missing monster skipped, the relic sets' rows held back (pair 58 off)")
+for _, a in ipairs(added) do
+	eq(M.piece(a[2]).relic, nil, "no relic piece is added while the pair 58 switch is off")
+end
 eq(added[1][3] >= M.config.minChance, true, "rows carry their chance")
 local again = #added
 print = function() end
 registered.onStartup()
 print = real
 eq(#added, again, "added once per run")
+-- the relic switch on: the relic rows are added too (a run of its own)
+ChaosGearSetLoot.done = nil
+added = {}
+M.PAIR58 = true
+print = function() end
+registered.onStartup()
+print = real
+eq(#added, #lootRows - skipped, "relic switch on: every row added, a missing monster skipped")
+M.PAIR58 = false
 
 print("gear_sets_test: " .. n .. " checks OK")

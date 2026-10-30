@@ -190,6 +190,12 @@ jobs:
           # server/data/items/weapons800.csv
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_weapons800_art.py build --check
           python3 -I client/tools/sprites/gen_weapons800_art_test.py
+          # the five relic sets of pair 58 (65 PixelLab 32 x 32 items: helmet, chest, legs, boots, shield, spellbook, sword, axe,
+          # hammer, bow, wand or rod, ring and amulet of each set; client ids 44446-44510): committed sources, atlas, things file,
+          # credits and sums match the generator, each look passes style_check on its own colours or a printed waiver, and the
+          # ids agree with server/data/items/relic_sets.csv
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_relic_sets_art.py build --check
+          python3 -I client/tools/sprites/gen_relic_sets_art_test.py
           # the Reward Chest look of pair 45 (one PixelLab chest, a 2 x 2 item): committed source, atlas, things file and
           # sums match the generator, and the look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build --check
@@ -1024,11 +1030,13 @@ jobs:
       - name: Store pouches install (four pouches, capacities, the Gem Pouch look, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pouches_test.py
 
-      - name: Client pair guard and the pair 55 and 56 item installs (chaosClientPair in config.lua, pickups 55, fist weapons and weapons above level 800 56)
+      - name: Client pair guard and the pair 55, 56 and 58 item installs (chaosClientPair in config.lua, pickups 55, fist weapons and weapons above level 800 56, relic sets 58)
         run: |
           python3 -I server/tools/client_pair_test.py
           python3 -I server/tools/install_fist_weapons_test.py
           python3 -I server/tools/install_weapons800_test.py
+          python3 -I server/tools/install_relic_sets.py --lua --check
+          python3 -I server/tools/install_relic_sets_test.py
 
       - name: Base NPC script names (patch_base_npcs.py step 5, the letter case of the script file)
         run: python3 -I server/tools/patch_base_npcs_test.py
