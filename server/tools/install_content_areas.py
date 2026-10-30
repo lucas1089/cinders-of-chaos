@@ -110,6 +110,14 @@ def plan_files(plans_dir=PLANS_DIR):
 
 
 def compile_plan(path, out_dir):
+    import area_import
+    with open(path, encoding='utf-8') as f:
+        if area_import.is_import(json.load(f)):  # an imported hunt: its tiles are a cut of a community map (area_import.py)
+            try:
+                area_import.compile_plan(path, out_dir)
+            except area_import.ImportError_ as e:
+                raise InstallError('compile %s failed:\n%s' % (os.path.basename(path), e))
+            return
     proc = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'area_planner.py'), 'compile', path, out_dir],
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     if proc.returncode != 0:
@@ -129,7 +137,7 @@ def compile_plan(path, out_dir):
 CACHE_FORMAT = 'plan-compile-cache-1'
 CACHE_OK = 'CACHE_OK.json'
 COMPILE_INPUTS = (  # relative to server/: globs of the files a compile reads (tools/install_content_areas_test.py traces it)
-    'tools/area_plan*.py', 'tools/area_planner.py', 'tools/areagen_export.py', 'tools/areaplan_build.lua',
+    'tools/area_plan*.py', 'tools/area_planner.py', 'tools/area_import.py', 'tools/areaplan/imports/*', 'tools/areagen_export.py', 'tools/areaplan_build.lua',
     'tools/areagen_dump.lua', 'tools/areaplan/*.json',
     'data/items/art_items.csv', 'data/items/base_item_names.csv', 'data/items/chaos_items.xml',
     'data/lib/chaos_*.lua', 'data/scripts/chaos/areagen_*.lua', 'data/scripts/chaos/rift_config.lua',

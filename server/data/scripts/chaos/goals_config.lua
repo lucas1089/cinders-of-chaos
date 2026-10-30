@@ -164,7 +164,11 @@ C.hunts = {
 	{id = "wanwick_cloister", name = "Wanwick Cloister", level = {370, 430}},
 	{id = "brinescar_strand", name = "Brinescar Strand", level = {390, 450}},
 	{id = "rustcog_warrens", name = "Rustcog Warrens", level = {420, 480}},
-	{id = "mossgrave_tangle", name = "Mossgrave Tangle", level = {450, 506}}
+	{id = "mossgrave_tangle", name = "Mossgrave Tangle", level = {450, 506}},
+	{id = "brickhold_depths", name = "Brickhold Depths", level = {260, 340}},
+	{id = "cinderbrick_halls", name = "Cinderbrick Halls", level = {300, 470}},
+	{id = "dunereach_isle", name = "Dunereach Isle", level = {570, 700}},
+	{id = "rimewind_isle", name = "Rimewind Isle", level = {900, 1000}}
 }
 
 -- ------------------------------------------------------------------ bands

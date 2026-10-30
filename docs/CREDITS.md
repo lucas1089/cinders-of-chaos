@@ -197,6 +197,10 @@ Free effect, icon and font packs. Their files name no author.
   - Author: free asset pack
   - Licence: free to use
   - Used for: status words over creatures
+- **Hunting area maps**
+  - Author: RyuKage
+  - Licence: free map, shared as free to use; the map files carry no licence text
+  - Used for: the terrain of four hunts (Brickhold Depths, Cinderbrick Halls, Rimewind Isle, Dunereach Isle), cut from free community maps
 
 ## Fonts {pt-BR: Fontes}
 

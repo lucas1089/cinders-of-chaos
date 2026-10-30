@@ -26958,3 +26958,15 @@ monster levels, what drops, if you die, how often); the Next Goals rows and the 
   same places, a changed config changes the text, byte stability, the committed file is current); client `howcore_test.lua` (real data: rows,
   order, no leftover `{`, pt-BR converts to cp1252, lookups) and `howitworks_test.lua` (mocked widgets). Not run in a client.
 
+
+## Imported hunts (O335)
+
+Four hunts of the hall are cuts of free community maps (`tools/area_import.py`, docs/MAP_GUIDE.md "Imported hunts (O335)"):
+Brickhold Depths (260-340), Cinderbrick Halls (300-470), Dunereach Isle (570-700), Rimewind Isle (900-1000). Install: step `contentareas`
+(they are plans in `tools/areaplan/plans/`); nothing else to run. The hall: floor 7 wings grow 8 -> 9 modules a side (`hall.capacity`
+z 7: 52 slots), the display monsters are listed in `hunt_teleports_config.lua`, the goals list in `goals_config.lua`. Monsters were
+picked by fewest spawns (base spawn file plus all plan spawns) inside a band that fits the biome, leaving out raid, harvest and boss
+files: Phantom Shade, Shadowgeist, Shadow Reaper, Grimbone (0, 0, 7, 21 spawns before), Fire Man, Cinderclaw, Gallows Fledgling, Barrow Haunt
+(0, 18, 0, 0), Cunning Hyaena, Snake Master, Ashbound Thrall, Slagback Hound (0, 0, 25, 17), Elite Ice Dragon, Elite Yeti, Elite Ice Witch,
+Ice Dragon (0 each). Assumptions: the sprite pair draws every kept id (looked at in the previews); the 7 x 7 camp protection zone has no
+monster; the base spawn counts come from the installed base spawn file, not a running server. `tools/area_import_test.py` (CI).

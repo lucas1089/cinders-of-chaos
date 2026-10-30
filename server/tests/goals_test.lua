@@ -282,7 +282,7 @@ for _, g in ipairs(v2.gear) do
 end
 check(hasTokens, "token vendor line with the system")
 check(not hasPocket, "no pocket boss line without the system")
-eq(#v2.hunts, 4, "hunts of level 210: Azuregate, Drownbell, Bonechoir and Sulphur (O139 added the first two)")
+eq(#v2.hunts, 5, "hunts of level 210: Azuregate, Drownbell, Bonechoir, Sulphur (O139 added the first two) and the imported Brickhold Depths")
 eq(v2.hunts[1].id, "azuregate_reliquary", "lowest band first")
 eq(v2.hunts[1].where.k, "plan", "hunt where")
 local v3 = K.view(cfg, {level = 30, stats = {}, done = {}}, "en", resolve)
