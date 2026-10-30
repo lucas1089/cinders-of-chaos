@@ -741,6 +741,36 @@ python3 -I server/tools/area_planner.py install OUT SERVER_DIR      # the chest 
 - After placing, rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`, so the bounty board, the
   bestiary and the map markers know the new spawns, and `content_audit.py` to see the bands again.
 
+### Imported hunts (O335)
+Four hunts are cuts of free community maps (author RyuKage, docs/CREDITS.md), not generated: `server/tools/area_import.py`,
+plans of schema `chaos-area-import/1` in `server/tools/areaplan/plans/`, their tiles a committed chunk in
+`server/tools/areaplan/imports/<id>.otbm.xz` (the planner's OTBM format, ids of the base range only) and the spec that made it
+(`<id>.spec`: source rectangle, origin, density, monster mix). The source maps are not in git. The installer treats them as
+any plan: origin, teleport slot by level band, spawns, places file. The free block for them is x 17800-18300, y 14340-14700,
+floor 7, 10 tiles from every other plan (`area_import_test.py` checks it).
+
+| Plan | Band | Size | Origin x, y, z | Arrival | Biome | Walkable | Monsters (count) |
+|---|---|---|---|---|---|---|---|
+| brickhold_depths | 260-340 | 168 x 151 | 17800, 14340, 7 | 17883, 14414, 7 | dungeon | 4222 | Phantom Shade 54, Shadowgeist 36, Shadow Reaper 30, Grimbone 24 |
+| cinderbrick_halls | 300-470 | 137 x 166 | 18000, 14340, 7 | 18068, 14415, 7 | dungeon | 5254 | Fire Man 66, Cinderclaw 39, Gallows Fledgling 33, Barrow Haunt 30 |
+| dunereach_isle | 570-700 | 111 x 136 | 18150, 14540, 7 | 18196, 14608, 7 | waste | 6298 | Cunning Hyaena 45, Snake Master 24, Ashbound Thrall 36, Slagback Hound 21 |
+| rimewind_isle | 900-1000 | 239 x 146 | 17869, 14540, 7 | 17982, 14618, 7 | ice | 6896 | Elite Ice Dragon 42, Elite Yeti 42, Elite Ice Witch 33, Ice Dragon 21 |
+
+What the cut does (`area_import.py extract`): keeps ground, border, wall and decoration items of known ids; drops unknown ids,
+containers, doors, keys, signs, fields, fluids, teleports, all action and unique ids, all tile flags; removes floor changes
+(a stair that was the ground takes the commonest ground around it, so no stair leads nowhere); keeps only the walkable set
+joined to the arrival plus 10 tiles around it (the player sees 9 x 7 tiles beyond); adds a 7 x 7 protection zone camp around
+the arrival and the exit forcefield (action id 47951, the way back to the hall). Spawns: farthest-point points 5 tiles apart,
+none within 10 tiles of the arrival, packs of 3, 3.2-3.4 monsters per 100 walkable tiles in the halls and 2.0 on the open
+islands (the guide's open-land numbers), the monster mix in regions. The imported maps keep their own shape; the generated
+areas' asymmetry rule does not apply to them. Not imported: the first map's areas (custom ids 44011-55072 that are not ours),
+every town and house, the thin coastal belt of the grass island (a strip, not a hunt), the multi floor mountain halls (their
+stairs lead to floors that would be cut).
+
+Re-extract after a change of a spec: `python3 -I server/tools/area_import.py extract server/tools/areaplan/imports/ID.spec SOURCE.otbm ASSETS_DIR`
+(ASSETS_DIR: items.otb, items.xml and the Tibia.dat of the installed server, Tibia.spr for `preview`). Then `install_content_areas.py` on a
+restored map (a changed plan is refused once placed).
+
 ### Haunted Harvest (event areas of the pair 33 kit)
 The seasonal haunted village (server/README.md "Haunted Harvest"; owner 2026-10-21: a Halloween / haunted map) is two
 fixed plans in `server/tools/areaplan/events/`, at the column x 15305 below the Hollow Crypt (the base map has no tile

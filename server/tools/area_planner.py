@@ -81,6 +81,10 @@ def main(argv):
         print(__doc__)
         return 2
     cmd = args.pop(0)
+    if cmd in ('validate', 'compile') and args:
+        import area_import  # an imported hunt (docs/MAP_GUIDE.md "Imported hunts") is checked and compiled by its own tool
+        if area_import.is_import(load_plan(args[0])):
+            return area_import.main([cmd] + args)
     if cmd == 'validate':
         plan = load_plan(args[0])
         issues = C.validate(plan, pair24=pair24)
