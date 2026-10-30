@@ -191,7 +191,9 @@ How to build by hand, on Linux with the SDK, NDK r27d and Gradle 8.9 or newer:
 The workflow does exactly this. Secrets, names only: `CHAOS_CLIENT_KEY` and `CHAOS_RSA_PUBLIC` as for the Windows
 package, and for a release signature `ANDROID_CLIENT_KEYSTORE_B64`, `ANDROID_CLIENT_KEYSTORE_PASS` and
 `ANDROID_CLIENT_KEY_ALIAS`. Without the keystore secrets the APK is a debug build with the runner's debug key. The game
-client has its own release key, not the key of the admin app.
+client has its own release key, not the key of the admin app. The engine inside is always a Release build with
+`NDEBUG`, also in a debug APK: a Debug engine keeps the `VALIDATE` checks, which end the game on a deep Lua stack
+(`getTop() <= 20`, 2026-10-30 on a phone), and runs at `-O0`. The workflow fails if the CMake cache says otherwise.
 
 ### What was checked here
 

@@ -265,6 +265,10 @@ jobs:
             -PchaosDepsPrefix="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" \
             -PchaosAssetsDir="$GITHUB_WORKSPACE/apk-assets" \
             -PchaosClientBuild="$CLIENT_BUILD"
+          # the engine must be an optimised build with NDEBUG (app/build.gradle): a Debug one ends the game on VALIDATE checks
+          CACHE=$(find app/.cxx -name CMakeCache.txt | head -1)
+          grep -H '^CMAKE_BUILD_TYPE' "$CACHE"
+          grep -q '^CMAKE_BUILD_TYPE:STRING=Release$' "$CACHE" || { echo "::error::the engine was not built as Release"; exit 1; }
 
       - name: Check the APK and write its update entry
         run: |

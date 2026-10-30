@@ -73,6 +73,15 @@ android {
     }
 
     buildTypes {
+        // the engine is always built optimised: a Debug native build keeps the engine's VALIDATE checks, which end the
+        // game on a deep Lua stack (getTop() <= 20) that the desktop release build ignores, and runs at -O0
+        debug {
+            externalNativeBuild {
+                cmake {
+                    arguments '-DCMAKE_BUILD_TYPE=Release'
+                }
+            }
+        }
         release {
             minifyEnabled false
             if (System.getenv('CHAOS_KS_FILE')) {
