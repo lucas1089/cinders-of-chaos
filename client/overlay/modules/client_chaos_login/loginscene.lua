@@ -292,8 +292,22 @@ function LoginScene.setLogoBox(x, y, w, h)
   place(logoShade, x - w * 0.12, y - h * 0.08, w * 1.24, h * 1.16)
 end
 
+-- the sign-in panel's box (relative to the parent): the map name stays clear of it, above its right corner when
+-- the room beside it is too narrow (a phone)
+local panelBox
+function LoginScene.setPanelBox(x, y, w, h)
+  panelBox = { x = x, y = y, w = w, h = h }
+  if alive(caption) then
+    local mr, mb = 22, 18
+    local cw, pw = caption:getWidth(), alive(layer) and layer:getWidth() or 0
+    if cw > 0 and pw > 0 and pw - mr - cw < x + w + 8 then mb = (alive(layer) and layer:getHeight() or 0) - y + 6 end
+    caption:setMarginBottom(mb)
+  end
+end
+
 function LoginScene.relayout()
   if alive(layer) then build() end
+  if panelBox then LoginScene.setPanelBox(panelBox.x, panelBox.y, panelBox.w, panelBox.h) end
 end
 
 -- every 50 ms from login.lua's tick
