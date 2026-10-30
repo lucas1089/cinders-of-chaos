@@ -20793,6 +20793,12 @@ every build started from the base map and the install steps, so an edit lived on
 - **Publishing a master.** `python3 -I server/tools/map_master.py pack <the owner's .otbm> <windows-assets>/world
   --note "..."`, then commit `world/MAP_MASTER.json`, `world/SHA256SUMS` and every `world/map-master.otbm.xz.part*`
   on `windows-assets` (removed parts too) and push. The next package build and the next "Atualizar servidor" take it.
+- **Update check in CI** (`.github/workflows/upgrade-install.yml`, `tools/ci/upgrade_install.sh`; 2026-10-30). The
+  package build installs from scratch and never sees an older version's work. This job installs the code of the newest
+  winpkg release with a Linux server (or `from_ref`) on the base server and the map master, then this commit's
+  `install_all.py --no-sql` over it, the way the VPS updates. A step that refuses its own older work fails the job. When
+  the update asks for the map from its backup, it runs again with `<map>.otbm.restore` and passes with a warning: create
+  the marker on the VPS before that update. Runs on pull requests that touch `server/tools` or `server/data`.
 
 ## Monster level: no skull, no spread (O326, engine patch 0082)
 Owner 2026-10-29 (pt-BR): "monstros com caveira ainda estao muito fortes, tire a mecanica da caveira". Coordinator
