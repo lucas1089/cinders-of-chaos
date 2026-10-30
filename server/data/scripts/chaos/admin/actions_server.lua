@@ -52,6 +52,19 @@ reg{id = "reload", name = "Reload system", description = "Reload one subsystem w
 		return true, "Reloaded " .. p.system .. "."
 	end}
 
+-- one config table, not a whole system (reload_file_core.lua; server/README.md "Reload one config table (O312)")
+reg{id = "reload_file", name = "Reload one config table", dangerous = true,
+	description = "Copy one data/scripts/chaos/*_config.lua into the running game without a full reload. Empty: list the "
+		.. "tables that can be reloaded. A script file is refused (use Reload system scripts or restart).",
+	params = {{name = "file", label = "Config file (like pace_config)", type = "string", max = 64, required = false}},
+	handler = function(actor, p)
+		if not ChaosReloadFile then pcall(dofile, "data/scripts/chaos/reload_file_core.lua") end
+		if not ChaosReloadFile then return false, "reload_file_core.lua is not installed." end
+		local ok, msg, lines = ChaosReloadFile.reload(p.file or "")
+		if not ok then return false, msg end
+		return true, msg, lines
+	end}
+
 local MARKS = {[3600] = true, [1800] = true, [600] = true, [300] = true, [120] = true, [60] = true, [30] = true,
 	[10] = true, [5] = true, [4] = true, [3] = true, [2] = true, [1] = true}
 

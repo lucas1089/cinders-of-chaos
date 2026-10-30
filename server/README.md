@@ -20786,7 +20786,7 @@ server folder (the engine's working folder), the same idea as the stop request f
   `spectate NAME` (same name rule) starts or renews the live view of a character (see "Live spectator"); a renewal is
   not logged. `cast NAME` (same name rule) names the player of the cast port and `caststop` clears it (src-patch 0064;
   an engine without it answers "this engine has no cast port"). Control characters, long lines and every other word are refused and logged.
-- The whole admin panel (`chaos/admin`, 179 actions) is reachable too, through two more lines: `catalog ACTOR` writes the
+- The whole admin panel (`chaos/admin`, 180 actions) is reachable too, through two more lines: `catalog ACTOR` writes the
   catalog of the panel for ACTOR's group to `remote.catalog` (JSON, same as the in-game panel gets), and
   `panel RID ACTION|ACTOR|JSON` runs one action (`ChaosAdmin.execute`: group check, parameter validation, audit log) and
   appends `{"rid","ok","message","lines"}` to `remote.result` (restarted above `maxResultBytes`). ACTOR is an admin
@@ -20811,14 +20811,50 @@ in `desktop/` (README there). It adds nothing to the server: it runs the system 
 calls `chaos-ctl.sh`, so the commands, `remote.cmd` and the audit log stay the only way in.
 - **Live apply.** Actions are marked live, needs restart, restarts the server or next install. "Apply live" runs the
   admin panel action `reload` (`chaos-ctl.sh panel ACTOR reload '{"system":"scripts"}'`) after a command that only
-  wrote a file (beta mode). The `reload` action reloads a whole system; there is no per-file reload yet, and the XP
-  rate buttons stay "needs restart" until `Game.reload(config)` is checked on a live server.
+  wrote a file (beta mode). The `reload` action reloads a whole system; one config table has its own reload (below,
+  "Reload one config table"). The XP rate buttons stay "needs restart" until `Game.reload(config)` is checked on a live
+  server.
+- **Live view.** The page "Ao vivo" runs `status`, `players` and `logs N` in one ssh call (a marker line between the
+  three) every 2 to 60 s while the page is open: server state, players online and a console tail with a filter, error
+  and warning colours and follow; pause, "Atualizar agora". One refresh at a time. No daemon, no new command.
 - **Command table.** `desktop/src/commands.rs`; `tools/ci/check_desktop_commands.py` compares it with the commands the
   Android app calls and with `chaos-ctl.sh`.
-- **Updates.** Releases `admin-desktop-vX.Y.Z` made by `.github/workflows/admin-desktop.yml` (manual); the app checks
-  them at start and swaps its own `.exe` after a SHA-256 check.
+- **Updates.** Releases `admin-desktop-vX.Y.Z` made by `.github/workflows/admin-desktop.yml` (manual) with the `.exe`,
+  its `.sig` and a `.sha256`. The app checks them at start and swaps its own `.exe` only after an Ed25519 signature
+  check (`desktop/src/sign.rs`, same scheme as the game updater and the launcher; the public key is compiled in from
+  `desktop/update_public_key.hex`, the private key is the repository secret `ADMIN_DESKTOP_SIGNING_KEY`). The signature
+  covers product, version, file name, size and SHA-256. No key in the build, a bad signature, a changed byte, a version
+  that is not the release tag or not newer than the running app: the update is refused.
 - **Untested.** Not run against a live VPS, not built on Windows, the workflow has not run. `cargo test` covers the
-  command table, quoting, settings, version compare, update choice, checksum and the swap.
+  command table, quoting, settings, version compare, update choice, the signature (good, bad signature, bad hash, no
+  key, replay and downgrade), the live view timer and split, the reload name rules and the swap.
+
+## Reload one config table (O312) (`reload_file_core.lua`, `reload_file_config.lua`, panel action `server.reload_file`)
+Owner, 2026-10-29 (O312): config and balance changes should apply without a full `/reload`. Revscripts cannot be reloaded
+one by one in TFS 1.4.2 (`Game.reload(scripts)` runs them all again and the scripts register events, so some state is
+lost). A `*_config.lua` file is different: it returns a plain table.
+- **How.** `chaos_constants.lua` (loaded first by every system) installs a thin wrapper around `dofile`
+  (`ChaosReloadFile.install`, idempotent). Every `data/scripts/chaos/*_config.lua` that a script loads returns a table;
+  the wrapper keeps it (the live copy; at most `maxTracked` per file, the same table once). A reload runs the file with
+  `loadfile` and, only if it parses, runs and returns a table, copies the new values INTO the live tables (identity kept
+  for nested tables, keys the file lost are removed). A script that holds the table reads the new numbers at its next
+  read. A file with an error, no table, or no live copy changes nothing and says why.
+- **Entry points.** Panel action `server.reload_file` (group 6 like the system `reload`, `dangerous`; the file is empty
+  to list the live tables), `chaos-ctl.sh reload-file ACTOR [CONFIG]` (checks the name with `^[a-z][a-z0-9_]{0,63}$`,
+  then `panel ACTOR server.reload_file '{"file":"NAME"}'`) and `chaos-ctl.sh reload-files` (the config names on disk).
+  The desktop app has the card "Recarregar um arquivo" on its Painel do jogo page; the Android app reaches the same panel
+  action through its Painel do jogo list (the catalog shows it, no new code).
+- **Safe by construction.** Only a bare name is accepted (a-z, 0-9, `_`; `pace_config`, `pace_config.lua` or the full
+  folder path of the same file); anything with a slash, dot segment, space, quote or `$` is refused in the app, in
+  `chaos-ctl.sh` and in the game, and the file read is always `data/scripts/chaos/NAME.lua`.
+- **What needs a restart, and the UI says so.** A script (not `*_config`): not reloaded alone, use Server > Reload system
+  > scripts or restart. `restartOnly` in `reload_file_config.lua` (`remote_cmd_config`, whose interval is read once).
+  A value a script copied out of the table when it loaded (`local N = cfg.n`) keeps the old number until the next scripts
+  reload; a config nobody loaded with `dofile` since the start has no live copy. The answer lists the first changed
+  keys, so the owner sees what moved.
+- **Tests.** `tests/reload_file_test.lua` (names, classes, tracking, in-place copy with identity, cycles, a broken file
+  changes nothing, every shipped `*_config.lua` reloads into itself without a change, the panel action) and the
+  `reload-file` cases of `server/deploy/chaos_ctl_test.py`. Not run on a live server.
 
 ## Live spectator (`spectate.lua`, `spectate_core.lua`, `spectate_config.lua`, `tools/spectate_render.py`)
 Owner, 2026-10-20 (ROADMAP "Open decisions": a live view of a player in the admin app). Phase 1: the owner watches one

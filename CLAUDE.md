@@ -37,6 +37,7 @@ python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
 python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix)
 python3 -I tools/ci/check_desktop_commands.py   # desktop admin app (O312) table names the same chaos-ctl commands as android/
+python3 -I desktop/tools/sign_release_test.py   # desktop admin app signed self-update: the Python signer and desktop/src/sign.rs share one vector; key must be the compiled-in one
 python3 -I server/deploy/discord_bot/bot_core_test.py && python3 -I server/deploy/discord_bot/claude_client_test.py   # Discord bot for bug reports and patch notes (O324): classification parsing, duplicates, status changes, patch notes, daily summary, Claude calls with fakes; chaos_ctl_test.py covers chaos-ctl.sh discord-bot
 cd desktop && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked
 for d in crates/selfupdate launcher; do (cd $d && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked); done   # game launcher (O314) and its shared crate; launcher/tests/mass_update.rs updates a fake install many times from a local HTTP server (interrupted download, bad hash, bad signature, rollback, self-update); needs curl

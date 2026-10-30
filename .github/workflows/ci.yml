@@ -666,6 +666,7 @@ jobs:
       - name: Desktop admin app (O312; desktop/, unit tests, same chaos-ctl commands as the Android app)
         run: |
           python3 -I tools/ci/check_desktop_commands.py
+          python3 -I desktop/tools/sign_release_test.py
           cd desktop
           cargo fmt --check
           cargo clippy --locked --all-targets -- -D warnings

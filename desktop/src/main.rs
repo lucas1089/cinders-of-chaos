@@ -3,7 +3,8 @@ use cinders_admin::cards::{self, Count, Metrics, Player, State, Status};
 use cinders_admin::catalog::{self, PanelAction};
 use cinders_admin::commands::{self, Action, Kind, Live, Tab, ACTIONS};
 use cinders_admin::config::{self, Config};
-use cinders_admin::{ssh, update};
+use cinders_admin::live::{self, Level, Poller};
+use cinders_admin::{reload, ssh, update};
 use eframe::egui;
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -13,8 +14,17 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[derive(PartialEq, Clone, Copy)]
 enum Page {
     Tab(Tab),
+    Live,
     Game,
     Settings,
+}
+
+/// One refresh of the live page.
+struct LiveData {
+    status: Status,
+    players: Vec<Player>,
+    logs: String,
+    at: i64,
 }
 
 enum Msg {
@@ -30,6 +40,9 @@ enum Msg {
     CardStatus(Result<Status, String>),
     CardPlayers(Result<Vec<Player>, String>),
     CardMetrics(Result<Metrics, String>),
+    Live(Result<LiveData, String>),
+    /// Names printed by `reload-files`.
+    ReloadList(Result<Vec<String>, String>),
 }
 
 struct Pending {
@@ -39,6 +52,8 @@ struct Pending {
     timeout: u64,
     reload: Option<&'static str>,
     warn: String,
+    /// The answer is the JSON line of a panel action: show its message and lines.
+    panel_answer: bool,
 }
 
 struct App {
@@ -65,6 +80,19 @@ struct App {
     card_metrics: Option<Metrics>,
     card_metrics_note: String,
     cards_busy: usize,
+    started: std::time::Instant,
+    poller: Poller,
+    live_status: Option<Status>,
+    live_players: Vec<Player>,
+    live_logs: String,
+    live_at: Option<i64>,
+    live_note: String,
+    live_filter: String,
+    live_lines: u32,
+    live_follow: bool,
+    reload_names: Vec<String>,
+    reload_pick: String,
+    reload_note: String,
 }
 
 impl App {
@@ -99,6 +127,19 @@ impl App {
             card_metrics: None,
             card_metrics_note: "Toque em Carregar métricas.".into(),
             cards_busy: 0,
+            started: std::time::Instant::now(),
+            poller: Poller::default(),
+            live_status: None,
+            live_players: Vec::new(),
+            live_logs: String::new(),
+            live_at: None,
+            live_note: "Esperando a primeira atualização.".into(),
+            live_filter: String::new(),
+            live_lines: 100,
+            live_follow: true,
+            reload_names: Vec::new(),
+            reload_pick: String::new(),
+            reload_note: "Lista vazia: toque em Listar arquivos.".into(),
         };
         if app.cfg.auto_update {
             app.check_update();
@@ -432,6 +473,11 @@ impl App {
                     ok = rok && r.code == 0;
                 }
             }
+            if p.panel_answer {
+                let (pok, msg) = catalog::parse_panel_result(&o.text);
+                ok = pok && o.code == 0;
+                o.text = msg;
+            }
             if o.code != 0 {
                 o.text.push_str(&format!("\n[exit code {}]\n", o.code));
             }
@@ -469,6 +515,7 @@ impl App {
                     timeout: a.timeout,
                     reload,
                     warn,
+                    panel_answer: false,
                 };
                 if a.confirm {
                     self.confirm = Some(p);
@@ -543,6 +590,7 @@ impl App {
     }
 
     fn game_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        self.reload_ui(ui, ctx);
         ui.label(
             "Tudo o que o painel de admin faz dentro do jogo, como o personagem admin de Config (pode estar offline).",
         );
@@ -668,6 +716,7 @@ impl App {
                             } else {
                                 String::new()
                             },
+                            panel_answer: false,
                         };
                         if a.risky {
                             self.confirm = Some(p);
@@ -675,6 +724,273 @@ impl App {
                             self.run(ctx, p);
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /// Starts one refresh of the live page when the timer says so; otherwise asks for a wake-up at the next one.
+    fn poll_live(&mut self, ctx: &egui::Context) {
+        let now = self.started.elapsed().as_millis() as u64;
+        if self.cfg.configured() && self.poller.due(now) {
+            self.poller.started(now);
+            let (cfg, tx, c, n) = (self.cfg.clone(), self.tx.clone(), ctx.clone(), self.live_lines);
+            std::thread::spawn(move || {
+                let line = live::remote_line(
+                    &ssh::ctl_line(&cfg, "status"),
+                    &ssh::ctl_line(&cfg, "players"),
+                    &ssh::ctl_line(&cfg, &format!("logs {n}")),
+                );
+                let o = ssh::exec(&cfg, &line, 40, None);
+                let first = |t: &str| t.lines().next().unwrap_or("").to_string();
+                let r = match live::split(&o.text) {
+                    None => Err(first(&o.text)),
+                    Some(s) => {
+                        let status = Status::parse(&s.status);
+                        if status.valid() {
+                            Ok(LiveData {
+                                status,
+                                players: cards::parse_players(&s.players),
+                                logs: s.logs,
+                                at: Self::now_unix(),
+                            })
+                        } else {
+                            Err(first(&s.status))
+                        }
+                    }
+                };
+                let _ = tx.send(Msg::Live(r));
+                c.request_repaint();
+            });
+        } else if let Some(ms) = self.poller.wait_ms(now) {
+            ctx.request_repaint_after(std::time::Duration::from_millis(ms.clamp(200, 5000)));
+        }
+    }
+
+    fn live_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        let gold = egui::Color32::from_rgb(230, 170, 60);
+        let red = egui::Color32::from_rgb(220, 80, 60);
+        let green = egui::Color32::from_rgb(90, 190, 100);
+        if !self.cfg.configured() {
+            ui.colored_label(gold, "Preencha o servidor, o usuário e a chave em Config.");
+        }
+        ui.horizontal_wrapped(|ui| {
+            ui.heading("Ao vivo");
+            ui.label("Atualizar a cada");
+            egui::ComboBox::from_id_salt("live_interval")
+                .selected_text(format!("{} s", self.poller.interval_secs))
+                .show_ui(ui, |ui| {
+                    for i in live::INTERVALS {
+                        ui.selectable_value(&mut self.poller.interval_secs, i, format!("{i} s"));
+                    }
+                });
+            ui.checkbox(&mut self.poller.paused, "Pausar");
+            if ui.button("Atualizar agora").clicked() {
+                self.poller.refresh_now();
+            }
+            if self.poller.running() {
+                ui.spinner();
+            }
+            match self.live_at {
+                Some(t) => {
+                    let ago = (Self::now_unix() - t).max(0);
+                    ui.weak(format!("atualizado há {}", cards::duration(ago)));
+                }
+                None => {
+                    ui.weak("ainda sem dados");
+                }
+            }
+        });
+        if self.poller.paused {
+            ui.colored_label(gold, "Pausado: nada é pedido ao servidor.");
+        }
+        if !self.live_note.is_empty() {
+            ui.colored_label(red, &self.live_note);
+        }
+        if let Some(s) = self.live_status.clone() {
+            let st = s.state();
+            let on = st == State::Online;
+            ui.horizontal_wrapped(|ui| {
+                let c = match st {
+                    State::Online => green,
+                    State::Starting | State::Stopping | State::OnlineNoUnit => gold,
+                    _ => red,
+                };
+                ui.colored_label(c, st.badge());
+                if let (true, Some(up)) = (on, s.uptime_sec(Self::now_unix())) {
+                    ui.label(format!("no ar há {}", cards::duration(up)));
+                }
+                ui.label(format!("Jogadores {}", s.players_text()));
+                match s.errors() {
+                    Some(0) => ui.label("Erros: nenhum"),
+                    Some(n) => ui.colored_label(red, format!("Erros: {n}")),
+                    None => ui.label("Erros: ?"),
+                };
+                ui.label(format!("Memória {}", s.mem_text()));
+                ui.label(format!("Carga {}", s.load_text()));
+                ui.label(format!("Disco {}", s.disk_text()));
+            });
+        }
+        egui::CollapsingHeader::new(format!("Online agora ({})", self.live_players.len()))
+            .default_open(true)
+            .show(ui, |ui| {
+                if self.live_players.is_empty() {
+                    ui.label("Ninguém online.");
+                }
+                for x in &self.live_players {
+                    ui.label(format!("{}  nível {}  {}", x.name, x.level, x.vocation));
+                }
+            });
+        ui.separator();
+        ui.horizontal_wrapped(|ui| {
+            ui.strong("Console do jogo");
+            let before = self.live_lines;
+            egui::ComboBox::from_id_salt("live_lines")
+                .selected_text(format!("{} linhas", self.live_lines))
+                .show_ui(ui, |ui| {
+                    for n in live::LOG_LINES {
+                        ui.selectable_value(&mut self.live_lines, n, format!("{n} linhas"));
+                    }
+                });
+            if before != self.live_lines {
+                self.poller.refresh_now();
+            }
+            ui.add(
+                egui::TextEdit::singleline(&mut self.live_filter)
+                    .hint_text("Filtrar (error, Bob)")
+                    .desired_width(180.0),
+            );
+            ui.checkbox(&mut self.live_follow, "Seguir o fim");
+            if ui.button("Copiar").clicked() {
+                ctx.copy_text(live::filter_lines(&self.live_logs, &self.live_filter).join("\n"));
+            }
+        });
+        let lines = live::filter_lines(&self.live_logs, &self.live_filter);
+        egui::ScrollArea::vertical()
+            .id_salt("live_log")
+            .max_height(360.0)
+            .auto_shrink([false, false])
+            .stick_to_bottom(self.live_follow)
+            .show(ui, |ui| {
+                if lines.is_empty() {
+                    ui.weak("Sem linhas.");
+                }
+                for l in &lines {
+                    let t = egui::RichText::new(l).monospace();
+                    match live::level(l) {
+                        Level::Error => ui.label(t.color(red)),
+                        Level::Warn => ui.label(t.color(gold)),
+                        Level::Normal => ui.label(t),
+                    };
+                }
+            });
+        ui.weak("O mesmo que Painel > Estado, Jogadores e Logs > Console, pedidos juntos em uma conexão. Só atualiza enquanto esta página está aberta.");
+    }
+
+    /// The card "Recarregar um arquivo": one config table into the running game.
+    fn reload_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.heading("Recarregar um arquivo");
+        ui.label(
+            "Copia uma tabela *_config.lua do servidor para o jogo que está rodando, sem /reload. Precisa do \
+             personagem admin de Config (grupo 6). Scripts não recarregam sozinhos: precisam de Recarregar scripts \
+             (abaixo, Server > Reload system) ou de reinício.",
+        );
+        ui.horizontal_wrapped(|ui| {
+            if ui.button("Listar arquivos").clicked() {
+                self.reload_note = "Pedindo a lista...".into();
+                let (cfg, tx, c) = (self.cfg.clone(), self.tx.clone(), ctx.clone());
+                std::thread::spawn(move || {
+                    let o = ssh::exec(&cfg, &ssh::ctl_line(&cfg, "reload-files"), 40, None);
+                    let r = if o.code == 0 {
+                        Ok(reload::parse_list(&o.text))
+                    } else {
+                        Err(o.text.lines().next().unwrap_or("").to_string())
+                    };
+                    let _ = tx.send(Msg::ReloadList(r));
+                    c.request_repaint();
+                });
+            }
+            ui.add(
+                egui::TextEdit::singleline(&mut self.reload_pick)
+                    .hint_text("pace_config")
+                    .desired_width(220.0),
+            );
+            if ui
+                .button("Quais estão vivos?")
+                .on_hover_text("Lista o que o jogo já pode recarregar")
+                .clicked()
+            {
+                self.reload_start(ctx, "");
+            }
+        });
+        let q = self.reload_pick.trim().to_lowercase();
+        let shown: Vec<String> = self
+            .reload_names
+            .iter()
+            .filter(|n| q.is_empty() || n.contains(&q))
+            .take(40)
+            .cloned()
+            .collect();
+        if !shown.is_empty() {
+            egui::ScrollArea::vertical()
+                .id_salt("reload_names")
+                .max_height(120.0)
+                .show(ui, |ui| {
+                    ui.horizontal_wrapped(|ui| {
+                        for n in &shown {
+                            if ui.selectable_label(self.reload_pick.trim() == n, n).clicked() {
+                                self.reload_pick = n.clone();
+                            }
+                        }
+                    });
+                });
+        }
+        ui.weak(&self.reload_note);
+        match reload::normalize(&self.reload_pick) {
+            Ok(name) => {
+                let k = reload::kind(&name);
+                ui.label(reload::note(k));
+                if ui
+                    .add_enabled(
+                        k == reload::Kind::Config,
+                        egui::Button::new(format!("Recarregar {name}")),
+                    )
+                    .clicked()
+                {
+                    self.reload_start(ctx, &name);
+                }
+            }
+            Err(e) if !self.reload_pick.trim().is_empty() => {
+                ui.colored_label(egui::Color32::from_rgb(220, 80, 60), e);
+            }
+            Err(_) => {}
+        }
+        ui.separator();
+    }
+
+    fn reload_start(&mut self, ctx: &egui::Context, name: &str) {
+        match reload::args(&self.cfg.actor, name) {
+            Err(e) => self.status = e,
+            Ok(line) => {
+                let p = Pending {
+                    title: if name.is_empty() {
+                        "Recarregar > arquivos vivos".into()
+                    } else {
+                        format!("Recarregar > {name}")
+                    },
+                    line,
+                    stdin: None,
+                    timeout: 40,
+                    reload: None,
+                    warn: format!(
+                        "Recarregar {name} no jogo em andamento? Os valores novos valem para todos os jogadores agora."
+                    ),
+                    panel_answer: true,
+                };
+                if name.is_empty() {
+                    self.run(ctx, p);
+                } else {
+                    self.confirm = Some(p);
                 }
             }
         }
@@ -757,6 +1073,26 @@ impl eframe::App for App {
                         }
                     }
                 }
+                Msg::Live(r) => {
+                    self.poller.finished();
+                    match r {
+                        Ok(d) => {
+                            self.live_status = Some(d.status);
+                            self.live_players = d.players;
+                            self.live_logs = d.logs;
+                            self.live_at = Some(d.at);
+                            self.live_note.clear();
+                        }
+                        Err(e) => self.live_note = format!("Sem resposta: {e}"),
+                    }
+                }
+                Msg::ReloadList(r) => match r {
+                    Ok(v) => {
+                        self.reload_note = format!("{} arquivos de configuração.", v.len());
+                        self.reload_names = v;
+                    }
+                    Err(e) => self.reload_note = format!("Sem lista: {e}"),
+                },
                 Msg::Catalog(r) => match r {
                     Ok((a, g)) => {
                         self.catalog_note = format!("{} comandos (grupo {g}).", a.len());
@@ -784,12 +1120,17 @@ impl eframe::App for App {
             }
         }
 
+        if self.page == Page::Live {
+            self.poll_live(ctx);
+        }
+
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Cinders Admin");
                 for t in Tab::ALL {
                     ui.selectable_value(&mut self.page, Page::Tab(t), t.title());
                 }
+                ui.selectable_value(&mut self.page, Page::Live, "Ao vivo");
                 ui.selectable_value(&mut self.page, Page::Game, "Painel do jogo");
                 ui.selectable_value(&mut self.page, Page::Settings, "Config");
                 if self.busy > 0 {
@@ -806,7 +1147,7 @@ impl eframe::App for App {
                         let (tx, c) = (self.tx.clone(), ctx.clone());
                         self.update_note = "Baixando...".into();
                         std::thread::spawn(move || {
-                            let _ = tx.send(Msg::Installed(update::install(&f).map(|_| ())));
+                            let _ = tx.send(Msg::Installed(update::install(&f, VERSION).map(|_| ())));
                             c.request_repaint();
                         });
                     }
@@ -854,12 +1195,14 @@ impl eframe::App for App {
                                         timeout: 60,
                                         reload: None,
                                         warn: String::new(),
+                                        panel_answer: false,
                                     };
                                     self.run(ctx, p);
                                 }
                             });
                         }
                     }
+                    Page::Live => self.live_ui(ui, ctx),
                     Page::Game => self.game_ui(ui, ctx),
                     Page::Settings => self.settings_ui(ui),
                 });

@@ -2154,6 +2154,16 @@ if type(rawgetmetatable) == "function" and type(CreatureEvent) == "table" and ge
 	D.install()
 end
 
+-- Reload one config table (O312, reload_file_core.lua): a thin wrapper around dofile remembers the table every
+-- data/scripts/chaos/*_config.lua hands back, so the admin panel can copy a changed file into the running game. Installed
+-- here, before the systems load their configs; a reload of this file keeps the first wrapper.
+if not ChaosReloadFile then
+	pcall(dofile, "data/scripts/chaos/reload_file_core.lua")
+end
+if ChaosReloadFile and ChaosReloadFile.install then
+	ChaosReloadFile.install()
+end
+
 -- PZ guard (pz_guard_core.lua): doTargetCombat / doTargetCombatHealth drop damage to a player in a protection zone, as
 -- the engine's own combat does. Installed here, before any system keeps a local copy of those globals.
 if not ChaosPzGuard then

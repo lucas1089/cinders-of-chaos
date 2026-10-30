@@ -287,7 +287,7 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 - **ed25519-compact**
   - Author: Frank Denis
   - Licence: MIT
-  - Used for: checking the Ed25519 signature of the update manifest in the game launcher
+  - Used for: checking the Ed25519 signature of the update manifest in the game launcher and of the releases of the desktop admin app
   - Source: https://github.com/jedisct1/rust-ed25519-compact
 - **RmlUi**
   - Author: Peter Curry, Michael R. P. Ragazzon and the RmlUi contributors

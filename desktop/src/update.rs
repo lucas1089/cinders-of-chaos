@@ -1,7 +1,10 @@
 //! Auto-update. On start the app asks the GitHub releases of this repository for the newest release whose tag starts
-//! with `admin-desktop-v`, downloads the asset, checks its SHA-256 against the `.sha256` asset, and swaps the program
-//! file (the running exe is renamed to `.old`, the new one takes its name; Windows allows that). The owner publishes a
-//! version with the workflow .github/workflows/admin-desktop.yml (manual). Downloads use curl (built into Windows 10+).
+//! with `admin-desktop-v`, downloads the asset and its signature (`.sig`), checks the Ed25519 signature with the key
+//! compiled into the app (sign.rs: it covers the version, file name, size and SHA-256), and only then swaps the program
+//! file (the running exe is renamed to `.old`, the new one takes its name; Windows allows that). Without a good
+//! signature nothing is replaced. The owner publishes a version with the workflow .github/workflows/admin-desktop.yml
+//! (manual), which signs it. Downloads use curl (built into Windows 10+).
+use crate::sign;
 use crate::version;
 pub use cinders_selfupdate::hash::{parse_sha, sha256_hex};
 pub use cinders_selfupdate::swap::swap;
@@ -21,8 +24,12 @@ pub const ASSET: &str = if cfg!(windows) {
 pub struct Found {
     pub tag: String,
     pub url: String,
-    pub sha_url: String,
+    /// The signed envelope `cinders-admin.exe.sig` (sign.rs).
+    pub sig_url: String,
 }
+
+/// The suffix of the signature asset.
+pub const SIG_SUFFIX: &str = ".sig";
 
 /// Picks the newest (by version number) non-draft release of ours that is newer than `current`.
 pub fn pick(releases_json: &str, current: &str) -> Option<Found> {
@@ -48,7 +55,7 @@ pub fn pick(releases_json: &str, current: &str) -> Option<Found> {
                     .flatten()
             })
         };
-        let (Some(url), Some(sha_url)) = (url_of(ASSET), url_of(&format!("{ASSET}.sha256"))) else {
+        let (Some(url), Some(sig_url)) = (url_of(ASSET), url_of(&format!("{ASSET}{SIG_SUFFIX}"))) else {
             continue;
         };
         let ver = version::parse(tag)?;
@@ -58,7 +65,7 @@ pub fn pick(releases_json: &str, current: &str) -> Option<Found> {
                 Found {
                     tag: tag.to_string(),
                     url,
-                    sha_url,
+                    sig_url,
                 },
             ));
         }
@@ -104,29 +111,54 @@ pub fn check(current: &str) -> Result<Option<Found>, String> {
     Ok(pick(&String::from_utf8_lossy(&body), current))
 }
 
-/// Downloads, verifies and swaps the program file. Returns the path of the new program (the caller restarts it).
-pub fn install(found: &Found) -> Result<PathBuf, String> {
+/// Downloads the program and its signature with `get` and returns the program bytes only when the signature holds
+/// (sign::verify with the compiled-in key `key`). Nothing is written here.
+pub fn fetch_verified(
+    found: &Found,
+    current: &str,
+    key: Option<[u8; 32]>,
+    get: &dyn Fn(&str) -> Result<Vec<u8>, String>,
+) -> Result<Vec<u8>, String> {
+    let key = key.ok_or_else(|| sign::Error::NoKey.to_string())?;
+    let sig = get(&found.sig_url)?;
+    let exe = get(&found.url)?;
+    sign::verify(
+        &sig,
+        &exe,
+        &sign::Expect {
+            key: &key,
+            asset: ASSET,
+            tag: &found.tag,
+            current,
+        },
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(exe)
+}
+
+/// Downloads, verifies the signature and swaps the program file. Returns the path of the new program (the caller
+/// restarts it). The file that is swapped in is the very byte string that was verified.
+pub fn install(found: &Found, current: &str) -> Result<PathBuf, String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let bytes = fetch_verified(found, current, sign::public_key(), &|u| curl(u, None))?;
     let new = exe.with_extension("new");
-    curl(&found.url, Some(&new))?;
-    let want = parse_sha(&String::from_utf8_lossy(&curl(&found.sha_url, None)?)).ok_or("bad .sha256 file")?;
-    let got = sha256_hex(&std::fs::read(&new).map_err(|e| e.to_string())?);
-    if got != want {
+    std::fs::write(&new, &bytes).map_err(|e| e.to_string())?;
+    if let Err(e) = swap(&exe, &new) {
         let _ = std::fs::remove_file(&new);
-        return Err(format!("checksum differs (got {got}); update refused"));
+        return Err(e);
     }
-    swap(&exe, &new)?;
     Ok(exe)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sign::tests::{envelope, pair};
 
-    fn rel(tag: &str, draft: bool, with_sha: bool) -> String {
+    fn rel(tag: &str, draft: bool, with_sig: bool) -> String {
         let mut assets = format!(r#"{{"name":"{ASSET}","browser_download_url":"https://x/{tag}/{ASSET}"}}"#);
-        if with_sha {
-            assets += &format!(r#",{{"name":"{ASSET}.sha256","browser_download_url":"https://x/{tag}/sha"}}"#);
+        if with_sig {
+            assets += &format!(r#",{{"name":"{ASSET}.sig","browser_download_url":"https://x/{tag}/sig"}}"#);
         }
         format!(r#"{{"tag_name":"{tag}","draft":{draft},"assets":[{assets}]}}"#)
     }
@@ -143,8 +175,79 @@ mod tests {
         );
         let f = pick(&j, "0.1.0").unwrap();
         assert_eq!(f.tag, "admin-desktop-v0.10.0");
-        assert!(f.url.ends_with(ASSET) && f.sha_url.ends_with("/sha"));
+        assert!(f.url.ends_with(ASSET) && f.sig_url.ends_with("/sig"));
         assert!(pick(&j, "0.10.0").is_none());
         assert!(pick("not json", "0.1.0").is_none());
+    }
+
+    #[test]
+    fn a_release_without_a_signature_is_not_offered() {
+        let j = format!("[{}]", rel("admin-desktop-v0.3.0", false, false));
+        assert!(pick(&j, "0.1.0").is_none());
+    }
+
+    const EXE: &[u8] = b"MZ the new program";
+
+    fn found() -> Found {
+        Found {
+            tag: "admin-desktop-v0.2.0".into(),
+            url: "https://x/exe".into(),
+            sig_url: "https://x/sig".into(),
+        }
+    }
+
+    /// A fake network: the exe and the signature file as given.
+    fn net<'a>(exe: &'a [u8], sig: &'a [u8]) -> impl Fn(&str) -> Result<Vec<u8>, String> + 'a {
+        move |u| match u {
+            "https://x/exe" => Ok(exe.to_vec()),
+            "https://x/sig" => Ok(sig.to_vec()),
+            _ => Err(format!("404 {u}")),
+        }
+    }
+
+    #[test]
+    fn good_signature_gives_the_bytes() {
+        let kp = pair(3);
+        let sig = envelope(&kp, "0.2.0", ASSET, EXE);
+        let got = fetch_verified(&found(), "0.1.0", Some(*kp.pk), &net(EXE, &sig)).unwrap();
+        assert_eq!(got, EXE);
+    }
+
+    #[test]
+    fn bad_signature_is_refused() {
+        let kp = pair(3);
+        let evil = pair(4);
+        // signed by a key that is not the compiled-in one
+        let sig = envelope(&evil, "0.2.0", ASSET, EXE);
+        let e = fetch_verified(&found(), "0.1.0", Some(*kp.pk), &net(EXE, &sig)).unwrap_err();
+        assert!(e.contains("signature is wrong") && e.contains("refused"), "{e}");
+        // garbage instead of a signature
+        let e = fetch_verified(&found(), "0.1.0", Some(*kp.pk), &net(EXE, b"hello")).unwrap_err();
+        assert!(e.contains("refused"), "{e}");
+    }
+
+    #[test]
+    fn bad_hash_is_refused() {
+        let kp = pair(3);
+        let sig = envelope(&kp, "0.2.0", ASSET, EXE);
+        let mut tampered = EXE.to_vec();
+        tampered[0] ^= 0xff; // a swapped download under a good signature file
+        let e = fetch_verified(&found(), "0.1.0", Some(*kp.pk), &net(&tampered, &sig)).unwrap_err();
+        assert!(e.contains("checksum differs") && e.contains("refused"), "{e}");
+    }
+
+    #[test]
+    fn no_compiled_in_key_refuses_everything() {
+        let kp = pair(3);
+        let sig = envelope(&kp, "0.2.0", ASSET, EXE);
+        let e = fetch_verified(&found(), "0.1.0", None, &net(EXE, &sig)).unwrap_err();
+        assert!(e.contains("no update signing key"), "{e}");
+    }
+
+    #[test]
+    fn a_failed_download_is_an_error() {
+        let kp = pair(3);
+        let e = fetch_verified(&found(), "0.1.0", Some(*kp.pk), &|u| Err(format!("down {u}"))).unwrap_err();
+        assert!(e.starts_with("down"), "{e}");
     }
 }
