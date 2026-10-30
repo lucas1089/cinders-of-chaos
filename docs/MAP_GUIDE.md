@@ -182,6 +182,40 @@ Measured around every spawn (13 tiles around each monster) on the live map, with
 Layout rule: build a loop of rooms (5-10 wide, 25-70 tiles) joined by 3-4 wide corridors. Add 1-2 dead-end pockets
 per 50x50 area as safe spots. Put 1 monster per spawn point every 4-7 tiles. Give each room 1-3 lights.
 
+### Asymmetric areas (standing rule)
+Owner rule, 2026-10-30: **every new area is asymmetric.** Never one round area, never one square, never one
+rectangle. The outline is irregular, lopsided and grown, not drawn. This holds for hunts, caves, forests and every
+other new map. The planner does it by default and QA fails a new plan that breaks it.
+
+How the planner builds it (`server/data/scripts/chaos/areagen_core.lua`, `server/tools/area_plan_core.py`):
+- A zone without a `shape` is `lobes` outside dungeon biomes: 3-6 overlapping lobes of different size and stretch,
+  each beside the one before, off the centre, with a different reach per direction, a rough rim and a smoothing pass.
+  Never a disc, never a box. Integer maths on the seeded generator, so the same seed gives the same bytes in LuaJIT and
+  Lua 5.3. `room` stays the default only in dungeon biomes (built halls); `cave` (round blobs) and `arena` (round)
+  are still there when a plan asks for them.
+- Compass places (`north`, `southwest`, ...) are a direction only: each zone drifts up to 9 % of the area by the seed.
+- `wild` and `tunnel` paths wander: a waypoint every 4-6 tiles pushed 2-3 tiles to one side or the other, and the
+  walker keeps 8 tiles from the border so no clamp flattens it.
+- Straight sides are broken: where a side of the walkable shape runs straight over 3 tiles, a 3-wide bump (2 deep)
+  or a notch pushes it out every 6-7 tiles.
+- Plans built before the rule keep their old outline: the ids in `legacy_plans` of
+  `server/tools/areaplan/shape_rules.json`. They only warn. The list may only shrink; a new plan never goes in it.
+
+QA scores the walkable tiles of every floor with 300 or more tiles (the footprint before the trees and bushes of the
+decoration took tiles). Limits in `server/tools/areaplan/shape_rules.json`, code in `server/tools/area_plan_shape.py`:
+
+| score | meaning | limit |
+|---|---|---|
+| mirror overlap left-right and top-bottom | intersection over union of the mask with its mirror image in the bounding box (circle, square, rectangle: 1.0) | at most 0.80 each |
+| bounding box fill | walkable tiles / bounding box tiles (square, rectangle: 1.0; circle 0.79) | at most 0.62 |
+| convex hull fill | walkable tiles / convex hull area (disc, box: about 1.0) | at most 0.86 |
+| longest straight edge run | consecutive edge tiles on one side (the generator breaks runs over 3; the guide's 4-5 rule for walls) | at most 7 |
+
+A new plan that breaks a limit gets an `ERROR` in QA (compile stops); a legacy plan gets a `WARN`. The test area
+`server/tools/areaplan/asym/asym_forest_test.json` (a forest hunt of 60 x 50) scores mirror 0.37 / 0.35, box 0.42, hull
+0.55, run 5. `server/tools/area_planner_test.py` checks a circle, a square, a rectangle, an ellipse and a plus fail and
+a generated outline passes. Show the picture to the owner after the first compile, as always.
+
 ## Pack items in the map editor (palette)
 
 The map editor reads the server's items.otb / items.xml, so the pack items (server/README.md "Pack items and monsters") are in
@@ -457,6 +491,7 @@ listed in `server/tools/areaplan_build.lua`, and the decoration kits in `server/
   tiers); a band may touch two neighbouring tiers. Wrong picks get a list of monsters of the right level.
 - No spawn in a PZ zone. The boss room has exactly one way in; a one-way teleport out does not count.
 - Teleport, stairs, chest, NPC and spawn targets exist. Stairs and holes join floors next to each other.
+- The outline of a new plan is asymmetric ("Asymmetric areas" above): mirror overlap, box fill, hull fill and straight run.
 - Zones fit inside the 4-tile rim with 3 tiles between them. Each message ends with a fix an AI can apply.
 - Chest rewards name items of our item tables (close names are suggested); two quest keys may not share a storage;
   a `new` NPC may not reuse an existing name.
@@ -774,6 +809,7 @@ Lessons from the owner's rounds on Sunken Mirewood. Start every new plan from th
   trees on the floor's ground).
 - A big room in the middle, and the rest spread over the map: no large empty block of rock or thicket left between
   the rooms.
+- Asymmetric: no area all round, all square or all rectangular ("Asymmetric areas" above; the planner builds lobes by default).
 - Nothing straight: `ragged: true` on hunt zones and `style: "wild"` on paths (the boss path may stay a tunnel).
 - Monsters everywhere: spawns on the trails between rooms too (`path` spawns), every spawn `spread: true` with pack 1,
   so the monsters are spread evenly over the area, not packed in some spots and missing in others.

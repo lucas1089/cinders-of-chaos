@@ -263,8 +263,11 @@ end
 
 -- a winding tunnel from (x, y) to (tx, ty): steps toward the target, sometimes aside
 -- wild: the radius swells and narrows by one tile and the route strays more, for ragged open-air trails
-local function tunnel(F, r, x, y, tx, ty, radius, wild)
+local function tunnel(F, r, x, y, tx, ty, radius, wild, rim)
 	local guard = 0
+	-- rim: keep the wandering this far from the grid border (a clamp at the border would leave a flat edge)
+	local lox, loy = min(rim or 3, tx, x), min(rim or 3, ty, y)
+	local hix, hiy = max(F.w - (rim or 3) + 1, tx, x), max(F.h - (rim or 3) + 1, ty, y)
 	while (x ~= tx or y ~= ty) and guard < 4 * (F.w + F.h) do
 		guard = guard + 1
 		carveDisc(F, x, y, wild and max(1, radius + r:int(-1, 1)) or radius)
@@ -277,8 +280,8 @@ local function tunnel(F, r, x, y, tx, ty, radius, wild)
 		else
 			y = y + (dy > 0 and 1 or -1)
 		end
-		x = min(max(x, 3), F.w - 2)
-		y = min(max(y, 3), F.h - 2)
+		x = min(max(x, lox), hix)
+		y = min(max(y, loy), hiy)
 	end
 	carveDisc(F, tx, ty, radius)
 end
@@ -964,6 +967,229 @@ local function blob(F, r, cx, cy, rad, fn)
 	end
 end
 
+-- an asymmetric outline for a zone rectangle (owner rule, docs/MAP_GUIDE.md "Asymmetric areas"): 3-6 overlapping
+-- lobes of different sizes and stretch, each next to the one before, off the centre, with a different reach per
+-- direction and a rough rim, then smoothed; never a disc, a box or a mirror image. Integer maths only, so the
+-- same seed gives the same cells in LuaJIT and Lua 5.3. calls mark(x, y) for each cell kept; (cx, cy) is always in
+local function lobeOutline(F, r, x1, y1, x2, y2, cx, cy, mark)
+	local w, h = x2 - x1 + 1, y2 - y1 + 1
+	local m = min(w, h)
+	local count = max(3, min(6, floor(w * h / 70) + 2))
+	local lobes = {}
+	local px, py = cx + r:int(-floor(w / 8), floor(w / 8)), cy + r:int(-floor(h / 8), floor(h / 8))
+	local first = max(2, floor(m * r:int(26, 40) / 100))
+	local rad = first
+	for k = 1, count do
+		-- stretched, but never past the rectangle: a lobe cut by the rectangle's side would leave a straight edge
+		local ax = max(2, min(floor(rad * r:int(75, 125) / 100), floor((min(px - x1, x2 - px) - 2) * 100 / 130)))
+		local ay = max(2, min(floor(rad * r:int(75, 125) / 100), floor((min(py - y1, y2 - py) - 2) * 100 / 130)))
+		local reach = {}
+		for o = 1, 8 do
+			reach[o] = r:int(78, 124)
+		end
+		lobes[k] = {x = px, y = py, ax = ax, ay = ay, reach = reach}
+		-- the next lobe: another size (0.5-1.1 of the first), shifted by 0.6-1.2 of the radii in a free direction
+		local d = D8[r:int(1, 8)]
+		rad = max(2, floor(first * r:int(50, 110) / 100))
+		px = min(x2 - 4, max(x1 + 4, px + d[1] * floor((ax + rad) * r:int(60, 120) / 100)))
+		py = min(y2 - 4, max(y1 + 4, py + d[2] * floor((ay + rad) * r:int(60, 120) / 100)))
+	end
+	local inLobe = {}
+	for _, lb in ipairs(lobes) do
+		for dy = -lb.ay - 3, lb.ay + 3 do
+			for dx = -lb.ax - 3, lb.ax + 3 do
+				local x, y = lb.x + dx, lb.y + dy
+				if x >= x1 and x <= x2 and y >= y1 and y <= y2 and inside(F, x, y) then
+					local ax, ay = dx < 0 and -dx or dx, dy < 0 and -dy or dy
+					local o = (dx >= 0 and 1 or 3) + (dy >= 0 and 0 or 4) + (ax >= ay and 0 or 1)
+					local fx, fy = lb.ax * lb.reach[o] / 100, lb.ay * lb.reach[o] / 100
+					local rim = r:int(-100, 100) / 100
+					local ex, ey = fx + rim, fy + rim
+					if ex > 0 and ey > 0 and dx * dx / (ex * ex) + dy * dy / (ey * ey) <= 1 then
+						inLobe[idx(F, x, y)] = true
+					end
+				end
+			end
+		end
+	end
+	inLobe[idx(F, cx, cy)] = true
+	-- smooth: drop cells with 1 or fewer of their 4 sides in, add cells with 3 or 4 in; twice
+	for _ = 1, 2 do
+		local nxt = {}
+		for y = y1, y2 do
+			for x = x1, x2 do
+				if inside(F, x, y) then
+					local n = 0
+					for _, d in ipairs(D4) do
+						if inLobe[idx(F, x + d[1], y + d[2])] then
+							n = n + 1
+						end
+					end
+					local i = idx(F, x, y)
+					if inLobe[i] then
+						nxt[i] = n >= 2 or nil
+					else
+						nxt[i] = n >= 3 or nil
+					end
+				end
+			end
+		end
+		nxt[idx(F, cx, cy)] = true
+		inLobe = nxt
+	end
+	-- keep the part joined to the centre
+	local keep, stack = {}, {idx(F, cx, cy)}
+	keep[stack[1]] = true
+	while #stack > 0 do
+		local i = table.remove(stack)
+		local x, y = xy(F, i)
+		for _, d in ipairs(D4) do
+			if inside(F, x + d[1], y + d[2]) then
+				local j = idx(F, x + d[1], y + d[2])
+				if inLobe[j] and not keep[j] then
+					keep[j] = true
+					stack[#stack + 1] = j
+				end
+			end
+		end
+	end
+	for y = y1, y2 do
+		for x = x1, x2 do
+			if inside(F, x, y) and keep[idx(F, x, y)] then
+				mark(x, y)
+			end
+		end
+	end
+end
+
+-- break the straight runs of the outline: where one side of the walkable design runs straight for more than maxRun
+-- cells, a 3-cell-wide bump pushes out 2 cells every 6-7 cells (the floor closes 1-2 cell notches, so smaller ones vanish) (never next to a boss room, never into the rim). Three
+-- passes, so the bumps' own sides stay short too. Owner rule "Asymmetric areas" (docs/MAP_GUIDE.md).
+local function breakRuns(F, r, maxRun, keepPoints)
+	local lo_x, lo_y, hi_x, hi_y = 3, 3, F.w - 2, F.h - 2
+	local function nearKept(x, y)
+		for _, q in ipairs(keepPoints) do
+			if abs(q[1] - x) <= 3 and abs(q[2] - y) <= 3 then
+				return true
+			end
+		end
+		return false
+	end
+	local function nearBoss(x, y)
+		for _, rm in ipairs(F.rooms) do
+			if rm.kind == "boss" and x >= rm.x1 - 2 and x <= rm.x2 + 2 and y >= rm.y1 - 2 and y <= rm.y2 + 2 then
+				return true
+			end
+		end
+		return false
+	end
+	for _ = 1, 6 do
+		local add, remove = {}, {}
+		-- the walkable cells as the floor will have them: the design grown by one cell, then every cell with all 8
+		-- neighbours in it (that closes notches of 1-2 cells, so the runs are measured on the closed shape)
+		local grown, cl = {}, {}
+		for i in pairs(F.open) do
+			local x, y = xy(F, i)
+			for dy = -1, 1 do
+				for dx = -1, 1 do
+					if inside(F, x + dx, y + dy) then
+						grown[idx(F, x + dx, y + dy)] = true
+					end
+				end
+			end
+		end
+		for i in pairs(grown) do
+			local x, y = xy(F, i)
+			local all = true
+			for _, d in ipairs(D8) do
+				if not (inside(F, x + d[1], y + d[2]) and grown[idx(F, x + d[1], y + d[2])]) then
+					all = false
+					break
+				end
+			end
+			if all then
+				cl[i] = true
+			end
+		end
+		for _, d in ipairs(D4) do
+			local dx, dy = d[1], d[2]
+			local ax, ay = dy ~= 0 and 1 or 0, dy ~= 0 and 0 or 1   -- along the edge
+			local function edge(x, y)
+				return inside(F, x, y) and cl[idx(F, x, y)] and not (inside(F, x + dx, y + dy) and cl[idx(F, x + dx, y + dy)])
+			end
+			for y = 1, F.h do
+				for x = 1, F.w do
+					if edge(x, y) and not edge(x - ax, y - ay) then
+						local n = 0
+						while edge(x + n * ax, y + n * ay) do
+							n = n + 1
+						end
+						if n > maxRun then
+							local pos = r:int(1, 3)
+							while pos + 3 <= n - 1 do
+								local group, okay = {}, true
+								for k = 0, 2 do
+									for e = 1, 2 do
+										local sx, sy = x + (pos + k) * ax, y + (pos + k) * ay
+										local tx, ty = sx + dx * e, sy + dy * e
+										if tx >= lo_x and tx <= hi_x and ty >= lo_y and ty <= hi_y and not nearBoss(tx, ty) then
+											group[#group + 1] = {idx(F, tx, ty), idx(F, sx, sy)}
+										else
+											okay = false
+										end
+									end
+								end
+								if okay then
+									for _, g in ipairs(group) do
+										add[#add + 1] = g
+									end
+								else
+									-- no room outward (the rim): a notch 2 deep into the edge instead, where the floor is 4+ deep and
+									-- no kept point is near
+									local cut, fine = {}, true
+									for k = 0, 2 do
+										local sx, sy = x + (pos + k) * ax, y + (pos + k) * ay
+										for e = 0, 3 do
+											local tx, ty = sx - dx * e, sy - dy * e
+											if not (inside(F, tx, ty) and cl[idx(F, tx, ty)]) or nearKept(tx, ty) then
+												fine = false
+											end
+											if e < 2 then
+												cut[#cut + 1] = idx(F, tx, ty)
+											end
+										end
+									end
+									if fine then
+										for _, c in ipairs(cut) do
+											remove[#remove + 1] = c
+										end
+									end
+								end
+								pos = pos + r:int(6, 7)
+							end
+						end
+					end
+				end
+			end
+		end
+		if #add == 0 and #remove == 0 then
+			break
+		end
+		for _, i in ipairs(remove) do
+			F.open[i], F.corridor[i], F.roomIdx[i] = nil, nil, nil
+		end
+		for _, a in ipairs(add) do
+			F.open[a[1]] = true
+			if F.corridor[a[2]] then
+				F.corridor[a[1]] = true
+			end
+			if F.roomIdx[a[2]] and not F.roomIdx[a[1]] then
+				F.roomIdx[a[1]] = F.roomIdx[a[2]]
+			end
+		end
+	end
+end
+
 -- a planned layout (the area planner, tools/area_planner.py): the zones, paths and spots of one floor are given, in
 -- local cells. p.zones = {{x1, y1, x2, y2, shape = "room" | "cave" | "arena", kind = "hunt" | "boss" | ..., ragged}},
 -- p.paths = {{width = n, style = "corridor" | "tunnel" | "wild", points = {{x, y}, ...}}}, p.spots = {{x, y, r}} (landings
@@ -1007,6 +1233,10 @@ local function plannedLayout(F, r, p, required)
 					end
 				end
 			end
+		elseif z.shape == "lobes" then
+			lobeOutline(F, r, x1, y1, x2, y2, cx, cy, function(x, y)
+				mark(k, idx(F, x, y))
+			end)
 		elseif z.shape == "arena" then
 			local rad = floor((min(x2 - x1, y2 - y1)) / 2)
 			for y = y1, y2 do
@@ -1062,6 +1292,36 @@ local function plannedLayout(F, r, p, required)
 		local wd = max(1, pa.width or 3)
 		local half = floor((wd - 1) / 2)
 		local pts = pa.points or {}
+		if p.meander and (pa.style == "tunnel" or pa.style == "wild") then
+			-- asymmetric trails: a waypoint every 4-6 tiles, pushed 2-3 tiles to one side or the other (never 0), so no
+			-- side of the trail runs straight for more than a few tiles (the ends stay where the plan put them)
+			local out, off = {pts[1]}, 0
+			for j = 1, #pts - 1 do
+				local ax, ay, bx, by = pts[j][1], pts[j][2], pts[j + 1][1], pts[j + 1][2]
+				local len = max(abs(bx - ax), abs(by - ay))
+				local vertical = abs(by - ay) >= abs(bx - ax)
+				local t = r:int(4, 6)
+				while t < len - 3 do
+					local k = t / len
+					local x, y = floor(ax + (bx - ax) * k + 0.5), floor(ay + (by - ay) * k + 0.5)
+					local step = r:int(2, 3) * (r:chance(50) and 1 or -1)
+					if off * step > 0 and abs(off + step) > 4 then
+						step = -step
+					end
+					off = off + step
+					if vertical then
+						x = x + off
+					else
+						y = y + off
+					end
+					out[#out + 1] = {min(max(x, 7), F.w - 6), min(max(y, 7), F.h - 6)}
+					t = t + r:int(4, 6)
+				end
+				off = 0
+				out[#out + 1] = pts[j + 1]
+			end
+			pts = out
+		end
 		for j = 1, #pts - 1 do
 			local ax, ay, bx, by = pts[j][1], pts[j][2], pts[j + 1][1], pts[j + 1][2]
 			if pa.style == "tunnel" or pa.style == "wild" then
@@ -1069,7 +1329,7 @@ local function plannedLayout(F, r, p, required)
 				for i in pairs(F.open) do
 					before[i] = true
 				end
-				tunnel(F, r, ax, ay, bx, by, half, pa.style == "wild")
+				tunnel(F, r, ax, ay, bx, by, half, pa.style == "wild", p.meander and 8 or nil)
 				for i in pairs(F.open) do
 					if not before[i] then
 						F.corridor[i] = true
@@ -1099,6 +1359,24 @@ local function plannedLayout(F, r, p, required)
 	end
 	for _, q in ipairs(required) do
 		carveDisc(F, q.x, q.y, min(q.r or 1, 1), 3)
+	end
+	if p.meander then
+		local keep = {}
+		for _, q in ipairs(required) do
+			keep[#keep + 1] = {q.x, q.y}
+		end
+		for _, sp in ipairs(p.spots or {}) do
+			keep[#keep + 1] = {sp[1], sp[2]}
+		end
+		for _, rm in ipairs(F.rooms) do
+			keep[#keep + 1] = {rm.cx, rm.cy}
+		end
+		for _, pa in ipairs(p.paths or {}) do
+			for _, q in ipairs(pa.points or {}) do
+				keep[#keep + 1] = {q[1], q[2]}
+			end
+		end
+		breakRuns(F, r, 3, keep)
 	end
 end
 

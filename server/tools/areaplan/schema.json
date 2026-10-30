@@ -136,9 +136,10 @@
             "enum": [
               "room",
               "cave",
+              "lobes",
               "arena"
             ],
-            "description": "room: a rectangle; cave: an irregular blob; arena: a round open room (default: room in a dungeon biome, cave elsewhere)"
+            "description": "room: a rectangle; lobes: an asymmetric outline of overlapping lobes (the default outside dungeons); cave: the old chain of round blobs; arena: a round open room (default: room in a dungeon biome, lobes elsewhere)"
           },
           "size": {
             "description": "small (7x7), medium (11x9), large (15x12), huge (20x16), or [w, h] in tiles (5-40)",

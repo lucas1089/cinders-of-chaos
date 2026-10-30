@@ -19882,6 +19882,10 @@ A semantic plan (JSON, `tools/areaplan/schema.json`, version `chaos-area-plan/1`
 editor through the area generator above (owner approval, 2026-10-13). The plan names a biome, zones, paths,
 connections, spawns, boss, NPCs, chests, entry, exit, PZ zones, decoration and light; it never holds an item id.
 Details and rules: docs/MAP_GUIDE.md "Area planner".
+Asymmetric areas (owner rule, 2026-10-30): a new plan's zones default to the `lobes` outline, its trails wander and straight sides are
+broken; QA scores the walkable mask (mirror overlap, bounding box fill, convex hull fill, longest straight run; limits in
+`tools/areaplan/shape_rules.json`, code `tools/area_plan_shape.py`) and a new plan that breaks a limit is a QA error, a plan of
+the `legacy_plans` list a warning. Rule and numbers: docs/MAP_GUIDE.md "Asymmetric areas"; test area `tools/areaplan/asym/`.
 Production plans for the thin level bands live in `tools/areaplan/plans/` (ten, 200-1300; origins and placing:
 docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the examples; none is placed on the world map yet.
 
