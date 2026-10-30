@@ -1,0 +1,311 @@
+/* Options window in RmlUi, drawn with the client skin: the same images as the classic Options window (NewMainWindow,
+   FlatPanel, Button, CheckBox, ComboBox, the scroll bars, the menu tabs of /images/optionstab/, the gold corner pieces of
+   client_chaos_theme). Paths are the client's absolute paths, so the skin the player chose (its images come first in the
+   file system) is the one drawn here too. Rects and borders copy data/styles/10-*.otui and client_settings/settings.otui.
+   Text colours: $var-text-cip-color #cdbfa4, highlight #fff1d6, grey #8c8070, window title #e8c477. */
+
+@spritesheet win { src: /images/ui/popupwindow.png; win: 0px 0px 236px 207px; win-in: 4px 17px 228px 186px; }
+@spritesheet frame { src: /images/ui/2pixel-up-frame-borderimage.png; frame: 0px 0px 100px 100px; frame-in: 3px 3px 94px 94px; }
+@spritesheet framedark { src: /images/ui/2pixel-up-frame-borderimage-dark.png; framedark: 0px 0px 100px 100px; framedark-in: 4px 4px 92px 92px; }
+@spritesheet flat { src: /images/ui/panel_flat.png; flat: 0px 0px 68px 68px; flat-in: 1px 1px 66px 66px; }
+@spritesheet btn {
+	src: /images/chaos/skin/button.png;
+	btn: 0px 0px 64px 24px;     btn-in: 5px 5px 54px 14px;
+	btn-h: 0px 24px 64px 24px;  btn-h-in: 5px 29px 54px 14px;
+	btn-p: 0px 48px 64px 24px;  btn-p-in: 5px 53px 54px 14px;
+	btn-d: 0px 72px 64px 24px;  btn-d-in: 5px 77px 54px 14px;
+}
+@spritesheet check { src: /images/ui/checkbox.png; cb-off: 0px 0px 12px 12px; cb-on: 0px 12px 12px 12px; cb-dis: 0px 24px 12px 12px; }
+@spritesheet combo {
+	src: /images/ui/combobox_square.png;
+	combo: 0px 0px 91px 20px;   combo-in: 3px 3px 67px 14px;
+	combo-o: 0px 20px 91px 20px; combo-o-in: 3px 23px 67px 14px;
+}
+@spritesheet sbar {
+	src: /images/ui/scrollbar.png;
+	hs-track: 0px 38px 24px 12px; hs-track-in: 1px 39px 22px 10px;
+	hs-bar: 12px 26px 12px 12px;  hs-bar-in: 17px 29px 1px 6px;
+	hs-dec: 0px 50px 12px 12px;   hs-dec-p: 0px 62px 12px 12px;
+	hs-inc: 12px 50px 12px 12px;  hs-inc-p: 12px 62px 12px 12px;
+	vs-track: 24px 0px 12px 74px; vs-track-in: 25px 1px 10px 72px;
+	vs-bar: 0px 24px 12px 14px;   vs-bar-in: 0px 29px 12px 4px;
+	vs-dec: 0px 0px 12px 12px;    vs-dec-p: 12px 0px 12px 12px;
+	vs-inc: 0px 12px 12px 12px;   vs-inc-p: 12px 12px 12px 12px;
+}
+@spritesheet sep { src: /images/ui/separator_horizontal.png; sep: 0px 0px 189px 2px; }
+@spritesheet help { src: /images/skin/show-gui-help-grey.png; help: 0px 0px 12px 12px; }
+@spritesheet helpon { src: /images/skin/show-gui-help-orange.png; help-on: 0px 0px 12px 12px; }
+@spritesheet orntl { src: /images/chaos/skin/orn_corner_tl.png; orn-tl: 0px 0px 44px 44px; }
+@spritesheet orntr { src: /images/chaos/skin/orn_corner_tr.png; orn-tr: 0px 0px 44px 44px; }
+@spritesheet ornbl { src: /images/chaos/skin/orn_corner_bl.png; orn-bl: 0px 0px 44px 44px; }
+@spritesheet ornbr { src: /images/chaos/skin/orn_corner_br.png; orn-br: 0px 0px 44px 44px; }
+@spritesheet crest { src: /images/chaos/skin/orn_crest.png; crest: 0px 0px 84px 30px; }
+@spritesheet tab-controls { src: /images/optionstab/controls.png; tab-controls: 0px 0px 115px 22px; tab-controls-on: 0px 22px 115px 22px; }
+@spritesheet tab-generalHotkeys { src: /images/optionstab/generalHotkeys.png; tab-generalHotkeys: 0px 0px 115px 20px; tab-generalHotkeys-on: 0px 20px 115px 20px; }
+@spritesheet tab-actionsHotkeys { src: /images/optionstab/actionsHotkeys.png; tab-actionsHotkeys: 0px 0px 115px 20px; tab-actionsHotkeys-on: 0px 20px 115px 20px; }
+@spritesheet tab-customHotkeys { src: /images/optionstab/customHotkeys.png; tab-customHotkeys: 0px 0px 115px 20px; tab-customHotkeys-on: 0px 20px 115px 20px; }
+@spritesheet tab-interface { src: /images/optionstab/interface.png; tab-interface: 0px 0px 115px 22px; tab-interface-on: 0px 22px 115px 22px; }
+@spritesheet tab-hud { src: /images/optionstab/hud.png; tab-hud: 0px 0px 115px 20px; tab-hud-on: 0px 20px 115px 20px; }
+@spritesheet tab-console { src: /images/optionstab/console.png; tab-console: 0px 0px 115px 20px; tab-console-on: 0px 20px 115px 20px; }
+@spritesheet tab-gameWindow { src: /images/optionstab/gameWindow.png; tab-gameWindow: 0px 0px 115px 20px; tab-gameWindow-on: 0px 20px 115px 20px; }
+@spritesheet tab-actionsBars { src: /images/optionstab/actionsBars.png; tab-actionsBars: 0px 0px 115px 20px; tab-actionsBars-on: 0px 20px 115px 20px; }
+@spritesheet tab-graphics { src: /images/optionstab/graphics.png; tab-graphics: 0px 0px 115px 22px; tab-graphics-on: 0px 22px 115px 22px; }
+@spritesheet tab-effects { src: /images/optionstab/effects.png; tab-effects: 0px 0px 115px 20px; tab-effects-on: 0px 20px 115px 20px; }
+@spritesheet tab-misc { src: /images/optionstab/misc.png; tab-misc: 0px 0px 115px 22px; tab-misc-on: 0px 22px 115px 22px; }
+@spritesheet tab-gameplay { src: /images/optionstab/gameplay.png; tab-gameplay: 0px 0px 115px 20px; tab-gameplay-on: 0px 20px 115px 20px; }
+@spritesheet tab-screenshot { src: /images/optionstab/screenshot.png; tab-screenshot: 0px 0px 115px 20px; tab-screenshot-on: 0px 20px 115px 20px; }
+
+body {
+	/* the document fills the screen but lets clicks through to the OTUI windows below */
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	font-family: "Alegreya Sans";
+	font-size: 14dp;
+	color: #cdbfa4;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+/* NewMainWindow: popupwindow, border 4, title bar 17 */
+#window {
+	position: relative;
+	pointer-events: auto;
+	display: flex;
+	flex-direction: column;
+	/* classic size 685x531; on a small screen it shrinks to what fits */
+	width: 92%;
+	max-width: 760dp;
+	height: 92%;
+	max-height: 560dp;
+	box-sizing: border-box;
+	padding: 0dp 12dp 10dp 10dp;
+	decorator: ninepatch(win, win-in);
+}
+
+/* gold corner pieces and the crest of client_chaos_theme (ORN_SIZE 44, ORN_INSET 8, crest 84x30 raised 17) */
+.orn { position: absolute; width: 44dp; height: 44dp; pointer-events: none; }
+.orn.tl { left: -8dp; top: -8dp; decorator: image(orn-tl); }
+.orn.tr { right: -8dp; top: -8dp; decorator: image(orn-tr); }
+.orn.bl { left: -8dp; bottom: -8dp; decorator: image(orn-bl); }
+.orn.br { right: -8dp; bottom: -8dp; decorator: image(orn-br); }
+#crest { position: absolute; width: 84dp; height: 30dp; top: -17dp; left: 50%; margin-left: -42dp; pointer-events: none; decorator: image(crest); }
+
+#titlebar {
+	height: 17dp;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-start;
+	padding-left: 40dp;  /* clear of the gold corner piece and left of the crest in the middle of the bar */
+}
+
+#title {
+	font-family: "Alegreya SC";
+	font-weight: bold;
+	font-size: 14dp;
+	color: #e8c477;
+}
+
+#main {
+	flex: 1 1 0dp;
+	min-height: 0dp;
+	display: flex;
+	flex-direction: row;
+	margin-top: 12dp;
+}
+
+/* the menu: FlatPanel "options", 129 wide, 2pixel-up-frame-borderimage-dark */
+#nav {
+	width: 129dp;
+	flex: 0 0 129dp;
+	box-sizing: border-box;
+	overflow-y: auto;
+	padding: 7dp 0dp 4dp 7dp;
+	decorator: ninepatch(framedark, framedark-in);
+}
+
+/* the page: Panel with 2pixel-up-frame-borderimage, padding 3 */
+#content {
+	flex: 1 1 0dp;
+	min-width: 0dp;
+	margin-left: 5dp;
+	overflow-y: auto;
+	padding: 6dp 6dp 6dp 6dp;
+	decorator: ninepatch(frame, frame-in);
+}
+
+/* menu tabs: the tab image of each page (/images/optionstab/<id>), the name drawn over it like setOptionLabel does */
+button.nav {
+	display: block;
+	box-sizing: border-box;
+	width: 115dp;
+	height: 22dp;
+	min-width: 0dp;
+	margin: 11dp 0dp 0dp 0dp;
+	padding: 3dp 0dp 0dp 0dp;
+	text-align: center;
+	font-weight: bold;
+	font-size: 13dp;
+	color: #cdbfa4;
+}
+button.nav:first-child { margin-top: 0dp; }
+/* NOptionButton: 20 high in a 21 row, 3 below its main entry (SUBMENU_GAP) */
+button.nav.sub { height: 20dp; margin-top: 1dp; padding-top: 2dp; font-size: 12dp; }
+button.nav:not(.sub) + button.nav.sub { margin-top: 3dp; }
+button.nav:hover, button.nav.on { color: #fff1d6; }
+button.nav.classic { color: #8c8070; }
+#p_controls { decorator: image(tab-controls); }  #p_controls.on, #p_controls:active { decorator: image(tab-controls-on); }
+#p_generalHotkeys { decorator: image(tab-generalHotkeys); }  #p_generalHotkeys.on, #p_generalHotkeys:active { decorator: image(tab-generalHotkeys-on); }
+#p_actionsHotkeys { decorator: image(tab-actionsHotkeys); }  #p_actionsHotkeys.on, #p_actionsHotkeys:active { decorator: image(tab-actionsHotkeys-on); }
+#p_customHotkeys { decorator: image(tab-customHotkeys); }  #p_customHotkeys.on, #p_customHotkeys:active { decorator: image(tab-customHotkeys-on); }
+#p_interface { decorator: image(tab-interface); }  #p_interface.on, #p_interface:active { decorator: image(tab-interface-on); }
+#p_hud { decorator: image(tab-hud); }  #p_hud.on, #p_hud:active { decorator: image(tab-hud-on); }
+#p_console { decorator: image(tab-console); }  #p_console.on, #p_console:active { decorator: image(tab-console-on); }
+#p_gameWindow { decorator: image(tab-gameWindow); }  #p_gameWindow.on, #p_gameWindow:active { decorator: image(tab-gameWindow-on); }
+#p_actionsBars { decorator: image(tab-actionsBars); }  #p_actionsBars.on, #p_actionsBars:active { decorator: image(tab-actionsBars-on); }
+#p_graphics { decorator: image(tab-graphics); }  #p_graphics.on, #p_graphics:active { decorator: image(tab-graphics-on); }
+#p_effects { decorator: image(tab-effects); }  #p_effects.on, #p_effects:active { decorator: image(tab-effects-on); }
+#p_misc { decorator: image(tab-misc); }  #p_misc.on, #p_misc:active { decorator: image(tab-misc-on); }
+#p_gameplay { decorator: image(tab-gameplay); }  #p_gameplay.on, #p_gameplay:active { decorator: image(tab-gameplay-on); }
+#p_screenshot { decorator: image(tab-screenshot); }  #p_screenshot.on, #p_screenshot:active { decorator: image(tab-screenshot-on); }
+
+/* one FlatPanel of the classic page: panel_flat, border 1 */
+.group {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	padding: 4dp 6dp;
+	margin-bottom: 5dp;
+	decorator: ninepatch(flat, flat-in);
+}
+.group.loose { decorator: none; }
+
+.pair {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	width: 100%;
+}
+.pair .lbl { flex: 1 1 auto; }
+.lbl { flex: 1 1 auto; margin: 2dp 10dp 2dp 0dp; }
+.lbl.off, .check.off, .off { color: #8c8070; }
+
+label.check {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	flex: 1 1 auto;
+	margin: 2dp 10dp 2dp 0dp;
+}
+label.check:hover { color: #fff1d6; }
+
+/* CheckBox: /images/ui/checkbox, 12x12, unchecked 0 0, checked 0 12, disabled and checked 0 24 */
+input.checkbox {
+	width: 12dp;
+	height: 12dp;
+	flex: 0 0 12dp;
+	margin-right: 6dp;
+	decorator: image(cb-off);
+}
+input.checkbox:checked { decorator: image(cb-on); }
+input.checkbox:checked:disabled { decorator: image(cb-dis); }
+
+/* HorizontalScrollBar: track 0 38 24 12 (border 1), arrows 0 50 / 12 50 (pressed one row down), slider 12 26 */
+input.range {
+	width: 200dp;
+	height: 12dp;
+	margin: 2dp 4dp;
+}
+input.range slidertrack { height: 12dp; decorator: ninepatch(hs-track, hs-track-in); }
+input.range sliderbar { width: 12dp; height: 12dp; decorator: ninepatch(hs-bar, hs-bar-in); }
+input.range:disabled sliderbar { opacity: 0; }
+input.range sliderarrowdec { width: 12dp; height: 12dp; decorator: image(hs-dec); }
+input.range sliderarrowdec:active { decorator: image(hs-dec-p); }
+input.range sliderarrowinc { width: 12dp; height: 12dp; decorator: image(hs-inc); }
+input.range sliderarrowinc:active { decorator: image(hs-inc-p); }
+
+/* ComboBox: combobox_square 91x20, border 3, right border 21 (the arrow is in the image) */
+select {
+	width: 200dp;
+	height: 20dp;
+	margin: 2dp 4dp;
+	padding: 0dp;
+	color: #cdbfa4;
+	decorator: ninepatch(combo, combo-in);
+}
+select:hover { color: #fff1d6; }
+select:checked { decorator: ninepatch(combo-o, combo-o-in); }
+select:disabled { color: #8c8070; }
+select selectvalue { height: 20dp; padding: 2dp 24dp 0dp 6dp; }
+select selectarrow { width: 21dp; height: 20dp; }
+select selectbox {
+	margin-top: 1dp;
+	padding: 3dp 0dp;
+	z-index: 100;  /* above the panels that follow it on the page */
+	background-color: #100d10;
+	border: 1dp #5a4a32;
+}
+select selectbox option { padding: 2dp 8dp; }
+select selectbox option:hover { color: #fff1d6; background-color: #3a2a1c; }
+select selectbox option:checked { color: #e8c477; }
+
+/* the skin's help icon: opens the tooltip text under the panel */
+.help {
+	width: 12dp;
+	height: 12dp;
+	flex: 0 0 12dp;
+	margin-left: 6dp;
+	decorator: image(help);
+}
+.help:hover { decorator: image(help-on); }
+.helptext {
+	display: none;
+	margin: -2dp 0dp 6dp 0dp;
+	padding: 5dp 10dp;
+	font-size: 13dp;
+	color: #cdbfa4;
+	decorator: ninepatch(framedark, framedark-in);
+}
+.helptext.open { display: block; }
+
+.classicnote { padding: 12dp 6dp; color: #cdbfa4; }
+
+/* HorizontalSeparator above the buttons */
+#sep { height: 2dp; margin-top: 11dp; decorator: image(sep); }
+
+#footer {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-end;
+	padding-top: 10dp;
+}
+
+/* Button: /images/chaos/skin/button, 64x24 per state, border 5 */
+button {
+	display: block;
+	box-sizing: border-box;
+	min-width: 64dp;
+	height: 22dp;
+	padding: 3dp 10dp 0dp 10dp;
+	margin-left: 6dp;
+	text-align: center;
+	font-size: 13dp;
+	color: #cdbfa4;
+	decorator: ninepatch(btn, btn-in);
+}
+button:hover { color: #ffe7a6; decorator: ninepatch(btn-h, btn-h-in); }
+button:active { decorator: ninepatch(btn-p, btn-p-in); }
+button:disabled { color: #8c8070; decorator: ninepatch(btn-d, btn-d-in); }
+button.act { margin: 2dp 8dp 2dp 0dp; }
+
+/* VerticalScrollBar: track 24 0 12 74, arrows 0 0 / 0 12 (pressed 12 0 / 12 12), slider 0 24 12 14 */
+scrollbarvertical { width: 12dp; margin-left: 2dp; }
+scrollbarvertical slidertrack { width: 12dp; decorator: ninepatch(vs-track, vs-track-in); }
+scrollbarvertical sliderbar { width: 12dp; min-height: 14dp; decorator: ninepatch(vs-bar, vs-bar-in); }
+scrollbarvertical sliderarrowdec { width: 12dp; height: 12dp; decorator: image(vs-dec); }
+scrollbarvertical sliderarrowdec:active { decorator: image(vs-dec-p); }
+scrollbarvertical sliderarrowinc { width: 12dp; height: 12dp; decorator: image(vs-inc); }
+scrollbarvertical sliderarrowinc:active { decorator: image(vs-inc-p); }

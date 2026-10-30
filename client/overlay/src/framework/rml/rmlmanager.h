@@ -41,6 +41,13 @@ public:
     bool setInnerRml(int doc, const std::string& elementId, const std::string& rml);
     bool setClass(int doc, const std::string& elementId, const std::string& className, bool on);
     bool setProperty(int doc, const std::string& elementId, const std::string& name, const std::string& value);
+    // form controls (phase 3, the Options window): input, select. Values are UTF-8 as RmlUi keeps them; setValue and
+    // setChecked fire a "change" event like a click does.
+    std::string getValue(int doc, const std::string& elementId);
+    bool setValue(int doc, const std::string& elementId, const std::string& value);
+    bool isChecked(int doc, const std::string& elementId);
+    bool setChecked(int doc, const std::string& elementId, bool checked);
+    bool setDisabled(int doc, const std::string& elementId, bool disabled);
     void setEventCallback(const std::function<void(int, std::string, std::string)>& callback) { m_callback = callback; }
     void setScale(float scale);          // extra factor on top of the engine scale (default 1), see getDpRatio
     float getDpRatio() const { return m_scale; }

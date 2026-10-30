@@ -235,6 +235,16 @@ class RmlSystemInterface : public Rml::SystemInterface
 {
 public:
     double GetElapsedTime() override { return stdext::micros() / 1000000.0; }
+    // client paths are absolute in the engine file system ("/images/ui/checkbox.png", the active skin first):
+    // RmlUi's default would drop the leading slash
+    void JoinPath(Rml::String& translated, const Rml::String& documentPath, const Rml::String& path) override
+    {
+        if (!path.empty() && path[0] == '/') {
+            translated = path;
+            return;
+        }
+        Rml::SystemInterface::JoinPath(translated, documentPath, path);
+    }
     bool LogMessage(Rml::Log::Type type, const Rml::String& message) override
     {
         switch (type) {
@@ -500,6 +510,58 @@ bool RmlManager::setProperty(int doc, const std::string& elementId, const std::s
     if (ok)
         requestRepaint();
     return ok;
+}
+
+std::string RmlManager::getValue(int doc, const std::string& elementId)
+{
+    auto* fc = rmlui_dynamic_cast<Rml::ElementFormControl*>(find(doc, elementId));
+    return fc ? fc->GetValue() : std::string();
+}
+
+bool RmlManager::setValue(int doc, const std::string& elementId, const std::string& value)
+{
+    auto* fc = rmlui_dynamic_cast<Rml::ElementFormControl*>(find(doc, elementId));
+    if (!fc)
+        return false;
+    fc->SetValue(value);
+    requestRepaint();
+    return true;
+}
+
+bool RmlManager::isChecked(int doc, const std::string& elementId)
+{
+    Rml::Element* e = find(doc, elementId);
+    return e && e->HasAttribute("checked");
+}
+
+bool RmlManager::setChecked(int doc, const std::string& elementId, bool checked)
+{
+    Rml::Element* e = find(doc, elementId);
+    if (!e)
+        return false;
+    if (checked != e->HasAttribute("checked")) {
+        if (checked)
+            e->SetAttribute("checked", "");
+        else
+            e->RemoveAttribute("checked");
+    }
+    requestRepaint();
+    return true;
+}
+
+bool RmlManager::setDisabled(int doc, const std::string& elementId, bool disabled)
+{
+    Rml::Element* e = find(doc, elementId);
+    if (!e)
+        return false;
+    if (disabled != e->HasAttribute("disabled")) {
+        if (disabled)
+            e->SetAttribute("disabled", "");
+        else
+            e->RemoveAttribute("disabled");
+    }
+    requestRepaint();
+    return true;
 }
 
 float RmlManager::getScrollTop(int doc, const std::string& elementId)
