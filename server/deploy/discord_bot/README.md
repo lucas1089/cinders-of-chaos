@@ -108,7 +108,7 @@ O `read -rs` não deixa a senha no histórico do shell. O arquivo de ajustes é 
 ### O que a instalação faz
 
 - Cria o usuário de sistema `chaosbot`, sem login e sem acesso aos arquivos do jogo.
-- Copia o código para `/opt/chaos/discord-bot/app` e cria o ambiente em `/opt/chaos/discord-bot/venv` com as versões fixas de `requirements.txt`.
+- Copia o código para `/opt/chaos/discord-bot/app` e cria o ambiente em `/opt/chaos/discord-bot/venv` com as versões fixas de `requirements.txt`. O arquivo vale do Python 3.10 ao 3.13: as linhas com `; python_full_version` escolhem a versão certa para o Python da VPS (gerado com `uv pip compile --universal --python-version 3.10`; o `audioop-lts` só entra no 3.13).
 - Cria `/etc/chaos/discord-bot.env`, modo 600, dono root. O systemd lê o arquivo antes de baixar os privilégios.
 - Instala `chaos-discordbot.service` com as proteções de sandbox dos outros serviços. O bot só escreve em `/var/lib/chaos/discord-bot`.
 - Roda de novo sem estragar nada.
