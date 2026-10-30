@@ -1,0 +1,11 @@
+Module
+  name: game_walkpad
+  description: The phone walking pad can be moved with a handle and remembers where it is
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 1000
+  dependencies: [ client_mobile ]
+  scripts: [ walkpad_logic, walkpad ]
+  @onLoad: ChaosWalkPad.init()
+  @onUnload: ChaosWalkPad.terminate()
