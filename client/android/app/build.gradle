@@ -73,6 +73,16 @@ android {
     }
 
     buildTypes {
+        // the engine never keeps its VALIDATE checks: they end the game on a deep Lua stack (getTop() <= 20) that the
+        // desktop release build ignores. A debug APK stays an -O0 engine with NDEBUG: an optimised engine died with SIGILL
+        // on the CI emulator (2026-10-30), not yet explained.
+        debug {
+            externalNativeBuild {
+                cmake {
+                    cppFlags '-DNDEBUG'
+                }
+            }
+        }
         release {
             minifyEnabled false
             if (System.getenv('CHAOS_KS_FILE')) {

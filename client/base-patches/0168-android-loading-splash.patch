@@ -1,0 +1,140 @@
+# Chaos: phone loading splash (O313; client/BASE.md "0168"; platform/nativesplash.h, platform/androidwindow.cpp,
+# core/modulemanager.cpp, core/graphicalapplication.cpp, main.cpp; after 0001-0167). The first load on a phone takes a
+# while before the first frame. The native splash calls the desktop build already makes now run on Android too:
+# androidwindow.cpp implements them as JNI calls of ChaosActivity.splashProgress(percent, stage) and splashHide(),
+# which drive a full-screen "Loading" dialog the activity shows in onCreate. showNativeSplash and
+# setNativeSplashEnabled do nothing there: the dialog is already up.
+diff -ruN a/src/framework/core/graphicalapplication.cpp b/src/framework/core/graphicalapplication.cpp
+--- a/src/framework/core/graphicalapplication.cpp
++++ b/src/framework/core/graphicalapplication.cpp
+@@ -179,7 +179,7 @@
+ 
+ void GraphicalApplication::deinit()
+ {
+-#if defined(WIN32) && !defined(__EMSCRIPTEN__)
++#if (defined(WIN32) || defined(ANDROID)) && !defined(__EMSCRIPTEN__)
+     hideNativeSplash();
+ #endif
+     // hide the window because there is no render anymore
+@@ -898,7 +898,7 @@
+ 
+         AutoStat s(STATS_RENDER, "SwapBuffers");
+         g_window.swapBuffers();
+-#if defined(WIN32) && !defined(__EMSCRIPTEN__)
++#if (defined(WIN32) || defined(ANDROID)) && !defined(__EMSCRIPTEN__)
+         if (totalFrames == 0)
+             finishNativeSplash();
+ #endif
+diff -ruN a/src/framework/core/modulemanager.cpp b/src/framework/core/modulemanager.cpp
+--- a/src/framework/core/modulemanager.cpp
++++ b/src/framework/core/modulemanager.cpp
+@@ -77,7 +77,7 @@
+     g_app.setStartupStage(stage);
+     StartupTimer timer(phase);
+ #endif
+-#if defined(WIN32) && !defined(__EMSCRIPTEN__)
++#if (defined(WIN32) || defined(ANDROID)) && !defined(__EMSCRIPTEN__)
+     const int progressFrom = maxPriority < 100 ? 25 : maxPriority < 500 ? 35 : maxPriority < 1000 ? 60 : 80;
+     const int progressTo = maxPriority < 100 ? 35 : maxPriority < 500 ? 60 : maxPriority < 1000 ? 80 : 90;
+     const char* nativeStage = maxPriority < 100 ? "Loading libraries..." : maxPriority < 500 ? "Building interface..." :
+@@ -93,16 +93,16 @@
+         if(priority > maxPriority)
+             break;
+         ModulePtr module = pair.second;
+-#if defined(WIN32) && !defined(__EMSCRIPTEN__)
++#if (defined(WIN32) || defined(ANDROID)) && !defined(__EMSCRIPTEN__)
+         const bool wasPending = !module->isLoaded();
+ #endif
+         module->load();
+-#if defined(WIN32) && !defined(__EMSCRIPTEN__)
++#if (defined(WIN32) || defined(ANDROID)) && !defined(__EMSCRIPTEN__)
+         if (wasPending && pending)
+             setNativeSplashProgress(progressFrom + static_cast<int>((progressTo - progressFrom) * ++completed / pending), nativeStage);
+ #endif
+     }
+-#if defined(WIN32) && !defined(__EMSCRIPTEN__)
++#if (defined(WIN32) || defined(ANDROID)) && !defined(__EMSCRIPTEN__)
+     // Dependencies may have loaded pending modules before their own iteration.
+     setNativeSplashProgress(progressTo, nativeStage);
+ #endif
+diff -ruN a/src/framework/platform/androidwindow.cpp b/src/framework/platform/androidwindow.cpp
+--- a/src/framework/platform/androidwindow.cpp
++++ b/src/framework/platform/androidwindow.cpp
+@@ -22,6 +22,7 @@
+ 
+ #include <framework/core/eventdispatcher.h>
+ #include "androidwindow.h"
++#include "nativesplash.h"
+ 
+ AndroidWindow g_androidWindow;
+ 
+@@ -602,6 +603,44 @@
+     }
+ }
+ 
++// Cinders of Chaos (base patch 0168): the loading screen of the Java shell (ChaosActivity.splashProgress / splashHide),
++// shown from the start until the first frame. Same calls as the Windows native splash (nativesplash.h).
++static void callSplash(const char* method, const char* signature, int percent, const char* stage)
++{
++    if (!g_androidState || !g_androidState->activity)
++        return;
++    JNIEnv* env = g_androidState->activity->env;
++    JavaVM* vm = g_androidState->activity->vm;
++    jobject activity = g_androidState->activity->clazz;
++    jint nResult = vm->AttachCurrentThread(&env, NULL);
++    if (nResult == JNI_ERR)
++        return;
++    jclass clazz = env->GetObjectClass(activity);
++    jmethodID methodID = env->GetMethodID(clazz, method, signature);
++    if (methodID) {
++        if (stage) {
++            jstring jstage = env->NewStringUTF(stage);
++            env->CallVoidMethod(activity, methodID, (jint)percent, jstage);
++            env->DeleteLocalRef(jstage);
++        } else {
++            env->CallVoidMethod(activity, methodID);
++        }
++    }
++    if (env->ExceptionCheck())
++        env->ExceptionClear();
++    env->DeleteLocalRef(clazz);
++    vm->DetachCurrentThread();
++}
++
++void showNativeSplash() {}
++void setNativeSplashEnabled(bool) {}
++void setNativeSplashProgress(int percent, const char* stage)
++{
++    callSplash("splashProgress", "(ILjava/lang/String;)V", percent, stage ? stage : "");
++}
++void finishNativeSplash() { callSplash("splashHide", "()V", 0, nullptr); }
++void hideNativeSplash() { callSplash("splashHide", "()V", 0, nullptr); }
++
+ // Cinders of Chaos (base patch 0167): the restart. Runs from main() after the runtime is shut down; the Java side
+ // (ChaosActivity.restartApp) opens a helper activity in its own process that starts the game again and ends this one.
+ void AndroidWindow::restartApp()
+diff -ruN a/src/framework/platform/nativesplash.h b/src/framework/platform/nativesplash.h
+--- a/src/framework/platform/nativesplash.h
++++ b/src/framework/platform/nativesplash.h
+@@ -1,7 +1,8 @@
+ #pragma once
+ 
+-#if defined(WIN32) && !defined(__EMSCRIPTEN__)
++#if (defined(WIN32) || defined(ANDROID)) && !defined(__EMSCRIPTEN__) // base patch 0168: the phone splash too
+ // Optional data/images/splash.png beside the executable, independent of the renderer.
++// Android (base patch 0168): the Java shell shows a loading screen; these calls move its bar and close it.
+ void showNativeSplash();
+ void setNativeSplashEnabled(bool enabled);
+ void setNativeSplashProgress(int percent, const char* stage);
+diff -ruN a/src/main.cpp b/src/main.cpp
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -232,7 +232,7 @@
+     }
+ #ifdef __EMSCRIPTEN__
+     g_app.setStartupStage("Building interface...");
+-#elif defined(WIN32)
++#elif defined(WIN32) || defined(ANDROID)
+     setNativeSplashProgress(95, "Preparing the first client frame...");
+ #endif
+ 

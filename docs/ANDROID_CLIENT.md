@@ -39,6 +39,7 @@ self-update (step 8), the release keystore and the touch layer are not.
 |---|---|---|
 | Manifest key `android` | `client/tools/make_update_manifest.py`, `client/MANIFEST.md` "Phone data" | The signed payload lists the files a phone needs: every path of the update except `layouts/mobile/` and the prefixes of `--android-exclude`. Written on every publish (`--no-android` leaves it out), checked by `verify`. Old clients and the launcher ignore it. |
 | Base patch `0167` | `client/base-patches/0167-android-phone-data.patch`, `client/BASE.md` | `g_resources.unpackUpdateBlob` (verified blob to a plain file), `mountDataFolder` (PhysFS mount of the downloaded folder in front of `data.zip`, file-backed), `getFreeSpace`, the update key on Android, and the Android restart request. |
+| Base patch `0168` | `client/base-patches/0168-android-loading-splash.patch`, `client/BASE.md`, `ChaosActivity.java` | Loading screen until the first frame: logo, "Loading...", a progress bar from the module load; the native splash calls of the Windows build as JNI calls of `ChaosActivity.splashProgress` and `splashHide`. |
 | First-start screen | `client/overlay/modules/client_chaos_firststart/` | Fetches the signed manifest, compares, shows size, Wi-Fi advice and the free-space check (data plus 0.5 GB), downloads with pause, resume and retry, unpacks, restarts. Uses the desktop updater's code for the signature, paths and the download pool. |
 | Restart | `ChaosActivity.restartApp`, `RestartActivity`, `AndroidManifest.xml` | After the engine has shut down, a helper activity in its own process ends the game process and starts the game again. |
 | Workflow | `.github/workflows/android-client.yml` | New inputs `update_manifest` and `update_public_key` (same production defaults as `windows-package.yml`, written with `set_update_config.py`; optional `update_baseline`, the release number of the APK's own Lua, so an older live update only brings the game data), `client_build` default 30 (the live build, else the manifest's `min_package` turns the phone away), and the smoke test asserts the first-start screen in logcat. |
@@ -120,7 +121,10 @@ How to build by hand, on Linux with the SDK, NDK r27d and Gradle 8.9 or newer:
 The workflow does exactly this. Secrets, names only: `CHAOS_CLIENT_KEY` and `CHAOS_RSA_PUBLIC` as for the Windows
 package, and for a release signature `ANDROID_CLIENT_KEYSTORE_B64`, `ANDROID_CLIENT_KEYSTORE_PASS` and
 `ANDROID_CLIENT_KEY_ALIAS`. Without the keystore secrets the APK is a debug build with the runner's debug key. The game
-client has its own release key, not the key of the admin app.
+client has its own release key, not the key of the admin app. The engine inside always has `NDEBUG`,
+also in a debug APK: without it the `VALIDATE` checks end the game on a deep Lua stack (`getTop() <= 20`, 2026-10-30 on
+a phone, Helper Auto setup). The workflow fails if the CMake cache shows no `NDEBUG`. A debug APK's engine is still
+`-O0`: an optimised one died with SIGILL on the CI emulator (arm64 translated on x86), not yet explained.
 
 ### What was checked here
 
@@ -158,8 +162,13 @@ client has its own release key, not the key of the admin app.
 4. **Touch layout.** The walk pad and the action bar of `client_mobile`, tap and long press, hotkey buttons, safe areas,
    the 69 windows over 360 logical pixels. Section 2 is unchanged.
 5. **Window re-layout.** The engine resizes with the screen through `updateSize`. The Chaos windows have no mobile
-   styles yet, except `game_event`. Phase 3.
-6. **Mobile defaults.** The heavy options should start off on Android. Not set.
+   styles yet, except `game_event`. The guard `client/tools/check_mobile_layout.py` now keeps the list from growing: 39
+   windows are over 960 x 540 logical pixels without a `$mobile` rule and sit in `client/tools/mobile_layout_baseline.txt`.
+   Each fixed window removes its line. The re-layout itself needs a device. Phase 3.
+6. **Mobile defaults.** Done, not run on a device. On the first start on Android `game_visualfx` switches off
+   `spellLight`, `liquidShimmer`, `weather`, `ambientParticles`, `missileTrails`, `lightFlicker`, `deathFade` and
+   `rarityOutlineMap` through the settings module, once (flag `chaosMobileDefaults`). `screenGrade`, `bloom` and
+   `hoverOutline` are off everywhere already. Desktop defaults are unchanged. The player can turn any back on.
 7. **APK self-update.** Step 8. The `android` manifest key now lists the game data files (phase 3). Still to build: the
    `android_apk` entry (version code, URL, SHA-256, size, signer), the Java installer hand-over through
    `PackageInstaller` and its permission, and the publish script flag.
@@ -312,8 +321,11 @@ Screen facts to design for: landscape only, 1280 x 720 at 5.0 inches and up. Saf
 `g_app.scale(...)` and `scaleUp` or `scaleDown` set the zoom. A 20:9 phone has little vertical room, so a window
 must fit in about 360 to 540 logical pixels.
 
-A tool to add: `client/tools/check_mobile_layout.py`, which reads every window size and fails when a window is
-over the limit and has no `$mobile` rule. CI can then keep the list from growing.
+The tool exists: `client/tools/check_mobile_layout.py` (test `check_mobile_layout_test.py`, CI step next to the text fit
+check). It reads the top-level windows of `client/overlay/modules/**/*.otui` and fails when a window with a fixed size is
+taller than 540 or wider than 960 logical pixels and has no `$mobile` rule, except the windows in
+`mobile_layout_baseline.txt`. Windows with `anchors.fill` or a size set only by an expression are skipped. A baseline
+entry that now fits is reported as removable. It is a text scan, not a measured layout.
 
 ## 3. Assets on a phone
 

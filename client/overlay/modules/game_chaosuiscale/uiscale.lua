@@ -78,6 +78,12 @@ function init()
   -- the base phone module zooms to 3x shortly after its start: the phone step goes in after it
   if g_app.isMobile and g_app.isMobile() then
     scheduleEvent(function() applied = nil; applyPhone() end, 1500)
+    -- the phone Back key is Escape: it closes the options window, which has no Escape of its own
+    local cs = modules.client_settings
+    local w = cs and cs.optionsWindow
+    if w and not w.onEscape and cs.closeOptions then
+      w.onEscape = function() cs.closeOptions() end
+    end
   end
 end
 

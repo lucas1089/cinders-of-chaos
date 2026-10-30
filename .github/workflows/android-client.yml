@@ -254,6 +254,11 @@ jobs:
             -PchaosDepsPrefix="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" \
             -PchaosAssetsDir="$GITHUB_WORKSPACE/apk-assets" \
             -PchaosClientBuild="$CLIENT_BUILD"
+          # the engine must have NDEBUG (app/build.gradle): without it the VALIDATE checks end the game
+          CACHE=$(find app/.cxx -name CMakeCache.txt | head -1)
+          grep -H -E '^CMAKE_BUILD_TYPE|^CMAKE_CXX_FLAGS:' "$CACHE"
+          grep -q -E '^CMAKE_BUILD_TYPE:STRING=Release$|^CMAKE_CXX_FLAGS:STRING=.*-DNDEBUG' "$CACHE" \
+            || { echo "::error::the engine was built without NDEBUG"; exit 1; }
 
       - name: Check the APK
         run: |
