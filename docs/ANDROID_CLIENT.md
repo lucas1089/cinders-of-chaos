@@ -3,7 +3,8 @@
 Status: phase 1 done, study and plan. Phase 2 done as far as this machine can check: the engine builds for android
 arm64 with the NDK through CMake, and a Gradle project packs it into an APK. See "Phase 2 status" below. Phase 3 (written
 2026-10-29, option B of section 3): the first-start download of the game data, the file-backed mount and the restart. See
-"Phase 3 status". Nothing has run on a device yet.
+"Phase 3 status". Step 8, the APK that updates itself (written 2026-10-30): see "Step 8 status". Nothing has run on a
+device yet.
 Date of the study: 2026-10-29. Owner approval to start: 2026-10-29.
 The admin app in `android/` is a separate program and is not touched.
 
@@ -27,6 +28,75 @@ sprites, and an APK that updates itself.
 
 Phase 1 added no CI workflow, because the base had no Android build to run from Linux. Phase 2 adds the build and the
 manual workflow `.github/workflows/android-client.yml`. See "Phase 2 status".
+
+## Step 8 status: the APK updater
+
+Date: 2026-10-30. Build plan step 8 is written and tested as far as this machine can: the publisher, the manifest key, the
+screen logic, the Java download and the workflow. Nothing of it ran on a device, and the Java installer and the JNI call were
+not built with the NDK and Gradle here.
+
+### What was added
+
+| Piece | Where | What it does |
+|---|---|---|
+| Manifest key `android_apk` | `client/tools/make_update_manifest.py`, `client/MANIFEST.md` "APK updater" | `{version_code, version_name, min_version_code, url, sha256, size, signer_sha256}` in the signed payload. `build --apk FILE --apk-info JSON` writes it and publishes the APK as a plain file `apk/<sha[:2]>/<sha>.apk` next to the manifest. A publish without `--apk` keeps the published entry while its file is intact, `--no-apk` drops it. A lower version code, or the same code with another file, is refused. `set-apk` changes only this entry of the published manifest and signs it again with the same version and files, so a new app needs no new Windows package. `verify` checks the file. Old clients ignore the key. |
+| Publish script | `server/deploy/publish_client_update.sh`, `chaos-ctl.sh publish-apk` | `--apk android-31` downloads `CindersOfChaos-Android.apk` and `.json` from the release, alone it runs `set-apk`, with a client release it goes into that publish. `--apk-min-version-code N`, `--no-apk`. The web check asks the APK URL with a range request. |
+| Admin app | `android/` Comandos > Site e update do client; `desktop/` same card | Field "Release do app Android", buttons "Publicar app Android" and "Tirar o app do update". |
+| Screen logic | `client/overlay/modules/client_chaos_firststart/firststart_core.lua`, `firststart.lua` | `apkEntry` checks the entry like the publisher, `apkDecision` says none, offer or required. An offer shows "New app version" with Update app and Later. Required (running package below `min_version_code`, or below the server's `min_package` and the entry reaches it) has no Later and blocks play. The screen polls the shell. |
+| Base patch `0168` | `client/base-patches/0168-android-apk-update.patch`, `client/BASE.md` | `g_resources.startApkUpdate(url, sha256, size, signerSha256)`, `apkUpdateStatus()`, `cancelApkUpdate()` over one JNI call to `ChaosActivity.apkUpdate`. |
+| Java shell | `client/android/app/src/main/java/com/cindersofchaos/client/` `ApkFetcher`, `ApkUpdater`, `InstallResultReceiver` | `ApkFetcher`: download to the app cache with range resume, exact size and SHA-256. `ApkUpdater`: the "install unknown apps" permission prompt, then checks the file (same package name, higher version code, exactly one signing certificate whose SHA-256 is `signer_sha256`), then a `PackageInstaller` session. The receiver starts the system confirmation window and records the result. `REQUEST_INSTALL_PACKAGES` is in the manifest. |
+| Workflow | `.github/workflows/android-client.yml` | Prints sha256 and the signer certificate sha256, writes `CindersOfChaos-Android.json`, and with `publish_release` on a release-signed build attaches APK, JSON and sha256 file to the prerelease `android-<client_build>` (never overwritten). |
+
+### How it behaves
+
+1. The first-start screen fetches the manifest as before. Before it compares the game data it asks `apkDecision` with the
+   running package (`Services.update.package`, equal to the APK versionCode) and the entry.
+2. Offer: the player may press Later and goes on to the game data check. Required: only Update app.
+3. Update app: the shell asks Android for the "install unknown apps" permission when it is not granted and opens that
+   setting. The player allows it and comes back and presses Update app again. The download resumes.
+4. The shell checks size and SHA-256 while downloading, then package name, version code and the signer certificate of the
+   file. Any mismatch deletes the file and shows a reason; nothing is installed.
+5. The `PackageInstaller` session is committed. Android asks the player to confirm, except on Android 12 and newer when this
+   app installed the running version. After the install Android ends the process. The player opens the app again.
+6. A package equal to or above `version_code` sees nothing. A phone whose engine lacks patch `0168` does not offer the update.
+
+### What was checked here
+
+- `make_update_manifest_test.py` (entry, plain file, carry over, `set-apk`, refusals, signature, old clients' view) and
+  `publish_client_update_test.py` (the real script: APK alone, from a release tag with a stub for curl, with game files,
+  refusals, removal), `chaos_ctl_test.py` (`publish-apk`).
+- `firststart_core_test.lua` (entry rules, decision table, url, status text, phases) under LuaJIT and Lua 5.3.
+- `ApkFetcherTest` on a plain JVM against a local server: fresh, resume, no range support, dropped connection, wrong
+  hash, too many bytes, wrong length, errors, cancel, no space.
+- The Java classes compile against an Android 14 `android.jar` (only the generated `R` is missing).
+- `0168` applies without fuzz on the lines patch `0167` leaves, and the JNI function passes a syntax check with the JDK
+  `jni.h`.
+
+### What is not checked
+
+- Everything on a device: the permission settings page, `getPackageArchiveInfo` signing info on each Android version,
+  the session commit, the confirmation window, the silent update path on Android 12 and newer, how the phone reacts to the
+  process ending, Play Protect warnings.
+- The NDK build of `0168` and the Gradle build of the new Java and manifest entries.
+- The Lua screen itself (no harness for `firststart.lua`; the logic is in the core).
+- A real release key: the secrets below do not exist yet.
+
+### What the owner does
+
+1. Create the release keystore once and keep an offline backup. A lost key means players must uninstall.
+   `keytool -genkeypair -v -keystore chaos-client.jks -alias chaos -keyalg RSA -keysize 4096 -validity 10000`. In the
+   repository settings add the secrets `ANDROID_CLIENT_KEYSTORE_B64` (`base64 -w0 chaos-client.jks`),
+   `ANDROID_CLIENT_KEYSTORE_PASS` and `ANDROID_CLIENT_KEY_ALIAS`.
+2. Actions > Android client, tick `publish_release`, set `client_build` above every APK given out so far. The summary shows the
+   sha256 and the signer certificate sha256; the prerelease `android-<client_build>` holds the files.
+3. On the VPS, once: admin app Painel > Atualizar servidor, so `/opt/chaos/repo` has the new script. Shell fallback:
+   `sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh update-apply`.
+4. Admin app: Comandos > card "Site e update do client" > field "Release do app Android" (for example `android-31`) > button
+   "Publicar app Android". Shell fallback: `sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh publish-apk android-31`. Add
+   `--min-version-code 31` to make the update mandatory. "Tirar o app do update" removes the entry.
+5. Check: `make_update_manifest.py verify /var/www/chaos/updates/live --public KEY` prints "app update 1.31 (code 31)". The
+   site must serve `apk/` with range requests; the publish web check warns when it does not.
+6. Players on the direct APK allow "install unknown apps" for the game once.
 
 ## Phase 3 status
 
@@ -62,7 +132,7 @@ decrypting file layer would have to sit under PhysFS.
 
 ### What was checked here
 
-- `client/overlay/modules/client_chaos_firststart/firststart_core_test.lua` (122 checks) and `boot_test.lua` (42 checks) under
+- `client/overlay/modules/client_chaos_firststart/firststart_core_test.lua` (219 checks) and `boot_test.lua` (42 checks) under
   LuaJIT and Lua 5.3; the older updater and clean start tests still pass with the Android cases added.
 - The publisher: `make_update_manifest_test.py` (the `android` section, its checks, `--android-exclude`, `--no-android`,
   the old clients' view, the signature, the workflow inputs) and `publish_client_update_test.py` (the real script on a
@@ -160,9 +230,9 @@ client has its own release key, not the key of the admin app.
 5. **Window re-layout.** The engine resizes with the screen through `updateSize`. The Chaos windows have no mobile
    styles yet, except `game_event`. Phase 3.
 6. **Mobile defaults.** The heavy options should start off on Android. Not set.
-7. **APK self-update.** Step 8. The `android` manifest key now lists the game data files (phase 3). Still to build: the
-   `android_apk` entry (version code, URL, SHA-256, size, signer), the Java installer hand-over through
-   `PackageInstaller` and its permission, and the publish script flag.
+7. **APK self-update.** Done in step 8, see "Step 8 status": the `android_apk` entry, the publish script and admin app button,
+   the Java download and `PackageInstaller` hand-over with the permission prompt, the screen, patch `0168`. Not run on a
+   device. Still needed: the release keystore secrets.
 8. **OpenAL Soft is LGPL.** It is linked statically into the engine library. Whoever has the APK cannot relink it. For
    a public release either link it dynamically, as a separate `.so` in the APK, or offer the object files. The owner
    should decide before any public download. The same question applies to the Windows package.
@@ -413,8 +483,8 @@ different updater setting (updater off, store updates). Do not build the store p
 
 Details of the direct path:
 
-- The manifest payload gets a new key `android` with `{version_code, version_name, min_version_code, url, sha256,
-  size, signer_sha256}`. It sits next to `native` and `files`. Old clients ignore it.
+- The manifest payload gets a new key `android_apk` with `{version_code, version_name, min_version_code, url, sha256,
+  size, signer_sha256}`. It sits next to `android`, `native` and `files`. Old clients ignore it. Built in step 8.
 - The shell (Java) downloads to the app cache with resume, checks the size and SHA-256, and asks the engine's Ed25519
   code for the manifest check. Simplest: the engine verifies the manifest it already verifies, then passes the
   APK entry to the shell through a JNI call.
@@ -455,8 +525,8 @@ Each step lists the result and a rough size. One person, with a phone and a CI r
    8 days, mostly fixing what only a device shows.
 7. **Touch layer.** Walk pad and action bar from `client_mobile`, long press, tooltip replacement, hotkey buttons for
    the spells and the helper, safe areas. Size: 8 to 12 days.
-8. **APK updater.** The `android` manifest key (the game data list is done in phase 3; the APK entry is not), the Java
-   installer step, publish script flag, tests in Python for the manifest side. Size: 4 to 6 days.
+8. **APK updater.** Done 2026-10-30, see "Step 8 status": the `android_apk` manifest key, the Java download and installer
+   step (patch `0168`), the publish script and admin app button, tests. Not run on a device. Size was 4 to 6 days.
 9. **CI workflow.** Written, see Phase 2 status. `.github/workflows/android-client.yml`, manual only (`workflow_dispatch`), `ubuntu-latest`:
    - check out this repository and the assets branch, as `windows-package.yml` does (base client archive in parts);
    - `assemble_client.sh` into a game folder, then a trimmed folder for the APK (no pair, no `chaos.pack`);

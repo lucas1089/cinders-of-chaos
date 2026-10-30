@@ -3,6 +3,8 @@
 # client update", client/MANIFEST.md "Signed updater", website/README.md "Client updates").
 #
 # usage: publish_client_update.sh [options] TAG|ZIP          (as root: the private key is readable by root only)
+#        publish_client_update.sh --apk APKTAG|APKFILE [--apk-info JSON] [--apk-min-version-code N]   (app update only)
+#        publish_client_update.sh --no-apk | --apk-min-version-code N                                  (app update only)
 #
 #   TAG   a release of the repository (winpkg-46): downloads its CindersOfChaos-Client-Windows.zip
 #   ZIP   a local client zip instead (not offered by chaos-ctl.sh, which publishes release tags only)
@@ -25,6 +27,18 @@
 #   (phone, O313)     every publish also writes the manifest's "android" section: the list of files the Android client
 #                     downloads on first start (all but layouts/mobile/; client/MANIFEST.md "Phone data"). No option
 #                     here; make_update_manifest.py build has --android-exclude and --no-android.
+#   (app update, O313 step 8) the Android client updates its own APK when the manifest's "android_apk" entry names a newer
+#                     one (client/MANIFEST.md "APK updater"). The APK is the signed release build of android-client.yml.
+#   --apk REF         REF is a release tag of the Android client (android-31): downloads its CindersOfChaos-Android.apk
+#                     and CindersOfChaos-Android.json (version code and name, signer certificate SHA-256, file SHA-256),
+#                     or a local APK file with --apk-info JSON. With a TAG|ZIP it goes into that publish; alone (no TAG|ZIP)
+#                     only the "android_apk" entry changes: same version, same game files, signed again (a new app without a
+#                     new Windows package). The APK is served as a plain file under updates/live/apk/.
+#   --apk-info JSON   the JSON of a local --apk file
+#   --apk-min-version-code N   phones whose package is below N cannot play until they update the app (default 0: the
+#                     update is offered, the phone can still play). Alone it changes only that number of the published entry.
+#   --no-apk          remove the app update entry (alone), or leave it out of this publish (with a TAG|ZIP, it is kept
+#                     otherwise: a publish of new game files does not drop the app update)
 #   --check-only     no publish: only the web server check of the published manifest (below)
 #   --no-check        skip the web server check
 #   --keep            keep the work folder (the download and the extracted client) for a look afterwards
@@ -55,6 +69,9 @@
 #                                             exists; else derived from the private key. All that are given must agree.
 #   CHAOS_UPDATE_REPO     lucas1089/cinders-of-chaos      the GitHub repository of the releases
 #   CHAOS_UPDATE_ASSET    CindersOfChaos-Client-Windows.zip
+#   CHAOS_UPDATE_APK_ASSET       CindersOfChaos-Android.apk    the APK asset of an Android client release (--apk TAG)
+#   CHAOS_UPDATE_APK_INFO_ASSET  CindersOfChaos-Android.json   its info asset
+#   CHAOS_UPDATE_APK_MIN_MB      1                 a smaller APK download is refused
 #   CHAOS_UPDATE_URL      (empty)             the public manifest URL for the check (default: the package's own)
 #   CHAOS_WORK_DIR        /var/tmp            where the work folder is made (needs about 4x the zip size free: the spr is split there)
 #   CHAOS_UPDATE_MIN_MB   50                  a smaller download is refused (an error page, a wrong asset)
@@ -76,6 +93,9 @@ ASSET=${CHAOS_UPDATE_ASSET:-CindersOfChaos-Client-Windows.zip}
 CHECK_URL=${CHAOS_UPDATE_URL:-}
 WORKBASE=${CHAOS_WORK_DIR:-/var/tmp}
 MIN_MB=${CHAOS_UPDATE_MIN_MB:-50}
+APK_ASSET=${CHAOS_UPDATE_APK_ASSET:-CindersOfChaos-Android.apk}
+APK_INFO_ASSET=${CHAOS_UPDATE_APK_INFO_ASSET:-CindersOfChaos-Android.json}
+APK_MIN_MB=${CHAOS_UPDATE_APK_MIN_MB:-1}
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'publish: %s\n' "$*" >&2; exit 1; }
@@ -85,12 +105,16 @@ isnum() { [[ ${1:-} =~ ^[0-9]{1,9}$ ]]; }
 ENVFILE=${CHAOS_ENV:-/etc/chaos/chaos.env}
 ENCRYPTED_MIN_PACKAGE=13
 
-VERSION="" MINPKG="" CHECK=1 PUBLISH=1 KEEP=0 SRC="" KEYIDX=""
+VERSION="" MINPKG="" CHECK=1 PUBLISH=1 KEEP=0 SRC="" KEYIDX="" APK="" APKINFO="" APKMIN="" NOAPK=0
 while [ $# -gt 0 ]; do
   case $1 in
     --version) isnum "${2:-}" || die "--version N"; VERSION=$((10#$2)); shift 2 ;;
     --key-index) { isnum "${2:-}" && [ "$((10#$2))" -ge 1 ]; } || die "--key-index N (1, 2...)"; KEYIDX=$((10#$2)); shift 2 ;;
     --min-package) isnum "${2:-}" || die "--min-package N"; MINPKG=$((10#$2)); shift 2 ;;
+    --apk) [ -n "${2:-}" ] || die "--apk APKTAG|APKFILE"; APK=$2; shift 2 ;;
+    --apk-info) [ -n "${2:-}" ] || die "--apk-info JSON"; APKINFO=$2; shift 2 ;;
+    --apk-min-version-code) isnum "${2:-}" || die "--apk-min-version-code N"; APKMIN=$((10#$2)); shift 2 ;;
+    --no-apk) NOAPK=1; shift ;;
     --check-only) PUBLISH=0; shift ;;
     --no-check) CHECK=0; shift ;;
     --keep) KEEP=1; shift ;;
@@ -109,7 +133,7 @@ command -v python3 >/dev/null || die "python3 is missing"
 
 # the web server check: what a client gets from the manifest URL ($1), compared with the local manifest.json
 web_check() {
-  local url=$1 dir hdr code ctype cache blob bcode ok=0
+  local url=$1 dir hdr code ctype cache blob bcode apkurl ok=0
   if [ -z "$url" ]; then
     say "check: no manifest URL (the package's init.lua has none; set CHAOS_UPDATE_URL); skipped"
     return 0
@@ -147,6 +171,17 @@ PY
     say "check: Range GET of the largest blob -> HTTP $bcode, Cache-Control: ${cache:-none}"
     [ "$bcode" = 206 ] || { say "check: WARN a blob Range request should answer 206 (large files come in parts)"; ok=1; }
   fi
+  apkurl=$(python3 -I - "$LIVE/manifest.json" <<'PY' 2>/dev/null || true
+import json, sys
+m = json.loads(json.load(open(sys.argv[1]))['payload'])
+print((m.get('android_apk') or {}).get('url', ''))
+PY
+)
+  if [ -n "$apkurl" ]; then
+    bcode=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 -r 0-15 "${url%manifest.json}$apkurl" 2>/dev/null || echo 000)
+    say "check: Range GET of the app update -> HTTP $bcode"
+    [ "$bcode" = 206 ] || { say "check: WARN the APK Range request should answer 206 (the phone resumes a download)"; ok=1; }
+  fi
   rm -rf "$dir"
   [ "$ok" = 0 ] && say "check: ok"
   return "$ok"
@@ -160,8 +195,66 @@ if [ "$PUBLISH" = 0 ]; then
   exit 0
 fi
 
-[ -n "$SRC" ] || die "TAG or ZIP (--help)"
 [ -r "$KEY" ] || die "cannot read the private key $KEY (CHAOS_UPDATE_KEY; run as root)"
+
+# the app update (O313 step 8): $WORK/apk/app.apk and app.json from a release tag of the Android client or a local file
+fetch_apk() {
+  mkdir -p "$WORK/apk"
+  APKFILE="$WORK/apk/app.apk" APKJSON="$WORK/apk/app.json"
+  if [ -f "$APK" ]; then
+    [ -n "$APKINFO" ] || die "--apk FILE needs --apk-info JSON (the JSON android-client.yml attached next to the APK)"
+    [ -f "$APKINFO" ] || die "--apk-info $APKINFO: not a file"
+    cp "$APK" "$APKFILE" && cp "$APKINFO" "$APKJSON"
+  elif [[ $APK =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] && [[ $APK != *..* ]]; then
+    [ -z "$APKINFO" ] || die "--apk-info is for a local --apk file; a release tag brings its own"
+    command -v curl >/dev/null || die "curl is missing"
+    local base="https://github.com/$GHREPO/releases/download/$APK"
+    say "download: $base/$APK_ASSET"
+    curl -fL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 --max-filesize 1073741824 \
+      -sS -o "$APKFILE" "$base/$APK_ASSET" || die "download failed ($base/$APK_ASSET)"
+    curl -fL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 --max-filesize 1048576 \
+      -sS -o "$APKJSON" "$base/$APK_INFO_ASSET" || die "download failed ($base/$APK_INFO_ASSET)"
+  else
+    die "$APK: not a local file and not a release tag"
+  fi
+  local asize
+  asize=$(stat -c %s "$APKFILE")
+  [ "$asize" -ge $((APK_MIN_MB * 1024 * 1024)) ] || die "the APK is $asize bytes, below $APK_MIN_MB MB (an error page or a wrong asset?)"
+  say "apk: $asize bytes, sha256 $(sha256sum "$APKFILE" | cut -d' ' -f1)"
+}
+
+# only the app update: the published manifest gets another android_apk entry and is signed again (same version, same files)
+if [ -z "$SRC" ]; then
+  { [ -n "$APK" ] || [ "$NOAPK" = 1 ] || [ -n "$APKMIN" ]; } || die "TAG or ZIP, or an app update option (--apk, --no-apk, --apk-min-version-code; --help)"
+  [ -f "$LIVE/manifest.json" ] || die "nothing published in $LIVE: publish a client package first"
+  if [ -n "$APK" ] && [ "$NOAPK" = 1 ]; then die "--apk and --no-apk together"; fi
+  mkdir -p "$SITE/updates"
+  if command -v flock >/dev/null; then
+    exec 9> "$SITE/updates/.publish.lock"
+    flock -n 9 || die "another publish is running"
+  fi
+  WORK=$(mktemp -d "$WORKBASE/chaos-publish.XXXXXX")
+  trap 'rm -rf "$WORK"' EXIT
+  if [ -n "$APK" ]; then fetch_apk; fi
+  sargs=(set-apk "$LIVE" --key "$KEY")
+  if [ "$NOAPK" = 1 ]; then
+    sargs+=(--remove)
+  else
+    if [ -n "$APK" ]; then sargs+=(--apk "$APKFILE" --apk-info "$APKJSON"); fi
+    if [ -n "$APKMIN" ]; then sargs+=(--apk-min-version-code "$APKMIN"); fi
+  fi
+  python3 -I "$TOOL" "${sargs[@]}"     || die "make_update_manifest.py set-apk failed; nothing changed"
+  PUBLIC=$(python3 -I "$TOOL" pubkey --private "$KEY") || die "cannot read the private key $KEY"
+  python3 -I "$TOOL" verify "$LIVE" --public "$PUBLIC" || die "verify failed: check $LIVE/manifest.json before players fetch it"
+  chk="skipped"
+  if [ "$CHECK" = 1 ] && [ -n "$CHECK_URL" ]; then
+    if web_check "$CHECK_URL"; then chk=ok; else chk="WARN (see above)"; fi
+  fi
+  say ""
+  say "published: the app update of manifest version $(python3 -I -c 'import json,sys; print(json.loads(json.load(open(sys.argv[1]))["payload"])["version"])' "$LIVE/manifest.json") (game files unchanged)"
+  say "  web server check: $chk"
+  exit 0
+fi
 
 # the blob key: the client guard secret of the game server (never printed, only passed on in the environment)
 if [ -z "${CHAOS_CLIENT_KEY:-}" ] && [ -r "$ENVFILE" ]; then
@@ -191,6 +284,7 @@ fi
 WORK=$(mktemp -d "$WORKBASE/chaos-publish.XXXXXX")
 if [ "$KEEP" = 1 ]; then trap 'say "work folder kept: $WORK"' EXIT; else trap 'rm -rf "$WORK"' EXIT; fi
 mkdir "$WORK/dl" "$WORK/x"
+if [ -n "$APK" ]; then fetch_apk; fi
 
 if [ -n "$TAG" ]; then
   command -v curl >/dev/null || die "curl is missing"
@@ -393,6 +487,9 @@ if [ -n "$NATIVE" ]; then
   isnum "$PKG_PACKAGE" || die "the launcher's files need Services.update.package in init.lua"
   args+=(--native-dir "$NATIVE" --native-package "$((10#$PKG_PACKAGE))" --native-launcher CindersLauncher.exe)
 fi
+if [ -n "$APK" ]; then args+=(--apk "$APKFILE" --apk-info "$APKJSON"); fi
+if [ -n "$APKMIN" ]; then args+=(--apk-min-version-code "$APKMIN"); fi
+if [ "$NOAPK" = 1 ]; then args+=(--no-apk); fi
 if [ -n "$KEYIDX" ]; then args+=(--key-index "$KEYIDX"); vargs+=(--key-index "$KEYIDX"); fi
 say "build: version ${VERSION:-$((PREV + 1))}, min_package $MINPKG, encrypted -> $LIVE"
 python3 -I "$TOOL" "${args[@]}" || die "make_update_manifest.py build failed; nothing new was published"
@@ -410,4 +507,5 @@ say "  folder: $LIVE"
 say "  public key: $PUBLIC"
 say "  clients of package $MINPKG or newer with this key apply it at their next start; older packages with the"
 say "  updater are told to download the new client (the game server refuses them when clientGuardManifest names it)"
+if [ -n "$APK" ]; then say "  app update: $(python3 -I -c 'import json,sys; a=json.loads(json.load(open(sys.argv[1]))["payload"]).get("android_apk") or {}; print(a.get("version_name","none"), "code", a.get("version_code","-"))' "$LIVE/manifest.json")"; fi
 say "  web server check: $chk"

@@ -116,6 +116,11 @@
 #                               publish_client_update.sh TAG in the background (publish-log): the release's client zip
 #                               becomes the signed client update on the site (docs/LAUNCH.md "Publishing a client
 #                               update"). Release tags only, never a local file.
+#   publish-apk APKTAG [--min-version-code N] | --remove | --min-version-code N
+#                               the Android app update (O313 step 8) in the background (publish-log): the release APKTAG
+#                               (android-31) of android-client.yml becomes the manifest's "android_apk" entry, same
+#                               version and game files, signed again; --remove drops it; alone, --min-version-code only
+#                               changes the number below which a phone cannot play (docs/ANDROID_CLIENT.md section 4).
 #   publish-log [N]             the last N lines of the publish log
 #   install-admin [--full] KEYFILE|-
 #                               creates the user "chaosadmin" with that ssh public key (a file, or - for stdin) and the
@@ -1252,6 +1257,35 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     : > "$PLOG"
     setsid env "${penv[@]}" "$pub" "${args[@]}" -- "$tag" >> "$PLOG" 2>&1 < /dev/null &
     echo "started (publish-update $tag ${args[*]}); follow it with: chaos-ctl.sh publish-log"
+    ;;
+  publish-apk)
+    atag="" args=()
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --min-version-code) { num "${2:-}" && [ "${#2}" -le 9 ]; } || die "--min-version-code N"; args+=(--apk-min-version-code "$2"); shift 2 ;;
+        --remove) args+=(--no-apk); shift ;;
+        -*) die "publish-apk APKTAG [--min-version-code N] | --remove | --min-version-code N" ;;
+        *) [ -z "$atag" ] || die "publish-apk: one release tag"; atag=$1; shift ;;
+      esac
+    done
+    if [ -n "$atag" ]; then
+      if ! [[ $atag =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || [[ $atag == *..* ]]; then
+        die "publish-apk APKTAG (a release tag like android-31)"
+      fi
+      args=(--apk "$atag" "${args[@]}")
+    fi
+    [ "${#args[@]}" -gt 0 ] || die "publish-apk APKTAG [--min-version-code N] | --remove | --min-version-code N"
+    pub="$REPO/server/deploy/publish_client_update.sh"
+    [ -x "$pub" ] || die "no $pub"
+    penv=()
+    for k in CHAOS_SITE_DIR CHAOS_UPDATE_KEY CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR; do
+      v=$(setting "$k" "")
+      [ -z "$v" ] || penv+=("$k=$v")
+    done
+    mkdir -p "$(dirname "$PLOG")"
+    : > "$PLOG"
+    setsid env "${penv[@]}" "$pub" "${args[@]}" >> "$PLOG" 2>&1 < /dev/null &
+    echo "started (publish-apk ${args[*]}); follow it with: chaos-ctl.sh publish-log"
     ;;
   publish-log)
     tail -n "$(lines_arg "${1:-60}")" "$PLOG" 2>&1

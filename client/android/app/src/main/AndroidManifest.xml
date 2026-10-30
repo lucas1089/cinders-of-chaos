@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- the app update (ApkUpdater): hands the downloaded APK to the PackageInstaller; the player allows it once -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
     <!-- The engine writes only to the app's private folder (getFilesDir), so no storage permission. -->
     <application
@@ -41,5 +43,9 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+        <!-- the PackageInstaller answers the app update here (ApkUpdater, InstallResultReceiver) -->
+        <receiver
+            android:name=".InstallResultReceiver"
+            android:exported="false"/>
     </application>
 </manifest>
