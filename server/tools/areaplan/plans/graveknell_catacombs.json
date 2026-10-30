@@ -346,7 +346,7 @@
     },
     {
       "zone": "bone_galleries",
-      "monster": "Blazebringer",
+      "monster": "Wickstaff Hexmage",
       "count": 6,
       "respawn": 75,
       "pack": 3
@@ -367,14 +367,14 @@
     },
     {
       "zone": "collapsed_halls",
-      "monster": "Grove Keeper",
+      "monster": "Wickstaff Hexmage",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "collapsed_halls",
-      "monster": "Mercenary",
+      "monster": "Wickstaff Hexmage",
       "count": 5,
       "respawn": 75,
       "pack": 3

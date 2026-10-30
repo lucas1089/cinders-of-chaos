@@ -11526,9 +11526,27 @@ Owner request 2026-10-30: the seven creature sheets of a free AI-generated sampl
 seven new hunt monsters, each with a name of its own. The art is client pair 57 (client/MANIFEST.md "Pair 57"; built, **not on
 windows-assets yet**), outfits 3364-3370. The pack's eighth sheet is not used (the owner: it looks like a famous comic character).
 - **Files.** `data/monster/monsters/chaos/<key>.xml`, registered by the `monsters` step with the rest of the folder. All seven are
-  hunt monsters, none a boss. **No spawn is placed here**: the hunt plans (`tools/areaplan/plans/*.json`) take them in a later change,
-  which is also when the Bestiary spawn table, the wiki (`gen_wiki_data.lua` lists the Chaos monsters that spawn somewhere) and the
-  codex data pick them up. Until then `gen_wiki_data.lua`, `gen_codex_data.lua` and `gen_howitworks_data.lua --check` stay unchanged.
+  hunt monsters, none a boss. **Where they spawn (2026-10-30)**: in nine planned hunts
+  (`tools/areaplan/plans/*.json`), each by swapping whole spawn entries to the new monster (counts and packs of 3 kept, so the
+  density of every plan is unchanged, `area_planner.py validate` 0 errors, 0 warnings). The table below lists the plan, band and
+  count. The wiki, codex and How it works data read the monster files and did not change (`--check` passes); the Bestiary spawn
+  table, the bounty pool and the map markers are regenerated from the installed spawn file on the server.
+  A plan already placed on a live map takes the new spawn list at the next `contentareas` run (the spawn blocks are written again,
+  no tile changes, no `.bak` restore).
+
+| Monster | Hunt (band) | Spawns |
+|---|---|---|
+| Bogtusk Cleaver | brinescar_strand (390-450): scorched_bluff, ashen_pan | 13 of 195 |
+| Wickstaff Hexmage | graveknell_catacombs (590-705): bone_galleries, collapsed_halls; sablemourn_ossuary (530-645): silent_shrine, candle_crypts | 16 of 199; 15 of 229 |
+| Coralcrown Brinecaller | sorrowfen_marsh (875-990): sunken_mire, brackish_reeds; deepgrudge_warrens (860-975): sunken_den, dripping_gallery | 14 of 191; 12 of 202 |
+| Gloamgeode Shellback | cinderglass_sanctum (1120-1300): glass_nave, facet_chapel | 20 of 276 |
+| Marshlight Hollowseer | gallowfen_mire (1300-1450): fenlight_marsh, bogbone_sink | 16 of 256 |
+| Redmane Anvilbreaker | gravehorn_deeps (1500-1750): marrow_forge, smouldering_cloister, cinderbone_vault | 30 of 300 |
+| Gravecrown Oathbreaker | paleflame_sanctum (1700-1850): moldy_cell, tainted_nave | 25 of 546 |
+
+  No bog, forge or grave-hall plan sits in the exact band, so the match is by band first and theme second: Bogtusk (no swamp plan at
+  390-410) is in a waste camp, Redmane (no forge plan at 1530-1570) in the crypt plan with a `marrow_forge` zone, Gravecrown (no
+  crypt plan at 1830-1870) at the top of the sanctum plan, which opens at 1700.
 - **Numbers.** The same rules as every other hunting monster, in `tools/tune_monsters.py` (`AISS_BAND`): under level 650 the pack 30
   template (the Cunning Hyaena scaled by L / 650: health x L/650, experience x (L/650)^2, strongest hit x L/650), from 650 the late-game
   curves (`late_targets`, health, experience, speed, strongest hit and heal at the level). Level range = level +-10 below 650, +-20 above.

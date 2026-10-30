@@ -349,7 +349,7 @@
     },
     {
       "zone": "sunken_mire",
-      "monster": "Crypt Crab",
+      "monster": "Coralcrown Brinecaller",
       "count": 6,
       "respawn": 75,
       "pack": 3
@@ -377,7 +377,7 @@
     },
     {
       "zone": "brackish_reeds",
-      "monster": "Crypt Crab",
+      "monster": "Coralcrown Brinecaller",
       "count": 8,
       "respawn": 75,
       "pack": 3

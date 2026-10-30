@@ -229,7 +229,7 @@
   "spawns": [
     {
       "zone": "sunken_den",
-      "monster": "Crypt Crab",
+      "monster": "Coralcrown Brinecaller",
       "count": 6,
       "respawn": 75,
       "pack": 3
@@ -299,7 +299,7 @@
     },
     {
       "zone": "dripping_gallery",
-      "monster": "Crypt Crab",
+      "monster": "Coralcrown Brinecaller",
       "count": 6,
       "respawn": 75,
       "pack": 3

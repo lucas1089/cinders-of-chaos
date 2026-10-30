@@ -317,7 +317,7 @@
     },
     {
       "zone": "smouldering_cloister",
-      "monster": "Cinderhorn Juggernaut",
+      "monster": "Redmane Anvilbreaker",
       "count": 10,
       "respawn": 75,
       "pack": 3
@@ -345,7 +345,7 @@
     },
     {
       "zone": "cinderbone_vault",
-      "monster": "Cinderskull Reaver",
+      "monster": "Redmane Anvilbreaker",
       "count": 10,
       "respawn": 75,
       "pack": 3
@@ -436,7 +436,7 @@
     },
     {
       "zone": "marrow_forge",
-      "monster": "Cinderhorn Juggernaut",
+      "monster": "Redmane Anvilbreaker",
       "count": 10,
       "respawn": 75,
       "pack": 3

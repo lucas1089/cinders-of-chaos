@@ -3693,7 +3693,7 @@ Output **pair 57**: dat 56c34d0121264ba6fb26076f95c35701 (8,846,011 bytes), spr 
     `things-1098.tar` sha256 `88436d0002aa39f72796dd25ada1abe5a5463ad2ba3363be5229d543eda59925`. Extracting the parts gives the dat md5 above (checked).
 - **Switched on** with the push: `ChaosAissArt.PAIR57 = true`, the rows of `monster_looks/aiss_picks.csv` in `picks.csv` (looks
   3364-3370 in the seven monster files), `check_content.py` at pair 57 / 3370 outfits, `outfit_anchors.lua` and `info_lifts.lua`
-  from pair 57. A client on pair 56 draws nothing for the seven until it updates; none of them is placed on a map yet.
+  from pair 57. A client on pair 56 draws nothing for the seven until it updates; they spawn in nine hunt plans (server/README.md "AI Sprite Studio monsters (pair 57)").
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
