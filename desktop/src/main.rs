@@ -1,4 +1,5 @@
 //! Cinders Admin for the PC: the window. Logic is in the library (commands, ssh, config, update, catalog).
+use cinders_admin::cards::{self, Count, Metrics, Player, State, Status};
 use cinders_admin::catalog::{self, PanelAction};
 use cinders_admin::commands::{self, Action, Kind, Live, Tab, ACTIONS};
 use cinders_admin::config::{self, Config};
@@ -17,10 +18,18 @@ enum Page {
 }
 
 enum Msg {
-    Done { title: String, text: String, ok: bool },
+    Done {
+        title: String,
+        text: String,
+        ok: bool,
+    },
     Catalog(Result<(Vec<PanelAction>, i64), String>),
     Update(Result<Option<update::Found>, String>),
     Installed(Result<(), String>),
+    /// Status card: parsed `status` output, or why it failed.
+    CardStatus(Result<Status, String>),
+    CardPlayers(Result<Vec<Player>, String>),
+    CardMetrics(Result<Metrics, String>),
 }
 
 struct Pending {
@@ -50,6 +59,12 @@ struct App {
     game_sel: Option<usize>,
     game_values: Vec<String>,
     terminal: String,
+    card_status: Option<Status>,
+    card_status_note: String,
+    card_players: Option<Vec<Player>>,
+    card_metrics: Option<Metrics>,
+    card_metrics_note: String,
+    cards_busy: usize,
 }
 
 impl App {
@@ -78,11 +93,303 @@ impl App {
             game_sel: None,
             game_values: Vec::new(),
             terminal: String::new(),
+            card_status: None,
+            card_status_note: "Toque em Atualizar.".into(),
+            card_players: None,
+            card_metrics: None,
+            card_metrics_note: "Toque em Carregar métricas.".into(),
+            cards_busy: 0,
         };
         if app.cfg.auto_update {
             app.check_update();
         }
         app
+    }
+
+    /// Runs one chaos-ctl.sh command on a thread and sends the parsed answer back.
+    fn card_call(&mut self, ctx: &egui::Context, args: &'static str, timeout: u64, kind: u8) {
+        self.cards_busy += 1;
+        let (cfg, tx, ctx) = (self.cfg.clone(), self.tx.clone(), ctx.clone());
+        std::thread::spawn(move || {
+            let o = ssh::exec(&cfg, &ssh::ctl_line(&cfg, args), timeout, None);
+            let first = |t: &str| t.lines().next().unwrap_or("").to_string();
+            let m = match kind {
+                0 => {
+                    let s = Status::parse(&o.text);
+                    Msg::CardStatus(if s.valid() { Ok(s) } else { Err(first(&o.text)) })
+                }
+                1 if o.code == 0 => Msg::CardPlayers(Ok(cards::parse_players(&o.text))),
+                1 => Msg::CardPlayers(Err(first(&o.text))),
+                _ => match Metrics::parse(&o.text) {
+                    Some(m) => Msg::CardMetrics(Ok(m)),
+                    None => Msg::CardMetrics(Err(first(&o.text))),
+                },
+            };
+            let _ = tx.send(m);
+            ctx.request_repaint();
+        });
+    }
+
+    fn now_unix() -> i64 {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0)
+    }
+
+    fn cards_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        let gold = egui::Color32::from_rgb(230, 170, 60);
+        let red = egui::Color32::from_rgb(220, 80, 60);
+        let green = egui::Color32::from_rgb(90, 190, 100);
+        ui.horizontal(|ui| {
+            ui.heading("Servidor do jogo");
+            if let Some(s) = &self.card_status {
+                let st = s.state();
+                let c = match st {
+                    State::Online => green,
+                    State::Starting | State::Stopping | State::OnlineNoUnit => gold,
+                    _ => red,
+                };
+                ui.colored_label(c, st.badge());
+            }
+            if ui.button("Atualizar").clicked() {
+                self.card_call(ctx, "status", 30, 0);
+            }
+            if self.cards_busy > 0 {
+                ui.spinner();
+            }
+        });
+        match self.card_status.clone() {
+            None => {
+                ui.weak(&self.card_status_note);
+            }
+            Some(s) => {
+                let on = s.state() == State::Online;
+                match s.uptime_sec(Self::now_unix()) {
+                    Some(up) if on => ui.label(format!("No ar há {}", cards::duration(up))),
+                    _ if on => ui.label("No ar."),
+                    _ => ui.label("O servidor não está rodando."),
+                };
+                let u = s.get("unit");
+                ui.weak(format!("Unidade {}", if u.is_empty() { "chaos-server" } else { u }));
+                if s.state() == State::OnlineNoUnit {
+                    ui.colored_label(
+                        gold,
+                        "Rodando fora do systemd: Ligar, Desligar e Reiniciar precisam da unidade instalada.",
+                    );
+                }
+                if s.state() == State::Failed {
+                    ui.colored_label(red, "O serviço caiu. Veja os erros na aba Logs.");
+                }
+                egui::Grid::new("status_grid")
+                    .num_columns(2)
+                    .spacing([24.0, 4.0])
+                    .show(ui, |ui| {
+                        ui.label("Jogadores");
+                        ui.horizontal(|ui| {
+                            ui.strong(s.players_text());
+                            if ui.small_button("Quem está online").clicked() {
+                                self.card_call(ctx, "players", 30, 1);
+                            }
+                        });
+                        ui.end_row();
+                        ui.label("Erros desde o início");
+                        match s.errors() {
+                            Some(0) => ui.strong("nenhum"),
+                            Some(n) => ui.colored_label(red, n.to_string()),
+                            None => ui.strong("?"),
+                        };
+                        ui.end_row();
+                        ui.label("Memória");
+                        ui.horizontal(|ui| {
+                            ui.strong(s.mem_text());
+                            if let Some(p) = s.mem_percent() {
+                                ui.add(egui::ProgressBar::new(p as f32 / 100.0).desired_width(120.0));
+                            }
+                        });
+                        ui.end_row();
+                        ui.label("Disco");
+                        ui.horizontal(|ui| {
+                            ui.strong(s.disk_text());
+                            if let Some(p) = s.disk_percent() {
+                                ui.add(egui::ProgressBar::new(p as f32 / 100.0).desired_width(120.0));
+                            }
+                        });
+                        ui.end_row();
+                        ui.label("Carga (1, 5, 15 min)");
+                        ui.strong(s.load_text());
+                        ui.end_row();
+                        ui.label("Último backup");
+                        ui.strong(s.backup_text());
+                        ui.end_row();
+                    });
+            }
+        }
+        if let Some(p) = &self.card_players {
+            egui::CollapsingHeader::new(format!("Online agora ({})", p.len()))
+                .default_open(true)
+                .show(ui, |ui| {
+                    if p.is_empty() {
+                        ui.label("Ninguém online.");
+                    }
+                    for x in p {
+                        ui.label(format!("{}  nível {}  {}", x.name, x.level, x.vocation));
+                    }
+                });
+        }
+        ui.separator();
+        self.metrics_ui(ui, ctx);
+        ui.separator();
+    }
+
+    fn metrics_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.horizontal(|ui| {
+            ui.heading("Métricas dos jogadores");
+            if ui.button("Carregar métricas").clicked() {
+                self.card_call(ctx, "metrics --json", 90, 2);
+            }
+        });
+        let Some(m) = self.card_metrics.clone() else {
+            ui.weak(&self.card_metrics_note);
+            return;
+        };
+        if !m.ok {
+            ui.colored_label(egui::Color32::from_rgb(220, 80, 60), m.error_text());
+            return;
+        }
+        if m.empty {
+            ui.label("Ainda sem dados: a tabela se enche com o jogo.");
+            return;
+        }
+        let c = |v: Option<Count>| v.map(Count::text).unwrap_or_else(|| "?".into());
+        ui.label(format!(
+            "Churn de {} dias: foram embora {}, ativos {}.",
+            m.churn_days,
+            c(m.gone),
+            c(m.active)
+        ));
+        let table = |ui: &mut egui::Ui, id: &str, head: &[&str], rows: Vec<Vec<String>>| {
+            if rows.is_empty() {
+                ui.weak("Sem linhas.");
+                return;
+            }
+            egui::Grid::new(id).striped(true).spacing([18.0, 2.0]).show(ui, |ui| {
+                for h in head {
+                    ui.strong(*h);
+                }
+                ui.end_row();
+                for r in rows {
+                    for v in r {
+                        ui.label(v);
+                    }
+                    ui.end_row();
+                }
+            });
+        };
+        let killer_rows = |v: &[cards::Killer]| -> Vec<Vec<String>> {
+            v.iter()
+                .map(|k| vec![k.name.clone(), k.count.text(), k.top_band.clone()])
+                .collect()
+        };
+        egui::CollapsingHeader::new("Churn por faixa de nível").show(ui, |ui| {
+            let rows = m
+                .bands
+                .iter()
+                .map(|b| vec![b.band.clone(), b.gone.text(), b.active.text(), cards::pct(b.gone_pct)])
+                .collect();
+            table(ui, "m_bands", &["Faixa", "Saíram", "Ativos", "Saída"], rows);
+        });
+        egui::CollapsingHeader::new("Onde as pessoas param").show(ui, |ui| {
+            table(
+                ui,
+                "m_stops",
+                &["Lugar", "Saíram", "Faixa principal"],
+                killer_rows(&m.stops),
+            );
+        });
+        egui::CollapsingHeader::new("Mortes por área").show(ui, |ui| {
+            table(
+                ui,
+                "m_areas",
+                &["Área", "Mortes", "Faixa principal"],
+                killer_rows(&m.areas),
+            );
+        });
+        egui::CollapsingHeader::new("Mortes por monstro").show(ui, |ui| {
+            table(
+                ui,
+                "m_monsters",
+                &["Monstro", "Mortes", "Faixa principal"],
+                killer_rows(&m.monsters),
+            );
+        });
+        egui::CollapsingHeader::new(format!("Primeira sessão ({} personagens)", c(m.session_characters))).show(
+            ui,
+            |ui| {
+                let mut prev = String::new();
+                let mut rows = Vec::new();
+                for b in &m.sessions {
+                    rows.push(vec![
+                        cards::bucket_text(&b.bucket, &prev),
+                        b.characters.text(),
+                        cards::pct(b.pct),
+                    ]);
+                    prev = b.bucket.clone();
+                }
+                table(ui, "m_sessions", &["Duração", "Personagens", "Parte"], rows);
+            },
+        );
+        egui::CollapsingHeader::new("Tempo mediano até o nível").show(ui, |ui| {
+            let rows = m
+                .milestones
+                .iter()
+                .map(|x| {
+                    vec![
+                        x.level.to_string(),
+                        cards::minutes(x.median_minutes),
+                        x.characters.text(),
+                    ]
+                })
+                .collect();
+            table(ui, "m_milestones", &["Nível", "Mediana", "Personagens"], rows);
+        });
+        egui::CollapsingHeader::new("Retorno por semana de criação").show(ui, |ui| {
+            let rows = m
+                .weeks
+                .iter()
+                .map(|w| {
+                    vec![
+                        w.week.clone(),
+                        w.cohort.text(),
+                        cards::pct(w.pct[0]),
+                        cards::pct(w.pct[1]),
+                        cards::pct(w.pct[2]),
+                    ]
+                })
+                .collect();
+            table(ui, "m_weeks", &["Semana", "Novos", "Dia 1", "Dia 3", "Dia 7"], rows);
+        });
+        egui::CollapsingHeader::new("Primeiro uso de cada sistema").show(ui, |ui| {
+            let rows = m
+                .first_uses
+                .iter()
+                .map(|x| {
+                    vec![
+                        cards::system_name(&x.system).to_string(),
+                        x.characters.text(),
+                        cards::pct(x.pct),
+                        cards::minutes(x.median_minutes),
+                        x.top_band.clone(),
+                    ]
+                })
+                .collect();
+            table(
+                ui,
+                "m_first",
+                &["Sistema", "Personagens", "Parte", "Tempo mediano", "Faixa"],
+                rows,
+            );
+        });
     }
 
     fn check_update(&mut self) {
@@ -423,6 +730,33 @@ impl eframe::App for App {
                     self.output = format!("{} {}\n{}", if ok { "OK" } else { "ERRO" }, title, text.trim_end());
                     self.status = format!("{title}: {}", if ok { "feito" } else { "falhou" });
                 }
+                Msg::CardStatus(r) => {
+                    self.cards_busy = self.cards_busy.saturating_sub(1);
+                    match r {
+                        Ok(s) => self.card_status = Some(s),
+                        Err(e) => {
+                            self.card_status = None;
+                            self.card_status_note = format!("Sem estado: {e}");
+                        }
+                    }
+                }
+                Msg::CardPlayers(r) => {
+                    self.cards_busy = self.cards_busy.saturating_sub(1);
+                    match r {
+                        Ok(p) => self.card_players = Some(p),
+                        Err(e) => self.status = format!("Jogadores: {e}"),
+                    }
+                }
+                Msg::CardMetrics(r) => {
+                    self.cards_busy = self.cards_busy.saturating_sub(1);
+                    match r {
+                        Ok(m) => self.card_metrics = Some(m),
+                        Err(e) => {
+                            self.card_metrics = None;
+                            self.card_metrics_note = format!("Sem métricas: {e}");
+                        }
+                    }
+                }
                 Msg::Catalog(r) => match r {
                     Ok((a, g)) => {
                         self.catalog_note = format!("{} comandos (grupo {g}).", a.len());
@@ -503,6 +837,9 @@ impl eframe::App for App {
                 .id_salt("main")
                 .show(ui, |ui| match self.page {
                     Page::Tab(t) => {
+                        if t == Tab::Panel {
+                            self.cards_ui(ui, ctx);
+                        }
                         self.actions_ui(ui, ctx, t);
                         if t == Tab::Logs {
                             ui.separator();

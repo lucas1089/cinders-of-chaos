@@ -3,8 +3,10 @@
 Desktop admin app for the owner's PC. Same job as the Android app (`android/`, `docs/ADMIN_APP.md`): the same tabs, the
 same `chaos-ctl.sh` commands, the same SSH key and user. Rust with egui/eframe: one small `.exe`, no installer.
 
-Phase 1 (this folder): tabs Painel, Comandos, Logs, Painel do jogo, Config. Not yet: live view (spectate, cast), the
-metrics and status dashboards as cards (the text answer shows in the output pane), the key generator.
+Phase 1 (this folder): tabs Painel, Comandos, Logs, Painel do jogo, Config. The Painel tab starts with cards: server state and
+uptime, players online (with the list), errors, memory, disk, load, last backup, and the progress metrics (churn, stops,
+deaths, first session, time to level, returns, first use). They call `status`, `players` and `metrics --json`; the
+parsing is pure code in `src/cards.rs` with fixture tests. Not yet: live view (spectate, cast), the key generator.
 
 ## How it reaches the VPS
 
