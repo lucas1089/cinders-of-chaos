@@ -8,6 +8,9 @@ use cinders_admin::{reload, ssh, update};
 use eframe::egui;
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::Arc;
+
+mod theme;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -93,10 +96,12 @@ struct App {
     reload_names: Vec<String>,
     reload_pick: String,
     reload_note: String,
+    header: egui::TextureHandle,
+    icon: egui::TextureHandle,
 }
 
 impl App {
-    fn new() -> Self {
+    fn new(ctx: &egui::Context) -> Self {
         let (tx, rx) = channel();
         let cfg = config::load();
         let mut app = App {
@@ -140,6 +145,8 @@ impl App {
             reload_names: Vec::new(),
             reload_pick: String::new(),
             reload_note: "Lista vazia: toque em Listar arquivos.".into(),
+            header: theme::header(ctx),
+            icon: theme::icon_texture(ctx),
         };
         if app.cfg.auto_update {
             app.check_update();
@@ -179,11 +186,16 @@ impl App {
     }
 
     fn cards_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        let gold = egui::Color32::from_rgb(230, 170, 60);
-        let red = egui::Color32::from_rgb(220, 80, 60);
-        let green = egui::Color32::from_rgb(90, 190, 100);
+        theme::card_full(ui, |ui| self.server_card_ui(ui, ctx));
+        ui.add_space(8.0);
+        theme::card_full(ui, |ui| self.metrics_ui(ui, ctx));
+        ui.add_space(8.0);
+    }
+
+    fn server_card_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        let (gold, red, green) = (theme::WARN, theme::ERROR, theme::OK);
         ui.horizontal(|ui| {
-            ui.heading("Servidor do jogo");
+            ui.label(theme::card_title("Servidor do jogo"));
             if let Some(s) = &self.card_status {
                 let st = s.state();
                 let c = match st {
@@ -224,9 +236,9 @@ impl App {
                 }
                 egui::Grid::new("status_grid")
                     .num_columns(2)
-                    .spacing([24.0, 4.0])
+                    .spacing([28.0, 6.0])
                     .show(ui, |ui| {
-                        ui.label("Jogadores");
+                        ui.label(theme::caption("Jogadores"));
                         ui.horizontal(|ui| {
                             ui.strong(s.players_text());
                             if ui.small_button("Quem está online").clicked() {
@@ -234,33 +246,43 @@ impl App {
                             }
                         });
                         ui.end_row();
-                        ui.label("Erros desde o início");
+                        ui.label(theme::caption("Erros desde o início"));
                         match s.errors() {
                             Some(0) => ui.strong("nenhum"),
                             Some(n) => ui.colored_label(red, n.to_string()),
                             None => ui.strong("?"),
                         };
                         ui.end_row();
-                        ui.label("Memória");
+                        ui.label(theme::caption("Memória"));
                         ui.horizontal(|ui| {
                             ui.strong(s.mem_text());
                             if let Some(p) = s.mem_percent() {
-                                ui.add(egui::ProgressBar::new(p as f32 / 100.0).desired_width(120.0));
+                                ui.add(
+                                    egui::ProgressBar::new(p as f32 / 100.0)
+                                        .desired_width(120.0)
+                                        .desired_height(8.0)
+                                        .fill(theme::EMBER),
+                                );
                             }
                         });
                         ui.end_row();
-                        ui.label("Disco");
+                        ui.label(theme::caption("Disco"));
                         ui.horizontal(|ui| {
                             ui.strong(s.disk_text());
                             if let Some(p) = s.disk_percent() {
-                                ui.add(egui::ProgressBar::new(p as f32 / 100.0).desired_width(120.0));
+                                ui.add(
+                                    egui::ProgressBar::new(p as f32 / 100.0)
+                                        .desired_width(120.0)
+                                        .desired_height(8.0)
+                                        .fill(theme::EMBER),
+                                );
                             }
                         });
                         ui.end_row();
-                        ui.label("Carga (1, 5, 15 min)");
+                        ui.label(theme::caption("Carga (1, 5, 15 min)"));
                         ui.strong(s.load_text());
                         ui.end_row();
-                        ui.label("Último backup");
+                        ui.label(theme::caption("Último backup"));
                         ui.strong(s.backup_text());
                         ui.end_row();
                     });
@@ -278,14 +300,11 @@ impl App {
                     }
                 });
         }
-        ui.separator();
-        self.metrics_ui(ui, ctx);
-        ui.separator();
     }
 
     fn metrics_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         ui.horizontal(|ui| {
-            ui.heading("Métricas dos jogadores");
+            ui.label(theme::card_title("Métricas dos jogadores"));
             if ui.button("Carregar métricas").clicked() {
                 self.card_call(ctx, "metrics --json", 90, 2);
             }
@@ -295,7 +314,7 @@ impl App {
             return;
         };
         if !m.ok {
-            ui.colored_label(egui::Color32::from_rgb(220, 80, 60), m.error_text());
+            ui.colored_label(theme::ERROR, m.error_text());
             return;
         }
         if m.empty {
@@ -534,63 +553,75 @@ impl App {
             }
         }
         for g in groups {
-            egui::CollapsingHeader::new(g)
-                .default_open(g == "Servidor")
-                .show(ui, |ui| {
-                    for (i, a) in ACTIONS.iter().enumerate().filter(|(_, a)| a.tab == tab && a.group == g) {
-                        ui.horizontal_wrapped(|ui| {
-                            let vals = self
-                                .values
-                                .entry(i)
-                                .or_insert_with(|| a.params.iter().map(|p| p.default.to_string()).collect());
-                            for (p, v) in a.params.iter().zip(vals.iter_mut()) {
-                                ui.label(p.label);
-                                match p.kind {
-                                    Kind::Choice(opts) => {
-                                        egui::ComboBox::from_id_salt((i, p.name))
-                                            .selected_text(v.clone())
-                                            .show_ui(ui, |ui| {
-                                                for o in opts {
-                                                    ui.selectable_value(v, o.to_string(), *o);
-                                                }
-                                            });
-                                    }
-                                    Kind::Secret => {
-                                        ui.add(egui::TextEdit::singleline(v).password(true).desired_width(140.0));
-                                    }
-                                    _ => {
-                                        ui.add(
-                                            egui::TextEdit::singleline(v).desired_width(
+            theme::card_full(ui, |ui| {
+                egui::CollapsingHeader::new(theme::card_title(g))
+                    .default_open(g == "Servidor")
+                    .show(ui, |ui| {
+                        for (i, a) in ACTIONS.iter().enumerate().filter(|(_, a)| a.tab == tab && a.group == g) {
+                            ui.horizontal_wrapped(|ui| {
+                                let vals = self
+                                    .values
+                                    .entry(i)
+                                    .or_insert_with(|| a.params.iter().map(|p| p.default.to_string()).collect());
+                                for (p, v) in a.params.iter().zip(vals.iter_mut()) {
+                                    ui.label(theme::caption(p.label));
+                                    match p.kind {
+                                        Kind::Choice(opts) => {
+                                            egui::ComboBox::from_id_salt((i, p.name))
+                                                .selected_text(v.clone())
+                                                .show_ui(ui, |ui| {
+                                                    for o in opts {
+                                                        ui.selectable_value(v, o.to_string(), *o);
+                                                    }
+                                                });
+                                        }
+                                        Kind::Secret => {
+                                            ui.add(egui::TextEdit::singleline(v).password(true).desired_width(140.0));
+                                        }
+                                        _ => {
+                                            ui.add(egui::TextEdit::singleline(v).desired_width(
                                                 if matches!(p.kind, Kind::Int(..)) { 60.0 } else { 220.0 },
-                                            ),
-                                        );
+                                            ));
+                                        }
                                     }
                                 }
-                            }
-                            let run = ui.button(a.label).on_hover_text(a.hint);
-                            let mut go = run.clicked();
-                            let mut live_go = false;
-                            if let Live::Reload(sys) = a.live {
-                                live_go = ui
-                                    .button(format!("{} + Apply live", a.label))
-                                    .on_hover_text(format!("then reloads {sys} in the game"))
-                                    .clicked();
-                            }
-                            ui.weak(a.live.label());
-                            if go || live_go {
-                                go = true;
-                            }
-                            if go {
-                                self.start(ctx, i, live_go);
-                            }
-                        });
-                    }
-                });
+                                let run = if a.confirm {
+                                    theme::danger_button(ui, a.label)
+                                } else {
+                                    ui.button(a.label)
+                                }
+                                .on_hover_text(a.hint);
+                                let mut go = run.clicked();
+                                let mut live_go = false;
+                                if let Live::Reload(sys) = a.live {
+                                    live_go = ui
+                                        .button(format!("{} + Apply live", a.label))
+                                        .on_hover_text(format!("then reloads {sys} in the game"))
+                                        .clicked();
+                                }
+                                ui.weak(a.live.label());
+                                if go || live_go {
+                                    go = true;
+                                }
+                                if go {
+                                    self.start(ctx, i, live_go);
+                                }
+                            });
+                        }
+                    });
+            });
+            ui.add_space(8.0);
         }
     }
 
     fn game_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        self.reload_ui(ui, ctx);
+        theme::card_full(ui, |ui| self.reload_ui(ui, ctx));
+        ui.add_space(8.0);
+        theme::card_full(ui, |ui| self.catalog_ui(ui, ctx));
+        ui.add_space(8.0);
+    }
+
+    fn catalog_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         ui.label(
             "Tudo o que o painel de admin faz dentro do jogo, como o personagem admin de Config (pode estar offline).",
         );
@@ -673,7 +704,7 @@ impl App {
         if let Some(i) = self.game_sel.filter(|i| *i < self.catalog.len()) {
             let a = self.catalog[i].clone();
             ui.separator();
-            ui.heading(format!("{} > {}", a.cat, a.name));
+            ui.label(theme::card_title(&format!("{} > {}", a.cat, a.name)));
             ui.label(&a.description);
             for (p, v) in a.params.iter().zip(self.game_values.iter_mut()) {
                 ui.horizontal(|ui| {
@@ -695,7 +726,7 @@ impl App {
                     }
                 });
             }
-            if ui.button("Executar").clicked() {
+            if theme::primary_button(ui, "Executar").clicked() {
                 match catalog::build_params(&a, &self.game_values) {
                     Err(e) => self.status = e,
                     Ok(json) => {
@@ -768,14 +799,19 @@ impl App {
     }
 
     fn live_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        let gold = egui::Color32::from_rgb(230, 170, 60);
-        let red = egui::Color32::from_rgb(220, 80, 60);
-        let green = egui::Color32::from_rgb(90, 190, 100);
+        theme::card_full(ui, |ui| self.live_top_ui(ui));
+        ui.add_space(8.0);
+        theme::card_full(ui, |ui| self.live_console_ui(ui, ctx));
+        ui.add_space(8.0);
+    }
+
+    fn live_top_ui(&mut self, ui: &mut egui::Ui) {
+        let (gold, red, green) = (theme::WARN, theme::ERROR, theme::OK);
         if !self.cfg.configured() {
             ui.colored_label(gold, "Preencha o servidor, o usuário e a chave em Config.");
         }
         ui.horizontal_wrapped(|ui| {
-            ui.heading("Ao vivo");
+            ui.label(theme::card_title("Ao vivo"));
             ui.label("Atualizar a cada");
             egui::ComboBox::from_id_salt("live_interval")
                 .selected_text(format!("{} s", self.poller.interval_secs))
@@ -841,9 +877,12 @@ impl App {
                     ui.label(format!("{}  nível {}  {}", x.name, x.level, x.vocation));
                 }
             });
-        ui.separator();
+    }
+
+    fn live_console_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        let (gold, red) = (theme::WARN, theme::ERROR);
         ui.horizontal_wrapped(|ui| {
-            ui.strong("Console do jogo");
+            ui.label(theme::card_title("Console do jogo"));
             let before = self.live_lines;
             egui::ComboBox::from_id_salt("live_lines")
                 .selected_text(format!("{} linhas", self.live_lines))
@@ -866,30 +905,34 @@ impl App {
             }
         });
         let lines = live::filter_lines(&self.live_logs, &self.live_filter);
-        egui::ScrollArea::vertical()
-            .id_salt("live_log")
-            .max_height(360.0)
-            .auto_shrink([false, false])
-            .stick_to_bottom(self.live_follow)
-            .show(ui, |ui| {
-                if lines.is_empty() {
-                    ui.weak("Sem linhas.");
-                }
-                for l in &lines {
-                    let t = egui::RichText::new(l).monospace();
-                    match live::level(l) {
-                        Level::Error => ui.label(t.color(red)),
-                        Level::Warn => ui.label(t.color(gold)),
-                        Level::Normal => ui.label(t),
-                    };
-                }
-            });
+        theme::well().show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            egui::ScrollArea::vertical()
+                .id_salt("live_log")
+                .max_height(360.0)
+                .auto_shrink([false, false])
+                .stick_to_bottom(self.live_follow)
+                .show(ui, |ui| {
+                    if lines.is_empty() {
+                        ui.weak("Sem linhas.");
+                    }
+                    ui.spacing_mut().item_spacing.y = 2.0;
+                    for l in &lines {
+                        let t = egui::RichText::new(l).monospace();
+                        match live::level(l) {
+                            Level::Error => ui.label(t.color(red)),
+                            Level::Warn => ui.label(t.color(gold)),
+                            Level::Normal => ui.label(t),
+                        };
+                    }
+                });
+        });
         ui.weak("O mesmo que Painel > Estado, Jogadores e Logs > Console, pedidos juntos em uma conexão. Só atualiza enquanto esta página está aberta.");
     }
 
     /// The card "Recarregar um arquivo": one config table into the running game.
     fn reload_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        ui.heading("Recarregar um arquivo");
+        ui.label(theme::card_title("Recarregar um arquivo"));
         ui.label(
             "Copia uma tabela *_config.lua do servidor para o jogo que está rodando, sem /reload. Precisa do \
              personagem admin de Config (grupo 6). Scripts não recarregam sozinhos: precisam de Recarregar scripts \
@@ -953,7 +996,11 @@ impl App {
                 if ui
                     .add_enabled(
                         k == reload::Kind::Config,
-                        egui::Button::new(format!("Recarregar {name}")),
+                        egui::Button::new(
+                            egui::RichText::new(format!("Recarregar {name}"))
+                                .color(egui::Color32::from_rgb(255, 240, 215)),
+                        )
+                        .fill(theme::EMBER_LO),
                     )
                     .clicked()
                 {
@@ -961,11 +1008,10 @@ impl App {
                 }
             }
             Err(e) if !self.reload_pick.trim().is_empty() => {
-                ui.colored_label(egui::Color32::from_rgb(220, 80, 60), e);
+                ui.colored_label(theme::ERROR, e);
             }
             Err(_) => {}
         }
-        ui.separator();
     }
 
     fn reload_start(&mut self, ctx: &egui::Context, name: &str) {
@@ -997,43 +1043,54 @@ impl App {
     }
 
     fn settings_ui(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Servidor");
-        egui::Grid::new("cfg").num_columns(2).show(ui, |ui| {
-            ui.label("Endereço (host)");
-            ui.text_edit_singleline(&mut self.cfg.host);
-            ui.end_row();
-            ui.label("Porta");
-            let mut port = self.cfg.port as u32;
-            ui.add(egui::DragValue::new(&mut port).range(1..=65535));
-            self.cfg.port = port as u16;
-            ui.end_row();
-            ui.label("Usuário SSH");
-            ui.text_edit_singleline(&mut self.cfg.user);
-            ui.end_row();
-            ui.label("Arquivo da chave privada");
-            ui.text_edit_singleline(&mut self.cfg.key_path);
-            ui.end_row();
-            ui.label("Caminho do chaos-ctl.sh (na VPS)");
-            ui.text_edit_singleline(&mut self.cfg.ctl_path);
-            ui.end_row();
-            ui.label("Personagem admin");
-            ui.text_edit_singleline(&mut self.cfg.actor);
-            ui.end_row();
+        theme::card_full(ui, |ui| {
+            ui.label(theme::card_title("Servidor"));
+            ui.add_space(2.0);
+            let w = (ui.available_width() - 250.0).clamp(240.0, 520.0);
+            egui::Grid::new("cfg")
+                .num_columns(2)
+                .spacing([20.0, 9.0])
+                .min_col_width(210.0)
+                .show(ui, |ui| {
+                    let row = |ui: &mut egui::Ui, label: &str, v: &mut String, mono: bool| {
+                        ui.label(theme::caption(label));
+                        let mut e = egui::TextEdit::singleline(v).desired_width(w);
+                        if mono {
+                            e = e.font(egui::TextStyle::Monospace);
+                        }
+                        ui.add(e);
+                        ui.end_row();
+                    };
+                    row(ui, "Endereço (host)", &mut self.cfg.host, false);
+                    ui.label(theme::caption("Porta"));
+                    let mut port = self.cfg.port as u32;
+                    ui.add(egui::DragValue::new(&mut port).range(1..=65535));
+                    self.cfg.port = port as u16;
+                    ui.end_row();
+                    row(ui, "Usuário SSH", &mut self.cfg.user, false);
+                    row(ui, "Arquivo da chave privada", &mut self.cfg.key_path, true);
+                    row(ui, "Caminho do chaos-ctl.sh (na VPS)", &mut self.cfg.ctl_path, true);
+                    row(ui, "Personagem admin", &mut self.cfg.actor, false);
+                });
         });
-        ui.checkbox(&mut self.cfg.auto_update, "Procurar versão nova ao abrir");
-        ui.horizontal(|ui| {
-            if ui.button("Salvar").clicked() {
-                self.status = match config::save(&self.cfg) {
-                    Ok(()) => format!("Salvo em {}", config::path().display()),
-                    Err(e) => format!("Não salvou: {e}"),
-                };
-            }
-            if ui.button("Procurar versão nova").clicked() {
-                self.check_update();
-            }
+        ui.add_space(8.0);
+        theme::card_full(ui, |ui| {
+            ui.checkbox(&mut self.cfg.auto_update, "Procurar versão nova ao abrir");
+            ui.horizontal(|ui| {
+                if theme::primary_button(ui, "Salvar").clicked() {
+                    self.status = match config::save(&self.cfg) {
+                        Ok(()) => format!("Salvo em {}", config::path().display()),
+                        Err(e) => format!("Não salvou: {e}"),
+                    };
+                }
+                if ui.button("Procurar versão nova").clicked() {
+                    self.check_update();
+                }
+            });
+            ui.add_space(2.0);
+            ui.label(theme::caption(&format!("Arquivo: {}", config::path().display())));
+            ui.label(theme::caption("A chave é a mesma do app Android (aba Config > Copiar comando de instalação, ou ssh-keygen e chaos-ctl.sh install-admin)."));
         });
-        ui.weak(format!("Arquivo: {}", config::path().display()));
-        ui.weak("A chave é a mesma do app Android (aba Config > Copiar comando de instalação, ou ssh-keygen e chaos-ctl.sh install-admin).");
     }
 }
 
@@ -1124,89 +1181,141 @@ impl eframe::App for App {
             self.poll_live(ctx);
         }
 
-        egui::TopBottomPanel::top("top").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.heading("Cinders Admin");
-                for t in Tab::ALL {
-                    ui.selectable_value(&mut self.page, Page::Tab(t), t.title());
-                }
-                ui.selectable_value(&mut self.page, Page::Live, "Ao vivo");
-                ui.selectable_value(&mut self.page, Page::Game, "Painel do jogo");
-                ui.selectable_value(&mut self.page, Page::Settings, "Config");
-                if self.busy > 0 {
-                    ui.spinner();
+        egui::TopBottomPanel::top("top")
+            .frame(egui::Frame::none().fill(theme::BG))
+            .show(ctx, |ui| {
+                theme::header_bar(ui, &self.header, &self.icon, "Cinders Admin");
+                egui::Frame::none()
+                    .inner_margin(egui::Margin::symmetric(10.0, 0.0))
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing.x = 2.0;
+                            for t in Tab::ALL {
+                                if theme::tab(ui, self.page == Page::Tab(t), t.title()).clicked() {
+                                    self.page = Page::Tab(t);
+                                }
+                            }
+                            for (page, label) in [
+                                (Page::Live, "Ao vivo"),
+                                (Page::Game, "Painel do jogo"),
+                                (Page::Settings, "Config"),
+                            ] {
+                                if theme::tab(ui, self.page == page, label).clicked() {
+                                    self.page = page;
+                                }
+                            }
+                            if self.busy > 0 {
+                                ui.add_space(8.0);
+                                ui.add(egui::Spinner::new().color(theme::EMBER));
+                            }
+                        });
+                    });
+                theme::rule(ui);
+                if let Some(f) = self.update.clone() {
+                    egui::Frame::none()
+                        .fill(egui::Color32::from_rgb(44, 32, 14))
+                        .inner_margin(egui::Margin::symmetric(14.0, 6.0))
+                        .show(ui, |ui| {
+                            ui.set_width(ui.available_width());
+                            ui.horizontal(|ui| {
+                                ui.colored_label(theme::WARN, format!("Versão nova {} disponível.", f.tag));
+                                if theme::primary_button(ui, "Atualizar e reiniciar o app").clicked() {
+                                    let (tx, c) = (self.tx.clone(), ctx.clone());
+                                    self.update_note = "Baixando...".into();
+                                    std::thread::spawn(move || {
+                                        let _ = tx.send(Msg::Installed(update::install(&f, VERSION).map(|_| ())));
+                                        c.request_repaint();
+                                    });
+                                }
+                            });
+                        });
                 }
             });
-            if let Some(f) = self.update.clone() {
-                ui.horizontal(|ui| {
-                    ui.colored_label(
-                        egui::Color32::from_rgb(230, 170, 60),
-                        format!("Versão nova {} disponível.", f.tag),
-                    );
-                    if ui.button("Atualizar e reiniciar o app").clicked() {
-                        let (tx, c) = (self.tx.clone(), ctx.clone());
-                        self.update_note = "Baixando...".into();
-                        std::thread::spawn(move || {
-                            let _ = tx.send(Msg::Installed(update::install(&f, VERSION).map(|_| ())));
-                            c.request_repaint();
-                        });
-                    }
-                });
-            }
-        });
         egui::TopBottomPanel::bottom("out")
             .resizable(true)
             .min_height(120.0)
+            .frame(
+                egui::Frame::none()
+                    .fill(egui::Color32::from_rgb(19, 15, 13))
+                    .stroke(egui::Stroke::new(1.0_f32, theme::CARD_EDGE))
+                    .inner_margin(egui::Margin::symmetric(14.0, 8.0)),
+            )
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label(&self.status);
-                    if ui.button("Copiar").clicked() {
-                        ctx.copy_text(self.output.clone());
-                    }
-                    ui.weak(format!("v{VERSION}  {}", self.update_note));
+                    let colour = if self.status.ends_with(": falhou") {
+                        theme::ERROR
+                    } else if self.status.ends_with(": feito") {
+                        theme::OK
+                    } else {
+                        theme::TEXT
+                    };
+                    ui.colored_label(colour, &self.status);
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("Copiar").clicked() {
+                            ctx.copy_text(self.output.clone());
+                        }
+                        ui.label(theme::caption(&format!("v{VERSION}  {}", self.update_note)));
+                    });
                 });
-                egui::ScrollArea::both().stick_to_bottom(false).show(ui, |ui| {
-                    ui.add(
-                        egui::TextEdit::multiline(&mut self.output.as_str())
-                            .font(egui::TextStyle::Monospace)
-                            .desired_width(f32::INFINITY),
-                    );
+                theme::well().show(ui, |ui| {
+                    ui.set_width(ui.available_width());
+                    egui::ScrollArea::both().stick_to_bottom(false).show(ui, |ui| {
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.output.as_str())
+                                .font(egui::TextStyle::Monospace)
+                                .frame(false)
+                                .desired_width(f32::INFINITY),
+                        );
+                    });
                 });
             });
-        egui::CentralPanel::default().show(ctx, |ui| {
-            egui::ScrollArea::vertical()
-                .id_salt("main")
-                .show(ui, |ui| match self.page {
-                    Page::Tab(t) => {
-                        if t == Tab::Panel {
-                            self.cards_ui(ui, ctx);
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::none()
+                    .fill(theme::BG)
+                    .inner_margin(egui::Margin::symmetric(14.0, 12.0)),
+            )
+            .show(ctx, |ui| {
+                egui::ScrollArea::vertical()
+                    .id_salt("main")
+                    .show(ui, |ui| match self.page {
+                        Page::Tab(t) => {
+                            if t == Tab::Panel {
+                                self.cards_ui(ui, ctx);
+                            }
+                            self.actions_ui(ui, ctx, t);
+                            if t == Tab::Logs {
+                                theme::card_full(ui, |ui| {
+                                    ui.label(theme::card_title("Terminal na VPS (qualquer comando do usuário SSH)"));
+                                    ui.horizontal(|ui| {
+                                        ui.add(
+                                            egui::TextEdit::singleline(&mut self.terminal)
+                                                .desired_width(420.0)
+                                                .font(egui::TextStyle::Monospace),
+                                        );
+                                        if theme::primary_button(ui, "Rodar").clicked()
+                                            && !self.terminal.trim().is_empty()
+                                        {
+                                            let p = Pending {
+                                                title: "Terminal".into(),
+                                                line: format!("\u{0}raw {}", self.terminal.trim()),
+                                                stdin: None,
+                                                timeout: 60,
+                                                reload: None,
+                                                warn: String::new(),
+                                                panel_answer: false,
+                                            };
+                                            self.run(ctx, p);
+                                        }
+                                    });
+                                });
+                            }
                         }
-                        self.actions_ui(ui, ctx, t);
-                        if t == Tab::Logs {
-                            ui.separator();
-                            ui.label("Terminal na VPS (qualquer comando do usuário SSH)");
-                            ui.horizontal(|ui| {
-                                ui.add(egui::TextEdit::singleline(&mut self.terminal).desired_width(420.0));
-                                if ui.button("Rodar").clicked() && !self.terminal.trim().is_empty() {
-                                    let p = Pending {
-                                        title: "Terminal".into(),
-                                        line: format!("\u{0}raw {}", self.terminal.trim()),
-                                        stdin: None,
-                                        timeout: 60,
-                                        reload: None,
-                                        warn: String::new(),
-                                        panel_answer: false,
-                                    };
-                                    self.run(ctx, p);
-                                }
-                            });
-                        }
-                    }
-                    Page::Live => self.live_ui(ui, ctx),
-                    Page::Game => self.game_ui(ui, ctx),
-                    Page::Settings => self.settings_ui(ui),
-                });
-        });
+                        Page::Live => self.live_ui(ui, ctx),
+                        Page::Game => self.game_ui(ui, ctx),
+                        Page::Settings => self.settings_ui(ui),
+                    });
+            });
 
         if let Some(p) = self.confirm.take() {
             let mut keep = true;
@@ -1218,7 +1327,7 @@ impl eframe::App for App {
                 .show(ctx, |ui| {
                     ui.label(&p.warn);
                     ui.horizontal(|ui| {
-                        go = ui.button("Executar").clicked();
+                        go = theme::primary_button(ui, "Executar").clicked();
                         if go || ui.button("Cancelar").clicked() {
                             keep = false;
                         }
@@ -1236,9 +1345,18 @@ impl eframe::App for App {
 fn main() -> eframe::Result<()> {
     let opts = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([980.0, 720.0])
+            .with_inner_size([1000.0, 740.0])
+            .with_min_inner_size([720.0, 520.0])
+            .with_icon(Arc::new(theme::icon()))
             .with_title("Cinders Admin"),
         ..Default::default()
     };
-    eframe::run_native("Cinders Admin", opts, Box::new(|_cc| Ok(Box::new(App::new()))))
+    eframe::run_native(
+        "Cinders Admin",
+        opts,
+        Box::new(|cc| {
+            theme::apply(&cc.egui_ctx);
+            Ok(Box::new(App::new(&cc.egui_ctx)))
+        }),
+    )
 }
