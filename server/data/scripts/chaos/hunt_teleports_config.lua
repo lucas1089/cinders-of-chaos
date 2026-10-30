@@ -141,7 +141,7 @@ return {
 	-- anyone (onTargetCombat). The base room's own display cells on floors 5 and 7 are covered too.
 	display = {x = {31594, 31706}, floors = {5, 7}},
 
-	-- 66 plans. With the base hunts they fill every slot of the hall since 2026-10-22 (server/README.md "Hall order":
+	-- 71 plans (67 generated, 4 imported; 66 on 2026-10-22). With the base hunts they fill every slot of the hall since 2026-10-22 (server/README.md "Hall order":
 	-- 48 of 48 on z 7, 37 of 37 on z 6, 18 of 18 on z 5). 2026-10-25: Sunken Mirewood is the 38th hunt of z 6, so floor 6
 	-- grew one module a side (5 -> 6, 41 slots; hall.capacity).
 	-- The order here does not count: install_content_areas.py gives the slots by level band ascending (the plan's
@@ -235,6 +235,7 @@ return {
 		{id = "brinescar_strand", monster = "Bogtusk Cleaver"},
 		{id = "rustcog_warrens", monster = "Mechanic Goblin"},
 		{id = "mossgrave_tangle", monster = "Waterglow Conjurer"},
+		{id = "sunken_mirewood", monster = "Hodag"}, -- the auto pick until 2026-10-30 (the plan's most frequent monster)
 		-- the imported hunts (server/tools/area_import.py, docs/MAP_GUIDE.md "Imported hunts"): cuts of a free community map
 		{id = "brickhold_depths", monster = "Phantom Shade"},
 		{id = "cinderbrick_halls", monster = "Fire Man"},

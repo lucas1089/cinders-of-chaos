@@ -168,7 +168,8 @@ C.hunts = {
 	{id = "brickhold_depths", name = "Brickhold Depths", level = {260, 340}},
 	{id = "cinderbrick_halls", name = "Cinderbrick Halls", level = {300, 470}},
 	{id = "dunereach_isle", name = "Dunereach Isle", level = {570, 700}},
-	{id = "rimewind_isle", name = "Rimewind Isle", level = {900, 1000}}
+	{id = "rimewind_isle", name = "Rimewind Isle", level = {900, 1000}},
+	{id = "sunken_mirewood", name = "Sunken Mirewood", level = {480, 540}}
 }
 
 -- ------------------------------------------------------------------ bands

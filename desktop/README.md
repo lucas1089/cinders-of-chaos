@@ -26,8 +26,12 @@ VPS `sudo -n chaos-ctl.sh ARGS`, exactly like the phone. No new port, service or
 is pinned on first use (`StrictHostKeyChecking=accept-new`); a changed key is refused. Passwords (accounts, Discord
 webhook) go to the command's stdin, never on a command line.
 
-Install the key on the VPS the way the Android app does (Config tab, "Copiar comando de instalação", or
-`chaos-ctl.sh install-admin KEYFILE`). Use the same key file as the phone or a new one: `ssh-keygen -t ed25519`.
+Install the key on the VPS the way the Android app does. Config page, card "Chave deste PC": "Gerar chave" (only while
+the key path is empty) makes an ed25519 key without passphrase next to the settings file (`cinders_admin_ed25519`) and
+saves its path; "Copiar comando de instalação" copies `echo 'PUBLIC KEY' | sudo 'CHAOS-CTL' install-admin -` for the VPS
+root shell. The public key comes from the private key file (`ssh-keygen -y`), never from a `.pub` beside it (a stale `.pub`
+made the VPS refuse the PC on 2026-10-30). `install-admin` adds the key and keeps the others, so the phone and the PC each
+keep theirs. `src/keys.rs`, tests in `cargo test`. Fallback: `ssh-keygen -t ed25519` and `chaos-ctl.sh install-admin KEYFILE`.
 
 ## Settings
 
@@ -73,6 +77,16 @@ It uses the existing `remote.cmd` path, so nothing new runs on the server.
   numbers in a `*_config.lua` can be reloaded one file at a time (next section).
 - Per-script state is lost on `reload scripts` (tables built at load are rebuilt; running events restart).
 - The phone's picture views (`spectate`, `cast`) are not in the desktop app: they need a long ssh stream and a picture view.
+
+## Update and bug report cards (Painel)
+
+Two answers show as cards under their group, next to the raw text in the output pane. Painel > Atualizar servidor >
+Verificar draws a card with "Há atualização" or "Tudo em dia", the new commits, engine, map master, client update,
+downloads, site and the last run (`src/infos.rs`, the wording of the phone's `UpdateInfo.java`). Painel > Bugs e
+sugestões > Abertos (30 dias) or Todos draws one card per report: number, category, open or closed, date, position,
+level and class, text and the closing note (`FeedbackInfo.java` and `server/tools/feedback_format.py`). The `from:` name
+line is never read. An open report has the button "Usar no Fechar relatório", which writes its number into the id field
+of the action Fechar relatório; add a note and press that button. The cards keep the last good answer until the next one.
 
 ## Reload one file (Painel do jogo > Recarregar um arquivo)
 
