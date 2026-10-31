@@ -727,7 +727,7 @@ collision check") and be added here.
 | 221 | `market` | `market.lua` (also buy orders, price history) | `game_market` | |
 | 222 | `pact` | `pact.lua` | `game_pact` | |
 | 223 | `bounty` | `bounty.lua` | `game_bounty` | |
-| 224 | `energyShield` | engine (src-patch 0015, `energyShieldOpcode`) | `game_energyshield` | server -> client, plain text `es:<current>:<max>` |
+| 224 | `energyShield` | engine (src-patch 0015, `energyShieldOpcode`), `energy_shield.lua` | `game_energyshield` | server -> client, plain text `es:<current>:<max>`; client -> server `hello` once in the game: the same text again |
 | 225 | `cosmetics` | `cosmetics.lua` | `game_cosmetics` | |
 | 226 | `pouches` | `pouches.lua` | `game_pouches` | |
 | 227 | `seasonPass` | `seasonpass.lua` | `game_battlepass` | |

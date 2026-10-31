@@ -138,7 +138,7 @@ end
 -- nil without the engine API or for any other request
 E.HELLO = "hello"
 function E.helloAnswer(player, buffer)
-	if buffer ~= E.HELLO or not player or not player.getMaxEnergyShield or not player.getEnergyShield then
+	if not player or not player.getMaxEnergyShield or not player.getEnergyShield or buffer ~= E.HELLO then
 		return nil
 	end
 	return string.format("es:%d:%d", floor(player:getEnergyShield() or 0), floor(player:getMaxEnergyShield() or 0))
