@@ -20964,6 +20964,16 @@ type in a rift showed its rolled "[777]"). Display only, as above.
   `tile:refresh()`: every player who sees the tile gets it whole (0x69, `Player::sendUpdateTile`), so the client rebuilds
   it from the server. `pickups.lua` calls it after a drop and after every removal (`ChaosPickups.refreshAt`; no-op
   without the patch). Guard: `tools/tile_refresh_patch_test.py`. A globe at a full bar still stays by design.
+- **Vigil reservation and maximum overflow (engine patch `0085-max-health-mana-int32.patch`, O358).** Owner log
+  2026-10-31: `vigils.lua` asked for a mana reservation of -4.3e9 to -9.9e9 (setParameter refused it, past int32) and the
+  player's save failed at `UPDATE players`. The script took the maximum on screen plus what it believed it held; a
+  reservation that did not lower the maximum made each sync reserve a share of a larger number (it tends to 3x the
+  maximum at 75%). `Player::getMaxHealth` / `getMaxMana` cast the vitality / spirit share through uint32_t (a negative
+  stat wrapped to about 4e9) and could leave int32; the `mana` column is a signed INT. Now: the stat share is never
+  negative and the sums are clamped to INT32_MAX; `savePlayer` clamps `health` and `mana`; `vigils.lua` re-reads the true
+  maximum (reservation off) whenever its sum moved, clamps to int32, and logs `[Chaos vigils] ... did not lower the
+  maximum` once per player when the reservation had no effect. Guard: `tools/max_stats_patch_test.py`; test:
+  `tests/vigils_test.lua`.
 - Rifts with density (`rift_core.lua R.displayLevel`): every pack monster and the guardian show the tier's level
   (`tiers[t].minLevel`, + `beyond.minLevelStep` a tier above the table), the player level their health budget is
   sized for. Without density, and an Omen guardian, keep their own level (their own health x multipliers).

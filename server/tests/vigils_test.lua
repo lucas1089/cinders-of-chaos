@@ -158,6 +158,7 @@ local function mk(opt)
 		return v
 	end
 	function m:getId() return c.id end
+	function m:getName() return "P" .. c.id end
 	function m:isPlayer() return true end
 	function m:getPlayer() return m end
 	function m:getPosition() return c.pos end
@@ -285,6 +286,27 @@ ChaosRift = nil
 holder.c.conds = {}
 registered.ChaosVigilsThink.onThink(1000)
 eq(holder:getMaxMana(), 600, "re-applied after the condition went")
+-- O358: a reservation that does not lower the maximum (the engine ignored it) must not run away: before, every think
+-- reserved 75% of (maximum + what it thought it held), towards 3x the maximum and past int32
+local realGetMax = holder.getMaxMana
+holder.getMaxMana = function(self) return self.c.maxMana end -- the condition has no effect
+local printed = {}
+local realPrint = print
+print = function(x) printed[#printed + 1] = tostring(x) end
+for _ = 1, 30 do registered.ChaosVigilsThink.onThink(1000) end
+print = realPrint
+local cd = holder:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, C.subIds.mana)
+eq(cd and -cd.params[CONDITION_PARAM_STAT_MAXMANAPOINTS], 1800, "ineffective reservation: stays 75% of the true maximum")
+check(#printed == 1 and printed[1]:find("did not lower the maximum", 1, true), "one log line: " .. #printed .. " " .. tostring(printed[1]))
+holder.getMaxMana = realGetMax
+-- a maximum past int32 (an engine sum that wrapped) is clamped
+holder.c.maxMana = 5e9
+registered.ChaosVigilsThink.onThink(1000)
+cd = holder:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, C.subIds.mana)
+check(cd and -cd.params[CONDITION_PARAM_STAT_MAXMANAPOINTS] <= 2147483647, "the reservation fits int32")
+holder.c.maxMana = 2400
+registered.ChaosVigilsThink.onThink(1000)
+eq(holder:getMaxMana(), 600, "back to 75% of 2400")
 -- switched off: the mana is free again
 holder.c.storage[C.storage] = 0
 registered.ChaosVigilsThink.onThink(1000)

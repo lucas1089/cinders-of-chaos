@@ -1,0 +1,54 @@
+# Maximum health and mana stay inside int32 (server/README.md "Vigil reservation and maximum overflow (O358)"). Owner log
+# 2026-10-31: the vigils' mana reservation grew from -4.3e9 to -9.9e9 in seconds and the player's save failed
+# ("failed at: UPDATE players"). Player::getMaxHealth / getMaxMana cast the vitality / spirit share through uint32_t (a
+# negative stat wrapped to about 4e9) and returned a sum that could leave int32 (getMaxMana is uint32_t, the `mana` column
+# is a signed INT): a maximum of billions, a current mana the database refuses. Now the stat share is never negative, the
+# sum is clamped to [1 or 0, INT32_MAX], and savePlayer clamps `health` (not below 0) and `mana` (not above INT32_MAX).
+# vigils.lua re-reads the true maximum when its sum does not add up. Applies after 0001-0084.
+--- a/src/iologindata.cpp
++++ b/src/iologindata.cpp
+@@ -764,7 +764,7 @@
+ 	query << "`level` = " << player->level << ',';
+ 	query << "`group_id` = " << player->group->id << ',';
+ 	query << "`vocation` = " << player->getVocationId() << ',';
+-	query << "`health` = " << player->health << ',';
++	query << "`health` = " << std::max<int32_t>(0, player->health) << ','; // Chaos (patch 0085): never out of the column
+ 	query << "`healthmax` = " << player->healthMax << ',';
+ 	query << "`experience` = " << player->experience << ',';
+ 	query << "`lookbody` = " << static_cast<uint32_t>(player->defaultOutfit.lookBody) << ',';
+@@ -774,7 +774,7 @@
+ 	query << "`looktype` = " << player->defaultOutfit.lookType << ',';
+ 	query << "`lookaddons` = " << static_cast<uint32_t>(player->defaultOutfit.lookAddons) << ',';
+ 	query << "`maglevel` = " << player->magLevel << ',';
+-	query << "`mana` = " << player->mana << ',';
++	query << "`mana` = " << std::min<uint32_t>(player->mana, std::numeric_limits<int32_t>::max()) << ','; // Chaos (patch 0085)
+ 	query << "`manamax` = " << player->manaMax << ',';
+ 	query << "`manaspent` = " << player->manaSpent << ',';
+ 	query << "`soul` = " << static_cast<uint16_t>(player->soul) << ',';
+--- a/src/player.h
++++ b/src/player.h
+@@ -508,15 +508,20 @@
+ 		}
+ 
+ 		int32_t getMaxHealth() const override {
+-			uint32_t vitHealth = static_cast<uint32_t>(healthMax * (charStats[CHARSTAT_VITALITY] / 100.f));
+-			return std::max<int64_t>(1, healthMax + varStats[STAT_MAXHITPOINTS] + vitHealth);
++			// Chaos (patch 0085): a negative stat no longer wraps through uint32_t, and the sum stays inside int32_t
++			int64_t vitHealth = static_cast<int64_t>(healthMax * (std::max<int16_t>(0, charStats[CHARSTAT_VITALITY]) / 100.f));
++			int64_t sum = static_cast<int64_t>(healthMax) + varStats[STAT_MAXHITPOINTS] + vitHealth;
++			return static_cast<int32_t>(std::min<int64_t>(std::numeric_limits<int32_t>::max(), std::max<int64_t>(1, sum)));
+ 		}
+ 		uint32_t getMana() const {
+ 			return mana;
+ 		}
+ 		uint32_t getMaxMana() const {
+-			uint32_t sprMana = static_cast<uint32_t>(manaMax * (charStats[CHARSTAT_SPIRIT] / 100.f));
+-			return std::max<int64_t>(0, manaMax + varStats[STAT_MAXMANAPOINTS] + sprMana);		}
++			// Chaos (patch 0085): as getMaxHealth
++			int64_t sprMana = static_cast<int64_t>(manaMax * (std::max<int16_t>(0, charStats[CHARSTAT_SPIRIT]) / 100.f));
++			int64_t sum = static_cast<int64_t>(manaMax) + varStats[STAT_MAXMANAPOINTS] + sprMana;
++			return static_cast<uint32_t>(std::min<int64_t>(std::numeric_limits<int32_t>::max(), std::max<int64_t>(0, sum)));
++		}
+ 
+ 		Item* getInventoryItem(slots_t slot) const;
+ 

@@ -76,18 +76,43 @@ local KINDS = {
 	health = {get = "getMaxHealth", stat = "CONDITION_PARAM_STAT_MAXHITPOINTS"},
 }
 
+-- O358 (owner log 2026-10-31): the reservation ran away. `base` was the maximum on screen plus what this script believed
+-- it had reserved; when the reservation did not lower the maximum (an engine sum that wrapped, a condition that did not
+-- take), every sync reserved a share of a larger number: -4.3e9 to -9.9e9 in a few seconds, past int32 (setParameter
+-- refused it) and the player's save failed. Now the sum is checked against the base the last sync used: when it does not
+-- add up, the reservation is taken off, the true maximum read, and the result clamped to int32; one log line per player.
+local INT32_MAX = 2147483647
+M.warned = M.warned or {}
+
 local function syncPool(player, kind, share)
 	local pid = player:getId()
 	local a = M.applied[pid] or {}
 	M.applied[pid] = a
 	local cur = a[kind] or 0
 	local subId = cfg().subIds[kind]
+	local get = KINDS[kind].get
 	local has = player:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, subId) ~= nil
 	if cur > 0 and not has then
 		cur = 0 -- the condition went (death): the maximum is unreserved again
 	end
-	local base = player[KINDS[kind].get](player) + cur
-	local want = math.min(V.reserved(base, share), math.max(0, base - 1))
+	local base = player[get](player) + cur
+	local lastBase = a[kind .. "Base"]
+	if has and lastBase and base ~= lastBase then
+		-- the sum moved (gear, a level, or a reservation that did not lower the maximum): take it off and read the true
+		-- maximum instead of trusting the sum
+		local before = player[get](player)
+		player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, subId)
+		base = player[get](player)
+		if cur > 0 and base - before < cur / 2 and not M.warned[pid] then
+			M.warned[pid] = true
+			print(string.format("[Chaos vigils] %s: the %s reservation of %d did not lower the maximum (%s); re-read",
+				player:getName(), kind, cur, tostring(base)))
+		end
+		has, cur = false, 0
+	end
+	base = math.max(0, math.min(INT32_MAX, base))
+	local want = math.min(V.reserved(base, share), math.max(0, base - 1), INT32_MAX)
+	a[kind .. "Base"] = base
 	if want == cur and (want == 0) == not has then
 		a[kind] = cur
 		return
