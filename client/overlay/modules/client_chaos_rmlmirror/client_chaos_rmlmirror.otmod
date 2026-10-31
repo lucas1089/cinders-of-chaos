@@ -1,0 +1,12 @@
+Module
+  name: client_chaos_rmlmirror
+  description: Window mirror (docs/RMLUI_SPIKE.md phase 4): every OTUI window made only of form controls is drawn in RmlUi with the client skin; the OTUI window stays behind it and does the work. Does nothing without CHAOS_RMLUI.
+  author: Cinders of Chaos
+  sandboxed: false
+  reloadable: true
+  dependencies: [ client_chaos_rmlform ]
+  scripts: [ rmlmirror ]
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

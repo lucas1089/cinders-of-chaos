@@ -1,0 +1,11 @@
+Module
+  name: client_chaos_rmlform
+  description: RmlUi form layer (docs/RMLUI_SPIKE.md phase 4): reads an OTUI widget tree, draws it in RmlUi with the client skin and keeps both in step. Used by client_chaos_rmloptions and client_chaos_rmlmirror. Does nothing without CHAOS_RMLUI.
+  author: Cinders of Chaos
+  sandboxed: false
+  reloadable: true
+  scripts: [ rmlform ]
+  autoload: true
+  autoload-priority: 999
+  @onLoad: init()
+  @onUnload: terminate()

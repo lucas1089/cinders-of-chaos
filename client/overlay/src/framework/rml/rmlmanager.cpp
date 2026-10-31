@@ -298,6 +298,9 @@ public:
 };
 
 // One listener for every document: click and change go to the Lua callback with the id of the nearest element that has one.
+// Events to Lua: click, dblclick and change as they are; Enter in a one-line field as "enter", Escape in a field as
+// "escape". A drag on an element with the class "drag-handle" moves its nearest ancestor with the class "movable"
+// (position: absolute) here, without Lua, and sends "moved" for that ancestor when the drag ends.
 class RmlRelay : public Rml::EventListener
 {
 public:
@@ -306,8 +309,61 @@ public:
         Rml::Element* target = event.GetTargetElement();
         if (!target)
             return;
-        g_rml.dispatch(target->GetOwnerDocument(), target, event.GetType());
+        Rml::ElementDocument* doc = target->GetOwnerDocument();
+        switch (event.GetId()) {
+            case Rml::EventId::Dragstart:
+            case Rml::EventId::Drag:
+            case Rml::EventId::Dragend:
+                move(event, target);
+                return;
+            case Rml::EventId::Keydown:
+                if (event.GetParameter<int>("key_identifier", 0) == Rml::Input::KI_ESCAPE)
+                    g_rml.dispatch(doc, target, "escape");
+                return;
+            case Rml::EventId::Change:
+                if (event.GetParameter<bool>("linebreak", false)) {
+                    g_rml.dispatch(doc, target, "enter");
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
+        g_rml.dispatch(doc, target, event.GetType());
     }
+
+private:
+    static Rml::Element* closestWithClass(Rml::Element* e, const Rml::String& cls)
+    {
+        while (e && !e->IsClassSet(cls))
+            e = e->GetParentNode();
+        return e;
+    }
+
+    void move(Rml::Event& event, Rml::Element* target)
+    {
+        Rml::Element* handle = closestWithClass(target, "drag-handle");
+        Rml::Element* win = handle ? closestWithClass(handle, "movable") : nullptr;
+        if (!win)
+            return;
+        const Rml::Vector2f mouse(event.GetParameter<float>("mouse_x", 0.f), event.GetParameter<float>("mouse_y", 0.f));
+        if (event.GetId() == Rml::EventId::Dragstart) {
+            m_grab = mouse - win->GetAbsoluteOffset(Rml::BoxArea::Border);
+            return;
+        }
+        if (event.GetId() == Rml::EventId::Drag) {
+            Rml::Vector2f origin;
+            if (Rml::Element* parent = win->GetOffsetParent())
+                origin = parent->GetAbsoluteOffset(Rml::BoxArea::Padding);
+            const Rml::Vector2f pos = mouse - m_grab - origin;
+            win->SetProperty(Rml::PropertyId::Left, Rml::Property(pos.x, Rml::Unit::PX));
+            win->SetProperty(Rml::PropertyId::Top, Rml::Property(pos.y, Rml::Unit::PX));
+            return;
+        }
+        g_rml.dispatch(win->GetOwnerDocument(), win, "moved");
+    }
+
+    Rml::Vector2f m_grab;
 };
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -415,8 +471,8 @@ int RmlManager::loadDocument(const std::string& path)
         g_logger.error("[RmlUi] can't load document " + path);
         return 0;
     }
-    doc->AddEventListener("click", m_relay.get());
-    doc->AddEventListener("change", m_relay.get());
+    for (const char* type : { "click", "dblclick", "change", "keydown", "dragstart", "drag", "dragend" })
+        doc->AddEventListener(type, m_relay.get());
     const int id = m_nextId++;
     m_docs[id] = doc;
     return id;

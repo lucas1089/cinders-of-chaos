@@ -1,0 +1,42 @@
+/* A mirrored OTUI window over the shared client skin (/modules/client_chaos_rmlform/skin.rcss). rmlmirror.lua puts the
+   window where the OTUI window is, with its width and at least its height; the title bar moves it (class drag-handle, see rmlmanager.cpp). */
+body { display: block; }
+
+#window {
+	position: absolute;
+	left: 0dp;
+	top: 0dp;
+	width: 300dp;
+	min-width: 160dp;
+	max-height: 94%;
+}
+#window.narrow #crest { display: none; }
+#window.narrow #titlebar { padding-left: 28dp; padding-right: 26dp; }
+
+#titlebar {
+	drag: drag;
+	cursor: move;
+	justify-content: space-between;
+	padding-left: 34dp;
+	padding-right: 30dp;
+}
+
+/* a press on the title text is a press on the bar (RmlUi starts a drag only on an element with drag set) */
+#title { pointer-events: none; }
+
+button.mini {
+	min-width: 0dp;
+	height: 13dp;
+	padding: 0dp 5dp;
+	margin: 0dp;
+	font-size: 10dp;
+	color: #8c8070;
+}
+
+#content {
+	flex: 1 1 auto;
+	min-height: 0dp;
+	overflow-y: auto;
+	margin-top: 8dp;
+	padding: 2dp 2dp 2dp 0dp;
+}
