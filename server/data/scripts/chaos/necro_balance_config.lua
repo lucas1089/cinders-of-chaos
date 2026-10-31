@@ -54,7 +54,9 @@ return {
 	-- profile (README "Percent armour"): the monsters keep the stock armour formula and a minion has 20 armour, so a
 	-- minion takes about what a caster with no percent armour takes. Interpolated by a power law between the points, and
 	-- below the first by the exponent of the first two. The pace damage curve and the late-game boost do not reach a minion.
-	monsterDps = {{100, 116}, {300, 228}, {1000, 983}},
+	-- O345 (2026-10-31): x5.5 after a live run (four Plagueroots, level 350, on the trio: about 1400 a second each after the
+	-- pace curve, against 260 here); the armour estimate missed the monsters' area attacks hitting every minion at once.
+	monsterDps = {{100, 640}, {300, 1250}, {1000, 5400}},
 
 	-- the pack fight: the share of the monsters' attacks that land on the minions (the rest on the owner; monsters pick the
 	-- nearest 7 times in 10: engine default target strategy), the share of the clear time an average monster is alive,

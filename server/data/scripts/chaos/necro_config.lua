@@ -80,7 +80,7 @@ return {
 		mage = {
 			monster = "Risen Mage", range = 4, intervalMs = 2000, combat = "energy", summon = true,
 			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
-			mult = {hit = 1.35, health = 0.6}, ani = "energy", hitEffect = "energyhit",
+			mult = {hit = 1.35, health = 0.85}, ani = "energy", hitEffect = "energyhit",
 		},
 		spread = 0.2,
 		-- what each class raises and how strong: {kind, caps = {{level, count}, ...}, total = {{level, count}, ...}, hit,
@@ -110,7 +110,9 @@ return {
 		-- regen: the share of its maximum health a minion gets back per second, `combat` while the fight goes on, `idle` once
 		-- no minion was hit and the owner had no target for idleAfterMs (necro_core.lua N.minionRegen / N.minionIdle).
 		-- Before, only the Bone Lord's banner healed them, so a minion went into every pack with what the last pack left.
-		incoming = {pace = true, factor = 1.0},
+		-- factor 0.25 (O345, 2026-10-31): measured live, four level 350 monsters took a level 347 Necromancer's trio (warrior
+		-- 6.7k health) in 3 s at factor 1; at 0.25 the warriors hold about 9 s under all four with no help from the owner.
+		incoming = {pace = true, factor = 0.25},
 		regen = {combat = 0.005, idle = 0.10, idleAfterMs = 2000},
 		-- first strike (class identity pass, 2026-10-28): a minion that has just risen waits this long before its first hit, per
 		-- class, so the minion classes start slower and win long fights (a ramp of 4-8 s; weakness_model.py reads it). The Bone
@@ -153,7 +155,8 @@ return {
 				hitEffect = "hitarea", areaEffect = "blackspark"},
 		},
 		mage = {
-			single = {name = "Arc Bolt", mult = 2.4, cooldownMs = 8000, ani = "energy", hitEffect = "energyhit"},
+			-- Arc Bolt throws a ball and bursts purple, so it reads apart from the plain hit (owner 2026-10-31: "only 1 skill seen")
+			single = {name = "Arc Bolt", mult = 2.4, cooldownMs = 8000, ani = "energyball", hitEffect = "purpleenergy"},
 			area = {name = "Static Nova", mult = 1.3, cooldownMs = 12000, radius = 2, center = "target", ani = "energy",
 				hitEffect = "energyhit", areaEffect = "energyarea"},
 		},
