@@ -682,6 +682,9 @@ class CheckIO(KeyIO):
                 PARTY_BUSY.discard(other_name)
             return False
         if action == 'form':
+            # out of any party the random party behaviour made before this check
+            await bot.helper_says('party leave', 'party')
+            await other.helper_says('party leave', 'party')
             bot.conn.send(b'\xA3' + struct.pack('<I', other.cid))      # invite
             await bot.conn.w.drain()
             await asyncio.sleep(1.0)
@@ -1220,6 +1223,10 @@ class TesterBot(LT.Bot):
         return ok
 
     async def do_party(self, clock):
+        # not while a party check holds this bot: a random invite, join or leave broke the check's party (local run
+        # 2026-10-31: "left the party, the helper still sees 2 members", "joined, the party has 0 members")
+        if self.name in PARTY_BUSY:
+            return False
         self.party_step()
         return True
 
