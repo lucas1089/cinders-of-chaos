@@ -1,6 +1,5 @@
--- Aegis of Faith: the Sentinel raises its shield and its faith: for 5 seconds it takes 40% less damage
--- (ChaosTemplar.cfg.aegis; applied by data/scripts/chaos/templar_combat.lua, which sees the timer condition).
--- Needs a shield in hand.
+-- Aegis of Faith: the Sentinel raises its shield and its faith: for 5 seconds it takes 40% less damage. Needs a shield in hand.
+-- Numbers: ChaosTemplar.cfg.aegis; applied by data/scripts/chaos/templar_combat.lua, which sees the timer condition.
 
 -- the text in the player's language (Chaos.t, i18n_core.lua); English where the helper is not loaded (unit tests)
 local function tr(player, key, ...)

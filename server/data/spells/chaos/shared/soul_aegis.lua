@@ -1,4 +1,5 @@
--- Soulward: mana shield for 15s plus mana regeneration while it lasts (the stock Ward of the Mind has no regen).
+-- Soulward: mana shield for 15s plus mana regeneration while it lasts.
+-- The stock Ward of the Mind has no regen.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)

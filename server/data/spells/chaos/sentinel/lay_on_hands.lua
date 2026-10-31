@@ -1,6 +1,7 @@
--- Lay on Hands: a great heal on one party member within 5 sqm: 35% of its maximum health + magic level x 10
--- (ChaosTemplar.cfg.layOnHands). Say a name to choose (saen gal manh "Name"); without one it goes to the party
--- member (or the Sentinel) with the lowest health share. Long cooldown.
+-- Lay on Hands: a great heal on one party member within 5 sqm: 35% of its maximum health + magic level x 10. Say a name
+-- to choose (saen gal manh "Name"); without one it goes to the party member (or the Sentinel) with the lowest health
+-- share. Long cooldown.
+-- Numbers: ChaosTemplar.cfg.layOnHands.
 dofile('data/spells/scripts/chaos/_templar.lua')
 -- status words (data/lib/chaos_status_fx.lua, switch off: nothing more is sent)
 if not ChaosStatusFx then

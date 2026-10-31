@@ -1,5 +1,5 @@
--- Glacial Doom: Doomtide's late sibling in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area;
--- the energy wave in the middle. 13 s cooldown (the cooldown ladder, 2026-10-20: 20 s, was 60 s; O176, 2026-10-24: 13 s).
+-- Glacial Doom: Doomtide in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area; the energy wave in the middle. 13 s cooldown.
+-- Doomtide's late sibling. Cooldown ladder, 2026-10-20: 20 s, was 60 s; O176, 2026-10-24: 13 s.
 -- Cast time 2 s (data/lib/chaos_casting.lua): moving, a new paralysis, another spell or death interrupt it and give
 -- the mana and cooldown back. Power x1.9 (Doomtide x1.38; the cast time is longer; before the cooldown
 -- ladder the cooldown was also 15 s longer, 2 s now).
