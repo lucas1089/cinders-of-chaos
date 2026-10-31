@@ -31,8 +31,9 @@ Outputs:
   The 21 line spell quest spells (client ids 349-369, gen_quest_spell_icons.py) are not in the sheet: their finished 32 px
       art (quest_spell_art/quest_spell_32.png, centre 28 x 28, no repaint, no palette clamp) goes straight into our buff
       frame as spells_painted/<id>.png, and the 7 level 800 buffs as buffs_painted/<name>.png (box-reduced to 22 px).
-      The same for the class spells repainted in O355 (class_spell_art/class_spell_32.png, the Necromancer line's
-      cells 294-337): no painted cell existed for them, so the painted setting showed their plain drawings.
+      The same for the class spells repainted in O355 (class_spell_art/class_spell_32.png, cells 280-348 and 370-371):
+      most had no painted cell, so the painted setting showed their plain drawings. Cells 280-288 also have a row in
+      painted_icons.csv (a repaint of the plain drawing); the class art wins, those rows are unused.
 A name with no painted icon keeps its normal icon in the client (each module falls back). Needs Pillow."""
 import csv, io, os, sys
 

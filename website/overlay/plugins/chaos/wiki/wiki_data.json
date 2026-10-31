@@ -1980,7 +1980,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-flurry.png"
+					"icon": "wiki/i/sp-289.png"
 				},
 				{
 					"id": "spell:180",
@@ -2064,7 +2064,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-palmwave.png"
+					"icon": "wiki/i/sp-291.png"
 				},
 				{
 					"id": "spell:201",
@@ -2540,7 +2540,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-shield.png"
+					"icon": "wiki/i/sp-309.png"
 				},
 				{
 					"id": "spell:96",
@@ -2652,7 +2652,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-nature-arrowup.png"
+					"icon": "wiki/i/sp-308.png"
 				},
 				{
 					"id": "spell:137",
@@ -2680,7 +2680,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-ring.png"
+					"icon": "wiki/i/sp-295.png"
 				},
 				{
 					"id": "spell:179",
@@ -2908,7 +2908,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-fist.png"
+					"icon": "wiki/i/sp-325.png"
 				},
 				{
 					"id": "spell:106",
@@ -3016,7 +3016,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-sword.png"
+					"icon": "wiki/i/sp-338.png"
 				},
 				{
 					"id": "spell:136",
@@ -3044,7 +3044,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-knives.png"
+					"icon": "wiki/i/sp-297.png"
 				},
 				{
 					"id": "spell:234",
@@ -3103,7 +3103,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-slam.png"
+					"icon": "wiki/i/sp-326.png"
 				},
 				{
 					"id": "spell:107",
@@ -3159,7 +3159,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-cross.png"
+					"icon": "wiki/i/sp-345.png"
 				},
 				{
 					"id": "spell:45",
@@ -3187,7 +3187,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-sword.png"
+					"icon": "wiki/i/sp-320.png"
 				},
 				{
 					"id": "spell:68",
@@ -3271,7 +3271,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-ring.png"
+					"icon": "wiki/i/sp-339.png"
 				},
 				{
 					"id": "spell:183",
@@ -3577,7 +3577,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-shield.png"
+					"icon": "wiki/i/sp-347.png"
 				},
 				{
 					"id": "spell:228",
@@ -3687,7 +3687,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-water-bolt.png"
+					"icon": "wiki/i/sp-327.png"
 				},
 				{
 					"id": "spell:97",
@@ -3743,7 +3743,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-sweep.png"
+					"icon": "wiki/i/sp-340.png"
 				},
 				{
 					"id": "spell:187",
@@ -3967,7 +3967,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-fang.png"
+					"icon": "wiki/i/sp-312.png"
 				},
 				{
 					"id": "spell:24",
@@ -3995,7 +3995,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-shrapnel.png"
+					"icon": "wiki/i/sp-317.png"
 				},
 				{
 					"id": "spell:56",
@@ -4023,7 +4023,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-shuriken.png"
+					"icon": "wiki/i/sp-321.png"
 				},
 				{
 					"id": "spell:184",
@@ -4107,7 +4107,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-poison-paw.png"
+					"icon": "wiki/i/sp-316.png"
 				},
 				{
 					"id": "spell:127",
@@ -4135,7 +4135,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-flame.png"
+					"icon": "wiki/i/sp-341.png"
 				},
 				{
 					"id": "spell:217",
@@ -4186,7 +4186,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-poison-swirl.png"
+					"icon": "wiki/i/sp-322.png"
 				},
 				{
 					"id": "spell:69",
@@ -4270,7 +4270,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-kick.png"
+					"icon": "wiki/i/sp-328.png"
 				},
 				{
 					"id": "spell:170",
@@ -4298,7 +4298,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-light-shieldwave.png"
+					"icon": "wiki/i/sp-296.png"
 				},
 				{
 					"id": "spell:188",
@@ -4354,7 +4354,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-ricochet.png"
+					"icon": "wiki/i/sp-292.png"
 				},
 				{
 					"id": "spell:196",
@@ -4382,7 +4382,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-chain.png"
+					"icon": "wiki/i/sp-293.png"
 				},
 				{
 					"id": "spell:204",
@@ -4517,7 +4517,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-light-missile.png"
+					"icon": "wiki/i/sp-314.png"
 				},
 				{
 					"id": "spell:128",
@@ -4545,7 +4545,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-burst.png"
+					"icon": "wiki/i/sp-342.png"
 				},
 				{
 					"id": "spell:185",
@@ -4601,7 +4601,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-frost-crystal.png"
+					"icon": "wiki/i/sp-318.png"
 				},
 				{
 					"id": "spell:62",
@@ -4629,7 +4629,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-sweep.png"
+					"icon": "wiki/i/sp-323.png"
 				},
 				{
 					"id": "spell:118",
@@ -4795,7 +4795,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-water-palmwave.png"
+					"icon": "wiki/i/sp-329.png"
 				},
 				{
 					"id": "spell:129",
@@ -4823,7 +4823,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-missile.png"
+					"icon": "wiki/i/sp-343.png"
 				},
 				{
 					"id": "spell:246",
@@ -4879,7 +4879,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-sweep.png"
+					"icon": "wiki/i/sp-290.png"
 				},
 				{
 					"id": "spell:139",
@@ -4907,7 +4907,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-fire-burst.png"
+					"icon": "wiki/i/sp-346.png"
 				},
 				{
 					"id": "spell:203",
@@ -5042,7 +5042,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-mountain.png"
+					"icon": "wiki/i/sp-348.png"
 				},
 				{
 					"id": "spell:230",
@@ -5096,7 +5096,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-rift.png"
+					"icon": "wiki/i/sp-313.png"
 				},
 				{
 					"id": "spell:22",
@@ -5124,7 +5124,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-nature-arrows.png"
+					"icon": "wiki/i/sp-315.png"
 				},
 				{
 					"id": "spell:35",
@@ -5152,7 +5152,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-frost-howl.png"
+					"icon": "wiki/i/sp-370.png"
 				},
 				{
 					"id": "spell:205",
@@ -5208,7 +5208,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-swirl.png"
+					"icon": "wiki/i/sp-319.png"
 				},
 				{
 					"id": "spell:80",
@@ -5236,7 +5236,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-daggers.png"
+					"icon": "wiki/i/sp-324.png"
 				},
 				{
 					"id": "spell:131",
@@ -5264,7 +5264,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-hammer.png"
+					"icon": "wiki/i/sp-344.png"
 				},
 				{
 					"id": "spell:39",
@@ -5292,7 +5292,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-pounce.png"
+					"icon": "wiki/i/sp-371.png"
 				},
 				{
 					"id": "spell:134",
@@ -5320,7 +5320,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-nature-dash.png"
+					"icon": "wiki/i/sp-310.png"
 				},
 				{
 					"id": "spell:90",
@@ -5348,7 +5348,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-light-fist.png"
+					"icon": "wiki/i/sp-330.png"
 				},
 				{
 					"id": "spell:120",
@@ -5488,7 +5488,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-shuriken.png"
+					"icon": "wiki/i/sp-307.png"
 				},
 				{
 					"id": "spell:193",
@@ -5628,7 +5628,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-nature-paw.png"
+					"icon": "wiki/i/sp-306.png"
 				},
 				{
 					"id": "spell:29",
@@ -5656,7 +5656,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-banner.png"
+					"icon": "wiki/i/sp-301.png"
 				},
 				{
 					"id": "spell:58",
@@ -5684,7 +5684,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-hammer.png"
+					"icon": "wiki/i/sp-302.png"
 				},
 				{
 					"id": "spell:145",
@@ -5712,7 +5712,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-slam.png"
+					"icon": "wiki/i/sp-304.png"
 				},
 				{
 					"id": "spell:144",
@@ -5740,7 +5740,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-twin.png"
+					"icon": "wiki/i/sp-303.png"
 				},
 				{
 					"id": "spell:146",
@@ -5768,7 +5768,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-frost-swirl.png"
+					"icon": "wiki/i/sp-305.png"
 				},
 				{
 					"id": "spell:142",

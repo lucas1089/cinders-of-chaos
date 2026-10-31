@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """PixelLab art in the Chaos frame: the 21 line spell quest spells (cells 349-369 of the three spell icon sheets) and
-the class spells repainted from plain drawings (class_spell_art/, O355: the Necromancer line).
+the class spells repainted from plain drawings (class_spell_art/, O355: every Chaos cell 280-348 and 370-371).
 
 Run: python3 -I client/tools/gen_quest_spell_icons.py            # build: art sheet cells and the three client sheets
      python3 -I client/tools/gen_quest_spell_icons.py --check    # the committed files match the source (CI)
@@ -14,8 +14,9 @@ row 2 the level 1200 ultimates (356-362), row 3 the level 800 buffs (363-369). E
 other image); the csv names the call and the candidate. The raw results stay outside git.
 Second source (O355, 2026-10-31): class_spell_art/class_spell_32.png, 7 columns of 32 x 32 cells in the order of
 class_spell_art/class_spell_icons.csv (same columns; any Chaos spell cells outside 349-369, each once). The plain
-drawings of gen_spell_icons.py there (the Necromancer line: summons, pack spells and attack kit, cells 294-337) looked
-flat next to the painted cells; each is now one candidate of the same kind of call (a description of the spell).
+drawings of gen_spell_icons.py there looked flat next to the painted cells: first the Necromancer line (12 cells of
+294-337), then the other 59 (Town Portal, the snares and mines, the four vigils and the other lines' kits in 280-348,
+the wolf spells 370-371). Each is one candidate of the same kind of call (a description of the spell).
 
 Build, deterministic (the same sheet gives the same files):
   1. the art is the cell's centre 28 x 28 (a 2 px margin cut off, no resampling, so the pixels stay crisp);
