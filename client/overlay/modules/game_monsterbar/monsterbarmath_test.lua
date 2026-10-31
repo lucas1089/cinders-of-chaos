@@ -84,5 +84,23 @@ eq(top, 125 + M.GAP, 'narrow: below the plate')
 top, offset = M.place(panel, { left = 0, right = 700, top = 0, bottom = 600 }, W, H, nil, { { x = 0, y = 0, width = 0, height = 0 } })
 eq(top, M.GAP, 'empty rect ignored')
 
+-- O351: draw sizes
+local jug = { -11, 10, -101, -95, 28, 5, 5, 0, 49 } -- look 1423 (Inferno Juggernaut), 5x5
+local small = { 16, 21, -8, -8, 23, 1, 1, 0, 15 } -- a 1x1 look
+local twoByTwo = { 12, 22, -28, 1, 32, 2, 2, 0, 12 }
+local w, h = M.bodySize(jug)
+eq(w, 123, 'juggernaut body width'); eq(h, 111, 'juggernaut body height')
+eq(M.drawScale(jug, nil, nil), 0.61, 'an oversized monster is shrunk to fit')
+eq(M.drawScale(jug, 'elite', nil), 0.61, 'an elite is no boss: shrunk too')
+eq(M.drawScale(jug, 'boss', nil), M.BOSS_SCALE, 'a boss keeps its size, bigger')
+eq(M.drawScale(jug, nil, 'omen'), M.BOSS_SCALE, 'an omen is drawn as a boss')
+eq(M.drawScale(jug, nil, 'guardian'), 1, 'a rift guardian keeps its art')
+eq(M.drawScale(small, nil, nil), 1, 'a small look stays')
+eq(M.drawScale(twoByTwo, 'normal', nil), 1, 'a 2x2 look stays')
+eq(M.drawScale(nil, nil, nil), 1, 'no anchor: as drawn')
+eq(M.drawScale({ 1, 2 }, nil, nil), 1, 'junk anchor: as drawn')
+eq(M.drawScale({ 0, 10, -400, -300, 300, 9, 9, 0, 0 }, nil, nil), M.SCALE_MIN, 'never below the engine floor')
+eq(M.isOversized(jug), true, 'oversized'); eq(M.isOversized(small), false, 'not oversized')
+
 print(string.format('monsterbar math: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end
