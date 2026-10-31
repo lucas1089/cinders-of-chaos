@@ -1,0 +1,56 @@
+# Tile refresh from Lua (server/README.md "Tile refresh (src-patch 0084)"; O349). Owner 2026-10-31 (pt-BR): walking over a
+# health or mana globe makes the own character invisible and the globe stays. The globe is taken in onStepIn and removed
+# with a 0x6C by stack position. When the client's tile differs from the server's (a dead monster the client still holds,
+# O352), that index names another thing on the client: the own character goes (not drawn standing) and the globe stays.
+# Adds tile:refresh(): every player who sees the tile gets it whole (0x69, ProtocolGame::sendUpdateTile), so the client
+# rebuilds it from the server's truth. pickups.lua calls it after it removes a pickup. Lua binding only. Applies after
+# 0001-0083.
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2291,6 +2291,7 @@
+ 	registerMethod("Tile", "addItemEx", LuaScriptInterface::luaTileAddItemEx);
+ 
+ 	registerMethod("Tile", "getHouse", LuaScriptInterface::luaTileGetHouse);
++	registerMethod("Tile", "refresh", LuaScriptInterface::luaTileRefresh);
+ 
+ 	// NetworkMessage
+ 	registerClass("NetworkMessage", "", LuaScriptInterface::luaNetworkMessageCreate);
+@@ -6087,6 +6088,28 @@
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaTileRefresh(lua_State* L)
++{
++	// tile:refresh() (Chaos patch 0084): every player who sees the tile gets it whole again (0x69 with the full tile
++	// description). The client drops what it holds for the tile and rebuilds it, so a thing a stack position missed
++	// (a leftover object, the own character taken off by a wrong index) is put right. Returns true, nil without a tile.
++	Tile* tile = getUserdata<Tile>(L, 1);
++	if (!tile) {
++		lua_pushnil(L);
++		return 1;
++	}
++	const Position& pos = tile->getPosition();
++	SpectatorVec spectators;
++	g_game.map.getSpectators(spectators, pos, true, true);
++	for (Creature* spectator : spectators) {
++		if (Player* player = spectator->getPlayer()) {
++			player->sendUpdateTile(tile, pos);
++		}
++	}
++	pushBoolean(L, true);
++	return 1;
++}
++
+ // NetworkMessage
+ int LuaScriptInterface::luaNetworkMessageCreate(lua_State* L)
+ {
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -664,6 +664,7 @@
+ 		static int luaTileAddItemEx(lua_State* L);
+ 
+ 		static int luaTileGetHouse(lua_State* L);
++		static int luaTileRefresh(lua_State* L);
+ 
+ 		// NetworkMessage
+ 		static int luaNetworkMessageCreate(lua_State* L);

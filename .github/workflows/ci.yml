@@ -1187,6 +1187,9 @@ jobs:
       - name: Creature refresh on a tile cannot strand a creature (server src-patch 0083, guard)
         run: python3 -I server/tools/creature_refresh_patch_test.py
 
+      - name: Tile refresh from Lua, pickups resend their tile (server src-patch 0084, guard; O349)
+        run: python3 -I server/tools/tile_refresh_patch_test.py
+
       - name: Loot Bag carries its loot without weight (server src-patch 0038, guard)
         run: python3 -I server/tools/weightless_patch_test.py
 

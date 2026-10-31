@@ -167,6 +167,8 @@ local tiles = {}
 local function mkTile(x, y, z, solid)
 	local t = {_items = {}, _solid = solid}
 	function t:getGround() return {} end
+	t._refreshed = 0
+	function t:refresh() self._refreshed = self._refreshed + 1; return true end -- src-patch 0084
 	function t:hasFlag(f) return (f == TILESTATE_BLOCKSOLID and self._solid) or false end
 	function t:getItemById(id)
 		for _, it in ipairs(self._items) do
@@ -317,6 +319,7 @@ eq(dropped[1], "health", "a health globe (mana is full)")
 local globe = itemsOn(100, 100)[1]
 ok(globe ~= nil and globe._id == 32088, "the health globe lies on the corpse tile")
 ok(globe._decay, "the failsafe decay was started")
+eq(tiles["100:100:7"]._refreshed, 1, "the tile goes whole to the viewers after the drop (O349)")
 eq(P.countOf(1, "health_globe"), 1, "recorded")
 ok(#effects > 0 and effects[#effects].id == CONST_ME_MAGIC_RED, "it glows red at once")
 -- the cooldown and the limit: a second kill right after drops nothing
@@ -337,8 +340,10 @@ step(stranger, globe)
 ok(not globe._removed and stranger._msgs[#stranger._msgs]:find("not meant for you"), "a stranger cannot take it")
 eq(stranger._hp, 1000, "and is not healed")
 local before = hero._hp
+local refreshedBefore = tiles["100:100:7"]._refreshed
 step(hero, globe)
 ok(globe._removed, "the owner takes it")
+eq(tiles["100:100:7"]._refreshed, refreshedBefore + 1, "the tile goes whole to the viewers after the take (O349)")
 eq(hero._hp, before + 180, "restores 18% of the maximum health")
 eq(heals[#heals].ctype, COMBAT_HEALING, "through the healing combat (the heal event applies the tree's Healing)")
 ok(hero._msgs[#hero._msgs]:find("restores 180 health"), "the message")

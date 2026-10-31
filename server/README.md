@@ -20950,6 +20950,13 @@ the marks and fails when a monster of a hunt of 100+ would show less than a tent
 `Game.createMonster`); `monster_levels.lua` uses it once in the same `onSpawn`, before the placement, so the first
 creature packet carries it. Patch 0044 lets a set display level win over a level of the monster's own (a level-scaled
 type in a rift showed its rolled "[777]"). Display only, as above.
+- **Tile refresh (engine patch `0084-tile-refresh.patch`, O349).** Owner 2026-10-31: walking over a health or mana globe
+  made the own character invisible and the globe stayed. The take runs in onStepIn and removes the globe with a 0x6C by
+  stack position. A client whose tile holds a thing the server's does not (a dead monster still drawn, O352) reads that
+  index as another thing: the own character left the tile's list (not drawn standing) and the globe stayed. The patch adds
+  `tile:refresh()`: every player who sees the tile gets it whole (0x69, `Player::sendUpdateTile`), so the client rebuilds
+  it from the server. `pickups.lua` calls it after a drop and after every removal (`ChaosPickups.refreshAt`; no-op
+  without the patch). Guard: `tools/tile_refresh_patch_test.py`. A globe at a full bar still stays by design.
 - Rifts with density (`rift_core.lua R.displayLevel`): every pack monster and the guardian show the tier's level
   (`tiers[t].minLevel`, + `beyond.minLevelStep` a tier above the table), the player level their health budget is
   sized for. Without density, and an Omen guardian, keep their own level (their own health x multipliers).
