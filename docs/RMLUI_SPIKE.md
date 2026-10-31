@@ -168,7 +168,18 @@ end. Still behind `CHAOS_RMLUI`. No new base patch: the changes are in the overl
   Xvfb at 1280x720: a message box, a question box (Yes ran its callback and closed both), a form with a text field
   (typing reached the OTUI field), a list (a row click focused the OTUI row), a check box, a button, a title drag and
   the Classic button.
-- Not done: tooltips, a scroll area that is not a list, tab bars as tabs, windows that draw items; Windows, Android, GPU.
+- Tab bars (2026-10-31, owner "Agora faz as dicas de mouse e as abas"): a `UITabBar` is a row of tab buttons with the
+  skin's tab image (`tabbutton_square`, current tab checked). A click calls the tab's own `onClick` (`selectTab`); the
+  content widget then holds another panel, the signature changes and the window is drawn again with it.
+- Tooltips: an item keeps its widget's tooltip. The manager sends `mouseover` (only for the innermost element under the
+  mouse, not for each newly hovered ancestor) and `mouseout`; the form shows the text in the document's `#tip` element
+  under the element, kept on the screen. A widget with only a tooltip and no text stays a "?" help icon.
+- Text: the engine's text is cp1252; `g_rml.escape` and `setText` turn it into UTF-8 in C++, so Lua passes it as it is
+  (only a value written into an input goes through `ChaosRmlForm.toUtf8`).
+- Checked under Xvfb at 1280x720: a window with three tabs (pt-BR accents), a tab click shows its panel, the tooltips of
+  a check box text and of a button, hidden again when the mouse leaves.
+- Not done: a scroll area that is not a list, movable tab bars (the chat's), windows that draw items; Windows, Android,
+  GPU.
 
 ## Effort
 

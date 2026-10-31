@@ -138,5 +138,49 @@ eq(M.centreShift(200, 100, 90), 0, 'centreShift: smaller')
 eq(M.centreShift(200, 100, 141), 20, 'centreShift: half, rounded down')
 eq(M.centreShift(10, 100, 200), 10, 'centreShift: clamped at the top')
 
+-- tab bars: the tab buttons (from bar.tabs, else buttonsPanel), the current one checked, then the shown panel
+local function tabButton(text, on)
+  local t = button('tab', text)
+  function t:isChecked() return on end
+  return t
+end
+local bar = widget('UITabBar', { id = 'bar' })
+bar.tabs = { tabButton('General', true), tabButton('Combat', false) }
+bar.tabs[2].tooltip = 'Fight settings'
+local tabWin = add(widget('UIWindow'), bar, add(widget('UIWidget', { id = 'content' }), label('l', 'Panel one')))
+local tItems = F.collect(tabWin)
+eq(tItems[1].kind, 'tabs', 'tabs: opens')
+eq(tItems[2].kind .. ':' .. tItems[2].text, 'tab:General', 'tabs: first tab')
+eq(tItems[3].text, 'Combat', 'tabs: second tab')
+eq(tItems[4].kind, 'endtabs', 'tabs: closes')
+eq(tItems[5].text, 'Panel one', 'tabs: the shown panel after them')
+local tRml = F.rml(tItems, function(s) return s end)
+has(tRml, '<div class="tabs"><button class="tab" id="c2">General</button><button class="tab" id="c3">Combat</button></div>', 'tabs: rml')
+local bp = add(widget('UIWidget', { id = 'buttonsPanel' }), tabButton('Only', true))
+local bar2 = add(widget('UITabBar'), bp)
+bar2.buttonsPanel = bp
+local t2 = F.collect(add(widget('UIWindow'), bar2))
+eq(#t2, 3, 'tabs: from buttonsPanel')
+eq(t2[2].text, 'Only', 'tabs: buttonsPanel tab')
+
+-- tooltips: an item keeps its widget's tooltip; the element ids of its parts find it
+eq(tItems[3].tip, 'Fight settings', 'tip: kept on the item')
+eq(tItems[2].tip, nil, 'tip: none')
+eq(F.tipItem(tItems, 'c3'), tItems[3], 'tipItem: element')
+eq(F.tipItem(tItems, 'c3l'), tItems[3], 'tipItem: check box text')
+eq(F.tipItem(tItems, 'c2'), nil, 'tipItem: no tooltip')
+eq(F.tipItem(tItems, 'content'), nil, 'tipItem: other element')
+eq(F.tipItem(tItems, 'c99'), nil, 'tipItem: out of range')
+local helpWin = add(widget('UIWindow'), widget('UIWidget', { tooltip = 'What this is' }), button('b', 'B'))
+local hItems = F.collect(helpWin)
+eq(hItems[1].kind, 'help', 'tip: an icon-only tooltip stays a help icon')
+eq(hItems[1].tip, nil, 'tip: a help icon has no hover tip')
+local x, y = F.tipPos({ x = 100, y = 50, width = 40, height = 20 }, 1280, 720)
+eq(x .. ',' .. y, '100,74', 'tipPos: under the element')
+x, y = F.tipPos({ x = 1200, y = 50, width = 40, height = 20 }, 1280, 720)
+eq(x, 1280 - F.TIP_MAX_W - 4, 'tipPos: kept inside on the right')
+x, y = F.tipPos({ x = 10, y = 690, width = 40, height = 20 }, 1280, 720)
+eq(y, 646, 'tipPos: above at the bottom')
+
 print(string.format('rmlmirror_test: %d checks, %d failures', checks, failures))
 if failures > 0 then os.exit(1) end

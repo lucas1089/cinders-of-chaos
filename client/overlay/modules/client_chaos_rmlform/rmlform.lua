@@ -1,6 +1,6 @@
 -- RmlUi form layer (docs/RMLUI_SPIKE.md, phase 4): what the Options window (client_chaos_rmloptions) and the window mirror
 -- (client_chaos_rmlmirror) share. It reads an OTUI widget tree (check boxes, sliders, combo boxes, buttons, labels, text
--- fields, lists, progress bars, icons, help icons, panels), writes RML for it and keeps both sides in step: a change in
+-- fields, lists, tab bars, progress bars, icons, help icons, panels, tooltips), writes RML for it and keeps both sides in step: a change in
 -- RmlUi goes through the OTUI widget's own click or setter, so the module behind the window runs as before.
 -- Pure parts (collect, rml, wantedValue, the text conversion) take the widget API only and are unit tested with mocks.
 -- Only a client built with -DCHAOS_RMLUI=ON has g_rml; without it nothing here touches the engine.
@@ -47,11 +47,16 @@ local function isList(w)
 end
 
 -- The controls of a widget tree in reading order. Kinds: group/endgroup (a FlatPanel), list/endlist, row/endrow (a list
--- child), label, para (text with line breaks), check, range, select, button, input, progress, image, sep, help.
+-- child), tabs/tab/endtabs (a TabBar), label, para (text with line breaks), check, range, select, button, input, progress, image, sep, help.
 -- Returns items and the classes it could not draw (sorted, unique); a non-empty list means "leave this window in OTUI".
 function M.collect(root)
   local items, unsupported, seen = {}, {}, {}
-  local function add(item) items[#items + 1] = item end
+  local function add(item)
+    -- the widget's tooltip, shown in RmlUi while the mouse is over its element
+    local tip = item.widget and item.kind ~= 'help' and item.widget.getTooltip and item.widget:getTooltip()
+    if type(tip) == 'string' and tip ~= '' then item.tip = tip end
+    items[#items + 1] = item
+  end
   local function walk(w, inRow)
     for _, c in ipairs(w:getChildren()) do
       -- a widget a module hid with opacity 0 (moved away, faded out) is not drawn either
@@ -85,6 +90,18 @@ function M.collect(root)
                 multiline = c.isMultiline and c:isMultiline() or false })
         elseif cls == 'UIProgressBar' then
           add({ kind = 'progress', widget = c })
+        elseif cls == 'UITabBar' then
+          -- its tab buttons (the current panel lies in the content widget the module set, read where it is)
+          local tabs = c.tabs
+          if type(tabs) ~= 'table' or #tabs == 0 then
+            local bp = c.buttonsPanel or (c.getChildById and c:getChildById('buttonsPanel'))
+            tabs = bp and bp:getChildren() or {}
+          end
+          add({ kind = 'tabs', widget = c })
+          for _, t in ipairs(tabs) do
+            if t:isExplicitlyVisible() then add({ kind = 'tab', widget = t, text = textOf(t) }) end
+          end
+          add({ kind = 'endtabs' })
         elseif cls == 'UIResizeBorder' or cls == 'UIRadioGroup' then
           -- window furniture
         elseif isList(c) then
@@ -166,6 +183,16 @@ function M.rml(items, escape)
     elseif k == 'endlist' then
       push('</div>') -- i18n-ok: markup
       depth = depth - 1
+    elseif k == 'tabs' then
+      endLoose()
+      push('<div class="tabs">') -- i18n-ok: markup
+      depth = depth + 1
+    elseif k == 'endtabs' then
+      push('</div>') -- i18n-ok: markup
+      depth = depth - 1
+    elseif k == 'tab' then
+      it.el = id
+      push(string.format('<button class="tab" id="%s">%s</button>', id, escape(it.text))) -- i18n-ok: markup
     elseif k == 'row' then
       it.el = id
       -- text in a span: a flex box draws no loose text
@@ -373,6 +400,7 @@ function Form:build(items)
   local unsupported
   if not items then items, unsupported = M.collect(self.root) end
   self.items, self.sig, self.open = items, M.signature(items), {}
+  self:hideTip()
   g_rml.setInnerRml(self.doc, self.el, M.rml(items, g_rml.escape))
   self:refresh()
   return unsupported
@@ -403,7 +431,7 @@ function Form:refresh()
           it.lastValue = v
           g_rml.setValue(doc, el, v)
         end
-      elseif k == 'label' or (k == 'button' and not it.image) then
+      elseif k == 'label' or k == 'tab' or (k == 'button' and not it.image) then
         setText(self, it, textOf(w))
       elseif k == 'para' then
         local t = textOf(w)
@@ -423,6 +451,7 @@ function Form:refresh()
       if k ~= 'label' and k ~= 'para' and k ~= 'row' and k ~= 'progress' then g_rml.setDisabled(doc, el, not w:isEnabled()) end
       if k ~= 'row' then g_rml.setClass(doc, el, 'off', not w:isEnabled()) end
       if k == 'button' then g_rml.setClass(doc, el, 'on', (w.isOn and w:isOn()) or (w.isChecked and w:isChecked()) or false) end
+      if k == 'tab' then g_rml.setClass(doc, el, 'on', (w.isChecked and w:isChecked()) or false) end
     end
   end
 end
@@ -442,9 +471,58 @@ local function itemOf(self, elementId)
   return n and self.items[n], n
 end
 
+-- Pure: the item whose element (or one of its parts: c<N>l the text of a check box, c<N>f / c<N>t the bar and text of a
+-- progress bar) the id names, if it has a tooltip.
+function M.tipItem(items, elementId)
+  local n = tonumber(tostring(elementId):match('^c(%d+)[lft]?$') or '')
+  local it = n and items[n]
+  if it and it.tip then return it end
+end
+
+-- Pure: where a tooltip goes, in document pixels: under the element, kept on the screen (width = the screen's).
+M.TIP_MAX_W = 300
+function M.tipPos(rect, width, height)
+  local x = math.max(0, math.min(rect.x, (width or 0) - M.TIP_MAX_W - 4))
+  local y = rect.y + rect.height + 4
+  if height and y + 40 > height then y = math.max(0, rect.y - 44) end
+  return x, y
+end
+
+-- The tooltip lives in the document's element "tip" (a document without one shows none).
+function Form:showTip(it)
+  local doc = self.doc
+  local r = g_rml.getRect(doc, it.el)
+  if not r or r.width == 0 then return end
+  local root = g_ui and g_ui.getRootWidget and g_ui.getRootWidget()
+  local x, y = M.tipPos(r, root and root:getWidth(), root and root:getHeight())
+  self.tipFor = it.el
+  g_rml.setInnerRml(doc, 'tip', (g_rml.escape(it.tip):gsub('\n', '<br/>')))
+  g_rml.setProperty(doc, 'tip', 'left', x .. 'px')
+  g_rml.setProperty(doc, 'tip', 'top', y .. 'px')
+  g_rml.setClass(doc, 'tip', 'on', true)
+end
+
+function Form:hideTip()
+  if not self.tipFor then return end
+  self.tipFor = nil
+  g_rml.setClass(self.doc, 'tip', 'on', false)
+end
+
 function Form:handle(elementId, eventType)
   local doc = self.doc
-  if eventType == 'enter' then
+  if eventType == 'mouseover' then
+    local it = M.tipItem(self.items, elementId)
+    if it then
+      if self.tipFor ~= it.el then self:showTip(it) end
+    else
+      self:hideTip()
+    end
+    return true
+  elseif eventType == 'mouseout' then
+    -- leaving for a child of the same element sends a mouseover for it right after
+    self:hideTip()
+    return true
+  elseif eventType == 'enter' then
     if self.hooks.onEnter then self.hooks.onEnter() end
     return true
   elseif eventType == 'escape' then
@@ -477,7 +555,7 @@ function Form:handle(elementId, eventType)
       w:setText(want)
     end
   elseif eventType == 'click' then
-    if it.kind == 'button' and w:isEnabled() then
+    if (it.kind == 'button' or it.kind == 'tab') and w:isEnabled() then
       signalcall(w.onClick, w)
     elseif it.kind == 'row' then
       it.list:focusChild(w, MouseFocusReason or 0)

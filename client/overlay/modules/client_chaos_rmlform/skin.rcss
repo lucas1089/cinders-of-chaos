@@ -43,6 +43,13 @@
 @spritesheet crest { src: /images/chaos/skin/orn_crest.png; crest: 0px 0px 84px 30px; }
 @spritesheet field { src: /images/ui/textedit.png; field: 0px 0px 32px 32px; field-in: 1px 1px 30px 30px; }
 @spritesheet listbg { src: /images/ui/scrollarea.png; listbg: 0px 0px 19px 16px; listbg-in: 1px 1px 17px 14px; }
+/* TabBarButton: client/tools/gen_skin.py draws 96x19 per state (normal, hover, checked), border 3 */
+@spritesheet tabbtn {
+	src: /images/ui/tabbutton_square.png;
+	tab: 0px 0px 96px 19px;    tab-in: 3px 3px 90px 13px;
+	tab-h: 0px 19px 96px 19px; tab-h-in: 3px 22px 90px 13px;
+	tab-c: 0px 38px 96px 19px; tab-c-in: 3px 41px 90px 13px;
+}
 @spritesheet pbar { src: /images/ui/progressbar.png; pbar: 0px 0px 80px 16px; pbar-in: 2px 2px 76px 12px; }
 
 body {
@@ -288,3 +295,38 @@ input.field:disabled { color: #8c8070; }
 button.on { color: #fff1d6; decorator: ninepatch(btn-p, btn-p-in); }
 button.icon { min-width: 0dp; padding: 2dp; height: auto; }
 img { margin: 1dp 3dp; }
+
+/* TabBar: the tab buttons in a row; a click selects the tab in OTUI and the window shows its panel */
+.tabs {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	width: 100%;
+	margin: 2dp 0dp 6dp 0dp;
+}
+button.tab {
+	min-width: 0dp;
+	height: 19dp;
+	padding: 2dp 9dp 0dp 9dp;
+	margin: 0dp 5dp 2dp 0dp;
+	font-size: 13dp;
+	color: #cdbfa4;
+	decorator: ninepatch(tab, tab-in);
+}
+button.tab:hover { color: #ffe7a6; decorator: ninepatch(tab-h, tab-h-in); }
+button.tab.on { color: #fff1d6; decorator: ninepatch(tab-c, tab-c-in); }
+
+/* tooltip of the widget under the mouse (Form:showTip places it); the document needs <div id="tip"></div> in body */
+#tip {
+	position: absolute;
+	display: none;
+	max-width: 300dp;
+	padding: 4dp 7dp;
+	background-color: #161114f2;
+	border: 1dp #8c6d3a;
+	color: #cdbfa4;
+	font-size: 13dp;
+	pointer-events: none;
+	z-index: 200;
+}
+#tip.on { display: block; }
