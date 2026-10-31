@@ -14,6 +14,7 @@ local mechWindow, mechCast, mechEvent -- the boss cast bar (monsterbarmech.lua):
 local MECH_W = 344
 local MECH_TICK = 50 -- ms
 local tierOf, modsOf, roleOf, levelOf, labelOf = {}, {}, {}, {}, {}
+local askedOf = {} -- creature id -> true: the tier was asked for an oversized look (O351)
 local trail, trailEvent, lastPercent -- the damage trail and the health it last saw
 
 local function send(action, data)
@@ -137,17 +138,29 @@ local function runTrail()
   end, TRAIL_TICK)
 end
 
--- bosses are drawn this much bigger than ordinary monsters (needs base patch 0020, Creature:setDrawScale)
-local BOSS_SCALE = 1.5
+-- the outfit anchors of the pair (client_chaos_charselect/outfit_anchors.lua; that module is sandboxed, so its table is
+-- reached through `modules`), nil when not loaded
+local function anchorOf(creature)
+  local m = modules and modules.client_chaos_charselect
+  local anchors = m and m.CharSelectAnchors
+  local ok, outfit = pcall(function() return creature:getOutfit() end)
+  return anchors and ok and type(outfit) == 'table' and anchors[outfit.type] or nil
+end
+
+-- the draw size (needs base patch 0020, Creature:setDrawScale): bosses bigger, oversized ordinary monsters smaller (O351,
+-- MonsterBarMath.drawScale)
+local function scaleCreature(creature, tier, role)
+  if creature and creature.setDrawScale and creature:isMonster() then
+    creature:setDrawScale(MonsterBarMath.drawScale(anchorOf(creature), tier, role))
+  end
+end
 
 -- in-world label: modifiers on a line above the name, name (and the engine's small bar) coloured by tier
 local function labelCreature(creature, tier, mods, role)
   if not creature then
     return
   end
-  if creature.setDrawScale then
-    creature:setDrawScale((tier == 'boss' or role == 'omen') and BOSS_SCALE or 1)
-  end
+  scaleCreature(creature, tier, role)
   local st = S.STYLES[S.key(tier, role)]
   if not st.world then
     return
@@ -328,10 +341,44 @@ function requestInfo(cid)
   send('query', { cid = cid })
 end
 
+-- the tier queries of oversized looks go out at most ASK_PER_TICK every ASK_TICK ms: a crowd in view at login sent one
+-- each in a burst and the server dropped the client over its packet limit (live check 2026-10-31)
+local ASK_TICK, ASK_PER_TICK = 250, 1
+local askQueue, askEvent = {}, nil
+local function drainAsks()
+  askEvent = nil
+  for _ = 1, ASK_PER_TICK do
+    local id = table.remove(askQueue, 1)
+    if not id then
+      return
+    end
+    if g_map.getCreatureById(id) then
+      send('query', { cid = id })
+    end
+  end
+  if #askQueue > 0 then
+    askEvent = scheduleEvent(drainAsks, ASK_TICK)
+  end
+end
+local function askLater(id)
+  askQueue[#askQueue + 1] = id
+  if not askEvent then
+    askEvent = scheduleEvent(drainAsks, ASK_TICK)
+  end
+end
+
 local function onAppear(creature)
   local id = creature:getId()
   if tierOf[id] then
     labelCreature(creature, tierOf[id], modsOf[id], roleOf[id])
+  elseif creature:isMonster() and MonsterBarMath.isOversized(anchorOf(creature)) then
+    -- shrunk until the server says what it is: a boss's answer brings it back to boss size (O351)
+    scaleCreature(creature, nil, nil)
+    -- once per creature: onAppear fires at every step into view, and the server drops a client over its packet limit
+    if not askedOf[id] then
+      askedOf[id] = true
+      askLater(id)
+    end
   end
 end
 
@@ -347,6 +394,11 @@ end
 
 local function onGameEnd()
   tierOf, modsOf, roleOf, levelOf, labelOf = {}, {}, {}, {}, {}
+  askedOf, askQueue = {}, {}
+  if askEvent then
+    removeEvent(askEvent)
+    askEvent = nil
+  end
   current = nil
   stopTrail()
   stopMech()

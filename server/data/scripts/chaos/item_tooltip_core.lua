@@ -533,6 +533,33 @@ function T.dpsRow(item, it, w, ms)
 	return {k = "dps", l = "Estimated DPS", v = dps, fmt = "est"}
 end
 
+-- a wand's or rod's "Attack" (the viewer's hit range) and "Estimated DPS" rows (O353). w = the wielder {level, magic};
+-- ms = the interval the viewer shoots it at. The flat min..max comes from ChaosWeaponDps.wands (item_tooltip.lua builds
+-- it at startup with D.collectWands); the factor is the one weapon_styles.lua puts on every wand hit. Both rows x the
+-- display scale of the wielder's level. Returns attack row, dps row (nil, nil when the item is no known wand).
+function T.wandRows(item, it, w, ms)
+	local D = ChaosWeaponDps
+	if not (D and D.wands and w and w.level) or int(call(it, "getWeaponType")) ~= int(WEAPON_WAND or 6) then
+		return nil, nil
+	end
+	local entry = D.wands[int(call(item, "getId"))]
+	if not entry then
+		return nil, nil
+	end
+	local WS, WP = ChaosWeaponSkill, ChaosWeaponPower
+	local factor = (WS and WS.wandFactor and WS.wandFactor(w.level, w.magic or 0) or 1)
+		* (WP and WP.levelFactor and WP.levelFactor("wand", w.level) or 1)
+	local DS = ChaosDisplayScale
+	local scale = DS and DS.factor and DS.factor(w.level) or 1
+	local lo, hi = D.wandHit(entry.min, entry.max, factor * scale)
+	if not lo then
+		return nil, nil
+	end
+	local attack = {k = "attack", l = "Attack", v = floor((lo + hi) / 2 + 0.5), lo = lo, hi = hi, fmt = "range"}
+	local dps = D.round(D.wandEstimate({min = entry.min, max = entry.max, factor = factor * scale, interval = ms}))
+	return attack, dps and {k = "dps", l = "Estimated DPS", v = dps, fmt = "est"} or nil
+end
+
 -- everything the tooltip shows. opts = {equippedIds = {[server id] = true}, attrs = item:getClientAttributes()}
 function T.build(item, opts)
 	opts = opts or {}
@@ -593,6 +620,14 @@ function T.build(item, opts)
 		local est = T.dpsRow(item, it, w, ms)
 		if est then
 			tip.base[#tip.base + 1] = est
+		end
+		-- a wand or rod: its hit and its damage per second for the viewer (O353)
+		local wandAttack, wandDps = T.wandRows(item, it, w, ms)
+		if wandAttack then
+			table.insert(tip.base, 1, wandAttack)
+		end
+		if wandDps then
+			tip.base[#tip.base + 1] = wandDps
 		end
 	end
 

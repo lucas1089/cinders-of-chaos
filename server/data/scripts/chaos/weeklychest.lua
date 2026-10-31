@@ -79,7 +79,7 @@ end
 local function toast(player, title, text)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text)
 	if ChaosNotify and ChaosNotify.send then
-		pcall(ChaosNotify.send, player, Chaos.t(player, title), text)
+		pcall(ChaosNotify.send, player, "", text, "weeklychest") -- the toast's own header says Weekly Chest
 	end
 end
 
@@ -154,7 +154,7 @@ end
 local function send(player, open)
 	local v = W.view(player)
 	if open then
-		v.open = 1
+		v.shown = 1 -- the window was just opened; `open` is the count of activities the character can do
 	end
 	W.pushAt[player:getId()] = nowMs()
 	Chaos.send(player, OPCODE, "state", v)

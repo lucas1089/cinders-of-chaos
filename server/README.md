@@ -670,7 +670,7 @@ collision check") and be added here.
 | 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226), m = "ice" / "swamp" / "desert" / "fire" / "crypt" (optional, O234)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)", "Area colour mood (O234)") |
 | 115 | `unlocks` | `unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua` | `client_chaos_topbar` | server -> client `state {entries = [{key, level, menu}], unlocked = [key], seen = [key], next? = {key, level}, all? = true}` (login, `hello`, every level change) and `new {key, level, menu, title, why = [line1, line2]}` (one entry just unlocked, one per 75 s); client -> server `hello` and `seen {key}` (see "The top menu reveals systems by level (O259)") |
 | 116 | `everfull` | `potions_helper.lua`, `data/lib/chaos_potions.lua`, `potions_core.lua` | `game_helperrotation` | server -> client `held {v = 1, health? = {look, tier, level, line, ready}, mana? = {...}}` (the Everfull each slot carries, by its client look; at login, after an upgrade and when it changes, checked every 3 s), client -> server `sync` (see "Potions", "The helper and the tiers (O246)") |
-| 117 | `weeklyChest` | `weeklychest.lua`, `weeklychest_core.lua` | `game_weeklychest` | client -> server `open` / `close` / `get`, server -> client `state {open?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}` (see "The Weekly Chest (O261)") |
+| 117 | `weeklyChest` | `weeklychest.lua`, `weeklychest_core.lua` | `game_weeklychest` | client -> server `open` / `close` / `get`, server -> client `state {shown?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}` (see "The Weekly Chest (O261)") |
 | 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)") |
 | 119 | `combatStats` | `combat_stats.lua`, `combat_stats_core.lua` | `game_skillstats` | client -> server `get`; server -> client `stats {damage?, attack?, defense, armor, mitigation}` (mitigation a share 0 .. 1), at login, after an equip, a level or skill advance or a passive tree change, only when a number changed (see "Combat stat rows of the Skills window") |
 | 121 | `npcTravel` | `npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua` | `game_npctravel` | client -> server `travel {k}` (a key of `npc_travel_config.lua` `npcs`); the answer is a game message (status line, or the reason as a cancel message), see "Travel to an NPC (O330)" |
@@ -2284,6 +2284,11 @@ net (vocation change, level loss) and gives the new kinds their animation (arrow
 Docs: `docs/CLASSES.md` "Necromancer", `data/spells/README.md` "Necromancer line". Needs a live check: the three casts and the
 minions' hits (arrow and energy animations), the replacement of the oldest minion at the cap, a Lich and a Bone Lord at their
 caps, look 33 for the archer.
+
+**Bone Golem look, O354 (2026-10-31)** (owner: the golem reads as brown clay, not bones). `necro_bone_golem.xml` wears
+look 3185, a 2x2 golem of bones with green eyes (pair 50 import, source F; idle 1 phase, walk 3). It was 1549, a 3x3
+brown earth golem. No other monster wears 3185. Already in every client from pair 50 on, so no new pair and no
+windows-assets step. The login scene shows the same look (`loginscene_core.lua`). Needs a live look in game.
 
 **No room, beta 2026-10-22** (owner: "when the necromancer has no room, the summons are blocked"). `ChaosNecro.spotAt`
 took only a free tile on or next to the spot, so a caster in a pack of monsters got "not enough room". Now it looks two
@@ -6996,8 +7001,17 @@ Interval". It is an estimate of the auto attack on a target that does not defend
 
 Inputs: the item's attack (a rarity roll or a unique writes it as an attribute), the viewer's level, best melee skill (one melee skill)
 or distance skill (`item_tooltip.lua` puts them in `opts.wielder`), the interval of the tooltip (vocation, dexterity, attack speed cap).
-Left out: critical hits, modifiers of the item, passive tree and gems, resistances, spells, runes, wands and rods (magic level
-damage) and the fist. The row is not shown for a linked or inspected item (no viewer). The client caches a tooltip by item id and
+Left out: critical hits, modifiers of the item, passive tree and gems, resistances, spells, runes and the fist.
+
+**Wands and rods (O353, owner 2026-10-31: "mostre o ataque dos rods tambem, juntamente com o dps deles").** A wand's or rod's
+tooltip shows **Attack: lo-hi** as its first base row and **Estimated DPS: ~N** under the interval (`T.wandRows`). The hit is
+what `weapon_styles.lua` deals: the flat weapons.xml min..max x `ChaosWeaponSkill.wandFactor(level, magic level)` x
+`ChaosWeaponPower.levelFactor("wand", level)`, then the display scale; DPS = the mean hit / the interval (every shot hits). The
+engine does not give weapons.xml numbers to Lua, so `item_tooltip.lua` builds `ChaosWeaponDps.wands` at startup
+(`D.collectWands`) from `data/lib/chaos_base_wands.lua` (the stock ones, generated by `tools/gen_base_wands.py` from
+`data/items/base_weapons.csv`; `--check` in CI) and the generated tables of ours (`chaos_gear_sets_items.lua`,
+`chaos_relic_sets_items.lua`, `chaos_weapons800.lua`: `stats.wandMin` / `wandMax`). A wand in none of them shows neither row.
+The client prints a `range` row as lo-hi (`tooltiplogic.lua` `L.baseValue`); a compare uses the mean. The row is not shown for a linked or inspected item (no viewer). The client caches a tooltip by item id and
 version, so after a skill or level change the number refreshes when the item is asked for again (the same as "Your Attack
 Interval"). Tests: `tests/weapon_dps_test.lua`, `tests/item_tooltip_test.lua`, client `tooltiplogic_test.lua`. Not checked live.
 
@@ -20936,6 +20950,13 @@ the marks and fails when a monster of a hunt of 100+ would show less than a tent
 `Game.createMonster`); `monster_levels.lua` uses it once in the same `onSpawn`, before the placement, so the first
 creature packet carries it. Patch 0044 lets a set display level win over a level of the monster's own (a level-scaled
 type in a rift showed its rolled "[777]"). Display only, as above.
+- **Tile refresh (engine patch `0084-tile-refresh.patch`, O349).** Owner 2026-10-31: walking over a health or mana globe
+  made the own character invisible and the globe stayed. The take runs in onStepIn and removes the globe with a 0x6C by
+  stack position. A client whose tile holds a thing the server's does not (a dead monster still drawn, O352) reads that
+  index as another thing: the own character left the tile's list (not drawn standing) and the globe stayed. The patch adds
+  `tile:refresh()`: every player who sees the tile gets it whole (0x69, `Player::sendUpdateTile`), so the client rebuilds
+  it from the server. `pickups.lua` calls it after a drop and after every removal (`ChaosPickups.refreshAt`; no-op
+  without the patch). Guard: `tools/tile_refresh_patch_test.py`. A globe at a full bar still stays by design.
 - Rifts with density (`rift_core.lua R.displayLevel`): every pack monster and the guardian show the tier's level
   (`tiers[t].minLevel`, + `beyond.minLevelStep` a tier above the table), the player level their health budget is
   sized for. Without density, and an Omen guardian, keep their own level (their own health x multipliers).
@@ -26821,7 +26842,7 @@ Retention pass of 2026-10-26 (design: `docs/superpowers/specs/2026-10-26-retenti
 - **4 of 6 open the chest, all unlocked ones add a bonus roll.** The chest is given at once (gold to the bank, orbs to the backpack, else the inbox) with a toast, once per week; the bonus roll picks one of three options. An activity the character cannot do yet is left out: each locked one takes one off the 4, but never below 2, and the bonus roll needs more activities open than the chest asks (`K.targets`). An activity the character did anyway counts as open, so a wrong gate never hides progress. Testers and staff bots earn nothing.
 - **The gates** (`weeklychest_config.lua` `activities`): dungeon 150 (`bossspawns_config.lua` `dungeons.defaults[1].level`), rift 100 (`rift_config.lua` `tiers[1].minLevel`), waystone 1100 (`waystone_tiers_config.lua` `tiers[1].level`), tower 100, world boss or invasion 30 (`invasion_config.lua` `minLevel`; the world boss needs `Chaos.worldBoss.minLevel` 300), bounty 8 (first band of `bounty_config.lua`). This is a local table that mirrors each system's own gate; `tests/weeklychest_test.lua` reads rift, bounty, waystone and invasion configs and fails when one differs, and checks dungeon, rift and tower against the top menu's unlock table (`unlocks_config.lua`, O259).
 - **Rewards by level band** (the bounty board's six bands): `hours` of hunting gold (the Ember Cache's `income` table, one source) plus orbs (counts x 1, 1, 2, 2, 3, 3 by band). Chest: 1.0 h of gold, 2 Orbs of Upheaval, 1 Awakening, 1 Whetstone, 1 Tempering. Bonus roll, one of: 0.8 h of gold; 0.3 h + Orb of Fate + Orb of Tempering; 0.4 h + Orb of Sockets. Orb values in hours are the Ember Cache's (2, 2, 2, 5, 6, 10 minutes). Limits checked by `tests/weeklychest_test.lua` at every band: chest at most 2.0 h, one bonus option at most 1.0 h, both at most 3.0 h, under the Ember Cache's top weekly milestone (3.95 h). The store and roulette models (`tools/store_model.lua`, `tools/roulette_model.lua --check`) do not read this table and stay green: the chest pays no coin or token value, and its gold is the same hours-of-income unit as the Ember Cache's.
-- **Protocol (opcode 117, `ChaosOpcodes.weeklyChest`):** client -> server `open` / `close` / `get`; server -> client `state {open?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}`. 117 is not in the reference server's list, not one of the base client's `ExtendedIds` and not named by another module (the test checks it).
+- **Protocol (opcode 117, `ChaosOpcodes.weeklyChest`):** client -> server `open` / `close` / `get`; server -> client `state {shown?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}`. 117 is not in the reference server's list, not one of the base client's `ExtendedIds` and not named by another module (the test checks it).
 - **Storages 7103020 - 7103029:** +0 the week, +1 the activities done (bit mask in the order of `activities`), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all. The state is written before anything is given.
 - **Client:** Adventure > Weekly Chest, `game_weeklychest` (client/MANIFEST.md). Tests: `tests/weeklychest_test.lua`, `weeklyview_test.lua`.
 

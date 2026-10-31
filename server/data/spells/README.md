@@ -3364,6 +3364,18 @@ least 90% of the fight, a full set survives 1.5 packs at 1000, minion share 35-6
 5 targets 0.85-1.25, experience per hour 0.75-1.15. Unit tests: `necro_test.lua` (`N.minionTaken`, `N.minionRegen`,
 `N.minionIdle`).
 
+**Live run (O345-O347, 2026-10-31, local server, level 347 Necromancer, no gear, four then eight Plagueroots of level 350).**
+At `incoming.factor` 1.0 the trio melted: the mage (2.2k health) died in under 1 s, a warrior went from 6.7k to 0.5k in
+2 s, about 1400 damage a second from each monster after the pace curve. The model's `monsterDps` said about 260 (its armour
+estimate missed the area attacks, which hit every minion at once). Changes: `minionLive` 5.5 on `monsterDps` (the run; minion model only, the wolf model keeps `monsterDps`),
+`incoming.factor` 0.25, the mage's health `mult` 0.6 -> 0.85. Same run after: four monsters take about 700 a second off a
+warrior (it holds about 9 s under all four, regenerating when they turn away), eight still kill the trio in about 10 s.
+`minion_model.py --check` passes (full set survives 2.4-4.8 packs, alive 100%). Seen in the run: the warrior casts
+Sundering Cleave and Whirling Bones, the mage Static Nova and Arc Bolt. Arc Bolt now throws an energy ball with a purple
+burst, so it reads apart from the plain hit. A minion whose owner's target is out of reach (or who has none) hits the
+nearest enemy in reach (`N.minionTarget` `nearby`; a warrior in the pack stood still before), and the warrior's taunt fires
+whenever monsters stand next to it, with a red flash (only a sound effect before, and only with an owner target).
+
 ### Attack spell parity (2026-10-23; owner: "veja quantas magias de ataque cada classe tem. devem ter a mesma quantidade"; computed, not measured in game)
 
 **Counting rule.** An attack spell is an `<instant group="attack">` of `spells_chaos.xml`, or a `stock_spells.csv` row of

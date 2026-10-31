@@ -33,7 +33,7 @@ WeeklyActRow < UIWidget
 
 ChaosMainWindow
   id: weeklyChestWindow
-  size: 420 470
+  size: 420 486
   !text: tr('Weekly Chest')
   @onEscape: modules.game_weeklychest.hide()
 
@@ -86,8 +86,9 @@ ChaosMainWindow
     anchors.top: chest.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    height: 16
-    text-align: left
+    height: 32
+    text-wrap: true
+    text-align: topLeft
     margin-left: 14
 
   ChaosLabel

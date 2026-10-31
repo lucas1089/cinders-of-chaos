@@ -325,13 +325,22 @@ end
 
 -- What a minion hits this think: the owner's target when the minion reaches it, else its own target when it
 -- reaches that, else nil. Each = {id, pos, alive}; range = the kind's reach.
-function N.minionTarget(minionPos, range, ownerTarget, ownTarget)
+function N.minionTarget(minionPos, range, ownerTarget, ownTarget, nearby)
 	for _, t in ipairs({ownerTarget, ownTarget}) do
 		if t and t.alive and N.distance(minionPos, t.pos) <= range then
 			return t
 		end
 	end
-	return nil
+	-- neither in reach (the owner's target behind the pack, or none): the nearest enemy in reach, the lowest id on a tie.
+	-- Before, a warrior with monsters on every side stood still (owner 2026-10-31, O346).
+	local best, bestDist
+	for _, t in ipairs(nearby or {}) do
+		local d = t.alive and N.distance(minionPos, t.pos)
+		if d and d <= range and (not best or d < bestDist or (d == bestDist and (t.id or 0) < (best.id or 0))) then
+			best, bestDist = t, d
+		end
+	end
+	return best
 end
 
 -- the skeleton Bone Offering sacrifices: the one nearest to the target (never the golem). minions = {kind, pos, id}

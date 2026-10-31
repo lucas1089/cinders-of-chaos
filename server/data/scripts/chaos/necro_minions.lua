@@ -208,16 +208,35 @@ local function act(owner, classKey, minion, kind, target, aura, t)
 	return hit(owner, classKey, minion, kind, target, aura)
 end
 
--- the golem's and the summoned warrior's taunt (Bone Challenge): the monsters within tauntRadius turn on the minion
+-- the golem's and the summoned warrior's taunt (Bone Challenge): the monsters within tauntRadius turn on the minion.
+-- Returns false when no monster stands in reach (nothing shown, the taunt stays ready).
 local function taunt(owner, minion, kind)
 	local mpos = minion:getPosition()
 	local r = cfg().minions[kind].tauntRadius or 1
+	local turned = false
 	for _, e in ipairs(L.enemiesAround(owner, mpos, r, false)) do
-		if e:isMonster() and e:getTarget() ~= minion then
-			e:selectTarget(minion)
+		if e:isMonster() then
+			turned = true
+			if e:getTarget() ~= minion then
+				e:selectTarget(minion)
+			end
 		end
 	end
-	mpos:sendMagicEffect(CONST_ME_SOUND_RED)
+	if turned then
+		-- a red flash on the minion, the war cry on each monster it pulled (only a sound effect before: not seen, O346)
+		mpos:sendMagicEffect(CONST_ME_MAGIC_RED)
+		mpos:sendMagicEffect(CONST_ME_SOUND_RED)
+	end
+	return turned
+end
+
+-- the enemies within `range` of a minion as N.minionTarget's `nearby`
+local function nearbyInfo(owner, pos, range)
+	local out = {}
+	for _, e in ipairs(L.enemiesAround(owner, pos, range, false)) do
+		out[#out + 1] = info(e)
+	end
+	return out
 end
 
 local function think(player, t)
@@ -280,16 +299,16 @@ local function think(player, t)
 			Chaos.heal(c, N.minionRegen(cfg(), c:getMaxHealth(), idle, cfg().minions.thinkMs))
 		end
 		local k = cfg().minions[kind]
-		if k.tauntMs and (M.nextTaunt[id] or 0) <= t and ownerTarget then
+		-- the taunt fires whenever monsters stand in reach, the owner's target or not (O346)
+		if k.tauntMs and (M.nextTaunt[id] or 0) <= t and taunt(player, c, kind) then
 			M.nextTaunt[id] = t + k.tauntMs
-			taunt(player, c, kind)
 		end
 		if M.nextHit[id] == nil then
 			-- a freshly raised minion: its first hit comes after the class's first strike delay
 			M.nextHit[id] = t + N.firstStrike(cfg(), classKey)
 		end
 		if (M.nextHit[id] or 0) <= t then
-			local target = N.minionTarget(cpos, k.range, ownerTarget, info(c:getTarget()))
+			local target = N.minionTarget(cpos, k.range, ownerTarget, info(c:getTarget()), nearbyInfo(player, cpos, k.range))
 			if target and target.creature ~= c and not (target.creature:getMaster() == player) then
 				M.nextHit[id] = t + k.intervalMs
 				-- a minion's hit is no spell of the class's damage model: the class spell factor stays off

@@ -25,7 +25,7 @@ function L.wantsWatch(state, id, isPlayer, isLocalPlayer, percent)
   return not state.pending[id]
 end
 
-function L.newState() return { pending = {}, warned = {}, zeroSince = {}, offSince = nil } end
+function L.newState() return { pending = {}, warned = {}, zeroSince = {}, staleSince = {}, offSince = nil, stable = false } end
 
 -- one warning per removal: true the first time an id is reported, false while it stays warned
 function L.shouldLog(state, id)
@@ -43,7 +43,9 @@ function L.reset(state)
   state.pending = {}
   state.warned = {}
   state.zeroSince = {}
+  state.staleSince = {}
   state.offSince = nil
+  state.stable = false
 end
 
 -- The sweep (every SWEEP_MS), for the two ways a dead monster stays that the health event cannot see:
@@ -53,6 +55,10 @@ end
 --    fixes the server side). The map's own entry for the id (canon) is the live one; the other is a leftover that no later
 --    packet reaches, so it keeps its old health and never moves. Only when exactly one of the objects IS the canon one:
 --    if the engine hands out a different wrapper for every call, nothing is touched.
+--  * 'stale' (O352): a lone object that the map no longer knows by its id (the server told the client to forget the id,
+--    the tile kept the object), or that the map knows as another object, seen so for GRACE_MS in a row. The second case
+--    only after one sweep proved the wrappers compare equal (some object on screen IS its canon one); without that proof
+--    every lone object would look stale.
 -- list: { { id, obj, isPlayer, isLocalPlayer, healthPercent, removed, onMap } ... }; canon(id) -> the map's object or nil.
 -- Returns the entries to remove, { entry, why }.
 L.SWEEP_MS = 1000
@@ -66,9 +72,22 @@ function L.sweep(state, list, canon, now)
       table.insert(byId[e.id], e)
     end
   end
-  local seenZero = {}
+  local seenZero, seenStale = {}, {}
+  state.staleSince = state.staleSince or {}
+  local lives = {}
   for id, group in pairs(byId) do
-    local live = canon and canon(id) or nil
+    lives[id] = canon and canon(id) or nil
+    for _, e in ipairs(group) do
+      if lives[id] ~= nil and e.obj == lives[id] then state.stable = true end
+    end
+  end
+  for id, group in pairs(byId) do
+    local live = lives[id]
+    if #group == 1 and (live == nil or (state.stable and live ~= group[1].obj)) then
+      seenStale[id] = true
+      state.staleSince[id] = state.staleSince[id] or now
+      if now - state.staleSince[id] >= L.GRACE_MS then out[#out + 1] = { entry = group[1], why = 'stale' } end
+    end
     if #group > 1 and live ~= nil then
       local canonCount = 0
       for _, e in ipairs(group) do if e.obj == live then canonCount = canonCount + 1 end end
@@ -92,6 +111,9 @@ function L.sweep(state, list, canon, now)
   end
   for id in pairs(state.zeroSince) do
     if not seenZero[id] then state.zeroSince[id] = nil end
+  end
+  for id in pairs(state.staleSince) do
+    if not seenStale[id] then state.staleSince[id] = nil end
   end
   return out
 end

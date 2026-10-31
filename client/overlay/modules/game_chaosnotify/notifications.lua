@@ -129,6 +129,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#4a1a6a",
         duration = 9000,
     },
+    -- Weekly Chest (server data/scripts/chaos/weeklychest.lua, O261): the chest opens, the bonus roll
+    WEEKLY_CHEST = {
+        icon = "images/toast/task.png",
+        title = "WEEKLY CHEST",
+        titleColor = "#e0b24a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a4a1a",
+        duration = 9000,
+    },
     -- season pass (server data/scripts/chaos/seasonpass.lua): tier up, challenge done, premium and packs
     SEASON_PASS = {
         icon = "images/toast/season_pass.png",
@@ -1251,6 +1260,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         cursedchest = function(data)
             if data.message then
                 addNotification("CURSED_CHEST", data.message)
+            end
+        end,
+
+        -- Weekly Chest (server data/scripts/chaos/weeklychest.lua)
+        weeklychest = function(data)
+            if data.message then
+                addNotification("WEEKLY_CHEST", data.message)
             end
         end,
 

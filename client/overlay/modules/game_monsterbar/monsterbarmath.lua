@@ -9,6 +9,45 @@ local M = MonsterBarMath
 
 M.GAP = 6 -- below the top of what is visible (the menu bar or the window edge)
 
+-- How big a monster is drawn (Creature:setDrawScale, base patch 0020). Owner 2026-10-31 (O351): "monstros como o
+-- inferno juggernaut estao muito grandes, deixe esse tamanho somente pra bosses". Bosses and omens are drawn BOSS_SCALE
+-- bigger; a rift guardian keeps its art; any other monster whose body is taller than BODY_MAX_H or wider than
+-- BODY_MAX_W pixels (at 1x, from the outfit anchors: {centre x, ground row, top, left, right, ...}) is shrunk to fit,
+-- never below SCALE_MIN (the engine's own floor). A 5x5 look (Inferno Juggernaut, 111 px tall) comes out at about 0.6.
+M.BOSS_SCALE = 1.5
+M.BODY_MAX_H = 68
+M.BODY_MAX_W = 96
+M.SCALE_MIN = 0.5
+
+function M.bodySize(anchor)
+  if type(anchor) ~= 'table' or type(anchor[2]) ~= 'number' or type(anchor[3]) ~= 'number'
+      or type(anchor[4]) ~= 'number' or type(anchor[5]) ~= 'number' then
+    return nil
+  end
+  return anchor[5] - anchor[4], anchor[2] - anchor[3]
+end
+
+-- tier: the server's tier ('boss', ...) or nil while unknown; role: 'omen' | 'guardian' | nil
+function M.drawScale(anchor, tier, role)
+  if tier == 'boss' or role == 'omen' then
+    return M.BOSS_SCALE
+  end
+  if role == 'guardian' then
+    return 1
+  end
+  local w, h = M.bodySize(anchor)
+  if not w or (h <= M.BODY_MAX_H and w <= M.BODY_MAX_W) then
+    return 1
+  end
+  local f = math.min(M.BODY_MAX_H / math.max(h, 1), M.BODY_MAX_W / math.max(w, 1))
+  return math.max(M.SCALE_MIN, math.floor(f * 100 + 0.5) / 100)
+end
+
+-- a body too big for an ordinary monster: the client asks the server for the tier at once, so a boss is never left shrunk
+function M.isOversized(anchor)
+  return M.drawScale(anchor, nil, nil) < 1
+end
+
 local function overlaps(a, x, y, w, h)
   return a.x < x + w and x < a.x + a.width and a.y < y + h and y < a.y + a.height
 end

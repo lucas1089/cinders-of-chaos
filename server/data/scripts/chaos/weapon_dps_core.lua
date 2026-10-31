@@ -9,8 +9,12 @@
 --   DPS      = hit x hit chance (launchers) / interval in seconds
 -- The attack is the item's own (a rarity roll writes it as an attribute), the skill is the character's best melee skill
 -- (one melee skill) or distance skill, the interval is "Your Attack Interval" of the tooltip. Left out: critical hits, the
--- modifiers of the item and the passive tree, monster resistances, spells, wands and rods (their damage is the magic
--- level's, not the attack's) and the fist. Lua 5.1 / LuaJIT and 5.3.
+-- modifiers of the item and the passive tree, monster resistances, spells and the fist. Lua 5.1 / LuaJIT and 5.3.
+-- Wands and rods (O353, owner 2026-10-31 "mostre o ataque dos rods tambem, juntamente com o dps deles"): their hit is
+-- the flat min..max of weapons.xml x a factor (weapon_styles.lua: the magic level against the typical one of the level,
+-- weapon_skill_core.lua wandFactor, x the auto attack power, weapon_power_core.lua levelFactor "wand"); D.wandHit and
+-- D.wandEstimate take that factor. The engine does not give weapons.xml numbers to Lua, so D.collectWands reads them
+-- from the generated item tables of data/lib (chaos_base_wands.lua for the stock ones).
 ChaosWeaponDps = ChaosWeaponDps or {}
 local D = ChaosWeaponDps
 
@@ -73,6 +77,59 @@ function D.round(dps)
 		return nil
 	end
 	return floor(dps + 0.5)
+end
+
+-- a wand or rod hit: lo, hi (whole numbers) of the flat min..max x factor; nil when there is nothing to show
+function D.wandHit(min, max, factor)
+	min, max, factor = num(min), num(max), num(factor)
+	if max <= 0 or factor <= 0 then
+		return nil
+	end
+	if min > max then
+		min, max = max, min
+	end
+	return floor(min * factor + 0.5), floor(max * factor + 0.5)
+end
+
+-- p = {min, max, factor, interval (ms)}: damage per second of a wand or rod (every shot hits)
+function D.wandEstimate(p)
+	if type(p) ~= "table" or num(p.interval) <= 0 then
+		return nil
+	end
+	local lo, hi = D.wandHit(p.min, p.max, p.factor)
+	if not lo then
+		return nil
+	end
+	return (num(p.min) + num(p.max)) / 2 * num(p.factor) / (num(p.interval) / 1000)
+end
+
+-- the wand and rod table {[server id] = {min, max}} from item tables: each a list or a map of entries
+-- {id?, stats = {wandMin, wandMax}} (the map key is the id when the entry has none): data/lib/chaos_base_wands.lua (the
+-- stock ones, tools/gen_base_wands.py from data/items/base_weapons.csv) and the generated tables of our items
+function D.collectWands(tables)
+	local out = {}
+	local function walk(t, key, depth)
+		if type(t) ~= "table" or depth > 4 then
+			return
+		end
+		local st = t.stats
+		if type(st) == "table" and tonumber(st.wandMax) and tonumber(st.wandMax) > 0 then
+			local id = tonumber(t.id) or tonumber(key)
+			if id then
+				out[id] = {min = tonumber(st.wandMin) or 0, max = tonumber(st.wandMax)}
+			end
+			return
+		end
+		for k, v in pairs(t) do
+			if type(v) == "table" and k ~= "stats" then
+				walk(v, k, depth + 1)
+			end
+		end
+	end
+	for _, t in ipairs(tables or {}) do
+		walk(t, nil, 0)
+	end
+	return out
 end
 
 -- the weapon types an estimate is made for (items.xml weaponType names)

@@ -31,6 +31,8 @@ Outputs:
   The 21 line spell quest spells (client ids 349-369, gen_quest_spell_icons.py) are not in the sheet: their finished 32 px
       art (quest_spell_art/quest_spell_32.png, centre 28 x 28, no repaint, no palette clamp) goes straight into our buff
       frame as spells_painted/<id>.png, and the 7 level 800 buffs as buffs_painted/<name>.png (box-reduced to 22 px).
+      The same for the class spells repainted in O355 (class_spell_art/class_spell_32.png, the Necromancer line's
+      cells 294-337): no painted cell existed for them, so the painted setting showed their plain drawings.
 A name with no painted icon keeps its normal icon in the client (each module falls back). Needs Pillow."""
 import csv, io, os, sys
 
@@ -52,6 +54,8 @@ SPELLDATA = gb.SPELLDATA
 CELL, COLS = 64, 16
 QUEST_SRC = os.path.join(HERE, 'quest_spell_art', 'quest_spell_32.png')
 QUEST_CSV = os.path.join(HERE, 'quest_spell_art', 'quest_spell_icons.csv')
+CLASS_SRC = os.path.join(HERE, 'class_spell_art', 'class_spell_32.png')
+CLASS_CSV = os.path.join(HERE, 'class_spell_art', 'class_spell_icons.csv')
 FIELDS = ['index', 'kind', 'name', 'frame', 'element', 'job', 'seed']
 
 # ---------------------------------------------------------------- palettes, one per element
@@ -179,18 +183,22 @@ def framed(cell, size, kind, element):
 
 
 def quest_art():
-    """client id -> the centre 28 x 28 of the quest spell's finished 32 px art (gen_quest_spell_icons.py)"""
+    """client id -> the centre 28 x 28 of the spell's finished 32 px art (gen_quest_spell_icons.py: the quest spells and
+    the repainted class spells of class_spell_art/)"""
     ids = set(spell_ids().values())
-    with open(QUEST_CSV, newline='', encoding='utf-8') as fh:
-        rows = list(csv.DictReader(fh))
-    src = Image.open(QUEST_SRC).convert('RGBA')
     out = {}
-    for i, r in enumerate(rows):
-        cid = int(r['cell'])
-        if cid not in ids:
-            raise SystemExit('quest spell %s: no Chaos spell with client id %d' % (r['spell'], cid))
-        x, y = (i % 7) * 32, (i // 7) * 32
-        out[cid] = src.crop((x + 2, y + 2, x + 30, y + 30))
+    for src_path, csv_path in ((QUEST_SRC, QUEST_CSV), (CLASS_SRC, CLASS_CSV)):
+        with open(csv_path, newline='', encoding='utf-8') as fh:
+            rows = list(csv.DictReader(fh))
+        src = Image.open(src_path).convert('RGBA')
+        for i, r in enumerate(rows):
+            cid = int(r['cell'])
+            if cid not in ids:
+                raise SystemExit('spell %s: no Chaos spell with client id %d' % (r['spell'], cid))
+            if cid in out:
+                raise SystemExit('spell %s: client id %d has art twice' % (r['spell'], cid))
+            x, y = (i % 7) * 32, (i // 7) * 32
+            out[cid] = src.crop((x + 2, y + 2, x + 30, y + 30))
     return out
 
 

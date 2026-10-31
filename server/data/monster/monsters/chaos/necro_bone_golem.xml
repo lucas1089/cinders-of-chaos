@@ -3,10 +3,12 @@
      Raised by the spell Bone Golem as the player's summon. It has no attacks of its own: necro_minions.lua makes it hit
      every enemy next to it every 2.5 s (a physical slam) and taunt the monsters around it, dealt as its owner so the damage counts for the owner. Health is a placeholder below the monster
      tiers' minimum (no tier roll at creation); the spell sets the real health from the owner's level and magic level.
-     Pushable, so players can push it out of the way; monsters never enter protection zones (the minions rest there). -->
+     Pushable, so players can push it out of the way; monsters never enter protection zones (the minions rest there).
+     Look 3185 (O354): a 2x2 golem of bones with green eyes, an existing outfit of the client pair since pair 50 (no new art).
+     It replaced 1549, a brown earth golem that did not read as bones. -->
 <monster name="Bone Golem" nameDescription="a bone golem" race="undead" experience="0" speed="190" manacost="0">
 	<health now="10" max="10" />
-	<look type="1549" corpse="5963" />
+	<look type="3185" corpse="5963" />
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0" />

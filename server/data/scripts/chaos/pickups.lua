@@ -153,9 +153,22 @@ function X.drop(spec)
 	}, nowMs())
 	K.track(X.tracked, entry)
 	sendEffect(pos.x, pos.y, pos.z, row.glow)
+	X.refreshAt(pos)
 	X.takeUnderFeet(entry, item, pos)
 	return entry
 end
+
+-- O349 (src-patch 0084): the tile goes to every player who sees it whole again after a pickup is put down or taken. A
+-- creation or a removal by stack position misses on a client whose tile holds a thing the server's does not (a dead
+-- monster still drawn, O352): the own character was taken off its tile (invisible) and the globe stayed. No-op on an
+-- engine without the patch.
+local function refreshAt(pos)
+	local tile = pos and Tile(pos)
+	if tile and tile.refresh then
+		pcall(tile.refresh, tile)
+	end
+end
+X.refreshAt = refreshAt
 
 local function removeItemAt(entry)
 	local row = itemRow(entry.itemKey)
@@ -169,6 +182,9 @@ local function removeItemAt(entry)
 		end
 		item:remove()
 		removed = true
+	end
+	if removed then
+		refreshAt(Position(entry.x, entry.y, entry.z))
 	end
 	return removed
 end
@@ -190,6 +206,7 @@ local function attempt(player, item, entry, position, now)
 		if why == "expired" then
 			K.take(X.reg, entry.uid)
 			item:remove()
+			refreshAt(position)
 		else
 			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, Chaos.t(player, cfg().notYours))
 		end
@@ -212,6 +229,7 @@ local function attempt(player, item, entry, position, now)
 	local row = itemRow(entry.itemKey)
 	sendEffect(position.x, position.y, position.z, row and row.take)
 	item:remove()
+	refreshAt(position)
 	return true
 end
 
@@ -258,6 +276,7 @@ function step.onStepIn(creature, item, position, fromPosition)
 	end
 	if not entry then
 		item:remove() -- not in the record: left over, grants nothing
+		refreshAt(position)
 		return true
 	end
 	attempt(player, item, entry, position, now)

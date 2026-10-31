@@ -42,7 +42,7 @@ M.PATCH_FAMILIES = { 'ash', 'wetRock', 'moss' }
 M.CREATURES = {
   { look = 1539, name = 'Death Mage', idle = 'idle', speed = 180 },
   { look = 1542, name = 'Risen Skeleton', idle = 'idle', speed = 150 },
-  { look = 1549, name = 'Bone Golem', idle = 'idle', big = true, speed = 120 },
+  { look = 3185, name = 'Bone Golem', idle = 'idle', big = true, speed = 120 },
   { look = 1545, name = 'Lich Shade', idle = 'hover', speed = 160 },
   { look = 2120, name = 'Gloomfire', idle = 'hover', big = true, speed = 140 },
   { look = 1479, name = 'Dreamgorger', idle = 'hover', big = true, speed = 110 },

@@ -140,6 +140,14 @@ local function trim(n)
   return (string.format('%.2f', n):gsub('0+$', ''):gsub('%.$', ''))
 end
 
+-- a base row's value: a range row ("Attack" of a wand or rod, server item_tooltip_core.lua wandRows, O353) shows its lo-hi
+function L.baseValue(b, signed)
+  if b.fmt == 'range' and tonumber(b.lo) and tonumber(b.hi) then
+    return b.lo == b.hi and L.int(b.lo) or (L.int(b.lo) .. '-' .. L.int(b.hi))
+  end
+  return L.formatValue(b.v, b.fmt, signed)
+end
+
 function L.formatValue(v, fmt, signed)
   v = tonumber(v) or 0
   local s
@@ -240,7 +248,7 @@ function L.lines(tip, ctx)
   local first = true
   for _, b in ipairs(tip.base or {}) do
     -- imp: a quiver base's implicit modifier (server chaos_archery_config.lua), signed and in the modifier colour
-    add(string.format('%s: %s', b.l, L.formatValue(b.v, b.fmt, b.imp or (b.fmt == 'pct' and b.k:find('^protect') ~= nil))),
+    add(string.format('%s: %s', b.l, L.baseValue(b, b.imp or (b.fmt == 'pct' and b.k:find('^protect') ~= nil))),
       b.imp and C.chaos or C.text, first)
     first = false
   end

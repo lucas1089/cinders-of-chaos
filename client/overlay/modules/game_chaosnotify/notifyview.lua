@@ -19,7 +19,8 @@ V.MESSAGE_TYPES = {
   pact = 'PACT', -- the Chaos Pact (or the Pacto Completo) ends soon (pact.lua, O317)
   journey = 'JOURNEY',
   invasion = 'INVASION',
-  cursedchest = 'CURSED_CHEST' -- a Cursed Chest rises, its hordes, its loot (server cursedchest.lua, O244)
+  cursedchest = 'CURSED_CHEST', -- a Cursed Chest rises, its hordes, its loot (server cursedchest.lua, O244)
+  weeklychest = 'WEEKLY_CHEST' -- the Weekly Chest opens, the bonus roll (server weeklychest.lua, O261)
 }
 
 function V.typeOfAction(action)

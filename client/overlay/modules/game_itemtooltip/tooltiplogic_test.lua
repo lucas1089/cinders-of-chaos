@@ -363,6 +363,12 @@ do
   eq(#lc.order, 2, 'no duplicate in the order list')
 end
 
+-- O353: a wand's or rod's Attack row shows its range
+eq(L.baseValue({ k = 'attack', l = 'Attack', v = 135, lo = 126, hi = 144, fmt = 'range' }), '126-144', 'rod attack range')
+eq(L.baseValue({ k = 'attack', l = 'Attack', v = 1500, lo = 1500, hi = 1500, fmt = 'range' }), '1,500', 'one value')
+eq(L.baseValue({ k = 'attack', l = 'Attack', v = 48 }), '48', 'a plain row as before')
+eq(L.baseValue({ k = 'attack', v = 7, fmt = 'range' }), '7', 'a range row without its ends shows the value')
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

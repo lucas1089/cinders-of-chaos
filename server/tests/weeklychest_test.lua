@@ -262,7 +262,7 @@ ChaosSeasonJourney = {emit = function() return true end}
 ChaosTower = {recordRun = function() return true end}
 ChaosWaystoneTiers = {startRun = function(area, serverId, mods) return 12 end}
 local toasts = {}
-ChaosNotify = {send = function(p, title, text) toasts[#toasts + 1] = {p = p, title = title, text = text} end}
+ChaosNotify = {send = function(p, title, text, kind) toasts[#toasts + 1] = {p = p, title = title, text = text, kind = kind} end}
 
 dofile("data/scripts/chaos/i18n_core.lua")
 dofile("data/scripts/chaos/weeklychest.lua")
@@ -299,7 +299,7 @@ ChaosTower.recordRun(a, 5, 100)
 local chest = K.reward(cfg, 1200, cfg.chest)
 eq(a.bank, chest.gold, "chest gold to the bank")
 eq(a.inbox[29856], chest.items[1].count, "chest orbs in the inbox")
-check(toasts[#toasts].title == "Weekly Chest" and toasts[#toasts].text:find("opens", 1, true) ~= nil, "chest toast")
+check(toasts[#toasts].kind == "weeklychest" and toasts[#toasts].text:find("opens", 1, true) ~= nil, "chest toast (its own kind, not an achievement)")
 check(a.said[#a.said - 0]:find("inbox", 1, true) ~= nil, "told about the inbox")
 eq(a.st[cfg.storage.base + cfg.storage.chest], 1, "chest flag stored"); eq(a.st[cfg.storage.base + cfg.storage.chests], 1)
 a.full = false
@@ -318,7 +318,7 @@ eq(a.bank, after, "no second chest or bonus")
 -- the window
 registry.ChaosWeeklyChestExtended.onExtendedOpcode(a, 117, "open")
 local last = sent[#sent]
-eq(last.action, "state"); eq(last.data.open, 1, "opened"); eq(last.data.got, 6); eq(last.data.chest.given, 1)
+eq(last.action, "state"); eq(last.data.shown, 1, "opened"); eq(last.data.open, 6, "open stays the activity count"); eq(last.data.got, 6); eq(last.data.chest.given, 1)
 eq(a.ops[#a.ops].op, 117, "sent on 117")
 local n0 = #sent
 registry.ChaosWeeklyChestExtended.onExtendedOpcode(a, 118, "open")

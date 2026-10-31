@@ -91,10 +91,12 @@ eq(N.minionDamageTaken(cfg, -1000, true), -750, "aura: -25% damage taken")
 eq(N.minionDamageTaken(cfg, -1000, false), -1000, "no aura")
 
 -- monsters on minions and minion regeneration (O160)
-eq(N.minionTaken(cfg, -1000, 0.5), -500, "incoming: x the pace damage curve")
-eq(N.minionTaken(cfg, -1000, 1), -1000, "incoming: unpaced monster, whole")
-eq(N.minionTaken(cfg, -1000, nil), -1000, "incoming: no pace value is 1")
-eq(N.minionTaken(cfg, 1000, 0.4), 400, "incoming: positive damage keeps its sign")
+local f = cfg.minions.incoming.factor -- 0.25 since O345 (live: a pack of four level 350 monsters took a trio in 3 s)
+eq(f, 0.25, "incoming: a minion takes a quarter of a monster's hit")
+eq(N.minionTaken(cfg, -1000, 0.5), -math.floor(1000 * f * 0.5 + 0.5), "incoming: x the pace damage curve")
+eq(N.minionTaken(cfg, -1000, 1), -math.floor(1000 * f + 0.5), "incoming: unpaced monster, the factor only")
+eq(N.minionTaken(cfg, -1000, nil), -math.floor(1000 * f + 0.5), "incoming: no pace value is 1")
+eq(N.minionTaken(cfg, 1000, 0.4), math.floor(1000 * f * 0.4 + 0.5), "incoming: positive damage keeps its sign")
 eq(N.minionTaken(cfg, 0, 0.4), 0, "incoming: no damage stays none")
 eq(N.minionTaken(cfg, -1, 0.1), -1, "incoming: a hit is at least 1")
 eq(N.minionTaken({minions = {}}, -1000, 0.5), -1000, "incoming: absent config is inert")
@@ -247,6 +249,12 @@ eq(N.minionTarget(P(1, 2), 1, ownerT, ownT), ownT, "else its own when in reach")
 eq(N.minionTarget(P(9, 9), 1, ownerT, ownT), nil, "nothing in reach")
 eq(N.minionTarget(P(3, 3), 4, ownerT, nil), ownerT, "a shade reaches 4 sqm")
 eq(N.minionTarget(P(4, 4), 1, {id = 1, pos = P(5, 5), alive = false}, nil), nil, "never a dead target")
+-- O346: neither target in reach, the nearest enemy next to the minion (a warrior used to stand still in the pack)
+local nearA, nearB = {id = 7, pos = P(10, 9), alive = true}, {id = 3, pos = P(9, 10), alive = true}
+eq(N.minionTarget(P(9, 9), 1, ownerT, ownT, {nearA, nearB}), nearB, "nothing chosen in reach: the nearest enemy, lowest id on a tie")
+eq(N.minionTarget(P(9, 9), 1, ownerT, ownT, {{id = 2, pos = P(12, 12), alive = true}}), nil, "an enemy out of reach is no target")
+eq(N.minionTarget(P(9, 9), 1, ownerT, ownT, {{id = 2, pos = P(9, 10), alive = false}}), nil, "never a dead enemy")
+eq(N.minionTarget(P(4, 4), 1, ownerT, ownT, {nearA}), ownerT, "the owner's target still comes first")
 local sac = N.pickSacrifice({
 	{kind = "golem", pos = P(5, 6), id = 1},
 	{kind = "skeleton", pos = P(9, 9), id = 2},
@@ -423,8 +431,8 @@ end
 
 -- ------------------------------------------------------------------ minion spells (beta 2026-10-22)
 local EFFECTS = {hitarea = true, energyhit = true, mortarea = true, drawblood = true, groundshaker = true,
-	energyarea = true, blackspark = true}
-local ANIS = {death = true, arrow = true, energy = true}
+	energyarea = true, blackspark = true, purpleenergy = true}
+local ANIS = {death = true, arrow = true, energy = true, energyball = true}
 local names = {}
 for kind in pairs({skeleton = 1, shade = 1, golem = 1, warrior = 1, mage = 1}) do
 	local sp = cfg.minionSpells[kind]
