@@ -1,7 +1,8 @@
 -- RmlUi form layer (docs/RMLUI_SPIKE.md, phase 4): what the Options window (client_chaos_rmloptions) and the window mirror
 -- (client_chaos_rmlmirror) share. It reads an OTUI widget tree (check boxes, sliders, combo boxes, buttons, labels, text
--- fields, lists, tab bars, progress bars, icons, help icons, panels, tooltips), writes RML for it and keeps both sides in step: a change in
--- RmlUi goes through the OTUI widget's own click or setter, so the module behind the window runs as before.
+-- fields, lists, tab bars, progress bars, icons, help icons, panels, tooltips), writes RML for it and keeps both sides in
+-- step: a change in RmlUi goes through the OTUI widget's own click or setter, so the module behind the window runs as
+-- before.
 -- Pure parts (collect, rml, wantedValue, the text conversion) take the widget API only and are unit tested with mocks.
 -- Only a client built with -DCHAOS_RMLUI=ON has g_rml; without it nothing here touches the engine.
 
