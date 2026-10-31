@@ -58,9 +58,9 @@ action (`chaos-ctl.sh panel ACTOR ACTION JSON`), like the Android Comandos > Pai
 
 Every button shows how its change reaches the running game:
 
-| Mark | Meaning | Actions |
 The mark beside a button says when the change takes effect, not a state (owner 2026-10-31 read the old "live" text as a status light). A coloured dot, a pt-BR tag and a tooltip (`Live::label`, `hint`, `rgb`).
 
+| Mark | Meaning | Actions |
 |---|---|---|
 | na hora (green dot) | read only, or immediate | status, players, logs, broadcast, kick, open, close, save, backup, unit start and stop, accounts, Discord, site, VPS, panel actions |
 | com Apply live (yellow dot) | the command writes a file the scripts read at start; the second button "... + Apply live" then runs the game panel action `reload` (`Game.reload`, no restart) for the named system | Modo beta ligar, desligar (reload `scripts`) |
