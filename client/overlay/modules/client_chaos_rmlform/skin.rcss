@@ -1,0 +1,290 @@
+/* Client skin for RmlUi documents (client_chaos_rmlform): the images of the OTUI skin (popupwindow frame, FlatPanel,
+   Button, CheckBox, ComboBox, TextEdit, TextList, ProgressBar, both scroll bars, the help icon, the gold corner pieces
+   and crest of client_chaos_theme), as sprite sheets and ninepatch decorators with the rects and borders of
+   data/styles/10-*.otui. Paths are the client's absolute paths, so the skin the player chose (its images come first in
+   the file system) is the one drawn. Text colours: $var-text-cip-color #cdbfa4, highlight #fff1d6, grey #8c8070,
+   window title #e8c477. A document links it with <link type="text/rcss" href="/modules/client_chaos_rmlform/skin.rcss"/>. */
+
+@spritesheet win { src: /images/ui/popupwindow.png; win: 0px 0px 236px 207px; win-in: 4px 17px 228px 186px; }
+@spritesheet frame { src: /images/ui/2pixel-up-frame-borderimage.png; frame: 0px 0px 100px 100px; frame-in: 3px 3px 94px 94px; }
+@spritesheet framedark { src: /images/ui/2pixel-up-frame-borderimage-dark.png; framedark: 0px 0px 100px 100px; framedark-in: 4px 4px 92px 92px; }
+@spritesheet flat { src: /images/ui/panel_flat.png; flat: 0px 0px 68px 68px; flat-in: 1px 1px 66px 66px; }
+@spritesheet btn {
+	src: /images/chaos/skin/button.png;
+	btn: 0px 0px 64px 24px;     btn-in: 5px 5px 54px 14px;
+	btn-h: 0px 24px 64px 24px;  btn-h-in: 5px 29px 54px 14px;
+	btn-p: 0px 48px 64px 24px;  btn-p-in: 5px 53px 54px 14px;
+	btn-d: 0px 72px 64px 24px;  btn-d-in: 5px 77px 54px 14px;
+}
+@spritesheet check { src: /images/ui/checkbox.png; cb-off: 0px 0px 12px 12px; cb-on: 0px 12px 12px 12px; cb-dis: 0px 24px 12px 12px; }
+@spritesheet combo {
+	src: /images/ui/combobox_square.png;
+	combo: 0px 0px 91px 20px;   combo-in: 3px 3px 67px 14px;
+	combo-o: 0px 20px 91px 20px; combo-o-in: 3px 23px 67px 14px;
+}
+@spritesheet sbar {
+	src: /images/ui/scrollbar.png;
+	hs-track: 0px 38px 24px 12px; hs-track-in: 1px 39px 22px 10px;
+	hs-bar: 12px 26px 12px 12px;  hs-bar-in: 17px 29px 1px 6px;
+	hs-dec: 0px 50px 12px 12px;   hs-dec-p: 0px 62px 12px 12px;
+	hs-inc: 12px 50px 12px 12px;  hs-inc-p: 12px 62px 12px 12px;
+	vs-track: 24px 0px 12px 74px; vs-track-in: 25px 1px 10px 72px;
+	vs-bar: 0px 24px 12px 14px;   vs-bar-in: 0px 29px 12px 4px;
+	vs-dec: 0px 0px 12px 12px;    vs-dec-p: 12px 0px 12px 12px;
+	vs-inc: 0px 12px 12px 12px;   vs-inc-p: 12px 12px 12px 12px;
+}
+@spritesheet sep { src: /images/ui/separator_horizontal.png; sep: 0px 0px 189px 2px; }
+@spritesheet help { src: /images/skin/show-gui-help-grey.png; help: 0px 0px 12px 12px; }
+@spritesheet helpon { src: /images/skin/show-gui-help-orange.png; help-on: 0px 0px 12px 12px; }
+@spritesheet orntl { src: /images/chaos/skin/orn_corner_tl.png; orn-tl: 0px 0px 44px 44px; }
+@spritesheet orntr { src: /images/chaos/skin/orn_corner_tr.png; orn-tr: 0px 0px 44px 44px; }
+@spritesheet ornbl { src: /images/chaos/skin/orn_corner_bl.png; orn-bl: 0px 0px 44px 44px; }
+@spritesheet ornbr { src: /images/chaos/skin/orn_corner_br.png; orn-br: 0px 0px 44px 44px; }
+@spritesheet crest { src: /images/chaos/skin/orn_crest.png; crest: 0px 0px 84px 30px; }
+@spritesheet field { src: /images/ui/textedit.png; field: 0px 0px 32px 32px; field-in: 1px 1px 30px 30px; }
+@spritesheet listbg { src: /images/ui/scrollarea.png; listbg: 0px 0px 19px 16px; listbg-in: 1px 1px 17px 14px; }
+@spritesheet pbar { src: /images/ui/progressbar.png; pbar: 0px 0px 80px 16px; pbar-in: 2px 2px 76px 12px; }
+
+body {
+	/* the document fills the screen but lets clicks through to the OTUI windows below */
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	font-family: "Alegreya Sans";
+	font-size: 14dp;
+	color: #cdbfa4;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+
+/* gold corner pieces and the crest of client_chaos_theme (ORN_SIZE 44, ORN_INSET 8, crest 84x30 raised 17) */
+.orn { position: absolute; width: 44dp; height: 44dp; pointer-events: none; }
+.orn.tl { left: -8dp; top: -8dp; decorator: image(orn-tl); }
+.orn.tr { right: -8dp; top: -8dp; decorator: image(orn-tr); }
+.orn.bl { left: -8dp; bottom: -8dp; decorator: image(orn-bl); }
+.orn.br { right: -8dp; bottom: -8dp; decorator: image(orn-br); }
+#crest { position: absolute; width: 84dp; height: 30dp; top: -17dp; left: 50%; margin-left: -42dp; pointer-events: none; decorator: image(crest); }
+
+#titlebar {
+	height: 17dp;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-start;
+	padding-left: 40dp;  /* clear of the gold corner piece and left of the crest in the middle of the bar */
+}
+
+#title {
+	font-family: "Alegreya SC";
+	font-weight: bold;
+	font-size: 14dp;
+	color: #e8c477;
+}
+
+
+/* one FlatPanel of the classic page: panel_flat, border 1 */
+.group {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	padding: 4dp 6dp;
+	margin-bottom: 5dp;
+	decorator: ninepatch(flat, flat-in);
+}
+.group.loose { decorator: none; }
+
+.pair {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	width: 100%;
+}
+.pair .lbl { flex: 1 1 auto; }
+.lbl { flex: 1 1 auto; margin: 2dp 10dp 2dp 0dp; }
+.lbl.off, .check.off, .off { color: #8c8070; }
+
+label.check {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	flex: 1 1 auto;
+	margin: 2dp 10dp 2dp 0dp;
+}
+label.check:hover { color: #fff1d6; }
+
+/* CheckBox: /images/ui/checkbox, 12x12, unchecked 0 0, checked 0 12, disabled and checked 0 24 */
+input.checkbox {
+	width: 12dp;
+	height: 12dp;
+	flex: 0 0 12dp;
+	margin-right: 6dp;
+	decorator: image(cb-off);
+}
+input.checkbox:checked { decorator: image(cb-on); }
+input.checkbox:checked:disabled { decorator: image(cb-dis); }
+
+/* HorizontalScrollBar: track 0 38 24 12 (border 1), arrows 0 50 / 12 50 (pressed one row down), slider 12 26 */
+input.range {
+	width: 200dp;
+	height: 12dp;
+	margin: 2dp 4dp;
+}
+input.range slidertrack { height: 12dp; decorator: ninepatch(hs-track, hs-track-in); }
+input.range sliderbar { width: 12dp; height: 12dp; decorator: ninepatch(hs-bar, hs-bar-in); }
+input.range:disabled sliderbar { opacity: 0; }
+input.range sliderarrowdec { width: 12dp; height: 12dp; decorator: image(hs-dec); }
+input.range sliderarrowdec:active { decorator: image(hs-dec-p); }
+input.range sliderarrowinc { width: 12dp; height: 12dp; decorator: image(hs-inc); }
+input.range sliderarrowinc:active { decorator: image(hs-inc-p); }
+
+/* ComboBox: combobox_square 91x20, border 3, right border 21 (the arrow is in the image) */
+select {
+	width: 200dp;
+	height: 20dp;
+	margin: 2dp 4dp;
+	padding: 0dp;
+	color: #cdbfa4;
+	decorator: ninepatch(combo, combo-in);
+}
+select:hover { color: #fff1d6; }
+select:checked { decorator: ninepatch(combo-o, combo-o-in); }
+select:disabled { color: #8c8070; }
+select selectvalue { height: 20dp; padding: 2dp 24dp 0dp 6dp; }
+select selectarrow { width: 21dp; height: 20dp; }
+select selectbox {
+	margin-top: 1dp;
+	padding: 3dp 0dp;
+	z-index: 100;  /* above the panels that follow it on the page */
+	background-color: #100d10;
+	border: 1dp #5a4a32;
+}
+select selectbox option { padding: 2dp 8dp; }
+select selectbox option:hover { color: #fff1d6; background-color: #3a2a1c; }
+select selectbox option:checked { color: #e8c477; }
+
+/* the skin's help icon: opens the tooltip text under the panel */
+.help {
+	width: 12dp;
+	height: 12dp;
+	flex: 0 0 12dp;
+	margin-left: 6dp;
+	decorator: image(help);
+}
+.help:hover { decorator: image(help-on); }
+.helptext {
+	display: none;
+	margin: -2dp 0dp 6dp 0dp;
+	padding: 5dp 10dp;
+	font-size: 13dp;
+	color: #cdbfa4;
+	decorator: ninepatch(framedark, framedark-in);
+}
+.helptext.open { display: block; }
+
+
+/* HorizontalSeparator above the buttons */
+#sep { height: 2dp; margin-top: 11dp; decorator: image(sep); }
+
+#footer {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-end;
+	padding-top: 10dp;
+}
+
+/* Button: /images/chaos/skin/button, 64x24 per state, border 5 */
+button {
+	display: block;
+	box-sizing: border-box;
+	min-width: 64dp;
+	height: 22dp;
+	padding: 3dp 10dp 0dp 10dp;
+	margin-left: 6dp;
+	text-align: center;
+	font-size: 13dp;
+	color: #cdbfa4;
+	decorator: ninepatch(btn, btn-in);
+}
+button:hover { color: #ffe7a6; decorator: ninepatch(btn-h, btn-h-in); }
+button:active { decorator: ninepatch(btn-p, btn-p-in); }
+button:disabled { color: #8c8070; decorator: ninepatch(btn-d, btn-d-in); }
+button.act { margin: 2dp 8dp 2dp 0dp; }
+
+/* VerticalScrollBar: track 24 0 12 74, arrows 0 0 / 0 12 (pressed 12 0 / 12 12), slider 0 24 12 14 */
+scrollbarvertical { width: 12dp; margin-left: 2dp; }
+scrollbarvertical slidertrack { width: 12dp; decorator: ninepatch(vs-track, vs-track-in); }
+scrollbarvertical sliderbar { width: 12dp; min-height: 14dp; decorator: ninepatch(vs-bar, vs-bar-in); }
+scrollbarvertical sliderarrowdec { width: 12dp; height: 12dp; decorator: image(vs-dec); }
+scrollbarvertical sliderarrowdec:active { decorator: image(vs-dec-p); }
+scrollbarvertical sliderarrowinc { width: 12dp; height: 12dp; decorator: image(vs-inc); }
+scrollbarvertical sliderarrowinc:active { decorator: image(vs-inc-p); }
+/* NewMainWindow: popupwindow, border 4, title bar 17 */
+#window {
+	position: relative;   /* the corner pieces sit on it; a mirrored window is absolute */
+	pointer-events: auto;
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	padding: 0dp 12dp 10dp 10dp;
+	decorator: ninepatch(win, win-in);
+}
+
+/* text with line breaks (a wrapped OTUI label) */
+p.para { display: block; width: 100%; margin: 3dp 0dp; }
+
+/* TextEdit: /images/ui/textedit, border 1 */
+input.field, textarea.field {
+	flex: 1 1 auto;
+	min-width: 120dp;
+	height: 20dp;
+	margin: 2dp 4dp;
+	padding: 3dp 4dp 0dp 4dp;
+	color: #cdbfa4;
+	decorator: ninepatch(field, field-in);
+}
+textarea.field { height: 72dp; width: 100%; }
+/* beside its label a field takes what the label leaves (an input's own width would squeeze the label) */
+.pair input.field { flex: 1 1 0dp; }
+input.field:focus, textarea.field:focus { color: #fff1d6; }
+input.field:disabled { color: #8c8070; }
+
+/* TextList: /images/ui/scrollarea, border 1; the focused row is marked */
+.list {
+	display: block;
+	width: 100%;
+	max-height: 220dp;
+	overflow-y: auto;
+	margin: 3dp 0dp 6dp 0dp;
+	padding: 1dp;
+	decorator: ninepatch(listbg, listbg-in);
+}
+.row {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	padding: 2dp 6dp;
+}
+.row:hover { color: #fff1d6; background-color: #2a2128; }
+.row.on { color: #fff1d6; background-color: #3a2a1c; }
+
+/* ProgressBar: /images/ui/progressbar, border 2, the fill under it */
+.progress {
+	position: relative;
+	width: 100%;
+	height: 16dp;
+	margin: 3dp 0dp;
+	decorator: ninepatch(pbar, pbar-in);
+}
+.progress .fill { position: absolute; left: 2dp; top: 2dp; bottom: 2dp; width: 0%; background-color: #8a1010; }
+.progress .ptext { position: absolute; left: 0dp; right: 0dp; top: 1dp; text-align: center; font-size: 12dp; color: #f4ead6; }
+
+/* HorizontalSeparator inside a window */
+.hsep { width: 100%; height: 2dp; margin: 5dp 0dp; decorator: image(sep); }
+
+button.on { color: #fff1d6; decorator: ninepatch(btn-p, btn-p-in); }
+button.icon { min-width: 0dp; padding: 2dp; height: auto; }
+img { margin: 1dp 3dp; }

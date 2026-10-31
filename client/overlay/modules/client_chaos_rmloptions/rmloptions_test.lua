@@ -102,6 +102,7 @@ add(scroll,
   add(widget('UIWidget', { style = 'FlatPanel' }), lightLabel, light),
   hidden, reset)
 
+dofile(here .. '../client_chaos_rmlform/rmlform.lua')
 dofile(here .. 'rmloptions.lua')
 
 -- 1. collect: reading order, kinds, hidden and vertical skipped
@@ -169,6 +170,7 @@ g_rml = {
   setInnerRml = function(d, id, r) state.inner[id] = r return true end,
   setClass = function(d, id, c, on) state.class[id .. '.' .. c] = on return true end,
   setScrollTop = function() return true end,
+  setProperty = function() return true end,
   show = function() visible = true return true end,
   close = function() visible = false return true end,
   isVisible = function() return visible end,

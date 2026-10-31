@@ -1,0 +1,18 @@
+<rml>
+<head>
+	<title>Window</title>
+	<link type="text/rcss" href="/modules/client_chaos_rmlform/skin.rcss"/>
+	<link type="text/rcss" href="rmlmirror.rcss"/>
+</head>
+<body>
+	<div id="window" class="movable">
+		<div class="orn tl"></div><div class="orn tr"></div><div class="orn bl"></div><div class="orn br"></div>
+		<div id="crest"></div>
+		<div id="titlebar" class="drag-handle">
+			<span id="title"></span>
+			<button id="classic" class="mini"></button>
+		</div>
+		<div id="content"></div>
+	</div>
+</body>
+</rml>

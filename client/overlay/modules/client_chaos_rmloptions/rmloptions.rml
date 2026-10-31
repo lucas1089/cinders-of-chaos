@@ -1,6 +1,7 @@
 <rml>
 <head>
 	<title>Options</title>
+	<link type="text/rcss" href="/modules/client_chaos_rmlform/skin.rcss"/>
 	<link type="text/rcss" href="rmloptions.rcss"/>
 </head>
 <body>

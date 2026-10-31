@@ -4,6 +4,7 @@ Module
   author: Cinders of Chaos
   sandboxed: false
   reloadable: true
+  dependencies: [ client_chaos_rmlform ]
   scripts: [ rmloptions ]
   autoload: true
   autoload-priority: 1001

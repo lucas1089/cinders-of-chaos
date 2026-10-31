@@ -138,6 +138,38 @@ Owner 2026-10-30: "Faça pelo menos a janela de opções em rmlui". Module `clie
   Interface pages drawn with the real values; a check box click, a help icon, a slider drag (the label followed to 78 %),
   the menu and Close worked.
 
+## Phase 4: the window mirror (2026-10-31, overlay only)
+
+Owner 2026-10-31: "Pode fazer com o cliente todo", approach "generic mirror"; release builds keep RmlUi off until the
+end. Still behind `CHAOS_RMLUI`. No new base patch: the changes are in the overlay `rmlmanager.cpp` and Lua.
+
+- `client_chaos_rmlform` is the form layer the Options window and the mirror share: `collect` (OTUI tree to items:
+  panels, labels, paragraphs, check boxes, sliders, combo boxes, buttons with text or an icon, text fields and password
+  fields, lists with rows, progress bars, icons, separators, help icons), `rml` (items to RML), the sync and the event
+  handling (`newForm`, `build`, `refresh`, `changed`, `handle`), cp1252 to UTF-8 and back, and `skin.rcss`, the skin of
+  phase 3 plus fields, lists and progress bars. Skipped: widgets at opacity 0 and the theme's corner pieces.
+- `client_chaos_rmlmirror`: every 150 ms it looks at the top windows of the UI root and the game root panel. A visible
+  `UIWindow`, `UIMessageBox` or `UIInputBox` whose controls the layer can all draw is shown in RmlUi at its place and
+  width (the height grows when the text needs more room, centred on the OTUI window). The OTUI window stays with opacity
+  0 and phantom; its module keeps working with it. Clicks and changes go to the OTUI widget's own `onClick` or setter;
+  Enter and Escape call the window's `onEnter` and `onEscape`.
+- Stays in OTUI: a window with any other class inside (items, creatures, the map, tables), the classic Options window,
+  a window that sets `chaosNoMirror` (the login panel has its own art), a mirror while an OTUI window or menu that is
+  not mirrored lies over it, and a window after its "Classic" button (until it closes). Ctrl+Alt+M turns the mirror
+  off and on (setting `chaosRmlMirror`). Mini windows, the map, inventory, containers, battle, action bar, chat and
+  minimap are not windows of these classes and stay in OTUI.
+- Manager (`rmlmanager.cpp`): a drag on an element with class `drag-handle` moves its `.movable` ancestor and sends
+  "moved" (the mirror moves the OTUI window there, anchors broken as an OTUI drag does); Escape in a document sends
+  "escape", Enter in a one-line field "enter"; `dblclick` reaches Lua.
+- Found on the way: a widget reaches Lua as a new userdata on each call, so tables key widgets by `ChaosRmlForm.keyOf`
+  (a number kept in the widget's Lua fields). Before that the form signature changed every tick and the window was
+  drawn again, losing the focus of a text field.
+- Test: `rmlmirror_test.lua` (eligibility, candidates, cover, centring, collect and signature details). Checked under
+  Xvfb at 1280x720: a message box, a question box (Yes ran its callback and closed both), a form with a text field
+  (typing reached the OTUI field), a list (a row click focused the OTUI row), a check box, a button, a title drag and
+  the Classic button.
+- Not done: tooltips, a scroll area that is not a list, tab bars as tabs, windows that draw items; Windows, Android, GPU.
+
 ## Effort
 
 All numbers below are estimates unless marked measured. The base for them (measured by counting files):

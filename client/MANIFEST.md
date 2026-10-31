@@ -5308,3 +5308,8 @@ One test window in HTML and RCSS, to measure what RmlUi costs. Report and recomm
   and save as before; the top menu Options button opens it, hotkey pages stay in the classic window. Fonts from
   `client_chaos_rmltest/fonts/`. Drawn with the skin images of the classic window (sprite sheets in `rmloptions.rcss`).
   Test: `rmloptions_test.lua`.
+- Phase 4 (no new patch): `client_chaos_rmlform` (`rmlform.lua`, `skin.rcss`), the form layer shared by the Options
+  window and the mirror: OTUI tree to RML, sync, events, the skin. `client_chaos_rmlmirror` (`rmlmirror.lua`,
+  `rmlmirror.rml`, `rmlmirror.rcss`) shows every plain OTUI window, message box and input box in RmlUi over the
+  hidden OTUI window; windows with items, creatures or other unknown widgets stay in OTUI, Ctrl+Alt+M toggles it,
+  "Classic" sends one window back. `client_chaos_login` marks its panel `chaosNoMirror`. Test: `rmlmirror_test.lua`.

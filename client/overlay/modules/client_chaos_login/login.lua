@@ -999,6 +999,7 @@ function init()
     g_logger.warning('[chaos_login] login windows not found, keeping the stock look')
     return
   end
+  enterGame.chaosNoMirror = true   -- the sign-in panel has its own art; the RmlUi window mirror leaves it in OTUI
   g_ui.importStyle('login')
 
   bg:setImageSource('/images/title')
