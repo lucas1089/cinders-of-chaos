@@ -1,5 +1,5 @@
--- Rebuke: the Sentinel calls every monster within 4 sqm to face it (taunt) and slows them 25% for 6 seconds
--- (ChaosTemplar.cfg.rebuke). Only monsters that are not player summons; players are never touched.
+-- Rebuke: the Sentinel calls every monster within 4 sqm to face it (taunt) and slows them 25% for 6 seconds. Only monsters that are not player summons; players are never touched.
+-- Numbers: ChaosTemplar.cfg.rebuke.
 dofile('data/spells/scripts/chaos/_templar.lua')
 
 local r = ChaosTemplar.cfg.rebuke

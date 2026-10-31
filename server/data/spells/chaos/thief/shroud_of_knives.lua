@@ -1,5 +1,5 @@
--- Shroud of Knives: steel you do not see. For 15 s your melee and distance skill are 20% higher and you dodge 10 points more
--- weapon hits (data/scripts/chaos/thief_combat.lua adds the evasion).
+-- Shroud of Knives: steel you do not see. For 15 s your melee and distance skill are 20% higher and you dodge 10 points more weapon hits.
+-- The evasion is added by data/scripts/chaos/thief_combat.lua.
 -- The level 800 buff of the Thief line's spell quest (needlearn, taught by Archivist Odrenna; numbers in
 -- data/scripts/chaos/quest_buffs_config.lua). The caster stays visible: no stealth, no lock on other spells.
 dofile('data/spells/scripts/chaos/_questbuffs.lua')

@@ -1,6 +1,7 @@
 -- Mirror Mend: the Illusionist heals the most hurt party member within 7 sqm (or the one named: saen spek "Name"), and a
 -- mirror image of the heal mends the next most hurt (the Illusionist included) for 25% of it. Without a hurt party
--- member it heals the Illusionist. Numbers: ChaosHealing.cfg.mirrorMend (data/scripts/chaos/healing_rules_core.lua).
+-- member it heals the Illusionist.
+-- Numbers: ChaosHealing.cfg.mirrorMend (data/scripts/chaos/healing_rules_core.lua).
 -- Weaver's Grace and the PvP healing reduction apply through data/scripts/chaos/healing_rules.lua.
 dofile('data/spells/scripts/chaos/_common.lua')
 if not ChaosMysticFx then

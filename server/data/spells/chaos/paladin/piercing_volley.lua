@@ -1,4 +1,5 @@
--- Skewering Line: a 7 sqm line of spears hitting everything in it. Every target takes a Dawnpiercer hit (owner, 2026-10-20: an area hit equals the single-target hit). Scales with distance skill x weapon attack.
+-- Skewering Line: a 7 sqm line of spears hitting everything in it. Every target takes a full Dawnpiercer hit. Scales with distance skill x weapon attack.
+-- Owner, 2026-10-20: an area hit equals the single-target hit.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()

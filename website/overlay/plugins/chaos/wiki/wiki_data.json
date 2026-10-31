@@ -1601,7 +1601,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Every class, from level 1, no mana. A 3 s channel, then a portal home and a return portal beside the temple; all rules, the cooldown and the portal styles are in data/scripts/chaos/townportal.lua. The XML cooldown is only a short guard: the real cooldown (60 s) starts when the portal opens."
+								"Every class, from level 1, no mana. A 3 s channel, then a portal home and a return portal beside the temple. 60 s cooldown. All rules, the cooldown and the portal styles are in data/scripts/chaos/townportal.lua. The XML cooldown is only a short guard: the real cooldown (60 s) starts when the portal opens."
 							]
 						},
 						{
@@ -1716,7 +1716,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A sturdy bone warrior rises next to you: a melee minion (range 1, physical) with the most health of the three. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level (necro_config.lua minions.warrior); the minion hits the creature you target (data/scripts/chaos/necro_minions.lua)."
+								"A sturdy bone warrior rises next to you: a melee minion (range 1, physical) with the most health of the three. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level; the minion hits the creature you target. Numbers: necro_config.lua minions.warrior; data/scripts/chaos/necro_minions.lua."
 							]
 						},
 						{
@@ -1828,7 +1828,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Throws a trap up to 4 sqm (onto your attack target, else straight ahead). It arms after 0.6 s; the first monster within 1 sqm sets it off: a burst hits up to 8 enemies within 2 sqm. At most 3 traps (the oldest goes); a trap lasts 20 s. Say an element after the words (drai snar \"fire\": fire, ice, energy, earth, death, holy, physical) to choose what it carries; it is remembered. Without one, a brand rune in the spell picks it. Rules and numbers: data/scripts/chaos/snares_core.lua, snares_config.lua; the scheduler: _snares.lua."
+								"Throws a trap up to 4 sqm (onto your attack target, else straight ahead). It arms after 0.6 s; the first monster within 1 sqm sets it off: a burst hits up to 8 enemies within 2 sqm. At most 3 traps (the oldest goes); a trap lasts 20 s. Say an element after the words (drai snar \"fire\"; also ice, energy, earth, death, holy, physical) to choose what it carries; it is remembered. Without one, a brand rune in the spell picks it. Rules and numbers: data/scripts/chaos/snares_core.lua, snares_config.lua; the scheduler: _snares.lua."
 							]
 						},
 						{
@@ -1935,7 +1935,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A risen mage joins you: a fragile caster minion (range 4, energy bolts) that hits harder than a skeleton. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level (necro_config.lua minions.mage); the minion hits the creature you target (data/scripts/chaos/necro_minions.lua)."
+								"A risen mage joins you: a fragile caster minion (range 4, energy bolts) that hits harder than a skeleton. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level; the minion hits the creature you target. Numbers: necro_config.lua minions.mage; data/scripts/chaos/necro_minions.lua."
 							]
 						},
 						{
@@ -2019,7 +2019,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"The Templar's self heal. Restores 8% of the maximum health + level / 5 + magic level x 4 (ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount)."
+								"The Templar's self heal. Restores 8% of the maximum health + level / 5 + magic level x 4. Numbers: ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount."
 							]
 						},
 						{
@@ -2773,7 +2773,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A 7 sqm line of spears hitting everything in it. Every target takes a Dawnpiercer hit (owner, 2026-10-20: an area hit equals the single-target hit). Scales with distance skill x weapon attack."
+								"A 7 sqm line of spears hitting everything in it. Every target takes a full Dawnpiercer hit. Scales with distance skill x weapon attack. Owner, 2026-10-20: an area hit equals the single-target hit."
 							]
 						},
 						{
@@ -3055,7 +3055,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Mana shield for 15s plus mana regeneration while it lasts (the stock Ward of the Mind has no regen)."
+								"Mana shield for 15s plus mana regeneration while it lasts. The stock Ward of the Mind has no regen."
 							]
 						},
 						{
@@ -3338,7 +3338,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"The Inquisitor brands one target (range 5) with a holy strike. For 8 seconds the target takes 20% more holy damage from every source, the party's included (ChaosTemplar.cfg.judgement; applied by data/scripts/chaos/templar_combat.lua, which sees the brand as a timer condition on the target)."
+								"The Inquisitor brands one target (range 5) with a holy strike. For 8 seconds the target takes 20% more holy damage from every source, the party's included. Numbers: ChaosTemplar.cfg.judgement; applied by data/scripts/chaos/templar_combat.lua, which sees the brand as a timer condition on the target."
 							]
 						},
 						{
@@ -3393,7 +3393,7 @@
 					"sections": [
 						{
 							"h": "Effect",
-							"p": ["+30% melee skill, -30% shield skill for 12s. (Not the stock Bloodlust.)"]
+							"p": ["+30% melee skill, -30% shield skill for 12s. Not the stock Bloodlust."]
 						},
 						{
 							"h": "Spell",
@@ -3504,7 +3504,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"The Sentinel calls every monster within 4 sqm to face it (taunt) and slows them 25% for 6 seconds (ChaosTemplar.cfg.rebuke). Only monsters that are not player summons; players are never touched."
+								"The Sentinel calls every monster within 4 sqm to face it (taunt) and slows them 25% for 6 seconds. Only monsters that are not player summons; players are never touched. Numbers: ChaosTemplar.cfg.rebuke."
 							]
 						},
 						{
@@ -3782,7 +3782,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Holy fire bursts from the Inquisitor (circle of 3 sqm). It heals the Inquisitor for 10% of the damage dealt, at most 5% of its maximum health per cast (ChaosTemplar.cfg.purgingNova). A normal area combat (the engine's PvP rules apply). The heal counts the formula average per creature hit."
+								"Holy fire bursts from the Inquisitor (circle of 3 sqm). It heals the Inquisitor for 10% of the damage dealt, at most 5% of its maximum health per cast. Numbers: ChaosTemplar.cfg.purgingNova. A normal area combat (the engine's PvP rules apply). The heal counts the formula average per creature hit."
 							]
 						},
 						{
@@ -3838,7 +3838,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Taunts every monster within 4 sqm and slows them 25% for 6s. The knight gains Iron Will for 8s: 25% less damage taken (data/scripts/chaos/spell_guard.lua) and +15% shielding."
+								"Taunts every monster within 4 sqm and slows them 25% for 6s. The knight gains Iron Will for 8s: 25% less damage taken and +15% shielding. The damage cut is applied by data/scripts/chaos/spell_guard.lua."
 							]
 						},
 						{
@@ -3922,7 +3922,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"The Sentinel raises its shield and its faith: for 5 seconds it takes 40% less damage (ChaosTemplar.cfg.aegis; applied by data/scripts/chaos/templar_combat.lua, which sees the timer condition). Needs a shield in hand."
+								"The Sentinel raises its shield and its faith: for 5 seconds it takes 40% less damage. Needs a shield in hand. Numbers: ChaosTemplar.cfg.aegis; applied by data/scripts/chaos/templar_combat.lua, which sees the timer condition."
 							]
 						},
 						{
@@ -4225,7 +4225,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Chant for 12 s; you and party members within 6 sqm take 8% less damage while they stay near, and every pulse (2 s) heals them for level x 1 + fist x 26 (the Iron Sage's party heal, ChaosMonk.cfg.mantra.heal). The aura pulses every 2 s: everyone in reach gets a 3 s timer condition (ChaosMonk.ids.subId.mantra) that data/scripts/chaos/monk_combat.lua reads on damage taken. Uses no chi. Stops when the Sage dies or logs out."
+								"Chant for 12 s; you and party members within 6 sqm take 8% less damage while they stay near, and every pulse (2 s) heals them for level x 1 + fist x 26 (the Iron Sage's party heal). Heal numbers: ChaosMonk.cfg.mantra.heal. The aura pulses every 2 s: everyone in reach gets a 3 s timer condition (ChaosMonk.ids.subId.mantra) that data/scripts/chaos/monk_combat.lua reads on damage taken. Uses no chi. Stops when the Sage dies or logs out."
 							]
 						},
 						{
@@ -4472,7 +4472,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A great heal on one party member within 5 sqm: 35% of its maximum health + magic level x 10 (ChaosTemplar.cfg.layOnHands). Say a name to choose (saen gal manh \"Name\"); without one it goes to the party member (or the Sentinel) with the lowest health share. Long cooldown."
+								"A great heal on one party member within 5 sqm: 35% of its maximum health + magic level x 10. Say a name to choose (saen gal manh \"Name\"); without one it goes to the party member (or the Sentinel) with the lowest health share. Long cooldown. Numbers: ChaosTemplar.cfg.layOnHands."
 							]
 						},
 						{
@@ -4834,7 +4834,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Leap next to the target (range 5) and bring the two-handed weapon down on it: physical damage to everything in a 3x3 square around the target, from weapon attack and skill (the knight spells' formula style). The Berserker's leaping slam. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua), and the slam staggers (30% slow, 2 s)."
+								"Leap next to the target (range 5) and bring the two-handed weapon down on it: physical damage to everything in a 3x3 square around the target, from weapon attack and skill. The formula is in the style of the knight spells. The Berserker's leaping slam. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua), and the slam staggers (30% slow, 2 s)."
 							]
 						},
 						{
@@ -5471,7 +5471,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Shuriken Barrage's late sibling. A storm of shurikens at your target and up to 8 more monsters within 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (shuriken power as Shuriken Toss, 1.1 times a Barrage strike). 13 s cooldown (the cooldown ladder, 2026-10-20: 14 s, was 30 s; O176, 2026-10-24: 13 s). Other players are only hit when they are the spell's target."
+								"A storm of shurikens at your target and up to 8 more monsters within 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (1.1 times a Barrage strike). Shuriken Barrage's late sibling; shuriken power as Shuriken Toss. 13 s cooldown (the cooldown ladder, 2026-10-20: 14 s, was 30 s; O176, 2026-10-24: 13 s). Other players are only hit when they are the spell's target."
 							]
 						},
 						{
@@ -5611,7 +5611,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 8 s cooldown (the cooldown ladder). The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage, O332): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.frenzy. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
+								"Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 8 s cooldown. Feral Command's late sibling; the 8 s cooldown comes from the cooldown ladder. The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage, O332): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.frenzy. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
 							]
 						},
 						{
@@ -5695,7 +5695,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Skyfall Cleave's late sibling. Leap next to the target (range 6) and bring the two-handed weapon down: heavy physical damage to everything in a 5x5 square around the target (about 1.6 times Skyfall Cleave per hit), from weapon attack and skill. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua); the slam staggers (50% slow, 2.5 s). 10 s cooldown (the cooldown ladder, 2026-10-20: 14 s, was 18 s; O176, 2026-10-24: 10 s)."
+								"Leap next to the target (range 6) and bring the two-handed weapon down: heavy physical damage to everything in a 5x5 square around the target (about 1.6 times Skyfall Cleave per hit), from weapon attack and skill; every hit gets Rage; the slam staggers (50% slow, 2.5 s). 10 s cooldown. Skyfall Cleave's late sibling. Rage: data/scripts/chaos/berserker_combat.lua. Cooldown ladder, 2026-10-20: 14 s, was 18 s; O176, 2026-10-24: 10 s."
 							]
 						},
 						{
@@ -5723,7 +5723,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Two heavy holy strikes at the target 0.6 s apart, each 1.3 times Final Verdict's; +50% against a target below 25% health, checked for each strike. 12 s cooldown (the cooldown ladder, 2026-10-20: 16 s, was 24 s; O176, 2026-10-24: 12 s)."
+								"Two heavy holy strikes at the target 0.6 s apart, each 1.3 times Final Verdict's; +50% against a target below 25% health, checked for each strike. 12 s cooldown. Cooldown ladder, 2026-10-20: 16 s, was 24 s; O176, 2026-10-24: 12 s."
 							]
 						},
 						{
@@ -5751,7 +5751,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Doomtide's late sibling in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area; the energy wave in the middle. 13 s cooldown (the cooldown ladder, 2026-10-20: 20 s, was 60 s; O176, 2026-10-24: 13 s). Cast time 2 s (data/lib/chaos_casting.lua): moving, a new paralysis, another spell or death interrupt it and give the mana and cooldown back. Power x1.9 (Doomtide x1.38; the cast time is longer; before the cooldown ladder the cooldown was also 15 s longer, 2 s now)."
+								"Doomtide in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area; the energy wave in the middle. 13 s cooldown. Doomtide's late sibling. Cooldown ladder, 2026-10-20: 20 s, was 60 s; O176, 2026-10-24: 13 s. Cast time 2 s (data/lib/chaos_casting.lua): moving, a new paralysis, another spell or death interrupt it and give the mana and cooldown back. Power x1.9 (Doomtide x1.38; the cast time is longer; before the cooldown ladder the cooldown was also 15 s longer, 2 s now)."
 							]
 						},
 						{
@@ -6059,7 +6059,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Steel you do not see. For 15 s your melee and distance skill are 20% higher and you dodge 10 points more weapon hits (data/scripts/chaos/thief_combat.lua adds the evasion). The level 800 buff of the Thief line's spell quest (needlearn, taught by Archivist Odrenna; numbers in data/scripts/chaos/quest_buffs_config.lua). The caster stays visible: no stealth, no lock on other spells."
+								"Steel you do not see. For 15 s your melee and distance skill are 20% higher and you dodge 10 points more weapon hits. The evasion is added by data/scripts/chaos/thief_combat.lua. The level 800 buff of the Thief line's spell quest (needlearn, taught by Archivist Odrenna; numbers in data/scripts/chaos/quest_buffs_config.lua). The caster stays visible: no stealth, no lock on other spells."
 							]
 						},
 						{

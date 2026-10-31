@@ -1,5 +1,6 @@
 -- Iron Bellow: taunts every monster within 4 sqm and slows them 25% for 6s. The knight gains Iron Will for 8s:
--- 25% less damage taken (data/scripts/chaos/spell_guard.lua) and +15% shielding.
+-- 25% less damage taken and +15% shielding.
+-- The damage cut is applied by data/scripts/chaos/spell_guard.lua.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)

@@ -6774,8 +6774,8 @@ return {
 		-- Spellbook: the Chaos spells' own descriptions (the first comment of each spell script; spellbook.lua)
 		["Your companions leap at the target (range 7) and maul it, each for 1.5 bites at once."] =
 			"Seus companheiros saltam sobre o alvo (alcance 7) e o dilaceram, cada um com 1,5 mordida de uma vez.",
-		["Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 8 s cooldown (the cooldown ladder)."] =
-			"A irmã tardia de Feral Command. Seus companheiros saltam sobre o alvo (alcance 7) e o dilaceram em frenesi, cada um com 3,3 mordidas de uma vez (Feral Command: 1,5). Recarga de 8 s (a escada de recargas).",
+		["Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 8 s cooldown."] =
+			"Seus companheiros saltam sobre o alvo (alcance 7) e o dilaceram em frenesi, cada um com 3,3 mordidas de uma vez (Feral Command: 1,5). Recarga de 8 s.",
 		["A howl calls the pack down on the quarry. Your companions leap at the target (range 7) and each bites every monster within 2 sqm of it, 3 bites apiece."] =
 			"Um uivo chama a matilha sobre a presa. Seus companheiros saltam sobre o alvo (alcance 7) e cada um morde todos os monstros a até 2 sqm dele, 3 mordidas cada.",
 		["The pack pounces. Your companions leap at the target (range 7) and each rends every monster within 1 sqm of it, 2 bites apiece."] =
@@ -6786,10 +6786,10 @@ return {
 			"Chame seu companheiro (um lobo de guerra; 2 a partir do nível 400). Os companheiros que já estão fora voltam para o seu lado e são curados em metade da vida.",
 		["Pay 10%% of your current health; for 12 s Rage gets +10%% on top and every melee weapon hit also strikes up to 4 other enemies next to you for 40%% of the hit."] =
 			"Pague 10%% da sua vida atual; por 12 s a Rage ganha +10%% a mais e todo golpe de arma corpo a corpo também atinge até 4 outros inimigos ao seu lado com 40%% do golpe.",
-		["Skyfall Cleave's late sibling. Leap next to the target (range 6) and bring the two-handed weapon down: heavy physical damage to everything in a 5x5 square around the target (about 1.6 times Skyfall Cleave per hit), from weapon attack and skill. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua); the slam staggers (50%% slow, 2.5 s)."] =
-			"A irmã tardia de Skyfall Cleave. Salte para junto do alvo (alcance 6) e desça a arma de duas mãos: dano físico pesado em tudo num quadrado 5x5 ao redor do alvo (cerca de 1,6 vez o Skyfall Cleave por golpe), pela força da arma e pela habilidade. Cada golpe dá Rage (data/scripts/chaos/berserker_combat.lua); a pancada cambaleia (lentidão de 50%%, 2,5 s).",
-		["Leap next to the target (range 5) and bring the two-handed weapon down on it: physical damage to everything in a 3x3 square around the target, from weapon attack and skill (the knight spells' formula style)."] =
-			"Salte para junto do alvo (alcance 5) e desça a arma de duas mãos sobre ele: dano físico em tudo num quadrado 3x3 ao redor do alvo, pela força da arma e pela habilidade (o estilo de fórmula das magias de knight).",
+		["Leap next to the target (range 6) and bring the two-handed weapon down: heavy physical damage to everything in a 5x5 square around the target (about 1.6 times Skyfall Cleave per hit), from weapon attack and skill; every hit gets Rage; the slam staggers (50%% slow, 2.5 s). 10 s cooldown."] =
+			"Salte para junto do alvo (alcance 6) e desça a arma de duas mãos: dano físico pesado em tudo num quadrado 5x5 ao redor do alvo (cerca de 1,6 vez o Skyfall Cleave por golpe), pela força da arma e pela habilidade.",
+		["Leap next to the target (range 5) and bring the two-handed weapon down on it: physical damage to everything in a 3x3 square around the target, from weapon attack and skill."] =
+			"Salte para junto do alvo (alcance 5) e desça a arma de duas mãos sobre ele: dano físico em tudo num quadrado 3x3 ao redor do alvo, pela força da arma e pela habilidade.",
 		["For 20 s your minions deal 30%% more damage, take 25%% less and regenerate 3%% of their health every second."] =
 			"Por 20 s seus lacaios causam 30%% mais dano, sofrem 25%% menos e regeneram 3%% da vida a cada segundo.",
 		["Raise the Bone Golem, a hulking construct of bone (one at a time, on top of your skeletons). It slams every enemy next to it and taunts the monsters around it. With the golem out, the cast calls it back to your side and heals half of its health."] =
@@ -6806,8 +6806,8 @@ return {
 			"Cura o conjurador, os membros do grupo e os próprios invocados a até 3 sqm e remove condições nocivas.",
 		["A healing zone on the caster's tile; 8 pulses (1/s) heal allies standing within 3 sqm."] =
 			"Uma zona de cura no quadrado do conjurador; 8 pulsos (1/s) curam os aliados a até 3 sqm.",
-		["Summons 2 wolves (3 from level 200) for 40s. Tries \"Spirit Wolf\", \"Winter Wolf\", \"Wolf\" in that order."] =
-			"Invoca 2 lobos (3 a partir do nível 200) por 40 s. Tenta \"Spirit Wolf\", \"Winter Wolf\" e \"Wolf\", nessa ordem.",
+		["Summons 2 wolves (3 from level 200) for 40s."] =
+			"Invoca 2 lobos (3 a partir do nível 200) por 40 s.",
 		["Thorns erupt around the target for 3 pulses, rooting enemies in a 3x3 for 5s."] =
 			"Espinhos brotam ao redor do alvo por 3 pulsos, prendendo os inimigos num 3x3 por 5 s.",
 		["Toxic cloud around the caster, poisons everything it hits."] =
@@ -6820,8 +6820,8 @@ return {
 			"Raio de dano de morte, depois um dano de maldição ao longo do tempo e uma lentidão curta.",
 		["Up to 3 decoys wearing the caster's outfit, they vanish after 10s."] =
 			"Até 3 chamarizes com o visual do conjurador; somem depois de 10 s.",
-		["The Illusionist heals the most hurt party member within 7 sqm (or the one named: saen spek \"Name\"), and a mirror image of the heal mends the next most hurt (the Illusionist included) for 25%% of it. Without a hurt party member it heals the Illusionist. Numbers: ChaosHealing.cfg.mirrorMend (data/scripts/chaos/healing_rules_core.lua)."] =
-			"O Illusionist cura o membro do grupo mais ferido a até 7 sqm (ou o nomeado: saen spek \"Nome\"), e uma imagem de espelho da cura trata o próximo mais ferido (o Illusionist incluído) com 25%% dela. Sem um membro ferido no grupo, cura o próprio Illusionist. Números: ChaosHealing.cfg.mirrorMend (data/scripts/chaos/healing_rules_core.lua).",
+		["The Illusionist heals the most hurt party member within 7 sqm (or the one named: saen spek \"Name\"), and a mirror image of the heal mends the next most hurt (the Illusionist included) for 25%% of it. Without a hurt party member it heals the Illusionist."] =
+			"O Illusionist cura o membro do grupo mais ferido a até 7 sqm (ou o nomeado: saen spek \"Nome\"), e uma imagem de espelho da cura trata o próximo mais ferido (o Illusionist incluído) com 25%% dela. Sem um membro ferido no grupo, cura o próprio Illusionist.",
 		["The glass of a mirror bursts; every enemy next to you is cut."] =
 			"O vidro de um espelho estoura; todo inimigo ao seu lado é cortado.",
 		["Needles of a dream, one violet hit on one target."] =
@@ -6838,10 +6838,10 @@ return {
 			"Uma varredura sagrada 3 sqm à frente.",
 		["A brand burned into a heretic: one heavy holy hit on one target."] =
 			"Uma marca queimada num herege: um golpe sagrado pesado em um alvo.",
-		["The Inquisitor brands one target (range 5) with a holy strike. For 8 seconds the target takes 20%% more holy damage from every source, the party's included (ChaosTemplar.cfg.judgement; applied by data/scripts/chaos/templar_combat.lua, which sees the brand as a timer condition on the target)."] =
-			"O Inquisitor marca um alvo (alcance 5) com um golpe sagrado. Por 8 segundos o alvo sofre 20%% mais dano sagrado de todas as fontes, as do grupo incluídas (ChaosTemplar.cfg.judgement; aplicado por data/scripts/chaos/templar_combat.lua, que enxerga a marca como uma condição de tempo no alvo).",
-		["Holy fire bursts from the Inquisitor (circle of 3 sqm). It heals the Inquisitor for 10%% of the damage dealt, at most 5%% of its maximum health per cast (ChaosTemplar.cfg.purgingNova)."] =
-			"Fogo sagrado irrompe do Inquisitor (círculo de 3 sqm). Cura o Inquisitor em 10%% do dano causado, no máximo 5%% da vida máxima por conjuração (ChaosTemplar.cfg.purgingNova).",
+		["The Inquisitor brands one target (range 5) with a holy strike. For 8 seconds the target takes 20%% more holy damage from every source, the party's included."] =
+			"O Inquisitor marca um alvo (alcance 5) com um golpe sagrado. Por 8 segundos o alvo sofre 20%% mais dano sagrado de todas as fontes, as do grupo incluídas.",
+		["Holy fire bursts from the Inquisitor (circle of 3 sqm). It heals the Inquisitor for 10%% of the damage dealt, at most 5%% of its maximum health per cast."] =
+			"Fogo sagrado irrompe do Inquisitor (círculo de 3 sqm). Cura o Inquisitor em 10%% do dano causado, no máximo 5%% da vida máxima por conjuração.",
 		["A burst of zeal; every enemy within 2 sqm of you takes holy damage."] =
 			"Uma explosão de zelo; todo inimigo a até 2 sqm de você sofre dano sagrado.",
 		["Spend all chi on a shield of chi around a party member (or yourself) that absorbs damage for 8 s."] =
@@ -6850,14 +6850,14 @@ return {
 			"Arremesse uma corrente de ferro no alvo; ela se prende a até 4 outros monstros por perto.",
 		["Spend all chi on an iron-hard palm at the target next to you; it stuns a monster for 1-2.6 s and a player for 0.6-1 s."] =
 			"Gaste todo o chi numa palma de ferro no alvo ao seu lado; atordoa um monstro por 1-2,6 s e um jogador por 0,6-1 s.",
-		["Chant for 12 s; you and party members within 6 sqm take 8%% less damage while they stay near, and every pulse (2 s) heals them for level x 1 + fist x 26 (the Iron Sage's party heal, ChaosMonk.cfg.mantra.heal)."] =
-			"Entoe por 12 s; você e os membros do grupo a até 6 sqm sofrem 8%% menos dano enquanto ficarem perto, e a cada pulso (2 s) são curados em nível x 1 + fist x 26 (a cura de grupo do Iron Sage, ChaosMonk.cfg.mantra.heal).",
+		["Chant for 12 s; you and party members within 6 sqm take 8%% less damage while they stay near, and every pulse (2 s) heals them for level x 1 + fist x 26 (the Iron Sage's party heal)."] =
+			"Entoe por 12 s; você e os membros do grupo a até 6 sqm sofrem 8%% menos dano enquanto ficarem perto, e a cada pulso (2 s) são curados em nível x 1 + fist x 26 (a cura de grupo do Iron Sage).",
 		["The Juggernaut brings its weapon down on the target (range 3): one crushing blow to everything in a 5x5 square around it, from weapon attack and skill; every enemy hit is stunned (90%% slow) for 2.5 s."] =
 			"O Juggernaut desce a arma sobre o alvo (alcance 3): um golpe esmagador em tudo num quadrado 5x5 ao redor dele, pela força da arma e pela habilidade; todo inimigo atingido fica atordoado (lentidão de 90%%) por 2,5 s.",
 		["A shout that hurls a shockwave 3 sqm ahead."] =
 			"Um grito que lança uma onda de choque 3 sqm à frente.",
-		["+30%% melee skill, -30%% shield skill for 12s. (Not the stock Bloodlust.)"] =
-			"+30%% de habilidade corpo a corpo, -30%% de habilidade de escudo por 12 s. (Não é o Bloodlust padrão.)",
+		["+30%% melee skill, -30%% shield skill for 12s."] =
+			"+30%% de habilidade corpo a corpo, -30%% de habilidade de escudo por 12 s.",
 		["A hooked blow at the target next to you that opens it; it bleeds for 5 s."] =
 			"Um golpe com gancho no alvo ao seu lado que o abre; ele sangra por 5 s.",
 		["Shockwave (5x5) that deals physical damage and staggers enemies (heavy slow for 3s)."] =
@@ -6870,8 +6870,8 @@ return {
 			"Um golpe amplo que rasga uma linha de 4 sqm em direção ao alvo.",
 		["Two crushing blows (0 / 0.6s) in a 7x7 circle; enemies are slowed 70%% for 4s."] =
 			"Dois golpes esmagadores (0 / 0,6 s) num círculo 7x7; os inimigos ficam 70%% mais lentos por 4 s.",
-		["Taunts every monster within 4 sqm and slows them 25%% for 6s. The knight gains Iron Will for 8s: 25%% less damage taken (data/scripts/chaos/spell_guard.lua) and +15%% shielding."] =
-			"Provoca todo monstro a até 4 sqm e os deixa 25%% mais lentos por 6 s. O knight ganha Iron Will por 8 s: 25%% menos dano sofrido (data/scripts/chaos/spell_guard.lua) e +15%% de escudo.",
+		["Taunts every monster within 4 sqm and slows them 25%% for 6s. The knight gains Iron Will for 8s: 25%% less damage taken and +15%% shielding."] =
+			"Provoca todo monstro a até 4 sqm e os deixa 25%% mais lentos por 6 s. O knight ganha Iron Will por 8 s: 25%% menos dano sofrido e +15%% de escudo.",
 		["Three spinning strikes (0 / 0.4 / 0.8s) against everything adjacent. Uses weapon attack and skill."] =
 			"Três golpes giratórios (0 / 0,4 / 0,8 s) contra tudo que estiver adjacente. Usa a força da arma e a habilidade.",
 		["Up to 3 corpses within 3 sqm of the target (range 7) burst; each burst hits every enemy within 1 sqm of it with death damage. Needs a usable corpse (no loot inside, yours, your party's or nobody's); without one the spell fails and costs nothing. The corpses are consumed."] =
@@ -6920,10 +6920,10 @@ return {
 			"Um raio de tutano de osso, um golpe de morte em um alvo.",
 		["Raise minions from the corpses around you (up to 4 sqm), or one from nothing for twice the mana."] =
 			"Erga lacaios dos cadáveres ao seu redor (até 4 sqm), ou um do nada pelo dobro da mana.",
-		["A risen mage joins you: a fragile caster minion (range 4, energy bolts) that hits harder than a skeleton. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level (necro_config.lua minions.mage); the minion hits the creature you target (data/scripts/chaos/necro_minions.lua)."] =
-			"Um mago erguido se junta a você: um lacaio conjurador frágil (alcance 4, raios de energia) que bate mais forte que um esqueleto. Um lacaio por conjuração. Você só pode ter alguns lacaios de todos os tipos ao mesmo tempo (3 para o Necromancer); no limite, o mais antigo se desfaz primeiro (sem cadáver, sem saque). A vida e os golpes crescem com seu nível e nível mágico (necro_config.lua minions.mage); o lacaio ataca a criatura que você mira (data/scripts/chaos/necro_minions.lua).",
-		["A sturdy bone warrior rises next to you: a melee minion (range 1, physical) with the most health of the three. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level (necro_config.lua minions.warrior); the minion hits the creature you target (data/scripts/chaos/necro_minions.lua)."] =
-			"Um guerreiro de osso robusto se ergue ao seu lado: um lacaio corpo a corpo (alcance 1, físico) com mais vida dos três. Um lacaio por conjuração. Você só pode ter alguns lacaios de todos os tipos ao mesmo tempo (3 para o Necromancer); no limite, o mais antigo se desfaz primeiro (sem cadáver, sem saque). A vida e os golpes crescem com seu nível e nível mágico (necro_config.lua minions.warrior); o lacaio ataca a criatura que você mira (data/scripts/chaos/necro_minions.lua).",
+		["A risen mage joins you: a fragile caster minion (range 4, energy bolts) that hits harder than a skeleton. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level; the minion hits the creature you target."] =
+			"Um mago erguido se junta a você: um lacaio conjurador frágil (alcance 4, raios de energia) que bate mais forte que um esqueleto. Um lacaio por conjuração. Você só pode ter alguns lacaios de todos os tipos ao mesmo tempo (3 para o Necromancer); no limite, o mais antigo se desfaz primeiro (sem cadáver, sem saque). A vida e os golpes crescem com seu nível e nível mágico; o lacaio ataca a criatura que você mira.",
+		["A sturdy bone warrior rises next to you: a melee minion (range 1, physical) with the most health of the three. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level; the minion hits the creature you target."] =
+			"Um guerreiro de osso robusto se ergue ao seu lado: um lacaio corpo a corpo (alcance 1, físico) com mais vida dos três. Um lacaio por conjuração. Você só pode ter alguns lacaios de todos os tipos ao mesmo tempo (3 para o Necromancer); no limite, o mais antigo se desfaz primeiro (sem cadáver, sem saque). A vida e os golpes crescem com seu nível e nível mágico; o lacaio ataca a criatura que você mira.",
 		["A beam that rends everything in a line 6 sqm long towards the target."] =
 			"Um raio que dilacera tudo numa linha de 6 sqm em direção ao alvo.",
 		["Bone shards that burst in a circle at the target."] =
@@ -6936,8 +6936,8 @@ return {
 			"Atravesse as sombras até as costas do alvo e o apunhale.",
 		["A fan of shurikens at your target and up to 4 more monsters near it."] =
 			"Um leque de shurikens no alvo e em até 4 monstros por perto.",
-		["Shuriken Barrage's late sibling. A storm of shurikens at your target and up to 8 more monsters within 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (shuriken power as Shuriken Toss, 1.1 times a Barrage strike)."] =
-			"A irmã tardia de Shuriken Barrage. Uma tempestade de shurikens no alvo e em até 8 monstros a até 4 sqm dele, dois golpes de arma à distância cada, com 0,5 s de intervalo (poder do shuriken como Shuriken Toss, 1,1 vez um golpe do Barrage).",
+		["A storm of shurikens at your target and up to 8 more monsters within 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (1.1 times a Barrage strike)."] =
+			"Uma tempestade de shurikens no alvo e em até 8 monstros a até 4 sqm dele, dois golpes de arma à distância cada, com 0,5 s de intervalo (1,1 vez um golpe do Barrage).",
 		["A bomb that bursts in a cloud around the caster."] =
 			"Uma bomba que estoura numa nuvem ao redor do conjurador.",
 		["A volley that lands in a circle of 2 sqm around the target."] =
@@ -6952,16 +6952,16 @@ return {
 			"Raio sagrado em alvo único, o tapa-buraco do paladin. Escala com habilidade à distância x força da arma (a do próprio arco).",
 		["Heavy holy strike, +50%% damage against targets below 25%% health."] =
 			"Golpe sagrado pesado, +50%% de dano contra alvos abaixo de 25%% de vida.",
-		["A 7 sqm line of spears hitting everything in it. Every target takes a Dawnpiercer hit (owner, 2026-10-20: an area hit equals the single-target hit). Scales with distance skill x weapon attack."] =
-			"Uma linha de lanças de 7 sqm que atinge tudo nela. Todo alvo sofre um golpe de Dawnpiercer (dono, 2026-10-20: um golpe em área é igual ao golpe em alvo único). Escala com habilidade à distância x força da arma.",
+		["A 7 sqm line of spears hitting everything in it. Every target takes a full Dawnpiercer hit. Scales with distance skill x weapon attack."] =
+			"Uma linha de lanças de 7 sqm que atinge tudo nela. Todo alvo sofre um golpe cheio de Dawnpiercer. Escala com habilidade à distância x força da arma.",
 		["3 volleys of 4 holy arrows, every arrow strikes the target. Scales with distance skill x weapon attack."] =
 			"3 saraivadas de 4 flechas sagradas, toda flecha atinge o alvo. Escala com habilidade à distância x força da arma.",
 		["A spear of sunlight, a heavy holy hit on one target."] =
 			"Uma lança de luz do sol, um golpe sagrado pesado em um alvo.",
 		["+25%% distance skill for 12 s. No slow and no lock on other spells: the bow keeps firing."] =
 			"+25%% de habilidade à distância por 12 s. Sem lentidão e sem travar outras magias: o arco continua disparando.",
-		["Two heavy holy strikes at the target 0.6 s apart, each 1.3 times Final Verdict's; +50%% against a target below 25%% health, checked for each strike. 12 s cooldown (the cooldown ladder, 2026-10-20: 16 s, was 24 s; O176, 2026-10-24: 12 s)."] =
-			"Dois golpes sagrados pesados no alvo com 0,6 s de intervalo, cada um 1,3 vez o de Final Verdict; +50%% contra alvo abaixo de 25%% de vida, conferido a cada golpe. Recarga de 12 s (a escada de recargas, 2026-10-20: 16 s, antes 24 s; O176, 2026-10-24: 12 s).",
+		["Two heavy holy strikes at the target 0.6 s apart, each 1.3 times Final Verdict's; +50%% against a target below 25%% health, checked for each strike. 12 s cooldown."] =
+			"Dois golpes sagrados pesados no alvo com 0,6 s de intervalo, cada um 1,3 vez o de Final Verdict; +50%% contra alvo abaixo de 25%% de vida, conferido a cada golpe. Recarga de 12 s.",
 		["For 30 seconds your critical chance grows while you take no damage."] =
 			"Por 30 segundos sua chance de crítico cresce enquanto você não sofre dano.",
 		["For 3 seconds the next melee hit you take is parried and answered with a strike, every other hit you take is 30%% smaller, and the monsters within 3 sqm turn on you (the Samurai is the line's duelist off-tank)."] =
@@ -6970,16 +6970,16 @@ return {
 			"Saque e corte amplo; o alvo e todo monstro à sua frente são atingidos.",
 		["Gather for a moment, then cut your target with one heavy draw strike."] =
 			"Concentre-se por um instante e corte o alvo com um único saque pesado.",
-		["The Sentinel raises its shield and its faith: for 5 seconds it takes 40%% less damage (ChaosTemplar.cfg.aegis; applied by data/scripts/chaos/templar_combat.lua, which sees the timer condition)."] =
-			"O Sentinel ergue o escudo e a fé: por 5 segundos sofre 40%% menos dano (ChaosTemplar.cfg.aegis; aplicado por data/scripts/chaos/templar_combat.lua, que enxerga a condição de tempo).",
+		["The Sentinel raises its shield and its faith: for 5 seconds it takes 40%% less damage. Needs a shield in hand."] =
+			"O Sentinel ergue o escudo e a fé: por 5 segundos sofre 40%% menos dano. Precisa de um escudo na mão.",
 		["A slam of your shield arm at the target next to you, holy damage from your weapon."] =
 			"Uma pancada do braço do escudo no alvo ao seu lado, dano sagrado pela sua arma.",
-		["A great heal on one party member within 5 sqm: 35%% of its maximum health + magic level x 10 (ChaosTemplar.cfg.layOnHands). Say a name to choose (saen gal manh \"Name\"); without one it goes to the party member (or the Sentinel) with the lowest health share. Long cooldown."] =
-			"Uma grande cura em um membro do grupo a até 5 sqm: 35%% da vida máxima dele + nível mágico x 10 (ChaosTemplar.cfg.layOnHands). Diga um nome para escolher (saen gal manh \"Nome\"); sem um, vai para o membro do grupo (ou o Sentinel) com a menor fatia de vida. Recarga longa.",
+		["A great heal on one party member within 5 sqm: 35%% of its maximum health + magic level x 10. Say a name to choose (saen gal manh \"Name\"); without one it goes to the party member (or the Sentinel) with the lowest health share. Long cooldown."] =
+			"Uma grande cura em um membro do grupo a até 5 sqm: 35%% da vida máxima dele + nível mágico x 10. Diga um nome para escolher (saen gal manh \"Nome\"); sem um, vai para o membro do grupo (ou o Sentinel) com a menor fatia de vida. Recarga longa.",
 		["The rampart shakes; every enemy within 2 sqm of you takes holy damage."] =
 			"A muralha treme; todo inimigo a até 2 sqm de você sofre dano sagrado.",
-		["The Sentinel calls every monster within 4 sqm to face it (taunt) and slows them 25%% for 6 seconds (ChaosTemplar.cfg.rebuke). Only monsters that are not player summons; players are never touched."] =
-			"O Sentinel chama todo monstro a até 4 sqm para encará-lo (provocar) e os deixa 25%% mais lentos por 6 segundos (ChaosTemplar.cfg.rebuke). Só monstros que não são invocados de jogadores; jogadores nunca são tocados.",
+		["The Sentinel calls every monster within 4 sqm to face it (taunt) and slows them 25%% for 6 seconds. Only monsters that are not player summons; players are never touched."] =
+			"O Sentinel chama todo monstro a até 4 sqm para encará-lo (provocar) e os deixa 25%% mais lentos por 6 segundos. Só monstros que não são invocados de jogadores; jogadores nunca são tocados.",
 		["Drive your shield forward; a wave of holy force hits your target and everything in front of you."] =
 			"Empurre o escudo para a frente; uma onda de força sagrada atinge o alvo e tudo à sua frente.",
 		["Strike a nerve of the target next to you: 1 chi, and a stack of Pressure Points on it (+5%% damage from Monks, up to 5 stacks, 8 s)."] =
@@ -6998,12 +6998,12 @@ return {
 			"Lança uma mina até 4 sqm (no seu alvo de ataque, senão direto à frente). Ela arma depois de 0,8 s e espera por Detonate Mines ou pelo pavio de 8 s; então uma explosão atinge até 8 inimigos a até 2 sqm com 1,15 vez o golpe de uma armadilha. No máximo 5 minas (a mais antiga se vai). O elemento funciona como no Snare Trap (kah snar \"ice\").",
 		["Pings every monster within 12 sqm on the caster's floor (max 15 marked) and reports the nearest."] =
 			"Marca todo monstro a até 12 sqm no andar do conjurador (no máximo 15 marcados) e avisa qual é o mais próximo.",
-		["Throws a trap up to 4 sqm (onto your attack target, else straight ahead). It arms after 0.6 s; the first monster within 1 sqm sets it off: a burst hits up to 8 enemies within 2 sqm. At most 3 traps (the oldest goes); a trap lasts 20 s. Say an element after the words (drai snar \"fire\": fire, ice, energy, earth, death, holy,"] =
-			"Lança uma armadilha até 4 sqm (no seu alvo de ataque, senão direto à frente). Ela arma depois de 0,6 s; o primeiro monstro a até 1 sqm a dispara: uma explosão atinge até 8 inimigos a até 2 sqm. No máximo 3 armadilhas (a mais antiga se vai); uma armadilha dura 20 s. Diga um elemento depois das palavras (drai snar \"fire\": fire, ice, energy, earth, death, holy,",
-		["Mana shield for 15s plus mana regeneration while it lasts (the stock Ward of the Mind has no regen)."] =
-			"Escudo de mana por 15 s mais regeneração de mana enquanto durar (o Ward of the Mind padrão não regenera).",
-		["Every class, from level 1, no mana. A 3 s channel, then a portal home and a return portal beside the temple; all rules, the cooldown and the portal styles are in data/scripts/chaos/townportal.lua."] =
-			"Toda classe, desde o nível 1, sem mana. Uma canalização de 3 s, depois um portal para casa e um portal de volta ao lado do templo; todas as regras, a recarga e os estilos de portal estão em data/scripts/chaos/townportal.lua.",
+		["Throws a trap up to 4 sqm (onto your attack target, else straight ahead). It arms after 0.6 s; the first monster within 1 sqm sets it off: a burst hits up to 8 enemies within 2 sqm. At most 3 traps (the oldest goes); a trap lasts 20 s."] =
+			"Lança uma armadilha até 4 sqm (no seu alvo de ataque, senão direto à frente). Ela arma depois de 0,6 s; o primeiro monstro a até 1 sqm a dispara: uma explosão atinge até 8 inimigos a até 2 sqm. No máximo 3 armadilhas (a mais antiga se vai); uma armadilha dura 20 s.",
+		["Mana shield for 15s plus mana regeneration while it lasts."] =
+			"Escudo de mana por 15 s mais regeneração de mana enquanto durar.",
+		["Every class, from level 1, no mana. A 3 s channel, then a portal home and a return portal beside the temple. 60 s cooldown."] =
+			"Toda classe, desde o nível 1, sem mana. Uma canalização de 3 s, depois um portal para casa e um portal de volta ao lado do templo. Recarga de 60 s.",
 		["Switches the vigil on or off. While on it reserves 20%% of your maximum mana, and you and your party members within 5 sqm regain 1%% of their maximum mana every second (not in a rift with Parched Veins)."] =
 			"Liga ou desliga a vigília. Enquanto ligada, reserva 20%% da sua mana máxima, e você e os membros do grupo a até 5 sqm recuperam 1%% da mana máxima a cada segundo (não num rift com Parched Veins).",
 		["Switches the vigil on or off. While on it reserves 20%% of your maximum mana, and you and your party members within 5 sqm move 15%% faster."] =
@@ -7020,8 +7020,8 @@ return {
 			"Uma maldição de sangue que queima o alvo por 6 s.",
 		["Ice burst around the caster, chills everything it hits."] =
 			"Explosão de gelo ao redor do conjurador, congela tudo que atinge.",
-		["Doomtide's late sibling in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area; the energy wave in the middle. 13 s cooldown (the cooldown ladder, 2026-10-20: 20 s, was 60 s; O176, 2026-10-24: 13 s)."] =
-			"A irmã tardia de Doomtide em gelo. Três ondas (gelo, energia, gelo) saindo do conjurador numa área de 6x6; a onda de energia no meio. Recarga de 13 s (a escada de recargas, 2026-10-20: 20 s, antes 60 s; O176, 2026-10-24: 13 s).",
+		["Doomtide in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area; the energy wave in the middle. 13 s cooldown."] =
+			"Doomtide em gelo. Três ondas (gelo, energia, gelo) saindo do conjurador numa área de 6x6; a onda de energia no meio. Recarga de 13 s.",
 		["Freezing zone on the target's position, 6 pulses over 5s, enemies inside are heavily slowed."] =
 			"Zona gélida na posição do alvo, 6 pulsos em 5 s; os inimigos dentro ficam muito lentos.",
 		["Single target fire bolt that leaves the target burning."] =
@@ -7048,8 +7048,8 @@ return {
 			"O chão sob você faísca com luz sagrada três vezes; tudo a até 2 sqm é queimado.",
 		["The sanctum passes sentence: one very heavy holy hit on one target."] =
 			"O santuário profere a sentença: um golpe sagrado muito pesado em um alvo.",
-		["The Templar's self heal. Restores 8%% of the maximum health + level / 5 + magic level x 4 (ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount)."] =
-			"A autocura do Templar. Restaura 8%% da vida máxima + nível / 5 + nível mágico x 4 (ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount).",
+		["The Templar's self heal. Restores 8%% of the maximum health + level / 5 + magic level x 4."] =
+			"A autocura do Templar. Restaura 8%% da vida máxima + nível / 5 + nível mágico x 4.",
 		["Spin with your blades and cut every monster next to you."] =
 			"Gire com suas lâminas e corte todo monstro ao seu lado.",
 		["A wide arc in front of you, towards the target, a melee weapon strike on each."] =
@@ -7068,6 +7068,8 @@ return {
 			"Cura você em nível / 2 + nível mágico x 20 + 5%% da sua vida máxima, 30%% a mais enquanto o Shadow Veil está ativo. Curar não encerra o véu.",
 		["Vanish for 4 seconds; monsters lose you and your first weapon hit out of it is a critical hit."] =
 			"Desapareça por 4 segundos; os monstros perdem você de vista e o primeiro golpe de arma que você der saindo dele é crítico.",
+		["Steel you do not see. For 15 s your melee and distance skill are 20%% higher and you dodge 10 points more weapon hits."] =
+			"Aço que você não vê. Por 15 s sua habilidade corpo a corpo e à distância fica 20%% maior e você esquiva 10 pontos a mais de golpes de arma.",
 		["Throw a shuriken at one target; physical damage from your sword or distance skill."] =
 			"Arremesse um shuriken em um alvo; dano físico pela sua habilidade de espada ou de distância.",
 		["A coiled blade of venom; the target is poisoned for 5 s."] =

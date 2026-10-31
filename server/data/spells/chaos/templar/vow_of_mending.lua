@@ -1,5 +1,5 @@
--- Vow of Mending: the Templar's self heal. Restores 8% of the maximum health + level / 5 + magic level x 4
--- (ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount).
+-- Vow of Mending: the Templar's self heal. Restores 8% of the maximum health + level / 5 + magic level x 4.
+-- Numbers: ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount.
 dofile('data/spells/scripts/chaos/_templar.lua')
 
 function onCastSpell(creature, variant, isHotkey)

@@ -1,4 +1,5 @@
--- Red Frenzy: +30% melee skill, -30% shield skill for 12s. (Not the stock Bloodlust.)
+-- Red Frenzy: +30% melee skill, -30% shield skill for 12s.
+-- Not the stock Bloodlust.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)

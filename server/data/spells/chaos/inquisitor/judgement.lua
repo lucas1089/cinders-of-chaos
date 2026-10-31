@@ -1,6 +1,7 @@
 -- Judgement: the Inquisitor brands one target (range 5) with a holy strike. For 8 seconds the target takes 20% more
--- holy damage from every source, the party's included (ChaosTemplar.cfg.judgement; applied by
--- data/scripts/chaos/templar_combat.lua, which sees the brand as a timer condition on the target).
+-- holy damage from every source, the party's included.
+-- Numbers: ChaosTemplar.cfg.judgement; applied by
+-- data/scripts/chaos/templar_combat.lua, which sees the brand as a timer condition on the target.
 dofile('data/spells/scripts/chaos/_templar.lua')
 
 local T = ChaosTemplar

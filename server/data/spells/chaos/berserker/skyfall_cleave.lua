@@ -1,5 +1,6 @@
 -- Skyfall Cleave: leap next to the target (range 5) and bring the two-handed weapon down on it: physical damage to
--- everything in a 3x3 square around the target, from weapon attack and skill (the knight spells' formula style).
+-- everything in a 3x3 square around the target, from weapon attack and skill.
+-- The formula is in the style of the knight spells.
 --
 -- The Berserker's leaping slam. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua), and the slam staggers
 -- (30% slow, 2 s).

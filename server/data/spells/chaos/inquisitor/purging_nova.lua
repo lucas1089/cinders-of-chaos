@@ -1,5 +1,6 @@
 -- Purging Nova: holy fire bursts from the Inquisitor (circle of 3 sqm). It heals the Inquisitor for 10% of the
--- damage dealt, at most 5% of its maximum health per cast (ChaosTemplar.cfg.purgingNova).
+-- damage dealt, at most 5% of its maximum health per cast.
+-- Numbers: ChaosTemplar.cfg.purgingNova.
 --
 -- A normal area combat (the engine's PvP rules apply). The heal counts the formula average per creature hit.
 dofile('data/spells/scripts/chaos/_templar.lua')
