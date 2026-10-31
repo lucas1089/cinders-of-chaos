@@ -21,7 +21,7 @@
 --     Extra Projectile Chance (a second missile at another monster close to the target, else at the target)
 -- Bows and crossbows fire without ammunition (server/README.md "Infinite arrows and quivers"): which kind a launcher
 -- is comes from chaos_archery_config.lua, not from an ammunition slot.
--- Only weapon hits are touched (combat origin melee / ranged; a wand hit has the melee origin in this engine); runes and
+-- Only weapon hits are touched (combat origin melee / ranged / wand; a wand shot comes as ORIGIN_WAND, O359); runes and
 -- spells are not.
 local cfg = {
 	arrowSplash = 0.5,
@@ -220,10 +220,14 @@ local function extraProjectile(attacker, target, kind, element, hit)
 	end, 0)
 end
 
+-- a wand or rod shot comes as ORIGIN_WAND (5; measured live 2026-10-31, O359), not ORIGIN_MELEE: before, this hook
+-- returned early on it and the wand factor below never ran (a level 378 rod hit its flat weapons.xml numbers)
+local WAND_ORIGIN = ORIGIN_WAND or 5
+
 local hit = CreatureEvent("ChaosWeaponStyle")
 function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if not attacker or not attacker:isPlayer() or primaryType == COMBAT_HEALING or extraDepth > 0
-			or (origin ~= ORIGIN_MELEE and origin ~= ORIGIN_RANGED) then
+			or (origin ~= ORIGIN_MELEE and origin ~= ORIGIN_RANGED and origin ~= WAND_ORIGIN) then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local weapon, weaponItem = handWeapon(attacker)
@@ -241,7 +245,7 @@ function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, seco
 	end
 	-- a wand or rod: the flat hit of weapons.xml scaled by the magic level (weapon_skill_core.lua); nothing else applies
 	if weapon:getWeaponType() == WEAPON_WAND then
-		if origin == ORIGIN_MELEE and attacker:getStorageValue(STRIKE_KEY) ~= 1 then
+		if (origin == WAND_ORIGIN or origin == ORIGIN_MELEE) and attacker:getStorageValue(STRIKE_KEY) ~= 1 then
 			local m = WS.wandFactor(attacker:getLevel(), attacker:getMagicLevel()) * WP.levelFactor("wand", attacker:getLevel())
 			if m ~= 1 then
 				primaryDamage = scale(primaryDamage, m)

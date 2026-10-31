@@ -72,8 +72,8 @@ end
 
 -- ------------------------------------------------------------------------------------------------ the reservation
 local KINDS = {
-	mana = {get = "getMaxMana", stat = "CONDITION_PARAM_STAT_MAXMANAPOINTS"},
-	health = {get = "getMaxHealth", stat = "CONDITION_PARAM_STAT_MAXHITPOINTS"},
+	mana = {get = "getMaxMana", stat = "CONDITION_PARAM_STAT_MAXMANAPOINTS", pool = "getMana", add = "addMana"},
+	health = {get = "getMaxHealth", stat = "CONDITION_PARAM_STAT_MAXHITPOINTS", pool = "getHealth", add = "addHealth"},
 }
 
 -- O358 (owner log 2026-10-31): the reservation ran away. `base` was the maximum on screen plus what this script believed
@@ -97,6 +97,13 @@ local function syncPool(player, kind, share)
 	end
 	local base = player[get](player) + cur
 	local lastBase = a[kind .. "Base"]
+	-- a bonus to the maximum that ends (a buff, an item taken off) takes its points off the reserved maximum first: for
+	-- up to one think the maximum sits that much lower and the engine cuts the pool to it (live test 2026-10-31: 13.6k
+	-- mana cut to 8.8k when a +50% buff ended). A pool that sits at that cut maximum gets back what it had at the last
+	-- sync, at most the new maximum, below.
+	local pool = KINDS[kind].pool
+	local cut = has and lastBase and base < lastBase and player[pool](player) >= player[get](player)
+	local prevPool = a[kind .. "Pool"]
 	if has and lastBase and base ~= lastBase then
 		-- the sum moved (gear, a level, or a reservation that did not lower the maximum): take it off and read the true
 		-- maximum instead of trusting the sum
@@ -115,6 +122,7 @@ local function syncPool(player, kind, share)
 	a[kind .. "Base"] = base
 	if want == cur and (want == 0) == not has then
 		a[kind] = cur
+		a[kind .. "Pool"] = player[pool](player)
 		return
 	end
 	if has then
@@ -128,6 +136,13 @@ local function syncPool(player, kind, share)
 		player:addCondition(c)
 	end
 	a[kind] = want
+	if cut and prevPool then
+		local back = math.min(prevPool, player[get](player)) - player[pool](player)
+		if back > 0 then
+			player[KINDS[kind].add](player, back)
+		end
+	end
+	a[kind .. "Pool"] = player[pool](player)
 end
 
 -- the reservation of a player for its mask (0 removes it)

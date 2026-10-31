@@ -6947,7 +6947,7 @@ base engine is TFS 1.4.2; no src-patch touches `weapons.cpp`'s damage):
 
 So the physical weapons already scaled with the skill (+10 skill is +20% damage at level 50, +8% at 300, +5% at 1000, see server/data/spells/README.md
 "Weapon damage and skills"); only the wands and rods did not, although docs/CLASSES.md said they "use the magic level".
-Now `weapon_styles.lua` (the `onHealthChange` of weapon hits; a wand hit has the melee origin in this engine) multiplies
+Now `weapon_styles.lua` (the `onHealthChange` of weapon hits; a wand hit comes as `ORIGIN_WAND`, 5, see below) multiplies
 a wand or rod hit by `ChaosWeaponSkill.wandFactor(level, magic level)`:
 
     factor = (magic level + 20) / (typical magic level of the level + 20), clamped to 0.5 .. 2.0
@@ -6966,6 +6966,14 @@ No engine build, no install step: a reload of the scripts is enough. Numbers: `p
 0.8x / 1.2x the stat is clearly less / more for every type). Not measured in game. The item tooltip shows no wand damage
 (the engine does not give weapons.xml `min` / `max` to Lua), so nothing there changed; the "Estimated DPS" of melee and
 distance weapons already uses the skill.
+
+**Wand origin, O359 (2026-10-31).** The engine sends a wand or rod shot as `ORIGIN_WAND` (5), not `ORIGIN_MELEE` as
+written above until now. The hook returned early on it, so the magic level factor and the auto attack power level factor
+never reached a wand: every wand hit its flat weapons.xml numbers live, while the tooltip (O353) and the models
+(`weapon_sim.py`, `minion_model.py` wand column) counted the factors. Measured on a local server, level 378, magic level 65,
+Snakebite Rod against a Plagueroot (10% earth), 23 shots each: mean 10.0 before, 12.4 after (x1.24; the tooltip's factor
+x1.22). The hook now takes `ORIGIN_WAND` (and still `ORIGIN_MELEE`). Test: `tests/melee_skill_test.lua` sends the wand
+shot with `ORIGIN_WAND`. Wand users hit as hard as the models and the tooltip say; a reload of the scripts is enough.
 
 ## Auto attack power (`weapon_power_core.lua`, `weapon_power_config.lua`, `weapon_styles.lua`)
 
@@ -20991,6 +20999,12 @@ type in a rift showed its rolled "[777]"). Display only, as above.
   larger than the maximum (gear or a stat share taken off under a high reservation) made the true sum negative; it
   wrapped to about 4.29e9, the script reserved a share of that, and the next sync read an even larger number. The
   int64 sum of 0085 reads 0 there instead.
+  Live test 2026-10-31 (local server with 0085, level 844, Wrath and Iron, a +50% maximum mana buff on and off every
+  7.5 s for 60 s): the maximum stays 30% of the true one, no log line, the save works. It showed one more thing: when a
+  bonus to the maximum ends, the engine takes it off the reserved maximum first, so for up to one think the maximum
+  sits that much lower and the pool is cut to it (13.6k mana to 8.8k, kept). Now the sync that re-reads the maximum
+  gives a pool that sits at that cut maximum back what it had at the last sync, at most the new maximum (live: back to
+  13.5k on the next think).
 - Rifts with density (`rift_core.lua R.displayLevel`): every pack monster and the guardian show the tier's level
   (`tiers[t].minLevel`, + `beyond.minLevelStep` a tier above the table), the player level their health budget is
   sized for. Without density, and an Omen guardian, keep their own level (their own health x multipliers).
