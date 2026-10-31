@@ -132,4 +132,16 @@ function E.apply(player, totals)
 	return true
 end
 
+-- the engine sends the bar only when the shield changes, and a reconnect into a character still online runs no login
+-- event: the client's bar stayed hidden until the next hit or recharge (live check of item 128). Once in the game the
+-- client sends "hello" on the shield opcode (data/scripts/chaos/energy_shield.lua) and gets the engine's own text again;
+-- nil without the engine API or for any other request
+E.HELLO = "hello"
+function E.helloAnswer(player, buffer)
+	if not player or not player.getMaxEnergyShield or not player.getEnergyShield or buffer ~= E.HELLO then
+		return nil
+	end
+	return string.format("es:%d:%d", floor(player:getEnergyShield() or 0), floor(player:getMaxEnergyShield() or 0))
+end
+
 return E

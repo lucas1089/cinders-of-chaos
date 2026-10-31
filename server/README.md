@@ -727,7 +727,7 @@ collision check") and be added here.
 | 221 | `market` | `market.lua` (also buy orders, price history) | `game_market` | |
 | 222 | `pact` | `pact.lua` | `game_pact` | |
 | 223 | `bounty` | `bounty.lua` | `game_bounty` | |
-| 224 | `energyShield` | engine (src-patch 0015, `energyShieldOpcode`) | `game_energyshield` | server -> client, plain text `es:<current>:<max>` |
+| 224 | `energyShield` | engine (src-patch 0015, `energyShieldOpcode`), `energy_shield.lua` | `game_energyshield` | server -> client, plain text `es:<current>:<max>`; client -> server `hello` once in the game: the same text again |
 | 225 | `cosmetics` | `cosmetics.lua` | `game_cosmetics` | |
 | 226 | `pouches` | `pouches.lua` | `game_pouches` | |
 | 227 | `seasonPass` | `seasonpass.lua` | `game_battlepass` | |
@@ -2600,7 +2600,9 @@ shield shows "You lose N energy shield due to an attack by X." and a light blue-
 extended opcode `energyShieldOpcode` (config.lua, default 224; `ChaosOpcodes.energyShield`), plain text
 `es:<current>:<max>`, at most every 200 ms (a skipped update goes out with the next think) and at once when the maximum
 changes; `game_energyshield` draws the bar above the health slot of the character plate, eases rises over 0.9 s and hides at
-max 0. Buff bar: no entry (the bar shows the recharge).
+max 0. Buff bar: no entry (the bar shows the recharge). The engine sends only changes, and a reconnect into a character
+still online runs no login event: the bar stayed hidden until the next hit (live check 2026-10-31). Once in the game the
+client sends `hello` on the same opcode and `energy_shield.lua` answers with the engine's text (`ChaosEnergyShield.helloAnswer`).
 
 Tests: `tests/energy_shield_test.lua` (catalogue, maths, the engine's recharge timeline, item_mods glue, reflect, the
 lethal-hit checks, the opcode), `client/overlay/modules/game_energyshield/shieldmath_test.lua`; `tests/item_mods_test.lua`
@@ -2613,8 +2615,12 @@ think is once a second) with +150 per second (80 for the part-second) to 600. A 
 600 -> 450 -> 300 -> 150 -> 0, then the health; mana shield on with 200 mana: the first hit took 200 mana and 152 shield, the
 next ones shield, then health. Last Breath (30%): a 700 hit at 300 health + 600 shield left 200 health and did not trigger;
 at 300 + 100 it triggered, left 1 health and healed to 1,405 (30%). Reflect 10% on a 348 hit taken fully by the shield sent
-34 back. The bar, its numbers and the violet hit number: screenshots of the test run. Not tested in game: PvP leech against
-a shield (needs two clients; the engine path is the same as for a monster target).
+34 back. The bar, its numbers and the violet hit number: screenshots of the test run. PvP leech against a shield, live
+2026-10-31 with two clients (attacker 50% life leech at 100% chance): a hit of 417 taken fully by the shield healed the
+attacker 209; both clients showed the same lines ("You lose 417 energy shield", "was healed for 209 hitpoints"). Live check 2026-10-31 (Linux client, engine 0001-0083, level 291,
++900 armour): the bar at 900 / 900 after a login and after a reconnect, a 400 hit "You lose 400 energy shield." with the
+violet number and the bar at 500, back to 900 after the delay; the item tooltip lists the shield row with the internal
+number (display scale x1).
 
 ## Percent armour (`src-patches/0016-percent-armour.patch`, `tools/armor_sim.py`)
 

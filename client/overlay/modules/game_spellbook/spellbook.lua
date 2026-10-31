@@ -100,15 +100,29 @@ local function initials(name)
   return out
 end
 
+-- the value column fits about three initials; a longer list (Town Portal: every class) was cut off, so it shows a
+-- count, or "Every class" when no named class is missing, and the names in the tooltip
+local VOCATION_INITIALS_MAX = 3
 local function vocationText(spell)
   local ids = list(spell.vocations)
-  if #ids == 0 then return 'Everyone', nil end
+  if #ids == 0 then return tr('Everyone'), nil end
   table.sort(ids)
-  local short, full = {}, {}
+  local short, full, has = {}, {}, {}
   for _, id in ipairs(ids) do
     local name = vocationNames[tonumber(id)] or ('#' .. tostring(id))
     short[#short + 1] = initials(name)
     full[#full + 1] = name
+    has[tonumber(id) or id] = true
+  end
+  if #short > VOCATION_INITIALS_MAX then
+    local missing, named = false, false
+    for id in pairs(vocationNames) do
+      if id > 0 then -- 0 is "None", no class
+        named = true
+        if not has[id] then missing = true break end
+      end
+    end
+    return (named and not missing) and tr('Every class') or tr('%d classes', #short), table.concat(full, ', ')
   end
   return table.concat(short, ', '), table.concat(full, ', ')
 end

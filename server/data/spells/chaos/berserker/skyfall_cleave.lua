@@ -44,7 +44,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if math.max(math.abs(from.x - tpos.x), math.abs(from.y - tpos.y)) > 1 then
 		local spots = ChaosSpell.freeAround(tpos, from)
 		if #spots == 0 then
-			return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+			return ChaosSpell.noRoom(player)
 		end
 		from:sendMagicEffect(CONST_ME_POFF)
 		player:teleportTo(spots[1].pos)

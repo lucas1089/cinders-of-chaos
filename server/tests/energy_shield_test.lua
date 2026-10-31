@@ -357,4 +357,34 @@ ok(p16:find('"armorPercent", true)', 1, true), "percent armour on by default")
 ok(p16:find('"armorPercentConstant", 250)', 1, true), "K = 250")
 ok(p16:find('"armorPercentMax", 80)', 1, true), "cap 80%")
 
+-- after a reconnect the client sends "hello" on the shield opcode and gets the engine's text again (live check of 128)
+local shielded = {getEnergyShield = function() return 596 end, getMaxEnergyShield = function() return 900 end}
+eq(E.helloAnswer(shielded, "hello"), "es:596:900", "hello: the engine's text")
+eq(E.helloAnswer(shielded, "es:1:1"), nil, "hello: nothing for another request")
+eq(E.helloAnswer({}, "hello"), nil, "hello: nothing without the engine API")
+local events = {}
+local realCreatureEvent = CreatureEvent
+CreatureEvent = function(name)
+	local ev = {name = name}
+	function ev:type(t) self.kind = t end
+	function ev:register() events[name] = self end
+	return ev
+end
+dofile("data/scripts/chaos/energy_shield.lua")
+CreatureEvent = realCreatureEvent
+local registered, sent = {}, {}
+local client = {
+	registerEvent = function(_, name) registered[#registered + 1] = name end,
+	sendExtendedOpcode = function(_, op, text) sent[#sent + 1] = op .. " " .. text end,
+	getEnergyShield = function() return 0 end,
+	getMaxEnergyShield = function() return 0 end
+}
+eq(events.ChaosEnergyShieldLogin.onLogin(client), true, "login goes on")
+eq(registered[1], "ChaosEnergyShieldOpcode", "login registers the opcode handler")
+eq(events.ChaosEnergyShieldOpcode.kind, "extendedopcode", "an extended opcode event")
+events.ChaosEnergyShieldOpcode.onExtendedOpcode(client, 225, "hello")
+eq(#sent, 0, "another opcode: nothing")
+events.ChaosEnergyShieldOpcode.onExtendedOpcode(client, ChaosOpcodes.energyShield, "hello")
+eq(sent[1], ChaosOpcodes.energyShield .. " es:0:0", "hello: max 0 is sent too, so a bar left from before hides")
+
 print("energy_shield_test: " .. checks .. " checks OK")

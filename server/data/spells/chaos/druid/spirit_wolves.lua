@@ -47,7 +47,7 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 	end
 	if created == 0 then
-		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+		return ChaosSpell.noRoom(player)
 	end
 	ChaosSpell.buffTimer(player, ChaosSpell.SUBID.moonfang_pack, DURATION) -- the buff bar's timer
 	ChaosSpell.fx(player:getPosition(), "summon_portal", CONST_ME_MAGIC_GREEN)

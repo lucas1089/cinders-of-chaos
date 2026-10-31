@@ -40,7 +40,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local golem = L.raise(player, "golem", pos)
 	if not golem then
-		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+		return ChaosSpell.noRoom(player)
 	end
 	NecroSpell.fx(golem:getPosition(),{"bonelord_golem_rise", "necro_seal"}, "ground_slam", CONST_ME_GROUNDSHAKER)
 	return true

@@ -2821,6 +2821,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Siege over"] = "Cerco encerrado",
   ["Guild Siege - arena %s"] = "Guild Siege - arena %s",
   -- game_spellbook/spellbook.lua
+  ["Every class"] = "Todas as classes",
+  ["Everyone"] = "Todos",
+  ["%d classes"] = "%d classes",
   ["Cast facing north (up)."] = "Lançada virada para o norte (para cima).",
   ["Centred on the target."] = "Centrada no alvo.",
   ["Centred on you."] = "Centrada em você.",

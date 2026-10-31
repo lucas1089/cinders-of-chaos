@@ -33,7 +33,7 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 		local minion = L.raise(player, kind, pos)
 		if not minion then
-			return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+			return ChaosSpell.noRoom(player)
 		end
 		player:addMana(-plan.extraMana)
 		-- the seal where the minion rises (it may be placed next to the caster)
@@ -52,7 +52,7 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 	end
 	if raised == 0 then
-		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+		return ChaosSpell.noRoom(player)
 	end
 	return true
 end

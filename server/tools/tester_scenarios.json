@@ -2,7 +2,6 @@
  "clientOnly": [
   "game_chaosnotify",
   "game_chestaura",
-  "game_energyshield",
   "game_levelwings",
   "game_monkchi",
   "game_npctradewindow"
@@ -7558,6 +7557,20 @@
    "systems": [
     "embercache"
    ]
+  },
+  "energyShield": {
+   "actions": [],
+   "client": [
+    "game_energyshield"
+   ],
+   "dataKeys": [],
+   "files": [
+    "energy_shield.lua"
+   ],
+   "opcode": 224,
+   "out": false,
+   "skip": [],
+   "systems": []
   },
   "everfull": {
    "actions": [

@@ -2,7 +2,9 @@
 -- numbers like the health bar. The engine (server src-patches/0015-energy-shield.patch) sends extended opcode 224, plain
 -- text "es:<current>:<max>", when the shield changes (at most every 200 ms) and once a second while it recharges; max 0
 -- hides the bar. A drop (a hit) shows at once, a rise (the recharge) eases over the next second so the bar fills
--- smoothly. Server side: server/data/lib/chaos_energy_shield.lua (the item modifiers), README "Energy shield".
+-- smoothly. Once in the game it sends "hello" on the same opcode and gets the shield again: the engine sends only changes,
+-- and a reconnect into a character still online left the bar hidden (server data/scripts/chaos/energy_shield.lua).
+-- Server side: server/data/lib/chaos_energy_shield.lua (the item modifiers), README "Energy shield".
 
 local OPCODE = 224
 local EASE_MS = 900
@@ -69,6 +71,11 @@ local function reset()
   if bar then bar:hide() end
 end
 
+local function hello()
+  local protocol = g_game.getProtocolGame()
+  if protocol then protocol:sendExtendedOpcode(OPCODE, 'hello') end
+end
+
 local function parentPanel()
   local root = modules.game_interface.getRootPanel()
   local plate = root and root:recursiveGetChildById('chaosHud')
@@ -79,11 +86,12 @@ function init()
   bar = g_ui.loadUI('energyshield', parentPanel())
   bar:hide()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
-  connect(g_game, { onGameEnd = reset })
+  connect(g_game, { onGameStart = hello, onGameEnd = reset })
+  if g_game.isOnline() then hello() end
 end
 
 function terminate()
-  disconnect(g_game, { onGameEnd = reset })
+  disconnect(g_game, { onGameStart = hello, onGameEnd = reset })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   reset()
   if bar then

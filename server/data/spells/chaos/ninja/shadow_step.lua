@@ -22,7 +22,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local tpos = target:getPosition()
 	local spots = ChaosSpell.freeAround(tpos, from, true)
 	if #spots == 0 then
-		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+		return ChaosSpell.noRoom(player)
 	end
 	ChaosSpell.vfxOr(from, "shade_vanish", "shadow_smoke", CONST_ME_POFF)
 	player:teleportTo(spots[1].pos)
