@@ -154,7 +154,16 @@ class BugBot(discord.Client):
         if self.cfg.guild_id:
             g = discord.Object(id=self.cfg.guild_id)
             self.tree.copy_global_to(guild=g)
-            await self.tree.sync(guild=g)
+            try:
+                await self.tree.sync(guild=g)
+            except discord.Forbidden:
+                # 50001 Missing Access (live 2026-10-31): the bot is not in that server, was invited without the
+                # applications.commands scope, or DISCORD_GUILD_ID is not a server id. The bot keeps running (the bug
+                # channel works without the slash commands) and says how to fix it.
+                log.error('slash commands not registered in server %s: Missing Access. Invite the bot with the link '
+                          'of README.md (scope bot applications.commands) and check DISCORD_GUILD_ID '
+                          '(right click on the server name > Copy Server ID), then discord-bot restart',
+                          self.cfg.guild_id)
         else:
             await self.tree.sync()
         self.loop.create_task(self.daily_loop())
