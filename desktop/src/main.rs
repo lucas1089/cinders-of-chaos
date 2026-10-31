@@ -624,7 +624,13 @@ impl App {
                                         .on_hover_text(format!("then reloads {sys} in the game"))
                                         .clicked();
                                 }
-                                ui.weak(a.live.label());
+                                // when the change takes effect: a coloured dot and a short tag (not a status light)
+                                let (r, gr, b) = a.live.rgb();
+                                let colour = egui::Color32::from_rgb(r, gr, b);
+                                let (dot, _) = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
+                                ui.painter().circle_filled(dot.center(), 4.0, colour);
+                                ui.label(egui::RichText::new(a.live.label()).small().color(colour))
+                                    .on_hover_text(a.live.hint());
                                 if go || live_go {
                                     go = true;
                                 }

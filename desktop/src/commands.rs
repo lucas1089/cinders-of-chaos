@@ -37,13 +37,38 @@ pub enum Live {
 }
 
 impl Live {
+    /// The short tag beside the button (pt-BR, like the rest of the window). It says when the change takes effect; it
+    /// is not a state of the system (the owner, 2026-10-31, read the old "live" as a status light).
     pub fn label(self) -> &'static str {
         match self {
-            Live::Now => "live",
-            Live::Reload(_) => "live with Apply live",
-            Live::Restart => "needs restart",
-            Live::Restarts => "restarts the server",
-            Live::NextInstall => "next install",
+            Live::Now => "na hora",
+            Live::Reload(_) => "com Apply live",
+            Live::Restart => "após reiniciar",
+            Live::Restarts => "reinicia o servidor",
+            Live::NextInstall => "na próxima instalação",
+        }
+    }
+
+    /// The tag's tooltip: the same in a sentence.
+    pub fn hint(self) -> &'static str {
+        match self {
+            Live::Now => "Faz efeito na hora (ou só lê).",
+            Live::Reload(_) => "Grava o arquivo; o botão \"+ Apply live\" recarrega no jogo sem reiniciar.",
+            Live::Restart => "Grava o arquivo; vale no próximo reinício do servidor.",
+            Live::Restarts => "O comando reinicia o servidor: os jogadores caem.",
+            Live::NextInstall => "Vale na próxima instalação ou atualização, sem reiniciar.",
+        }
+    }
+
+    /// The tag's dot colour (r, g, b): green at once, yellow with Apply live, orange after a restart, red when it
+    /// restarts the server, grey at the next install.
+    pub fn rgb(self) -> (u8, u8, u8) {
+        match self {
+            Live::Now => (96, 196, 110),
+            Live::Reload(_) => (228, 196, 72),
+            Live::Restart => (232, 140, 60),
+            Live::Restarts => (220, 72, 60),
+            Live::NextInstall => (150, 150, 150),
         }
     }
 }
@@ -384,6 +409,24 @@ pub fn reload_args(actor: &str, system: &str) -> String {
 mod tests {
     use super::*;
     use std::collections::HashSet;
+
+    #[test]
+    fn live_tags_differ() {
+        let all = [
+            Live::Now,
+            Live::Reload("scripts"),
+            Live::Restart,
+            Live::Restarts,
+            Live::NextInstall,
+        ];
+        for (i, a) in all.iter().enumerate() {
+            assert!(!a.label().is_empty() && !a.hint().is_empty());
+            for b in &all[i + 1..] {
+                assert_ne!(a.label(), b.label());
+                assert_ne!(a.rgb(), b.rgb());
+            }
+        }
+    }
 
     #[test]
     fn placeholders_match_params() {

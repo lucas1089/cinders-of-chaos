@@ -59,12 +59,14 @@ action (`chaos-ctl.sh panel ACTOR ACTION JSON`), like the Android Comandos > Pai
 Every button shows how its change reaches the running game:
 
 | Mark | Meaning | Actions |
+The mark beside a button says when the change takes effect, not a state (owner 2026-10-31 read the old "live" text as a status light). A coloured dot, a pt-BR tag and a tooltip (`Live::label`, `hint`, `rgb`).
+
 |---|---|---|
-| live | read only, or immediate | status, players, logs, broadcast, kick, open, close, save, backup, unit start and stop, accounts, Discord, site, VPS, panel actions |
-| live with Apply live | the command writes a file the scripts read at start; the second button "... + Apply live" then runs the game panel action `reload` (`Game.reload`, no restart) for the named system | Modo beta ligar, desligar (reload `scripts`) |
-| needs restart | no live path yet | Taxa de XP definir, voltar ao padrão |
-| restarts the server | the command itself restarts, players are disconnected | restart, update-apply, rollback, testers start, XP and beta "e reiniciar", server-user fix --restart |
-| next install | applies when `install_all.py` runs again | Par do cliente |
+| na hora (green dot) | read only, or immediate | status, players, logs, broadcast, kick, open, close, save, backup, unit start and stop, accounts, Discord, site, VPS, panel actions |
+| com Apply live (yellow dot) | the command writes a file the scripts read at start; the second button "... + Apply live" then runs the game panel action `reload` (`Game.reload`, no restart) for the named system | Modo beta ligar, desligar (reload `scripts`) |
+| após reiniciar (orange dot) | no live path yet | Taxa de XP definir, voltar ao padrão |
+| reinicia o servidor (red dot) | the command itself restarts, players are disconnected | restart, update-apply, rollback, testers start, XP and beta "e reiniciar", server-user fix --restart |
+| na próxima instalação (grey dot) | applies when `install_all.py` runs again | Par do cliente |
 
 Apply live needs the admin character in Config (group 4 or more; `reload` is a dangerous panel action, so use it when few players are on).
 It uses the existing `remote.cmd` path, so nothing new runs on the server.
