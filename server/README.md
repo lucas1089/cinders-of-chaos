@@ -23939,6 +23939,17 @@ Two things lie on the ground for a short time and are taken by walking onto them
 and the ember of an Ember Blessing proc. Both use one framework. Server only: no client part, no client build, no opcode,
 no storage key, no database table.
 
+**Globes are common items, O352 (2026-10-31).** Monsters left standing after death and a globe that stayed (O349, O352)
+came from the globes' `items.otb` nodes: copied from the stock node of client id 7618 / 7620, they were always-on-top
+(top order 1), while the client draws looks 44397 / 44398 as common items. The server counted a globe before the
+creatures of its tile, the client after them, so a creature move or removal on that tile named a stack position that
+was another thing on the client: `no creature found to move`, a dead monster left at 0 percent, a step on the globe that
+removed the wrong thing. `install_pickups.py` now clears the always-on-top flag and the top order of the three nodes
+and rewrites an installed node (step `pickups` of `install_all.py`). Reproduced on a local server and client: farm,
+kill, step on globes and embers; 4 ghosts and repeated move errors in 2 rounds before, none in 19 rounds after (13
+pickups stepped on). An audit of every `items.otb` node against the pair 56 dat found only the globes and five blocking
+pack 33 decor nodes (coffins, graves; no creature stands there) on different layers. Test: `tools/install_pickups_test.py`.
+
 **The framework** (`pickups_core.lua` pure and tested, `pickups.lua` the engine glue, `pickups_config.lua` the items and
 the shared numbers). A pickup is an item on a tile plus a record in memory (owner, birth, end, callback). `ChaosPickups.drop`
 takes the nearest tile with ground, no solid block and no pickup of ours (the corpse tile, then the ring around it, 13

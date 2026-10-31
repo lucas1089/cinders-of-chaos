@@ -54,6 +54,19 @@ check(by[32088][3] == 44397 and by[32089][3] == 44398 and by[32090][3] == 44396,
 check(all(by[s][5] & FLAG_STACKABLE for s in (32088, 32089, 32090)), 'all three are stackable (forced, also the mana globe)')
 check(by[7618][3] == 7618 and by[7620][3] == 7620 and not (by[7620][5] & FLAG_STACKABLE), 'the stock potion nodes stay as they are')
 check(by[7618][5] & FLAG_PICKUPABLE, 'the stock node stays pickupable')
+# O352: a stock node that is always-on-top (top order 1) gives a common item: the client draws our looks as common items
+top_attr = attr(0x2B, bytes([1]))
+aot = bytes([START]) + escape(bytes([0])) + escape(struct.pack('<I', FLAG_PICKUPABLE | FLAG_MOVEABLE | (1 << 13))
+      + attr(A_SERVERID, struct.pack('<H', 7618)) + attr(A_CLIENTID, struct.pack('<H', 7618)) + top_attr) + bytes([END])
+topped, _n, wt = T.patch_otb(otb([aot, item_node(7620, 7620), item_node(30000, 25045)]), cfg)
+tk = {k[2]: k for k in scan(topped)[0]}
+check(not (tk[32088][5] & (1 << 13)) and all(k != 0x2B for k, _v in tk[32088][6]), 'an always-on-top stock node: the globe is a common item, no top order')
+check(tk[7618][5] & (1 << 13), 'the stock node keeps its top order')
+older_top = bytes([START]) + escape(bytes([0])) + escape(struct.pack('<I', FLAG_STACKABLE | (1 << 13))
+      + attr(A_SERVERID, struct.pack('<H', 32088)) + attr(A_CLIENTID, struct.pack('<H', 44397)) + top_attr) + bytes([END])
+refixed, n6, w6 = T.patch_otb(otb([aot, item_node(7620, 7620), item_node(30000, 25045), older_top]), cfg)
+rk = {k[2]: k for k in scan(refixed)[0]}
+check(any('updated' in n for n in n6) and not (rk[32088][5] & (1 << 13)) and T.verify_otb(refixed, w6), 'an installed always-on-top globe is rewritten')
 check(T.verify_otb(new, wanted) == 7, 'verified, seven nodes')
 again, notes2, _ = T.patch_otb(new, cfg)
 check(again == new and all('present' in n for n in notes2), 'idempotent')
