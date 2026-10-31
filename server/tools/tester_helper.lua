@@ -338,6 +338,13 @@ end
 -- credited death through ChaosSpellQuest.credit, the trial question through ChaosSpellQuest.enterTrial (needs Archivist
 -- Odrenna within range: `!tester enter npc Archivist Odrenna` first), the reward through ChaosSpellQuest.complete.
 -- Answers {quest, step, code, kills, fragments, need = {kills, fragments, level}, spell, learned, ...}.
+-- a trial run of the tester that is not over: trials.lua finish marks it over at once and takes the player out (and
+-- drops the run) in a later event, so a run still listed right after a leave is not running any more
+local function trialRunning(player)
+	local tr = ChaosTrials and ChaosTrials.runs and ChaosTrials.runs[player:getId()]
+	return tr ~= nil and not tr.over
+end
+
 local function spellQuestState(player, extra)
 	local S, Q = ChaosSpellQuest, ChaosSpellQuestCore
 	local n, step, code = S.current(player)
@@ -417,14 +424,15 @@ function commands.spellquest(player, arg)
 		end
 		tell(player, "spellquest", spellQuestState(player, {counted = counted, weight = weight, rolled = #fragments}))
 	elseif a.sub == "trial" then
+		-- near before the entry: a trial that opens takes the tester into its chamber, away from Odrenna
+		local near = S.archivistNear(player) ~= nil
 		local ok, text = S.enterTrial(player)
-		local running = ChaosTrials and ChaosTrials.runs and ChaosTrials.runs[player:getId()] ~= nil
+		local running = trialRunning(player)
 		tell(player, "spellquest", spellQuestState(player, {entered = ok and true or false, text = text, running = running,
-			near = S.archivistNear(player) ~= nil}))
+			near = near}))
 	elseif a.sub == "leave" then
 		local left = ChaosTrials and ChaosTrials.leave and ChaosTrials.leave(player) or false
-		tell(player, "spellquest", spellQuestState(player, {left = left,
-			running = ChaosTrials and ChaosTrials.runs and ChaosTrials.runs[player:getId()] ~= nil or false}))
+		tell(player, "spellquest", spellQuestState(player, {left = left, running = trialRunning(player)}))
 	elseif a.sub == "complete" then
 		local n, step, code = S.current(player)
 		if code ~= "ok" or step ~= Q.STEP.TRIAL then
@@ -537,7 +545,9 @@ local function summonSnapshot(player)
 		row.listed = #list
 		local allies = 0
 		for _, c in ipairs(list) do
-			if H.targetKind(owner, sideOf(c)) ~= "monster" then
+			-- the owner's side only: another player outside the party is an opponent in PvP (stock), not an ally
+			local kind = H.targetKind(owner, sideOf(c))
+			if kind == "owner" or kind == "ally" or kind == "summon" then
 				allies = allies + 1
 			end
 		end
@@ -597,8 +607,14 @@ local function partyShare(party, data)
 	end
 end
 
-function commands.party(player)
+function commands.party(player, arg)
 	local party = player:getParty()
+	-- "leave": out through Party:removeMember; the client's leave packet is refused in a fight
+	-- (Game::playerLeaveParty checks CONDITION_INFIGHT), and hunting bots are always in one
+	if party and (arg or ""):lower() == "leave" then
+		pcall(party.removeMember, party, player)
+		party = player:getParty()
+	end
 	local data = {size = 0, members = {}}
 	if party then
 		local leader = party:getLeader()
@@ -645,8 +661,25 @@ function commands.chest(player, arg)
 			local level = Kc.areaLevel(C, player:getLevel(), player:getLevel())
 			ch = CC.spawnChest(player, player:getPosition(), {name = "Tester Monster",
 				pool = Kc.buildPool(C, "Rotworm", {"Rotworm"}, level, {}), gear = {}, monsterLevel = level, tier = "normal"})
+			if not ch then
+				-- the rift and spell quest checks leave the tester in the temple: the chest goes to its hunt spot
+				local tile = Tile(player:getPosition())
+				local spot = tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) and huntPos(player)
+				if spot then
+					player:teleportTo(spot)
+					ch = CC.spawnChest(player, player:getPosition(), {name = "Tester Monster",
+						pool = Kc.buildPool(C, "Rotworm", {"Rotworm"}, level, {}), gear = {}, monsterLevel = level, tier = "normal"})
+				end
+			end
 			if ch then
 				ch.level = level
+			else
+				-- the game puts no chest in a protection zone (cursedchest.lua usableTile): the temple after a death
+				local tile = Tile(player:getPosition())
+				if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+					tell(player, "chest", {err = "the tester stands in a protection zone: no chest there by design"})
+					return
+				end
 			end
 		end
 	elseif what == "use" and ch then
@@ -672,7 +705,7 @@ function commands.chest(player, arg)
 		monsters = monsters + 1
 	end
 	tell(player, "chest", {state = ch and ch.state or "none", left = #mine, monsters = monsters,
-		horde = ch and ch.ev and ch.ev.horde or 0})
+		horde = ch and ch.ev and ch.ev.horde or 0, made = ch and ch.ev and ch.ev.made or 0})
 end
 
 -- ---------------------------------------------------------------- O110: waystone runs, rift layouts, content rewards
@@ -774,8 +807,16 @@ local function waystoneRun(player, arg)
 	local sid = tierRow.item
 	local ws = WK.roll(mcfg, t, "Rare", math.random)
 	local item = player:addItem(sid, 1)
-	if not item then
-		return {err = "no room for the waystone"}
+	-- a full bag puts the new item on the ground (addItem drops it): the device then finds no waystone on the tester
+	local okTop, carried = pcall(function()
+		local top = item and item:getTopParent()
+		return top ~= nil and top.isPlayer ~= nil and top:isPlayer()
+	end)
+	if not (item and okTop and carried) then
+		if item then
+			pcall(item.remove, item)
+		end
+		return {err = "no room for the waystone (the bag is full)"}
 	end
 	WM.write(item, ws)
 	local rd = WM.read(item) or {mods = {}}
@@ -906,6 +947,14 @@ local function riftRun(player, arg)
 	if not key then
 		return {err = "no key in the backpack"}
 	end
+	-- ready slots of the tier's band before the open: with none, RF.findReady takes another band by design (a full pool)
+	local wantBand = RL.band(cfg, tier)
+	local readyOfBand = 0
+	for _, st in pairs(RF.slots or {}) do
+		if st.state == "ready" and st.band == wantBand then
+			readyOfBand = readyOfBand + 1
+		end
+	end
 	local okOpen, opened = pcall(RF.open, player, key)
 	local run = RF.runOf[player:getId()]
 	if not (okOpen and opened and run and run.L) then
@@ -916,7 +965,7 @@ local function riftRun(player, arg)
 		if what == "layout" then
 			local L = run.L
 			local lay = cfg.layout
-			ans.band, ans.bandExpected = L.band, (RL.band(cfg, tier))
+			ans.band, ans.bandExpected, ans.readyOfBand = L.band, (RL.band(cfg, tier)), readyOfBand
 			ans.floors, ans.side, ans.walkable, ans.route = #L.floors, L.side, L.walkable, L.route
 			local th = lay.themes[L.theme]
 			ans.kinds, ans.floorCounts = {}, {}
@@ -973,8 +1022,11 @@ local function riftRun(player, arg)
 					orbs = orbs + (it.count or 1)
 				end
 			end
-			ans.loot = {paid = paid == true, items = #items, orbs = orbs,
-				minOrbs = math.floor(g.orbs.base + g.orbs.perTier * tier)}
+			-- the burst is (base + perTier x the run's tier) x the run's quantity (RF.contentOf): both as the game reads them
+			local info = RF.contentOf and RF.contentOf(standIn("Rift Guardian", player:getPosition(), gid), player) or {}
+			local runTier, quantity = info.tier or tier, info.quantity or 1
+			ans.loot = {paid = paid == true, items = #items, orbs = orbs, runTier = runTier, quantity = quantity,
+				minOrbs = math.floor((g.orbs.base + g.orbs.perTier * runTier) * quantity)}
 		end
 	end)
 	if not okRead then

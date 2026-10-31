@@ -697,6 +697,11 @@ class CheckIO(KeyIO):
             bot.conn.send(b'\xA7')
             await other.conn.w.drain()
             await bot.conn.w.drain()
+            # the engine refuses the leave packet in a fight (Game::playerLeaveParty), and hunting bots are in one:
+            # the helper takes both out (Party:removeMember), else the partner stays in the party for the next check
+            await asyncio.sleep(0.5)
+            await other.helper_says('party leave', 'party')
+            await bot.helper_says('party leave', 'party')
         return True
 
     def autosetup(self):

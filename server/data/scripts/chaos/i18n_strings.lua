@@ -4086,6 +4086,8 @@ return {
 			"As cinco hordas morreram! O baú amaldiçoado se abre: use-o em %d segundos para pegar seu tesouro.",
 		["The curse wins: time is up. The cursed chest crumbles and its hordes fade."] =
 			"A maldição vence: o tempo acabou. O baú amaldiçoado se desfaz e as hordas somem.",
+		["The hordes find no room to rise here. The cursed chest crumbles."] =
+			"As hordas não acham espaço para surgir aqui. O baú amaldiçoado se desfaz.",
 		["Nobody is left to fight. The cursed chest crumbles and its hordes fade."] =
 			"Não sobrou ninguém para lutar. O baú amaldiçoado se desfaz e as hordas somem.",
 		["You are leaving the cursed chest! Go back or the curse wins in %d seconds."] =

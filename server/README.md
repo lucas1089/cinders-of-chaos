@@ -2399,6 +2399,16 @@ Tests: `tests/necro_summon_test.lua` (levels, rescale, the XML experience and lo
 attack next on an own minion with Auto Target on, walking through a warrior in a corridor (and a second player who
 cannot), a level up with minions out.
 
+**Allies in the engine target list (O86 third pass, engine patch `0086-summon-allies-not-opponents.patch`).** Live
+finding 2026-10-31 (tester bots, checks `necro_minions` and `party`): Risen Skeletons held 2 allies in their engine
+target list, 1 in a party. `Monster::isOpponent` of a player's summon was "everybody but the master": the owner's other
+summons, the party and their summons came back into the list on each step in view, and the Lua purge
+(`ChaosSummonsCore.purge`, every 0.5 s) only removed them for a moment. Now a player's summon takes the owner, the
+owner's other summons, members of the owner's party and their summons as no opponent; `updateTargetList` also drops a
+listed creature that is no opponent any more (a party joined later). Other players and their summons stay opponents
+(PvP unchanged); wild monsters are unchanged. The Lua purge stays for a base without the patch. Guard:
+`tools/summon_allies_patch_test.py`. Live: the bot checks `necro_minions` and `party` pass with the patch.
+
 ## Monster debuff durations (`tools/patch_debuff_durations.py`, install step `debuffs`)
 
 Owner, 2026-10-20 (beta): stock debuffs lasted up to a minute; they now last at most 10 s. Every `<attack>` of a monster
@@ -26714,6 +26724,12 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 - **Economy.** About 4-5 chests an hour of hunting (the cooldown caps 10). The gold is about 22% of an hour's, and the fights (about 3 minutes, monsters are husks) cost the same in lost corpse loot, so gold is neutral; orbs are about 5 an hour, against 24-33 from tier 15 rifts. No model config was changed; `store_model`, `roulette_model`, `progression_model`, `skill_model`, `pack_model` pass.
 - **Abuse.** Event monsters are husks (`Monster:setDropLoot(false)`, as rift husks): no corpse loot, so no `onDropLoot` (no chest, blessing, Chaos roll) and they are never treasure goblins (artificial spawns). They are also tagged and refused by the chest roll. One claim per participant (the mark is set before the loot). Everything is checked on the server. Nothing is stored (no storage keys, no table): after a restart or `/reload` no monster remains and a chest item left on the map is unknown to the table and crumbles at its next use.
 - **Outcome messages (O308).** Tester report: chests opened with no loot and no line. Every claim now ends with an event line and a toast (`MESSAGE_LOOT` is kept off the game screen by `game_lootscreen`, so it is not the only line): the loot list, or "held nothing for you". Each part of the roll (gold, orbs, shards, crafting orbs, gear, uniques) is its own step, so one error is logged and the rest is still given; a roll that breaks as a whole gives the claim mark back and tells the player to use the chest again. Backpack full: the inbox, else the ground at the player's feet, and the line says which. A won chest reminds players who have not claimed `event.remindSec` (30) before it crumbles and tells them when it does; a chest item that disappears mid-event fails the event with a line. An error in the use itself is a cancel message, not silence.
+- **No free win from an empty horde (2026-10-31).** Tester bots (check `cursed_chest`): a horde came with no monster and the
+  chest was won without a fight. A horde that made no monster counted as spawned, so 5 empty hordes gave the loot. Cause: the
+  14 random tries of `ChaosSpawnTile.find` (2-5 tiles from the chest) all missed in a tight spot (a corridor, the edge of a
+  protection zone). Now `randomSpot` scans every tile of the ring, then of the whole square, and takes one at random; a horde
+  that still makes no monster (or fails with an error) ends the event (`CC.failEvent(ch, "room")`, "The hordes find no room to
+  rise here."). `ev.made` counts the monsters made (the tester helper reads it). Tests: `tests/cursedchest_test.lua`.
 - **Staff.** `/cursedchest` makes a chest next to you; `/cursedchest roll <tier>, <level>[, <n>]` shows the chance.
 - **Ascension Proof (2026-10-29).** Owner report: the monsters of a cursed chest did not count for the Ascension Proof of Strength.
   Cause: the tier was applied (`ChaosApplyTier`), but the Proof compares the monster's hunting level, and a chest monster keeps

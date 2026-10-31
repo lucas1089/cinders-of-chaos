@@ -162,7 +162,7 @@ async def check_party(io, name, cls, level):
     """two bots form a party and leave it: the helper sees the size; a bot with a summon keeps its sides in the party"""
     other = await io.partner()
     if not other:
-        return Result('party', name, cls, SKIP, 'no other bot in game')
+        return Result('party', name, cls, SKIP, 'no free bot in game (none online, or all in another party check)')
     if not await io.party('form', other):
         return Result('party', name, cls, SKIP, 'the invite could not be sent')
     await io.sleep(SETTLE)
@@ -259,8 +259,8 @@ def party_share_problems(p):
     if p.get('shareEnabled') and hard:
         out.append('shared experience works while %s %s' % (hard[0].get('name', '?'), 'is below two thirds of the highest level'
                                                              if hard[0].get('kind') == 'level' else 'is out of range'))
-    if p.get('shareActive') and not p.get('shareEnabled') and not (p.get('problems') or []):
-        out.append('shared experience is off while every member passes level, range and fight')
+    # off with no problem the helper sees is no failure: the engine also needs an attack or a heal of each member since
+    # it joined (Party ticksMap); the helper only sees the fight condition (live run 2026-10-31)
     return out
 
 
@@ -269,10 +269,11 @@ async def check_party_xp(io, name, cls, level):
     reads the party: the switch took, what the game's Party:onShareExperience pays for 1000 experience is
     ceil(1000 x (1 + class line bonus) / members), and the engine's verdict agrees with the rules (nobody below two
     thirds of the highest level, within 30 tiles and 1 floor, in a fight): not working while a member fails level or
-    range, working when all pass. A verdict seen in two looks 3 s apart. Left again at the end."""
+    range (off with no problem seen is no failure: the engine also needs each member's attack or heal since the join). A
+    verdict seen in two looks 3 s apart. Left again at the end."""
     other = await io.partner()
     if not other:
-        return Result('party_xp', name, cls, SKIP, 'no other bot in game')
+        return Result('party_xp', name, cls, SKIP, 'no free bot in game (none online, or all in another party check)')
     if not await io.party('form', other):
         return Result('party_xp', name, cls, SKIP, 'the invite could not be sent')
     await io.sleep(SETTLE)
@@ -421,7 +422,8 @@ def rift_layout_problems(a):
         out.append('%s has the layout kind %s, its config allows %s' % (a.get('theme'), a.get('kind'), '/'.join(a.get('kinds') or [])))
     if a.get('floors') not in (a.get('floorCounts') or []):
         out.append('%s has %s floor(s), its config allows %s' % (a.get('theme'), a.get('floors'), a.get('floorCounts')))
-    if a.get('band') != a.get('bandExpected'):
+    if a.get('band') != a.get('bandExpected') and a.get('readyOfBand') != 0:
+        # no ready slot of the band: the pool hands out another band by design (rift.lua RF.findReady)
         out.append('tier %s made a band %s layout, the config says band %s' % (a.get('tier'), a.get('band'), a.get('bandExpected')))
     lim = a.get('limits') or {}
     w = int(a.get('walkable') or 0)
@@ -469,8 +471,8 @@ async def check_content_rewards(io, name, cls, level):
         parts.append('rift guardian not checked: %s' % str(why)[:50])
     else:
         if not rl.get('paid') or int(rl.get('orbs') or 0) < int(rl.get('minOrbs') or 0):
-            return Result('content_rewards', name, cls, FAIL, 'rift guardian: %s orb(s) (paid %s), the config guarantees %s' % (
-                rl.get('orbs'), rl.get('paid'), rl.get('minOrbs')))
+            return Result('content_rewards', name, cls, FAIL, 'rift guardian: %s orb(s) (paid %s), the config guarantees %s (run tier %s, quantity %s)' % (
+                rl.get('orbs'), rl.get('paid'), rl.get('minOrbs'), rl.get('runTier'), rl.get('quantity')))
         ran += 1
         parts.append('rift guardian: %s orbs' % rl.get('orbs'))
     if not ran:
@@ -486,6 +488,7 @@ async def check_reward_chest(io, name, cls, level):
 
 async def check_cursed_chest(io, name, cls, level):
     """a chest next to the bot: spawn, use (the horde starts), abort; nothing may be left"""
+    await io.go('hunt')   # the rift and spell quest checks leave the bot in the temple: no chest in a protection zone
     a = await io.helper('chest spawn', 'chest', ANSWER)
     if not a:
         return Result('cursed_chest', name, cls, SKIP, 'no answer to !tester chest')
@@ -500,8 +503,10 @@ async def check_cursed_chest(io, name, cls, level):
     bad = []
     if not u or u.get('state') not in ('running', 'idle'):
         bad.append('after use the chest is %r' % (u or {}).get('state'))
-    if s and s.get('state') == 'running' and int(s.get('monsters') or 0) < 1:
-        bad.append('the event runs with no monster')
+    if s and s.get('state') == 'running' and int(s.get('monsters') or 0) < 1 and int(s.get('horde') or 0) > 0 \
+            and int(s.get('made') if s.get('made') is not None else 0) < 1:
+        # a horde the bots killed at once is fine: only a horde that made no monster is a failure
+        bad.append('horde %s came with no monster' % s.get('horde'))
     z = await io.helper('chest abort', 'chest', ANSWER)
     await io.sleep(1.0)
     z = await io.helper('chest state', 'chest', ANSWER) or z

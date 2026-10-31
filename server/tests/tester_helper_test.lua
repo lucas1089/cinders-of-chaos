@@ -541,7 +541,9 @@ do
 	mate.getParty = function() return party end
 	w1.getParty = function() return nil end
 	t2.getSummons = function() return {w1} end
-	w1.getTargetList = function() return {t2, mate, wolf} end
+	local stranger = creature(268435482, "Tester Aby", {store = {[ST] = 1}})
+	stranger.getParty = function() return nil end
+	w1.getTargetList = function() return {t2, mate, wolf, stranger} end -- a player outside the party: no ally
 	w1.target = t2
 	function Game.getPlayers() return {t2, mate} end
 	talks["!tester"].onSay(t2, "!tester", "summons")
@@ -550,6 +552,13 @@ do
 	check(line:find('"listedAllies":2', 1, true) ~= nil, "summons: two allies in the engine target list")
 	talks["!tester"].onSay(t2, "!tester", "party")
 	check(t2.log.msgs[#t2.log.msgs]:find('"size":2', 1, true) ~= nil, "party: size 2")
+	-- leave: out through Party:removeMember (the leave packet is refused in a fight)
+	local removed
+	party.removeMember = function(_, who) removed = who; mate.getParty = function() return nil end end
+	talks["!tester"].onSay(mate, "!tester", "party leave")
+	check(removed == mate and mate.log.msgs[#mate.log.msgs]:find('"size":0', 1, true) ~= nil, "party leave: removed, size 0")
+	mate.getParty = function() return party end
+	party.removeMember = nil
 	-- the loop reports the anomaly of a tester with a wolf on the console
 	T.ids[t2.id] = true
 	spectators = {}
@@ -835,6 +844,8 @@ do
 	function wp:addItem(id, n)
 		local it = {id = id, count = n, ws = nil}
 		function it:getId() return self.id end
+		local owner = self
+		function it:getTopParent() return owner.bagFull and {} or owner end
 		self.bag[#self.bag + 1] = it
 		return it
 	end
@@ -849,6 +860,11 @@ do
 		return lastBody(pl, kind)
 	end
 
+	wp.bagFull = true
+	local nBag = #wp.bag
+	has((ask(wp, "waystone 2", "waystone")), "the bag is full", "waystone: a waystone that fell on the ground: refused")
+	wp.bagFull = nil
+	table.remove(wp.bag, nBag + 1)
 	body = ask(wp, "waystone 2", "waystone")
 	has(body, '"tier":2', "waystone: tier 2")
 	has(body, '"tierLevel":1200', "waystone: tier 2 runs at level 1200")
