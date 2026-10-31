@@ -35,6 +35,22 @@ end
 if not ChaosWeaponDps then
 	dofile("data/scripts/chaos/weapon_dps_core.lua")
 end
+if not ChaosWeaponSkill then
+	dofile("data/scripts/chaos/weapon_skill_core.lua")
+end
+-- the wands' and rods' weapons.xml damage (O353): the stock ones (chaos_base_wands.lua, from base_weapons.csv) and ours
+-- (the generated item tables; the engine does not give weapons.xml numbers to Lua)
+do
+	local tables = {}
+	for _, path in ipairs({"data/lib/chaos_base_wands.lua", "data/lib/chaos_gear_sets_items.lua",
+			"data/lib/chaos_relic_sets_items.lua", "data/lib/chaos_weapons800.lua"}) do
+		local ok, t = pcall(dofile, path)
+		if ok and type(t) == "table" then
+			tables[#tables + 1] = t
+		end
+	end
+	ChaosWeaponDps.wands = ChaosWeaponDps.collectWands(tables)
+end
 if not ChaosArchery then
 	dofile("data/lib/chaos_archery_core.lua")
 end
@@ -127,6 +143,7 @@ local function answer(player, data)
 			best = math.max(best, player:getEffectiveSkillLevel(sk))
 		end
 		wielder.melee, wielder.distance = best, player:getEffectiveSkillLevel(SKILL_DISTANCE)
+		wielder.magic = player:getMagicLevel()
 		wielder.level = player:getLevel()
 	end)
 	if not okSkill then

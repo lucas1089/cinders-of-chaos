@@ -813,6 +813,7 @@ jobs:
           python3 -I server/tools/weapon_sim_test.py
           python3 -I server/tools/weapon_sim.py --check
           python3 -I server/tools/weapon_sim.py --power --check  # weapon_power_config.lua (auto attack power)
+          python3 -I server/tools/gen_base_wands.py --check  # data/lib/chaos_base_wands.lua: stock wand damage for the tooltip (O353)
           python3 -I server/tools/add_vocations_melee_test.py
           python3 -I server/tools/monster_fire_resist_test.py
 

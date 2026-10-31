@@ -24,6 +24,7 @@ SLOTP_TWO_HAND, WEAPON_SHIELD, WEAPON_AMMO = 2048, 4, 7
 local TYPES = {
 	[2400] = {name = "magic sword", weaponType = 1, attack = 48, defense = 35, slot = 48, level = 80, voc = "knights"},
 	[2431] = {name = "stonecutter axe", weaponType = 3, attack = 50, slot = 48 + 2048, attackSpeed = 2200},
+	[2181] = {name = "test rod", weaponType = 6, slot = 48, level = 26},
 	[2466] = {name = "golden armor", armor = 14, slot = 8 + 48, description = "It shines.",
 		abilities = {skills = {0, 0, 0, 0, 0, 0}, stats = {0, 0, 0, 0}, absorbPercent = {[4] = 5}, speed = 0}},
 	[2514] = {name = "mastermind shield", weaponType = WEAPON_SHIELD, defense = 37, slot = 48},
@@ -440,6 +441,20 @@ eq(twoH ~= nil, true, "a two-handed axe has one")
 ChaosDisplayScale = {factor = function() return 10 end}
 eq(dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0, level = 100, melee = 70}})).v, row.v * 10, "x the display scale of the level")
 ChaosDisplayScale = nil
+-- a wand or rod (O353): its hit for the viewer as "Attack lo-hi" first, and its estimated DPS
+ChaosWeaponDps.wands = {[2181] = {min = 42, max = 48}}
+ChaosWeaponSkill = {wandFactor = function(level, ml) return ml >= 50 and 2 or 1 end}
+ChaosWeaponPower = {levelFactor = function() return 1.5 end}
+local rod = newItem(2181)
+local rt = T.build(rod, {wielder = {voc = 2000, dex = 0, level = 100, magic = 60}})
+eq(rt.base[1].k, "attack", "the rod's attack comes first") eq(rt.base[1].fmt, "range")
+eq(rt.base[1].lo, 126, "42 x 2 x 1.5") eq(rt.base[1].hi, 144, "48 x 2 x 1.5") eq(rt.base[1].v, 135, "attack value: the mean")
+eq(dpsOf(rt).v, ChaosWeaponDps.round(45 * 3 / 2), "rod dps: mean hit x factor / 2 s")
+eq(T.build(rod, {wielder = {voc = 2000, dex = 0, level = 100, magic = 10}}).base[1].hi, 72, "less magic level, smaller hit")
+eq(dpsOf(T.build(rod, {})), nil, "no viewer: no rod estimate")
+ChaosWeaponDps.wands = {}
+eq(dpsOf(T.build(rod, {wielder = {voc = 2000, dex = 0, level = 100, magic = 60}})), nil, "an unknown wand: no rows")
+ChaosWeaponDps.wands, ChaosWeaponSkill, ChaosWeaponPower = nil, nil, nil
 
 -- a transmog look travels in the tip (also in item link snapshots, itemlink.lua builds them with T.build): the client
 -- draws the tooltip icon with it (game_itemtooltip setAppearanceId) and names it

@@ -90,6 +90,7 @@ for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests
 python3 client/tools/gen_spell_data.py                       # -> game_chaosspells/spelldata.lua
 python3 -I client/tools/gen_credits.py                       # docs/CREDITS.md -> client_chaos_credits/credits_data.lua, website credits_data.json (--check)
 cd server && python3 -I tools/gen_unique_specs.py            # -> data/lib/chaos_unique_specs.lua
+python3 -I server/tools/gen_base_wands.py                    # -> data/lib/chaos_base_wands.lua (stock wand damage for the tooltip, O353; --check in CI)
 cd server && luajit tools/gen_codex_data.lua                 # -> client game_codex/codex_data.lua
 cd server && lua5.3 tools/gen_codex_data.lua --check
 cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/wiki_data.json

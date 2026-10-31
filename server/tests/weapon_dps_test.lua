@@ -49,5 +49,29 @@ ok(D.round(137.5) == 138 and D.round(0) == nil and D.round(nil) == nil, "round")
 local skill = 10 + 0.4 * (100 - 8)
 ok(D.estimate({level = 100, skill = skill, attack = 30, interval = 2000}) > 0, "model skill gives a number")
 
+-- wands and rods (O353): the flat weapons.xml hit x the factor of weapon_styles.lua
+local lo, hi = D.wandHit(42, 48, 1.5)
+ok(lo == 63 and hi == 72, "wand hit range x factor")
+ok(D.wandHit(48, 42, 1) == 42, "min and max swapped are put back")
+ok(D.wandHit(0, 0, 1) == nil and D.wandHit(10, 20, 0) == nil, "no wand hit")
+near(D.wandEstimate({min = 42, max = 48, factor = 1.5, interval = 2000}), 45 * 1.5 / 2, 1e-9, "wand dps")
+ok(D.wandEstimate({min = 42, max = 48, factor = 1, interval = 0}) == nil, "wand: no interval")
+ok(D.wandEstimate(nil) == nil, "wand: no input")
+local wands = D.collectWands({
+	{[2181] = {stats = {wandMin = 42, wandMax = 48}}}, -- chaos_base_wands.lua shape
+	{{id = 37051, key = "x_wand", stats = {wandMin = 57, wandMax = 77}}, {id = 37047, stats = {armor = 1}}}, -- gear sets
+	{ids = {48434}, items = {[48434] = {key = "rod", stats = {wandMin = 95, wandMax = 129}}}}, -- weapons800
+})
+ok(wands[2181] and wands[2181].min == 42 and wands[2181].max == 48, "stock wand")
+ok(wands[37051] and wands[37051].max == 77, "gear set wand by its id field")
+ok(wands[48434] and wands[48434].min == 95, "weapons800 rod by its map key")
+ok(wands[37047] == nil, "no wand stats, no row")
+local real = D.collectWands({dofile("data/lib/chaos_base_wands.lua"), dofile("data/lib/chaos_gear_sets_items.lua"),
+	dofile("data/lib/chaos_weapons800.lua")})
+local n = 0
+for _ in pairs(real) do n = n + 1 end
+ok(n > 60, "the shipped tables hold the wands and rods (" .. n .. ")")
+ok(real[2181] and real[2181].max == 48, "a stock wand")
+
 print(string.format("weapon_dps_test: %d checks, %d failed", checks, fails))
 os.exit(fails == 0 and 0 or 1)
