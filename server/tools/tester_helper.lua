@@ -303,7 +303,13 @@ function commands.enter(player, arg)
 		rift.giveKey(player, {tier = place.tier, mods = {}}, "Tester key")
 		player:teleportTo(temple(player))
 		local it = ItemType(cfg.key.itemId)
-		tell(player, "enter", {kind = "rift", tier = place.tier, keyClientId = it and it:getClientId() or 0,
+		-- the key is read back and taken again: one key per check filled the testers' bags over a long run
+		local key = player:getItemById(cfg.key.itemId, true)
+		local held = key ~= nil
+		if key then
+			pcall(key.remove, key, 1)
+		end
+		tell(player, "enter", {kind = "rift", tier = place.tier, keyClientId = it and it:getClientId() or 0, held = held,
 			pos = posOf(player:getPosition())})
 		return
 	end

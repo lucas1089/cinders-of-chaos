@@ -211,8 +211,12 @@ class Party(unittest.TestCase):
 
 class Others(unittest.TestCase):
     def test_rift(self):
-        io = FakeIO({'enter rift 1': {'pos': {}}}, {('rift', 'query'): {'action': 'state', 'data': {}}})
+        io = FakeIO({'enter rift 1': {'pos': {}, 'tier': 1, 'held': True}})
         self.assertEqual(run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100)).status, TX.PASS)
+        io = FakeIO({'enter rift 1': {'pos': {}, 'tier': 1, 'held': False}})
+        self.assertEqual(run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100)).status, TX.FAIL)
+        io = FakeIO({'enter rift 1': {'pos': {}}})
+        self.assertEqual(run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100)).status, TX.SKIP)
         self.assertEqual(run(TX.check_rift(FakeIO({'enter rift 1': {'err': 'no temple'}}), 'a', 'Ninja', 100)).status, TX.FAIL)
         self.assertEqual(run(TX.check_rift(FakeIO(), 'a', 'Ninja', 100)).status, TX.SKIP)
 

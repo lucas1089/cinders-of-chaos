@@ -199,10 +199,12 @@ async def check_rift(io, name, cls, level):
         return Result('rift', name, cls, SKIP, 'no answer to !tester enter rift')
     if r.get('err'):
         return Result('rift', name, cls, FAIL, 'enter rift: %s' % str(r['err'])[:80])
-    q = await io.request('rift', 'query', {}, ['*'], ANSWER)
-    if q is None:
-        return Result('rift', name, cls, SKIP, 'key given; the rift window did not answer')
-    return Result('rift', name, cls, PASS, 'key given, the rift window answered')
+    # the rift window answers a query only inside a run (rift.lua ChaosRiftExtended); the run itself is check rift_layout
+    if r.get('held') is False:
+        return Result('rift', name, cls, FAIL, 'a rift key of tier %s was given, the backpack holds none' % r.get('tier'))
+    if r.get('held') is None:
+        return Result('rift', name, cls, SKIP, 'key given; the helper does not read it back (old helper file)')
+    return Result('rift', name, cls, PASS, 'a tier %s key reached the backpack' % r.get('tier'))
 
 
 async def check_opcode(io, name, cls, level, check, opname, action, data=None):

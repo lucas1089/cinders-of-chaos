@@ -392,8 +392,16 @@ talks["!tester"].onSay(tester, "!tester", "enter npc Ana")
 check(last(tester):find('"err":"no such NPC"', 1, true) ~= nil, "a player's name is not an NPC")
 eq(#tester.log.teleports, tps, "and nobody moves")
 eq(#ana.log.teleports, 0, "Ana stays where she is")
+local keyRemoved = 0
+function tester:getItemById(id)
+	if #keys > keyRemoved then
+		return {remove = function() keyRemoved = keyRemoved + 1 return true end}
+	end
+	return nil
+end
 talks["!tester"].onSay(tester, "!tester", "enter rift 4")
 eq(#keys, 1, "a rift key")
+check(last(tester):find('"held":true', 1, true) ~= nil and keyRemoved == 1, "the key is read back and taken again")
 check(keys[1].who == tester and keys[1].key.tier == 4 and #keys[1].key.mods == 0, "tier 4, no modifiers, to the tester")
 check(last(tester):find('"keyClientId":20155', 1, true) ~= nil, "the key's client id for the hotkey use")
 eq(tester.pos.x, 50, "and the tester waits in the temple")
