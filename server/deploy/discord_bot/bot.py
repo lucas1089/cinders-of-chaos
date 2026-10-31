@@ -154,7 +154,16 @@ class BugBot(discord.Client):
         if self.cfg.guild_id:
             g = discord.Object(id=self.cfg.guild_id)
             self.tree.copy_global_to(guild=g)
-            await self.tree.sync(guild=g)
+            try:
+                await self.tree.sync(guild=g)
+            except discord.Forbidden:
+                # 50001 Missing Access (live 2026-10-31): the bot is not in that server, was invited without the
+                # applications.commands scope, or DISCORD_GUILD_ID is not a server id. The bot keeps running (the bug
+                # channel works without the slash commands) and says how to fix it.
+                log.error('slash commands not registered in server %s: Missing Access. Invite the bot with the link '
+                          'of README.md (scope bot applications.commands) and check DISCORD_GUILD_ID '
+                          '(right click on the server name > Copy Server ID), then discord-bot restart',
+                          self.cfg.guild_id)
         else:
             await self.tree.sync()
         self.loop.create_task(self.daily_loop())
@@ -199,9 +208,13 @@ class BugBot(discord.Client):
 
     # ---- the bugs channel
     async def on_message(self, m):
-        if m.author.bot or m.channel.id != self.cfg.bugs_channel_id:
+        if m.author.bot:
             return
-        text = m.content or ''
+        thread = m.channel if isinstance(m.channel, discord.Thread) else None
+        if not core.in_bugs_channel(m.channel.id, thread.parent_id if thread else None, self.cfg.bugs_channel_id):
+            return
+        # a forum post: the starter message has the thread's id; its title goes in front of the text
+        text = core.report_text(m.content, thread.name if thread else None, bool(thread) and m.id == thread.id)
         idx = core.pick_images([(a.filename, a.content_type, a.size) for a in m.attachments])
         if len(text.strip()) < 6 and not idx:
             return

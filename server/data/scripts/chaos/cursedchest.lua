@@ -84,10 +84,21 @@ local function say(player, text, ...)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, Chaos.t(player, text, ...))
 end
 
-local function toast(player, text, ...)
-	if ChaosNotify and ChaosNotify.gmBroadcast then
-		pcall(ChaosNotify.gmBroadcast, player, Chaos.t(player, text, ...))
+-- a toast under the client's CURSED CHEST header (kind "cursedchest", notifications.lua ChaosNotify.send); the GM
+-- broadcast toast (header GAMEMASTER NOTIFICATION) only on a server without ChaosNotify.send
+local function notify(player, text)
+	if not ChaosNotify then
+		return
 	end
+	if ChaosNotify.send then
+		pcall(ChaosNotify.send, player, "", text, "cursedchest")
+	elseif ChaosNotify.gmBroadcast then
+		pcall(ChaosNotify.gmBroadcast, player, text)
+	end
+end
+
+local function toast(player, text, ...)
+	notify(player, Chaos.t(player, text, ...))
 end
 
 -- a text with a toast, for the players of an event that are online
@@ -879,9 +890,7 @@ local function claimReport(player, parts, spill)
 		text = Chaos.t(player, "Cursed Chest loot: %s.%s", table.concat(parts, ", "), tail)
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text)
-	if ChaosNotify and ChaosNotify.gmBroadcast then
-		pcall(ChaosNotify.gmBroadcast, player, text)
-	end
+	notify(player, text)
 end
 
 local function claim(player, ch)

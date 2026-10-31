@@ -178,6 +178,24 @@ def image_media_type(filename, content_type):
     return IMAGE_TYPES.get(ext)
 
 
+def in_bugs_channel(channel_id, parent_id, bugs_channel_id):
+    """A message of the bugs channel: in it, or in a thread of it (a forum channel: every post is a thread whose
+    parent is the forum; owner 2026-10-31, the forum post was not seen)."""
+    if not bugs_channel_id:
+        return False
+    return channel_id == bugs_channel_id or (parent_id is not None and parent_id == bugs_channel_id)
+
+
+def report_text(body, thread_title=None, starter=False):
+    """The text to classify. The first message of a forum post gets the post's title in front: the title often holds
+    the whole report ("teste: baú não abre.") and the body only "teste"."""
+    body = body or ''
+    title = (thread_title or '').strip()
+    if starter and title and title not in body:
+        return title + '\n' + body if body.strip() else title
+    return body
+
+
 def pick_images(attachments):
     """attachments: [(filename, content_type, size)] -> indexes worth downloading (images, small enough, at most 4)."""
     out = []

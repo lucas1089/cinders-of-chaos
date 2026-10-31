@@ -120,6 +120,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#7a1a12",
         duration = 9000,
     },
+    -- Cursed Chest (server data/scripts/chaos/cursedchest.lua, O244): the chest rises, the hordes, the loot
+    CURSED_CHEST = {
+        icon = "images/toast/invasion.png",
+        title = "CURSED CHEST",
+        titleColor = "#b46ae0",
+        backgroundColor = "#ccbebb",
+        borderColor = "#4a1a6a",
+        duration = 9000,
+    },
     -- season pass (server data/scripts/chaos/seasonpass.lua): tier up, challenge done, premium and packs
     SEASON_PASS = {
         icon = "images/toast/season_pass.png",
@@ -465,6 +474,7 @@ end
 -- middle of the text column, 'no' (Decline, Cancel) right of it; both 80 x 24, ANSWER_GAP apart
 local ANSWER_W, ANSWER_GAP, ANSWER_BOTTOM = 80, 12, 33
 local TEXT_LEFT, TEXT_RIGHT, TOAST_W = 80, 30, 340 -- the message label's margins and the toast width
+local REFIT_MS = { 100, 400 } -- measure the wrapped message again after the first draws (createCompactNotification)
 
 local function createAnswerButton(parent, kind, id, text)
     local style = kind == 'yes' and 'ChaosToastAccept' or 'ChaosToastDecline'
@@ -636,13 +646,25 @@ local function createCompactNotification(data, isPinned)
             local message = data.message or tr('Notification message')
             messageLabel:setSize({width = TOAST_W - TEXT_LEFT - TEXT_RIGHT, height = 1})
             messageLabel:setText(message)
-            local height, labelHeight, cut = ChaosNotifyView.heightFor(data.notificationType,
-                messageLabel:getTextSize().height)
-            notification:setHeight(height)
-            notification.toastHeight = height
-            messageLabel:setHeight(labelHeight)
-            if cut then
-                messageLabel:setTooltip(message)
+            local function fit()
+                local height, labelHeight, cut = ChaosNotifyView.heightFor(data.notificationType,
+                    messageLabel:getTextSize().height)
+                local changed = notification.toastHeight ~= nil and notification.toastHeight ~= height
+                notification:setHeight(height)
+                notification.toastHeight = height
+                messageLabel:setHeight(labelHeight)
+                messageLabel:setTooltip(cut and message or '')
+                return changed
+            end
+            fit()
+            -- the wrapped text size is known only once the label is laid out and drawn (live check 2026-10-31: 14 px,
+            -- one line, at creation; 70 px, five lines, 300 ms later), so measure again then and restack if it grew
+            for _, delay in ipairs(REFIT_MS) do
+                scheduleEvent(function()
+                    if isWidgetValid(notification) and isWidgetValid(messageLabel) and fit() then
+                        repositionNotifications()
+                    end
+                end, delay)
             end
             messageLabel:setMarginLeft(80)
             messageLabel:setMarginTop(28)
@@ -1222,6 +1244,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         invasion = function(data)
             if data.message then
                 addNotification("INVASION", data.message)
+            end
+        end,
+
+        -- Cursed Chest (server data/scripts/chaos/cursedchest.lua)
+        cursedchest = function(data)
+            if data.message then
+                addNotification("CURSED_CHEST", data.message)
             end
         end,
 

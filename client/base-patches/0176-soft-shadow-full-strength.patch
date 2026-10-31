@@ -1,0 +1,14 @@
+diff -ruN a/src/client/creature.cpp b/src/client/creature.cpp
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -316,7 +316,9 @@
+             shadowTiles = std::max<int>(shadowTiles, shadowType->getWidth());
+         if (shadowMount)
+             shadowTiles = std::max<int>(shadowTiles, shadowMount->getWidth());
+-        shadowItem = g_drawQueue->addTexturedRect(Rect(dest.x, dest.y, 1, 1), softShadowTexture(), Rect(0, 0, 64, 32), Color(255, 255, 255, 120));
++        // Chaos (base patch 0176): full strength; the texture's own fade is the shadow's softness. At alpha 120 the
++        // shadow changed no pixel on screen (live check 2026-10-31, light floor, shadow on and off).
++        shadowItem = g_drawQueue->addTexturedRect(Rect(dest.x, dest.y, 1, 1), softShadowTexture(), Rect(0, 0, 64, 32), Color::white);
+     }
+ 
+     size_t drawQueueSize = g_drawQueue->size();
