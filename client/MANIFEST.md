@@ -506,7 +506,8 @@ The login background can be a piece of our own world instead of the artwork: a r
   position, so the 4x4 seamless ground patterns tile as on the map; things bigger than a tile are drawn up and left
   of their tile, as on the map. Tiles are 32 px times a whole factor (about 11 rows: 64 px at 720p, 96 px at 1080p).
 - **Monsters** (`UICreature`): Death Mage with two Risen Skeletons, Dark Sorcerer, Bone Golem, Lich Shade, Gloomfire,
-  Dreamgorger, Grindmaw the Mauler (server/data/monster/monsters/chaos). They are at the sides, never behind the logo
+  Dreamgorger, Grindmaw the Mauler (server/data/monster/monsters/chaos; the Bone Golem wears look 3185, a golem of
+  bones of pair 50, since O354; it was the brown earth golem 1549). They are at the sides, never behind the logo
   or the sign-in panel (their whole footprint, two tiles for the big ones), and never on the outer columns or the
   bottom row, which hang over the window's edges. They and their patrols are placed before the small scattered things
   (bones, rubble, bushes, glowcaps), so those keep off the patrols; all nine get a place at 1024x768 to 1920x1080.
