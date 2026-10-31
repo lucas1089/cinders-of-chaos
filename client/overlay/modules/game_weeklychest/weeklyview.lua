@@ -108,8 +108,10 @@ function V.build(state)
   state = tbl(state)
   local got, need, bonusNeed = int(state.got), int(state.need), int(state.bonusNeed)
   local chest, bonus = tbl(state.chest), tbl(state.bonus)
+  -- the head counts towards the next goal: the chest, then the bonus roll ("5 of 3" read as an error)
+  local goal = (got >= need and bonusNeed > 0) and bonusNeed or need
   local v = {
-    head = { '%d of %d activities done this week', got, math.max(need, 1) },
+    head = { '%d of %d activities done this week', got, math.max(goal, 1) },
     ends = { 'The week ends in %s', V.plain(V.left(state.endsIn)) },
     rows = V.rows(state),
     chests = { 'Chests opened so far: %d', int(state.chests) },

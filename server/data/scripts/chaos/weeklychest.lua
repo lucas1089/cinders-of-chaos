@@ -79,7 +79,7 @@ end
 local function toast(player, title, text)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text)
 	if ChaosNotify and ChaosNotify.send then
-		pcall(ChaosNotify.send, player, Chaos.t(player, title), text)
+		pcall(ChaosNotify.send, player, "", text, "weeklychest") -- the toast's own header says Weekly Chest
 	end
 end
 

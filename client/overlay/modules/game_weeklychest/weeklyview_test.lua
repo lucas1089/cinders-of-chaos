@@ -37,6 +37,8 @@ eq(P(v.rows[2].status), 'Not yet', 'open'); eq(P(v.rows[3].status), 'Unlocks at 
 eq(P(v.rows[4].name), 'weird', 'unknown activity named by its key')
 eq(P(v.chest), 'The chest opens at 3 of 5 activities.', 'chest line'); eq(P(v.reward), '1.5M gold, 4x Orb of Upheaval', 'reward line')
 eq(P(v.bonus), 'All 5 activities add a bonus roll: 800k to 1.2M gold or orbs.', 'bonus line'); eq(P(v.chests), 'Chests opened so far: 4', 'chests')
+state.got = 4
+eq(P(V.build(state).head), '4 of 5 activities done this week', 'past the chest: the head counts to the bonus roll')
 state.chest.given, state.bonus.given = 1, 1
 v = V.build(state)
 eq(v.chestColor, V.DONE, 'chest given'); eq(P(v.bonus), 'Bonus roll taken this week.', 'bonus given')
