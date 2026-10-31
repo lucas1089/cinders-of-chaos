@@ -168,6 +168,7 @@ async def check_party(io, name, cls, level):
     await io.sleep(SETTLE)
     p = await io.helper('party', 'party', ANSWER)
     if not p or p.get('err'):
+        await io.party('leave', other)
         return Result('party', name, cls, SKIP, 'no answer to !tester party')
     if int(p.get('size') or 0) < 2:
         await io.party('leave', other)

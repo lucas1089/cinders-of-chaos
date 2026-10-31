@@ -662,8 +662,14 @@ class CheckIO(KeyIO):
             await self.bot.conn.w.drain()
 
     async def partner(self):
+        # a bot that is in no other party check: the checks of all bots start together, and when every bot picked the
+        # same partner (the lowest id) only one party formed and the others read 0 members (local run 2026-10-31)
+        if self.bot.name in PARTY_BUSY:
+            return None
         for cid, other in sorted(ONLINE.items()):
-            if cid != self.bot.cid and other is not self.bot and other.alive and not other.died:
+            if cid != self.bot.cid and other is not self.bot and other.alive and not other.died \
+                    and other.name not in PARTY_BUSY:
+                PARTY_BUSY.update((self.bot.name, other.name))
                 return other.name
         return None
 
@@ -671,6 +677,9 @@ class CheckIO(KeyIO):
         other = next((b for b in ONLINE.values() if b.name == other_name), None)
         bot = self.bot
         if other is None or not self.alive() or not other.alive or not bot.cid or not other.cid:
+            if action in ('form', 'leave'):
+                PARTY_BUSY.discard(bot.name)
+                PARTY_BUSY.discard(other_name)
             return False
         if action == 'form':
             bot.conn.send(b'\xA3' + struct.pack('<I', other.cid))      # invite
@@ -682,6 +691,8 @@ class CheckIO(KeyIO):
             bot.conn.send(b'\xA8' + (b'\x01' if action == 'share' else b'\x00'))   # the leader's shared experience switch
             await bot.conn.w.drain()
         else:
+            PARTY_BUSY.discard(bot.name)
+            PARTY_BUSY.discard(other_name)
             other.conn.send(b'\xA7')                                    # leave
             bot.conn.send(b'\xA7')
             await other.conn.w.drain()
@@ -710,6 +721,10 @@ def load_check_spells(server_dir, vocs):
                 out[int(a['spellid'])] = {'name': a.get('name', ''), 'level': int(a.get('level', 0) or 0),
                                           'vocations': [vocs[n]['id'] for n in names if n in vocs]}
     stock = os.path.join(data, 'stock_spells.csv')
+    if not os.path.exists(stock):
+        # no install step copies the table: the repo's copy (server/data/spells, made from the installed spells.xml).
+        # Without it every stock spell of a preset read "not on the server" (local run 2026-10-31)
+        stock = os.path.join(HERE, '..', 'data', 'spells', 'stock_spells.csv')
     if os.path.exists(stock):
         for line in LT.read_text(stock).splitlines()[1:]:
             c = line.split(',')
@@ -719,6 +734,7 @@ def load_check_spells(server_dir, vocs):
     return out
 
 
+PARTY_BUSY = set()  # bot names in a party check now (partner() picks among the others; leave frees both)
 ONLINE = LT.ONLINE  # creature id -> bot in game (loadtest's party_step reads the same table)
 BAG_EVERY = 240  # seconds between the bag clean-ups (and potion top-ups) of a bot
 ROOM_FAILS_BAG = 3  # "not enough room" messages that call a clean-up at once
