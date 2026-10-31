@@ -61,7 +61,7 @@ CONST_SLOT_LEFT, CONST_SLOT_RIGHT = 6, 5
 SLOTP_TWO_HAND = 2048
 ITEM_ATTRIBUTE_ATTACK = 2
 COMBAT_NONE, COMBAT_PHYSICALDAMAGE, COMBAT_HEALING = 0, 1, 128
-ORIGIN_NONE, ORIGIN_SPELL, ORIGIN_MELEE, ORIGIN_RANGED = 0, 2, 3, 4
+ORIGIN_NONE, ORIGIN_SPELL, ORIGIN_MELEE, ORIGIN_RANGED, ORIGIN_WAND = 0, 2, 3, 4, 5
 bit = bit or {band = function(a, b)
 	local r, p = 0, 1
 	while a > 0 and b > 0 do
@@ -244,7 +244,7 @@ ok(f > 1.3 and f < 1.6, "the two-handed factor is below the old flat 1.6 (" .. s
 local bare = attacker(100, {[SKILL_SWORD] = 100})
 eq(swing(bare, -100), -100, "no weapon in the hands")
 
--- a wand or rod (weapon_skill_core.lua): the engine's flat hit (melee origin in this engine) x the magic level against
+-- a wand or rod (weapon_skill_core.lua): the engine's flat hit (ORIGIN_WAND in this engine, O359) x the magic level against
 -- the typical one of the level; no melee skill rule, no style factor
 local WS = ChaosWeaponSkill
 local mage = attacker(300, {})
@@ -263,6 +263,11 @@ mage.ml = 60
 eq(swing(mage, -100), -sc(100, WS.wandFactor(300, 60) * lw), "a lower magic level hits less")
 ok(swing(mage, -100) > typical * 0.9, "(by more than 10%)")
 eq(swing(mage, -100, ORIGIN_SPELL), -100, "a spell with a wand in hand is untouched")
+-- the engine sends a wand shot as ORIGIN_WAND (5), not melee (O359: the hook returned early on it before)
+mage.ml = 140
+eq(swing(mage, -100, ORIGIN_WAND), -sc(100, WS.wandFactor(300, 140) * lw), "a wand shot (ORIGIN_WAND) is scaled too")
+mage.ml = 60
+eq(swing(mage, -100, ORIGIN_WAND), -sc(100, WS.wandFactor(300, 60) * lw), "(at a low magic level too)")
 mage.storage[7100028] = 1
 eq(swing(mage, -100), -100, "a scripted strike is untouched")
 mage.storage[7100028] = 0
