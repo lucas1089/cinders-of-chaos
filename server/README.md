@@ -20973,7 +20973,10 @@ type in a rift showed its rolled "[777]"). Display only, as above.
   negative and the sums are clamped to INT32_MAX; `savePlayer` clamps `health` and `mana`; `vigils.lua` re-reads the true
   maximum (reservation off) whenever its sum moved, clamps to int32, and logs `[Chaos vigils] ... did not lower the
   maximum` once per player when the reservation had no effect. Guard: `tools/max_stats_patch_test.py`; test:
-  `tests/vigils_test.lua`.
+  `tests/vigils_test.lua`. Likely trigger: the old sum `healthMax + varStats + share` ran in uint32_t. A reservation
+  larger than the maximum (gear or a stat share taken off under a high reservation) made the true sum negative; it
+  wrapped to about 4.29e9, the script reserved a share of that, and the next sync read an even larger number. The
+  int64 sum of 0085 reads 0 there instead.
 - Rifts with density (`rift_core.lua R.displayLevel`): every pack monster and the guardian show the tier's level
   (`tiers[t].minLevel`, + `beyond.minLevelStep` a tier above the table), the player level their health budget is
   sized for. Without density, and an Omen guardian, keep their own level (their own health x multipliers).
