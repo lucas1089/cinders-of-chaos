@@ -318,7 +318,7 @@ eq(a.bank, after, "no second chest or bonus")
 -- the window
 registry.ChaosWeeklyChestExtended.onExtendedOpcode(a, 117, "open")
 local last = sent[#sent]
-eq(last.action, "state"); eq(last.data.open, 1, "opened"); eq(last.data.got, 6); eq(last.data.chest.given, 1)
+eq(last.action, "state"); eq(last.data.shown, 1, "opened"); eq(last.data.open, 6, "open stays the activity count"); eq(last.data.got, 6); eq(last.data.chest.given, 1)
 eq(a.ops[#a.ops].op, 117, "sent on 117")
 local n0 = #sent
 registry.ChaosWeeklyChestExtended.onExtendedOpcode(a, 118, "open")

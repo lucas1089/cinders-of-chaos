@@ -154,7 +154,7 @@ end
 local function send(player, open)
 	local v = W.view(player)
 	if open then
-		v.open = 1
+		v.shown = 1 -- the window was just opened; `open` is the count of activities the character can do
 	end
 	W.pushAt[player:getId()] = nowMs()
 	Chaos.send(player, OPCODE, "state", v)

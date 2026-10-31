@@ -3,7 +3,7 @@
 -- Adventure > Weekly Chest (ChaosTopBar.addEntry). The server talks on extended opcode 117 (JSON, joined by
 -- registerExtendedJSONOpcode):
 --   client -> server  open | close | get
---   server -> client  state {open?, endsIn, acts, got, need, bonusNeed, open, chests, chest, bonus} (weeklyview.lua)
+--   server -> client  state {shown?, endsIn, acts, got, need, bonusNeed, open, chests, chest, bonus} (weeklyview.lua)
 -- Rewards are given by the server when the chest or the bonus roll is reached (a toast tells); the window only shows.
 -- Pure parts: weeklyview.lua (weeklyview_test.lua).
 
