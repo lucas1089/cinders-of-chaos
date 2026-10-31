@@ -122,7 +122,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | **necromancer** (N Necromancer, L Lich, BL Bone Lord; per-cast numbers: formula; rotations measured, see "Necromancer line") | | | | | | | |
 | 180 | Raise Dead | `vael oss` | N, L, BL | 20 | 60 | 2s | Raises a minion from an empty corpse (never one with loot), else one from nothing for twice the mana; skeletons, the Lich's shade. |
 | 192 | Raise Bone Warrior | `vael oss brak` | N, L, BL | 8 | 50 | 4s | Raises ONE Risen Warrior next to you: melee (range 1, physical), health x1.8 of a skeleton. The oldest minion dies when the total cap is reached. |
-| 193 | Raise Bone Archer | `vael oss sag` | N, L, BL | 12 | 60 | 4s | Raises ONE Risen Archer: range 5, physical arrows, hit x1.25, health x0.6. |
+| 40 | Raise Bone Archer | `vael oss vex` | N, L, BL | 12 | 35 | 4s | Raises ONE Risen Archer: range 5, physical arrows, hit x1.25, health x0.85. Id 193 and `vael oss sag` until O254 (now Splinter Volley); back since O350. |
 | 176 | Raise Bone Mage | `vael oss mynd` | N, L, BL | 16 | 70 | 4s | Raises ONE Risen Mage: range 4, energy bolts, hit x1.35, health x0.6. |
 | 181 | Bone Spear | `kah oss lanc` | N, L, BL | 8 | 30 | 2s | The filler: a bone spear at the target (range 5) that pierces to the creature behind. |
 | 182 | Withering Curse | `kah nyx maled` | N, L, BL | 40 | 120 | 7s | The target takes +15% damage from everyone and rots (Lich: +25%, spreads to 2 more; monsters only, players just rot). |
@@ -3375,6 +3375,25 @@ Sundering Cleave and Whirling Bones, the mage Static Nova and Arc Bolt. Arc Bolt
 burst, so it reads apart from the plain hit. A minion whose owner's target is out of reach (or who has none) hits the
 nearest enemy in reach (`N.minionTarget` `nearby`; a warrior in the pack stood still before), and the warrior's taunt fires
 whenever monsters stand next to it, with a red flash (only a sound effect before, and only with an owner target).
+
+**Raise Bone Archer back (O350, 2026-10-31; owner: "de volta o minion archer também"; computed, not measured in game).**
+The archer is a summon spell again: id 40, `vael oss vex`, level 12, 35 mana, 4 s, the whole line. Splinter Volley keeps
+id 193, so every class keeps 13 attack spells. Risen Archer: range 5, physical, hit x1.25 (the mage x1.35, the warrior
+x1.0), health x0.85 (like the mage since O345; 0.6 before O254). Its spells: Piercing Shot x2.4, 8 s; Arrow Rain x1.2,
+radius 2 at the target, 12 s. The model trio is warrior, archer, mage again (`necro_balance_config.lua`). `minion_model.py`
+before (warrior, warrior, mage) and after, the trio rows:
+
+| Level | Trio health before / after | Ratio 1 target before / after | Ratio 5 targets before / after | Exp/h ratio before / after |
+|---|---|---|---|---|
+| 50 | 3683 / 2896 | 1.02 / 1.05 | 0.85 / 0.87 | 0.77 / 0.77 |
+| 200 | 11036 / 8680 | 1.06 / 1.09 | 1.07 / 1.09 | 0.94 / 0.94 |
+| 500 | 23938 / 18827 | 0.99 / 1.03 | 1.22 / 1.24 | 1.08 / 1.08 |
+| 1000 | 44678 / 35140 | 1.06 / 1.10 | 1.20 / 1.23 | 1.10 / 1.11 |
+
+The archer hits harder than a second warrior and has less health; the trio stays alive 100% of the fight. Every limit
+holds (ratio 1 target 0.95-1.15, 5 targets 0.84-1.25), so the class hit stays 1.0 (0.97 moved the ratios by 0.01: the C4
+anchor takes most of the factor out). `pack_model.py`, `boss_model.py`, `companion_model.py` and `weakness_model.py` pass
+unchanged (`weakness_model.py` knows the archer's 4 s cooldown).
 
 ### Attack spell parity (2026-10-23; owner: "veja quantas magias de ataque cada classe tem. devem ter a mesma quantidade"; computed, not measured in game)
 

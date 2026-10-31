@@ -33,7 +33,7 @@ function S.fx(pos, vnames, name, fallback)
 	return nil
 end
 
--- A summon spell (Raise Bone Warrior / Mage): ONE minion of `kind` next to the caster. The class's total cap is
+-- A summon spell (Raise Bone Warrior / Archer / Mage): ONE minion of `kind` next to the caster. The class's total cap is
 -- enforced by ChaosNecro.raise (the oldest minion is dismissed first). Returns true, or cancels with a message.
 function S.summon(player, kind)
 	local classKey = S.class(player)

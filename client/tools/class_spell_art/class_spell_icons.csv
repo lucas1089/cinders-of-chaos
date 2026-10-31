@@ -1,9 +1,55 @@
 cell,spell,frame,job,candidate
+280,Town Portal,purple,f71e7887-7bb1-4f8f-92ae-5bf288a73a53,48
+281,Shadow Mend,purple,30072a24-f45e-42b9-89c8-3e25a1d0610a,16
+282,Snare Trap,grey,c2e9c1c8-0078-4f25-907a-9ba90084ff76,41
+283,Seeker Mine,red,a9aacb11-0162-473e-845d-249b6d3a7f29,1
+284,Detonate Mines,orange,d3577ad8-5a9f-4cdf-916e-6f92163ff0e6,27
+285,Vigil of Wrath,red,01cd5e75-a934-4226-8c48-aaa58f83855f,4
+286,Vigil of Iron,grey,d5d97501-f63b-468c-bbdf-c581831e820e,26
+287,Vigil of Haste,green,afa1d33a-c9f3-4e71-96ff-8abfa7441d8c,9
+288,Vigil of Clarity,cyan,6b07ef20-9ed0-42cb-bc9c-f1dec311471e,24
+289,Blade Flurry,grey,e4c56421-ce77-4364-aa65-18e473004e22,3
+290,Iaido Sweep,grey,0530bb3c-50b0-4b9e-b925-744ecb52b92d,49
+291,Palm Shockwave,orange,0a9ac5d1-228b-4f5a-a4bc-b1ece092da21,25
+292,Shadow Ricochet,purple,2c865d29-81cc-40a8-8b88-a7122d1d8a18,18
+293,Iron Chain,grey,a0c0ed36-baf2-4e23-a89b-92ca1538034c,0
 294,Bone Shrapnel,grey,d38db2bb-a8f4-41e4-a78f-359e78af149e,33
+295,Sanctified Ground,orange,338fc9bb-9d68-4f39-a0bc-c561c4d8594c,7
+296,Shield Wave,orange,27165937-2cbe-4b3a-b516-29612cf47b13,17
+297,Fan of Knives,grey,46e8d217-64e7-481f-b9a4-6675d57b378a,35
 298,Raise Bone Warrior,grey,8ec87b9a-40a8-4f63-8a70-523a4477b0b3,44
 299,Splinter Volley,grey,fbdce2f9-e79e-474b-9498-8765e9be0fa4,33
 300,Raise Bone Mage,purple,aa9ef5b8-16b2-4f93-b2df-2e62343e1e13,26
+301,Bastion Cry,grey,a3b9cc8b-7e46-4a75-afb7-2b8c7124e49b,3
+302,Anvil Fall,grey,30e3ae1b-4161-4be3-8b69-b300538a2286,43
+303,Twin Verdict,orange,51fe1483-0e69-4dd9-9708-632dae994c28,0
+304,Rampage Leap,red,d520df35-8149-4f2e-91a5-b7c38fe2ac0a,7
+305,Glacial Doom,cyan,933c4f62-ace5-42da-a7c5-8ef739ad206a,34
+306,Pack Frenzy,red,a335e543-8183-49eb-b08a-64b300a9c579,4
+307,Shuriken Tempest,grey,1411d5fb-41d1-45cd-b26c-dcd519c5a6c4,39
+308,Tautstring,green,928a6f99-a699-4814-b455-95b8c687d1fd,9
+309,Ironhold,grey,bbf74d73-5367-4f9a-9d66-3d50f8b592a0,63
+310,Gale Volley,grey,e0d0b13b-090a-4814-9c27-8ce73ac94e6b,56
 311,Grave Nova,green,ce143994-c8a5-45a3-ad3b-4a0c0815414f,14
+312,Gorehook,red,23e4a0a9-0845-41ec-a3d7-4668af05b0e6,44
+313,Rift Cleaver,purple,d108ca90-4a8f-4215-b14b-58b2117849b7,1
+314,Sunspear,orange,ffd35da7-544e-4d9e-969e-efc7e80fc61b,6
+315,Arrowstorm,grey,3ae7b77b-47e4-4722-972e-3ed65cabaae3,17
+316,Packhunter's Dart,green,02acfdfc-378c-4a8c-9dcb-4e3d4be0f174,38
+317,Phantom Needles,cyan,8fc2713f-6715-46d7-8d6c-6560bd7f90ca,35
+318,Mirror Shards,cyan,263a9929-8e98-45d2-98ac-733c78811530,25
+319,Dreamrot,green,3660bd72-90ba-400a-baf1-0fd32efd2b6e,7
+320,Gutting Slash,red,717dd0f7-759b-44b2-b251-9668c20c091e,0
+321,Razor Rain,grey,680f9185-7ee4-42c6-9697-78e4c1114667,4
+322,Venom Spiral,green,82d04739-c0aa-4d2b-b0ac-af085a464782,16
+323,Crescent Cut,grey,750b2311-f476-4268-b4d5-78885733c4ab,26
+324,Last Breath,red,aa611e3d-6ad1-4f03-8475-0ba88cfb6fd1,5
+325,Hollow Knuckle,grey,6d1c468a-d5a9-4b03-b0ff-3f0459cd5e48,6
+326,Quaking Stomp,orange,06ae08d4-359e-44ac-90a9-013d40ec3058,11
+327,Chi Lance,orange,b14c1091-d719-4228-9757-5f788187b200,4
+328,Cleaving Heel,grey,2a8c9520-d2ac-4773-8b9c-8eaa35d7e29a,1
+329,Tidal Palm,cyan,c489ce37-1a96-4794-b539-fc0fcd66b734,18
+330,Skysplitter Fist,orange,7d04653c-182f-4331-addf-b52f776ca33a,12
 331,Marrow Bolt,red,563dcc17-4d0c-4270-96c1-1a3af6d657c7,62
 332,Wraithwind,cyan,dcc07150-b8e2-44ab-becc-16cf38809e13,15
 333,Gravewail,green,56fc27a4-2f1a-4829-82ac-a93b956ed445,0
@@ -11,3 +57,17 @@ cell,spell,frame,job,candidate
 335,Soulrend Beam,green,2bf1f755-9695-445b-80e2-f165b9913a01,39
 336,Crypt Collapse,grey,f927e4b2-701b-496c-8712-f8f6c346777a,27
 337,Ossuary Surge,green,94d94f61-e66e-451a-9554-34e185410ab3,0
+338,Hallowed Cut,orange,33907042-dcc4-455a-8ed6-2fa8b48a8aa7,2
+339,Censer Swing,orange,2457056d-5e9e-4cd7-af17-ebe5e51cec66,43
+340,Penitent Lash,orange,7d4756a6-769c-4332-b6ef-6e0ef1651969,11
+341,Martyr's Pyre,orange,cf2537a2-0797-49c5-bdc3-0ff864225f48,10
+342,Bell of Reckoning,orange,8597925a-749a-4f90-8b8b-0ad8bc896d54,7
+343,Lance of Vigil,orange,7fdb2c89-f870-4375-bda6-f5c7d64ecd13,3
+344,Sanctum Verdict,orange,87ee37c4-d3a2-4250-aa85-8b6e38f3bb29,44
+345,Heretic's Brand,red,11f6b095-93a3-48c5-8a07-5688dc290f4f,13
+346,Zealot's Wrath,orange,147acdc9-f8cc-475f-82f6-e9eca1b1ce5f,1
+347,Bulwark Slam,orange,5fe37ba0-9cfa-4d80-bc0b-f2ea18325977,16
+348,Rampart Quake,orange,7b7404f5-1516-452c-ae8f-7a2a74bb7010,19
+370,Pack Howl,cyan,bc94041a-7b68-4ecd-80ea-076e422c1190,48
+371,Rending Pounce,red,03c07e96-abed-4e48-be30-ba8f897d968a,31
+372,Raise Bone Archer,green,58da3feb-9303-450e-a76c-639c2b1f69d4,0

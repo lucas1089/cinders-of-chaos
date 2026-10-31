@@ -10,7 +10,7 @@ Everything is read from server/data/scripts/chaos/pickups_config.lua (`items`, `
    server id of that client id; with `stockClientId` too: a look of ours that has no stock node, e.g. the ember's
    portal, client item 44396 of pair 55, and the globes, 44397 / 44398: the lowest stock node of `stockClientId` is
    copied and `clientId` written, and a client id that belongs to another server id stops the script), with the new
-   server id and the flags NOT pickupable and NOT moveable (a pickup can never go into a bag, be pushed or traded; an
+   server id and the flags NOT pickupable, NOT moveable and NOT always-on-top, no top order (O352; a pickup can never go into a bag, be pushed or traded; an
    older node of the ember on 25045 or of a globe on the potion look 7618 / 7620 is rewritten). The stackable flag is copied from the stock node, or forced when the
    row says `stackable = true` (the 10.98 client reads a count for a stackable look). A node already there with the
    same bytes is left alone, one with other bytes is replaced; a server id that belongs to another client id stops
@@ -70,16 +70,24 @@ def read_config(path=CONFIG):
 
 
 # ------------------------------------------------------------------------------------------------ 1. items.otb
+FLAG_ALWAYSONTOP, A_TOPORDER = 1 << 13, 0x2B
+
+
 def pickup_node(stock, row):
-    """a copy of the stock node with the new server id, not pickupable, not moveable"""
+    """a copy of the stock node with the new server id, not pickupable, not moveable, never always-on-top (O352: the
+    globes' stock nodes of client ids 7618 / 7620 were top order 1; the client draws our looks as common items, so the
+    server counted a globe before the creatures and the client after them, and every creature on that tile moved or
+    died at a stack position the client read as another thing: monsters left standing after death, a globe that stayed)"""
     _s, _e, _sid, _cid, group, flags, attrs = stock
-    flags &= ~(FLAG_PICKUPABLE | FLAG_MOVEABLE)
+    flags &= ~(FLAG_PICKUPABLE | FLAG_MOVEABLE | FLAG_ALWAYSONTOP)
     if row['stackable'] is True:
         flags |= FLAG_STACKABLE
     elif row['stackable'] is False:
         flags &= ~FLAG_STACKABLE
     body = struct.pack('<I', flags)
     for k, v in attrs:
+        if k == A_TOPORDER:
+            continue
         if k == A_SERVERID:
             v = struct.pack('<H', row['id'])
         elif k == A_CLIENTID and row.get('stockClientId'):

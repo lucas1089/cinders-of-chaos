@@ -20,7 +20,7 @@ def ok(cond, what):
 
 levels = (8, 50, 200, 500, 1000)
 data = M.dump(levels)
-ok(len(data['rows']) == 3 * 5 * len(levels), 'dumper: one row per class, kind and level')
+ok(len(data['rows']) == 3 * 6 * len(levels), 'dumper: one row per class, kind and level')
 ok(data['config']['minions']['incoming']['pace'] is True, 'config: incoming pace on')
 ok(data['config']['minions']['regen']['idle'] > data['config']['minions']['regen']['combat'], 'config: idle regen above combat')
 
@@ -28,7 +28,7 @@ ok(data['config']['minions']['regen']['idle'] > data['config']['minions']['regen
 ok(M.check(levels) == [], 'check: the shipped config is inside its limits')
 
 # the fix matters: without it the minions are dead a good part of the fight at 1000. Checked on the fragile build
-# (three mages): the shipped trio (two warriors and a mage, since the Raise Bone Archer left in O254) is sturdy enough to
+# (three mages): the shipped trio (warrior, archer, mage; two warriors and a mage from O254 to O350) is sturdy enough to
 # live through the legacy fight, 0.91
 old = M.model_class('necromancer', 1000, build='mages', levels=(8, 50, 200, 500, 1000), legacy=True)
 new = M.model_class('necromancer', 1000, build='mages', levels=(8, 50, 200, 500, 1000))

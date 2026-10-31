@@ -169,6 +169,21 @@ eq(d1, -1210, "fire: tree +10% x Paragon +10%")
 local h1 = registered["ChaosPassiveDealt"].onHealthChange({}, atk, 1000, COMBAT_HEALING, 0, COMBAT_NONE, 0)
 eq(h1, 1000, "heal unchanged")
 
+-- O348: a Necromancer minion's hit (ChaosNecroMinions.dealing) also takes the tree's death percent
+local B = {incrementPhysical = 10, incrementEnergy = 5, incrementDeath = 20, multiIncrement = 4}
+eq(ChaosPassiveMinionDamagePercent(B, COMBAT_PHYSICALDAMAGE), 34, "minion physical: own 10 + death 20 + all elements 4")
+eq(ChaosPassiveMinionDamagePercent(B, COMBAT_ENERGYDAMAGE), 29, "minion energy: own 5 + 4 (all elements once) + death 20")
+eq(ChaosPassiveMinionDamagePercent(B, COMBAT_DEATHDAMAGE), 24, "minion death: counted once")
+eq(ChaosPassiveMinionDamagePercent(B, COMBAT_HEALING), 0, "healing: nothing extra")
+ChaosPassiveCache[7] = {incrementDeath = 20}
+eq(registered["ChaosPassiveDealt"].onHealthChange({}, atk, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0), -1000,
+	"the owner's own physical hit: no death percent")
+ChaosNecroMinions = ChaosNecroMinions or {}
+ChaosNecroMinions.dealing = 1
+eq(registered["ChaosPassiveDealt"].onHealthChange({}, atk, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0), -1200,
+	"a minion's physical hit: +20% death")
+ChaosNecroMinions.dealing = 0
+
 -- speed follows the base speed on level up
 ChaosPassiveCache[7] = {paragonSpeed = 10}
 applyAll(p, ChaosPassiveCache[7]); eq(speed(), 241, "10% of 2418")
