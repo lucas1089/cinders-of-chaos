@@ -298,8 +298,8 @@ public:
 };
 
 // One listener for every document: click and change go to the Lua callback with the id of the nearest element that has one.
-// Events to Lua: click, dblclick and change as they are; Enter in a one-line field as "enter", Escape in a field as
-// "escape". A drag on an element with the class "drag-handle" moves its nearest ancestor with the class "movable"
+// Events to Lua: click, dblclick, change, mouseover and mouseout (tooltips) as they are; Enter in a one-line field as
+// "enter", Escape in a field as "escape". A drag on an element with the class "drag-handle" moves its nearest ancestor with the class "movable"
 // (position: absolute) here, without Lua, and sends "moved" for that ancestor when the drag ends.
 class RmlRelay : public Rml::EventListener
 {
@@ -316,6 +316,11 @@ public:
             case Rml::EventId::Dragend:
                 move(event, target);
                 return;
+            case Rml::EventId::Mouseover:
+                // each newly hovered ancestor gets one too; only the innermost element under the mouse counts
+                if (Rml::Context* ctx = target->GetContext(); ctx && ctx->GetHoverElement() != target)
+                    return;
+                break;
             case Rml::EventId::Keydown:
                 if (event.GetParameter<int>("key_identifier", 0) == Rml::Input::KI_ESCAPE)
                     g_rml.dispatch(doc, target, "escape");
@@ -471,7 +476,7 @@ int RmlManager::loadDocument(const std::string& path)
         g_logger.error("[RmlUi] can't load document " + path);
         return 0;
     }
-    for (const char* type : { "click", "dblclick", "change", "keydown", "dragstart", "drag", "dragend" })
+    for (const char* type : { "click", "dblclick", "change", "keydown", "dragstart", "drag", "dragend", "mouseover", "mouseout" })
         doc->AddEventListener(type, m_relay.get());
     const int id = m_nextId++;
     m_docs[id] = doc;

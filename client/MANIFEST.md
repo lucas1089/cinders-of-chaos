@@ -5312,4 +5312,5 @@ One test window in HTML and RCSS, to measure what RmlUi costs. Report and recomm
   window and the mirror: OTUI tree to RML, sync, events, the skin. `client_chaos_rmlmirror` (`rmlmirror.lua`,
   `rmlmirror.rml`, `rmlmirror.rcss`) shows every plain OTUI window, message box and input box in RmlUi over the
   hidden OTUI window; windows with items, creatures or other unknown widgets stay in OTUI, Ctrl+Alt+M toggles it,
-  "Classic" sends one window back. `client_chaos_login` marks its panel `chaosNoMirror`. Test: `rmlmirror_test.lua`.
+  "Classic" sends one window back. `client_chaos_login` marks its panel `chaosNoMirror`. Tab bars draw as tabs and
+  widget tooltips show on hover (`#tip` in each document). Test: `rmlmirror_test.lua`.

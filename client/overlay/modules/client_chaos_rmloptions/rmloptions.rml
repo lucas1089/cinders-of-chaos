@@ -21,5 +21,6 @@
 			<button id="done" class="primary"></button>
 		</div>
 	</div>
+	<div id="tip"></div>
 </body>
 </rml>
