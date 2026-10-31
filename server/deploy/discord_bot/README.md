@@ -154,6 +154,7 @@ Mensagens curtas demais e sem print não chamam o Claude. Cada `/patch gerar` e 
 | O bot está online e ignora as mensagens | Ligue **Message Content Intent** na aba Bot e reinicie |
 | Os comandos não aparecem | Salve `DISCORD_GUILD_ID`, reinicie e confira o convite com `applications.commands`. Sem o id do servidor pode levar uma hora |
 | `403 Forbidden (error code: 50001): Missing Access` ao iniciar | O bot não está no servidor de `DISCORD_GUILD_ID`, ou foi convidado sem `applications.commands`, ou o id não é de servidor. Convide de novo com o link da seção 1 (pode convidar por cima). Para o id: modo desenvolvedor ligado, clique direito no nome do servidor > Copiar ID do servidor, e salve com **Guardar ajuste**. Depois **Reiniciar**. Desde 2026-10-31 o bot segue rodando sem os comandos e explica isso nos **Logs** |
+| "Integration requires code grant" ao abrir o link de convite | Na aba **Bot**, desligue **Requires OAuth2 Code Grant**, salve e abra o link de novo |
 | Não chega DM | Você precisa dividir um servidor com o bot e aceitar DM de membros dele |
 | `config-missing` ao iniciar | O app lista os nomes que faltam. Salve esses valores |
 | O bot reage mas não responde | Falta a permissão de enviar mensagens ou ver o histórico no canal |
