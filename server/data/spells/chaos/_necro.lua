@@ -45,7 +45,7 @@ function S.summon(player, kind)
 	end
 	local minion = L.raise(player, kind, player:getPosition())
 	if not minion then
-		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+		return ChaosSpell.noRoom(player)
 	end
 	-- the seal where the minion rises (it may be placed next to the caster)
 	ChaosSpell.vfxOr(minion:getPosition(), "necro_seal", "summon_portal", CONST_ME_MORTAREA)

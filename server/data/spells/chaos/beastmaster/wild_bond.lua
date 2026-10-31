@@ -84,7 +84,7 @@ function onCastSpell(creature, variant, isHotkey)
 			end
 		end
 		if created == 0 and #have == 0 then
-			return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+			return ChaosSpell.noRoom(player)
 		end
 	end
 	ChaosSpell.fx(pos, "summon_portal", CONST_ME_MAGIC_GREEN)

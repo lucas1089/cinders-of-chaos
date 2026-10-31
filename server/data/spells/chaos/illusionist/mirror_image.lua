@@ -34,7 +34,7 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 	end
 	if made == 0 then
-		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+		return ChaosSpell.noRoom(player)
 	end
 	ChaosSpell.buffTimer(player, ChaosSpell.SUBID.mirror_image, DURATION) -- the buff bar's timer
 	-- the caster: runes orbiting it (pack arcane_orbit; server/data/spells/README_FX.md "Mystic line effects")

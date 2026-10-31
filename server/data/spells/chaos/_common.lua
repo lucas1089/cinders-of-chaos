@@ -598,6 +598,16 @@ function ChaosSpell.freeAround(center, ref, far)
 	return list
 end
 
+-- The refusal when no tile around was free: freeAround never picks a protection zone tile, so a cast in a temple said
+-- "not enough room" (live check of O85, Wild Bond); there it names the protection zone.
+function ChaosSpell.noRoom(creature)
+	local tile = Tile(creature:getPosition())
+	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+		return ChaosSpell.cancel(creature, RETURNVALUE_ACTIONNOTPERMITTEDINPROTECTIONZONE)
+	end
+	return ChaosSpell.cancel(creature, RETURNVALUE_NOTENOUGHROOM)
+end
+
 -- Run fn(caster, step) now and then every `interval` ms until `count` runs were made.
 -- Stops when the caster is gone/dead or fn returns false.
 function ChaosSpell.pulse(casterId, count, interval, fn, step)

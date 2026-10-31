@@ -20,7 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local tpos = target:getPosition()
 	local spots = ChaosSpell.freeAround(tpos, from, true)
 	if #spots == 0 then
-		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+		return ChaosSpell.noRoom(player)
 	end
 	-- a shadow eruption where the Illusionist leaves, the pack shadow orb, the shadow hit on the stab when the orb
 	-- arrives (server/data/spells/README_FX.md "Mystic line effects")
