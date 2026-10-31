@@ -403,6 +403,16 @@ function ChaosTheme.showSkinMenu(widget)
   return menu
 end
 
+-- the Options > Interface skin button (base patch 0159) hides itself when client_settings builds it before this module
+-- loads; show it here with the saved choice
+function ChaosTheme.fixSkinButton(root)
+  local button = root and root.recursiveGetChildById and root:recursiveGetChildById('chaosSkinButton')
+  if not button then return false end
+  button:setText(ChaosTheme.skinName())
+  button:show()
+  return true
+end
+
 function init()
   applyBootPalette()
   wrapTooltip()
@@ -412,6 +422,7 @@ function init()
   installWidgetHelpers()
   connect(UIWidget, { onStyleApply = onStyleApply })
   decorateExisting(rootWidget)
+  ChaosTheme.fixSkinButton(rootWidget)
 end
 
 function terminate()

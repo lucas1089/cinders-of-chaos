@@ -98,4 +98,15 @@ eq(ChaosTheme.setSkin('bone', true), 'classic', 'unknown value saved as classic'
 eq(store['chaos-skin'], 'classic', 'classic saved')
 eq(ChaosTheme.skinPending(), false, 'nothing pending')
 
+-- the skin button hid itself when client_settings loaded first (live check of O281): init shows it with the choice
+local button = { hidden = true }
+function button:setText(t) self.text = t end
+function button:show() self.hidden = false end
+local root = { recursiveGetChildById = function(_, id) return id == 'chaosSkinButton' and button or nil end }
+store['chaos-skin'] = 'forge'
+eq(ChaosTheme.fixSkinButton(root), true, 'skin button found')
+eq(button.hidden, false, 'skin button shown')
+eq(button.text, 'Forge and Embers', 'skin button names the choice')
+eq(ChaosTheme.fixSkinButton({ recursiveGetChildById = function() return nil end }), false, 'no options window yet')
+
 print('chaos_theme_test: ' .. n .. ' checks ok')
