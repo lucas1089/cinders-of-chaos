@@ -619,7 +619,11 @@ end
 ChaosCombatFx = {label = function(pos, text, color) labels[#labels + 1] = {text = text, color = color} end}
 ChaosTierOf = function(m) return m._tier end
 local toasts = {}
-ChaosNotify = {gmBroadcast = function(p, text) toasts[#toasts + 1] = text end}
+local toastKinds = {}
+ChaosNotify = {
+	gmBroadcast = function(p, text) error("the Cursed Chest toast must not use the GM broadcast header") end,
+	send = function(p, title, text, kind) toasts[#toasts + 1] = text; toastKinds[kind] = true end
+}
 local appliedTiers = {}
 ChaosApplyTier = function(m, tier) appliedTiers[#appliedTiers + 1] = tier; m._tier = tier; m._max = m._max * 2; return true end
 local paced = {}
@@ -736,6 +740,7 @@ eq(chestItemAt._aid, 47730, "with the action id")
 eq(chestItemAt._attrs[ITEM_ATTRIBUTE_NAME], "cursed chest", "named")
 ok(hero._msgs[#hero._msgs]:find("cursed chest rises"), "the owner is told")
 ok(#toasts >= 1, "and a toast")
+ok(toastKinds.cursedchest and true, "under the CURSED CHEST header (kind cursedchest), not the GM broadcast")
 eq(#labels, 1, "a floating label")
 eq(CC.state.alive, 1, "counted")
 -- the cooldown and the one chest per player

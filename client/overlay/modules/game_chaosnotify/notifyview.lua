@@ -18,7 +18,8 @@ V.MESSAGE_TYPES = {
   seasonpass = 'SEASON_PASS',
   pact = 'PACT', -- the Chaos Pact (or the Pacto Completo) ends soon (pact.lua, O317)
   journey = 'JOURNEY',
-  invasion = 'INVASION'
+  invasion = 'INVASION',
+  cursedchest = 'CURSED_CHEST' -- a Cursed Chest rises, its hordes, its loot (server cursedchest.lua, O244)
 }
 
 function V.typeOfAction(action)
