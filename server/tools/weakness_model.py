@@ -17,7 +17,7 @@ Per class and level it reports three things, from the models and data that alrea
     no minion out, no chi). The damage dealt since the start over the damage a steady class would have dealt by then must stay
     at 80% or more from that second on. The rotation is rotation_sim.simulate (its chi: +1 a 2 s auto attack hit, a finisher
     waits for 4 chi); the Necromancer line adds its minions: raised one by one by the support group (2 s) and each spell's own
-    cooldown (Raise Bone Warrior / Mage 4 s, Raise Dead 2 s with no corpse to raise from, one minion a cast, Bone Golem 30 s), each
+    cooldown (Raise Bone Warrior / Archer / Mage 4 s, Raise Dead 2 s with no corpse to raise from, one minion a cast, Bone Golem 30 s), each
     hitting `minionTravel` seconds plus its class's first strike delay (necro_config.lua minions.firstStrikeMs) after it arrives, weighted by minion_model.py (the tree factor, the alive share, the wand).
     Damage buffs are cast before the pull in every balance model and the auto attack is not in rotation_sim, so both stay out.
   * Exposure. The share of the class's damage on one target that is dealt from a reach of 1 (melee exposure), of 2 and of 3 or
@@ -154,7 +154,7 @@ def minion_arrivals(kinds, rates, conf):
     """[(arrival second, damage rate)] of every minion of a build, raised from a cold start with no corpse around (`raisePerCast`
     minions of a kind a Raise Dead cast): the support group allows a cast every SUPPORT_GCD, each spell has its own cooldown, and
     the player picks the order of casts that costs the least damage (the sum of rate x arrival second, tried over every order)"""
-    cd = {'warrior': 4.0, 'mage': 4.0, 'golem': 30.0, 'skeleton': 2.0, 'shade': 2.0}
+    cd = {'warrior': 4.0, 'archer': 4.0, 'mage': 4.0, 'golem': 30.0, 'skeleton': 2.0, 'shade': 2.0}
     per = {'skeleton': conf['raisePerCast'], 'shade': 1}
     by = {}
     for k, r in zip(kinds, rates):

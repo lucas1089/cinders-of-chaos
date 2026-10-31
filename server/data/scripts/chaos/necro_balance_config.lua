@@ -17,11 +17,11 @@ return {
 	checkLevels = {50, 200, 500, 1000},
 
 	-- what the Necromancer raises first: the kinds in order; a kind not yet learned (spell levels in necro_config.lua
-	-- summonSpells; Raise Dead 20) is replaced by the next one. "trio": two sturdy warriors in front and a mage
-	-- behind them (3 minions; the Raise Bone Archer, the third of the old trio, became an attack spell in O254); "dead": Raise Dead's skeletons (the Raise Dead caps); "mages": the
-	-- glass cannon.
+	-- summonSpells; Raise Dead 20) is replaced by the next one. "trio": the sturdy warrior in front, an archer and a mage
+	-- behind it (the three summon spells, 3 minions; warrior, warrior, mage from O254 until the archer came back in O350);
+	-- "dead": Raise Dead's skeletons (the Raise Dead caps); "mages": the glass cannon.
 	builds = {
-		trio = {"warrior", "warrior", "mage"},
+		trio = {"warrior", "archer", "mage"},
 		dead = {"skeleton", "skeleton", "skeleton", "skeleton"},
 		mages = {"mage", "mage", "mage"},
 	},
@@ -65,7 +65,7 @@ return {
 	-- and how the hits spread over the minions by kind (the front melee minion draws more; the warrior's taunt most)
 	focus = 0.7,
 	alive = 0.55,
-	aggro = {warrior = 2.0, skeleton = 1.5, golem = 2.0, shade = 0.8, mage = 0.6},
+	aggro = {warrior = 2.0, skeleton = 1.5, golem = 2.0, shade = 0.8, archer = 0.6, mage = 0.6},
 	-- a minion that died is raised again at the start of the next pack (a cast and its mana), at full health; the others
 	-- start the next pack with what is left plus the regeneration of the walk
 	packs = 40,

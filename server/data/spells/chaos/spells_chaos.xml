@@ -313,6 +313,13 @@
 		<vocation name="Lich" />
 		<vocation name="Bone Lord" />
 	</instant>
+	<!-- Raise Bone Archer back (O350, owner 2026-10-31): id 40 is the first spare of spell_id_pool_config.lua (the stock
+	     Shatterfrost's, retired by the cap); its old id 193 and words stay with Splinter Volley -->
+	<instant group="support" spellid="40" name="Raise Bone Archer" words="vael oss vex" level="12" mana="35" premium="0" aggressive="0" selftarget="1" cooldown="4000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/raise_archer.lua">
+		<vocation name="Necromancer" />
+		<vocation name="Lich" />
+		<vocation name="Bone Lord" />
+	</instant>
 	<instant group="attack" spellid="193" name="Splinter Volley" words="vael oss sag" level="270" mana="400" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/splinter_volley.lua">
 		<vocation name="Necromancer" />
 		<vocation name="Lich" />

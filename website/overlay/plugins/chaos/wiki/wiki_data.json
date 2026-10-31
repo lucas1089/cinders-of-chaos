@@ -389,7 +389,7 @@
 		"siege.on": true,
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
-		"spell.count": 171,
+		"spell.count": 172,
 		"store.categories": 41,
 		"store.cosmetic": 637,
 		"store.offers": 778,
@@ -1289,6 +1289,7 @@
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Bone Spear", "kah oss lanc", "8", "20", "2 s", "whole line"],
 								["Raise Bone Warrior", "vael oss brak", "8", "30", "4 s", "whole line"],
+								["Raise Bone Archer", "vael oss vex", "12", "35", "4 s", "whole line"],
 								["Raise Bone Mage", "vael oss mynd", "16", "40", "4 s", "whole line"],
 								["Raise Dead", "vael oss", "20", "35", "2 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
@@ -1324,6 +1325,7 @@
 								"spell:254",
 								"spell:181",
 								"spell:192",
+								"spell:40",
 								"spell:176",
 								"spell:180",
 								"spell:235",
@@ -1762,6 +1764,34 @@
 						}
 					],
 					"icon": "wiki/i/sp-237.png"
+				},
+				{
+					"id": "spell:40",
+					"name": "Raise Bone Archer",
+					"sub": "\"vael oss vex\", level 12, 35 mana, cooldown 4 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"A risen archer joins you: a fragile ranged minion (range 5, physical arrows) that hits harder than a skeleton. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level; the minion hits the creature you target. Numbers: necro_config.lua minions.archer; data/scripts/chaos/necro_minions.lua."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "vael oss vex"],
+								["Level", "12"],
+								["Mana", "35"],
+								["Cooldown", "4 s"],
+								["Kind", "Support"],
+								["Classes", "Necromancer, Lich, Bone Lord"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-bone-arrows.png"
 				},
 				{
 					"id": "spell:214",

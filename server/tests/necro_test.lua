@@ -131,7 +131,7 @@ for _, kind in ipairs({"skeleton", "shade", "golem"}) do
 	end
 end
 eq(N.minionCap(cfg, "necromancer", "skeleton", 300), 4, "Raise Dead's own cap stays")
-for _, kind in ipairs({"warrior", "mage"}) do
+for _, kind in ipairs({"warrior", "archer", "mage"}) do
 	eq(N.minionCap(cfg, "necromancer", kind, 50), 3, "necromancer " .. kind .. ": limited only by the total")
 	eq(N.minionCap(cfg, "lich", kind, 50), 1, "lich " .. kind .. ": the total of 1")
 	eq(N.minionCap(cfg, "bonelord", kind, 50), 6, "bone lord " .. kind .. ": the total of 6")
@@ -175,13 +175,13 @@ eq(#N.restFilter(cfg, "lich", 50, kinds("shade", "warrior")), 1, "rest: the lich
 
 -- ------------------------------------------------------------------ the summon kinds' numbers
 eq(N.kindOf(cfg, "Risen Warrior"), "warrior", "kind of Risen Warrior")
-eq(N.kindOf(cfg, "risen archer"), nil, "no Risen Archer any more (O254)")
+eq(N.kindOf(cfg, "risen archer"), "archer", "kind of Risen Archer (back since O350)")
 eq(N.kindOf(cfg, "Risen Mage"), "mage", "kind of Risen Mage")
 local m = cfg.minions
-eq(m.warrior.range, 1, "warrior: melee"); eq(m.mage.range, 4, "mage: range 4")
-eq(m.warrior.combat, "physical", "warrior: physical")
+eq(m.warrior.range, 1, "warrior: melee"); eq(m.archer.range, 5, "archer: range 5"); eq(m.mage.range, 4, "mage: range 4")
+eq(m.warrior.combat, "physical", "warrior: physical"); eq(m.archer.combat, "physical", "archer: physical arrows")
 ok(m.mage.combat == "death" or m.mage.combat == "energy", "mage: death or energy")
-for _, kind in ipairs({"warrior", "mage"}) do
+for _, kind in ipairs({"warrior", "archer", "mage"}) do
 	ok(m[kind].summon, kind .. ": a summon-spell kind")
 	ok(m[kind].intervalMs >= 1000, kind .. ": a hit interval")
 end
@@ -190,10 +190,14 @@ local hs = N.minionHealth(cfg, "necromancer", "skeleton", 100, 50)
 local hm = N.minionHealth(cfg, "necromancer", "mage", 100, 50)
 ok(hw > hs, "the warrior is sturdier than a skeleton (" .. hw .. " vs " .. hs .. ")")
 ok(hm < hs, "the mage is fragile (" .. hm .. " vs " .. hs .. ")")
+local ha = N.minionHealth(cfg, "necromancer", "archer", 100, 50)
+ok(ha < hs, "the archer is fragile (" .. ha .. " vs " .. hs .. ")")
 eq(hw, math.floor((200 + 100 * 9 + 50 * 6) * 1.0 * m.warrior.mult.health), "warrior health = formula x mult")
 local mMin, mMax = N.minionHit(cfg, "necromancer", "mage", 100, 50)
 local sMin, sMax = N.minionHit(cfg, "necromancer", "skeleton", 100, 50)
 ok(mMax > sMax, "the mage hits harder than the skeleton")
+local aMin, aMax = N.minionHit(cfg, "necromancer", "archer", 100, 50)
+ok(aMax > sMax, "the archer hits harder than the skeleton")
 local wMin, wMax = N.minionHit(cfg, "necromancer", "warrior", 100, 50)
 eq(wMax, sMax, "the warrior hits like a skeleton")
 ok(N.minionHealth(cfg, "lich", "warrior", 100, 50) > hw, "the lich's single minion is stronger (class factor)")
@@ -379,7 +383,7 @@ for a in xml:gmatch("<instant ([^>]*)>") do
 end
 local stock = readFile("data/spells/stock_spells.csv") or ""
 local prev
-for _, kind in ipairs({"warrior", "mage"}) do
+for _, kind in ipairs({"warrior", "archer", "mage"}) do
 	local sp = cfg.summonSpells[kind]
 	local id = cfg.spellIds[sp.spell]
 	ok(id and id < 256, kind .. ": spell id below 256")
@@ -404,7 +408,7 @@ for _, kind in ipairs({"warrior", "mage"}) do
 	eq(allIds[tostring(id)], 1, kind .. ": id used once"); eq(allWords[sp.words], 1, kind .. ": words used once")
 	ok(not stock:find("\n" .. id .. ",", 1, true), kind .. ": id is no stock spell of stock_spells.csv")
 	ok(sp.level >= 8, kind .. ": not below the start level 8 of the first spell")
-	ok(not prev or sp.level > prev, kind .. ": unlock levels rise (warrior, mage)")
+	ok(not prev or sp.level > prev, kind .. ": unlock levels rise (warrior, archer, mage)")
 	prev = sp.level
 	ok(sp.mana > 0 and sp.mana < 150 and sp.cooldownMs >= 2000 and sp.cooldownMs <= 10000, kind .. ": sensible mana and cooldown")
 end
@@ -413,7 +417,7 @@ eq(tonumber(xml:match('name="Bone Spear"[^>]*level="(%d+)"') or xml:match('level
 for _, kind in ipairs(N.kinds) do
 	local found
 	for _, f in ipairs({"necro_risen_skeleton", "necro_lich_shade", "necro_bone_golem", "necro_risen_warrior",
-			"necro_risen_mage"}) do
+			"necro_risen_archer", "necro_risen_mage"}) do
 		local t = readFile("data/monster/monsters/chaos/" .. f .. ".xml") or ""
 		if t:find('<monster name="' .. cfg.minions[kind].monster .. '"', 1, true) then
 			found = t
@@ -434,7 +438,7 @@ local EFFECTS = {hitarea = true, energyhit = true, mortarea = true, drawblood = 
 	energyarea = true, blackspark = true, purpleenergy = true}
 local ANIS = {death = true, arrow = true, energy = true, energyball = true}
 local names = {}
-for kind in pairs({skeleton = 1, shade = 1, golem = 1, warrior = 1, mage = 1}) do
+for kind in pairs({skeleton = 1, shade = 1, golem = 1, warrior = 1, archer = 1, mage = 1}) do
 	local sp = cfg.minionSpells[kind]
 	ok(sp and sp.single and sp.area, kind .. ": a single target and an area spell")
 	for _, which in ipairs({"single", "area"}) do

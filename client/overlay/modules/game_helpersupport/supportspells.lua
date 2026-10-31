@@ -162,6 +162,7 @@ H.KINDS = {
   [211] = { auto = 'support', kind = 'summon', fight = true, dur = 40, rank = 4 },   -- Moonfang Pack
   [180] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true },    -- Raise Dead
   [192] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true, minion = 'Risen Warrior' }, -- Raise Bone Warrior
+  [40] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true, minion = 'Risen Archer' },   -- Raise Bone Archer (back since O350)
   [176] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true, minion = 'Risen Mage' },    -- Raise Bone Mage
   -- (a recast with the golem / the companions out only calls them back and heals them: cast while fewer than `keep` are out)
   [186] = { auto = 'support', kind = 'summon', fight = true, rank = 4, minions = { 'Bone Golem' }, keep = { { 0, 1 } } }, -- Bone Golem
