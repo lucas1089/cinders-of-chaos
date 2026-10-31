@@ -694,8 +694,9 @@ class CheckIO(KeyIO):
             bot.conn.send(b'\xA8' + (b'\x01' if action == 'share' else b'\x00'))   # the leader's shared experience switch
             await bot.conn.w.drain()
         else:
-            PARTY_BUSY.discard(bot.name)
-            PARTY_BUSY.discard(other_name)
+            # both stay busy a while: the check reads the party again after the leave, and a random party step of a
+            # freed bot could join another party first (local run 2026-10-31)
+            asyncio.get_running_loop().call_later(PARTY_RELEASE_S, release_party, bot.name, other_name)
             other.conn.send(b'\xA7')                                    # leave
             bot.conn.send(b'\xA7')
             await other.conn.w.drain()
@@ -743,6 +744,12 @@ def load_check_spells(server_dir, vocs):
 
 
 PARTY_BUSY = set()  # bot names in a party check now (partner() picks among the others; leave frees both)
+PARTY_RELEASE_S = 10.0  # seconds after a leave before both bots are free again
+
+
+def release_party(*names):
+    for n in names:
+        PARTY_BUSY.discard(n)
 ONLINE = LT.ONLINE  # creature id -> bot in game (loadtest's party_step reads the same table)
 BAG_EVERY = 240  # seconds between the bag clean-ups (and potion top-ups) of a bot
 ROOM_FAILS_BAG = 3  # "not enough room" messages that call a clean-up at once

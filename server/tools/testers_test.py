@@ -740,6 +740,9 @@ eq(_picks, ['P2', None, 'P4', None], 'party partners: two pairs, nobody picked t
 _ios[0].alive = lambda: False
 eq(asyncio.run(_ios[0].party('leave', 'P2')), False, 'party leave of a dead bot sends nothing')
 eq(sorted(T.PARTY_BUSY), ['P3', 'P4'], 'party leave frees both bots even when nothing was sent')
+T.release_party('P3', 'P4')
+eq(sorted(T.PARTY_BUSY), [], 'release_party frees the bots of a left party (called PARTY_RELEASE_S after a leave)')
+T.PARTY_BUSY.update(('P3', 'P4'))
 _tb = T.TesterBot.__new__(T.TesterBot)
 _tb.name, _stepped = 'P3', []
 _tb.party_step = lambda: _stepped.append(1)
