@@ -307,6 +307,21 @@ check(cd and -cd.params[CONDITION_PARAM_STAT_MAXMANAPOINTS] <= 2147483647, "the 
 holder.c.maxMana = 2400
 registered.ChaosVigilsThink.onThink(1000)
 eq(holder:getMaxMana(), 600, "back to 75% of 2400")
+-- a bonus to the maximum ends: for one think the maximum sits below the reserved one and the engine cuts the mana to it;
+-- the next think gives back what the pool had (at most the new maximum; live test 2026-10-31: 13.6k cut to 8.8k)
+holder.c.maxMana = 2800
+registered.ChaosVigilsThink.onThink(1000)
+eq(holder:getMaxMana(), 700, "a +400 bonus: 75% of 2800 reserved")
+holder.c.mana = 700
+registered.ChaosVigilsThink.onThink(1000)
+holder.c.maxMana = 2400
+holder.c.mana = 300 -- the engine's cut to the lowered maximum
+registered.ChaosVigilsThink.onThink(1000)
+eq(holder:getMaxMana(), 600, "the bonus ended: back to 75% of 2400")
+eq(holder.c.mana, 600, "the cut mana comes back, up to the new maximum")
+holder.c.mana = 200
+registered.ChaosVigilsThink.onThink(1000)
+check(holder.c.mana < 300, "mana spent with the maximum unchanged stays spent (Clarity's regen aside): " .. holder.c.mana)
 -- switched off: the mana is free again
 holder.c.storage[C.storage] = 0
 registered.ChaosVigilsThink.onThink(1000)

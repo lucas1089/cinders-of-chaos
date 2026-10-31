@@ -20999,6 +20999,12 @@ type in a rift showed its rolled "[777]"). Display only, as above.
   larger than the maximum (gear or a stat share taken off under a high reservation) made the true sum negative; it
   wrapped to about 4.29e9, the script reserved a share of that, and the next sync read an even larger number. The
   int64 sum of 0085 reads 0 there instead.
+  Live test 2026-10-31 (local server with 0085, level 844, Wrath and Iron, a +50% maximum mana buff on and off every
+  7.5 s for 60 s): the maximum stays 30% of the true one, no log line, the save works. It showed one more thing: when a
+  bonus to the maximum ends, the engine takes it off the reserved maximum first, so for up to one think the maximum
+  sits that much lower and the pool is cut to it (13.6k mana to 8.8k, kept). Now the sync that re-reads the maximum
+  gives a pool that sits at that cut maximum back what it had at the last sync, at most the new maximum (live: back to
+  13.5k on the next think).
 - Rifts with density (`rift_core.lua R.displayLevel`): every pack monster and the guardian show the tier's level
   (`tiers[t].minLevel`, + `beyond.minLevelStep` a tier above the table), the player level their health budget is
   sized for. Without density, and an Omen guardian, keep their own level (their own health x multipliers).
