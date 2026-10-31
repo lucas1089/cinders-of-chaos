@@ -86,7 +86,7 @@ ChaosSupportPanel < Panel
 
       CheckBox
         id: enableAll
-        width: 230
+        width: 280
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
         !text: tr('Cast support spells automatically')

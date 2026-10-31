@@ -4089,7 +4089,6 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Loot goblins, bosses and special monsters are attacked first"] = "Goblins de saque, chefes e monstros especiais são atacados primeiro",
   ["Lowest health"] = "Menos vida",
   ["Magic shooter"] = "Rotação de magias",
-  ["Mana from"] = "Mana a partir de",
   ["Mana training"] = "Treino de mana",
   ["Monsters"] = "Monstros",
   ["Most monsters hit"] = "Mais monstros atingidos",

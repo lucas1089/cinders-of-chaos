@@ -510,7 +510,7 @@ ChaosHelperWindow < ChaosMainWindow
           anchors.top: parent.top
           margin-left: 216
           width: 62
-          !text: tr('Mana from')
+          !text: tr('Mana')
           !tooltip: tr('The spell is cast while your mana is at or above this percent')
 
         ChaosHelperHint
