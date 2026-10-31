@@ -359,9 +359,19 @@ def test_embeds():
     check(es[0]['title'] == 'Cinzas e correções', 'no version, plain title')
 
 
+def test_forum():
+    check(core.in_bugs_channel(5, None, 5) and core.in_bugs_channel(9, 5, 5), 'the channel and a thread of it')
+    check(not core.in_bugs_channel(9, 7, 5) and not core.in_bugs_channel(9, None, 5), 'other channels and threads')
+    check(not core.in_bugs_channel(5, None, 0), 'no channel set')
+    check(core.report_text('teste', 'teste: baú não abre.', True) == 'teste: baú não abre.\nteste', 'forum title in front')
+    check(core.report_text('', 'baú não abre', True) == 'baú não abre', 'title alone')
+    check(core.report_text('também comigo', 'baú não abre', False) == 'também comigo', 'a reply keeps its own text')
+    check(core.report_text('o baú não abre', None, False) == 'o baú não abre', 'a plain channel message')
+
+
 def main():
     for t in (test_config, test_auth_and_limit, test_clean, test_images, test_prompt_and_parse, test_new_and_duplicate,
-              test_status, test_lists_and_views, test_daily, test_patch_notes, test_embeds):
+              test_status, test_lists_and_views, test_daily, test_patch_notes, test_embeds, test_forum):
         t()
     print('bot_core_test: %s' % ('ok' if not failures else '%d failure(s)' % failures))
     return 1 if failures else 0

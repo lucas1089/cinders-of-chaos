@@ -43,10 +43,10 @@ No formulário do patch, escreva um item por linha. `Destaque :: texto` dá um d
 6. Convide o bot para o seu servidor abrindo este endereço, com o Application ID no lugar de `SEU_APPLICATION_ID`:
 
 ```
-https://discord.com/oauth2/authorize?client_id=SEU_APPLICATION_ID&permissions=117824&scope=bot%20applications.commands
+https://discord.com/oauth2/authorize?client_id=SEU_APPLICATION_ID&permissions=274878024768&scope=bot%20applications.commands
 ```
 
-Os escopos são `bot` e `applications.commands`. O número 117824 são estas permissões: Ver Canais, Enviar Mensagens, Inserir Links, Anexar Arquivos, Ver Histórico de Mensagens e Adicionar Reações.
+Os escopos são `bot` e `applications.commands`. O número 274878024768 são estas permissões: Ver Canais, Enviar Mensagens, Enviar Mensagens em Threads (respostas nos posts de um canal de fórum), Inserir Links, Anexar Arquivos, Ver Histórico de Mensagens e Adicionar Reações. O canal de bugs pode ser um canal de texto ou de fórum: num fórum o bot lê o título e o texto do post.
 
 7. No canal de bugs e no canal de patch notes, confira que o cargo do bot pode ver o canal, enviar mensagens, ver o histórico e adicionar reações. No canal de patch notes ele também precisa de Inserir Links.
 8. Para receber DM do bot, você precisa estar no mesmo servidor e deixar ligada a opção "Permitir mensagens diretas de membros do servidor" nas configurações de privacidade do servidor.
@@ -157,7 +157,7 @@ Mensagens curtas demais e sem print não chamam o Claude. Cada `/patch gerar` e 
 | "Integration requires code grant" ao abrir o link de convite | Na aba **Bot**, desligue **Requires OAuth2 Code Grant**, salve e abra o link de novo |
 | Não chega DM | Você precisa dividir um servidor com o bot e aceitar DM de membros dele |
 | `config-missing` ao iniciar | O app lista os nomes que faltam. Salve esses valores |
-| O bot reage mas não responde | Falta a permissão de enviar mensagens ou ver o histórico no canal |
+| O bot reage mas não responde | Falta a permissão de enviar mensagens (num fórum: enviar mensagens em threads) ou ver o histórico no canal |
 | Você recebe "Falha ao classificar" | Veja **Logs**. Quase sempre é chave inválida, sem crédito ou limite de uso. O aviso vem no máximo uma vez por hora |
 | `python3-venv-missing` | o `apt-get` não conseguiu instalar: `sudo apt-get install python3-venv` e instale de novo |
 

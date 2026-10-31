@@ -208,9 +208,13 @@ class BugBot(discord.Client):
 
     # ---- the bugs channel
     async def on_message(self, m):
-        if m.author.bot or m.channel.id != self.cfg.bugs_channel_id:
+        if m.author.bot:
             return
-        text = m.content or ''
+        thread = m.channel if isinstance(m.channel, discord.Thread) else None
+        if not core.in_bugs_channel(m.channel.id, thread.parent_id if thread else None, self.cfg.bugs_channel_id):
+            return
+        # a forum post: the starter message has the thread's id; its title goes in front of the text
+        text = core.report_text(m.content, thread.name if thread else None, bool(thread) and m.id == thread.id)
         idx = core.pick_images([(a.filename, a.content_type, a.size) for a in m.attachments])
         if len(text.strip()) < 6 and not idx:
             return
