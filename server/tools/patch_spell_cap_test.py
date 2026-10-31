@@ -80,9 +80,10 @@ ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster
 # O254 (2026-10-26): a converted support goes to its whole line, plus one in the 8 classes that lacked it
 # line spell quests, phase 2 (2026-10-28): the level 500 attack of the line, plus one in every class; phase 3: the level 1200
 # ultimate, plus one again; phase 4: the level 800 buff, plus one again (Bone Lord 22 of 24)
+# O350 (2026-10-31): Raise Bone Archer back, plus one in the Necromancer line (Bone Lord 23 of 24)
 PINNED = {'Warrior': 21, 'Juggernaut': 20, 'Berserker': 20, 'Ranger': 20, 'Deadeye': 19, 'Beastmaster': 20,
           'Mystic': 18, 'Elementalist': 16, 'Illusionist': 22, 'Thief': 18, 'Ninja': 18, 'Samurai': 20, 'Monk': 15,
-          'Shadowfist': 15, 'Iron Sage': 17, 'Necromancer': 20, 'Lich': 20, 'Bone Lord': 22, 'Templar': 15,
+          'Shadowfist': 15, 'Iron Sage': 17, 'Necromancer': 21, 'Lich': 21, 'Bone Lord': 23, 'Templar': 15,
           'Inquisitor': 15, 'Sentinel': 18}
 kit = {v: set() for v in ORDER}
 xml = re.sub(r'<!--.*?-->', '', open(os.path.join(SPELLS, 'chaos', 'spells_chaos.xml'), encoding='utf-8').read(), flags=re.S)

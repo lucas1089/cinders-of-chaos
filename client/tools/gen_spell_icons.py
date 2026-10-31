@@ -472,7 +472,9 @@ ICONS = [  # (spell name, theme, glyph)
     ('Shroud of Knives', 'shadow', 'knives'), ('Dirge of the Legion', 'necrotic', 'skull'), ('Lotus Stance', 'ember', 'ring'),
     ('Mantle of Dawn', 'holy', 'shield'),
     # the Beastmaster's wolf spells (O332, cells 370-371; they took the free spell ids 35 and 39)
-    ('Pack Howl', 'frost', 'howl'), ('Rending Pounce', 'blood', 'pounce')]
+    ('Pack Howl', 'frost', 'howl'), ('Rending Pounce', 'blood', 'pounce'),
+    # Raise Bone Archer back (O350, cell 372; spell id 40): the flat bone arrows of its old cell 299, which Splinter Volley kept
+    ('Raise Bone Archer', 'bone', 'arrows')]
 
 def render(theme, glyph):
     c = COL[theme]

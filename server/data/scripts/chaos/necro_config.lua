@@ -23,7 +23,10 @@ return {
 		boneGolem = 186, bannerOfBones = 187, boneOffering = 188,
 		-- the summon spells (2026-10-18): free in the base server, the client and the Chaos block (the stock spells end
 		-- at 178 and the packs use 194-199), below 256
-		raiseWarrior = 192, raiseMage = 176, -- (193, the archer's, is the attack spell Splinter Volley since O254)
+		raiseWarrior = 192, raiseMage = 176, -- (193, the archer's until O254, is the attack spell Splinter Volley)
+		-- Raise Bone Archer back (O350, 2026-10-31): the first spare id of spell_id_pool_config.lua (the stock Shatterfrost's,
+		-- retired by the cap, patch_spell_cap.py CAP)
+		raiseArcher = 40,
 		-- the area attack (2026-10-22): the id of the stock Conjure Rations, a conjure spell the runes step removed
 		-- (no rune carries it); register_spells.py and spell_ids_test.lua count it as free
 		graveNova = 42
@@ -64,9 +67,10 @@ return {
 			-- the golem's hit strikes every enemy next to it (a slam), and it taunts monsters near it
 			slam = true, tauntMs = 6000, tauntRadius = 3,
 		},
-		-- The two summon spells' minions (Raise Bone Warrior / Mage; the monster types necro_risen_warrior.xml,
-		-- necro_risen_mage.xml; the Raise Bone Archer left in O254). Same formulas as the others, with `mult` on top of the
-		-- hit and the health (and then the class factors below, so the Lich's single minion is strong and the Bone Lord's weaker).
+		-- The three summon spells' minions (Raise Bone Warrior / Archer / Mage; the monster types necro_risen_warrior.xml,
+		-- necro_risen_archer.xml, necro_risen_mage.xml; the archer left in O254 and came back in O350). Same formulas as the
+		-- others, with `mult` on top of the hit and the health (and then the class factors below, so the Lich's single minion
+		-- is strong and the Bone Lord's weaker).
 		-- `summon = true`: raised by a summon spell, not by Raise Dead: no cap of its own, only the total cap (`total`).
 		-- ani / effect / hitEffect: the animation the ranged ones throw (a name of necro_lib.lua M.ANI / M.EFFECT), the
 		-- effect on the target; fx: a Chaos missile name (chaos_fx.lua) tried before `ani`.
@@ -76,6 +80,12 @@ return {
 			mult = {hit = 1.0, health = 1.8}, hitEffect = "hitarea",
 			-- Bone Challenge: the warrior taunts the monsters near it, like the golem (beta 2026-10-22)
 			tauntMs = 8000, tauntRadius = 2,
+		},
+		archer = {
+			monster = "Risen Archer", range = 5, intervalMs = 2000, combat = "physical", summon = true,
+			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
+			-- health 0.85 like the mage (0.6 before O254; the mage went to 0.85 in O345)
+			mult = {hit = 1.25, health = 0.85}, ani = "arrow", hitEffect = "hitarea",
 		},
 		mage = {
 			monster = "Risen Mage", range = 4, intervalMs = 2000, combat = "energy", summon = true,
@@ -93,7 +103,9 @@ return {
 		-- The passive tree's Legion (+skeletons) raises the total by the same number.
 		classes = {
 			necromancer = {kind = "skeleton", caps = {{0, 1}, {40, 2}, {80, 3}, {200, 4}}, total = {{0, 3}},
-				-- hit 1.0 (0.92 from O160 to O254): the archer left the trio in O254 (trio: warrior, warrior, mage), whose damage was lower, so the factor goes back up to keep level 50 at the median
+				-- hit 1.0 (0.92 from O160 to O254): the archer left the trio in O254 and the factor went up to keep level 50 at the
+				-- median. The archer is back since O350 (trio: warrior, archer, mage): minion_model.py --check passes at 1.0 (1 target
+				-- 1.05 at 50, 1.10 at 1000; 0.97 moved it by 0.01 only, the C4 anchor takes the factor out), so it stays
 				hit = 1.0, health = 1.0},
 			lich = {kind = "shade", caps = {{0, 1}}, total = {{0, 1}}, hit = 2.4, health = 2.5},
 			bonelord = {kind = "skeleton", caps = {{0, 5}, {400, 6}}, total = {{0, 6}, {400, 7}}, hit = 0.6, health = 1.2,
@@ -154,6 +166,11 @@ return {
 			area = {name = "Whirling Bones", mult = 1.3, cooldownMs = 12000, radius = 1, center = "self",
 				hitEffect = "hitarea", areaEffect = "blackspark"},
 		},
+		archer = {
+			single = {name = "Piercing Shot", mult = 2.4, cooldownMs = 8000, ani = "arrow", hitEffect = "drawblood"},
+			area = {name = "Arrow Rain", mult = 1.2, cooldownMs = 12000, radius = 2, center = "target", ani = "arrow",
+				hitEffect = "hitarea", areaEffect = "groundshaker"},
+		},
 		mage = {
 			-- Arc Bolt throws a ball and bursts purple, so it reads apart from the plain hit (owner 2026-10-31: "only 1 skill seen")
 			single = {name = "Arc Bolt", mult = 2.4, cooldownMs = 8000, ani = "energyball", hitEffect = "purpleenergy"},
@@ -168,11 +185,12 @@ return {
 	-- holds no items (never destroys loot) and belongs to nobody else (corpse owner: the caster, its party, or none).
 	raiseDead = {radius = 4, perCast = {necromancer = 2, lich = 1, bonelord = 3}, nothingManaFactor = 1.0, mana = 35},
 
-	-- The summon spells (Raise Bone Warrior / Mage): each creates ONE minion of its kind next to the caster; the
+	-- The summon spells (Raise Bone Warrior / Archer / Mage): each creates ONE minion of its kind next to the caster; the
 	-- total cap of the class (minions.classes[].total) decides what happens to the oldest minion. The xml entries
 	-- (spells_chaos.xml) carry level / mana / cooldown; they are repeated here for the tests and the docs.
 	summonSpells = {
 		warrior = {spell = "raiseWarrior", name = "Raise Bone Warrior", words = "vael oss brak", level = 8, mana = 30, cooldownMs = 4000},
+		archer = {spell = "raiseArcher", name = "Raise Bone Archer", words = "vael oss vex", level = 12, mana = 35, cooldownMs = 4000},
 		mage = {spell = "raiseMage", name = "Raise Bone Mage", words = "vael oss mynd", level = 16, mana = 40, cooldownMs = 4000},
 	},
 

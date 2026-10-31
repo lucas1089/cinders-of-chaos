@@ -305,9 +305,14 @@ have one spell more (pinned in `server/tools/patch_spell_cap_test.py`; the most 
 | Zealotry (250), a stacking damage buff | Crusader's Sweep (`crusaderssweep`) | Templar, Inquisitor, Sentinel | 250 | holy wave 3 sqm |
 
 Kept: every heal, the tank and party auras (Ironhold, Rebuke, Aegis of Faith, Hall of Mirrors, Banner Call, Soulward) and
-the Necromancer's two other summons. The Necromancer line summons Raise Bone Warrior and Raise Bone Mage now (the
-Risen Archer is gone; the best build is two warriors and a mage). Numbers, balance and the retune:
+the Necromancer's two other summons. The Necromancer line summoned Raise Bone Warrior and Raise Bone Mage then (the
+Risen Archer was gone; the best build was two warriors and a mage). Numbers, balance and the retune:
 server/data/spells/README.md "Support to attack (O254)".
+
+**Raise Bone Archer back (O350, 2026-10-31; owner: "de volta o minion archer também")**: the archer is a summon spell
+again, id 40, `vael oss vex`, level 12, 35 mana, 4 s, the whole Necromancer line. Splinter Volley keeps id 193 and its
+words, so the attack counts stay (a summon is no attack spell). The trio is warrior, archer, mage again. Spells per
+class: Necromancer 21, Lich 21, Bone Lord 23 (cap 24). Numbers: server/data/spells/README.md "Raise Bone Archer back (O350)".
 
 **Line spell quests, phase 4 (2026-10-28)**: the level 800 buff of each line, taught by the quest, shared by the base class and both
 ascensions. A support spell (support group, cooldown 90 s, group cooldown 2 s), not an attack: the attack count stays 13, it takes no
@@ -344,7 +349,7 @@ ultimates".
 **Line spell quests, phase 2 (2026-10-28)**: the level 500 attack of each line, taught by the quest (`needlearn="1"`, never by the
 level), shared by the base class and both ascensions. Every class and ascension has **12 attack spells** now
 (`ATTACK_SPELLS` 12; 13 with the level 1200 ultimates, below). The cap `MAX_SPELLS` is 24 (the Bone Lord has 20, 22 with its
-three quest spells). Cooldown 13 s, group cooldown 2 s, mana 1.2 x the reference spell, coefficients 1.25 x it. The quest
+three quest spells; 23 since Raise Bone Archer came back, O350). Cooldown 13 s, group cooldown 2 s, mana 1.2 x the reference spell, coefficients 1.25 x it. The quest
 attacks are not ranked by the cooldown ladder: they are the last rung of their classes at 13 s (`rotation_sim.py`
 `QUEST_COOLDOWN`).
 
@@ -739,12 +744,12 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
   gear, stock heals and mana potions (`add_vocations.py`). Locked behind the account's class unlock at level 200 (`class_unlocks.lua`,
   key "necromancer").
 - **Ascension**: the Ascendant Oracle (`Chaos.classes.ascension.choices[20]`).
-- **Kit**: 13 spells (ids 180-188, the Necromancer's Bone Shrapnel 197 of 2026-10-15 and the three summon spells Raise Bone Warrior 192 / Archer 193 / Mage 176 of 2026-10-18, `_packtools.lua`; `server/data/spells/chaos/necromancer|lich|bonelord`, helpers `_necro.lua`);
+- **Kit**: 13 spells (ids 180-188, the Necromancer's Bone Shrapnel 197 of 2026-10-15 and the three summon spells Raise Bone Warrior 192 / Archer 40 (193 until O254, back on 40 since O350) / Mage 176 of 2026-10-18, `_packtools.lua`; `server/data/spells/chaos/necromancer|lich|bonelord`, helpers `_necro.lua`);
   minions `necro_minions.lua`, curse and bone shield `necromancer_combat.lua`, engine helpers `necro_lib.lua`, pure
   rules `necro_core.lua` (tests `server/tests/necro_test.lua`), numbers `necro_config.lua`; minion monsters
   `server/data/monster/monsters/chaos/necro_*.xml` (looks: skeleton 33, ghost 48, demon skeleton 37). New-player kit: the
   Mystic's (`newplayer_config.lua`).
-- **Summon spells** (2026-10-18, support group, all three classes, 4 s cooldown): Raise Bone Warrior (192, `vael oss brak`, level 8, 50 mana; a sturdy melee minion, range 1, physical), Raise Bone Archer (193, `vael oss sag`, level 12, 60 mana; range 5, physical arrows, fragile; **left in O254**, its id is the attack spell Splinter Volley) and Raise Bone Mage (176, `vael oss mynd`, level 16, 70 mana; range 4, energy, fragile). Each creates ONE minion next to the caster. **Total cap** (all kinds together: skeletons, shades, the golem and these three): Necromancer 3, Lich 1, Bone Lord 6 (7 from level 400), the passive tree's Legion adds to it. At the cap the next summon of any spell dismisses the OLDEST minion first (a puff, no corpse, no loot), then the new one appears. Raise Dead's own per-kind caps stay; the total wins. Numbers: `necro_config.lua` `minions`.
+- **Summon spells** (2026-10-18, support group, all three classes, 4 s cooldown): Raise Bone Warrior (192, `vael oss brak`, level 8, 50 mana; a sturdy melee minion, range 1, physical), Raise Bone Archer (40, `vael oss vex`, level 12, 35 mana; range 5, physical arrows, fragile; **left in O254**, when its id 193 and words `vael oss sag` became the attack spell Splinter Volley; **back since O350** on id 40 with new words) and Raise Bone Mage (176, `vael oss mynd`, level 16, 70 mana; range 4, energy, fragile). Each creates ONE minion next to the caster. **Total cap** (all kinds together: skeletons, shades, the golem and these three): Necromancer 3, Lich 1, Bone Lord 6 (7 from level 400), the passive tree's Legion adds to it. At the cap the next summon of any spell dismisses the OLDEST minion first (a puff, no corpse, no loot), then the new one appears. Raise Dead's own per-kind caps stay; the total wins. Numbers: `necro_config.lua` `minions`.
 - **Summons**: capped per class and level, scale with the owner's level and magic level, follow (brought back past
   7 sqm or across floors), rest in protection zones and rise outside, go at logout and death, pushable. They show
   their owner's level after the name and follow a level up while out (the level shown and the maximum health, the

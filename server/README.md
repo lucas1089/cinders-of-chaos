@@ -1876,7 +1876,7 @@ Mystic who cast it had no attack spell for 12 s; 2 s since the rotation pass ("S
 
 Until the cure spells were retired (C6 below) every spell id below 256 was in use (base server, `patch_spell_ids.py`, the Chaos block). The Necromancer's three summon
 spells (Raise Bone Warrior 192, Raise Bone Archer 193, Raise Bone Mage 176) took the ids of the base's Fletch Crystal Arrows
-(O254: Raise Bone Archer was removed; id 193 is the attack spell Splinter Volley and the trio is warrior, warrior, mage. Wildstride, Blood Pact, Mistborne Step and Zealotry became attack spells too: server/data/spells/README.md "Support to attack (O254)".)
+(O254: Raise Bone Archer was removed; id 193 is the attack spell Splinter Volley and the trio is warrior, warrior, mage. Wildstride, Blood Pact, Mistborne Step and Zealotry became attack spells too: server/data/spells/README.md "Support to attack (O254)". O350: Raise Bone Archer is back on id 40, the trio is warrior, archer, mage again; "Necromancer summons and the summon cap".)
 (192), Fletch Wraith Bolts (193) and Arrow Call (176): ammunition conjure spells, switched off by the `archery` step
 (`patch_base_archery.py`, `conjureScripts` of `data/lib/chaos_archery_config.lua`). The `spells` step runs before `archery`,
 so `register_spells.py` no longer counts a base spell whose script is in `conjureScripts` as holding its spellid;
@@ -2242,7 +2242,7 @@ class). Read from the tools, 34 ids of 1-255 are free in the install after the C
 spells 48, 49, 51, 79, 95, 108 and 109 are commented out too; they are not counted, the client keeps them for icons).
 No stock spell needed retiring: nothing is left that no class uses and the tools already retire it. The pool is
 `data/scripts/chaos/spell_id_pool_config.lua`: `ids` (21: 142 143 148-160 172 173 174 177 178 237, the ids of the
-retired stock attack and healing spells, as the attack kit did before) and `spare` (9 since O332: 40 41 47 52 60 101 165 168 171; 35 and 39 went to Pack Howl and Rending Pounce, "Wolves as the main damage (O332)"). The test checks that every pool id is free: no live
+retired stock attack and healing spells, as the attack kit did before) and `spare` (8 since O350: 41 47 52 60 101 165 168 171; 35 and 39 went to Pack Howl and Rending Pounce, "Wolves as the main damage (O332)", 40 to Raise Bone Archer, "Necromancer summons and the summon cap"). The test checks that every pool id is free: no live
 stock spell, no Chaos spell, freed by a retiring tool. A phase that adds a spell takes the next id of `ids` and writes
 it in `spells_chaos.xml`, `attack_kit_config.lua` (a kit spell) and nowhere else; `register_spells.py` refuses a taken
 id, the client moves a stock entry that held it (`spellfix.lua` `chaosIds`).
@@ -2291,6 +2291,20 @@ reach the warrior, the golem or the mage. `necro_minions.lua` raises `ChaosNecro
 `ChaosPassiveDealt` then uses `ChaosPassiveMinionDamagePercent`: the hit type's percent plus the death stat (and the
 all-element stat once), summed before the soft cap. The shade's death hit counts once. Not in `minion_model.py` (one tree
 factor from the C4 run); a stronger minion line shows in the next live run. Test: `tests/paragon_test.lua`.
+
+**Raise Bone Archer back, O350 (2026-10-31)** (owner: "de volta o minion archer também"). O254 had made the archer's
+id 193 and words `vael oss sag` the attack spell Splinter Volley. That spell stays. The archer is a summon spell again on
+id 40, the first spare of `spell_id_pool_config.lua` (the stock Shatterfrost's, retired by the cap, so `register_spells.py`
+and `tests/spell_ids_test.lua` count it as free; the client's Shatterfrost fix in `spellfix.lua` is gone, like Lance of
+the Grave's in O332). Words `vael oss vex`, level 12, 35 mana, 4 s, support group, the whole line. Restored from the O254
+removal: `necro_risen_archer.xml` (look 33), `raise_archer.lua`, `minions.archer` (range 5, physical, hit x1.25, health
+x0.85 like the mage since O345; it was 0.6), `minionSpells.archer` (Piercing Shot, Arrow Rain), `summonSpells.archer`,
+`N.kinds`. The model trio (`necro_balance_config.lua` `builds.trio`) is warrior, archer, mage; `aggro.archer` 0.6. The class
+hit stays 1.0: `minion_model.py --check` passes (1 target 1.05 at 50, 1.10 at 1000, 5 targets 1.24 at 500 of 1.25), and
+0.97 moved the ratio by 0.01 only. Spells per class: Necromancer 21, Lich 21, Bone Lord 23 of 24
+(`patch_spell_cap_test.py`). Client: `spelldata.lua`, the helper entry `[40]` (`supportspells.lua`, capped, counts
+"Risen Archer"), icon cell 372 (painted, `class_spell_art`). Needs a live check: the cast, the arrow
+animation, Piercing Shot and Arrow Rain.
 
 **Bone Golem look, O354 (2026-10-31)** (owner: the golem reads as brown clay, not bones). `necro_bone_golem.xml` wears
 look 3185, a 2x2 golem of bones with green eyes (pair 50 import, source F; idle 1 phase, walk 3). It was 1549, a 3x3

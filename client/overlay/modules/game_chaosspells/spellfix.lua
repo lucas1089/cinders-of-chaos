@@ -41,7 +41,8 @@ F.STOCK = {
   -- Lance of the Grave (client 260, server 35) is retired by the cap (patch_spell_cap.py CAP) and its id 35 is the Chaos spell
   -- Pack Howl's since O332: no fix, the removed-spell rule keeps its entry off the Chaos id (as with Bog Splatter above).
   ["kah rek sang"] = { id = 37, level = 300, mana = 25, range = 7, vocations = { 4, 8, 14 }, exhaustion = 13000 }, -- Headsman's Hurl (261)
-  ["drai orr hyr"] = { id = 40, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Shatterfrost (263/262)
+  -- Shatterfrost (client 263, server 40) is retired by the cap too and its id 40 is the Chaos spell Raise Bone Archer's since
+  -- O350: no fix, the removed-spell rule keeps its entry off the Chaos id (as with Lance of the Grave above).
   ["drai orr gor"] = { id = 41, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Quakeburst (262/263)
   ["vael mur sol"] = { id = 46, level = 300, vocations = { 3 } },                 -- Hallowed Ground (268)
   ["vok rek kal"] = { range = 7, needTarget = true },               -- Duelist's Oath: the server needs a target

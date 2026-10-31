@@ -1,7 +1,7 @@
 -- Run from the server/ folder: luajit tests/necro_summon_test.lua (no engine needed; CI runs it with luajit and lua5.3)
 -- The Necromancer line's summon cap on a mocked engine (data/scripts/chaos/necro_lib.lua M.raise): the total cap of all
 -- kinds together, the oldest minion dismissed first (a puff, no corpse), the new one created after, Raise Dead following
--- the same rule, and the two summon spells (Raise Bone Warrior / Mage) creating one minion of their kind.
+-- the same rule, and the three summon spells (Raise Bone Warrior / Archer / Mage) creating one minion of their kind.
 local fails, checks = 0, 0
 local function ok(c, what)
 	checks = checks + 1
@@ -111,19 +111,19 @@ end
 -- ------------------------------------------------------------------ the cap
 local nec = player(cfg.ids.necromancer)
 L.raise(nec, "warrior", {x = 10, y = 10, z = 7})
+L.raise(nec, "archer", {x = 10, y = 10, z = 7})
 L.raise(nec, "mage", {x = 10, y = 10, z = 7})
-L.raise(nec, "warrior", {x = 10, y = 10, z = 7})
-eq(names(nec), "Risen Warrior,Risen Mage,Risen Warrior", "three summons out")
+eq(names(nec), "Risen Warrior,Risen Archer,Risen Mage", "three summons out (the trio, the archer back since O350)")
 eq(#removed, 0, "none dismissed below the cap")
 local before = puffs
 L.raise(nec, "skeleton", {x = 10, y = 10, z = 7})
-eq(names(nec), "Risen Mage,Risen Warrior,Risen Skeleton", "a fourth: the oldest (the warrior) is gone, the new one is out")
+eq(names(nec), "Risen Archer,Risen Mage,Risen Skeleton", "a fourth: the oldest (the warrior) is gone, the new one is out")
 eq(removed[#removed], "Risen Warrior", "the warrior was dismissed")
 ok(puffs > before, "a puff where it stood")
-L.raise(nec, "mage", {x = 10, y = 10, z = 7})
-eq(names(nec), "Risen Warrior,Risen Skeleton,Risen Mage", "a fifth: the first mage goes next")
 L.raise(nec, "warrior", {x = 10, y = 10, z = 7})
-eq(names(nec), "Risen Skeleton,Risen Mage,Risen Warrior", "a sixth: the second warrior goes")
+eq(names(nec), "Risen Mage,Risen Skeleton,Risen Warrior", "a fifth: the archer goes next")
+L.raise(nec, "archer", {x = 10, y = 10, z = 7})
+eq(names(nec), "Risen Skeleton,Risen Warrior,Risen Archer", "a sixth: the mage goes")
 eq(#nec:getSummons(), 3, "always three at most")
 for _, m in ipairs(created) do
 	eq(m.drop, false, m.name .. ": no loot")
@@ -131,7 +131,7 @@ end
 
 -- Raise Dead's kind follows the total cap too (a necromancer's skeleton raised with 3 others out)
 local nec2 = player(cfg.ids.necromancer, 100)
-for _, k in ipairs({"warrior", "mage", "mage"}) do L.raise(nec2, k, {x = 10, y = 10, z = 7}) end
+for _, k in ipairs({"warrior", "archer", "mage"}) do L.raise(nec2, k, {x = 10, y = 10, z = 7}) end
 L.raise(nec2, "skeleton", {x = 10, y = 10, z = 7})
 L.raise(nec2, "skeleton", {x = 10, y = 10, z = 7})
 eq(names(nec2), "Risen Mage,Risen Skeleton,Risen Skeleton", "two skeletons from Raise Dead push out the two oldest")
@@ -159,7 +159,7 @@ local function cast(file, p)
 	dofile(file)
 	return onCastSpell({getPlayer = function() return p end}, {}, false)
 end
-for _, kind in ipairs({"warrior", "mage"}) do
+for _, kind in ipairs({"warrior", "archer", "mage"}) do
 	local p = player(cfg.ids.necromancer)
 	local n = #created
 	eq(cast("data/spells/chaos/necromancer/raise_" .. kind .. ".lua", p), true, kind .. " spell: cast")
