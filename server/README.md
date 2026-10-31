@@ -2285,6 +2285,11 @@ Docs: `docs/CLASSES.md` "Necromancer", `data/spells/README.md` "Necromancer line
 minions' hits (arrow and energy animations), the replacement of the oldest minion at the cap, a Lich and a Bone Lord at their
 caps, look 33 for the archer.
 
+**Bone Golem look, O354 (2026-10-31)** (owner: the golem reads as brown clay, not bones). `necro_bone_golem.xml` wears
+look 3185, a 2x2 golem of bones with green eyes (pair 50 import, source F; idle 1 phase, walk 3). It was 1549, a 3x3
+brown earth golem. No other monster wears 3185. Already in every client from pair 50 on, so no new pair and no
+windows-assets step. The login scene shows the same look (`loginscene_core.lua`). Needs a live look in game.
+
 **No room, beta 2026-10-22** (owner: "when the necromancer has no room, the summons are blocked"). `ChaosNecro.spotAt`
 took only a free tile on or next to the spot, so a caster in a pack of monsters got "not enough room". Now it looks two
 and three steps away (a free tile in sight), then takes a tile with a creature on it (the spot, a tile next to it, the

@@ -132,7 +132,7 @@ def c4_dps(data, cls, level):
 
 # ------------------------------------------------------------------------------------------------ the hunt
 def monster_dps(bal, level):
-    return power(bal['monsterDps'], max(level, 1))
+    return power(bal['monsterDps'], max(level, 1)) * bal.get('minionLive', 1.0)
 
 
 def pace_mult(data, level, legacy):

@@ -340,9 +340,11 @@ local scanned = 0
 if ok and pipe then
 	for path in pipe:lines() do
 		-- the theme art libs define the themed set pieces (pair 24): the sets' own source; the item price table
-		-- (chaos_item_prices_data.lua, sell_prices.lua) prices every item a monster drops or a recipe makes and gives nothing
+		-- (chaos_item_prices_data.lua, sell_prices.lua) prices every item a monster drops or a recipe makes and gives nothing;
+		-- the stock wand table (chaos_base_wands.lua, O353) only gives the tooltip the damage of every stock wand
 		if not path:find("transmog", 1, true) and not path:find("chaos_theme_", 1, true)
-				and not path:find("item_prices_data", 1, true) and not path:find("sell_prices", 1, true) then
+				and not path:find("item_prices_data", 1, true) and not path:find("sell_prices", 1, true)
+				and not path:find("chaos_base_wands", 1, true) then
 			scan(path)
 			scanned = scanned + 1
 		end
