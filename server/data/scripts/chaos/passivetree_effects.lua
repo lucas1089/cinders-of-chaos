@@ -170,6 +170,22 @@ function ChaosPassiveDamagePercent(bonuses, combatType)
 	return ChaosSoftCap(ChaosPassiveDamageRaw(bonuses, combatType), cfg.maxDamagePercent, cfg.softCap.damagePercentH)
 end
 
+-- A Necromancer minion's hit (O348, owner 2026-10-31: "make the minions count the death damage"): the hit is dealt as the
+-- owner with the minion's own type (physical for the warrior and the golem, energy for the mage, ...), so it took only
+-- that type's percent. It now also takes the tree's death damage percent, summed before the soft cap. A death hit (the
+-- shade) is counted once; healing and no type get nothing extra.
+function ChaosPassiveMinionDamagePercent(bonuses, combatType)
+	local raw = ChaosPassiveDamageRaw(bonuses, combatType)
+	if combatType ~= COMBAT_DEATHDAMAGE and combatType ~= COMBAT_HEALING and combatType ~= COMBAT_NONE then
+		-- the death stat, and the all-element stat once (an element hit has it already)
+		raw = raw + math.max(0, bonuses.incrementDeath or 0)
+		if not IS_ELEMENT[combatType] then
+			raw = raw + math.max(0, bonuses.multiIncrement or 0)
+		end
+	end
+	return ChaosSoftCap(raw, cfg.maxDamagePercent, cfg.softCap.damagePercentH)
+end
+
 -- Paragon damage: every damage type, not healing (multiplies after the tree's own bonuses)
 function ChaosParagonDamageMultiplier(bonuses, combatType)
 	local pct = bonuses.paragonDamage or 0
@@ -472,9 +488,12 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		if bonuses then
 			-- the factor of the classes tuned without a tree (class_tree.lua classDamage); not on healing
 			local line = ChaosPassiveLineFactor(attacker)
-			local m1 = (1 + ChaosPassiveDamagePercent(bonuses, primaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, primaryType, origin)
+			-- a minion's hit (necro_minions.lua raises ChaosNecroMinions.dealing around it) also takes the death percent
+			local NM = rawget(_G, "ChaosNecroMinions")
+			local pctOf = (NM and (NM.dealing or 0) > 0) and ChaosPassiveMinionDamagePercent or ChaosPassiveDamagePercent
+			local m1 = (1 + pctOf(bonuses, primaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, primaryType, origin)
 				* ChaosParagonDamageMultiplier(bonuses, primaryType) * (primaryType == COMBAT_HEALING and 1 or line)
-			local m2 = (1 + ChaosPassiveDamagePercent(bonuses, secondaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, secondaryType, origin)
+			local m2 = (1 + pctOf(bonuses, secondaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, secondaryType, origin)
 				* ChaosParagonDamageMultiplier(bonuses, secondaryType) * (secondaryType == COMBAT_HEALING and 1 or line)
 			if m1 ~= 1 then
 				primaryDamage = scale(primaryDamage, m1)

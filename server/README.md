@@ -2285,6 +2285,13 @@ Docs: `docs/CLASSES.md` "Necromancer", `data/spells/README.md` "Necromancer line
 minions' hits (arrow and energy animations), the replacement of the oldest minion at the cap, a Lich and a Bone Lord at their
 caps, look 33 for the archer.
 
+**Minions take the death percent, O348 (2026-10-31)** (owner: "make the minions count the death damage"). A minion's hit is
+dealt as its owner with its own type, so it took only that type's tree percent: the Necromancer tree's death damage did not
+reach the warrior, the golem or the mage. `necro_minions.lua` raises `ChaosNecroMinions.dealing` around every minion hit;
+`ChaosPassiveDealt` then uses `ChaosPassiveMinionDamagePercent`: the hit type's percent plus the death stat (and the
+all-element stat once), summed before the soft cap. The shade's death hit counts once. Not in `minion_model.py` (one tree
+factor from the C4 run); a stronger minion line shows in the next live run. Test: `tests/paragon_test.lua`.
+
 **Bone Golem look, O354 (2026-10-31)** (owner: the golem reads as brown clay, not bones). `necro_bone_golem.xml` wears
 look 3185, a 2x2 golem of bones with green eyes (pair 50 import, source F; idle 1 phase, walk 3). It was 1549, a 3x3
 brown earth golem. No other monster wears 3185. Already in every client from pair 50 on, so no new pair and no

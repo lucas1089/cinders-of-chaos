@@ -317,7 +317,10 @@ local function think(player, t)
 				if SF then
 					SF.depth = (SF.depth or 0) + 1
 				end
+				-- the tree's death percent reaches the hit too (passivetree_effects.lua, O348)
+				M.dealing = (M.dealing or 0) + 1
 				local ok, err = pcall(act, player, classKey, c, kind, target.creature, aura, t)
+				M.dealing = M.dealing - 1
 				if SF then
 					SF.depth = SF.depth - 1
 				end
