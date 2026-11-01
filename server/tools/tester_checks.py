@@ -317,6 +317,45 @@ def party_share_problems(p):
     return out
 
 
+KILL_TOLERANCE = 0.05
+
+
+def shared_kill_problems(kill, share_of_1000):
+    """(skip text or None, [problems]) for the "kill" part of `!tester party kill`: a real kill with the share as the
+    leader set it, then a solo kill. Working share: both gain, the leader's gain against the solo kill is what
+    Party:onShareExperience pays (share_of_1000 / 1000, within KILL_TOLERANCE). Share off: the partner gains nothing.
+    A solo kill never pays the partner."""
+    if not kill:
+        return 'no answer to !tester party kill (an old helper file, or the bot died)', []
+    if kill.get('err'):
+        return 'no shared kill: %s' % kill['err'], []
+    sh, so = kill.get('shared') or {}, kill.get('solo') or {}
+    for k in (sh, so):
+        if k.get('err'):
+            return 'no shared kill: %s' % k['err'], []
+        if not k.get('dead'):
+            return 'the %s did not die in the kill (health %s -> %s%s%s)' % (
+                kill.get('monster', 'monster'), k.get('hp'), k.get('hpLeft'), ', leader in a protection zone' if k.get('pz')
+                else '', ', ' + k['hitErr'] if k.get('hitErr') else ''), []
+    if int(so.get('leader') or 0) <= 0:
+        return 'the solo kill paid the leader nothing (no experience from this monster here)', []
+    out = []
+    if int(so.get('partner') or 0) != 0:
+        out.append('a solo kill of the leader paid the partner %s experience' % so['partner'])
+    if sh.get('enabled'):
+        if int(sh.get('partner') or 0) <= 0:
+            out.append('a kill with the share working paid the partner nothing')
+        if share_of_1000:
+            got = int(sh.get('leader') or 0) / float(so['leader'])
+            want = int(share_of_1000) / 1000.0
+            if abs(got / want - 1) > KILL_TOLERANCE:
+                out.append('the leader got %.0f%% of a solo kill with the share working, Party:onShareExperience pays %.0f%%' % (
+                    got * 100, want * 100))
+    elif int(sh.get('partner') or 0) > 0:
+        out.append('the partner got %s experience from a kill with the share not working' % sh['partner'])
+    return None, out
+
+
 async def check_party_xp(io, name, cls, level):
     """party XP sharing: two bots form a party, the leader (this bot) switches shared experience on (packet 0xA8); the helper
     reads the party: the switch took, what the game's Party:onShareExperience pays for 1000 experience is
@@ -368,8 +407,20 @@ async def check_party_xp(io, name, cls, level):
         verdict = 'working' if second.get('shareEnabled') else 'off: %s' % (
             ', '.join('%s %s' % (x.get('name'), x.get('kind')) for x in second.get('problems') or [])[:60] or 'none')
         pays = second.get('shareOf1000')
-        return Result('party_xp', name, cls, PASS, 'switch took, 1000 xp pays %s (%s class line(s), %s members), engine %s' % (
-            'not read (old helper file)' if pays is None else pays, second.get('lines'), second.get('size'), verdict))
+        # a real kill: the leader back at its hunt (no kill in a protection zone), one kill shared, one solo
+        await io.go('hunt')
+        k = await io.helper('party kill', 'partykill', ANSWER + 6.0)   # two kills, each read 1.5 s later
+        skip, kbad = shared_kill_problems(k, pays)
+        if kbad and not partner_kept(io, other):
+            return Result('party_xp', name, cls, SKIP, PARTNER_GONE)
+        if kbad:
+            return Result('party_xp', name, cls, FAIL, '; '.join(kbad[:3]))
+        sh, so = (k or {}).get('shared') or {}, (k or {}).get('solo') or {}
+        kill = skip or 'kill %s: leader %s / partner %s xp (share %s), solo %s' % (
+            'shared' if sh.get('enabled') else 'not shared', sh.get('leader'), sh.get('partner'),
+            'working' if sh.get('enabled') else 'off', so.get('leader'))
+        return Result('party_xp', name, cls, PASS, 'switch took, 1000 xp pays %s (%s class line(s), %s members), engine %s; %s' % (
+            'not read (old helper file)' if pays is None else pays, second.get('lines'), second.get('size'), verdict, kill))
     finally:
         await io.party('unshare', other)
         await io.party('leave', other)

@@ -537,7 +537,8 @@ class PartyXp(unittest.TestCase):
         self.assertEqual(io.partied, [('form', 'Tester Bbb'), ('share', 'Tester Bbb'), ('unshare', 'Tester Bbb'), ('leave', 'Tester Bbb')])
         self.assertIn('1000 xp pays 650', r.detail)
         # the switch in the temple (the engine refuses it in a fight outside a protection zone), back to the hunt after
-        self.assertEqual(io.moves, ['town', 'hunt'])
+        self.assertEqual(io.moves, ['town', 'hunt', 'hunt'])
+        self.assertIn('no answer to !tester party kill', r.detail)
 
     def test_a_switch_the_engine_refuses_in_a_fight_is_a_skip(self):
         _, r = self.run_check(shareActive=False, leaderBlocked=True, leaderPz=False)
@@ -586,6 +587,48 @@ class PartyXp(unittest.TestCase):
             return self.party(io, shareEnabled=(calls['n'] != 3))   # the first look after the switch only
         r = run(TX.check_party_xp(FakeIO({'party': answer}), 'Tester Aaa', 'Ninja', 100))
         self.assertEqual(r.status, TX.PASS, r.detail)
+
+    def kill(self, shared=None, solo=None, **over):
+        k = {'monster': 'Demon', 'shared': {'leader': 6500, 'partner': 6400, 'active': True, 'enabled': True, 'dead': True},
+             'solo': {'leader': 10000, 'partner': 0, 'dead': True}}
+        k['shared'].update(shared or {})
+        k['solo'].update(solo or {})
+        k.update(over)
+        return k
+
+    def test_a_real_shared_kill_pays_what_the_share_rule_says(self):
+        self.assertEqual(TX.shared_kill_problems(self.kill(), 650), (None, []))
+        self.assertEqual(TX.shared_kill_problems(self.kill(shared={'leader': 6700}), 650)[1], [], 'within 5%')
+        skip, bad = TX.shared_kill_problems(self.kill(shared={'leader': 10000}), 650)
+        self.assertIn('the leader got 100% of a solo kill', bad[0])
+        _, bad = TX.shared_kill_problems(self.kill(shared={'partner': 0}), 650)
+        self.assertIn('paid the partner nothing', bad[0])
+        _, bad = TX.shared_kill_problems(self.kill(solo={'partner': 40}), 650)
+        self.assertIn('solo kill of the leader paid the partner 40', bad[0])
+
+    def test_a_kill_with_the_share_off_pays_the_leader_alone(self):
+        self.assertEqual(TX.shared_kill_problems(self.kill(shared={'enabled': False, 'leader': 10000, 'partner': 0}), 650),
+                         (None, []))
+        _, bad = TX.shared_kill_problems(self.kill(shared={'enabled': False, 'partner': 5}), 650)
+        self.assertIn('kill with the share not working', bad[0])
+
+    def test_a_kill_that_did_not_run_is_a_skip_not_a_bug(self):
+        for k, text in ((None, 'no answer'), ({'err': 'not the leader of a party of 2'}, 'not the leader'),
+                        (self.kill(solo={'dead': False}), 'did not die'), (self.kill(solo={'leader': 0}), 'paid the leader nothing'),
+                        (self.kill(shared={'err': 'no free tile next to the leader'}), 'no free tile')):
+            skip, bad = TX.shared_kill_problems(k, 650)
+            self.assertIn(text, skip)
+            self.assertEqual(bad, [])
+
+    def test_the_check_runs_the_kill_at_the_hunt(self):
+        io = FakeIO({'party': lambda io: self.party(io), 'party kill': self.kill()})
+        r = run(TX.check_party_xp(io, 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('kill shared: leader 6500 / partner 6400 xp (share working), solo 10000', r.detail)
+        io = FakeIO({'party': lambda io: self.party(io), 'party kill': self.kill(shared={'partner': 0})})
+        r = run(TX.check_party_xp(io, 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('paid the partner nothing', r.detail)
 
     def test_skips(self):
         self.assertEqual(run(TX.check_party_xp(FakeIO(partner=None), 'Tester Aaa', 'Ninja', 100)).status, TX.SKIP)

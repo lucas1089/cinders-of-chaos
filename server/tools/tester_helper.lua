@@ -21,7 +21,7 @@
 --     checks of tools/tester_checks.py spell_quest; the staff command /spellquest is closed to testers)
 --   * "!tester waystone <1-15> [loot]" and "!tester riftrun <layout | loot>": a waystone run of that tier on the device's own
 --     functions, a real rift run opened as a player does; the facts the checks waystone_run, rift_layout and content_rewards
---     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience
+--     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience, "!tester party kill" adds a real shared kill and a solo kill
 --   * "!tester bag": empties the tester's own backpack of loot (everything but the potions) and tops the potions up
 --   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
 --     the count changed, and every 5 minutes anyway
@@ -49,7 +49,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 3
+HELPER_VERSION = 4
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -693,6 +693,154 @@ local function partyShare(party, data)
 	end
 end
 
+-- one kill by the leader on the engine's own death path (Creature::onDeath: a party with the share on and working pays
+-- through Party:shareExperience, else the attacker alone): a monster made next to the leader and hit by the leader
+-- down to 0. The engine runs the death on its next creature check, so the gains are read KILL_READ_MS later.
+-- done({leader, partner (experience gained), active, enabled (after the hits), dead, hp, hpLeft, pz, err})
+local KILL_MONSTER, KILL_HITS, KILL_READ_MS, KILL_ROUNDS, KILL_STREET = "Demon", 20, 1500, 3, 20
+local function hitDown(lid, id, out)
+	for _ = 1, KILL_HITS do
+		local mon = Monster(id)
+		if not mon or mon:getHealth() <= 0 then
+			return
+		end
+		-- the health left plus one, capped below 2^31 (max health x 10 of a level-scaled monster overflowed)
+		local hp = math.min(mon:getHealth() + 1, 2000000000)
+		local okH, err = pcall(doTargetCombatHealth, lid, mon, COMBAT_PHYSICALDAMAGE, -hp, -hp, CONST_ME_NONE)
+		if not okH then
+			out.hitErr = tostring(err)
+			return
+		end
+	end
+end
+
+local function oneKill(leader, partner, done)
+	local spot = freeNear(leader:getPosition(), nil, 3)
+	local out = {leader = 0, partner = 0, dead = false}
+	if not spot then
+		out.err = "no free tile next to the leader"
+		return done(out)
+	end
+	local tile = Tile(leader:getPosition())
+	out.pz = tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) or false
+	local lid, pid = leader:getId(), partner:getId()
+	local xl, xp = leader:getExperience(), partner:getExperience()
+	local okM, m = pcall(Game.createMonster, KILL_MONSTER, spot, false, true)
+	if not okM or not m then
+		out.err = "the monster could not be made"
+		return done(out)
+	end
+	local id = m:getId()
+	out.hp = m:getHealth()
+	hitDown(lid, id, out)
+	local party = leader:getParty()
+	out.active = party and party:isSharedExperienceActive() == true
+	out.enabled = party and party:isSharedExperienceEnabled() == true
+	local rounds = 0
+	local function read()
+		local left = Monster(id)
+		-- a monster whose health a Chaos script set after it was made (level scaling) is hit down again
+		if left and left:getHealth() > 0 and rounds < KILL_ROUNDS and Player(lid) then
+			rounds = rounds + 1
+			hitDown(lid, id, out)
+			return addEvent(read, KILL_READ_MS)
+		end
+		out.dead = left == nil
+		out.rounds = rounds + 1
+		if left then
+			out.hpLeft = left:getHealth()
+			left:remove()
+		end
+		local l, p = Player(lid), Player(pid)
+		if not l or not p then
+			out.err = "the leader or the partner left the game"
+			return done(out)
+		end
+		out.leader, out.partner = l:getExperience() - xl, p:getExperience() - xp
+		done(out)
+	end
+	addEvent(read, KILL_READ_MS)
+end
+
+-- the nearest free tile outside a protection zone round the leader (the temple's street), else nil
+local function outsidePz(center, reach)
+	for r = 1, reach do
+		for dx = -r, r do
+			for dy = -r, r do
+				if math.max(math.abs(dx), math.abs(dy)) == r then
+					local p = Position(center.x + dx, center.y + dy, center.z)
+					local t = Tile(p)
+					if t and t:getGround() and not t:hasFlag(TILESTATE_PROTECTIONZONE) and not t:hasFlag(TILESTATE_BLOCKSOLID)
+						and not t:hasFlag(TILESTATE_FLOORCHANGE) and not t:hasFlag(TILESTATE_TELEPORT) and not t:getTopCreature()
+						and freeNear(p, nil, 3) then
+						return p
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- "party kill": the leader's real shared kill against a solo kill (O110 party XP). A leader in a protection zone (no
+-- hunt spot it may use) steps out of it first; the partner, a tester too, is put next to the leader (range). One
+-- kill with the share as the leader set it, then the share off and one solo kill; the switch is put back. The checks
+-- compare both gains with what Party:onShareExperience pays (shareOf1000). done(kill)
+local function sharedKill(player, party, done)
+	if party:getLeader() ~= player or #party:getMembers() ~= 1 then
+		return done({err = "not the leader of a party of 2"})
+	end
+	local partner = party:getMembers()[1]
+	if not eligible(partner) then
+		return done({err = "the partner is no tester"})
+	end
+	-- no kill in a protection zone: a leader in the temple (no hunt spot it may use) steps out to the street next to it
+	local tile = Tile(player:getPosition())
+	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+		local street = outsidePz(player:getPosition(), KILL_STREET)
+		if street then
+			player:teleportTo(street)
+		end
+	end
+	local spot = freeNear(player:getPosition(), nil, 2)
+	if spot then
+		partner:teleportTo(spot)
+	end
+	local lid, pid = player:getId(), partner:getId()
+	-- both members active for the engine (Party ticksMap: damage to a hostile monster in the last pzLocked ms): one hit
+	-- of a tenth of its health by each on a second monster, removed again before it dies (bots in the temple never hit
+	-- anything; a hit of 1 was taken by the armour and counted 0 points)
+	local wspot = freeNear(player:getPosition(), nil, 3)
+	local okW, w = pcall(Game.createMonster, KILL_MONSTER, wspot or player:getPosition(), false, true)
+	if okW and w then
+		local hit = math.max(1, math.floor(w:getHealth() / 10))
+		pcall(doTargetCombatHealth, lid, w, COMBAT_PHYSICALDAMAGE, -hit, -hit, CONST_ME_NONE)
+		pcall(doTargetCombatHealth, pid, w, COMBAT_PHYSICALDAMAGE, -hit, -hit, CONST_ME_NONE)
+		w:remove()
+	end
+	local was = party:isSharedExperienceActive() == true
+	local kill = {monster = KILL_MONSTER}
+	oneKill(player, partner, function(shared)
+		kill.shared = shared
+		local l, p = Player(lid), Player(pid)
+		local pa = l and l:getParty()
+		if not (l and p and pa) then
+			kill.err = "the party broke up during the kill"
+			return done(kill)
+		end
+		pa:setSharedExperience(false)
+		oneKill(l, p, function(solo)
+			kill.solo = solo
+			local l2 = Player(lid)
+			local pa2 = l2 and l2:getParty()
+			if pa2 then
+				pa2:setSharedExperience(was)
+			end
+			done(kill)
+		end)
+	end)
+end
+
 function commands.party(player, arg)
 	local party = player:getParty()
 	-- "leave": out through Party:removeMember; the client's leave packet is refused in a fight
@@ -710,6 +858,27 @@ function commands.party(player, arg)
 			data.members[#data.members + 1] = m:getName()
 		end
 		pcall(partyShare, party, data)
+		if (arg or ""):lower() == "kill" then
+			-- the answer comes after both kills (about 3 s)
+			local pid = player:getId()
+			-- its own kind with the kill alone: the party answer and the kill in one line was too long and never came
+			local function answer(kill)
+				local p = Player(pid)
+				if p then
+					tell(p, "partykill", kill)
+				end
+			end
+			local ok, err = pcall(sharedKill, player, party, function(kill)
+				local okA, errA = pcall(answer, kill)
+				if not okA then
+					print("[tester-helper] party kill: " .. tostring(errA))
+				end
+			end)
+			if not ok then
+				answer({err = tostring(err)})
+			end
+			return
+		end
 	end
 	tell(player, "party", data)
 end
