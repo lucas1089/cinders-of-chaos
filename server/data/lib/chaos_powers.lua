@@ -76,7 +76,7 @@ P.defs = {
 		fmt = "pct", side = "prefix", weight = 3, cap = 30, kinds = {shield = true, armor = true, legs = true, boots = true,
 		other = true}, tiers = PCT},
 	{key = "echoshot", label = "Echo Shot", text = "Echo Shot: %d%% chance on a ranged hit to shoot again", fmt = "pct",
-		side = "prefix", weight = 2, cap = 25, kinds = {weapon = true}, tiers = PCT},
+		side = "prefix", weight = 2, cap = 25, kinds = {weapon = true}, ranged = true, tiers = PCT},
 	{key = "critecho", label = "Critical Echo", text = "Critical Echo: %d%% chance on a critical hit to strike again",
 		fmt = "pct", side = "prefix", weight = 3, cap = 30, kinds = {weapon = true, jewel = true},
 		tiers = {{3, 5}, {5, 7}, {6, 9}, {8, 11}, {10, 14}, {12, 17}, {15, 20}, {18, 25}}},

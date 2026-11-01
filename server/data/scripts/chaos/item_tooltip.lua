@@ -35,6 +35,9 @@ end
 if not ChaosWeaponDps then
 	dofile("data/scripts/chaos/weapon_dps_core.lua")
 end
+if not ChaosMonk then
+	dofile("data/scripts/chaos/monk_chi_core.lua") -- the fist weapons' DPS line (item_tooltip_core.lua T.fistDps)
+end
 if not ChaosWeaponSkill then
 	dofile("data/scripts/chaos/weapon_skill_core.lua")
 end
@@ -143,6 +146,8 @@ local function answer(player, data)
 			best = math.max(best, player:getEffectiveSkillLevel(sk))
 		end
 		wielder.melee, wielder.distance = best, player:getEffectiveSkillLevel(SKILL_DISTANCE)
+		-- a Monk fist weapon's line (item_tooltip_core.lua T.fistDps): the fist skill and the vocation
+		wielder.fist, wielder.vocId = player:getEffectiveSkillLevel(SKILL_FIST), voc and voc:getId() or 0
 		wielder.magic = player:getMagicLevel()
 		wielder.level = player:getLevel()
 	end)
@@ -203,6 +208,15 @@ local function answer(player, data)
 					end)
 					if okD and type(text) == "string" then
 						tip.desc = text
+					end
+				end
+				-- a unique's passive as a block of its own (T.splitPassive): the client draws it in a colour of its own
+				if type(tip) == "table" and type(tip.desc) == "string" and ChaosUniquePassivesCore and ChaosUniquePassivesConfig then
+					local UC, UF = ChaosUniquePassivesCore, ChaosUniquePassivesConfig
+					local e = UC.entry(UF, item:getId())
+					if e then
+						local okP, texts = pcall(function() return {UC.text(UF, e, "pt-BR"), UC.text(UF, e, "en")} end)
+						tip.passive = okP and T.splitPassive(tip.desc, texts, e.name) or nil
 					end
 				end
 				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)

@@ -31,6 +31,7 @@ local TYPES = {
 	[2496] = {name = "horned helmet", armor = 11, slot = 1}, -- Hornsworn Helm (a unique of the Embers set)
 	[3975] = {name = "dragon shield", weaponType = WEAPON_SHIELD, defense = 31, slot = 48}, -- Emberwarden
 	[2206] = {name = "strange ring", slot = 256},
+	[36656] = {name = "pair of ember knuckles", weaponType = WEAPON_SHIELD, attack = 46, defense = 12, slot = 48}, -- a fist weapon
 	[2160] = {name = "crystal coin", stackable = true, description = ""},
 	[27749] = {name = "lasting exercise wand", charges = 14400},
 	[27849] = {name = "Moon Amplifier Catalyst [1]", slot = 48, description = "An amplifier of the old badge rite.",
@@ -436,6 +437,23 @@ eq(row2.v > row.v, true, "more skill, more DPS")
 eq(dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0}})), nil, "no level: no estimate")
 eq(dpsOf(T.build(sword, {})), nil, "no viewer: no estimate")
 eq(dpsOf(T.build(armor, {wielder = {voc = 2000, dex = 0, level = 100, melee = 70}})), nil, "armour has none")
+-- a Monk fist weapon (owner 2026-11-01 "sem dps"): the fist skill, the fist attack and the vocation's meleeDamage
+dofile("data/scripts/chaos/monk_chi_core.lua")
+local knuckles = newItem(36656)
+local fw = {voc = 2000, dex = 0, level = 150, melee = 10, distance = 10, fist = 80, vocId = 17}
+local frow = dpsOf(T.build(knuckles, {wielder = fw}))
+eq(frow ~= nil, true, "a fist weapon has the line")
+local MK = ChaosMonk
+local fmax = MK.maxWeaponDamage(150, 80, MK.fistAttack(150, 46), 1) * 1.2
+local fpow = ChaosWeaponPower and ChaosWeaponPower.hitFactor and ChaosWeaponPower.hitFactor("fist", 150, 80) or 1
+eq(frow.v, ChaosWeaponDps.round(fmax / 2 * fpow / 2), "level 150, fist 80, attack 46, Monk x1.2, 2 s")
+fw.fist = 100
+eq(dpsOf(T.build(knuckles, {wielder = fw})).v > frow.v, true, "more fist skill, more DPS (the melee skill does not count)")
+fw.fist, fw.vocId = 80, 2
+eq(dpsOf(T.build(knuckles, {wielder = fw})).v, frow.v, "another viewer: the base Monk's factor")
+fw.vocId = 19
+eq(dpsOf(T.build(knuckles, {wielder = fw})).v < frow.v, true, "Iron Sage x1.1")
+eq(dpsOf(T.build(newItem(2514), {wielder = fw})), nil, "a plain shield has none")
 local twoH = dpsOf(T.build(newItem(2431), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70}}))
 eq(twoH ~= nil, true, "a two-handed axe has one")
 ChaosDisplayScale = {factor = function() return 10 end}
@@ -512,6 +530,23 @@ do
 	eq(T.build(newItem(27749), {}).charges.unlimited, true, "no charges attribute: unlimited")
 	eq(T.build(newItem(2160, 5), {}).charges, nil, "a stackable has no charges line")
 	eq(T.build(newItem(2496), {}).charges, nil, "a plain helmet has none")
+end
+
+-- ---------------------------------------------------------------- a unique's passive as a block of its own
+do
+	local en = "Hungry Blade: Each kill restores 7.1% of your maximum health. For: Warrior, Thief."
+	local pt = "Hungry Blade: Cada morte restaura 7.1% da sua vida máxima. Só para: Guerreiro, Ladino."
+	local p = T.splitPassive("Every soul it cuts feeds the blade. " .. en .. " (Requires level 120.)", {pt, en}, "Hungry Blade")
+	eq(p.name, "Hungry Blade", "the passive's name")
+	eq(p.text, "Each kill restores 7.1% of your maximum health. For: Warrior, Thief.", "the rule without the name")
+	eq(p.flavor, "Every soul it cuts feeds the blade. (Requires level 120.)", "the rest of the description")
+	local q = T.splitPassive("Uma alma. " .. pt .. " (Requer nível 120.)", {pt, en}, "Hungry Blade")
+	eq(q.text, "Cada morte restaura 7.1% da sua vida máxima. Só para: Guerreiro, Ladino.", "the pt-BR text")
+	eq(q.flavor, "Uma alma. (Requer nível 120.)", "the pt-BR rest")
+	eq(T.splitPassive(en, {en}, "Hungry Blade").flavor, "", "a description of only the passive")
+	eq(T.splitPassive("Plain text.", {en}, "Hungry Blade"), nil, "no passive text in it")
+	eq(T.splitPassive(nil, {en}, "Hungry Blade"), nil, "no description")
+	eq(T.splitPassive(en, {en}, ""), nil, "no name")
 end
 
 print(string.format("item_tooltip_test: %d checks OK", checks))

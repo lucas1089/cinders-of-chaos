@@ -3494,6 +3494,10 @@ numbers, `lv` checked against the item's level), the tooltip lines in `unique_pa
 `unique_passives.lua`. The item keeps its name, flavor text, stats, class rule and archetype line; the passive is one more
 sentence in its description (`tools/gen_unique_specs.py` renders it from the config through `tools/dump_unique_passives.lua`,
 so a number changed in the config changes the item text, the Codex and the wiki after the generators run).
+In the item tooltip the passive stands out (O360, owner 2026-11-01: "deixe esse texto especial mais em evidência"):
+`item_tooltip.lua` finds the passive text (pt-BR or English) in the description and sends it as `tip.passive = {name,
+text, flavor}` (`T.splitPassive`); the client draws the flavor dim, then the passive's name in orange on a section of
+its own and the rule in bright text. `tip.desc` keeps the whole text for an older client.
 - **Who gets it.** A passive works while the unique is worn as a real copy (custom attribute `chaos_unique`) and only for the
   class lines it names (`lines`); the item stays wearable for every class its equip rule allows, the passive sleeps for the
   others (so `gear_coverage` is unchanged). At most 5 passives are active, one per family: a character wearing more picks
@@ -7040,7 +7044,13 @@ Interval". It is an estimate of the auto attack on a target that does not defend
 
 Inputs: the item's attack (a rarity roll or a unique writes it as an attribute), the viewer's level, best melee skill (one melee skill)
 or distance skill (`item_tooltip.lua` puts them in `opts.wielder`), the interval of the tooltip (vocation, dexterity, attack speed cap).
-Left out: critical hits, modifiers of the item, passive tree and gems, resistances, spells, runes and the fist.
+Left out: critical hits, modifiers of the item, passive tree and gems, resistances, spells and runes.
+
+**Monk fist weapons (O360, owner 2026-11-01: "sem dps").** A fist weapon's tooltip shows **Estimated DPS: ~N** too
+(`T.fistDps`): max hit = `ChaosMonk.maxWeaponDamage(level, fist skill, ChaosMonk.fistAttack(level, attack), 1)` x the
+viewer's Monk class factor (`unarmed.meleeDamage`, the Monk's for other viewers) x `ChaosWeaponPower.hitFactor("fist")`;
+mean hit = max / 2; DPS = mean hit / the interval, then the display scale. `item_tooltip.lua` adds the fist skill and the
+vocation id to `opts.wielder`.
 
 **Wands and rods (O353, owner 2026-10-31: "mostre o ataque dos rods tambem, juntamente com o dps deles").** A wand's or rod's
 tooltip shows **Attack: lo-hi** as its first base row and **Estimated DPS: ~N** under the interval (`T.wandRows`). The hit is
@@ -12429,7 +12439,7 @@ stays ORIGIN_SPELL, so the monsters' own events (defences, the hall display guar
 |---|---|---|---|---|---|
 | Death Blast | prefix (weapon, jewel) | on kill: a fire explosion on up to 8 monsters around the corpse, 10% of its maximum health, at most 50 + level | 2-3% .. 12-16% | 25% | 1.5 s |
 | Glacial Ward | prefix (shield, armour, legs, boots, other) | when you dodge or block a monster's hit: an ice nova (100 + level) that slows 35% for 3 s | 2-3% .. 12-16% | 30% | 4 s |
-| Echo Shot | prefix (weapon) | a ranged hit that landed is repeated after 250 ms for 60% | 2-3% .. 12-16% | 25% | 0.8 s |
+| Echo Shot | prefix (distance weapon only, O360) | a ranged hit that landed is repeated after 250 ms for 60% | 2-3% .. 12-16% | 25% | 0.8 s |
 | Critical Echo | prefix (weapon, jewel) | a critical hit is repeated after 200 ms for 50% | 3-5% .. 18-25% | 30% | 1 s |
 | Arc Lightning | prefix (weapon, jewel) | a hit arcs to 3 monsters within 3 sqm for 30% | 2-3% .. 12-16% | 30% | 0.7 s |
 | Bloodrush | prefix (weapon, jewel, other) | every kill adds a stack (5, 6 s): +N% damage per stack | 1% .. 4-5% | 5% (25% at 5 stacks) | stacks |
@@ -22041,10 +22051,13 @@ tiver, faca por favor".
   family was sold only from level 8 and dropped only to level 500; the fist skill did not scale the auto attack (melee got
   the skill factor of "Auto attack power", fists did not); the Monk's starter kit had no weapon.
 * **Two item families, one list.** A fist weapon is a hand item of weaponType "shield" with an attack (no stock shield has
-  one): on this server the left hand only takes real weapons, so it goes in the shield hand; the engine still hits with
+  one): it goes in either hand, two at once included (engine patch `0087-fist-weapon-either-hand.patch`, O360; before it the
+  weapon hand took real weapons only); the Equip event keeps it to the Monk line, so only a Monk holds two; the engine still hits with
   fists (`Weapon::useFist`), and `monk_combat.lua` and the Monk spells (`_monk.lua`) use its attack instead of the level
   value when it is higher (`ChaosMonk.cfg.unarmed.fistWeapons`, kept in step with `ChaosFistWeapons.ids` by
-  `tests/fist_weapons_test.lua`). Its defense is a shield's.
+  `tests/fist_weapons_test.lua`). Its defense is a shield's. With two, the better attack counts (`fistWeaponAttack`), the
+  engine takes the better defense, and each item's modifiers count, as a Thief's two daggers do. Guard
+  `tools/fist_either_hand_patch_test.py`.
   * `data/items/fist_items.csv`: the six items of our own art (client ids 33654..33659, server ids 36654..36659;
     client/MANIFEST.md "Fist weapons and bone effects").
   * `data/items/fist_claws.csv` (new): thirteen "claws" (nine plain, four unique bases) on looks the pair already has (donor B "claw 1..13", client ids

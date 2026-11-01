@@ -501,6 +501,69 @@ function T.chargeInfo(charges, typeCharges)
 	return {n = math.max(0, floor(charges)), max = typeCharges > charges and floor(typeCharges) or nil}
 end
 
+-- a unique's passive as a block of its own (owner 2026-11-01: "deixe esse texto especial mais em evidência"): the
+-- passive text (texts = its line in each language, "Name: rule. For: ...") found in the description -> {name, text
+-- (the rule without the name), flavor (the rest of the description)}; nil when no text is in it. tip.desc keeps the
+-- whole text for a client that does not know the block.
+function T.splitPassive(desc, texts, name)
+	if type(desc) ~= "string" or type(name) ~= "string" or name == "" then
+		return nil
+	end
+	for _, t in ipairs(texts or {}) do
+		local from, to
+		if type(t) == "string" and t ~= "" then
+			from, to = desc:find(t, 1, true)
+		end
+		if from then
+			local rule = t:sub(1, #name + 1) == name .. ":" and t:sub(#name + 2):gsub("^%s+", "") or t
+			local flavor = (desc:sub(1, from - 1) .. " " .. desc:sub(to + 1)):gsub("%s+", " "):gsub("^ ", ""):gsub(" $", "")
+			return {name = name, text = rule, flavor = flavor}
+		end
+	end
+	return nil
+end
+
+-- a Monk fist weapon's "Estimated DPS" row (owner 2026-11-01 "sem dps" on a pair of ember knuckles): the engine hits
+-- with fists, and monk_combat.lua scales the hit to the fist attack (ChaosMonk.fistAttack: the item's attack or the
+-- level value, the higher), the vocation's meleeDamage (the base Monk's for another viewer) and the weapon power of the
+-- fist skill. Mean hit = max / 2 (melee). false when the item is no fist weapon (the other rows decide), nil when it is
+-- one but cannot be worked out.
+function T.fistDps(item, it, w, ms)
+	local MK = ChaosMonk
+	local u = MK and MK.cfg and MK.cfg.unarmed
+	if not (u and u.fistWeapons and MK.fistAttack and MK.maxWeaponDamage) then
+		return false
+	end
+	local id, found = int(call(item, "getId")), false
+	for _, f in ipairs(u.fistWeapons) do
+		if f == id then
+			found = true
+			break
+		end
+	end
+	if not found then
+		return false
+	end
+	local level, skill = int(w.level), int(w.fist)
+	if level < 1 or not ms or ms <= 0 then
+		return nil
+	end
+	local attack = attrOr(item, ITEM_ATTRIBUTE_ATTACK, call(it, "getAttack"))
+	local max = MK.maxWeaponDamage(level, skill, MK.fistAttack(level, attack), 1)
+		* ((u.meleeDamage or {})[int(w.vocId)] or (u.meleeDamage or {})[17] or 1)
+	local WP = ChaosWeaponPower
+	local power = WP and WP.hitFactor and WP.hitFactor("fist", level, skill) or 1
+	local dps = ChaosWeaponDps.round(max / 2 * power / (ms / 1000))
+	if not dps then
+		return nil
+	end
+	local DS = ChaosDisplayScale
+	if DS and DS.factor then
+		dps = dps * DS.factor(level)
+	end
+	return {k = "dps", l = "Estimated DPS", v = dps, fmt = "est"}
+end
+
 -- "Estimated DPS" row of a weapon (weapon_dps_core.lua). w = the wielder {level, melee (best melee skill), distance};
 -- ms = the interval the viewer swings it at. Melee swords, axes, clubs and distance weapons only; nil otherwise.
 -- The number is x the display scale of the wielder's level, like every combat number (display_scale_core.lua).
@@ -508,6 +571,10 @@ function T.dpsRow(item, it, w, ms)
 	local D = ChaosWeaponDps
 	if not (D and w and w.level) then
 		return nil
+	end
+	local fist = T.fistDps(item, it, w, ms)
+	if fist ~= false then
+		return fist
 	end
 	local wt = int(call(it, "getWeaponType"))
 	local melee = {[int(WEAPON_SWORD or 1)] = "sword", [int(WEAPON_CLUB or 2)] = "club", [int(WEAPON_AXE or 3)] = "axe"}
