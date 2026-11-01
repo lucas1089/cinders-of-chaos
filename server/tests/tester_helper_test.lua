@@ -56,6 +56,10 @@ check(#hl <= H.HIT_KEEP, "the list stays short")
 eq(H.hotSpot(40, {{"a", 30}, {"b", 90}, {"c", 500}})[1], "c", "hotSpot: the highest above the level")
 eq(H.hotSpot(40, {{"a", 30}, {"b", 40}}), nil, "hotSpot: nothing above")
 eq(H.hotSpot(40, nil), nil, "hotSpot: no monsters")
+eq(H.hotSpot(287, {{"Urzog", 300}}), nil, "hotSpot: a few levels lost by dying keep the spot")
+eq(H.hotSpot(40, {{"a", 65}}), nil, "hotSpot: the margin is at least 25 levels")
+eq(H.hotSpot(40, {{"a", 66}})[1], "a", "hotSpot: over the margin")
+eq(H.hotSpot(575, {{"Embermaw Archon", 2100}})[1], "Embermaw Archon", "hotSpot: a far higher monster")
 eq(H.xpAnomaly(100, -1), "negative experience gain", "negative xp")
 eq(H.xpAnomaly(100, 300000000), "absurd experience gain", "absurd xp")
 eq(H.xpAnomaly(100, 50000), nil, "normal xp")
@@ -409,6 +413,23 @@ do
 	check(last(tester):find('"owns":true', 1, true) ~= nil and granted == 1, "pet: granted quietly as staff")
 	talks["!tester"].onSay(tester, "!tester", "pet")
 	check(last(tester):find('"had":true', 1, true) ~= nil and granted == 1, "pet: an owned pet is not granted again")
+	-- the live pet and why it waits (the pets check tells a game rule from a bug)
+	check(last(tester):find('"cid"', 1, true) == nil, "pet: none out, no creature id")
+	local realCreature, realGuid = Creature, tester.getGuid
+	Creature = function(id) return id == pet.id and pet or nil end
+	function pet:isRemoved() return false end
+	tester.getGuid = function() return 77 end
+	ChaosPets.live = {[tester.id] = {species = "ember_whelp", cid = pet.id}}
+	ChaosPets.cool = {[77] = {summon = os.time() + 30, death = 0}}
+	talks["!tester"].onSay(tester, "!tester", "pet")
+	check(last(tester):find('"cid":' .. pet.id, 1, true) ~= nil, "pet: the live pet's creature id")
+	check(last(tester):find('"summonLeft":3', 1, true) ~= nil and last(tester):find('"deathLeft":0', 1, true) ~= nil,
+		"pet: the call and death cooldowns left")
+	ChaosPets.live[tester.id] = {species = "ember_whelp", rest = "summons"}
+	talks["!tester"].onSay(tester, "!tester", "pet")
+	check(last(tester):find('"rest":"summons"', 1, true) ~= nil and last(tester):find('"cid"', 1, true) == nil,
+		"pet: a resting pet says why")
+	Creature, tester.getGuid = realCreature, realGuid
 	ChaosPets, ChaosPetsConfig = nil, nil
 end
 talks["!tester"].onSay(tester, "!tester", "enter rift 4")
@@ -417,6 +438,31 @@ check(last(tester):find('"held":true', 1, true) ~= nil and keyRemoved == 1, "the
 check(keys[1].who == tester and keys[1].key.tier == 4 and #keys[1].key.mods == 0, "tier 4, no modifiers, to the tester")
 check(last(tester):find('"keyClientId":20155', 1, true) ~= nil, "the key's client id for the hotkey use")
 eq(tester.pos.x, 50, "and the tester waits in the temple")
+-- a full bag: the key lies under the tester (player:addItem's rule); found there, taken away, told as bagFull
+do
+	local realGet, realTileF, groundTaken = tester.getItemById, Tile, 0
+	function tester:getItemById() return nil end
+	Tile = function() return {getItemById = function() return {remove = function() groundTaken = groundTaken + 1 end} end} end
+	talks["!tester"].onSay(tester, "!tester", "enter rift 2")
+	check(last(tester):find('"held":false', 1, true) ~= nil and last(tester):find('"bagFull":true', 1, true) ~= nil,
+		"full bag: not held, bagFull")
+	eq(groundTaken, 1, "full bag: the key on the ground is taken away")
+	Tile = function() return nil end
+	talks["!tester"].onSay(tester, "!tester", "enter rift 2")
+	check(last(tester):find('"held":false', 1, true) ~= nil and last(tester):find('bagFull', 1, true) == nil,
+		"no key anywhere: not held, no bagFull (the check fails)")
+	-- RF.giveKey answers true when the key went to the inbox (a full bag)
+	local realGive, inboxTaken = ChaosRift.giveKey, 0
+	ChaosRift.giveKey = function() return true end
+	function tester:getInbox()
+		return {getItems = function() return {{getId = function() return ChaosRiftConfig.key.itemId end,
+			remove = function() inboxTaken = inboxTaken + 1 end}} end}
+	end
+	talks["!tester"].onSay(tester, "!tester", "enter rift 2")
+	check(last(tester):find('"bagFull":true', 1, true) ~= nil and inboxTaken == 1, "full bag: the key in the inbox, taken again")
+	ChaosRift.giveKey, tester.getInbox = realGive, nil
+	tester.getItemById, Tile = realGet, realTileF
+end
 talks["!tester"].onSay(tester, "!tester", "enter guild")
 check(last(tester):find('"err":"unknown place"', 1, true) ~= nil, "guild halls: unknown place")
 Tile = realTile

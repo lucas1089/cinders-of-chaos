@@ -375,10 +375,15 @@ end
 
 -- the first monster of a hunt spot above the tester: levels = {{name, level}} (hunting levels of the monsters round the spot).
 -- A tester set up before the safe-spawn fix keeps its old hunt spot, so "!tester hunt" checks the spot itself.
+-- a margin over the level: a tester loses levels by dying, and its own spawn (setup: at or under the level) must stay its spot
+H.HOT_MARGIN = {share = 0.1, min = 25}
+
 function H.hotSpot(level, monsters)
 	local worst
+	level = tonumber(level) or 0
+	local limit = level + math.max(H.HOT_MARGIN.min, math.floor(level * H.HOT_MARGIN.share))
 	for _, m in ipairs(monsters or {}) do
-		if (tonumber(m[2]) or 0) > (tonumber(level) or 0) and (not worst or m[2] > worst[2]) then
+		if (tonumber(m[2]) or 0) > limit and (not worst or m[2] > worst[2]) then
 			worst = m
 		end
 	end

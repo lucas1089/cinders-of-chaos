@@ -300,17 +300,37 @@ function commands.enter(player, arg)
 			tell(player, "enter", {kind = "rift", err = "no rifts on this server"})
 			return
 		end
-		rift.giveKey(player, {tier = place.tier, mods = {}}, "Tester key")
-		player:teleportTo(temple(player))
+		local inbox = rift.giveKey(player, {tier = place.tier, mods = {}}, "Tester key")
 		local it = ItemType(cfg.key.itemId)
 		-- the key is read back and taken again: one key per check filled the testers' bags over a long run
 		local key = player:getItemById(cfg.key.itemId, true)
 		local held = key ~= nil
+		local bagFull = false
 		if key then
 			pcall(key.remove, key, 1)
+		elseif inbox == true then
+			-- a full bag: RF.giveKey sends the key to the inbox (live run 2026-11-01); taken from there again
+			bagFull = true
+			pcall(function()
+				for _, i in ipairs(player:getInbox():getItems(true) or {}) do
+					if i:getId() == cfg.key.itemId then
+						i:remove(1)
+						break
+					end
+				end
+			end)
+		else
+			-- a full bag: player:addItem puts the key on the ground under the player (the engine's rule, no bug)
+			local tile = Tile(player:getPosition())
+			local dropped = tile and tile:getItemById(cfg.key.itemId)
+			if dropped then
+				bagFull = true
+				pcall(dropped.remove, dropped)
+			end
 		end
+		player:teleportTo(temple(player))
 		tell(player, "enter", {kind = "rift", tier = place.tier, keyClientId = it and it:getClientId() or 0, held = held,
-			pos = posOf(player:getPosition())})
+			bagFull = bagFull or nil, pos = posOf(player:getPosition())})
 		return
 	end
 	if place.kind == "npc" then
@@ -578,7 +598,16 @@ function commands.pet(player)
 		local okCall, res, msg = pcall(P.grant, player, first.key, "staff", true)
 		ok, why = okCall and res ~= false, okCall and msg or res
 	end
-	tell(player, "pet", {key = first.key, had = had, owns = P.owns(player, first.key), err = (not ok) and tostring(why) or nil})
+	-- the live pet (pets.lua P.live: its creature id, or why it rests) and the cooldowns: the check tells "did not
+	-- come out" from a rule of the game (pz, a zone, other summons, the death or call cooldown)
+	local live = P.live and P.live[player:getId()]
+	local pc = live and live.cid and Creature(live.cid)
+	local cool = P.cool and P.cool[player:getGuid()] or {}
+	local now = os.time()
+	tell(player, "pet", {key = first.key, had = had, owns = P.owns(player, first.key), err = (not ok) and tostring(why) or nil,
+		live = live and live.species or nil, cid = (pc and not pc:isRemoved()) and live.cid or nil,
+		rest = live and live.rest or nil, summonLeft = math.max(0, (tonumber(cool.summon) or 0) - now),
+		deathLeft = math.max(0, (tonumber(cool.death) or 0) - now)})
 end
 
 function commands.summons(player)
@@ -607,6 +636,13 @@ local function partyShare(party, data)
 	end
 	local lf, members, all = facts(leader), {}, {}
 	all[1] = lf
+	-- the engine's own gate of the switch (Game::playerEnableSharedPartyExperience): in a fight outside a protection zone
+	local okZ, pz = pcall(function()
+		local t = Tile(leader:getPosition())
+		return t ~= nil and t:hasFlag(TILESTATE_PROTECTIONZONE)
+	end)
+	data.leaderPz = okZ and pz == true
+	data.leaderBlocked = lf.fighting and not data.leaderPz
 	for _, m in ipairs(party:getMembers()) do
 		local f = facts(m)
 		members[#members + 1], all[#all + 1] = f, f
