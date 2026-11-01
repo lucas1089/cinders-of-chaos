@@ -886,8 +886,8 @@ async def check_unique_passive(io, name, cls, level):
 
 
 MONK_LINE = ('Monk', 'Shadowfist', 'Iron Sage')
-# the helper watches the fight for 6 s (tester_helper.lua FIST_WATCH_MS) before it answers
-FIST_ANSWER = 12.0
+# the helper watches the fight for 10 s (tester_helper.lua FIST_WATCH_MS) before it answers
+FIST_ANSWER = 16.0
 
 
 def dual_problems(f, kind):
