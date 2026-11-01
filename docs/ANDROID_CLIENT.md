@@ -48,8 +48,9 @@ call the game functions a tap would call.
 
 First run, 2026-11-01 (run 41339306856): the first start, the login and the character list passed. Entering the game
 failed: the client built 450 action bar slots in the login call (17 s on the emulator), sent nothing for over 30 s and
-the server closed the connection (ERROR 32). Fixed by base patch `0178` (hidden bars one per event). Also seen, not yet
-fixed: `uitable.lua` errors (`setColumnStyle` / `setRowStyle` nil) once in the game.
+the server closed the connection (ERROR 32). Fixed by base patch `0178` (hidden bars one per event). The 6 `uitable.lua` errors
+(`setColumnStyle` / `setRowStyle` nil) of that log follow from the drop: the two Dungeons tables queue their styles for
+the next frame and the game end destroys the window first.
 
 ## Step 8 status: the APK updater
 
