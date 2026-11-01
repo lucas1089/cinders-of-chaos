@@ -326,7 +326,7 @@ def shared_kill_problems(kill, share_of_1000):
     Party:onShareExperience pays (share_of_1000 / 1000, within KILL_TOLERANCE). Share off: the partner gains nothing.
     A solo kill never pays the partner."""
     if not kill:
-        return 'the helper does not run the shared kill (old helper file)', []
+        return 'no answer to !tester party kill (an old helper file, or the bot died)', []
     if kill.get('err'):
         return 'no shared kill: %s' % kill['err'], []
     sh, so = kill.get('shared') or {}, kill.get('solo') or {}
@@ -334,7 +334,9 @@ def shared_kill_problems(kill, share_of_1000):
         if k.get('err'):
             return 'no shared kill: %s' % k['err'], []
         if not k.get('dead'):
-            return 'the %s did not die in the kill' % kill.get('monster', 'monster'), []
+            return 'the %s did not die in the kill (health %s -> %s%s%s)' % (
+                kill.get('monster', 'monster'), k.get('hp'), k.get('hpLeft'), ', leader in a protection zone' if k.get('pz')
+                else '', ', ' + k['hitErr'] if k.get('hitErr') else ''), []
     if int(so.get('leader') or 0) <= 0:
         return 'the solo kill paid the leader nothing (no experience from this monster here)', []
     out = []
@@ -407,13 +409,13 @@ async def check_party_xp(io, name, cls, level):
         pays = second.get('shareOf1000')
         # a real kill: the leader back at its hunt (no kill in a protection zone), one kill shared, one solo
         await io.go('hunt')
-        k = await io.helper('party kill', 'party', ANSWER)
-        skip, kbad = shared_kill_problems((k or {}).get('kill') if k and not k.get('err') else None, pays)
+        k = await io.helper('party kill', 'partykill', ANSWER + 6.0)   # two kills, each read 1.5 s later
+        skip, kbad = shared_kill_problems(k, pays)
         if kbad and not partner_kept(io, other):
             return Result('party_xp', name, cls, SKIP, PARTNER_GONE)
         if kbad:
             return Result('party_xp', name, cls, FAIL, '; '.join(kbad[:3]))
-        sh, so = ((k or {}).get('kill') or {}).get('shared') or {}, ((k or {}).get('kill') or {}).get('solo') or {}
+        sh, so = (k or {}).get('shared') or {}, (k or {}).get('solo') or {}
         kill = skip or 'kill %s: leader %s / partner %s xp (share %s), solo %s' % (
             'shared' if sh.get('enabled') else 'not shared', sh.get('leader'), sh.get('partner'),
             'working' if sh.get('enabled') else 'off', so.get('leader'))
