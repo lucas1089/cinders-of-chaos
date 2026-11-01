@@ -1196,6 +1196,9 @@ jobs:
       - name: Player summons take no ally as an opponent (server src-patch 0086, guard; O86)
         run: python3 -I server/tools/summon_allies_patch_test.py
 
+      - name: Fist weapons in either hand, two only for the Monk line (server src-patch 0087, guard; O360)
+        run: python3 -I server/tools/fist_either_hand_patch_test.py
+
       - name: Loot Bag carries its loot without weight (server src-patch 0038, guard)
         run: python3 -I server/tools/weightless_patch_test.py
 

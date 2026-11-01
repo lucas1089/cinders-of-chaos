@@ -1,0 +1,43 @@
+# Fist weapons in either hand (owner 2026-11-01: "as armas fist devem ser usadas em qualquer mão. inclusive ao mesmo
+# tempo, mas o dual wield é somente pra monk"). A Monk's fist weapon is a shield-type hand item with an attack
+# (server/tools/install_fist_weapons.py; no stock shield has one). With classicEquipmentSlots = false the weapon hand
+# refused every shield type, so a fist weapon went in the shield hand only. Now Player::queryAdd lets it into the weapon
+# hand too, next to anything one-handed but a quiver; two at once included. Its Equip event (movements.xml slot "hand",
+# install_fist_weapons.py) keeps it to the Monk line, so only a Monk holds two. The engine still fights with fists
+# (Player::getWeapon skips shield types); data/scripts/chaos/monk_combat.lua takes the best fist weapon of the two
+# hands. Applies after 0001-0086.
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -2759,6 +2759,14 @@
+ 	return item && item->getWeaponType() == WEAPON_DISTANCE && (item->getSlotPosition() & SLOTP_TWO_HAND);
+ }
+ 
++// Chaos 0087: a Monk's fist weapon is a shield-type hand item with an attack (no stock shield has one;
++// server/tools/install_fist_weapons.py). It goes in either hand, two at once included; its Equip event (slot "hand")
++// keeps it to the Monk line, so only a Monk holds two.
++static bool chaosIsFistWeapon(const Item* item)
++{
++	return item && item->getWeaponType() == WEAPON_SHIELD && item->getAttack() > 0;
++}
++
+ // Chaos 0023: one might ring at a time over both ring slots. The might rings (the normal and the worn ids) carry the
+ // items.xml key "chaosMightRing" (server/tools/patch_base_archery.py). `item` may go into a ring slot unless it is a
+ // might ring and `other` (what the other ring slot holds) is another might ring.
+@@ -2915,7 +2923,16 @@
+ 				if (!g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
+ 					WeaponType_t type = item->getWeaponType();
+ 					const Item* rightItem = inventory[CONST_SLOT_RIGHT];
+-					if (type == WEAPON_NONE || type == WEAPON_SHIELD || type == WEAPON_AMMO || type == WEAPON_QUIVER) {
++					if (chaosIsFistWeapon(item)) {
++						// Chaos 0087: a fist weapon in the weapon hand, next to anything one-handed but a quiver
++						if (rightItem && rightItem != item && chaosIsQuiver(rightItem)) {
++							ret = RETURNVALUE_CANNOTBEDRESSED;
++						} else if (rightItem && rightItem != item && (rightItem->getSlotPosition() & SLOTP_TWO_HAND)) {
++							ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
++						} else {
++							ret = RETURNVALUE_NOERROR;
++						}
++					} else if (type == WEAPON_NONE || type == WEAPON_SHIELD || type == WEAPON_AMMO || type == WEAPON_QUIVER) {
+ 						ret = RETURNVALUE_CANNOTBEDRESSED;
+ 					} else if (chaosIsQuiver(rightItem) && rightItem != item) {
+ 						// Chaos 0023: a quiver in the shield hand takes a bow or crossbow only

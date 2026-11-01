@@ -161,4 +161,21 @@ eq(M.dodges(SF, true, 0.05), true); eq(M.dodges(SF, false, 0.0), false, "spells 
 eq(M.dodges(IS, true, 0.05), false)
 eq(M.dodges(SF, true, 0.0, true), false, "Scarred Discipline takes the evasion away")
 
+-- a fist weapon in each hand: off-hand strike, neutral main hit (owner 2026-11-01)
+eq(M.dualFists(1000, {64, 0}), nil, "one fist weapon: no pair")
+eq(M.dualFists(1000, {0, 0}), nil, "bare fists: no pair")
+local dm, dof = M.dualFists(2200, {62, 67})
+eq(dm, 67, "the better one is the main hand"); eq(dof, 62)
+local lm, lo = M.dualFists(1000, {41, 43})
+eq(lm, 60, "below the level value both hands use it"); eq(lo, 60)
+local d = cfg.unarmed.dualFists
+near(M.dualFistNeutral(60, 60), 1 / (1 + d.share), "same attack: cut by 1 / (1 + share)")
+near(M.dualFistNeutral(100, 10), 1 / (1 + d.share * d.minRatio), "a weak off hand counts at minRatio")
+local hit = 1000
+local cut = hit * M.dualFistNeutral(67, 62)
+local total = cut + M.dualFistStrike(cut, 67, 62)
+eq(math.abs(total - hit) <= 1, true, "neutral: main + off-hand strike = one fist hit (" .. total .. ")")
+eq(M.dualFistStrike(100, 60, 60, true), 2 * M.dualFistStrike(100, 60, 60, false), "against a player doubled")
+eq(M.dualFistStrike(0, 60, 60), 0, "no hit, no strike")
+
 print("monk tests OK")

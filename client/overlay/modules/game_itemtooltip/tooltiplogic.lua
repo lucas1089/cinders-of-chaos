@@ -28,7 +28,9 @@ L.COLORS = {
   corrupted = '#d04040',
   normal = '#e4d8c0',
   -- item sets: the title of a piece, the pieces worn and the bonuses active (dim when not)
-  set = '#58c878', setOn = '#7fe0a0', setLow = '#c0805a'
+  set = '#58c878', setOn = '#7fe0a0', setLow = '#c0805a',
+  -- a unique's passive (server T.splitPassive): its name and its rule stand out from the flavour text
+  passive = '#ffb340', passiveText = '#f2e6cc'
 }
 -- modifier tiers T1 (lowest) .. T8 (highest)
 L.TIER_COLORS = { '#8c8070', '#a89c88', '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#ff8a40' }
@@ -347,9 +349,20 @@ function L.lines(tip, ctx)
       add(line, C.gold, i == 1)
     end
   end
-  if tip.desc then
-    for i, line in ipairs(L.wrap(tip.desc, L.WRAP)) do
+  -- a unique's passive (owner 2026-11-01, "deixe esse texto especial mais em evidência"): the server sends it as a
+  -- block of its own (tip.passive); the flavour text stays dim, the passive's name and rule get lines of their own
+  local passive = type(tip.passive) == 'table' and type(tip.passive.name) == 'string' and type(tip.passive.text) == 'string'
+    and tip.passive or nil
+  local desc = passive and passive.flavor or tip.desc
+  if type(desc) == 'string' and desc ~= '' then
+    for i, line in ipairs(L.wrap(desc, L.WRAP)) do
       add(line, C.dim, i == 1)
+    end
+  end
+  if passive then
+    add(passive.name, C.passive, true)
+    for _, line in ipairs(L.wrap(passive.text, L.WRAP)) do
+      add(line, C.passiveText)
     end
   end
   if tip.locked then add('Locked', C.gold, true) end

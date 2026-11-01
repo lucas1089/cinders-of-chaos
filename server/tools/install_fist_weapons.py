@@ -22,8 +22,9 @@ it), loot (monster:chance per 100000; ...), description, unique (the item is the
 data/items/chaos_items.xml and is in no shop or loot).
 Without the matching client pair (client/MANIFEST.md "Fist weapons and bone effects") the items show as nothing.
 
-A fist weapon is a hand item of weaponType "shield" with an attack (no stock shield has one): it goes in the shield
-hand (the left hand only takes real weapons on this server), the engine still fights with fists (Weapon::useFist), and
+A fist weapon is a hand item of weaponType "shield" with an attack (no stock shield has one): it goes in either hand,
+two at once included (engine patch 0087; before it the weapon hand took real weapons only), the engine still fights
+with fists (Weapon::useFist), and
 monk_combat.lua / the Monk spells use its attack instead of the level-based fist attack when it is higher
 (ChaosMonk.cfg.unarmed.fistWeapons). Its defense is a shield's defense; data/lib/chaos_item_mods.lua rolls weapon
 modifiers on it.
@@ -35,8 +36,8 @@ modifiers on it.
 2. data/items/items.xml: the entries (article, name, plural, weight, description, weaponType shield, attack, defense)
    between two marker comments before </items>, rewritten when the manifest changed. An id with an entry outside the
    block stops the script.
-3. data/movements/movements.xml: an Equip / DeEquip pair per item (slot shield, its level, the Monk line: Monk,
-   Shadowfist, Iron Sage) between two marker comments before </movements>. The engine shows "It can only be wielded
+3. data/movements/movements.xml: an Equip / DeEquip pair per item (slot shield, which the engine reads as both hands;
+   its level; the Monk line: Monk, Shadowfist, Iron Sage) between two marker comments before </movements>. The engine shows "It can only be wielded
    properly by monks of level N or higher" from it and refuses the item to everyone else.
 4. NPC shops (data/npc/*.xml, `shop_buyable` / `shop_sellable` parameters): every weapon dealer (a buy list with the
    stock battle hammer, 2417: the town weapon shops) sells the rows with a `buy` price and buys back those rows at their

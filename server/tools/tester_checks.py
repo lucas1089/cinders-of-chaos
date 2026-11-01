@@ -885,6 +885,72 @@ async def check_unique_passive(io, name, cls, level):
         ' (critical)' if u.get('crit') else ''))
 
 
+MONK_LINE = ('Monk', 'Shadowfist', 'Iron Sage')
+# the helper watches the fight for 10 s (tester_helper.lua FIST_WATCH_MS) before it answers
+FIST_ANSWER = 16.0
+
+
+def dual_problems(f, kind):
+    """[text] for one `!tester fists` / `!tester blades` answer. able (the class may hold both: the Monk line for fist
+    weapons, Thief and Ninja for daggers): both are worn (codes 0) and every melee hit of the main hand is followed by
+    an off-hand strike. Not able: fists, the fist weapon is refused; blades, the dagger is refused in the shield hand."""
+    out = []
+    what = 'fist weapon' if kind == 'fists' else 'dagger'
+    if not f.get('able'):
+        if kind == 'fists' and f.get('left') == 0:
+            out.append('a class outside the Monk line could wear a fist weapon')
+        if kind == 'blades' and f.get('right') == 0:
+            out.append('a class that does not dual wield could hold a dagger in the shield hand')
+        return out
+    if f.get('left') != 0 or f.get('right') != 0:
+        out.append('could not wear a %s in each hand (weapon hand code %s, shield hand code %s)' % (
+            what, f.get('left'), f.get('right')))
+        return out
+    melee, off = int(f.get('melee') or 0), int(f.get('off') or 0)
+    if melee == 0:
+        return out
+    if off == 0:
+        out.append('%d melee hits with a %s in each hand and no off-hand strike' % (melee, what))
+        return out
+    if off < melee - 1 or off > melee:
+        out.append('%d melee hits but %d off-hand strikes (one each)' % (melee, off))
+    return out
+
+
+async def check_dual(io, name, cls, level, kind):
+    check = 'dual_fists' if kind == 'fists' else 'dual_blades'
+    f = await io.helper(kind, kind, FIST_ANSWER)
+    if not f:
+        return Result(check, name, cls, SKIP, 'no answer to !tester %s (an old helper file, or the bot died)' % kind)
+    if f.get('err'):
+        return Result(check, name, cls, SKIP, f['err'])
+    bad = dual_problems(f, kind)
+    if bad:
+        return Result(check, name, cls, FAIL, '; '.join(bad))
+    if not f.get('able'):
+        if kind == 'fists':
+            return Result(check, name, cls, PASS, 'a fist weapon is refused outside the Monk line (code %s)' % f.get('left'))
+        return Result(check, name, cls, PASS, 'a dagger is refused in the shield hand (code %s)' % f.get('right'))
+    if not int(f.get('melee') or 0):
+        return Result(check, name, cls, SKIP, 'both worn, but no melee hit landed in the watch')
+    # offSum: the strikes as the script deals them (before armour); the share itself is covered by the unit tests
+    return Result(check, name, cls, PASS, 'both worn; %s melee hits, %s off-hand strikes (%s damage)' % (
+        f.get('melee'), f.get('off'), f.get('offSum')))
+
+
+async def check_dual_fists(io, name, cls, level):
+    """fist weapons in either hand (engine patch 0087, O360): a Monk-line bot puts a fist weapon in each hand through the
+    engine's slot rule and hits a Demon; every fist hit must bring an off-hand strike. Another class must be refused."""
+    return await check_dual(io, name, cls, level, 'fists')
+
+
+async def check_dual_blades(io, name, cls, level):
+    """the Thief and Ninja dual wield (src-patch 0002, thief_combat.lua; owner 2026-11-01 "faça os mesmos testes com o
+    thief"): a dagger in each hand, every melee hit of the main hand brings an off-hand strike. Every other class, the
+    Samurai too, must be refused the dagger in the shield hand."""
+    return await check_dual(io, name, cls, level, 'blades')
+
+
 CHECKS = [
     ('beastmaster_wolf', check_summons, lambda c: c == 'Beastmaster'),
     ('necro_minions', check_summons, lambda c: c in ('Necromancer', 'Lich', 'Bone Lord')),
@@ -896,6 +962,8 @@ CHECKS = [
     ('content_rewards', check_content_rewards, lambda c: True),
     ('party_xp', check_party_xp, lambda c: True),
     ('unique_passive', check_unique_passive, lambda c: True),
+    ('dual_fists', check_dual_fists, lambda c: True),
+    ('dual_blades', check_dual_blades, lambda c: True),
     ('waystone', check_waystone, lambda c: True),
     ('reward_chest', check_reward_chest, lambda c: True),
     ('cursed_chest', check_cursed_chest, lambda c: True),

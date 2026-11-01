@@ -50,7 +50,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 5
+HELPER_VERSION = 7
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1431,6 +1431,188 @@ function commands.unique(player)
 		out.err = tostring(err)
 	end
 	tell(player, "unique", out)
+end
+
+-- two fist weapons (engine patch 0087, O360): a Monk-line bot puts one in each hand through the engine's own slot rule
+-- (addItemEx runs Player::queryAdd and the Equip event), hits a Demon next to it with the auto attack and counts the
+-- melee hits and the off-hand strikes (physical, ORIGIN_NONE) it deals; any other class must be refused the fist weapon.
+-- Answer kind "fists": {able (Monk line), left, right (return codes; 0 = worn), melee, off, meleeSum, offSum, err}
+local FIST_IDS, FIST_WATCH_MS = {36656, 36657}, 10000
+-- monster id -> {player id, counts}; a global, so the doTargetCombat wrapper below (made once) sees it after a reload
+TesterFistWatch = TesterFistWatch or {}
+local fistWatch = TesterFistWatch
+local fistEvent = CreatureEvent("TesterHelperDualFist")
+function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	local w = fistWatch[creature:getId()]
+	if w and attacker and attacker:getId() == w.pid and primaryType ~= COMBAT_HEALING then
+		local dmg = math.abs(primaryDamage) + math.abs(secondaryDamage)
+		if origin == ORIGIN_MELEE then
+			w.melee, w.meleeSum = w.melee + 1, w.meleeSum + dmg
+		end
+	end
+	-- the probe's Demon never dies: a kill would pay experience to the bot's party (live run 2026-11-01: party_xp read
+	-- the share of a Monk's probe kill; the monster level scaling can undo a raised maximum health)
+	if w and creature:getHealth() - (math.abs(primaryDamage) + math.abs(secondaryDamage)) < creature:getMaxHealth() / 2 then
+		creature:addHealth(creature:getMaxHealth())
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+fistEvent:type("healthchange")
+fistEvent:register()
+
+-- the off-hand strike is ORIGIN_NONE, and the engine runs no onHealthChange event for that origin (Game::combatChangeHealth:
+-- it stops scripted hits from recursing; live run 2026-11-01: 0 strikes seen though the strike was dealt), so the strikes
+-- are counted where the script deals them: a physical ORIGIN_NONE doTargetCombat from the bot on its probe Demon
+if type(doTargetCombat) == "function" and not TesterFistWrapped then
+	TesterFistWrapped = true
+	local realCombat = doTargetCombat
+	-- the arguments go on exactly as given: an explicit nil origin would be read as ORIGIN_NONE, not the default
+	-- (live run 2026-11-01: every unique_passive probe hit lost its health events)
+	doTargetCombat = function(...)
+		local cid, target, ctype, min, _, _, origin = ...
+		local ok, tid = pcall(function() return target and target:getId() end)
+		local w = ok and tid and fistWatch[tid]
+		if w and origin == ORIGIN_NONE and ctype == COMBAT_PHYSICALDAMAGE then
+			local okC, pid = pcall(function() return type(cid) == "number" and cid or cid:getId() end)
+			if okC and pid == w.pid then
+				w.off, w.offSum = w.off + 1, w.offSum + math.abs(tonumber(min) or 0)
+			end
+		end
+		return realCombat(...)
+	end
+end
+
+-- one probe for both dual wields: spec = {kind (the answer kind), ids (the item of each hand), able (this class may hold
+-- both), event (the class's combat event on the target)}. The hands are emptied (the items go back after); the probe
+-- items carry the custom attribute tester_probe, so only they are taken off again.
+local function dualProbe(player, spec)
+	local out = {able = spec.able}
+	local hands = {CONST_SLOT_LEFT, CONST_SLOT_RIGHT}
+	local held = {}
+	for i, slot in ipairs(hands) do
+		held[i] = player:getSlotItem(slot)
+	end
+	local capWas = player:getCapacity()
+	player:setCapacity(capWas + 10000000)
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	local function probeItem(item)
+		local ok, v = pcall(function() return item:getCustomAttribute("tester_probe") end)
+		return ok and v ~= nil
+	end
+	local function restore()
+		for _, slot in ipairs(hands) do
+			local worn = player:getSlotItem(slot)
+			if worn and probeItem(worn) then
+				worn:remove()
+			end
+		end
+		for i, slot in ipairs(hands) do
+			local top = held[i] and held[i]:getTopParent()
+			-- only an item that left its hand (a failed move leaves it worn) and is still on the player
+			if not player:getSlotItem(slot) and top and top.isPlayer and top:isPlayer() and top:getId() == player:getId() then
+				if player:addItemEx(held[i]:clone(), false, slot) == RETURNVALUE_NOERROR then
+					held[i]:remove()
+				end
+			end
+		end
+		player:setCapacity(capWas)
+	end
+	for i in ipairs(hands) do
+		if held[i] and (not bag or held[i]:moveTo(bag) == false) then
+			restore()
+			out.err = "could not empty the hands"
+			return tell(player, spec.kind, out)
+		end
+	end
+	local function wear(i)
+		local item = Game.createItem(spec.ids[i], 1)
+		if not item then
+			return nil
+		end
+		item:setCustomAttribute("tester_probe", 1)
+		local rv = player:addItemEx(item, false, hands[i])
+		if rv ~= RETURNVALUE_NOERROR then
+			item:remove()
+		end
+		return rv
+	end
+	out.left = wear(1)
+	if not spec.able then
+		-- a class that may not hold both: the second item must be refused in the shield hand (fist weapons: in the weapon
+		-- hand already, as no other class wears one at all)
+		if spec.kind == "blades" then
+			out.right = wear(2)
+		end
+		restore()
+		return tell(player, spec.kind, out)
+	end
+	out.right = wear(2)
+	if out.left ~= RETURNVALUE_NOERROR or out.right ~= RETURNVALUE_NOERROR then
+		restore()
+		return tell(player, spec.kind, out)
+	end
+	local tile = Tile(player:getPosition())
+	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+		local street = outsidePz(player:getPosition(), KILL_STREET)
+		if street then
+			player:teleportTo(street)
+		end
+	end
+	-- next to the tester when a tile is free (a melee hit needs it adjacent), else within 3: the Demon walks in
+	local spot = freeNear(player:getPosition(), nil, 1) or freeNear(player:getPosition(), nil, 3)
+	local okM, m
+	if spot then
+		okM, m = pcall(Game.createMonster, KILL_MONSTER, spot, false, true)
+	end
+	if not okM or not m then
+		restore()
+		out.err = "no Demon next to the tester"
+		return tell(player, spec.kind, out)
+	end
+	local w = {pid = player:getId(), melee = 0, off = 0, meleeSum = 0, offSum = 0}
+	fistWatch[m:getId()] = w
+	m:registerEvent("TesterHelperDualFist")
+	pcall(function() m:setMaxHealth(10000000) m:addHealth(10000000) end)
+	-- player:setTarget skips the onTargetCombat callback a client attack runs, which registers the class's combat event
+	-- on the target (monk_combat.lua, thief_combat.lua); without it the hits are the engine's bare ones (live run
+	-- 2026-11-01)
+	if Chaos and Chaos.registerOnce then
+		Chaos.registerOnce(m, spec.event)
+	else
+		m:registerEvent(spec.event)
+	end
+	player:setTarget(m)
+	local pid, mid = player:getId(), m:getId()
+	addEvent(function()
+		local p, mon = Player(pid), Creature(mid)
+		fistWatch[mid] = nil
+		if mon then
+			mon:remove()
+		end
+		if not p then
+			return
+		end
+		out.melee, out.off, out.meleeSum, out.offSum = w.melee, w.off, w.meleeSum, w.offSum
+		restore()
+		tell(p, spec.kind, out)
+	end, FIST_WATCH_MS)
+end
+
+function commands.fists(player)
+	local voc = player:getVocation()
+	local monk = ChaosMonk and ChaosMonk.isMonkLine and voc and ChaosMonk.isMonkLine(voc:getId()) or false
+	dualProbe(player, {kind = "fists", ids = FIST_IDS, able = monk, event = "ChaosMonkCombat"})
+end
+
+-- the Thief and Ninja dual wield (src-patch 0002, thief_combat.lua): a dagger in each hand; every melee hit of the main
+-- hand brings an off-hand strike. Every other class (the Samurai too) must be refused the dagger in the shield hand.
+-- Answer kind "blades": {able, left, right, melee, off, meleeSum, offSum, err}
+local BLADE_IDS = {2379, 2379}
+
+function commands.blades(player)
+	local voc = player:getVocation()
+	local able = ChaosClasses and ChaosClasses.isDualWielder and voc and ChaosClasses.isDualWielder(voc:getId()) or false
+	dualProbe(player, {kind = "blades", ids = BLADE_IDS, able = able, event = "ChaosThiefCombat"})
 end
 
 function commands.riftrun(player, arg)

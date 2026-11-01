@@ -545,9 +545,14 @@ end
 -- a quiver rolls only the modifiers that name it (chaos_archery_config.lua mods and sharedMods), never the ones open
 -- to every kind (the engine's absorbs, skills, critical and leech pairs: the base rarity script would apply those
 -- whatever the wearer holds)
-function M.allowed(def, kind)
+-- def.ranged: only a distance weapon (bow, crossbow, throwing weapon) rolls it, when the item type is known (it): its
+-- power works on a ranged hit only (Echo Shot; owner 2026-11-01, "fist weapon com prefixo de ranged")
+function M.allowed(def, kind, it)
 	if kind == "quiver" then
 		return def.kinds ~= nil and def.kinds.quiver == true
+	end
+	if def.ranged and kind == "weapon" and it ~= nil and typeNumber(it, "getWeaponType") ~= (WEAPON_DISTANCE or 5) then
+		return false
 	end
 	return kind ~= nil and (def.kinds == nil or def.kinds[kind] == true)
 end
@@ -1089,10 +1094,11 @@ end
 
 -- modifiers of this file the item could still get (its kind, not on it yet): list of {entry = def, weight}
 function M.addable(item, rarity)
-	local kind = M.kindOf(item)
+	local it = typeOf(item)
+	local kind = M.kindOfType(it)
 	local out = {}
 	for _, def in ipairs(M.config.mods) do
-		if M.allowed(def, kind) and M.value(item, def.key) == 0
+		if M.allowed(def, kind, it) and M.value(item, def.key) == 0
 				and (not M.isPower(def) or (tonumber(rarity) or 0) >= M.config.powers.minRarity) then
 			out[#out + 1] = {entry = def, weight = def.weight}
 		end

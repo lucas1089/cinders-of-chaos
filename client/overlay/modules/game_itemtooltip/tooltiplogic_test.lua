@@ -160,6 +160,28 @@ eq(found['Set: Embers of Aranoth (2/6)'] ~= nil, true, 'set line')
 eq(found['Locked'] ~= nil, true, 'locked line')
 eq(L.titleColor({ rarity = 0 }), L.COLORS.normal, 'normal item colour')
 
+-- a unique's passive (server T.splitPassive): the flavour dim, the name in the passive colour on a new section, the rule bright
+local reaper = { name = 'Soulreaper', unique = { name = 'Soulreaper' }, slot = 'Weapon', rarity = 0,
+  desc = 'Every soul it cuts feeds the blade. Hungry Blade: Each kill restores 7.1% of your maximum health. (Requires level 120.)',
+  passive = { name = 'Hungry Blade', text = 'Each kill restores 7.1% of your maximum health.',
+    flavor = 'Every soul it cuts feeds the blade. (Requires level 120.)' } }
+lines = L.lines(reaper)
+found = {}
+for _, l in ipairs(lines) do found[l.text] = l end
+eq(found['Hungry Blade'] ~= nil and found['Hungry Blade'].color, L.COLORS.passive, 'passive name in its colour')
+eq(found['Hungry Blade'].sep, true, 'passive name opens a section')
+eq(found['Each kill restores 7.1% of your maximum'] ~= nil and found['Each kill restores 7.1% of your maximum'].color,
+  L.COLORS.passiveText, 'passive rule in bright text')
+local all = {}
+for _, l in ipairs(lines) do all[#all + 1] = l.text end
+eq(table.concat(all, ' '):find('Hungry Blade: Each', 1, true), nil, 'the passive is not repeated in the flavour')
+eq(table.concat(all, ' '):find('Every soul it cuts', 1, true) ~= nil, true, 'flavour kept')
+-- an older server (no passive block): the description as before
+reaper.passive = nil
+all = {}
+for _, l in ipairs(L.lines(reaper)) do all[#all + 1] = l.text end
+eq(table.concat(all, ' '):find('Hungry Blade: Each', 1, true) ~= nil, true, 'without the block the description is whole')
+
 -- a store pouch (server pouches.lua): the store line in gold and what it collects, no lock line
 local pouch = { name = 'orbs pouch', rarity = 0, store = 'Store item: cannot be traded',
   collects = 'Auto-collects orbs, whetstones, rune shards and gems while you carry it.', weight = 1 }

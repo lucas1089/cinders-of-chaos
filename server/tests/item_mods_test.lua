@@ -36,6 +36,8 @@ local TYPES = {
 	[2123] = {name = "ring of the sky", slot = SLOTP_RING},
 	[2471] = {name = "golden helmet", armor = 12, slot = SLOTP_HEAD},
 	[2514] = {name = "mastermind shield", weaponType = WEAPON_SHIELD, defense = 37, slot = 48},
+	[2456] = {name = "bow", weaponType = 5, attack = 0, slot = 48},
+	[36656] = {name = "pair of ember knuckles", weaponType = WEAPON_SHIELD, attack = 46, defense = 12, slot = 48},
 	[2160] = {name = "crystal coin", stackable = true}
 }
 
@@ -273,6 +275,19 @@ eq(addableKeys(newItem(2123)).gearspeed, true, "worn attack speed on rings")
 eq(addableKeys(newItem(2171)).gearspeed, true, "worn attack speed on amulets")
 eq(addableKeys(newItem(2400)).gearspeed, nil, "not on weapons (they have attackspeed)")
 eq(addableKeys(newItem(2466)).gearspeed, nil, "not on armor")
+-- Echo Shot works on a ranged hit only: a bow rolls it, a sword or a Monk's fist weapon does not (owner 2026-11-01)
+eq(M.addable(newItem(2456), 5)[1] ~= nil, true, "a bow has addable modifiers")
+local function powerKeys(id)
+	local out = {}
+	for _, row in ipairs(M.addable(newItem(id), 5)) do
+		out[row.entry.key] = true
+	end
+	return out
+end
+eq(powerKeys(2456).echoshot, true, "Echo Shot on a bow")
+eq(powerKeys(2400).echoshot, nil, "no Echo Shot on a sword")
+eq(powerKeys(36656).echoshot, nil, "no Echo Shot on a fist weapon")
+eq(powerKeys(36656).critecho, true, "a fist weapon keeps the other weapon powers")
 eq(addableKeys(newItem(2123)).attackspeed, nil, "the weapon's own modifier is not on rings")
 eq(M.byKey.gearspeed.cap, 10, "worn attack speed cap") eq(M.byKey.gearspeed.label, "Attack Speed")
 eq(M.byKey.attackspeed.weight, 20, "weapon attack speed weight (was 8)")

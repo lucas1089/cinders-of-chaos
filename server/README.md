@@ -3494,6 +3494,10 @@ numbers, `lv` checked against the item's level), the tooltip lines in `unique_pa
 `unique_passives.lua`. The item keeps its name, flavor text, stats, class rule and archetype line; the passive is one more
 sentence in its description (`tools/gen_unique_specs.py` renders it from the config through `tools/dump_unique_passives.lua`,
 so a number changed in the config changes the item text, the Codex and the wiki after the generators run).
+In the item tooltip the passive stands out (O360, owner 2026-11-01: "deixe esse texto especial mais em evidência"):
+`item_tooltip.lua` finds the passive text (pt-BR or English) in the description and sends it as `tip.passive = {name,
+text, flavor}` (`T.splitPassive`); the client draws the flavor dim, then the passive's name in orange on a section of
+its own and the rule in bright text. `tip.desc` keeps the whole text for an older client.
 - **Who gets it.** A passive works while the unique is worn as a real copy (custom attribute `chaos_unique`) and only for the
   class lines it names (`lines`); the item stays wearable for every class its equip rule allows, the passive sleeps for the
   others (so `gear_coverage` is unchanged). At most 5 passives are active, one per family: a character wearing more picks
@@ -7040,7 +7044,13 @@ Interval". It is an estimate of the auto attack on a target that does not defend
 
 Inputs: the item's attack (a rarity roll or a unique writes it as an attribute), the viewer's level, best melee skill (one melee skill)
 or distance skill (`item_tooltip.lua` puts them in `opts.wielder`), the interval of the tooltip (vocation, dexterity, attack speed cap).
-Left out: critical hits, modifiers of the item, passive tree and gems, resistances, spells, runes and the fist.
+Left out: critical hits, modifiers of the item, passive tree and gems, resistances, spells and runes.
+
+**Monk fist weapons (O360, owner 2026-11-01: "sem dps").** A fist weapon's tooltip shows **Estimated DPS: ~N** too
+(`T.fistDps`): max hit = `ChaosMonk.maxWeaponDamage(level, fist skill, ChaosMonk.fistAttack(level, attack), 1)` x the
+viewer's Monk class factor (`unarmed.meleeDamage`, the Monk's for other viewers) x `ChaosWeaponPower.hitFactor("fist")`;
+mean hit = max / 2; DPS = mean hit / the interval, then the display scale. `item_tooltip.lua` adds the fist skill and the
+vocation id to `opts.wielder`.
 
 **Wands and rods (O353, owner 2026-10-31: "mostre o ataque dos rods tambem, juntamente com o dps deles").** A wand's or rod's
 tooltip shows **Attack: lo-hi** as its first base row and **Estimated DPS: ~N** under the interval (`T.wandRows`). The hit is
@@ -8452,6 +8462,8 @@ the system is not installed): never faked. A death in the middle drops the check
 | `content_rewards` | all | the passive rewards of `content_rewards.lua` through `ChaosContentRewards.onKill` with a stand-in monster (nothing is spawned, a backpack is the corpse): a boss kill of a tier 8 waystone run (`!tester waystone 8 loot`) holds the config's guaranteed gear pieces of Legendary or better, none below, the sure orbs (Awakening, Gilding) at their minimum and a waystone of the run's tier; the guardian kill of a rift (`!tester riftrun loot`) holds at least `floor(base + perTier x tier)` orbs. A level under 100 checks the waystone half only. The first unique and the pity of `retention_loot.lua` are not checked: they skip testers by rule |
 | `party_xp` | all | the bot invites another bot and switches shared experience on (packet 0xA8) in the temple (the engine refuses the switch in a fight outside a protection zone; the helper loads `Party:onShareExperience` from `data/events/scripts/party.lua` in a sandbox, as it lives in the events state, not in the scripts one): the party says it is on; `Party:onShareExperience(1000)` pays `ceil(1000 x (100 + bonus) / 100 / members)` with the bonus of `ChaosPartyXpCore.bonusPercent` for the class lines; the engine's verdict follows the rules (nobody under two thirds of the highest level, within 30 tiles and 1 floor, in a fight): working while a member fails level or range, or off while all pass, is a BUG when two looks 3 s apart agree. Then a real kill at the leader's hunt (`!tester party kill`, helper v4, own answer kind `partykill`): a leader in the temple steps out to the nearest street tile, the partner is put next to it, one hit of a tenth of a monster's health by each makes both active for the engine (Party ticksMap; a hit of 1 counted 0 after the armour), a Demon made there and hit by the leader down to 0 (the engine's own death path on its next creature check, `Creature::onDeath` and `Party:shareExperience`; gains read 1.5 s later, a monster scaled up after it was made is hit again), then the share off and one solo kill. With the share working both gain and the leader's gain is `shareOf1000 / 1000` of the solo kill (5%); with it off, or in the solo kill, the partner gains nothing. A kill that could not run is a skip. Switched off and left again at the end |
 | `unique_passive` | all | `!tester unique` (helper v5): a real unique copy (custom attribute `chaos_unique`) of an item whose passive is a plain damage multiplier (critrule, opener, lowlife, overflow) and works for the bot's class line goes into a free slot (not the hands; the first item the slot takes). One energy hit of a tenth of a fresh Demon's health before it is worn, one on a second Demon after; the multiplier the game's own `ChaosUniquePassivesCore.dealt` returned on the second hit is caught. BUG: the passive is not active, the hit never reached the rule, or the second hit took more than 3% off that multiple of the first. Item and monsters are removed again |
+| `dual_fists` | all | `!tester fists` (helper v7, O360): a Monk-line bot empties its hands (the items go back after), puts pair of ember knuckles and ossuary gauntlet in the weapon and shield hand through `addItemEx` (the engine slot rule of patch 0087 and the Equip event), stands outside a protection zone, registers the Monk combat event on a Demon (as a client attack does through onTargetCombat; `setTarget` skips it) and auto attacks it for 10 s (it spawns next to the bot, else within 3 sqm and walks in); the melee hits (a health event on the Demon, which also keeps it alive so no kill pays the party) and the off-hand strikes are counted. The engine runs no onHealthChange event for an ORIGIN_NONE hit (it stops scripted hits from recursing), so the strikes are counted where the script deals them: the helper wraps `doTargetCombat` and counts a physical ORIGIN_NONE call from the bot on its probe Demon. BUG: a hand refused the fist weapon, fist hits without off-hand strikes, or more or fewer strikes than one per hit (the last may land after the watch). The strike share is covered by `tests/monk_test.lua`. Any other class: a fist weapon must be refused in a free hand (BUG when it is worn) |
+| `dual_blades` | all | `!tester blades` (helper v7, O360; owner 2026-11-01: "faça os mesmos testes com o thief"): the same probe with a dagger (2379) in each hand. Thief and Ninja (`ChaosClasses.isDualWielder`, src-patch 0002): both worn through the engine slot rule, the Thief combat event registered on the Demon, every melee hit of the main hand followed by an off-hand strike (counted at `doTargetCombat`). BUG: a hand refused, hits without strikes, or not one strike per hit. Every other class, the Samurai too: the dagger must be refused in the shield hand. The probe items carry the custom attribute `tester_probe`, so only they are taken off again |
 | `reward_chest` | all | the weekly chest (`weeklyChest` `open`) answers without an error, then `close` |
 | `cursed_chest` | all | `!tester chest spawn` puts a chest next to the bot (`idle`), `use` starts the event (`running`, monsters tagged), `abort` ends it and leaves no chest and no monster |
 | `auto_setup` | all | the preset of the client's Auto setup table (`autorotation_data.lua`) for the bot's class and level holds only spells that exist on the server (`spells_chaos.xml`, `stock_spells.csv`), are open to the class and are not gated higher (`auto_setup_problems`) |
@@ -12429,7 +12441,7 @@ stays ORIGIN_SPELL, so the monsters' own events (defences, the hall display guar
 |---|---|---|---|---|---|
 | Death Blast | prefix (weapon, jewel) | on kill: a fire explosion on up to 8 monsters around the corpse, 10% of its maximum health, at most 50 + level | 2-3% .. 12-16% | 25% | 1.5 s |
 | Glacial Ward | prefix (shield, armour, legs, boots, other) | when you dodge or block a monster's hit: an ice nova (100 + level) that slows 35% for 3 s | 2-3% .. 12-16% | 30% | 4 s |
-| Echo Shot | prefix (weapon) | a ranged hit that landed is repeated after 250 ms for 60% | 2-3% .. 12-16% | 25% | 0.8 s |
+| Echo Shot | prefix (distance weapon only, O360) | a ranged hit that landed is repeated after 250 ms for 60% | 2-3% .. 12-16% | 25% | 0.8 s |
 | Critical Echo | prefix (weapon, jewel) | a critical hit is repeated after 200 ms for 50% | 3-5% .. 18-25% | 30% | 1 s |
 | Arc Lightning | prefix (weapon, jewel) | a hit arcs to 3 monsters within 3 sqm for 30% | 2-3% .. 12-16% | 30% | 0.7 s |
 | Bloodrush | prefix (weapon, jewel, other) | every kill adds a stack (5, 6 s): +N% damage per stack | 1% .. 4-5% | 5% (25% at 5 stacks) | stacks |
@@ -22041,10 +22053,19 @@ tiver, faca por favor".
   family was sold only from level 8 and dropped only to level 500; the fist skill did not scale the auto attack (melee got
   the skill factor of "Auto attack power", fists did not); the Monk's starter kit had no weapon.
 * **Two item families, one list.** A fist weapon is a hand item of weaponType "shield" with an attack (no stock shield has
-  one): on this server the left hand only takes real weapons, so it goes in the shield hand; the engine still hits with
+  one): it goes in either hand, two at once included (engine patch `0087-fist-weapon-either-hand.patch`, O360; before it the
+  weapon hand took real weapons only); the Equip event keeps it to the Monk line, so only a Monk holds two; the engine still hits with
   fists (`Weapon::useFist`), and `monk_combat.lua` and the Monk spells (`_monk.lua`) use its attack instead of the level
   value when it is higher (`ChaosMonk.cfg.unarmed.fistWeapons`, kept in step with `ChaosFistWeapons.ids` by
-  `tests/fist_weapons_test.lua`). Its defense is a shield's.
+  `tests/fist_weapons_test.lua`). Its defense is a shield's. With two (owner 2026-11-01: "pode adicionar golpe extra
+  igual a thief"): the better attack is the main hand, the engine takes the better defense, each item's modifiers count,
+  and every auto attack fist hit is followed after 150 ms by an off-hand strike (physical, ORIGIN_NONE, so no chi and no
+  second strike) of 50% of it x the off hand's fist attack / the main hand's (0.5..1). Like the Thief, the rule is
+  neutral: the main hit is cut by 1 / (1 + 0.5 x ratio), so the pair deals what one fist hit did and the measured
+  balance stands (`ChaosMonk.dualFists`, `dualFistNeutral`, `dualFistStrike`; numbers `unarmed.dualFists` in
+  `monk_chi_core.lua`; `tests/monk_test.lua`). Guard `tools/fist_either_hand_patch_test.py`; tester bot check
+  `dual_fists` (`!tester fists`: a Monk wears one in each hand through the engine's slot rule and hits a Demon, another
+  class is refused).
   * `data/items/fist_items.csv`: the six items of our own art (client ids 33654..33659, server ids 36654..36659;
     client/MANIFEST.md "Fist weapons and bone effects").
   * `data/items/fist_claws.csv` (new): thirteen "claws" (nine plain, four unique bases) on looks the pair already has (donor B "claw 1..13", client ids
