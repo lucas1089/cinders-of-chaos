@@ -1388,10 +1388,11 @@ function commands.unique(player)
 				item:setCustomAttribute("chaos_unique", 1)
 				local rv = player:addItemEx(item, false, sl)
 				if rv == RETURNVALUE_NOTENOUGHCAPACITY and not capWas then
-					-- the potions and loot fill the capacity (the engine's rule takes no flag): the capacity is raised by
-					-- the item's weight for the probe and put back at the end (live run 2026-11-01: half the bots, code 21)
+					-- the potions and loot fill the capacity (the engine's rule takes no flag): the capacity is raised for
+					-- the probe and put back at the end (live run 2026-11-01: half the bots, code 21; the inventory can
+					-- weigh more than the capacity already, so the item's weight alone was not enough)
 					capWas = player:getCapacity()
-					player:setCapacity(capWas + item:getWeight() + 100)
+					player:setCapacity(capWas + 10000000)
 					rv = player:addItemEx(item, false, sl)
 				end
 				if rv == RETURNVALUE_NOERROR then
