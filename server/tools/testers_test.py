@@ -664,6 +664,14 @@ eq(CL, {(100, 100, 7): 5, (104, 100, 7): 20, (108, 100, 7): 284, (112, 100, 7): 
    'a spawn centre counts at its highest monster, the pool level (baseLevelMult 1); an unknown monster never safe')
 eq(LT.base_level_mult(), 1, 'baseLevelMult read from pace_config.lua (1 since 2026-10-28, O285)')
 eq(LT.spawn_levels(SP, LT.pool_levels(POOL), 3)[(104, 100, 7)], 60, 'the multiplier is a parameter')
+WCFG = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'scripts', 'chaos',
+                         'waystone_tiers_config.lua')).read()
+WA = LT.waystone_areas(WCFG)
+eq(len(WA), 12, 'the twelve waystone tier maps of waystone_tiers_config.lua')
+ok((33124, 33376, 33395, 33582, 7) in WA, 'a map rect as (x1, y1, x2, y2, z): %r' % WA[-1:])
+eq(LT.spawn_levels(SP, LT.pool_levels(POOL), blocked=[(103, 99, 105, 101, 7)])[(104, 100, 7)], 10 ** 9,
+   'a centre inside a waystone map is never safe (its monsters count at the run tier, 1100+; live run 2026-11-01)')
+eq(LT.spawn_levels(SP, LT.pool_levels(POOL), blocked=[(103, 99, 105, 101, 8)])[(104, 100, 7)], 20, 'another floor: as before')
 IDX = LT.spawn_index(SP)
 eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=15), (100, 100, 7),
    'level 15 passes the Terror Bird (20) and the Juggernaut (284): the quiet centre')
@@ -734,14 +742,36 @@ _pbs = [_PB(i, 'P%d' % i) for i in (1, 2, 3, 4)]
 T.ONLINE.update({b.cid: b for b in _pbs})
 _ios = [T.CheckIO.__new__(T.CheckIO) for _ in _pbs]
 for _io, _b in zip(_ios, _pbs):
-    _io.bot = _b
+    _io.bot, _io.clock = _b, {'stop': False}
+_wait = T.PARTNER_WAIT_S
+T.PARTNER_WAIT_S = 0.0
 _picks = [asyncio.run(_io.partner()) for _io in _ios]
 eq(_picks, ['P2', None, 'P4', None], 'party partners: two pairs, nobody picked twice')
+_snap = dict(T.PARTY_BUSY.until)
+
+
+async def _freed_while_waiting():
+    T.PARTY_BUSY.clear()
+    T.PARTY_BUSY.update(('P1', 'P2', 'P3', 'P4'))
+    T.PARTY_BUSY.discard('P1')
+    asyncio.get_running_loop().call_later(0.1, T.release_party, 'P3')
+    return await _ios[0].partner()
+
+T.PARTNER_WAIT_S = 1.0
+eq(asyncio.run(_freed_while_waiting()), 'P3', 'partner() waits for a bot that a party check frees (PARTNER_WAIT_S)')
+T.PARTNER_WAIT_S = _wait
+T.PARTY_BUSY.until = _snap
 _ios[0].alive = lambda: False
 eq(asyncio.run(_ios[0].party('leave', 'P2')), False, 'party leave of a dead bot sends nothing')
 eq(sorted(T.PARTY_BUSY), ['P3', 'P4'], 'party leave frees both bots even when nothing was sent')
 T.release_party('P3', 'P4')
 eq(sorted(T.PARTY_BUSY), [], 'release_party frees the bots of a left party (called PARTY_RELEASE_S after a leave)')
+_hold = T.PARTY_HOLD_S
+T.PARTY_HOLD_S = -1.0
+T.PARTY_BUSY.update(('P5', 'P6'))
+ok('P5' not in T.PARTY_BUSY and list(T.PARTY_BUSY) == [], 'a busy name frees itself after PARTY_HOLD_S (a check cut off by a death)')
+T.PARTY_HOLD_S = _hold
+T.PARTY_BUSY.clear()
 T.PARTY_BUSY.update(('P3', 'P4'))
 _tb = T.TesterBot.__new__(T.TesterBot)
 _tb.name, _stepped = 'P3', []

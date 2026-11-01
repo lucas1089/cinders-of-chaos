@@ -98,11 +98,17 @@ async def watch_summons(io, seconds):
     return problems, last
 
 
+def not_at_hunt(io):
+    """the skip text when io.go('hunt') failed, with the helper's own reason (a spot too high, no answer)"""
+    why = getattr(io, 'go_err', None)
+    return 'the helper did not bring the bot to its hunt spot' + (' (%s)' % str(why)[:80] if why else '')
+
+
 async def check_summons(io, name, cls, level):
     """the class's own summon: cast it, watch it, then teleport (the leash and the portal paths) and watch again"""
     words, check, cap = SUMMONERS[cls]
     if not await io.go('hunt'):
-        return Result(check, name, cls, SKIP, 'the helper did not bring the bot to its hunt spot')
+        return Result(check, name, cls, SKIP, not_at_hunt(io))
     await io.say(words)
     await io.sleep(SETTLE)
     snap = await io.helper('summons', 'summons', ANSWER)
@@ -127,6 +133,22 @@ async def check_summons(io, name, cls, level):
     return Result(check, name, cls, PASS, '%d summon(s), no wrong target in %d s and after a teleport' % (count, int(WATCH)))
 
 
+PET_REST = {'pz': 'a protection zone', 'zone': 'a zone without pets', 'summons': 'the bot has other summons'}
+
+
+def pet_rest_text(live):
+    """why the helper's !tester pet answer shows no live pet: a rest rule, a cooldown, or none known"""
+    if live.get('rest'):
+        return 'rests: ' + PET_REST.get(live['rest'], str(live['rest']))
+    if int(live.get('deathLeft') or 0) > 0:
+        return 'death cooldown %s s' % live['deathLeft']
+    if int(live.get('summonLeft') or 0) > 0 and not live.get('live'):
+        return 'call cooldown %s s' % live['summonLeft']
+    if not live:
+        return 'no answer to !tester pet'
+    return 'no rule of the game says why'
+
+
 async def check_pets(io, name, cls, level):
     """call out a pet the character owns, it is a summon of the bot and never targets it; dismiss it"""
     state = await io.request('pets', 'get', {}, ['state'], ANSWER)
@@ -136,24 +158,37 @@ async def check_pets(io, name, cls, level):
     owned = [p.get('species') or p.get('key') for p in data.get('pets') or [] if isinstance(p, dict)]
     owned = [o for o in owned if o]
     if not owned:
+        # a pet of the helper (ChaosPets.grant): before, every bot read "owns no pet" and the check never ran
+        g = await io.helper('pet', 'pet', ANSWER)
+        if g and g.get('owns'):
+            state = await io.request('pets', 'get', {}, ['state'], ANSWER) or {}
+            owned = [p.get('species') or p.get('key') for p in (state.get('data') or {}).get('pets') or [] if isinstance(p, dict)]
+            owned = [o for o in owned if o] or [g.get('key')]
+    if not owned:
         return Result('pets', name, cls, SKIP, 'the bot owns no pet')
     if not await io.go('hunt'):
-        return Result('pets', name, cls, SKIP, 'the helper did not bring the bot to its hunt spot')
+        return Result('pets', name, cls, SKIP, not_at_hunt(io))
     await io.request('pets', 'summon', {'species': owned[0]}, ['state'], ANSWER)
     await io.sleep(SETTLE)
+    live = await io.helper('pet', 'pet', ANSWER) or {}
+    cid = live.get('cid')
+    if not cid:
+        why = pet_rest_text(live)
+        return Result('pets', name, cls, SKIP, 'the pet did not come out (%s)' % why)
     snap = await io.helper('summons', 'summons', ANSWER)
     if not snap or snap.get('err'):
         return Result('pets', name, cls, SKIP, 'no answer to !tester summons')
-    if int(snap.get('count') or 0) < 1:
-        return Result('pets', name, cls, SKIP, 'the pet did not come out (cooldown or a zone rule)')
+    if not any(s.get('id') == cid for s in snap.get('summons') or []):
+        await io.request('pets', 'dismiss', {}, ['state'], ANSWER)
+        return Result('pets', name, cls, FAIL, 'the pet (creature %s) is out but not a summon of the bot' % cid)
     problems, _ = await watch_summons(io, 10.0)
     await io.request('pets', 'dismiss', {}, ['state'], ANSWER)
     await io.sleep(1.5)
     after = await io.helper('summons', 'summons', ANSWER)
     if problems:
         return Result('pets', name, cls, FAIL, '; '.join(problems[:3]))
-    if after and int(after.get('count') or 0) > 0 and after.get('summons') and any(
-            s.get('name', '').lower() == (snap['summons'][0].get('name') or '').lower() for s in after['summons']):
+    # the pet by its creature id: a Necromancer's minions stay out after the pet's dismiss (before: the first summon by name)
+    if after and any(s.get('id') == cid for s in after.get('summons') or []):
         return Result('pets', name, cls, FAIL, 'the pet is still out after dismiss')
     return Result('pets', name, cls, PASS, 'pet %s: out, no wrong target, gone after dismiss' % owned[0])
 
@@ -200,6 +235,8 @@ async def check_rift(io, name, cls, level):
     if r.get('err'):
         return Result('rift', name, cls, FAIL, 'enter rift: %s' % str(r['err'])[:80])
     # the rift window answers a query only inside a run (rift.lua ChaosRiftExtended); the run itself is check rift_layout
+    if r.get('held') is False and r.get('bagFull'):
+        return Result('rift', name, cls, SKIP, 'the bag is full: the tier %s key went to the inbox or the ground (by design)' % r.get('tier'))
     if r.get('held') is False:
         return Result('rift', name, cls, FAIL, 'a rift key of tier %s was given, the backpack holds none' % r.get('tier'))
     if r.get('held') is None:
@@ -289,13 +326,25 @@ async def check_party_xp(io, name, cls, level):
             return Result('party_xp', name, cls, SKIP, 'this bot is not the leader (%s is)' % p.get('leader'))
         if 'shareActive' not in p:
             return Result('party_xp', name, cls, SKIP, 'the helper does not report the shared experience (old helper file)')
+        # the engine takes the switch in a fight only in a protection zone (Game::playerEnableSharedPartyExperience),
+        # and a hunting bot is in one: the leader switches in the temple (live run 2026-11-01: 2 "says it is off")
+        await io.go('town')
         await io.party('share', other)
         await io.sleep(SETTLE)
         first = await io.helper('party', 'party', ANSWER)
+        if first and not first.get('err') and not first.get('shareActive') and not first.get('leaderBlocked'):
+            # one more switch: 1 of 14 leaders read off once with no rule against it (live run 2026-11-01); an engine
+            # that never takes it still fails below
+            await io.party('share', other)
+            await io.sleep(SETTLE)
+            first = await io.helper('party', 'party', ANSWER)
         await io.sleep(3.0)
         second = await io.helper('party', 'party', ANSWER)
         if not first or not second or first.get('err') or second.get('err'):
             return Result('party_xp', name, cls, SKIP, 'no answer to !tester party after the switch')
+        if not first.get('shareActive') and not second.get('shareActive') and first.get('leaderBlocked'):
+            return Result('party_xp', name, cls, SKIP, 'the engine refused the switch: the leader is in a fight outside a '
+                                                       'protection zone (the temple teleport did not take)')
         a, b = party_share_problems(first), party_share_problems(second)
         bad = [x for x in a if x in b]    # the engine's own update lags a tick: only what both looks saw
         if bad:
@@ -308,6 +357,7 @@ async def check_party_xp(io, name, cls, level):
         await io.party('unshare', other)
         await io.party('leave', other)
         await io.sleep(1.0)
+        await io.go('hunt')
 
 
 def waystone_problems(a):

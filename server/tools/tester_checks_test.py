@@ -71,6 +71,9 @@ def run(coro):
         loop.close()
 
 
+LIVE = {'live': 'fox', 'cid': 100}  # !tester pet: the live pet's creature id (the first row of summons() has id 100)
+
+
 def summons(*rows, owner='none', count=None):
     return {'who': 'Tester Aaa', 'ownerTarget': owner, 'count': len(rows) if count is None else count,
             'summons': [dict({'name': 'war wolf', 'id': 100 + i, 'target': 'none', 'listed': 1, 'listedAllies': 0}, **r)
@@ -158,6 +161,13 @@ class Pets(unittest.TestCase):
         io = FakeIO(replies={('pets', 'get'): {'action': 'state', 'data': {'pets': []}}})
         self.assertIn('owns no pet', run(TX.check_pets(io, 'Tester Aaa', 'Ninja', 100)).detail)
 
+    def test_a_pet_of_the_helper_when_none_is_owned(self):
+        io = FakeIO({'pet': {'key': 'ember_whelp', 'owns': True}, 'summons': summons()},
+                    replies={('pets', 'get'): {'action': 'state', 'data': {'pets': []}}})
+        r = run(TX.check_pets(io, 'Tester Aaa', 'Ninja', 100))
+        self.assertNotIn('owns no pet', r.detail)
+        self.assertIn(('pets', 'summon', {'species': 'ember_whelp'}), io.asked)
+
     def test_pet_out_and_dismissed(self):
         state = {'action': 'state', 'data': {'pets': [{'species': 'fox'}]}}
         out = summons({'name': 'fox', 'target': 'monster'})
@@ -165,7 +175,7 @@ class Pets(unittest.TestCase):
         def answer(io):
             return out if not any(a[1] == 'dismiss' for a in io.asked) else summons()
 
-        io = FakeIO({'summons': answer}, {('pets', 'get'): state})
+        io = FakeIO({'summons': answer, 'pet': LIVE}, {('pets', 'get'): state})
         r = run(TX.check_pets(io, 'Tester Aaa', 'Ninja', 100))
         self.assertEqual(r.status, TX.PASS, r.detail)
         self.assertEqual([a[1] for a in io.asked], ['get', 'summon', 'dismiss'])
@@ -173,11 +183,44 @@ class Pets(unittest.TestCase):
 
     def test_pet_that_attacks_the_owner_or_stays_out(self):
         state = {'action': 'state', 'data': {'pets': [{'key': 'fox'}]}}
-        io = FakeIO({'summons': summons({'name': 'fox', 'target': 'owner'})}, {('pets', 'get'): state})
+        io = FakeIO({'summons': summons({'name': 'fox', 'target': 'owner'}), 'pet': LIVE}, {('pets', 'get'): state})
         self.assertEqual(run(TX.check_pets(io, 'Tester Aaa', 'Ninja', 100)).status, TX.FAIL)
-        io = FakeIO({'summons': summons({'name': 'fox', 'target': 'monster'})}, {('pets', 'get'): state})
+        io = FakeIO({'summons': summons({'name': 'fox', 'target': 'monster'}), 'pet': LIVE}, {('pets', 'get'): state})
         r = run(TX.check_pets(io, 'Tester Aaa', 'Ninja', 100))
         self.assertEqual((r.status, r.detail), (TX.FAIL, 'the pet is still out after dismiss'))
+
+    def test_minions_that_stay_are_not_the_pet(self):
+        # live run 2026-11-01: a Lich's minions stayed after the pet's dismiss and read as the pet (the first summon)
+        state = {'action': 'state', 'data': {'pets': [{'key': 'fox'}]}}
+        minion = {'name': 'skeleton', 'id': 900, 'target': 'monster'}
+
+        def answer(io):
+            pet = {'name': 'fox', 'id': 100, 'target': 'monster'}
+            return summons(minion, pet) if not any(a[1] == 'dismiss' for a in io.asked) else summons(minion)
+
+        io = FakeIO({'summons': answer, 'pet': LIVE}, {('pets', 'get'): state})
+        r = run(TX.check_pets(io, 'Tester Aaa', 'Lich', 300))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+
+    def test_a_pet_that_rests_or_waits_is_a_skip_with_the_rule(self):
+        state = {'action': 'state', 'data': {'pets': [{'key': 'fox'}]}}
+        for live, text in (({'live': 'fox', 'rest': 'summons'}, 'the bot has other summons'),
+                           ({'live': 'fox', 'rest': 'pz'}, 'a protection zone'),
+                           ({'deathLeft': 40}, 'death cooldown 40 s'),
+                           ({'summonLeft': 9}, 'call cooldown 9 s'),
+                           ({'live': 'fox'}, 'no rule of the game says why'),
+                           (None, 'no answer to !tester pet')):
+            io = FakeIO({'summons': summons(), 'pet': live}, {('pets', 'get'): state})
+            r = run(TX.check_pets(io, 'Tester Aaa', 'Ninja', 100))
+            self.assertEqual(r.status, TX.SKIP)
+            self.assertIn(text, r.detail)
+
+    def test_a_pet_that_is_out_but_no_summon_fails(self):
+        state = {'action': 'state', 'data': {'pets': [{'key': 'fox'}]}}
+        io = FakeIO({'summons': summons(), 'pet': LIVE}, {('pets', 'get'): state})
+        r = run(TX.check_pets(io, 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('not a summon of the bot', r.detail)
 
 
 class Party(unittest.TestCase):
@@ -215,6 +258,11 @@ class Others(unittest.TestCase):
         self.assertEqual(run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100)).status, TX.PASS)
         io = FakeIO({'enter rift 1': {'pos': {}, 'tier': 1, 'held': False}})
         self.assertEqual(run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100)).status, TX.FAIL)
+        # live run 2026-11-01: a full bag put the key on the ground; the helper finds it there, no bug
+        io = FakeIO({'enter rift 1': {'pos': {}, 'tier': 1, 'held': False, 'bagFull': True}})
+        r = run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('bag is full', r.detail)
         io = FakeIO({'enter rift 1': {'pos': {}}})
         self.assertEqual(run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100)).status, TX.SKIP)
         self.assertEqual(run(TX.check_rift(FakeIO({'enter rift 1': {'err': 'no temple'}}), 'a', 'Ninja', 100)).status, TX.FAIL)
@@ -477,6 +525,16 @@ class PartyXp(unittest.TestCase):
         self.assertEqual(r.status, TX.PASS, r.detail)
         self.assertEqual(io.partied, [('form', 'Tester Bbb'), ('share', 'Tester Bbb'), ('unshare', 'Tester Bbb'), ('leave', 'Tester Bbb')])
         self.assertIn('1000 xp pays 650', r.detail)
+        # the switch in the temple (the engine refuses it in a fight outside a protection zone), back to the hunt after
+        self.assertEqual(io.moves, ['town', 'hunt'])
+
+    def test_a_switch_the_engine_refuses_in_a_fight_is_a_skip(self):
+        _, r = self.run_check(shareActive=False, leaderBlocked=True, leaderPz=False)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('in a fight outside a protection zone', r.detail)
+        io, r = self.run_check(shareActive=False, leaderBlocked=False, leaderPz=True)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertEqual([a for a in io.partied if a[0] == 'share'], [('share', 'Tester Bbb')] * 2, 'one more switch, then a bug')
 
     def test_a_wrong_share_is_a_bug(self):
         _, r = self.run_check(shareOf1000=500)

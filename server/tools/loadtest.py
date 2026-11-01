@@ -864,15 +864,29 @@ def base_level_mult(path=None):
     return int(m.group(1))
 
 
-def spawn_levels(spawn_text, levels, mult=None):
+def waystone_areas(config_text):
+    """[(x1, y1, x2, y2, z)] of the waystone tier maps (waystone_tiers_config.lua maps: from / to); a monster there counts at
+    its run's tier level (1100+, ChaosWaystoneTiers.levelOf), not at its pool level"""
+    block = config_text.split('maps = {', 1)[1] if 'maps = {' in config_text else ''
+    out = []
+    for m in re.finditer(r'from = \{x = (\d+), y = (\d+), z = (\d+)\}, to = \{x = (\d+), y = (\d+), z = (\d+)\}', block):
+        x1, y1, z1, x2, y2, _ = (int(v) for v in m.groups())
+        out.append((min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2), z1))
+    return out
+
+
+def spawn_levels(spawn_text, levels, mult=None, blocked=()):
     """{(x, y, z): the highest hunting level (mult x the pool level, mult: baseLevelMult) of the monsters of the spawn at
     that centre; the pool levels of pool_levels stay pool levels, only the map marks print hunting levels); a monster
-    the pool does not know counts as unknown (never safe)"""
+    the pool does not know counts as unknown (never safe), and so does a centre inside a `blocked` area (waystone_areas)"""
     mult = base_level_mult() if mult is None else mult
     out = {}
     for m in re.finditer(r'<spawn\s+centerx="(\d+)"\s+centery="(\d+)"\s+centerz="(\d+)"[^>]*>(.*?)</spawn>',
                          spawn_text, re.S):
         centre = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        if any(a[0] <= centre[0] <= a[2] and a[1] <= centre[1] <= a[3] and a[4] == centre[2] for a in blocked):
+            out[centre] = 10 ** 9
+            continue
         top = 0
         for name in re.findall(r'<monster\s+name="([^"]+)"', m.group(4)):
             lv = levels.get(name.lower())

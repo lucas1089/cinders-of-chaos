@@ -350,7 +350,9 @@ def setup(a):
     centres = None
     pool = os.path.join(data, 'scripts', 'chaos', 'bounty_pool.lua')
     if spawns and os.path.isfile(pool):
-        centres = LT.spawn_levels(LT.read_text(spawns[0]), LT.pool_levels(LT.read_text(pool)))
+        wcfg = os.path.join(data, 'scripts', 'chaos', 'waystone_tiers_config.lua')
+        blocked = LT.waystone_areas(LT.read_text(wcfg)) if os.path.isfile(wcfg) else ()
+        centres = LT.spawn_levels(LT.read_text(spawns[0]), LT.pool_levels(LT.read_text(pool)), blocked=blocked)
     elif spawns:
         print('no data/scripts/chaos/bounty_pool.lua: the testers are not kept off spawns above their level')
     positions = place_testers([lv for _, lv in plan], hunts, temples, index, centres)
@@ -608,6 +610,7 @@ class KeyIO:
 
     def __init__(self, bot, clock):
         self.bot, self.clock = bot, clock
+        self.go_err = None
 
     def alive(self):
         return bool(self.bot.alive and not self.bot.died and not self.clock['stop'])
@@ -618,6 +621,7 @@ class KeyIO:
             return False
         self.bot.stay = place == 'town'
         r = await self.bot.helper_says(place, place)
+        self.go_err = (r.get('err') if r else 'no helper answer') or None
         return bool(r and not r.get('err'))
 
     async def sleep(self, seconds):
@@ -664,14 +668,19 @@ class CheckIO(KeyIO):
     async def partner(self):
         # a bot that is in no other party check: the checks of all bots start together, and when every bot picked the
         # same partner (the lowest id) only one party formed and the others read 0 members (local run 2026-10-31)
-        if self.bot.name in PARTY_BUSY:
-            return None
-        for cid, other in sorted(ONLINE.items()):
-            if cid != self.bot.cid and other is not self.bot and other.alive and not other.died \
-                    and other.name not in PARTY_BUSY:
-                PARTY_BUSY.update((self.bot.name, other.name))
-                return other.name
-        return None
+        # Every bot also starts its party checks at about the same time: wait up to PARTNER_WAIT_S for a free one
+        # (live run 2026-11-01: 13 of 14 party_xp checks found none free and skipped)
+        end = time.monotonic() + PARTNER_WAIT_S
+        while True:
+            if self.bot.name not in PARTY_BUSY:
+                for cid, other in sorted(ONLINE.items()):
+                    if cid != self.bot.cid and other is not self.bot and other.alive and not other.died \
+                            and other.name not in PARTY_BUSY:
+                        PARTY_BUSY.update((self.bot.name, other.name))
+                        return other.name
+            if time.monotonic() >= end or not self.alive():
+                return None
+            await asyncio.sleep(min(2.0, max(0.05, end - time.monotonic())))
 
     async def party(self, action, other_name):
         other = next((b for b in ONLINE.values() if b.name == other_name), None)
@@ -743,7 +752,35 @@ def load_check_spells(server_dir, vocs):
     return out
 
 
-PARTY_BUSY = set()  # bot names in a party check now (partner() picks among the others; leave frees both)
+class BusyNames:
+    """the bot names in a party check now (partner() picks among the others; leave frees both). A name frees itself
+    PARTY_HOLD_S after it was taken: a check cut off by the bot's death never sends the leave, and the two names stayed
+    busy for the rest of the run (live run 2026-11-01: 14 of 14 party_xp checks "no free bot")"""
+
+    def __init__(self):
+        self.until = {}
+
+    def __contains__(self, name):
+        t = self.until.get(name)
+        return t is not None and t > time.monotonic()
+
+    def __iter__(self):
+        return iter([n for n in self.until if n in self])
+
+    def update(self, names):
+        for n in names:
+            self.until[n] = time.monotonic() + PARTY_HOLD_S
+
+    def discard(self, name):
+        self.until.pop(name, None)
+
+    def clear(self):
+        self.until.clear()
+
+
+PARTNER_WAIT_S = 60.0  # seconds partner() waits for a bot in no other party check
+PARTY_HOLD_S = 120.0  # a party check (form, look, leave and PARTY_RELEASE_S) is over well within it
+PARTY_BUSY = BusyNames()
 PARTY_RELEASE_S = 10.0  # seconds after a leave before both bots are free again
 
 
