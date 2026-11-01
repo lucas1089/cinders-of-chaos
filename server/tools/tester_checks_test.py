@@ -102,7 +102,7 @@ class Pure(unittest.TestCase):
         self.assertIn('necro_minions', keys('Lich'))
         self.assertNotIn('beastmaster_wolf', keys('Ninja'))
         for k in ('pets', 'party', 'rift', 'waystone', 'reward_chest', 'cursed_chest', 'auto_setup', 'spell_quest',
-                  'rift_layout', 'waystone_run', 'content_rewards', 'party_xp', 'unique_passive', 'dual_fists'):
+                  'rift_layout', 'waystone_run', 'content_rewards', 'party_xp', 'unique_passive', 'dual_fists', 'dual_blades'):
             self.assertIn(k, keys('Ninja'))
 
 
@@ -146,27 +146,51 @@ class DualFists(unittest.TestCase):
         return run(TX.check_dual_fists(FakeIO({'fists': f}), 'Tester Aaa', cls, 600))
 
     def test_a_monk_strikes_with_the_off_hand(self):
-        r = self.check(monk=True, left=0, right=0, melee=3, off=3, meleeSum=3000, offSum=1400)
+        r = self.check(able=True, left=0, right=0, melee=3, off=3, meleeSum=3000, offSum=1400)
         self.assertEqual(r.status, TX.PASS, r.detail)
-        self.assertIn('3 fist hits, 3 off-hand strikes (1400 damage)', r.detail)
-        self.assertEqual(self.check(monk=True, left=0, right=0, melee=3, off=2, meleeSum=3000, offSum=1000).status,
+        self.assertIn('3 melee hits, 3 off-hand strikes (1400 damage)', r.detail)
+        self.assertEqual(self.check(able=True, left=0, right=0, melee=3, off=2).status,
                          TX.PASS, 'the last strike may land after the watch')
 
     def test_bugs(self):
-        r = self.check(monk=True, left=0, right=6, melee=0, off=0)
+        r = self.check(able=True, left=0, right=6, melee=0, off=0)
         self.assertEqual(r.status, TX.FAIL)
         self.assertIn('shield hand code 6', r.detail)
-        self.assertIn('no off-hand strike', self.check(monk=True, left=0, right=0, melee=4, off=0).detail)
-        self.assertIn('one each', self.check(monk=True, left=0, right=0, melee=4, off=8, meleeSum=4, offSum=2).detail)
-        r = self.check(cls='Warrior', monk=False, left=0)
+        self.assertIn('no off-hand strike', self.check(able=True, left=0, right=0, melee=4, off=0).detail)
+        self.assertIn('one each', self.check(able=True, left=0, right=0, melee=4, off=8).detail)
+        r = self.check(cls='Warrior', able=False, left=0)
         self.assertEqual(r.status, TX.FAIL)
         self.assertIn('outside the Monk line could wear', r.detail)
 
     def test_other_class_refused_and_skips(self):
-        self.assertEqual(self.check(cls='Warrior', monk=False, left=6).status, TX.PASS)
+        self.assertEqual(self.check(cls='Warrior', able=False, left=6).status, TX.PASS)
         self.assertEqual(run(TX.check_dual_fists(FakeIO(), 'a', 'Monk', 600)).status, TX.SKIP)
-        self.assertEqual(self.check(monk=False, err='both hands are taken').status, TX.SKIP)
-        self.assertEqual(self.check(monk=True, left=0, right=0, melee=0, off=0).status, TX.SKIP)
+        self.assertEqual(self.check(able=False, err='could not empty the hands').status, TX.SKIP)
+        self.assertEqual(self.check(able=True, left=0, right=0, melee=0, off=0).status, TX.SKIP)
+
+
+class DualBlades(unittest.TestCase):
+    def check(self, cls='Thief', **f):
+        return run(TX.check_dual_blades(FakeIO({'blades': f}), 'Tester Aaa', cls, 600))
+
+    def test_a_thief_strikes_with_the_off_hand(self):
+        r = self.check(able=True, left=0, right=0, melee=4, off=4, offSum=900)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('4 melee hits, 4 off-hand strikes (900 damage)', r.detail)
+
+    def test_bugs(self):
+        self.assertIn('could not wear a dagger in each hand',
+                      self.check(able=True, left=0, right=14).detail)
+        self.assertIn('no off-hand strike', self.check(cls='Ninja', able=True, left=0, right=0, melee=3, off=0).detail)
+        r = self.check(cls='Samurai', able=False, left=0, right=0)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('does not dual wield could hold a dagger in the shield hand', r.detail)
+
+    def test_others_refused(self):
+        r = self.check(cls='Samurai', able=False, left=0, right=14)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('refused in the shield hand (code 14)', r.detail)
+        self.assertEqual(self.check(cls='Mystic', able=False, left=14, right=14).status, TX.PASS)
 
 
 class Summons(unittest.TestCase):

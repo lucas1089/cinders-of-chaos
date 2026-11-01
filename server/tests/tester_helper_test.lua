@@ -739,6 +739,7 @@ do
 	check(H.COMMANDS.waystone and H.COMMANDS.riftrun, "waystone and riftrun are registered commands")
 	check(H.COMMANDS.unique and H.parseCommand("unique") == "unique", "unique is a registered command (O278)")
 	check(H.COMMANDS.fists and H.parseCommand("fists") == "fists", "fists is a registered command (O360)")
+	check(H.COMMANDS.blades and H.parseCommand("blades") == "blades", "blades is a registered command (O360)")
 
 	CONDITION_INFIGHT, CONDITIONID_DEFAULT = 1, 0
 	dofile("data/scripts/chaos/party_xp_core.lua")

@@ -50,7 +50,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 6
+HELPER_VERSION = 7
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1436,7 +1436,7 @@ end
 -- two fist weapons (engine patch 0087, O360): a Monk-line bot puts one in each hand through the engine's own slot rule
 -- (addItemEx runs Player::queryAdd and the Equip event), hits a Demon next to it with the auto attack and counts the
 -- melee hits and the off-hand strikes (physical, ORIGIN_NONE) it deals; any other class must be refused the fist weapon.
--- Answer kind "fists": {monk, left, right (return codes; 0 = worn), melee, off, meleeSum, offSum, err}
+-- Answer kind "fists": {able (Monk line), left, right (return codes; 0 = worn), melee, off, meleeSum, offSum, err}
 local FIST_IDS, FIST_WATCH_MS = {36656, 36657}, 6000
 -- monster id -> {player id, counts}; a global, so the doTargetCombat wrapper below (made once) sees it after a reload
 TesterFistWatch = TesterFistWatch or {}
@@ -1482,23 +1482,27 @@ if type(doTargetCombat) == "function" and not TesterFistWrapped then
 	end
 end
 
-function commands.fists(player)
-	local voc = player:getVocation()
-	local monk = ChaosMonk and ChaosMonk.isMonkLine and voc and ChaosMonk.isMonkLine(voc:getId()) or false
-	local out = {monk = monk}
+-- one probe for both dual wields: spec = {kind (the answer kind), ids (the item of each hand), able (this class may hold
+-- both), event (the class's combat event on the target)}. The hands are emptied (the items go back after); the probe
+-- items carry the custom attribute tester_probe, so only they are taken off again.
+local function dualProbe(player, spec)
+	local out = {able = spec.able}
 	local hands = {CONST_SLOT_LEFT, CONST_SLOT_RIGHT}
 	local held = {}
 	for i, slot in ipairs(hands) do
 		held[i] = player:getSlotItem(slot)
 	end
-	-- the hands are emptied for the probe (the items go back after)
 	local capWas = player:getCapacity()
 	player:setCapacity(capWas + 10000000)
 	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	local function probeItem(item)
+		local ok, v = pcall(function() return item:getCustomAttribute("tester_probe") end)
+		return ok and v ~= nil
+	end
 	local function restore()
-		for i, slot in ipairs(hands) do
+		for _, slot in ipairs(hands) do
 			local worn = player:getSlotItem(slot)
-			if worn and (worn:getId() == FIST_IDS[1] or worn:getId() == FIST_IDS[2]) then
+			if worn and probeItem(worn) then
 				worn:remove()
 			end
 		end
@@ -1513,33 +1517,39 @@ function commands.fists(player)
 		end
 		player:setCapacity(capWas)
 	end
-	for i, slot in ipairs(hands) do
+	for i in ipairs(hands) do
 		if held[i] and (not bag or held[i]:moveTo(bag) == false) then
 			restore()
-			return tell(player, "fists", {monk = monk, err = "could not empty the hands"})
+			out.err = "could not empty the hands"
+			return tell(player, spec.kind, out)
 		end
 	end
-	if not monk then
-		-- another class: the fist weapon must be refused in the weapon hand
-		local item = Game.createItem(FIST_IDS[1], 1)
-		out.left = item and player:addItemEx(item, false, CONST_SLOT_LEFT)
-		if out.left ~= RETURNVALUE_NOERROR and item then
+	local function wear(i)
+		local item = Game.createItem(spec.ids[i], 1)
+		if not item then
+			return nil
+		end
+		item:setCustomAttribute("tester_probe", 1)
+		local rv = player:addItemEx(item, false, hands[i])
+		if rv ~= RETURNVALUE_NOERROR then
 			item:remove()
+		end
+		return rv
+	end
+	out.left = wear(1)
+	if not spec.able then
+		-- a class that may not hold both: the second item must be refused in the shield hand (fist weapons: in the weapon
+		-- hand already, as no other class wears one at all)
+		if spec.kind == "blades" then
+			out.right = wear(2)
 		end
 		restore()
-		return tell(player, "fists", out)
+		return tell(player, spec.kind, out)
 	end
-	for i, slot in ipairs(hands) do
-		local item = Game.createItem(FIST_IDS[i], 1)
-		local rv = item and player:addItemEx(item, false, slot)
-		if rv ~= RETURNVALUE_NOERROR and item then
-			item:remove()
-		end
-		out[i == 1 and "left" or "right"] = rv
-	end
+	out.right = wear(2)
 	if out.left ~= RETURNVALUE_NOERROR or out.right ~= RETURNVALUE_NOERROR then
 		restore()
-		return tell(player, "fists", out)
+		return tell(player, spec.kind, out)
 	end
 	local tile = Tile(player:getPosition())
 	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
@@ -1557,18 +1567,19 @@ function commands.fists(player)
 	if not okM or not m then
 		restore()
 		out.err = "no Demon next to the tester"
-		return tell(player, "fists", out)
+		return tell(player, spec.kind, out)
 	end
 	local w = {pid = player:getId(), melee = 0, off = 0, meleeSum = 0, offSum = 0}
 	fistWatch[m:getId()] = w
 	m:registerEvent("TesterHelperDualFist")
 	pcall(function() m:setMaxHealth(10000000) m:addHealth(10000000) end)
-	-- player:setTarget skips the onTargetCombat callback a client attack runs, which registers the Monk's combat event on
-	-- the target (monk_combat.lua); without it the fist hits are the engine's bare ones (live run 2026-11-01)
+	-- player:setTarget skips the onTargetCombat callback a client attack runs, which registers the class's combat event
+	-- on the target (monk_combat.lua, thief_combat.lua); without it the hits are the engine's bare ones (live run
+	-- 2026-11-01)
 	if Chaos and Chaos.registerOnce then
-		Chaos.registerOnce(m, "ChaosMonkCombat")
+		Chaos.registerOnce(m, spec.event)
 	else
-		m:registerEvent("ChaosMonkCombat")
+		m:registerEvent(spec.event)
 	end
 	player:setTarget(m)
 	local pid, mid = player:getId(), m:getId()
@@ -1583,8 +1594,25 @@ function commands.fists(player)
 		end
 		out.melee, out.off, out.meleeSum, out.offSum = w.melee, w.off, w.meleeSum, w.offSum
 		restore()
-		tell(p, "fists", out)
+		tell(p, spec.kind, out)
 	end, FIST_WATCH_MS)
+end
+
+function commands.fists(player)
+	local voc = player:getVocation()
+	local monk = ChaosMonk and ChaosMonk.isMonkLine and voc and ChaosMonk.isMonkLine(voc:getId()) or false
+	dualProbe(player, {kind = "fists", ids = FIST_IDS, able = monk, event = "ChaosMonkCombat"})
+end
+
+-- the Thief and Ninja dual wield (src-patch 0002, thief_combat.lua): a dagger in each hand; every melee hit of the main
+-- hand brings an off-hand strike. Every other class (the Samurai too) must be refused the dagger in the shield hand.
+-- Answer kind "blades": {able, left, right, melee, off, meleeSum, offSum, err}
+local BLADE_IDS = {2379, 2379}
+
+function commands.blades(player)
+	local voc = player:getVocation()
+	local able = ChaosClasses and ChaosClasses.isDualWielder and voc and ChaosClasses.isDualWielder(voc:getId()) or false
+	dualProbe(player, {kind = "blades", ids = BLADE_IDS, able = able, event = "ChaosThiefCombat"})
 end
 
 function commands.riftrun(player, arg)
