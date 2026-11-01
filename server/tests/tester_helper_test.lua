@@ -399,6 +399,18 @@ function tester:getItemById(id)
 	end
 	return nil
 end
+-- !tester pet: the first species of the config, granted once
+do
+	local owned, granted = {}, 0
+	ChaosPetsConfig = {species = {{key = "ember_whelp"}}}
+	ChaosPets = {owns = function(_, k) return owned[k] == true end,
+		grant = function(_, k, src, quiet) granted = granted + 1; owned[k] = src == "staff" and quiet == true end}
+	talks["!tester"].onSay(tester, "!tester", "pet")
+	check(last(tester):find('"owns":true', 1, true) ~= nil and granted == 1, "pet: granted quietly as staff")
+	talks["!tester"].onSay(tester, "!tester", "pet")
+	check(last(tester):find('"had":true', 1, true) ~= nil and granted == 1, "pet: an owned pet is not granted again")
+	ChaosPets, ChaosPetsConfig = nil, nil
+end
 talks["!tester"].onSay(tester, "!tester", "enter rift 4")
 eq(#keys, 1, "a rift key")
 check(last(tester):find('"held":true', 1, true) ~= nil and keyRemoved == 1, "the key is read back and taken again")

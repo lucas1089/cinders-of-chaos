@@ -158,6 +158,13 @@ class Pets(unittest.TestCase):
         io = FakeIO(replies={('pets', 'get'): {'action': 'state', 'data': {'pets': []}}})
         self.assertIn('owns no pet', run(TX.check_pets(io, 'Tester Aaa', 'Ninja', 100)).detail)
 
+    def test_a_pet_of_the_helper_when_none_is_owned(self):
+        io = FakeIO({'pet': {'key': 'ember_whelp', 'owns': True}, 'summons': summons()},
+                    replies={('pets', 'get'): {'action': 'state', 'data': {'pets': []}}})
+        r = run(TX.check_pets(io, 'Tester Aaa', 'Ninja', 100))
+        self.assertNotIn('owns no pet', r.detail)
+        self.assertIn(('pets', 'summon', {'species': 'ember_whelp'}), io.asked)
+
     def test_pet_out_and_dismissed(self):
         state = {'action': 'state', 'data': {'pets': [{'species': 'fox'}]}}
         out = summons({'name': 'fox', 'target': 'monster'})

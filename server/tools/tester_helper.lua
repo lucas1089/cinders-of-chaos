@@ -563,6 +563,24 @@ local function summonSnapshot(player)
 	return snap
 end
 
+-- !tester pet: the first pet species of pets_config.lua for the tester (ChaosPets.grant, source "staff", quiet), so the
+-- pets check has a pet to call out; a pet the tester owns already stays as it is
+function commands.pet(player)
+	local P, cfg = ChaosPets, ChaosPetsConfig
+	local first = cfg and cfg.species and cfg.species[1]
+	if not (P and P.grant and P.owns and first) then
+		tell(player, "pet", {err = "no pet system"})
+		return
+	end
+	local had = P.owns(player, first.key)
+	local ok, why = true, nil
+	if not had then
+		local okCall, res, msg = pcall(P.grant, player, first.key, "staff", true)
+		ok, why = okCall and res ~= false, okCall and msg or res
+	end
+	tell(player, "pet", {key = first.key, had = had, owns = P.owns(player, first.key), err = (not ok) and tostring(why) or nil})
+end
+
 function commands.summons(player)
 	local snap = summonSnapshot(player)
 	snap.count = #snap.summons

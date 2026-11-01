@@ -136,6 +136,13 @@ async def check_pets(io, name, cls, level):
     owned = [p.get('species') or p.get('key') for p in data.get('pets') or [] if isinstance(p, dict)]
     owned = [o for o in owned if o]
     if not owned:
+        # a pet of the helper (ChaosPets.grant): before, every bot read "owns no pet" and the check never ran
+        g = await io.helper('pet', 'pet', ANSWER)
+        if g and g.get('owns'):
+            state = await io.request('pets', 'get', {}, ['state'], ANSWER) or {}
+            owned = [p.get('species') or p.get('key') for p in (state.get('data') or {}).get('pets') or [] if isinstance(p, dict)]
+            owned = [o for o in owned if o] or [g.get('key')]
+    if not owned:
         return Result('pets', name, cls, SKIP, 'the bot owns no pet')
     if not await io.go('hunt'):
         return Result('pets', name, cls, SKIP, 'the helper did not bring the bot to its hunt spot')
