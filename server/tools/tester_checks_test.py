@@ -102,8 +102,43 @@ class Pure(unittest.TestCase):
         self.assertIn('necro_minions', keys('Lich'))
         self.assertNotIn('beastmaster_wolf', keys('Ninja'))
         for k in ('pets', 'party', 'rift', 'waystone', 'reward_chest', 'cursed_chest', 'auto_setup', 'spell_quest',
-                  'rift_layout', 'waystone_run', 'content_rewards', 'party_xp'):
+                  'rift_layout', 'waystone_run', 'content_rewards', 'party_xp', 'unique_passive'):
             self.assertIn(k, keys('Ninja'))
+
+
+class UniquePassive(unittest.TestCase):
+    def answer(self, **over):
+        d = {'id': 26185, 'family': 'critrule', 'line': 'monk', 'slot': 9, 'active': ['critrule'], 'm': 0.92,
+             'crit': False, 'lostBefore': 1000, 'lostAfter': 920, 'hit': 820}
+        d.update(over)
+        return d
+
+    def check(self, **over):
+        return run(TX.check_unique_passive(FakeIO({'unique': self.answer(**over)}), 'Tester Aaa', 'Monk', 600))
+
+    def test_the_hit_follows_the_rule(self):
+        r = self.check()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('critrule (item 26185, monk line): hit 1000 -> 920, rule x0.920', r.detail)
+        self.assertEqual(self.check(lostAfter=935).status, TX.PASS, 'within 3%')
+
+    def test_a_hit_off_the_rule_is_a_bug(self):
+        r = self.check(lostAfter=1000)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('took x1.000 of the health, its rule says x0.920', r.detail)
+
+    def test_a_sleeping_passive_is_a_bug(self):
+        r = self.check(active=[])
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('leaves its passive asleep (active: none)', r.detail)
+        r = self.check(m=None)
+        self.assertIn('never reached', r.detail)
+
+    def test_skips(self):
+        self.assertEqual(run(TX.check_unique_passive(FakeIO(), 'a', 'Monk', 600)).status, TX.SKIP)
+        r = self.check(err='no free slot for a unique of the monk line')
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertEqual(self.check(lostBefore=0).status, TX.SKIP)
 
 
 class Summons(unittest.TestCase):

@@ -841,6 +841,50 @@ def _summoner(cls):
     return cls in SUMMONERS
 
 
+UNIQUE_TOLERANCE = 0.03
+
+
+def unique_problems(u):
+    """[text] for one `!tester unique` answer: the worn unique's passive is active and the hit after it is worn lost
+    the monster `m` times the health of the hit before (within UNIQUE_TOLERANCE)"""
+    out = []
+    fam = u.get('family')
+    if fam not in (u.get('active') or []):
+        out.append('a worn %s unique (item %s) leaves its passive asleep (active: %s)' % (
+            fam, u.get('id'), ', '.join(u.get('active') or []) or 'none'))
+        return out
+    m = u.get('m')
+    if m is None:
+        out.append('a hit with the %s unique worn never reached the passive\'s damage rule' % fam)
+        return out
+    before, after = int(u.get('lostBefore') or 0), int(u.get('lostAfter') or 0)
+    if before > 0:
+        got = after / float(before)
+        if abs(got / float(m) - 1) > UNIQUE_TOLERANCE:
+            out.append('with the %s unique worn a hit took x%.3f of the health, its rule says x%.3f' % (fam, got, m))
+    return out
+
+
+async def check_unique_passive(io, name, cls, level):
+    """unique passives (O278): the helper wears a real unique copy of an item whose passive is a plain damage
+    multiplier (critrule, opener, lowlife, overflow) for this bot's class line, hits a fresh monster before and after,
+    and catches the multiplier the game's own rule returned. The passive must be active and the second hit must take
+    that multiple of the first."""
+    u = await io.helper('unique', 'unique', ANSWER)
+    if not u:
+        return Result('unique_passive', name, cls, SKIP, 'no answer to !tester unique (an old helper file, or the bot died)')
+    if u.get('err'):
+        return Result('unique_passive', name, cls, SKIP, u['err'])
+    if not u.get('lostBefore'):
+        return Result('unique_passive', name, cls, SKIP, 'the hit before the unique was worn took no health')
+    bad = unique_problems(u)
+    if bad:
+        return Result('unique_passive', name, cls, FAIL, '; '.join(bad))
+    return Result('unique_passive', name, cls, PASS, '%s (item %s, %s line): hit %s -> %s, rule x%.3f%s' % (
+        u.get('family'), u.get('id'), u.get('line'), u.get('lostBefore'), u.get('lostAfter'), float(u.get('m')),
+        ' (critical)' if u.get('crit') else ''))
+
+
 CHECKS = [
     ('beastmaster_wolf', check_summons, lambda c: c == 'Beastmaster'),
     ('necro_minions', check_summons, lambda c: c in ('Necromancer', 'Lich', 'Bone Lord')),
@@ -851,6 +895,7 @@ CHECKS = [
     ('waystone_run', check_waystone_run, lambda c: True),
     ('content_rewards', check_content_rewards, lambda c: True),
     ('party_xp', check_party_xp, lambda c: True),
+    ('unique_passive', check_unique_passive, lambda c: True),
     ('waystone', check_waystone, lambda c: True),
     ('reward_chest', check_reward_chest, lambda c: True),
     ('cursed_chest', check_cursed_chest, lambda c: True),
