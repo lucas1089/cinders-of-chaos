@@ -889,6 +889,8 @@ MONK_LINE = ('Monk', 'Shadowfist', 'Iron Sage')
 # the off-hand strike of two fist weapons is share x ratio of the main hit (monk_chi_core.lua unarmed.dualFists: 0.5,
 # ratio 0.5..1); armour takes a flat part of each hit, so the sums are compared loosely
 DUAL_FIST_SHARE = (0.15, 1.0)
+# the helper watches the fight for 6 s (tester_helper.lua FIST_WATCH_MS) before it answers
+FIST_ANSWER = 12.0
 
 
 def fist_problems(f):
@@ -921,7 +923,7 @@ def fist_problems(f):
 async def check_dual_fists(io, name, cls, level):
     """fist weapons in either hand (engine patch 0087, O360): a Monk-line bot puts a fist weapon in each hand through the
     engine's slot rule and hits a Demon; every fist hit must bring an off-hand strike. Another class must be refused."""
-    f = await io.helper('fists', 'fists', ANSWER)
+    f = await io.helper('fists', 'fists', FIST_ANSWER)
     if not f:
         return Result('dual_fists', name, cls, SKIP, 'no answer to !tester fists (an old helper file, or the bot died)')
     if f.get('err'):

@@ -1450,6 +1450,11 @@ function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType
 			w.off, w.offSum = w.off + 1, w.offSum + dmg
 		end
 	end
+	-- the probe's Demon never dies: a kill would pay experience to the bot's party (live run 2026-11-01: party_xp read
+	-- the share of a Monk's probe kill; the monster level scaling can undo a raised maximum health)
+	if w and creature:getHealth() - (math.abs(primaryDamage) + math.abs(secondaryDamage)) < creature:getMaxHealth() / 2 then
+		creature:addHealth(creature:getMaxHealth())
+	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
 fistEvent:type("healthchange")
