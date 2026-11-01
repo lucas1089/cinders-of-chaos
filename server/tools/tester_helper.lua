@@ -720,6 +720,24 @@ local function hitDown(lid, id, out)
 	end
 end
 
+-- experience per test monster and player: the bots go on hunting during a kill, so the change of their experience
+-- also held other kills (live run 2026-11-01: a solo kill paid the partner 157408, the leader 6 times a solo kill).
+-- The last callback (after every Chaos bonus) adds what the watched monster gives. {[monster id] = {[player id] = exp}}
+TesterXpWatch = TesterXpWatch or {}
+if EventCallback and not TesterXpWatchCb then
+	TesterXpWatchCb = true
+	local xpCb = EventCallback
+	xpCb.onGainExperience = function(self, source, exp, rawExp)
+		local w = source and TesterXpWatch[source:getId()]
+		if w then
+			local id = self:getId()
+			w[id] = (w[id] or 0) + exp
+		end
+		return exp
+	end
+	xpCb:register(1000)
+end
+
 local function oneKill(leader, partner, done)
 	local spot = freeNear(leader:getPosition(), nil, 3)
 	local out = {leader = 0, partner = 0, dead = false}
@@ -738,6 +756,7 @@ local function oneKill(leader, partner, done)
 	end
 	local id = m:getId()
 	out.hp = m:getHealth()
+	TesterXpWatch[id] = {}
 	hitDown(lid, id, out)
 	local party = leader:getParty()
 	out.active = party and party:isSharedExperienceActive() == true
@@ -757,12 +776,20 @@ local function oneKill(leader, partner, done)
 			out.hpLeft = left:getHealth()
 			left:remove()
 		end
+		local watched = TesterXpWatch[id]
+		TesterXpWatch[id] = nil
 		local l, p = Player(lid), Player(pid)
 		if not l or not p then
 			out.err = "the leader or the partner left the game"
 			return done(out)
 		end
-		out.leader, out.partner = l:getExperience() - xl, p:getExperience() - xp
+		-- the whole change too, to tell the other kills of the bots apart in the answer
+		out.leaderAll, out.partnerAll = l:getExperience() - xl, p:getExperience() - xp
+		if TesterXpWatchCb and watched then
+			out.leader, out.partner, out.fromMonster = watched[lid] or 0, watched[pid] or 0, true
+		else
+			out.leader, out.partner = out.leaderAll, out.partnerAll
+		end
 		done(out)
 	end
 	addEvent(read, KILL_READ_MS)

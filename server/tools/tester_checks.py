@@ -414,7 +414,11 @@ async def check_party_xp(io, name, cls, level):
         if kbad and not partner_kept(io, other):
             return Result('party_xp', name, cls, SKIP, PARTNER_GONE)
         if kbad:
-            return Result('party_xp', name, cls, FAIL, '; '.join(kbad[:3]))
+            sh, so = (k or {}).get('shared') or {}, (k or {}).get('solo') or {}
+            nums = 'leader/partner xp: shared %s/%s, solo %s/%s%s' % (
+                sh.get('leader'), sh.get('partner'), so.get('leader'), so.get('partner'),
+                '' if so.get('fromMonster') else ', whole change (old helper file)')
+            return Result('party_xp', name, cls, FAIL, '; '.join(kbad[:3]) + ' (' + nums + ')')
         sh, so = (k or {}).get('shared') or {}, (k or {}).get('solo') or {}
         kill = skip or 'kill %s: leader %s / partner %s xp (share %s), solo %s' % (
             'shared' if sh.get('enabled') else 'not shared', sh.get('leader'), sh.get('partner'),
