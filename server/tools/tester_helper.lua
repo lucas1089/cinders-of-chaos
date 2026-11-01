@@ -1342,7 +1342,7 @@ function commands.unique(player)
 	if not line then
 		return tell(player, "unique", {err = "no class line"})
 	end
-	local pick, slot
+	local cands = {}
 	local ids = {}
 	for id in pairs(CFG.passives) do
 		ids[#ids + 1] = id
@@ -1350,15 +1350,11 @@ function commands.unique(player)
 	table.sort(ids)
 	for _, id in ipairs(ids) do
 		local e = C.entry(CFG, id)
-		if e and UNIQUE_FAMILIES[e.family] and C.worksFor(CFG, e, line) then
-			slot = freeSlotOf(player, id)
-			if slot then
-				pick = e
-				break
-			end
+		if e and UNIQUE_FAMILIES[e.family] and C.worksFor(CFG, e, line) and freeSlotOf(player, id) then
+			cands[#cands + 1] = e
 		end
 	end
-	if not pick then
+	if #cands == 0 then
 		return tell(player, "unique", {err = "no free slot for a unique of the " .. line .. " line"})
 	end
 	local tile = Tile(player:getPosition())
@@ -1379,19 +1375,32 @@ function commands.unique(player)
 		capture.m, capture.crit = m, ctx and ctx.crit
 		return m
 	end
-	local out = {id = pick.id, family = pick.family, line = line, slot = slot}
+	local out = {line = line}
 	local ok, err = pcall(function()
 		out.lostBefore, out.hit = probeHit(player, spot, capture)
-		local item = Game.createItem(pick.id, 1)
-		if not item then
-			out.err = "the item could not be made"
+		-- the first candidate the slot takes (the engine refuses some for the class or a slot rule: live run 2026-11-01)
+		local pick, slot, refused = nil, nil, {}
+		for _, e in ipairs(cands) do
+			local sl = freeSlotOf(player, e.id)
+			local item = sl and Game.createItem(e.id, 1)
+			if item then
+				item:setCustomAttribute("chaos_unique", 1)
+				local rv = player:addItemEx(item, false, sl)
+				if rv == RETURNVALUE_NOERROR then
+					pick, slot = e, sl
+					break
+				end
+				refused[#refused + 1] = e.id .. ":" .. tostring(rv)
+				if #refused >= 12 then
+					break
+				end
+			end
+		end
+		if not pick then
+			out.err = "no unique went into its slot (" .. table.concat(refused, " ") .. ")"
 			return
 		end
-		item:setCustomAttribute("chaos_unique", 1)
-		if player:addItemEx(item, false, slot) ~= RETURNVALUE_NOERROR then
-			out.err = "the item did not go into its slot"
-			return
-		end
+		out.id, out.family, out.slot, out.tried = pick.id, pick.family, slot, #refused + 1
 		local st = UP.refresh(player)
 		out.active = {}
 		for _, e in ipairs(st and st.act or {}) do
