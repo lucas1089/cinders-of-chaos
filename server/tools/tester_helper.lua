@@ -1563,6 +1563,13 @@ function commands.fists(player)
 	fistWatch[m:getId()] = w
 	m:registerEvent("TesterHelperDualFist")
 	pcall(function() m:setMaxHealth(10000000) m:addHealth(10000000) end)
+	-- player:setTarget skips the onTargetCombat callback a client attack runs, which registers the Monk's combat event on
+	-- the target (monk_combat.lua); without it the fist hits are the engine's bare ones (live run 2026-11-01)
+	if Chaos and Chaos.registerOnce then
+		Chaos.registerOnce(m, "ChaosMonkCombat")
+	else
+		m:registerEvent("ChaosMonkCombat")
+	end
 	player:setTarget(m)
 	local pid, mid = player:getId(), m:getId()
 	addEvent(function()
