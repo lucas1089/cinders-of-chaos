@@ -50,6 +50,9 @@ android {
                         '-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH', '-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH',
                         '-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH',
                         "-DCMAKE_PREFIX_PATH=${depsPrefix ?: ''}"
+                // OpenAL Soft is shared (triplet): the engine's find_library looks for .a only on Android, so name the .so
+                if (depsPrefix && file("${depsPrefix}/lib/libopenal.so").exists())
+                    arguments "-DOPENAL_LIBRARY=${depsPrefix}/lib/libopenal.so"
                 cmakeExtra.each { arguments it }
             }
         }
