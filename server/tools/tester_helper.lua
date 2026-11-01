@@ -21,7 +21,8 @@
 --     checks of tools/tester_checks.py spell_quest; the staff command /spellquest is closed to testers)
 --   * "!tester waystone <1-15> [loot]" and "!tester riftrun <layout | loot>": a waystone run of that tier on the device's own
 --     functions, a real rift run opened as a player does; the facts the checks waystone_run, rift_layout and content_rewards
---     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience, "!tester party kill" adds a real shared kill and a solo kill
+--     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience, "!tester party kill" adds a real shared kill and a solo kill; "!tester unique" wears a unique and
+--     measures its passive on a real hit
 --   * "!tester bag": empties the tester's own backpack of loot (everything but the potions) and tops the potions up
 --   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
 --     the count changed, and every 5 minutes anyway
@@ -49,7 +50,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 4
+HELPER_VERSION = 5
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1291,6 +1292,145 @@ local function riftRun(player, arg)
 	pcall(RF.interrupt, run)
 	ans.after = {inRun = RF.runOf[player:getId()] ~= nil, slotFree = RF.runs[run.slot] ~= run}
 	return ans
+end
+
+-- ---------------------------------------------------------------- O278 unique passives, live
+-- "!tester unique": a real unique copy (custom attribute chaos_unique) of an item whose passive is a damage multiplier
+-- with no state to build (UNIQUE_FAMILIES) and works for the tester's class line goes into an empty slot. One hit of a
+-- tenth of a fresh monster's health before it is worn, one on a second fresh monster after; the multiplier the glue's
+-- own ChaosUniquePassivesCore.dealt returned on the second hit is caught. Item and monsters are removed again.
+-- Answers {id, family, line, slot, active = {families}, m, crit, lostBefore, lostAfter, hit} or {err}
+local UNIQUE_FAMILIES = {critrule = true, opener = true, lowlife = true, overflow = true}
+local SLOT_OF = { -- ItemType:getSlotPosition() bit -> CONST_SLOT_*; hands are left alone (the tester's weapon)
+	{1, CONST_SLOT_HEAD}, {2, CONST_SLOT_NECKLACE}, {8, CONST_SLOT_ARMOR}, {64, CONST_SLOT_LEGS},
+	{128, CONST_SLOT_FEET}, {256, CONST_SLOT_RING},
+}
+
+local function freeSlotOf(player, id)
+	local it = ItemType(id)
+	local bits = it and it:getSlotPosition() or 0
+	for _, s in ipairs(SLOT_OF) do
+		if math.floor(bits / s[1]) % 2 == 1 and not player:getSlotItem(s[2]) then
+			return s[2]
+		end
+	end
+	return nil
+end
+
+local function probeHit(player, spot, capture)
+	local okM, m = pcall(Game.createMonster, KILL_MONSTER, spot, false, true)
+	if not okM or not m then
+		return nil
+	end
+	pcall(Chaos.registerOnce, m, "ChaosUPDealt")
+	local before = m:getHealth()
+	local d = math.max(1, math.floor(m:getMaxHealth() / 10))
+	capture.m, capture.crit = nil, nil
+	pcall(doTargetCombatHealth, player:getId(), m, COMBAT_ENERGYDAMAGE, -d, -d, CONST_ME_NONE)
+	local lost = before - m:getHealth()
+	m:remove()
+	return lost, d
+end
+
+function commands.unique(player)
+	local UP, C, CFG = ChaosUniquePassives, ChaosUniquePassivesCore, ChaosUniquePassivesConfig
+	if not (UP and UP.refresh and C and C.dealt and CFG and CFG.passives) then
+		return tell(player, "unique", {err = "no unique passives on this server"})
+	end
+	local voc = player:getVocation()
+	local line = ChaosClasses and ChaosClasses.lineKey and voc and ChaosClasses.lineKey(voc:getId())
+	if not line then
+		return tell(player, "unique", {err = "no class line"})
+	end
+	local cands = {}
+	local ids = {}
+	for id in pairs(CFG.passives) do
+		ids[#ids + 1] = id
+	end
+	table.sort(ids)
+	for _, id in ipairs(ids) do
+		local e = C.entry(CFG, id)
+		if e and UNIQUE_FAMILIES[e.family] and C.worksFor(CFG, e, line) and freeSlotOf(player, id) then
+			cands[#cands + 1] = e
+		end
+	end
+	if #cands == 0 then
+		return tell(player, "unique", {err = "no free slot for a unique of the " .. line .. " line"})
+	end
+	local tile = Tile(player:getPosition())
+	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+		local street = outsidePz(player:getPosition(), KILL_STREET)
+		if street then
+			player:teleportTo(street)
+		end
+	end
+	local spot = freeNear(player:getPosition(), nil, 3)
+	if not spot then
+		return tell(player, "unique", {err = "no free tile next to the tester"})
+	end
+	local capture = {}
+	local real = C.dealt
+	C.dealt = function(cfg, S, act, ctx)
+		local m = real(cfg, S, act, ctx)
+		capture.m, capture.crit = m, ctx and ctx.crit
+		return m
+	end
+	local out = {line = line}
+	local capWas
+	local ok, err = pcall(function()
+		out.lostBefore, out.hit = probeHit(player, spot, capture)
+		-- the first candidate the slot takes (the engine refuses some for the class or a slot rule: live run 2026-11-01)
+		local pick, slot, refused = nil, nil, {}
+		for _, e in ipairs(cands) do
+			local sl = freeSlotOf(player, e.id)
+			local item = sl and Game.createItem(e.id, 1)
+			if item then
+				item:setCustomAttribute("chaos_unique", 1)
+				local rv = player:addItemEx(item, false, sl)
+				if rv == RETURNVALUE_NOTENOUGHCAPACITY and not capWas then
+					-- the potions and loot fill the capacity (the engine's rule takes no flag): the capacity is raised for
+					-- the probe and put back at the end (live run 2026-11-01: half the bots, code 21; the inventory can
+					-- weigh more than the capacity already, so the item's weight alone was not enough)
+					capWas = player:getCapacity()
+					player:setCapacity(capWas + 10000000)
+					rv = player:addItemEx(item, false, sl)
+				end
+				if rv == RETURNVALUE_NOERROR then
+					pick, slot = e, sl
+					break
+				end
+				refused[#refused + 1] = e.id .. ":" .. tostring(rv)
+				if #refused >= 12 then
+					break
+				end
+			end
+		end
+		if not pick then
+			out.err = "no unique went into its slot (" .. table.concat(refused, " ") .. ")"
+			return
+		end
+		out.id, out.family, out.slot, out.tried = pick.id, pick.family, slot, #refused + 1
+		local st = UP.refresh(player)
+		out.active = {}
+		for _, e in ipairs(st and st.act or {}) do
+			out.active[#out.active + 1] = e.family
+		end
+		out.lostAfter = probeHit(player, spot, capture)
+		out.m, out.crit = capture.m, capture.crit
+		local worn = player:getSlotItem(slot)
+		if worn and worn:getId() == pick.id then
+			worn:remove()
+		end
+		UP.refresh(player)
+	end)
+	C.dealt = real
+	if capWas then
+		player:setCapacity(capWas)
+	end
+	if not ok then
+		out.err = tostring(err)
+	end
+	tell(player, "unique", out)
 end
 
 function commands.riftrun(player, arg)

@@ -737,6 +737,7 @@ do
 	eq(H.riftTierFor(99, 15, function(t) return 100 + (t - 1) * 50 end), nil, "no tier under the first level")
 	eq(H.riftTierFor(210, 15, function(t) return 100 + (t - 1) * 50 end), 3, "the highest tier the level opens")
 	check(H.COMMANDS.waystone and H.COMMANDS.riftrun, "waystone and riftrun are registered commands")
+	check(H.COMMANDS.unique and H.parseCommand("unique") == "unique", "unique is a registered command (O278)")
 
 	CONDITION_INFIGHT, CONDITIONID_DEFAULT = 1, 0
 	dofile("data/scripts/chaos/party_xp_core.lua")
