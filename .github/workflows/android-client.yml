@@ -289,6 +289,14 @@ jobs:
           "$RE" -d "$RUNNER_TEMP/libcinders.so" | grep NEEDED
           "$RE" -d "$RUNNER_TEMP/libcinders.so" | grep -q 'Shared library: \[libopenal.so\]' || { echo "::error::libcinders.so does not load libopenal.so"; exit 1; }
           "$RE" -d "$RUNNER_TEMP/libopenal.so" | grep -E 'SONAME|NEEDED'
+          # every library a packed .so needs is in the APK or one of the system libraries an app may load
+          SYSLIBS=' libc.so libm.so libdl.so liblog.so libandroid.so libEGL.so libGLESv2.so libGLESv3.so libOpenSLES.so libaaudio.so libz.so libjnigraphics.so '
+          for so in libcinders.so libopenal.so; do
+            for need in $("$RE" -d "$RUNNER_TEMP/$so" | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p'); do
+              unzip -l "$APK" | grep -q "lib/arm64-v8a/$need\$" && continue
+              [[ "$SYSLIBS" == *" $need "* ]] || { echo "::error::$so needs $need, which is neither in the APK nor a system library"; exit 1; }
+            done
+          done
           mkdir out
           cp "$APK" out/CindersOfChaos-Android.apk
           (cd out && sha256sum CindersOfChaos-Android.apk | tee CindersOfChaos-Android.apk.sha256)
