@@ -89,7 +89,13 @@ M.cfg = {
 		-- pair 56 only 40000-40002 wear donor looks), the first six (36654-36659) and the three of pair 56 (48409-48411).
 		-- Same order as ChaosFistWeapons.ids (the test compares them)
 		fistWeapons = {40000, 36654, 40009, 40010, 40001, 36655, 40002, 36656, 36657, 36658, 36659, 48409, 40003, 48410,
-			40004, 48411, 40005, 40011, 40006, 40007, 40012, 40008}
+			40004, 48411, 40005, 40011, 40006, 40007, 40012, 40008},
+		-- a fist weapon in each hand (engine patch 0087; owner 2026-11-01: "pode adicionar golpe extra igual a thief"):
+		-- each auto attack fist hit is followed after delayMs by an off-hand strike of `share` of it, scaled by the off
+		-- hand's fist attack against the main hand's (clamped to minRatio..maxRatio). `neutral`: the main hit is cut by
+		-- 1 / (1 + share x ratio), as the Thief's (chaos_constants.lua dualWield), so the pair deals what one fist hit
+		-- did and the measured Monk balance stands
+		dualFists = {share = 0.5, minRatio = 0.5, maxRatio = 1, delayMs = 150, neutral = true}
 	},
 	-- (spellLevelScale, a level factor of the strikes that stood in for the passive tree, was dropped with the class trees:
 	-- M.levelScale is 1 unless one is set here or in Chaos.classes)
@@ -285,6 +291,46 @@ function M.fistAttack(level, fistWeaponAttack)
 	local u = cfg().unarmed
 	local byLevel = math.min(u.attackMax, u.attackBase + (level or 0) * u.attackPerLevel)
 	return math.max(byLevel, fistWeaponAttack or 0)
+end
+
+-- a fist weapon in each hand: attacks = the fist weapon attack of each hand (0 or nil = none there). Returns the main
+-- hand's and the off hand's fist attack at `level` (M.fistAttack; the better one is the main hand), or nil without two
+function M.dualFists(level, attacks)
+	local a, b = tonumber((attacks or {})[1]) or 0, tonumber((attacks or {})[2]) or 0
+	if a <= 0 or b <= 0 then
+		return nil
+	end
+	local main, off = M.fistAttack(level, math.max(a, b)), M.fistAttack(level, math.min(a, b))
+	return main, off
+end
+
+local function dualRatio(main, off)
+	local d = cfg().unarmed.dualFists
+	local ratio = (main or 0) > 0 and (off or 0) / main or 1
+	return math.max(d.minRatio, math.min(d.maxRatio, ratio))
+end
+
+-- the factor of the main fist hit with two fist weapons (1 when the rule is not neutral)
+function M.dualFistNeutral(main, off)
+	local d = cfg().unarmed.dualFists
+	if not d.neutral then
+		return 1
+	end
+	return 1 / (1 + d.share * dualRatio(main, off))
+end
+
+-- the off-hand strike that follows a main fist hit of `hit` (after the neutral cut). The engine halves damage between
+-- players before onHealthChange sees it and halves the scripted strike again, so against a player it is doubled
+function M.dualFistStrike(hit, main, off, targetIsPlayer)
+	hit = math.abs(hit or 0)
+	if hit <= 0 then
+		return 0
+	end
+	local value = hit * cfg().unarmed.dualFists.share * dualRatio(main, off)
+	if targetIsPlayer then
+		value = value * 2
+	end
+	return math.floor(value + 0.5)
 end
 
 -- the engine's maximum weapon damage (Weapons::getMaxWeaponDamage)

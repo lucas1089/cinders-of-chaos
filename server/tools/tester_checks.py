@@ -885,6 +885,58 @@ async def check_unique_passive(io, name, cls, level):
         ' (critical)' if u.get('crit') else ''))
 
 
+MONK_LINE = ('Monk', 'Shadowfist', 'Iron Sage')
+# the off-hand strike of two fist weapons is share x ratio of the main hit (monk_chi_core.lua unarmed.dualFists: 0.5,
+# ratio 0.5..1); armour takes a flat part of each hit, so the sums are compared loosely
+DUAL_FIST_SHARE = (0.15, 1.0)
+
+
+def fist_problems(f):
+    """[text] for one `!tester fists` answer: a Monk-line bot wears a fist weapon in each hand (codes 0) and every auto
+    attack fist hit is followed by an off-hand strike; any other class is refused the fist weapon"""
+    out = []
+    if not f.get('monk'):
+        if f.get('left') == 0:
+            out.append('a class outside the Monk line could wear a fist weapon')
+        return out
+    if f.get('left') != 0 or f.get('right') != 0:
+        out.append('a Monk could not wear a fist weapon in each hand (weapon hand code %s, shield hand code %s)' % (
+            f.get('left'), f.get('right')))
+        return out
+    melee, off = int(f.get('melee') or 0), int(f.get('off') or 0)
+    if melee == 0:
+        return out
+    if off == 0:
+        out.append('%d fist hits with two fist weapons and no off-hand strike' % melee)
+        return out
+    if off < melee - 1 or off > melee:
+        out.append('%d fist hits but %d off-hand strikes (one each)' % (melee, off))
+    msum, osum = int(f.get('meleeSum') or 0), int(f.get('offSum') or 0)
+    if msum > 0 and not (DUAL_FIST_SHARE[0] <= osum / float(msum) <= DUAL_FIST_SHARE[1]):
+        out.append('the off-hand strikes dealt x%.2f of the fist hits (expected %.2f..%.2f)' % (
+            osum / float(msum), DUAL_FIST_SHARE[0], DUAL_FIST_SHARE[1]))
+    return out
+
+
+async def check_dual_fists(io, name, cls, level):
+    """fist weapons in either hand (engine patch 0087, O360): a Monk-line bot puts a fist weapon in each hand through the
+    engine's slot rule and hits a Demon; every fist hit must bring an off-hand strike. Another class must be refused."""
+    f = await io.helper('fists', 'fists', ANSWER)
+    if not f:
+        return Result('dual_fists', name, cls, SKIP, 'no answer to !tester fists (an old helper file, or the bot died)')
+    if f.get('err'):
+        return Result('dual_fists', name, cls, SKIP, f['err'])
+    bad = fist_problems(f)
+    if bad:
+        return Result('dual_fists', name, cls, FAIL, '; '.join(bad))
+    if not f.get('monk'):
+        return Result('dual_fists', name, cls, PASS, 'a fist weapon is refused outside the Monk line (code %s)' % f.get('left'))
+    if not int(f.get('melee') or 0):
+        return Result('dual_fists', name, cls, SKIP, 'two fist weapons worn, but no fist hit landed in the watch')
+    return Result('dual_fists', name, cls, PASS, 'two fist weapons worn; %s fist hits (%s), %s off-hand strikes (%s)' % (
+        f.get('melee'), f.get('meleeSum'), f.get('off'), f.get('offSum')))
+
+
 CHECKS = [
     ('beastmaster_wolf', check_summons, lambda c: c == 'Beastmaster'),
     ('necro_minions', check_summons, lambda c: c in ('Necromancer', 'Lich', 'Bone Lord')),
@@ -896,6 +948,7 @@ CHECKS = [
     ('content_rewards', check_content_rewards, lambda c: True),
     ('party_xp', check_party_xp, lambda c: True),
     ('unique_passive', check_unique_passive, lambda c: True),
+    ('dual_fists', check_dual_fists, lambda c: True),
     ('waystone', check_waystone, lambda c: True),
     ('reward_chest', check_reward_chest, lambda c: True),
     ('cursed_chest', check_cursed_chest, lambda c: True),

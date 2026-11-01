@@ -50,7 +50,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 5
+HELPER_VERSION = 6
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1431,6 +1431,122 @@ function commands.unique(player)
 		out.err = tostring(err)
 	end
 	tell(player, "unique", out)
+end
+
+-- two fist weapons (engine patch 0087, O360): a Monk-line bot puts one in each hand through the engine's own slot rule
+-- (addItemEx runs Player::queryAdd and the Equip event), hits a Demon next to it with the auto attack and counts the
+-- melee hits and the off-hand strikes (physical, ORIGIN_NONE) it deals; any other class must be refused the fist weapon.
+-- Answer kind "fists": {monk, left, right (return codes; 0 = worn), melee, off, meleeSum, offSum, err}
+local FIST_IDS, FIST_WATCH_MS = {36656, 36657}, 4500
+local fistWatch = {} -- monster id -> {player id, counts}
+local fistEvent = CreatureEvent("TesterHelperDualFist")
+function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	local w = fistWatch[creature:getId()]
+	if w and attacker and attacker:getId() == w.pid and primaryType ~= COMBAT_HEALING then
+		local dmg = math.abs(primaryDamage) + math.abs(secondaryDamage)
+		if origin == ORIGIN_MELEE then
+			w.melee, w.meleeSum = w.melee + 1, w.meleeSum + dmg
+		elseif origin == ORIGIN_NONE and primaryType == COMBAT_PHYSICALDAMAGE then
+			w.off, w.offSum = w.off + 1, w.offSum + dmg
+		end
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+fistEvent:type("healthchange")
+fistEvent:register()
+
+function commands.fists(player)
+	local voc = player:getVocation()
+	local monk = ChaosMonk and ChaosMonk.isMonkLine and voc and ChaosMonk.isMonkLine(voc:getId()) or false
+	local out = {monk = monk}
+	local hands = {CONST_SLOT_LEFT, CONST_SLOT_RIGHT}
+	local held = {}
+	for i, slot in ipairs(hands) do
+		held[i] = player:getSlotItem(slot)
+	end
+	-- the hands are emptied for the probe (the items go back after)
+	local capWas = player:getCapacity()
+	player:setCapacity(capWas + 10000000)
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	local function restore()
+		for i, slot in ipairs(hands) do
+			local worn = player:getSlotItem(slot)
+			if worn and (worn:getId() == FIST_IDS[1] or worn:getId() == FIST_IDS[2]) then
+				worn:remove()
+			end
+		end
+		for i, slot in ipairs(hands) do
+			local top = held[i] and held[i]:getTopParent()
+			-- only an item that left its hand (a failed move leaves it worn) and is still on the player
+			if not player:getSlotItem(slot) and top and top.isPlayer and top:isPlayer() and top:getId() == player:getId() then
+				if player:addItemEx(held[i]:clone(), false, slot) == RETURNVALUE_NOERROR then
+					held[i]:remove()
+				end
+			end
+		end
+		player:setCapacity(capWas)
+	end
+	for i, slot in ipairs(hands) do
+		if held[i] and (not bag or held[i]:moveTo(bag) == false) then
+			restore()
+			return tell(player, "fists", {monk = monk, err = "could not empty the hands"})
+		end
+	end
+	if not monk then
+		-- another class: the fist weapon must be refused in the weapon hand
+		local item = Game.createItem(FIST_IDS[1], 1)
+		out.left = item and player:addItemEx(item, false, CONST_SLOT_LEFT)
+		if out.left ~= RETURNVALUE_NOERROR and item then
+			item:remove()
+		end
+		restore()
+		return tell(player, "fists", out)
+	end
+	for i, slot in ipairs(hands) do
+		local item = Game.createItem(FIST_IDS[i], 1)
+		local rv = item and player:addItemEx(item, false, slot)
+		if rv ~= RETURNVALUE_NOERROR and item then
+			item:remove()
+		end
+		out[i == 1 and "left" or "right"] = rv
+	end
+	if out.left ~= RETURNVALUE_NOERROR or out.right ~= RETURNVALUE_NOERROR then
+		restore()
+		return tell(player, "fists", out)
+	end
+	local tile = Tile(player:getPosition())
+	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+		local street = outsidePz(player:getPosition(), KILL_STREET)
+		if street then
+			player:teleportTo(street)
+		end
+	end
+	local spot = freeNear(player:getPosition(), nil, 1)
+	local okM, m = spot and pcall(Game.createMonster, KILL_MONSTER, spot, false, true)
+	if not okM or not m then
+		restore()
+		out.err = "no Demon next to the tester"
+		return tell(player, "fists", out)
+	end
+	local w = {pid = player:getId(), melee = 0, off = 0, meleeSum = 0, offSum = 0}
+	fistWatch[m:getId()] = w
+	m:registerEvent("TesterHelperDualFist")
+	pcall(function() m:setMaxHealth(10000000) m:addHealth(10000000) end)
+	player:setTarget(m)
+	local pid, mid = player:getId(), m:getId()
+	addEvent(function()
+		local p, mon = Player(pid), Creature(mid)
+		fistWatch[mid] = nil
+		if mon then
+			mon:remove()
+		end
+		if not p then
+			return
+		end
+		out.melee, out.off, out.meleeSum, out.offSum = w.melee, w.off, w.meleeSum, w.offSum
+		restore()
+		tell(p, "fists", out)
+	end, FIST_WATCH_MS)
 end
 
 function commands.riftrun(player, arg)

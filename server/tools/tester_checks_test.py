@@ -102,7 +102,7 @@ class Pure(unittest.TestCase):
         self.assertIn('necro_minions', keys('Lich'))
         self.assertNotIn('beastmaster_wolf', keys('Ninja'))
         for k in ('pets', 'party', 'rift', 'waystone', 'reward_chest', 'cursed_chest', 'auto_setup', 'spell_quest',
-                  'rift_layout', 'waystone_run', 'content_rewards', 'party_xp', 'unique_passive'):
+                  'rift_layout', 'waystone_run', 'content_rewards', 'party_xp', 'unique_passive', 'dual_fists'):
             self.assertIn(k, keys('Ninja'))
 
 
@@ -139,6 +139,35 @@ class UniquePassive(unittest.TestCase):
         r = self.check(err='no free slot for a unique of the monk line')
         self.assertEqual(r.status, TX.SKIP)
         self.assertEqual(self.check(lostBefore=0).status, TX.SKIP)
+
+
+class DualFists(unittest.TestCase):
+    def check(self, cls='Monk', **f):
+        return run(TX.check_dual_fists(FakeIO({'fists': f}), 'Tester Aaa', cls, 600))
+
+    def test_a_monk_strikes_with_the_off_hand(self):
+        r = self.check(monk=True, left=0, right=0, melee=3, off=3, meleeSum=3000, offSum=1400)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('3 fist hits (3000), 3 off-hand strikes (1400)', r.detail)
+        self.assertEqual(self.check(monk=True, left=0, right=0, melee=3, off=2, meleeSum=3000, offSum=1000).status,
+                         TX.PASS, 'the last strike may land after the watch')
+
+    def test_bugs(self):
+        r = self.check(monk=True, left=0, right=6, melee=0, off=0)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('shield hand code 6', r.detail)
+        self.assertIn('no off-hand strike', self.check(monk=True, left=0, right=0, melee=4, off=0).detail)
+        self.assertIn('one each', self.check(monk=True, left=0, right=0, melee=4, off=8, meleeSum=4, offSum=2).detail)
+        self.assertIn('x2.00', self.check(monk=True, left=0, right=0, melee=2, off=2, meleeSum=100, offSum=200).detail)
+        r = self.check(cls='Warrior', monk=False, left=0)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('outside the Monk line could wear', r.detail)
+
+    def test_other_class_refused_and_skips(self):
+        self.assertEqual(self.check(cls='Warrior', monk=False, left=6).status, TX.PASS)
+        self.assertEqual(run(TX.check_dual_fists(FakeIO(), 'a', 'Monk', 600)).status, TX.SKIP)
+        self.assertEqual(self.check(monk=False, err='both hands are taken').status, TX.SKIP)
+        self.assertEqual(self.check(monk=True, left=0, right=0, melee=0, off=0).status, TX.SKIP)
 
 
 class Summons(unittest.TestCase):

@@ -68,10 +68,11 @@ local function itemAttack(item)
 	return a or 0
 end
 
--- nil when a weapon is in the hands; else the best fist weapon's attack (0 = bare fists)
+-- nil when a weapon is in the hands; else the best fist weapon's attack (0 = bare fists) and the fist weapon attack of
+-- each hand ({left, right}, 0 = none there; two above 0 = dual fists, M.dualFists)
 local function fistWeaponAttack(player)
-	local best = 0
-	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
+	local best, hands = 0, {0, 0}
+	for i, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
 		if item then
 			local wt = ItemType(item:getId()):getWeaponType()
@@ -80,12 +81,30 @@ local function fistWeaponAttack(player)
 			end
 			for _, id in ipairs(M.cfg.unarmed.fistWeapons) do
 				if id == item:getId() then
+					hands[i] = math.max(1, itemAttack(item))
 					best = math.max(best, itemAttack(item))
 				end
 			end
 		end
 	end
-	return best
+	return best, hands
+end
+
+-- the off-hand strike of two fist weapons (M.dualFistStrike); ORIGIN_NONE, so it is no weapon hit again (no chi, no
+-- second strike)
+local function offhandFist(playerId, targetId, amount)
+	local player, target = Player(playerId), Creature(targetId)
+	if not player or not target or target:getHealth() <= 0 then
+		return
+	end
+	if target:isPlayer() and ChaosSpell and not ChaosSpell.canAttack(player, target) then
+		return
+	end
+	local ok, err = pcall(doTargetCombat, player, target, COMBAT_PHYSICALDAMAGE, -amount, -amount, CONST_ME_HITAREA,
+		ORIGIN_NONE)
+	if not ok then
+		print("[ChaosMonk] " .. tostring(err))
+	end
 end
 
 local function pressureStacks(creature)
@@ -114,10 +133,11 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 	local isMelee = origin == ORIGIN_MELEE
 	local isStrike = isMelee or origin == ORIGIN_RANGED or origin == ORIGIN_SPELL
 	local mult = 1
+	local dualMain, dualOff
 
 	-- unarmed: the engine's fist hit becomes the Monk's
 	if isMelee then
-		local fist = fistWeaponAttack(player)
+		local fist, hands = fistWeaponAttack(player)
 		if fist then
 			local skill = player:getEffectiveSkillLevel(SKILL_FIST)
 			mult = mult * M.unarmedFactor(voc, player:getLevel(), skill, fist,
@@ -125,6 +145,11 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 			-- the same weapon power as every other weapon (weapon_power_core.lua, kind "fist"): the fist skill against the
 			-- typical skill of the level, ^ 0.5, clamped; 1 at the typical skill, so the measured balance stands
 			mult = mult * WP.hitFactor("fist", player:getLevel(), skill)
+			-- a fist weapon in each hand: the main hit is cut (neutral) and the off hand strikes after it
+			dualMain, dualOff = M.dualFists(player:getLevel(), hands)
+			if dualMain then
+				mult = mult * M.dualFistNeutral(dualMain, dualOff)
+			end
 		end
 		-- chi from the auto attack (one per weaponHitIcdMs)
 		local id, now = player:getId(), M.now()
@@ -165,6 +190,14 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 	if mult ~= 1 then
 		primaryDamage = scale(primaryDamage, mult)
 		secondaryDamage = scale(secondaryDamage, mult)
+	end
+	-- two fist weapons: the off-hand strike after the main hit (as the Thief's dual wield)
+	if dualMain then
+		local value = M.dualFistStrike(math.abs(primaryDamage) + math.abs(secondaryDamage), dualMain, dualOff,
+			creature:isPlayer())
+		if value > 0 then
+			addEvent(offhandFist, M.cfg.unarmed.dualFists.delayMs, player:getId(), creature:getId(), value)
+		end
 	end
 	return primaryDamage, secondaryDamage
 end
