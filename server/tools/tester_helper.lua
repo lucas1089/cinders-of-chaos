@@ -50,7 +50,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 7
+HELPER_VERSION = 8
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -453,6 +453,11 @@ function commands.spellquest(player, arg)
 	elseif a.sub == "trial" then
 		-- near before the entry: a trial that opens takes the tester into its chamber, away from Odrenna
 		local near = S.archivistNear(player) ~= nil
+		-- the bot comes from its hunt: the fight mark of its last hit outlives the teleport (live run 2026-11-01: "You
+		-- cannot enter a trial in combat"). The rule is the game's own; the tester only waits it out at once
+		if CONDITION_INFIGHT and not player:isPzLocked() then
+			player:removeCondition(CONDITION_INFIGHT)
+		end
 		local ok, text = S.enterTrial(player)
 		local running = trialRunning(player)
 		tell(player, "spellquest", spellQuestState(player, {entered = ok and true or false, text = text, running = running,
@@ -830,7 +835,14 @@ local function sharedKill(player, party, done)
 			return done(kill)
 		end
 		pa:setSharedExperience(false)
+		-- the solo kill: the partner waits in its temple (a protection zone). Next to the leader its bot hit the monster
+		-- itself and earned its own damage share (live run 2026-11-01: "a solo kill paid the partner 31 experience")
+		local town = p:getTown()
+		if town then
+			p:teleportTo(town:getTemplePosition())
+		end
 		oneKill(l, p, function(solo)
+			solo.partnerAway = town ~= nil
 			kill.solo = solo
 			local l2 = Player(lid)
 			local pa2 = l2 and l2:getParty()
