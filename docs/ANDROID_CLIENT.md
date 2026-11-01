@@ -251,10 +251,10 @@ there; not yet tried on a phone. The debug APK stays `-O0` so the emulator smoke
 3. **Restart.** Done in phase 3 (Java `restartApp` and `RestartActivity`). Not run on a device.
 4. **Touch layout.** The walk pad and the action bar of `client_mobile`, tap and long press, hotkey buttons, safe areas,
    the 69 windows over 360 logical pixels. Section 2 is unchanged.
-5. **Window re-layout.** The engine resizes with the screen through `updateSize`. The Chaos windows have no mobile
-   styles yet, except `game_event`. The guard `client/tools/check_mobile_layout.py` now keeps the list from growing: 39
-   windows are over 960 x 540 logical pixels without a `$mobile` rule and sit in `client/tools/mobile_layout_baseline.txt`.
-   Each fixed window removes its line. The re-layout itself needs a device. Phase 3.
+5. **Window re-layout.** The engine resizes with the screen through `updateSize`. Done in the files 2026-11-01: every
+   Chaos window over 960 x 540 logical pixels has a `$mobile` rule, and `client/tools/mobile_layout_baseline.txt` is
+   empty (`check_mobile_layout.py`: 112 windows, 0 in the baseline). A new big window without a rule fails CI. The
+   emulator play test logs each main window's size against the screen; the look on a real phone is still open.
 6. **Mobile defaults.** Done, not run on a device. On the first start on Android `game_visualfx` switches off
    `spellLight`, `liquidShimmer`, `weather`, `ambientParticles`, `missileTrails`, `lightFlicker`, `deathFade` and
    `rarityOutlineMap` through the settings module, once (flag `chaosMobileDefaults`). `screenGrade`, `bloom` and
