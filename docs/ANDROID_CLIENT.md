@@ -46,6 +46,11 @@ the public development login key and the server address 10.0.2.2 (the emulator's
 The emulator runs the arm64 engine through a translator: slow, but the same code as a phone. Not a finger: the steps
 call the game functions a tap would call.
 
+First run, 2026-11-01 (run 41339306856): the first start, the login and the character list passed. Entering the game
+failed: the client built 450 action bar slots in the login call (17 s on the emulator), sent nothing for over 30 s and
+the server closed the connection (ERROR 32). Fixed by base patch `0178` (hidden bars one per event). Also seen, not yet
+fixed: `uitable.lua` errors (`setColumnStyle` / `setRowStyle` nil) once in the game.
+
 ## Step 8 status: the APK updater
 
 Date: 2026-10-30. Build plan step 8 is written and tested as far as this machine can: the publisher, the manifest key, the
