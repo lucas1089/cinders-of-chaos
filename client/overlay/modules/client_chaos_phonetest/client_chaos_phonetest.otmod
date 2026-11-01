@@ -1,0 +1,12 @@
+Module
+  name: client_chaos_phonetest
+  description: Cinders of Chaos emulator play test (android-client.yml smoke_play) - with the marker file phonetest_run in the write folder it logs in, walks, opens windows, talks to an NPC, fights, loots and logs each step; without it, nothing
+  author: Cinders of Chaos
+  sandboxed: false
+  scripts: [ phonetest_core, phonetest ]
+  dependencies:
+    - client_entergame
+  autoload: true
+  autoload-priority: 1200
+  @onLoad: ChaosPhoneTest.init()
+  @onUnload: ChaosPhoneTest.terminate()

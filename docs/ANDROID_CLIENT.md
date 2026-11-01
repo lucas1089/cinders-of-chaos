@@ -29,6 +29,23 @@ sprites, and an APK that updates itself.
 Phase 1 added no CI workflow, because the base had no Android build to run from Linux. Phase 2 adds the build and the
 manual workflow `.github/workflows/android-client.yml`. See "Phase 2 status".
 
+## Play test on an emulator
+
+Date: 2026-11-01. Actions > Android client with `smoke_play` builds a TEST APK and plays it on an emulator. The APK has
+the public development login key and the server address 10.0.2.2 (the emulator's host). It is never published:
+`publish_release` is skipped with `smoke_play`.
+
+1. The job starts the Linux server package of the newest `winpkg-N` release on the runner, with its game address
+   10.0.2.2, and adds the gamemaster account `phonetest`.
+2. `smoke_download.sh` runs the first start: the live game data download, the unpack, the restart.
+3. `smoke_play.sh` writes the marker `phonetest_run` and restarts the app. Module `client_chaos_phonetest` logs in,
+   enters, walks, opens 20 windows, trades with an NPC, kills a monster, opens its corpse and chats.
+4. The artifact `android-play-test` holds a screenshot per step, `phonetest.txt` (one line per step and window, with
+   the window size against the screen), the logcat, the memory use and the server log. A failed step fails the job.
+
+The emulator runs the arm64 engine through a translator: slow, but the same code as a phone. Not a finger: the steps
+call the game functions a tap would call.
+
 ## Step 8 status: the APK updater
 
 Date: 2026-10-30. Build plan step 8 is written and tested as far as this machine can: the publisher, the manifest key, the

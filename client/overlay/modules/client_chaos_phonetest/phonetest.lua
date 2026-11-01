@@ -1,0 +1,327 @@
+-- phonetest.lua: the emulator play test of the Android client (android-client.yml smoke_play, O313). With the marker
+-- file phonetest_run in the write folder (written by client/android/tools/smoke_play.sh through run-as, debug APKs only)
+-- it logs in with the account the marker names, enters with the first character, walks, opens and closes the main
+-- windows (size against the screen), summons an NPC and trades with it, summons a monster and kills it, opens its
+-- corpse and says a line. Every step logs "phonetest: <step> ok|fail <detail>"; "phonetest: shot <name>" asks the
+-- script for a screenshot (it waits SHOT_MS). Without the marker the module does nothing.
+ChaosPhoneTest = {}
+local P = ChaosPhoneTest
+local C = ChaosPhoneTestCore
+
+local SHOT_MS = 3000
+local cfg
+local events = {}
+local results = {}
+local talkSeen = {}
+local tradeOpened = false
+local containerOpened = nil
+
+local function log(text)
+  g_logger.info('phonetest: ' .. text)
+end
+
+local function later(ms, fn)
+  events[#events + 1] = scheduleEvent(function()
+    local ok, err = pcall(fn)
+    if not ok then
+      log('fail error ' .. tostring(err))
+      log('done error')
+    end
+  end, ms)
+end
+
+local function result(step, ok, detail)
+  results[#results + 1] = {step = step, ok = ok}
+  log(('%s %s %s'):format(step, ok and 'ok' or 'fail', detail or ''))
+end
+
+local function shot(name, nextFn)
+  log('shot ' .. name)
+  later(SHOT_MS, nextFn)
+end
+
+-- polls cond every 500 ms until it holds (then yes()) or ms ran out (then no())
+local function waitFor(cond, ms, yes, no)
+  local t0 = g_clock.millis()
+  local function poll()
+    local ok, v = pcall(cond)
+    if ok and v then return yes() end
+    if g_clock.millis() - t0 >= ms then return no() end
+    later(500, poll)
+  end
+  poll()
+end
+
+local function me()
+  return g_game.isOnline() and g_game.getLocalPlayer() or nil
+end
+
+local function posCopy(p)
+  return p and {x = p.x, y = p.y, z = p.z} or nil
+end
+
+local function spectators()
+  local p = me()
+  if not p then return {} end
+  return g_map.getSpectators(p:getPosition(), false) or {}
+end
+
+local function findCreature(name, kind)
+  local best, bestD
+  local mp = me() and me():getPosition()
+  for _, c in ipairs(spectators()) do
+    local hit = (kind == 'npc' and c:isNpc()) or (kind == 'monster' and c:isMonster())
+    if hit and (not name or c:getName():lower() == name:lower()) and mp then
+      local cp = c:getPosition()
+      local d = math.max(math.abs(cp.x - mp.x), math.abs(cp.y - mp.y))
+      if not bestD or d < bestD then best, bestD = c, d end
+    end
+  end
+  return best
+end
+
+local function visibleWindows()
+  local out = {}
+  local parents = {rootWidget}
+  if modules.game_interface and modules.game_interface.getRootPanel then
+    parents[#parents + 1] = modules.game_interface.getRootPanel()
+  end
+  for _, parent in ipairs(parents) do
+    for _, w in ipairs(parent and parent:getChildren() or {}) do
+      if w:isVisible() and w.getClassName and w:getClassName() == 'UIWindow' then
+        out[w:getId()] = w
+      end
+    end
+  end
+  return out
+end
+
+local steps = {}
+
+function steps.login(nextFn)
+  if g_game.isOnline() then
+    result('login', true, 'already in the game')
+    return nextFn()
+  end
+  EnterGame.doLogin(cfg.account, cfg.password)
+  waitFor(function()
+    return (CharSelect and CharSelect.isVisible and CharSelect.isVisible()) or
+      (CharacterList and CharacterList.isVisible and CharacterList.isVisible()) or g_game.isOnline()
+  end, 60000, function()
+    result('login', true, 'character list shown')
+    shot('charlist', nextFn)
+  end, function()
+    result('login', false, 'no character list in 60 s')
+    shot('login_failed', function() steps.done() end)
+  end)
+end
+
+function steps.enter(nextFn)
+  if not g_game.isOnline() then
+    if CharSelect and CharSelect.select then pcall(CharSelect.select, 1, true) end
+    if CharSelect and CharSelect.play then CharSelect.play() else CharacterList.doLogin() end
+  end
+  waitFor(function() return me() ~= nil end, 120000, function()
+    later(5000, function()
+      local p = me()
+      result('enter', true, ('%s level %d at %d,%d,%d'):format(p:getName(), p:getLevel(), p:getPosition().x,
+        p:getPosition().y, p:getPosition().z))
+      shot('ingame', nextFn)
+    end)
+  end, function()
+    result('enter', false, 'not in the game after 120 s')
+    shot('enter_failed', function() steps.done() end)
+  end)
+end
+
+function steps.walk(nextFn)
+  local dirs = {North, North, East, East, South, South, West, West}
+  local positions = {posCopy(me():getPosition())}
+  local i = 0
+  local function stepOnce()
+    i = i + 1
+    if i > #dirs then
+      local n = C.moved(positions)
+      result('walk', n > 0, ('%d of %d steps moved'):format(n, #dirs))
+      return shot('walk', nextFn)
+    end
+    g_game.walk(dirs[i])
+    later(1200, function()
+      positions[#positions + 1] = posCopy(me():getPosition())
+      stepOnce()
+    end)
+  end
+  stepOnce()
+end
+
+function steps.windows(nextFn)
+  local sw, sh = rootWidget:getWidth(), rootWidget:getHeight()
+  local list, i, opened, tooBig = C.WINDOWS, 0, 0, 0
+  local function one()
+    i = i + 1
+    if i > #list then
+      result('windows', opened > 0 and tooBig == 0, ('%d opened, %d outside the screen'):format(opened, tooBig))
+      return nextFn()
+    end
+    local m = modules[list[i]]
+    if not (m and type(m.toggle) == 'function') then
+      log(('window %s: no toggle'):format(list[i]))
+      return one()
+    end
+    local before = visibleWindows()
+    local ok, err = pcall(m.toggle)
+    later(1500, function()
+      local found
+      for id, w in pairs(visibleWindows()) do
+        if not before[id] then found = w end
+      end
+      if found then
+        opened = opened + 1
+        local r = found:getRect()
+        local fits, text = C.fits(r.x, r.y, r.width, r.height, sw, sh)
+        if not fits then tooBig = tooBig + 1 end
+        log(('window %s: %s %s'):format(list[i], found:getId(), text))
+      else
+        log(('window %s: no new window%s'):format(list[i], ok and '' or (' (' .. tostring(err) .. ')')))
+      end
+      shot('win_' .. list[i], function()
+        pcall(m.toggle)
+        later(800, one)
+      end)
+    end)
+  end
+  one()
+end
+
+function steps.npc(nextFn)
+  g_game.talk('/s ' .. cfg.npc)
+  later(2500, function()
+    local npc = findCreature(cfg.npc, 'npc') or findCreature(nil, 'npc')
+    if not npc then
+      result('npc', false, 'no NPC in view after /s ' .. cfg.npc)
+      return shot('npc', nextFn)
+    end
+    local name = npc:getName()
+    talkSeen[name] = nil
+    tradeOpened = false
+    g_game.talk('hi')
+    later(2500, function()
+      g_game.talk('trade')
+      waitFor(function() return tradeOpened end, 6000, function()
+        result('npc', true, ('%s answered (%s), the trade window opened'):format(name, talkSeen[name] and 'yes' or 'no'))
+        shot('npc_trade', function()
+          pcall(g_game.closeNpcTrade)
+          g_game.talk('bye')
+          later(1000, nextFn)
+        end)
+      end, function()
+        result('npc', talkSeen[name] ~= nil, ('%s answered: %s; no trade window'):format(name,
+          tostring(talkSeen[name] or 'nothing')))
+        shot('npc', nextFn)
+      end)
+    end)
+  end)
+end
+
+local corpsePos
+function steps.fight(nextFn)
+  g_game.talk('/m ' .. cfg.monster)
+  later(2500, function()
+    local mon = findCreature(cfg.monster, 'monster') or findCreature(nil, 'monster')
+    if not mon then
+      result('fight', false, 'no monster in view after /m ' .. cfg.monster)
+      return shot('fight', nextFn)
+    end
+    local id, name = mon:getId(), mon:getName()
+    corpsePos = posCopy(mon:getPosition())
+    g_game.attack(mon)
+    later(1500, function() shot('fight', function() end) end)
+    waitFor(function()
+      local c = g_map.getCreatureById(id)
+      if c then corpsePos = posCopy(c:getPosition()) end
+      return not c or c:isDead() or c:getHealthPercent() == 0
+    end, 60000, function()
+      result('fight', true, name .. ' died')
+      later(1500, nextFn)
+    end, function()
+      local c = g_map.getCreatureById(id)
+      result('fight', false, ('%s still alive after 60 s (%s%%)'):format(name, c and c:getHealthPercent() or '?'))
+      shot('fight_end', nextFn)
+    end)
+  end)
+end
+
+function steps.loot(nextFn)
+  local tile = corpsePos and g_map.getTile(corpsePos)
+  local thing = tile and tile:getTopUseThing()
+  if not (thing and thing:isContainer()) then
+    result('loot', false, 'no corpse to open at the monster\'s tile')
+    return nextFn()
+  end
+  containerOpened = nil
+  g_game.open(thing)
+  waitFor(function() return containerOpened ~= nil end, 6000, function()
+    result('loot', true, ('the corpse opened, %d item(s)'):format(containerOpened))
+    shot('loot', nextFn)
+  end, function()
+    result('loot', false, 'the corpse did not open')
+    shot('loot', nextFn)
+  end)
+end
+
+function steps.chat(nextFn)
+  g_game.talk('phone test')
+  later(1500, function()
+    result('chat', true, 'said a line')
+    shot('chat', nextFn)
+  end)
+end
+
+function steps.done()
+  local fails = 0
+  for _, r in ipairs(results) do
+    if not r.ok then fails = fails + 1 end
+  end
+  log(('done %d steps, %d failed'):format(#results, fails))
+end
+
+local function onTalk(name, level, mode, text)
+  if name and name ~= '' then talkSeen[name] = text end
+end
+local function onOpenNpcTrade() tradeOpened = true end
+local function onContainerOpen(container)
+  containerOpened = container and container:getItemsCount() or 0
+end
+
+function P.init()
+  if not g_resources.fileExists('/' .. C.MARKER) then return end
+  local text = g_resources.readFileContents('/' .. C.MARKER)
+  local err
+  cfg, err = C.parseMarker(text)
+  if not cfg then
+    log('fail marker ' .. tostring(err))
+    return
+  end
+  connect(g_game, {onTalk = onTalk, onOpenNpcTrade = onOpenNpcTrade})
+  connect(Container, {onOpen = onContainerOpen})
+  log('armed: account ' .. cfg.account .. ', npc ' .. cfg.npc .. ', monster ' .. cfg.monster)
+  local order, i = C.STEPS, 0
+  local function nextStep()
+    i = i + 1
+    local name = order[i]
+    if not name then return end
+    log('step ' .. name)
+    steps[name](nextStep)
+  end
+  -- the login screen and the other modules first
+  later(8000, nextStep)
+end
+
+function P.terminate()
+  for _, e in ipairs(events) do removeEvent(e) end
+  events = {}
+  if cfg then
+    disconnect(g_game, {onTalk = onTalk, onOpenNpcTrade = onOpenNpcTrade})
+    disconnect(Container, {onOpen = onContainerOpen})
+  end
+end

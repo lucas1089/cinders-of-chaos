@@ -79,6 +79,11 @@ on:
         type: boolean
         required: false
         default: false
+      smoke_play:
+        description: "Play test on an emulator: a TEST APK (development login key, server 10.0.2.2, never for players) against the Linux server package of the newest winpkg release on the runner; first start, then login, walk, windows, NPC trade, a fight, the corpse, chat, a screenshot per step (about 60 min)"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -93,8 +98,10 @@ env:
   UPDATE_MANIFEST: ${{ inputs.update_manifest }}
   UPDATE_PUBLIC_KEY: ${{ inputs.update_public_key }}
   UPDATE_BASELINE: ${{ inputs.update_baseline }}
-  SERVER_HOST: ${{ inputs.server_host || '127.0.0.1' }}
+  # a play test APK (smoke_play) talks to the emulator's host, where the job runs the server package
+  SERVER_HOST: ${{ inputs.smoke_play && '10.0.2.2' || inputs.server_host || '127.0.0.1' }}
   SITE_URL: ${{ inputs.site_url }}
+  PLAY_TEST: ${{ inputs.smoke_play && 'true' || 'false' }}
   ALLOW_DEV_KEY: ${{ inputs.allow_dev_key && 'true' || 'false' }}
   # NDK r27d; the Gradle project (client/android/app/build.gradle) names the same version
   NDK_VERSION: "27.3.13750724"
@@ -162,8 +169,14 @@ jobs:
           fi
           # not compiled in: written into init.lua, which goes into data.zip
           python3 -I chaos/client/tools/set_server_host.py game "$SERVER_HOST" --site-url "$SITE_URL"
-          python3 -I chaos/client/tools/set_rsa_key.py game --from-env CHAOS_RSA_PUBLIC \
-            $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
+          if [ "$PLAY_TEST" = true ]; then
+            # the server package on the runner has the public default login key; this APK is for the play test only
+            echo "::warning::smoke_play: this APK has the public development login key and the server 10.0.2.2. Never give it out."
+            CHAOS_RSA_PUBLIC= python3 -I chaos/client/tools/set_rsa_key.py game --from-env CHAOS_RSA_PUBLIC --allow-default
+          else
+            python3 -I chaos/client/tools/set_rsa_key.py game --from-env CHAOS_RSA_PUBLIC \
+              $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
+          fi
           # the first-start download of the game data: the signed manifest and the operator's public key (O313)
           if [ -n "$UPDATE_MANIFEST" ]; then
             python3 -I chaos/client/tools/set_update_config.py game --manifest "$UPDATE_MANIFEST" \
@@ -340,7 +353,7 @@ jobs:
   release:
     name: Attach the APK to a GitHub prerelease (the source of the app update)
     needs: apk
-    if: ${{ inputs.publish_release && needs.apk.outputs.release_signed == 'yes' }}
+    if: ${{ inputs.publish_release && !inputs.smoke_play && needs.apk.outputs.release_signed == 'yes' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -451,5 +464,83 @@ jobs:
         with:
           name: android-first-start
           path: smoke-download/
+          retention-days: 14
+          if-no-files-found: warn
+
+  smoke-play:
+    name: Play test on an emulator (server package, login, walk, windows, NPC, fight, loot)
+    needs: apk
+    if: ${{ inputs.smoke_play }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: chaos
+          sparse-checkout: client/android/tools
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: CindersOfChaos-Android
+          path: apk
+
+      # the Linux server package as a player gets it (windows-package.yml), its game address the emulator's host
+      - name: Game server on the runner
+        run: |
+          set -euo pipefail
+          TAG=""
+          for t in $(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=30" --jq '.[] | select(.tag_name | startswith("winpkg-")) | select([.assets[].name] | index("CindersOfChaos-Server-Linux.tar.gz")) | .tag_name'); do
+            TAG=$t; break
+          done
+          [ -n "$TAG" ] || { echo "::error::no winpkg release with CindersOfChaos-Server-Linux.tar.gz"; exit 1; }
+          echo "server package of $TAG"
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p CindersOfChaos-Server-Linux.tar.gz -D "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/srv" && tar -xzf "$RUNNER_TEMP/CindersOfChaos-Server-Linux.tar.gz" -C "$RUNNER_TEMP/srv"
+          cd "$RUNNER_TEMP/srv/CindersOfChaos-Server-Linux"
+          sed -i -E 's/^ip = ".*"/ip = "10.0.2.2"/' server/config.lua
+          grep -E '^ip = ' server/config.lua
+          ./start-server.sh -d
+          for _ in $(seq 1 600); do grep -q "Server Online" logs/server.log 2>/dev/null && break; sleep 1; done
+          grep -q "Server Online" logs/server.log || { tail -n 60 logs/server.log; echo "::error::the server did not start"; exit 1; }
+          ./add-account.sh phonetest phonetest1 "Phone Tester" warrior
+          # a gamemaster, so the test can place its NPC and its monster (/s, /m)
+          SOCK="$PWD/run/mariadb.sock"
+          [ "$(printf %s "$SOCK" | wc -c)" -le 100 ] || SOCK="/tmp/chaos-mariadb-$(id -u)-$(printf '%s' "$PWD" | cksum | cut -d' ' -f1).sock"
+          ./mariadb/bin/mariadb --no-defaults --socket="$SOCK" -u "$(id -un)" chaos -e \
+            "UPDATE accounts SET type = 5 WHERE name = 'phonetest'; UPDATE players SET group_id = 3 WHERE name = 'Phone Tester';"
+          echo "SRV=$PWD" >> "$GITHUB_ENV"
+
+      - name: Let the emulator use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: First start, then the play test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          disk-size: 8000M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash chaos/client/android/tools/smoke_download.sh apk/CindersOfChaos-Android.apk smoke-play/first-start && bash chaos/client/android/tools/smoke_play.sh smoke-play phonetest phonetest1
+
+      - name: Server log
+        if: always()
+        run: |
+          mkdir -p smoke-play
+          cp "$SRV/logs/server.log" smoke-play/server.log 2>/dev/null || true
+          tail -n 80 smoke-play/server.log || true
+
+      - name: Upload the screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-play-test
+          path: smoke-play/
           retention-days: 14
           if-no-files-found: warn
