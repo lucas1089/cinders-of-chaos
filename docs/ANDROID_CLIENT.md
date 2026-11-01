@@ -52,6 +52,11 @@ the server closed the connection (ERROR 32). Fixed by base patch `0178` (hidden 
 (`setColumnStyle` / `setRowStyle` nil) of that log follow from the drop: the two Dungeons tables queue their styles for
 the next frame and the game end destroys the window first.
 
+The emulator's default screen was 320 x 640, smaller than any phone we target, so the character list overlapped in the
+screenshots. Two changes: `smoke_download.sh` sets a 20:9 720p phone screen (`wm size 720x1600`, density 320; env
+`PHONE_SCREEN`, `PHONE_DENSITY`), and a real screen under 960 x 540 now shrinks the interface to fit (base patch `0179`,
+`game_chaosuiscale`) instead of cutting it.
+
 ## Step 8 status: the APK updater
 
 Date: 2026-10-30. Build plan step 8 is written and tested as far as this machine can: the publisher, the manifest key, the

@@ -9,6 +9,11 @@ mkdir -p "$OUT"
 wait_for() {  # pattern, tries of 5 s
   for _ in $(seq "$2"); do adb logcat -d | grep -q "$1" && return 0; sleep 5; done; return 1
 }
+# the default emulator screen is 320 x 640, smaller than any phone we target; PHONE_SCREEN (natural portrait size, default a
+# 20:9 720p phone) and a phone density make the screenshots show what a player sees
+adb shell wm size "${PHONE_SCREEN:-720x1600}"
+adb shell wm density "${PHONE_DENSITY:-320}"
+adb shell wm size
 adb logcat -c
 adb install -r "$APK" || exit 1
 adb shell am start -W -n $PKG/.ChaosActivity
