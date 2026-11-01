@@ -1385,7 +1385,7 @@ function commands.unique(player)
 			local item = sl and Game.createItem(e.id, 1)
 			if item then
 				item:setCustomAttribute("chaos_unique", 1)
-				local rv = player:addItemEx(item, false, sl)
+				local rv = player:addItemEx(item, false, sl, FLAG_NOLIMIT or 1) -- a bag full of loot: no capacity rule (21)
 				if rv == RETURNVALUE_NOERROR then
 					pick, slot = e, sl
 					break
