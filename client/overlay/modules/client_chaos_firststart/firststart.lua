@@ -496,6 +496,12 @@ local function compareFiles(entries, scopeName, onDone)
   local index = C.parseIndex(readText(C.INDEX))
   local out = { download = {}, stale = {} }
   local i, n = 1, #entries
+  -- data.zip files this APK already checked are not hashed again (C.apkVisible); the store is written once at the end
+  local pid = boot and boot.packageId or ''
+  local keep = C.parseApkKeep(readText(C.APKKEEP), pid)
+  local newKeep, hashed, cached = {}, 0, 0
+  local function exists(path) return g_resources.fileExists('/' .. path) end
+  local function hash(path) hashed = hashed + 1; return g_resources.fileSha256('/' .. path) end
   local function slice()
     hashEvent = nil
     local t0 = g_clock.millis()
@@ -505,8 +511,10 @@ local function compareFiles(entries, scopeName, onDone)
       local treeHash = ix and g_resources.fileSize('/' .. C.TREE .. '/' .. e.path) == ix.size and ix.sha or nil
       local visible
       if treeHash == nil then
-        visible = g_resources.fileExists('/' .. e.path) and g_resources.fileSha256('/' .. e.path) or nil
-        if visible == '' then visible = nil end
+        local fromCache
+        visible, fromCache = C.apkVisible(e, keep, exists, hash)
+        if fromCache then cached = cached + 1 end
+        if visible and visible == e.sha256 then newKeep[e.path] = visible end
       end
       if C.decide(e, treeHash, visible) == 'download' then out.download[#out.download + 1] = e end
       i = i + 1
@@ -517,6 +525,12 @@ local function compareFiles(entries, scopeName, onDone)
       return
     end
     if scopeName == 'all' then out.stale = C.staleTree(index, entries) end
+    if pid ~= '' and hashed > 0 then
+      local merged = keep
+      for p, h in pairs(newKeep) do merged[p] = h end
+      writeText(C.APKKEEP, C.formatApkKeep(pid, merged))
+    end
+    g_logger.info(('firststart: %d files compared, %d hashed, %d from the store of this APK'):format(n, hashed, cached))
     onDone(out)
   end
   slice()

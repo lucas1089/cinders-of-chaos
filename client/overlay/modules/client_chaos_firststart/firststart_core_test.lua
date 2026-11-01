@@ -299,5 +299,29 @@ for _, ph in ipairs({ 'apkoffer', 'apkrequired', 'apkbusy', 'apkwait', 'apkerror
   eq(C.blocksLogin(ph, true), true, 'blocks login without data: ' .. ph)
 end
 
+-- the APK's files checked once per APK (O313: a start hashed all 6912 data.zip files, 11 minutes on the emulator)
+do
+  local pid = string.rep('ab', 32)
+  local keep = { ['data/a.png'] = sha('a'), ['modules/x.lua'] = sha('c') }
+  local text = C.formatApkKeep(pid, keep)
+  eq(C.parseApkKeep(text, pid)['data/a.png'], sha('a'), 'apkkeep: round trip')
+  eq(C.parseApkKeep(text, pid)['modules/x.lua'], sha('c'), 'apkkeep: round trip 2')
+  eq(next(C.parseApkKeep(text, string.rep('cd', 32))), nil, 'apkkeep: another APK drops it')
+  eq(next(C.parseApkKeep(text, '')), nil, 'apkkeep: no package id, nothing')
+  eq(next(C.parseApkKeep(nil, pid)), nil, 'apkkeep: no file')
+  eq(next(C.parseApkKeep('data/a.png\t' .. sha('a') .. '\n', pid)), nil, 'apkkeep: no header, nothing')
+  eq(C.parseApkKeep(text, pid).package, nil, 'apkkeep: the header is no path')
+  local hashed = 0
+  local function hash(p) hashed = hashed + 1; return sha(p == 'data/a.png' and 'a' or 'other') end
+  local function exists(p) return p ~= 'gone.lua' end
+  local h, cached = C.apkVisible({ path = 'data/a.png', sha256 = sha('a') }, keep, exists, hash)
+  eq(h, sha('a'), 'apkVisible: stored hash'); eq(cached, true, 'apkVisible: from the store'); eq(hashed, 0, 'apkVisible: no hash')
+  h, cached = C.apkVisible({ path = 'data/a.png', sha256 = sha('new') }, keep, exists, hash)
+  eq(h, sha('a'), 'apkVisible: a new sha hashes again'); eq(cached, false, 'apkVisible: not from the store'); eq(hashed, 1, 'apkVisible: one hash')
+  h = C.apkVisible({ path = 'gone.lua', sha256 = sha('g') }, { ['gone.lua'] = sha('g') }, exists, hash)
+  eq(h, nil, 'apkVisible: a missing file is never kept')
+  eq(C.apkVisible({ path = 'b', sha256 = sha('b') }, {}, exists, function() return '' end), nil, 'apkVisible: empty hash is nil')
+end
+
 print(('firststart_core_test: %d checks, %s'):format(checks, fails == 0 and 'OK' or (fails .. ' FAILED')))
 if fails > 0 then os.exit(1) end

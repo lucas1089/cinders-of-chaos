@@ -57,6 +57,13 @@ screenshots. Two changes: `smoke_download.sh` sets a 20:9 720p phone screen (`wm
 `PHONE_SCREEN`, `PHONE_DENSITY`), and a real screen under 960 x 540 now shrinks the interface to fit (base patch `0179`,
 `game_chaosuiscale`) instead of cutting it.
 
+Start time (owner 2026-11-01: "the APK still takes too long to open"). The same log shows the first-start check at each
+start hashing every file data.zip gives, 6912 files, before the login is free: 11 minutes on the emulator. A file of
+the APK only changes with the APK, so `client_chaos_firststart` now keeps its "this file is right" verdicts in
+`chaos_update/android_apkkeep.txt` under the package id (`ChaosFirstStartCore.parseApkKeep`, `apkVisible`; tests in
+`firststart_core_test.lua`). The first start of a new APK still hashes once; later starts only look the files up. The log
+line `firststart: N files compared, H hashed, C from the store of this APK` shows it.
+
 ## Step 8 status: the APK updater
 
 Date: 2026-10-30. Build plan step 8 is written and tested as far as this machine can: the publisher, the manifest key, the
