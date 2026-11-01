@@ -1379,13 +1379,19 @@ function commands.unique(player)
 	local ok, err = pcall(function()
 		out.lostBefore, out.hit = probeHit(player, spot, capture)
 		-- the first candidate the slot takes (the engine refuses some for the class or a slot rule: live run 2026-11-01)
-		local pick, slot, refused = nil, nil, {}
+		local pick, slot, refused, emptied = nil, nil, {}, false
 		for _, e in ipairs(cands) do
 			local sl = freeSlotOf(player, e.id)
 			local item = sl and Game.createItem(e.id, 1)
 			if item then
 				item:setCustomAttribute("chaos_unique", 1)
-				local rv = player:addItemEx(item, false, sl, FLAG_NOLIMIT or 1) -- a bag full of loot: no capacity rule (21)
+				local rv = player:addItemEx(item, false, sl)
+				if rv == RETURNVALUE_NOTENOUGHCAPACITY and not emptied then
+					-- a bag full of loot (the engine's capacity rule takes no flag): the loot goes, as "!tester bag" does
+					emptied = true
+					pcall(commands.bag, player)
+					rv = player:addItemEx(item, false, sl)
+				end
 				if rv == RETURNVALUE_NOERROR then
 					pick, slot = e, sl
 					break
