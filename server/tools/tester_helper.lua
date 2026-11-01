@@ -1437,7 +1437,7 @@ end
 -- (addItemEx runs Player::queryAdd and the Equip event), hits a Demon next to it with the auto attack and counts the
 -- melee hits and the off-hand strikes (physical, ORIGIN_NONE) it deals; any other class must be refused the fist weapon.
 -- Answer kind "fists": {monk, left, right (return codes; 0 = worn), melee, off, meleeSum, offSum, err}
-local FIST_IDS, FIST_WATCH_MS = {36656, 36657}, 4500
+local FIST_IDS, FIST_WATCH_MS = {36656, 36657}, 6000
 local fistWatch = {} -- monster id -> {player id, counts}
 local fistEvent = CreatureEvent("TesterHelperDualFist")
 function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
@@ -1521,8 +1521,12 @@ function commands.fists(player)
 			player:teleportTo(street)
 		end
 	end
-	local spot = freeNear(player:getPosition(), nil, 1)
-	local okM, m = spot and pcall(Game.createMonster, KILL_MONSTER, spot, false, true)
+	-- the Demon comes to the tester (its target), so the nearest free tile within 3 will do
+	local spot = freeNear(player:getPosition(), nil, 3)
+	local okM, m
+	if spot then
+		okM, m = pcall(Game.createMonster, KILL_MONSTER, spot, false, true)
+	end
 	if not okM or not m then
 		restore()
 		out.err = "no Demon next to the tester"
