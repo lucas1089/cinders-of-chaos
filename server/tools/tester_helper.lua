@@ -1466,7 +1466,10 @@ fistEvent:register()
 if type(doTargetCombat) == "function" and not TesterFistWrapped then
 	TesterFistWrapped = true
 	local realCombat = doTargetCombat
-	doTargetCombat = function(cid, target, ctype, min, max, effect, origin, ...)
+	-- the arguments go on exactly as given: an explicit nil origin would be read as ORIGIN_NONE, not the default
+	-- (live run 2026-11-01: every unique_passive probe hit lost its health events)
+	doTargetCombat = function(...)
+		local cid, target, ctype, min, _, _, origin = ...
 		local ok, tid = pcall(function() return target and target:getId() end)
 		local w = ok and tid and fistWatch[tid]
 		if w and origin == ORIGIN_NONE and ctype == COMBAT_PHYSICALDAMAGE then
@@ -1475,7 +1478,7 @@ if type(doTargetCombat) == "function" and not TesterFistWrapped then
 				w.off, w.offSum = w.off + 1, w.offSum + math.abs(tonumber(min) or 0)
 			end
 		end
-		return realCombat(cid, target, ctype, min, max, effect, origin, ...)
+		return realCombat(...)
 	end
 end
 
