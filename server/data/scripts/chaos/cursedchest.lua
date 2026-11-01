@@ -470,7 +470,30 @@ local function randomSpot(ch)
 	local e = cfg().event
 	-- spawn_tile_core.lua: ground, no water (a land horde never left it), not blocked, no protection zone, house or
 	-- floor change; nil (the monster is skipped) when 14 tries find none
-	return ChaosSpawnTile.find(ch.pos, {radius = e.spreadMax, minRadius = e.spreadMin, tries = 14, rand = rand, occupied = true})
+	local opts = {radius = e.spreadMax, minRadius = e.spreadMin, tries = 14, rand = rand, occupied = true}
+	local pos = ChaosSpawnTile.find(ch.pos, opts)
+	if pos or not ChaosSpawnTile.ok then
+		return pos
+	end
+	-- a tight spot (a corridor, the edge of a protection zone): every tile of the ring, then of the whole square, one at
+	-- random (live run 2026-10-31: hordes came with no monster and the chest was won without a fight)
+	for _, least in ipairs({e.spreadMin, 1}) do
+		local spots = {}
+		for dx = -e.spreadMax, e.spreadMax do
+			for dy = -e.spreadMax, e.spreadMax do
+				if math.max(math.abs(dx), math.abs(dy)) >= least then
+					local p = {x = ch.pos.x + dx, y = ch.pos.y + dy, z = ch.pos.z}
+					if ChaosSpawnTile.ok(p, opts) then
+						spots[#spots + 1] = p
+					end
+				end
+			end
+		end
+		if #spots > 0 then
+			return spots[rand(1, #spots)]
+		end
+	end
+	return nil
 end
 
 local TIER_EVENTS = {"ChaosTierRollMagic", "ChaosTierRollRare", "ChaosTierRollLegendary"}
@@ -560,6 +583,7 @@ local function spawnHorde(ev, ch, n)
 		end
 	end
 	K.spawned(ev, n, nowMs())
+	ev.made = (ev.made or 0) + made -- the monsters the event created so far (the tester helper reads it)
 	if plan.leader == "legendary" then
 		tellAll(ev, "Horde %d/%d: a legendary leader leads it!", n, total)
 	elseif plan.leader then
@@ -638,6 +662,8 @@ function CC.failEvent(ch, reason)
 	try("aura", CC.syncAuras)
 	if reason == "time" then
 		tellAll(ev, "The curse wins: time is up. The cursed chest crumbles and its hordes fade.")
+	elseif reason == "room" then
+		tellAll(ev, "The hordes find no room to rise here. The cursed chest crumbles.")
 	else
 		tellAll(ev, "Nobody is left to fight. The cursed chest crumbles and its hordes fade.")
 	end
@@ -693,8 +719,12 @@ function tickInner(key)
 	local actions = K.step(c, ev, {alive = aliveCount(ev), inside = inside}, now)
 	for _, a in ipairs(actions) do
 		if a[1] == "spawn" then
-			if try("horde", spawnHorde, ev, ch, a[2]) == nil then
-				K.spawned(ev, a[2], now) -- a horde that failed to build counts as spawned: the event moves on
+			local made = try("horde", spawnHorde, ev, ch, a[2])
+			if not made or made < 1 then
+				-- a horde with no monster (no room around the chest, or an error) ends the event: before, it counted
+				-- as spawned and the chest was won without a fight
+				CC.failEvent(ch, "room")
+				return
 			end
 		elseif a[1] == "warn" then
 			tellAll(ev, "You are leaving the cursed chest! Go back or the curse wins in %d seconds.",

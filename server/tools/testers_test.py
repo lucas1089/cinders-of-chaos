@@ -9,6 +9,7 @@ import io
 import json
 import os
 import random
+import shutil
 import struct
 import sys
 import tempfile
@@ -716,8 +717,39 @@ bc.flush_checks(); bc.flush_checks()
 eq([r['status'] for r in resc.d['checks']], ['pass'], 'flushed once when through')
 sp = T.load_check_spells(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'), {'Beastmaster': {'id': 15}, 'Ninja': {'id': 12}})
 eq(sp.get(248, {}).get('name'), 'Wild Bond', 'load_check_spells: a Chaos spell by its spellid')
+# a server folder without data/spells/stock_spells.csv (no install step copies it): the repo's table
+_empty = tempfile.mkdtemp()
+sp2 = T.load_check_spells(_empty, {'Ranger': {'id': 2}})
+eq(sp2.get(111, {}).get('name'), 'Phantom Javelin', 'load_check_spells: a stock spell from the repo table when the server has none')
+shutil.rmtree(_empty)
 eq(sp.get(248, {}).get('vocations'), [15], 'its class')
 ok(236 in sp and 12 in sp[236]['vocations'], 'Shuriken Toss is open to the Ninja')
+
+# party partners: bots that start the party check together pick distinct free partners; leave frees both
+class _PB:
+    def __init__(self, cid, name):
+        self.cid, self.name, self.alive, self.died = cid, name, True, False
+T.ONLINE.clear(); T.PARTY_BUSY.clear()
+_pbs = [_PB(i, 'P%d' % i) for i in (1, 2, 3, 4)]
+T.ONLINE.update({b.cid: b for b in _pbs})
+_ios = [T.CheckIO.__new__(T.CheckIO) for _ in _pbs]
+for _io, _b in zip(_ios, _pbs):
+    _io.bot = _b
+_picks = [asyncio.run(_io.partner()) for _io in _ios]
+eq(_picks, ['P2', None, 'P4', None], 'party partners: two pairs, nobody picked twice')
+_ios[0].alive = lambda: False
+eq(asyncio.run(_ios[0].party('leave', 'P2')), False, 'party leave of a dead bot sends nothing')
+eq(sorted(T.PARTY_BUSY), ['P3', 'P4'], 'party leave frees both bots even when nothing was sent')
+T.release_party('P3', 'P4')
+eq(sorted(T.PARTY_BUSY), [], 'release_party frees the bots of a left party (called PARTY_RELEASE_S after a leave)')
+T.PARTY_BUSY.update(('P3', 'P4'))
+_tb = T.TesterBot.__new__(T.TesterBot)
+_tb.name, _stepped = 'P3', []
+_tb.party_step = lambda: _stepped.append(1)
+eq(asyncio.run(_tb.do_party(None)), False, 'a bot in a party check skips the random party behaviour')
+_tb.name = 'P9'
+eq((asyncio.run(_tb.do_party(None)), len(_stepped)), (True, 1), 'a free bot does its party step')
+T.ONLINE.clear(); T.PARTY_BUSY.clear()
 
 for f in FAILS:
     print('FAIL ' + f)

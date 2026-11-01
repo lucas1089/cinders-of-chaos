@@ -211,8 +211,12 @@ class Party(unittest.TestCase):
 
 class Others(unittest.TestCase):
     def test_rift(self):
-        io = FakeIO({'enter rift 1': {'pos': {}}}, {('rift', 'query'): {'action': 'state', 'data': {}}})
+        io = FakeIO({'enter rift 1': {'pos': {}, 'tier': 1, 'held': True}})
         self.assertEqual(run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100)).status, TX.PASS)
+        io = FakeIO({'enter rift 1': {'pos': {}, 'tier': 1, 'held': False}})
+        self.assertEqual(run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100)).status, TX.FAIL)
+        io = FakeIO({'enter rift 1': {'pos': {}}})
+        self.assertEqual(run(TX.check_rift(io, 'Tester Aaa', 'Ninja', 100)).status, TX.SKIP)
         self.assertEqual(run(TX.check_rift(FakeIO({'enter rift 1': {'err': 'no temple'}}), 'a', 'Ninja', 100)).status, TX.FAIL)
         self.assertEqual(run(TX.check_rift(FakeIO(), 'a', 'Ninja', 100)).status, TX.SKIP)
 
@@ -259,6 +263,27 @@ class Others(unittest.TestCase):
         self.assertEqual(run(TX.check_cursed_chest(FakeIO(), 'a', 'Ninja', 100)).status, TX.SKIP)
         io = FakeIO({'chest spawn': {'err': 'no cursed chest system'}})
         self.assertEqual(run(TX.check_cursed_chest(io, 'a', 'Ninja', 100)).status, TX.SKIP)
+
+    def test_cursed_chest_horde_counts(self):
+        def io_with(running):
+            class HordeIO(FakeIO):
+                async def helper(self, command, kind, wait=4.0):
+                    if command == 'chest spawn':
+                        return {'state': 'idle', 'left': 1}
+                    if command in ('chest use', 'chest state') and not getattr(self, 'aborted', False):
+                        return dict({'state': 'running', 'left': 1}, **running)
+                    self.aborted = True
+                    return {'state': 'none', 'left': 0}
+            return HordeIO()
+        # a horde the bots killed at once: no monster left, but some were made
+        r = run(TX.check_cursed_chest(io_with({'monsters': 0, 'horde': 1, 'made': 6}), 'a', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        r = run(TX.check_cursed_chest(io_with({'monsters': 0, 'horde': 1, 'made': 0}), 'a', 'Ninja', 100))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('horde 1 came with no monster', r.detail)
+        # before the first horde (2.5 s after the use) nothing is due yet
+        r = run(TX.check_cursed_chest(io_with({'monsters': 0, 'horde': 0}), 'a', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS, r.detail)
 
 
 def waystone_answer(tier, **over):
@@ -342,6 +367,11 @@ class RiftLayout(unittest.TestCase):
         r = self.check()
         self.assertEqual(r.status, TX.PASS, r.detail)
         self.assertIn('Obsidian Hall', r.detail)
+
+    def test_another_band_only_fails_when_one_of_the_tier_was_ready(self):
+        self.assertEqual(self.check(band=2, readyOfBand=1).status, TX.FAIL)
+        self.assertEqual(self.check(band=2).status, TX.FAIL)   # an old helper: no count, the strict rule
+        self.assertEqual(self.check(band=2, readyOfBand=0).status, TX.PASS)   # a full pool hands out another band
 
     def test_each_broken_fact_is_a_bug(self):
         cases = {
@@ -468,10 +498,9 @@ class PartyXp(unittest.TestCase):
         self.assertIn('Tester Bbb is below two thirds', r.detail)
         _, r = self.run_check(problems=[{'name': 'Tester Bbb', 'kind': 'range'}])
         self.assertIn('is out of range', r.detail)
-        # off with every rule passing
+        # off with every rule the helper sees passing: the engine's own activity ticks decide, no failure
         _, r = self.run_check(shareEnabled=False)
-        self.assertEqual(r.status, TX.FAIL)
-        self.assertIn('every member passes', r.detail)
+        self.assertEqual(r.status, TX.PASS, r.detail)
 
     def test_off_for_a_real_reason_is_a_pass(self):
         io = FakeIO({'party': lambda io: self.party(io, shareEnabled=False, problems=[{'name': 'Tester Bbb', 'kind': 'level'}],

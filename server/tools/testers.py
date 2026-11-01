@@ -662,8 +662,14 @@ class CheckIO(KeyIO):
             await self.bot.conn.w.drain()
 
     async def partner(self):
+        # a bot that is in no other party check: the checks of all bots start together, and when every bot picked the
+        # same partner (the lowest id) only one party formed and the others read 0 members (local run 2026-10-31)
+        if self.bot.name in PARTY_BUSY:
+            return None
         for cid, other in sorted(ONLINE.items()):
-            if cid != self.bot.cid and other is not self.bot and other.alive and not other.died:
+            if cid != self.bot.cid and other is not self.bot and other.alive and not other.died \
+                    and other.name not in PARTY_BUSY:
+                PARTY_BUSY.update((self.bot.name, other.name))
                 return other.name
         return None
 
@@ -671,8 +677,14 @@ class CheckIO(KeyIO):
         other = next((b for b in ONLINE.values() if b.name == other_name), None)
         bot = self.bot
         if other is None or not self.alive() or not other.alive or not bot.cid or not other.cid:
+            if action in ('form', 'leave'):
+                PARTY_BUSY.discard(bot.name)
+                PARTY_BUSY.discard(other_name)
             return False
         if action == 'form':
+            # out of any party the random party behaviour made before this check
+            await bot.helper_says('party leave', 'party')
+            await other.helper_says('party leave', 'party')
             bot.conn.send(b'\xA3' + struct.pack('<I', other.cid))      # invite
             await bot.conn.w.drain()
             await asyncio.sleep(1.0)
@@ -682,10 +694,18 @@ class CheckIO(KeyIO):
             bot.conn.send(b'\xA8' + (b'\x01' if action == 'share' else b'\x00'))   # the leader's shared experience switch
             await bot.conn.w.drain()
         else:
+            # both stay busy a while: the check reads the party again after the leave, and a random party step of a
+            # freed bot could join another party first (local run 2026-10-31)
+            asyncio.get_running_loop().call_later(PARTY_RELEASE_S, release_party, bot.name, other_name)
             other.conn.send(b'\xA7')                                    # leave
             bot.conn.send(b'\xA7')
             await other.conn.w.drain()
             await bot.conn.w.drain()
+            # the engine refuses the leave packet in a fight (Game::playerLeaveParty), and hunting bots are in one:
+            # the helper takes both out (Party:removeMember), else the partner stays in the party for the next check
+            await asyncio.sleep(0.5)
+            await other.helper_says('party leave', 'party')
+            await bot.helper_says('party leave', 'party')
         return True
 
     def autosetup(self):
@@ -710,6 +730,10 @@ def load_check_spells(server_dir, vocs):
                 out[int(a['spellid'])] = {'name': a.get('name', ''), 'level': int(a.get('level', 0) or 0),
                                           'vocations': [vocs[n]['id'] for n in names if n in vocs]}
     stock = os.path.join(data, 'stock_spells.csv')
+    if not os.path.exists(stock):
+        # no install step copies the table: the repo's copy (server/data/spells, made from the installed spells.xml).
+        # Without it every stock spell of a preset read "not on the server" (local run 2026-10-31)
+        stock = os.path.join(HERE, '..', 'data', 'spells', 'stock_spells.csv')
     if os.path.exists(stock):
         for line in LT.read_text(stock).splitlines()[1:]:
             c = line.split(',')
@@ -719,6 +743,13 @@ def load_check_spells(server_dir, vocs):
     return out
 
 
+PARTY_BUSY = set()  # bot names in a party check now (partner() picks among the others; leave frees both)
+PARTY_RELEASE_S = 10.0  # seconds after a leave before both bots are free again
+
+
+def release_party(*names):
+    for n in names:
+        PARTY_BUSY.discard(n)
 ONLINE = LT.ONLINE  # creature id -> bot in game (loadtest's party_step reads the same table)
 BAG_EVERY = 240  # seconds between the bag clean-ups (and potion top-ups) of a bot
 ROOM_FAILS_BAG = 3  # "not enough room" messages that call a clean-up at once
@@ -1199,6 +1230,10 @@ class TesterBot(LT.Bot):
         return ok
 
     async def do_party(self, clock):
+        # not while a party check holds this bot: a random invite, join or leave broke the check's party (local run
+        # 2026-10-31: "left the party, the helper still sees 2 members", "joined, the party has 0 members")
+        if self.name in PARTY_BUSY:
+            return False
         self.party_step()
         return True
 

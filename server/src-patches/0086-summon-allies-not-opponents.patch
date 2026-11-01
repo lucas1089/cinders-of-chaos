@@ -1,0 +1,43 @@
+# Player summons see their owner's side as allies (server/README.md "Summons: targets, walk-through, levels", O86).
+# Live finding 2026-10-31 (tester bots, necro_minions / party checks): a Necromancer's Risen Skeletons held 2 allies in
+# their engine target list, 1 in a party. Monster::isOpponent of a player's summon was "everybody but the master", so
+# the owner's other summons, the party and their summons were listed whenever they came into view; the Lua purge of
+# summons.lua (ChaosSummonsCore.purge, every 0.5 s) removed them, and the next step listed them again. Now a player's
+# summon takes none of these as an opponent: the owner, the owner's other summons, members of the owner's party and
+# their summons (pointer compare of Player::getParty). Other players and their summons stay opponents as before (PvP).
+# Monster::updateTargetList also drops a listed creature that is no opponent any more (a party joined after it was
+# listed; setMaster calls it). Wild monsters are unchanged. Applies after 0001-0085.
+--- a/src/monster.cpp
++++ b/src/monster.cpp
+@@ -406,7 +406,8 @@
+ 	auto targetIterator = targetList.begin();
+ 	while (targetIterator != targetList.end()) {
+ 		Creature* creature = *targetIterator;
+-		if (creature->getHealth() <= 0 || !canSee(creature->getPosition())) {
++		// Chaos: also a creature that is no opponent any more (a player summon's party, joined after it was listed)
++		if (creature->getHealth() <= 0 || !canSee(creature->getPosition()) || !isOpponent(creature)) {
+ 			creature->decrementReferenceCounter();
+ 			targetIterator = targetList.erase(targetIterator);
+ 		} else {
+@@ -500,9 +501,19 @@
+ bool Monster::isOpponent(const Creature* creature) const
+ {
+ 	if (isSummon() && getMaster()->getPlayer()) {
+-		if (creature != getMaster()) {
+-			return true;
++		// Chaos: a player's summon is no opponent of its owner's side: the owner, the owner's other summons, the
++		// owner's party and their summons (stock: everybody but the master, so allies stood in the target list)
++		const Player* owner = getMaster()->getPlayer();
++		const Creature* side = creature->getMaster() ? creature->getMaster() : creature;
++		if (side == owner) {
++			return false;
++		}
++		const Player* sidePlayer = side->getPlayer();
++		const Party* party = owner->getParty();
++		if (sidePlayer && party && sidePlayer->getParty() == party) {
++			return false;
+ 		}
++		return true;
+ 	} else {
+ 		if ((creature->getPlayer() && !creature->getPlayer()->hasFlag(PlayerFlag_IgnoredByMonsters)) ||
+ 		        (creature->getMaster() && creature->getMaster()->getPlayer())) {

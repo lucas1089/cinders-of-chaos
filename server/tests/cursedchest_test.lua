@@ -958,13 +958,54 @@ createFail.Troll = true
 for _, name in ipairs(cfg.event.pool.themed[1][2]) do createFail[name] = true end
 ch = freshChest(hero)
 openIt(ch, hero)
-eq(ch.ev.horde, 1, "an empty horde still counts as spawned")
-for _ = 1, 40 do
+for _ = 1, 3 do
 	T = T + 4000
 	runQueue()
 end
-eq(ch.state, "won", "empty hordes pass and the chest is won")
+-- before (live run 2026-10-31) an empty horde counted as spawned and the chest was won without a fight
+eq(ch.ev.state, "failed", "a horde with no monster ends the event")
+eq(ch.ev.reason, "room", "reason: no room for the horde")
+eq(next(CC.chests), nil, "and the chest crumbles")
 createFail = {}
+-- a horde whose random tries all miss still finds the one free tile of the ring
+do
+	local realOk = ChaosSpawnTile.ok
+	local only
+	ChaosSpawnTile.ok = function(p2, o)
+		if only and (p2.x ~= only.x or p2.y ~= only.y) then
+			return false
+		end
+		return realOk(p2, o)
+	end
+	local cTight = freshChest(hero)
+	-- the one free tile: the last good tile of the ring (scan order), so 14 random tries nearly always miss it
+	local r = cfg.event.spreadMax
+	for dx = -r, r do
+		for dy = -r, r do
+			local p2 = {x = cTight.pos.x + dx, y = cTight.pos.y + dy, z = cTight.pos.z}
+			if math.max(math.abs(dx), math.abs(dy)) >= cfg.event.spreadMin and realOk(p2, {occupied = true}) then
+				only = p2
+			end
+		end
+	end
+	openIt(cTight, hero)
+	T = T + 4000
+	runQueue()
+	eq(cTight.ev.state, "running", "a tight spot: the horde rises")
+	ok((cTight.ev.made or 0) >= 1, "on the one free tile")
+	ChaosSpawnTile.ok = realOk
+	CC.failEvent(cTight, "time")
+end
+-- an unclaimed open chest crumbles: win one by killing its hordes
+ch = freshChest(hero)
+openIt(ch, hero)
+for _ = 1, 60 do
+	if ch.state == "won" then break end
+	killAll()
+	T = T + 1000
+	runQueue()
+end
+eq(ch.state, "won", "the hordes killed: won")
 use(hero, Tile(ch.pos):getItemById(12664))
 -- the loop removes an unclaimed open chest
 think(1500)
@@ -1054,16 +1095,14 @@ end
 do
 	local live = ChaosCursedChestConfig
 	local function winChest(owner)
-		createFail.Troll = true
-		for _, name in ipairs(cfg.event.pool.themed[1][2]) do createFail[name] = true end
 		local c2 = freshChest(owner)
 		openIt(c2, owner)
-		for _ = 1, 40 do
+		for _ = 1, 60 do
 			if c2.state == "won" then break end
-			T = T + 4000
+			killAll()
+			T = T + 1000
 			runQueue()
 		end
-		createFail = {}
 		eq(c2.state, "won", "O308: the chest is won")
 		return c2
 	end
@@ -1148,17 +1187,15 @@ end
 do
 	local c5
 	do
-		createFail.Troll = true
-		for _, name in ipairs(cfg.event.pool.themed[1][2]) do createFail[name] = true end
 		c5 = freshChest(hero)
 		hero._party = nil
 		openIt(c5, hero)
-		for _ = 1, 40 do
+		for _ = 1, 60 do
 			if c5.state == "won" then break end
-			T = T + 4000
+			killAll()
+			T = T + 1000
 			runQueue()
 		end
-		createFail = {}
 	end
 	eq(c5.state, "won", "O308: won, nobody has claimed")
 	hero._msgs = {}
