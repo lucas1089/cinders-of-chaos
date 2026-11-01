@@ -25,6 +25,7 @@ if wait_for "firststart: restarting the client" 360; then echo "RESTART: seen"; 
 sleep 30; adb exec-out screencap -p > "$OUT/after-restart-30s.png"
 sleep 150; adb exec-out screencap -p > "$OUT/after-restart-180s.png"
 adb shell pidof $PKG && echo STILL RUNNING || echo NOT RUNNING
+adb shell dumpsys meminfo $PKG | head -n 40 || true
 adb logcat -d -v threadtime > "$OUT/logcat.txt"
 adb shell run-as $PKG find . -maxdepth 2 > "$OUT/write-folder.txt" 2>&1
 adb shell run-as $PKG cat chaos_update/android_state.txt > "$OUT/state.txt" 2>&1
