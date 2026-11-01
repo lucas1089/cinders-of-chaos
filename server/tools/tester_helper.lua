@@ -616,6 +616,31 @@ function commands.summons(player)
 	tell(player, "summons", snap)
 end
 
+-- the game's Party:onShareExperience lives in the events state (data/events/scripts/party.lua), not in this one: its
+-- file is loaded here once in a sandbox (its Party methods go to a table of their own, nothing of this state changes).
+-- Before, `party:onShareExperience` was nil here and every live party_xp check read "pays None" (live run 2026-11-01)
+local shareFn
+local function shareFunction()
+	if shareFn ~= nil then
+		return shareFn or nil
+	end
+	shareFn = false
+	local env = setmetatable({Party = {}}, {__index = _G})
+	local chunk
+	if setfenv then
+		chunk = loadfile("data/events/scripts/party.lua")
+		if chunk then
+			setfenv(chunk, env)
+		end
+	else
+		chunk = loadfile("data/events/scripts/party.lua", "t", env)
+	end
+	if chunk and pcall(chunk) and type(env.Party.onShareExperience) == "function" then
+		shareFn = env.Party.onShareExperience
+	end
+	return shareFn or nil
+end
+
 -- the shared experience of the party (O110 party XP): the switch, the engine's verdict, the rules of party_xp_core.lua on
 -- the members' facts, the class lines, and what the game's own Party:onShareExperience pays for 1000 experience
 local function partyShare(party, data)
@@ -661,7 +686,8 @@ local function partyShare(party, data)
 	data.minLevel = KX.minLevel(highest)
 	data.lines = KX.lineCount(all)
 	data.bonusPct = KX.bonusPercent(data.lines)
-	local okS, share = pcall(function() return party:onShareExperience(1000) end)
+	local fn = party.onShareExperience or shareFunction()
+	local okS, share = pcall(function() return fn(party, 1000) end)
 	if okS then
 		data.shareOf1000 = tonumber(share)
 	end

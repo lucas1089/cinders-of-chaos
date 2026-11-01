@@ -351,8 +351,9 @@ async def check_party_xp(io, name, cls, level):
             return Result('party_xp', name, cls, FAIL, '; '.join(bad[:3]))
         verdict = 'working' if second.get('shareEnabled') else 'off: %s' % (
             ', '.join('%s %s' % (x.get('name'), x.get('kind')) for x in second.get('problems') or [])[:60] or 'none')
+        pays = second.get('shareOf1000')
         return Result('party_xp', name, cls, PASS, 'switch took, 1000 xp pays %s (%s class line(s), %s members), engine %s' % (
-            second.get('shareOf1000'), second.get('lines'), second.get('size'), verdict))
+            'not read (old helper file)' if pays is None else pays, second.get('lines'), second.get('size'), verdict))
     finally:
         await io.party('unshare', other)
         await io.party('leave', other)
