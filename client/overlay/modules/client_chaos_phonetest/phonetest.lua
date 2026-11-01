@@ -3,7 +3,8 @@
 -- it logs in with the account the marker names, enters with the first character, walks, opens and closes the main
 -- windows (size against the screen), summons an NPC and trades with it, summons a monster and kills it, opens its
 -- corpse and says a line. Every step logs "phonetest: <step> ok|fail <detail>"; "phonetest: shot <name>" asks the
--- script for a screenshot (it waits SHOT_MS). Without the marker the module does nothing.
+-- script for a screenshot (it waits SHOT_MS). While entering, "phonetest: stall N ms: <stack>" samples a blocked client.
+-- Without the marker the module does nothing.
 ChaosPhoneTest = {}
 local P = ChaosPhoneTest
 local C = ChaosPhoneTestCore
@@ -96,6 +97,33 @@ local function visibleWindows()
   return out
 end
 
+-- stall probe: a count hook samples the Lua stack while one dispatcher event runs for over 1.5 s (the tick below did
+-- not run), so the log names the code that keeps the client silent; on for ms milliseconds
+local function stallProbe(ms)
+  if not (debug and debug.sethook and debug.traceback) then return end
+  local last, lastSample = g_clock.millis(), 0
+  local stopAt = last + ms
+  local function tick()
+    last = g_clock.millis()
+    if last < stopAt then
+      later(50, tick)
+    else
+      debug.sethook()
+      log('stall probe off')
+    end
+  end
+  debug.sethook(function()
+    local now = g_clock.millis()
+    if now - last > 1500 and now - lastSample > 1000 then
+      lastSample = now
+      local tb = debug.traceback('', 2):gsub('\n%s*', ' | ')
+      log(('stall %d ms: %s'):format(now - last, tb:sub(1, 700)))
+    end
+  end, '', 100000)
+  log('stall probe on')
+  tick()
+end
+
 local steps = {}
 
 function steps.login(nextFn)
@@ -117,6 +145,7 @@ function steps.login(nextFn)
 end
 
 function steps.enter(nextFn)
+  stallProbe(120000)
   if not g_game.isOnline() then
     if CharSelect and CharSelect.select then pcall(CharSelect.select, 1, true) end
     if CharSelect and CharSelect.play then CharSelect.play() else CharacterList.doLogin() end
