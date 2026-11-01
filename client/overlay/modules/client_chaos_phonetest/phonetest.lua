@@ -3,7 +3,8 @@
 -- it logs in with the account the marker names, enters with the first character, walks, opens and closes the main
 -- windows (size against the screen), summons an NPC and trades with it, summons a monster and kills it, opens its
 -- corpse and says a line. Every step logs "phonetest: <step> ok|fail <detail>"; "phonetest: shot <name>" asks the
--- script for a screenshot (it waits SHOT_MS). While entering, "phonetest: stall N ms: <stack>" samples a blocked client.
+-- script for a screenshot (it waits SHOT_MS). From the start to done, "phonetest: stall N ms: <stack>" samples a blocked
+-- client (the first-start check, the login, entering the game).
 -- Without the marker the module does nothing.
 ChaosPhoneTest = {}
 local P = ChaosPhoneTest
@@ -131,26 +132,35 @@ function steps.login(nextFn)
     result('login', true, 'already in the game')
     return nextFn()
   end
-  EnterGame.doLogin(cfg.account, cfg.password)
-  waitFor(function()
-    return (CharSelect and CharSelect.isVisible and CharSelect.isVisible()) or
-      (CharacterList and CharacterList.isVisible and CharacterList.isVisible()) or g_game.isOnline()
-  end, 60000, function()
-    result('login', true, 'character list shown')
-    shot('charlist', nextFn)
+  -- the first-start check holds the login (ChaosFirstStart.blocking); the emulator is slow, so the limits are wide
+  local fs = ChaosFirstStart
+  local t0 = g_clock.millis()
+  waitFor(function() return not (fs and fs.blocking and fs.blocking()) end, 40 * 60000, function()
+    log(('login: the first-start check let go after %d s'):format(math.floor((g_clock.millis() - t0) / 1000)))
+    local t1 = g_clock.millis()
+    EnterGame.doLogin(cfg.account, cfg.password)
+    waitFor(function()
+      return (CharSelect and CharSelect.isVisible and CharSelect.isVisible()) or
+        (CharacterList and CharacterList.isVisible and CharacterList.isVisible()) or g_game.isOnline()
+    end, 300000, function()
+      result('login', true, ('character list shown after %d s'):format(math.floor((g_clock.millis() - t1) / 1000)))
+      shot('charlist', nextFn)
+    end, function()
+      result('login', false, 'no character list in 300 s')
+      shot('login_failed', function() steps.done() end)
+    end)
   end, function()
-    result('login', false, 'no character list in 60 s')
+    result('login', false, 'the first-start check still holds the login after 40 min')
     shot('login_failed', function() steps.done() end)
   end)
 end
 
 function steps.enter(nextFn)
-  stallProbe(120000)
   if not g_game.isOnline() then
     if CharSelect and CharSelect.select then pcall(CharSelect.select, 1, true) end
     if CharSelect and CharSelect.play then CharSelect.play() else CharacterList.doLogin() end
   end
-  waitFor(function() return me() ~= nil end, 120000, function()
+  waitFor(function() return me() ~= nil end, 300000, function()
     later(5000, function()
       local p = me()
       result('enter', true, ('%s level %d at %d,%d,%d'):format(p:getName(), p:getLevel(), p:getPosition().x,
@@ -158,7 +168,7 @@ function steps.enter(nextFn)
       shot('ingame', nextFn)
     end)
   end, function()
-    result('enter', false, 'not in the game after 120 s')
+    result('enter', false, 'not in the game after 300 s')
     shot('enter_failed', function() steps.done() end)
   end)
 end
@@ -312,6 +322,7 @@ function steps.done()
     if not r.ok then fails = fails + 1 end
   end
   log(('done %d steps, %d failed'):format(#results, fails))
+  if debug and debug.sethook then debug.sethook() end
 end
 
 local function onTalk(name, level, mode, text)
@@ -334,6 +345,7 @@ function P.init()
   connect(g_game, {onTalk = onTalk, onOpenNpcTrade = onOpenNpcTrade})
   connect(Container, {onOpen = onContainerOpen})
   log('armed: account ' .. cfg.account .. ', npc ' .. cfg.npc .. ', monster ' .. cfg.monster)
+  stallProbe(45 * 60 * 1000)
   local order, i = C.STEPS, 0
   local function nextStep()
     i = i + 1

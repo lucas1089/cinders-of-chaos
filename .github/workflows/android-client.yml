@@ -472,7 +472,7 @@ jobs:
     needs: apk
     if: ${{ inputs.smoke_play }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 170
     env:
       GH_TOKEN: ${{ github.token }}
     steps:

@@ -15,8 +15,8 @@ done
 adb logcat -c
 adb shell am force-stop $PKG; sleep 3
 adb shell am start -W -n $PKG/.ChaosActivity
-# screenshots on request, until "phonetest: done" or 30 minutes
-deadline=$((SECONDS + 1800)); seen=" "
+# screenshots on request, until "phonetest: done" or 60 minutes
+deadline=$((SECONDS + 3600)); seen=" "
 while [ $SECONDS -lt $deadline ]; do
   log=$(adb logcat -d -s CindersOfChaos:I 2>/dev/null | grep -o 'phonetest: .*' | tr -d '\r')
   for name in $(printf '%s\n' "$log" | sed -n 's/^phonetest: shot \([A-Za-z0-9_]*\).*/\1/p'); do
