@@ -1376,20 +1376,22 @@ function commands.unique(player)
 		return m
 	end
 	local out = {line = line}
+	local capWas
 	local ok, err = pcall(function()
 		out.lostBefore, out.hit = probeHit(player, spot, capture)
 		-- the first candidate the slot takes (the engine refuses some for the class or a slot rule: live run 2026-11-01)
-		local pick, slot, refused, emptied = nil, nil, {}, false
+		local pick, slot, refused = nil, nil, {}
 		for _, e in ipairs(cands) do
 			local sl = freeSlotOf(player, e.id)
 			local item = sl and Game.createItem(e.id, 1)
 			if item then
 				item:setCustomAttribute("chaos_unique", 1)
 				local rv = player:addItemEx(item, false, sl)
-				if rv == RETURNVALUE_NOTENOUGHCAPACITY and not emptied then
-					-- a bag full of loot (the engine's capacity rule takes no flag): the loot goes, as "!tester bag" does
-					emptied = true
-					pcall(commands.bag, player)
+				if rv == RETURNVALUE_NOTENOUGHCAPACITY and not capWas then
+					-- the potions and loot fill the capacity (the engine's rule takes no flag): the capacity is raised by
+					-- the item's weight for the probe and put back at the end (live run 2026-11-01: half the bots, code 21)
+					capWas = player:getCapacity()
+					player:setCapacity(capWas + item:getWeight() + 100)
 					rv = player:addItemEx(item, false, sl)
 				end
 				if rv == RETURNVALUE_NOERROR then
@@ -1421,6 +1423,9 @@ function commands.unique(player)
 		UP.refresh(player)
 	end)
 	C.dealt = real
+	if capWas then
+		player:setCapacity(capWas)
+	end
 	if not ok then
 		out.err = tostring(err)
 	end
