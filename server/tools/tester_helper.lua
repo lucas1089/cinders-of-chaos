@@ -1438,7 +1438,9 @@ end
 -- melee hits and the off-hand strikes (physical, ORIGIN_NONE) it deals; any other class must be refused the fist weapon.
 -- Answer kind "fists": {monk, left, right (return codes; 0 = worn), melee, off, meleeSum, offSum, err}
 local FIST_IDS, FIST_WATCH_MS = {36656, 36657}, 6000
-local fistWatch = {} -- monster id -> {player id, counts}
+-- monster id -> {player id, counts}; a global, so the doTargetCombat wrapper below (made once) sees it after a reload
+TesterFistWatch = TesterFistWatch or {}
+local fistWatch = TesterFistWatch
 local fistEvent = CreatureEvent("TesterHelperDualFist")
 function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	local w = fistWatch[creature:getId()]
@@ -1446,8 +1448,6 @@ function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType
 		local dmg = math.abs(primaryDamage) + math.abs(secondaryDamage)
 		if origin == ORIGIN_MELEE then
 			w.melee, w.meleeSum = w.melee + 1, w.meleeSum + dmg
-		elseif origin == ORIGIN_NONE and primaryType == COMBAT_PHYSICALDAMAGE then
-			w.off, w.offSum = w.off + 1, w.offSum + dmg
 		end
 	end
 	-- the probe's Demon never dies: a kill would pay experience to the bot's party (live run 2026-11-01: party_xp read
@@ -1459,6 +1459,25 @@ function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType
 end
 fistEvent:type("healthchange")
 fistEvent:register()
+
+-- the off-hand strike is ORIGIN_NONE, and the engine runs no onHealthChange event for that origin (Game::combatChangeHealth:
+-- it stops scripted hits from recursing; live run 2026-11-01: 0 strikes seen though the strike was dealt), so the strikes
+-- are counted where the script deals them: a physical ORIGIN_NONE doTargetCombat from the bot on its probe Demon
+if type(doTargetCombat) == "function" and not TesterFistWrapped then
+	TesterFistWrapped = true
+	local realCombat = doTargetCombat
+	doTargetCombat = function(cid, target, ctype, min, max, effect, origin, ...)
+		local ok, tid = pcall(function() return target and target:getId() end)
+		local w = ok and tid and fistWatch[tid]
+		if w and origin == ORIGIN_NONE and ctype == COMBAT_PHYSICALDAMAGE then
+			local okC, pid = pcall(function() return type(cid) == "number" and cid or cid:getId() end)
+			if okC and pid == w.pid then
+				w.off, w.offSum = w.off + 1, w.offSum + math.abs(tonumber(min) or 0)
+			end
+		end
+		return realCombat(cid, target, ctype, min, max, effect, origin, ...)
+	end
+end
 
 function commands.fists(player)
 	local voc = player:getVocation()

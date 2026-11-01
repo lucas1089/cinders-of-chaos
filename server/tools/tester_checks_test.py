@@ -148,7 +148,7 @@ class DualFists(unittest.TestCase):
     def test_a_monk_strikes_with_the_off_hand(self):
         r = self.check(monk=True, left=0, right=0, melee=3, off=3, meleeSum=3000, offSum=1400)
         self.assertEqual(r.status, TX.PASS, r.detail)
-        self.assertIn('3 fist hits (3000), 3 off-hand strikes (1400)', r.detail)
+        self.assertIn('3 fist hits, 3 off-hand strikes (1400 damage)', r.detail)
         self.assertEqual(self.check(monk=True, left=0, right=0, melee=3, off=2, meleeSum=3000, offSum=1000).status,
                          TX.PASS, 'the last strike may land after the watch')
 
@@ -158,7 +158,6 @@ class DualFists(unittest.TestCase):
         self.assertIn('shield hand code 6', r.detail)
         self.assertIn('no off-hand strike', self.check(monk=True, left=0, right=0, melee=4, off=0).detail)
         self.assertIn('one each', self.check(monk=True, left=0, right=0, melee=4, off=8, meleeSum=4, offSum=2).detail)
-        self.assertIn('x2.00', self.check(monk=True, left=0, right=0, melee=2, off=2, meleeSum=100, offSum=200).detail)
         r = self.check(cls='Warrior', monk=False, left=0)
         self.assertEqual(r.status, TX.FAIL)
         self.assertIn('outside the Monk line could wear', r.detail)

@@ -886,9 +886,6 @@ async def check_unique_passive(io, name, cls, level):
 
 
 MONK_LINE = ('Monk', 'Shadowfist', 'Iron Sage')
-# the off-hand strike of two fist weapons is share x ratio of the main hit (monk_chi_core.lua unarmed.dualFists: 0.5,
-# ratio 0.5..1); armour takes a flat part of each hit, so the sums are compared loosely
-DUAL_FIST_SHARE = (0.15, 1.0)
 # the helper watches the fight for 6 s (tester_helper.lua FIST_WATCH_MS) before it answers
 FIST_ANSWER = 12.0
 
@@ -913,10 +910,6 @@ def fist_problems(f):
         return out
     if off < melee - 1 or off > melee:
         out.append('%d fist hits but %d off-hand strikes (one each)' % (melee, off))
-    msum, osum = int(f.get('meleeSum') or 0), int(f.get('offSum') or 0)
-    if msum > 0 and not (DUAL_FIST_SHARE[0] <= osum / float(msum) <= DUAL_FIST_SHARE[1]):
-        out.append('the off-hand strikes dealt x%.2f of the fist hits (expected %.2f..%.2f)' % (
-            osum / float(msum), DUAL_FIST_SHARE[0], DUAL_FIST_SHARE[1]))
     return out
 
 
@@ -935,8 +928,10 @@ async def check_dual_fists(io, name, cls, level):
         return Result('dual_fists', name, cls, PASS, 'a fist weapon is refused outside the Monk line (code %s)' % f.get('left'))
     if not int(f.get('melee') or 0):
         return Result('dual_fists', name, cls, SKIP, 'two fist weapons worn, but no fist hit landed in the watch')
-    return Result('dual_fists', name, cls, PASS, 'two fist weapons worn; %s fist hits (%s), %s off-hand strikes (%s)' % (
-        f.get('melee'), f.get('meleeSum'), f.get('off'), f.get('offSum')))
+    # meleeSum: the engine's fist hits as the first health event sees them (before the Monk's own scaling); offSum: the
+    # strikes as the script deals them (before armour); the share itself is covered by tests/monk_test.lua
+    return Result('dual_fists', name, cls, PASS, 'two fist weapons worn; %s fist hits, %s off-hand strikes (%s damage)' % (
+        f.get('melee'), f.get('off'), f.get('offSum')))
 
 
 CHECKS = [
