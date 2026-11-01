@@ -103,6 +103,15 @@ android {
         noCompress += ['zip']
     }
 
+    // OpenAL Soft is LGPL and built shared (triplets/arm64-android-chaos.cmake): pack libopenal.so next to the engine
+    // library. The Android linker finds it in the APK by its name when NativeActivity loads libcinders.so.
+    def openalSo = depsPrefix ? file("${depsPrefix}/lib/libopenal.so") : null
+    def jniExtra = new File(project.buildDir, 'chaos-jni')
+    if (openalSo?.exists()) {
+        project.copy { from openalSo; into new File(jniExtra, 'arm64-v8a') }
+        sourceSets.main.jniLibs.srcDirs += [jniExtra]
+    }
+
     packagingOptions {
         jniLibs {
             // the library is built page aligned (16 KB); keep it uncompressed so Android maps it from the APK

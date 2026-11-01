@@ -227,9 +227,9 @@ there; not yet tried on a phone. The debug APK stays `-O0` so the emulator smoke
 
 ### Still open
 
-1. **File-backed data.** Done in phase 3 (patch `0167`) for the downloaded game data. `data.zip` in the assets is still
-   read into one RAM buffer, about 71 MB here. Fine for the Lua and UI files; a PhysFS mount of the APK asset would be
-   better and is not built.
+1. **File-backed data.** Done in phase 3 (patch `0167`) for the downloaded game data. `data.zip` in the assets: done
+   2026-11-01 (patch `0177`, not run on a device). It was read into one heap buffer, about 74 MB, twice per start. Now
+   PhysFS mounts the asset buffer that Android maps from the APK (stored uncompressed), so pages load on demand.
 2. **No game data in the APK.** Done in phase 3: the first-start screen downloads it. Not run on a device.
 3. **Restart.** Done in phase 3 (Java `restartApp` and `RestartActivity`). Not run on a device.
 4. **Touch layout.** The walk pad and the action bar of `client_mobile`, tap and long press, hotkey buttons, safe areas,
@@ -245,9 +245,10 @@ there; not yet tried on a phone. The debug APK stays `-O0` so the emulator smoke
 7. **APK self-update.** Done in step 8, see "Step 8 status": the `android_apk` entry, the publish script and admin app button,
    the Java download and `PackageInstaller` hand-over with the permission prompt, the screen, patch `0169`. Not run on a
    device. Still needed: the release keystore secrets.
-8. **OpenAL Soft is LGPL.** It is linked statically into the engine library. Whoever has the APK cannot relink it. For
-   a public release either link it dynamically, as a separate `.so` in the APK, or offer the object files. The owner
-   should decide before any public download. The same question applies to the Windows package.
+8. **OpenAL Soft is LGPL.** Done for the APK 2026-11-01: the triplet builds it shared, `app/build.gradle` packs
+   `libopenal.so` next to `libcinders.so`, and the workflow fails when the APK lacks it or the engine does not load it
+   by that name. Whoever has the APK can replace it. The Windows package still links it statically; the owner decides
+   that one before any public download.
 9. **Encrypted data on the phone.** Decided as the default in phase 3: plain files in the app folder, and `data.zip` can
    be unzipped from the APK by anyone. Same level as the Windows loose tree before client build 13. The owner can still
    ask for encrypted storage (question 2); it would be a decrypting file layer under PhysFS.

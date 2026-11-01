@@ -280,6 +280,15 @@ jobs:
           "$BT/apksigner" verify --print-certs "$APK" | head -3
           "$BT/zipalign" -c -P 16 4 "$APK"   # 16 KB page alignment of the native library
           "$BT/aapt2" dump badging "$APK" | grep -E "^package:|native-code"
+          # OpenAL Soft (LGPL) ships as its own library: the APK holds it and the engine needs it by that name
+          unzip -l "$APK" | grep -E 'lib/arm64-v8a/.*\.so$'
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/libopenal.so$' || { echo "::error::libopenal.so is not in the APK"; exit 1; }
+          RE="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          unzip -p "$APK" lib/arm64-v8a/libcinders.so > "$RUNNER_TEMP/libcinders.so"
+          unzip -p "$APK" lib/arm64-v8a/libopenal.so > "$RUNNER_TEMP/libopenal.so"
+          "$RE" -d "$RUNNER_TEMP/libcinders.so" | grep NEEDED
+          "$RE" -d "$RUNNER_TEMP/libcinders.so" | grep -q 'Shared library: \[libopenal.so\]' || { echo "::error::libcinders.so does not load libopenal.so"; exit 1; }
+          "$RE" -d "$RUNNER_TEMP/libopenal.so" | grep -E 'SONAME|NEEDED'
           mkdir out
           cp "$APK" out/CindersOfChaos-Android.apk
           (cd out && sha256sum CindersOfChaos-Android.apk | tee CindersOfChaos-Android.apk.sha256)

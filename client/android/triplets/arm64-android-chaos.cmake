@@ -1,4 +1,4 @@
-# vcpkg triplet for the Android client (O313): arm64 only, static libraries, release only, API 26.
+# vcpkg triplet for the Android client (O313): arm64 only, static libraries (OpenAL Soft shared), release only, API 26.
 # Used with the NDK that ANDROID_NDK_HOME names (r27d, see docs/ANDROID_CLIENT.md).
 set(VCPKG_TARGET_ARCHITECTURE arm64)
 set(VCPKG_CRT_LINKAGE dynamic)
@@ -14,3 +14,8 @@ set(VCPKG_C_FLAGS "-fPIC")
 set(VCPKG_CXX_FLAGS "-fPIC")
 # 16 KB page size: Android 15 devices and Google Play ask for aligned libraries
 set(VCPKG_LINKER_FLAGS "-Wl,-z,max-page-size=16384")
+# OpenAL Soft is LGPL: a separate libopenal.so in the APK next to libcinders.so, so it can be replaced
+# (app/build.gradle packs it; the workflow checks the APK holds it and the engine links it by name)
+if(PORT STREQUAL "openal-soft")
+    set(VCPKG_LIBRARY_LINKAGE dynamic)
+endif()
