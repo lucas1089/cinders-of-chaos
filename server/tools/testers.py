@@ -611,6 +611,7 @@ class KeyIO:
     def __init__(self, bot, clock):
         self.bot, self.clock = bot, clock
         self.go_err = None
+        self.formed = None
 
     def alive(self):
         return bool(self.bot.alive and not self.bot.died and not self.clock['stop'])
@@ -691,6 +692,7 @@ class CheckIO(KeyIO):
                 PARTY_BUSY.discard(other_name)
             return False
         if action == 'form':
+            self.formed = (other_name, other.cid, bot.cid)
             # out of any party the random party behaviour made before this check
             await bot.helper_says('party leave', 'party')
             await other.helper_says('party leave', 'party')
@@ -717,11 +719,23 @@ class CheckIO(KeyIO):
             await bot.helper_says('party leave', 'party')
         return True
 
+    def partner_kept(self, other_name):
+        """False when this bot or the partner died, left the game or logged in again (a new creature id) since the
+        party was formed: a party of 0 or 1 is then no bug (live run 2026-11-01 at level 1600: bots died every few s)"""
+        formed = getattr(self, 'formed', None)
+        other = next((b for b in ONLINE.values() if b.name == other_name), None)
+        if not formed or formed[0] != other_name or other is None or not self.alive():
+            return False
+        return other.alive and not other.died and other.cid == formed[1] and self.bot.cid == formed[2]
+
     def autosetup(self):
         return getattr(self.bot.args, 'checks_rotation', None)
 
     def spells(self):
         return getattr(self.bot.args, 'checks_spells', None) or {}
+
+    def timers(self):
+        return getattr(self.bot.args, 'checks_timers', None)
 
 
 def load_check_spells(server_dir, vocs):
@@ -1522,10 +1536,14 @@ def run(a):
     a.keytest_table = {}
     a.checks_rotation = None
     a.checks_spells = {}
+    a.checks_timers = None
     if a.checks:
         rot = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules', 'game_helperrotation', 'autorotation_data.lua')
         if os.path.exists(rot):
             a.checks_rotation = TX.load_table(rot)
+        sup = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules', 'game_helpersupport', 'supportspells.lua')
+        if os.path.exists(sup):
+            a.checks_timers = TX.load_timer_ids(sup)
         vocs = LT.parse_vocations(LT.read_text(os.path.join(a.server_dir, 'data', 'XML', 'vocations.xml')))
         a.checks_spells = load_check_spells(a.server_dir, vocs)
     a.backpack_client_id = 0

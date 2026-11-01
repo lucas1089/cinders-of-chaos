@@ -743,6 +743,14 @@ T.ONLINE.update({b.cid: b for b in _pbs})
 _ios = [T.CheckIO.__new__(T.CheckIO) for _ in _pbs]
 for _io, _b in zip(_ios, _pbs):
     _io.bot, _io.clock = _b, {'stop': False}
+_ios[1].formed = ('P1', 1, 2)
+ok(_ios[1].partner_kept('P1'), 'partner_kept: both in game with the creature ids of the form')
+_pbs[0].cid_was, _pbs[0].cid = _pbs[0].cid, 99
+ok(not _ios[1].partner_kept('P1'), 'partner_kept: the partner logged in again (a new creature id)')
+_pbs[0].cid = _pbs[0].cid_was
+_pbs[0].died = True
+ok(not _ios[1].partner_kept('P1'), 'partner_kept: the partner died')
+_pbs[0].died = False
 _wait = T.PARTNER_WAIT_S
 T.PARTNER_WAIT_S = 0.0
 _picks = [asyncio.run(_io.partner()) for _io in _ios]

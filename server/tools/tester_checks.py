@@ -37,6 +37,7 @@ LOOK = 2.0          # seconds between two looks
 SETTLE = 3.0        # seconds after a cast, a teleport or a party change before the first look (the server's purge runs at 0.5 s)
 ANSWER = 6.0
 QUEST_LEVEL = 500   # the level of the first line spell quest (spellquest_config.lua quests[1].level)
+QUEST_LEVELS = (500, 800, 1200)  # spellquest_config.lua quests[n].level, in order
 QUEST_GOLD = 2000   # gold per level to the bank when a spell quest is done (spellquest_config.lua reward.goldPerLevel)
 
 # class (vocation name of vocations.xml) -> the summon spell words (spells_chaos.xml) and the check that owns it
@@ -193,6 +194,15 @@ async def check_pets(io, name, cls, level):
     return Result('pets', name, cls, PASS, 'pet %s: out, no wrong target, gone after dismiss' % owned[0])
 
 
+PARTNER_GONE = 'this bot or its partner died or logged in again during the check (no party to read)'
+
+
+def partner_kept(io, other):
+    """io.partner_kept(other): both bots still in game with the creature ids of the form (True for an io without it)"""
+    f = getattr(io, 'partner_kept', None)
+    return True if f is None else bool(f(other))
+
+
 async def check_party(io, name, cls, level):
     """two bots form a party and leave it: the helper sees the size; a bot with a summon keeps its sides in the party"""
     other = await io.partner()
@@ -207,6 +217,8 @@ async def check_party(io, name, cls, level):
         return Result('party', name, cls, SKIP, 'no answer to !tester party')
     if int(p.get('size') or 0) < 2:
         await io.party('leave', other)
+        if not partner_kept(io, other):
+            return Result('party', name, cls, SKIP, PARTNER_GONE)
         return Result('party', name, cls, FAIL, 'invited %s, joined, the party has %s member(s)' % (other, p.get('size')))
     detail = 'party of %s' % p.get('size')
     if cls in SUMMONERS:
@@ -222,6 +234,8 @@ async def check_party(io, name, cls, level):
     await io.sleep(SETTLE)
     p = await io.helper('party', 'party', ANSWER)
     if p and not p.get('err') and int(p.get('size') or 0) >= 2:
+        if not partner_kept(io, other):
+            return Result('party', name, cls, SKIP, PARTNER_GONE)
         return Result('party', name, cls, FAIL, 'left the party, the helper still sees %s members' % p.get('size'))
     return Result('party', name, cls, PASS, detail + ', and gone after leaving')
 
@@ -347,6 +361,8 @@ async def check_party_xp(io, name, cls, level):
                                                        'protection zone (the temple teleport did not take)')
         a, b = party_share_problems(first), party_share_problems(second)
         bad = [x for x in a if x in b]    # the engine's own update lags a tick: only what both looks saw
+        if bad and not partner_kept(io, other):
+            return Result('party_xp', name, cls, SKIP, PARTNER_GONE)
         if bad:
             return Result('party_xp', name, cls, FAIL, '; '.join(bad[:3]))
         verdict = 'working' if second.get('shareEnabled') else 'off: %s' % (
@@ -584,9 +600,17 @@ async def check_auto_setup(io, name, cls, level):
     return Result('auto_setup', name, cls, PASS, 'the preset of level %s is castable' % level)
 
 
-def quest_spell_problems(spell, cls, level, spells, table):
+def load_timer_ids(path):
+    """the spell ids Auto setup keeps up as timer buffs (game_helpersupport/supportspells.lua: `[id] = { auto = 'timer'`)"""
+    import re
+    with open(path, encoding='utf-8') as f:
+        return {int(m.group(1)) for m in re.finditer(r"\[(\d+)\]\s*=\s*\{\s*auto\s*=\s*'timer'", f.read())}
+
+
+def quest_spell_problems(spell, cls, level, spells, table, timers=None):
     """[text] for the quest spell a bot learned: it must be in the server's spell list (by name), open to the class, not gated
-    above the level, and in the class's Auto setup data (a preset, the extras or the ultimate). spells / table may be empty:
+    above the level, and in the class's Auto setup data (a preset, the extras or the ultimate; a level 800 quest buff: the
+    timer buffs of `timers`, load_timer_ids, as Auto setup keeps a buff up and never casts it in a rotation). spells / table may be empty:
     that part is left out (the caller says so); returns None when the spell is not on the server at all"""
     found = [(sid, s) for sid, s in spells.items() if str(s.get('name', '')).lower() == str(spell).lower()]
     if spells and not found:
@@ -601,8 +625,11 @@ def quest_spell_problems(spell, cls, level, spells, table):
         if row:
             ids = {x for p in row['presets'] for x in p['spells']} | set(row.get('extras') or []) | (
                 {row['ultimate']} if row.get('ultimate') else set())
+            if timers is not None and sid in timers:
+                continue
             if sid not in ids:
-                out.append('%s (%d) is in no preset or extras of the Auto setup of %s' % (spell, sid, cls))
+                out.append('%s (%d) is in no preset or extras of the Auto setup of %s%s' % (
+                    spell, sid, cls, '' if timers is None else ' and no timer buff of it'))
     return out
 
 
@@ -647,19 +674,37 @@ async def check_spell_quest(io, name, cls, level):
 
 
 async def _spell_quest_run(io, name, cls, level):
+    """every quest the level opens, in order (500, 800, 1200): before, only the first one ran live (O302)"""
+    check = 'spell_quest'
+    done = []
+    for n, qlevel in enumerate(QUEST_LEVELS, 1):
+        if level < qlevel:
+            break
+        r = await _one_spell_quest(io, name, cls, level, n)
+        if r.status != PASS:
+            if done and r.status == SKIP:
+                break
+            return r
+        done.append(r.detail)
+    later = [lv for lv in QUEST_LEVELS[len(done):]]
+    tail = '; quests at level %s not reached (level %s)' % (', '.join(map(str, later)), level) if later else ''
+    return Result(check, name, cls, PASS, ' | '.join(done) + tail)
+
+
+async def _one_spell_quest(io, name, cls, level, n):
     check = 'spell_quest'
 
     def fail(text):
-        return Result(check, name, cls, FAIL, text)
+        return Result(check, name, cls, FAIL, 'quest %d: %s' % (n, text))
 
-    a, bad = await quest_step(io, 'state', {'quest': 1, 'code': 'ok', 'step': 0})
+    a, bad = await quest_step(io, 'state', {'quest': n, 'code': 'ok', 'step': 0})
     if bad:
-        return fail('level %s, fresh: %s' % (level, bad))
+        return fail('level %s, %s: %s' % (level, 'fresh' if n == 1 else 'after quest %d' % (n - 1), bad))
     spell = a.get('spell')
     need = a.get('need') or {}
     if not spell or not need.get('kills'):
         return fail('the state names no spell or hunt: %s' % json.dumps(a)[:100])
-    a, bad = await quest_step(io, 'set 1 1 0 0', {'step': 1, 'kills': 0, 'fragments': 0})
+    a, bad = await quest_step(io, 'set %d 1 0 0' % n, {'step': 1, 'kills': 0, 'fragments': 0})
     if bad:
         return fail(bad)
     a, bad = await quest_step(io, 'kill 3', {'counted': 3, 'kills': 3})
@@ -671,13 +716,13 @@ async def _spell_quest_run(io, name, cls, level):
     a, bad = await quest_step(io, 'kill boss', {'weight': 25, 'kills': 73})
     if bad:
         return fail('a boss kill does not count 25: ' + bad)
-    a, bad = await quest_step(io, 'set 1 2', {'step': 2, 'kills': need['kills'], 'fragments': need['fragments']})
+    a, bad = await quest_step(io, 'set %d 2' % n, {'step': 2, 'kills': need['kills'], 'fragments': need['fragments']})
     if bad:
         return fail('the trial step: ' + bad)
     # Archivist Odrenna must stand in the world (placed at startup in her stall); the helper takes the bot to her
     at = await io.helper('enter npc Archivist Odrenna', 'enter', 8.0)
     if not at:
-        return Result(check, name, cls, SKIP, 'no answer to !tester enter npc Archivist Odrenna')
+        return Result(check, name, cls, SKIP, 'quest %d: no answer to !tester enter npc Archivist Odrenna' % n)
     if at.get('err'):
         return fail('Archivist Odrenna is not in the game (%s): placement at startup failed or her XML did not load' % str(at['err'])[:60])
     a, bad = await quest_step(io, 'trial', {'near': True, 'entered': True, 'running': True})
@@ -686,17 +731,20 @@ async def _spell_quest_run(io, name, cls, level):
     a, bad = await quest_step(io, 'leave', {'left': True, 'running': False})
     if bad:
         return fail('the trial run could not be left: ' + bad)
-    a, bad = await quest_step(io, 'complete', {'taught': spell, 'taughtKnown': True,
+    a, bad = await quest_step(io, 'complete', {'completed': n, 'taught': spell, 'taughtKnown': True,
                                                'gold': lambda r: int(r.get('gold') or 0) == QUEST_GOLD * level})
     if bad:
         return fail('the reward: ' + bad)
     spells, table = io.spells(), io.autosetup()
-    problems = quest_spell_problems(spell, cls, level, spells, table)
+    timers = io.timers() if hasattr(io, 'timers') else None
+    problems = quest_spell_problems(spell, cls, level, spells, table, timers)
     if problems is None:
         return fail('%s is learned but not in the server\'s spell list' % spell)
     if problems:
         return fail('; '.join(problems[:3]))
     parts = ['%d kills, fragment, boss 25' % 48, 'trial opened at Odrenna', '%s learned' % spell]
+    if n > 1:
+        parts = ['quest %d (level %d): %s learned' % (n, QUEST_LEVELS[n - 1], spell)]
     if spells:
         parts.append('in the spell list')
     if table and cls in table:

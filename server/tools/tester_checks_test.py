@@ -224,6 +224,17 @@ class Pets(unittest.TestCase):
 
 
 class Party(unittest.TestCase):
+    def test_a_partner_that_died_is_a_skip_not_a_bug(self):
+        # live run 2026-11-01 at level 1600: bots died every few seconds, "joined, the party has 0 member(s)"
+        io = FakeIO({'party': {'size': 0}})
+        io.partner_kept = lambda other: False
+        r = run(TX.check_party(io, 'Tester Aaa', 'Ninja', 100))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('died or logged in again', r.detail)
+        io = FakeIO({'party': {'size': 0}})
+        io.partner_kept = lambda other: True
+        self.assertEqual(run(TX.check_party(io, 'Tester Aaa', 'Ninja', 100)).status, TX.FAIL)
+
     def test_form_and_leave(self):
         def size(io):
             return {'size': 2 if ('form', 'Tester Bbb') in io.partied and ('leave', 'Tester Bbb') not in io.partied else 1}
@@ -644,12 +655,14 @@ class QuestIO(FakeIO):
         self.level, self.spell, self.faults, self.odrenna = level, spell, set(faults), odrenna
         self.q = {'step': 0, 'kills': 0, 'fragments': 0, 'pity': 0}
         self.known, self.near, self.running, self.cmds = False, False, False, []
+        self.n = 1   # the open quest: the next one after a completion (500, 800, 1200)
+        self.spells_of = [spell, spell + ' II', spell + ' III']
 
     def state(self, **extra):
-        code = 'ok' if self.level >= 500 else 'level'
-        d = {'level': self.level, 'quest': 1, 'step': self.q['step'], 'code': code, 'kills': self.q['kills'],
-             'fragments': self.q['fragments'], 'pity': self.q['pity'], 'need': dict(self.NEED), 'spell': self.spell,
-             'learned': self.known}
+        code = 'ok' if self.level >= TX.QUEST_LEVELS[self.n - 1] else 'level'
+        d = {'level': self.level, 'quest': self.n, 'step': self.q['step'], 'code': code, 'kills': self.q['kills'],
+             'fragments': self.q['fragments'], 'pity': self.q['pity'], 'need': dict(self.NEED),
+             'spell': self.spells_of[self.n - 1], 'learned': self.known}
         d.update(extra)
         return d
 
@@ -685,6 +698,7 @@ class QuestIO(FakeIO):
             return self.state()
         if sub[0] == 'reset':
             self.q, self.known, self.running = {'step': 0, 'kills': 0, 'fragments': 0, 'pity': 0}, False, False
+            self.n = 1
             return self.state()
         if sub[0] == 'set':
             step = int(sub[2])
@@ -706,7 +720,10 @@ class QuestIO(FakeIO):
             if self.q['step'] != 2:
                 return self.state(err='the quest is not on its trial step')
             self.q['step'], self.known = 3, 'noteach' not in self.faults
-            return self.state(completed=1, taught=self.spell, taughtKnown=self.known, gold=0 if 'nogold' in self.faults else 2000 * self.level)
+            done, spell = self.n, self.spells_of[self.n - 1]
+            if self.n < 3:
+                self.n, self.q = self.n + 1, {'step': 0, 'kills': 0, 'fragments': 0, 'pity': 0}
+            return self.state(completed=done, taught=spell, taughtKnown=self.known, gold=0 if 'nogold' in self.faults else 2000 * self.level)
         return {'err': 'unknown spellquest command'}
 
 
@@ -718,6 +735,22 @@ KEEPFALL = {142: {'name': 'Keepfall', 'level': 500, 'vocations': [4, 8, 14]}}
 
 
 class SpellQuest(unittest.TestCase):
+    def test_every_quest_the_level_opens(self):
+        # O302: the quests at 800 and 1200 ran in no live check before; a level 1300 bot does all three in order
+        io = QuestIO(level=1300)
+        r = run(TX.check_spell_quest(io, 'Tester Aaa', 'Warrior', 1300))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        for text in ('Keepfall learned', 'quest 2 (level 800): Keepfall II learned', 'quest 3 (level 1200): Keepfall III learned'):
+            self.assertIn(text, r.detail)
+        self.assertNotIn('not reached', r.detail)
+        r = run(TX.check_spell_quest(QuestIO(level=900), 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('quest 2 (level 800)', r.detail)
+        self.assertIn('quests at level 1200 not reached (level 900)', r.detail)
+        r = run(TX.check_spell_quest(QuestIO(level=900, faults={'nogold'}), 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('quest 1: the reward', r.detail)
+
     def go(self, io, cls='Warrior', level=600):
         return run(TX.check_spell_quest(io, 'Tester Aaa', cls, level))
 
@@ -751,7 +784,7 @@ class SpellQuest(unittest.TestCase):
     def test_kills_that_do_not_count(self):
         r = self.go(QuestIO(faults=['nokill']))
         self.assertEqual(r.status, TX.FAIL)
-        self.assertTrue(r.bug_line().startswith('BUG spell_quest: kills do not count'))
+        self.assertTrue(r.bug_line().startswith('BUG spell_quest: quest 1: kills do not count'))
 
     def test_no_fragment_from_the_pity(self):
         r = self.go(QuestIO(faults=['nopity']))
@@ -812,6 +845,21 @@ class SpellQuest(unittest.TestCase):
             mine = [n for n, sid in quest1 if row['voc'] in spells[sid]['vocations']]
             self.assertEqual(len(mine), 1, '%s: exactly one quest 1 spell, got %s' % (cls, mine))
             self.assertEqual(TX.quest_spell_problems(mine[0], cls, 500, spells, table), [], cls)
+
+    def test_the_real_level_800_buffs_are_auto_setup_timers(self):
+        # live run 2026-11-01: Lotus Stance and Ironbound Oath read "in no preset"; a buff is a timer of Auto setup
+        table = TX.load_table(os.path.join(MODULES, 'game_helperrotation', 'autorotation_data.lua'))
+        timers = TX.load_timer_ids(os.path.join(MODULES, 'game_helpersupport', 'supportspells.lua'))
+        with open(os.path.join(MODULES, 'game_chaosspells', 'spelldata.lua'), encoding='utf-8') as f:
+            text = f.read()
+        quest2 = [(m.group(2), int(m.group(1))) for m in re.finditer(r'\{ id = (\d+), name = "([^"]+)"[^\n]*? quest = 2 \}', text)]
+        self.assertEqual(len(quest2), 7, 'one level 800 quest buff per line')
+        spells = client_spells()
+        for cls, row in table.items():
+            mine = [n for n, sid in quest2 if row['voc'] in spells[sid]['vocations']]
+            self.assertEqual(len(mine), 1, '%s: exactly one quest 2 spell, got %s' % (cls, mine))
+            self.assertEqual(TX.quest_spell_problems(mine[0], cls, 900, spells, table, timers), [], cls)
+            self.assertTrue(TX.quest_spell_problems(mine[0], cls, 900, spells, table), 'without the timers it reads missing')
 
     def test_load_table_reads_extras_and_the_ultimate(self):
         table = TX.load_table(os.path.join(MODULES, 'game_helperrotation', 'autorotation_data.lua'))
