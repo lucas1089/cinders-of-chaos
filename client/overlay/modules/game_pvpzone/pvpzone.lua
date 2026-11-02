@@ -191,9 +191,7 @@ local function minimapWidget()
 end
 
 local function saveFlags()
-  local list = {}
-  for _, f in ipairs(flags) do list[#list + 1] = { x = f.x, y = f.y, z = f.z, icon = f.icon, name = f.name } end
-  pcall(g_settings.setNode, 'pvpzoneFlags', { list = list })
+  pcall(g_settings.setNode, 'pvpzoneFlags', V.flagsNode(flags))
 end
 
 -- take our flags off the minimap (the server's marks stay known for the objective line until the zone is left)
@@ -215,14 +213,7 @@ end
 local function clearOldFlags()
   local node = nil
   pcall(function() node = g_settings.getNode('pvpzoneFlags') end)
-  flags = {}
-  if type(node) == 'table' and type(node.list) == 'table' then
-    for _, f in ipairs(node.list) do
-      if tonumber(f.x) and tonumber(f.y) and tonumber(f.z) then
-        flags[#flags + 1] = { x = f.x, y = f.y, z = f.z, icon = f.icon or 0, name = tostring(f.name or '') }
-      end
-    end
-  end
+  flags = V.savedFlags(node) -- a list read back from g_settings has the keys "1", "2" ... (client_chaos_settings)
   clearFlags()
 end
 
