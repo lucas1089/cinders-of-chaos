@@ -1,0 +1,15 @@
+# Cycle events that fall behind start again from now instead of starving every other timer (O313).
+--- a/src/framework/core/scheduledevent.cpp
++++ b/src/framework/core/scheduledevent.cpp
+@@ -48,6 +48,11 @@
+ {
+     if(m_callback && !m_canceled && (m_maxCycles == 0 || m_cyclesExecuted < m_maxCycles)) {
+         m_ticks += m_delay;
++        // Chaos (base patch 0180): a cycle that fell behind (its callback took longer than its delay) starts again from
++        // now. Moved on from its old due time only, it stayed the earliest event for good and ran before every other
++        // timer of the client (the login scene's walkers kept a slow phone from logging in, 2026-11-02).
++        if (m_ticks <= g_clock.millis())
++            m_ticks = g_clock.millis() + m_delay;
+         return true;
+     }
+ 

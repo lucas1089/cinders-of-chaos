@@ -291,7 +291,15 @@ function LoginScene.create(parent, keep)
     th.applyFont(nameTag, 'outlineSmall')
   end
   build()   -- or on the first tick, when the layer has its size
-  walkEvent = cycleEvent(walkStep, WALK_MS)
+  -- not a cycleEvent: the engine moves a cycle event on by its delay from its last due time, so a step that takes longer
+  -- than WALK_MS (a slow phone, the emulator) falls further behind each time, stays the earliest event and runs before
+  -- every other timer of the client, for good (the login never got through on the emulator, 2026-11-02). Each tick is
+  -- scheduled from now, before the step runs, so an error in the step does not stop the walkers either.
+  local function walkTick()
+    walkEvent = scheduleEvent(walkTick, WALK_MS)
+    walkStep()
+  end
+  walkEvent = scheduleEvent(walkTick, WALK_MS)
   return true
 end
 

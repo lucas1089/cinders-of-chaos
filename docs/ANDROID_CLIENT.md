@@ -64,6 +64,17 @@ the APK only changes with the APK, so `client_chaos_firststart` now keeps its "t
 `firststart_core_test.lua`). The first start of a new APK still hashes once; later starts only look the files up. The log
 line `firststart: N files compared, H hashed, C from the store of this APK` shows it.
 
+Login never reached, 2026-11-02 (runs 41354357031, 41373382299, 41387243370). A stall probe in `client_chaos_phonetest`
+samples the Lua stack while its own 50 ms timer is late. Every sample was in the login scene's walkers. Two causes:
+- `restack` asked the engine for a child index per thing of the scene on every tile change. Now only the neighbours
+  (commit c5a217c9).
+- The walkers ran on a 25 ms `cycleEvent`. The engine moves a cycle on from its last due time, so a step slower than
+  25 ms fell behind for good and ran before every other timer: the login timers never fired. Now each tick is
+  scheduled from now (`loginscene.lua`), and base patch `0180` restarts any cycle that fell behind from now.
+- The second run still had the old Lua: the first start downloads the live update 100, and without `update_baseline`
+  that update puts its older Lua over the APK's. A play test of new Lua needs `update_baseline` above the live
+  release number (101 while winpkg-100 is live).
+
 ## Step 8 status: the APK updater
 
 Date: 2026-10-30. Build plan step 8 is written and tested as far as this machine can: the publisher, the manifest key, the
