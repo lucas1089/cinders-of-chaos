@@ -1,6 +1,6 @@
 Module
   name: game_sidepanelfit
-  description: The right and left horizontal panels take no space while they hold nothing visible
+  description: The right and left horizontal panels take only the height of the windows they show, none with the option off
   author: Cinders of Chaos
   sandboxed: false
   autoload: true
