@@ -3769,7 +3769,7 @@ Output **pair 58**: dat af634150c86240eaf8566e930e845819 (8,847,086 bytes), spr 
   `gen_wiki_data.lua`, run the update (server/README.md "Relic sets (pair 58)"). No client Lua changes: the codex shows the five sets
   from the regenerated `codex_data.lua`.
 
-### Pair 59: pair 58 with new looks for nine rings and necklaces (`gen_jewelry_art.py`, `redraw_items.py`; built 2026-11-02, not pushed yet)
+### Pair 59: pair 58 with new looks for nine rings and necklaces (`gen_jewelry_art.py`, `redraw_items.py`; built 2026-11-02, on windows-assets 30ac16e)
 Owner 2026-11-02 ("a arte do necklace nao tem nada a ver com um necklace"; "substitua esses"; "se baseie mais nos outros itens
 que ficaram"; "aprovo as joias, pode montar o pair"): the terra, glacier and magma amulets, the lightning pendant, the life,
 sword, axe and club rings and the ring of healing showed loose gems, a round eye, chain links or bare bands. They are PixelLab
@@ -3783,8 +3783,16 @@ python3 -I client/tools/sprites/redraw_items.py --dat pair58/Tibia.dat --spr pai
 python3 -I client/tools/sprites/check_pair.py pair59/Tibia.dat pair59/Tibia.spr --old pair58/Tibia.dat pair58/Tibia.spr --allow-changed 'item:38612,38614-38617,38629-38632'
 ```
 Output **pair 59**: dat 5ecf883fcbe7ff328b664622880c44c8 (8,847,086 bytes), spr d9639640fffaa710daed01ee57eb42bc (1,132,704,452 bytes).
-check_pair: 0 errors (the warnings of pair 58). Waits for the owner's approval of the windows-assets push; until then the game
-shows the old looks.
+check_pair: 0 errors (the warnings of pair 58). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 59 change only the dat
+md5 lines (committed with the push).
+- **Archive parts** (the recipe of pair 58, tar streamed into xz; owner approved 2026-11-02, pushed to windows-assets as **30ac16e**,
+  only the two part files and their lines of `SHA256SUMS.parts` change):
+  - part00 99,614,720 bytes, sha256 `618c283adfd9cc1c5a86dfa58dd1343e6d255a8e6973fb7fb2b48a55fa15ead6`
+  - part01 30,257,600 bytes, sha256 `2e7f0c4197522b87ec9294d0fda105595a064e75b078d9e4e4ed008713d5d2ae`
+  - joined `things-1098.tar.xz` (129,872,320 bytes) sha256 `944f9082cf551374ec1072f0d1c4c441e5009a250c5966f5cca36bbd4ccedaef`;
+    `things-1098.tar` sha256 `f068776dcbd37c58af660259aa73377374b39aa295e2d37592efbb8ad37ccf30`. Decompressing the joined parts gives
+    the dat and spr md5s above (checked).
+- **Switch on:** none on the server (same client ids). The new looks show once a client update with pair 59 is published.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
