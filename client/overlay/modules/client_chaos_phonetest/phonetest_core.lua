@@ -5,7 +5,7 @@ local M = ChaosPhoneTestCore
 
 M.MARKER = 'phonetest_run'
 M.DEFAULTS = {npc = 'Loot Buyer', monster = 'Rat'}
-M.STEPS = {'login', 'enter', 'walk', 'windows', 'npc', 'fight', 'loot', 'chat', 'done'}
+M.STEPS = {'login', 'enter', 'perf', 'walk', 'windows', 'npc', 'fight', 'loot', 'chat', 'done'}
 -- windows a player opens from the menus: each module's own toggle() opens it and closes it again
 M.WINDOWS = {
   'game_skills', 'game_inventory', 'game_battle', 'game_spellbook', 'game_passivetree', 'game_codex', 'game_goals',
@@ -41,6 +41,23 @@ function M.moved(positions)
     if a and b and (a.x ~= b.x or a.y ~= b.y or a.z ~= b.z) then n = n + 1 end
   end
   return n
+end
+
+-- fps samples {fps, gfx, cpu} of the perf step: medians of each and the lowest fps (all whole numbers, 0 when empty)
+function M.fpsSummary(samples)
+  local function median(key)
+    local v = {}
+    for _, x in ipairs(samples or {}) do v[#v + 1] = tonumber(x[key]) or 0 end
+    if #v == 0 then return 0 end
+    table.sort(v)
+    return math.floor(v[math.floor((#v + 1) / 2)])
+  end
+  local lowest
+  for _, x in ipairs(samples or {}) do
+    local f = tonumber(x.fps) or 0
+    if not lowest or f < lowest then lowest = f end
+  end
+  return {fps = median('fps'), minFps = math.floor(lowest or 0), gfx = median('gfx'), cpu = median('cpu')}
 end
 
 return M

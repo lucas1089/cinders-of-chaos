@@ -228,11 +228,16 @@ package, and for a release signature `ANDROID_CLIENT_KEYSTORE_B64`, `ANDROID_CLI
 `ANDROID_CLIENT_KEY_ALIAS`. Without the keystore secrets the APK is a debug build with the runner's debug key. The game
 client has its own release key, not the key of the admin app. The engine inside always has `NDEBUG`,
 also in a debug APK: without it the `VALIDATE` checks end the game on a deep Lua stack (`getTop() <= 20`, 2026-10-30 on
-a phone, Helper Auto setup). The workflow fails if the CMake cache shows no `NDEBUG`. A debug APK's engine is still
-`-O0`: an optimised one died with SIGILL on the CI emulator. Cause, from the logcat backtrace: the emulator runs arm64
-code through a translator on x86 (`libndk_translation.so`), and its interpreter stopped on a NEON instruction it does
-not decode (`DecodeSimdScalarTwoRegMisc`). A real arm64 phone has that instruction, so a release APK (`-O2`) should run
-there; not yet tried on a phone. The debug APK stays `-O0` so the emulator smoke test keeps working.
+a phone, Helper Auto setup). Every APK a player gets has an optimised engine (CMake Release: `-O3`, `NDEBUG`, stripped),
+the debug APK too. The workflow fails if its CMake cache is not Release. Until 2026-11-02 a debug APK's engine was
+`-O0`. On the owner's phone the game then drew under 30 fps and took minutes to start. The optimised engine dies with
+SIGILL on the CI emulator only. Cause, from the logcat backtrace: the emulator runs arm64 code through a translator on
+x86 (`libndk_translation.so`), and its interpreter stopped on a NEON instruction it does not decode
+(`DecodeSimdScalarTwoRegMisc`). A real arm64 phone has that instruction. So the emulator jobs get a second APK of the
+same tree, artifact `CindersOfChaos-Android-emulator`, built with `-PchaosEmulatorEngine=true` (`-O0` with `NDEBUG`).
+Players never get that one. The emulator play test logs fps and the engine timings after entering (`phonetest: perf`,
+`phonetest: stat ...`). Those come from an `-O0` engine on a software renderer: they show where the time goes, not
+what a phone reaches.
 
 ### What was checked here
 
@@ -275,7 +280,9 @@ there; not yet tried on a phone. The debug APK stays `-O0` so the emulator smoke
    emulator play test logs each main window's size against the screen; the look on a real phone is still open.
 6. **Mobile defaults.** Done, not run on a device. On the first start on Android `game_visualfx` switches off
    `spellLight`, `liquidShimmer`, `weather`, `ambientParticles`, `missileTrails`, `lightFlicker`, `deathFade` and
-   `rarityOutlineMap` through the settings module, once (flag `chaosMobileDefaults`). `screenGrade`, `bloom` and
+   `rarityOutlineMap` through the settings module, once (flag `chaosMobileDefaults`). A second round (flag
+   `chaosMobileDefaults2`, also on phones that took the first) switches off HD Sprite Upscaling (`hdmodeBox`). It
+   upscaled every sprite 2x with xBRZ on the CPU the first time it was drawn, and made the map picture 4x the pixels. `screenGrade`, `bloom` and
    `hoverOutline` are off everywhere already. Desktop defaults are unchanged. The player can turn any back on.
 7. **APK self-update.** Done in step 8, see "Step 8 status": the `android_apk` entry, the publish script and admin app button,
    the Java download and `PackageInstaller` hand-over with the permission prompt, the screen, patch `0169`. Not run on a

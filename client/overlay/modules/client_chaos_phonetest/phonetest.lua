@@ -193,6 +193,35 @@ function steps.walk(nextFn)
   stepOnce()
 end
 
+-- frames per second standing in the game for PERF_MS, then the engine's own timings (g_stats: main thread, render
+-- thread, dispatcher events, Lua) of that time. Information only: an emulator draws in software, so the numbers say
+-- where the time goes, not what a phone reaches.
+local PERF_MS = 20000
+local STAT_NAMES = {[1] = 'main', [2] = 'render', [3] = 'events', [4] = 'lua'}
+function steps.perf(nextFn)
+  if g_stats and g_stats.clearAll then pcall(g_stats.clearAll) end
+  local samples = {}
+  local t0 = g_clock.millis()
+  local function sample()
+    samples[#samples + 1] = {fps = g_app.getFps(), gfx = g_app.getGraphicsFps and g_app.getGraphicsFps() or 0,
+      cpu = g_app.getProcessingFps and g_app.getProcessingFps() or 0}
+    if g_clock.millis() - t0 < PERF_MS then return later(1000, sample) end
+    local s = C.fpsSummary(samples)
+    result('perf', true, ('fps median %d min %d, graphics %d, processing %d, screen %dx%d'):format(s.fps, s.minFps,
+      s.gfx, s.cpu, g_window.getWidth(), g_window.getHeight()))
+    if g_stats and g_stats.get then
+      for t = 1, 4 do
+        local ok, text = pcall(g_stats.get, t, 12, true)
+        if ok and text and text ~= '' then
+          for line in text:gmatch('[^\n]+') do log('stat ' .. STAT_NAMES[t] .. ' ' .. line) end
+        end
+      end
+    end
+    nextFn()
+  end
+  later(1000, sample)
+end
+
 function steps.windows(nextFn)
   local sw, sh = rootWidget:getWidth(), rootWidget:getHeight()
   local list, i, opened, tooBig = C.WINDOWS, 0, 0, 0

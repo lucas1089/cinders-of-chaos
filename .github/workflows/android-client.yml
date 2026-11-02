@@ -278,11 +278,12 @@ jobs:
             -PchaosDepsPrefix="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" \
             -PchaosAssetsDir="$GITHUB_WORKSPACE/apk-assets" \
             -PchaosClientBuild="$CLIENT_BUILD"
-          # the engine must have NDEBUG (app/build.gradle): without it the VALIDATE checks end the game
+          # the player APK's engine is optimised (CMake Release, app/build.gradle): an -O0 engine ran under 30 fps on a
+          # phone. Release also brings NDEBUG: without it the VALIDATE checks end the game
           CACHE=$(find app/.cxx -name CMakeCache.txt | head -1)
           grep -H -E '^CMAKE_BUILD_TYPE|^CMAKE_CXX_FLAGS:' "$CACHE"
-          grep -q -E '^CMAKE_BUILD_TYPE:STRING=Release$|^CMAKE_CXX_FLAGS:STRING=.*-DNDEBUG' "$CACHE" \
-            || { echo "::error::the engine was built without NDEBUG"; exit 1; }
+          grep -q -E '^CMAKE_BUILD_TYPE:STRING=Release$' "$CACHE" \
+            || { echo "::error::the engine was not built optimised (CMAKE_BUILD_TYPE is not Release)"; exit 1; }
 
       - name: Check the APK and write its update entry
         run: |
@@ -350,6 +351,38 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+      # The emulator's arm64 translator stops on an instruction of the optimised engine (SIGILL, app/build.gradle), so the
+      # emulator jobs get a second APK of the same tree with an -O0 engine. Players never get this one.
+      - name: Build the emulator APK (-O0 engine, for the emulator jobs only)
+        if: ${{ inputs.smoke_test || inputs.smoke_download || inputs.smoke_play }}
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+        working-directory: chaos/client/android
+        run: |
+          set -euo pipefail
+          rm -rf app/build/outputs/apk
+          gradle --no-daemon :app:assembleDebug \
+            -PchaosClientDir="$GITHUB_WORKSPACE/game" \
+            -PchaosDepsPrefix="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" \
+            -PchaosAssetsDir="$GITHUB_WORKSPACE/apk-assets" \
+            -PchaosClientBuild="$CLIENT_BUILD" -PchaosEmulatorEngine=true
+          CACHE=$(find app/.cxx/Debug -name CMakeCache.txt | head -1)
+          grep -H -E '^CMAKE_BUILD_TYPE|^CMAKE_CXX_FLAGS:' "$CACHE"
+          grep -q -E '^CMAKE_CXX_FLAGS:STRING=.*-DNDEBUG' "$CACHE" || { echo "::error::the emulator engine has no NDEBUG"; exit 1; }
+          APK=$(find app/build/outputs/apk -name '*.apk' | head -1)
+          [ -n "$APK" ] || { echo "::error::no emulator APK built"; exit 1; }
+          mkdir -p "$GITHUB_WORKSPACE/out-emu"
+          cp "$APK" "$GITHUB_WORKSPACE/out-emu/CindersOfChaos-Android.apk"
+
+      - name: Upload the emulator APK
+        if: ${{ inputs.smoke_test || inputs.smoke_download || inputs.smoke_play }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: CindersOfChaos-Android-emulator
+          path: out-emu/
+          retention-days: 3
+          if-no-files-found: error
+
   release:
     name: Attach the APK to a GitHub prerelease (the source of the app update)
     needs: apk
@@ -390,7 +423,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: CindersOfChaos-Android
+          name: CindersOfChaos-Android-emulator
           path: apk
 
       - name: Let the emulator use KVM
@@ -437,7 +470,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: CindersOfChaos-Android
+          name: CindersOfChaos-Android-emulator
           path: apk
 
       - name: Let the emulator use KVM
@@ -483,7 +516,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: CindersOfChaos-Android
+          name: CindersOfChaos-Android-emulator
           path: apk
 
       # the Linux server package as a player gets it (windows-package.yml), its game address the emulator's host
