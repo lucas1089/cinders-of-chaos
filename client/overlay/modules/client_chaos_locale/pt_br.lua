@@ -1445,6 +1445,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Leave Tower"] = "Sair da torre",
   ["Next floor now"] = "Próximo andar agora",
   ["Automatic"] = "Automático",
+  ["Drag to move. Double-click to put it back."] = "Arraste para mover. Clique duas vezes para voltar ao lugar.",
   ["Start each next floor by itself as soon as the server allows it. In a group, Automatic only works for the run leader."] = "Começa cada próximo andar sozinho assim que o servidor permitir. Em grupo, o Automático só funciona para o líder da corrida.",
   ["Get ready"] = "Prepare-se",
   ["Floor %d"] = "Andar %d",
