@@ -6,8 +6,6 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -122,17 +120,17 @@ public class MainActivity extends AppCompatActivity {
         ui = new Ui(this);
 
         shell = ui.column();
-        shell.setBackgroundColor(ui.iron1);
+        shell.setBackgroundColor(ui.bg);
         shell.setFitsSystemWindows(true);
         shell.addView(topBar(), Ui.matchWrap());
 
         progress = new LinearProgressIndicator(this);
         progress.setIndeterminate(true);
-        progress.setIndicatorColor(ui.ember, ui.gold);
-        progress.setTrackColor(ui.iron0);
-        progress.setTrackThickness(ui.dp(3));
+        progress.setIndicatorColor(ui.text2);
+        progress.setTrackColor(ui.input);
+        progress.setTrackThickness(ui.dp(4));
         progress.setVisibility(View.INVISIBLE);
-        shell.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(3)));
+        shell.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(4)));
 
         content = new FrameLayout(this);
         // hidden until the phone's lock screen is passed (onResume)
@@ -140,11 +138,12 @@ public class MainActivity extends AppCompatActivity {
         shell.addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         nav = new BottomNavigationView(this);
-        nav.setBackgroundColor(ui.iron2);
+        nav.setBackgroundColor(ui.surface);
         nav.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_LABELED);
         nav.setItemIconTintList(getColorStateList(R.color.nav_item));
+        nav.setItemIconSize(ui.dp(20));
         nav.setItemTextColor(getColorStateList(R.color.nav_item));
-        nav.setItemActiveIndicatorColor(ColorStateList.valueOf(Color.argb(90, 107, 74, 20)));
+        nav.setItemActiveIndicatorColor(ColorStateList.valueOf(ui.raised));
         Menu m = nav.getMenu();
         m.add(Menu.NONE, TAB_PANEL, 0, "Painel").setIcon(R.drawable.ic_nav_panel);
         m.add(Menu.NONE, TAB_COMMANDS, 1, "Comandos").setIcon(R.drawable.ic_nav_commands);
@@ -177,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
 
     private View topBar() {
         LinearLayout bar = ui.row();
-        bar.setBackgroundColor(ui.iron0);
+        bar.setBackgroundColor(ui.input);
         bar.setPadding(ui.dp(16), ui.dp(12), ui.dp(16), ui.dp(12));
         ImageView flame = new ImageView(this);
         flame.setImageResource(R.drawable.ic_flame);
@@ -186,10 +185,9 @@ public class MainActivity extends AppCompatActivity {
         names.setPadding(ui.dp(12), 0, 0, 0);
         TextView t = new TextView(this);
         t.setText("Cinders Admin");
-        t.setTextColor(ui.goldLight);
-        t.setTextSize(19);
-        t.setLetterSpacing(0.04f);
-        t.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
+        t.setTextColor(ui.text);
+        t.setTextSize(16);
+        t.setTypeface(Ui.MEDIUM);
         names.addView(t);
         subtitle = new TextView(this);
         subtitle.setTextColor(ui.muted);
@@ -373,8 +371,8 @@ public class MainActivity extends AppCompatActivity {
     void snack(String s, boolean good) {
         Snackbar sb = Snackbar.make(content, s, s.length() > 60 ? Snackbar.LENGTH_LONG : Snackbar.LENGTH_SHORT);
         sb.setAnchorView(nav);
-        sb.setBackgroundTint(good ? ui.iron3 : ui.bloodDark);
-        sb.setTextColor(ui.bright);
+        sb.setBackgroundTint(good ? ui.raised : ui.errorDeep);
+        sb.setTextColor(ui.text);
         sb.setTextMaxLines(4);
         sb.show();
     }
@@ -384,7 +382,7 @@ public class MainActivity extends AppCompatActivity {
                 .setNegativeButton("Cancelar", null).setPositiveButton(yes, (x, w) -> go.run());
         androidx.appcompat.app.AlertDialog dlg = d.show();
         if (danger) {
-            dlg.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setTextColor(ui.ember);
+            dlg.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setTextColor(ui.error);
         }
     }
 
@@ -459,17 +457,17 @@ public class MainActivity extends AppCompatActivity {
             card = ui.card();
             LinearLayout b = Ui.body(card);
             head = ui.title("");
-            head.setTextSize(15);
+            head.setTextSize(14);
             detail = ui.text("");
             detail.setPadding(0, ui.dp(4), 0, 0);
             toggle = new TextView(MainActivity.this);
             toggle.setText("Ver detalhes");
-            toggle.setTextColor(ui.gold);
+            toggle.setTextColor(ui.text2);
             toggle.setTextSize(13);
-            toggle.setPadding(0, ui.dp(10), 0, ui.dp(2));
+            toggle.setPadding(0, ui.dp(8), 0, ui.dp(4));
             raw = ui.mono("");
-            raw.setBackgroundColor(ui.iron0);
-            raw.setPadding(ui.dp(10), ui.dp(8), ui.dp(10), ui.dp(8));
+            raw.setBackgroundColor(ui.input);
+            raw.setPadding(ui.dp(12), ui.dp(8), ui.dp(12), ui.dp(8));
             raw.setVisibility(View.GONE);
             raw.setTextIsSelectable(true);
             detail.setTextIsSelectable(true);
@@ -487,15 +485,15 @@ public class MainActivity extends AppCompatActivity {
             b.addView(head);
             b.addView(detail);
             b.addView(toggle);
-            b.addView(raw, ui.gap(6));
+            b.addView(raw, ui.gap(8));
             b.addView(actions, ui.gap(4));
             card.setVisibility(View.GONE);
         }
 
         void running(String what) {
             card.setVisibility(View.VISIBLE);
-            card.setStrokeColor(ui.goldDark);
-            head.setTextColor(ui.goldLight);
+            card.setStrokeColor(ui.edgeStrong);
+            head.setTextColor(ui.text);
             head.setText(what + "...");
             detail.setText("Executando na VPS.");
             toggle.setVisibility(View.GONE);
@@ -505,8 +503,8 @@ public class MainActivity extends AppCompatActivity {
 
         void show(String what, Friendly f) {
             card.setVisibility(View.VISIBLE);
-            card.setStrokeColor(f.ok ? ui.iron4 : ui.blood);
-            head.setTextColor(f.ok ? ui.ok : ui.ember);
+            card.setStrokeColor(f.ok ? ui.edge : ui.errorEdge);
+            head.setTextColor(f.ok ? ui.ok : ui.error);
             head.setText((f.ok ? "✓  " : "✕  ") + what + (f.ok ? "" : ": " + f.title));
             detail.setText(f.detail.isEmpty() ? (f.ok ? "Sem resposta do comando." : "") : f.detail);
             detail.setVisibility(detail.getText().length() == 0 ? View.GONE : View.VISIBLE);

@@ -222,7 +222,7 @@ impl App {
                     State::Starting | State::Stopping | State::OnlineNoUnit => gold,
                     _ => red,
                 };
-                ui.colored_label(c, st.badge());
+                theme::state_word(ui, st.badge(), c, st == State::Online);
             }
             if ui.button("Atualizar").clicked() {
                 self.card_call(ctx, "status", 30, 0);
@@ -239,8 +239,8 @@ impl App {
                 let on = s.state() == State::Online;
                 match s.uptime_sec(Self::now_unix()) {
                     Some(up) if on => ui.label(format!("No ar há {}", cards::duration(up))),
-                    _ if on => ui.label("No ar."),
-                    _ => ui.label("O servidor não está rodando."),
+                    _ if on => ui.label("No ar"),
+                    _ => ui.label("O servidor não está rodando"),
                 };
                 let u = s.get("unit");
                 ui.weak(format!("Unidade {}", if u.is_empty() { "chaos-server" } else { u }));
@@ -251,11 +251,11 @@ impl App {
                     );
                 }
                 if s.state() == State::Failed {
-                    ui.colored_label(red, "O serviço caiu. Veja os erros na aba Logs.");
+                    ui.colored_label(red, "O serviço caiu: veja os erros na aba Logs");
                 }
                 egui::Grid::new("status_grid")
                     .num_columns(2)
-                    .spacing([28.0, 6.0])
+                    .spacing([28.0, 8.0])
                     .show(ui, |ui| {
                         ui.label(theme::caption("Jogadores"));
                         ui.horizontal(|ui| {
@@ -276,12 +276,7 @@ impl App {
                         ui.horizontal(|ui| {
                             ui.strong(s.mem_text());
                             if let Some(p) = s.mem_percent() {
-                                ui.add(
-                                    egui::ProgressBar::new(p as f32 / 100.0)
-                                        .desired_width(120.0)
-                                        .desired_height(8.0)
-                                        .fill(theme::EMBER),
-                                );
+                                theme::usage_bar(ui, u32::from(p));
                             }
                         });
                         ui.end_row();
@@ -289,12 +284,7 @@ impl App {
                         ui.horizontal(|ui| {
                             ui.strong(s.disk_text());
                             if let Some(p) = s.disk_percent() {
-                                ui.add(
-                                    egui::ProgressBar::new(p as f32 / 100.0)
-                                        .desired_width(120.0)
-                                        .desired_height(8.0)
-                                        .fill(theme::EMBER),
-                                );
+                                theme::usage_bar(ui, u32::from(p));
                             }
                         });
                         ui.end_row();
@@ -494,7 +484,8 @@ impl App {
             let mut ok = o.code == 0;
             if let (true, Some(sys)) = (ok, p.reload) {
                 if cfg.actor.is_empty() {
-                    o.text.push_str("\nApply live: set the admin character in Settings.\n");
+                    o.text
+                        .push_str("\nAplicar agora: preencha o personagem admin em Config.\n");
                     ok = false;
                 } else {
                     let r = ssh::exec(
@@ -505,8 +496,8 @@ impl App {
                     );
                     let (rok, msg) = catalog::parse_panel_result(&r.text);
                     o.text.push_str(&format!(
-                        "\nApply live (reload {sys}): {}\n{msg}\n",
-                        if rok && r.code == 0 { "ok" } else { "FAILED" }
+                        "\nAplicar agora (recarregar {sys}): {}\n{msg}\n",
+                        if rok && r.code == 0 { "ok" } else { "falhou" }
                     ));
                     ok = rok && r.code == 0;
                 }
@@ -517,7 +508,7 @@ impl App {
                 o.text = msg;
             }
             if o.code != 0 {
-                o.text.push_str(&format!("\n[exit code {}]\n", o.code));
+                o.text.push_str(&format!("\n[código de saída {}]\n", o.code));
             }
             let _ = tx.send(Msg::Done {
                 title: p.title,
@@ -620,17 +611,21 @@ impl App {
                                 let mut live_go = false;
                                 if let Live::Reload(sys) = a.live {
                                     live_go = ui
-                                        .button(format!("{} + Apply live", a.label))
-                                        .on_hover_text(format!("then reloads {sys} in the game"))
+                                        .button(format!("{} e aplicar agora", a.label))
+                                        .on_hover_text(format!("Depois recarrega {sys} no jogo"))
                                         .clicked();
                                 }
-                                // when the change takes effect: a coloured dot and a short tag (not a status light)
-                                let (r, gr, b) = a.live.rgb();
-                                let colour = egui::Color32::from_rgb(r, gr, b);
-                                let (dot, _) = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
-                                ui.painter().circle_filled(dot.center(), 4.0, colour);
-                                ui.label(egui::RichText::new(a.live.label()).small().color(colour))
-                                    .on_hover_text(a.live.hint());
+                                // a quiet tag only when the change carries a caveat: it restarts the server, or waits
+                                // for the next restart. No dot: the ember dot is the running server's alone.
+                                let tag = match a.live {
+                                    Live::Restarts => Some(theme::ERROR),
+                                    Live::Restart => Some(theme::MUTED),
+                                    _ => None,
+                                };
+                                if let Some(colour) = tag {
+                                    ui.label(egui::RichText::new(a.live.label()).small().color(colour))
+                                        .on_hover_text(a.live.hint());
+                                }
                                 if go || live_go {
                                     go = true;
                                 }
@@ -653,18 +648,18 @@ impl App {
     /// The answer of "Verificar" as a card: headline, summary lines and the last run.
     fn update_card_ui(&mut self, ui: &mut egui::Ui) {
         let Some(u) = &self.update_info else { return };
-        ui.add_space(6.0);
+        ui.add_space(8.0);
         theme::well().show(ui, |ui| {
             ui.set_width(ui.available_width());
             let (colour, badge) = if u.available() {
-                (theme::WARN, "ATUALIZAÇÃO DISPONÍVEL")
+                (theme::WARN, "Atualização disponível")
             } else {
-                (theme::OK, "EM DIA")
+                (theme::OK, "Em dia")
             };
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new(badge).strong().color(colour));
+                ui.colored_label(colour, badge);
                 if u.running() {
-                    ui.label(egui::RichText::new("EM ANDAMENTO").strong().color(theme::EMBER_HI));
+                    ui.colored_label(theme::WARN, "Em andamento");
                 }
             });
             for line in u.summary_lines() {
@@ -682,7 +677,7 @@ impl App {
                 ui.label(theme::caption(&last));
             }
         });
-        ui.add_space(6.0);
+        ui.add_space(8.0);
     }
 
     /// One card per report. "Usar no Fechar relatório" fills the id of the action below, like a typed value.
@@ -690,24 +685,20 @@ impl App {
         let Some(list) = &self.reports else { return };
         let close = ACTIONS.iter().position(|a| a.template.starts_with("feedback-close"));
         let mut fill: Option<u32> = None;
-        ui.add_space(6.0);
+        ui.add_space(8.0);
         ui.label(theme::caption(&infos::reports_summary(list)));
         for r in list {
             theme::well().show(ui, |ui| {
                 ui.set_width(ui.available_width());
                 ui.horizontal_wrapped(|ui| {
                     ui.label(theme::card_title(&format!("#{}", r.id)));
-                    ui.label(
-                        egui::RichText::new(infos::category_label(&r.category))
-                            .strong()
-                            .color(theme::TEXT),
-                    );
+                    ui.colored_label(theme::TEXT, infos::category_label(&r.category));
                     let (colour, word) = if r.closed {
-                        (theme::MUTED, "FECHADO")
+                        (theme::MUTED, "Fechado")
                     } else {
-                        (theme::WARN, "ABERTO")
+                        (theme::WARN, "Aberto")
                     };
-                    ui.label(egui::RichText::new(word).strong().color(colour));
+                    ui.colored_label(colour, word);
                     ui.label(theme::caption(&r.when));
                 });
                 let mut meta = format!("posição {}", r.pos);
@@ -977,7 +968,7 @@ impl App {
                     State::Starting | State::Stopping | State::OnlineNoUnit => gold,
                     _ => red,
                 };
-                ui.colored_label(c, st.badge());
+                theme::state_word(ui, st.badge(), c, on);
                 if let (true, Some(up)) = (on, s.uptime_sec(Self::now_unix())) {
                     ui.label(format!("no ar há {}", cards::duration(up)));
                 }
@@ -1339,7 +1330,7 @@ impl eframe::App for App {
                         self.update_note = format!("Versão nova: {}", f.tag);
                         self.update = Some(f);
                     }
-                    Ok(None) => self.update_note = format!("Versão {VERSION}: em dia."),
+                    Ok(None) => self.update_note = format!("Versão {VERSION}: em dia"),
                     Err(e) => self.update_note = format!("Sem checagem de versão: {e}"),
                 },
                 Msg::Installed(r) => match r {
@@ -1363,7 +1354,7 @@ impl eframe::App for App {
             .show(ctx, |ui| {
                 theme::header_bar(ui, &self.header, &self.icon, "Cinders Admin");
                 egui::Frame::none()
-                    .inner_margin(egui::Margin::symmetric(10.0, 0.0))
+                    .inner_margin(egui::Margin::symmetric(12.0, 0.0))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.spacing_mut().item_spacing.x = 2.0;
@@ -1383,7 +1374,7 @@ impl eframe::App for App {
                             }
                             if self.busy > 0 {
                                 ui.add_space(8.0);
-                                ui.add(egui::Spinner::new().color(theme::EMBER));
+                                ui.add(egui::Spinner::new().color(theme::MUTED));
                             }
                         });
                     });
@@ -1391,11 +1382,11 @@ impl eframe::App for App {
                 if let Some(f) = self.update.clone() {
                     egui::Frame::none()
                         .fill(egui::Color32::from_rgb(44, 32, 14))
-                        .inner_margin(egui::Margin::symmetric(14.0, 6.0))
+                        .inner_margin(egui::Margin::symmetric(16.0, 8.0))
                         .show(ui, |ui| {
                             ui.set_width(ui.available_width());
                             ui.horizontal(|ui| {
-                                ui.colored_label(theme::WARN, format!("Versão nova {} disponível.", f.tag));
+                                ui.colored_label(theme::WARN, format!("Versão nova {} disponível", f.tag));
                                 if theme::primary_button(ui, "Atualizar e reiniciar o app").clicked() {
                                     let (tx, c) = (self.tx.clone(), ctx.clone());
                                     self.update_note = "Baixando...".into();
@@ -1415,7 +1406,7 @@ impl eframe::App for App {
                 egui::Frame::none()
                     .fill(egui::Color32::from_rgb(19, 15, 13))
                     .stroke(egui::Stroke::new(1.0_f32, theme::CARD_EDGE))
-                    .inner_margin(egui::Margin::symmetric(14.0, 8.0)),
+                    .inner_margin(egui::Margin::symmetric(16.0, 8.0)),
             )
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {

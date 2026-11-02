@@ -82,18 +82,18 @@ final class SpectateCard {
         });
         b.addView(lightB, ui.gap(2));
 
-        b.addView(live, ui.gap(10));
+        b.addView(live, ui.gap(12));
         view = new ImageView(a);
         view.setAdjustViewBounds(true);
         view.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        view.setBackgroundColor(ui.iron0);
+        view.setBackgroundColor(ui.input);
         view.setContentDescription("Foto do personagem");
         view.setVisibility(View.GONE);
-        b.addView(view, ui.gap(10));
+        b.addView(view, ui.gap(12));
         info = ui.text("");
-        info.setTextColor(ui.bright);
+        info.setTextColor(ui.text);
         info.setVisibility(View.GONE);
-        b.addView(info, ui.gap(6));
+        b.addView(info, ui.gap(8));
         state = ui.hint("");
         state.setVisibility(View.GONE);
         b.addView(state, ui.gap(4));

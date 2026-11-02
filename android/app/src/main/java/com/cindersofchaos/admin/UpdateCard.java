@@ -55,7 +55,7 @@ final class UpdateCard {
         client = box("Publicar o update do client (quando a release é mais nova)");
         downloads = box("Trocar os downloads do site (Windows e Linux)");
         site = box("Reinstalar o site se o código dele mudou");
-        b.addView(client, ui.gap(6));
+        b.addView(client, ui.gap(8));
         b.addView(downloads);
         b.addView(site);
 
@@ -73,20 +73,20 @@ final class UpdateCard {
 
         prog = ui.column();
         stepText = ui.text("");
-        stepText.setTextColor(ui.goldLight);
+        stepText.setTextColor(ui.text);
         prog.addView(stepText);
         bar = new LinearProgressIndicator(a);
         bar.setMax(100);
-        bar.setTrackThickness(ui.dp(5));
-        bar.setTrackCornerRadius(ui.dp(3));
-        bar.setTrackColor(ui.iron0);
-        bar.setIndicatorColor(ui.gold);
-        prog.addView(bar, ui.gap(6));
+        bar.setTrackThickness(ui.dp(4));
+        bar.setTrackCornerRadius(ui.dp(2));
+        bar.setTrackColor(ui.input);
+        bar.setIndicatorColor(ui.text2);
+        prog.addView(bar, ui.gap(8));
         tail = ui.mono("");
-        tail.setBackgroundColor(ui.iron0);
-        tail.setPadding(ui.dp(8), ui.dp(6), ui.dp(8), ui.dp(6));
-        tail.setTextSize(11);
-        prog.addView(tail, ui.gap(6));
+        tail.setBackgroundColor(ui.input);
+        tail.setPadding(ui.dp(12), ui.dp(8), ui.dp(12), ui.dp(8));
+        tail.setTextSize(12);
+        prog.addView(tail, ui.gap(8));
         prog.setVisibility(View.GONE);
         b.addView(prog, ui.gap(8));
 
@@ -211,7 +211,7 @@ final class UpdateCard {
             polling = false;
             setButtons(true);
             bar.setProgressCompat(100, true);
-            bar.setIndicatorColor(p.status.equals("ok") ? ui.ok : p.status.equals("warn") ? ui.goldLight : ui.ember);
+            bar.setIndicatorColor(p.status.equals("ok") ? ui.ok : p.status.equals("warn") ? ui.warn : ui.error);
             boolean ok = p.status.equals("ok") || p.status.equals("warn");
             Friendly f = ok ? Friendly.ok(UpdateInfo.statusWord(p.status), UpdateInfo.resultText(p), r.out.trim())
                     : Friendly.fail(UpdateInfo.statusWord(p.status), UpdateInfo.resultText(p), r.out.trim());

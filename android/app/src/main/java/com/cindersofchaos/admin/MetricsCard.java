@@ -115,7 +115,7 @@ final class MetricsCard {
         for (MetricsInfo.Band x : m.bands) {
             if (x.gone == MetricsInfo.SMALL || x.active == MetricsInfo.SMALL || x.gonePct < 0) {
                 any = true;
-                bar("Nível " + x.band, 0, "<5 personagens", ui.gold);
+                bar("Nível " + x.band, 0, "<5 personagens", ui.text2);
                 continue;
             }
             long t = x.gone + x.active;
@@ -124,7 +124,7 @@ final class MetricsCard {
             }
             any = true;
             bar("Nível " + x.band, (int) Math.round(x.gonePct), MetricsInfo.pct(x.gonePct) + "  ·  " + x.gone + " de " + t,
-                    x.gonePct >= 60 ? ui.ember : ui.gold);
+                    x.gonePct >= 60 ? ui.warn : ui.text2);
         }
         if (!any) {
             note("Sem dados de abandono.");
@@ -140,7 +140,7 @@ final class MetricsCard {
         String prev = "";
         for (MetricsInfo.Bucket x : m.sessions) {
             bar(MetricsInfo.bucketText(x.bucket, prev), x.pct < 0 ? 0 : (int) Math.round(x.pct),
-                    MetricsInfo.pct(x.pct) + "  ·  " + MetricsInfo.n(x.characters), ui.gold);
+                    MetricsInfo.pct(x.pct) + "  ·  " + MetricsInfo.n(x.characters), ui.text2);
             if (!x.bucket.equals("inf")) {
                 prev = x.bucket;
             }
@@ -210,9 +210,9 @@ final class MetricsCard {
     }
 
     private void funnelSection(String title) {
-        funnelOut.addView(new View(a), ui.gap(10));
+        funnelOut.addView(new View(a), ui.gap(12));
         TextView h = ui.heading(title);
-        h.setTextSize(11);
+        h.setTextSize(13);
         funnelOut.addView(h);
     }
 
@@ -224,12 +224,12 @@ final class MetricsCard {
         row.addView(l);
         LinearProgressIndicator bar = new LinearProgressIndicator(a);
         bar.setMax(100);
-        bar.setTrackThickness(ui.dp(6));
-        bar.setTrackCornerRadius(ui.dp(3));
-        bar.setTrackColor(ui.iron0);
-        bar.setIndicatorColor(ui.gold);
+        bar.setTrackThickness(ui.dp(4));
+        bar.setTrackCornerRadius(ui.dp(2));
+        bar.setTrackColor(ui.input);
+        bar.setIndicatorColor(ui.text2);
         bar.setProgressCompat(Math.max(0, Math.min(100, percent)), false);
-        row.addView(bar, ui.gap(3));
+        row.addView(bar, ui.gap(4));
         TextView v = ui.hint(value);
         v.setTextSize(12);
         row.addView(v);
@@ -249,15 +249,15 @@ final class MetricsCard {
         for (MetricsInfo.Killer k : list) {
             bar(k.name, MetricsInfo.percent(k.deaths, max),
                     MetricsInfo.n(k.deaths) + (k.deaths == 1 ? " morte" : " mortes")
-                            + (k.topBand.isEmpty() ? "" : "  ·  mais no nível " + k.topBand), ui.ember);
+                            + (k.topBand.isEmpty() ? "" : "  ·  mais no nível " + k.topBand), ui.text2);
         }
     }
 
     private void section(String title) {
         View gap = new View(a);
-        out.addView(gap, ui.gap(10));
+        out.addView(gap, ui.gap(12));
         TextView h = ui.heading(title);
-        h.setTextSize(11);
+        h.setTextSize(13);
         out.addView(h);
     }
 
@@ -274,12 +274,12 @@ final class MetricsCard {
         row.addView(l);
         LinearProgressIndicator bar = new LinearProgressIndicator(a);
         bar.setMax(100);
-        bar.setTrackThickness(ui.dp(6));
-        bar.setTrackCornerRadius(ui.dp(3));
-        bar.setTrackColor(ui.iron0);
+        bar.setTrackThickness(ui.dp(4));
+        bar.setTrackCornerRadius(ui.dp(2));
+        bar.setTrackColor(ui.input);
         bar.setIndicatorColor(color);
         bar.setProgressCompat(Math.max(0, Math.min(100, percent)), false);
-        row.addView(bar, ui.gap(3));
+        row.addView(bar, ui.gap(4));
         TextView v = ui.hint(value);
         v.setTextSize(12);
         row.addView(v);

@@ -25,7 +25,7 @@ impl Tab {
 pub enum Live {
     /// Read only, or the effect is immediate (a message, a kick, a unit start).
     Now,
-    /// Written to a file the scripts read at start. Needs a restart, or "Apply live": the game panel's `reload`
+    /// Written to a file the scripts read at start. Needs a restart, or "e aplicar agora": the game panel's `reload`
     /// action for this system (scripts, config, ...) right after the command.
     Reload(&'static str),
     /// Applies only at the next server restart. No live path yet (see README "Gaps").
@@ -42,7 +42,7 @@ impl Live {
     pub fn label(self) -> &'static str {
         match self {
             Live::Now => "na hora",
-            Live::Reload(_) => "com Apply live",
+            Live::Reload(_) => "ao aplicar agora",
             Live::Restart => "após reiniciar",
             Live::Restarts => "reinicia o servidor",
             Live::NextInstall => "na próxima instalação",
@@ -53,14 +53,14 @@ impl Live {
     pub fn hint(self) -> &'static str {
         match self {
             Live::Now => "Faz efeito na hora (ou só lê).",
-            Live::Reload(_) => "Grava o arquivo; o botão \"+ Apply live\" recarrega no jogo sem reiniciar.",
+            Live::Reload(_) => "Grava o arquivo; o botão \"e aplicar agora\" recarrega no jogo sem reiniciar.",
             Live::Restart => "Grava o arquivo; vale no próximo reinício do servidor.",
             Live::Restarts => "O comando reinicia o servidor: os jogadores caem.",
             Live::NextInstall => "Vale na próxima instalação ou atualização, sem reiniciar.",
         }
     }
 
-    /// The tag's dot colour (r, g, b): green at once, yellow with Apply live, orange after a restart, red when it
+    /// The tag's dot colour (r, g, b): green at once, yellow with "aplicar agora", orange after a restart, red when it
     /// restarts the server, grey at the next install.
     pub fn rgb(self) -> (u8, u8, u8) {
         match self {
@@ -274,8 +274,8 @@ pub static ACTIONS: &[Action] = &[
     act(C, "Par do cliente", "Definir", "client-pair set {n}").p(PAIR_P).ask().live(Live::NextInstall).t(30),
     // ---- Comandos: modo beta
     act(C, "Modo beta", "Ver", "beta-mode status").t(30),
-    act(C, "Modo beta", "Ligar", "beta-mode on").live(Live::Reload("scripts")).t(30).h("Apply live recarrega os scripts."),
-    act(C, "Modo beta", "Desligar", "beta-mode off").live(Live::Reload("scripts")).t(30).h("Apply live recarrega os scripts."),
+    act(C, "Modo beta", "Ligar", "beta-mode on").live(Live::Reload("scripts")).t(30).h("Aplicar agora recarrega os scripts."),
+    act(C, "Modo beta", "Desligar", "beta-mode off").live(Live::Reload("scripts")).t(30).h("Aplicar agora recarrega os scripts."),
     act(C, "Modo beta", "Ligar e reiniciar", "beta-mode on restart").ask().live(Live::Restarts).t(240),
     act(C, "Modo beta", "Desligar e reiniciar", "beta-mode off restart").ask().live(Live::Restarts).t(240),
     // ---- Comandos: recarregar um arquivo (o cartão com a escolha e o botão está no Painel do jogo; reload-file ACTOR NOME)
@@ -396,7 +396,7 @@ pub fn build(action: &Action, values: &[String]) -> Result<(String, Option<Strin
     Ok((line.trim().to_string(), stdin))
 }
 
-/// The game panel's reload action as chaos-ctl.sh arguments (Apply live).
+/// The game panel's reload action as chaos-ctl.sh arguments ("e aplicar agora").
 pub fn reload_args(actor: &str, system: &str) -> String {
     format!(
         "panel {} reload {}",

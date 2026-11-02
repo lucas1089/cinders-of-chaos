@@ -72,7 +72,7 @@ final class LogsTab {
         this.a = a;
         this.ui = a.ui;
         LinearLayout page = ui.column();
-        page.setPadding(ui.dp(14), ui.dp(10), ui.dp(14), ui.dp(10));
+        page.setPadding(ui.dp(16), ui.dp(12), ui.dp(16), ui.dp(12));
 
         modes = new MaterialButtonToggleGroup(a);
         modes.setSingleSelection(true);
@@ -157,14 +157,14 @@ final class LogsTab {
 
         info = ui.hint("");
         info.setTextSize(12);
-        info.setPadding(ui.dp(2), 0, 0, ui.dp(6));
+        info.setPadding(0, 0, 0, ui.dp(8));
         page.addView(info);
 
         // ---- the text
         MaterialCardView card = ui.card();
-        card.setCardBackgroundColor(ui.iron0);
+        card.setCardBackgroundColor(ui.input);
         LinearLayout cb = Ui.body(card);
-        cb.setPadding(ui.dp(10), ui.dp(8), ui.dp(10), ui.dp(8));
+        cb.setPadding(ui.dp(12), ui.dp(8), ui.dp(12), ui.dp(8));
         out = ui.mono("");
         outScroll = new ScrollView(a);
         outScroll.addView(out, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -386,7 +386,7 @@ final class LogsTab {
                     }
                     int st = b.length();
                     b.append(head).append('\n');
-                    b.setSpan(new ForegroundColorSpan(ui.goldLight), st, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    b.setSpan(new ForegroundColorSpan(ui.text), st, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     b.setSpan(new StyleSpan(Typeface.BOLD), st, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
                 continue;
@@ -404,7 +404,7 @@ final class LogsTab {
                             .append(p[3].isEmpty() ? "" : " → " + p[3]).append("  [").append(p[4]).append("] ")
                             .append(p[5]).append('\n');
                     if (!p[4].equals("ok")) {
-                        b.setSpan(new ForegroundColorSpan(ui.ember), st, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        b.setSpan(new ForegroundColorSpan(ui.error), st, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                 } else {
                     b.append(line).append('\n');
@@ -425,7 +425,7 @@ final class LogsTab {
         outScroll.post(() -> outScroll.fullScroll(View.FOCUS_UP));
     }
 
-    /** Error lines in ember, warnings in gold. */
+    /** Error lines in red, warnings in amber. */
     private CharSequence colourLog(String text) {
         SpannableStringBuilder b = new SpannableStringBuilder();
         for (String line : text.split("\n", -1)) {
@@ -434,9 +434,9 @@ final class LogsTab {
             String low = line.toLowerCase(Locale.ROOT);
             int colour = 0;
             if (low.contains("error") || low.contains("exception") || low.contains("segfault")) {
-                colour = ui.ember;
+                colour = ui.error;
             } else if (low.contains("warning") || low.contains("[warn")) {
-                colour = ui.goldLight;
+                colour = ui.warn;
             } else if (low.contains("server online") || low.contains("starting the game server")) {
                 colour = ui.ok;
             }
@@ -473,7 +473,7 @@ final class LogsTab {
                 }
                 int s = b.length();
                 b.append("── ").append(head).append(" ──\n");
-                b.setSpan(new ForegroundColorSpan(ui.gold), s, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                b.setSpan(new ForegroundColorSpan(ui.text), s, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 b.setSpan(new StyleSpan(Typeface.BOLD), s, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 lastRun = r;
                 distinct = 0;
@@ -495,11 +495,11 @@ final class LogsTab {
                 int s = b.length();
                 String count = n > 1 ? "×" + n + " " : "";
                 b.append(count);
-                b.setSpan(new ForegroundColorSpan(ui.goldLight), s, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                b.setSpan(new ForegroundColorSpan(ui.warn), s, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 b.setSpan(new StyleSpan(Typeface.BOLD), s, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 int t = b.length();
                 b.append(m.group(2).replace(" | ", "\n    ")).append("\n\n");
-                b.setSpan(new ForegroundColorSpan(ui.ember), t, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                b.setSpan(new ForegroundColorSpan(ui.error), t, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else if (!line.trim().isEmpty()) {
                 b.append(line).append('\n');
             }
@@ -580,7 +580,7 @@ final class LogsTab {
             int s = b.length();
             b.append(line).append('\n');
             if (line.startsWith("$ ")) {
-                b.setSpan(new ForegroundColorSpan(ui.goldLight), s, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                b.setSpan(new ForegroundColorSpan(ui.text2), s, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else if (line.startsWith("[") && line.endsWith("]")) {
                 b.setSpan(new ForegroundColorSpan(ui.muted), s, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }

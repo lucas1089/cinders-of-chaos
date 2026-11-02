@@ -1,6 +1,5 @@
 package com.cindersofchaos.admin;
 
-import android.graphics.Typeface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -57,15 +56,13 @@ final class PanelTab {
         Tile(String label, boolean withBar) {
             card = ui.card();
             LinearLayout b = Ui.body(card);
-            b.setPadding(ui.dp(14), ui.dp(12), ui.dp(14), ui.dp(12));
-            TextView l = ui.heading(label);
-            l.setPadding(0, 0, 0, ui.dp(4));
-            l.setTextSize(11);
-            b.addView(l);
+            b.setPadding(ui.dp(16), ui.dp(12), ui.dp(16), ui.dp(12));
+            b.addView(ui.label(label));
             value = new TextView(a);
-            value.setTextColor(ui.bright);
+            value.setTextColor(ui.text);
             value.setTextSize(20);
-            value.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
+            value.setTypeface(Ui.MEDIUM);
+            value.setFontFeatureSettings("tnum");
             value.setText("·");
             b.addView(value);
             sub = ui.hint("");
@@ -75,10 +72,10 @@ final class PanelTab {
             if (withBar) {
                 bar = new LinearProgressIndicator(a);
                 bar.setMax(100);
-                bar.setTrackThickness(ui.dp(5));
-                bar.setTrackCornerRadius(ui.dp(3));
-                bar.setTrackColor(ui.iron0);
-                bar.setIndicatorColor(ui.gold);
+                bar.setTrackThickness(ui.dp(4));
+                bar.setTrackCornerRadius(ui.dp(2));
+                bar.setTrackColor(ui.input);
+                bar.setIndicatorColor(ui.text2);
                 b.addView(bar, ui.gap(8));
             } else {
                 bar = null;
@@ -93,7 +90,7 @@ final class PanelTab {
                 bar.setVisibility(percent < 0 ? View.INVISIBLE : View.VISIBLE);
                 if (percent >= 0) {
                     bar.setProgressCompat(percent, true);
-                    bar.setIndicatorColor(percent >= 90 ? ui.ember : percent >= 75 ? ui.goldLight : ui.gold);
+                    bar.setIndicatorColor(percent >= 90 ? ui.error : percent >= 80 ? ui.warn : ui.text2);
                 }
             }
         }
@@ -118,25 +115,25 @@ final class PanelTab {
         hb.addView(uptime);
         updated = ui.hint("");
         updated.setTextSize(12);
-        updated.setPadding(0, ui.dp(2), 0, 0);
+        updated.setPadding(0, ui.dp(4), 0, 0);
         hb.addView(updated);
         page.addView(head, Ui.matchWrap());
 
         // ---- a problem that needs the owner (no unit, no connection)
         notice = ui.card();
-        notice.setStrokeColor(ui.blood);
-        notice.setCardBackgroundColor(ui.bloodDark);
+        notice.setStrokeColor(ui.errorEdge);
+        notice.setCardBackgroundColor(ui.errorDeep);
         LinearLayout nb = Ui.body(notice);
         noticeTitle = ui.title("");
-        noticeTitle.setTextSize(15);
-        noticeTitle.setTextColor(ui.goldLight);
+        noticeTitle.setTextSize(14);
+        noticeTitle.setTextColor(ui.onError);
         noticeText = ui.text("");
-        noticeText.setPadding(0, ui.dp(6), 0, 0);
+        noticeText.setPadding(0, ui.dp(4), 0, 0);
         noticeText.setTextIsSelectable(true);
         nb.addView(noticeTitle);
         nb.addView(noticeText);
         notice.setVisibility(View.GONE);
-        page.addView(notice, ui.gap(10));
+        page.addView(notice, ui.gap(12));
 
         // ---- numbers
         players = new Tile("Jogadores", false);
@@ -150,7 +147,7 @@ final class PanelTab {
             a.showTab(MainActivity.TAB_LOGS, true);
             a.logs.openErrors();
         });
-        page.addView(ui.evenRow(players.card, errors.card), ui.gap(10));
+        page.addView(ui.evenRow(players.card, errors.card), ui.gap(12));
         page.addView(ui.evenRow(mem.card, disk.card), ui.gap(8));
         page.addView(ui.evenRow(load.card, backup.card), ui.gap(8));
 
@@ -184,27 +181,27 @@ final class PanelTab {
         ab.addView(ui.evenRow(start, stop));
         ab.addView(ui.evenRow(save, restart), ui.gap(4));
         ab.addView(ui.evenRow(later, bk), ui.gap(4));
-        page.addView(actions, ui.gap(10));
+        page.addView(actions, ui.gap(12));
 
         result = a.new ResultCard();
-        page.addView(result.card, ui.gap(10));
+        page.addView(result.card, ui.gap(12));
 
         update = new UpdateCard(a);
-        page.addView(update.card, ui.gap(10));
+        page.addView(update.card, ui.gap(12));
 
         metrics = new MetricsCard(a);
-        page.addView(metrics.card, ui.gap(10));
-        page.addView(metrics.funnelCard, ui.gap(10)); // O258
+        page.addView(metrics.card, ui.gap(12));
+        page.addView(metrics.funnelCard, ui.gap(12)); // O258
 
         feedback = new FeedbackCard(a);
-        page.addView(feedback.card, ui.gap(10));
+        page.addView(feedback.card, ui.gap(12));
 
         ScrollView sv = new ScrollView(a);
         sv.addView(page, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
         swipe = new SwipeRefreshLayout(a);
-        swipe.setColorSchemeColors(ui.gold, ui.ember);
-        swipe.setProgressBackgroundColorSchemeColor(ui.iron3);
+        swipe.setColorSchemeColors(ui.text2);
+        swipe.setProgressBackgroundColorSchemeColor(ui.raised);
         swipe.addView(sv);
         swipe.setOnRefreshListener(() -> refresh(true));
         root = swipe;
@@ -227,7 +224,7 @@ final class PanelTab {
             swipe.setRefreshing(false);
             if (e != null) {
                 Friendly f = Friendly.ofException(e);
-                a.ui.setBadge(badge, "SEM CONEXÃO", ui.muted);
+                a.ui.setBadge(badge, "Sem conexão", ui.muted);
                 showNotice(f.title, f.detail);
                 if (manual) {
                     a.snack(f.title, false);
@@ -237,7 +234,7 @@ final class PanelTab {
             StatusInfo s = StatusInfo.parse(r.out);
             if (!s.valid()) {
                 Friendly f = Friendly.ofResult(r.out, r.code == 0 ? 1 : r.code);
-                a.ui.setBadge(badge, "ERRO", ui.ember);
+                a.ui.setBadge(badge, "Erro", ui.error);
                 showNotice(f.title, f.detail);
                 return;
             }
@@ -256,10 +253,10 @@ final class PanelTab {
         hideNotice();
         switch (s.state()) {
             case ONLINE:
-                ui.setBadge(badge, "NO AR", ui.ok);
+                ui.setBadge(badge, "No ar", ui.ok, true);
                 break;
             case ONLINE_NO_UNIT:
-                ui.setBadge(badge, "NO AR · SEM SERVIÇO", ui.goldLight);
+                ui.setBadge(badge, "No ar, sem serviço", ui.warn);
                 showNotice("Rodando fora do systemd",
                         "O jogo está rodando (pid " + s.get("pid") + "), mas não pela unidade '" + unit + "'. Ligar, "
                                 + "Desligar e Reiniciar só funcionam com a unidade instalada: "
@@ -267,27 +264,27 @@ final class PanelTab {
                                 + "ou o nome certo em /etc/chaos/ctl.conf (CHAOS_UNIT=nome).");
                 break;
             case STARTING:
-                ui.setBadge(badge, "LIGANDO", ui.goldLight);
+                ui.setBadge(badge, "Ligando", ui.warn);
                 break;
             case STOPPING:
-                ui.setBadge(badge, "DESLIGANDO", ui.goldLight);
+                ui.setBadge(badge, "Desligando", ui.warn);
                 break;
             case FAILED:
-                ui.setBadge(badge, "FALHOU", ui.ember);
+                ui.setBadge(badge, "Falhou", ui.error);
                 showNotice("O serviço caiu", "O systemd marcou o servidor como falho. Veja os erros na aba Logs e "
                         + "toque em Ligar.");
                 break;
             case NO_UNIT:
-                ui.setBadge(badge, "SEM SERVIÇO", ui.ember);
+                ui.setBadge(badge, "Sem serviço", ui.error);
                 Friendly f = Friendly.ofResult("chaos-ctl: unit-not-found: the systemd unit " + unit
                         + " does not exist", 5);
                 showNotice(f.title, f.detail);
                 break;
             case OFFLINE:
-                ui.setBadge(badge, "PARADO", ui.ember);
+                ui.setBadge(badge, "Parado", ui.error);
                 break;
             default:
-                ui.setBadge(badge, s.get("service").toUpperCase(Locale.ROOT), ui.muted);
+                ui.setBadge(badge, sentence(s.get("service")), ui.muted);
         }
         long up = s.uptimeSec(now);
         Date since = s.since();
@@ -296,11 +293,11 @@ final class PanelTab {
             uptime.setText("No ar há " + Friendly.duration(up) + "  ·  desde "
                     + new SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(since));
         } else if (on) {
-            uptime.setText("No ar.");
+            uptime.setText("No ar");
         } else if (s.state() == StatusInfo.State.ONLINE_NO_UNIT) {
-            uptime.setText("Rodando pelo start-server.sh.");
+            uptime.setText("Rodando pelo start-server.sh");
         } else {
-            uptime.setText("O servidor não está rodando.");
+            uptime.setText("O servidor não está rodando");
         }
         updated.setText("Unidade " + unit + "  ·  atualizado às "
                 + new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date(now)));
@@ -308,13 +305,18 @@ final class PanelTab {
         players.set(s.playersText(), s.playersText().equals("?") ? "banco indisponível" : "online agora", -1);
         int e = s.errors();
         errors.set(e < 0 ? "?" : String.valueOf(e), e > 0 ? "toque para ver" : "nenhum", -1);
-        errors.value.setTextColor(e > 0 ? ui.ember : ui.bright);
+        errors.value.setTextColor(e > 0 ? ui.error : ui.text);
         mem.set(s.memText(), null, s.memPercent());
         disk.set(s.diskText(), null, s.diskPercent());
         load.set(s.loadText(), null, -1);
         load.value.setTextSize(16);
         backup.set(s.backupText(), null, -1);
         backup.value.setTextSize(16);
+    }
+
+    /** "activating" -> "Activating": a raw systemd word in sentence case. */
+    private static String sentence(String w) {
+        return w.isEmpty() ? "?" : w.substring(0, 1).toUpperCase(Locale.ROOT) + w.substring(1).toLowerCase(Locale.ROOT);
     }
 
     private void showNotice(String title, String text) {

@@ -18,13 +18,13 @@ pub enum State {
 impl State {
     pub fn badge(self) -> &'static str {
         match self {
-            State::Online => "NO AR",
-            State::OnlineNoUnit => "NO AR, SEM SERVIÇO",
-            State::Starting => "LIGANDO",
-            State::Stopping => "DESLIGANDO",
-            State::Offline => "PARADO",
-            State::Failed => "FALHOU",
-            State::NoUnit => "SEM SERVIÇO",
+            State::Online => "No ar",
+            State::OnlineNoUnit => "No ar, sem serviço",
+            State::Starting => "Ligando",
+            State::Stopping => "Desligando",
+            State::Offline => "Parado",
+            State::Failed => "Falhou",
+            State::NoUnit => "Sem serviço",
             State::Unknown => "?",
         }
     }

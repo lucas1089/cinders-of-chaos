@@ -41,7 +41,7 @@ A JSON file, saved by the Config page:
 - Linux: `~/.config/cinders-admin/settings.json`
 
 Keys: `host`, `port` (22), `user` (`chaosadmin`), `key_path`, `ctl_path`
-(`/opt/chaos/repo/server/deploy/chaos-ctl.sh`), `actor` (admin character for the game panel and Apply live),
+(`/opt/chaos/repo/server/deploy/chaos-ctl.sh`), `actor` (admin character for the game panel and "e aplicar agora"),
 `auto_update` (true).
 
 ## The command table
@@ -56,19 +56,20 @@ action (`chaos-ctl.sh panel ACTOR ACTION JSON`), like the Android Comandos > Pai
 
 ## Live apply
 
-Every button shows how its change reaches the running game:
+Each action has a live kind (`Live` in `src/commands.rs`): when its change takes effect, not a state (owner 2026-10-31
+read the old "live" text as a status light). Only kinds with a caveat show a quiet tag beside the button, no dot.
+Every kind keeps its tooltip (`Live::label`, `hint`; `rgb` stays for the tests).
 
-The mark beside a button says when the change takes effect, not a state (owner 2026-10-31 read the old "live" text as a status light). A coloured dot, a pt-BR tag and a tooltip (`Live::label`, `hint`, `rgb`).
+| Kind | Tag shown | Meaning | Actions |
+|---|---|---|---|
+| `Now` | none | read only, or immediate | status, players, logs, broadcast, kick, open, close, save, backup, unit start and stop, accounts, Discord, site, VPS, panel actions |
+| `Reload` | none: a second button "... e aplicar agora" | the command writes a file the scripts read at start; the second button then runs the game panel action `reload` (`Game.reload`, no restart) for the named system | Modo beta ligar, desligar (reload `scripts`) |
+| `Restart` | "após reiniciar", muted | no live path yet | Taxa de XP definir, voltar ao padrão |
+| `Restarts` | "reinicia o servidor", red | the command itself restarts, players are disconnected | restart, update-apply, rollback, testers start, XP and beta "e reiniciar", server-user fix --restart |
+| `NextInstall` | none | applies when `install_all.py` runs again | Par do cliente |
 
-| Mark | Meaning | Actions |
-|---|---|---|
-| na hora (green dot) | read only, or immediate | status, players, logs, broadcast, kick, open, close, save, backup, unit start and stop, accounts, Discord, site, VPS, panel actions |
-| com Apply live (yellow dot) | the command writes a file the scripts read at start; the second button "... + Apply live" then runs the game panel action `reload` (`Game.reload`, no restart) for the named system | Modo beta ligar, desligar (reload `scripts`) |
-| após reiniciar (orange dot) | no live path yet | Taxa de XP definir, voltar ao padrão |
-| reinicia o servidor (red dot) | the command itself restarts, players are disconnected | restart, update-apply, rollback, testers start, XP and beta "e reiniciar", server-user fix --restart |
-| na próxima instalação (grey dot) | applies when `install_all.py` runs again | Par do cliente |
-
-Apply live needs the admin character in Config (group 4 or more; `reload` is a dangerous panel action, so use it when few players are on).
+"e aplicar agora" needs the admin character in Config (group 4 or more; `reload` is a dangerous panel action, so use it
+when few players are on).
 It uses the existing `remote.cmd` path, so nothing new runs on the server.
 
 ### Gaps (not done in phase 1, no engine change)
@@ -104,14 +105,23 @@ a scripts reload or restart, and `remote_cmd_config` needs a restart. The reload
 ## Look (O344)
 
 Owner, 2026-10-30 (pt-BR): "melhore esse design também". Same family as the game launcher (`launcher/README.md` "Look
-(O339)"), tightened for a dense tool: warm black window, ember accent, gold headings, rounded cards.
+(O339)"), tightened for a dense tool. Polish pass 2026-11-02: a forge on the night shift. Quiet warm neutral chrome,
+richness only in the header strip and the server status.
 
-- Slim header (52 px) with the brand icon and the title over a strip of ember glow and sparks, then a tab bar with an
-  ember underline under the selected tab (Painel, Comandos, Logs, Ao vivo, Painel do jogo, Config) and a hairline.
+- One warm neutral ramp, shared with the Android app (`android/.../res/values/colors.xml`): `BG`, `CARD`, `CARD_EDGE`,
+  `INPUT`; text `TEXT`, `TEXT_2`, `MUTED`.
+- Ember only for the one main action of a screen and the live dot. The ember dot sits before "No ar" (server card and
+  Ao vivo) and nowhere else. Gold only for the selected tab (text and underline).
+- Headings in sentence case, text colour, 16 px, regular weight. Type scale 12, 13, 14, 16, 20. Status words in
+  sentence case, plain coloured text, no pills.
+- 4 px grid: button padding 12x4, widget height 28, item spacing 8, card padding 16, card radius 12, controls 8.
+- Memory and disk bars: neutral, amber from 80 %, red from 90 %.
+- Slim header (52 px) with the brand icon and the title over a strip of ember glow and sparks, then a tab bar
+  (Painel, Comandos, Logs, Ao vivo, Painel do jogo, Config) and a hairline.
 - Every group of commands, the server and metrics cards, the live page and the settings are cards. Settings has aligned
   labels and inputs (paths in monospace) and a second card for the update checkbox and the buttons.
-- Buttons: ember for the one main action of a card (Salvar, Executar, Rodar, update), plain for the rest, red-edged for
-  a command that asks for a confirmation (restart, rollback, kick).
+- Buttons: deep ember for the one main action of a card (Salvar, Executar, Rodar, update; light text at 4.5:1), plain
+  for the rest, red-edged for a command that asks for a confirmation (restart, rollback, kick).
 - Status colours are the same everywhere: ok green, warning amber, error red (`theme.rs` `OK`, `WARN`, `ERROR`): server
   badge, errors count, update banner, console `[Warning` and `[Error` lines, the status text at the bottom ("feito"
   green, "falhou" red).
@@ -122,7 +132,7 @@ Owner, 2026-10-30 (pt-BR): "melhore esse design também". Same family as the gam
   Pillow and numpy, the fx venv); `--preview out.png` saves the header. Change the colours in `src/theme.rs` and `BG` in
   the generator together. `theme.rs` is adapted from `launcher/src/theme.rs` (no shared crate: two small files).
 - Look at it without Windows: build and run under `xvfb-run` (needs `libxkbcommon-x11-0` and Mesa), then
-  `import -window root shot.png`. No new crate and no new font. No new text: only styling, strings unchanged.
+  `import -window root shot.png`. No new crate and no new font.
 
 ## Build and run
 

@@ -43,7 +43,7 @@ final class FeedbackCard {
         b.addView(days, ui.gap(8));
         all = new MaterialCheckBox(a);
         all.setText("Incluir os já fechados");
-        all.setTextColor(ui.bright);
+        all.setTextColor(ui.text);
         b.addView(all);
         note = ui.field("Nota ao fechar (opcional)", "Fica gravada no relato (até 200 letras).", "", 0);
         b.addView(note, ui.gap(4));
@@ -101,7 +101,7 @@ final class FeedbackCard {
         out.addView(ui.divider());
         TextView head = ui.heading("#" + i.id + "  ·  " + FeedbackInfo.categoryLabel(i.category) + "  ·  "
                 + (i.closed ? "fechado" : "aberto"));
-        head.setTextSize(11);
+        head.setTextSize(12);
         row.addView(head);
         TextView t = ui.text(i.text.isEmpty() ? "-" : i.text);
         t.setTextIsSelectable(true);
