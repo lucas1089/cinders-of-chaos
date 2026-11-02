@@ -21,6 +21,7 @@
 -- File format (data/patchnotes/<id>.md, id = file name without .md, e.g. 2026-10-08):
 --   # Title of the week                  first "# " line
 --   Date: 2026-10-08                     optional; else the date in the file name; else none
+--   Kind: news                           optional: an announcement, not patch notes (the launcher feed's News)
 --   Free text before the first section   the intro
 --   ## New | ## Changes | ## Fixes | ## Balance    sections (other names are kept as "other")
 --   - a bullet (or "* ")                 indent by 2+ spaces for a sub-bullet; "- **Lead.** text" gives the bullet a
@@ -140,6 +141,8 @@ function PN.parse(text, id)
 				section = nil
 			end
 			item = nil
+		elseif not section and body:lower():match("^kind%s*:%s*news%s*$") then
+			note.kind = "news" -- an announcement (the launcher shows it under News); the window shows it as any note
 		elseif not section and not note.date and body:lower():match("^date%s*:") then
 			local d = trim(body:match(":(.*)$"))
 			if isDate(d) then

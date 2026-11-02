@@ -1071,16 +1071,20 @@ Nothing is written for it by hand:
 - **News** are ZnoteX's own (`znote_news`, the front page's news, the last 12 rows read, 6 shown): title, date, a short
   plain text and the link `<site_url>/?view=<id>`. No author or account field is read. The staff write them in one
   language, so both language blocks hold the same news.
-- **Changelog** is the weekly patch notes: `server/data/patchnotes/*.md` and the pt-BR twins `<id>.pt-br.md`, parsed
+- **Changelog** is the patch notes: `server/data/patchnotes/*.md` and the pt-BR twins `<id>.pt-br.md`, parsed
   with the same rules as the Patch Notes page (`chaos_pn_parse`). Per note: id, date, title, up to 8 lines ("Lead.
   text", sub-bullets left out) and the link to the full note. A note without a twin shows its English text in the
   pt-BR block. Twins, `README.md` and `_drafts` are not entries of their own.
+- **News notes** (owner 2026-11-02: the beta and test texts go to News, the Changelog keeps the patch notes). A note
+  whose English file has a `Kind: news` line before its first section goes to News instead: title, date, its intro as
+  the text (560 characters) and the link to the full note, merged with the site news by date, 6 shown. Every note now
+  in the repository is marked so; new notes without the line (the Discord bot writes none) are Changelog entries.
 - **Shape** (`format` 1): `{"format":1,"generated":<unix>,"en":{"news":[{id,date,title,text,url}],"changelog":[{id,date,title,lines,url}]},"pt-BR":{...}}`.
   Plain text only (BBCode, HTML and control characters are removed); links are absolute `https://` addresses or empty.
-- **Limits and cache.** 6 news and 6 changelog entries, titles 80, news text 280 and lines 200 characters, the file at
+- **Limits and cache.** 6 news and 6 changelog entries (24 notes read), titles 80, news text 560 and lines 200 characters, the file at
   most 64 KiB (the oldest items go first). A copy in the system temp folder for 5 minutes and `Cache-Control: public,
   max-age=300`, so any number of launcher starts cost one query and a few files per 5 minutes. GET and HEAD only, no
-  cookie, nothing else is read from the request. A news query that fails gives an empty news list; the changelog stays.
+  cookie, nothing else is read from the request. A news query that fails leaves only the news notes; the changelog stays.
 - **Web server.** Like the other machine endpoints (`chaos_client_api.php`): no clean-address redirect (`.htaccess`,
   `setup/router.php`, the nginx `map` above), no SEO buffering, `Disallow` in `robots.txt`. Optional in nginx:
   `location = /chaos_launcher_feed.php { limit_req zone=chaos_forms burst=10 nodelay; limit_req_status 429; include snippets/chaos-php.conf; }`.

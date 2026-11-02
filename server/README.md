@@ -17489,7 +17489,8 @@ startup if missing; also `sql/chaos_patchnotes.sql`). The notes live on the serv
 
 - **Files.** One Markdown-ish file per week or version in `data/patchnotes/` (copy `server/data/patchnotes/` there), named
   `<id>.md` (e.g. `2026-10-08.md`; the id is the name without `.md`). Format (parser: `patchnotes_core.lua`):
-  `# Title`, an optional `Date: YYYY-MM-DD` line (else the date at the start of the file name), free text before the first
+  `# Title`, an optional `Date: YYYY-MM-DD` line (else the date at the start of the file name), an optional
+  `Kind: news` line (the launcher shows the note under News, not Changelog; website/README.md "Launcher feed"), free text before the first
   section (the intro), then `## New`, `## Changes`, `## Fixes`, `## Balance` (other headings are kept and drawn in plain
   colour). Bullets `- ` (or `* `, `+ `), sub-bullets indented by 2+ spaces, indented lines without a dash continue the
   bullet above, `- **Lead.** text` gives the bullet a highlighted lead, `<!-- ... -->` is ignored, `**`/`__`/backticks

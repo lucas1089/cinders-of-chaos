@@ -3,8 +3,10 @@
  * The launcher feed (website/README.md "Launcher feed"): one small public JSON file for the game launcher (launcher/,
  * ROADMAP O314), which shows News and a Changelog next to the Play button. Entry point: chaos_launcher_feed.php
  * (site root, GET). Nothing new is written by hand: the news are ZnoteX's own (table znote_news, the front page's
- * news) and the changelog is the weekly patch notes (server/data/patchnotes/*.md and their pt-BR twins <id>.pt-br.md,
- * the same files as the Patch Notes page and the in-game window).
+ * news) and the announcements among the notes files (a "Kind: news" line: the Open Beta letter, the closed test's
+ * feature notes; owner 2026-11-02: "those texts go to News, the Changelog gets the patch notes"); the changelog is the
+ * other notes, the patch notes (server/data/patchnotes/*.md and their pt-BR twins <id>.pt-br.md, the same files as the
+ * Patch Notes page and the in-game window; the Discord bot writes them).
  *
  * Shape (format 1), one block per language, "en" and "pt-BR":
  *   {"format":1,"generated":<unix>,"en":{"news":[{id,date,title,text,url}],"changelog":[{id,date,title,lines,url}]},
@@ -19,7 +21,7 @@
 if (!function_exists('chaos_launcher_feed_limits')) {
 
 function chaos_launcher_feed_limits(): array {
-	return array('news' => 6, 'changelog' => 6, 'lines' => 8, 'title' => 80, 'news_text' => 280, 'line' => 200,
+	return array('news' => 6, 'changelog' => 6, 'notes' => 24, 'lines' => 8, 'title' => 80, 'news_text' => 560, 'line' => 200,
 		'bytes' => 65536, 'ttl' => 300);
 }
 
@@ -99,7 +101,7 @@ function chaos_lf_notes(string $dir): array {
 	usort($notes, static function (array $a, array $b): int {
 		return strcmp(($b['date'] ?: '0000-00-00') . '|' . $b['id'], ($a['date'] ?: '0000-00-00') . '|' . $a['id']);
 	});
-	return array_slice($notes, 0, $lim['changelog']);
+	return array_slice($notes, 0, $lim['notes']);   // news and patch notes; the build keeps 6 of each
 }
 
 /** One parsed note -> a changelog entry: title, date and the first lines (bullets, "Lead. text"), in plain text. */
@@ -129,17 +131,40 @@ function chaos_lf_entry(array $note, string $id, string $site): array {
 	);
 }
 
-/** The feed array. $newsRows: znote_news rows; $notes: chaos_lf_notes(). */
+/** An announcement note ("Kind: news") -> a news item: title, date, the intro paragraphs in plain text. */
+function chaos_lf_note_news(array $note, string $id, string $site): array {
+	$lim = chaos_launcher_feed_limits();
+	return array(
+		'id'    => $id,
+		'date'  => (string)($note['date'] ?? ''),
+		'title' => chaos_lf_plain($note['title'] ?? $id, $lim['title']),
+		'text'  => chaos_lf_plain(implode(' ', $note['intro'] ?? array()), $lim['news_text']),
+		'url'   => $site === '' ? '' : chaos_lf_url($site . '/page?plugin=chaos&p=patchnotes&id=' . rawurlencode($id)),
+	);
+}
+
+/** The feed array. $newsRows: znote_news rows; $notes: chaos_lf_notes(). A note is news when its English file says
+ * "Kind: news"; the news are the site's and those notes, newest first. */
 function chaos_launcher_feed_build(array $newsRows, array $notes, string $site, int $now): array {
+	$lim = chaos_launcher_feed_limits();
 	$site = rtrim($site, '/');
-	$news = chaos_lf_news($newsRows, $site);
+	$siteNews = chaos_lf_news($newsRows, $site);
 	$feed = array('format' => 1, 'generated' => $now);
 	foreach (array('en', 'pt-BR') as $lang) {
 		$log = array();
+		$news = $siteNews;
 		foreach ($notes as $n) {
-			$log[] = chaos_lf_entry($n[$lang] ?? $n['en'], (string)$n['id'], $site);   // no twin: the English note
+			$note = $n[$lang] ?? $n['en'];   // no twin: the English note
+			if (($n['en']['kind'] ?? 'notes') === 'news') {
+				$news[] = chaos_lf_note_news($note, (string)$n['id'], $site);
+			} elseif (count($log) < $lim['changelog']) {
+				$log[] = chaos_lf_entry($note, (string)$n['id'], $site);
+			}
 		}
-		$feed[$lang] = array('news' => $news, 'changelog' => $log);
+		usort($news, static function (array $a, array $b): int {
+			return strcmp((string)$b['date'], (string)$a['date']);
+		});
+		$feed[$lang] = array('news' => array_slice($news, 0, $lim['news']), 'changelog' => $log);
 	}
 	return $feed;
 }
