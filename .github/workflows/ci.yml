@@ -816,6 +816,7 @@ jobs:
           python3 -I server/tools/gen_base_wands.py --check  # data/lib/chaos_base_wands.lua: stock wand damage for the tooltip (O353)
           python3 -I server/tools/add_vocations_melee_test.py
           python3 -I server/tools/monster_fire_resist_test.py
+          python3 -I server/tools/monster_physical_resist_test.py  # no hunt monster immune to physical (Thief line bug 2026-11-02)
 
       - name: Rotations of at most 5 spells, never 2 s without one (rotation_sim.py; the helper's auto rotation data)
         run: |

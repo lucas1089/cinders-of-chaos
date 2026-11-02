@@ -226,8 +226,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the "Refined by" line, the descriptions in items.xml name the five sets (README "Star inlay stones";
                after itemnames)
   basemonsters tools/patch_base_monsters.py      load warnings of the base monsters: speed spells below -1000 clamped, loot
-               names with their article by item id, unknown races mapped (README "Base server start warnings"; after
-               itemnames)
+               names with their article by item id, unknown races mapped, fire and physical immunity -> 30% resistance
+               (README "Base server start warnings"; after itemnames)
   baselooks    tools/patch_base_looks.py         pair 30 sheet looks and pair 33 kit looks on matching base monsters (rows of family
                "base" of client/tools/sprites/monster_looks/picks.csv; README "Pack 30 monsters in the hunts")
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character

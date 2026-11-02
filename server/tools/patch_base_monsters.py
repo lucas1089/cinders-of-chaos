@@ -16,6 +16,10 @@ DATA_DIR is the base server's data folder. Every monster file under DATA_DIR/mon
   * fire immunity (XML <immunity fire="1"/> or firePercent 100+; Lua {type = "fire"} or a fire percent of 100+) becomes
     a fire resistance of FIRE_RESIST_PERCENT (30: the monster takes 70%) so that Pyre Oath never burns its owner for
     nothing (owner decision, C7; tools/monster_fire_resist.py holds the number)
+  * physical immunity (XML <immunity physical="1"/> or physicalPercent 100+; Lua {type = "physical", combat = true} or
+    a physical percent of 100+) becomes a physical resistance of PHYSICAL_RESIST_PERCENT (30) so that the classes whose
+    kit is physical (Thief, Barbarian and Monk lines) can kill every hunt monster; the bleed immunity stays. Monsters
+    that are not attackable or immune to every damage type keep it (tools/monster_physical_resist.py)
   * a race the engine does not know (Lua monster.race = "magical", "dragon"; XML race="...") gets a known one:
     RACE_MAP, else blood ("Unknown race type")
 Only those attributes change. A second run changes nothing. Prints one line per changed file and a summary.
@@ -27,6 +31,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.dont_write_bytecode = True
 import monster_fire_resist as fire  # noqa: E402
+import monster_physical_resist as phys  # noqa: E402
 
 KNOWN_RACES = ('venom', 'blood', 'undead', 'fire', 'energy')
 RACE_MAP = {'magical': 'energy', 'magic': 'energy', 'dragon': 'blood', 'demon': 'fire', 'elemental': 'energy',
@@ -138,6 +143,9 @@ def patch_xml(text, names):
     text, immune = fire.xml(text)
     if immune:
         changes.append('fire immunity -> %d%% resistance' % fire.FIRE_RESIST_PERCENT)
+    text, immune = phys.xml(text)
+    if immune:
+        changes.append('physical immunity -> %d%% resistance' % phys.PHYSICAL_RESIST_PERCENT)
     return text, changes
 
 
@@ -169,6 +177,9 @@ def patch_lua(text):
     text, immune = fire.lua(text)
     if immune:
         changes.append('fire immunity -> %d%% resistance' % fire.FIRE_RESIST_PERCENT)
+    text, immune = phys.lua(text)
+    if immune:
+        changes.append('physical immunity -> %d%% resistance' % phys.PHYSICAL_RESIST_PERCENT)
     return text, changes
 
 
