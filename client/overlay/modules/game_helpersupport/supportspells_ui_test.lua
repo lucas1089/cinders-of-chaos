@@ -266,5 +266,83 @@ do
   eq(store.chaos_helper_support.Lost.cleared, true, 'an empty list asked for is the player\'s')
 end
 
+-- owner 2026-11-02, the fifth report "the support list is still empty after a death". The tests above kept the saved
+-- node as a Lua table; the client's g_settings does not. setNode turns the table into an OTML node (luavalue_cast: every
+-- key is read with lua_isstring, true for a number, so list index 1 becomes the tag "1"), and getNode turns the node
+-- back into a table whose unique children are set by their tag string (push_otml_subnode_luavalue): slots[1] comes back
+-- as slots["1"]. ipairs saw no rows, so every relog (a death is one) loaded an empty list, and the backup `keep` came
+-- back the same way. This mock does what the engine does, value casts included (true/false and numbers come back typed,
+-- a table with no children comes back nil).
+do
+  local function cast(s)
+    if s == 'true' then return true elseif s == 'false' then return false end
+    return tonumber(s) or s
+  end
+  local function toNode(v)
+    if type(v) ~= 'table' then return cast(tostring(v)) end
+    local out, any = {}, false
+    for k, x in pairs(v) do
+      local r = toNode(x)
+      if r ~= nil then out[tostring(k)] = r any = true end -- the key is the tag: 1 -> "1"
+    end
+    return any and out or nil
+  end
+  local doc = {}
+  g_settings = {
+    setNode = function(n, v) doc[n] = toNode(v) or {} end,
+    getNode = function(n)
+      if doc[n] == nil then return nil end
+      return toNode(doc[n]) or {}
+    end,
+    save = function() end,
+  }
+  -- the engine's round trip, checked once: a list comes back keyed by strings
+  g_settings.setNode('probe', { list = { { id = 7 } } })
+  eq(g_settings.getNode('probe').list[1], nil, 'mock: list index 1 does not come back')
+  eq(g_settings.getNode('probe').list['1'].id, 7, 'mock: it comes back as "1"')
+
+  local name = 'Hero'
+  local dead = false
+  g_game.getLocalPlayer = function()
+    return { getName = function() return name end, isDead = function() return dead end,
+      getHealth = function() return dead and 0 or 100 end }
+  end
+  local spells = {
+    ['Iron Ward'] = { id = 9501, name = 'Iron Ward', words = 'iron ward', group = { [3] = 2000 } },
+    ['Swift Feet'] = { id = 9502, name = 'Swift Feet', words = 'swift feet', group = { [3] = 2000 } },
+    ['Mind Shield'] = { id = 9503, name = 'Mind Shield', words = 'mind shield', group = { [3] = 2000 } },
+  }
+  Spells = { getSpellList = function() return spells end, getSpellDataById = function(id)
+    for _, e in pairs(spells) do if e.id == id then return e end end
+  end }
+  local function ids()
+    local out = {}
+    for _, sl in ipairs(U.slots()) do out[#out + 1] = sl.id .. (sl.enabled and '+' or '-') end
+    return table.concat(out, ',')
+  end
+  U.onGameEnd()
+  U.onGameStart()
+  U.setSlots({ { id = 9501, enabled = true }, { id = 9502, enabled = false }, { id = 9503, enabled = true } }, true)
+  eq(ids(), '9501+,9502-,9503+', 'three support spells set')
+  -- the death: the packet, the death screen, the fast relog (the name comes after the game start)
+  U.onDeath()
+  dead = true
+  U.onGameEnd()
+  name = ''
+  U.onGameStart()
+  name = 'Hero'
+  dead = false
+  eq(ids(), '9501+,9502-,9503+', 'after the death the list is back')
+  -- and a client restart reads it from the file (the same casts)
+  U.onGameEnd()
+  U.onGameStart()
+  eq(ids(), '9501+,9502-,9503+', 'after a relog the list is back')
+  -- an emptied list (Clear) stays empty through the round trip
+  U.setSlots({})
+  U.onGameEnd()
+  U.onGameStart()
+  eq(ids(), '', 'a list the player emptied stays empty after a relog')
+end
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('supportspells_ui_test: OK')
