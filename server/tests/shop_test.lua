@@ -882,6 +882,34 @@ do
 	eq(logged[2] and logged[2].action, "talk/coins", "the use is logged")
 	eq(talks["/coins"].onSay(R1, "/coins", "Receiver, 500"), true, "a player: said as chat, nothing else")
 	eq(#logged, 2, "players are not logged")
+	-- /storecosmetics: every store cosmetic to an online character; administrators only, logged
+	local list = ChaosShopCore.cosmeticOffers(nil, "Cosmetics")
+	eq(#list, 0, "no categories: nothing")
+	-- the unlocks (cosmetics, pets, portal styles ...) count as owned once delivered, as shop_services.lua has it
+	ChaosShopServices.owns = function(p, o)
+		for _, k in ipairs(p.services) do if k == o.key then return true end end
+		return false
+	end
+	local fan = newPlayer("Cosmetic Fan", {account = 603})
+	fan.storage[Chaos.storage.shopFrameActive] = 2
+	eq(talks["/storecosmetics"].onSay(gm, "/storecosmetics", "Cosmetic Fan"), false, "staff words are swallowed")
+	eq(next(fan.outfits), nil, "a gamemaster gives nothing")
+	eq(talks["/storecosmetics"].onSay(R1, "/storecosmetics", "Cosmetic Fan"), true, "a player: said as chat")
+	talks["/storecosmetics"].onSay(god, "/storecosmetics", "Nobody Online")
+	ok(god.cancel and god.cancel:find("online", 1, true), "an offline or unknown character: the usage")
+	local given, owned, failed = ChaosShop.grantStoreCosmetics(fan)
+	ok(given > 50, "many cosmetics given: " .. given)
+	eq(#failed, 0, "none failed: " .. table.concat(failed, "; "))
+	ok(next(fan.mounts) and next(fan.wings) and next(fan.auras), "mounts, wings and auras given")
+	local looks = 0
+	for _ in pairs(fan.outfits) do looks = looks + 1 end
+	ok(looks > 40, "outfits given with both addons: " .. looks)
+	eq(fan.storage[Chaos.storage.shopFrameActive], 2, "the active name plate frame is kept")
+	eq(next(fan.items), nil, "no items, no services")
+	eq(fan.premDays, nil, "no premium time")
+	local g2, o2 = ChaosShop.grantStoreCosmetics(fan)
+	eq(g2, 0, "a second grant gives nothing") eq(o2, given + owned, "everything owned now")
+	ChaosShopServices.owns = nil
 	ChaosAdmin = nil
 end
 

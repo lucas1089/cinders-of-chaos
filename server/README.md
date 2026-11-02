@@ -1238,7 +1238,7 @@ Texts: the base `!exp` line "You didn't have any current Double EXP enhancement.
 Kept as a typed player command: `!bless` (owner exception 2026-10-15; buys the missing classic blessings for gold, see
 "Gentle deaths and blessings"). Kept as typed commands: every staff command (`/` words with an access check: `/rift`, `/season`, `/arena`, `/daily`,
 `/leaderboard`, `/patchnotes`, `/spells reload`, `/supports reload`, `/achievements`, `/invasion`, `/worldboss`,
-`/siege`, `/guild`, `/pet`, `/reports`, `/classunlock`, `/ascendset`, `/towerrun`, `/goblin`, `/coins`, `/gmnotify`,
+`/siege`, `/guild`, `/pet`, `/reports`, `/classunlock`, `/ascendset`, `/towerrun`, `/goblin`, `/coins`, `/storecosmetics`, `/gmnotify`,
 `/newplayerkit`, `/treestats` and the base server's `/` commands); for a player those words are plain chat.
 `tests/no_player_talkactions_test.lua` holds the full staff allowlist (64 words, file by file) and fails on any
 talkaction under `data/` that is not on it, or whose onSay (or the local function it hands the call to) has no staff
@@ -4476,6 +4476,11 @@ The client's Store (menu Economy > Store, module `game_shop`) talks JSON on exte
 base server's own store script uses 201 and is left alone). Prices are in Chaos Coins, kept per account in
 `chaos_shop_coins`. Administrators (group 5+) give coins with `/coins <player>, <amount>` or the admin panel (Store > Give
 Chaos Coins); a gamemaster is refused, and every use is in the admin audit log.
+`/storecosmetics <character>` (group 5+, the character online; owner 2026-11-02) gives every cosmetic the store sells,
+free: the offers of the Cosmetics subcategories (outfits with both addons, mounts, wings, auras, shaders, name plate frames,
+the cosmetic, pet, hideout and other unlocks) and the cosmetic parts of the bundles (`ChaosShopCore.cosmeticOffers`). No
+items, services, premium time or founder pieces. What the character owns is left alone and its active plate frame is
+kept; the reply counts given, owned and failed, the console lists each failure. Audit log as `/coins` (`tests/shop_test.lua`).
 Rules without engine calls are in `shop_core.lua` (tested by `tests/shop_test.lua`); offers in `shop_config.lua`; the
 services, unlocks and boosts in `shop_services.lua` (next section).
 A look offer (outfit, addons, mount, wings, aura, shader) carries its `kind` in the offer the client gets, so the

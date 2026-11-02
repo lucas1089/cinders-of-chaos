@@ -1560,6 +1560,60 @@ end
 login:register()
 
 -- /coins <player>, <amount>   (staff; negative amounts take coins away)
+-- ------------------------------------------------------------------ staff: every store cosmetic (owner 2026-11-02)
+-- /storecosmetics <character>: every cosmetic the store sells (ChaosShopCore.cosmeticOffers: the Cosmetics subcategories
+-- and the cosmetic parts of bundles) given to an online character, free; what it owns already is left alone, its
+-- active name plate frame is kept. Gives value: administrators only, every use in the audit log (Chaos.staffCommand).
+-- Returns given, owned, failed ({name: reason}).
+function Shop.grantStoreCosmetics(target)
+	local given, owned, failed = 0, 0, {}
+	local frame = target:getStorageValue(S.shopFrameActive)
+	local receipt = delivery().newReceipt()
+	for _, offer in ipairs(K.cosmeticOffers(CATS, "Cosmetics")) do
+		if Shop.owns(target, offer) then
+			owned = owned + 1
+		else
+			local ok, result = pcall(deliverOne, target, offer, receipt)
+			if ok and result == true then
+				given = given + 1
+			else
+				failed[#failed + 1] = nameOf(offer) .. ": " .. tostring(result)
+			end
+		end
+	end
+	target:setStorageValue(S.shopFrameActive, frame)
+	afterDelivery(target)
+	return given, owned, failed
+end
+
+local grantTalk = TalkAction("/storecosmetics")
+function grantTalk.onSay(player, words, param)
+	local allowed, staff = Chaos.staffCommand(player, words, param, true)
+	if not allowed then
+		return not staff
+	end
+	local name = (param or ""):match("^%s*(.-)%s*$")
+	local target = name ~= "" and Player(name) or nil
+	if not target then
+		player:sendCancelMessage(Chaos.t(player, "Usage: /storecosmetics <character> (the character must be online)"))
+		return false
+	end
+	local given, owned, failed = Shop.grantStoreCosmetics(target)
+	log(string.format("%s gave %s every store cosmetic: %d given, %d owned, %d failed", player:getName(), target:getName(),
+		given, owned, #failed))
+	for _, f in ipairs(failed) do
+		log("  not given: " .. f)
+	end
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: %d store cosmetics given, %d owned already, %d failed.",
+		target:getName(), given, owned, #failed))
+	if target ~= player then
+		target:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(target, "You received every cosmetic of the store."))
+	end
+	return false
+end
+grantTalk:separator(" ")
+grantTalk:register()
+
 local talk = TalkAction("/coins")
 function talk.onSay(player, words, param)
 	-- creates store currency: administrators only, every use in the audit log (chaos_constants.lua)
