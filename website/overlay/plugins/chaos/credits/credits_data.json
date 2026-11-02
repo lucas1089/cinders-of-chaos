@@ -269,13 +269,13 @@
   {
    "title": "Fonts",
    "pt": "Fontes",
-   "note": "SIL Open Font License 1.1. The licence texts ship with the client in data/fonts/chaos/. The bitmap fonts made from them are named by role, so they carry no Reserved Font Name.",
+   "note": "SIL Open Font License 1.1. The licence texts ship with the client in data/fonts/chaos/ and with the website in layouts/chaos/assets/fonts/. The bitmap fonts made from them are named by role, so they carry no Reserved Font Name.",
    "entries": [
     {
      "name": "Cinzel",
      "author": "Copyright 2020 The Cinzel Project Authors",
      "licence": "SIL Open Font License 1.1",
-     "use": "window titles, the login splash and captions",
+     "use": "window titles, the login splash and captions; the website's headings, menu and window titles",
      "source": "https://github.com/NDISCOVER/Cinzel"
     },
     {
@@ -289,7 +289,7 @@
      "name": "Alegreya Sans",
      "author": "Copyright 2013 The Alegreya Sans Project Authors, Huerta Tipográfica",
      "licence": "SIL Open Font License 1.1",
-     "use": "text over the game picture, and the text of the RmlUi test window",
+     "use": "text over the game picture, and the text of the RmlUi test window; the website's body text",
      "source": "https://github.com/huertatipografica/Alegreya-Sans"
     },
     {

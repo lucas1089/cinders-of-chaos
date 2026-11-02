@@ -50,7 +50,7 @@ $data = chaos_fairplay_data();
 		<p class="chaos-muted"><?= chaos_h(chaos_t('Prices are in the in-game Store (Economy > Store) and on the Donate page. Donations are always voluntary.')) ?></p>
 		<p><a class="chaos-button" href="page?plugin=chaos&amp;p=coins"><?= chaos_h(chaos_t('Back to the Donate page')) ?></a></p>
 		<?php if ($data['updated'] !== ''): ?>
-			<p class="chaos-muted" style="font-size:12px;"><?= chaos_h(chaos_t('Last reviewed: %s.', $data['updated'])) ?></p>
+			<p class="chaos-muted chaos-small"><?= chaos_h(chaos_t('Last reviewed: %s.', $data['updated'])) ?></p>
 		<?php endif; ?>
 	</div>
 </div>

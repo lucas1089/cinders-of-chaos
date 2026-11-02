@@ -1,7 +1,5 @@
 package com.cindersofchaos.admin;
 
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -68,7 +66,7 @@ final class CommandsTab {
         page.addView(seg, Ui.matchWrap());
 
         result = a.new ResultCard();
-        page.addView(result.card, ui.gap(10));
+        page.addView(result.card, ui.gap(12));
 
         quick = ui.column();
         buildQuick();
@@ -85,13 +83,13 @@ final class CommandsTab {
         search = ui.field("Buscar (ex.: ban, item, spawn)", null, "", 0);
         search.setStartIconDrawable(R.drawable.ic_search);
         search.setStartIconTintList(android.content.res.ColorStateList.valueOf(ui.muted));
-        hb.addView(search, ui.gap(10));
+        hb.addView(search, ui.gap(12));
         MaterialButton reload = ui.secondary("Atualizar lista", R.drawable.ic_refresh);
         reload.setOnClickListener(v -> fetchCatalog());
-        hb.addView(reload, ui.gap(6));
+        hb.addView(reload, ui.gap(8));
         catalogPage.addView(head, Ui.matchWrap());
         list = ui.column();
-        catalogPage.addView(list, ui.gap(10));
+        catalogPage.addView(list, ui.gap(12));
         page.addView(catalogPage, Ui.matchWrap());
 
         if (search.getEditText() != null) {
@@ -158,7 +156,7 @@ final class CommandsTab {
             ctl("Aviso", "broadcast " + Ssh.sq(t), 20, () -> Ui.setValue(msg, ""));
         });
         mb.addView(send, ui.gap(8));
-        quick.addView(msgCard, ui.gap(10));
+        quick.addView(msgCard, ui.gap(12));
 
         // kick
         MaterialCardView kickCard = ui.titledCard("Expulsar um personagem");
@@ -178,11 +176,11 @@ final class CommandsTab {
                     () -> ctl("Expulsar " + n, "kick " + Ssh.sq(n), 20, null));
         });
         kb.addView(kick, ui.gap(8));
-        quick.addView(kickCard, ui.gap(10));
+        quick.addView(kickCard, ui.gap(12));
 
         // live view of a character (server/README.md "Live spectator")
         spectate = new SpectateCard(a);
-        quick.addView(spectate.card, ui.gap(10));
+        quick.addView(spectate.card, ui.gap(12));
 
         // login
         MaterialCardView loginCard = ui.titledCard("Login");
@@ -194,7 +192,7 @@ final class CommandsTab {
         MaterialButton openB = ui.secondary("Abrir login", 0);
         openB.setOnClickListener(v -> ctl("Abrir login", "open", 20, null));
         lb.addView(ui.evenRow(openB, close), ui.gap(8));
-        quick.addView(loginCard, ui.gap(10));
+        quick.addView(loginCard, ui.gap(12));
 
         // version
         MaterialCardView upCard = ui.titledCard("Versão do servidor");
@@ -217,8 +215,8 @@ final class CommandsTab {
                 () -> ctl("Voltar versão", "rollback now", 30, null)));
         ub.addView(ui.evenRow(progress, rollback), ui.gap(4));
         ub.addView(ui.hint("Por tag: o layout padrão (/opt/chaos). No kit Linux (/opt/chaos-trial) use Atualizar "
-                + "servidor no Painel."), ui.gap(6));
-        quick.addView(upCard, ui.gap(10));
+                + "servidor no Painel."), ui.gap(8));
+        quick.addView(upCard, ui.gap(12));
 
         buildXp();
         buildClientPair();
@@ -269,9 +267,9 @@ final class CommandsTab {
         MaterialButton reset = ui.flat("Voltar ao padrão (x1)", 0);
         reset.setOnClickListener(v -> a.confirm("Voltar a XP ao padrão?", "Os estágios da release, sem multiplicador. "
                 + "Vale no próximo reinício.", "Voltar", false, () -> ctl("Taxa de XP padrão", "xp-rate reset", 30, null)));
-        b.addView(ui.evenRow(see, reset), ui.gap(6));
+        b.addView(ui.evenRow(see, reset), ui.gap(8));
         b.addView(ui.evenRow(later, nowB), ui.gap(4));
-        quick.addView(c, ui.gap(10));
+        quick.addView(c, ui.gap(12));
     }
 
     private void xpSet(TextInputLayout mult, boolean restart) {
@@ -327,8 +325,8 @@ final class CommandsTab {
                     + "Atualizar servidor para instalar os itens que esperavam.", "Gravar", false,
                     () -> ctl("Par do cliente " + n, "client-pair set " + n, 30, null));
         });
-        b.addView(ui.evenRow(see, save), ui.gap(6));
-        quick.addView(c, ui.gap(10));
+        b.addView(ui.evenRow(see, save), ui.gap(8));
+        quick.addView(c, ui.gap(12));
     }
 
     // beta test mode: lifts the weekly / daily gameplay limits for testers, never the store's (chaos-ctl.sh beta-mode)
@@ -362,10 +360,10 @@ final class CommandsTab {
         offNow.setOnClickListener(v -> a.confirm("Desligar o modo beta e reiniciar?", "O servidor reinicia agora: os "
                 + "jogadores são desconectados (o jogo salva antes).", "Reiniciar", true,
                 () -> ctl("Modo beta desligado", "beta-mode off restart", 240, null)));
-        b.addView(see, ui.gap(6));
+        b.addView(see, ui.gap(8));
         b.addView(ui.evenRow(on, off), ui.gap(4));
         b.addView(ui.evenRow(onNow, offNow), ui.gap(4));
-        quick.addView(c, ui.gap(10));
+        quick.addView(c, ui.gap(12));
     }
 
     // the login-screen services (port 8090): the Python program (default) or the Rust port, opt-in
@@ -396,9 +394,9 @@ final class CommandsTab {
                 () -> ctl("Rust ligado", "clientservices-impl rust", 900, null)));
         MaterialButton py = ui.secondary("Voltar ao Python", 0);
         py.setOnClickListener(v -> ctl("Python ligado", "clientservices-impl python", 60, null));
-        b.addView(see, ui.gap(6));
+        b.addView(see, ui.gap(8));
         b.addView(ui.evenRow(rust, py), ui.gap(4));
-        quick.addView(c, ui.gap(10));
+        quick.addView(c, ui.gap(12));
     }
 
     // accounts: the password goes on stdin, never on the command line (chaos-ctl.sh account-create / account-password)
@@ -410,7 +408,7 @@ final class CommandsTab {
         TextInputLayout pass = ui.field("Senha", "6 a 64 caracteres. Vai pelo SSH, nunca na linha de comando.", "",
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         b.addView(name);
-        b.addView(pass, ui.gap(6));
+        b.addView(pass, ui.gap(8));
         if (pass.getEditText() != null) {
             // the window is FLAG_SECURE while the password field is in focus or holds text
             final android.widget.EditText pe = pass.getEditText();
@@ -436,8 +434,8 @@ final class CommandsTab {
         change.setOnClickListener(v -> account("account-password", "Trocar senha", name, pass));
         b.addView(ui.evenRow(create, change), ui.gap(8));
         b.addView(ui.hint("Chaos Coins e grupo (GM): Painel do jogo > Store > Give Chaos Coins e Players > Set group."),
-                ui.gap(6));
-        quick.addView(c, ui.gap(10));
+                ui.gap(8));
+        quick.addView(c, ui.gap(12));
     }
 
     private void account(String cmd, String label, TextInputLayout name, TextInputLayout pass) {
@@ -517,7 +515,7 @@ final class CommandsTab {
         off.setOnClickListener(v -> a.confirm("Desativar os anúncios no Discord?", "O jogo continua anotando os "
                 + "anúncios, mas nada é postado até você ativar de novo. Os webhooks salvos ficam.", "Desativar", true,
                 () -> discordCtl("Discord desativado", "discord-disable", 60, now, fields)));
-        b.addView(ui.evenRow(on, off), ui.gap(10));
+        b.addView(ui.evenRow(on, off), ui.gap(12));
         MaterialButton test = ui.secondary("Testar", 0);
         test.setOnClickListener(v -> a.confirm("Mandar mensagem de teste?", "Posta \"Cinders of Chaos: teste do webhook "
                 + "...\" em cada canal que tem webhook salvo. Resultado 204 = funcionou.", "Testar", false,
@@ -525,7 +523,7 @@ final class CommandsTab {
         MaterialButton status = ui.secondary("Atualizar status", R.drawable.ic_refresh);
         status.setOnClickListener(v -> discordStatus(now, fields, true));
         b.addView(ui.evenRow(test, status), ui.gap(4));
-        quick.addView(c, ui.gap(10));
+        quick.addView(c, ui.gap(12));
     }
 
     // Discord bot for bug reports and patch notes (chaos-ctl.sh discord-bot, server/deploy/discord_bot/README.md). The token
@@ -599,7 +597,7 @@ final class CommandsTab {
         start.setOnClickListener(v -> ctl("Bot do Discord: iniciar", "discord-bot start", 60, null));
         MaterialButton restart = ui.secondary("Reiniciar", R.drawable.ic_refresh);
         restart.setOnClickListener(v -> ctl("Bot do Discord: reiniciar", "discord-bot restart", 60, null));
-        b.addView(ui.evenRow(start, restart), ui.gap(10));
+        b.addView(ui.evenRow(start, restart), ui.gap(12));
         MaterialButton status = ui.secondary("Estado", R.drawable.ic_refresh);
         status.setOnClickListener(v -> ctl("Bot do Discord: estado", "discord-bot status", 40, null));
         MaterialButton logs = ui.secondary("Logs", 0);
@@ -612,7 +610,7 @@ final class CommandsTab {
                 + "resumo diário até você iniciar de novo. Os bugs ficam salvos.", "Parar", true,
                 () -> ctl("Bot do Discord: parar", "discord-bot stop", 60, null)));
         b.addView(ui.evenRow(notes, stop), ui.gap(4));
-        quick.addView(c, ui.gap(10));
+        quick.addView(c, ui.gap(12));
     }
 
     private void discordSave(String ch, String label, TextInputLayout field, TextView now, Map<String, TextInputLayout> fields) {
@@ -718,7 +716,7 @@ final class CommandsTab {
                     + "carregou, o servidor reinicia com 5 minutos de aviso.", "Iniciar", true,
                     () -> ctl("Iniciar testers (árvore)", "testers start " + n + " " + m + " --keystones --restart 300", 180, null));
         });
-        b.addView(tree, ui.gap(6));
+        b.addView(tree, ui.gap(8));
         // O110: the same run, but every tester first runs the system checks of its class (summons, party, rift, chests, Auto setup)
         MaterialButton checks = ui.secondary("Iniciar testando os sistemas", R.drawable.ic_play);
         checks.setOnClickListener(v -> {
@@ -734,7 +732,7 @@ final class CommandsTab {
                     + "carregou, o servidor reinicia com 5 minutos de aviso.", "Iniciar", true,
                     () -> ctl("Iniciar testers (sistemas)", "testers start " + n + " " + m + " --checks --restart 300", 180, null));
         });
-        b.addView(checks, ui.gap(6));
+        b.addView(checks, ui.gap(8));
         MaterialButton status = ui.secondary("Status", R.drawable.ic_refresh);
         status.setOnClickListener(v -> a.ctlAction("testers status", 30, f -> {
             if (!f.ok) {
@@ -766,10 +764,10 @@ final class CommandsTab {
         }));
         MaterialButton report = ui.secondary("Relatório", R.drawable.ic_search);
         report.setOnClickListener(v -> ctl("Relatório dos testers", "testers report", 120, null));
-        b.addView(ui.evenRow(status, report), ui.gap(6));
+        b.addView(ui.evenRow(status, report), ui.gap(8));
         MaterialButton actions = ui.flat("Log das ações", R.drawable.ic_nav_logs);
         actions.setOnClickListener(v -> ctl("Log dos testers", "testers log 400", 60, null));
-        b.addView(actions, ui.gap(6));
+        b.addView(actions, ui.gap(8));
         b.addView(ui.hint("Cada rodada grava sozinha o log de tudo o que os testers fizeram e os erros que receberam, e "
                 + "o relatório no fim. Ficam as 20 últimas rodadas na VPS."), ui.gap(4));
         MaterialButton clean = ui.flat("Apagar os testers", 0);
@@ -777,8 +775,8 @@ final class CommandsTab {
                 + "personagens e tudo deles. Se estão rodando, para agora e espera 2 minutos antes de apagar (um "
                 + "toque só). O próximo Iniciar cria novos, com os níveis atuais.", "Apagar", true,
                 () -> ctl("Apagar testers", "testers cleanup --yes", 240, null)));
-        b.addView(clean, ui.gap(6));
-        quick.addView(c, ui.gap(10));
+        b.addView(clean, ui.gap(8));
+        quick.addView(c, ui.gap(12));
     }
 
     // the machine: info, system updates, reboot (chaos-ctl.sh vps)
@@ -830,12 +828,12 @@ final class CommandsTab {
         upgrade.setOnClickListener(v -> a.confirm("Atualizar o sistema da VPS?", "apt-get update e upgrade, em "
                 + "segundo plano. O jogo continua rodando. Veja o andamento em Log da atualização.", "Atualizar", false,
                 () -> ctl("Atualizar sistema", "vps upgrade", 30, null)));
-        b.addView(ui.evenRow(info, upgrade), ui.gap(6));
+        b.addView(ui.evenRow(info, upgrade), ui.gap(8));
         MaterialButton upLog = ui.flat("Log da atualização", R.drawable.ic_nav_logs);
         upLog.setOnClickListener(v -> ctl("Log da atualização", "vps upgrade-log 200", 30, null));
-        b.addView(upLog, ui.gap(6));
+        b.addView(upLog, ui.gap(8));
         TextInputLayout minutes = ui.field("Reiniciar em (min)", "1 a 60.", "5", InputType.TYPE_CLASS_NUMBER);
-        b.addView(minutes, ui.gap(6));
+        b.addView(minutes, ui.gap(8));
         MaterialButton reboot = ui.danger("Reiniciar VPS", R.drawable.ic_restart);
         reboot.setOnClickListener(v -> {
             int m = number(minutes, 1, 60);
@@ -848,8 +846,8 @@ final class CommandsTab {
         });
         MaterialButton cancel = ui.secondary("Cancelar reinício", R.drawable.ic_stop);
         cancel.setOnClickListener(v -> ctl("Cancelar reinício", "vps reboot-cancel", 30, null));
-        b.addView(ui.evenRow(reboot, cancel), ui.gap(6));
-        quick.addView(c, ui.gap(10));
+        b.addView(ui.evenRow(reboot, cancel), ui.gap(8));
+        quick.addView(c, ui.gap(12));
     }
 
     // the chaos-* systemd units: list, start / stop / restart, log (chaos-ctl.sh services, service, service-log)
@@ -883,8 +881,8 @@ final class CommandsTab {
             new MaterialAlertDialogBuilder(a).setTitle("Serviços")
                     .setItems(labels.toArray(new String[0]), (d, w) -> serviceActions(names.get(w))).show();
         }));
-        b.addView(list, ui.gap(6));
-        quick.addView(c, ui.gap(10));
+        b.addView(list, ui.gap(8));
+        quick.addView(c, ui.gap(12));
     }
 
     private void serviceActions(String unit) {
@@ -992,7 +990,7 @@ final class CommandsTab {
                     + "\n\nRestaurar é pela VPS (docs/LAUNCH.md, Incident runbook): o app não restaura banco.", f.raw));
         }));
         b.addView(backups, ui.gap(4));
-        quick.addView(c, ui.gap(10));
+        quick.addView(c, ui.gap(12));
     }
 
     // the game server as the system user chaos instead of root (chaos-ctl.sh server-user status | fix; server/README.md
@@ -1024,7 +1022,7 @@ final class CommandsTab {
                 + "Acompanhe com Log do reinício e Ver.", "Corrigir e reiniciar", true,
                 () -> serverUserFix("server-user fix --restart 300", now)));
         b.addView(ui.evenRow(fix, fixRestart), ui.gap(4));
-        quick.addView(c, ui.gap(10));
+        quick.addView(c, ui.gap(12));
     }
 
     /** server-user status: the summary of the card. */
@@ -1094,7 +1092,7 @@ final class CommandsTab {
             a.showTab(MainActivity.TAB_LOGS, true);
             a.logs.openUpdate("publish-log");
         });
-        b.addView(ui.evenRow(pub, pubLog), ui.gap(6));
+        b.addView(ui.evenRow(pub, pubLog), ui.gap(8));
         TextInputLayout apkTag = ui.field("Release do app Android", "Ex.: android-31. O app do celular baixa e instala "
                 + "o APK dessa release (do workflow Android client) quando abre. Não precisa de um update novo do client.",
                 "", 0);
@@ -1115,7 +1113,7 @@ final class CommandsTab {
         apkOff.setOnClickListener(v -> a.confirm("Tirar o app Android do update?", "Os celulares deixam de ver a "
                 + "oferta de um app novo. O APK publicado é apagado do site.", "Tirar", true,
                 () -> ctl("Tirar o app Android", "publish-apk --remove", 30, null)));
-        b.addView(ui.evenRow(apkPub, apkOff), ui.gap(6));
+        b.addView(ui.evenRow(apkPub, apkOff), ui.gap(8));
         MaterialButton dl = ui.secondary("Trocar os downloads do site", 0);
         dl.setOnClickListener(v -> a.confirm("Trocar os downloads do site?", "Baixa o pacote Windows e o Linux da release "
                 + "mais nova para a página de downloads. Não reinicia o servidor e não mexe no update do client. "
@@ -1126,11 +1124,11 @@ final class CommandsTab {
             a.showTab(MainActivity.TAB_LOGS, true);
             a.logs.openUpdate("update-log");
         });
-        b.addView(ui.evenRow(dl, dlLog), ui.gap(6));
+        b.addView(ui.evenRow(dl, dlLog), ui.gap(8));
         b.addView(ui.hint("A versão publicada, a release mais nova e a release dos downloads aparecem em Painel > "
                 + "Atualizar servidor > Verificar. Quem baixou o pacote do site e vê um update por cima dele precisa "
-                + "deste botão: o pacote do site é o que ele baixa."), ui.gap(6));
-        quick.addView(c, ui.gap(10));
+                + "deste botão: o pacote do site é o que ele baixa."), ui.gap(8));
+        quick.addView(c, ui.gap(12));
     }
 
     // the map inbox: areas asked for in chat, published for the map editor on the owner's PC (docs/MAP_GUIDE.md "Map inbox")
@@ -1150,8 +1148,8 @@ final class CommandsTab {
         b.addView(ui.hint("Fluxo: peça a área no chat, o Claude gera e manda para o repositório; depois de unir na main e "
                 + "atualizar o servidor (Painel > Atualizar servidor), toque em Publicar áreas, copie a linha url= "
                 + "(toque em copiar no resultado) e rode fetch-areas.bat no Windows. O endereço é secreto: quem o tem "
-                + "baixa as áreas, que não têm nada sigiloso."), ui.gap(6));
-        quick.addView(c, ui.gap(10));
+                + "baixa as áreas, que não têm nada sigiloso."), ui.gap(8));
+        quick.addView(c, ui.gap(12));
     }
 
     private void update(TextInputLayout tag, String mode) {
@@ -1265,7 +1263,7 @@ final class CommandsTab {
             groups.computeIfAbsent(act.optString("cat"), k -> new ArrayList<>()).add(act);
         }
         if (groups.isEmpty()) {
-            list.addView(a.emptyLine(catalog.length() == 0 ? "Nenhum comando ainda." : "Nada encontrado para \"" + q + "\"."));
+            list.addView(a.emptyLine(catalog.length() == 0 ? "Nenhum comando ainda" : "Nada encontrado para \"" + q + "\"."));
             return;
         }
         for (Map.Entry<String, List<JSONObject>> g : groups.entrySet()) {
@@ -1275,10 +1273,9 @@ final class CommandsTab {
             LinearLayout b = Ui.body(card);
             b.setPadding(0, 0, 0, 0);
             LinearLayout header = ui.row();
-            header.setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14));
+            header.setPadding(ui.dp(16), ui.dp(12), ui.dp(16), ui.dp(12));
             TextView name = ui.title(cat);
-            name.setTextSize(15);
-            name.setTextColor(ui.goldLight);
+            name.setTextSize(14);
             header.addView(name, Ui.weight(1f));
             TextView count = ui.hint(g.getValue().size() + (expanded ? "  ▾" : "  ▸"));
             header.addView(count);
@@ -1301,25 +1298,21 @@ final class CommandsTab {
 
     private View actionRow(JSONObject act) {
         LinearLayout row = ui.column();
-        row.setPadding(ui.dp(16), ui.dp(10), ui.dp(16), ui.dp(10));
+        row.setPadding(ui.dp(16), ui.dp(12), ui.dp(16), ui.dp(12));
         android.util.TypedValue tv = new android.util.TypedValue();
         a.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, tv, true);
         row.setBackgroundResource(tv.resourceId);
         LinearLayout top = ui.row();
         TextView n = ui.text(act.optString("name"));
-        n.setTextColor(ui.bright);
-        n.setTypeface(Typeface.DEFAULT_BOLD);
+        n.setTypeface(Ui.MEDIUM);
         top.addView(n, Ui.weight(1f));
         if (act.optBoolean("dangerous")) {
+            // a quiet word, not a pill: the confirmation dialog does the warning
             TextView tag = new TextView(a);
             tag.setText("perigoso");
-            tag.setTextSize(11);
-            tag.setTextColor(ui.ember);
-            tag.setPadding(ui.dp(8), ui.dp(2), ui.dp(8), ui.dp(2));
-            GradientDrawable bg = new GradientDrawable();
-            bg.setCornerRadius(ui.dp(10));
-            bg.setStroke(ui.dp(1), ui.blood);
-            tag.setBackground(bg);
+            tag.setTextSize(12);
+            tag.setTextColor(ui.error);
+            tag.setPadding(ui.dp(8), 0, 0, 0);
             top.addView(tag);
         }
         row.addView(top);
@@ -1338,12 +1331,12 @@ final class CommandsTab {
         final View[] inputs = new View[params.length()];
         final String[] picked = new String[params.length()];
         LinearLayout box = ui.column();
-        box.setPadding(ui.dp(22), ui.dp(4), ui.dp(22), 0);
+        box.setPadding(ui.dp(24), ui.dp(4), ui.dp(24), 0);
         if (!act.optString("description").isEmpty()) {
             box.addView(ui.hint(act.optString("description")));
         }
         if (params.length() == 0) {
-            box.addView(ui.text("Sem parâmetros."), ui.gap(8));
+            box.addView(ui.text("Sem parâmetros"), ui.gap(8));
         }
         for (int i = 0; i < params.length(); i++) {
             final int idx = i;
@@ -1361,7 +1354,7 @@ final class CommandsTab {
                 cb.setTextColor(ui.text);
                 cb.setChecked(def.equals("true") || def.equals("1"));
                 inputs[i] = cb;
-                box.addView(cb, ui.gap(6));
+                box.addView(cb, ui.gap(8));
             } else if (type.equals("select")) {
                 final JSONArray opts = p.optJSONArray("options") == null ? new JSONArray() : p.optJSONArray("options");
                 final String[] labels = new String[opts.length()];
@@ -1380,7 +1373,7 @@ final class CommandsTab {
                     }
                 }
                 TextView l = ui.hint(lab + (hint.isEmpty() ? "" : " (" + hint + ")"));
-                box.addView(l, ui.gap(10));
+                box.addView(l, ui.gap(12));
                 final MaterialButton pick = ui.secondary("Escolher ▾", 0);
                 for (int k = 0; k < values.length; k++) {
                     if (values[k].equals(picked[i])) {
@@ -1404,7 +1397,7 @@ final class CommandsTab {
                 String help = hint.isEmpty() ? (type.equals("pos") ? "x,y,z" : "") : hint;
                 TextInputLayout f = ui.field(lab, help, def, it);
                 inputs[i] = f;
-                box.addView(f, ui.gap(10));
+                box.addView(f, ui.gap(12));
             }
         }
         final boolean risky = act.optBoolean("dangerous") || act.optBoolean("confirm");

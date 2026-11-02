@@ -716,12 +716,37 @@ folder. The changes:
 - `tools/recolor_layout.py` maps every violet colour of Void's three stylesheets to the client palette
   (`client/tools/gen_theme_art.py`): near-black violets to the iron blacks (`#050405` .. `#241f27`), lavender text to
   the client's parchment (`#d6c9ae`), violet accents to crimson (`#8a1010` .. `#e03a1e`), and the named variables to
-  gold (`#d9a53a`, headings `#f6cf72`). Void's brand webfonts are dropped for serif stacks.
+  gold (`#d9a53a`, headings `#f6cf72`). Void's brand webfonts are dropped.
 - `assets/css/chaos.css` (appended to the last generated stylesheet) gives the windows the client's frame (iron band,
-  black groove, gold trim, crimson etch) with the client's gold corner ornaments, crimson buttons with a gold edge,
-  the iron menu bar, and the styles of our pages.
-- The header is the client's login scene (`header.png`, from the client background), with rising embers
-  (`assets/js/shadow-particles.js`) instead of violet motes; the logo is the client's CHAOS wordmark.
+  black groove, gold trim, crimson etch) with the client's gold corner ornaments, the iron menu bar, and the styles of
+  our pages.
+- The look rules in chaos.css:
+  - One accent. Gold marks the primary action (gold plate, dark text), links and the selection.
+  - Other buttons are iron plates. Crimson only for errors, danger and the blood-moon art.
+  - Text roles: primary `#d6c9ae`, secondary `#b3a68e`, muted `#8c8070`.
+  - No glows: no coloured text-shadow, box-shadow glow, radial wash or gradient text. `--glow-*` are empty.
+  - No looping motion. Every inherited keyframe is off: header line, rim flow, shimmer, bouncing icon, panel fade-ups.
+  - `assets/js/shadow-cursor.js` is empty, so the parent's cursor glow never starts.
+  - The live online dot is the only thing that pulses. Off for reduced motion.
+  - Hover changes colour or border only, 140 ms, one easing.
+  - Sentence case, no tracked caps. Weights 400 to 600, no italic.
+  - Spacing on a 4 px grid. Type 12 / 14 / 16 / 18 / 24 / 32.
+- Fonts, self-hosted woff2 in `assets/fonts/` with their OFL texts: Cinzel 400-600 (headings, menu, window titles)
+  and Alegreya Sans Medium (body). Both come from `client/fonts-src/` (docs/CREDITS.md).
+  Made with fonttools and brotli, Latin subset (`U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,`
+  `U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212`):
+  `fonttools varLib.instancer Cinzel-VariableFont_wght.ttf wght=400:600 -o c.ttf`, then
+  `pyftsubset <ttf> --unicodes=... --layout-features=kern,liga,lnum,tnum --flavor=woff2` (Alegreya Sans also
+  `onum,pnum`).
+- The header is the client's login scene (`header.png`, from the client background) with a few faint embers
+  (`assets/js/shadow-particles.js`, off for reduced motion); the logo is the client's CHAOS wordmark.
+- Phone (900 px and less): the same script folds the menu into one Menu button (no script: the bar stays open).
+  The page column comes before the side columns. At 600 px and less the header keeps the logo and the online count,
+  so the headline and the download button are on the first screen.
+- Home hero: a headline that says what the game is, one line of pitch, Download (primary) and Create an account
+  (secondary), and four figures from the page (classes, passive nodes, rarities, world bosses). "Read the guide"
+  sits under the features. All home texts go through `chaos_t()` (pt-BR in `plugins/chaos/i18n/pt-BR.php`;
+  `tests/chaos_i18n_test.php` checks the keys).
 - Views: the home page (pitch, classes, features, latest patch notes, news), character creation as class cards,
   highscores with class names grouped by line, downloads, server info (the README for players); the right column ranks
   characters with their class badge. `locale/en.php` replaces stock texts that name another game's client.

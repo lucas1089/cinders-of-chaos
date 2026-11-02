@@ -20,42 +20,61 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-/** The view builders of every screen: the game's palette, cards, buttons and fields, all made in code. */
+/**
+ * The view builders of every screen, all made in code. A forge on the night shift: one warm neutral ramp (the same as
+ * the desktop app, desktop/src/theme.rs), text-coloured headings, ember only for the main action and the dot of a
+ * running server, gold only for the selected tab. Spacing on a 4 dp grid, type 12, 13, 14, 16, 20, one icon size (20).
+ */
 final class Ui {
     final Context c;
-    final int iron0;
-    final int iron1;
-    final int iron2;
-    final int iron3;
-    final int iron4;
+    /** Neutral ramp: window, card, raised control, hairline, strong hairline, input well. */
+    final int bg;
+    final int surface;
+    final int raised;
+    final int edge;
+    final int edgeStrong;
+    final int input;
+    /** Text roles: primary, secondary, muted. */
     final int text;
-    final int bright;
+    final int text2;
     final int muted;
-    final int gold;
-    final int goldLight;
-    final int goldDark;
-    final int blood;
-    final int bloodDark;
+    /** The one accent: ember (main action, live dot), its deeper button fill and the light text on it. */
     final int ember;
+    final int emberDeep;
+    final int onEmber;
+    /** Gold marks only the selected tab (res/color/nav_item.xml). */
+    final int gold;
+    /** Status: ok, warning, error; the dark fill and rim of a destructive button. */
     final int ok;
+    final int warn;
+    final int error;
+    final int errorDeep;
+    final int errorEdge;
+    final int onError;
+
+    static final Typeface MEDIUM = Typeface.create("sans-serif-medium", Typeface.NORMAL);
 
     Ui(Context c) {
         this.c = c;
-        iron0 = col(R.color.iron0);
-        iron1 = col(R.color.iron1);
-        iron2 = col(R.color.iron2);
-        iron3 = col(R.color.iron3);
-        iron4 = col(R.color.iron4);
+        bg = col(R.color.bg);
+        surface = col(R.color.surface);
+        raised = col(R.color.raised);
+        edge = col(R.color.edge);
+        edgeStrong = col(R.color.edge_strong);
+        input = col(R.color.input);
         text = col(R.color.text);
-        bright = col(R.color.text_bright);
+        text2 = col(R.color.text2);
         muted = col(R.color.muted);
-        gold = col(R.color.gold);
-        goldLight = col(R.color.gold_light);
-        goldDark = col(R.color.gold_dark);
-        blood = col(R.color.blood);
-        bloodDark = col(R.color.blood_dark);
         ember = col(R.color.ember);
+        emberDeep = col(R.color.ember_deep);
+        onEmber = col(R.color.on_ember);
+        gold = col(R.color.gold);
         ok = col(R.color.ok);
+        warn = col(R.color.warn);
+        error = col(R.color.error);
+        errorDeep = col(R.color.error_deep);
+        errorEdge = col(R.color.error_edge);
+        onError = col(R.color.on_error);
     }
 
     private int col(int id) {
@@ -84,7 +103,7 @@ final class Ui {
     /** The page body: a column with the screen margins. */
     LinearLayout page() {
         LinearLayout l = column();
-        l.setPadding(dp(14), dp(10), dp(14), dp(24));
+        l.setPadding(dp(16), dp(12), dp(16), dp(24));
         return l;
     }
 
@@ -117,16 +136,16 @@ final class Ui {
 
     // ------------------------------------------------------------------------------------------------ cards
 
-    /** A dark card with a thin iron rim; returns the card, its content is {@link #body(MaterialCardView)}. */
+    /** A dark card with a hairline rim; returns the card, its content is {@link #body(MaterialCardView)}. */
     MaterialCardView card() {
         MaterialCardView card = new MaterialCardView(c);
-        card.setCardBackgroundColor(iron2);
-        card.setStrokeColor(iron4);
+        card.setCardBackgroundColor(surface);
+        card.setStrokeColor(edge);
         card.setStrokeWidth(dp(1));
-        card.setRadius(dp(14));
+        card.setRadius(dp(12));
         card.setCardElevation(0);
         LinearLayout body = column();
-        body.setPadding(dp(16), dp(14), dp(16), dp(16));
+        body.setPadding(dp(16), dp(16), dp(16), dp(16));
         card.addView(body, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
         return card;
@@ -136,30 +155,40 @@ final class Ui {
         return (LinearLayout) card.getChildAt(0);
     }
 
-    /** A card with a gold small-caps heading. */
+    /** A card with a heading. */
     MaterialCardView titledCard(String title) {
         MaterialCardView card = card();
         body(card).addView(heading(title));
         return card;
     }
 
+    /** A card heading: sentence case, text colour, medium weight. */
     TextView heading(String s) {
         TextView t = new TextView(c);
-        t.setText(s.toUpperCase(java.util.Locale.ROOT));
-        t.setTextColor(gold);
-        t.setTextSize(12);
-        t.setLetterSpacing(0.12f);
-        t.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
+        t.setText(s);
+        t.setTextColor(text);
+        t.setTextSize(14);
+        t.setTypeface(MEDIUM);
         t.setPadding(0, 0, 0, dp(8));
+        return t;
+    }
+
+    /** A small label over a figure (dashboard tiles, metric sections). */
+    TextView label(String s) {
+        TextView t = new TextView(c);
+        t.setText(s);
+        t.setTextColor(muted);
+        t.setTextSize(12);
+        t.setPadding(0, 0, 0, dp(4));
         return t;
     }
 
     TextView title(String s) {
         TextView t = new TextView(c);
         t.setText(s);
-        t.setTextColor(bright);
-        t.setTextSize(17);
-        t.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
+        t.setTextColor(text);
+        t.setTextSize(16);
+        t.setTypeface(MEDIUM);
         return t;
     }
 
@@ -190,73 +219,83 @@ final class Ui {
         return t;
     }
 
-    /** A pill with a coloured dot: the server state. */
+    /** The server state: a sentence-case word in its status colour. */
     TextView badge(String s, int color) {
         TextView t = new TextView(c);
         setBadge(t, s, color);
-        t.setTextSize(12);
-        t.setTypeface(Typeface.DEFAULT_BOLD);
-        t.setLetterSpacing(0.06f);
-        t.setPadding(dp(10), dp(4), dp(12), dp(4));
+        t.setTextSize(14);
+        t.setTypeface(MEDIUM);
         t.setGravity(Gravity.CENTER_VERTICAL);
         return t;
     }
 
     void setBadge(TextView t, String s, int color) {
-        t.setText("●  " + s);
+        setBadge(t, s, color, false);
+    }
+
+    /** {@code live} puts the ember dot before the word: the one mark of a running server, used nowhere else. */
+    void setBadge(TextView t, String s, int color, boolean live) {
+        t.setText(s);
         t.setTextColor(color);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(dp(14));
-        bg.setColor(Color.argb(40, Color.red(color), Color.green(color), Color.blue(color)));
-        bg.setStroke(dp(1), Color.argb(140, Color.red(color), Color.green(color), Color.blue(color)));
-        t.setBackground(bg);
+        if (live) {
+            GradientDrawable dot = new GradientDrawable();
+            dot.setShape(GradientDrawable.OVAL);
+            dot.setColor(ember);
+            dot.setSize(dp(8), dp(8));
+            t.setCompoundDrawablesRelativeWithIntrinsicBounds(dot, null, null, null);
+            t.setCompoundDrawablePadding(dp(8));
+        } else {
+            t.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null);
+        }
     }
 
     /** A thin rule between parts of a card. */
     View divider() {
         View v = new View(c);
-        v.setBackgroundColor(iron4);
+        v.setBackgroundColor(edge);
         v.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
         return v;
     }
 
     // ------------------------------------------------------------------------------------------------ buttons
 
-    /** The main action: gold, dark text. */
+    /** The main action of a card: deep ember, light text (4.5:1). */
     MaterialButton primary(String s, int icon) {
         MaterialButton b = new MaterialButton(c);
         b.setText(s);
         b.setAllCaps(false);
-        b.setBackgroundTintList(ColorStateList.valueOf(gold));
-        b.setTextColor(iron0);
-        b.setCornerRadius(dp(12));
-        icon(b, icon, iron0);
+        b.setBackgroundTintList(ColorStateList.valueOf(emberDeep));
+        b.setTextColor(onEmber);
+        b.setCornerRadius(dp(8));
+        icon(b, icon, onEmber);
         return b;
     }
 
-    /** A plain action: iron, parchment text, gold rim. */
+    /** A plain action: hairline rim, text colour. */
     MaterialButton secondary(String s, int icon) {
         MaterialButton b = new MaterialButton(c, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
         b.setText(s);
         b.setAllCaps(false);
         b.setTextColor(text);
-        b.setStrokeColor(ColorStateList.valueOf(goldDark));
+        b.setStrokeColor(ColorStateList.valueOf(edgeStrong));
         b.setStrokeWidth(dp(1));
-        b.setCornerRadius(dp(12));
-        b.setRippleColor(ColorStateList.valueOf(Color.argb(60, Color.red(gold), Color.green(gold), Color.blue(gold))));
-        icon(b, icon, gold);
+        b.setCornerRadius(dp(8));
+        b.setRippleColor(ColorStateList.valueOf(Color.argb(48, Color.red(text), Color.green(text), Color.blue(text))));
+        icon(b, icon, text2);
         return b;
     }
 
-    /** A destructive action: crimson. */
+    /** A destructive action: dark red fill, red rim. */
     MaterialButton danger(String s, int icon) {
         MaterialButton b = new MaterialButton(c);
         b.setText(s);
         b.setAllCaps(false);
-        b.setBackgroundTintList(ColorStateList.valueOf(blood));
-        b.setTextColor(bright);
-        b.setCornerRadius(dp(12));
-        icon(b, icon, bright);
+        b.setBackgroundTintList(ColorStateList.valueOf(errorDeep));
+        b.setStrokeColor(ColorStateList.valueOf(errorEdge));
+        b.setStrokeWidth(dp(1));
+        b.setTextColor(onError);
+        b.setCornerRadius(dp(8));
+        icon(b, icon, onError);
         return b;
     }
 
@@ -265,27 +304,27 @@ final class Ui {
         MaterialButton b = new MaterialButton(c, null, com.google.android.material.R.attr.borderlessButtonStyle);
         b.setText(s);
         b.setAllCaps(false);
-        b.setTextColor(goldLight);
-        icon(b, icon, goldLight);
+        b.setTextColor(text2);
+        icon(b, icon, text2);
         return b;
     }
 
     /** Big tiles of the dashboard's actions. */
     MaterialButton big(MaterialButton b) {
-        b.setMinHeight(dp(60));
-        b.setTextSize(15);
-        b.setIconSize(dp(22));
-        b.setIconPadding(dp(10));
+        b.setMinHeight(dp(56));
+        b.setTextSize(14);
+        b.setIconPadding(dp(8));
         b.setInsetTop(dp(4));
         b.setInsetBottom(dp(4));
         return b;
     }
 
+    /** Every icon: 20 dp, tinted with its text role. */
     private void icon(MaterialButton b, int icon, int tint) {
         if (icon != 0) {
             b.setIconResource(icon);
             b.setIconTint(ColorStateList.valueOf(tint));
-            b.setIconSize(dp(18));
+            b.setIconSize(dp(20));
         }
     }
 
@@ -300,13 +339,13 @@ final class Ui {
             l.setHelperText(helper);
             l.setHelperTextColor(ColorStateList.valueOf(muted));
         }
-        l.setBoxStrokeColor(gold);
-        l.setHintTextColor(ColorStateList.valueOf(gold));
+        l.setBoxStrokeColor(text2);
+        l.setHintTextColor(ColorStateList.valueOf(text2));
         l.setDefaultHintTextColor(ColorStateList.valueOf(muted));
-        l.setBoxCornerRadii(dp(10), dp(10), dp(10), dp(10));
+        l.setBoxCornerRadii(dp(8), dp(8), dp(8), dp(8));
         TextInputEditText e = new TextInputEditText(l.getContext());
         e.setText(value);
-        e.setTextColor(bright);
+        e.setTextColor(text);
         e.setInputType(inputType == 0 ? InputType.TYPE_CLASS_TEXT : inputType);
         if ((e.getInputType() & InputType.TYPE_TEXT_FLAG_MULTI_LINE) == 0) {
             e.setSingleLine(true);

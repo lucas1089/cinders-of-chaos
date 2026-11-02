@@ -56,7 +56,7 @@ pub fn note(k: Kind) -> &'static str {
     match k {
         Kind::Config => {
             "Tabela de configuração: os valores novos entram no jogo agora, sem /reload. Um valor que o script copiou \
-             ao carregar só muda com Recarregar scripts (Apply live) ou reinício."
+             ao carregar só muda com Recarregar scripts (aplicar agora) ou reinício."
         }
         Kind::Script => {
             "Script: não recarrega sozinho (registra eventos e guarda cópias). Precisa de Recarregar scripts (todos os \

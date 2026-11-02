@@ -146,11 +146,11 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 		<?php endif; ?>
 
 		<?php if ($error !== ''): ?>
-			<p class="chaos-error" style="color:#e07060;"><?= chaos_h(chaos_t($error)) ?></p>
+			<p class="chaos-error"><?= chaos_h(chaos_t($error)) ?></p>
 		<?php endif; ?>
 
 		<?php if ($order): ?>
-			<div class="chaos-box" id="chaos-donation-order" style="margin:10px 0;">
+			<div class="chaos-box" id="chaos-donation-order">
 				<h2 class="chaos-heading"><?= chaos_h(chaos_t('Your donation: %s', $packName($order['pack_key']))) ?></h2>
 				<p><?= chaos_h($order['method'] === 'pix' ? 'Pix' : 'PayPal') ?>: <strong><?= chaos_h(ChaosPayService::money((int)$order['amount_cents'], $order['currency'])) ?></strong>
 					&middot; <?= chaos_h(chaos_t('%d Chaos Coins as a thank-you', (int)$order['coins'] + (int)$order['bonus'] + (int)$order['first_bonus'])) ?></p>

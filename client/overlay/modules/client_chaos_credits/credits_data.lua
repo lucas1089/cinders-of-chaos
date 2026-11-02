@@ -72,11 +72,11 @@ ChaosCreditsData = {
   {
     title = "Fonts",
     pt = "Fontes",
-    note = "SIL Open Font License 1.1. The licence texts ship with the client in data/fonts/chaos/. The bitmap fonts made from them are named by role, so they carry no Reserved Font Name.",
+    note = "SIL Open Font License 1.1. The licence texts ship with the client in data/fonts/chaos/ and with the website in layouts/chaos/assets/fonts/. The bitmap fonts made from them are named by role, so they carry no Reserved Font Name.",
     entries = {
-      { name = "Cinzel", author = "Copyright 2020 The Cinzel Project Authors", licence = "SIL Open Font License 1.1", use = "window titles, the login splash and captions", source = "https://github.com/NDISCOVER/Cinzel" },
+      { name = "Cinzel", author = "Copyright 2020 The Cinzel Project Authors", licence = "SIL Open Font License 1.1", use = "window titles, the login splash and captions; the website's headings, menu and window titles", source = "https://github.com/NDISCOVER/Cinzel" },
       { name = "Alegreya SC", author = "Copyright 2011 The Alegreya Project Authors, Huerta Tipogr\225fica", licence = "SIL Open Font License 1.1", use = "Codex titles and headings, and the title of the RmlUi test window", source = "https://github.com/huertatipografica/Alegreya" },
-      { name = "Alegreya Sans", author = "Copyright 2013 The Alegreya Sans Project Authors, Huerta Tipogr\225fica", licence = "SIL Open Font License 1.1", use = "text over the game picture, and the text of the RmlUi test window", source = "https://github.com/huertatipografica/Alegreya-Sans" },
+      { name = "Alegreya Sans", author = "Copyright 2013 The Alegreya Sans Project Authors, Huerta Tipogr\225fica", licence = "SIL Open Font License 1.1", use = "text over the game picture, and the text of the RmlUi test window; the website's body text", source = "https://github.com/huertatipografica/Alegreya-Sans" },
       { name = "IM Fell English", author = "Copyright (c) 2010, Igino Marini", licence = "SIL Open Font License 1.1", use = "NPC dialogue", source = "https://github.com/librefonts/imfellenglish" },
       { name = "PT Sans", author = "Copyright (c) 2010, ParaType Ltd., with Reserved Font Names \"PT Sans\" and \"ParaType\"", licence = "SIL Open Font License 1.1", use = "the small interface fonts with the pt-BR letters", source = "https://www.paratype.com/public" },
     },

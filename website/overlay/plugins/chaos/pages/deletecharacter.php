@@ -38,7 +38,7 @@ $characters = $accountId > 0 ? chaos_delete_characters($accountId) : array();
 			<p class="chaos-lead">Deleting a character removes it for good: its items, depot, progress and bank are gone, and the
 				name becomes free. This cannot be undone. Staff cannot restore it.</p>
 			<?php if ($message !== ''): ?>
-				<p id="chaos-delete-message" class="<?= $deleted ? 'chaos-ok' : 'chaos-error' ?>"<?= $deleted ? '' : ' style="color:#e07060;"' ?>><?= chaos_h($message) ?></p>
+				<p id="chaos-delete-message" class="<?= $deleted ? 'chaos-ok' : 'chaos-error' ?>"><?= chaos_h($message) ?></p>
 			<?php endif; ?>
 			<?php if (!$characters): ?>
 				<p>This account has no characters.</p>

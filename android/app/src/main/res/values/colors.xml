@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- the game's palette (website/tools/recolor_layout.py, the client skin): iron blacks, parchment text, gold, ember -->
+<!-- One warm neutral ramp, the same as the desktop app (desktop/src/theme.rs): a forge on the night shift.
+     Ember only for the main action and the dot of a running server; gold only for the selected tab. -->
 <resources>
     <color name="ic_launcher_bg">#1A1412</color>
-    <color name="iron0">#050405</color>
-    <color name="iron1">#0D0B0E</color>
-    <color name="iron2">#17141A</color>
-    <color name="iron3">#241F27</color>
-    <color name="iron4">#3A3339</color>
-    <color name="iron5">#574D52</color>
-    <color name="text">#D6C9AE</color>
-    <color name="text_bright">#F3EAD6</color>
-    <color name="muted">#8C8070</color>
-    <color name="gold_dark">#6B4A14</color>
-    <color name="gold">#D9A53A</color>
-    <color name="gold_light">#F6CF72</color>
-    <color name="blood_dark">#5A0A0A</color>
-    <color name="blood">#B8160F</color>
-    <color name="ember">#E03A1E</color>
-    <color name="ok">#66CC66</color>
+    <color name="bg">#0E0B0A</color>
+    <color name="surface">#191412</color>
+    <color name="raised">#281F1B</color>
+    <color name="edge">#382A22</color>
+    <color name="edge_strong">#5C483C</color>
+    <color name="input">#0A0807</color>
+    <color name="text">#DED4C8</color>
+    <color name="text2">#BCB0A4</color>
+    <color name="muted">#96887C</color>
+    <color name="ember">#E04E1A</color>
+    <color name="ember_deep">#BE3E14</color>
+    <color name="on_ember">#FFF0D7</color>
+    <color name="gold">#E8BE6E</color>
+    <color name="ok">#6EC878</color>
+    <color name="warn">#EEAC3C</color>
+    <color name="error">#F06254</color>
+    <color name="error_deep">#341C18</color>
+    <color name="error_edge">#963C30</color>
+    <color name="on_error">#FFD6CC</color>
 </resources>

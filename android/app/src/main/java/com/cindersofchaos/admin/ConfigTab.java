@@ -60,13 +60,13 @@ final class ConfigTab {
         refreshPick = ui.secondary(refreshLabel(st.refreshSec()) + "  ▾", 0);
         refreshPick.setOnClickListener(v -> pickRefresh());
         rr.addView(refreshPick);
-        sb.addView(rr, ui.gap(10));
+        sb.addView(rr, ui.gap(12));
         MaterialButton save = ui.primary("Salvar", 0);
         save.setOnClickListener(v -> save());
         MaterialButton test = ui.secondary("Testar conexão", 0);
         test.setOnClickListener(v -> test());
         sb.addView(ui.evenRow(test, save), ui.gap(12));
-        page.addView(srv, ui.gap(10));
+        page.addView(srv, ui.gap(12));
 
         // ---- screen
         MaterialCardView scr = ui.titledCard("Tela");
@@ -74,7 +74,7 @@ final class ConfigTab {
         com.google.android.material.materialswitch.MaterialSwitch cap =
                 new com.google.android.material.materialswitch.MaterialSwitch(a);
         cap.setText("Permitir captura de tela");
-        cap.setTextColor(ui.bright);
+        cap.setTextColor(ui.text);
         cap.setChecked(st.allowCapture());
         cap.setOnCheckedChangeListener((v, on) -> {
             a.store.put("capture", on ? "1" : "0");
@@ -83,7 +83,7 @@ final class ConfigTab {
         scb.addView(cap);
         scb.addView(ui.hint("Ligado: dá para tirar print e a tela aparece nos apps recentes. Desligado: o Android "
                 + "bloqueia os dois. A tela sempre fica bloqueada enquanto você digita uma senha."), ui.gap(4));
-        page.addView(scr, ui.gap(10));
+        page.addView(scr, ui.gap(12));
 
         // ---- key
         MaterialCardView key = ui.titledCard("Chave SSH deste celular");
@@ -105,7 +105,7 @@ final class ConfigTab {
         });
         MaterialButton show = ui.secondary("Mostrar", 0);
         show.setOnClickListener(v -> showKey());
-        kb.addView(ui.evenRow(gen, show), ui.gap(10));
+        kb.addView(ui.evenRow(gen, show), ui.gap(12));
         MaterialButton install = ui.primary("Copiar comando de instalação", R.drawable.ic_copy);
         install.setOnClickListener(v -> {
             if (needKey()) {
@@ -127,7 +127,7 @@ final class ConfigTab {
             }
         });
         kb.addView(ui.evenRow(copyPub, sharePub), ui.gap(2));
-        page.addView(key, ui.gap(10));
+        page.addView(key, ui.gap(12));
 
         // ---- host fingerprint
         MaterialCardView fp = ui.titledCard("Impressão digital da VPS");
@@ -147,8 +147,8 @@ final class ConfigTab {
                     refreshInfo();
                     a.snack("Esquecida. A próxima conexão guarda a nova.", true);
                 }));
-        fb.addView(forget, ui.gap(10));
-        page.addView(fp, ui.gap(10));
+        fb.addView(forget, ui.gap(12));
+        page.addView(fp, ui.gap(12));
 
         // ---- help
         MaterialCardView help = ui.titledCard("Primeira vez");
@@ -157,7 +157,7 @@ final class ConfigTab {
                 + "VPS como root.\n4. Testar conexão. Confira a impressão digital.\n\nOutro layout na VPS (o kit em "
                 + "/opt/chaos-trial, outra unidade systemd)? Escreva os caminhos em /etc/chaos/ctl.conf "
                 + "(server/deploy/ctl.conf.trial.example). Variáveis de ambiente não chegam ao chaos-ctl.sh."));
-        page.addView(help, ui.gap(10));
+        page.addView(help, ui.gap(12));
 
         refreshInfo();
         ScrollView sv = new ScrollView(a);
@@ -169,7 +169,7 @@ final class ConfigTab {
     void refreshInfo() {
         String pub = a.store.publicKey();
         keyState.setText(pub.isEmpty() ? "Nenhuma chave ainda." : "Chave pronta: " + shortKey(pub));
-        keyState.setTextColor(pub.isEmpty() ? ui.goldLight : ui.ok);
+        keyState.setTextColor(pub.isEmpty() ? ui.warn : ui.ok);
         String fp = a.store.hostFingerprint();
         fpText.setText(fp.isEmpty() ? "Ainda não conectou." : fp);
     }
@@ -258,7 +258,7 @@ final class ConfigTab {
             return;
         }
         TextView t = ui.mono(a.store.publicKey());
-        t.setPadding(ui.dp(22), ui.dp(8), ui.dp(22), 0);
+        t.setPadding(ui.dp(24), ui.dp(8), ui.dp(24), 0);
         ScrollView sv = new ScrollView(a);
         sv.addView(t);
         new MaterialAlertDialogBuilder(a).setTitle("Chave pública").setView(sv)

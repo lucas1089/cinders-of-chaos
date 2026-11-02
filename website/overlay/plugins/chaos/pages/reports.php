@@ -65,10 +65,10 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d H:i', $
 		</nav>
 
 		<?php if ($message !== ''): ?>
-			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-reports-message"<?= $messageOk ? '' : ' style="color:#e07060;"' ?>><?= chaos_h($message) ?></p>
+			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-reports-message"><?= chaos_h($message) ?></p>
 		<?php endif; ?>
 
-		<form method="get" action="page" class="chaos-filter" style="margin:10px 0;">
+		<form method="get" action="page" class="chaos-filter">
 			<input type="hidden" name="plugin" value="chaos">
 			<input type="hidden" name="p" value="reports">
 			<?php if ($showLog): ?><input type="hidden" name="log" value="1"><?php else: ?>
@@ -99,7 +99,7 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d H:i', $
 						<td><a href="<?= chaos_h($self . '&log=1&name=' . rawurlencode((string)$r['player_name'])) ?>"><?= chaos_h($r['player_name']) ?></a></td>
 						<td><?= chaos_h(str_replace('_', ' ', (string)$r['kind'])) ?></td>
 						<td class="num"><?= (int)$r['score'] ?></td>
-						<td class="chaos-muted" style="font-size:12px;"><?= chaos_h($r['detail']) ?></td>
+						<td class="chaos-muted chaos-small"><?= chaos_h($r['detail']) ?></td>
 					</tr>
 				<?php endforeach; ?>
 				</tbody>

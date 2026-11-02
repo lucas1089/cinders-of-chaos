@@ -47,7 +47,7 @@ $accepted = $accountId > 0 && chaos_legal_has_accepted($accountId);
 			<p class="chaos-lead" lang="pt-BR">Antes de continuar, leia e aceite os nossos Termos de Uso e a Política de Privacidade.
 				Contas criadas antes da caixa de aceite no cadastro, e todas as contas depois de uma mudança nos textos, aceitam uma vez.</p>
 			<?php if ($error !== ''): ?>
-				<p class="chaos-error" id="chaos-legal-accept-error" style="color:#e07060;"><?= chaos_h($error) ?></p>
+				<p class="chaos-error" id="chaos-legal-accept-error"><?= chaos_h($error) ?></p>
 			<?php endif; ?>
 			<form method="post" action="<?= chaos_h(CHAOS_LEGAL_ACCEPT_URL) ?>">
 				<input type="hidden" name="csrf" value="<?= chaos_h($csrf) ?>">
