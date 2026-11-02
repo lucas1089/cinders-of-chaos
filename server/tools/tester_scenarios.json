@@ -7847,8 +7847,8 @@
    "actions": [
     "state",
     "skip",
-    "enter",
     "leave",
+    "enter",
     "request",
     "claim"
    ],
