@@ -34,4 +34,6 @@ grep -o 'phonetest: .*' "$OUT/logcat.txt" | tee "$OUT/phonetest.txt"
 ls "$OUT"
 grep -q '^phonetest: done' "$OUT/phonetest.txt" || { echo "PLAY TEST: did not finish"; exit 1; }
 if grep -E '^phonetest: [a-z]+ fail' "$OUT/phonetest.txt"; then echo "PLAY TEST: a step failed"; exit 1; fi
+# a Lua error inside a step ends the test with "fail error ..." and "done error" (run 41408494687 passed with them)
+if grep -E '^phonetest: (fail error|done error)' "$OUT/phonetest.txt"; then echo "PLAY TEST: a step raised an error"; exit 1; fi
 echo "PLAY TEST: ok"

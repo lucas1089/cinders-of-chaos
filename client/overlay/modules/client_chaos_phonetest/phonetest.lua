@@ -163,6 +163,10 @@ function steps.enter(nextFn)
   waitFor(function() return me() ~= nil end, 300000, function()
     later(5000, function()
       local p = me()
+      if not p then
+        result('enter', false, 'in the game, then out again within 5 s (the server closed the connection?)')
+        return shot('enter_failed', function() steps.done() end)
+      end
       result('enter', true, ('%s level %d at %d,%d,%d'):format(p:getName(), p:getLevel(), p:getPosition().x,
         p:getPosition().y, p:getPosition().z))
       shot('ingame', nextFn)

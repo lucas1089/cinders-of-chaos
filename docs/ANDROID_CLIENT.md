@@ -82,6 +82,11 @@ proficiency JSON (about 25 s, base patch `0182` now decodes it once on the login
 passive tree, outfit window. The emulator runs an `-O0` engine through a translator, far slower than a phone, so a
 phone sees this as a freeze of a second or two, not a drop.
 
+Next run (41408494687, with `0181` and `0182`): the client entered the game, then left it within 5 s. The longest
+silence was still about 45 s. The job went green by mistake: the step raised a Lua error, which `smoke_play.sh` did
+not count. It does now, and the step reports the case. The biggest shares left: the Auto spellbook and the season pass
+built their rows on the login's prefetch while hidden. Both now keep the data and build the rows when shown.
+
 ## Step 8 status: the APK updater
 
 Date: 2026-10-30. Build plan step 8 is written and tested as far as this machine can: the publisher, the manifest key, the
