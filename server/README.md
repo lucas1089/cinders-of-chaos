@@ -20639,6 +20639,27 @@ floor, second run unchanged), `tests/hunt_teleports_test.lua` (base signs and la
 languages, the top floor "levels 1000+", the quest hall's labels, an exit back in front of its own teleport from the
 places file's `front` or computed for both rows and the end row).
 
+## Quest hall showcase (O361) (`tools/patch_quest_showcase.py`, `tools/quest_showcase.json`, install step `questshowcase`)
+Owner 2026-11-02: "check that the quests give the same rewards as the showcases of the teleports"; "yes to all".
+An audit of the 16 quest alcoves on an installed server compared what each alcove shows with what its quest gives.
+Sources read: every item with an action or unique id on the map, contents included; `actions/scripts/quests/system.lua`
+and `system2.lua` (chests by unique id); `quests/inquisition/rewards.lua`; `quests/demon oak/demonOakChest.lua`;
+NPC script `Arkulius.lua` (Elemental Spheres); `scripts/customs/enhanced_loot/Enhanced_loot.lua` (boss loot bags).
+No Chaos script changes a quest chest's contents (`patch_reward_chests.py` changes only the chest's look).
+- Match: Black Knight, Deeper Fibula, Annihilator, Elemental Spheres, Queen of the Banshees, Dragon Scale, Blessed.
+  Small extras not on show stay so (rings, an amulet, coins).
+- Fixed by the step (`quest_showcase.json`, a `why` per row):
+  - Demon Oak: royal crossbow 8851 on show becomes the thorn spitter 16111 the chest gives.
+  - Inquisition: paladin armor 8891 becomes master archer's armor 8888; spellbook of dark mysteries 8918 added.
+  - Pits of Inferno: the regenerating soft boots 2640 become the plain ones 6132 the chest gives.
+  - Demon Helmet: demon shield 2520 added. Behemoth: guardian halberd 2427 added. Yalahari and Draken: royal scale robe 12643 added.
+  - Astro, Arodis, Mercurial: the items on show come only from the boss's loot bag (chance 5000 of 10000, then a tier
+    roll); the quest gives the outfit. The sign says so.
+The alcove is found on the map, not by coordinates: the teleport (1387, 5023, 11796) to the CSV row's destination with
+the sign (5360) two tiles behind it; the cells are x - 1 .. x + 1 of the row between. An added item goes on the cell
+with the fewest items, the middle first. Run on the installed copy of 2026-10-30: 10 changes; a second run: none.
+Test: `tools/patch_quest_showcase_test.py` (synthetic map, CI).
+
 ## Map fixes (`tools/patch_map_fixes.py`, `tools/teleport_fixes.csv`, install step `mapfixes`)
 Owner report of 2026-10-21 (live server): "many teleports lead nowhere", "hunts whose teleport has no teleport back",
 "teleports in the hub with no monsters behind them", "black spots in the teleport hub", "the new NPCs are scattered".

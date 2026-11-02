@@ -1,0 +1,26 @@
+{
+  "_doc": "patch_quest_showcase.py: the rewards on show in the quest hall's alcoves made to match what each quest gives (owner 2026-11-02). quest: the name of the hall_hunts.csv row of kind quest. replace: [on show, given] item ids swapped in place. add: item ids put on the alcove's emptiest cell. sign: the new text of the alcove's sign.",
+  "quests": [
+    {"quest": "Demon Oak Quest", "replace": [[8851, 16111]],
+     "why": "the chests give the thorn spitter (16111, uid 9010), not the royal crossbow"},
+    {"quest": "The Inquisition Quest", "replace": [[8891, 8888]], "add": [8918],
+     "why": "rewards.lua (uids 1300-1308) gives the master archer's armor and the spellbook of dark mysteries, not the paladin armor"},
+    {"quest": "Pits of Inferno Quest", "replace": [[2640, 6132]],
+     "why": "the chest (uid 10545) gives the plain soft boots, not the regenerating ones"},
+    {"quest": "Demon Helmet Quest", "add": [2520],
+     "why": "the third chest (uid 2214) gives a demon shield"},
+    {"quest": "Behemoth Quest", "add": [2427],
+     "why": "a chest (uid 1299) gives a guardian halberd"},
+    {"quest": "Yalahari and Draken Quest", "add": [12643],
+     "why": "a chest (uid 42016) gives a royal scale robe"},
+    {"quest": "Astro Mage / Astro Warrior Outfit Quest",
+     "sign": "Astro Quest\n\nThe quest's chests give the Astro Mage and Astro Warrior outfits.\nThe items on show are not a quest reward: the Astro King drops them by chance (a loot bag on one kill in two).",
+     "why": "the items on show come only from the boss's loot bag (Enhanced_loot.lua, chance 5000 of 10000)"},
+    {"quest": "Arodis Quest",
+     "sign": "Arodis Quest\n\nThe quest gives the Arodis outfit.\nThe items on show are not a quest reward: Arodis Saron drops them by chance (a loot bag on one kill in two).",
+     "why": "the items on show come only from the boss's loot bag (Enhanced_loot.lua, chance 5000 of 10000)"},
+    {"quest": "Mercurial Quest",
+     "sign": "Mercurial Quest\n\nThe quest's chest gives the Corrupted outfit.\nThe items on show are not a quest reward: the Mercurial Mage drops them by chance (a loot bag on one kill in two).",
+     "why": "the items on show come only from the boss's loot bag (Enhanced_loot.lua, chance 5000 of 10000)"}
+  ]
+}

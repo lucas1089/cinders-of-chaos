@@ -329,6 +329,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                hall becomes deep water with its shore borders and ground under its walls, and the portal gallery at
                Cinderhold's temple is built (temple_portals_config.lua; after contentareas, before poi; with --dry-run
                it reads the real map and writes nothing)
+  questshowcase tools/patch_quest_showcase.py  the owner's answer of 2026-11-02 (README "Quest hall showcase (O361)"): the
+               rewards on show in the quest hall's alcoves match what each quest gives (tools/quest_showcase.json: an
+               item swapped, an item added, the boss-loot quests' sign text; after mapfixes, before poi; with --dry-run
+               it reads the real map and writes nothing)
   deadholes    tools/patch_dead_holes.py         the owner's report of 2026-10-26 ("this hole leads nowhere", README "Dead holes (O264)"): the
                floor changes of the base map whose landing has no walkable ground (tools/dead_holes.csv, found by
                tools/check_dead_holes.py) lose their item or turn into plain ground; one that has a tile below now is
@@ -1398,6 +1402,19 @@ def step_mapfixes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('contentareas') + 1, 'mapfixes')  # after contentareas (the hall's map), before poi
+
+
+def step_questshowcase(server, data, ctx):
+    if ctx['dry']:
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_quest_showcase.py'), real, '--dry-run', '--map', mp], 'patch_quest_showcase.py'))
+    return tool_result(run_tool([tool('patch_quest_showcase.py'), data], 'patch_quest_showcase.py'))
+
+
+STEPS.insert(STEPS.index('mapfixes') + 1, 'questshowcase')  # after mapfixes (the quest hall's alcoves moved), before poi
 
 
 def step_deadholes(server, data, ctx):
