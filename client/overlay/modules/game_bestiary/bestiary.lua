@@ -621,6 +621,26 @@ local function onGameEnd()
   renderTracker()
 end
 
+-- the tracker's default place. The map panel runs under the side panels and the chat: anchor to what is really visible
+local function anchorTracker(w)
+  local root = w:getParent()
+  w:breakAnchors()
+  if root and root:getChildById('gameRightPanels') then
+    w:addAnchor(AnchorRight, 'gameRightPanels', AnchorLeft)
+  else
+    w:addAnchor(AnchorRight, 'gameMapPanel', AnchorRight)
+  end
+  if root and root:getChildById('bottomSplitter') then
+    w:addAnchor(AnchorBottom, 'bottomSplitter', AnchorTop)
+  else
+    w:addAnchor(AnchorBottom, 'gameMapPanel', AnchorBottom)
+  end
+  w:setMarginTop(0)
+  w:setMarginLeft(0)
+  w:setMarginRight(10)
+  w:setMarginBottom(10)
+end
+
 function init()
   window = g_ui.displayUI('bestiary')
   window:hide()
@@ -641,24 +661,15 @@ function init()
   setTab('bestiary')
   renderDetail()
 
-  -- the map panel runs under the side panels and the chat: anchor to what is really visible
   local root = modules.game_interface.getRootPanel()
   tracker = g_ui.loadUI('tracker', root)
   tracker:hide()
-  local right = root:getChildById('gameRightPanels')
-  local bottom = root:getChildById('bottomSplitter')
-  if right then
-    tracker:addAnchor(AnchorRight, 'gameRightPanels', AnchorLeft)
-  else
-    tracker:addAnchor(AnchorRight, 'gameMapPanel', AnchorRight)
+  anchorTracker(tracker)
+  -- the player drags it by its background or title (a click on the title still folds); the spot is saved per character,
+  -- a double-click puts it back here (game_hudmove)
+  if ChaosHudMove then
+    ChaosHudMove.attach(tracker, 'bestiaryTracker', { handles = { tracker.title }, reset = anchorTracker })
   end
-  if bottom then
-    tracker:addAnchor(AnchorBottom, 'bottomSplitter', AnchorTop)
-  else
-    tracker:addAnchor(AnchorBottom, 'gameMapPanel', AnchorBottom)
-  end
-  tracker:setMarginRight(10)
-  tracker:setMarginBottom(10)
 
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
@@ -674,6 +685,7 @@ function terminate()
     window = nil
   end
   if tracker then
+    if ChaosHudMove then ChaosHudMove.detach(tracker) end
     tracker:destroy()
     tracker = nil
   end

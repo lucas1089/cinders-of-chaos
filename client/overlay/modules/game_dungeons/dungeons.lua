@@ -94,6 +94,10 @@ function create()
 
   killCounter = g_ui.loadUI("killcounter", modules.game_interface.getMapPanel())
   killCounter:hide()
+  -- movable, spot saved per character, double-click back (game_hudmove)
+  if ChaosHudMove then
+    ChaosHudMove.attach(killCounter, 'dungeonKillCounter', { otui = '/modules/game_dungeons/killcounter' })
+  end
 
   challengeNotifi = g_ui.loadUI("challenge", modules.game_interface.getMapPanel())
   g_effects.fadeOut(challengeNotifi, 1)
@@ -132,6 +136,7 @@ function destroy()
   end
 
   if killCounter then
+    if ChaosHudMove then ChaosHudMove.detach(killCounter) end
     killCounter:destroy()
     killCounter = nil
   end

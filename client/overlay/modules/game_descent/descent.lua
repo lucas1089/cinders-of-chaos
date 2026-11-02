@@ -53,6 +53,7 @@ end
 -- ---------------------------------------------------------------- HUD
 local function place()
   local mapPanel = hud and hud:getParent()
+  if ChaosHudMove and ChaosHudMove.isMoved(hud) then return end -- the player put it somewhere (game_hudmove)
   local plate = rootWidget:recursiveGetChildById('chaosHud')
   if not mapPanel or not plate or not plate:isVisible() then return end
   local r = plate:getRect()
@@ -403,6 +404,11 @@ function init()
     return nil
   end
   hud = make('DescentHud', modules.game_interface.getMapPanel())
+  -- dragged by its title (the rest stays click-through), spot saved per character (game_hudmove)
+  if hud and ChaosHudMove then
+    ChaosHudMove.attach(hud, 'descentHud', { panel = false, handles = { hud.title },
+      otui = '/modules/game_descent/descent', style = 'DescentHud', onDefault = place })
+  end
   offerWindow = make('DescentOfferWindow', rootWidget)
   pcall(function() modules.game_howitworks.attach(offerWindow, 'descent') end) -- game_howitworks: the ? button
   shopWindow = make('DescentShopWindow', rootWidget)
@@ -417,6 +423,7 @@ function terminate()
   pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
   stopTick()
   if hideEvent then removeEvent(hideEvent) hideEvent = nil end
+  if hud and ChaosHudMove then ChaosHudMove.detach(hud) end
   for _, w in ipairs({ hud, offerWindow, shopWindow, infoWindow }) do
     if w then w:destroy() end
   end

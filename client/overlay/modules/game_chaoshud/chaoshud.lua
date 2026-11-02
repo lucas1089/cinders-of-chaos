@@ -270,6 +270,8 @@ function init()
   hud = g_ui.loadUI('chaoshud', modules.game_interface.getRootPanel())
   local bars = child('barsHover')
   if bars then bars.onMouseRelease = showBarMenu end
+  -- movable (the buff bar and the energy shield bar hang on it and follow), spot saved per character (game_hudmove)
+  if ChaosHudMove then ChaosHudMove.attach(hud, 'chaosHud', { otui = '/modules/game_chaoshud/chaoshud' }) end
   -- the outfit hook goes on LocalPlayer: another module's LocalPlayer.onOutfitChange hides Creature.onOutfitChange for
   -- the local player, so a Creature hook never fired and the portrait kept the login outfit
   connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange,
@@ -283,6 +285,7 @@ function terminate()
   disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange,
     onOutfitChange = onOutfitChange })
   disconnect(g_game, { onGameStart = online, onGameEnd = offline })
+  if hud and ChaosHudMove then ChaosHudMove.detach(hud) end
   if hud then
     hud:destroy()
     hud = nil

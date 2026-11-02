@@ -119,6 +119,7 @@ end
 -- 1920x1080), so the fixed margin-top of the style put the HUD on the plate
 place = function()
   local mapPanel = hud and hud:getParent()
+  if ChaosHudMove and ChaosHudMove.isMoved(hud) then return end -- the player put it somewhere (game_hudmove)
   local plate = rootWidget:recursiveGetChildById('chaosHud')
   if not mapPanel or not plate or not plate:isVisible() then return end
   local r = plate:getRect()
@@ -203,6 +204,11 @@ end
 function init()
   hud = g_ui.loadUI('rift', modules.game_interface.getMapPanel())
   hud:hide()
+  -- dragged by its title (the rest stays click-through), spot saved per character (game_hudmove)
+  if ChaosHudMove then
+    ChaosHudMove.attach(hud, 'riftHud', { panel = false, handles = { hud.title }, otui = '/modules/game_rift/rift',
+      onDefault = place })
+  end
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameStart = onGameStart, onGameEnd = hide })
   if g_game.isOnline() then onGameStart() end
@@ -212,6 +218,7 @@ function terminate()
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = hide })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   hide()
+  if hud and ChaosHudMove then ChaosHudMove.detach(hud) end
   if hud then
     hud:destroy()
     hud = nil

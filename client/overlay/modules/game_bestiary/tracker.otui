@@ -2,6 +2,7 @@
 // (left of the right side panels, above the chat; anchored in bestiary.lua). The other HUDs sit top left (character
 // plate, rift, invasion), top centre (siege, arena, monster bar), top right (toasts) and bottom centre (monk chi); the
 // status messages are centred. Click the title to fold it; the window's "Task tracker" box (or the Hunt menu) hides it.
+// Drag it by its background or title to move it (saved per character); a double-click puts it back (game_hudmove).
 BestiaryTrackerRow < UIWidget
   height: 26
   phantom: true

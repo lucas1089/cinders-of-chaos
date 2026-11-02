@@ -511,6 +511,10 @@ function init()
     return nil
   end
   hud = make('BgHud', modules.game_interface.getRootPanel())
+  -- movable, spot saved per character, double-click back (game_hudmove)
+  if hud and ChaosHudMove then
+    ChaosHudMove.attach(hud, 'battlegroundHud', { otui = '/modules/game_battleground/battleground', style = 'BgHud' })
+  end
   window = make('BgWindow', rootWidget)
   pcall(function() modules.game_howitworks.attach(window, 'battleground') end) -- game_howitworks: the ? button
   board = make('BgBoard', rootWidget)
@@ -524,6 +528,7 @@ function terminate()
   disconnect(g_game, handlers.game or {})
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
   stopTick()
+  if hud and ChaosHudMove then ChaosHudMove.detach(hud) end
   for _, w in ipairs({ hud, window, board }) do
     if w then w:destroy() end
   end

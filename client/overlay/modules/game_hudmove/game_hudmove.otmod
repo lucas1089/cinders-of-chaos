@@ -1,0 +1,11 @@
+Module
+  name: game_hudmove
+  description: Movable HUD panels (global ChaosHudMove): drag a tracker or HUD by its background or title; its spot is saved per character; a double-click puts it back
+  author: Cinders of Chaos
+  sandboxed: false
+  reloadable: false
+  autoload: true
+  autoload-priority: 800
+  scripts: [ hudmove_core, hudmove ]
+  @onLoad: ChaosHudMove.init()
+  @onUnload: ChaosHudMove.terminate()
