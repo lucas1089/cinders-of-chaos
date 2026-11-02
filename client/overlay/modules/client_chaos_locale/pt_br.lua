@@ -3531,7 +3531,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Pick sections in Tools > Bot HUD"] = "Escolha as seções em Tools > Bot HUD",
   -- game_chatpanel
   ["Drag to change the width of the chat. Double-click: default width."] = "Arraste para mudar a largura do chat. Clique duplo: largura padrão.",
-  ["Drag to move the chat sideways. Double-click: back to the centre."] = "Arraste para mover o chat para os lados. Clique duplo: volta ao centro.",
+  ["Drag to move the chat anywhere. Double-click: back to the bottom centre."] = "Arraste para mover o chat para qualquer lugar. Clique duplo: volta para baixo, no centro.",
+  ["Chat"] = "Chat",
   -- game_helperrotation/autorotation_ui.lua
   ["Add to my rules"] = "Somar às minhas regras",
   ["Replace"] = "Substituir",

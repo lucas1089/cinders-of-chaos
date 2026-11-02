@@ -62,7 +62,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_targetguard | none | base patch 0112 (the helper's locked target and the battle list's attack next call `ChaosTargetGuard`) | Which creatures the player's own targeting may pick, see "Target guard" |
 | game_autotarget | none of its own; asks the server for a creature's tier through `game_monsterbar` (opcode 125 `query`, answer `info`) | base patch 0117 (the helper's Auto Target calls `ChaosAutoTargetEngine`; two boxes in its Targeting panel); `g_map.findPath` / `g_map.isSightClear` of the base engine | Which monster the helper's Auto Target picks: only reachable ones, loot goblins / bosses / special monsters first, then the nearest with the lowest health, see "Auto Target priority and reach" |
 | game_helpersupport | none | none (overlay only: it uses the helper's `_Helper` functions and `game_buffbar`'s `activeBuffs`) | The helper's Support spells tab: a list of support spells the helper casts by itself whenever they are off cooldown, see "Helper Support spells" |
-| game_chatpanel | none | base patches 0056 (`game_console` reads `ChaosChatLogic.enterAction`; splitter minimum 96), 0065 (splitter drag, left margin) | Chat panel size and place (with the orbs) and the chat's Enter rule, see "Chat panel" |
+| game_chatpanel | none | base patches 0056 (`game_console` reads `ChaosChatLogic.enterAction`; splitter minimum 96), 0065 (splitter drag, left margin) | Chat panel size and place (with the orbs; moved anywhere by its "Chat" handle, width grip keeps the left edge) and the chat's Enter rule, see "Chat panel" |
 | game_chaoslayout | none | none (the base's miniwindow restore reads a node nothing writes) | Window layout per character, see "Window layout per character" |
 | game_chaosview | none (asks for the server's largest map area with `g_game.changeMapAwareRange`, server limit 29 x 21) | none | The map's zoom, see "Map zoom" |
 | game_cosmeticfx | none of its own (`game_cosmetics` hands it the server's `looks` and `tryfx`) | `0038` for the outline line (`Creature:setOutline` / `setOutlineGradient` / `clearOutline`); `0078` for the footprints (`Tile:setFloorWidget`: under creatures; without it `Tile:setWidget`, drawn over everything); without `0038` the glow picture (uses `Creature:addBottomWidget` / `clearBottomWidgets`, `UIWidget:setRotation`) | Footprints and outlines of every player on screen, drawn by this client: a print on the tile a player left (turned to the step, fading in 3.2 s; 160 on screen, 8 per walker; never on a tile with another module's widget; none while the own character stands in a protection zone) and an outline: a 2 px line that follows the player's silhouette (body, addons, mount and rider, the walking frame; drawn by the engine under the outfit's parts, so it stacks with outfit shaders, wings and auras and stays off names and bars). Colours per art key in `CF.OUTLINES` (one colour, or a vertical gradient: Ember, Storm, Paragon's Radiance, Void Corona, Cinderheart Blaze); pulsing ones breathe in the engine (1.8 s). Feature check per creature (`CF.hasEngineOutline`): a client without base patch 0038 gets the old soft glow behind the player (a bottom widget) instead. `applyOutline(creature, art, pulse)` for `game_cosmetics`' sample. Settings (g_settings node `chaosCosmeticFx`) hide other players' footprints / outlines; the own character always shows. Pictures `images/prints/*.png` (64 x 64, pointing north) and, for old engines only, `images/glows/*.png` (128 x 128) from `tools/gen_cosmeticfx_art.py` (shapes and noise with a fixed seed, no reference art). Logic `cosmeticfxlogic.lua` (tested by `cosmeticfxlogic_test.lua`, which also checks a picture and outline colours for every art key of the server's `cosmetics_config.lua`, the gradients and the feature check); tested in game with two clients (server/README.md "Footprints and outlines") Print `laurel` (O318, `gen_cosmeticfx_art.py`, appended last so the other pictures stay byte for byte): the collection score's footprints Laurel Steps. |
@@ -4705,21 +4705,32 @@ window resize is not taken for a choice. `chaosview_logic.lua`, `chaosview_test.
 
 ### Chat panel (`game_chatpanel`)
 - Place: the group life orb + chat + mana orb is centred in the game window by default and re-centred when the window
-  or the side panels change. The grip on the chat's left edge moves it sideways (clamped to the room between the side
-  panels); double-click on it, or a drag that ends within 8 px of the centre, makes it centred again. The splitter's
-  left and right margins place it (`ChaosChatLogic.layout`); base patch `0065` hands game_interface's left margin to
-  `ChaosChatPanel.relayout`.
-- Width: the grip on the right edge (double-click: default width). The action bar shows fewer empty slots (width /
-  36). Default 760 px, at least 420, never more than the room.
+  or the side panels change. The "Chat" handle above the chat's top-left corner (its title) and the grip on its left
+  edge drag it anywhere in the game area between the side panels, clamped to the screen. Up only in the extended view
+  (the classic view docks the map above it). Double-click on either, or a move that ends within 8 px of the centre /
+  the bottom edge, puts it back there. The splitter's left and right margins place it sideways
+  (`ChaosChatLogic.layout`, `x` = chat's left edge); the lift goes into the splitter's bottom margin (height + lift)
+  and the console's (`gameBottomPanel`); the splitter's own height rules are wrapped to see the height alone; the side
+  bars that end on the splitter (`gameLeft/RightTopBar`, `gameLeft/RightActionPanel`) lose the lift from their bottom
+  margin so they keep their length. Base patch `0065` hands game_interface's left margin to `ChaosChatPanel.relayout`.
+- Width: the grip on the right edge (double-click: default width). The left edge stays, the right edge follows the
+  mouse (`widthForGrip`, `keepLeft`); past the screen edge the width stops. The action bar shows fewer empty slots
+  (width / 36). Default 760 px, at least 420, never more than the room.
+- Owner video 2026-11-02: dragging the width grip right made the chat grow to the left, and it could only move
+  sideways inside a narrow band. Cause: the width grip widened the centred group around its centre, and the group was
+  clamped to a region that also kept off the side action bars and the reserved left column. So near the right limit
+  every extra pixel pushed the left edge out. Fixed as above. Old saved places (`offset` from the centre) turn into `x`
+  once.
 - Height: the base splitter above the action bars, minimum 96 px plus the action bars (was 118); a new character
   starts 40 px above the minimum, at most 55% of the window. Build 5 "the splitter does not work": the base splitter
   set its orientation only on hover and skipped that while another cursor was pushed (the width grip could leave one
   pushed), so the drag changed the right margin; fixed in `0065`, and the grips pop their cursor once.
 - Orbs (`game_shaderfx`): children of the game root panel anchored to the chat's edges (life past the move grip, mana
-  past the width grip, `ChaosChatLogic.orbMargins`), bottom-aligned with the chat, so they follow a resize or a move.
+  past the width grip, `ChaosChatLogic.orbMargins(lift)`), bottom-aligned with the chat, so they follow a resize or
+  a move (`ChaosChatPanel.getLift`).
   On a window too narrow for orbs and a 420 px chat they are hidden; with orbs on, the group also keeps off the side
   action bars (an orb is taller than a small chat).
-- Width, height and place kept per character (client settings node `chaos_chatpanel`).
+- Width, height and place (`x`, `lift`) kept per character (client settings node `chaos_chatpanel`).
 - Enter / Shift+Enter (`ChaosChatLogic.enterAction`, read by `game_console`): an empty line closes the chat in "Chat
   On" and "Chat On*" and walking works again; with text it sends, "Chat On*" closes after.
 - `chatpanel_logic.lua`, `chatpanel_test.lua`.

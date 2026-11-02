@@ -41,16 +41,23 @@ eq(L.sizeFor(saved, 'Bob').height, nil, 'new character height: default')
 eq(L.sizeFor(nil, 'Bob').width, L.DEFAULT_WIDTH, 'nothing saved')
 
 -- saved place
-eq(L.sizeFor({ A = { width = 600, offset = -120.4 } }, 'A').offset, -121, 'saved offset (whole pixels)')
-eq(L.sizeFor({ A = { width = 600 } }, 'A').offset, nil, 'no offset: centred')
+eq(L.sizeFor({ A = { width = 600, offset = -120.4 } }, 'A').offset, -121, 'old saved offset (whole pixels)')
+eq(L.sizeFor({ A = { width = 600, x = 300, offset = 50 } }, 'A').offset, nil, 'x wins over an old offset')
+eq(L.sizeFor({ A = { width = 600, x = 300.7 } }, 'A').x, 300, 'saved x')
+eq(L.sizeFor({ A = { width = 600 } }, 'A').x, nil, 'no x: centred')
+eq(L.sizeFor({ A = { width = 600, lift = 220 } }, 'A').lift, 220, 'saved lift')
+eq(L.sizeFor({ A = { width = 600, lift = -5 } }, 'A').lift, 0, 'lift never under the bottom edge')
+eq(L.sizeFor(nil, 'A').lift, 0, 'new character on the bottom edge')
 
 -- the group: life orb + chat + mana orb, centred in the window by default
 local m = L.orbMargins()
 eq(m.left, L.MOVE_GRIP_GAP + L.GRIP + L.ORB_GAP, 'life orb clears the move grip')
 eq(m.right, L.WIDTH_GRIP_GAP + L.GRIP + L.ORB_GAP, 'mana orb clears the width grip')
+eq(m.bottom, L.ORB_BOTTOM, 'orbs on the bottom edge')
+eq(L.orbMargins(200).bottom, L.ORB_BOTTOM + 200, 'orbs follow a lifted chat')
 local function place(t)
   return L.layout({ regionLeft = t.rl or 0, regionRight = t.rr or 1920, windowLeft = 0, windowWidth = t.ww or 1920,
-    width = t.w or 760, offset = t.off, orbSize = t.orb or 0 })
+    width = t.w or 760, x = t.x, offset = t.off, orbSize = t.orb or 0, keepLeft = t.keep })
 end
 local function groupOf(p, orb)
   local o = p.orbs and orb or 0
@@ -60,27 +67,28 @@ local p = place({ orb = 150 })
 local gl, gr = groupOf(p, 150)
 eq(p.chatWidth, 760, 'centred: wanted width')
 eq(p.orbs, true, 'orbs fit')
-eq(p.offset, nil, 'centred by default')
+eq(p.x, nil, 'centred by default')
+eq(p.chatLeft, p.centredLeft, 'centred place reported')
 eq(math.abs((gl + gr) - 1920) <= 1, true, 'group centred in the window')
--- the chat's own centre is shifted by the uneven grips only, never by the orbs (they are the same size)
 eq(p.chatLeft - 0 >= m.left + 150, true, 'room for the life orb on the left')
 p = place({ orb = 150, ww = 2560, rr = 2560 })
 gl, gr = groupOf(p, 150)
 eq(math.abs((gl + gr) - 2560) <= 1, true, 're-centres on a wider window')
--- moved by the player, kept as an offset from the centre, clamped to the region
-p = place({ orb = 150, off = 200 })
-eq(p.offset, 200, 'offset kept')
-gl, gr = groupOf(p, 150)
-eq(math.abs((gl + gr) - 1920 - 400) <= 1, true, 'group moved right by the offset')
-p = place({ orb = 150, off = 5000 })
+-- placed by the player: kept as the chat's left edge, clamped to the region
+p = place({ orb = 150, x = 900 })
+eq(p.chatLeft, 900, 'x is the left edge')
+eq(p.x, 900, 'x kept')
+p = place({ orb = 150, x = 5000 })
 gl, gr = groupOf(p, 150)
 eq(gr, 1920, 'clamped at the right edge (mana orb inside the window)')
-eq(p.offset < 5000, true, 'the stored offset is the clamped one')
-p = place({ orb = 150, off = -5000, rl = 300 })
+eq(p.x < 5000, true, 'the stored x is the clamped one')
+p = place({ orb = 150, x = -5000, rl = 300 })
 gl = groupOf(p, 150)
 eq(gl, 300, 'clamped at the left panels (life orb inside the region)')
-eq(place({ orb = 150, off = 6 }).offset, nil, 'a drag ending near the centre snaps back to centred')
-eq(place({ orb = 150, off = -8 }).offset, nil, 'snap both ways')
+-- an old saved offset becomes x
+p = place({ orb = 150, off = 200 })
+eq(p.x ~= nil, true, 'old offset turns into x')
+eq(p.chatLeft, place({ orb = 150 }).chatLeft + 200, 'old offset: moved right from the centre')
 -- small windows: the orbs give way before the chat goes under its minimum; the chat then takes the room
 p = place({ orb = 190, rr = 820, ww = 820 })
 eq(p.orbs, false, 'orbs left out on a narrow window')
@@ -92,7 +100,7 @@ eq(p.orbs, false, 'orbs off')
 gl, gr = groupOf(p, 0)
 eq(math.abs((gl + gr) - 1920) <= 1, true, 'without orbs the chat with its grips is centred')
 -- nothing overlaps: life orb | move grip | chat | width grip | mana orb
-p = place({ orb = 76, off = -300 })
+p = place({ orb = 76, x = 400 })
 local lifeRight = p.chatLeft - m.left
 local moveGripLeft = p.chatLeft - L.MOVE_GRIP_GAP - L.GRIP
 eq(lifeRight + L.ORB_GAP, moveGripLeft, 'life orb ends ORB_GAP before the move grip')
@@ -103,16 +111,59 @@ eq(widthGripRight + L.ORB_GAP, manaLeft, 'mana orb starts ORB_GAP after the widt
 local ml, mr = L.splitterMargins({ chatLeft = 500, chatWidth = 760 }, 100, 1800)
 eq(ml, 400, 'left margin from the left panels')
 eq(mr, 540, 'right margin from the right panels')
--- dragging
-eq(L.dragOffset(nil, 400, 460), 60, 'move: mouse travel from centred')
-eq(L.dragOffset(-50, 400, 380), -70, 'move: adds to the offset')
-for _, case in ipairs({ { off = nil, orb = 150 }, { off = 120, orb = 150 }, { off = -80, orb = 0 } }) do
-  local w = 900
-  local q = place({ w = w, off = case.off, orb = case.orb })
-  local gripX = q.chatLeft + q.chatWidth + L.WIDTH_GRIP_GAP + L.GRIP / 2
-  eq(math.abs(L.widthForGrip(gripX, 0, 1920, case.off, q.orbs and case.orb or 0) - w) <= 1, true,
-     'width grip under the mouse gives the width back (offset ' .. tostring(case.off) .. ')')
+
+-- the width grip (owner video 2026-11-02: dragging it right made the chat grow to the left): the left edge stays,
+-- the right edge follows the mouse
+for _, case in ipairs({ { x = 300, orb = 150 }, { x = 900, orb = 150 }, { x = 200, orb = 0 } }) do
+  local before = place({ w = 600, x = case.x, orb = case.orb })
+  for _, mouse in ipairs({ before.chatLeft + 700, before.chatLeft + 900, before.chatLeft + 500 }) do
+    local w = L.widthForGrip(mouse, before.chatLeft)
+    local after = place({ w = w, x = before.x, orb = case.orb, keep = true })
+    eq(after.chatLeft, before.chatLeft, 'resize keeps the left edge (x ' .. case.x .. ', mouse ' .. mouse .. ')')
+    local gripX = after.chatLeft + after.chatWidth + L.WIDTH_GRIP_GAP + L.GRIP / 2
+    local orbRoom = 1920 - (after.chatLeft + after.chatWidth + m.right + (after.orbs and case.orb or 0))
+    eq(math.abs(gripX - mouse) <= 1 or orbRoom == 0, true, 'grip under the mouse or at the screen edge')
+  end
 end
+-- dragged far past the right edge: the chat stops at the screen edge, its left edge does not move
+do
+  local before = place({ w = 600, x = 900, orb = 150 })
+  local after = place({ w = L.widthForGrip(5000, before.chatLeft), x = before.x, orb = 150, keep = true })
+  eq(after.chatLeft, 900, 'past the screen edge: left edge stays')
+  local _, right = groupOf(after, 150)
+  eq(right, 1920, 'past the screen edge: the mana orb ends on the edge')
+  -- without keepLeft (a window resize) the same width would push the group left: the old behaviour
+  local pushed = place({ w = L.widthForGrip(5000, before.chatLeft), x = before.x, orb = 150 })
+  eq(pushed.chatLeft < 900, true, 'only a resize drag keeps the left edge')
+end
+-- a chat that sits at the right edge and is narrower than the minimum room there keeps its minimum width
+do
+  local before = place({ w = 420, x = 5000, orb = 150 })
+  local after = place({ w = 100, x = before.x, orb = 150, keep = true })
+  eq(after.chatWidth, L.MIN_WIDTH, 'resize never under the minimum')
+end
+
+-- moving: anywhere on the screen, the group stays on it
+local sx, slift = L.dragPlace({ x = 500, lift = 0, mouseX = 600, mouseY = 900 }, 700, 600)
+eq(sx, 600, 'move: x follows the mouse')
+eq(slift, 300, 'move: dragging up lifts the chat')
+sx, slift = L.dragPlace({ x = 500, lift = 100, mouseX = 600, mouseY = 900 }, 600, 1200)
+eq(slift, 0, 'move: never under the bottom edge')
+eq(L.groupHeight(200, 0), 200 + L.SPLITTER + L.HANDLE_HEIGHT, 'group height: chat, splitter, handle')
+eq(L.groupHeight(50, 150), 150 + L.ORB_BOTTOM, 'group height: an orb taller than a small chat')
+eq(L.clampLift(5000, 300, 1080), 780, 'lift keeps the group on the screen')
+eq(L.clampLift(-20, 300, 1080), 0, 'lift not under the bottom edge')
+eq(L.clampLift(400, 1200, 1080), 0, 'a group taller than the window stays on the bottom edge')
+-- the end of a move snaps back to the centre and the bottom edge when close
+local centredLeft = place({ orb = 150 }).chatLeft
+local near = place({ orb = 150, x = centredLeft + 6 })
+local x, lift = L.snapPlace(near, 5)
+eq(x, nil, 'snap: back to centred')
+eq(lift, 0, 'snap: back on the bottom edge')
+local far = place({ orb = 150, x = centredLeft + 200 })
+x, lift = L.snapPlace(far, 300)
+eq(x, centredLeft + 200, 'no snap far from the centre')
+eq(lift, 300, 'no snap far from the bottom edge')
 
 if fails > 0 then os.exit(1) end
 print('chatpanel tests OK')
