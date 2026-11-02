@@ -330,6 +330,9 @@ eq(plan({id = 32071}, d, {loot = true, orbs = true}), "", "no Rift Key Pouch: om
 eq(P.moveRefusal({holdsPouch = false, toGround = true}), nil, "other items: no rule")
 ok(P.moveRefusal({holdsPouch = true, toGround = true}):find("cannot be dropped"), "ground / mailbox / trash refused")
 eq(P.moveRefusal({holdsPouch = true, chain = {"item", "self"}}), nil, "into a bag in the own backpack")
+-- owner 2026-11-02: the nemesis trophy may be dropped, thrown away or put anywhere a plain item goes
+eq(P.moveRefusal({holdsPouch = true, trophy = true, toGround = true}), nil, "the nemesis trophy may be dropped")
+eq(P.moveRefusal({holdsPouch = true, trophy = true, chain = {"player"}}), nil, "the nemesis trophy: no store-item rule")
 eq(P.moveRefusal({holdsPouch = true, chain = {"self"}}), nil, "into an own slot")
 eq(P.moveRefusal({holdsPouch = true, chain = {"item", "depot", "tile"}}), nil, "into the depot")
 ok(P.moveRefusal({holdsPouch = true, chain = {"item", "tile"}}), "a bag on the ground (house, corpse) refused")

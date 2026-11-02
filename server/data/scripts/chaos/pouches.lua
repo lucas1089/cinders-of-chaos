@@ -721,7 +721,9 @@ function PO.onMoveItem(player, item, count, fromPosition, toPosition, fromCylind
 	if not PO.holdsPouch(item) then
 		return PO.checkOneWay(player, item, toPosition, toCylinder)
 	end
-	local m = {holdsPouch = true, toGround = toPosition.x ~= CONTAINER_POS}
+	local isContainer = item.isContainer and item:isContainer() or false
+	local m = {holdsPouch = true, toGround = toPosition.x ~= CONTAINER_POS,
+		trophy = not isContainer and customAttr(item, "chaos_nemesis_owner") ~= nil}
 	if PO.isLootBag(item) then
 		m.lootBag, m.inPurse = true, PO.inPurse(player, item)
 	end

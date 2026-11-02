@@ -25168,7 +25168,8 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
   epithet. A nemesis not seen for 14 days is gone (login check, startup and hourly `DELETE`).
 - **Rewards** (`K.reward`). The victim slays it: a trophy (`rewards.trophy.id` 7393, a stock hunting trophy; named
   "nemesis trophy", the engraved name in the description and the custom attribute `chaos_nemesis_name`, owner
-  `chaos_nemesis_owner`, `chaos_storebound` and `chaos_locked`: the market and NPCs refuse it, a house takes it), the
+  `chaos_nemesis_owner`, `chaos_storebound` and `chaos_locked`: the market and NPCs refuse it, a house takes it; since 2026-11-02 the player may drop it, throw it away or put it
+  anywhere a plain item goes: `pouches_core.lua` `moveRefusal` `trophy`), the
   title Avenger of Self (`ChaosTitles` source `nemesis`) and gold in its corpse (5000 + 150 per level, once per 20 h).
   A party member slays it: the Nemesis Hunter bounty to the bank (10000 + 200 per level, once per 6 h per hunter, never
   for the victim's account or connection, never for a nemesis younger than 10 min), the title Nemesis Hunter after 3,
