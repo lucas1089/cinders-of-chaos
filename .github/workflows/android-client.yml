@@ -539,11 +539,12 @@ jobs:
           grep -q "Server Online" logs/server.log || { tail -n 60 logs/server.log; echo "::error::the server did not start"; exit 1; }
           ./add-account.sh phonetest phonetest1 "Phone Tester" warrior
           # group 6 (god: access, may attack monsters), so the test can place its NPC and monster (/s, /m) and jump (/a);
-          # group 3 is a senior tutor without access: every GM command was silently ignored
+          # group 3 is a senior tutor without access: every GM command was silently ignored; /m and /s also need account
+          # type 6 (god), type 5 got "no monster in view"
           SOCK="$PWD/run/mariadb.sock"
           [ "$(printf %s "$SOCK" | wc -c)" -le 100 ] || SOCK="/tmp/chaos-mariadb-$(id -u)-$(printf '%s' "$PWD" | cksum | cut -d' ' -f1).sock"
           ./mariadb/bin/mariadb --no-defaults --socket="$SOCK" -u "$(id -un)" chaos -e \
-            "UPDATE accounts SET type = 5 WHERE name = 'phonetest'; UPDATE players SET group_id = 6 WHERE name = 'Phone Tester';"
+            "UPDATE accounts SET type = 6 WHERE name = 'phonetest'; UPDATE players SET group_id = 6 WHERE name = 'Phone Tester';"
           echo "SRV=$PWD" >> "$GITHUB_ENV"
 
       - name: Let the emulator use KVM
