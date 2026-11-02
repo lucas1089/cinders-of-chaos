@@ -210,20 +210,27 @@ local function planWithSupport(voc, level)
     support = ChaosHelperSupport.autoPlan(entries, canCast) })
 end
 local sp = planWithSupport(13, 200)           -- Samurai
-local more, total = 0, 0
+local total = 0
+-- owner 2026-11-02 ("Auto setup does not put Poison Blades in the Support list"): the class fight buffs are Support rows
+-- now (cast while attacking a monster), no timer rules; the old hand-written timer buffs all stand in the Support plan
 for _, voc in ipairs({ 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 23, 24, 25 }) do
   local new, old = planWithSupport(voc, 300), planFor(voc, 300)
-  ok(#new.timers >= #old.timers, 'vocation ' .. voc .. ': no fewer timer rules than before')
-  ok(#new.timers <= ChaosHelperSupport.TIMER_MAX, 'vocation ' .. voc .. ': within the timer limit')
-  if #new.timers > #old.timers then more = more + 1 end
+  ok(#new.support <= ChaosHelperSupport.SUPPORT_MAX, 'vocation ' .. voc .. ': within the Support rows')
+  local inSupport, inTimer = {}, {}
+  for _, id in ipairs(new.support) do inSupport[id] = true end
+  for _, r in ipairs(new.timers) do inTimer[r.chaosAutoSetup] = true end
+  -- a timer rule only for a buff the full section has no row for
+  ok(#new.timers == 0 or #new.support == ChaosHelperSupport.SUPPORT_MAX, 'vocation ' .. voc .. ': timer rules only when the Support rows are full')
+  for _, r in ipairs(old.timers) do
+    ok(inSupport[r.chaosAutoSetup] or inTimer[r.chaosAutoSetup], 'vocation ' .. voc .. ': buff ' .. tostring(r.chaosAutoSetup) .. ' still set up')
+  end
   total = total + #new.support
 end
-ok(more >= 5, 'at least five classes get more timer rules than the hand-written list gave (' .. more .. ')')
 ok(total >= 21, 'every class has a support row or more (' .. total .. ')')
-eq(sp.timers[1].unit, 'sec', 'timer rule in seconds')
-eq(sp.timers[1].targetingMonster, true, 'timer rule: only while attacking a monster')
-eq(sp.timers[1].inNonPz, true, 'timer rule: outside protection zones')
-ok(sp.timers[1].chaosAutoSetup, 'timer rule: marked as Auto setup\'s')
+local thief = planWithSupport(11, 70)
+local hasPB = false
+for _, id in ipairs(thief.support) do if id == 239 then hasPB = true end end
+ok(hasPB, 'Thief 70: Poison Blades in the Support plan')
 ok(#sp.support >= 1, 'the plan lists support spells for the new section')
 eq(planFor(13, 200).support and #planFor(13, 200).support or 0, 0, 'without the module\'s plan: no support rows')
 eq(#S.ownTabs({ support = {} }, sp), 0, 'an empty support section is nobody\'s')

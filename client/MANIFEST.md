@@ -4769,6 +4769,10 @@ window exists (polled every second, like the Auto setup button), and any other h
   share of the maximum mana is left after it) and the buttons Fill for my class (adds what Auto setup would) and Clear
   list. Saved per character in the client settings node `chaos_helper_support` (`{enabled, reserve, slots, keep,
   cleared}`), like the other helper additions; Auto setup fills it (Undo restores it).
+- The class fight buffs (Poison Blades, Banner Call, Red Frenzy, Bushido Focus, the level 800 buffs ...) are Support
+  rows now, cast while attacking a monster (owner 2026-11-02: "Auto setup does not put Poison Blades in the Support
+  list"; they were Timer rules). They take the rows the vigil, shield and summons leave; one that does not fit (a Bone
+  Lord's army fills the eight rows) stays a Timer rule (`ChaosHelperSupport.autoPlan`).
 - The list survives a death (owner 2026-10-30, the fourth "it clears the list" report). Only the player's own edits in
   the open window change rows (a hidden panel's events are ignored), a box with no option chosen keeps its row, the
   mouse wheel no longer changes a box, and a nameless login (`''`, before the name packet) loads nothing. `keep` holds

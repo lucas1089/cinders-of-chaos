@@ -55,9 +55,10 @@ ok(H.isSupportGroup(3), 'a group number')
 local function ids(list) local t = {} for i, v in ipairs(list) do t[i] = type(v) == 'table' and v.id or v end return t end
 local function has(list, id) for _, v in ipairs(ids(list)) do if v == id then return true end end return false end
 local p = H.autoPlan(entries, canCastFor(14, 200))   -- Berserker
-ok(has(p.timer, 222), 'Berserker: Red Frenzy in the Timer section')
-ok(has(p.timer, 233), 'Berserker: Banner Call in the Timer section')
-ok(has(p.timer, 223) == false, 'Berserker: Iron Bellow is not his (Juggernaut line)')
+ok(has(p.support, 222), 'Berserker: Red Frenzy in the Support section (owner 2026-11-02)')
+ok(has(p.support, 233), 'Berserker: Banner Call in the Support section')
+eq(#p.timer, 0, 'Berserker: no timer rule')
+ok(has(p.support, 223) == false, 'Berserker: Iron Bellow is not his (Juggernaut line)')
 ok(not has(p.timer, 247) and not has(p.support, 247), 'Bloodrage costs health: not set up')
 ok(has(p.support, 162), 'Berserker: the Vigil of Clarity in the support section')
 ok(not has(p.support, 234), 'Berserker: no Soulward (only the magic and hybrid lines have a mana shield, 2026-10-28)')
@@ -71,16 +72,12 @@ end
 for _, vid in ipairs({ 4, 11, 17 }) do   -- Warrior, Thief, Monk: no mana shield at all
   ok(not has(H.autoPlan(entries, canCastFor(vid, 200)).support, 234), 'class ' .. vid .. ': no Soulward')
 end
-local red
-for _, r in ipairs(p.timer) do if r.id == 222 then red = r end end
-eq(red.words, 'vyr ira cruor', 'timer rule: the words')
-eq(red.cooldown, 41, 'timer rule: cooldown 40 s + 1')
-local bk
-for _, r in ipairs(p.timer) do if r.id == 245 then bk = r end end
 p = H.autoPlan(entries, canCastFor(13, 200))       -- Samurai
-for _, r in ipairs(p.timer) do if r.id == 245 then bk = r end end
-eq(bk and bk.cooldown, 31, 'Bushido Focus: its 30 s effect and 30 s cooldown + 1')
-ok(#p.timer >= 3, 'Samurai: at least three timer rules (was 3 at most)')
+ok(has(p.support, 245) and has(p.support, 239), 'Samurai: Bushido Focus and Poison Blades in the Support section')
+for _, c in ipairs(H.candidates(entries, canCastFor(11, 70))) do
+  if c.spell.id == 239 then eq(c.info.fight, true, 'Poison Blades: cast only while attacking a monster') end
+end
+ok(has(H.autoPlan(entries, canCastFor(11, 70)).support, 239), 'Thief 70: Poison Blades in the Support section')
 
 p = H.autoPlan(entries, canCastFor(22, 200))       -- Bone Lord
 ok(has(p.support, 180) and has(p.support, 186) and has(p.support, 187), 'Bone Lord: his minions and the banner')
@@ -110,7 +107,7 @@ for i = 1, 20 do
   many[#many + 1] = { id = 700 + i, name = 'S' .. i, words = 'tor s' .. i, level = 1, mana = 1, group = { [3] = 2000 }, exhaustion = 10000, vocations = { 1 } }
 end
 for i = 1, 10 do
-  H.KINDS[800 + i] = { auto = 'timer', dur = 5 }
+  H.KINDS[800 + i] = { auto = 'timer', dur = 5 } -- a timer kind still works (none is left in KINDS)
   many[#many + 1] = { id = 800 + i, name = 'T' .. i, words = 'vyr t' .. i, level = 1, mana = 1, group = { [3] = 2000 }, exhaustion = 10000, vocations = { 1 } }
 end
 p = H.autoPlan(many, function() return true end)
@@ -702,7 +699,7 @@ do
 end
 
 -- the level 800 buffs of the line spell quests (2026-10-28): a character that knows one keeps it up in the fights (the Timer
--- section, first among the buffs: the highest level), one per line
+-- Support section since 2026-11-02, cast while attacking), one per line
 do
   local Q2 = { { 143, 4, 'Ironbound Oath', 20 }, { 150, 3, 'Unblinking Gaze', 20 }, { 153, 1, 'Veil of Whispers', 20 },
     { 156, 11, 'Shroud of Knives', 15 }, { 159, 20, 'Dirge of the Legion', 20 }, { 173, 17, 'Lotus Stance', 15 },
@@ -711,17 +708,23 @@ do
     local id, voc, name, dur = q[1], q[2], q[3], q[4]
     eq(byId[id] and byId[id].name, name, name .. ': in the spell data')
     ok(H.eligible(byId[id]), name .. ': a support spell the helper may cast')
-    eq(H.KINDS[id] and H.KINDS[id].auto, 'timer', name .. ': Auto setup puts it in the Timer section')
+    eq(H.KINDS[id] and H.KINDS[id].auto, 'support', name .. ': Auto setup puts it in the Support section')
+    eq(H.KINDS[id] and H.KINDS[id].fight, true, name .. ': only while attacking a monster')
     eq(H.KINDS[id] and H.KINDS[id].dur, dur, name .. ': its duration')
     local plan = H.autoPlan(entries, canCastFor(voc, 1300))
-    ok(has(plan.timer, id), name .. ': planned for a character of its line that can cast it')
-    eq(plan.timer[1] and plan.timer[1].id, id, name .. ': the first timer rule (the highest level buff)')
-    local rule
-    for _, r in ipairs(plan.timer) do if r.id == id then rule = r end end
-    eq(rule and rule.cooldown, 91, name .. ': the rule waits the 90 s cooldown plus one second')
-    ok(not has(H.autoPlan(entries, canCastFor(voc, 799)).timer, id), name .. ': not before level 800')
-    ok(not has(H.autoPlan(entries, canCastFor(2, 1300)).timer, id), name .. ': not for a character of no line')
+    ok(has(plan.support, id), name .. ': planned for a character of its line that can cast it')
+    ok(#plan.support <= H.SUPPORT_MAX, name .. ': within the section')
+    ok(not has(H.autoPlan(entries, canCastFor(voc, 799)).support, id), name .. ': not before level 800')
+    ok(not has(H.autoPlan(entries, canCastFor(2, 1300)).support, id), name .. ': not for a character of no line')
   end
+end
+
+-- a fight buff the full section has no row for stays a timer rule (Bone Lord: the army fills the eight rows)
+do
+  local p = H.autoPlan(entries, canCastFor(22, 300))
+  eq(#p.support, H.SUPPORT_MAX, 'Bone Lord 300: the section is full')
+  ok(has(p.timer, 233), 'Bone Lord 300: Banner Call stays a timer rule')
+  ok(has(p.support, 180) and has(p.support, 192), 'Bone Lord 300: the summons keep their rows')
 end
 
 -- restoreKept: an empty list comes back from its kept rows unless the player emptied it
