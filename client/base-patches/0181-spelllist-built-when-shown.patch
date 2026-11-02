@@ -1,0 +1,59 @@
+# Spell list window: built when shown, not at every game start while hidden (O313).
+--- a/mods/game_tibia_spelllist/t_spelllist.lua
++++ b/mods/game_tibia_spelllist/t_spelllist.lua
+@@ -5,12 +5,29 @@
+ local lastHighlightWidget = nil
+ local spellListConfig = {}
+ local player = nil
++-- Chaos (base patch 0181): the list is built when the window is shown, not at every game start and spell list change
++-- while it is hidden (hundreds of Chaos spells, each a widget with a tooltip: tens of seconds on a slow phone, during
++-- which the client read nothing from the server and was dropped)
++local listDirty = false
++
++local function refreshList()
++  if t_spelllist and t_spelllist:isVisible() then
++    onConfigureList()
++  else
++    listDirty = true
++  end
++end
+ 
+ function init()
+   t_spelllist = g_ui.displayUI('t_spelllist')
+   --t_spelllist:setContentMinimumHeight(195)
+   t_spelllist:setup()
+   t_spelllist:hide()
++  local onVisibility = t_spelllist.onVisibilityChange
++  t_spelllist.onVisibilityChange = function(widget, visible)
++    if onVisibility then onVisibility(widget, visible) end
++    if visible and listDirty and g_game.isOnline() then onConfigureList() end
++  end
+ 
+   connect(g_game, {
+     onGameStart = online,
+@@ -81,7 +98,7 @@
+     }
+   end
+ 
+-  onConfigureList()
++  refreshList()
+   consoleln("Spelllist loaded in " .. (g_clock.millis() - benchmark) / 1000 .. " seconds.")
+ end
+ 
+@@ -132,7 +149,7 @@
+ 
+   if not table.empty(spellListData) then
+     table.sort(spellListData, function(a, b) return a.name < b.name end)
+-    onConfigureList()
++    refreshList()
+   end
+ end
+ 
+@@ -147,6 +164,7 @@
+ end
+ 
+ function onConfigureList()
++  listDirty = false
+   local player = g_game.getLocalPlayer()
+   local list = t_spelllist:recursiveGetChildById("contentsPanel")
+   list.onChildFocusChange = nil

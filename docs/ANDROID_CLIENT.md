@@ -75,6 +75,13 @@ samples the Lua stack while its own 50 ms timer is late. Every sample was in the
   that update puts its older Lua over the APK's. A play test of new Lua needs `update_baseline` above the live
   release number (101 while winpkg-100 is live).
 
+With those fixes the login passed (run 41399706815, character list after 4 s). Entering failed: from the login call the
+client did not read from the server for about 75 s and the server closed the connection. The stall samples: the
+proficiency JSON (about 25 s, base patch `0182` now decodes it once on the login screen), the hidden spell list window
+(about 20 s, base patch `0181` builds it when shown), then smaller shares: key bindings, action bar save, Auto setup,
+passive tree, outfit window. The emulator runs an `-O0` engine through a translator, far slower than a phone, so a
+phone sees this as a freeze of a second or two, not a drop.
+
 ## Step 8 status: the APK updater
 
 Date: 2026-10-30. Build plan step 8 is written and tested as far as this machine can: the publisher, the manifest key, the

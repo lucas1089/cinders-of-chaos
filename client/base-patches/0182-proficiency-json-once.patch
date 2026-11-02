@@ -1,0 +1,70 @@
+# Weapon proficiency: the 460 KB JSON decoded once, on the login screen (O313).
+--- a/mods/game_proficiency/proficiency.lua
++++ b/mods/game_proficiency/proficiency.lua
+@@ -160,6 +160,13 @@
+ 
+ 	g_ui.importStyle("weapon_proficiency_modify")
+ 
++	-- Chaos (base patch 0182): decode the proficiency file on the login screen, not when entering the game
++	scheduleEvent(function()
++		if not g_game.isOnline() then
++			ProficiencyData:decodedJson()
++		end
++	end, 1000)
++
+ 	WeaponProficiency.displayItemPanel = WeaponProficiency.window:recursiveGetChildById("itemPanel")
+ 	WeaponProficiency.perkPanel = WeaponProficiency.window:recursiveGetChildById("bonusProgressBackground")
+ 	WeaponProficiency.bonusDetailPanel = WeaponProficiency.window:recursiveGetChildById("bonusDetailBackground")
+--- a/mods/game_proficiency/proficiency_data.lua
++++ b/mods/game_proficiency/proficiency_data.lua
+@@ -222,19 +222,20 @@
+ 	return rawValue / 10000
+ end
+ 
+-function ProficiencyData:loadProficiencyJsonContentOnly()
+-	self.content = {}
+-	self.proficiencyByName = {}
+-	self.proficiencyByWeaponItem = {}
+-	self.proficiencyByUniqueItemName = {}
+-	self.duplicateProficiencyItemNames = {}
++-- Chaos (base patch 0182): the file never changes while the client runs, so it is decoded once (a 460 KB JSON in Lua:
++-- tens of seconds at every game start on a slow phone, and the client read nothing from the server meanwhile). The
++-- tables are only read, never written, so the next game start reuses them.
++function ProficiencyData:decodedJson()
++	if self.decoded then
++		return self.decoded
++	end
+ 
+ 	local file = "/json/proficiencies.json"
+ 
+ 	if not g_resources.fileExists(file) then
+ 		g_logger.error("Proficiency config file not found: " .. file)
+ 
+-		return false
++		return nil
+ 	end
+ 
+ 	local status, result = pcall(function()
+@@ -244,6 +245,22 @@
+ 	if not status then
+ 		g_logger.error("Error while reading proficiency config file " .. file .. ". Details: " .. result)
+ 
++		return nil
++	end
++
++	self.decoded = result
++	return result
++end
++
++function ProficiencyData:loadProficiencyJsonContentOnly()
++	self.content = {}
++	self.proficiencyByName = {}
++	self.proficiencyByWeaponItem = {}
++	self.proficiencyByUniqueItemName = {}
++	self.duplicateProficiencyItemNames = {}
++
++	local result = self:decodedJson()
++	if not result then
+ 		return false
+ 	end
+ 
