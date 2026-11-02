@@ -72,8 +72,13 @@ local function findCreature(name, kind)
   local best, bestD
   local mp = me() and me():getPosition()
   for _, c in ipairs(spectators()) do
-    local hit = (kind == 'npc' and c:isNpc()) or (kind == 'monster' and c:isMonster())
-    if hit and (not name or c:getName():lower() == name:lower()) and mp then
+    local hit
+    if kind == 'npc' then
+      hit = c:isNpc() and (not name or c:getName():lower() == name:lower())
+    else
+      hit = c:isMonster() and C.isTarget(c:getName(), name, me():getName())
+    end
+    if hit and mp then
       local cp = c:getPosition()
       local d = math.max(math.abs(cp.x - mp.x), math.abs(cp.y - mp.y))
       if not bestD or d < bestD then best, bestD = c, d end
@@ -233,6 +238,11 @@ function steps.windows(nextFn)
     i = i + 1
     if i > #list then
       result('windows', opened > 0 and tooBig == 0, ('%d opened, %d outside the screen'):format(opened, tooBig))
+      -- a window still open (one that popped up on its own: daily reward, outfit) would hide the next steps
+      for id, w in pairs(visibleWindows()) do
+        log('window left open, closed: ' .. id)
+        pcall(w.hide, w)
+      end
       return nextFn()
     end
     local m = modules[list[i]]
@@ -296,7 +306,31 @@ function steps.npc(nextFn)
 end
 
 local corpsePos
+local function inPz()
+  local p = me()
+  return p and PlayerStates and PlayerStates.Pz and p:hasState(PlayerStates.Pz) or false
+end
+
+-- no monster can stand in a protection zone and no one attacks there: step out first, turning each time
+local function leavePz(done)
+  local tries = 0
+  local function try()
+    if not inPz() or tries >= #C.OUT_OF_PZ then
+      log(inPz() and 'fight: still in a protection zone' or ('fight: out of the protection zone after %d move(s)'):format(tries))
+      return done()
+    end
+    tries = tries + 1
+    g_game.turn((tries - 1) % 4)
+    later(400, function()
+      g_game.talk(C.OUT_OF_PZ[tries])
+      later(1200, try)
+    end)
+  end
+  try()
+end
+
 function steps.fight(nextFn)
+  leavePz(function()
   g_game.talk('/m ' .. cfg.monster)
   later(2500, function()
     local mon = findCreature(cfg.monster, 'monster') or findCreature(nil, 'monster')
@@ -320,6 +354,7 @@ function steps.fight(nextFn)
       result('fight', false, ('%s still alive after 60 s (%s%%)'):format(name, c and c:getHealthPercent() or '?'))
       shot('fight_end', nextFn)
     end)
+  end)
   end)
 end
 

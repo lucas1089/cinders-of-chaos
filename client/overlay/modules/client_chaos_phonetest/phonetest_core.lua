@@ -60,4 +60,20 @@ function M.fpsSummary(samples)
   return {fps = median('fps'), minFps = math.floor(lowest or 0), gfx = median('gfx'), cpu = median('cpu')}
 end
 
+-- the server shows a monster as "Name [level]" (server patch 0040); the name without that tag
+function M.baseName(name)
+  return (tostring(name or ''):gsub('%s*%[%d+%]%s*$', ''))
+end
+
+-- a monster the test may fight: the asked name when given, never one named after the player (a companion)
+function M.isTarget(name, wanted, playerName)
+  local base = M.baseName(name):lower()
+  local own = tostring(playerName or ''):lower()
+  if own ~= '' and base:sub(1, #own) == own then return false end
+  return not wanted or base == tostring(wanted):lower()
+end
+
+-- GM steps out of a protection zone: four directions, a few tiles each time (the "/a" talkaction)
+M.OUT_OF_PZ = {'/a 3', '/a 3', '/a 3', '/a 3'}
+
 return M
