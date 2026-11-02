@@ -105,7 +105,7 @@ ok(cdata:find('["utamo tempo"] = true', 1, true), "the client hides the retired 
 ok(cdata:find('["utamo tempo san"] = true', 1, true), "the client hides the retired Swift Foot")
 ok(not cdata:find('"tor ira"', 1, true) and not cdata:find('"tor ira sol"', 1, true), "no rename to the old words")
 local support = read("../client/overlay/modules/game_helpersupport/supportspells.lua")
-ok(support:find("[132] = { auto = 'timer', dur = 12 }", 1, true), "the helper's Auto setup times Ironhold (12 s)")
+ok(support:find("[132] = { auto = 'support', fight = true, dur = 12, rank = 5 }", 1, true), "the helper's Auto setup keeps Ironhold up in fights (12 s)")
 ok(not support:find("[134] =", 1, true), "Gale Volley is an attack spell: no support row")
 
 if fails > 0 then error("ironhold_wildstride_test: " .. fails .. " failure(s)") end

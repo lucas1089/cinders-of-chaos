@@ -102,7 +102,7 @@ ok(cdata:find('{ id = 135, name = "Tautstring", words = "vyr sag"', 1, true), "t
 ok(cdata:find('["utito tempo san"] = true', 1, true), "the client hides the retired stock entry")
 ok(not cdata:find('"vyr ira sol"', 1, true), "the client no longer renames to the Hawkeye words")
 local support = read("../client/overlay/modules/game_helpersupport/supportspells.lua")
-ok(support:find("[135] = { auto = 'timer', dur = 12 }", 1, true), "the helper's Auto setup times Tautstring (12 s)")
+ok(support:find("[135] = { auto = 'support', fight = true, dur = 12, rank = 5 }", 1, true), "the helper's Auto setup keeps Tautstring up in fights (12 s)")
 
 if fails > 0 then error("tautstring_test: " .. fails .. " failure(s)") end
 print("tautstring_test: OK")
