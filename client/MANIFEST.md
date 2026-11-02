@@ -3754,6 +3754,19 @@ Output **pair 58**: dat af634150c86240eaf8566e930e845819 (8,847,086 bytes), spr 
   `gen_wiki_data.lua`, run the update (server/README.md "Relic sets (pair 58)"). No client Lua changes: the codex shows the five sets
   from the regenerated `codex_data.lua`.
 
+### Pair 59: pair 58 with a new look for the lightning pendant (`gen_jewelry_art.py`, `redraw_items.py`; built 2026-11-02, not pushed yet)
+Owner 2026-11-02 ("a arte do necklace nao tem nada a ver com um necklace"): the lightning pendant (server id 7889, client id 38631, pair 35)
+showed the set's blue eye medallion, a round orb with no chain. `gen_jewelry_art.py` PICKS now cuts sheet row 136, column 15 (a blue collar
+with a gold gem, unused before); `jewelry.png` changes in that cell only. `redraw_items.py` redraws item 38631 in place (one new sprite
+appended; id, flags and every other entry unchanged); the server needs nothing (same client id).
+```
+python3 -I client/tools/sprites/gen_jewelry_art.py build --src SHEET
+python3 -I client/tools/sprites/redraw_items.py --dat pair58/Tibia.dat --spr pair58/Tibia.spr --out-dir pair59 --item 38631=CELL.png
+python3 -I client/tools/sprites/check_pair.py pair59/Tibia.dat pair59/Tibia.spr --old pair58/Tibia.dat pair58/Tibia.spr --allow-changed item:38631
+```
+Output **pair 59**: dat 4d436b475698ce38397a6eb104feb6f7 (8,847,086 bytes), spr f1f6948b6ad9850cc37fc2d60e917343 (1,132,692,684 bytes). check_pair: 0
+errors (the warnings of pair 58). Waits for the owner's approval of the windows-assets push; until then the game shows the old look.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

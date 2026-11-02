@@ -60,7 +60,7 @@ PICKS = (
     (2199, 'garlic necklace', 129, 2, 3083),       # bead string
     (7887, 'terra amulet', 113, 3, 814),           # green gem pendant
     (7888, 'glacier amulet', 113, 2, 815),         # ice gem pendant
-    (7889, 'lightning pendant', 113, 1, 816),      # blue eye medallion
+    (7889, 'lightning pendant', 136, 15, 816),     # blue collar, gold gem (owner 2026-11-02: the blue eye was no necklace)
     (7890, 'magma amulet', 113, 4, 817),           # red gem pendant
     (24851, 'onyx pendant', 136, 6, 22195),        # gold loop, dark beads
     (15403, 'necklace of the deep', 136, 0, 13990),  # blue chain, gold drop
