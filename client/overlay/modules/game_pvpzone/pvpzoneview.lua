@@ -268,4 +268,29 @@ function V.goalLines(d, exitWhere, shrineWhere)
   return lines
 end
 
+-- ---------------------------------------------------------------- the minimap flags kept in g_settings (pvpzoneFlags)
+-- the node to save: { list = { { x, y, z, icon, name } } }
+function V.flagsNode(flags)
+  local list = {}
+  for _, f in ipairs(type(flags) == 'table' and flags or {}) do
+    list[#list + 1] = { x = f.x, y = f.y, z = f.z, icon = f.icon, name = f.name }
+  end
+  return { list = list }
+end
+
+-- the flags of a saved node, a list of { x, y, z, icon, name } with a whole position. Read back from g_settings the
+-- list's keys are the tags "1", "2" ... and the numbers come back typed (client_chaos_settings): ipairs alone read
+-- nothing, so a crash left the last visit's flags on the minimap for good.
+function V.savedFlags(node)
+  local out = {}
+  if type(node) ~= 'table' or type(node.list) ~= 'table' then return out end
+  for _, f in ipairs(ChaosSettings.list(node.list)) do
+    local x, y, z = type(f) == 'table' and tonumber(f.x), type(f) == 'table' and tonumber(f.y), type(f) == 'table' and tonumber(f.z)
+    if x and y and z then
+      out[#out + 1] = { x = x, y = y, z = z, icon = tonumber(f.icon) or f.icon or 0, name = tostring(f.name or '') }
+    end
+  end
+  return out
+end
+
 return V
