@@ -27309,6 +27309,16 @@ of our monsters), `install_owner_decor_test.py`. Owner, VPS: Update in the admin
 decor49items,ownerdecor` and a restart; the blocks in items.xml are rewritten, no SQL, no client change (the names show in the
 client tooltips only).
 
+## Item tooltips: what kind of weapon (O365)
+
+Owner 2026-11-02: "Two-handed sword", not "Two-handed weapon"; every weapon names its kind. `T.weaponLabel` in
+`item_tooltip_core.lua` gives the tooltip title (`tip.slot`, through `T.slotsOf`): One- / Two-handed sword, axe or club
+(the engine weapon type and the two-hand slot bit), Dagger (a one-handed sword whose name holds dagger, knife, dirk,
+stiletto, kris, shiv, kunai or sai as a word; the engine has no dagger type, the Thief dual wields any one-handed
+sword), Fist weapon (`ChaosMonk.cfg.unarmed.fistWeapons`), Bow and Crossbow (`ChaosArchery.kindOfType`), Throwing weapon
+(other distance weapons), Wand and Rod (by name). Anything else stays "Weapon". The client translates the title
+(`tr`, pt-BR in `client_chaos_locale`). Test: `tests/item_tooltip_test.lua`.
+
 ## Item tooltips: who may use it (O307)
 
 The engine's vocation string hides an ascended class whose base class is listed, so a crossbow read "For rangers" while
