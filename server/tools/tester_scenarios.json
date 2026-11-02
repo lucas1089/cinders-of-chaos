@@ -11038,7 +11038,8 @@
     "shop"
    ],
    "talkactions": [
-    "/coins"
+    "/coins",
+    "/storecosmetics"
    ]
   },
   "shop_payments": {
