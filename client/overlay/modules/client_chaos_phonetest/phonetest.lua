@@ -103,6 +103,14 @@ local function visibleWindows()
   return out
 end
 
+local function closeWindows()
+  for id, w in pairs(visibleWindows()) do
+    log('window left open, closed: ' .. id)
+    pcall(w.hide, w)
+  end
+end
+
+
 -- stall probe: a count hook samples the Lua stack while one dispatcher event runs for over 1.5 s (the tick below did
 -- not run), so the log names the code that keeps the client silent; on for ms milliseconds
 local function stallProbe(ms)
@@ -239,10 +247,7 @@ function steps.windows(nextFn)
     if i > #list then
       result('windows', opened > 0 and tooBig == 0, ('%d opened, %d outside the screen'):format(opened, tooBig))
       -- a window still open (one that popped up on its own: daily reward, outfit) would hide the next steps
-      for id, w in pairs(visibleWindows()) do
-        log('window left open, closed: ' .. id)
-        pcall(w.hide, w)
-      end
+      closeWindows()
       return nextFn()
     end
     local m = modules[list[i]]
@@ -315,25 +320,43 @@ end
 local function leavePz(done)
   local tries = 0
   local function try()
-    if not inPz() or tries >= #C.OUT_OF_PZ then
-      log(inPz() and 'fight: still in a protection zone' or ('fight: out of the protection zone after %d move(s)'):format(tries))
-      return done()
+    local pos = me():getPosition()
+    if not inPz() then
+      log(('fight: out of the protection zone after %d jump(s) at %d,%d,%d'):format(tries, pos.x, pos.y, pos.z))
+      return done(true)
+    end
+    if tries >= #C.OUT_OF_PZ then
+      log(('fight: still in a protection zone at %d,%d,%d after %d jump(s)'):format(pos.x, pos.y, pos.z, tries))
+      return done(false)
     end
     tries = tries + 1
-    g_game.turn((tries - 1) % 4)
-    later(400, function()
-      g_game.talk(C.OUT_OF_PZ[tries])
-      later(1200, try)
+    local j = C.OUT_OF_PZ[tries]
+    -- face the next way and jump on from where the last jump landed
+    later(300, function()
+      g_game.turn(j.dir)
+      later(400, function()
+        g_game.talk('/a ' .. j.n)
+        later(1200, function()
+          local p = me():getPosition()
+          log(('fight: /a %d facing %d -> %d,%d,%d%s'):format(j.n, j.dir, p.x, p.y, p.z, inPz() and ' (protection zone)' or ''))
+          try()
+        end)
+      end)
     end)
   end
   try()
 end
 
 function steps.fight(nextFn)
-  leavePz(function()
+  closeWindows()
+  leavePz(function(out)
+  if not out then
+    result('fight', false, 'no tile outside the protection zone in reach of /a')
+    return shot('fight', nextFn)
+  end
   g_game.talk('/m ' .. cfg.monster)
   later(2500, function()
-    local mon = findCreature(cfg.monster, 'monster') or findCreature(nil, 'monster')
+    local mon = findCreature(cfg.monster, 'monster')
     if not mon then
       result('fight', false, 'no monster in view after /m ' .. cfg.monster)
       return shot('fight', nextFn)

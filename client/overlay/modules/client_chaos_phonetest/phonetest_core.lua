@@ -73,7 +73,11 @@ function M.isTarget(name, wanted, playerName)
   return not wanted or base == tostring(wanted):lower()
 end
 
--- GM steps out of a protection zone: four directions, a few tiles each time (the "/a" talkaction)
-M.OUT_OF_PZ = {'/a 3', '/a 3', '/a 3', '/a 3'}
+-- GM steps out of a protection zone (the "/a N" talkaction jumps N tiles the way the character faces):
+-- each direction (0 north, 1 east, 2 south, 3 west) in turn, further each round
+M.OUT_OF_PZ = {}
+for _, n in ipairs({6, 12, 20}) do
+  for dir = 0, 3 do M.OUT_OF_PZ[#M.OUT_OF_PZ + 1] = {dir = dir, n = n} end
+end
 
 return M

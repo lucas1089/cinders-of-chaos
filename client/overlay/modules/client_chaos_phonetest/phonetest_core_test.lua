@@ -30,5 +30,6 @@ check(M.isTarget('Rat [3]', 'rat', 'Phone Tester'), 'a rat with its level is the
 check(not M.isTarget('Phone Tester [4]', nil, 'Phone Tester'), 'the player\'s companion is never a target')
 check(not M.isTarget('Cave Rat [5]', 'Rat', 'Phone Tester'), 'another name is not the asked one')
 check(M.isTarget('Cave Rat [5]', nil, 'Phone Tester'), 'any other monster when no name is asked')
+check(#M.OUT_OF_PZ == 12 and M.OUT_OF_PZ[1].dir == 0 and M.OUT_OF_PZ[12].n == 20, 'out of the protection zone: 4 directions, 3 rounds')
 print(('phonetest_core_test: %d checks, %d failures'):format(n, bad))
 os.exit(bad == 0 and 0 or 1)
