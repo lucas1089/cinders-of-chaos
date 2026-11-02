@@ -80,7 +80,7 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d', $t) :
 				<button type="submit" name="do" value="support" class="chaos-button"><?= chaos_h(chaos_t('Support')) ?></button>
 				<?php if ($pick): ?><button type="submit" name="do" value="clear" class="chaos-button"><?= chaos_h(chaos_t('Stop supporting')) ?></button><?php endif; ?>
 			</form>
-			<p class="chaos-muted" style="font-size:12px;"><?= chaos_h(chaos_t('You cannot use your own code. A donation that is refunded or charged back gives the creator nothing.')) ?></p>
+			<p class="chaos-muted chaos-small"><?= chaos_h(chaos_t('You cannot use your own code. A donation that is refunded or charged back gives the creator nothing.')) ?></p>
 
 			<h2><?= chaos_h(chaos_t('Invite friends')) ?></h2>
 			<?php if ($refLink !== ''): ?>
@@ -88,7 +88,7 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d', $t) :
 			<?php else: ?>
 				<p class="chaos-muted"><?= chaos_h(chaos_t('Reach level 20 with any character to get your referral link (Character > Referral in game).')) ?></p>
 			<?php endif; ?>
-			<p class="chaos-muted" style="font-size:12px;"><?= chaos_h(chaos_t('You earn titles when friends you invited reach level milestones, and more at 3, 5 and 10 friends. Accounts of the same person, connection or payment do not count.')) ?></p>
+			<p class="chaos-muted chaos-small"><?= chaos_h(chaos_t('You earn titles when friends you invited reach level milestones, and more at 3, 5 and 10 friends. Accounts of the same person, connection or payment do not count.')) ?></p>
 		<?php endif; ?>
 
 		<?php foreach ($mine as $c): ?>

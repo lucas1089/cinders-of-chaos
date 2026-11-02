@@ -142,6 +142,6 @@ $state = static function (string $s): string {
 		<ul id="chaos-creators-open">
 			<?php foreach ($data['open'] as $q): ?><li id="open-<?= chaos_h($q['id']) ?>"><?= chaos_h(chaos_bi($q['text'])) ?></li><?php endforeach; ?>
 		</ul>
-		<?php if ($data['updated'] !== ''): ?><p class="chaos-muted" style="font-size:12px;"><?= chaos_h(chaos_t('Last reviewed: %s.', $data['updated'])) ?></p><?php endif; ?>
+		<?php if ($data['updated'] !== ''): ?><p class="chaos-muted chaos-small"><?= chaos_h(chaos_t('Last reviewed: %s.', $data['updated'])) ?></p><?php endif; ?>
 	</div>
 </div>

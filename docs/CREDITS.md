@@ -209,13 +209,13 @@ Free effect, icon, font and sprite packs. Their files name no author, except the
 
 ## Fonts {pt-BR: Fontes}
 
-SIL Open Font License 1.1. The licence texts ship with the client in `data/fonts/chaos/`. The bitmap fonts made from
-them are named by role, so they carry no Reserved Font Name.
+SIL Open Font License 1.1. The licence texts ship with the client in `data/fonts/chaos/` and with the website in
+`layouts/chaos/assets/fonts/`. The bitmap fonts made from them are named by role, so they carry no Reserved Font Name.
 
 - **Cinzel**
   - Author: Copyright 2020 The Cinzel Project Authors
   - Licence: SIL Open Font License 1.1
-  - Used for: window titles, the login splash and captions
+  - Used for: window titles, the login splash and captions; the website's headings, menu and window titles
   - Source: https://github.com/NDISCOVER/Cinzel
 - **Alegreya SC**
   - Author: Copyright 2011 The Alegreya Project Authors, Huerta Tipográfica
@@ -225,7 +225,7 @@ them are named by role, so they carry no Reserved Font Name.
 - **Alegreya Sans**
   - Author: Copyright 2013 The Alegreya Sans Project Authors, Huerta Tipográfica
   - Licence: SIL Open Font License 1.1
-  - Used for: text over the game picture, and the text of the RmlUi test window
+  - Used for: text over the game picture, and the text of the RmlUi test window; the website's body text
   - Source: https://github.com/huertatipografica/Alegreya-Sans
 - **IM Fell English**
   - Author: Copyright (c) 2010, Igino Marini

@@ -74,6 +74,20 @@ foreach (array('coins', 'bazaar', 'creator', 'leaderboards', 'fairplay', 'calend
 	}
 }
 check($used >= 150, "the pages use their keys ($used)");
+// the home page of the layout (layouts/chaos/views/index.php): every chaos_t('...') key has a pt-BR text
+$home = 0;
+$tokens = token_get_all(file_get_contents(__DIR__ . '/../overlay/layouts/chaos/views/index.php'));
+for ($i = 0, $n = count($tokens); $i < $n; $i++) {
+	if (!is_array($tokens[$i]) || $tokens[$i][0] !== T_STRING || $tokens[$i][1] !== 'chaos_t' || ($tokens[$i + 1] ?? null) !== '(') {
+		continue;
+	}
+	if (is_array($tokens[$i + 2]) && $tokens[$i + 2][0] === T_CONSTANT_ENCAPSED_STRING) {
+		$key = str_replace(array("\\'", '\\\\'), array("'", '\\'), substr($tokens[$i + 2][1], 1, -1));
+		$home++;
+		check(isset($table[$key]), "home page: no pt-BR text for '$key'");
+	}
+}
+check($home >= 40, "the home page uses its keys ($home)");
 
 echo $failed ? "chaos_i18n_test: $failed of $checks checks failed\n" : "chaos_i18n_test: $checks checks OK\n";
 exit($failed ? 1 : 0);

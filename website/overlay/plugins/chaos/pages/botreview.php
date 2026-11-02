@@ -76,7 +76,7 @@ $row = $detailId > 0 ? chaos_botreview_row($detailId) : null;
 		</nav>
 
 		<?php if ($message !== ''): ?>
-			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-botreview-message"<?= $messageOk ? '' : ' style="color:#e07060;"' ?>><?= chaos_h($message) ?></p>
+			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-botreview-message"><?= chaos_h($message) ?></p>
 		<?php endif; ?>
 
 		<?php if ($row): ?>
@@ -96,7 +96,7 @@ $row = $detailId > 0 ? chaos_botreview_row($detailId) : null;
 				<?php if ((string)$row['note'] !== ''): ?><br><span class="chaos-muted">Note:</span> <?= chaos_h($row['note']) ?><?php endif; ?></p>
 
 			<h3>Signals</h3>
-			<p class="chaos-muted" style="font-size:12px;">Automation alone (the allowed client helper) never makes a high score; the score needs at least two unattended signs. 0 = like a person, 1 = like a program.</p>
+			<p class="chaos-muted chaos-small">Automation alone (the allowed client helper) never makes a high score; the score needs at least two unattended signs. 0 = like a person, 1 = like a program.</p>
 			<table class="chaos-table" id="chaos-botreview-signals">
 				<thead><tr><th>Family</th><th>Signal</th><th class="num">Value</th><th></th></tr></thead>
 				<tbody>
@@ -147,7 +147,7 @@ $row = $detailId > 0 ? chaos_botreview_row($detailId) : null;
 					<tbody>
 					<?php foreach ($abLog as $l): ?>
 						<tr><td><?= chaos_h($time((int)$l['created_at'])) ?></td><td><?= chaos_h(str_replace('_', ' ', (string)$l['kind'])) ?></td>
-							<td class="num"><?= (int)$l['score'] ?></td><td class="chaos-muted" style="font-size:12px;"><?= chaos_h($l['detail']) ?></td></tr>
+							<td class="num"><?= (int)$l['score'] ?></td><td class="chaos-muted chaos-small"><?= chaos_h($l['detail']) ?></td></tr>
 					<?php endforeach; ?>
 					</tbody>
 				</table>
@@ -183,7 +183,7 @@ $row = $detailId > 0 ? chaos_botreview_row($detailId) : null;
 			<?php endif; ?>
 		<?php else: ?>
 			<?php [$rows, $total] = chaos_botreview_list($f, $now); ?>
-			<form method="get" action="page" class="chaos-filter" style="margin:10px 0;">
+			<form method="get" action="page" class="chaos-filter">
 				<input type="hidden" name="plugin" value="chaos">
 				<input type="hidden" name="p" value="botreview">
 				<input type="hidden" name="status" value="<?= chaos_h($f['status']) ?>">
@@ -217,7 +217,7 @@ $row = $detailId > 0 ? chaos_botreview_row($detailId) : null;
 						<td><?= chaos_h($dayText($r['day'])) ?></td>
 						<td><a href="<?= chaos_h($self . '&id=' . (int)$r['id']) ?>"><strong><?= chaos_h($r['player_name']) ?></strong></a></td>
 						<td class="num chaos-gold"><?= (int)$r['score'] ?></td>
-						<td class="chaos-muted" style="font-size:12px;"><?= chaos_h(implode(', ', $top)) ?></td>
+						<td class="chaos-muted chaos-small"><?= chaos_h(implode(', ', $top)) ?></td>
 						<td><?= chaos_h($statuses[$r['status']] ?? (string)$r['status']) ?><?php if ((string)$r['reviewed_by'] !== ''): ?> <span class="chaos-muted">(<?= chaos_h($r['reviewed_by']) ?>)</span><?php endif; ?></td>
 					</tr>
 				<?php endforeach; ?>

@@ -317,7 +317,7 @@ check(strpos($src, "if (!isset(\$config)) { http_response_code(403);") !== false
 $locale = include __DIR__ . '/../overlay/layouts/chaos/locale/en.php';
 check(strpos((string)$locale['void.footer.copyright'], '<a href="page?plugin=chaos&amp;p=wiki">Wiki</a>') !== false, 'footer links the wiki');
 check(strpos((string)file_get_contents(__DIR__ . '/../setup/chaos_setup.php'), "\$menu('Wiki', 'page?plugin=chaos&p=wiki'") !== false, 'menu entry');
-check(strpos((string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/views/index.php'), 'href="page?plugin=chaos&amp;p=wiki">Read the guide</a>') !== false, 'home page button');
+check(strpos((string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/views/index.php'), 'href="page?plugin=chaos&amp;p=wiki"><?= $h(chaos_t(\'Read the guide\')) ?></a>') !== false, 'home page button');
 $css = (string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/assets/css/chaos.css');
 check(strpos($css, '.chaos-wiki-search') !== false && strpos($css, '.chaos-wiki-scroll') !== false, 'layout styles');
 check(strpos($css, '.chaos-wiki-steps') !== false && strpos($css, '.chaos-wiki-callout') !== false && strpos($css, '.chaos-wiki-hero__img') !== false, 'layout styles: wiki art');
