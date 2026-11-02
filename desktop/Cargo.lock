@@ -301,7 +301,7 @@ dependencies = [
 
 [[package]]
 name = "cinders-admin"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "cinders-selfupdate",
  "ed25519-compact",
