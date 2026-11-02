@@ -1687,8 +1687,11 @@ return {
 		["Only the party leader can start the tower."] = "Só o líder da party pode começar a torre.",
 		["All tower arenas are busy. Try again in a moment."] =
 			"Todas as arenas da torre estão ocupadas. Tente de novo daqui a pouco.",
-		["Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out."] =
-			"Bem-vindo à Infinity Tower. O andar 1 começa em %d segundos. Leave Tower (Adventure > Infinity Tower) te tira de lá.",
+		["Welcome to the Infinity Tower. Floor 1 starts in %d seconds. The exit portal at the south wall or the Leave button of the floor panel takes you out."] =
+			"Bem-vindo à Infinity Tower. O andar 1 começa em %d segundos. O portal de saída junto à parede sul ou o botão Sair do painel do andar te tira de lá.",
+		["You left the Infinity Tower. You cleared %d floor(s)."] = "Você saiu da Infinity Tower. Você concluiu %d andar(es).",
+		["You left the Infinity Tower."] = "Você saiu da Infinity Tower.",
+		["You leave the tower in %d seconds."] = "Você sai da torre em %d segundos.",
 		["Goal: kill every monster of a floor to open the next one; every %dth floor is a boss floor. Stay in the open middle to kite; the pillars and braziers along the walls are cover."] =
 			"Objetivo: mate todos os monstros do andar para abrir o próximo; todo %dº andar é de chefe. Fique no meio aberto para fugir dos golpes; os pilares e braseiros junto às paredes são cobertura.",
 		["The tower arena is not ready. Tell a game master."] = "A arena da torre não está pronta. Avise um game master.",

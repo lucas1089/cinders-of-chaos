@@ -47,6 +47,9 @@ if not ChaosClasses then
 	dofile("data/scripts/chaos/classes.lua")
 end
 dofile("data/lib/chaos_dark_paint.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua") -- wall pieces (wallPlacer, wallIds)
+end
 
 local Q = ChaosAscensionQuestCore
 ChaosAscensionQuest = ChaosAscensionQuest or {}
@@ -447,11 +450,15 @@ function S.buildSlot(slot)
 			end
 		end
 	end
+	local wallAt = ChaosArenaLook.wallPlacer(t.wallId, L.walls) -- a piece per tile ("darkstone") or the dark wall
 	for _, f in ipairs(L.walls) do
-		placeItem(P(f), t.wallId)
+		placeItem(P(f), wallAt(f.x, f.y))
 	end
+	-- a 2x2 wall overhangs the floor row north of the south wall and the column west of the east wall: those basins
+	-- stand one tile in
+	local rect = {x1 = L.x1, y1 = L.y1, x2 = L.x2, y2 = L.y2}
 	for _, f in ipairs(L.basins) do
-		placeItem(P(f), t.basinId)
+		placeItem(P(ChaosArenaLook.fixtureSpot(f, {rect}, ChaosArenaLook.wallSizeOf(t.wallId))), t.basinId)
 	end
 	if dark then
 		local walls = {}
@@ -461,6 +468,7 @@ function S.buildSlot(slot)
 		local reserved = {L.center, L.playerStart, L.guardianStart}
 		for _, b in ipairs(L.basins) do
 			reserved[#reserved + 1] = b
+			reserved[#reserved + 1] = ChaosArenaLook.fixtureSpot(b, {rect}, ChaosArenaLook.wallSizeOf(t.wallId)) -- where it stands
 		end
 		ChaosDarkPaint.apply(ChaosDarkPaint.plan(L.floor, t.dark.style, math.random, {walls = walls, reserved = reserved}), L.z)
 	end
@@ -471,7 +479,7 @@ end
 -- monsters and loose items (corpses, fields) of the room
 local function cleanSlot(L)
 	local t = C().trial
-	local keep = {[t.groundId] = true, [t.wallId] = true, [t.basinId] = true}
+	local keep = ChaosArenaLook.wallIds(t.wallId, {[t.groundId] = true, [t.basinId] = true})
 	for _, f in ipairs(L.floor) do
 		local tile = Tile(P(f))
 		if tile then

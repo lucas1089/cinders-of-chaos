@@ -4,6 +4,8 @@ local milestoneWidgets = {}
 local cachedTowerData = nil
 local skipPanel = nil       -- the tower panel (floor, monsters, countdown, Next floor now): shown only inside a run
 local skipButton = nil
+local leaveButton = nil     -- the panel's Leave button (towerskip.lua TowerSkip.canLeave)
+local lastLeaveMs = nil
 local stateAtMs = 0
 local tickEvent = nil
 local towerState = nil      -- the last {action = 'state'} of the server
@@ -51,7 +53,7 @@ function terminate()
   end
   if skipPanel then
     skipPanel:destroy()
-    skipPanel, skipButton = nil, nil
+    skipPanel, skipButton, leaveButton = nil, nil, nil
   end
 
   if infinityTowerWindow then
@@ -154,13 +156,15 @@ function placePanel()
   if pos then anchorAt(pos.x, pos.y) else anchorDefault() end
 end
 
--- the button and the Automatic box get the width their texts need (en and pt-BR); the panel grows with them
+-- the buttons and the Automatic box get the width their texts need (en and pt-BR); the panel grows with them
 local function fitPanelWidth()
   local box = skipPanel:getChildById('autoSkipBox')
   local ok1, bt = pcall(function() return skipButton:getTextSize().width end)
   local ok2, xt = pcall(function() return box:getTextSize().width end)
-  local panelW, boxW = P.widths(ok1 and bt or 0, ok2 and xt or 0)
+  local ok3, lt = pcall(function() return leaveButton:getTextSize().width end)
+  local panelW, boxW, leaveW = P.widths(ok1 and bt or 0, ok2 and xt or 0, leaveButton and (ok3 and lt or 0) or nil)
   if box:getWidth() ~= boxW then box:setWidth(boxW) end
+  if leaveButton and leaveW > 0 and leaveButton:getWidth() ~= leaveW then leaveButton:setWidth(leaveW) end
   if skipPanel:getWidth() == panelW then return false end
   skipPanel:setWidth(panelW)
   return true
@@ -234,6 +238,8 @@ function updateSkipButton()
     connect(root, { onGeometryChange = placePanel }) -- a smaller game window pulls a saved spot back in
     skipButton = skipPanel:getChildById('skipButton')
     skipButton.onClick = function() skipFloor() end
+    leaveButton = skipPanel:getChildById('leaveButton')
+    if leaveButton then leaveButton.onClick = function() leaveRun() end end
     local autoBox = skipPanel:getChildById('autoSkipBox')
     autoBox:setChecked(autoSkipOn())
     autoBox.onCheckChange = function(_, checked)
@@ -280,6 +286,17 @@ function skipFloor()
   if protocol then
     lastSkipMs = g_clock.millis()
     protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"skip"}')
+  end
+end
+
+-- the panel's Leave button: the same request as the window's Leave Tower (server ChaosTowerRun.leave)
+function leaveRun()
+  local now = g_clock.millis()
+  if not g_game.isOnline() or not TowerSkip.canLeave(towerState, now, lastLeaveMs) then return end
+  local protocol = g_game.getProtocolGame()
+  if protocol then
+    lastLeaveMs = now
+    protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"leave"}')
   end
 end
 

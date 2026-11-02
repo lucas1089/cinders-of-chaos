@@ -50,7 +50,7 @@ return {
 	-- Forsaken Sanctum). "dark" is the dark tile set and becomes "ember" when it is not installed. Every room repaints the
 	-- hall with one of `variants` layouts (seed + depth mod variants), so two rooms of a theme differ.
 	look = {themes = {"dark", "ember", "crypt", "stone"}, seed = 3, variants = 3, cover = 4, lights = 4},
-	wallId = 5648, -- stone wall (the rift's), the obsidian wall of the dark tile set when it is installed
+	wallId = "darkstone", -- dark stone bricks, a piece per wall tile (A.WALL_SETS; was 5648, a cave rock piece); the obsidian wall of the dark tile set when it is installed
 	basinId = 1481, -- coal basin in the hub corners
 	aid = {portal = 47701, exit = 47702, chest = 47703, shrine = 47704, merchant = 47705},
 	-- forcefield, reward chest (32311, the rift's own one-tile look; chestFallback 21584, the stock one, while 32311 is not

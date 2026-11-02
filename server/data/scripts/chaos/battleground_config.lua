@@ -109,7 +109,7 @@ return {
 		ground = 407, -- black marble floor (the field)
 		baseGround = 413, -- stone floor (bases, graveyards)
 		ringGround = 406, -- white marble floor (the capture circle of a brazier)
-		wall = 5648, -- stone wall
+		wall = "darkstone", -- dark stone bricks, a piece per wall tile (arenalook_core.lua A.WALL_SETS; was 5648, a cave rock piece)
 		pillar = 1515, -- marble pillar (cover)
 		brazier = 1481, -- coal basin (the brazier itself; unwalkable)
 		flag = 1436 -- castle flag (base decoration)

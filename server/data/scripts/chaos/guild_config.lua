@@ -89,7 +89,7 @@ return {
 
 		ids = {
 			portal = 1387, -- magic forcefield (teleport type), used without destination + action id
-			wall = 5648, -- stone wall (tier 0)
+			wall = "darkstone", -- tier 0: dark stone bricks, a piece per wall tile (arenalook_core.lua A.WALL_SETS; was 5648)
 			ground = 413, -- stone floor (tier 0)
 			basin = 1481, -- coal basin (light)
 			flag = 1436, -- castle flag
@@ -131,13 +131,14 @@ return {
 			{key = "decor", name = "Decoration", info = "Floors and walls of the hall change look.",
 				tiers = {{level = 12, cost = 1500000, requires = {"trophy"}}, {level = 16, cost = 3000000}, {level = 20, cost = 6000000}}}
 		},
-		-- decoration tiers (0 = none): floor and wall item ids, coal basins become braziers of the tier.
+		-- decoration tiers (0 = none): floor item id and wall (a wall set of arenalook_core.lua A.WALL_SETS: a piece per
+		-- wall tile from its neighbours), coal basins become braziers of the tier.
 		-- `dark`: names in the dark tile set (data/lib/chaos_dark_tiles.lua) used instead when it is installed
 		decor = {
-			[0] = {name = "Bare stone", ground = 413, wall = 5648},
-			[1] = {name = "White marble", ground = 406, wall = 1111},
-			[2] = {name = "Obsidian", ground = 407, wall = 1049, dark = {ground = "obsidian_floor", wall = "obsidian_wall"}},
-			[3] = {name = "Gilded", ground = 415, wall = 1025}
+			[0] = {name = "Bare stone", ground = 413, wall = "darkstone"},
+			[1] = {name = "White marble", ground = 406, wall = "marble"},
+			[2] = {name = "Obsidian", ground = 407, wall = "greystone", dark = {ground = "obsidian_floor", wall = "obsidian_wall"}},
+			[3] = {name = "Gilded", ground = 415, wall = "brick"}
 		}
 	},
 

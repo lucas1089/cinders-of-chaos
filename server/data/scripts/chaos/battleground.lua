@@ -521,6 +521,20 @@ function B.buildSlot(slot)
 	end
 	local ids = cfg.ids
 	local grounds = {base = ids.baseGround, ring = ids.ringGround}
+	-- the walls: a piece per tile ("darkstone", from its neighbours); a pillar or flag with such a 2x2 wall to its south
+	-- or east stands one tile in, or the wall draws over it
+	local walls, onWall = {}, {}
+	for _, t in ipairs(foot) do
+		if t.wall then
+			walls[#walls + 1] = t
+			onWall[t.x .. "," .. t.y] = true
+		end
+	end
+	local wallAt = ChaosArenaLook.wallPlacer(ids.wall, walls)
+	local wallSize = ChaosArenaLook.wallSizeOf(ids.wall)
+	local function spot(p)
+		return ChaosArenaLook.clearOfWall(p, function(x, y) return onWall[x .. "," .. y] == true end, wallSize)
+	end
 	for _, t in ipairs(foot) do
 		local pos = P(t)
 		local tile = Game.createTile(pos, true)
@@ -529,8 +543,9 @@ function B.buildSlot(slot)
 			if not tile:getGround() and (grounds[t.ground] or t.wall) then
 				Game.createItem(grounds[t.ground] or ids.ground, 1, pos)
 			end
-			if t.wall and not tile:getItemById(ids.wall) then
-				Game.createItem(ids.wall, 1, pos)
+			local wallId = t.wall and wallAt(t.x, t.y)
+			if wallId and not tile:getItemById(wallId) then
+				Game.createItem(wallId, 1, pos)
 			end
 		end
 	end
@@ -540,12 +555,12 @@ function B.buildSlot(slot)
 	local spec = K.lookSpec(cfg, L)
 	ChaosArenaLook.dressTiles("battleground" .. slot, spec.tiles, L.z, themes[slot % #themes + 1], {keep = spec.keep,
 		roads = spec.roads, plain = spec.plain, seed = lk.seed or 1, cover = lk.cover, lights = lk.lights, keepGap = lk.keepGap,
-		mirror = true, groundIds = {[ids.ground] = true}, fallbackGround = ids.ground})
+		mirror = true, wallSize = wallSize, groundIds = {[ids.ground] = true}, fallbackGround = ids.ground})
 	for _, p in ipairs(L.pillars) do
-		placeItem(P(p), ids.pillar)
+		placeItem(P(spot(p)), ids.pillar)
 	end
 	for _, p in ipairs(L.flags) do
-		placeItem(P(p), ids.flag)
+		placeItem(P(spot(p)), ids.flag)
 	end
 	for _, b in ipairs(L.braziers) do
 		placeItem(P(b), ids.brazier)
@@ -557,7 +572,7 @@ end
 local function cleanSlot(slot)
 	local cfg = C()
 	local ids = cfg.ids
-	local keep = {[ids.wall] = true, [ids.pillar] = true, [ids.brazier] = true, [ids.flag] = true}
+	local keep = ChaosArenaLook.wallIds(ids.wall, {[ids.pillar] = true, [ids.brazier] = true, [ids.flag] = true})
 	for _, t in ipairs(K.footprint(cfg, K.layout(cfg, slot))) do
 		if not t.wall then
 			local tile = Tile(P(t))

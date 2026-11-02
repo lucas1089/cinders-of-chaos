@@ -12,6 +12,16 @@
 --   K.claimReward(api, row, index, milestone)  milestone claim, mark first: -> "claimed" | "already" | "points" | "room" | "db"
 --                                        api.mark(bit) sets the claimed bit only while it is clear and returns true on success,
 --                                        api.unmark(bit) clears it, api.give(item) -> count given, api.take(id, count)
+-- Leaving a run (infinitytower_run.lua; tests/infinitytower_exit_test.lua; server/README.md "Infinity Tower: leaving a run"):
+--   K.portalSpot(inner)                  local x, y of the exit portal: the south end of the lane (the arena look keeps it
+--                                        open), one row above the last floor row: the 2x2 south wall pieces draw over that row
+--   K.leaveRule(s)                       what a leave request does. s = {inRun, inArena, fighting, pendingAt, now, delay}:
+--                                        "outside"        no run and not in an arena: refused
+--                                        "stray", 0       in an arena without a run (a script reload lost it): to the temple
+--                                        "pending", secs  a countdown already runs: seconds left
+--                                        "now", 0         no live floor (start delay, the pause between floors): out at once
+--                                        "countdown", d   a floor is being fought: out after d seconds
+--   K.exitPos(entry, temple, inArena)    where a leaver lands: the entry spot; the temple when it is missing or in an arena
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosTowerCore = ChaosTowerCore or {}
@@ -134,6 +144,36 @@ function K.claimReward(api, row, index, milestone)
 		api.log("could not clear claimed bit " .. index .. " after a failed give")
 	end
 	return "room"
+end
+
+-- ------------------------------------------------------------------ leaving a run
+function K.portalSpot(inner)
+	return math.floor(inner / 2) + 1, inner - 1
+end
+
+function K.leaveRule(s)
+	if not s.inRun then
+		if s.inArena then
+			return "stray", 0
+		end
+		return "outside", 0
+	end
+	local now = s.now or 0
+	if s.pendingAt and s.pendingAt > now then
+		return "pending", s.pendingAt - now
+	end
+	local delay = math.floor(tonumber(s.delay) or 0)
+	if s.fighting and delay > 0 then
+		return "countdown", delay
+	end
+	return "now", 0
+end
+
+function K.exitPos(entry, temple, inArena)
+	if entry and not (inArena and inArena(entry)) then
+		return entry
+	end
+	return temple
 end
 
 K.placeNames = {"1st", "2nd", "3rd"}

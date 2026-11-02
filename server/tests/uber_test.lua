@@ -822,6 +822,23 @@ eq(hero.storage[Chaos.storage.ascendedRun], 1, "the crash marker holds the kind"
 eq(run.lives, 4, "3 lives + 1 for the friend")
 check(U.inArena(run.L, hero.pos) and U.inArena(run.L, friend.pos), "teleported into the arena")
 check(Tile(run.L.portal):getItemById(cfg.portalId).aid == cfg.portalActionId, "the Ember Gate is placed")
+do -- the walls: a piece per tile (darkstone, from its neighbours) or the dark set's wall, never the cave rock piece 5648
+	local pieces = ChaosArenaLook.wallIds(cfg.wallId, ChaosArenaLook.wallIds("darkstone"))
+	if cfg.dark and ChaosDarkTiles and ChaosDarkTiles.id then
+		local d = ChaosDarkTiles.id(cfg.dark.wall)
+		if d then pieces[d] = true end
+	end
+	local bad = 0
+	for _, w in ipairs(run.L.wallList) do
+		local t, ok = Tile(w), false
+		for _, it in ipairs(t and t:getItems() or {}) do
+			if pieces[it.id] then ok = true end
+			if it.id == 5648 then ok = false; break end
+		end
+		if not ok then bad = bad + 1 end
+	end
+	check(#run.L.wallList > 0 and bad == 0, "every wall tile carries its wall piece (" .. bad .. " bad)")
+end
 eq(hero.sent[#hero.sent].action, "start", "the rift HUD starts")
 
 -- the boss comes after startDelay

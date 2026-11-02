@@ -38,6 +38,9 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 dofile("data/scripts/chaos/siege_core.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua") -- wall pieces (wallPlacer, wallIds)
+end
 if not ChaosCityPortals then
 	dofile("data/scripts/chaos/cityportals.lua")
 end
@@ -269,9 +272,30 @@ end
 
 local function fixedItemIds()
 	local a = cfg.arena
-	return {[a.wallId] = true, [a.obeliskId] = true, [a.pillarId] = true, [a.basinId] = true, [a.flagId] = true,
-		[a.portalId] = true}
+	return ChaosArenaLook.wallIds(a.wallId, {[a.obeliskId] = true, [a.pillarId] = true, [a.basinId] = true,
+		[a.flagId] = true, [a.portalId] = true})
 end
+
+-- the walls of a layout: the piece of every wall tile ("darkstone": from its neighbours) and where a fixture stands so
+-- the wall does not draw over it (a 2x2 wall overhangs the floor row north of it and the column west of it)
+local function wallsOf(L)
+	local a = cfg.arena
+	local list, on = {}, {}
+	for _, t in ipairs(S.footprint(L, cfg.capture.radius)) do
+		if t.wall then
+			list[#list + 1] = t
+			on[t.x .. "," .. t.y] = true
+		end
+	end
+	local size = ChaosArenaLook.wallSizeOf(a.wallId)
+	local function isWall(x, y)
+		return on[x .. "," .. y] == true
+	end
+	return ChaosArenaLook.wallPlacer(a.wallId, list), function(p)
+		return ChaosArenaLook.clearOfWall(p, isWall, size)
+	end
+end
+S.wallsOf = wallsOf
 
 local function placeItem(pos, id, aid)
 	local tile = Tile(pos)
@@ -308,6 +332,7 @@ function S.buildArena(b)
 			end
 		end
 	end
+	local wallAt, spot = wallsOf(L)
 	for _, t in ipairs(foot) do
 		local pos = P(t)
 		local tile = Game.createTile(pos, true)
@@ -315,26 +340,27 @@ function S.buildArena(b)
 			if not tile:getGround() then
 				Game.createItem(groundFor(t), 1, pos)
 			end
-			if t.wall and not tile:getItemById(a.wallId) then
-				Game.createItem(a.wallId, 1, pos)
+			local wallId = t.wall and wallAt(t.x, t.y)
+			if wallId and not tile:getItemById(wallId) then
+				Game.createItem(wallId, 1, pos)
 			end
 		end
 	end
 	placeItem(P(L.center), a.obeliskId)
 	for _, p in ipairs(L.pillars) do
-		placeItem(P(p), a.pillarId)
+		placeItem(P(spot(p)), a.pillarId)
 	end
 	for _, p in ipairs(L.basins) do
-		placeItem(P(p), a.basinId)
+		placeItem(P(spot(p)), a.basinId)
 	end
 	for _, base in ipairs(L.bases) do
-		placeItem(P(base.gate), a.portalId, cfg.aid.gate)
-		placeItem(P(base.exit), a.portalId, cfg.aid.exit)
+		placeItem(P(spot(base.gate)), a.portalId, cfg.aid.gate)
+		placeItem(P(spot(base.exit)), a.portalId, cfg.aid.exit)
 		for _, p in ipairs(base.basins) do
-			placeItem(P(p), a.basinId)
+			placeItem(P(spot(p)), a.basinId)
 		end
 		for _, p in ipairs(base.flags) do
-			placeItem(P(p), a.flagId)
+			placeItem(P(spot(p)), a.flagId)
 		end
 	end
 	return true
@@ -817,7 +843,8 @@ local function beginMatch(token)
 	for _, br in ipairs(state.brackets) do
 		local L = br.L
 		for slot in pairs(br.teams) do
-			P(L.bases[slot].gate):sendMagicEffect(CONST_ME_MAGIC_BLUE)
+			local _, spot = wallsOf(L)
+			P(spot(L.bases[slot].gate)):sendMagicEffect(CONST_ME_MAGIC_BLUE)
 		end
 	end
 	announce(function(lang)

@@ -13,6 +13,7 @@ M.EDGE = 6              -- panel edge and gap between the button and the box
 M.BOX_MIN = 84
 M.BOX_PAD = 24          -- the box image and its gap before the text, plus a little air
 M.BUTTON_PAD = 16
+M.LEAVE_MIN = 48        -- the Leave button (bottom left) is never narrower than this
 
 local function num(v)
   v = tonumber(v)
@@ -85,10 +86,15 @@ function M.moved(fromX, fromY, toX, toY)
   return math.abs((toX or 0) - (fromX or 0)) >= M.DRAG_MIN or math.abs((toY or 0) - (fromY or 0)) >= M.DRAG_MIN
 end
 
--- the panel width and the Automatic box width from the measured texts (button text, box text), so neither is cut
-function M.widths(buttonTextW, boxTextW)
+-- the panel width, the Automatic box width and the Leave button width from the measured texts (Next floor now text,
+-- box text, Leave text), so none is cut. Without a Leave text (nil) the row has no Leave button: leave width 0.
+function M.widths(buttonTextW, boxTextW, leaveTextW)
   local box = math.max(M.BOX_MIN, math.ceil((num(boxTextW) or 0) + M.BOX_PAD))
   local button = math.ceil((num(buttonTextW) or 0) + M.BUTTON_PAD)
-  local panel = math.max(M.MIN_WIDTH, M.EDGE + button + M.EDGE + box + M.EDGE)
-  return panel, box
+  local leave = 0
+  if leaveTextW ~= nil then
+    leave = math.max(M.LEAVE_MIN, math.ceil((num(leaveTextW) or 0) + M.BUTTON_PAD))
+  end
+  local panel = math.max(M.MIN_WIDTH, M.EDGE + (leave > 0 and leave + M.EDGE or 0) + button + M.EDGE + box + M.EDGE)
+  return panel, box, leave
 end

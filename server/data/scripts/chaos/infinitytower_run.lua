@@ -9,7 +9,10 @@
 -- floor pays a reward (first clear per character and tower season, and every time). When a run ends each player's cleared
 -- floors are recorded with ChaosTower.recordRun (points, best floor, ranking, milestones in infinitytower.lua).
 --
--- Entry: "!tower start" or the Enter button of the client window (action "enter"); "!tower leave" leaves.
+-- Entry: the Enter button of the client window (action "enter"). Leaving (server/README.md "Infinity Tower: leaving a
+-- run"): the exit portal of every arena or the Leave button of the floor panel or of the window (action "leave"); out
+-- at once between floors, after exit.delay seconds while a floor is fought. No typed words (owner rule: no player
+-- talkactions, tests/no_player_talkactions_test.lua).
 -- A party leader takes the party members who are close; solo works too.
 --
 -- Not run on a server: assumed API Game.createTile(pos, true), Tile:addItem, Game.createMonster, Creature:remove,
@@ -36,6 +39,10 @@ end
 if not ChaosDarkTiles then
 	dofile("data/lib/chaos_dark_tiles.lua")
 end
+if not (ChaosTowerCore and ChaosTowerCore.leaveRule) then
+	dofile("data/scripts/chaos/infinitytower_core.lua")
+end
+local TK = ChaosTowerCore
 
 ChaosTowerRun = ChaosTowerRun or {}
 
@@ -55,7 +62,10 @@ local cfg = {
 	spawnRadius = 6, -- monsters appear within this distance of the middle (players start there)
 	spawnMinDistance = 3, -- ... but not closer than this
 	groundId = 413, -- "stone floor"
-	wallId = 5648, -- "stone wall"
+	-- the walls: the theme's built wall pieces (arenalook_core.lua A.WALL_SETS, dark stone bricks; the dark theme its
+	-- obsidian wall). This set is the fallback. Not the single "stone wall" 5648: a cave rock piece, rock lumps with
+	-- earth seams when set tile by tile.
+	walls = "darkstone",
 	-- O276 look (arenalook_core.lua): every run gets one theme and one layout variant in turn (the same hash of the
 	-- coordinates every time, so the layout of a variant never changes): varied ground with borders, a rim along the wall
 	-- with rubble, mirrored cover pieces that never touch each other or the spawn ring, lights against the wall and a
@@ -96,7 +106,10 @@ local cfg = {
 	-- floor // bandFloors + 1, the last one repeats)
 	pools = BC.pools,
 	bosses = bossNames(),
-	fallbackMonster = "demon"
+	fallbackMonster = "demon",
+	-- leaving a run: the exit portal (magic forcefield 1387, no destination; the MoveEvent of actionId moves the player) at
+	-- the south end of the lane (ChaosTowerCore.portalSpot) and the countdown while a floor is fought
+	exit = {portalId = 1387, actionId = 47850, delay = 5}
 }
 ChaosTowerRunConfig = cfg
 
@@ -144,7 +157,7 @@ local function towerLook(n)
 			tiles = ChaosArenaLook.rectTiles(1, 1, cfg.inner, cfg.inner), theme = theme, seed = 100 + variant, mirror = true,
 			keep = {{x = center, y = center, r = L.keepRadius}, {x = center, y = cfg.inner, r = 1}},
 			roads = {{from = {x = center, y = cfg.inner}, to = {x = center, y = center + L.keepRadius + 1}}},
-			cover = L.cover, lights = L.lights
+			cover = L.cover, lights = L.lights, wallSize = theme.wallSize or (ChaosArenaLook.wallSetOf(theme) or {}).size
 		}
 	end)
 	return look
@@ -157,7 +170,10 @@ local builtSlots = ChaosTowerBuiltSlots
 -- returns true, or false + reason (nothing is built then: a tile of the footprint already belongs to the map)
 local function buildArena(slot, look)
 	local last = cfg.inner + 1
-	local wallId = look.wallId or cfg.wallId
+	local set = look.walls or (not look.wallId and ChaosArenaLook.WALL_SETS[cfg.walls]) or nil
+	local function isWall(dx, dy)
+		return dx >= 0 and dy >= 0 and dx <= last and dy <= last and (dx == 0 or dy == 0 or dx == last or dy == last)
+	end
 	if not builtSlots[slot] then
 		for dx = 0, last do
 			for dy = 0, last do
@@ -178,7 +194,8 @@ local function buildArena(slot, look)
 				if wall and not tile:getGround() then
 					Game.createItem(cfg.groundId, 1, pos)
 				end
-				if wall and not tile:getItemById(wallId) then
+				local wallId = wall and (set and ChaosArenaLook.wallPieceId(set, isWall, dx, dy) or look.wallId)
+				if wallId and not tile:getItemById(wallId) then
 					Game.createItem(wallId, 1, pos)
 				end
 			end
@@ -335,6 +352,12 @@ local function pushStates(run)
 	end
 end
 
+-- the temple of a player's town (nil without one)
+local function templeOf(player)
+	local town = player.getTown and player:getTown()
+	return town and town:getTemplePosition() or nil
+end
+
 local function removePlayer(run, playerId, teleportOut)
 	local entry = run.players[playerId]
 	if not entry then
@@ -342,11 +365,15 @@ local function removePlayer(run, playerId, teleportOut)
 	end
 	run.players[playerId] = nil
 	runOf[playerId] = nil
+	if run.leaving then
+		run.leaving[playerId] = nil -- a countdown of this player does nothing any more
+	end
 	local player = Player(playerId)
 	if player then
 		player:unregisterEvent("ChaosTowerPlayerDeath")
-		if teleportOut then
-			player:teleportTo(entry.entry)
+		local out = teleportOut and TK.exitPos(entry.entry, templeOf(player), inArena)
+		if out then
+			player:teleportTo(out)
 			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		end
 	end
@@ -823,6 +850,7 @@ function ChaosTowerRun.start(player)
 	local run = {slot = slot, players = {}, finished = {}, floor = 0, cleared = 0, remaining = 0, startTime = os.time(),
 		look = look}
 	runs[slot] = run
+	ChaosTowerRun.placeExit(slot)
 	local center = math.floor(cfg.inner / 2) + 1
 	for i, m in ipairs(group) do
 		run.players[m:getId()] = {id = m:getId(), guid = m:getGuid(), entry = m:getPosition()}
@@ -830,7 +858,7 @@ function ChaosTowerRun.start(player)
 		m:registerEvent("ChaosTowerPlayerDeath")
 		m:teleportTo(arenaPos(slot, center + (i - 1) % 2, center + math.floor((i - 1) / 2)))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out.", cfg.startDelay))
+		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Welcome to the Infinity Tower. Floor 1 starts in %d seconds. The exit portal at the south wall or the Leave button of the floor panel takes you out.", cfg.startDelay))
 		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Goal: kill every monster of a floor to open the next one; every %dth floor is a boss floor. Stay in the open middle to kite; the pillars and braziers along the walls are cover.", cfg.bossEvery))
 		local reward = ChaosTowerRun.nextRewardText(m, 0)
 		if reward then
@@ -870,16 +898,87 @@ if Chaos.registerInstance then -- chaos_constants.lua (a test may stub Chaos)
 		end})
 end
 
-function ChaosTowerRun.leave(player)
-	local run = runOf[player:getId()]
-	if not run then
-		player:sendCancelMessage(Chaos.t(player, "You are not inside the tower."))
-		return false
+-- ------------------------------------------------------------------ leaving (the rule: ChaosTowerCore.leaveRule)
+-- the exit portal of a slot: put after the arena is built; clearArena takes it away with the rest
+function ChaosTowerRun.placeExit(slot)
+	local ex = cfg.exit
+	local dx, dy = TK.portalSpot(cfg.inner)
+	local pos = arenaPos(slot, dx, dy)
+	local tile = Tile(pos)
+	if not tile then
+		return nil
 	end
-	removePlayer(run, player:getId(), true)
+	local item = tile.getItemById and tile:getItemById(ex.portalId)
+	if not item then
+		item = Game.createItem(ex.portalId, 1, pos)
+	end
+	if type(item) ~= "boolean" and item and item.setActionId then
+		item:setActionId(ex.actionId)
+	end
+	return pos
+end
+
+local function leaveNow(run, player)
+	local id = player:getId()
+	local cleared = run.cleared
+	removePlayer(run, id, true)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You left the Infinity Tower. You cleared %d floor(s).", cleared))
 	if next(run.players) == nil then
 		endRun(run, "Everyone left.")
+	else
+		say(run, player:getName() .. " has left the tower.")
 	end
+end
+
+local function leaveDue(playerId, owner)
+	local run = runOf[playerId]
+	local player = Player(playerId)
+	if run ~= owner or run.ended or not player or not (run.leaving and run.leaving[playerId]) then
+		return -- died, logged out or the run ended first
+	end
+	leaveNow(run, player)
+end
+ChaosTowerRun._leaveDue = leaveDue
+
+-- the portal and the Leave buttons (action "leave"). Returns true when the player is out
+-- or on the way out.
+function ChaosTowerRun.leave(player)
+	local id = player:getId()
+	local run = runOf[id]
+	local now = os.time()
+	local rule, secs = TK.leaveRule({
+		inRun = run ~= nil and not run.ended,
+		inArena = player.getPosition and inArena(player:getPosition()) or false,
+		fighting = run ~= nil and not run.waiting and (run.remaining or 0) > 0,
+		pendingAt = run and run.leaving and run.leaving[id],
+		now = now, delay = cfg.exit.delay})
+	if rule == "outside" then
+		player:sendCancelMessage(Chaos.t(player, "You are not inside the tower."))
+		ChaosTowerRun.pushState(player, nil)
+		return false
+	elseif rule == "stray" then
+		-- in an arena without a run (a script reload lost the run): nothing to record, straight to the temple
+		local temple = templeOf(player)
+		if not temple then
+			player:sendCancelMessage(Chaos.t(player, "You are not inside the tower."))
+			return false
+		end
+		player:teleportTo(temple)
+		player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You left the Infinity Tower."))
+		ChaosTowerRun.pushState(player, nil)
+		return true
+	elseif rule == "pending" then
+		player:sendCancelMessage(Chaos.t(player, "You leave the tower in %d seconds.", secs))
+		return true
+	elseif rule == "countdown" then
+		run.leaving = run.leaving or {}
+		run.leaving[id] = now + secs
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You leave the tower in %d seconds.", secs))
+		addEvent(leaveDue, secs * 1000, id, run)
+		return true
+	end
+	leaveNow(run, player)
 	return true
 end
 
@@ -1032,5 +1131,20 @@ function login.onLogin(player)
 	return true
 end
 login:register()
+
+-- the exit portal (ChaosTowerRun.placeExit); the rule is ChaosTowerCore.leaveRule
+if MoveEvent then
+	local exitStep = MoveEvent()
+	exitStep:type("stepin")
+	function exitStep.onStepIn(creature, item, position, fromPosition)
+		local player = creature and creature.isPlayer and creature:isPlayer() and creature or nil
+		if player then
+			ChaosTowerRun.leave(player)
+		end
+		return true
+	end
+	exitStep:aid(cfg.exit.actionId)
+	exitStep:register()
+end
 
 ChaosTowerRun._state = function() return runs, runOf, monsterRun end

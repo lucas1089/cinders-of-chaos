@@ -775,7 +775,7 @@ Chaos.worldBoss = {
 		lobbyInnerW = 13, lobbyInnerH = 7,
 		groundId = 407, -- black marble floor (arena)
 		lobbyGroundId = 413, -- stone floor (lobby)
-		wallId = 5648, -- stone wall
+		wallId = "darkstone", -- dark stone bricks, a piece per wall tile (arenalook_core.lua A.WALL_SETS; was 5648, a cave rock piece)
 		pillarId = 1515, -- marble pillar (line-of-sight cover inside the arena)
 		basinId = 1481, -- coal basin (light, lobby corners and arena corners)
 		portalId = 1387, -- magic forcefield (type teleport in items.xml); used without destination + action id
@@ -1205,6 +1205,16 @@ Chaos.classes = {
 	},
 	-- Evasion: chance to dodge a melee or ranged hit (monster or player weapon attacks), per vocation id
 	evasion = {[11] = 0.08, [12] = 0.12, [13] = 0.05},
+	-- Ninja guard (O367, owner report 2026-11-02: a level 757 Ninja could not hunt level 750 monsters): a hit from a monster
+	-- (or a monster's summon) that lands on a listed vocation is x (1 - reduction), the reduction by the character's
+	-- level, linear between the points, flat outside. Why: the Ninja's lanes of the passive tree hold 30 vitality and 19
+	-- physical absorb in the whole tree (the Thief 358 absorb, the Samurai 240 vitality and 374 absorb), so its Auto
+	-- builds reach +6% health and 7% absorb at level 757 where the median class has +48% and its no-shield peers 57-75%;
+	-- with no shield and no mana shield it lived 0.35-0.43 x the median class's seconds in a pack of its hunt
+	-- (tools/survival_model.py, survival_balance_config.lua; server/README.md "Hunt survival by class (O367)").
+	-- The points follow the tree gap: 0.89 of the median class's health x absorb at 100, 0.76 at 200, 0.70 from 300.
+	-- PvE only: a player's hit, a player's summon and conditions are never cut.
+	guard = {vocations = {[12] = true}, points = {{100, 0.10}, {300, 0.30}, {650, 0.40}}},
 	-- Poison Blades: weapon hits poison the target, `share` of the hit as earth damage over `ticks` seconds. A hit
 	-- refreshes the poison (the condition is replaced, the tick clock runs on), so a class that hits every 1-2 s takes one
 	-- tick of the last hit per second: the poison deals about share / ticks of a hit per second. 2026-10-17 (owner:

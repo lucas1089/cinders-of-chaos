@@ -22,8 +22,8 @@
 --   "open" shows the window, "update" refreshes it if it is already open.
 --
 -- Implemented: seasons, per-season points / best floor / best time, ranking top 10, milestone
--- claiming with item rewards, "!tower" to open the window, and the tower itself in
--- infinitytower_run.lua ("!tower start" / "!tower leave" / the client's Enter button), which reports each
+-- claiming with item rewards, the window (Adventure > Infinity Tower), and the tower itself in
+-- infinitytower_run.lua (Enter button; out by the exit portal or a Leave button, action "leave"), which reports each
 -- finished run with ChaosTower.recordRun(player, floorsCleared, seconds).
 -- Season end (ChaosTower.checkSeasons, pure part infinitytower_core.lua, numbers Chaos.tower.seasonEnd): the top 3
 -- of each ended season get the "Top Rank Rewards" chest of their place once (chaos_tower_season_rewards, server_config

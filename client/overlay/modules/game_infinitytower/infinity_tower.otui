@@ -1,5 +1,5 @@
-// The tower panel (O274), created by infinity_tower.lua inside a run: floor, floors cleared, monsters left, the countdown
-// and the Next floor now button. Hidden outside a run. The player drags it by its background (the labels are phantom);
+// The tower panel (O274), created by infinity_tower.lua inside a run: floor, floors cleared, monsters left, the countdown,
+// the Leave button (bottom left) and the Next floor now button. Hidden outside a run. The player drags it by its background (the labels are phantom);
 // a double-click puts it back here. The spot is saved per character (towerpanelpos.lua). The width grows in Lua when
 // the button or the Automatic text needs it.
 TowerPanel < UIWidget
@@ -51,6 +51,16 @@ TowerPanel < UIWidget
     text-align: center
     phantom: true
     color: #f0e4c8
+  Button
+    id: leaveButton
+    width: 48
+    height: 22
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin: 0 0 6 6
+    !text: tr('Leave')
+    !tooltip: tr('Leave the tower. Your cleared floors count. During a fight you leave after a short countdown.')
+    focusable: false
   CheckBox
     id: autoSkipBox
     width: 100
@@ -63,7 +73,7 @@ TowerPanel < UIWidget
   Button
     id: skipButton
     anchors.bottom: parent.bottom
-    anchors.left: parent.left
+    anchors.left: leaveButton.right
     anchors.right: prev.left
     margin: 0 6 6 6
     height: 22

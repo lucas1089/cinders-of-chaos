@@ -523,11 +523,16 @@ local function buildSlot(slot)
 	ChaosArenaLook.dressTiles(lookKey(L), L.floorList, L.z, lk.theme or "crypt", {keep = keep,
 		roads = {{from = L.start, to = last.bossSpawn}}, seed = lk.seed or 1, mirror = false, cover = lk.cover, lights = lk.lights,
 		wallSize = ChaosArenaLook.wallSizeOf(wall), groundIds = {[cfg.groundId] = true}, fallbackGround = cfg.groundId})
+	local wallAt = ChaosArenaLook.wallPlacer(wall, L.wallList) -- a piece per tile ("darkstone") or the dark wall
 	for _, f in ipairs(L.wallList) do
-		placeItem(P(f), wall)
+		placeItem(P(f), wallAt(f.x, f.y))
+	end
+	-- a basin with a 2x2 wall to its south or east stands one tile in, or the wall draws over it
+	local function isWall(x, y)
+		return L.walls[x .. "," .. y] ~= nil
 	end
 	for _, f in ipairs(L.basins) do
-		placeItem(P(f), basin)
+		placeItem(P(ChaosArenaLook.clearOfWall(f, isWall, ChaosArenaLook.wallSizeOf(wall))), basin)
 	end
 	local ex = placeItem(P(L.exit), cfg.objects.exit)
 	if ex then
@@ -582,7 +587,7 @@ end
 local function cleanSlot(L)
 	local cfg = C()
 	local wall, basin = fixtures()
-	local keep = {[wall] = true, [basin] = true, [cfg.doorId] = true, [cfg.objects.exit] = true}
+	local keep = ChaosArenaLook.wallIds(wall, {[basin] = true, [cfg.doorId] = true, [cfg.objects.exit] = true})
 	for _, f in ipairs(L.floorList) do
 		local tile = Tile(P(f))
 		if tile then

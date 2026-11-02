@@ -187,6 +187,29 @@ eq(#S.queue, 0, "queue empty")
 check(S.matchOf[b2:getId()] == m, "all four in the match")
 local L = A.layout(cfg, m.slot)
 check(A.inArena(L, a1.pos) and A.inArena(L, b2.pos), "teleported into the arena")
+-- the walls: darkstone pieces from their neighbours (never the cave rock piece 5648); a basin with the 2x2 wall to its
+-- south or east stands one tile in
+do
+  local pieces, bad = ChaosArenaLook.wallIds(cfg.wallId), 0
+  for _, t in ipairs(A.footprint(L)) do
+    if t.wall then
+      local tile, ok = Tile({x = t.x, y = t.y, z = t.z}), false
+      for _, it in ipairs(tile and tile.items or {}) do
+        if pieces[it.id] then ok = true end
+        if it.id == 5648 then ok = false; break end
+      end
+      if not ok then bad = bad + 1 end
+    end
+  end
+  eq(bad, 0, "every wall tile carries its darkstone piece")
+  local ar = L.arena
+  local nw = Tile({x = ar.x1, y = ar.y1, z = L.z})
+  check(nw and nw:getItemById(25202) ~= nil, "the north-west corner is the pole")
+  local se = Tile({x = ar.x2 - 2, y = ar.y2 - 2, z = L.z})
+  check(se and se:getItemById(cfg.basinId) ~= nil, "the south-east basin stands one tile in from the 2x2 wall")
+  local hidden = Tile({x = ar.x2 - 1, y = ar.y2 - 1, z = L.z})
+  check(not (hidden and hidden:getItemById(cfg.basinId)), "no basin under the south-east wall")
+end
 check(a1.pos.x < L.center.x and b1.pos.x > L.center.x, "teams on opposite sides")
 check(a1.events.ChaosArenaHealth and b2.events.ChaosArenaPrepareDeath, "combat events registered")
 check(lastSend(a1, "start") and lastSend(a1, "start").team == 1, "client told: start, team 1")

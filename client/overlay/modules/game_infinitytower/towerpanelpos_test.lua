@@ -80,6 +80,18 @@ pw, bw = M.widths(200, 70)
 eq(pw, 6 + 216 + 6 + 94 + 6, 'long button text: wider panel')
 pw, bw = M.widths(nil, nil)
 eq(pw, 290, 'no measure: default width'); eq(bw, 84, 'no measure: minimum box')
+-- the Leave button on the same row: its own width, the panel grows by it and a gap
+local lw
+pw, bw, lw = M.widths(160, 50)
+eq(lw, 0, 'no Leave text: no Leave width')
+pw, bw, lw = M.widths(160, 50, 30)
+eq(lw, 48, 'short Leave text: minimum width')
+eq(pw, 6 + 48 + 6 + 176 + 6 + 84 + 6, 'Leave widens the row')
+pw, bw, lw = M.widths(100, 50, 40)
+eq(lw, 56, 'Leave grows with its text')
+eq(pw, 290, 'all three fit 290')
+pw, bw, lw = M.widths(160, 50, 'x')
+eq(lw, 48, 'a bad measure: minimum width')
 
 print(string.format('towerpanelpos_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

@@ -107,6 +107,8 @@ function EventCallback:register() lootCallbacks[#lootCallbacks + 1] = self.onDro
 ItemType = function() return {isStackable = function() return true end} end
 
 dofile("data/scripts/chaos/infinitytower_run.lua")
+-- leaving here is at once; the countdown while a floor is fought: tests/infinitytower_exit_test.lua
+ChaosTowerRunConfig.exit.delay = 0
 local assertEq = function(a, b, m) if a ~= b then error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
 
 -- ---- floor planner
@@ -212,6 +214,7 @@ do
   Player = function(k) if type(k) == "string" then for _, p in pairs(players) do if p.name == k then return p end end return nil end return byId(k) end
   dofile("data/scripts/chaos/instance_limits.lua")
   dofile("data/scripts/chaos/infinitytower_run.lua") -- again, now with the registry
+  ChaosTowerRunConfig.exit.delay = 0
   local cfg = ChaosTowerRunConfig
   cfg.runTimeLimit = 400
   cfg.limits.maxRuns = 1
@@ -514,6 +517,30 @@ do
   assertEq(run.look ~= nil, true, "the run holds its look")
   local gpos = Position(cfg.arenaBase.x + slot * cfg.slotSpacing + center, cfg.arenaBase.y + center, cfg.arenaBase.z)
   assertEq(Tile(gpos):getGround() ~= nil, true, "the middle has a ground")
+  -- the walls are built wall pieces (a row, a column, the corners), never the cave rock piece 5648
+  local function wallAt(dx, dy)
+    local t = Tile(Position(cfg.arenaBase.x + slot * cfg.slotSpacing + dx, cfg.arenaBase.y + dy, cfg.arenaBase.z))
+    local set = run.look.walls or AL.WALL_SETS[cfg.walls]
+    for _, it in ipairs(t and t.items or {}) do
+      if it.id == 5648 then return "rock" end
+      for piece, rows in pairs(run.look.wallId and {} or set) do
+        if type(rows) == "table" then for _, e in ipairs(rows) do if e[1] == it.id then return piece end end end
+      end
+      if run.look.wallId and it.id == run.look.wallId then return "single" end
+    end
+  end
+  local last = cfg.inner + 1
+  if run.look.wallId then
+    assertEq(wallAt(center, 0), "single", "a theme with one wall id: that id")
+  else
+    assertEq(wallAt(center, 0), "horizontal", "north wall: a row piece")
+    assertEq(wallAt(center, last), "horizontal", "south wall: a row piece")
+    assertEq(wallAt(0, center), "vertical", "west wall: a column piece")
+    assertEq(wallAt(last, center), "vertical", "east wall: a column piece")
+    assertEq(wallAt(0, 0), "pole", "north-west corner: the pole")
+    assertEq(wallAt(last, last), "corner", "south-east corner: the corner piece")
+  end
+  assertEq(wallAt(center, center), nil, "no wall in the middle")
   ChaosTowerRun.leave(z)
   -- a map tile inside an unbuilt slot refuses the build: the run does not start and nothing is left behind
   local savedBase = cfg.arenaBase

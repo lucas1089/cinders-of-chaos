@@ -47,7 +47,7 @@ return {
 		grid = {origin = {x = 7000, y = 7000, z = 7}, cols = 4, slots = 8, spacing = 24},
 		inner = 13, -- inner width / height of the room (odd: a centre tile)
 		groundId = 407, -- black marble floor
-		wallId = 5648, -- stone wall
+		wallId = "darkstone", -- dark stone bricks, a piece per wall tile (arenalook_core.lua A.WALL_SETS; was 5648, a cave rock piece)
 		basinId = 1481, -- coal basin (light) in the corners
 		-- dark tile set (server/README.md "Dark tile set"): with the set installed the walls and lights use these and
 		-- the room is painted with the `style` of data/lib/chaos_dark_paint.lua (nothing solid on the floor: the

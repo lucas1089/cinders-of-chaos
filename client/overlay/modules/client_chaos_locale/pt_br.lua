@@ -1459,6 +1459,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["A boss floor is next: it starts by itself."] = "O próximo andar é de chefe: ele começa sozinho.",
   ["Only the run leader can call the next floor."] = "Só o líder da corrida pode chamar o próximo andar.",
   ["Leave the tower run you are in (your progress so far counts)."] = "Sair da corrida na torre em que você está (seu progresso até aqui conta).",
+  ["Leave the tower. Your cleared floors count. During a fight you leave after a short countdown."] = "Sair da torre. Seus andares concluídos contam. Durante uma luta você sai após uma contagem curta.",
   -- game_invasion/invasion.lua
   ["Occupied"] = "Ocupado",
   ["Horde slain: %d%%"] = "Horda morta: %d%%",

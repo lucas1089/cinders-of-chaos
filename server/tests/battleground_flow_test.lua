@@ -220,6 +220,22 @@ eq(m and m.size, 5, "5v5")
 eq(#B.queue, 0, "queue empty")
 check(created > 1000, "the map was built (" .. created .. " tiles)")
 local L = K.layout(cfg, m.slot)
+-- the walls: darkstone pieces from their neighbours, never the cave rock piece 5648
+do
+  local pieces, bad, n = ChaosArenaLook.wallIds(cfg.ids.wall), 0, 0
+  for _, t in ipairs(K.footprint(cfg, L)) do
+    if t.wall then
+      n = n + 1
+      local tile, ok = Tile({x = t.x, y = t.y, z = t.z}), false
+      for _, it in ipairs(tile and tile.items or {}) do
+        if pieces[it.id] then ok = true end
+        if it.id == 5648 then ok = false; break end
+      end
+      if not ok then bad = bad + 1 end
+    end
+  end
+  check(n > 0 and bad == 0, "every wall tile carries its darkstone piece (" .. bad .. " bad)")
+end
 -- O276: the field wears the shared arena look (arenalook_core.lua), the same for both teams
 do
   local AL = ChaosArenaLook
