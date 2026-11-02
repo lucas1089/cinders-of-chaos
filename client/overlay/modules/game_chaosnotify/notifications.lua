@@ -13,6 +13,8 @@ local maxNotifications = 3
 local maxPinnedNotifications = 2
 local notificationDuration = 30000 -- 30 segundos para convites
 local isInitialized = false
+local hideDanger                      -- the danger window (showDanger, below)
+local dangerWidget, dangerEvent = nil, nil
 
 -- Tipos de notificação com configurações melhoradas + CATACOMB
 local NOTIFICATION_TYPES = {
@@ -449,6 +451,7 @@ end
 
 -- Função para esconder todas as notificações
 function hideAllNotifications()
+    hideDanger()
     notificationQueue = {}
     
     -- Remover todas as notificações ativas
@@ -1104,6 +1107,82 @@ function showNotification(data, slot)
     updateTimer()
 end
 
+-- ---------------------------------------------------------------- the danger window (owner 2026-11-02)
+-- "Danger: much stronger monsters ahead (level N+)" and "Caution: you are in an area of level N+" (server
+-- hunt_warnings.lua, action "danger") were a red line over the creatures' names. They are a window of their own now, at
+-- the top centre of the game map, in the toast style (like ACHIEVEMENT UNLOCKED): a red header, the text, a close button.
+-- One at a time: a new warning replaces the shown one; it closes by itself after DANGER_MS.
+local DANGER_MS = 7000
+
+hideDanger = function()
+    if dangerEvent then removeEvent(dangerEvent) dangerEvent = nil end
+    if dangerWidget and isWidgetValid(dangerWidget) then pcall(function() dangerWidget:destroy() end) end
+    dangerWidget = nil
+end
+
+function showDanger(message, caution)
+    if type(message) ~= 'string' or message == '' then return end
+    local root = modules.game_interface.getRootPanel()
+    if not root then return end
+    hideDanger()
+    local w = g_ui.createWidget('Panel', root)
+    if not w then return end
+    dangerWidget = w
+    local map = modules.game_interface.getMapPanel and modules.game_interface.getMapPanel() or nil
+    local ok = pcall(function()
+        w:setId('chaosDangerWindow')
+        w:setSize({width = 380, height = 64})
+        w:setImageSource('images/Background')
+        w:setImageColor('#ccbebb')
+        w:setBorderWidth(1)
+        w:setBorderColor('#7a1f1f')
+        w:setPhantom(false)
+        if map and map:getParent() == root and map:getId() ~= '' then
+            w:addAnchor(AnchorHorizontalCenter, map:getId(), AnchorHorizontalCenter)
+            w:addAnchor(AnchorTop, map:getId(), AnchorTop)
+        else
+            w:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+            w:addAnchor(AnchorTop, 'parent', AnchorTop)
+        end
+        w:setMarginTop(40)
+        local title = g_ui.createWidget('Label', w)
+        title:setText(caution and tr('CAUTION') or tr('DANGER'))
+        title:setFont(titleFont())
+        title:setColor('#c0392b')
+        title:setTextAlign(AlignCenter)
+        title:setHeight(18)
+        title:setMarginTop(6)
+        title:addAnchor(AnchorTop, 'parent', AnchorTop)
+        title:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        title:addAnchor(AnchorRight, 'parent', AnchorRight)
+        local text = g_ui.createWidget('Label', w)
+        text:setText(message)
+        text:setColor('#8e1b1b')
+        text:setTextAlign(AlignCenter)
+        text:setTextWrap(true)
+        text:setMarginTop(24)
+        text:setMarginLeft(12)
+        text:setMarginRight(26)
+        text:setMarginBottom(6)
+        text:addAnchor(AnchorTop, 'parent', AnchorTop)
+        text:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        text:addAnchor(AnchorRight, 'parent', AnchorRight)
+        text:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+        local close = g_ui.createWidget('UIButton', w)
+        close:setSize({width = 20, height = 20})
+        close:setImageSource('images/Icon Close')
+        close:setTooltip(tr("Close notification"))
+        close:setMarginTop(5)
+        close:setMarginRight(5)
+        close:addAnchor(AnchorTop, 'parent', AnchorTop)
+        close:addAnchor(AnchorRight, 'parent', AnchorRight)
+        close.onClick = hideDanger
+        w:raise()
+    end)
+    if not ok then hideDanger() return end
+    dangerEvent = scheduleEvent(function() dangerEvent = nil hideDanger() end, DANGER_MS)
+end
+
 -- Função para adicionar notificação à fila
 function addNotification(notificationType, message, customIcon, monsterLookType, inviteData, catacombData)
     if not isInitialized then
@@ -1191,6 +1270,11 @@ function onExtendedOpcode(protocol, opcode, buffer)
             if data.message then
                 addNotification("BESTIARY", data.message, nil, data.monsterLookType)
             end
+        end,
+
+        -- hunt warnings (server data/scripts/chaos/hunt_warnings.lua): the danger window at the top centre
+        danger = function(data)
+            showDanger(data.message, data.caution == true)
         end,
 
         -- achievements (server data/scripts/chaos/achievements.lua)

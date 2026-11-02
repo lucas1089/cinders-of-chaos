@@ -1,4 +1,5 @@
--- Hunt warnings (server/README.md "Hunt warnings (O323)"): a caution effect on, and a red message near, every hole, stairs,
+-- Hunt warnings (server/README.md "Hunt warnings (O323)"): a caution effect on, and a red warning window (client
+-- game_chaosnotify "danger", top centre) near, every hole, stairs,
 -- ladder or teleport that leads from a weak hunt to much stronger, denser monsters (the list is written by
 -- server/tools/audit_hunt_transitions.py into hunt_warnings_config.lua; docs/HUNT_TRANSITIONS.md). Nobody is blocked.
 -- The rules are in hunt_warnings_core.lua (tests/hunt_warnings_test.lua), the numbers in hunt_warnings_config.lua.
@@ -57,7 +58,15 @@ function HW.pass()
 	for _, m in ipairs(out.messages) do
 		local player = byId[m.id]
 		if player then
-			player:sendTextMessage(MESSAGE_STATUS_WARNING, text(player, m))
+			-- owner 2026-11-02: a window of its own at the top centre of the game (client game_chaosnotify "danger"),
+			-- not a red line over the creatures' names; an old client without the window still gets the line
+			local ok = pcall(function()
+				player:sendExtendedOpcode(ChaosOpcodes.notifications, json.encode({action = "danger",
+					caution = m.kind == "arrive", level = m.level, message = text(player, m)}))
+			end)
+			if not ok then
+				player:sendTextMessage(MESSAGE_STATUS_WARNING, text(player, m))
+			end
 			player:setStorageValue(Chaos.storage.huntWarnLast, os.time())
 		end
 	end

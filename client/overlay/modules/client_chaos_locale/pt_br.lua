@@ -589,6 +589,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Info & Services"] = "Info & Serviços",
   -- game_chaosnotify/notifications.lua
   ["Close notification"] = "Fechar notificação",
+  ["DANGER"] = "PERIGO", -- game_chaosnotify danger window (hunt warnings)
+  ["CAUTION"] = "CUIDADO",
   ["NOTIFICATION"] = "NOTIFICAÇÃO",
   ["Notification message"] = "Mensagem da notificação",
   ["Task Complete: of %s, killed %d and received %d task points"] = "Task completa: de %s, matou %d e recebeu %d pontos de task",
