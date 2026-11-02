@@ -4209,7 +4209,10 @@ by one (client/BASE.md 0048; docs/LAUNCH.md "Client updates").
   (`updater_core.lua` `M.MAX_FILE_SIZE`, the same in `make_update_manifest.py`) refuses a whole manifest that lists a
   bigger file, so that limit can never grow for the builds already out. The workflow unpacks the pair beside the
   client tree, copies the dat, splits and verifies the spr into the tree, and moves the single `Tibia.spr` (with the
-  dat) to the map editor only (`mapeditor\client`): it cannot read shards. This replaces the owner decision of
+  dat) to the map editor only (`mapeditor\client`): it cannot read shards. Beside them goes `Tibia.otfi`
+  (`tools/windows/editor_versions.py --otfi`, read from the spr: extended, transparency, frame durations, frame
+  groups all on; also in the MapFiles zip). Without a .otfi a map editor takes transparency as off and reads the
+  RGBA spr as RGB: black boxes and vertical stripes in the item palette (owner 2026-11-02, winpkg-101). This replaces the owner decision of
   2026-10-13 (single file in the Windows package for the map editor), whose reason the editor's own copy now covers.
   Shards inside the pack load like loose ones: 0048 opens them by PhysFS path, and the pack is a PhysFS memory mount
   (base patch 0102); the Linux start test of the workflow starts a packed, sharded client.

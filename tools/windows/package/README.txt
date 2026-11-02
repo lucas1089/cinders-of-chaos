@@ -27,7 +27,8 @@ Map editor
        to the client folder that is already there (the folder must hold that one program and no other
        .exe). If Windows asks about merging the data folder, say yes.
     4. Double-click open-map-editor.bat. It opens the editor on the server's map, with the 10.98 client files
-       (mapeditor\client: the Chaos Tibia.dat and Tibia.spr) and the server folder (server\: items.otb and items.xml
+       (mapeditor\client: the Chaos Tibia.dat and Tibia.spr, and Tibia.otfi, which tells the editor the .spr has
+       transparency; keep it there) and the server folder (server\: items.otb and items.xml
        with every Chaos item, the map in server\data\world) already chosen. The Chaos monsters are in the creature
        list (mapeditor\data\user\data\1098\creatures.xml).
   Areas asked for in chat (the map inbox, docs/MAP_GUIDE.md "Map inbox"): the owner publishes them in the admin app
