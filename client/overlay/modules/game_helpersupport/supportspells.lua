@@ -349,23 +349,10 @@ end
 -- a saved list -> its entries in order. The client's g_settings gives a list back keyed by strings: setNode makes the
 -- index 1 the OTML tag "1" (the engine reads every key with lua_isstring, true for a number) and getNode sets a child by
 -- its tag, so slots[1] comes back as slots["1"] and ipairs sees nothing (owner 2026-11-02, the fifth report "the list
--- is still empty after a death": every relog loaded an empty list). Whole keys from 1, numbers or strings; others are left.
+-- is still empty after a death": every relog loaded an empty list). The shared reader of client_chaos_settings
+-- (ChaosSettings.list): whole keys from 1, numbers or strings, in order; others are left.
 function H.list(t)
-  local out = {}
-  if type(t) ~= 'table' then return out end
-  local keys = {}
-  for k in pairs(t) do
-    local n = (type(k) == 'number' or (type(k) == 'string' and k:match('^%d+$'))) and tonumber(k) or nil
-    if n and n >= 1 and n == math.floor(n) and n <= 10000 then
-      keys[#keys + 1] = { n = n, k = k }
-    end
-  end
-  table.sort(keys, function(a, b)
-    if a.n ~= b.n then return a.n < b.n end
-    return type(a.k) == 'number' -- 1 and "1" both there: the number first
-  end)
-  for _, e in ipairs(keys) do out[#out + 1] = t[e.k] end
-  return out
+  return ChaosSettings.list(t)
 end
 
 -- a saved node -> a valid config (wrong values fall back to the defaults, an id twice or an empty one is dropped)

@@ -1,5 +1,6 @@
 -- luajit supportspells_test.lua && lua5.3 supportspells_test.lua (from the repository root or this folder)
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
+dofile(dir .. '../client_chaos_settings/settingslist.lua')
 dofile(dir .. 'supportspells.lua')
 dofile(dir .. '../game_chaosspells/spelldata.lua')
 local H = ChaosHelperSupport

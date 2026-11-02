@@ -467,7 +467,7 @@ Used by base patch `0019-short-numbers.patch` (health/mana in healthinfo and top
 Audit of every `getNode` / `setNode` in `overlay/modules` (2026-11-02). Lists read with `ipairs` after a read, fixed with `ChaosSettings.list`:
 - `game_helperrotation` `ChaosHelperConfig.autosetupWords` (node `chaos_helper_autosetup`, `timerWords` written by `autosetup_ui.lua`): after a relog Auto setup no longer knew its own timer rules, so a later Auto setup took them for the player's own rules and asked about them.
 - `game_pvpzone` `PvpZoneView.savedFlags` (node `pvpzoneFlags`): the flags left on the minimap by a crash were never taken off at the next start.
-- `game_helpersupport` `sanitize` (node `chaos_helper_support`, the Support list emptying on death) has its own reader `ChaosHelperSupport.list`, on the branch of PR 241.
+- `game_helpersupport` `sanitize` (node `chaos_helper_support`, the Support list emptying on death): `ChaosHelperSupport.list` calls `ChaosSettings.list`.
 
 Checked, no list read back: `game_unlocks`, `game_chatpanel`, `game_chaoslayout` (maps by window id), `game_goals`, `game_partyframes`, `game_dpsmeter`, `game_buffbar`, `game_deathrecap`, `game_dropfeed`, `game_mapmarkers`, `game_groundlabels`, `game_lootbeams`, `game_chaossound`, `game_chaoshud`, `game_damagescatter`, `game_leaderboard`, `game_loadouts`, `game_spellbook`, `game_mapoverlay` (rift tokens are keyed by `tostring(id)`), `game_chaosview`, `game_lookpreview`, `game_cosmeticfx`, `game_npctalk`, Auto rotation's `chaos_helper_spells`. A new list saved through `g_settings` is read with `ChaosSettings.list`. Tests: `settingslist_test.lua`, `helperconfig_test.lua` and `pvpzoneview_test.lua` (set, get, set again through the mock).
 
@@ -4810,7 +4810,7 @@ window exists (polled every second, like the Auto setup button), and any other h
   (`ChaosHelperSupport.restoreKept`), and an empty save over kept rows logs a warning with a traceback.
 - The real cause (owner 2026-11-02, fifth report): g_settings turns list keys into strings. setNode makes index 1 the
   OTML tag "1"; getNode gives `slots["1"]` back, not `slots[1]`. ipairs saw no rows, so every relog loaded an empty
-  list, `keep` included. `ChaosHelperSupport.list` reads both key kinds in order; `sanitize` uses it. Test:
+  list, `keep` included. `ChaosHelperSupport.list` reads both key kinds in order (it calls `ChaosSettings.list`, "Lists in g_settings nodes"); `sanitize` uses it. Test:
   `supportspells_ui_test.lua` runs the death relog through a mock with the engine's casts.
 - What may stand in the list comes from the spell data, not from a class list (`ChaosHelperSupport.eligible`): a
   support spell (group 3 without the attack group 1) with no typed name and no target, on the server, and not a utility

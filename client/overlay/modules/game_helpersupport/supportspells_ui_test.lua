@@ -146,6 +146,7 @@ local function runPolls()
   for _, f in ipairs(list) do f() end
 end
 
+dofile(dir .. '../client_chaos_settings/settingslist.lua')
 dofile(dir .. 'supportspells.lua')
 dofile(dir .. 'supportspells_ui.lua')
 local U = ChaosHelperSupportUI
