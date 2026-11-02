@@ -149,5 +149,30 @@ do
   eq(boom(1, function() end), true, 'coalescer: a run that failed does not block the key')
 end
 
+-- a peek row only dresses the item it describes (owner 2026-11-02: a plain Nightmare Blade with the gold frame)
+do
+  local function item(id, attrs)
+    return { getId = function() return id end,
+      getCustomAttribute = function(_, k) return attrs and attrs[k] or 0 end }
+  end
+  -- the bag as the last peek saw it: slot 0 a Legendary blade, slot 1 an orb
+  local rows = { [0] = { id = 7400, r = 5, u = 0, o = 0, g = 'equipment' }, [1] = { id = 9000, r = 0, u = 0, o = 1 } }
+  local legendary, plain = item(7400, { [1] = 5 }), item(7400, {})
+  eq(L.rowFits(rows[0], legendary, true), true, 'the row of the item in the slot fits')
+  -- the Legendary blade leaves, a plain copy slides into slot 0 before the next peek answers
+  eq(rows[0].id == plain:getId(), true, 'the old match (id only) took the stale row: the bug')
+  eq(L.color(rows[0]), '#ffd040', 'and drew the Legendary gold on it')
+  eq(L.rowFits(rows[0], plain, true), false, 'a plain item does not take a Legendary row')
+  eq(L.rowFits({ id = 7400, r = 0, u = 0 }, legendary, true), false, 'nor a Legendary item a plain row')
+  eq(L.rowFits({ id = 7400, r = 7, u = 0 }, legendary, true), true, 'an old id is the rarity it became')
+  eq(L.rowFits({ id = 7400, r = 0, u = 1 }, item(7400, { [4] = 1 }), true), true, 'unique row, unique item')
+  eq(L.rowFits({ id = 7400, r = 0, u = 1 }, plain, true), false, 'unique row, plain item')
+  eq(L.rowFits(rows[1], item(9000, {}), true), true, 'an orb (no rarity) still fits')
+  eq(L.rowFits(rows[0], item(7401, { [1] = 5 }), true), false, 'another item id')
+  eq(L.rowFits(rows[0], plain, false), true, 'without the attributes only the id can be told')
+  eq(L.rowFits(nil, plain, true), false, 'no row') eq(L.rowFits(rows[0], nil, true), false, 'empty slot')
+  eq(L.rowFits(rows[0], { getId = function() return 7400 end }, true), true, 'an item without the method: id only')
+end
+
 if fails > 0 then os.exit(1) end
 print('lootfilter client tests OK')

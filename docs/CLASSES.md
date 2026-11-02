@@ -634,6 +634,9 @@ for free, at the migration.
   wield, counter stance, Bushido stacks (`server/data/scripts/chaos/thief_combat.lua`). Spells, numbers and the balance measurement
   are in `server/data/spells/README.md` ("Thief line"). The shuriken spells need no star: stackable throwing weapons left the game (owner 2026-10-20, server/README.md "Throwing weapons"),
   the spells use a default attack of 50 (a one-handed distance weapon in hand raises it).
+- **Ninja guard** (O367, 2026-11-02): a monster's hit that lands on a Ninja is cut by 10% at level 100, 30% at 300 and 40%
+  from 650 (`Chaos.classes.guard`). The Ninja's tree lanes have almost no vitality or physical absorb, so it lived about a
+  third of the median class's time in a pack of its hunt. PvE only. server/README.md "Hunt survival by class (O367)".
 - **Outfits** (look types 1505-1510, from a third donor sprite set, see `server/data/monster/CUSTOM_MONSTERS.md`): Ninja gets
   Shadow Ninja, Crimson Ninja and Masked Ninja (colourable); Samurai gets Oni Samurai, Ronin and Dark Samurai. Ascending gives the
   class's three (since phase 2b the class's stock look is put on instead, see "Class looks"); characters already in the class get them at their next login (look unchanged). They stay

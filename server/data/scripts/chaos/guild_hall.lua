@@ -117,10 +117,30 @@ local function groundIdOf(tile)
 	return g and g:getId() or nil
 end
 
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua") -- wall pieces (wallPlacer, wallIds)
+end
 local OUR_GROUNDS, OUR_WALLS = {}, {}
 for _, d in pairs(H.decor) do
 	OUR_GROUNDS[d.ground] = true
-	OUR_WALLS[d.wall] = true
+	ChaosArenaLook.wallIds(d.wall, OUR_WALLS) -- a wall set ("darkstone", "marble", ...) gives every piece
+end
+ChaosArenaLook.wallIds(H.ids.wall, OUR_WALLS)
+-- the single wall ids the tiers used before the wall sets (5648 was a cave rock piece): a hall that still has them
+-- changes look to the pieces
+for _, id in ipairs({5648, 1111, 1049, 1025}) do
+	OUR_WALLS[id] = true
+end
+
+-- the piece of every wall tile of a slot for the wall value `wall` (a set name: from the neighbours; an id: that id)
+local function wallPlacerOf(foot, wall)
+	local list = {}
+	for _, t in ipairs(foot) do
+		if t.wall then
+			list[#list + 1] = t
+		end
+	end
+	return ChaosArenaLook.wallPlacer(wall, list)
 end
 -- decoration tiers with a `dark` pair use the dark tile set when it is installed (guild_config.lua); the stock ids
 -- stay in OUR_GROUNDS / OUR_WALLS, so halls built before still change look
@@ -156,6 +176,7 @@ function G.buildSlot(slot)
 			end
 		end
 	end
+	local wallAt = wallPlacerOf(foot, H.ids.wall)
 	for _, t in ipairs(foot) do
 		local pos = P(t)
 		local tile = Tile(pos) or Game.createTile(pos, true)
@@ -171,7 +192,7 @@ function G.buildSlot(slot)
 					end
 				end
 				if not hasWall then
-					Game.createItem(H.ids.wall, 1, pos)
+					Game.createItem(wallAt(t.x, t.y), 1, pos)
 				end
 			end
 		end
@@ -251,7 +272,9 @@ end
 
 local function setDecor(slot, tier)
 	local d = H.decor[tier] or H.decor[0]
-	for _, t in ipairs(C.footprint(slot, cfg)) do
+	local foot = C.footprint(slot, cfg)
+	local wallAt = wallPlacerOf(foot, d.wall)
+	for _, t in ipairs(foot) do
 		local tile = Tile(P(t))
 		if tile then
 			local g = tile:getGround()
@@ -259,10 +282,11 @@ local function setDecor(slot, tier)
 				g:transform(d.ground)
 			end
 			if t.wall then
+				local want = wallAt(t.x, t.y)
 				for id in pairs(OUR_WALLS) do
 					local w = tile:getItemById(id)
-					if w and id ~= d.wall then
-						w:transform(d.wall)
+					if w and id ~= want then
+						w:transform(want)
 					end
 				end
 			end
@@ -285,8 +309,14 @@ function G.furnish(gid)
 	local A = H.aid
 	setDecor(h.slot, active.decor or 0)
 	fixture(L.exit, H.ids.portal, A.exit, "The way back to your temple.")
+	-- every tier's wall is a 2x2 sprite: a corner basin with the wall to its south or east stands one tile in (the exit
+	-- forcefield stays where it is, two steps from the arrival)
+	local box = L.box
+	local function onWall(x, y)
+		return x == box.x1 or x == box.x2 or y == box.y1 or y == box.y2
+	end
 	for _, p in ipairs(L.basins) do
-		fixture(p, H.ids.basin)
+		fixture(ChaosArenaLook.clearOfWall(p, onWall, 2), H.ids.basin)
 	end
 	for _, p in ipairs(L.flags) do
 		fixture(p, H.ids.flag, nil, "The banner of " .. G.nameOf(gid) .. ".")

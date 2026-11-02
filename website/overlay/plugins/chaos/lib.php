@@ -926,10 +926,11 @@ function chaos_pn_item(string $bullet, int $level): array {
 	return array('lead' => '', 'text' => chaos_pn_clean($bullet), 'level' => $level);
 }
 
-/** One notes file -> {id, title, date, intro: [lines], sections: [{name, kind, items: [{text, lead, level}]}]}. */
+/** One notes file -> {id, title, date, kind (notes | news: a "Kind: news" line before the first section), intro: [lines],
+ * sections: [{name, kind, items: [{text, lead, level}]}]}. */
 function chaos_pn_parse(string $text, string $id): array {
 	$lim = chaos_pn_limits();
-	$note = array('id' => $id, 'title' => null, 'date' => null, 'intro' => array(), 'sections' => array());
+	$note = array('id' => $id, 'title' => null, 'date' => null, 'kind' => 'notes', 'intro' => array(), 'sections' => array());
 	$sec = null;     // index into sections
 	$item = null;    // reference path: array('intro', i) or array('sec', s, i)
 	$inComment = false;
@@ -976,6 +977,8 @@ function chaos_pn_parse(string $text, string $id): array {
 			if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
 				$note['date'] = $d;
 			}
+		} elseif ($sec === null && preg_match('/^kind\s*:\s*news\s*$/i', $body)) {
+			$note['kind'] = 'news';   // an announcement: the launcher shows it under News, not in the Changelog
 		} elseif (preg_match('/^[-*+]\s+(.*)$/', $body, $bm)) {
 			if ($sec !== null) {
 				if (count($note['sections'][$sec]['items']) < $lim['items']) {

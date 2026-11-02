@@ -64,7 +64,7 @@ return {
 		groundId = 407, -- black marble floor (arena)
 		pointGroundId = 406, -- white marble floor (the capture area around the obelisk)
 		baseGroundId = 413, -- stone floor (bases)
-		wallId = 5648, -- stone wall
+		wallId = "darkstone", -- dark stone bricks, a piece per wall tile (arenalook_core.lua A.WALL_SETS; was 5648, a cave rock piece)
 		obeliskId = 1560, -- obelisk (the "Chaos Obelisk")
 		pillarId = 1515, -- marble pillar (cover)
 		basinId = 1481, -- coal basin (light)

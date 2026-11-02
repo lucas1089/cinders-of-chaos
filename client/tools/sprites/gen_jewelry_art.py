@@ -11,7 +11,8 @@ of docs/CREDITS.md (internal label `set35 icons`, the 32 x 32 full sheet: 16 x 1
 md5 in SOURCE). That sheet is its 16 px art doubled pixel for pixel (checked: every 2 x 2 block is one colour), so each
 pick takes the 16 px cell (every other pixel) and doubles it with Scale2x (pack30lib.scale2x, as the importer does for
 16 px art): no colour is changed, nothing is traced or redrawn. Imported art stays as it is (docs/SPRITE_STYLE.md),
-so `style_check.py` is not run on it.
+so `style_check.py` is not run on it. Nine looks (PIXELLAB, owner 2026-11-02) are PixelLab pictures committed as
+art_import/jewelry_pixellab/<server id>.png instead; `--check` compares their atlas cells even without --src.
 
 `build --src SHEET` cuts the picks of PICKS and writes the atlas and the things file. `build --check` (CI) compares the
 things file with PICKS and chaos_jewelry.lua (server id, client id, name, order) and the atlas's size; with --src it
@@ -41,12 +42,12 @@ SOURCE = {'drive_id': '1ngMAdCvwGdehhd5RrR1BloVNY6ZhoeZt', 'md5': 'bd6c96e2e9253
 
 # server id, things name, sheet row, sheet column, stock client id (flags copied from it)
 PICKS = (
-    (2168, 'life ring', 115, 2, 3052),             # plain silver band
+    (2168, 'life ring', None, None, 3052),         # PIXELLAB: silver band, green heart
     (2166, 'power ring', 115, 4, 3050),            # gold band, ruby
-    (2207, 'sword ring', 128, 12, 3091),           # iron band
-    (2208, 'axe ring', 128, 14, 3092),             # iron band, open
-    (2209, 'club ring', 128, 15, 3093),            # two iron bands
-    (2214, 'ring of healing', 128, 13, 3098),      # iron band, green stone
+    (2207, 'sword ring', None, None, 3091),        # PIXELLAB: steel band, sword crest
+    (2208, 'axe ring', None, None, 3092),          # PIXELLAB: bronze band, axe crest
+    (2209, 'club ring', None, None, 3093),         # PIXELLAB: dark iron band, garnet
+    (2214, 'ring of healing', None, None, 3098),   # PIXELLAB: white gold band, pink gem
     (6300, 'death ring', 115, 5, 6299),            # violet band, green gem
     (18408, 'prismatic ring', 136, 10, 16114),     # gold band, blue gem
     (28691, 'ring of temptation', 136, 9, 26035),  # gold signet, red stone
@@ -58,10 +59,10 @@ PICKS = (
     (2201, 'dragon necklace', 115, 8, 3085),       # copper chain, red drop
     (2198, 'elven amulet', 136, 7, 3082),          # gold chain, blue drop
     (2199, 'garlic necklace', 129, 2, 3083),       # bead string
-    (7887, 'terra amulet', 113, 3, 814),           # green gem pendant
-    (7888, 'glacier amulet', 113, 2, 815),         # ice gem pendant
-    (7889, 'lightning pendant', 113, 1, 816),      # blue eye medallion
-    (7890, 'magma amulet', 113, 4, 817),           # red gem pendant
+    (7887, 'terra amulet', None, None, 814),       # PIXELLAB: bronze chain, emerald in leaves
+    (7888, 'glacier amulet', None, None, 815),     # PIXELLAB: silver chain, ice crystal
+    (7889, 'lightning pendant', None, None, 816),  # PIXELLAB: gold chain, lightning bolt
+    (7890, 'magma amulet', None, None, 817),       # PIXELLAB: dark chain, magma drop
     (24851, 'onyx pendant', 136, 6, 22195),        # gold loop, dark beads
     (15403, 'necklace of the deep', 136, 0, 13990),  # blue chain, gold drop
     (18402, 'gill necklace', 136, 2, 16108),       # blue chain, gold clasp
@@ -71,6 +72,13 @@ PICKS = (
     (27251, 'rainbow necklace', 136, 1, 24595),    # blue chain, gold claws and gem
     (27215, 'cobra amulet', 136, 5, 24559),        # gold chain, blue gem
 )
+# Owner 2026-11-02 ("a arte do necklace nao tem nada a ver com um necklace"; "substitua esses"; "se baseie mais nos outros
+# itens que ficaram"; "aprovo as joias"): the sheet's loose gems, round eye, chain links and bare bands read as no necklace
+# or ring. These nine looks are PixelLab pictures (create_image_pro 32 x 32, our own prompts, the themed gear set rings and
+# amulets as the style image), committed as art_import/jewelry_pixellab/<server id>.png and used as they are (only the
+# colour under fully transparent pixels is cleared). Job id and the recut candidate: art_import/jewelry_sources.csv.
+PIXELLAB_DIR = os.path.join(ART, 'jewelry_pixellab')
+PIXELLAB = (2168, 2207, 2208, 2209, 2214, 7887, 7888, 7889, 7890)
 HEADER = ['key', 'cat', 'kind', 'name', 'atlas', 'x', 'y', 'w', 'h', 'patterns', 'phases', 'flags', 'mode',
           'server_id', 'extra']
 
@@ -97,12 +105,27 @@ def things_text():
     return out.getvalue()
 
 
+def pixellab_tile(sid):
+    """the committed 32 px PixelLab look of a PIXELLAB pick"""
+    a = np.array(Image.open(os.path.join(PIXELLAB_DIR, '%d.png' % sid)).convert('RGBA'))
+    if a.shape != (32, 32, 4):
+        raise ArtError('jewelry_pixellab/%d.png is %s, not 32 x 32' % (sid, a.shape[:2]))
+    if set(np.unique(a[..., 3])) - {0, 255}:
+        raise ArtError('jewelry_pixellab/%d.png has soft alpha' % sid)
+    a = a.copy()
+    a[a[..., 3] == 0] = 0
+    return a
+
+
 def cut(sheet):
-    """the atlas (32 x 29*32 RGBA) from the full 32 px sheet"""
+    """the atlas (32 x 29*32 RGBA) from the full 32 px sheet and the PixelLab looks"""
     if sheet.shape[1] != SOURCE['size'][0] or sheet.shape[0] != SOURCE['size'][1]:
         raise ArtError('sheet %dx%d, expected %dx%d' % ((sheet.shape[1], sheet.shape[0]) + SOURCE['size']))
     tiles = []
     for sid, _n, r, c, _s in PICKS:
+        if sid in PIXELLAB:
+            tiles.append(pixellab_tile(sid))
+            continue
         cell = sheet[r * CELL:(r + 1) * CELL, c * CELL:(c + 1) * CELL]
         half = cell[0::2, 0::2]
         if not (half.repeat(2, 0).repeat(2, 1) == cell).all():
@@ -129,7 +152,9 @@ def check_spec():
     want = list(range(FIRST_CLIENT_ID, FIRST_CLIENT_ID + len(PICKS)))
     if [l for _s, l, _k in lib] != want:
         out.append('chaos_jewelry.lua looks are not %d..%d in order' % (want[0], want[-1]))
-    cells = [(p[2], p[3]) for p in PICKS]
+    cells = [(p[2], p[3]) for p in PICKS if p[0] not in PIXELLAB]
+    if any((p[2] is None) != (p[0] in PIXELLAB) for p in PICKS):
+        out.append('a pick has no sheet cell but is no PIXELLAB look, or the other way round')
     if len(set(cells)) != len(cells):
         out.append('two picks share a cell')
     return out
@@ -202,6 +227,15 @@ def main():
             elif atlas is not None and not np.array_equal(have, atlas):
                 print('stale:', os.path.relpath(ATLAS, HERE))
                 ok = False
+            else:
+                try:
+                    for k, p in enumerate(PICKS):
+                        if p[0] in PIXELLAB and not np.array_equal(have[:, k * 32:(k + 1) * 32], pixellab_tile(p[0])):
+                            print('stale: %s cell %d (jewelry_pixellab/%d.png)' % (os.path.relpath(ATLAS, HERE), k, p[0]))
+                            ok = False
+                except ArtError as e:
+                    print('error:', e)
+                    ok = False
         print('jewelry looks up to date' if ok else 'run: python3 -I gen_jewelry_art.py build --src SHEET')
         return 0 if ok else 1
     if atlas is None:

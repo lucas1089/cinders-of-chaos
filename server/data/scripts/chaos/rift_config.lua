@@ -457,7 +457,7 @@ return {
 	-- and ready (more are built only when the keys ask for them)
 	build = {sliceMs = 10, everyMs = 40, poolReady = 6, startDelayMs = 10000},
 	-- the Ember Descent (descent.lua) still builds its halls with these: wall, light, dark set and theme floors
-	wallId = 5648, -- stone wall
+	wallId = "darkstone", -- dark stone bricks, a piece per wall tile (arenalook_core.lua A.WALL_SETS; was 5648, a cave rock piece)
 	basinId = 1481, -- coal basin (light)
 	-- dark tile set (server/README.md "Dark tile set"): the Descent's walls and lights use these when installed, its
 	-- floors the theme's darkStyle (data/lib/chaos_dark_paint.lua); the rifts take the dark palettes of their

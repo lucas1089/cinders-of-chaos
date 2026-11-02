@@ -36,6 +36,9 @@
 --   C.iconCount(icon, stackable)          the count an item picture is drawn with (a pile for a stackable item)
 --   C.FRAMES / C.frameIndex(frame) / C.frameStorage(S, i)   name plate frames: the order is the ownership storage slot
 --                                         (shop.lua kind "frame", exclusives.lua kind "frame")
+--   C.cosmeticOffers(cats, parent)        every cosmetic the store sells, for the staff grant /storecosmetics: the
+--                                         offers of the subcategories of `parent` (Cosmetics) and the cosmetic parts of
+--                                         every bundle, once each (no bundle, item, service, premium or founder piece)
 -- Lua 5.1 / LuaJIT / Lua 5.3 compatible.
 
 ChaosShopCore = ChaosShopCore or {}
@@ -887,6 +890,37 @@ function C.validate(cfg, ex)
 		end
 	end
 	return problems
+end
+
+-- the kinds a bundle part can be and still be a cosmetic (an unlock only when its category is a cosmetic one)
+local COSMETIC_KINDS = {outfit = true, addons = true, mount = true, wings = true, aura = true, shader = true, frame = true}
+local GRANTED_KINDS = {outfit = true, addons = true, mount = true, wings = true, aura = true, shader = true, frame = true,
+	unlock = true}
+
+function C.cosmeticOffers(cats, parent)
+	local out, seen = {}, {}
+	local function add(o)
+		local key = o.key or C.offerKey(o)
+		if not seen[key] then
+			seen[key] = true
+			out[#out + 1] = o
+		end
+	end
+	for _, cat in ipairs(cats or {}) do
+		local cosmetic = cat.parent == parent
+		for _, o in ipairs(cat.offers or {}) do
+			if o.kind == "bundle" then
+				for _, p in ipairs(o.resolved or {}) do
+					if COSMETIC_KINDS[p.kind] then
+						add(p)
+					end
+				end
+			elseif cosmetic and GRANTED_KINDS[o.kind] then
+				add(o)
+			end
+		end
+	end
+	return out
 end
 
 return C

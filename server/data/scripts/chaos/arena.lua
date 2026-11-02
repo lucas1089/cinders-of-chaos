@@ -407,6 +407,20 @@ function S.buildSlot(slot)
 			return false, string.format("tile %d,%d,%d already exists in the map", t.x, t.y, t.z)
 		end
 	end
+	-- the walls: a piece per tile ("darkstone", from its neighbours); a fixture with such a 2x2 wall to its south or east
+	-- stands one tile in, or the wall draws over it
+	local walls, onWall = {}, {}
+	for _, t in ipairs(foot) do
+		if t.wall then
+			walls[#walls + 1] = t
+			onWall[t.x .. "," .. t.y] = true
+		end
+	end
+	local wallAt = ChaosArenaLook.wallPlacer(cfg.wallId, walls)
+	local wallSize = ChaosArenaLook.wallSizeOf(cfg.wallId)
+	local function spot(p)
+		return ChaosArenaLook.clearOfWall(p, function(x, y) return onWall[x .. "," .. y] == true end, wallSize)
+	end
 	for _, t in ipairs(foot) do
 		local pos = P(t)
 		local tile = Game.createTile(pos, true)
@@ -414,8 +428,9 @@ function S.buildSlot(slot)
 			if (t.wall or t.gallery) and not tile:getGround() then -- the fighting floor gets its ground from the look (below)
 				Game.createItem(t.gallery and cfg.galleryGroundId or cfg.groundId, 1, pos)
 			end
-			if t.wall and not tile:getItemById(cfg.wallId) then
-				Game.createItem(cfg.wallId, 1, pos)
+			local wallId = t.wall and wallAt(t.x, t.y)
+			if wallId and not tile:getItemById(wallId) then
+				Game.createItem(wallId, 1, pos)
 			end
 		end
 	end
@@ -434,16 +449,18 @@ function S.buildSlot(slot)
 		keep[#keep + 1] = {x = p.x, y = p.y, r = 0}
 	end
 	for _, p in ipairs(L.basins) do
-		keep[#keep + 1] = {x = p.x, y = p.y, r = 0}
+		local s = spot(p)
+		keep[#keep + 1] = {x = s.x, y = s.y, r = 0}
 	end
 	ChaosArenaLook.dress("pvparena" .. slot, {x1 = ar.x1 + 1, y1 = ar.y1 + 1, x2 = ar.x2 - 1, y2 = ar.y2 - 1}, L.z,
 		themes[slot % #themes + 1], {keep = keep, roads = {{from = L.spawns[1][1], to = L.spawns[2][1]}}, seed = lk.seed or 1,
-		cover = lk.cover, lights = lk.lights, keepGap = lk.keepGap, mirror = true, groundIds = {[cfg.groundId] = true}, fallbackGround = cfg.groundId})
+		cover = lk.cover, lights = lk.lights, keepGap = lk.keepGap, mirror = true, wallSize = wallSize,
+		groundIds = {[cfg.groundId] = true}, fallbackGround = cfg.groundId})
 	for _, p in ipairs(L.pillars) do
 		placeItem(P(p), cfg.pillarId)
 	end
 	for _, p in ipairs(L.basins) do
-		placeItem(P(p), cfg.basinId)
+		placeItem(P(spot(p)), cfg.basinId)
 	end
 	S.built[slot] = true
 	return true
@@ -451,7 +468,7 @@ end
 
 local function cleanSlot(slot)
 	local cfg = C()
-	local keep = {[cfg.wallId] = true, [cfg.pillarId] = true, [cfg.basinId] = true}
+	local keep = ChaosArenaLook.wallIds(cfg.wallId, {[cfg.pillarId] = true, [cfg.basinId] = true})
 	for _, t in ipairs(A.footprint(A.layout(cfg, slot))) do
 		if not t.wall then
 			local tile = Tile(P(t))

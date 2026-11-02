@@ -1,5 +1,5 @@
-// The grips beside the bottom area (action bars + console). Width: the right edge. Move: the left edge.
-// The height keeps the base splitter above the action bars (bottomSplitter).
+// The grips beside the bottom area (action bars + console). Width: the right edge. Move: the left edge and the
+// handle (the chat's title) above its top-left corner. The height keeps the base splitter above the action bars.
 ChaosChatGrip < UIWidget
   width: 6
   focusable: false
@@ -15,4 +15,21 @@ ChaosChatWidthGrip < ChaosChatGrip
   !tooltip: tr('Drag to change the width of the chat. Double-click: default width.')
 
 ChaosChatMoveGrip < ChaosChatGrip
-  !tooltip: tr('Drag to move the chat sideways. Double-click: back to the centre.')
+  !tooltip: tr('Drag to move the chat anywhere. Double-click: back to the bottom centre.')
+
+ChaosChatMoveHandle < UIWidget
+  size: 64 14
+  focusable: false
+  !text: tr('Chat')
+  font: verdana-11px-rounded
+  color: #e8c89a
+  text-align: center
+  background-color: #2a1a12dd
+  border-width: 1
+  border-color: #8a5a3aaa
+  !tooltip: tr('Drag to move the chat anywhere. Double-click: back to the bottom centre.')
+  $hover:
+    background-color: #5a3a29ee
+    color: #ffe0b0
+  $pressed:
+    background-color: #c8782eee

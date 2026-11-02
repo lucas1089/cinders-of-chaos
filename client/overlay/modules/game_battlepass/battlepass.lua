@@ -149,7 +149,15 @@ local function paintRow(row, tier)
   row.tier:setColor(reached and '#f6cf72' or '#8c8070')
 end
 
+-- the tier rows (two cells per tier) are built when the window is shown: the login's state and tiers messages only
+-- keep the data (building them while hidden took seconds on a slow phone, in the event that had to answer the server)
+local rowsStale = false
 local function buildRows()
+  if not (window and window:isVisible()) then
+    rowsStale = true
+    return
+  end
+  rowsStale = false
   local tp = window.rewardsPage
   if not tiers or not state or not state.season or tiers.season ~= state.season.id then return end
   if builtSeason ~= tiers.season then
@@ -365,6 +373,10 @@ function show()
   window:show()
   window:raise()
   window:focus()
+  if rowsStale then
+    buildRows()
+    scheduleEvent(scrollToCurrent, 50)
+  end
   if not tickEvent then tick() end
 end
 

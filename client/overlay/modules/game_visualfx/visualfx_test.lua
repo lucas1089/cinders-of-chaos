@@ -537,6 +537,19 @@ do
   local src = f and f:read('*a') or ''
   if f then f:close() end
   eq(src:find('L.mobileDefaultPlan', 1, true) ~= nil, true, 'the glue asks the plan')
+  eq(src:find('L.MOBILE_ROUNDS', 1, true) ~= nil, true, 'the glue runs every round')
+  -- later rounds: own flag each, the first round is the old list under the old flag
+  eq(L.MOBILE_ROUNDS[1].flag, L.MOBILE_FLAG, 'round 1 keeps the old flag')
+  eq(L.MOBILE_ROUNDS[1].off, L.MOBILE_OFF, 'round 1 is the old list')
+  local flags = {}
+  for _, r in ipairs(L.MOBILE_ROUNDS) do
+    eq(flags[r.flag], nil, 'round flag ' .. r.flag .. ' is its own')
+    flags[r.flag] = true
+  end
+  local r2 = L.mobileDefaultPlan(true, false, L.MOBILE_ROUNDS[2].off)
+  eq(r2[1], 'hdmodeBox', 'round 2 turns off HD Sprite Upscaling')
+  eq(#L.mobileDefaultPlan(false, false, L.MOBILE_ROUNDS[2].off), 0, 'round 2 not on a desktop')
+  eq(#L.mobileDefaultPlan(true, true, L.MOBILE_ROUNDS[2].off), 0, 'round 2 once')
 end
 
 if fails > 0 then

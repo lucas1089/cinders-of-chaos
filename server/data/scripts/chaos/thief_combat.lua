@@ -12,6 +12,8 @@
 --     followed by an off-hand strike for ~50% of it. Holding the second sword in the shield hand needs the engine
 --     change server/src-patches/0002-dual-wield-and-vocation-attack-speed.patch, which reads the storage
 --     classes.lua keeps at 1 for Thieves and Ninjas (Chaos.classes.storage.dualWield).
+--   * Ninja guard (O367, Chaos.classes.guard): a monster's hit that lands on a Ninja is cut by a share that grows with the
+--     level (the Ninja's tree lanes hold almost no vitality or physical absorb; tools/survival_model.py).
 --   * Samurai Counter Stance (spell): the next melee hit within 2 s is parried and answered.
 --   * Samurai Bushido Focus (spell): crit chance stacks every second without taking damage.
 --   * The class section of the passive tree (class_tree.lua): Twin Fangs (off-hand share), Fleet Shadow (evasion),
@@ -291,6 +293,14 @@ local function onDefence(player, attacker, primaryDamage, primaryType, secondary
 			C.livingOpen(player:getId(), now)
 		end
 		return 0, 0
+	end
+
+	-- Ninja guard (O367): a monster's hit that lands is x (1 - the reduction of the level); a player's summon is no monster
+	local master = attacker:isMonster() and attacker:getMaster() or nil
+	local guard = C.guardFactor(voc, player:getLevel(), attacker:isMonster() and not (master and master:isPlayer()))
+	if guard ~= 1 then
+		primaryDamage, secondaryDamage = scale(primaryDamage, guard), scale(secondaryDamage, guard)
+		amount = math.abs(primaryDamage) + math.abs(secondaryDamage)
 	end
 
 	-- the hit lands: it ends the stealth and resets the Bushido stacks

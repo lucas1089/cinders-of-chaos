@@ -45,7 +45,7 @@ return {
 	hall = {half = 5}, -- the entry hall: 11 x 11
 	corridor = {length = 10, half = 2}, -- 10 long, 5 wide
 	room = {half = 11}, -- a boss room: 23 x 23
-	wallId = 5648, -- stone wall (the dark tile set's obsidian wall when installed)
+	wallId = "darkstone", -- dark stone bricks, a piece per wall tile (A.WALL_SETS; was 5648, a cave rock piece); the dark tile set's obsidian wall when installed
 	doorId = 1546, -- the doors of the corridors: iron bars (blocking), put back when a door closes
 	basinId = 1481, -- coal basins in the corners
 	groundId = 407, -- black marble floor (stock); the dark tile set paints the rooms when installed

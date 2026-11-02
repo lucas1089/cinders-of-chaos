@@ -409,11 +409,13 @@ local function buildSlot(slot)
 		end
 	end
 	local wall, basin = fixtures()
+	local wallAt = ChaosArenaLook.wallPlacer(wall, L.wallList) -- a piece per tile ("darkstone") or the dark wall
 	for _, f in ipairs(L.wallList) do
-		placeItem(P(f), wall)
+		placeItem(P(f), wallAt(f.x, f.y))
 	end
+	-- the corner basins under the south and east walls stand one tile in (a 2x2 wall draws over that row / column)
 	for _, f in ipairs(L.basins) do
-		placeItem(P(f), basin)
+		placeItem(P(ChaosArenaLook.fixtureSpot(f, {L.rect}, ChaosArenaLook.wallSizeOf(wall))), basin)
 	end
 	X.built[slot] = true
 	return L
@@ -422,7 +424,7 @@ end
 -- monsters and loose items (corpses, drops, fields, the room objects) on the floor; walls and lights stay
 local function cleanSlot(L)
 	local wall, basin = fixtures()
-	local keep = {[wall] = true, [basin] = true}
+	local keep = ChaosArenaLook.wallIds(wall, {[basin] = true})
 	for _, f in ipairs(L.floorList) do
 		local tile = Tile(P(f))
 		if tile then

@@ -997,6 +997,23 @@ for i = 1, 5 do
 	check(run.bossId[i] ~= nil, "boss " .. i .. " waits in its room")
 end
 check(Tile(run.L.exit):getItemById(cfg.objects.exit).aid == cfg.aid.exit, "the exit portal")
+do -- the walls: a piece per tile (darkstone, from its neighbours) or the dark set's wall, never the cave rock piece 5648
+	local pieces = ChaosArenaLook.wallIds(cfg.wallId, ChaosArenaLook.wallIds("darkstone"))
+	if cfg.dark and ChaosDarkTiles and ChaosDarkTiles.id then
+		local d = ChaosDarkTiles.id(cfg.dark.wall)
+		if d then pieces[d] = true end
+	end
+	local bad = 0
+	for _, w in ipairs(run.L.wallList) do
+		local t, ok = Tile(w), false
+		for _, it in ipairs(t and t:getItems() or {}) do
+			if pieces[it.id] then ok = true end
+			if it.id == 5648 then ok = false; break end
+		end
+		if not ok then bad = bad + 1 end
+	end
+	check(#run.L.wallList > 0 and bad == 0, "every wall tile carries its wall piece (" .. bad .. " bad)")
+end
 local fonts = 0
 for i = 1, 5 do
 	for _, f in ipairs(run.L.rooms[i].fonts) do

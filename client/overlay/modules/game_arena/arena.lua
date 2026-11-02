@@ -287,6 +287,11 @@ function init()
   window:hide()
   hudPanel = g_ui.loadUI('arenahud', modules.game_interface.getRootPanel())
   if hudPanel then hudPanel:hide() end
+  -- dragged by the mode and clock lines (the rest stays click-through), spot saved per character (game_hudmove)
+  if hudPanel and ChaosHudMove then
+    ChaosHudMove.attach(hudPanel, 'arenaHud', { panel = false, handles = { hudPanel.mode, hudPanel.clock },
+      otui = '/modules/game_arena/arenahud' })
+  end
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd })
 end
@@ -297,6 +302,7 @@ function terminate()
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
   if resultEvent then removeEvent(resultEvent) resultEvent = nil end
   if window then window:destroy() window = nil end
+  if hudPanel and ChaosHudMove then ChaosHudMove.detach(hudPanel) end
   if hudPanel then hudPanel:destroy() hudPanel = nil end
   state = nil
 end

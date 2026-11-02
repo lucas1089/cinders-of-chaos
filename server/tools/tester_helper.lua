@@ -50,7 +50,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 7
+HELPER_VERSION = 8
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -453,6 +453,11 @@ function commands.spellquest(player, arg)
 	elseif a.sub == "trial" then
 		-- near before the entry: a trial that opens takes the tester into its chamber, away from Odrenna
 		local near = S.archivistNear(player) ~= nil
+		-- the bot comes from its hunt: the fight mark of its last hit outlives the teleport (live run 2026-11-01: "You
+		-- cannot enter a trial in combat"). The rule is the game's own; the tester only waits it out at once
+		if CONDITION_INFIGHT and not player:isPzLocked() then
+			player:removeCondition(CONDITION_INFIGHT)
+		end
 		local ok, text = S.enterTrial(player)
 		local running = trialRunning(player)
 		tell(player, "spellquest", spellQuestState(player, {entered = ok and true or false, text = text, running = running,
@@ -715,6 +720,24 @@ local function hitDown(lid, id, out)
 	end
 end
 
+-- experience per test monster and player: the bots go on hunting during a kill, so the change of their experience
+-- also held other kills (live run 2026-11-01: a solo kill paid the partner 157408, the leader 6 times a solo kill).
+-- The last callback (after every Chaos bonus) adds what the watched monster gives. {[monster id] = {[player id] = exp}}
+TesterXpWatch = TesterXpWatch or {}
+if EventCallback and not TesterXpWatchCb then
+	TesterXpWatchCb = true
+	local xpCb = EventCallback
+	xpCb.onGainExperience = function(self, source, exp, rawExp)
+		local w = source and TesterXpWatch[source:getId()]
+		if w then
+			local id = self:getId()
+			w[id] = (w[id] or 0) + exp
+		end
+		return exp
+	end
+	xpCb:register(1000)
+end
+
 local function oneKill(leader, partner, done)
 	local spot = freeNear(leader:getPosition(), nil, 3)
 	local out = {leader = 0, partner = 0, dead = false}
@@ -733,6 +756,7 @@ local function oneKill(leader, partner, done)
 	end
 	local id = m:getId()
 	out.hp = m:getHealth()
+	TesterXpWatch[id] = {}
 	hitDown(lid, id, out)
 	local party = leader:getParty()
 	out.active = party and party:isSharedExperienceActive() == true
@@ -752,12 +776,20 @@ local function oneKill(leader, partner, done)
 			out.hpLeft = left:getHealth()
 			left:remove()
 		end
+		local watched = TesterXpWatch[id]
+		TesterXpWatch[id] = nil
 		local l, p = Player(lid), Player(pid)
 		if not l or not p then
 			out.err = "the leader or the partner left the game"
 			return done(out)
 		end
-		out.leader, out.partner = l:getExperience() - xl, p:getExperience() - xp
+		-- the whole change too, to tell the other kills of the bots apart in the answer
+		out.leaderAll, out.partnerAll = l:getExperience() - xl, p:getExperience() - xp
+		if TesterXpWatchCb and watched then
+			out.leader, out.partner, out.fromMonster = watched[lid] or 0, watched[pid] or 0, true
+		else
+			out.leader, out.partner = out.leaderAll, out.partnerAll
+		end
 		done(out)
 	end
 	addEvent(read, KILL_READ_MS)
@@ -830,7 +862,14 @@ local function sharedKill(player, party, done)
 			return done(kill)
 		end
 		pa:setSharedExperience(false)
+		-- the solo kill: the partner waits in its temple (a protection zone). Next to the leader its bot hit the monster
+		-- itself and earned its own damage share (live run 2026-11-01: "a solo kill paid the partner 31 experience")
+		local town = p:getTown()
+		if town then
+			p:teleportTo(town:getTemplePosition())
+		end
 		oneKill(l, p, function(solo)
+			solo.partnerAway = town ~= nil
 			kill.solo = solo
 			local l2 = Player(lid)
 			local pa2 = l2 and l2:getParty()

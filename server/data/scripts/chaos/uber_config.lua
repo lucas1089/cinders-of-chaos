@@ -71,7 +71,7 @@ return {
 	grid = {origin = {x = 7600, y = 7600, z = 7}, cols = 2, slots = 4, spacing = 48},
 	arena = {half = 9, anteGap = 2, anteHalfW = 3, anteHalfH = 1},
 	groundId = 407, -- black marble floor (stock); with the dark tile set: painted in `dark.style`
-	wallId = 5648,
+	wallId = "darkstone", -- dark stone bricks, a piece per wall tile (arenalook_core.lua A.WALL_SETS; was 5648, a cave rock piece)
 	basinId = 1481,
 	portalId = 1387, -- magic forcefield, used as a tile with the action id below
 	portalActionId = 47411,

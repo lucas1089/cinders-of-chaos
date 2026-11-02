@@ -547,6 +547,35 @@ function M.dodgeChance(vocId, extra, scale)
 	return (base + (extra or 0)) * (scale or 1)
 end
 
+-- Ninja guard (O367, Chaos.classes.guard): the reduction of a monster's hit on vocation vocId at `level` (0 for a vocation
+-- that is not listed), linear between the points, flat outside
+function M.guardReduction(vocId, level)
+	local g = cfg().guard
+	if not g or not g.vocations or not g.vocations[vocId] or not g.points or #g.points == 0 then
+		return 0
+	end
+	local pts, lv = g.points, tonumber(level) or 0
+	if lv <= pts[1][1] then
+		return pts[1][2]
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if lv <= b[1] then
+			return a[2] + (b[2] - a[2]) * (lv - a[1]) / (b[1] - a[1])
+		end
+	end
+	return pts[#pts][2]
+end
+
+-- the factor of a hit that landed: 1 - guardReduction for a monster's hit (fromMonster: the attacker is a monster that is
+-- not a player's summon), 1 for anything else
+function M.guardFactor(vocId, level, fromMonster)
+	if not fromMonster then
+		return 1
+	end
+	return 1 - M.guardReduction(vocId, level)
+end
+
 -- `roll` in [0, 1) (math.random()); only weapon-style attacks (melee or ranged origin) can be dodged.
 -- extra: evasion from the passive tree (Fleet Shadow); scale: Blackblood Creed halves it
 function M.dodges(vocId, isWeaponAttack, roll, extra, scale)

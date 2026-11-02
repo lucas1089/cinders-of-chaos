@@ -4,7 +4,7 @@ ChaosChatLogic = {}
 local L = ChaosChatLogic
 
 -- the bottom area (action bars + console): width in pixels. It is centred in the game window with the orbs beside it
--- by default; the player can move it sideways (L.layout below)
+-- by default; the player can move it anywhere in the game area (L.layout, L.clampLift below)
 L.DEFAULT_WIDTH = 760 -- about 20 action bar slots of 36 px
 L.MIN_WIDTH = 420
 -- extra height over the splitter's minimum for a new player: about five chat lines
@@ -51,32 +51,37 @@ function L.clampHeight(height, minimum, windowHeight)
   return math.max(minimum, math.min(maximum, height))
 end
 
--- the saved size and place of one character, or the defaults for a new one. offset: pixels from the centred place
--- (nil: centred, the default)
+-- the saved size and place of one character, or the defaults for a new one.
+--   x       pixels from the game window's left edge to the chat's left edge (nil: centred, the default)
+--   lift    pixels between the window's bottom edge and the group's bottom (0: on the bottom edge)
+--   offset  the old place (pixels from the centred place, before x); layout turns it into x once
 function L.sizeFor(saved, name)
   local entry = type(saved) == 'table' and name and saved[name] or nil
-  if type(entry) ~= 'table' then return { width = L.DEFAULT_WIDTH } end
-  local offset = tonumber(entry.offset)
+  if type(entry) ~= 'table' then return { width = L.DEFAULT_WIDTH, lift = 0 } end
+  local x, offset = tonumber(entry.x), tonumber(entry.offset)
   return { width = tonumber(entry.width) or L.DEFAULT_WIDTH, height = tonumber(entry.height),
-           offset = offset and math.floor(offset) or nil }
+           x = x and math.floor(x) or nil, offset = (not x and offset) and math.floor(offset) or nil,
+           lift = math.max(0, math.floor(tonumber(entry.lift) or 0)) }
 end
 
 -- ------------------------------------------------------------------ the group: life orb, chat panel, mana orb
 -- Left to right: life orb | ORB_GAP | move grip | MOVE_GRIP_GAP | chat (action bars + console) | WIDTH_GRIP_GAP |
 -- width grip | ORB_GAP | mana orb. The orbs are anchored to the chat's edges (game_shaderfx reads orbMargins), so
--- they follow it; nothing of the group overlaps.
+-- they follow it; nothing of the group overlaps. Above the chat's top-left corner: the move handle (its title).
 L.GRIP = 6            -- width of both grips
 L.MOVE_GRIP_GAP = 2   -- move grip <-> chat's left edge
 L.WIDTH_GRIP_GAP = 13 -- chat's right edge <-> width grip (past the action bar's lock column)
 L.ORB_GAP = 4         -- grip <-> orb
-L.ORB_BOTTOM = 4      -- orbs over the window's bottom edge (the chat reaches it)
-L.SNAP = 8            -- a drag that ends this close to the centre snaps back to "centred"
+L.ORB_BOTTOM = 4      -- orbs over the group's bottom edge (the chat reaches it)
+L.SNAP = 8            -- a move that ends this close to the centre (or the bottom edge) snaps back there
+L.SPLITTER = 6        -- the height splitter above the action bars (bottomSplitter)
+L.HANDLE_HEIGHT = 14  -- the move handle above the splitter
 
 -- margins of the orbs from the chat panel (bottomSplitter) edges: life orb's right margin from its left edge, mana
--- orb's left margin from its right edge, and the bottom margin of both
-function L.orbMargins()
+-- orb's left margin from its right edge, and the bottom margin of both (lift: the group's distance from the bottom)
+function L.orbMargins(lift)
   return { left = L.MOVE_GRIP_GAP + L.GRIP + L.ORB_GAP, right = L.WIDTH_GRIP_GAP + L.GRIP + L.ORB_GAP,
-           bottom = L.ORB_BOTTOM }
+           bottom = L.ORB_BOTTOM + math.max(0, math.floor(tonumber(lift) or 0)) }
 end
 
 local function extras(orbSize)
@@ -85,14 +90,18 @@ local function extras(orbSize)
   return m.left + o, m.right + o
 end
 
--- Place the group. p:
---   regionLeft, regionRight  x range the bottom area may use (between the side panels)
---   windowLeft, windowWidth  the game window (the group centres on it)
+-- Place the group sideways. p:
+--   regionLeft, regionRight  x range the group may use (the game area between the side panels)
+--   windowLeft, windowWidth  the game window (the default place centres on it)
 --   width                    the wanted chat width
---   offset                   pixels from the centred place, nil = centred
+--   x                        the chat's left edge from windowLeft; nil = centred
+--   offset                   the old saved place (pixels from the centred place), used when x is nil
 --   orbSize                  size of the orbs, 0 / nil without orbs
--- Returns { chatLeft, chatWidth, offset (clamped; nil when centred), orbs (true when the orbs fit beside the chat) }.
--- The group stays inside the region; orbs that leave less than MIN_WIDTH for the chat are left out (hidden).
+--   keepLeft                 the width grip is dragged: the chat's left edge stays where it is and only the width
+--                            changes (a wider chat than the room to the right is cut, never pushed left)
+-- Returns { chatLeft, chatWidth, x (clamped; nil when centred), centredLeft (the chat's left edge when centred),
+-- orbs (true when the orbs fit beside the chat) }. The group stays inside the region; orbs that leave less than
+-- MIN_WIDTH for the chat are left out (hidden).
 function L.layout(p)
   local left = math.floor(tonumber(p.regionLeft) or 0)
   local right = math.max(left, math.floor(tonumber(p.regionRight) or left))
@@ -104,19 +113,45 @@ function L.layout(p)
     orbs = false
     exL, exR = extras(0)
   end
-  local chatWidth = L.clampWidth(p.width, math.max(0, room - exL - exR))
-  local group = exL + chatWidth + exR
+  local maxWidth = math.max(0, room - exL - exR)
+  local chatWidth = L.clampWidth(p.width, maxWidth)
   local windowLeft = math.floor(tonumber(p.windowLeft) or left)
   local windowWidth = math.floor(tonumber(p.windowWidth) or room)
-  local centred = windowLeft + math.floor((windowWidth - group) / 2)
-  local offset = p.offset and math.floor(tonumber(p.offset) or 0) or nil
-  local groupLeft = centred + (offset or 0)
-  groupLeft = math.max(left, math.min(right - group, groupLeft))
-  if offset then
-    offset = groupLeft - centred
-    if math.abs(offset) <= L.SNAP then offset = nil end
+  local centred = windowLeft + math.floor((windowWidth - (exL + chatWidth + exR)) / 2)
+  local x = tonumber(p.x)
+  local groupLeft
+  if x then
+    groupLeft = windowLeft + math.floor(x) - exL
+  elseif tonumber(p.offset) then
+    groupLeft = centred + math.floor(tonumber(p.offset))
+    x = 0 -- placed by the player: kept as x from now on
+  else
+    groupLeft = centred
   end
-  return { chatLeft = groupLeft + exL, chatWidth = chatWidth, offset = offset, orbs = orbs }
+  if p.keepLeft then
+    groupLeft = math.max(left, groupLeft)
+    local fits = math.max(0, right - groupLeft - exL - exR)
+    chatWidth = math.max(math.min(L.MIN_WIDTH, maxWidth), L.clampWidth(p.width, fits))
+  end
+  local group = exL + chatWidth + exR
+  groupLeft = math.max(left, math.min(right - group, groupLeft))
+  local chatLeft = groupLeft + exL
+  return { chatLeft = chatLeft, chatWidth = chatWidth, x = x and (chatLeft - windowLeft) or nil,
+           centredLeft = centred + exL, orbs = orbs }
+end
+
+-- Height of the group over its bottom edge: the splitter and the chat, or an orb when that is taller.
+-- chatHeight: the splitter's bottom margin without the lift (action bars + console)
+function L.groupHeight(chatHeight, orbSize)
+  local o = math.max(0, math.floor(tonumber(orbSize) or 0))
+  local chat = math.floor(tonumber(chatHeight) or 0) + L.SPLITTER + L.HANDLE_HEIGHT
+  return math.max(chat, o > 0 and (o + L.ORB_BOTTOM) or 0)
+end
+
+-- the lift (pixels over the window's bottom edge) that keeps the whole group on the screen
+function L.clampLift(lift, groupHeight, windowHeight)
+  local maximum = math.max(0, math.floor((tonumber(windowHeight) or 0) - (tonumber(groupHeight) or 0)))
+  return math.max(0, math.min(maximum, math.floor(tonumber(lift) or 0)))
 end
 
 -- the splitter's margins for a layout. anchorLeft / anchorRight: x of the splitter's anchor lines (the left panels'
@@ -126,18 +161,28 @@ function L.splitterMargins(place, anchorLeft, anchorRight)
          math.max(0, math.floor(anchorRight) - (place.chatLeft + place.chatWidth))
 end
 
--- the chat width that puts the width grip under the mouse. The group is centred (plus offset), so a wider chat also
--- moves its left edge: chatRight = centre + offset + (exL + width - exR) / 2. orbSize: the orbs shown (0 when not)
-function L.widthForGrip(mouseX, windowLeft, windowWidth, offset, orbSize)
-  local exL, exR = extras(orbSize)
-  local centre = (tonumber(windowLeft) or 0) + (tonumber(windowWidth) or 0) / 2
+-- the chat width that puts the width grip under the mouse: the left edge stays, the right edge follows the mouse
+function L.widthForGrip(mouseX, chatLeft)
   local chatRight = (tonumber(mouseX) or 0) - L.WIDTH_GRIP_GAP - L.GRIP / 2
-  return math.floor(2 * (chatRight - centre - (tonumber(offset) or 0)) - exL + exR + 0.5)
+  return math.floor(chatRight - (tonumber(chatLeft) or 0) + 0.5)
 end
 
--- the offset while the move grip is dragged: the offset at the press plus the mouse travel (layout clamps it)
-function L.dragOffset(startOffset, startX, mouseX)
-  return (tonumber(startOffset) or 0) + math.floor((tonumber(mouseX) or 0) - (tonumber(startX) or 0))
+-- the place while the group is dragged by its handle or its left grip: the place at the press plus the mouse travel
+-- (start = { x, lift, mouseX, mouseY }); layout and clampLift keep it on the screen
+function L.dragPlace(start, mouseX, mouseY)
+  local dx = math.floor((tonumber(mouseX) or 0) - (tonumber(start.mouseX) or 0))
+  local dy = math.floor((tonumber(mouseY) or 0) - (tonumber(start.mouseY) or 0))
+  return (tonumber(start.x) or 0) + dx, math.max(0, (tonumber(start.lift) or 0) - dy)
+end
+
+-- at the end of a move: back to "centred" when the chat ends within SNAP of the centre, back on the bottom edge
+-- when the lift is within SNAP of it. Returns x (nil: centred), lift
+function L.snapPlace(place, lift)
+  local x = place.x
+  if x == nil or math.abs(place.chatLeft - place.centredLeft) <= L.SNAP then x = nil end
+  lift = math.max(0, math.floor(tonumber(lift) or 0))
+  if lift <= L.SNAP then lift = 0 end
+  return x, lift
 end
 
 return ChaosChatLogic

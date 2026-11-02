@@ -9,6 +9,7 @@
 //   chaosCmakeExtra  more CMake arguments, separated by spaces (for example a different CMAKE_PREFIX_PATH entry). Optional.
 //   chaosClientBuild the client build number: versionCode, and CHAOS_CLIENT_BUILD baked into the engine (1..65535).
 //   chaosVersionName shown version name (default: "1.<build>").
+//   chaosEmulatorEngine  "true": the debug APK keeps an unoptimised (-O0) engine, for the CI emulator only (see buildTypes).
 // The client guard key is read by CMake from the environment variable CHAOS_CLIENT_KEY (src/client/CMakeLists.txt);
 // without it the engine gets the public development key, which only a test server accepts.
 // The release signing key: CHAOS_KS_FILE, CHAOS_KS_PASS, CHAOS_KS_ALIAS (environment). Without them the release build is
@@ -29,6 +30,7 @@ if (!(build ==~ /\d+/) || build.toInteger() < 1 || build.toInteger() > 65535)
 def depsPrefix = prop('chaosDepsPrefix')
 def assetsDir = prop('chaosAssetsDir')
 def cmakeExtra = (prop('chaosCmakeExtra') ?: '').trim() ? prop('chaosCmakeExtra').trim().split(/\s+/) as List : []
+def emulatorEngine = prop('chaosEmulatorEngine') == 'true'
 
 android {
     namespace 'com.cindersofchaos.client'
@@ -50,6 +52,9 @@ android {
                         '-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH', '-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH',
                         '-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH',
                         "-DCMAKE_PREFIX_PATH=${depsPrefix ?: ''}"
+                // OpenAL Soft is shared (triplet): the engine's find_library looks for .a only on Android, so name the .so
+                if (depsPrefix && file("${depsPrefix}/lib/libopenal.so").exists())
+                    arguments "-DOPENAL_LIBRARY=${depsPrefix}/lib/libopenal.so"
                 cmakeExtra.each { arguments it }
             }
         }
@@ -74,13 +79,18 @@ android {
 
     buildTypes {
         // the engine never keeps its VALIDATE checks: they end the game on a deep Lua stack (getTop() <= 20) that the
-        // desktop release build ignores. A debug APK stays an -O0 engine with NDEBUG: an optimised engine died with SIGILL
-        // on the CI emulator (2026-10-30): the emulator's arm64 translator stopped on a NEON instruction it does not know
-        // (logcat: ndk_translation DecodeSimdScalarTwoRegMisc). A real arm64 phone runs it; the -O0 build keeps the smoke test.
+        // desktop release build ignores. A debug APK gets an optimised engine (CMake Release: -O3, NDEBUG, stripped): an
+        // -O0 engine drew under 30 fps on a phone and took minutes to start (2026-11-02). Only with chaosEmulatorEngine
+        // it stays -O0 with NDEBUG: an optimised engine died with SIGILL on the CI emulator (2026-10-30), whose arm64
+        // translator stops on a NEON instruction it does not know (logcat: ndk_translation DecodeSimdScalarTwoRegMisc).
         debug {
             externalNativeBuild {
                 cmake {
-                    cppFlags '-DNDEBUG'
+                    if (emulatorEngine) {
+                        cppFlags '-DNDEBUG'
+                    } else {
+                        arguments '-DCMAKE_BUILD_TYPE=Release'   // after the variant's own Debug: the last -D wins
+                    }
                 }
             }
         }
@@ -101,6 +111,15 @@ android {
     // data.zip is read by the engine from the assets (ResourceManager::loadDataFromSelf), so it stays stored, not deflated
     androidResources {
         noCompress += ['zip']
+    }
+
+    // OpenAL Soft is LGPL and built shared (triplets/arm64-android-chaos.cmake): pack libopenal.so next to the engine
+    // library. The Android linker finds it in the APK by its name when NativeActivity loads libcinders.so.
+    def openalSo = depsPrefix ? file("${depsPrefix}/lib/libopenal.so") : null
+    def jniExtra = new File(project.buildDir, 'chaos-jni')
+    if (openalSo?.exists()) {
+        project.copy { from openalSo; into new File(jniExtra, 'arm64-v8a') }
+        sourceSets.main.jniLibs.srcDirs += [jniExtra]
     }
 
     packagingOptions {

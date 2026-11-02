@@ -525,7 +525,11 @@ local function fitNames()
 end
 
 -- the rows, once per list (signature); a pooled row keeps its widget
+-- the rows are built when the window is shown: the login prefetch only keeps the list (a widget per spell while
+-- hidden took seconds on a slow phone, in the event that also had to answer the server)
+local listStale = false
 local function buildList()
+  listStale = false
   local listWidget = window.spellList
   local layout = listWidget:getLayout()
   if layout then layout:disableUpdates() end
@@ -673,7 +677,9 @@ local function onExtendedOpcode(protocol, opcode, buffer)
       if fresh then Core.sort(spells) end
     end
     if window then
-      if fresh or #rows ~= #spells then
+      if not window:isVisible() then
+        if fresh or #rows ~= #spells then listStale = true end
+      elseif fresh or #rows ~= #spells then
         buildList()
       else
         refreshState()
@@ -693,6 +699,7 @@ function show()
   window:raise()
   window:focus()
   window.searchEdit:focus()
+  if listStale then buildList() end
   refreshState()
   addEvent(fitNames)
   stopCooldownTick()

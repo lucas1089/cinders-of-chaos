@@ -28,7 +28,7 @@ return {
 		ground = 407, -- black marble floor: the scorched plain
 		gateGround = 413, -- stone floor: the gate yards around the safe exits
 		ring = 406, -- white marble floor: the shrine circle and the exit circles
-		wall = 5648, -- stone wall (outer wall and ruins)
+		wall = "darkstone", -- outer wall and ruins: dark stone bricks, a piece per wall tile (A.WALL_SETS; was 5648, a cave rock piece)
 		pillar = 1515, -- marble pillar (cover)
 		shrine = 1481, -- coal basin: the Cinder Shrine itself (unwalkable)
 		exitMark = 1436, -- castle flag beside an exit circle

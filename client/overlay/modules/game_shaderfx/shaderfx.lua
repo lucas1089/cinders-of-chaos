@@ -178,15 +178,18 @@ local function applyOrbSize()
 end
 
 -- anchor the orbs to the chat panel's edges (bottomSplitter): health right of its left edge's grip, mana past the
--- width grip, both on the window's bottom edge like the chat. Without the chat panel (mobile) or game_chatpanel: the
--- bottom corners of the root panel.
+-- width grip, both on the chat's bottom edge (the window's, unless the chat was moved up). Without the chat panel
+-- (mobile) or game_chatpanel: the bottom corners of the root panel.
 local function placeOrbs()
   if not orbs then return end
   local gi = modules.game_interface
   local root = gi and gi.getRootPanel and gi.getRootPanel()
   local splitter = root and root:getChildById('bottomSplitter')
   local logic = rawget(_G, 'ChaosChatLogic')
-  local m = logic and logic.orbMargins and logic.orbMargins() or nil
+  local chat = rawget(_G, 'ChaosChatPanel')
+  local lift = chat and type(chat.getLift) == 'function' and chat.getLift() or 0
+  -- the chat may be moved up (game_chatpanel): the orbs keep its bottom edge
+  local m = logic and logic.orbMargins and logic.orbMargins(lift) or nil
   local beside = splitter and splitter:isVisible() and m ~= nil
   for _, kind in ipairs({ 'health', 'mana' }) do
     local w = orbWidget(kind)

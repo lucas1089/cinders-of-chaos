@@ -7847,8 +7847,8 @@
    "actions": [
     "state",
     "skip",
-    "enter",
     "leave",
+    "enter",
     "request",
     "claim"
    ],
@@ -11038,7 +11038,8 @@
     "shop"
    ],
    "talkactions": [
-    "/coins"
+    "/coins",
+    "/storecosmetics"
    ]
   },
   "shop_payments": {

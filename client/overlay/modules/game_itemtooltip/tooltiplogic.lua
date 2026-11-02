@@ -229,7 +229,7 @@ function L.lines(tip, ctx)
   if type(tip.slot) == 'string' and tip.slot:find(': ', 1, true) then
     slotWhat, slotLine = tip.slot:match(': (.+)$'), tip.slot
   end
-  if slotWhat then sub[#sub + 1] = slotWhat end
+  if slotWhat then sub[#sub + 1] = tr(slotWhat) end -- 'Two-handed sword', 'Dagger' ... (pt-BR in client_chaos_locale)
   if #sub > 0 then add(table.concat(sub, ' '), L.titleColor(tip)) end
   if slotLine then add(slotLine, C.dim) end
   if tip.level then

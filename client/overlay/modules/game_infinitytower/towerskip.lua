@@ -69,6 +69,16 @@ function M.panel(state, elapsedMs)
   return out
 end
 
+-- The Leave button of the tower panel (server: infinitytower_run.lua ChaosTowerRun.leave, action "leave"): shown with
+-- the panel, always enabled inside a run (the server decides: out at once between floors, a short countdown while a
+-- floor is fought). A press is sent at most once per MIN_PRESS_MS.
+M.LEAVE_KEY = 'Leave'
+M.LEAVE_TIP = 'Leave the tower. Your cleared floors count. During a fight you leave after a short countdown.'
+function M.canLeave(state, nowMs, lastMs)
+  if type(state) ~= 'table' or not state.inRun then return false end
+  return lastMs == nil or ((tonumber(nowMs) or 0) - lastMs) >= M.MIN_PRESS_MS
+end
+
 -- 125 -> "2:05"
 function M.clock(secs)
   secs = math.max(0, math.floor(tonumber(secs) or 0))

@@ -65,6 +65,7 @@ access flag (gamemaster or higher).
 | `/daily`, `/leaderboard`, `/season status`, `/spells reload`, `/supports reload` | 4+ (`/daily shift\|set`, `/leaderboard shift`: **5+**) | state and test clocks (`shift`: test servers only) |
 | `/testkit` | 4+ (admin panel access) | gear kits for balance tests; **removed from the live server** (docs/LAUNCH.md section 11) |
 | `/coins <character>, <amount>`, `/charm give ...`, `/pact <player>, days\|end\|extra\|claimreset` | **5+** | economy value |
+| `/storecosmetics <character>` (online) | **5+** | every cosmetic the store sells (Cosmetics subcategories and the cosmetic parts of bundles), free; what the character owns is left alone |
 | `/goblin`, `/blessing`, `/season start\|end`, `/seasonpass`, `/journey` | **god account** | test and season tools |
 | base server `/` commands (ban, kick, teleport, create item, ...) | per the base server's groups | the admin panel covers the common ones with logging; prefer it |
 

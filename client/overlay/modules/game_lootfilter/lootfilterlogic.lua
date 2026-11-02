@@ -105,6 +105,24 @@ function L.classify(info, s)
   return shown and 'normal' or 'dim'
 end
 
+-- Does a peek row describe the item now in the slot? The rows are kept by slot index until the next peek answers
+-- (60 ms plus the round trip, or never when a request is dropped), and the slots shift when an item leaves. A match on
+-- the client id alone gave the next copy of the same item the old row (owner 2026-11-02: a plain Nightmare Blade in a
+-- Legendary one's slot wore the gold frame). With the item custom attributes (feature 126, attrsOn) the item says its
+-- own rarity (key 1) and unique flag (key 4): a row that disagrees belongs to another item. Without them, the id only.
+function L.rowFits(row, item, attrsOn)
+  if type(row) ~= 'table' or not item then return false end
+  local okId, id = pcall(function() return item:getId() end)
+  if not okId or tonumber(row.id) == nil or tonumber(row.id) ~= tonumber(id) then return false end
+  if not attrsOn or not item.getCustomAttribute then return true end
+  local function attr(key)
+    local ok, v = pcall(item.getCustomAttribute, item, key)
+    return ok and tonumber(v) or 0
+  end
+  if L.canon(row.r) ~= L.canon(attr(1)) then return false end
+  return flag(row.u) == (attr(4) > 0)
+end
+
 function L.color(info)
   if flag(info.u) then return L.UNIQUE_COLOR end
   local r = L.RARITY[tonumber(info.r) or 0]

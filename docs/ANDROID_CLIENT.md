@@ -29,6 +29,64 @@ sprites, and an APK that updates itself.
 Phase 1 added no CI workflow, because the base had no Android build to run from Linux. Phase 2 adds the build and the
 manual workflow `.github/workflows/android-client.yml`. See "Phase 2 status".
 
+## Play test on an emulator
+
+Date: 2026-11-01. Actions > Android client with `smoke_play` builds a TEST APK and plays it on an emulator. The APK has
+the public development login key and the server address 10.0.2.2 (the emulator's host). It is never published:
+`publish_release` is skipped with `smoke_play`.
+
+1. The job starts the Linux server package of the newest `winpkg-N` release on the runner, with its game address
+   10.0.2.2, and adds the gamemaster account `phonetest`.
+2. `smoke_download.sh` runs the first start: the live game data download, the unpack, the restart.
+3. `smoke_play.sh` writes the marker `phonetest_run` and restarts the app. Module `client_chaos_phonetest` logs in,
+   enters, walks, opens 20 windows, trades with an NPC, kills a monster, opens its corpse and chats.
+4. The artifact `android-play-test` holds a screenshot per step, `phonetest.txt` (one line per step and window, with
+   the window size against the screen), the logcat, the memory use and the server log. A failed step fails the job.
+
+The emulator runs the arm64 engine through a translator: slow, but the same code as a phone. Not a finger: the steps
+call the game functions a tap would call.
+
+First run, 2026-11-01 (run 41339306856): the first start, the login and the character list passed. Entering the game
+failed: the client built 450 action bar slots in the login call (17 s on the emulator), sent nothing for over 30 s and
+the server closed the connection (ERROR 32). Fixed by base patch `0178` (hidden bars one per event). The 6 `uitable.lua` errors
+(`setColumnStyle` / `setRowStyle` nil) of that log follow from the drop: the two Dungeons tables queue their styles for
+the next frame and the game end destroys the window first.
+
+The emulator's default screen was 320 x 640, smaller than any phone we target, so the character list overlapped in the
+screenshots. Two changes: `smoke_download.sh` sets a 20:9 720p phone screen (`wm size 720x1600`, density 320; env
+`PHONE_SCREEN`, `PHONE_DENSITY`), and a real screen under 960 x 540 now shrinks the interface to fit (base patch `0179`,
+`game_chaosuiscale`) instead of cutting it.
+
+Start time (owner 2026-11-01: "the APK still takes too long to open"). The same log shows the first-start check at each
+start hashing every file data.zip gives, 6912 files, before the login is free: 11 minutes on the emulator. A file of
+the APK only changes with the APK, so `client_chaos_firststart` now keeps its "this file is right" verdicts in
+`chaos_update/android_apkkeep.txt` under the package id (`ChaosFirstStartCore.parseApkKeep`, `apkVisible`; tests in
+`firststart_core_test.lua`). The first start of a new APK still hashes once; later starts only look the files up. The log
+line `firststart: N files compared, H hashed, C from the store of this APK` shows it.
+
+Login never reached, 2026-11-02 (runs 41354357031, 41373382299, 41387243370). A stall probe in `client_chaos_phonetest`
+samples the Lua stack while its own 50 ms timer is late. Every sample was in the login scene's walkers. Two causes:
+- `restack` asked the engine for a child index per thing of the scene on every tile change. Now only the neighbours
+  (commit c5a217c9).
+- The walkers ran on a 25 ms `cycleEvent`. The engine moves a cycle on from its last due time, so a step slower than
+  25 ms fell behind for good and ran before every other timer: the login timers never fired. Now each tick is
+  scheduled from now (`loginscene.lua`), and base patch `0180` restarts any cycle that fell behind from now.
+- The second run still had the old Lua: the first start downloads the live update 100, and without `update_baseline`
+  that update puts its older Lua over the APK's. A play test of new Lua needs `update_baseline` above the live
+  release number (101 while winpkg-100 is live).
+
+With those fixes the login passed (run 41399706815, character list after 4 s). Entering failed: from the login call the
+client did not read from the server for about 75 s and the server closed the connection. The stall samples: the
+proficiency JSON (about 25 s, base patch `0182` now decodes it once on the login screen), the hidden spell list window
+(about 20 s, base patch `0181` builds it when shown), then smaller shares: key bindings, action bar save, Auto setup,
+passive tree, outfit window. The emulator runs an `-O0` engine through a translator, far slower than a phone, so a
+phone sees this as a freeze of a second or two, not a drop.
+
+Next run (41408494687, with `0181` and `0182`): the client entered the game, then left it within 5 s. The longest
+silence was still about 45 s. The job went green by mistake: the step raised a Lua error, which `smoke_play.sh` did
+not count. It does now, and the step reports the case. The biggest shares left: the Auto spellbook and the season pass
+built their rows on the login's prefetch while hidden. Both now keep the data and build the rows when shown.
+
 ## Step 8 status: the APK updater
 
 Date: 2026-10-30. Build plan step 8 is written and tested as far as this machine can: the publisher, the manifest key, the
@@ -193,11 +251,16 @@ package, and for a release signature `ANDROID_CLIENT_KEYSTORE_B64`, `ANDROID_CLI
 `ANDROID_CLIENT_KEY_ALIAS`. Without the keystore secrets the APK is a debug build with the runner's debug key. The game
 client has its own release key, not the key of the admin app. The engine inside always has `NDEBUG`,
 also in a debug APK: without it the `VALIDATE` checks end the game on a deep Lua stack (`getTop() <= 20`, 2026-10-30 on
-a phone, Helper Auto setup). The workflow fails if the CMake cache shows no `NDEBUG`. A debug APK's engine is still
-`-O0`: an optimised one died with SIGILL on the CI emulator. Cause, from the logcat backtrace: the emulator runs arm64
-code through a translator on x86 (`libndk_translation.so`), and its interpreter stopped on a NEON instruction it does
-not decode (`DecodeSimdScalarTwoRegMisc`). A real arm64 phone has that instruction, so a release APK (`-O2`) should run
-there; not yet tried on a phone. The debug APK stays `-O0` so the emulator smoke test keeps working.
+a phone, Helper Auto setup). Every APK a player gets has an optimised engine (CMake Release: `-O3`, `NDEBUG`, stripped),
+the debug APK too. The workflow fails if its CMake cache is not Release. Until 2026-11-02 a debug APK's engine was
+`-O0`. On the owner's phone the game then drew under 30 fps and took minutes to start. The optimised engine dies with
+SIGILL on the CI emulator only. Cause, from the logcat backtrace: the emulator runs arm64 code through a translator on
+x86 (`libndk_translation.so`), and its interpreter stopped on a NEON instruction it does not decode
+(`DecodeSimdScalarTwoRegMisc`). A real arm64 phone has that instruction. So the emulator jobs get a second APK of the
+same tree, artifact `CindersOfChaos-Android-emulator`, built with `-PchaosEmulatorEngine=true` (`-O0` with `NDEBUG`).
+Players never get that one. The emulator play test logs fps and the engine timings after entering (`phonetest: perf`,
+`phonetest: stat ...`). Those come from an `-O0` engine on a software renderer: they show where the time goes, not
+what a phone reaches.
 
 ### What was checked here
 
@@ -227,27 +290,30 @@ there; not yet tried on a phone. The debug APK stays `-O0` so the emulator smoke
 
 ### Still open
 
-1. **File-backed data.** Done in phase 3 (patch `0167`) for the downloaded game data. `data.zip` in the assets is still
-   read into one RAM buffer, about 71 MB here. Fine for the Lua and UI files; a PhysFS mount of the APK asset would be
-   better and is not built.
+1. **File-backed data.** Done in phase 3 (patch `0167`) for the downloaded game data. `data.zip` in the assets: done
+   2026-11-01 (patch `0177`, not run on a device). It was read into one heap buffer, about 74 MB, twice per start. Now
+   PhysFS mounts the asset buffer that Android maps from the APK (stored uncompressed), so pages load on demand.
 2. **No game data in the APK.** Done in phase 3: the first-start screen downloads it. Not run on a device.
 3. **Restart.** Done in phase 3 (Java `restartApp` and `RestartActivity`). Not run on a device.
 4. **Touch layout.** The walk pad and the action bar of `client_mobile`, tap and long press, hotkey buttons, safe areas,
    the 69 windows over 360 logical pixels. Section 2 is unchanged.
-5. **Window re-layout.** The engine resizes with the screen through `updateSize`. The Chaos windows have no mobile
-   styles yet, except `game_event`. The guard `client/tools/check_mobile_layout.py` now keeps the list from growing: 39
-   windows are over 960 x 540 logical pixels without a `$mobile` rule and sit in `client/tools/mobile_layout_baseline.txt`.
-   Each fixed window removes its line. The re-layout itself needs a device. Phase 3.
+5. **Window re-layout.** The engine resizes with the screen through `updateSize`. Done in the files 2026-11-01: every
+   Chaos window over 960 x 540 logical pixels has a `$mobile` rule, and `client/tools/mobile_layout_baseline.txt` is
+   empty (`check_mobile_layout.py`: 112 windows, 0 in the baseline). A new big window without a rule fails CI. The
+   emulator play test logs each main window's size against the screen; the look on a real phone is still open.
 6. **Mobile defaults.** Done, not run on a device. On the first start on Android `game_visualfx` switches off
    `spellLight`, `liquidShimmer`, `weather`, `ambientParticles`, `missileTrails`, `lightFlicker`, `deathFade` and
-   `rarityOutlineMap` through the settings module, once (flag `chaosMobileDefaults`). `screenGrade`, `bloom` and
+   `rarityOutlineMap` through the settings module, once (flag `chaosMobileDefaults`). A second round (flag
+   `chaosMobileDefaults2`, also on phones that took the first) switches off HD Sprite Upscaling (`hdmodeBox`). It
+   upscaled every sprite 2x with xBRZ on the CPU the first time it was drawn, and made the map picture 4x the pixels. `screenGrade`, `bloom` and
    `hoverOutline` are off everywhere already. Desktop defaults are unchanged. The player can turn any back on.
 7. **APK self-update.** Done in step 8, see "Step 8 status": the `android_apk` entry, the publish script and admin app button,
    the Java download and `PackageInstaller` hand-over with the permission prompt, the screen, patch `0169`. Not run on a
    device. Still needed: the release keystore secrets.
-8. **OpenAL Soft is LGPL.** It is linked statically into the engine library. Whoever has the APK cannot relink it. For
-   a public release either link it dynamically, as a separate `.so` in the APK, or offer the object files. The owner
-   should decide before any public download. The same question applies to the Windows package.
+8. **OpenAL Soft is LGPL.** Done for the APK 2026-11-01: the triplet builds it shared, `app/build.gradle` packs
+   `libopenal.so` next to `libcinders.so`, and the workflow fails when the APK lacks it or the engine does not load it
+   by that name. Whoever has the APK can replace it. The Windows package still links it statically; the owner decides
+   that one before any public download.
 9. **Encrypted data on the phone.** Decided as the default in phase 3: plain files in the app folder, and `data.zip` can
    be unzipped from the APK by anyone. Same level as the Windows loose tree before client build 13. The owner can still
    ask for encrypted storage (question 2); it would be a decrypting file layer under PhysFS.

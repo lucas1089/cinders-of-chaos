@@ -174,12 +174,14 @@ local function decorateContainer(container)
   if not container or not container.itemsPanel or container.itemsPanel:isDestroyed() then return end
   local data = peekData[container:getId()]
   local first = container.getFirstIndex and container:getFirstIndex() or 0
+  -- feature 126 (GameItemCustomAttributes): the items carry their own rarity, so a stale row is told apart (L.rowFits)
+  local attrsOn = g_game.getFeature ~= nil and g_game.getFeature(126) == true
   for slot = 0, container:getCapacity() - 1 do
     local widget = container.itemsPanel:getChildById('item' .. slot)
     if widget then
       local item = container:getItem(slot)
       local row = data and data.items[first + slot]
-      if item and row and row.id == item:getId() then
+      if L.rowFits(row, item, attrsOn) then
         decorate(widget, row, data.corpse, false)
       else
         clearDecoration(widget)

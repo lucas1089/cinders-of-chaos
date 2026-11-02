@@ -37,7 +37,10 @@ local function allIds(t)
   for _, id in ipairs(t.light) do add(id) end
   for _, id in ipairs(t.decor.ids) do add(id) end
   for _, id in ipairs(t.wallDecor.ids) do add(id) end
-  add(t.wall)
+  if t.wall then add(t.wall) end
+  for _, rows in pairs(A.wallSetOf(t) or {}) do
+    if type(rows) == "table" then for _, e in ipairs(rows) do add(e[1]) end end
+  end
   return out
 end
 for name, t in pairs(A.THEMES) do
@@ -166,6 +169,78 @@ do
   made = {}
   A.apply(look, io)
   check(#made < before, "a second apply keeps the ground that is there")
+end
+
+-- built walls: the stock themes use a wall set (not the cave rock piece 5648), the same ids as the wall brush of the
+-- generated areas, and a rectangle gets rows, columns, a pole in the north-west and the corner piece in the south-east
+do
+  local AG = dofile("data/scripts/chaos/areagen_config.lua")
+  -- the guild hall tiers' sets have no areagen brush: their pieces were picked from client renders (white stone wall
+  -- 1111-1116, stone wall 1049-1054, brick wall 1025-1030)
+  local ownSets = {marble = {1111, 1116}, greystone = {1049, 1054}, brick = {1025, 1030}}
+  check(AG.walls.darkstone ~= nil and A.WALL_SETS.darkstone ~= nil, "darkstone is a wall brush of areagen_config.lua")
+  for name, set in pairs(A.WALL_SETS) do
+    local brush = AG.walls[name]
+    check(brush ~= nil or ownSets[name] ~= nil, "wall set " .. name .. ": an areagen brush or a known stock family")
+    check(set.size == 2, "wall set " .. name .. ": 2x2 sprites")
+    for _, piece in ipairs({"horizontal", "vertical", "corner", "pole"}) do
+      local a, b = {}, {}
+      for _, e in ipairs(set[piece] or {}) do
+        a[#a + 1] = e[1] .. "x" .. (e[2] or 1)
+        if ownSets[name] then
+          check(e[1] >= ownSets[name][1] and e[1] <= ownSets[name][2], "wall set " .. name .. ": " .. e[1] .. " in its family")
+        end
+      end
+      for _, e in ipairs(brush and brush[piece] or {}) do b[#b + 1] = e[1] .. "x" .. (e[2] or 1) end
+      check(#a > 0, "wall set " .. name .. ": has " .. piece)
+      if brush then
+        check(table.concat(a, ",") == table.concat(b, ","), "wall set " .. name .. ": " .. piece .. " as in areagen_config.lua")
+      end
+    end
+  end
+  for name, t in pairs(A.THEMES) do
+    check(t.wall ~= 5648, "theme " .. name .. ": not the cave rock piece 5648 as a wall")
+    check(A.wallSetOf(t) ~= nil or t.wall ~= nil, "theme " .. name .. ": has a wall")
+    local look = A.generate({tiles = A.rectTiles(1, 1, 5, 5), theme = A.theme(name), seed = 1})
+    check(look.walls == A.wallSetOf(t), "theme " .. name .. ": the look carries the wall set")
+  end
+  local set = A.WALL_SETS.darkstone
+  local function isWall(x, y) return x >= 0 and y >= 0 and x <= 6 and y <= 6 and (x == 0 or y == 0 or x == 6 or y == 6) end
+  local function inSet(rows, id) for _, e in ipairs(rows) do if e[1] == id then return true end end return false end
+  check(inSet(set.pole, A.wallPieceId(set, isWall, 0, 0)), "frame: pole in the north-west corner")
+  check(inSet(set.corner, A.wallPieceId(set, isWall, 6, 6)), "frame: corner piece in the south-east corner")
+  check(inSet(set.horizontal, A.wallPieceId(set, isWall, 6, 0)), "frame: north-east corner is a row end")
+  check(inSet(set.vertical, A.wallPieceId(set, isWall, 0, 6)), "frame: south-west corner is a column end")
+  for i = 1, 5 do
+    check(inSet(set.horizontal, A.wallPieceId(set, isWall, i, 0)) and inSet(set.horizontal, A.wallPieceId(set, isWall, i, 6)), "frame: rows " .. i)
+    check(inSet(set.vertical, A.wallPieceId(set, isWall, 0, i)) and inSet(set.vertical, A.wallPieceId(set, isWall, 6, i)), "frame: columns " .. i)
+  end
+  check(A.wallPieceId(set, isWall, 3, 0) == A.wallPieceId(set, isWall, 3, 0), "frame: the same piece every time")
+  -- wall values of the builders' configs: a set name or one id
+  local frame = {}
+  for x = 0, 6 do for y = 0, 6 do if isWall(x, y) then frame[#frame + 1] = {x = x, y = y} end end end
+  local at = A.wallPlacer("darkstone", frame)
+  check(at(0, 0) == A.wallPieceId(set, isWall, 0, 0) and at(6, 6) == A.wallPieceId(set, isWall, 6, 6), "wallPlacer: the frame's pieces")
+  check(A.wallPlacer(5648, frame)(3, 0) == 5648, "wallPlacer: a plain id stays that id (the dark set's walls)")
+  check(A.wallPlacer("nope", frame)(3, 0) == nil, "wallPlacer: an unknown set places nothing")
+  local ids = A.wallIds("darkstone", {[1] = true})
+  check(ids[1] and ids[25200] and ids[25201] and ids[25202] and ids[25203] and ids[25204] and ids[25205], "wallIds: every piece, added")
+  check(A.wallIds(1049)[1049] == true and A.wallIds("darkstone")["darkstone"] == nil, "wallIds: a plain id; never the name")
+  check(A.wallSizeOf("darkstone") == 2 and A.wallSizeOf(25204) == 2 and A.wallSizeOf(5648) == 1, "wallSizeOf: sets and pieces are 2x2")
+  -- a fixture next to the south / east wall of a 2x2 wall moves one tile in; elsewhere it stays
+  local function same(p, x, y) return p.x == x and p.y == y end
+  check(same(A.clearOfWall({x = 5, y = 5}, isWall, 2), 4, 4), "clearOfWall: south-east corner one tile in")
+  check(same(A.clearOfWall({x = 3, y = 5}, isWall, 2), 3, 4), "clearOfWall: south wall one row up")
+  check(same(A.clearOfWall({x = 5, y = 3}, isWall, 2), 4, 3), "clearOfWall: east wall one column left")
+  check(same(A.clearOfWall({x = 1, y = 1}, isWall, 2), 1, 1), "clearOfWall: north-west corner stays")
+  check(same(A.clearOfWall({x = 5, y = 5}, isWall, 1), 5, 5), "clearOfWall: a 1x1 wall moves nothing")
+  -- no config of a runtime room uses the cave rock piece 5648 as its wall any more
+  for _, f in ipairs({"uber_config", "guildboss_config", "pocketboss_config", "trials_config", "ascension_quest_config",
+    "siege_config", "descent_config", "raid_config", "arena_config", "rift_config", "battleground_config", "pvpzone_config",
+    "guild_config", "chaos_constants"}) do
+    local src = readFile("data/scripts/chaos/" .. f .. ".lua")
+    check(src ~= "" and not src:find("wallI?d? = 5648") and not src:find("wall = 5648"), f .. ": no wall 5648")
+  end
 end
 
 if fails > 0 then

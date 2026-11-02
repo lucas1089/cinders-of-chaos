@@ -9,6 +9,12 @@ local function eq(a, b, what)
 end
 
 eq(M.view(nil).visible, false, 'no state: hidden')
+-- Leave: inside a run only, one press a second
+eq(M.canLeave(nil, 5000, nil), false, 'leave: no state')
+eq(M.canLeave({ inRun = false }, 5000, nil), false, 'leave: not in a run')
+eq(M.canLeave({ inRun = true, canSkip = false }, 5000, nil), true, 'leave: in a run, even during a fight')
+eq(M.canLeave({ inRun = true }, 5000, 4500), false, 'leave: a second press too soon')
+eq(M.canLeave({ inRun = true }, 5000, 4000), true, 'leave: after a second')
 eq(M.view({ inRun = false, canSkip = true }).visible, false, 'not in a run: hidden even if the flag is set')
 eq(M.view({ inRun = false, canSkip = true }).enabled, false, 'not in a run: disabled')
 local v = M.view({ inRun = true, canSkip = true })

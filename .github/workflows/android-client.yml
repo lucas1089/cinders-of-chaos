@@ -79,6 +79,11 @@ on:
         type: boolean
         required: false
         default: false
+      smoke_play:
+        description: "Play test on an emulator: a TEST APK (development login key, server 10.0.2.2, never for players) against the Linux server package of the newest winpkg release on the runner; first start, then login, walk, windows, NPC trade, a fight, the corpse, chat, a screenshot per step (about 60 min)"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -93,8 +98,10 @@ env:
   UPDATE_MANIFEST: ${{ inputs.update_manifest }}
   UPDATE_PUBLIC_KEY: ${{ inputs.update_public_key }}
   UPDATE_BASELINE: ${{ inputs.update_baseline }}
-  SERVER_HOST: ${{ inputs.server_host || '127.0.0.1' }}
+  # a play test APK (smoke_play) talks to the emulator's host, where the job runs the server package
+  SERVER_HOST: ${{ inputs.smoke_play && '10.0.2.2' || inputs.server_host || '127.0.0.1' }}
   SITE_URL: ${{ inputs.site_url }}
+  PLAY_TEST: ${{ inputs.smoke_play && 'true' || 'false' }}
   ALLOW_DEV_KEY: ${{ inputs.allow_dev_key && 'true' || 'false' }}
   # NDK r27d; the Gradle project (client/android/app/build.gradle) names the same version
   NDK_VERSION: "27.3.13750724"
@@ -162,8 +169,14 @@ jobs:
           fi
           # not compiled in: written into init.lua, which goes into data.zip
           python3 -I chaos/client/tools/set_server_host.py game "$SERVER_HOST" --site-url "$SITE_URL"
-          python3 -I chaos/client/tools/set_rsa_key.py game --from-env CHAOS_RSA_PUBLIC \
-            $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
+          if [ "$PLAY_TEST" = true ]; then
+            # the server package on the runner has the public default login key; this APK is for the play test only
+            echo "::warning::smoke_play: this APK has the public development login key and the server 10.0.2.2. Never give it out."
+            CHAOS_RSA_PUBLIC= python3 -I chaos/client/tools/set_rsa_key.py game --from-env CHAOS_RSA_PUBLIC --allow-default
+          else
+            python3 -I chaos/client/tools/set_rsa_key.py game --from-env CHAOS_RSA_PUBLIC \
+              $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
+          fi
           # the first-start download of the game data: the signed manifest and the operator's public key (O313)
           if [ -n "$UPDATE_MANIFEST" ]; then
             python3 -I chaos/client/tools/set_update_config.py game --manifest "$UPDATE_MANIFEST" \
@@ -265,11 +278,12 @@ jobs:
             -PchaosDepsPrefix="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" \
             -PchaosAssetsDir="$GITHUB_WORKSPACE/apk-assets" \
             -PchaosClientBuild="$CLIENT_BUILD"
-          # the engine must have NDEBUG (app/build.gradle): without it the VALIDATE checks end the game
+          # the player APK's engine is optimised (CMake Release, app/build.gradle): an -O0 engine ran under 30 fps on a
+          # phone. Release also brings NDEBUG: without it the VALIDATE checks end the game
           CACHE=$(find app/.cxx -name CMakeCache.txt | head -1)
           grep -H -E '^CMAKE_BUILD_TYPE|^CMAKE_CXX_FLAGS:' "$CACHE"
-          grep -q -E '^CMAKE_BUILD_TYPE:STRING=Release$|^CMAKE_CXX_FLAGS:STRING=.*-DNDEBUG' "$CACHE" \
-            || { echo "::error::the engine was built without NDEBUG"; exit 1; }
+          grep -q -E '^CMAKE_BUILD_TYPE:STRING=Release$' "$CACHE" \
+            || { echo "::error::the engine was not built optimised (CMAKE_BUILD_TYPE is not Release)"; exit 1; }
 
       - name: Check the APK and write its update entry
         run: |
@@ -280,6 +294,23 @@ jobs:
           "$BT/apksigner" verify --print-certs "$APK" | head -3
           "$BT/zipalign" -c -P 16 4 "$APK"   # 16 KB page alignment of the native library
           "$BT/aapt2" dump badging "$APK" | grep -E "^package:|native-code"
+          # OpenAL Soft (LGPL) ships as its own library: the APK holds it and the engine needs it by that name
+          unzip -l "$APK" | grep -E 'lib/arm64-v8a/.*\.so$'
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/libopenal.so$' || { echo "::error::libopenal.so is not in the APK"; exit 1; }
+          RE="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          unzip -p "$APK" lib/arm64-v8a/libcinders.so > "$RUNNER_TEMP/libcinders.so"
+          unzip -p "$APK" lib/arm64-v8a/libopenal.so > "$RUNNER_TEMP/libopenal.so"
+          "$RE" -d "$RUNNER_TEMP/libcinders.so" | grep NEEDED
+          "$RE" -d "$RUNNER_TEMP/libcinders.so" | grep -q 'Shared library: \[libopenal.so\]' || { echo "::error::libcinders.so does not load libopenal.so"; exit 1; }
+          "$RE" -d "$RUNNER_TEMP/libopenal.so" | grep -E 'SONAME|NEEDED'
+          # every library a packed .so needs is in the APK or one of the system libraries an app may load
+          SYSLIBS=' libc.so libm.so libdl.so liblog.so libandroid.so libEGL.so libGLESv2.so libGLESv3.so libOpenSLES.so libaaudio.so libz.so libjnigraphics.so '
+          for so in libcinders.so libopenal.so; do
+            for need in $("$RE" -d "$RUNNER_TEMP/$so" | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p'); do
+              unzip -l "$APK" | grep -q "lib/arm64-v8a/$need\$" && continue
+              [[ "$SYSLIBS" == *" $need "* ]] || { echo "::error::$so needs $need, which is neither in the APK nor a system library"; exit 1; }
+            done
+          done
           mkdir out
           cp "$APK" out/CindersOfChaos-Android.apk
           (cd out && sha256sum CindersOfChaos-Android.apk | tee CindersOfChaos-Android.apk.sha256)
@@ -320,10 +351,42 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+      # The emulator's arm64 translator stops on an instruction of the optimised engine (SIGILL, app/build.gradle), so the
+      # emulator jobs get a second APK of the same tree with an -O0 engine. Players never get this one.
+      - name: Build the emulator APK (-O0 engine, for the emulator jobs only)
+        if: ${{ inputs.smoke_test || inputs.smoke_download || inputs.smoke_play }}
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+        working-directory: chaos/client/android
+        run: |
+          set -euo pipefail
+          rm -rf app/build/outputs/apk
+          gradle --no-daemon :app:assembleDebug \
+            -PchaosClientDir="$GITHUB_WORKSPACE/game" \
+            -PchaosDepsPrefix="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" \
+            -PchaosAssetsDir="$GITHUB_WORKSPACE/apk-assets" \
+            -PchaosClientBuild="$CLIENT_BUILD" -PchaosEmulatorEngine=true
+          CACHE=$(find app/.cxx/Debug -name CMakeCache.txt | head -1)
+          grep -H -E '^CMAKE_BUILD_TYPE|^CMAKE_CXX_FLAGS:' "$CACHE"
+          grep -q -E '^CMAKE_CXX_FLAGS:STRING=.*-DNDEBUG' "$CACHE" || { echo "::error::the emulator engine has no NDEBUG"; exit 1; }
+          APK=$(find app/build/outputs/apk -name '*.apk' | head -1)
+          [ -n "$APK" ] || { echo "::error::no emulator APK built"; exit 1; }
+          mkdir -p "$GITHUB_WORKSPACE/out-emu"
+          cp "$APK" "$GITHUB_WORKSPACE/out-emu/CindersOfChaos-Android.apk"
+
+      - name: Upload the emulator APK
+        if: ${{ inputs.smoke_test || inputs.smoke_download || inputs.smoke_play }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: CindersOfChaos-Android-emulator
+          path: out-emu/
+          retention-days: 3
+          if-no-files-found: error
+
   release:
     name: Attach the APK to a GitHub prerelease (the source of the app update)
     needs: apk
-    if: ${{ inputs.publish_release && needs.apk.outputs.release_signed == 'yes' }}
+    if: ${{ inputs.publish_release && !inputs.smoke_play && needs.apk.outputs.release_signed == 'yes' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -360,7 +423,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: CindersOfChaos-Android
+          name: CindersOfChaos-Android-emulator
           path: apk
 
       - name: Let the emulator use KVM
@@ -382,7 +445,7 @@ jobs:
           # appears: the APK holds no sprite pair, so it always shows, with or without a network to the update server).
           # It waits for that line up to 8 minutes, then 20 s more: module loading on the emulator varies by minutes.
           script: |
-            bash -c 'adb logcat -c; adb install -r apk/CindersOfChaos-Android.apk && adb shell am start -W -n com.cindersofchaos.client/.ChaosActivity; for i in $(seq 96); do adb logcat -d | grep -q "firststart: screen shown" && break; sleep 5; done; sleep 20; adb shell pidof com.cindersofchaos.client && echo STILL RUNNING || echo NOT RUNNING; adb logcat -d -v threadtime > logcat.txt; grep -E "CindersOfChaos|AndroidRuntime|DEBUG|libc|linker|cindersofchaos|F/|E/" logcat.txt | tail -n 300; grep -E "CindersOfChaos.*firststart: " logcat.txt | tail -n 20; grep -q "firststart: screen shown" logcat.txt && echo "FIRST START SCREEN: ok" || { echo "FIRST START SCREEN: not shown"; exit 1; }'
+            bash -c 'adb logcat -c; adb install -r apk/CindersOfChaos-Android.apk && adb shell am start -W -n com.cindersofchaos.client/.ChaosActivity; for i in $(seq 96); do adb logcat -d | grep -q "firststart: screen shown" && break; sleep 5; done; sleep 20; adb shell pidof com.cindersofchaos.client && echo STILL RUNNING || echo NOT RUNNING; adb shell dumpsys meminfo com.cindersofchaos.client | head -n 40; adb logcat -d -v threadtime > logcat.txt; grep -E "CindersOfChaos|AndroidRuntime|DEBUG|libc|linker|cindersofchaos|F/|E/" logcat.txt | tail -n 300; grep -E "CindersOfChaos.*firststart: " logcat.txt | tail -n 20; grep -q "firststart: screen shown" logcat.txt && echo "FIRST START SCREEN: ok" || { echo "FIRST START SCREEN: not shown"; exit 1; }; grep -q "data.zip is compressed in the APK" logcat.txt && { echo "DATA.ZIP: inflated into RAM, not mapped (base patch 0177)"; exit 1; }; echo "DATA.ZIP: mapped"'
 
       - name: Upload the logcat
         if: always()
@@ -407,7 +470,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: CindersOfChaos-Android
+          name: CindersOfChaos-Android-emulator
           path: apk
 
       - name: Let the emulator use KVM
@@ -434,5 +497,85 @@ jobs:
         with:
           name: android-first-start
           path: smoke-download/
+          retention-days: 14
+          if-no-files-found: warn
+
+  smoke-play:
+    name: Play test on an emulator (server package, login, walk, windows, NPC, fight, loot)
+    needs: apk
+    if: ${{ inputs.smoke_play }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: chaos
+          sparse-checkout: client/android/tools
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: CindersOfChaos-Android-emulator
+          path: apk
+
+      # the Linux server package as a player gets it (windows-package.yml), its game address the emulator's host
+      - name: Game server on the runner
+        run: |
+          set -euo pipefail
+          TAG=""
+          for t in $(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=30" --jq '.[] | select(.tag_name | startswith("winpkg-")) | select([.assets[].name] | index("CindersOfChaos-Server-Linux.tar.gz")) | .tag_name'); do
+            TAG=$t; break
+          done
+          [ -n "$TAG" ] || { echo "::error::no winpkg release with CindersOfChaos-Server-Linux.tar.gz"; exit 1; }
+          echo "server package of $TAG"
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p CindersOfChaos-Server-Linux.tar.gz -D "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/srv" && tar -xzf "$RUNNER_TEMP/CindersOfChaos-Server-Linux.tar.gz" -C "$RUNNER_TEMP/srv"
+          cd "$RUNNER_TEMP/srv/CindersOfChaos-Server-Linux"
+          sed -i -E 's/^ip = ".*"/ip = "10.0.2.2"/' server/config.lua
+          grep -E '^ip = ' server/config.lua
+          ./start-server.sh -d
+          for _ in $(seq 1 600); do grep -q "Server Online" logs/server.log 2>/dev/null && break; sleep 1; done
+          grep -q "Server Online" logs/server.log || { tail -n 60 logs/server.log; echo "::error::the server did not start"; exit 1; }
+          ./add-account.sh phonetest phonetest1 "Phone Tester" warrior
+          # group 6 (god: access, may attack monsters), so the test can place its NPC and monster (/s, /m) and jump (/a);
+          # group 3 is a senior tutor without access: every GM command was silently ignored; /m and /s also need account
+          # type 6 (god), type 5 got "no monster in view"
+          SOCK="$PWD/run/mariadb.sock"
+          [ "$(printf %s "$SOCK" | wc -c)" -le 100 ] || SOCK="/tmp/chaos-mariadb-$(id -u)-$(printf '%s' "$PWD" | cksum | cut -d' ' -f1).sock"
+          ./mariadb/bin/mariadb --no-defaults --socket="$SOCK" -u "$(id -un)" chaos -e \
+            "UPDATE accounts SET type = 6 WHERE name = 'phonetest'; UPDATE players SET group_id = 6 WHERE name = 'Phone Tester';"
+          echo "SRV=$PWD" >> "$GITHUB_ENV"
+
+      - name: Let the emulator use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: First start, then the play test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          disk-size: 8000M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash chaos/client/android/tools/smoke_download.sh apk/CindersOfChaos-Android.apk smoke-play/first-start && bash chaos/client/android/tools/smoke_play.sh smoke-play phonetest phonetest1
+
+      - name: Server log
+        if: always()
+        run: |
+          mkdir -p smoke-play
+          cp "$SRV/logs/server.log" smoke-play/server.log 2>/dev/null || true
+          tail -n 80 smoke-play/server.log || true
+
+      - name: Upload the screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-play-test
+          path: smoke-play/
           retention-days: 14
           if-no-files-found: warn

@@ -662,18 +662,22 @@ end
 
 -- phones (O313): the heavy options start off the first time (VisualFxLogic.MOBILE_OFF), through the settings module so the
 -- checkbox and the effect follow. Done once per install; the flag is only set when the settings module could take the values.
+-- hdmodeBox takes effect before the sprites load: init runs before the first login, so the first game is already at scale 1.
 local function applyMobileDefaults()
   local isMobile = g_app and g_app.isMobile and g_app.isMobile() or false
-  local okFlag, done = pcall(g_settings.getBoolean, L.MOBILE_FLAG)
-  local plan = L.mobileDefaultPlan(isMobile, okFlag and done)
-  if #plan == 0 then return end
-  local cs = modules.client_settings
-  local opts = cs and cs.GameOptions
-  if not (opts and opts.getDataSet and opts.setOption) then return end
-  for _, name in ipairs(plan) do
-    if opts:getDataSet(name) then pcall(opts.setOption, opts, name, false) end
+  for _, round in ipairs(L.MOBILE_ROUNDS) do
+    local okFlag, done = pcall(g_settings.getBoolean, round.flag)
+    local plan = L.mobileDefaultPlan(isMobile, okFlag and done, round.off)
+    if #plan > 0 then
+      local cs = modules.client_settings
+      local opts = cs and cs.GameOptions
+      if not (opts and opts.getDataSet and opts.setOption) then return end
+      for _, name in ipairs(plan) do
+        if opts:getDataSet(name) then pcall(opts.setOption, opts, name, false) end
+      end
+      pcall(g_settings.set, round.flag, true)
+    end
   end
-  pcall(g_settings.set, L.MOBILE_FLAG, true)
 end
 
 function init()

@@ -190,6 +190,10 @@ function init()
   -- in the game root panel (the map panel itself reaches above the visible area), centred on the map
   hud = g_ui.loadUI('siegehud', modules.game_interface.getRootPanel())
   if hud then hud:setVisible(false) end
+  -- dragged by its title (the rest stays click-through), spot saved per character (game_hudmove)
+  if hud and ChaosHudMove then
+    ChaosHudMove.attach(hud, 'siegeHud', { panel = false, handles = { hud.title }, otui = '/modules/game_siege/siegehud' })
+  end
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd })
 end
@@ -198,6 +202,7 @@ function terminate()
   disconnect(g_game, { onGameEnd = onGameEnd })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
+  if hud and ChaosHudMove then ChaosHudMove.detach(hud) end
   if hud then hud:destroy() hud = nil end
   if window then window:destroy() window = nil end
   info = nil

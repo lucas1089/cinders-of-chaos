@@ -1,0 +1,67 @@
+# Chaos: the interface scale may go below 1.0 on Android (src/framework/core/graphicalapplication.cpp; after 0001-0178).
+# APK play test 2026-11-01 (O313): on a 640 x 320 screen the windows, made for 960 x 540 interface pixels, overlapped and
+# ran off the edges, and g_app.scale clamped at 1.0. On Android the floor is 0.5, and the scaled frame buffer is used for
+# any factor other than 1.0, so a fraction draws a bigger interface and shrinks it to the screen (linear filter, as for
+# every fraction). Overlay game_chaosuiscale (L.phoneFactor) asks for it. Desktop builds keep 1.0 as the floor.
+--- a/src/framework/core/graphicalapplication.cpp
++++ b/src/framework/core/graphicalapplication.cpp
+@@ -413,7 +413,7 @@
+     }
+ 
+     g_painter->resetDraws();
+-    if (m_scaling > 1.0f) {
++    if (m_scaling != 1.0f) {
+         AutoStat stat(STATS_RENDER, "SetupScaling");
+         g_painter->setResolution(g_graphics.getViewportSize() / m_scaling);
+         m_framebuffer->resize(g_painter->getResolution());
+@@ -502,7 +502,7 @@
+         }
+     }
+ 
+-    if (m_scaling > 1.0f) {
++    if (m_scaling != 1.0f) {
+         AutoStat stat(STATS_RENDER, "DrawScaled");
+         m_framebuffer->release();
+         g_painter->setResolution(g_graphics.getViewportSize());
+@@ -787,7 +787,7 @@
+         }
+ 
+         g_painter->resetDraws();
+-        if (m_scaling > 1.0f) {
++        if (m_scaling != 1.0f) {
+             AutoStat s(STATS_RENDER, "SetupScaling");
+             g_painter->setResolution(g_graphics.getViewportSize() / m_scaling);
+             m_framebuffer->resize(g_painter->getResolution());
+@@ -885,7 +885,7 @@
+             }
+         }
+ 
+-        if (m_scaling > 1.0f) {
++        if (m_scaling != 1.0f) {
+             AutoStat s(STATS_RENDER, "DrawScaled");
+             m_framebuffer->release();
+             g_painter->setResolution(g_graphics.getViewportSize());
+@@ -1029,13 +1029,21 @@
+         maxScale = 2.0;
+     maxScale /= 2;
+ 
++    // Chaos (base patch 0179, O313): a phone smaller than the 960 x 540 interface the windows are made for shrinks the
++    // interface (overlay game_chaosuiscale asks for the fraction); desktop keeps 1.0 as the floor
++#ifdef ANDROID
++    const float minScale = 0.5f;
++#else
++    const float minScale = 1.0f;
++#endif
++
+     if (m_scaling == value) {
+         value = m_lastScaling;
+     } else {
+-        m_lastScaling = std::max<float>(1.0, std::min<float>(maxScale, value));
++        m_lastScaling = std::max<float>(minScale, std::min<float>(maxScale, value));
+     }
+ 
+-    m_scaling = std::max<float>(1.0, std::min<float>(maxScale, value));
++    m_scaling = std::max<float>(minScale, std::min<float>(maxScale, value));
+     g_window.setScaling(m_scaling);
+ 
+     g_dispatcher.addEvent([&] {

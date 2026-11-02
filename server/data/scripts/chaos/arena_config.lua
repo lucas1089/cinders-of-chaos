@@ -61,7 +61,7 @@ return {
 	room = {innerW = 11, innerH = 9, galleryH = 2},
 	groundId = 407, -- black marble floor
 	galleryGroundId = 413, -- stone floor
-	wallId = 5648, -- stone wall
+	wallId = "darkstone", -- dark stone bricks, a piece per wall tile (arenalook_core.lua A.WALL_SETS; was 5648, a cave rock piece)
 	pillarId = 1515, -- marble pillar (line-of-sight cover)
 	basinId = 1481, -- coal basin (light)
 	-- O276 look (arenalook_core.lua): a theme per slot in turn, cover and lights mirrored for the two teams

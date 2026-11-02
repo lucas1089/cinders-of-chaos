@@ -346,11 +346,15 @@ function T.buildSlot(slot)
 			end
 		end
 	end
+	local wallAt = ChaosArenaLook.wallPlacer(r.wallId, L.walls) -- a piece per tile ("darkstone") or the dark wall
 	for _, f in ipairs(L.walls) do
-		placeItem(P(f), r.wallId)
+		placeItem(P(f), wallAt(f.x, f.y))
 	end
+	-- a 2x2 wall overhangs the floor row north of the south wall and the column west of the east wall: those basins
+	-- stand one tile in
+	local rect = {x1 = L.x1, y1 = L.y1, x2 = L.x2, y2 = L.y2}
 	for _, f in ipairs(L.basins) do
-		placeItem(P(f), r.basinId)
+		placeItem(P(ChaosArenaLook.fixtureSpot(f, {rect}, ChaosArenaLook.wallSizeOf(r.wallId))), r.basinId)
 	end
 	T.built[slot] = true
 	return L
@@ -379,7 +383,7 @@ end
 
 local function cleanSlot(L)
 	local r = C().room
-	local keep = {[r.groundId] = true, [r.wallId] = true, [r.basinId] = true}
+	local keep = ChaosArenaLook.wallIds(r.wallId, {[r.groundId] = true, [r.basinId] = true})
 	for _, f in ipairs(L.floor) do
 		local tile = Tile(P(f))
 		if tile then

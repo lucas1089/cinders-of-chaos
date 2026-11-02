@@ -90,8 +90,10 @@ place = function()
   end
   local px, py = InvasionMath.place(x, top, hud:getWidth(), hud:getHeight(), obstacles, bottom)
   if not px then px, py = x, top end
-  if hud:getMarginLeft() ~= px - view.x then hud:setMarginLeft(px - view.x) end
-  if hud:getMarginTop() ~= py - view.y then hud:setMarginTop(py - view.y) end
+  if not (ChaosHudMove and ChaosHudMove.isMoved(hud)) then -- unless the player put it somewhere (game_hudmove)
+    if hud:getMarginLeft() ~= px - view.x then hud:setMarginLeft(px - view.x) end
+    if hud:getMarginTop() ~= py - view.y then hud:setMarginTop(py - view.y) end
+  end
   -- above the map overlay (game_mapoverlay draws the explored map see-through over the game view)
   if overlay and mapPanel:getChildIndex(overlay) > mapPanel:getChildIndex(hud) then hud:raise() end
 end
@@ -240,6 +242,10 @@ function init()
       render()
       return true
     end
+    -- movable, spot saved per character, double-click back (game_hudmove); a click still folds
+    if ChaosHudMove then
+      ChaosHudMove.attach(hud, 'invasionHud', { otui = '/modules/game_invasion/invasionhud', onDefault = place })
+    end
   end
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
@@ -251,6 +257,7 @@ function terminate()
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   stopTick()
   if hideEvent then removeEvent(hideEvent) hideEvent = nil end
+  if hud and ChaosHudMove then ChaosHudMove.detach(hud) end
   if hud then hud:destroy() hud = nil end
   if window then window:destroy() window = nil end
   data = nil

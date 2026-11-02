@@ -37,6 +37,9 @@ if not Chaos.t then
 end
 Chaos.pvpZoneConfig = dofile("data/scripts/chaos/pvpzone_config.lua")
 dofile("data/scripts/chaos/pvpzone_core.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua") -- wall pieces (wallPlacer, wallIds)
+end
 
 ChaosPvpZone = ChaosPvpZone or {}
 local Z = ChaosPvpZone
@@ -353,6 +356,14 @@ local function buildTiles(slot)
 	end
 	local ids = cfg.ids
 	local fallback = cfg.look and cfg.look.rock[1] or ids.ground
+	-- the outer wall and the ruins: a piece per tile ("darkstone", from its neighbours)
+	local walls = {}
+	for _, t in ipairs(foot) do
+		if t.wall then
+			walls[#walls + 1] = t
+		end
+	end
+	local wallAt = ChaosArenaLook.wallPlacer(ids.wall, walls)
 	for _, t in ipairs(foot) do
 		local pos = P(t)
 		local tile = Game.createTile(pos, true)
@@ -363,8 +374,9 @@ local function buildTiles(slot)
 			for _, edge in ipairs(t.edges or {}) do
 				putItem(pos, edge)
 			end
-			if t.wall and not tile:getItemById(ids.wall) then
-				Game.createItem(ids.wall, 1, pos)
+			local wallId = t.wall and wallAt(t.x, t.y)
+			if wallId and not tile:getItemById(wallId) then
+				Game.createItem(wallId, 1, pos)
 			end
 		end
 	end

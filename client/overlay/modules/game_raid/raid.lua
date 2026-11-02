@@ -203,6 +203,7 @@ end
 -- ---------------------------------------------------------------- HUD
 local function place()
   local mapPanel = hud and hud:getParent()
+  if ChaosHudMove and ChaosHudMove.isMoved(hud) then return end -- the player put it somewhere (game_hudmove)
   local plate = rootWidget:recursiveGetChildById('chaosHud')
   if not mapPanel or not plate or not plate:isVisible() then return end
   local r = plate:getRect()
@@ -382,6 +383,11 @@ function init()
   end
   local map = modules.game_interface.getMapPanel()
   hud = make('RaidHud', map)
+  -- dragged by its title (the rest stays click-through), spot saved per character (game_hudmove)
+  if hud and ChaosHudMove then
+    ChaosHudMove.attach(hud, 'raidHud', { panel = false, handles = { hud.title }, otui = '/modules/game_raid/raid',
+      style = 'RaidHud', onDefault = place })
+  end
   callout = make('RaidCallout', map)
   window = make('RaidWindow', rootWidget)
   pcall(function() modules.game_howitworks.attach(window, 'raid') end) -- game_howitworks: the ? button
@@ -396,6 +402,7 @@ function terminate()
   stopTick()
   if hideEvent then removeEvent(hideEvent) hideEvent = nil end
   if calloutEvent then removeEvent(calloutEvent) calloutEvent = nil end
+  if hud and ChaosHudMove then ChaosHudMove.detach(hud) end
   for _, w in ipairs({ hud, callout, window }) do
     if w then w:destroy() end
   end

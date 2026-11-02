@@ -110,6 +110,44 @@ do
   eq(resetStockValueFrame(a, {}), false, 'database without setRarityItem')
 end
 
+-- a slot that showed a rare frame loses it when a plain item takes the slot (owner 2026-11-02), and the loot filter's
+-- frame goes while ours is drawn
+do
+  features[126] = true
+  local function widget()
+    local w = { children = {} }
+    function w:isDestroyed() return false end
+    function w:getItem() return self.item end
+    function w:getChildById(id) return self.children[id] end
+    return w
+  end
+  local function child(parent, id)
+    local c = { shown = true, color = nil }
+    function c:setId(i) parent.children[i] = self end
+    function c:setPhantom() end function c:setFocusable() end function c:fill() end function c:setImageSource() end
+    function c:setImageColor(col) self.color = col end
+    function c:show() self.shown = true end function c:hide() self.shown = false end
+    if id then c:setId(id) end
+    return c
+  end
+  g_ui = { createWidget = function(_, parent) return child(parent) end }
+  local slot = widget()
+  slot.item = item({ [1] = 4 })
+  updateRarityFrame(slot)
+  eq(slot.children.irFrame.shown, true, 'rare item: frame shown') eq(slot.irColor, '#a35cf0', 'rare colour')
+  slot.item = item({ [2] = 90 }) -- a plain Nightmare Blade: item level, no rarity
+  updateRarityFrame(slot)
+  eq(slot.children.irFrame.shown, false, 'plain item: the rare frame goes') eq(slot.irColor, nil, 'no colour left')
+  local lf = child(slot, 'lfFrame')
+  slot.item = item({ [1] = 5 })
+  updateRarityFrame(slot)
+  eq(lf.shown, false, 'one frame per slot: the loot filter frame hides under ours')
+  slot.item = nil
+  updateRarityFrame(slot)
+  eq(slot.children.irFrame.shown, false, 'empty slot: no frame')
+  g_ui = nil
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

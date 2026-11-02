@@ -174,17 +174,36 @@ local function drawsBefore(a, b)
   if a.k ~= b.k then return a.k < b.k end
   return a.x < b.x
 end
+-- The widgets of the stack are in draw order, so the first thing drawn after e and the last one drawn before it are found
+-- by their keys in Lua; only those (and ties of the same key) ask the engine for their index. getChildIndex walks the
+-- layer's children, and one call per thing on every tile change kept the client busy for minutes on a slow phone (the
+-- emulator play test, 2026-11-02: the login never got through).
+local function sameKey(a, b)
+  return a.y == b.y and a.k == b.k and a.x == b.x
+end
 local function restack(e)
-  local nextIdx, lastIdx
+  local nextO, lastO = {}, {}
   for _, o in ipairs(stack) do
     if o ~= e and alive(o.w) then
-      local i = layer:getChildIndex(o.w)
       if drawsBefore(e, o) then
-        if not nextIdx or i < nextIdx then nextIdx = i end
-      elseif not lastIdx or i > lastIdx then
-        lastIdx = i
+        local m = nextO[1]
+        if not m or drawsBefore(o, m) then nextO = { o }
+        elseif sameKey(o, m) then nextO[#nextO + 1] = o end
+      else
+        local m = lastO[1]
+        if not m or drawsBefore(m, o) then lastO = { o }
+        elseif sameKey(o, m) then lastO[#lastO + 1] = o end
       end
     end
+  end
+  local nextIdx, lastIdx
+  for _, o in ipairs(nextO) do
+    local i = layer:getChildIndex(o.w)
+    if not nextIdx or i < nextIdx then nextIdx = i end
+  end
+  for _, o in ipairs(lastO) do
+    local i = layer:getChildIndex(o.w)
+    if not lastIdx or i > lastIdx then lastIdx = i end
   end
   local j = layer:getChildIndex(e.w)
   local to
@@ -272,7 +291,15 @@ function LoginScene.create(parent, keep)
     th.applyFont(nameTag, 'outlineSmall')
   end
   build()   -- or on the first tick, when the layer has its size
-  walkEvent = cycleEvent(walkStep, WALK_MS)
+  -- not a cycleEvent: the engine moves a cycle event on by its delay from its last due time, so a step that takes longer
+  -- than WALK_MS (a slow phone, the emulator) falls further behind each time, stays the earliest event and runs before
+  -- every other timer of the client, for good (the login never got through on the emulator, 2026-11-02). Each tick is
+  -- scheduled from now, before the step runs, so an error in the step does not stop the walkers either.
+  local function walkTick()
+    walkEvent = scheduleEvent(walkTick, WALK_MS)
+    walkStep()
+  end
+  walkEvent = scheduleEvent(walkTick, WALK_MS)
   return true
 end
 

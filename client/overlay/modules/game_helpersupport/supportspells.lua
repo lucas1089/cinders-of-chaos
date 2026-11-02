@@ -125,30 +125,31 @@ end
 --   bar    names the buff bar shows for it, when they are not the spell's name
 --   rank   order among the section's rows (lower first)
 H.KINDS = {
-  -- fight buffs: the Timer section
-  [209] = { auto = 'timer', dur = 20 },  -- Ironbark Hide
-  [217] = { auto = 'timer', dur = 8 },   -- Lightward
-  [222] = { auto = 'timer', dur = 12 },  -- Red Frenzy
-  [233] = { auto = 'timer', dur = 12 },  -- Banner Call
-  [239] = { auto = 'timer', dur = 20 },  -- Poison Blades
-  [245] = { auto = 'timer', dur = 30 },  -- Bushido Focus
-  [72] = { auto = 'timer', dur = 12 },   -- Mantra of Stone
-  [223] = { auto = 'timer', dur = 8 },   -- Iron Bellow
-  [226] = { auto = 'timer', dur = 10 },  -- Hall of Mirrors
-  [243] = { auto = 'timer', dur = 3 },   -- Counter Stance
-  [251] = { auto = 'timer', dur = 6 },   -- Rebuke
-  [133] = { auto = 'timer', dur = 10 },  -- Blood Rage (stock)
-  [132] = { auto = 'timer', dur = 12 },  -- Ironhold (the Chaos id 132 of the retired stock Bulwark, 2026-10-20)
-  [135] = { auto = 'timer', dur = 12 },  -- Tautstring (the Chaos id 135 of the retired stock Hawkeye, 2026-10-20)
+  -- fight buffs: this Support section, cast while attacking a monster (owner 2026-11-02: "Auto setup does not put
+  -- Poison Blades in the Support list"; they were the Timer section's before)
+  [209] = { auto = 'support', fight = true, dur = 20, rank = 5 },  -- Ironbark Hide
+  [217] = { auto = 'support', fight = true, dur = 8, rank = 5 },   -- Lightward
+  [222] = { auto = 'support', fight = true, dur = 12, rank = 5 },  -- Red Frenzy
+  [233] = { auto = 'support', fight = true, dur = 12, rank = 5 },  -- Banner Call
+  [239] = { auto = 'support', fight = true, dur = 20, rank = 5 },  -- Poison Blades
+  [245] = { auto = 'support', fight = true, dur = 30, rank = 5 },  -- Bushido Focus
+  [72] = { auto = 'support', fight = true, dur = 12, rank = 5 },   -- Mantra of Stone
+  [223] = { auto = 'support', fight = true, dur = 8, rank = 5 },   -- Iron Bellow
+  [226] = { auto = 'support', fight = true, dur = 10, rank = 5 },  -- Hall of Mirrors
+  [243] = { auto = 'support', fight = true, dur = 3, rank = 5 },   -- Counter Stance
+  [251] = { auto = 'support', fight = true, dur = 6, rank = 5 },   -- Rebuke
+  [133] = { auto = 'support', fight = true, dur = 10, rank = 5 },  -- Blood Rage (stock)
+  [132] = { auto = 'support', fight = true, dur = 12, rank = 5 },  -- Ironhold (the Chaos id 132 of the retired stock Bulwark, 2026-10-20)
+  [135] = { auto = 'support', fight = true, dur = 12, rank = 5 },  -- Tautstring (the Chaos id 135 of the retired stock Hawkeye, 2026-10-20)
   -- the level 800 buffs of the line spell quests (2026-10-28; cooldown 90 s, so the timer rule waits cooldown + 1 s): a character
   -- that knows one keeps it up in the fights; Auto setup ranks the higher level first
-  [143] = { auto = 'timer', dur = 20 },  -- Ironbound Oath
-  [150] = { auto = 'timer', dur = 20 },  -- Unblinking Gaze
-  [153] = { auto = 'timer', dur = 20 },  -- Veil of Whispers
-  [156] = { auto = 'timer', dur = 15 },  -- Shroud of Knives
-  [159] = { auto = 'timer', dur = 20 },  -- Dirge of the Legion
-  [173] = { auto = 'timer', dur = 15 },  -- Lotus Stance
-  [178] = { auto = 'timer', dur = 20 },  -- Mantle of Dawn
+  [143] = { auto = 'support', fight = true, dur = 20, rank = 5 },  -- Ironbound Oath
+  [150] = { auto = 'support', fight = true, dur = 20, rank = 5 },  -- Unblinking Gaze
+  [153] = { auto = 'support', fight = true, dur = 20, rank = 5 },  -- Veil of Whispers
+  [156] = { auto = 'support', fight = true, dur = 15, rank = 5 },  -- Shroud of Knives
+  [159] = { auto = 'support', fight = true, dur = 20, rank = 5 },  -- Dirge of the Legion
+  [173] = { auto = 'support', fight = true, dur = 15, rank = 5 },  -- Lotus Stance
+  [178] = { auto = 'support', fight = true, dur = 20, rank = 5 },  -- Mantle of Dawn
   -- the hastes: offered, but the Tools tab keeps them up (Auto setup sets that), so Auto setup leaves them out here
   [6] = { auto = false, kind = 'buff', dur = 33, bar = { 'haste' }, haste = true },
   [39] = { auto = false, kind = 'buff', dur = 22, bar = { 'haste' }, haste = true },
@@ -309,18 +310,33 @@ end
 
 -- what Auto setup puts where: { support = { spell id, ... }, timer = { { id, words, name, cooldown (s) }, ... } }
 -- (the timer's cooldown: the longer of the spell's cooldown and its effect, plus one second)
+-- The class fight buffs (kind 'buff' with fight) are Support rows too (owner 2026-11-02, "Auto setup does not put Poison
+-- Blades in the Support list"; they were timer rules before). They take the rows the shields, vigils and summons leave,
+-- and one that does not fit (a Bone Lord's army fills the section) stays a timer rule, so no buff is lost.
+local function fightBuff(c)
+  return c.info.fight and (c.info.kind or 'buff') == 'buff'
+end
+
 function H.autoPlan(spells, canCast)
-  local support, timer = {}, {}
+  local support, timer, buffs = {}, {}, {}
+  local function addTimer(c)
+    if #timer < H.TIMER_MAX then
+      local cd = math.max(math.ceil(H.cooldownMs(c.spell) / 1000), c.info.dur or 0) + 1
+      timer[#timer + 1] = { id = c.spell.id, words = c.spell.words, name = c.spell.name, cooldown = cd }
+    end
+  end
   for _, c in ipairs(H.candidates(spells, canCast)) do
     local slot = autoSlot(c)
     if slot == 'timer' then
-      if #timer < H.TIMER_MAX then
-        local cd = math.max(math.ceil(H.cooldownMs(c.spell) / 1000), c.info.dur or 0) + 1
-        timer[#timer + 1] = { id = c.spell.id, words = c.spell.words, name = c.spell.name, cooldown = cd }
-      end
+      addTimer(c)
+    elseif slot == 'support' and fightBuff(c) then
+      buffs[#buffs + 1] = c
     elseif slot == 'support' then
       if #support < H.SUPPORT_MAX then support[#support + 1] = c.spell.id end
     end
+  end
+  for _, c in ipairs(buffs) do
+    if #support < H.SUPPORT_MAX then support[#support + 1] = c.spell.id else addTimer(c) end
   end
   return { support = support, timer = timer }
 end
@@ -328,6 +344,15 @@ end
 -- ---------------------------------------------------------------- the player's list (saved per character)
 function H.defaultConfig()
   return { enabled = true, reserve = H.DEFAULT_RESERVE, slots = {} }
+end
+
+-- a saved list -> its entries in order. The client's g_settings gives a list back keyed by strings: setNode makes the
+-- index 1 the OTML tag "1" (the engine reads every key with lua_isstring, true for a number) and getNode sets a child by
+-- its tag, so slots[1] comes back as slots["1"] and ipairs sees nothing (owner 2026-11-02, the fifth report "the list
+-- is still empty after a death": every relog loaded an empty list). The shared reader of client_chaos_settings
+-- (ChaosSettings.list): whole keys from 1, numbers or strings, in order; others are left.
+function H.list(t)
+  return ChaosSettings.list(t)
 end
 
 -- a saved node -> a valid config (wrong values fall back to the defaults, an id twice or an empty one is dropped)
@@ -341,7 +366,7 @@ function H.sanitize(node)
   end
   local seen = {}
   if type(node.slots) == 'table' then
-    for _, s in ipairs(node.slots) do
+    for _, s in ipairs(H.list(node.slots)) do
       local id = type(s) == 'table' and tonumber(s.id) or nil
       -- config.otml can be edited by hand: whole spell ids only
       if id and id ~= math.floor(id) then id = nil end

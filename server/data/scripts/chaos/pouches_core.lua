@@ -256,12 +256,17 @@ end
 
 P.LOOT_BAG_STAYS = "The Loot Bag stays in your purse: it cannot be moved out, dropped, traded or mailed."
 
--- m = {holdsPouch = bool (the moved item is a pouch or holds one),
+-- m = {holdsPouch = bool (the moved item is a pouch or holds one), trophy = bool (it is a nemesis trophy, no container),
 --      lootBag = bool (the moved item is the Loot Bag), inPurse = bool (it lies in the purse now),
 --      toGround = bool (a map tile: the ground, a mailbox, a trash holder), chain = the destination and its parents,
 --      innermost first: "self" (the mover), "player" (another one), "depot", "pouch", "item", "tile"}
 function P.moveRefusal(m)
 	if not m.holdsPouch then
+		return nil
+	end
+	-- the nemesis trophy (nemesis.lua) is store-bound for the market, trade and death keep, but it may go anywhere a
+	-- plain item goes: owner 2026-11-02, "deixe o item ser jogado no chao, ja que ele nao serve pra nada"
+	if m.trophy then
 		return nil
 	end
 	-- the Loot Bag lives in the purse (owner 2026-10-17): from there it goes nowhere but back into the purse

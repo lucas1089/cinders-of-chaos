@@ -1,5 +1,7 @@
-// The tower panel (O274), created by infinity_tower.lua inside a run: floor, floors cleared, monsters left, the countdown
-// and the Next floor now button. Hidden outside a run.
+// The tower panel (O274), created by infinity_tower.lua inside a run: floor, floors cleared, monsters left, the countdown,
+// the Leave button (bottom left) and the Next floor now button. Hidden outside a run. The player drags it by its background (the labels are phantom);
+// a double-click puts it back here. The spot is saved per character (towerpanelpos.lua). The width grows in Lua when
+// the button or the Automatic text needs it.
 TowerPanel < UIWidget
   width: 290
   height: 108
@@ -10,6 +12,7 @@ TowerPanel < UIWidget
   border-width: 1
   border-color: #7d7176
   focusable: false
+  !tooltip: tr('Drag to move. Double-click to put it back.')
 
   Label
     id: floorLabel
@@ -18,6 +21,7 @@ TowerPanel < UIWidget
     anchors.right: parent.right
     margin: 5 6 0 6
     text-align: center
+    phantom: true
     font: verdana-11px-rounded
     color: #f0e4c8
   Label
@@ -27,6 +31,7 @@ TowerPanel < UIWidget
     anchors.right: parent.right
     margin: 2 6 0 6
     text-align: center
+    phantom: true
     color: #c9bfae
   Label
     id: monstersLabel
@@ -35,6 +40,7 @@ TowerPanel < UIWidget
     anchors.right: parent.right
     margin: 2 6 0 6
     text-align: center
+    phantom: true
     color: #e8b4a0
   Label
     id: timerLabel
@@ -43,10 +49,21 @@ TowerPanel < UIWidget
     anchors.right: parent.right
     margin: 2 6 0 6
     text-align: center
+    phantom: true
     color: #f0e4c8
+  Button
+    id: leaveButton
+    width: 48
+    height: 22
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin: 0 0 6 6
+    !text: tr('Leave')
+    !tooltip: tr('Leave the tower. Your cleared floors count. During a fight you leave after a short countdown.')
+    focusable: false
   CheckBox
     id: autoSkipBox
-    width: 84
+    width: 100
     anchors.bottom: parent.bottom
     anchors.right: parent.right
     margin: 0 6 9 0
@@ -56,7 +73,7 @@ TowerPanel < UIWidget
   Button
     id: skipButton
     anchors.bottom: parent.bottom
-    anchors.left: parent.left
+    anchors.left: leaveButton.right
     anchors.right: prev.left
     margin: 0 6 6 6
     height: 22

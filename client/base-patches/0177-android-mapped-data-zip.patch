@@ -1,0 +1,121 @@
+# Chaos: data.zip mapped from the APK (client/BASE.md "0177"; framework/core/resourcemanager.{h,cpp}; after 0001-0176).
+# Android read the data.zip asset (about 74 MB) into one heap buffer, twice per start: getCompactName, then setup.
+# Now the asset stays open and PhysFS mounts its buffer, which Android maps from the APK because build.gradle stores
+# zip files uncompressed. Pages load on demand and the system can drop them. The heap copy stays as the fallback.
+# filesChecksums reads the mapped buffer too. Desktop builds are unchanged.
+diff -ruN a/src/framework/core/resourcemanager.cpp b/src/framework/core/resourcemanager.cpp
+--- a/src/framework/core/resourcemanager.cpp
++++ b/src/framework/core/resourcemanager.cpp
+@@ -446,6 +446,14 @@
+ bool ResourceManager::loadDataFromSelf(bool unmountIfMounted) {
+     std::shared_ptr<std::vector<uint8_t>> data = nullptr;
+ #ifdef ANDROID
++    // Cinders of Chaos (base patch 0177): map the asset instead of reading about 74 MB into the heap, which this
++    // ran twice per start (getCompactName, then setup). The copy below stays as the fallback.
++    if (unmountIfMounted)
++        unmountMemoryData();
++    if (mountAssetData()) {
++        m_loadedFromMemory = true;
++        return true;
++    }
+     AAsset* file = AAssetManager_open(g_androidState->activity->assetManager, "data.zip", AASSET_MODE_BUFFER);
+     if (!file)
+         g_logger.fatal("Can't open data.zip from assets");
+@@ -1660,8 +1668,16 @@
+     zip_error_init(&error);
+     zip_stat_init(&file_stat);
+ 
+-    if (m_memoryData) {
+-        if ((src = zip_source_buffer_create(m_memoryData->data(), m_memoryData->size(), 0, &error)) == nullptr)
++    const uint8_t* zipBuffer = m_memoryData ? m_memoryData->data() : nullptr;
++    size_t zipSize = m_memoryData ? m_memoryData->size() : 0;
++#ifdef ANDROID
++    if (m_dataAsset) { // base patch 0177: the mapped APK asset
++        zipBuffer = m_dataAssetBuffer;
++        zipSize = m_dataAssetSize;
++    }
++#endif
++    if (zipBuffer) {
++        if ((src = zip_source_buffer_create(zipBuffer, zipSize, 0, &error)) == nullptr)
+             g_logger.fatal(stdext::format("can't create source: %s", zip_error_strerror(&error)));
+ 
+         if ((za = zip_open_from_source(src, ZIP_RDONLY, &error)) == nullptr)
+@@ -2335,8 +2351,60 @@
+     return false;
+ }
+ 
++#ifdef ANDROID
++// Cinders of Chaos (base patch 0177): mount data.zip straight from the APK. An asset stored uncompressed
++// (build.gradle noCompress 'zip') gives a buffer mapped from the APK file: pages are read on demand and the
++// system can drop them again. A compressed asset would be inflated into RAM by AAsset_getBuffer; that still
++// works and is logged.
++bool ResourceManager::mountAssetData()
++{
++    if (m_dataAsset)
++        return true;
++    AAsset* asset = AAssetManager_open(g_androidState->activity->assetManager, "data.zip", AASSET_MODE_BUFFER);
++    if (!asset)
++        return false;
++    const void* buffer = AAsset_getBuffer(asset);
++    const off64_t size = AAsset_getLength64(asset);
++    if (!buffer || size < 1024) {
++        AAsset_close(asset);
++        return false;
++    }
++    if (AAsset_isAllocated(asset))
++        g_logger.warning("data.zip is compressed in the APK; it is inflated into RAM");
++    if (!PHYSFS_mountMemory(buffer, (PHYSFS_uint64)size, nullptr, "memory_data.zip", "/", 0)) {
++        AAsset_close(asset);
++        return false;
++    }
++    if (!PHYSFS_exists(INIT_FILENAME.c_str())) {
++        PHYSFS_unmount("memory_data.zip");
++        AAsset_close(asset);
++        return false;
++    }
++    m_dataAsset = asset;
++    m_dataAssetBuffer = static_cast<const uint8_t*>(buffer);
++    m_dataAssetSize = (size_t)size;
++    m_loadedFromArchive = true;
++    ++m_generation;
++    return true;
++}
++#endif
++
+ void ResourceManager::unmountMemoryData()
+ {
++#ifdef ANDROID
++    if (m_dataAsset) {
++        if (!PHYSFS_unmount("memory_data.zip"))
++            g_logger.fatal(stdext::format("Unable to unmount memory data: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())));
++        AAsset_close(m_dataAsset);
++        m_dataAsset = nullptr;
++        m_dataAssetBuffer = nullptr;
++        m_dataAssetSize = 0;
++        m_loadedFromMemory = false;
++        m_loadedFromArchive = false;
++        ++m_generation;
++        return;
++    }
++#endif
+     if (!m_memoryData)
+         return;
+ 
+diff -ruN a/src/framework/core/resourcemanager.h b/src/framework/core/resourcemanager.h
+--- a/src/framework/core/resourcemanager.h
++++ b/src/framework/core/resourcemanager.h
+@@ -163,6 +163,14 @@
+     std::shared_ptr<std::vector<uint8_t>> m_updateOverlay; // the decrypted update files, mounted (base patch 0103)
+     std::string m_dataFolderReal; // Android: the mounted phone data folder (real path), base patch 0167
+     std::shared_ptr<std::vector<uint8_t>> m_memoryData;
++#ifdef ANDROID
++    // Cinders of Chaos (base patch 0177): the APK's data.zip asset held open while it is mounted. Its buffer is
++    // mapped from the APK (stored uncompressed), so the archive is not copied into the heap.
++    bool mountAssetData();
++    struct AAsset* m_dataAsset = nullptr;
++    const uint8_t* m_dataAssetBuffer = nullptr;
++    size_t m_dataAssetSize = 0;
++#endif
+     uint64 m_generation = 0;
+     uint32_t m_customEncryption = 0;
+     std::string m_layout;

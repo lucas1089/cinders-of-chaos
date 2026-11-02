@@ -337,8 +337,9 @@ local function buildSlot(slot, bossKey)
 			end
 		end
 	end
+	local wallAt = ChaosArenaLook.wallPlacer(cfg.wallId, L.wallList) -- a piece per tile ("darkstone") or the dark wall
 	for _, t in ipairs(L.wallList) do
-		placeItem(P(t), cfg.wallId)
+		placeItem(P(t), wallAt(t.x, t.y))
 	end
 	-- a second way out inside the arena, next to where the players arrive (beta 2026-10-20: a player was stuck at the
 	-- boss with the exit in the antechamber; closed boss rooms always get a portal). Chosen before the paint and kept
@@ -370,7 +371,7 @@ end
 
 local function cleanSlot(L)
 	local cfg = C()
-	local keep = {[cfg.groundId] = true, [cfg.wallId] = true, [cfg.basinId] = true, [cfg.portalId] = true}
+	local keep = ChaosArenaLook.wallIds(cfg.wallId, {[cfg.groundId] = true, [cfg.basinId] = true, [cfg.portalId] = true})
 	for _, list in ipairs({L.floorList, L.anteList}) do
 		for _, t in ipairs(list) do
 			local tile = Tile(P(t))

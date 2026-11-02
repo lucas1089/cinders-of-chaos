@@ -17,12 +17,20 @@ L.MOBILE_OFF = { 'spellLight', 'liquidShimmer', 'weather', 'ambientParticles', '
 L.MOBILE_FLAG = 'chaosMobileDefaults'
 
 -- the option names to switch off now: none on a desktop, none once the flag says it was done (the player may turn any back on)
-function L.mobileDefaultPlan(isMobile, done)
+function L.mobileDefaultPlan(isMobile, done, list)
   local out = {}
   if isMobile ~= true or done == true then return out end
-  for i, name in ipairs(L.MOBILE_OFF) do out[i] = name end
+  for i, name in ipairs(list or L.MOBILE_OFF) do out[i] = name end
   return out
 end
+
+-- a later round of phone defaults, with its own flag, so phones that took the first round get it too. hdmodeBox is HD Sprite
+-- Upscaling of the settings module: every sprite upscaled 2x by xBRZ on the CPU the first time it is drawn (a stall on each new
+-- monster or item) and a map picture of 4x the pixels each frame; a phone below 30 fps had it on by default (base patch 0007)
+L.MOBILE_ROUNDS = {
+  { flag = L.MOBILE_FLAG, off = L.MOBILE_OFF },
+  { flag = 'chaosMobileDefaults2', off = { 'hdmodeBox' } },
+}
 
 -- ---------------------------------------------------------------- missile arcs (O230, base patch 0147)
 -- Distance effect ids (missiles) that fly in a slight arc: the thrown and shot ones, which are physical. The ids are the

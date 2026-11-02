@@ -23,6 +23,7 @@ M.TREE = 'chaos_update/android'               -- plain files, mounted by boot.lu
 M.STATE = 'chaos_update/android_state.txt'    -- key=value: status (applying|ok), version, package, applied
 M.AUTOSTART = 'firststart_autostart'           -- emulator test marker (android-client.yml smoke_download): starts the download
 M.INDEX = 'chaos_update/android_index.txt'    -- "<path>\t<sha256>\t<size>" per file placed in the tree
+M.APKKEEP = 'chaos_update/android_apkkeep.txt' -- files data.zip of this APK already holds right (no hash on every start)
 M.STAGING = U.STAGING
 M.PROBE = 'data/things/1098/Tibia.dat'        -- the file that says the game data is there
 M.KEEP_DIR = 'data/things/'                   -- survives a new APK; the rest of the tree is the old APK's Lua and art
@@ -103,6 +104,41 @@ function M.decide(entry, treeHash, visibleHash)
   if treeHash == entry.sha256 then return 'keep' end
   if treeHash == nil and visibleHash == entry.sha256 then return 'keep' end
   return 'download'
+end
+
+-- The APK's own files (data.zip) only change with the APK, so a check that found one right needs no second hash on the
+-- next start. The file holds the package id (bootstrap.lua: build date, commit, arch, init.lua) and "<path>\t<sha256>"
+-- per file; another package id (a new APK) drops it all. Only "keep" verdicts are stored: a file to download is always
+-- hashed again.
+function M.parseApkKeep(text, packageId)
+  local keep = {}
+  text = tostring(text or '')
+  local head = text:match('^package\t(%x+)[\r\n]')
+  if type(packageId) ~= 'string' or packageId == '' or head ~= packageId then return keep end
+  for line in text:gmatch('[^\r\n]+') do
+    local path, sha = line:match('^(.-)\t(%x+)$')
+    if path and path ~= 'package' and #sha == 64 then keep[path] = sha end
+  end
+  return keep
+end
+
+function M.formatApkKeep(packageId, keep)
+  local paths = {}
+  for p in pairs(keep) do paths[#paths + 1] = p end
+  table.sort(paths)
+  local out = { ('package\t%s\n'):format(packageId) }
+  for _, p in ipairs(paths) do out[#out + 1] = ('%s\t%s\n'):format(p, keep[p]) end
+  return table.concat(out)
+end
+
+-- the hash of a file as data.zip gives it: the stored one when this APK already checked it, else hash() (nil: no file)
+--   returns hash, fromCache
+function M.apkVisible(entry, keep, exists, hash)
+  if not exists(entry.path) then return nil, false end
+  if keep[entry.path] == entry.sha256 then return entry.sha256, true end
+  local h = hash(entry.path)
+  if h == '' then h = nil end
+  return h, false
 end
 
 -- tree files the update does not list any more (index paths, full scope only)

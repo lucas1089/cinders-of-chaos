@@ -1,0 +1,73 @@
+# Chaos: the action bar builds only the visible bars in the login call; each hidden bar follows in its own event
+# (modules/game_actionbar/actionbar.lua; after 0001-0177). APK play test 2026-11-01 (O313): online() built 9 bars of
+# 50 slots, 450 widgets, in the one onGameStart call. The emulator spent 17 s there, the client sent nothing for over
+# 30 s and the server closed the connection (ERROR 32). Hidden bars still get their hotkeys, about 50 ms apart.
+--- a/modules/game_actionbar/actionbar.lua
++++ b/modules/game_actionbar/actionbar.lua
+@@ -9,6 +9,8 @@
+ local lastHighlightWidget = nil
+ local isLoaded = false
+ local loadActionBarEvent = nil
++-- Chaos: hidden bars are set up one per frame after login (O313)
++local hiddenBarEvent = nil
+ 
+ -- new
+ local hotkeyItemList = {}
+@@ -538,6 +540,8 @@
+ 
+ 	removeEvent(loadActionBarEvent)
+ 	loadActionBarEvent = nil
++	removeEvent(hiddenBarEvent)
++	hiddenBarEvent = nil
+ 
+ 	if closeCurrentMultiActionPanel then
+ 		closeCurrentMultiActionPanel()
+@@ -587,6 +591,19 @@
+ 	gameRootPanel = nil
+ end
+ 
++-- Chaos (O313): a bar has 50 slots, so all 9 bars are 450 widgets. Building them in the login call blocked a phone
++-- for over 30 s (emulator: 17 s for this module alone) and the server closed the silent connection. The visible bars
++-- are built at once; each hidden bar (it still needs its hotkeys) in its own event, so frames and pings run between.
++local function setupHiddenBars(list, k)
++	hiddenBarEvent = nil
++	local n = list[k]
++	if not n or not g_game.isOnline() then
++		return
++	end
++	setupActionBar(n)
++	hiddenBarEvent = scheduleEvent(function() setupHiddenBars(list, k + 1) end, 50)
++end
++
+ function online()
+ 	local benchmark = g_clock.millis()
+ 	dragItem = nil
+@@ -601,8 +618,18 @@
+ 		Options.saveData()
+ 	end
+ 
++	removeEvent(hiddenBarEvent)
++	hiddenBarEvent = nil
++	local hidden = {}
+ 	for i = 1, #actionBars do
+-		setupActionBar(i)
++		if Options.actionBar[i] and Options.actionBar[i].isVisible then
++			setupActionBar(i)
++		else
++			hidden[#hidden + 1] = i
++		end
++	end
++	if #hidden > 0 then
++		hiddenBarEvent = scheduleEvent(function() setupHiddenBars(hidden, 1) end, 400)
+ 	end
+ 
+ 	-- schedule update items
+@@ -619,6 +646,8 @@
+ end
+ 
+ function offline()
++	removeEvent(hiddenBarEvent)
++	hiddenBarEvent = nil
+ 	for _, actionbar in pairs(activeActionBars) do
+ 		unbindActionBarEvent(actionbar)
+ 	end

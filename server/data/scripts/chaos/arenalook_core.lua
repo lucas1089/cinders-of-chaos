@@ -26,7 +26,8 @@
 -- }
 -- look = {tiles = {[key] = {x, y, gid, edges = {id...}, decor = id|nil, cover = id|nil, light = id|nil, road = bool,
 --   rim = bool}}, order = {key...} (sorted), blocked = {[key] = true}, covers = n, lights = n, theme = name,
---   wallId = id, floorCount = n}
+--   wallId = id (a theme with one wall id: the dark set) or walls = set (A.WALL_SETS: a piece per tile, A.wallPieceId),
+--   floorCount = n}
 -- Guarantees (tests/arenalook_test.lua): the floor tiles that are not blocked stay one 4-connected field; every `keep`
 -- point and every road tile is free and reachable; no two solid pieces touch (not even on a diagonal), so a lane is
 -- never narrower than one tile and no corner pinches; the tiles within `r` (+1) of a keep point carry nothing solid.
@@ -87,7 +88,7 @@ local FLAGSTONE = {{3152, 25}, {3153, 25}, {3154, 5}, {3155, 5}, {3156, 3}, {315
 A.THEMES = {
 	-- scorched rock, basalt fields and lava cracks: fire, ember, dragons
 	ember = {
-		wall = 5648,
+		walls = "darkstone",
 		base = {{9068, 1}, {9069, 1}, {9070, 1}, {9071, 1}, {9072, 1}, {9073, 1}},
 		patches = {
 			{grounds = {{17625, 1}, {17626, 1}, {17627, 1}, {17628, 1}}, edge = BASALT_EDGE, count = {3, 5}, r = {2, 4}},
@@ -101,7 +102,7 @@ A.THEMES = {
 	},
 	-- flagstone halls and marble: castles, guardians, stone giants
 	stone = {
-		wall = 5648,
+		walls = "darkstone",
 		base = {{413, 8}, {407, 1}},
 		patches = {{grounds = {{407, 1}}, count = {3, 5}, r = {2, 4}}, {grounds = {{414, 1}}, count = {1, 2}, r = {2, 3}}},
 		rim = {407}, road = FLAGSTONE,
@@ -112,7 +113,7 @@ A.THEMES = {
 	},
 	-- slate, rock and bones: crypts, the dead, the cold
 	crypt = {
-		wall = 5648,
+		walls = "darkstone",
 		base = {{10766, 25}, {10767, 20}, {10768, 20}, {10769, 10}, {10770, 5}, {10771, 3}},
 		patches = {{grounds = {{9068, 1}, {9069, 1}, {9070, 1}}, count = {3, 5}, r = {2, 4}},
 			{grounds = {{13189, 3}, {12237, 2}}, count = {1, 3}, r = {2, 3}}},
@@ -182,14 +183,124 @@ end
 
 -- the walls of the dark set are 2x2 sprites (drawn one tile up and left of their tile): a look made for such a wall keeps
 -- lights and decoration off the floor row / column in front of it (spec.wallSize)
+-- (a wall value that names a set of A.WALL_SETS, or one of its pieces, has the set's size)
 local DARK_WALL_NAMES = {"dark_wall", "ruined_wall", "obsidian_wall"}
 function A.wallSizeOf(wallId)
+	if type(wallId) == "string" then
+		return A.WALL_SETS[wallId] and A.WALL_SETS[wallId].size or 1
+	end
+	for _, set in pairs(A.WALL_SETS) do
+		for _, rows in pairs(set) do
+			if type(rows) == "table" then
+				for _, e in ipairs(rows) do
+					if e[1] == wallId then
+						return set.size or 1
+					end
+				end
+			end
+		end
+	end
 	for _, n in ipairs(DARK_WALL_NAMES) do
 		if wallId ~= nil and A.darkIds(n) == wallId then
 			return 2
 		end
 	end
 	return 1
+end
+
+-- built walls of the stock themes: one piece per neighbour pattern, like a wall brush of the generated areas
+-- (areagen_config.lua walls; tests/arenalook_test.lua checks they are the same ids). The single "stone wall" 5648 the
+-- themes used before is a cave rock piece (grey rock in red earth): set tile by tile it drew a row of rock lumps with
+-- earth seams, not a wall. size = 2: the pieces are 2x2 sprites drawn one tile up and left of their tile.
+A.WALL_SETS = {
+	-- dark stone bricks (areagen_config.lua walls.darkstone): the dungeons and halls of the generated areas
+	darkstone = {horizontal = {{25201, 1}, {25203, 1}}, vertical = {{25200, 1}, {25205, 1}}, corner = {{25204, 1}},
+		pole = {{25202, 1}}, size = 2},
+	-- the decoration tiers of the guild hall (guild_config.lua decor), from the client pair (scratch renders of 1025-1116):
+	-- white marble ("white stone wall"), grey stone ("stone wall") and red brick ("brick wall")
+	marble = {horizontal = {{1112, 1}, {1114, 1}}, vertical = {{1111, 1}, {1116, 1}}, corner = {{1115, 1}},
+		pole = {{1113, 1}}, size = 2},
+	greystone = {horizontal = {{1050, 1}, {1052, 1}}, vertical = {{1049, 1}, {1054, 1}}, corner = {{1053, 1}},
+		pole = {{1051, 1}}, size = 2},
+	brick = {horizontal = {{1026, 1}, {1028, 1}}, vertical = {{1025, 1}, {1030, 1}}, corner = {{1029, 1}},
+		pole = {{1027, 1}}, size = 2}
+}
+
+-- the wall set of a theme (a table of A.WALL_SETS) or nil when the theme has one wall id for every tile
+function A.wallSetOf(theme)
+	return theme and theme.walls and A.WALL_SETS[theme.walls] or nil
+end
+
+-- the piece of `set` for the wall tile x, y; isWall(x, y) tells which neighbours are wall tiles too. The piece type
+-- follows ChaosAreaGenCore.wallPiece (measured on the live map): a rectangle gets horizontal rows, vertical columns, a
+-- pole in the north-west corner and the corner piece in the south-east one.
+function A.wallPieceId(set, isWall, x, y)
+	local piece = ChaosAreaGenCore.wallPiece(isWall(x, y - 1), isWall(x + 1, y), isWall(x, y + 1), isWall(x - 1, y))
+	return weighted(set[piece], x, y, 977)
+end
+
+-- ---------------------------------------------------------------------- wall values of the arena configs
+-- A wall value of a builder's config is a set name of A.WALL_SETS ("darkstone": a piece per tile from its neighbours)
+-- or one item id (the dark set's walls, the decoration tiers of the guild hall). The builders go through these, so a
+-- set name never reaches the engine.
+A.STOCK_WALL = "darkstone"
+
+-- every item id a wall value can place: {[id] = true}; `into` (optional) gets them added and is returned
+function A.wallIds(wall, into)
+	into = into or {}
+	local set = type(wall) == "string" and A.WALL_SETS[wall]
+	if set then
+		for _, rows in pairs(set) do
+			if type(rows) == "table" then
+				for _, e in ipairs(rows) do
+					into[e[1]] = true
+				end
+			end
+		end
+	elseif type(wall) == "number" then
+		into[wall] = true
+	end
+	return into
+end
+
+-- the piece picker of one wall: tiles = every wall tile of the room ({x, y} lists; several lists may be given), so a
+-- tile's neighbours are known. Returns fn(x, y) -> item id (always the id itself for a plain id; nil for an unknown
+-- set name). Tiles of one height only: a piece looks at x and y.
+function A.wallPlacer(wall, ...)
+	local set = type(wall) == "string" and A.WALL_SETS[wall]
+	if not set then
+		local id = type(wall) == "number" and wall or nil
+		return function()
+			return id
+		end
+	end
+	local on = {}
+	for _, list in ipairs({...}) do
+		for _, t in ipairs(list) do
+			on[key(t.x, t.y)] = true
+		end
+	end
+	local function isWall(x, y)
+		return on[key(x, y)] == true
+	end
+	return function(x, y)
+		return A.wallPieceId(set, isWall, x, y)
+	end
+end
+
+-- p ({x, y, z}) moved off the floor tiles a wall of `size` (2 = 2x2) draws over: a fixture with a wall to its east, south
+-- or south-east goes one tile west / north, so the wall does not hide it. isWall(x, y). Returns a new table.
+function A.clearOfWall(p, isWall, size)
+	local out = {x = p.x, y = p.y, z = p.z}
+	if (size or 1) > 1 then
+		if isWall(p.x + 1, p.y) or isWall(p.x + 1, p.y + 1) and not isWall(p.x, p.y + 1) then
+			out.x = p.x - (size - 1)
+		end
+		if isWall(p.x, p.y + 1) or isWall(p.x + 1, p.y + 1) and not isWall(p.x + 1, p.y) then
+			out.y = p.y - (size - 1)
+		end
+	end
+	return out
 end
 
 -- where a fixture of the layout (a corner basin) stands when the walls are `wallSize` big: the floor row south of a
@@ -293,7 +404,7 @@ function A.generate(spec)
 		return maxx - (x - minx), maxy - (y - miny)
 	end
 	local look = {tiles = {}, order = {}, blocked = {}, covers = 0, lights = 0, theme = theme.name, wallId = theme.wall,
-		floorCount = floorCount, minx = minx, miny = miny, maxx = maxx, maxy = maxy}
+		walls = A.wallSetOf(theme), floorCount = floorCount, minx = minx, miny = miny, maxx = maxx, maxy = maxy}
 
 	local function isFloor(x, y)
 		return floor[key(x, y)] ~= nil

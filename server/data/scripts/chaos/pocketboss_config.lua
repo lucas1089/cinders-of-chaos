@@ -51,7 +51,7 @@ return {
 	grid = {origin = {x = 11520, y = 10000, z = 7}, cols = 8, slots = 16, spacing = 48},
 	arena = {half = 11, anteGap = 2, anteHalfW = 3, anteHalfH = 1},
 	groundId = 407,
-	wallId = 5648,
+	wallId = "darkstone", -- dark stone bricks, a piece per wall tile (arenalook_core.lua A.WALL_SETS; was 5648, a cave rock piece)
 	basinId = 1481,
 	portalId = 1387,
 	portalActionId = 47620, -- the way out in the antechamber (47620-47629 reserved for pocket bosses)

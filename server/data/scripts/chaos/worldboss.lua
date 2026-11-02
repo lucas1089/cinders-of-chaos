@@ -594,7 +594,7 @@ end
 local function fixedItemIds()
 	darkArena()
 	local a = C().arena
-	return {[a.wallId] = true, [a.pillarId] = true, [a.basinId] = true, [a.portalId] = true}
+	return ChaosArenaLook.wallIds(a.wallId, {[a.pillarId] = true, [a.basinId] = true, [a.portalId] = true})
 end
 
 local function keepItem(keep, id)
@@ -673,6 +673,13 @@ function W.buildArena(bossName)
 			end
 		end
 	end
+	local walls = {}
+	for _, t in ipairs(foot) do
+		if t.wall then
+			walls[#walls + 1] = t
+		end
+	end
+	local wallAt = ChaosArenaLook.wallPlacer(a.wallId, walls) -- a piece per tile ("darkstone") or the dark wall
 	for _, t in ipairs(foot) do
 		local pos = P(t)
 		local tile = Game.createTile(pos, true)
@@ -680,8 +687,9 @@ function W.buildArena(bossName)
 			if t.wall and not tile:getGround() then -- the floors get theirs from the look (below)
 				Game.createItem(t.lobby and a.lobbyGroundId or a.groundId, 1, pos)
 			end
-			if t.wall and not tile:getItemById(a.wallId) then
-				Game.createItem(a.wallId, 1, pos)
+			local wallId = t.wall and wallAt(t.x, t.y)
+			if wallId and not tile:getItemById(wallId) then
+				Game.createItem(wallId, 1, pos)
 			end
 		end
 	end

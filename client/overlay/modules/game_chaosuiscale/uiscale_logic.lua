@@ -68,9 +68,16 @@ end
 -- cuts the login panel and the windows. A phone gets the highest whole step whose interface still has PHONE_W x
 -- PHONE_H pixels (a 1080-pixel-high phone: 2x, about 1170 x 540); the zoom buttons still change it afterwards
 L.PHONE_W, L.PHONE_H = 960, 540
+L.PHONE_MIN = 0.5                    -- the engine's floor on Android (base patch 0179)
 function L.phoneFactor(w, h)
   if type(w) ~= 'number' or type(h) ~= 'number' or w <= 0 or h <= 0 then return nil end
   if w < h then w, h = h, w end                   -- the game is landscape; a portrait size during a turn counts the same
+  if w < L.PHONE_W or h < L.PHONE_H then
+    -- a screen smaller than the interface the windows are made for: shrink it to fit (base patch 0179 lets the engine go
+    -- below 1.0 on Android; soft, but nothing overlaps or runs off the edge), never below PHONE_MIN
+    local f = math.min(w / L.PHONE_W, h / L.PHONE_H)
+    return math.max(L.PHONE_MIN, floor(f * 1000) / 1000)
+  end
   local best = 1
   for _, p in ipairs(L.STEPS) do
     local f = p / 100

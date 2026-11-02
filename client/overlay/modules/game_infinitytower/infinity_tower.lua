@@ -4,11 +4,15 @@ local milestoneWidgets = {}
 local cachedTowerData = nil
 local skipPanel = nil       -- the tower panel (floor, monsters, countdown, Next floor now): shown only inside a run
 local skipButton = nil
+local leaveButton = nil     -- the panel's Leave button (towerskip.lua TowerSkip.canLeave)
+local lastLeaveMs = nil
 local stateAtMs = 0
 local tickEvent = nil
 local towerState = nil      -- the last {action = 'state'} of the server
 local lastSkipMs = nil
-local AUTO_SKIP_KEY = 'chaosTowerAutoSkip' -- global per client install (the module has no per-character setting)
+local AUTO_SKIP_KEY = 'chaosTowerAutoSkip' -- global per client install
+local panelDrag = nil       -- { offX, offY, fromX, fromY } while the player drags the tower panel
+local panelRoot = nil       -- the parent the geometry watch is connected to
 
 -- Milestones padrão espelhados do servidor, exibidos antes dos dados chegarem
 local DEFAULT_MILESTONES = {
@@ -43,9 +47,13 @@ function terminate()
   onGameEnd()
   unbindSkipKey()
   if tickEvent then removeEvent(tickEvent); tickEvent = nil end
+  if panelRoot then
+    disconnect(panelRoot, { onGeometryChange = placePanel })
+    panelRoot = nil
+  end
   if skipPanel then
     skipPanel:destroy()
-    skipPanel, skipButton = nil, nil
+    skipPanel, skipButton, leaveButton = nil, nil, nil
   end
 
   if infinityTowerWindow then
@@ -102,6 +110,113 @@ local function refreshPanel()
   setLabel('timerLabel', timerText)
 end
 
+-- ---- the panel's spot: dragged by its background, saved per character (pure part towerpanelpos.lua)
+local P = TowerPanelPos
+
+local function charKey()
+  local world = g_game.getWorldName and g_game.getWorldName() or nil
+  return P.key(world, g_game.getCharacterName and g_game.getCharacterName() or nil)
+end
+
+local function savedNode()
+  local ok, node = pcall(g_settings.getNode, P.NODE)
+  return ok and type(node) == 'table' and node or {}
+end
+
+local function savePos(pos)
+  local key = charKey()
+  if not key then return end
+  pcall(g_settings.setNode, P.NODE, P.store(savedNode(), key, pos))
+  pcall(g_settings.save) -- a client that crashes or is killed keeps the spot too
+end
+
+local function anchorAt(x, y)
+  skipPanel:breakAnchors()
+  skipPanel:addAnchor(AnchorTop, 'parent', AnchorTop)
+  skipPanel:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  skipPanel:setMarginTop(y)
+  skipPanel:setMarginLeft(x)
+end
+
+local function anchorDefault()
+  skipPanel:breakAnchors()
+  skipPanel:addAnchor(AnchorTop, 'parent', AnchorTop)
+  skipPanel:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+  skipPanel:setMarginTop(P.DEFAULT_TOP)
+  skipPanel:setMarginLeft(0)
+end
+
+-- the saved spot of this character, clamped to the parent; the default place when nothing is saved
+function placePanel()
+  if not skipPanel or panelDrag then return end
+  local parent = skipPanel:getParent()
+  if not parent then return end
+  local pos = P.place(P.saved(savedNode(), charKey()), skipPanel:getWidth(), skipPanel:getHeight(),
+    parent:getWidth(), parent:getHeight())
+  if pos then anchorAt(pos.x, pos.y) else anchorDefault() end
+end
+
+-- the buttons and the Automatic box get the width their texts need (en and pt-BR); the panel grows with them
+local function fitPanelWidth()
+  local box = skipPanel:getChildById('autoSkipBox')
+  local ok1, bt = pcall(function() return skipButton:getTextSize().width end)
+  local ok2, xt = pcall(function() return box:getTextSize().width end)
+  local ok3, lt = pcall(function() return leaveButton:getTextSize().width end)
+  local panelW, boxW, leaveW = P.widths(ok1 and bt or 0, ok2 and xt or 0, leaveButton and (ok3 and lt or 0) or nil)
+  if box:getWidth() ~= boxW then box:setWidth(boxW) end
+  if leaveButton and leaveW > 0 and leaveButton:getWidth() ~= leaveW then leaveButton:setWidth(leaveW) end
+  if skipPanel:getWidth() == panelW then return false end
+  skipPanel:setWidth(panelW)
+  return true
+end
+
+local function onPanelPress(w, pos, button)
+  if button ~= MouseLeftButton then return false end
+  local parent = w:getParent()
+  if not parent then return false end
+  local x, y = w:getX() - parent:getX(), w:getY() - parent:getY()
+  panelDrag = { offX = pos.x - w:getX(), offY = pos.y - w:getY(), fromX = x, fromY = y }
+  anchorAt(x, y)
+  w:grabMouse()
+  return true
+end
+
+local function onPanelMove(w, pos)
+  if not panelDrag then return false end
+  local parent = w:getParent()
+  local x, y = P.dragTo(pos.x, pos.y, panelDrag.offX, panelDrag.offY, parent:getX(), parent:getY(),
+    w:getWidth(), w:getHeight(), parent:getWidth(), parent:getHeight())
+  w:setMarginLeft(x)
+  w:setMarginTop(y)
+  return true
+end
+
+local function onPanelRelease(w)
+  if not panelDrag then return false end
+  local drag = panelDrag
+  panelDrag = nil
+  w:ungrabMouse()
+  local parent = w:getParent()
+  local x, y = w:getX() - parent:getX(), w:getY() - parent:getY()
+  if P.moved(drag.fromX, drag.fromY, x, y) then
+    savePos({ x = x, y = y })
+  else
+    placePanel() -- a plain click: back to where it was (the default anchors when nothing is saved)
+  end
+  return true
+end
+
+-- double-click: back to the default place, the saved spot is forgotten
+local function onPanelDoubleClick()
+  if panelDrag then
+    panelDrag = nil
+    pcall(function() skipPanel:ungrabMouse() end)
+  end
+  savePos(nil)
+  placePanel()
+  return true
+end
+
 local function tickPanel()
   tickEvent = nil
   if not skipPanel or not skipPanel:isVisible() then return end
@@ -115,8 +230,16 @@ function updateSkipButton()
     local root = gameRoot()
     if not root then return end
     skipPanel = g_ui.createWidget('TowerPanel', root)
+    skipPanel.onMousePress = onPanelPress
+    skipPanel.onMouseMove = onPanelMove
+    skipPanel.onMouseRelease = onPanelRelease
+    skipPanel.onDoubleClick = onPanelDoubleClick
+    panelRoot = root
+    connect(root, { onGeometryChange = placePanel }) -- a smaller game window pulls a saved spot back in
     skipButton = skipPanel:getChildById('skipButton')
     skipButton.onClick = function() skipFloor() end
+    leaveButton = skipPanel:getChildById('leaveButton')
+    if leaveButton then leaveButton.onClick = function() leaveRun() end end
     local autoBox = skipPanel:getChildById('autoSkipBox')
     autoBox:setChecked(autoSkipOn())
     autoBox.onCheckChange = function(_, checked)
@@ -133,6 +256,9 @@ function updateSkipButton()
   skipButton:setText(tr(view.key) .. ' (' .. TowerSkip.HOTKEY .. ')')
   skipButton:setTooltip(tr(view.tip))
   skipButton:setEnabled(view.enabled)
+  local wasShown = skipPanel:isVisible()
+  -- on showing: this character's spot (another one after a relog); a wider panel is clamped again
+  if fitPanelWidth() or not wasShown then placePanel() end
   skipPanel:show()
   refreshPanel()
   if not tickEvent then tickEvent = scheduleEvent(tickPanel, 250) end
@@ -160,6 +286,17 @@ function skipFloor()
   if protocol then
     lastSkipMs = g_clock.millis()
     protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"skip"}')
+  end
+end
+
+-- the panel's Leave button: the same request as the window's Leave Tower (server ChaosTowerRun.leave)
+function leaveRun()
+  local now = g_clock.millis()
+  if not g_game.isOnline() or not TowerSkip.canLeave(towerState, now, lastLeaveMs) then return end
+  local protocol = g_game.getProtocolGame()
+  if protocol then
+    lastLeaveMs = now
+    protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"leave"}')
   end
 end
 

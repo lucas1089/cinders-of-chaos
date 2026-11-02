@@ -54,30 +54,36 @@ for ($i = 1; $i <= 30; $i++) {
 check(count(chaos_lf_news($many, '')) === $lim['news'], 'news: limited');
 check(chaos_lf_news($many, '')[0]['url'] === '', 'news: no site url, no link');
 
-// ---------------------------------------------------------------- the changelog from the real patch notes
+// ---------------------------------------------------------------- the real patch notes: all "Kind: news", so the launcher News
 $notes = chaos_lf_notes($repo . '/server/data/patchnotes');
-check(count($notes) >= 3 && count($notes) <= $lim['changelog'], 'changelog: notes found (' . count($notes) . ')');
+check(count($notes) >= 3 && count($notes) <= $lim['notes'], 'notes found (' . count($notes) . ')');
 $ids = array_column($notes, 'id');
 $sorted = $ids;
 rsort($sorted);
-check($ids === $sorted, 'changelog: newest first');
+check($ids === $sorted, 'notes: newest first');
 $bad = array_filter($ids, static function ($i) { return stripos($i, 'pt-br') !== false; });
-check(!$bad, 'changelog: the pt-BR twins are not entries of their own');
+check(!$bad, 'notes: the pt-BR twins are not entries of their own');
+check(!array_filter($notes, static function (array $n): bool { return ($n['en']['kind'] ?? '') !== 'news'; }), 'notes: every real note is marked Kind: news (owner 2026-11-02)');
 $feed = chaos_launcher_feed_build($rows, $notes, 'https://www.example.org/', 1790000100);
 check($feed['format'] === 1 && $feed['generated'] === 1790000100, 'feed: format and time');
 foreach (array('en', 'pt-BR') as $lang) {
-	check(isset($feed[$lang]['news'], $feed[$lang]['changelog']) && count($feed[$lang]['changelog']) === count($notes), "feed $lang: both lists");
-	foreach ($feed[$lang]['changelog'] as $e) {
-		check($e['title'] !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $e['date']) === 1 && $e['lines'] && count($e['lines']) <= $lim['lines'], "feed $lang: entry {$e['id']} has title, date and lines");
-		check(strpos($e['url'], 'https://www.example.org/page?plugin=chaos&p=patchnotes&id=') === 0, "feed $lang: entry {$e['id']} link");
-		foreach ($e['lines'] as $l) {
-			check($l === chaos_lf_plain($l, $lim['line']) && preg_match('/\*\*|__|`/', $l) === 0, "feed $lang: line is plain text");
+	check(isset($feed[$lang]['news'], $feed[$lang]['changelog']) && $feed[$lang]['changelog'] === array() && count($feed[$lang]['news']) === $lim['news'], "feed $lang: news notes go to News, the changelog is empty");
+	$dates = array_column($feed[$lang]['news'], 'date');
+	$ds = $dates;
+	rsort($ds);
+	check($dates === $ds, "feed $lang: news newest first, site rows and notes merged");
+	foreach ($feed[$lang]['news'] as $e) {
+		if (!is_string($e['id'])) {
+			continue;   // a site news row
 		}
+		check($e['title'] !== '' && $e['text'] !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $e['date']) === 1 && !isset($e['lines']), "feed $lang: note {$e['id']} has title, date and text");
+		check($e['text'] === chaos_lf_plain($e['text'], $lim['news_text']) && preg_match('/\*\*|__|`/', $e['text']) === 0, "feed $lang: note {$e['id']} text is plain");
+		check(strpos($e['url'], 'https://www.example.org/page?plugin=chaos&p=patchnotes&id=') === 0, "feed $lang: note {$e['id']} link");
 	}
 }
-$e0en = $feed['en']['changelog'][0];
-$e0pt = $feed['pt-BR']['changelog'][0];
-check($e0en['id'] === $e0pt['id'] && $e0en['lines'] !== $e0pt['lines'], 'feed: the pt-BR block has the twin text');
+$e0en = $feed['en']['news'][0];
+$e0pt = $feed['pt-BR']['news'][0];
+check(is_string($e0en['id']) && $e0en['id'] === $e0pt['id'] && $e0en['text'] !== $e0pt['text'], 'feed: the pt-BR block has the twin text');
 check(is_file($repo . '/server/data/patchnotes/' . $e0en['id'] . '.pt-br.md'), 'feed: newest note has a twin to compare with');
 // a note without a twin falls back to English
 $dir = sys_get_temp_dir() . '/chaos_lf_test_' . getmypid();
@@ -86,19 +92,24 @@ file_put_contents($dir . '/2026-01-02.md', "# Only English\nDate: 2026-01-02\n\n
 file_put_contents($dir . '/2026-01-01.md', "# First\nDate: 2026-01-01\n\n## Fixes\n\n- Fixed it.\n");
 file_put_contents($dir . '/2026-01-01.pt-br.md', "# Primeiro\nDate: 2026-01-01\n\n## Correções\n\n- Corrigido.\n");
 file_put_contents($dir . '/README.md', "# not a note\n");
+file_put_contents($dir . '/2026-01-03.md', "# Big news\nDate: 2026-01-03\nKind: news\n\nThe intro **line**.\nMore intro.\n\n## New\n\n- A bullet.\n");
 file_put_contents($dir . '/_draft.md', "# draft\n");
 $n2 = chaos_lf_notes($dir);
 $f2 = chaos_launcher_feed_build(array(), $n2, '', 5);
-check(count($n2) === 2 && $f2['en']['changelog'][0]['id'] === '2026-01-02', 'folder: README and drafts skipped, newest first');
+check(count($n2) === 3 && count($f2['en']['changelog']) === 2 && $f2['en']['changelog'][0]['id'] === '2026-01-02', 'folder: README and drafts skipped, a plain note stays in the changelog, newest first');
+check($f2['en']['news'] === array(array('id' => '2026-01-03', 'date' => '2026-01-03', 'title' => 'Big news', 'text' => 'The intro line. More intro.', 'url' => '')), 'folder: a Kind: news note goes to News with its intro: ' . json_encode($f2['en']['news']));
+check($f2['pt-BR']['news'][0]['title'] === 'Big news', 'folder: a news note without a twin is English in pt-BR');
+$f3 = chaos_launcher_feed_build(array(array('id' => 9, 'title' => 'Site', 'text' => 's', 'date' => strtotime('2026-01-04 12:00 UTC'))), $n2, '', 5);
+check(array_column($f3['en']['news'], 'title') === array('Site', 'Big news'), 'folder: site news and news notes merged by date');
 check($f2['pt-BR']['changelog'][0]['title'] === 'Only English' && $f2['pt-BR']['changelog'][0]['lines'] === array('Lead. The line.', 'Second.'), 'folder: no twin gives the English note, sub-bullets left out');
 check($f2['pt-BR']['changelog'][1]['title'] === 'Primeiro' && $f2['pt-BR']['changelog'][1]['lines'] === array('Corrigido.'), 'folder: the twin is used');
-check($f2['en']['changelog'][1]['title'] === 'First' && $f2['en']['news'] === array() && $f2['en']['changelog'][0]['url'] === '', 'folder: English block, no site url, no link');
+check($f2['en']['changelog'][1]['title'] === 'First' && $f2['en']['changelog'][0]['url'] === '', 'folder: English block, no site url, no link');
 check(chaos_lf_notes($dir . '/missing') === array() && chaos_lf_notes('') === array(), 'folder: missing gives an empty list');
 
 // ---------------------------------------------------------------- JSON, size
 $json = chaos_launcher_feed_json($feed);
 $back = json_decode($json, true);
-check(is_array($back) && $back['en']['changelog'][0]['id'] === $e0en['id'] && strlen($json) < $lim['bytes'], 'json: round trip, ' . strlen($json) . ' bytes');
+check(is_array($back) && $back['en']['news'][0]['id'] === $e0en['id'] && strlen($json) < $lim['bytes'], 'json: round trip, ' . strlen($json) . ' bytes');
 $keys = array();
 foreach (array('en', 'pt-BR') as $lang) {
 	foreach (array('news', 'changelog') as $k) {
@@ -133,7 +144,7 @@ check(chaos_launcher_feed_cached($build, $cache, 300, 2001) === '{"n":3}', 'cach
 check(chaos_launcher_feed_cached($build, '/nonexistent-folder/x.json', 300, 3000) === '{"n":4}', 'cache: an unwritable place still answers');
 check(count(glob($dir . '/cache.json.*.tmp') ?: array()) === 0, 'cache: no temporary file left');
 
-// ---------------------------------------------------------------- live builder: a failing database gives no news, the changelog stays
+// ---------------------------------------------------------------- live builder: a failing database keeps the news notes
 function db() {
 	return new class {
 		public function fetchAll(string $sql, array $p = array()) { throw new RuntimeException('database down'); }
@@ -141,7 +152,7 @@ function db() {
 }
 $log = ini_set('error_log', $dir . '/php.log');
 $live = json_decode(chaos_launcher_feed_live(1790000200), true);
-check(is_array($live) && $live['en']['news'] === array() && count($live['en']['changelog']) >= 3, 'live: database down gives no news, the changelog stays');
+check(is_array($live) && count($live['en']['news']) >= 3 && !array_filter($live['en']['news'], static function (array $n): bool { return !is_string($n['id']); }), 'live: database down gives no site news, the news notes stay');
 ini_set('error_log', (string)$log);
 
 // ---------------------------------------------------------------- the entry point and the wiring

@@ -1,0 +1,18 @@
+# Item hotkey texts ("Using one of ...", "Using the last ...", the Everfull "Using ... (never runs out).") are not drawn over the game; console and helper potion gate still get them. Applies after 0019.
+--- a/modules/game_textmessage/textmessage.lua	2026-11-02 13:39:57.015083596 +0000
++++ b/modules/game_textmessage/textmessage.lua	2026-11-02 13:39:57.034189571 +0000
+@@ -40,6 +40,14 @@
+     return
+   end
+ 
++  -- Chaos (owner 2026-11-02): the server's item hotkey texts ("Using an everfull mana potion (never runs out).", "Using
++  -- one of 12 ...", "Using the last ...") are not drawn over the game; the console and the helper's potion gate still
++  -- get them (their own onTextMessage)
++  if type(text) == 'string' and (text:find('^Using one of ') or text:find('^Using the last ') or
++      text:find('^Using .+ %(never runs out%)%.$')) then
++    return
++  end
++
+   -- Chaos: damage, healing, experience, loot, look and status texts show short numbers (15.3k); chat is left as it is
+   text = shortNumbersInMessage(mode, text)
+ 

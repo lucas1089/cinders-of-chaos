@@ -35,9 +35,20 @@ local function helperConfig()
 end
 
 local function destroy()
+  if hud and ChaosHudMove then ChaosHudMove.detach(hud) end
   if hud and not hud:isDestroyed() then hud:destroy() end
   hud = nil
   lastLayoutKey = nil
+  lastMarginTop = nil
+end
+
+-- the default place: top centre of the map (placeBelowMenuBar fine-tunes the margin on the next refresh)
+local function anchorHud(widget)
+  widget:breakAnchors()
+  widget:addAnchor(AnchorTop, 'parent', AnchorTop)
+  widget:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+  widget:setMarginLeft(0)
+  widget:setMarginTop(L.HUD_GAP)
   lastMarginTop = nil
 end
 
@@ -48,14 +59,18 @@ local function ensure()
   if not map then return nil end
   hud = g_ui.createWidget('ChaosBotHud', map)
   if not hud then return nil end
-  hud:addAnchor(AnchorTop, 'parent', AnchorTop)
-  hud:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
-  hud:setMarginTop(L.HUD_GAP)
+  anchorHud(hud)
+  -- dragged by its title line (the cards stay click-through), spot saved per character, double-click back (game_hudmove)
+  if ChaosHudMove then
+    ChaosHudMove.attach(hud, 'botHud', { panel = false, reset = anchorHud,
+      handles = { hud:getChildById('hudTitle'), hud:getChildById('hudStatus') } })
+  end
   return hud
 end
 
 -- keeps the HUD below the menu bar (client_chaos_topbar), which is drawn over the top of the map
 local function placeBelowMenuBar(widget)
+  if ChaosHudMove and ChaosHudMove.isMoved(widget) then return end -- the player put it somewhere (game_hudmove)
   local map = widget:getParent()
   local gi = modules.game_interface
   local root = gi and gi.getRootPanel and gi.getRootPanel()

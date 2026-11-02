@@ -589,6 +589,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Info & Services"] = "Info & Serviços",
   -- game_chaosnotify/notifications.lua
   ["Close notification"] = "Fechar notificação",
+  ["DANGER"] = "PERIGO", -- game_chaosnotify danger window (hunt warnings)
+  ["CAUTION"] = "CUIDADO",
   ["NOTIFICATION"] = "NOTIFICAÇÃO",
   ["Notification message"] = "Mensagem da notificação",
   ["Task Complete: of %s, killed %d and received %d task points"] = "Task completa: de %s, matou %d e recebeu %d pontos de task",
@@ -1443,6 +1445,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Leave Tower"] = "Sair da torre",
   ["Next floor now"] = "Próximo andar agora",
   ["Automatic"] = "Automático",
+  ["Drag to move. Double-click to put it back."] = "Arraste para mover. Clique duas vezes para voltar ao lugar.",
   ["Start each next floor by itself as soon as the server allows it. In a group, Automatic only works for the run leader."] = "Começa cada próximo andar sozinho assim que o servidor permitir. Em grupo, o Automático só funciona para o líder da corrida.",
   ["Get ready"] = "Prepare-se",
   ["Floor %d"] = "Andar %d",
@@ -1456,6 +1459,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["A boss floor is next: it starts by itself."] = "O próximo andar é de chefe: ele começa sozinho.",
   ["Only the run leader can call the next floor."] = "Só o líder da corrida pode chamar o próximo andar.",
   ["Leave the tower run you are in (your progress so far counts)."] = "Sair da corrida na torre em que você está (seu progresso até aqui conta).",
+  ["Leave the tower. Your cleared floors count. During a fight you leave after a short countdown."] = "Sair da torre. Seus andares concluídos contam. Durante uma luta você sai após uma contagem curta.",
   -- game_invasion/invasion.lua
   ["Occupied"] = "Ocupado",
   ["Horde slain: %d%%"] = "Horda morta: %d%%",
@@ -3529,7 +3533,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Pick sections in Tools > Bot HUD"] = "Escolha as seções em Tools > Bot HUD",
   -- game_chatpanel
   ["Drag to change the width of the chat. Double-click: default width."] = "Arraste para mudar a largura do chat. Clique duplo: largura padrão.",
-  ["Drag to move the chat sideways. Double-click: back to the centre."] = "Arraste para mover o chat para os lados. Clique duplo: volta ao centro.",
+  ["Drag to move the chat anywhere. Double-click: back to the bottom centre."] = "Arraste para mover o chat para qualquer lugar. Clique duplo: volta para baixo, no centro.",
+  ["Chat"] = "Chat",
   -- game_helperrotation/autorotation_ui.lua
   ["Add to my rules"] = "Somar às minhas regras",
   ["Replace"] = "Substituir",
@@ -4373,6 +4378,21 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Boots"] = "Botas",
   ["Jewel"] = "Joia",
   ["Quiver"] = "Aljava",
+  -- what a weapon is (server item_tooltip_core.lua T.weaponLabel, the tooltip title)
+  ["One-handed sword"] = "Espada de uma mão",
+  ["Two-handed sword"] = "Espada de duas mãos",
+  ["One-handed axe"] = "Machado de uma mão",
+  ["Two-handed axe"] = "Machado de duas mãos",
+  ["One-handed club"] = "Clava de uma mão",
+  ["Two-handed club"] = "Clava de duas mãos",
+  ["Dagger"] = "Adaga",
+  ["Bow"] = "Arco",
+  ["Crossbow"] = "Besta",
+  ["Throwing weapon"] = "Arma de arremesso",
+  ["Wand"] = "Varinha",
+  ["Rod"] = "Cajado",
+  ["Two-handed weapon"] = "Arma de duas mãos",
+  ["Container"] = "Recipiente",
   ["Any group"] = "Qualquer grupo",
   ["Chaos"] = "Chaos",
   ["Absorbs"] = "Absorções",

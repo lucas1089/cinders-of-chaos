@@ -200,13 +200,61 @@ local function hasBit(value, b)
 	return floor((value or 0) / b) % 2 == 1
 end
 
--- inventory slots an item of this type is worn in (the compare view looks there) and what it is worn as
-function T.slotsOf(slotPosition, kind)
+-- what kind of weapon it is (owner 2026-11-02: "Two-handed sword", not "Two-handed weapon"; every weapon names its
+-- kind). w = {weaponType (engine number), twoHanded, name, fist (a Monk fist weapon), launcher ("bow" / "crossbow")}.
+-- Daggers are one-handed swords in the engine (the Thief dual wields any of them, classes.lua): the name tells them.
+T.DAGGER_WORDS = {"dagger", "knife", "dirk", "stiletto", "kris", "shiv", "kunai", "sai"}
+function T.weaponLabel(w)
+	w = w or {}
+	local wt, two = int(w.weaponType), w.twoHanded == true
+	local name = tostring(w.name or ""):lower()
+	local function hands(what)
+		return (two and "Two-handed " or "One-handed ") .. what
+	end
+	if w.fist then
+		return "Fist weapon"
+	elseif wt == int(WEAPON_SWORD or 1) then
+		if not two then
+			for _, word in ipairs(T.DAGGER_WORDS) do
+				if name:find("%f[%a]" .. word .. "%f[%A]") then
+					return "Dagger"
+				end
+			end
+		end
+		return hands("sword")
+	elseif wt == int(WEAPON_CLUB or 2) then
+		return hands("club")
+	elseif wt == int(WEAPON_AXE or 3) then
+		return hands("axe")
+	elseif wt == int(WEAPON_DISTANCE or 5) then
+		if w.launcher == "crossbow" then
+			return "Crossbow"
+		elseif w.launcher == "bow" then
+			return "Bow"
+		end
+		return "Throwing weapon"
+	elseif wt == int(WEAPON_WAND or 6) then
+		return name:find("%f[%a]rod%f[%A]") and "Rod" or "Wand"
+	end
+	return two and "Two-handed weapon" or "Weapon"
+end
+
+-- inventory slots an item of this type is worn in (the compare view looks there) and what it is worn as. weapon: the
+-- T.weaponLabel input (without it a weapon is "Weapon" / "Two-handed weapon")
+function T.slotsOf(slotPosition, kind, weapon)
 	local sp = int(slotPosition)
 	-- every item may be held in the hands (the engine's default slot position), so the hands count only for weapons
 	-- and shields
 	if kind == "weapon" or kind == "shield" then
-		local name = kind == "shield" and "Shield" or (hasBit(sp, SLOTP.twohand) and "Two-handed weapon" or "Weapon")
+		local name
+		if kind == "shield" then
+			name = "Shield"
+		elseif weapon then
+			weapon.twoHanded = hasBit(sp, SLOTP.twohand)
+			name = T.weaponLabel(weapon)
+		else
+			name = hasBit(sp, SLOTP.twohand) and "Two-handed weapon" or "Weapon"
+		end
 		return {INV.left, INV.right}, name
 	end
 	-- a quiver is worn in the off-hand (the shield hand) next to a bow or crossbow (engine patch 0023)
@@ -639,7 +687,23 @@ function T.build(item, opts)
 
 	local kind = M and M.kindOf(item) or nil
 	tip.kind = kind
-	local slots, slotName = T.slotsOf(call(it, "getSlotPosition"), kind)
+	local weapon = nil
+	if kind == "weapon" then
+		local MK = ChaosMonk
+		local fists = MK and MK.cfg and MK.cfg.unarmed and MK.cfg.unarmed.fistWeapons or {}
+		local fist = false
+		for _, f in ipairs(fists) do
+			if f == int(id) then
+				fist = true
+				break
+			end
+		end
+		local wt = int(call(it, "getWeaponType"))
+		local A = ChaosArchery
+		weapon = {weaponType = wt, name = call(it, "getName") or "", fist = fist,
+			launcher = wt == int(WEAPON_DISTANCE or 5) and A and A.kindOfType and A.kindOfType(it) or nil}
+	end
+	local slots, slotName = T.slotsOf(call(it, "getSlotPosition"), kind, weapon)
 	tip.slot = slotName
 	if kind then
 		tip.cmp = slots

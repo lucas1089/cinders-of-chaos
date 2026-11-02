@@ -621,9 +621,12 @@ json = {encode = function(x) return x end, decode = function(x) return x end}
 local function key(p) return p.x .. "," .. p.y .. "," .. p.z end
 Position = function(x, y, z) return {x = x, y = y, z = z, sendMagicEffect = function() end} end
 local tiles, creatures, players = {}, {}, {}
-local BLOCKING = {[cfg.ids.wall] = true, [cfg.ids.pillar] = true, [cfg.ids.exitMark] = true, [cfg.ids.shrine] = true,
+if not ChaosArenaLook then dofile("data/scripts/chaos/arenalook_core.lua") end
+-- the wall is a set of pieces ("darkstone"): every piece blocks
+local BLOCKING = {[cfg.ids.pillar] = true, [cfg.ids.exitMark] = true, [cfg.ids.shrine] = true,
   [cfg.look.shrineLights.id] = true, [cfg.look.shrineBeacons.id] = true, [cfg.look.gateLights.id] = true}
 for _, g in ipairs(cfg.look.cover) do for _, id in ipairs(g.ids) do BLOCKING[id] = true end end
+ChaosArenaLook.wallIds(cfg.ids.wall, BLOCKING)
 local function newTile(pos)
   local t = {pos = pos, items = {}, pz = false}
   function t:hasFlag(f) return f == TILESTATE_PROTECTIONZONE and self.pz end
@@ -755,6 +758,22 @@ check(Z.inst[0] and Z.inst[0].built, "the standard instance is built at startup"
 check(Z.inst[1] and Z.inst[1].built, "the running season's instance too")
 eq(created, 2 * #foot, "the tiles of both instances")
 local Lz = Z.inst[0].L
+-- the outer wall and the ruins are darkstone pieces (from their neighbours), never the cave rock piece 5648
+do
+  local pieces, walls, bad = ChaosArenaLook.wallIds("darkstone"), 0, 0
+  for _, t in ipairs(foot) do
+    if t.wall then
+      walls = walls + 1
+      local tile, ok = Tile(t), false
+      for _, it in ipairs(tile and tile.items or {}) do
+        if pieces[it.id] then ok = true end
+        if it.id == 5648 then bad = bad + 1 end
+      end
+      if not ok then bad = bad + 1 end
+    end
+  end
+  check(walls > 0 and bad == 0, "every wall tile has a darkstone piece (" .. bad .. " bad of " .. walls .. ")")
+end
 local function hit(target, attacker, dmg)
   local p, _, s = events.ChaosMarchesHealth.onHealthChange(target, attacker, dmg, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
   target.health = target.health - p - s

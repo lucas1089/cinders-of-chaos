@@ -403,6 +403,10 @@ function init()
     return nil
   end
   hud = make('PzHud', modules.game_interface.getRootPanel())
+  -- movable, spot saved per character, double-click back (game_hudmove)
+  if hud and ChaosHudMove then
+    ChaosHudMove.attach(hud, 'pvpZoneHud', { otui = '/modules/game_pvpzone/pvpzone', style = 'PzHud' })
+  end
   window = make('PzWindow', rootWidget)
   confirm = make('PzConfirm', rootWidget)
   if confirm then
@@ -419,6 +423,7 @@ function terminate()
   disconnect(g_game, handlers.game or {})
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
   stopTick()
+  if hud and ChaosHudMove then ChaosHudMove.detach(hud) end
   for _, w in ipairs({ hud, window, confirm }) do
     if w then w:destroy() end
   end
