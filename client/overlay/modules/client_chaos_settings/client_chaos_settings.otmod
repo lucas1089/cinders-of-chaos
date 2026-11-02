@@ -1,0 +1,9 @@
+Module
+  name: client_chaos_settings
+  description: Lists read back from g_settings nodes (global ChaosSettings): setNode turns list index 1 into the tag "1", so ipairs and # see nothing after a relog; ChaosSettings.list reads both key kinds in order
+  author: Cinders of Chaos
+  sandboxed: false
+  reloadable: false
+  scripts: [ settingslist ]
+  autoload: true
+  autoload-priority: 10

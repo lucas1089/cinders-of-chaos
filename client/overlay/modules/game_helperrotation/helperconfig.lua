@@ -319,7 +319,8 @@ end
 function HC.autosetupWords(entry)
   local out = {}
   if type(entry) ~= 'table' or type(entry.timerWords) ~= 'table' then return out end
-  for _, w in ipairs(entry.timerWords) do
+  -- read back from g_settings the list's keys are the tags "1", "2" ... (client_chaos_settings)
+  for _, w in ipairs(ChaosSettings.list(entry.timerWords)) do
     if #out >= HC.WORDS_MAX then break end
     if type(w) == 'string' and w ~= '' then out[#out + 1] = w:sub(1, HC.TEXT_MAX) end
   end

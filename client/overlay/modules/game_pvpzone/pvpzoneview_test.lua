@@ -1,5 +1,6 @@
 -- luajit pvpzoneview_test.lua && lua5.3 pvpzoneview_test.lua (CI runs it from the repository root)
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
+dofile(dir .. '../client_chaos_settings/settingslist.lua')
 dofile(dir .. 'pvpzoneview.lua')
 local V = PvpZoneView
 local fails, checks = 0, 0
@@ -123,6 +124,24 @@ eq(g[2][1], 'Shrine event: stand in the shrine circle with your faction to take 
 g = V.goalLines({ embers = 0, contest = { phase = 'capture' } }, nil, nil)
 eq(g[2][1], 'Shrine event: only players pledged to a faction can take the shrine.', 'capture, unpledged')
 eq(#V.goalLines(nil, nil, nil), 1, 'no data: the goal')
+
+-- the minimap flags after a crash: saved with V.flagsNode, read back through g_settings (client_chaos_settings mock
+-- with the engine's casts: the list's keys become "1", "2"; ipairs alone read nothing, the flags stayed on the map)
+do
+  local g = ChaosSettings.mockSettings()
+  g.setNode('pvpzoneFlags', V.flagsNode({ { x = 1000, y = 1001, z = 7, icon = 3, name = 'Safe exit' },
+    { x = 1010, y = 1020, z = 6, icon = 5, name = 'Cinder Shrine' } }))
+  local node = g.getNode('pvpzoneFlags')
+  eq(node.list[1], nil, 'flags: the engine turned index 1 into a tag')
+  local back = V.savedFlags(node)
+  eq(#back, 2, 'flags: both read back')
+  eq(back[1].x, 1000, 'flags: first x'); eq(back[1].z, 7, 'flags: first z'); eq(back[1].name, 'Safe exit', 'flags: first name')
+  eq(back[2].icon, 5, 'flags: second icon'); eq(back[2].name, 'Cinder Shrine', 'flags: order kept')
+  g.setNode('pvpzoneFlags', V.flagsNode({}))
+  eq(#V.savedFlags(g.getNode('pvpzoneFlags')), 0, 'flags: an empty list comes back nil, read as none')
+  eq(#V.savedFlags({ list = { { x = 1, y = 2, z = 'x' }, 'bad', { x = 3, y = 4, z = 5 } } }), 1, 'flags: bad rows dropped')
+  eq(#V.savedFlags(nil), 0, 'flags: no node')
+end
 
 print(string.format('pvpzoneview_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

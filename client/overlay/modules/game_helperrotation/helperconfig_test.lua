@@ -2,6 +2,7 @@
 -- ChaosHelperConfig: hand-edited helper.json and config.otml nodes are clamped to the helper's ranges on load, wrong
 -- types fall back to defaults, lists are capped; the helper's reader (ChaosHelperSave.read) applies it.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
+dofile(dir .. '../client_chaos_settings/settingslist.lua')
 dofile(dir .. 'helpersave.lua')
 dofile(dir .. 'helperconfig.lua')
 local HS, HC = ChaosHelperSave, ChaosHelperConfig
@@ -167,6 +168,24 @@ eq(n, 500, 'ignored list capped')
 local w = HC.autosetupWords({ timerWords = { 'utani hur', 5, '', { 'x' }, ('a'):rep(300) } })
 eq(#w, 2, 'only non-empty words'); eq(#w[2], HC.TEXT_MAX, 'long word capped')
 eq(#HC.autosetupWords({ timerWords = 'x' }), 0, 'not a list'); eq(#HC.autosetupWords(nil), 0, 'no entry')
+-- the words after a relog: autosetup_ui.lua rememberWords writes the node, g_settings gives it back with the list's
+-- keys as the tags "1", "2" (client_chaos_settings mock with the engine's casts); ipairs alone read nothing
+do
+  local g = ChaosSettings.mockSettings()
+  g.setNode('chaos_helper_autosetup', { Hero = { timerWords = { 'utani hur', 'utamo vita', 'utito tempo' } } })
+  local node = g.getNode('chaos_helper_autosetup')
+  eq(node.Hero.timerWords[1], nil, 'relog: the engine turned index 1 into a tag')
+  local rw = HC.autosetupWords(node.Hero)
+  eq(#rw, 3, 'relog: every Auto setup word is read back')
+  eq(rw[1], 'utani hur', 'relog: first word in order'); eq(rw[3], 'utito tempo', 'relog: last word in order')
+  g.setNode('chaos_helper_autosetup', node) -- saved again as read: still there after a second relog
+  eq(#HC.autosetupWords(g.getNode('chaos_helper_autosetup').Hero), 3, 'relog twice: words kept')
+  local many = {}
+  for i = 1, HC.WORDS_MAX + 5 do many[i] = 'w' .. i end
+  g.setNode('chaos_helper_autosetup', { Hero = { timerWords = many } })
+  local capped = HC.autosetupWords(g.getNode('chaos_helper_autosetup').Hero)
+  eq(#capped, HC.WORDS_MAX, 'relog: list still capped'); eq(capped[HC.WORDS_MAX], 'w' .. HC.WORDS_MAX, 'relog: cap keeps index order')
+end
 
 -- Auto setup's targeting (autosetup.lua S.TARGETING) survives the check on load, so it is back after a relog
 local tcfg = HC.sanitizeHelper({ targetMonsterList = '*', autoTargetEnabled = true, alwaysChaseOpponent = false,
