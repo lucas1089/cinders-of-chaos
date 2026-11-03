@@ -74,6 +74,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_chaosuiscale | none (client only) | base patch 0129 (`uiScale` option and line in Options > Interface, nearest filter for a whole scale); without it `g_app.scale` still works but the picture is soft; base patch 0179 (Android: a screen under 960 x 540 gets a factor below 1.0, `phoneFactor`) | Interface scale for 1440p and 4K screens: 100 / 200 / 300 % (Options > Interface, saved per computer, applied at once). A step the window is too small for is lowered (200 % from about 2048x1152, 300 % from 3072x1728) and comes back when the window grows. Windows only: only the Windows window maps the mouse through the scale, so elsewhere the module leaves 100 %. A phone gets the highest whole step that leaves 960x540 interface pixels (a 1080-pixel-high phone: 200 %, about 1170x540) instead of the base phone zoom of 300 %, which left 780x360 and cut the login panel and the windows. On a phone the Back key (Escape) closes the options window too. See "Interface scale (O207)". Pure logic `uiscale_logic.lua`, tested by `uiscale_test.lua`. Not run in a client |
 | client_chaos_uifade | none (client only) | base patch 0141 (`uiFade` option and checkbox in Options > Graphics); without it the effect stays on (the default) | Short fades on main windows and dialogs, from one hook on the `UIWindow` class. See "Window fade (O223)". Pure logic `uifade_logic.lua`, tested by `uifade_test.lua` and, on a mocked widget API, `uifade_widget_test.lua`. Not run in a client |
 | client_chaos_screenfit | none (client only) | none | A window taller or wider than the screen scrolls instead of being cut off (O313): it opens with its title in view, a drag on any empty part moves it until its far edge reaches the screen edge, the mouse wheel scrolls it too. One hook on `UIWindow` (onDragMove, onMouseWheel, onVisibilityChange, onGeometryChange), installed at autoload priority 5 and copied onto the windows made before it, because a widget takes its class methods when it is made. Only windows on the root, not mini windows. A window that fits behaves as before. Pure rules `screenfit_logic.lua`, tested by `screenfit_test.lua`. Checked here in the desktop client at 1200x480: the options window opens at the top, scrolls by wheel and drag; not run on a phone |
+| client_chaos_perf | none (client only) | none (`g_stats`, `g_app.getGraphicsFps` / `getProcessingFps`, `g_clock.realMicros` used when the engine has them) | Performance overlay (O376): System > Developer > Performance or Ctrl+Alt+F9 (PC and phone). Live: FPS, frame time (avg from FPS, worst = longest main loop stall), Lua memory, loaded modules (Chaos ones by author), creatures on screen, open windows. Record 60 s writes `chaos-perf-<time>.csv` and `.txt` to the write folder; Copy summary puts the text on the clipboard. Lua time per module by wrapping `scheduleEvent` / `cycleEvent` / `addEvent` and the extended opcode registers. See "How to measure performance (O376)". Pure part `perf_core.lua`, tested by `perf_core_test.lua`. Not run in a client |
 | client_chaos_phonetest | none (client only) | none | Emulator play test of the Android client (O313, `android-client.yml` input `smoke_play`). Only with the marker file `phonetest_run` in the write folder, which `client/android/tools/smoke_play.sh` writes through `run-as` (debug APKs only): logs in with the account the marker names, enters with the first character, walks 8 steps, opens and closes 20 main windows (size against the screen), places an NPC (`/s`, default Loot Buyer) and opens its trade, places a monster (`/m`, default Rat) and kills it, opens the corpse, says a line. Each step logs `phonetest: <step> ok|fail`, `phonetest: shot <name>` asks the script for a screenshot. Without the marker it does nothing. Pure part `phonetest_core.lua`, tested by `phonetest_core_test.lua` |
 | game_chaosweather | extended opcode 114 (server `weather.lua`: `set` server -> client, `hello` client -> server) | base patch 0130 (the `weather` option and checkbox in Options > Graphics, Lua and otui only); without it the rain still works, only the checkbox is missing (the option then stays on) | Rain over the game window, drawn by the client when the server says it rains (the same message also carries the area colour mood `m`, which goes to `game_visualfx.setMood`, O234). Three repeated 256 px rain pictures (`images/rain_*.png`, `tools/gen_rain_art.py --check`) on widgets over the game map panel only (under the side panels and the map's HUD), scrolled by `setImageRect` every 33 ms; 3 layers at most (about 130 rectangles at 1080p, 560 at 4K, all three layers), 1-3 layers by the strength 1-3, faded in and out by the server's fade, faded out under a roof (`g_map.isCovered`, every 400 ms), hidden at once by the option. Nothing runs while it is dry. Also the ambient particles (O226, `chaosambient*.lua`, `images/ember_*`, `mote_*`, `dust_*`, `tools/gen_ambient_art.py --check`; option `ambientParticles`, base patch 0144). A tick calls `setImageRect` and `setOpacity` on a layer only when the value changed (`L.newPaint`, O235; the rain rectangle moves every tick, a steady opacity and the slow ambient drift do not). Pure logic `chaosweather_logic.lua` and `chaosambient_logic.lua`, tested by `chaosweather_test.lua`, `chaosambient_test.lua`, `chaosambient_glue_test.lua`. See "Weather on the client (O208)" and "Ambient particles (O226)". Not run in a client |
 | game_combatdecals | none (client only) | base patch 0148 (`combatDecals` option and checkbox in Options > Graphics); needs `Tile:setFloorWidget` of `0078`, `g_map.onImpactText` of `0100` and `AnimatedText:getColor` of `0081`; without the floor widget it draws nothing | Stains on the ground after combat (O231): blood where a monster dies, a scorch mark under a fire hit, frost cracks under an ice hit, a green stain under poison or earth. See "Combat decals (O231)" below |
@@ -299,6 +300,55 @@ partial and need a server packet, art or an engine rewrite; water and lava shade
 at first and came later as O206 (above); bloom needs a second framebuffer and a blur pass per
 frame (costly on a weak PC). Not run in a client: the first build should check the Graphics tab fits
 the four new rows (window 685x531), the flash on a pack, a shake from a boss hit, and the frame rate with all four on and off.
+
+## How to measure performance (O376)
+
+Module `client_chaos_perf` (priority 110, before the game modules). Nothing runs while its window is closed and no
+record is going on.
+
+**What exists in the engine.** `g_app.getFps()` (frames of the last second; the Options "Current Frame Rate" line
+reads it). `g_app.getGraphicsFps` / `getProcessingFps` and `g_stats` (main, render, events, Lua timings) when the build
+has them; the emulator play test used them first (`client_chaos_phonetest` step `perf`). No per-frame time, no effect
+count and no process memory reach Lua. Lua memory is `collectgarbage('count')`. No overlay existed before.
+
+**Steps on PC.**
+1. Log in and go where it feels slow: a full hunt, a rift, town with many players.
+2. Open System > Developer > Performance, or press Ctrl+Alt+F9.
+3. Press Record 60 s. Play as usual for one minute. The window may stay open or be closed.
+4. The status line says where the files went. Windows: `%APPDATA%\CindersOfChaos\CindersOfChaos\`.
+   Files: `chaos-perf-<date>-<time>.txt` (summary) and `.csv` (one row a second).
+5. Paste the `.txt` to Claude, or press Copy summary and paste.
+
+**Steps on a phone.** Same menu (System > Developer > Performance). Press Record 60 s, play, then Copy summary.
+Paste it into a chat to yourself or to Claude. The files are in the app folder, out of reach without a cable.
+
+**Good numbers.**
+- PC: avg 60 FPS (57 counts), lowest 5 % at least 30. Verdict "good".
+- Phone: avg 30 FPS, lowest 5 % at least 20.
+- "ok": avg at least 30 (phone 20) with some drops. "low": below that, or deep drops.
+- Main loop stall: under 50 ms is fine. 100 ms and more is a visible hitch.
+- Lua memory: it grows and falls with garbage collection. A steady climb of thousands of KB a minute over
+  several records points to a leak.
+- Lua time per module: under 1 ms per second each is cheap. The top lines say which Chaos module to look at first.
+
+**What the numbers mean.**
+- FPS, graphics and processing FPS: the engine's own counters, sampled once a second.
+- Frame time avg: 1000 / FPS. Worst: the longest gap between two ticks of a 10 ms timer, per second.
+  Lua blocks the main loop, so a slow callback shows here. With a separate render thread a slow draw may not.
+- Lua time per module: while a record runs, `scheduleEvent`, `cycleEvent`, `addEvent` and
+  `ProtocolGame.registerExtendedOpcode` / `registerExtendedJSONOpcode` are wrapped. Each new callback is charged to
+  the module that registered it (`debug.getinfo` source, corelib and gamelib frames skipped). A callback called inside
+  another timed one counts once, in the outer one. Clock: `g_clock.realMicros`, else `os.clock` (the file says which).
+- By default only callbacks registered during the record count. Cycle events started at login are missed.
+  Tick "Time Lua per module from client start" (setting `chaosPerfProfileStart`) and restart the client to count them.
+  That mode costs a stack lookup per new timer and one test per call outside a record.
+- Not measured: signal handlers (`connect`), drawing, shaders and effects on the GPU, process memory.
+- Open windows: ids of the visible windows on the root, the game panel and the side panels, with seconds seen.
+
+Files start with `chaos-` so the write folder clean-up keeps them (`cleanup_core.lua` `keepName`). Logic and the file
+formats: `perf_core.lua`, tested by `perf_core_test.lua` (stats, stall probe, attribution, timing wrap with nesting,
+errors and nil holes, record, CSV, summary). Not run in a client: the hotkey, the menu entry, the real engine
+functions and how many cycle events a default record misses.
 
 ## Lazy modules (O202)
 Two modules with a window that is opened rarely and no server push load on first use (`autoload: false`) instead of at start:

@@ -29,6 +29,11 @@ sprites, and an APK that updates itself.
 Phase 1 added no CI workflow, because the base had no Android build to run from Linux. Phase 2 adds the build and the
 manual workflow `.github/workflows/android-client.yml`. See "Phase 2 status".
 
+## Frame rate on a real phone (O376)
+
+System > Developer > Performance, Record 60 s, then Copy summary and paste it to Claude.
+Target: avg 30 FPS, lowest 5 % at least 20. Steps and numbers: client/MANIFEST.md "How to measure performance (O376)".
+
 ## Play test on an emulator
 
 Date: 2026-11-01. Actions > Android client with `smoke_play` builds a TEST APK and plays it on an emulator. The APK has

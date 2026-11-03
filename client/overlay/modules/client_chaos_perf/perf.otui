@@ -1,0 +1,89 @@
+// Performance overlay (client_chaos_perf, O376): live numbers and the 60 s record. Styles from client_chaos_theme.
+
+ChaosPerfLine < ChaosLabel
+  anchors.left: parent.left
+  anchors.right: parent.right
+  height: 16
+  text-align: left
+
+ChaosPerfWindow < ChaosWindow
+  id: chaosPerfWindow
+  size: 380 330
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 60
+  margin-left: 12
+  !text: tr('Performance')
+  @onEscape: ChaosPerf.hide()
+
+  ChaosPerfLine
+    id: fpsLabel
+    anchors.top: parent.top
+
+  ChaosPerfLine
+    id: frameLabel
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  ChaosPerfLine
+    id: luaLabel
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  ChaosPerfLine
+    id: modulesLabel
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  ChaosPerfLine
+    id: creaturesLabel
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  ChaosPerfLine
+    id: windowsLabel
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  ChaosCheckBox
+    id: profileBox
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    !text: tr('Time Lua per module from client start')
+    !tooltip: tr('Off: the record times only the timers started during it. On: every timer from the next client start, at a small cost.')
+
+  ChaosLabelDim
+    id: statusLabel
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: recordButton.top
+    margin-top: 8
+    margin-bottom: 6
+    text-wrap: true
+    text-align: topLeft
+
+  ChaosButton
+    id: recordButton
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    size: 110 24
+    !text: tr('Record 60 s')
+
+  ChaosButton
+    id: copyButton
+    anchors.left: recordButton.right
+    anchors.bottom: parent.bottom
+    margin-left: 6
+    size: 120 24
+    !text: tr('Copy summary')
+    !tooltip: tr('Copies the last record to the clipboard, to paste into a chat or to Claude.')
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
