@@ -17,6 +17,12 @@
 --   .pickSpots(area, cfg, idx, isFree, rand)                 node tiles of an area (deterministic for a given rand)
 --   .rng(seed)                                               a small deterministic generator (same numbers in 5.1 / 5.3)
 --   .payload(cfg, idx, view)                                 the window state for the client
+-- O395 (feeding the base crafting, perks, nodes in the hunts):
+--   .perks(cfg, prof, level) -> totals {channel, byproduct, lucky, flay}, the perks reached
+--   .channelMs / .flayChance / .byproductChance(cfg, prof, level)    the gather numbers with the perks
+--   .byproductId(cfg, prof, tier, rand)                      the base crafting material of a by-product
+--   .huntAreas(cfg, entries)                                 gathering areas for the hunts of the teleport hall
+--   .refineRows(cfg, idx) / .refineProblems(cfg, idx, priceOf) / .recipes(cfg, idx, book, nameOf)   refining recipes
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosProfessionsCore = ChaosProfessionsCore or {}
@@ -153,6 +159,52 @@ function K.validate(cfg)
 	if not (cfg.bonus.cap > 0 and cfg.bonus.perLevel > 0) then
 		bad("bonus: perLevel and cap")
 	end
+	local kinds = {channel = true, byproduct = true, lucky = true, flay = true}
+	for prof, list in pairs(cfg.perks or {}) do
+		if not keys[prof] then
+			bad("perks: unknown profession " .. tostring(prof))
+		end
+		local last = 0
+		for _, pk in ipairs(list) do
+			if not kinds[pk.kind] then
+				bad("perk " .. tostring(pk.name) .. ": kind " .. tostring(pk.kind))
+			end
+			if not (pk.level > last and pk.level <= cfg.maxLevel) then
+				bad("perks of " .. prof .. ": levels must rise and stay within the max level")
+			end
+			last = pk.level
+			if pk.kind == "channel" and not (pk.value > 0 and pk.value < 1) then
+				bad("perk " .. tostring(pk.name) .. ": a channel perk shortens (0 < value < 1)")
+			elseif pk.kind ~= "channel" and not (pk.value > 0 and pk.value < 0.5) then
+				bad("perk " .. tostring(pk.name) .. ": value out of range")
+			end
+			if type(pk.name) ~= "string" or type(pk.pt) ~= "string" then
+				bad("perk of " .. prof .. ": name and pt")
+			end
+		end
+	end
+	for prof, list in pairs(cfg.byproducts and cfg.byproducts.ids or {}) do
+		if #list ~= nt then
+			bad("byproducts of " .. prof .. ": one list per tier (" .. nt .. ")")
+		end
+		if not (cfg.byproducts.chance[prof] and cfg.byproducts.chance[prof] > 0) then
+			bad("byproducts of " .. prof .. ": no chance")
+		end
+	end
+	local refineSeen = {}
+	for _, r in ipairs(cfg.refine or {}) do
+		local k = tostring(r.prof) .. ":" .. tostring(r.tier)
+		if refineSeen[k] then
+			bad("refine " .. k .. " twice")
+		end
+		refineSeen[k] = true
+		if not (idx.matOf[r.prof] and idx.matOf[r.prof][r.tier]) then
+			bad("refine " .. k .. ": no such material")
+		end
+		if not (r.ins >= 1 and r.count >= 1 and r.out > 0 and r.cost >= 0 and r.level >= 1 and type(r.book) == "string") then
+			bad("refine " .. k .. " incomplete")
+		end
+	end
 	return out
 end
 
@@ -245,23 +297,25 @@ function K.extraChance(cfg, tier, profLevel)
 	return min(cfg.yield.extraMax, over / cfg.yield.extraPerLevel)
 end
 
-function K.avgYield(cfg, tier, profLevel)
-	return 1 + K.extraChance(cfg, tier, profLevel) + cfg.yield.lucky
+-- luckyAdd: the perks' extra lucky chance (K.perks lucky; default 0)
+function K.avgYield(cfg, tier, profLevel, luckyAdd)
+	return 1 + K.extraChance(cfg, tier, profLevel) + cfg.yield.lucky + (luckyAdd or 0)
 end
 
-function K.yieldCount(cfg, tier, profLevel, rand)
+function K.yieldCount(cfg, tier, profLevel, rand, luckyAdd)
 	local n = 1
 	if rand() < K.extraChance(cfg, tier, profLevel) then
 		n = n + 1
 	end
-	if rand() < cfg.yield.lucky then
+	if rand() < cfg.yield.lucky + (luckyAdd or 0) then
 		n = n + 1
 	end
 	return n
 end
 
--- g = {prof, placeTier, profLevel, charLevel, chance (optional: a roll that can miss, flaying)}
--- -> {tier, mat, count (0 = a miss: half the experience), xp}
+-- g = {prof, placeTier, profLevel, charLevel, chance (optional: a roll that can miss, flaying), lucky (optional: the
+-- perks' extra lucky chance), byChance (optional: the by-product chance, O395)}
+-- -> {tier, mat, count (0 = a miss: half the experience), xp, extra (a base crafting material id or nil)}
 function K.resolve(cfg, idx, g, rand)
 	local tier = K.gatherTier(cfg, g.placeTier, g.profLevel, g.charLevel)
 	local mat = idx.matOf[g.prof][tier]
@@ -269,7 +323,75 @@ function K.resolve(cfg, idx, g, rand)
 	if g.chance and rand() >= g.chance then
 		return {tier = tier, mat = mat, count = 0, xp = max(1, floor(xp / 2))}
 	end
-	return {tier = tier, mat = mat, count = K.yieldCount(cfg, tier, g.profLevel, rand), xp = xp}
+	local r = {tier = tier, mat = mat, count = K.yieldCount(cfg, tier, g.profLevel, rand, g.lucky), xp = xp}
+	if g.byChance and g.byChance > 0 and rand() < g.byChance then
+		r.extra = K.byproductId(cfg, g.prof, tier, rand)
+	end
+	return r
+end
+
+-- ---------------------------------------------------------------- O395: perks and by-products
+-- totals of the perks a profession has at `level`: {channel (multiplier), byproduct, lucky, flay}, and the list
+function K.perks(cfg, prof, level)
+	local tot = {channel = 1, byproduct = 0, lucky = 0, flay = 0}
+	local got = {}
+	for _, pk in ipairs((cfg.perks or {})[prof] or {}) do
+		if (tonumber(level) or 1) >= pk.level then
+			got[#got + 1] = pk
+			if pk.kind == "channel" then
+				tot.channel = tot.channel * pk.value
+			elseif tot[pk.kind] then
+				tot[pk.kind] = tot[pk.kind] + pk.value
+			end
+		end
+	end
+	return tot, got
+end
+
+-- the perks a level up from `from` to `to` reaches
+function K.newPerks(cfg, prof, from, to)
+	local out = {}
+	for _, pk in ipairs((cfg.perks or {})[prof] or {}) do
+		if pk.level > (tonumber(from) or 1) and pk.level <= (tonumber(to) or 1) then
+			out[#out + 1] = pk
+		end
+	end
+	return out
+end
+
+function K.channelMs(cfg, prof, level)
+	local p
+	for _, q in ipairs(cfg.professions) do
+		if q.key == prof then
+			p = q
+		end
+	end
+	return floor((p and p.channelMs or 0) * K.perks(cfg, prof, level).channel + 0.5)
+end
+
+function K.flayChance(cfg, level)
+	return min(1, cfg.flaying.chance + K.perks(cfg, "flaying", level).flay)
+end
+
+function K.byproductChance(cfg, prof, level)
+	local b = cfg.byproducts
+	local base = b and b.chance and b.chance[prof]
+	if not base then
+		return 0
+	end
+	return min(1, base + K.perks(cfg, prof, level).byproduct)
+end
+
+function K.byproductId(cfg, prof, tier, rand)
+	local list = cfg.byproducts and cfg.byproducts.ids and cfg.byproducts.ids[prof]
+	local ids = list and (list[tier] or list[#list])
+	if not ids or #ids == 0 then
+		return nil
+	end
+	if #ids == 1 then
+		return ids[1]
+	end
+	return ids[rand(1, #ids)]
 end
 
 -- experience the stock engine wants for a level (Player::getExpForLevel)
@@ -409,22 +531,25 @@ function K.huntIncome(cfg, level)
 	return pts[#pts][2]
 end
 
-function K.nodesOfTier(cfg, prof, tier)
-	local n = 0
-	for _, a in ipairs(cfg.areas or {}) do
+-- the nodes of a tier a character can work in one hour: the busiest single area of that tier (O395: with nodes in every
+-- hunt of the hall a tier's nodes are spread over many hunts; walking from one hunt to the next takes minutes, so the
+-- model keeps a gatherer in one area, as it always assumed: "one area of 10 nodes")
+function K.nodesOfTier(cfg, prof, tier, areas)
+	local best = 0
+	for _, a in ipairs(areas or cfg.areas or {}) do
 		if a.tier == tier then
-			n = n + ((a.nodes or {})[prof] or 0) + #((a.pos or {})[prof] or {})
+			best = max(best, ((a.nodes or {})[prof] or 0) + #((a.pos or {})[prof] or {}))
 		end
 	end
-	return n
+	return best
 end
 
--- gathers (rolls that can give a material) per hour at the best pace the model allows
+-- gathers (rolls that can give a material) per hour at the best pace the model allows (profession 100, every perk)
 function K.gathersPerHour(cfg, prof, tier)
-	local p = K.index(cfg).prof[prof]
 	local bal = cfg.balance
+	local channel = K.channelMs(cfg, prof, cfg.maxLevel) / 1000
 	if prof == "flaying" then
-		return 3600 / (p.channelMs / 1000 + bal.killSec) * cfg.flaying.chance
+		return 3600 / (channel + bal.killSec) * K.flayChance(cfg, cfg.maxLevel)
 	elseif prof == "angling" then
 		return 3600000 / cfg.angling.rollMs * cfg.angling.chance
 	end
@@ -432,27 +557,133 @@ function K.gathersPerHour(cfg, prof, tier)
 	if nodes == 0 then
 		return 0
 	end
-	return min(3600 / (p.channelMs / 1000 + bal.walkSec), nodes * 60 / cfg.respawnMin)
+	return min(3600 / (channel + bal.walkSec), nodes * 60 / cfg.respawnMin)
+end
+
+-- gold of the by-products per hour (O395): gathers x the chance with every perk x the item price table's price
+function K.byproductGold(cfg, prof, tier)
+	return K.gathersPerHour(cfg, prof, tier) * K.byproductChance(cfg, prof, cfg.maxLevel) * ((cfg.byproducts or {}).price or 0)
 end
 
 function K.goldPerHour(cfg, prof, tier)
 	local idx = K.index(cfg)
 	local mat = idx.matOf[prof][tier]
-	return K.gathersPerHour(cfg, prof, tier) * K.avgYield(cfg, tier, cfg.maxLevel) * K.unitPrice(cfg, mat, K.maxDemand(cfg))
+	local lucky = K.perks(cfg, prof, cfg.maxLevel).lucky
+	return K.gathersPerHour(cfg, prof, tier) * K.avgYield(cfg, tier, cfg.maxLevel, lucky)
+		* K.unitPrice(cfg, mat, K.maxDemand(cfg)) + K.byproductGold(cfg, prof, tier)
 end
 
--- one row per profession and tier: {prof, tier, perHour, gold, hunt, share}
+-- one row per profession and tier: {prof, tier, perHour, gold (by-products included), by (their part), hunt, share}
 function K.balance(cfg)
 	local rows = {}
 	for _, p in ipairs(cfg.professions) do
 		for t, tier in ipairs(cfg.tiers) do
 			local gold = K.goldPerHour(cfg, p.key, t)
 			local hunt = K.huntIncome(cfg, tier.charLevel)
-			rows[#rows + 1] = {prof = p.key, tier = t, perHour = K.gathersPerHour(cfg, p.key, t), gold = gold, hunt = hunt,
-				share = gold / hunt}
+			rows[#rows + 1] = {prof = p.key, tier = t, perHour = K.gathersPerHour(cfg, p.key, t), gold = gold,
+				by = K.byproductGold(cfg, p.key, t), hunt = hunt, share = gold / hunt}
 		end
 	end
 	return rows
+end
+
+-- ---------------------------------------------------------------- O395: refining recipes for the base crafting books
+-- rows {prof, tier, book, mat, ins, out, count, level, cost, inValue (the inputs at the broker's base price + gold)}
+function K.refineRows(cfg, idx)
+	idx = idx or K.index(cfg)
+	local out = {}
+	for _, r in ipairs(cfg.refine or {}) do
+		local mat = idx.matOf[r.prof] and idx.matOf[r.prof][r.tier]
+		if mat then
+			out[#out + 1] = {prof = r.prof, tier = r.tier, book = r.book, mat = mat, ins = r.ins, out = r.out, count = r.count,
+				level = r.level, cost = r.cost, inValue = r.ins * cfg.tiers[r.tier].price + r.cost}
+		end
+	end
+	return out
+end
+
+-- priceOf(id) -> the item price table's gold for one; a recipe whose product is worth more than its inputs is a problem
+function K.refineProblems(cfg, idx, priceOf)
+	local out = {}
+	for _, r in ipairs(K.refineRows(cfg, idx)) do
+		local worth = (tonumber(priceOf(r.out)) or 0) * r.count
+		if worth > r.inValue then
+			out[#out + 1] = string.format("refine %s tier %d: %d x %d is worth %d, the inputs only %d", r.prof, r.tier,
+				r.count, r.out, worth, r.inValue)
+		end
+	end
+	return out
+end
+
+-- the base recipe tables of one book (the base books' format: id, name, level, cost, count, storage, storageText,
+-- materials); nameOf(id) -> the product's name. Every recipe carries chaosProfession = true.
+function K.recipes(cfg, idx, book, nameOf)
+	local out = {}
+	for _, r in ipairs(K.refineRows(cfg, idx)) do
+		if r.book == book then
+			local name = nameOf and nameOf(r.out) or nil
+			if type(name) ~= "string" or name == "" then
+				name = "refined " .. r.mat.name
+			end
+			name = name:gsub("^%l", string.upper)
+			out[#out + 1] = {id = r.out, name = name, level = r.level, cost = r.cost, count = r.count, storage = 0,
+				storageText = "", materials = {{id = r.mat.id, count = r.ins}}, chaosProfession = true}
+		end
+	end
+	return out
+end
+
+-- the crafting book a profession's materials refine at (nil: none)
+function K.refineBook(cfg, prof)
+	for _, r in ipairs(cfg.refine or {}) do
+		if r.prof == prof then
+			return r.book
+		end
+	end
+	return nil
+end
+
+-- ---------------------------------------------------------------- O395: nodes in the hunts of the teleport hall
+-- entries: {{id, name, level = {lo, hi}, arrival = {x, y, z}}} (hunt_teleports_core.lua H.index list and base) ->
+-- areas {key = "hunt_<id>", name, tier, center, r, nodes, fishing, hunt = true, band}; one per id, none near a fixed area
+function K.huntAreas(cfg, entries)
+	local h = cfg.huntNodes
+	local out, seen = {}, {}
+	if not (h and h.enabled) then
+		return out
+	end
+	for _, e in ipairs(entries or {}) do
+		local a = type(e) == "table" and (e.arrival or e.dest) or nil
+		local lv = type(e) == "table" and e.level
+		local key = type(e) == "table" and e.id and ("hunt_" .. tostring(e.id):gsub("[^%w]+", "_"):lower())
+		if key and not seen[key] and type(a) == "table" and tonumber(a.x) and tonumber(a.y) and tonumber(a.z)
+				and type(lv) == "table" and tonumber(lv[1]) then
+			local near = false
+			for _, f in ipairs(cfg.areas or {}) do
+				if not f.hunt and f.center.z == a.z and math.abs(f.center.x - a.x) <= h.gap
+						and math.abs(f.center.y - a.y) <= h.gap then
+					near = true
+				end
+			end
+			if not near then
+				seen[key] = true
+				local nodes = {}
+				for prof, n in pairs(h.nodes or {}) do
+					nodes[prof] = n
+				end
+				out[#out + 1] = {key = key, name = tostring(e.name or e.id), tier = K.charTier(cfg, tonumber(lv[1])),
+					center = {x = a.x, y = a.y, z = a.z}, r = h.r, nodes = nodes, fishing = h.fishing and true or nil,
+					hunt = true, band = {tonumber(lv[1]), tonumber(lv[2]) or tonumber(lv[1])}}
+			end
+		end
+	end
+	table.sort(out, function(x, y)
+		if x.tier ~= y.tier then
+			return x.tier < y.tier
+		end
+		return x.key < y.key
+	end)
+	return out
 end
 
 -- the most a character can get from the broker in one day for one material (the best demand week)
@@ -543,9 +774,14 @@ function K.payload(cfg, idx, view)
 	for _, p in ipairs(idx.list) do
 		local e = view.levels[p.key] or {level = 1, xp = 0}
 		levels[p.key] = e.level
+		local perks = {}
+		for _, pk in ipairs((cfg.perks or {})[p.key] or {}) do
+			perks[#perks + 1] = {lv = pk.level, n = pk.name, k = pk.kind, v = pk.value, on = e.level >= pk.level or nil}
+		end
 		profs[#profs + 1] = {k = p.key, n = p.name, lv = e.level, xp = e.xp, need = K.xpNeed(cfg, e.level) or 0,
 			pct = K.percent(cfg, e), tier = K.gatherTier(cfg, #cfg.tiers, e.level, view.charLevel),
-			tool = p.toolName, d = p.desc, g = e.gathered or 0}
+			tool = p.toolName, d = p.desc, g = e.gathered or 0, perks = perks,
+			bp = floor(K.byproductChance(cfg, p.key, e.level) * 1000 + 0.5) / 10, book = K.refineBook(cfg, p.key)}
 	end
 	local tiers = {}
 	for i, t in ipairs(cfg.tiers) do
@@ -572,7 +808,7 @@ function K.payload(cfg, idx, view)
 			end
 		end
 		areas[#areas + 1] = {n = a.name, t = a.tier, f = a.fishing and true or nil, m = a.monsters, near = row.town,
-			x = a.center.x, y = a.center.y, z = a.center.z, nodes = list}
+			x = a.center.x, y = a.center.y, z = a.center.z, nodes = list, h = a.hunt and true or nil}
 	end
 	return {profs = profs, bonus = K.bonusPct(cfg, levels), cap = cfg.bonus.cap, per = cfg.bonus.perLevel,
 		tiers = tiers, demand = demand, areas = areas, broker = view.broker and true or false,

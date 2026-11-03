@@ -25009,8 +25009,10 @@ live server.
 
 **Level gate (O368).** `professions_config.lua` `C.minLevel` 20 (`ChaosProfessions.levelOk`): below it the window, gathering a node, flaying and the Angling roll are refused ("Professions open at level 20."); stock fishing stays as it is. The top menu shows Professions from 20 (`unlocks_config.lua` `professions`).
 
-The owner's rule: professions gather materials **to sell to NPCs** and give an **experience bonus**. They make no gear and no
-orbs and feed no crafting, so they never compete with the crafting orbs or salvage. Every number is in `professions_config.lua`.
+The owner's rule: professions gather materials **to sell to NPCs** and give an **experience bonus**. Since O395 they also
+**feed the base crafting** (Mining, Herbalist and Armorsmith books): a by-product chance per gather and refining recipes. They
+still make no gear and no orbs, so they never compete with the crafting orbs or salvage. Every number is in
+`professions_config.lua`.
 
 **Four gathering professions**, each with its own level 1-100 per character (table `chaos_professions`):
 
@@ -25094,16 +25096,41 @@ levels 8 and 40 from the same model on Gutworm / Troll / Orc and Cyclops / Dwarf
 Pace model: node professions min(3600 / (channel + 12 s walking), nodes of the tier x 60 / 6 min) = 100 gathers an hour (one area
 of 10 nodes); Flaying 3600 / (2.5 s + 10 s per kill) x 40%; Angling 1,200 rolls x 10%.
 
-| Tier | Delving | Wortcunning | Flaying | Angling | Hunting / h | One material's best day |
-|---|---|---|---|---|---|---|
-| 1 Common | 4,890 (26%) | 4,890 (26%) | 5,633 (30%) | 5,868 (31%) | 19,000 | 4,500 |
-| 2 Fine | 19,560 (24%) | 19,560 (24%) | 22,533 (27%) | 23,472 (28%) | 83,000 | 18,000 |
-| 3 Rare | 85,575 (24%) | 85,575 (24%) | 98,582 (27%) | 102,690 (29%) | 358,839 | 78,800 |
-| 4 Grim | 205,920 (27%) | 205,920 (27%) | 197,683 (26%) | 205,920 (27%) | 751,109 | 180,000 |
-| 5 Infernal | 738,000 (13%) | 738,000 (13%) | 850,176 (15%) | 885,600 (16%) | 5,548,330 | 900,000 |
+| Tier | Delving | Wortcunning | Flaying | Angling | Hunting / h |
+|---|---|---|---|---|---|
+| 1 Common | 6,750 (35.5%) | 6,750 (35.5%) | 6,682 (35.2%) | 6,948 (36.6%) | 19,000 |
+| 2 Fine | 21,600 (26.0%) | 21,600 (26.0%) | 26,730 (32.2%) | 24,768 (29.8%) | 83,000 |
+| 3 Rare | 88,425 (24.6%) | 88,425 (24.6%) | 116,943 (32.6%) | 104,958 (29.2%) | 358,839 |
+| 4 Grim | 210,960 (28.1%) | 210,960 (28.1%) | 234,900 (31.3%) | 209,808 (27.9%) | 751,109 |
+| 5 Infernal | 751,800 (13.6%) | 751,800 (13.6%) | 1,012,500 (18.2%) | 901,008 (16.2%) | 5,548,330 |
 
+Since O395 the table counts the level 75 / 50 perks (shorter channel, Lucky, Sure Hand) and the by-products at the price
+table's 120 gold (1,800 an hour for Delving and Wortcunning, 2,160 at tier 4 with 12 nodes; Angling 1,008). Node areas count
+the best single area of the tier, not the sum (`K.nodesOfTier`): a character walks one area at a time.
 Every cell stays below `balance.maxShare` (40%) of hunting, and one material's best day (100 at full price + 100 at half, x1.5)
 stays below one hour of hunting at its level. Flaying comes on top of a beast hunt but costs the channel time per corpse.
+
+**Crafting (O395).** Gathering now feeds the base crafting, without a new currency or table:
+
+- **By-products.** A Delving or Wortcunning gather has 10% (Angling 4%) chance of one base crafting material of the gather's
+  tier (`C.byproducts`): Delving gives the base ore pieces (26398..26404), Wortcunning and Angling the base herbs
+  (26723..26732). Message "Also found: 1 X (a crafting material)." Flaying gives none (its hides refine instead).
+- **Refining** (`C.refine`, 15 rows). Profession materials turn into base crafting materials at the base crafting table:
+  Delving at Mining (ore pieces, 5880), Wortcunning at Herbalist (herbs), Flaying at Armorsmith (12435, 5920, 5948, 5882). One
+  material of tier T gives 1-4 units, plus 50-100 gold; the crafting level 10-25. `K.refineProblems` checks every row: the inputs
+  at the broker's base price plus the gold are worth at least the product at the price table (`chaos_item_prices_data.lua`), so
+  no gold loop through the NPC buy price. Angling has no refining (its fish are a broker product).
+- **How it gets in.** `data/lib/chaos_profession_recipes.lua` builds the recipe tables (`K.recipes`, names from the item types,
+  tag `chaosProfession`); `install_professions.py` step 5 appends one loader block to each of the three base book files
+  (`patch_recipe_loaders`, marker `-- Chaos: profession refining recipes (install_professions.py) v1`; idempotent, CRLF kept).
+  Every product and by-product is an item of `data/items/base_recipes.csv`, so the base crafting already uses it.
+- **Perks** (`C.perks`, three per profession at levels 25, 50, 75): shorter channel (x0.8), +5% by-product chance, +2% chance of
+  one more unit, +5% hide chance (Flaying). Message and toast "New X perk: Y." at the level. The window shows them in the
+  profession's tooltip (reached with "+", to come with "-").
+- **Hunt nodes.** Besides the eight fixed areas, every hunt of the teleport hall (`ChaosHuntTeleports.idx`, list and base) gets
+  4 Delving and 4 Wortcunning nodes around its arrival (box 12, fishing on), tier by the hunt's low level (`K.huntAreas`; key
+  `hunt_<id>`). A hunt within 30 tiles of a fixed area is skipped. Shown in "Where to Gather" with ", hunt".
+- **Toasts.** A profession level-up and a new perk also show as a toast (opcode notifications, action `journey`).
 
 **Experience bonus.** +0.0253% monster experience per profession level above 1, all four together, at most +10%: every
 profession at 100 (396 levels) reaches the cap, a new character has +0%; all at 50 give +4.96%. EventCallback `onGainExperience`
@@ -25128,14 +25155,16 @@ Protocol (opcode 195, JSON `{action, data}`): client -> server `open` | `close` 
 Staff: `/professions Name[, profession, level]` (show / set), `/professions nodes` (place the nodes again). Test or event areas:
 `ChaosProfessions.addArea{key, name, tier, center, r, nodes, fishing}` places them at once.
 
-**Tests:** `tests/professions_test.lua` (635 checks under LuaJIT and Lua 5.3): config, curve, tiers and yields, the bonus and its
+**Tests:** `tests/professions_test.lua` (853 checks under LuaJIT and Lua 5.3): config, curve, tiers and yields, the bonus and its
 cap, the demand draw of a fixed week (exact values), weeks and days, prices, the daily cap, the gold per hour bound against
 hunting, node spots (deterministic, spaced), fishing places; and `professions.lua` against a mocked engine: placing an area twice,
 a node gather through the action and the cast bar, the profession tier cap, the per-player cooldown, another character on the same
 node, moving / damage interrupting (healing not), the wrong tool, the stock pick's own uses, flaying a tagged wolf (and once only,
 the owner rule; a dragon is no beast), the angling roll limit, selling away from / at the broker, the full / late price and the cap,
 a new day, Sell All, the bonus on monster experience only (+10% at the cap), the buff entry, the weekly board, the title-only
-board. Client: `game_professions/professionsview_test.lua` (45 checks).
+board; O395: perks, by-products, the refine rows against the price table and base_recipes.csv, the recipe lib, hunt areas,
+the perk message and toast, the hunt nodes placed. `tools/install_professions_test.py` (11 checks: the loader block, idempotent,
+CRLF, the patched book loaded under LuaJIT and Lua 5.3). Client: `game_professions/professionsview_test.lua` (58 checks).
 
 **Tested in game** (test server with the cropped map, a runtime test area next to the temple, one client): a vein by "use" with the
 pick in the backpack (cast bar, "You gathered 1 duskglass shard (+30 Delving experience)", 49.8k character experience at level
@@ -25655,7 +25684,8 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
 
 ## Tales (`tales.lua`, `tales_core.lua`, `tales_config.lua`, `lore_data.lua`, npc `Archivist Maelis`)
 
-Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4). The giver is Archivist Maelis
+Story quests from level 8 to 2000: 37 tales (2026-10-22: 23 added to the first 4; O396: the ten chapters of the Tale
+of Cinderhold). The giver is Archivist Maelis
 (`data/npc/Archivist Maelis.xml`, `npc/scripts/archivist_maelis.lua`), placed next to the first temple at startup;
 `install_class_ascension.py` copies the NPC folder. She gives and closes every tale.
 
@@ -25689,8 +25719,8 @@ Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4
 | 1600 | The Fallen Seraph | choir | Kharzun's Anvil |
 | 2000 | The Chained Wyrm | vigil | The Fallen Seraph |
 
-- **Steps.** kill (party members within 30 squares share the kill), visit, talk, deliver, report. The last step is
-  always deliver or report at the Archivist; `M.problems` refuses any other config and the startup logs it.
+- **Steps.** kill (party members within 30 squares share the kill), visit, talk, elite (O396), deliver, report. The last
+  step is always deliver or report at the Archivist; `M.problems` refuses any other config and the startup logs it.
 - **Visit.** Stand within `radius` of a place: a hunting mark of `data/chaos_poi.lua`. Only characters with an open
   visit step are watched (`T.watch`); the global event `ChaosTalesVisit` checks them every `visitMs` (3 s) and sweeps
   all players every `visitSweep` ticks. The place is revealed on the map when the step opens (`ChaosPoi.seen`, opcode
@@ -25700,12 +25730,62 @@ Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4
   pending the faction dialogue runs as before.
 - **Chains.** `requires` names a tale that must be done first. A locked tale is not offered, and a forged accept is
   refused.
+- **Elite (O396).** `{kind = "elite", pos, radius, monster, name}`: go to a place (revealed on the map like a visit) and
+  kill a named elite. The visit watch list also holds the characters with an open elite step; at the place
+  `T.raiseElite` makes `monster` with the shown name `name` (`Chaos.createMonsterNamed`, at `pos`, else next to the
+  character) and forces the tier `elite.tier` (rare: x3.5 health, x1.5 damage, 2-3 modifiers; `ChaosApplyTier`). One per
+  name at a time (`T.elites`); it is removed after `elite.lifeSec` (600 s) and does not rise again within
+  `elite.againSec` (20 s). The kill counts by the shown name only (`M.matches`), so a plain monster of the type does not;
+  the party shares it like any kill. `M.problems`: an elite needs pos, monster and name, and the name must differ from
+  the type.
+- **Sagas (O396).** `cfg.sagas`: a chain told as one story. A tale with `saga` and `chapter`; chapter n requires
+  chapter n - 1 (`M.problems`). The chapters done (`M.sagaDone`) set the achievement counter `stat`
+  (`ChaosAchievements.set`, max) at every turn-in and at login; the turn-in names "chapter n of 10".
 - **Rewards.** Experience, bank gold, orbs, faction reputation and a lore book. The experience is a share of the next
   level, measured at most at the top of the tale's band (`M.xpLevel`), so a high character gets no huge reward from a
   low tale.
 
 Every text is English and Brazilian Portuguese: a player says "portugues" or "english" to the Archivist, or `Chaos.t`'s
-language decides. The Archivist also answers lore questions from `lore_data.lua`. The list shows tales in progress
+language decides. The Archivist also answers lore questions from `lore_data.lua`.
+
+**The Tale of Cinderhold (O396).** Ten chapters, slots 28-37 (storages 7101568-7101576 state, 7101588-7101596 count;
+slot 37 is 7101577 / 7101597), a chain from level 10 to 560. The Archivist, who is also the Chronicler of the Ashen
+Chronicle, has lost the ten founding pages of her oldest ledger: the night the Cinders fell they went where the ash
+went. Each chapter is one page, carried by a named elite in a hunt of its band; the Chronicle tells what the realm does
+now, the tale tells what the city was. Reused: the tales framework (window, chains, rewards, party credit, the faction
+NPCs' talk steps), the hunting marks of `chaos_poi.lua`, the monster tiers, the achievements and Next Goals.
+
+| Ch. | Level | Title | Talk | Elite (monster, hunting mark) | Reward |
+|---|---|---|---|---|---|
+| I | 10 | The Torn Ledger | | Gnawbone the Page-Eater (Troll, 32354 32129 8, 1-10) | 2,000 gold |
+| II | 22 | The Founders' Bell | Warden Ysolde | Old Bellwarden (Gargoyle, 32252 32578 8, 20-30) | 6,500 |
+| III | 45 | Mortar of Dragon Ash | | Ashmaw the Mortar-Wyrm (Dragon, 33215 31297 7, 40-50), then 20 Dragon / Dragon Hatchling | 18,000, Orb of Awakening |
+| IV | 60 | The Oathless Legion | Forgemaster Brannoc | Sskareth the Oathbreaker (Lizard High Guard, 33076 31152 7, 50-70) | 25,000, Orb of Awakening |
+| V | 105 | The Choking Hymn | Cantor Velith | The Hymn That Chokes (Choking Fear, 33568 32402 7, 100-120) | 55,000, Orb of Tempering |
+| VI | 150 | The Unwritten Page | | The Founder's Quill (Animated Feather, 31294 31917 8, 150-280) | 80,000, Orb of Tempering |
+| VII | 230 | Rimecrown's Winter | Elder Bramwyn | Rimecrown the Winter-Eater (Frost Hydra, 30827 31254 6, 220-440) | 160,000, Orb of Fate |
+| VIII | 300 | The Last Light | Warden Ysolde (after) | The Archon of the Last Light (Archon, 33402 31807 2, 260-420) | 200,000, Orb of Fate |
+| IX | 430 | Brine and Ember | | Saltcrown the Eldest Pyrarch (Brinebrute Pyrarch, 31602 31267 6, 430-480) | 300,000, Orb of Fate |
+| X | 560 | The Founding Stone | | The Pitlord of the Founding Stone (Pitlord Incarnate, 33225 33493 7, 470-600) | 450,000, 2 Orbs of Fate |
+
+Every chapter also gives a 0.4-0.8 share of the next level's experience (at most at the top of its band) and 100-800
+faction reputation. Rewards are modest on purpose: the gold sits between the tales below and above it (the test keeps
+gold rising with the level), no gear, no lore book. The cosmetic end reward is the achievement title.
+
+- **Achievements** (`achievements_data.lua`, Exploration, stat `cinderhold_tale`): The Torn Ledger (1 chapter, 5 points),
+  Half the Ledger (5, 15 points), Keeper of the Founding (10, 50 points, title "Keeper of the Founding"). pt-BR in
+  `i18n_strings.lua`.
+- **Next Goals** (`goals_config.lua`, built from `tales_config.lua`): one goal per chapter, `cinderhold1` to
+  `cinderhold10`, unlocked at the chapter's level, counter `cinderhold_tale`, the button marks Archivist Maelis on the
+  map; hidden without `ChaosTales`. The goal's own small reward is the default of Next Goals.
+- **Tests** (`tests/tales_test.lua`): ten chapters in a chain, rising levels, the free slots, one elite per chapter at a
+  hunting mark of its monster whose level band fits the chapter, elite names unique and no monster type, credit by shown
+  name only, the watch list and `M.elitesAt`, the saga counter, the problems of elites and sagas; through the mocked
+  engine: accept at level 10, the place revealed, the elite raised once with its name and tier and lifetime, a plain
+  troll not counting, the elite's kill, the turn-in with the counter and "chapter 1 of 10", the counter at login,
+  chapter 2 opening at 22, no second rise within `againSec`.
+- **Not tested in game.** The elites' spawn tiles at the real marks (an extended spawn at the mark, else next to the
+  character) and the rare tier's strength at each band. The list shows tales in progress
 first, then new ones, then done ones. Modal windows 7170-7171. Storages 7101500 - 7101549 (slots 1-19) and 7101560 -
 7101599 (slots 20-39); a slot per tale, append only, never reuse one. No spoken `!command`. Pure logic:
 `tales_core.lua`; tests: `tests/tales_test.lua`. Not run on a live server.

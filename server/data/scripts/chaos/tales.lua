@@ -4,7 +4,10 @@
 -- turn in only next to her. Kills count for the killer and the party members within cfg.partyRange on the same floor
 -- (CreatureEvent "ChaosTalesKill"). Visit steps: the characters with one in progress are on a watch list (login,
 -- accept, every step change) and GlobalEvent "ChaosTalesVisit" checks their position every cfg.visitMs. Talk steps
--- are done in the named NPC's own script (data/npc/scripts/chaos_faction_npc.lua, ChaosTalesCore.talkTo).
+-- are done in the named NPC's own script (data/npc/scripts/chaos_faction_npc.lua, ChaosTalesCore.talkTo). Elite steps
+-- (O396): the same watch list; at the place a named elite rises (Chaos.createMonsterNamed, a forced tier through
+-- ChaosApplyTier), one at a time per elite name, gone after cfg.elite.lifeSec; its kill counts by the shown name. A
+-- saga's chapters done set its achievement counter (ChaosAchievements.set) at every turn-in and at login.
 -- Rewards: experience (measured at most at the top of the tale's band), gold to the bank, items (the inbox when the
 -- backpack is full), faction reputation (ChaosFactions.gain, when loaded) and a written lore book. No spoken command
 -- (the project's rule, tests/commands_ui_test.lua): the progress is in the Archivist's window and in the messages.
@@ -27,6 +30,7 @@ local T = ChaosTales
 T.open = T.open or {} -- player id -> the key of the tale shown in its last tale window
 T.credited = T.credited or {} -- monster id -> {at = os.time, [player id] = true}: killer and most damage both fire onKill
 T.watch = T.watch or {} -- player id -> true while a visit step is in progress
+T.elites = T.elites or {} -- elite name (lower case) -> {id = creature id, at = os.time of the rise}
 
 local function C()
 	return M.cfg()
@@ -59,7 +63,8 @@ function T.revealPlaces(player)
 	end
 	local list = {}
 	for _, t in ipairs(M.tales()) do
-		local step = M.current(t, getS(player, M.stateKey(t)), "visit")
+		local state = getS(player, M.stateKey(t))
+		local step = M.current(t, state, "visit") or M.current(t, state, "elite")
 		if step then
 			for _, m in ipairs(P.all) do
 				if M.atPlace(step, m) and not set[P.key(m)] then
@@ -263,6 +268,29 @@ function T.reward(player, t)
 		info(player, C().npc.name .. ": " .. M.t(t.outro, lang))
 	end
 	toast(player, string.format(M.t(C().ui.finished, lang), M.t(t.name, lang)))
+	if t.saga then
+		local sg = M.saga(t.saga)
+		if sg then
+			local n = M.sagaDone(t.saga, stateFn(player))
+			info(player, string.format(M.t(C().ui.chapter, lang), M.t(sg.name, lang), n, #M.chapters(t.saga)))
+		end
+		T.syncSagas(player)
+	end
+end
+
+-- the achievement counters of the sagas (chapters done): set at every turn-in and at login (retroactive)
+function T.syncSagas(player)
+	if not (ChaosAchievements and ChaosAchievements.set) then
+		return 0
+	end
+	local n = 0
+	for _, r in ipairs(M.sagaStats(stateFn(player))) do
+		if r.value > 0 then
+			pcall(ChaosAchievements.set, player, r.stat, r.value)
+			n = n + 1
+		end
+	end
+	return n
 end
 
 -- ======================================================================== accept, turn in
@@ -449,10 +477,70 @@ function modal.onModalWindow(player, modalWindowId, buttonId, choiceId)
 end
 modal:register()
 
+-- ======================================================================== elites (O396)
+local function aliveElite(key)
+	local e = T.elites[key]
+	if not e then
+		return nil
+	end
+	local m = e.id and Monster and Monster(e.id)
+	if m then
+		return m
+	end
+	return nil
+end
+
+-- raise the named elite of an elite step near the character (once: while it lives, and not again within againSec)
+function T.raiseElite(player, t, step)
+	local key = step.name:lower()
+	local now = os.time()
+	if aliveElite(key) then
+		return nil
+	end
+	local e = T.elites[key]
+	if e and now - (e.at or 0) < ((C().elite or {}).againSec or 20) then
+		return nil
+	end
+	local create = Chaos.createMonsterNamed or function(ty, p, ex, f) return Game.createMonster(ty, p, ex, f) end
+	local p = step.pos
+	local ok, m = pcall(create, step.monster, Position(p.x, p.y, p.z), true, true, step.name)
+	if not ok or not m then
+		ok, m = pcall(create, step.monster, player:getPosition(), true, true, step.name)
+	end
+	if not ok or not m then
+		log("elite: could not raise " .. step.name .. " (" .. tostring(m) .. ")")
+		return nil
+	end
+	local tier = (C().elite or {}).tier
+	if tier and ChaosApplyTier then
+		pcall(ChaosApplyTier, m, tier)
+	end
+	local id = m:getId()
+	T.elites[key] = {id = id, at = now}
+	local lang = T.langOf(player)
+	local text = string.format(M.t(C().ui.eliteRises, lang), step.name)
+	msg(player, text)
+	toast(player, text)
+	local life = (C().elite or {}).lifeSec or 600
+	if addEvent and life > 0 then
+		addEvent(function()
+			local left = Monster and Monster(id)
+			if left then
+				left:remove()
+			end
+		end, life * 1000)
+	end
+	return m
+end
+
 -- ======================================================================== visits
--- one check of a character on the watch list: every tale whose visit step it stands at moves on
+-- one check of a character on the watch list: every tale whose visit step it stands at moves on; an elite step's
+-- elite rises
 function T.checkVisits(player)
 	local pos = player:getPosition()
+	for _, e in ipairs(M.elitesAt(stateFn(player), pos)) do
+		T.raiseElite(player, e.tale, e.step)
+	end
 	local lang, moved
 	for _, t in ipairs(M.tales()) do
 		local state = getS(player, M.stateKey(t))
@@ -510,6 +598,7 @@ function login.onLogin(player)
 	player:registerEvent("ChaosTalesLogout")
 	-- a talk step done in an NPC's own Lua state may have ended a visit wait, or started one
 	pcall(T.rewatch, player)
+	pcall(T.syncSagas, player)
 	return true
 end
 login:register()

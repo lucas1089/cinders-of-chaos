@@ -54,6 +54,7 @@
 --   mentor_graduates, mentor_fledged                                 mentors (mentor.lua, at a graduation)
 --   pvpzone_kills, pvpzone_banked, pvpzone_haul, pvpzone_captures   the Scorched Marches (pvpzone.lua)
 --   prof_<delving|wortcunning|flaying|angling>, prof_total          professions (professions.lua: the level; all four levels together)
+--   cinderhold_tale                                                  the Tale of Cinderhold (tales.lua: chapters done; login, turn-in)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible; no engine calls (also read by server/tests/achievements_test.lua).
 
 local CHAOS, DIVINE, EXALTED = 29856, 29857, 29855
@@ -490,6 +491,14 @@ return {
 		{id = "prof_total_400", cat = "explore", name = "Master of the Wilds", desc = "Reach level 100 in all four professions.",
 			points = 50, stat = "prof_total", target = 400, title = "Master of the Wilds",
 			reward = {exclusives = {{key = "shader_verdant", name = "outfit shader Verdant Sparks"}}}},
+
+		-- the Tale of Cinderhold (O396, tales_config.lua saga "cinderhold"): chapters done, set by tales.lua
+		{id = "cinderhold_1", cat = "explore", name = "The Torn Ledger", desc = "Finish the first chapter of the Tale of Cinderhold.",
+			points = 5, stat = "cinderhold_tale", target = 1},
+		{id = "cinderhold_5", cat = "explore", name = "Half the Ledger", desc = "Finish five chapters of the Tale of Cinderhold.",
+			points = 15, stat = "cinderhold_tale", target = 5},
+		{id = "cinderhold_10", cat = "explore", name = "Keeper of the Founding", desc = "Finish all ten chapters of the Tale of Cinderhold.",
+			points = 50, stat = "cinderhold_tale", target = 10, title = "Keeper of the Founding"},
 
 		-- mentors (mentor.lua): mentor_graduates = apprentices this character mentored to graduation (with enough time
 		-- hunting together); mentor_fledged = 1 once this character graduated from a mentor
