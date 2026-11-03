@@ -38,7 +38,11 @@ local problems = M.problems(env)
 eq(#problems, 0, table.concat(problems, "; "))
 -- the stage table as the files have it
 eq(env.stages[1][1], 1); eq(env.stages[#env.stages][2], 999999, "the last stage has an explicit maxlevel")
-ok(#env.stages > 40, "the smooth table has a row per multiplier step")
+ok(#env.stages > 20, "the smooth table has a row per multiplier step")
+-- O377 (owner 2026-11-03): the early peak is x30 (was x45 at levels 50-87)
+local peak = 0
+for _, s in ipairs(env.stages) do if s[3] > peak then peak = s[3] end end
+eq(peak, 30, "the highest stage is x30")
 
 -- the table before O135 must fail: x10 up to level 20, x50 from 21 (a 5x cliff), 3 a step every 50 levels from 301
 local old = {{1, 20, 10}, {21, 50, 50}, {51, 100, 45}, {101, 150, 43}, {151, 200, 41}, {201, 300, 39}, {301, 350, 36},

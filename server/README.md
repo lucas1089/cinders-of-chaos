@@ -19066,6 +19066,15 @@ replaced; `chaos-ctl.sh xp-rate` keeps its factor (it scales the release table).
 No client update and no engine rebuild.
 
 
+### Early peak x30 (O377, owner 2026-11-03)
+
+The owner asked for a slower start: the stage peak was x45 (levels 50-87), now it is x30. `SMOOTH_STAGES`: x26 to level 17,
+x27 to 22, x28 to 47, x30 from 48 to 433, then the descent of O135 unchanged (x29 at 434 ... x15 at 700); the late table
+is unchanged. The small ramp before x30 keeps the base pace jumps at levels 18-27 and 48-57 inside the 1.25x limit.
+Model hours (with the newcomer bonus of O370): 8-100 1.1 (was 1.2), 8-300 9.0 (was 6.7), 8-433 about 18 (was 15),
+8-1000 119.6 (was 116.6), 8-2200 349.6 (was 346.6). Minutes a level: 0.7 at 50 (0.6), 1.0 at 100 (0.7), 3.5 at 300 (2.7);
+from 434 on as before. `tests/progression_test.lua` checks the peak is x30. Install: step `lategame` and a server restart.
+
 ## Balance follow-ups (O141, 2026-10-23)
 
 The open items noted after the O135-O140 balance pass, each checked with the repo's models before changing anything. All numbers are
