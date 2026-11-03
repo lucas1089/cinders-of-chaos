@@ -24,6 +24,17 @@
 #                               level 10 / 25 / 50 / 100 / 200. Reads the aggregate table chaos_progress_metrics (no names,
 #                               accounts or IPs) through server/tools/progress_metrics.py; text, or one JSON line with --json
 #                               ({"ok": false, "error": "no-table" | "database"} and exit 1 when it cannot be read)
+#   newplayer-funnel [--days N] [--json] [--pt]
+#                               new player funnel (server/README.md "New player funnel and survey (O374)"), read-only: of
+#                               the characters whose first login was in the last N days (default 30, 1 to 3650), how many
+#                               reached level 10 / 20 / 30 / 50 / 100 and played 1 / 5 / 10 hours; of those with no login
+#                               for 7+ days, the level band, played minutes and last system where they stopped. One
+#                               grouped query on players / player_storage (no names, accounts or IPs), built and printed by
+#                               server/tools/newplayer_report.py; --pt writes the text in Portuguese (the admin apps)
+#   survey [--days N] [--json] [--pt] [--texts N]
+#                               the in-game survey of level 20 / 50 (chaos_survey), read-only: answered / skipped, the
+#                               fun score 1-5, would recommend, the "what confused you" texts newest first (--texts N of
+#                               them in the text, default 50); no account id or name is read
 #   broadcast TEXT              a message to everyone online     (remote.cmd, server/README.md "Remote admin commands")
 #   kick NAME | open | close    kick one character / let players log in / close the server for login
 #   catalog ACTOR               the admin panel's catalog (all actions and their parameters) for the admin character ACTOR
@@ -1014,6 +1025,40 @@ case $cmd in
       exit 1
     fi
     printf '%s\n' "$mrows" | python3 -I "$mpy" ${mjson[@]+"${mjson[@]}"}
+    ;;
+  newplayer-funnel|survey)
+    # read-only: the SELECT comes from newplayer_report.py, built from fixed numbers and a checked day count; no argument
+    # reaches the shell or the SQL as text
+    nmode=funnel
+    [ "$cmd" = survey ] && nmode=survey
+    ndays=30 nargs=()
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --days) shift; { num "${1:-}" && [ "${#1}" -le 4 ] && [ "$((10#$1))" -ge 1 ] && [ "$((10#$1))" -le 3650 ]; } \
+          || die "$cmd --days N (1 to 3650)"
+          ndays=$((10#$1)) ;;
+        --json) nargs+=(--json) ;;
+        --pt) nargs+=(--pt) ;;
+        --texts) [ "$nmode" = survey ] || die "newplayer-funnel [--days N] [--json] [--pt]"
+          shift; { num "${1:-}" && [ "${#1}" -le 3 ] && [ "$((10#$1))" -le 500 ]; } || die "survey --texts N (0 to 500)"
+          nargs+=(--texts "$((10#$1))") ;;
+        *) if [ "$nmode" = survey ]; then die "survey [--days N] [--json] [--pt] [--texts N]"; fi
+          die "newplayer-funnel [--days N] [--json] [--pt]" ;;
+      esac
+      shift
+    done
+    npy="$REPO/server/tools/newplayer_report.py"
+    [ -r "$npy" ] || die "no $npy"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    nsql=$(python3 -I "$npy" "$nmode" --sql --days "$ndays") || die "the query could not be built"
+    nrc=0
+    nrows=$(mysql_q "$nsql" 2>&1) || nrc=$?
+    if [ "$nrc" -ne 0 ]; then
+      case $nrows in *"doesn't exist"*) nerr=no-table ;; *) nerr=database ;; esac
+      python3 -I "$npy" "$nmode" ${nargs[@]+"${nargs[@]}"} --error "$nerr"
+      exit 1
+    fi
+    printf '%s\n' "$nrows" | python3 -I "$npy" "$nmode" --days "$ndays" ${nargs[@]+"${nargs[@]}"}
     ;;
   feedback)
     # players' bug reports and suggestions (chaos_reports, reason bug) as plain text for the owner and for Claude.

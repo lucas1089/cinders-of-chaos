@@ -5964,5 +5964,15 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Classic window"] = "Janela clássica",
   ["Hotkeys are set in the classic window."] = "Os atalhos são configurados na janela clássica.",
   ["Open the classic window"] = "Abrir a janela clássica",
+  -- client/overlay/modules/game_chaossurvey (new player survey, O374)
+  ["A quick survey"] = "Uma pesquisa rápida",
+  ["A quick survey: level %d"] = "Uma pesquisa rápida: nível %d",
+  ["How fun is it? (1 = not fun, 5 = great)"] = "Quão divertido está? (1 = nada, 5 = muito)",
+  ["Sending..."] = "Enviando...",
+  ["Skip"] = "Pular",
+  ["Thank you! Your answer helps us make the game better."] = "Obrigado! Sua resposta nos ajuda a melhorar o jogo.",
+  ["Three short questions about your first steps. Answer what you like, or skip. We will not ask again."] = "Três perguntas curtas sobre seus primeiros passos. Responda o que quiser, ou pule. Não vamos perguntar de novo.",
+  ["What confused you so far?"] = "O que te confundiu até agora?",
+  ["Would you recommend it to a friend?"] = "Você recomendaria a um amigo?",
 }
 return ChaosLocaleStrings['pt-BR']

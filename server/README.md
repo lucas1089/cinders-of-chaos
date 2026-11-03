@@ -674,6 +674,7 @@ collision check") and be added here.
 | 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)") |
 | 119 | `combatStats` | `combat_stats.lua`, `combat_stats_core.lua` | `game_skillstats` | client -> server `get`; server -> client `stats {damage?, attack?, defense, armor, mitigation}` (mitigation a share 0 .. 1), at login, after an equip, a level or skill advance or a passive tree change, only when a number changed (see "Combat stat rows of the Skills window") |
 | 121 | `npcTravel` | `npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua` | `game_npctravel` | client -> server `travel {k}` (a key of `npc_travel_config.lua` `npcs`); the answer is a game message (status line, or the reason as a cancel message), see "Travel to an NPC (O330)" |
+| 122 | `survey` | `survey.lua`, `survey_core.lua`, `survey_config.lua` | `game_chaossurvey` | server -> client `open {s, max}` (the stage, level 20 or 50, and the text limit) and `done {s}`; client -> server `answer {s, fun, rec, text}` / `skip {s}`, once per account and stage, see "New player funnel and survey (O374)" |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -824,7 +825,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -879,12 +880,13 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102510 - 7102519 | Everfull tier upgrades (`potions_config.lua` `storage.upgradeBase`, O245): +0 .. +9 the upgrade to the entry at that place among the entries with a `from` (great health, great mana, great spirit, ultimate health, ultimate mana, ultimate spirit, supreme health, spirit tier 1, supreme mana, supreme spirit: O247) was done (1); the block is full, a new upgrade needs a new block |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
-| 7102830 - 7102833 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); +3 the last hunt (O258: the stable id of the hunt place the character last killed in); 7102834 - 7102839 free |
+| 7102830 - 7102834 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); +3 the last hunt (O258: the stable id of the hunt place the character last killed in); +4 = 7102834 the last system used (O374: the 1-based index in `systems`, read by the new-player funnel); 7102835 - 7102839 free |
 | 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of; 7103010 and up are for O260 and O261 |
 | 7103010 - 7103011 | early spike and pity (`retention_loot_config.lua`): 7103010 the first unique (-1 / 0 unset, 1..149 kills counted, 1000000 given), 7103011 the pity counter (kills without a Rare or better drop) |
 | 7103020 - 7103029 | the Weekly Chest (`weeklychest_config.lua` `storage`, `Chaos.storage.weeklyChest`): +0 the week (YYYYMMDD of its Monday), +1 activities done (bit mask), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all; +5..9 free |
 | 7103040 - 7103049 | the Weekend Ritual's GLOBAL storages (`Game.setStorageValue`, `weekend_config.lua` `globalStorage`, O321): +0 the staff switch (1 = off), +1 / +2 / +3 the weekend (YYYYMMDD of its first day) whose start, end warning and highlight were done; +4..9 free; no player storage |
 | 7103050 - 7103059 | Hunt warnings (`hunt_warnings_config.lua` `storage`, `Chaos.storage.huntWarnLast`, O323): +0 os.time of the last warning shown to the character; +1..9 free |
+| 7103060 - 7103069 | new player survey (`survey_config.lua` `storage`, `Chaos.storage.survey`, O374): +0 bit mask of the survey stages (bit 0 = level 20, bit 1 = level 50) already handled for the character's account (a cache of `chaos_survey`); +1..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -26952,6 +26954,66 @@ Part of the retention pass (docs/superpowers/specs/2026-10-26-retention-design.m
 - **Report.** `progress_metrics.py` gets `returns` (week, cohort, d1 / d3 / d7 and their shares), `firstUse` (system, characters, share of all characters = churn gone + active, median played minutes, most common level band) and `stops` (top 10 areas: gone, top band), in text and JSON; the milestones list is longer. Counts of 1 to 4 are `<5` (text) / `"<5"` (JSON) with their shares and medians left out; a hidden stop area also hides its band.
 - **Limits.** Characters from before the install count their first use of a system at their current level and played time, which skews the first weeks; the cohort and return figures are clean (only characters created after the install). A first use inside one 60 s window that ends before the next check (a party that forms and disbands) is missed. The "where they stop" area is the last hunt a character killed in (a kill check at most every 60 s), so a character that never hunted, or left before the install, falls back to its last saved position, which is mostly the town; the hunt is the area nearest a place's arrival tile within `areaRadius`, so a kill far inside a large hunt is not remembered. Characters that last hunted before the install have no hunt until they log in again. `waystone` counts the first waystone opened by the character, not the first map cleared. Not run on a live server.
 - **Tests.** `tests/metrics_test.lua` (day maths, return flags, first-use bits, stop rows and SQL, the wrapped hooks against fake systems, tester and staff left out), `tools/progress_metrics_test.py` (cohort weeks and maturity, first use, stops, suppression). The Android card is not built here (no SDK); CI `admin-app.yml` compiles it.
+
+## New player funnel and survey (O374) (`tools/newplayer_report.py`, `survey.lua`, `survey_core.lua`, `survey_config.lua`, `sql/chaos_survey.sql`; client `game_chaossurvey`)
+
+**Why.** Owner request: see where new players quit, and ask them what confused them. Two read-only reports for the owner,
+one small window in the game.
+
+**Where the owner reads it.** Admin app (Android and desktop): Painel > Novos jogadores > Funil or Pesquisa (a days
+field, default 30; "Copiar" on Android puts the text on the clipboard). Fallback on the VPS:
+`sudo chaos-ctl.sh newplayer-funnel [--days N] [--json] [--pt]` and `sudo chaos-ctl.sh survey [--days N] [--json] [--pt] [--texts N]`.
+
+**Funnel.** Of the characters whose first login was in the last N days:
+- reached level 10 / 20 / 30 / 50 / 100 (the current level, or the milestone bit of 10 / 25 / 50 / 100 in storage
+  7102830, so a level lost at a death still counts);
+- played 1 / 5 / 10 hours (`players.onlinetime`);
+- stopped: no login for 7+ days, of the characters at least 7 days old. For those: the level band (1-5 ... 81-100,
+  101+), the played minutes (up to 10, 30, 60, 120, 300, 600, 1200, more) and the last system used.
+
+Data the server already stores: the first-login day of O258 (storage 7102831, `day * 8 + flags`; characters from before
+the O258 install have none and are left out), `players`, and one new storage: **7102834 the last system used**
+(`metrics_config.lua` `lastSystemStorage`, the 1-based index in `systems`). `ChaosMetrics.firstUse` now writes it on every
+success of a system, not only the first (one storage write when it changes). Party and guild are only seen at their first
+use (the 60 s member check stops once the bit is set), so they rarely show as last system. "none (hunting only)" = no
+listed system used.
+
+The SELECT is built by `newplayer_report.py funnel --sql` from fixed numbers and the checked day count; it groups in the
+database (one row per reach, hours, stopped, band, minutes, system and a count). No name, account, id or IP is read.
+Staff (group above 1) and tester bots are left out. Small numbers: a count of 1 to 4 is written "<5", its share left out
+(as `progress_metrics.py`).
+
+**Survey.** At level 20 and at level 50, once per **account** and stage (decided per account: an account with alts
+answers each stage once, one voice per person), a small window (400 x 380) asks:
+"What confused you so far?" (free text, 200 letters), "How fun is it? (1 = not fun, 5 = great)" and "Would you recommend it
+to a friend?" (yes / no). Every question is optional. Send, Skip or Escape. After an answer or a skip the row is
+written (`chaos_survey`, unique account + stage) and the window never comes back for that account.
+- When: the level up that crosses the stage, or a later login while the level is below stage + 15 (`window`; a logout
+  before an answer offers it again; a veteran far past the stage is not asked). The window opens 4 s later and only out
+  of combat (`Chaos.inCombat`).
+- Server checks: only the stage the server opened is accepted; one message per 2 s per character (`ChaosRateLimit`), at
+  most 60 rows a minute for the server; staff and tester bots are never asked. `INSERT IGNORE` keeps the first row.
+- Text: `S.cleanText` keeps valid UTF-8 of 1 to 3 bytes (the table is utf8), drops control, line separator and bidi
+  characters, folds spaces, at most 200 letters. The client turns its cp1252 text edit into UTF-8 first
+  (`surveylogic.lua` `L.toUtf8`). The report cleans again (`clean_text`).
+- Stored: stage, answered / skipped, fun (0 = none), recommend (1 / 0 / -1 none), the text, level, played minutes, time.
+  The account id is only the unique key; the report never selects it.
+- Storage 7103060 (`survey_config.lua` `storage`, 7103060 - 7103069): bit per stage handled for the account, a cache so a
+  login asks the database only while a stage could be due.
+- Opcode 122 (see "Opcode collision check"), table `chaos_survey` (created by the `sql` step or at startup).
+
+**Report.** `newplayer_report.py survey`: per stage answered / skipped, mean fun and the spread 1-5, recommend yes / no and
+the share, the texts newest first with level and played time (50 in the text, `--texts N` up to 500; the apps ask 100).
+
+**Install.** `install_all.py` step `sql` (`chaos_survey.sql`); `survey.lua` also creates the table at startup. Client: the
+module `game_chaossurvey` ships with the next client update.
+
+**Tests.** `tests/survey_test.lua` (opcode, storage, text cleaning, stages, parsing, rate limits, SQL, and `survey.lua` on a
+mocked engine: level 20, combat, answer, never again, another character of the account, skip, logout before an answer,
+staff, testers), `tests/metrics_test.lua` (last system), `tools/newplayer_report_test.py` (the SELECT, the funnel maths,
+small numbers, survey rows and escapes, the command line), `deploy/chaos_ctl_test.py` (`test_newplayer`: both commands
+with a stub database, refusals), client `game_chaossurvey/surveylogic_test.lua`, Android `NewPlayerInfoTest`. All data is
+synthetic. Not run in a live client or on the live server yet.
 
 ## The top menu reveals systems by level (O259) (`unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua`; client `client_chaos_topbar`)
 
