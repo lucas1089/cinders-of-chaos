@@ -37,9 +37,9 @@ return {
 	hints = {
 		{key = "start", level = 1,
 			en = "First hunts: %s. They are on your map now. Monsters drop gear with a rarity; your kit carries you to level 20. "
-				.. "In Cinderhold, the main city, the two great teleports north of the temple lead to the teleport room: a portal to a hunt of every level.",
+				.. "In Cinderhold, the main city, the great purple teleport north of the temple leads to the teleport room: a portal to a hunt of every level.",
 			pt = "Primeiras caçadas: %s. Elas estão no seu mapa agora. Monstros soltam equipamentos com raridade; seu kit leva você até o nível 20. "
-				.. "Em Cinderhold, a cidade principal, os dois grandes teleportes ao norte do templo levam à sala de teleportes: um portal para uma caçada de cada nível."},
+				.. "Em Cinderhold, a cidade principal, o grande teleporte roxo ao norte do templo leva à sala de teleportes: um portal para uma caçada de cada nível."},
 		{key = "gear", level = 4,
 			en = "Better gear: the shops in town sell weapons and armour for gold, and the Loot Buyer in the teleport room's market buys what you find. "
 				.. "Economy > Item Finder tells where any item drops or who sells it.",

@@ -33,7 +33,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 
 ## Level 8-50: first steps
 
-=> @temple | Teleport hall | The two great teleports 5 tiles north of the temple lead to the hunting hall.
+=> @temple | Teleport hall | The great purple teleport 5 tiles north of the temple leads to the hunting hall.
 => @level | Level signs | Every teleport has a sign: "Name, levels X-Y". Floor 7 holds levels 1-560.
 => @reward | First contract | Adventure > Bounty Board: take a contract from level 8.
 => @level | First point | Your first passive point comes at level 12.
@@ -43,7 +43,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 - **Monster tiers.** Magic (blue), rare (yellow) and legendary (orange) monsters drop better gear. Wear what beats yours.
 - **Pack combat.** Chained kills, each within 3 s of the one before, give bonus experience: +10% at 4 kills, +20% at 6, +30% at 8 and +40% at 9.
 - **Bounty Board.** Up to {{bounty.maxActive}} contracts at once; the board rolls every day at 06:00. {{bounty.weeklyNeed}} contracts in one week give the weekly chest.
-- **Buy and sell.** The Loot Buyer stands in the market of the teleport room (the two great teleports north of the temple lead there). **Economy > Market** (Alt+E) opens at level {{market.minLevel}}.
+- **Buy and sell.** The Loot Buyer stands in the market of the teleport room (the great purple teleport north of the temple leads there). **Economy > Market** (Alt+E) opens at level {{market.minLevel}}.
 - **Level 20:** your first kill task, your first crafting orb on the Crafting Bench, 50 monsters with a tier.
 ::: if invasion.on
 - **Level {{invasion.minLevel}}:** [town invasions](wiki:event:invasion). See Adventure > Events.

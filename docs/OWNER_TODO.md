@@ -46,7 +46,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   on a test server, and the three portals in the temple's upper hall; set `town.anchor` if they land badly. Optional
   ground swaps (`swaps`) need ground ids of the map.
 - [ ] **Main city Cinderhold, the hub stalls and the temple's portal gallery (a check, not a decision):** after a
-  restart, take one of the two great teleports north of Cinderhold's temple: the market of the teleport room holds the
+  restart, take the great purple teleport north of Cinderhold's temple (one since O386): the market of the teleport room holds the
   Oracle, the Keeper of Trials, Archivist Maelis, the faction NPC, the Loot Buyer, the Material Broker, the Gambler,
   Iselde Varrow, Osric and the five service NPCs in the stalls where the base NPCs stood (2026-10-22: the Halls of
   Services are gone). Along the temple's south wall, the portal gallery holds every portal of the old halls, each with
@@ -201,8 +201,8 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
     Breach 32362, 32240, 6; Ossuary Stair 32358, 32240, 6. On 2026-10-16 both gates and the Memorial's portal moved to
     the Halls of Services' portal rooms, and on 2026-10-22 to the portal gallery at Cinderhold's temple (server/README.md "City portals"). The Chronicle's scars are around that temple, every new character's home town is
     the capital, and the hall is off every walking line (checked on the base map: plain floor, every other tile of
-    the hall still reached from both stairs). The hunt teleport room is one step away: its two great teleports stand 5
-    tiles north of the temple (server/README.md "Main city"). Found in passing: the Memorial's action ids 47930-47933
+    the hall still reached from both stairs). The hunt teleport room is one step away: its great purple teleport stands 5
+    tiles north of the temple (two until O386) (server/README.md "Main city"). Found in passing: the Memorial's action ids 47930-47933
     were the hunt teleports' block; moved to 47940-47944.
   - **Helper rule** (Rules 2.2 and 7.4, the Terms section 6 EN / pt-BR, the wiki's rules guide, docs/GM_HANDBOOK.md
     3a and 4): "The official client's helper (healing, spell rules, auto rotation, targeting) is allowed while you

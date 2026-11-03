@@ -226,7 +226,7 @@ return {
 			"- The passive tree (top menu, Character): a point every 4 levels past level 8.\n" ..
 			"- Adventure > Bounty Board: daily contracts that pay gold and Orbs of Upheaval.\n" ..
 			"- The store (top menu, Economy): temple scrolls, stamina and services.\n" ..
-			"- Cinderhold is the main city: the two great teleports north of its temple lead to the teleport room, " ..
+			"- Cinderhold is the main city: the great purple teleport north of its temple leads to the teleport room, " ..
 			"a portal to a hunt of every level.\n" ..
 			"- The top menu holds every game window: dungeons, the tower, dailies, bank and stash.\n\n" ..
 			"%s",

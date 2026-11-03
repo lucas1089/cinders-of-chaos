@@ -1,7 +1,7 @@
 -- The NPC booths of the hub (npc_booths.lua, npc_booths_core.lua; server/README.md "Hub NPC booths").
 -- Owner 2026-10-22: "take these NPCs out of the temple and do away with the Hall of Services ... the NPCs go to the hub,
 -- in the place where the current ones are. Take the current ones out and put ours there." The hub is the market of
--- Cinderhold's teleport room (the two great teleports north of the temple lead there): two rows of eight closed stalls
+-- Cinderhold's teleport room (the great purple teleport north of the temple leads there): two rows of eight closed stalls
 -- along a carpet walk, each with a counter in front and goods on display behind. The base server's shop NPCs stood in
 -- them; every Chaos NPC of the main city stands there now, on the very tile the base NPC had (the spawn file's entry,
 -- a bare floor tile inside the stall), and talks across the stall's counter.

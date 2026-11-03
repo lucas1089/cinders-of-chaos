@@ -491,7 +491,7 @@ check(queried("INSERT INTO `chaos_community_week`.-, 'seed', %d+, %d+%)"), "the 
 check(ChaosEvents.dynamic.community_restless_dead and ChaosEvents.dynamic.community_forgefire, "runtime events in !events")
 eq(ChaosEvents.bonus("tierChance"), 1, "no calendar bonus from these two")
 eq(created[1] and created[1].aid, cfg.brazier.actionId, "the Brazier placed with its action id")
-eq(X.brazierPos and X.brazierPos.x, 103, "next to the temple")
+eq(X.brazierPos and X.brazierPos.x, 104, "next to the temple: the first free offset (O386: 4, -5)")
 check(titleSources.community ~= nil and ChaosLeaderboard.communityWrapped and ChaosLeaderboard.communitySharesWrapped, "hooks")
 -- a player logs in: lines, events
 local hero = mkPlayer("Hero", 501, 1, Position(103, 99, 7))
@@ -651,7 +651,7 @@ check(tt and tt.text == cfg.goal.rewards.title, "the title on the name plate")
 check(titleSources.community(hero) == nil, "no title for Hero (not logged in again)")
 
 print = print_
-check(logged[1] and logged[1]:find("Great Brazier stands at 103, 98, 7", 1, true), "startup log")
+check(logged[1] and logged[1]:find("Great Brazier stands at 104, 95, 7", 1, true), "startup log: the first free offset (O386: 4, -5)")
 print(string.format("community_test: %s (%d checks)", failures == 0 and "OK" or (failures .. " FAILED"), count))
 if failures > 0 then
 	os.exit(1)
