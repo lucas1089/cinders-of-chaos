@@ -724,6 +724,9 @@ end
 -- also held other kills (live run 2026-11-01: a solo kill paid the partner 157408, the leader 6 times a solo kill).
 -- The last callback (after every Chaos bonus) adds what the watched monster gives. {[monster id] = {[player id] = exp}}
 TesterXpWatch = TesterXpWatch or {}
+-- damage per player (summons count for their master) on a watched kill monster: without the share the engine pays
+-- every attacker its damage share, so a partner that hit the test monster earns from it (live run 2026-11-03: 26)
+TesterKillHits = TesterKillHits or {}
 if EventCallback and not TesterXpWatchCb then
 	TesterXpWatchCb = true
 	local xpCb = EventCallback
@@ -757,6 +760,8 @@ local function oneKill(leader, partner, done)
 	local id = m:getId()
 	out.hp = m:getHealth()
 	TesterXpWatch[id] = {}
+	TesterKillHits[id] = {}
+	m:registerEvent("TesterHelperKillHits")
 	hitDown(lid, id, out)
 	local party = leader:getParty()
 	out.active = party and party:isSharedExperienceActive() == true
@@ -778,6 +783,9 @@ local function oneKill(leader, partner, done)
 		end
 		local watched = TesterXpWatch[id]
 		TesterXpWatch[id] = nil
+		local hits = TesterKillHits[id] or {}
+		TesterKillHits[id] = nil
+		out.partnerHit = (hits[pid] or 0) > 0
 		local l, p = Player(lid), Player(pid)
 		if not l or not p then
 			out.err = "the leader or the partner left the game"
@@ -1777,6 +1785,24 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 end
 dealt:type("healthchange")
 dealt:register()
+
+-- on the party kill check's monster: who hit it (TesterKillHits)
+local killHits = CreatureEvent("TesterHelperKillHits")
+function killHits.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	local w = TesterKillHits[creature:getId()]
+	if w and attacker and primaryType ~= COMBAT_HEALING then
+		local p = attacker
+		if not p:isPlayer() and p:getMaster() then
+			p = p:getMaster()
+		end
+		if p:isPlayer() then
+			w[p:getId()] = (w[p:getId()] or 0) + math.abs(primaryDamage or 0) + math.abs(secondaryDamage or 0)
+		end
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+killHits:type("healthchange")
+killHits:register()
 
 local death = CreatureEvent("TesterHelperDeath")
 function death.onDeath(creature, corpse, killer, mostDamageKiller)
