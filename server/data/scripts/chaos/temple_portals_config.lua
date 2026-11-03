@@ -45,5 +45,38 @@ return {
 			},
 			lamps = {{x = 32382, y = 32249}}
 		}
+	},
+
+	-- O386, owner 2026-11-03 (pt-BR): "organize o templo, deixe ele mais clean, retire um dos portais roxos".
+	-- tools/patch_temple_tidy.py (install step `templetidy`) takes these base map items off the temple's tiles and the
+	-- base floating texts (scripts/customs/actions/messages_text.lua) off these spots; idempotent, an item with an
+	-- action id or a unique id is never taken. Checked on the base map (2026-11-03): the temple's north hall had two
+	-- purple "Mystic Teleport" portals (5 pieces each: 28016 28017 over 28013 28014 28015, the two middle-row pieces
+	-- leading to 31648, 32233, 7, the teleport room) side by side, each with a "Teleports" text. Both led to the same
+	-- tile: the east one goes (with the marble pillar on its top piece), the west one at 32364-32366, 32235-32236
+	-- stays. The east side room loses its fallen leaves and the broom (walkway clutter). The "Collect First Items!"
+	-- text floated over the starter chest the `startchest` step took away. Kept: the waypoint portal (the "Waypoint"
+	-- text, east), the dungeon portal (west), the exercise dummy, the statues and the coal basins, the pillars of the
+	-- main hall, the stairs. The Great Brazier takes the freed spot (community_config.lua brazier.offsets).
+	tidy = {
+		{
+			town = 2, name = "Cinderhold", z = 7,
+			remove = {
+				-- the east purple teleport and the pillar on it
+				{x = 32372, y = 32235, item = 28016}, {x = 32373, y = 32235, item = 28017},
+				{x = 32373, y = 32235, item = 1515},
+				{x = 32372, y = 32236, item = 28013}, {x = 32373, y = 32236, item = 28014},
+				{x = 32374, y = 32236, item = 28015},
+				-- the east side room: leaves and a broom on the floor
+				{x = 32377, y = 32239, item = 12768}, {x = 32378, y = 32239, item = 12764},
+				{x = 32379, y = 32239, item = 12760}, {x = 32379, y = 32239, item = 2551},
+				{x = 32378, y = 32240, item = 12768}, {x = 32379, y = 32240, item = 12767}
+			},
+			-- the floating texts of these spots go (the line of messages_text.lua at the position, with this text)
+			texts = {
+				{x = 32373, y = 32236, text = "Teleports"},
+				{x = 32373, y = 32240, text = "Collect First Items!"}
+			}
+		}
 	}
 }
