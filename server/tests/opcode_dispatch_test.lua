@@ -9,11 +9,12 @@
 -- Also: every handler under data/scripts whose body uses OPCODE starts with its guard, since the dispatch files a
 -- handler under the opcode of its OPCODE upvalue.
 local checks, fails = 0, 0
+local outPrint = print -- FAIL lines go out even while the test captures print
 local function ok(cond, what)
 	checks = checks + 1
 	if not cond then
 		fails = fails + 1
-		print("FAIL " .. what)
+		outPrint("FAIL " .. what)
 	end
 end
 
@@ -242,7 +243,11 @@ do
 	reset()
 	printed = {}
 	D.bucket[p:getId()] = nil
+	-- a fixed clock: a second boundary during the flood would refill the bucket
+	local realMtime = os.mtime
+	os.mtime = function() return 7000000 end
 	for _ = 1, burst + 100 do sendOpcode(p, 60, "{}") end
+	os.mtime = realMtime
 	ok(calls.Bank and calls.Bank <= burst and calls.Bank >= burst - 5, "a flood reaches Bank " .. tostring(calls.Bank) .. " times")
 	local rateWarnings = 0
 	for _, line in ipairs(printed) do

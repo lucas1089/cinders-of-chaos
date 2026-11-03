@@ -89,6 +89,11 @@ function PF.sources()
 	if type(ChaosRaidConfig) == "table" and ChaosRaidConfig.name then
 		src.raids = {ChaosRaidConfig.name} -- raid.lua: the weekly raid
 	end
+	-- O389: the hunts of the teleport room (hunt_teleports.lua: placed plans and base hunts) with their level bands
+	local idx = ChaosHuntTeleports and ChaosHuntTeleports.idx
+	if type(idx) == "table" then
+		src.hunts, src.huntBands = K.huntTargets(idx.list, idx.base)
+	end
 	return src
 end
 

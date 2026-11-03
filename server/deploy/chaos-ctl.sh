@@ -35,6 +35,28 @@
 #                               the in-game survey of level 20 / 50 (chaos_survey), read-only: answered / skipped, the
 #                               fun score 1-5, would recommend, the "what confused you" texts newest first (--texts N of
 #                               them in the text, default 50); no account id or name is read
+#   game-health [--days N] [--kv | --json] [--pt]
+#                               the game health panel (server/README.md "Game health panel (O397)"), read-only: characters
+#                               online per hour of the last N days (default 7, 1 to 90: mean and peak), deaths per hour,
+#                               the most and least used hunts (hunting samples per hunt; every hunt marker of
+#                               data/chaos_poi.lua listed), gold in and out, the new player funnel of the last 30 days
+#                               (newplayer-funnel). One script of aggregate telemetry SELECTs built by
+#                               server/tools/game_health.py; counts of 1 to 4 characters are "<5". --kv: key=value lines
+#                               for the admin apps, --json one line, else text (--pt Portuguese)
+#   balance-report [--days N | --season ID|current] [--pt] [--json] [--save] [--dm]
+#                               the season balance report (server/README.md "Season balance report (O398)"): classes
+#                               compared per level band over the last N days (default 30, 1 to 730) or a season (its
+#                               dates, the /season start|end overrides winning): minutes per level, deaths per hunting
+#                               hour, damage per hour and share, most used spells, and every class outside the thresholds
+#                               of server/tools/balance_report_config.json with a suggested change. --save writes
+#                               CHAOS_BALANCE_DIR (/var/lib/chaos/balance) NAME.md / NAME.json / latest.md; --dm also puts
+#                               it into the Discord bot's outbox (CHAOS_BOT_DATA/outbox: the bot DMs the owner)
+#   balance-report last         the newest saved report (latest.md)
+#   balance-report auto         (chaos-balance.timer, daily) a season that ended in the last 14 days with no saved report:
+#                               save season-ID.md (Portuguese) and DM it
+#   balance-report timer on|off|status
+#                               installs (from the repo) and enables chaos-balance.service / .timer, disables it, or
+#                               key=value lines (timer_installed, timer_enabled, timer_active, dir) and "@saved" names
 #   broadcast TEXT              a message to everyone online     (remote.cmd, server/README.md "Remote admin commands")
 #   kick NAME | open | close    kick one character / let players log in / close the server for login
 #   catalog ACTOR               the admin panel's catalog (all actions and their parameters) for the admin character ACTOR
@@ -262,7 +284,8 @@
 # $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log. For areas-publish:
 # CHAOS_AREAS_STATE /var/lib/chaos/areas (the token file), CHAOS_DL_DIR, CHAOS_SITE_ENV (CHAOS_SITE_URL). For testers:
 # CHAOS_TESTER_KEY /etc/chaos/tester-client-key, CHAOS_TESTER_STATE /var/lib/chaos/testers, CHAOS_TESTER_LOG
-# /var/log/chaos/testers.log. For vps: CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log. For spectate: CHAOS_SPECTATE_PAIR
+# /var/log/chaos/testers.log. For balance-report: CHAOS_BALANCE_DIR /var/lib/chaos/balance. For vps: CHAOS_VPS_LOG
+# /var/log/chaos/vps-upgrade.log. For spectate: CHAOS_SPECTATE_PAIR
 # $CHAOS_ROOT/pair, CHAOS_SPECTATE_STATE /var/lib/chaos/spectate (lock, renewal time, the dat index), CHAOS_PAIR_BRANCH
 # windows-assets, CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log. For cast: CHAOS_CAST_PORT (else castPort of
 # the server's config.lua). For clientservices-impl: CHAOS_SYSTEMD_DIR /etc/systemd/system.
@@ -292,7 +315,7 @@ CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPEC
 CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STAGING CHAOS_CACHE_DIR \
 CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE \
 CHAOS_SERVER_USER_STATE CHAOS_SERVER_USER_LOG CHAOS_BOT_USER CHAOS_BOT_ENV CHAOS_BOT_DIR CHAOS_BOT_DATA CHAOS_BOT_LOG \
-CHAOS_BOT_PYTHON "
+CHAOS_BOT_PYTHON CHAOS_BALANCE_DIR "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -363,6 +386,7 @@ SPLOG=$(setting CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log)
 SYSD=$(setting CHAOS_SYSTEMD_DIR /etc/systemd/system)
 SUSTATE=$(setting CHAOS_SERVER_USER_STATE /var/lib/chaos/server-user)
 SULOG=$(setting CHAOS_SERVER_USER_LOG /var/log/chaos/server-user.log)
+BALDIR=$(setting CHAOS_BALANCE_DIR /var/lib/chaos/balance)
 if [ -z "$MYSQL" ]; then
   for c in mysql mariadb "$ROOT/mariadb/bin/mariadb"; do
     command -v "$c" >/dev/null 2>&1 && { MYSQL=$c; break; }
@@ -1079,6 +1103,183 @@ case $cmd in
       exit 1
     fi
     printf '%s\n' "$nrows" | python3 -I "$npy" "$nmode" --days "$ndays" ${nargs[@]+"${nargs[@]}"}
+    ;;
+  game-health)
+    # read-only (O397): the SELECT script comes from game_health.py, built from fixed numbers and a checked day count;
+    # no argument reaches the shell or the SQL as text. Aggregate telemetry rows only (no names, accounts or IPs)
+    gdays=7 gargs=()
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --days) shift; { num "${1:-}" && [ "${#1}" -le 2 ] && [ "$((10#$1))" -ge 1 ] && [ "$((10#$1))" -le 90 ]; } \
+          || die "game-health --days N (1 to 90)"
+          gdays=$((10#$1)) ;;
+        --kv) gargs+=(--kv) ;;
+        --json) gargs+=(--json) ;;
+        --pt) gargs+=(--pt) ;;
+        *) die "game-health [--days N] [--kv | --json] [--pt]" ;;
+      esac
+      shift
+    done
+    gpy="$REPO/server/tools/game_health.py"
+    [ -r "$gpy" ] || die "no $gpy"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    gnow=$(date +%s)
+    gsql=$(python3 -I "$gpy" --sql --days "$gdays" --now "$gnow") || die "the query could not be built"
+    grc=0
+    grows=$(mysql_q - <<< "$gsql" 2>&1) || grc=$?
+    if [ "$grc" -ne 0 ]; then
+      case $grows in *"doesn't exist"*) gerr=no-table ;; *) gerr=database ;; esac
+      python3 -I "$gpy" ${gargs[@]+"${gargs[@]}"} --error "$gerr"
+      exit 1
+    fi
+    printf '%s\n' "$grows" | python3 -I "$gpy" --days "$gdays" --now "$gnow" --poi "$SERVER/data/chaos_poi.lua" \
+      ${gargs[@]+"${gargs[@]}"}
+    ;;
+  balance-report)
+    # the season balance report (O398): classes compared over a season or the last N days from the balance telemetry,
+    # with suggested changes (server/tools/balance_report.py). Read-only on the database; --save writes $BALDIR, --dm
+    # also drops the report into the Discord bot's outbox (the bot DMs the owner). Every SQL comes from
+    # balance_report.py, built from checked numbers; no argument reaches the shell or the SQL as text.
+    bpy="$REPO/server/tools/balance_report.py"
+    [ -r "$bpy" ] || die "no $bpy"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    bseasons="$SERVER/data/scripts/chaos/season_config.lua"
+    [ -r "$bseasons" ] || bseasons="$REPO/server/data/scripts/chaos/season_config.lua"
+    bvocs=$(IFS=,; printf '%s' "${VOCATIONS[*]}")
+    bnow=$(date +%s)
+    BARGS=()
+    # the window of a season: "SINCE UNTIL ID NAME" (the /season start|end overrides of server_config win)
+    bal_window() {
+      local wsql wrows
+      wsql=$(python3 -I "$bpy" windows-sql --seasons "$bseasons") || return 2
+      wrows=$(mysql_q - <<< "$wsql" 2>/dev/null) || return 4
+      printf '%s\n' "$wrows" | python3 -I "$bpy" window --season "$1" --seasons "$bseasons" --now "$bnow"
+    }
+    # the report of SINCE UNTIL TITLE [SAVE-NAME]; extra python arguments in BARGS
+    bal_run() {
+      local rsql rrows rrc=0 rsave=() berr
+      rsql=$(python3 -I "$bpy" sql --since "$1" --until "$2") || die "the query could not be built"
+      rrows=$(mysql_q - <<< "$rsql" 2>&1) || rrc=$?
+      if [ "$rrc" -ne 0 ]; then
+        case $rrows in *"doesn't exist"*) berr=no-table ;; *) berr=database ;; esac
+        python3 -I "$bpy" report ${BARGS[@]+"${BARGS[@]}"} --error "$berr"
+        exit 1
+      fi
+      if [ -n "${4:-}" ]; then
+        install -d -m 0750 "$BALDIR" || die "cannot create $BALDIR"
+        rsave=(--save "$BALDIR" --name "$4")
+      fi
+      printf '%s\n' "$rrows" | python3 -I "$bpy" report --since "$1" --until "$2" --title "$3" --vocations "$bvocs" \
+        --now "$bnow" ${rsave[@]+"${rsave[@]}"} ${BARGS[@]+"${BARGS[@]}"}
+    }
+    # a saved report into the bot's outbox: the bot sends it to the owner as DMs within a minute
+    bal_dm() {
+      local box="$BOTDATA/outbox" bgrp
+      if [ ! -d "$BOTDATA" ] || ! id "$BOTUSER" >/dev/null 2>&1; then
+        echo "dm=no-bot (discord-bot install first)"
+        return 0
+      fi
+      bgrp=$(id -gn "$BOTUSER") || return 1
+      install -d -m 0750 -o "$BOTUSER" -g "$bgrp" "$box" || return 1
+      install -m 0640 -o "$BOTUSER" -g "$bgrp" "$1" "$box/$(basename "$1")" || return 1
+      echo "dm=queued"
+    }
+    case ${1:-} in
+      last)
+        [ $# -eq 1 ] || die "balance-report last"
+        if [ -r "$BALDIR/latest.md" ]; then cat "$BALDIR/latest.md"; else echo "no-report: no saved report yet"; exit 1; fi
+        ;;
+      auto)
+        # the timer (chaos-balance.timer, daily): every season that ended in the last autoDays days and has no saved
+        # report gets one (season-ID.md, Portuguese) and a DM
+        [ $# -eq 1 ] || die "balance-report auto"
+        bwsql=$(python3 -I "$bpy" windows-sql --seasons "$bseasons") || die "no season list"
+        bwrows=$(mysql_q - <<< "$bwsql") || die "database-down: the season windows could not be read"
+        bdue=$(printf '%s\n' "$bwrows" | python3 -I "$bpy" due --seasons "$bseasons" --dir "$BALDIR" --now "$bnow") \
+          || die "the due check failed"
+        [ -n "$bdue" ] || { echo "auto: nothing due"; exit 0; }
+        for bid in $bdue; do
+          num "$bid" || continue
+          bw=$(printf '%s\n' "$bwrows" | python3 -I "$bpy" window --season "$bid" --seasons "$bseasons" --now "$bnow") \
+            || continue
+          read -r bs bu _ bname <<< "$bw"
+          BARGS=(--pt)
+          bal_run "$bs" "$bu" "$bname" "season-$bid" >/dev/null
+          echo "auto: season $bid report saved ($BALDIR/season-$bid.md)"
+          bal_dm "$BALDIR/season-$bid.md" || echo "dm=failed"
+        done
+        ;;
+      timer)
+        [ $# -eq 2 ] || die "balance-report timer on|off|status"
+        case $2 in
+          on)
+            [ -d "$REPO/server/deploy" ] || die "no repository checkout at $REPO (update-apply first)"
+            bchanged=0
+            for bkind in service timer; do
+              bsrc="$REPO/server/deploy/chaos-balance.$bkind"
+              [ -f "$bsrc" ] || die "missing $bsrc"
+              btxt=$(sed -e "s#/opt/chaos/repo#$REPO#g" "$bsrc")
+              if [ "$btxt" != "$(cat "$SYSD/chaos-balance.$bkind" 2>/dev/null)" ]; then
+                printf '%s\n' "$btxt" > "$SYSD/chaos-balance.$bkind" || die "cannot install chaos-balance.$bkind"
+                chmod 0644 "$SYSD/chaos-balance.$bkind"
+                bchanged=1
+              fi
+            done
+            [ "$bchanged" -eq 0 ] || systemctl daemon-reload || die "daemon-reload failed"
+            systemctl enable --now chaos-balance.timer >/dev/null 2>&1 || die "could not enable chaos-balance.timer"
+            echo "balance-report timer: on (daily; a season that just ended gets its report and a DM)"
+            ;;
+          off)
+            systemctl disable --now chaos-balance.timer >/dev/null 2>&1 || die "could not disable chaos-balance.timer"
+            echo "balance-report timer: off"
+            ;;
+          status)
+            if [ -f "$SYSD/chaos-balance.timer" ]; then echo timer_installed=yes; else echo timer_installed=no; fi
+            echo "timer_enabled=$(systemctl is-enabled chaos-balance.timer 2>/dev/null || echo disabled)"
+            echo "timer_active=$(systemctl is-active chaos-balance.timer 2>/dev/null || echo inactive)"
+            echo "dir=$BALDIR"
+            echo "@saved"
+            find "$BALDIR" -maxdepth 1 -type f \( -name 'season-*.md' -o -name 'balance-*.md' \) -printf '%f\n' 2>/dev/null \
+              | sort -r | head -n 10
+            ;;
+          *) die "balance-report timer on|off|status" ;;
+        esac
+        ;;
+      *)
+        bdays="" bseason="" bsave=0 bdm=0
+        while [ $# -gt 0 ]; do
+          case $1 in
+            --days) shift; { num "${1:-}" && [ "${#1}" -le 3 ] && [ "$((10#$1))" -ge 1 ] && [ "$((10#$1))" -le 730 ]; } \
+              || die "balance-report --days N (1 to 730)"
+              bdays=$((10#$1)) ;;
+            --season) shift; { [ "${1:-}" = current ] || { num "${1:-}" && [ "${#1}" -le 4 ]; }; } \
+              || die "balance-report --season ID|current"
+              bseason=$1 ;;
+            --pt) BARGS+=(--pt) ;;
+            --json) BARGS+=(--json) ;;
+            --save) bsave=1 ;;
+            --dm) bsave=1 bdm=1 ;;
+            *) die "balance-report [--days N | --season ID|current] [--pt] [--json] [--save] [--dm] | last | auto | timer on|off|status" ;;
+          esac
+          shift
+        done
+        [ -z "$bdays" ] || [ -z "$bseason" ] || die "balance-report: --days or --season, not both"
+        if [ -n "$bseason" ]; then
+          bw=$(bal_window "$bseason") || die "no-season: season $bseason not found or not started (or the database is down)"
+          read -r bs bu bid bname <<< "$bw"
+          bfile="season-$bid"
+        else
+          bs=$((bnow - ${bdays:-30} * 86400)) bu=$bnow bname="" bfile="balance-$(date +%Y%m%d-%H%M%S)"
+        fi
+        if [ "$bsave" -eq 1 ]; then
+          bal_run "$bs" "$bu" "$bname" "$bfile"
+          echo "saved=$BALDIR/$bfile.md"
+          if [ "$bdm" -eq 1 ]; then bal_dm "$BALDIR/$bfile.md" || echo "dm=failed"; fi
+        else
+          bal_run "$bs" "$bu" "$bname"
+        fi
+        ;;
+    esac
     ;;
   feedback)
     # players' bug reports and suggestions (chaos_reports, reason bug) as plain text for the owner and for Claude.

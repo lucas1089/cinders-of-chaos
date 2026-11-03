@@ -951,6 +951,10 @@ character of group 5 or higher). Nothing to set up: the game server creates the 
 730 days. Aggregates only, no names or ids (privacy policy section 2, "Game statistics"). Details: server/README.md
 "Balance telemetry". `/telemetry` in game shows the hour in memory.
 
+The admin apps read it too: Painel > Saúde do jogo (O397) and Painel > Relatório de equilíbrio (O398). To get the
+season balance report by Discord DM when a season ends: Relatório de equilíbrio > Ligar automático (fallback:
+`chaos-ctl.sh balance-report timer on`). server/README.md "Game health panel (O397)", "Season balance report (O398)".
+
 ## Client updates (signed updater)
 
 The client checks the website for a signed manifest before login and downloads changed modules, images, fonts and

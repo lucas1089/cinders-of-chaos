@@ -2,7 +2,7 @@
 ChaosWindow
   id: buildShareWindow
   !text: tr('Build Code')
-  size: 400 360
+  size: 400 392
   anchors.top: parent.top
   anchors.right: parent.right
   margin-top: 80
@@ -14,11 +14,11 @@ ChaosWindow
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    height: 30
+    height: 42
     text-wrap: true
     text-auto-resize: false
     text-align: center
-    !text: tr('Export copies your build code to the clipboard. Paste a code and press Import to preview it in the tree.')
+    !text: tr('Export copies your tree code, Copy Full Build also your class, spells and gear (for Discord and the website). Paste a code and press Import to preview it.')
 
   ChaosTextEdit
     id: codeEdit
@@ -27,7 +27,7 @@ ChaosWindow
     anchors.right: parent.right
     margin-top: 6
     height: 24
-    max-length: 600
+    max-length: 1000
 
   ChaosButton
     id: exportButton
@@ -56,9 +56,19 @@ ChaosWindow
     !text: tr('Paste')
     @onClick: modules.game_passivetree.pasteBuild()
 
+  ChaosButton
+    id: exportFullButton
+    anchors.top: exportButton.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    !text: tr('Copy Full Build')
+    !tooltip: tr('Copies one code with your passive tree, class, level, spell rotation and gear. The website draws it.')
+    @onClick: modules.game_passivetree.exportFullBuild()
+
   ChaosSeparator
     id: sep
-    anchors.top: exportButton.bottom
+    anchors.top: exportFullButton.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 8

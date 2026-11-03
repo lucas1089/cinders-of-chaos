@@ -1,0 +1,16 @@
+{
+  "comment": "Season balance report (O398, server/tools/balance_report.py; server/README.md \"Season balance report (O398)\"). tolerance: a class is flagged when its minutes per level or damage per hour is this share away from the median of its level band; deathTolerance: the same for deaths per hunting hour; minDeathsPerHour: no death flag below this rate; minHuntHours / minCharacterHours: a class and band needs this much hunting time (and this many character-hours: the small groups rule) to be compared; minClasses: a band needs this many compared classes for a median; suggestShare / suggestMax: a suggested change is this share of the gap, at most suggestMax; bandLevel: the level each telemetry band (telemetry_config.lua bands) is measured at; topSpells: most used spells per class; autoDays: the timer writes the report of a season that ended within this many days; keep: saved reports kept; defaultDays: the window without --days or --season.",
+  "tolerance": 0.15,
+  "deathTolerance": 0.25,
+  "minDeathsPerHour": 0.2,
+  "minHuntHours": 5,
+  "minCharacterHours": 5,
+  "minClasses": 3,
+  "suggestShare": 0.5,
+  "suggestMax": 0.15,
+  "bandLevel": {"1-99": 50, "100-299": 200, "300-499": 400, "500-999": 750, "1000+": 1200},
+  "topSpells": 3,
+  "autoDays": 14,
+  "keep": 30,
+  "defaultDays": 30
+}

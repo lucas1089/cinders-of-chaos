@@ -282,6 +282,8 @@ return array(
 	'Donate to %s and receive Chaos Coins for the in-game store.' => 'Doe para %s e receba Chaos Coins para a loja do jogo.',
 	'Every third-party source of %s: art, fonts, libraries and tools.' => 'Todas as fontes de terceiros de %s: arte, fontes, bibliotecas e ferramentas.',
 	'The %s wiki: guides for new players and a reference of classes, spells, items, rifts and bosses, generated from the game data.' => 'A wiki de %s: guias para novos jogadores e uma referência de classes, magias, itens, rifts e chefes, gerada a partir dos dados do jogo.',
+	'A shared build of %s: class, passive tree, spell rotation and gear.' => 'Uma build compartilhada de %s: classe, árvore passiva, rotação de magias e equipamento.',
+	'A character of %s: gear, achievements, level milestones, best runs and seasons.' => 'Um personagem de %s: equipamento, conquistas, marcos de nível, melhores corridas e temporadas.',
 	'%s in the %s wiki: guides and a reference generated from the game data.' => '%s na wiki de %s: guias e uma referência gerada a partir dos dados do jogo.',
 	'%s of %s.' => '%s de %s.',
 	'%s, level %d %s of %s: profile, deaths and the account\'s characters.' => '%s, nível %d, %s de %s: perfil, mortes e os personagens da conta.',

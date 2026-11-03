@@ -130,6 +130,16 @@ level and class, text and the closing note (`FeedbackInfo.java` and `server/tool
 line is never read. An open report has the button "Usar no Fechar relatório", which writes its number into the id field
 of the action Fechar relatório; add a note and press that button. The cards keep the last good answer until the next one.
 
+## Game health and balance report (Jogadores, O397, O398)
+
+Jogadores > Saúde do jogo > "Carregar gráficos (7 dias)" runs `game-health --kv --pt --days 7` and draws bars with the
+egui painter (no plot crate): online per hour (a gap = no sample), the mean by hour of the day, deaths per hour. Then
+tables: most and least used hunts, gold by source, new player funnel. Counts under 5 read "<5". Parsing: `src/health.rs`
+(the key=value lines of `server/tools/game_health.py`, tests in the file). "Ver como texto" in the table takes any day
+count (1 to 90). Jogadores > Relatório de equilíbrio: Últimos dias, Season atual, Enviar por DM, Último salvo, Ligar /
+Desligar automático, Estado do automático (`balance-report`, text in the output pane). server/README.md "Game health
+panel (O397)", "Season balance report (O398)".
+
 ## Reload one file (Painel do jogo > Recarregar um arquivo)
 
 Pick a config table (`Listar arquivos` fills the list from `chaos-ctl.sh reload-files`; type to filter) and press

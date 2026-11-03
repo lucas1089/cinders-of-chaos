@@ -64,7 +64,27 @@ for _, t in ipairs(trialsCfg.tiers) do sources.trials[#sources.trials + 1] = t.n
 for _, b in ipairs(Chaos.worldBoss.bosses) do sources.worldBosses[#sources.worldBosses + 1] = b.name end
 for i = 1, 4 do sources.dungeons[i] = Chaos.dungeons.extra[i].title end
 local acts = K.buildActivities(cfg, sources)
-eq(#acts, 9, "nine activities (the battleground too)")
+eq(#acts, 10, "ten activities (the battleground and, O389, hunts too)")
+eq(acts[1].k, "hunt", "O389: hunts first (the form's default)")
+eq(#K.activity(acts, "hunt").targets, 0, "no hunt list without the hunt teleports")
+eq(K.activity(acts, "hunt").bands, nil, "no bands without hunts")
+-- O389: the hunt targets from the hunt teleports' index, by band, one per name, with their bands
+do
+	local names, bands = K.huntTargets({{name = "Ashen Caves", level = {300, 400}}, {name = "Bad"}, {name = "Low Moor", level = {6, 20}}},
+		{{name = "Ashen Caves", level = {1, 2}}, {name = "Base Crypt", level = {300, 350}}})
+	eq(table.concat(names, "|"), "Low Moor|Ashen Caves|Base Crypt", "hunts by band, then name; a name once")
+	eq(bands[2][1] .. "-" .. bands[2][2], "300-400", "the band of a hunt")
+	local srcH = {}
+	for k, v in pairs(sources) do srcH[k] = v end
+	srcH.hunts, srcH.huntBands = names, bands
+	local hacts = K.buildActivities(cfg, srcH)
+	local h = K.activity(hacts, "hunt")
+	eq(#h.targets, 3, "three hunt targets")
+	eq(h.bands[1][1] .. "-" .. h.bands[1][2], "6-20", "bands sent with the targets")
+	eq(K.activityText(hacts, {a = "hunt", t = 2}), "Hunt: Ashen Caves", "hunt text")
+	srcH.huntBands = {{1, 2}}
+	eq(K.activity(K.buildActivities(cfg, srcH), "hunt").bands, nil, "bands that do not match the targets are dropped")
+end
 eq(K.activity(acts, "battleground").n, "Battleground", "the battleground activity")
 eq(K.activity(acts, "battleground").max, 5, "a battleground party is at most 5")
 eq(K.activity(acts, "rift").range.max, riftCfg.maxTier, "rift max tier from rift_config.lua")
@@ -136,6 +156,14 @@ refused(copy(good, {want = {tank = -1, healer = 1, dps = 0}}), "perRole", "negat
 refused(copy(good, {want = {tank = 3, healer = 3, dps = 4}}), "size", "past a full party")
 refused(copy(good, {minLevel = 0}), "minLevel", "level 0")
 refused(copy(good, {minLevel = 99999}), "minLevel", "level too high")
+-- O389: the level band's top and the fixed notes
+refused(copy(good, {maxLevel = 200}), "maxLevel", "band top under the minimum")
+refused(copy(good, {maxLevel = 99999}), "maxLevel", "band top too high")
+refused(copy(good, {maxLevel = -1}), "maxLevel", "negative band top")
+refused(copy(good, {nk = #cfg.notes + 1}), "noteKey", "a note past the list")
+refused(copy(good, {nk = -1}), "noteKey", "a negative note")
+check(#cfg.notes >= 5, "a fixed list of notes")
+for _, r in pairs(K.reasons) do check(type(r) == "string" and r ~= "", "reason text") end
 refused(good, "notLeader", "a party member", who(9, ids.juggernaut, 400, {party = {leader = false, members = {}}}))
 cfg.enabled = false
 refused(good, "disabled", "switched off")
@@ -150,6 +178,25 @@ eq(L.expires, now + cfg.defaultExpiry * 60, "expires")
 local open, total = K.open(cfg, L)
 eq(open.healer, 1, "one healer open")
 eq(total, 3, "three slots open")
+-- O389: a level band and a fixed note: the row carries them, an applicant above the band is refused, the quick join
+-- queue skips the listing for that character
+do
+	local st2 = K.newState()
+	local L2 = K.post(st2, cfg, acts, who(40, ids.juggernaut, 400), copy(good, {minLevel = 300, maxLevel = 450, nk = 2}), now)
+	check(L2 ~= nil, "band listing posted")
+	eq(L2.maxLevel, 450, "band top kept")
+	local row = K.row(cfg, acts, L2, who(41, ids.illusionist, 350), now)
+	eq(row.xl, 450, "row: band top")
+	eq(row.nk, 2, "row: fixed note")
+	eq(K.list(st2, cfg, acts, who(40, ids.juggernaut, 400), now).mine.input.maxLevel, 450, "own form: band top")
+	local _, why = K.apply(st2, cfg, who(42, ids.illusionist, 451), L2.id, "healer", now)
+	eq(why, "levelHigh", "above the band: refused")
+	check(K.apply(st2, cfg, who(43, ids.illusionist, 450), L2.id, "healer", now) ~= nil, "at the band top: applies")
+	K.queueJoin(st2, cfg, acts, who(44, ids.deadeye, 900), "dps", nil, now)
+	eq(#K.match(st2, cfg, now), 0, "quick join: no match above the band")
+	local L3 = K.post(K.newState(), cfg, acts, who(45, ids.juggernaut, 400), copy(good, {maxLevel = 0}), now)
+	eq(K.row(cfg, acts, L3, who(41, ids.illusionist, 350), now).xl, nil, "no band top: none sent")
+end
 eq(K.size(L), 1, "the leader alone")
 -- the update keeps the listing and its id
 local L2, st2 = K.post(st, cfg, acts, tank, copy(good, {exp = 60}), now + 1)
@@ -600,7 +647,8 @@ check(lead.events.ChaosPartyFinderExtended and lead.events.ChaosPartyFinderLogou
 
 op(lead, "open", {})
 eq(last("Brannoc", "init").op, 208, "init on opcode 208")
-eq(#last("Brannoc", "init").data.acts, 9, "init activities")
+eq(#last("Brannoc", "init").data.acts, 10, "init activities")
+eq(#last("Brannoc", "init").data.notes, #cfg.notes, "init: the fixed notes (O389)")
 eq(last("Brannoc", "list").data.mine, nil, "no listing yet")
 op(lead, "post", {a = "dungeon", t = 1, want = {tank = 0, healer = 1, dps = 1}, minLevel = 300, note = "fast run", exp = 30,
 	role = "tank"})

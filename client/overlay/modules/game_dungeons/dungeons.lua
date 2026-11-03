@@ -561,7 +561,7 @@ function selectDungeon(dungeonId)
   currentUI.soloTable = window and window:recursiveGetChildById("soloTable") or nil
   currentUI.groupTable = window and window:recursiveGetChildById("groupTable") or nil
 
-  dungeonInfo:getChildById("banner"):setImageSource(bannerFor(dungeon.title))
+  dungeonInfo:getChildById("banner"):setImageSource(bannerFor(DungeonsView.bannerTitle(dungeon)))
   applyDifficultyTexts(dungeon)
 
   if currentUI.difficultiesPanel then
@@ -571,7 +571,8 @@ function selectDungeon(dungeonId)
     for i = 2, 6 do
       local diffWidget = currentUI.difficultiesPanel:getChildByIndex(i)
       if diffWidget then
-        if dungeon.difficulty < i then
+        -- the Weekly Challenge runs at difficulty 1 only (server weekly_challenge_config.lua)
+        if dungeon.difficulty < i or dungeon.weekly then
           diffWidget:disable()
           diffWidget:getChildById("lockBg"):show()
           diffWidget:getChildById("lockImg"):show()
@@ -630,6 +631,13 @@ function selectDungeon(dungeonId)
 
   if currentUI.challengesPanel then
     currentUI.challengesPanel:destroyChildren()
+    local weeklyTitle = DungeonsView.weeklyTitle(dungeon.weekly)
+    if weeklyTitle then
+      local widget = g_ui.createWidget("ChallengePanel", currentUI.challengesPanel)
+      widget:setText(weeklyTitle)
+      widget:getChildById("checkbox"):hide()
+      widget:getChildById("description"):setText(DungeonsView.weeklyText(dungeon.weekly))
+    end
     for i = 1, #dungeon.challenges do
       local challenge = dungeon.challenges[i]
       local widget = g_ui.createWidget("ChallengePanel", currentUI.challengesPanel)

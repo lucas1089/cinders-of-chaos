@@ -153,5 +153,34 @@ eq(V.compTooltip({ comp = { { n = 'Brannoc', lv = 60, vn = 'Juggernaut', r = 'ta
   :find('leader - Mentoring', 1, true) ~= nil, true, 'mentor tag in the tooltip')
 eq(V.mentorTag(nil), nil, 'no tag')
 
+-- O389: the level band (ml .. xl), the fixed notes, a hunt's band
+local band = { id = 9, a = 'hunt', ml = 300, xl = 450, left = 600, ld = 'Rhea', open = { dps = 1 }, comp = {}, nk = 2, note = 'hi' }
+eq(V.levelFits(band, 300), true, 'band: at the bottom')
+eq(V.levelFits(band, 450), true, 'band: at the top')
+eq(V.levelFits(band, 451), false, 'band: above')
+eq(V.levelFits(band, 299), false, 'band: below')
+eq(V.levelFits({ ml = 10 }, 2000), true, 'no top: any level above')
+local okHi, whyHi = V.canApply(band, { 'dps' }, 500)
+eq(okHi, false, 'above the band: no apply')
+eq(whyHi, 'Level 300-450', 'band refusal text')
+eq(V.canApply(band, { 'dps' }, 400), true, 'inside the band: apply')
+eq(#V.filter({ band }, { fits = true }, 500), 0, 'fits filter drops a row above its band')
+eq(#V.filter({ band }, { fits = false }, 500), 1, 'without the filter it shows')
+eq(V.subLine(band, 0), 'Rhea  -  Lv 300-450  -  10m left', 'sub line with the band')
+eq(V.bandShort({ ml = 1, xl = 50 }), 'Lv 1-50', 'band from level 1')
+eq(V.noteText(band, { 'Relaxed', 'Fast clear' }), 'Fast clear  -  hi', 'fixed note and free note')
+eq(V.noteText({ note = '' , nk = 1 }, { 'Relaxed' }), 'Relaxed', 'fixed note only')
+eq(V.noteText({ note = 'x', nk = 5 }, { 'Relaxed' }), 'x', 'unknown fixed note left out')
+eq(V.noteText({ note = 'x' }, nil), 'x', 'no notes list')
+local hunt = { k = 'hunt', targets = { 'Low Moor', 'Ashen Caves' }, bands = { { 6, 20 }, { 300, 400 } } }
+local lo, hi = V.targetBand(hunt, 2)
+eq(lo .. '-' .. hi, '300-400', 'hunt band')
+eq(V.targetBand(hunt, 0), nil, 'any hunt: no band')
+eq(V.targetBand({ targets = { 'x' } }, 1), nil, 'no bands')
+local inp = V.postInput({ hunt }, { a = 'hunt', t = 2, minLevel = '300', maxLevel = '200', nk = 3, role = 'dps' })
+eq(inp.maxLevel, 300, 'band top never under the minimum')
+eq(inp.nk, 3, 'fixed note index')
+eq(V.postInput({ hunt }, { a = 'hunt', minLevel = '5', maxLevel = '' }).maxLevel, 0, 'empty top: none')
+
 if fails > 0 then print(fails .. ' failure(s)') os.exit(1) end
 print('partyfinderview_test: OK')

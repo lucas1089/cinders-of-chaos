@@ -499,10 +499,34 @@ def test_changes():
           == (None, None), 'pending: empty or broken')
 
 
+def test_outbox():
+    """O398: the files chaos-ctl.sh drops for a DM to the owner"""
+    with tempfile.TemporaryDirectory() as tmp:
+        box = os.path.join(tmp, core.OUTBOX_DIR)
+        check(core.outbox_files(box) == [], 'no outbox folder: nothing')
+        os.makedirs(box)
+        for name, body in (('b-2.md', 'second'), ('a-1.md', 'first'), ('x.sh', 'no'), ('.hidden.md', 'no'),
+                           ('note.txt', 'text')):
+            with open(os.path.join(box, name), 'w') as f:
+                f.write(body)
+        os.symlink(os.path.join(box, 'a-1.md'), os.path.join(box, 'link.md'))
+        names = [os.path.basename(p) for p in core.outbox_files(box)]
+        check(names == ['a-1.md', 'b-2.md', 'note.txt'], 'only plain .md / .txt files, oldest name first: %r' % names)
+        with open(os.path.join(box, 'c.md'), 'w', encoding='utf-8') as f:
+            f.write('# Relat\u00f3rio\x07\u202e\n' + 'linha\n' * 5000)
+        t = core.read_outbox(os.path.join(box, 'c.md'), max_chars=200)
+        check(t.startswith('# Relat\u00f3rio\nlinha') and '\x07' not in t and '\u202e' not in t, 'cleaned text')
+        check(len(t) <= 210 and t.endswith('(...)'), 'capped at a line end')
+    parts = core.split_message('a' * 10 + '\n' + 'b' * 10 + '\n' + 'c' * 25, limit=22)
+    check(parts == ['a' * 10 + '\n' + 'b' * 10, 'c' * 22, 'c' * 3], 'split at line ends, a long line cut: %r' % parts)
+    check(all(len(p) <= core.DM_LIMIT for p in core.split_message('x\n' * 3000)), 'every piece within the DM limit')
+    check(core.split_message('') == [], 'nothing to send')
+
+
 def main():
     for t in (test_config, test_auth_and_limit, test_clean, test_images, test_prompt_and_parse, test_new_and_duplicate,
               test_status, test_lists_and_views, test_daily, test_patch_notes, test_embeds, test_forum,
-              test_channel_check, test_changes):
+              test_channel_check, test_changes, test_outbox):
         t()
     print('bot_core_test: %s' % ('ok' if not failures else '%d failure(s)' % failures))
     return 1 if failures else 0

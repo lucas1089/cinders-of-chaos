@@ -57,6 +57,12 @@ K.INTENTS = {
 		{"frame", "plate"},
 		{"shop", "web", "order"},
 		{"open", "service", "trade", "menu"}
+	},
+	-- O394: English and pt-BR words (the NPC hears what the player types, in either language)
+	rumours = {
+		{"job", "who are", "your name", "what do you do", "quem", "seu nome"},
+		{"price", "cost", "fee", "how much", "quanto", "preço", "preco", "custa"},
+		{"rumour", "rumor", "boato", "gossip", "fofoca", "news", "novidade", "hint", "dica", "whisper", "trade"}
 	}
 }
 -- the answer names of the rows above, per NPC, in the same order
@@ -65,7 +71,8 @@ K.INTENT_NAMES = {
 	pocketboss = {"job", "charges", "open"},
 	banker = {"job", "balance", "open"},
 	broker = {"job", "buy", "leave", "sell", "towns", "list"},
-	services = {"job", "name", "vocation", "familiar", "frame", "webshop", "open"}
+	services = {"job", "name", "vocation", "familiar", "frame", "webshop", "open"},
+	rumours = {"job", "price", "rumour"}
 }
 
 function K.intent(key, text)

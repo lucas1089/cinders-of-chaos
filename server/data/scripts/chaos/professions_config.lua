@@ -4,7 +4,10 @@
 -- description), `broker.npc` and `hooks`. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 --
 -- The owner's rule: professions gather materials to SELL TO NPCs and to earn an EXPERIENCE BONUS. They make no gear
--- and no orbs and feed no crafting; the materials are sold to the Material Broker (or traded on the market).
+-- and no orbs. O395 (owner 2026-11-03): they also FEED THE BASE CRAFTING TABLES (mining, herbalist, armorsmith books):
+-- by-products (a base crafting material now and then, `byproducts`) and refining recipes (`refine`, added to the
+-- base books by data/lib/chaos_profession_recipes.lua). Perks at profession levels 25 / 50 / 75 (`perks`), nodes in
+-- the hunts of the teleport hall by level band (`huntNodes`). Gathering still earns less than hunting (`balance`).
 --
 -- Four gathering professions, each with its own level 1..100 (own curve, below) per character:
 --   delving      ore veins (node items placed in hunting areas)     tool: a pick (stock 2553)
@@ -202,6 +205,74 @@ C.balance = {
 	maxShare = 0.4, walkSec = 12, killSec = 10,
 	hunting = {{8, 19000}, {40, 83000}, {100, 358839}, {300, 881866}, {500, 5548330}, {1000, 9519711}}
 }
+
+-- ------------------------------------------------------------------ O395: feeding the base crafting
+-- By-products: a gather that yields a material has `chance[prof]` (+ the perks) of one base crafting material more,
+-- of the gather's tier (`ids[prof][tier]`, one picked at random). The base server's own gathering materials (ore pieces
+-- of the mining book, herbs of the herbalist book); they have no NPC price of their own, the item price table pays
+-- `price` for each (data/lib/chaos_item_prices_data.lua, checked by the test), which the gold model counts.
+-- Flaying has none (its hides refine at the armorsmith instead).
+C.byproducts = {
+	price = 120,
+	chance = {delving = 0.10, wortcunning = 0.10, angling = 0.04},
+	ids = {
+		delving = {{26398}, {26399}, {26404, 26401}, {26400}, {26402, 26403}},
+		wortcunning = {{26729, 26731}, {26732, 26730}, {26726, 26725}, {26727, 26724}, {26723, 26728}},
+		-- water plants caught on the line
+		angling = {{26731}, {26730}, {26725}, {26724}, {26728}}
+	}
+}
+
+-- Refining recipes, added to the base crafting books (data/lib/chaos_profession_recipes.lua; the loader line in each
+-- book: tools/install_professions.py). `ins` units of the profession material of `tier` (+ `cost` gold) make `count`
+-- of `out`, at the book's crafting skill `level`. Rule (tests/professions_test.lua against the item price table): the
+-- inputs at the broker's base price plus the gold are worth at least the product, so no recipe makes gold.
+local function refine(prof, tier, book, ins, out, count, level, cost)
+	return {prof = prof, tier = tier, book = book, ins = ins, out = out, count = count, level = level, cost = cost}
+end
+C.refine = {
+	refine("delving", 1, "mining", 2, 26398, 1, 10, 100),
+	refine("delving", 2, "mining", 1, 26399, 1, 10, 50),
+	refine("delving", 3, "mining", 1, 26404, 2, 15, 50),
+	refine("delving", 4, "mining", 1, 26400, 3, 20, 50),
+	refine("delving", 5, "mining", 1, 5880, 2, 25, 50),
+	refine("wortcunning", 1, "herbalist", 2, 26729, 1, 10, 100),
+	refine("wortcunning", 2, "herbalist", 1, 26732, 1, 10, 50),
+	refine("wortcunning", 3, "herbalist", 1, 26726, 2, 15, 50),
+	refine("wortcunning", 4, "herbalist", 1, 26727, 3, 20, 50),
+	refine("wortcunning", 5, "herbalist", 1, 26724, 4, 25, 50),
+	refine("flaying", 1, "armorsmith", 2, 12435, 1, 10, 50),
+	refine("flaying", 2, "armorsmith", 1, 5920, 1, 10, 50),
+	refine("flaying", 3, "armorsmith", 1, 5920, 2, 15, 50),
+	refine("flaying", 4, "armorsmith", 1, 5948, 3, 20, 50),
+	refine("flaying", 5, "armorsmith", 1, 5882, 4, 25, 50)
+}
+
+-- Perks: a profession at `level` gets these, for good (the window lists them). Kinds:
+--   channel    the gather channel x value (Delving, Wortcunning, Flaying)
+--   byproduct  + value to the by-product chance
+--   lucky      + value to the chance of one more unit
+--   flay       + value to the chance a flay gives a hide
+-- The gold model counts every perk at profession 100.
+local function perk(level, kind, value, name, pt)
+	return {level = level, kind = kind, value = value, name = name, pt = pt}
+end
+C.perks = {
+	delving = {perk(25, "channel", 0.8, "Steady Swing", "Golpe Firme"), perk(50, "byproduct", 0.05, "Keen Eye", "Olho Atento"),
+		perk(75, "lucky", 0.02, "Rich Seam", "Veio Rico")},
+	wortcunning = {perk(25, "channel", 0.8, "Quick Blade", "Lâmina Ágil"), perk(50, "byproduct", 0.05, "Keen Eye", "Olho Atento"),
+		perk(75, "lucky", 0.02, "Deep Roots", "Raízes Fundas")},
+	flaying = {perk(25, "channel", 0.8, "Clean Cuts", "Cortes Limpos"), perk(50, "flay", 0.05, "Sure Hand", "Mão Segura"),
+		perk(75, "lucky", 0.02, "Whole Hide", "Couro Inteiro")},
+	angling = {perk(25, "byproduct", 0.02, "Weedy Hook", "Anzol de Algas"), perk(50, "lucky", 0.02, "Heavy Catch", "Pesca Farta"),
+		perk(75, "byproduct", 0.01, "Old Nets", "Redes Velhas")}
+}
+
+-- Nodes in the hunts (O395): at startup every hunt of the teleport hall (hunt_teleports.lua: the placed content hunts
+-- and the base server's hunts of tools/hall_hunts.csv) gets `nodes` per profession around its arrival (box +- r, the
+-- arrival's floor), at the tier of its level band (the band's first level, `C.tiers` charLevel), with fishing at that
+-- tier. A hunt whose arrival lies within `gap` tiles of a fixed area (`C.areas`, same floor) is left alone.
+C.huntNodes = {enabled = true, r = 12, gap = 30, nodes = {delving = 4, wortcunning = 4}, fishing = true}
 
 -- leaderboard (leaderboard_config.lua board "professions"): materials gathered this week, sent every minute and at logout
 C.board = "professions"

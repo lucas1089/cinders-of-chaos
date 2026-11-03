@@ -211,7 +211,7 @@ login, not the caches. Full table: server/README.md "Level milestones (O378)".
 
 ## Tales
 
-Short quests with a story, 27 from level 8 to 2000. Archivist Maelis gives them and closes them. She stands next to
+Short quests with a story, 37 from level 8 to 2000. Archivist Maelis gives them and closes them. She stands next to
 the first temple, placed at startup like the Ascendant Oracle, and shows on the map markers. Steps: kill, visit (stand
 at a hunting mark, revealed on the map), talk (ask a faction leader about "tales"), deliver and report. A chained tale
 opens when the one before it is done. Experience is a share of the next level, measured at most at the top of the
@@ -246,6 +246,25 @@ tale's band. "x" below is that share; gold goes to the bank.
 | The Wyrm Tithe | 500 | kill 50 wrym; bring 20 rune shards | half a level, 400,000 gold, 2 Orbs of Fate, 800 Cinderforge Compact reputation, the book "Obsidian Hall" |
 | Requiem for the Ash-Sister | 800 | kill 60 of the Sovereign's lost court; defeat Morwen the Ash-Sister in the Sepulchre; return | 0.4 of a level, 1,000,000 gold, 1 Orb of Grafting, 1,200 Ashen Vigil reputation, the book "The Ashen Sepulchre" |
 | The Last Ember | 1000 | defeat a warden of the deep places; defeat an Ascended Omen; return | 0.3 of a level, 2,500,000 gold, 2 Orbs of Grafting, 1,500 Veiled Choir reputation, the book "Ysgrath the Cinderheart" |
+
+**The Tale of Cinderhold (O396).** A chain of ten chapters, levels 10 to 560: the ten founding pages of the
+Archivist's oldest ledger, torn out the night the Cinders fell. Each chapter sends the character to a hunting mark of
+its band, where a named elite rises (a rare-tier monster with its own name) and must be killed; some chapters start
+with a faction leader. Rewards are modest (0.4-0.8x, gold between the tales around it, an orb from chapter III on); the
+last chapter's achievement gives the title "Keeper of the Founding". Each chapter is also a Next Goal.
+
+| Chapter | From level | Steps | Rewards |
+|---|---|---|---|
+| I. The Torn Ledger | 10 | defeat Gnawbone the Page-Eater (troll caves); report | 0.8x, 2,000 gold, 100 Vigil reputation |
+| II. The Founders' Bell | 22 | ask Warden Ysolde; defeat the Old Bellwarden (gargoyle roost); report | 0.7x, 6,500 gold, 150 Vigil reputation |
+| III. Mortar of Dragon Ash | 45 | defeat Ashmaw the Mortar-Wyrm; kill 20 dragons; report | 0.7x, 18,000 gold, 1 Orb of Awakening, 200 Compact reputation |
+| IV. The Oathless Legion | 60 | ask Forgemaster Brannoc; defeat Sskareth the Oathbreaker (lizards); report | 0.6x, 25,000 gold, 1 Orb of Awakening, 250 Compact reputation |
+| V. The Choking Hymn | 105 | ask Cantor Velith; defeat the Hymn That Chokes; report | 0.6x, 55,000 gold, 1 Tempering orb, 300 Choir reputation |
+| VI. The Unwritten Page | 150 | defeat the Founder's Quill (the library); report | 0.6x, 80,000 gold, 1 Tempering orb, 350 Choir reputation |
+| VII. Rimecrown's Winter | 230 | ask Elder Bramwyn; defeat Rimecrown the Winter-Eater (frost hydras); report | 0.5x, 160,000 gold, 1 Orb of Fate, 450 Circle reputation |
+| VIII. The Last Light | 300 | defeat the Archon of the Last Light; tell Warden Ysolde; report | 0.5x, 200,000 gold, 1 Orb of Fate, 550 Vigil reputation |
+| IX. Brine and Ember | 430 | defeat Saltcrown the Eldest Pyrarch; report | 0.4x, 300,000 gold, 1 Orb of Fate, 650 Compact reputation |
+| X. The Founding Stone | 560 | defeat the Pitlord of the Founding Stone; write the last page | 0.4x, 450,000 gold, 2 Orbs of Fate, 800 Vigil reputation |
 
 Every kill target spawns today, so the tales work before any planned area is placed. Party members within 30 tiles
 on the same floor share a kill. Every text is in English and Brazilian Portuguese: a player says "portugues" to her,

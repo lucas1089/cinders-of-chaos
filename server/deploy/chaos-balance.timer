@@ -1,0 +1,13 @@
+# Cinders of Chaos: runs chaos-balance.service once a day (O398). Installed and enabled by
+# chaos-ctl.sh balance-report timer on; off: balance-report timer off.
+
+[Unit]
+Description=Cinders of Chaos season balance report, once a day
+
+[Timer]
+OnCalendar=*-*-* 10:17:00
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

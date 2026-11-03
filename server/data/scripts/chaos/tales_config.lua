@@ -67,7 +67,19 @@ return {
 		gold = {en = "%s gold (bank)", pt = "%s de ouro (banco)"},
 		rep = {en = "%d reputation with %s", pt = "%d de reputação com %s"},
 		book = {en = "the book \"%s\"", pt = "o livro \"%s\""},
-		status = {en = "Tales: %s", pt = "Histórias: %s"}
+		status = {en = "Tales: %s", pt = "Histórias: %s"},
+		eliteRises = {en = "%s rises to meet you.", pt = "%s se ergue para enfrentar você."},
+		chapter = {en = "%s, chapter %d of %d", pt = "%s, capítulo %d de %d"}
+	},
+
+	-- O396: the elites of the elite steps (tales.lua): the tier they rise with (monster_tiers.lua ChaosApplyTier), how
+	-- long one waits for its killer, and how soon the same elite may rise again after it fell or left
+	elite = {tier = "rare", lifeSec = 600, againSec = 20},
+
+	-- O396: the sagas: chains told as one story. stat: the achievement counter of the chapters done (achievements_data.lua;
+	-- set by tales.lua at every turn-in and at login)
+	sagas = {
+		cinderhold = {name = {en = "The Tale of Cinderhold", pt = "A História de Cinderhold"}, stat = "cinderhold_tale"}
 	},
 
 	factions = {vigil = "the Ashen Vigil", compact = "the Cinderforge Compact", choir = "the Veiled Choir",
@@ -701,6 +713,257 @@ return {
 			rewards = {xpLevels = 0.25, gold = 5000000, items = {{id = GRAFTING, count = 3, name = "Orb of Grafting"}}, rep = 2000,
 				book = "cinders"},
 			outro = {en = "The ledger is full. I will need a new one. You will need new tales. We will both manage.",
-				pt = "O registro está cheio. Vou precisar de um novo. Você vai precisar de novas histórias. Nós dois daremos um jeito."}}
+				pt = "O registro está cheio. Vou precisar de um novo. Você vai precisar de novas histórias. Nós dois daremos um jeito."}},
+
+		-- ---------------------------------------------------------------- O396: the Tale of Cinderhold, a saga of ten
+		-- chapters from level 10 to 560. Each chapter: (a faction NPC), a place in a hunt of its band where a named elite
+		-- rises (an elite step), back to the Archivist. The founding ledger's ten pages; the Chronicle's own prologue.
+		{key = "cinderhold_1", slot = 28, minLevel = 10, band = {10, 40}, faction = "vigil", saga = "cinderhold", chapter = 1,
+			name = {en = "Cinderhold I: The Torn Ledger", pt = "Cinderhold I: O Registro Rasgado"},
+			story = {
+				en = "I keep the Chronicle of what the realm does. Older than the Chronicle is my first ledger: the founding of "
+					.. "Cinderhold, written by the city's first archivist. The night the Cinders fell, someone tore its ten "
+					.. "chapters out, and the pages went where the ash went. One went down a troll's throat in the caves "
+					.. "north of the city, and the troll grew clever on it. Bring the page back. The city's tale begins again.",
+				pt = "Eu guardo a Crônica do que o reino faz. Mais antigo que a Crônica é o meu primeiro registro: a fundação "
+					.. "de Cinderhold, escrita pela primeira arquivista da cidade. Na noite em que as Brasas caíram, alguém "
+					.. "arrancou seus dez capítulos, e as páginas foram para onde a cinza foi. Uma desceu pela garganta de um "
+					.. "troll nas cavernas ao norte da cidade, e o troll ficou esperto com ela. Traga a página de volta. A "
+					.. "história da cidade começa de novo."},
+			steps = {
+				{kind = "elite", pos = {x = 32354, y = 32129, z = 8}, radius = 8, monster = "Troll", name = "Gnawbone the Page-Eater",
+					text = {en = "Find Gnawbone the Page-Eater in the troll caves north of Cinderhold (marked on your map) and defeat him",
+						pt = "Encontre Gnawbone the Page-Eater nas cavernas dos trolls ao norte de Cinderhold (marcado no seu mapa) e derrote-o"}},
+				{kind = "report", text = {en = "Bring the first page to the Archivist", pt = "Leve a primeira página à Arquivista"}}
+			},
+			rewards = {xpLevels = 0.8, gold = 2000, rep = 100},
+			outro = {en = "Chewed, but legible. \"In the first year the city had no name, only a fire.\" Keep reading with me.",
+				pt = "Mastigada, mas legível. \"No primeiro ano a cidade não tinha nome, só um fogo.\" Continue lendo comigo."}},
+
+		{key = "cinderhold_2", slot = 29, minLevel = 22, band = {22, 60}, faction = "vigil", saga = "cinderhold", chapter = 2,
+			requires = "cinderhold_1",
+			name = {en = "Cinderhold II: The Founders' Bell", pt = "Cinderhold II: O Sino dos Fundadores"},
+			story = {
+				en = "The second page speaks of a bell cast from the founders' first fire. The Ashen Vigil rang it for every "
+					.. "death in the young city. Warden Ysolde will know where it hung. A gargoyle carried the page to its "
+					.. "roost south of the city and guards it as if it were its own heart.",
+				pt = "A segunda página fala de um sino fundido no primeiro fogo dos fundadores. A Vigília Cinzenta o tocava "
+					.. "a cada morte na cidade jovem. A Warden Ysolde vai saber onde ele ficava. Uma gárgula levou a página "
+					.. "para seu poleiro ao sul da cidade e a guarda como se fosse o próprio coração."},
+			steps = {
+				{kind = "talk", npc = YSOLDE,
+					text = {en = "Ask Warden Ysolde in Cinderhold about the tale", pt = "Pergunte à Warden Ysolde, em Cinderhold, sobre a história"},
+					reply = {en = "The founders' bell? It hung over the first graves, before there were walls. The gargoyles took "
+						.. "the tower stone by stone. Bring the page home.",
+						pt = "O sino dos fundadores? Ficava sobre os primeiros túmulos, antes de haver muralhas. As gárgulas "
+						.. "levaram a torre pedra por pedra. Traga a página para casa."}},
+				{kind = "elite", pos = {x = 32252, y = 32578, z = 8}, radius = 8, monster = "Gargoyle", name = "Old Bellwarden",
+					text = {en = "Find the Old Bellwarden at the gargoyle roost (marked on your map) and break it",
+						pt = "Encontre o Old Bellwarden no poleiro das gárgulas (marcado no seu mapa) e quebre-o"}},
+				{kind = "report", text = {en = "Bring the second page to the Archivist", pt = "Leve a segunda página à Arquivista"}}
+			},
+			rewards = {xpLevels = 0.7, gold = 6500, rep = 150},
+			outro = {en = "\"The bell was rung once for every name, and so the city learned to count its dead.\" A grim way to learn sums.",
+				pt = "\"O sino tocava uma vez para cada nome, e assim a cidade aprendeu a contar seus mortos.\" Um jeito sombrio de aprender a somar."}},
+
+		{key = "cinderhold_3", slot = 30, minLevel = 45, band = {45, 100}, faction = "compact", saga = "cinderhold", chapter = 3,
+			requires = "cinderhold_2",
+			name = {en = "Cinderhold III: Mortar of Dragon Ash", pt = "Cinderhold III: Argamassa de Cinza de Dragão"},
+			story = {
+				en = "The walls of Cinderhold were mortared with dragon ash, the third page says; the Cinderforge Compact still "
+					.. "swears by the recipe. An old dragon in the east, the one the Compact calls Ashmaw, swallowed the page "
+					.. "with the mortar-masters who carried it. Take the page back, and enough ash from its kin for the "
+					.. "Compact's kilns.",
+				pt = "As muralhas de Cinderhold foram assentadas com cinza de dragão, diz a terceira página; o Pacto da Forja "
+					.. "de Brasa ainda jura pela receita. Um dragão velho no leste, aquele que o Pacto chama de Ashmaw, engoliu "
+					.. "a página junto com os mestres de argamassa que a levavam. Recupere a página, e cinza suficiente dos "
+					.. "parentes dele para os fornos do Pacto."},
+			steps = {
+				{kind = "elite", pos = {x = 33215, y = 31297, z = 7}, radius = 8, monster = "Dragon", name = "Ashmaw the Mortar-Wyrm",
+					text = {en = "Find Ashmaw the Mortar-Wyrm at the Dragon Scar (marked on your map) and slay it",
+						pt = "Encontre Ashmaw the Mortar-Wyrm na Dragon Scar (marcado no seu mapa) e abata-o"}},
+				{kind = "kill", count = 20, monsters = {"Dragon", "Dragon Hatchling"},
+					text = {en = "Gather ash for the kilns: slay 20 of its kin (Dragon, Dragon Hatchling)",
+						pt = "Junte cinza para os fornos: abata 20 parentes dele (Dragon, Dragon Hatchling)"}},
+				{kind = "report", text = {en = "Bring the third page to the Archivist", pt = "Leve a terceira página à Arquivista"}}
+			},
+			rewards = {xpLevels = 0.7, gold = 18000, items = {{id = AWAKENING, count = 1, name = "Orb of Awakening"}}, rep = 200},
+			outro = {en = "\"Ash holds what fire cannot.\" The Compact will carve that above a door and charge for it.",
+				pt = "\"A cinza segura o que o fogo não consegue.\" O Pacto vai entalhar isso sobre uma porta e cobrar por isso."}},
+
+		{key = "cinderhold_4", slot = 31, minLevel = 60, band = {60, 110}, faction = "compact", saga = "cinderhold", chapter = 4,
+			requires = "cinderhold_3",
+			name = {en = "Cinderhold IV: The Oathless Legion", pt = "Cinderhold IV: A Legião Sem Juramento"},
+			story = {
+				en = "Lizard legions marched with the founders once, sworn to the city for a share of its fire. The fourth "
+					.. "page holds their oath. Their warlord broke it the night the Cinders fell, and his heirs keep the page "
+					.. "as a trophy. Forgemaster Brannoc kept the Compact's copy of that oath; ask him what it was worth.",
+				pt = "Legiões de lagartos marcharam com os fundadores um dia, juradas à cidade por uma parte do seu fogo. A "
+					.. "quarta página guarda o juramento delas. O senhor da guerra delas o quebrou na noite em que as Brasas "
+					.. "caíram, e seus herdeiros guardam a página como troféu. O Forgemaster Brannoc guardou a cópia do Pacto "
+					.. "desse juramento; pergunte a ele quanto valia."},
+			steps = {
+				{kind = "talk", npc = BRANNOC,
+					text = {en = "Ask Forgemaster Brannoc in Mirewake about the tale", pt = "Pergunte ao Forgemaster Brannoc, em Mirewake, sobre a história"},
+					reply = {en = "Worth? A legion for a hearth. They took the hearth and forgot the legion. Bring back their copy; "
+						.. "the Compact likes its contracts in pairs.",
+						pt = "Valia? Uma legião por uma lareira. Eles ficaram com a lareira e esqueceram a legião. Traga a cópia "
+						.. "deles; o Pacto gosta dos contratos em pares."}},
+				{kind = "elite", pos = {x = 33076, y = 31152, z = 7}, radius = 8, monster = "Lizard High Guard",
+					name = "Sskareth the Oathbreaker",
+					text = {en = "Find Sskareth the Oathbreaker among the lizard legions (marked on your map) and defeat him",
+						pt = "Encontre Sskareth the Oathbreaker entre as legiões de lagartos (marcado no seu mapa) e derrote-o"}},
+				{kind = "report", text = {en = "Bring the fourth page to the Archivist", pt = "Leve a quarta página à Arquivista"}}
+			},
+			rewards = {xpLevels = 0.6, gold = 25000, items = {{id = AWAKENING, count = 1, name = "Orb of Awakening"}}, rep = 250},
+			outro = {en = "\"Fire for steel, steel for fire, until the last ember.\" They kept half of it.",
+				pt = "\"Fogo por aço, aço por fogo, até a última brasa.\" Eles cumpriram metade."}},
+
+		{key = "cinderhold_5", slot = 32, minLevel = 105, band = {105, 180}, faction = "choir", saga = "cinderhold", chapter = 5,
+			requires = "cinderhold_4",
+			name = {en = "Cinderhold V: The Choking Hymn", pt = "Cinderhold V: O Hino Sufocante"},
+			story = {
+				en = "The fifth page is a hymn, the first song sung in Cinderhold. The Veiled Choir lost it, and something "
+					.. "else learned it: in the east a horror sings it backwards, and those who hear it choke. Ask Cantor "
+					.. "Velith what the hymn was; then silence the thing that stole it.",
+				pt = "A quinta página é um hino, a primeira canção cantada em Cinderhold. O Coro Velado a perdeu, e outra coisa "
+					.. "a aprendeu: no leste, um horror a canta de trás para a frente, e quem a ouve sufoca. Pergunte ao Cantor "
+					.. "Velith que hino era; depois silencie a coisa que o roubou."},
+			steps = {
+				{kind = "talk", npc = VELITH,
+					text = {en = "Ask Cantor Velith in Bellwatch about the tale", pt = "Pergunte ao Cantor Velith, em Bellwatch, sobre a história"},
+					reply = {en = "The founding hymn? We sing its echo every dusk and never knew the words were missing. End the "
+						.. "thief. Let us hear it whole once.",
+						pt = "O hino da fundação? Cantamos o eco dele todo entardecer e nunca soubemos que faltavam palavras. "
+						.. "Acabe com o ladrão. Deixe-nos ouvi-lo inteiro uma vez."}},
+				{kind = "elite", pos = {x = 33568, y = 32402, z = 7}, radius = 8, monster = "Choking Fear",
+					name = "The Hymn That Chokes",
+					text = {en = "Find the Hymn That Chokes among the eastern horrors (marked on your map) and silence it",
+						pt = "Encontre o Hymn That Chokes entre os horrores do leste (marcado no seu mapa) e silencie-o"}},
+				{kind = "report", text = {en = "Bring the fifth page to the Archivist", pt = "Leve a quinta página à Arquivista"}}
+			},
+			rewards = {xpLevels = 0.6, gold = 55000, items = {{id = TEMPERING, count = 1, name = "Orb of Tempering"}}, rep = 300},
+			outro = {en = "\"Sing low, the fire is listening.\" The Choir will weep. I may too.",
+				pt = "\"Cante baixo, o fogo está ouvindo.\" O Coro vai chorar. Eu talvez também."}},
+
+		{key = "cinderhold_6", slot = 33, minLevel = 150, band = {150, 260}, faction = "choir", saga = "cinderhold", chapter = 6,
+			requires = "cinderhold_5",
+			name = {en = "Cinderhold VI: The Unwritten Page", pt = "Cinderhold VI: A Página Não Escrita"},
+			story = {
+				en = "The sixth page was never written. The first archivist died with her quill in hand, and the quill went on "
+					.. "writing without her, in a library across the western sea. It writes the city's tale wrong, and the "
+					.. "books there believe it. Break the quill and bring me what it wrote.",
+				pt = "A sexta página nunca foi escrita. A primeira arquivista morreu com a pena na mão, e a pena continuou "
+					.. "escrevendo sem ela, numa biblioteca do outro lado do mar ocidental. Ela escreve a história da cidade "
+					.. "errado, e os livros de lá acreditam. Quebre a pena e me traga o que ela escreveu."},
+			steps = {
+				{kind = "elite", pos = {x = 31294, y = 31917, z = 8}, radius = 8, monster = "Animated Feather",
+					name = "The Founder's Quill",
+					text = {en = "Find the Founder's Quill in the drowned library (marked on your map) and break it",
+						pt = "Encontre o Founder's Quill na biblioteca afogada (marcado no seu mapa) e quebre-o"}},
+				{kind = "report", text = {en = "Bring the sixth page to the Archivist", pt = "Leve a sexta página à Arquivista"}}
+			},
+			rewards = {xpLevels = 0.6, gold = 80000, items = {{id = TEMPERING, count = 1, name = "Orb of Tempering"}}, rep = 350},
+			outro = {en = "Half lies, half her hand. I can tell them apart. I have practised for years.",
+				pt = "Metade mentira, metade a letra dela. Eu sei separar. Pratico há anos."}},
+
+		{key = "cinderhold_7", slot = 34, minLevel = 230, band = {230, 340}, faction = "circle", saga = "cinderhold", chapter = 7,
+			requires = "cinderhold_6",
+			name = {en = "Cinderhold VII: Rimecrown's Winter", pt = "Cinderhold VII: O Inverno de Rimecrown"},
+			story = {
+				en = "The seventh page tells of the founders' first winter, when the Thornbound Circle kept the city alive with "
+					.. "seed and root. A hydra in the frozen far west ate that winter's stores and the page with them, and it "
+					.. "has not been warm there since. Elder Bramwyn remembers the seed; ask him, then end the hydra.",
+				pt = "A sétima página conta o primeiro inverno dos fundadores, quando o Círculo Espinhoso manteve a cidade viva "
+					.. "com sementes e raízes. Uma hidra no extremo oeste gelado comeu as provisões daquele inverno e a página "
+					.. "junto, e lá nunca mais fez calor. O Elder Bramwyn se lembra da semente; pergunte a ele, depois acabe com "
+					.. "a hidra."},
+			steps = {
+				{kind = "talk", npc = BRAMWYN,
+					text = {en = "Ask Elder Bramwyn in Thornmere about the tale", pt = "Pergunte ao Elder Bramwyn, em Thornmere, sobre a história"},
+					reply = {en = "Remember it? My grandmother's grandmother sowed it. Kill the beast, every head. Then the groves "
+						.. "owe you a winter.",
+						pt = "Se me lembro? A avó da minha avó a semeou. Mate a fera, cada cabeça. Aí os bosques ficam devendo "
+						.. "um inverno a você."}},
+				{kind = "elite", pos = {x = 30827, y = 31254, z = 6}, radius = 8, monster = "Frost Hydra",
+					name = "Rimecrown the Winter-Eater",
+					text = {en = "Find Rimecrown the Winter-Eater in the frozen west (marked on your map) and slay it",
+						pt = "Encontre Rimecrown the Winter-Eater no oeste gelado (marcado no seu mapa) e abata-a"}},
+				{kind = "report", text = {en = "Bring the seventh page to the Archivist", pt = "Leve a sétima página à Arquivista"}}
+			},
+			rewards = {xpLevels = 0.5, gold = 160000, items = {{id = FATE, count = 1, name = "Orb of Fate"}}, rep = 450},
+			outro = {en = "\"We ate the seed corn and lived; we planted the rest and lived longer.\" The Circle should frame it.",
+				pt = "\"Comemos o milho da semente e vivemos; plantamos o resto e vivemos mais.\" O Círculo devia emoldurar isso."}},
+
+		{key = "cinderhold_8", slot = 35, minLevel = 300, band = {300, 420}, faction = "vigil", saga = "cinderhold", chapter = 8,
+			requires = "cinderhold_7",
+			name = {en = "Cinderhold VIII: The Last Light", pt = "Cinderhold VIII: A Última Luz"},
+			story = {
+				en = "The eighth page tells of the night the Cinders fell: the founders lit a last light in the high tower so "
+					.. "the people could find their way out of the ash. Above Bellwatch an archon took the light up and now "
+					.. "believes it is the light. Put it out, gently if you can, and tell Warden Ysolde; the Vigil swore to "
+					.. "keep that light.",
+				pt = "A oitava página conta a noite em que as Brasas caíram: os fundadores acenderam uma última luz na torre "
+					.. "alta para que o povo achasse a saída da cinza. Acima de Bellwatch, um arconte tomou essa luz e agora "
+					.. "acredita que é a luz. Apague-a, com cuidado se puder, e conte à Warden Ysolde; a Vigília jurou guardar "
+					.. "aquela luz."},
+			steps = {
+				{kind = "elite", pos = {x = 33402, y = 31807, z = 2}, radius = 8, monster = "Archon",
+					name = "The Archon of the Last Light",
+					text = {en = "Find the Archon of the Last Light above Bellwatch (marked on your map) and put it out",
+						pt = "Encontre o Archon of the Last Light acima de Bellwatch (marcado no seu mapa) e apague-o"}},
+				{kind = "talk", npc = YSOLDE,
+					text = {en = "Tell Warden Ysolde in Cinderhold about the tale", pt = "Conte à Warden Ysolde, em Cinderhold, sobre a história"},
+					reply = {en = "An archon wearing our light. The Vigil will mourn the oath and keep it anyway. Thank you.",
+						pt = "Um arconte vestindo a nossa luz. A Vigília vai lamentar o juramento e cumpri-lo mesmo assim. Obrigada."}},
+				{kind = "report", text = {en = "Bring the eighth page to the Archivist", pt = "Leve a oitava página à Arquivista"}}
+			},
+			rewards = {xpLevels = 0.5, gold = 200000, items = {{id = FATE, count = 1, name = "Orb of Fate"}}, rep = 550},
+			outro = {en = "\"The light went up so the city could go down into the dark and live.\" That night is where the Chronicle begins.",
+				pt = "\"A luz subiu para que a cidade pudesse descer ao escuro e viver.\" Aquela noite é onde a Crônica começa."}},
+
+		{key = "cinderhold_9", slot = 36, minLevel = 430, band = {430, 560}, faction = "compact", saga = "cinderhold", chapter = 9,
+			requires = "cinderhold_8",
+			name = {en = "Cinderhold IX: Brine and Ember", pt = "Cinderhold IX: Salmoura e Brasa"},
+			story = {
+				en = "The ninth page went to sea with the founders' ships, which carried the city's fire to the islands. The "
+					.. "pyrarchs of the brine burned the ships and kept the fire, and the page, in the crown of their eldest. "
+					.. "Take the crown. The Compact will want the fire back too, but the page is mine.",
+				pt = "A nona página foi para o mar com os navios dos fundadores, que levavam o fogo da cidade para as ilhas. "
+					.. "Os pirarcas da salmoura queimaram os navios e ficaram com o fogo, e com a página, na coroa do mais velho "
+					.. "deles. Tome a coroa. O Pacto também vai querer o fogo de volta, mas a página é minha."},
+			steps = {
+				{kind = "elite", pos = {x = 31602, y = 31267, z = 6}, radius = 8, monster = "Brinebrute Pyrarch",
+					name = "Saltcrown the Eldest Pyrarch",
+					text = {en = "Find Saltcrown the Eldest Pyrarch on the brine shore (marked on your map) and take the crown",
+						pt = "Encontre Saltcrown the Eldest Pyrarch na costa da salmoura (marcado no seu mapa) e tome a coroa"}},
+				{kind = "report", text = {en = "Bring the ninth page to the Archivist", pt = "Leve a nona página à Arquivista"}}
+			},
+			rewards = {xpLevels = 0.4, gold = 300000, items = {{id = FATE, count = 1, name = "Orb of Fate"}}, rep = 650},
+			outro = {en = "\"Fire crosses water if you carry it in your hands.\" The founders were braver than the Compact admits.",
+				pt = "\"O fogo atravessa a água se você o levar nas mãos.\" Os fundadores eram mais corajosos do que o Pacto admite."}},
+
+		{key = "cinderhold_10", slot = 37, minLevel = 560, band = {560, 700}, faction = "vigil", saga = "cinderhold", chapter = 10,
+			requires = "cinderhold_9",
+			name = {en = "Cinderhold X: The Founding Stone", pt = "Cinderhold X: A Pedra Fundamental"},
+			story = {
+				en = "The last page names the Founding Stone, the first hearth of Cinderhold, which the survivors carried south "
+					.. "when the city burned. Something from the pit sat down on it and never got up, and it drinks the city's "
+					.. "first fire. End it, and come back to me. We will write the last chapter together.",
+				pt = "A última página nomeia a Pedra Fundamental, a primeira lareira de Cinderhold, que os sobreviventes levaram "
+					.. "para o sul quando a cidade queimou. Algo do abismo sentou nela e nunca mais levantou, e bebe o primeiro "
+					.. "fogo da cidade. Acabe com isso e volte para mim. Escreveremos o último capítulo juntos."},
+			steps = {
+				{kind = "elite", pos = {x = 33225, y = 33493, z = 7}, radius = 8, monster = "Pitlord Incarnate",
+					name = "The Pitlord of the Founding Stone",
+					text = {en = "Find the Pitlord of the Founding Stone in the southern pits (marked on your map) and end it",
+						pt = "Encontre o Pitlord of the Founding Stone nos abismos do sul (marcado no seu mapa) e acabe com ele"}},
+				{kind = "report", text = {en = "Write the last page with the Archivist", pt = "Escreva a última página com a Arquivista"}}
+			},
+			rewards = {xpLevels = 0.4, gold = 450000, items = {{id = FATE, count = 2, name = "Orb of Fate"}}, rep = 800},
+			outro = {en = "\"And the fire was given back to the city, and the city remembered its name.\" The ledger is whole, and "
+				.. "the tale is yours as much as mine.",
+				pt = "\"E o fogo foi devolvido à cidade, e a cidade se lembrou do seu nome.\" O registro está inteiro, e a "
+				.. "história é tão sua quanto minha."}}
 	}
 }

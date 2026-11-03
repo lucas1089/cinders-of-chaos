@@ -396,6 +396,13 @@ plan, err = B.plan(tree, assert(B.decode(B.encode({classId = 3, nodes = toLong})
 	current = {}, points = 300})
 check(not plan and err:find("another class"), "the Mystic line may not take Longshot: " .. tostring(err))
 
+-- the worn gear of the full build code (O391): every slot but the backpack, only real ids, slot order
+local worn = {[1] = 2466, [3] = 1988, [4] = 8209, [6] = 0, [9] = 70000, [10] = 2544}
+local gear = B.cardGear(function(slot) return worn[slot] end)
+check(#gear == 3 and gear[1].slot == 1 and gear[1].id == 2466 and gear[2].slot == 4 and gear[3].slot == 10,
+	"cardGear: head, armour and ammo; no backpack, no empty or bad id")
+check(#B.cardGear(function() return nil end) == 0, "cardGear: nothing worn")
+
 print(string.format("buildshare_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

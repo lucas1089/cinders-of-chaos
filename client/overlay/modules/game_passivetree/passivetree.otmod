@@ -4,6 +4,6 @@ Module
   website: None
   sandboxed: true
   autoload: true
-  scripts: [ toolbarview, treetext, treetips, passivetree, treelanes, treedata, paragonmath, paragonmasterymath, paragon, paragonmastery, totalsview, totals, respec, buildshare, autobuildview, autobuild, statinfoview, statinfo, bosspoints, trialsmath, trials, treeplan, planner, search, viewother ]
+  scripts: [ toolbarview, treetext, treetips, passivetree, treelanes, treedata, paragonmath, paragonmasterymath, paragon, paragonmastery, totalsview, totals, respec, buildcode, buildshare, autobuildview, autobuild, statinfoview, statinfo, bosspoints, trialsmath, trials, treeplan, planner, search, viewother ]
   @onLoad: init()
   @onUnload: terminate()

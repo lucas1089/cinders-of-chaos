@@ -3818,6 +3818,12 @@ validates and applies; the client only shows what the server sends.
   applied, skipped, added, removed, treeReset, paragon, paragonChange, paragonReset, cost, free, points, notes, change, summary}` or
   `buildError {message}`; `buildApply {code, cost}` -> `sendNodes`, `sendPoints`, `paragonState`, `respecInfo`, `buildApplied
   {message}` or `buildError {message}`. No new opcode.
+- **Full build codes (O391):** `buildExport {full = true}` adds `full = true` and `gear` (`{{slot, id}}`, server item ids of
+  slots 1, 2, 4-10, `ChaosBuildShare.cardGear`) to the `buildCode` answer. The client wraps the tree code, class, level,
+  Auto setup spells and gear in a `CC1-` code (`game_passivetree/buildcode.lua`, format in `docs/build_code_vectors.txt`).
+  An import of a `CC1-` code sends only its inner `CB` part to `buildPreview`; the rules above decide. Spells and gear
+  are shown, never applied. The website draws the same codes (website/README.md "Build codes and character page (O391,
+  O392)").
 - `server/tests/buildshare_test.lua`: round trip (40 / 248 nodes, Paragon part), every single-character typo, swapped and truncated
   codes, old / newer version, wrong class, unknown and disconnected nodes, keystones, too many points, reset detection, the Paragon
   part, an old code on a tree with an appended node, the reworked nodes (versions 1 and 2 leave 383 out with a note, version 3
@@ -9065,6 +9071,7 @@ module's own script, never by the NPC.
 | Cassian Auric (banker) | 31654, 32230, 7 | the bank window; says the balance | `bank.lua`, opcode 60 |
 | Halvard Deedkeeper (house broker) | 31672, 32230, 7 | lists the free houses by town, sells one by name after a "yes", runs the base `!leavehouse` and `!sellhouse` | `commands_ui_core.lua` loader, opcode 237 page `house` |
 | Pell Ashmere (services clerk) | 31653, 32236, 7 | the Services page (name, class, frame); says the token counts; runs the base `!summonfamiliar`, `!familiarlevel`, `!choosefamiliar`, `!shop` | `commands_ui.lua` / `shop_services.lua`, opcode 237 page `services` |
+| Dorrin Alewright (rumourmonger, O394) | next to the temple (no stall free) | no window: sells a rumour of the next hour ("Tavern rumours (O394)") | `rumours_run.lua`, no opcode |
 
 **Pure logic** (`service_npcs_core.lua`, `tests/service_npcs_test.lua`): what each NPC understands (`K.intent`: ordered
 keyword rows, the narrow ones first), the house name after "buy", the house search (an exact name in any case, else the
@@ -9095,6 +9102,53 @@ five has one.
 
 **Install:** step `servicenpcs` (`tools/install_service_npcs.py`, `tools/install_service_npcs_test.py`). **Texts:** English
 keys, pt-BR in `i18n_strings.lua` (`tests/service_npcs_test.lua` checks every line has one).
+
+## Tavern rumours (O394) (`rumours.lua`, `rumours_core.lua`, `rumours_run.lua`, `rumours_config.lua`, NPC Dorrin Alewright)
+
+Owner idea of 2026-11-03: an NPC who hints where a rare monster or boss will show in the next hour. Checked first: no
+tavern or inn NPC exists in the repository and every stall of the hub is taken, so **Dorrin Alewright** is a sixth
+service NPC (`service_npcs_config.lua` `rumours`, `stall = false`): placed next to Cinderhold's temple by
+`service_npcs.lua` (`offsets`), installed by step `servicenpcs`. To move him into an inn on the map, give him a stall
+in `npc_booths_config.lua`. No opcode, storage key or table; one staff command.
+
+- **Talk.** "rumours" / "boatos" (also rumor, gossip, fofoca, news, novidade, dica), "price" / "preço", "job". Texts
+  in the player's language (`ChaosI18n.npcText`), pt-BR in `i18n_strings.lua`; names of monsters, places and bosses
+  stay English.
+- **What he knows** (`R.candidates`), from 3 to 60 minutes ahead, soonest first:
+  - **appearances**: the rare monsters `rumours.lua` itself spawns. Each hour has one with `chance` 35%, at a minute
+    of 8-52, in one region, a monster by weight (Treasure Goblin 70, Gem Goblin 20, Shard Goblin 10, through
+    `ChaosTreasureGoblin.spawn` at the region's level, so their loot, flee and escape rules hold). The plan is
+    `R.planHour`: from the hour and `salt` only, so the NPC's state and the spawner agree and a restart changes
+    nothing. Regions: the two hunting grounds of `invasion_config.lua` (points read from the real map) and, with
+    `huntPlaces`, every hunt of `data/lib/chaos_hunt_places.lua` (written by `install_content_areas.py`; arrival or
+    destination tile, middle of the level band, one per name, levels 20-2500). Spawn tile: 6-18 tiles from the point,
+    `ChaosInvasion.tileOk` (walkable, no protection zone, house, water, creature). Nobody online: skipped. A minute
+    missed by more than 180 s (server down) is not made up for.
+  - **invasions**: `invasion_core.lua` `I.upcoming` with its config, the secret random ones included: the faction
+    and the area.
+  - **the world boss**: the next slot (`R.worldBossNext`, the formula of `worldboss.lua`) and, in rotation mode, the
+    next boss from the global storage of the last one; random mode says "a great beast".
+  - The Ashen Chronicle has no timed events, so it is not a source. Treasure goblins of natural respawns and the base
+    raids are random in the engine and cannot be foretold.
+- **The rumour**: a window of 30 minutes in server time that holds the true minute, starting 5-20 minutes earlier,
+  rounded to 5 minutes: "A trapper swore he saw a Gem Goblin near Ashgrave Barrow. If he is right, it shows itself
+  between 14:15 and 14:45, server time."
+- **Fee**: 200 + 2 x level gold, at most 2,000 (`Chaos.pay`: coins, then the bank). A gold sink. Nothing new for that
+  player: no fee. Cannot pay: the rumour stays untold.
+- **Once per player per rumour**: the NPC state remembers each player's heard keys until an hour after the event
+  (memory only; a restart forgets it).
+- **False rumours** (`falseChance` 15%): a believable appearance in another region and another window of the hour.
+  The true rumour it replaced counts as heard.
+- **Economy**: about 8 extra goblins a day (35% of 24 hours), each only worth something when found. Natural goblins
+  stay 1 in 3000 respawns. The fee takes gold out.
+- **Staff**: `/rumours` lists what the NPC knows now and the appearances of the next 6 hours; `/rumours spawn` makes
+  the next planned one now. Group access and `Chaos.staffCommand`.
+
+Tests: `tests/rumours_test.lua` (regions, the hourly plan and its share, the world boss, candidates, the window, the
+fee, once per player, false rumours; `rumours_run.lua` with a mocked player; the NPC dialogue on a mocked NPC library;
+`rumours.lua` spawning at the planned minute, once, not late, not with nobody online; the staff guard),
+`tests/service_npcs_test.lua` (six NPCs, intents), `tools/install_service_npcs_test.py`. Not seen in a client or on a
+live server: his spot by the temple, a spawn in a real hunt.
 
 ## The Apothecary (`apothecary.lua`, `apothecary_config.lua`, `data/npc/Veyra the Apothecary.xml`, `data/npc/scripts/veyra_the_apothecary.lua`, `tools/install_apothecary.py`)
 
@@ -10874,6 +10928,66 @@ invasion.
 `defender`), `loot_config.lua` (`rateMult` x `ChaosWorldEvents.lootMult`), `monster_tiers.lua` (spawn roll x
 `ChaosWorldEvents.tierMult`), `events_schedule.lua` (`ChaosEvents.dynamic`: runtime events in `E.active`),
 client `game_chaosnotify/notifications.lua` (toast type `INVASION`, action `invasion`).
+
+### City invasions (O393)
+
+Owner idea of 2026-11-03: a city attacked from time to time, rewards for taking part (not only the last hit), game and
+Discord notices, a boss wave, a mild cost for a loss. The invasion system above did most of it already: schedule and
+random day, waves from outside walking to the temple steps, boss wave, contribution shares, broadcasts and toasts,
+occupation with dearer NPC shops. O393 extends it. No second system, no new opcode, storage key or table.
+
+- **Gate** (`gate`): an automatic start (schedule or random) needs `minOnline` (3) players online of `minLevel` or
+  more, tester bots left out. Too few: the horde turns back, with a broadcast. `cooldownMinutes` (120) after the last
+  invasion ended (won or lost): skipped, and so are its warnings. Staff starts (`/invasion start`, `schedule`) ignore
+  both. Memory only: a restart forgets the last end. `/invasion status` shows the gate. Pure: `I.gate`.
+- **Window**: the random invasion's `fromHour` / `toHour` (12-23) and the fixed `schedule`, as before.
+- **Level of the players online** (`scaling.online`): at the start the area level is pulled towards the median
+  level of the players online: area x 0.5 + median x 0.5, never below the area level, at most x2. Area 80 with a
+  median of 120 is fought at 100; with a median of 900, at 160. That level drives the roster, the scaling, the boss
+  and the rewards (gold is area level x (200 + 8000 x share), so at most twice the old gold). The config keeps its
+  own level; `state.area` is a copy with `level` and `baseLevel`. Pure: `I.effectiveLevel`.
+- **Time present, anti-AFK** (`contribution.presence`, `activeSeconds`, `presenceMargin`): every second a defender
+  within 10 tiles of the area who hit, healed or killed within the last 60 s gains a second of presence. A minute
+  counts 0.05 of an average invader (a 20 minute defence = one invader, four kills). Standing idle counts nothing,
+  and a player who never acted has no entry. Damage, healing and kills count as before; a kill credits both the last
+  hit and the most damage. The split stays by share of the total score (gold floor `goldBase`, one orb for everyone
+  rewarded). Pure: `I.credit` (time of the act), `I.presenceTick`, `I.score`.
+- **Discord** (`discord_config.lua` `city_invasion`, channel `announce`; `discord_core.lua` `D.cityInvasion`): one row
+  at the start (area, faction, level, time limit), one at the end: held (time, rewarded defenders, top 5) or fallen
+  (occupation minutes). The website worker knows the kind (`discord_lib.php`, colour of the world boss spawn).
+- **Notices in game**: the start broadcast and toast, plus one line on how rewards work ("Stand idle and you earn
+  nothing"); pt-BR in `i18n_strings.lua`.
+- **Failure**: unchanged and already mild: the occupation (30 min, NPC shops x1.25 buy / x0.75 sell in the town).
+
+Tests: `tests/invasion_test.lua` (gate, effective level, presence and the idle character, the status line, the
+online levels without testers), `tests/discord_test.lua` (the three rows, the PHP kind). How it works, the guide and
+the wiki say it (`howitworks_config.lua`, `gen_wiki_data.lua`). Not run live: a real start with the gate, a Discord
+post of the new kind.
+
+### Hunts, level band and fixed notes (O389)
+
+The owner's idea of 2026-11-03 (a party finder: post a want, others see a live list, Join sends the party invite)
+was this window already. O389 adds what it lacked; nothing new beside it (same opcode, no storage, no table).
+
+- **Hunts.** A new first activity, Hunt (`party_finder_config.lua` `activities`, `targets = "hunts"`). Its targets are
+  the hunts of the teleport room: the placed plans and the base hunts of `ChaosHuntTeleports.idx` (`list`, `base`), one
+  per name, lowest band first (`K.huntTargets`). Each target carries its level band (`bands = "huntBands"` ->
+  `acts[].bands`); picking a hunt in the form fills the level band from it. Without the hunt teleports' places the
+  list is empty and only "Any" is offered.
+- **Level band.** A listing has a top level too (`maxLevel`, 0 = none; at most `maxLevel` of the config, never under
+  the minimum). An applicant above it is refused (`levelHigh`), the quick join queue skips the listing, the row sends
+  `xl`, the browse row shows "Lv 300-450", "Fits my level" checks both ends.
+- **Fixed notes.** `notes` in the config: ten short notes ("Relaxed pace, all welcome", "Fast clear, know the fight",
+  ...). A listing may pick one (`nk`, its index; 0 = none) next to the filtered free note. The client shows it in the
+  reader's language (pt-BR in `client_chaos_locale`). Append only: a listing keeps the index.
+- **Hotkey.** Alt+L opens the window (the top menu entry's `key`, bound by `client_chaos_topbar`).
+- **Mentor offer (O371) and the group nudge (O261)** keep working as they were: the mentor tag rides on the rows and the
+  nudge points to the same listings.
+
+Protocol additions: `post {..., maxLevel, nk}`, `init {..., notes}`, rows `xl`, `nk`, `mine.input.maxLevel`,
+`mine.input.nk`, `acts[].bands`. Tests: `tests/party_finder_test.lua` (hunt targets and bands, band and note refusals,
+an applicant above the band, the queue skipping it, the row fields) and `partyfinderview_test.lua` (band fit and text,
+note line, a hunt's band, the post input). Not run against a live server.
 
 ## Leaderboards (`leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua`)
 
@@ -22942,6 +23056,51 @@ script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (
   option off and on, a hunting area discovered on approach with the message, the discoveries kept over a relog, a
   category switched off. Screenshots were taken but are not in the repository.
 
+## The Weekly Challenge (O390) (`weekly_challenge.lua`, `weekly_challenge_core.lua`, `weekly_challenge_config.lua`)
+
+One queue dungeon of the dungeon system whose layout comes from the week: the same map for everyone, a new one every
+Monday. The fastest clear per class goes on two weekly boards; the week's end pays the class tops in Conquest Tokens
+and queues a Discord post. Owner's idea of 2026-11-03. No opcode, no storage, no table of its own: it reuses
+`areagen.lua`, `dungeons.lua`, the leaderboards, Conquest Tokens and the Discord queue.
+
+- **The area.** `areagen.lua` asks `ChaosWeeklyChallenge.areaFor` at startup for one more area: a copy of the Hollow
+  Vault (`base = "vault"`: rooms, spawns, monsters, level 800, the run's health curves and time) at the free cell
+  25088, 24576, 9 of the dungeon block (docs/MAP_GUIDE.md), with the week's seed and theme (Hollow Vault, Marrow
+  Crypts, Iron Crucible, Fallen Sanctum or Pyre Throne). The boss is the Vault's under its own name, The Proving
+  Warden (the dungeon matches the kill by name). No boss chest.
+- **The seed.** The week is the leaderboard week (Monday, `leaderboard_config.lua` `resetHour`); its ISO year and week
+  (`W.weekOf`, ISO 8601 by date maths, no time zone) give the seed (`W.seed`). A seed whose layout fails areagen's checks,
+  has fewer than 100 monsters (`minMonsters`, the owner's rule for queue dungeons) or no boss room is followed by the
+  next try's seed, at most `seedTries`. The same server start gives the same layout all week (the tiles are built at
+  startup). `/challenge` (staff) tells the built week, theme, seed and try.
+- **The run.** Dungeon id 10 (after the generated 5-9), solo or a party of up to 4 (the dungeon system's matchmaking;
+  the monsters scale with the size), always at difficulty 1 (`fixedDifficulty`: the queue's choice is ignored, so every
+  time on the board has the same rule). The window (`game_dungeons`) shows a "Weekly Challenge 2026-W45: Marrow Crypts"
+  line with the rule, the boards and the time to the new layout, the banner of the theme, and locks difficulties 2-6.
+  Normal dungeon rewards apply (boss loot, Conquest Tokens for the clear, the cooldown).
+- **The week turns without a restart.** The layout stays last week's until the next start (the daily server save):
+  the queue refuses with "opens at the next server save", and a run that ends after the reset records nothing.
+- **Boards.** `challenge_solo` (party size 1) and `challenge_party` (2-4) in `leaderboard_config.lua`: mode "min",
+  seconds shown as m:ss, class tabs (`byClass`), title only for the overall top 3 (`noReward`: no orbs). The game window
+  and the website's Leaderboards page read the config, so both show them with class tabs.
+- **The week's end.** `ChaosLeaderboard.onReset` (new: hooks run after each weekly reset with the ended week's ranked
+  boards) calls `onWeekEnd`: the 1st, 2nd and 3rd of every class tab of each board get 30 / 20 / 10 Conquest Tokens
+  (`ChaosConquest.grantGuid`, new: by guid, online or not, logged as source `weekly_challenge`), and one Discord row of
+  the new kind `weekly_challenge` (channel `records`; `discord_core.lua` `D.weeklyChallenge`) lists the top 3 of each
+  class on both boards. The website worker knows the kind (`discord_lib.php` `KINDS`, `COLORS`).
+- **Economy.** Conquest Tokens are an existing currency. At most 7 classes x 2 boards x 60 = 840 tokens a week on the
+  server, 120 for one character; a dungeon clear alone gives 5-15 tokens with a daily cap of 90
+  (`conquest_config.lua`; the test holds 2 x 30 under that cap). No item, gold or orb is added.
+
+Open points: the challenge needs level 800 (the Vault's numbers, which `tests/areagen_test.lua` holds to a 10 minute
+run); the per-dungeon solo / group tops of the dungeon window mix weeks (the boards are the weekly view); the class of
+a board entry is the character's class at the reset (`players.vocation`), like the Cinderheart boards. Tests:
+`tests/weekly_challenge_test.lua` (ISO weeks over 2015-2035 and Python's vectors, seeds and themes, the area over 13
+weeks in light and dark tiles: valid, 100+ monsters, apart from every area, inside the block; boards, class tops,
+grants, the Discord event; `weekly_challenge.lua` against a mocked engine: area, entry check, clears on the right
+board, a stale layout, the week's end), `dungeonsview_test.lua` (the window line and banner). Not run on a live
+server.
+
 ## Party Finder (`party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua`, client `game_partyfinder`)
 
 Looking-for-group window, Social > Party Finder (opcode **208**). A leader posts a listing; others browse it, apply with
@@ -24850,8 +25009,10 @@ live server.
 
 **Level gate (O368).** `professions_config.lua` `C.minLevel` 20 (`ChaosProfessions.levelOk`): below it the window, gathering a node, flaying and the Angling roll are refused ("Professions open at level 20."); stock fishing stays as it is. The top menu shows Professions from 20 (`unlocks_config.lua` `professions`).
 
-The owner's rule: professions gather materials **to sell to NPCs** and give an **experience bonus**. They make no gear and no
-orbs and feed no crafting, so they never compete with the crafting orbs or salvage. Every number is in `professions_config.lua`.
+The owner's rule: professions gather materials **to sell to NPCs** and give an **experience bonus**. Since O395 they also
+**feed the base crafting** (Mining, Herbalist and Armorsmith books): a by-product chance per gather and refining recipes. They
+still make no gear and no orbs, so they never compete with the crafting orbs or salvage. Every number is in
+`professions_config.lua`.
 
 **Four gathering professions**, each with its own level 1-100 per character (table `chaos_professions`):
 
@@ -24935,16 +25096,41 @@ levels 8 and 40 from the same model on Gutworm / Troll / Orc and Cyclops / Dwarf
 Pace model: node professions min(3600 / (channel + 12 s walking), nodes of the tier x 60 / 6 min) = 100 gathers an hour (one area
 of 10 nodes); Flaying 3600 / (2.5 s + 10 s per kill) x 40%; Angling 1,200 rolls x 10%.
 
-| Tier | Delving | Wortcunning | Flaying | Angling | Hunting / h | One material's best day |
-|---|---|---|---|---|---|---|
-| 1 Common | 4,890 (26%) | 4,890 (26%) | 5,633 (30%) | 5,868 (31%) | 19,000 | 4,500 |
-| 2 Fine | 19,560 (24%) | 19,560 (24%) | 22,533 (27%) | 23,472 (28%) | 83,000 | 18,000 |
-| 3 Rare | 85,575 (24%) | 85,575 (24%) | 98,582 (27%) | 102,690 (29%) | 358,839 | 78,800 |
-| 4 Grim | 205,920 (27%) | 205,920 (27%) | 197,683 (26%) | 205,920 (27%) | 751,109 | 180,000 |
-| 5 Infernal | 738,000 (13%) | 738,000 (13%) | 850,176 (15%) | 885,600 (16%) | 5,548,330 | 900,000 |
+| Tier | Delving | Wortcunning | Flaying | Angling | Hunting / h |
+|---|---|---|---|---|---|
+| 1 Common | 6,750 (35.5%) | 6,750 (35.5%) | 6,682 (35.2%) | 6,948 (36.6%) | 19,000 |
+| 2 Fine | 21,600 (26.0%) | 21,600 (26.0%) | 26,730 (32.2%) | 24,768 (29.8%) | 83,000 |
+| 3 Rare | 88,425 (24.6%) | 88,425 (24.6%) | 116,943 (32.6%) | 104,958 (29.2%) | 358,839 |
+| 4 Grim | 210,960 (28.1%) | 210,960 (28.1%) | 234,900 (31.3%) | 209,808 (27.9%) | 751,109 |
+| 5 Infernal | 751,800 (13.6%) | 751,800 (13.6%) | 1,012,500 (18.2%) | 901,008 (16.2%) | 5,548,330 |
 
+Since O395 the table counts the level 75 / 50 perks (shorter channel, Lucky, Sure Hand) and the by-products at the price
+table's 120 gold (1,800 an hour for Delving and Wortcunning, 2,160 at tier 4 with 12 nodes; Angling 1,008). Node areas count
+the best single area of the tier, not the sum (`K.nodesOfTier`): a character walks one area at a time.
 Every cell stays below `balance.maxShare` (40%) of hunting, and one material's best day (100 at full price + 100 at half, x1.5)
 stays below one hour of hunting at its level. Flaying comes on top of a beast hunt but costs the channel time per corpse.
+
+**Crafting (O395).** Gathering now feeds the base crafting, without a new currency or table:
+
+- **By-products.** A Delving or Wortcunning gather has 10% (Angling 4%) chance of one base crafting material of the gather's
+  tier (`C.byproducts`): Delving gives the base ore pieces (26398..26404), Wortcunning and Angling the base herbs
+  (26723..26732). Message "Also found: 1 X (a crafting material)." Flaying gives none (its hides refine instead).
+- **Refining** (`C.refine`, 15 rows). Profession materials turn into base crafting materials at the base crafting table:
+  Delving at Mining (ore pieces, 5880), Wortcunning at Herbalist (herbs), Flaying at Armorsmith (12435, 5920, 5948, 5882). One
+  material of tier T gives 1-4 units, plus 50-100 gold; the crafting level 10-25. `K.refineProblems` checks every row: the inputs
+  at the broker's base price plus the gold are worth at least the product at the price table (`chaos_item_prices_data.lua`), so
+  no gold loop through the NPC buy price. Angling has no refining (its fish are a broker product).
+- **How it gets in.** `data/lib/chaos_profession_recipes.lua` builds the recipe tables (`K.recipes`, names from the item types,
+  tag `chaosProfession`); `install_professions.py` step 5 appends one loader block to each of the three base book files
+  (`patch_recipe_loaders`, marker `-- Chaos: profession refining recipes (install_professions.py) v1`; idempotent, CRLF kept).
+  Every product and by-product is an item of `data/items/base_recipes.csv`, so the base crafting already uses it.
+- **Perks** (`C.perks`, three per profession at levels 25, 50, 75): shorter channel (x0.8), +5% by-product chance, +2% chance of
+  one more unit, +5% hide chance (Flaying). Message and toast "New X perk: Y." at the level. The window shows them in the
+  profession's tooltip (reached with "+", to come with "-").
+- **Hunt nodes.** Besides the eight fixed areas, every hunt of the teleport hall (`ChaosHuntTeleports.idx`, list and base) gets
+  4 Delving and 4 Wortcunning nodes around its arrival (box 12, fishing on), tier by the hunt's low level (`K.huntAreas`; key
+  `hunt_<id>`). A hunt within 30 tiles of a fixed area is skipped. Shown in "Where to Gather" with ", hunt".
+- **Toasts.** A profession level-up and a new perk also show as a toast (opcode notifications, action `journey`).
 
 **Experience bonus.** +0.0253% monster experience per profession level above 1, all four together, at most +10%: every
 profession at 100 (396 levels) reaches the cap, a new character has +0%; all at 50 give +4.96%. EventCallback `onGainExperience`
@@ -24969,14 +25155,16 @@ Protocol (opcode 195, JSON `{action, data}`): client -> server `open` | `close` 
 Staff: `/professions Name[, profession, level]` (show / set), `/professions nodes` (place the nodes again). Test or event areas:
 `ChaosProfessions.addArea{key, name, tier, center, r, nodes, fishing}` places them at once.
 
-**Tests:** `tests/professions_test.lua` (635 checks under LuaJIT and Lua 5.3): config, curve, tiers and yields, the bonus and its
+**Tests:** `tests/professions_test.lua` (853 checks under LuaJIT and Lua 5.3): config, curve, tiers and yields, the bonus and its
 cap, the demand draw of a fixed week (exact values), weeks and days, prices, the daily cap, the gold per hour bound against
 hunting, node spots (deterministic, spaced), fishing places; and `professions.lua` against a mocked engine: placing an area twice,
 a node gather through the action and the cast bar, the profession tier cap, the per-player cooldown, another character on the same
 node, moving / damage interrupting (healing not), the wrong tool, the stock pick's own uses, flaying a tagged wolf (and once only,
 the owner rule; a dragon is no beast), the angling roll limit, selling away from / at the broker, the full / late price and the cap,
 a new day, Sell All, the bonus on monster experience only (+10% at the cap), the buff entry, the weekly board, the title-only
-board. Client: `game_professions/professionsview_test.lua` (45 checks).
+board; O395: perks, by-products, the refine rows against the price table and base_recipes.csv, the recipe lib, hunt areas,
+the perk message and toast, the hunt nodes placed. `tools/install_professions_test.py` (11 checks: the loader block, idempotent,
+CRLF, the patched book loaded under LuaJIT and Lua 5.3). Client: `game_professions/professionsview_test.lua` (58 checks).
 
 **Tested in game** (test server with the cropped map, a runtime test area next to the temple, one client): a vein by "use" with the
 pick in the backpack (cast bar, "You gathered 1 duskglass shard (+30 Delving experience)", 49.8k character experience at level
@@ -25496,7 +25684,8 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
 
 ## Tales (`tales.lua`, `tales_core.lua`, `tales_config.lua`, `lore_data.lua`, npc `Archivist Maelis`)
 
-Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4). The giver is Archivist Maelis
+Story quests from level 8 to 2000: 37 tales (2026-10-22: 23 added to the first 4; O396: the ten chapters of the Tale
+of Cinderhold). The giver is Archivist Maelis
 (`data/npc/Archivist Maelis.xml`, `npc/scripts/archivist_maelis.lua`), placed next to the first temple at startup;
 `install_class_ascension.py` copies the NPC folder. She gives and closes every tale.
 
@@ -25530,8 +25719,8 @@ Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4
 | 1600 | The Fallen Seraph | choir | Kharzun's Anvil |
 | 2000 | The Chained Wyrm | vigil | The Fallen Seraph |
 
-- **Steps.** kill (party members within 30 squares share the kill), visit, talk, deliver, report. The last step is
-  always deliver or report at the Archivist; `M.problems` refuses any other config and the startup logs it.
+- **Steps.** kill (party members within 30 squares share the kill), visit, talk, elite (O396), deliver, report. The last
+  step is always deliver or report at the Archivist; `M.problems` refuses any other config and the startup logs it.
 - **Visit.** Stand within `radius` of a place: a hunting mark of `data/chaos_poi.lua`. Only characters with an open
   visit step are watched (`T.watch`); the global event `ChaosTalesVisit` checks them every `visitMs` (3 s) and sweeps
   all players every `visitSweep` ticks. The place is revealed on the map when the step opens (`ChaosPoi.seen`, opcode
@@ -25541,12 +25730,62 @@ Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4
   pending the faction dialogue runs as before.
 - **Chains.** `requires` names a tale that must be done first. A locked tale is not offered, and a forged accept is
   refused.
+- **Elite (O396).** `{kind = "elite", pos, radius, monster, name}`: go to a place (revealed on the map like a visit) and
+  kill a named elite. The visit watch list also holds the characters with an open elite step; at the place
+  `T.raiseElite` makes `monster` with the shown name `name` (`Chaos.createMonsterNamed`, at `pos`, else next to the
+  character) and forces the tier `elite.tier` (rare: x3.5 health, x1.5 damage, 2-3 modifiers; `ChaosApplyTier`). One per
+  name at a time (`T.elites`); it is removed after `elite.lifeSec` (600 s) and does not rise again within
+  `elite.againSec` (20 s). The kill counts by the shown name only (`M.matches`), so a plain monster of the type does not;
+  the party shares it like any kill. `M.problems`: an elite needs pos, monster and name, and the name must differ from
+  the type.
+- **Sagas (O396).** `cfg.sagas`: a chain told as one story. A tale with `saga` and `chapter`; chapter n requires
+  chapter n - 1 (`M.problems`). The chapters done (`M.sagaDone`) set the achievement counter `stat`
+  (`ChaosAchievements.set`, max) at every turn-in and at login; the turn-in names "chapter n of 10".
 - **Rewards.** Experience, bank gold, orbs, faction reputation and a lore book. The experience is a share of the next
   level, measured at most at the top of the tale's band (`M.xpLevel`), so a high character gets no huge reward from a
   low tale.
 
 Every text is English and Brazilian Portuguese: a player says "portugues" or "english" to the Archivist, or `Chaos.t`'s
-language decides. The Archivist also answers lore questions from `lore_data.lua`. The list shows tales in progress
+language decides. The Archivist also answers lore questions from `lore_data.lua`.
+
+**The Tale of Cinderhold (O396).** Ten chapters, slots 28-37 (storages 7101568-7101576 state, 7101588-7101596 count;
+slot 37 is 7101577 / 7101597), a chain from level 10 to 560. The Archivist, who is also the Chronicler of the Ashen
+Chronicle, has lost the ten founding pages of her oldest ledger: the night the Cinders fell they went where the ash
+went. Each chapter is one page, carried by a named elite in a hunt of its band; the Chronicle tells what the realm does
+now, the tale tells what the city was. Reused: the tales framework (window, chains, rewards, party credit, the faction
+NPCs' talk steps), the hunting marks of `chaos_poi.lua`, the monster tiers, the achievements and Next Goals.
+
+| Ch. | Level | Title | Talk | Elite (monster, hunting mark) | Reward |
+|---|---|---|---|---|---|
+| I | 10 | The Torn Ledger | | Gnawbone the Page-Eater (Troll, 32354 32129 8, 1-10) | 2,000 gold |
+| II | 22 | The Founders' Bell | Warden Ysolde | Old Bellwarden (Gargoyle, 32252 32578 8, 20-30) | 6,500 |
+| III | 45 | Mortar of Dragon Ash | | Ashmaw the Mortar-Wyrm (Dragon, 33215 31297 7, 40-50), then 20 Dragon / Dragon Hatchling | 18,000, Orb of Awakening |
+| IV | 60 | The Oathless Legion | Forgemaster Brannoc | Sskareth the Oathbreaker (Lizard High Guard, 33076 31152 7, 50-70) | 25,000, Orb of Awakening |
+| V | 105 | The Choking Hymn | Cantor Velith | The Hymn That Chokes (Choking Fear, 33568 32402 7, 100-120) | 55,000, Orb of Tempering |
+| VI | 150 | The Unwritten Page | | The Founder's Quill (Animated Feather, 31294 31917 8, 150-280) | 80,000, Orb of Tempering |
+| VII | 230 | Rimecrown's Winter | Elder Bramwyn | Rimecrown the Winter-Eater (Frost Hydra, 30827 31254 6, 220-440) | 160,000, Orb of Fate |
+| VIII | 300 | The Last Light | Warden Ysolde (after) | The Archon of the Last Light (Archon, 33402 31807 2, 260-420) | 200,000, Orb of Fate |
+| IX | 430 | Brine and Ember | | Saltcrown the Eldest Pyrarch (Brinebrute Pyrarch, 31602 31267 6, 430-480) | 300,000, Orb of Fate |
+| X | 560 | The Founding Stone | | The Pitlord of the Founding Stone (Pitlord Incarnate, 33225 33493 7, 470-600) | 450,000, 2 Orbs of Fate |
+
+Every chapter also gives a 0.4-0.8 share of the next level's experience (at most at the top of its band) and 100-800
+faction reputation. Rewards are modest on purpose: the gold sits between the tales below and above it (the test keeps
+gold rising with the level), no gear, no lore book. The cosmetic end reward is the achievement title.
+
+- **Achievements** (`achievements_data.lua`, Exploration, stat `cinderhold_tale`): The Torn Ledger (1 chapter, 5 points),
+  Half the Ledger (5, 15 points), Keeper of the Founding (10, 50 points, title "Keeper of the Founding"). pt-BR in
+  `i18n_strings.lua`.
+- **Next Goals** (`goals_config.lua`, built from `tales_config.lua`): one goal per chapter, `cinderhold1` to
+  `cinderhold10`, unlocked at the chapter's level, counter `cinderhold_tale`, the button marks Archivist Maelis on the
+  map; hidden without `ChaosTales`. The goal's own small reward is the default of Next Goals.
+- **Tests** (`tests/tales_test.lua`): ten chapters in a chain, rising levels, the free slots, one elite per chapter at a
+  hunting mark of its monster whose level band fits the chapter, elite names unique and no monster type, credit by shown
+  name only, the watch list and `M.elitesAt`, the saga counter, the problems of elites and sagas; through the mocked
+  engine: accept at level 10, the place revealed, the elite raised once with its name and tier and lifetime, a plain
+  troll not counting, the elite's kill, the turn-in with the counter and "chapter 1 of 10", the counter at login,
+  chapter 2 opening at 22, no second rise within `againSec`.
+- **Not tested in game.** The elites' spawn tiles at the real marks (an extended spawn at the mark, else next to the
+  character) and the rare tier's strength at each band. The list shows tales in progress
 first, then new ones, then done ones. Modal windows 7170-7171. Storages 7101500 - 7101549 (slots 1-19) and 7101560 -
 7101599 (slots 20-39); a slot per tale, append only, never reuse one. No spoken `!command`. Pure logic:
 `tales_core.lua`; tests: `tests/tales_test.lua`. Not run on a live server.
@@ -27369,6 +27608,99 @@ small numbers, survey rows and escapes, the command line), `deploy/chaos_ctl_tes
 with a stub database, refusals), client `game_chaossurvey/surveylogic_test.lua`, Android `NewPlayerInfoTest`. All data is
 synthetic. Not run in a live client or on the live server yet.
 
+## Balance telemetry (`telemetry.lua`, `telemetry_core.lua`, `telemetry_config.lua`, `sql/chaos_telemetry.sql`)
+
+Hourly aggregates for staff. Website page `page?plugin=chaos&p=telemetry` (group 5+); docs/LAUNCH.md "Balance telemetry".
+Sources and privacy: the header of `telemetry.lua`. Tables `chaos_telemetry_{hunt, online, boss, deaths, casts, economy,
+area, class}`: hourly rows (`span` 'h') for 90 days, then one daily row ('d') kept 730 days. No row holds an id or name.
+- `area` (O397): every 5 minute sample, a character with hunting time or kills counts in its hunt. The hunt is the
+  instance label, else the nearest `hunt` marker of `data/chaos_poi.lua` within `poiRange` 60 squares and `poiFloors` 3
+  (`K.huntAreaOf`). Columns: distinct characters, hunting seconds, kills per hunt and level band.
+- `class` (O398): deaths per level band and class (the death event), damage dealt to monsters per band and class.
+  Damage comes from `combatlog.lua` `dealt()`: it calls `ChaosCombatLog.dealtHook` (set by `telemetry.lua`) for every
+  hit on a monster it gives to a character or its summon. So damage counts only while the combat log is on. Staff
+  are left out.
+- Both tables are new from O397 / O398: they start empty. The `sql` step or the server start creates them.
+Tests: `tests/telemetry_test.lua` (buckets, rollup, the area and class rows, the mocked engine sample, the damage hook).
+
+## Game health panel (O397) (`tools/game_health.py`, `chaos-ctl.sh game-health`)
+
+**Why.** Owner request: one look at how the game is doing. Online per hour, where new players stop, which hunts are
+used, deaths, gold.
+
+**Where the owner reads it.** Admin app. Android: Painel > card "Saúde do jogo" > "Atualizar saúde do jogo" (days
+field, default 7, 1 to 90). Desktop: Jogadores > Saúde do jogo > "Carregar gráficos (7 dias)", or "Ver como
+texto" for any day count. Fallback on the VPS: `sudo chaos-ctl.sh game-health [--days N] [--kv | --json] [--pt]`.
+
+**What it shows.** Read only, from tables the server already fills:
+- Online per hour of the last N days: mean of the 5 minute samples and the peak (`chaos_telemetry_online`, band
+  `all`). An hour with no sample is a gap (server off). Also the mean by hour of the day, the busiest and quietest hour.
+- Deaths per hour (`chaos_telemetry_deaths`) and per hour of play (deaths / character-hours online).
+- Most and least used hunts, top 10 each (`chaos_telemetry_area`). Sorted by hunting time; the least used list never repeats a top one.
+  Every `hunt` marker of `data/chaos_poi.lua` is listed, so a hunt nobody visited shows with 0.
+- Gold in and out of the window by source (`chaos_telemetry_economy`): loot, Loot Bag, Auto Seller; supplies, respec.
+- The new player funnel of the last 30 days: the SELECT and maths of `newplayer_report.py` (O374), reused as is.
+  Levels reached, how many stopped, at which level band and after which system.
+
+**Small groups.** A character count of 1 to 4 is written "<5" (hunt visits, funnel rows), as O374. No row read holds a
+name, account, id or IP.
+
+**How.** `game_health.py --sql` builds one script of six tagged SELECTs from fixed numbers and the checked day count.
+`chaos-ctl.sh` sends it to `mysql` on stdin, then pipes the rows back into `game_health.py`. Output: text (`--pt`
+Portuguese), `--json` one line, `--kv` key=value lines for the apps (`ok`, `online_*`, `hour=EPOCH DD/MM HH MEAN PEAK
+DEATHS`, `hunt_top` / `hunt_low` = `VISITS HOURS KILLS DEATHS NAME`, `gold_*`, `funnel_*`). Missing tables: `ok=0`,
+`error=no-table`; database down: `error=database`.
+
+**Install.** Nothing new to run beyond the update: `install_all.py` step `sql` (or the server start) creates
+`chaos_telemetry_area`. The hunt rows fill from that update on.
+
+**Tests.** `tools/game_health_test.py` (SELECT, hours with gaps, hunt order, unvisited markers, small numbers, gold,
+funnel, kv / json / text, errors), `deploy/chaos_ctl_test.py` `test_health_balance`, Android `GameHealthInfoTest`,
+desktop `health.rs` tests. All data is synthetic. Not run on the live server yet.
+
+## Season balance report (O398) (`tools/balance_report.py`, `tools/balance_report_config.json`, `chaos-ctl.sh balance-report`, `deploy/chaos-balance.timer`)
+
+**Why.** Owner request: at season end, a report comparing the classes, with suggested changes.
+
+**Where the owner reads it.** Admin app. Android: Painel > card "Relatório de equilíbrio" > "Últimos dias" (days
+field, default 30), "Season atual", "Enviar por DM", "Último salvo", "Ligar automático" / "Desligar", "Copiar".
+Desktop: Jogadores > Relatório de equilíbrio > same buttons. Fallback on the VPS:
+`sudo chaos-ctl.sh balance-report [--days N | --season ID|current] [--pt] [--json] [--save] [--dm]`,
+`balance-report last`, `balance-report timer on|off|status`.
+
+**What it compares.** Per level band (1-99, 100-299, 300-499, 500-999, 1000+) and class, from the telemetry:
+- Minutes per level: hunting seconds and experience (`chaos_telemetry_hunt`) at the band's reference level
+  (`bandLevel`; engine curve 50L² - 150L + 200).
+- Deaths per hunting hour, damage per hunting hour and the class's share of its band (`chaos_telemetry_class`).
+- The most used spells per class (`chaos_telemetry_casts`, top 3).
+A class and band under `minCharacterHours` 5 character-hours shows as "<5" and is not compared.
+
+**Suggestions.** `flags()` is pure. Against the median of the band (needs `minClasses` 3 classes):
+- minutes per level outside ±15% (`tolerance`): slow or fast;
+- deaths per hour over +25% (`deathTolerance`) and over `minDeathsPerHour` 0.2;
+- damage per hour outside ±15%: low or high.
+`suggested()` proposes half the gap, at most 15%, at least 1%, as more or less damage or experience. A suggestion,
+not a change: nothing is applied.
+
+**Season window.** `--season ID|current` reads `season_config.lua` and the `/season start|end` overrides in
+`server_config` (`chaos_season_<id>_start/_end`). A season not found or not started: refused.
+
+**Saved reports.** `--save` writes `CHAOS_BALANCE_DIR` (default `/var/lib/chaos/balance`): `NAME.md`, `NAME.json` and
+`latest.md`; the newest 30 are kept. `--dm` also saves and drops the text into the Discord bot's outbox
+(`CHAOS_BOT_DATA/outbox`): the bot DMs it to the owner within a minute, in parts of 1900 characters. No bot installed:
+`dm=no-bot`, the file is still saved.
+
+**Automatic at season end.** `chaos-balance.timer` (daily 10:17, `Persistent=true`) runs `balance-report auto`: a season
+that ended in the last 14 days with no saved report gets `season-ID.md` (Portuguese) and a DM. Off by default; the app
+button "Ligar automático" or `balance-report timer on` installs and enables it.
+
+**Tests.** `tools/balance_report_test.py` (SELECT, analysis, flags and suggestions on synthetic classes, small groups,
+season windows and overrides, due, save and prune, text and JSON), `deploy/chaos_ctl_test.py` `test_health_balance`,
+`deploy/discord_bot/bot_core_test.py` `test_outbox`, `deploy/chaos_units_test.py`. Not run on the live server yet.
+
+**Assumptions.** The band reference levels are a choice (`bandLevel`). Damage only counts while the combat log is on.
+Data starts at the O397 / O398 update.
+
 ## The top menu reveals systems by level (O259) (`unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua`; client `client_chaos_topbar`)
 
 **Why.** The top menu showed about 60 entries to a character that has just left the tutorial. The retention pass (design
@@ -27995,6 +28327,9 @@ asks Claude what each message is, keeps a bug list and helps write patch notes. 
   `start` refuses with `config-missing` until the five required ones are set. Settings in `ctl.conf`: `CHAOS_BOT_USER`,
   `CHAOS_BOT_ENV`, `CHAOS_BOT_DIR`, `CHAOS_BOT_DATA`, `CHAOS_BOT_LOG`, `CHAOS_BOT_PYTHON`. Admin app: Comandos > Bot do Discord;
   desktop table: `commands.rs` group Bot do Discord.
+- **Outbox (O398).** Other tools DM the owner through the bot: a file dropped into `CHAOS_BOT_DATA/outbox` (owned by the
+  bot user) is sent as DMs within 60 s, in parts of 1900 characters (at most 20,000 read), then deleted
+  (`bot_core.outbox_files`, `read_outbox`, `split_message`; `bot.py` `outbox_loop`). `balance-report --dm` and `auto` use it.
 - **Not done.** No live run (the fallbacks parameter together with structured output is untested against the real API; the automatic
   patch loop and the persistent buttons in `bot.py` are not run here, only their pure rules), the Android card is not compiled here, and the slash commands are checked in code only (no permission override in the server settings).
 

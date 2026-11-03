@@ -8,6 +8,7 @@
 --                       health = {monsters = {six %}, boss = {six %}}: only a dungeon with its own health curves (the
 --                       Vault, the generated dungeons 6-9; dungeons_difficulty.lua D.healthCurves); without it the
 --                       client's panel shows the table's 100-1300%
+--                       weekly = {label, theme, current, resetIn, boards}: the Weekly Challenge (weekly_challenge.lua)
 --                     solo / group {id,diff,top=[{name,time,self?}]}      (time in ms)
 --                     queue {id,joined}   stopQueue   queueUpdate {id,queue,estimated}
 --                     prepare            start {boss,left,duration,objectives,need}
@@ -433,7 +434,9 @@ local function dungeonPayload(player, id, dg)
 		queue = queueInfo(id, dg),
 		challenges = challenges,
 		-- the dungeon's own health curves for the difficulty panel (nil: the table's, old clients ignore it)
-		health = DIFF.healthCurves(extra.bossName and extra.bossHealth or nil, extra.trashHealth)
+		health = DIFF.healthCurves(extra.bossName and extra.bossHealth or nil, extra.trashHealth),
+		-- the Weekly Challenge (weekly_challenge.lua): {label, theme, current, resetIn, boards} (old clients ignore it)
+		weekly = extra.weeklyInfo and extra.weeklyInfo(player) or nil
 	}
 end
 
@@ -568,6 +571,14 @@ local function entryProblem(player, id, dg, difficulty)
 	end
 	if player:getLevel() < levelOf(dg) then
 		return Chaos.t(player, baseMessage("MsgNeedLevel", "You need level %s."), levelOf(dg))
+	end
+	-- a dungeon's own rule (the Weekly Challenge, weekly_challenge.lua: only with this week's layout)
+	local own = extraOf(id).entryProblem
+	if own then
+		local why = own(player)
+		if why then
+			return why
+		end
 	end
 	local storage = cooldownStorage()
 	if storage and not (ChaosBetaMode and ChaosBetaMode.lifted("dungeon_cooldown")) then -- beta test mode: no cooldown
@@ -764,7 +775,7 @@ local function endRun(run, success, reason)
 		end
 		-- a generated dungeon's boss chest and achievement counters (areagen.lua registerDungeon)
 		if extra.onClear then
-			pcall(extra.onClear, p, {difficulty = run.difficulty, ms = elapsed, deaths = run.deaths})
+			pcall(extra.onClear, p, {difficulty = run.difficulty, ms = elapsed, deaths = run.deaths, size = run.size or #memberInfo})
 		end
 	end
 
@@ -1596,6 +1607,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		end
 
 		local difficulty = Chaos.toInt(msg.data.difficulty, 1, cfg.maxDifficulty) or 1
+		-- a dungeon with one difficulty for every run (the Weekly Challenge: one rule for every time on its board)
+		difficulty = extraOf(id).fixedDifficulty or difficulty
 		local problem = entryProblem(player, id, dg, difficulty)
 		if problem then
 			player:sendCancelMessage(problem)

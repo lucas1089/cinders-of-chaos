@@ -42,7 +42,7 @@ function db() { return $GLOBALS['DB']; }
 // the server's tables, turned into SQLite (the same columns)
 $sqlFile = file_get_contents(__DIR__ . '/../../server/sql/chaos_telemetry.sql');
 preg_match_all('/CREATE TABLE IF NOT EXISTS `(\w+)` \((.*?)\) ENGINE/s', $sqlFile, $mm, PREG_SET_ORDER);
-check(count($mm) === 6, 'six telemetry tables in the server SQL');
+check(count($mm) === 8, 'eight telemetry tables in the server SQL');
 foreach ($mm as $m) {
 	$cols = preg_replace('/, KEY `\w+` \([^)]*\)/', '', $m[2]);
 	$cols = str_replace(array(' unsigned', 'bigint', 'smallint', 'tinyint'), array('', 'INTEGER', 'INTEGER', 'INTEGER'), $cols);

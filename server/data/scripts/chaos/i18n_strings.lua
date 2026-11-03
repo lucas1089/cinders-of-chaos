@@ -409,6 +409,11 @@ return {
 		["The last %d invaders flee from %s."] = "Os últimos %d invasores fogem de %s.",
 		["INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord."] =
 			"INVASÃO! %s ataca %s! Defenda %s: %d ondas em %d minutos, a última liderada pelo senhor da guerra deles.",
+		-- O393
+		["Every defender is rewarded by their part: damage, healing, kills and time in the fight. Stand idle and you earn nothing."] =
+			"Cada defensor é recompensado pela sua parte: dano, cura, abates e tempo na luta. Quem fica parado não ganha nada.",
+		["The %s turns back from %s: too few defenders are awake to make a fight of it."] =
+			"%s recua de %s: há poucos defensores acordados para uma batalha.",
 		["VICTORY! %s held: the %s is broken in %s. Top defenders: %s."] =
 			"VITÓRIA! %s resistiu: %s foi quebrado em %s. Melhores defensores: %s.",
 		["DEFEAT! %s %s. The %s occupies it for %d minutes: slay the occupiers to free it."] =
@@ -1341,6 +1346,9 @@ return {
 		["Reach Angling level 100."] = "Alcance o nível 100 em Angling.",
 		["Reach 200 profession levels in total."] = "Alcance 200 níveis de profissão no total.",
 		["Reach level 100 in all four professions."] = "Alcance o nível 100 nas quatro profissões.",
+		["Finish the first chapter of the Tale of Cinderhold."] = "Conclua o primeiro capítulo da História de Cinderhold.",
+		["Finish five chapters of the Tale of Cinderhold."] = "Conclua cinco capítulos da História de Cinderhold.",
+		["Finish all ten chapters of the Tale of Cinderhold."] = "Conclua os dez capítulos da História de Cinderhold.",
 		["Mentor an apprentice to graduation."] = "Seja mentor de um aprendiz até a formatura.",
 		["Mentor 5 apprentices to graduation."] = "Seja mentor de 5 aprendizes até a formatura.",
 		["Mentor 15 apprentices to graduation."] = "Seja mentor de 15 aprendizes até a formatura.",
@@ -2038,6 +2046,21 @@ return {
 		["Nothing worth keeping (+%d %s experience)."] = "Nada que valha guardar (+%d de experiência de %s).",
 		["You advanced to %s level %d. Profession experience bonus: +%s%%."] =
 			"Você avançou para %s nível %d. Bônus de experiência da profissão: +%s%%.",
+		-- O395: by-products, level up toasts and perks (professions.lua, professions_config.lua perks)
+		["Also found: 1 %s (a crafting material)."] = "Também encontrou: 1 %s (um material de criação).",
+		["%s level %d!"] = "%s nível %d!",
+		["New %s perk: %s."] = "Nova vantagem de %s: %s.",
+		["Steady Swing"] = "Golpe Firme",
+		["Keen Eye"] = "Olho Atento",
+		["Rich Seam"] = "Veio Rico",
+		["Quick Blade"] = "Lâmina Ágil",
+		["Deep Roots"] = "Raízes Fundas",
+		["Clean Cuts"] = "Cortes Limpos",
+		["Sure Hand"] = "Mão Segura",
+		["Whole Hide"] = "Couro Inteiro",
+		["Weedy Hook"] = "Anzol de Algas",
+		["Heavy Catch"] = "Pesca Farta",
+		["Old Nets"] = "Redes Velhas",
 		["Battleground: you left the queue."] = "Battleground: você saiu da fila.",
 		["Battleground: the wards of the enemy base throw you back."] =
 			"Battleground: as proteções da base inimiga te jogam para trás.",
@@ -3234,6 +3257,33 @@ return {
 			"Mais de uma casa combina com esse nome. Diga o nome completo.",
 		["No house is free at the moment."] =
 			"Nenhuma casa está livre no momento.",
+		-- O394: Dorrin Alewright, the rumourmonger (chaos_service_npc.lua ANSWERS.rumours, his XML)
+		["Pull up a stool, |PLAYERNAME|. Ears open, purse open: want to hear the {rumours}?"] =
+			"Puxe um banquinho, |PLAYERNAME|. Ouvidos abertos, bolsa aberta: quer ouvir os {boatos}?",
+		["Mind the hour, |PLAYERNAME|."] =
+			"Fique de olho na hora, |PLAYERNAME|.",
+		["Some folk never finish their drink."] =
+			"Tem gente que nunca termina a bebida.",
+		["Dorrin Alewright. I pour, I listen, and for a few coins I tell what I hear. Ask for the {rumours}, or the {price}."] =
+			"Dorrin Alewright. Eu sirvo, eu escuto e, por umas moedas, conto o que ouço. Peça os {boatos}, ou o {preço}.",
+		["A rumour costs you %s gold. One per tale: I never sell the same story twice."] =
+			"Um boato custa %s de ouro. Um por história: nunca vendo a mesma história duas vezes.",
+		["The taps are dry and so am I. No rumours today."] =
+			"As torneiras secaram, e eu também. Nada de boatos hoje.",
+		["Nothing new has reached my ears for you. Come back within the hour."] =
+			"Nada de novo chegou aos meus ouvidos para você. Volte dentro de uma hora.",
+		["A rumour costs %s gold, and your purse and bank cannot spare it."] =
+			"Um boato custa %s de ouro, e sua bolsa e seu banco não têm isso sobrando.",
+		["%s gold, thank you. Lean closer."] =
+			"%s de ouro, obrigado. Chegue mais perto.",
+		["Scouts swear the %s is massing near %s. Trouble between %s and %s, server time, if they are right."] =
+			"Batedores juram que %s está se juntando perto de %s. Encrenca entre %s e %s, horário do servidor, se estiverem certos.",
+		["The old priests whisper that %s stirs. The portals by the temples should open between %s and %s, server time."] =
+			"Os velhos sacerdotes sussurram que %s desperta. Os portais junto aos templos devem abrir entre %s e %s, horário do servidor.",
+		["A trapper swore he saw a %s near %s. If he is right, it shows itself between %s and %s, server time."] =
+			"Um caçador jurou ter visto um %s perto de %s. Se ele estiver certo, aparece entre %s e %s, horário do servidor.",
+		["a great beast"] =
+			"uma grande fera",
 		["Pell Ashmere. I see to your name, your class, your familiar, your plate frame and your web shop orders. Ask what you need."] =
 			"Pell Ashmere. Cuido do seu nome, da sua classe, do seu familiar, da moldura da placa e dos pedidos da loja web. Diga o que precisa.",
 		["Say {sell} and the name of the one who buys it. Both of you must be here."] =
@@ -3739,6 +3789,9 @@ return {
 		["Lord of the Dark Waters"] = "Senhor das Águas Escuras",
 		["Jack of the Wilds"] = "Aprendiz dos Ermos",
 		["Master of the Wilds"] = "Mestre dos Ermos",
+		["The Torn Ledger"] = "O Registro Rasgado",
+		["Half the Ledger"] = "Metade do Registro",
+		["Keeper of the Founding"] = "Guardião da Fundação",
 		["Guiding Hand"] = "Mão Guia",
 		["Lamplighter"] = "Acendedor de Lampiões",
 		["Keeper of the Flame"] = "Guardião da Chama",
@@ -4009,6 +4062,9 @@ return {
 		-- Party Finder: refusals of party_finder_core.lua (K.reasons, translated on display) and notices (O147)
 		["The Party Finder is closed right now."] = "O Party Finder está fechado agora.",
 		["Pick an activity."] = "Escolha uma atividade.",
+		["That level band is not possible."] = "Essa faixa de nível não é possível.",
+		["Your level is above the listing's level band."] = "Seu nível está acima da faixa de nível do anúncio.",
+		["Pick one of the listed notes."] = "Escolha uma das notas da lista.",
 		["That range is not possible for this activity."] = "Essa faixa não é possível para esta atividade.",
 		["Pick one of the listed targets."] = "Escolha um dos alvos listados.",
 		["Give your group a short title."] = "Dê um título curto ao seu grupo.",
@@ -8590,5 +8646,14 @@ return {
 			"Próximo marco: nível %d.",
 		["%s reached level %d and earned the title %s."] =
 			"%s alcançou o nível %d e ganhou o título %s.",
+		-- The Weekly Challenge (O390, weekly_challenge.lua, weekly_challenge_core.lua W.entryProblem)
+		["The Weekly Challenge is closed: its dungeon was not built at this start."] =
+			"O Desafio Semanal está fechado: o calabouço dele não foi construído nesta inicialização.",
+		["This week's Weekly Challenge opens at the next server save (the dungeon still has last week's layout)."] =
+			"O Desafio Semanal desta semana abre no próximo server save (o calabouço ainda tem o mapa da semana passada).",
+		["Weekly Challenge %s cleared in %s (%s). Your best this week: %s. See Leaderboards."] =
+			"Desafio Semanal %s concluído em %s (%s). Seu melhor tempo nesta semana: %s. Veja os Leaderboards.",
+		["solo"] = "sozinho",
+		["party"] = "em grupo",
 	},
 }

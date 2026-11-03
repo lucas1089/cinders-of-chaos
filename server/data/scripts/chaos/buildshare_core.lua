@@ -540,4 +540,21 @@ function B.plan(tree, build, ctx)
 	return plan
 end
 
+-- ------------------------------------------------------------------------------------------------ full build code
+-- The worn gear for the client's full build code (O391, client game_passivetree/buildcode.lua): {{slot, id}} of the
+-- slots head, amulet, armour, both hands, legs, feet, ring and ammo (not the backpack), server item ids. itemAt(slot)
+-- returns the item id in that slot or nil (buildshare.lua: player:getSlotItem).
+B.CARD_SLOTS = {1, 2, 4, 5, 6, 7, 8, 9, 10}
+
+function B.cardGear(itemAt)
+	local gear = {}
+	for _, slot in ipairs(B.CARD_SLOTS) do
+		local id = math.floor(tonumber(itemAt(slot)) or 0)
+		if id > 0 and id < 65536 then
+			gear[#gear + 1] = {slot = slot, id = id}
+		end
+	end
+	return gear
+end
+
 return ChaosBuildShare

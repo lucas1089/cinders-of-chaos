@@ -567,12 +567,18 @@ seven in a week for the weekly bounty chest.
   hunting ground. It comes in five waves and marches on the town's heart, and its warlord leads the last wave.
   - Everyone can defend. The bar at the top left shows the wave, the invaders left, the time and the **breach
     meter**, which fills while invaders stand at the target.
-  - Hold it and everyone who fought is paid by their part in the defence: damage, kills, and healing for healers.
+  - The horde is as strong as the players online: it starts from the place's level and rises towards theirs. An
+    invasion needs a few players online.
+  - Hold it and everyone who fought is paid by their part in the defence: damage, kills, healing for healers, and time
+    in the fight. Time counts only while you keep hitting, healing or killing: standing idle earns nothing.
     The pay is gold, orbs and a chance at a unique, plus points on the weekly **Defender** leaderboard. The whole world
     gets +10% experience for an hour.
   - Lose it and the invaders occupy the place for 30 minutes. Slay the occupiers to free it for a smaller reward.
   - Warnings come 30, 10 and 1 minutes before. The calendar shows the fixed invasion days, but some invasions come
     unannounced.
+- **Rumours:** Dorrin Alewright, next to Cinderhold's temple, sells a rumour for a little gold ("rumours" or
+  "boatos"): where a rare goblin, an invasion or the world boss will show within the hour, and a half-hour window.
+  One rumour per tale, and now and then he is wrong.
 - **World events** every few hours, somewhere in the world:
   - a *Chaos Storm*: three times as many magic, rare and legendary monsters for 15 minutes
   - a *Wandering Merchant* who sells orbs cheaply for 20 minutes; the town is announced, you have to find him
@@ -768,6 +774,11 @@ Weekly boards (Social > Leaderboards) reset every Monday:
 - Cinderheart fastest kills (alone, 2-3 and 4-5 players, with class tabs, also on the website)
 - Reputation
 - Gatherers (materials gathered; a title only)
+- Weekly Challenge, alone and in a party of 2-4 (fastest clear, with class tabs, also on the website)
+
+**The Weekly Challenge** (Adventure > Dungeons, level 800): one dungeon with a new map every Monday, the same map for
+everyone, always at difficulty 1. Your fastest clear goes on the board of your class. When the week ends, the 3 fastest
+of every class (alone and in a party) get Conquest Tokens, and the results are posted on Discord.
 
 Other systems keep weekly boards of their own: the raid's fastest clear, the Ember Descent's weekly run, the guild boss,
 the battleground and the Scorched Marches. Season modes get their own tabs, Hardcore graves included.
@@ -1022,8 +1033,10 @@ footprints, outlines and the Collection. Everything is looks only and unlocks fo
   taken per spell, rune, weapon attack, damage over time, proc and summon, for each fight (bosses named), the last ten
   fights and the session. The Combat Log window adds hits, crits, averages and elements. Party mode shows everyone's
   DPS and HPS (you can opt out); export a summary to the clipboard or chat.
-- **Party Finder** (Social > Party Finder): post a group for a rift tier, a dungeon, a world boss, an Omen, the Infinity
-  Tower, the raid, a trial or anything else, and say which roles you want (tank, healer, damage) and the minimum level.
+- **Party Finder** (Social > Party Finder, or **Alt+L**): post a group for a hunt, a rift tier, a dungeon, a world boss,
+  an Omen, the Infinity Tower, the raid, a trial or anything else, and say which roles you want (tank, healer, damage),
+  the level band (a hunt fills in its own) and a note from a short list.
+  "Fits my level" keeps the groups whose band you are in.
   Others browse, filter and apply with a role, or queue with "Join as". Accepting sends a real party invite. Raid
   listings hold 15 players (up to 3 tanks, 4 healers and 12 damage dealers). Mentors can tag their groups.
 - **Map overlay:** press **Tab** to lay a see-through map over the game view, centred on your character, with icons for
