@@ -335,6 +335,10 @@ ChaosAutoSell.sellBag(players[2])
 eq(T.acc.economy["faucet|lootbag|100-299"].gold, 777, "a Loot Bag sale is a faucet")
 check(T.economy(players[1], "faucet", "autoseller", 120), "the public hook (corpse Auto Seller)")
 check(not T.economy(players[3], "faucet", "autoseller", 120), "staff never count")
+local bot = mkPlayer(9, 350, 4)
+function bot:getStorageValue(key) return key == Chaos.storage.tester and 1 or -1 end
+check(not T.economy(bot, "faucet", "autoseller", 120), "tester bots never count")
+creatures[bot:getId()] = nil
 
 -- casts
 local cast = ChaosSpellEvents.handlers.casttelemetry
