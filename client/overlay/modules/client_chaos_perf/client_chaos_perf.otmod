@@ -1,0 +1,10 @@
+Module
+  name: client_chaos_perf
+  description: Performance overlay (O376) - FPS, frame time, worst main loop stall, Lua memory, modules, creatures and open windows; Record 60 s writes chaos-perf-<time>.csv and .txt (with Lua time per module) to the write folder. System > Developer > Performance, Ctrl+Alt+F9
+  author: Cinders of Chaos
+  sandboxed: false
+  scripts: [ perf_core, perf ]
+  autoload: true
+  autoload-priority: 110
+  @onLoad: ChaosPerf.init()
+  @onUnload: ChaosPerf.terminate()
