@@ -55,6 +55,8 @@ def run(argv, env=None):
 check(upstream.from_credits(CREDITS) == 'example/editor-repo', 'the AGPL map entry of the credits')
 check(upstream.from_credits(CREDITS.replace('AGPL-3.0', 'MIT')) is None, 'no AGPL map entry')
 check(upstream.from_credits(CREDITS + CREDITS) is None, 'two candidates are ambiguous')
+check(upstream.from_credits(CREDITS.replace('AGPL-3.0', 'GNU Affero General Public License v3.0')) == 'example/editor-repo', 'the licence spelled out')
+check(upstream.from_credits(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'docs', 'CREDITS.md')).read()) is not None, 'the real credits name the editor')
 
 with tempfile.TemporaryDirectory() as tmp:
     credits, pin = os.path.join(tmp, 'CREDITS.md'), os.path.join(tmp, 'UPSTREAM')

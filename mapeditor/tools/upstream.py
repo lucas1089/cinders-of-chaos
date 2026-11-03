@@ -28,7 +28,7 @@ def from_credits(text):
         used = ' '.join(re.findall(r'^\s+- Used for:(.*)$', block, re.M))
         source = ' '.join(re.findall(r'^\s+- Source:(.*)$', block, re.M))
         m = SOURCE.search(source + ' ')
-        if m and 'AGPL' in licence.upper() and 'map' in used.lower():
+        if m and ('AGPL' in licence.upper() or 'AFFERO' in licence.upper()) and 'map' in used.lower():
             found.append(m.group(1))
     return found[0] if len(found) == 1 else None
 
