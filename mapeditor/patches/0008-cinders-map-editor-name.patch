@@ -1,0 +1,824 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Tue, 3 Nov 2026 16:36:53 +0000
+Subject: [PATCH 8/9] Name: Cinders Map Editor
+
+Our build is named Cinders Map Editor: window titles, start window,
+About dialog, error dialog, in-game preview window, updater window,
+map description stamp ("Saved with Cinders Map Editor"; the old stamp
+is replaced on save like the other editor stamps), screenshots folder,
+user texts that named the editor.
+
+Programs: CindersMapEditor.exe and CindersMapEditorUpdater.exe (CMake
+OUTPUT_NAME; the release package script, the updater and its tests
+follow). The Windows version resource names the product, the licence
+and where the source is.
+
+Settings: organisation Cinders, application CindersMapEditor, so our
+build has its own key HKCU\Software\Cinders\CindersMapEditor and its
+own application data folder.
+
+About dialog (GNU AGPL-3.0 section 5a): the upstream name, its link and
+licence stay; a notice says the program is modified by Cinders of Chaos
+since 2026-11 and where the source of each version is.
+
+Behaviour otherwise identical.
+---
+ CMakeLists.txt                               |  5 +--
+ cmake/CreateReleasePackage.cmake             | 12 +++----
+ docs/lua-api.md                              | 14 ++++----
+ editor/core/aimapassistant.cpp               |  4 +--
+ editor/core/backend.cpp                      |  4 +--
+ editor/core/tilemapgenbridge.cpp             |  4 +--
+ editor/core/updateservice.cpp                | 14 ++++----
+ editor/main.cpp                              |  9 ++---
+ editor/qml/EditorScene.qml                   |  4 +--
+ editor/qml/StartupWindow.qml                 |  8 ++---
+ editor/qml/components/IngamePreviewPanel.qml |  2 +-
+ editor/qml/components/MainMenuBar.qml        |  2 +-
+ editor/qml/components/TaskIconPicker.qml     |  2 +-
+ editor/qml/components/WorkActivityPanel.qml  |  2 +-
+ editor/qml/controllers/AppSettings.qml       |  2 +-
+ editor/qml/dialogs/AboutDialog.qml           | 35 ++++++++++++++++++--
+ editor/qml/dialogs/ActivityDialog.qml        |  4 +--
+ editor/qml/dialogs/AiMapAssistantDialog.qml  |  2 +-
+ editor/qml/dialogs/PreferencesDialog.qml     |  2 +-
+ editor/qml/dialogs/TileMapGenDialog.qml      |  2 +-
+ editor/qml/tools/StartupErrorDialog.qml      |  2 +-
+ editor/updater/main.cpp                      | 32 +++++++++---------
+ editor/windows/DME.rc                        | 24 +++++++++++++-
+ libs/otformats/otbmreader.cpp                |  5 +--
+ libs/otformats/tmgformat.cpp                 |  6 ++--
+ tests/otbm_editing_storage_test.cpp          |  2 +-
+ tests/release_manifest_test.cmake            |  8 ++---
+ 27 files changed, 134 insertions(+), 78 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4ad7bbe..30311ba 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -752,7 +752,7 @@ set(DME_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist" CACHE PATH
+     "Directory used for the built application and deployed Qt runtime")
+ 
+ set_target_properties(DewralMapEditor PROPERTIES
+-    OUTPUT_NAME "DME"
++    OUTPUT_NAME "CindersMapEditor"
+     WIN32_EXECUTABLE TRUE
+     RUNTIME_OUTPUT_DIRECTORY "${DME_RUNTIME_OUTPUT_DIRECTORY}"
+     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${DME_RUNTIME_OUTPUT_DIRECTORY}"
+@@ -796,6 +796,7 @@ if(WIN32)
+         set_tests_properties(dme_updater_startup PROPERTIES TIMEOUT 15)
+     endif()
+     set_target_properties(DMEUpdater PROPERTIES
++        OUTPUT_NAME "CindersMapEditorUpdater"
+         RUNTIME_OUTPUT_DIRECTORY "${DME_RUNTIME_OUTPUT_DIRECTORY}"
+         RUNTIME_OUTPUT_DIRECTORY_DEBUG "${DME_RUNTIME_OUTPUT_DIRECTORY}"
+         RUNTIME_OUTPUT_DIRECTORY_RELEASE "${DME_RUNTIME_OUTPUT_DIRECTORY}")
+@@ -827,7 +828,7 @@ if(WIN32)
+                     "-DAPPLICATION_FILE=$<TARGET_FILE:DewralMapEditor>"
+                     "-DAPPLICATION_DIRECTORY=$<TARGET_FILE_DIR:DewralMapEditor>"
+                     -P "${CMAKE_SOURCE_DIR}/cmake/DeployQtRuntime.cmake"
+-            COMMENT "Deploying the minimal Qt runtime next to DME.exe"
++            COMMENT "Deploying the minimal Qt runtime next to CindersMapEditor.exe"
+             VERBATIM)
+     else()
+         message(WARNING "windeployqt was not found - the release executable may not start "
+diff --git a/cmake/CreateReleasePackage.cmake b/cmake/CreateReleasePackage.cmake
+index 94351f2..5b87bd5 100644
+--- a/cmake/CreateReleasePackage.cmake
++++ b/cmake/CreateReleasePackage.cmake
+@@ -28,8 +28,8 @@ file(GLOB packaged_executables
+ )
+ foreach(packaged_executable IN LISTS packaged_executables)
+     get_filename_component(executable_name "${packaged_executable}" NAME)
+-    if(NOT executable_name STREQUAL "DME.exe"
+-       AND NOT executable_name STREQUAL "DMEUpdater.exe")
++    if(NOT executable_name STREQUAL "CindersMapEditor.exe"
++       AND NOT executable_name STREQUAL "CindersMapEditorUpdater.exe")
+         file(REMOVE "${packaged_executable}")
+     endif()
+ endforeach()
+@@ -75,9 +75,9 @@ if(IS_DIRECTORY "${package_data_directory}")
+     endif()
+ endif()
+ 
+-set(application_file "${package_directory}/DME.exe")
++set(application_file "${package_directory}/CindersMapEditor.exe")
+ if(NOT EXISTS "${application_file}")
+-    message(FATAL_ERROR "The deployed DME.exe was not found")
++    message(FATAL_ERROR "The deployed CindersMapEditor.exe was not found")
+ endif()
+ 
+ # Qt builds from vcpkg can link additional shared libraries that windeployqt
+@@ -89,7 +89,7 @@ if(RUNTIME_DEPENDENCY_COMMAND)
+     get_filename_component(qt_runtime_directory "${QT_CORE_FILE}" DIRECTORY)
+     file(GLOB_RECURSE runtime_libraries "${package_directory}/*.dll")
+     file(GET_RUNTIME_DEPENDENCIES
+-        EXECUTABLES "${application_file}" "${package_directory}/DMEUpdater.exe"
++        EXECUTABLES "${application_file}" "${package_directory}/CindersMapEditorUpdater.exe"
+         LIBRARIES ${runtime_libraries}
+         DIRECTORIES "${package_directory}" "${qt_runtime_directory}"
+         PRE_EXCLUDE_REGEXES "^(api-ms-|ext-ms-)"
+@@ -139,7 +139,7 @@ if(DEFINED STRIP_EXECUTABLE
+         RESULT_VARIABLE strip_result
+     )
+     if(NOT strip_result EQUAL 0)
+-        message(FATAL_ERROR "Stripping DME.exe failed with exit code ${strip_result}")
++        message(FATAL_ERROR "Stripping CindersMapEditor.exe failed with exit code ${strip_result}")
+     endif()
+ endif()
+ 
+diff --git a/docs/lua-api.md b/docs/lua-api.md
+index 623545a..b736cf7 100644
+--- a/docs/lua-api.md
++++ b/docs/lua-api.md
+@@ -1,11 +1,11 @@
+ # Lua generation API
+ 
+-Open **Tools → Lua Scripts & otMapGen…**. Lua 5.1.5 is embedded in DME;
++Open **Tools → Lua Scripts & otMapGen…**. Lua 5.1.5 is embedded in the editor;
+ no Lua installation or running TFS server is required.
+ 
+ ## Built-in Dungeon and Cave
+ 
+-**Tools → Custom Map Generator…** uses DME’s standalone Lua generator with
++**Tools → Custom Map Generator…** uses the editor’s standalone Lua generator with
+ material profiles, seed, preview and Undo. No external folder is required.
+ See [the material profile guide](custom-map-generator.md).
+ 
+@@ -13,22 +13,22 @@ See [the material profile guide](custom-map-generator.md).
+ 
+ 1. Download and extract [otMapGenPublic](https://github.com/abecek/otMapGenPublic).
+ 2. Load an editable map with matching client assets. The supplied schemas use
+-   Tibia 8.6 server item IDs. DME rejects IDs absent from the current client.
++   Tibia 8.6 server item IDs. The editor rejects IDs absent from the current client.
+ 3. Choose **otMapGenPublic**, then choose its root folder containing `config.lua`,
+    `lib/` and `data/genScripts/`.
+ 4. Select a generation script (start with `test30.lua`), a seed, and destination
+    X/Y/floor. Click **Generate**, then **Apply** after checking the summary.
+ 
+ The adapter loads upstream libraries directly, runs the selected script in CLI
+-table mode, and converts `CLI_FINAL_MAP_TABLE` to a DME patch. It does not call
++table mode, and converts `CLI_FINAL_MAP_TABLE` to an editor patch. It does not call
+ the upstream OTBM writer, bootstrap shell commands, or TFS drawing functions.
+ Ground and item order/counts are retained; the mock `uid` fields are temporary
+ generator handles and are deliberately not written as OTBM unique IDs.
+ 
+ The script's `MAP_CONFIGURATION.mainPos` is translated to the destination origin.
+ Coordinates outside its main region retain their offsets. Multi-floor output
+-retains relative floors; DME refuses patches extending outside floors 0–15.
+-Upstream generator files are external and are not redistributed with DME.
++retains relative floors; the editor refuses patches extending outside floors 0–15.
++Upstream generator files are external and are not redistributed with the editor.
+ 
+ ## Custom scripts
+ 
+@@ -79,6 +79,6 @@ this is not a filesystem sandbox. Subprocess execution, process exit and native
+ module loaders are disabled. Blocking file IO is not interrupted by the hook.
+ Item counts/subtypes use OTBM's byte-sized Count attribute (0–255).
+ 
+-The generator is upstream alpha software. DME's adapter does not fix its room
++The generator is upstream alpha software. The editor's adapter does not fix its room
+ layout/pathfinding bugs, and does not implement its TFS-only delayed drawing or
+ server interactions. Existing map dimensions are unchanged by applying a patch.
+diff --git a/editor/core/aimapassistant.cpp b/editor/core/aimapassistant.cpp
+index 89617de..e021194 100644
+--- a/editor/core/aimapassistant.cpp
++++ b/editor/core/aimapassistant.cpp
+@@ -73,7 +73,7 @@ void AiMapAssistant::generate(const QString &prompt, const QVariantMap &selectio
+ {
+     if (m_busy) return;
+     if (!configured()) {
+-        emit failed(QStringLiteral("Set OPENAI_API_KEY before starting DME."));
++        emit failed(QStringLiteral("Set OPENAI_API_KEY before starting the editor."));
+         return;
+     }
+     if (prompt.trimmed().isEmpty()) {
+@@ -101,7 +101,7 @@ void AiMapAssistant::generate(const QString &prompt, const QVariantMap &selectio
+     };
+ 
+     const QString instructions = QStringLiteral(
+-        "You are the terrain planner for Dewral Map Editor. Return only a plan matching the schema. "
++        "You are the terrain planner for Cinders Map Editor. Return only a plan matching the schema. "
+         "Each operation paints one selected tile using one exact ground brush name from available_brushes. "
+         "Coordinates are relative to the selection origin. Never use coordinates absent from selected_tiles. "
+         "Preserve existing terrain unless changing it helps satisfy the request. Do not invent brush names. "
+diff --git a/editor/core/backend.cpp b/editor/core/backend.cpp
+index 7864f49..dd82ea6 100644
+--- a/editor/core/backend.cpp
++++ b/editor/core/backend.cpp
+@@ -113,11 +113,11 @@ QString Backend::previewScreenshotPath() const
+ {
+     QStringList folders;
+     const QString pictures = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+-    if (!pictures.isEmpty()) folders << pictures + QStringLiteral("/DME Screenshots");
++    if (!pictures.isEmpty()) folders << pictures + QStringLiteral("/Cinders Map Editor Screenshots");
+     folders << QCoreApplication::applicationDirPath() + QStringLiteral("/Screenshots");
+     const QString localData = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+     if (!localData.isEmpty()) folders << localData + QStringLiteral("/Screenshots");
+-    const QString stem = QStringLiteral("DME-Preview-")
++    const QString stem = QStringLiteral("CindersMapEditor-Preview-")
+         + QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd_HH-mm-ss-zzz"));
+     for (const QString &folder : folders) {
+         if (!QDir().mkpath(folder)) continue;
+diff --git a/editor/core/tilemapgenbridge.cpp b/editor/core/tilemapgenbridge.cpp
+index 4f58a44..5345264 100644
+--- a/editor/core/tilemapgenbridge.cpp
++++ b/editor/core/tilemapgenbridge.cpp
+@@ -48,7 +48,7 @@ TileMapGenBridge::TileMapGenBridge(Backend *backend) : QObject(backend), m_backe
+             target->adoptLoadedState(*result.document); target->finishLoading(true);
+             m_backend->docMgr()->setCurrentProfileKey(profile);
+         }
+-        m_status = result.error.isEmpty() ? (m_placement ? tr("Preview ready. Apply as one undoable edit or cancel.") : tr("Opened as a new unsaved map. Save in Dewral to write OTBM and spawns.")) : result.error;
++        m_status = result.error.isEmpty() ? (m_placement ? tr("Preview ready. Apply as one undoable edit or cancel.") : tr("Opened as a new unsaved map. Save in the editor to write OTBM and spawns.")) : result.error;
+         emit changed(); emit finished(result.error.isEmpty());
+     });
+     connect(&m_generator, &TileMapGenProcess::progressChanged, this, [this](int value, const QString &stage) {
+@@ -159,7 +159,7 @@ QString TileMapGenBridge::writeAssets(const QUrl &path, int downId, int upId, bo
+             {"upper_landing", QJsonArray{dx, dy, 0}}, {"lower_landing", QJsonArray{-dx, -dy, 1}},
+             {"tiles", QJsonArray{QJsonObject{{"dx", 0}, {"dy", 0}, {"dz", 0}, {"items", QJsonArray{downId}}}, QJsonObject{{"dx", 0}, {"dy", 0}, {"dz", 1}, {"items", QJsonArray{upId}}}}}});
+     }
+-    pack["schema_version"] = 1; pack["id"] = sourceFingerprint.left(16); pack["name"] = QStringLiteral("Dewral %1 materials").arg(m_backend->datReader()->clientVersion());
++    pack["schema_version"] = 1; pack["id"] = sourceFingerprint.left(16); pack["name"] = QStringLiteral("Cinders Map Editor %1 materials").arg(m_backend->datReader()->clientVersion());
+     pack["fingerprint"] = sourceFingerprint; pack["synthetic"] = false; pack["connectors"] = connectors;
+     // Stale brushes are reported, rather than silently rewriting material definitions.
+     const auto valid = catalog();
+diff --git a/editor/core/updateservice.cpp b/editor/core/updateservice.cpp
+index 2c2895d..f90c1f6 100644
+--- a/editor/core/updateservice.cpp
++++ b/editor/core/updateservice.cpp
+@@ -25,7 +25,7 @@ QNetworkRequest githubRequest(const QUrl &url)
+     QNetworkRequest request(url);
+     request.setRawHeader("Accept", "application/vnd.github+json");
+     request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
+-    request.setRawHeader("User-Agent", "DewralMapEditor-Updater");
++    request.setRawHeader("User-Agent", "CindersMapEditor-Updater");
+     request.setTransferTimeout(30000);
+     return request;
+ }
+@@ -249,7 +249,7 @@ void UpdateService::downloadAndInstall()
+     }
+ 
+     const QString updateDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation)
+-        + QStringLiteral("/DewralMapEditorUpdates");
++        + QStringLiteral("/CindersMapEditorUpdates");
+     if (!QDir().mkpath(updateDir)) {
+         fail(QStringLiteral("The temporary update directory could not be created."));
+         return;
+@@ -335,9 +335,9 @@ bool UpdateService::launchUpdater(const QString &archivePath)
+ {
+ #ifdef Q_OS_WIN
+     const QString applicationDir = QCoreApplication::applicationDirPath();
+-    const QString source = applicationDir + QStringLiteral("/DMEUpdater.exe");
++    const QString source = applicationDir + QStringLiteral("/CindersMapEditorUpdater.exe");
+     if (!QFileInfo::exists(source)) {
+-        fail(QStringLiteral("DMEUpdater.exe is missing from the application folder."));
++        fail(QStringLiteral("CindersMapEditorUpdater.exe is missing from the application folder."));
+         return false;
+     }
+ 
+@@ -360,9 +360,9 @@ bool UpdateService::launchUpdater(const QString &archivePath)
+         QFile::remove(to);
+         return QFile::copy(from, to);
+     };
+-    const QString tempUpdater = runtimePath + QStringLiteral("/DMEUpdater.exe");
++    const QString tempUpdater = runtimePath + QStringLiteral("/CindersMapEditorUpdater.exe");
+     const QStringList requiredFiles{
+-        QStringLiteral("DMEUpdater.exe"), QStringLiteral("Qt6Core.dll"),
++        QStringLiteral("CindersMapEditorUpdater.exe"), QStringLiteral("Qt6Core.dll"),
+         QStringLiteral("Qt6Gui.dll"), QStringLiteral("Qt6Widgets.dll")
+     };
+     for (const QString &file : requiredFiles) {
+@@ -391,7 +391,7 @@ bool UpdateService::launchUpdater(const QString &archivePath)
+         QStringLiteral("--pid"), QString::number(QCoreApplication::applicationPid()),
+         QStringLiteral("--archive"), QDir::toNativeSeparators(archivePath),
+         QStringLiteral("--target"), QDir::toNativeSeparators(applicationDir),
+-        QStringLiteral("--exe"), QStringLiteral("DME.exe"),
++        QStringLiteral("--exe"), QStringLiteral("CindersMapEditor.exe"),
+         QStringLiteral("--sha256"), m_expectedSha256
+     };
+     if (!QProcess::startDetached(tempUpdater, arguments, runtimePath)) {
+diff --git a/editor/main.cpp b/editor/main.cpp
+index 3e46a7e..80d76b7 100644
+--- a/editor/main.cpp
++++ b/editor/main.cpp
+@@ -186,9 +186,10 @@ int main(int argc, char *argv[])
+     LoadProfile::record(QStringLiteral("process_start"));
+     qputenv("QT_QUICK_CONTROLS_STYLE", QByteArrayLiteral("Basic"));
+ 
++    // Our build keeps its own settings: HKCU\Software\Cinders\CindersMapEditor on Windows.
+     QSettings startupSettings(QSettings::NativeFormat, QSettings::UserScope,
+-                              QStringLiteral("Dewral"),
+-                              QStringLiteral("DewralMapEditor"));
++                              QStringLiteral("Cinders"),
++                              QStringLiteral("CindersMapEditor"));
+     const bool vsyncEnabled =
+         startupSettings.value(QStringLiteral("vsyncEnabled"), true).toBool();
+ 
+@@ -217,8 +218,8 @@ int main(int argc, char *argv[])
+     QGuiApplication app(argc, argv);
+     app.setWindowIcon(QIcon(QStringLiteral(":/ui/github/app-icon.png")));
+ 
+-    QCoreApplication::setOrganizationName(QStringLiteral("Dewral"));
+-    QCoreApplication::setApplicationName(QStringLiteral("DewralMapEditor"));
++    QCoreApplication::setOrganizationName(QStringLiteral("Cinders"));
++    QCoreApplication::setApplicationName(QStringLiteral("CindersMapEditor"));
+     QCoreApplication::setApplicationVersion(QStringLiteral(DME_VERSION));
+     // Automated timing runs use separate settings and session state.
+     if (profile && app.arguments().contains(QStringLiteral("--profile-map"))) {
+diff --git a/editor/qml/EditorScene.qml b/editor/qml/EditorScene.qml
+index d19ba76..15f981c 100644
+--- a/editor/qml/EditorScene.qml
++++ b/editor/qml/EditorScene.qml
+@@ -71,7 +71,7 @@ DmeWindow {
+     height: 680
+     minimumWidth: 720
+     minimumHeight: 480
+-    title: "Dewral Map Editor  -  " + (Backend.otbmReader.filePath !== "" ? Backend.fileTools.fileName(Backend.otbmReader.filePath) : "(no map)") + (Backend.otbmReader.dirty ? "  *" : "")
++    title: "Cinders Map Editor  -  " + (Backend.otbmReader.filePath !== "" ? Backend.fileTools.fileName(Backend.otbmReader.filePath) : "(no map)") + (Backend.otbmReader.dirty ? "  *" : "")
+ 
+     flags: Qt.FramelessWindowHint | Qt.Window
+     roundedCorners: !root.tibiaUi
+@@ -212,7 +212,7 @@ DmeWindow {
+             id: githubTitleText
+             visible: root.githubUi && root.width >= 920
+             anchors.centerIn: parent
+-            text: "Dewral Map Editor"
++            text: "Cinders Map Editor"
+             color: root.grayUi ? "#F0F0F0" : "#E6EDF3"
+             font {
+                 pixelSize: 14
+diff --git a/editor/qml/StartupWindow.qml b/editor/qml/StartupWindow.qml
+index d990ef5..adaf0da 100644
+--- a/editor/qml/StartupWindow.qml
++++ b/editor/qml/StartupWindow.qml
+@@ -81,7 +81,7 @@ Window {
+     maximumHeight: loadingMap ? 190 : fluentTheme ? 600 : 520
+     x: Screen.width / 2 - width / 2
+     y: Screen.height / 2 - height / 2
+-    title: "Dewral Map Editor"
++    title: "Cinders Map Editor"
+ 
+     flags: Qt.FramelessWindowHint | Qt.Window
+     color: "transparent"
+@@ -182,7 +182,7 @@ Window {
+                     Column {
+                         spacing: 4
+                         Text {
+-                            text: "Dewral Map Editor"
++                            text: "Cinders Map Editor"
+                             color: startupScreen.fluentTheme ? Colors.c("heading") : "#F0F6FC"
+                             font.family: startupScreen.fluentTheme ? Colors.family() : Qt.application.font.family
+                             font.pixelSize: startupScreen.fluentTheme ? 20 : 22
+@@ -268,7 +268,7 @@ Window {
+                             id: newProfileField
+                             width: 150
+                             height: startupScreen.fluentTheme ? 28 : 23
+-                            placeholderText: "e.g. Midhem"
++                            placeholderText: "e.g. Cinders 10.98"
+                         }
+                         DmeButton {
+                             width: 76
+@@ -534,7 +534,7 @@ Window {
+                 }
+                 Text {
+                     width: parent.width
+-                    text: "DME found " + Backend.docMgr.recoveryCount
++                    text: "The editor found " + Backend.docMgr.recoveryCount
+                           + (Backend.docMgr.recoveryCount === 1
+                              ? " map from an interrupted session."
+                              : " maps from an interrupted session.")
+diff --git a/editor/qml/components/IngamePreviewPanel.qml b/editor/qml/components/IngamePreviewPanel.qml
+index 48a53b2..1de67a8 100644
+--- a/editor/qml/components/IngamePreviewPanel.qml
++++ b/editor/qml/components/IngamePreviewPanel.qml
+@@ -53,7 +53,7 @@ Item {
+     }
+     Window {
+         id: floatingWindow
+-        title: "In-game Preview - Dewral Map Editor"
++        title: "In-game Preview - Cinders Map Editor"
+         visible: previewWindow.settings.showIngamePreviewWindow && !previewWindow.docked
+         flags: previewWindow.tibiaUi ? Qt.FramelessWindowHint | Qt.Window : Qt.Window
+         transientParent: null
+diff --git a/editor/qml/components/MainMenuBar.qml b/editor/qml/components/MainMenuBar.qml
+index b401c88..07c4b4a 100644
+--- a/editor/qml/components/MainMenuBar.qml
++++ b/editor/qml/components/MainMenuBar.qml
+@@ -600,7 +600,7 @@ DmeMenuBar {
+             enabled: !!menuBar.weatherDialog
+             onTriggered: menuBar.weatherDialog.open()
+         }
+-        Action { text: "DME Activity…"; onTriggered: menuBar.activityRequested() }
++        Action { text: "Activity…"; onTriggered: menuBar.activityRequested() }
+         Action {
+             id: hotkeyAction_show_palette
+             shortcut: menuBar.commandShortcut("show_palette")
+diff --git a/editor/qml/components/TaskIconPicker.qml b/editor/qml/components/TaskIconPicker.qml
+index 5822cdf..5e93b7f 100644
+--- a/editor/qml/components/TaskIconPicker.qml
++++ b/editor/qml/components/TaskIconPicker.qml
+@@ -54,7 +54,7 @@ Popup {
+             }
+         }
+         DmeButton { objectName: "taskIconImport"; width: parent.width; height: 34; text: "Choose image…"; onClicked: imageDialog.open() }
+-        TimerLabel { width: parent.width; wrapMode: Text.WordWrap; text: "PNG, JPG, WEBP or SVG. Your image is saved with DME."; color: picker.muted; font.pixelSize: 11 }
++        TimerLabel { width: parent.width; wrapMode: Text.WordWrap; text: "PNG, JPG, WEBP or SVG. Your image is saved with the editor."; color: picker.muted; font.pixelSize: 11 }
+         TimerLabel { width: parent.width; wrapMode: Text.WordWrap; text: picker.timerService.errorString || ""; visible: text.length > 0; color: "#e68a8a"; font.pixelSize: 11 }
+         DmeButton { width: parent.width; height: 30; text: "Cancel"; onClicked: picker.close() }
+     }
+diff --git a/editor/qml/components/WorkActivityPanel.qml b/editor/qml/components/WorkActivityPanel.qml
+index 11cc7e8..4bffa32 100644
+--- a/editor/qml/components/WorkActivityPanel.qml
++++ b/editor/qml/components/WorkActivityPanel.qml
+@@ -42,7 +42,7 @@ Item {
+             Rectangle { x: 12; y: 16; width: 7; height: 7; radius: 4; color: root.service.linked ? "#67c3a4" : root.muted }
+             Column {
+                 x: 28; y: 11; width: parent.width-40; spacing: 5
+-                Text { width: parent.width; text: root.service.linked ? root.service.accountName : "DME Activity account"; color: root.foreground; font.pixelSize: 13; font.weight: Font.DemiBold; elide: Text.ElideRight }
++                Text { width: parent.width; text: root.service.linked ? root.service.accountName : "Activity account"; color: root.foreground; font.pixelSize: 13; font.weight: Font.DemiBold; elide: Text.ElideRight }
+                 Text { width: parent.width; text: root.service.currentMapName || (root.service.linked ? "No tracked map open" : "Sign in to see your recorded work"); color: root.muted; font.pixelSize: 11; elide: Text.ElideRight }
+                 Text { text: root.service.status+" · "+root.service.pendingCount+" pending events"; color: root.accent; font.pixelSize: 10 }
+             }
+diff --git a/editor/qml/controllers/AppSettings.qml b/editor/qml/controllers/AppSettings.qml
+index 7f5c24e..d2ed696 100644
+--- a/editor/qml/controllers/AppSettings.qml
++++ b/editor/qml/controllers/AppSettings.qml
+@@ -96,7 +96,7 @@ Settings {
+     property bool ingamePreviewShowBorders: true
+     property int ingamePreviewWidthTiles: 15
+     property int ingamePreviewHeightTiles: 11
+-    property string ingamePreviewPlayerName: "Dewral"
++    property string ingamePreviewPlayerName: "Cinders"
+     property int ingamePreviewPlayerLevel: 1
+     property int ingamePreviewSpeed: 0
+     property string ingamePreviewOutfitsJson: "[]"
+diff --git a/editor/qml/dialogs/AboutDialog.qml b/editor/qml/dialogs/AboutDialog.qml
+index 4016506..1e927c8 100644
+--- a/editor/qml/dialogs/AboutDialog.qml
++++ b/editor/qml/dialogs/AboutDialog.qml
+@@ -6,20 +6,21 @@ DmeDialog {
+     id: dialog
+ 
+     title: "About"
+-    width: 440
++    width: 480
+ 
+     readonly property color primaryText: dialog.grayTheme ? "#F0F0F0"
+                                                           : (dialog.modernTheme ? "#E6EDF3" : "#C0C0C0")
+     readonly property color secondaryText: dialog.grayTheme ? "#A0A0A0"
+                                                             : (dialog.modernTheme ? "#8B949E" : "#8A8A8A")
+     readonly property string githubUrl: "https://github.com/dewral/DewralMapEditor"
++    readonly property string sourceUrl: "https://github.com/lucas1089/cinders-of-chaos/releases"
+ 
+     contentItem: Column {
+         spacing: 14
+ 
+         Text {
+             anchors.horizontalCenter: parent.horizontalCenter
+-            text: "Dewral Map Editor"
++            text: "Cinders Map Editor"
+             color: dialog.primaryText
+             font.pixelSize: 18
+             font.bold: true
+@@ -46,6 +47,36 @@ DmeDialog {
+             }
+         }
+ 
++        // GNU AGPL-3.0 section 5a: a modified version carries a prominent notice of the change and a date.
++        Text {
++            width: parent.width
++            horizontalAlignment: Text.AlignHCenter
++            wrapMode: Text.WordWrap
++            text: "Based on Dewral Map Editor by its authors (link above), licensed under the GNU AGPL-3.0.\n"
++                  + "Modified by Cinders of Chaos since 2026-11: English texts, this name, updates from our releases "
++                  + "and speed fixes (the list is in BUILD_INFO.txt next to the program)."
++            color: dialog.secondaryText
++            font.pixelSize: 11
++        }
++
++        Text {
++            width: parent.width
++            horizontalAlignment: Text.AlignHCenter
++            wrapMode: Text.WordWrap
++            text: "No warranty. Source code of this version: the -source.zip of its release at "
++                  + "<a href=\"" + dialog.sourceUrl + "\">" + dialog.sourceUrl + "</a>. "
++                  + "LICENSE and NOTICE are in the program folder."
++            textFormat: Text.RichText
++            color: dialog.secondaryText
++            linkColor: dialog.modernTheme ? "#58A6FF" : "#80A0C0"
++            font.pixelSize: 11
++            onLinkActivated: link => Qt.openUrlExternally(link)
++
++            HoverHandler {
++                cursorShape: Qt.PointingHandCursor
++            }
++        }
++
+         Rectangle {
+             width: parent.width
+             height: 1
+diff --git a/editor/qml/dialogs/ActivityDialog.qml b/editor/qml/dialogs/ActivityDialog.qml
+index c4b83b0..59c7abb 100644
+--- a/editor/qml/dialogs/ActivityDialog.qml
++++ b/editor/qml/dialogs/ActivityDialog.qml
+@@ -5,7 +5,7 @@ import "../style"
+ 
+ DmeDialog {
+     id: root
+-    title: "DME Activity"
++    title: "Activity"
+     width: 480
+     modal: true
+     standardButtons: Dialog.NoButton
+@@ -103,7 +103,7 @@ DmeDialog {
+                 Text { text: "Server address"; color: "#c5cbd0"; font.pixelSize: 12 }
+                 AccountField { id: server; objectName: "activityServer"; width: parent.width; text: root.service.serverUrl || "http://localhost:3000"; placeholderText: "https://activity.example.com"; enabled: !root.service.linked }
+                 Text { text: "Device name"; color: "#c5cbd0"; font.pixelSize: 12; visible: !root.service.linked }
+-                AccountField { id: device; width: parent.width; visible: !root.service.linked; text: "DME workstation" }
++                AccountField { id: device; width: parent.width; visible: !root.service.linked; text: "Map editor workstation" }
+             }
+         }
+         Rectangle { width: parent.width; height: 1; color: "#3a4044" }
+diff --git a/editor/qml/dialogs/AiMapAssistantDialog.qml b/editor/qml/dialogs/AiMapAssistantDialog.qml
+index b7e28cd..cefcf6b 100644
+--- a/editor/qml/dialogs/AiMapAssistantDialog.qml
++++ b/editor/qml/dialogs/AiMapAssistantDialog.qml
+@@ -84,7 +84,7 @@ DmeDialog {
+         Text {
+             width: parent.width
+             visible: !Backend.aiMapAssistant.configured
+-            text: "OPENAI_API_KEY is not set. Set it before launching DME. "
++            text: "OPENAI_API_KEY is not set. Set it before starting the editor. "
+                   + "Optional: OPENAI_MODEL (default: " + Backend.aiMapAssistant.model + ")."
+             color: "#d29922"
+             font.pixelSize: 11
+diff --git a/editor/qml/dialogs/PreferencesDialog.qml b/editor/qml/dialogs/PreferencesDialog.qml
+index 69cd60b..b0eaf2c 100644
+--- a/editor/qml/dialogs/PreferencesDialog.qml
++++ b/editor/qml/dialogs/PreferencesDialog.qml
+@@ -94,7 +94,7 @@ DmeDialog {
+                     title: "Updates"
+                     Text {
+                         width: parent.width
+-                        text: "DME checks for updates whenever the start window opens. Update status and installation are available there."
++                        text: "The editor checks our releases for updates whenever the start window opens. Update status and installation are available there."
+                         color: "#8B949E"
+                         font.pixelSize: 11
+                         wrapMode: Text.WordWrap
+diff --git a/editor/qml/dialogs/TileMapGenDialog.qml b/editor/qml/dialogs/TileMapGenDialog.qml
+index d2e03a9..d4ee189 100644
+--- a/editor/qml/dialogs/TileMapGenDialog.qml
++++ b/editor/qml/dialogs/TileMapGenDialog.qml
+@@ -244,7 +244,7 @@ DmeDialog {
+     contentItem: ColumnLayout {
+         spacing: 10
+         Caption { Layout.fillWidth: true; text: "Connected to " + Backend.tileMapGen.generatorDirectory; elide: Text.ElideMiddle }
+-        Choice { id: workflow; objectName: "tileMapWorkflow"; enabled: !dialog.busy; model: ["Generate in DME", "Export materials for the studio", "Import a generated .tmg map"] }
++        Choice { id: workflow; objectName: "tileMapWorkflow"; enabled: !dialog.busy; model: ["Generate in the editor", "Export materials for the studio", "Import a generated .tmg map"] }
+         RowLayout {
+             visible: workflow.currentIndex === 0; enabled: !dialog.busy; Layout.fillWidth: true
+             Choice {
+diff --git a/editor/qml/tools/StartupErrorDialog.qml b/editor/qml/tools/StartupErrorDialog.qml
+index bbd25d3..e58db39 100644
+--- a/editor/qml/tools/StartupErrorDialog.qml
++++ b/editor/qml/tools/StartupErrorDialog.qml
+@@ -4,7 +4,7 @@ import "../style"
+ DmeDialog {
+     id: dialog
+     property string message: ""
+-    title: "Dewral Map Editor"
++    title: "Cinders Map Editor"
+     width: 440
+     standardButtons: Dialog.Ok
+     contentItem: Text { text: dialog.message; width: 400; wrapMode: Text.WordWrap; color: "#dddddd" }
+diff --git a/editor/updater/main.cpp b/editor/updater/main.cpp
+index 38a47bc..fbf1f0a 100644
+--- a/editor/updater/main.cpp
++++ b/editor/updater/main.cpp
+@@ -85,10 +85,10 @@ bool waitForApplication(quint32 pid)
+ 
+ fs::path packageRoot(const fs::path &staging)
+ {
+-    if (fs::exists(staging / L"DME.exe"))
++    if (fs::exists(staging / L"CindersMapEditor.exe"))
+         return staging;
+     for (const fs::directory_entry &entry : fs::directory_iterator(staging)) {
+-        if (entry.is_directory() && fs::exists(entry.path() / L"DME.exe"))
++        if (entry.is_directory() && fs::exists(entry.path() / L"CindersMapEditor.exe"))
+             return entry.path();
+     }
+     return {};
+@@ -235,7 +235,7 @@ void scheduleTemporaryRuntimeCleanup()
+     if (!runtime.dirName().startsWith(QStringLiteral("runtime-")))
+         return;
+     QDir parent = runtime;
+-    if (!parent.cdUp() || parent.dirName() != QStringLiteral("DewralMapEditorUpdates"))
++    if (!parent.cdUp() || parent.dirName() != QStringLiteral("CindersMapEditorUpdates"))
+         return;
+ 
+     const QString script = QStringLiteral(
+@@ -257,14 +257,14 @@ public:
+     explicit UpdaterWindow(QWidget *parent = nullptr)
+         : QDialog(parent)
+     {
+-        setWindowTitle(QStringLiteral("Dewral Map Editor Update"));
++        setWindowTitle(QStringLiteral("Cinders Map Editor Update"));
+         setFixedSize(460, 205);
+ 
+         auto *layout = new QVBoxLayout(this);
+         layout->setContentsMargins(24, 22, 24, 20);
+         layout->setSpacing(12);
+ 
+-        auto *heading = new QLabel(QStringLiteral("Updating Dewral Map Editor"), this);
++        auto *heading = new QLabel(QStringLiteral("Updating Cinders Map Editor"), this);
+         heading->setObjectName(QStringLiteral("heading"));
+         layout->addWidget(heading);
+ 
+@@ -304,8 +304,8 @@ public:
+     {
+         m_busy = false;
+         m_status->setText(QStringLiteral(
+-            "DMEUpdater is started automatically by Dewral Map Editor.\n\n"
+-            "Open DME to check for updates from the start window."));
++            "This updater is started automatically by Cinders Map Editor.\n\n"
++            "Open Cinders Map Editor to check for updates from the start window."));
+         m_progress->setVisible(false);
+         m_closeButton->setVisible(true);
+     }
+@@ -369,21 +369,21 @@ private:
+                    const QString &targetPath, const QString &executable,
+                    QString expectedHash)
+     {
+-        logFile.open((fs::temp_directory_path() / L"DMEUpdater.log"), std::ios::trunc);
+-        log(L"DME updater started.");
++        logFile.open((fs::temp_directory_path() / L"CindersMapEditorUpdater.log"), std::ios::trunc);
++        log(L"Cinders Map Editor updater started.");
+ 
+         const fs::path target = targetPath.toStdWString();
+         const fs::path targetExecutable = target / executable.toStdWString();
+-        postStatus(QStringLiteral("Waiting for all DME windows to close..."), 5);
++        postStatus(QStringLiteral("Waiting for all map editor windows to close..."), 5);
+         if (!waitForApplication(pid) || !waitForApplicationInstances(targetExecutable)) {
+             fail(QStringLiteral(
+-                "Close every DME window before installing the update, then try again."));
++                "Close every map editor window before installing the update, then try again."));
+             return;
+         }
+ 
+         const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+         const fs::path work = fs::temp_directory_path()
+-            / (L"DMEUpdate-" + std::to_wstring(stamp));
++            / (L"CindersMapEditorUpdate-" + std::to_wstring(stamp));
+         const fs::path staging = work / L"staging";
+         const fs::path backup = work / L"backup";
+         const fs::path archive = archivePath.toStdWString();
+@@ -412,7 +412,7 @@ private:
+         const fs::path source = packageRoot(staging);
+         if (source.empty()) {
+             fs::remove_all(work, error);
+-            fail(QStringLiteral("The update package does not contain DME.exe."));
++            fail(QStringLiteral("The update package does not contain CindersMapEditor.exe."));
+             return;
+         }
+ 
+@@ -425,11 +425,11 @@ private:
+             return;
+         }
+ 
+-        postStatus(QStringLiteral("Update installed. Restarting DME..."), 96);
++        postStatus(QStringLiteral("Update installed. Restarting the map editor..."), 96);
+         fs::remove_all(work, error);
+         fs::remove(archive, error);
+         if (!QProcess::startDetached(QDir(targetPath).filePath(executable), {}, targetPath)) {
+-            fail(QStringLiteral("The update was installed, but DME could not be restarted."));
++            fail(QStringLiteral("The update was installed, but the map editor could not be restarted."));
+             return;
+         }
+ 
+@@ -449,7 +449,7 @@ private:
+ int main(int argc, char *argv[])
+ {
+     QApplication application(argc, argv);
+-    application.setApplicationName(QStringLiteral("DMEUpdater"));
++    application.setApplicationName(QStringLiteral("CindersMapEditorUpdater"));
+     // Exercise the Windows loader and Qt platform plugin without installing anything.
+     if (application.arguments().contains(QStringLiteral("--smoke-test")))
+         return 0;
+diff --git a/editor/windows/DME.rc b/editor/windows/DME.rc
+index 43cb692..c442149 100644
+--- a/editor/windows/DME.rc
++++ b/editor/windows/DME.rc
+@@ -1,2 +1,24 @@
+-// Native Windows icon embedded in DME.exe.
++// Native Windows icon embedded in CindersMapEditor.exe and its updater.
+ IDI_DME_ICON ICON "DME.ico"
++
++// Version resource: the name Explorer and the task manager show.
++1 VERSIONINFO
++FILEOS 0x40004
++FILETYPE 0x1
++BEGIN
++    BLOCK "StringFileInfo"
++    BEGIN
++        BLOCK "040904B0"
++        BEGIN
++            VALUE "CompanyName", "Cinders of Chaos"
++            VALUE "FileDescription", "Cinders Map Editor"
++            VALUE "ProductName", "Cinders Map Editor"
++            VALUE "LegalCopyright", "GNU AGPL-3.0. Based on Dewral Map Editor by its authors, modified by Cinders of Chaos."
++            VALUE "Comments", "Source code: the -source.zip of each mapeditor release of github.com/lucas1089/cinders-of-chaos"
++        END
++    END
++    BLOCK "VarFileInfo"
++    BEGIN
++        VALUE "Translation", 0x409, 1200
++    END
++END
+diff --git a/libs/otformats/otbmreader.cpp b/libs/otformats/otbmreader.cpp
+index 9034503..4828273 100644
+--- a/libs/otformats/otbmreader.cpp
++++ b/libs/otformats/otbmreader.cpp
+@@ -892,7 +892,7 @@ bool OtbmReader::newMap(int width, int height, int clientVersion,
+     // the format read from their header for their entire lifetime.
+     m_otbmVersion = static_cast<uint32_t>(OtbmVersion::V3);
+     applyClientVersions(clientVersion, otbMajor, otbMinor);
+-    m_description = QStringLiteral("Saved with Dewral Map Editor");
++    m_description = QStringLiteral("Saved with Cinders Map Editor");
+     m_spawnsXmlLoaded = true;
+     m_housesXmlLoaded = true;
+ 
+@@ -3670,8 +3670,9 @@ bool OtbmReader::saveFileInternal(const QString &path, bool recoveryMode)
+     const QString firstLine = firstNewline < 0 ? m_description : m_description.left(firstNewline);
+     if (firstLine.startsWith(QStringLiteral("Saved with Remere's Map Editor"))
+         || firstLine == QStringLiteral("Created with Dewral Map Editor")
++        || firstLine == QStringLiteral("Saved with Dewral Map Editor")
+         || m_description.isEmpty()) {
+-        m_description = QStringLiteral("Saved with Dewral Map Editor")
++        m_description = QStringLiteral("Saved with Cinders Map Editor")
+             + (firstNewline < 0 ? QString() : m_description.mid(firstNewline));
+     }
+     QString spawnTarget;
+diff --git a/libs/otformats/tmgformat.cpp b/libs/otformats/tmgformat.cpp
+index ee4c622..dd4ab89 100644
+--- a/libs/otformats/tmgformat.cpp
++++ b/libs/otformats/tmgformat.cpp
+@@ -145,8 +145,8 @@ TmgFormat::Result TmgFormat::load(const QString &path, const Catalog &catalog,
+         const int manifestVersion = number(manifest, "schema_version", 1, 2);
+         number(request, "schema_version", 1, 1); number(manifest, "chunk_size", 128, 128);
+         require((manifestVersion == 2) == (request["generator"].toString() == QStringLiteral("settlement")), "Settlements require manifest version 2");
+-        require(!manifest.value(QStringLiteral("synthetic")).toBool(true), "Demo item IDs cannot be imported; export a real Dewral asset pack");
+-        require(!catalog.fingerprint.isEmpty() && manifest.value(QStringLiteral("asset_fingerprint")).toString() == catalog.fingerprint, "Asset pack does not match the active Dewral client and materials");
++        require(!manifest.value(QStringLiteral("synthetic")).toBool(true), "Demo item IDs cannot be imported; export a real asset pack from the editor");
++        require(!catalog.fingerprint.isEmpty() && manifest.value(QStringLiteral("asset_fingerprint")).toString() == catalog.fingerprint, "Asset pack does not match the active client and materials of the editor");
+         const auto client = manifest.value(QStringLiteral("client")).toObject();
+         require(number(client, "version", 1, 100000) == catalog.version && number(client, "otb_major", 0, 100000) == catalog.major && number(client, "otb_minor", 0, 100000) == catalog.minor, "Client versions do not match");
+         const int width = number(request, "width", 24, 65535), height = number(request, "height", 24, 65535);
+@@ -157,7 +157,7 @@ TmgFormat::Result TmgFormat::load(const QString &path, const Catalog &catalog,
+         require(!smallResult || (expectedTiles <= 100000 && expectedItems <= 500000), "This map is too large for placement; open it as a new document");
+         auto doc = QSharedPointer<OtbmReader>::create();
+         require(doc->newMap(width, height, catalog.version, catalog.major, catalog.minor), "Cannot create detached map");
+-        doc->m_description = QStringLiteral("Generated with TileMapGen; finished with Dewral Map Editor");
++        doc->m_description = QStringLiteral("Generated with TileMapGen; finished with Cinders Map Editor");
+         QCryptographicHash content(QCryptographicHash::Sha256);
+         int chunks = 0; qint64 tileCount = 0, itemCount = 0;
+         const qint64 expectedChunks = qint64((width + 127) / 128) * ((height + 127) / 128) * floors;
+diff --git a/tests/otbm_editing_storage_test.cpp b/tests/otbm_editing_storage_test.cpp
+index b6f8be2..d3acb73 100644
+--- a/tests/otbm_editing_storage_test.cpp
++++ b/tests/otbm_editing_storage_test.cpp
+@@ -297,7 +297,7 @@ int main(int argc, char **argv)
+     stamp.newMap(1024,1024,1098,3,57);
+     stamp.setMapProperties(QStringLiteral("Saved with Remere's Map Editor 3.3\nMy custom description"),1024,1024,{},{});
+     if (!require(stamp.saveFile(directory.filePath(QStringLiteral("stamp.otbm")))
+-                 && stamp.description() == QStringLiteral("Saved with Dewral Map Editor\nMy custom description"),
++                 && stamp.description() == QStringLiteral("Saved with Cinders Map Editor\nMy custom description"),
+                  "Save must replace the editor stamp and preserve the custom description")) return EXIT_FAILURE;
+     stamp.setMapProperties(QStringLiteral("My own description"),1024,1024,{},{});
+     if (!require(stamp.saveFile(directory.filePath(QStringLiteral("custom.otbm")))
+diff --git a/tests/release_manifest_test.cmake b/tests/release_manifest_test.cmake
+index 8206182..3fdfb1a 100644
+--- a/tests/release_manifest_test.cmake
++++ b/tests/release_manifest_test.cmake
+@@ -59,8 +59,8 @@ endif()
+ # A development deployment can contain profiler preferences and diagnostic EXEs.
+ set(deployment "${TEST_ROOT}/deployment")
+ file(MAKE_DIRECTORY "${deployment}/profile-settings" "${deployment}/data/860")
+-file(WRITE "${deployment}/DME.exe" "application fixture")
+-file(WRITE "${deployment}/DMEUpdater.exe" "updater fixture")
++file(WRITE "${deployment}/CindersMapEditor.exe" "application fixture")
++file(WRITE "${deployment}/CindersMapEditorUpdater.exe" "updater fixture")
+ file(WRITE "${deployment}/DME-startup-audit.exe" "diagnostic fixture")
+ file(WRITE "${deployment}/profile-settings/local.ini" "private-profile-path=fixture")
+ file(WRITE "${deployment}/data/860/Tibia.dat" "private client fixture")
+@@ -72,8 +72,8 @@ execute_process(COMMAND "${CMAKE_COMMAND}"
+     -P "${SOURCE_ROOT}/cmake/CreateReleasePackage.cmake"
+     RESULT_VARIABLE package_result OUTPUT_QUIET)
+ set(portable "${TEST_ROOT}/portable/DewralMapEditor-windows-x64")
+-if(NOT package_result EQUAL 0 OR NOT EXISTS "${portable}/DME.exe"
+-    OR NOT EXISTS "${portable}/DMEUpdater.exe"
++if(NOT package_result EQUAL 0 OR NOT EXISTS "${portable}/CindersMapEditor.exe"
++    OR NOT EXISTS "${portable}/CindersMapEditorUpdater.exe"
+     OR NOT EXISTS "${portable}/data/860/tilesets.json"
+     OR EXISTS "${portable}/profile-settings"
+     OR EXISTS "${portable}/DME-startup-audit.exe"

@@ -727,7 +727,8 @@ jobs:
             [ -n "$ok" ] || { echo "::error::the map editor's release files do not match SHA256SUMS.txt"; exit 1; }
           fi
           cat editor.env
-          # the settings key is named after the upstream repository: the one our build was made from, else the credits
+          # the upstream repository (the one our build was made from, else the credits): the settings key of the upstream
+          # program is named after it; ours since O388 has its own (Software\Cinders\CindersMapEditor, editor_release.py)
           repo=$(sed -n 's/^upstream_repo=//p' editor.env)
           {
             grep -v '^upstream_repo=' editor.env
@@ -784,25 +785,38 @@ jobs:
           # the map editor (O381, O387): its release zip (ours or upstream, step above) unpacked into mapeditor\ (one
           # folder in the zip: the program, its DLLs, qml\, data\ with one folder per client version, LICENSE, NOTICE;
           # ours also BUILD_INFO.txt), checked above against SHA256SUMS.txt.
-          # Kept as it is, but for two package changes listed in mapeditor\CHANGES.txt: the self-updater is left out
-          # (it would replace this folder with the newest upstream release, our build and lists included), and the 10.98
-          # creature and item lists are the game's.
+          # Kept as it is, but for the package changes listed in mapeditor\CHANGES.txt: the 10.98 creature and item lists
+          # are the game's, and the self-updater:
+          #   - our build with its updater (Cinders Map Editor, patch 0009, O388): kept. It updates from the releases of
+          #     this repository (rolling release mapeditor-latest) and never overwrites the files listed in
+          #     mapeditor\update-keep.txt (the game's data\1098 lists).
+          #   - upstream, or an older build of ours: left out (it would replace this folder with the upstream release).
           mkdir -p "$P/mapeditor" editorzip
           unzip -q "editordl/${{ steps.editor.outputs.windows }}" -d editorzip
           top=$(find editorzip -mindepth 1 -maxdepth 1 -type d)
           [ "$(echo "$top" | wc -l)" -eq 1 ] || { echo "::error::the map editor zip does not hold one folder"; exit 1; }
           cp -a "$top"/. "$P/mapeditor/"
           rm -rf editorzip
-          find "$P/mapeditor" -maxdepth 1 -iname '*updater*.exe' -print -delete
-          n=$(find "$P/mapeditor" -maxdepth 1 -iname '*.exe' | wc -l)
-          [ "$n" -eq 1 ] || { echo "::error::mapeditor holds $n programs (open-map-editor.bat needs one)"; exit 1; }
-          exe=$(find "$P/mapeditor" -maxdepth 1 -iname '*.exe')
+          updater=removed
+          if [ "${{ steps.editor.outputs.kind }}" = ours ] && [ -f "$P/mapeditor/CindersMapEditor.exe" ] &&
+             [ -f "$P/mapeditor/CindersMapEditorUpdater.exe" ]; then
+            updater=kept
+            printf '%s\r\n' "# The editor's updater never overwrites these files (the game's lists, windows-package.yml)." \
+              "data/1098/creatures.xml" "data/1098/items.xml" > "$P/mapeditor/update-keep.txt"
+          else
+            find "$P/mapeditor" -maxdepth 1 -iname '*updater*.exe' -print -delete
+          fi
+          echo "map editor self-updater: $updater"
+          n=$(find "$P/mapeditor" -maxdepth 1 -iname '*.exe' ! -iname '*updater*.exe' | wc -l)
+          [ "$n" -eq 1 ] || { echo "::error::mapeditor holds $n programs besides the updater (open-map-editor.bat needs one)"; exit 1; }
+          exe=$(find "$P/mapeditor" -maxdepth 1 -iname '*.exe' ! -iname '*updater*.exe')
           test -f "$P/mapeditor/LICENSE" && test -f "$P/mapeditor/NOTICE" && test -d "$P/mapeditor/data/1098" || {
             echo "::error::the map editor zip has no LICENSE, NOTICE or data/1098"; exit 1; }
           # the source of exactly this program (AGPL-3.0: we pass on the binary, so its source goes with it)
           mkdir -p "$P/mapeditor/source"
           cp "editordl/${{ steps.editor.outputs.source }}" "$P/mapeditor/source/"
-          # where the editor keeps its settings (HKCU), read from the program; open-map-editor.bat presets them from it
+          # where the editor keeps its settings (HKCU), read from the program (ours first, then the upstream names);
+          # open-map-editor.bat presets them from it
           if python3 -I chaos/tools/windows/editor_release.py settings-key "$exe" "${{ steps.editor.outputs.repo }}" \
               > "$P/mapeditor/settings-key.txt"; then
             sed -i 's/$/\r/' "$P/mapeditor/settings-key.txt"
@@ -834,8 +848,15 @@ jobs:
               echo
               echo "Changed by the Cinders of Chaos package (the program itself is unchanged):"
             fi
-            echo "  - the self-updater program is left out, so the editor stays at this version (it would replace"
-            echo "    this folder, the lists below included). A newer editor comes with a newer package."
+            if [ "$updater" = kept ]; then
+              echo "  - update-keep.txt: the self-updater (Cinders Map Editor, start window) installs newer builds of"
+              echo "    ours from $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases and never overwrites the files listed"
+              echo "    there (the two lists below). After an update BUILD_INFO.txt names the new build; its source is"
+              echo "    the -source.zip of that release."
+            else
+              echo "  - the self-updater program is left out, so the editor stays at this version (it would replace"
+              echo "    this folder, the lists below included). A newer editor comes with a newer package."
+            fi
             echo "  - data\\1098\\creatures.xml: every monster and NPC of the game (tools/windows/editor_creatures.py)"
             echo "  - data\\1098\\items.xml: the game server's items.xml (open-map-editor.bat copies it again)"
             echo "Added (not part of the editor):"

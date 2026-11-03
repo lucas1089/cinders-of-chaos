@@ -1,0 +1,207 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Tue, 3 Nov 2026 16:38:19 +0000
+Subject: [PATCH 9/9] Updater: our releases, build number, files the install
+ keeps
+
+The self-updater checks the releases of our repository instead of
+upstream (CMake DME_RELEASE_REPOSITORY, default
+lucas1089/cinders-of-chaos): it reads update-manifest.json of the
+rolling release DME_UPDATE_TAG (mapeditor-latest), which the release
+job of our build workflow moves to the newest tested build. The
+download must be a *-windows-x64.zip of a release of that repository;
+size and SHA-256 are checked as before.
+
+Version: DME_BUILD_NUMBER (the CI run number) is appended to the
+upstream version (1.1.43 -> 1.1.43.N), so every newer build of ours is
+newer for the updater. Empty for local builds.
+
+The updater never overwrites the files listed in update-keep.txt of the
+program folder (one relative path per line). The game package lists
+its data/1098 files there, so an update keeps the game's monsters and
+items.
+
+Upstream's update check and its release tag are no longer used.
+---
+ CMakeLists.txt                | 26 ++++++++++++++++++++++++--
+ editor/core/updateservice.cpp | 25 +++++++++++++++++++------
+ editor/updater/main.cpp       | 32 ++++++++++++++++++++++++++++++--
+ 3 files changed, 73 insertions(+), 10 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 30311ba..7a8806d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -7,8 +7,28 @@ set(QT_CREATOR_SKIP_VCPKG_SETUP ON CACHE BOOL
+ 
+ project(DewralMapEditor VERSION 1.1.43 LANGUAGES C CXX)
+ 
+-set(DME_RELEASE_REPOSITORY "dewral/DewralMapEditor" CACHE STRING
++set(DME_RELEASE_REPOSITORY "lucas1089/cinders-of-chaos" CACHE STRING
+     "GitHub repository hosting the stable update packages")
++# Cinders Map Editor: the updater reads update-manifest.json of this release tag of DME_RELEASE_REPOSITORY
++# (a rolling release, moved by the release job of our build workflow to the newest tested build).
++set(DME_UPDATE_TAG "mapeditor-latest" CACHE STRING
++    "Release tag whose update-manifest.json names the newest build")
++# Our builds count up: the version is the upstream version plus this number (the CI run number), so a newer
++# build is always "newer" for the updater. Empty for local builds.
++set(DME_BUILD_NUMBER "" CACHE STRING "Build number appended to the version")
++if(NOT DME_RELEASE_REPOSITORY MATCHES "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
++    message(FATAL_ERROR "DME_RELEASE_REPOSITORY must be a GitHub owner/repository")
++endif()
++if(NOT DME_UPDATE_TAG MATCHES "^[A-Za-z0-9_.-]+$")
++    message(FATAL_ERROR "DME_UPDATE_TAG must be a plain release tag")
++endif()
++if(DME_BUILD_NUMBER STREQUAL "")
++    set(DME_APP_VERSION "${PROJECT_VERSION}")
++elseif(DME_BUILD_NUMBER MATCHES "^[0-9]+$")
++    set(DME_APP_VERSION "${PROJECT_VERSION}.${DME_BUILD_NUMBER}")
++else()
++    message(FATAL_ERROR "DME_BUILD_NUMBER must be a number")
++endif()
+ 
+ set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+@@ -278,7 +298,9 @@ qt_add_qml_module(DewralMapEditor
+ target_include_directories(DewralMapEditor PRIVATE editor/core editor/map editor/preview)
+ 
+ target_compile_definitions(DewralMapEditor PRIVATE
+-    DME_VERSION="${PROJECT_VERSION}")
++    DME_VERSION="${DME_APP_VERSION}"
++    DME_RELEASE_REPOSITORY="${DME_RELEASE_REPOSITORY}"
++    DME_UPDATE_TAG="${DME_UPDATE_TAG}")
+ 
+ target_link_libraries(DewralMapEditor
+     PRIVATE
+diff --git a/editor/core/updateservice.cpp b/editor/core/updateservice.cpp
+index f90c1f6..d79bec5 100644
+--- a/editor/core/updateservice.cpp
++++ b/editor/core/updateservice.cpp
+@@ -15,9 +15,19 @@
+ #include <QRegularExpression>
+ #include <QStandardPaths>
+ 
++// Cinders Map Editor checks the releases of its own repository, never upstream (CMake DME_RELEASE_REPOSITORY,
++// DME_UPDATE_TAG). The tag is a rolling release whose update-manifest.json names the newest tested build.
++#ifndef DME_RELEASE_REPOSITORY
++#define DME_RELEASE_REPOSITORY "lucas1089/cinders-of-chaos"
++#endif
++#ifndef DME_UPDATE_TAG
++#define DME_UPDATE_TAG "mapeditor-latest"
++#endif
++
+ namespace {
+-constexpr auto kRepositoryApi = "https://api.github.com/repos/dewral/DewralMapEditor";
+-constexpr auto kWindowsArchive = "DewralMapEditor-windows-x64.zip";
++constexpr auto kRepository = DME_RELEASE_REPOSITORY;
++constexpr auto kUpdateTag = DME_UPDATE_TAG;
++constexpr auto kArchiveSuffix = "-windows-x64.zip";
+ constexpr auto kManifestName = "update-manifest.json";
+ 
+ QNetworkRequest githubRequest(const QUrl &url)
+@@ -45,9 +55,12 @@ bool validSha256(const QString &value)
+ 
+ bool validPackageUrl(const QUrl &url)
+ {
++    // A Windows zip of a release of our repository only.
++    const QString releases = QStringLiteral("/%1/releases/download/").arg(QLatin1String(kRepository));
+     return url.scheme() == QStringLiteral("https")
+         && url.host().compare(QStringLiteral("github.com"), Qt::CaseInsensitive) == 0
+-        && url.path().endsWith(QStringLiteral("/") + QLatin1String(kWindowsArchive));
++        && url.path().startsWith(releases, Qt::CaseInsensitive)
++        && url.path().endsWith(QLatin1String(kArchiveSuffix));
+ }
+ }
+ 
+@@ -96,8 +109,8 @@ void UpdateService::checkForUpdates()
+ 
+ void UpdateService::requestRelease()
+ {
+-    const QString endpoint = QStringLiteral("%1/releases/tags/1.0")
+-                                 .arg(QLatin1String(kRepositoryApi));
++    const QString endpoint = QStringLiteral("https://api.github.com/repos/%1/releases/tags/%2")
++                                 .arg(QLatin1String(kRepository), QLatin1String(kUpdateTag));
+     startRequest(QUrl(endpoint), [this](QByteArray payload) { processRelease(payload); });
+ }
+ 
+@@ -151,7 +164,7 @@ void UpdateService::processRelease(const QByteArray &payload)
+     qint64 size = -1;
+     for (const QJsonValue &value : assets) {
+         const QJsonObject asset = value.toObject();
+-        if (asset.value(QStringLiteral("name")).toString() == QLatin1String(kWindowsArchive)) {
++        if (asset.value(QStringLiteral("name")).toString().endsWith(QLatin1String(kArchiveSuffix))) {
+             downloadUrl = asset.value(QStringLiteral("browser_download_url")).toString();
+             digest = digestValue(asset.value(QStringLiteral("digest")).toString());
+             size = asset.value(QStringLiteral("size")).toInteger(-1);
+diff --git a/editor/updater/main.cpp b/editor/updater/main.cpp
+index fbf1f0a..85f3f39 100644
+--- a/editor/updater/main.cpp
++++ b/editor/updater/main.cpp
+@@ -3,6 +3,7 @@
+ #include <QCoreApplication>
+ #include <QDialog>
+ #include <QDir>
++#include <QFile>
+ #include <QFileInfo>
+ #include <QLabel>
+ #include <QMetaObject>
+@@ -10,6 +11,7 @@
+ #include <QProcessEnvironment>
+ #include <QProgressBar>
+ #include <QPushButton>
++#include <QStringList>
+ #include <QThread>
+ #include <QTimer>
+ #include <QVBoxLayout>
+@@ -163,8 +165,28 @@ void copyFileOverwrite(const fs::path &source, const fs::path &destination)
+         throw fs::filesystem_error("cannot replace update file", source, destination, error);
+ }
+ 
++// Files the installation owns: update-keep.txt in the target folder, one path per line relative to it ('#' starts
++// a comment). An update never overwrites them. The Cinders of Chaos package lists the game's data/1098 files there.
++QStringList keptFiles(const fs::path &target)
++{
++    QStringList kept;
++    QFile file(QString::fromStdWString((target / L"update-keep.txt").wstring()));
++    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
++        return kept;
++    while (!file.atEnd()) {
++        QString line = QString::fromUtf8(file.readLine()).trimmed();
++        if (line.isEmpty() || line.startsWith(QLatin1Char('#')))
++            continue;
++        line.replace(QLatin1Char('\\'), QLatin1Char('/'));
++        while (line.startsWith(QLatin1Char('/')))
++            line.remove(0, 1);
++        kept << line.toLower();
++    }
++    return kept;
++}
++
+ bool installFiles(const fs::path &source, const fs::path &target,
+-                  const fs::path &backup,
++                  const fs::path &backup, const QStringList &kept,
+                   const std::function<void(int)> &progress)
+ {
+     std::vector<fs::path> overwritten;
+@@ -189,6 +211,12 @@ bool installFiles(const fs::path &source, const fs::path &target,
+             if (!entry.is_regular_file())
+                 continue;
+ 
++            const QString key = QString::fromStdWString(relative.generic_wstring()).toLower();
++            if (kept.contains(key) && fs::exists(destination)) {
++                log(L"Kept: " + relative.wstring());
++                ++copied;
++                continue;
++            }
+             fs::create_directories(destination.parent_path());
+             if (fs::exists(destination)) {
+                 const fs::path saved = backup / relative;
+@@ -417,7 +445,7 @@ private:
+         }
+ 
+         postStatus(QStringLiteral("Installing application files..."), 55);
+-        if (!installFiles(source, target, backup, [this](int value) {
++        if (!installFiles(source, target, backup, keptFiles(target), [this](int value) {
+                 postStatus(QStringLiteral("Installing application files..."), value);
+             })) {
+             fs::remove_all(work, error);

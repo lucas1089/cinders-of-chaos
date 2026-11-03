@@ -78,10 +78,10 @@ with tempfile.TemporaryDirectory() as tmp:
     write(os.path.join(o, 'mapeditor-bbbbbbb-source.zip'), src)
 
     def info(variant='patched', patches='0001-profile-map-pan.patch, 0002-light.patch, 0003-overlays.patch',
-             upstream=up):
-        text = ('﻿upstream: %s\nupstream_repo: acme/ExampleMapEditor\nvariant: %s\npatches: %s\n'
+             upstream=up, version=''):
+        text = ('﻿%supstream: %s\nupstream_repo: acme/ExampleMapEditor\nvariant: %s\npatches: %s\n'
                 'cinders of chaos commit: %s\nbuilt: 2026-11-03T10:00Z by run 1\n'
-                % (upstream, variant, patches, ours_commit))
+                % ('version: %s\n' % version if version else '', upstream, variant, patches, ours_commit))
         write(os.path.join(o, 'BUILD_INFO.txt'), text.encode('utf-8'))
         hi = er.sha256(os.path.join(o, 'BUILD_INFO.txt'))
         write(os.path.join(o, 'SHA256SUMS.txt'), ('%s  mapeditor-bbbbbbb-windows-x64.zip\n'
@@ -94,6 +94,14 @@ with tempfile.TemporaryDirectory() as tmp:
     check(out['upstream_repo'] == 'acme/ExampleMapEditor', 'upstream repo from BUILD_INFO.txt')
     check(out['version'] == 'our build: upstream aaaaaaa + patches 0001..0003', 'version: %s' % out['version'])
     check(er.verify(o)['version'] == 'unknown', 'without --ours BUILD_INFO.txt is not read')
+    # O388: BUILD_INFO.txt names the program version (upstream version + run number)
+    info(version='1.1.43.57')
+    v = er.verify(o, ours=True)['version']
+    check(v == 'our build 1.1.43.57: upstream aaaaaaa + patches 0001..0003', 'version with the build: %s' % v)
+    info(version='1.1.43.57 & echo')
+    v = er.verify(o, ours=True)['version']
+    check(v == 'our build: upstream aaaaaaa + patches 0001..0003', 'a strange version is left out: %s' % v)
+    info()
     check(er.main(['verify', o, '--ours']) == 0, 'exit 0 on our build')
     check(er.main(['verify', o, '--bogus']) == 2, 'unknown option: usage')
     for bad, what in ((dict(variant='baseline'), 'the baseline build is never shipped'),
@@ -145,6 +153,15 @@ with tempfile.TemporaryDirectory() as tmp:
     check(er.settings_key(exe, 'acme/ExampleMapEditor') == 'Software\\Acme\\ExampleMapEditor', 'settings key')
     write(exe, b'MZ.. Acme ExampleMapEditor')
     check(er.settings_key(exe, 'acme/ExampleMapEditor') is None, 'names not in UTF-16: no key')
+    # O388: our build (Cinders Map Editor) has its own key, found first and also without the upstream name
+    write(exe, b'MZ..' + 'Cinders'.encode('utf-16-le') + b'\0\0' + 'CindersMapEditor'.encode('utf-16-le')
+          + b'\0\0' + 'Acme'.encode('utf-16-le') + 'ExampleMapEditor'.encode('utf-16-le'))
+    check(er.settings_key(exe, 'acme/ExampleMapEditor') == 'Software\\Cinders\\CindersMapEditor', 'our key first')
+    check(er.settings_key(exe) == 'Software\\Cinders\\CindersMapEditor', 'our key without a repository')
+    check(er.main(['settings-key', exe]) == 0, 'settings-key with the program only')
+    write(exe, b'MZ..' + 'CindersMapEditor'.encode('utf-16-le'))
+    check(er.settings_key(exe) is None, 'only one of our names: no key')
+    check(er.main(['settings-key', exe]) == 3, 'settings-key exit 3 without a key')
 
 print('editor_release: %s' % ('ok' if not failures else '%d failed' % failures))
 sys.exit(1 if failures else 0)

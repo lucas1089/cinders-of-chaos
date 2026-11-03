@@ -1,0 +1,830 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Tue, 3 Nov 2026 16:35:05 +0000
+Subject: [PATCH 7/9] UI: English for the Polish texts
+
+The procedural brush bar, the procedural library dialog, their error
+messages, the UI colorize presets, the Tools menu entry, the AI
+assistant example, the default custom generator profile name and the
+shipped custom-map-generator.md guide were in Polish. They are English
+now. The two tests that read these texts follow.
+
+Behaviour identical; only the texts change.
+---
+ README.md                                     |   2 +-
+ docs/custom-map-generator.md                  | 264 +++++++++---------
+ editor/core/generationlibrary.cpp             |   2 +-
+ editor/core/proceduralgeneration.cpp          |  14 +-
+ editor/core/uitheme.cpp                       |  14 +-
+ editor/map/mapview_generation.cpp             |  12 +-
+ editor/qml/components/MainMenuBar.qml         |   2 +-
+ editor/qml/components/ProceduralBrushBar.qml  |  48 ++--
+ editor/qml/dialogs/AiMapAssistantDialog.qml   |   2 +-
+ .../qml/dialogs/CustomMapGeneratorDialog.qml  |   2 +-
+ .../qml/dialogs/GenerationLibraryDialog.qml   |  64 ++---
+ tests/map_brush_demo_checks.h                 |   2 +-
+ tests/qml/tst_custom_generator.qml            |   2 +-
+ 13 files changed, 215 insertions(+), 215 deletions(-)
+
+diff --git a/README.md b/README.md
+index 8954184..5ba558b 100644
+--- a/README.md
++++ b/README.md
+@@ -11,7 +11,7 @@ with one Undo, or open a larger result as a new map. See the
+ your own client materials, weighted variants and reusable JSON profiles. It
+ provides a non-destructive map preview and applies the result with one Undo.
+ The built-in Dungeon and Cave algorithms run in Lua without external generator files.
+-See [custom materials and Midhem profile guide](docs/custom-map-generator.md).
++See [the custom material profile guide](docs/custom-map-generator.md).
+ 
+ Lua generation is available under **Tools → Lua Scripts & otMapGen…**, with an
+ embedded Lua 5.1 runtime, background execution and one-step Undo. The panel can
+diff --git a/docs/custom-map-generator.md b/docs/custom-map-generator.md
+index cf84c25..b772941 100644
+--- a/docs/custom-map-generator.md
++++ b/docs/custom-map-generator.md
+@@ -1,138 +1,138 @@
+-# Generator własnych materiałów — Dungeon i Cave
+-
+-Otwórz **Tools → Custom Map Generator…** po wczytaniu mapy i klienta.
+-Panel nie blokuje edytora. Własny generator DME działa w osadzonej Lua 5.1:
+-Dungeon tworzy prostokątne pokoje i korytarze, a Cave nieregularne komory
+-połączone tunelami. Nie wymaga otMapGenPublic ani instalacji Lua.
+-Oba tryby korzystają wyłącznie z materiałów przypisanych w profilu.
+-
+-## Przygotowanie
+-
+-Wczytaj DAT, SPR i OTB odpowiadające swoim grafikom. Generator używa **server ID
+-z OTB**, a nie numerów sprite’ów. DME sprawdza typ podłogi i blokowanie ruchu
+-w danych aktualnego klienta przed każdym uruchomieniem.
+-
+-## Pierwszy profil „Midhem — jaskinia”
+-
+-1. Wpisz nazwę profilu. W ustawieniach wybierz **Cave**.
+-2. Wyszukaj item po nazwie lub ID. Zaznacz go i użyj **+ Add** przy kategorii,
+-   albo przeciągnij go na kategorię. Dwuklik dodaje item do aktywnej kategorii.
+-3. Dodaj **Background**: ground wypełniający obszar poza jaskinią.
+-4. Dodaj **Rooms and corridors**: nieblokujący ground do chodzenia.
+-   Możesz też wybrać kategorię **Floors**, docelowy slot oraz nazwę ground brusha.
+-   Wybór brusha od razu dodaje go do docelowego slotu, bez osobnego kliknięcia.
+-   Slot pokazuje nazwy dodanych brushy, liczbę itemów i sprite każdego wariantu.
+-   Zmiana docelowego slotu resetuje dropdown do **Choose ground brush…**;
+-   wybierz brush osobno dla **Background** i **Rooms and corridors**.
+-   Wczytywane są wszystkie aktywne warianty podłogi
+-   i ich wagi. Każdy border brusha dostaje osobną pozycję **Borders · nazwa**
+-   w dropdownie kategorii, razem z przypisaniem do ground ID, kierunkami,
+-   rodzajem inner/outer i docelowym gruntem. Kolejne brushe można dodać do
+-   tego samego slotu; ich bordery pozostają oddzielne.
+-5. Opcjonalnie dodaj **Secondary floor**. Domyślnie zastąpi około 15% pól podłogi;
+-   udział można zmienić w **Advanced settings…**.
+-6. W **Decorations** dodaj pojedyncze kamienie, grzyby lub inne itemy.
+-   Nie dodawaj fragmentów obiektów składanych z wielu pól.
+-7. Ustaw rozmiar, liczbę pomieszczeń, seed, gęstość dekoracji i docelowe X/Y/Z.
+-   Na początek użyj 70 × 70, 8 pomieszczeń i 8% dekoracji.
+-   Współrzędne **Destination X, Y i Z / floor** są w jednym poziomym wierszu.
+-8. Kliknij **Save**, potem **Generate preview**. Obejrzyj wynik na mapie.
+-9. **Apply** zatwierdza cały wynik. **Cancel preview** lub zamknięcie panelu
+-   usuwa go bez zmiany dokumentu.
+-
+-Nie ma przykładowych ID Midhem wpisanych na stałe: profile muszą odpowiadać
+-Twojej wersji grafik. Waga 10 oznacza dziesięć razy większą szansę wyboru niż
+-waga 1 w tej samej kategorii. Można usunąć wpis przyciskiem ×.
+-
+-## Ustawienia zaawansowane
+-
+-Przycisk **Advanced settings…** otwiera osobny panel. Zmiany działają od razu
+-w bieżącym profilu i usuwają wcześniejszy podgląd; wygeneruj go ponownie.
+-
+-| Ustawienie | Zakres | Domyślnie | Efekt |
++# Custom material generator: Dungeon and Cave
++
++Open **Tools → Custom Map Generator…** after loading a map and a client.
++The panel does not block the editor. The built-in generator runs in embedded Lua 5.1:
++Dungeon makes rectangular rooms and corridors, Cave makes irregular chambers
++joined by tunnels. It needs neither otMapGenPublic nor a Lua installation.
++Both modes use only the materials assigned in the profile.
++
++## Preparation
++
++Load the DAT, SPR and OTB that match your graphics. The generator uses **server IDs
++from the OTB**, not sprite numbers. Before every run the editor checks the floor type
++and movement blocking in the data of the current client.
++
++## A first profile, "My cave"
++
++1. Enter a profile name. In the settings choose **Cave**.
++2. Search for an item by name or ID. Select it and use **+ Add** next to a category,
++   or drag it onto the category. A double click adds the item to the active category.
++3. Add **Background**: the ground that fills the area outside the cave.
++4. Add **Rooms and corridors**: a walkable, non-blocking ground.
++   You can also pick the **Floors** category, a target slot and the name of a ground brush.
++   Choosing a brush adds it to the target slot at once, with no extra click.
++   The slot shows the names of the added brushes, the item count and the sprite of each variant.
++   Changing the target slot resets the dropdown to **Choose ground brush…**;
++   pick a brush separately for **Background** and for **Rooms and corridors**.
++   Every active floor variant is loaded
++   with its weight. Each border of the brush gets its own **Borders · name** entry
++   in the category dropdown, with its ground ID assignment, directions,
++   inner/outer kind and target ground. More brushes can be added to
++   the same slot; their borders stay separate.
++5. Optionally add a **Secondary floor**. By default it replaces about 15% of the floor tiles;
++   the share can be changed in **Advanced settings…**.
++6. In **Decorations** add single stones, mushrooms or other items.
++   Do not add parts of objects made of several tiles.
++7. Set the size, room count, seed, decoration density and the target X/Y/Z.
++   To start, use 70 × 70, 8 rooms and 8% decorations.
++   The **Destination X, Y and Z / floor** fields are on one horizontal row.
++8. Click **Save**, then **Generate preview**. Look at the result on the map.
++9. **Apply** commits the whole result. **Cancel preview** or closing the panel
++   removes it without changing the document.
++
++No example IDs are built in: profiles must match
++your version of the graphics. A weight of 10 means ten times the chance of being picked compared with
++a weight of 1 in the same category. Remove an entry with its × button.
++
++## Advanced settings
++
++The **Advanced settings…** button opens a separate panel. Changes apply at once
++to the current profile and remove an earlier preview; generate it again.
++
++| Setting | Range | Default | Effect |
+ | --- | --- | --- | --- |
+-| Room width / height | 5–21 pól | 7 / 7 | Rozmiar pokoi Dungeon; przybliżony rozmiar komór Cave, losowany przez generator. |
+-| Room center spacing | 6–40 pól | 8 | Odstęp siatki centrów pomieszczeń. Większy odstęp zmniejsza liczbę pomieszczeń mieszczących się w mapie. Duże pokoje mogą się nakładać. |
+-| Corridor width | 3–5 pól | 3 | Szerokość ścieżek łączących pomieszczenia. |
+-| Room connections | Chain / Nearest network | Chain | Losowy łańcuch pokoi albo sieć dołączająca najbliższy niepołączony pokój. |
+-| Extra room connections | 0–16 | 0 | Dodatkowe trasy między pokojami, do liczby dostępnych niepołączonych par. |
+-| Cave tunnels | Winding / Direct | Winding | Kręte albo bezpośrednie tunele. Aktywne tylko dla Cave. |
+-| Secondary floor | 0–100% | 15% | Szansa zastąpienia pola podłogi wariantem Secondary floor. Aktywne po dodaniu materiałów do tego slotu. |
+-
+-**Reset advanced defaults** resetuje tylko powyższe ustawienia. Są zapisywane,
+-importowane i eksportowane razem z profilem. Starsze profile bez tych pól
+-używają wartości domyślnych. Ten sam seed odtwarza wynik w tej samej wersji DME.
+-Wielkość pokoi, odstępy i wymiary mapy są sprawdzane przed generowaniem.
+-
+-Parametry rozmiaru pokoi, szerokości korytarzy i sieci połączeń są realizowane
+-przez osadzony generator DME i nie wymagają plików otMapGenPublic.
+-
+-## Ściany i bordery
+-
+-Są opcjonalne. Po włączeniu **Generate walls** trzeba wypełnić wszystkie cztery
+-sloty: Horizontal, Vertical, Small junction, Corner.
+-W kategorii **Walls** wybór brusha w dropdownie pobiera warianty i wagi
+-odpowiednich elementów wall brusha.
+-W **Borders · default floor** ręcznie przypisywany komplet wymaga wszystkich
+-12 slotów. W zestawach przypisanych do konkretnego gruntu można zostawić
+-puste sloty, tak jak w ground brushu. Brakujące wklęsłe narożniki są
+-zastępowane dostępnymi bokami. Zestaw konkretnego celu ma pierwszeństwo przed
+-zestawem dla dowolnego gruntu. Bordery są generowane po wyborze podłogi,
+-więc warianty i secondary floor zachowują właściwe zestawy borderów.
+-Dodanie pojedynczego ground ID tworzy pusty zestaw **Borders · Ground #ID**,
+-który można uzupełnić ręcznie. Usunięcie ground ID usuwa jego przypisanie.
+-Cel **no neighboring ground** oznacza brak gruntu na sąsiednim polu, a nie
+-puste sloty bordera. Cel **any other ground** dotyczy innych gruntów.
+-W Brush Managerze sprawdzaj tę samą parę Alignment + Border target:
+-**Inside ground / Empty (no neighbor)** i **Inside ground / Any other brush**
+-to dwa oddzielne zestawy. Generator importuje tylko zestawy z itemami;
+-nie dodaje inner borderów do brusha zawierającego wyłącznie outer bordery.
+-Numery slotów zachowują zgodność z dotychczasowymi profilami:
+-
+-| Slot | Wariant bordera |
++| Room width / height | 5–21 tiles | 7 / 7 | Room size for Dungeon; approximate chamber size for Cave, randomised by the generator. |
++| Room center spacing | 6–40 tiles | 8 | Grid spacing of the room centers. A larger spacing lowers the number of rooms that fit on the map. Large rooms may overlap. |
++| Corridor width | 3–5 tiles | 3 | Width of the paths that join the rooms. |
++| Room connections | Chain / Nearest network | Chain | A random chain of rooms, or a network that joins the nearest unconnected room. |
++| Extra room connections | 0–16 | 0 | Extra routes between rooms, up to the number of unconnected pairs available. |
++| Cave tunnels | Winding / Direct | Winding | Winding or direct tunnels. Cave only. |
++| Secondary floor | 0–100% | 15% | Chance that a floor tile is replaced by a Secondary floor variant. Active once that slot has materials. |
++
++**Reset advanced defaults** resets only the settings above. They are saved,
++imported and exported with the profile. Older profiles without these fields
++use the defaults. The same seed gives the same result in the same editor version.
++Room sizes, spacing and map dimensions are checked before generating.
++
++Room size, corridor width and the connection network are handled
++by the editor's embedded generator and need no otMapGenPublic files.
++
++## Walls and borders
++
++Both are optional. With **Generate walls** on, all four
++slots must be filled: Horizontal, Vertical, Small junction, Corner.
++In the **Walls** category, choosing a brush in the dropdown takes the variants and weights
++of the matching wall brush parts.
++In **Borders · default floor** a hand-assigned set needs all
++12 slots. Sets assigned to a specific ground may leave
++slots empty, as in a ground brush. Missing inner corners are
++replaced by the available sides. A set for a specific target wins over
++a set for any ground. Borders are generated after the floor is chosen,
++so variants and the secondary floor keep their proper border sets.
++Adding a single ground ID creates an empty **Borders · Ground #ID** set,
++which can be filled by hand. Removing a ground ID removes its assignment.
++The target **no neighboring ground** means no ground on the neighboring tile, not
++empty border slots. The target **any other ground** covers other grounds.
++In the Brush Manager check the same Alignment + Border target pair:
++**Inside ground / Empty (no neighbor)** and **Inside ground / Any other brush**
++are two separate sets. The generator imports only sets that hold items;
++it does not add inner borders to a brush that has only outer borders.
++The slot numbers stay compatible with existing profiles:
++
++| Slot | Border variant |
+ | --- | --- |
+ | 1–4 | South, West, North, East |
+ | 5–8 | Outer SE, SW, NE, NW |
+ | 9–12 | Inner SW, SE, NW, NE |
+ 
+-Ściany są umieszczane na tle przy krawędzi podłogi. Bordery są nakładane
+-na podłogę; kilka krawędzi i narożnik może znaleźć się na jednym polu.
+-
+-Kierunki przypisujesz samodzielnie. Generator nie rozpoznaje ich z grafiki.
+-Wybierz itemy bez ground; osobne warianty w danym slocie mogą mieć własne wagi.
+-Układ, który zostanie odcięty przez blokujące ściany lub bordery, nie zostanie
+-przekazany do podglądu. Zmień materiały lub seed zgodnie z komunikatem.
+-
+-## Profile i podgląd
+-
+-**Save**, **Duplicate**, **Delete**, **Import** i **Export** obsługują nazwane
+-profile JSON: materiały, wagi, zestawy borderów przypisane do gruntów
+-i wszystkie ustawienia generowania. Tooltipy przy **Import** i **Export**
+-wyjaśniają ich działanie. Import dodaje profil do biblioteki; eksport zapisuje
+-bieżące ustawienia, również niezapisane zmiany. Mapę zapisuje się oddzielnie
+-jako OTBM. Dotychczasowe profile z jednym kompletem borderów nadal działają.
+-Profile zapisane w DME są powiązane z profilem klienta. Aby użyć profilu na
+-innym kliencie, zduplikuj go i popraw materiały. ID są zawsze sprawdzane ponownie.
+-Biblioteka znajduje się w katalogu danych aplikacji `custom-generator/profiles.json`.
+-
+-Generowanie odbywa się w tle; przycisk Generate zmienia się w **Cancel generation**.
+-Obowiązują limity Lua: 120 sekund i 256 MiB. Rozmiar wynosi 24–200 pól na oś,
+-liczba pomieszczeń 2–64, dekoracje 0–30%. Zbyt mały obszar zwraca komunikat.
+-Ta sama konfiguracja i seed dają ten sam wynik przy tej samej wersji generatora DME.
+-Puste kategorie opcjonalne są pomijane.
+-
+-Podgląd pokazuje cały stos wygenerowanych itemów w rendererze mapy. Zmiana
+-materiałów, ustawień, aktywnej mapy lub klienta usuwa podgląd. Kolejne Generate
+-zastępuje poprzedni wynik. Podgląd nie zmienia dokumentu ani historii Undo.
+-
+-Apply zastępuje itemy na całym wygenerowanym prostokącie, zachowując metadane
+-pól, w tym strefy, domy i spawny/stworzenia. Powstaje jedna operacja Undo/Redo.
+-Przedstawiony wynik można następnie zapisać jako OTBM.
+-
+-Przepisy łączą pomieszczenia i sprawdzają przechodniość obszaru. Blokujące
+-dekoracje są dodawane tylko, jeśli nie rozdzielą przejść; rzeczywista liczba
+-dekoracji może być niższa od ustawionej gęstości. Przy dużych obszarach liczba
+-prób dla dekoracji blokujących jest ograniczona do 256.
+-
+-Pierwsza wersja generuje jedno piętro. Nie generuje schodów, drabin, połączonych
+-pięter ani obiektów składanych z kilku pól.
++Walls are placed on the background next to the edge of the floor. Borders are laid
++on the floor; several edges and a corner can share one tile.
++
++You assign the directions yourself. The generator does not read them from the graphics.
++Pick items that are not ground; each variant in a slot can have its own weight.
++A layout that blocking walls or borders would cut off is not
++passed to the preview. Change the materials or the seed as the message says.
++
++## Profiles and preview
++
++**Save**, **Duplicate**, **Delete**, **Import** and **Export** handle named
++JSON profiles: materials, weights, border sets assigned to grounds
++and every generation setting. The tooltips of **Import** and **Export**
++explain them. Import adds a profile to the library; export writes
++the current settings, unsaved changes included. The map is saved separately
++as OTBM. Older profiles with a single border set still work.
++Profiles saved in the editor belong to a client profile. To use a profile with
++another client, duplicate it and fix its materials. IDs are always checked again.
++The library is `custom-generator/profiles.json` in the application data folder.
++
++Generation runs in the background; the Generate button turns into **Cancel generation**.
++Lua limits apply: 120 seconds and 256 MiB. The size is 24–200 tiles per axis,
++2–64 rooms, 0–30% decorations. An area that is too small returns a message.
++The same settings and seed give the same result with the same generator version.
++Empty optional categories are skipped.
++
++The preview shows the whole stack of generated items in the map renderer. Changing
++the materials, the settings, the active map or the client removes the preview. Another Generate
++replaces the previous result. The preview changes neither the document nor the Undo history.
++
++Apply replaces the items on the whole generated rectangle and keeps the tile
++metadata, zones, houses and spawns/creatures included. It makes one Undo/Redo step.
++The result can then be saved as OTBM.
++
++The recipes connect the rooms and check that the area is walkable. Blocking
++decorations are added only where they do not split passages; the actual number of
++decorations can be lower than the set density. On large areas the number of
++tries for blocking decorations is limited to 256.
++
++This first version makes one floor. It does not make stairs, ladders, linked
++floors or objects made of several tiles.
+diff --git a/editor/core/generationlibrary.cpp b/editor/core/generationlibrary.cpp
+index f5b9594..2b0456f 100644
+--- a/editor/core/generationlibrary.cpp
++++ b/editor/core/generationlibrary.cpp
+@@ -1042,7 +1042,7 @@ QVariantMap GenerationLibrary::reviseStyle(const QString &styleId, const QVarian
+ 
+     model["roles"] = roles;
+     style["model"] = model;
+-    style["name"] = style.value("name").toString() + " · poprawiony";
++    style["name"] = style.value("name").toString() + " · revised";
+ 
+     return save(style); // New ID/revision: existing plans retain their original snapshot.
+ }
+diff --git a/editor/core/proceduralgeneration.cpp b/editor/core/proceduralgeneration.cpp
+index 48c2dbf..b6f29b7 100644
+--- a/editor/core/proceduralgeneration.cpp
++++ b/editor/core/proceduralgeneration.cpp
+@@ -311,7 +311,7 @@ Analysis analyze(const QVariantMap &model, const QVariantMap &context, const Can
+     if (a.focus.isEmpty() || !counts.contains(a.focus))
+     {
+         a.error =
+-            "Wzorzec nie zawiera rozpoznanego przechodniego wnętrza. Zaznacz podłoże razem ze ścianami.";
++            "The pattern has no recognized walkable interior. Select the ground together with its walls.";
+         return a;
+     }
+     QSet<int> interiorDetails, boundaryDetails;
+@@ -470,7 +470,7 @@ Analysis analyze(const QVariantMap &model, const QVariantMap &context, const Can
+         }
+     if (!a.complete)
+     {
+-        a.error = "Brak pełnego sąsiedztwa RAW 3×3. Zaznacz większy fragment.";
++        a.error = "No complete RAW 3×3 neighborhood. Select a larger fragment.";
+         return a;
+     }
+     QVariantList coverage;
+@@ -708,8 +708,8 @@ GenerationResult generateProcedural(const GenerationRequest &req, const Cancel &
+             if (!inside && a.edgeIds.isEmpty())
+                 continue;
+             return fail(
+-                QString("Wzorzec nie ma pasującej %1 (kod %2). Dodaj przykład tego narożnika lub brzegu.")
+-                    .arg(inside ? "granicy wnętrza" : "zewnętrznej ściany")
++                QString("The pattern has no matching %1 (code %2). Add an example of this corner or edge.")
++                    .arg(inside ? "interior border" : "outer wall")
+                     .arg(shape),
+                 k);
+         }
+@@ -734,12 +734,12 @@ GenerationResult generateProcedural(const GenerationRequest &req, const Cancel &
+                 }
+             }
+             if (!found)
+-                return fail("Brak przechodniego wariantu w maksymalnie 8 próbach. Poszerz przejście.", k);
++                return fail("No walkable variant in at most 8 tries. Widen the passage.", k);
+         }
+         const auto &p = pool[chosen];
+         QString oldSurface = surfaceAt(k);
+         if (!target.contains(k) && !oldSurface.isEmpty() && !a.surfaces.contains(oldSurface))
+-            return fail("Nieznane połączenie terenu. Dodaj przykład obu stron przejścia.", k);
++            return fail("Unknown terrain connection. Add an example of both sides of the passage.", k);
+         QVariantList items = p.items;
+         if (!target.contains(k))
+         {
+@@ -765,7 +765,7 @@ GenerationResult generateProcedural(const GenerationRequest &req, const Cancel &
+                         .value("blocked")
+                         .toBool())
+                     return fail(
+-                        "Przejście dotyka ściany. Poszerz pędzel albo dodaj wzorzec wąskiego przejścia.", k);
++                        "The passage touches a wall. Widen the brush or add a pattern of a narrow passage.", k);
+         output[k] = {{"x", px(k)}, {"y", py(k)}, {"z", floor}, {"items", items}};
+         if (target.contains(k))
+         {
+diff --git a/editor/core/uitheme.cpp b/editor/core/uitheme.cpp
+index 80943a6..7926158 100644
+--- a/editor/core/uitheme.cpp
++++ b/editor/core/uitheme.cpp
+@@ -25,14 +25,14 @@ const QColor glyph    ("#b8b8b8");
+ struct Preset { const char *name; const char *color; };
+ 
+ const Preset kPresets[] = {
+-    { "Klasyczny",  "#ffffff" },
+-    { "Zielony",    "#8fd08f" },
++    { "Classic",    "#ffffff" },
++    { "Green",      "#8fd08f" },
+     { "Blue",       "#8fa8e0" },
+-    { "Czerwony",   "#e08f8f" },
+-    { "Fioletowy",  "#b78fe0" },
+-    { "Zloty",      "#e0c88f" },
+-    { "Turkusowy",  "#8fd8d0" },
+-    { "Grafitowy",  "#9a9aa5" },
++    { "Red",        "#e08f8f" },
++    { "Purple",     "#b78fe0" },
++    { "Gold",       "#e0c88f" },
++    { "Turquoise",  "#8fd8d0" },
++    { "Graphite",   "#9a9aa5" },
+ };
+ 
+ }
+diff --git a/editor/map/mapview_generation.cpp b/editor/map/mapview_generation.cpp
+index 5d40cb3..d1a79af 100644
+--- a/editor/map/mapview_generation.cpp
++++ b/editor/map/mapview_generation.cpp
+@@ -645,8 +645,8 @@ QVariantMap MapView::setGenerationPreview(const QVariantMap &patch, quint64 revi
+                         for (int d = 0; d < 8; ++d)
+                             touches |= proposed.contains(selKey(x + dx[d], y + dy[d], z));
+                         if (inside || touches)
+-                            return fail(QString("Wzorzec nie zawiera brzegu między podłożami %1 i %2. "
+-                                                "Pobierz fragment obejmujący obie strony wybrzeża.")
++                            return fail(QString("The pattern has no border between grounds %1 and %2. "
++                                                "Take a fragment that covers both sides of the shore.")
+                                             .arg(centerId)
+                                             .arg(it.key()));
+                         continue;
+@@ -671,12 +671,12 @@ QVariantMap MapView::setGenerationPreview(const QVariantMap &patch, quint64 revi
+                                 borders.append(b);
+                             }
+                             else
+-                                return fail("Wzorzec nie zawiera kompletu narożników brzegu. Pobierz większy "
+-                                            "fragment wybrzeża.");
++                                return fail("The pattern lacks a full set of border corners. Take a larger "
++                                            "fragment of the shore.");
+                         }
+                         else
+-                            return fail("Wzorzec nie zawiera kompletu kierunków brzegu. Pobierz większy "
+-                                        "fragment wybrzeża.");
++                            return fail("The pattern lacks a full set of border directions. Take a larger "
++                                        "fragment of the shore.");
+                     }
+                 }
+             }
+diff --git a/editor/qml/components/MainMenuBar.qml b/editor/qml/components/MainMenuBar.qml
+index a363206..b401c88 100644
+--- a/editor/qml/components/MainMenuBar.qml
++++ b/editor/qml/components/MainMenuBar.qml
+@@ -532,7 +532,7 @@ DmeMenuBar {
+             onTriggered: menuBar.numberedZonesDialog.open()
+         }
+         Action {
+-            text: "Pędzel proceduralny…"
++            text: "Procedural brush…"
+             enabled: Backend.otbReader.loaded && Backend.otbmReader.loaded && !!menuBar.generationLibraryDialog
+             onTriggered: menuBar.generationLibraryDialog.open()
+         }
+diff --git a/editor/qml/components/ProceduralBrushBar.qml b/editor/qml/components/ProceduralBrushBar.qml
+index b25dc45..13d2a3f 100644
+--- a/editor/qml/components/ProceduralBrushBar.qml
++++ b/editor/qml/components/ProceduralBrushBar.qml
+@@ -22,7 +22,7 @@ Control {
+ 
+     readonly property bool locked: !!mapView.generationInputBlocked || (!!session && session.library.busy)
+ 
+-    readonly property string styleName: session && session.selectedStyleIndex >= 0 && session.selectedStyleIndex < session.styles.length ? session.styles[session.selectedStyleIndex].name : "Wybierz wzorzec"
++    readonly property string styleName: session && session.selectedStyleIndex >= 0 && session.selectedStyleIndex < session.styles.length ? session.styles[session.selectedStyleIndex].name : "Choose a pattern"
+ 
+     implicitHeight: commands.implicitHeight + 12 + (sessionActive ? statusLine.implicitHeight + 6 : 0)
+ 
+@@ -120,7 +120,7 @@ Control {
+ 
+         spacing: 6
+ 
+-        BrushButton {objectName: "mapBrushToggle";svgIcon: "brush";text: "Pędzel z wzorca";checked: bar.sessionActive;onClicked: {if(bar.sessionActive)bar.session.endOnMap();else bar.activationRequested();}}
++        BrushButton {objectName: "mapBrushToggle";svgIcon: "brush";text: "Pattern brush";checked: bar.sessionActive;onClicked: {if(bar.sessionActive)bar.session.endOnMap();else bar.activationRequested();}}
+ 
+         BrushButton {objectName: "mapBrushStyle";visible: bar.sessionActive;width: Math.min(220,bar.width-16);text: bar.styleName;dropdown: true;previewSource: bar.session?bar.session.styleIcon(bar.session.styleId):"";enabled: !bar.locked;onClicked: stylePicker.open()}
+ 
+@@ -128,13 +128,13 @@ Control {
+ 
+             visible: bar.sessionActive;spacing: 2
+ 
+-            BrushButton {objectName: "mapBrushCorridor";svgIcon: "path";helpText: "Ścieżka — przeciągnij, aby narysować korytarz";text: "Ścieżka";checked: bar.mapView.generationPaintMode===3;enabled: !!bar.session&&!!bar.session.styleId&&!bar.locked;onClicked: bar.session.armBrush(3)}
++            BrushButton {objectName: "mapBrushCorridor";svgIcon: "path";helpText: "Path: drag to draw a corridor";text: "Path";checked: bar.mapView.generationPaintMode===3;enabled: !!bar.session&&!!bar.session.styleId&&!bar.locked;onClicked: bar.session.armBrush(3)}
+ 
+-            BrushButton {objectName: "mapBrushRoom";svgIcon: "area";helpText: "Obszar — maluj większe, nieregularne powierzchnie";text: "Obszar";checked: bar.mapView.generationPaintMode===4;enabled: !!bar.session&&!!bar.session.styleId&&!bar.locked;onClicked: {if(bar.session.brushWidthValue<11)bar.session.setMapWidth(17);bar.session.armBrush(4)}}
++            BrushButton {objectName: "mapBrushRoom";svgIcon: "area";helpText: "Area: paint larger, irregular surfaces";text: "Area";checked: bar.mapView.generationPaintMode===4;enabled: !!bar.session&&!!bar.session.styleId&&!bar.locked;onClicked: {if(bar.session.brushWidthValue<11)bar.session.setMapWidth(17);bar.session.armBrush(4)}}
+ 
+-            BrushButton {objectName: "mapBrushReshape";svgIcon: "reshape";text: "Zwężaj";helpText: "Przebudowa — zamykaj fragmenty komory i dopasuj ściany";checked: bar.mapView.generationPaintMode===6;enabled: !!bar.session&&!!bar.session.styleId&&!bar.locked;onClicked: bar.session.armBrush(6)}
++            BrushButton {objectName: "mapBrushReshape";svgIcon: "reshape";text: "Narrow";helpText: "Reshape: close off parts of a chamber and fit the walls";checked: bar.mapView.generationPaintMode===6;enabled: !!bar.session&&!!bar.session.styleId&&!bar.locked;onClicked: bar.session.armBrush(6)}
+ 
+-            BrushButton {objectName: "mapBrushPrefab";svgIcon: "prefab";helpText: "Prefab — wstaw cały zapisany układ";text: "Struktura";checked: bar.mapView.generationPaintMode===5;enabled: !!bar.session&&bar.session.brushPrefabs.length>0&&!bar.locked;onClicked: bar.session.armBrush(5)}
++            BrushButton {objectName: "mapBrushPrefab";svgIcon: "prefab";helpText: "Prefab: place a whole saved layout";text: "Structure";checked: bar.mapView.generationPaintMode===5;enabled: !!bar.session&&bar.session.brushPrefabs.length>0&&!bar.locked;onClicked: bar.session.armBrush(5)}
+ 
+         }
+ 
+@@ -142,27 +142,27 @@ Control {
+ 
+             visible: bar.sessionActive;spacing: 6
+ 
+-            Label {height: 30;verticalAlignment: Text.AlignVCenter;text: "Rozmiar";color: Colors.c("muted");font.pixelSize: 11}
++            Label {height: 30;verticalAlignment: Text.AlignVCenter;text: "Size";color: Colors.c("muted");font.pixelSize: 11}
+ 
+             SpinBox {objectName: "mapBrushWidth";width: 90;height: 30;from: 3;to: 63;value: bar.session?bar.session.brushWidthValue:7;editable: true;enabled: !bar.locked;onValueModified: bar.session.setMapWidth(value)}
+ 
+         }
+ 
+-        BrushButton {objectName: "pickMapBrushSource";svgIcon: "select";helpText: "Zaznacz gotowy fragment mapy do nauki wzorca";visible: bar.sessionActive;text: "Zaznacz wzorzec";enabled: !bar.locked;onClicked: bar.session.pickMapExample()}
++        BrushButton {objectName: "pickMapBrushSource";svgIcon: "select";helpText: "Select a finished map fragment to learn a pattern from";visible: bar.sessionActive;text: "Select pattern";enabled: !bar.locked;onClicked: bar.session.pickMapExample()}
+ 
+-        BrushButton {objectName: "learnMapBrushSource";svgIcon: "learn";helpText: "Zapamiętaj zaznaczenie jako nowy wzorzec";visible: bar.sessionActive;text: "Zapamiętaj";enabled: !!bar.session&&bar.mapView.selectionCount>0&&!bar.locked;onClicked: bar.session.learnMapSelection()}
++        BrushButton {objectName: "learnMapBrushSource";svgIcon: "learn";helpText: "Remember the selection as a new pattern";visible: bar.sessionActive;text: "Remember";enabled: !!bar.session&&bar.mapView.selectionCount>0&&!bar.locked;onClicked: bar.session.learnMapSelection()}
+ 
+         ComboBox {visible: bar.sessionActive&&bar.mapView.generationPaintMode===5;width: 180;height: 30;model: bar.session?bar.session.brushPrefabs:[];textRole: "name";currentIndex: bar.session?bar.session.selectedPrefabIndex:-1;onActivated: bar.session.choosePrefab(currentIndex)}
+ 
+-        SpinBox {visible: bar.sessionActive&&bar.mapView.generationPaintMode===5;width: 80;height: 30;from: 1;to: 32;value: bar.session?bar.session.structureSpan:1;onValueModified: bar.session.structureSpan=value;ToolTip.visible: hovered;ToolTip.text: "Długość powtarzanej części struktury"}
++        SpinBox {visible: bar.sessionActive&&bar.mapView.generationPaintMode===5;width: 80;height: 30;from: 1;to: 32;value: bar.session?bar.session.structureSpan:1;onValueModified: bar.session.structureSpan=value;ToolTip.visible: hovered;ToolTip.text: "Length of the repeated part of the structure"}
+ 
+-        BrushButton {objectName: "mapBrushOptions";svgIcon: "settings";visible: bar.sessionActive;text: "Ustawienia";dropdown: true;enabled: !bar.locked;onClicked: options.open()}
++        BrushButton {objectName: "mapBrushOptions";svgIcon: "settings";visible: bar.sessionActive;text: "Settings";dropdown: true;enabled: !bar.locked;onClicked: options.open()}
+ 
+-        BrushButton {objectName: "mapBrushLibrary";svgIcon: "library";visible: bar.sessionActive;text: "Biblioteka";enabled: !bar.locked;onClicked: bar.session.openLibrary()}
++        BrushButton {objectName: "mapBrushLibrary";svgIcon: "library";visible: bar.sessionActive;text: "Library";enabled: !bar.locked;onClicked: bar.session.openLibrary()}
+ 
+-        BrushButton {objectName: "closeMapBrush";svgIcon: "close";visible: bar.sessionActive;text: "Wyłącz pędzel";onClicked: bar.session.endOnMap()}
++        BrushButton {objectName: "closeMapBrush";svgIcon: "close";visible: bar.sessionActive;text: "Turn off brush";onClicked: bar.session.endOnMap()}
+ 
+-        Label {visible: !bar.sessionActive;height: 30;verticalAlignment: Text.AlignVCenter;text: "Maluj na podstawie fragmentów swojej mapy";color: Colors.c("muted");font.pixelSize: 11;width: Math.min(300,bar.width-16);elide: Text.ElideRight}
++        Label {visible: !bar.sessionActive;height: 30;verticalAlignment: Text.AlignVCenter;text: "Paint from fragments of your own map";color: Colors.c("muted");font.pixelSize: 11;width: Math.min(300,bar.width-16);elide: Text.ElideRight}
+ 
+     }
+ 
+@@ -176,9 +176,9 @@ Control {
+ 
+         BusyIndicator {Layout.preferredWidth: 16;Layout.preferredHeight: 16;running: !!bar.session&&bar.session.library.busy;visible: running}
+ 
+-        Label {objectName: "mapBrushStatus";Layout.fillWidth: true;maximumLineCount: 2;wrapMode: Text.WordWrap;elide: Text.ElideRight;color: Colors.c("muted");font.pixelSize: 11;text: bar.session?(bar.session.library.busy?(bar.session.quickLearning?"Zapamiętuję wzorzec…":"Przygotowuję teren…"):bar.session.message):"";ToolTip.visible: statusHover.hovered;ToolTip.text: text;HoverHandler {id: statusHover}}
++        Label {objectName: "mapBrushStatus";Layout.fillWidth: true;maximumLineCount: 2;wrapMode: Text.WordWrap;elide: Text.ElideRight;color: Colors.c("muted");font.pixelSize: 11;text: bar.session?(bar.session.library.busy?(bar.session.quickLearning?"Learning the pattern…":"Preparing the terrain…"):bar.session.message):"";ToolTip.visible: statusHover.hovered;ToolTip.text: text;HoverHandler {id: statusHover}}
+ 
+-        Label {visible: bar.width>1000;text: "LPM — maluj    Ctrl+Z — cofnij    Esc — zakończ";color: Colors.c("muted");font.pixelSize: 11}
++        Label {visible: bar.width>1000;text: "Left click: paint    Ctrl+Z: undo    Esc: finish";color: Colors.c("muted");font.pixelSize: 11}
+ 
+     }
+ 
+@@ -202,7 +202,7 @@ Control {
+ 
+             spacing: 6
+ 
+-            Label {text: "Twoje wzorce";color: Colors.c("text");font.bold: true;padding: 6}
++            Label {text: "Your patterns";color: Colors.c("text");font.bold: true;padding: 6}
+ 
+             ScrollView {
+ 
+@@ -242,9 +242,9 @@ Control {
+ 
+             }
+ 
+-            Label {visible: !!bar.session&&!bar.session.styles.length;width: parent.width;wrapMode: Text.WordWrap;text: "Zaznacz gotowy fragment mapy i kliknij Zapamiętaj.";color: Colors.c("muted");padding: 6}
++            Label {visible: !!bar.session&&!bar.session.styles.length;width: parent.width;wrapMode: Text.WordWrap;text: "Select a finished map fragment and click Remember.";color: Colors.c("muted");padding: 6}
+ 
+-            BrushButton {text: "Pobierz nowy wzorzec z mapy";width: parent.width;onClicked: {stylePicker.close();bar.session.pickMapExample()}}
++            BrushButton {text: "Take a new pattern from the map";width: parent.width;onClicked: {stylePicker.close();bar.session.pickMapExample()}}
+ 
+         }
+ 
+@@ -268,15 +268,15 @@ Control {
+ 
+             spacing: 8
+ 
+-            Label {text: "Kształt i teren";color: Colors.c("text");font.bold: true}
++            Label {text: "Shape and terrain";color: Colors.c("text");font.bold: true}
+ 
+-            Label {text: "Nieregularność: "+(bar.session?bar.session.roughnessValue:35)+"%";color: Colors.c("muted")}
++            Label {text: "Irregularity: "+(bar.session?bar.session.roughnessValue:35)+"%";color: Colors.c("muted")}
+ 
+             Slider {Layout.fillWidth: true;from: 0;to: 100;stepSize: 1;value: bar.session?bar.session.roughnessValue:35;onMoved: bar.session.setMapRoughness(Math.round(value))}
+ 
+-            CheckBox {text: "Zastępuj teren pod pędzlem";checked: !!bar.session&&bar.session.replaceTerrain;palette.windowText: Colors.c("text");onToggled: bar.session.setReplaceTerrain(checked)}
++            CheckBox {text: "Replace the terrain under the brush";checked: !!bar.session&&bar.session.replaceTerrain;palette.windowText: Colors.c("text");onToggled: bar.session.setReplaceTerrain(checked)}
+ 
+-            BrushButton {text: "Użyj zaznaczonego podłoża jako wnętrza";enabled: bar.mapView.selectionCount>0;onClicked: {
++            BrushButton {text: "Use the selected ground as the interior";enabled: bar.mapView.selectionCount>0;onClicked: {
+ 
+                 const sample=bar.mapView.generationExample();let ground=0;
+ 
+@@ -290,7 +290,7 @@ Control {
+ 
+             }}
+ 
+-            Label {Layout.fillWidth: true;wrapMode: Text.WordWrap;text: "Puszczenie myszy zapisuje pociągnięcie. Ctrl+Z cofa teren razem z brzegami.";color: Colors.c("muted");font.pixelSize: 11}
++            Label {Layout.fillWidth: true;wrapMode: Text.WordWrap;text: "Releasing the mouse saves the stroke. Ctrl+Z undoes the terrain together with its borders.";color: Colors.c("muted");font.pixelSize: 11}
+ 
+         }
+ 
+diff --git a/editor/qml/dialogs/AiMapAssistantDialog.qml b/editor/qml/dialogs/AiMapAssistantDialog.qml
+index ba3f459..b7e28cd 100644
+--- a/editor/qml/dialogs/AiMapAssistantDialog.qml
++++ b/editor/qml/dialogs/AiMapAssistantDialog.qml
+@@ -64,7 +64,7 @@ DmeDialog {
+                 id: prompt
+                 anchors.fill: parent
+                 anchors.margins: 5
+-                placeholderText: "Np. mała piaszczysta wyspa z trawiastym środkiem i nieregularnym brzegiem"
++                placeholderText: "E.g. a small sandy island with a grassy middle and an irregular shore"
+                 wrapMode: TextEdit.Wrap
+                 color: Backend.uiTheme.style === "gray-dark" ? "#E0E0E0" : (Backend.uiTheme.style === "github-dark" ? "#C9D1D9" : "#d0d0d0")
+                 placeholderTextColor: "#777"
+diff --git a/editor/qml/dialogs/CustomMapGeneratorDialog.qml b/editor/qml/dialogs/CustomMapGeneratorDialog.qml
+index 25b4a9d..5c9e14f 100644
+--- a/editor/qml/dialogs/CustomMapGeneratorDialog.qml
++++ b/editor/qml/dialogs/CustomMapGeneratorDialog.qml
+@@ -46,7 +46,7 @@ DmeDialog {
+     width: Math.max(760,Math.min(1120,(Overlay.overlay ? Overlay.overlay.width : 1152)-32))
+     height: Math.max(570,Math.min(720,(Overlay.overlay ? Overlay.overlay.height : 752)-32))
+     function freshProfile() {
+-        return Object.assign({version:1,name:"Midhem — jaskinia",kind:"dungeon",clientKey:clientKey,
++        return Object.assign({version:1,name:"My cave",kind:"dungeon",clientKey:clientKey,
+             width:70,height:70,rooms:8,seed:123,density:8,x:1000,y:1000,z:mapCtrl ? mapCtrl.floor : 7,
+             wallsEnabled:false,bordersEnabled:false,materials:{},groundBorders:[]},advancedDefaults);
+     }
+diff --git a/editor/qml/dialogs/GenerationLibraryDialog.qml b/editor/qml/dialogs/GenerationLibraryDialog.qml
+index 0146106..971082d 100644
+--- a/editor/qml/dialogs/GenerationLibraryDialog.qml
++++ b/editor/qml/dialogs/GenerationLibraryDialog.qml
+@@ -98,8 +98,8 @@ DmeDialog {
+         replace.checked=true;
+         livePreview.checked=true;
+         if(visible)close();
+-        if(profileReady&&styleId){chooseStyle(styleChoice.currentIndex);if(!quickLearning)armBrush(3);message="Maluj LPM na mapie. Po puszczeniu myszy zapiszę pociągnięcie. Ctrl+Z cofa.";}
+-        else{mapCtrl.generationPaintMode=0;message=profileReady?"Zaznacz gotowy fragment mapy (minimum 3×3) i kliknij Zapamiętaj.":library.status;}
++        if(profileReady&&styleId){chooseStyle(styleChoice.currentIndex);if(!quickLearning)armBrush(3);message="Paint on the map with the left mouse button. The stroke is saved when you release the mouse. Ctrl+Z undoes.";}
++        else{mapCtrl.generationPaintMode=0;message=profileReady?"Select a finished map fragment (at least 3×3) and click Remember.":library.status;}
+     }
+     function endOnMap() {
+         mapSessionActive=false;commitAfterStroke=false;quickLearning=false;
+@@ -116,7 +116,7 @@ DmeDialog {
+         if(mapSessionActive&&model&&(model.algorithm==="raw-patch-v1"||model.patterns)&&!library.busy) {
+             const converted=styles.findIndex(s=>s.parameters&&s.parameters.sourceStyleId===entry.id);
+             if(converted>=0){chooseStyle(converted);return;}
+-            quickLearning=true;mapCtrl.generationPaintMode=0;message="Przygotowuję proceduralną wersję zapisanego wzorca…";
++            quickLearning=true;mapCtrl.generationPaintMode=0;message="Preparing a procedural version of the saved pattern…";
+             if(!library.learnStyle(entry.name+" · proceduralny",entry.examples||[],model.prefabs||[],{procedural:true,sourceStyleId:entry.id,recipes:model.recipes||[]})){quickLearning=false;message=library.status;}
+             return;
+         }
+@@ -130,25 +130,25 @@ DmeDialog {
+     function pickMapExample() {
+         if(library.busy||mapCtrl.generationInputBlocked)return;
+         discardPending();mapCtrl.generationPaintMode=0;mapCtrl.selectionMode=true;
+-        message="Zaznacz gotowy fragment mapy (minimum 3×3), następnie kliknij Zapamiętaj.";
++        message="Select a finished map fragment (at least 3×3), then click Remember.";
+     }
+     function learnMapSelection() {
+         if(!profileReady||library.busy||mapCtrl.generationInputBlocked)return;
+         const snapshot=mapCtrl.generationExample();
+         if(!snapshot.success){message=snapshot.error;return;}
+-        const name="Wzorzec z mapy "+(styles.length+1);
++        const name="Map pattern "+(styles.length+1);
+         const saved=library.capture(name,snapshot);
+         if(!saved.success){message=saved.error;return;}
+-        quickLearning=true;message="Pobieram teren i dekoracje z zaznaczenia…";
++        quickLearning=true;message="Reading terrain and decorations from the selection…";
+         if(!library.learnStyle(name,[saved.id],mapCtrl.generationPrefabs(),{procedural:true,recipes:recipes.map(r=>library.load(r.id).recipe)})){quickLearning=false;message=library.status;}
+     }
+     function finishMapStroke() {
+         if(!mapSessionActive){queueLivePreview();return;}
+-        if(!profileReady||!styleId){unlockMapStroke();mapCtrl.generationPaintMode=0;message="Najpierw pobierz lub wybierz wzorzec.";return;}
++        if(!profileReady||!styleId){unlockMapStroke();mapCtrl.generationPaintMode=0;message="Take or choose a pattern first.";return;}
+         if(mapCtrl.generationPaintMode<3||!mapCtrl.generationMask.length)return;
+         commitAfterStroke=true;mapCtrl.generationInputBlocked=true;
+         if(mapCtrl.generationPreviewActive&&!library.busy){applyPending();return;}
+-        message="Kończę pociągnięcie…";
++        message="Finishing the stroke…";
+         if(!waitingForPreview){previewDirty=true;liveTimer.restart();}
+     }
+     function unlockMapStroke() {commitAfterStroke=false;mapCtrl.generationInputBlocked=false;}
+@@ -190,7 +190,7 @@ DmeDialog {
+         mapCtrl.generationConnectRooms=connectRooms.checked;
+         mapCtrl.generationPaintMode=mode;
+         message=mapSessionActive
+-            ? (mode===5?"Kliknij na mapie, aby wstawić cały prefab. Ctrl+Z cofa.":"Maluj LPM na mapie. Puszczenie myszy zapisuje pociągnięcie. Ctrl+Z cofa.")
++            ? (mode===5?"Click on the map to place the whole prefab. Ctrl+Z undoes.":"Paint on the map with the left mouse button. Releasing the mouse saves the stroke. Ctrl+Z undoes.")
+             : (mode===5?"Click to stamp a complete prefab; right-click removes a pending stamp.":"Left drag builds the area; right drag erases. Preview updates after a short pause. Apply commits one undo step.");
+     }
+     function queueLivePreview() {
+@@ -216,7 +216,7 @@ DmeDialog {
+         mapCtrl.setGenerationMask([],[]);pins=[];previewCells=[];diagnosticCells=[];frozenStyle=({});blueprintId="";
+         mapCtrl.generationPaintMode=mode;
+         unlockMapStroke();
+-        message=mapSessionActive?"Zapisano pociągnięcie. Maluj dalej. Ctrl+Z cofa.":"Applied. Continue painting with the same style. Undo/Redo restores the whole committed area.";
++        message=mapSessionActive?"Stroke saved. Keep painting. Ctrl+Z undoes.":"Applied. Continue painting with the same style. Undo/Redo restores the whole committed area.";
+     }
+     function stampPrefab(x,y,z,erase) {
+         if(!profileReady||!styleId)return;
+@@ -294,9 +294,9 @@ DmeDialog {
+                 if(result.success){
+                     const index=dialog.styles.findIndex(e=>e.id===result.id);
+                     if(index>=0)dialog.chooseStyle(index);
+-                    dialog.message="Wzorzec gotowy. Wybierz korytarz lub komnatę i maluj LPM na mapie.";
++                    dialog.message="Pattern ready. Choose Path or Area and paint on the map with the left mouse button.";
+                 }else dialog.message=String(result.error).indexOf("3 x 3")>=0
+-                    ? "Zaznacz większy fragment podłoża — wzorzec potrzebuje co najmniej pełnego obszaru 3×3."
++                    ? "Select a larger ground fragment: a pattern needs at least one full 3×3 area."
+                     : result.error;
+                 return;
+             }
+@@ -328,7 +328,7 @@ DmeDialog {
+         function onGenerationPrefabRequested(x,y,z,erase) { dialog.stampPrefab(x,y,z,erase); }
+         function onGenerationInvalidated() {
+             dialog.previewCells=[];dialog.diagnosticCells=[];
+-            if (dialog.waitingForPreview) {dialog.library.cancel();dialog.waitingForPreview=false;dialog.message="Mapa się zmieniła — odświeżam wynik.";}
++            if (dialog.waitingForPreview) {dialog.library.cancel();dialog.waitingForPreview=false;dialog.message="The map changed: refreshing the result.";}
+             if(dialog.mapSessionActive&&dialog.commitAfterStroke&&!dialog.previewDirty&&!dialog.library.busy)dialog.unlockMapStroke();
+         }
+         function onReadersChanged() {if(dialog.mapSessionActive)dialog.endOnMap();liveTimer.stop();dialog.previewDirty=false;dialog.library.cancel();dialog.mapCtrl.generationPaintMode=0;dialog.mapCtrl.clearGenerationPreview(); }
+@@ -354,7 +354,7 @@ DmeDialog {
+             TabButton { text: "Brush" }
+             TabButton { text: "Prefabs" }
+             TabButton { text: "Legacy" }
+-            TabButton { text: "Struktury" }
++            TabButton { text: "Structures" }
+         }
+         StackLayout {
+             currentIndex: tab.currentIndex; enabled: dialog.profileReady; Layout.fillWidth: true; Layout.fillHeight: true
+@@ -521,18 +521,18 @@ DmeDialog {
+                 DmeButton { text: "Open legacy Tile Map Generator…"; onClicked: dialog.legacyRequested() }
+             }
+             ColumnLayout {
+-                Label {Layout.fillWidth: true;wrapMode: Text.WordWrap;text: "Zbuduj strukturę z całych prefabów. Przesunięcia liczymy od miejsca kliknięcia."}
++                Label {Layout.fillWidth: true;wrapMode: Text.WordWrap;text: "Build a structure from whole prefabs. Offsets count from the clicked position."}
+                 ComboBox {id: recipePrefab;Layout.fillWidth: true;model: dialog.prefabModel;textRole: "name"}
+                 RowLayout {
+                     Label {text: "X"} SpinBox {id: partX;from: -1024;to: 1024;editable: true;Layout.preferredWidth: 90}
+                     Label {text: "Y"} SpinBox {id: partY;from: -1024;to: 1024;editable: true;Layout.preferredWidth: 90}
+-                    Label {text: "Piętro"} SpinBox {id: partZ;from: -15;to: 15;editable: true;Layout.preferredWidth: 85}
++                    Label {text: "Floor"} SpinBox {id: partZ;from: -15;to: 15;editable: true;Layout.preferredWidth: 85}
+                 }
+-                ComboBox {id: repeatPart;Layout.fillWidth: true;model: ["Stała część", "Powtarzany odcinek mostu", "Końcowa część przesuwana z mostem"]}
++                ComboBox {id: repeatPart;Layout.fillWidth: true;model: ["Fixed part", "Repeated bridge segment", "End part that moves with the bridge"]}
+                 RowLayout {
+-                    Label {text: "Krok X"} SpinBox {id: stepX;from: -64;to: 64;value: 1;editable: true;Layout.preferredWidth: 85}
+-                    Label {text: "Krok Y"} SpinBox {id: stepY;from: -64;to: 64;editable: true;Layout.preferredWidth: 85}
+-                    DmeButton {objectName: "recipePartAdd";text: "Dodaj część";enabled: recipePrefab.currentIndex>=0;onClicked: {
++                    Label {text: "Step X"} SpinBox {id: stepX;from: -64;to: 64;value: 1;editable: true;Layout.preferredWidth: 85}
++                    Label {text: "Step Y"} SpinBox {id: stepY;from: -64;to: 64;editable: true;Layout.preferredWidth: 85}
++                    DmeButton {objectName: "recipePartAdd";text: "Add part";enabled: recipePrefab.currentIndex>=0;onClicked: {
+                         dialog.recipeParts=dialog.recipeParts.concat([{prefab:dialog.prefabModel[recipePrefab.currentIndex].name,dx:partX.value,dy:partY.value,dz:partZ.value,repeat:repeatPart.currentIndex===1,afterSpan:repeatPart.currentIndex===2,stepX:stepX.value,stepY:stepY.value,stepZ:0}]);
+                     }}
+                 }
+@@ -540,33 +540,33 @@ DmeDialog {
+                     Column {width: parent.width
+                         Repeater {model: dialog.recipeParts
+                             delegate: RowLayout {required property var modelData;required property int index;width: parent.width
+-                                Label {Layout.fillWidth: true;text: modelData.prefab+" · "+modelData.dx+", "+modelData.dy+", "+modelData.dz+(modelData.repeat?" · odcinek":modelData.afterSpan?" · koniec":"")}
+-                                DmeButton {text: "Usuń";onClicked: dialog.recipeParts=dialog.recipeParts.filter((p,i)=>i!==index)}
++                                Label {Layout.fillWidth: true;text: modelData.prefab+" · "+modelData.dx+", "+modelData.dy+", "+modelData.dz+(modelData.repeat?" · segment":modelData.afterSpan?" · end":"")}
++                                DmeButton {text: "Remove";onClicked: dialog.recipeParts=dialog.recipeParts.filter((p,i)=>i!==index)}
+                             }
+                         }
+                     }
+                 }
+-                CheckBox {id: showConnections;text: "Sprawdzaj połączenia przejść"}
++                CheckBox {id: showConnections;text: "Check passage connections"}
+                 GridLayout {visible: showConnections.checked;columns: 4
+-                    Label {text: "Wejście"}
++                    Label {text: "Entrance"}
+                     SpinBox {id: portAX;from: -1024;to: 1024;editable: true;Layout.preferredWidth: 85}
+                     SpinBox {id: portAY;from: -1024;to: 1024;editable: true;Layout.preferredWidth: 85}
+                     SpinBox {id: portAZ;from: -15;to: 15;editable: true;Layout.preferredWidth: 85}
+-                    Label {text: "Wyjście"}
++                    Label {text: "Exit"}
+                     SpinBox {id: portBX;from: -1024;to: 1024;editable: true;Layout.preferredWidth: 85}
+                     SpinBox {id: portBY;from: -1024;to: 1024;editable: true;Layout.preferredWidth: 85}
+                     SpinBox {id: portBZ;from: -15;to: 15;editable: true;Layout.preferredWidth: 85}
+-                    DmeButton {Layout.columnSpan: 4;text: "Dodaj połączenie ("+dialog.recipeConnections.length+")";onClicked: dialog.recipeConnections=dialog.recipeConnections.concat([{from:{dx:portAX.value,dy:portAY.value,dz:portAZ.value},to:{dx:portBX.value,dy:portBY.value,dz:portBZ.value}}])}
++                    DmeButton {Layout.columnSpan: 4;text: "Add connection ("+dialog.recipeConnections.length+")";onClicked: dialog.recipeConnections=dialog.recipeConnections.concat([{from:{dx:portAX.value,dy:portAY.value,dz:portAZ.value},to:{dx:portBX.value,dy:portBY.value,dz:portBZ.value}}])}
+                 }
+-                DmeButton {objectName: "recipeSave";text: "Zapisz strukturę i dodaj do wzorca";enabled: !!dialog.styleId&&dialog.recipeParts.length>0&&!dialog.library.busy;onClicked: {
++                DmeButton {objectName: "recipeSave";text: "Save the structure and add it to the pattern";enabled: !!dialog.styleId&&dialog.recipeParts.length>0&&!dialog.library.busy;onClicked: {
+                     const saved=dialog.library.saveRecipe(resourceName.text,{parts:dialog.recipeParts,connections:dialog.recipeConnections});
+                     if(!saved.success){dialog.message=saved.error;return;}
+                     const attached=dialog.library.attachRecipe(dialog.styleId,saved.id,dialog.prefabModel);
+-                    if(attached.success){dialog.chooseStyle(dialog.styles.findIndex(s=>s.id===attached.id));dialog.recipeParts=[];dialog.recipeConnections=[];dialog.message="Struktura zapisana. Wybierz tryb Struktura w topbarze.";}else dialog.message=attached.error;
++                    if(attached.success){dialog.chooseStyle(dialog.styles.findIndex(s=>s.id===attached.id));dialog.recipeParts=[];dialog.recipeConnections=[];dialog.message="Structure saved. Choose the Structure mode in the top bar.";}else dialog.message=attached.error;
+                 }}
+                 RowLayout {
+-                    DmeButton {text: "Eksportuj bibliotekę…";onClicked: packageExport.open()}
+-                    DmeButton {text: "Importuj bibliotekę…";onClicked: packageImport.open()}
++                    DmeButton {text: "Export library…";onClicked: packageExport.open()}
++                    DmeButton {text: "Import library…";onClicked: packageImport.open()}
+                 }
+             }
+         }
+@@ -577,8 +577,8 @@ DmeDialog {
+         }
+     }
+     signal legacyRequested()
+-    FileDialog {id: packageExport;title: "Eksport biblioteki proceduralnej";fileMode: FileDialog.SaveFile;nameFilters: ["Biblioteka DME (*.json)"];onAccepted: dialog.report(dialog.library.exportPackage(selectedFile.toString()))}
+-    FileDialog {id: packageImport;title: "Import biblioteki proceduralnej";nameFilters: ["Biblioteka DME (*.json)"];onAccepted: dialog.report(dialog.library.importPackage(selectedFile.toString()))}
++    FileDialog {id: packageExport;title: "Export procedural library";fileMode: FileDialog.SaveFile;nameFilters: ["Procedural library (*.json)"];onAccepted: dialog.report(dialog.library.exportPackage(selectedFile.toString()))}
++    FileDialog {id: packageImport;title: "Import procedural library";nameFilters: ["Procedural library (*.json)"];onAccepted: dialog.report(dialog.library.importPackage(selectedFile.toString()))}
+     FileDialog {
+         id: sourceFile; title: "Import a map example"; nameFilters: ["Tibia maps (*.otbm)"]
+         onAccepted: {
+diff --git a/tests/map_brush_demo_checks.h b/tests/map_brush_demo_checks.h
+index 324824f..e0475e0 100644
+--- a/tests/map_brush_demo_checks.h
++++ b/tests/map_brush_demo_checks.h
+@@ -375,7 +375,7 @@ static bool testMidhemBrush(const QStringList &args)
+     const int beforeMissing = map.itemCount();
+     auto missing = view.setGenerationPreview(patch, view.generationRevision());
+     if (missing.value("success").toBool() || map.itemCount() != beforeMissing ||
+-        !missing.value("error").toString().contains("Wzorzec"))
++        !missing.value("error").toString().contains("The pattern"))
+     {
+         qCritical() << "Unknown custom coastline was silently accepted" << missing;
+         return false;
+diff --git a/tests/qml/tst_custom_generator.qml b/tests/qml/tst_custom_generator.qml
+index 46eb4a0..b5b4ff1 100644
+--- a/tests/qml/tst_custom_generator.qml
++++ b/tests/qml/tst_custom_generator.qml
+@@ -147,7 +147,7 @@ Item {
+             const name=findChild(dialog.contentItem,"customGeneratorName");
+             name.text="Edited profile"; compare(dialog.profile.name,"Edited profile");
+             dialog.adopt(dialog.freshProfile());
+-            tryCompare(name,"text","Midhem — jaskinia");
++            tryCompare(name,"text","My cave");
+             tryCompare(width,"value",70); tryCompare(kind,"currentIndex",0);
+         }
+         function test_destinationControlsShareOneRow() {
