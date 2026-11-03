@@ -409,6 +409,11 @@ return {
 		["The last %d invaders flee from %s."] = "Os últimos %d invasores fogem de %s.",
 		["INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord."] =
 			"INVASÃO! %s ataca %s! Defenda %s: %d ondas em %d minutos, a última liderada pelo senhor da guerra deles.",
+		-- O393
+		["Every defender is rewarded by their part: damage, healing, kills and time in the fight. Stand idle and you earn nothing."] =
+			"Cada defensor é recompensado pela sua parte: dano, cura, abates e tempo na luta. Quem fica parado não ganha nada.",
+		["The %s turns back from %s: too few defenders are awake to make a fight of it."] =
+			"%s recua de %s: há poucos defensores acordados para uma batalha.",
 		["VICTORY! %s held: the %s is broken in %s. Top defenders: %s."] =
 			"VITÓRIA! %s resistiu: %s foi quebrado em %s. Melhores defensores: %s.",
 		["DEFEAT! %s %s. The %s occupies it for %d minutes: slay the occupiers to free it."] =
@@ -3234,6 +3239,33 @@ return {
 			"Mais de uma casa combina com esse nome. Diga o nome completo.",
 		["No house is free at the moment."] =
 			"Nenhuma casa está livre no momento.",
+		-- O394: Dorrin Alewright, the rumourmonger (chaos_service_npc.lua ANSWERS.rumours, his XML)
+		["Pull up a stool, |PLAYERNAME|. Ears open, purse open: want to hear the {rumours}?"] =
+			"Puxe um banquinho, |PLAYERNAME|. Ouvidos abertos, bolsa aberta: quer ouvir os {boatos}?",
+		["Mind the hour, |PLAYERNAME|."] =
+			"Fique de olho na hora, |PLAYERNAME|.",
+		["Some folk never finish their drink."] =
+			"Tem gente que nunca termina a bebida.",
+		["Dorrin Alewright. I pour, I listen, and for a few coins I tell what I hear. Ask for the {rumours}, or the {price}."] =
+			"Dorrin Alewright. Eu sirvo, eu escuto e, por umas moedas, conto o que ouço. Peça os {boatos}, ou o {preço}.",
+		["A rumour costs you %s gold. One per tale: I never sell the same story twice."] =
+			"Um boato custa %s de ouro. Um por história: nunca vendo a mesma história duas vezes.",
+		["The taps are dry and so am I. No rumours today."] =
+			"As torneiras secaram, e eu também. Nada de boatos hoje.",
+		["Nothing new has reached my ears for you. Come back within the hour."] =
+			"Nada de novo chegou aos meus ouvidos para você. Volte dentro de uma hora.",
+		["A rumour costs %s gold, and your purse and bank cannot spare it."] =
+			"Um boato custa %s de ouro, e sua bolsa e seu banco não têm isso sobrando.",
+		["%s gold, thank you. Lean closer."] =
+			"%s de ouro, obrigado. Chegue mais perto.",
+		["Scouts swear the %s is massing near %s. Trouble between %s and %s, server time, if they are right."] =
+			"Batedores juram que %s está se juntando perto de %s. Encrenca entre %s e %s, horário do servidor, se estiverem certos.",
+		["The old priests whisper that %s stirs. The portals by the temples should open between %s and %s, server time."] =
+			"Os velhos sacerdotes sussurram que %s desperta. Os portais junto aos templos devem abrir entre %s e %s, horário do servidor.",
+		["A trapper swore he saw a %s near %s. If he is right, it shows itself between %s and %s, server time."] =
+			"Um caçador jurou ter visto um %s perto de %s. Se ele estiver certo, aparece entre %s e %s, horário do servidor.",
+		["a great beast"] =
+			"uma grande fera",
 		["Pell Ashmere. I see to your name, your class, your familiar, your plate frame and your web shop orders. Ask what you need."] =
 			"Pell Ashmere. Cuido do seu nome, da sua classe, do seu familiar, da moldura da placa e dos pedidos da loja web. Diga o que precisa.",
 		["Say {sell} and the name of the one who buys it. Both of you must be here."] =

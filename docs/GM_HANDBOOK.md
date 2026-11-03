@@ -47,6 +47,7 @@ access flag (gamemaster or higher).
 | `/rift key <tier> [count \| mods]`, `/rift omen`, `/rift fragments` | **5+** | Rift Keys, Omen Keys and fragments for staff test characters |
 | `/worldboss start [name\|number\|random]`, `stop`, `arena` | 4+ | the world boss event |
 | `/invasion start <area\|random> [faction]`, `stop`, `status`, `schedule <minutes> ...` | 4+ | invasions |
+| `/rumours`, `/rumours spawn` | 4+ | tavern rumours (O394): what Dorrin Alewright knows now, the planned rare appearances; spawn the next one now |
 | `/siege start\|match\|end\|stop\|portal\|arena [n]\|signup <guild>\|clear` | 4+ | the guild siege |
 | `/arena stop\|slots`, `/bg stop\|slots\|min <n>\|off\|on`, `/marches` | 4+ (`/marches embers`: **5+**) | arena, battleground, Scorched Marches |
 | `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial`, `/challenge` | 4+ (`/raid marks`, `/descent sigil`, `/trial tokens`: **5+**) | the instanced content: runs, phases (`/challenge`: the Weekly Challenge's built week, theme and seed) |

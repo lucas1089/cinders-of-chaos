@@ -4,7 +4,8 @@
 usage: python3 -I install_service_npcs.py DATA_DIR [--dry-run]
 
 The NPCs come from server/data/scripts/chaos/service_npcs_config.lua (`C.npcs`: name and script per NPC), the same file the
-Lua side uses: the stash keeper, the pocket boss NPC, the banker, the house broker and the services clerk.
+Lua side uses: the stash keeper, the pocket boss NPC, the banker, the house broker, the services clerk and (O394) the
+rumourmonger Dorrin Alewright, who has no stall and stands next to the temple.
 
 1. data/npc: each NPC's XML (server/data/npc/<name>.xml), the script it names and the shared dialogue
    npc/scripts/chaos_service_npc.lua; only new or different files are written. service_npcs.lua places them at startup,

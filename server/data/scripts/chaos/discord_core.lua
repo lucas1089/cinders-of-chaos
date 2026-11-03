@@ -9,6 +9,7 @@
 --   ChaosDiscordCore.patchnotes(cfg, title, text)      the patch note post (patchnotes.lua, English and pt-BR rows)
 --   ChaosDiscordCore.weeklyChallenge(cfg, label, theme, sections)   the Weekly Challenge's week (O390,
 --                                                      weekly_challenge.lua): the top 3 of each class
+--   ChaosDiscordCore.cityInvasion(cfg, phase, info)    an invasion starts, is won or is lost (O393, invasion.lua)
 --   ChaosDiscordCore.milestones(old, new, list)        the milestone levels crossed by a level up
 --   ChaosDiscordCore.saveTime(xml)                     hour, minute of the server save in globalevents.xml
 --   ChaosDiscordCore.isDailyRestart(now, hour, min, window)   a shutdown inside the window after the save time
@@ -169,6 +170,32 @@ function D.weeklyChallenge(cfg, label, theme, sections)
 			tostring(theme))
 	end
 	return event(cfg, "weekly_challenge", "Weekly Challenge " .. tostring(label), text, fields)
+end
+
+-- O393, an invasion (invasion.lua): phase "start" | "win" | "lost"; info = {area, faction, level, waves, minutes,
+-- occupation (minutes), secs (fight time), names (top defenders), defenders (rewarded count)}
+function D.cityInvasion(cfg, phase, info)
+	info = info or {}
+	local area, faction = tostring(info.area or "A town"), tostring(info.faction or "horde")
+	if phase == "win" then
+		local names = info.names or {}
+		local fields = {{name = "Time", value = D.clock(info.secs or 0), inline = true},
+			{name = "Defenders rewarded", value = tostring(floor(tonumber(info.defenders) or 0)), inline = true}}
+		return event(cfg, "city_invasion", area .. " held", string.format("%s held against the %s.%s", area, faction,
+			#names > 0 and (" Top defenders: " .. D.names(names, 5) .. ".") or ""), fields)
+	elseif phase == "lost" then
+		return event(cfg, "city_invasion", area .. " has fallen", string.format("The %s occupies %s for %d minutes. " ..
+			"Slay the occupiers to free it.", faction, area, floor(tonumber(info.occupation) or 30)))
+	end
+	local fields = {}
+	if info.level then
+		fields[#fields + 1] = {name = "Level", value = tostring(floor(tonumber(info.level) or 0)), inline = true}
+	end
+	fields[#fields + 1] = {name = "Time limit", value = string.format("%d min", floor(tonumber(info.minutes) or 20)),
+		inline = true}
+	return event(cfg, "city_invasion", "Invasion: " .. area, string.format("The %s attacks %s! %d waves, the last one " ..
+		"led by their warlord. Every defender is rewarded by their part in the fight.", faction, area,
+		floor(tonumber(info.waves) or 5)), fields)
 end
 
 function D.milestones(oldLevel, newLevel, list)

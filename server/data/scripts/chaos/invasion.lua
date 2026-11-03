@@ -13,7 +13,9 @@
 --      with a player target fights instead (the engine's AI). Invaders at the target raise the breach meter.
 --   -> the last wave brings the boss -> all waves and the boss slain in time: victory (rewards by contribution, the
 --      Defender board, the Victory buff); the breach meter full or the time up: the area is occupied (occupation)
---   Damage dealt to invaders, kills and healing done to other players inside the area count as contribution.
+--   Damage dealt to invaders, kills, healing done to other players inside the area and (O393) the time present while
+--   acting count as contribution. O393 also adds the start gate (players online, cooldown), the level pulled towards
+--   the players online and the Discord rows (kind city_invasion, discord.lua).
 --
 -- Engine API used (all in this engine's luascript.cpp): Game.createMonster (onSpawn runs before the placement,
 -- which is where an invader is renamed), Monster:rename, Creature:getPathTo / move(tile, flags) / getTarget /
@@ -403,6 +405,34 @@ local function countPlayers(area)
 	return math.max(1, n)
 end
 
+-- O393: the players online who count for the gate and the level (minLevel and up, no tester bots)
+local function onlineLevels()
+	local minLevel = C().minLevel or 0
+	local out = {}
+	for _, p in ipairs(Game.getPlayers()) do
+		local lv = p:getLevel()
+		local tester = Chaos.isTester and Chaos.isTester(p)
+		if lv >= minLevel and not tester then
+			out[#out + 1] = lv
+		end
+	end
+	return out
+end
+V.onlineLevels = onlineLevels
+
+-- O393: a Discord row (discord.lua, kind city_invasion), when that module is loaded; phase start | win | lost
+local function discord(phase, extra)
+	if ChaosDiscord and ChaosDiscord.queue and ChaosDiscordCore and ChaosDiscordCore.cityInvasion and ChaosDiscordConfig then
+		pcall(function()
+			ChaosDiscord.queue(ChaosDiscordCore.cityInvasion(ChaosDiscordConfig, phase, {area = state.areaName,
+				faction = state.factionName, level = state.area and state.area.level, waves = state.waves,
+				minutes = C().timeLimitMinutes or 20, occupation = (C().occupation or {}).minutes or 30,
+				secs = state.startedAt and (now() - state.startedAt), names = extra and extra.names,
+				defenders = extra and extra.defenders}))
+		end)
+	end
+end
+
 local function spawnWave(i)
 	local c = C()
 	local area = state.area
@@ -733,6 +763,17 @@ local function tick(token)
 	else
 		return
 	end
+	-- O393: time present while acting (I.presenceTick counts a defender only when they acted lately: anti-AFK)
+	local contrib = state.phase == "running" and state.contrib or state.libContrib
+	if contrib then
+		local w = C().contribution or {}
+		for guid, e in pairs(contrib) do
+			local p = Player(e.name)
+			if p and p:getGuid() == guid then
+				I.presenceTick(contrib, guid, t, I.inArea(p:getPosition(), state.area, w.presenceMargin or 10), w, 1)
+			end
+		end
+	end
 	if t >= (state.nextHud or 0) then
 		state.nextHud = t + (C().hudSeconds or 2)
 		V.broadcastHud()
@@ -755,6 +796,16 @@ function V.start(areaKey, factionKey)
 	end
 	area = I.areaByKey(c, ak)
 	local faction = c.factions[fk]
+	-- O393: fought at the area level pulled towards the players online (a copy: the config keeps its own level)
+	do
+		local copy = {}
+		for k, v in pairs(area) do
+			copy[k] = v
+		end
+		copy.baseLevel = area.level
+		copy.level = I.effectiveLevel(area.level, onlineLevels(), (c.scaling or {}).online)
+		area = copy
+	end
 	if ChaosWorldEvents and ChaosWorldEvents.stopIn then
 		ChaosWorldEvents.stopIn(area.key) -- no world event where the horde arrives
 	end
@@ -792,6 +843,11 @@ function V.start(areaKey, factionKey)
 	state.mc = {}
 	announce(ChaosI18n.msg("INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord.",
 		faction.name, area.name, state.targetName, state.waves, c.timeLimitMinutes or 20))
+	announce(ChaosI18n.msg("Every defender is rewarded by their part: damage, healing, kills and time in the fight. Stand idle and you earn nothing."), false)
+	if area.level ~= area.baseLevel then
+		log(string.format("%s fought at level %d (area level %d, players online)", area.key, area.level, area.baseLevel))
+	end
+	discord("start")
 	addEvent(tick, 1000, state.token)
 	addEvent(moveLoop, c.moveMs or 400, state.token)
 	V.broadcastHud()
@@ -813,6 +869,12 @@ finish = function(result)
 		end
 		announce(ChaosI18n.msg("VICTORY! %s held: the %s is broken in %s. Top defenders: %s.", state.areaName,
 			state.factionName, I.clock(now() - state.startedAt), #names > 0 and table.concat(names, ", ") or "nobody"))
+		V.lastEndAt = now()
+		local top = {}
+		for i = 1, math.min(5, #list) do
+			top[i] = list[i].name
+		end
+		discord("win", {names = top, defenders = #list})
 		if fled > 0 then
 			announce(ChaosI18n.msg("The last %d invaders flee from %s.", fled, state.areaName))
 		end
@@ -829,6 +891,8 @@ finish = function(result)
 		return
 	end
 	state.result = result
+	V.lastEndAt = now()
+	discord("lost")
 	sendAll("end", {result = result, text = result == "breach" and ChaosI18n.msg("%s has fallen!", state.areaName)
 		or ChaosI18n.msg("Time is up: %s is overrun!", state.areaName)})
 	announce(ChaosI18n.msg("DEFEAT! %s %s. The %s occupies it for %d minutes: slay the occupiers to free it.",
@@ -1160,7 +1224,7 @@ spawnCb:register()
 
 local function creditPlayer(contrib, player, field, amount)
 	local guid = player:getGuid()
-	local e = I.credit(contrib, guid, player:getName(), field, amount)
+	local e = I.credit(contrib, guid, player:getName(), field, amount, now())
 	if e and not e.mcChecked then
 		e.mcChecked = true
 		if Chaos.isMultiClient and Chaos.isMultiClient(player) then
@@ -1344,10 +1408,14 @@ function schedule.onThink(interval)
 	for _, s in ipairs(I.upcoming(c, t - 90, horizon + 90)) do
 		local area = s.areaKey and I.areaByKey(c, s.areaKey)
 		local faction = s.factionKey and c.factions[s.factionKey]
+		-- O393: the cooldown after the last invasion is known in advance: no warnings for a start it will skip.
+		-- A staff one-off (/invasion schedule, source "once") ignores the gate.
+		local auto = s.source ~= "once"
+		local cooled = not auto or I.gate({cooldownMinutes = (c.gate or {}).cooldownMinutes}, math.huge, V.lastEndAt, s.at)
 		if area and faction then
 			for _, m in ipairs(warn) do
 				local key = s.at .. ":" .. m
-				if not V.warned[key] and t >= s.at - m * 60 and t < s.at - m * 60 + 120 and t < s.at then
+				if cooled and not V.warned[key] and t >= s.at - m * 60 and t < s.at - m * 60 + 120 and t < s.at then
 					V.warned[key] = true
 					announce(ChaosI18n.msg("The %s gathers: %s will be invaded in %d minute%s!", faction.name, area.name, m,
 						m == 1 and "" or "s"))
@@ -1356,9 +1424,21 @@ function schedule.onThink(interval)
 			local key = s.at .. ":start"
 			if not V.warned[key] and t >= s.at and t < s.at + 90 then
 				V.warned[key] = true
-				local ok, err = V.start(s.areaKey, s.factionKey)
-				if not ok then
-					log("scheduled start failed: " .. tostring(err))
+				local open, why = true, nil
+				if auto then
+					open, why = I.gate(c.gate, #onlineLevels(), V.lastEndAt, s.at)
+				end
+				if not open then
+					log(string.format("%s start at %s skipped: %s", s.source or "?", os.date("%H:%M", s.at), why))
+					if why == "players" then
+						announce(ChaosI18n.msg("The %s turns back from %s: too few defenders are awake to make a fight of it.",
+							faction.name, area.name))
+					end
+				else
+					local ok, err = V.start(s.areaKey, s.factionKey)
+					if not ok then
+						log("scheduled start failed: " .. tostring(err))
+					end
 				end
 			end
 		end
@@ -1412,6 +1492,12 @@ local function statusText()
 	else
 		lines[#lines + 1] = "No invasion is running."
 	end
+	if state.area and state.area.baseLevel then
+		lines[#lines + 1] = string.format("Fought at level %d (area level %d).", state.area.level, state.area.baseLevel)
+	end
+	local g = C().gate or {}
+	lines[#lines + 1] = string.format("Gate (O393): %d of %d players online; cooldown %d min%s.", #onlineLevels(),
+		g.minOnline or 0, g.cooldownMinutes or 0, V.lastEndAt and (", last end " .. os.date("%H:%M", V.lastEndAt)) or "")
 	local cal = V.calendar()
 	if #cal > 0 then
 		lines[#lines + 1] = "Upcoming:"

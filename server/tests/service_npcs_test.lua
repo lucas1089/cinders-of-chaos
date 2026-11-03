@@ -32,8 +32,8 @@ local cfg = dofile("data/scripts/chaos/service_npcs_config.lua")
 
 -- ---------------------------------------------------------------- the config
 eq(#K.validate(cfg), 0, "the config validates")
-eq(#cfg.order, 5, "five NPCs")
-local expect = {"stash", "pocketboss", "banker", "broker", "services"}
+eq(#cfg.order, 6, "six NPCs (O394: the rumourmonger)")
+local expect = {"stash", "pocketboss", "banker", "broker", "services", "rumours"}
 for i, key in ipairs(expect) do
 	eq(cfg.order[i], key, "owner order " .. i)
 end
@@ -66,8 +66,17 @@ for _, b in ipairs(B.booths) do
 	end
 end
 for _, key in ipairs(expect) do
-	check(booth[cfg.npcs[key].name] ~= nil, cfg.npcs[key].name .. " has a stall in npc_booths_config.lua")
+	if cfg.npcs[key].stall == false then -- O394: no stall is free, he stands next to the temple
+		eq(booth[cfg.npcs[key].name], nil, cfg.npcs[key].name .. " has no stall")
+	else
+		check(booth[cfg.npcs[key].name] ~= nil, cfg.npcs[key].name .. " has a stall in npc_booths_config.lua")
+	end
 end
+eq(cfg.npcs.rumours.window, nil, "the rumourmonger opens no window")
+eq(K.intent("rumours", "any rumours?"), "rumour", "rumours: rumour")
+eq(K.intent("rumours", "quero ouvir os boatos"), "rumour", "rumours: pt-BR boatos")
+eq(K.intent("rumours", "how much is a rumour"), "price", "rumours: price first")
+eq(K.intent("rumours", "qual o preço"), "price", "rumours: pt-BR price")
 eq(table.concat(cfg.towns, ","), "2", "placed in the main city only (its stalls)")
 
 -- ---------------------------------------------------------------- what they understand
@@ -352,13 +361,13 @@ addEvent = function(fn) fn() return 1 end
 dofile("data/scripts/chaos/service_npcs.lua")
 eq(#startups, 1, "one startup event")
 startups[1].onStartup()
-eq(#placed, 5, "five NPCs in the main city (its stalls in the hub)")
+eq(#placed, 6, "six NPCs in the main city (the stalls in the hub, the rumourmonger by the temple)")
 eq(placed[1], "Tavish Coldhand@2", "the stash keeper first")
 eq(placed[5], "Pell Ashmere@2", "the clerk last")
 for _, p in ipairs(placed) do
 	check(p:sub(-2) == "@2", "only the main city: " .. p)
 end
-eq(ChaosServiceNpcs.placeNpcs(), 4, "a failed placement is not counted")
+eq(ChaosServiceNpcs.placeNpcs(), 5, "a failed placement is not counted")
 
 print(string.format("service_npcs_test: %d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)

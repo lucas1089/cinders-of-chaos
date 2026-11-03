@@ -567,12 +567,18 @@ seven in a week for the weekly bounty chest.
   hunting ground. It comes in five waves and marches on the town's heart, and its warlord leads the last wave.
   - Everyone can defend. The bar at the top left shows the wave, the invaders left, the time and the **breach
     meter**, which fills while invaders stand at the target.
-  - Hold it and everyone who fought is paid by their part in the defence: damage, kills, and healing for healers.
+  - The horde is as strong as the players online: it starts from the place's level and rises towards theirs. An
+    invasion needs a few players online.
+  - Hold it and everyone who fought is paid by their part in the defence: damage, kills, healing for healers, and time
+    in the fight. Time counts only while you keep hitting, healing or killing: standing idle earns nothing.
     The pay is gold, orbs and a chance at a unique, plus points on the weekly **Defender** leaderboard. The whole world
     gets +10% experience for an hour.
   - Lose it and the invaders occupy the place for 30 minutes. Slay the occupiers to free it for a smaller reward.
   - Warnings come 30, 10 and 1 minutes before. The calendar shows the fixed invasion days, but some invasions come
     unannounced.
+- **Rumours:** Dorrin Alewright, next to Cinderhold's temple, sells a rumour for a little gold ("rumours" or
+  "boatos"): where a rare goblin, an invasion or the world boss will show within the hour, and a half-hour window.
+  One rumour per tale, and now and then he is wrong.
 - **World events** every few hours, somewhere in the world:
   - a *Chaos Storm*: three times as many magic, rare and legendary monsters for 15 minutes
   - a *Wandering Merchant* who sells orbs cheaply for 20 minutes; the town is announced, you have to find him

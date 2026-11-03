@@ -1,4 +1,4 @@
--- Shared dialogue of the five service NPCs of the hub's stalls (server/data/scripts/chaos/service_npcs.lua,
+-- Shared dialogue of the service NPCs (the five of the hub's stalls and, O394, the rumourmonger by the temple) (server/data/scripts/chaos/service_npcs.lua,
 -- service_npcs_config.lua, service_npcs_core.lua, service_npcs_run.lua; server/README.md "Service NPCs"). Each NPC script
 -- sets SERVICE_KEY (stash, pocketboss, banker, broker, services) and runs this file. It runs in the NPC's own Lua state:
 -- it opens the client window of the module (that module's extended opcode, action "npc") and answers; every action in
@@ -216,6 +216,49 @@ ANSWERS.services = {
 	end,
 	webshop = function(cid, player)
 		return R.runBase(player, "webshop") or t(cid, "The web shop is not on this server.")
+	end
+}
+
+-- ------------------------------------------------------------------ the rumourmonger (O394)
+-- rumours_run.lua (this state): the candidates, the fee, the once-per-player memory; rumours_core.lua the rules
+local function rumourRun()
+	if not ChaosRumoursRun then
+		dofile("data/scripts/chaos/rumours_run.lua")
+	end
+	return ChaosRumoursRun
+end
+
+local function rumourText(cid, r)
+	local lo, hi = os.date("%H:%M", r.lo), os.date("%H:%M", r.hi)
+	if r.kind == "invasion" then
+		return t(cid, "Scouts swear the %s is massing near %s. Trouble between %s and %s, server time, if they are right.",
+			r.what, r.place, lo, hi)
+	elseif r.kind == "worldboss" then
+		return t(cid, "The old priests whisper that %s stirs. The portals by the temples should open between %s and %s, server time.",
+			t(cid, tostring(r.what)), lo, hi)
+	end
+	return t(cid, "A trapper swore he saw a %s near %s. If he is right, it shows itself between %s and %s, server time.",
+		r.what, r.place, lo, hi)
+end
+
+ANSWERS.rumours = {
+	job = function(cid)
+		return t(cid, "Dorrin Alewright. I pour, I listen, and for a few coins I tell what I hear. Ask for the {rumours}, or the {price}.")
+	end,
+	price = function(cid, player)
+		local fee = ChaosRumoursCore and ChaosRumoursCore.fee(rumourRun().cfg, player:getLevel()) or 0
+		return t(cid, "A rumour costs you %s gold. One per tale: I never sell the same story twice.", gold(fee))
+	end,
+	rumour = function(cid, player)
+		local status, r, fee = rumourRun().ask(player)
+		if status == "off" then
+			return t(cid, "The taps are dry and so am I. No rumours today.")
+		elseif status == "nothing" then
+			return t(cid, "Nothing new has reached my ears for you. Come back within the hour.")
+		elseif status == "money" then
+			return t(cid, "A rumour costs %s gold, and your purse and bank cannot spare it.", gold(r))
+		end
+		return t(cid, "%s gold, thank you. Lean closer.", gold(fee)) .. " " .. rumourText(cid, r)
 	end
 }
 

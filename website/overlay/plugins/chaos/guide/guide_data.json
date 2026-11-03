@@ -154,9 +154,9 @@
 			"level": 30,
 			"menu": "Adventure > Events",
 			"rows": [
-				{"id": "who", "text": {"en": "Level 30+, near the invaded area. The more defenders, the bigger the waves.", "pt-BR": "Nível 30+, perto da área invadida. Quanto mais defensores, maiores as ondas."}},
-				{"id": "levels", "text": {"en": "The invaders are scaled to the level of the area.", "pt-BR": "Os invasores seguem o nível da área."}},
-				{"id": "drops", "text": {"en": "A reward by how much you helped. Players below level 30 get none.", "pt-BR": "Uma recompensa conforme a sua ajuda. Quem está abaixo do nível 30 não ganha nada."}},
+				{"id": "who", "text": {"en": "Level 30+, near the invaded area. The more defenders, the bigger the waves. It needs 3 players online.", "pt-BR": "Nível 30+, perto da área invadida. Quanto mais defensores, maiores as ondas. Precisa de 3 jogadores online."}},
+				{"id": "levels", "text": {"en": "The invaders follow the level of the area, raised towards the level of the players online.", "pt-BR": "Os invasores seguem o nível da área, puxado para o nível dos jogadores online."}},
+				{"id": "drops", "text": {"en": "A reward by your part: damage, healing, kills and time in the fight. Time counts only while you hit, heal or kill at least every 60 seconds. Players below level 30 get none.", "pt-BR": "Uma recompensa pela sua parte: dano, cura, abates e tempo na luta. O tempo só conta se você bater, curar ou abater pelo menos a cada 60 segundos. Quem está abaixo do nível 30 não ganha nada."}},
 				{"id": "death", "text": {"en": "A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half.", "pt-BR": "Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade."}},
 				{"id": "often", "text": {"en": "Every week: Wednesday 19:30 and Sunday 17:30. Some days bring a surprise invasion (35% of days). Each one lasts 20 minutes at most, with 5 waves; the last has a boss.", "pt-BR": "Toda semana: quarta-feira 19:30 e domingo 17:30. Alguns dias trazem uma invasão surpresa (35% dos dias). Cada uma dura no máximo 20 minutos, com 5 ondas; a última tem um chefe."}}
 			]

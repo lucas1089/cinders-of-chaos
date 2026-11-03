@@ -3,7 +3,8 @@
 -- calls (tests/service_npcs_test.lua and tools/install_service_npcs.py read it). Lua 5.1 / LuaJIT and Lua 5.3.
 --
 -- Owner decision 2026-10-20: five NPCs that stand in for menu entries, in this order: the stash keeper, the pocket
--- boss NPC, the banker, the house broker and the services clerk (each in a stall of the hub, npc_booths_config.lua). The menu entries stay (the owner confirms in the game before any is removed). They
+-- boss NPC, the banker, the house broker and the services clerk (each in a stall of the hub, npc_booths_config.lua).
+-- O394 (2026-11-03) adds a sixth, the rumourmonger, next to the temple (no stall is free). The menu entries stay (the owner confirms in the game before any is removed). They
 -- add no opcode, no storage key and no table: every window opens through the opcode of its own module.
 local C = {}
 
@@ -28,9 +29,13 @@ C.npcs = {
 	broker = {name = "Halvard Deedkeeper", script = "halvard_deedkeeper.lua",
 		window = {opcode = "info", json = '{"action":"npc","data":{"page":"house"}}'}},
 	services = {name = "Pell Ashmere", script = "pell_ashmere.lua",
-		window = {opcode = "info", json = '{"action":"npc","data":{"page":"services"}}'}}
+		window = {opcode = "info", json = '{"action":"npc","data":{"page":"services"}}'}},
+	-- O394 (owner 2026-11-03): the rumourmonger. No window; sells a hint about a rare appearance of the next hour
+	-- (rumours_config.lua, rumours_run.lua). Every stall of the hub is taken, so stall = false: he stands next to
+	-- Cinderhold's temple (`offsets`; the map has no tavern this repository knows of)
+	rumours = {name = "Dorrin Alewright", script = "dorrin_alewright.lua", stall = false}
 }
-C.order = {"stash", "pocketboss", "banker", "broker", "services"}
+C.order = {"stash", "pocketboss", "banker", "broker", "services", "rumours"}
 
 -- The house broker. perSqm: the price of a tile when the base config has none (config.lua housePriceEachSQM, read
 -- first); listMax: houses named in one answer; townMax: towns named in one answer.

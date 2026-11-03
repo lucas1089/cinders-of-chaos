@@ -30,7 +30,7 @@ local STAFF = {
 	["/gmnotify"] = "notifications.lua", ["/orbx"] = "orbexchange.lua", ["/pack30gallery"] = "admin/actions_pack30_gallery.lua", ["/pact"] = "pact.lua",
 	["/patchnotes"] = "patchnotes.lua", ["/pet"] = "pets.lua", ["/pocketboss"] = "pocketboss.lua",
 	["/poi"] = "poi.lua", ["/professions"] = "professions.lua", ["/marches"] = "pvpzone.lua", ["/raid"] = "raid.lua",
-	["/records"] = "records.lua", ["/referral"] = "referral.lua", ["/reports"] = "reports.lua", ["/rift"] = "rift.lua",
+	["/records"] = "records.lua", ["/rumours"] = "rumours.lua", ["/referral"] = "referral.lua", ["/reports"] = "reports.lua", ["/rift"] = "rift.lua",
 	["/season"] = "season.lua", ["/journey"] = "season_journey.lua", ["/seasonpass"] = "seasonpass.lua",
 	["/coins"] = "shop.lua", ["/storecosmetics"] = "shop.lua", ["/siege"] = "siege.lua", ["/spells"] = "spellbook.lua", ["/spellquest"] = "spellquest.lua", ["/supports"] = "supports.lua",
 	["/telemetry"] = "telemetry.lua", ["/transmog"] = "transmog.lua", ["/goblin"] = "treasure_goblin.lua",

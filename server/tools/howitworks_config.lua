@@ -215,13 +215,15 @@ P.features = {
 				at[#at + 1] = {en = H.weekday(s.weekdays[1]).en .. " " .. H.hhmm(s.hour, s.minute),
 					pt = H.weekday(s.weekdays[1]).pt .. " " .. H.hhmm(s.hour, s.minute)}
 			end
-			return {min = I.minLevel, at = H.join(at), chance = I.random.chance, mins = I.timeLimitMinutes, waves = I.waves.count}
+			return {min = I.minLevel, at = H.join(at), chance = I.random.chance, mins = I.timeLimitMinutes, waves = I.waves.count,
+				online = I.gate.minOnline, active = I.contribution.activeSeconds}
 		end,
-		who = {"Level {min}+, near the invaded area. The more defenders, the bigger the waves.",
-			"Nível {min}+, perto da área invadida. Quanto mais defensores, maiores as ondas."},
-		levels = {"The invaders are scaled to the level of the area.", "Os invasores seguem o nível da área."},
-		drops = {"A reward by how much you helped. Players below level {min} get none.",
-			"Uma recompensa conforme a sua ajuda. Quem está abaixo do nível {min} não ganha nada."},
+		who = {"Level {min}+, near the invaded area. The more defenders, the bigger the waves. It needs {online} players online.",
+			"Nível {min}+, perto da área invadida. Quanto mais defensores, maiores as ondas. Precisa de {online} jogadores online."},
+		levels = {"The invaders follow the level of the area, raised towards the level of the players online.",
+			"Os invasores seguem o nível da área, puxado para o nível dos jogadores online."},
+		drops = {"A reward by your part: damage, healing, kills and time in the fight. Time counts only while you hit, heal or kill at least every {active} seconds. Players below level {min} get none.",
+			"Uma recompensa pela sua parte: dano, cura, abates e tempo na luta. O tempo só conta se você bater, curar ou abater pelo menos a cada {active} segundos. Quem está abaixo do nível {min} não ganha nada."},
 		death = {"{gentle}", "{gentle}"},
 		often = {"Every week: {at}. Some days bring a surprise invasion ({chance}% of days). Each one lasts {mins} minutes at most, with {waves} waves; the last has a boss.",
 			"Toda semana: {at}. Alguns dias trazem uma invasão surpresa ({chance}% dos dias). Cada uma dura no máximo {mins} minutos, com {waves} ondas; a última tem um chefe."}},
