@@ -648,6 +648,30 @@ do
 	end
 end
 
+-- the Tale of Cinderhold (O396, tales_config.lua saga "cinderhold"): one goal per chapter, unlocked at the chapter's
+-- level; the counter is the achievement stat tales.lua sets (chapters done)
+do
+	local ok, tales = pcall(dofile, "data/scripts/chaos/tales_config.lua")
+	local sg = ok and type(tales) == "table" and tales.sagas and tales.sagas.cinderhold
+	if sg then
+		local chapters = {}
+		for _, t in ipairs(tales.tales) do
+			if t.saga == "cinderhold" then
+				chapters[#chapters + 1] = t
+			end
+		end
+		table.sort(chapters, function(a, b) return a.chapter < b.chapter end)
+		for _, t in ipairs(chapters) do
+			C.goals[#C.goals + 1] = {key = "cinderhold" .. t.chapter, level = t.minLevel, stat = sg.stat, target = t.chapter,
+				title = T(t.name.en, t.name.pt),
+				why = T("The tale of the city itself, one page of its founding ledger per chapter.",
+					"A história da própria cidade, uma página do registro da fundação por capítulo."),
+				where = W("npc", {name = "Archivist Maelis"}), requires = "ChaosTales",
+				effort = T("A trip to one hunt of your level and back.", "Uma ida a uma caçada do seu nível e a volta.")}
+		end
+	end
+end
+
 -- ------------------------------------------------------------------ texts of the engine (goals.lua)
 C.texts = {
 	done = T("Goal done: %s. Reward: %s.", "Objetivo concluído: %s. Recompensa: %s."),

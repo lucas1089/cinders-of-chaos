@@ -146,7 +146,7 @@ HowData = {
 			{id = "often", en = "A charm works only while it sits in an open cell. Place and move charms out of combat, as often as you like.", pt = "Um amuleto só funciona numa casa aberta. Coloque e mova amuletos fora de combate, quantas vezes quiser."}
 		}},
 		{key = "achievements", title = {en = "Achievements", pt = "Conquistas"}, window = "game_achievements", rows = {
-			{id = "what", en = "189 achievements in 11 groups, from leveling and monsters to bosses, rifts, crafting and PvP. 12 stay secret until you earn them.", pt = "189 conquistas em 11 grupos, de subir de nível e monstros a chefes, fendas, criação e PvP. 12 ficam secretas até você conseguir."},
+			{id = "what", en = "192 achievements in 11 groups, from leveling and monsters to bosses, rifts, crafting and PvP. 12 stay secret until you earn them.", pt = "192 conquistas em 11 grupos, de subir de nível e monstros a chefes, fendas, criação e PvP. 12 ficam secretas até você conseguir."},
 			{id = "who", en = "Every player. Most unlock by themselves while you play.", pt = "Todo jogador. A maioria libera sozinha enquanto você joga."},
 			{id = "drops", en = "Achievement points; many also give a title, gold, items, an outfit, a mount or a portal style. Finish every achievement of a group for its own title.", pt = "Pontos de conquista; muitas também dão um título, ouro, itens, um traje, uma montaria ou um estilo de portal. Complete todas as conquistas de um grupo para ganhar o título dele."},
 			{id = "often", en = "Once each. Progress never goes back. Pick a title you earned in this window.", pt = "Uma vez cada. O progresso nunca volta. Escolha um título que você ganhou nesta janela."}

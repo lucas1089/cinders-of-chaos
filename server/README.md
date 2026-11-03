@@ -25601,7 +25601,8 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
 
 ## Tales (`tales.lua`, `tales_core.lua`, `tales_config.lua`, `lore_data.lua`, npc `Archivist Maelis`)
 
-Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4). The giver is Archivist Maelis
+Story quests from level 8 to 2000: 37 tales (2026-10-22: 23 added to the first 4; O396: the ten chapters of the Tale
+of Cinderhold). The giver is Archivist Maelis
 (`data/npc/Archivist Maelis.xml`, `npc/scripts/archivist_maelis.lua`), placed next to the first temple at startup;
 `install_class_ascension.py` copies the NPC folder. She gives and closes every tale.
 
@@ -25635,8 +25636,8 @@ Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4
 | 1600 | The Fallen Seraph | choir | Kharzun's Anvil |
 | 2000 | The Chained Wyrm | vigil | The Fallen Seraph |
 
-- **Steps.** kill (party members within 30 squares share the kill), visit, talk, deliver, report. The last step is
-  always deliver or report at the Archivist; `M.problems` refuses any other config and the startup logs it.
+- **Steps.** kill (party members within 30 squares share the kill), visit, talk, elite (O396), deliver, report. The last
+  step is always deliver or report at the Archivist; `M.problems` refuses any other config and the startup logs it.
 - **Visit.** Stand within `radius` of a place: a hunting mark of `data/chaos_poi.lua`. Only characters with an open
   visit step are watched (`T.watch`); the global event `ChaosTalesVisit` checks them every `visitMs` (3 s) and sweeps
   all players every `visitSweep` ticks. The place is revealed on the map when the step opens (`ChaosPoi.seen`, opcode
@@ -25646,12 +25647,62 @@ Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4
   pending the faction dialogue runs as before.
 - **Chains.** `requires` names a tale that must be done first. A locked tale is not offered, and a forged accept is
   refused.
+- **Elite (O396).** `{kind = "elite", pos, radius, monster, name}`: go to a place (revealed on the map like a visit) and
+  kill a named elite. The visit watch list also holds the characters with an open elite step; at the place
+  `T.raiseElite` makes `monster` with the shown name `name` (`Chaos.createMonsterNamed`, at `pos`, else next to the
+  character) and forces the tier `elite.tier` (rare: x3.5 health, x1.5 damage, 2-3 modifiers; `ChaosApplyTier`). One per
+  name at a time (`T.elites`); it is removed after `elite.lifeSec` (600 s) and does not rise again within
+  `elite.againSec` (20 s). The kill counts by the shown name only (`M.matches`), so a plain monster of the type does not;
+  the party shares it like any kill. `M.problems`: an elite needs pos, monster and name, and the name must differ from
+  the type.
+- **Sagas (O396).** `cfg.sagas`: a chain told as one story. A tale with `saga` and `chapter`; chapter n requires
+  chapter n - 1 (`M.problems`). The chapters done (`M.sagaDone`) set the achievement counter `stat`
+  (`ChaosAchievements.set`, max) at every turn-in and at login; the turn-in names "chapter n of 10".
 - **Rewards.** Experience, bank gold, orbs, faction reputation and a lore book. The experience is a share of the next
   level, measured at most at the top of the tale's band (`M.xpLevel`), so a high character gets no huge reward from a
   low tale.
 
 Every text is English and Brazilian Portuguese: a player says "portugues" or "english" to the Archivist, or `Chaos.t`'s
-language decides. The Archivist also answers lore questions from `lore_data.lua`. The list shows tales in progress
+language decides. The Archivist also answers lore questions from `lore_data.lua`.
+
+**The Tale of Cinderhold (O396).** Ten chapters, slots 28-37 (storages 7101568-7101576 state, 7101588-7101596 count;
+slot 37 is 7101577 / 7101597), a chain from level 10 to 560. The Archivist, who is also the Chronicler of the Ashen
+Chronicle, has lost the ten founding pages of her oldest ledger: the night the Cinders fell they went where the ash
+went. Each chapter is one page, carried by a named elite in a hunt of its band; the Chronicle tells what the realm does
+now, the tale tells what the city was. Reused: the tales framework (window, chains, rewards, party credit, the faction
+NPCs' talk steps), the hunting marks of `chaos_poi.lua`, the monster tiers, the achievements and Next Goals.
+
+| Ch. | Level | Title | Talk | Elite (monster, hunting mark) | Reward |
+|---|---|---|---|---|---|
+| I | 10 | The Torn Ledger | | Gnawbone the Page-Eater (Troll, 32354 32129 8, 1-10) | 2,000 gold |
+| II | 22 | The Founders' Bell | Warden Ysolde | Old Bellwarden (Gargoyle, 32252 32578 8, 20-30) | 6,500 |
+| III | 45 | Mortar of Dragon Ash | | Ashmaw the Mortar-Wyrm (Dragon, 33215 31297 7, 40-50), then 20 Dragon / Dragon Hatchling | 18,000, Orb of Awakening |
+| IV | 60 | The Oathless Legion | Forgemaster Brannoc | Sskareth the Oathbreaker (Lizard High Guard, 33076 31152 7, 50-70) | 25,000, Orb of Awakening |
+| V | 105 | The Choking Hymn | Cantor Velith | The Hymn That Chokes (Choking Fear, 33568 32402 7, 100-120) | 55,000, Orb of Tempering |
+| VI | 150 | The Unwritten Page | | The Founder's Quill (Animated Feather, 31294 31917 8, 150-280) | 80,000, Orb of Tempering |
+| VII | 230 | Rimecrown's Winter | Elder Bramwyn | Rimecrown the Winter-Eater (Frost Hydra, 30827 31254 6, 220-440) | 160,000, Orb of Fate |
+| VIII | 300 | The Last Light | Warden Ysolde (after) | The Archon of the Last Light (Archon, 33402 31807 2, 260-420) | 200,000, Orb of Fate |
+| IX | 430 | Brine and Ember | | Saltcrown the Eldest Pyrarch (Brinebrute Pyrarch, 31602 31267 6, 430-480) | 300,000, Orb of Fate |
+| X | 560 | The Founding Stone | | The Pitlord of the Founding Stone (Pitlord Incarnate, 33225 33493 7, 470-600) | 450,000, 2 Orbs of Fate |
+
+Every chapter also gives a 0.4-0.8 share of the next level's experience (at most at the top of its band) and 100-800
+faction reputation. Rewards are modest on purpose: the gold sits between the tales below and above it (the test keeps
+gold rising with the level), no gear, no lore book. The cosmetic end reward is the achievement title.
+
+- **Achievements** (`achievements_data.lua`, Exploration, stat `cinderhold_tale`): The Torn Ledger (1 chapter, 5 points),
+  Half the Ledger (5, 15 points), Keeper of the Founding (10, 50 points, title "Keeper of the Founding"). pt-BR in
+  `i18n_strings.lua`.
+- **Next Goals** (`goals_config.lua`, built from `tales_config.lua`): one goal per chapter, `cinderhold1` to
+  `cinderhold10`, unlocked at the chapter's level, counter `cinderhold_tale`, the button marks Archivist Maelis on the
+  map; hidden without `ChaosTales`. The goal's own small reward is the default of Next Goals.
+- **Tests** (`tests/tales_test.lua`): ten chapters in a chain, rising levels, the free slots, one elite per chapter at a
+  hunting mark of its monster whose level band fits the chapter, elite names unique and no monster type, credit by shown
+  name only, the watch list and `M.elitesAt`, the saga counter, the problems of elites and sagas; through the mocked
+  engine: accept at level 10, the place revealed, the elite raised once with its name and tier and lifetime, a plain
+  troll not counting, the elite's kill, the turn-in with the counter and "chapter 1 of 10", the counter at login,
+  chapter 2 opening at 22, no second rise within `againSec`.
+- **Not tested in game.** The elites' spawn tiles at the real marks (an extended spawn at the mark, else next to the
+  character) and the rare tier's strength at each band. The list shows tales in progress
 first, then new ones, then done ones. Modal windows 7170-7171. Storages 7101500 - 7101549 (slots 1-19) and 7101560 -
 7101599 (slots 20-39); a slot per tale, append only, never reuse one. No spoken `!command`. Pure logic:
 `tales_core.lua`; tests: `tests/tales_test.lua`. Not run on a live server.

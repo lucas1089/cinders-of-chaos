@@ -299,7 +299,8 @@ states.ash_requiem = 1
 states.cellar_teeth = 100
 v = M.listView(520, stateOf, "en"); eq(#v.choices, open520 + 2, "a taken tale shows below its level too; the chain opens")
 eq(v.choices[1].key, "ash_requiem", "in progress first"); eq(v.choices[#v.choices].key, "cellar_teeth", "done last")
-eq(v.choices[2].key, "lantern_road", "the chain's next tale, by level")
+eq(v.choices[2].key, "cinderhold_1", "by level: the Tale of Cinderhold's first chapter (level 10)")
+eq(v.choices[3].key, "lantern_road", "the chain's next tale, by level")
 v = M.listView(5000, function() return -1 end, "en")
 eq(#v.choices, #cfg.tales - chained, "every tale but the locked chains at the top")
 tv = M.taleView(choir, 1, 7, "en", 230); assert(tv.text:find("(7 / 40)", 1, true)); eq(#tv.buttons, 0)
@@ -308,6 +309,88 @@ tv = M.taleView(choir, 2, 0, "pt", 230); eq(tv.buttons[1], "turnin"); assert(tv.
 tv = M.taleView(choir, 100, 0, "en", 230); eq(#tv.buttons, 0); assert(tv.text:find("Rest, rest", 1, true), "outro when done")
 eq(M.statusLine(300, function() return -1 end, function() return 0 end, "en"), nil)
 assert(M.statusLine(300, function(t) return t.key == "bone_choir" and 1 or -1 end, function() return 12 end, "en"):find("12 / 40", 1, true))
+
+-- ------------------------------------------------------------------ O396: the Tale of Cinderhold (a saga, elite steps)
+local saga = M.chapters("cinderhold")
+eq(#saga, 10, "ten chapters")
+eq(cfg.sagas.cinderhold.stat, "cinderhold_tale")
+assert(saga[1].minLevel <= 10 and saga[10].minLevel >= 500 and saga[10].band[2] <= 700, "from level 8-10 to about 600")
+local eliteNames = {}
+for i, t in ipairs(saga) do
+	eq(t.chapter, i, "chapter order")
+	assert(t.slot >= 28 and t.slot <= 39, "the free slots of the second block: " .. t.key)
+	if i > 1 then
+		eq(t.requires, saga[i - 1].key, "a chain: " .. t.key)
+		assert(t.minLevel > saga[i - 1].minLevel, "levels rise: " .. t.key)
+	else
+		eq(t.requires, nil, "the first chapter is open")
+	end
+	assert(t.name.en:find("Cinderhold", 1, true) and t.name.pt:find("Cinderhold", 1, true), "named: " .. t.key)
+	-- each chapter: a place in a hunt of its band where a named elite rises, then back to the Archivist
+	local elites = 0
+	for _, s in ipairs(t.steps) do
+		if s.kind == "elite" then
+			elites = elites + 1
+			assert(not eliteNames[s.name:lower()], "an elite name once: " .. s.name); eliteNames[s.name:lower()] = true
+			assert(known(s.monster), "the elite's monster is ours: " .. s.monster)
+			assert(not known(s.name), "the elite's name is no monster type (a plain kill must not count): " .. s.name)
+			local hit
+			for _, m in ipairs(poi.marks) do
+				if m.k == "hunt" and M.atPlace(s, m) and m.n:find(s.monster, 1, true) then hit = m end
+			end
+			assert(hit, "the elite of " .. t.key .. " stands at a hunting mark of its monster")
+			local lo, hi = hit.n:match("level (%d+)%-(%d+)")
+			lo, hi = tonumber(lo), tonumber(hi)
+			assert(lo and t.minLevel >= lo - 25 and t.minLevel <= hi, "the hunt fits the chapter's level: " .. t.key
+				.. " " .. tostring(lo) .. "-" .. tostring(hi))
+		end
+	end
+	eq(elites, 1, "one elite per chapter: " .. t.key)
+	eq(t.steps[#t.steps].kind, "report", "back to the Archivist: " .. t.key)
+	-- modest rewards: never more than the tale of the band (checked above with all tales), no lore book, no gear
+	assert(t.rewards.xpLevels <= 0.8 and not t.rewards.book, "modest: " .. t.key)
+end
+
+-- the elite step: credit by the shown name only, at the place only
+local ch1 = saga[1]
+local es = ch1.steps[1]
+eq(es.kind, "elite"); eq(M.FIELD.elite, true); eq(M.KINDS.elite, true)
+eq(M.matches(es, "Troll", es.name), true, "the shown name counts")
+eq(M.matches(es, "Troll", "Troll"), false, "a plain troll does not")
+eq(M.matches(es, "Troll", es.name:upper()), true, "case-insensitive")
+s, c, ev = M.addKill(ch1, 1, 0, "Troll", "Troll"); eq(ev, nil)
+s, c, ev = M.addKill(ch1, 1, 0, "Troll", es.name); eq(ev, "step"); eq(s, 2); eq(c, 0)
+assert(M.atPlace(es, {x = es.pos.x + 8, y = es.pos.y, z = es.pos.z}), "within the radius")
+assert(not M.atPlace(es, {x = es.pos.x + 9, y = es.pos.y, z = es.pos.z}), "outside")
+local function chOnly(key, v) return function(t) return t.key == key and v or -1 end end
+assert(M.visiting(chOnly("cinderhold_1", 1)), "an elite step keeps the character on the watch list")
+assert(not M.visiting(chOnly("cinderhold_1", 2)), "not after it")
+eq(#M.elitesAt(chOnly("cinderhold_1", 1), es.pos), 1); eq(#M.elitesAt(chOnly("cinderhold_1", 1), {x = 1, y = 1, z = 7}), 0)
+eq(#M.elitesAt(chOnly("cinderhold_1", 2), es.pos), 0)
+ok, why = M.turnIn(ch1, 1, 0, nil); eq(ok, false); eq(why, "elite", "an elite is done in the field")
+ok, done, take, fin = M.turnIn(ch1, 2, 0, nil); eq(fin, true)
+-- the saga's counter
+local sagaStates = {cinderhold_1 = 100, cinderhold_2 = 100, cinderhold_3 = 2, bone_choir = 100}
+local function sgOf(t) return sagaStates[t.key] or -1 end
+eq(M.sagaDone("cinderhold", sgOf), 2)
+local st2 = M.sagaStats(sgOf); eq(#st2, 1); eq(st2[1].stat, "cinderhold_tale"); eq(st2[1].value, 2)
+eq(M.sagaDone("cinderhold", function() return -1 end), 0)
+-- chapter 2 needs chapter 1
+eq(M.unlocked(saga[2], function() return -1 end), false); eq(M.unlocked(saga[2], sgOf), true)
+-- the problems of elites and sagas
+local badSaga = {storage = cfg.storage, sagas = {x = {stat = "x"}}, tales = {
+	{key = "e1", slot = 1, minLevel = 1, saga = "x", chapter = 1, steps = {{kind = "elite", pos = {x = 1, y = 1, z = 7}},
+		{kind = "report"}}},
+	{key = "e2", slot = 2, minLevel = 2, saga = "x", chapter = 3, requires = "e1", steps = {{kind = "elite",
+		pos = {x = 1, y = 1, z = 7}, monster = "Rat", name = "rat"}, {kind = "report"}}},
+	{key = "e3", slot = 3, minLevel = 3, saga = "nope", chapter = 1, steps = {{kind = "report"}}},
+	{key = "e4", slot = 4, minLevel = 3, saga = "x", steps = {{kind = "report"}}}}}
+probs = table.concat(M.problems(badSaga), "\n")
+for _, want in ipairs({"e1: step 1: an elite needs pos, monster and name", "e2: step 1: an elite's name must differ",
+	"e2: chapter 3 must require chapter 2", "e3: unknown saga nope", "e4: a saga's tale needs a chapter number"}) do
+	assert(probs:find(want, 1, true), "problem found: " .. want)
+end
+assert(cfg.elite.tier and cfg.elite.lifeSec > 0, "elite settings")
 
 -- ------------------------------------------------------------------ tales.lua against a mocked engine
 local events, talks, modals, messages = {}, {}, {}, {}
@@ -517,6 +600,88 @@ events.ChaosTalesVisit.onThink()
 eq(T.watch[999], nil)
 events.ChaosTalesLogout.onLogout(mira)
 eq(T.open[11], nil)
+
+-- ------------------------------------------------------------------ O396: an elite chapter through the engine
+local raised, tiered, achSet, timers = {}, {}, {}, {}
+local monsters = {}
+local function mkElite(id, typeName, shown, at)
+	local m = mkMonster(id, typeName, shown, at)
+	function m:remove() monsters[id] = nil end
+	monsters[id] = m
+	return m
+end
+Monster = function(id) return monsters[id] end
+local nextId = 7000
+Chaos.createMonsterNamed = function(typeName, p, ext, force, shown)
+	nextId = nextId + 1
+	raised[#raised + 1] = {type = typeName, shown = shown, x = p.x, y = p.y, z = p.z}
+	return mkElite(nextId, typeName, shown, p)
+end
+ChaosApplyTier = function(m, tier) tiered[#tiered + 1] = {m:getId(), tier} return true end
+ChaosAchievements = {set = function(p, stat, v) achSet[#achSet + 1] = {p:getId(), stat, v} end}
+local oldAddEvent = addEvent
+addEvent = function(fn, ms) timers[#timers + 1] = {fn = fn, ms = ms} end
+local wren = mkPlayer(12, 10, pos(100, 100, 7))
+function wren:getGuid() return 512 end
+online[12] = wren
+ChaosPoi.seen[512] = {}; ChaosPoi.watch[12] = true
+events.ChaosTalesLogin.onLogin(wren)
+eq(#achSet, 0, "no chapter done: no counter written")
+T.open[12] = "cinderhold_1"
+events.ChaosTalesModal.onModalWindow(wren, cfg.modal.tale, 1, 0)
+eq(wren:getStorageValue(M.stateKey(ch1)), 1, "chapter 1 taken at level 10"); eq(T.watch[12], true, "on the watch list")
+assert(revealed[#revealed][2].marks[1].n:find("Troll", 1, true), "the elite's place shown on the map")
+-- away: nothing rises; at the place: the named elite, tiered, with a message and a lifetime
+events.ChaosTalesVisit.onThink()
+eq(#raised, 0)
+wren.at = pos(es.pos.x + 2, es.pos.y + 1, es.pos.z)
+events.ChaosTalesVisit.onThink()
+eq(#raised, 1); eq(raised[1].type, "Troll"); eq(raised[1].shown, es.name); eq(raised[1].x, es.pos.x)
+eq(tiered[1][2], cfg.elite.tier); eq(timers[#timers].ms, cfg.elite.lifeSec * 1000)
+assert(wren.msgs[#wren.msgs]:find("rises to meet you", 1, true), "the rise message")
+events.ChaosTalesVisit.onThink()
+eq(#raised, 1, "one at a time")
+-- a plain troll does not count; the elite does (by its shown name)
+events.ChaosTalesKill.onKill(wren, mkMonster(7900, "Troll"))
+eq(wren:getStorageValue(M.stateKey(ch1)), 1)
+local eliteMon = monsters[nextId]
+events.ChaosTalesKill.onKill(wren, eliteMon)
+eq(wren:getStorageValue(M.stateKey(ch1)), 2, "the elite fell"); eq(T.watch[12], nil, "off the watch list")
+assert(wren.msgs[#wren.msgs]:find("Return to the Archivist", 1, true))
+-- the lifetime ends it when nobody did
+timers[#timers].fn(); eq(monsters[nextId], nil, "removed after its lifetime")
+-- turn in: the reward and the saga's counter; login sets it again (retroactive)
+T.open[12] = "cinderhold_1"
+events.ChaosTalesModal.onModalWindow(wren, cfg.modal.tale, 3, 0)
+eq(wren:getStorageValue(M.stateKey(ch1)), 100); eq(wren.bank, ch1.rewards.gold)
+eq(achSet[#achSet][2], "cinderhold_tale"); eq(achSet[#achSet][3], 1)
+local chapterLine
+for _, m in ipairs(wren.msgs) do if m:find("chapter 1 of 10", 1, true) then chapterLine = m end end
+assert(chapterLine, "the chapter count named")
+achSet = {}
+events.ChaosTalesLogin.onLogin(wren)
+eq(achSet[1][3], 1, "login writes the counter")
+-- the next chapter is open now; a level 10 character still waits for its level
+T.sendList(wren)
+local seen2
+for _, label in ipairs(modals[#modals].choices) do seen2 = seen2 or label:find("Founders' Bell", 1, true) end
+eq(seen2, nil, "chapter 2 at level 22")
+wren.level = 22
+T.sendList(wren)
+for _, label in ipairs(modals[#modals].choices) do seen2 = seen2 or label:find("Founders' Bell", 1, true) end
+assert(seen2, "chapter 2 opens after chapter 1 at its level")
+-- the elite cannot rise twice within againSec after it fell
+T.elites = {}
+wren:setStorageValue(M.stateKey(ch1), 1)
+local before = #raised
+T.checkVisits(wren)
+eq(#raised, before + 1)
+monsters[nextId] = nil
+T.checkVisits(wren)
+eq(#raised, before + 1, "not again at once")
+wren:setStorageValue(M.stateKey(ch1), 100)
+addEvent = oldAddEvent
+events.ChaosTalesLogout.onLogout(wren)
 
 -- ------------------------------------------------------------------ the talk step in the faction NPC's own script
 local said, callbacks = {}, {}
