@@ -155,5 +155,24 @@ eq(V.savedPosition({ Jokr = { x = 1 } }, 'Jokr'), nil, 'half a position'); eq(V.
 eq(V.savedPosition({}, 'Other'), nil, 'other character')
 eq(V.isDrag(2, 3), false, 'small move is a click'); eq(V.isDrag(0, -6), true, 'big move is a drag')
 
+-- the welcome path (server welcomepath.lua, O370): one row, the step count in the head
+local w = V.new()
+eq(#w.welcome, 0, 'no welcome rows at first')
+V.onWelcome(w, { title = 'Welcome Path', step = 2, count = 7,
+  rows = { { key = 'kills', title = 'Slay 20 monsters', progress = 5, target = 20, state = 'open', hint = 'The hunts.',
+    where = { k = 'hunts', pos = { x = 1, y = 2, z = 7 }, label = 'Rats' } }, 'junk' } })
+eq(#w.welcome, 1, 'one welcome row, junk dropped')
+eq(V.welcomeTitle(w), 'Welcome Path 2/7', 'welcome head')
+eq(V.welcomeTitle(w, true), 'Welcome Path (2/7) +', 'folded welcome head')
+local wt, wp = V.ascensionLine(w.welcome[1])
+eq(wt, 'Slay 20 monsters  5/20', 'welcome row text'); eq(wp, 25, 'welcome row bar')
+eq(V.action(w.welcome[1].where).map.x, 1, 'the row marks the hunt on the map')
+V.onWelcome(w, { rows = {} })
+eq(#w.welcome, 0, 'no rows hide the section'); eq(w.welcomeStep, 0, 'step reset')
+V.onWelcome(w, nil)
+eq(#w.welcome, 0, 'a bad message hides it too')
+sh, hid = V.budget({ 1, 3, 0, 0 }, 3)
+eq(sh[1], 1, 'budget: the welcome step first'); eq(sh[2], 2, 'budget: then two goals'); eq(hid, 1, 'budget: one goal hidden')
+
 if fails > 0 then print('goalsview_test: ' .. fails .. ' failure(s)'); os.exit(1) end
 print('goalsview_test: ' .. checks .. ' checks OK')

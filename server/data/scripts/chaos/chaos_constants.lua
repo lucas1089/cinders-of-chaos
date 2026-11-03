@@ -2281,10 +2281,14 @@ ChaosOpcodes.npcTravel = 121
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,
 -- +5 trial cooldown (os.time), +6 done time (os.time of the first completion, the gold is paid once), +7 lines done
--- (a bit per line), +8 and +9 free. 7101070 - 7101099 stays free. No opcode: the tracker rows go over the goals channel.
+-- (a bit per line), +8 and +9 free. No opcode: the tracker rows go over the goals channel.
 Chaos.storage.spellQuest = 7101040
 Chaos.storage.spellQuestSlots = 10
 Chaos.storage.spellQuestCount = 3
+-- The welcome path (O370; welcomepath.lua, welcomepath_core.lua, welcomepath_config.lua `storage`; server/README.md
+-- "Welcome path (O370)"): 7101070 - 7101079: +0 state, +1 step, +2 kills of the kill step, +3 flags; +4..9 free.
+-- 7101080 - 7101099 stays free. No opcode: the tracker rows go over the goals channel (ChaosOpcodes.goals).
+Chaos.storage.welcomePath = 7101070
 -- Hunting level on screen (owner 2026-10-27): the bounty pool's level (ChaosLoot.monsterLevel) is half of the level
 -- players hunt a monster at; every text that prints a pool-scale level (monster level thresholds, map marks) prints
 -- Chaos.huntingLevel(n) = n x pace_config.lua baseLevelMult. A gate that compares a monster with a share of the

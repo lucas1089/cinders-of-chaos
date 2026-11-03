@@ -70,6 +70,7 @@ with tempfile.TemporaryDirectory() as d:
     check(value(text, 'spawnNearPlayers') == 'true', 'spawnNearPlayers = true on a first run')
     check(value(text, 'spawnMinPlayerDistance') == '2', 'spawnMinPlayerDistance = 2 on a first run')
     check(value(text, 'rateSpawn') == '3', 'rateSpawn = 3')
+    check(value(text, 'protectionLevel') == '50', 'protectionLevel = 50 (O370: the stock 1 protected nobody)')
     check(value(text, 'rsaKeyFile') == 'os.getenv("CHAOS_RSA_KEY_FILE") or "key.pem"',
           'rsaKeyFile from CHAOS_RSA_KEY_FILE (engine patch 0046)')
     check(text.count('spawnNearPlayers') == 1 and text.count('rateSpawn') == 1, 'each key written once')

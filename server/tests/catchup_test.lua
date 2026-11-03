@@ -77,6 +77,26 @@ eq(K.altPct(cfg, 600, 500), 0, "above the best: none")
 eq(K.altPct(cfg, 10, 40), 0, "best below minBest: none")
 eq(K.altPct(cfg, 60, 70), 50, "small best: the fade is minFade (20)")
 
+-- ---------------------------------------------------------------- newcomer bonus (O370)
+local nc = cfg.newcomer
+eq(K.newcomerPct(cfg, 8), nc.maxPct, "level 8: the full newcomer bonus")
+eq(K.newcomerPct(cfg, 1), nc.maxPct, "below fullTo: full")
+near(K.newcomerPct(cfg, (nc.fullTo + nc.zeroAt) / 2), nc.maxPct / 2, "half way: half")
+eq(K.newcomerPct(cfg, nc.zeroAt), 0, "at zeroAt: none")
+eq(K.newcomerPct(cfg, 600), 0, "high level: none")
+check(K.newcomerPct(cfg, 40) > K.newcomerPct(cfg, 41), "it shrinks with every level")
+eq(K.newcomerPct({newcomer = {enabled = false, maxPct = 50, fullTo = 8, zeroAt = 150}}, 8), 0, "switched off")
+eq(K.newcomerPct({}, 8), 0, "no section: none")
+eq(K.levelPct(cfg, 8, 0), nc.maxPct, "no alt: the newcomer bonus")
+eq(K.levelPct(cfg, 60, 500), 100, "an alt far below its best: the larger alt bonus, not both")
+local o8 = K.xpGain(cfg, 1000, {level = 8, stamina = 2000, pool = 0, best = 0})
+near(o8, 1000 * (1 + nc.maxPct / 100), "a level 8 kill: +maxPct")
+eq((K.xpGain(cfg, 1000, {level = 60, stamina = 2000, pool = 0, best = 500})), 2000, "alt and newcomer never stack")
+eq((K.xpGain(cfg, 1000, {level = 8, stamina = 2000, pool = 0, best = 0, season = true})), 1000, "season: no newcomer bonus")
+eq(#K.validate(cfg), 0, "the shipped config validates")
+check(#K.validate({stamina = cfg.stamina, maxXpMult = 3, newcomer = {maxPct = 50, fullTo = 100, zeroAt = 50}}) > 0,
+	"zeroAt below fullTo is refused")
+
 -- ---------------------------------------------------------------- stamina
 eq(K.staminaLootMult(cfg, 2000), 1, "full stamina: full loot")
 eq(K.staminaLootMult(cfg, 840), 0.5, "at 14 h: half loot")
@@ -283,7 +303,8 @@ near(CU.restedMinutes(fresh), 2.5, "an hour offline: 2.5 minutes")
 check(not said(fresh, "Welcome back!"), "an hour away is no return")
 local per = K.xpPerMinute(cfg, 100)
 local big = per * 10
-near(xpcb(fresh, monster, big, big), big + per * 2.5, "the pool pays what it holds", 1e-3)
+-- (level 100 still has the newcomer bonus, O370: it multiplies before the rested part)
+near(xpcb(fresh, monster, big, big), big * (1 + K.newcomerPct(cfg, 100) / 100) + per * 2.5, "the pool pays what it holds", 1e-3)
 near(CU.restedMinutes(fresh), 0, "and is empty")
 eq(fresh.st[cfg.storage.rested], 0, "the storage follows")
 eq(CU.buffItem(fresh, "rested"), nil, "an empty pool: no buff")
@@ -300,6 +321,13 @@ local newbie = newPlayer(5, 40, 1, 2520, 0)
 online = {newbie}
 events.ChaosCatchupLogin.onLogin(newbie)
 eq(rows.catchup[40], nil, "a new account starts no boost")
+-- O370: the newcomer bonus of a low level (this one is level 1): told at login, on the buff bar, in the experience
+check(said(newbie, "Newcomer bonus: +50%"), "the newcomer is told its bonus")
+local nb = CU.buffItem(newbie, "newcomer")
+eq(nb and nb.stacks, 50, "newcomer buff: the percent as stacks")
+eq(CU.buffItem(newbie, "alt"), nil, "no alt buff beside it")
+eq(xpcb(newbie, monster, 1000, 1000), 1500, "newcomer experience: +50%")
+eq(CU.buffItem(alt, "newcomer"), nil, "a level 300 character: no newcomer buff")
 -- the Next Goals panel when it exists
 local hinted
 ChaosNextGoals = {hint = function(p, why) hinted = why end}
