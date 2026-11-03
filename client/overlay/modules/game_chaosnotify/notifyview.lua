@@ -20,7 +20,8 @@ V.MESSAGE_TYPES = {
   journey = 'JOURNEY',
   invasion = 'INVASION',
   cursedchest = 'CURSED_CHEST', -- a Cursed Chest rises, its hordes, its loot (server cursedchest.lua, O244)
-  weeklychest = 'WEEKLY_CHEST' -- the Weekly Chest opens, the bonus roll (server weeklychest.lua, O261)
+  weeklychest = 'WEEKLY_CHEST', -- the Weekly Chest opens, the bonus roll (server weeklychest.lua, O261)
+  milestone = 'MILESTONE' -- a level milestone every 100 levels from 800 (server milestones.lua, O378)
 }
 
 function V.typeOfAction(action)

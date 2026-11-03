@@ -303,7 +303,7 @@
 			"level": null,
 			"menu": "Character > Achievements",
 			"rows": [
-				{"id": "what", "text": {"en": "175 achievements in 10 groups, from leveling and monsters to bosses, rifts, crafting and PvP. 12 stay secret until you earn them.", "pt-BR": "175 conquistas em 10 grupos, de subir de nível e monstros a chefes, fendas, criação e PvP. 12 ficam secretas até você conseguir."}},
+				{"id": "what", "text": {"en": "189 achievements in 11 groups, from leveling and monsters to bosses, rifts, crafting and PvP. 12 stay secret until you earn them.", "pt-BR": "189 conquistas em 11 grupos, de subir de nível e monstros a chefes, fendas, criação e PvP. 12 ficam secretas até você conseguir."}},
 				{"id": "who", "text": {"en": "Every player. Most unlock by themselves while you play.", "pt-BR": "Todo jogador. A maioria libera sozinha enquanto você joga."}},
 				{"id": "drops", "text": {"en": "Achievement points; many also give a title, gold, items, an outfit, a mount or a portal style. Finish every achievement of a group for its own title.", "pt-BR": "Pontos de conquista; muitas também dão um título, ouro, itens, um traje, uma montaria ou um estilo de portal. Complete todas as conquistas de um grupo para ganhar o título dele."}},
 				{"id": "often", "text": {"en": "Once each. Progress never goes back. Pick a title you earned in this window.", "pt-BR": "Uma vez cada. O progresso nunca volta. Escolha um título que você ganhou nesta janela."}}

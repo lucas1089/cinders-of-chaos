@@ -47,11 +47,20 @@ local function win(m, f)
 	return W("window", {m = m, f = f or "toggle"})
 end
 
--- "Reach level n", unlocked at `from` (the band before n: it is that band's last goal)
+-- the level milestones (O378, milestones_config.lua): the title and the Milestone Cache of each, and one challenge goal
+-- per milestone (appended to C.goals below)
+if not ChaosMilestonesCore or not ChaosMilestonesCore.goals then
+	dofile("data/scripts/chaos/milestones_core.lua")
+end
+local MILESTONES = ChaosMilestonesCore.goals(dofile("data/scripts/chaos/milestones_config.lua"),
+	dofile("data/scripts/chaos/achievements_data.lua"))
+
+-- "Reach level n", unlocked at `from` (the band before n, or the milestone before n). A milestone level says its title
+-- and its cache.
 local function lvl(n, from)
 	return {key = "lvl" .. n, level = from, stat = "level", target = n,
 		title = T("Reach level " .. n, "Alcance o nível " .. n),
-		why = T("New content, gear and goals unlock with every band.",
+		why = MILESTONES.why[n] or T("New content, gear and goals unlock with every band.",
 			"Novo conteúdo, equipamento e objetivos se abrem a cada faixa."),
 		where = W("hunts"),
 		effort = T("Hunt at your level; bounties and kill tasks add experience.",
@@ -611,6 +620,23 @@ C.goals = {
 		why = T("The Paragon title and more stats.", "O título Paragon e mais atributos."),
 		where = win("game_passivetree"), effort = T("Keep levelling.", "Continue subindo de nível.")}
 }
+
+-- the level milestones between the band goals (O378): "Reach level <L>" for every milestone without a band goal (each
+-- unlocked at the milestone before it), then the milestone challenges (unlocked at their level)
+do
+	local have = {}
+	for _, g in ipairs(C.goals) do
+		have[g.key] = true
+	end
+	for _, g in ipairs(MILESTONES.challenges) do
+		if not have["lvl" .. g.level] then
+			C.goals[#C.goals + 1] = lvl(g.level, g.level - 100)
+		end
+	end
+	for _, g in ipairs(MILESTONES.challenges) do
+		C.goals[#C.goals + 1] = g
+	end
+end
 
 -- ------------------------------------------------------------------ texts of the engine (goals.lua)
 C.texts = {

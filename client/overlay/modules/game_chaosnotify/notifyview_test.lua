@@ -18,6 +18,7 @@ eq(V.typeOfAction('market'), 'MARKET', 'market kind')
 eq(V.typeOfAction('pact'), 'PACT', 'pact kind (the Chaos Pact expiry warning)')
 eq(V.typeOfAction('cursedchest'), 'CURSED_CHEST', 'cursedchest kind (the Cursed Chest toasts, O244)')
 eq(V.typeOfAction('weeklychest'), 'WEEKLY_CHEST', 'weeklychest kind (the Weekly Chest toasts, O261)')
+eq(V.typeOfAction('milestone'), 'MILESTONE', 'milestone kind (the level milestone toast, O378)')
 eq(V.typeOfAction('partyInvite'), nil, 'not a message kind')
 -- every kind the server's ChaosNotify.send accepts has a toast type here
 local src = io.open(here .. '/../../../../server/data/scripts/chaos/notifications.lua')

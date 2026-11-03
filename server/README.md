@@ -610,7 +610,7 @@ working directory, as with the rest of the base server libs).
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
 | game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, Social > Guild | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, Guild Stash), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
 | game_guildwar | `guildwar.lua`, `guildwar_core.lua`, `guildwar_config.lua`, `guildboss.lua`, `guildboss_core.lua`, `guildboss_config.lua`, `sql/chaos_guildwar.sql`, monsters `monsters/chaos/guildboss/`, engine patch 0020 | **197**, Social > Guild Wars, the Summoning Stone in the guild hall | Guild wars declared and answered in game (terms, gold stake in escrow, anti-farming kill rules, frag limit / time / surrender, base `guild_wars` rows for the engine's war emblems, war board) and the weekly guild boss (fuel, summon, instanced fight, rewards, banner, weekly board); see "Guild wars in game" and "The weekly guild boss". Unit and mocked-engine tests; tested on a live test server with two clients. |
-| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 173 in 10 categories (4170 points) with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
+| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 189 in 11 categories (4640 points) with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, Character > Pets / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
 | game_buffbar | `buffbar.lua`, `data/lib/chaos_buffs.lua` | 234 (server -> client), Character > Buff Bar | Buff / debuff bar: icons with a countdown and stacks for the engine conditions, the Chaos class buffs, world buffs, the Victory buff, world events, trial kill stacks, chi, Rage and Reprisal; diffs only; tested in game (see "Buff bar and party frames"). |
 | game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
@@ -849,7 +849,8 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
-| 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. 7101080 - 7101099 stays free |
+| 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. level milestones below |
+| 7101080 - 7101089 | level milestones (`milestones_config.lua` `storage`, O378): +0 the highest milestone level whose Milestone Cache was given or skipped (-1 = not seen yet; the first login sets the baseline); +1..9 free. 7101090 - 7101099 stays free |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
 | 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
@@ -5219,7 +5220,7 @@ them, all palette variants of effects and colours that already exist (no new art
 | 2500 | Obsidian Labels | label accent |
 | 3500 | Gilded Ascent (`aura_burst_gold`, the gold Cinder Throne) | kill effect |
 
-Category completion: Combat & Leveling War Surge (`aura_burst_red`), Monsters Thornbloom (`px286_green`), World Bosses
+Category completion: Combat & Leveling War Surge (`aura_burst_red`), Level Milestones Summit Seal (`infernal_seal`, O378), Monsters Thornbloom (`px286_green`), World Bosses
 Titan's Pyre (`dome_blast_holy`), Rifts Rift Sigil (`px674_arcane`), Raids Sepulchre Labels, Bounties Huntsman's Copper,
 Items & Crafting Tempered Labels, PvP Bloodsteel Name, Exploration & Social Lantern Name, Secrets Falling Stars
 (`starfall_crown`); the category's title is in "Achievements". `ChaosCosmetics.sync(player)` / `syncAccount(accountId,
@@ -18691,9 +18692,9 @@ character creation (client and website) and the cancel text name the level, not 
 
 ## Achievements (`achievements.lua`, `achievements_core.lua`, `achievements_data.lua`, client `game_achievements`)
 
-Long-term goals across every system: 178 achievements in 10 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
-Raids, Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 4280 points in all (counted from
-`achievements_data.lua` on 2026-10-14; the five deep dungeon ones, in Raids: a clear of each of the four, 10 / 10 / 15 /
+Long-term goals across every system: 189 achievements in 11 categories (Combat & Leveling, Level Milestones, Monsters, World
+Bosses, Rifts, Raids, Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 4640 points in all (counted from
+`achievements_data.lua` on 2026-11-03, O378 added the 14 level milestones 800-2200 but 1000; earlier the five deep dungeon ones, in Raids: a clear of each of the four, 10 / 10 / 15 /
 25 points, and the hidden "Into the Last Fire", all four on difficulty 6, 50 points, title "the Unchained"; their
 counters `dungeon_<area id>`, `_top`, `_d6` come from `areagen.lua` at a won run). Client `game_achievements` (Chaos ->
 Achievements in the top menu, or Character > Achievements), extended opcode 250 (`ChaosOpcodes.achievements`), tables
@@ -18752,6 +18753,7 @@ Achievements in the top menu, or Character > Achievements), extended opcode 250 
   | Category | Title (frame) | Cosmetic |
   |---|---|---|
   | Combat & Leveling | Warmaster (ember) | War Surge, kill effect |
+  | Level Milestones (O378) | Hundredfold (amber) | Summit Seal, kill effect |
   | Monsters | Beastwarden (verdant) | Thornbloom, kill effect |
   | World Bosses | Titanfeller (bone) | Titan's Pyre, kill effect |
   | Rifts | Riftwarden (violet) | Rift Sigil, kill effect |
@@ -25485,7 +25487,7 @@ objetivos), and a compact tracker on screen (Adventure > Goal Tracker or the win
   1300, 1600, 2000). Each has a name and a line, a gear path (where the next gear comes from: hunts, dungeons, vendors,
   crafting; each line with a button) and the content hunts of the teleport room whose band holds the level
   (`hunts`, checked against `tools/areaplan/plans/*.json` and `hunt_teleports_config.lua` by the test).
-- **Goals.** 73 goals, each with a title, why it matters, where (a button: a client window, an Info page, the kill
+- **Goals.** 97 goals (73 and the 24 level milestone lines of O378), each with a title, why it matters, where (a button: a client window, an Info page, the kill
   tasks, the Item Finder, or a mark on the minimap at an NPC, the nearest hunting ground of the level, a teleport of the
   room or the temple: the server resolves the position), progress, the expected effort and a small reward. They cover
   the unlocks: passive tree (12), bounty (8), kill tasks, crafting orbs, invasions, arena, ascension (100), rifts, the
@@ -25493,7 +25495,8 @@ objetivos), and a compact tracker on screen (Adventure > Goal Tracker or the win
   Tokens (150, shown only while `ChaosPocketBoss` / `ChaosConquest` exist: `requires`), the Infinity Tower, uniques,
   world bosses (300), Orbs of Grafting, the raid and Omens (800), The Hollow Vault (800), Ascended Omens (900), the
   Cinderheart and The Marrow Crypts (1000), Paragon (1001), legendary powers, The Iron Crucible (1300), The Fallen
-  Sanctum (1600), The Pyre Throne and difficulty 6 (2000), and a "reach level N" goal closing each band.
+  Sanctum (1600), The Pyre Throne and difficulty 6 (2000), and a "reach level N" goal closing each band, plus
+  the level milestones (O378, below): "Reach level N" every 100 levels from 800 to 2200 and one milestone challenge each.
 - **The panel** lists the open goals of the band, then up to 6 open goals of the bands below (the nearest first, "and N
   more"), then the band's goals done; the side column has the gear path, where to hunt and the next 3 unlocks
   ("Level 500: Reach level 800"). Season characters get a Seasonal Journey button: the Journey stays the season's own
@@ -25529,6 +25532,69 @@ objetivos), and a compact tracker on screen (Adventure > Goal Tracker or the win
   the client modules, NPCs against data/npc, the guide's sections, bands, retro, evaluation, rewards, the panel, the
   tracker, effort texts; goals.lua on a mocked engine: login, rewards once, the hooks, the panel, the resolver, the band
   message, logout), client `game_goals/goalsview_test.lua`. Not run on a live server.
+
+## Level milestones (O378) (`milestones.lua`, `milestones_core.lua`, `milestones_config.lua`; achievements, cosmetics, Next Goals; client `game_chaosnotify`)
+
+Owner request 2026-11-03: after level 700 the leveling is flat (10-14 minutes a level for about 290 hours to 2200,
+`tools/progression_model.lua`) and has no landmarks. Now every 100 levels from 800 to 2200 (15 milestones) is a step.
+Built on what exists; nothing is duplicated:
+
+| Level | Achievement (points) | Title | Milestone Cache (Upheaval / Fate / Grafting) | Challenge (Next Goals) | Cosmetic |
+|---|---|---|---|---|---|
+| 800 | Tempered in the Dark (25) | the Tempered | 5 / 2 / 0 | Infinity Tower floor 30 | |
+| 900 | Nine Hundred Embers (25) | Emberborn | 5 / 2 / 0 | Tower floor 35 | |
+| 1000 | The Thousandth Step (50, mount Doombringer as before) | the Unbroken | 6 / 2 / 1 | 100 pocket bosses | level-up effect Thousandth Ascent |
+| 1100 | Will Unbending (25) | the Unyielding | 6 / 2 / 0 | Tower floor 45 | |
+| 1200 | Forged in the Grave (25) | Graveforged | 6 / 3 / 0 | Tower floor 50 | |
+| 1300 | The Thirteenth Bell (25) | the Knelled | 7 / 3 / 0 | Tower floor 55 | |
+| 1400 | Sworn to the Cinders (25) | Cindersworn | 7 / 3 / 0 | Tower floor 60 | |
+| 1500 | The Long Dusk (50) | Duskbearer | 8 / 3 / 1 | 200 pocket bosses | level-up effect Dusk Ascent |
+| 1600 | Crown of Hollows (25) | Hollowcrowned | 8 / 3 / 0 | Tower floor 65 | |
+| 1700 | Still Smoldering (25) | the Smoldering | 8 / 4 / 0 | Tower floor 75 | |
+| 1800 | Bound to the Pyre (25) | Pyrebound | 9 / 4 / 0 | Tower floor 80 | |
+| 1900 | Past the Last Light (25) | Lightless | 9 / 4 / 0 | Tower floor 85 | |
+| 2000 | Two Thousand Fires (50) | the Undimmed | 10 / 4 / 1 | 300 pocket bosses | level-up effect Undimmed Ascent |
+| 2100 | Where Stars Die (25) | Starless | 10 / 4 / 0 | Tower floor 95 | |
+| 2200 | The Summit of Ruin (50) | Apex of Chaos | 12 / 5 / 2 | Tower floor 100 | category: title Hundredfold, kill effect Summit Seal |
+
+- **Title and points:** the level achievements `level_<L>` of `achievements_data.lua`, in a new category Level
+  Milestones (Marcos de Nível; `level_1000` moved there from Combat & Leveling, its id and mount unchanged, so Combat is
+  not harder to complete). The achievement system gives the points, the title (name plate, `!title`, the window), the
+  ACHIEVEMENT UNLOCKED toast and the reward track. Category completion (level 2200): title Hundredfold (frame amber) and
+  the kill effect Summit Seal.
+- **Cosmetics** (`cosmetics_config.lua`, ids 606-608 and 121, account wide, never sold): level-up effects at 1000
+  (`storm_mantle`), 1500 (`shadow_shroud`) and 2000 (`arcane_orbit`), chosen in Character > Cosmetics; the effects of
+  the client pair, no new art. Visual only.
+- **Milestone Cache:** orbs given once per character by `milestones.lua` at the level up (backpack first, inbox when full),
+  the storage mark written first. 116 Upheaval, 48 Fate and 5 Grafting over the 15 caches: at most a tenth of what the
+  about 290 hours of hunting from 800 to 2200 drop (about 4 / 2 / 0.4 an hour at the normal tier, `loot_config.lua`
+  currency); 800 starts at the level 700 reward (5 + 2). No gold, no coins, no power: the store, roulette and unique pace
+  models are not touched (their `--check` pass as before).
+- **Broadcast:** one short line in each player's language, "Name reached level 1300 and earned the title the Knelled."
+  Only for a milestone reached live (never at the login baseline), one per advance (a jump: the highest), not for staff or
+  tester bots. Switch: `milestones_config.lua` `broadcast.enabled` (on).
+- **Toast:** LEVEL MILESTONE (notifications opcode 79, new kind `milestone`; client `game_chaosnotify` type `MILESTONE`):
+  "Level 1300: Milestone reached. Title: the Knelled. Milestone Cache: 7 Orb of Upheaval, 3 Orb of Fate. Next milestone:
+  level 1400." The same line in the chat.
+- **Next Goals** (`goals_config.lua` builds them from `milestones_core.lua` `K.goals`): "Reach level N" for every
+  milestone (the existing 800, 900, 1000, 1300, 1600, 2000 keep their keys and unlock levels; 1100, 1200, 1400, 1500,
+  1700, 1800, 1900, 2100, 2200 are new, each unlocked at the milestone before); its line names the title and the cache.
+  The challenge goal `ms<L>` unlocks at the milestone: an Infinity Tower floor (`tower_floor`, the floors are below the
+  median class reach of `tools/tower_model.py`: L800 34, L1000 44, L1500 64, L2000 93) or pocket boss kills at 1000 /
+  1500 / 2000 (`pocket_kills`, shown while `ChaosPocketBoss` runs). Paid with Next Goals' small default reward.
+- **Existing characters** (decided, owner delegated): titles, points and the cosmetics are retroactive (the achievements'
+  login check). The Milestone Cache is only for milestones reached from now on: the first login after the install
+  stores the highest milestone at or below the level and gives nothing for it. Next Goals marks the goals of the bands
+  below the character's own done without a reward (as for every goal, `K.retro`); new goals of its own band are paid
+  once with the small goal reward. A death and the way back never pay twice (the mark only rises). Staff move the mark
+  and get nothing.
+- **Not built:** a per-player mute of the broadcast (the switch is server wide); a Chronicle goal for the milestones.
+- **State:** the storage 7101080 ("Storage keys"); no opcode of its own, no table.
+- **Tests:** `tests/milestones_test.lua` (config against the achievements, titles unique and short, the cosmetics, the
+  storage, the cache share, the plan: baseline, advance, jump, death, unseen, staff, off; the toast, the pt-BR keys, the
+  Next Goals lines and the tower reach; `milestones.lua` on a mocked engine: login, advance, cache, inbox, toast,
+  broadcast, staff, testers, the switch); `achievements_test.lua`, `cosmetics_test.lua`, `goals_test.lua`,
+  `i18n_test.lua`; client `game_chaosnotify/notifyview_test.lua`. Not run on a live server.
 
 ## Welcome path (O370, `welcomepath.lua`, `welcomepath_core.lua`, `welcomepath_config.lua`, client `game_goals`)
 

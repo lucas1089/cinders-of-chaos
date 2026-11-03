@@ -1126,6 +1126,7 @@ return {
 
 		-- Achievements: categories, descriptions (achievements_data.lua; names and titles stay English), window and toasts (achievements_core.lua)
 		["Combat & Leveling"] = "Combate e Níveis",
+		["Level Milestones"] = "Marcos de Nível",
 		["Monsters"] = "Monstros",
 		["World Bosses"] = "World Bosses",
 		["Rifts"] = "Rifts",
@@ -1163,6 +1164,20 @@ return {
 		["Reach level 500."] = "Alcance o nível 500.",
 		["Reach level 700."] = "Alcance o nível 700.",
 		["Reach level 1000."] = "Alcance o nível 1000.",
+		["Reach level 800."] = "Alcance o nível 800.",
+		["Reach level 900."] = "Alcance o nível 900.",
+		["Reach level 1100."] = "Alcance o nível 1100.",
+		["Reach level 1200."] = "Alcance o nível 1200.",
+		["Reach level 1300."] = "Alcance o nível 1300.",
+		["Reach level 1400."] = "Alcance o nível 1400.",
+		["Reach level 1500."] = "Alcance o nível 1500.",
+		["Reach level 1600."] = "Alcance o nível 1600.",
+		["Reach level 1700."] = "Alcance o nível 1700.",
+		["Reach level 1800."] = "Alcance o nível 1800.",
+		["Reach level 1900."] = "Alcance o nível 1900.",
+		["Reach level 2000."] = "Alcance o nível 2000.",
+		["Reach level 2100."] = "Alcance o nível 2100.",
+		["Reach level 2200."] = "Alcance o nível 2200.",
 		["Ascend into one of your class's two paths."] = "Ascenda para um dos dois caminhos da sua classe.",
 		["Clear your vocation's trial on Normal."] = "Vença o trial da sua vocação no Normal.",
 		["Clear your vocation's trial on Cruel."] = "Vença o trial da sua vocação no Cruel.",
@@ -3560,6 +3575,20 @@ return {
 		["Shatterborn"] = "Nascido do Estilhaço",
 		["Into the Abyss"] = "Rumo ao Abismo",
 		["The Thousandth Step"] = "O Milésimo Passo",
+		["Tempered in the Dark"] = "Temperado no Escuro",
+		["Nine Hundred Embers"] = "Novecentas Brasas",
+		["Will Unbending"] = "Vontade Inflexível",
+		["Forged in the Grave"] = "Forjado na Cova",
+		["The Thirteenth Bell"] = "O Décimo Terceiro Sino",
+		["Sworn to the Cinders"] = "Jurado às Cinzas",
+		["The Long Dusk"] = "O Longo Crepúsculo",
+		["Crown of Hollows"] = "Coroa dos Vazios",
+		["Still Smoldering"] = "Ainda em Brasa",
+		["Bound to the Pyre"] = "Preso à Pira",
+		["Past the Last Light"] = "Além da Última Luz",
+		["Two Thousand Fires"] = "Dois Mil Fogos",
+		["Where Stars Die"] = "Onde as Estrelas Morrem",
+		["The Summit of Ruin"] = "O Cume da Ruína",
 		["Ascended"] = "Ascendido",
 		["Trial by Fire"] = "Prova de Fogo",
 		["No Mercy Asked"] = "Sem Pedir Clemência",
@@ -8553,5 +8582,13 @@ return {
 			"Volte no nível %d. %s não aceita juramentos de quem não foi testado.",
 		["Come back at level %d. Keep the tokens you earn until then."] =
 			"Volte no nível %d. Guarde os tokens que ganhar até lá.",
+		-- Level milestones (O378, milestones.lua, milestones_config.lua texts; "Level %d" and the full backpack line are
+		-- above)
+		["Milestone reached. Title: %s. Milestone Cache: %s."] =
+			"Marco alcançado. Título: %s. Milestone Cache: %s.",
+		["Next milestone: level %d."] =
+			"Próximo marco: nível %d.",
+		["%s reached level %d and earned the title %s."] =
+			"%s alcançou o nível %d e ganhou o título %s.",
 	},
 }
