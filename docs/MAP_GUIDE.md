@@ -311,7 +311,9 @@ map that are not a content plan: the broken teleports of `server/tools/teleport_
 teleport hall (`hunt_teleports_config.lua` `hall.fill`: void -> deep water 28915-28918 with the water border pieces
 29166-29177 on the shore: n 29166, e 29167, w 29168, s 29177, two sides 29169-29172, a corner 29173-29176) and the
 portal gallery at Cinderhold's temple (`temple_portals_config.lua`; it replaced the NPC arcade of 2026-10-21 on the same
-tiles). Floor changes that lead nowhere (a hole over nothing, a ramp under a wall) are found by `server/tools/check_dead_holes.py`
+tiles). Cinderhold's temple itself is tidied by `server/tools/patch_temple_tidy.py` (install step `templetidy`, README
+"Temple tidy (O386)"): the base map items of `temple_portals_config.lua` `tidy` go (the second purple teleport to the
+teleport room, the leaves of the east side room) with their floating texts. Floor changes that lead nowhere (a hole over nothing, a ramp under a wall) are found by `server/tools/check_dead_holes.py`
 and taken off by `patch_dead_holes.py` (install step `deadholes`, `server/tools/dead_holes.csv`, README "Dead holes").
 Add a row or a config entry and run the install again. The
 team never edits the map by hand; the owner's hand edits go through the map master below.
@@ -342,7 +344,7 @@ What stays and what does not:
   install steps too and would no longer match the house tiles of the map.
 - Places the install steps build keep their design: the hunt teleport hall (its teleports, signs and floors), the sea
   round it, the portal gallery at Cinderhold's temple and the teleports of `teleport_fixes.csv` are written again by each
-  install. A change there needs a change in the config; ask us.
+  install. The items of the temple tidy (the east purple teleport, the leaves) are taken off again too. A change there needs a change in the config; ask us.
 - Content areas (the planned hunts, the Chronicle areas, the Idle Hall): small hand edits inside them stay. An area
   rebuilt to more than half of its tiles is left as the owner made it, and a later change of its plan does not reach
   it any more.

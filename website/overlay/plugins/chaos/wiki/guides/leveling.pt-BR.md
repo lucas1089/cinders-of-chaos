@@ -33,7 +33,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 
 ## Nível 8-50: primeiros passos
 
-=> @temple | Salão de teleportes | Os dois grandes teleportes 5 passos ao norte do templo levam ao salão de caçadas.
+=> @temple | Salão de teleportes | O grande teleporte roxo 5 passos ao norte do templo leva ao salão de caçadas.
 => @level | Placas de nível | Cada teleporte tem uma placa: "Nome, levels X-Y". O andar 7 é dos níveis 1-560.
 => @reward | Primeiro contrato | Adventure > Bounty Board: aceite um contrato já no nível 8.
 => @level | Primeiro ponto | Seu primeiro ponto passivo chega no nível 12.
@@ -43,7 +43,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 - **Monstros com nível.** Monstros mágicos (azuis), raros (amarelos) e lendários (laranja) soltam equipamento melhor. Use o que for melhor que o seu.
 - **Combate em bando.** Abates seguidos, cada um até 3 s depois do anterior, dão bônus de experiência: +10% com 4 abates, +20% com 6, +30% com 8 e +40% com 9.
 - **Bounty Board.** Até {{bounty.maxActive}} contratos ao mesmo tempo; o quadro troca todo dia às 06:00. Com {{bounty.weeklyNeed}} contratos numa semana você ganha o baú semanal.
-- **Venda e compre.** O Loot Buyer fica no mercado da sala de teleportes (os dois grandes teletransportes ao norte do templo levam até lá). O **Economy > Market** (Mercado, Alt+E) abre no nível {{market.minLevel}}.
+- **Venda e compre.** O Loot Buyer fica no mercado da sala de teleportes (o grande teletransporte roxo ao norte do templo leva até lá). O **Economy > Market** (Mercado, Alt+E) abre no nível {{market.minLevel}}.
 - **Nível 20:** primeira tarefa de abate, primeiro orbe de criação na Crafting Bench, 50 monstros com nível.
 ::: if invasion.on
 - **Nível {{invasion.minLevel}}:** [invasões de cidade](wiki:event:invasion). Veja Adventure > Events.

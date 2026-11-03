@@ -109,7 +109,7 @@ front by trimming the classes right behind them, not by raising the leaders.
 
 ### The ascension quest
 
-Ascension is earned, not bought. The **Ascendant Oracle** in the market of Cinderhold's teleport room (the two great teleports north of the temple lead there) leads every class through it:
+Ascension is earned, not bought. The **Ascendant Oracle** in the market of Cinderhold's teleport room (the great purple teleport north of the temple leads there) leads every class through it:
 
 1. **The Calling:** talk to the Oracle at level 100. It tells you about the two paths of your class.
 2. **Proof of Strength:** slay rare and legendary monsters that are a match for your level (a rare counts 1, a legendary 3;

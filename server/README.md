@@ -8959,7 +8959,7 @@ The other seven towns (Kindle Isle, Slagdelve, Ashstrand, Nightwrack, Isle of Hu
 houses or fewer and at most 9 shops. **The teleports decide it:** the base map's teleport room (z 5-7 around 31648,
 32256, "Hunt teleports") holds 63 teleports, about 59 of them to hunting grounds all over the map, plus the 20 new
 alcoves of the content hunts, and its only way in from a town is the pair of great 2x2 teleports 5 tiles north of
-Cinderhold's temple; the room's own temple teleports lead back to that temple. No other temple has a teleport with a
+Cinderhold's temple (one of the two since O386, "Temple tidy (O386)"); the room's own temple teleports lead back to that temple. No other temple has a teleport with a
 destination within 8 tiles except Slagdelve and Dunescar (one each, local). Cinderhold is also the biggest town (most
 house floor, the second most houses), has the depot 15 tiles from the temple, two banks, 17 shops and the blessings 8
 tiles away. Mirewake had the Chaos anchors; those are configuration, so they move.
@@ -8998,7 +8998,7 @@ tiles away. Mirewake had the Chaos anchors; those are configuration, so they mov
 Owner 2026-10-22: "take these NPCs out of the temple and do away with the Hall of Services. The portals of the Hall of
 Services go to the temple, with decoration and the orange text saying where they go. The NPCs go to the hub, in the
 place where the current ones are. Take the current ones out and put ours there." The hub is the market of Cinderhold's
-teleport room (the two great teleports 5 tiles north of the temple lead there, "Hunt teleports"): two rows of eight
+teleport room (the great purple teleport 5 tiles north of the temple leads there, "Hunt teleports"; two until O386): two rows of eight
 closed stalls along a carpet walk (x 31622-31672), each with a counter in front and goods on display behind, where
 the base server's shop NPCs stood. Players walk the carpet (y 32232-32234) and talk across the counter (2 squares);
 the stalls are 6 apart, so in front of a stall its own NPC is the nearest (`chaos_npc_focus.lua`).
@@ -21073,6 +21073,60 @@ unique id, a destination or a house refuses the run. Our NPCs are gone from ther
   looking at one names it and says what it does.
 - Players come from the street to the south straight onto the carpet; the portals face it. Rendered from the map
   before and after (not in git); not seen in a client or on a live server.
+
+## Temple tidy (O386) (`tools/patch_temple_tidy.py`, `temple_portals_config.lua` `tidy`)
+Owner 2026-11-03 (pt-BR): "organize o templo por favor. deixe ele mais clean. retire um dos portais roxos". Read on the
+base map of `windows-assets` (2026-11-03) with the gallery of `mapfixes` and the startup objects on top. Cinderhold's
+temple (temple spot 32369, 32241, 7) is one hall x 32364-32374, y 32231-32243 with its door north (x 32367-32371, y
+32230) and two side rooms (x 32358-32362 and 32376-32380, y 32239-32243, doors 32363 / 32375, 32241, stairs south);
+the vestibule south of the crystal wall is a sealed showcase and the portal gallery runs along the outer south wall.
+- **The purple portals.** The north hall had two purple "Mystic Teleport" portals of the base map side by side (5
+  pieces each: 28016 28017 over 28013 28014 28015 at x 32364-32366 and 32372-32374, y 32235-32236; the two middle-row
+  pieces of each lead to 31648, 32233, 7, the teleport room), each with a floating "Teleports". Both led to the same
+  tile: the east one goes, with the marble pillar standing on its top piece and its text. The west one stays and is
+  the way to the teleport room. Not purple and kept: the Waypoint portal (east, base waypoints, "Waypoints for
+  everyone (O386)"), the dungeon portal (west, base dungeon system), the gallery's city portals.
+- **Clutter.** The east side room loses its fallen leaves and the broom. The floating "Collect First Items!" over the
+  starter chest that `startchest` took away goes. Kept: the statues, the coal basins and pillars of the hall (mirrored),
+  the exercise dummy, the street sign, the stairs.
+- **Startup objects** (no map change). The Great Brazier (`community_config.lua` `brazier.offsets`) first takes the
+  freed teleport tile 32373, 32236 (before: 32373, 32241, on the walk from the temple spot to the east side room; a map
+  without the tidy still has the teleport there, so the list goes on as before). The Chronicle's town decoration
+  (`chronicle_config.lua` `town.sets`) stands in eight mirrored spots: the four corners of the hall (dx +-5, dy -4 /
+  +2) and two corners of each side room (dx +-11, dy -2 / +1). Before, pieces fell in the side doors, on the walk to the
+  north door, in the vestibule's showcase and on the gallery's carpet in front of the Hideout and Guild Hall portals.
+- **The tool.** `patch_temple_tidy.py DATA_DIR [--dry-run] [--map] [--out] [--config]`, install step `templetidy` (after
+  `startchest`, before `poi`): every item of a listed id on its tile goes, an item with an action id or a unique id
+  never; the lines of `scripts/customs/actions/messages_text.lua` at a listed spot with its text go. Map through
+  `<map>.otbm.tmp`, the tile count checked, `<map>.otbm.bak` first. A second run changes nothing. On the base map: 12
+  items off 10 tiles, two text lines; a second run: nothing. Tests: `tools/patch_temple_tidy_test.py` (synthetic map
+  and script, the real list), `tests/temple_tidy_test.lua` (the list, the decoration spots mirrored and off the walks,
+  the Brazier's spot). Rendered before and after from the base map (pictures kept out of the repo); not seen in a
+  client.
+- Texts: "the two great teleports" is now "the great purple teleport" in the welcome window, the first hint, the
+  wiki guides and docs/GAME_GUIDE.md.
+
+## Waypoints for everyone (O386) (`waypoints_config.lua`, `waypoints_core.lua`, `tools/patch_base_waypoints.py`)
+Owner 2026-11-03 (pt-BR): "libere todos os waypoints pra todos os jogadores". The base server has a waypoint system:
+a portal next to every temple (in Cinderhold the round "Waypoint" portal at 32371-32374, 32232-32234 of the temple's
+north hall, step tile 32372, 32233), action ids 7000-7017, one per town (18). Its script
+(`data/scripts/customs/waypoints/waypoint.lua`, base data) opened a waypoint the first time a character stepped on it
+(player storage = the action id, value 1; the step itself only said "You have unlocked waypoint to ...") and its menu
+listed only the opened ones, so a new character had to walk to every town first.
+- `waypoints_config.lua` `unlockAll = true`: every waypoint is open for every character, new and old, at any level;
+  the first step opens the menu with the other 17 towns. Nothing is written to the characters: false brings the base
+  rule back with what each character had opened. The base menu has no level gate and no cost; the hunts round a town
+  keep their own warnings and gates (hunt teleports, "Hunt bands (O333)").
+- `tools/patch_base_waypoints.py DATA_DIR [--dry-run]`, install step `waypoints` (after `worldtexts`): a block marked
+  `chaos-waypoints` before the script's MoveEvent loads `waypoints_core.lua`; the three storage tests become
+  `chaosWaypointOpen(player, aid)` (`ChaosWaypointsCore.isUnlocked`). The rest of the file stays byte for byte. A
+  second run changes nothing; a data folder without the script, or a script of another shape, is left alone.
+- Nothing else reads these storages: no achievement, goal, codex or wiki text counts waypoints. The map markers'
+  discovered marks (hunting areas, "Map markers") are another system and unchanged.
+- Tests: `tests/waypoints_test.lua` (the rule, on and off, no storage read while on), `tools/patch_base_waypoints_test.py`
+  (a synthetic script patched, run under luajit and lua5.3 with a mocked engine: on, the menu at once and no storage
+  written; off, the same as the unpatched script). Tried on a copy of the base script (3 tests replaced, a second run:
+  nothing); not run on a live server.
 
 ## Map master (`tools/map_master.py`, `deploy/chaos_kit_update.sh` step `map`, branch `windows-assets` `world/`)
 Owner request 2026-10-21: hand edits made in the map editor must survive the next build and reach the VPS. Before,

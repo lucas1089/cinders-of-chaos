@@ -298,6 +298,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                coin NPCs, the sweets and token NPCs) announce their currency to the trade window on opcode 113, the
                azure NPC names our classes and where the coins drop, ServerOpcodes move off the monster bar's 125
                (README "NPC currencies"; after worldtexts)
+  waypoints    tools/patch_base_waypoints.py     the owner's request of 2026-11-03 (README "Waypoints for everyone (O386)"): the base
+               waypoint script (scripts/customs/waypoints/waypoint.lua) asks data/scripts/chaos/waypoints_core.lua which
+               waypoints are open; waypoints_config.lua unlockAll = true opens every one for every character (after
+               worldtexts, which renames the script's town names)
   servername   tools/patch_base_server_name.py   the base server's own name in whole strings of its data: the welcome text
                over the first temple, the web login service's console banner, config.lua's serverName while it is
                the base value (tools/base_server_texts.csv, keyed by the sha256 of the old string; README "Server
@@ -360,6 +364,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                ("Collect First Items!", action id 33735) is cut off the map and scripts/customs/actions/first_chest.lua is
                renamed to *.chaos-off; the Chaos new-player kit gives the class kit at the first login (after deadholes,
                before poi; with --dry-run it reads the real map and writes nothing)
+  templetidy   tools/patch_temple_tidy.py        the owner's request of 2026-11-03 (README "Temple tidy (O386)"): Cinderhold's
+               temple loses the base map's items of temple_portals_config.lua `tidy` (the second purple teleport to the
+               teleport room, its pillar, the leaves and broom of the east side room) and the floating texts of the
+               base script messages_text.lua at the tidied spots (after startchest, before poi; with --dry-run it reads
+               the real map and writes nothing)
   hubnpcs      tools/patch_hub_npcs.py           the stalls of the hub (the market of Cinderhold's teleport room,
                npc_booths_config.lua) cleared of the base server's NPCs: their spawn file entries on the stall tiles
                go, by position; the Chaos NPCs stand there from startup (README "Hub NPC booths"; before poi)
@@ -1341,6 +1350,13 @@ def step_servername(server, data, ctx):
 STEPS.insert(STEPS.index('worldtexts') + 1, 'servername')  # after worldtexts, which may rename part of a phrase first
 
 
+def step_waypoints(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_waypoints.py'), data], 'patch_base_waypoints.py'))
+
+
+STEPS.insert(STEPS.index('worldtexts') + 1, 'waypoints')  # the base waypoint script asks waypoints_core.lua (O386)
+
+
 def step_houses(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_houses.py'), data], 'patch_base_houses.py'))
 
@@ -1510,6 +1526,20 @@ def step_startchest(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('deadholes') + 1, 'startchest')  # after deadholes (map steps), before poi
+
+
+def step_templetidy(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing (the floating texts are read from the copy)
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_temple_tidy.py'), data, '--dry-run', '--map', mp], 'patch_temple_tidy.py'))
+    return tool_result(run_tool([tool('patch_temple_tidy.py'), data], 'patch_temple_tidy.py'))
+
+
+STEPS.insert(STEPS.index('startchest') + 1, 'templetidy')  # after startchest (the chest's floating text), before poi
 
 
 def step_hubnpcs(server, data, ctx):
