@@ -12,6 +12,8 @@
 --
 -- Protocol (opcode 65, through ChaosPassiveTree.extraActions in passivetree.lua):
 --   client -> server  buildExport                  -> buildCode {code, nodes, paragon} (format version 3: with the masteries)
+--                     buildExport {full = true}    -> buildCode {code, nodes, paragon, full = true, gear = [{slot, id}]}
+--                                                     (the client's full build code, O391: worn gear, server ids)
 --                     buildPreview {code}          -> buildPreview {code, nodes, current, wanted, applied, skipped, added,
 --                                                     removed, treeReset, paragon, paragonChange, paragonReset, cost,
 --                                                     free, points, notes, change, masteries = [{id, choice}]} or
@@ -234,9 +236,19 @@ local function sendError(player, text)
 	Chaos.send(player, OPCODE, "buildError", {message = Chaos.tx(player, text)})
 end
 
-actions.buildExport = function(player)
+actions.buildExport = function(player, data)
 	local code, build = B.exportCode(player)
-	Chaos.send(player, OPCODE, "buildCode", {code = code, nodes = build.nodes, paragon = build.paragon})
+	local reply = {code = code, nodes = build.nodes, paragon = build.paragon}
+	if type(data) == "table" and data.full == true then
+		-- the client's full build code (O391): it adds the class, level and spells it knows; the server ids of the
+		-- worn gear only the server has
+		reply.full = true
+		reply.gear = B.cardGear(function(slot)
+			local item = player:getSlotItem(slot)
+			return item and item:getId() or nil
+		end)
+	end
+	Chaos.send(player, OPCODE, "buildCode", reply)
 	return true
 end
 

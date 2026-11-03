@@ -3818,6 +3818,12 @@ validates and applies; the client only shows what the server sends.
   applied, skipped, added, removed, treeReset, paragon, paragonChange, paragonReset, cost, free, points, notes, change, summary}` or
   `buildError {message}`; `buildApply {code, cost}` -> `sendNodes`, `sendPoints`, `paragonState`, `respecInfo`, `buildApplied
   {message}` or `buildError {message}`. No new opcode.
+- **Full build codes (O391):** `buildExport {full = true}` adds `full = true` and `gear` (`{{slot, id}}`, server item ids of
+  slots 1, 2, 4-10, `ChaosBuildShare.cardGear`) to the `buildCode` answer. The client wraps the tree code, class, level,
+  Auto setup spells and gear in a `CC1-` code (`game_passivetree/buildcode.lua`, format in `docs/build_code_vectors.txt`).
+  An import of a `CC1-` code sends only its inner `CB` part to `buildPreview`; the rules above decide. Spells and gear
+  are shown, never applied. The website draws the same codes (website/README.md "Build codes and character page (O391,
+  O392)").
 - `server/tests/buildshare_test.lua`: round trip (40 / 248 nodes, Paragon part), every single-character typo, swapped and truncated
   codes, old / newer version, wrong class, unknown and disconnected nodes, keystones, too many points, reset detection, the Paragon
   part, an old code on a tree with an appended node, the reworked nodes (versions 1 and 2 leave 383 out with a note, version 3
