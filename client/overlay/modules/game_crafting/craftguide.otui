@@ -95,9 +95,10 @@ ChaosMainWindow
 
   ChaosScrollBar
     id: scroll
-    anchors.top: list.top
+    anchors.top: orbsTab.bottom
     anchors.right: parent.right
     anchors.bottom: closeButton.top
+    margin-top: 4
     margin-bottom: 8
     step: 24
     pixels-scroll: true
