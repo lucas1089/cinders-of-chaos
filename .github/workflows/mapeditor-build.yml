@@ -215,6 +215,18 @@ jobs:
           if (-not $sql) { throw "no qsqlite plugin under build/vcpkg-windows" }
           $env:QT_PLUGIN_PATH = $sql.Directory.Parent.FullName
           Write-Host "QT_PLUGIN_PATH=$env:QT_PLUGIN_PATH"
+          # the QML modules (QtQuick.Controls, QtQuick.Window) sit next to the plugins in Qt6/qml, which the
+          # tibia_ui_qml test does not find from the build tree
+          $qml = Join-Path $sql.Directory.Parent.Parent.FullName 'qml'
+          if (-not (Test-Path (Join-Path $qml 'QtQuick'))) {
+            $qq = Get-ChildItem build/vcpkg-windows -Recurse -Directory -Filter 'QtQuick' -ErrorAction SilentlyContinue |
+              Where-Object { $_.Parent.Name -eq 'qml' -and $_.FullName -notmatch '\\debug\\' } | Select-Object -First 1
+            if (-not $qq) { throw "no Qt6/qml/QtQuick under build/vcpkg-windows" }
+            $qml = $qq.Parent.FullName
+          }
+          $env:QML_IMPORT_PATH = $qml
+          $env:QML2_IMPORT_PATH = $qml
+          Write-Host "QML_IMPORT_PATH=$qml"
           # vcpkg's qtbase has no offscreen plugin: the tests use the windows platform plugin (the runner has a desktop)
           Get-ChildItem (Join-Path $env:QT_PLUGIN_PATH 'platforms') -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "platform plugin: $($_.Name)" }
           ctest --test-dir build/vcpkg-windows -C Release --output-on-failure `
