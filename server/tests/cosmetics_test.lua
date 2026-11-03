@@ -151,7 +151,7 @@ for _, c in ipairs(cfg.cosmetics) do
 	end
 end
 eq(count.spellskin, 12, "12 spell skins")
-eq(count.killfx, 24, "24 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 8 reward track, 3 Pact months, 1 Candlemarks)")
+eq(count.killfx, 25, "25 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 9 reward track, 3 Pact months, 1 Candlemarks)")
 eq(count.lootbeam, 16, "16 label accents (three PvP, 4 reward track, 3 Pact months, 1 Candlemarks)")
 eq(count.chatcolor, 17, "17 chat colours (three PvP, 5 reward track, the Pact's, 1 Candlemarks, the collection reward)")
 -- the Chaos Pact (VIP) perks: never sold, every monthly key and the chat colour are pact cosmetics
@@ -451,7 +451,7 @@ for _, tc in ipairs(cfg.cosmetics) do
 		eq(offered[K.unlockName(tc)], nil, tc.key .. ": not in the store")
 	end
 end
-eq(trackCount, 19, "19 reward track cosmetics (9 milestones, 10 categories)")
+eq(trackCount, 20, "20 reward track cosmetics (9 milestones, 11 categories)")
 -- the last category cosmetic of the list (Falling Stars)
 local function starfall(l)
 	for _, c in ipairs(l) do
@@ -505,7 +505,7 @@ eq(K.owns(have, K.byKey(cfg, "chat_ashen")), true, "and nothing taken back")
 -- category completion
 eq(#track(0, {rifts = true}), 1, "one completed category: one cosmetic")
 eq(track(0, {rifts = true})[1], "kill_riftsigil", "Rifts: Rift Sigil")
-eq(#track(0, catSet), 10, "every category: ten")
+eq(#track(0, catSet), 11, "every category: eleven (Level Milestones, O378)")
 eq(K.earned(K.byKey(cfg, "chat_veteran"), function(id) return id == "level_300" end), true, "an achievement cosmetic")
 eq(K.earned(K.byKey(cfg, "kill_sunring"), function() return true end, {points = 99999}), false, "a store one is never earned")
 eq(#K.syncs(cfg, function(id) return id == "level_300" end, {}), 1, "without track facts: the achievement cosmetics only")
@@ -1051,7 +1051,7 @@ do
 	for _, c in ipairs(cfg.cosmetics) do
 		if kinds[c.kind] then
 			kinds[c.kind] = kinds[c.kind] + 1
-			eq(c.source, "store", c.key .. " is sold") eq(ChaosVfx[c.vfx] ~= nil, true, c.key .. " plays a known effect")
+			eq(c.source == "store" or c.source == "achievement", true, c.key .. " is sold or a milestone reward (O378)") eq(ChaosVfx[c.vfx] ~= nil, true, c.key .. " plays a known effect")
 			eq(c.kind == "emote" and #c.say >= 1 and #c.say <= K.EMOTE_MAX or c.say == nil, true, c.key .. " line")
 		end
 	end

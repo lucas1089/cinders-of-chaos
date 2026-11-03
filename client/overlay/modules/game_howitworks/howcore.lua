@@ -55,3 +55,20 @@ function C.rows(card, lang, convert)
   end
   return out
 end
+
+-- First open (owner request 2026-11-03): a feature window opens its card by itself the first time a character opens
+-- it. seen = {charKey = {cardKey = true}} (the client settings node); true, and marked, only the first time.
+function C.charKey(name)
+  name = tostring(name or '')
+  local key = name:gsub('[^%w]', '_')
+  return key ~= '' and key or '_'
+end
+
+function C.firstOpen(seen, charKey, key)
+  if type(seen) ~= 'table' or not key then return false end
+  charKey = charKey or '_'
+  if type(seen[charKey]) ~= 'table' then seen[charKey] = {} end
+  if seen[charKey][key] then return false end
+  seen[charKey][key] = true
+  return true
+end

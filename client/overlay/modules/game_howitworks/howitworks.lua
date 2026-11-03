@@ -8,6 +8,9 @@
 --   show(key) / showForUnlock(unlockKey) / showForGoal(goalKey)   open the card; true when there is one
 --   hasUnlock(unlockKey) / hasGoal(goalKey)                       is there a card for it
 --   hide()
+-- First open (owner request 2026-11-03): attach() also watches the window; the first time a character sees it, the card
+-- opens by itself (once per character and card, settings node chaos_howitworks_seen). The card's check box turns this
+-- off for every character (setting chaos_howitworks_auto, on by default).
 
 local H = HowCore
 local window
@@ -74,6 +77,54 @@ function showForGoal(key) return showCard(H.forGoal(HowData, key)) end
 function hasUnlock(key) return H.forUnlock(HowData, key) ~= nil end
 function hasGoal(key) return H.forGoal(HowData, key) ~= nil end
 
+-- ---------------------------------------------------------------- first open
+local SEEN_NODE, AUTO_KEY = 'chaos_howitworks_seen', 'chaos_howitworks_auto'
+
+function autoOn()
+  local st = rawget(_G, 'g_settings')
+  if not st then return false end
+  if st.exists and not st.exists(AUTO_KEY) then return true end
+  return st.getBoolean(AUTO_KEY) and true or false
+end
+
+function setAuto(on)
+  local st = rawget(_G, 'g_settings')
+  if st then st.set(AUTO_KEY, on and true or false) end
+end
+
+-- true the first time this character opens the card's window (and remembers it)
+local function firstOpen(key)
+  local st = rawget(_G, 'g_settings')
+  if not st or not autoOn() then return false end
+  local seen = st.getNode(SEEN_NODE)
+  if type(seen) ~= 'table' then seen = {} end
+  local game = rawget(_G, 'g_game')
+  local name = game and game.getCharacterName and game.getCharacterName() or nil
+  if not H.firstOpen(seen, H.charKey(name), key) then return false end
+  st.setNode(SEEN_NODE, seen)
+  return true
+end
+
+local function visible(w)
+  local ok, v = pcall(function() return w:isVisible() end)
+  return ok and v
+end
+
+-- the card opens a moment after the window, so it lands on top of it
+local function watch(target, key)
+  local function check()
+    if alive(target) and visible(target) and firstOpen(key) then
+      local later = rawget(_G, 'scheduleEvent')
+      if later then later(function() show(key) end, 250) else show(key) end
+    end
+  end
+  if not target.howWatched and rawget(_G, 'connect') then
+    target.howWatched = true
+    connect(target, { onVisibilityChange = function(_, shown) if shown then check() end end })
+  end
+  check()
+end
+
 -- ---------------------------------------------------------------- the "?" buttons
 local function makeButton(parent, card)
   local b = g_ui.createWidget('HowButton', parent)
@@ -95,6 +146,7 @@ function attach(target, key, moduleName)
   b:setMarginTop(7)
   b:setMarginRight(22)
   target.howButton = b
+  watch(target, card.key)
   return b
 end
 
@@ -115,6 +167,11 @@ function init()
   if ok and ui then
     window = ui
     window:hide()
+    local box = window:getChildById('autoBox')
+    if box then
+      box:setChecked(autoOn())
+      box.onCheckChange = function(_, checked) setAuto(checked) end
+    end
   else
     g_logger.warning('[howitworks] window not loaded: ' .. tostring(ui))
   end

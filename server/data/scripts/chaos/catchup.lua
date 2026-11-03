@@ -2,7 +2,8 @@
 -- progression (catchup)"). The engine glue:
 --   login             the rested pool grows by the offline time (storage), the account's returning boost is started
 --                     or read (table chaos_catchup), the account's best level is read; short messages say what holds
---   EventCallback     onGainExperience at cfg.xpIndex: stamina factor, returning, alt catch-up and rested experience
+--   EventCallback     onGainExperience at cfg.xpIndex: stamina factor, returning, alt catch-up or newcomer bonus (O370)
+--                     and rested experience
 --   advance           a new best level of the account is remembered (the alts' bonus shrinks)
 --   logout            the pool goes back to its storage
 -- API for other scripts (all guarded by their callers):
@@ -203,7 +204,7 @@ end
 ChaosRested = ChaosRested or {}
 ChaosRested.addVials = CU.addVials
 
--- the buff bar: part "rested" | "returning" | "alt" | "low" -> {name, desc, leftMs, stacks} or nil
+-- the buff bar: part "rested" | "returning" | "alt" | "newcomer" | "low" -> {name, desc, leftMs, stacks} or nil
 function CU.buffItem(player, part)
 	local c = C()
 	if c.enabled == false then
@@ -231,9 +232,16 @@ function CU.buffItem(player, part)
 		end
 	elseif part == "alt" then
 		local pct = own and K.altPct(c, f.level, f.best) or 0
-		if pct >= 1 then
+		if pct >= 1 and pct >= K.newcomerPct(c, f.level) then
 			return {stacks = math.floor(pct), desc = string.format("+%d%% experience from monsters: your account's best "
 				.. "character is level %d. The bonus shrinks as you get close.", math.floor(pct), f.best)}
+		end
+	elseif part == "newcomer" then
+		-- O370: the newcomer bonus, shown while it is the level bonus that counts (it never stacks with the alt's)
+		local pct = own and K.newcomerPct(c, f.level) or 0
+		if pct >= 1 and pct > K.altPct(c, f.level, f.best) then
+			return {stacks = math.floor(pct), desc = string.format("+%d%% experience from monsters for new adventurers. "
+				.. "It shrinks with every level and ends at level %d.", math.floor(pct), c.newcomer.zeroAt)}
 		end
 	end
 	return nil
@@ -296,9 +304,13 @@ function CU.onLogin(player)
 		nextGoalsHint(player)
 	end
 	local pct = K.altPct(c, player:getLevel(), acc.best)
-	if pct >= 1 then
+	local fresh = K.newcomerPct(c, player:getLevel())
+	if pct >= 1 and pct >= fresh then
 		player:sendTextMessage(MSG, Chaos.t(player, "Catch-up: +%d%% experience from monsters until you near level %d, your account's best.", math.floor(pct), acc.best))
 		packFx(player, "catchup")
+	elseif fresh >= 1 then
+		-- O370: the newcomer bonus (the buff bar shows it too)
+		player:sendTextMessage(MSG, Chaos.t(player, "Newcomer bonus: +%d%% experience from monsters. It shrinks with every level and ends at level %d.", math.floor(fresh), c.newcomer.zeroAt))
 	end
 end
 

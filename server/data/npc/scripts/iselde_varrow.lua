@@ -55,6 +55,11 @@ local function creatureSayCallback(cid, type, msg)
 	end
 	local text = msg:lower()
 	if has(text, "ware", "trade", "buy", "offer", "stock", "vendor") then
+		-- O368: the ledger opens at cfg.minLevel (conquest.lua checks it again)
+		if player:getLevel() < (cfg.minLevel or 1) then
+			npcHandler:say(t(cid, "Come back at level %d. Keep the tokens you earn until then.", cfg.minLevel), cid)
+			return true
+		end
 		openWindow(player)
 		npcHandler:say(t(cid, "Pick what you need. Anything you have seen fall, or anything of your level, is on my ledger."), cid)
 		return true

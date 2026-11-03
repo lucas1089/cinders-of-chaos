@@ -333,6 +333,9 @@ return {
 			color = "#e8d890", name = "Lantern Name", desc = "Your name in chat shows lantern light for everyone. Complete Exploration & Social."},
 		{id = 119, key = "kill_starfall", kind = "killfx", icon = 2150, source = "achievement", category = "secrets",
 			vfx = "starfall_crown", name = "Falling Stars", desc = "Stars fall over your kills. Complete Secrets."},
+		{id = 121, key = "kill_summit", kind = "killfx", icon = 2353, source = "achievement", category = "milestones",
+			vfx = "infernal_seal", name = "Summit Seal",
+			desc = "A seal of hellfire burns where your killing blow lands. Complete Level Milestones."},
 
 		-- ------------------------------------------------------------------ footprints (store 200)
 		-- every viewer's client draws them (game_cosmeticfx), behind the walking character, fading in about 2.5 s
@@ -405,6 +408,16 @@ return {
 			name = "Verdant Ascent", desc = "Leaves bloom round you when you gain a level."},
 		{id = 605, key = "lvl_void", kind = "levelfx", icon = 2153, source = "store", price = 250, vfx = "void_rift",
 			name = "Void Ascent", desc = "A violet rift opens and closes round you when you gain a level."},
+		-- the level milestones (O378, milestones_config.lua): a level-up effect tier at level 1000, 1500 and 2000, never sold
+		{id = 606, key = "lvl_thousand", kind = "levelfx", icon = 7759, source = "achievement", achievement = "level_1000",
+			vfx = "storm_mantle", name = "Thousandth Ascent",
+			desc = "A crackling storm mantle wraps you when you gain a level. Achievement: The Thousandth Step."},
+		{id = 607, key = "lvl_dusk", kind = "levelfx", icon = 2150, source = "achievement", achievement = "level_1500",
+			vfx = "shadow_shroud", name = "Dusk Ascent",
+			desc = "A cloak of shadow rises round you when you gain a level. Achievement: The Long Dusk."},
+		{id = 608, key = "lvl_undimmed", kind = "levelfx", icon = 2343, source = "achievement", achievement = "level_2000",
+			vfx = "arcane_orbit", name = "Undimmed Ascent",
+			desc = "Runes orbit you when you gain a level. Achievement: Two Thousand Fires."},
 		-- rare-loot effects: `vfx` on the corpse's tile when your kill drops a Legendary item or better
 		{id = 701, key = "rare_gilded", kind = "rarefx", icon = 2154, source = "store", price = 200, vfx = "aura_burst_gold",
 			name = "Gilded Glint", desc = "A golden burst flares over the corpse when it drops a Legendary item or better."},

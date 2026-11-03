@@ -198,6 +198,7 @@ function init()
   local ok, ui = pcall(g_ui.createWidget, 'ProfessionsWindow', rootWidget)
   if ok and ui then
     window = ui
+    pcall(function() modules.game_howitworks.attach(window, 'professions') end) -- game_howitworks: the ? button
     window:hide()
   else
     g_logger.warning('[professions] window not loaded: ' .. tostring(ui))

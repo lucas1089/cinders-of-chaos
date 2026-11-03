@@ -40,6 +40,9 @@
 local cfg = {
 	opcode = 192, -- ChaosOpcodes.hideout (chaos_constants.lua)
 	staffGroup = 4, -- may enter any hideout (moderation) and use /hideout
+	-- O368: the window, entering (one's own or a friend's) and decorating need this character level. The depot, the stash
+	-- and the dummies are in every town; the top menu shows Hideout from here on (unlocks_config.lua key "hideout")
+	minLevel = 30,
 
 	-- player storages 7100180 - 7100189 (chaos_constants.lua): +0 .. +2 the spot a character entered from (x, y, z;
 	-- the exit and a login inside a torn-down room lead back there), +3 0 = the temple instead

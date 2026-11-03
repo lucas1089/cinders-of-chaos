@@ -803,6 +803,15 @@ def m_catchup(c):
     c.px(['W'], 16, 5, {'W': W})
 
 
+def m_newcomer(c):
+    c.line([(10, 22), (10, 12)], B, 1.2)                                           # a young sprout: the stem
+    c.ell(3, 9, 10, 14, B)                                                         # its two leaves
+    c.ell(10, 6, 17, 11, B)
+    c.px(['h'], 5, 11, {'h': BH}); c.px(['h'], 14, 8, {'h': BH})
+    m_up_arrow(c, 18, 8, 0.55, A)                                                  # growing fast (O370)
+    c.px(['W'], 18, 10, {'W': W})
+
+
 def m_low_stamina(c):
     c.poly([(6, 4), (20, 4), (14, 13), (20, 22), (6, 22), (12, 13)], B)            # an hourglass running low
     c.poly([(9, 6), (17, 6), (13, 11)], KK)
@@ -813,6 +822,7 @@ def m_low_stamina(c):
 MOTIFS = {  # name: (function, ramps A, B, C)
     'rested': (m_rested, 'holy', 'arcane'), 'returning': (m_returning, 'gold', 'wood'),
     'catchup': (m_catchup, 'gold', 'nature'), 'low_stamina': (m_low_stamina, 'blood', 'steel'),
+    'newcomer': (m_newcomer, 'gold', 'nature'),
     'world_xp': (m_world_xp, 'gold', 'water'), 'world_loot': (m_world_loot, 'gold', 'wood'),
     'world_skill': (m_world_skill, 'steel', 'arcane'),
     'world_hunt': (m_world_hunt, 'gold', 'water'), 'victory': (m_victory, 'nature', 'steel', 'gold'),

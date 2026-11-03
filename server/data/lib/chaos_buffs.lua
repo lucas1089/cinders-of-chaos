@@ -171,10 +171,13 @@ source("blessing_orb", "blessings", "buff", "Ember of the Forge", "buff:blessing
 -- Professions (data/scripts/chaos/professions.lua): the passive experience bonus of the profession levels, no timer
 source("professions", "professions", "buff", "Profession Mastery", "buff:professions", "Your profession levels add experience from monsters.", 29)
 -- time-friendly progression (data/scripts/chaos/catchup.lua): the rested pool (stacks = minutes of hunting left), the
--- returning player boost (timer), the alt catch-up (stacks = percent) and low stamina (a debuff, no timer)
+-- returning player boost (timer), the alt catch-up and the newcomer bonus (stacks = percent) and low stamina (a debuff,
+-- no timer)
 source("rested", "catchup", "buff", "Rested", "buff:rested", "More experience from monsters until your rest is spent.", 26, {part = "rested"})
 source("returning", "catchup", "buff", "Welcome Back", "buff:returning", "More experience, loot and token drops for returning players.", 26, {part = "returning"})
 source("catchup", "catchup", "buff", "Catch-up", "buff:catchup", "More experience from monsters below your account's best level.", 26, {part = "alt"})
+-- O370: the newcomer bonus of low levels (stacks = percent; it fades with the level)
+source("newcomer", "catchup", "buff", "Newcomer", "buff:newcomer", "More experience from monsters for new adventurers; it fades with the level.", 26, {part = "newcomer"})
 source("low_stamina", "catchup", "debuff", "Low Stamina", "buff:low_stamina", "Less experience and loot until your stamina comes back.", 42, {part = "low"})
 
 -- ---- engine conditions: buffs

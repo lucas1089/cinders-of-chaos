@@ -273,6 +273,7 @@ end
 
 function init()
   window = g_ui.displayUI('achievements')
+  pcall(function() modules.game_howitworks.attach(window, 'achievements') end) -- game_howitworks: the ? button
   window:hide()
   window.titleCombo.onOptionChange = onTitleChange
   window.trackPanel.trackPips.onGeometryChange = function() if track then showTrack() end end

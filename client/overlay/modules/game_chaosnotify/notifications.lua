@@ -140,6 +140,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#6a4a1a",
         duration = 9000,
     },
+    -- level milestones (server data/scripts/chaos/milestones.lua, O378): every 100 levels from 800 to 2200
+    MILESTONE = {
+        icon = "images/toast/ascension.png",
+        title = "LEVEL MILESTONE",
+        titleColor = "#e8c15a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a4a1a",
+        duration = 10000,
+    },
     -- season pass (server data/scripts/chaos/seasonpass.lua): tier up, challenge done, premium and packs
     SEASON_PASS = {
         icon = "images/toast/season_pass.png",
@@ -1351,6 +1360,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         weeklychest = function(data)
             if data.message then
                 addNotification("WEEKLY_CHEST", data.message)
+            end
+        end,
+
+        -- level milestones (server data/scripts/chaos/milestones.lua, O378): title, Milestone Cache, the next milestone
+        milestone = function(data)
+            if data.message then
+                addNotification("MILESTONE", data.message)
             end
         end,
 

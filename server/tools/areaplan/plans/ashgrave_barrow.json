@@ -1,0 +1,241 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "ashgrave_barrow",
+  "name": "Ashgrave Barrow",
+  "biome": "crypt",
+  "size": [
+    104,
+    86
+  ],
+  "floors": 1,
+  "level": [
+    18,
+    26
+  ],
+  "seed": 37907,
+  "origin": {
+    "x": 16028,
+    "y": 15700,
+    "z": 9
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "mourning_hall",
+      "floor": 1,
+      "size": [
+        21,
+        15
+      ],
+      "place": "center"
+    },
+    {
+      "id": "bone_niches",
+      "floor": 1,
+      "size": [
+        21,
+        15
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "wrapped_dead",
+      "floor": 1,
+      "size": [
+        21,
+        15
+      ],
+      "place": "east"
+    },
+    {
+      "id": "ghost_aisle",
+      "floor": 1,
+      "size": [
+        21,
+        15
+      ],
+      "place": "north"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "mourning_hall",
+      "width": 3
+    },
+    {
+      "from": "mourning_hall",
+      "to": "bone_niches",
+      "width": 3
+    },
+    {
+      "from": "mourning_hall",
+      "to": "wrapped_dead",
+      "width": 3
+    },
+    {
+      "from": "bone_niches",
+      "to": "ghost_aisle",
+      "width": 3
+    },
+    {
+      "from": "ghost_aisle",
+      "to": "wrapped_dead",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "mourning_hall",
+      "monster": "Crypt Shambler",
+      "count": 8,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "mourning_hall",
+      "monster": "Ghost",
+      "count": 7,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "bone_niches",
+      "monster": "Bonelord",
+      "count": 8,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "bone_niches",
+      "monster": "Crypt Shambler",
+      "count": 8,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "wrapped_dead",
+      "monster": "Mummy",
+      "count": 10,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "wrapped_dead",
+      "monster": "Tomb Servant",
+      "count": 5,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "ghost_aisle",
+      "monster": "Ghost",
+      "count": 9,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "ghost_aisle",
+      "monster": "Tomb Servant",
+      "count": 6,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "mourning_hall",
+        "bone_niches"
+      ],
+      "monster": "Crypt Shambler",
+      "count": 6,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "mourning_hall",
+        "wrapped_dead"
+      ],
+      "monster": "Ghost",
+      "count": 4,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "mourning_hall",
+        "bone_niches"
+      ],
+      "monster": "Bonelord",
+      "count": 3,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "bone_niches",
+        "ghost_aisle"
+      ],
+      "monster": "Crypt Shambler",
+      "count": 3,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "mourning_hall",
+        "wrapped_dead"
+      ],
+      "monster": "Mummy",
+      "count": 4,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "ghost_aisle",
+        "wrapped_dead"
+      ],
+      "monster": "Tomb Servant",
+      "count": 3,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "bone_niches",
+        "ghost_aisle"
+      ],
+      "monster": "Ghost",
+      "count": 2,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "ghost_aisle",
+        "wrapped_dead"
+      ],
+      "monster": "Tomb Servant",
+      "count": 2,
+      "respawn": 40,
+      "pack": 2
+    }
+  ],
+  "notes": "Content plan (O375 hall coverage, 2026-11-03): a crypt hunt for levels 18-26 on floor 7 of the teleport hall (server/README.md \"Hall coverage (O375)\"). 4 hunting zones; monsters Crypt Shambler, Ghost, Bonelord, Mummy, Tomb Servant. Display monster: Crypt Shambler."
+}

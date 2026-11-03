@@ -8,6 +8,7 @@
 --   tracker {rows = [{key, title, progress, target}]}
 --   ascension {rows = [{key, title, progress, target, state}]}
 --   spellquest {rows = [{key, title, progress, target, state}]}
+--   welcome {title, step, count, rows = [{key, title, progress, target, state, hint, where}]}   (welcomepath.lua, O370)
 --   done {text}
 -- The window code (goals.lua) keeps one GoalsView state and draws from it.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
@@ -32,7 +33,8 @@ local function num(v, d)
 end
 
 function V.new()
-  return { header = nil, goals = {}, upcoming = {}, gear = {}, hunts = {}, here = nil, tracker = {}, ascension = {}, spellquest = {} }
+  return { header = nil, goals = {}, upcoming = {}, gear = {}, hunts = {}, here = nil, tracker = {}, ascension = {}, spellquest = {},
+    welcome = {}, welcomeStep = 0, welcomeCount = 0 }
 end
 
 function V.onGoals(st, data)
@@ -63,6 +65,22 @@ end
 function V.onSpellQuest(st, data)
   st.spellquest = list(type(data) == 'table' and data.rows or nil)
   return st
+end
+
+-- welcome {title, step, count, rows}: the current step of the welcome path of a new character (server welcomepath.lua,
+-- O370); no rows hides the section
+function V.onWelcome(st, data)
+  data = type(data) == 'table' and data or {}
+  st.welcome = list(data.rows)
+  st.welcomeStep, st.welcomeCount = num(data.step), num(data.count)
+  return st
+end
+
+-- the welcome section's head: "Welcome Path 2/7" (folded: "Welcome Path (2/7) +")
+function V.welcomeTitle(st, folded)
+  local i, n = num(st.welcomeStep), num(st.welcomeCount)
+  if folded then return tr('Welcome Path (%d/%d) +', i, n) end
+  return tr('Welcome Path %d/%d', i, n)
 end
 
 -- "Level 300-499: World bosses" / "Level 2000+: The apex"
@@ -219,7 +237,7 @@ function V.trackerAnchors(hasLeftPanels)
   }
 end
 
--- Phone tracker: at most `max` rows over the sections in order (goals, ascension, spell quest). Returns the rows shown per
+-- Phone tracker: at most `max` rows over the sections in order (welcome path, goals, ascension, spell quest). Returns the rows shown per
 -- section and the count left out ("+N" line). max nil or below 1 shows everything (desktop).
 function V.budget(counts, max)
   local shown, hidden, left = {}, 0, tonumber(max) and math.floor(max) or nil

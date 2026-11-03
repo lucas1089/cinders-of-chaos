@@ -1,0 +1,114 @@
+// game_chaossurvey: the new player survey window (server survey.lua, opcode 122). Styles from client_chaos_theme.
+
+SurveyChoice < ChaosTabButton
+  size: 44 24
+  margin-right: 6
+  text-align: center
+
+SurveyWindow < ChaosStaticMainWindow
+  id: surveyWindow
+  size: 400 380
+  !text: tr('A quick survey')
+  @onEscape: modules.game_chaossurvey.skip()
+
+  ChaosLabel
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-wrap: true
+    text-auto-resize: true
+    !text: tr('Three short questions about your first steps. Answer what you like, or skip. We will not ask again.')
+
+  ChaosLabel
+    id: confusedLabel
+    anchors.top: intro.bottom
+    anchors.left: parent.left
+    margin-top: 12
+    !text: tr('What confused you so far?')
+
+  ChaosLabelDim
+    id: counter
+    anchors.top: confusedLabel.top
+    anchors.right: parent.right
+    text-auto-resize: true
+
+  ChaosMultilineTextEdit
+    id: textEdit
+    anchors.top: confusedLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 66
+    text-wrap: true
+    max-length: 200
+
+  ChaosLabel
+    id: funLabel
+    anchors.top: textEdit.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 12
+    !text: tr('How fun is it? (1 = not fun, 5 = great)')
+
+  UIWidget
+    id: funRow
+    anchors.top: funLabel.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    size: 250 24
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  ChaosLabel
+    id: recLabel
+    anchors.top: funRow.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 12
+    !text: tr('Would you recommend it to a friend?')
+
+  SurveyChoice
+    id: yesButton
+    anchors.top: recLabel.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    width: 70
+    !text: tr('Yes')
+    @onClick: modules.game_chaossurvey.chooseRec(true)
+
+  SurveyChoice
+    id: noButton
+    anchors.top: yesButton.top
+    anchors.left: yesButton.right
+    width: 70
+    !text: tr('No')
+    @onClick: modules.game_chaossurvey.chooseRec(false)
+
+  ChaosLabel
+    id: status
+    anchors.top: yesButton.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    height: 16
+    text-align: center
+
+  ChaosButton
+    id: skipButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 80
+    !text: tr('Skip')
+    @onClick: modules.game_chaossurvey.skip()
+
+  ChaosButton
+    id: sendButton
+    anchors.bottom: parent.bottom
+    anchors.right: skipButton.left
+    margin-right: 8
+    width: 80
+    !text: tr('Send')
+    @onClick: modules.game_chaossurvey.send()

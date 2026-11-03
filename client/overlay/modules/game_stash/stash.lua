@@ -122,6 +122,7 @@ end
 
 Stash.CreateUI = function()
 	Stash.UI = g_ui.displayUI('stash')
+	pcall(function() modules.game_howitworks.attach(Stash.UI, 'stash') end) -- game_howitworks: the ? button
 	Stash.UI.Overlay:setVisible(false)
 	Stash.UI:hide()
 

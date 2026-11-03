@@ -891,6 +891,13 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if not m or type(m.action) ~= "string" then
 		return
 	end
+	-- O368: below the level nothing answers; opening says when the vendor opens
+	if player:getLevel() < (cfg.minLevel or 1) then
+		if m.action == "open" then
+			result(player, false, ChaosI18n.msg("The Conquest vendor opens at level %d.", cfg.minLevel))
+		end
+		return
+	end
 	local d = type(m.data) == "table" and m.data or {}
 	local guid = player:getGuid()
 	if m.action == "open" then

@@ -610,7 +610,7 @@ working directory, as with the rest of the base server libs).
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
 | game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, Social > Guild | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, Guild Stash), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
 | game_guildwar | `guildwar.lua`, `guildwar_core.lua`, `guildwar_config.lua`, `guildboss.lua`, `guildboss_core.lua`, `guildboss_config.lua`, `sql/chaos_guildwar.sql`, monsters `monsters/chaos/guildboss/`, engine patch 0020 | **197**, Social > Guild Wars, the Summoning Stone in the guild hall | Guild wars declared and answered in game (terms, gold stake in escrow, anti-farming kill rules, frag limit / time / surrender, base `guild_wars` rows for the engine's war emblems, war board) and the weekly guild boss (fuel, summon, instanced fight, rewards, banner, weekly board); see "Guild wars in game" and "The weekly guild boss". Unit and mocked-engine tests; tested on a live test server with two clients. |
-| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 173 in 10 categories (4170 points) with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
+| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 189 in 11 categories (4640 points) with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, Character > Pets / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
 | game_buffbar | `buffbar.lua`, `data/lib/chaos_buffs.lua` | 234 (server -> client), Character > Buff Bar | Buff / debuff bar: icons with a countdown and stacks for the engine conditions, the Chaos class buffs, world buffs, the Victory buff, world events, trial kill stacks, chi, Rage and Reprisal; diffs only; tested in game (see "Buff bar and party frames"). |
 | game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
@@ -674,6 +674,7 @@ collision check") and be added here.
 | 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)") |
 | 119 | `combatStats` | `combat_stats.lua`, `combat_stats_core.lua` | `game_skillstats` | client -> server `get`; server -> client `stats {damage?, attack?, defense, armor, mitigation}` (mitigation a share 0 .. 1), at login, after an equip, a level or skill advance or a passive tree change, only when a number changed (see "Combat stat rows of the Skills window") |
 | 121 | `npcTravel` | `npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua` | `game_npctravel` | client -> server `travel {k}` (a key of `npc_travel_config.lua` `npcs`); the answer is a game message (status line, or the reason as a cancel message), see "Travel to an NPC (O330)" |
+| 122 | `survey` | `survey.lua`, `survey_core.lua`, `survey_config.lua` | `game_chaossurvey` | server -> client `open {s, max}` (the stage, level 20 or 50, and the text limit) and `done {s}`; client -> server `answer {s, fun, rec, text}` / `skip {s}`, once per account and stage, see "New player funnel and survey (O374)" |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -824,7 +825,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -847,7 +848,9 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
-| 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free. 7101070 - 7101099 stays free |
+| 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
+| 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. level milestones below |
+| 7101080 - 7101089 | level milestones (`milestones_config.lua` `storage`, O378): +0 the highest milestone level whose Milestone Cache was given or skipped (-1 = not seen yet; the first login sets the baseline); +1..9 free. 7101090 - 7101099 stays free |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
 | 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
@@ -879,12 +882,13 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102510 - 7102519 | Everfull tier upgrades (`potions_config.lua` `storage.upgradeBase`, O245): +0 .. +9 the upgrade to the entry at that place among the entries with a `from` (great health, great mana, great spirit, ultimate health, ultimate mana, ultimate spirit, supreme health, spirit tier 1, supreme mana, supreme spirit: O247) was done (1); the block is full, a new upgrade needs a new block |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
-| 7102830 - 7102833 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); +3 the last hunt (O258: the stable id of the hunt place the character last killed in); 7102834 - 7102839 free |
-| 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of; 7103010 and up are for O260 and O261 |
+| 7102830 - 7102834 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); +3 the last hunt (O258: the stable id of the hunt place the character last killed in); +4 = 7102834 the last system used (O374: the 1-based index in `systems`, read by the new-player funnel); 7102835 - 7102839 free |
+| 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of, +3 / +4 the unlocked / seen bits of entries 31-50 (O368); 7103010 and up are for O260 and O261 |
 | 7103010 - 7103011 | early spike and pity (`retention_loot_config.lua`): 7103010 the first unique (-1 / 0 unset, 1..149 kills counted, 1000000 given), 7103011 the pity counter (kills without a Rare or better drop) |
 | 7103020 - 7103029 | the Weekly Chest (`weeklychest_config.lua` `storage`, `Chaos.storage.weeklyChest`): +0 the week (YYYYMMDD of its Monday), +1 activities done (bit mask), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all; +5..9 free |
 | 7103040 - 7103049 | the Weekend Ritual's GLOBAL storages (`Game.setStorageValue`, `weekend_config.lua` `globalStorage`, O321): +0 the staff switch (1 = off), +1 / +2 / +3 the weekend (YYYYMMDD of its first day) whose start, end warning and highlight were done; +4..9 free; no player storage |
 | 7103050 - 7103059 | Hunt warnings (`hunt_warnings_config.lua` `storage`, `Chaos.storage.huntWarnLast`, O323): +0 os.time of the last warning shown to the character; +1..9 free |
+| 7103060 - 7103069 | new player survey (`survey_config.lua` `storage`, `Chaos.storage.survey`, O374): +0 bit mask of the survey stages (bit 0 = level 20, bit 1 = level 50) already handled for the character's account (a cache of `chaos_survey`); +1..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -1561,6 +1565,16 @@ login and follows level advances) gets +100% monster experience while it is at l
 shrinking linearly to 0 at the best: best 500 -> +100% to level 400, +50% at 450. Needs a best of 50. Buff "Catch-up" (the
 percent as stacks).
 
+**Newcomer bonus (O370).** Every character gets +50% monster experience at level 8; from there it shrinks linearly to 0 at
+level 150 (+25% at 79; `catchup_config.lua` `newcomer`: `maxPct`, `fullTo`, `zeroAt`, `enabled`). It never stacks with the
+alt catch-up: the larger of the two counts (`ChaosCatchupCore.levelPct`). Season characters do not get it. A login message
+says it ("Newcomer bonus: +N% ..."), the buff bar shows "Newcomer" with the percent as stacks (`chaos_buffs.lua` source
+`newcomer`, icon `buff:newcomer` from `client/tools/gen_buff_icons.py`), and the Skills window's XP gain rate counts it
+(`xp_rate_display.lua` runs after every bonus). The leveling model counts it (`tools/progression_model.lua`, `--no-newcomer`
+leaves it out): levels 8-150 take 1.5 hours instead of 1.8. A fade to 0 at level 100 failed `--check` (levels 83-107 then
+took x1.37 the time of the 25 before, limit 1.35); 120 and up pass. Nothing counts days since creation (the players table of
+the base has no creation time); the level is the clock.
+
 **Rested Vial.** `ChaosRested.addVials(player, n)` (the Candlemarks shop's "Rested Vial") adds `vialMinutes` (60) of rest per
 vial, never past the 180 cap; it returns false (the shop gives the marks back) when nothing fits or for a season
 character. Tests: `tests/catchup_test.lua`, `tests/candlemarks_apis_test.lua` (the three Candlemarks call offers light up
@@ -1569,7 +1583,8 @@ with the real modules loaded, and each API works as the shop calls it).
 **Order and ceiling.** One `onGainExperience` callback at index 87: after the experience cap (85, so the cap does not eat
 the player's own time), before the dungeon difficulty (90), the rift cap (100) and the hunt tracker. Returning, alt and
 rested multiply, together never above x3 (`maxXpMult`); rested pays only what fits under that ceiling (the pool is kept
-otherwise). Season characters get none of the three bonuses (a fresh race); the stamina rules apply to everyone.
+otherwise). The newcomer bonus takes the alt's place when it is larger. Season characters get none of these bonuses (a
+fresh race); the stamina rules apply to everyone.
 
 **Also for limited time** (each in its own system's section): the faction weekly cap rolls over (3 weeks at most), the
 season pass daily caps bank over 3 days, the bounty weekly chest needs 4 contracts (was 7), the Vocation Trials' repeat
@@ -5205,7 +5220,7 @@ them, all palette variants of effects and colours that already exist (no new art
 | 2500 | Obsidian Labels | label accent |
 | 3500 | Gilded Ascent (`aura_burst_gold`, the gold Cinder Throne) | kill effect |
 
-Category completion: Combat & Leveling War Surge (`aura_burst_red`), Monsters Thornbloom (`px286_green`), World Bosses
+Category completion: Combat & Leveling War Surge (`aura_burst_red`), Level Milestones Summit Seal (`infernal_seal`, O378), Monsters Thornbloom (`px286_green`), World Bosses
 Titan's Pyre (`dome_blast_holy`), Rifts Rift Sigil (`px674_arcane`), Raids Sepulchre Labels, Bounties Huntsman's Copper,
 Items & Crafting Tempered Labels, PvP Bloodsteel Name, Exploration & Social Lantern Name, Secrets Falling Stars
 (`starfall_crown`); the category's title is in "Achievements". `ChaosCosmetics.sync(player)` / `syncAccount(accountId,
@@ -5573,6 +5588,8 @@ Not on `windows-assets` until the owner says "pode mandar o par para o windows-a
 still draws the Glimmer off its tile.
 
 ## Hideouts (`hideout.lua`, `hideout_core.lua`, `hideout_config.lua`, `hideout_store.lua`, `sql/chaos_hideout.sql`, client `game_hideout`)
+
+**Level gate (O368).** `hideout_config.lua` `minLevel` 30: below it the opcode answers only `leave` (and one line on `open`), and `M.enter` refuses the portal, entering and visiting ("The hideout opens at level 30."). The top menu shows Hideout from 30 (`unlocks_config.lua` `hideout`).
 
 A personal room for every character (a season character is another character, so it has its own), built at runtime and
 decorated by its owner. Cosmetic only: decorations change how the room looks and nothing else; the utilities are the ones
@@ -6757,7 +6774,17 @@ Every number and text is in `mentor_config.lua`; the rules are pure functions in
 - **Opcode.** Referral's 220 is not reused: the client registers one handler per opcode and the mentor window is its own
   module. 194 is free in the reference server ("Opcode collision check"), in every Chaos script and in every client module
   of the reference client (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants; 190-199 had
-  only guild wars' 197). Storages 7100360 - 7100369 (+0 "looking for a mentor").
+  only guild wars' 197). Storages 7100360 - 7100369 (+0 "looking for a mentor", +1 the mentor offer).
+- **Mentor offer (O371).** Once per character from level `offer.level` (12), while `apprenticeCheck` lets it pick a
+  mentor: at that level up (`ChaosMentorOffer` advance event, registered at login while the offer may still come) or
+  `offer.loginDelayMs` (8 s) after a login at or above it. Server `offer {online, any, exp, dmg}`: mentors online now
+  with a free place, not of the own account, `online` those whose card language matches the character's
+  (`ChaosMentorCore.langMatch`, `offer.langWords`; `x*` a word starting with x), `any` all of them. The client shows a
+  small window, "Want a mentor?" (`game_mentor` `MentorOfferWindow`): Find a mentor (`offer {answer = "find"}`, the
+  server opens the Mentors window, Find a mentor tab) or No thanks / Escape (`offer {answer = "no"}`). Storage +1:
+  -1 never, 1..`maxShows` (3) shown without an answer (one more login each), 100 done. Done also when a lasting refusal
+  comes (a mentor, too old an account or level, graduated, a mentor itself, staff, all mentors used); a cooldown or a
+  ban only waits. `unlocks_config.lua` is not touched.
 - **State.** `chaos_mentors` (card, marks, graduates, today's minutes and marks, the month's marks), `chaos_mentor_links`,
   `chaos_mentor_milestones`, `chaos_mentor_purchases`, `chaos_mentor_log` (`sql/chaos_mentor.sql`; `mentor.lua` creates
   them at startup). Invitations live in memory. Staff: `/mentor <player>` (marks, graduates, link), `/mentor <player>, unlink`.
@@ -6852,6 +6879,8 @@ window is open now refreshes it at once (`achievements.lua` sends the state, `op
 Not verified: a real party of two clients using the return portal while the owner is away; very crowded temples (80 return spots).
 
 ## Transmog (`transmog.lua`, `transmog_core.lua`, `transmog_config.lua`, `sql/chaos_transmog.sql`, engine patch 0019, client `game_transmog`, base patch 0030)
+
+**Level gate (O368).** `transmog_config.lua` `minLevel` 30 (`ChaosTransmogCore.levelGate`): below it the opcode answers nothing but a refusal on `open` ("Transmog opens at level 30."). Looks still go into the wardrobe below it. The top menu shows Transmog from 30 (`unlocks_config.lua` `transmog`).
 
 An equipped helmet, armor, legs, boots, weapon or shield can LOOK like another item of the same kind that the account has
 unlocked. Appearance only: id, stats, name, tooltip, weight and every rule stay the item's own. Character > Transmog, or
@@ -13077,6 +13106,8 @@ The damage test used `Combat:execute` (the spell path, which runs onTargetCombat
 registered by hand. Not tested in game: a bounty payout and the weekly chest (unit tests of the rolls only), melee hits,
 life leech and attack speed from gems in a fight.
 
+**Crafting Guide (O369).** When the bench opens, `crafting.lua` sends `gemguide` after `info`: `ChaosGems.guide()`, the gem table as numbers (tiers, every type with its name, colour, client look per tier and its weapon / armour / jewel effect with values; effect labels, format and cap; remove costs; socket limits; the Orb of Sockets' name). The client's Guide window writes the texts (client/MANIFEST.md game_crafting). Under 6000 bytes, one message (`tests/gems_test.lua`).
+
 ## Vocation Trials (`trials*.lua`, `TRIALS.md`, client `game_passivetree/trials*.lua`)
 
 **Limits** (`trials_config.lua` `limits`, "Instance limits"): 8 / 9 / 10 minutes by tier (unchanged) with warnings at 2 min, 1 min and 10 s; time up loses the trial (nothing is lost, the 60 s cooldown); at most 8 chambers, the wait and the waiting line when all are in use; a staff close ends a trial without a cooldown.
@@ -13818,6 +13849,8 @@ counters (add and max), the preview for a standard character, the last chapter's
 `game_season/journeyview_test.lua`. Offline client screenshots of the tab and the toasts; not run on a live server.
 
 ## Season pass (`seasonpass.lua`, `seasonpass_core.lua`, `seasonpass_config.lua`, `seasonpass_store.lua`, `sql/chaos_seasonpass.sql`, client `game_battlepass`)
+
+**Level gate (O368).** `seasonpass_config.lua` `minLevel` 10 (`ChaosSeasonPassCore.levelGate`): below it the opcode answers nothing but a line on `open` ("The Season Pass opens at level 10."). Pass XP still counts below it. The top menu shows Season Pass from 10 (`unlocks_config.lua` `seasonpass`).
 
 An account-wide pass per season of `season_config.lua`: a free and a premium track of 50 tiers, pass XP from play,
 daily and weekly challenges, claims in the client (Adventure > Season Pass, extended opcode 227
@@ -15186,6 +15219,8 @@ retention). Screenshots of the item chart and the Sell suggestion: offline clien
 
 ## Orb Exchange (`orbexchange.lua`, `orbexchange_core.lua`, `orbexchange_config.lua`, `sql/chaos_orbx.sql`, client `game_orbexchange`)
 
+**Level gate (O368).** `minLevel` 8 -> 20, the Crafting Bench's level (the orbs are for it). The top menu shows the Orb Exchange from 20 (`unlocks_config.lua` `orbexchange`).
+
 The crafting orbs are the economy's currency; the Orb Exchange is their order book. Pairs: any orb against gold (the
 bank balance) and any orb against any other orb. Client `game_orbexchange` (Economy > Orb Exchange in the top menu, and
 an "Orb Exchange" button in the Market window), extended opcode **209** (`ChaosOpcodes.orbExchange`, JSON
@@ -15208,7 +15243,7 @@ Upheaval each who meets an ask at 0.04 gets 75 for the same 3 Upheaval).
 | Sizes | orbs 1 - 100,000 per side, gold 1,000 - 2,000,000,000 per side (all products stay below 2^53) |
 | Fees (gold sinks) | 2% (`goldBps` 200) of the gold leg of every fill, rounded down, paid by the side that receives the gold; 500 gold from the bank for every orb-for-orb order when it is placed; never refunded |
 | Duration | 1, 3, 7 or 14 days (default 7); then the rest goes back |
-| Limits | 20 open orders per character, 40 per account; level 8; characters with `players.save = 0` cannot trade |
+| Limits | 20 open orders per character, 40 per account; level 20 (O368: the Crafting Bench's level; was 8); characters with `players.save = 0` cannot trade |
 | Rate limits | per character: place 1 s, cancel 0.5 s, book 150 ms, my orders 300 ms, open 400 ms (`ChaosRateLimit`) |
 
 **Matching** (`ChaosOrbExchangeCore.match`, `fillAmounts`). A new order (the taker) meets the open orders that give what
@@ -15419,6 +15454,8 @@ and one hub destination at its tiles), several guilds' halls at once, a restart 
 after a restart; the first entry builds them again).
 
 ## Guild wars in game (`guildwar.lua`, `guildwar_core.lua`, `guildwar_config.lua`, `sql/chaos_guildwar.sql`, engine patch 0020, client `game_guildwar`)
+
+**Level gate (O368).** `guildwar_config.lua` `minLevel` 50: below it `handle` answers nothing but a line on `open` ("Guild wars open at level 50."): no board, no declaration, no guild boss tab. A guild leader below 50 asks a vice-leader of 50+. The top menu shows Guild Wars from 50 (`unlocks_config.lua` `guildwar`).
 
 The base server knows guild wars only through the website (rows of `guild_wars`, status 1 = running; its
 `playerdeath.lua` logs every war kill in `guildwar_kills`). This adds the whole flow in game, on extended opcode
@@ -16138,6 +16175,40 @@ history of 5, the SQL. Against a mocked engine: the hook, a death, the row, the 
 an arena defeat, a real death in an instance, a cancelled hit outside one, a hidden mode, 5 rows kept per character, the
 window's `open` / `get`, another character's id refused, bad input. Client: `game_deathrecap/deathrecaplogic_test.lua`.
 
+### Death advice (O371) (`deathadvice_core.lua`, `deathrecap_config.lua` `advice`, client `game_deathrecap`)
+
+Owner request (new player experience): after a death, say in plain words why and what to do.
+- **Where.** Each recap gets `tips`: 1-3 short tips, rule order, at most `advice.max` (3). The client words them under
+  the last hits, in a "What to do" panel (`deathrecaplogic.lua` `L.tips`, English and pt-BR). An older recap has none.
+- **Facts** (`ChaosDeathAdvice.facts`, from the same rolling log): the level of each monster attacker (`getMonsterLevel`,
+  taken once per attacker), distinct monster creatures (their ids), healing received in the window (`combatlog.lua`
+  `ChaosCombatLog.healHook`, the part that filled missing health), Everfull potions drunk in the window (`potions.lua`
+  calls `ChaosDeathRecap.onPotion`), and the character's resistance to the element that dealt the most.
+- **Resistance** (`ChaosDeathRecap.resistOf`, an estimate): worn items' protection of that combat type
+  (`ItemType:getAbilities().absorbPercent`) and the two absorb storages of engine patch 0049 (gear rolls, tree / Paragon),
+  summed by `ChaosItemMods.effectiveAbsorb` (75 cap), then the gems' `res_<element>` (`ChaosGems.playerBonus`).
+  Spells, buffs and set bonuses outside those storages are not counted.
+- **Rules** (numbers in `advice`):
+
+| Tip | When | Says |
+|---|---|---|
+| `lvl {d}` | monsters above the character dealt `levelShare` (30) % of the damage and the hardest hitter of them is `levelGap` (30)+ levels above | the gap; Next Goals shows hunts for your level |
+| `res {el, r, s}` | one element dealt `resShare` (40) % and the resistance is under `resLow` (10) % | the element, the resistance, the gem: ruby / sapphire / emerald / diamond in jewellery, amethyst / topaz / onyx in armour (`resElements`, checked against `chaos_gems_config.lua`) |
+| `pot` | no potion, the fight lasted `potMinMs` (4 s)+, healing covered under `potHealShare` (30) % of the health damage | set up healing in the Helper (Auto setup) |
+| `heal {s}` | potions drunk, the fight lasted `healMinMs` (8 s)+, healing covered under `healShare` (25) % | heal sooner or pull fewer monsters |
+| `pack {n}` | `packSize` (5)+ distinct monsters hit the character | pull fewer at a time |
+
+- **Assumptions.** A stock potion (base `potions.lua`) is not counted as a potion; its healing is, so a player who drinks
+  them gets no "no potions" tip unless the healing stayed low. Monster level is the engine's (the middle of the `<level>`
+  range, src-patch 0082); a type without a range gives no level tip. A player's summon counts for neither level nor pack.
+- **Bounds.** `maxHeals` (60) healing entries and `maxPotions` (30) per log; levels for at most 2 x `maxAttackers` + 4
+  attackers. The recap is fitted to `maxRecapBytes` again after the tips.
+- **Edits to shared files.** `combatlog.lua` (`healed` calls `CL.healHook`), `potions.lua` (one call after a drink).
+- **Tests.** `tests/deathadvice_test.lua` (each rule and its limits, the order and the cap, the facts from a log, the
+  absorb sum, the gem of each element against `chaos_gems_config.lua`, `deathrecap.lua` against a mocked engine: the
+  hooks, the monster level, the resistance from a worn amulet and a gem, the tips stored). Client:
+  `deathrecaplogic_test.lua` (the sentences, unknown tips skipped, one sentence per server element naming its gem).
+
 **Tested in game** (test server copy on the cropped map, two Linux clients, the engine without patches 0028-0030). A
 death to rats on the tutorial island; at the next login the window opened with 44.7M experience and 5 levels lost. A
 death to a Dragon, a player (Velka Dusk) and her War Wolf with a mana drain: three rows with their looks, health 1.95k
@@ -16685,6 +16756,8 @@ Tests: `tests/waystone_mods_test.lua` (core and mocked engine), `tools/patch_way
 are first guesses. Not run in game.
 
 ## Waystone Atlas (`waystone_atlas.lua`, `waystone_atlas_core.lua`, `waystone_atlas_config.lua`, `sql/chaos_waystone_atlas.sql`, client `game_riftatlas` waystone mode)
+
+**Level gate (O368).** `waystone_atlas_config.lua` `minLevel` 1100, the first waystone tier's level (`tests/waystone_atlas_test.lua` checks the two match): below it the opcode answers nothing but a line on `open`. The top menu shows Waystone Atlas from 1100 (`unlocks_config.lua` `waystoneatlas`).
 
 Owner 2026-10-23: the waystone maps get their own atlas, as the maps of the well-known action RPG. Opcode 159, table
 `chaos_waystone_atlas` (created by the script when missing, as the Rift Atlas's), no storages. Window: Adventure >
@@ -17691,6 +17764,8 @@ the VPS.
 
 ## Rift Atlas (`atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql`, client `game_riftatlas`)
 
+**Level gate (O368).** `atlas_config.lua` `minLevel` 100, the first rift tier's level (`tests/riftatlas_test.lua` checks the two match): below it the opcode answers nothing but a line on `open` ("The Rift Atlas opens at level 100."). Sealed rifts still credit the cells. The top menu shows Rift Atlas from 100 (`unlocks_config.lua` `riftatlas`).
+
 The long-term progression of the rift loop (roadmap item 54). Sealing rifts fills a finite completion grid; every new
 cell is worth points; points buy nodes of a map of 81 nodes. Every number and the whole graph are in `atlas_config.lua`;
 the pure logic is `atlas_core.lua` (tested by `tests/riftatlas_test.lua`). Extended opcode 210 (`ChaosOpcodes.riftAtlas`),
@@ -18617,9 +18692,9 @@ character creation (client and website) and the cancel text name the level, not 
 
 ## Achievements (`achievements.lua`, `achievements_core.lua`, `achievements_data.lua`, client `game_achievements`)
 
-Long-term goals across every system: 178 achievements in 10 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
-Raids, Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 4280 points in all (counted from
-`achievements_data.lua` on 2026-10-14; the five deep dungeon ones, in Raids: a clear of each of the four, 10 / 10 / 15 /
+Long-term goals across every system: 189 achievements in 11 categories (Combat & Leveling, Level Milestones, Monsters, World
+Bosses, Rifts, Raids, Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 4640 points in all (counted from
+`achievements_data.lua` on 2026-11-03, O378 added the 14 level milestones 800-2200 but 1000; earlier the five deep dungeon ones, in Raids: a clear of each of the four, 10 / 10 / 15 /
 25 points, and the hidden "Into the Last Fire", all four on difficulty 6, 50 points, title "the Unchained"; their
 counters `dungeon_<area id>`, `_top`, `_d6` come from `areagen.lua` at a won run). Client `game_achievements` (Chaos ->
 Achievements in the top menu, or Character > Achievements), extended opcode 250 (`ChaosOpcodes.achievements`), tables
@@ -18678,6 +18753,7 @@ Achievements in the top menu, or Character > Achievements), extended opcode 250 
   | Category | Title (frame) | Cosmetic |
   |---|---|---|
   | Combat & Leveling | Warmaster (ember) | War Surge, kill effect |
+  | Level Milestones (O378) | Hundredfold (amber) | Summit Seal, kill effect |
   | Monsters | Beastwarden (verdant) | Thornbloom, kill effect |
   | World Bosses | Titanfeller (bone) | Titan's Pyre, kill effect |
   | Rifts | Riftwarden (violet) | Rift Sigil, kill effect |
@@ -18975,7 +19051,8 @@ needed per level growing with L^2 against hunts that pay linearly.
 one before or the table has a hole; the mean minutes a level of consecutive 10-level blocks change by less than 0.75x or more
 than 1.25x (25-level blocks 0.88x to 1.35x) between 8 and 2200; fewer than 4 pool hunts are in reach of a level; fewer than 3
 hall hunts are within 0.7-1.3 L of a level. The test also feeds it the table from before O135 and expects the x50 step at
-level 21 and the time cliff to be named.
+level 21 and the time cliff to be named. (O375 raised these limits: 10-level blocks 0.78x, 25-level blocks 0.80x, 5 hall
+hunts within 0.7-1.3 L; "Hall coverage (O375)".)
 
 **Not fixed, and why.**
 - (Done in O139, "Hall coverage (O139)".) The hall had levels 163-233 and 386-518 with fewer than 3 hunts within 0.8-1.1 L;
@@ -18991,6 +19068,15 @@ which the kit update runs): config.lua is read at the engine's start, so restart
 replaced; `chaos-ctl.sh xp-rate` keeps its factor (it scales the release table). Paragon needs only the script reload.
 No client update and no engine rebuild.
 
+
+### Early peak x30 (O377, owner 2026-11-03)
+
+The owner asked for a slower start: the stage peak was x45 (levels 50-87), now it is x30. `SMOOTH_STAGES`: x26 to level 17,
+x27 to 22, x28 to 47, x30 from 48 to 433, then the descent of O135 unchanged (x29 at 434 ... x15 at 700); the late table
+is unchanged. The small ramp before x30 keeps the base pace jumps at levels 18-27 and 48-57 inside the 1.25x limit.
+Model hours (with the newcomer bonus of O370): 8-100 1.1 (was 1.2), 8-300 9.0 (was 6.7), 8-433 about 18 (was 15),
+8-1000 119.6 (was 116.6), 8-2200 349.6 (was 346.6). Minutes a level: 0.7 at 50 (0.6), 1.0 at 100 (0.7), 3.5 at 300 (2.7);
+from 434 on as before. `tests/progression_test.lua` checks the peak is x30. Install: step `lategame` and a server restart.
 
 ## Balance follow-ups (O141, 2026-10-23)
 
@@ -19087,6 +19173,92 @@ display spawns follow. No new step, no new table. Needs a server restart (spawns
 engine rebuild. Not run on the real map: `tools/install_content_areas_test.py` (synthetic map) and the planner's compile and
 QA of the twelve plans pass; the dry run on the live map is the owner's first step (`install_all.py --only contentareas
 --dry-run`).
+
+## Hall coverage (O375, `tools/areaplan/plans/`, `progression_config.lua` `hall`, 2026-11-03)
+
+ROADMAP O375: more hunting choice where `tools/progression_model.lua` showed few hunts. New characters had 3 hall hunts in
+reach (0.7-1.3 x L) at levels 8-100, and levels 1300-2200 (about 170 of the 347 model hours) had 6-15. Done the way of
+O139 ("Hall coverage (O139)"): new area plans, no new monster, no new sprite.
+
+**What was built.** Nine generated areas in a new row of the annex block (y 15700, x 15620 to 17252, step 204; the
+annexes stand at y 15500-15624, x 14340-15684; docs/MAP_GUIDE.md "Content plans"). Six are small and quick (96 x 80 to
+114 x 94, 4-5 hunting zones on loops, packs of 2 below level 35 and of 3 above, respawn 40-45 s) for new players on the
+ground floor of the hall; three are big late hunts on floor 5 (150 x 122 to 172 x 140, 7 zones, respawn 75 s). All have
+4.1-4.3 monsters per 100 walkable tiles, no zone above the validator's 8 per 100 (what a zone cannot hold stands along
+the paths out of it), and pass the asymmetric outline rule (new plans, not in `shape_rules.json` `legacy_plans`).
+Monsters: the pool's monsters of the band (the planner's tier check passes); the late ones are the level-scaled set of
+the hunts around them. No reward chest.
+
+| Plan | Name | Band (hunt level) | Floor | Biome | Size | Monsters (walkable tiles) | Display |
+|---|---|---|---|---|---|---|---|
+| thistlewood_hollow | Thistlewood Hollow | 6-12 (9) | 7 | forest | 96 x 80 | 64 (1514): Goblin, Goblin Scavenger, Troll, Swamp Troll, Wolf, Bear | Goblin Scavenger |
+| copperdelve_mine | Copperdelve Mine | 11-17 (14) | 7 | cave | 100 x 84 | 53 (1295): Dwarf, Dwarf Soldier, Dwarf Miner, Larva, Carrion Worm | Dwarf Soldier |
+| ashgrave_barrow | Ashgrave Barrow | 18-26 (22) | 7 | crypt | 104 x 86 | 88 (2113): Crypt Shambler, Ghost, Bonelord, Mummy, Tomb Servant | Crypt Shambler |
+| murkreed_fen | Murkreed Fen | 24-34 (29) | 7 | swamp | 106 x 88 | 62 (1480): Lancer Beetle, Swarmer, Acid Blob, Death Blob, Sacred Spider | Lancer Beetle |
+| chitinmaw_warren | Chitinmaw Warren | 44-56 (50) | 7 | cave | 112 x 92 | 86 (2084): Waspoid, Crawler, Spitter, Drillworm, Brimstone Bug | Waspoid |
+| scalewatch_bastion | Scalewatch Bastion | 50-62 (56) | 7 | hall | 114 x 94 | 113 (2753): Lizard Legionnaire, Lizard Dragon Priest, Lizard High Guard | Lizard Legionnaire |
+| anvilmourn_wastes | Anvilmourn Wastes | 1500-1650 (1575) | 5 | waste | 168 x 136 | 152 (3743): Redmane Anvilbreaker, Cinderskull Reaver, Ashveil Hierarch, Hollowhorn, Bloodantler Fiend | Cinderskull Reaver |
+| oathgrave_ossuary | Oathgrave Ossuary | 1750-1900 (1825) | 5 | catacomb | 150 x 122 | 259 (6248): Gravecrown Oathbreaker, Cinderhorn Juggernaut, Wraithbone Stalker, Ironmask Warbreaker, Gnarlback | Cinderhorn Juggernaut |
+| pyrecrown_caldera | Pyrecrown Caldera | 1900-2100 (2000) | 5 | lava | 172 x 140 | 150 (3683): Pyre Stork, Mirecoil Wyrm, Wraithbone Stalker, Gnarlback, Gnawbone Swarm, Pyrewing Tyrant | Wraithbone Stalker |
+
+The bands fill the gaps between the hall's hunt levels: 12 to 16, 20 to 24, 25 to 32, 44 to 63 (none), 1525 to 1625,
+1775 to 1875, and above 2000 (one hunt). Display monsters: one per slot, none shown elsewhere in the hall; the low ones
+are stock 1x1 looks, Cinderskull Reaver (2219) and Cinderhorn Juggernaut (2218) the 2x2 owner art sheets (64 px cells),
+Wraithbone Stalker the stock look 1449: not checked in a cell of the live pair (if it spills over the cell walls, set
+`standIn` with a 2x2 monster, like Wyrmspine Hollows).
+
+**The hall grows (no slot was free: z 7 50 on 52, z 6 40 on 41, z 5 18 on 18).** `hunt_teleports_config.lua`:
+- z 7: `room.wings` 9 to 10 modules a side: 56 slots for 56 hunts. The wing sweeps the lawn and the sea fill
+  (`hall.fill`, x 31578-31724) as before; `hall.x` 31586-31716 and `display.x` 31590-31710 follow the new ends.
+- z 5: a wing of its own, one module a side copied from floor 6 (no `sweep`): 22 slots for 21 hunts. The new tiles must
+  land where the map has none: floor 5 above the grown floor 6 (6 modules a side) had nothing around the base room
+  when floor 6 grew, but this was not read on the live map. If something stands there the install refuses with
+  "target tile(s) are taken ... nothing written" (`tools/install_content_areas_test.py` `upper_wing_checks`).
+- `hall.capacity` 56 / 41 / 22; `install_content_areas_test.py` `capacity_checks` passes. Every hunt keeps its floor
+  by level and the slots go by level as before ("Hall order"), so a hunt moves along the corridor by as many slots as
+  new hunts stand below it on its floor (up to 6 on z 7, up to 3 on z 5); the display spawns follow.
+
+**Hall hunts in reach (fewest over the levels; `luajit tools/progression_model.lua`).**
+
+| Levels | 0.7-1.3 L before | after | 0.8-1.1 L before | after |
+|---|---|---|---|---|
+| 8-20 | 3 (level 18) | 5 | 1 (level 14) | 2 |
+| 20-50 | 3 (level 29) | 5 | 1 (level 32) | 2 |
+| 50-100 | 3 (level 56) | 5 | 0 (levels 49-57) | 2 |
+| 1000-1300 | 22 | 23 | 8 | 8 |
+| 1300-1600 | 15 | 17 | 7 | 8 |
+| 1600-2000 | 10 | 13 | 6 | 8 |
+| 2000-2200 | 6 | 9 | 4 (levels 2126-2200) | 6 |
+
+Levels 100-1000 are unchanged (7-31). Pool hunts in reach at the middle of the bands: 1300-1600 27 to 29, 1600-2000 13 to
+15, 2000-2200 10 to 11 (below).
+
+**The check.** `progression_config.lua` `hall.minHunts` 5 (was 3): every level 8-2200 needs 5 hall hunts within
+0.7-1.3 L. `hall.tight.ranges` takes an optional third number (the range's own minimum): {8, 100, 2} and {1300, 2200, 5}
+(was {1350, 1650} and {1800, 2200} with 3); 160-240, 380-520, 630-770 and 900-1100 keep 3. `tests/progression_test.lua`
+takes the nine plans out and expects both ends named.
+
+**The pool and the sawtooth.** The model paces each level by the median experience per hour of the pool hunts within
+0.8-1.1 L (`bounty_pool.lua`, generated by `gen_bounty_pool.py` from an installed map). The pool was last made before the
+seven monsters of O336 went into nine plans, so it missed them (Bogtusk Cleaver 400, Wickstaff Hexmage 630, Coralcrown
+Brinecaller 930, Gloamgeode Shellback 1150, Marshlight Hollowseer 1350, Redmane Anvilbreaker 1550, Gravecrown Oathbreaker
+1850). `M.plannedMonsters` adds a monster the plans spawn 6+ times that the pool does not list, from its Chaos monster file
+(middle of `<level>`, experience, health; no boss), the way the tool will once the map has them (`--check` prints 836
+pool hunts, 829 before). The jump near level 1578 came from four monsters of level 1260 leaving the window at once
+(14.4 to 10.4 minutes a level): with Redmane Anvilbreaker at 1550 it comes in two steps (14.4, 12.9, 10.4), the worst
+25-level change is 0.81 (was 0.745) and the worst 10-level change 0.81 at level 28. `limits.longRatio` low bound 0.78 to
+0.80, `shortRatio` 0.75 to 0.78. Hours to 2200: 346.3 to 347.1 (1600-2200 107.2 to 108.2). The hall plans do not pace the
+model: a smoother curve needs monsters at levels the pool does not have (the late set sits at 1260-1300, 1400, 1500,
+1550, 1600, 1700, 1800, 1850, 1900 and 2000). Not fixed: the smaller teeth of 1600-2200 (9.4 to 12.6 minutes a level,
+each time a level group enters or leaves the window).
+
+**Install** (`install_all.py` step `contentareas`; idempotent): the nine plans are placed with their frame and spawns, z 7
+grows by one module a side, z 5 gets its wings, the hall is ordered again and the places file, signs and display spawns
+follow. Dry run first on the live map (`install_all.py --only contentareas --dry-run`): it names a z 5 tile in the way.
+Then a server restart (spawns, config). Afterwards rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`
+on the server (docs/MAP_GUIDE.md "Content plans") so the bounty board knows the O336 monsters. No client update, no
+engine rebuild. Not run on the live map, not played: the planner's validate, compile and QA of the nine plans and the
+synthetic install test pass.
 
 ## Pack combat (pace) (`pace.lua`, `pace_core.lua`, `pace_config.lua`, 2026-10-14)
 
@@ -23240,6 +23412,8 @@ a crash refund, the shutdown path.
 
 ## Factions (`factions.lua`, `factions_core.lua`, `factions_config.lua`, `sql/chaos_factions.sql`, `tools/install_factions.py`, client `game_factions`)
 
+**Level gate (O368).** `factions_config.lua` `minLevel` 40: below it the opcode answers nothing but a line on `open` ("Factions open at level 40."), so no contracts, turn-ins or quartermaster; the faction NPCs say "Come back at level 40." instead of opening the ledger. Reputation still counts below it, quietly (no lines, no rank-up line), as a head start. The top menu shows Factions from 40 (`unlocks_config.lua` `factions`).
+
 Four powers that fight over what the Cinders left, each with a home NPC who is also its quartermaster. Reputation is per
 character (a season character is a character of its own and starts at Neutral everywhere: season isolation needs nothing
 more; its gear and tokens follow the season's trade rules like any item). Every number is in `factions_config.lua`; the
@@ -23921,6 +24095,8 @@ one minute.
 
 ## Loadouts (Armory) (`loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql`, client `game_loadouts`)
 
+**Level gate (O368).** `minLevel` 8 -> 15, a few levels after the first passive point (12). The top menu shows Loadouts from 15 (`unlocks_config.lua` `loadouts`).
+
 Save a whole build and switch between builds without paying the respec again. Client `game_loadouts` (Character > Loadouts,
 and a Loadouts button the module adds at runtime to the passive tree window), extended opcode 206 (`ChaosOpcodes.loadouts`).
 Every number is in `loadouts_config.lua`; the rules are in `loadouts_core.lua` (pure, `tests/loadouts_test.lua`).
@@ -23963,7 +24139,7 @@ preview at the respec prices.
 - The randomized check in `tests/loadouts_test.lua` runs thousands of save / load / delete / priced-edit steps and checks that no
   tree shape ever appears that a priced edit did not make, and that no rune is created or lost.
 
-**Switching.** Out of combat (no fight condition, not PZ-locked), level 8+, not inside an instance (arena, rift, Vocation Trial,
+**Switching.** Out of combat (no fight condition, not PZ-locked), level 15+ (O368; was 8), not inside an instance (arena, rift, Vocation Trial,
 raid, Ember Descent, Infinity Tower, Ascended Omen, siege), `cooldownSeconds` (60) after the last switch. In a protection zone it
 is instant; elsewhere it is a `castMs` (3 s) channel: moving or entering combat interrupts it; the bar is drawn by `game_castbar`.
 
@@ -24181,6 +24357,8 @@ only) or many kills of rare monsters: the ember shows the blessing's name when l
 
 ## Charms (`charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py`, client `game_charms`)
 
+**Level gate (O368).** `C.minLevel` 8 -> 15. The top menu shows Charms from 15 (`unlocks_config.lua` `charms`).
+
 A second, small place for minor bonuses: the 10.98 client has no free equipment slot, so charms go into a per-character
 **charm grid** in a window of its own (Character > Charms, extended opcode **198**, `ChaosOpcodes.charms`). Every number is in
 `charms_config.lua`; the rules are pure in `charms_core.lua` (`tests/charms_test.lua`, LuaJIT and Lua 5.3).
@@ -24198,7 +24376,7 @@ them (its key-list codec carries the charm keys too, `market.lua` customKeys).
 (+4); level 400: row 3, columns 1-3 (+3); level 600: row 3, columns 4-5 (+2); level 800: row 4, columns 1-3 (+3); the achievement
 "Edge of Ruin" (`rift_t10`, seal a tier 10 rift; account-wide like every achievement): row 4, columns 4-5 (+2). A charm needs
 all its cells open, inside the grid and free; at most 20 charms. A charm on a cell that closes again (a lost level) stays
-placed and gives nothing until it opens again (shown dimmed). Place, move and take out: level 8+, out of combat (no fight
+placed and gives nothing until it opens again (shown dimmed). Place, move and take out: level 15+ (O368; was 8), out of combat (no fight
 condition, not PZ-locked), anywhere.
 
 **Rolls.** Shape by weight (small 50, tall 20, wide 20, grand 10); rarity Faint (60, 1 modifier, x0.7), Glowing (30, 1
@@ -24299,6 +24477,8 @@ crash, the drop hooks from real rifts, bounties, invasions, dungeons and Descent
 a charm.
 
 ## The Gambler (`gamble.lua`, `gamble_core.lua`, `gamble_config.lua`, `tools/install_gamble.py`, client `game_gamble`)
+
+**Level gate (O368).** `gamble_config.lua` `C.minLevel` 40: below it the opcode answers nothing but a refusal on `open` ("The Gambler opens at level 40."), and Mordecai says "Come back at level 40." instead of opening the window. The top menu shows The Gambler from 40 (`unlocks_config.lua` `gamble`).
 
 Mordecai Ashwager, the Gambler, sells sealed equipment for gold: the base type, the slot and the item level are shown, the
 rarity is hidden until the piece is bought. Every number is in `gamble_config.lua`; the rules are pure in `gamble_core.lua`.
@@ -24484,6 +24664,8 @@ already (the Vigils auras, `vigils*.lua`, `ChaosVigils`, buff keys `vigil_*`; an
 
 ## Conquest Tokens, the Conquest vendor and bad-luck protection (`conquest.lua`, `conquest_core.lua`, `conquest_config.lua`, `sql/chaos_conquest.sql`, `tools/install_conquest.py`, NPC `data/npc/Iselde Varrow.xml`, client `game_conquest`)
 
+**Level gate (O368).** `conquest_config.lua` `C.minLevel` 50: below it the vendor's opcode answers nothing but a refusal on `open` ("The Conquest vendor opens at level 50."), and Iselde Varrow says "Come back at level 50.". Tokens are still granted below it. The top menu shows the Conquest Vendor from 50 (`unlocks_config.lua` `conquest`).
+
 The owner's rule (2026-10-15): everything a player needs has a deterministic path; luck only decides the maximum
 (perfect rolls, top rarities, the best legendary power). Three parts: a currency for every boss and clear, a vendor
 that sells any unique or set piece the character has seen, and bad-luck protection on every chase roll.
@@ -24605,6 +24787,8 @@ vendor rows), `i18n_test.lua` (the new texts and the NPC); client `game_conquest
 live server.
 
 ## Professions (`professions.lua`, `professions_core.lua`, `professions_config.lua`, `sql/chaos_professions.sql`, `tools/install_professions.py`, client `game_professions`)
+
+**Level gate (O368).** `professions_config.lua` `C.minLevel` 20 (`ChaosProfessions.levelOk`): below it the window, gathering a node, flaying and the Angling roll are refused ("Professions open at level 20."); stock fishing stays as it is. The top menu shows Professions from 20 (`unlocks_config.lua` `professions`).
 
 The owner's rule: professions gather materials **to sell to NPCs** and give an **experience bonus**. They make no gear and no
 orbs and feed no crafting, so they never compete with the crafting orbs or salvage. Every number is in `professions_config.lua`.
@@ -25390,7 +25574,7 @@ objetivos), and a compact tracker on screen (Adventure > Goal Tracker or the win
   1300, 1600, 2000). Each has a name and a line, a gear path (where the next gear comes from: hunts, dungeons, vendors,
   crafting; each line with a button) and the content hunts of the teleport room whose band holds the level
   (`hunts`, checked against `tools/areaplan/plans/*.json` and `hunt_teleports_config.lua` by the test).
-- **Goals.** 73 goals, each with a title, why it matters, where (a button: a client window, an Info page, the kill
+- **Goals.** 97 goals (73 and the 24 level milestone lines of O378), each with a title, why it matters, where (a button: a client window, an Info page, the kill
   tasks, the Item Finder, or a mark on the minimap at an NPC, the nearest hunting ground of the level, a teleport of the
   room or the temple: the server resolves the position), progress, the expected effort and a small reward. They cover
   the unlocks: passive tree (12), bounty (8), kill tasks, crafting orbs, invasions, arena, ascension (100), rifts, the
@@ -25398,7 +25582,8 @@ objetivos), and a compact tracker on screen (Adventure > Goal Tracker or the win
   Tokens (150, shown only while `ChaosPocketBoss` / `ChaosConquest` exist: `requires`), the Infinity Tower, uniques,
   world bosses (300), Orbs of Grafting, the raid and Omens (800), The Hollow Vault (800), Ascended Omens (900), the
   Cinderheart and The Marrow Crypts (1000), Paragon (1001), legendary powers, The Iron Crucible (1300), The Fallen
-  Sanctum (1600), The Pyre Throne and difficulty 6 (2000), and a "reach level N" goal closing each band.
+  Sanctum (1600), The Pyre Throne and difficulty 6 (2000), and a "reach level N" goal closing each band, plus
+  the level milestones (O378, below): "Reach level N" every 100 levels from 800 to 2200 and one milestone challenge each.
 - **The panel** lists the open goals of the band, then up to 6 open goals of the bands below (the nearest first, "and N
   more"), then the band's goals done; the side column has the gear path, where to hunt and the next 3 unlocks
   ("Level 500: Reach level 800"). Season characters get a Seasonal Journey button: the Journey stays the season's own
@@ -25434,6 +25619,117 @@ objetivos), and a compact tracker on screen (Adventure > Goal Tracker or the win
   the client modules, NPCs against data/npc, the guide's sections, bands, retro, evaluation, rewards, the panel, the
   tracker, effort texts; goals.lua on a mocked engine: login, rewards once, the hooks, the panel, the resolver, the band
   message, logout), client `game_goals/goalsview_test.lua`. Not run on a live server.
+
+## Level milestones (O378) (`milestones.lua`, `milestones_core.lua`, `milestones_config.lua`; achievements, cosmetics, Next Goals; client `game_chaosnotify`)
+
+Owner request 2026-11-03: after level 700 the leveling is flat (10-14 minutes a level for about 290 hours to 2200,
+`tools/progression_model.lua`) and has no landmarks. Now every 100 levels from 800 to 2200 (15 milestones) is a step.
+Built on what exists; nothing is duplicated:
+
+| Level | Achievement (points) | Title | Milestone Cache (Upheaval / Fate / Grafting) | Challenge (Next Goals) | Cosmetic |
+|---|---|---|---|---|---|
+| 800 | Tempered in the Dark (25) | the Tempered | 5 / 2 / 0 | Infinity Tower floor 30 | |
+| 900 | Nine Hundred Embers (25) | Emberborn | 5 / 2 / 0 | Tower floor 35 | |
+| 1000 | The Thousandth Step (50, mount Doombringer as before) | the Unbroken | 6 / 2 / 1 | 100 pocket bosses | level-up effect Thousandth Ascent |
+| 1100 | Will Unbending (25) | the Unyielding | 6 / 2 / 0 | Tower floor 45 | |
+| 1200 | Forged in the Grave (25) | Graveforged | 6 / 3 / 0 | Tower floor 50 | |
+| 1300 | The Thirteenth Bell (25) | the Knelled | 7 / 3 / 0 | Tower floor 55 | |
+| 1400 | Sworn to the Cinders (25) | Cindersworn | 7 / 3 / 0 | Tower floor 60 | |
+| 1500 | The Long Dusk (50) | Duskbearer | 8 / 3 / 1 | 200 pocket bosses | level-up effect Dusk Ascent |
+| 1600 | Crown of Hollows (25) | Hollowcrowned | 8 / 3 / 0 | Tower floor 65 | |
+| 1700 | Still Smoldering (25) | the Smoldering | 8 / 4 / 0 | Tower floor 75 | |
+| 1800 | Bound to the Pyre (25) | Pyrebound | 9 / 4 / 0 | Tower floor 80 | |
+| 1900 | Past the Last Light (25) | Lightless | 9 / 4 / 0 | Tower floor 85 | |
+| 2000 | Two Thousand Fires (50) | the Undimmed | 10 / 4 / 1 | 300 pocket bosses | level-up effect Undimmed Ascent |
+| 2100 | Where Stars Die (25) | Starless | 10 / 4 / 0 | Tower floor 95 | |
+| 2200 | The Summit of Ruin (50) | Apex of Chaos | 12 / 5 / 2 | Tower floor 100 | category: title Hundredfold, kill effect Summit Seal |
+
+- **Title and points:** the level achievements `level_<L>` of `achievements_data.lua`, in a new category Level
+  Milestones (Marcos de Nível; `level_1000` moved there from Combat & Leveling, its id and mount unchanged, so Combat is
+  not harder to complete). The achievement system gives the points, the title (name plate, `!title`, the window), the
+  ACHIEVEMENT UNLOCKED toast and the reward track. Category completion (level 2200): title Hundredfold (frame amber) and
+  the kill effect Summit Seal.
+- **Cosmetics** (`cosmetics_config.lua`, ids 606-608 and 121, account wide, never sold): level-up effects at 1000
+  (`storm_mantle`), 1500 (`shadow_shroud`) and 2000 (`arcane_orbit`), chosen in Character > Cosmetics; the effects of
+  the client pair, no new art. Visual only.
+- **Milestone Cache:** orbs given once per character by `milestones.lua` at the level up (backpack first, inbox when full),
+  the storage mark written first. 116 Upheaval, 48 Fate and 5 Grafting over the 15 caches: at most a tenth of what the
+  about 290 hours of hunting from 800 to 2200 drop (about 4 / 2 / 0.4 an hour at the normal tier, `loot_config.lua`
+  currency); 800 starts at the level 700 reward (5 + 2). No gold, no coins, no power: the store, roulette and unique pace
+  models are not touched (their `--check` pass as before).
+- **Broadcast:** one short line in each player's language, "Name reached level 1300 and earned the title the Knelled."
+  Only for a milestone reached live (never at the login baseline), one per advance (a jump: the highest), not for staff or
+  tester bots. Switch: `milestones_config.lua` `broadcast.enabled` (on).
+- **Toast:** LEVEL MILESTONE (notifications opcode 79, new kind `milestone`; client `game_chaosnotify` type `MILESTONE`):
+  "Level 1300: Milestone reached. Title: the Knelled. Milestone Cache: 7 Orb of Upheaval, 3 Orb of Fate. Next milestone:
+  level 1400." The same line in the chat.
+- **Next Goals** (`goals_config.lua` builds them from `milestones_core.lua` `K.goals`): "Reach level N" for every
+  milestone (the existing 800, 900, 1000, 1300, 1600, 2000 keep their keys and unlock levels; 1100, 1200, 1400, 1500,
+  1700, 1800, 1900, 2100, 2200 are new, each unlocked at the milestone before); its line names the title and the cache.
+  The challenge goal `ms<L>` unlocks at the milestone: an Infinity Tower floor (`tower_floor`, the floors are below the
+  median class reach of `tools/tower_model.py`: L800 34, L1000 44, L1500 64, L2000 93) or pocket boss kills at 1000 /
+  1500 / 2000 (`pocket_kills`, shown while `ChaosPocketBoss` runs). Paid with Next Goals' small default reward.
+- **Existing characters** (decided, owner delegated): titles, points and the cosmetics are retroactive (the achievements'
+  login check). The Milestone Cache is only for milestones reached from now on: the first login after the install
+  stores the highest milestone at or below the level and gives nothing for it. Next Goals marks the goals of the bands
+  below the character's own done without a reward (as for every goal, `K.retro`); new goals of its own band are paid
+  once with the small goal reward. A death and the way back never pay twice (the mark only rises). Staff move the mark
+  and get nothing.
+- **Not built:** a per-player mute of the broadcast (the switch is server wide); a Chronicle goal for the milestones.
+- **State:** the storage 7101080 ("Storage keys"); no opcode of its own, no table.
+- **Tests:** `tests/milestones_test.lua` (config against the achievements, titles unique and short, the cosmetics, the
+  storage, the cache share, the plan: baseline, advance, jump, death, unseen, staff, off; the toast, the pt-BR keys, the
+  Next Goals lines and the tower reach; `milestones.lua` on a mocked engine: login, advance, cache, inbox, toast,
+  broadcast, staff, testers, the switch); `achievements_test.lua`, `cosmetics_test.lua`, `goals_test.lua`,
+  `i18n_test.lua`; client `game_chaosnotify/notifyview_test.lua`. Not run on a live server.
+
+## Welcome path (O370, `welcomepath.lua`, `welcomepath_core.lua`, `welcomepath_config.lua`, client `game_goals`)
+
+Owner request 2026-11-03 (pt-BR): a tracked chain of first steps for a new character, each with a small reward, that
+teaches the basics in order. Built on the Next Goals tracker and its channel (no new opcode, no new window).
+
+- **Steps** (`welcomepath_config.lua` `steps`, one at a time, in order): (1) cast a spell (a spell group cooldown on the
+  character: by hand or by the Helper after Auto setup; row click opens the Helper), (2) slay 20 monsters (a kill event of
+  this module while the step is open; summons do not count; click: a mark at the nearest hunt of the level), (3) wear a
+  new piece of gear (a worn item that is not of the character's starter kit, `newplayer_config.lua` kits: loot, a shop or
+  the Gambler; click: a mark at the Loot Buyer), (4) spend the first passive point (`passive_spent`, as Next Goals reads it,
+  or `ChaosPassiveTree.hasAllocation`; below level 12 the row shows "(level 12)" and the level as its progress), (5)
+  finish a Bounty contract (`bounty_done`; it pays 2 Orbs of Awakening, which turn a plain kit piece into a Common or
+  Uncommon one), (6) use an orb at the Crafting Bench (achievement counter `orbs_used`; from level 20, the bench's own
+  `minLevel`), (7) open Next Goals (`goals.lua` "open" calls `ChaosWelcomePath.mark`). Each step tells its next one in a
+  message with a hint.
+- **Rewards** (gold to the bank, items to the backpack, else the inbox): 300, 500 + potions of the kit's role, 500, 800,
+  1,000 + 2 Orbs of Awakening, 500 + 2 Orbs of Upheaval, 1,000 + potions: 4,600 gold in all. The step is written before
+  the reward (a crash loses the reward rather than paying twice).
+- **Who.** Once per character (storage 7101070-7101079, "Storage keys"). A character first seen above level 20
+  (`quietAbove`) never gets it. One first seen at or below it starts the path; the steps it has done already pass silently,
+  without a reward (`K.skipDone`): the gear, passive, bounty and orb steps by their facts, the cast and the kills only for a
+  character that played before (above the start level 8, or a kit older than an hour), so a brand-new character's first
+  cast is its first reward. Staff (group 4+) walk no path.
+- **Skip.** "Skip welcome path" under the tracker rows; the first click turns it into "Click again to skip" for 4 s, the
+  second sends `welcomeSkip` (goals.lua -> `ChaosWelcomePath.skip`): state 2, nothing more is paid.
+- **Engine side.** The first look waits 12 s after login (the achievements and Next Goals load their counters; the
+  welcome comes at 2.5 s and the first first-hour hint at 9 s). A sweep every
+  second looks only at characters on the path (a done step moves on, one per look) and sends the row when it changed
+  (`K.sig`). Protocol on opcode 178: server -> client `welcome {title, step, count, rows = [{key, title, progress, target,
+  state, hint, where}]}` (rows = [] hides the section; `where` with the map position resolved by `ChaosGoals.resolver`);
+  client -> server `welcomeSkip`; `tracker` resends the row (`ChaosWelcomePath.forget`).
+- **Client** (`game_goals`): the step comes first in the tracker, the title reads "Welcome Path 2/7" while the path runs
+  (the goals then get their own "Next Goals" head), the row's tooltip is the hint and a click does its `where`; on a phone
+  the 3 row budget counts the welcome row first.
+- **Relation to the first-hour hints and Next Goals.** The hints (`firsthour.lua`) stay as they are (one message per
+  level band); the Next Goals band 1 goals (`bounty1`, `passive1`) still pay their own small reward too: the path is the
+  ordered walk through them.
+- **Tests:** `tests/welcomepath_test.lua` (config, validation, each check, the gear rule, first sight, silent skips,
+  rewards, the view; the engine file on a mocked engine: a new character through all 7 steps, kills and summons, the
+  level gates (12, 20), the goals.lua hooks, skip, a quiet level 300, an existing level 14, staff, the tracker request), client
+  `game_goals/goalsview_test.lua`. Not run on a live server.
+
+**PvP protection of low levels (O370 check).** The base config has `protectionLevel = 1`, and characters start at level 8,
+so nobody was protected. `tools/prod_config.py` now writes `protectionLevel = 50` (the Arena's entry level; the
+battleground, the siege and the Scorched Marches start at 100-150): below level 50 a player can neither attack a player nor
+be attacked by one (the engine's rule; the script spells ask `ChaosSpell.canAttack`, which reads the same setting).
+`tools/prod_config_test.py` checks it. A server already set up gets it at the next `prod_config.py` run.
 
 ## Server texts in pt-BR (Chaos.t)
 `i18n_core.lua` (ChaosI18n, pure) puts the helpers on `Chaos`: `Chaos.t(player, "English %s pattern", ...)`, the text in
@@ -26953,6 +27249,66 @@ Part of the retention pass (docs/superpowers/specs/2026-10-26-retention-design.m
 - **Limits.** Characters from before the install count their first use of a system at their current level and played time, which skews the first weeks; the cohort and return figures are clean (only characters created after the install). A first use inside one 60 s window that ends before the next check (a party that forms and disbands) is missed. The "where they stop" area is the last hunt a character killed in (a kill check at most every 60 s), so a character that never hunted, or left before the install, falls back to its last saved position, which is mostly the town; the hunt is the area nearest a place's arrival tile within `areaRadius`, so a kill far inside a large hunt is not remembered. Characters that last hunted before the install have no hunt until they log in again. `waystone` counts the first waystone opened by the character, not the first map cleared. Not run on a live server.
 - **Tests.** `tests/metrics_test.lua` (day maths, return flags, first-use bits, stop rows and SQL, the wrapped hooks against fake systems, tester and staff left out), `tools/progress_metrics_test.py` (cohort weeks and maturity, first use, stops, suppression). The Android card is not built here (no SDK); CI `admin-app.yml` compiles it.
 
+## New player funnel and survey (O374) (`tools/newplayer_report.py`, `survey.lua`, `survey_core.lua`, `survey_config.lua`, `sql/chaos_survey.sql`; client `game_chaossurvey`)
+
+**Why.** Owner request: see where new players quit, and ask them what confused them. Two read-only reports for the owner,
+one small window in the game.
+
+**Where the owner reads it.** Admin app (Android and desktop): Painel > Novos jogadores > Funil or Pesquisa (a days
+field, default 30; "Copiar" on Android puts the text on the clipboard). Fallback on the VPS:
+`sudo chaos-ctl.sh newplayer-funnel [--days N] [--json] [--pt]` and `sudo chaos-ctl.sh survey [--days N] [--json] [--pt] [--texts N]`.
+
+**Funnel.** Of the characters whose first login was in the last N days:
+- reached level 10 / 20 / 30 / 50 / 100 (the current level, or the milestone bit of 10 / 25 / 50 / 100 in storage
+  7102830, so a level lost at a death still counts);
+- played 1 / 5 / 10 hours (`players.onlinetime`);
+- stopped: no login for 7+ days, of the characters at least 7 days old. For those: the level band (1-5 ... 81-100,
+  101+), the played minutes (up to 10, 30, 60, 120, 300, 600, 1200, more) and the last system used.
+
+Data the server already stores: the first-login day of O258 (storage 7102831, `day * 8 + flags`; characters from before
+the O258 install have none and are left out), `players`, and one new storage: **7102834 the last system used**
+(`metrics_config.lua` `lastSystemStorage`, the 1-based index in `systems`). `ChaosMetrics.firstUse` now writes it on every
+success of a system, not only the first (one storage write when it changes). Party and guild are only seen at their first
+use (the 60 s member check stops once the bit is set), so they rarely show as last system. "none (hunting only)" = no
+listed system used.
+
+The SELECT is built by `newplayer_report.py funnel --sql` from fixed numbers and the checked day count; it groups in the
+database (one row per reach, hours, stopped, band, minutes, system and a count). No name, account, id or IP is read.
+Staff (group above 1) and tester bots are left out. Small numbers: a count of 1 to 4 is written "<5", its share left out
+(as `progress_metrics.py`).
+
+**Survey.** At level 20 and at level 50, once per **account** and stage (decided per account: an account with alts
+answers each stage once, one voice per person), a small window (400 x 380) asks:
+"What confused you so far?" (free text, 200 letters), "How fun is it? (1 = not fun, 5 = great)" and "Would you recommend it
+to a friend?" (yes / no). Every question is optional. Send, Skip or Escape. After an answer or a skip the row is
+written (`chaos_survey`, unique account + stage) and the window never comes back for that account.
+- When: the level up that crosses the stage, or a later login while the level is below stage + 15 (`window`; a logout
+  before an answer offers it again; a veteran far past the stage is not asked). The window opens 4 s later and only out
+  of combat (`Chaos.inCombat`).
+- Server checks: only the stage the server opened is accepted; one message per 2 s per character (`ChaosRateLimit`), at
+  most 60 rows a minute for the server; staff and tester bots are never asked. `INSERT IGNORE` keeps the first row.
+- Text: `S.cleanText` keeps valid UTF-8 of 1 to 3 bytes (the table is utf8), drops control, line separator and bidi
+  characters, folds spaces, at most 200 letters. The client turns its cp1252 text edit into UTF-8 first
+  (`surveylogic.lua` `L.toUtf8`). The report cleans again (`clean_text`).
+- Stored: stage, answered / skipped, fun (0 = none), recommend (1 / 0 / -1 none), the text, level, played minutes, time.
+  The account id is only the unique key; the report never selects it.
+- Storage 7103060 (`survey_config.lua` `storage`, 7103060 - 7103069): bit per stage handled for the account, a cache so a
+  login asks the database only while a stage could be due.
+- Opcode 122 (see "Opcode collision check"), table `chaos_survey` (created by the `sql` step or at startup).
+
+**Report.** `newplayer_report.py survey`: per stage answered / skipped, mean fun and the spread 1-5, recommend yes / no and
+the share, the texts newest first with level and played time (50 in the text, `--texts N` up to 500; the apps ask 100).
+
+**Install.** `install_all.py` step `sql` (`chaos_survey.sql`); `survey.lua` also creates the table at startup. Client: the
+module `game_chaossurvey` ships with the next client update.
+
+**Tests.** `tests/survey_test.lua` (opcode, storage, text cleaning, stages, parsing, rate limits, SQL, and `survey.lua` on a
+mocked engine: level 20, combat, answer, never again, another character of the account, skip, logout before an answer,
+staff, testers), `tests/metrics_test.lua` (last system), `tools/newplayer_report_test.py` (the SELECT, the funnel maths,
+small numbers, survey rows and escapes, the command line), `deploy/chaos_ctl_test.py` (`test_newplayer`: both commands
+with a stub database, refusals), client `game_chaossurvey/surveylogic_test.lua`, Android `NewPlayerInfoTest`. All data is
+synthetic. Not run in a live client or on the live server yet.
+
 ## The top menu reveals systems by level (O259) (`unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua`; client `client_chaos_topbar`)
 
 **Why.** The top menu showed about 60 entries to a character that has just left the tutorial. The retention pass (design
@@ -26962,8 +27318,11 @@ the level where that system opens, announces it, and hides the rest.
 **One table.** `unlocks_config.lua` `entries`: `{key, level, menu, source, title, why, go}`. `menu` is the English text of the
 entry in the client's top menu; `title` and the two `why` lines are English and pt-BR; `go = {open = <client module>}` (the
 Go button runs the menu entry, which opens that module). The bits of the storages are by index: never reorder or insert,
-add at the end (up to 30). Eleven entries now: Bounty Board 8, Market 8, Passive Tree 12 (the first point), Events 30 (invasions),
-Arena 50, Rifts 100, Guild Siege 100, Infinity Tower 100, Dungeons 150, and (O262) Crafting Bench 20, Salvage 20 (the same gate), Pets 25.
+add at the end (up to 50, O368). Thirty entries now: Bounty Board 8, Market 8, Passive Tree 12 (the first point), Events 30 (invasions),
+Arena 50, Rifts 100, Guild Siege 100, Infinity Tower 100, Dungeons 150, (O262) Crafting Bench 20, Salvage 20 (the same gate), Pets 25,
+and (O368, below) Loadouts 15, Orb Exchange 20, Charms 15, Season Pass 10, Professions 20, Transmog 30, Hideout 30, The Gambler 40,
+Factions 40, Conquest Vendor 50, Guild Wars 50, Nemesis 50, Rift Atlas 100, Ember Descent 100, Battleground 100, Scorched Marches 150,
+Raid: Ashen Sepulchre 800, Waystone Atlas 1100.
 
 **The level is the system's own.** Nothing here gates a system; each keeps its own check, and this table only says when the menu
 shows it. `tests/unlocks_test.lua` has a reader per entry and fails when a level differs from the one the system enforces:
@@ -26981,9 +27340,27 @@ shows it. `tests/unlocks_test.lua` has a reader per entry and fails when a level
 | dungeons | `bossspawns_config.lua` `dungeons.defaults[1].level` (the first base dungeon, mirrors the base's own `Level`) |
 | crafting | `data/lib/chaos_crafting.lua` `config.minLevel` (read from the file text: the lib needs the engine libs to load) |
 | pets | `pets_config.lua` `minLevel` |
+| loadouts | `loadouts_config.lua` `minLevel` |
+| orbexchange | `orbexchange_config.lua` `minLevel` |
+| charms | `charms_config.lua` `C.minLevel` |
+| seasonpass | `seasonpass_config.lua` `minLevel` |
+| professions | `professions_config.lua` `C.minLevel` |
+| transmog | `transmog_config.lua` `minLevel` |
+| hideout | `hideout_config.lua` `minLevel` |
+| gamble | `gamble_config.lua` `C.minLevel` |
+| factions | `factions_config.lua` `minLevel` |
+| conquest | `conquest_config.lua` `C.minLevel` |
+| guildwar | `guildwar_config.lua` `minLevel` |
+| nemesis | `nemesis_config.lua` `birth.minLevel` (no nemesis is born below it) |
+| riftatlas | `atlas_config.lua` `minLevel` (= `rift_config.lua` `tiers[1].minLevel`, `tests/riftatlas_test.lua`) |
+| descent | `descent_config.lua` `minLevel` |
+| battleground | `battleground_config.lua` `minLevel` |
+| pvpzone | `pvpzone_config.lua` `minLevel` |
+| raid | `raid_config.lua` `minLevel` |
+| waystoneatlas | `waystone_atlas_config.lua` `minLevel` (= `waystone_tiers_config.lua` `tiers[1].level`, `tests/waystone_atlas_test.lua`) |
 
 The test also checks that every entry has a reader and the other way round, that the menu text is an `entry('<text>', ...)` of
-`chaos_topbar.lua`, that the Go module exists in `client/overlay/modules`, that both languages and two lines are there, and
+`chaos_topbar.lua` or a `text = '<text>'` the Go module adds with `ChaosTopBar.addEntry` (O368), that the Go module exists in `client/overlay/modules`, that both languages and two lines are there, and
 that the changed level of a copy of the table is found. Systems of the menu without a gate the repo can read (Skills, Bank, Stash, ...) are not in the table and always show; add one
 when its own config has a level.
 
@@ -26997,6 +27374,43 @@ its own top menu entry (`salvage`, the same level). Pets: below the level the op
 called out at login (a pet a character already owns is kept and comes back at the level), the staff `/pet` command is not
 gated. Both lines are in en and pt-BR (`i18n_strings.lua`). Bank and the Supply Stash are NOT gated on purpose: a new
 character needs them from level 1, so they stay out of the table and always show.
+
+**New player level gates (O368).** Owner request: "put a minimum level to do some things"; a new character could open about 30
+systems at level 1. Each system below got a `minLevel` in its own config, checked server side where its window or action is
+requested, and an entry in the table (so the menu hides it, shows it grey as the next one, and pops the "New" window at the level).
+Below the level the system's opcode answers nothing but one line on `open` ("The Gambler opens at level 40.", en and pt-BR in
+`i18n_strings.lua`); the NPCs that open a window (Mordecai Ashwager, the four faction NPCs, Iselde Varrow) say "Come back at level N."
+instead. Nothing earned is lost below a gate: pass XP, faction reputation (quiet: no lines), wardrobe looks, Conquest Tokens and rift
+cells still count.
+
+| System | Level | Why that level | Enforced in |
+|---|---|---|---|
+| Season Pass | 10 | progress counts from level 1; the window waits for the first minutes | `seasonpass.lua` opcode (`ChaosSeasonPassCore.levelGate`) |
+| Loadouts | 15 (was 8) | saved builds mean little before the first passive points (12) | `loadouts.lua` (window explains, saving and switching refused) |
+| Charms | 15 (was 8) | after the first systems of level 8 and the first passive point | `charms.lua` `canChange` |
+| Orb Exchange | 20 (was 8) | the orbs are for the Crafting Bench, which opens at 20 | `orbexchange.lua` orders |
+| Professions | 20 | the first levels are for hunting; stock fishing stays open | `professions.lua`: opcode, gathering, flaying, the Angling roll |
+| Transmog | 30 | the fee starts at 2000 gold; looks still go into the wardrobe | `transmog.lua` opcode (`ChaosTransmogCore.levelGate`) |
+| Hideout | 30 | depot, stash and dummies are in every town | `hideout.lua`: opcode (all but `leave`), `M.enter` (portal, enter, visit) |
+| The Gambler | 40 | early gold goes to supplies; the Next Goals band 50 points to him | `gamble.lua` opcode, `mordecai_ashwager.lua` |
+| Factions | 40 | contracts and quartermasters are mid game; reputation counts quietly before | `factions.lua` opcode and `F.gain` (quiet), `chaos_faction_npc.lua` |
+| Conquest Vendor | 50 | tokens come mostly from bosses and clears; uniques are past their open ramp | `conquest.lua` opcode, `iselde_varrow.lua` |
+| Guild Wars | 50 | PvP band; the kill rules keep their own floor (`minVictimLevel` 100) | `guildwar.lua` `handle` (wars, board, guild boss tab) |
+| Rift Atlas | 100 | the first rift tier's level | `atlas.lua` opcode |
+| Waystone Atlas | 1100 | the first waystone tier's level | `waystone_atlas.lua` opcode |
+
+Gates that already existed and now also have a table entry: Nemesis 50 (`birth.minLevel`), Ember Descent 100, Battleground 100,
+Scorched Marches 150, Raid: Ashen Sepulchre 800. Not gated on purpose (core or a help for new players): spells, Skills, Party, Party
+Finder, chat, Bank, depot, Supply Stash, Daily Reward, Next Goals, Help and How it works, Codex, Item Finder, Store, Options, Outfit,
+Cosmetics, Mentors (an apprentice needs it from level 1; the mentor side has its own levels), Referral, Candlemarks, Ember Cache,
+Weekly Chest (it drops the activities a character has not reached), Chronicle, Boss Spawns (the world boss has its own level).
+`tests/unlocks_test.lua` checks that each engine file reads its own field and that the bands stay gentle (economy by 15, crafting
+band by 30, gambling and PvP from 40); each system's own test checks the refusal below the level and the window at it.
+
+**Two storages per mask (O368).** A storage holds 31 bits, so the table had a cap of 30 entries, and it is full now. Entries
+31-50 live in `+3` (unlocked) and `+4` (seen): `ChaosUnlocks.getMask` / `setMask` split a mask at 2^30 (an exact number up to 2^50
+in LuaJIT and Lua 5.3). The second storage is only written once it holds a bit, so the stored values of today's characters do not
+change.
 
 **What the server does.**
 - Login: a character with no storage yet gets masks: above `quietAbove` (20) every entry of its level is unlocked and seen,
@@ -27015,7 +27429,7 @@ not a `ChaosOpcodes` value and not named by any client module other than `client
 **Storages 7103000-7103009** are used by no other file (the test scans `data/scripts/chaos` and `data/lib`).
 
 **Client** (`client/MANIFEST.md`, `client_chaos_topbar`): a menu entry whose key the table names is hidden until unlocked; the next
-one shows grey with a padlock and "Level N" and says "Unlocks at level N" when clicked; its hotkey (Alt+J, Alt+E, Alt+P) says the
+one shows grey with a padlock and "Level N", has the tooltip "Unlocks at level N" (O368) and says it when clicked; its hotkey (Alt+J, Alt+E, Alt+P) says the
 same instead of opening. On `new`: a big text "New: <title>!", a gold "New" badge on the entry (and a gold category button)
 until it is opened, and a small window with the two lines, Go and Close. The option "Show the whole menu" (System > Options >
 Interface, client base patch `0154`, `showWholeMenu`, off by default, kept in g_settings by client_settings like the other options)
@@ -27617,12 +28031,19 @@ monster levels, what drops, if you die, how often); the Next Goals rows and the 
   Cache, season, factions and Gambler numbers, weekdays and times; world boss hours (`Chaos.worldBoss`), pocket boss tries; the death rule
   (`gentledeath_config.lua`: items kept, experience loss by level, first death of the day). The generator refuses to run when
   `keepItems` is off, because the cards say nobody loses items.
+- **New-player windows (follow-up).** 22 more cards, one per window a level 1-50 player opens: passive tree (`Chaos.passive`,
+  `respec_config.lua`), spellbook, bestiary and kill tasks (`bestiary_config.lua`), professions, charms, achievements
+  (`achievements_data.lua`: count, groups, hidden), loadouts, town portal, stash (`stash_config.lua`, `pact_config.lua` limits),
+  auto loot (`Chaos.autoloot`), loot filter, item finder, codex, party finder, mentors, guild, season pass, hideout, transmog,
+  nemesis, Chaos Pact, store. Two claims are checked by the generator: the town portal card stops when `partyCanUse` is off, the
+  transmog card when `fee.remove` is not 0. The spellbook, codex and store cards have no numbers.
 - **Hand-written** (`tools/howitworks_config.lua`): the plain sentences in English and pt-BR with `{name}` places, which client window gets
   the `?`, which unlock keys and goal keys open the card, and the "no real death" lines of the modes that catch a lethal hit (arena,
   battleground, Descent, raid, siege, pocket boss; see "Instance limits" and "Death recap"). These claims are checked by reading the code
   and README, not by a test: when a mode's death rule changes, change its sentence.
-- **Cards without a hand-written one.** An unlock entry that no card claims (crafting, salvage, pets, market, passive tree) gets a card made
-  from the entry: its level and its own two lines (en and pt-BR).
+- **Cards without a hand-written one.** An unlock entry that no card names goes to the hand-written card of the same key, else to
+  the hand-written card whose window the entry opens (`go.open`): a new gate of a system that has a card opens that card. The
+  rest (crafting, salvage, pets, market) get a card made from the entry: its level and its own two lines (en and pt-BR).
 - **Not covered, on purpose.** Tower Defense and the roulette have no window of their own (a base event room and an NPC), so no `?`.
   The Rift card sits on the Rift Atlas window (the rift itself only has a HUD).
 - **Known mismatch found.** The unlock card of the Infinity Tower says "a boss every fifth" floor; `bossEvery` is 10 (`milestoneEvery` 5 is
@@ -27630,6 +28051,26 @@ monster levels, what drops, if you die, how often); the Next Goals rows and the 
 - **Tests.** `tests/howitworks_gen_test.lua` (helpers, placeholder rules, every unlock entry and window module has a card, en and pt-BR use the
   same places, a changed config changes the text, byte stability, the committed file is current); client `howcore_test.lua` (real data: rows,
   order, no leftover `{`, pt-BR converts to cp1252, lookups) and `howitworks_test.lua` (mocked widgets). Not run in a client.
+
+## Help search and beginner guide (O373) (`tools/gen_guide_data.lua`, `tools/guide_config.lua`)
+
+The same cards, reused twice for a new player: the client's help search (`game_helpsearch`, System > Help Search, Alt+F)
+and the website's beginner guide (`page?plugin=chaos&p=guide`, "Comece aqui").
+
+- **Install.** Nothing on the server. `cd server && luajit tools/gen_guide_data.lua` writes
+  `client/overlay/modules/game_helpsearch/helpsearch_data.lua` and `website/overlay/plugins/chaos/guide/guide_data.json`
+  (commit both); `--check` exits 1 when one is stale (CI, LuaJIT and Lua 5.3, byte-identical). Run it after a change to
+  the cards, `unlocks_config.lua`, `tools/guide_config.lua` or the client's top menu.
+- **Derived.** The cards come from `tools/gen_howitworks_data.lua` (`Gen.make`, not from the client file, so the guide never
+  lags behind). A card's level: the lowest level of its unlock entries, else the first "Level N+" of its "who" row, else
+  any level. Its menu path: the entry of `client_chaos_topbar/chaos_topbar.lua` CATEGORIES with its unlock entry's menu
+  text or its window module, else the entry its module adds itself (`ChaosTopBar.addEntry` in `game_x/x.lua`).
+- **Hand-written** (`tools/guide_config.lua`): the intro, the first steps (a card key and a one-line tip each, in order),
+  extra search words per card for the client and the website headings. No number is typed there.
+- **Order of the guide.** First steps, then every other card by level (lowest first, card order inside a level), then
+  the cards of any level. The generator stops on an unknown card in the steps or the words, or a step listed twice.
+- **Tests.** `tests/guide_gen_test.lua` (level sentences, menu parser, the order on synthetic data, every real card
+  placed once); client `game_helpsearch/helpcore_test.lua`, `helpsearch_test.lua`; website `tests/chaos_guide_page_test.php`.
 
 
 ## Imported hunts (O335)

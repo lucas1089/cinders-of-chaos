@@ -596,6 +596,28 @@ has(other.messages[#other.messages], "Use a pick", "the right tool is named")
 eq(P.onTool(other, {getId = function() return 2553 end}, newItem(1234, {x = 500, y = 499, z = 7}), {x = 500, y = 499, z = 7}),
 	false, "the stock pick keeps its own uses")
 
+-- O368: below cfg.minLevel nothing of the professions answers (the window, gathering, flaying, the Angling roll)
+do
+	eq(cfg.minLevel, 20, "professions open at level 20")
+	local young = newPlayer(9, cfg.minLevel - 1, 500, 501)
+	events.ChaosProfessionsLogin.onLogin(young)
+	young.inv[2553] = 1
+	sent = {}
+	events.ChaosProfessionsExtended.onExtendedOpcode(young, 195, json.encode({action = "open"}))
+	local gotState = false
+	for _, s in ipairs(sent) do
+		if s.action == "state" then gotState = true end
+	end
+	check(not gotState, "no window state below the level")
+	has(young.messages[#young.messages], "level " .. cfg.minLevel, "opening names the level")
+	check(P.onTool(young, {getId = function() return 2553 end}, nodeOnMap, {x = 501, y = 500, z = 7}), "a pick on a vein: handled")
+	eq(P.channels[young:getId()], nil, "no gathering below the level")
+	has(young.messages[#young.messages], "level " .. cfg.minLevel, "gathering names the level")
+	eq(P.onFishCast(young, nil, nil, {x = 500, y = 500, z = 7}), nil, "no Angling roll below the level")
+	young.level = cfg.minLevel
+	check(P.levelOk(young), "open at the level")
+end
+
 -- flaying: a beast corpse is tagged at the death
 local wolf = {name = "wolf", getMaster = function() return nil end, getName = function() return "Wolf" end,
 	getType = function() return {experience = function() return 18 end, maxHealth = function() return 25 end} end}

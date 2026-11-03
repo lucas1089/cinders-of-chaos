@@ -429,6 +429,7 @@ function terminate()
   disconnect(UIWidget, { onStyleApply = onStyleApply })
   unwrapTooltip()
   unwrapPopupMenu()
+  if ChaosAltHelp then ChaosAltHelp.stop() end -- althelp.lua: the shared Alt poll
   _G.ChaosTheme = nil
   ChaosTheme = nil
 end

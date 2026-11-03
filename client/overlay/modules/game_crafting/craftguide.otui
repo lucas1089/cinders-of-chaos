@@ -1,0 +1,111 @@
+// Crafting Guide (craftguide.lua): orbs and gems explained, opened by the Guide button of the crafting bench.
+
+CraftGuideHead < UILabel
+  height: 16
+  margin-top: 10
+  font: verdana-11px-rounded
+  color: #e8b84a
+  text-align: left
+  phantom: true
+
+CraftGuideText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: topLeft
+  text-wrap: true
+  text-auto-resize: true
+  margin-top: 2
+  phantom: true
+
+CraftGuideLine < UIWidget
+  height: 34
+  margin-top: 10
+  phantom: true
+
+  UIItem
+    id: icon
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 8
+    margin-top: 2
+    height: 14
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: note
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 2
+    height: 14
+    font: verdana-11px-antialised
+    color: #9fdc7f
+    text-align: left
+    phantom: true
+
+ChaosMainWindow
+  id: craftGuideWindow
+  size: 620 560
+  $mobile:
+    width: 900
+    height: 536
+  !text: tr('Crafting Guide')
+  @onEscape: modules.game_crafting.hideGuide()
+
+  ChaosTabButton
+    id: orbsTab
+    anchors.top: parent.top
+    anchors.left: parent.left
+    !text: tr('Orbs')
+    @onClick: modules.game_crafting.setGuideTab('orbs')
+
+  ChaosTabButton
+    id: gemsTab
+    anchors.top: parent.top
+    anchors.left: orbsTab.right
+    margin-left: 4
+    !text: tr('Gems')
+    @onClick: modules.game_crafting.setGuideTab('gems')
+
+  UIScrollArea
+    id: list
+    anchors.top: orbsTab.bottom
+    anchors.left: parent.left
+    anchors.right: scroll.left
+    anchors.bottom: closeButton.top
+    margin-top: 4
+    margin-bottom: 8
+    margin-right: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: scroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: scroll
+    anchors.top: orbsTab.bottom
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 4
+    margin-bottom: 8
+    step: 24
+    pixels-scroll: true
+
+  ChaosButton
+    id: closeButton
+    !text: tr('Close')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    @onClick: modules.game_crafting.hideGuide()

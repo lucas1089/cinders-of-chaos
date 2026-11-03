@@ -14,7 +14,8 @@
 --                     Excision, Reforging; none = a random one) | gem {op = "remove"|"shatter", socket, path, id, sig} | clear
 --   server -> client  info {orbs = [{key, id, clientId, name, text, keyText}], reasons = {code -> text}}   sent when the bench
 --                            opens (an extended opcode message above 8192 bytes is dropped by the engine, so what never
---                            changes is sent once)
+--                            changes is sent once), followed by gemguide (ChaosGems.guide(): the gem table of the Guide
+--                            window)
 --                     state {open, counts = {orb key -> how many the player has}, item = {path, clientId,
 --                            name, kind ("riftkey" for a key), rarity, rarityName, level, mods = [{group, key, text, tier, side,
 --                            lo, hi, bound, power, implicit}], maxMods, quality, qualityCap, ruined, corrupted, binds = {n, max}, pick = {orb key
@@ -199,6 +200,9 @@ local function sendInfo(player)
 			keyText = orb.keyText, wsText = orb.wsText}
 	end
 	Chaos.send(player, OPCODE, "info", {orbs = orbs, reasons = C.reasons})
+	if ChaosGems and ChaosGems.guide then
+		Chaos.send(player, OPCODE, "gemguide", ChaosGems.guide()) -- the gem table of the bench's Guide window
+	end
 end
 
 -- gear, Rift Keys and waystones

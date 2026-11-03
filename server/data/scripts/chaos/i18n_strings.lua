@@ -128,6 +128,8 @@ return {
 			"Bem-vindo de volta! Por %d dias: +%d%% de experiência, +%d%% de loot e +%d%% de drops de tokens.",
 		["Catch-up: +%d%% experience from monsters until you near level %d, your account's best."] =
 			"Recuperação: +%d%% de experiência de monstros até chegar perto do level %d, o melhor da sua conta.",
+		["Newcomer bonus: +%d%% experience from monsters. It shrinks with every level and ends at level %d."] =
+			"Bônus de novato: +%d%% de experiência de monstros. Diminui a cada nível e acaba no nível %d.",
 		["Your stamina is below %d hours: monsters give %d%% experience and %d%% loot. Stamina comes back faster while you are offline."] =
 			"Sua stamina está abaixo de %d horas: monstros dão %d%% de experiência e %d%% de loot. A stamina volta mais rápido enquanto você está offline.",
 		-- Ember Cache, Daily Spark and the day book (embercache.lua)
@@ -1124,6 +1126,7 @@ return {
 
 		-- Achievements: categories, descriptions (achievements_data.lua; names and titles stay English), window and toasts (achievements_core.lua)
 		["Combat & Leveling"] = "Combate e Níveis",
+		["Level Milestones"] = "Marcos de Nível",
 		["Monsters"] = "Monstros",
 		["World Bosses"] = "World Bosses",
 		["Rifts"] = "Rifts",
@@ -1161,6 +1164,20 @@ return {
 		["Reach level 500."] = "Alcance o nível 500.",
 		["Reach level 700."] = "Alcance o nível 700.",
 		["Reach level 1000."] = "Alcance o nível 1000.",
+		["Reach level 800."] = "Alcance o nível 800.",
+		["Reach level 900."] = "Alcance o nível 900.",
+		["Reach level 1100."] = "Alcance o nível 1100.",
+		["Reach level 1200."] = "Alcance o nível 1200.",
+		["Reach level 1300."] = "Alcance o nível 1300.",
+		["Reach level 1400."] = "Alcance o nível 1400.",
+		["Reach level 1500."] = "Alcance o nível 1500.",
+		["Reach level 1600."] = "Alcance o nível 1600.",
+		["Reach level 1700."] = "Alcance o nível 1700.",
+		["Reach level 1800."] = "Alcance o nível 1800.",
+		["Reach level 1900."] = "Alcance o nível 1900.",
+		["Reach level 2000."] = "Alcance o nível 2000.",
+		["Reach level 2100."] = "Alcance o nível 2100.",
+		["Reach level 2200."] = "Alcance o nível 2200.",
 		["Ascend into one of your class's two paths."] = "Ascenda para um dos dois caminhos da sua classe.",
 		["Clear your vocation's trial on Normal."] = "Vença o trial da sua vocação no Normal.",
 		["Clear your vocation's trial on Cruel."] = "Vença o trial da sua vocação no Cruel.",
@@ -3558,6 +3575,20 @@ return {
 		["Shatterborn"] = "Nascido do Estilhaço",
 		["Into the Abyss"] = "Rumo ao Abismo",
 		["The Thousandth Step"] = "O Milésimo Passo",
+		["Tempered in the Dark"] = "Temperado no Escuro",
+		["Nine Hundred Embers"] = "Novecentas Brasas",
+		["Will Unbending"] = "Vontade Inflexível",
+		["Forged in the Grave"] = "Forjado na Cova",
+		["The Thirteenth Bell"] = "O Décimo Terceiro Sino",
+		["Sworn to the Cinders"] = "Jurado às Cinzas",
+		["The Long Dusk"] = "O Longo Crepúsculo",
+		["Crown of Hollows"] = "Coroa dos Vazios",
+		["Still Smoldering"] = "Ainda em Brasa",
+		["Bound to the Pyre"] = "Preso à Pira",
+		["Past the Last Light"] = "Além da Última Luz",
+		["Two Thousand Fires"] = "Dois Mil Fogos",
+		["Where Stars Die"] = "Onde as Estrelas Morrem",
+		["The Summit of Ruin"] = "O Cume da Ruína",
 		["Ascended"] = "Ascendido",
 		["Trial by Fire"] = "Prova de Fogo",
 		["No Mercy Asked"] = "Sem Pedir Clemência",
@@ -6245,6 +6276,10 @@ return {
 			"Mais experiência, loot e drops de tokens para jogadores que voltam.",
 		["More experience from monsters below your account's best level."] =
 			"Mais experiência dos monstros abaixo do melhor nível da sua conta.",
+		["More experience from monsters for new adventurers; it fades with the level."] =
+			"Mais experiência dos monstros para novos aventureiros; diminui com o nível.",
+		["+%d%% experience from monsters for new adventurers. It shrinks with every level and ends at level %d."] =
+			"+%d%% de experiência dos monstros para novos aventureiros. Diminui a cada nível e acaba no nível %d.",
 		["Less experience and loot until your stamina comes back."] =
 			"Menos experiência e loot até a sua stamina voltar.",
 		["Health and mana come back faster."] =
@@ -8530,5 +8565,30 @@ return {
 		["Forgemaster Brannoc, next to the temple of Mirewake"] = "Forgemaster Brannoc, ao lado do templo de Mirewake",
 		["Cantor Velith, next to the temple of Bellwatch"] = "Cantor Velith, ao lado do templo de Bellwatch",
 		["Elder Bramwyn, next to the temple of Thornmere"] = "Elder Bramwyn, ao lado do templo de Thornmere",
+		-- O368: new player level gates (the systems refuse below their level; their NPCs say it too)
+		["The Gambler opens at level %d."] = "The Gambler abre no nível %d.",
+		["Professions open at level %d."] = "As profissões abrem no nível %d.",
+		["Transmog opens at level %d."] = "O Transmog abre no nível %d.",
+		["The hideout opens at level %d."] = "O esconderijo abre no nível %d.",
+		["Factions open at level %d."] = "As facções abrem no nível %d.",
+		["Guild wars open at level %d."] = "As guerras de guilda abrem no nível %d.",
+		["The Conquest vendor opens at level %d."] = "O vendedor de Conquest abre no nível %d.",
+		["The Rift Atlas opens at level %d."] = "O Rift Atlas abre no nível %d.",
+		["The Waystone Atlas opens at level %d."] = "O Waystone Atlas abre no nível %d.",
+		["The Season Pass opens at level %d."] = "O Season Pass abre no nível %d.",
+		["Come back at level %d. Your gold buys potions for now."] =
+			"Volte no nível %d. Por enquanto, o seu ouro compra poções.",
+		["Come back at level %d. %s takes no oaths from the untried."] =
+			"Volte no nível %d. %s não aceita juramentos de quem não foi testado.",
+		["Come back at level %d. Keep the tokens you earn until then."] =
+			"Volte no nível %d. Guarde os tokens que ganhar até lá.",
+		-- Level milestones (O378, milestones.lua, milestones_config.lua texts; "Level %d" and the full backpack line are
+		-- above)
+		["Milestone reached. Title: %s. Milestone Cache: %s."] =
+			"Marco alcançado. Título: %s. Milestone Cache: %s.",
+		["Next milestone: level %d."] =
+			"Próximo marco: nível %d.",
+		["%s reached level %d and earned the title %s."] =
+			"%s alcançou o nível %d e ganhou o título %s.",
 	},
 }

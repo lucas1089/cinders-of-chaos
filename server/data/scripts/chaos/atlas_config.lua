@@ -52,6 +52,9 @@ local cfg = {
 	opcode = 210,
 	table = "chaos_rift_atlas",
 	requestMs = 400, -- rate limit of the window's requests (ratelimit.lua)
+	-- O368: the window needs this character level: the first rift tier's (rift_config.lua tiers[1].minLevel; the points
+	-- come from sealed rifts). tests/riftatlas_test.lua checks the two match; unlocks_config.lua key "riftatlas"
+	minLevel = 100,
 
 	-- ------------------------------------------------------------------ the completion grid
 	-- Points come only from FIRST completions, so the grid is finite and visible:

@@ -771,8 +771,9 @@ local nextCid = 0x10000000
 local function newPlayer(guid, name, account, pos)
 	nextCid = nextCid + 1
 	local p = {cid = nextCid, guid = guid, name = name, account = account, pos = pos or {x = 100, y = 100, z = 7}, st = {}, msgs = {},
-		sends = {}, events = {}, group = 1, infight = false, pz = false}
+		sends = {}, events = {}, group = 1, infight = false, pz = false, level = 100}
 	function p:getId() return self.cid end
+	function p:getLevel() return self.level end
 	function p:getGuid() return self.guid end
 	function p:getName() return self.name end
 	function p:getAccountId() return self.account end
@@ -850,6 +851,27 @@ local bo = newPlayer(2, "Bo", 20)
 local cy = newPlayer(3, "Cy", 30)
 events.ChaosHideoutLogin.onLogin(ana)
 ok(ana.events.ChaosHideoutOpcode, "opcode event registered at login")
+
+-- O368: below cfg.minLevel no window, no entering, no visiting
+do
+	eq(cfg.minLevel, 30, "the hideout opens at level 30")
+	local young = newPlayer(9, "Young", 90)
+	young.level = cfg.minLevel - 1
+	local before = #sent
+	local r = req(young, "open")
+	ok(r and r.ok == false and r.text:find("level " .. cfg.minLevel, 1, true), "opening names the level")
+	for i = before + 1, #sent do
+		ok(sent[i].action ~= "state", "no state below the level")
+	end
+	r = req(young, "enter")
+	eq(r, nil, "an enter request below the level gets no answer")
+	local entered, why = M.enter(young, young.guid)
+	eq(entered, false, "no entering below the level")
+	ok(tostring(why):find("level " .. cfg.minLevel, 1, true), "the reason names the level")
+	eq(M.enter(young, ana.guid), false, "no visiting below the level")
+	young.level = cfg.minLevel
+	ok(M.levelOk(young), "open at the level")
+end
 
 -- open: the catalogue, themes and permissions
 req(ana, "open")

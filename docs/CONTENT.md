@@ -144,6 +144,20 @@ docs/MAP_GUIDE.md "Content plans"). Monsters by count, the most first; Parties h
 | brinescar_strand | 390-450 | waste | Saltkin Raider, Saltkin Looter, Saltkin Plunderer, Bony Sea Devil | 12 | brinescar_wreck_cache |
 | rustcog_warrens | 420-480 | cave | Mountain Goblin, Enforced Mountain Goblin, Mechanic Goblin, Bat Goblin, Mounted Warrior Goblin | 11 | - |
 | mossgrave_tangle | 450-506 | forest | Rootling Amber Shaper, Rootling Bug Tracker, Rootling Nutshell, Mirethorn Hexer, Waterglow Conjurer | 11 | - |
+| thistlewood_hollow | 6-12 | forest | Goblin, Goblin Scavenger, Troll, Swamp Troll, Wolf, Bear | 4 | - |
+| copperdelve_mine | 11-17 | cave | Dwarf, Dwarf Soldier, Dwarf Miner, Larva, Carrion Worm | 4 | - |
+| ashgrave_barrow | 18-26 | crypt | Crypt Shambler, Ghost, Bonelord, Mummy, Tomb Servant | 4 | - |
+| murkreed_fen | 24-34 | swamp | Lancer Beetle, Swarmer, Acid Blob, Death Blob, Sacred Spider | 4 | - |
+| chitinmaw_warren | 44-56 | cave | Waspoid, Crawler, Spitter, Drillworm, Brimstone Bug | 5 | - |
+| scalewatch_bastion | 50-62 | hall | Lizard Legionnaire, Lizard Dragon Priest, Lizard High Guard | 5 | - |
+| anvilmourn_wastes | 1500-1650 | waste | Redmane Anvilbreaker, Cinderskull Reaver, Ashveil Hierarch, Hollowhorn, Bloodantler Fiend | 7 | - |
+| oathgrave_ossuary | 1750-1900 | catacomb | Gravecrown Oathbreaker, Cinderhorn Juggernaut, Wraithbone Stalker, Ironmask Warbreaker, Gnarlback | 7 | - |
+| pyrecrown_caldera | 1900-2100 | lava | Pyre Stork, Mirecoil Wyrm, Wraithbone Stalker, Gnarlback, Gnawbone Swarm, Pyrewing Tyrant | 7 | - |
+
+**Hall coverage (O375, 2026-11-03).** The last nine rows: six small hunts of levels 6-62 for the ground floor of the hall
+(53-113 monsters, 1,300-2,750 walkable tiles, packs of 2 below level 35) and three late hunts of 1500-2100 for floor 5
+(150-259 monsters). With them every level 8-100 has 5 hall hunts within 0.7-1.3 x L (was 3) and every level 1300-2200
+has 5 within 0.8-1.1 x L (was 4 at 2126-2200). server/README.md "Hall coverage (O375)".
 
 Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
 monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.
@@ -178,8 +192,22 @@ Revenant and Cinderskull Reaver in the chasm).
 | 1000+ | the Cinderheart; generated areas; **The Last Ember** and 4 more tales up to 2000 | nothing before; now five tales |
 
 The base world has 35 quest lines with 310 missions in its quest log, renamed at install by `worldtexts`. They were
-written for low and mid levels. Our achievements: 173 in 10 groups, mostly counters. Bestiary kill tasks and bounty
+written for low and mid levels. Our achievements: 189 in 11 groups, mostly counters. Bestiary kill tasks and bounty
 contracts cover every band but are tasks without a story.
+
+## Level milestones (O378)
+
+From 700 the leveling is flat: 10-14 minutes a level, about 290 hours to 2200. Now every 100 levels from 800 to 2200 is
+a step. Each one gives:
+
+- a level achievement with a title (800 the Tempered ... 2200 Apex of Chaos), in the new category Level Milestones;
+- a Milestone Cache of orbs, once per character: 5 Upheaval and 2 Fate at 800, up to 12 / 5 / 2 Grafting at 2200;
+- a LEVEL MILESTONE toast and one short server line;
+- a challenge in Next Goals: an Infinity Tower floor (30 at 800, 100 at 2200) or pocket boss kills at 1000 / 1500 / 2000;
+- a level-up effect at 1000, 1500 and 2000; all 15 give the title Hundredfold and the Summit Seal kill effect.
+
+Next Goals shows the next milestone, its title and its cache. Characters already past a milestone get the titles at
+login, not the caches. Full table: server/README.md "Level milestones (O378)".
 
 ## Tales
 
@@ -244,6 +272,30 @@ Walked from the tutorial, the welcome and the new-player scripts. Dead ends foun
 The hints come once each, as a message and a toast, in English or Brazilian Portuguese. Characters above level 20 when
 the module first sees them get every hint marked as given, silently. Files: `server/data/scripts/chaos/firsthour*.lua`,
 `server/tests/firsthour_test.lua`.
+
+### Welcome path (O370)
+
+A new character also walks a short welcome path: seven first steps, one at a time, shown first in the goal tracker
+("Welcome Path 2/7"), each with a hint and a small reward. The order teaches the basics:
+
+| Step | Done when | Reward |
+|---|---|---|
+| Cast a spell | a spell is cast (by hand, or by the Helper after Auto setup) | 300 gold |
+| Slay 20 monsters | 20 kills while the step is open (summons do not count) | 500 gold, potions of the class role |
+| Wear a new piece of gear | a worn item that is not from the starter kit (loot, a shop, the Gambler) | 500 gold |
+| Spend your first passive point | a point spent (it comes at level 12; the row shows the level until then) | 800 gold |
+| Finish a Bounty contract | a paid contract | 1,000 gold, 2 Orbs of Awakening |
+| Use an orb at the Crafting Bench | any orb used, from level 20 when the bench opens (the Orbs of Awakening work on a plain kit piece) | 500 gold, 2 Orbs of Upheaval |
+| Open Next Goals | the Next Goals window opened (a click on the row does it) | 1,000 gold, potions |
+
+Once per character. "Skip welcome path" under the tracker row ends it (two clicks). Characters above level 20 when the
+path first sees them never get it; one at or below it passes the steps it has already done without a reward. The
+first-hour hints above and the Next Goals goals stay as they are. Files: `server/data/scripts/chaos/welcomepath*.lua`,
+`server/tests/welcomepath_test.lua`; server/README.md "Welcome path (O370)".
+
+Also for new characters: the newcomer bonus, +50% monster experience at level 8 that shrinks to 0 at level 150 (buff
+"Newcomer"; server/README.md "Time-friendly progression (catchup)"), and PvP protection below level 50 on a production
+server (`server/tools/prod_config.py`).
 
 ## Lore
 

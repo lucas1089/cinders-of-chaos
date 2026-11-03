@@ -382,6 +382,7 @@ function init()
     return
   end
   window = ui
+  pcall(function() modules.game_howitworks.attach(window, 'itemfinder') end) -- game_howitworks: the ? button
   window:hide()
   window.searchEdit.onTextChange = safe('search', onSearchChange)
   window.listPager.prevButton.onClick = function() if results then doSearch(results.p - 1) end end

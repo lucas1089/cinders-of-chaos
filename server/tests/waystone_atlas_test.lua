@@ -229,7 +229,8 @@ do
 	local MAP3 = {x = 33350, y = 33050, z = 7} -- map 3 (base tier II, low band)
 	local players = {}
 	local function mkPlayer(guid, cid, pos)
-		local p = {guid = guid, cid = cid, gold = 1000000, orbs = 3, msgs = {}, pos = pos}
+		local p = {guid = guid, cid = cid, gold = 1000000, orbs = 3, msgs = {}, pos = pos, level = 1500}
+		function p:getLevel() return self.level end
 		function p:getGuid() return self.guid end
 		function p:getId() return self.cid end
 		function p:isPlayer() return true end
@@ -300,6 +301,17 @@ do
 	local function last() return sent[#sent] end
 	local function op(pl, action, data)
 		events.ChaosWaystoneAtlasExtended.onExtendedOpcode(pl, 159, {action = action, data = data})
+	end
+	-- O368: below the level (the first waystone tier's) the window does not open
+	eq(cfg.minLevel, tcfg.tiers[1].level, "the atlas opens with the first waystone tier")
+	do
+		local before = #sent
+		p.level = cfg.minLevel - 1
+		op(p, "open")
+		eq(#sent, before, "nothing sent below the level")
+		ok(p.msgs[#p.msgs] and p.msgs[#p.msgs]:find("level " .. cfg.minLevel, 1, true), "it names the level")
+		p.level = 1500
+		p.msgs = {}
 	end
 	op(p, "open")
 	eq(sent[#sent - 1].action, "tree", "tree first")

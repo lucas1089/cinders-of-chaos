@@ -531,6 +531,7 @@ function init()
   local ok, ui = pcall(g_ui.displayUI, 'partyfinder')
   if ok and ui then
     window = ui
+    pcall(function() modules.game_howitworks.attach(window, 'partyfinder') end) -- game_howitworks: the ? button
     window:hide()
     for _, t in ipairs({ { 'browse', 'Browse' }, { 'my', 'My Group' } }) do
       local b = g_ui.createWidget('PartyFinderTab', window.tabs)

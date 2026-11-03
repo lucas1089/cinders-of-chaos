@@ -1,0 +1,229 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "scalewatch_bastion",
+  "name": "Scalewatch Bastion",
+  "biome": "hall",
+  "size": [
+    114,
+    94
+  ],
+  "floors": 1,
+  "level": [
+    50,
+    62
+  ],
+  "seed": 37607,
+  "origin": {
+    "x": 16640,
+    "y": 15700,
+    "z": 9
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "legion_court",
+      "floor": 1,
+      "size": [
+        23,
+        17
+      ],
+      "place": "center"
+    },
+    {
+      "id": "priest_chapel",
+      "floor": 1,
+      "size": [
+        23,
+        17
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "guard_walk",
+      "floor": 1,
+      "size": [
+        23,
+        17
+      ],
+      "place": "south"
+    },
+    {
+      "id": "drake_shrine",
+      "floor": 1,
+      "size": [
+        23,
+        17
+      ],
+      "place": "east"
+    },
+    {
+      "id": "barracks",
+      "floor": 1,
+      "size": [
+        23,
+        17
+      ],
+      "place": "northwest"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "legion_court",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "barracks",
+      "width": 3
+    },
+    {
+      "from": "legion_court",
+      "to": "priest_chapel",
+      "width": 3
+    },
+    {
+      "from": "legion_court",
+      "to": "guard_walk",
+      "width": 3
+    },
+    {
+      "from": "priest_chapel",
+      "to": "drake_shrine",
+      "width": 3
+    },
+    {
+      "from": "guard_walk",
+      "to": "drake_shrine",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "legion_court",
+      "monster": "Lizard Legionnaire",
+      "count": 13,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "legion_court",
+      "monster": "Lizard Dragon Priest",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "priest_chapel",
+      "monster": "Lizard Dragon Priest",
+      "count": 11,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "priest_chapel",
+      "monster": "Lizard High Guard",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "guard_walk",
+      "monster": "Lizard High Guard",
+      "count": 13,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "guard_walk",
+      "monster": "Lizard Legionnaire",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "drake_shrine",
+      "monster": "Lizard High Guard",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "drake_shrine",
+      "monster": "Lizard Dragon Priest",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "barracks",
+      "monster": "Lizard Legionnaire",
+      "count": 13,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "barracks",
+      "monster": "Lizard High Guard",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "path": [
+        "legion_court",
+        "priest_chapel"
+      ],
+      "monster": "Lizard Legionnaire",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "path": [
+        "legion_court",
+        "guard_walk"
+      ],
+      "monster": "Lizard Dragon Priest",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "path": [
+        "legion_court",
+        "priest_chapel"
+      ],
+      "monster": "Lizard Dragon Priest",
+      "count": 2,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "path": [
+        "priest_chapel",
+        "drake_shrine"
+      ],
+      "monster": "Lizard High Guard",
+      "count": 2,
+      "respawn": 45,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O375 hall coverage, 2026-11-03): a hall hunt for levels 50-62 on floor 7 of the teleport hall (server/README.md \"Hall coverage (O375)\"). 5 hunting zones; monsters Lizard Legionnaire, Lizard Dragon Priest, Lizard High Guard. Display monster: Lizard Legionnaire."
+}

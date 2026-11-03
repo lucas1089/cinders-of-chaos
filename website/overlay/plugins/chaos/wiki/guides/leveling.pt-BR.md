@@ -38,7 +38,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 => @reward | Primeiro contrato | Adventure > Bounty Board: aceite um contrato já no nível 8.
 => @level | Primeiro ponto | Seu primeiro ponto passivo chega no nível 12.
 
-- **Onde caçar.** Na primeira hora, dicas marcam no minimapa as 3 caçadas mais perto do seu nível. Bons começos no salão: Rat (1-6), Orc (5-15), Minotaur (5-15), Cave Rat (5-20), Dwarf Guard (10-25), Haunted Treeling (10-30), Stalker (15-30), Saltkin Mantassin (25-55), Frost Dragon Hatchling (25-75) e Fire Elemental (20-80).
+- **Onde caçar.** Na primeira hora, dicas marcam no minimapa as 3 caçadas mais perto do seu nível. Bons começos no salão: Rat (1-6), Orc (5-15), Minotaur (5-15), Cave Rat (5-20), Dwarf Guard (10-25), Haunted Treeling (10-30), Stalker (15-30), Saltkin Mantassin (25-55), Frost Dragon Hatchling (25-75) e Fire Elemental (20-80). Caçadas pequenas e rápidas, feitas para jogar sozinho: Thistlewood Hollow (6-12), Copperdelve Mine (11-17), Ashgrave Barrow (18-26) e Murkreed Fen (24-34).
 - **Árvore passiva.** Você ganha 1 ponto a cada {{tree.levelsPerPoint}} níveis acima do nível {{tree.startLevel}}. Gaste em Character > Passive Tree. Veja o guia da [Árvore passiva](wiki:guide:tree).
 - **Monstros com nível.** Monstros mágicos (azuis), raros (amarelos) e lendários (laranja) soltam equipamento melhor. Use o que for melhor que o seu.
 - **Combate em bando.** Abates seguidos, cada um até 3 s depois do anterior, dão bônus de experiência: +10% com 4 abates, +20% com 6, +30% com 8 e +40% com 9.
@@ -54,7 +54,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 
 ## Nível 50-150: ascensão e as primeiras fendas
 
-- **Onde caçar.** Wyrm (50-80), Rustheap Golem (60-80), Serpent Spawn (35-105), Dawnfire Asura (20-105), Hellspawn (80-135), Blightwalker (95-150), Usurper Archer (110-140) e Demon Outcast (120-140).
+- **Onde caçar.** Chitinmaw Warren (44-56), Scalewatch Bastion (50-62), Wyrm (50-80), Rustheap Golem (60-80), Serpent Spawn (35-105), Dawnfire Asura (20-105), Hellspawn (80-135), Blightwalker (95-150), Usurper Archer (110-140) e Demon Outcast (120-140).
 - **Arena.** No nível {{arena.minLevel}}, Adventure > Arena. Um dos objetivos da faixa é vencer uma partida.
 - **Bestiário.** Cada estágio (Discovered, Studied, Mastered, Completed) dá experiência bônus contra aquela criatura. Junte 25 criaturas no Bestiário.
 - **Ascensão no nível {{class.ascensionLevel}}.** Fale com o Ascendant Oracle no mercado da sala de teleportes. Junte a Prova de Força ({{ascension.proofPoints}} pontos: monstro raro vale 1, lendário vale 3) e vença uma prova de {{ascension.trialTime}}. Se perder, tente de novo depois de {{ascension.retry}}.

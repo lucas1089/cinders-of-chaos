@@ -41,7 +41,7 @@ Rules for this list:
 | of these: notables / keystone entries / masteries | 123 / 46 / 4 | wiki "Passive tree" tab |
 | Paragon stats | 8 | server/README.md "Paragon" |
 | Charm kinds | 4 shapes + 4 uniques | server/README.md "Charms" |
-| Achievements | 173 in 10 categories | server/README.md "Achievements" |
+| Achievements | 189 in 11 categories | server/README.md "Achievements" |
 | World hunts per band | see section 4 | docs/CONTENT.md |
 | Tales (story quests of our own) | 27 | docs/CONTENT.md |
 | Base quest lines | 35 lines, 310 missions | docs/CONTENT.md |
@@ -299,7 +299,7 @@ Boss systems:
 - **The Gambler.** Sealed gear for gold, stock refreshes every 4 hours (#83). Done.
 - **Conquest Tokens.** Tokens from every boss and clear; a vendor of any unique or set piece you have seen; Omen Keys
   and Ascended Shards of a chosen kind; bad-luck protection on boss, set, raid and monster uniques (#158). Done, not run live.
-- **Achievements.** 173 in 10 categories, 4,170 points; reward track (#26, #75). Done.
+- **Achievements.** 189 in 11 categories, 4,640 points (O378: level milestones); reward track (#26, #75). Done.
 - **Leaderboards.** Weekly boards: world boss, healer, tank, bounty, rifts, class ladder (#13). Done.
 - **Competitive records** for bosses, dungeons and the tower (#135). Done.
 - **The Ashen Chronicle.** Server-wide story per season (#145). Done, not run live.
@@ -524,8 +524,8 @@ Owner art in client pair 26 (things_custom26, published 2026-10-15; switch `Chao
 monster files), six store wings and three boss-drop wings (live), 45 desert plants and a waypoint seal for maps and the
 area planner (in its waste kit; to place in the map editor).
 
-Planned hunting areas (58, in `server/tools/areaplan/plans/`, docs/CONTENT.md; the last 41 are the hall fill of
-2026-10-22):
+Planned hunting areas (80, in `server/tools/areaplan/plans/`, docs/CONTENT.md; 41 are the hall fill of
+2026-10-22, the last nine the O375 hall coverage of 2026-11-03):
 
 | Plan | Levels | Biome |
 |---|---|---|
@@ -595,6 +595,15 @@ Planned hunting areas (58, in `server/tools/areaplan/plans/`, docs/CONTENT.md; t
 | brinescar_strand | 390-450 | waste |
 | rustcog_warrens | 420-480 | cave |
 | mossgrave_tangle | 450-506 | forest |
+| thistlewood_hollow | 6-12 | forest (O375, small) |
+| copperdelve_mine | 11-17 | cave (O375, small) |
+| ashgrave_barrow | 18-26 | crypt (O375, small) |
+| murkreed_fen | 24-34 | swamp (O375, small) |
+| chitinmaw_warren | 44-56 | cave (O375, small) |
+| scalewatch_bastion | 50-62 | hall (O375, small) |
+| anvilmourn_wastes | 1500-1650 | waste (O375) |
+| oathgrave_ossuary | 1750-1900 | catacomb (O375) |
+| pyrecrown_caldera | 1900-2100 | lava (O375) |
 
 Each is four times the first draft (2026-10-14); the four 1000-1500 plans and the two 1500-2000 plans were added the
 same day. Placed, they lift 500-700 from 14 to about 50 parties at once, 700-1000 from 10 to about 46, 1000+ from 0 to

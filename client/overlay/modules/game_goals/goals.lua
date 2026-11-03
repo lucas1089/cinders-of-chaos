@@ -2,8 +2,9 @@
 -- level band, the gear path and hunts of the band and the next unlocks, and a compact tracker on screen. The pure
 -- parts: goalsview.lua (GoalsView, tested by goalsview_test.lua). Menu: Adventure > Next Goals and Adventure > Goal
 -- Tracker (added with ChaosTopBar.addEntry). The "where" buttons open a window or put a mark on the minimap.
---   client -> server  open | close | tracker
---   server -> client  goals {...} (chunked) | tracker {rows} | ascension {rows} | spellquest {rows} | done {text}
+--   client -> server  open | close | tracker | welcomeSkip
+--   server -> client  goals {...} (chunked) | tracker {rows} | ascension {rows} | spellquest {rows} | welcome {...} |
+--                     done {text}
 
 local OPCODE = 178
 local V = GoalsView
@@ -172,7 +173,7 @@ local function trackerLook()
   return isPhone() and TRACKER_PHONE or TRACKER_DESKTOP
 end
 
-local function addTrackerRow(parent, text, look, color, pct)
+local function addTrackerRow(parent, text, look, color, pct, onClick, tooltip)
   local w = g_ui.createWidget('GoalTrackerRow', parent)
   local wrapped, lines = V.wrapLine(text, look.chars)
   w.label:setFont(look.font)
@@ -183,13 +184,35 @@ local function addTrackerRow(parent, text, look, color, pct)
   w.bar:setPercent(pct)
   w.bar:setBackgroundColor(pct >= 100 and '#3f6e24' or '#a3844b')
   if isPhone() then w.bar:setHeight(4) end
-  w.onClick = function() show() end
+  w.onClick = onClick or function() show() end
+  if tooltip and tooltip ~= '' then w:setTooltip(tooltip) end
   return w
+end
+
+-- "Skip welcome path": the first click asks, a second one within SKIP_CONFIRM_MS skips (server welcomepath.lua)
+local SKIP_CONFIRM_MS = 4000
+local skipArmed, skipEvent
+local function resetSkip()
+  skipArmed = false
+  if skipEvent then removeEvent(skipEvent) skipEvent = nil end
+  if tracker and tracker.welcomeSkip then tracker.welcomeSkip:setText(tr('Skip welcome path')) end
+end
+
+local function onSkipClick()
+  if not skipArmed then
+    skipArmed = true
+    tracker.welcomeSkip:setText(tr('Click again to skip'))
+    skipEvent = scheduleEvent(function() skipEvent = nil resetSkip() end, SKIP_CONFIRM_MS)
+    return
+  end
+  resetSkip()
+  send('welcomeSkip')
 end
 
 local function renderTracker()
   if not tracker then return end
-  local shown = trackerEnabled() and (#st.tracker > 0 or #st.ascension > 0 or #st.spellquest > 0) and g_game.isOnline()
+  local shown = trackerEnabled() and (#st.welcome > 0 or #st.tracker > 0 or #st.ascension > 0 or #st.spellquest > 0)
+    and g_game.isOnline()
   tracker:setVisible(shown)
   if not shown then return end
   local look = trackerLook()
@@ -198,9 +221,14 @@ local function renderTracker()
   tracker.title:setHeight(look.titleH)
   tracker.ascTitle:setFont(look.title)
   tracker.sqTitle:setFont(look.title)
+  tracker.goalsTitle:setFont(look.title)
+  tracker.welcomeSkip:setFont(look.font)
   local folded = g_settings.getBoolean(SETTING_FOLDED, false)
+  local hasWelcome = #st.welcome > 0
   local hasGoals, hasAsc, hasSq = #st.tracker > 0, #st.ascension > 0, #st.spellquest > 0
-  if hasGoals then
+  if hasWelcome then
+    tracker.title:setText(V.welcomeTitle(st, folded))
+  elseif hasGoals then
     tracker.title:setText(folded and tr('Next Goals (%d) +', #st.tracker) or tr('Next Goals'))
   elseif hasAsc then
     tracker.title:setText(folded and tr('Ascension (%d) +', #st.ascension) or tr('Ascension'))
@@ -210,34 +238,48 @@ local function renderTracker()
   tracker.rows:destroyChildren()
   tracker.ascRows:destroyChildren()
   tracker.sqRows:destroyChildren()
+  tracker.welcomeRows:destroyChildren()
   if tracker.moreLine then tracker.moreLine:destroy() tracker.moreLine = nil end
-  local take, hidden = V.budget({ #st.tracker, #st.ascension, #st.spellquest }, look.maxRows)
+  local take, hidden = V.budget({ #st.welcome, #st.tracker, #st.ascension, #st.spellquest }, look.maxRows)
+  if not hasWelcome then resetSkip() end
+  tracker.welcomeRows:setVisible(not folded)
+  tracker.welcomeSkip:setVisible(hasWelcome and not folded)
+  tracker.goalsTitle:setVisible(hasWelcome and hasGoals and not folded and take[2] > 0)
   tracker.rows:setVisible(not folded)
-  tracker.ascTitle:setVisible(hasAsc and hasGoals and not folded and take[2] > 0)
+  tracker.ascTitle:setVisible(hasAsc and (hasGoals or hasWelcome) and not folded and take[3] > 0)
   tracker.ascRows:setVisible(not folded)
-  tracker.sqTitle:setVisible(hasSq and (hasGoals or hasAsc) and not folded and take[3] > 0)
+  tracker.sqTitle:setVisible(hasSq and (hasGoals or hasAsc or hasWelcome) and not folded and take[4] > 0)
   tracker.sqRows:setVisible(not folded)
   if folded then
+    tracker.welcomeRows:setHeight(0)
     tracker.rows:setHeight(0)
     tracker.ascRows:setHeight(0)
     tracker.sqRows:setHeight(0)
     scheduleAnchor()
     return
   end
+  for i, r in ipairs(st.welcome) do
+    if i <= take[1] then
+      local text, pct, color = V.ascensionLine(r)
+      local where = r.where
+      local click = V.action(where) and function() runWhere(where) end or nil
+      addTrackerRow(tracker.welcomeRows, text, look, color, pct, click, type(r.hint) == 'string' and r.hint or nil)
+    end
+  end
   for i, r in ipairs(st.spellquest) do
-    if i <= take[3] then
+    if i <= take[4] then
       local text, pct, color = V.ascensionLine(r)
       addTrackerRow(tracker.sqRows, text, look, color, pct)
     end
   end
   for i, r in ipairs(st.ascension) do
-    if i <= take[2] then
+    if i <= take[3] then
       local text, pct, color = V.ascensionLine(r)
       addTrackerRow(tracker.ascRows, text, look, color, pct)
     end
   end
   for i, r in ipairs(st.tracker) do
-    if i <= take[1] then
+    if i <= take[2] then
       local text, pct = V.trackerLine(r)
       addTrackerRow(tracker.rows, text, look, nil, pct)
     end
@@ -309,6 +351,9 @@ local function onMessage(msg)
     renderTracker()
   elseif msg.action == 'spellquest' then
     V.onSpellQuest(st, msg.data)
+    renderTracker()
+  elseif msg.action == 'welcome' then
+    V.onWelcome(st, msg.data)
     renderTracker()
   elseif msg.action == 'done' then
     status(V.doneText(msg.data))
@@ -492,6 +537,7 @@ function init()
   tracker.title.onMousePress = onTitlePress
   tracker.title.onMouseMove = onTitleMove
   tracker.title.onMouseRelease = onTitleRelease
+  tracker.welcomeSkip.onClick = onSkipClick
   anchorTracker()
   watchGeometry(true)
 
@@ -502,6 +548,7 @@ end
 
 function terminate()
   if anchorEvent then removeEvent(anchorEvent); anchorEvent = nil end
+  if skipEvent then removeEvent(skipEvent); skipEvent = nil end
   pcall(watchGeometry, false)
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)

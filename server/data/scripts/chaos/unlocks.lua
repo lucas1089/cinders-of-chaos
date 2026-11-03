@@ -32,6 +32,34 @@ local function key(name)
 	return s.base + s[name]
 end
 
+-- A mask of the character (O368: up to 50 entries). A storage holds 31 bits, so bits 1-30 live in `name` (unlocked,
+-- seen) and bits 31-50 in `name .. "2"`; -1 = never stored. A number up to 2^50 is exact in LuaJIT and Lua 5.3.
+local SPLIT = 2 ^ 30
+
+function U.getMask(player, name)
+	local lo = player:getStorageValue(key(name))
+	if lo < 0 then
+		return lo
+	end
+	local s = C().storage
+	local hi = s[name .. "2"] and player:getStorageValue(s.base + s[name .. "2"]) or 0
+	if hi < 0 then
+		hi = 0
+	end
+	return lo + hi * SPLIT
+end
+
+function U.setMask(player, name, mask)
+	mask = math.max(0, math.floor(tonumber(mask) or 0))
+	local hi = math.floor(mask / SPLIT)
+	player:setStorageValue(key(name), math.floor(mask - hi * SPLIT))
+	local s = C().storage
+	local k2 = s[name .. "2"] and s.base + s[name .. "2"]
+	if k2 and (hi > 0 or player:getStorageValue(k2) > 0) then
+		player:setStorageValue(k2, hi)
+	end
+end
+
 function U.langOf(player)
 	if ChaosFirstHour and ChaosFirstHour.langOf then
 		return ChaosFirstHour.langOf(player)
@@ -51,7 +79,7 @@ local function wholeMenu(player)
 end
 
 function U.sendState(player)
-	local data = M.state(player:getStorageValue(key("unlocked")), player:getStorageValue(key("seen")), player:getLevel(),
+	local data = M.state(U.getMask(player, "unlocked"), U.getMask(player, "seen"), player:getLevel(),
 		wholeMenu(player))
 	return Chaos.send(player, OPCODE, "state", data)
 end
@@ -76,7 +104,7 @@ function U.later(player)
 end
 
 function U.run(player)
-	local mask = player:getStorageValue(key("unlocked"))
+	local mask = U.getMask(player, "unlocked")
 	local perRun = M.pace()
 	local lang = U.langOf(player)
 	for n, i in ipairs(M.due(mask, player:getLevel())) do
@@ -86,7 +114,7 @@ function U.run(player)
 		end
 		-- the bit first: a failed message is not repeated
 		mask = M.set(mask, i)
-		player:setStorageValue(key("unlocked"), mask)
+		U.setMask(player, "unlocked", mask)
 		Chaos.send(player, OPCODE, "new", M.announcement(i, lang))
 	end
 	U.sendState(player)
@@ -102,8 +130,8 @@ function U.sync(player)
 	end
 	if known < #c.entries then
 		local function levelOf(i) return c.entries[i].level end
-		player:setStorageValue(key("unlocked"), M.sync(player:getStorageValue(key("unlocked")), known, #c.entries, levelOf, level))
-		player:setStorageValue(key("seen"), M.sync(player:getStorageValue(key("seen")), known, #c.entries, levelOf, level))
+		U.setMask(player, "unlocked", M.sync(U.getMask(player, "unlocked"), known, #c.entries, levelOf, level))
+		U.setMask(player, "seen", M.sync(U.getMask(player, "seen"), known, #c.entries, levelOf, level))
 		player:setStorageValue(key("known"), #c.entries)
 	end
 end
@@ -117,8 +145,8 @@ function login.onLogin(player)
 	player:registerEvent("ChaosUnlocksExtended")
 	if player:getStorageValue(key("unlocked")) < 0 then
 		local unlocked, seen = M.firstMasks(player:getLevel())
-		player:setStorageValue(key("unlocked"), unlocked)
-		player:setStorageValue(key("seen"), seen)
+		U.setMask(player, "unlocked", unlocked)
+		U.setMask(player, "seen", seen)
 		player:setStorageValue(key("known"), #C().entries)
 	else
 		U.sync(player)
@@ -168,8 +196,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	elseif msg.action == "seen" then
 		local data = type(msg.data) == "table" and msg.data or msg
 		local i = type(data.key) == "string" and M.index(data.key) or nil
-		if i and M.has(player:getStorageValue(key("unlocked")), i) then
-			player:setStorageValue(key("seen"), M.set(player:getStorageValue(key("seen")), i))
+		if i and M.has(U.getMask(player, "unlocked"), i) then
+			U.setMask(player, "seen", M.set(U.getMask(player, "seen"), i))
 		end
 	end
 end

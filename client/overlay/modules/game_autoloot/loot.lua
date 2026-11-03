@@ -104,6 +104,7 @@ function init()
 	})
 
 	windowAutoLoot = g_ui.displayUI("loot")
+	pcall(function() modules.game_howitworks.attach(windowAutoLoot, 'autoloot') end) -- game_howitworks: the ? button
 
 	windowAutoLoot:hide()
 

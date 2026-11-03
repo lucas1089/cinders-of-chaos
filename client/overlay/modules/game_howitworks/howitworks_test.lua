@@ -23,6 +23,7 @@ local function widget(style, parent)
   function w:raise() end
   function w:focus() end
   function w:isDestroyed() return self.destroyed end
+  function w:isVisible() return self.visible end
   function w:destroy() self.destroyed = true end
   function w:destroyChildren() self.children = {} end
   function w:getChildById(id) return self.ids[id] end
@@ -102,6 +103,46 @@ eq(attachGoal(row, 'lvl300'), nil, 'no button for a level goal')
 terminate()
 eq(root.destroyed, true, 'terminate destroys the window')
 eq(showForUnlock('tower'), false, 'after terminate nothing shows')
+
+-- first open: the card opens by itself once per character and window, never with the setting off
+local store = {}
+g_settings = {
+  exists = function(k) return store[k] ~= nil end,
+  getBoolean = function(k) return store[k] == true end,
+  set = function(k, v) store[k] = v end,
+  getNode = function(k) return store[k] end,
+  setNode = function(k, v) store[k] = v end,
+}
+local handlers = {}
+function connect(w, t) handlers[w] = t end
+g_game = { getCharacterName = function() return 'Ash' end }
+init()
+eq(autoOn(), true, 'auto on by default')
+hide()
+local tower = widget('TowerWindow')
+attach(tower, 'tower')
+eq(root.visible, true, 'a visible window opens its card the first time')
+hide()
+tower:hide(); tower:show(); handlers[tower].onVisibilityChange(tower, true)
+eq(root.visible, false, 'not the second time')
+attach(tower, 'tower')
+eq(root.visible, false, 'nor on a new attach')
+local siege = widget('SiegeWindow')
+siege.visible = false
+attach(siege, 'siege')
+eq(root.visible, false, 'a hidden window waits')
+siege:show(); handlers[siege].onVisibilityChange(siege, true)
+eq(root.visible, true, 'and opens its card when shown')
+hide()
+g_game = { getCharacterName = function() return 'Bo' end }
+setAuto(false)
+eq(autoOn(), false, 'setting off')
+attach(widget('TowerWindow'), 'tower')
+eq(root.visible, false, 'no card with the setting off')
+setAuto(true)
+attach(widget('TowerWindow'), 'tower')
+eq(root.visible, true, 'another character gets its own first time')
+hide()
 
 print(string.format('howitworks: %d checks, %d failed', count, fails))
 if fails > 0 then os.exit(1) end

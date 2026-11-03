@@ -15,6 +15,9 @@ C.opcode = 167 -- ChaosOpcodes.conquest (chaos_constants.lua); client game_conqu
 C.requestMs = 400 -- one window request per player per 400 ms (Chaos.limited, before any database read)
 C.staffGroup = 4 -- /conquest needs this group or higher (giving tokens: an administrator, Chaos.staffCommand economy)
 C.name = "Conquest Tokens"
+-- O368: the vendor's window and every purchase need this character level. Tokens still come in below it (Next Goals,
+-- invasions); the top menu shows the Conquest Vendor from here on (unlocks_config.lua key "conquest")
+C.minLevel = 50
 
 -- player storages 7102640 - 7102689 (server/README.md "Storage keys", Chaos.storage.conquest):
 --   +0 the day (YYYYMMDD) the daily counters below belong to; +1 .. +29 tokens earned today per source slot;

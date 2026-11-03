@@ -43,4 +43,36 @@ return {
 	hiddenName = "Unseen attacker",
 	-- the opcode handler's rate limit
 	rateLimitMs = 300,
+
+	-- Death advice (O371; deathadvice_core.lua): 1-3 short tips in the recap, why the character died and what to do.
+	-- Rules in this order, at most `max` tips; the client words them (game_deathrecap deathrecaplogic.lua L.tips).
+	advice = {
+		enabled = true,
+		max = 3,
+		-- lvl: monsters this many levels above the character dealt at least levelShare % of the damage
+		levelGap = 30,
+		levelShare = 30,
+		-- res: one element dealt at least resShare % of the damage and the character resists it under resLow %.
+		-- Elements with a tip, and the gem that resists it (data/lib/chaos_gems_config.lua; the test checks them)
+		resShare = 40,
+		resLow = 10,
+		resElements = {
+			fire = {gem = "ruby", group = "jewel"}, ice = {gem = "sapphire", group = "jewel"},
+			earth = {gem = "emerald", group = "jewel"}, holy = {gem = "diamond", group = "jewel"},
+			death = {gem = "amethyst", group = "armour"}, energy = {gem = "topaz", group = "armour"},
+			physical = {gem = "onyx", group = "armour"},
+		},
+		-- pot: no potion drunk in a fight of at least potMinMs, and the healing received covered under potHealShare % of
+		-- the health damage (a stock potion the log cannot see still heals)
+		potMinMs = 4000,
+		potHealShare = 30,
+		-- heal: potions drunk, but in a fight of at least healMinMs the healing covered under healShare % of the damage
+		healMinMs = 8000,
+		healShare = 25,
+		-- pack: this many monsters or more hit the character
+		packSize = 5,
+		-- the rolling logs of healing received and potions drunk (count bound per character, the window is windowMs)
+		maxHeals = 60,
+		maxPotions = 30,
+	},
 }

@@ -37,6 +37,12 @@ P.PREMIUM_KINDS = {coins = true, title = true, outfit = true, mount = true, shad
 P.FREE, P.PREMIUM = 0, 1
 
 -- ---------------------------------------------------------------- tiers
+-- O368: true, minLevel when a character of `level` may use the window; false, minLevel below it
+function P.levelGate(level, cfg)
+	local need = cfg.minLevel or 1
+	return (tonumber(level) or 0) >= need, need
+end
+
 function P.tierCost(cfg, t)
 	return cfg.tierXp.base + cfg.tierXp.step * (t - 1)
 end

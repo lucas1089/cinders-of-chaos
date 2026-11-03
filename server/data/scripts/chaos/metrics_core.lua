@@ -19,6 +19,7 @@
 --   M.returnCheck(stored, today, cfg)          -> list of "d1" / "d3" / "d7" newly due, new stored value, cohort day
 --   M.returnStart(today)                       the stored value of a first login
 --   M.firstUseMark(mask, key, cfg)             -> true and the new mask when the system's bit was not set; false, mask
+--   M.systemIndex(key, cfg)                    1-based index of a system in cfg.systems, or nil (O374 last system)
 --   M.playedBucket(minutes, cfg)               the played-minutes bucket label of a first use
 --   M.stopSql(cfg, now, notTesterSql) / M.stopRows(sqlRows, spots, cfg)   where the gone characters stood, by area and band
 --   M.setSqlChunks(rows, table, escape)        setSql in chunks of at most 200 rows
@@ -402,6 +403,15 @@ function M.firstUseMark(mask, key, cfg)
 		end
 	end
 	return false, mask
+end
+
+function M.systemIndex(key, cfg)
+	for i, k in ipairs(cfg.systems) do
+		if k == key then
+			return i
+		end
+	end
+	return nil
 end
 
 function M.playedBucket(minutes, cfg)

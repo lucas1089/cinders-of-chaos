@@ -318,6 +318,7 @@ function create()
 	end
 
 	window = g_ui.loadUI("passivetree", modules.game_interface.getRootPanel())
+	pcall(function() modules.game_howitworks.attach(window, 'passive') end) -- game_howitworks: the ? button
 	window.onMouseWheel = function (self, mousePos, mouseWheel)
 		if mouseWheel == MouseWheelUp then
 			zoomPlus()
@@ -569,12 +570,10 @@ function setNodeTooltip(widget, node)
 		end
 	end
 	if texts then
-		if customStats and not node.isMastery and statInfoLines then
-			for _, line in ipairs(statInfoLines(customStats)) do
-				table.insert(texts, line) -- statinfo.lua: what each stat does
-			end
-		end
-		widget.setExtendedTooltip(widget, title, texts, tooltipType)
+		-- statinfo.lua: what each stat does; shown only while Alt is held (treetips.lua, onTreeAlt below)
+		local extra = (customStats and not node.isMastery and statInfoLines) and statInfoLines(customStats) or {}
+		widget.treeTip = { title = title, texts = texts, extra = extra, style = tooltipType }
+		widget.setExtendedTooltip(widget, title, TreeTips.lines(texts, extra, treeAltDown, tr), tooltipType)
 	end
 	if markStatNode and not node.isMastery then
 		markStatNode(widget, customStats) -- statinfo.lua: gold / silver border for Primary / Secondary
@@ -613,6 +612,44 @@ function setTreeStatMarksShown(shown)
 	for _, widget in pairs(nodeWidgets or {}) do
 		applyTreeNodeBorder(widget)
 	end
+end
+
+-- Alt shows the stat explanations in node tooltips (treetips.lua). The shared Alt poll (client_chaos_theme althelp.lua)
+-- runs while the window is open: on a change every node widget gets its tooltip text again, and the one under the mouse
+-- shows the new text at once.
+treeAltDown = false
+
+local function onTreeAlt(down)
+	if not window or not window:isVisible() then
+		return
+	end
+	treeAltDown = down
+	for _, widget in pairs(nodeWidgets or {}) do
+		local t = not widget:isDestroyed() and widget.treeTip
+		if t then
+			widget.setExtendedTooltip(widget, t.title, TreeTips.lines(t.texts, t.extra, down, tr), t.style)
+		end
+	end
+	local hovered = g_ui.getHoveredWidget and g_ui.getHoveredWidget() -- not in every engine build
+	if hovered and hovered.treeTip then
+		ChaosAltHelp.redraw(hovered:getTooltip())
+	end
+end
+
+function startTreeAltPoll()
+	local A = rawget(_G, 'ChaosAltHelp')
+	if A then
+		A.watch('game_passivetree', onTreeAlt)
+		treeAltDown = A.isDown()
+	end
+end
+
+function stopTreeAltPoll()
+	local A = rawget(_G, 'ChaosAltHelp')
+	if A then
+		A.unwatch('game_passivetree')
+	end
+	treeAltDown = false
 end
 
 -- statinfo.lua: new stat texts arrived; redo the tooltip and mark of every node widget
@@ -1942,6 +1979,7 @@ function calculateStats()
 end
 
 function destroy()
+	stopTreeAltPoll()
 	serverVocation = nil -- the next character may have another class
 	serverClass, serverLine = nil, nil
 	destroyParagon() -- paragon.lua
@@ -2001,6 +2039,7 @@ function show()
 	window:show()
 	window:raise()
 	window:focus()
+	startTreeAltPoll()
 	layoutTreeToolbar()
 	-- The widgets are kept between openings: the tree shows the allocation it had (rebuilt only when the zoom went back
 	-- to the default) until the server's sendNodes, which then changes only the nodes that differ. Before the first
@@ -2027,6 +2066,7 @@ function hide()
 		return 
 	end
 
+	stopTreeAltPoll()
 	window.presets:hide()
 	closeParagon()
 	closeTrials()

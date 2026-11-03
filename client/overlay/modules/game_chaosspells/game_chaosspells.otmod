@@ -5,6 +5,6 @@ Module
   sandboxed: true
   autoload: true
   autoload-priority: 150
-  scripts: [ spelldata, spellfix, chaosspells ]
+  scripts: [ spelldata, spellfix, spellhelp, chaosspells ]
   @onLoad: init()
   @onUnload: terminate()

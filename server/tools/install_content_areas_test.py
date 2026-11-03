@@ -357,6 +357,52 @@ def wing_ground_checks(root):
     check(digest(srv) == twice, 'wing regrow: a second run changes nothing')
 
 
+class DictWorld:
+    """a World over {pos: tile} (room_layout / room_state reads)"""
+
+    def __init__(self, tiles):
+        self.t = tiles
+        self.tele = {}
+
+    def has(self, p):
+        return p in self.t
+
+    def stack(self, p):
+        return [i for i, _a in self.t[p]['items']] if p in self.t else None
+
+    def flags(self, p):
+        return self.t[p]['flags'] if p in self.t else 0
+
+    def house(self, p):
+        return 0
+
+
+def upper_wing_checks():
+    """O375: a wing of an upper floor without `sweep` (z 5 above the grown floor 6): the alcoves come from floor 6, the
+    end is the floor's own and moves out; it grows only where the map has no tile, else it is refused, nothing written"""
+    up = Z - 1
+    base = room_tiles()
+    world = dict(base)
+    for (x, y, z), t in base.items():
+        if x in (14, 15):  # the upper floor has its own end (with its temple teleport)
+            world[(x, y, up)] = json.loads(json.dumps(t))
+    wing = {'z': up, 'from': Z, 'east': {'modules': 1}}
+    lay = T.room_layout(DictWorld(world), CFG['room'], PORTAL, wing=wing)
+    check(lay['z'] == up and all(p[2] == up for p in lay['tiles']), 'upper wing: every new tile on its own floor')
+    check(sorted({p[0] for p in lay['module']}) == [14, 15, 16, 17], 'upper wing: one module of floor 6 copied: %s'
+          % sorted({p[0] for p in lay['module']}))
+    check({p[0] for p in lay['caps']} == {18, 19} and {p[0] for p in lay['old']} == {14, 15}, 'upper wing: its end moves out by 4')
+    check([s['teleport'] for s in lay['slots']] == [(16, 11, up), (16, 15, up)], 'upper wing: two new slots %s' % lay['slots'])
+    check(T.room_state(DictWorld(world), lay, PORTAL) == 'todo', 'upper wing: grows over empty floor')
+    taken = dict(world)
+    taken[(17, 13, up)] = tile(G)
+    try:
+        T.room_state(DictWorld(taken), lay, PORTAL)
+        check(False, 'upper wing: a tile of the map where it would grow is refused')
+    except T.InstallError as e:
+        check('taken' in str(e) and 'nothing written' in str(e), 'upper wing refused: %s' % e)
+
+
 def floor_rule_checks():
     """the owner's floors by level: z 7 for levels 1-500, z 6 for 501-1000, z 5 for the rest (hall.levels)"""
     import hall_order as H
@@ -1193,6 +1239,7 @@ def main():
         capacity_checks()
         quest_hall_checks(root)
         wing_ground_checks(root)
+        upper_wing_checks()
         shared_cell_checks(root)
 
         # the real hunts: ascending by band, every plan exactly once, and ascending along the corridor's slots

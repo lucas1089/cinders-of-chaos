@@ -1,0 +1,13 @@
+Module
+  name: game_chaossurvey
+  description: New player survey at level 20 and 50 (server survey.lua, extended opcode 122)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ surveylogic, survey ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

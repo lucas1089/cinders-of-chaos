@@ -677,4 +677,35 @@ Q.removeItem = removeItem
 eq(total(purse, 32006) + total(backpack, 32006), 3, "failed removal: given back"); eq(total(backpack, 32007), 0, "none made")
 Chaos.giveItem = realGive
 
+-- the bench guide's gem table (ChaosGems.guide)
+do
+	local G = ChaosGems
+	local g = G.guide()
+	eq(#g.tiers, 5, "guide tiers"); eq(g.tiers[1], "Chipped", "guide first tier")
+	eq(#g.types, G.TYPES, "guide one row per type")
+	eq(g.types[1].name, "Ruby", "guide type name in title case")
+	eq(g.types[1].weapon.effect, "dmg_fire", "guide ruby weapon effect")
+	eq(g.types[1].weapon.values[4], 9, "guide ruby weapon value at Flawless")
+	eq(g.types[1].look[2], G.clientIdOf(1, 2), "guide look per tier")
+	for _, t in ipairs(g.types) do
+		for _, group in ipairs({"weapon", "armour", "jewel"}) do
+			eq(g.effects[t[group].effect] ~= nil, true, "guide effect label for " .. t[group].effect)
+		end
+	end
+	eq(g.effects.crit.fmt, "pair", "guide pair effect"); eq(g.effects.crit.label2, "Critical Hit", "guide label2")
+	eq(g.combine, 3, "guide combine count")
+	eq(g.removeCost[5], ChaosGems.config.removeCost[5], "guide remove cost")
+	eq(g.socketOrb, "Orb of Sockets", "guide socket orb")
+	-- one message: well below the 8192 bytes of an extended opcode (a rough JSON size of the table)
+	local function size(v)
+		if type(v) == "table" then
+			local n = 2
+			for k, x in pairs(v) do n = n + #tostring(k) + 4 + size(x) end
+			return n
+		end
+		return #tostring(v) + 2
+	end
+	eq(size(g) < 6000, true, "guide fits one message (" .. size(g) .. ")")
+end
+
 print("gems_test: " .. checks .. " checks OK")

@@ -26,7 +26,8 @@ return {
 	sessionBuckets = {5, 10, 20, 30, 45, 60, 90, 120, 180, 240, 360, 480},
 
 	-- time to level: the played minutes (players.onlinetime) a character had when it first reached each level
-	-- O258: 9 milestones, one bit each in the mask (the first five keep their bits, so old masks stay valid)
+	-- O258: 9 milestones, one bit each in the mask (the first five keep their bits, so old masks stay valid;
+	-- server/tools/newplayer_report.py reads bits 0 - 3 = 10 / 25 / 50 / 100: keep them)
 	milestones = {10, 25, 50, 100, 200, 500, 1000, 1500, 2000},
 	-- bucket upper limits in minutes (longer is "inf"); the median is read inside the bucket by interpolation, so the
 	-- buckets are finer where most characters are (an hour or two) and coarser later
@@ -51,7 +52,8 @@ return {
 	maxGroupId = 1,
 
 	-- player storage: bit mask of the milestones already recorded for the character (+0), so a level lost at a death
-	-- and gained again counts once. A game flag of the character; no metric row holds it. 7102830 - 7102839 reserved (7102833 = the last hunt)
+	-- and gained again counts once. A game flag of the character; no metric row holds it. 7102830 - 7102839 reserved (7102833 = the last hunt,
+	-- 7102834 = the last system)
 	storage = 7102830,
 
 	-- O258 return: the first login of a character stores `day * 8 + flags` in this storage (day = whole days since the
@@ -76,6 +78,10 @@ return {
 	huntStorage = 7102833,
 	huntSeconds = 60,
 	removedArea = "Hunt no longer listed",
+	-- O374 last system: the index (1-based, in `systems`) of the last system the character used, player storage; written
+	-- by the same success paths as the first use (ChaosMetrics.firstUse), only when it changes. The new-player funnel
+	-- (server/tools/newplayer_report.py funnel) groups the characters that stopped by it; 0 / none = no system used.
+	lastSystemStorage = 7102834,
 	-- the first-use / stop / return checks of party and guild membership run in the 60 s think for the open sessions
 	memberCheckSeconds = 60
 }

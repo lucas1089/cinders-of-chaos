@@ -30,7 +30,9 @@ L.COLORS = {
   -- item sets: the title of a piece, the pieces worn and the bonuses active (dim when not)
   set = '#58c878', setOn = '#7fe0a0', setLow = '#c0805a',
   -- a unique's passive (server T.splitPassive): its name and its rule stand out from the flavour text
-  passive = '#ffb340', passiveText = '#f2e6cc'
+  passive = '#ffb340', passiveText = '#f2e6cc',
+  -- the Alt help lines (itemhelp.lua, O372)
+  help = '#b8b0a0'
 }
 -- modifier tiers T1 (lowest) .. T8 (highest)
 L.TIER_COLORS = { '#8c8070', '#a89c88', '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#ff8a40' }

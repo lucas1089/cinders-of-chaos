@@ -58,10 +58,14 @@ local function startWatching()
   if settings.shown and not watching and g_game.isOnline() then
     watching = true
     send('sync')
+    local A = rawget(_G, 'ChaosAltHelp')
+    if A then A.watch('game_buffbar') end -- Alt shows what a hovered buff does
   end
 end
 
 local function stopWatching()
+  local A = rawget(_G, 'ChaosAltHelp')
+  if A then A.unwatch('game_buffbar') end
   if watching then
     watching = false
     send('off')
@@ -146,7 +150,10 @@ local function refreshWidget(w, entry, t)
   else
     countLabel:setVisible(false)
   end
-  w.tooltip = BuffMath.tooltip(entry, t)
+  -- Alt (O372): the description behind Alt; the shared poll (client_chaos_theme althelp.lua) swaps it in on hover
+  w.altTip = function(down) return BuffMath.tooltip(entry, now(), down) end
+  local A = rawget(_G, 'ChaosAltHelp')
+  w.tooltip = BuffMath.tooltip(entry, t, A ~= nil and A.isDown() and A.shown() == w)
 end
 
 local function updateVisibility()
@@ -319,6 +326,8 @@ local function onGameStart()
 end
 
 local function onGameEnd()
+  local A = rawget(_G, 'ChaosAltHelp')
+  if A then A.unwatch('game_buffbar') end
   watching = false
   BuffMath.clear(state)
   relayout()

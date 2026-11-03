@@ -692,7 +692,27 @@ z 6 takes bands 500-615 up to 950-1050, 15 levels apart; z 5 1050-1200 up to 185
 
 With these, 58 plans and the 45 base hunts take all 103 slots of the hall (48 on z 7, 37 on z 6, 18 on z 5). A next
 hunt needs a new slot first (`room.wings`) and a free cell: the grid's last row has 9 cells free east of
-worldscar_abyss (x 15824-17456, y 15156), each room for a plan up to 190 x 200.
+worldscar_abyss (x 15824-17456, y 15156), each room for a plan up to 190 x 200. (Taken since: eight by O139, the last one, x 17456, is free.)
+
+**The O375 row y 15700** (2026-11-03, server/README.md "Hall coverage (O375)"): nine plans in the annex block below the
+annexes (they end at y 15624), the same grid of 204 from x 15620; `schema.json` allows the block (y 15400-16383) and the
+map has no tile there (it lies outside the world, x 30700-34600). Six small hunts for the ground floor and three late ones
+for floor 5. The hall grew for them: z 7 to 10 modules a side, z 5 one module a side (`room.wings`):
+
+| Plan | Band | Biome | Size | Origin x, y, z | Arrival |
+|---|---|---|---|---|---|
+| thistlewood_hollow | 6-12 | forest | 96 x 80 | 15620, 15700, 7 | 15663, 15710, 7 |
+| copperdelve_mine | 11-17 | cave | 100 x 84 | 15824, 15700, 8 | 15843, 15712, 8 |
+| ashgrave_barrow | 18-26 | crypt | 104 x 86 | 16028, 15700, 9 | 16071, 15771, 9 |
+| murkreed_fen | 24-34 | swamp | 106 x 88 | 16232, 15700, 8 | 16308, 15745, 8 |
+| chitinmaw_warren | 44-56 | cave | 112 x 92 | 16436, 15700, 9 | 16516, 15712, 9 |
+| scalewatch_bastion | 50-62 | hall | 114 x 94 | 16640, 15700, 9 | 16662, 15740, 9 |
+| anvilmourn_wastes | 1500-1650 | waste | 168 x 136 | 16844, 15700, 7 | 16918, 15819, 7 |
+| oathgrave_ossuary | 1750-1900 | catacomb | 150 x 122 | 17048, 15700, 10 | 17066, 15760, 10 |
+| pyrecrown_caldera | 1900-2100 | lava | 172 x 140 | 17252, 15700, 10 | 17351, 15721, 10 |
+
+With them 80 plans and the 37 base hunts of `tools/hall_hunts.csv` take 117 of the hall's 119 slots (56 of 56 on z 7,
+40 of 41 on z 6, 21 of 22 on z 5). The row has one more cell (x 17456), and a row at y 15904 has ten.
 
 **The dungeon block x/y 24576-25599** (2026-10-14, owner approval: the queue dungeons 6-9 of `areagen_config.lua`,
 server/README.md "Generated areas"). The 14336-15359 block is full, so the four deep dungeons got a block of their

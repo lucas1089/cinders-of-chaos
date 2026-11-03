@@ -384,7 +384,7 @@ Chaos.storage.guildBossLockout = 7101302
 Chaos.tables.guildWars = "chaos_guildwar"
 Chaos.tables.guildBoss = "chaos_guildboss_week"
 -- Mentors (client game_mentor; mentor.lua, mentor_core.lua, mentor_config.lua, sql/chaos_mentor.sql): mentor list,
--- apprentice view, marks shop on one opcode; storages 7100360 - 7100369 reserved (+0 "looking for a mentor")
+-- apprentice view, marks shop on one opcode; storages 7100360 - 7100369 reserved (+0 "looking for a mentor", +1 the mentor offer, O371)
 ChaosOpcodes.mentor = 194
 Chaos.storage.mentor = 7100360
 Chaos.tables.mentors = "chaos_mentors"
@@ -2277,14 +2277,28 @@ ChaosOpcodes.combatStats = 119
 -- game message. 121 is free in the reference server, the base client's ExtendedIds, every Chaos script and every client module
 -- (README "Opcode collision check"). No storage, no table.
 ChaosOpcodes.npcTravel = 121
+-- New player survey (O374; survey.lua, survey_core.lua, survey_config.lua; client game_chaossurvey; server/README.md "New
+-- player funnel and survey (O374)"): server -> client `open {s, max}` / `done {s}`, client -> server `answer {s, fun, rec,
+-- text}` / `skip {s}`. 122 is free in the reference server, the base client's ExtendedIds, every Chaos script and every
+-- client module (README "Opcode collision check"; tests/survey_test.lua). Table chaos_survey, storage 7103060
+-- (survey_config.lua `storage`, 7103060 - 7103069).
+ChaosOpcodes.survey = 122
+Chaos.tables.survey = "chaos_survey"
+Chaos.storage.survey = 7103060
 -- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,
 -- +5 trial cooldown (os.time), +6 done time (os.time of the first completion, the gold is paid once), +7 lines done
--- (a bit per line), +8 and +9 free. 7101070 - 7101099 stays free. No opcode: the tracker rows go over the goals channel.
+-- (a bit per line), +8 and +9 free. No opcode: the tracker rows go over the goals channel.
 Chaos.storage.spellQuest = 7101040
 Chaos.storage.spellQuestSlots = 10
 Chaos.storage.spellQuestCount = 3
+-- The welcome path (O370; welcomepath.lua, welcomepath_core.lua, welcomepath_config.lua `storage`; server/README.md
+-- "Welcome path (O370)"): 7101070 - 7101079: +0 state, +1 step, +2 kills of the kill step, +3 flags; +4..9 free.
+-- No opcode: the tracker rows go over the goals channel (ChaosOpcodes.goals).
+-- Level milestones (O378; milestones_config.lua `storage`): 7101080 - 7101089, +0 the highest milestone paid; +1..9
+-- free. 7101090 - 7101099 stays free.
+Chaos.storage.welcomePath = 7101070
 -- Hunting level on screen (owner 2026-10-27): the bounty pool's level (ChaosLoot.monsterLevel) is half of the level
 -- players hunt a monster at; every text that prints a pool-scale level (monster level thresholds, map marks) prints
 -- Chaos.huntingLevel(n) = n x pace_config.lua baseLevelMult. A gate that compares a monster with a share of the

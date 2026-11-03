@@ -115,6 +115,11 @@ local function creatureSayCallback(cid, type, msg)
 	end
 	if has(text, "contract", "work", "task", "quartermaster", "trade", "offer", "buy", "reputation", "standing",
 			"token", "deliver", "recipe", "window") then
+		-- O368: the ledger opens at cfg.minLevel (factions.lua checks it again)
+		if player:getLevel() < (cfg.minLevel or 1) then
+			npcHandler:say(t(cid, "Come back at level %d. %s takes no oaths from the untried.", cfg.minLevel, faction.name), cid)
+			return true
+		end
 		openWindow(player)
 		npcHandler:say(t(cid, "Here is what %s asks, and what it gives. Your contracts, your standing and my stores are in the ledger (Adventure > Factions). Bring %s and deliveries to me.",
 			faction.name, token.plural), cid)

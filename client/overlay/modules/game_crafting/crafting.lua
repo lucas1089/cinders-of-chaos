@@ -778,6 +778,12 @@ local function onState(data)
   end
 end
 
+-- the Guide window (craftguide.lua) reads these
+gemGuide = nil
+function guideOrbs() return info and type(info.orbs) == 'table' and info.orbs or {} end
+function guideCounts() return state and type(state.counts) == 'table' and state.counts or {} end
+function guideGems() return gemGuide end
+
 local function onExtendedOpcode(protocol, opcode, buffer)
   local ok, msg = pcall(json.decode, buffer)
   if not ok or type(msg) ~= 'table' then
@@ -787,6 +793,10 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   local data = type(msg.data) == 'table' and msg.data or {}
   if msg.action == 'info' then
     info = data
+    refreshGuide() -- craftguide.lua
+  elseif msg.action == 'gemguide' then
+    gemGuide = data
+    refreshGuide()
   elseif msg.action == 'state' then
     onState(data)
   elseif msg.action == 'result' then
@@ -885,6 +895,7 @@ end
 
 local function onGameEnd()
   hide()
+  hideGuide() -- craftguide.lua
   state = nil
   mode = 'orbs'
   selectedMod = nil
@@ -939,5 +950,6 @@ function terminate()
     window = nil
   end
   if confirmBox then confirmBox:destroy() confirmBox = nil end
+  destroyGuide() -- craftguide.lua
   state, orbRows, expanded = nil, {}, {}
 end

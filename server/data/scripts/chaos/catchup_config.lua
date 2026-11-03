@@ -4,8 +4,9 @@
 -- No engine calls here (server/tests/catchup_test.lua reads it with plain Lua). Lua 5.1 / LuaJIT and Lua 5.3.
 --
 -- Owner goal (2026-10-15): an adult with little time progresses fluidly; a heavy player still feels rewarded.
--- Four parts, each switchable: stamina (low stamina reduces, never zeroes), rested experience (offline time builds a
--- pool), the returning player boost (back after a long break) and the alt catch-up (characters below the account's best).
+-- Five parts, each switchable: stamina (low stamina reduces, never zeroes), rested experience (offline time builds a
+-- pool), the returning player boost (back after a long break), the newcomer bonus (O370: low levels, fading) and the
+-- alt catch-up (characters below the account's best).
 -- The numbers to review are listed in docs/OWNER_TODO.md "Time-friendly progression".
 
 return {
@@ -76,6 +77,19 @@ return {
 		xpPct = 50,
 		lootPct = 25,
 		tokenPct = 50
+	},
+
+	-- ------------------------------------------------------------------ newcomer bonus (O370)
+	-- Every character gets +maxPct % monster experience up to level fullTo; from there the bonus shrinks linearly to 0
+	-- at level zeroAt: +50% at level 8, +25% at 79, 0 from level 150. It never stacks with the alt catch-up below (the
+	-- larger of the two counts, ChaosCatchupCore.levelPct) and stays under maxXpMult with the rest. The leveling model
+	-- (tools/progression_model.lua --check) counts it: levels 8-150 take 1.5 h instead of 1.8 h. A fade to 0 at level
+	-- 100 failed the model (levels 83-107 then take x1.37 the time of the 25 before, limit 1.35); 120 and up pass.
+	newcomer = {
+		enabled = true,
+		maxPct = 50,
+		fullTo = 8,
+		zeroAt = 150
 	},
 
 	-- ------------------------------------------------------------------ alt catch-up

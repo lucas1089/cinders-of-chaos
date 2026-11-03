@@ -372,6 +372,7 @@ end
 function init()
   data = CodexData
   window = g_ui.displayUI('codex')
+  pcall(function() modules.game_howitworks.attach(window, 'codex') end) -- game_howitworks: the ? button
   window:hide()
   -- the Chaos fonts (client_chaos_theme ChaosTheme.fonts): the page title, the section headings and, when the trial
   -- body font is switched on, the paragraphs

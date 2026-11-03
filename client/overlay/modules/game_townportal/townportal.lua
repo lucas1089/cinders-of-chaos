@@ -247,6 +247,7 @@ end
 function init()
   setGroundEffects(true)
   window = g_ui.displayUI('townportal')
+  pcall(function() modules.game_howitworks.attach(window, 'townportal') end) -- game_howitworks: the ? button
   window:hide()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd })

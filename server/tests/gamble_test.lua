@@ -958,6 +958,24 @@ sent = {}
 events.ChaosGambleExtended.onExtendedOpcode(hero, 198, json.encode({action = "open"}))
 eq(#sent, 0, "another opcode ignored")
 
+-- O368: below cfg.minLevel the window does not open and nothing is sold
+do
+	check(cfg.minLevel == 40, "the Gambler opens at level 40")
+	local young = newPlayer(14, cfg.minLevel - 1, 4)
+	young.pos = hero.pos
+	young.bank = 50000000
+	events.ChaosGambleLogin.onLogin(young)
+	local r = op(young, "open")
+	eq(r.state, nil, "no stock below the level")
+	check(r.result and r.result.ok == false, "a refusal")
+	has(r.result and r.result.text or "", "level " .. cfg.minLevel, "the refusal names the level")
+	r = op(young, "buy", {i = 1, w = 1, id = 1})
+	eq(r.result, nil, "a buy below the level gets no answer")
+	eq(#young.items, 0, "nothing bought")
+	young.level = cfg.minLevel
+	check(op(young, "open").state ~= nil, "the window opens at the level")
+end
+
 -- the engine part reads the library itself: the entries follow the switch
 do
 	ChaosGearSets = nil

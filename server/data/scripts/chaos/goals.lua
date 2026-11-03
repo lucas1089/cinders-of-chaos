@@ -21,7 +21,7 @@
 -- (ChaosConquest.grant(player, "goals", n): given only while its config has a "goals" source).
 --
 -- Protocol (JSON {action, data}):
---   client -> server  open | close | tracker
+--   client -> server  open | close | tracker | welcomeSkip (the welcome path, welcomepath.lua, O370)
 --   server -> client  goals {header, goals, upcoming, gear, hunts, hereWhere}   (Chaos.sendChunked)
 --                     tracker {rows = [{key, title, progress, target}]}
 --                     done {text}
@@ -608,6 +608,9 @@ if CreatureEvent then
 		local guid = player:getGuid()
 		if msg.action == "open" then
 			-- only a character loaded at its login (goals.lua login event): never a stale or logged out one
+			if ChaosWelcomePath and ChaosWelcomePath.mark then
+				pcall(ChaosWelcomePath.mark, player, "goals") -- the welcome path's last step (O370)
+			end
 			local st = G.st[guid]
 			if st then
 				probe(player, st)
@@ -625,6 +628,13 @@ if CreatureEvent then
 			end
 			if ChaosSpellQuestTracker and ChaosSpellQuestTracker.sent then
 				ChaosSpellQuestTracker.sent[player:getId()] = nil -- and the spell quest rows
+			end
+			if ChaosWelcomePath and ChaosWelcomePath.forget then
+				pcall(ChaosWelcomePath.forget, player) -- and the welcome path's (O370)
+			end
+		elseif msg.action == "welcomeSkip" then
+			if ChaosWelcomePath and ChaosWelcomePath.skip then
+				pcall(ChaosWelcomePath.skip, player) -- the skip line under its tracker rows (O370)
 			end
 		end
 	end

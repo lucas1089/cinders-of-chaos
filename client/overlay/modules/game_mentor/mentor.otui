@@ -632,3 +632,47 @@ MentorWindow < ChaosMainWindow
     size: 80 24
     !text: tr('Close')
     @onClick: modules.game_mentor.hide()
+
+// The mentor offer (O371): once per character around level 12, from the server (action offer). Find a mentor opens
+// the Mentors window on its Find a mentor tab; No thanks (or Escape) ends the offer for good.
+MentorOfferWindow < ChaosMainWindow
+  id: mentorOfferWindow
+  size: 380 200
+  !text: tr('Want a mentor?')
+  @onEscape: modules.game_mentor.declineOffer()
+
+  ChaosLabel
+    id: body
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 58
+    text-wrap: true
+    text-align: topLeft
+
+  ChaosLabel
+    id: online
+    anchors.top: body.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 30
+    text-wrap: true
+    text-align: topLeft
+    color: #e8b84a
+
+  ChaosButton
+    id: findButton
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    size: 150 24
+    !text: tr('Find a mentor')
+    @onClick: modules.game_mentor.acceptOffer()
+
+  ChaosButton
+    id: noButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 100 24
+    !text: tr('No thanks')
+    @onClick: modules.game_mentor.declineOffer()

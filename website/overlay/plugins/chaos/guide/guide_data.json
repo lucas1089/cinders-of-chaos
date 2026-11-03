@@ -1,0 +1,551 @@
+{
+	"generated": "server/tools/gen_guide_data.lua from the How it works cards, unlocks_config.lua and tools/guide_config.lua",
+	"intro": {"en": "New here? Start with these steps. Each one is a window of the game; the rest of the guide follows the level where each feature opens.", "pt-BR": "Chegou agora? Comece por estes passos. Cada um é uma janela do jogo; o resto do guia segue o nível em que cada recurso abre."},
+	"headings": {"steps": {"en": "First steps", "pt-BR": "Primeiros passos"}, "levels": {"en": "As you level up", "pt-BR": "Conforme você sobe de nível"}, "anytime": {"en": "Any level", "pt-BR": "Qualquer nível"},
+		"rows": {
+			"what": {"en": "What it is", "pt-BR": "O que é"},
+			"who": {"en": "Who is it for", "pt-BR": "Para quem é"},
+			"levels": {"en": "Monster levels", "pt-BR": "Níveis dos monstros"},
+			"drops": {"en": "What drops", "pt-BR": "O que cai"},
+			"death": {"en": "If you die", "pt-BR": "Se você morrer"},
+			"often": {"en": "How often", "pt-BR": "Quantas vezes"}
+		}
+	},
+	"steps": [
+		{"card": "goals", "tip": {"en": "Lost? Open it first: it shows what to do at your level.", "pt-BR": "Perdido? Abra primeiro: mostra o que fazer no seu nível."}},
+		{"card": "spellbook", "tip": {"en": "See your spells and put the ones you use on your hotkeys.", "pt-BR": "Veja suas magias e coloque as que usa nos seus atalhos."}},
+		{"card": "passive", "tip": {"en": "Spend each new point here. Start next to the centre.", "pt-BR": "Gaste cada ponto novo aqui. Comece perto do centro."}},
+		{"card": "townportal", "tip": {"en": "Your way back to town from any hunt.", "pt-BR": "Seu caminho de volta para a cidade de qualquer caçada."}},
+		{"card": "bounty", "tip": {"en": "Take a contract before you hunt: gold and orbs for the same kills.", "pt-BR": "Pegue um contrato antes de caçar: ouro e orbes pelas mesmas mortes."}},
+		{"card": "daily", "tip": {"en": "Claim it every day; a streak pays more.", "pt-BR": "Pegue todo dia; uma sequência paga mais."}},
+		{"card": "autoloot", "tip": {"en": "Let the loot you want go into your backpack by itself.", "pt-BR": "Deixe o saque que você quer ir sozinho para a mochila."}},
+		{"card": "lootfilter", "tip": {"en": "Make the good drops stand out on the ground.", "pt-BR": "Faça os drops bons se destacarem no chão."}},
+		{"card": "stash", "tip": {"en": "Keep your items here, not in your backpack.", "pt-BR": "Guarde seus itens aqui, não na mochila."}},
+		{"card": "partyfinder", "tip": {"en": "Hunting is faster in a party. Find one here.", "pt-BR": "Caçar em grupo é mais rápido. Encontre um aqui."}},
+		{"card": "mentor", "tip": {"en": "A veteran can help you and you both gain from it.", "pt-BR": "Um veterano pode ajudar você e os dois ganham com isso."}},
+		{"card": "codex", "tip": {"en": "Every rule of items, orbs and gems, with a search.", "pt-BR": "Todas as regras de itens, orbes e gemas, com busca."}}
+	],
+	"levels": [
+		{"level": 8, "cards": ["market"]},
+		{"level": 10, "cards": ["seasonpass"]},
+		{"level": 15, "cards": ["charms", "loadouts"]},
+		{"level": 20, "cards": ["professions", "crafting", "salvage", "orbexchange"]},
+		{"level": 25, "cards": ["pets"]},
+		{"level": 30, "cards": ["invasion", "hideout", "transmog"]},
+		{"level": 40, "cards": ["factions", "gamble"]},
+		{"level": 50, "cards": ["arena", "nemesis", "conquest", "guildwar"]},
+		{"level": 100, "cards": ["tower", "rift", "battleground", "descent", "siege"]},
+		{"level": 150, "cards": ["dungeons", "pvpzone"]},
+		{"level": 300, "cards": ["bosses"]},
+		{"level": 800, "cards": ["raid"]}
+	],
+	"anytime": ["weeklychest", "embercache", "season", "bestiary", "achievements", "itemfinder", "guild", "pact", "shop"],
+	"cards": {
+		"tower": {
+			"title": {"en": "Infinity Tower", "pt-BR": "Infinity Tower"},
+			"level": 100,
+			"menu": "Adventure > Infinity Tower",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 100+. Go alone or with a party of up to 4.", "pt-BR": "Nível 100+. Vá sozinho ou com um grupo de até 4."}},
+				{"id": "levels", "text": {"en": "Floor 1: level 100. Floor 10: level 300. Floor 20: level 540. Floor 40: level 900. It never stops growing. A boss waits every 10 floors.", "pt-BR": "Andar 1: nível 100. Andar 10: nível 300. Andar 20: nível 540. Andar 40: nível 900. Nunca para de crescer. Um chefe aparece a cada 10 andares."}},
+				{"id": "drops", "text": {"en": "Gold on every floor. Every 5 floors: crystal coins. Every 10 floors: Orbs of Upheaval and Fate. Monsters can drop orbs too.", "pt-BR": "Ouro em todo andar. A cada 5 andares: crystal coins. A cada 10 andares: Orbs of Upheaval e Fate. Os monstros também podem soltar orbes."}},
+				{"id": "death", "text": {"en": "A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half.", "pt-BR": "Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade."}},
+				{"id": "often", "text": {"en": "No daily limit. 300 seconds for a floor, 600 for a boss floor, 60 minutes for a whole run. The big prize of a floor is paid once per tower season.", "pt-BR": "Sem limite por dia. 300 segundos por andar, 600 num andar de chefe, 60 minutos na corrida toda. O prêmio grande de cada andar sai uma vez por temporada da torre."}}
+			]
+		},
+		"rift": {
+			"title": {"en": "Rifts", "pt-BR": "Fendas"},
+			"level": 100,
+			"menu": "Adventure > Rifts",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 100+ for tier 1. Higher tiers need more level: tier 10 needs 900. Alone or in a party: a bigger party faces harder monsters and gets +12.5% reward for each extra player (up to +50%).", "pt-BR": "Nível 100+ para o nível 1. Níveis mais altos pedem mais nível: o nível 10 pede 900. Sozinho ou em grupo: um grupo maior enfrenta monstros mais fortes e ganha +12.5% de recompensa por jogador extra (até +50%)."}},
+				{"id": "levels", "text": {"en": "Tier 1: monsters of level 80-180. Tier 5: 380-520. Tier 10 and above: 880-1100.", "pt-BR": "Nível 1: monstros de nível 80-180. Nível 5: 380-520. Nível 10 em diante: 880-1100."}},
+				{"id": "drops", "text": {"en": "A chest after the boss: gold, orbs and gear. Harder key modifiers give a bigger prize. Seal a tier to get a key for the next one.", "pt-BR": "Um baú depois do chefe: ouro, orbes e equipamento. Modificadores mais difíceis dão prêmio maior. Sele um nível para ganhar a chave do próximo."}},
+				{"id": "death", "text": {"en": "Each death costs one shared life: 3 alone, +1 for each extra player. A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half. With no lives left the rift ends and the key is lost.", "pt-BR": "Cada morte gasta uma vida do grupo: 3 sozinho, +1 por jogador extra. Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade. Sem vidas, a fenda acaba e a chave se perde."}},
+				{"id": "often", "text": {"en": "Each run needs one Rift Key; monsters drop them. Time limit: 17 to 21 minutes, by map size. When time runs out the rift fails and the key is spent.", "pt-BR": "Cada corrida pede uma Rift Key; os monstros as soltam. Limite de tempo: 17 a 21 minutos, pelo tamanho do mapa. Se o tempo acabar, a fenda falha e a chave é gasta."}}
+			]
+		},
+		"arena": {
+			"title": {"en": "Arena", "pt-BR": "Arena"},
+			"level": 50,
+			"menu": "Adventure > Arena",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 50+. Queue alone for 1v1, or in a party for 2v2 and 3v3. You meet players of a close level: at least 80% of the highest one, or within 20 levels.", "pt-BR": "Nível 50+. Entre na fila sozinho para 1v1, ou em grupo para 2v2 e 3v3. Você enfrenta jogadores de nível próximo: pelo menos 80% do maior, ou até 20 níveis de diferença."}},
+				{"id": "levels", "text": {"en": "No monsters. You fight other players.", "pt-BR": "Sem monstros. Você luta contra outros jogadores."}},
+				{"id": "drops", "text": {"en": "Each win: 1 Orb of Upheaval. The first win of the day also gives 1 Orb of Fate and 2 more Orbs of Upheaval.", "pt-BR": "Cada vitória: 1 Orb of Upheaval. A primeira vitória do dia dá também 1 Orb of Fate e mais 2 Orbs of Upheaval."}},
+				{"id": "death", "text": {"en": "No real death. The loser just leaves the match. You lose no experience and no items.", "pt-BR": "Sem morte de verdade. Quem perde só sai da partida. Você não perde experiência nem itens."}},
+				{"id": "often", "text": {"en": "10 rewarded wins per day. A match is a 10 second countdown and then 5 minutes at most.", "pt-BR": "10 vitórias com prêmio por dia. Uma partida tem 10 segundos de contagem e depois no máximo 5 minutos."}}
+			]
+		},
+		"battleground": {
+			"title": {"en": "Battleground", "pt-BR": "Campo de Batalha"},
+			"level": 100,
+			"menu": "Adventure > Battleground",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 100+. Teams of 5 to 10 players per side. Queue alone or in a party of up to 5. You meet players of your level bracket: 100-299, 300-599, 600-899, 900+.", "pt-BR": "Nível 100+. Times de 5 a 10 jogadores por lado. Entre na fila sozinho ou em grupo de até 5. Você enfrenta jogadores da sua faixa de nível: 100-299, 300-599, 600-899, 900+."}},
+				{"id": "levels", "text": {"en": "No monsters. Hits are scaled to your bracket, so a higher level gives only a small edge.", "pt-BR": "Sem monstros. Os golpes são ajustados à sua faixa, então um nível maior dá só uma pequena vantagem."}},
+				{"id": "drops", "text": {"en": "Honor, the PvP vendor's money: 120 for a win, 80 for a draw, 50 for a loss. The first win of the week adds 300 honor and orbs. At most 6000 honor a week from matches. Be in at least 50% of the match.", "pt-BR": "Honra, o dinheiro do vendedor de PvP: 120 por vitória, 80 por empate, 50 por derrota. A primeira vitória da semana soma 300 de honra e orbes. No máximo 6000 de honra por semana em partidas. Fique em pelo menos 50% da partida."}},
+				{"id": "death", "text": {"en": "No real death. You go down and wake in your base. You lose no experience and no items.", "pt-BR": "Sem morte de verdade. Você cai e acorda na sua base. Você não perde experiência nem itens."}},
+				{"id": "often", "text": {"en": "Queue any time. 30 seconds to get ready, then 15 minutes. The higher score wins.", "pt-BR": "Entre na fila quando quiser. 30 segundos de preparo, depois 15 minutos. Vence a maior pontuação."}}
+			]
+		},
+		"dungeons": {
+			"title": {"en": "Dungeons", "pt-BR": "Masmorras"},
+			"level": 150,
+			"menu": "Adventure > Dungeons",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 150+, by dungeon: Prince Skeletal 150, Master of the Elements 200, Forbidden Chevalier 500, The Rootmaw 600. Enter alone or queue with a group.", "pt-BR": "Nível 150+, conforme a masmorra: Prince Skeletal 150, Master of the Elements 200, Forbidden Chevalier 500, The Rootmaw 600. Entre sozinho ou na fila com um grupo."}},
+				{"id": "levels", "text": {"en": "The monsters match the dungeon. In a group they get tougher with each extra player.", "pt-BR": "Os monstros seguem a masmorra. Em grupo, ficam mais fortes a cada jogador extra."}},
+				{"id": "drops", "text": {"en": "Boss chests. The item level of the loot rises with the difficulty.", "pt-BR": "Baús de chefe. O nível dos itens sobe com a dificuldade."}},
+				{"id": "death", "text": {"en": "A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half.", "pt-BR": "Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade."}},
+				{"id": "often", "text": {"en": "Each dungeon has its own wait before you can enter again; the window shows it.", "pt-BR": "Cada masmorra tem a sua espera antes de entrar de novo; a janela mostra."}}
+			]
+		},
+		"bosses": {
+			"title": {"en": "Boss Spawns", "pt-BR": "Chefes"},
+			"level": 300,
+			"menu": "Adventure > Boss Spawns",
+			"rows": [
+				{"id": "who", "text": {"en": "World boss: level 300+, up to 40 players together. Pocket boss: your own copy of a boss, alone or in a party of up to 5.", "pt-BR": "Chefe mundial: nível 300+, até 40 jogadores juntos. Chefe de bolso: sua própria cópia de um chefe, sozinho ou em grupo de até 5."}},
+				{"id": "levels", "text": {"en": "World boss: one big boss, shown at level 300.", "pt-BR": "Chefe mundial: um chefe grande, mostrado no nível 300."}},
+				{"id": "drops", "text": {"en": "World boss: its loot, and a reward by how much damage you did. Pocket boss: a smaller reward than the real fight.", "pt-BR": "Chefe mundial: o saque dele e uma recompensa pelo dano que você causou. Chefe de bolso: recompensa menor que a da luta de verdade."}},
+				{"id": "death", "text": {"en": "World boss: A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half. Pocket boss: a deadly hit sends you back safe. You lose nothing, but the try is spent.", "pt-BR": "Chefe mundial: Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade. Chefe de bolso: um golpe mortal manda você de volta em segurança. Você não perde nada, mas a tentativa é gasta."}},
+				{"id": "often", "text": {"en": "World boss every 6 hours: 03:00, 09:00, 15:00, 21:00. The portals stay open 30 minutes. The boss leaves after 45 minutes. Pocket boss: 3 free tries per boss each day; more from the online-time shop (up to 6 saved).", "pt-BR": "Chefe mundial a cada 6 horas: 03:00, 09:00, 15:00, 21:00. Os portais ficam abertos 30 minutos. O chefe vai embora após 45 minutos. Chefe de bolso: 3 tentativas grátis por chefe por dia; mais na loja de tempo online (até 6 guardadas)."}}
+			]
+		},
+		"descent": {
+			"title": {"en": "Ember Descent", "pt-BR": "Ember Descent"},
+			"level": 100,
+			"menu": "Adventure > Ember Descent",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 100+. Alone or in a party of up to 4.", "pt-BR": "Nível 100+. Sozinho ou em grupo de até 4."}},
+				{"id": "levels", "text": {"en": "8 to 12 rooms, each harder than the last. Taking curses gives more reward.", "pt-BR": "8 a 12 salas, cada uma mais difícil que a anterior. Aceitar maldições dá mais recompensa."}},
+				{"id": "drops", "text": {"en": "Rewards at the end of the run, by the depth you reached.", "pt-BR": "Recompensas no fim da corrida, conforme a profundidade que você alcançou."}},
+				{"id": "death", "text": {"en": "No real death. A deadly hit ends your run, and you keep the rewards of the depth you reached. You lose no experience and no items.", "pt-BR": "Sem morte de verdade. Um golpe mortal termina a sua corrida, e você fica com as recompensas da profundidade alcançada. Você não perde experiência nem itens."}},
+				{"id": "often", "text": {"en": "1 free run a day (up to 3 saved if you skip days) and 1 free weekly run. More runs cost 1 Ember Sigil: 25 rune shards and 50,000 gold, made in the Descent window. A run lasts 45 minutes at most.", "pt-BR": "1 corrida grátis por dia (até 3 guardadas se você pular dias) e 1 corrida grátis por semana. Mais corridas custam 1 Ember Sigil: 25 rune shards e 50.000 de ouro, feito na janela do Descent. Uma corrida dura no máximo 45 minutos."}}
+			]
+		},
+		"raid": {
+			"title": {"en": "Ashen Sepulchre", "pt-BR": "Ashen Sepulchre"},
+			"level": 800,
+			"menu": "Adventure > Raid: Ashen Sepulchre",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 800+. Alone or in a party of up to 15. The bosses are made for 5 players and scale to your group.", "pt-BR": "Nível 800+. Sozinho ou em grupo de até 15. Os chefes são feitos para 5 jogadores e se ajustam ao seu grupo."}},
+				{"id": "levels", "text": {"en": "Several bosses in a row. Each one waits behind a door with its own monsters.", "pt-BR": "Vários chefes em sequência. Cada um espera atrás de uma porta, com os seus monstros."}},
+				{"id": "drops", "text": {"en": "Boss rewards: orbs and the raid's own unique gear.", "pt-BR": "Recompensas dos chefes: orbes e os itens únicos da própria raide."}},
+				{"id": "death", "text": {"en": "No real death. You go down, and if everyone falls it is a wipe. You lose no experience and no items.", "pt-BR": "Sem morte de verdade. Você cai, e se todos caírem é um desastre. Você não perde experiência nem itens."}},
+				{"id": "often", "text": {"en": "Once a week: it resets every Monday at 06:00. Your progress of the week is saved.", "pt-BR": "Uma vez por semana: reinicia toda segunda-feira às 06:00. O seu progresso da semana fica salvo."}}
+			]
+		},
+		"siege": {
+			"title": {"en": "Guild Siege", "pt-BR": "Guild Siege"},
+			"level": 100,
+			"menu": "Adventure > Guild Siege",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 100+. For guilds: the leader or vice-leader signs the guild up. The guild needs 3 members, and at least 2 guilds must sign up.", "pt-BR": "Nível 100+. Para guildas: o líder ou vice-líder inscreve a guilda. A guilda precisa de 3 membros, e pelo menos 2 guildas precisam se inscrever."}},
+				{"id": "levels", "text": {"en": "No monsters. Guilds fight each other for the Chaos Obelisk.", "pt-BR": "Sem monstros. As guildas lutam entre si pelo Chaos Obelisk."}},
+				{"id": "drops", "text": {"en": "Gold in the bank and orbs. The winning guild: 500,000 gold, 5 Orbs of Upheaval and 2 of Fate. The others: 150,000 gold and 2 Orbs of Upheaval. Be there at least 5 minutes.", "pt-BR": "Ouro no banco e orbes. A guilda vencedora: 500.000 de ouro, 5 Orbs of Upheaval e 2 de Fate. As outras: 150.000 de ouro e 2 Orbs of Upheaval. Fique pelo menos 5 minutos."}},
+				{"id": "death", "text": {"en": "No real death. You lie down for 3 seconds and wake in your guild base. You lose no experience and no items.", "pt-BR": "Sem morte de verdade. Você fica caído por 3 segundos e acorda na base da guilda. Você não perde experiência nem itens."}},
+				{"id": "often", "text": {"en": "Once a week: Saturday at 20:00. Sign-ups close 5 minutes before. The match lasts 25 minutes.", "pt-BR": "Uma vez por semana: sábado às 20:00. As inscrições fecham 5 minutos antes. A partida dura 25 minutos."}}
+			]
+		},
+		"invasion": {
+			"title": {"en": "Invasions", "pt-BR": "Invasões"},
+			"level": 30,
+			"menu": "Adventure > Events",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 30+, near the invaded area. The more defenders, the bigger the waves.", "pt-BR": "Nível 30+, perto da área invadida. Quanto mais defensores, maiores as ondas."}},
+				{"id": "levels", "text": {"en": "The invaders are scaled to the level of the area.", "pt-BR": "Os invasores seguem o nível da área."}},
+				{"id": "drops", "text": {"en": "A reward by how much you helped. Players below level 30 get none.", "pt-BR": "Uma recompensa conforme a sua ajuda. Quem está abaixo do nível 30 não ganha nada."}},
+				{"id": "death", "text": {"en": "A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half.", "pt-BR": "Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade."}},
+				{"id": "often", "text": {"en": "Every week: Wednesday 19:30 and Sunday 17:30. Some days bring a surprise invasion (35% of days). Each one lasts 20 minutes at most, with 5 waves; the last has a boss.", "pt-BR": "Toda semana: quarta-feira 19:30 e domingo 17:30. Alguns dias trazem uma invasão surpresa (35% dos dias). Cada uma dura no máximo 20 minutos, com 5 ondas; a última tem um chefe."}}
+			]
+		},
+		"bounty": {
+			"title": {"en": "Bounty Board", "pt-BR": "Bounty Board"},
+			"level": 8,
+			"menu": "Adventure > Bounty Board",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 8+. Alone or in a party: party members near you get the kills too.", "pt-BR": "Nível 8+. Sozinho ou em grupo: os colegas por perto também contam as mortes."}},
+				{"id": "levels", "text": {"en": "Contracts name monsters close to your level. You also see the bands next to yours.", "pt-BR": "Os contratos pedem monstros perto do seu nível. Você também vê as faixas vizinhas à sua."}},
+				{"id": "drops", "text": {"en": "Gold in the bank, orbs and experience when you finish. Elite and boss contracts pay x1.5.", "pt-BR": "Ouro no banco, orbes e experiência quando você termina. Contratos de elite e de chefe pagam x1.5."}},
+				{"id": "death", "text": {"en": "A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half.", "pt-BR": "Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade."}},
+				{"id": "often", "text": {"en": "New contracts every day at 06:00. You can hold 3 at once. There is a weekly prize too.", "pt-BR": "Contratos novos todo dia às 06:00. Você pode ter 3 ao mesmo tempo. Também há um prêmio semanal."}}
+			]
+		},
+		"daily": {
+			"title": {"en": "Daily Reward", "pt-BR": "Recompensa Diária"},
+			"level": null,
+			"menu": "Adventure > Daily Reward",
+			"rows": [
+				{"id": "who", "text": {"en": "Every player. One reward a day for the whole account: all your characters share it.", "pt-BR": "Todo jogador. Uma recompensa por dia para a conta inteira: todos os seus personagens dividem."}},
+				{"id": "drops", "text": {"en": "Seven daily rewards in a loop. Streak prizes (orbs) at 7, 14, 30, 60, 100, 180 days in a row.", "pt-BR": "Sete recompensas diárias em ciclo. Prêmios de sequência (orbes) com 7, 14, 30, 60, 100, 180 dias seguidos."}},
+				{"id": "often", "text": {"en": "Once a day. Miss a day and the streak breaks, unless you have a grace charge: you earn one every 7 days (up to 2).", "pt-BR": "Uma vez por dia. Se faltar um dia, a sequência quebra, a menos que você tenha uma carga de graça: você ganha uma a cada 7 dias (até 2)."}}
+			]
+		},
+		"weeklychest": {
+			"title": {"en": "Weekly Chest", "pt-BR": "Baú Semanal"},
+			"level": null,
+			"menu": "Adventure > Weekly Chest",
+			"rows": [
+				{"id": "who", "text": {"en": "Every player. Six activities count: a dungeon, a rift, a waystone run, an Infinity Tower floor, a world boss or invasion, and a bounty contract. Ones you have not unlocked are skipped.", "pt-BR": "Todo jogador. Seis atividades contam: uma masmorra, uma fenda, uma corrida de waystone, um andar da Infinity Tower, um chefe mundial ou invasão, e um contrato de bounty. As que você ainda não liberou são ignoradas."}},
+				{"id": "drops", "text": {"en": "Gold (about an hour of hunting) and orbs. Do every activity you have unlocked for a bonus roll.", "pt-BR": "Ouro (cerca de uma hora de caça) e orbes. Faça todas as atividades liberadas para ganhar um sorteio extra."}},
+				{"id": "often", "text": {"en": "Once a week, new every Monday at 06:00. Do 4 of the 6 activities to open it (fewer if some are locked, never under 2).", "pt-BR": "Uma vez por semana, novo toda segunda às 06:00. Faça 4 das 6 atividades para abrir (menos se algumas estiverem bloqueadas, nunca abaixo de 2)."}}
+			]
+		},
+		"embercache": {
+			"title": {"en": "Ember Cache", "pt-BR": "Ember Cache"},
+			"level": null,
+			"menu": "Adventure > Ember Cache",
+			"rows": [
+				{"id": "who", "text": {"en": "Every player. Any activity gives Ember points: hunting, dungeons, rifts, bounties, bosses, crafting and more.", "pt-BR": "Todo jogador. Qualquer atividade dá pontos de Ember: caça, masmorras, fendas, bounties, chefes, criação e mais."}},
+				{"id": "drops", "text": {"en": "Daily Spark: a small reward when you earn 30 points in a day (the first 40 count double). Weekly cache: gold and orbs at 120, 300 and 600 points.", "pt-BR": "Daily Spark: uma recompensa pequena ao ganhar 30 pontos no dia (os primeiros 40 valem em dobro). Cache semanal: ouro e orbes com 120, 300 e 600 pontos."}},
+				{"id": "often", "text": {"en": "The day and the week turn at 06:00 (the week on Monday).", "pt-BR": "O dia e a semana viram às 06:00 (a semana na segunda)."}}
+			]
+		},
+		"season": {
+			"title": {"en": "Seasons", "pt-BR": "Temporadas"},
+			"level": null,
+			"menu": "Adventure > Season",
+			"rows": [
+				{"id": "who", "text": {"en": "Only a new character of level 7 or less can join, with the Join button. It starts from nothing: items and bank are wiped. Season characters play apart from the normal ones.", "pt-BR": "Só um personagem novo de nível 7 ou menos pode entrar, com o botão Entrar. Ele começa do zero: itens e banco são apagados. Personagens de temporada jogam separados dos normais."}},
+				{"id": "drops", "text": {"en": "A reward track, rankings and season titles. Season of Ash: +10% experience from monsters.", "pt-BR": "Uma trilha de recompensas, rankings e títulos da temporada. Season of Ash: +10% de experiência dos monstros."}},
+				{"id": "death", "text": {"en": "Normal season characters follow the normal death rules. In Hardcore mode you have one life.", "pt-BR": "Personagens de temporada normais seguem as regras normais de morte. No modo Hardcore você tem uma vida."}},
+				{"id": "often", "text": {"en": "Season of Ash runs from 20 Nov 2026 to 19 Feb 2027. Only one season runs at a time.", "pt-BR": "Season of Ash vai de 20/11/2026 a 19/02/2027. Só uma temporada roda por vez."}}
+			]
+		},
+		"factions": {
+			"title": {"en": "Factions", "pt-BR": "Facções"},
+			"level": 40,
+			"menu": "Adventure > Factions",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 40+. Reputation you earn before that is kept. Nothing is locked: even a Hostile faction still talks and trades.", "pt-BR": "Nível 40+. A reputação ganha antes disso fica guardada. Nada fica trancado: até uma facção Hostil ainda fala e negocia."}},
+				{"id": "drops", "text": {"en": "Ranks unlock gear, orb bundles and titles at the faction's quartermaster.", "pt-BR": "Os postos liberam equipamento, pacotes de orbes e títulos com o intendente da facção."}},
+				{"id": "often", "text": {"en": "Kills, rifts, bosses and more give reputation, less after 600 a day, and at most 7500 per faction per week. Each faction has 2 daily and 1 weekly contracts. The day turns at 06:00.", "pt-BR": "Mortes, fendas, chefes e mais dão reputação, menos depois de 600 por dia, e no máximo 7500 por facção por semana. Cada facção tem 2 contratos diários e 1 semanal. O dia vira às 06:00."}}
+			]
+		},
+		"gamble": {
+			"title": {"en": "The Gambler", "pt-BR": "O Apostador"},
+			"level": 40,
+			"menu": "Economy > The Gambler",
+			"rows": [
+				{"id": "who", "text": {"en": "Level 40+. The Gambler sells sealed gear for gold. You see how rare it is only after you buy it.", "pt-BR": "Nível 40+. O Apostador vende equipamento lacrado por ouro. Você só vê a raridade depois de comprar."}},
+				{"id": "drops", "text": {"en": "One piece of gear for your level and class.", "pt-BR": "Uma peça de equipamento para o seu nível e a sua classe."}},
+				{"id": "often", "text": {"en": "The stock is new every 4 hours, 14 pieces each time. You can buy an early refresh.", "pt-BR": "O estoque renova a cada 4 horas, com 14 peças. Você pode comprar uma renovação antecipada."}}
+			]
+		},
+		"goals": {
+			"title": {"en": "Next Goals", "pt-BR": "Próximas Metas"},
+			"level": null,
+			"menu": "Adventure > Next Goals",
+			"rows": [
+				{"id": "who", "text": {"en": "Every player. It shows the goals of your level, the gear to look for, where to hunt and what unlocks next.", "pt-BR": "Todo jogador. Mostra as metas do seu nível, o equipamento para procurar, onde caçar e o que libera em seguida."}},
+				{"id": "drops", "text": {"en": "Most goals give a reward when you finish them.", "pt-BR": "A maioria das metas dá uma recompensa quando você termina."}},
+				{"id": "often", "text": {"en": "New goals come as you level up. The tracker keeps the next ones on your screen.", "pt-BR": "Metas novas chegam conforme você sobe de nível. O marcador deixa as próximas na tela."}}
+			]
+		},
+		"passive": {
+			"title": {"en": "Passive Tree", "pt-BR": "Árvore Passiva"},
+			"level": 12,
+			"menu": "Character > Passive Tree",
+			"rows": [
+				{"id": "what", "text": {"en": "A big tree of small bonuses. Start next to the centre and take nodes that touch the ones you have. Plan first, then press Apply Plan.", "pt-BR": "Uma grande árvore de pequenos bônus. Comece perto do centro e pegue nós vizinhos aos que já tem. Planeje antes e depois clique em Aplicar plano."}},
+				{"id": "who", "text": {"en": "Every player. Your first point comes at level 12, then one more every 4 levels.", "pt-BR": "Todo jogador. Seu primeiro ponto chega no nível 12, depois mais um a cada 4 níveis."}},
+				{"id": "often", "text": {"en": "Adding a node is free. Taking nodes back is free below level 50; after that a single node or a full reset costs gold.", "pt-BR": "Adicionar um nó é grátis. Tirar nós é grátis abaixo do nível 50; depois disso um nó ou uma redistribuição total custa ouro."}}
+			]
+		},
+		"spellbook": {
+			"title": {"en": "Spellbook", "pt-BR": "Livro de Magias"},
+			"level": null,
+			"menu": "Character > Spellbook",
+			"rows": [
+				{"id": "what", "text": {"en": "Every spell of the game: its words, level, mana, cooldown and the area it hits. Search by name or words, or show only your class.", "pt-BR": "Todas as magias do jogo: palavras, nível, mana, recarga e a área que atinge. Busque pelo nome ou pelas palavras, ou mostre só a sua classe."}},
+				{"id": "who", "text": {"en": "Every player. No spell needs premium.", "pt-BR": "Todo jogador. Nenhuma magia pede premium."}},
+				{"id": "often", "text": {"en": "New spells open as you level up; Available soon lists the next ones. A few line spells need a quest first: the spell names the teacher and the level.", "pt-BR": "Magias novas abrem conforme você sobe de nível; Em breve mostra as próximas. Algumas magias de linha pedem uma quest antes: a magia mostra o mestre e o nível."}}
+			]
+		},
+		"bestiary": {
+			"title": {"en": "Bestiary", "pt-BR": "Bestiário"},
+			"level": null,
+			"menu": "Hunt > Bestiary",
+			"rows": [
+				{"id": "what", "text": {"en": "A book of every monster. Your kills fill its page in 4 stages, and each stage shows more: health, weaknesses, where it lives, then the whole loot list.", "pt-BR": "Um livro de todos os monstros. Suas mortes preenchem a página em 4 etapas, e cada etapa mostra mais: vida, fraquezas, onde vive e depois todo o saque."}},
+				{"id": "who", "text": {"en": "Every player. Party members within 30 squares of you count the kills too.", "pt-BR": "Todo jogador. Colegas de grupo a até 30 quadrados de você também contam as mortes."}},
+				{"id": "drops", "text": {"en": "A completed page gives +1% to +3% damage and experience against that monster. Bestiary points raise your rank, up to +3% experience from every monster.", "pt-BR": "Uma página completa dá +1% a +3% de dano e experiência contra aquele monstro. Pontos de bestiário sobem o seu posto, até +3% de experiência de todos os monstros."}},
+				{"id": "often", "text": {"en": "Kill Tasks (same window): hold 3 at once, finish up to 4 a day and 20 a week. They pay gold, orbs, experience and bestiary points. The day turns at 06:00.", "pt-BR": "Tarefas de Abate (mesma janela): tenha 3 ao mesmo tempo, conclua até 4 por dia e 20 por semana. Pagam ouro, orbes, experiência e pontos de bestiário. O dia vira às 06:00."}}
+			]
+		},
+		"professions": {
+			"title": {"en": "Professions", "pt-BR": "Profissões"},
+			"level": 20,
+			"menu": "Economy > Professions",
+			"rows": [
+				{"id": "what", "text": {"en": "4 gathering trades: Delving, Wortcunning, Flaying and Angling. Each has its own level, up to 100. Ore veins and herb patches stand in the hunting grounds; flay beasts and reptiles you kill; fish in any water.", "pt-BR": "4 profissões de coleta: Delving, Wortcunning, Flaying e Angling. Cada uma tem o seu nível, até 100. Veios de minério e moitas de ervas ficam nas áreas de caça; esfole feras e répteis que matar; pesque em qualquer água."}},
+				{"id": "who", "text": {"en": "Every player from level 8. You need the tool: a pick, a sickle, an obsidian knife or a fishing rod. The Material Broker next to the temple sells them.", "pt-BR": "Todo jogador a partir do nível 8. Você precisa da ferramenta: uma picareta, uma foice, uma faca de obsidiana ou uma vara de pesca. O Material Broker perto do templo vende."}},
+				{"id": "levels", "text": {"en": "Better materials need a profession level and a character level: Common (profession 1, level 8), Fine (profession 20, level 40), Rare (profession 40, level 100), Grim (profession 60, level 250), Infernal (profession 80, level 500).", "pt-BR": "Materiais melhores pedem um nível de profissão e um nível de personagem: Common (profissão 1, nível 8), Fine (profissão 20, nível 40), Rare (profissão 40, nível 100), Grim (profissão 60, nível 250), Infernal (profissão 80, nível 500)."}},
+				{"id": "drops", "text": {"en": "Materials to sell to the Material Broker or on the Market; they make no gear. Each profession level also adds a little monster experience, up to +10% with all of them high.", "pt-BR": "Materiais para vender ao Material Broker ou no Market; eles não fazem equipamento. Cada nível de profissão também soma um pouco de experiência dos monstros, até +10% com todas altas."}},
+				{"id": "often", "text": {"en": "A node is ready for you again 6 minutes after you use it, and nobody can take it from you. The broker pays full price for 100 of each material a day, then 50% up to 200.", "pt-BR": "Um ponto de coleta fica pronto de novo para você 6 minutos depois de usar, e ninguém pode tirá-lo de você. O broker paga o preço cheio por 100 de cada material por dia, depois 50% até 200."}}
+			]
+		},
+		"charms": {
+			"title": {"en": "Charms", "pt-BR": "Amuletos"},
+			"level": 15,
+			"menu": "Character > Charms",
+			"rows": [
+				{"id": "what", "text": {"en": "A grid next to your gear. A charm is a small item with one or two bonuses: damage to a monster family, a resistance, gold or orb find, and more. Bigger charms take more cells.", "pt-BR": "Uma grade ao lado do seu equipamento. Um amuleto é um item pequeno com um ou dois bônus: dano contra uma família de monstros, uma resistência, achar ouro ou orbes, e mais. Amuletos maiores ocupam mais casas."}},
+				{"id": "who", "text": {"en": "Level 15+. 6 cells are open from the start; more open from level 200 and with an achievement.", "pt-BR": "Nível 15+. 6 casas abrem desde o início; mais abrem a partir do nível 200 e com uma conquista."}},
+				{"id": "drops", "text": {"en": "Bounty contracts (4% chance), invasions, dungeons, the Ember Descent and rifts of tier 6 and up. A few are uniques with a special power. Salvage a charm into shards; shards reforge the values of another.", "pt-BR": "Contratos de bounty (4% de chance), invasões, masmorras, o Ember Descent e fendas de nível 6 para cima. Alguns são únicos com um poder especial. Recicle um amuleto em fragmentos; os fragmentos refazem os valores de outro."}},
+				{"id": "often", "text": {"en": "A charm works only while it sits in an open cell. Place and move charms out of combat, as often as you like.", "pt-BR": "Um amuleto só funciona numa casa aberta. Coloque e mova amuletos fora de combate, quantas vezes quiser."}}
+			]
+		},
+		"achievements": {
+			"title": {"en": "Achievements", "pt-BR": "Conquistas"},
+			"level": null,
+			"menu": "Character > Achievements",
+			"rows": [
+				{"id": "what", "text": {"en": "189 achievements in 11 groups, from leveling and monsters to bosses, rifts, crafting and PvP. 12 stay secret until you earn them.", "pt-BR": "189 conquistas em 11 grupos, de subir de nível e monstros a chefes, fendas, criação e PvP. 12 ficam secretas até você conseguir."}},
+				{"id": "who", "text": {"en": "Every player. Most unlock by themselves while you play.", "pt-BR": "Todo jogador. A maioria libera sozinha enquanto você joga."}},
+				{"id": "drops", "text": {"en": "Achievement points; many also give a title, gold, items, an outfit, a mount or a portal style. Finish every achievement of a group for its own title.", "pt-BR": "Pontos de conquista; muitas também dão um título, ouro, itens, um traje, uma montaria ou um estilo de portal. Complete todas as conquistas de um grupo para ganhar o título dele."}},
+				{"id": "often", "text": {"en": "Once each. Progress never goes back. Pick a title you earned in this window.", "pt-BR": "Uma vez cada. O progresso nunca volta. Escolha um título que você ganhou nesta janela."}}
+			]
+		},
+		"loadouts": {
+			"title": {"en": "Loadouts", "pt-BR": "Loadouts"},
+			"level": 15,
+			"menu": "Character > Loadouts",
+			"rows": [
+				{"id": "what", "text": {"en": "Save your build and switch to another one: passive tree, Paragon points, the support runes of your spells and a set of gear.", "pt-BR": "Salve a sua build e troque para outra: árvore passiva, pontos de Paragon, as runas de suporte das magias e um conjunto de equipamento."}},
+				{"id": "who", "text": {"en": "Level 15+. 3 slots, one more at level 200 and at level 500, and 1 more while the Chaos Pact runs.", "pt-BR": "Nível 15+. 3 espaços, mais um no nível 200 e no nível 500, e mais 1 enquanto o Chaos Pact estiver ativo."}},
+				{"id": "often", "text": {"en": "A switch is free. Out of combat and never inside an instance: at once in a safe zone, elsewhere after 3 seconds standing still. Then wait 60 seconds for the next one.", "pt-BR": "Trocar é grátis. Fora de combate e nunca dentro de uma instância: na hora numa zona segura, fora dela após 3 segundos parado. Depois espere 60 segundos para a próxima."}}
+			]
+		},
+		"townportal": {
+			"title": {"en": "Town Portal", "pt-BR": "Portal da Cidade"},
+			"level": null,
+			"menu": "Character > Town Portal",
+			"rows": [
+				{"id": "what", "text": {"en": "Open a portal from the field to your temple. A return portal at the temple takes you back to the same spot.", "pt-BR": "Abra um portal do campo até o seu templo. Um portal de volta no templo leva você ao mesmo lugar."}},
+				{"id": "who", "text": {"en": "Every player. Your party may use your portals too.", "pt-BR": "Todo jogador. O seu grupo também pode usar os seus portais."}},
+				{"id": "drops", "text": {"en": "The styles of this window change only the look of the portal. They come from the store, achievements and the season pass.", "pt-BR": "Os estilos desta janela mudam só a aparência do portal. Vêm da loja, de conquistas e do passe da temporada."}},
+				{"id": "often", "text": {"en": "Casting takes 3 seconds; moving or taking damage stops it. Then 60 seconds of cooldown. The portals close after 5 minutes, or when you walk back.", "pt-BR": "Conjurar leva 3 segundos; andar ou levar dano interrompe. Depois 60 segundos de recarga. Os portais fecham após 5 minutos, ou quando você volta por ele."}}
+			]
+		},
+		"stash": {
+			"title": {"en": "Supply Stash", "pt-BR": "Supply Stash"},
+			"level": null,
+			"menu": "Economy > Supply Stash",
+			"rows": [
+				{"id": "what", "text": {"en": "Your item storage. All of one plain item fills one slot: a big stack of gold coins is a single entry.", "pt-BR": "O seu depósito de itens. Tudo de um mesmo item simples ocupa um espaço: uma pilha enorme de moedas de ouro é uma entrada só."}},
+				{"id": "who", "text": {"en": "Every player. Each character has its own stash; every character of the account gets the same room.", "pt-BR": "Todo jogador. Cada personagem tem o seu stash; todos os personagens da conta têm o mesmo espaço."}},
+				{"id": "often", "text": {"en": "30 slots free. The store sells expansions of 25 slots (up to 20) and tabs that each hold one kind of item. The Chaos Pact lends 1 expansion while it runs.", "pt-BR": "30 espaços grátis. A loja vende expansões de 25 espaços (até 20) e abas para um tipo de item cada. O Chaos Pact empresta 1 expansão enquanto estiver ativo."}}
+			]
+		},
+		"autoloot": {
+			"title": {"en": "Auto Loot", "pt-BR": "Auto Loot"},
+			"level": null,
+			"menu": "Hunt > Auto Loot",
+			"rows": [
+				{"id": "what", "text": {"en": "Items on your list go from the corpse into your backpack by themselves when you kill.", "pt-BR": "Os itens da sua lista vão do corpo para a sua mochila sozinhos quando você mata."}},
+				{"id": "who", "text": {"en": "Every player. Add an item by its name here, or right-click it and choose Add to Loot List.", "pt-BR": "Todo jogador. Adicione um item pelo nome aqui, ou clique com o botão direito nele e escolha Add to Loot List."}},
+				{"id": "often", "text": {"en": "10 items on the list; premium time or the Chaos Pact raise it to 20.", "pt-BR": "10 itens na lista; tempo premium ou o Chaos Pact sobem para 20."}}
+			]
+		},
+		"lootfilter": {
+			"title": {"en": "Loot Filter", "pt-BR": "Filtro de Saque"},
+			"level": null,
+			"menu": "Hunt > Loot Filter",
+			"rows": [
+				{"id": "what", "text": {"en": "Choose which drops stand out: rarity, uniques, orbs and more. A matching drop gets a light beam over the corpse, a sound and a line in the loot feed.", "pt-BR": "Escolha quais itens se destacam: raridade, únicos, orbes e mais. Um item escolhido ganha uma luz sobre o corpo, um som e uma linha no registro de saque."}},
+				{"id": "who", "text": {"en": "Every player. Start from a preset, then change any rule.", "pt-BR": "Todo jogador. Comece de um modelo e depois mude qualquer regra."}},
+				{"id": "often", "text": {"en": "The loot feed keeps your last 50 kills. Click an item there to loot it while the corpse is on your screen.", "pt-BR": "O registro de saque guarda as suas últimas 50 mortes. Clique num item ali para pegar enquanto o corpo está na sua tela."}}
+			]
+		},
+		"itemfinder": {
+			"title": {"en": "Item Finder", "pt-BR": "Item Finder"},
+			"level": null,
+			"menu": "Economy > Item Finder",
+			"rows": [
+				{"id": "what", "text": {"en": "Search any item and see where it comes from: monsters, chests and rewards, recipes, NPC shops, the store, the Gambler and gathering. It also shows who buys it and what uses it.", "pt-BR": "Busque qualquer item e veja de onde ele vem: monstros, baús e recompensas, receitas, lojas de NPC, a loja, o Apostador e a coleta. Também mostra quem compra e onde ele é usado."}},
+				{"id": "who", "text": {"en": "Every player. Type at least 2 letters of the name.", "pt-BR": "Todo jogador. Digite pelo menos 2 letras do nome."}}
+			]
+		},
+		"codex": {
+			"title": {"en": "Codex", "pt-BR": "Códex"},
+			"level": null,
+			"menu": "Economy > Codex",
+			"rows": [
+				{"id": "what", "text": {"en": "The book of the item system: modifiers, powers, orbs, gems, uniques, sets, rifts, supports, materials, the basics and the lore.", "pt-BR": "O livro do sistema de itens: modificadores, poderes, orbes, gemas, únicos, conjuntos, fendas, suportes, materiais, o básico e a história."}},
+				{"id": "who", "text": {"en": "Every player. Search with any word, then use the filters of the tab. Where to find opens the Item Finder.", "pt-BR": "Todo jogador. Busque com qualquer palavra e depois use os filtros da aba. Onde achar abre o Item Finder."}}
+			]
+		},
+		"partyfinder": {
+			"title": {"en": "Party Finder", "pt-BR": "Procurar Grupo"},
+			"level": null,
+			"menu": "Social > Party Finder",
+			"rows": [
+				{"id": "what", "text": {"en": "Find a group, or players for yours: post what you want to do and the roles you need (tank, healer, damage), or apply to a listing.", "pt-BR": "Ache um grupo, ou jogadores para o seu: anuncie o que quer fazer e as funções que precisa (tank, healer, dano), ou candidate-se a um anúncio."}},
+				{"id": "who", "text": {"en": "Every player. Activities: Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial and Battleground, or anything else.", "pt-BR": "Todo jogador. Atividades: Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial e Battleground, ou qualquer outra coisa."}},
+				{"id": "often", "text": {"en": "A listing closes by itself after 15 to 120 minutes, as you choose. You can have 5 applications open at once.", "pt-BR": "Um anúncio fecha sozinho após 15 a 120 minutos, como você escolher. Você pode ter 5 candidaturas abertas ao mesmo tempo."}}
+			]
+		},
+		"mentor": {
+			"title": {"en": "Mentors", "pt-BR": "Mentores"},
+			"level": null,
+			"menu": "Social > Mentors",
+			"rows": [
+				{"id": "what", "text": {"en": "A veteran helps a new player. While they hunt together, the apprentice gets +10% experience and 5% less damage from monsters.", "pt-BR": "Um veterano ajuda um jogador novo. Enquanto caçam juntos, o aprendiz ganha +10% de experiência e 5% menos dano dos monstros."}},
+				{"id": "who", "text": {"en": "Apprentice: a character of level 79 or less, on an account up to 60 days old. Mentor: an account with a level 150 character, 100 hours played and 30 days of age.", "pt-BR": "Aprendiz: um personagem de nível 79 ou menos, numa conta de até 60 dias. Mentor: uma conta com um personagem nível 150, 100 horas jogadas e 30 dias de idade."}},
+				{"id": "drops", "text": {"en": "Milestones (levels, a first rift, dungeon, bounty contract and world boss) give the mentor Mentor Marks for titles, looks and supplies. At level 200 the apprentice graduates and gets 100 health and 100 mana potions.", "pt-BR": "Marcos (níveis, a primeira fenda, masmorra, contrato de bounty e chefe mundial) dão ao mentor Mentor Marks para títulos, visuais e suprimentos. No nível 200 o aprendiz se forma e ganha 100 poções de vida e 100 de mana."}},
+				{"id": "often", "text": {"en": "A mentor has up to 3 apprentices at once. The bonus works only near each other, with the mentor's character close to the apprentice's level.", "pt-BR": "Um mentor tem até 3 aprendizes ao mesmo tempo. O bônus só funciona perto um do outro, com o personagem do mentor perto do nível do aprendiz."}}
+			]
+		},
+		"guild": {
+			"title": {"en": "Guild", "pt-BR": "Guilda"},
+			"level": null,
+			"menu": "Social > Guild",
+			"rows": [
+				{"id": "what", "text": {"en": "Your guild gains guild levels (up to 20) from what its members do: experience, bounty contracts, rifts, world bosses, invasions and sieges.", "pt-BR": "A sua guilda ganha níveis de guilda (até 20) com o que os membros fazem: experiência, contratos de bounty, fendas, chefes mundiais, invasões e cercos."}},
+				{"id": "who", "text": {"en": "Every member of a guild.", "pt-BR": "Todo membro de uma guilda."}},
+				{"id": "drops", "text": {"en": "Guild levels give every member perks: up to +5% experience and +5% loot, cheaper respecs and more depot room. At guild level 5 the guild gets its own guild hall.", "pt-BR": "Os níveis da guilda dão vantagens a todos os membros: até +5% de experiência e +5% de saque, redistribuição mais barata e mais espaço no depósito. No nível 5 a guilda ganha o seu salão."}},
+				{"id": "often", "text": {"en": "Each member adds at most 400 guild XP a day.", "pt-BR": "Cada membro soma no máximo 400 de XP de guilda por dia."}}
+			]
+		},
+		"seasonpass": {
+			"title": {"en": "Season Pass", "pt-BR": "Passe da Temporada"},
+			"level": 10,
+			"menu": "Adventure > Season Pass",
+			"rows": [
+				{"id": "what", "text": {"en": "A reward track of 50 tiers. Pass XP from play fills it.", "pt-BR": "Uma trilha de recompensas com 50 níveis. A XP do passe, ganha jogando, enche a trilha."}},
+				{"id": "who", "text": {"en": "Every player. The pass counts for the whole account, season and normal characters alike, and starts from zero each season.", "pt-BR": "Todo jogador. O passe vale para a conta inteira, personagens de temporada e normais, e começa do zero a cada temporada."}},
+				{"id": "drops", "text": {"en": "A free track of gold and potions, and a premium track (sold in the store) with Chaos Coins, titles, outfits and other looks. Looks are yours forever.", "pt-BR": "Uma trilha grátis de ouro e poções, e uma trilha premium (vendida na loja) com Chaos Coins, títulos, trajes e outros visuais. Os visuais ficam com você para sempre."}},
+				{"id": "often", "text": {"en": "Pass XP comes from experience, bosses, bounty contracts, rifts, treasure goblins and invasions, each with a daily cap; the caps of 3 days add up, so a missed day can be caught up. Daily and weekly challenges give more. Claim rewards up to 14 days after the season ends.", "pt-BR": "A XP do passe vem de experiência, chefes, contratos de bounty, fendas, treasure goblins e invasões, cada um com limite diário; os limites de 3 dias se somam, então um dia perdido pode ser recuperado. Desafios diários e semanais dão mais. Pegue as recompensas até 14 dias depois do fim da temporada."}}
+			]
+		},
+		"hideout": {
+			"title": {"en": "Hideout", "pt-BR": "Esconderijo"},
+			"level": 30,
+			"menu": "Character > Hideout",
+			"rows": [
+				{"id": "what", "text": {"en": "Your own room, with your depot, the supply stash, exercise dummies and a waystone device. Decorations change only its look.", "pt-BR": "A sua própria sala, com o seu depósito, o supply stash, bonecos de treino e um dispositivo de waystone. As decorações mudam só a aparência."}},
+				{"id": "who", "text": {"en": "Every character has one. Enter through the Hideout Portal of any town.", "pt-BR": "Todo personagem tem um. Entre pelo Hideout Portal de qualquer cidade."}},
+				{"id": "drops", "text": {"en": "Decorations come from achievements, boss kills, factions, the Ember Descent and the store.", "pt-BR": "As decorações vêm de conquistas, chefes mortos, facções, do Ember Descent e da loja."}},
+				{"id": "often", "text": {"en": "Go any time. Choose who may visit: only you, friends, your guild or everyone. You can like 10 hideouts of others a day.", "pt-BR": "Vá quando quiser. Escolha quem pode visitar: só você, amigos, a sua guilda ou todos. Você pode curtir 10 esconderijos de outros por dia."}}
+			]
+		},
+		"transmog": {
+			"title": {"en": "Transmog", "pt-BR": "Transmog"},
+			"level": 30,
+			"menu": "Character > Transmog",
+			"rows": [
+				{"id": "what", "text": {"en": "Make a worn item look like another item of the same kind. Only the look changes; the stats stay the item's own.", "pt-BR": "Faça um item equipado parecer outro item do mesmo tipo. Só a aparência muda; os atributos continuam os do item."}},
+				{"id": "who", "text": {"en": "Every player. Looks are saved for the whole account: carry or wear an item once to learn its look.", "pt-BR": "Todo jogador. As aparências ficam salvas para a conta inteira: carregue ou use um item uma vez para aprender a aparência."}},
+				{"id": "often", "text": {"en": "A look costs 2,000 gold plus 10 per item level, 20,000 at most. Taking it off is free.", "pt-BR": "Uma aparência custa 2.000 de ouro mais 10 por nível do item, no máximo 20.000. Tirar é grátis."}}
+			]
+		},
+		"nemesis": {
+			"title": {"en": "Nemesis", "pt-BR": "Nêmesis"},
+			"level": 50,
+			"menu": "Hunt > Nemesis",
+			"rows": [
+				{"id": "what", "text": {"en": "A monster that kills you may become your Nemesis: stronger, with special traits, and it comes back to hunt you.", "pt-BR": "Um monstro que mata você pode virar o seu Nêmesis: mais forte, com traços especiais, e ele volta para caçar você."}},
+				{"id": "who", "text": {"en": "Level 50+. Each death to a normal monster outside instances has a 25% chance. You have at most 1 at a time.", "pt-BR": "Nível 50+. Cada morte para um monstro comum fora de instâncias tem 25% de chance. Você tem no máximo 1 por vez."}},
+				{"id": "drops", "text": {"en": "It gives x2.5 experience. Slay your own Nemesis for gold and a trophy; slaying another player's pays a bounty.", "pt-BR": "Ele dá x2.5 de experiência. Mate o seu Nêmesis por ouro e um troféu; matar o de outro jogador paga uma recompensa."}},
+				{"id": "death", "text": {"en": "A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half.", "pt-BR": "Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade."}},
+				{"id": "often", "text": {"en": "While you hunt, each kill of its kind or of a monster near its level has a 4% chance to call it, at most once in 30 minutes. It leaves after 5 minutes. Unseen for 14 days, it is gone.", "pt-BR": "Enquanto você caça, cada morte do mesmo tipo ou de um monstro perto do nível dele tem 4% de chance de chamá-lo, no máximo uma vez a cada 30 minutos. Ele vai embora após 5 minutos. Sem aparecer por 14 dias, some."}}
+			]
+		},
+		"pact": {
+			"title": {"en": "Chaos Pact", "pt-BR": "Chaos Pact"},
+			"level": null,
+			"menu": "Character > Chaos Pact",
+			"rows": [
+				{"id": "what", "text": {"en": "The server's monthly membership, bought with Chaos Coins: comfort and looks.", "pt-BR": "A assinatura mensal do servidor, comprada com Chaos Coins: conforto e visuais."}},
+				{"id": "who", "text": {"en": "Every account. One purchase gives 30 days; more purchases add time. The experience bonus does not reach season characters.", "pt-BR": "Toda conta. Uma compra dá 30 dias; mais compras somam tempo. O bônus de experiência não vale para personagens de temporada."}},
+				{"id": "drops", "text": {"en": "While it runs: +10% experience from monsters, stamina comes back x1.5 faster, more storage and room, and 5 Pact Marks a day for looks.", "pt-BR": "Enquanto estiver ativo: +10% de experiência dos monstros, a stamina volta x1.5 mais rápido, mais espaço e depósito, e 5 Pact Marks por dia para visuais."}},
+				{"id": "often", "text": {"en": "Claim the Marks in this window once a day while the Pact runs; a missed day is not paid later.", "pt-BR": "Pegue as Marks nesta janela uma vez por dia enquanto o Pact estiver ativo; um dia perdido não é pago depois."}}
+			]
+		},
+		"shop": {
+			"title": {"en": "Store", "pt-BR": "Loja"},
+			"level": null,
+			"menu": "Economy > Store",
+			"rows": [
+				{"id": "what", "text": {"en": "The Chaos store. Prices are in Chaos Coins, kept for the whole account.", "pt-BR": "A loja do Chaos. Os preços são em Chaos Coins, guardadas para a conta inteira."}},
+				{"id": "who", "text": {"en": "Every player. Buy coins with the coin packs. Many offers can be sent to a friend as a gift.", "pt-BR": "Todo jogador. Compre moedas com os pacotes de moedas. Muitas ofertas podem ser enviadas de presente a um amigo."}},
+				{"id": "drops", "text": {"en": "Looks (outfits, mounts, wings, auras, portal styles), more storage room, services such as a name change, and comfort items.", "pt-BR": "Visuais (trajes, montarias, asas, auras, estilos de portal), mais espaço de depósito, serviços como troca de nome, e itens de conforto."}}
+			]
+		},
+		"market": {
+			"title": {"en": "Market", "pt-BR": "Market"},
+			"level": 8,
+			"menu": "Economy > Market",
+			"rows": [
+				{"id": "what", "text": {"en": "Sell to other players for gold or Chaos Coins. Post a buy order for the gear you are after.", "pt-BR": "Venda para outros jogadores por ouro ou Chaos Coins. Faça uma oferta de compra do equipamento que procura."}},
+				{"id": "who", "text": {"en": "Level 8+.", "pt-BR": "Nível 8+."}}
+			]
+		},
+		"crafting": {
+			"title": {"en": "Crafting Bench", "pt-BR": "Crafting Bench"},
+			"level": 20,
+			"menu": "Economy > Crafting Bench",
+			"rows": [
+				{"id": "what", "text": {"en": "Improve your gear with orbs and see a preview first. Salvage what you do not need for shards.", "pt-BR": "Melhore seu equipamento com orbes e veja uma prévia antes. Recicle o que não precisa em fragmentos."}},
+				{"id": "who", "text": {"en": "Level 20+.", "pt-BR": "Nível 20+."}}
+			]
+		},
+		"pets": {
+			"title": {"en": "Pets", "pt-BR": "Pets"},
+			"level": 25,
+			"menu": "Character > Pets",
+			"rows": [
+				{"id": "what", "text": {"en": "A small companion that follows you and levels with your kills. Call one out in the window.", "pt-BR": "Um pequeno companheiro que te segue e sobe de nível com suas mortes. Chame um pela janela."}},
+				{"id": "who", "text": {"en": "Level 25+.", "pt-BR": "Nível 25+."}}
+			]
+		},
+		"salvage": {
+			"title": {"en": "Salvage", "pt-BR": "Reciclagem"},
+			"level": 20,
+			"menu": "Economy > Salvage",
+			"rows": [
+				{"id": "what", "text": {"en": "Break gear you do not need into shards and orbs. Lock the pieces you want to keep first.", "pt-BR": "Quebre o equipamento que não precisa em fragmentos e orbes. Tranque antes as peças que quer guardar."}},
+				{"id": "who", "text": {"en": "Level 20+.", "pt-BR": "Nível 20+."}}
+			]
+		},
+		"orbexchange": {
+			"title": {"en": "Orb Exchange", "pt-BR": "Orb Exchange"},
+			"level": 20,
+			"menu": null,
+			"rows": [
+				{"id": "what", "text": {"en": "Trade crafting orbs with other players. Post the price you want and wait for a buyer.", "pt-BR": "Troque orbes de criação com outros jogadores. Coloque o preço que quer e espere um comprador."}},
+				{"id": "who", "text": {"en": "Level 20+.", "pt-BR": "Nível 20+."}}
+			]
+		},
+		"conquest": {
+			"title": {"en": "Conquest Vendor", "pt-BR": "Conquest Vendor"},
+			"level": 50,
+			"menu": null,
+			"rows": [
+				{"id": "what", "text": {"en": "Spend Conquest Tokens on uniques and set pieces. Bosses and clears give the tokens.", "pt-BR": "Gaste Conquest Tokens em itens únicos e peças de conjunto. Chefes e conclusões dão os tokens."}},
+				{"id": "who", "text": {"en": "Level 50+.", "pt-BR": "Nível 50+."}}
+			]
+		},
+		"guildwar": {
+			"title": {"en": "Guild Wars", "pt-BR": "Guild Wars"},
+			"level": 50,
+			"menu": null,
+			"rows": [
+				{"id": "what", "text": {"en": "Guild against guild: declare a war and count the kills. Leaders and vice-leaders declare it.", "pt-BR": "Guilda contra guilda: declare uma guerra e conte as mortes. Líderes e vice-líderes declaram."}},
+				{"id": "who", "text": {"en": "Level 50+.", "pt-BR": "Nível 50+."}}
+			]
+		},
+		"pvpzone": {
+			"title": {"en": "Scorched Marches", "pt-BR": "Scorched Marches"},
+			"level": 150,
+			"menu": null,
+			"rows": [
+				{"id": "what", "text": {"en": "An open zone where players fight players. Go in only when you are ready to be hunted.", "pt-BR": "Uma zona aberta onde jogadores lutam contra jogadores. Entre só quando estiver pronto para ser caçado."}},
+				{"id": "who", "text": {"en": "Level 150+.", "pt-BR": "Nível 150+."}}
+			]
+		}
+	}
+}

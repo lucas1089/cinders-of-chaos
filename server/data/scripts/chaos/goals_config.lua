@@ -47,11 +47,20 @@ local function win(m, f)
 	return W("window", {m = m, f = f or "toggle"})
 end
 
--- "Reach level n", unlocked at `from` (the band before n: it is that band's last goal)
+-- the level milestones (O378, milestones_config.lua): the title and the Milestone Cache of each, and one challenge goal
+-- per milestone (appended to C.goals below)
+if not ChaosMilestonesCore or not ChaosMilestonesCore.goals then
+	dofile("data/scripts/chaos/milestones_core.lua")
+end
+local MILESTONES = ChaosMilestonesCore.goals(dofile("data/scripts/chaos/milestones_config.lua"),
+	dofile("data/scripts/chaos/achievements_data.lua"))
+
+-- "Reach level n", unlocked at `from` (the band before n, or the milestone before n). A milestone level says its title
+-- and its cache.
 local function lvl(n, from)
 	return {key = "lvl" .. n, level = from, stat = "level", target = n,
 		title = T("Reach level " .. n, "Alcance o nível " .. n),
-		why = T("New content, gear and goals unlock with every band.",
+		why = MILESTONES.why[n] or T("New content, gear and goals unlock with every band.",
 			"Novo conteúdo, equipamento e objetivos se abrem a cada faixa."),
 		where = W("hunts"),
 		effort = T("Hunt at your level; bounties and kill tasks add experience.",
@@ -169,7 +178,17 @@ C.hunts = {
 	{id = "cinderbrick_halls", name = "Cinderbrick Halls", level = {300, 470}},
 	{id = "dunereach_isle", name = "Dunereach Isle", level = {570, 700}},
 	{id = "rimewind_isle", name = "Rimewind Isle", level = {900, 1000}},
-	{id = "sunken_mirewood", name = "Sunken Mirewood", level = {480, 540}}
+	{id = "sunken_mirewood", name = "Sunken Mirewood", level = {480, 540}},
+	-- O375: more hunting choice for levels 6-62 (floor 7) and 1500-2100 (floor 5)
+	{id = "thistlewood_hollow", name = "Thistlewood Hollow", level = {6, 12}},
+	{id = "copperdelve_mine", name = "Copperdelve Mine", level = {11, 17}},
+	{id = "ashgrave_barrow", name = "Ashgrave Barrow", level = {18, 26}},
+	{id = "murkreed_fen", name = "Murkreed Fen", level = {24, 34}},
+	{id = "chitinmaw_warren", name = "Chitinmaw Warren", level = {44, 56}},
+	{id = "scalewatch_bastion", name = "Scalewatch Bastion", level = {50, 62}},
+	{id = "anvilmourn_wastes", name = "Anvilmourn Wastes", level = {1500, 1650}},
+	{id = "oathgrave_ossuary", name = "Oathgrave Ossuary", level = {1750, 1900}},
+	{id = "pyrecrown_caldera", name = "Pyrecrown Caldera", level = {1900, 2100}}
 }
 
 -- ------------------------------------------------------------------ bands
@@ -611,6 +630,23 @@ C.goals = {
 		why = T("The Paragon title and more stats.", "O título Paragon e mais atributos."),
 		where = win("game_passivetree"), effort = T("Keep levelling.", "Continue subindo de nível.")}
 }
+
+-- the level milestones between the band goals (O378): "Reach level <L>" for every milestone without a band goal (each
+-- unlocked at the milestone before it), then the milestone challenges (unlocked at their level)
+do
+	local have = {}
+	for _, g in ipairs(C.goals) do
+		have[g.key] = true
+	end
+	for _, g in ipairs(MILESTONES.challenges) do
+		if not have["lvl" .. g.level] then
+			C.goals[#C.goals + 1] = lvl(g.level, g.level - 100)
+		end
+	end
+	for _, g in ipairs(MILESTONES.challenges) do
+		C.goals[#C.goals + 1] = g
+	end
+end
 
 -- ------------------------------------------------------------------ texts of the engine (goals.lua)
 C.texts = {

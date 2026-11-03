@@ -1,0 +1,250 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "oathgrave_ossuary",
+  "name": "Oathgrave Ossuary",
+  "biome": "catacomb",
+  "size": [
+    150,
+    122
+  ],
+  "floors": 1,
+  "level": [
+    1750,
+    1900
+  ],
+  "seed": 37710,
+  "origin": {
+    "x": 17048,
+    "y": 15700,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "oath_nave",
+      "floor": 1,
+      "size": [
+        38,
+        27
+      ],
+      "place": "center"
+    },
+    {
+      "id": "broken_vows",
+      "floor": 1,
+      "size": [
+        38,
+        27
+      ],
+      "place": "east"
+    },
+    {
+      "id": "stalker_crypts",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "north"
+    },
+    {
+      "id": "warbreak_yard",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "south"
+    },
+    {
+      "id": "molten_vault",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "gnarl_roots",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "crown_niches",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "northwest"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "oath_nave",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "crown_niches",
+      "width": 3
+    },
+    {
+      "from": "oath_nave",
+      "to": "broken_vows",
+      "width": 3
+    },
+    {
+      "from": "oath_nave",
+      "to": "warbreak_yard",
+      "width": 3
+    },
+    {
+      "from": "crown_niches",
+      "to": "stalker_crypts",
+      "width": 3
+    },
+    {
+      "from": "stalker_crypts",
+      "to": "molten_vault",
+      "width": 3
+    },
+    {
+      "from": "molten_vault",
+      "to": "broken_vows",
+      "width": 3
+    },
+    {
+      "from": "broken_vows",
+      "to": "gnarl_roots",
+      "width": 3
+    },
+    {
+      "from": "gnarl_roots",
+      "to": "warbreak_yard",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "oath_nave",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 31,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "oath_nave",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 21,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_vows",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 31,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_vows",
+      "monster": "Wraithbone Stalker",
+      "count": 21,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stalker_crypts",
+      "monster": "Wraithbone Stalker",
+      "count": 21,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stalker_crypts",
+      "monster": "Ironmask Warbreaker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warbreak_yard",
+      "monster": "Ironmask Warbreaker",
+      "count": 21,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warbreak_yard",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_vault",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 21,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_vault",
+      "monster": "Gnarlback",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarl_roots",
+      "monster": "Gnarlback",
+      "count": 21,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarl_roots",
+      "monster": "Wraithbone Stalker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crown_niches",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 21,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crown_niches",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O375 hall coverage, 2026-11-03): a catacomb hunt for levels 1750-1900 on floor 5 of the teleport hall (server/README.md \"Hall coverage (O375)\"). 7 hunting zones; monsters Gravecrown Oathbreaker, Cinderhorn Juggernaut, Wraithbone Stalker, Ironmask Warbreaker, Gnarlback. Display monster: Cinderhorn Juggernaut."
+}

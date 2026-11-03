@@ -16,6 +16,9 @@ local SHARD = 32051 -- salvage Rune Shard (salvage_config.lua)
 return {
 	enabled = true,
 	opcode = 215, -- ChaosOpcodes.factions (client game_factions)
+	-- O368: the window, contracts, turn-ins, the quartermaster and the NPCs' ledger need this character level. Below it
+	-- reputation still counts, quietly (a head start); the top menu shows Factions from here on (unlocks_config.lua)
+	minLevel = 40,
 	tables = {
 		rep = "chaos_factions", -- one row per character and faction (sql/chaos_factions.sql)
 		contracts = "chaos_faction_contracts", -- contract progress per character, period and slot

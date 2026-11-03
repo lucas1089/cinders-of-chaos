@@ -607,6 +607,22 @@ limited = false
 events.ChaosConquestExtended.onExtendedOpcode(hero, 99, json.encode({action = "open", data = {}}))
 eq(DB.reads, reads, "another opcode is ignored")
 
+-- O368: below cfg.minLevel the vendor does not open and sells nothing
+do
+	eq(cfg.minLevel, 50, "the Conquest vendor opens at level 50")
+	local young = newPlayer(7, cfg.minLevel - 1)
+	sent = {}
+	events.ChaosConquestExtended.onExtendedOpcode(young, 167, json.encode({action = "open", data = {}}))
+	for _, m in ipairs(sent) do
+		check(m.action ~= "state", "no state below the level")
+	end
+	check(sent[1] and sent[1].action == "result" and sent[1].data.ok == false, "a refusal")
+	check(young.messages[#young.messages]:find("level " .. cfg.minLevel, 1, true) ~= nil, "it names the level")
+	sent = {}
+	events.ChaosConquestExtended.onExtendedOpcode(young, 167, json.encode({action = "buy", data = {k = "x"}}))
+	eq(#sent, 0, "a buy below the level gets no answer")
+end
+
 -- the hooks of the other systems are in place (their own tests run them with mocked ChaosConquest tables where they can)
 local function src(f)
 	local fh = io.open("data/scripts/chaos/" .. f, "r")

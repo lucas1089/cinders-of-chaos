@@ -76,16 +76,17 @@ Presentes esperam por você nos níveis {{newplayer.giftLevelsPt}}: poções, or
 ## Nível 1300-1599: As profundezas
 
 - The Iron Crucible e seu baú de chefe.
-- Caçadas: Gallowfen Mire, Voidscar Chasm, Gravehorn Deeps.
+- Caçadas: Gallowfen Mire, Voidscar Chasm, Gravehorn Deeps, Anvilmourn Wastes (1500-1650).
 
 ## Nível 1600-1999: O abismo
 
 - The Fallen Sanctum e as raides mais difíceis do Sepulchre.
-- Cace na Duskmarrow Crater a partir do nível 1750.
+- Cace na Duskmarrow Crater e na Oathgrave Ossuary a partir do nível 1750.
 
 ## Nível 2000+: O ápice
 
 - The Pyre Throne, a última masmorra; o melhor baú é na dificuldade {{dungeon.difficulties}}.
+- Caçadas: Gloomsilt Mire (1800-2200) e Pyrecrown Caldera (1900-2100).
 - Conquest Tokens compram os únicos que a sorte não deu.
 
 ## Sorte e esforço
