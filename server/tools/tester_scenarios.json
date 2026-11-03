@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 65,
   "out": 38,
-  "passive": 90,
+  "passive": 91,
   "place": 15,
   "staff": 13
  },
@@ -11404,6 +11404,13 @@
    "files": [
     "wardrobe.lua"
    ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "waypoints": {
+   "files": [],
    "kind": "passive",
    "opcodes": [],
    "talkactions": [],
