@@ -47,8 +47,55 @@ pub struct Output {
     pub code: i32,
 }
 
+/// Windows: the child gets no console window (CREATE_NO_WINDOW). The app is a windows-subsystem program with no
+/// console of its own (O383), so without this flag every ssh, ssh-keygen or curl call would flash a new console.
+/// Other systems: nothing to do.
+pub fn hide_console(cmd: &mut Command) -> &mut Command {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd
+}
+
+/// The Windows process creation flag of `hide_console`.
+pub const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+/// Streamed output: called with each piece of stdout or stderr text as it arrives (from reader threads).
+pub type OnText = std::sync::Arc<dyn Fn(&str) + Send + Sync>;
+
 /// Runs `remote` on the VPS. `stdin` goes to the command's standard input (passwords never on a command line).
 pub fn exec(cfg: &Config, remote: &str, timeout_sec: u64, stdin: Option<&str>) -> Output {
+    exec_stream(cfg, remote, timeout_sec, stdin, None)
+}
+
+/// Reads one pipe to the end; each piece also goes to `on` as text.
+fn drain<R: std::io::Read>(pipe: Option<R>, on: Option<OnText>) -> Vec<u8> {
+    let mut all = Vec::new();
+    let Some(mut r) = pipe else { return all };
+    let mut buf = [0u8; 8192];
+    let mut text = crate::output::Utf8Chunks::default();
+    loop {
+        match r.read(&mut buf) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => {
+                all.extend_from_slice(&buf[..n]);
+                if let Some(f) = &on {
+                    let t = text.push(&buf[..n]);
+                    if !t.is_empty() {
+                        f(&t);
+                    }
+                }
+            }
+        }
+    }
+    all
+}
+
+/// `exec`, and every piece of output also goes to `on` while the command runs (the output panel follows it). The
+/// returned text is the same as `exec` gives (stdout, then stderr).
+pub fn exec_stream(cfg: &Config, remote: &str, timeout_sec: u64, stdin: Option<&str>, on: Option<OnText>) -> Output {
     if !cfg.configured() {
         return Output {
             text: "Not configured: fill host, user and key path in Settings.".into(),
@@ -60,11 +107,7 @@ pub fn exec(cfg: &Config, remote: &str, timeout_sec: u64, stdin: Option<&str>) -
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
-    }
+    hide_console(&mut cmd);
     let mut child = match cmd.spawn() {
         Ok(c) => c,
         Err(e) => {
@@ -78,24 +121,14 @@ pub fn exec(cfg: &Config, remote: &str, timeout_sec: u64, stdin: Option<&str>) -
         if let Some(s) = stdin {
             let _ = si.write_all(s.as_bytes());
         }
+        // dropped here: the remote command sees the end of its input and never waits on it
     }
     // read both pipes on threads so a full pipe cannot stall the command
-    let mut out = child.stdout.take();
-    let mut err = child.stderr.take();
-    let t1 = std::thread::spawn(move || {
-        let mut v = Vec::new();
-        if let Some(o) = out.as_mut() {
-            let _ = std::io::Read::read_to_end(o, &mut v);
-        }
-        v
-    });
-    let t2 = std::thread::spawn(move || {
-        let mut v = Vec::new();
-        if let Some(o) = err.as_mut() {
-            let _ = std::io::Read::read_to_end(o, &mut v);
-        }
-        v
-    });
+    let out = child.stdout.take();
+    let err = child.stderr.take();
+    let on2 = on.clone();
+    let t1 = std::thread::spawn(move || drain(out, on));
+    let t2 = std::thread::spawn(move || drain(err, on2));
     let end = Instant::now() + Duration::from_secs(timeout_sec);
     let mut code = -1;
     let mut timed_out = false;
@@ -155,6 +188,19 @@ mod tests {
         assert_eq!(a[a.len() - 2], "--");
         assert_eq!(a[a.len() - 1], "x");
         assert!(ctl_line(&cfg, "status").ends_with(" status"));
+    }
+
+    #[test]
+    fn drain_streams_every_piece() {
+        use std::sync::{Arc, Mutex};
+        let seen = Arc::new(Mutex::new(String::new()));
+        let s2 = seen.clone();
+        let on: OnText = Arc::new(move |t: &str| s2.lock().unwrap().push_str(t));
+        let text = "linha um\nação dois\n".repeat(2000);
+        let all = drain(Some(std::io::Cursor::new(text.clone().into_bytes())), Some(on));
+        assert_eq!(all, text.as_bytes());
+        assert_eq!(*seen.lock().unwrap(), text);
+        assert!(drain(None::<std::io::Cursor<Vec<u8>>>, None).is_empty());
     }
 
     #[test]
