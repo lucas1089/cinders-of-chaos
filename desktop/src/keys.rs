@@ -36,11 +36,7 @@ fn run(args: &[&str]) -> Result<String, String> {
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
-    }
+    crate::ssh::hide_console(&mut cmd);
     let out = cmd
         .output()
         .map_err(|e| format!("ssh-keygen não abriu ({e}). O OpenSSH está instalado?"))?;

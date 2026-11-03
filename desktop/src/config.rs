@@ -13,6 +13,8 @@ pub struct Config {
     pub actor: String,
     /// Check for a new version of this app at start.
     pub auto_update: bool,
+    /// The sidebar category open last (`Section::key`, O383); empty opens Painel.
+    pub last_section: String,
 }
 
 impl Default for Config {
@@ -25,6 +27,7 @@ impl Default for Config {
             ctl_path: "/opt/chaos/repo/server/deploy/chaos-ctl.sh".into(),
             actor: String::new(),
             auto_update: true,
+            last_section: String::new(),
         }
     }
 }
@@ -49,6 +52,7 @@ impl Config {
         s("key_path", &mut c.key_path);
         s("ctl_path", &mut c.ctl_path);
         s("actor", &mut c.actor);
+        s("last_section", &mut c.last_section);
         if let Some(p) = obj.get("port").and_then(Value::as_u64) {
             if (1..=65535).contains(&p) {
                 c.port = p as u16;
@@ -64,6 +68,7 @@ impl Config {
         let v = json!({
             "host": self.host, "port": self.port, "user": self.user, "key_path": self.key_path,
             "ctl_path": self.ctl_path, "actor": self.actor, "auto_update": self.auto_update,
+            "last_section": self.last_section,
         });
         serde_json::to_string_pretty(&v).unwrap_or_default() + "\n"
     }
@@ -90,6 +95,25 @@ pub fn load() -> Config {
         .unwrap_or_default()
 }
 
+/// Remembers the open category in the settings file without saving the other fields of the window (an edit on the
+/// Config page that was not saved stays unsaved).
+/// A settings file that is there but unreadable is left alone.
+pub fn save_last_section(key: &str) -> std::io::Result<()> {
+    let mut c = match std::fs::read_to_string(path()) {
+        Ok(t) => match Config::parse(&t) {
+            Ok(c) => c,
+            Err(_) => return Ok(()),
+        },
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Config::default(),
+        Err(e) => return Err(e),
+    };
+    if c.last_section == key {
+        return Ok(());
+    }
+    c.last_section = key.to_string();
+    save(&c)
+}
+
 pub fn save(c: &Config) -> std::io::Result<()> {
     let p = path();
     if let Some(d) = p.parent() {
@@ -110,6 +134,7 @@ mod tests {
             user: "chaosadmin".into(),
             key_path: "C:\\keys\\id".into(),
             actor: "Admin One".into(),
+            last_section: "discord".into(),
             ..Config::default()
         };
         assert_eq!(Config::parse(&c.to_text()).unwrap(), c);
@@ -122,6 +147,7 @@ mod tests {
         assert_eq!(c.host, "h");
         assert_eq!(c.port, 22);
         assert!(!c.configured());
+        assert_eq!(c.last_section, "");
         assert!(Config::parse("[1]").is_err());
         assert!(Config::parse("nope").is_err());
     }

@@ -1,14 +1,53 @@
 # Cinders Admin for the PC (O312)
 
-Desktop admin app for the owner's PC. Same job as the Android app (`android/`, `docs/ADMIN_APP.md`): the same tabs, the
-same `chaos-ctl.sh` commands, the same SSH key and user. Rust with egui/eframe: one small `.exe`, no installer.
+Desktop admin app for the owner's PC. Same job as the Android app (`android/`, `docs/ADMIN_APP.md`): the same
+`chaos-ctl.sh` commands, the same SSH key and user. Rust with egui/eframe: one small `.exe`, no installer.
 
-Phase 1 (this folder): tabs Painel, Comandos, Logs, Painel do jogo, Config. The Painel tab starts with cards: server state and
-uptime, players online (with the list), errors, memory, disk, load, last backup, and the progress metrics (churn, stops,
-deaths, first session, time to level, returns, first use). They call `status`, `players` and `metrics --json`; the
-parsing is pure code in `src/cards.rs` with fixture tests. Also: the page Ao vivo (below), the card Recarregar um
+Phase 1 (this folder): a sidebar of categories (below, "Layout (O383)"). Painel starts with the server card: state and
+uptime, players online (with the list), errors, memory, disk, load, last backup. Jogadores ends with the progress
+metrics (churn, stops, deaths, first session, time to level, returns, first use). They call `status`, `players` and
+`metrics --json`; the parsing is pure code in `src/cards.rs` with fixture tests. Also: the page Ao vivo (below), the card Recarregar um
 arquivo on Painel do jogo (below) and signed self-updates (below). Not yet: the phone's picture views (spectate, cast),
 the key generator.
+
+## Layout (O383)
+
+Owner, 2026-11-03, on 0.3.2: "the app always opens a cmd window", "too many collapsible sections, hard to find what I
+look for", "a bigger window for console output". Version 0.4.0:
+
+- **No console.** A release build is a Windows-subsystem program (`#![cfg_attr(all(windows, not(debug_assertions)),
+  windows_subsystem = "windows")]` in `src/main.rs`), so no console or Windows Terminal tab opens with it. Every child
+  (ssh, ssh-keygen, curl, the restart after a self-update) goes through `ssh::hide_console` (`CREATE_NO_WINDOW`), so no
+  console flashes on a button. Nothing needs a console: ssh runs with `BatchMode=yes` and
+  `StrictHostKeyChecking=accept-new` (never a password or host key prompt; a refusal lands in the output), ssh-keygen
+  gets `-N ""` / `-P ""` and stdin from nowhere, the restart gets no inherited pipes. A debug build (`cargo run`) keeps
+  its console.
+- **Sidebar.** Left, full height: a search box, then the categories (`Section` in `src/commands.rs`, sidebar order):
+  Painel, Ao vivo, Jogadores, Ajustes do jogo, Painel do jogo, Atualizações, Discord, Testers, VPS e manutenção, Logs,
+  Config. The selected one has a gold bar. The window opens on the last category (`last_section` in the settings file,
+  written alone so an unsaved Config edit stays unsaved); Config while host, user or key are empty.
+- **Groups are plain titled cards**, never collapsing headers. Buttons without fields share a wrapped row; a button with
+  fields gets its own row. The metrics tables and the online lists are sub headings, always open. Only the game
+  catalog (Painel do jogo) keeps its folding categories: it is long and has its own search.
+- **Search.** Typing in the box lists the matching buttons of every category in the main area, as the same cards, ready
+  to run (fields, confirm, timeouts as on their page). It reads category, card title, button label, help text and field
+  labels, without case or accents, every word must match ("webhook" gives Discord > Guardar webhook; "bot reiniciar" gives
+  Bot do Discord > Reiniciar). Pages with their own cards (Config, Ao vivo, Painel, Jogadores, Painel do jogo, Logs) are
+  found by their words too ("chave" offers Config). The sidebar then shows only the categories with hits and their
+  counts. Esc or x clears, Ctrl+F jumps back to the box. Pure code: `src/nav.rs`, tests in `cargo test`.
+- **Output panel.** Bottom, under the page, about 40 % of the window at start, resized by dragging its top edge (grip
+  in the middle). Monospace, no wrapping, scrolls both ways, follows the end while a command streams: ssh output is shown
+  as it arrives (`ssh::exec_stream`), and the final text with the exit code replaces it at the end. Toolbar: the history
+  (the last 30 runs, "Seguir a mais recente" or any older one), Copiar (the shown run), Limpar (forgets finished runs;
+  running ones stay), Abrir em janela (the output in its own resizable window, which can be maximized; the main window
+  keeps a one-line status bar with "Trazer a saída de volta"). The status line and the version with the update note
+  stay on the toolbar. One run keeps at most 1 MB of text (the start is dropped a line at a time). `src/output.rs`.
+- **Window** 1280x800 at start, minimum 900x600.
+
+The command strings are unchanged; rows only moved between groups and categories (`check_desktop_commands.py` passes).
+Moves: Ações rápidas > Atualizar para uma versão and Voltar versão became Atualizações > Versão específica; Logs >
+Updates became Atualizações > Logs das atualizações; Logs > Unidades > Log de uma unidade joined VPS e manutenção >
+Unidades chaos-*.
 
 ## Live view (Ao vivo)
 
@@ -42,11 +81,11 @@ A JSON file, saved by the Config page:
 
 Keys: `host`, `port` (22), `user` (`chaosadmin`), `key_path`, `ctl_path`
 (`/opt/chaos/repo/server/deploy/chaos-ctl.sh`), `actor` (admin character for the game panel and "e aplicar agora"),
-`auto_update` (true).
+`auto_update` (true), `last_section` (the category open last, O383).
 
 ## The command table
 
-`src/commands.rs` has one table (`ACTIONS`): tab, group, button label, `chaos-ctl.sh` arguments with `{name}`
+`src/commands.rs` has one table (`ACTIONS`): category, group, button label, `chaos-ctl.sh` arguments with `{name}`
 placeholders, parameters, confirm flag, live kind. The window is drawn from it. The Android app has no shared table,
 so the table mirrors it. `tools/ci/check_desktop_commands.py` (CI) fails when Android calls a `chaos-ctl.sh` command
 the table lacks, or the table names a command `chaos-ctl.sh` does not have. Add a button: add one `act(...)` line.
@@ -81,11 +120,11 @@ It uses the existing `remote.cmd` path, so nothing new runs on the server.
 - Per-script state is lost on `reload scripts` (tables built at load are rebuilt; running events restart).
 - The phone's picture views (`spectate`, `cast`) are not in the desktop app: they need a long ssh stream and a picture view.
 
-## Update and bug report cards (Painel)
+## Update and bug report cards (Atualizações, Jogadores)
 
-Two answers show as cards under their group, next to the raw text in the output pane. Painel > Atualizar servidor >
+Two answers show as cards under their group, next to the raw text in the output pane. Atualizações > Atualizar servidor >
 Verificar draws a card with "Há atualização" or "Tudo em dia", the new commits, engine, map master, client update,
-downloads, site and the last run (`src/infos.rs`, the wording of the phone's `UpdateInfo.java`). Painel > Bugs e
+downloads, site and the last run (`src/infos.rs`, the wording of the phone's `UpdateInfo.java`). Jogadores > Bugs e
 sugestões > Abertos (30 dias) or Todos draws one card per report: number, category, open or closed, date, position,
 level and class, text and the closing note (`FeedbackInfo.java` and `server/tools/feedback_format.py`). The `from:` name
 line is never read. An open report has the button "Usar no Fechar relatório", which writes its number into the id field
@@ -111,13 +150,13 @@ richness only in the header strip and the server status.
 - One warm neutral ramp, shared with the Android app (`android/.../res/values/colors.xml`): `BG`, `CARD`, `CARD_EDGE`,
   `INPUT`; text `TEXT`, `TEXT_2`, `MUTED`.
 - Ember only for the one main action of a screen and the live dot. The ember dot sits before "No ar" (server card and
-  Ao vivo) and nowhere else. Gold only for the selected tab (text and underline).
+  Ao vivo) and nowhere else. Gold only for the selected category of the sidebar (text and bar).
 - Headings in sentence case, text colour, 16 px, regular weight. Type scale 12, 13, 14, 16, 20. Status words in
   sentence case, plain coloured text, no pills.
 - 4 px grid: button padding 12x4, widget height 28, item spacing 8, card padding 16, card radius 12, controls 8.
 - Memory and disk bars: neutral, amber from 80 %, red from 90 %.
-- Slim header (52 px) with the brand icon and the title over a strip of ember glow and sparks, then a tab bar
-  (Painel, Comandos, Logs, Ao vivo, Painel do jogo, Config) and a hairline.
+- Slim header (52 px) with the brand icon and the title over a strip of ember glow and sparks and a hairline; the
+  categories are in the sidebar (O383).
 - Every group of commands, the server and metrics cards, the live page and the settings are cards. Settings has aligned
   labels and inputs (paths in monospace) and a second card for the update checkbox and the buttons.
 - Buttons: deep ember for the one main action of a card (Salvar, Executar, Rodar, update; light text at 4.5:1), plain
@@ -125,8 +164,9 @@ richness only in the header strip and the server status.
 - Status colours are the same everywhere: ok green, warning amber, error red (`theme.rs` `OK`, `WARN`, `ERROR`): server
   badge, errors count, update banner, console `[Warning` and `[Error` lines, the status text at the bottom ("feito"
   green, "falhou" red).
-- Logs and command output sit in dark monospace wells. Footer: status, version and update note, Copiar.
-- Window icon is the brand icon (`docs/brand/cinders_logo_icon.png`). 1000x740, resizable, minimum 720x520.
+- Logs and command output sit in dark monospace wells. Output panel toolbar: status, version and update note,
+  history, Copiar, Limpar, Abrir em janela.
+- Window icon is the brand icon (`docs/brand/cinders_logo_icon.png`). 1280x800, resizable, minimum 900x600.
 - Art: `tools/gen_admin_art.py` makes `assets/icon.rgba` (128x128) and `assets/header.rgba` (1280x64) from `docs/brand/`,
   raw RGBA, embedded with `include_bytes!`. `python3 -I desktop/tools/gen_admin_art.py --check` runs in CI (needs
   Pillow and numpy, the fx venv); `--preview out.png` saves the header. Change the colours in `src/theme.rs` and `BG` in

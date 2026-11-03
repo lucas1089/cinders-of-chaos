@@ -1,21 +1,91 @@
-//! The one table of commands: tabs, groups, buttons. Mirrors the Android admin app (android/.../CommandsTab.java,
-//! PanelTab.java, LogsTab.java). tools/ci/check_desktop_commands.py checks that both name the same chaos-ctl.sh commands.
+//! The one table of commands: categories (the sidebar), groups (titled cards), buttons. Mirrors the Android admin
+//! app (android/.../CommandsTab.java, PanelTab.java, LogsTab.java). tools/ci/check_desktop_commands.py checks that
+//! both name the same chaos-ctl.sh commands.
 use crate::ssh::sq;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Tab {
+/// A category of the sidebar (O383). Most hold groups of the table; Ao vivo and Config are pages only, Painel,
+/// Jogadores, Painel do jogo and Logs add cards of their own to their groups.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Section {
     Panel,
-    Commands,
+    LiveView,
+    Players,
+    Game,
+    GamePanel,
+    Updates,
+    Discord,
+    Testers,
+    Machine,
     Logs,
+    Settings,
 }
 
-impl Tab {
-    pub const ALL: [Tab; 3] = [Tab::Panel, Tab::Commands, Tab::Logs];
+impl Section {
+    /// Sidebar order.
+    pub const ALL: [Section; 11] = [
+        Section::Panel,
+        Section::LiveView,
+        Section::Players,
+        Section::Game,
+        Section::GamePanel,
+        Section::Updates,
+        Section::Discord,
+        Section::Testers,
+        Section::Machine,
+        Section::Logs,
+        Section::Settings,
+    ];
+
     pub fn title(self) -> &'static str {
         match self {
-            Tab::Panel => "Painel",
-            Tab::Commands => "Comandos",
-            Tab::Logs => "Logs",
+            Section::Panel => "Painel",
+            Section::LiveView => "Ao vivo",
+            Section::Players => "Jogadores",
+            Section::Game => "Ajustes do jogo",
+            Section::GamePanel => "Painel do jogo",
+            Section::Updates => "Atualizações",
+            Section::Discord => "Discord",
+            Section::Testers => "Testers",
+            Section::Machine => "VPS e manutenção",
+            Section::Logs => "Logs",
+            Section::Settings => "Config",
+        }
+    }
+
+    /// Stable name in the settings file (`last_section`): never shown, never translated.
+    pub fn key(self) -> &'static str {
+        match self {
+            Section::Panel => "panel",
+            Section::LiveView => "live",
+            Section::Players => "players",
+            Section::Game => "game",
+            Section::GamePanel => "game-panel",
+            Section::Updates => "updates",
+            Section::Discord => "discord",
+            Section::Testers => "testers",
+            Section::Machine => "machine",
+            Section::Logs => "logs",
+            Section::Settings => "settings",
+        }
+    }
+
+    pub fn from_key(key: &str) -> Option<Section> {
+        Section::ALL.into_iter().find(|s| s.key() == key)
+    }
+
+    /// What the category shows besides its buttons (cards, pages), for the search. Empty: buttons only.
+    pub fn page_words(self) -> &'static str {
+        match self {
+            Section::Panel => "estado do servidor no ar memória disco carga último backup erros jogadores online",
+            Section::LiveView => "ao vivo tempo real console do jogo log atualizar a cada pausar filtrar seguir",
+            Section::Players => "métricas churn faixa de nível mortes por área monstro primeira sessão retorno",
+            Section::GamePanel => "catálogo painel de admin ban item spawn recarregar arquivo tabela config lua",
+            Section::Logs => "terminal na vps qualquer comando shell",
+            Section::Settings => {
+                "configurações host endereço porta usuário ssh chave privada gerar chave comando de instalação \
+                 caminho chaos-ctl personagem admin versão nova atualizar o app"
+            }
+            _ => "",
         }
     }
 }
@@ -125,7 +195,7 @@ pub const fn choice(name: &'static str, label: &'static str, options: &'static [
 
 #[derive(Clone, Copy, Debug)]
 pub struct Action {
-    pub tab: Tab,
+    pub section: Section,
     pub group: &'static str,
     pub label: &'static str,
     /// chaos-ctl.sh arguments; `{name}` is replaced by the quoted value of the parameter.
@@ -138,9 +208,9 @@ pub struct Action {
     pub hint: &'static str,
 }
 
-const fn act(tab: Tab, group: &'static str, label: &'static str, template: &'static str) -> Action {
+const fn act(section: Section, group: &'static str, label: &'static str, template: &'static str) -> Action {
     Action {
-        tab,
+        section,
         group,
         label,
         template,
@@ -179,7 +249,7 @@ impl Action {
     }
 }
 
-use Tab::{Commands as C, Logs as L, Panel as P};
+use Section::{Discord, Game, GamePanel, Logs, Machine, Panel, Players, Testers, Updates};
 
 const TEXT_P: &[Param] = &[text("text", "Mensagem")];
 const NAME_P: &[Param] = &[text("name", "Nome do personagem")];
@@ -234,124 +304,117 @@ const FB_CLOSE_P: &[Param] = &[
     text("note", "Nota (200 caracteres)"),
 ];
 
-/// The table. One line per button. Keep one `act(` per line: the CI check reads it.
+/// The table. One line per button: category, group (a titled card), label, chaos-ctl.sh arguments. Keep one
+/// `act(` per line: the CI check reads it. Rows are in sidebar order, groups in the order they are drawn.
 #[rustfmt::skip]
 pub static ACTIONS: &[Action] = &[
-    // ---- Painel: servidor
-    act(P, "Servidor", "Estado", "status"),
-    act(P, "Servidor", "Ligar", "start").t(120),
-    act(P, "Servidor", "Desligar", "stop").ask().t(240).h("Os jogadores são desconectados; o jogo salva antes."),
-    act(P, "Servidor", "Salvar", "save"),
-    act(P, "Servidor", "Reiniciar agora", "restart").ask().live(Live::Restarts).t(240),
-    act(P, "Servidor", "Reiniciar com aviso", "restart {secs}").p(SECS_P).ask().live(Live::Restarts).t(60).h("Os jogadores são avisados; roda em segundo plano."),
-    act(P, "Servidor", "Backup", "backup").t(600),
-    act(P, "Servidor", "Saúde e espaço", "health").t(120),
-    act(P, "Jogadores", "Quem está online", "players"),
-    act(P, "Jogadores", "Classes", "vocations"),
-    // ---- Painel: atualizar servidor
-    act(P, "Atualizar servidor", "Verificar", "update-check").t(180),
-    act(P, "Atualizar servidor", "Aplicar e reiniciar", "update-apply").ask().live(Live::Restarts).t(60).h("Roda em segundo plano; acompanhe em Logs > Updates."),
-    act(P, "Atualizar servidor", "Voltar à versão anterior", "update-rollback").ask().live(Live::Restarts).t(60),
-    act(P, "Atualizar servidor", "Estado da última atualização", "update-status"),
-    // ---- Painel: métricas e relatos
-    act(P, "Métricas dos jogadores", "Ver métricas", "metrics").t(90),
-    act(P, "Novos jogadores", "Funil", "newplayer-funnel --pt --days {days}").p(NP_DAYS_P).t(90).h("Níveis 10 a 100, horas jogadas e onde pararam os que sumiram há 7+ dias."),
-    act(P, "Novos jogadores", "Pesquisa", "survey --pt --texts 100 --days {days}").p(NP_DAYS_P).t(90).h("Respostas da pesquisa dos níveis 20 e 50."),
-    act(P, "Bugs e sugestões", "Abertos (30 dias)", "feedback").t(90),
-    act(P, "Bugs e sugestões", "Todos (inclui fechados)", "feedback --all").t(90),
-    act(P, "Bugs e sugestões", "Fechar relatório", "feedback-close {id} {note}").p(FB_CLOSE_P).ask(),
-    // ---- Comandos: ações rápidas
-    act(C, "Ações rápidas", "Aviso para todos", "broadcast {text}").p(TEXT_P).t(20),
-    act(C, "Ações rápidas", "Expulsar", "kick {name}").p(NAME_P).ask().t(20),
-    act(C, "Ações rápidas", "Abrir login", "open").t(20),
-    act(C, "Ações rápidas", "Fechar login", "close").ask().t(20),
-    act(C, "Ações rápidas", "Atualizar para uma versão", "update {tag} {mode}").p(&[text("tag", "Tag da release (ex.: winpkg-123)"), choice("mode", "Quando", &["now", "at-save"])]).ask().live(Live::Restarts).h("Layout padrão com repositório."),
-    act(C, "Ações rápidas", "Voltar versão", "rollback now").ask().live(Live::Restarts).t(30),
-    // ---- Comandos: taxa de XP
-    act(C, "Taxa de XP", "Ver", "xp-rate show").t(30),
-    act(C, "Taxa de XP", "Definir (vale no próximo reinício)", "xp-rate set {n}").p(XP_P).live(Live::Restart).t(30),
-    act(C, "Taxa de XP", "Definir e reiniciar", "xp-rate set {n} restart").p(XP_P).ask().live(Live::Restarts).t(240),
-    act(C, "Taxa de XP", "Voltar ao padrão", "xp-rate reset").live(Live::Restart).t(30),
-    // ---- Comandos: par do cliente
-    act(C, "Par do cliente", "Ver", "client-pair show").t(30),
-    act(C, "Par do cliente", "Definir", "client-pair set {n}").p(PAIR_P).ask().live(Live::NextInstall).t(30),
-    // ---- Comandos: modo beta
-    act(C, "Modo beta", "Ver", "beta-mode status").t(30),
-    act(C, "Modo beta", "Ligar", "beta-mode on").live(Live::Reload("scripts")).t(30).h("Aplicar agora recarrega os scripts."),
-    act(C, "Modo beta", "Desligar", "beta-mode off").live(Live::Reload("scripts")).t(30).h("Aplicar agora recarrega os scripts."),
-    act(C, "Modo beta", "Ligar e reiniciar", "beta-mode on restart").ask().live(Live::Restarts).t(240),
-    act(C, "Modo beta", "Desligar e reiniciar", "beta-mode off restart").ask().live(Live::Restarts).t(240),
-    // ---- Comandos: recarregar um arquivo (o cartão com a escolha e o botão está no Painel do jogo; reload-file ACTOR NOME)
-    act(C, "Recarregar um arquivo", "Listar tabelas de configuração", "reload-files").t(30).h("Recarregar uma delas: Painel do jogo > Recarregar um arquivo."),
-    // ---- Comandos: serviços da tela de login
-    act(C, "Serviços de login", "Ver", "clientservices-impl status").t(30),
-    act(C, "Serviços de login", "Rust ligado", "clientservices-impl rust").ask().t(900).h("Compila com cargo na VPS; pode levar minutos."),
-    act(C, "Serviços de login", "Python ligado", "clientservices-impl python").t(60),
-    // ---- Comandos: contas
-    act(C, "Contas", "Criar conta", "account-create {name}").p(ACC_P).t(60),
-    act(C, "Contas", "Trocar senha", "account-password {name}").p(ACC_P).ask().t(60),
-    act(C, "Contas", "Direitos de staff", "gm-set {name} {g}").p(GM_P).ask().t(60).h("O personagem precisa estar offline. 4 = GM, 6 = God; 1 tira os direitos."),
-    // ---- Comandos: Discord
-    act(C, "Discord", "Estado", "discord-status").t(60),
-    act(C, "Discord", "Guardar webhook", "discord-set {channel}").p(DISCORD_P).t(60),
-    act(C, "Discord", "Ligar avisos", "discord-enable").t(90),
-    act(C, "Discord", "Desligar avisos", "discord-disable").t(90),
-    act(C, "Discord", "Testar todos", "discord-test all").t(90),
-    // ---- Comandos: bot do Discord (bugs e patch notes)
-    act(C, "Bot do Discord", "Estado", "discord-bot status").t(40),
-    act(C, "Bot do Discord", "Instalar ou atualizar", "discord-bot install").ask().t(600).h("Cria o usuário chaosbot e o virtualenv; alguns minutos. De novo atualiza o código."),
-    act(C, "Bot do Discord", "Guardar ajuste", "discord-bot set {key}").p(BOT_SET_P).t(40).h("Token e chave vão pelo stdin, só ficam na VPS."),
-    act(C, "Bot do Discord", "Iniciar", "discord-bot start").t(60),
-    act(C, "Bot do Discord", "Reiniciar", "discord-bot restart").t(60),
-    act(C, "Bot do Discord", "Parar", "discord-bot stop").ask().t(60),
-    act(C, "Bot do Discord", "Logs", "discord-bot logs 80").t(40),
-    act(C, "Bot do Discord", "Levar patch notes ao jogo", "discord-bot patchnotes").t(60),
-    // ---- Comandos: saúde e espaço
-    act(C, "Saúde e espaço", "Ver sobras a limpar", "cleanup").t(120),
-    act(C, "Saúde e espaço", "Limpar sobras", "cleanup --yes").ask().t(120),
-    act(C, "Saúde e espaço", "Backups", "backups"),
-    // ---- Comandos: servidor como usuário chaos
-    act(C, "Servidor como usuário chaos", "Ver", "server-user status").t(60),
-    act(C, "Servidor como usuário chaos", "Corrigir", "server-user fix").ask().t(180),
-    act(C, "Servidor como usuário chaos", "Corrigir e reiniciar", "server-user fix --restart {secs}").p(SECS_P).ask().live(Live::Restarts).t(180),
-    act(C, "Servidor como usuário chaos", "Desfazer", "server-user rollback").ask().t(60),
-    act(C, "Servidor como usuário chaos", "Log do reinício", "server-user log 60").t(30),
-    // ---- Comandos: testers
-    act(C, "Testers", "Iniciar (reinicia o servidor)", "testers start {n} {m} --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
-    act(C, "Testers", "Iniciar com árvore de talentos", "testers start {n} {m} --keystones --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
-    act(C, "Testers", "Iniciar com checagem de sistemas", "testers start {n} {m} --checks --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
-    act(C, "Testers", "Parar", "testers stop").ask().t(60),
-    act(C, "Testers", "Estado", "testers status").t(60),
-    act(C, "Testers", "Relatório", "testers report").t(120),
-    act(C, "Testers", "Log das ações", "testers log 400").t(60),
-    act(C, "Testers", "Apagar testers", "testers cleanup --yes").ask().t(240),
-    // ---- Comandos: site e update do client
-    act(C, "Site e update do client", "Reinstalar o site", "site-install").ask().t(30),
-    act(C, "Site e update do client", "Publicar update do client", "publish-update {tag}").p(TAG_P).ask().t(30),
-    act(C, "Site e update do client", "Publicar app Android", "publish-apk {tag}").p(APK_P).ask().t(30),
-    act(C, "Site e update do client", "Tirar o app Android do update", "publish-apk --remove").ask().t(30),
-    act(C, "Site e update do client", "Trocar os downloads", "update-downloads").ask().t(30),
-    act(C, "Mapa", "Publicar áreas da caixa de entrada", "areas-publish").t(120),
-    act(C, "Mapa", "Novo endereço das áreas", "areas-publish --rotate").ask().t(120),
-    // ---- Comandos: a máquina
-    act(C, "VPS", "Informações", "vps info").t(60),
-    act(C, "VPS", "Atualizar o sistema", "vps upgrade").ask().t(30),
-    act(C, "VPS", "Log da atualização", "vps upgrade-log 200").t(30),
-    act(C, "VPS", "Reiniciar a VPS", "vps reboot {mins}").p(MINS_P).ask().t(30),
-    act(C, "VPS", "Cancelar reinício", "vps reboot-cancel").t(30),
-    act(C, "Unidades chaos-*", "Listar", "services").t(30),
-    act(C, "Unidades chaos-*", "Ligar, desligar ou reiniciar", "service {unit} {verb}").p(UNIT_ACT_P).ask().t(240),
+    // ---- Painel
+    act(Panel, "Servidor", "Estado", "status"),
+    act(Panel, "Servidor", "Ligar", "start").t(120),
+    act(Panel, "Servidor", "Desligar", "stop").ask().t(240).h("Os jogadores são desconectados; o jogo salva antes."),
+    act(Panel, "Servidor", "Salvar", "save"),
+    act(Panel, "Servidor", "Reiniciar agora", "restart").ask().live(Live::Restarts).t(240),
+    act(Panel, "Servidor", "Reiniciar com aviso", "restart {secs}").p(SECS_P).ask().live(Live::Restarts).t(60).h("Os jogadores são avisados; roda em segundo plano."),
+    act(Panel, "Servidor", "Backup", "backup").t(600),
+    act(Panel, "Servidor", "Saúde e espaço", "health").t(120),
+    act(Panel, "Ações rápidas", "Aviso para todos", "broadcast {text}").p(TEXT_P).t(20),
+    act(Panel, "Ações rápidas", "Expulsar", "kick {name}").p(NAME_P).ask().t(20),
+    act(Panel, "Ações rápidas", "Abrir login", "open").t(20),
+    act(Panel, "Ações rápidas", "Fechar login", "close").ask().t(20),
+    // ---- Jogadores
+    act(Players, "Jogadores", "Quem está online", "players"),
+    act(Players, "Jogadores", "Classes", "vocations"),
+    act(Players, "Contas", "Criar conta", "account-create {name}").p(ACC_P).t(60),
+    act(Players, "Contas", "Trocar senha", "account-password {name}").p(ACC_P).ask().t(60),
+    act(Players, "Contas", "Direitos de staff", "gm-set {name} {g}").p(GM_P).ask().t(60).h("O personagem precisa estar offline. 4 = GM, 6 = God; 1 tira os direitos."),
+    act(Players, "Bugs e sugestões", "Abertos (30 dias)", "feedback").t(90),
+    act(Players, "Bugs e sugestões", "Todos (inclui fechados)", "feedback --all").t(90),
+    act(Players, "Bugs e sugestões", "Fechar relatório", "feedback-close {id} {note}").p(FB_CLOSE_P).ask(),
+    act(Players, "Novos jogadores", "Funil", "newplayer-funnel --pt --days {days}").p(NP_DAYS_P).t(90).h("Níveis 10 a 100, horas jogadas e onde pararam os que sumiram há 7+ dias."),
+    act(Players, "Novos jogadores", "Pesquisa", "survey --pt --texts 100 --days {days}").p(NP_DAYS_P).t(90).h("Respostas da pesquisa dos níveis 20 e 50."),
+    act(Players, "Métricas dos jogadores", "Ver métricas", "metrics").t(90),
+    // ---- Ajustes do jogo
+    act(Game, "Taxa de XP", "Ver", "xp-rate show").t(30),
+    act(Game, "Taxa de XP", "Definir (vale no próximo reinício)", "xp-rate set {n}").p(XP_P).live(Live::Restart).t(30),
+    act(Game, "Taxa de XP", "Definir e reiniciar", "xp-rate set {n} restart").p(XP_P).ask().live(Live::Restarts).t(240),
+    act(Game, "Taxa de XP", "Voltar ao padrão", "xp-rate reset").live(Live::Restart).t(30),
+    act(Game, "Modo beta", "Ver", "beta-mode status").t(30),
+    act(Game, "Modo beta", "Ligar", "beta-mode on").live(Live::Reload("scripts")).t(30).h("Aplicar agora recarrega os scripts."),
+    act(Game, "Modo beta", "Desligar", "beta-mode off").live(Live::Reload("scripts")).t(30).h("Aplicar agora recarrega os scripts."),
+    act(Game, "Modo beta", "Ligar e reiniciar", "beta-mode on restart").ask().live(Live::Restarts).t(240),
+    act(Game, "Modo beta", "Desligar e reiniciar", "beta-mode off restart").ask().live(Live::Restarts).t(240),
+    act(Game, "Serviços de login", "Ver", "clientservices-impl status").t(30),
+    act(Game, "Serviços de login", "Rust ligado", "clientservices-impl rust").ask().t(900).h("Compila com cargo na VPS; pode levar minutos."),
+    act(Game, "Serviços de login", "Python ligado", "clientservices-impl python").t(60),
+    act(Game, "Par do cliente", "Ver", "client-pair show").t(30),
+    act(Game, "Par do cliente", "Definir", "client-pair set {n}").p(PAIR_P).ask().live(Live::NextInstall).t(30),
+    act(Game, "Mapa", "Publicar áreas da caixa de entrada", "areas-publish").t(120),
+    act(Game, "Mapa", "Novo endereço das áreas", "areas-publish --rotate").ask().t(120),
+    // ---- Painel do jogo
+    // the card with the choice and the button is drawn by the window (reload-file ACTOR NAME)
+    act(GamePanel, "Recarregar um arquivo", "Listar tabelas de configuração", "reload-files").t(30).h("Recarregar uma delas: Painel do jogo > Recarregar um arquivo."),
+    // ---- Atualizações
+    act(Updates, "Atualizar servidor", "Verificar", "update-check").t(180),
+    act(Updates, "Atualizar servidor", "Aplicar e reiniciar", "update-apply").ask().live(Live::Restarts).t(60).h("Roda em segundo plano; acompanhe em Atualizações > Logs das atualizações."),
+    act(Updates, "Atualizar servidor", "Voltar à versão anterior", "update-rollback").ask().live(Live::Restarts).t(60),
+    act(Updates, "Atualizar servidor", "Estado da última atualização", "update-status"),
+    act(Updates, "Versão específica", "Atualizar para uma versão", "update {tag} {mode}").p(&[text("tag", "Tag da release (ex.: winpkg-123)"), choice("mode", "Quando", &["now", "at-save"])]).ask().live(Live::Restarts).h("Layout padrão com repositório."),
+    act(Updates, "Versão específica", "Voltar versão", "rollback now").ask().live(Live::Restarts).t(30),
+    act(Updates, "Site e update do client", "Reinstalar o site", "site-install").ask().t(30),
+    act(Updates, "Site e update do client", "Publicar update do client", "publish-update {tag}").p(TAG_P).ask().t(30),
+    act(Updates, "Site e update do client", "Publicar app Android", "publish-apk {tag}").p(APK_P).ask().t(30),
+    act(Updates, "Site e update do client", "Tirar o app Android do update", "publish-apk --remove").ask().t(30),
+    act(Updates, "Site e update do client", "Trocar os downloads", "update-downloads").ask().t(30),
+    act(Updates, "Logs das atualizações", "Log do update do servidor", "update-log {n}").p(N_P).t(40),
+    act(Updates, "Logs das atualizações", "Log da publicação do client", "publish-log {n}").p(N_P).t(40),
+    act(Updates, "Logs das atualizações", "Log da instalação do site", "site-log {n}").p(N_P).t(40),
+    // ---- Discord
+    act(Discord, "Discord", "Estado", "discord-status").t(60),
+    act(Discord, "Discord", "Guardar webhook", "discord-set {channel}").p(DISCORD_P).t(60),
+    act(Discord, "Discord", "Ligar avisos", "discord-enable").t(90),
+    act(Discord, "Discord", "Desligar avisos", "discord-disable").t(90),
+    act(Discord, "Discord", "Testar todos", "discord-test all").t(90),
+    act(Discord, "Bot do Discord", "Estado", "discord-bot status").t(40),
+    act(Discord, "Bot do Discord", "Instalar ou atualizar", "discord-bot install").ask().t(600).h("Cria o usuário chaosbot e o virtualenv; alguns minutos. De novo atualiza o código."),
+    act(Discord, "Bot do Discord", "Guardar ajuste", "discord-bot set {key}").p(BOT_SET_P).t(40).h("Token e chave vão pelo stdin, só ficam na VPS."),
+    act(Discord, "Bot do Discord", "Iniciar", "discord-bot start").t(60),
+    act(Discord, "Bot do Discord", "Reiniciar", "discord-bot restart").t(60),
+    act(Discord, "Bot do Discord", "Parar", "discord-bot stop").ask().t(60),
+    act(Discord, "Bot do Discord", "Logs", "discord-bot logs 80").t(40),
+    act(Discord, "Bot do Discord", "Levar patch notes ao jogo", "discord-bot patchnotes").t(60),
+    // ---- Testers
+    act(Testers, "Testers", "Iniciar (reinicia o servidor)", "testers start {n} {m} --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
+    act(Testers, "Testers", "Iniciar com árvore de talentos", "testers start {n} {m} --keystones --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
+    act(Testers, "Testers", "Iniciar com checagem de sistemas", "testers start {n} {m} --checks --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
+    act(Testers, "Testers", "Parar", "testers stop").ask().t(60),
+    act(Testers, "Testers", "Estado", "testers status").t(60),
+    act(Testers, "Testers", "Relatório", "testers report").t(120),
+    act(Testers, "Testers", "Log das ações", "testers log 400").t(60),
+    act(Testers, "Testers", "Apagar testers", "testers cleanup --yes").ask().t(240),
+    // ---- VPS e manutenção
+    act(Machine, "Saúde e espaço", "Ver sobras a limpar", "cleanup").t(120),
+    act(Machine, "Saúde e espaço", "Limpar sobras", "cleanup --yes").ask().t(120),
+    act(Machine, "Saúde e espaço", "Backups", "backups"),
+    act(Machine, "VPS", "Informações", "vps info").t(60),
+    act(Machine, "VPS", "Atualizar o sistema", "vps upgrade").ask().t(30),
+    act(Machine, "VPS", "Log da atualização", "vps upgrade-log 200").t(30),
+    act(Machine, "VPS", "Reiniciar a VPS", "vps reboot {mins}").p(MINS_P).ask().t(30),
+    act(Machine, "VPS", "Cancelar reinício", "vps reboot-cancel").t(30),
+    act(Machine, "Unidades chaos-*", "Listar", "services").t(30),
+    act(Machine, "Unidades chaos-*", "Ligar, desligar ou reiniciar", "service {unit} {verb}").p(UNIT_ACT_P).ask().t(240),
+    act(Machine, "Unidades chaos-*", "Log de uma unidade", "service-log {unit} 200").p(UNIT_P).t(40),
+    act(Machine, "Servidor como usuário chaos", "Ver", "server-user status").t(60),
+    act(Machine, "Servidor como usuário chaos", "Corrigir", "server-user fix").ask().t(180),
+    act(Machine, "Servidor como usuário chaos", "Corrigir e reiniciar", "server-user fix --restart {secs}").p(SECS_P).ask().live(Live::Restarts).t(180),
+    act(Machine, "Servidor como usuário chaos", "Desfazer", "server-user rollback").ask().t(60),
+    act(Machine, "Servidor como usuário chaos", "Log do reinício", "server-user log 60").t(30),
     // ---- Logs
-    act(L, "Console", "Últimas linhas", "logs {n}").p(N_P).t(40),
-    act(L, "Erros", "Desde o último início", "errors {n}").p(N_P).t(40),
-    act(L, "Erros", "Incluir inícios anteriores", "errors {n} all").p(N_P).t(40),
-    act(L, "Erros", "Limpar lista", "errors clear").ask().t(40).h("Só põe uma marca no log; nada é apagado."),
-    act(L, "Updates", "Log do update do servidor", "update-log {n}").p(N_P).t(40),
-    act(L, "Updates", "Log da publicação do client", "publish-log {n}").p(N_P).t(40),
-    act(L, "Updates", "Log da instalação do site", "site-log {n}").p(N_P).t(40),
-    act(L, "GM", "Registro do painel de admin", "gm-logs {n}").p(N_P).t(60),
-    act(L, "Unidades", "Log de uma unidade", "service-log {unit} 200").p(UNIT_P).t(40),
-    act(L, "Par do cliente", "Estado do par (spectate)", "spectate-pair status").t(40),
+    act(Logs, "Console", "Últimas linhas", "logs {n}").p(N_P).t(40),
+    act(Logs, "Erros", "Desde o último início", "errors {n}").p(N_P).t(40),
+    act(Logs, "Erros", "Incluir inícios anteriores", "errors {n} all").p(N_P).t(40),
+    act(Logs, "Erros", "Limpar lista", "errors clear").ask().t(40).h("Só põe uma marca no log; nada é apagado."),
+    act(Logs, "GM", "Registro do painel de admin", "gm-logs {n}").p(N_P).t(60),
+    act(Logs, "Par do cliente", "Estado do par (spectate)", "spectate-pair status").t(40),
 ];
 
 /// Fills the template: `{name}` becomes the single-quoted value. Secret parameters are not in templates; they are
@@ -459,7 +522,7 @@ mod tests {
         let mut seen = HashSet::new();
         for a in ACTIONS {
             assert!(
-                seen.insert((a.tab as u8, a.group, a.label)),
+                seen.insert((a.section as u8, a.group, a.label)),
                 "duplicate {} / {}",
                 a.group,
                 a.label
