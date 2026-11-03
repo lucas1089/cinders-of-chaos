@@ -1,0 +1,38 @@
+# Cinders of Chaos Discord bot, the root side (O385; server/deploy/discord_bot/changes_export.py, README.md section 5).
+# Installed by: chaos-ctl.sh discord-bot install (the admin app: Comandos > Bot do Discord > Instalar ou atualizar),
+# which puts the real paths in. Every 5 minutes (chaos-discordbot-sync.timer), two idempotent jobs:
+#   - the game's changes for the patch notes: /var/lib/chaos/discord-bot/changes.json from the git history of the
+#     repository checkout, only when its HEAD moved (the bot cannot read the checkout from its sandbox);
+#   - the patch notes the bot published: copied into the game's data/patchnotes when missing (never overwritten).
+# Root, because it reads the checkout and writes files for two users; it changes nothing else.
+
+[Unit]
+Description=Cinders of Chaos Discord bot: game changes and patch note files
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I /opt/chaos/discord-bot/app/changes_export.py sync --repo /opt/chaos/repo --data /var/lib/chaos/discord-bot --server-data /opt/chaos/server/data
+TimeoutStartSec=120
+Nice=10
+StandardOutput=append:/var/log/chaos/discord-bot-sync.log
+StandardError=append:/var/log/chaos/discord-bot-sync.log
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+PrivateNetwork=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/chaos/discord-bot -/opt/chaos/server/data/patchnotes /var/log/chaos
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectKernelLogs=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+LimitCORE=0
+MemoryMax=256M

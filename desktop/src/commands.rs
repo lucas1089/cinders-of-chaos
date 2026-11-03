@@ -224,6 +224,7 @@ const BOT_SET_P: &[Param] = &[
             "DISCORD_GUILD_ID",
             "DISCORD_ADMIN_ROLE_ID",
             "DISCORD_BOT_MODEL",
+            "DISCORD_BOT_PATCH_AUTO",
         ],
     ),
     secret("value", "Valor (vazio remove)"),

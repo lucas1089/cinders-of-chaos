@@ -27912,6 +27912,22 @@ asks Claude what each message is, keeps a bug list and helps write patch notes. 
   `patchnotes_core.lua`) into `DISCORD_BOT_DATA_DIR/patchnotes`, never over an existing id. The bot has no write access to the game, so
   `chaos-ctl.sh discord-bot patchnotes` copies the new files into `SERVER/data/patchnotes` (the game lists it every 60 s at most).
   Commit them to `server/data/patchnotes` as well, or the next install does not have them.
+- **Game changes (O385).** The bot cannot read the checkout, so `chaos-discordbot-sync.service` (root, oneshot, `chaos-discordbot-sync.timer`
+  every 5 min; installed and started by `discord-bot install`) runs `discord_bot/changes_export.py sync`: `CHAOS_BOT_DATA/changes.json`
+  (mode 640, owner of the data dir) from `git log --no-merges` of `CHAOS_REPO`, rewritten only when HEAD moved. It reuses
+  `server/tools/gen_changelog.py`: path classes (server data, src-patches, SQL, install steps, client overlay and patches, website) and
+  `clean_subject` (internal subjects, private-looking text, names `check_names.py` refuses); the first body paragraph is kept without
+  trailers, paths, file names, identifiers or O-ids. 120 days, 400 commits, 300 KB. The same run copies new patch note files into
+  `SERVER/data/patchnotes`, so the copy needs no button any more; `discord-bot patchnotes` does both at once. `/patch gerar` sends the
+  changes no published patch covered (meta `patch_seen`, the shas of the file at publish, capped 3000; before the first: 14 days, at
+  most 60), newest first, at most 12,000 characters, with the fixed bugs and extras. The system prompt turns commit messages into
+  player notes and drops tooling, docs, tests, admin; the schema has `player_facing` (false: no notes). Nothing new at all: "Nada novo
+  desde <date>". Runs as root code of the checkout, like `chaos-health.service`.
+- **Automatic patch (O385).** `DISCORD_BOT_PATCH_AUTO` = `preview` (default), `publish` or `off`. Every 5 min the bot reads
+  `changes.json`; a new head (meta `auto_head`, one attempt per head) with unseen changes makes notes versioned `YYYY-MM-DD`
+  (`bot_core.auto_patch_plan`). `preview` DMs the owner the preview with persistent buttons (meta `auto_pending`, restored with
+  `add_view` at start; a newer preview or any publish with changes retires it). `publish` posts and writes the site files, then DMs a
+  short note; its first run is still a preview. `player_facing` false: one log line, the changes are marked seen.
 - **Install.** `chaos-ctl.sh discord-bot install` (idempotent): user `chaosbot`, `CHAOS_BOT_DIR/venv` (default `/opt/chaos/discord-bot`)
   from the pinned `requirements.txt`, the code copied to `CHAOS_BOT_DIR/app`, `/etc/chaos/discord-bot.env` (mode 600, from
   `.env.example`), data dir `/var/lib/chaos/discord-bot` (750), `chaos-discordbot.service` (sandboxed like the other services, writes
@@ -27919,8 +27935,8 @@ asks Claude what each message is, keeps a bug list and helps write patch notes. 
   `start` refuses with `config-missing` until the five required ones are set. Settings in `ctl.conf`: `CHAOS_BOT_USER`,
   `CHAOS_BOT_ENV`, `CHAOS_BOT_DIR`, `CHAOS_BOT_DATA`, `CHAOS_BOT_LOG`, `CHAOS_BOT_PYTHON`. Admin app: Comandos > Bot do Discord;
   desktop table: `commands.rs` group Bot do Discord.
-- **Not done.** No live run (the fallbacks parameter together with structured output is untested against the real API), the Android card
-  is not compiled here, and the slash commands are checked in code only (no permission override in the server settings).
+- **Not done.** No live run (the fallbacks parameter together with structured output is untested against the real API; the automatic
+  patch loop and the persistent buttons in `bot.py` are not run here, only their pure rules), the Android card is not compiled here, and the slash commands are checked in code only (no permission override in the server settings).
 
 ## Combat stat rows of the Skills window (`combat_stats.lua`, `combat_stats_core.lua`, `combat_stats_config.lua`, client `game_skillstats`)
 
