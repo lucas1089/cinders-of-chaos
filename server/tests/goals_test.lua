@@ -286,7 +286,10 @@ eq(#v2.hunts, 5, "hunts of level 210: Azuregate, Drownbell, Bonechoir, Sulphur (
 eq(v2.hunts[1].id, "azuregate_reliquary", "lowest band first")
 eq(v2.hunts[1].where.k, "plan", "hunt where")
 local v3 = K.view(cfg, {level = 30, stats = {}, done = {}}, "en", resolve)
-eq(#v3.hunts, 0, "no content hunts at 30")
+eq(#v3.hunts, 3, "hunts of level 30 (O375): Murkreed Fen, and within 50 levels above Chitinmaw Warren and Scalewatch Bastion")
+eq(v3.hunts[1].id, "murkreed_fen", "the band that holds 30 first")
+v3 = K.view(cfg, {level = 90, stats = {}, done = {}}, "en", resolve)
+eq(#v3.hunts, 0, "no content hunts at 90")
 check(v3.hereWhere and v3.hereWhere.k == "hunts", "the nearby hunts instead")
 -- level 2500: no next band, no upcoming
 local v4 = K.view(cfg, {level = 2500, stats = {}, done = {}}, "en", resolve)

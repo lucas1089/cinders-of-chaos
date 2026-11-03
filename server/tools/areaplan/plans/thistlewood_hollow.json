@@ -1,0 +1,241 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "thistlewood_hollow",
+  "name": "Thistlewood Hollow",
+  "biome": "forest",
+  "size": [
+    96,
+    80
+  ],
+  "floors": 1,
+  "level": [
+    6,
+    12
+  ],
+  "seed": 37501,
+  "origin": {
+    "x": 15620,
+    "y": 15700,
+    "z": 7
+  },
+  "decoration": "normal",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "goblin_dell",
+      "floor": 1,
+      "size": [
+        19,
+        14
+      ],
+      "place": "center"
+    },
+    {
+      "id": "troll_ford",
+      "floor": 1,
+      "size": [
+        19,
+        14
+      ],
+      "place": "west"
+    },
+    {
+      "id": "bramble_run",
+      "floor": 1,
+      "size": [
+        19,
+        14
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "wolf_thicket",
+      "floor": 1,
+      "size": [
+        19,
+        14
+      ],
+      "place": "southwest"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "goblin_dell",
+      "width": 3
+    },
+    {
+      "from": "goblin_dell",
+      "to": "troll_ford",
+      "width": 3
+    },
+    {
+      "from": "goblin_dell",
+      "to": "bramble_run",
+      "width": 3
+    },
+    {
+      "from": "troll_ford",
+      "to": "wolf_thicket",
+      "width": 3
+    },
+    {
+      "from": "wolf_thicket",
+      "to": "bramble_run",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "goblin_dell",
+      "monster": "Goblin",
+      "count": 7,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "goblin_dell",
+      "monster": "Goblin Scavenger",
+      "count": 5,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "troll_ford",
+      "monster": "Troll",
+      "count": 8,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "troll_ford",
+      "monster": "Swamp Troll",
+      "count": 4,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "bramble_run",
+      "monster": "Goblin Scavenger",
+      "count": 7,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "bramble_run",
+      "monster": "Wolf",
+      "count": 5,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "wolf_thicket",
+      "monster": "Wolf",
+      "count": 7,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "wolf_thicket",
+      "monster": "Bear",
+      "count": 5,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "goblin_dell",
+        "troll_ford"
+      ],
+      "monster": "Goblin",
+      "count": 4,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "goblin_dell",
+        "bramble_run"
+      ],
+      "monster": "Goblin Scavenger",
+      "count": 3,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "goblin_dell",
+        "troll_ford"
+      ],
+      "monster": "Troll",
+      "count": 3,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "troll_ford",
+        "wolf_thicket"
+      ],
+      "monster": "Swamp Troll",
+      "count": 2,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "goblin_dell",
+        "bramble_run"
+      ],
+      "monster": "Goblin Scavenger",
+      "count": 1,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "wolf_thicket",
+        "bramble_run"
+      ],
+      "monster": "Wolf",
+      "count": 1,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "troll_ford",
+        "wolf_thicket"
+      ],
+      "monster": "Wolf",
+      "count": 1,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "path": [
+        "wolf_thicket",
+        "bramble_run"
+      ],
+      "monster": "Bear",
+      "count": 1,
+      "respawn": 40,
+      "pack": 2
+    }
+  ],
+  "notes": "Content plan (O375 hall coverage, 2026-11-03): a forest hunt for levels 6-12 on floor 7 of the teleport hall (server/README.md \"Hall coverage (O375)\"). 4 hunting zones; monsters Goblin, Goblin Scavenger, Troll, Swamp Troll, Wolf, Bear. Display monster: Goblin Scavenger."
+}

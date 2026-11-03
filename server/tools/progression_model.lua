@@ -1,7 +1,8 @@
 -- Leveling journey model: minutes per level from level 1 to 2200, hunts per level, spikes and walls (computed from the
 -- repo's own data; not measured in game). server/README.md "Progression smoothness (O135)".
 --     cd server && luajit tools/progression_model.lua [--check]      (also lua5.3)
--- Inputs: experienceStages (tools/late_game.py), the hunt pool (bounty_pool.lua) with the pace curves (pace_config.lua),
+-- Inputs: experienceStages (tools/late_game.py), the hunt pool (bounty_pool.lua, plus the monsters the plans spawn that
+-- it does not list yet, O375 M.plannedMonsters) with the pace curves (pace_config.lua),
 -- kills per hour (spawn_tuning.json model.paceKillsPerHour), the engine's experience formula, the hall's hunt bands
 -- (tools/hall_hunts.csv and tools/areaplan/plans/*.json), the newcomer bonus of low levels (catchup_config.lua newcomer,
 -- O370; --no-newcomer leaves it out) and progression_config.lua (the limits --check enforces).
@@ -73,6 +74,52 @@ function M.hunts(P, cfg, pool, kph)
 		out[#out + 1] = {name = e.name, level = lvl, xp = e.exp * xpL * f.xp, kph = k, xph = e.exp * xpL * f.xp * k}
 	end
 	table.sort(out, function(a, b) return a.level < b.level end)
+	return out
+end
+
+-- O375: the monsters the plans spawn that the pool does not list yet. bounty_pool.lua is generated from an installed
+-- map (gen_bounty_pool.py), so a monster placed in a plan after the last run (the seven of O336) is missing until the
+-- next one. The model adds them the way the tool will: at least `minSpawns` spawns over every plan, not a boss, a Chaos
+-- monster file with <level min max> (its hunting level is the middle), its experience and health.
+-- planFiles: {id = json text}; monsterFiles: {xml text, ...}. Returns pool entries ({name, level, exp, health, spawns}).
+function M.plannedMonsters(pool, planFiles, monsterFiles, minSpawns)
+	minSpawns = minSpawns or 6
+	local known = {}
+	for _, list in ipairs({pool.hunt or {}, pool.bosses or {}}) do
+		for _, e in ipairs(list) do known[e.name:lower()] = true end
+	end
+	local count, order = {}, {}
+	local ids = {}
+	for id in pairs(planFiles) do ids[#ids + 1] = id end
+	table.sort(ids)
+	for _, id in ipairs(ids) do
+		for name, n in planFiles[id]:gmatch('"monster"%s*:%s*"([^"]+)"%s*,%s*"count"%s*:%s*(%d+)') do
+			local k = name:lower()
+			if not count[k] then order[#order + 1] = k end
+			count[k] = (count[k] or 0) + tonumber(n)
+		end
+	end
+	local defs = {}
+	for _, text in ipairs(monsterFiles) do
+		local body = text:gsub("<!%-%-.-%-%->", "")
+		local name = body:match('<monster%s[^>]-name="([^"]+)"')
+		local lo, hi = body:match('<level%s+min="(%d+)"%s+max="(%d+)"')
+		if name and lo and not body:find('isboss="1"', 1, true) then
+			defs[name:lower()] = {name = name, level = math.floor((tonumber(lo) + tonumber(hi)) / 2),
+				exp = tonumber(body:match('<monster%s[^>]-experience="(%d+)"') or 0),
+				health = tonumber(body:match('<health%s+now="(%d+)"') or 0),
+				minLevel = tonumber(lo), maxLevel = tonumber(hi)}
+		end
+	end
+	local out = {}
+	for _, k in ipairs(order) do
+		local d = defs[k]
+		if not known[k] and d and d.exp > 0 and count[k] >= minSpawns then
+			out[#out + 1] = {name = d.name, level = d.level, exp = d.exp, health = d.health, spawns = count[k],
+				minLevel = d.minLevel, maxLevel = d.maxLevel}
+		end
+	end
+	table.sort(out, function(a, b) return a.level < b.level or (a.level == b.level and a.name < b.name) end)
 	return out
 end
 
@@ -206,19 +253,16 @@ function M.problems(env)
 			hall.minHunts, hall.lo, hall.hi)
 	end
 	-- the narrow window (O139): in the listed level ranges every level has `minHunts` hall hunts within lo-hi x L
+	-- (a range's third number, O375, overrides minHunts there)
 	local tight = hall.tight
 	if tight then
-		local inside = function(L)
-			for _, rg in ipairs(tight.ranges) do
-				if L >= rg[1] and L <= rg[2] then return true end
+		for _, rg in ipairs(tight.ranges) do
+			local need = rg[3] or tight.minHunts
+			local a, b = math.max(lim.fromLevel, rg[1]), math.min(lim.toLevel, rg[2])
+			for _, r in ipairs(M.runs(a, b, function(L) return M.hallCount(env.bands, L, tight) < need end)) do
+				out[#out + 1] = string.format("hall: levels %d-%d have fewer than %d hall hunts within %.1fx-%.1fx", r[1], r[2],
+					need, tight.lo, tight.hi)
 			end
-			return false
-		end
-		for _, r in ipairs(M.runs(lim.fromLevel, lim.toLevel, function(L)
-			return inside(L) and M.hallCount(env.bands, L, tight) < tight.minHunts
-		end)) do
-			out[#out + 1] = string.format("hall: levels %d-%d have fewer than %d hall hunts within %.1fx-%.1fx", r[1], r[2],
-				tight.minHunts, tight.lo, tight.hi)
 		end
 	end
 	return out, curve
@@ -306,11 +350,23 @@ function M.load(opts)
 		end
 	end
 	env.kph = kph
-	env.hunts = M.hunts(P, env.pace, env.pool, kph)
 	local plans = {}
 	local p = io.popen("ls tools/areaplan/plans/*.json")
 	for path in p:lines() do plans[path:match("([^/]+)%.json$")] = readAll(path) end
 	p:close()
+	-- O375: the planned monsters the generated pool does not list yet (M.plannedMonsters)
+	if not opts.poolOnly then
+		local files = {}
+		p = io.popen("ls data/monster/monsters/chaos/*.xml data/monster/monsters/chaos/*/*.xml")
+		for path in p:lines() do files[#files + 1] = readAll(path) end
+		p:close()
+		env.planned = M.plannedMonsters(env.pool, plans, files)
+		local hunt = {}
+		for _, e in ipairs(env.pool.hunt) do hunt[#hunt + 1] = e end
+		for _, e in ipairs(env.planned) do hunt[#hunt + 1] = e end
+		env.pool = {hunt = hunt, bosses = env.pool.bosses}
+	end
+	env.hunts = M.hunts(P, env.pace, env.pool, kph)
 	env.bands = M.hallBands(readAll("tools/hall_hunts.csv"), plans)
 	return env
 end

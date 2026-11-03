@@ -1,0 +1,250 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "pyrecrown_caldera",
+  "name": "Pyrecrown Caldera",
+  "biome": "lava",
+  "size": [
+    172,
+    140
+  ],
+  "floors": 1,
+  "level": [
+    1900,
+    2100
+  ],
+  "seed": 37509,
+  "origin": {
+    "x": 17252,
+    "y": 15700,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "caldera_floor",
+      "floor": 1,
+      "size": [
+        38,
+        31
+      ],
+      "place": "center"
+    },
+    {
+      "id": "stork_roost",
+      "floor": 1,
+      "size": [
+        38,
+        31
+      ],
+      "place": "south"
+    },
+    {
+      "id": "wyrm_coil",
+      "floor": 1,
+      "size": [
+        34,
+        25
+      ],
+      "place": "east"
+    },
+    {
+      "id": "ash_vents",
+      "floor": 1,
+      "size": [
+        34,
+        25
+      ],
+      "place": "west"
+    },
+    {
+      "id": "bone_swarm",
+      "floor": 1,
+      "size": [
+        34,
+        25
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "tyrant_ledge",
+      "floor": 1,
+      "size": [
+        34,
+        25
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "crown_rim",
+      "floor": 1,
+      "size": [
+        34,
+        25
+      ],
+      "place": "northeast"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "caldera_floor",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "crown_rim",
+      "width": 3
+    },
+    {
+      "from": "caldera_floor",
+      "to": "stork_roost",
+      "width": 3
+    },
+    {
+      "from": "caldera_floor",
+      "to": "ash_vents",
+      "width": 3
+    },
+    {
+      "from": "crown_rim",
+      "to": "wyrm_coil",
+      "width": 3
+    },
+    {
+      "from": "wyrm_coil",
+      "to": "tyrant_ledge",
+      "width": 3
+    },
+    {
+      "from": "tyrant_ledge",
+      "to": "stork_roost",
+      "width": 3
+    },
+    {
+      "from": "stork_roost",
+      "to": "bone_swarm",
+      "width": 3
+    },
+    {
+      "from": "bone_swarm",
+      "to": "ash_vents",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "caldera_floor",
+      "monster": "Pyre Stork",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "caldera_floor",
+      "monster": "Mirecoil Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stork_roost",
+      "monster": "Pyre Stork",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stork_roost",
+      "monster": "Wraithbone Stalker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_coil",
+      "monster": "Mirecoil Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_coil",
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ash_vents",
+      "monster": "Wraithbone Stalker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ash_vents",
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_swarm",
+      "monster": "Gnawbone Swarm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_swarm",
+      "monster": "Wraithbone Stalker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tyrant_ledge",
+      "monster": "Pyrewing Tyrant",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tyrant_ledge",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crown_rim",
+      "monster": "Gnarlback",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crown_rim",
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O375 hall coverage, 2026-11-03): a lava hunt for levels 1900-2100 on floor 5 of the teleport hall (server/README.md \"Hall coverage (O375)\"). 7 hunting zones; monsters Pyre Stork, Mirecoil Wyrm, Wraithbone Stalker, Gnarlback, Gnawbone Swarm, Pyrewing Tyrant. Display monster: Wraithbone Stalker."
+}

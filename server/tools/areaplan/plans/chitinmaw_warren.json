@@ -1,0 +1,209 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "chitinmaw_warren",
+  "name": "Chitinmaw Warren",
+  "biome": "cave",
+  "size": [
+    112,
+    92
+  ],
+  "floors": 1,
+  "level": [
+    44,
+    56
+  ],
+  "seed": 37505,
+  "origin": {
+    "x": 16436,
+    "y": 15700,
+    "z": 9
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "northeast",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "brood_chamber",
+      "floor": 1,
+      "size": [
+        22,
+        17
+      ],
+      "place": "center"
+    },
+    {
+      "id": "spitter_ledges",
+      "floor": 1,
+      "size": [
+        22,
+        17
+      ],
+      "place": "south"
+    },
+    {
+      "id": "drill_tunnels",
+      "floor": 1,
+      "size": [
+        22,
+        17
+      ],
+      "place": "west"
+    },
+    {
+      "id": "wasp_vault",
+      "floor": 1,
+      "size": [
+        22,
+        17
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "ember_pit",
+      "floor": 1,
+      "size": [
+        22,
+        17
+      ],
+      "place": "southeast"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "brood_chamber",
+      "width": 3
+    },
+    {
+      "from": "brood_chamber",
+      "to": "spitter_ledges",
+      "width": 3
+    },
+    {
+      "from": "brood_chamber",
+      "to": "wasp_vault",
+      "width": 3
+    },
+    {
+      "from": "wasp_vault",
+      "to": "drill_tunnels",
+      "width": 3
+    },
+    {
+      "from": "drill_tunnels",
+      "to": "spitter_ledges",
+      "width": 3
+    },
+    {
+      "from": "spitter_ledges",
+      "to": "ember_pit",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "brood_chamber",
+      "monster": "Waspoid",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "brood_chamber",
+      "monster": "Crawler",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "spitter_ledges",
+      "monster": "Spitter",
+      "count": 12,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "spitter_ledges",
+      "monster": "Crawler",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "drill_tunnels",
+      "monster": "Drillworm",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "drill_tunnels",
+      "monster": "Spitter",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "wasp_vault",
+      "monster": "Waspoid",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "wasp_vault",
+      "monster": "Brimstone Bug",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "ember_pit",
+      "monster": "Brimstone Bug",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "ember_pit",
+      "monster": "Drillworm",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "path": [
+        "brood_chamber",
+        "spitter_ledges"
+      ],
+      "monster": "Waspoid",
+      "count": 2,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "path": [
+        "brood_chamber",
+        "wasp_vault"
+      ],
+      "monster": "Crawler",
+      "count": 2,
+      "respawn": 45,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O375 hall coverage, 2026-11-03): a cave hunt for levels 44-56 on floor 7 of the teleport hall (server/README.md \"Hall coverage (O375)\"). 5 hunting zones; monsters Waspoid, Crawler, Spitter, Drillworm, Brimstone Bug. Display monster: Waspoid."
+}

@@ -76,16 +76,17 @@ Gifts wait for you at levels {{newplayer.giftLevels}}: potions, orbs and, later,
 ## Level 1300-1599: The deep
 
 - The Iron Crucible and its boss chest.
-- Hunts: Gallowfen Mire, Voidscar Chasm, Gravehorn Deeps.
+- Hunts: Gallowfen Mire, Voidscar Chasm, Gravehorn Deeps, Anvilmourn Wastes (1500-1650).
 
 ## Level 1600-1999: The abyss
 
 - The Fallen Sanctum and the hardest Sepulchre runs.
-- Hunt Duskmarrow Crater from level 1750.
+- Hunt Duskmarrow Crater and Oathgrave Ossuary from level 1750.
 
 ## Level 2000+: The apex
 
 - The Pyre Throne, the last dungeon; its best chest is at difficulty {{dungeon.difficulties}}.
+- Hunts: Gloomsilt Mire (1800-2200) and Pyrecrown Caldera (1900-2100).
 - Conquest Tokens buy the uniques luck has not given you.
 
 ## Luck and effort

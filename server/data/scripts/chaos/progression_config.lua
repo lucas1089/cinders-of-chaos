@@ -15,13 +15,16 @@ return {
 	window = {lo = 0.8, hi = 1.1, minHunts = 5},
 
 	-- teleport hall: a hall hunt (tools/hall_hunts.csv, tools/areaplan/plans) is within reach of level L when its level is
-	-- within [lo L, hi L]; every level from `fromLevel` needs minHunts of them ("next hunt far above" = nothing in range)
-	hall = {lo = 0.7, hi = 1.3, minHunts = 3,
-		-- the narrow window where the hall was thin (O139): from the levels 160-240 (hunts for 200), 380-520 (450),
-		-- 630-770 (700), 900-1100 (1000), 1350-1650 (1500) and 1800-2200 (2000) every level needs minHunts hall hunts
-		-- within 0.8-1.1 x L, the pool's window. Elsewhere (levels 8-160, 240-380...) the wide window above holds.
+	-- within [lo L, hi L]; every level from `fromLevel` needs minHunts of them ("next hunt far above" = nothing in range).
+	-- O375: 5 (was 3): six small hunts of levels 6-62 on floor 7 and three of 1500-2100 on floor 5 (server/README.md
+	-- "Hall coverage (O375)"); the fewest are now 5 at levels 8-100 (was 3) and 9 at 2000-2200 (was 6)
+	hall = {lo = 0.7, hi = 1.3, minHunts = 5,
+		-- the narrow window where the hall was thin: in each listed range every level needs minHunts hall hunts within
+		-- 0.8-1.1 x L, the pool's window (a range's third number overrides minHunts). O139: the levels 160-240 (hunts for
+		-- 200), 380-520 (450), 630-770 (700), 900-1100 (1000). O375: 8-100 needs 2 (was 0 at levels 49-57 and 1-2 elsewhere)
+		-- and 1300-2200 needs 5 (was 4 at 2126-2200; O139 asked 3 in 1350-1650 and 1800-2200).
 		tight = {lo = 0.8, hi = 1.1, minHunts = 3,
-			ranges = {{160, 240}, {380, 520}, {630, 770}, {900, 1100}, {1350, 1650}, {1800, 2200}}}},
+			ranges = {{8, 100, 2}, {160, 240}, {380, 520}, {630, 770}, {900, 1100}, {1300, 2200, 5}}}},
 
 	limits = {
 		fromLevel = 8, -- characters start at level 8 (start_stats.lua)
@@ -29,13 +32,16 @@ return {
 		-- the experience stage table (tools/late_game.py): the next row is at most this x (or 1/this x) the one before
 		stageStep = 1.08,
 		-- the mean minutes per level of consecutive blocks of `short` levels change by a ratio inside shortRatio, blocks
-		-- of `long` levels inside longRatio (before O135: 0.37 to 1.26 over 10 levels, the cliff at level 21)
-		short = 10, shortRatio = {0.75, 1.25},
+		-- of `long` levels inside longRatio (before O135: 0.37 to 1.26 over 10 levels, the cliff at level 21; O375: the low
+		-- bound 0.78, was 0.75, the worst is 0.81 at level 28)
+		short = 10, shortRatio = {0.78, 1.25},
 		-- O337: the pool lists the monsters of the planned hunts (829 monsters, was 709 and ended at hunting level 980), so levels 1000-2200
 		-- are paced by the hunts that exist (10-14.5 minutes a level; the pool without them gave 13-60, 777 hours to 2200 instead of
 		-- 347). A hunt of the 1700s entering the window of level 1580 (0.8-1.1 x L) speeds the journey up by a fifth at once (14.5 to
-		-- 10.4 minutes a level): the lower bound of the long blocks is 0.78 (was 0.88, made for the 5x cliff of O135)
-		long = 25, longRatio = {0.78, 1.35},
+		-- 10.4 minutes a level): the lower bound of the long blocks was 0.78 (0.88 before, made for the 5x cliff of O135).
+		-- O375: the model also counts the planned monsters the pool misses (Redmane Anvilbreaker 1550, Gravecrown Oathbreaker
+		-- 1850 and five more), so the step comes in two (14.4, 12.9, 10.4) and the worst 25-level change is 0.81: 0.80
+		long = 25, longRatio = {0.80, 1.35},
 		-- hunts of the pool inside the window, every level (the window widens first)
 		minPoolHunts = 4
 	}

@@ -19049,7 +19049,8 @@ needed per level growing with L^2 against hunts that pay linearly.
 one before or the table has a hole; the mean minutes a level of consecutive 10-level blocks change by less than 0.75x or more
 than 1.25x (25-level blocks 0.88x to 1.35x) between 8 and 2200; fewer than 4 pool hunts are in reach of a level; fewer than 3
 hall hunts are within 0.7-1.3 L of a level. The test also feeds it the table from before O135 and expects the x50 step at
-level 21 and the time cliff to be named.
+level 21 and the time cliff to be named. (O375 raised these limits: 10-level blocks 0.78x, 25-level blocks 0.80x, 5 hall
+hunts within 0.7-1.3 L; "Hall coverage (O375)".)
 
 **Not fixed, and why.**
 - (Done in O139, "Hall coverage (O139)".) The hall had levels 163-233 and 386-518 with fewer than 3 hunts within 0.8-1.1 L;
@@ -19170,6 +19171,92 @@ display spawns follow. No new step, no new table. Needs a server restart (spawns
 engine rebuild. Not run on the real map: `tools/install_content_areas_test.py` (synthetic map) and the planner's compile and
 QA of the twelve plans pass; the dry run on the live map is the owner's first step (`install_all.py --only contentareas
 --dry-run`).
+
+## Hall coverage (O375, `tools/areaplan/plans/`, `progression_config.lua` `hall`, 2026-11-03)
+
+ROADMAP O375: more hunting choice where `tools/progression_model.lua` showed few hunts. New characters had 3 hall hunts in
+reach (0.7-1.3 x L) at levels 8-100, and levels 1300-2200 (about 170 of the 347 model hours) had 6-15. Done the way of
+O139 ("Hall coverage (O139)"): new area plans, no new monster, no new sprite.
+
+**What was built.** Nine generated areas in a new row of the annex block (y 15700, x 15620 to 17252, step 204; the
+annexes stand at y 15500-15624, x 14340-15684; docs/MAP_GUIDE.md "Content plans"). Six are small and quick (96 x 80 to
+114 x 94, 4-5 hunting zones on loops, packs of 2 below level 35 and of 3 above, respawn 40-45 s) for new players on the
+ground floor of the hall; three are big late hunts on floor 5 (150 x 122 to 172 x 140, 7 zones, respawn 75 s). All have
+4.1-4.3 monsters per 100 walkable tiles, no zone above the validator's 8 per 100 (what a zone cannot hold stands along
+the paths out of it), and pass the asymmetric outline rule (new plans, not in `shape_rules.json` `legacy_plans`).
+Monsters: the pool's monsters of the band (the planner's tier check passes); the late ones are the level-scaled set of
+the hunts around them. No reward chest.
+
+| Plan | Name | Band (hunt level) | Floor | Biome | Size | Monsters (walkable tiles) | Display |
+|---|---|---|---|---|---|---|---|
+| thistlewood_hollow | Thistlewood Hollow | 6-12 (9) | 7 | forest | 96 x 80 | 64 (1514): Goblin, Goblin Scavenger, Troll, Swamp Troll, Wolf, Bear | Goblin Scavenger |
+| copperdelve_mine | Copperdelve Mine | 11-17 (14) | 7 | cave | 100 x 84 | 53 (1295): Dwarf, Dwarf Soldier, Dwarf Miner, Larva, Carrion Worm | Dwarf Soldier |
+| ashgrave_barrow | Ashgrave Barrow | 18-26 (22) | 7 | crypt | 104 x 86 | 88 (2113): Crypt Shambler, Ghost, Bonelord, Mummy, Tomb Servant | Crypt Shambler |
+| murkreed_fen | Murkreed Fen | 24-34 (29) | 7 | swamp | 106 x 88 | 62 (1480): Lancer Beetle, Swarmer, Acid Blob, Death Blob, Sacred Spider | Lancer Beetle |
+| chitinmaw_warren | Chitinmaw Warren | 44-56 (50) | 7 | cave | 112 x 92 | 86 (2084): Waspoid, Crawler, Spitter, Drillworm, Brimstone Bug | Waspoid |
+| scalewatch_bastion | Scalewatch Bastion | 50-62 (56) | 7 | hall | 114 x 94 | 113 (2753): Lizard Legionnaire, Lizard Dragon Priest, Lizard High Guard | Lizard Legionnaire |
+| anvilmourn_wastes | Anvilmourn Wastes | 1500-1650 (1575) | 5 | waste | 168 x 136 | 152 (3743): Redmane Anvilbreaker, Cinderskull Reaver, Ashveil Hierarch, Hollowhorn, Bloodantler Fiend | Cinderskull Reaver |
+| oathgrave_ossuary | Oathgrave Ossuary | 1750-1900 (1825) | 5 | catacomb | 150 x 122 | 259 (6248): Gravecrown Oathbreaker, Cinderhorn Juggernaut, Wraithbone Stalker, Ironmask Warbreaker, Gnarlback | Cinderhorn Juggernaut |
+| pyrecrown_caldera | Pyrecrown Caldera | 1900-2100 (2000) | 5 | lava | 172 x 140 | 150 (3683): Pyre Stork, Mirecoil Wyrm, Wraithbone Stalker, Gnarlback, Gnawbone Swarm, Pyrewing Tyrant | Wraithbone Stalker |
+
+The bands fill the gaps between the hall's hunt levels: 12 to 16, 20 to 24, 25 to 32, 44 to 63 (none), 1525 to 1625,
+1775 to 1875, and above 2000 (one hunt). Display monsters: one per slot, none shown elsewhere in the hall; the low ones
+are stock 1x1 looks, Cinderskull Reaver (2219) and Cinderhorn Juggernaut (2218) the 2x2 owner art sheets (64 px cells),
+Wraithbone Stalker the stock look 1449: not checked in a cell of the live pair (if it spills over the cell walls, set
+`standIn` with a 2x2 monster, like Wyrmspine Hollows).
+
+**The hall grows (no slot was free: z 7 50 on 52, z 6 40 on 41, z 5 18 on 18).** `hunt_teleports_config.lua`:
+- z 7: `room.wings` 9 to 10 modules a side: 56 slots for 56 hunts. The wing sweeps the lawn and the sea fill
+  (`hall.fill`, x 31578-31724) as before; `hall.x` 31586-31716 and `display.x` 31590-31710 follow the new ends.
+- z 5: a wing of its own, one module a side copied from floor 6 (no `sweep`): 22 slots for 21 hunts. The new tiles must
+  land where the map has none: floor 5 above the grown floor 6 (6 modules a side) had nothing around the base room
+  when floor 6 grew, but this was not read on the live map. If something stands there the install refuses with
+  "target tile(s) are taken ... nothing written" (`tools/install_content_areas_test.py` `upper_wing_checks`).
+- `hall.capacity` 56 / 41 / 22; `install_content_areas_test.py` `capacity_checks` passes. Every hunt keeps its floor
+  by level and the slots go by level as before ("Hall order"), so a hunt moves along the corridor by as many slots as
+  new hunts stand below it on its floor (up to 6 on z 7, up to 3 on z 5); the display spawns follow.
+
+**Hall hunts in reach (fewest over the levels; `luajit tools/progression_model.lua`).**
+
+| Levels | 0.7-1.3 L before | after | 0.8-1.1 L before | after |
+|---|---|---|---|---|
+| 8-20 | 3 (level 18) | 5 | 1 (level 14) | 2 |
+| 20-50 | 3 (level 29) | 5 | 1 (level 32) | 2 |
+| 50-100 | 3 (level 56) | 5 | 0 (levels 49-57) | 2 |
+| 1000-1300 | 22 | 23 | 8 | 8 |
+| 1300-1600 | 15 | 17 | 7 | 8 |
+| 1600-2000 | 10 | 13 | 6 | 8 |
+| 2000-2200 | 6 | 9 | 4 (levels 2126-2200) | 6 |
+
+Levels 100-1000 are unchanged (7-31). Pool hunts in reach at the middle of the bands: 1300-1600 27 to 29, 1600-2000 13 to
+15, 2000-2200 10 to 11 (below).
+
+**The check.** `progression_config.lua` `hall.minHunts` 5 (was 3): every level 8-2200 needs 5 hall hunts within
+0.7-1.3 L. `hall.tight.ranges` takes an optional third number (the range's own minimum): {8, 100, 2} and {1300, 2200, 5}
+(was {1350, 1650} and {1800, 2200} with 3); 160-240, 380-520, 630-770 and 900-1100 keep 3. `tests/progression_test.lua`
+takes the nine plans out and expects both ends named.
+
+**The pool and the sawtooth.** The model paces each level by the median experience per hour of the pool hunts within
+0.8-1.1 L (`bounty_pool.lua`, generated by `gen_bounty_pool.py` from an installed map). The pool was last made before the
+seven monsters of O336 went into nine plans, so it missed them (Bogtusk Cleaver 400, Wickstaff Hexmage 630, Coralcrown
+Brinecaller 930, Gloamgeode Shellback 1150, Marshlight Hollowseer 1350, Redmane Anvilbreaker 1550, Gravecrown Oathbreaker
+1850). `M.plannedMonsters` adds a monster the plans spawn 6+ times that the pool does not list, from its Chaos monster file
+(middle of `<level>`, experience, health; no boss), the way the tool will once the map has them (`--check` prints 836
+pool hunts, 829 before). The jump near level 1578 came from four monsters of level 1260 leaving the window at once
+(14.4 to 10.4 minutes a level): with Redmane Anvilbreaker at 1550 it comes in two steps (14.4, 12.9, 10.4), the worst
+25-level change is 0.81 (was 0.745) and the worst 10-level change 0.81 at level 28. `limits.longRatio` low bound 0.78 to
+0.80, `shortRatio` 0.75 to 0.78. Hours to 2200: 346.3 to 347.1 (1600-2200 107.2 to 108.2). The hall plans do not pace the
+model: a smoother curve needs monsters at levels the pool does not have (the late set sits at 1260-1300, 1400, 1500,
+1550, 1600, 1700, 1800, 1850, 1900 and 2000). Not fixed: the smaller teeth of 1600-2200 (9.4 to 12.6 minutes a level,
+each time a level group enters or leaves the window).
+
+**Install** (`install_all.py` step `contentareas`; idempotent): the nine plans are placed with their frame and spawns, z 7
+grows by one module a side, z 5 gets its wings, the hall is ordered again and the places file, signs and display spawns
+follow. Dry run first on the live map (`install_all.py --only contentareas --dry-run`): it names a z 5 tile in the way.
+Then a server restart (spawns, config). Afterwards rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`
+on the server (docs/MAP_GUIDE.md "Content plans") so the bounty board knows the O336 monsters. No client update, no
+engine rebuild. Not run on the live map, not played: the planner's validate, compile and QA of the nine plans and the
+synthetic install test pass.
 
 ## Pack combat (pace) (`pace.lua`, `pace_core.lua`, `pace_config.lua`, 2026-10-14)
 
