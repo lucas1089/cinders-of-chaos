@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 65,
   "out": 38,
-  "passive": 86,
+  "passive": 89,
   "place": 15,
   "staff": 13
  },
@@ -7645,6 +7645,7 @@
   },
   "goals": {
    "actions": [
+    "welcomeSkip",
     "tracker",
     "open",
     "close"
@@ -8241,6 +8242,7 @@
    ],
    "dataKeys": [
     "accepting",
+    "answer",
     "guid",
     "hours",
     "key",
@@ -8270,6 +8272,7 @@
     "retire",
     "dismiss",
     "invite",
+    "offer",
     "open",
     "seek"
    ],
@@ -9015,6 +9018,22 @@
    "skip": [],
    "systems": [
     "combine"
+   ]
+  },
+  "survey": {
+   "actions": [],
+   "client": [
+    "game_chaossurvey"
+   ],
+   "dataKeys": [],
+   "files": [
+    "survey.lua"
+   ],
+   "opcode": 122,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "survey"
    ]
   },
   "tileBars": {
@@ -9765,6 +9784,13 @@
    "files": [
     "death_keep.lua"
    ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "deathadvice": {
+   "files": [],
    "kind": "passive",
    "opcodes": [],
    "talkactions": [],
@@ -11182,6 +11208,18 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "survey": {
+   "files": [
+    "chaos_constants.lua",
+    "survey.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [
+    "survey"
+   ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "tales": {
    "files": [
     "lore_data.lua",
@@ -11459,6 +11497,16 @@
     "weeklyChest"
    ],
    "talkactions": []
+  },
+  "welcomepath": {
+   "files": [
+    "chaos_constants.lua",
+    "welcomepath.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "wrapchain": {
    "files": [],
