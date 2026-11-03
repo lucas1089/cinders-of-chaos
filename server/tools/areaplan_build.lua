@@ -21,10 +21,19 @@ local cfg = dofile("data/scripts/chaos/areagen_config.lua")
 local riftCfg = dofile("data/scripts/chaos/rift_config.lua")
 local floor = math.floor
 
-local mode = arg[1]
+-- Library use (the map editor's script pack, tools/editor_scripts/cinders_editor.lua): set the global
+-- AREAPLAN_LIB = {pair24 = bool, dark = bool} before dofile; the file then returns its tables (end of "biomes") and
+-- prints nothing. The map editor runs Lua 5.1 without arg.
+local lib = AREAPLAN_LIB
+local mode = lib and "lib" or arg[1]
 local flags = {}
-for k = 2, #arg do
-	flags[arg[k]] = true
+if lib then
+	flags.pair24 = lib.pair24 and true or nil
+	flags.dark = lib.dark and true or nil
+else
+	for k = 2, #arg do
+		flags[arg[k]] = true
+	end
 end
 local dark = flags.dark or false
 local pair24 = flags.pair24 or false
@@ -611,6 +620,11 @@ local function materials(theme)
 		return a.over .. ":" .. a.under < b.over .. ":" .. b.under
 	end)
 	return famOut, borders, sets
+end
+
+if mode == "lib" then
+	return {A = A, cfg = cfg, opts = opts, biomes = BIOMES, light = LIGHT, decoration = DECOR, planTheme = planTheme,
+		materials = materials, idOf = idOf, pair24 = pair24, dark = dark}
 end
 
 -- ------------------------------------------------------------------ catalogue

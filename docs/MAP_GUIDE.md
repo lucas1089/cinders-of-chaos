@@ -326,10 +326,10 @@ For the owner:
 1. Download the newest `CindersOfChaos-Windows.zip` from the GitHub releases (the newest `winpkg-N`). Always start
    from the newest one: it holds the current map with every install step and every earlier master in it. An edit
    made on an older zip would bring old content back.
-2. Extract it. The map editor is a separate download (its licence does not let us pass it on in our zip; the source is
-   in `docs/CREDITS.md`, steps in the package `README.txt`, "Map editor"): unpack it once into the zip's `mapeditor`
-   folder. Then run `open-map-editor.bat`: it opens the editor on the `.otbm` in `server\data\world` (the only `.otbm`
-   there) with the client and server folders already set (`mapeditor\client`, `server\`).
+2. Extract it. The map editor is in the zip (`mapeditor\`, AGPL-3.0 with its source zip; `docs/CREDITS.md`). Run
+   `open-map-editor.bat`: it sets the editor's 10.98 client folder to `mapeditor\client`, puts the `.otbm` of
+   `server\data\world` (the only `.otbm` there) first in the editor's "Recent maps" and starts it; click the map there
+   (the editor opens no map from the command line; package `README.txt`, "Map editor").
 3. Edit and save. Keep the file name. Test it locally if you like: `start-server.bat` loads the saved map.
 4. Send us that one `.otbm` file (zip it if the channel limits the size), with a line on what you changed.
 
@@ -830,6 +830,40 @@ in x 15295-15510, y 14330-15120 on any floor, checked with `tools/map/otbm.py`; 
 - Review pictures: `area_planner.py render` needs a client pair with the kit (pair 33, not built yet); until then a
   schematic of the compiled tiles (ground families, blocking pieces, set pieces, mechanics and spawns in flat colours)
   is what can be drawn. The kit's own art is never given to an AI tool (docs/SPRITE_STYLE.md, import-only).
+
+## Generator in the map editor
+
+O381 (owner 2026-11-03). The map editor of the Windows package runs Lua 5.1 scripts (Tools > Lua Scripts, mode
+"Custom Lua script"). `mapeditor\cinders\` holds our area generator and every area plan for it; the package build makes
+the folder with `server/tools/gen_editor_scripts.py` (nothing of it is committed). Two entry scripts, parameters at the
+top (open them in Notepad):
+
+- `generate_area.lua`: a new area from `areagen_core.lua` with the planner's biomes (`tools/areaplan_build.lua`, library
+  use): `biome`, `width`, `height`, `floors`, `seed` (nil: the editor window's seed), `level` (the monsters' band:
+  `monsters.lua` holds our monsters and their hunting level), `decoration`, `light`, `boss`, `dark`. The same seed
+  gives the same area. The log lists the arrival, the exit portal, holes and ladders and the spawns, counted from the
+  Destination; `generated_spawns.txt` has the whole spawn list.
+- `paint_plan.lua`: one compiled plan of `server/tools/areaplan/{plans,annexes,chronicle,rooms,events}`
+  (`plan = "<id>"`; `plans\index.txt` lists them). The build compiles each plan like the install does
+  (`area_plan_compile.py`, an imported hunt by `area_import.py`) and writes its tiles and view frame as rows of server
+  ids (`plans\<id>.lua`); the script only reads them and writes tiles. The log names the Destination that puts the
+  area where the server has it. `plans\<id>-notes.txt`: the monsters, boss, NPCs, item attributes (chest and portal
+  action ids, teleport targets) and protection zone tiles.
+
+In the editor: set the Destination (X / Y = the top-left corner, floor = the deepest floor of the area), Generate (the
+log, nothing written yet), Apply (one change: Undo takes it out). The editor's API takes server ids (items.otb) and
+checks each against the loaded client, so use the package's 10.98 client (`mapeditor\client`).
+
+Limits of the editor's scripts: 100,000 tiles, 500,000 items and 1,024 items on one tile, 120 seconds. The generator
+refuses a size over 100,000 tiles before it writes anything; a plan over it is painted one floor per run (`floor = z`;
+every plan of today is under 42,000 tiles with its frame). The API writes no creatures, spawns, action ids, teleport
+targets or tile flags: those stay in the log and the notes, and the plans keep them on the server through the install.
+
+Code: `server/tools/editor_scripts/` (the entry scripts, `cinders_editor.lua`, the pack README and `dme_mock.lua`, a
+stand-in of the editor's runner for the tests). Tests: `server/tests/editor_scripts_test.lua` (LuaJIT, Lua 5.3 and Lua
+5.1: tiles, allowed ids, same seed same map, refusals, one floor, the floor split) and
+`server/tools/gen_editor_scripts_test.py` (a pack of three real plans painted in LuaJIT and Lua 5.1 against the
+compiled `.otbm`).
 
 ## Map inbox
 

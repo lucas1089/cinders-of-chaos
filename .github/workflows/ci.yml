@@ -1021,6 +1021,20 @@ jobs:
           python3 -I server/tools/gen_harvest_places.py --check
           python3 -I server/tools/gen_harvest_places_test.py
 
+      - name: Map editor scripts (O381; our generator and plans in the editor's Lua 5.1) and the editor download checks
+        run: |
+          sudo apt-get install -y -qq lua5.1
+          # the editor runs Lua 5.1: every file of the script pack parses there, and the entry scripts run there
+          for f in server/tools/editor_scripts/*.lua server/tools/areaplan_build.lua server/data/scripts/chaos/areagen_core.lua \
+              server/data/scripts/chaos/areagen_config.lua server/data/scripts/chaos/rift_config.lua \
+              server/data/lib/chaos_dark_tiles.lua server/data/lib/chaos_theme_items.lua server/data/lib/chaos_theme_art.lua \
+              server/data/lib/chaos_pack33_kit.lua; do
+            luac5.1 -p "$f"
+          done
+          (cd server && lua5.1 tests/editor_scripts_test.lua)
+          python3 -I server/tools/gen_editor_scripts_test.py
+          python3 -I tools/windows/editor_release_test.py
+
       - name: Content areas install and the teleport room (install_content_areas.py on a synthetic map); reward chests on the map
         run: |
           python3 -I server/tools/install_content_areas_test.py

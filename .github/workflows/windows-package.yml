@@ -1,6 +1,7 @@
 # Windows package and release downloads: every run publishes a prerelease winpkg-<run number> (Releases; the run's
 # Summary links each file) with six ready-to-use downloads:
-#   CindersOfChaos-Windows.zip         the whole game for one Windows PC: server, client, portable MariaDB, the map editor's client and creature files (the editor is a separate download);
+#   CindersOfChaos-Windows.zip         the whole game for one Windows PC: server, client, portable MariaDB, the map editor (AGPL-3.0, with
+#                                      its source zip; our area generator and plans as its Lua scripts in mapeditor\cinders, O381);
 #                                      extract it and run start-server.bat, then start-client.bat
 #                                      (tools/windows/package/README.txt is in the zip)
 #   CindersOfChaos-Client-Windows.zip  the Windows client alone (Chaos.exe and chaos.pack: modules, data with the 10.98
@@ -125,6 +126,10 @@ env:
   MARIADB_VERSION: "10.11.14"
   GH_TOKEN: ${{ github.token }}
   PKG_TAG: winpkg-${{ github.run_number }}
+  # the map editor's GitHub release (its repository: docs/CREDITS.md, tools/windows/editor_release.py repo). One rolling
+  # release whose files are replaced on every upstream push; the package takes what it holds at build time and the
+  # release notes name the version.
+  EDITOR_TAG: "1.0"
 
 jobs:
   server:
@@ -618,6 +623,8 @@ jobs:
     needs: [server, engine, client]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      editor_version: ${{ steps.editor.outputs.version }}
     steps:
       - name: Check out Cinders of Chaos
         uses: actions/checkout@v4
@@ -647,6 +654,38 @@ jobs:
           for pid in "${pids[@]}"; do wait "$pid" || rc=1; done
           [ "$rc" -eq 0 ] || { echo "::error::a download from the release failed"; exit 1; }
           for f in server.tar server-exe.tar client.tar; do test -s "parts/$f"; done
+
+      # The map editor (O381, docs/CREDITS.md "Used for: editing the game map": AGPL-3.0) ships in the package as its
+      # upstream release made it: the Windows zip, and its source zip next to it. The release is rolling (one tag, its
+      # files replaced on every upstream push), so both zips are checked against its SHA256SUMS.txt and a mismatch
+      # (a download during an upload) is fetched again, at most three times, then fails the run. The repository comes
+      # from docs/CREDITS.md (tools/windows/editor_release.py repo), the only file that may name it.
+      # The script pack mapeditor\cinders (our area generator and every compiled area plan for the editor's Lua
+      # scripts, server/tools/gen_editor_scripts.py, about a minute) is built here too.
+      - name: Get the map editor and build its script pack
+        id: editor
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq luajit
+          (python3 -I chaos/server/tools/gen_editor_scripts.py cinderspack > cinderspack.log 2>&1) &
+          pack_pid=$!
+          src=$(python3 -I chaos/tools/windows/editor_release.py repo)
+          echo "map editor: $src, release $EDITOR_TAG"
+          ok=
+          for try in 1 2 3; do
+            rm -rf editordl && mkdir editordl
+            gh release download "$EDITOR_TAG" -R "$src" -D editordl -p '*-windows-x64.zip' -p '*-source.zip' \
+              -p SHA256SUMS.txt -p update-manifest.json || { sleep 60; continue; }
+            if python3 -I chaos/tools/windows/editor_release.py verify editordl > editor.env; then ok=1; break; fi
+            echo "::warning::map editor download $try does not match its SHA256SUMS.txt (the release is being updated?)"
+            sleep 60
+          done
+          [ -n "$ok" ] || { echo "::error::the map editor's release files do not match SHA256SUMS.txt"; exit 1; }
+          cat editor.env
+          { cat editor.env; echo "repo=$src"; } >> "$GITHUB_OUTPUT"
+          wait "$pack_pid" || { tail -n 40 cinderspack.log; echo "::error::the editor script pack failed"; exit 1; }
+          tail -n 3 cinderspack.log
+          test -f cinderspack/generate_area.lua && test -f cinderspack/plans/index.txt
 
       - name: Put the package together
         env:
@@ -690,17 +729,63 @@ jobs:
           fi
           python3 -I chaos/client/tools/make_update_manifest.py build "$P/client" --dry-run --min-package "$CLIENT_BUILD"
 
-          # the map editor (10.98) is NOT in the package: its licence (docs/CREDITS.md) lets a copy be passed on only
-          # unmodified and with its licence text, which a build of ours with our files beside it does not clearly
-          # meet, so the owner downloads it from its source (README.txt) and unpacks it into mapeditor\. The package
-          # holds what the editor reads from us: the creature list of our XML monsters (the editor reads Lua monsters
-          # itself) here, the single Tibia.dat / Tibia.spr in mapeditor\client below. open-map-editor.bat points the
-          # editor's workspace at server\ (items.otb, items.xml, the map) and mapeditor\client; nothing is set by hand.
-          mkdir -p "$P/mapeditor/client" "$P/mapeditor/data/user/data/1098"
-          # Chaos monsters first (a name there wins), then every monster and NPC of the packaged server: without the
-          # NPCs and the base monsters the editor drew their spawns as empty grey squares (owner 2026-11-03)
-          python3 -I chaos/tools/windows/editor_creatures.py "$P/mapeditor/data/user/data/1098/creatures.xml" \
+          # the map editor (O381): its release zip unpacked into mapeditor\ (one folder in the zip: the program, its DLLs,
+          # qml\, data\ with one folder per client version, LICENSE, NOTICE), checked above against SHA256SUMS.txt.
+          # Kept as it is, but for two package changes listed in mapeditor\CHANGES.txt: the self-updater is left out
+          # (it would replace this folder with the newest upstream release, our lists included), and the 10.98
+          # creature and item lists are the game's.
+          mkdir -p "$P/mapeditor" editorzip
+          unzip -q "editordl/${{ steps.editor.outputs.windows }}" -d editorzip
+          top=$(find editorzip -mindepth 1 -maxdepth 1 -type d)
+          [ "$(echo "$top" | wc -l)" -eq 1 ] || { echo "::error::the map editor zip does not hold one folder"; exit 1; }
+          cp -a "$top"/. "$P/mapeditor/"
+          rm -rf editorzip
+          find "$P/mapeditor" -maxdepth 1 -iname '*updater*.exe' -print -delete
+          n=$(find "$P/mapeditor" -maxdepth 1 -iname '*.exe' | wc -l)
+          [ "$n" -eq 1 ] || { echo "::error::mapeditor holds $n programs (open-map-editor.bat needs one)"; exit 1; }
+          exe=$(find "$P/mapeditor" -maxdepth 1 -iname '*.exe')
+          test -f "$P/mapeditor/LICENSE" && test -f "$P/mapeditor/NOTICE" && test -d "$P/mapeditor/data/1098" || {
+            echo "::error::the map editor zip has no LICENSE, NOTICE or data/1098"; exit 1; }
+          # the source of exactly this program (AGPL-3.0: we pass on the binary, so its source goes with it)
+          mkdir -p "$P/mapeditor/source"
+          cp "editordl/${{ steps.editor.outputs.source }}" "$P/mapeditor/source/"
+          # where the editor keeps its settings (HKCU), read from the program; open-map-editor.bat presets them from it
+          if python3 -I chaos/tools/windows/editor_release.py settings-key "$exe" "${{ steps.editor.outputs.repo }}" \
+              > "$P/mapeditor/settings-key.txt"; then
+            sed -i 's/$/\r/' "$P/mapeditor/settings-key.txt"
+          else
+            rm -f "$P/mapeditor/settings-key.txt"
+            echo "::warning::the map editor's settings key was not found in the program: open-map-editor.bat presets nothing"
+          fi
+          {
+            echo "Map editor of this package"
+            echo
+            echo "Program: version ${{ steps.editor.outputs.version }} of https://github.com/${{ steps.editor.outputs.repo }}"
+            echo "  (GitHub release $EDITOR_TAG), licence GNU AGPL-3.0: LICENSE and NOTICE in this folder."
+            echo "  zip sha256 ${{ steps.editor.outputs.windows_sha256 }}"
+            echo "Source: source\\${{ steps.editor.outputs.source }} (the same release), sha256"
+            echo "  ${{ steps.editor.outputs.source_sha256 }}"
+            echo
+            echo "Changed by the Cinders of Chaos package (the program itself is unchanged):"
+            echo "  - the self-updater program is left out, so the editor stays at this version (it would replace"
+            echo "    this folder, the lists below included). A newer editor comes with a newer package."
+            echo "  - data\\1098\\creatures.xml: every monster and NPC of the game (tools/windows/editor_creatures.py)"
+            echo "  - data\\1098\\items.xml: the game server's items.xml (open-map-editor.bat copies it again)"
+            echo "Added (not part of the editor):"
+            echo "  - client\\: the game's 10.98 Tibia.dat, Tibia.spr, Tibia.otfi and items.otb"
+            echo "  - cinders\\: our scripts for Tools > Lua Scripts (cinders\\README.txt)"
+            echo "  - settings-key.txt: where the editor keeps its settings (open-map-editor.bat presets them)"
+          } | sed 's/$/\r/' > "$P/mapeditor/CHANGES.txt"
+          mkdir -p "$P/mapeditor/client" "$P/mapeditor/data/1098"
+          # the 10.98 profile reads data\1098\creatures.xml: Chaos monsters first (a name there wins), then every
+          # monster and NPC of the packaged server (without them their spawns are empty grey squares, owner 2026-11-03)
+          python3 -I chaos/tools/windows/editor_creatures.py "$P/mapeditor/data/1098/creatures.xml" \
             chaos/server/data/monster/monsters/chaos "$P/server/data/monster" "$P/server/data/npc"
+          cp "$P/server/data/items/items.xml" "$P/mapeditor/data/1098/items.xml"
+          # it reads items.otb from the client folder, next to Tibia.dat / Tibia.spr (below)
+          cp "$P/server/data/items/items.otb" "$P/mapeditor/client/items.otb"
+          # our area generator and plans for its Lua scripts (built in the step before)
+          cp -a cinderspack "$P/mapeditor/cinders"
 
           wait "$curl_pid"
           unzip -q mariadb.zip
@@ -720,6 +805,7 @@ jobs:
             echo "chaos commit: $GITHUB_SHA"
             echo "assets: $ASSETS_REF @ $(git -C assets rev-parse HEAD)"
             echo "mariadb: $MARIADB_VERSION"
+            echo "map editor: ${{ steps.editor.outputs.version }} (release $EDITOR_TAG, mapeditor\\CHANGES.txt)"
             echo "built: $(date -u +%Y-%m-%dT%H:%MZ) by run $GITHUB_RUN_ID"
           } | sed 's/$/\r/' > "$P/BUILD_INFO.txt"
 
@@ -812,8 +898,8 @@ jobs:
           mkdir -p "$M/data"
           cp -al "$P/server/data/world" "$M/world"
           cp -al "$P/mapeditor/client" "$M/data/1098"
-          cp -al "$P/server/data/items/items.otb" "$P/server/data/items/items.xml" \
-            "$P/mapeditor/data/user/data/1098/creatures.xml" "$M/data/1098/"
+          # (items.otb came with the editor's client folder)
+          cp -al "$P/server/data/items/items.xml" "$P/mapeditor/data/1098/creatures.xml" "$M/data/1098/"
           # the sprite editors' versions list, read from the shipped dat, spr and otb so it never goes stale
           python3 -I chaos/tools/windows/editor_versions.py "$M/data/1098" "$M/data/versions.xml"
           for f in 1098/Tibia.dat 1098/Tibia.spr 1098/Tibia.otfi 1098/items.otb 1098/items.xml 1098/creatures.xml versions.xml; do
@@ -1230,6 +1316,7 @@ jobs:
       KEY_STATE: ${{ secrets.CHAOS_CLIENT_KEY != '' && 'the official key (secret CHAOS_CLIENT_KEY)' || 'the public development key (no CHAOS_CLIENT_KEY secret)' }}
       RSA_STATE: ${{ (secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC) && 'our own key (CHAOS_RSA_PUBLIC)' || 'the PUBLIC DEFAULT key (no CHAOS_RSA_PUBLIC), never for players' }}
       ALL_OK: ${{ needs.package.result == 'success' && needs.engine-linux.result == 'success' && needs.client-linux.result == 'success' }}
+      EDITOR_VERSION: ${{ needs.package.outputs.editor_version }}
     steps:
       - name: Release notes and download links
         run: |
@@ -1250,7 +1337,7 @@ jobs:
           {
             echo "Cinders of Chaos packages built by run [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) from $GITHUB_SHA (assets: $ASSETS_REF)."
             echo
-            line CindersOfChaos-Windows.zip "the whole game on one Windows PC: server, client, portable MariaDB, the map editor's client and creature files (the editor itself is a separate download, README.txt); start-server.bat, then start-client.bat (test accounts, local play)."
+            line CindersOfChaos-Windows.zip "the whole game on one Windows PC: server, client, portable MariaDB, the map editor with its source (open-map-editor.bat; our area generator and plans in its Tools > Lua Scripts); start-server.bat, then start-client.bat (test accounts, local play)."
             line CindersOfChaos-Client-Windows.zip "the Windows client alone (Chaos.exe), connects to $SERVER_HOST."
             line CindersOfChaos-Server-Windows.zip "the Windows server alone: ChaosServer.exe, portable MariaDB, start-server.bat / stop-server.bat."
             line CindersOfChaos-MapFiles.zip "the map files alone for a 10.98 map editor: the .otbm with its spawns and houses, Tibia.dat / Tibia.spr / Tibia.otfi, items.otb / items.xml, creatures.xml, versions.xml (no editor)."
@@ -1258,6 +1345,7 @@ jobs:
             line CindersOfChaos-Client-Linux.tar.gz "the Linux client (Ubuntu 22.04+, Debian 12+): ./run-client.sh, connects to $SERVER_HOST."
             echo
             echo "Client build $CLIENT_BUILD, built with $KEY_STATE. Server host of the separate downloads: $SERVER_HOST."
+            echo "Map editor in the Windows zip: version ${EDITOR_VERSION:-unknown} (licence AGPL-3.0, source zip in mapeditor\\source, mapeditor\\CHANGES.txt)."
             echo "Login encryption of the separate client downloads: $RSA_STATE."
           } > notes.md
           cat notes.md

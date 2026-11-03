@@ -5,9 +5,9 @@ usage: python3 -I tools/windows/editor_creatures.py OUT.xml MONSTER_DIR [MONSTER
 
 Reads every monster / npc XML under the given folders (name and <look type/head/body/legs/feet/addons or typeex>) and
 writes OUT.xml with one <creature type="monster|npc" .../> line per name (sorted; the first file of a name wins). The
-map editor reads the server's Lua monsters itself (Server Workspace), but this server's monsters are XML files, so
-this file is its "user" creature list: <editor folder>\\data\\user\\data\\1098\\creatures.xml. It is written new each
-time (nothing is merged, running it again gives the same bytes). Used by .github/workflows/windows-package.yml.
+map editor (O381) reads its creature list of the 10.98 client profile from <editor folder>\\data\\1098\\creatures.xml;
+the Windows package writes this file there, in place of the editor's own stock list. It is written new each time
+(nothing is merged, running it again gives the same bytes). Used by .github/workflows/windows-package.yml.
 """
 import os
 import sys
