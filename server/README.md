@@ -24926,8 +24926,10 @@ live server.
 
 **Level gate (O368).** `professions_config.lua` `C.minLevel` 20 (`ChaosProfessions.levelOk`): below it the window, gathering a node, flaying and the Angling roll are refused ("Professions open at level 20."); stock fishing stays as it is. The top menu shows Professions from 20 (`unlocks_config.lua` `professions`).
 
-The owner's rule: professions gather materials **to sell to NPCs** and give an **experience bonus**. They make no gear and no
-orbs and feed no crafting, so they never compete with the crafting orbs or salvage. Every number is in `professions_config.lua`.
+The owner's rule: professions gather materials **to sell to NPCs** and give an **experience bonus**. Since O395 they also
+**feed the base crafting** (Mining, Herbalist and Armorsmith books): a by-product chance per gather and refining recipes. They
+still make no gear and no orbs, so they never compete with the crafting orbs or salvage. Every number is in
+`professions_config.lua`.
 
 **Four gathering professions**, each with its own level 1-100 per character (table `chaos_professions`):
 
@@ -25011,16 +25013,41 @@ levels 8 and 40 from the same model on Gutworm / Troll / Orc and Cyclops / Dwarf
 Pace model: node professions min(3600 / (channel + 12 s walking), nodes of the tier x 60 / 6 min) = 100 gathers an hour (one area
 of 10 nodes); Flaying 3600 / (2.5 s + 10 s per kill) x 40%; Angling 1,200 rolls x 10%.
 
-| Tier | Delving | Wortcunning | Flaying | Angling | Hunting / h | One material's best day |
-|---|---|---|---|---|---|---|
-| 1 Common | 4,890 (26%) | 4,890 (26%) | 5,633 (30%) | 5,868 (31%) | 19,000 | 4,500 |
-| 2 Fine | 19,560 (24%) | 19,560 (24%) | 22,533 (27%) | 23,472 (28%) | 83,000 | 18,000 |
-| 3 Rare | 85,575 (24%) | 85,575 (24%) | 98,582 (27%) | 102,690 (29%) | 358,839 | 78,800 |
-| 4 Grim | 205,920 (27%) | 205,920 (27%) | 197,683 (26%) | 205,920 (27%) | 751,109 | 180,000 |
-| 5 Infernal | 738,000 (13%) | 738,000 (13%) | 850,176 (15%) | 885,600 (16%) | 5,548,330 | 900,000 |
+| Tier | Delving | Wortcunning | Flaying | Angling | Hunting / h |
+|---|---|---|---|---|---|
+| 1 Common | 6,750 (35.5%) | 6,750 (35.5%) | 6,682 (35.2%) | 6,948 (36.6%) | 19,000 |
+| 2 Fine | 21,600 (26.0%) | 21,600 (26.0%) | 26,730 (32.2%) | 24,768 (29.8%) | 83,000 |
+| 3 Rare | 88,425 (24.6%) | 88,425 (24.6%) | 116,943 (32.6%) | 104,958 (29.2%) | 358,839 |
+| 4 Grim | 210,960 (28.1%) | 210,960 (28.1%) | 234,900 (31.3%) | 209,808 (27.9%) | 751,109 |
+| 5 Infernal | 751,800 (13.6%) | 751,800 (13.6%) | 1,012,500 (18.2%) | 901,008 (16.2%) | 5,548,330 |
 
+Since O395 the table counts the level 75 / 50 perks (shorter channel, Lucky, Sure Hand) and the by-products at the price
+table's 120 gold (1,800 an hour for Delving and Wortcunning, 2,160 at tier 4 with 12 nodes; Angling 1,008). Node areas count
+the best single area of the tier, not the sum (`K.nodesOfTier`): a character walks one area at a time.
 Every cell stays below `balance.maxShare` (40%) of hunting, and one material's best day (100 at full price + 100 at half, x1.5)
 stays below one hour of hunting at its level. Flaying comes on top of a beast hunt but costs the channel time per corpse.
+
+**Crafting (O395).** Gathering now feeds the base crafting, without a new currency or table:
+
+- **By-products.** A Delving or Wortcunning gather has 10% (Angling 4%) chance of one base crafting material of the gather's
+  tier (`C.byproducts`): Delving gives the base ore pieces (26398..26404), Wortcunning and Angling the base herbs
+  (26723..26732). Message "Also found: 1 X (a crafting material)." Flaying gives none (its hides refine instead).
+- **Refining** (`C.refine`, 15 rows). Profession materials turn into base crafting materials at the base crafting table:
+  Delving at Mining (ore pieces, 5880), Wortcunning at Herbalist (herbs), Flaying at Armorsmith (12435, 5920, 5948, 5882). One
+  material of tier T gives 1-4 units, plus 50-100 gold; the crafting level 10-25. `K.refineProblems` checks every row: the inputs
+  at the broker's base price plus the gold are worth at least the product at the price table (`chaos_item_prices_data.lua`), so
+  no gold loop through the NPC buy price. Angling has no refining (its fish are a broker product).
+- **How it gets in.** `data/lib/chaos_profession_recipes.lua` builds the recipe tables (`K.recipes`, names from the item types,
+  tag `chaosProfession`); `install_professions.py` step 5 appends one loader block to each of the three base book files
+  (`patch_recipe_loaders`, marker `-- Chaos: profession refining recipes (install_professions.py) v1`; idempotent, CRLF kept).
+  Every product and by-product is an item of `data/items/base_recipes.csv`, so the base crafting already uses it.
+- **Perks** (`C.perks`, three per profession at levels 25, 50, 75): shorter channel (x0.8), +5% by-product chance, +2% chance of
+  one more unit, +5% hide chance (Flaying). Message and toast "New X perk: Y." at the level. The window shows them in the
+  profession's tooltip (reached with "+", to come with "-").
+- **Hunt nodes.** Besides the eight fixed areas, every hunt of the teleport hall (`ChaosHuntTeleports.idx`, list and base) gets
+  4 Delving and 4 Wortcunning nodes around its arrival (box 12, fishing on), tier by the hunt's low level (`K.huntAreas`; key
+  `hunt_<id>`). A hunt within 30 tiles of a fixed area is skipped. Shown in "Where to Gather" with ", hunt".
+- **Toasts.** A profession level-up and a new perk also show as a toast (opcode notifications, action `journey`).
 
 **Experience bonus.** +0.0253% monster experience per profession level above 1, all four together, at most +10%: every
 profession at 100 (396 levels) reaches the cap, a new character has +0%; all at 50 give +4.96%. EventCallback `onGainExperience`
@@ -25045,14 +25072,16 @@ Protocol (opcode 195, JSON `{action, data}`): client -> server `open` | `close` 
 Staff: `/professions Name[, profession, level]` (show / set), `/professions nodes` (place the nodes again). Test or event areas:
 `ChaosProfessions.addArea{key, name, tier, center, r, nodes, fishing}` places them at once.
 
-**Tests:** `tests/professions_test.lua` (635 checks under LuaJIT and Lua 5.3): config, curve, tiers and yields, the bonus and its
+**Tests:** `tests/professions_test.lua` (853 checks under LuaJIT and Lua 5.3): config, curve, tiers and yields, the bonus and its
 cap, the demand draw of a fixed week (exact values), weeks and days, prices, the daily cap, the gold per hour bound against
 hunting, node spots (deterministic, spaced), fishing places; and `professions.lua` against a mocked engine: placing an area twice,
 a node gather through the action and the cast bar, the profession tier cap, the per-player cooldown, another character on the same
 node, moving / damage interrupting (healing not), the wrong tool, the stock pick's own uses, flaying a tagged wolf (and once only,
 the owner rule; a dragon is no beast), the angling roll limit, selling away from / at the broker, the full / late price and the cap,
 a new day, Sell All, the bonus on monster experience only (+10% at the cap), the buff entry, the weekly board, the title-only
-board. Client: `game_professions/professionsview_test.lua` (45 checks).
+board; O395: perks, by-products, the refine rows against the price table and base_recipes.csv, the recipe lib, hunt areas,
+the perk message and toast, the hunt nodes placed. `tools/install_professions_test.py` (11 checks: the loader block, idempotent,
+CRLF, the patched book loaded under LuaJIT and Lua 5.3). Client: `game_professions/professionsview_test.lua` (58 checks).
 
 **Tested in game** (test server with the cropped map, a runtime test area next to the temple, one client): a vein by "use" with the
 pick in the backpack (cast bar, "You gathered 1 duskglass shard (+30 Delving experience)", 49.8k character experience at level

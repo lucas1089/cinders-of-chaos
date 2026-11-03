@@ -89,4 +89,27 @@ has(a[1].tip, 'hunting ground of dragons', 'the monsters in the tooltip')
 has(V.footer(s), 'Full price for 100 a day', 'footer rule')
 has(V.footer(s), 'new demand in 2d 5h', 'footer week')
 
+-- O395: perks, the crafting line, hunt areas
+local pd = { k = 'delving', perks = {
+  { lv = 25, n = 'Steady Swing', k = 'channel', v = 0.8, on = true },
+  { lv = 50, n = 'Keen Eye', k = 'byproduct', v = 0.05 },
+  { lv = 75, n = 'Rich Seam', k = 'lucky', v = 0.02 } }, bp = 10, book = 'mining' }
+local pl = V.perkLines(pd)
+eq(#pl, 3, 'three perk lines')
+eq(pl[1].text, 'Level 25, Steady Swing: gathering takes 20% less time', 'the channel perk')
+eq(pl[1].on, true, 'reached')
+eq(pl[2].text, 'Level 50, Keen Eye: +5% chance of a crafting material', 'the by-product perk')
+eq(pl[2].on, false, 'not yet')
+eq(V.craftText(pd), 'Crafting: 10% chance of a base crafting material per gather; refine at the Mining crafting table',
+  'the crafting line')
+eq(V.craftText({ bp = 0 }), '', 'no crafting line')
+eq(V.craftText({ bp = 7, book = nil }), 'Crafting: 7% chance of a base crafting material per gather', 'angling: by-products only')
+local tip = V.profTooltip(pd, V.profRows(s)[1])
+has(tip, 'Tool: a pick', 'the old lines stay')
+has(tip, 'Mining crafting table', 'the crafting line in the tooltip')
+has(tip, '+ Level 25, Steady Swing', 'a reached perk')
+has(tip, '- Level 75, Rich Seam', 'a perk to come')
+s.areas[2] = { n = 'Plan X', t = 1, h = true, x = 1, y = 2, z = 7, nodes = { { k = 'delving', r = 4, t = 4 } } }
+eq(V.areaLines(s)[2].title, 'Plan X (Common, hunt)', 'a hunt of the hall')
+
 print('professionsview_test: ' .. n .. ' checks passed')

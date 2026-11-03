@@ -29,6 +29,12 @@ file the Lua side uses.
    A line that is already there is left alone (or rewritten when it changed). A script that cannot be found or has no
    onUse / no skill try line is reported and skipped: the nodes still work by "use" with the tool in the backpack.
 
+5. O395: the base crafting books that the refining recipes go into (professions_config.lua `refine`: mining, herbalist,
+   armorsmith; data/scripts/customs/crafting/<book>.lua) get a loader block at their end (marker RECIPE_MARK): it runs
+   ChaosProfessionRecipes.addRecipes(Crafting.<book>, "<book>") from data/lib/chaos_profession_recipes.lua (install step
+   "lib" copies it), so the recipes follow the config without another install. No such book (no base crafting):
+   skipped and listed. Line ends of the book are kept.
+
 Idempotent: a second run changes nothing.
 """
 import filecmp, os, re, shutil, struct, sys
@@ -273,6 +279,56 @@ def patch_hooks(data_dir, dry):
     return notes
 
 
+RECIPE_MARK = '-- Chaos: profession refining recipes (install_professions.py) v1'
+
+
+def refine_books(path=CONFIG):
+    """the crafting books of professions_config.lua `refine`, in config order"""
+    text = open(path, encoding='utf-8').read()
+    out = []
+    for m in re.finditer(r'\n\trefine\("\w+", \d+, "(\w+)",', text):
+        if m.group(1) not in out:
+            out.append(m.group(1))
+    return out
+
+
+def recipe_block(book, nl):
+    lines = ['', RECIPE_MARK + ': the professions\' materials refine into this book\'s materials',
+             '-- (data/lib/chaos_profession_recipes.lua, professions_config.lua `refine`; server/README.md "Professions")', 'do',
+             '\tlocal ok, recipes = pcall(dofile, "data/lib/chaos_profession_recipes.lua")',
+             '\tif ok and type(recipes) == "table" and recipes.addRecipes and Crafting and Crafting.%s then' % book,
+             '\t\trecipes.addRecipes(Crafting.%s, "%s")' % (book, book),
+             '\telse',
+             '\t\tprint("[Crafting] profession recipes not loaded: " .. tostring(recipes))',
+             '\tend',
+             'end', '']
+    return nl.join(lines)
+
+
+def patch_book_loader(text, book):
+    """(new text, note) for one crafting book"""
+    if RECIPE_MARK in text:
+        return text, 'present'
+    nl = '\r\n' if '\r\n' in text else '\n'
+    out = text if text.endswith(nl) or not text else text + nl
+    return out + recipe_block(book, nl), 'added'
+
+
+def patch_recipe_loaders(data_dir, dry, books=None):
+    notes = []
+    for book in books if books is not None else refine_books():
+        path = os.path.join(data_dir, 'scripts', 'customs', 'crafting', book + '.lua')
+        if not os.path.isfile(path):
+            notes.append('recipes: no crafting book %s.lua (no base crafting); skipped' % book)
+            continue
+        text = open(path, encoding='utf-8', errors='surrogateescape', newline='').read()
+        new, what = patch_book_loader(text, book)
+        notes.append('recipes: %s.lua loader %s%s' % (book, what, ' (dry run)' if dry and new != text else ''))
+        if new != text and not dry:
+            open(path, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
+    return notes
+
+
 def main():
     args = sys.argv[1:]
     dry = '--dry-run' in args
@@ -303,6 +359,8 @@ def main():
     for note in copy_npc(data_dir, npc, dry):
         print(note)
     for note in patch_hooks(data_dir, dry):
+        print(note)
+    for note in patch_recipe_loaders(data_dir, dry):
         print(note)
     if dry:
         print('dry run: nothing written')

@@ -2038,6 +2038,21 @@ return {
 		["Nothing worth keeping (+%d %s experience)."] = "Nada que valha guardar (+%d de experiência de %s).",
 		["You advanced to %s level %d. Profession experience bonus: +%s%%."] =
 			"Você avançou para %s nível %d. Bônus de experiência da profissão: +%s%%.",
+		-- O395: by-products, level up toasts and perks (professions.lua, professions_config.lua perks)
+		["Also found: 1 %s (a crafting material)."] = "Também encontrou: 1 %s (um material de criação).",
+		["%s level %d!"] = "%s nível %d!",
+		["New %s perk: %s."] = "Nova vantagem de %s: %s.",
+		["Steady Swing"] = "Golpe Firme",
+		["Keen Eye"] = "Olho Atento",
+		["Rich Seam"] = "Veio Rico",
+		["Quick Blade"] = "Lâmina Ágil",
+		["Deep Roots"] = "Raízes Fundas",
+		["Clean Cuts"] = "Cortes Limpos",
+		["Sure Hand"] = "Mão Segura",
+		["Whole Hide"] = "Couro Inteiro",
+		["Weedy Hook"] = "Anzol de Algas",
+		["Heavy Catch"] = "Pesca Farta",
+		["Old Nets"] = "Redes Velhas",
 		["Battleground: you left the queue."] = "Battleground: você saiu da fila.",
 		["Battleground: the wards of the enemy base throw you back."] =
 			"Battleground: as proteções da base inimiga te jogam para trás.",

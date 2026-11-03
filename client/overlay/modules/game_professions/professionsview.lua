@@ -1,11 +1,13 @@
 -- Professions window texts and rules (pure, no UI calls): shared by professions.lua and professionsview_test.lua.
 -- `s` is the server's state (server data/scripts/chaos/professions_core.lua K.payload):
---   profs  = {{k, n, lv, xp, need, pct, tier, tool, d, g}}          the four professions
+--   profs  = {{k, n, lv, xp, need, pct, tier, tool, d, g, perks = {{lv, n, k, v, on}}, bp, book}}   the four
+--            professions (O395: perks, by-product chance in %, the crafting book their materials refine at)
 --   bonus, cap, per                                                 the experience bonus now, its cap, % per level
 --   tiers  = {{n, p, c, g, col}}                                    name, profession level, character level, price, colour
 --   demand = {{id, c, n, p, t, m, g, l, s, h}}                      per material: server id, client id, name, profession,
 --                                                                   tier, multiplier, price, late price, sold today, held
---   areas  = {{n, t, f, m, near, x, y, z, nodes = {{k, r, t}}}}     where to gather: ready / total nodes for you
+--   areas  = {{n, t, f, m, near, x, y, z, nodes = {{k, r, t}}, h}}  where to gather: ready / total nodes for you (h: a
+--                                                                   hunt of the teleport hall, O395)
 --   broker, full, capDay, late, nextDay, nextWeek, respawn          at a broker; the daily rule; seconds to the next day / week
 -- The sale rule here mirrors the server's (professions_core.lua K.quote) for the estimates; the server decides.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
@@ -73,6 +75,55 @@ function V.profRows(s)
     }
   end
   return out
+end
+
+-- O395: the crafting tables the materials refine at (the base books' names)
+V.BOOKS = { mining = 'Mining', herbalist = 'Herbalist', armorsmith = 'Armorsmith' }
+V.PERK_KINDS = {
+  channel = 'gathering takes %s%% less time',
+  byproduct = '+%s%% chance of a crafting material',
+  lucky = '+%s%% chance of one more unit',
+  flay = '+%s%% chance of a hide',
+}
+
+-- the perk lines of a profession (p = a `profs` entry: perks {{lv, n, k, v, on}}): {{text, on}}
+function V.perkLines(p)
+  local out = {}
+  for _, pk in ipairs(p and p.perks or {}) do
+    local pct = pk.k == 'channel' and (1 - num(pk.v)) * 100 or num(pk.v) * 100
+    local what = tr(V.PERK_KINDS[pk.k] or '%s', V.fmtPct(math.floor(pct * 10 + 0.5) / 10))
+    out[#out + 1] = { text = tr('Level %d, %s: %s', num(pk.lv), tr(pk.n or ''), what), on = pk.on == true }
+  end
+  return out
+end
+
+-- the crafting line of a profession: by-product chance and the table its materials refine at
+function V.craftText(p)
+  if not p then return '' end
+  local parts = {}
+  if num(p.bp) > 0 then
+    parts[#parts + 1] = tr('%s%% chance of a base crafting material per gather', V.fmtPct(p.bp))
+  end
+  if p.book then
+    parts[#parts + 1] = tr('refine at the %s crafting table', tr(V.BOOKS[p.book] or p.book))
+  end
+  if #parts == 0 then return '' end
+  return tr('Crafting: %s', table.concat(parts, '; '))
+end
+
+-- the tooltip of a profession row
+function V.profTooltip(p, r)
+  local lines = { tr('%s\nTool: %s\n%s gathered in total', r.desc, r.tool, V.fmtNum(r.gathered)) }
+  local craft = V.craftText(p)
+  if craft ~= '' then lines[#lines + 1] = craft end
+  local perks = V.perkLines(p)
+  if #perks > 0 then
+    lines[#lines + 1] = tr('Perks:')
+    for _, l in ipairs(perks) do
+      lines[#lines + 1] = (l.on and '+ ' or '- ') .. l.text
+    end
+  end
+  return table.concat(lines, '\n')
 end
 
 function V.multText(m)
@@ -160,7 +211,8 @@ function V.areaLines(s)
     end
     local where = a.near and ('near ' .. a.near) or ''
     out[#out + 1] = {
-      title = string.format('%s (%s)', a.n, t.n), color = t.col or V.COLORS.text,
+      title = a.h and string.format('%s (%s, %s)', a.n, t.n, tr('hunt')) or string.format('%s (%s)', a.n, t.n),
+      color = t.col or V.COLORS.text,
       text = (#parts > 0 and table.concat(parts, ', ') or tr('no nodes')) .. (where ~= '' and ('; ' .. where) or ''),
       tip = tr('%s%s\nPosition %d, %d, %d', a.n, a.m and (tr(': hunting ground of %s', a.m)) or '', num(a.x),
         num(a.y), num(a.z)),
