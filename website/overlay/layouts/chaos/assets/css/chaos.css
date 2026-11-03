@@ -581,3 +581,15 @@ h1, h2, h3, h4 { font-family: var(--c-display); font-weight: 500; color: var(--c
 .chaos-pick__go { padding: 4px 16px; }
 .chaos-pick__go[hidden] { display: none !important; }
 @media (max-width: 560px) { .chaos-pick__field, .chaos-pick select { width: 100%; } }
+/* build codes and the character page (plugins/chaos/buildcode_lib.php, character_lib.php; website/README.md "Build codes", "Character page") */
+.chaos-build__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 32px; }
+.chaos-build__h3 { font-family: var(--c-display); font-size: 15px; color: var(--c-gold3); margin: 12px 0 4px; }
+.chaos-build__list { list-style: none; margin: 4px 0 12px; padding: 0; }
+.chaos-build__list li { padding: 3px 0; border-bottom: 1px solid var(--c-line); }
+ol.chaos-build__spells { list-style: decimal inside; }
+.chaos-build__gear { display: flex; align-items: center; gap: 8px; }
+.chaos-build__item { width: 32px; height: 32px; image-rendering: pixelated; flex: none; }
+.chaos-build__share { width: 100%; max-width: 46rem; font-size: 13px; padding: 4px 8px; }
+.chaos-character { display: flex; align-items: center; gap: 12px; }
+.chaos-character .chaos-lead { margin: 0; }
+@media (max-width: 720px) { .chaos-build__cols { grid-template-columns: minmax(0, 1fr); } }

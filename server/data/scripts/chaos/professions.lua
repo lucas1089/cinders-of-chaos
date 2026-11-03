@@ -1,6 +1,7 @@
 -- Professions: gathering for the Material Broker and a passive experience bonus (client game_professions, extended opcode
 -- ChaosOpcodes.professions = 195). Owner's rule: professions gather materials to sell to NPCs and give an experience
--- bonus; they make no gear and no orbs. Numbers: professions_config.lua; pure logic: professions_core.lua (tests:
+-- bonus; they make no gear and no orbs. O395: they feed the base crafting tables (by-products, refining recipes of
+-- data/lib/chaos_profession_recipes.lua), have perks at levels 25 / 50 / 75 and nodes in the hunts of the hall. Numbers: professions_config.lua; pure logic: professions_core.lua (tests:
 -- server/tests/professions_test.lua); overview: server/README.md "Professions".
 -- Tables: chaos_professions (levels), chaos_professions_sales (sold today per material) (server/sql/chaos_professions.sql;
 -- also created at startup). No player storages: node cooldowns and the angling roll timer are kept in memory.
@@ -361,7 +362,37 @@ function P.placeArea(area)
 	return n
 end
 
+-- O395: the hunts of the teleport hall (hunt_teleports.lua index: the placed content hunts and the base server's hunts)
+-- become gathering areas at the tier of their level band (K.huntAreas); added to cfg.areas once
+function P.addHuntAreas()
+	local HT = ChaosHuntTeleports
+	local hidx = HT and (HT.idx or (HT.reload and HT.reload()))
+	if not hidx then
+		return 0
+	end
+	local entries = {}
+	for _, list in ipairs({hidx.list or {}, hidx.base or {}}) do
+		for _, e in ipairs(list) do
+			entries[#entries + 1] = e
+		end
+	end
+	local have = {}
+	for _, a in ipairs(cfg.areas) do
+		have[a.key] = true
+	end
+	local n = 0
+	for _, a in ipairs(K.huntAreas(cfg, entries)) do
+		if not have[a.key] then
+			cfg.areas[#cfg.areas + 1] = a
+			idx.area[a.key] = a
+			n = n + 1
+		end
+	end
+	return n
+end
+
 function P.placeNodes()
+	try("hunt areas", P.addHuntAreas)
 	local total = 0
 	for _, area in ipairs(cfg.areas) do
 		total = total + (try("place " .. area.key, P.placeArea, area) or 0)
@@ -472,6 +503,28 @@ local function giveMaterial(player, id, count)
 	return count
 end
 
+-- a toast in the client (game_chaosnotify, the Journey style): level ups and perks
+local function toast(player, text)
+	if ChaosOpcodes and ChaosOpcodes.notifications and json then
+		pcall(function()
+			player:sendExtendedOpcode(ChaosOpcodes.notifications, json.encode({action = "journey", message = text}))
+		end)
+	end
+end
+
+local function itemName(id)
+	local ok, name = pcall(function() return ItemType(id):getName() end)
+	return ok and type(name) == "string" and name ~= "" and name or ("item " .. tostring(id))
+end
+
+-- the gather input with the perks of the profession's level (O395): lucky, by-product chance
+local function withPerks(g, prof, level)
+	g.lucky = K.perks(cfg, prof, level).lucky
+	g.byChance = K.byproductChance(cfg, prof, level)
+	return g
+end
+P.withPerks = withPerks
+
 -- r = K.resolve(...) result
 function P.reward(player, S, prof, r)
 	local p = idx.prof[prof]
@@ -481,6 +534,11 @@ function P.reward(player, S, prof, r)
 		giveMaterial(player, mat.id, r.count)
 		e.gathered = e.gathered + r.count
 		S.lb = S.lb + r.count
+	end
+	-- O395: a by-product, a base crafting material of the gather's tier
+	if r.count > 0 and r.extra then
+		giveMaterial(player, r.extra, 1)
+		msg(player, ChaosI18n.msg("Also found: 1 %s (a crafting material).", itemName(r.extra)), MESSAGE_STATUS_SMALL)
 	end
 	local before = e.level
 	local gained = K.addXp(cfg, e, r.xp)
@@ -498,6 +556,12 @@ function P.reward(player, S, prof, r)
 		fx(player:getPosition(), "CONST_ME_FIREWORK_YELLOW", 29)
 		msg(player, ChaosI18n.msg("You advanced to %s level %d. Profession experience bonus: +%s%%.", p.name, e.level,
 			fmtPct(S.bonus)), MESSAGE_EVENT_ADVANCE)
+		toast(player, Chaos.t(player, ChaosI18n.msg("%s level %d!", p.name, e.level)))
+		for _, pk in ipairs(K.newPerks(cfg, prof, before, e.level)) do
+			local text = ChaosI18n.msg("New %s perk: %s.", p.name, ChaosI18n.msg(pk.name))
+			msg(player, text, MESSAGE_EVENT_ADVANCE)
+			toast(player, Chaos.t(player, text))
+		end
 		Chaos.send(player, OPCODE, "levelup", {k = prof, lv = e.level, from = before})
 		setAchievements(player, S) -- the buff bar's entry follows S.bonus on its next look (every second)
 	end
@@ -528,7 +592,8 @@ end
 local function finish(player, ch)
 	P.channels[player:getId()] = nil
 	local S = stateOf(player)
-	local g = {prof = ch.prof, placeTier = ch.tier, profLevel = S.levels[ch.prof].level, charLevel = player:getLevel()}
+	local g = withPerks({prof = ch.prof, placeTier = ch.tier, profLevel = S.levels[ch.prof].level,
+		charLevel = player:getLevel()}, ch.prof, S.levels[ch.prof].level)
 	if ch.node then
 		local nd = P.nodes[ch.node]
 		if not nd or not nodeOnTile(nd.pos, nd.id) then
@@ -549,7 +614,7 @@ local function finish(player, ch)
 			return player:sendCancelMessage(Chaos.t(player, "The corpse is gone."))
 		end
 		corpse:setCustomAttribute(FLAYED_ATTR, 1)
-		g.chance = cfg.flaying.chance
+		g.chance = K.flayChance(cfg, S.levels.flaying.level)
 	end
 	castbar(player, "end", {s = ch.serial, r = "done"})
 	local p = idx.prof[ch.prof]
@@ -599,10 +664,12 @@ function P.startChannel(player, ctx)
 	local p = idx.prof[ctx.prof]
 	P.serial = P.serial + 1
 	local t = nowMs()
+	-- O395: the channel perk (level 25) shortens it
+	local ms = K.channelMs(cfg, ctx.prof, stateOf(player).levels[ctx.prof].level)
 	local ch = {serial = P.serial, prof = ctx.prof, tier = ctx.tier, pos = ctx.pos, node = ctx.node, corpse = ctx.corpse,
-		from = player:getPosition(), endMs = t + p.channelMs, fxAt = t + 1000}
+		from = player:getPosition(), endMs = t + ms, fxAt = t + 1000}
 	P.channels[pid] = ch
-	castbar(player, "start", {s = ch.serial, n = p.verb, ms = p.channelMs})
+	castbar(player, "start", {s = ch.serial, n = p.verb, ms = ms})
 	fx(ctx.pos, p.fx, 3)
 	addEvent(tick, 200, pid, ch.serial)
 	return true
@@ -741,8 +808,8 @@ function P.onFishCast(player, item, target, toPosition)
 	S.rollAt = t + cfg.angling.rollMs
 	local tier = K.fishingPlace(cfg, toPosition)
 	local e = S.levels.angling
-	local r = K.resolve(cfg, idx, {prof = "angling", placeTier = tier, profLevel = e.level, charLevel = player:getLevel(),
-		chance = cfg.angling.chance}, math.random)
+	local r = K.resolve(cfg, idx, withPerks({prof = "angling", placeTier = tier, profLevel = e.level,
+		charLevel = player:getLevel(), chance = cfg.angling.chance}, "angling", e.level), math.random)
 	if r.count == 0 then
 		return
 	end

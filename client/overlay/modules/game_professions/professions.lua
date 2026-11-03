@@ -67,7 +67,7 @@ local function drawProfessions()
     w.tier:setColor(r.tierColor)
     w.bar:setPercent(r.pct)
     w.bar:setText(r.xpText)
-    w:setTooltip(tr('%s\nTool: %s\n%s gathered in total', r.desc, r.tool, V.fmtNum(r.gathered)))
+    w:setTooltip(V.profTooltip(p, r)) -- O395: the crafting line and the perks too
   end
 end
 

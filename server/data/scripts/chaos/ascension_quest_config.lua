@@ -142,7 +142,10 @@ return {
 	},
 
 	-- modal window ids (answered in ascension_quest.lua); the confirm id is confirmBase + the ascended vocation id
-	modal = {trial = 7101, choice = 7102, confirmBase = 7110},
+	-- confirmSpan: the confirm ids are confirmBase + 1 .. confirmBase + confirmSpan (vocation ids up to 39). It must stay
+	-- below the next window ids: trials 7150, spell quest 7160, tales 7170-7171 (with 255 their answers got "That path
+	-- is not yours to walk." / "The Oracle waits." from this handler, live test 2026-11-03)
+	modal = {trial = 7101, choice = 7102, confirmBase = 7110, confirmSpan = 39},
 
 	-- rewards
 	title = {enabled = true, prefix = "Ascended ", color = "#c9a24a"},

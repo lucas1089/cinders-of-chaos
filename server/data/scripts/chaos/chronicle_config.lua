@@ -105,38 +105,43 @@ return {
 	-- teleport or floor change); a piece with no free tile is skipped. Only non-blocking stock items, so no street is
 	-- ever closed. Optional ground swaps between two prepared states: {dx, dy, from = id, to = id} turns the ground
 	-- `from` into `to` and back (a tile whose ground is not `from` is left alone).
+	-- O386 (owner 2026-11-03: "organize o templo, deixe ele mais clean"): the pieces stand in eight spots off every
+	-- walkway of Cinderhold's temple, mirrored on its axis (x 32369), checked on the base map with the gallery and the
+	-- temple tidy: the four corners of the main hall (dx +-5, dy -4 / +2, beside the pillars) and two corners of each
+	-- side room (dx +-11, dy -2 / +1, away from the door and the stairs). Before, some fell in the side doors (dx +-6),
+	-- on the walk to the north door (0, -6), in the sealed showcase of the vestibule and on the gallery's carpet.
 	town = {
 		anchor = nil, -- {x =, y =, z =}
 		sets = {
 			ashfall = {
 				pieces = {
-					{id = 2249, at = {{-4, -3}, {-5, -2}, {-4, -4}}}, {id = 7349, at = {{4, -3}, {5, -2}, {4, -4}}},
-					{id = 2249, at = {{-4, 3}, {-5, 2}, {-4, 4}}}, {id = 7349, at = {{4, 3}, {5, 2}, {4, 4}}},
-					{id = 22509, at = {{-2, 5}, {-1, 5}, {-2, 6}}}, {id = 25834, at = {{2, 5}, {1, 5}, {2, 6}}},
-					{id = 2249, at = {{0, -6}, {1, -6}, {-1, -6}}}, {id = 7349, at = {{-6, 0}, {6, 0}, {-6, 1}}}
+					{id = 2249, at = {{-5, -4}, {-5, -3}}}, {id = 7349, at = {{5, -4}, {5, -3}}},
+					{id = 2249, at = {{-5, 2}, {-5, 1}}}, {id = 7349, at = {{5, 2}, {5, 1}}},
+					{id = 22509, at = {{-11, -2}, {-10, -2}}}, {id = 25834, at = {{11, -2}, {10, -2}}},
+					{id = 2249, at = {{-11, 1}, {-11, 0}}}, {id = 7349, at = {{11, 1}, {11, 0}}}
 				},
 				swaps = {}
 			},
 			rubble = {
 				pieces = {
-					{id = 1308, at = {{-6, -4}, {-6, -5}, {-7, -4}}}, {id = 1311, at = {{6, -4}, {6, -5}, {7, -4}}},
-					{id = 1320, at = {{-6, 4}, {-6, 5}, {-7, 4}}}, {id = 1325, at = {{6, 4}, {6, 5}, {7, 4}}},
-					{id = 1336, at = {{-3, 6}, {-3, 7}, {-4, 6}}}, {id = 3124, at = {{3, 6}, {3, 7}, {4, 6}}}
+					{id = 1308, at = {{-5, -4}, {-5, -3}}}, {id = 1311, at = {{5, -4}, {5, -3}}},
+					{id = 1320, at = {{-5, 2}, {-5, 1}}}, {id = 1325, at = {{5, 2}, {5, 1}}},
+					{id = 1336, at = {{-11, -2}, {-10, -2}}}, {id = 3124, at = {{11, -2}, {10, -2}}}
 				},
 				swaps = {}
 			},
 			wardfires = {
 				pieces = {
-					{id = 21350, at = {{-3, -3}, {-3, -2}, {-2, -3}}}, {id = 21351, at = {{3, -3}, {3, -2}, {2, -3}}},
-					{id = 21352, at = {{-3, 3}, {-3, 2}, {-2, 3}}}, {id = 21350, at = {{3, 3}, {3, 2}, {2, 3}}}
+					{id = 21350, at = {{-5, -4}, {-5, -3}}}, {id = 21351, at = {{5, -4}, {5, -3}}},
+					{id = 21352, at = {{-5, 2}, {-5, 1}}}, {id = 21350, at = {{5, 2}, {5, 1}}}
 				},
 				swaps = {}
 			},
 			rebuilt = {
 				pieces = {
-					{id = 6226, at = {{-4, -3}, {-5, -2}, {-4, -4}}}, {id = 6227, at = {{4, -3}, {5, -2}, {4, -4}}},
-					{id = 6228, at = {{-4, 3}, {-5, 2}, {-4, 4}}}, {id = 6226, at = {{4, 3}, {5, 2}, {4, 4}}},
-					{id = 6217, at = {{-2, 5}, {-1, 5}, {-2, 6}}}, {id = 6218, at = {{2, 5}, {1, 5}, {2, 6}}}
+					{id = 6226, at = {{-5, -4}, {-5, -3}}}, {id = 6227, at = {{5, -4}, {5, -3}}},
+					{id = 6228, at = {{-5, 2}, {-5, 1}}}, {id = 6226, at = {{5, 2}, {5, 1}}},
+					{id = 6217, at = {{-11, -2}, {-10, -2}}}, {id = 6218, at = {{11, -2}, {10, -2}}}
 				},
 				swaps = {}
 			}

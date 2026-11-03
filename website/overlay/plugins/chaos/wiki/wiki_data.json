@@ -264,7 +264,7 @@
 		"atlas.points": 96,
 		"bg.minLevel": 100,
 		"bg.on": true,
-		"boards.count": 20,
+		"boards.count": 22,
 		"boards.reset": "06:00",
 		"bounty.maxActive": 3,
 		"bounty.weeklyNeed": 4,
@@ -294,7 +294,7 @@
 		"gem.tiers": 5,
 		"gem.types": 7,
 		"goals.bands": 13,
-		"goals.count": 97,
+		"goals.count": 107,
 		"goals.lastBand": 2000,
 		"guild.hallLevel": 5,
 		"guild.maxLevel": 20,
@@ -40129,6 +40129,7 @@
 							"h": "The fight",
 							"p": [
 								"5 waves in 20 min; the last one brings the boss. Players of level 30 or more see the HUD and get rewards by contribution.",
+								"An invasion needs 3 players online. The invaders follow the area's level, raised towards the level of the players online. Damage, healing, kills and time in the fight count; time counts only while you act.",
 								"Win and everyone nearby gets the Victory buff; lose and the invaders occupy the place for a while."
 							]
 						},

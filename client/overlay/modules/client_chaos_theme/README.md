@@ -68,7 +68,7 @@ Category buttons at the top of the game window: Character, Hunt, Adventure, Econ
 Each opens a drop-down of at most ten entries; rarely used windows sit in a "More" sub-menu at the end of the drop-down
 (System has a "Developer" one for the console and the DAT offset studio). The most used windows have hotkeys shown beside
 the entry and bound while in game: Alt+S Spellbook, Alt+P Passive Tree, Alt+H Hunt Tracker, Alt+B Bestiary, Alt+J
-Dungeons, Alt+C Crafting Bench, Alt+G Guild. It replaces the icon grid of the stock `game_sidebuttons` window, which is
+Dungeons, Alt+C Crafting Bench, Alt+G Guild, Alt+L Party Finder (its own entry, added by `game_partyfinder`). It replaces the icon grid of the stock `game_sidebuttons` window, which is
 closed on login, and the stock top strip of `client_topmenu`. An entry is listed only when its module is loaded and exposes
 a known call (`toggle`, `vipToggle`, ...); calls are `pcall`-guarded, so a missing module never breaks the menu. A base
 window a Chaos one replaces (spell list, hunt analyser) is listed only when the Chaos module is missing.

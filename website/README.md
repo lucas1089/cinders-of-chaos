@@ -84,6 +84,10 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_credits_page_test.php` | `php website/tests/chaos_credits_page_test.php`: the Credits page in both languages, every entry and required credit line, escaping, source links, the footer link (php-cli only) |
 | `overlay/plugins/chaos/guide_lib.php`, `pages/guide.php`, `guide/guide_data.json` | the beginner guide "Comece aqui": first steps, then features by unlock level, from the game's How it works cards (`server/tools/gen_guide_data.lua`; see "Beginner guide (O373)") |
 | `tests/chaos_guide_page_test.php` | `php website/tests/chaos_guide_page_test.php`: the data (every card placed once, levels rising, both languages), a card's HTML and escaping, the page in both languages, the menu, home page and sitemap links (php-cli only) |
+| `overlay/plugins/chaos/buildcode_lib.php`, `pages/build.php` | build codes (`CC1-`): the PHP twin of the client codec and the build page `page?plugin=chaos&p=build&c=CODE` (see "Build codes and character page (O391, O392)") |
+| `overlay/plugins/chaos/character_lib.php`, `pages/character.php`, `patches/znotex-chaos-character-page.patch` | the character page `page?plugin=chaos&p=character&name=X` and its link on the stock character profile (same section) |
+| `tests/chaos_build_page_test.php` | `php website/tests/chaos_build_page_test.php`: the shared vectors `docs/build_code_vectors.txt`, every one-character typo, the class and slot tables against the Lua codec and the server core, item names, the page and escaping, SEO (php-cli only) |
+| `tests/chaos_character_page_test.php` | `php website/tests/chaos_character_page_test.php`: SQLite fake db: hidden and tester characters, gear, tree, the build code, achievements, titles, milestones, runs, seasons, the memorial opt-out, escaping (needs pdo_sqlite) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material, the icon set and the link preview image (see "Art", "SEO and social previews") |
 | `overlay/plugins/chaos/seo_lib.php` | SEO and link previews: the `<head>` of every page (title, description, canonical, robots, Open Graph / Twitter tags, icons, JSON-LD on the front page), rewritten at the end of the request (see "SEO and social previews") |
@@ -1219,12 +1223,12 @@ the environment only.
   `chaos-ctl.sh discord-set | discord-enable | discord-disable | discord-test | discord-status` (docs/LAUNCH.md
   "Discord announcements"); the URL goes on stdin and is only ever written to the file below.
 - **Environment** (`/etc/chaos/discord.env`, mode 600, owned by www-data; never in the repository):
-  `CHAOS_DISCORD_WEBHOOK_RECORDS` (records, realm firsts), `_BOSSES` (world boss spawn and kill, Ascended,
-  Cinderheart), `_PLAYERS` (levels 500 and 1000), `_ANNOUNCE` (season start and end), `_STATUS` (server up, daily
+  `CHAOS_DISCORD_WEBHOOK_RECORDS` (records, realm firsts, the Weekly Challenge's week), `_BOSSES` (world boss spawn and kill, Ascended,
+  Cinderheart), `_PLAYERS` (levels 500 and 1000), `_ANNOUNCE` (season start and end, invasions), `_STATUS` (server up, daily
   restart, down), `_BAZAAR` (auctions and sales), `_DEFAULT` (every channel without its own); `CHAOS_DISCORD_OFF`
   (kinds not to post, comma separated: `record`, `first`, `worldboss_spawn`, `worldboss_kill`, `ascended_kill`,
   `cinderheart_kill`, `level`, `season_start`, `season_end`, `status_up`, `status_down`, `status_restart`,
-  `bazaar_list`, `bazaar_sale`); `CHAOS_DISCORD_NAME` (the poster's name); `CHAOS_SITE_URL` (the bazaar link). Only
+  `bazaar_list`, `bazaar_sale`, `weekly_challenge`, `city_invasion`); `CHAOS_DISCORD_NAME` (the poster's name); `CHAOS_SITE_URL` (the bazaar link). Only
   `https://discord.com/api/webhooks/<id>/<token>` URLs are taken.
 - **Rate limits:** at most 20 posts a run, 0.6 s apart per webhook; Discord's 429 `retry_after` and
   `X-RateLimit-Remaining: 0` hold that webhook's rows back. A failed post is tried again after 1, 2, 4, 8 minutes and
@@ -1288,7 +1292,7 @@ Mercado Pago or PayPal.
   id); the stock `guildwar.php` prints guild names without escaping (guild names are letters only, created on this site).
 
 - The outfit images of ZnoteX (an external image service) are off; turn them on in `config.local.php` if wanted.
-- Achievements (`chaos_achievements`) and name plate titles have no page yet.
+- Achievements (`chaos_achievements`) and name plate titles show only on the character page (O392), no list page yet.
 - Other languages: the layout's wording is English only (the language selector is off and `languages_enabled` is `en`
   only, so `?lang=` does not translate ZnoteX's strings around our English pages).
 
@@ -1346,6 +1350,28 @@ Facebook, X): `plugins/chaos/seo_lib.php`, test `tests/chaos_seo_test.php`.
   test loop). Test: `tests/chaos_guide_page_test.php`.
 - Linked from the site menu (Start Here, before Wiki), the home page ("Novo no jogo? Comece aqui"), the sitemap and the
   SEO descriptions.
+
+## Build codes and character page (O391, O392)
+- Build code `CC1-` + base64url (canonical, no padding) of parts, each tag (1 byte), length (2 bytes), data: 1 class
+  (index into an append-only list of the 21 classes), 2 level, 3 tree (the server's `CB` code bytes with its own
+  checksum), 4 spells (server spell ids, 16 at most), 5 gear (slot + item id). A 3 byte checksum over "CC1" and the
+  parts closes it. Unknown parts are skipped, so later parts do not break old readers. Lua `ChaosBuildCode`
+  (`client/overlay/modules/game_passivetree/buildcode.lua`) and PHP `chaos_buildcode_*` (`buildcode_lib.php`) share
+  `docs/build_code_vectors.txt`: code and canonical text per line, then codes that must fail and why.
+- Client: Build Code panel > Copy Full Build. Import of a pasted code shows it and previews the tree through the server;
+  the server's respec rules decide (server/README.md "Build sharing").
+- `page?plugin=chaos&p=build&c=CODE`: class, level, keystones, notables, masteries with the chosen effect, small node
+  count, Paragon, spells and gear with wiki icons and names (`wiki/wiki_data.json`, items.xml names cached in
+  `engine/cache/chaos-item-names.json`). A share link; the title and description name the build for link previews.
+  A bad code gives a 404 with the reason and a paste box.
+- `page?plugin=chaos&p=character&name=X`: look, class, level, gear, a build link (tree and gear, no spells: the
+  rotation lives in the client), achievements (count, points, recent ten), titles, level milestones (O378), best runs
+  (Infinity Tower, rift tier, arena, weekly board podiums) and season results. Read-only queries, escaped output.
+  Hidden characters (`hide_char`) and tester bots (`chaos_tester_sql()`) give a 404. Runs and seasons hide when the
+  player opted out (`chaos_memorial_optin.records = 0`); a Hardcore fall shows only with `fallen = 1`. No account data
+  is read. The stock character profile links to it (`znotex-chaos-character-page.patch`).
+- Not done: a per-character link preview image (the site default is used), a drawn tree (a list for now), gems and
+  item modifiers in the code.
 
 ## Fair play, calendar and creator program (O320)
 Three public pages, each in Portuguese (Brazil) and English (`&l=`, see "Languages"). Short texts use `chaos_t()`

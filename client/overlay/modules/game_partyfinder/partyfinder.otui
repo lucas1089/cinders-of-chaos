@@ -445,7 +445,22 @@ ChaosMainWindow
         id: role
         anchors.left: lRole.right
         anchors.verticalCenter: lRole.verticalCenter
-        width: 110
+        width: 96
+
+      ChaosLabelDim
+        id: lExp
+        anchors.left: role.right
+        anchors.verticalCenter: lRole.verticalCenter
+        margin-left: 10
+        text-auto-resize: true
+        !text: tr('Expires')
+
+      ChaosComboBox
+        id: exp
+        anchors.left: lExp.right
+        anchors.verticalCenter: lRole.verticalCenter
+        margin-left: 6
+        width: 64
 
       PartyFinderFormLabel
         id: lWant
@@ -513,7 +528,7 @@ ChaosMainWindow
         anchors.top: wantDps.bottom
         anchors.left: parent.left
         margin-top: 16
-        !text: tr('Min level')
+        !text: tr('Level')
 
       ChaosTextEdit
         id: minLevel
@@ -523,19 +538,21 @@ ChaosMainWindow
         max-length: 4
 
       ChaosLabelDim
-        id: lExp
+        id: levelTo
         anchors.left: minLevel.right
         anchors.verticalCenter: lLevel.verticalCenter
-        margin-left: 12
+        margin-left: 8
         text-auto-resize: true
-        !text: tr('Expires')
+        !text: tr('to')
 
-      ChaosComboBox
-        id: exp
-        anchors.left: lExp.right
+      ChaosTextEdit
+        id: maxLevel
+        anchors.left: levelTo.right
         anchors.verticalCenter: lLevel.verticalCenter
-        margin-left: 6
-        width: 70
+        margin-left: 8
+        width: 54
+        max-length: 4
+        !tooltip: tr('Highest level that may apply. Empty: no limit.')
 
       PartyFinderFormLabel
         id: lNote
@@ -544,10 +561,18 @@ ChaosMainWindow
         margin-top: 16
         !text: tr('Note')
 
-      ChaosTextEdit
-        id: note
+      ChaosComboBox
+        id: notePreset
         anchors.left: lNote.right
         anchors.verticalCenter: lNote.verticalCenter
+        width: 224
+        !tooltip: tr('A note from a fixed list, shown in the language of each player.')
+
+      ChaosTextEdit
+        id: note
+        anchors.top: notePreset.bottom
+        anchors.left: lNote.right
+        margin-top: 6
         width: 224
         max-length: 80
         !tooltip: tr('Short note for the group (80 letters). Links and rude words are removed.')

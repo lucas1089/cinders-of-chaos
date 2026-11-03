@@ -4,11 +4,16 @@
 -- and the price. Apply sends the code back with the price the preview showed.
 --   buildExport -> buildCode {code}, buildPreview {code} -> buildPreview {...} | buildError {message},
 --   buildApply {code, cost} -> buildApplied {message} | buildError {message}
+-- The full build code (O391, buildcode.lua ChaosBuildCode, "CC1-"): Copy Full Build asks buildExport {full = true}
+-- (the server adds the worn gear's server ids) and adds the class, level and the helper's spell rotation. Pasting one
+-- shows what it holds and sends only its inner tree code to the same server preview, so the server's class and respec
+-- rules decide what can be applied. The website draws it at page?plugin=chaos&p=build&c=CODE.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 ChaosTreeHandlers = ChaosTreeHandlers or {}
 local buildWindow = nil
 local preview = nil
 local confirmBox = nil
+local cardSummary = nil -- what a pasted full build code holds, shown above the server's preview
 
 local function alive()
   if buildWindow and buildWindow.isDestroyed and buildWindow:isDestroyed() then
@@ -25,6 +30,9 @@ end
 local function setPreviewText(text, color)
   local label = child('previewText')
   if label then
+    if cardSummary and text and text ~= '' then
+      text = cardSummary .. '\n' .. text
+    end
     label:setText(text or '')
     label:setColor(color or '#d8cfc0')
   end
@@ -64,6 +72,7 @@ end
 -- leave the preview: the tree shows the saved allocation again
 function cancelBuildPreview()
   closeConfirm()
+  cardSummary = nil
   if preview then
     preview = nil
     sendAction('requestNodesUnlocked')
@@ -98,13 +107,91 @@ function destroyBuildShare()
 end
 
 function exportBuild()
+  cardSummary = nil
   sendAction('buildExport')
+end
+
+function exportFullBuild()
+  cardSummary = nil
+  sendAction('buildExport', {full = true})
+end
+
+-- the spell ids of the helper's rotation (the shooter profile), else the Auto rotation preset of the class and level
+local function rotationSpells(player)
+  local ids = {}
+  local helper = modules.game_helper and modules.game_helper._Helper
+  if helper and helper.getShooterProfile and ChaosAutoRotation and ChaosAutoRotation.ruleIds then
+    local okProfile, profile = pcall(helper.getShooterProfile)
+    if okProfile and profile then
+      ids = ChaosAutoRotation.ruleIds(profile.rules)
+    end
+  end
+  if #ids == 0 and ChaosAutoRotation and ChaosAutoRotation.presetFor and player then
+    local preset = ChaosAutoRotation.presetFor(player:getVocation(), player:getLevel())
+    for i, id in ipairs(preset and preset.spells or {}) do
+      ids[i] = id
+    end
+  end
+  return ids
+end
+
+local function spellName(id)
+  local spells = modules.game_chaosspells and modules.game_chaosspells.ChaosSpellData
+  for _, s in ipairs(spells or {}) do
+    if s.id == id then
+      return s.name
+    end
+  end
+  return '#' .. id
+end
+
+local SLOT_NAMES = {[1] = 'Head', [2] = 'Amulet', [4] = 'Armour', [5] = 'Right hand', [6] = 'Left hand', [7] = 'Legs',
+  [8] = 'Feet', [9] = 'Ring', [10] = 'Ammo'}
+
+local function codeError(kind)
+  local texts = {
+    empty = tr('Paste a build code into the box first.'),
+    toolong = tr('That build code is too long.'),
+    format = tr('That is not a full build code (they start with CC1-).'),
+    version = tr('That full build code is from a newer format than this client reads. Update the client.'),
+    checksum = tr('That build code is damaged: the checksum does not match (check for a typo).'),
+    tree = tr('The passive tree part of that build code is damaged.'),
+  }
+  return texts[kind] or tr('That build code is damaged (check for a typo or a missing part).')
+end
+
+-- the lines of a pasted full build code: class and level, spells, gear
+local function cardLines(card)
+  local lines = {}
+  local class = ChaosBuildCode.className(card.class)
+  if class and card.level then
+    lines[#lines + 1] = tr('Full build: %s, level %d.', class, card.level)
+  elseif class then
+    lines[#lines + 1] = tr('Full build: %s.', class)
+  else
+    lines[#lines + 1] = tr('Full build code.')
+  end
+  if #card.spells > 0 then
+    local names = {}
+    for i, id in ipairs(card.spells) do
+      names[i] = spellName(id)
+    end
+    lines[#lines + 1] = tr('Spells: %s.', table.concat(names, ', '))
+  end
+  if #card.gear > 0 then
+    local slots = {}
+    for i, g in ipairs(card.gear) do
+      slots[i] = tr(SLOT_NAMES[g.slot] or '?')
+    end
+    lines[#lines + 1] = tr('Gear in %d slots: %s (the website shows the items).', #card.gear, table.concat(slots, ', '))
+  end
+  return table.concat(lines, '\n')
 end
 
 function pasteBuild()
   local edit = child('codeEdit')
   if edit then
-    edit:setText((g_window.getClipboardText() or ''):gsub('%s+', ' '):sub(1, 600))
+    edit:setText((g_window.getClipboardText() or ''):gsub('%s+', ' '):sub(1, 1000))
   end
 end
 
@@ -114,6 +201,21 @@ function importBuild()
   if code:gsub('%s', '') == '' then
     setPreviewText(tr('Paste a build code into the box first.'), '#e07060')
     return
+  end
+  cardSummary = nil
+  local full = ChaosBuildCode.extract(code)
+  if full then
+    local card, kind = ChaosBuildCode.decode(full)
+    if not card then
+      setPreviewText(codeError(kind), '#e07060')
+      return
+    end
+    cardSummary = cardLines(card)
+    if not card.tree then
+      setPreviewText(tr('This code has no passive tree to import.'), '#c0b080')
+      return
+    end
+    code = card.tree -- only the tree goes to the server's preview and its rules
   end
   setPreviewText(tr('Asking the server for a preview...'))
   sendAction('buildPreview', {code = code})
@@ -146,6 +248,29 @@ ChaosTreeHandlers.buildCode = function(data)
   end
   openBuildShare()
   local edit = child('codeEdit')
+  if data.full then
+    local player = g_game.getLocalPlayer()
+    local spells = rotationSpells(player)
+    local gear = type(data.gear) == 'table' and data.gear or {}
+    local code = ChaosBuildCode.encode({
+      class = player and ChaosBuildCode.classOfVocation(player:getVocation()) or nil,
+      level = player and player:getLevel() or nil,
+      tree = data.code,
+      spells = spells,
+      gear = gear,
+    })
+    if not code then
+      setPreviewText(tr('The full build code could not be made.'), '#e07060')
+      return
+    end
+    if edit then
+      edit:setText(code)
+    end
+    g_window.setClipboardText(code)
+    setPreviewText(tr('Your full build code (passive tree, %d spells, %d items) was copied to the clipboard.\nPaste it on Discord, or open it on the website: Build page.',
+      #spells, #gear))
+    return
+  end
   if edit then
     edit:setText(data.code)
   end

@@ -68,5 +68,20 @@ for title, n in pairs(V.BANNERS) do
   if h then h:close() end
 end
 
+-- the Weekly Challenge (server weekly_challenge.lua `weekly`)
+eq(V.weeklyTitle(nil), nil, 'no weekly: no line')
+eq(V.weeklyTitle({ theme = 'X' }), nil, 'weekly without a label')
+local wk = { label = '2026-W45', theme = 'Marrow Crypts', current = true, resetIn = 2 * 86400 + 5 * 3600 }
+eq(V.weeklyTitle(wk), 'Weekly Challenge 2026-W45: Marrow Crypts', 'weekly title')
+eq(V.weeklyText(wk):match('New layout in 2d 5h%.$') ~= nil, true, 'weekly: time to the new layout')
+eq(V.weeklyText({ label = '2026-W45', current = false, resetIn = 60 }):match("last week's") ~= nil, true,
+  'weekly: a stale layout says so')
+eq(V.span(3725), '1h 02m', 'span hours')
+eq(V.span(59), '0m', 'span minutes')
+eq(V.bannerTitle({ title = 'Weekly Challenge', weekly = wk }), 'The Marrow Crypts', 'weekly banner: the theme')
+eq(V.bannerTitle({ title = 'The Pyre Throne' }), 'The Pyre Throne', 'banner title')
+eq(V.bannerFor(V.bannerTitle({ title = 'Weekly Challenge', weekly = wk }), exists), '/images/dungeons/MarrowCrypts',
+  'weekly banner file')
+
 if fails > 0 then print(fails .. ' failure(s)'); os.exit(1) end
 print('dungeonsview tests passed')

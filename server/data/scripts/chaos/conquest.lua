@@ -202,6 +202,35 @@ function X.grant(player, key, amount, detail)
 	return plan.give
 end
 
+-- a weekly reward by character guid, online or not (weekly_challenge.lua at the leaderboard reset, O390): no daily cap
+-- (the caller gives it once a week), the log names `source`. Server side only. Returns the tokens given.
+function X.grantGuid(guid, amount, source, detail)
+	guid, amount = tonumber(guid), math.floor(tonumber(amount) or 0)
+	if not cfg.enabled or not guid or amount <= 0 or amount > 1000 then
+		return 0
+	end
+	credit(guid, amount)
+	local bal = X.bal[guid] and (X.bal[guid] + amount) or readBalance(guid)
+	if X.bal[guid] ~= nil then
+		X.bal[guid] = bal
+	end
+	logRow(guid, source or "weekly", amount, bal, detail)
+	local player
+	for _, p in ipairs(Game.getPlayers()) do
+		if p:getGuid() == guid then
+			player = p
+			break
+		end
+	end
+	if player then
+		notify(player, Chaos.t(player, "+%d Conquest Tokens (%s). Balance: %d.", amount, Chaos.t(player, detail or source or ""), bal))
+		if X.open[guid] then
+			try("send", X.send, player)
+		end
+	end
+	return amount
+end
+
 function X.reward(player, key, ctx, detail)
 	return X.grant(player, key, K.amount(cfg, key, ctx), detail)
 end

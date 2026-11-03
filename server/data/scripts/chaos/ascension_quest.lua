@@ -937,7 +937,7 @@ function modal.onModalWindow(player, modalWindowId, buttonId, choiceId)
 			return true
 		end
 		Q.sendConfirmModal(player, id, c.word, vocName(id), Chaos.lang(player))
-	elseif modalWindowId > m.confirmBase and modalWindowId <= m.confirmBase + 255 then
+	elseif modalWindowId > m.confirmBase and modalWindowId <= m.confirmBase + (m.confirmSpan or 39) then
 		if buttonId ~= 1 then
 			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "The Oracle waits. Say 'choice' when you are ready."))
 			return true

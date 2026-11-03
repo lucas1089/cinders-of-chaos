@@ -178,7 +178,7 @@ for _, it in ipairs(inv.worldEvents.merchant.items) do
 	-- even the best copy: an orb is unsellable, a potion is no gear
 	check(P.priceFor(it.id, {rarity = 10, ilvl = 150}) < it.price, "Wandering Merchant: the best copy of " .. it.name)
 end
--- the Wandering Merchant's rarity orbs on a plain copy (owner 2026-10-14: Gilding 250,000): the expected gain at item
+-- the Wandering Merchant's rarity orbs on a plain copy (owner 2026-10-14: Gilding 250,000; O399 2026-11-03: 650,000): the expected gain at item
 -- level 150 never reaches the orb's price, for any equipment (the real orb tables of chaos_crafting.lua)
 local function merchantPrice(id)
 	for _, it in ipairs(inv.worldEvents.merchant.items) do
@@ -200,7 +200,7 @@ if okc and ChaosCrafting then
 		gild = gild + w[2] / tot * P.rarityMult(w[1])
 	end
 	local fate = P.rarityMult(ChaosRarity.idOfRank(1)) -- the Orb of Fate: a plain copy becomes Common
-	eq(merchantPrice(24691), 250000, "the merchant's Orb of Gilding costs 250,000")
+	eq(merchantPrice(24691), 650000, "the merchant's Orb of Gilding costs 650,000 (O399)")
 	local top, topId = 0, 0
 	for id, price in pairs(D.prices) do
 		if D.gear[id] and price > top then

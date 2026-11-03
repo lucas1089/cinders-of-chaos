@@ -119,13 +119,16 @@ function chaos_seo_descriptions(): array {
 		'page_chaos_coins' => 'Donate to %s and receive Chaos Coins for the in-game store.',
 		'page_chaos_credits' => 'Every third-party source of %s: art, fonts, libraries and tools.',
 		'page_chaos_wiki' => 'The %s wiki: guides for new players and a reference of classes, spells, items, rifts and bosses, generated from the game data.',
+		'page_chaos_build' => 'A shared build of %s: class, passive tree, spell rotation and gear.',
+		'page_chaos_character' => 'A character of %s: gear, achievements, level milestones, best runs and seasons.',
 	);
 }
 
 /**
  * What the head says for one request. $ctx: page ($page_filename), script (SCRIPT_NAME), get, status (the HTTP
  * response code), page_title (the plugin pages' $GLOBALS['page_title']), profile ($profile_data of
- * characterprofile.php), lang, site (chaos_seo_site()).
+ * characterprofile.php), lang, site (chaos_seo_site()), page_description (a plugin page's own description:
+ * $GLOBALS['page_description'] of the build and character pages).
  */
 function chaos_seo_page(array $ctx): array {
 	$site = (array)($ctx['site'] ?? chaos_seo_site());
@@ -135,6 +138,7 @@ function chaos_seo_page(array $ctx): array {
 	$get = (array)($ctx['get'] ?? array());
 	$status = (int)($ctx['status'] ?? 200);
 	$pageTitle = trim((string)($ctx['page_title'] ?? ''));
+	$pageDescription = trim((string)($ctx['page_description'] ?? ''));
 	$profile = $ctx['profile'] ?? null;
 	$name = $site['name'];
 	$t = static function (string $en, ...$args) use ($lang): string {
@@ -180,6 +184,11 @@ function chaos_seo_page(array $ctx): array {
 		$params = array('plugin', 'p', 'doc', 't', 's', 'l', 'what');
 		if ($page === 'page_rules') {
 			$params = array('p');
+		} elseif ($page === 'page_chaos_build') {
+			$params = array('plugin', 'p', 'c');
+		} elseif ($page === 'page_chaos_character') {
+			$params = array('plugin', 'p', 'name');
+			$type = 'profile';
 		}
 		$title = $pageTitle !== '' ? $pageTitle : (isset($stock[$page]) ? $t($stock[$page]) : '');
 		if ($title === '') {
@@ -190,6 +199,8 @@ function chaos_seo_page(array $ctx): array {
 			$description = $t('%s in the %s wiki: guides and a reference generated from the game data.', $topic, $name);
 		} elseif ($page === 'page_chaos_legal' && $pageTitle !== '') {
 			$description = $t('%s of %s.', $pageTitle, $name);
+		} elseif ($pageDescription !== '' && in_array($page, array('page_chaos_build', 'page_chaos_character'), true)) {
+			$description = $pageDescription;
 		} elseif (isset($descriptions[$page])) {
 			$description = $t($descriptions[$page], $name);
 		}
@@ -361,6 +372,7 @@ function chaos_seo_context(): array {
 		'get' => $_GET,
 		'status' => (int)http_response_code(),
 		'page_title' => (string)($GLOBALS['page_title'] ?? ''),
+		'page_description' => (string)($GLOBALS['page_description'] ?? ''),
 		'profile' => $profile,
 		'lang' => chaos_seo_lang(),
 		'site' => $site,

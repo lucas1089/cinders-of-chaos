@@ -9,9 +9,9 @@
  "counts": {
   "opcode": 65,
   "out": 38,
-  "passive": 90,
+  "passive": 91,
   "place": 15,
-  "staff": 13
+  "staff": 15
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
  "keytest": {
@@ -6732,6 +6732,12 @@
   },
   {
    "keywords": [
+    "rumours"
+   ],
+   "npc": "Dorrin Alewright"
+  },
+  {
+   "keywords": [
     "contracts",
     "quartermaster",
     "lore"
@@ -10986,6 +10992,18 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "rumours": {
+   "files": [
+    "rumours.lua",
+    "rumours_run.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/rumours"
+   ],
+   "why": "staff command only (/rumours); testers are never staff"
+  },
   "salvage": {
    "files": [
     "salvage.lua"
@@ -11409,6 +11427,13 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "waypoints": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "waystone_atlas": {
    "files": [
     "waystone_atlas.lua"
@@ -11495,6 +11520,17 @@
     "/weekend"
    ],
    "why": "staff command only (/weekend); testers are never staff"
+  },
+  "weekly_challenge": {
+   "files": [
+    "weekly_challenge.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/challenge"
+   ],
+   "why": "staff command only (/challenge); testers are never staff"
   },
   "weeklychest": {
    "files": [

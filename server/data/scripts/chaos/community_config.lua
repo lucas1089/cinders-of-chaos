@@ -69,7 +69,10 @@ return {
 	brazier = {
 		townId = 2, -- the main temple: Cinderhold, the main city (server/README.md "Main city"; nil town: pos must be set)
 		pos = nil, -- {x =, y =, z =} to place it exactly
-		offsets = {{3, -2}, {-3, -2}, {3, 2}, {-3, 2}, {4, 0}, {-4, 0}, {0, 4}, {0, -4}},
+		-- O386: first the spot of the east purple teleport that patch_temple_tidy.py takes off Cinderhold's temple
+		-- (32373, 32236, the north hall, mirroring the west one; a teleport tile is never taken, so a map without the
+		-- tidy goes on down the list). Before it stood at {4, 0}, on the walk from the temple to the east side room.
+		offsets = {{4, -5}, {3, -2}, {-3, -2}, {3, 2}, {-3, 2}, {4, 0}, {-4, 0}, {0, 4}, {0, -4}},
 		itemId = 1481, -- coal basin (stock); the dark tile set's "brazier" is used when installed
 		darkTile = "brazier",
 		actionId = 47901,

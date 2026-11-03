@@ -2,10 +2,10 @@
 -- The runtime is invasion.lua (invasions) and worldevents.lua (Chaos Storm, Wandering Merchant, Golden Hour); every
 -- number is in invasion_config.lua. Server local time. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 --
---   schedule      I.scheduledStarts, I.randomStart, I.upcoming, I.resolve
---   waves         I.roster, I.scale, I.playerFactor, I.tierChances, I.planWave, I.planBoss, I.edgePoints, I.nextWaveDue
+--   schedule      I.scheduledStarts, I.randomStart, I.upcoming, I.resolve, I.gate (O393)
+--   waves         I.effectiveLevel (O393), I.roster, I.scale, I.playerFactor, I.tierChances, I.planWave, I.planBoss, I.edgePoints, I.nextWaveDue
 --   the fight     I.breachStep, I.outcome, I.sweep
---   rewards       I.credit, I.shares, I.rewards, I.defenderPoints
+--   rewards       I.credit, I.presenceTick (O393), I.shares, I.rewards, I.defenderPoints
 --   after         I.occupationOver, I.buffActive
 --   world events  I.pickWorldEvent, I.nextWorldEventAt
 --   HUD           I.hud, I.clock
@@ -288,6 +288,46 @@ function I.scale(monLevel, areaLevel, sc)
 	}
 end
 
+-- O393: the level an invasion is fought at. The configured area level, pulled towards the median level of the
+-- players online (levels = a list of numbers): base x (1 - weight) + median x weight, clamped to
+-- [base x minRatio, base x maxRatio] and rounded. o = scaling.online; no o, weight 0 or nobody online: the base level.
+function I.effectiveLevel(areaLevel, levels, o)
+	local base = max(1, floor(tonumber(areaLevel) or 1))
+	if type(o) ~= "table" or (tonumber(o.weight) or 0) <= 0 or type(levels) ~= "table" then
+		return base
+	end
+	local list = {}
+	for _, v in ipairs(levels) do
+		local n = tonumber(v)
+		if n and n == n and n > 0 and n < math.huge then
+			list[#list + 1] = n
+		end
+	end
+	if #list == 0 then
+		return base
+	end
+	table.sort(list)
+	local mid = #list % 2 == 1 and list[(#list + 1) / 2] or (list[#list / 2] + list[#list / 2 + 1]) / 2
+	local w = clamp(tonumber(o.weight) or 0, 0, 1)
+	local lv = base * (1 - w) + mid * w
+	lv = clamp(lv, base * (o.minRatio or 1), base * max(o.minRatio or 1, o.maxRatio or 2))
+	return max(1, floor(lv + 0.5))
+end
+
+-- O393: may an automatic start (schedule or random) go ahead? g = cfg.gate {minOnline, cooldownMinutes};
+-- online = players online of minLevel or more; lastEndAt = when the last invasion ended (nil: none since the start).
+-- Returns true, or false and "players" | "cooldown".
+function I.gate(g, online, lastEndAt, at)
+	g = g or {}
+	if (tonumber(online) or 0) < (g.minOnline or 0) then
+		return false, "players"
+	end
+	if lastEndAt and at and at < lastEndAt + (g.cooldownMinutes or 0) * 60 then
+		return false, "cooldown"
+	end
+	return true
+end
+
 -- more defenders -> bigger waves and a tougher boss
 function I.playerFactor(players, p)
 	p = p or {}
@@ -540,24 +580,45 @@ end
 
 -- ============================================================================ contribution and rewards
 
--- contrib = {[guid] = {name, damage, healing, kills, boss}}
-function I.credit(contrib, guid, name, field, amount)
+-- contrib = {[guid] = {name, damage, healing, kills, boss, presence, lastAct}}. at (optional): the time of the act; it
+-- keeps the player "active" for the presence count (O393)
+function I.credit(contrib, guid, name, field, amount, at)
 	if not guid or not amount or amount <= 0 then
 		return nil
 	end
 	local e = contrib[guid]
 	if not e then
-		e = {name = name, damage = 0, healing = 0, kills = 0, boss = 0}
+		e = {name = name, damage = 0, healing = 0, kills = 0, boss = 0, presence = 0}
 		contrib[guid] = e
 	end
 	e[field] = (e[field] or 0) + amount
+	if at then
+		e.lastAct = max(e.lastAct or 0, at)
+	end
 	return e
 end
 
+-- O393, time present: one second (dt) for a defender inside the area (inside = the caller's I.inArea with the
+-- presence margin) who dealt damage, healed or killed within the last activeSeconds. Standing there without acting
+-- counts nothing (anti-AFK): a player who never acted has no entry at all. Returns true when the time was counted.
+function I.presenceTick(contrib, guid, now, inside, w, dt)
+	local e = contrib and contrib[guid]
+	if not e or not inside or not e.lastAct then
+		return false
+	end
+	if now - e.lastAct > ((w or {}).activeSeconds or 60) then
+		return false
+	end
+	e.presence = (e.presence or 0) + (dt or 1)
+	return true
+end
+
+-- score = damage + healing x 0.6 + kills x kill x unit + minutes present and active x presence x unit
 function I.score(e, w, unit)
 	w = w or {}
 	return (e.damage or 0) * (w.damage or 1) + (e.healing or 0) * (w.healing or 0.6)
 		+ (e.kills or 0) * (w.kill or 0.25) * (unit or 0)
+		+ (e.presence or 0) / 60 * (w.presence or 0) * (unit or 0)
 end
 
 -- eligible players (score >= minPoints, not excluded), sorted by score, with share and rank
@@ -568,7 +629,7 @@ function I.shares(contrib, w, unit, minPoints, excluded)
 		local s = I.score(e, w, unit)
 		if not excluded[guid] and s > 0 and s >= (minPoints or 0) then
 			list[#list + 1] = {guid = guid, name = e.name, score = s, damage = e.damage or 0, healing = e.healing or 0,
-				kills = e.kills or 0, boss = e.boss or 0}
+				kills = e.kills or 0, boss = e.boss or 0, presence = e.presence or 0}
 			total = total + s
 		end
 	end
@@ -683,7 +744,7 @@ function I.pickWorldEvent(we, lastKind, rng)
 	local kinds, total = {}, 0
 	for _, k in ipairs({"storm", "merchant", "golden"}) do
 		local e = we[k]
-		local w = e and e.enabled ~= false and (e.weight or 0) or 0
+		local w = e and e.enabled ~= false and not e.resident and (e.weight or 0) or 0
 		if w > 0 and (k ~= lastKind) then
 			kinds[#kinds + 1] = {k, w}
 			total = total + w
@@ -691,7 +752,7 @@ function I.pickWorldEvent(we, lastKind, rng)
 	end
 	if #kinds == 0 then
 		local e = lastKind and we[lastKind]
-		return (e and e.enabled ~= false and (e.weight or 0) > 0) and lastKind or nil
+		return (e and e.enabled ~= false and not e.resident and (e.weight or 0) > 0) and lastKind or nil
 	end
 	local r = rng(1, total)
 	for _, kw in ipairs(kinds) do
@@ -772,6 +833,22 @@ function I.hud(st, now, list, mine, cfg)
 		d.you = {rank = mine.rank, share = floor(mine.share * 100 + 0.5), kills = mine.kills or 0}
 	end
 	return d
+end
+
+-- the resident Wandering Merchant (O399): the stop number at time t (moveHours per stop) and when it ends
+function I.merchantSlot(t, moveHours)
+	local period = max(1, floor((tonumber(moveHours) or 3) * 3600))
+	local slot = floor(t / period)
+	return slot, (slot + 1) * period
+end
+
+-- the area of a stop: the candidates in turn by the stop number, so two stops in a row are never in the same area
+-- while there are two or more, and a restart picks the same one
+function I.merchantArea(candidates, slot)
+	if #candidates == 0 then
+		return nil
+	end
+	return candidates[(floor(slot) % #candidates) + 1]
 end
 
 return I

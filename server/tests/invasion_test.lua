@@ -474,7 +474,22 @@ do
 		counts[k] = counts[k] + 1
 		last = k
 	end
-	ok(counts.storm > 0 and counts.merchant > 0 and counts.golden > 0, "every kind happens")
+	ok(counts.storm > 0 and counts.golden > 0, "every kind happens")
+	ok(counts.merchant == 0, "O399: the resident merchant is never a random world event")
+	local notResident = {storm = {weight = 1}, merchant = {weight = 1}, golden = {weight = 0}}
+	local seen = {}
+	for _ = 1, 50 do
+		seen[I.pickWorldEvent(notResident, nil, rng)] = true
+	end
+	ok(seen.merchant, "a merchant that is not resident is still picked")
+	-- the stops: 3 hours each, fixed by the clock, the town areas in turn
+	local slot, endsAt = I.merchantSlot(10800 * 5 + 100, 3)
+	eq(slot, 5, "stop number from the clock")
+	eq(endsAt, 10800 * 6, "the stop ends at the next 3 hour mark")
+	local towns2 = {{key = "a"}, {key = "b"}}
+	ok(I.merchantArea(towns2, 5).key ~= I.merchantArea(towns2, 6).key, "two stops in a row are in different towns")
+	eq(I.merchantArea(towns2, 5).key, I.merchantArea(towns2, 5).key, "a restart picks the same town")
+	eq(I.merchantArea({}, 1), nil, "no town, no stop")
 	local only = {storm = {weight = 1}, merchant = {weight = 0}, golden = {weight = 0}}
 	eq(I.pickWorldEvent(only, "storm", rng), "storm", "a single kind may repeat")
 	eq(I.pickWorldEvent({storm = {weight = 0}, merchant = {weight = 0}, golden = {weight = 0}}, nil, rng), nil, "none enabled")
@@ -526,6 +541,67 @@ do
 	eq(d.left, 7, "occupiers left")
 	local warm = I.hud({phase = "running", wave = 0, waves = 5, firstWaveAt = 1030, endsAt = 2200}, 1000, {}, nil, cfg)
 	eq(warm.next, 30, "first wave countdown")
+end
+
+-- ------------------------------------------------------------------ O393: gate, level of the players online, presence
+do
+	-- the gate of an automatic start
+	local g = cfg.gate
+	ok(g and g.minOnline >= 1 and g.cooldownMinutes >= 0, "O393: the gate is configured")
+	eq(I.gate({minOnline = 3}, 2, nil, 1000), false, "too few players online")
+	eq(select(2, I.gate({minOnline = 3}, 2, nil, 1000)), "players", "the reason: players")
+	eq(I.gate({minOnline = 3, cooldownMinutes = 120}, 3, nil, 1000), true, "enough players, no invasion yet")
+	eq(I.gate({minOnline = 3, cooldownMinutes = 120}, 5, 1000, 1000 + 119 * 60), false, "inside the cooldown")
+	eq(select(2, I.gate({minOnline = 3, cooldownMinutes = 120}, 5, 1000, 1000 + 119 * 60)), "cooldown", "the reason: cooldown")
+	eq(I.gate({minOnline = 3, cooldownMinutes = 120}, 5, 1000, 1000 + 120 * 60), true, "the cooldown is over")
+	eq(I.gate(nil, 0, nil, 0), true, "no gate: always")
+
+	-- the level pulled towards the players online
+	local o = {weight = 0.5, minRatio = 1.0, maxRatio = 2.0}
+	eq(I.effectiveLevel(80, {}, o), 80, "nobody online: the area level")
+	eq(I.effectiveLevel(80, {120, 100, 140}, o), 100, "median 120: 80 x 0.5 + 120 x 0.5")
+	eq(I.effectiveLevel(80, {100, 140}, o), 100, "an even count: the mean of the middle two")
+	eq(I.effectiveLevel(80, {900, 1000, 40}, o), 160, "high levels online: at most area x maxRatio")
+	eq(I.effectiveLevel(80, {10, 20, 30}, o), 80, "low levels online: never below area x minRatio")
+	eq(I.effectiveLevel(80, {300}, {weight = 0}), 80, "weight 0: the area level")
+	eq(I.effectiveLevel(80, {300}, nil), 80, "no online scaling: the area level")
+	eq(I.effectiveLevel(80, {0 / 0, "x", 120}, o), 100, "bad entries are skipped")
+	local on = cfg.scaling.online
+	ok(on and on.weight > 0 and on.minRatio >= 1 and on.maxRatio >= on.minRatio, "O393: online scaling configured, never easier")
+	-- the effective level drives the roster and the scale like the area level did
+	local hi = I.effectiveLevel(80, {1000}, on)
+	ok(#I.roster(cfg.factions.orcs, hi, cfg.scaling) >= 3, "a roster at the online level")
+
+	-- presence: only while acting (anti-AFK), only inside
+	local w = {damage = 1, healing = 0.6, kill = 0.25, presence = 0.05, activeSeconds = 60}
+	local c = {}
+	eq(I.presenceTick(c, 7, 100, true, w), false, "no entry (never acted): no presence")
+	I.credit(c, 7, "Healer", "healing", 500, 100)
+	eq(c[7].lastAct, 100, "credit with a time marks the act")
+	eq(I.presenceTick(c, 7, 130, true, w), true, "acted 30 s ago, inside: counted")
+	eq(I.presenceTick(c, 7, 130, false, w), false, "outside the area: not counted")
+	eq(I.presenceTick(c, 7, 161, true, w), false, "acted 61 s ago: idle, not counted")
+	eq(c[7].presence, 1, "one second counted")
+	I.credit(c, 7, "Healer", "healing", 1, 200)
+	for t = 201, 260 do
+		I.presenceTick(c, 7, t, true, w)
+	end
+	eq(c[7].presence, 61, "a minute while acting")
+	I.credit(c, 7, "Healer", "healing", 1, 150)
+	eq(c[7].lastAct, 200, "an older act does not move the mark back")
+	-- the score: presence minutes x presence x unit
+	local e = {presence = 600}
+	near(I.score(e, w, 1000), 10 * 0.05 * 1000, 1e-9, "ten minutes present = half an invader")
+	local list = I.shares({[1] = {name = "A", damage = 1000, presence = 120}}, w, 1000, 0)
+	eq(list[1].presence, 120, "shares carry the presence")
+	-- an AFK character next to the fight: one hit, then idle for the rest earns only the hit
+	local afk = {}
+	I.credit(afk, 9, "Afk", "damage", 50, 0)
+	for t = 1, 1200 do
+		I.presenceTick(afk, 9, t, true, w)
+	end
+	eq(afk[9].presence, 60, "the idle character's time stops after activeSeconds")
+	ok(cfg.contribution.presence > 0 and cfg.contribution.activeSeconds > 0, "O393: presence configured")
 end
 
 -- ------------------------------------------------------------------ engine: the boss unique by the boss's type
@@ -597,6 +673,15 @@ do
 	eq(ChaosInvasion.npcPrice(100, {x = 150, y = 150, z = 7}, "sell"), 75, "occupied: the config's sell factor")
 	eq(ChaosInvasion.npcPrice(100, {x = 10, y = 10, z = 7}, "buy"), 100, "an NPC elsewhere: the base price")
 	st.phase, st.area = "idle", oldArea
+	-- O393: the players who count for the gate and the level (minLevel and up, no tester bots)
+	local function pl(lv, tester) return {getLevel = function() return lv end, tester = tester} end
+	local oldPlayers, oldTester = Game.getPlayers, Chaos.isTester
+	Game.getPlayers = function() return {pl(10), pl(200), pl(400, true), pl(cfg.minLevel)} end
+	Chaos.isTester = function(p) return p.tester == true end
+	local lv = ChaosInvasion.onlineLevels()
+	eq(#lv, 2, "online levels: below minLevel and the tester bot left out")
+	ok(ChaosInvasion.statusText():find("Gate (O393): 2 of " .. cfg.gate.minOnline, 1, true) ~= nil, "status names the gate")
+	Game.getPlayers, Chaos.isTester = oldPlayers, oldTester
 	setmetatable(_G, nil)
 end
 

@@ -789,6 +789,7 @@ jobs:
           python3 -I server/tools/exercise_charges_patch_test.py
           python3 -I server/tools/patch_exercise_weapons_test.py  # one melee training weapon: stock lines, descriptions, NPC lists
           python3 -I server/tools/patch_skill_stages_test.py  # skill and magic level stages x5 from 101: synthetic copies, idempotent, CRLF, refusals
+          python3 -I server/tools/install_professions_test.py  # O395: refining recipes join the base crafting books once (luajit and lua5.3 load the patched book)
           python3 -I server/tools/rarity_stock_patch_test.py  # the seven rarities: the stock roll of default_onDropLoot.lua
           python3 -I server/tools/patch_base_throwables_test.py  # stackable throwing weapons leave loot, shops and rewards
           python3 -I server/tools/retire_cure_spells_test.py  # the stock cure spells and Hawkeye leave spells.xml
@@ -1048,6 +1049,7 @@ jobs:
           python3 -I server/tools/patch_spawn_fields_test.py  # small fire under the base spawns in fire lairs
           python3 -I server/tools/patch_map_fixes_test.py  # broken teleports, the sea round the hall, the temple portal gallery
           python3 -I server/tools/patch_start_chest_test.py  # the base starter chest cut off the map, its script disabled
+          python3 -I server/tools/patch_temple_tidy_test.py  # O386: the east purple teleport and clutter off Cinderhold's temple
 
       - name: "Map master (pack, verify, unpack and install of the owner's edited map; synthetic OTBM)"
         run: python3 -I server/tools/map_master_test.py
@@ -1086,6 +1088,9 @@ jobs:
 
       - name: Base rain off in config.lua (patch_base_rain.py, install_all step baserain)
         run: python3 -I server/tools/patch_base_rain_test.py
+
+      - name: Base waypoints open for everyone (patch_base_waypoints.py, install_all step waypoints, O386)
+        run: python3 -I server/tools/patch_base_waypoints_test.py
 
       - name: Monster level without skull or spread (src-patch 0082)
         run: python3 -I server/tools/monster_level_patch_test.py
@@ -1172,6 +1177,12 @@ jobs:
 
       - name: New player funnel and survey report (newplayer_report_test.py; grouped funnel query, small numbers, survey texts, O374)
         run: python3 -I server/tools/newplayer_report_test.py
+
+      - name: Game health report (game_health_test.py; online per hour, hunts, deaths, gold, funnel, small numbers, O397)
+        run: python3 -I server/tools/game_health_test.py
+
+      - name: Season balance report (balance_report_test.py; class table, flags against the median, suggestions, season window, O398)
+        run: python3 -I server/tools/balance_report_test.py
 
       - name: Tester bots coverage table up to date, scenarios never out of scope
         run: |
@@ -1319,7 +1330,7 @@ jobs:
           shellcheck server/deploy/chaos-ctl.sh
           python3 -I server/deploy/chaos_ctl_test.py
 
-      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; plain JVM)
+      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; Saúde do jogo parsing; plain JVM)
         run: |
           mkdir -p /tmp/appjava
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/DiscordInfo.java android/app/src/test/java/com/cindersofchaos/admin/DiscordInfoTest.java
@@ -1330,6 +1341,8 @@ jobs:
           java -cp /tmp/appjava com.cindersofchaos.admin.ServerUserInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/NewPlayerInfo.java android/app/src/test/java/com/cindersofchaos/admin/NewPlayerInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.NewPlayerInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/GameHealthInfo.java android/app/src/test/java/com/cindersofchaos/admin/GameHealthInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.GameHealthInfoTest
 
       - name: Kit server update (chaos_kit_update.sh with a fake repo, releases, systemctl and database; rates, rollback)
         run: |

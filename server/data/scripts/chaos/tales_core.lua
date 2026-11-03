@@ -6,8 +6,10 @@
 -- second storage counts the kills of the current kill step. Steps: kill (credit by monster type or shown name),
 -- deliver (items handed over at the Archivist), report (talk to her), visit (stand near a place: tales.lua checks
 -- the characters with such a step every few seconds) and talk (speak with another NPC of ours: the NPC's script
--- calls M.talkTo). kill, visit and talk are done in the field; deliver and report at the Archivist. A tale may need
--- another one done first (`requires`): the chains.
+-- calls M.talkTo) and elite (O396: go to a place; a named elite rises there for the character, tales.lua spawns it;
+-- killing it, by its shown name, does the step). kill, visit, talk and elite are done in the field; deliver and report
+-- at the Archivist. A tale may need another one done first (`requires`): the chains. A saga (O396, `saga` and
+-- `chapter` on a tale; cfg.sagas) is a chain told as one story: the chapters done feed an achievement counter.
 
 ChaosTalesCore = ChaosTalesCore or {}
 local M = ChaosTalesCore
@@ -218,9 +220,11 @@ function M.count(v)
 	return max(0, floor(tonumber(v) or 0))
 end
 
--- the step kinds: done in the field (kill, visit, talk) or at the Archivist (deliver, report)
-M.FIELD = {kill = true, visit = true, talk = true}
-M.KINDS = {kill = true, visit = true, talk = true, deliver = true, report = true}
+-- the step kinds: done in the field (kill, visit, talk, elite) or at the Archivist (deliver, report)
+M.FIELD = {kill = true, visit = true, talk = true, elite = true}
+M.KINDS = {kill = true, visit = true, talk = true, elite = true, deliver = true, report = true}
+-- the steps done by standing at a place (`pos`, `radius`): the watch list of tales.lua checks them
+M.PLACED = {visit = true, elite = true}
 
 -- "new", "on", "ready" (the current step is done at the Archivist) or "done"
 function M.status(t, state)
@@ -289,9 +293,9 @@ function M.current(t, state, kind)
 	return nil
 end
 
--- a visit step: is the position {x, y, z} at the step's place (same floor, within `radius` tiles; default 5)
+-- a visit or elite step: is the position {x, y, z} at the step's place (same floor, within `radius` tiles; default 5)
 function M.atPlace(step, pos)
-	if not step or step.kind ~= "visit" or type(pos) ~= "table" then
+	if not step or not M.PLACED[step.kind] or type(pos) ~= "table" or type(step.pos) ~= "table" then
 		return false
 	end
 	local p, r = step.pos, step.radius or 5
@@ -326,14 +330,73 @@ function M.talkTo(npcName, stateOf, setState)
 	return out
 end
 
--- does any tale of the character wait for a visit (tales.lua keeps those characters on its watch list)
+-- does any tale of the character wait for a visit or an elite (tales.lua keeps those characters on its watch list)
 function M.visiting(stateOf)
 	for _, t in ipairs(M.tales()) do
-		if M.current(t, stateOf(t), "visit") then
+		local state = stateOf(t)
+		if M.current(t, state, "visit") or M.current(t, state, "elite") then
 			return true
 		end
 	end
 	return false
+end
+
+-- the elite steps the character stands at now: {{tale = t, step = step}} (tales.lua raises their elites)
+function M.elitesAt(stateOf, pos)
+	local out = {}
+	for _, t in ipairs(M.tales()) do
+		local step = M.current(t, stateOf(t), "elite")
+		if step and M.atPlace(step, pos) then
+			out[#out + 1] = {tale = t, step = step}
+		end
+	end
+	return out
+end
+
+-- ------------------------------------------------------------------------------------------------ sagas (O396)
+function M.saga(key)
+	return (M.cfg().sagas or {})[key]
+end
+
+-- the chapters of a saga, by chapter number
+function M.chapters(sagaKey, cfg)
+	cfg = cfg or M.cfg()
+	local out = {}
+	for _, t in ipairs(cfg.tales) do
+		if t.saga == sagaKey then
+			out[#out + 1] = t
+		end
+	end
+	table.sort(out, function(a, b) return (a.chapter or 0) < (b.chapter or 0) end)
+	return out
+end
+
+-- how many chapters of the saga the character has done (stateOf(t) -> stored state)
+function M.sagaDone(sagaKey, stateOf)
+	local n = 0
+	for _, t in ipairs(M.chapters(sagaKey)) do
+		if M.state(t, stateOf(t)) == M.cfg().done then
+			n = n + 1
+		end
+	end
+	return n
+end
+
+-- the achievement counters of every saga: {{stat, value}}
+function M.sagaStats(stateOf)
+	local out = {}
+	local keys = {}
+	for k in pairs(M.cfg().sagas or {}) do
+		keys[#keys + 1] = k
+	end
+	table.sort(keys)
+	for _, k in ipairs(keys) do
+		local sg = M.cfg().sagas[k]
+		if sg.stat then
+			out[#out + 1] = {stat = sg.stat, value = M.sagaDone(k, stateOf)}
+		end
+	end
+	return out
 end
 
 -- the config's mistakes (the test, and tales.lua at startup): a list of lines, empty when sound
@@ -380,6 +443,11 @@ function M.problems(cfg)
 				bad(t, "step " .. i .. ": a talk needs npc and reply")
 			elseif step.kind == "deliver" and #(step.items or {}) < 1 then
 				bad(t, "step " .. i .. ": a delivery needs items")
+			elseif step.kind == "elite" and not (step.pos and step.pos.x and step.pos.y and step.pos.z
+				and type(step.monster) == "string" and type(step.name) == "string") then
+				bad(t, "step " .. i .. ": an elite needs pos, monster and name")
+			elseif step.kind == "elite" and step.name:lower() == step.monster:lower() then
+				bad(t, "step " .. i .. ": an elite's name must differ from its monster (the kill counts by the name)")
 			end
 		end
 		local last = t.steps[#t.steps]
@@ -394,6 +462,18 @@ function M.problems(cfg)
 				bad(t, "requires a tale of a higher level")
 			end
 		end
+		if t.saga then
+			if not (cfg.sagas or {})[t.saga] then
+				bad(t, "unknown saga " .. tostring(t.saga))
+			elseif type(t.chapter) ~= "number" then
+				bad(t, "a saga's tale needs a chapter number")
+			elseif t.chapter > 1 then
+				local r = byKey[t.requires or ""]
+				if not r or r.saga ~= t.saga or r.chapter ~= t.chapter - 1 then
+					bad(t, "chapter " .. t.chapter .. " must require chapter " .. (t.chapter - 1) .. " of its saga")
+				end
+			end
+		end
 	end
 	return out
 end
@@ -403,6 +483,10 @@ local function eqName(a, b)
 end
 
 function M.matches(step, typeName, shownName)
+	if step and step.kind == "elite" then
+		-- only the shown name: a plain monster of the same type does not count
+		return eqName(step.name, shownName) or false
+	end
 	if not step or step.kind ~= "kill" then
 		return false
 	end
@@ -425,7 +509,7 @@ function M.addKill(t, state, count, typeName, shownName)
 		return state, count, nil
 	end
 	count = count + 1
-	if count >= step.count then
+	if count >= (step.count or 1) then
 		return M.advance(t, state), 0, "step"
 	end
 	return state, count, "progress"

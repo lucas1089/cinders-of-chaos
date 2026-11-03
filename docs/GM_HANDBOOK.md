@@ -47,9 +47,10 @@ access flag (gamemaster or higher).
 | `/rift key <tier> [count \| mods]`, `/rift omen`, `/rift fragments` | **5+** | Rift Keys, Omen Keys and fragments for staff test characters |
 | `/worldboss start [name\|number\|random]`, `stop`, `arena` | 4+ | the world boss event |
 | `/invasion start <area\|random> [faction]`, `stop`, `status`, `schedule <minutes> ...` | 4+ | invasions |
+| `/rumours`, `/rumours spawn` | 4+ | tavern rumours (O394): what Dorrin Alewright knows now, the planned rare appearances; spawn the next one now |
 | `/siege start\|match\|end\|stop\|portal\|arena [n]\|signup <guild>\|clear` | 4+ | the guild siege |
 | `/arena stop\|slots`, `/bg stop\|slots\|min <n>\|off\|on`, `/marches` | 4+ (`/marches embers`: **5+**) | arena, battleground, Scorched Marches |
-| `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial` | 4+ (`/raid marks`, `/descent sigil`, `/trial tokens`: **5+**) | the instanced content: runs, phases |
+| `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial`, `/challenge` | 4+ (`/raid marks`, `/descent sigil`, `/trial tokens`: **5+**) | the instanced content: runs, phases (`/challenge`: the Weekly Challenge's built week, theme and seed) |
 | `/ascended sigil\|shards\|relic, <kind>` | **5+** | Ascended test items for staff test characters |
 | `/instances`, `/instances <type>`, `/instances close <type> <id>`, `/instances line [type]` | 4+ | every running instance (rift, descent, raid, ascended, guildboss, trials, ascension, tower, dungeon, arena, battleground, worldboss, siege, tutorial, bossroom) with its id, time left, players and idle grace; close one by its system's failure rule (nobody gets a reward, nothing is refunded that a time-out would not refund); who waits in line for a free slot (server/README.md "Instance limits") |
 | `/community status\|modifier <key>\|modifier auto\|add <points>\|stage <n>` | 4+ (`add`: **5+**) | the community goal and the weekly modifier |

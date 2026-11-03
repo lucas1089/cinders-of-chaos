@@ -14,6 +14,10 @@
 --   deaths      a death event registered at login: level band, area (instance, hunting place, nearest town), killer
 --               (monster type; "a player" for PvP: no names)
 --   spell casts ChaosSpellEvents "cast" (the same engine event the combat log reads): casts per class and spell
+--   hunts       (O397) the same sample: a character with hunting time or kills in it counts in its hunt (instance
+--               label, else the nearest hunt marker of data/chaos_poi.lua in poiRange): characters, seconds, kills
+--   classes     (O398) deaths per level band and class (the death event), damage dealt to monsters per level band and
+--               class (combatlog.lua CL.dealtHook: every hit the combat log attributes to a character or its summon)
 --   economy     faucets: loot value (hunt tracker), Loot Bag sales (ChaosAutoSell.sellBag wrapped), the corpse Auto
 --               Seller (needs the one-line hook ChaosTelemetry.economy in autosell.lua, server/README.md); sinks:
 --               supplies used (runes, potions, ammunition at the NPC price: the hunt tracker), respec and skill
@@ -54,6 +58,11 @@ end
 
 local function counted(player)
 	if not player then
+		return false
+	end
+	-- tester bots are left out like staff (live test 2026-11-03: 16 bots made the game health panel's online,
+	-- deaths and hunts and the balance report's classes; server/README.md "Tester bots": never counted)
+	if Chaos.isTester and Chaos.isTester(player) then
 		return false
 	end
 	local ok, gid = pcall(function() return player:getGroup():getId() end)
@@ -183,6 +192,15 @@ function T.sample(now)
 				local d = K.huntDelta(T.last[guid], cur, cfg.sampleSeconds)
 				T.last[guid] = cur
 				K.addHunt(T.acc, band, voc, guid, d)
+				if d.secs > 0 or d.kills > 0 then
+					local pos = player:getPosition()
+					local label
+					if Chaos.instanceAt then
+						local _, l = Chaos.instanceAt(pos)
+						label = l
+					end
+					K.addArea(T.acc, K.huntAreaOf({x = pos.x, y = pos.y, z = pos.z}, label, T.marks(), cfg), band, guid, d)
+				end
 				K.addEconomy(T.acc, "faucet", "loot", band, d.loot)
 				K.addEconomy(T.acc, "sink", "supplies", band, d.sup)
 			end
@@ -288,6 +306,18 @@ function T.installHooks()
 			T.onCast(player, name)
 		end)
 	end
+	if ChaosCombatLog and cfg.damage ~= false then
+		ChaosCombatLog.dealtHook = T.onDamage
+	end
+end
+
+-- O398: a hit the combat log gave to a character (its own or its summon's) on a monster
+function T.onDamage(owner, amount)
+	if cfg.enabled == false or cfg.damage == false or not counted(owner) then
+		return
+	end
+	T.rotate()
+	K.addDamage(T.acc, bandOf(owner), vocOf(owner), amount)
 end
 
 function T.onCast(player, name)
@@ -334,6 +364,7 @@ function T.onDeath(player, killer, mostDamageKiller)
 	end
 	T.rotate()
 	K.addDeath(T.acc, bandOf(player), area, K.killerOf(info))
+	K.addClassDeath(T.acc, bandOf(player), vocOf(player))
 end
 
 local death = CreatureEvent("ChaosTelemetryDeath")
@@ -439,9 +470,9 @@ function talk.onSay(player, words, param)
 		return false
 	end
 	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Telemetry hour %s UTC: %d samples, buckets hunt %d, " ..
-		"boss %d, deaths %d, casts %d, economy %d; %d characters with a hunt base.", os.date("!%Y-%m-%d %H:00", acc.hour),
-		acc.onlineSamples, K.count(acc.hunt), K.count(acc.boss), K.count(acc.deaths), K.count(acc.casts),
-		K.count(acc.economy), K.count(T.last)))
+		"boss %d, deaths %d, casts %d, economy %d, hunts %d, classes %d; %d characters with a hunt base.",
+		os.date("!%Y-%m-%d %H:00", acc.hour), acc.onlineSamples, K.count(acc.hunt), K.count(acc.boss), K.count(acc.deaths),
+		K.count(acc.casts), K.count(acc.economy), K.count(acc.area), K.count(acc.class), K.count(T.last)))
 	return false
 end
 talk:separator(" ")

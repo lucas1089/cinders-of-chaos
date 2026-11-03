@@ -123,9 +123,47 @@ function V.canApply(row, my, level)
   if type(row) ~= 'table' then return false, 'Gone' end
   if row.mine then return false, tr('Your group') end
   if row.ap then return false, 'Applied' end
-  if num(level) < num(row.ml) then return false, tr('Level %d+', num(row.ml)) end
+  if num(level) < num(row.ml) then return false, V.bandText(row) end
+  if num(row.xl) > 0 and num(level) > num(row.xl) then return false, V.bandText(row) end
   if #V.applyRoles(row, my) == 0 then return false, tr('No open role for you') end
   return true
+end
+
+-- O389: the level band of a row (ml = minimum, xl = maximum or none)
+function V.levelFits(row, level)
+  level = num(level)
+  if level < num(row and row.ml) then return false end
+  if num(row and row.xl) > 0 and level > num(row.xl) then return false end
+  return true
+end
+
+-- "Lv 300-450" / "Lv 300+"
+function V.bandShort(row)
+  if num(row.xl) > 0 then return string.format('Lv %d-%d', math.max(1, num(row.ml)), num(row.xl)) end
+  return string.format('Lv %d+', num(row.ml))
+end
+
+-- the refusal shown on the Apply button: "Level 300-450" / "Level 300+"
+function V.bandText(row)
+  if num(row.xl) > 0 then return tr('Level %d-%d', math.max(1, num(row.ml)), num(row.xl)) end
+  return tr('Level %d+', num(row.ml))
+end
+
+-- O389: the row's note line: the fixed note (server party_finder_config.lua notes, by index nk, in the reader's
+-- language) and the filtered free note
+function V.noteText(row, notes)
+  local parts = {}
+  local fixed = type(notes) == 'table' and notes[num(row and row.nk)] or nil
+  if fixed then parts[#parts + 1] = tr(fixed) end
+  if row and type(row.note) == 'string' and row.note ~= '' then parts[#parts + 1] = row.note end
+  return table.concat(parts, '  -  ')
+end
+
+-- O389: the level band a hunt target proposes (server K.buildActivities `bands`), or nil
+function V.targetBand(act, t)
+  local b = type(act) == 'table' and type(act.bands) == 'table' and act.bands[math.floor(num(t))] or nil
+  if type(b) ~= 'table' or not tonumber(b[1]) then return nil end
+  return math.floor(b[1]), math.floor(tonumber(b[2]) or b[1])
 end
 
 -- the rows the filters keep: f = {a = activity key or '', role = role key or '', fits = bool}, `level` the viewer's.
@@ -138,7 +176,7 @@ function V.filter(rows, f, level)
     if not row.mine then
       if f.a and f.a ~= '' and row.a ~= f.a then keep = false end
       if keep and f.role and f.role ~= '' and num(row.open and row.open[f.role]) <= 0 and row.ap ~= f.role then keep = false end
-      if keep and f.fits and num(level) < num(row.ml) then keep = false end
+      if keep and f.fits and not V.levelFits(row, level) then keep = false end
     end
     if keep then
       if row.mine then mine[#mine + 1] = row
@@ -161,7 +199,7 @@ function V.mentorTag(mt) return V.MENTOR_TAG[mt or ''] end
 function V.subLine(row, elapsed)
   local parts = { tostring(row.ld or '?') }
   if V.mentorTag(row.mt) then parts[#parts + 1] = V.mentorTag(row.mt) end
-  if num(row.ml) > 1 then parts[#parts + 1] = string.format('Lv %d+', num(row.ml)) end
+  if num(row.ml) > 1 or num(row.xl) > 0 then parts[#parts + 1] = V.bandShort(row) end
   parts[#parts + 1] = V.timeLeft(num(row.left) - num(elapsed)) .. ' left'
   if row.season then parts[#parts + 1] = 'Season' end
   return table.concat(parts, '  -  ')
@@ -190,12 +228,15 @@ local function int(v)
 end
 
 -- the post input from the form's values (texts and combo data); clamps ranges into the activity's bounds
--- f = {a, lo, hi, t, title, tank, healer, dps, minLevel, note, exp, role, auto}
+-- f = {a, lo, hi, t, title, tank, healer, dps, minLevel, maxLevel, nk, note, exp, role, auto}
 function V.postInput(acts, f)
   local act = V.activityOf(acts, f.a)
   local input = { a = f.a, role = f.role, exp = int(f.exp), note = tostring(f.note or ''), auto = f.auto and true or false,
     want = { tank = int(f.tank) or 0, healer = int(f.healer) or 0, dps = int(f.dps) or 0 },
-    minLevel = math.max(1, int(f.minLevel) or 1) }
+    minLevel = math.max(1, int(f.minLevel) or 1), nk = math.max(0, int(f.nk) or 0) }
+  -- O389: the top of the level band, empty or 0 = none; never under the minimum
+  local maxLevel = int(f.maxLevel) or 0
+  input.maxLevel = maxLevel > 0 and math.max(maxLevel, input.minLevel) or 0
   local kind = V.formKind(act)
   if kind == 'range' then
     local lo = int(f.lo) or act.range.min

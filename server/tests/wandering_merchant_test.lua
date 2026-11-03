@@ -40,11 +40,15 @@ function NpcHandler:new()
 end
 NpcSystem = {parseParameters = function() end}
 ShopModule = {}
+local shopRef
+local saleOk = true
 function ShopModule:new()
-	return {addBuyableItem = function(_, names, id, price)
+	shopRef = {addBuyableItem = function(_, names, id, price)
 		buyable[#buyable + 1] = {name = names[1], id = id, price = price}
 		nodes[#nodes + 1] = {keys = {"buy", names[1]}, shop = true}
-	end}
+	end,
+	callbackOnBuy = function() return saleOk end}
+	return shopRef
 end
 FocusModule = {new = function() return {} end}
 CALLBACK_ONBUY = 10
@@ -82,7 +86,11 @@ function Player(cid)
 	return players[cid]
 end
 local function makePlayer(cid, guid)
+	local store = {}
 	players[cid] = {
+		store = store,
+		getStorageValue = function(_, k) return store[k] or -1 end,
+		setStorageValue = function(_, k, v) store[k] = v end,
 		getGuid = function() return guid end,
 		sendCancelMessage = function(_, text) cancels[#cancels + 1] = text end
 	}
@@ -126,11 +134,39 @@ ok(onBuy(3, 28095) == true, "migrated season character buys the potion")
 
 local guard = nodes[guardIndex].cb
 ok(guard(2, "buy double experience potion") == true, "spoken buy refused for the season character")
-ok(guard(1, "buy double experience potion") == false, "spoken buy passes on to the shop for a standard character")
+ok(guard(1, "buy double experience potion") == true, "O399: a spoken buy is sent to the trade window (the limit lives there)")
+ok(said[#said].text:find("trade") ~= nil, "the NPC says to trade")
 
 -- no running season: everybody buys
 config["chaos_season_1_end"] = tostring(now - 1)
 ok(onBuy(2, 28095) == true, "after the season ends the potion is sold")
+
+-- O399: one of each per character and stop
+local m = cfg.worldEvents.merchant
+ok(m.resident == true and m.moveHours == 3 and m.perStop == 1, "resident, moves every 3 hours, one of each")
+ok(#items <= 10 and m.storageBase == 7103070, "the items fit the storage block 7103070 - 7103079")
+local orb = items[1]
+ok(orb.price >= 100000, "the orb of upheaval costs 100k or more")
+makePlayer(4, 104)
+ok(onBuy(4, orb.id, 1, 2) == false, "two at once are refused")
+ok(said[#said].text:find("One of each") ~= nil, "the NPC says one of each")
+ok(onBuy(4, orb.id, 1, 1) == true, "one is fine")
+-- the shop's sale marks the item (the wrapped callbackOnBuy)
+local shop = shopRef
+ok(shop and shop.callbackOnBuy ~= nil, "the shop's buy callback is wrapped")
+if shop and shop.callbackOnBuy then
+	ok(shop:callbackOnBuy(4, orb.id, 1, 1) == true, "the sale goes through")
+	ok(onBuy(4, orb.id, 1, 1) == false, "a second one in the same stop is refused")
+	ok(said[#said].text:find("move on in") ~= nil, "the NPC says when he moves on")
+	ok(onBuy(4, items[2].id, 1, 1) == true, "another item is still fine")
+	saleOk = false
+	ok(shop:callbackOnBuy(4, items[2].id, 1, 1) == false, "a failed sale (no gold)")
+	ok(onBuy(4, items[2].id, 1, 1) == true, "does not count")
+	-- the next stop: the mark is for the old one
+	local period = m.moveHours * 3600
+	players[4].store[m.storageBase] = math.floor(os.time() / period)
+	ok(onBuy(4, orb.id, 1, 1) == true, "a mark of the previous stop does not count")
+end
 
 print(string.format("wandering merchant tests: %d checks, %d failed", checks, fails))
 if fails > 0 then

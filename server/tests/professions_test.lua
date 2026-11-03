@@ -211,6 +211,172 @@ check(worst > 0.05, "the professions are worth something (best share " .. worst 
 eq(K.gathersPerHour(cfg, "delving", 1), 100, "10 nodes, 6 minutes: 100 gathers an hour")
 eq(K.gathersPerHour(cfg, "angling", 1), 120, "angling: 1200 rolls, 10%")
 
+-- ---------------------------------------------------------------- O395: perks, by-products, refining, hunt nodes
+do
+	local tot, got = K.perks(cfg, "delving", 1)
+	eq(#got, 0, "no perk at level 1")
+	eq(tot.channel, 1, "full channel at level 1")
+	tot, got = K.perks(cfg, "delving", 50)
+	eq(#got, 2, "two perks at 50")
+	eq(tot.channel, 0.8, "the channel perk")
+	eq(K.channelMs(cfg, "delving", 24), 3000, "3 s below 25")
+	eq(K.channelMs(cfg, "delving", 25), 2400, "2.4 s from 25")
+	eq(K.channelMs(cfg, "angling", 100), 0, "angling has no channel")
+	eq(K.byproductChance(cfg, "delving", 49), 0.10, "by-products 10% below 50")
+	check(math.abs(K.byproductChance(cfg, "delving", 50) - 0.15) < 1e-9, "15% from 50")
+	check(math.abs(K.byproductChance(cfg, "angling", 100) - 0.07) < 1e-9, "angling 7% at 100")
+	eq(K.byproductChance(cfg, "flaying", 100), 0, "flaying has no by-products")
+	check(math.abs(K.flayChance(cfg, 50) - 0.45) < 1e-9, "the flay perk")
+	eq(K.flayChance(cfg, 49), cfg.flaying.chance, "no flay perk below 50")
+	local fresh = K.newPerks(cfg, "wortcunning", 24, 51)
+	eq(#fresh, 2, "two perks reached from 24 to 51")
+	eq(fresh[1].name, "Quick Blade", "the first one first")
+	eq(#K.newPerks(cfg, "wortcunning", 25, 49), 0, "none between")
+	-- the by-product ids of a tier
+	eq(K.byproductId(cfg, "delving", 1, function(a, b) return a end), 26398, "delving tier 1: the first ore piece")
+	eq(K.byproductId(cfg, "wortcunning", 3, function(a, b) return b end), 26725, "a pick among two")
+	eq(K.byproductId(cfg, "flaying", 1, function(a) return a end), nil, "none for flaying")
+	-- resolve with a by-product chance: one more roll after the yield
+	local seq = {0.9, 0.9, 0.01, 1}
+	local i = 0
+	local r = K.resolve(cfg, idx, {prof = "delving", placeTier = 1, profLevel = 1, charLevel = 50, byChance = 0.1},
+		function(a, b)
+			i = i + 1
+			if a then
+				return a
+			end
+			return seq[i]
+		end)
+	eq(r.count, 1, "one ore")
+	eq(r.extra, 26398, "and a piece of ore")
+	r = K.resolve(cfg, idx, {prof = "delving", placeTier = 1, profLevel = 1, charLevel = 50}, function() return 0.01 end)
+	eq(r.extra, nil, "no by-product without a chance (the old callers)")
+	-- the lucky perk adds to the yield's lucky roll
+	r = K.resolve(cfg, idx, {prof = "delving", placeTier = 1, profLevel = 1, charLevel = 50, lucky = 0.02},
+		(function() local v = {0.9, 0.04} local j = 0 return function() j = j + 1 return v[j] end end)())
+	eq(r.count, 2, "lucky 3% + 2%: a roll of 0.04 gives one more")
+	check(K.avgYield(cfg, 1, 100, 0.02) > K.avgYield(cfg, 1, 100), "the lucky perk in the average")
+
+	-- the item price table: every by-product sells for the model's price; no refining recipe makes gold
+	local prices = dofile("data/lib/chaos_item_prices_data.lua").prices
+	for prof, list in pairs(cfg.byproducts.ids) do
+		for t, ids in ipairs(list) do
+			for _, id in ipairs(ids) do
+				eq(prices[id], cfg.byproducts.price, "by-product " .. id .. " (" .. prof .. " tier " .. t .. ") price")
+			end
+		end
+	end
+	local problems = K.refineProblems(cfg, idx, function(id) return prices[id] end)
+	eq(#problems, 0, "no refining recipe makes gold: " .. table.concat(problems, "; "))
+	check(#K.refineProblems(cfg, idx, function() return 100000 end) > 0, "a too valuable product is reported")
+	eq(#K.refineRows(cfg, idx), 15, "fifteen refining recipes")
+	eq(K.refineBook(cfg, "delving"), "mining", "delving refines at the mining table")
+	eq(K.refineBook(cfg, "angling"), nil, "angling feeds by by-products only")
+	-- the products are materials of the base books (data/items/base_recipes.csv): every one is used by a stock recipe
+	local used = {}
+	for line in io.lines("data/items/base_recipes.csv") do
+		for id in (line:match("^%d+,%d+,%d+,%d+,%w+,(.*)$") or ""):gmatch("%d+x(%d+)") do
+			used[tonumber(id)] = true
+		end
+	end
+	for _, row in ipairs(K.refineRows(cfg, idx)) do
+		check(used[row.out], "refined product " .. row.out .. " is a material of a base recipe")
+	end
+	for _, list in pairs(cfg.byproducts.ids) do
+		for _, ids in ipairs(list) do
+			for _, id in ipairs(ids) do
+				check(used[id], "by-product " .. id .. " is a material of a base recipe")
+			end
+		end
+	end
+	-- the recipes of a book in the base books' format
+	local rec = K.recipes(cfg, idx, "mining", function(id) return id == 26398 and "piece of bronze" or nil end)
+	eq(#rec, 5, "five mining recipes")
+	eq(rec[1].name, "Piece of bronze", "named after the product, capitalised")
+	eq(rec[2].name, "Refined bloodiron ore", "a fallback name")
+	eq(rec[1].materials[1].id, 32351, "ashstone ore in")
+	eq(rec[1].materials[1].count, 2, "two of them")
+	check(rec[1].chaosProfession and rec[1].storage == 0 and rec[1].storageText == "", "tagged, no storage")
+	-- the library the books load: once per list
+	dofile("data/lib/chaos_profession_recipes.lua")
+	local list = {{id = 1}}
+	eq(ChaosProfessionRecipes.addRecipes(list, "herbalist"), 5, "five herbalist recipes added")
+	eq(ChaosProfessionRecipes.addRecipes(list, "herbalist"), 0, "a second load adds nothing")
+	eq(#list, 6, "the stock recipe and five")
+	eq(table.concat(ChaosProfessionRecipes.books(), ","), "mining,herbalist,armorsmith", "the books")
+
+	-- the gold model counts the by-products and every perk; still below the share of hunting (checked above)
+	local delv = K.balance(cfg)[1]
+	check(math.abs(delv.by - 1800) < 1e-6, "delving tier 1: by-products 1,800 an hour (" .. delv.by .. ")")
+	check(math.abs(delv.gold - (100 * 1.65 * 30 + 1800)) < 1e-6, "delving tier 1: 6,750 an hour")
+	eq(K.gathersPerHour(cfg, "flaying", 1), 3600 / (2.0 + 10) * 0.45, "flaying with its perks")
+	-- a gatherer works one area: the busiest one of the tier, not the sum of every hunt's nodes
+	local more = {areas = {{tier = 1, nodes = {delving = 10}}, {tier = 1, nodes = {delving = 4}}, {tier = 1, nodes = {delving = 4}}}}
+	eq(K.nodesOfTier(cfg, "delving", 1, more.areas), 10, "the busiest area")
+
+	-- nodes in the hunts of the hall
+	local entries = {
+		{id = "base_a", name = "Low Hunt", level = {5, 11}, arrival = {x = 1000, y = 1000, z = 7}},
+		{id = "plan_b", name = "Mid Hunt", level = {120, 200}, arrival = {x = 2000, y = 2000, z = 8}},
+		{id = "plan_c", name = "Deep Hunt", level = {600, 700}, dest = {x = 3000, y = 3000, z = 9}},
+		{id = "plan_b", name = "Twice", level = {120, 200}, arrival = {x = 2100, y = 2000, z = 8}},
+		{id = "near", name = "Near Wolf Meadows", level = {10, 20}, arrival = {x = 32590, y = 32040, z = 7}},
+		{id = "nolevel", name = "No band", arrival = {x = 1, y = 1, z = 7}}
+	}
+	local ha = K.huntAreas(cfg, entries)
+	eq(#ha, 3, "three hunt areas (one twice, one near a fixed area, one without a band)")
+	eq(ha[1].key, "hunt_base_a", "keyed by the hunt id")
+	eq(ha[1].tier, 1, "levels 5-11: tier 1")
+	eq(ha[2].tier, 3, "levels 120+: tier 3")
+	eq(ha[3].tier, 5, "levels 600+: tier 5")
+	eq(ha[3].center.z, 9, "the destination's floor")
+	eq(ha[1].nodes.delving, cfg.huntNodes.nodes.delving, "the configured nodes")
+	check(ha[1].hunt and ha[1].fishing, "a hunt area with fishing")
+	local off = dofile("data/scripts/chaos/professions_config.lua")
+	off.huntNodes.enabled = false
+	eq(#K.huntAreas(off, entries), 0, "switched off")
+	-- the real hall: tools/hall_hunts.csv (the base hunts) all get a tier
+	local n = 0
+	for line in io.lines("tools/hall_hunts.csv") do
+		local id, z, x, y, dx, dy, dz, kind, name, level, lo, hi = line:match(
+			"^([^,#]+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%w[%w ]*),([^,]*),(%d+),(%d+),(%d+)")
+		if id and kind == "hunt" then
+			n = n + 1
+			local a = K.huntAreas(cfg, {{id = id, name = name, level = {tonumber(lo), tonumber(hi)},
+				arrival = {x = tonumber(dx), y = tonumber(dy), z = tonumber(dz)}}})
+			check(#a <= 1 and (not a[1] or (a[1].tier >= 1 and a[1].tier <= #cfg.tiers)), "hall hunt " .. id)
+		end
+	end
+	check(n >= 30, "the hall's hunts read (" .. n .. ")")
+
+	-- payload: perks, by-product chance and book per profession
+	local pl = K.payload(cfg, idx, {levels = {delving = {level = 60, xp = 0}}, charLevel = 300, demand = {}, sold = {},
+		have = {}, areas = {}})
+	local d = pl.profs[1]
+	eq(d.k, "delving", "delving first")
+	eq(#d.perks, 3, "three perks listed")
+	eq(d.perks[2].on, true, "Keen Eye reached at 60")
+	eq(d.perks[3].on, nil, "Rich Seam not yet")
+	eq(d.bp, 15, "15% by-products")
+	eq(d.book, "mining", "the book")
+	eq(pl.profs[4].book, nil, "angling has no book")
+
+	-- the perk names in pt-BR (the level up line names the perk in the player's language)
+	local pt = dofile("data/scripts/chaos/i18n_strings.lua")["pt-BR"]
+	for prof, list in pairs(cfg.perks) do
+		for _, pk in ipairs(list) do
+			eq(pt[pk.name], pk.pt, "pt-BR of the perk " .. pk.name)
+		end
+	end
+	-- broken O395 config parts are reported
+	local bad = dofile("data/scripts/chaos/professions_config.lua")
+	bad.perks.delving[2].level = 10
+	bad.perks.angling[1].kind = "gold"
+	bad.byproducts.ids.delving[5] = nil
+	bad.refine[2].prof = "nothing"
+	check(#K.validate(bad) >= 4, "broken perks, by-products and refining reported (" .. #K.validate(bad) .. ")")
+end
+
 -- ---------------------------------------------------------------- places
 do
 	local area = {key = "t", tier = 2, center = {x = 100, y = 100, z = 7}, r = 10, nodes = {delving = 6, wortcunning = 4},
@@ -732,6 +898,109 @@ for _, b in ipairs(lb.boards) do
 	end
 end
 check(found ~= nil and found.noReward == true, "the Gatherers board gives a title, no orbs")
+
+-- ---------------------------------------------------------------- O395 in the engine
+do
+	local g = newPlayer(9, 300, 500, 500)
+	local toasts = {}
+	function g:sendExtendedOpcode(opc, text) toasts[#toasts + 1] = json.decode(text) end
+	events.ChaosProfessionsLogin.onLogin(g)
+	g.inv[2553] = 1
+	-- Delving 24 -> a gather that levels it to 25: the level up toast and the new perk
+	local S = P.players[9]
+	S.levels.delving = {level = 24, xp = K.xpNeed(cfg, 24) - 1, gathered = 0}
+	local vein = Tile({x = 501, y = 500, z = 7}):getItemById(32372)
+	local realRandom = math.random
+	math.random = function(a, b)
+		if a then
+			return a
+		end
+		return 0.05 -- every roll hits: the yield, the lucky unit and the by-product
+	end
+	sent = {}
+	actions[1].onUse(g, vein, {x = 501, y = 500, z = 7})
+	local started
+	for _, s in ipairs(sent) do
+		if s.op == 231 and s.action == "start" then
+			started = s.data
+		end
+	end
+	eq(started and started.ms, 3000, "Delving 24: a 3 s channel")
+	run(3500)
+	math.random = realRandom
+	eq(S.levels.delving.level, 25, "levelled to 25")
+	check(g:getItemCount(26399) == 1, "a by-product of the vein's tier: piece 26399 (tier 2)")
+	local perkMsg, perkToast
+	for _, m in ipairs(g.messages) do
+		if tostring(m):find("New Delving perk: Steady Swing", 1, true) then
+			perkMsg = true
+		end
+		if tostring(m):find("crafting material", 1, true) then
+			g.byText = m
+		end
+	end
+	for _, t in ipairs(toasts) do
+		if t.action == "journey" and tostring(t.message):find("Steady Swing", 1, true) then
+			perkToast = true
+		end
+	end
+	check(perkMsg, "the perk message")
+	check(perkToast, "the perk toast")
+	has(g.byText, "Also found: 1 item", "the by-product line")
+	-- from 25 the channel is shorter (another node, the first is on cooldown)
+	local other
+	for _, nd in pairs(P.nodes) do
+		if nd.area == "test_area" and nd.prof == "delving" and nd.key ~= "501:500:7" and not other then
+			other = nd
+		end
+	end
+	g.pos = {x = other.pos.x, y = other.pos.y + 1, z = 7}
+	sent = {}
+	actions[1].onUse(g, Tile(other.pos):getItemById(other.id), other.pos)
+	started = nil
+	for _, s in ipairs(sent) do
+		if s.op == 231 and s.action == "start" then
+			started = s.data
+		end
+	end
+	eq(started and started.ms, 2400, "Delving 25: a 2.4 s channel")
+	run(3000)
+	-- the window lists the perks
+	local stg = (function()
+		sent = {}
+		events.ChaosProfessionsExtended.onExtendedOpcode(g, 195, json.encode({action = "open"}))
+		for _, s in ipairs(sent) do
+			if s.action == "state" then
+				return s.data
+			end
+		end
+	end)()
+	eq(stg.profs[1].perks[1].on, true, "Steady Swing on in the window")
+	eq(stg.profs[1].book, "mining", "the book in the window")
+
+	-- the hunts of the hall become areas (hunt_teleports.lua index), once
+	ChaosHuntTeleports = {idx = {list = {{id = "plan_x", name = "Plan X", level = {130, 200}, arrival = {x = 600, y = 600, z = 7}}},
+		base = {{id = "base_y", name = "Base Y", level = {8, 14}, arrival = {x = 700, y = 700, z = 7}}}}}
+	for x = 690, 710 do
+		for y = 690, 710 do
+			newTile(x, y, 7)
+		end
+	end
+	local before = #P.cfg.areas
+	eq(P.addHuntAreas(), 2, "two hunt areas")
+	eq(P.addHuntAreas(), 0, "not twice")
+	eq(#P.cfg.areas, before + 2, "added to the areas")
+	check(P.idx.area.hunt_plan_x and P.idx.area.hunt_plan_x.tier == 3, "the content hunt at tier 3")
+	P.placeNodes()
+	local inHunt = 0
+	for _, nd in pairs(P.nodes) do
+		if nd.area == "hunt_base_y" then
+			inHunt = inHunt + 1
+		end
+	end
+	eq(inHunt, cfg.huntNodes.nodes.delving + cfg.huntNodes.nodes.wortcunning, "nodes placed in the base hunt")
+	ChaosHuntTeleports = nil
+end
 
 print(string.format("professions_test: %d checks, %d failures", count, failures))
 if failures > 0 then

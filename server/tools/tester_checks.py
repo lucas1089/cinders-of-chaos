@@ -340,7 +340,7 @@ def shared_kill_problems(kill, share_of_1000):
     if int(so.get('leader') or 0) <= 0:
         return 'the solo kill paid the leader nothing (no experience from this monster here)', []
     out = []
-    if int(so.get('partner') or 0) != 0:
+    if int(so.get('partner') or 0) != 0 and not so.get('partnerHit'):
         out.append('a solo kill of the leader paid the partner %s experience' % so['partner'])
     if sh.get('enabled'):
         if int(sh.get('partner') or 0) <= 0:
@@ -351,7 +351,8 @@ def shared_kill_problems(kill, share_of_1000):
             if abs(got / want - 1) > KILL_TOLERANCE:
                 out.append('the leader got %.0f%% of a solo kill with the share working, Party:onShareExperience pays %.0f%%' % (
                     got * 100, want * 100))
-    elif int(sh.get('partner') or 0) > 0:
+    elif int(sh.get('partner') or 0) > 0 and not sh.get('partnerHit'):
+        # a partner that hit the monster earns its damage share without the share (engine rule, no failure)
         out.append('the partner got %s experience from a kill with the share not working' % sh['partner'])
     return None, out
 

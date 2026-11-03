@@ -89,6 +89,10 @@ class Config:
     def changes_path(self):
         return os.path.join(self.data_dir, CHANGES_FILE)
 
+    @property
+    def outbox_dir(self):
+        return os.path.join(self.data_dir, OUTBOX_DIR)
+
 
 def load_config(env):
     """Settings from a mapping (os.environ). Raises BotError naming the missing or bad KEYS, never their values."""
@@ -1207,6 +1211,61 @@ def sync_new_notes(src_dir, dst_dir, uid=None, gid=None):
         os.replace(tmp, dst)
         done.append(name)
     return done
+
+
+# ---------------------------------------------------------------- the owner's outbox (O398)
+# chaos-ctl.sh (root) drops a text file into DATA/outbox (balance-report --dm: the season balance report); the bot sends
+# each one to the owner as DMs and deletes it. Only plain names, only .md / .txt, at most OUTBOX_MAX_CHARS per file.
+OUTBOX_DIR = 'outbox'
+OUTBOX_MAX_CHARS = 20000
+DM_LIMIT = 1900
+
+
+def outbox_files(directory):
+    """the files waiting in the outbox, oldest name first"""
+    if not os.path.isdir(directory):
+        return []
+    out = []
+    for name in sorted(os.listdir(directory)):
+        if name.startswith('.') or not re.fullmatch(r'[0-9A-Za-z._-]{1,80}', name) or \
+                not (name.endswith('.md') or name.endswith('.txt')):
+            continue
+        path = os.path.join(directory, name)
+        if os.path.isfile(path) and not os.path.islink(path):
+            out.append(path)
+    return out
+
+
+def read_outbox(path, max_chars=OUTBOX_MAX_CHARS):
+    """the text of an outbox file: UTF-8, control characters out (newlines kept), at most max_chars"""
+    with open(path, 'rb') as f:
+        raw = f.read(max_chars * 4 + 4)
+    text = raw.decode('utf-8', 'replace')
+    text = ''.join(c for c in text if c == '\n' or (c >= ' ' and c != '\x7f' and not 0x200b <= ord(c) <= 0x200f
+                                                     and not 0x202a <= ord(c) <= 0x202e and c != '\ufeff'))
+    if len(text) > max_chars:
+        text = text[:max_chars].rsplit('\n', 1)[0] + '\n(...)'
+    return text.strip()
+
+
+def split_message(text, limit=DM_LIMIT):
+    """pieces of at most limit characters, cut at line ends (a longer line is cut hard)"""
+    parts, cur = [], ''
+    for line in text.split('\n'):
+        while len(line) > limit:
+            if cur:
+                parts.append(cur)
+                cur = ''
+            parts.append(line[:limit])
+            line = line[limit:]
+        if cur and len(cur) + 1 + len(line) > limit:
+            parts.append(cur)
+            cur = line
+        else:
+            cur = cur + '\n' + line if cur else line
+    if cur.strip():
+        parts.append(cur)
+    return [p for p in parts if p.strip()]
 
 
 def main(argv):

@@ -67,9 +67,9 @@ HowData = {
 			{id = "often", en = "Once a week: Saturday at 20:00. Sign-ups close 5 minutes before. The match lasts 25 minutes.", pt = "Uma vez por semana: sábado às 20:00. As inscrições fecham 5 minutos antes. A partida dura 25 minutos."}
 		}},
 		{key = "invasion", title = {en = "Invasions", pt = "Invasões"}, window = "game_chaosinfo", unlocks = {"events"}, goals = {"invasion1"}, rows = {
-			{id = "who", en = "Level 30+, near the invaded area. The more defenders, the bigger the waves.", pt = "Nível 30+, perto da área invadida. Quanto mais defensores, maiores as ondas."},
-			{id = "levels", en = "The invaders are scaled to the level of the area.", pt = "Os invasores seguem o nível da área."},
-			{id = "drops", en = "A reward by how much you helped. Players below level 30 get none.", pt = "Uma recompensa conforme a sua ajuda. Quem está abaixo do nível 30 não ganha nada."},
+			{id = "who", en = "Level 30+, near the invaded area. The more defenders, the bigger the waves. It needs 3 players online.", pt = "Nível 30+, perto da área invadida. Quanto mais defensores, maiores as ondas. Precisa de 3 jogadores online."},
+			{id = "levels", en = "The invaders follow the level of the area, raised towards the level of the players online.", pt = "Os invasores seguem o nível da área, puxado para o nível dos jogadores online."},
+			{id = "drops", en = "A reward by your part: damage, healing, kills and time in the fight. Time counts only while you hit, heal or kill at least every 60 seconds. Players below level 30 get none.", pt = "Uma recompensa pela sua parte: dano, cura, abates e tempo na luta. O tempo só conta se você bater, curar ou abater pelo menos a cada 60 segundos. Quem está abaixo do nível 30 não ganha nada."},
 			{id = "death", en = "A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half.", pt = "Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade."},
 			{id = "often", en = "Every week: Wednesday 19:30 and Sunday 17:30. Some days bring a surprise invasion (35% of days). Each one lasts 20 minutes at most, with 5 waves; the last has a boss.", pt = "Toda semana: quarta-feira 19:30 e domingo 17:30. Alguns dias trazem uma invasão surpresa (35% dos dias). Cada uma dura no máximo 20 minutos, com 5 ondas; a última tem um chefe."}
 		}},
@@ -146,7 +146,7 @@ HowData = {
 			{id = "often", en = "A charm works only while it sits in an open cell. Place and move charms out of combat, as often as you like.", pt = "Um amuleto só funciona numa casa aberta. Coloque e mova amuletos fora de combate, quantas vezes quiser."}
 		}},
 		{key = "achievements", title = {en = "Achievements", pt = "Conquistas"}, window = "game_achievements", rows = {
-			{id = "what", en = "189 achievements in 11 groups, from leveling and monsters to bosses, rifts, crafting and PvP. 12 stay secret until you earn them.", pt = "189 conquistas em 11 grupos, de subir de nível e monstros a chefes, fendas, criação e PvP. 12 ficam secretas até você conseguir."},
+			{id = "what", en = "192 achievements in 11 groups, from leveling and monsters to bosses, rifts, crafting and PvP. 12 stay secret until you earn them.", pt = "192 conquistas em 11 grupos, de subir de nível e monstros a chefes, fendas, criação e PvP. 12 ficam secretas até você conseguir."},
 			{id = "who", en = "Every player. Most unlock by themselves while you play.", pt = "Todo jogador. A maioria libera sozinha enquanto você joga."},
 			{id = "drops", en = "Achievement points; many also give a title, gold, items, an outfit, a mount or a portal style. Finish every achievement of a group for its own title.", pt = "Pontos de conquista; muitas também dão um título, ouro, itens, um traje, uma montaria ou um estilo de portal. Complete todas as conquistas de um grupo para ganhar o título dele."},
 			{id = "often", en = "Once each. Progress never goes back. Pick a title you earned in this window.", pt = "Uma vez cada. O progresso nunca volta. Escolha um título que você ganhou nesta janela."}
@@ -187,7 +187,7 @@ HowData = {
 		}},
 		{key = "partyfinder", title = {en = "Party Finder", pt = "Procurar Grupo"}, window = "game_partyfinder", rows = {
 			{id = "what", en = "Find a group, or players for yours: post what you want to do and the roles you need (tank, healer, damage), or apply to a listing.", pt = "Ache um grupo, ou jogadores para o seu: anuncie o que quer fazer e as funções que precisa (tank, healer, dano), ou candidate-se a um anúncio."},
-			{id = "who", en = "Every player. Activities: Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial and Battleground, or anything else.", pt = "Todo jogador. Atividades: Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial e Battleground, ou qualquer outra coisa."},
+			{id = "who", en = "Every player. Activities: Hunt, Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial and Battleground, or anything else.", pt = "Todo jogador. Atividades: Hunt, Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial e Battleground, ou qualquer outra coisa."},
 			{id = "often", en = "A listing closes by itself after 15 to 120 minutes, as you choose. You can have 5 applications open at once.", pt = "Um anúncio fecha sozinho após 15 a 120 minutos, como você escolher. Você pode ter 5 candidaturas abertas ao mesmo tempo."}
 		}},
 		{key = "mentor", title = {en = "Mentors", pt = "Mentores"}, window = "game_mentor", rows = {

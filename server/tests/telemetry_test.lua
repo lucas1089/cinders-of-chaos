@@ -109,6 +109,31 @@ eq(K.areaOf({x = 1105, y = 1102, z = 13}, nil, marks, cfg), "near Cinderhold", "
 eq(K.areaOf({x = 2900, y = 2950, z = 7}, nil, marks, cfg), "near Saltgrave", "out of range: the nearest temple")
 eq(K.areaOf({x = 1, y = 1, z = 7}, "Rift", marks, cfg), "Rift", "an instance first")
 eq(K.areaOf({x = 1, y = 1, z = 7}, nil, {}, cfg), "wild", "no marks")
+eq(K.huntAreaOf({x = 1105, y = 1102, z = 9}, nil, marks, cfg), "Ashen Caves", "O397: hunting in the nearest hunt")
+eq(K.huntAreaOf({x = 2900, y = 2950, z = 7}, nil, marks, cfg), nil, "O397: near a temple is no hunt")
+eq(K.huntAreaOf({x = 1, y = 1, z = 7}, "Rift", marks, cfg), "Rift", "O397: an instance is a hunt")
+
+-- O397 / O398: hunts, class deaths and damage
+local acc2 = K.newAcc(1791000000)
+check(K.addArea(acc2, "Ashen Caves", "300-499", 101, {secs = 300, kills = 4}), "a hunting sample in a hunt")
+check(K.addArea(acc2, "Ashen Caves", "300-499", 102, {secs = 0, kills = 2}), "kills alone count")
+check(K.addArea(acc2, "Ashen Caves", "300-499", 101, {secs = 120, kills = 1}), "the same character again")
+check(not K.addArea(acc2, "Ashen Caves", "300-499", 103, {secs = 0, kills = 0}), "an idle sample does not")
+check(not K.addArea(acc2, nil, "300-499", 103, {secs = 300, kills = 3}), "outside a hunt does not")
+eq(table.concat(K.rowsOf("area", acc2)[1], ","), "Ashen Caves,300-499,2,420,7", "area row: 2 characters, seconds, kills")
+K.addClassDeath(acc2, "300-499", 4)
+K.addClassDeath(acc2, "300-499", 4)
+check(K.addDamage(acc2, "300-499", 4, 1500.7), "damage")
+check(not K.addDamage(acc2, "300-499", 4, 0), "no damage for 0")
+check(K.addDamage(acc2, "1-99", 1, 20), "another class")
+local cls = K.rowsOf("class", acc2)
+eq(#cls, 2, "class rows")
+eq(table.concat(cls[2], ","), "300-499,4,2,1500", "class row: deaths, damage")
+local sql2 = table.concat(K.flushSql(acc2, cfg.tables, esc), "\n")
+check(sql2:find("INSERT INTO `chaos_telemetry_area`", 1, true) and sql2:find("INSERT INTO `chaos_telemetry_class`", 1, true),
+	"the new tables are written")
+check(not sql2:find("101", 1, true) and not sql2:find("102", 1, true), "no character id in the new rows")
+
 eq(K.killerOf({player = true}), "a player", "PvP: never a name")
 eq(K.killerOf({monster = "Cinder Imp"}), "Cinder Imp", "a monster")
 eq(K.killerOf(nil), "environment", "no killer")
@@ -116,7 +141,7 @@ eq(K.killerOf(nil), "environment", "no killer")
 -- ------------------------------------------------------------------ rollup, schema
 local roll = K.rollupSql(cfg.tables, 1790985600, 1700000000)
 eq(roll[1], "START TRANSACTION", "rollup in a transaction"); eq(roll[#roll], "COMMIT", "committed at the end")
-eq(#roll, 2 + 3 * 6, "copy, delete hourly, delete old daily per table")
+eq(#roll, 2 + 3 * 8, "copy, delete hourly, delete old daily per table")
 check(roll[2]:find("SELECT 'd', `at` - `at` % 86400 AS `day`", 1, true), "daily rows at the day start")
 check(roll[2]:find("WHERE `span` = 'h' AND `at` < 1790985600 GROUP BY `day`, `band`, `voc`", 1, true), "hunt grouped: " .. roll[2])
 check(roll[3] == "DELETE FROM `chaos_telemetry_hunt` WHERE `span` = 'h' AND `at` < 1790985600", "hourly rows deleted after the copy")
@@ -266,6 +291,9 @@ T.sample(clock)
 local hb = T.acc.hunt["300-499|4"]
 check(hb and hb.exp == 3000 and hb.loot == 400 and hb.sup == 100 and hb.kills == 10 and hb.secs == 300, "the second sample adds the delta")
 check(T.acc.economy["faucet|loot|300-499"].gold == 400 and T.acc.economy["sink|supplies|300-499"].gold == 100, "loot and supplies as economy")
+local ab = T.acc.area["Ashen Caves|300-499"]
+check(ab and ab.secs == 300 and ab.kills == 10 and K.count(ab.players) == 1, "O397: the hunting sample counts in its hunt")
+eq(K.count(T.acc.area), 1, "O397: only hunting characters in a hunt")
 
 -- hooks
 T.installHooks()
@@ -307,6 +335,10 @@ ChaosAutoSell.sellBag(players[2])
 eq(T.acc.economy["faucet|lootbag|100-299"].gold, 777, "a Loot Bag sale is a faucet")
 check(T.economy(players[1], "faucet", "autoseller", 120), "the public hook (corpse Auto Seller)")
 check(not T.economy(players[3], "faucet", "autoseller", 120), "staff never count")
+local bot = mkPlayer(9, 350, 4)
+function bot:getStorageValue(key) return key == Chaos.storage.tester and 1 or -1 end
+check(not T.economy(bot, "faucet", "autoseller", 120), "tester bots never count")
+creatures[bot:getId()] = nil
 
 -- casts
 local cast = ChaosSpellEvents.handlers.casttelemetry
@@ -328,6 +360,17 @@ for key in pairs(T.acc.deaths) do deathKeys[#deathKeys + 1] = key end
 table.sort(deathKeys)
 eq(table.concat(deathKeys, ";"), "100-299|Rift|a player;300-499|Ashen Caves|Cinder Imp;300-499|near Saltgrave|a player",
 	"deaths: area and killer, a summon's master is a player, no names")
+
+local cd = T.acc.class["300-499|4"]
+check(cd and cd.deaths == 2, "O398: deaths per class")
+eq(T.acc.class["100-299|11"].deaths, 1, "O398: the other class")
+-- damage through the combat log's hook
+ChaosCombatLog = {}
+T.installHooks()
+check(ChaosCombatLog.dealtHook == T.onDamage, "O398: the combat log's damage hook")
+ChaosCombatLog.dealtHook(players[1], 250)
+ChaosCombatLog.dealtHook(players[3], 999)
+eq(T.acc.class["300-499|4"].damage, 250, "O398: damage per class; staff left out")
 
 -- the hour ends: one async flush, no ids, a fresh hour
 async = {}
