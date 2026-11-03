@@ -3,7 +3,7 @@ Module
   description: Cinders of Chaos dark-fantasy UI theme (blackened iron, dried blood, ember gold). Provides reusable Chaos* styles.
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ chaos_theme ]
+  scripts: [ althelp, chaos_theme ]
   autoload: true
   autoload-priority: 500
   @onLoad: init()

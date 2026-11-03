@@ -1,12 +1,12 @@
 Module
   name: game_itemtooltip
-  description: Rich item tooltips from the server (extended opcode 242): rarity, item level, modifiers with tiers and ranges, sockets, uniques; Ctrl compares with the equipped item
+  description: Rich item tooltips from the server (extended opcode 242): rarity, item level, modifiers with tiers and ranges, sockets, uniques; Ctrl compares with the equipped item; Alt explains each term (itemhelp.lua)
   author: Cinders of Chaos
   website: None
   sandboxed: true
   autoload: true
   autoload-priority: 1000
-  scripts: [ tooltiplogic, item_tooltip ]
+  scripts: [ tooltiplogic, itemhelp, item_tooltip ]
   dependencies:
     - game_interface
   @onLoad: init()

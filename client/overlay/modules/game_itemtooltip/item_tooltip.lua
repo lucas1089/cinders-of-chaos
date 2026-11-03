@@ -3,7 +3,8 @@
 -- stats, every modifier with its tier and roll range, sockets and gems, unique and set (the pieces worn and the bonuses
 -- active; the cached set pieces are dropped when the equipment changes), requirements. Holding Ctrl
 -- shows the equipped item(s) worn the same way next to it, and the hovered tooltip lists the differences per stat
--- (green better, red worse).
+-- (green better, red worse). Holding Alt adds a plain line on what each term does (itemhelp.lua, O372); without Alt a
+-- hint line says so.
 -- Tooltips are cached by the item's per-item id and version (item custom attributes, game_itemrarity ChaosItemAttr):
 -- the version changes whenever the server changes the item (orbs, gems), so a changed item is asked for again.
 -- Items without those attributes (plain items, or a server without engine patch 0003) are cached for a short time
@@ -20,6 +21,7 @@ local C = L.COLORS
 
 local PAD_X, PAD_TOP, LINE_GAP, SEP_GAP = 8, 46, 1, 5
 local MIN_WIDTH = 190
+local HELP_WRAP = 54 -- characters per Alt help line (itemhelp.lua)
 local ASK_DELAY = 60 -- ms of hover before asking the server
 local PENDING_TIMEOUT = 2 -- s before an unanswered request may be sent again
 local CTRL_POLL = 100 -- ms
@@ -31,6 +33,7 @@ local hovered = nil -- {widget, item, pos, key, plain}
 local panels = {} -- the tooltip panels on screen (1 = hovered, then the compare ones)
 local askEvent, pollEvent
 local compareShown = false
+local helpShown = false -- the plate on screen has the Alt help lines (itemhelp.lua)
 local handlers = {}
 
 local function now()
@@ -91,6 +94,17 @@ local function needs(d)
   if L.cacheGet(cache, d.key, now()) then return false end
   local p = pending[L.posKey(d.pos, d.iid)]
   return not p or now() - p.at > PENDING_TIMEOUT or p.key ~= d.key
+end
+
+-- Alt held now (the shared helper of client_chaos_theme althelp.lua; this module polls it with Ctrl)
+local function altPressed()
+  local A = rawget(_G, 'ChaosAltHelp')
+  return A ~= nil and A.pressed()
+end
+
+local function altHint()
+  local A = rawget(_G, 'ChaosAltHelp')
+  return A and A.hint(tr) or tr('Hold Alt for what each line does.')
 end
 
 -- ---------------------------------------------------------------- panels
@@ -269,7 +283,22 @@ local function render()
   elseif tip.cmp then
     extra[#extra + 1] = { text = tr('Hold Ctrl to compare'), color = C.dim, sep = true }
   end
+  -- Alt (O372, itemhelp.lua): a plain line on what each term of the item does; without Alt a hint line
+  local wantHelp = altPressed()
+  local help = ItemTooltipHelp.lines(tip, tr)
+  if #help > 0 then
+    if wantHelp then
+      for i, line in ipairs(help) do
+        for j, part in ipairs(L.wrap(line, HELP_WRAP)) do
+          extra[#extra + 1] = { text = part, color = C.help, sep = i == 1 and j == 1 }
+        end
+      end
+    else
+      extra[#extra + 1] = { text = altHint(), color = C.dim, sep = not (tip.cmp and not wantCompare) }
+    end
+  end
   compareShown = wantCompare
+  helpShown = wantHelp
   panels[1] = buildPanel(tip, extra)
   for _, o in ipairs(others) do
     panels[#panels + 1] = buildPanel(o, nil, 'Equipped')
@@ -306,7 +335,7 @@ local function poll()
     return
   end
   local ctrl = g_keyboard.isCtrlPressed()
-  if #panels > 0 and ctrl ~= compareShown then
+  if #panels > 0 and (ctrl ~= compareShown or altPressed() ~= helpShown) then
     render()
   elseif #panels > 0 then
     place()
