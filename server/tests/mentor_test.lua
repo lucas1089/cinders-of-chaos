@@ -333,6 +333,30 @@ do
 	eq(K.tagOf({mentor = true}), "mentor", "mentor tag")
 	eq(K.tagOf({seeking = true}), "seeking", "seeking tag")
 	eq(K.tagOf({}), nil, "no tag")
+	-- the mentor offer (O371): when it is due, the card language against the character's
+	eq(cfg.storage.offer, Chaos.storage.mentor + 1, "offer storage in the mentor block")
+	ok(cfg.offer.level >= 10 and cfg.offer.level <= 15, "offered around level 10-15")
+	eq(K.offerDue(-1, 12, false, cfg), true, "due at the level")
+	eq(K.offerDue(-1, 11, false, cfg), false, "not below")
+	eq(K.offerDue(-1, cfg.apprentice.maxLevel + 1, false, cfg), false, "not past the apprentice level")
+	eq(K.offerDue(-1, 12, true, cfg), false, "once per login")
+	eq(K.offerDue(cfg.offer.maxShows, 12, false, cfg), false, "shown enough")
+	eq(K.offerDue(K.OFFER_DONE, 12, false, cfg), false, "done")
+	ok(K.langMatch("PT-BR", "pt-BR", cfg), "pt-BR card")
+	ok(K.langMatch("Portugues / English", "pt-BR", cfg), "Portugues")
+	ok(K.langMatch("Portugus", "pt-BR", cfg), "accent stripped by cleanText")
+	ok(K.langMatch("English, PT", "en", cfg), "English")
+	ok(not K.langMatch("Deutsch", "en", cfg), "another language")
+	ok(not K.langMatch("Enfermeiro", "en", cfg), "a word starting with en is no English")
+	ok(not K.langMatch("", "en", cfg), "no language on the card")
+	ok(not K.langMatch("en", "fr", cfg), "an unknown viewer language")
+	local s1, a1 = K.offerCount({{accountId = 1, accepting = true, active = 0, lang = "pt-br"},
+		{accountId = 2, accepting = true, active = 0, lang = "en"}, {accountId = 3, accepting = false, active = 0, lang = "pt"},
+		{accountId = 4, accepting = true, active = cfg.mentor.maxApprentices, lang = "pt"},
+		{accountId = 9, accepting = true, active = 0, lang = "pt"}}, {accountId = 9, lang = "pt-BR"}, cfg)
+	eq(s1, 1, "one free mentor in pt-BR") eq(a1, 2, "two free mentors (not full, not closed, not the own account)")
+	ok(K.OFFER_FINAL.hasMentor and K.OFFER_FINAL.apprenticeAge and not K.OFFER_FINAL.cooldown and not K.OFFER_FINAL.banned,
+		"lasting and passing refusals")
 end
 
 -- ------------------------------------------------------------------ the client view
@@ -486,6 +510,71 @@ do
 	M.onRecord("bounty", {guid = 2, name = "Ash"}, 1)
 	ok(seen and seen[2].bounty, "bounty record by guid table")
 	M.checkApprentice = real
+	-- the mentor offer (O371): once per character from cfg.offer.level, with the mentors online in its language
+	do
+		local sent = {}
+		local realSend = Chaos.sendChunked
+		Chaos.sendChunked = function(p, op, data) sent[#sent + 1] = {p = p, op = op, data = data} return true end
+		local realRef = ChaosReferral
+		ChaosReferral = {accountFacts = function() return {created = os.time() - 5 * 86400, ips = {}, email = "", staff = false,
+			banned = false} end}
+		ok(registry.ChaosMentorOffer ~= nil, "offer advance event")
+		local newbie = mk(40, "Nym", 11, {x = 1, y = 1, z = 7}, 444)
+		M.online[40] = newbie.cid
+		M.links[40] = nil
+		eq(M.offerCheck(newbie), false, "level 11: not yet")
+		newbie.level = 12
+		M.mentors[1] = {account_id = 10, accepting = 1, apprentices = {}, lang = "English, PT-BR"}
+		local m2 = mk(41, "Odo", 90, {x = 1, y = 1, z = 7}, 555)
+		M.online[41] = m2.cid
+		M.mentors[41] = {account_id = 410, accepting = 1, apprentices = {}, lang = "Deutsch"}
+		local m3 = mk(42, "Full", 90, {x = 1, y = 1, z = 7}, 556)
+		M.online[42] = m3.cid
+		M.mentors[42] = {account_id = 420, accepting = 1, apprentices = {7, 8, 9}, lang = "en"}
+		M.mentors[43] = {account_id = 430, accepting = 1, apprentices = {}, lang = "en"} -- logged out: no player
+		eq(registry.ChaosMentorOffer.onAdvance(newbie, SKILL_LEVEL, 11, 12), true, "advance event")
+		eq(#sent, 1, "offered at level 12")
+		local msg = sent[1] and sent[1].data or {}
+		eq(msg.action, "offer", "offer action")
+		eq(msg.data and msg.data.online, 1, "one free mentor online in English")
+		eq(msg.data and msg.data.any, 2, "two free mentors online")
+		eq(msg.data and msg.data.exp, 10, "the bonus shown")
+		eq(newbie:getStorageValue(cfg.storage.offer), 1, "shown once")
+		eq(M.offerCheck(newbie), false, "once per login")
+		M.offered[40] = nil -- a later login without an answer
+		eq(M.offerCheck(newbie), true, "again at a later login")
+		eq(newbie:getStorageValue(cfg.storage.offer), 2, "shown twice")
+		local ext = registry.ChaosMentorExtended
+		local realDecode = Chaos.decode
+		Chaos.decode = function(b) return b end
+		ext.onExtendedOpcode(newbie, 194, {action = "offer", data = {answer = "no"}})
+		eq(newbie:getStorageValue(cfg.storage.offer), K.OFFER_DONE, "No thanks: done")
+		M.offered[40] = nil
+		eq(M.offerCheck(newbie), false, "never again after No thanks")
+		-- Find a mentor: done, and the window opens
+		local other = mk(44, "Pell", 14, {x = 1, y = 1, z = 7}, 666)
+		M.online[44] = other.cid
+		local opened
+		local realStatus = M.sendStatus
+		M.sendStatus = function(p, open) opened = {p, open} end
+		ext.onExtendedOpcode(other, 194, {action = "offer", data = {answer = "find"}})
+		eq(other:getStorageValue(cfg.storage.offer), -1, "an answer without an offer does nothing")
+		other:setStorageValue(cfg.storage.offer, 1)
+		ext.onExtendedOpcode(other, 194, {action = "offer", data = {answer = "find"}})
+		eq(other:getStorageValue(cfg.storage.offer), K.OFFER_DONE, "Find a mentor: done")
+		ok(opened and opened[1] == other and opened[2] == true, "the window opens")
+		-- a lasting refusal ends it; a passing one does not
+		local old = mk(45, "Ulm", 30, {x = 1, y = 1, z = 7}, 777)
+		ChaosReferral = {accountFacts = function() return {created = os.time() - 200 * 86400, ips = {}, email = "", staff = false,
+			banned = false} end}
+		eq(M.offerCheck(old), false, "an old account: no offer")
+		eq(old:getStorageValue(cfg.storage.offer), K.OFFER_DONE, "and never again")
+		local high = mk(46, "Vor", cfg.apprentice.maxLevel + 1, {x = 1, y = 1, z = 7}, 778)
+		eq(M.offerCheck(high), false, "over the apprentice level")
+		Chaos.decode, Chaos.sendChunked, ChaosReferral = realDecode, realSend, realRef
+		M.sendStatus = realStatus
+		M.mentors[1], M.mentors[41], M.mentors[42], M.mentors[43] = nil, nil, nil, nil
+	end
 	-- logout forgets the character
 	registry.ChaosMentorLogout.onLogout(appr)
 	eq(M.links[2], nil, "logout clears the link cache")

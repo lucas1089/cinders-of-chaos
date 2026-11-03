@@ -237,3 +237,24 @@ function V.firstTab(s)
   if s and s.mentor then return 'mentoring' end
   return 'find'
 end
+
+-- the mentor offer (O371; server action offer {online, any, exp, dmg}): {body, online}
+function V.offerTexts(d)
+  d = type(d) == 'table' and d or {}
+  local body = tr('A mentor hunts with you and you both earn rewards. While you hunt together you get +%d%% experience and take %d%% less damage.',
+    num(d.exp), num(d.dmg))
+  local same, any = math.floor(num(d.online)), math.floor(num(d.any))
+  local online
+  if same == 1 then
+    online = tr('1 mentor who speaks your language is online now.')
+  elseif same > 1 then
+    online = tr('%d mentors who speak your language are online now.', same)
+  elseif any == 1 then
+    online = tr('1 mentor is online now.')
+  elseif any > 1 then
+    online = tr('%d mentors are online now.', any)
+  else
+    online = tr('No mentor is online right now: pick one and hunt together later.')
+  end
+  return { body = body, online = online }
+end

@@ -384,7 +384,7 @@ Chaos.storage.guildBossLockout = 7101302
 Chaos.tables.guildWars = "chaos_guildwar"
 Chaos.tables.guildBoss = "chaos_guildboss_week"
 -- Mentors (client game_mentor; mentor.lua, mentor_core.lua, mentor_config.lua, sql/chaos_mentor.sql): mentor list,
--- apprentice view, marks shop on one opcode; storages 7100360 - 7100369 reserved (+0 "looking for a mentor")
+-- apprentice view, marks shop on one opcode; storages 7100360 - 7100369 reserved (+0 "looking for a mentor", +1 the mentor offer, O371)
 ChaosOpcodes.mentor = 194
 Chaos.storage.mentor = 7100360
 Chaos.tables.mentors = "chaos_mentors"

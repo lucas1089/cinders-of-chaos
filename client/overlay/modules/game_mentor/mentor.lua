@@ -3,13 +3,16 @@
 --   client -> server  open | sync | list {line, lang, online} | register {lang, hours, note, accepting, public} |
 --                     retire | choose {guid} | invite {name} | accept {guid} | decline {guid} | dismiss |
 --                     release {guid} | seek {on} | buy {key}
---   server -> client  status {...} (open = true: show the window) | mentors {rows, filter} | message {text, error}
+--   server -> client  status {...} (open = true: show the window) | mentors {rows, filter} | message {text, error} |
+--                     offer {online, any, exp, dmg} (O371: the once-per-character mentor offer; answered with
+--                     offer {answer = "find" | "no"})
 -- Menu: Social > Mentors. The server decides everything; the texts are in mentorview.lua.
 
 local OPCODE = 194
 local V = MentorView
 
 local window
+local offerWindow
 local status
 local mentorRows
 local page = 'find'
@@ -265,7 +268,26 @@ local function onMessage(protocol, opcode, msg)
     if page == 'find' then refresh() end
   elseif msg.action == 'message' then
     note(d.text or '', d.error and V.COLORS.bad or V.COLORS.good)
+  elseif msg.action == 'offer' and offerWindow then
+    local t = V.offerTexts(d)
+    offerWindow.body:setText(t.body)
+    offerWindow.online:setText(t.online)
+    offerWindow:show()
+    offerWindow:raise()
   end
+end
+
+-- the mentor offer's buttons: Find a mentor opens this window (the server answers with status open = true, on Find a
+-- mentor for a character without a mentor); No thanks or Escape ends the offer for this character
+function acceptOffer()
+  if offerWindow then offerWindow:hide() end
+  page = 'find'
+  send('offer', { answer = 'find' })
+end
+
+function declineOffer()
+  if offerWindow then offerWindow:hide() end
+  send('offer', { answer = 'no' })
 end
 
 function show() send('open') end
@@ -299,6 +321,7 @@ end
 
 local function onGameEnd()
   hide()
+  if offerWindow then offerWindow:hide() end
   status, mentorRows = nil, nil
 end
 
@@ -334,6 +357,13 @@ function init()
   else
     g_logger.warning('[mentor] window not loaded: ' .. tostring(ui))
   end
+  local okOffer, offer = pcall(g_ui.createWidget, 'MentorOfferWindow', rootWidget)
+  if okOffer and offer then
+    offerWindow = offer
+    offerWindow:hide()
+  else
+    g_logger.warning('[mentor] offer window not loaded: ' .. tostring(offer))
+  end
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, handlers.opcode)
   connect(g_game, handlers.game)
   addMenu()
@@ -344,6 +374,7 @@ function terminate()
   disconnect(g_game, handlers.game)
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
   if window then window:destroy() window = nil end
+  if offerWindow then offerWindow:destroy() offerWindow = nil end
   tabs = {}
   handlers = {}
 end

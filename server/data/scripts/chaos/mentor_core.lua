@@ -739,4 +739,56 @@ function K.validate(cfg, opts)
 	return problems
 end
 
+-- ---------------------------------------------------------------- the mentor offer (O371)
+K.OFFER_DONE = 100
+-- refusals of apprenticeCheck that never go away for this character: the offer ends for good
+K.OFFER_FINAL = {staff = true, isMentor = true, graduated = true, hasMentor = true, apprenticeLevel = true,
+	apprenticeAge = true, maxMentors = true}
+
+-- whether the offer is due: state = the storage (-1 never, 1..maxShows shown, OFFER_DONE), level, shownNow (this login)
+function K.offerDue(state, level, shownNow, cfg)
+	local o = cfg.offer
+	if not cfg.enabled or type(o) ~= "table" or shownNow then
+		return false
+	end
+	state = num(state)
+	if state >= K.OFFER_DONE or state >= (o.maxShows or 3) then
+		return false
+	end
+	level = num(level)
+	return level >= (o.level or 12) and level <= cfg.apprentice.maxLevel
+end
+
+-- whether a mentor card's language text (free text, "PT-BR / English") matches a character's language
+function K.langMatch(text, lang, cfg)
+	local words = cfg.offer and cfg.offer.langWords and cfg.offer.langWords[lang]
+	if type(text) ~= "string" or not words then
+		return false
+	end
+	for token in text:lower():gmatch("%a+") do
+		for _, w in ipairs(words) do
+			local prefix = w:match("^(.-)%*$")
+			if (prefix and token:sub(1, #prefix) == prefix) or token == w then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- the mentors online now who take an apprentice: rows = [{accountId, accepting, active, lang}] -> same (the
+-- character's language), any; viewer = {accountId, lang}
+function K.offerCount(rows, viewer, cfg)
+	local same, any = 0, 0
+	for _, r in ipairs(rows or {}) do
+		if r.accepting and num(r.active) < cfg.mentor.maxApprentices and r.accountId ~= viewer.accountId then
+			any = any + 1
+			if K.langMatch(r.lang, viewer.lang, cfg) then
+				same = same + 1
+			end
+		end
+	end
+	return same, any
+end
+
 return K

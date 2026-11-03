@@ -265,6 +265,44 @@ function L.historyRows(list, sel)
   return out
 end
 
+-- ---------------------------------------------------------------- death advice (O371)
+-- recap.tips (server deathadvice_core.lua A.tips, rule order): [{k = 'lvl', d} | {k = 'res', el, r, s} | {k = 'pot'} |
+-- {k = 'heal', s} | {k = 'pack', n}] -> the sentences, at most L.TIPS_MAX; an unknown tip is skipped
+L.TIPS_MAX = 3
+L.RES_TIPS = {
+  fire = function(r) return tr('Most damage was fire and your fire resistance is %d%%: look for fire resistance on gear or a ruby in jewellery', r) end,
+  ice = function(r) return tr('Most damage was ice and your ice resistance is %d%%: look for ice resistance on gear or a sapphire in jewellery', r) end,
+  earth = function(r) return tr('Most damage was earth and your earth resistance is %d%%: look for earth resistance on gear or an emerald in jewellery', r) end,
+  holy = function(r) return tr('Most damage was holy and your holy resistance is %d%%: look for holy resistance on gear or a diamond in jewellery', r) end,
+  death = function(r) return tr('Most damage was death and your death resistance is %d%%: look for death resistance on gear or an amethyst in armour', r) end,
+  energy = function(r) return tr('Most damage was energy and your energy resistance is %d%%: look for energy resistance on gear or a topaz in armour', r) end,
+  physical = function(r) return tr('Most damage was physical and your physical resistance is %d%%: look for physical resistance on gear or an onyx in armour', r) end,
+}
+
+function L.tips(recap)
+  local out = {}
+  local list = type(recap) == 'table' and type(recap.tips) == 'table' and recap.tips or {}
+  for _, t in ipairs(list) do
+    if #out >= L.TIPS_MAX then break end
+    local text
+    if type(t) == 'table' then
+      if t.k == 'lvl' and num(t.d) then
+        text = tr('These monsters are %d levels above you: Next Goals shows hunts for your level', math.floor(num(t.d)))
+      elseif t.k == 'res' and L.RES_TIPS[t.el] then
+        text = L.RES_TIPS[t.el](math.max(0, math.floor(num(t.r) or 0)))
+      elseif t.k == 'pot' then
+        text = tr('You used no potions: set up healing in the Helper (Auto setup)')
+      elseif t.k == 'heal' and num(t.s) then
+        text = tr('Your healing covered only %d%% of the damage: heal sooner or pull fewer monsters', math.floor(num(t.s)))
+      elseif t.k == 'pack' and num(t.n) then
+        text = tr('%d monsters hit you at once: pull fewer at a time', math.floor(num(t.n)))
+      end
+    end
+    if text then out[#out + 1] = text end
+  end
+  return out
+end
+
 -- the bar segments of a row: [{color, frac}] in the order of the elements (fractions of the row's own bar)
 function L.segments(row)
   local out = {}

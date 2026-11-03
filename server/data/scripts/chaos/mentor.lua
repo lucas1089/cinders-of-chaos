@@ -18,9 +18,10 @@
 -- Protocol (extended opcode ChaosOpcodes.mentor = 194, JSON {action, data}, server -> client through Chaos.sendChunked):
 --   client -> server  open | sync | list {line, lang, online} | register {lang, hours, note, accepting, public} |
 --                     retire | choose {guid} | invite {name} | accept {guid} | decline {guid} | dismiss |
---                     release {guid} | seek {on} | buy {key}
+--                     release {guid} | seek {on} | buy {key} | offer {answer = "find" | "no"}
 --   server -> client  status {...ChaosMentorCore.view...} (open = true: show the window) | mentors {rows} |
---                     message {text, error}
+--                     message {text, error} | offer {online, any, exp, dmg} (O371: the once-per-character mentor offer
+--                     from cfg.offer.level; online = mentors online now in the character's language, any = all of them)
 -- API: ChaosMentor.tagOf(player) -> "mentor" | "seeking" | nil (Party Finder). Staff: /mentor <player>[, unlink].
 -- See server/README.md "Mentors". Lua 5.1 / LuaJIT compatible.
 
@@ -905,6 +906,65 @@ local function buy(player, data)
 	sendStatus(player, false)
 end
 
+-- ------------------------------------------------------------------ the mentor offer (O371)
+-- once per character from cfg.offer.level: a small client window, "Want a mentor?", with the mentors online now
+M.offered = M.offered or {} -- guid -> true: shown this login
+local function offerState(player)
+	return tonumber(player:getStorageValue(cfg.storage.offer)) or -1
+end
+
+function M.offerCheck(player)
+	if not player or not cfg.storage.offer then
+		return false
+	end
+	local guid = player:getGuid()
+	local state = offerState(player)
+	if not K.offerDue(state, player:getLevel(), M.offered[guid], cfg) then
+		return false
+	end
+	local okA, reason = K.apprenticeCheck(apprenticeInfo(player), cfg)
+	if not okA then
+		if K.OFFER_FINAL[reason] then
+			player:setStorageValue(cfg.storage.offer, K.OFFER_DONE)
+		end
+		return false
+	end
+	M.offered[guid] = true
+	player:setStorageValue(cfg.storage.offer, math.max(0, state) + 1)
+	local rows = {}
+	for g, row in pairs(M.mentors) do
+		if row and playerOf(g) then
+			rows[#rows + 1] = {accountId = row.account_id, accepting = row.accepting == 1, active = #(row.apprentices or {}),
+				lang = row.lang}
+		end
+	end
+	local same, any = K.offerCount(rows, {accountId = player:getAccountId(), lang = Chaos.lang(player)}, cfg)
+	send(player, "offer", {online = same, any = any, exp = math.floor(cfg.bonus.exp * 100 + 0.5),
+		dmg = math.floor(cfg.bonus.damageTaken * 100 + 0.5)})
+	return true
+end
+
+function M.offerLater(cid)
+	local player = Player(cid)
+	if player then
+		local ok, err = pcall(M.offerCheck, player)
+		if not ok then
+			print("[Chaos mentor] offer: " .. tostring(err))
+		end
+	end
+end
+
+-- the answer: "find" opens the window (Find a mentor for a character without one), "no" ends the offer
+local function answerOffer(player, data)
+	if offerState(player) < 0 then
+		return -- never offered: nothing to answer
+	end
+	player:setStorageValue(cfg.storage.offer, K.OFFER_DONE)
+	if data.answer == "find" then
+		M.sendStatus(player, true)
+	end
+end
+
 -- ------------------------------------------------------------------ protocol
 local ACTIONS = {
 	open = {500, function(player) sendStatus(player, true) end},
@@ -919,7 +979,8 @@ local ACTIONS = {
 	dismiss = {2000, dismiss},
 	release = {2000, release},
 	seek = {1000, seek},
-	buy = {1000, buy}
+	buy = {1000, buy},
+	offer = {1000, answerOffer}
 }
 
 local ext = CreatureEvent("ChaosMentorExtended")
@@ -1003,6 +1064,19 @@ function advance.onAdvance(player, skill, oldLevel, newLevel)
 	return true
 end
 advance:register()
+
+-- the mentor offer at the level up to cfg.offer.level (registered at login while the offer may still come)
+local offerAdvance = CreatureEvent("ChaosMentorOffer")
+function offerAdvance.onAdvance(player, skill, oldLevel, newLevel)
+	if skill == SKILL_LEVEL and cfg.enabled and cfg.offer and newLevel >= cfg.offer.level then
+		local ok, err = pcall(M.offerCheck, player)
+		if not ok then
+			print("[Chaos mentor] offer: " .. tostring(err))
+		end
+	end
+	return true
+end
+offerAdvance:register()
 
 -- shared hunting time, once a minute: a link whose apprentice got the bonus in the last minute counts a minute; the
 -- mentor earns a mark per marks.huntMinutes of such minutes (any apprentice), dailyHuntMarks a day
@@ -1128,6 +1202,14 @@ function login.onLogin(player)
 		if M.mentors[guid] then
 			notifyOffline(guid, player)
 		end
+		-- the mentor offer (O371): while it may still come, at the level up and a moment after this login
+		if cfg.enabled and cfg.offer and not M.links[guid] and player:getLevel() <= cfg.apprentice.maxLevel
+				and player:getStorageValue(cfg.storage.offer) < K.OFFER_DONE then
+			player:registerEvent("ChaosMentorOffer")
+			if player:getLevel() >= cfg.offer.level then
+				addEvent(M.offerLater, cfg.offer.loginDelayMs or 8000, player:getId())
+			end
+		end
 	end)
 	if not ok then
 		print("[Chaos mentor] login: " .. tostring(err))
@@ -1140,6 +1222,7 @@ local logout = CreatureEvent("ChaosMentorLogout")
 function logout.onLogout(player)
 	local guid = player:getGuid()
 	M.online[guid], M.mentors[guid], M.links[guid], M.titles[guid] = nil, nil, nil, nil
+	M.offered[guid] = nil
 	return true
 end
 logout:register()

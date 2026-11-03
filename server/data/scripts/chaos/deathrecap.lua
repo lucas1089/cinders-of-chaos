@@ -15,6 +15,9 @@
 --                  guild boss, Ascended Omens, trials, the Trial of Ascension) while the character stood in a
 --                  Chaos.registerInstance instance: sent at once (nothing lost), stored as seen.
 --   cfg.hideModes lists instance keys whose recaps are hidden on purpose (none by default).
+-- Death advice (O371, deathadvice_core.lua, cfg.advice): each recap carries 1-3 tips (recap.tips) from the same log plus
+-- the healing received (combatlog.lua ChaosCombatLog.healHook), the Everfull potions drunk (potions.lua calls R.onPotion),
+-- the level of each monster attacker (getMonsterLevel) and the character's resistance to the element that hit most.
 -- Privacy: names as the victim saw them; a staff character in ghost mode the victim could not see is
 -- cfg.hiddenName (also as the master of a summon). A character reads only its own recaps.
 --
@@ -27,10 +30,13 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 dofile("data/scripts/chaos/deathrecap_core.lua")
+dofile("data/scripts/chaos/deathadvice_core.lua")
 
 Chaos.deathRecapConfig = dofile("data/scripts/chaos/deathrecap_config.lua")
 local cfg = Chaos.deathRecapConfig
 local R = ChaosDeathRecap
+local A = ChaosDeathAdvice
+local adv = cfg.advice or {}
 R.configure(cfg)
 local OPCODE = ChaosOpcodes.deathRecap or 154
 local T = Chaos.tables.deathRecaps or "chaos_death_recaps"
@@ -119,11 +125,117 @@ function R.onTaken(creature, attacker, src, amount, el, critical, now, mana)
 		local ok, outfit = pcall(function() return attacker:getOutfit() end)
 		R.setLook(log, key, ok and R.look(outfit) or false)
 	end
+	local cid
+	if kind == "c" and not master and attacker then
+		local okId, id = pcall(function() return attacker:getId() end)
+		cid = okId and id or nil
+		if A.wantLevel(log, key, 2 * cfg.maxAttackers + 4) then
+			local okLv, lv = pcall(function() return attacker:getMonsterLevel() end)
+			A.setLevel(log, key, okLv and lv or nil)
+		end
+	end
 	R.record(log, now or nowMs(), {k = key, n = name, kind = kind, m = master, el = el, a = amount,
-		c = critical and true or nil, mp = mana and true or nil, pv = pv})
+		c = critical and true or nil, mp = mana and true or nil, pv = pv, cid = cid})
 end
 ChaosCombatLog = ChaosCombatLog or {}
 ChaosCombatLog.takenHook = R.onTaken
+
+-- ---------------------------------------------------------------- death advice: healing, potions, resistances
+local function logOf(creature)
+	local pid = creature:getId()
+	local log = R.logs[pid]
+	if not log then
+		log = R.newLog()
+		R.logs[pid] = log
+	end
+	return log
+end
+
+-- healing a character received (combatlog.lua: the part that filled missing health)
+function R.onHealed(creature, amount, now)
+	if cfg.enabled and adv.enabled ~= false and creature and creature:isPlayer() and (amount or 0) > 0 then
+		A.addHeal(logOf(creature), now or nowMs(), amount, adv.maxHeals)
+	end
+end
+ChaosCombatLog.healHook = R.onHealed
+
+-- an Everfull potion drunk on the character (potions.lua)
+function R.onPotion(creature, now)
+	if cfg.enabled and adv.enabled ~= false and creature and creature:isPlayer() then
+		A.addPotion(logOf(creature), now or nowMs(), adv.maxPotions)
+	end
+end
+
+-- the absorb storages of engine patch 0049 (gear rolls, passive tree / Paragon) per element with a tip
+local ABSORB_KEYS = {fire = {977544, 977562}, physical = {977545, 977563}, energy = {977546, 977564},
+	earth = {977547, 977565}, ice = {977549, 977567}, holy = {977550, 977568}, death = {977551, 977569}}
+local COMBAT_OF = {fire = "COMBAT_FIREDAMAGE", physical = "COMBAT_PHYSICALDAMAGE", energy = "COMBAT_ENERGYDAMAGE",
+	earth = "COMBAT_EARTHDAMAGE", ice = "COMBAT_ICEDAMAGE", holy = "COMBAT_HOLYDAMAGE", death = "COMBAT_DEATHDAMAGE"}
+local WORN_SLOTS = {1, 2, 4, 5, 6, 7, 8, 9, 10, 13} -- as combat_stats.lua
+
+-- the index of a combat type in ItemType:getAbilities().absorbPercent (the engine's combatTypeToIndex, from 1)
+local function absorbIndex(ctype)
+	local i = 1
+	while ctype > 1 do
+		ctype = math.floor(ctype / 2)
+		i = i + 1
+	end
+	return i
+end
+
+-- about the character's resistance to an element: the worn items' protection and the absorb storages (patch 0049's
+-- sum, ChaosItemMods.effectiveAbsorb), then the gems' resistance (gems.lua). nil for an element without a tip.
+function R.resistOf(player, el)
+	local keys, ctype = ABSORB_KEYS[el], _G[COMBAT_OF[el] or ""]
+	if not keys or not ctype then
+		return nil
+	end
+	local idx = absorbIndex(ctype)
+	local items = {}
+	for _, slot in ipairs(WORN_SLOTS) do
+		local ok, p = pcall(function()
+			local item = player:getSlotItem(slot)
+			local ab = item and ItemType(item:getId()):getAbilities()
+			return type(ab) == "table" and type(ab.absorbPercent) == "table" and tonumber(ab.absorbPercent[idx]) or 0
+		end)
+		if ok and p and p ~= 0 then
+			items[#items + 1] = p
+		end
+	end
+	local storage = 0
+	for _, k in ipairs(keys) do
+		local ok, v = pcall(function() return player:getStorageValue(k) end)
+		storage = storage + math.max(0, ok and tonumber(v) or 0)
+	end
+	local absorb = A.absorb(items, storage, 75)
+	if ChaosItemMods and ChaosItemMods.effectiveAbsorb then
+		local ok, v = pcall(ChaosItemMods.effectiveAbsorb, items, storage)
+		if ok and tonumber(v) then
+			absorb = v
+		end
+	end
+	local okGem, gem = pcall(function()
+		return ChaosGems and ChaosGems.playerBonus and ChaosGems.playerBonus(player, "res_" .. el)
+	end)
+	return A.combine(absorb, okGem and tonumber(gem) or 0)
+end
+
+-- the tips of a recap (added to it, then the recap is fitted again)
+local function advise(player, log, deathAt, recap)
+	if adv.enabled == false or type(recap) ~= "table" then
+		return recap
+	end
+	local ok, err = pcall(function()
+		local f = A.facts(log, deathAt, recap, player:getLevel(), cfg.windowMs, function(el) return R.resistOf(player, el) end)
+		local tips = A.tips(f, adv)
+		recap.tips = #tips > 0 and tips or nil
+	end)
+	if not ok then
+		print("[Warning - ChaosDeathRecap] advice: " .. tostring(err))
+	end
+	return R.fit(recap, cfg.maxRecapBytes)
+end
+R.advise = advise
 
 -- ---------------------------------------------------------------- store and send
 local function send(player, action, data)
@@ -184,8 +296,10 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 		return true
 	end
 	local ok, err = pcall(function()
-		local recap = R.build(log, nowMs(), {at = os.time(), real = true, mode = label, mk = key, level = creature:getLevel(),
+		local at = nowMs()
+		local recap = R.build(log, at, {at = os.time(), real = true, mode = label, mk = key, level = creature:getLevel(),
 			exp = creature:getExperience(), killer = killerInfo(creature, killer or mostDamageKiller)})
+		recap = advise(creature, log, at, recap)
 		store(creature:getGuid(), recap, false)
 	end)
 	if not ok then
@@ -210,6 +324,7 @@ function R.checkDefeat(pid)
 	R.logs[pid] = nil -- the next defeat (a battleground respawn) starts a new log
 	local recap = R.build(log, p.at, {at = os.time(), real = false, mode = p.mode, mk = p.mk, level = player:getLevel(),
 		killer = p.killer})
+	recap = advise(player, log, p.at, recap)
 	R.finalize(recap)
 	store(player:getGuid(), recap, true)
 	send(player, "recap", {recap = recap, auto = true})

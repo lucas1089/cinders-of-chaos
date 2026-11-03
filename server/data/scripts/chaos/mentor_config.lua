@@ -18,8 +18,24 @@ return {
 		log = "chaos_mentor_log" -- every registration, link, refusal, milestone, graduation, purchase
 	},
 
-	-- player storages, 7100360 - 7100369 reserved (chaos_constants.lua Chaos.storage.mentor): +0 "looking for a mentor"
-	storage = {seeking = 7100360},
+	-- player storages, 7100360 - 7100369 reserved (chaos_constants.lua Chaos.storage.mentor): +0 "looking for a mentor",
+	-- +1 the mentor offer (O371): -1 never shown, 1..offer.maxShows shown without an answer, 100 done for good
+	storage = {seeking = 7100360, offer = 7100361},
+
+	-- the mentor offer (O371): a window once per character from this level (reached, or logged in at it) while the
+	-- character may pick a mentor (apprenticeCheck). "Find a mentor" opens Social > Mentors; "No thanks", a mentor or
+	-- a lasting refusal (too old, a mentor itself, graduated, ...) end it for good. Unanswered (the client closed), it
+	-- comes back at a later login, at most maxShows times. It counts the mentors online now with a free place, those
+	-- whose card language (free text) matches the character's language by langWords ("x*" = a word starting with x).
+	offer = {
+		level = 12,
+		maxShows = 3,
+		loginDelayMs = 8000, -- after the login burst of windows
+		langWords = {
+			["pt-BR"] = {"pt", "br", "ptbr", "portugu*", "brasil*", "brazil*"},
+			en = {"en", "eng", "english", "ingl*"}
+		}
+	},
 
 	-- who may register as a mentor: the ACCOUNT is a veteran (its best character, its total online time, its age);
 	-- the mentoring character itself only needs minCharacterLevel, so a veteran can mentor with a character of the

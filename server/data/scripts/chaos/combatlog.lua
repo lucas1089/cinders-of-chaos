@@ -463,6 +463,11 @@ local function healed(creature, attacker, raw, origin, critical, now, exact)
 			end
 		end
 		CL.add(a, now, RECV, rsrc, eff, critical, over)
+		-- the death advice (deathrecap.lua, O371) counts the healing received in its window
+		local hook = CL.healHook
+		if hook and eff > 0 then
+			pcall(hook, creature, eff, now)
+		end
 	end
 end
 
