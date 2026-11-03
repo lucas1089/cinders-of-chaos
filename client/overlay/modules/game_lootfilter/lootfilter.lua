@@ -843,6 +843,7 @@ function init()
   local ok, ui = pcall(g_ui.displayUI, 'lootfilter')
   if ok and ui then
     window = ui
+    pcall(function() modules.game_howitworks.attach(window, 'lootfilter') end) -- game_howitworks: the ? button
     window:hide()
     local function hook(widget, field, fn)
       if widget then widget[field] = safe('ui', fn) end

@@ -643,6 +643,7 @@ end
 
 function init()
   window = g_ui.displayUI('bestiary')
+  pcall(function() modules.game_howitworks.attach(window, 'bestiary') end) -- game_howitworks: the ? button
   window:hide()
   local bestiaryTab = g_ui.createWidget('BestiaryTab', window.tabs)
   bestiaryTab:setId('bestiaryTab')

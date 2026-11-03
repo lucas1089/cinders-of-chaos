@@ -225,6 +225,7 @@ end
 function createShop()
   if shop then return end
   shop = g_ui.displayUI('shop')
+  pcall(function() modules.game_howitworks.attach(shop, 'shop') end) -- game_howitworks: the ? button
   shop:hide()
   createPreview()
 

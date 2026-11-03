@@ -71,6 +71,23 @@ fakeP.features[1].values = function() return {a = 1} end
 local built = Gen.build(fakeC, fakeP)
 eq(built.features[1].rows[1].pt, "B 1", "build fills pt"); count()
 eq(#built.features, 1 + #C0.unlocks.entries, "unlock entries without a card get one"); count()
+-- an unlock entry no card names goes to the card of its key, else to the card of the window it opens
+do
+	local P2 = {gentle = fakeP.gentle, rows = {"who"}, unlockWindows = {}, features = {
+		{key = "alpha", title = {"A", "A"}, who = {"x", "y"}},
+		{key = "beta", title = {"B", "B"}, window = "game_beta", unlocks = {"b0"}, who = {"x", "y"}}}}
+	local C2 = {gentle = C0.gentle, unlocks = {entries = {
+		{key = "b0", level = 1, title = {"B", "B"}, why = {{"a", "b"}, {"c", "d"}}, go = {open = "game_beta"}},
+		{key = "alpha", level = 5, title = {"A", "A"}, why = {{"a", "b"}, {"c", "d"}}, go = {open = "game_x"}},
+		{key = "late", level = 9, title = {"L", "L"}, why = {{"a", "b"}, {"c", "d"}}, go = {open = "game_beta"}},
+		{key = "other", level = 9, title = {"O", "O"}, why = {{"a", "b"}, {"c", "d"}}, go = {open = "game_y"}}}}}
+	local b2 = Gen.build(C2, P2)
+	eq(#b2.features, 3, "claimed entries make no card of their own"); count()
+	eq(table.concat(b2.features[1].unlocks, ","), "alpha", "same key claims"); count()
+	eq(table.concat(b2.features[2].unlocks, ","), "b0,late", "same window claims"); count()
+	eq(table.concat(P2.features[2].unlocks, ","), "b0", "the config table is not changed"); count()
+	eq(b2.features[3].key, "other", "an entry of another window keeps its own card"); count()
+end
 
 -- ---------------------------------------------------------------- the real data
 local data, C, P = Gen.make()
@@ -79,7 +96,10 @@ for _, f in ipairs(data.features) do
 	byKey[f.key] = f
 end
 for _, key in ipairs({"tower", "rift", "arena", "battleground", "dungeons", "bosses", "descent", "raid", "siege", "invasion",
-		"bounty", "daily", "weeklychest", "embercache", "season", "factions", "gamble", "goals"}) do
+		"bounty", "daily", "weeklychest", "embercache", "season", "factions", "gamble", "goals", "passive", "spellbook",
+		"bestiary", "professions", "charms", "achievements", "loadouts", "townportal", "stash", "autoloot", "lootfilter",
+		"itemfinder", "codex", "partyfinder", "mentor", "guild", "seasonpass", "hideout", "transmog", "nemesis", "pact",
+		"shop"}) do
 	ok(byKey[key], "card " .. key); count()
 end
 -- every unlock entry opens a card
@@ -152,6 +172,8 @@ ok(rowText("tower", "death", "en"):find("never lose items", 1, true), "death rul
 ok(rowText("season", "often", "pt"):find("20/11/2026", 1, true), "season dates"); count()
 ok(rowText("descent", "often", "pt"):find("50.000", 1, true), "pt thousands"); count()
 ok(rowText("pets", "what", "en"):find("companion", 1, true), "unlock card text is the entry's own"); count()
+ok(rowText("passive", "who", "en"):find("level 12, then one more every 4 levels", 1, true), "passive: first point"); count()
+ok(rowText("transmog", "often", "pt"):find("2.000", 1, true), "transmog: pt thousands"); count()
 
 -- the numbers are derived: change a config, the text follows
 do

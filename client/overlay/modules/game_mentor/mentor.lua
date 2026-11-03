@@ -327,6 +327,7 @@ function init()
   local ok, ui = pcall(g_ui.createWidget, 'MentorWindow', rootWidget)
   if ok and ui then
     window = ui
+    pcall(function() modules.game_howitworks.attach(window, 'mentor') end) -- game_howitworks: the ? button
     window:hide()
     local built, err = pcall(buildTabs)
     if not built then g_logger.warning('[mentor] tabs: ' .. tostring(err)) end

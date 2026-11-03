@@ -338,6 +338,7 @@ function init()
   local ok, ui = pcall(g_ui.createWidget, 'CharmsWindow', rootWidget)
   if ok and ui then
     window = ui
+    pcall(function() modules.game_howitworks.attach(window, 'charms') end) -- game_howitworks: the ? button
     window:hide()
     window.gridFrame.grid.onDrop = safe('drop', onDropItem)
   else

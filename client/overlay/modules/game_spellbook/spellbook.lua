@@ -767,6 +767,7 @@ end
 
 function init()
   window = g_ui.displayUI('spellbook')
+  pcall(function() modules.game_howitworks.attach(window, 'spellbook') end) -- game_howitworks: the ? button
   window:hide()
   local filterText = { learned = tr('Learned'), soon = tr('Available soon'), vocation = tr('My vocation'),
     all = tr('All spells'), runes = tr('Runes') }

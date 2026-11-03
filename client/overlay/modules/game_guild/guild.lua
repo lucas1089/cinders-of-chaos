@@ -275,6 +275,7 @@ end
 
 function init()
   window = g_ui.displayUI('guild')
+  pcall(function() modules.game_howitworks.attach(window, 'guild') end) -- game_howitworks: the ? button
   window:hide()
   for _, t in ipairs(TABS) do
     local b = g_ui.createWidget('GuildTab', window.tabs)

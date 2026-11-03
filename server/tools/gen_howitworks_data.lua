@@ -7,7 +7,8 @@
 --   lua5.3 works the same; the output is byte-identical under both (CI checks both).
 -- Derived (from the configs): every number, level, time, count, price and weekday of a sentence; the level of every unlock;
 -- the death rule (gentledeath_config.lua); the cards of the unlock entries that have no hand-written card (crafting, pets,
--- market, passive tree, salvage): their two lines and their level are the unlock entry's own.
+-- market, salvage): their two lines and their level are the unlock entry's own. An unlock entry no card names goes to the
+-- hand-written card of the same key, else to the one whose window the entry opens (go.open).
 -- Hand-written (tools/howitworks_config.lua): the sentences, the window of a card, the unlock and goal keys it answers.
 -- A {name} with no value, or a value no sentence uses, stops the run. No clock, no random, no pairs() order.
 -- Pure helpers are exported for tests/howitworks_gen_test.lua: set HOWITWORKS_GEN_NO_MAIN = true before dofile().
@@ -24,7 +25,14 @@ Gen.SOURCES = {"tools/howitworks_config.lua", "data/scripts/chaos/unlocks_config
 	"data/scripts/chaos/descent_config.lua", "data/scripts/chaos/raid_config.lua", "data/scripts/chaos/siege_config.lua",
 	"data/scripts/chaos/invasion_config.lua", "data/scripts/chaos/bounty_config.lua", "data/scripts/chaos/daily_config.lua",
 	"data/scripts/chaos/weeklychest_config.lua", "data/scripts/chaos/embercache_config.lua",
-	"data/scripts/chaos/season_config.lua", "data/scripts/chaos/factions_config.lua", "data/scripts/chaos/gamble_config.lua"}
+	"data/scripts/chaos/season_config.lua", "data/scripts/chaos/factions_config.lua", "data/scripts/chaos/gamble_config.lua",
+	"data/scripts/chaos/professions_config.lua", "data/scripts/chaos/bestiary_config.lua", "data/scripts/chaos/charms_config.lua",
+	"data/scripts/chaos/seasonpass_config.lua", "data/scripts/chaos/hideout_config.lua", "data/scripts/chaos/transmog_config.lua",
+	"data/scripts/chaos/stash_config.lua", "data/scripts/chaos/loadouts_config.lua", "data/scripts/chaos/mentor_config.lua",
+	"data/scripts/chaos/party_finder_config.lua", "data/scripts/chaos/pact_config.lua", "data/scripts/chaos/nemesis_config.lua",
+	"data/scripts/chaos/townportal_config.lua", "data/scripts/chaos/lootfilter_config.lua",
+	"data/scripts/chaos/itemfinder_config.lua", "data/scripts/chaos/achievements_data.lua", "data/scripts/chaos/guild_config.lua",
+	"data/scripts/chaos/respec_config.lua"}
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- pure helpers
@@ -169,7 +177,16 @@ function Gen.load()
 		siege = loadConfig("siege_config"), invasion = loadConfig("invasion_config"), bounty = loadConfig("bounty_config"),
 		daily = loadConfig("daily_config"), weeklychest = loadConfig("weeklychest_config"),
 		embercache = loadConfig("embercache_config"), season = loadConfig("season_config"),
-		factions = loadConfig("factions_config"), gamble = loadConfig("gamble_config"), worldBoss = Chaos.worldBoss
+		factions = loadConfig("factions_config"), gamble = loadConfig("gamble_config"), worldBoss = Chaos.worldBoss,
+		professions = loadConfig("professions_config"), bestiary = loadConfig("bestiary_config"),
+		charms = loadConfig("charms_config"), seasonpass = loadConfig("seasonpass_config"),
+		hideout = loadConfig("hideout_config"), transmog = loadConfig("transmog_config"), stash = loadConfig("stash_config"),
+		loadouts = loadConfig("loadouts_config"), mentor = loadConfig("mentor_config"),
+		partyfinder = loadConfig("party_finder_config"), pact = loadConfig("pact_config"),
+		nemesis = loadConfig("nemesis_config"), townportal = loadConfig("townportal_config"),
+		lootfilter = loadConfig("lootfilter_config"), itemfinder = loadConfig("itemfinder_config"),
+		achievements = loadConfig("achievements_data"), guild = loadConfig("guild_config"),
+		respec = loadConfig("respec_config"), passive = Chaos.passive, autoloot = Chaos.autoloot
 	}
 	C.towerRun = scanNumbers("data/scripts/chaos/infinitytower_run.lua",
 		{"maxPartySize", "floorTimeLimit", "bossFloorTimeMult", "runTimeLimit"})
@@ -230,6 +247,36 @@ function Gen.build(C, P)
 			claimed[u] = f.key
 		end
 		features[#features + 1] = card
+	end
+
+	-- an unlock entry no card names is answered by the hand-written card of the same key, else by the hand-written card
+	-- of the window the entry opens (go.open), so a new unlock entry of a system that has a card opens that card
+	local byWindow = {}
+	for i, f in ipairs(P.features) do
+		if f.window and not byWindow[f.window] then
+			byWindow[f.window] = i
+		end
+	end
+	for _, e in ipairs(C.unlocks.entries) do
+		if not claimed[e.key] then
+			local i
+			for j, f in ipairs(P.features) do
+				if f.key == e.key then
+					i = j
+				end
+			end
+			i = i or (e.go and byWindow[e.go.open])
+			if i then
+				local card = features[i]
+				local list = {}
+				for _, u in ipairs(card.unlocks or {}) do
+					list[#list + 1] = u
+				end
+				list[#list + 1] = e.key
+				card.unlocks = list
+				claimed[e.key] = card.key
+			end
+		end
 	end
 
 	-- the unlock entries without a hand-written card: a card made from the entry (level, and its two lines)
