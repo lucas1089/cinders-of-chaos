@@ -206,7 +206,17 @@ jobs:
         working-directory: src
         env:
           QT_FORCE_STDERR_LOGGING: "1"
+          QT_QPA_PLATFORM: offscreen
         run: |
+          # The tests run from the build tree, before the release folder gets
+          # its plugins: point Qt at the vcpkg plugin folder (sqldrivers,
+          # platforms), or QSQLITE and the platform plugin are not found.
+          $sql = Get-ChildItem build/vcpkg-windows -Recurse -Filter 'qsqlite*.dll' -ErrorAction SilentlyContinue |
+            Where-Object { $_.Directory.Name -eq 'sqldrivers' -and $_.FullName -notmatch '\\debug\\' } | Select-Object -First 1
+          if (-not $sql) { throw "no qsqlite plugin under build/vcpkg-windows" }
+          $env:QT_PLUGIN_PATH = $sql.Directory.Parent.FullName
+          Write-Host "QT_PLUGIN_PATH=$env:QT_PLUGIN_PATH"
+          if (-not (Test-Path (Join-Path $env:QT_PLUGIN_PATH 'platforms/qoffscreen.dll'))) { Write-Warning "no qoffscreen.dll in $env:QT_PLUGIN_PATH/platforms" }
           ctest --test-dir build/vcpkg-windows -C Release --output-on-failure `
             -R '^(release_manifest|[a-z]+_startup|[a-z]+_updater_startup|ground_brush_export|wall_brush_export|brush_png_archive|obd_export|dat_legacy_740|otbm_rme_compatibility|otbm_legacy_subtypes|otbm_numbered_zones|ui_colorize|tibia_ui_qml|weather_particles|tilemapgen_assets)$'
           if ($LASTEXITCODE -ne 0) { throw "tests failed with exit code $LASTEXITCODE" }
