@@ -369,9 +369,140 @@ def test_forum():
     check(core.report_text('o baú não abre', None, False) == 'o baú não abre', 'a plain channel message')
 
 
+def test_channel_check():
+    allp = set(core.PERM_LABEL)
+    check(core.missing_permissions(allp, 'bugs', True) == [] and core.missing_permissions(allp, 'patch') == [], 'all granted')
+    check(core.missing_permissions({'view_channel'}, 'patch') == ['Enviar mensagens', 'Inserir links'], 'patch needs')
+    check('Enviar mensagens em threads' in core.missing_permissions(set(core.BUGS_PERMS), 'bugs', True), 'forum threads')
+    check(core.missing_permissions(set(core.BUGS_PERMS), 'bugs', False) == [], 'text bugs channel')
+    check(core.channel_check_text([('Canal de bugs', 1567178340434059494, None)]) is None, 'nothing wrong, no DM')
+    t = core.channel_check_text([('Canal de bugs', 1567178340434059494, 'missing'), ('Canal de patch notes', 0, 'not-set'),
+                                 ('X', 12345678, ['Inserir links'])])
+    check('9494' in t and '1567178340434059494' not in t and 'não configurado' in t and 'Inserir links' in t, t)
+
+
+DAY = 86400
+
+
+def commit(n, ts, subject=None, body=''):
+    return {'sha': ('%040x' % n), 'ts': ts, 'date': '2027-01-%02d' % (n % 28 + 1), 'subject': subject or 'Change %d' % n,
+            'body': body, 'tags': ['server']}
+
+
+def write_changes(path, commits, head=None, gen=1_800_000_000):
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump({'format': 1, 'head': head or ('f' * 40), 'generated_at': gen, 'commits': commits}, f)
+
+
+def test_changes():
+    """O385: the game's changes from changes.json (changes_export.py): loading, selection since the last publish,
+    the first-run window, caps, the prompt, the empty case and the automatic patch plan."""
+    now = 1_800_000_000
+    c = core.load_config(GOOD)
+    check(c.patch_auto == 'preview' and c.changes_path.endswith('changes.json'), 'patch_auto default preview')
+    for v in ('publish', 'off', 'PREVIEW '):
+        check(core.load_config(dict(GOOD, DISCORD_BOT_PATCH_AUTO=v)).patch_auto == v.strip().lower(), 'patch_auto ' + v)
+    check(raises(lambda: core.load_config(dict(GOOD, DISCORD_BOT_PATCH_AUTO='yes')), 'DISCORD_BOT_PATCH_AUTO'),
+          'bad patch_auto refused')
+
+    with tempfile.TemporaryDirectory() as tmp:
+        p = os.path.join(tmp, 'changes.json')
+        check(core.load_changes(p) is None, 'no file: None')
+        open(p, 'w').write('{bad')
+        check(core.load_changes(p) is None, 'bad json: None')
+        rows = [commit(1, now - 20 * DAY), commit(3, now - DAY, 'Novo chefe @everyone', 'Mais\x00 texto'),
+                commit(2, now - 3 * DAY), {'sha': 'xyz', 'ts': 1, 'subject': 's'}, {'sha': 'a' * 40, 'ts': 'no'},
+                dict(commit(4, now), subject='')]
+        write_changes(p, rows)
+        e = core.load_changes(p)
+        check([x['sha'][-1] for x in e['commits']] == ['3', '2', '1'], 'newest first, bad rows dropped: %s' % e['commits'])
+        check('@everyone' not in e['commits'][0]['subject'] and '\x00' not in e['commits'][0]['body'], 'texts cleaned')
+
+    # selection: before the first publish with changes, the last 14 days, at most 60
+    many = {'head': 'a' * 40, 'generated_at': now, 'commits': [commit(i, now - i * 3600) for i in range(1, 200)]}
+    sel, since = core.select_changes(many, None, None, now)
+    check(len(sel) == 60 and since == now - 14 * DAY and sel[0]['sha'] == commit(1, 0)['sha'], 'first run: 60 newest')
+    e2 = {'head': 'a' * 40, 'commits': [commit(1, now - DAY), commit(2, now - 20 * DAY)]}
+    sel, since = core.select_changes(e2, None, None, now)
+    check([x['sha'] for x in sel] == [commit(1, 0)['sha']], 'first run: only the last 14 days')
+    seen = {commit(1, 0)['sha']}
+    e3 = {'head': 'b' * 40, 'commits': [commit(5, now), commit(1, now - DAY), commit(2, now - 20 * DAY)]}
+    sel, since = core.select_changes(e3, seen | {commit(2, 0)['sha']}, now - 2 * DAY, now)
+    check([x['sha'] for x in sel] == [commit(5, 0)['sha']] and since == now - 2 * DAY, 'after a publish: unseen only')
+    check(core.select_changes(None, None, None, now)[0] == [], 'no file: no changes')
+
+    # the prompt block: newest first, capped, says how many were left out
+    block, used, left = core.changes_block([commit(1, now, 'Dragões novos', 'Aparecem no norte.'), commit(2, now)])
+    check(used == 2 and left == 0 and block.index('Dragões novos') < block.index('Change 2')
+          and 'Aparecem no norte.' in block and '[server]' in block, 'changes block: ' + block)
+    big = [commit(i, now, 'x' * 150, 'y' * 400) for i in range(100)]
+    block, used, left = core.changes_block(big)
+    check(len(block) <= core.MAX_CHANGES_CHARS + 60 and used + left == 100 and left > 0
+          and '%d older changes left out' % left in block, 'changes block capped at 12k: %d %d' % (used, left))
+    prompt = core.patch_prompt([], '0.9', '', core.changes_block([commit(7, now, 'Dragões novos')])[0])
+    check('Game changes since the last patch' in prompt and 'Dragões novos' in prompt, 'prompt carries the subjects')
+    check('(none)' in core.patch_prompt([], '0.9', ''), 'prompt without changes')
+    for rule in ('commit hashes', 'file names', 'O123', 'CI', 'player_facing', 'Group them by theme'):
+        check(rule in core.PATCH_SYSTEM, 'system prompt rule: ' + rule)
+    check(core.PATCH_SCHEMA['properties']['player_facing']['type'] == 'boolean'
+          and 'player_facing' in core.PATCH_SCHEMA['required'], 'schema asks player_facing')
+    nothing = dict(NOTES_JSON, player_facing=False)
+    check(core.parse_patch(json.dumps(nothing)) is None, 'player_facing false: no notes')
+    check(core.parse_patch(json.dumps(dict(NOTES_JSON, player_facing=True)))['pt']['title'], 'player_facing true')
+
+    # the empty case and the preview line
+    t = core.nothing_new_text(1_800_000_000)
+    check(t.startswith('Nada novo desde 15/01/2027') and 'corrigido' in t, 'nothing new since a date: ' + t)
+    check(core.nothing_new_text(None).startswith('Nada novo:'), 'nothing new, no date')
+    s = core.changes_summary(5, 2, 1_800_000_000, {'generated_at': 1_800_000_000})
+    check('incluídas: 5 (desde 15/01/2027)' in s and '2 mais antigas' in s and 'Lista de 15/01/2027' in s, 'summary: ' + s)
+    check('Sem lista' in core.changes_summary(0, 0, None, None), 'summary without a file')
+
+    # the store: seen shas and the last publish
+    st = core.Store(clock=Clock(now))
+    check(st.changes_seen() is None and st.patch_last_at() is None, 'store: nothing published yet')
+    st.mark_changes_seen(['a' * 40, 'b' * 40], 'b' * 40)
+    st.mark_changes_seen(['b' * 40, 'c' * 40])
+    check(st.changes_seen() == {'a' * 40, 'b' * 40, 'c' * 40} and st.meta_get('patch_last_sha') == 'b' * 40,
+          'store: seen shas merged')
+    st.record_patch('0.9', '2027-01-15', [])
+    check(st.patch_last_at() == now, 'store: last publish time')
+    st.mark_changes_seen(['%040x' % i for i in range(core.SEEN_CAP + 10)])
+    check(len(st.changes_seen()) == core.SEEN_CAP, 'store: seen list capped')
+
+    # the automatic patch plan
+    ex = {'head': 'a' * 40, 'commits': [commit(1, now - DAY), commit(2, now - 2 * DAY)]}
+    check(core.auto_patch_plan('off', ex, None, None, None, now)['action'] == 'none', 'auto off: nothing')
+    check(core.auto_patch_plan('preview', None, None, None, None, now)['action'] == 'none', 'auto without file: nothing')
+    p = core.auto_patch_plan('publish', ex, None, None, None, now)
+    check(p['action'] == 'generate' and not p['publish'] and len(p['changes']) == 2,
+          'auto publish: the first time is a preview')
+    p = core.auto_patch_plan('preview', ex, None, set(), now - DAY, now)
+    check(p['action'] == 'generate' and not p['publish'], 'auto preview: preview')
+    p = core.auto_patch_plan('publish', ex, 'b' * 40, set(), now - DAY, now)
+    check(p['action'] == 'generate' and p['publish'] and p['since'] == now - DAY, 'auto publish: publishes')
+    check(core.auto_patch_plan('publish', ex, 'a' * 40, set(), None, now)['action'] == 'none',
+          'auto: the same head never twice')
+    p = core.auto_patch_plan('publish', ex, 'b' * 40, {commit(1, 0)['sha'], commit(2, 0)['sha']}, None, now)
+    check(p == {'action': 'skip', 'head': 'a' * 40}, 'auto: a new head with nothing new is skipped')
+    check(core.auto_version(datetime.datetime(2027, 1, 15, 10)) == '2027-01-15', 'auto version is the date')
+
+    # the pending automatic preview survives a restart
+    pt = core.parse_patch(json.dumps(NOTES_JSON))['pt']
+    raw = core.pending_to_json({'version': '2027-01-15', 'date': '2027-01-15', 'pt': pt, 'en': None, 'bug_ids': [3],
+                                'seen_shas': ['a' * 40, 'bad'], 'newest_sha': 'a' * 40, 'summary': 'x'}, 1234567)
+    d, mid = core.pending_from_json(raw)
+    check(mid == 1234567 and d['pt']['title'] == pt['title'] and d['en'] is None and d['bug_ids'] == [3]
+          and d['seen_shas'] == ['a' * 40], 'pending round trip')
+    check(core.pending_message_id(raw) == 1234567 and core.pending_message_id('') is None, 'pending message id')
+    check(core.pending_from_json('') == (None, None) and core.pending_from_json('{"session": {}, "message_id": 5}')
+          == (None, None), 'pending: empty or broken')
+
+
 def main():
     for t in (test_config, test_auth_and_limit, test_clean, test_images, test_prompt_and_parse, test_new_and_duplicate,
-              test_status, test_lists_and_views, test_daily, test_patch_notes, test_embeds, test_forum):
+              test_status, test_lists_and_views, test_daily, test_patch_notes, test_embeds, test_forum,
+              test_channel_check, test_changes):
         t()
     print('bot_core_test: %s' % ('ok' if not failures else '%d failure(s)' % failures))
     return 1 if failures else 0

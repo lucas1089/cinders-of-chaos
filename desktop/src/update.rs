@@ -88,11 +88,8 @@ fn curl(url: &str, out: Option<&Path>) -> Result<Vec<u8>, String> {
         Some(p) => c.arg("-o").arg(p).arg(url),
         None => c.arg(url),
     };
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        c.creation_flags(0x0800_0000);
-    }
+    c.stdin(std::process::Stdio::null());
+    crate::ssh::hide_console(&mut c);
     let o = c.output().map_err(|e| format!("cannot start curl: {e}"))?;
     if o.status.success() {
         Ok(o.stdout)
@@ -148,6 +145,20 @@ pub fn install(found: &Found, current: &str) -> Result<PathBuf, String> {
         return Err(e);
     }
     Ok(exe)
+}
+
+/// Starts the program at `exe` again after an update: no console, no inherited pipes (the app has none on Windows),
+/// its own folder as the working folder. The caller exits right after.
+pub fn restart(exe: &Path) -> std::io::Result<()> {
+    let mut c = Command::new(exe);
+    c.stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    if let Some(dir) = exe.parent() {
+        c.current_dir(dir);
+    }
+    crate::ssh::hide_console(&mut c);
+    c.spawn().map(|_| ())
 }
 
 #[cfg(test)]

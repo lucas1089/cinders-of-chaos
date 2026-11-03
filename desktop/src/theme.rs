@@ -1,6 +1,6 @@
 //! Look of the admin window (O344): the launcher's dark fantasy family, tightened for a dense tool. A forge on the night
 //! shift: warm neutral iron, one ember. Ember marks the one main action and the live dot of a running server; gold marks
-//! only the selected tab. Headings use the text colour. Sizes sit on a 4 px grid (type 12, 13, 14, 16, 20).
+//! only the selected category of the sidebar (O383). Headings use the text colour. Sizes sit on a 4 px grid (type 12, 13, 14, 16, 20).
 //! Only colours and drawing. No behaviour, no text (strings are in `main.rs`).
 //! The Android app (android/.../res/values/colors.xml) uses the same ramp.
 //! Colours match `launcher/src/theme.rs`; the crates share no code on purpose (two small files, no cross dependency).
@@ -253,36 +253,47 @@ pub fn header_bar(ui: &mut Ui, strip: &egui::TextureHandle, icon: &egui::Texture
     p.text(at, egui::Align2::LEFT_CENTER, title, font, GOLD);
 }
 
-/// A tab: text with a gold underline when selected (gold marks only the selected tab).
-pub fn tab(ui: &mut Ui, selected: bool, label: &str) -> Response {
+/// A sidebar category (O383): a full-width row, the selected one with a gold bar on the left and gold text (gold
+/// marks only the selected category).
+pub fn nav_item(ui: &mut Ui, selected: bool, label: &str) -> Response {
     let font = FontId::new(14.0, FontFamily::Proportional);
-    let galley = ui.painter().layout_no_wrap(label.to_owned(), font.clone(), TEXT);
-    let pad = Vec2::new(12.0, 8.0);
-    let (rect, resp) = ui.allocate_exact_size(galley.size() + pad * 2.0, Sense::click());
+    let h = 32.0;
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(ui.available_width(), h), Sense::click());
     let color = if selected {
         GOLD
     } else if resp.hovered() {
         TEXT
     } else {
-        MUTED
+        TEXT_2
     };
     let p = ui.painter();
-    if resp.hovered() && !selected {
-        p.rect_filled(rect.shrink2(Vec2::new(0.0, 2.0)), 8.0, Color32::from_rgb(30, 24, 21));
+    if selected {
+        p.rect_filled(rect, 8.0, Color32::from_rgb(36, 28, 23));
+        p.rect_filled(
+            Rect::from_min_size(rect.min + Vec2::new(0.0, 6.0), Vec2::new(3.0, h - 12.0)),
+            2.0,
+            GOLD,
+        );
+    } else if resp.hovered() {
+        p.rect_filled(rect, 8.0, Color32::from_rgb(30, 24, 21));
     }
     let galley = p.layout_no_wrap(label.to_owned(), font, color);
-    p.galley(rect.min + pad, galley, color);
-    if selected {
-        let y = rect.max.y;
-        p.line_segment(
-            [Pos2::new(rect.min.x + 8.0, y), Pos2::new(rect.max.x - 8.0, y)],
-            Stroke::new(2.0_f32, GOLD),
-        );
-    }
+    let at = Pos2::new(rect.min.x + 14.0, rect.center().y - galley.size().y / 2.0);
+    p.with_clip_rect(rect).galley(at, galley, color);
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
-/// A hairline across the width, under the tab bar.
+/// A short bar at the top centre of a resizable panel: the place to drag it (the whole top edge drags).
+pub fn grip(ui: &mut Ui) {
+    let (r, _) = ui.allocate_exact_size(Vec2::new(ui.available_width(), 6.0), Sense::hover());
+    ui.painter().rect_filled(
+        Rect::from_center_size(Pos2::new(r.center().x, r.min.y), Vec2::new(48.0, 4.0)),
+        2.0,
+        Color32::from_rgb(92, 72, 60),
+    );
+}
+
+/// A hairline across the width, under the header.
 pub fn rule(ui: &mut Ui) {
     let y = ui.cursor().min.y;
     let x = ui.max_rect().x_range();

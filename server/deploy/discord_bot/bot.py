@@ -34,10 +34,23 @@ LIST_CHOICES = [app_commands.Choice(name='Abertos', value='abertos'),
 
 
 class PatchSession:
-    """Notes waiting for Publicar / Editar / Cancelar."""
+    """Notes waiting for Publicar / Editar / Cancelar. seen_shas: the commits of the changes file the notes were made
+    from (marked as covered at Publicar; None: no file). auto: the automatic preview DM'd to the owner (its buttons
+    survive a restart: meta 'auto_pending', message_id)."""
 
-    def __init__(self, version, date, pt, en, bug_ids):
+    def __init__(self, version, date, pt, en, bug_ids, seen_shas=None, newest_sha='', summary='', auto=False):
         self.version, self.date, self.pt, self.en, self.bug_ids = version, date, pt, en, bug_ids
+        self.seen_shas, self.newest_sha, self.summary, self.auto = seen_shas, newest_sha, summary, auto
+        self.message_id = None
+
+    def to_dict(self):
+        return {'version': self.version, 'date': self.date, 'pt': self.pt, 'en': self.en, 'bug_ids': self.bug_ids,
+                'seen_shas': self.seen_shas, 'newest_sha': self.newest_sha, 'summary': self.summary}
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(d['version'], d['date'], d['pt'], d['en'], d['bug_ids'], d['seen_shas'], d['newest_sha'],
+                   d['summary'], auto=True)
 
 
 def embeds_of(session):
@@ -47,6 +60,8 @@ def embeds_of(session):
 def preview_text(session, channel_id):
     n = len(core.render_embeds(session.pt, session.version, session.date))
     s = 'Prévia do patch. Vai para <#%d>. Bugs corrigidos incluídos: %d.' % (channel_id, len(session.bug_ids))
+    if session.summary:
+        s += ' ' + session.summary
     if n > 1:
         s += ' A prévia mostra a primeira de %d mensagens.' % n
     return s
@@ -80,14 +95,22 @@ class EditModal(discord.ui.Modal):
         notes['intro'] = (self.session.pt or {}).get('intro', '')
         self.session.pt = notes
         self.session.en = None  # the English twin is made again at Publicar
+        if self.session.auto:
+            self.bot.save_auto_pending(self.session)
         await interaction.response.edit_message(content=preview_text(self.session, self.bot.cfg.patch_channel_id),
                                                 embeds=embeds_of(self.session)[:1], view=self.view_)
 
 
 class PatchView(discord.ui.View):
-    def __init__(self, bot, session):
-        super().__init__(timeout=900)
+    """persistent: the automatic preview; no timeout and fixed custom ids, so bot.add_view() after a restart binds
+    the buttons of the stored message again."""
+
+    def __init__(self, bot, session, persistent=False):
+        super().__init__(timeout=None if persistent else 900)
         self.bot, self.session = bot, session
+        if persistent:
+            for item in self.children:
+                item.custom_id = 'chaospatch:auto:' + {'Publicar': 'publish', 'Editar': 'edit'}.get(item.label, 'cancel')
 
     async def interaction_check(self, interaction):
         return await self.bot.guard(interaction)
@@ -95,6 +118,11 @@ class PatchView(discord.ui.View):
     @discord.ui.button(label='Publicar', style=discord.ButtonStyle.success)
     async def publish(self, interaction, button):
         await interaction.response.defer()
+        if self.session.auto and not self.bot.auto_pending_is(self.session.message_id):
+            self.stop()
+            await interaction.edit_original_response(content='Esta prévia não vale mais: outro patch saiu depois '
+                                                     'dela. Use /patch gerar.', embeds=[], view=None)
+            return
         try:
             msg = await self.bot.publish(self.session)
         except Exception as e:
@@ -112,6 +140,8 @@ class PatchView(discord.ui.View):
     @discord.ui.button(label='Cancelar', style=discord.ButtonStyle.danger)
     async def cancel(self, interaction, button):
         self.stop()
+        if self.session.auto:
+            self.bot.clear_auto_pending()
         await interaction.response.edit_message(content='Cancelado. Nada foi publicado.', embeds=[], view=None)
 
 
@@ -119,7 +149,11 @@ class WriteModal(EditModal):
     """/patch escrever: the same fields, empty."""
 
     def __init__(self, bot, version):
-        session = PatchSession(version, core.note_date(bot.now_local()), None, None, [])
+        export = core.load_changes(bot.cfg.changes_path)
+        # a hand-written patch also covers the game's changes up to now (the next /patch gerar starts after them)
+        session = PatchSession(version, core.note_date(bot.now_local()), None, None, [],
+                               [c['sha'] for c in export['commits']] if export else None,
+                               export['head'] if export else '')
         super().__init__(bot, session, None, title='Escrever patch notes')
 
     async def on_submit(self, interaction):
@@ -143,6 +177,8 @@ class BugBot(discord.Client):
         self.lock = asyncio.Lock()
         self.limiter = core.RateLimiter(cfg.per_user_hour)
         self.last_fail_dm = 0.0
+        self.channels_checked = False
+        self.ignored_seen = {}
         self.tz = ZoneInfo(core.TZ_NAME)
 
     def now_local(self):
@@ -166,10 +202,51 @@ class BugBot(discord.Client):
                           self.cfg.guild_id)
         else:
             await self.tree.sync()
+        self.restore_auto_pending()
         self.loop.create_task(self.daily_loop())
+        self.loop.create_task(self.auto_loop())
 
     async def on_ready(self):
         log.info('ready as bot id %s', self.user.id if self.user else '?')
+        if not self.channels_checked:
+            self.channels_checked = True
+            try:
+                await self.check_channels()
+            except Exception as e:
+                log.error('channel check failed: %s', type(e).__name__)
+
+    async def check_channels(self):
+        """At start: can the bot see the bugs and patch channels, with the permissions it needs? Logs one line per
+        channel and DMs the owner when something is wrong (owner 2026-11-03: the bot read nothing, no hint why)."""
+        results = []
+        for label, role, cid in (('Canal de bugs', 'bugs', self.cfg.bugs_channel_id),
+                                 ('Canal de patch notes', 'patch', self.cfg.patch_channel_id)):
+            if not cid:
+                results.append((label, cid, 'not-set'))
+                log.error('%s channel: not set', role)
+                continue
+            try:
+                ch = self.get_channel(cid) or await self.fetch_channel(cid)
+            except discord.HTTPException as e:
+                results.append((label, cid, 'missing'))
+                log.error('%s channel ...%s: not reachable (%s)', role, str(cid)[-4:], type(e).__name__)
+                continue
+            guild = getattr(ch, 'guild', None)
+            me = guild.me if guild else None
+            if me is None:
+                results.append((label, cid, 'missing'))
+                log.error('%s channel ...%s: not a server channel', role, str(cid)[-4:])
+                continue
+            perms = ch.permissions_for(me)
+            granted = {n for n, v in perms if v}
+            forum = isinstance(ch, discord.ForumChannel)
+            missing = core.missing_permissions(granted, role, forum)
+            results.append((label, cid, missing or None))
+            log.info('%s channel ...%s: %s%s', role, str(cid)[-4:], 'forum' if forum else 'text',
+                     ', missing: ' + ', '.join(missing) if missing else ', ok')
+        text = core.channel_check_text(results)
+        if text:
+            await self.dm_owner(text)
 
     # ---- who may use the commands
     async def guard(self, interaction):
@@ -211,7 +288,14 @@ class BugBot(discord.Client):
         if m.author.bot:
             return
         thread = m.channel if isinstance(m.channel, discord.Thread) else None
-        if not core.in_bugs_channel(m.channel.id, thread.parent_id if thread else None, self.cfg.bugs_channel_id):
+        parent = thread.parent_id if thread else None
+        if not core.in_bugs_channel(m.channel.id, parent, self.cfg.bugs_channel_id):
+            # one line per channel an hour, ids only: shows a wrong DISCORD_BUGS_CHANNEL_ID (owner 2026-11-03)
+            key = parent or m.channel.id
+            if time.time() - self.ignored_seen.get(key, 0) > 3600:
+                self.ignored_seen[key] = time.time()
+                log.info('message in channel %s%s ignored: the bugs channel is %s', m.channel.id,
+                         ' (thread of %s)' % parent if parent else '', self.cfg.bugs_channel_id or 'not set')
             return
         # a forum post: the starter message has the thread's id; its title goes in front of the text
         text = core.report_text(m.content, thread.name if thread else None, bool(thread) and m.id == thread.id)
@@ -263,14 +347,125 @@ class BugBot(discord.Client):
             if s.en is None:
                 s.en = await self.claude.translate_patch(s.pt)
             nid = core.write_site_files(self.cfg.patchnotes_dir, s.date, s.pt, s.en)
-            note = ' Arquivos do site: %s.md e %s.pt-br.md (use "chaos-ctl discord-bot patchnotes" para levar ao jogo).' \
-                % (nid, nid)
+            note = (' Arquivos do site: %s.md e %s.pt-br.md (o jogo recebe em até 5 minutos; na hora: Levar patch '
+                    'notes ao jogo).' % (nid, nid))
         except Exception as e:
             log.error('site files not written: %s', type(e).__name__)
             note = ' Os arquivos do site NÃO foram gravados (%s).' % type(e).__name__
         self.store.mark_patched(s.bug_ids, s.version or nid or s.date)
         self.store.record_patch(s.version or '', nid, s.bug_ids)
+        if s.seen_shas is not None:
+            self.store.mark_changes_seen(s.seen_shas, s.newest_sha)
+        if s.auto or s.seen_shas is not None:
+            self.clear_auto_pending()  # a pending automatic preview is out of date now: its Publicar refuses
         return 'Publicado em <#%d>.%s' % (self.cfg.patch_channel_id, note)
+
+    # ---- the game's changes and the automatic patch (O385)
+    def changes_for_patch(self):
+        """(export, changes, since, block, used, left_out) for the next patch."""
+        export = core.load_changes(self.cfg.changes_path)
+        changes, since = core.select_changes(export, self.store.changes_seen(), self.store.patch_last_at(), time.time())
+        block, used, left = core.changes_block(changes)
+        return export, changes, since, block, used, left
+
+    def session_from(self, version, notes, fixed, export, since, used, left, auto=False):
+        return PatchSession(version, core.note_date(self.now_local()), notes['pt'], notes['en'],
+                            [b['id'] for b in fixed], [c['sha'] for c in export['commits']] if export else None,
+                            export['head'] if export else '', core.changes_summary(used, left, since, export, self.tz),
+                            auto=auto)
+
+    def save_auto_pending(self, session):
+        self.store.meta_set('auto_pending', core.pending_to_json(session.to_dict(), session.message_id))
+
+    def clear_auto_pending(self):
+        self.store.meta_set('auto_pending', '')
+
+    def auto_pending_is(self, message_id):
+        return core.pending_message_id(self.store.meta_get('auto_pending')) == message_id
+
+    def restore_auto_pending(self):
+        """At start: the buttons of a stored automatic preview work again."""
+        raw = self.store.meta_get('auto_pending')
+        if not raw:
+            return
+        data, mid = core.pending_from_json(raw)
+        if not data:
+            self.clear_auto_pending()
+            return
+        s = PatchSession.from_dict(data)
+        s.message_id = mid
+        self.add_view(PatchView(self, s, persistent=True), message_id=mid)
+        log.info('automatic preview %s: buttons restored', mid)
+
+    async def auto_loop(self):
+        await self.wait_until_ready()
+        while not self.is_closed():
+            try:
+                await self.auto_patch_tick()
+            except Exception as e:
+                log.error('auto patch: %s', type(e).__name__)
+            await asyncio.sleep(300)
+
+    async def auto_patch_tick(self):
+        export = core.load_changes(self.cfg.changes_path)
+        seen, last_at = self.store.changes_seen(), self.store.patch_last_at()
+        plan = core.auto_patch_plan(self.cfg.patch_auto, export, self.store.meta_get('auto_head'), seen, last_at,
+                                    time.time())
+        if plan['action'] == 'none':
+            return
+        self.store.meta_set('auto_head', plan['head'])  # one attempt per head: never twice for the same changes
+        if plan['action'] == 'skip':
+            log.info('auto patch: head %s has no new player-facing change', plan['head'][:12])
+            return
+        block, used, left = core.changes_block(plan['changes'])
+        fixed = self.store.fixed_unpatched()
+        version = core.auto_version(self.now_local())
+        try:
+            notes = await self.claude.write_patch(fixed, version, '', block)
+        except Exception as e:
+            log.error('auto patch: notes not written: %s', type(e).__name__)
+            await self.dm_owner('Não consegui escrever o patch automático (%s). Use /patch gerar.' % type(e).__name__)
+            return
+        if notes is None:
+            log.info('auto patch: head %s, %d changes, nothing players notice', plan['head'][:12], used)
+            self.store.mark_changes_seen([c['sha'] for c in export['commits']], export['head'])
+            return
+        s = self.session_from(version, notes, fixed, export, plan['since'], used, left, auto=True)
+        if plan['publish']:
+            try:
+                msg = await self.publish(s)
+            except Exception as e:
+                log.error('auto patch: publish failed: %s', type(e).__name__)
+                await self.dm_owner('O patch automático não foi publicado (%s). Use /patch gerar.' % type(e).__name__)
+                return
+            log.info('auto patch: published %s (%d changes)', version, used)
+            await self.dm_owner('Patch automático %s depois da atualização do servidor. %s' % (version, msg))
+            return
+        await self.retire_auto_preview()
+        user = await self.fetch_user(self.cfg.owner_id)
+        view = PatchView(self, s, persistent=True)
+        text = 'Patch automático depois da atualização do servidor. ' + preview_text(s, self.cfg.patch_channel_id)
+        m = await user.send(text, embeds=embeds_of(s)[:1], view=view, allowed_mentions=NO_PINGS)
+        s.message_id = m.id
+        self.save_auto_pending(s)
+        log.info('auto patch: preview %s sent to the owner (%d changes)', version, used)
+
+    async def retire_auto_preview(self):
+        """A newer automatic preview replaces the old one: its message loses the buttons."""
+        raw = self.store.meta_get('auto_pending')
+        if not raw:
+            return
+        self.clear_auto_pending()
+        mid = core.pending_message_id(raw)
+        if mid is None:
+            return
+        try:
+            user = await self.fetch_user(self.cfg.owner_id)
+            ch = user.dm_channel or await user.create_dm()
+            old = await ch.fetch_message(mid)
+            await old.edit(content='Substituída por uma prévia mais nova (abaixo).', embeds=[], view=None)
+        except Exception as e:
+            log.info('old automatic preview not edited: %s', type(e).__name__)
 
 
 def register_commands(bot):
@@ -359,13 +554,18 @@ def register_commands(bot):
         try:
             await interaction.response.defer(ephemeral=True)
             fixed = store.fixed_unpatched()
-            if not fixed and not extras.strip():
-                await interaction.followup.send('Não há bugs corrigidos sem patch nem extras. Marque bugs como '
-                                                '"corrigido" ou passe o texto em extras.', ephemeral=True)
+            export, changes, since, block, used, left = bot.changes_for_patch()
+            if not fixed and not extras.strip() and not changes:
+                await interaction.followup.send(core.nothing_new_text(since or store.patch_last_at(), bot.tz),
+                                                ephemeral=True)
                 return
-            notes = await claude.write_patch(fixed, versao, extras)
-            s = PatchSession(core.clean_line(versao, 40), core.note_date(bot.now_local()), notes['pt'], notes['en'],
-                             [b['id'] for b in fixed])
+            notes = await claude.write_patch(fixed, versao, extras, block)
+            if notes is None:
+                await interaction.followup.send('O Claude não achou nada que os jogadores notem nas %d mudanças do '
+                                                'jogo. Passe o texto em extras se quiser um patch mesmo assim.' % used,
+                                                ephemeral=True)
+                return
+            s = bot.session_from(core.clean_line(versao, 40), notes, fixed, export, since, used, left)
             await interaction.followup.send(preview_text(s, bot.cfg.patch_channel_id), embeds=embeds_of(s)[:1],
                                             view=PatchView(bot, s), ephemeral=True)
         except Exception as e:

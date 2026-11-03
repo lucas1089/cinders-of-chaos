@@ -18,33 +18,40 @@ Runs the server and the client on your own computer.
    crashes\crashes.log); after 5 crashes in a row it stops trying and leaves the window open.
 
 Map editor
-  The map editor is not in this zip: its licence lets copies be passed on only unmodified, with its own licence
-  text, so you download it once from its source (docs/CREDITS.md, entry under Tools; the game's Credits window shows
-  the same link). It is free. You need a GitHub account to download from the Actions page.
-    1. Open the source's "Actions" tab, "Build Windows", the newest run with a green check.
-    2. Download the x64 artifact (its name ends in "Windows-x64-Release"; a zip inside a zip: extract both).
-    3. Copy what is inside (the program, its DLLs and its data folder) into the mapeditor folder of this package, next
-       to the client folder that is already there (the folder must hold that one program and no other
-       .exe). If Windows asks about merging the data folder, say yes.
-    4. Double-click open-map-editor.bat. It opens the editor on the server's map, with the 10.98 client files
-       (mapeditor\client: the Chaos Tibia.dat and Tibia.spr, and Tibia.otfi, which tells the editor the .spr has
-       transparency; keep it there) and the server folder (server\: items.otb and items.xml
-       with every Chaos item, the map in server\data\world) already chosen. Every monster and NPC of the server is in
-       the creature list (mapeditor\data\user\data\1098\creatures.xml), so their spawns show who stands there. NPCs
-       the server places at start (the Gambler, the Loot Buyer, the market stalls) are not in the map file and do not
-       show in the editor.
+  The map editor is in this zip (mapeditor\): a free program under the GNU AGPL-3.0, with its source zip in
+  mapeditor\source and its licence in mapeditor\LICENSE (docs/CREDITS.md, entry under Tools; the game's Credits window
+  names it too). Nothing to download. mapeditor\CHANGES.txt says which version it is and what the package set up.
+    1. Double-click open-map-editor.bat. It copies the server's items.otb and items.xml (every Chaos item) to the
+       editor, sets the editor's 10.98 client folder to mapeditor\client (the Chaos Tibia.dat, Tibia.spr, items.otb
+       and Tibia.otfi, which tells the editor the .spr has transparency; keep it there), puts the server's map first
+       in the editor's "Recent maps" and starts the editor.
+    2. On the start window, check that the client is 10.98 and click the map under "Recent maps" (the .otbm in
+       server\data\world). The editor cannot open a map from the command line; if the map is not in the list, use
+       File > Open: the bat put the map's path on the clipboard (Ctrl+V in the file window).
+  Every monster and NPC of the server is in the creature list (mapeditor\data\1098\creatures.xml), so their spawns show
+  who stands there. NPCs the server places at start (the Gambler, the Loot Buyer, the market stalls) are not in the map
+  file and do not show in the editor.
+  If the start window asks for the client folder of 10.98 (the first start, or the bat could not preset it): choose
+  mapeditor\client of this package. Once is enough; the editor keeps it.
+  The editor checks for a newer version on its start window. Its "Download & install" does not work in this package
+  on purpose (the updater is left out, mapeditor\CHANGES.txt): a newer editor comes with a newer package.
+  Our area generator in the editor (Tools > Lua Scripts, mapeditor\cinders\README.txt):
+    - New area: mode "Custom Lua script", script mapeditor\cinders\generate_area.lua (already chosen by the bat). Set
+      biome, width, height, floors, seed and level band at the top of that file (Notepad), set the Destination X / Y /
+      floor in the editor window, Generate, look at the log, Apply. Undo (Ctrl+Z) takes it out again.
+    - One of our area plans: script mapeditor\cinders\paint_plan.lua with plan = "<id>" at its top (the list:
+      mapeditor\cinders\plans\index.txt). The log names the Destination that puts it where the server has it.
+    The editor's scripts cannot place creatures, action ids, teleport targets or protection zones: the log and the
+    files next to the scripts list them (generated_spawns.txt, plans\<id>-notes.txt).
   Areas asked for in chat (the map inbox, docs/MAP_GUIDE.md "Map inbox"): the owner publishes them in the admin app
   (Comandos > Mapas pedidos > Publicar areas), which shows an address (the url= line). Double-click fetch-areas.bat, paste
   that address once (it is kept in mapeditor\inbox\source.txt), and it downloads the areas into mapeditor\inbox\<id>\
-  (every file checked against its sha256), lists them and opens the one you pick in the map editor. It needs curl.exe and
-  certutil (Windows 10 and later). The area is a separate small map, not the server's: look at it, say in the chat what to
-  change or "approve"; do not save it over the server's map. The editor may ask about the file's item version: it was written
-  for it (OTBM 2, items 3.57).
-  If the editor opens empty or asks for folders (Client + Server Workspace), choose mapeditor\client as the client
-  folder and the server folder of this package as the server folder, then open the .otbm in server\data\world.
-  The server's map is that .otbm (the only one there). Stop the game server before saving over it, keep a copy of the
-  old file, and restart the server to load the change. docs/MAP_GUIDE.md in the repository has the building rules
-  (sizes, borders, detail) for new areas.
+  (every file checked against its sha256), lists them and opens the one you pick in the map editor (first in "Recent
+  maps"). It needs curl.exe and certutil (Windows 10 and later). The area is a separate small map, not the server's: look
+  at it, say in the chat what to change or "approve"; do not save it over the server's map.
+  The server's map is the .otbm in server\data\world (the only one there). Stop the game server before saving over it,
+  keep a copy of the old file, and restart the server to load the change. docs/MAP_GUIDE.md in the repository has the
+  building rules (sizes, borders, detail) for new areas.
   To keep a change for good (next packages and the live server): send the saved .otbm to the team. It becomes the
   map master (docs/MAP_GUIDE.md "Editing the live map"). Start each edit from the newest package. Monster spawns
   and houses placed in the editor are not kept.
@@ -52,7 +59,8 @@ Map editor
 Folders
   server\     the game server (ChaosServer.exe, config.lua, data\, the map)
   client\     the Cinders of Chaos client (Chaos.exe and chaos.pack, which holds the game data and sprites)
-  mapeditor\  where the map editor goes (see above), with the client files and the creature list it reads
+  mapeditor\  the map editor (see above) with its source zip, the client files, the creature list and our
+              scripts (cinders\)
   mariadb\    portable MariaDB (nothing is installed on Windows)
   database\   made at the first start: the game database. Delete it (with the server and database stopped)
               to start over with a fresh database and the test accounts above.

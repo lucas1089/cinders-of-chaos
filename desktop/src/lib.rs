@@ -6,6 +6,8 @@ pub mod config;
 pub mod infos;
 pub mod keys;
 pub mod live;
+pub mod nav;
+pub mod output;
 pub mod reload;
 pub mod sign;
 pub mod ssh;

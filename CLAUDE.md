@@ -54,6 +54,7 @@ python3 -I tools/ci/check_rotation_kit.py && python3 -I tools/ci/check_rotation_
 cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check  # smooth leveling: stages, minutes per level 8-2200, hunts in reach (limits: data/scripts/chaos/progression_config.lua); no flag prints the table, --spells the unlock gaps
 python3 -I server/tools/audit_hunt_transitions_test.py   # hunt transition audit maths on synthetic spawns (O323; the run on a map: README "Hunt warnings (O323)"; warnings: tests/hunt_warnings_test.lua in the server loop)
 python3 -I server/tools/area_import_test.py   # imported hunts (O335): committed chunks, spawns, exit portal, boxes; extract needs the source map (not in git)
+cd server && lua5.1 tests/editor_scripts_test.lua && cd .. && python3 -I server/tools/gen_editor_scripts_test.py && python3 -I tools/windows/editor_release_test.py   # map editor script pack in the editor's Lua 5.1 (O381; luac5.1 -p of the pack files in ci.yml); the editor download checks
 python3 -I server/tools/audit_hunts_test.py   # hunt audit (monsters, density, size of every hunt) on synthetic data (O337; the run on an installed map: README "Hunt audit (O337)")
 python3 -I server/tools/hunt_annexes_test.py && python3 -I server/tools/patch_hunt_annexes_test.py && python3 -I server/tools/patch_waystone_trim_test.py && python3 -I server/tools/gen_spawn_expand_test.py   # the five hunt annexes, their portal step, the waystone trim and the spawn fills / thinning (O337; on an installed server: gen_spawn_expand.py --check)
 python3 -I server/tools/patch_quest_showcase_test.py   # quest hall showcase: items on show match the quest rewards (O361; rows: tools/quest_showcase.json)
@@ -85,6 +86,7 @@ python3 -I server/tools/patch_spell_ids_test.py      # stock spell ids below 256
 python3 -I server/tools/monster_level_patch_test.py   # src-patch 0082: monster level = middle of the <level> range, no level skull (O326)
 python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
+python3 -I mapeditor/tools/run_profile_test.py && python3 -I mapeditor/tools/upstream_test.py   # our map editor (O382): profile table, upstream pin; build and profile: mapeditor-build.yml, patches: mapeditor/tools/check_patches.sh UPSTREAM_CLONE
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
 for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests
 
@@ -147,6 +149,7 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
 - `ROADMAP.md`: status of each item.
 - `server/README.md`: one section per server system, install steps, assumptions.
 - `client/MANIFEST.md`: client modules. `client/BASE.md`: client base patches.
+- `mapeditor/README.md`: our map editor build, its patches and the profile.
 - `docs/CLASSES.md`: classes.
 - `docs/CREDITS.md`: every third-party source. The game and the website show it.
 - `server/data/spells/README.md`: measured balance numbers.

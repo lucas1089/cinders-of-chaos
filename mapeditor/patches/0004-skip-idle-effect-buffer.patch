@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Tue, 3 Nov 2026 14:07:20 +0000
+Subject: [PATCH 4/6] Render: skip the effect buffer when no effect is active
+
+synchronize() collected the placement effect instances and rebuilt the
+effect vertex staging on every frame, also when no effect was active: a
+temporary vector, a QByteArray and a dirty mark per frame. The collection
+now runs only while effects are active, plus one more frame to clear the
+last one. Drawing is unchanged: an empty list was never drawn.
+---
+ editor/map/maprhiview.cpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/editor/map/maprhiview.cpp b/editor/map/maprhiview.cpp
+index d35a82b..2d3a338 100644
+--- a/editor/map/maprhiview.cpp
++++ b/editor/map/maprhiview.cpp
+@@ -301,7 +301,9 @@ public:
+         };
+         if (m_previewWindow) {
+             m_fxInst.clear(); m_fxCount = 0;
+-        } else {
++        } else if (src->hasActiveEffects() || m_fxCount > 0) {
++            // Without active effects the collected list stays empty; skip the
++            // per-frame allocation and the dirty mark of an empty buffer.
+             src->renderCollectEffectInstances(m_fxInst);
+             uploadDyn(m_fxVbo, m_fxInst, m_fxCount);
+         }

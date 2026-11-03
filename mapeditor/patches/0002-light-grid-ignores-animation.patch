@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Tue, 3 Nov 2026 14:07:07 +0000
+Subject: [PATCH 2/6] Render: keep the light grid across item animation frames
+
+MapView::animTick bumps the data version on every animation phase change
+(water, fire, torches). The light grid cache key used that version, so with
+the lighting preview on, every phase change rebuilt the CPU light grid of
+all visible floors and uploaded a new light texture, although item
+animation never changes light sources. The key now uses
+renderStaticContentVersion(), the data version without the bumps made by
+animTick. Any other content change still rebuilds the grid.
+---
+ editor/map/maprhiview.cpp | 2 +-
+ editor/map/mapview.cpp    | 1 +
+ editor/map/mapview.h      | 7 +++++++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/editor/map/maprhiview.cpp b/editor/map/maprhiview.cpp
+index 8473fda..9bc2c98 100644
+--- a/editor/map/maprhiview.cpp
++++ b/editor/map/maprhiview.cpp
+@@ -356,7 +356,7 @@ public:
+             // sprites are rendered.
+             const int tx = static_cast<int>(std::floor(ox)) - 1;
+             const int ty = static_cast<int>(std::floor(oy)) - 1;
+-            quint64 key = contentVersion;
++            quint64 key = src->renderStaticContentVersion();
+             const auto mixLightKey = [&key](quint64 value) {
+                 key ^= value + 0x9e3779b97f4a7c15ull + (key << 6) + (key >> 2);
+             };
+diff --git a/editor/map/mapview.cpp b/editor/map/mapview.cpp
+index 95c27b5..b37420a 100644
+--- a/editor/map/mapview.cpp
++++ b/editor/map/mapview.cpp
+@@ -175,6 +175,7 @@ void MapView::animTick()
+     if (invalidated) m_chunkStore.cacheVersion().fetch_add(1,std::memory_order_relaxed);
+     // Includes detached previews and Lua previews, even outside the editor view.
+     ++m_dataVersion;
++    ++m_animationDataBumps;
+     emit contentUpdated();update();
+ }
+ 
+diff --git a/editor/map/mapview.h b/editor/map/mapview.h
+index b58a4ce..032a3b2 100644
+--- a/editor/map/mapview.h
++++ b/editor/map/mapview.h
+@@ -519,6 +519,12 @@ public:
+     void renderTakeDirtyChunks(QVector<QPair<int, quint64>> &out);
+ 
+     quint64 renderContentVersion() const;
++    // Content version without the bumps made only by item animation phases.
++    // Light grids and geometry overlays do not depend on animation frames.
++    quint64 renderStaticContentVersion() const {
++        return static_cast<quint64>(static_cast<uint32_t>(m_dataVersion)
++                                    - static_cast<uint32_t>(m_animationDataBumps));
++    }
+     quint64 renderMetadataOverlayVersion() const;
+     quint64 renderPointerOverlayVersion() const;
+ 
+@@ -1247,6 +1253,7 @@ private:
+     bool m_atlasBuilding = false;
+     bool m_refreshCreaturesAfterAtlas = false;
+     int m_dataVersion = 0;
++    int m_animationDataBumps = 0;
+     quint32 m_metadataOverlayVersion = 0;
+     mutable quint64 m_zoneLabelCacheVersion = ~quint64(0);
+     mutable QHash<quint64, int> m_zoneLabelRegions;

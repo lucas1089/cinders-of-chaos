@@ -593,6 +593,29 @@ final class CommandsTab {
             b.addView(f, ui.gap(8));
             b.addView(save, ui.gap(2));
         }
+        // O385: the patch notes after a server update (DISCORD_BOT_PATCH_AUTO); one choice, the bot restarts with it
+        b.addView(ui.hint("Patch notes automáticas depois de cada atualização do servidor: Prévia (padrão) manda a "
+                + "prévia para você no Discord, com Publicar, Editar e Cancelar. Publicar posta sozinho e avisa você. "
+                + "Desligado: só com /patch gerar."), ui.gap(12));
+        final String[][] autoModes = {{"preview", "Prévia"}, {"publish", "Publicar"}, {"off", "Desligado"}};
+        MaterialButton[] autoButtons = new MaterialButton[autoModes.length];
+        for (int i = 0; i < autoModes.length; i++) {
+            final String mode = autoModes[i][0];
+            final String label = autoModes[i][1];
+            autoButtons[i] = ui.secondary(label, 0);
+            autoButtons[i].setOnClickListener(v -> {
+                if (!a.store.configured()) {
+                    a.snack("Configure o servidor na aba Config.", false);
+                    return;
+                }
+                result.running("Bot do Discord: patch automático " + label);
+                a.ctlAction("discord-bot set DISCORD_BOT_PATCH_AUTO", 40, mode + "\n", r -> {
+                    result.show("Bot do Discord", r);
+                    a.snack("Patch automático: " + (r.ok ? label : r.title), r.ok);
+                });
+            });
+        }
+        b.addView(ui.evenRow(autoButtons), ui.gap(4));
         MaterialButton start = ui.primary("Iniciar", R.drawable.ic_play);
         start.setOnClickListener(v -> ctl("Bot do Discord: iniciar", "discord-bot start", 60, null));
         MaterialButton restart = ui.secondary("Reiniciar", R.drawable.ic_refresh);

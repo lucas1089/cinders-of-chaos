@@ -2,7 +2,7 @@
 
 Um bot para o seu servidor do Discord. Ele lê o canal de bugs, usa o Claude para separar bug de conversa, junta relatos repetidos, avisa você quando o bug é crítico e ajuda a escrever os patch notes. Roda na VPS do jogo como serviço do systemd. Chama-se `chaos-discordbot`.
 
-Código: `bot.py` é a camada fina do Discord. As regras estão em `bot_core.py` e as chamadas ao Claude em `claude_client.py`. Os testes são `bot_core_test.py` e `claude_client_test.py`.
+Código: `bot.py` é a camada fina do Discord. As regras estão em `bot_core.py` e as chamadas ao Claude em `claude_client.py`. `changes_export.py` roda como root e lê as mudanças do jogo no repositório (seção 5). Os testes são `bot_core_test.py` e `claude_client_test.py`.
 
 ## O que ele faz
 
@@ -26,7 +26,7 @@ Comandos. Só você e quem tem o cargo de admin, se você definir um, conseguem 
 | `/bugs status id novo_status [duplicado_de] [nota]` | Muda o status: aberto, confirmado, em andamento, corrigido, não é bug, duplicado |
 | `/bugs exportar [incluir_fechados]` | Baixa um arquivo Markdown |
 | `/bugs resumo` | O Claude sugere prioridades e bugs que provavelmente têm a mesma causa |
-| `/patch gerar versao [extras]` | Escreve os patch notes com os bugs corrigidos, mostra a prévia com Publicar, Editar e Cancelar |
+| `/patch gerar versao [extras]` | Escreve os patch notes com as mudanças do jogo desde o último patch, os bugs corrigidos e os extras. Mostra a prévia com Publicar, Editar e Cancelar |
 | `/patch escrever [versao]` | Abre um formulário para escrever à mão, com prévia |
 
 Regras de status. Um bug corrigido só volta para aberto ou confirmado. Duplicado pede o número do bug original, e os relatos vão para ele. Um bug entra em um `/patch gerar` uma vez só.
@@ -111,18 +111,49 @@ O `read -rs` não deixa a senha no histórico do shell. O arquivo de ajustes é 
 - Copia o código para `/opt/chaos/discord-bot/app` e cria o ambiente em `/opt/chaos/discord-bot/venv` com as versões fixas de `requirements.txt`. O arquivo vale do Python 3.10 ao 3.13: as linhas com `; python_full_version` escolhem a versão certa para o Python da VPS (gerado com `uv pip compile --universal --python-version 3.10`; o `audioop-lts` só entra no 3.13).
 - Cria `/etc/chaos/discord-bot.env`, modo 600, dono root. O systemd lê o arquivo antes de baixar os privilégios.
 - Instala `chaos-discordbot.service` com as proteções de sandbox dos outros serviços. O bot só escreve em `/var/lib/chaos/discord-bot`.
+- Instala e liga `chaos-discordbot-sync.timer`, de 5 em 5 minutos, como root. Ele grava as mudanças do jogo para o bot e leva os patch notes publicados para o jogo (seção 5). Log: `/var/log/chaos/discord-bot-sync.log`.
 - Roda de novo sem estragar nada.
 
 ## 5. Patch notes no site e no jogo
 
-O `/patch gerar` e o `/patch escrever` publicam o embed no canal de patch notes. O bot também grava dois arquivos no formato que o jogo e o site já leem:
+### De onde vêm as mudanças
+
+O bot puxa sozinho as mudanças do jogo. A cada 5 minutos o `chaos-discordbot-sync.timer` lê o histórico do git do repositório da VPS (`/opt/chaos/repo`) e grava `/var/lib/chaos/discord-bot/changes.json`. Só regrava quando o repositório mudou, ou seja, depois de um **Atualizar servidor**.
+
+Entram só commits do que o jogador recebe: dados do servidor, patches do motor, SQL, passos de instalação, cliente e site. Ficam de fora docs, testes, CI, ferramentas, o app de admin e o próprio bot. Commits de merge também. Assuntos que parecem internos ou privados (endereço, caminho, chave) caem fora inteiros. O texto do commit vai sem caminhos de arquivo e sem ids como O123. São no máximo 120 dias e 400 commits.
+
+O `/patch gerar` usa as mudanças que nenhum patch publicado cobriu ainda. No primeiro patch, as dos últimos 14 dias, no máximo 60. O Claude transforma as mensagens dos commits em notas para o jogador, em português e inglês, agrupadas por tema. Nada de hash, caminho, id interno ou jargão. A entrada vai até 12 mil caracteres, as mais novas primeiro; a prévia diz quantas entraram, desde quando e quantas ficaram de fora. Se não há mudança nova, nem bug corrigido, nem extras, o bot diz "Nada novo desde DD/MM/AAAA". Se o Claude não acha nada que o jogador note, ele avisa e não monta patch.
+
+Ao publicar, o bot marca essas mudanças como cobertas. O próximo patch começa depois delas. Um `/patch escrever` publicado também conta.
+
+### Patch automático depois de cada atualização
+
+Você não precisa rodar nada. Quando o `changes.json` muda e tem mudança nova para o jogador, o bot escreve o patch sozinho. A versão é a data, `AAAA-MM-DD`. Os bugs corrigidos sem patch entram junto. Três modos, no ajuste `DISCORD_BOT_PATCH_AUTO`:
+
+| Modo | O que acontece |
+|---|---|
+| `preview` (padrão) | O bot manda a prévia por DM, com Publicar, Editar e Cancelar. Os botões continuam valendo depois de reiniciar o bot. Uma prévia nova substitui a anterior |
+| `publish` | O bot publica direto no canal de patch notes, grava os arquivos do site e manda uma DM curta com o link do canal. A primeira vez é sempre prévia, para você ver como fica |
+| `off` | Só com `/patch gerar` |
+
+Se o Claude disser que nada muda para o jogador, o bot não manda nada e escreve uma linha nos **Logs**. O mesmo conjunto de mudanças nunca vira dois patches: o bot guarda o último estado do repositório que já tratou. Se a prévia ficou velha porque outro patch saiu antes, o Publicar dela recusa e manda usar `/patch gerar`.
+
+Para escolher o modo, uma vez só. No app Android: **Comandos** > **Bot do Discord** > botões **Prévia**, **Publicar** ou **Desligado**. No app de desktop: **Comandos** > **Bot do Discord** > **Guardar ajuste**, ajuste `DISCORD_BOT_PATCH_AUTO`, valor `preview`, `publish` ou `off`. O bot reinicia sozinho com o ajuste novo. Pelo terminal, só se o app não puder: `printf 'publish\n' | sudo $CTL discord-bot set DISCORD_BOT_PATCH_AUTO`.
+
+Bot instalado antes de 2026-11-03? Toque uma vez em **Instalar ou atualizar** para ganhar o timer.
+
+### Os arquivos
+
+O `/patch gerar`, o `/patch escrever` e o patch automático publicam o embed no canal de patch notes. O bot também grava dois arquivos no formato que o jogo e o site já leem:
 
 - `/var/lib/chaos/discord-bot/patchnotes/AAAA-MM-DD.md`, em inglês
 - `/var/lib/chaos/discord-bot/patchnotes/AAAA-MM-DD.pt-br.md`, em português
 
 O Claude escreve as duas versões juntas. Se você edita ou escreve à mão, ele traduz para o inglês na hora de publicar. Se o dia já tem um arquivo, o novo vira `AAAA-MM-DD-2` e nada é sobrescrito.
 
-Os arquivos não vão sozinhos para o jogo, porque o bot não tem acesso à pasta do servidor. Toque em **Levar patch notes ao jogo** no app, ou rode `sudo $CTL discord-bot patchnotes`. Isso copia só os arquivos que o servidor ainda não tem para `data/patchnotes`. O jogo lista essa pasta a cada minuto no máximo. Depois copie os arquivos para `server/data/patchnotes` no repositório e faça o commit, para o próximo update não perdê-los.
+O timer leva os arquivos novos para `data/patchnotes` do servidor em até 5 minutos. Nada é sobrescrito. O jogo lista essa pasta a cada minuto no máximo. Para levar agora: **Levar patch notes ao jogo** no app, ou `sudo $CTL discord-bot patchnotes`. Esse botão também atualiza as mudanças do jogo na hora. Depois copie os arquivos para `server/data/patchnotes` no repositório e faça o commit. Se um update trocar a pasta do servidor, o timer copia de novo os que faltarem.
+
+**Estado** mostra `patch_auto`, `sync_timer` e a hora do `changes_file`.
 
 ## 6. Dados e privacidade
 
@@ -151,7 +182,8 @@ Mensagens curtas demais e sem print não chamam o Claude. Cada `/patch gerar` e 
 
 | Sintoma | O que fazer |
 |---|---|
-| O bot está online e ignora as mensagens | Ligue **Message Content Intent** na aba Bot e reinicie |
+| O bot está online e ignora as mensagens | Veja **Logs** logo depois de **Reiniciar**. Ao iniciar, o bot confere os dois canais e escreve uma linha por canal: `bugs channel ...9494: text, ok` ou o que falta. Se algo falta, ele também manda DM. Confira também **Message Content Intent** na aba Bot |
+| Salvei um ajuste e nada mudou | Desde 2026-11-03, **Guardar ajuste** reinicia o bot sozinho quando ele está rodando. Antes era preciso clicar em **Reiniciar** |
 | Os comandos não aparecem | Salve `DISCORD_GUILD_ID`, reinicie e confira o convite com `applications.commands`. Sem o id do servidor pode levar uma hora |
 | `403 Forbidden (error code: 50001): Missing Access` ao iniciar | O bot não está no servidor de `DISCORD_GUILD_ID`, ou foi convidado sem `applications.commands`, ou o id não é de servidor. Convide de novo com o link da seção 1 (pode convidar por cima). Para o id: modo desenvolvedor ligado, clique direito no nome do servidor > Copiar ID do servidor, e salve com **Guardar ajuste**. Depois **Reiniciar**. Desde 2026-10-31 o bot segue rodando sem os comandos e explica isso nos **Logs** |
 | "Integration requires code grant" ao abrir o link de convite | Na aba **Bot**, desligue **Requires OAuth2 Code Grant**, salve e abra o link de novo |
@@ -159,6 +191,7 @@ Mensagens curtas demais e sem print não chamam o Claude. Cada `/patch gerar` e 
 | `config-missing` ao iniciar | O app lista os nomes que faltam. Salve esses valores |
 | O bot reage mas não responde | Falta a permissão de enviar mensagens (num fórum: enviar mensagens em threads) ou ver o histórico no canal |
 | Você recebe "Falha ao classificar" | Veja **Logs**. Quase sempre é chave inválida, sem crédito ou limite de uso. O aviso vem no máximo uma vez por hora |
+| O patch automático não chega | **Estado**: `patch_auto` não pode ser `off`, `sync_timer` deve ser `active` e `changes_file` não pode ser `missing`. Sem timer, toque em **Instalar ou atualizar**. Os **Logs** dizem `auto patch: ...` a cada tentativa |
 | `python3-venv-missing` | o `apt-get` não conseguiu instalar: `sudo apt-get install python3-venv` e instale de novo |
 
 ## Testes
