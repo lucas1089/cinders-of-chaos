@@ -143,6 +143,7 @@ class BugBot(discord.Client):
         self.lock = asyncio.Lock()
         self.limiter = core.RateLimiter(cfg.per_user_hour)
         self.last_fail_dm = 0.0
+        self.channels_checked = False
         self.tz = ZoneInfo(core.TZ_NAME)
 
     def now_local(self):
@@ -170,6 +171,45 @@ class BugBot(discord.Client):
 
     async def on_ready(self):
         log.info('ready as bot id %s', self.user.id if self.user else '?')
+        if not self.channels_checked:
+            self.channels_checked = True
+            try:
+                await self.check_channels()
+            except Exception as e:
+                log.error('channel check failed: %s', type(e).__name__)
+
+    async def check_channels(self):
+        """At start: can the bot see the bugs and patch channels, with the permissions it needs? Logs one line per
+        channel and DMs the owner when something is wrong (owner 2026-11-03: the bot read nothing, no hint why)."""
+        results = []
+        for label, role, cid in (('Canal de bugs', 'bugs', self.cfg.bugs_channel_id),
+                                 ('Canal de patch notes', 'patch', self.cfg.patch_channel_id)):
+            if not cid:
+                results.append((label, cid, 'not-set'))
+                log.error('%s channel: not set', role)
+                continue
+            try:
+                ch = self.get_channel(cid) or await self.fetch_channel(cid)
+            except discord.HTTPException as e:
+                results.append((label, cid, 'missing'))
+                log.error('%s channel ...%s: not reachable (%s)', role, str(cid)[-4:], type(e).__name__)
+                continue
+            guild = getattr(ch, 'guild', None)
+            me = guild.me if guild else None
+            if me is None:
+                results.append((label, cid, 'missing'))
+                log.error('%s channel ...%s: not a server channel', role, str(cid)[-4:])
+                continue
+            perms = ch.permissions_for(me)
+            granted = {n for n, v in perms if v}
+            forum = isinstance(ch, discord.ForumChannel)
+            missing = core.missing_permissions(granted, role, forum)
+            results.append((label, cid, missing or None))
+            log.info('%s channel ...%s: %s%s', role, str(cid)[-4:], 'forum' if forum else 'text',
+                     ', missing: ' + ', '.join(missing) if missing else ', ok')
+        text = core.channel_check_text(results)
+        if text:
+            await self.dm_owner(text)
 
     # ---- who may use the commands
     async def guard(self, interaction):

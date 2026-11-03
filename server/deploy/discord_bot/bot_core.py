@@ -186,6 +186,49 @@ def in_bugs_channel(channel_id, parent_id, bugs_channel_id):
     return channel_id == bugs_channel_id or (parent_id is not None and parent_id == bugs_channel_id)
 
 
+# What the bot needs in each channel (README step 7). Names are discord.Permissions attributes.
+PERM_LABEL = {
+    'view_channel': 'Ver canal',
+    'read_message_history': 'Ver histórico de mensagens',
+    'send_messages': 'Enviar mensagens',
+    'send_messages_in_threads': 'Enviar mensagens em threads',
+    'add_reactions': 'Adicionar reações',
+    'embed_links': 'Inserir links',
+}
+BUGS_PERMS = ('view_channel', 'read_message_history', 'send_messages', 'add_reactions')
+PATCH_PERMS = ('view_channel', 'send_messages', 'embed_links')
+
+
+def missing_permissions(granted, role, forum=False):
+    """The permission labels the bot lacks in a channel. granted: names the bot has; role: 'bugs' or 'patch'.
+    A forum bugs channel answers inside each post's thread, so it also needs Enviar mensagens em threads."""
+    need = list(BUGS_PERMS if role == 'bugs' else PATCH_PERMS)
+    if role == 'bugs' and forum:
+        need.append('send_messages_in_threads')
+    return [PERM_LABEL[n] for n in need if n not in granted]
+
+
+def channel_check_text(results):
+    """The owner's DM after a start with a problem, or None when every channel is fine.
+    results: list of (label, channel_id, problem) with problem None, 'missing' (not found or no access),
+    'not-set', or a list of missing permission labels."""
+    lines = []
+    for label, cid, problem in results:
+        tail = str(cid)[-4:] if cid else ''
+        if problem is None:
+            continue
+        if problem == 'not-set':
+            lines.append('- %s: não configurado. App: Bot do Discord > Guardar ajuste, depois Reiniciar.' % label)
+        elif problem == 'missing':
+            lines.append('- %s (id terminando em %s): o bot não encontra ou não vê esse canal. Confira o id '
+                         '(botão direito no canal > Copiar ID do canal) e se o bot está no servidor.' % (label, tail))
+        else:
+            lines.append('- %s (id terminando em %s): faltam permissões para o bot: %s.' % (label, tail, ', '.join(problem)))
+    if not lines:
+        return None
+    return 'O bot iniciou, mas há um problema nos canais:\n' + '\n'.join(lines)
+
+
 def report_text(body, thread_title=None, starter=False):
     """The text to classify. The first message of a forum post gets the post's title in front: the title often holds
     the whole report ("teste: baú não abre.") and the body only "teste"."""

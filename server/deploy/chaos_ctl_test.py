@@ -1827,6 +1827,13 @@ exit 0
         # set: validated per name, mode 600, only that line replaced, never printed
         r = run('set', 'DISCORD_TOKEN', stdin=token + '\n')
         check(r.returncode == 0 and 'saved' in r.stdout and token not in r.stdout + r.stderr, 'set token: ' + r.stdout + r.stderr)
+        check('not running' in r.stdout and 'restarted' not in r.stdout, 'set: a stopped bot is not started: ' + r.stdout)
+        open(os.path.join(stub, 'active'), 'w').close()
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('set', 'DISCORD_BUGS_CHANNEL_ID', stdin='1567178340434059494\n')
+        check(r.returncode == 0 and 'systemctl restart chaos-discordbot' in calls() and 'restarted' in r.stdout,
+              'set: a running bot restarts with the new setting: ' + r.stdout + r.stderr)
+        os.remove(os.path.join(stub, 'active'))
         r = run('set', 'ANTHROPIC_API_KEY', stdin=key + '\n')
         check(r.returncode == 0 and key not in r.stdout + r.stderr, 'set key')
         body = open(envf).read()

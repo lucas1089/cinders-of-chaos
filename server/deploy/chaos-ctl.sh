@@ -194,7 +194,7 @@
 #   discord-bot set NAME        saves one setting into the env file, the value on stdin (one line, checked per NAME, never
 #                               printed, never on a command line). NAME: DISCORD_TOKEN ANTHROPIC_API_KEY DISCORD_OWNER_ID
 #                               DISCORD_BUGS_CHANNEL_ID DISCORD_PATCH_CHANNEL_ID DISCORD_GUILD_ID DISCORD_ADMIN_ROLE_ID
-#                               DISCORD_BOT_MODEL. Empty input removes the line
+#                               DISCORD_BOT_MODEL. Empty input removes the line. A running bot restarts at once
 #   discord-bot start | stop | restart
 #                               start refuses with config-missing (names only) until the five required settings are set
 #   discord-bot logs [N]        the last N (default 60, at most 500) lines of the bot log, tokens and keys masked
@@ -2073,8 +2073,16 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           || { rm -f "$btmp"; die "cannot write $BOTENV"; }
         chown --reference="$breal" -- "$btmp" 2>/dev/null || true
         mv -f -- "$btmp" "$breal" || { rm -f "$btmp"; die "cannot replace $BOTENV"; }
-        if [ -n "$bval" ]; then echo "discord-bot set: $bname saved (${#bval} characters); restart the bot to use it"; unset bval
+        if [ -n "$bval" ]; then echo "discord-bot set: $bname saved (${#bval} characters)"; unset bval
         else echo "discord-bot set: $bname removed"; fi
+        # the bot reads its settings only at start: a running bot restarts now (owner 2026-11-03: a saved channel id
+        # did nothing until a restart nobody did)
+        if [ "$(systemctl is-active "$BOTUNIT" 2>/dev/null | head -n 1)" = active ]; then
+          if systemctl restart "$BOTUNIT"; then echo "the bot was running: restarted with the new setting"
+          else echo "warning: restart failed; use discord-bot restart" >&2; fi
+        else
+          echo "the bot is not running: discord-bot start uses the new setting"
+        fi
         ;;
       start|stop|restart)
         [ $# -eq 0 ] || die "discord-bot $sub (no arguments)"

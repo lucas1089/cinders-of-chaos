@@ -369,9 +369,22 @@ def test_forum():
     check(core.report_text('o baú não abre', None, False) == 'o baú não abre', 'a plain channel message')
 
 
+def test_channel_check():
+    allp = set(core.PERM_LABEL)
+    check(core.missing_permissions(allp, 'bugs', True) == [] and core.missing_permissions(allp, 'patch') == [], 'all granted')
+    check(core.missing_permissions({'view_channel'}, 'patch') == ['Enviar mensagens', 'Inserir links'], 'patch needs')
+    check('Enviar mensagens em threads' in core.missing_permissions(set(core.BUGS_PERMS), 'bugs', True), 'forum threads')
+    check(core.missing_permissions(set(core.BUGS_PERMS), 'bugs', False) == [], 'text bugs channel')
+    check(core.channel_check_text([('Canal de bugs', 1567178340434059494, None)]) is None, 'nothing wrong, no DM')
+    t = core.channel_check_text([('Canal de bugs', 1567178340434059494, 'missing'), ('Canal de patch notes', 0, 'not-set'),
+                                 ('X', 12345678, ['Inserir links'])])
+    check('9494' in t and '1567178340434059494' not in t and 'não configurado' in t and 'Inserir links' in t, t)
+
+
 def main():
     for t in (test_config, test_auth_and_limit, test_clean, test_images, test_prompt_and_parse, test_new_and_duplicate,
-              test_status, test_lists_and_views, test_daily, test_patch_notes, test_embeds, test_forum):
+              test_status, test_lists_and_views, test_daily, test_patch_notes, test_embeds, test_forum,
+              test_channel_check):
         t()
     print('bot_core_test: %s' % ('ok' if not failures else '%d failure(s)' % failures))
     return 1 if failures else 0
