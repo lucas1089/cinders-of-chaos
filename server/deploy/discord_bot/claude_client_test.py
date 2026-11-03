@@ -113,6 +113,17 @@ def main():
     check('Item some' in kw['messages'][0]['content'] and 'novo boss' in kw['messages'][0]['content']
           and '0.9' in kw['messages'][0]['content'] and 'BUG-' not in kw['messages'][0]['content'], 'patch prompt')
     check('#1' not in kw['messages'][0]['content'], 'bug numbers are not sent to the patch writer')
+    block = core.changes_block([{'sha': 'a' * 40, 'ts': 1, 'date': '2027-01-15', 'subject': 'Dragões no norte',
+                                 'body': 'Novo mapa.', 'tags': ['content']}])[0]
+    sdk = FakeSDK(json.dumps({'player_facing': True, 'pt': NOTE, 'en': NOTE}))
+    run(ClaudeClient(sdk).write_patch([], '2027-01-15', '', block))
+    content = sdk.calls[0][1]['messages'][0]['content']
+    check('Dragões no norte' in content and 'Novo mapa.' in content and 'Game changes since' in content,
+          'write_patch sends the game changes')
+    check('player_facing' in sdk.calls[0][1]['system'], 'write_patch: the rules for the changes')
+    sdk = FakeSDK(json.dumps({'player_facing': False, 'pt': NOTE, 'en': NOTE}))
+    check(run(ClaudeClient(sdk).write_patch([], '2027-01-15', '', block)) is None,
+          'write_patch: nothing players notice gives None')
 
     sdk = FakeSDK(json.dumps({'en': dict(NOTE, title='Translated')}))
     e = run(ClaudeClient(sdk).translate_patch(core.normalize_notes_lang(NOTE)))

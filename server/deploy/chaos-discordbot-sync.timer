@@ -1,0 +1,10 @@
+[Unit]
+Description=Cinders of Chaos Discord bot: game changes and patch note files, every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

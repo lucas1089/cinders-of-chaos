@@ -58,9 +58,10 @@ class ClaudeClient:
                                max_tokens=4000)
         return core.clean(text, 1900)
 
-    async def write_patch(self, bugs, version, extras):
-        """/patch gerar: {'pt': notes, 'en': notes}."""
-        raw = await self._ask(core.PATCH_SYSTEM, core.patch_prompt(bugs, version, extras), core.PATCH_SCHEMA,
+    async def write_patch(self, bugs, version, extras, changes=''):
+        """/patch gerar and the automatic patch: {'pt': notes, 'en': notes}, or None when nothing in the input is
+        something players notice. changes: the block of core.changes_block()."""
+        raw = await self._ask(core.PATCH_SYSTEM, core.patch_prompt(bugs, version, extras, changes), core.PATCH_SCHEMA,
                               effort='medium', max_tokens=8000)
         return core.parse_patch(raw)
 

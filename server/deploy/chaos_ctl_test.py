@@ -1728,10 +1728,42 @@ exit 0
         server = os.path.join(tmp, 'server')
         for d in (stub, bsrc, sysd, os.path.join(server, 'data')):
             os.makedirs(d)
-        for f in ('bot.py', 'bot_core.py', 'claude_client.py', 'requirements.txt', '.env.example'):
+        for f in ('bot.py', 'bot_core.py', 'claude_client.py', 'changes_export.py', 'requirements.txt', '.env.example'):
             shutil.copy(os.path.join(HERE, 'discord_bot', f), bsrc)
-        for f in ('chaos-discordbot.service', 'chaos.logrotate'):
+        for f in ('chaos-discordbot.service', 'chaos-discordbot-sync.service', 'chaos-discordbot-sync.timer',
+                  'chaos.logrotate'):
             shutil.copy(os.path.join(HERE, f), os.path.join(repo, 'server', 'deploy', f))
+        # a git checkout (O385): the game's changes come from its history; a docs commit and merges are left out
+        top = os.path.dirname(os.path.dirname(HERE))
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        os.makedirs(os.path.join(repo, 'tools', 'ci'))
+        shutil.copy(os.path.join(top, 'server', 'tools', 'gen_changelog.py'), os.path.join(repo, 'server', 'tools'))
+        shutil.copy(os.path.join(top, 'tools', 'ci', 'check_names.py'), os.path.join(repo, 'tools', 'ci'))
+        genv = dict(os.environ, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@example.org', GIT_COMMITTER_NAME='t',
+                    GIT_COMMITTER_EMAIL='t@example.org', GIT_CONFIG_NOSYSTEM='1', HOME=tmp)
+
+        def git(*a):
+            return subprocess.run(['git', '-C', repo] + list(a), env=genv, capture_output=True, text=True,
+                                  check=True).stdout.strip()
+
+        def gcommit(path, msg):
+            full = os.path.join(repo, path)
+            os.makedirs(os.path.dirname(full), exist_ok=True)
+            with open(full, 'a') as f:
+                f.write(msg + '\n')
+            git('add', '-A')
+            git('commit', '-q', '-m', msg)
+
+        git('init', '-q', '-b', 'main')
+        gcommit('README.md', 'Start')
+        gcommit('server/data/monster/dragon.xml', 'Dragons in the north (O999)\n\nThey guard the pass in '
+                'server/data/monster/dragon.xml and drop scales.\n\nCo-Authored-By: someone')
+        gcommit('docs/NOTES.md', 'Docs: a note')
+        git('checkout', '-q', '-b', 'side')
+        gcommit('client/overlay/modules/game_x/x.lua', 'Bigger bag window')
+        git('checkout', '-q', 'main')
+        gcommit('server/data/items/items.xml', 'Health potions heal more')
+        git('merge', '-q', '--no-ff', '-m', 'Merge pull request #1 from side', 'side')
         aptget = '#!/usr/bin/env bash\necho "apt-get $*" >> "$STUB/calls"\n[ -n "${STUB_APT_FAIL:-}" ] && exit 100\ntouch "$STUB/venv_ok"\n'
         for name, body in (('systemctl', sysctl), ('fakepython', py), ('apt-get', aptget)):
             p = os.path.join(stub, name)
@@ -1798,12 +1830,39 @@ exit 0
         check(os.path.exists(os.path.join(tmp, 'logrotate-chaos')), 'install adds the logrotate file')
         check(stat.S_IMODE(os.stat(data).st_mode) == 0o750, 'the data dir is mode 750')
 
+        # O385: the sync unit and timer with the real paths, enabled; changes.json written at once
+        sunit = open(os.path.join(sysd, 'chaos-discordbot-sync.service')).read()
+        check(botdir + '/app/changes_export.py sync --repo ' + repo + ' --data ' + data + ' --server-data '
+              + server + '/data' in sunit and 'ReadWritePaths=%s -%s/data/patchnotes %s' % (data, server, os.path.dirname(blog))
+              in sunit and 'append:%s/discord-bot-sync.log' % os.path.dirname(blog) in sunit
+              and '/opt/chaos' not in sunit and '/var/lib/chaos' not in sunit, 'the sync unit gets the paths: ' + sunit)
+        check(os.path.exists(os.path.join(sysd, 'chaos-discordbot-sync.timer'))
+              and 'systemctl enable --now chaos-discordbot-sync.timer' in c, 'the sync timer is installed and started')
+        check(os.path.exists(os.path.join(botdir, 'app', 'changes_export.py')), 'install copies changes_export.py')
+        check(os.path.isdir(os.path.join(server, 'data', 'patchnotes')), 'install makes SERVER/data/patchnotes')
+        cpath = os.path.join(data, 'changes.json')
+        check('changes: 3 game changes' in r.stdout, 'install runs the first sync: ' + r.stdout + r.stderr)
+        ch = json.load(open(cpath, encoding='utf-8'))
+        subjects = [x['subject'] for x in ch['commits']]
+        check(sorted(subjects) == ['Bigger bag window', 'Dragons in the north', 'Health potions heal more'],
+              'changes: game commits only, no docs, no merge, roadmap id cut: %s' % subjects)
+        dragon = [x for x in ch['commits'] if x['subject'] == 'Dragons in the north'][0]
+        check(dragon['body'] == 'They guard the pass in and drop scales.' and dragon['tags'] == ['content']
+              and ch['head'] == git('rev-parse', 'HEAD'), 'changes: body without paths or trailers, head: %s' % dragon)
+        st = os.stat(cpath)
+        check(stat.S_IMODE(st.st_mode) == 0o640 and (st.st_uid, st.st_gid) == (os.stat(data).st_uid, os.stat(data).st_gid),
+              'changes.json: mode 640, owner of the data dir')
+        mtime = os.stat(cpath).st_mtime_ns
+
         # idempotent: nothing is redone, a changed file is copied
         open(os.path.join(stub, 'calls'), 'w').close()
         r = run('install')
         c = calls()
         check(r.returncode == 0 and 'requirements: already installed' in r.stdout and 'unit: already installed' in r.stdout
               and 'pip install' not in c and '-m venv' not in c and 'restart' not in c, 'install twice changes nothing: ' + r.stdout + c)
+        check('sync timer: already installed' in r.stdout and 'daemon-reload' not in c
+              and 'changes: 3 game changes (unchanged)' in r.stdout and os.stat(cpath).st_mtime_ns == mtime,
+              'install twice: the sync unit and changes.json stay as they are: ' + r.stdout)
         with open(os.path.join(bsrc, 'bot.py'), 'a') as f:
             f.write('# changed\n')
         touch_active = open(os.path.join(stub, 'active'), 'w')
@@ -1869,6 +1928,14 @@ exit 0
               and kvs(run('status')).get('model') == 'claude-opus-5-5', 'the model setting shows in status')
         check(run('set', 'DISCORD_BOT_MODEL', stdin='\n').returncode == 0 and '\nDISCORD_BOT_MODEL=' not in open(envf).read(),
               'an empty value removes the line')
+        check(kvs(run('status')).get('patch_auto') == 'preview', 'patch_auto defaults to preview in status')
+        for v in ('publish', 'off', 'preview'):
+            check(run('set', 'DISCORD_BOT_PATCH_AUTO', stdin=v + '\n').returncode == 0
+                  and kvs(run('status')).get('patch_auto') == v, 'DISCORD_BOT_PATCH_AUTO ' + v)
+        for bad in ('auto', 'Publish', 'publish now', 'on'):
+            check(run('set', 'DISCORD_BOT_PATCH_AUTO', stdin=bad + '\n').returncode != 0, 'DISCORD_BOT_PATCH_AUTO refuses ' + bad)
+        k = kvs(run('status'))
+        check(k.get('changes_file', 'missing') != 'missing' and 'sync_timer' in k, 'status: changes file and sync timer')
         r = run('stop')
         check(r.returncode == 0 and not os.path.exists(os.path.join(stub, 'active')), 'stop')
         r = run('start', extra={'STUB_NOPE': '1'})
@@ -1890,7 +1957,10 @@ exit 0
         os.makedirs(os.path.join(data, 'patchnotes'))
         for n, t in (('2026-10-29.md', 'en'), ('2026-10-29.pt-br.md', 'pt')):
             open(os.path.join(data, 'patchnotes', n), 'w').write(t)
+        gcommit('server/data/spells/spells.xml', 'Fireball hits harder')
         r = run('patchnotes')
+        check('changes: 4 game changes' in r.stdout and json.load(open(cpath))['commits'][0]['subject'] == 'Fireball hits harder',
+              'patchnotes refreshes changes.json after a new commit: ' + r.stdout + r.stderr)
         check(r.returncode == 0 and '2 files copied' in r.stdout and open(os.path.join(server, 'data', 'patchnotes', '2026-10-29.md')).read() == 'en',
               'patchnotes copies new notes: ' + r.stdout + r.stderr)
         open(os.path.join(server, 'data', 'patchnotes', '2026-10-29.md'), 'w').write('edited')
