@@ -144,6 +144,7 @@ class BugBot(discord.Client):
         self.limiter = core.RateLimiter(cfg.per_user_hour)
         self.last_fail_dm = 0.0
         self.channels_checked = False
+        self.ignored_seen = {}
         self.tz = ZoneInfo(core.TZ_NAME)
 
     def now_local(self):
@@ -251,7 +252,14 @@ class BugBot(discord.Client):
         if m.author.bot:
             return
         thread = m.channel if isinstance(m.channel, discord.Thread) else None
-        if not core.in_bugs_channel(m.channel.id, thread.parent_id if thread else None, self.cfg.bugs_channel_id):
+        parent = thread.parent_id if thread else None
+        if not core.in_bugs_channel(m.channel.id, parent, self.cfg.bugs_channel_id):
+            # one line per channel an hour, ids only: shows a wrong DISCORD_BUGS_CHANNEL_ID (owner 2026-11-03)
+            key = parent or m.channel.id
+            if time.time() - self.ignored_seen.get(key, 0) > 3600:
+                self.ignored_seen[key] = time.time()
+                log.info('message in channel %s%s ignored: the bugs channel is %s', m.channel.id,
+                         ' (thread of %s)' % parent if parent else '', self.cfg.bugs_channel_id or 'not set')
             return
         # a forum post: the starter message has the thread's id; its title goes in front of the text
         text = core.report_text(m.content, thread.name if thread else None, bool(thread) and m.id == thread.id)
