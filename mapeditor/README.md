@@ -1,6 +1,6 @@
 # Our map editor (O382)
 
-Our own build of the AGPL-3.0 map editor the owner chose in 2026-11.
+Our own build of the AGPL-3.0 map editor the owner chose in 2026-11, named **Cinders Map Editor** (O388).
 Upstream repository, author and licence: `docs/CREDITS.md` (names stay there, `tools/ci/check_names.py`).
 It is a Qt 6 / QML editor with its own QRhi renderer, built with CMake, vcpkg and Visual Studio 2022.
 
@@ -15,7 +15,7 @@ This folder holds the pin, our patches and the tools.
 | `tools/check_patches.sh` | Checks every patch applies in order on a clean copy. |
 | `tools/upstream.py` | Prints the upstream repository and the pin for the workflow. |
 | `tools/run_profile.py` | Runs builds on a map and writes the timing table. |
-| `.github/workflows/mapeditor-build.yml` | Build, tests, artifacts, optional profile. |
+| `.github/workflows/mapeditor-build.yml` | Build, tests, artifacts, release for the package, optional profile. |
 
 Pin: `2b98cb3192a74e01bb6b88b05a8ba8185c9ebfa1` (upstream HEAD of 2026-10-28, cloned 2026-11-03).
 
@@ -63,6 +63,7 @@ bash mapeditor/tools/check_patches.sh PATH_TO_UPSTREAM_CLONE
 5. A harness-only patch (timing, no behaviour) also goes into `BASELINE_PATCHES`.
 
 Keep upstream behaviour identical except speed. Behaviour changes need the owner's yes and their own row.
+Owner yes so far: English texts, the name, the updater on our releases (O388, patches 0007-0009).
 
 ## Move the pin
 
@@ -118,8 +119,64 @@ Gains are judged from the code. "Not yet measured": the CI profile run will tell
 | 0004 skip-idle-effect-buffer | No per-frame effect collection, allocation and dirty buffer while no placement effect runs. | Small, every frame | Not yet |
 | 0005 skip-selection-lookups | Chunk instance collection skips three hash lookups per quad when nothing is selected. Chunks are collected again on every animation phase. | Medium with many animated chunks on screen | Not yet |
 | 0006 palette-lazy-alias-lookup | Item search looks up brush aliases only for rows whose name and id miss. About 40k rows per keystroke. | Medium: faster search typing in the item palette | Not yet |
+| 0007 english-ui | The Polish texts in English (O388, below). | None (texts) | n/a |
+| 0008 cinders-map-editor-name | The name Cinders Map Editor, the exe names, our settings key, the AGPL notice in About (below). | None (name) | n/a |
+| 0009 updater-our-releases | The self-updater reads our releases; the version counts up; `update-keep.txt` (below). | None (updates) | n/a |
 
-All six apply on the pin (`check_patches.sh`). None is compiled yet: the first CI run builds them.
+All nine apply on the pin (`check_patches.sh`). None is compiled yet: the first CI run builds them.
+
+## English and the name (O388)
+
+Owner request 2026-11-03: "translate the whole map editor to English. Rename it to Cinders Map Editor."
+
+Upstream is English except one area, which was Polish (not Portuguese). Found by a search of every string literal of
+`editor/` and `libs/` (Polish letters, then every word missing from an English word list), patch 0007:
+
+- the procedural brush bar (`ProceduralBrushBar.qml`): 31 texts, buttons, tooltips, the status line, the options;
+- the procedural library dialog (`GenerationLibraryDialog.qml`): 35 texts, its status messages, the structure tab;
+- the pattern errors of `proceduralgeneration.cpp` (7) and `mapview_generation.cpp` (3), the style suffix
+  " · revised" of `generationlibrary.cpp`;
+- the UI colorize presets (`uitheme.cpp`: Classic, Green, Red, Purple, Gold, Turquoise, Graphite);
+- Tools > "Procedural brush…", the AI assistant example, the default custom generator profile name ("My cave");
+- `docs/custom-map-generator.md`, shipped in the program folder's `docs/`, translated whole.
+
+Everything else the user sees was English already: menus, dialogs, status bar, Lua script runner, weather preview,
+path builder, palettes, tilesets and brush names (`data/`). Comments in Polish stay.
+
+Patch 0008, the name:
+
+| What | Before | Ours |
+|---|---|---|
+| Programs | upstream names | `CindersMapEditor.exe`, `CindersMapEditorUpdater.exe` (CMake `OUTPUT_NAME`; the release package script and its test follow) |
+| Settings (QSettings) | the upstream organisation and application | `Cinders` / `CindersMapEditor`: `HKCU\Software\Cinders\CindersMapEditor`, its own app data folder |
+| Titles | upstream name | "Cinders Map Editor": main window, start window, error dialog, in-game preview, updater |
+| About | upstream name, link, sponsor | our name, version, the upstream link kept, "Based on ... by its authors, GNU AGPL-3.0", "Modified by Cinders of Chaos since 2026-11", where the source is |
+| Windows version resource | icon only | product name, company, licence line, source line |
+| Map stamp | "Saved with" + upstream name | "Saved with Cinders Map Editor" (the old stamp is replaced on save like the others) |
+
+The release folder keeps LICENSE, NOTICE and the upstream README. The settings start empty once (new key); the
+package presets them (`map-editor-settings.ps1`, key from `tools/windows/editor_release.py settings-key`: ours first,
+then the upstream names).
+
+## Self-updater (O388)
+
+Owner 2026-11-03: keep the updater and its button, but update from our releases. Patch 0009:
+
+- It reads `update-manifest.json` (upstream format: `schemaVersion` 1, `version`, `downloadUrl`, `sha256`, `size`,
+  `releasePageUrl`, `notes`) of the release `mapeditor-latest` of `DME_RELEASE_REPOSITORY` (CMake, default
+  `lucas1089/cinders-of-chaos`; the workflow passes `github.repository`). Unauthenticated GitHub API: the repository
+  must stay public, 60 checks an hour per IP.
+- The zip must be a `*-windows-x64.zip` under `github.com/<repo>/releases/download/`. Size and SHA-256 are checked
+  before the install (as upstream), and again by the updater program.
+- Version: upstream version + `DME_BUILD_NUMBER` (the run number): `1.1.43.57`. Newer run, newer version.
+- The updater unpacks the zip and copies its files over the program folder; it removes nothing. Files listed in
+  `update-keep.txt` of the program folder are never overwritten. The package lists `data/1098/creatures.xml` and
+  `data/1098/items.xml` there (the game's lists). Folders the package adds (`client`, `cinders`, `inbox`, `source`)
+  are not in the zip, so they stay.
+
+The release job writes the manifest into each `mapeditor-<short>` release and copies it to the rolling release
+`mapeditor-latest`, unless that names a newer version (a re-run of an old run). The pruning of old releases never
+removes the one `mapeditor-latest` names.
 
 ## Findings without a patch yet
 
@@ -144,13 +201,50 @@ Read from the code at the pin. Each needs a profile number before a patch.
   the SPR is decoded lazily (memory mapped during bulk work); save writes through a 64 KiB buffer; the minimap
   is one 8-bit image per floor.
 
-## The Windows package and the licence
+## Release (O387)
 
-The package workflow (`windows-package.yml`) ships the upstream release zip today.
-To ship ours: download the artifacts `mapeditor-windows-x64` and `mapeditor-source` of a green run instead,
-put both in the package, and keep LICENSE and NOTICE beside the exe.
+Job `release` of the same workflow, after a green build from `main` (push or dispatch; never pull requests).
+It runs only when the patched build and its `ctest` step passed: the artifacts exist only then.
+It publishes the GitHub release `mapeditor-<short sha>` of this repository (prerelease, never "latest").
+Artifacts expire after 30 days; releases do not.
+
+| Asset | What |
+|---|---|
+| `mapeditor-<short>-windows-x64.zip` | The release folder in one top folder of the same name. |
+| `mapeditor-<short>-source.zip` | The patched source with `cinders-patches/` (AGPL). |
+| `BUILD_INFO.txt` | Program version, upstream sha and repository, variant, our patches, our commit, the run. |
+| `SHA256SUMS.txt` | The three files above. |
+| `update-manifest.json` | The self-updater's manifest of this build (O388). |
+
+Release `mapeditor-latest` (rolling, prerelease): only `update-manifest.json` of the newest build. Do not delete it.
+
+One tag per commit. A new build never changes a release a package is downloading.
+A rebuild of the same commit replaces its own release. The newest 5 are kept.
+The job has `contents: write`; the rest of the workflow stays read only.
+
+## Package
+
+`windows-package.yml` input `map_editor`: `ours` (default) or `upstream`.
+
+- `ours`: the newest `mapeditor-<hex>` release of this repository (`tools/windows/editor_release.py latest-tag`).
+  `editor_release.py verify --ours` checks both zips and `BUILD_INFO.txt` against `SHA256SUMS.txt`.
+  It also wants the patched variant, a full upstream sha and our patch list.
+- No such release, or three bad downloads: a `::warning::` and the upstream release. Packaging never blocks.
+- `upstream`: the upstream rolling release, as in O381.
+
+Both go through the same later steps: `data\1098` creatures and items are the game's,
+the settings key is read from the exe, the source zip goes to `mapeditor\source`.
+Updater: kept for our build with `CindersMapEditorUpdater.exe` (O388), with `mapeditor\update-keep.txt`; removed for
+upstream and for an older build of ours (it would install upstream).
+Settings key: ours (`Software\Cinders\CindersMapEditor`) when the program holds it, else the upstream key named after
+the upstream repository (`upstream_repo` of `BUILD_INFO.txt`, else the credits).
+`mapeditor\CHANGES.txt` says "our build of ...: upstream commit <sha> + our patches 0001..0006" and our commit.
+The release notes and the package `BUILD_INFO.txt` name the build that shipped.
+A fallback to upstream says "the UPSTREAM release" in the release notes.
+
 AGPL-3.0: whoever gets our build must be able to get its exact source.
-So the package ships the patched source zip (`mapeditor-source`) next to the editor. Never ship one without the other.
+So the package ships the patched source zip of the same release next to the editor, with LICENSE and NOTICE.
+Never ship one without the other.
 
-Open: the editor's built-in updater checks the upstream releases. An update from there replaces our build with
-upstream's. Turn it off or point it at us in a patch before players or staff use our build.
+The updater installs our releases only (O388). After an update, `BUILD_INFO.txt` names the new build and its source is
+the `-source.zip` of that release; `mapeditor\source` and `CHANGES.txt` still describe the packaged one.

@@ -70,12 +70,98 @@ with tempfile.TemporaryDirectory() as tmp:
         pass
     check(er.main(['verify', d]) == 1, 'exit 1 on a missing zip')
 
+    # our build (O387): BUILD_INFO.txt listed in SHA256SUMS.txt, the patched variant
+    o = os.path.join(tmp, 'ours')
+    os.makedirs(o)
+    up, ours_commit = 'a' * 40, 'b' * 40
+    write(os.path.join(o, 'mapeditor-bbbbbbb-windows-x64.zip'), win)
+    write(os.path.join(o, 'mapeditor-bbbbbbb-source.zip'), src)
+
+    def info(variant='patched', patches='0001-profile-map-pan.patch, 0002-light.patch, 0003-overlays.patch',
+             upstream=up, version=''):
+        text = ('﻿%supstream: %s\nupstream_repo: acme/ExampleMapEditor\nvariant: %s\npatches: %s\n'
+                'cinders of chaos commit: %s\nbuilt: 2026-11-03T10:00Z by run 1\n'
+                % ('version: %s\n' % version if version else '', upstream, variant, patches, ours_commit))
+        write(os.path.join(o, 'BUILD_INFO.txt'), text.encode('utf-8'))
+        hi = er.sha256(os.path.join(o, 'BUILD_INFO.txt'))
+        write(os.path.join(o, 'SHA256SUMS.txt'), ('%s  mapeditor-bbbbbbb-windows-x64.zip\n'
+                                                  '%s  mapeditor-bbbbbbb-source.zip\n'
+                                                  '%s  BUILD_INFO.txt\n' % (hw, hs, hi)).encode())
+    info()
+    out = er.verify(o, ours=True)
+    check(out['upstream'] == up and out['commit'] == ours_commit, 'our build: upstream and commit')
+    check(out['patches'] == '0001..0003', 'patch range: %s' % out['patches'])
+    check(out['upstream_repo'] == 'acme/ExampleMapEditor', 'upstream repo from BUILD_INFO.txt')
+    check(out['version'] == 'our build: upstream aaaaaaa + patches 0001..0003', 'version: %s' % out['version'])
+    check(er.verify(o)['version'] == 'unknown', 'without --ours BUILD_INFO.txt is not read')
+    # O388: BUILD_INFO.txt names the program version (upstream version + run number)
+    info(version='1.1.43.57')
+    v = er.verify(o, ours=True)['version']
+    check(v == 'our build 1.1.43.57: upstream aaaaaaa + patches 0001..0003', 'version with the build: %s' % v)
+    info(version='1.1.43.57 & echo')
+    v = er.verify(o, ours=True)['version']
+    check(v == 'our build: upstream aaaaaaa + patches 0001..0003', 'a strange version is left out: %s' % v)
+    info()
+    check(er.main(['verify', o, '--ours']) == 0, 'exit 0 on our build')
+    check(er.main(['verify', o, '--bogus']) == 2, 'unknown option: usage')
+    for bad, what in ((dict(variant='baseline'), 'the baseline build is never shipped'),
+                      (dict(patches=''), 'no patches'),
+                      (dict(upstream='abc'), 'a short upstream sha')):
+        info(**bad)
+        try:
+            er.verify(o, ours=True)
+            check(False, what)
+        except er.VerifyError:
+            pass
+    info()
+    with open(os.path.join(o, 'BUILD_INFO.txt'), 'ab') as f:
+        f.write(b'tampered\n')
+    try:
+        er.verify(o, ours=True)
+        check(False, 'a changed BUILD_INFO.txt fails')
+    except er.VerifyError as e:
+        check('BUILD_INFO.txt' in str(e), 'the mismatch names BUILD_INFO.txt')
+    # an upstream release (no BUILD_INFO.txt in its sums) is not taken for ours
+    try:
+        er.verify(d, ours=True)
+        check(False, 'the upstream download is not our build')
+    except er.VerifyError:
+        pass
+
+    # patch ranges
+    check(er.patch_range(['0001-a.patch']) == '0001', 'one patch')
+    check(er.patch_range(['0001-a.patch', '0003-c.patch']) == '0001, 0003', 'a gap lists the numbers')
+    check(er.patch_range([]) == 'none', 'no patches')
+
+    # latest tag of our builds: newest published mapeditor-<hex>, drafts and other tags left out
+    rels = [{'tagName': 'winpkg-90', 'createdAt': '2026-11-05T00:00:00Z', 'isDraft': False},
+            {'tagName': 'mapeditor-1111111', 'createdAt': '2026-11-01T00:00:00Z', 'isDraft': False},
+            {'tagName': 'mapeditor-2222222', 'createdAt': '2026-11-03T00:00:00Z', 'isDraft': False},
+            {'tagName': 'mapeditor-3333333', 'createdAt': '2026-11-04T00:00:00Z', 'isDraft': True},
+            {'tagName': 'mapeditor-latest', 'createdAt': '2026-11-06T00:00:00Z', 'isDraft': False}]
+    check(er.latest_tag(rels) == 'mapeditor-2222222', 'latest tag: %s' % er.latest_tag(rels))
+    check(er.latest_tag(rels[:1]) is None, 'no build of ours yet')
+    lst = os.path.join(tmp, 'releases.json')
+    write(lst, json.dumps(rels).encode())
+    check(er.main(['latest-tag', lst]) == 0, 'latest-tag exit 0')
+    write(lst, b'[]')
+    check(er.main(['latest-tag', lst]) == 1, 'latest-tag exit 1 when there is none')
+
     # settings key: both names stored as UTF-16 in the program
     exe = os.path.join(tmp, 'app.exe')
     write(exe, b'MZ..' + 'Acme'.encode('utf-16-le') + b'\0\0' + 'ExampleMapEditor'.encode('utf-16-le'))
     check(er.settings_key(exe, 'acme/ExampleMapEditor') == 'Software\\Acme\\ExampleMapEditor', 'settings key')
     write(exe, b'MZ.. Acme ExampleMapEditor')
     check(er.settings_key(exe, 'acme/ExampleMapEditor') is None, 'names not in UTF-16: no key')
+    # O388: our build (Cinders Map Editor) has its own key, found first and also without the upstream name
+    write(exe, b'MZ..' + 'Cinders'.encode('utf-16-le') + b'\0\0' + 'CindersMapEditor'.encode('utf-16-le')
+          + b'\0\0' + 'Acme'.encode('utf-16-le') + 'ExampleMapEditor'.encode('utf-16-le'))
+    check(er.settings_key(exe, 'acme/ExampleMapEditor') == 'Software\\Cinders\\CindersMapEditor', 'our key first')
+    check(er.settings_key(exe) == 'Software\\Cinders\\CindersMapEditor', 'our key without a repository')
+    check(er.main(['settings-key', exe]) == 0, 'settings-key with the program only')
+    write(exe, b'MZ..' + 'CindersMapEditor'.encode('utf-16-le'))
+    check(er.settings_key(exe) is None, 'only one of our names: no key')
+    check(er.main(['settings-key', exe]) == 3, 'settings-key exit 3 without a key')
 
 print('editor_release: %s' % ('ok' if not failures else '%d failed' % failures))
 sys.exit(1 if failures else 0)

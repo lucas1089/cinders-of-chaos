@@ -528,7 +528,7 @@
     {
      "name": "Dewral Map Editor",
      "author": "Dewral and the Dewral Map Editor contributors; parts derived from Tibia ImGui Map Editor (its contributors); built-in brush, tileset, item and creature lists derived from OTAcademy/RME",
-     "licence": "GNU Affero General Public License v3.0 (LICENSE and NOTICE next to the program). Shipped unmodified in the Windows package (mapeditor) with its source zip from the same release; the package replaces its 10.98 creatures.xml and items.xml with the game's and leaves out its self-updater (mapeditor/CHANGES.txt). It brings Qt 6 (LGPL-3.0) and a public-domain part of the LZMA SDK",
+     "licence": "GNU Affero General Public License v3.0 (LICENSE and NOTICE next to the program). Shipped in the Windows package (mapeditor) as our modified build, named Cinders Map Editor: in English, with our speed patches and a self-updater that installs our releases (mapeditor/patches), with the patched source zip of the same build (our patches inside); its About window names this editor, its authors and licence and says that we modified it. Without a build of ours the package ships their release with its source zip and leaves out its self-updater; the package replaces its 10.98 creatures.xml and items.xml with the game's (mapeditor/CHANGES.txt). It brings Qt 6 (LGPL-3.0) and a public-domain part of the LZMA SDK",
      "use": "editing the game map; its Lua scripts run our area generator and paint our area plans (mapeditor/cinders)",
      "source": "https://github.com/dewral/DewralMapEditor"
     }

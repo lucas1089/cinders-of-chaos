@@ -11,7 +11,9 @@ rem     and paste the path).
 set "PKG=%~dp0"
 set "ED=%PKG%mapeditor"
 set "EXE="
-for %%F in ("%ED%\*.exe") do if not defined EXE set "EXE=%%~fF"
+rem our build (Cinders Map Editor, O388), else the one program of the folder that is not the updater
+if exist "%ED%\CindersMapEditor.exe" set "EXE=%ED%\CindersMapEditor.exe"
+if not defined EXE for %%F in ("%ED%\*.exe") do call :pickexe "%%~fF"
 if not defined EXE goto :noeditor
 for %%F in ("%EXE%") do set "EXENAME=%%~nxF"
 if not exist "%PKG%server\data\items\items.otb" goto :noserver
@@ -65,3 +67,9 @@ echo No map found: there is no .otbm in %PKG%server\data\world.
 :end
 pause
 exit /b 1
+
+:pickexe
+if defined EXE exit /b 0
+echo %~n1| find /i "updater" >nul && exit /b 0
+set "EXE=%~1"
+exit /b 0

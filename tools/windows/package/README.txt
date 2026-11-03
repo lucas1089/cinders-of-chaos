@@ -20,7 +20,11 @@ Runs the server and the client on your own computer.
 Map editor
   The map editor is in this zip (mapeditor\): a free program under the GNU AGPL-3.0, with its source zip in
   mapeditor\source and its licence in mapeditor\LICENSE (docs/CREDITS.md, entry under Tools; the game's Credits window
-  names it too). Nothing to download. mapeditor\CHANGES.txt says which version it is and what the package set up.
+  names it too). Nothing to download. It is our own build, Cinders Map Editor (CindersMapEditor.exe): the editor's
+  code in English, with our speed patches for this big map, and the source zip is that patched source (our patches in
+  its cinders-patches folder). Help > About names the original editor and its licence. mapeditor\CHANGES.txt says
+  which build it is (the upstream commit and our patches, or the plain upstream release when ours was not ready) and
+  what the package set up.
     1. Double-click open-map-editor.bat. It copies the server's items.otb and items.xml (every Chaos item) to the
        editor, sets the editor's 10.98 client folder to mapeditor\client (the Chaos Tibia.dat, Tibia.spr, items.otb
        and Tibia.otfi, which tells the editor the .spr has transparency; keep it there), puts the server's map first
@@ -33,8 +37,11 @@ Map editor
   file and do not show in the editor.
   If the start window asks for the client folder of 10.98 (the first start, or the bat could not preset it): choose
   mapeditor\client of this package. Once is enough; the editor keeps it.
-  The editor checks for a newer version on its start window. Its "Download & install" does not work in this package
-  on purpose (the updater is left out, mapeditor\CHANGES.txt): a newer editor comes with a newer package.
+  The editor checks for a newer build of ours on its start window. "Download & install" there downloads it from
+  the Cinders of Chaos releases (checked by size and SHA-256), closes the editor, installs it and starts it again. Save
+  your maps first. The update keeps the game's creature and item lists (mapeditor\update-keep.txt) and the folders
+  the package added (client, cinders, inbox, source). In a package with the plain upstream editor the updater is left
+  out (mapeditor\CHANGES.txt): a newer editor comes with a newer package.
   Our area generator in the editor (Tools > Lua Scripts, mapeditor\cinders\README.txt):
     - New area: mode "Custom Lua script", script mapeditor\cinders\generate_area.lua (already chosen by the bat). Set
       biome, width, height, floors, seed and level band at the top of that file (Notepad), set the Destination X / Y /

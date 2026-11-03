@@ -328,7 +328,8 @@ For the owner:
 1. Download the newest `CindersOfChaos-Windows.zip` from the GitHub releases (the newest `winpkg-N`). Always start
    from the newest one: it holds the current map with every install step and every earlier master in it. An edit
    made on an older zip would bring old content back.
-2. Extract it. The map editor is in the zip (`mapeditor\`, AGPL-3.0 with its source zip; `docs/CREDITS.md`). Run
+2. Extract it. The map editor is in the zip (`mapeditor\`, our build Cinders Map Editor, AGPL-3.0 with its source
+   zip; `docs/CREDITS.md`, `mapeditor/README.md`). Run
    `open-map-editor.bat`: it sets the editor's 10.98 client folder to `mapeditor\client`, puts the `.otbm` of
    `server\data\world` (the only `.otbm` there) first in the editor's "Recent maps" and starts it; click the map there
    (the editor opens no map from the command line; package `README.txt`, "Map editor").

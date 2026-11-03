@@ -7,6 +7,20 @@
 #   mapeditor-source        the patched source as a zip, plus our patches, the pin and mapeditor/README.md in
 #                           cinders-patches/ (AGPL-3.0: the source of what we ship goes with it)
 #
+# Release (O387, job release): a green patched build from main (push or dispatch, never pull_request) becomes the
+# GitHub release mapeditor-<short sha of our commit> of this repository (artifacts expire, releases do not), assets:
+#   mapeditor-<short>-windows-x64.zip   the release folder in one top folder of the same name
+#   mapeditor-<short>-source.zip        the patched source with cinders-patches/
+#   BUILD_INFO.txt                      upstream sha and repository, variant, our patches, our commit, the run
+#   SHA256SUMS.txt                      the three files above
+#   update-manifest.json                the self-updater's manifest: version, zip URL, sha256, size (O388)
+# The rolling release mapeditor-latest holds only update-manifest.json of the newest build: the editor's self-updater
+# (Cinders Map Editor, patch 0009) checks it. Version = upstream version + run number (1.1.43.N), so it counts up.
+# The artifacts are uploaded only after the ctest step passed, so a release exists only for a tested build.
+# windows-package.yml (input map_editor: ours) ships the newest one (tools/windows/editor_release.py latest-tag).
+# One tag per commit, so a new build never changes the release a package is downloading (a rebuild of the same
+# commit replaces its own release; the package checks SHA256SUMS.txt and falls back). The newest 5 are kept.
+#
 # Profile (input profile: true): a second build with only the harness patches (mapeditor/BASELINE_PATCHES), the
 # merged Tibia.dat / Tibia.spr and the map master from the private branch windows-assets (as windows-package.yml
 # gets them), and run_profile.py runs both builds on our map: load time, peak RAM, frame times while panning. The
@@ -154,7 +168,10 @@ jobs:
         shell: pwsh
         working-directory: src
         run: |
-          cmake --preset windows-vcpkg
+          # O388: the version counts up with the run number (upstream version + run number, e.g. 1.1.43.57) and the
+          # updater checks the releases of this repository (patch 0009); upstream's CMake ignores both in baseline
+          cmake --preset windows-vcpkg "-DDME_BUILD_NUMBER=${{ github.run_number }}" `
+            "-DDME_RELEASE_REPOSITORY=${{ github.repository }}"
           if ($LASTEXITCODE -ne 0) {
             $log = "build/vcpkg-windows/vcpkg-manifest-install.log"
             if (Test-Path $log) { Get-Content $log -Tail 80 }
@@ -190,6 +207,28 @@ jobs:
         env:
           QT_FORCE_STDERR_LOGGING: "1"
         run: |
+          # The tests run from the build tree, before the release folder gets
+          # its plugins: point Qt at the vcpkg plugin folder (sqldrivers,
+          # platforms), or QSQLITE and the platform plugin are not found.
+          $sql = Get-ChildItem build/vcpkg-windows -Recurse -Filter 'qsqlite*.dll' -ErrorAction SilentlyContinue |
+            Where-Object { $_.Directory.Name -eq 'sqldrivers' -and $_.FullName -notmatch '\\debug\\' } | Select-Object -First 1
+          if (-not $sql) { throw "no qsqlite plugin under build/vcpkg-windows" }
+          $env:QT_PLUGIN_PATH = $sql.Directory.Parent.FullName
+          Write-Host "QT_PLUGIN_PATH=$env:QT_PLUGIN_PATH"
+          # the QML modules (QtQuick.Controls, QtQuick.Window) sit next to the plugins in Qt6/qml, which the
+          # tibia_ui_qml test does not find from the build tree
+          $qml = Join-Path $sql.Directory.Parent.Parent.FullName 'qml'
+          if (-not (Test-Path (Join-Path $qml 'QtQuick'))) {
+            $qq = Get-ChildItem build/vcpkg-windows -Recurse -Directory -Filter 'QtQuick' -ErrorAction SilentlyContinue |
+              Where-Object { $_.Parent.Name -eq 'qml' -and $_.FullName -notmatch '\\debug\\' } | Select-Object -First 1
+            if (-not $qq) { throw "no Qt6/qml/QtQuick under build/vcpkg-windows" }
+            $qml = $qq.Parent.FullName
+          }
+          $env:QML_IMPORT_PATH = $qml
+          $env:QML2_IMPORT_PATH = $qml
+          Write-Host "QML_IMPORT_PATH=$qml"
+          # vcpkg's qtbase has no offscreen plugin: the tests use the windows platform plugin (the runner has a desktop)
+          Get-ChildItem (Join-Path $env:QT_PLUGIN_PATH 'platforms') -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "platform plugin: $($_.Name)" }
           ctest --test-dir build/vcpkg-windows -C Release --output-on-failure `
             -R '^(release_manifest|[a-z]+_startup|[a-z]+_updater_startup|ground_brush_export|wall_brush_export|brush_png_archive|obd_export|dat_legacy_740|otbm_rme_compatibility|otbm_legacy_subtypes|otbm_numbered_zones|ui_colorize|tibia_ui_qml|weather_particles|tilemapgen_assets)$'
           if ($LASTEXITCODE -ne 0) { throw "tests failed with exit code $LASTEXITCODE" }
@@ -202,8 +241,14 @@ jobs:
           if (-not $release -or -not $sourceZip) { throw "the release package has no windows-x64 folder or source zip" }
           New-Item -ItemType Directory -Force -Path out/editor, out/source | Out-Null
           Copy-Item -Recurse "$($release.FullName)/*" out/editor/
+          # the program's version (CMakeLists.txt project VERSION + DME_BUILD_NUMBER, patch 0009)
+          $upVersion = Select-String -Path src/CMakeLists.txt -Pattern '^project\([^)]*VERSION ([0-9]+\.[0-9]+\.[0-9]+)' |
+            ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -First 1
+          if (-not $upVersion) { throw "src/CMakeLists.txt has no project VERSION" }
           $info = @(
+            "version: $upVersion.${{ github.run_number }}",
             "upstream: ${{ steps.pin.outputs.sha }}",
+            "upstream_repo: ${{ steps.pin.outputs.repo }}",
             "variant: ${{ matrix.variant }}",
             "patches: $((Get-Content applied.txt) -join ', ')",
             "cinders of chaos commit: $env:GITHUB_SHA",
@@ -235,6 +280,151 @@ jobs:
           path: out/mapeditor-source.zip
           retention-days: 30
           if-no-files-found: error
+
+  release:
+    name: Release (our build for the Windows package)
+    needs: build
+    # main only, never pull_request; also after a failed baseline build of the profile: the patched artifacts exist only
+    # when the patched build and its ctest step passed (checked below)
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Get the tested build (editor)
+        id: dl
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mapeditor-windows-x64
+          path: dl/mapeditor-windows-x64
+
+      - name: Get the tested build (source)
+        id: dlsrc
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mapeditor-source
+          path: dl/mapeditor-source
+
+      - name: Zips, BUILD_INFO.txt, SHA256SUMS.txt
+        id: files
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.dl.outcome }}" != success ] || [ "${{ steps.dlsrc.outcome }}" != success ] ||
+             [ ! -f dl/mapeditor-windows-x64/BUILD_INFO.txt ] || [ ! -f dl/mapeditor-source/mapeditor-source.zip ]; then
+            # the build job is red already; nothing to release
+            echo "::notice::no tested patched build in this run (build or ctest failed): no release"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          grep -qx 'variant: patched' <(tr -d '\r' < dl/mapeditor-windows-x64/BUILD_INFO.txt | sed 's/^\xef\xbb\xbf//')
+          short=${GITHUB_SHA:0:7}
+          name="mapeditor-$short"
+          mkdir -p rel "pack/$name-windows-x64"
+          cp -a dl/mapeditor-windows-x64/. "pack/$name-windows-x64/"
+          (cd pack && zip -qrX "../rel/$name-windows-x64.zip" "$name-windows-x64")
+          cp dl/mapeditor-source/mapeditor-source.zip "rel/$name-source.zip"
+          cp dl/mapeditor-windows-x64/BUILD_INFO.txt rel/BUILD_INFO.txt
+          (cd rel && sha256sum "$name-windows-x64.zip" "$name-source.zip" BUILD_INFO.txt > SHA256SUMS.txt)
+          # the self-updater's manifest (O388, patch 0009; the format of the upstream update-manifest.json): the
+          # version that counts up, the zip of this release, its sha256 and size. The rolling release
+          # mapeditor-latest gets a copy (next steps); the editor reads it from there.
+          version=$(tr -d '\r' < rel/BUILD_INFO.txt | sed 's/^\xef\xbb\xbf//' | sed -n 's/^version: *//p')
+          [[ "$version" =~ ^[0-9]+(\.[0-9]+){3}$ ]] || { echo "::error::BUILD_INFO.txt has no build version"; exit 1; }
+          base="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases"
+          jq -n --arg v "$version" --arg t "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg url "$base/download/$name/$name-windows-x64.zip" --arg page "$base/tag/$name" \
+            --arg sha "$(sha256sum "rel/$name-windows-x64.zip" | cut -d' ' -f1)" \
+            --argjson size "$(stat -c %s "rel/$name-windows-x64.zip")" \
+            --arg notes "Cinders Map Editor $version (our build ${GITHUB_SHA:0:7}, run $GITHUB_RUN_ID)." \
+            '{schemaVersion: 1, version: $v, publishedAt: $t, downloadUrl: $url, releasePageUrl: $page,
+              sha256: $sha, size: $size, notes: $notes}' > rel/update-manifest.json
+          ls -la rel
+          cat rel/SHA256SUMS.txt rel/update-manifest.json
+          { echo "tag=$name"; echo "version=$version"; echo "ok=true"; } >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        if: steps.files.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          tag="${{ steps.files.outputs.tag }}"
+          {
+            echo "Our build of the map editor (mapeditor/README.md): upstream at the pin plus our patches, built and"
+            echo "tested by run [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
+            echo "Licence GNU AGPL-3.0 (LICENSE and NOTICE in the zip); the patched source is the -source.zip."
+            echo "The Windows package (input map_editor: ours) ships the newest of these releases."
+            echo "Cinders Map Editor ${{ steps.files.outputs.version }}; its self-updater finds the newest build through the"
+            echo "release mapeditor-latest (update-manifest.json)."
+            echo
+            echo '```'
+            tr -d '\r' < rel/BUILD_INFO.txt | sed 's/^\xef\xbb\xbf//'
+            echo
+            cat rel/SHA256SUMS.txt
+            echo '```'
+          } > notes.md
+          # a rebuild of the same commit replaces its release
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release delete "$tag" -R "$GITHUB_REPOSITORY" -y --cleanup-tag
+          fi
+          gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "Map editor build ${GITHUB_SHA:0:7}" --notes-file notes.md rel/*
+          {
+            echo "## Map editor release $tag"
+            echo
+            cat notes.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # O388: the editor's self-updater (patch 0009) reads update-manifest.json of the rolling release
+      # mapeditor-latest. It moves to this build unless it already names a newer version (a re-run of an old run).
+      - name: Point the self-updater at this build (release mapeditor-latest)
+        id: roll
+        if: steps.files.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          roll=mapeditor-latest
+          new="${{ steps.files.outputs.version }}"
+          keep="${{ steps.files.outputs.tag }}"
+          {
+            echo "Rolling release for the self-updater of our map editor build (Cinders Map Editor, mapeditor/README.md)."
+            echo "Its update-manifest.json names the newest tested build: version, zip URL, SHA-256, size."
+            echo "Moved by the workflow Map editor build. Do not delete it: the editor checks it on every start."
+          } > roll.md
+          if gh release view "$roll" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            rm -rf cur && mkdir cur
+            if gh release download "$roll" -R "$GITHUB_REPOSITORY" -D cur -p update-manifest.json 2> /dev/null; then
+              old=$(jq -r '.version // ""' cur/update-manifest.json 2> /dev/null || true)
+              if [ -n "$old" ] && [ "$(printf '%s\n%s\n' "$old" "$new" | sort -V | tail -n 1)" != "$new" ]; then
+                echo "::notice::$roll names $old, newer than $new: left as it is"
+                keep=$(jq -r '.downloadUrl // ""' cur/update-manifest.json | sed -n 's|.*/releases/download/\([^/]*\)/.*|\1|p')
+                echo "keep=$keep" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            fi
+            gh release upload "$roll" -R "$GITHUB_REPOSITORY" --clobber rel/update-manifest.json
+            gh release edit "$roll" -R "$GITHUB_REPOSITORY" --prerelease --latest=false --notes-file roll.md
+          else
+            gh release create "$roll" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title "Map editor updates" --notes-file roll.md rel/update-manifest.json
+          fi
+          echo "keep=$keep" >> "$GITHUB_OUTPUT"
+          echo "- self-updater: $roll now names $new ($keep)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the newest 5 editor releases
+        if: steps.files.outputs.ok == 'true'
+        env:
+          KEEP: ${{ steps.roll.outputs.keep }}
+        run: |
+          # the release the self-updater points at is never removed (mapeditor-latest is not a mapeditor-<hex> tag)
+          gh release list -R "$GITHUB_REPOSITORY" --limit 200 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | test("^mapeditor-[0-9a-f]{7,40}$"))] | sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
+          while read -r tag; do
+            if [ "$tag" = "$KEEP" ]; then continue; fi
+            gh release delete "$tag" -R "$GITHUB_REPOSITORY" -y --cleanup-tag || true
+          done
 
   profile-data:
     name: Profile data (our items.otb and map)
