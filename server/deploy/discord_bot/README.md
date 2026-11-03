@@ -17,6 +17,9 @@ No canal de bugs o bot lê toda mensagem, inclusive prints anexados. O Claude v�
 
 Todo dia às 09:00 de São Paulo você recebe um resumo por DM.
 
+O bot também entrega por DM os relatórios do servidor. Hoje: o relatório de equilíbrio da season (Painel > Relatório de
+equilíbrio > Enviar por DM, e o automático no fim de cada season). Textos longos chegam em várias mensagens.
+
 Comandos. Só você e quem tem o cargo de admin, se você definir um, conseguem usar. As respostas são só suas.
 
 | Comando | Para quê |

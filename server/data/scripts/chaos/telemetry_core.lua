@@ -10,7 +10,9 @@
 --   ChaosTelemetryCore.newAcc(hour)                      an empty hour
 --   ChaosTelemetryCore.huntDelta(last, cur, maxSecs)     the gain between two samples of the hunt tracker's counters
 --   ChaosTelemetryCore.addHunt / addOnline / addBoss / addDeath / addCast / addEconomy   sum into the acc
+--   ChaosTelemetryCore.addArea / addClassDeath / addDamage   hunt presence per area, deaths and damage per class (O397/O398)
 --   ChaosTelemetryCore.areaOf(pos, instanceLabel, marks, cfg)    the death area's name
+--   ChaosTelemetryCore.huntAreaOf(pos, instanceLabel, marks, cfg)  the hunt of a hunting character (instance or hunt mark)
 --   ChaosTelemetryCore.killerOf(info)                    the killer's label (a monster type; players never named)
 --   ChaosTelemetryCore.flushSql(acc, tables, esc)        the INSERT statements of an hour (span 'h')
 --   ChaosTelemetryCore.rollupSql(tables, hourlyBefore, dailyBefore)   hourly -> daily rows, the deletes, in a transaction
@@ -48,7 +50,8 @@ end
 
 -- ---------------------------------------------------------------- the hour in memory
 function K.newAcc(hour)
-	return {hour = hour, hunt = {}, online = {}, onlineSamples = 0, boss = {}, deaths = {}, casts = {}, economy = {}}
+	return {hour = hour, hunt = {}, online = {}, onlineSamples = 0, boss = {}, deaths = {}, casts = {}, economy = {},
+		area = {}, class = {}}
 end
 
 local function bucket(map, key, make)
@@ -185,6 +188,43 @@ function K.addEconomy(acc, flow, source, band, gold)
 	return true
 end
 
+-- O397: a hunting character's sample in its hunt (huntAreaOf). Only a sample with hunting time or kills counts.
+function K.addArea(acc, area, band, guid, d)
+	if not area or not (d.secs > 0 or d.kills > 0) then
+		return false
+	end
+	local b = bucket(acc.area, area .. "|" .. band, function()
+		return {area = area, band = band, players = {}, secs = 0, kills = 0}
+	end)
+	b.players[guid] = true
+	b.secs = b.secs + d.secs
+	b.kills = b.kills + d.kills
+	return true
+end
+
+local function classBucket(acc, band, voc)
+	return bucket(acc.class, band .. "|" .. voc, function()
+		return {band = band, voc = voc, deaths = 0, damage = 0}
+	end)
+end
+
+-- O398: a death per level band and class (the deaths table has the area and killer, no class)
+function K.addClassDeath(acc, band, voc)
+	local b = classBucket(acc, band, voc)
+	b.deaths = b.deaths + 1
+end
+
+-- O398: damage a character (or its summon) dealt to a monster, per level band and class (the combat log's hits)
+function K.addDamage(acc, band, voc, amount)
+	amount = floor(tonumber(amount) or 0)
+	if amount <= 0 then
+		return false
+	end
+	local b = classBucket(acc, band, voc)
+	b.damage = b.damage + amount
+	return true
+end
+
 -- ---------------------------------------------------------------- labels
 local function clip(s, n)
 	s = tostring(s or "")
@@ -221,6 +261,28 @@ function K.areaOf(pos, instanceLabel, marks, cfg)
 	return "wild"
 end
 
+-- O397: the hunt a hunting character stands in: the instance label, else the nearest hunting place of the map markers
+-- in range (the same rule as areaOf), else nil (in town, travelling: not a hunt)
+function K.huntAreaOf(pos, instanceLabel, marks, cfg)
+	if instanceLabel and instanceLabel ~= "" then
+		return clip(instanceLabel, 64)
+	end
+	if not pos then
+		return nil
+	end
+	local range, floors = cfg and cfg.poiRange or 60, cfg and cfg.poiFloors or 3
+	local best, bestD
+	for _, m in ipairs(marks or {}) do
+		if m.k == "hunt" and math.abs(m.z - pos.z) <= floors then
+			local d = math.max(math.abs(m.x - pos.x), math.abs(m.y - pos.y))
+			if d <= range and (not bestD or d < bestD) then
+				best, bestD = m, d
+			end
+		end
+	end
+	return best and clip(best.n, 64) or nil
+end
+
 -- info: {player = true} for a player or a player's summon, {monster = type name} otherwise, nil for none
 function K.killerOf(info)
 	if not info then
@@ -244,9 +306,13 @@ K.SCHEMA = {
 	deaths = {keys = {{"band", "varchar(12)"}, {"area", "varchar(64)"}, {"killer", "varchar(64)"}}, sums = {"deaths"}},
 	casts = {keys = {{"voc", "smallint"}, {"spell", "varchar(64)"}}, sums = {"casts", "players"}},
 	economy = {keys = {{"flow", "varchar(8)"}, {"source", "varchar(32)"}, {"band", "varchar(12)"}},
-		sums = {"gold", "events"}}
+		sums = {"gold", "events"}},
+	-- O397: hunting samples per hunt (players: distinct characters of the hour; a daily row: character-hours)
+	area = {keys = {{"area", "varchar(64)"}, {"band", "varchar(12)"}}, sums = {"players", "hunt_seconds", "kills"}},
+	-- O398: deaths and damage dealt to monsters per level band and class
+	class = {keys = {{"band", "varchar(12)"}, {"voc", "smallint"}}, sums = {"deaths", "damage"}}
 }
-K.ORDER = {"hunt", "online", "boss", "deaths", "casts", "economy"}
+K.ORDER = {"hunt", "online", "boss", "deaths", "casts", "economy", "area", "class"}
 
 local function cols(s)
 	local out = {}
@@ -325,6 +391,16 @@ local function rowsOf(name, acc)
 	elseif name == "economy" then
 		for _, b in pairs(acc.economy) do
 			rows[#rows + 1] = {b.flow, b.source, b.band, b.gold, b.events}
+		end
+	elseif name == "area" then
+		for _, b in pairs(acc.area) do
+			rows[#rows + 1] = {b.area, b.band, count(b.players), b.secs, b.kills}
+		end
+	elseif name == "class" then
+		for _, b in pairs(acc.class) do
+			if b.deaths > 0 or b.damage > 0 then
+				rows[#rows + 1] = {b.band, b.voc, b.deaths, b.damage}
+			end
 		end
 	end
 	-- a stable order (tests, and the same statement for the same hour)

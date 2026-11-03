@@ -27369,6 +27369,99 @@ small numbers, survey rows and escapes, the command line), `deploy/chaos_ctl_tes
 with a stub database, refusals), client `game_chaossurvey/surveylogic_test.lua`, Android `NewPlayerInfoTest`. All data is
 synthetic. Not run in a live client or on the live server yet.
 
+## Balance telemetry (`telemetry.lua`, `telemetry_core.lua`, `telemetry_config.lua`, `sql/chaos_telemetry.sql`)
+
+Hourly aggregates for staff. Website page `page?plugin=chaos&p=telemetry` (group 5+); docs/LAUNCH.md "Balance telemetry".
+Sources and privacy: the header of `telemetry.lua`. Tables `chaos_telemetry_{hunt, online, boss, deaths, casts, economy,
+area, class}`: hourly rows (`span` 'h') for 90 days, then one daily row ('d') kept 730 days. No row holds an id or name.
+- `area` (O397): every 5 minute sample, a character with hunting time or kills counts in its hunt. The hunt is the
+  instance label, else the nearest `hunt` marker of `data/chaos_poi.lua` within `poiRange` 60 squares and `poiFloors` 3
+  (`K.huntAreaOf`). Columns: distinct characters, hunting seconds, kills per hunt and level band.
+- `class` (O398): deaths per level band and class (the death event), damage dealt to monsters per band and class.
+  Damage comes from `combatlog.lua` `dealt()`: it calls `ChaosCombatLog.dealtHook` (set by `telemetry.lua`) for every
+  hit on a monster it gives to a character or its summon. So damage counts only while the combat log is on. Staff
+  are left out.
+- Both tables are new from O397 / O398: they start empty. The `sql` step or the server start creates them.
+Tests: `tests/telemetry_test.lua` (buckets, rollup, the area and class rows, the mocked engine sample, the damage hook).
+
+## Game health panel (O397) (`tools/game_health.py`, `chaos-ctl.sh game-health`)
+
+**Why.** Owner request: one look at how the game is doing. Online per hour, where new players stop, which hunts are
+used, deaths, gold.
+
+**Where the owner reads it.** Admin app. Android: Painel > card "Saúde do jogo" > "Atualizar saúde do jogo" (days
+field, default 7, 1 to 90). Desktop: Jogadores > Saúde do jogo > "Carregar gráficos (7 dias)", or "Ver como
+texto" for any day count. Fallback on the VPS: `sudo chaos-ctl.sh game-health [--days N] [--kv | --json] [--pt]`.
+
+**What it shows.** Read only, from tables the server already fills:
+- Online per hour of the last N days: mean of the 5 minute samples and the peak (`chaos_telemetry_online`, band
+  `all`). An hour with no sample is a gap (server off). Also the mean by hour of the day, the busiest and quietest hour.
+- Deaths per hour (`chaos_telemetry_deaths`) and per hour of play (deaths / character-hours online).
+- Most and least used hunts, top 10 each (`chaos_telemetry_area`). Sorted by hunting time; the least used list never repeats a top one.
+  Every `hunt` marker of `data/chaos_poi.lua` is listed, so a hunt nobody visited shows with 0.
+- Gold in and out of the window by source (`chaos_telemetry_economy`): loot, Loot Bag, Auto Seller; supplies, respec.
+- The new player funnel of the last 30 days: the SELECT and maths of `newplayer_report.py` (O374), reused as is.
+  Levels reached, how many stopped, at which level band and after which system.
+
+**Small groups.** A character count of 1 to 4 is written "<5" (hunt visits, funnel rows), as O374. No row read holds a
+name, account, id or IP.
+
+**How.** `game_health.py --sql` builds one script of six tagged SELECTs from fixed numbers and the checked day count.
+`chaos-ctl.sh` sends it to `mysql` on stdin, then pipes the rows back into `game_health.py`. Output: text (`--pt`
+Portuguese), `--json` one line, `--kv` key=value lines for the apps (`ok`, `online_*`, `hour=EPOCH DD/MM HH MEAN PEAK
+DEATHS`, `hunt_top` / `hunt_low` = `VISITS HOURS KILLS DEATHS NAME`, `gold_*`, `funnel_*`). Missing tables: `ok=0`,
+`error=no-table`; database down: `error=database`.
+
+**Install.** Nothing new to run beyond the update: `install_all.py` step `sql` (or the server start) creates
+`chaos_telemetry_area`. The hunt rows fill from that update on.
+
+**Tests.** `tools/game_health_test.py` (SELECT, hours with gaps, hunt order, unvisited markers, small numbers, gold,
+funnel, kv / json / text, errors), `deploy/chaos_ctl_test.py` `test_health_balance`, Android `GameHealthInfoTest`,
+desktop `health.rs` tests. All data is synthetic. Not run on the live server yet.
+
+## Season balance report (O398) (`tools/balance_report.py`, `tools/balance_report_config.json`, `chaos-ctl.sh balance-report`, `deploy/chaos-balance.timer`)
+
+**Why.** Owner request: at season end, a report comparing the classes, with suggested changes.
+
+**Where the owner reads it.** Admin app. Android: Painel > card "Relatório de equilíbrio" > "Últimos dias" (days
+field, default 30), "Season atual", "Enviar por DM", "Último salvo", "Ligar automático" / "Desligar", "Copiar".
+Desktop: Jogadores > Relatório de equilíbrio > same buttons. Fallback on the VPS:
+`sudo chaos-ctl.sh balance-report [--days N | --season ID|current] [--pt] [--json] [--save] [--dm]`,
+`balance-report last`, `balance-report timer on|off|status`.
+
+**What it compares.** Per level band (1-99, 100-299, 300-499, 500-999, 1000+) and class, from the telemetry:
+- Minutes per level: hunting seconds and experience (`chaos_telemetry_hunt`) at the band's reference level
+  (`bandLevel`; engine curve 50L² - 150L + 200).
+- Deaths per hunting hour, damage per hunting hour and the class's share of its band (`chaos_telemetry_class`).
+- The most used spells per class (`chaos_telemetry_casts`, top 3).
+A class and band under `minCharacterHours` 5 character-hours shows as "<5" and is not compared.
+
+**Suggestions.** `flags()` is pure. Against the median of the band (needs `minClasses` 3 classes):
+- minutes per level outside ±15% (`tolerance`): slow or fast;
+- deaths per hour over +25% (`deathTolerance`) and over `minDeathsPerHour` 0.2;
+- damage per hour outside ±15%: low or high.
+`suggested()` proposes half the gap, at most 15%, at least 1%, as more or less damage or experience. A suggestion,
+not a change: nothing is applied.
+
+**Season window.** `--season ID|current` reads `season_config.lua` and the `/season start|end` overrides in
+`server_config` (`chaos_season_<id>_start/_end`). A season not found or not started: refused.
+
+**Saved reports.** `--save` writes `CHAOS_BALANCE_DIR` (default `/var/lib/chaos/balance`): `NAME.md`, `NAME.json` and
+`latest.md`; the newest 30 are kept. `--dm` also saves and drops the text into the Discord bot's outbox
+(`CHAOS_BOT_DATA/outbox`): the bot DMs it to the owner within a minute, in parts of 1900 characters. No bot installed:
+`dm=no-bot`, the file is still saved.
+
+**Automatic at season end.** `chaos-balance.timer` (daily 10:17, `Persistent=true`) runs `balance-report auto`: a season
+that ended in the last 14 days with no saved report gets `season-ID.md` (Portuguese) and a DM. Off by default; the app
+button "Ligar automático" or `balance-report timer on` installs and enables it.
+
+**Tests.** `tools/balance_report_test.py` (SELECT, analysis, flags and suggestions on synthetic classes, small groups,
+season windows and overrides, due, save and prune, text and JSON), `deploy/chaos_ctl_test.py` `test_health_balance`,
+`deploy/discord_bot/bot_core_test.py` `test_outbox`, `deploy/chaos_units_test.py`. Not run on the live server yet.
+
+**Assumptions.** The band reference levels are a choice (`bandLevel`). Damage only counts while the combat log is on.
+Data starts at the O397 / O398 update.
+
 ## The top menu reveals systems by level (O259) (`unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua`; client `client_chaos_topbar`)
 
 **Why.** The top menu showed about 60 entries to a character that has just left the tutorial. The retention pass (design
@@ -27995,6 +28088,9 @@ asks Claude what each message is, keeps a bug list and helps write patch notes. 
   `start` refuses with `config-missing` until the five required ones are set. Settings in `ctl.conf`: `CHAOS_BOT_USER`,
   `CHAOS_BOT_ENV`, `CHAOS_BOT_DIR`, `CHAOS_BOT_DATA`, `CHAOS_BOT_LOG`, `CHAOS_BOT_PYTHON`. Admin app: Comandos > Bot do Discord;
   desktop table: `commands.rs` group Bot do Discord.
+- **Outbox (O398).** Other tools DM the owner through the bot: a file dropped into `CHAOS_BOT_DATA/outbox` (owned by the
+  bot user) is sent as DMs within 60 s, in parts of 1900 characters (at most 20,000 read), then deleted
+  (`bot_core.outbox_files`, `read_outbox`, `split_message`; `bot.py` `outbox_loop`). `balance-report --dm` and `auto` use it.
 - **Not done.** No live run (the fallbacks parameter together with structured output is untested against the real API; the automatic
   patch loop and the persistent buttons in `bot.py` are not run here, only their pure rules), the Android card is not compiled here, and the slash commands are checked in code only (no permission override in the server settings).
 

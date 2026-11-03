@@ -205,6 +205,7 @@ class BugBot(discord.Client):
         self.restore_auto_pending()
         self.loop.create_task(self.daily_loop())
         self.loop.create_task(self.auto_loop())
+        self.loop.create_task(self.outbox_loop())
 
     async def on_ready(self):
         log.info('ready as bot id %s', self.user.id if self.user else '?')
@@ -281,6 +282,27 @@ class BugBot(discord.Client):
                         log.info('daily summary sent')
             except Exception as e:
                 log.error('daily loop: %s', type(e).__name__)
+            await asyncio.sleep(60)
+
+    async def outbox_loop(self):
+        """O398: files chaos-ctl.sh drops into DATA/outbox (the season balance report) go to the owner as DMs, then
+        are deleted. A file that cannot be sent stays and is tried again a minute later."""
+        await self.wait_until_ready()
+        while not self.is_closed():
+            try:
+                for path in core.outbox_files(self.cfg.outbox_dir):
+                    text = core.read_outbox(path)
+                    ok = True
+                    for part in core.split_message(text):
+                        if not await self.dm_owner(part):
+                            ok = False
+                            break
+                    if not ok:
+                        break
+                    os.unlink(path)
+                    log.info('outbox: %s sent to the owner', os.path.basename(path))
+            except Exception as e:
+                log.error('outbox: %s', type(e).__name__)
             await asyncio.sleep(60)
 
     # ---- the bugs channel

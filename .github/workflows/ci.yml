@@ -1177,6 +1177,12 @@ jobs:
       - name: New player funnel and survey report (newplayer_report_test.py; grouped funnel query, small numbers, survey texts, O374)
         run: python3 -I server/tools/newplayer_report_test.py
 
+      - name: Game health report (game_health_test.py; online per hour, hunts, deaths, gold, funnel, small numbers, O397)
+        run: python3 -I server/tools/game_health_test.py
+
+      - name: Season balance report (balance_report_test.py; class table, flags against the median, suggestions, season window, O398)
+        run: python3 -I server/tools/balance_report_test.py
+
       - name: Tester bots coverage table up to date, scenarios never out of scope
         run: |
           python3 -I server/tools/gen_tester_scenarios.py --check
@@ -1323,7 +1329,7 @@ jobs:
           shellcheck server/deploy/chaos-ctl.sh
           python3 -I server/deploy/chaos_ctl_test.py
 
-      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; plain JVM)
+      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; Saúde do jogo parsing; plain JVM)
         run: |
           mkdir -p /tmp/appjava
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/DiscordInfo.java android/app/src/test/java/com/cindersofchaos/admin/DiscordInfoTest.java
@@ -1334,6 +1340,8 @@ jobs:
           java -cp /tmp/appjava com.cindersofchaos.admin.ServerUserInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/NewPlayerInfo.java android/app/src/test/java/com/cindersofchaos/admin/NewPlayerInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.NewPlayerInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/GameHealthInfo.java android/app/src/test/java/com/cindersofchaos/admin/GameHealthInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.GameHealthInfoTest
 
       - name: Kit server update (chaos_kit_update.sh with a fake repo, releases, systemctl and database; rates, rollback)
         run: |

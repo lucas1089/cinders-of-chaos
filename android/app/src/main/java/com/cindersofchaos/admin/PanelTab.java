@@ -43,6 +43,7 @@ final class PanelTab {
     private final MetricsCard metrics;
     private final FeedbackCard feedback;
     private final NewPlayerCard newPlayers;
+    private final GameHealthCard health;
     private boolean updateSeen = false;
     private final List<MaterialButton> actionButtons = new ArrayList<>();
     private boolean loading = false;
@@ -196,6 +197,10 @@ final class PanelTab {
 
         newPlayers = new NewPlayerCard(a); // O374
         page.addView(newPlayers.card, ui.gap(12));
+
+        health = new GameHealthCard(a); // O397, O398
+        page.addView(health.card, ui.gap(12));
+        page.addView(health.balanceCard, ui.gap(12));
 
         feedback = new FeedbackCard(a);
         page.addView(feedback.card, ui.gap(12));
