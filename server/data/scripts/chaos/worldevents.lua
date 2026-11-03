@@ -1,8 +1,10 @@
 -- Small world events, one at a time at random moments every few hours (settings: invasion_config.lua worldEvents):
 --   Chaos Storm         15 minutes: magic / rare / legendary spawns in one area x tierMult (monster_tiers.lua asks
 --                       ChaosWorldEvents.tierMult(position) in its spawn roll), lightning around the players there
---   Wandering Merchant  20 minutes: an NPC (data/npc/Wandering Merchant.xml) at a random free spot of a town area,
---                       selling orbs and rare consumables (the list is in the config); the area is announced, not the spot
+--   Wandering Merchant  resident since O399 (merchant.resident): always in one town area, moving every moveHours (3)
+--                       to the next one; an NPC (data/npc/Wandering Merchant.xml) at a random free spot selling orbs and
+--                       rare consumables, one of each per character and stop (the list is in the config); the area is
+--                       announced, not the spot. Not one of the random world events while resident.
 --   Golden Hour         30 minutes: +25% Chaos loot in one area (loot_config.lua rateMult asks ChaosWorldEvents.lootMult)
 -- Each shows in !events / the login lines while it runs (ChaosEvents.dynamic) and in the client's upcoming-events
 -- window. Never in the area of a running invasion; no event starts within quietMinutes of an invasion.
@@ -24,6 +26,7 @@ local W = ChaosWorldEvents
 local I = ChaosInvasionCore
 
 W.active = W.active or nil -- {kind, area, endsAt, token, npcId}
+W.merchant = W.merchant or nil -- the resident merchant: {slot, area, endsAt, npcId, npcPos}
 W.token = W.token or 0
 
 local function cfg()
@@ -159,15 +162,103 @@ function W.stop(quiet)
 	return true
 end
 
--- stop the running event if it is in that area (an invasion starts there)
+local function busyArea(key)
+	return ChaosInvasion and ChaosInvasion.state and ChaosInvasion.state.phase ~= "idle" and ChaosInvasion.state.areaKey == key
+end
+
+-- ----------------------------------------------------------------- the resident Wandering Merchant (O399)
+local function merchantCfg()
+	local e = we().merchant
+	return e and e.resident and e.enabled ~= false and e or nil
+end
+
+local function merchantAreas(c, e)
+	local list = {}
+	for _, a in ipairs(I.worldEventAreas(c, "merchant")) do
+		local kindOk = not e.kinds
+		for _, k in ipairs(e.kinds or {}) do
+			if k == a.kind then
+				kindOk = true
+			end
+		end
+		if kindOk then
+			list[#list + 1] = a
+		end
+	end
+	return list
+end
+
+local function removeMerchant()
+	local m = W.merchant
+	W.merchant = nil
+	if ChaosEvents and ChaosEvents.dynamic then
+		ChaosEvents.dynamic.wanderingMerchant = nil
+	end
+	if m and m.npcId then
+		local npc = Npc(m.npcId)
+		if npc then
+			npc:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+			npc:remove()
+		end
+	end
+end
+
+-- put the merchant at this stop's area (areaKey: a staff choice; avoidKey: an area an invasion takes); returns ok, text
+function W.placeMerchant(areaKey, avoidKey, quiet)
+	local e = merchantCfg()
+	if not e then
+		return false, "the merchant is not resident (worldEvents.merchant.resident)"
+	end
+	local c = cfg()
+	local slot, endsAt = I.merchantSlot(os.time(), e.moveHours)
+	local list = merchantAreas(c, e)
+	local area
+	if areaKey then
+		area = I.areaByKey(c, areaKey)
+	else
+		area = I.merchantArea(list, slot)
+		for i = 1, #list do
+			if area and not busyArea(area.key) and area.key ~= avoidKey then
+				break
+			end
+			area = list[((slot + i) % #list) + 1]
+		end
+		if area and (busyArea(area.key) or area.key == avoidKey) then
+			area = nil
+		end
+	end
+	removeMerchant()
+	if not area then
+		return false, "no area for the merchant"
+	end
+	local pos = merchantSpot(area)
+	local npc = pos and Game.createNpc(e.npc or "Wandering Merchant", pos, false, true)
+	if not npc then
+		return false, "the merchant NPC could not be placed (data/npc/Wandering Merchant.xml installed?)"
+	end
+	pos:sendMagicEffect(CONST_ME_TELEPORT)
+	W.merchant = {slot = slot, area = area, endsAt = endsAt, npcId = npc:getId(), npcPos = {x = pos.x, y = pos.y, z = pos.z}}
+	local text = ChaosI18n.msg("The Wandering Merchant has set up shop somewhere in %s until %s: orbs and rare goods, one of each per customer. Find him!",
+		area.name, os.date("%H:%M", endsAt))
+	if ChaosEvents and ChaosEvents.dynamic then
+		ChaosEvents.dynamic.wanderingMerchant = {id = "wanderingMerchant", name = e.name or "Wandering Merchant",
+			description = tostring(text), untilTime = endsAt}
+	end
+	if not quiet then
+		announce(text)
+	end
+	return true, string.format("%s in %s at %d,%d,%d until %s", e.name or "Wandering Merchant", area.name, pos.x, pos.y,
+		pos.z, os.date("%H:%M", endsAt))
+end
+
+-- stop the running event if it is in that area (an invasion starts there); the merchant moves on
 function W.stopIn(areaKey)
 	if W.active and W.active.area.key == areaKey then
 		W.stop(false)
 	end
-end
-
-local function busyArea(key)
-	return ChaosInvasion and ChaosInvasion.state and ChaosInvasion.state.phase ~= "idle" and ChaosInvasion.state.areaKey == key
+	if W.merchant and W.merchant.area.key == areaKey then
+		W.placeMerchant(nil, areaKey, false)
+	end
 end
 
 -- start kind (nil = by weight) in areaKey (nil = random allowed area); returns ok, text
@@ -179,6 +270,9 @@ function W.start(kind, areaKey)
 	local w = c.worldEvents or {}
 	if kind and not w[kind] then
 		return false, "unknown event (storm, merchant, golden)"
+	end
+	if kind == "merchant" and merchantCfg() then
+		return W.placeMerchant(areaKey, nil, false) -- staff: move the resident merchant now
 	end
 	kind = kind or I.pickWorldEvent(w, W.lastKind, math.random)
 	if not kind then
@@ -247,7 +341,13 @@ function W.calendar(t)
 			name = (e.name or a.kind) .. " in " .. a.area.name}
 	elseif W.nextAt and W.nextAt > t then
 		list[#list + 1] = {kind = "world", at = W.nextAt, inSeconds = W.nextAt - t, when = "around " .. os.date("%H:%M", W.nextAt),
-			name = "A world event (Chaos Storm, Wandering Merchant or Golden Hour)"}
+			name = merchantCfg() and "A world event (Chaos Storm or Golden Hour)" or "A world event (Chaos Storm, Wandering Merchant or Golden Hour)"}
+	end
+	local m = W.merchant
+	if m and t < m.endsAt then
+		local e = we().merchant or {}
+		list[#list + 1] = {kind = "merchant", at = m.endsAt, inSeconds = 0, when = "until " .. os.date("%H:%M", m.endsAt),
+			name = (e.name or "Wandering Merchant") .. " in " .. m.area.name}
 	end
 	return list
 end
@@ -262,6 +362,19 @@ local think = GlobalEvent("ChaosWorldEvents")
 function think.onThink(interval)
 	local t = os.time()
 	local w = we()
+	-- the resident merchant: a new stop when the clock passes the end of this one (or the NPC is gone)
+	if merchantCfg() and (not W.merchantRetryAt or t >= W.merchantRetryAt) then
+		local m = W.merchant
+		if not m or t >= m.endsAt or not Npc(m.npcId) then
+			local ok, err = W.placeMerchant(nil, nil, false)
+			if not ok then
+				print("[Chaos world events] merchant not placed: " .. tostring(err))
+				W.merchantRetryAt = t + 300
+			else
+				W.merchantRetryAt = nil
+			end
+		end
+	end
 	if W.active and t >= W.active.endsAt then
 		W.stop(false)
 		planNext(t)

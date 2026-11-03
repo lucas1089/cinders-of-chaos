@@ -2,6 +2,9 @@
 -- reads its goods straight from the config file: invasion_config.lua worldEvents.merchant.items ({id, price, name,
 -- seasonBlocked}). A seasonBlocked item (the double experience potion) is refused to season characters, both in the
 -- trade window and by "buy <name>": the realm comes from chaos_season_players and season_core.lua, as in season.lua.
+-- O399: one of each item per character and stop (perStop; the stop is floor(os.time() / (moveHours * 3600)), the same
+-- clock worldevents.lua moves him by). A bought item is marked in player storage storageBase + its place - 1 with the
+-- stop + 1. Spoken buys are sent to the trade window, which checks the limit.
 local keywordHandler = KeywordHandler:new()
 local npcHandler = NpcHandler:new(keywordHandler)
 NpcSystem.parseParameters(npcHandler)
@@ -69,10 +72,46 @@ local function seasonRealm(player)
 end
 
 local blocked = {} -- item id -> name
-for _, it in ipairs(items) do
+local place = {} -- item id -> its place in the list (1-based)
+for i, it in ipairs(items) do
+	place[it.id] = i
 	if it.seasonBlocked then
 		blocked[it.id] = it.name
 	end
+end
+
+-- the limit per stop (O399)
+local perStop = tonumber(merchant.perStop) or 0
+local storageBase = tonumber(merchant.storageBase)
+local limited = perStop > 0 and storageBase ~= nil
+local function stopNumber()
+	local period = math.max(1, math.floor((tonumber(merchant.moveHours) or 3) * 3600))
+	return math.floor(os.time() / period), period
+end
+local function boughtKey(itemId)
+	return place[itemId] and storageBase + place[itemId] - 1
+end
+-- true (and the NPC says why) when the limit stops this buy
+local function overLimit(cid, itemId, amount)
+	if not limited then
+		return false
+	end
+	local player = Player(cid)
+	local key = boughtKey(itemId)
+	if not player or not key then
+		return false
+	end
+	local stop, period = stopNumber()
+	if (tonumber(amount) or 1) > perStop then
+		npcHandler:say(t(cid, "One of each per customer, friend. I have only so much to go around."), cid)
+		return true
+	end
+	if player:getStorageValue(key) == stop + 1 then
+		local left = math.max(1, math.ceil(((stop + 1) * period - os.time()) / 60))
+		npcHandler:say(t(cid, "You already bought that from me here. I move on in %d minutes; find me again then.", left), cid)
+		return true
+	end
+	return false
 end
 
 -- true (and the NPC says why) when this player may not buy this item
@@ -93,15 +132,34 @@ end
 
 -- trade window
 npcHandler:setCallback(CALLBACK_ONBUY, function(cid, itemId, subType, amount, ignoreCap, inBackpacks)
-	return not refused(cid, itemId)
+	return not refused(cid, itemId) and not overLimit(cid, itemId, amount)
 end)
+-- a sale that went through marks the item for this stop (the shop's own callback answers true only then)
+if limited and shopModule.callbackOnBuy then
+	local shopBuy = shopModule.callbackOnBuy
+	function shopModule:callbackOnBuy(cid, itemId, subType, amount, ignoreCap, inBackpacks)
+		local done = shopBuy(self, cid, itemId, subType, amount, ignoreCap, inBackpacks)
+		local player, key = Player(cid), boughtKey(itemId)
+		if done and player and key then
+			player:setStorageValue(key, stopNumber() + 1)
+		end
+		return done
+	end
+end
 
 -- "buy <name>": a node in front of the shop's own one; it answers only a refusal, else the shop's node goes on
 for _, it in ipairs(items) do
-	if it.seasonBlocked then
+	if it.seasonBlocked or limited then
 		keywordHandler:addKeyword({"buy", it.name}, function(cid, message, keywords, parameters, node)
-			if not npcHandler:isFocused(cid) or not refused(cid, it.id) then
+			if not npcHandler:isFocused(cid) then
 				return false
+			end
+			if not refused(cid, it.id) then
+				if not limited then
+					return false
+				end
+				-- O399: spoken buys could ask for any amount; the trade window keeps the limit
+				npcHandler:say(t(cid, "Ask me for a {trade}; one of each per customer."), cid)
 			end
 			if shop_npcuid then
 				shop_npcuid[cid] = 0

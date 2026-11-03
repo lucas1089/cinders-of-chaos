@@ -474,7 +474,22 @@ do
 		counts[k] = counts[k] + 1
 		last = k
 	end
-	ok(counts.storm > 0 and counts.merchant > 0 and counts.golden > 0, "every kind happens")
+	ok(counts.storm > 0 and counts.golden > 0, "every kind happens")
+	ok(counts.merchant == 0, "O399: the resident merchant is never a random world event")
+	local notResident = {storm = {weight = 1}, merchant = {weight = 1}, golden = {weight = 0}}
+	local seen = {}
+	for _ = 1, 50 do
+		seen[I.pickWorldEvent(notResident, nil, rng)] = true
+	end
+	ok(seen.merchant, "a merchant that is not resident is still picked")
+	-- the stops: 3 hours each, fixed by the clock, the town areas in turn
+	local slot, endsAt = I.merchantSlot(10800 * 5 + 100, 3)
+	eq(slot, 5, "stop number from the clock")
+	eq(endsAt, 10800 * 6, "the stop ends at the next 3 hour mark")
+	local towns2 = {{key = "a"}, {key = "b"}}
+	ok(I.merchantArea(towns2, 5).key ~= I.merchantArea(towns2, 6).key, "two stops in a row are in different towns")
+	eq(I.merchantArea(towns2, 5).key, I.merchantArea(towns2, 5).key, "a restart picks the same town")
+	eq(I.merchantArea({}, 1), nil, "no town, no stop")
 	local only = {storm = {weight = 1}, merchant = {weight = 0}, golden = {weight = 0}}
 	eq(I.pickWorldEvent(only, "storm", rng), "storm", "a single kind may repeat")
 	eq(I.pickWorldEvent({storm = {weight = 0}, merchant = {weight = 0}, golden = {weight = 0}}, nil, rng), nil, "none enabled")

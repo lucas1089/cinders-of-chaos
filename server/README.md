@@ -889,6 +889,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103040 - 7103049 | the Weekend Ritual's GLOBAL storages (`Game.setStorageValue`, `weekend_config.lua` `globalStorage`, O321): +0 the staff switch (1 = off), +1 / +2 / +3 the weekend (YYYYMMDD of its first day) whose start, end warning and highlight were done; +4..9 free; no player storage |
 | 7103050 - 7103059 | Hunt warnings (`hunt_warnings_config.lua` `storage`, `Chaos.storage.huntWarnLast`, O323): +0 os.time of the last warning shown to the character; +1..9 free |
 | 7103060 - 7103069 | new player survey (`survey_config.lua` `storage`, `Chaos.storage.survey`, O374): +0 bit mask of the survey stages (bit 0 = level 20, bit 1 = level 50) already handled for the character's account (a cache of `chaos_survey`); +1..9 free |
+| 7103070 - 7103079 | Wandering Merchant (`invasion_config.lua` `worldEvents.merchant.storageBase`, O399): +0..+9 the stop + 1 in which the character bought the item at that place of `items` (one of each per stop) |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -10861,9 +10862,18 @@ Adventure > Events while it runs (`ChaosEvents.dynamic.worldEvent`).
 - **Chaos Storm** (15 min): magic, rare and legendary spawn chances x3 in the area. `monster_tiers.lua` multiplies its
   spawn roll by `ChaosWorldEvents.tierMult(position)` (with the event days at most x3 together, `maxSpawnMult`).
   Lightning and clouds around the players inside every 2 s.
-- **Wandering Merchant** (20 min, town areas only): the NPC "Wandering Merchant" at a random free tile of the area (or
-  one of `merchantSpots`). Only the area is announced. Goods: Orb of Upheaval 40k, Orb of Fate 120k, Orb of Grafting 200k, Orb of
-  Gilding 250k (60k before the owner's decision of 2026-10-14, "Item prices"), Orb of Unmaking 80k, Double Experience Potion 350k, supreme health potion 900 (no stock limit). An item with
+- **Wandering Merchant** (resident since O399, town areas only): always present, he moves every `moveHours` (3) to the
+  next town area. The stops are fixed by the clock (`floor(os.time() / 10800)`, `invasion_core.lua` `merchantSlot`,
+  `merchantArea`: the town areas in turn), so a restart keeps the stop and its limit. Each move is announced and shows
+  in !events and the events window until the next mark; an invasion in his town sends him to the next one; the staff's
+  `/invasion event merchant [area]` moves him now. He is no longer one of the random world events. The NPC stands at a
+  random free tile of the area (or one of `merchantSpots`); only the area is announced. Goods (O399, about x2.5 the old
+  prices): Orb of Upheaval 100k, Orb of Fate 300k, Orb of Grafting 500k, Orb of Gilding 650k (60k before the owner's
+  decision of 2026-10-14, then 250k), Orb of Unmaking 200k, Double Experience Potion 900k, supreme health potion 2,500.
+  Limit: `perStop` (1) of each item per character and stop, in the trade window (an amount over it or a second buy in
+  the same stop is refused with a line saying when he moves on); a spoken "buy <name>" points to the trade window. The
+  wrapped `ShopModule:callbackOnBuy` marks a sale that went through in player storage `storageBase` (7103070) + the
+  item's place - 1 with the stop + 1. An item with
   `seasonBlocked = true` (the Double Experience Potion: it does nothing for season characters) is refused to a character of a
   running season, in the trade window and by "buy <name>", with the merchant's `seasonBlockedText` and a cancel message;
   the NPC reads the realm itself (`chaos_season_players`, `season_core.lua`, the `/season` overrides). Tested in game: a
@@ -14396,8 +14406,8 @@ the gold per hour.
   anything sellable.
 - Caps: crafted equipment at most an hour of hunting gold at its level band (`gamble_config.lua` `balance.hunting`; the
   band is its level requirement or the highest lowest-monster level of its materials; 14 items). Every piece of
-  equipment at most 30,252 for a plain copy: the Wandering Merchant's Orb of Gilding (250,000) adds x4.25 on average
-  to a plain copy and his Orb of Fate (120,000) x0.55, so at item level 150 neither pays off (90% margin; 150 items,
+  equipment at most 30,252 for a plain copy: the Wandering Merchant's Orb of Gilding (650,000) adds x4.25 on average
+  to a plain copy and his Orb of Fate (300,000) x0.55, so at item level 150 neither pays off (90% margin; 150 items,
   the inferniarch weapons at 14.9M before among them). A base the Gambler sells keeps its expected sale (x3.45, his rarity odds, and the item level) under 90% of his
   price at every level he offers it (152 items); at most half of what the NPCs ask for the item (the median of their
   gold prices), a fifth for supplies (potions, runes, ammunition); goods an NPC sells for 1-2 gold sell for 1.
