@@ -20,7 +20,10 @@ Runs the server and the client on your own computer.
 Map editor
   The map editor is in this zip (mapeditor\): a free program under the GNU AGPL-3.0, with its source zip in
   mapeditor\source and its licence in mapeditor\LICENSE (docs/CREDITS.md, entry under Tools; the game's Credits window
-  names it too). Nothing to download. mapeditor\CHANGES.txt says which version it is and what the package set up.
+  names it too). Nothing to download. It is our own build: the editor's code with our speed patches for this big map,
+  and the source zip is that patched source (our patches in its cinders-patches folder). mapeditor\CHANGES.txt says
+  which build it is (the upstream commit and our patches, or the plain upstream release when ours was not ready) and
+  what the package set up.
     1. Double-click open-map-editor.bat. It copies the server's items.otb and items.xml (every Chaos item) to the
        editor, sets the editor's 10.98 client folder to mapeditor\client (the Chaos Tibia.dat, Tibia.spr, items.otb
        and Tibia.otfi, which tells the editor the .spr has transparency; keep it there), puts the server's map first

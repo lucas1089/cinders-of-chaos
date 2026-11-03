@@ -7,6 +7,17 @@
 #   mapeditor-source        the patched source as a zip, plus our patches, the pin and mapeditor/README.md in
 #                           cinders-patches/ (AGPL-3.0: the source of what we ship goes with it)
 #
+# Release (O387, job release): a green patched build from main (push or dispatch, never pull_request) becomes the
+# GitHub release mapeditor-<short sha of our commit> of this repository (artifacts expire, releases do not), assets:
+#   mapeditor-<short>-windows-x64.zip   the release folder in one top folder of the same name
+#   mapeditor-<short>-source.zip        the patched source with cinders-patches/
+#   BUILD_INFO.txt                      upstream sha and repository, variant, our patches, our commit, the run
+#   SHA256SUMS.txt                      the three files above
+# The artifacts are uploaded only after the ctest step passed, so a release exists only for a tested build.
+# windows-package.yml (input map_editor: ours) ships the newest one (tools/windows/editor_release.py latest-tag).
+# One tag per commit, so a new build never changes the release a package is downloading (a rebuild of the same
+# commit replaces its own release; the package checks SHA256SUMS.txt and falls back). The newest 5 are kept.
+#
 # Profile (input profile: true): a second build with only the harness patches (mapeditor/BASELINE_PATCHES), the
 # merged Tibia.dat / Tibia.spr and the map master from the private branch windows-assets (as windows-package.yml
 # gets them), and run_profile.py runs both builds on our map: load time, peak RAM, frame times while panning. The
@@ -204,6 +215,7 @@ jobs:
           Copy-Item -Recurse "$($release.FullName)/*" out/editor/
           $info = @(
             "upstream: ${{ steps.pin.outputs.sha }}",
+            "upstream_repo: ${{ steps.pin.outputs.repo }}",
             "variant: ${{ matrix.variant }}",
             "patches: $((Get-Content applied.txt) -join ', ')",
             "cinders of chaos commit: $env:GITHUB_SHA",
@@ -235,6 +247,97 @@ jobs:
           path: out/mapeditor-source.zip
           retention-days: 30
           if-no-files-found: error
+
+  release:
+    name: Release (our build for the Windows package)
+    needs: build
+    # main only, never pull_request; also after a failed baseline build of the profile: the patched artifacts exist only
+    # when the patched build and its ctest step passed (checked below)
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Get the tested build (editor)
+        id: dl
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mapeditor-windows-x64
+          path: dl/mapeditor-windows-x64
+
+      - name: Get the tested build (source)
+        id: dlsrc
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mapeditor-source
+          path: dl/mapeditor-source
+
+      - name: Zips, BUILD_INFO.txt, SHA256SUMS.txt
+        id: files
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.dl.outcome }}" != success ] || [ "${{ steps.dlsrc.outcome }}" != success ] ||
+             [ ! -f dl/mapeditor-windows-x64/BUILD_INFO.txt ] || [ ! -f dl/mapeditor-source/mapeditor-source.zip ]; then
+            # the build job is red already; nothing to release
+            echo "::notice::no tested patched build in this run (build or ctest failed): no release"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          grep -qx 'variant: patched' <(tr -d '\r' < dl/mapeditor-windows-x64/BUILD_INFO.txt | sed 's/^\xef\xbb\xbf//')
+          short=${GITHUB_SHA:0:7}
+          name="mapeditor-$short"
+          mkdir -p rel "pack/$name-windows-x64"
+          cp -a dl/mapeditor-windows-x64/. "pack/$name-windows-x64/"
+          (cd pack && zip -qrX "../rel/$name-windows-x64.zip" "$name-windows-x64")
+          cp dl/mapeditor-source/mapeditor-source.zip "rel/$name-source.zip"
+          cp dl/mapeditor-windows-x64/BUILD_INFO.txt rel/BUILD_INFO.txt
+          (cd rel && sha256sum "$name-windows-x64.zip" "$name-source.zip" BUILD_INFO.txt > SHA256SUMS.txt)
+          ls -la rel
+          cat rel/SHA256SUMS.txt
+          { echo "tag=$name"; echo "ok=true"; } >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        if: steps.files.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          tag="${{ steps.files.outputs.tag }}"
+          {
+            echo "Our build of the map editor (mapeditor/README.md): upstream at the pin plus our patches, built and"
+            echo "tested by run [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
+            echo "Licence GNU AGPL-3.0 (LICENSE and NOTICE in the zip); the patched source is the -source.zip."
+            echo "The Windows package (input map_editor: ours) ships the newest of these releases."
+            echo
+            echo '```'
+            tr -d '\r' < rel/BUILD_INFO.txt | sed 's/^\xef\xbb\xbf//'
+            echo
+            cat rel/SHA256SUMS.txt
+            echo '```'
+          } > notes.md
+          # a rebuild of the same commit replaces its release
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release delete "$tag" -R "$GITHUB_REPOSITORY" -y --cleanup-tag
+          fi
+          gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "Map editor build ${GITHUB_SHA:0:7}" --notes-file notes.md rel/*
+          {
+            echo "## Map editor release $tag"
+            echo
+            cat notes.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the newest 5 editor releases
+        if: steps.files.outputs.ok == 'true'
+        run: |
+          gh release list -R "$GITHUB_REPOSITORY" --limit 200 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | test("^mapeditor-[0-9a-f]{7,40}$"))] | sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
+          while read -r tag; do
+            gh release delete "$tag" -R "$GITHUB_REPOSITORY" -y --cleanup-tag || true
+          done
 
   profile-data:
     name: Profile data (our items.otb and map)

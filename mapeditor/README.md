@@ -15,7 +15,7 @@ This folder holds the pin, our patches and the tools.
 | `tools/check_patches.sh` | Checks every patch applies in order on a clean copy. |
 | `tools/upstream.py` | Prints the upstream repository and the pin for the workflow. |
 | `tools/run_profile.py` | Runs builds on a map and writes the timing table. |
-| `.github/workflows/mapeditor-build.yml` | Build, tests, artifacts, optional profile. |
+| `.github/workflows/mapeditor-build.yml` | Build, tests, artifacts, release for the package, optional profile. |
 
 Pin: `2b98cb3192a74e01bb6b88b05a8ba8185c9ebfa1` (upstream HEAD of 2026-10-28, cloned 2026-11-03).
 
@@ -144,13 +144,45 @@ Read from the code at the pin. Each needs a profile number before a patch.
   the SPR is decoded lazily (memory mapped during bulk work); save writes through a 64 KiB buffer; the minimap
   is one 8-bit image per floor.
 
-## The Windows package and the licence
+## Release (O387)
 
-The package workflow (`windows-package.yml`) ships the upstream release zip today.
-To ship ours: download the artifacts `mapeditor-windows-x64` and `mapeditor-source` of a green run instead,
-put both in the package, and keep LICENSE and NOTICE beside the exe.
+Job `release` of the same workflow, after a green build from `main` (push or dispatch; never pull requests).
+It runs only when the patched build and its `ctest` step passed: the artifacts exist only then.
+It publishes the GitHub release `mapeditor-<short sha>` of this repository (prerelease, never "latest").
+Artifacts expire after 30 days; releases do not.
+
+| Asset | What |
+|---|---|
+| `mapeditor-<short>-windows-x64.zip` | The release folder in one top folder of the same name. |
+| `mapeditor-<short>-source.zip` | The patched source with `cinders-patches/` (AGPL). |
+| `BUILD_INFO.txt` | Upstream sha and repository, variant, our patches, our commit, the run. |
+| `SHA256SUMS.txt` | The three files above. |
+
+One tag per commit. A new build never changes a release a package is downloading.
+A rebuild of the same commit replaces its own release. The newest 5 are kept.
+The job has `contents: write`; the rest of the workflow stays read only.
+
+## Package
+
+`windows-package.yml` input `map_editor`: `ours` (default) or `upstream`.
+
+- `ours`: the newest `mapeditor-<hex>` release of this repository (`tools/windows/editor_release.py latest-tag`).
+  `editor_release.py verify --ours` checks both zips and `BUILD_INFO.txt` against `SHA256SUMS.txt`.
+  It also wants the patched variant, a full upstream sha and our patch list.
+- No such release, or three bad downloads: a `::warning::` and the upstream release. Packaging never blocks.
+- `upstream`: the upstream rolling release, as in O381.
+
+Both go through the same later steps: the updater exe is removed, `data\1098` creatures and items are the game's,
+the settings key is read from the exe, the source zip goes to `mapeditor\source`.
+The settings key is named after the upstream repository: `upstream_repo` of `BUILD_INFO.txt`, else the credits.
+`mapeditor\CHANGES.txt` says "our build of ...: upstream commit <sha> + our patches 0001..0006" and our commit.
+The release notes and the package `BUILD_INFO.txt` name the build that shipped.
+A fallback to upstream says "the UPSTREAM release" in the release notes.
+
 AGPL-3.0: whoever gets our build must be able to get its exact source.
-So the package ships the patched source zip (`mapeditor-source`) next to the editor. Never ship one without the other.
+So the package ships the patched source zip of the same release next to the editor, with LICENSE and NOTICE.
+Never ship one without the other.
 
 Open: the editor's built-in updater checks the upstream releases. An update from there replaces our build with
-upstream's. Turn it off or point it at us in a patch before players or staff use our build.
+upstream's. The package leaves the updater exe out. Turn it off or point it at us in a patch before staff use
+our build outside the package.
