@@ -391,11 +391,11 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 - **AutoSprite**
   - Licence: paid account
   - Used for: drawing and animating the boss Vharzul the Verdant Eye and the Ashbound Thrall and Slagback Hound of the Embergut Rift
-- **NexaMap Editor**
-  - Author: Mateuzkl, Skyyzyy and SoyFabi
-  - Licence: freeware end-user licence in the source's LICENSE.rtf: free to use; copies may be passed on only unmodified, with that licence text and without a fee. Not part of our downloads: the owner downloads it from its source
-  - Source: https://github.com/Mateuzkl/NexaMap-Editor
-  - Used for: editing the game map (the Windows package sets its client and server folders)
+- **Dewral Map Editor**
+  - Author: Dewral and the Dewral Map Editor contributors; parts derived from Tibia ImGui Map Editor (its contributors); built-in brush, tileset, item and creature lists derived from OTAcademy/RME
+  - Licence: GNU Affero General Public License v3.0 (LICENSE and NOTICE next to the program). Shipped unmodified in the Windows package (mapeditor) with its source zip from the same release; the package replaces its 10.98 creatures.xml and items.xml with the game's and leaves out its self-updater (mapeditor/CHANGES.txt). It brings Qt 6 (LGPL-3.0) and a public-domain part of the LZMA SDK
+  - Source: https://github.com/dewral/DewralMapEditor
+  - Used for: editing the game map; its Lua scripts run our area generator and paint our area plans (mapeditor/cinders)
 
 <!-- credits:end -->
 

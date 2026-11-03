@@ -20491,6 +20491,12 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   with QA, determinism, decoration rules and rates, stairs, roofs, chest script run on a mocked engine, place and
   install on synthetic maps, pair 24 switch, knowledge base, AI fix loop on a fake endpoint). Previews of the examples
   were rendered with things_custom23 for review only.
+- **In the map editor (O381):** `tools/gen_editor_scripts.py OUT` builds the script pack the Windows package ships as
+  `mapeditor\cinders\` (docs/MAP_GUIDE.md "Generator in the map editor"): `generate_area.lua` runs `areagen_core.lua`
+  with the biomes of `areaplan_build.lua`, loaded as a library (global `AREAPLAN_LIB = {pair24, dark}` before
+  `dofile`: it returns its tables and reads no `arg`), inside the editor's Lua 5.1; `paint_plan.lua` paints a plan
+  compiled by the build (rows of server ids, notes with what the editor cannot write). Code in `tools/editor_scripts/`,
+  tests `tests/editor_scripts_test.lua` (also Lua 5.1 in CI) and `tools/gen_editor_scripts_test.py`.
 
 ## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
 
