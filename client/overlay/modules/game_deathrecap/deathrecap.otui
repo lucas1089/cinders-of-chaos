@@ -134,6 +134,14 @@ DeathTimelineLine < UILabel
   color: #d6c9ae
   phantom: true
 
+DeathAdviceLine < UILabel
+  height: 24
+  text-align: topLeft
+  text-wrap: true
+  font: Verdana-9px-antialiased
+  color: #f2e8d0
+  phantom: true
+
 ChaosMainWindow
   id: deathRecapWindow
   size: 680 520
@@ -289,8 +297,8 @@ ChaosMainWindow
     id: timelineFrame
     anchors.left: headPanel.left
     anchors.right: headPanel.right
-    anchors.bottom: closeButton.top
-    margin-bottom: 8
+    anchors.bottom: adviceFrame.top
+    margin-bottom: 6
     height: 100
 
     ChaosLabel
@@ -306,6 +314,36 @@ ChaosMainWindow
     UIWidget
       id: timeline
       anchors.top: timelineTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 2
+      layout:
+        type: verticalBox
+
+  // death advice (O371): 1-3 tips from the server (deathrecaplogic.lua L.tips); height set by the script, 0 without tips
+  ChaosPanelDark
+    id: adviceFrame
+    anchors.left: headPanel.left
+    anchors.right: headPanel.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    height: 0
+    visible: false
+
+    ChaosLabel
+      id: adviceTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 14
+      color: #e8b84a
+      text-align: left
+      !text: tr('What to do')
+
+    UIWidget
+      id: tips
+      anchors.top: adviceTitle.bottom
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.bottom: parent.bottom

@@ -101,6 +101,11 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		doTargetCombat(player, who, COMBAT_MANADRAIN, v, v)
 	end
 	who:say(PT.cfg().sound, TALKTYPE_MONSTER_SAY)
+	-- the death advice (deathrecap.lua, O371) counts the potions drunk before a death
+	local onPotion = ChaosDeathRecap and ChaosDeathRecap.onPotion
+	if onPotion then
+		pcall(onPotion, who)
+	end
 	for _, pool in ipairs(pools) do
 		lastDrink[player:getId() .. ":" .. pool] = nowMs()
 	end

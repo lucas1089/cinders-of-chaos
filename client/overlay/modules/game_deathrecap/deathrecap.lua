@@ -7,6 +7,7 @@
 -- registerExtendedJSONOpcode):
 --   client -> server  open {id?} | get {id}
 --   server -> client  history {list, sel, recap} | recap {id, recap, auto}
+-- Below the last hits, "What to do": 1-3 tips of the death advice (O371; recap.tips, worded by L.tips).
 -- Pure parts: deathrecaplogic.lua (deathrecaplogic_test.lua).
 
 local OPCODE = 154
@@ -134,6 +135,17 @@ local function renderRecap()
   end
   window.emptyText:setText(current and tr('No hits were recorded before this death.') or tr('No death recorded yet.'))
   window.emptyText:setVisible(#rows == 0)
+
+  -- death advice (O371): up to 3 tips of the server, two lines each at most
+  local advice = window.adviceFrame
+  advice.tips:destroyChildren()
+  local tips = L.tips(current)
+  for _, text in ipairs(tips) do
+    local line = g_ui.createWidget('DeathAdviceLine', advice.tips)
+    line:setText(text)
+  end
+  advice:setHeight(#tips > 0 and (18 + 24 * #tips) or 0)
+  advice:setVisible(#tips > 0)
 
   window.timelineFrame.timeline:destroyChildren()
   for _, e in ipairs(L.timeline(current)) do

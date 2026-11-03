@@ -6757,7 +6757,17 @@ Every number and text is in `mentor_config.lua`; the rules are pure functions in
 - **Opcode.** Referral's 220 is not reused: the client registers one handler per opcode and the mentor window is its own
   module. 194 is free in the reference server ("Opcode collision check"), in every Chaos script and in every client module
   of the reference client (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants; 190-199 had
-  only guild wars' 197). Storages 7100360 - 7100369 (+0 "looking for a mentor").
+  only guild wars' 197). Storages 7100360 - 7100369 (+0 "looking for a mentor", +1 the mentor offer).
+- **Mentor offer (O371).** Once per character from level `offer.level` (12), while `apprenticeCheck` lets it pick a
+  mentor: at that level up (`ChaosMentorOffer` advance event, registered at login while the offer may still come) or
+  `offer.loginDelayMs` (8 s) after a login at or above it. Server `offer {online, any, exp, dmg}`: mentors online now
+  with a free place, not of the own account, `online` those whose card language matches the character's
+  (`ChaosMentorCore.langMatch`, `offer.langWords`; `x*` a word starting with x), `any` all of them. The client shows a
+  small window, "Want a mentor?" (`game_mentor` `MentorOfferWindow`): Find a mentor (`offer {answer = "find"}`, the
+  server opens the Mentors window, Find a mentor tab) or No thanks / Escape (`offer {answer = "no"}`). Storage +1:
+  -1 never, 1..`maxShows` (3) shown without an answer (one more login each), 100 done. Done also when a lasting refusal
+  comes (a mentor, too old an account or level, graduated, a mentor itself, staff, all mentors used); a cooldown or a
+  ban only waits. `unlocks_config.lua` is not touched.
 - **State.** `chaos_mentors` (card, marks, graduates, today's minutes and marks, the month's marks), `chaos_mentor_links`,
   `chaos_mentor_milestones`, `chaos_mentor_purchases`, `chaos_mentor_log` (`sql/chaos_mentor.sql`; `mentor.lua` creates
   them at startup). Invitations live in memory. Staff: `/mentor <player>` (marks, graduates, link), `/mentor <player>, unlink`.
@@ -16137,6 +16147,40 @@ looks, the recap math (totals, health and mana, elements, killing blow, engine k
 history of 5, the SQL. Against a mocked engine: the hook, a death, the row, the login that fills the loss and opens it,
 an arena defeat, a real death in an instance, a cancelled hit outside one, a hidden mode, 5 rows kept per character, the
 window's `open` / `get`, another character's id refused, bad input. Client: `game_deathrecap/deathrecaplogic_test.lua`.
+
+### Death advice (O371) (`deathadvice_core.lua`, `deathrecap_config.lua` `advice`, client `game_deathrecap`)
+
+Owner request (new player experience): after a death, say in plain words why and what to do.
+- **Where.** Each recap gets `tips`: 1-3 short tips, rule order, at most `advice.max` (3). The client words them under
+  the last hits, in a "What to do" panel (`deathrecaplogic.lua` `L.tips`, English and pt-BR). An older recap has none.
+- **Facts** (`ChaosDeathAdvice.facts`, from the same rolling log): the level of each monster attacker (`getMonsterLevel`,
+  taken once per attacker), distinct monster creatures (their ids), healing received in the window (`combatlog.lua`
+  `ChaosCombatLog.healHook`, the part that filled missing health), Everfull potions drunk in the window (`potions.lua`
+  calls `ChaosDeathRecap.onPotion`), and the character's resistance to the element that dealt the most.
+- **Resistance** (`ChaosDeathRecap.resistOf`, an estimate): worn items' protection of that combat type
+  (`ItemType:getAbilities().absorbPercent`) and the two absorb storages of engine patch 0049 (gear rolls, tree / Paragon),
+  summed by `ChaosItemMods.effectiveAbsorb` (75 cap), then the gems' `res_<element>` (`ChaosGems.playerBonus`).
+  Spells, buffs and set bonuses outside those storages are not counted.
+- **Rules** (numbers in `advice`):
+
+| Tip | When | Says |
+|---|---|---|
+| `lvl {d}` | monsters above the character dealt `levelShare` (30) % of the damage and the hardest hitter of them is `levelGap` (30)+ levels above | the gap; Next Goals shows hunts for your level |
+| `res {el, r, s}` | one element dealt `resShare` (40) % and the resistance is under `resLow` (10) % | the element, the resistance, the gem: ruby / sapphire / emerald / diamond in jewellery, amethyst / topaz / onyx in armour (`resElements`, checked against `chaos_gems_config.lua`) |
+| `pot` | no potion, the fight lasted `potMinMs` (4 s)+, healing covered under `potHealShare` (30) % of the health damage | set up healing in the Helper (Auto setup) |
+| `heal {s}` | potions drunk, the fight lasted `healMinMs` (8 s)+, healing covered under `healShare` (25) % | heal sooner or pull fewer monsters |
+| `pack {n}` | `packSize` (5)+ distinct monsters hit the character | pull fewer at a time |
+
+- **Assumptions.** A stock potion (base `potions.lua`) is not counted as a potion; its healing is, so a player who drinks
+  them gets no "no potions" tip unless the healing stayed low. Monster level is the engine's (the middle of the `<level>`
+  range, src-patch 0082); a type without a range gives no level tip. A player's summon counts for neither level nor pack.
+- **Bounds.** `maxHeals` (60) healing entries and `maxPotions` (30) per log; levels for at most 2 x `maxAttackers` + 4
+  attackers. The recap is fitted to `maxRecapBytes` again after the tips.
+- **Edits to shared files.** `combatlog.lua` (`healed` calls `CL.healHook`), `potions.lua` (one call after a drink).
+- **Tests.** `tests/deathadvice_test.lua` (each rule and its limits, the order and the cap, the facts from a log, the
+  absorb sum, the gem of each element against `chaos_gems_config.lua`, `deathrecap.lua` against a mocked engine: the
+  hooks, the monster level, the resistance from a worn amulet and a gem, the tips stored). Client:
+  `deathrecaplogic_test.lua` (the sentences, unknown tips skipped, one sentence per server element naming its gem).
 
 **Tested in game** (test server copy on the cropped map, two Linux clients, the engine without patches 0028-0030). A
 death to rats on the tutorial island; at the next login the window opened with 44.7M experience and 5 levels lost. A

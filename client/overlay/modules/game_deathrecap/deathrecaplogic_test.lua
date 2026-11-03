@@ -138,5 +138,34 @@ eq(hr[2].selected, true, 'selected')
 eq(hr[1].selected, false, 'not selected')
 eq(hr[1].killer, 'Dragon', 'killer')
 
+-- death advice (O371): the server's tips worded, in order, at most 3; unknown ones skipped
+do
+  local t = L.tips({ tips = { { k = 'lvl', d = 40 }, { k = 'res', el = 'fire', r = 0, s = 62 }, { k = 'pot' }, { k = 'pack', n = 6 } } })
+  eq(#t, 3, 'three tips at most')
+  eq(t[1], 'These monsters are 40 levels above you: Next Goals shows hunts for your level', 'level tip')
+  eq(t[2], 'Most damage was fire and your fire resistance is 0%: look for fire resistance on gear or a ruby in jewellery', 'fire tip')
+  eq(t[3], 'You used no potions: set up healing in the Helper (Auto setup)', 'potion tip')
+  t = L.tips({ tips = { { k = 'heal', s = 12 }, { k = 'pack', n = 6 }, { k = 'what' }, { k = 'res', el = 'lifedrain', r = 0 } } })
+  eq(#t, 2, 'unknown tips skipped')
+  eq(t[1], 'Your healing covered only 12% of the damage: heal sooner or pull fewer monsters', 'heal tip')
+  eq(t[2], '6 monsters hit you at once: pull fewer at a time', 'pack tip')
+  eq(#L.tips({}), 0, 'an old recap without tips')
+  eq(#L.tips(nil), 0, 'no recap')
+  eq(#L.tips({ tips = 'x' }), 0, 'bad tips')
+  -- every element the server gives a tip for has a sentence naming its gem (server deathrecap_config.lua advice)
+  local server = dofile(here .. '../../../../server/data/scripts/chaos/deathrecap_config.lua')
+  local n = 0
+  for el, g in pairs(server.advice.resElements) do
+    n = n + 1
+    ok(L.RES_TIPS[el] ~= nil, 'sentence for ' .. el)
+    local s = L.RES_TIPS[el] and L.RES_TIPS[el](5) or ''
+    ok(s:find(g.gem, 1, true) ~= nil, el .. ' names the ' .. g.gem)
+    ok(s:find(g.group == 'jewel' and 'jewellery' or 'armour', 1, true) ~= nil, el .. ' names the slot')
+  end
+  local c = 0
+  for _ in pairs(L.RES_TIPS) do c = c + 1 end
+  eq(c, n, 'no sentence the server never sends')
+end
+
 print(string.format('deathrecaplogic_test: %s (%d checks)', failures == 0 and 'OK' or (failures .. ' FAILED'), checks))
 if failures > 0 then os.exit(1) end
