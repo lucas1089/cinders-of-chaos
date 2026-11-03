@@ -5284,6 +5284,11 @@ on every level change, and `new {key, level, menu, title, why}` one entry at a t
   patch the filter stays on. Staff and a switched-off server module get the whole menu (`all`).
 - Texts through `tr()`, pt-BR in `client_chaos_locale/pt_br.lua` ("Go", "New: %s!", "Show the whole menu" and its tooltip; "Level %d",
   "Unlocks at level %d", "New", "Close" existed). Not run in a client.
+- O368 (new player level gates): the locked row also has the tooltip "Unlocks at level N" (`ChaosTopBarUnlocksLogic.unlocksAt`,
+  the existing tr() key). The table now names 30 entries, among them entries other modules add with `ChaosTopBar.addEntry`
+  (The Gambler, Factions, Professions, Loadouts, Charms, Orb Exchange, Conquest Vendor, Guild Wars, Nemesis, Rift Atlas,
+  Waystone Atlas, Ember Descent, Battleground, Scorched Marches, Raid: Ashen Sepulchre): the status is by menu text, so they hide
+  and lock like the built-in ones. No new tr() key. Not run in a client.
 
 ## Drop feed option and personal records (O260)
 

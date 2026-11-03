@@ -10,6 +10,9 @@ C.enabled = true
 C.opcode = 199 -- ChaosOpcodes.gamble (chaos_constants.lua); client game_gamble
 C.requestMs = 300 -- one window request per player per 300 ms (Chaos.limited)
 C.staffGroup = 4 -- /gamble needs this group or higher
+-- O368: the window, the buys and the NPC's offer need this level (a new player's gold goes to supplies first). The top
+-- menu shows The Gambler from here on (unlocks_config.lua key "gamble"; tests/unlocks_test.lua checks the two match)
+C.minLevel = 40
 
 -- player storages 7101900 - 7101909 (server/README.md "Storage keys"):
 --   +0 the window the stock below belongs to, +1 the level and +2 the vocation id it was made for (frozen for the

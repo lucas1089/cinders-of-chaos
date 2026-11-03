@@ -404,10 +404,18 @@ local function setAchievements(player, P)
 	end
 end
 
+-- O368: the factions open at cfg.minLevel
+function F.levelOk(player)
+	return player:getLevel() >= (cfg.minLevel or 1)
+end
+
 -- give `amount` reputation with faction `key`. source = "kill" | "bounty" | "token" | "rift" | "invasion" |
 -- "worldBoss" | "contract". quiet: no message (kills). Returns the K.gain result.
 function F.gain(player, key, amount, source, quiet)
 	local P = stateOf(player)
+	-- O368: below cfg.minLevel the reputation counts without a word (the factions are not in the menu yet)
+	local young = not F.levelOk(player)
+	quiet = quiet or young
 	-- community goal's reputation stage and the week's Banner Week (community.lua); 1 when neither is active
 	local cm = ChaosCommunity and ChaosCommunity.repMult and tonumber(ChaosCommunity.repMult(player)) or 1
 	if cm ~= 1 and (tonumber(amount) or 0) > 0 then
@@ -437,7 +445,7 @@ function F.gain(player, key, amount, source, quiet)
 	elseif not quiet and res.capped then
 		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "You have reached this week's reputation cap with %s.", f.name))
 	end
-	if res.rankAfter and res.rankBefore and res.rankAfter > res.rankBefore then
+	if res.rankAfter and res.rankBefore and res.rankAfter > res.rankBefore and not young then
 		local r = cfg.ranks[res.rankAfter]
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s now counts you as %s.", f.name, r.name))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
@@ -1128,6 +1136,13 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "factions", cfg.requestMs or 400) then
+		return
+	end
+	-- O368: below the level nothing answers; opening says when it opens
+	if not F.levelOk(player) then
+		if m.action == "open" then
+			msg(player, Chaos.t(player, "Factions open at level %d.", cfg.minLevel), false)
+		end
 		return
 	end
 	local d = type(m.data) == "table" and m.data or {}

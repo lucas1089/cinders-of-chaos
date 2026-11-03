@@ -385,6 +385,12 @@ function K.sqlDeleteSet(cfg, accountId, key)
 		.. tostring(key):gsub("[^%w_]", "") .. "'"
 end
 
+-- O368: true, minLevel when a character of `level` may use the window; false, minLevel below it
+function K.levelGate(level, cfg)
+	local need = cfg.minLevel or 1
+	return (tonumber(level) or 0) >= need, need
+end
+
 -- ---------------------------------------------------------------- requests
 local ACTIONS = {open = true, looks = true, apply = true, remove = true, close = true}
 function K.request(msg)

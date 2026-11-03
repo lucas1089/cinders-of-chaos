@@ -302,6 +302,14 @@ function WA.onOpcode(player, buffer)
 		return
 	end
 	local data = type(msg.data) == "table" and msg.data or {}
+	-- O368: below the level nothing answers; opening says when it opens
+	if player:getLevel() < (cfg.minLevel or 1) then
+		if msg.action == "open" then
+			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR,
+				Chaos.t(player, "The Waystone Atlas opens at level %d.", cfg.minLevel))
+		end
+		return
+	end
 	local ok, err = pcall(function()
 		if msg.action == "open" then
 			if not WA.treeSent[player:getId()] or data.tree then

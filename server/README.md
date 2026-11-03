@@ -880,7 +880,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
 | 7102830 - 7102833 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); +3 the last hunt (O258: the stable id of the hunt place the character last killed in); 7102834 - 7102839 free |
-| 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of; 7103010 and up are for O260 and O261 |
+| 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of, +3 / +4 the unlocked / seen bits of entries 31-50 (O368); 7103010 and up are for O260 and O261 |
 | 7103010 - 7103011 | early spike and pity (`retention_loot_config.lua`): 7103010 the first unique (-1 / 0 unset, 1..149 kills counted, 1000000 given), 7103011 the pity counter (kills without a Rare or better drop) |
 | 7103020 - 7103029 | the Weekly Chest (`weeklychest_config.lua` `storage`, `Chaos.storage.weeklyChest`): +0 the week (YYYYMMDD of its Monday), +1 activities done (bit mask), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all; +5..9 free |
 | 7103040 - 7103049 | the Weekend Ritual's GLOBAL storages (`Game.setStorageValue`, `weekend_config.lua` `globalStorage`, O321): +0 the staff switch (1 = off), +1 / +2 / +3 the weekend (YYYYMMDD of its first day) whose start, end warning and highlight were done; +4..9 free; no player storage |
@@ -5574,6 +5574,8 @@ still draws the Glimmer off its tile.
 
 ## Hideouts (`hideout.lua`, `hideout_core.lua`, `hideout_config.lua`, `hideout_store.lua`, `sql/chaos_hideout.sql`, client `game_hideout`)
 
+**Level gate (O368).** `hideout_config.lua` `minLevel` 30: below it the opcode answers only `leave` (and one line on `open`), and `M.enter` refuses the portal, entering and visiting ("The hideout opens at level 30."). The top menu shows Hideout from 30 (`unlocks_config.lua` `hideout`).
+
 A personal room for every character (a season character is another character, so it has its own), built at runtime and
 decorated by its owner. Cosmetic only: decorations change how the room looks and nothing else; the utilities are the ones
 every town has (the owner's own depot, the supply stash, two exercise dummies), no buffs. Client `game_hideout`
@@ -6852,6 +6854,8 @@ window is open now refreshes it at once (`achievements.lua` sends the state, `op
 Not verified: a real party of two clients using the return portal while the owner is away; very crowded temples (80 return spots).
 
 ## Transmog (`transmog.lua`, `transmog_core.lua`, `transmog_config.lua`, `sql/chaos_transmog.sql`, engine patch 0019, client `game_transmog`, base patch 0030)
+
+**Level gate (O368).** `transmog_config.lua` `minLevel` 30 (`ChaosTransmogCore.levelGate`): below it the opcode answers nothing but a refusal on `open` ("Transmog opens at level 30."). Looks still go into the wardrobe below it. The top menu shows Transmog from 30 (`unlocks_config.lua` `transmog`).
 
 An equipped helmet, armor, legs, boots, weapon or shield can LOOK like another item of the same kind that the account has
 unlocked. Appearance only: id, stats, name, tooltip, weight and every rule stay the item's own. Character > Transmog, or
@@ -13821,6 +13825,8 @@ counters (add and max), the preview for a standard character, the last chapter's
 
 ## Season pass (`seasonpass.lua`, `seasonpass_core.lua`, `seasonpass_config.lua`, `seasonpass_store.lua`, `sql/chaos_seasonpass.sql`, client `game_battlepass`)
 
+**Level gate (O368).** `seasonpass_config.lua` `minLevel` 10 (`ChaosSeasonPassCore.levelGate`): below it the opcode answers nothing but a line on `open` ("The Season Pass opens at level 10."). Pass XP still counts below it. The top menu shows Season Pass from 10 (`unlocks_config.lua` `seasonpass`).
+
 An account-wide pass per season of `season_config.lua`: a free and a premium track of 50 tiers, pass XP from play,
 daily and weekly challenges, claims in the client (Adventure > Season Pass, extended opcode 227
 `ChaosOpcodes.seasonPass`), tier-up toasts, and three season packs. Every number, reward and pack is data in
@@ -15188,6 +15194,8 @@ retention). Screenshots of the item chart and the Sell suggestion: offline clien
 
 ## Orb Exchange (`orbexchange.lua`, `orbexchange_core.lua`, `orbexchange_config.lua`, `sql/chaos_orbx.sql`, client `game_orbexchange`)
 
+**Level gate (O368).** `minLevel` 8 -> 20, the Crafting Bench's level (the orbs are for it). The top menu shows the Orb Exchange from 20 (`unlocks_config.lua` `orbexchange`).
+
 The crafting orbs are the economy's currency; the Orb Exchange is their order book. Pairs: any orb against gold (the
 bank balance) and any orb against any other orb. Client `game_orbexchange` (Economy > Orb Exchange in the top menu, and
 an "Orb Exchange" button in the Market window), extended opcode **209** (`ChaosOpcodes.orbExchange`, JSON
@@ -15210,7 +15218,7 @@ Upheaval each who meets an ask at 0.04 gets 75 for the same 3 Upheaval).
 | Sizes | orbs 1 - 100,000 per side, gold 1,000 - 2,000,000,000 per side (all products stay below 2^53) |
 | Fees (gold sinks) | 2% (`goldBps` 200) of the gold leg of every fill, rounded down, paid by the side that receives the gold; 500 gold from the bank for every orb-for-orb order when it is placed; never refunded |
 | Duration | 1, 3, 7 or 14 days (default 7); then the rest goes back |
-| Limits | 20 open orders per character, 40 per account; level 8; characters with `players.save = 0` cannot trade |
+| Limits | 20 open orders per character, 40 per account; level 20 (O368: the Crafting Bench's level; was 8); characters with `players.save = 0` cannot trade |
 | Rate limits | per character: place 1 s, cancel 0.5 s, book 150 ms, my orders 300 ms, open 400 ms (`ChaosRateLimit`) |
 
 **Matching** (`ChaosOrbExchangeCore.match`, `fillAmounts`). A new order (the taker) meets the open orders that give what
@@ -15421,6 +15429,8 @@ and one hub destination at its tiles), several guilds' halls at once, a restart 
 after a restart; the first entry builds them again).
 
 ## Guild wars in game (`guildwar.lua`, `guildwar_core.lua`, `guildwar_config.lua`, `sql/chaos_guildwar.sql`, engine patch 0020, client `game_guildwar`)
+
+**Level gate (O368).** `guildwar_config.lua` `minLevel` 50: below it `handle` answers nothing but a line on `open` ("Guild wars open at level 50."): no board, no declaration, no guild boss tab. A guild leader below 50 asks a vice-leader of 50+. The top menu shows Guild Wars from 50 (`unlocks_config.lua` `guildwar`).
 
 The base server knows guild wars only through the website (rows of `guild_wars`, status 1 = running; its
 `playerdeath.lua` logs every war kill in `guildwar_kills`). This adds the whole flow in game, on extended opcode
@@ -16688,6 +16698,8 @@ are first guesses. Not run in game.
 
 ## Waystone Atlas (`waystone_atlas.lua`, `waystone_atlas_core.lua`, `waystone_atlas_config.lua`, `sql/chaos_waystone_atlas.sql`, client `game_riftatlas` waystone mode)
 
+**Level gate (O368).** `waystone_atlas_config.lua` `minLevel` 1100, the first waystone tier's level (`tests/waystone_atlas_test.lua` checks the two match): below it the opcode answers nothing but a line on `open`. The top menu shows Waystone Atlas from 1100 (`unlocks_config.lua` `waystoneatlas`).
+
 Owner 2026-10-23: the waystone maps get their own atlas, as the maps of the well-known action RPG. Opcode 159, table
 `chaos_waystone_atlas` (created by the script when missing, as the Rift Atlas's), no storages. Window: Adventure >
 Waystone Atlas.
@@ -17692,6 +17704,8 @@ Not verified in game: the tab, the chunked answer in the real client, the layout
 the VPS.
 
 ## Rift Atlas (`atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql`, client `game_riftatlas`)
+
+**Level gate (O368).** `atlas_config.lua` `minLevel` 100, the first rift tier's level (`tests/riftatlas_test.lua` checks the two match): below it the opcode answers nothing but a line on `open` ("The Rift Atlas opens at level 100."). Sealed rifts still credit the cells. The top menu shows Rift Atlas from 100 (`unlocks_config.lua` `riftatlas`).
 
 The long-term progression of the rift loop (roadmap item 54). Sealing rifts fills a finite completion grid; every new
 cell is worth points; points buy nodes of a map of 81 nodes. Every number and the whole graph are in `atlas_config.lua`;
@@ -23242,6 +23256,8 @@ a crash refund, the shutdown path.
 
 ## Factions (`factions.lua`, `factions_core.lua`, `factions_config.lua`, `sql/chaos_factions.sql`, `tools/install_factions.py`, client `game_factions`)
 
+**Level gate (O368).** `factions_config.lua` `minLevel` 40: below it the opcode answers nothing but a line on `open` ("Factions open at level 40."), so no contracts, turn-ins or quartermaster; the faction NPCs say "Come back at level 40." instead of opening the ledger. Reputation still counts below it, quietly (no lines, no rank-up line), as a head start. The top menu shows Factions from 40 (`unlocks_config.lua` `factions`).
+
 Four powers that fight over what the Cinders left, each with a home NPC who is also its quartermaster. Reputation is per
 character (a season character is a character of its own and starts at Neutral everywhere: season isolation needs nothing
 more; its gear and tokens follow the season's trade rules like any item). Every number is in `factions_config.lua`; the
@@ -23923,6 +23939,8 @@ one minute.
 
 ## Loadouts (Armory) (`loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql`, client `game_loadouts`)
 
+**Level gate (O368).** `minLevel` 8 -> 15, a few levels after the first passive point (12). The top menu shows Loadouts from 15 (`unlocks_config.lua` `loadouts`).
+
 Save a whole build and switch between builds without paying the respec again. Client `game_loadouts` (Character > Loadouts,
 and a Loadouts button the module adds at runtime to the passive tree window), extended opcode 206 (`ChaosOpcodes.loadouts`).
 Every number is in `loadouts_config.lua`; the rules are in `loadouts_core.lua` (pure, `tests/loadouts_test.lua`).
@@ -23965,7 +23983,7 @@ preview at the respec prices.
 - The randomized check in `tests/loadouts_test.lua` runs thousands of save / load / delete / priced-edit steps and checks that no
   tree shape ever appears that a priced edit did not make, and that no rune is created or lost.
 
-**Switching.** Out of combat (no fight condition, not PZ-locked), level 8+, not inside an instance (arena, rift, Vocation Trial,
+**Switching.** Out of combat (no fight condition, not PZ-locked), level 15+ (O368; was 8), not inside an instance (arena, rift, Vocation Trial,
 raid, Ember Descent, Infinity Tower, Ascended Omen, siege), `cooldownSeconds` (60) after the last switch. In a protection zone it
 is instant; elsewhere it is a `castMs` (3 s) channel: moving or entering combat interrupts it; the bar is drawn by `game_castbar`.
 
@@ -24183,6 +24201,8 @@ only) or many kills of rare monsters: the ember shows the blessing's name when l
 
 ## Charms (`charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py`, client `game_charms`)
 
+**Level gate (O368).** `C.minLevel` 8 -> 15. The top menu shows Charms from 15 (`unlocks_config.lua` `charms`).
+
 A second, small place for minor bonuses: the 10.98 client has no free equipment slot, so charms go into a per-character
 **charm grid** in a window of its own (Character > Charms, extended opcode **198**, `ChaosOpcodes.charms`). Every number is in
 `charms_config.lua`; the rules are pure in `charms_core.lua` (`tests/charms_test.lua`, LuaJIT and Lua 5.3).
@@ -24200,7 +24220,7 @@ them (its key-list codec carries the charm keys too, `market.lua` customKeys).
 (+4); level 400: row 3, columns 1-3 (+3); level 600: row 3, columns 4-5 (+2); level 800: row 4, columns 1-3 (+3); the achievement
 "Edge of Ruin" (`rift_t10`, seal a tier 10 rift; account-wide like every achievement): row 4, columns 4-5 (+2). A charm needs
 all its cells open, inside the grid and free; at most 20 charms. A charm on a cell that closes again (a lost level) stays
-placed and gives nothing until it opens again (shown dimmed). Place, move and take out: level 8+, out of combat (no fight
+placed and gives nothing until it opens again (shown dimmed). Place, move and take out: level 15+ (O368; was 8), out of combat (no fight
 condition, not PZ-locked), anywhere.
 
 **Rolls.** Shape by weight (small 50, tall 20, wide 20, grand 10); rarity Faint (60, 1 modifier, x0.7), Glowing (30, 1
@@ -24301,6 +24321,8 @@ crash, the drop hooks from real rifts, bounties, invasions, dungeons and Descent
 a charm.
 
 ## The Gambler (`gamble.lua`, `gamble_core.lua`, `gamble_config.lua`, `tools/install_gamble.py`, client `game_gamble`)
+
+**Level gate (O368).** `gamble_config.lua` `C.minLevel` 40: below it the opcode answers nothing but a refusal on `open` ("The Gambler opens at level 40."), and Mordecai says "Come back at level 40." instead of opening the window. The top menu shows The Gambler from 40 (`unlocks_config.lua` `gamble`).
 
 Mordecai Ashwager, the Gambler, sells sealed equipment for gold: the base type, the slot and the item level are shown, the
 rarity is hidden until the piece is bought. Every number is in `gamble_config.lua`; the rules are pure in `gamble_core.lua`.
@@ -24486,6 +24508,8 @@ already (the Vigils auras, `vigils*.lua`, `ChaosVigils`, buff keys `vigil_*`; an
 
 ## Conquest Tokens, the Conquest vendor and bad-luck protection (`conquest.lua`, `conquest_core.lua`, `conquest_config.lua`, `sql/chaos_conquest.sql`, `tools/install_conquest.py`, NPC `data/npc/Iselde Varrow.xml`, client `game_conquest`)
 
+**Level gate (O368).** `conquest_config.lua` `C.minLevel` 50: below it the vendor's opcode answers nothing but a refusal on `open` ("The Conquest vendor opens at level 50."), and Iselde Varrow says "Come back at level 50.". Tokens are still granted below it. The top menu shows the Conquest Vendor from 50 (`unlocks_config.lua` `conquest`).
+
 The owner's rule (2026-10-15): everything a player needs has a deterministic path; luck only decides the maximum
 (perfect rolls, top rarities, the best legendary power). Three parts: a currency for every boss and clear, a vendor
 that sells any unique or set piece the character has seen, and bad-luck protection on every chase roll.
@@ -24607,6 +24631,8 @@ vendor rows), `i18n_test.lua` (the new texts and the NPC); client `game_conquest
 live server.
 
 ## Professions (`professions.lua`, `professions_core.lua`, `professions_config.lua`, `sql/chaos_professions.sql`, `tools/install_professions.py`, client `game_professions`)
+
+**Level gate (O368).** `professions_config.lua` `C.minLevel` 20 (`ChaosProfessions.levelOk`): below it the window, gathering a node, flaying and the Angling roll are refused ("Professions open at level 20."); stock fishing stays as it is. The top menu shows Professions from 20 (`unlocks_config.lua` `professions`).
 
 The owner's rule: professions gather materials **to sell to NPCs** and give an **experience bonus**. They make no gear and no
 orbs and feed no crafting, so they never compete with the crafting orbs or salvage. Every number is in `professions_config.lua`.
@@ -26964,8 +26990,11 @@ the level where that system opens, announces it, and hides the rest.
 **One table.** `unlocks_config.lua` `entries`: `{key, level, menu, source, title, why, go}`. `menu` is the English text of the
 entry in the client's top menu; `title` and the two `why` lines are English and pt-BR; `go = {open = <client module>}` (the
 Go button runs the menu entry, which opens that module). The bits of the storages are by index: never reorder or insert,
-add at the end (up to 30). Eleven entries now: Bounty Board 8, Market 8, Passive Tree 12 (the first point), Events 30 (invasions),
-Arena 50, Rifts 100, Guild Siege 100, Infinity Tower 100, Dungeons 150, and (O262) Crafting Bench 20, Salvage 20 (the same gate), Pets 25.
+add at the end (up to 50, O368). Thirty entries now: Bounty Board 8, Market 8, Passive Tree 12 (the first point), Events 30 (invasions),
+Arena 50, Rifts 100, Guild Siege 100, Infinity Tower 100, Dungeons 150, (O262) Crafting Bench 20, Salvage 20 (the same gate), Pets 25,
+and (O368, below) Loadouts 15, Orb Exchange 20, Charms 15, Season Pass 10, Professions 20, Transmog 30, Hideout 30, The Gambler 40,
+Factions 40, Conquest Vendor 50, Guild Wars 50, Nemesis 50, Rift Atlas 100, Ember Descent 100, Battleground 100, Scorched Marches 150,
+Raid: Ashen Sepulchre 800, Waystone Atlas 1100.
 
 **The level is the system's own.** Nothing here gates a system; each keeps its own check, and this table only says when the menu
 shows it. `tests/unlocks_test.lua` has a reader per entry and fails when a level differs from the one the system enforces:
@@ -26983,9 +27012,27 @@ shows it. `tests/unlocks_test.lua` has a reader per entry and fails when a level
 | dungeons | `bossspawns_config.lua` `dungeons.defaults[1].level` (the first base dungeon, mirrors the base's own `Level`) |
 | crafting | `data/lib/chaos_crafting.lua` `config.minLevel` (read from the file text: the lib needs the engine libs to load) |
 | pets | `pets_config.lua` `minLevel` |
+| loadouts | `loadouts_config.lua` `minLevel` |
+| orbexchange | `orbexchange_config.lua` `minLevel` |
+| charms | `charms_config.lua` `C.minLevel` |
+| seasonpass | `seasonpass_config.lua` `minLevel` |
+| professions | `professions_config.lua` `C.minLevel` |
+| transmog | `transmog_config.lua` `minLevel` |
+| hideout | `hideout_config.lua` `minLevel` |
+| gamble | `gamble_config.lua` `C.minLevel` |
+| factions | `factions_config.lua` `minLevel` |
+| conquest | `conquest_config.lua` `C.minLevel` |
+| guildwar | `guildwar_config.lua` `minLevel` |
+| nemesis | `nemesis_config.lua` `birth.minLevel` (no nemesis is born below it) |
+| riftatlas | `atlas_config.lua` `minLevel` (= `rift_config.lua` `tiers[1].minLevel`, `tests/riftatlas_test.lua`) |
+| descent | `descent_config.lua` `minLevel` |
+| battleground | `battleground_config.lua` `minLevel` |
+| pvpzone | `pvpzone_config.lua` `minLevel` |
+| raid | `raid_config.lua` `minLevel` |
+| waystoneatlas | `waystone_atlas_config.lua` `minLevel` (= `waystone_tiers_config.lua` `tiers[1].level`, `tests/waystone_atlas_test.lua`) |
 
 The test also checks that every entry has a reader and the other way round, that the menu text is an `entry('<text>', ...)` of
-`chaos_topbar.lua`, that the Go module exists in `client/overlay/modules`, that both languages and two lines are there, and
+`chaos_topbar.lua` or a `text = '<text>'` the Go module adds with `ChaosTopBar.addEntry` (O368), that the Go module exists in `client/overlay/modules`, that both languages and two lines are there, and
 that the changed level of a copy of the table is found. Systems of the menu without a gate the repo can read (Skills, Bank, Stash, ...) are not in the table and always show; add one
 when its own config has a level.
 
@@ -26999,6 +27046,43 @@ its own top menu entry (`salvage`, the same level). Pets: below the level the op
 called out at login (a pet a character already owns is kept and comes back at the level), the staff `/pet` command is not
 gated. Both lines are in en and pt-BR (`i18n_strings.lua`). Bank and the Supply Stash are NOT gated on purpose: a new
 character needs them from level 1, so they stay out of the table and always show.
+
+**New player level gates (O368).** Owner request: "put a minimum level to do some things"; a new character could open about 30
+systems at level 1. Each system below got a `minLevel` in its own config, checked server side where its window or action is
+requested, and an entry in the table (so the menu hides it, shows it grey as the next one, and pops the "New" window at the level).
+Below the level the system's opcode answers nothing but one line on `open` ("The Gambler opens at level 40.", en and pt-BR in
+`i18n_strings.lua`); the NPCs that open a window (Mordecai Ashwager, the four faction NPCs, Iselde Varrow) say "Come back at level N."
+instead. Nothing earned is lost below a gate: pass XP, faction reputation (quiet: no lines), wardrobe looks, Conquest Tokens and rift
+cells still count.
+
+| System | Level | Why that level | Enforced in |
+|---|---|---|---|
+| Season Pass | 10 | progress counts from level 1; the window waits for the first minutes | `seasonpass.lua` opcode (`ChaosSeasonPassCore.levelGate`) |
+| Loadouts | 15 (was 8) | saved builds mean little before the first passive points (12) | `loadouts.lua` (window explains, saving and switching refused) |
+| Charms | 15 (was 8) | after the first systems of level 8 and the first passive point | `charms.lua` `canChange` |
+| Orb Exchange | 20 (was 8) | the orbs are for the Crafting Bench, which opens at 20 | `orbexchange.lua` orders |
+| Professions | 20 | the first levels are for hunting; stock fishing stays open | `professions.lua`: opcode, gathering, flaying, the Angling roll |
+| Transmog | 30 | the fee starts at 2000 gold; looks still go into the wardrobe | `transmog.lua` opcode (`ChaosTransmogCore.levelGate`) |
+| Hideout | 30 | depot, stash and dummies are in every town | `hideout.lua`: opcode (all but `leave`), `M.enter` (portal, enter, visit) |
+| The Gambler | 40 | early gold goes to supplies; the Next Goals band 50 points to him | `gamble.lua` opcode, `mordecai_ashwager.lua` |
+| Factions | 40 | contracts and quartermasters are mid game; reputation counts quietly before | `factions.lua` opcode and `F.gain` (quiet), `chaos_faction_npc.lua` |
+| Conquest Vendor | 50 | tokens come mostly from bosses and clears; uniques are past their open ramp | `conquest.lua` opcode, `iselde_varrow.lua` |
+| Guild Wars | 50 | PvP band; the kill rules keep their own floor (`minVictimLevel` 100) | `guildwar.lua` `handle` (wars, board, guild boss tab) |
+| Rift Atlas | 100 | the first rift tier's level | `atlas.lua` opcode |
+| Waystone Atlas | 1100 | the first waystone tier's level | `waystone_atlas.lua` opcode |
+
+Gates that already existed and now also have a table entry: Nemesis 50 (`birth.minLevel`), Ember Descent 100, Battleground 100,
+Scorched Marches 150, Raid: Ashen Sepulchre 800. Not gated on purpose (core or a help for new players): spells, Skills, Party, Party
+Finder, chat, Bank, depot, Supply Stash, Daily Reward, Next Goals, Help and How it works, Codex, Item Finder, Store, Options, Outfit,
+Cosmetics, Mentors (an apprentice needs it from level 1; the mentor side has its own levels), Referral, Candlemarks, Ember Cache,
+Weekly Chest (it drops the activities a character has not reached), Chronicle, Boss Spawns (the world boss has its own level).
+`tests/unlocks_test.lua` checks that each engine file reads its own field and that the bands stay gentle (economy by 15, crafting
+band by 30, gambling and PvP from 40); each system's own test checks the refusal below the level and the window at it.
+
+**Two storages per mask (O368).** A storage holds 31 bits, so the table had a cap of 30 entries, and it is full now. Entries
+31-50 live in `+3` (unlocked) and `+4` (seen): `ChaosUnlocks.getMask` / `setMask` split a mask at 2^30 (an exact number up to 2^50
+in LuaJIT and Lua 5.3). The second storage is only written once it holds a bit, so the stored values of today's characters do not
+change.
 
 **What the server does.**
 - Login: a character with no storage yet gets masks: above `quietAbove` (20) every entry of its level is unlocked and seen,
@@ -27017,7 +27101,7 @@ not a `ChaosOpcodes` value and not named by any client module other than `client
 **Storages 7103000-7103009** are used by no other file (the test scans `data/scripts/chaos` and `data/lib`).
 
 **Client** (`client/MANIFEST.md`, `client_chaos_topbar`): a menu entry whose key the table names is hidden until unlocked; the next
-one shows grey with a padlock and "Level N" and says "Unlocks at level N" when clicked; its hotkey (Alt+J, Alt+E, Alt+P) says the
+one shows grey with a padlock and "Level N", has the tooltip "Unlocks at level N" (O368) and says it when clicked; its hotkey (Alt+J, Alt+E, Alt+P) says the
 same instead of opening. On `new`: a big text "New: <title>!", a gold "New" badge on the entry (and a gold category button)
 until it is opened, and a small window with the two lines, Go and Close. The option "Show the whole menu" (System > Options >
 Interface, client base patch `0154`, `showWholeMenu`, off by default, kept in g_settings by client_settings like the other options)

@@ -1247,6 +1247,15 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if limited then
 		return
 	end
+	-- O368: below the level nothing answers; opening says when it opens (pass XP still counts)
+	local levelOk, need = P.levelGate(player:getLevel(), cfg)
+	if not levelOk then
+		if msg.action == "open" then
+			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR,
+				Chaos.t(player, "The Season Pass opens at level %d.", need))
+		end
+		return
+	end
 	if msg.action == "open" then
 		SP.sendState(player, true)
 	elseif msg.action == "tiers" then

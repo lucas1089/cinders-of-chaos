@@ -730,12 +730,24 @@ end
 
 -- send `player` to the hideout of `owner` (a guid); false + text when refused. `back`: the spot the exit leads to
 -- (the Hideout Portal passes the tile the character stepped from, never the portal itself); default: where they stand
+-- O368: a character below cfg.minLevel has no hideout yet (the window, entering, visiting, decorating)
+function M.levelOk(player)
+	return player:getLevel() >= (cfg.minLevel or 1)
+end
+
+function M.lowLevelText()
+	return ChaosI18n.msg("The hideout opens at level %d.", cfg.minLevel or 1)
+end
+
 function M.enter(player, owner, back)
 	owner = tonumber(owner) or player:getGuid()
 	local here = player:getPosition()
 	back = back or here
 	local fromSlot = K.fromWorld(cfg, here)
 	local inside = fromSlot ~= nil
+	if not inside and not M.levelOk(player) then
+		return false, M.lowLevelText()
+	end
 	if not inside then
 		local problem = K.enterProblem(enterFacts(player))
 		if problem then
@@ -1199,6 +1211,13 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	local limit = ({open = R.list, get = R.list, visits = R.list, enter = R.visit, visit = R.visit, leave = R.visit,
 		like = cfg.likes.cooldownMs})[a] or R.edit
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "hideout." .. a, limit) then
+		return true
+	end
+	-- below the level only "leave" answers (opening says when it opens)
+	if a ~= "leave" and not M.levelOk(player) then
+		if a == "open" then
+			result(player, false, M.lowLevelText())
+		end
 		return true
 	end
 	local ok, text

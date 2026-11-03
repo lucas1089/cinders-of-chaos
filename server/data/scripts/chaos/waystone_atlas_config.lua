@@ -52,6 +52,9 @@ local cfg = {
 	opcode = 159,
 	table = "chaos_waystone_atlas",
 	requestMs = 400,
+	-- O368: the window needs this character level: the first waystone tier's (waystone_tiers_config.lua tiers[1].level).
+	-- tests/waystone_atlas_test.lua checks the two match; unlocks_config.lua key "waystoneatlas"
+	minLevel = 1100,
 
 	-- ------------------------------------------------------------------ the completion grid
 	-- First completions only (killing the map's boss during a waystone run; every player inside the map is credited):

@@ -550,11 +550,19 @@ eq(mira:getStorageValue(M.stateKey(road)), 2, "the talk step done by Warden Ysol
 assert(said[#said]:find("The Archivist sent you", 1, true), "her reply")
 assert(mira.msgs[#mira.msgs]:find("Next: Put down 30", 1, true), "the next step named")
 eq(opened, 0, "the faction window stays closed")
+-- O368: below the factions' level (factions_config.lua minLevel) the ledger stays shut and the NPC names the level
+local factionLevel = dofile("data/scripts/chaos/factions_config.lua").minLevel
+say(11, 1, "any task?")
+eq(opened, 0, "the faction window stays shut below its level")
+assert(said[#said]:find("level " .. factionLevel, 1, true), "the level named")
+local miraLevel = mira.level
+mira.level = factionLevel
 -- nothing pending: the faction's own dialogue answers as before
 local before = #said
 say(11, 1, "any task?")
 eq(opened, 1, "the faction window"); eq(mira:getStorageValue(M.stateKey(road)), 2)
 assert(#said == before + 1 and not said[#said]:find("Archivist sent", 1, true))
+mira.level = miraLevel
 -- a Portuguese character hears the Portuguese reply
 local bia = mkPlayer(12, 1100)
 online[12] = bia

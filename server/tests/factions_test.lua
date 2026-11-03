@@ -696,6 +696,31 @@ for _, rr in ipairs(recorded) do if rr.board == "factions" then board = rr end e
 check(board ~= nil and board.value > 0, "weekly Reputation board fed at logout")
 check(F.players[501] == nil, "state dropped at logout")
 
+-- O368: below cfg.minLevel the window does not open and reputation counts without a word
+do
+	eq(cfg.minLevel, 40, "factions open at level 40")
+	local young = mkPlayer("Young", 503, cfg.minLevel - 1, Position(104, 98, 7))
+	registry.ChaosFactionsLogin.onLogin(young)
+	young.ops = {}
+	registry.ChaosFactionsExtended.onExtendedOpcode(young, 215, {action = "open"})
+	local gotState = false
+	for _, o in ipairs(young.ops) do
+		if tostring(o[2]):find('"state"', 1, true) then gotState = true end
+	end
+	check(not gotState, "no ledger below the level")
+	check(young.msgs[#young.msgs] and young.msgs[#young.msgs]:find("level " .. cfg.minLevel, 1, true), "opening names the level")
+	young.items[cfg.tokens.vigil.id] = 5
+	registry.ChaosFactionsExtended.onExtendedOpcode(young, 215, {action = "turnin", data = {f = "vigil"}})
+	eq(young.items[cfg.tokens.vigil.id], 5, "no turn-in below the level")
+	local function rep() local v = F.players[503].st.vigil return v and v.rep or 0 end
+	local before, msgs = rep(), #young.msgs
+	F.gain(young, "vigil", 50, "bounty")
+	check(rep() > before, "reputation still counts below the level")
+	eq(#young.msgs, msgs, "quietly")
+	young.level = cfg.minLevel
+	check(F.levelOk(young), "open at the level")
+end
+
 print = print_
 check(#logged >= 1 and logged[1]:find("4 faction NPC", 1, true) ~= nil, "startup log")
 print(string.format("factions_test: %s (%d checks)", failures == 0 and "OK" or (failures .. " FAILED"), count))

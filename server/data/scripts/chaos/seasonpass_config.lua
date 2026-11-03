@@ -72,6 +72,9 @@ return {
 		log = "chaos_seasonpass_log" -- claim / buy / tier / admin events
 	},
 	opcode = 227, -- ChaosOpcodes.seasonPass (client game_battlepass)
+	-- O368: the window (claims, the pass and pack offers) needs this character level. Pass XP still counts below it, so
+	-- nothing is lost; the top menu shows the Season Pass from here on (unlocks_config.lua key "seasonpass")
+	minLevel = 10,
 	-- player storages (Chaos.storage reserves 7100980 - 7100984 for the season pass)
 	storage = {
 		frameOff = 7100980 -- 1 = this character hides the season name plate frame

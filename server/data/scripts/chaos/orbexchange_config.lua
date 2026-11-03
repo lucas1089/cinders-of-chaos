@@ -24,7 +24,9 @@ return {
 	orbs = nil,
 	exclude = {},
 
-	minLevel = 8, -- characters below this level cannot place orders
+	-- characters below this level cannot place orders. O368: 8 -> 20, the Crafting Bench's level (the orbs are for it;
+	-- data/lib/chaos_crafting.lua minLevel). The top menu shows the Orb Exchange from here on (unlocks_config.lua)
+	minLevel = 20,
 
 	-- the size of one order, per side (the amount offered and the amount wanted)
 	min = {orb = 1, gold = 1000},

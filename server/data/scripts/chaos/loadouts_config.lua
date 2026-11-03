@@ -11,7 +11,9 @@ ChaosLoadoutsConfig = {
 	},
 	pactSlots = 1,
 	maxSlots = 6, -- baseSlots + #earned + pactSlots; the rune mirror below reserves room for up to runeMirrorSlots
-	minLevel = 8, -- below this the window only explains (a level 1-7 character has no tree points)
+	-- below this the window only explains. O368: 8 -> 15, a few levels after the first passive point (12): saved builds
+	-- mean little before the tree has some points. The top menu shows Loadouts from here on (unlocks_config.lua)
+	minLevel = 15,
 
 	-- switching (load): out of combat, never inside an instance (arena, rift, trial, raid, ...); in a protection zone at
 	-- once, elsewhere after a castMs channel (standing still, no combat). cooldownSeconds between two switches.

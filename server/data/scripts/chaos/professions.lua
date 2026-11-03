@@ -447,6 +447,15 @@ local function result(player, ok, text)
 	return ok
 end
 
+-- O368: professions open at cfg.minLevel (the window, gathering, flaying, the Angling roll; stock fishing stays)
+function P.levelOk(player)
+	return player:getLevel() >= (cfg.minLevel or 1)
+end
+
+local function tooLow(player)
+	return result(player, false, ChaosI18n.msg("Professions open at level %d.", cfg.minLevel))
+end
+
 -- ---------------------------------------------------------------- rewards
 local function giveMaterial(player, id, count)
 	local before = player:getItemCount(id)
@@ -627,6 +636,9 @@ function P.gatherNode(player, nodeItem, pos)
 	if not cfg.enabled then
 		return false
 	end
+	if not P.levelOk(player) then
+		return tooLow(player)
+	end
 	local def = idx.node[nodeItem:getId()]
 	local p = idx.prof[def.prof]
 	local S = stateOf(player)
@@ -675,6 +687,9 @@ function P.flay(player, corpse, pos)
 	if not tag then
 		return false
 	end
+	if not P.levelOk(player) then
+		return tooLow(player)
+	end
 	if custom(corpse, FLAYED_ATTR) then
 		return result(player, false, "This corpse was flayed already.")
 	end
@@ -715,7 +730,7 @@ end
 
 -- one stock fishing cast on fishable water (the hooked line in fishing.lua): the Angling roll
 function P.onFishCast(player, item, target, toPosition)
-	if not cfg.enabled then
+	if not cfg.enabled or not P.levelOk(player) then
 		return
 	end
 	local S = stateOf(player)
@@ -997,6 +1012,12 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "professions", cfg.requestMs) then
+		return
+	end
+	if not P.levelOk(player) then
+		if m.action == "open" then
+			tooLow(player)
+		end
 		return
 	end
 	local d = type(m.data) == "table" and m.data or {}

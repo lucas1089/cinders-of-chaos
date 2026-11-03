@@ -789,6 +789,13 @@ end
 
 local function handle(player, action, data)
 	local ok, text
+	-- O368: below the level nothing answers; opening says when it opens
+	if player:getLevel() < (cfg().minLevel or 1) then
+		if action == "open" and not limited(player, "guildwar.state", 300) then
+			W.message(player, false, ChaosI18n.msg("Guild wars open at level %d.", cfg().minLevel))
+		end
+		return
+	end
 	local tab = type(data.tab) == "string" and data.tab:sub(1, 16) or nil
 	if action == "open" or action == "refresh" then
 		if limited(player, "guildwar.state", 300) then

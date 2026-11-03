@@ -6,7 +6,10 @@
 --     its run file) is read here, and the check fails on a mismatch (a mutation of the table is checked to fail too);
 --   * the entries: unique keys, the topbar entry and the client module exist, English and Portuguese texts, two lines;
 --   * the rules (bits, due, next, silent first masks, later entries) and the glue against a mocked engine: login, the
---     state and new messages, the 75 s pace, seen, staff, a level lost.
+--     state and new messages, the 75 s pace, seen, staff, a level lost;
+--   * O368: the new player level gates (gamble, factions, ...): each entry's level is the system's own minLevel, a menu
+--     entry added by a module (ChaosTopBar.addEntry) counts as a menu entry, and the masks split over two storages
+--     (entries 31-50).
 local n = 0
 setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -77,7 +80,7 @@ end
 ph:close()
 
 -- ------------------------------------------------------------------ the entries
-ok(#cfg.entries >= 1 and #cfg.entries <= 30, "bits fit 31")
+ok(#cfg.entries >= 1 and #cfg.entries <= 50, "bits fit two storages of 30 (O368)")
 local keys = {}
 local function modules()
 	local out = {}
@@ -98,8 +101,17 @@ for _, e in ipairs(cfg.entries) do
 		ok(not line[1]:find("\226\128\148") and not line[2]:find("\226\128\148"), "no em dash: " .. e.key)
 	end
 	ok(type(e.go) == "table" and e.go.open and clientModules[e.go.open], "the client module of Go exists: " .. e.key)
-	-- the menu text is an entry of the top menu
-	ok(topbar:find("entry('" .. e.menu .. "'", 1, true), "the top menu has an entry '" .. e.menu .. "'")
+	-- the menu text is an entry of the top menu, or one the Go module adds itself (ChaosTopBar.addEntry, O368)
+	local added = false
+	local lp = io.popen("ls ../client/overlay/modules/" .. e.go.open .. "/*.lua 2>/dev/null")
+	for file in lp:lines() do
+		local src = not file:find("_test.lua", 1, true) and readFile(file) or ""
+		if src:find("addEntry", 1, true) and src:find("text = '" .. e.menu .. "'", 1, true) then
+			added = true
+		end
+	end
+	lp:close()
+	ok(topbar:find("entry('" .. e.menu .. "'", 1, true) or added, "the top menu has an entry '" .. e.menu .. "'")
 end
 
 -- ------------------------------------------------------------------ the levels: what each system enforces
@@ -126,6 +138,25 @@ local readers = {
 	crafting = function() return fromFile("data/lib/chaos_crafting.lua", "\n\tminLevel = (%d+),") end,
 	pets = function() return dofile("data/scripts/chaos/pets_config.lua").minLevel end,
 	salvage = function() return fromFile("data/lib/chaos_crafting.lua", "\n\tminLevel = (%d+),") end,
+	-- O368: the new player level gates, each the system's own config field
+	loadouts = function() return dofile("data/scripts/chaos/loadouts_config.lua").minLevel end,
+	orbexchange = function() return dofile("data/scripts/chaos/orbexchange_config.lua").minLevel end,
+	charms = function() return dofile("data/scripts/chaos/charms_config.lua").minLevel end,
+	seasonpass = function() return dofile("data/scripts/chaos/seasonpass_config.lua").minLevel end,
+	professions = function() return dofile("data/scripts/chaos/professions_config.lua").minLevel end,
+	transmog = function() return dofile("data/scripts/chaos/transmog_config.lua").minLevel end,
+	hideout = function() return dofile("data/scripts/chaos/hideout_config.lua").minLevel end,
+	gamble = function() return dofile("data/scripts/chaos/gamble_config.lua").minLevel end,
+	factions = function() return dofile("data/scripts/chaos/factions_config.lua").minLevel end,
+	conquest = function() return dofile("data/scripts/chaos/conquest_config.lua").minLevel end,
+	guildwar = function() return dofile("data/scripts/chaos/guildwar_config.lua").minLevel end,
+	nemesis = function() return dofile("data/scripts/chaos/nemesis_config.lua").birth.minLevel end,
+	riftatlas = function() return dofile("data/scripts/chaos/atlas_config.lua").minLevel end,
+	descent = function() return dofile("data/scripts/chaos/descent_config.lua").minLevel end,
+	battleground = function() return dofile("data/scripts/chaos/battleground_config.lua").minLevel end,
+	pvpzone = function() return dofile("data/scripts/chaos/pvpzone_config.lua").minLevel end,
+	raid = function() return dofile("data/scripts/chaos/raid_config.lua").minLevel end,
+	waystoneatlas = function() return dofile("data/scripts/chaos/waystone_atlas_config.lua").minLevel end,
 }
 -- every entry has a reader and every reader an entry
 for _, e in ipairs(cfg.entries) do
@@ -159,6 +190,27 @@ do
 	eq(#mismatches(copy), 1, "a changed level is found")
 end
 
+-- O368: every new gate is enforced by the system itself (its engine file reads its own minLevel)
+do
+	local gates = {
+		{"gamble.lua", "cfg.minLevel"}, {"factions.lua", "cfg.minLevel"}, {"professions.lua", "cfg.minLevel"},
+		{"transmog.lua", "K.levelGate(player:getLevel(), cfg)"}, {"hideout.lua", "cfg.minLevel"},
+		{"conquest.lua", "cfg.minLevel"}, {"guildwar.lua", "cfg().minLevel"}, {"atlas.lua", "cfg.minLevel"},
+		{"waystone_atlas.lua", "cfg.minLevel"}, {"seasonpass.lua", "P.levelGate(player:getLevel(), cfg)"},
+	}
+	for _, g in ipairs(gates) do
+		local src = readFile("data/scripts/chaos/" .. g[1])
+		ok(src and src:find(g[2], 1, true), g[1] .. " checks its level gate")
+		ok(src:find("getLevel()", 1, true), g[1] .. " reads the character's level")
+	end
+	-- the levels stay gentle: nothing of the first minutes (8) is moved, the economy basics come before the PvP ones
+	local lv = {}
+	for _, e in ipairs(cfg.entries) do lv[e.key] = e.level end
+	ok(lv.seasonpass <= 15 and lv.loadouts <= 15 and lv.charms <= 15, "economy basics by 15")
+	ok(lv.professions <= 30 and lv.transmog <= 30 and lv.hideout <= 30, "crafting band by 30")
+	ok(lv.gamble >= 40 and lv.factions >= 40 and lv.guildwar >= 40, "gambling and PvP from 40")
+end
+
 -- ------------------------------------------------------------------ bits, due, next
 eq(M.has(-1, 1), false); eq(M.has(0, 1), false); eq(M.has(5, 1), true); eq(M.has(5, 2), false); eq(M.has(5, 3), true)
 eq(M.set(-1, 2), 2); eq(M.set(2, 2), 2); eq(M.set(2, 1), 3); eq(M.all(3), 7)
@@ -172,13 +224,14 @@ eq(#M.due(M.all(#cfg.entries), 2000), 0)
 do
 	local nxt = M.nextLocked(0, 8)
 	-- 8 is due but not announced: next is the first entry above the level
-	eq(nxt.key, "passive"); eq(nxt.level, 12)
+	eq(nxt.key, "seasonpass"); eq(nxt.level, 10)
 	eq(M.nextLocked(M.all(#cfg.entries), 5), nil, "all unlocked: no next")
 	eq(M.nextLocked(0, 2000), nil, "no entry above 2000")
 	-- a level lost after unlocking: the entry stays unlocked and is not next
 	local mask = M.set(0, indexOf("passive"))
 	eq(M.nextLocked(mask, 5).key, "bounty", "lowest locked above the level")
-	eq(M.nextLocked(M.set(M.set(M.set(0, 1), 2), 3), 8).key, "crafting", "passive unlocked: crafting (20) is next")
+	eq(M.nextLocked(M.set(M.set(M.set(M.set(0, 1), 2), 3), indexOf("seasonpass")), 8).key, "loadouts",
+		"passive and the pass unlocked: loadouts (15, before charms by index) is next")
 end
 -- silent first masks
 do
@@ -201,7 +254,7 @@ end
 do
 	local d = M.state(M.set(0, 1), 0, 8, false)
 	eq(#d.entries, #cfg.entries); eq(d.entries[1].key, "bounty"); eq(d.entries[1].menu, "Bounty Board")
-	eq(#d.unlocked, 1); eq(d.unlocked[1], "bounty"); eq(#d.seen, 0); eq(d.next.key, "passive"); eq(d.all, nil)
+	eq(#d.unlocked, 1); eq(d.unlocked[1], "bounty"); eq(#d.seen, 0); eq(d.next.key, "seasonpass"); eq(d.all, nil)
 	d = M.state(M.set(M.set(0, 1), 2), M.set(0, 1), 8, true)
 	eq(#d.seen, 1); eq(d.all, true)
 	d = M.state(M.all(#cfg.entries), 0, 8, false)
@@ -292,32 +345,44 @@ ok(not M.has(bits(new, "seen"), indexOf("market")), "other opcode ignored")
 events.ChaosUnlocksExtended.onExtendedOpcode(new, 115, {action = "hello"})
 eq(#take("state"), 1, "hello answers with the state")
 eq(take("state")[1].data.seen[1], "bounty")
--- a level up: passive at 12
+-- a level up: the Season Pass at 10 (O368), then passive at 12
+sent = {}
+new.level = 10
+events.ChaosUnlocksAdvance.onAdvance(new, SKILL_LEVEL, 9, 10)
+eq(take("new")[1].data.key, "seasonpass")
+eq(take("state")[1].data.next.key, "passive")
 sent = {}
 new.level = 12
 events.ChaosUnlocksAdvance.onAdvance(new, SKILL_LEVEL, 11, 12)
 eq(take("new")[1].data.key, "passive"); eq(take("new")[1].data.why[1], "Your first passive point is ready.")
-eq(take("state")[1].data.next.key, "crafting")
+eq(take("state")[1].data.next.key, "loadouts")
 -- several at once, one per 75 s (a jump from 12 to 100)
 sent = {}
 new.level = 100
 events.ChaosUnlocksAdvance.onAdvance(new, SKILL_LEVEL, 12, 100)
-eq(#take("new"), 1, "crafting first (lowest level)"); eq(take("new")[1].data.key, "crafting")
-local order = {"crafting"}
-for _ = 1, 14 do
+eq(#take("new"), 1, "loadouts first (lowest level)"); eq(take("new")[1].data.key, "loadouts")
+local order = {"loadouts"}
+for _ = 1, 40 do
 	if #queued == 0 then break end
 	local g = flush()
 	eq(g[1], 75000)
 	local t = take("new")
 	order[#order + 1] = t[#t].data.key
 end
-eq(table.concat(order, ","), "crafting,salvage,pets,events,arena,rifts,siege,tower", "one per gap in level order, ties by index")
+eq(table.concat(order, ","), "loadouts,charms,crafting,salvage,orbexchange,professions,pets,events,transmog,hideout," ..
+	"gamble,factions,arena,conquest,guildwar,nemesis,rifts,siege,tower,riftatlas,descent,battleground",
+	"one per gap in level order, ties by index")
 eq(take("state")[#take("state")].data.next.key, "dungeons")
 -- a level lost: nothing is taken back, the state follows
 sent = {}
 new.level = 40
 events.ChaosUnlocksAdvance.onAdvance(new, SKILL_LEVEL, 100, 40)
-eq(#take("new"), 0); eq(#take("state")[1].data.unlocked, #cfg.entries - 1, "still unlocked after dying (dungeons not yet)")
+local function upTo(level)
+	local n = 0
+	for _, e in ipairs(cfg.entries) do if e.level <= level then n = n + 1 end end
+	return n
+end
+eq(#take("new"), 0); eq(#take("state")[1].data.unlocked, upTo(100), "still unlocked after dying (dungeons not yet)")
 -- a veteran: silent
 sent = {}
 local vet = mk(2, 600)
@@ -325,7 +390,7 @@ events.ChaosUnlocksLogin.onLogin(vet)
 flush()
 eq(#take("new"), 0, "silent"); eq(bits(vet, "unlocked"), bits(vet, "seen"))
 ok(M.has(bits(vet, "unlocked"), indexOf("dungeons")))
-eq(#take("state")[1].data.unlocked, #cfg.entries)
+eq(#take("state")[1].data.unlocked, upTo(600), "everything up to its level")
 -- a character with masks from before an entry was added: the passed one silent, the rest at its level
 local old = mk(3, 60)
 old.st[S.base + S.unlocked] = 3; old.st[S.base + S.seen] = 3; old.st[S.base + S.known] = 2
@@ -334,6 +399,23 @@ events.ChaosUnlocksLogin.onLogin(old)
 flush()
 eq(#take("new"), 0, "entries it passed are silent")
 ok(M.has(bits(old, "unlocked"), indexOf("arena")) and not M.has(bits(old, "unlocked"), indexOf("rifts")))
+-- O368: the masks of entries 31-50 live in the second storages (+3, +4); a mask splits at 2^30 and comes back whole
+do
+	local p = mk(6, 10)
+	local mask = M.set(M.set(5, 31), 36)
+	U.setMask(p, "unlocked", mask)
+	eq(p.st[S.base + S.unlocked], 5, "bits 1-30 in the first storage")
+	eq(p.st[S.base + S.unlocked2], 33, "bits 31-50 in the second")
+	eq(U.getMask(p, "unlocked"), mask, "read back whole")
+	ok(M.has(U.getMask(p, "unlocked"), 36) and not M.has(U.getMask(p, "unlocked"), 35), "bit 36")
+	local q = mk(7, 10)
+	U.setMask(q, "seen", 3)
+	eq(q.st[S.base + S.seen2], nil, "no second storage written while it is empty")
+	eq(U.getMask(q, "seen"), 3)
+	eq(U.getMask(mk(8, 10), "unlocked"), -1, "never stored")
+	ok(S.base + S.seen2 <= S.last, "inside the block")
+	eq(M.has(M.all(50), 50), true, "50 bits exact")
+end
 -- staff see the whole menu
 sent = {}
 local gm = mk(4, 8, 4)

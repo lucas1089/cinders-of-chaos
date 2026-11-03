@@ -612,7 +612,8 @@ do
 	end}
 	local players = {}
 	local function mkPlayer(guid, cid)
-		local p = {guid = guid, cid = cid, gold = 1000000, orbs = 3, msgs = {}}
+		local p = {guid = guid, cid = cid, gold = 1000000, orbs = 3, msgs = {}, level = 300}
+		function p:getLevel() return self.level end
 		function p:getGuid() return self.guid end
 		function p:getId() return self.cid end
 		function p:getItemCount() return self.orbs end
@@ -688,6 +689,17 @@ do
 	events.ChaosAtlasLogin.onLogin(p)
 	local function last()
 		return sent[#sent]
+	end
+	-- O368: below the level (the first rift tier's) the window does not open
+	eq(cfg.minLevel, rcfg.tiers[1].minLevel, "the atlas opens with the first rift tier")
+	do
+		local young = mkPlayer(501, 9002)
+		young.level = cfg.minLevel - 1
+		events.ChaosAtlasLogin.onLogin(young)
+		local before = #sent
+		events.ChaosAtlasExtended.onExtendedOpcode(young, 210, {action = "open"})
+		eq(#sent, before, "nothing sent below the level")
+		ok(young.msgs[#young.msgs] and young.msgs[#young.msgs]:find("level " .. cfg.minLevel, 1, true), "it names the level")
 	end
 	events.ChaosAtlasExtended.onExtendedOpcode(p, 210, {action = "open"})
 	eq(sent[#sent - 1].action, "tree", "tree first")
