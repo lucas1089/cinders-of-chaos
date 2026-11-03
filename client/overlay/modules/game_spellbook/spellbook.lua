@@ -443,6 +443,19 @@ local function stateTip(status, spell)
   return tr('You can cast it.')
 end
 
+-- a row's tooltip: the short text, then the Alt help or its hint (spellhelp.lua)
+local function spellTip(short, spell, down)
+  local S = rawget(_G, 'ChaosSpellHelp')
+  if not S then return short end
+  return S.tooltip(short, spell, down, tr)
+end
+
+-- the row shows its Alt text now (a cooldown tick must not put the short text back under the mouse)
+local function altShownOn(row)
+  local A = rawget(_G, 'ChaosAltHelp')
+  return A ~= nil and A.isDown() and A.shown() == row
+end
+
 -- the right-hand label of a row: level, "Learn", or the cooldown left
 local function updateRowState(row, spell, ctx, now)
   local status = Core.status(spell, ctx)
@@ -461,7 +474,11 @@ local function updateRowState(row, spell, ctx, now)
     row.level:setText(tr('Lv %s', formatShortNumber(tonumber(spell.level) or 0)))
     row.level:setColor(STATE_COLORS[status] or STATE_COLORS.ready)
   end
-  row:setTooltip((spell.name or '?') .. '\n' .. stateTip(status, spell))
+  -- Alt (O372): what the spell is for, its target, element and cooldowns (game_chaosspells spellhelp.lua); the shared
+  -- poll (client_chaos_theme althelp.lua) puts the long text on the hovered row while Alt is held
+  local short = (spell.name or '?') .. '\n' .. stateTip(status, spell)
+  row.altTip = function(down) return spellTip(short, spell, down) end
+  row:setTooltip(spellTip(short, spell, altShownOn(row)))
   return left ~= nil and left ~= false
 end
 
@@ -704,10 +721,18 @@ function show()
   addEvent(fitNames)
   stopCooldownTick()
   cooldownTick()
+  local A = rawget(_G, 'ChaosAltHelp')
+  if A then
+    A.watch('game_spellbook', function()
+      if not window or not window:isVisible() then A.unwatch('game_spellbook') end
+    end)
+  end
 end
 
 function hide()
   stopCooldownTick()
+  local A = rawget(_G, 'ChaosAltHelp')
+  if A then A.unwatch('game_spellbook') end
   if window then window:hide() end
 end
 
@@ -807,6 +832,8 @@ function terminate()
   disconnect(LocalPlayer, { onLevelChange = onLevelChange, onMagicLevelChange = onLevelChange })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   stopCooldownTick()
+  local A = rawget(_G, 'ChaosAltHelp')
+  if A then A.unwatch('game_spellbook') end
   if filterEvent then
     removeEvent(filterEvent)
     filterEvent = nil

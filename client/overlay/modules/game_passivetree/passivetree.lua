@@ -570,7 +570,7 @@ function setNodeTooltip(widget, node)
 		end
 	end
 	if texts then
-		-- statinfo.lua: what each stat does; shown only while Alt is held (treetips.lua, pollTreeAlt below)
+		-- statinfo.lua: what each stat does; shown only while Alt is held (treetips.lua, onTreeAlt below)
 		local extra = (customStats and not node.isMastery and statInfoLines) and statInfoLines(customStats) or {}
 		widget.treeTip = { title = title, texts = texts, extra = extra, style = tooltipType }
 		widget.setExtendedTooltip(widget, title, TreeTips.lines(texts, extra, treeAltDown, tr), tooltipType)
@@ -614,17 +614,13 @@ function setTreeStatMarksShown(shown)
 	end
 end
 
--- Alt shows the stat explanations in node tooltips (treetips.lua). Polled while the window is open: on a change every
--- node widget gets its tooltip text again, and the one under the mouse shows the new text at once.
+-- Alt shows the stat explanations in node tooltips (treetips.lua). The shared Alt poll (client_chaos_theme althelp.lua)
+-- runs while the window is open: on a change every node widget gets its tooltip text again, and the one under the mouse
+-- shows the new text at once.
 treeAltDown = false
-local altEvent
 
-local function pollTreeAlt()
+local function onTreeAlt(down)
 	if not window or not window:isVisible() then
-		return
-	end
-	local down = g_keyboard.isAltPressed() and true or false
-	if down == treeAltDown then
 		return
 	end
 	treeAltDown = down
@@ -635,22 +631,25 @@ local function pollTreeAlt()
 		end
 	end
 	local hovered = g_ui.getHoveredWidget and g_ui.getHoveredWidget() -- not in every engine build
-	if hovered and hovered.treeTip and g_tooltip and g_tooltip.displayText then
-		g_tooltip.displayText(hovered:getTooltip())
+	if hovered and hovered.treeTip then
+		ChaosAltHelp.redraw(hovered:getTooltip())
 	end
 end
 
 function startTreeAltPoll()
-	if not altEvent then
-		altEvent = cycleEvent(pollTreeAlt, 100)
+	local A = rawget(_G, 'ChaosAltHelp')
+	if A then
+		A.watch('game_passivetree', onTreeAlt)
+		treeAltDown = A.isDown()
 	end
 end
 
 function stopTreeAltPoll()
-	if altEvent then
-		removeEvent(altEvent)
-		altEvent = nil
+	local A = rawget(_G, 'ChaosAltHelp')
+	if A then
+		A.unwatch('game_passivetree')
 	end
+	treeAltDown = false
 end
 
 -- statinfo.lua: new stat texts arrived; redo the tooltip and mark of every node widget

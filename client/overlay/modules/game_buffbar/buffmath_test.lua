@@ -98,9 +98,13 @@ eq(spot.x, 241, 'no plate: relative to the view x'); eq(spot.y, 58, 'no plate: r
 
 -- tooltip
 local tip = M.tooltip({ name = 'Haste', desc = 'Faster.', debuff = false, endAt = 1065, stacks = nil }, 1000)
-eq(tip, 'Haste\nFaster.\nTime left: 1m 05s', 'tooltip')
+eq(tip, 'Haste\nTime left: 1m 05s\nHold Alt for what it does.', 'tooltip: short, hint')
+tip = M.tooltip({ name = 'Haste', desc = 'Faster.', debuff = false, endAt = 1065, stacks = nil }, 1000, true)
+eq(tip, 'Haste\nFaster.\nTime left: 1m 05s', 'tooltip with Alt: the description')
 tip = M.tooltip({ name = 'Rage +20%', desc = '', debuff = true, endAt = nil, stacks = 20 }, 1000)
 eq(tip, 'Rage +20%  (debuff)\nStacks: 20\nNo time limit', 'tooltip debuff, stacks, no timer')
+tip = M.tooltip({ name = 'Rage +20%', desc = '', debuff = true, endAt = nil, stacks = 20 }, 1000, true)
+eq(tip, 'Rage +20%  (debuff)\nStacks: 20\nNo time limit', 'no description: Alt changes nothing')
 
 -- icons
 local k, a = M.parseIcon('spell:utani hur'); eq(k, 'spell', 'spell kind'); eq(a, 'utani hur', 'spell words')

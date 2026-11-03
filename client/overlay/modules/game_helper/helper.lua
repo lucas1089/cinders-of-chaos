@@ -397,13 +397,32 @@ local MODE_NAMES = {
   [8] = tr('Farthest, lowest health'),
 }
 
+-- a spell's tooltip: the data (spellinfo_logic.lua), then with Alt what the spell is for (O372, game_chaosspells
+-- spellhelp.lua) or a hint line without it; the shared poll (client_chaos_theme althelp.lua) swaps the texts on hover
+local function setSpellTooltip(widget, spell)
+  if not spell then
+    widget.altTip = nil
+    widget:setTooltip('')
+    return
+  end
+  local short = Info.tooltip(spell, tr)
+  local S = rawget(_G, 'ChaosSpellHelp')
+  if not S then
+    widget.altTip = nil
+    widget:setTooltip(short)
+    return
+  end
+  widget.altTip = function(down) return S.tooltip(short, spell, down, tr) end
+  widget:setTooltip(S.tooltip(short, spell, false, tr))
+end
+
 local function setIcon(widget, id)
   if not widget then return end
   local spell = spellById(id)
   if not spell then
     widget:setImageSource('/images/ui/item')
     widget:setImageClip('0 0 32 32')
-    widget:setTooltip('')
+    setSpellTooltip(widget, nil)
     return
   end
   local source = '/images/game/spells/spell-icons-32x32'
@@ -419,7 +438,7 @@ local function setIcon(widget, id)
   widget:setImageSource(source)
   widget:setImageClip(clip)
   -- the name and words, then what the spell costs and hits (spellinfo_logic.lua; what the entry lacks is left out)
-  widget:setTooltip(Info.tooltip(spell, tr))
+  setSpellTooltip(widget, spell)
 end
 
 local function percentOptions(from, to, step)
@@ -435,7 +454,7 @@ local POPUP_PAD = 24
 local function spellTip(combo)
   local option = combo:getCurrentOption()
   local spell = option and combo.spellOf and combo.spellOf[option.text]
-  combo:setTooltip(spell and Info.tooltip(spell, tr) or '')
+  setSpellTooltip(combo, spell)
 end
 
 local function decoratePopup(combo)
@@ -447,7 +466,7 @@ local function decoratePopup(combo)
     local spell = combo.spellOf[row:getText()]
     if spell then
       row:setText(Info.optionText(row:getText(), spell, tr))
-      row:setTooltip(Info.tooltip(spell, tr))
+      setSpellTooltip(row, spell)
       local ok, size = pcall(function() return row:getTextSize() end)
       widest = math.max(widest, (ok and size and size.width or #row:getText() * 6) + POPUP_PAD)
     end
@@ -1930,11 +1949,19 @@ function H.show()
   helper:focus()
   showTab(currentTab)
   updateStatus()
+  local A = rawget(_G, 'ChaosAltHelp')
+  if A then
+    A.watch('game_helper', function()
+      if not helper or not helper:isVisible() then A.unwatch('game_helper') end
+    end)
+  end
 end
 show = H.show
 
 function H.hide()
   if loaded then saveSettings() end
+  local A = rawget(_G, 'ChaosAltHelp')
+  if A then A.unwatch('game_helper') end
   if helper then helper:hide() end
 end
 hide = H.hide
@@ -2058,6 +2085,8 @@ function terminate()
   disconnect(g_game, { onGameStart = online, onGameEnd = offline, onDeath = onDeath, onSpellCooldown = onSpellCooldown,
     onSpellGroupCooldown = onSpellGroupCooldown })
   stopCycle()
+  local A = rawget(_G, 'ChaosAltHelp')
+  if A then A.unwatch('game_helper') end
   if loaded then flushSettings() end
   endSession()
   if helper then

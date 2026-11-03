@@ -1,5 +1,6 @@
 -- luajit / lua5.3, from the repo root: client/overlay/modules/game_passivetree/treetips_test.lua
 local dir = (arg and arg[0] or ''):match('^(.*)/[^/]*$') or '.'
+dofile(dir .. '/../client_chaos_theme/althelp.lua')
 dofile(dir .. '/treetips.lua')
 local function tr(s) return '<' .. s .. '>' end
 local function eq(a, b, msg)

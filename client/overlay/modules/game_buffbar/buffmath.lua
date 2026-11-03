@@ -207,12 +207,15 @@ function BuffMath.attach(plate, view)
     width = math.max(BuffMath.ICON_SIZE, plate.width - P.left - P.right), shown = plate.visible ~= false }
 end
 
-function BuffMath.tooltip(entry, now)
-  local lines = { entry.name .. (entry.debuff and '  (debuff)' or '') }
-  if entry.desc ~= '' then lines[#lines + 1] = entry.desc end
-  if entry.stacks and entry.stacks > 0 then lines[#lines + 1] = 'Stacks: ' .. math.floor(entry.stacks) end
+-- altDown (O372, client_chaos_theme althelp.lua): the description of what the buff does shows only while Alt is held;
+-- without Alt the tooltip is name, stacks and time, and a hint line when there is a description
+function BuffMath.tooltip(entry, now, altDown)
+  local lines = { entry.name .. (entry.debuff and tr('  (debuff)') or '') }
+  if altDown and entry.desc ~= '' then lines[#lines + 1] = entry.desc end
+  if entry.stacks and entry.stacks > 0 then lines[#lines + 1] = tr('Stacks: %d', math.floor(entry.stacks)) end
   local left = BuffMath.remaining(entry, now)
   lines[#lines + 1] = left and (tr('Time left: %s', BuffMath.formatLong(left))) or tr('No time limit')
+  if not altDown and entry.desc ~= '' then lines[#lines + 1] = tr('Hold Alt for what it does.') end
   return table.concat(lines, '\n')
 end
 
