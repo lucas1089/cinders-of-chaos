@@ -422,6 +422,11 @@ local function dealt(creature, attacker, amount, ptype, origin, critical, now, m
 		local src = classifyFor(owner, summon, DMG, origin, el)
 		local isMonster = creature:isMonster()
 		CL.add(a, now, DMG, src, amount, critical, 0, el, creature:getName(), isMonster and bossName(creature) or nil)
+		-- the balance telemetry's damage per class (telemetry.lua T.onDamage, O398): monsters only
+		local dh = CL.dealtHook
+		if dh and isMonster then
+			pcall(dh, owner, amount)
+		end
 	end
 	if creature:isPlayer() then
 		local a = actorOf(creature)

@@ -630,6 +630,7 @@ def main():
     test_testers()
     test_metrics()
     test_newplayer()
+    test_health_balance()
     test_feedback()
     test_discord()
     test_discord_bot()
@@ -1312,6 +1313,185 @@ def test_newplayer():
             r = run(*args)
             check(r.returncode != 0, 'refuses %r' % (args,))
         check(calls() == '', 'a refused call never reaches the database')
+
+
+HEALTH_MYSQL = r'''#!/usr/bin/env bash
+echo "$(basename "$0") $*" >> "$STUB/calls"
+case " $* " in *" -e "*) q="$*" ;; *) q=$(cat); echo "STDIN: $q" >> "$STUB/calls" ;; esac
+case "$q" in
+  *chaos_telemetry_online*)
+    case "${STUB_GH_FAIL:-}" in
+      table) echo "ERROR 1146 (42S02) at line 1: Table 'chaos.chaos_telemetry_area' doesn't exist" >&2; exit 1 ;;
+      db) echo "ERROR 2002 (HY000): Can't connect to local MySQL server" >&2; exit 1 ;;
+    esac
+    cat "$STUB/gh.tsv" ;;
+  *"'sw'"*) [ -z "${STUB_BR_FAIL:-}" ] || exit 1; cat "$STUB/sw.tsv" ;;
+  *chaos_telemetry_class*)
+    [ "${STUB_BR_FAIL:-}" != table ] || { echo "ERROR 1146 (42S02): Table 'chaos.chaos_telemetry_class' doesn't exist" >&2; exit 1; }
+    cat "$STUB/br.tsv" ;;
+esac
+'''
+
+
+def test_health_balance():
+    """chaos-ctl.sh game-health (O397) and balance-report (O398); synthetic rows only"""
+    import getpass
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        server = os.path.join(tmp, 'server')
+        sysd = os.path.join(tmp, 'systemd')
+        baldir = os.path.join(tmp, 'balance')
+        botdata = os.path.join(tmp, 'botdata')
+        for d in (stub, os.path.join(repo, 'server', 'tools'), os.path.join(repo, 'server', 'deploy'),
+                  os.path.join(server, 'data', 'scripts', 'chaos'), sysd, botdata):
+            os.makedirs(d)
+        for f in ('game_health.py', 'newplayer_report.py', 'balance_report.py', 'balance_report_config.json'):
+            shutil.copy(os.path.join(repo_root, 'server', 'tools', f), os.path.join(repo, 'server', 'tools'))
+        for f in ('chaos-balance.service', 'chaos-balance.timer'):
+            shutil.copy(os.path.join(HERE, f), os.path.join(repo, 'server', 'deploy'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', HEALTH_MYSQL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        now = int(time.time())
+        h = now - now % 3600
+        with open(os.path.join(stub, 'gh.tsv'), 'w') as f:
+            f.write('on\t%d\t12\t120\t14\non\t%d\t12\t240\t25\nde\t%d\t4\n' % (h - 7200, h - 3600, h - 3600))
+            f.write('hu\tAshen Caves\t40\t36000\t900\nhu\tRift\t3\t1200\t50\nda\tAshen Caves\t7\n')
+            f.write('ec\tfaucet\tloot\t500000\t300\nec\tsink\tsupplies\t120000\t280\n')
+            f.write('fn\t2\t1\t1\t1\t5\t4\t2\t8\nfn\t3\t2\t0\t1\t0\t0\t0\t12\n')
+        with open(os.path.join(server, 'data', 'chaos_poi.lua'), 'w') as f:
+            f.write('return {marks = {\n\t\t{k = "hunt", x = 1, y = 1, z = 7, n = "Bone Pits", r = 1},\n}}\n')
+        with open(os.path.join(server, 'data', 'scripts', 'chaos', 'season_config.lua'), 'w') as f:
+            f.write('return {seasons = {\n\t{\n\t\tid = 1,\n\t\tname = "Season of Ash",\n\t\ttag = "[S1]",\n'
+                    '\t\tstart = 20261120,\n\t\tfinish = 20270219,\n\t\thour = 15\n\t}\n}}\n')
+        # season 1 ended 3 days ago (the /season end override of the database wins over the file's dates)
+        with open(os.path.join(stub, 'sw.tsv'), 'w') as f:
+            f.write('sw\t1\t%d\t%d\n' % (now - 40 * 86400, now - 3 * 86400))
+        rows = []
+        need = 50 * 400 * 400 - 150 * 400 + 200
+        for voc, mins in ((1, 30), (3, 45), (4, 20), (5, 31), (7, 29)):
+            rows.append('hu\t300-499\t%d\t40\t36000\t%d\t100' % (voc, int(need / float(mins) * 600)))
+            rows.append('cl\t300-499\t%d\t5\t1000000' % voc)
+        rows.append('ca\t3\tArrow Rain\t900')
+        with open(os.path.join(stub, 'br.tsv'), 'w') as f:
+            f.write('\n'.join(rows) + '\n')
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=server, CHAOS_ENV=env_file, CHAOS_REPO=repo, CHAOS_MYSQL='mysql',
+                   CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'),
+                   CHAOS_LOG=os.path.join(tmp, 'no.log'), CHAOS_SYSTEMD_DIR=sysd, CHAOS_BALANCE_DIR=baldir,
+                   CHAOS_BOT_DATA=botdata, CHAOS_BOT_USER=getpass.getuser())
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'STUB_GH_FAIL',
+                  'STUB_BR_FAIL'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def reset():
+            if os.path.exists(os.path.join(stub, 'calls')):
+                os.unlink(os.path.join(stub, 'calls'))
+
+        # ---- game-health (O397)
+        r = run('game-health', '--kv', '--pt')
+        kv = r.stdout.splitlines()
+        check(r.returncode == 0 and 'ok=1' in kv and 'days=7' in kv, 'game-health --kv: ' + r.stdout[:300] + r.stderr)
+        check(sum(1 for x in kv if x.startswith('hour=')) == 7 * 24, 'game-health: one line per hour of 7 days')
+        check('hunt_top=40 10.0 900 7 Ashen Caves' in kv and 'hunt_low=0 0.0 0 0 Bone Pits' in kv,
+              'game-health: hunts, the installed markers included: %r' % [x for x in kv if x.startswith('hunt')])
+        check('hunt_top=<5 0.3 50 0 Rift' in kv, 'game-health: small groups "<5"')
+        q = calls()
+        check('chaos_telemetry_online' in q and 'GROUP BY `reach`' in q, 'game-health: one script, telemetry and funnel')
+        for column in ('`name`', 'account', 'lastip', 'email'):
+            check(column not in q, 'game-health never reads ' + column)
+        check('secret' not in q, 'game-health: the password is not on a command line')
+        reset()
+        r = run('game-health', '--days', '30')
+        check(r.returncode == 0 and 'Game health: the last 30 days' in r.stdout, 'game-health text: ' + r.stdout[:200])
+        r = run('game-health', '--json')
+        d = json.loads(r.stdout or '{}')
+        check(r.returncode == 0 and d.get('ok') and d['hunts']['top'][0]['name'] == 'Ashen Caves', 'game-health --json')
+        r = run('game-health', '--kv', extra={'STUB_GH_FAIL': 'table'})
+        check(r.returncode == 1 and r.stdout.strip() == 'ok=0\nerror=no-table', 'game-health: no table: ' + r.stdout)
+        r = run('game-health', '--json', extra={'STUB_GH_FAIL': 'db'})
+        check(r.returncode == 1 and json.loads(r.stdout or '{}') == {'ok': False, 'error': 'database'},
+              'game-health: database down')
+        reset()
+        for args in (('game-health', '--days'), ('game-health', '--days', '0'), ('game-health', '--days', '91'),
+                     ('game-health', '--days', '1;id'), ('game-health', '--days', '$(id)'), ('game-health', 'x')):
+            r = run(*args)
+            check(r.returncode != 0, 'refuses %r' % (args,))
+        check(calls() == '', 'a refused game-health never reaches the database')
+
+        # ---- balance-report (O398)
+        r = run('balance-report', '--pt', '--days', '30')
+        check(r.returncode == 0 and r.stdout.startswith('# Relatório de equilíbrio: últimos 30 dias')
+              and 'Ranger, nível 300-499: sobe de nível 50% mais devagar' in r.stdout,
+              'balance-report --pt: ' + r.stdout[:600] + r.stderr)
+        q = calls()
+        check('chaos_telemetry_hunt' in q and 'player_id' not in q and '`name`' not in q, 'balance-report: aggregates only')
+        check(not os.path.exists(baldir), 'nothing saved without --save')
+        reset()
+        r = run('balance-report', '--season', 'current', '--json')
+        d = json.loads(r.stdout or '{}')
+        check(r.returncode == 0 and d.get('title') == 'Season of Ash [S1]'
+              and abs(d.get('until', 0) - (now - 3 * 86400)) < 5, 'balance-report --season current: '
+              + r.stdout[:300] + r.stderr)
+        check("'chaos_season_1_end'" in calls(), 'the season window reads the /season overrides')
+        r = run('balance-report', '--season', '1', '--pt', '--dm')
+        check(r.returncode == 0 and 'saved=%s/season-1.md' % baldir in r.stdout and 'dm=queued' in r.stdout,
+              'balance-report --dm: ' + r.stdout[-300:] + r.stderr)
+        check(os.path.exists(os.path.join(botdata, 'outbox', 'season-1.md')), 'the report waits in the bot outbox')
+        r = run('balance-report', 'last')
+        check(r.returncode == 0 and r.stdout.startswith('# Relatório de equilíbrio: Season of Ash'), 'balance-report last')
+        r = run('balance-report', 'auto')
+        check(r.returncode == 0 and 'nothing due' in r.stdout, 'auto: a saved season is not due again: ' + r.stdout + r.stderr)
+        os.unlink(os.path.join(baldir, 'season-1.md'))
+        shutil.rmtree(os.path.join(botdata, 'outbox'))
+        r = run('balance-report', 'auto')
+        check(r.returncode == 0 and 'season 1 report saved' in r.stdout and 'dm=queued' in r.stdout,
+              'auto: the ended season gets its report: ' + r.stdout + r.stderr)
+        check(os.path.exists(os.path.join(baldir, 'season-1.md')) and
+              os.path.exists(os.path.join(botdata, 'outbox', 'season-1.md')), 'auto: saved and queued')
+        nobot = {'CHAOS_BOT_DATA': os.path.join(tmp, 'nobot')}
+        r = run('balance-report', '--days', '7', '--save', extra=nobot)
+        check(r.returncode == 0 and 'saved=%s/balance-' % baldir in r.stdout, 'balance-report --save')
+        r = run('balance-report', '--days', '7', '--dm', extra=nobot)
+        check(r.returncode == 0 and 'dm=no-bot' in r.stdout, 'no bot installed: said, not failed')
+        r = run('balance-report', '--json', extra={'STUB_BR_FAIL': 'table'})
+        check(r.returncode == 1 and json.loads(r.stdout or '{}') == {'ok': False, 'error': 'no-table'},
+              'balance-report: no table: ' + r.stdout)
+        r = run('balance-report', '--season', '9')
+        check(r.returncode != 0 and 'no-season' in r.stderr, 'an unknown season')
+        reset()
+        r = run('balance-report', 'timer', 'on')
+        check(r.returncode == 0 and os.path.exists(os.path.join(sysd, 'chaos-balance.timer')), 'timer on: ' + r.stderr)
+        unit = open(os.path.join(sysd, 'chaos-balance.service')).read()
+        check(repo + '/server/deploy/chaos-ctl.sh balance-report auto' in unit, 'timer on: the real repository path')
+        check('enable --now chaos-balance.timer' in calls(), 'timer on: enabled')
+        r = run('balance-report', 'timer', 'status')
+        check('timer_installed=yes' in r.stdout and 'season-1.md' in r.stdout, 'timer status: ' + r.stdout)
+        r = run('balance-report', 'timer', 'off')
+        check(r.returncode == 0 and 'disable --now chaos-balance.timer' in calls(), 'timer off')
+        reset()
+        for args in (('balance-report', '--days', '0'), ('balance-report', '--days', '731'),
+                     ('balance-report', '--days', '1;id'), ('balance-report', '--season', 'x'),
+                     ('balance-report', '--season', '$(id)'), ('balance-report', '--days', '7', '--season', '1'),
+                     ('balance-report', '--bogus'), ('balance-report', 'timer', 'maybe'), ('balance-report', 'last', 'x')):
+            r = run(*args)
+            check(r.returncode != 0, 'refuses %r' % (args,))
+        check(calls() == '', 'a refused balance-report never reaches the database')
 
 
 def test_feedback():

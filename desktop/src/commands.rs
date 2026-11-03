@@ -78,7 +78,11 @@ impl Section {
         match self {
             Section::Panel => "estado do servidor no ar memória disco carga último backup erros jogadores online",
             Section::LiveView => "ao vivo tempo real console do jogo log atualizar a cada pausar filtrar seguir",
-            Section::Players => "métricas churn faixa de nível mortes por área monstro primeira sessão retorno",
+            Section::Players => {
+                "métricas churn faixa de nível mortes por área monstro primeira sessão retorno \
+                 saúde do jogo online por hora hunts mais usadas menos usadas ouro economia \
+                 relatório de equilíbrio balanceamento classes season sugestões"
+            }
             Section::GamePanel => "catálogo painel de admin ban item spawn recarregar arquivo tabela config lua",
             Section::Logs => "terminal na vps qualquer comando shell",
             Section::Settings => {
@@ -300,6 +304,8 @@ const BOT_SET_P: &[Param] = &[
     secret("value", "Valor (vazio remove)"),
 ];
 const NP_DAYS_P: &[Param] = &[int("days", "Últimos dias", 1, 3650, "30")];
+const GH_DAYS_P: &[Param] = &[int("days", "Últimos dias", 1, 90, "7")];
+const BAL_DAYS_P: &[Param] = &[int("days", "Últimos dias", 1, 730, "30")];
 const FB_CLOSE_P: &[Param] = &[
     int("id", "Número do relatório", 1, 999_999_999, "1"),
     text("note", "Nota (200 caracteres)"),
@@ -334,6 +340,14 @@ pub static ACTIONS: &[Action] = &[
     act(Players, "Novos jogadores", "Funil", "newplayer-funnel --pt --days {days}").p(NP_DAYS_P).t(90).h("Níveis 10 a 100, horas jogadas e onde pararam os que sumiram há 7+ dias."),
     act(Players, "Novos jogadores", "Pesquisa", "survey --pt --texts 100 --days {days}").p(NP_DAYS_P).t(90).h("Respostas da pesquisa dos níveis 20 e 50."),
     act(Players, "Métricas dos jogadores", "Ver métricas", "metrics").t(90),
+    act(Players, "Saúde do jogo", "Ver como texto", "game-health --pt --days {days}").p(GH_DAYS_P).t(120).h("Online por hora, mortes, hunts mais e menos usadas, ouro e novos jogadores. O gráfico fica no card abaixo."),
+    act(Players, "Relatório de equilíbrio", "Últimos dias", "balance-report --pt --days {days}").p(BAL_DAYS_P).t(180).h("Classes por faixa de nível: minutos por nível, mortes e dano por hora, feitiços mais usados e sugestões."),
+    act(Players, "Relatório de equilíbrio", "Season atual", "balance-report --pt --season current").t(180),
+    act(Players, "Relatório de equilíbrio", "Enviar por DM", "balance-report --pt --days {days} --dm").p(BAL_DAYS_P).t(180).h("Guarda no servidor e o bot do Discord manda por DM em até 1 minuto."),
+    act(Players, "Relatório de equilíbrio", "Último salvo", "balance-report last").t(60),
+    act(Players, "Relatório de equilíbrio", "Ligar automático", "balance-report timer on").t(60).h("Todo dia: quando uma season termina, o relatório dela sai sozinho e vai por DM."),
+    act(Players, "Relatório de equilíbrio", "Desligar automático", "balance-report timer off").t(60),
+    act(Players, "Relatório de equilíbrio", "Estado do automático", "balance-report timer status").t(60),
     // ---- Ajustes do jogo
     act(Game, "Taxa de XP", "Ver", "xp-rate show").t(30),
     act(Game, "Taxa de XP", "Definir (vale no próximo reinício)", "xp-rate set {n}").p(XP_P).live(Live::Restart).t(30),

@@ -12,8 +12,14 @@ ChaosTelemetryConfig = {
 		deaths = "chaos_telemetry_deaths", -- deaths per area and killer per level band
 		casts = "chaos_telemetry_casts", -- spell casts per class
 		economy = "chaos_telemetry_economy", -- gold sinks and faucets per source and level band
-		online = "chaos_telemetry_online" -- online samples per level band and class (and the total)
+		online = "chaos_telemetry_online", -- online samples per level band and class (and the total)
+		area = "chaos_telemetry_area", -- O397: hunting samples, time and kills per hunt (instance or hunt marker)
+		class = "chaos_telemetry_class" -- O398: deaths and damage dealt to monsters per level band and class
 	},
+
+	-- O398: damage per class comes from the combat log's hits (combatlog.lua CL.dealtHook, only while the combat log is
+	-- enabled). false: no damage column (the deaths still count)
+	damage = true,
 
 	-- every sampleSeconds: online counts, the hunt tracker's counters of every online character (deltas)
 	sampleSeconds = 300,

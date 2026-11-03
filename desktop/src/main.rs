@@ -6,6 +6,7 @@ use cinders_admin::cards::{self, Count, Metrics, Player, State, Status};
 use cinders_admin::catalog::{self, PanelAction};
 use cinders_admin::commands::{self, Action, Kind, Live, Section, ACTIONS};
 use cinders_admin::config::{self, Config};
+use cinders_admin::health::{self, Health};
 use cinders_admin::infos::{self, Report, UpdateInfo};
 use cinders_admin::live::{self, Level, Poller};
 use cinders_admin::output::{self, State as RunState};
@@ -57,6 +58,8 @@ enum Msg {
     CardStatus(Result<Status, String>),
     CardPlayers(Result<Vec<Player>, String>),
     CardMetrics(Result<Metrics, String>),
+    /// O397: parsed `game-health --kv`, or why it failed.
+    CardHealth(Result<Health, String>),
     Live(Result<LiveData, String>),
     /// Names printed by `reload-files`.
     ReloadList(Result<Vec<String>, String>),
@@ -107,6 +110,8 @@ struct App {
     card_players: Option<Vec<Player>>,
     card_metrics: Option<Metrics>,
     card_metrics_note: String,
+    card_health: Option<Health>,
+    card_health_note: String,
     cards_busy: usize,
     started: std::time::Instant,
     poller: Poller,
@@ -156,6 +161,8 @@ impl App {
             card_players: None,
             card_metrics: None,
             card_metrics_note: "Toque em Carregar métricas.".into(),
+            card_health: None,
+            card_health_note: "Toque em Carregar gráficos.".into(),
             cards_busy: 0,
             started: std::time::Instant::now(),
             poller: Poller::default(),
@@ -193,6 +200,10 @@ impl App {
                 }
                 1 if o.code == 0 => Msg::CardPlayers(Ok(cards::parse_players(&o.text))),
                 1 => Msg::CardPlayers(Err(first(&o.text))),
+                3 => match Health::parse(&o.text) {
+                    Some(h) => Msg::CardHealth(Ok(h)),
+                    None => Msg::CardHealth(Err(first(&o.text))),
+                },
                 _ => match Metrics::parse(&o.text) {
                     Some(m) => Msg::CardMetrics(Ok(m)),
                     None => Msg::CardMetrics(Err(first(&o.text))),
@@ -299,6 +310,121 @@ impl App {
         if let Some(p) = &self.card_players {
             sub_block(ui, &format!("Online agora ({})", p.len()), |ui| players_list(ui, p));
         }
+    }
+
+    /// O397: the charts of `game-health --kv` under the group "Saúde do jogo" (7 days; the table's button prints the
+    /// text for any number of days).
+    fn health_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.add_space(4.0);
+        if ui.button("Carregar gráficos (7 dias)").clicked() {
+            self.card_call(ctx, "game-health --kv --pt --days 7", 120, 3);
+        }
+        let Some(h) = self.card_health.clone() else {
+            ui.weak(&self.card_health_note);
+            return;
+        };
+        if !h.ok {
+            ui.colored_label(theme::ERROR, h.error_text());
+            return;
+        }
+        ui.label(h.headline());
+        let online: Vec<Option<f64>> = h.hours.iter().map(|x| x.mean).collect();
+        sub_block(ui, "Online por hora (média de cada hora; vazio = sem amostra)", |ui| {
+            bars(ui, &online, h.max_online(), theme::EMBER, 80.0);
+            if let (Some(a), Some(b)) = (h.hours.first(), h.hours.last()) {
+                ui.weak(format!(
+                    "{} a {}, hora do servidor. Pico {} em {}.",
+                    a.day, b.day, h.online_peak, h.online_peak_at
+                ));
+            }
+        });
+        let hod = h.by_hour_of_day();
+        let hod_max = hod.iter().flatten().copied().fold(1.0, f64::max);
+        sub_block(ui, "Média por hora do dia (0h a 23h)", |ui| {
+            bars(ui, &hod, hod_max, theme::TEXT_2, 60.0);
+            let hour = |v: Option<u32>| v.map(|x| format!("{x}h")).unwrap_or_else(|| "-".into());
+            ui.weak(format!(
+                "Mais cheia: {}. Mais vazia: {}.",
+                hour(h.busiest_hour),
+                hour(h.quietest_hour)
+            ));
+        });
+        let deaths: Vec<Option<f64>> = h.hours.iter().map(|x| Some(x.deaths as f64)).collect();
+        let dmax = h.hours.iter().map(|x| x.deaths as f64).fold(1.0, f64::max);
+        sub_block(
+            ui,
+            &format!(
+                "Mortes por hora ({} no período, {} por hora de jogo)",
+                h.deaths_total,
+                h.deaths_per_play_hour.replace('.', ",")
+            ),
+            |ui| bars(ui, &deaths, dmax, theme::WARN, 60.0),
+        );
+        let hunt_rows = |v: &[health::Hunt]| -> Vec<Vec<String>> {
+            v.iter()
+                .map(|x| {
+                    vec![
+                        x.name.clone(),
+                        format!("{:.1}", x.hours).replace('.', ","),
+                        x.visits.text(),
+                        x.kills.to_string(),
+                        x.deaths.to_string(),
+                    ]
+                })
+                .collect()
+        };
+        let head = ["Hunt", "Horas caçando", "Personagem-horas", "Abates", "Mortes"];
+        sub_block(
+            ui,
+            &format!(
+                "Hunts mais usadas ({} conhecidas, {} sem visita)",
+                h.hunts_known, h.hunts_unvisited
+            ),
+            |ui| grid(ui, "gh_top", &head, hunt_rows(&h.top)),
+        );
+        sub_block(ui, "Hunts menos usadas", |ui| {
+            grid(ui, "gh_low", &head, hunt_rows(&h.low))
+        });
+        sub_block(
+            ui,
+            &format!(
+                "Ouro: entrou {}, saiu {}, saldo {}",
+                health::gold(h.gold_in),
+                health::gold(h.gold_out),
+                health::gold(h.gold_net)
+            ),
+            |ui| {
+                let rows = h
+                    .gold
+                    .iter()
+                    .map(|r| {
+                        let g = match r.count {
+                            health::Small::N(n) => health::gold(n as i64),
+                            health::Small::Hidden => "<5".into(),
+                        };
+                        vec![r.label.clone(), g, r.extra.to_string()]
+                    })
+                    .collect();
+                grid(ui, "gh_gold", &["Fonte", "Ouro", "Vezes"], rows);
+            },
+        );
+        sub_block(
+            ui,
+            &format!(
+                "Novos jogadores (últimos {} dias): {} personagens; pararam {}",
+                h.funnel_days, h.funnel_characters, h.funnel_stopped
+            ),
+            |ui| {
+                let rows = h
+                    .reached
+                    .iter()
+                    .chain(h.stop_level.iter().take(5))
+                    .chain(h.stop_system.iter().take(5))
+                    .map(|r| vec![r.label.clone(), r.count.text(), health::pct(r.pct)])
+                    .collect();
+                grid(ui, "gh_funnel", &["", "Personagens", "Parte"], rows);
+            },
+        );
     }
 
     fn metrics_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
@@ -660,6 +786,7 @@ impl App {
             match group {
                 "Atualizar servidor" => self.update_card_ui(ui),
                 "Bugs e sugestões" => self.reports_ui(ui),
+                "Saúde do jogo" => self.health_ui(ui, ctx),
                 _ => {}
             }
         });
@@ -1627,6 +1754,16 @@ impl eframe::App for App {
                         }
                     }
                 }
+                Msg::CardHealth(r) => {
+                    self.cards_busy = self.cards_busy.saturating_sub(1);
+                    match r {
+                        Ok(h) => self.card_health = Some(h),
+                        Err(e) => {
+                            self.card_health = None;
+                            self.card_health_note = format!("Sem dados: {e}");
+                        }
+                    }
+                }
                 Msg::Live(r) => {
                     self.poller.finished();
                     match r {
@@ -1820,6 +1957,50 @@ fn sub_block(ui: &mut egui::Ui, title: &str, add: impl FnOnce(&mut egui::Ui)) {
     ui.add_space(6.0);
     ui.label(egui::RichText::new(title).strong().color(theme::TEXT_2));
     add(ui);
+}
+
+/// O397: one bar per value from the left (None: a gap), scaled to max, in a strip `height` high.
+fn bars(ui: &mut egui::Ui, values: &[Option<f64>], max: f64, colour: egui::Color32, height: f32) {
+    let width = ui.available_width().max(100.0);
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
+    let painter = ui.painter_at(rect);
+    painter.rect_filled(rect, 2.0, theme::INPUT);
+    if values.is_empty() {
+        return;
+    }
+    let step = rect.width() / values.len() as f32;
+    let gap = if step > 4.0 { 1.0 } else { 0.0 };
+    let max = max.max(1.0);
+    for (i, v) in values.iter().enumerate() {
+        let Some(v) = v else { continue };
+        let top = rect.bottom() - (rect.height() - 2.0) * (v / max).clamp(0.0, 1.0) as f32;
+        let x = rect.left() + i as f32 * step;
+        painter.rect_filled(
+            egui::Rect::from_min_max(egui::pos2(x, top), egui::pos2(x + step - gap, rect.bottom())),
+            0.0,
+            colour,
+        );
+    }
+}
+
+/// A striped table with a header row.
+fn grid(ui: &mut egui::Ui, id: &str, head: &[&str], rows: Vec<Vec<String>>) {
+    if rows.is_empty() {
+        ui.weak("Sem linhas.");
+        return;
+    }
+    egui::Grid::new(id).striped(true).spacing([18.0, 2.0]).show(ui, |ui| {
+        for h in head {
+            ui.strong(*h);
+        }
+        ui.end_row();
+        for r in rows {
+            for v in r {
+                ui.label(v);
+            }
+            ui.end_row();
+        }
+    });
 }
 
 fn players_list(ui: &mut egui::Ui, p: &[Player]) {
