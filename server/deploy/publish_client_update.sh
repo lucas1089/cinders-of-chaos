@@ -509,3 +509,13 @@ say "  clients of package $MINPKG or newer with this key apply it at their next 
 say "  updater are told to download the new client (the game server refuses them when clientGuardManifest names it)"
 if [ -n "$APK" ]; then say "  app update: $(python3 -I -c 'import json,sys; a=json.loads(json.load(open(sys.argv[1]))["payload"]).get("android_apk") or {}; print(a.get("version_name","none"), "code", a.get("version_code","-"))' "$LIVE/manifest.json")"; fi
 say "  web server check: $chk"
+# the Android app has no other way past min_package: without an android_apk entry of that version code or newer, every
+# phone stops at "A new client download is required" (owner 2026-11-03: package 31 published, the phones had 30)
+apkcode=$(python3 -I -c 'import json,sys; a=json.loads(json.load(open(sys.argv[1]))["payload"]).get("android_apk") or {}; print(a.get("version_code", 0))' "$LIVE/manifest.json")
+if [ "$((10#${apkcode:-0}))" -lt "$MINPKG" ]; then
+  say ""
+  say "WARN: min_package $MINPKG, but the app update is ${apkcode:-none} (no android_apk of code $MINPKG or newer):"
+  say "  Android phones cannot play until an APK of client_build $MINPKG or newer is published (android-client.yml"
+  say "  with publish_release, then: chaos-ctl.sh publish-apk android-$MINPKG; admin app: Comandos > Site e update do"
+  say "  client > Publicar app Android)"
+fi
