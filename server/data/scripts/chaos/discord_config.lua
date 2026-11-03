@@ -23,7 +23,8 @@ ChaosDiscordConfig = {
 		status_up = true, -- the server started
 		status_down = true, -- a clean shutdown outside the daily restart (a crash posts nothing: chaos_health.py)
 		status_restart = true, -- the daily server save restart
-		patchnotes = true -- a new patch note: one digest in English and one in pt-BR (patchnotes.lua)
+		patchnotes = true, -- a new patch note: one digest in English and one in pt-BR (patchnotes.lua)
+		weekly_challenge = true -- the Weekly Challenge's week ended: the top 3 of each class (weekly_challenge.lua, O390)
 	},
 
 	-- the automatic patch note post (patchnotes.lua): off here or with events.patchnotes = false. Each note is posted
@@ -43,7 +44,7 @@ ChaosDiscordConfig = {
 	channels = {
 		record = "records", first = "records",
 		worldboss_spawn = "bosses", worldboss_kill = "bosses", ascended_kill = "bosses", cinderheart_kill = "bosses",
-		level = "players", drop = "drops",
+		level = "players", drop = "drops", weekly_challenge = "records",
 		season_start = "announce", season_end = "announce", chronicle = "announce", patchnotes = "announce",
 		status_up = "status", status_down = "status", status_restart = "status"
 	},

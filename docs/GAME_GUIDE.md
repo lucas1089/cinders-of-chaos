@@ -768,6 +768,11 @@ Weekly boards (Social > Leaderboards) reset every Monday:
 - Cinderheart fastest kills (alone, 2-3 and 4-5 players, with class tabs, also on the website)
 - Reputation
 - Gatherers (materials gathered; a title only)
+- Weekly Challenge, alone and in a party of 2-4 (fastest clear, with class tabs, also on the website)
+
+**The Weekly Challenge** (Adventure > Dungeons, level 800): one dungeon with a new map every Monday, the same map for
+everyone, always at difficulty 1. Your fastest clear goes on the board of your class. When the week ends, the 3 fastest
+of every class (alone and in a party) get Conquest Tokens, and the results are posted on Discord.
 
 Other systems keep weekly boards of their own: the raid's fastest clear, the Ember Descent's weekly run, the guild boss,
 the battleground and the Scorched Marches. Season modes get their own tabs, Hardcore graves included.
@@ -1022,8 +1027,10 @@ footprints, outlines and the Collection. Everything is looks only and unlocks fo
   taken per spell, rune, weapon attack, damage over time, proc and summon, for each fight (bosses named), the last ten
   fights and the session. The Combat Log window adds hits, crits, averages and elements. Party mode shows everyone's
   DPS and HPS (you can opt out); export a summary to the clipboard or chat.
-- **Party Finder** (Social > Party Finder): post a group for a rift tier, a dungeon, a world boss, an Omen, the Infinity
-  Tower, the raid, a trial or anything else, and say which roles you want (tank, healer, damage) and the minimum level.
+- **Party Finder** (Social > Party Finder, or **Alt+L**): post a group for a hunt, a rift tier, a dungeon, a world boss,
+  an Omen, the Infinity Tower, the raid, a trial or anything else, and say which roles you want (tank, healer, damage),
+  the level band (a hunt fills in its own) and a note from a short list.
+  "Fits my level" keeps the groups whose band you are in.
   Others browse, filter and apply with a role, or queue with "Join as". Accepting sends a real party invite. Raid
   listings hold 15 players (up to 3 tanks, 4 healers and 12 damage dealers). Mentors can tag their groups.
 - **Map overlay:** press **Tab** to lay a see-through map over the game view, centred on your character, with icons for

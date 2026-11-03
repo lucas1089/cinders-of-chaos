@@ -8,7 +8,8 @@
 --                     entered: a toast with [Join] that opens the browse tab)
 -- The server pushes a new list while the window is open; the time left counts down here every second. A new
 -- application shows a toast and a badge on the Social menu (also while the window is closed). Menu: Social > Party
--- Finder (added with ChaosTopBar.addEntry).
+-- Finder (added with ChaosTopBar.addEntry), hotkey Alt+L (O389). O389 also: hunts (with their level band), a level
+-- band (min and max), a note from a fixed list (init.notes) next to the filtered free note.
 
 local OPCODE = 208
 local V = PartyFinderView
@@ -195,8 +196,9 @@ local function renderBrowse()
   for _, row in ipairs(rows) do
     local w = g_ui.createWidget('PartyFinderRow', list)
     w.activity:setText(row.an or '?')
-    w.note:setText(row.note or '')
-    w.note:setTooltip(row.note ~= '' and row.note or nil)
+    local noteLine = V.noteText(row, srv and srv.notes)
+    w.note:setText(noteLine)
+    w.note:setTooltip(noteLine ~= '' and noteLine or nil)
     w.sub:setText(V.subLine(row, e))
     w.openText:setText(V.openText(row))
     local slotRows = fillSlots(w.slots, row)
@@ -279,7 +281,8 @@ local function formValues()
   local f = window.myPanel.form
   return { a = comboData(f.activity), lo = f.lo:getText(), hi = f.hi:getText(), t = comboData(f.target),
     title = f.title:getText(), tank = comboData(f.wantTank), healer = comboData(f.wantHealer), dps = comboData(f.wantDps),
-    minLevel = f.minLevel:getText(), note = f.note:getText(), exp = comboData(f.exp), role = comboData(f.role),
+    minLevel = f.minLevel:getText(), maxLevel = f.maxLevel:getText(), nk = comboData(f.notePreset),
+    note = f.note:getText(), exp = comboData(f.exp), role = comboData(f.role),
     auto = f.auto:isChecked() }
 end
 
@@ -307,6 +310,8 @@ local function fillForm(input)
   f.wantHealer:setCurrentOptionByData(want.healer or 0, true)
   f.wantDps:setCurrentOptionByData(want.dps or 0, true)
   f.minLevel:setText(tostring(input.minLevel or 1))
+  f.maxLevel:setText((tonumber(input.maxLevel) or 0) > 0 and tostring(input.maxLevel) or '')
+  f.notePreset:setCurrentOptionByData(tonumber(input.nk) or 0, true)
   f.note:setText(input.note or '')
   f.exp:setCurrentOptionByData(input.exp, true)
   f.auto:setChecked(input.auto and true or false)
@@ -400,6 +405,10 @@ local function onInit(d)
   f.note:setMaxLength(d.lim and d.lim.note or 80)
   f.title:setMaxLength(d.lim and d.lim.title or 24)
   if f.minLevel:getText() == '' then f.minLevel:setText('1') end
+  -- O389: the fixed notes in the reader's language
+  local notes = { { tr('No preset note'), 0 } }
+  for i, n in ipairs(d.notes or {}) do notes[#notes + 1] = { tr(n), i } end
+  fillCombo(f.notePreset, notes, true)
   updating = false
   updateDetail()
   updateSize()
@@ -509,7 +518,7 @@ local function addMenu()
   local top = modules.client_chaos_topbar
   local api = top and top.ChaosTopBar
   if api and api.addEntry and not handlers.menu then
-    menuEntry = { text = 'Party Finder', icon = 'vip', modules = { 'game_partyfinder' }, fns = { 'toggle' } }
+    menuEntry = { text = 'Party Finder', icon = 'vip', modules = { 'game_partyfinder' }, fns = { 'toggle' }, key = 'Alt+L' }
     handlers.menu = pcall(api.addEntry, 'social', menuEntry)
   end
 end
@@ -547,6 +556,15 @@ function init()
     p.roleFilter.onOptionChange = rerender
     p.fitsCheck.onCheckChange = rerender
     f.activity.onOptionChange = safe('activity', function() if not updating then updateDetail(true) updateSize() end end)
+    -- O389: a hunt proposes its level band
+    f.target.onOptionChange = safe('target', function()
+      if updating then return end
+      local lo, hi = V.targetBand(V.activityOf(srv and srv.acts, comboData(f.activity)), comboData(f.target))
+      if lo then
+        f.minLevel:setText(tostring(lo))
+        f.maxLevel:setText(tostring(hi))
+      end
+    end)
     local resize = safe('size', function() if not updating then updateSize() end end)
     f.wantTank.onOptionChange = resize
     f.wantHealer.onOptionChange = resize

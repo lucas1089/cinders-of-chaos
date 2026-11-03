@@ -7,7 +7,8 @@
 --   party.members are the OTHER members of the character's party (the engine's party, not the listing's).
 -- A listing:
 --   {id, leader = {guid, cid, name, level, voc, vocName, role}, realm, staff, a (activity key), lo, hi, t (target, 0 =
---    any), title, want = {tank, healer, dps}, minLevel, note, expMin, created, expires, auto, max (group size: 10, raid 15),
+--    any), title, want = {tank, healer, dps}, minLevel, maxLevel (0 = no maximum; O389 level band), note, nk (a fixed
+--    note of cfg.notes, 0 = none; O389), expMin, created, expires, auto, max (group size: 10, raid 15),
 --    members = {{guid, cid, name, level, voc, vocName, role, st = "invited" | "joined", at}, ...} (taken by the listing),
 --    crew = {{guid, name, level, voc, vocName, role}, ...} (in the leader's party without a listing slot),
 --    apps = {[guid] = app}, appOrder = {guid, ...}, hadParty}
@@ -29,6 +30,9 @@ K.reasons = {
 	wantBelow = "You already took more of that role.",
 	level = "Your level is below the listing's minimum.",
 	minLevel = "That minimum level is not possible.",
+	maxLevel = "That level band is not possible.",
+	levelHigh = "Your level is above the listing's level band.",
+	noteKey = "Pick one of the listed notes.",
 	notLeader = "Only the party leader can post a listing.",
 	cooldown = "Wait a moment before posting again.",
 	busyServer = "Too many listings right now. Try again later.",
@@ -133,6 +137,13 @@ function K.buildActivities(cfg, sources)
 		if a.title then
 			e.title = true
 		end
+		-- the level band of each target (hunts: {lo, hi} by target index; the client proposes it as the listing's band)
+		if a.bands and e.targets and type(sources[a.bands]) == "table" and #sources[a.bands] == #e.targets then
+			e.bands = {}
+			for i, b in ipairs(sources[a.bands]) do
+				e.bands[i] = {int(b[1]) or 1, int(b[2]) or int(b[1]) or 1}
+			end
+		end
 		-- the group size and wanted caps per role of this activity (a raid holds 15), and the form's proposal
 		e.max = int(a.maxParty) or cfg.maxParty
 		e.per = {}
@@ -148,6 +159,34 @@ function K.buildActivities(cfg, sources)
 		list[#list + 1] = e
 	end
 	return list
+end
+
+-- O389: the hunt targets from the hunt teleports' index (hunt_teleports_core.lua H.index: list and base, entries
+-- {name, level = {lo, hi}}): one per name, by band (lowest first, then name) -> names, bands
+function K.huntTargets(...)
+	local rows, seen = {}, {}
+	for _, list in ipairs({...}) do
+		for _, e in ipairs(type(list) == "table" and list or {}) do
+			local name = type(e) == "table" and e.name
+			local lv = type(e) == "table" and e.level
+			if type(name) == "string" and name ~= "" and not seen[name] and type(lv) == "table" and int(lv[1]) then
+				seen[name] = true
+				local lo = int(lv[1])
+				rows[#rows + 1] = {name = name, lo = lo, hi = int(lv[2]) or lo}
+			end
+		end
+	end
+	table.sort(rows, function(a, b)
+		if a.lo ~= b.lo then
+			return a.lo < b.lo
+		end
+		return a.name < b.name
+	end)
+	local names, bands = {}, {}
+	for i, r in ipairs(rows) do
+		names[i], bands[i] = r.name, {r.lo, r.hi}
+	end
+	return names, bands
 end
 
 function K.activity(acts, key)
@@ -312,7 +351,7 @@ function K.appCount(state, guid)
 end
 
 -- ---------------------------------------------------------------- post / update / close
--- input = {a, lo, hi, t, title, want = {tank, healer, dps}, minLevel, note, exp, role, auto}
+-- input = {a, lo, hi, t, title, want = {tank, healer, dps}, minLevel, maxLevel, nk, note, exp, role, auto}
 -- -> listing, "posted" | "updated"   or   nil, reason key
 function K.post(state, cfg, acts, who, input, now)
 	if cfg.enabled == false then
@@ -368,6 +407,16 @@ function K.post(state, cfg, acts, who, input, now)
 	if not minLevel or minLevel < 1 or minLevel > cfg.maxLevel then
 		return nil, "minLevel"
 	end
+	-- O389: an optional top of the level band (0 or nothing = none)
+	local maxLevel = int(input.maxLevel or 0)
+	if not maxLevel or maxLevel < 0 or (maxLevel > 0 and (maxLevel < minLevel or maxLevel > cfg.maxLevel)) then
+		return nil, "maxLevel"
+	end
+	-- O389: a note picked from the fixed list (no free text to moderate); 0 = none
+	local nk = int(input.nk or 0)
+	if not nk or nk < 0 or nk > #(cfg.notes or {}) then
+		return nil, "noteKey"
+	end
 	local expMin = int(input.exp) or cfg.defaultExpiry
 	if not contains(cfg.expiryMinutes, expMin) then
 		expMin = cfg.defaultExpiry
@@ -415,6 +464,7 @@ function K.post(state, cfg, acts, who, input, now)
 	L.a, L.lo, L.hi, L.t, L.title = a.k, lo, hi, t, title
 	L.max = max
 	L.want, L.minLevel, L.expMin, L.auto = want, minLevel, expMin, input.auto and true or false
+	L.maxLevel, L.nk = maxLevel, nk
 	L.note = K.cleanText(input.note, cfg.noteMax, cfg)
 	L.crew = crew
 	L.hadParty = L.hadParty or #crew > 0
@@ -489,6 +539,9 @@ function K.apply(state, cfg, who, id, role, now, quick)
 	end
 	if (who.level or 0) < L.minLevel then
 		return nil, "level"
+	end
+	if (L.maxLevel or 0) > 0 and (who.level or 0) > L.maxLevel then
+		return nil, "levelHigh"
 	end
 	local open = K.open(cfg, L)
 	if (open[role] or 0) <= 0 then
@@ -769,6 +822,12 @@ function K.row(cfg, acts, L, viewer, now)
 		open = open, ml = L.minLevel, note = L.note, left = math.max(0, L.expires - now), auto = L.auto,
 		mine = L.leader.guid == viewer.guid, ap = app and app.role or nil, max = K.maxOf(cfg, L)}
 	row.mt = L.leader.mt
+	if (L.maxLevel or 0) > 0 then
+		row.xl = L.maxLevel
+	end
+	if (L.nk or 0) > 0 then
+		row.nk = L.nk
+	end
 	if L.realm and L.realm > 0 then
 		row.season = true
 	end
@@ -794,7 +853,7 @@ function K.list(state, cfg, acts, viewer, now)
 	if L then
 		local mine = K.row(cfg, acts, L, viewer, now)
 		mine.input = {a = L.a, lo = L.lo, hi = L.hi, t = L.t, title = L.title, want = L.want, minLevel = L.minLevel,
-			note = L.note, exp = L.expMin, role = L.leader.role, auto = L.auto}
+			maxLevel = L.maxLevel, nk = L.nk, note = L.note, exp = L.expMin, role = L.leader.role, auto = L.auto}
 		mine.apps = {}
 		for _, guid in ipairs(L.appOrder) do
 			local a = L.apps[guid]
@@ -820,7 +879,7 @@ function K.init(cfg, acts, who)
 	end
 	return {acts = acts, roles = roles, my = K.rolesOf(cfg, who.voc), lv = who.level, exp = cfg.expiryMinutes,
 		defExp = cfg.defaultExpiry, lim = {note = cfg.noteMax, title = cfg.titleMax, perRole = cfg.maxPerRole,
-		party = cfg.maxParty, level = cfg.maxLevel}, staff = who.staff and true or nil}
+		party = cfg.maxParty, level = cfg.maxLevel}, staff = who.staff and true or nil, notes = cfg.notes}
 end
 
 return K

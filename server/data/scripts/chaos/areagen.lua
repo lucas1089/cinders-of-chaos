@@ -475,10 +475,20 @@ local function registerDungeon(entry)
 		bossName = b and ((Chaos.createMonsterNamed and b.name or b.monster):lower()) or nil,
 		bossType = b and b.monster or nil,
 		loot = d.loot, challenges = d.challenges, bossHealth = d.bossHealth, trashHealth = d.trashHealth,
-		-- the boss chest and the achievement counters of a won run (dungeons.lua endRun, per finisher)
-		onClear = d.chest and function(player, info)
-			onClear(entry, player, info)
+		-- the boss chest and the achievement counters of a won run (dungeons.lua endRun, per finisher); the Weekly
+		-- Challenge (O390) records the run time on its board instead
+		onClear = (d.chest or entry.def.weekly) and function(player, info)
+			if d.chest then
+				onClear(entry, player, info)
+			end
+			if entry.def.weekly and ChaosWeeklyChallenge and ChaosWeeklyChallenge.onClear then
+				ChaosWeeklyChallenge.onClear(player, info)
+			end
 		end or nil,
+		-- the Weekly Challenge: one difficulty for every run, the week's entry check and the window's line
+		fixedDifficulty = d.fixedDifficulty,
+		entryProblem = entry.def.weekly and ChaosWeeklyChallenge and ChaosWeeklyChallenge.entryProblem or nil,
+		weeklyInfo = entry.def.weekly and ChaosWeeklyChallenge and ChaosWeeklyChallenge.info or nil,
 		-- every run: the monsters of every point (dungeons.lua startRun; its teardown removes them); the boss room is
 		-- closed by its gate and the boss waits for `unlock`
 		populate = function()
@@ -529,7 +539,21 @@ function AG.buildAll()
 	local dark = darkReady()
 	local opts = {dark = dark, darkIds = ChaosDarkTiles.ids}
 	local done = 0
+	local list = {}
 	for _, def in ipairs(cfg.areas) do
+		list[#list + 1] = def
+	end
+	-- the Weekly Challenge (weekly_challenge.lua, O390): a copy of the Vault with this week's seed and theme
+	if ChaosWeeklyChallenge and ChaosWeeklyChallenge.areaFor and not AG.built[(ChaosWeeklyChallengeConfig or {}).area
+		and ChaosWeeklyChallengeConfig.area.id or "challenge"] then
+		local okW, weekly = pcall(ChaosWeeklyChallenge.areaFor, cfg, A, opts)
+		if okW and weekly then
+			list[#list + 1] = weekly
+		elseif not okW then
+			log("weekly challenge: " .. tostring(weekly))
+		end
+	end
+	for _, def in ipairs(list) do
 		if def.enabled ~= false and not AG.built[def.id] then
 			local t0 = os.clock()
 			local model = A.generate(cfg, def, opts)
@@ -559,6 +583,9 @@ function AG.buildAll()
 				end
 				if def.dungeon then
 					registerDungeon(entry)
+					if def.weekly and ChaosWeeklyChallenge and ChaosWeeklyChallenge.onBuilt then
+						pcall(ChaosWeeklyChallenge.onBuilt, entry)
+					end
 				else
 					for _, point in ipairs(entry.points) do
 						fillPoint(point)

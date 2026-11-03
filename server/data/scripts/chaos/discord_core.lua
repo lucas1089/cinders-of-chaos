@@ -7,6 +7,8 @@
 --   ChaosDiscordCore.allow(state, cfg, kind, now)       the per-minute rate limit (state.window, state.dropped)
 --   ChaosDiscordCore.record / first / worldBossSpawn / bossKill / level / season / status   the events
 --   ChaosDiscordCore.patchnotes(cfg, title, text)      the patch note post (patchnotes.lua, English and pt-BR rows)
+--   ChaosDiscordCore.weeklyChallenge(cfg, label, theme, sections)   the Weekly Challenge's week (O390,
+--                                                      weekly_challenge.lua): the top 3 of each class
 --   ChaosDiscordCore.milestones(old, new, list)        the milestone levels crossed by a level up
 --   ChaosDiscordCore.saveTime(xml)                     hour, minute of the server save in globalevents.xml
 --   ChaosDiscordCore.isDailyRestart(now, hour, min, window)   a shutdown inside the window after the save time
@@ -147,6 +149,26 @@ end
 -- a new patch note (patchnotes.lua; the text is a digest in one language, cut to the embed size by the caller)
 function D.patchnotes(cfg, title, text)
 	return event(cfg, "patchnotes", title, text)
+end
+
+-- O390, the Weekly Challenge at the week's end: label "2026-W45", theme = the layout's theme name, sections = {{name
+-- = class, value = "Solo: 1. A 5:12, ...\nParty: ..."}} (weekly_challenge_core.lua W.discordSections); at most 25
+-- fields of 1024 characters (Discord's embed limits)
+function D.weeklyChallenge(cfg, label, theme, sections)
+	local fields = {}
+	for i = 1, math.min(#(sections or {}), 25) do
+		local s = sections[i]
+		fields[i] = {name = clip(s.name, 256), value = clip(s.value, 1024), inline = false}
+	end
+	local text
+	if #fields == 0 then
+		text = string.format("Weekly Challenge %s (%s) has ended. Nobody cleared it this week.", tostring(label),
+			tostring(theme))
+	else
+		text = string.format("Weekly Challenge %s (%s) has ended. The fastest clears of each class:", tostring(label),
+			tostring(theme))
+	end
+	return event(cfg, "weekly_challenge", "Weekly Challenge " .. tostring(label), text, fields)
 end
 
 function D.milestones(oldLevel, newLevel, list)

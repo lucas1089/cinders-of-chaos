@@ -38,10 +38,14 @@ return {
 	--           raid_config.lua name);
 	--           `fallback` when that config is not loaded. "Any" is always offered first.
 	--   title = true: a short free text title is required ("other")
+	--   bands = "<source>": the level band {lo, hi} of each target from the engine file (hunts: the hunt teleports'
+	--           bands); the client proposes it as the listing's level band (O389)
 	--   maxParty = n: this activity's group size (leader + party + wanted), else the `maxParty` below
 	--   perRole = {tank, healer, dps}: wanted count of each role, else `maxPerRole` below
 	--   suggest = {tank, healer, dps}: what the client's form proposes when this activity is picked for a new listing
 	activities = {
+		-- O389: a hunt of the teleport room (hunt_teleports.lua: the placed plans and the base hunts, by level band)
+		{key = "hunt", name = "Hunt", targets = "hunts", bands = "huntBands"},
 		{key = "rift", name = "Rift", range = {min = 1, max = 15, label = "Tier", short = "T"}},
 		{key = "dungeon", name = "Dungeon", targets = "dungeons",
 			fallback = {"Bones Dungeon", "Master of the Elements", "Forbidden Chevalier", "Rootmaw"}},
@@ -62,6 +66,21 @@ return {
 	maxPerRole = 6, -- wanted count of one role (an activity's perRole overrides it)
 	maxLevel = 2000, -- highest minimum level a listing may ask for
 	noteMax = 80, -- characters of the note (printable ASCII; longer is cut)
+	-- O389: notes from a fixed list (the client shows them in the reader's language: pt-BR in client_chaos_locale); a
+	-- listing may carry one of these as well as (or instead of) the filtered note above. Append only: a listing keeps
+	-- the index.
+	notes = {
+		"Relaxed pace, all welcome",
+		"Fast clear, know the fight",
+		"Learning run, patience please",
+		"Experience run",
+		"Loot run",
+		"Achievements and challenges",
+		"Bring your own supplies",
+		"Mentoring welcome",
+		"Long session (1 hour or more)",
+		"Short session (under 30 minutes)"
+	},
 	titleMax = 24, -- characters of the "other" title
 	expiryMinutes = {15, 30, 60, 120}, -- the choices; a listing closes by itself after it
 	defaultExpiry = 60,

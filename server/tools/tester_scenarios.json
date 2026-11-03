@@ -11,7 +11,7 @@
   "out": 38,
   "passive": 91,
   "place": 15,
-  "staff": 13
+  "staff": 14
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
  "keytest": {
@@ -11502,6 +11502,17 @@
     "/weekend"
    ],
    "why": "staff command only (/weekend); testers are never staff"
+  },
+  "weekly_challenge": {
+   "files": [
+    "weekly_challenge.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/challenge"
+   ],
+   "why": "staff command only (/challenge); testers are never staff"
   },
   "weeklychest": {
    "files": [

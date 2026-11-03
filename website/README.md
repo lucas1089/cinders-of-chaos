@@ -1219,12 +1219,12 @@ the environment only.
   `chaos-ctl.sh discord-set | discord-enable | discord-disable | discord-test | discord-status` (docs/LAUNCH.md
   "Discord announcements"); the URL goes on stdin and is only ever written to the file below.
 - **Environment** (`/etc/chaos/discord.env`, mode 600, owned by www-data; never in the repository):
-  `CHAOS_DISCORD_WEBHOOK_RECORDS` (records, realm firsts), `_BOSSES` (world boss spawn and kill, Ascended,
+  `CHAOS_DISCORD_WEBHOOK_RECORDS` (records, realm firsts, the Weekly Challenge's week), `_BOSSES` (world boss spawn and kill, Ascended,
   Cinderheart), `_PLAYERS` (levels 500 and 1000), `_ANNOUNCE` (season start and end), `_STATUS` (server up, daily
   restart, down), `_BAZAAR` (auctions and sales), `_DEFAULT` (every channel without its own); `CHAOS_DISCORD_OFF`
   (kinds not to post, comma separated: `record`, `first`, `worldboss_spawn`, `worldboss_kill`, `ascended_kill`,
   `cinderheart_kill`, `level`, `season_start`, `season_end`, `status_up`, `status_down`, `status_restart`,
-  `bazaar_list`, `bazaar_sale`); `CHAOS_DISCORD_NAME` (the poster's name); `CHAOS_SITE_URL` (the bazaar link). Only
+  `bazaar_list`, `bazaar_sale`, `weekly_challenge`); `CHAOS_DISCORD_NAME` (the poster's name); `CHAOS_SITE_URL` (the bazaar link). Only
   `https://discord.com/api/webhooks/<id>/<token>` URLs are taken.
 - **Rate limits:** at most 20 posts a run, 0.6 s apart per webhook; Discord's 429 `retry_after` and
   `X-RateLimit-Remaining: 0` hold that webhook's rows back. A failed post is tried again after 1, 2, 4, 8 minutes and

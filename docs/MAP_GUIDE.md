@@ -728,8 +728,10 @@ the rift slots use 20480-21503 and every other runtime area 2000-15359. Cells of
 | The Iron Crucible (7, level 1300) | 24832, 24576, 9 | 52 x 42, 1 |
 | The Fallen Sanctum (8, level 1600) | 24576, 24832, 9 | 52 x 42, 1 |
 | The Pyre Throne (9, level 2000) | 24832, 24832, 9 | 52 x 42, 1 |
+| The Weekly Challenge (10, level 800; O390, `weekly_challenge_config.lua`) | 25088, 24576, 9 | 52 x 42, 1 |
 
-The block has room for twelve more cells (x 25088 and 25344, every row; rows y 25088 and 25344). `tests/areagen_test.lua`
+The block has room for eleven more cells (x 25088 and 25344, every row; rows y 25088 and 25344; 25088, 24576 holds the
+Weekly Challenge, built at startup with the week's seed, not one of `areagen_config.lua` areas). `tests/areagen_test.lua`
 holds every area to one of the two blocks and apart from the others.
 
 **The way in: the teleport room.** `install_all.py` step `contentareas` (`server/tools/install_content_areas.py`)

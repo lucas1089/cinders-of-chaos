@@ -10875,6 +10875,31 @@ invasion.
 `ChaosWorldEvents.tierMult`), `events_schedule.lua` (`ChaosEvents.dynamic`: runtime events in `E.active`),
 client `game_chaosnotify/notifications.lua` (toast type `INVASION`, action `invasion`).
 
+### Hunts, level band and fixed notes (O389)
+
+The owner's idea of 2026-11-03 (a party finder: post a want, others see a live list, Join sends the party invite)
+was this window already. O389 adds what it lacked; nothing new beside it (same opcode, no storage, no table).
+
+- **Hunts.** A new first activity, Hunt (`party_finder_config.lua` `activities`, `targets = "hunts"`). Its targets are
+  the hunts of the teleport room: the placed plans and the base hunts of `ChaosHuntTeleports.idx` (`list`, `base`), one
+  per name, lowest band first (`K.huntTargets`). Each target carries its level band (`bands = "huntBands"` ->
+  `acts[].bands`); picking a hunt in the form fills the level band from it. Without the hunt teleports' places the
+  list is empty and only "Any" is offered.
+- **Level band.** A listing has a top level too (`maxLevel`, 0 = none; at most `maxLevel` of the config, never under
+  the minimum). An applicant above it is refused (`levelHigh`), the quick join queue skips the listing, the row sends
+  `xl`, the browse row shows "Lv 300-450", "Fits my level" checks both ends.
+- **Fixed notes.** `notes` in the config: ten short notes ("Relaxed pace, all welcome", "Fast clear, know the fight",
+  ...). A listing may pick one (`nk`, its index; 0 = none) next to the filtered free note. The client shows it in the
+  reader's language (pt-BR in `client_chaos_locale`). Append only: a listing keeps the index.
+- **Hotkey.** Alt+L opens the window (the top menu entry's `key`, bound by `client_chaos_topbar`).
+- **Mentor offer (O371) and the group nudge (O261)** keep working as they were: the mentor tag rides on the rows and the
+  nudge points to the same listings.
+
+Protocol additions: `post {..., maxLevel, nk}`, `init {..., notes}`, rows `xl`, `nk`, `mine.input.maxLevel`,
+`mine.input.nk`, `acts[].bands`. Tests: `tests/party_finder_test.lua` (hunt targets and bands, band and note refusals,
+an applicant above the band, the queue skipping it, the row fields) and `partyfinderview_test.lua` (band fit and text,
+note line, a hunt's band, the post input). Not run against a live server.
+
 ## Leaderboards (`leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua`)
 
 Client `game_leaderboard` (opcode 229), opened with Social > Leaderboards in the top menu. Settings:
@@ -22941,6 +22966,51 @@ script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (
   for a member 600 tiles east with its hover text, the full map view, leave and disband clearing the markers, the
   option off and on, a hunting area discovered on approach with the message, the discoveries kept over a relog, a
   category switched off. Screenshots were taken but are not in the repository.
+
+## The Weekly Challenge (O390) (`weekly_challenge.lua`, `weekly_challenge_core.lua`, `weekly_challenge_config.lua`)
+
+One queue dungeon of the dungeon system whose layout comes from the week: the same map for everyone, a new one every
+Monday. The fastest clear per class goes on two weekly boards; the week's end pays the class tops in Conquest Tokens
+and queues a Discord post. Owner's idea of 2026-11-03. No opcode, no storage, no table of its own: it reuses
+`areagen.lua`, `dungeons.lua`, the leaderboards, Conquest Tokens and the Discord queue.
+
+- **The area.** `areagen.lua` asks `ChaosWeeklyChallenge.areaFor` at startup for one more area: a copy of the Hollow
+  Vault (`base = "vault"`: rooms, spawns, monsters, level 800, the run's health curves and time) at the free cell
+  25088, 24576, 9 of the dungeon block (docs/MAP_GUIDE.md), with the week's seed and theme (Hollow Vault, Marrow
+  Crypts, Iron Crucible, Fallen Sanctum or Pyre Throne). The boss is the Vault's under its own name, The Proving
+  Warden (the dungeon matches the kill by name). No boss chest.
+- **The seed.** The week is the leaderboard week (Monday, `leaderboard_config.lua` `resetHour`); its ISO year and week
+  (`W.weekOf`, ISO 8601 by date maths, no time zone) give the seed (`W.seed`). A seed whose layout fails areagen's checks,
+  has fewer than 100 monsters (`minMonsters`, the owner's rule for queue dungeons) or no boss room is followed by the
+  next try's seed, at most `seedTries`. The same server start gives the same layout all week (the tiles are built at
+  startup). `/challenge` (staff) tells the built week, theme, seed and try.
+- **The run.** Dungeon id 10 (after the generated 5-9), solo or a party of up to 4 (the dungeon system's matchmaking;
+  the monsters scale with the size), always at difficulty 1 (`fixedDifficulty`: the queue's choice is ignored, so every
+  time on the board has the same rule). The window (`game_dungeons`) shows a "Weekly Challenge 2026-W45: Marrow Crypts"
+  line with the rule, the boards and the time to the new layout, the banner of the theme, and locks difficulties 2-6.
+  Normal dungeon rewards apply (boss loot, Conquest Tokens for the clear, the cooldown).
+- **The week turns without a restart.** The layout stays last week's until the next start (the daily server save):
+  the queue refuses with "opens at the next server save", and a run that ends after the reset records nothing.
+- **Boards.** `challenge_solo` (party size 1) and `challenge_party` (2-4) in `leaderboard_config.lua`: mode "min",
+  seconds shown as m:ss, class tabs (`byClass`), title only for the overall top 3 (`noReward`: no orbs). The game window
+  and the website's Leaderboards page read the config, so both show them with class tabs.
+- **The week's end.** `ChaosLeaderboard.onReset` (new: hooks run after each weekly reset with the ended week's ranked
+  boards) calls `onWeekEnd`: the 1st, 2nd and 3rd of every class tab of each board get 30 / 20 / 10 Conquest Tokens
+  (`ChaosConquest.grantGuid`, new: by guid, online or not, logged as source `weekly_challenge`), and one Discord row of
+  the new kind `weekly_challenge` (channel `records`; `discord_core.lua` `D.weeklyChallenge`) lists the top 3 of each
+  class on both boards. The website worker knows the kind (`discord_lib.php` `KINDS`, `COLORS`).
+- **Economy.** Conquest Tokens are an existing currency. At most 7 classes x 2 boards x 60 = 840 tokens a week on the
+  server, 120 for one character; a dungeon clear alone gives 5-15 tokens with a daily cap of 90
+  (`conquest_config.lua`; the test holds 2 x 30 under that cap). No item, gold or orb is added.
+
+Open points: the challenge needs level 800 (the Vault's numbers, which `tests/areagen_test.lua` holds to a 10 minute
+run); the per-dungeon solo / group tops of the dungeon window mix weeks (the boards are the weekly view); the class of
+a board entry is the character's class at the reset (`players.vocation`), like the Cinderheart boards. Tests:
+`tests/weekly_challenge_test.lua` (ISO weeks over 2015-2035 and Python's vectors, seeds and themes, the area over 13
+weeks in light and dark tiles: valid, 100+ monsters, apart from every area, inside the block; boards, class tops,
+grants, the Discord event; `weekly_challenge.lua` against a mocked engine: area, entry check, clears on the right
+board, a stale layout, the week's end), `dungeonsview_test.lua` (the window line and banner). Not run on a live
+server.
 
 ## Party Finder (`party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua`, client `game_partyfinder`)
 

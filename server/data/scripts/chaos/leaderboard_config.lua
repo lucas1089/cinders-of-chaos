@@ -66,6 +66,15 @@ return {
 		-- bosses in one sitting; mode "min": lower is better), every raider present at the final kill
 		{key = "raid_clear", name = "Sepulchre Clear", mode = "min", value = "Fastest", count = "Clears", title = "Sepulchre Breaker",
 			format = "time", info = "Fastest full clear of the Ashen Sepulchre this week (all five bosses in one sitting)."},
+		-- the Weekly Challenge (weekly_challenge.lua, O390): the fastest clear of this week's seeded dungeon in seconds
+		-- (mode "min"), alone or in a party of 2-4, with class tabs. noReward: the title only here; the top 3 of every
+		-- class get Conquest Tokens from weekly_challenge.lua at the reset (weekly_challenge_config.lua tokens)
+		{key = "challenge_solo", name = "Weekly Challenge Solo", mode = "min", value = "Fastest", count = "Clears",
+			title = "Proven Alone", byClass = true, format = "time", noReward = true,
+			info = "Fastest clear of this week's Weekly Challenge dungeon alone (the same layout for everyone)."},
+		{key = "challenge_party", name = "Weekly Challenge Party", mode = "min", value = "Fastest", count = "Clears",
+			title = "Proven Together", byClass = true, format = "time", noReward = true,
+			info = "Fastest clear of this week's Weekly Challenge dungeon in a party of 2-4 (the same layout for everyone)."},
 		-- the Scorched Marches (pvpzone.lua): embers banked at a safe exit this week
 		{key = "marches", name = "Scorched Marches", mode = "add", value = "Embers", count = "Exits", title = "Marchlord",
 			info = "Embers banked from the Scorched Marches this week."},

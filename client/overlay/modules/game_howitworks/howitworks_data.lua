@@ -187,7 +187,7 @@ HowData = {
 		}},
 		{key = "partyfinder", title = {en = "Party Finder", pt = "Procurar Grupo"}, window = "game_partyfinder", rows = {
 			{id = "what", en = "Find a group, or players for yours: post what you want to do and the roles you need (tank, healer, damage), or apply to a listing.", pt = "Ache um grupo, ou jogadores para o seu: anuncie o que quer fazer e as funções que precisa (tank, healer, dano), ou candidate-se a um anúncio."},
-			{id = "who", en = "Every player. Activities: Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial and Battleground, or anything else.", pt = "Todo jogador. Atividades: Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial e Battleground, ou qualquer outra coisa."},
+			{id = "who", en = "Every player. Activities: Hunt, Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial and Battleground, or anything else.", pt = "Todo jogador. Atividades: Hunt, Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial e Battleground, ou qualquer outra coisa."},
 			{id = "often", en = "A listing closes by itself after 15 to 120 minutes, as you choose. You can have 5 applications open at once.", pt = "Um anúncio fecha sozinho após 15 a 120 minutos, como você escolher. Você pode ter 5 candidaturas abertas ao mesmo tempo."}
 		}},
 		{key = "mentor", title = {en = "Mentors", pt = "Mentores"}, window = "game_mentor", rows = {

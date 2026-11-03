@@ -4009,6 +4009,9 @@ return {
 		-- Party Finder: refusals of party_finder_core.lua (K.reasons, translated on display) and notices (O147)
 		["The Party Finder is closed right now."] = "O Party Finder está fechado agora.",
 		["Pick an activity."] = "Escolha uma atividade.",
+		["That level band is not possible."] = "Essa faixa de nível não é possível.",
+		["Your level is above the listing's level band."] = "Seu nível está acima da faixa de nível do anúncio.",
+		["Pick one of the listed notes."] = "Escolha uma das notas da lista.",
 		["That range is not possible for this activity."] = "Essa faixa não é possível para esta atividade.",
 		["Pick one of the listed targets."] = "Escolha um dos alvos listados.",
 		["Give your group a short title."] = "Dê um título curto ao seu grupo.",
@@ -8590,5 +8593,14 @@ return {
 			"Próximo marco: nível %d.",
 		["%s reached level %d and earned the title %s."] =
 			"%s alcançou o nível %d e ganhou o título %s.",
+		-- The Weekly Challenge (O390, weekly_challenge.lua, weekly_challenge_core.lua W.entryProblem)
+		["The Weekly Challenge is closed: its dungeon was not built at this start."] =
+			"O Desafio Semanal está fechado: o calabouço dele não foi construído nesta inicialização.",
+		["This week's Weekly Challenge opens at the next server save (the dungeon still has last week's layout)."] =
+			"O Desafio Semanal desta semana abre no próximo server save (o calabouço ainda tem o mapa da semana passada).",
+		["Weekly Challenge %s cleared in %s (%s). Your best this week: %s. See Leaderboards."] =
+			"Desafio Semanal %s concluído em %s (%s). Seu melhor tempo nesta semana: %s. Veja os Leaderboards.",
+		["solo"] = "sozinho",
+		["party"] = "em grupo",
 	},
 }

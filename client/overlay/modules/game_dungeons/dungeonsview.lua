@@ -87,6 +87,41 @@ V.BANNERS = {
 }
 V.BANNER_FALLBACK = 'Underworld'
 
+-- the Weekly Challenge (server weekly_challenge.lua, the "dungeon" payload's `weekly` = {label, theme, current,
+-- resetIn}): the line on top of the challenges and its text; nil without `weekly`
+function V.weeklyTitle(w)
+  if type(w) ~= 'table' or not w.label then return nil end
+  return tr('Weekly Challenge %s: %s', tostring(w.label), tostring(w.theme or '?'))
+end
+
+-- 3725 -> "1h 02m", 200000 -> "2d 7h"
+function V.span(seconds)
+  seconds = math.max(0, math.floor(tonumber(seconds) or 0))
+  local d, h, m = math.floor(seconds / 86400), math.floor(seconds % 86400 / 3600), math.floor(seconds % 3600 / 60)
+  if d > 0 then return string.format('%dd %dh', d, h) end
+  if h > 0 then return string.format('%dh %02dm', h, m) end
+  return string.format('%dm', m)
+end
+
+function V.weeklyText(w)
+  if type(w) ~= 'table' or not w.label then return nil end
+  local lines = { tr('The same layout for everyone this week, always at difficulty 1. Solo or a party of up to 4.'),
+    tr('Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class get Conquest Tokens.') }
+  if w.current == false then
+    lines[#lines + 1] = tr('This layout is last week\'s: the new one opens at the next server save.')
+  elseif tonumber(w.resetIn) then
+    lines[#lines + 1] = tr('New layout in %s.', V.span(w.resetIn))
+  end
+  return table.concat(lines, '\n')
+end
+
+-- the banner of a dungeon payload: the Weekly Challenge shows its week's theme ("Marrow Crypts" -> The Marrow Crypts)
+function V.bannerTitle(dungeon)
+  if type(dungeon) ~= 'table' then return nil end
+  if type(dungeon.weekly) == 'table' and dungeon.weekly.theme then return 'The ' .. tostring(dungeon.weekly.theme) end
+  return dungeon.title
+end
+
 -- the image path for a title; exists(path) says whether /images/dungeons/<name>.png is there
 function V.bannerFor(title, exists)
   title = tostring(title or '')

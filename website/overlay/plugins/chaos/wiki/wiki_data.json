@@ -264,7 +264,7 @@
 		"atlas.points": 96,
 		"bg.minLevel": 100,
 		"bg.on": true,
-		"boards.count": 20,
+		"boards.count": 22,
 		"boards.reset": "06:00",
 		"bounty.maxActive": 3,
 		"bounty.weeklyNeed": 4,

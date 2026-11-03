@@ -17,6 +17,8 @@
 --       -> the player's entry {value, count, at} of this week, or nil (unknown board / player)
 --   ChaosLeaderboard.recordShares(shares)   world boss shares (worldboss.lua computeShares) -> record("worldboss", ...)
 --   ChaosLeaderboard.titlesOf(guid)         titles the player holds this week: {{title, rank, rankName, board}}
+--   ChaosLeaderboard.onReset(fn)            fn(prevWeek, ranked, awards) after each weekly reset (ranked: board ->
+--                                           the ended week's ranked list, entries with voc)
 -- State: chaos_leaderboard (scores per board, week, player), chaos_leaderboard_titles (the top 3 of each ended week,
 -- with the reward state), server_config chaos_leaderboard_reset (the last processed week). The current week's scores
 -- are kept in memory (loaded at startup and at the week change) and written through to the DB.
@@ -189,6 +191,20 @@ function LB.recordShares(shares)
 	end
 end
 
+LB.resetHooks = LB.resetHooks or {}
+-- one hook per name (a /reload replaces it instead of adding a second one)
+function LB.onReset(fn, name)
+	name = name or tostring(fn)
+	LB.resetHookNames = LB.resetHookNames or {}
+	local at = LB.resetHookNames[name]
+	if at then
+		LB.resetHooks[at] = fn
+	else
+		LB.resetHooks[#LB.resetHooks + 1] = fn
+		LB.resetHookNames[name] = #LB.resetHooks
+	end
+end
+
 function LB.titlesOf(guid)
 	return LB.held.byGuid[guid]
 end
@@ -279,6 +295,14 @@ function LB.checkReset(force)
 			ChaosNotify.gmBroadcast(nil, text)
 		end
 		log(text)
+	end
+	-- other systems that close their week with the boards (weekly_challenge.lua: class rewards and the Discord post);
+	-- ranked holds the week that ended, its entries with voc (players.vocation)
+	for _, fn in ipairs(LB.resetHooks or {}) do
+		local ok, err = pcall(fn, prev, ranked, awards)
+		if not ok then
+			log("reset hook: " .. tostring(err))
+		end
 	end
 	log(string.format("weekly reset: week %d scored (%d titles), new week %d", prev, #awards, cur))
 	for _, p in ipairs(Game.getPlayers()) do
