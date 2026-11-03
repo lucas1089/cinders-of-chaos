@@ -577,6 +577,13 @@ local okApply = ChaosCrafting.apply("alchemy", item)
 check(okApply == true, "crafting returns as before")
 eq(ChaosMetrics.firstUse(f, "pocketboss"), true, "direct call")
 eq(ChaosMetrics.firstUse(f, "pocketboss"), false, "direct call, second time")
+-- O374 last system: kept on every success, not only the first
+eq(f.storage[cfg.lastSystemStorage], M.systemIndex("pocketboss", cfg), "last system: pocket boss")
+ChaosMarket.buy(f, "ok")
+eq(f.storage[cfg.lastSystemStorage], M.systemIndex("market", cfg), "last system: market again (not a first use)")
+eq(M.systemIndex("dungeon", cfg), 1, "system index 1")
+eq(M.systemIndex("nonsense", cfg), nil, "unknown system")
+eq(cfg.lastSystemStorage, 7102834, "last system storage in the metrics block")
 eq(ChaosMetrics.firstUse(bot, "dungeon"), false, "a tester bot is not counted")
 eq(ChaosMetrics.firstUse(gm, "dungeon"), false, "staff is not counted")
 f.party = {getMembers = function() return {} end}

@@ -6174,5 +6174,15 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Power: a special effect; its line says what it does."] = "Poder: um efeito especial; a linha dele diz o que faz.",
   ["Sockets: put gems in them for extra bonuses."] = "Encaixes: ponha gemas neles para ganhar bônus extras.",
   ["Veiled: a hidden modifier; an Orb of Unveiling shows it."] = "Velado: um modificador escondido; um Orb of Unveiling o revela.",
+  -- client/overlay/modules/game_chaossurvey (new player survey, O374)
+  ["A quick survey"] = "Uma pesquisa rápida",
+  ["A quick survey: level %d"] = "Uma pesquisa rápida: nível %d",
+  ["How fun is it? (1 = not fun, 5 = great)"] = "Quão divertido está? (1 = nada, 5 = muito)",
+  ["Sending..."] = "Enviando...",
+  ["Skip"] = "Pular",
+  ["Thank you! Your answer helps us make the game better."] = "Obrigado! Sua resposta nos ajuda a melhorar o jogo.",
+  ["Three short questions about your first steps. Answer what you like, or skip. We will not ask again."] = "Três perguntas curtas sobre seus primeiros passos. Responda o que quiser, ou pule. Não vamos perguntar de novo.",
+  ["What confused you so far?"] = "O que te confundiu até agora?",
+  ["Would you recommend it to a friend?"] = "Você recomendaria a um amigo?",
 }
 return ChaosLocaleStrings['pt-BR']

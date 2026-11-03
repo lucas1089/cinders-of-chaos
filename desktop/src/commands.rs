@@ -228,6 +228,7 @@ const BOT_SET_P: &[Param] = &[
     ),
     secret("value", "Valor (vazio remove)"),
 ];
+const NP_DAYS_P: &[Param] = &[int("days", "Últimos dias", 1, 3650, "30")];
 const FB_CLOSE_P: &[Param] = &[
     int("id", "Número do relatório", 1, 999_999_999, "1"),
     text("note", "Nota (200 caracteres)"),
@@ -254,6 +255,8 @@ pub static ACTIONS: &[Action] = &[
     act(P, "Atualizar servidor", "Estado da última atualização", "update-status"),
     // ---- Painel: métricas e relatos
     act(P, "Métricas dos jogadores", "Ver métricas", "metrics").t(90),
+    act(P, "Novos jogadores", "Funil", "newplayer-funnel --pt --days {days}").p(NP_DAYS_P).t(90).h("Níveis 10 a 100, horas jogadas e onde pararam os que sumiram há 7+ dias."),
+    act(P, "Novos jogadores", "Pesquisa", "survey --pt --texts 100 --days {days}").p(NP_DAYS_P).t(90).h("Respostas da pesquisa dos níveis 20 e 50."),
     act(P, "Bugs e sugestões", "Abertos (30 dias)", "feedback").t(90),
     act(P, "Bugs e sugestões", "Todos (inclui fechados)", "feedback --all").t(90),
     act(P, "Bugs e sugestões", "Fechar relatório", "feedback-close {id} {note}").p(FB_CLOSE_P).ask(),

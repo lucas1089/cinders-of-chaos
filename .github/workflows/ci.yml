@@ -1151,6 +1151,9 @@ jobs:
       - name: Progress metrics report (progress_metrics_test.py; medians from time buckets, top 10, churn shares, O253)
         run: python3 -I server/tools/progress_metrics_test.py
 
+      - name: New player funnel and survey report (newplayer_report_test.py; grouped funnel query, small numbers, survey texts, O374)
+        run: python3 -I server/tools/newplayer_report_test.py
+
       - name: Tester bots coverage table up to date, scenarios never out of scope
         run: |
           python3 -I server/tools/gen_tester_scenarios.py --check
@@ -1297,7 +1300,7 @@ jobs:
           shellcheck server/deploy/chaos-ctl.sh
           python3 -I server/deploy/chaos_ctl_test.py
 
-      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; plain JVM)
+      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; plain JVM)
         run: |
           mkdir -p /tmp/appjava
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/DiscordInfo.java android/app/src/test/java/com/cindersofchaos/admin/DiscordInfoTest.java
@@ -1306,6 +1309,8 @@ jobs:
           java -cp /tmp/appjava com.cindersofchaos.admin.FeedbackInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/ServerUserInfo.java android/app/src/test/java/com/cindersofchaos/admin/ServerUserInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.ServerUserInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/NewPlayerInfo.java android/app/src/test/java/com/cindersofchaos/admin/NewPlayerInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.NewPlayerInfoTest
 
       - name: Kit server update (chaos_kit_update.sh with a fake repo, releases, systemctl and database; rates, rollback)
         run: |

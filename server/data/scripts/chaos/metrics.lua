@@ -18,7 +18,7 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
-if not ChaosMetrics or not ChaosMetrics.areaFor or not ChaosMetrics.returnCheck then
+if not ChaosMetrics or not ChaosMetrics.areaFor or not ChaosMetrics.returnCheck or not ChaosMetrics.systemIndex then
 	dofile("data/scripts/chaos/metrics_core.lua")
 end
 if not (ChaosWrapChain and ChaosWrapChain.wrap) then
@@ -206,7 +206,8 @@ function X.countReturn(player, first)
 end
 
 -- ---------------------------------------------------------------- O258: first use of a system
--- called by the success path of each system (the wraps in X.installHooks); once per character and system
+-- called by the success path of each system (the wraps in X.installHooks); counted once per character and system, the
+-- last system (O374) is kept on every call
 function X.firstUse(player, key)
 	if not cfg.enabled then
 		return false
@@ -214,6 +215,11 @@ function X.firstUse(player, key)
 	local s = player and X.sessions[player:getId()]
 	if not s then
 		return false
+	end
+	-- O374 last system: every success, not only the first (one storage write when it changes)
+	local idx = cfg.lastSystemStorage and X.systemIndex(key, cfg)
+	if idx and player:getStorageValue(cfg.lastSystemStorage) ~= idx then
+		player:setStorageValue(cfg.lastSystemStorage, idx)
 	end
 	local m = player:getStorageValue(cfg.firstStorage)
 	local isNew, newMask = X.firstUseMark(m > 0 and m or 0, key, cfg)

@@ -629,6 +629,7 @@ def main():
     test_admin_commands()
     test_testers()
     test_metrics()
+    test_newplayer()
     test_feedback()
     test_discord()
     test_discord_bot()
@@ -1215,6 +1216,102 @@ case "$*" in
 esac
 if grep -q "UPDATE chaos_reports" "$STUB/stdin" 2>/dev/null; then echo "${STUB_FB_ROWS:-1}"; fi
 '''
+
+
+NEWPLAYER_MYSQL = r'''#!/usr/bin/env bash
+echo "$(basename "$0") $*" >> "$STUB/calls"
+case "$*" in
+  *"FROM \`chaos_survey\`"*)
+    case "${STUB_NP_FAIL:-}" in
+      table) echo "ERROR 1146 (42S02) at line 1: Table 'chaos.chaos_survey' doesn't exist" >&2; exit 1 ;;
+      db) echo "ERROR 2002 (HY000): Can't connect to local MySQL server" >&2; exit 1 ;;
+    esac
+    cat "$STUB/survey.tsv" ;;
+  *"FROM \`players\`"*)
+    [ -z "${STUB_NP_FAIL:-}" ] || { echo "ERROR 2002 (HY000): Can't connect" >&2; exit 1; }
+    cat "$STUB/funnel.tsv" ;;
+esac
+'''
+
+
+def test_newplayer():
+    """chaos-ctl.sh newplayer-funnel / survey (O374, server/tools/newplayer_report.py); synthetic rows only"""
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        shutil.copy(os.path.join(repo_root, 'server', 'tools', 'newplayer_report.py'), os.path.join(repo, 'server', 'tools'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', NEWPLAYER_MYSQL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        with open(os.path.join(stub, 'funnel.tsv'), 'w') as f:
+            f.write('0\t0\t1\t1\t1\t1\t0\t40\n2\t1\t1\t1\t5\t4\t2\t8\n3\t2\t0\t1\t0\t0\t0\t12\n')
+        with open(os.path.join(stub, 'survey.tsv'), 'w') as f:
+            f.write('20\tanswered\t4\t1\t21\t95\t1790000000\tWhere is the bank?\n20\tskipped\t0\t-1\t20\t60\t1790000000\t\n')
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=env_file, CHAOS_REPO=repo,
+                   CHAOS_MYSQL='mysql', CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'STUB_NP_FAIL'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def reset():
+            if os.path.exists(os.path.join(stub, 'calls')):
+                os.unlink(os.path.join(stub, 'calls'))
+
+        r = run('newplayer-funnel')
+        check(r.returncode == 0 and 'Characters: 60' in r.stdout and 'last 30 days' in r.stdout,
+              'newplayer-funnel: text, 30 days by default: ' + r.stdout + r.stderr)
+        q = calls()
+        check('GROUP BY `reach`' in q and '`rs`.`key` = 7102831' in q, 'newplayer-funnel: the grouped query: ' + q)
+        for column in ('`name`', 'account', 'lastip', 'email'):
+            check(column not in q, 'newplayer-funnel never reads ' + column)
+        check('secret' not in q, 'newplayer-funnel: the password is not on a command line')
+        reset()
+        r = run('newplayer-funnel', '--days', '90', '--json')
+        d = json.loads(r.stdout or '{}')
+        check(r.returncode == 0 and d.get('ok') and d.get('days') == 90 and d.get('characters') == 60,
+              'newplayer-funnel --json --days 90: ' + r.stdout)
+        r = run('newplayer-funnel', '--pt')
+        check(r.returncode == 0 and 'Personagens: 60' in r.stdout, 'newplayer-funnel --pt')
+        reset()
+        r = run('survey', '--pt')
+        check(r.returncode == 0 and 'Pesquisa do nível 20: 1 responderam, 1 pularam' in r.stdout
+              and 'Where is the bank?' in r.stdout, 'survey --pt: ' + r.stdout + r.stderr)
+        q = calls()
+        check('FROM `chaos_survey`' in q and 'account_id' not in q, 'survey: the query reads no account: ' + q)
+        r = run('survey', '--json', '--texts', '5', '--days', '7')
+        d = json.loads(r.stdout or '{}')
+        check(r.returncode == 0 and d.get('answers') == 2 and d.get('days') == 7, 'survey --json: ' + r.stdout)
+        r = run('survey', '--json', extra={'STUB_NP_FAIL': 'table'})
+        check(r.returncode == 1 and json.loads(r.stdout or '{}') == {'ok': False, 'error': 'no-table'},
+              'survey: no table: ' + r.stdout)
+        r = run('newplayer-funnel', '--json', extra={'STUB_NP_FAIL': 'db'})
+        check(r.returncode == 1 and json.loads(r.stdout or '{}') == {'ok': False, 'error': 'database'},
+              'newplayer-funnel: database down: ' + r.stdout)
+        reset()
+        for args in (('newplayer-funnel', '--days'), ('newplayer-funnel', '--days', '0'), ('newplayer-funnel', '--days', '3651'),
+                     ('newplayer-funnel', '--days', '1;id'), ('newplayer-funnel', '--days', '$(id)'),
+                     ('newplayer-funnel', '--texts', '5'), ('newplayer-funnel', 'x'), ('survey', '--texts', '501'),
+                     ('survey', '--texts', 'x'), ('survey', '--bogus'), ('survey', '--days', '99999')):
+            r = run(*args)
+            check(r.returncode != 0, 'refuses %r' % (args,))
+        check(calls() == '', 'a refused call never reaches the database')
 
 
 def test_feedback():

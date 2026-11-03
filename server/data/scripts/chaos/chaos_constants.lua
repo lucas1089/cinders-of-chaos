@@ -2277,6 +2277,14 @@ ChaosOpcodes.combatStats = 119
 -- game message. 121 is free in the reference server, the base client's ExtendedIds, every Chaos script and every client module
 -- (README "Opcode collision check"). No storage, no table.
 ChaosOpcodes.npcTravel = 121
+-- New player survey (O374; survey.lua, survey_core.lua, survey_config.lua; client game_chaossurvey; server/README.md "New
+-- player funnel and survey (O374)"): server -> client `open {s, max}` / `done {s}`, client -> server `answer {s, fun, rec,
+-- text}` / `skip {s}`. 122 is free in the reference server, the base client's ExtendedIds, every Chaos script and every
+-- client module (README "Opcode collision check"; tests/survey_test.lua). Table chaos_survey, storage 7103060
+-- (survey_config.lua `storage`, 7103060 - 7103069).
+ChaosOpcodes.survey = 122
+Chaos.tables.survey = "chaos_survey"
+Chaos.storage.survey = 7103060
 -- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,
