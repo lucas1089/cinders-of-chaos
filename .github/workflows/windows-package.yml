@@ -697,8 +697,10 @@ jobs:
           # itself) here, the single Tibia.dat / Tibia.spr in mapeditor\client below. open-map-editor.bat points the
           # editor's workspace at server\ (items.otb, items.xml, the map) and mapeditor\client; nothing is set by hand.
           mkdir -p "$P/mapeditor/client" "$P/mapeditor/data/user/data/1098"
+          # Chaos monsters first (a name there wins), then every monster and NPC of the packaged server: without the
+          # NPCs and the base monsters the editor drew their spawns as empty grey squares (owner 2026-11-03)
           python3 -I chaos/tools/windows/editor_creatures.py "$P/mapeditor/data/user/data/1098/creatures.xml" \
-            chaos/server/data/monster/monsters/chaos
+            chaos/server/data/monster/monsters/chaos "$P/server/data/monster" "$P/server/data/npc"
 
           wait "$curl_pid"
           unzip -q mariadb.zip
