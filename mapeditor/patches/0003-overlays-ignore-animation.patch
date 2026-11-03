@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Tue, 3 Nov 2026 14:07:14 +0000
+Subject: [PATCH 3/6] Render: keep geometry overlays across item animation
+ frames
+
+The grid, wall outline, pathing and floor change overlays were collected
+again (a scan of the visible tiles) and uploaded on every data version
+bump, including the bumps made only by item animation phases. They do not
+depend on animation frames, so their rebuild key now uses
+renderStaticContentVersion(). View moves and real content changes still
+rebuild them as before.
+---
+ editor/map/maprhiview.cpp | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/editor/map/maprhiview.cpp b/editor/map/maprhiview.cpp
+index 9bc2c98..d35a82b 100644
+--- a/editor/map/maprhiview.cpp
++++ b/editor/map/maprhiview.cpp
+@@ -406,6 +406,9 @@ public:
+         }
+ 
+         const quint64 metadataOverlayVersion = src->renderMetadataOverlayVersion();
++        // Grid, wall outline, pathing and floor change marks do not depend on
++        // item animation frames.
++        const quint64 staticContentVersion = src->renderStaticContentVersion();
+         constexpr int overlayCacheTiles = 16;
+         const int overlayX = fdiv(static_cast<int>(std::floor(ox)), overlayCacheTiles)
+                            * overlayCacheTiles;
+@@ -415,14 +418,14 @@ public:
+             || m_curFloor != m_overlayFloor || ts != m_overlayTileSize
+             || static_cast<int>(w) != m_overlayWidth || static_cast<int>(h) != m_overlayHeight;
+         const bool rebuildGeometryOverlays = overlayViewChanged
+-            || (contentVersion != m_overlayContentVersion
++            || (staticContentVersion != m_overlayContentVersion
+                 && !src->editingStrokeActive());
+         const bool rebuildMetadataOverlays =
+             metadataOverlayVersion != m_metadataOverlayVersion || overlayViewChanged
+             || m_atlasGen != m_overlayAtlasGeneration;
+ 
+         if (!m_previewWindow && rebuildGeometryOverlays) {
+-            m_overlayContentVersion = contentVersion;
++            m_overlayContentVersion = staticContentVersion;
+ 
+             src->renderCollectGridInstances(m_gridInst);
+             uploadDyn(m_gridVbo, m_gridInst, m_gridCount);

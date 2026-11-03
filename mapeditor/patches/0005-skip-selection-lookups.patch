@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Tue, 3 Nov 2026 14:07:43 +0000
+Subject: [PATCH 5/6] Render: skip selection lookups while nothing is selected
+
+renderCollectChunkInstances() ran up to three QHash lookups per quad
+(entity twice, selected once) to compute the selection flag. Chunks are
+collected again after every edit and after every item animation phase,
+so with water and other animated items on screen this ran for every quad
+of every visible chunk several times per second. With an empty selection
+the flag is always 0; the lookups are now skipped in that case. The
+result is identical.
+---
+ editor/map/mapview_render.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/editor/map/mapview_render.cpp b/editor/map/mapview_render.cpp
+index 14e3183..2962b4d 100644
+--- a/editor/map/mapview_render.cpp
++++ b/editor/map/mapview_render.cpp
+@@ -88,11 +88,14 @@ quint32 MapView::renderCollectChunkInstances(int z, quint64 key, bool groundOnly
+     }
+ 
+     out.reserve(quads->size() * 6);
++    // With an empty selection every quad is unselected; skip the three hash
++    // lookups per quad (chunks are collected again on each animation phase).
++    const bool anySelected = !m_selectionController.selected().isEmpty();
+     for (const QuadRef &q : *quads) {
+         if (groundOnly && !q.ground) continue;
+         const QRect &slot = atlasSlots[static_cast<size_t>(q.atlasSlot)];
+ 
+-        const float sel = ((m_selectionController.wholeStack()
++        const float sel = (anySelected && (m_selectionController.wholeStack()
+                            || (m_selectionController.entity(selKey(q.tileX, q.tileY, z)) != -1
+                                ? q.itemIndex == m_selectionController.entity(selKey(q.tileX, q.tileY, z))
+                                : q.topItem))

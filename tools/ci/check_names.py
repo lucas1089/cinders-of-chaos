@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fail if text files mention other servers or clients by name (project rule: no such references).
-base-patches/ is skipped: its context lines are copied from the client tree and cannot be edited.
+base-patches/ and mapeditor/patches/ are skipped: their context lines are copied from the client and map editor
+trees and cannot be edited.
 Art pack names (ART_PACKS) are allowed only in the credits (docs/CREDITS.md and the two files gen_credits.py makes
 from it): the owner shows the packs' credits in the game and on the website (2026-10-15).
 
@@ -35,7 +36,7 @@ ART_PACKS = re.compile(r'\bwst(_|\b)|raven ?fantasy|pixel ?spellcraft|anime ?ki 
                        r'pixel ?(status ?effects|projectiles|fireworks|blood ?vfx)|animated ?vfx', re.I)
 CREDITS_FILES = ('docs/CREDITS.md', 'client/overlay/modules/client_chaos_credits/credits_data.lua',
                  'website/overlay/plugins/chaos/credits/credits_data.json')
-SKIP = ('client/base-patches/', 'tools/ci/check_names.py')
+SKIP = ('client/base-patches/', 'mapeditor/patches/', 'tools/ci/check_names.py')
 WORD = re.compile(r'[A-Z]+(?![a-z])|[A-Z]?[a-z]+')
 
 
