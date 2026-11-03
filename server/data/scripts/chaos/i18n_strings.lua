@@ -431,6 +431,9 @@ return {
 			"Uma Chaos Storm cai sobre %s até %s: monstros mágicos, raros e lendários aparecem %s vezes mais lá.",
 		["Golden Hour in %s until %s: +%d%% loot from every monster there."] =
 			"Golden Hour em %s até %s: +%d%% de loot de todo monstro lá.",
+		["The Wandering Merchant has set up shop somewhere in %s until %s: orbs and rare goods, one of each per customer. Find him!"] =
+			"O Wandering Merchant montou a loja em algum lugar de %s até %s: orbes e itens raros, um de cada por cliente. Ache-o!",
+		["A world event (Chaos Storm or Golden Hour)"] = "Um evento do mundo (Chaos Storm ou Golden Hour)",
 		["A Wandering Merchant has set up shop somewhere in %s until %s: orbs and rare goods at a good price. Find him!"] =
 			"Um Wandering Merchant montou a loja em algum lugar de %s até %s: orbes e itens raros a bom preço. Ache-o!",
 		["The %s in %s is over."] = "%s em %s acabou.",
@@ -1032,6 +1035,11 @@ return {
 		["Season characters gain nothing from a %s, so I will not sell you one."] =
 			"Personagens de temporada não ganham nada com um %s, então não vou te vender um.",
 		["Season characters cannot buy a %s."] = "Personagens de temporada não podem comprar um %s.",
+		["One of each per customer, friend. I have only so much to go around."] =
+			"Um de cada por cliente, amigo. Não tenho tanto assim pra todo mundo.",
+		["You already bought that from me here. I move on in %d minutes; find me again then."] =
+			"Você já comprou isso de mim aqui. Eu sigo viagem em %d minutos; me ache de novo depois.",
+		["Ask me for a {trade}; one of each per customer."] = "Peça um {trade}; um de cada por cliente.",
 		["Write what you saw, |PLAYERNAME|. Ink outlasts us."] =
 			"Escreva o que você viu, |PLAYERNAME|. A tinta dura mais que nós.",
 		["Another page left blank."] = "Mais uma página deixada em branco.",

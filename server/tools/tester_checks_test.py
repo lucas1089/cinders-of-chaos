@@ -696,6 +696,8 @@ class PartyXp(unittest.TestCase):
     def test_a_kill_with_the_share_off_pays_the_leader_alone(self):
         self.assertEqual(TX.shared_kill_problems(self.kill(shared={'enabled': False, 'leader': 10000, 'partner': 0}), 650),
                          (None, []))
+        _, bad = TX.shared_kill_problems(self.kill(shared={'enabled': False, 'partner': 26, 'partnerHit': True}), 650)
+        self.assertEqual(bad, [])
         _, bad = TX.shared_kill_problems(self.kill(shared={'enabled': False, 'partner': 5}), 650)
         self.assertIn('kill with the share not working', bad[0])
 

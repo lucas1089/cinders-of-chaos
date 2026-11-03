@@ -108,6 +108,9 @@ CRAFT_HOURS = 1.0
 # the Wandering Merchant's rarity orbs (invasion_config.lua): gilding or re-rolling a plain item and selling it must not
 # pay; every equipment price is capped so the expected gain at item level 150 stays under MERCHANT_MARGIN of the orb
 MERCHANT_MARGIN = 0.9
+# the cap as it was with the old merchant prices (Gilding 250,000, Fate 120,000): O399 raised his prices, which keeps the no-arbitrage
+# rule but must not raise what the NPCs pay for equipment
+MERCHANT_CAP_MAX = 33834
 # plain equipment without an NPC price, by its level requirement (gold at item level 0)
 EQUIP_CURVE = [(0, 200), (20, 1000), (50, 8000), (80, 20000), (120, 30000), (200, 45000), (300, 60000), (500, 90000),
                (800, 130000), (1000, 160000), (1500, 220000)]
@@ -683,7 +686,8 @@ def merchant_orbs():
 
 def merchant_cap():
     lmax = 1 + 150.0 / ILVL_DIV
-    return min(int(price * MERCHANT_MARGIN / (gain * lmax)) for _, price, gain in merchant_orbs() if gain > 0)
+    return min([MERCHANT_CAP_MAX] + [int(price * MERCHANT_MARGIN / (gain * lmax)) for _, price, gain in merchant_orbs()
+                                     if gain > 0])
 
 
 def buy_cap(e):

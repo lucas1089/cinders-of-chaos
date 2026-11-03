@@ -212,19 +212,26 @@ return {
 			effectSeconds = 2, -- lightning around the players inside
 			name = "Chaos Storm"},
 		golden = {weight = 30, minutes = 30, lootMult = 1.25, name = "Golden Hour"}, -- loot_config.lua rateMult x1.25
+		-- O399 (owner 2026-11-03): the merchant is resident, no longer one of the random world events. He always stands
+		-- in a town area and moves to another one every moveHours (the stops are fixed by the clock: slot =
+		-- floor(os.time() / (moveHours * 3600)), so a restart keeps the stop and its buy limit). perStop: what one
+		-- character may buy of each item per stop (player storage storageBase + the item's place - 1, value = the slot
+		-- + 1). weight is unused while resident = true.
 		merchant = {weight = 30, minutes = 20, name = "Wandering Merchant", npc = "Wandering Merchant",
+			resident = true, moveHours = 3, perStop = 1, storageBase = 7103070, -- 7103070 - 7103079, item places 1-10
 			kinds = {"town"}, -- only in town areas
-			-- what the NPC sells (gold): orbs and rare consumables a little below the usual value. seasonBlocked = true:
-			-- not sold to season characters (season.lua realm > 0), e.g. the double experience potion does nothing for them
+			-- what the NPC sells (gold): orbs and rare consumables. O399: about 2.5 times the old prices (they were far
+			-- too cheap) and one of each per character and stop. seasonBlocked = true: not sold to season characters
+			-- (season.lua realm > 0), e.g. the double experience potion does nothing for them
 			seasonBlockedText = "Season characters gain nothing from a %s, so I will not sell you one.",
 			items = {
-				{id = 29856, price = 40000, name = "orb of upheaval"},
-				{id = 29857, price = 120000, name = "orb of fate"},
-				{id = 29855, price = 200000, name = "orb of grafting"},
-				{id = 24691, price = 250000, name = "orb of gilding"}, -- owner 2026-10-14: above what gilding adds to a plain item's NPC price
-				{id = 24697, price = 80000, name = "orb of unmaking"},
-				{id = 28095, price = 350000, name = "double experience potion", seasonBlocked = true},
-				{id = 26031, price = 900, name = "supreme health potion"}
+				{id = 29856, price = 100000, name = "orb of upheaval"},
+				{id = 29857, price = 300000, name = "orb of fate"},
+				{id = 29855, price = 500000, name = "orb of grafting"},
+				{id = 24691, price = 650000, name = "orb of gilding"}, -- owner 2026-10-14: above what gilding adds to a plain item's NPC price
+				{id = 24697, price = 200000, name = "orb of unmaking"},
+				{id = 28095, price = 900000, name = "double experience potion", seasonBlocked = true},
+				{id = 26031, price = 2500, name = "supreme health potion"}
 			}}
 	}
 }

@@ -744,7 +744,7 @@ function I.pickWorldEvent(we, lastKind, rng)
 	local kinds, total = {}, 0
 	for _, k in ipairs({"storm", "merchant", "golden"}) do
 		local e = we[k]
-		local w = e and e.enabled ~= false and (e.weight or 0) or 0
+		local w = e and e.enabled ~= false and not e.resident and (e.weight or 0) or 0
 		if w > 0 and (k ~= lastKind) then
 			kinds[#kinds + 1] = {k, w}
 			total = total + w
@@ -752,7 +752,7 @@ function I.pickWorldEvent(we, lastKind, rng)
 	end
 	if #kinds == 0 then
 		local e = lastKind and we[lastKind]
-		return (e and e.enabled ~= false and (e.weight or 0) > 0) and lastKind or nil
+		return (e and e.enabled ~= false and not e.resident and (e.weight or 0) > 0) and lastKind or nil
 	end
 	local r = rng(1, total)
 	for _, kw in ipairs(kinds) do
@@ -833,6 +833,22 @@ function I.hud(st, now, list, mine, cfg)
 		d.you = {rank = mine.rank, share = floor(mine.share * 100 + 0.5), kills = mine.kills or 0}
 	end
 	return d
+end
+
+-- the resident Wandering Merchant (O399): the stop number at time t (moveHours per stop) and when it ends
+function I.merchantSlot(t, moveHours)
+	local period = max(1, floor((tonumber(moveHours) or 3) * 3600))
+	local slot = floor(t / period)
+	return slot, (slot + 1) * period
+end
+
+-- the area of a stop: the candidates in turn by the stop number, so two stops in a row are never in the same area
+-- while there are two or more, and a restart picks the same one
+function I.merchantArea(candidates, slot)
+	if #candidates == 0 then
+		return nil
+	end
+	return candidates[(floor(slot) % #candidates) + 1]
 end
 
 return I

@@ -60,6 +60,11 @@ local function counted(player)
 	if not player then
 		return false
 	end
+	-- tester bots are left out like staff (live test 2026-11-03: 16 bots made the game health panel's online,
+	-- deaths and hunts and the balance report's classes; server/README.md "Tester bots": never counted)
+	if Chaos.isTester and Chaos.isTester(player) then
+		return false
+	end
 	local ok, gid = pcall(function() return player:getGroup():getId() end)
 	return ok and (gid or 0) < (cfg.staffGroup or 4)
 end
