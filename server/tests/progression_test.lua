@@ -82,6 +82,13 @@ ok(h > 100 and h < 180, "levels 8 to 1000 take " .. h .. " hours (the leveling m
 ok(M.hours(curve, 8, 20) < 0.5, "the first 12 levels are minutes, not half an hour")
 for L = 8, 2200 do ok(curve[L].min > 0 and curve[L].min < 120, "level " .. L .. " takes " .. curve[L].min .. " minutes") end
 
+-- O370: the newcomer bonus (catchup_config.lua newcomer) is in the model: level 8 is faster with it, level 600 the same
+ok(env.newcomer ~= nil, "the model counts the newcomer bonus")
+local plain = M.load({noNewcomer = true})
+local _, plainCurve = M.problems(plain)
+ok(curve[8].min < plainCurve[8].min * 0.75, "level 8: the newcomer bonus speeds it up")
+ok(math.abs(curve[600].min - plainCurve[600].min) < 1e-9, "level 600: no newcomer bonus")
+
 -- the spell unlock table reads the files
 local lv = M.unlockLevels()
 ok(lv.Warrior and lv.Mystic and lv.Monk, "unlock levels of the base classes")

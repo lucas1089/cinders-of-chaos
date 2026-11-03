@@ -7,6 +7,8 @@
 --   K.restedAfter(cfg, pool, offlineSec)    the rested pool (minutes) after an absence
 --   K.isReturning(cfg, lastSeen, now)       the account was away long enough (lastSeen = 0: a new account, never)
 --   K.altPct(cfg, level, best)              the alt catch-up bonus in percent
+--   K.newcomerPct(cfg, level)               the newcomer bonus in percent (O370: fades with the level)
+--   K.levelPct(cfg, level, best)            the larger of the two (they never stack)
 --   K.staminaLow(cfg, stamina)              at or below the low stamina line
 --   K.staminaLootMult(cfg, stamina)         loot factor of the stamina (1 or stamina.lootMult)
 --   K.staminaXpFactor(cfg, stamina)         experience factor on top of the base script's own low stamina rule
@@ -111,6 +113,26 @@ function K.altPct(cfg, level, best)
 	return (a.maxPct or 0) * share
 end
 
+-- the newcomer bonus (O370): newcomer.maxPct up to level fullTo, then linear to 0 at level zeroAt
+function K.newcomerPct(cfg, level)
+	local n = cfg.newcomer or {}
+	level = num(level, 0)
+	local full, zero = num(n.fullTo, 0), num(n.zeroAt, 0)
+	if n.enabled == false or zero <= full or level >= zero then
+		return 0
+	end
+	local pct = num(n.maxPct, 0)
+	if level <= full then
+		return pct
+	end
+	return pct * (zero - level) / (zero - full)
+end
+
+-- the level bonus of a character: the alt catch-up or the newcomer bonus, whichever is larger (never both)
+function K.levelPct(cfg, level, best)
+	return max(K.altPct(cfg, level, best), K.newcomerPct(cfg, level))
+end
+
 -- ---------------------------------------------------------------- stamina
 function K.staminaLow(cfg, stamina)
 	local s = cfg.stamina or {}
@@ -153,7 +175,7 @@ function K.xpGain(cfg, exp, f)
 	if f.returning and (cfg.returning or {}).enabled ~= false then
 		other = other * (1 + num(cfg.returning.xpPct, 0) / 100)
 	end
-	other = other * (1 + K.altPct(cfg, f.level, f.best) / 100)
+	other = other * (1 + K.levelPct(cfg, f.level, f.best) / 100)
 	other = min(cap, other)
 	local out = exp * other
 	local spent = 0
@@ -210,6 +232,10 @@ function K.validate(cfg)
 	end
 	if num(cfg.maxXpMult, 0) < 1 then
 		bad("maxXpMult below 1")
+	end
+	local n = cfg.newcomer
+	if n and n.enabled ~= false and (num(n.maxPct, -1) < 0 or num(n.zeroAt, 0) <= num(n.fullTo, 0)) then
+		bad("newcomer: maxPct below 0 or zeroAt not above fullTo")
 	end
 	local prev = 0
 	for i, b in ipairs(cfg.model or {}) do

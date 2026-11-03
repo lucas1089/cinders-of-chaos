@@ -245,6 +245,30 @@ The hints come once each, as a message and a toast, in English or Brazilian Port
 the module first sees them get every hint marked as given, silently. Files: `server/data/scripts/chaos/firsthour*.lua`,
 `server/tests/firsthour_test.lua`.
 
+### Welcome path (O370)
+
+A new character also walks a short welcome path: seven first steps, one at a time, shown first in the goal tracker
+("Welcome Path 2/7"), each with a hint and a small reward. The order teaches the basics:
+
+| Step | Done when | Reward |
+|---|---|---|
+| Cast a spell | a spell is cast (by hand, or by the Helper after Auto setup) | 300 gold |
+| Slay 20 monsters | 20 kills while the step is open (summons do not count) | 500 gold, potions of the class role |
+| Wear a new piece of gear | a worn item that is not from the starter kit (loot, a shop, the Gambler) | 500 gold |
+| Spend your first passive point | a point spent (it comes at level 12; the row shows the level until then) | 800 gold |
+| Finish a Bounty contract | a paid contract | 1,000 gold, 2 Orbs of Awakening |
+| Use an orb at the Crafting Bench | any orb used, from level 20 when the bench opens (the Orbs of Awakening work on a plain kit piece) | 500 gold, 2 Orbs of Upheaval |
+| Open Next Goals | the Next Goals window opened (a click on the row does it) | 1,000 gold, potions |
+
+Once per character. "Skip welcome path" under the tracker row ends it (two clicks). Characters above level 20 when the
+path first sees them never get it; one at or below it passes the steps it has already done without a reward. The
+first-hour hints above and the Next Goals goals stay as they are. Files: `server/data/scripts/chaos/welcomepath*.lua`,
+`server/tests/welcomepath_test.lua`; server/README.md "Welcome path (O370)".
+
+Also for new characters: the newcomer bonus, +50% monster experience at level 8 that shrinks to 0 at level 150 (buff
+"Newcomer"; server/README.md "Time-friendly progression (catchup)"), and PvP protection below level 50 on a production
+server (`server/tools/prod_config.py`).
+
 ## Lore
 
 Before: world bosses had a one-line yell, the Sepulchre bosses a short intro, the four factions one line each, item sets

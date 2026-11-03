@@ -3,7 +3,8 @@
 --     cd server && luajit tools/progression_model.lua [--check]      (also lua5.3)
 -- Inputs: experienceStages (tools/late_game.py), the hunt pool (bounty_pool.lua) with the pace curves (pace_config.lua),
 -- kills per hour (spawn_tuning.json model.paceKillsPerHour), the engine's experience formula, the hall's hunt bands
--- (tools/hall_hunts.csv and tools/areaplan/plans/*.json) and progression_config.lua (the limits --check enforces).
+-- (tools/hall_hunts.csv and tools/areaplan/plans/*.json), the newcomer bonus of low levels (catchup_config.lua newcomer,
+-- O370; --no-newcomer leaves it out) and progression_config.lua (the limits --check enforces).
 local M = {}
 
 local function readAll(path)
@@ -100,7 +101,7 @@ function M.curve(env, maxLevel)
 	local out = {}
 	for L = 1, maxLevel do
 		local xph, n = M.xpPerHour(env.hunts, L, env.cfg.window)
-		xph = xph * env.cfg.multikill * M.stage(env.stages, L)
+		xph = xph * env.cfg.multikill * M.stage(env.stages, L) * (env.newcomer and env.newcomer(L) or 1)
 		out[L] = {min = xph > 0 and M.expToNext(L) / xph * 60 or math.huge, hunts = n}
 	end
 	return out
@@ -285,6 +286,13 @@ function M.load(opts)
 	env.pace = dofile("data/scripts/chaos/pace_config.lua")
 	env.pool = dofile("data/scripts/chaos/bounty_pool.lua")
 	env.cfg = dofile("data/scripts/chaos/progression_config.lua")
+	-- the newcomer bonus of low levels (O370, catchup_config.lua newcomer): a factor on the experience per hour
+	if not opts.noNewcomer then
+		ChaosCatchupCore = nil
+		local K = dofile("data/scripts/chaos/catchup_core.lua") or ChaosCatchupCore
+		local ccfg = dofile("data/scripts/chaos/catchup_config.lua")
+		env.newcomer = function(L) return 1 + K.newcomerPct(ccfg, L) / 100 end
+	end
 	env.stages = M.stagesFromText(readAll(opts.stagesFile or "tools/late_game.py"))
 	-- paceKillsPerHour out of tools/spawn_tuning.json (two arrays of {level, kills})
 	local js = readAll("tools/spawn_tuning.json")
@@ -313,7 +321,10 @@ end
 
 -- ---------------------------------------------------------------- command line
 local mode = arg and arg[1]
-local env = M.load()
+local env = M.load({noNewcomer = arg and (arg[1] == "--no-newcomer" or arg[2] == "--no-newcomer")})
+if mode == "--no-newcomer" then
+	mode = arg[2]
+end
 local problems, curve = M.problems(env)
 if mode == "--spells" then
 	local names = {}

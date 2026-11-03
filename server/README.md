@@ -847,7 +847,8 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
-| 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free. 7101070 - 7101099 stays free |
+| 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
+| 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. 7101080 - 7101099 stays free |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
 | 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
@@ -1561,6 +1562,16 @@ login and follows level advances) gets +100% monster experience while it is at l
 shrinking linearly to 0 at the best: best 500 -> +100% to level 400, +50% at 450. Needs a best of 50. Buff "Catch-up" (the
 percent as stacks).
 
+**Newcomer bonus (O370).** Every character gets +50% monster experience at level 8; from there it shrinks linearly to 0 at
+level 150 (+25% at 79; `catchup_config.lua` `newcomer`: `maxPct`, `fullTo`, `zeroAt`, `enabled`). It never stacks with the
+alt catch-up: the larger of the two counts (`ChaosCatchupCore.levelPct`). Season characters do not get it. A login message
+says it ("Newcomer bonus: +N% ..."), the buff bar shows "Newcomer" with the percent as stacks (`chaos_buffs.lua` source
+`newcomer`, icon `buff:newcomer` from `client/tools/gen_buff_icons.py`), and the Skills window's XP gain rate counts it
+(`xp_rate_display.lua` runs after every bonus). The leveling model counts it (`tools/progression_model.lua`, `--no-newcomer`
+leaves it out): levels 8-150 take 1.5 hours instead of 1.8. A fade to 0 at level 100 failed `--check` (levels 83-107 then
+took x1.37 the time of the 25 before, limit 1.35); 120 and up pass. Nothing counts days since creation (the players table of
+the base has no creation time); the level is the clock.
+
 **Rested Vial.** `ChaosRested.addVials(player, n)` (the Candlemarks shop's "Rested Vial") adds `vialMinutes` (60) of rest per
 vial, never past the 180 cap; it returns false (the shop gives the marks back) when nothing fits or for a season
 character. Tests: `tests/catchup_test.lua`, `tests/candlemarks_apis_test.lua` (the three Candlemarks call offers light up
@@ -1569,7 +1580,8 @@ with the real modules loaded, and each API works as the shop calls it).
 **Order and ceiling.** One `onGainExperience` callback at index 87: after the experience cap (85, so the cap does not eat
 the player's own time), before the dungeon difficulty (90), the rift cap (100) and the hunt tracker. Returning, alt and
 rested multiply, together never above x3 (`maxXpMult`); rested pays only what fits under that ceiling (the pool is kept
-otherwise). Season characters get none of the three bonuses (a fresh race); the stamina rules apply to everyone.
+otherwise). The newcomer bonus takes the alt's place when it is larger. Season characters get none of these bonuses (a
+fresh race); the stamina rules apply to everyone.
 
 **Also for limited time** (each in its own system's section): the faction weekly cap rolls over (3 weeks at most), the
 season pass daily caps bank over 3 days, the bounty weekly chest needs 4 contracts (was 7), the Vocation Trials' repeat
@@ -25434,6 +25446,54 @@ objetivos), and a compact tracker on screen (Adventure > Goal Tracker or the win
   the client modules, NPCs against data/npc, the guide's sections, bands, retro, evaluation, rewards, the panel, the
   tracker, effort texts; goals.lua on a mocked engine: login, rewards once, the hooks, the panel, the resolver, the band
   message, logout), client `game_goals/goalsview_test.lua`. Not run on a live server.
+
+## Welcome path (O370, `welcomepath.lua`, `welcomepath_core.lua`, `welcomepath_config.lua`, client `game_goals`)
+
+Owner request 2026-11-03 (pt-BR): a tracked chain of first steps for a new character, each with a small reward, that
+teaches the basics in order. Built on the Next Goals tracker and its channel (no new opcode, no new window).
+
+- **Steps** (`welcomepath_config.lua` `steps`, one at a time, in order): (1) cast a spell (a spell group cooldown on the
+  character: by hand or by the Helper after Auto setup; row click opens the Helper), (2) slay 20 monsters (a kill event of
+  this module while the step is open; summons do not count; click: a mark at the nearest hunt of the level), (3) wear a
+  new piece of gear (a worn item that is not of the character's starter kit, `newplayer_config.lua` kits: loot, a shop or
+  the Gambler; click: a mark at the Loot Buyer), (4) spend the first passive point (`passive_spent`, as Next Goals reads it,
+  or `ChaosPassiveTree.hasAllocation`; below level 12 the row shows "(level 12)" and the level as its progress), (5)
+  finish a Bounty contract (`bounty_done`; it pays 2 Orbs of Awakening, which turn a plain kit piece into a Common or
+  Uncommon one), (6) use an orb at the Crafting Bench (achievement counter `orbs_used`; from level 20, the bench's own
+  `minLevel`), (7) open Next Goals (`goals.lua` "open" calls `ChaosWelcomePath.mark`). Each step tells its next one in a
+  message with a hint.
+- **Rewards** (gold to the bank, items to the backpack, else the inbox): 300, 500 + potions of the kit's role, 500, 800,
+  1,000 + 2 Orbs of Awakening, 500 + 2 Orbs of Upheaval, 1,000 + potions: 4,600 gold in all. The step is written before
+  the reward (a crash loses the reward rather than paying twice).
+- **Who.** Once per character (storage 7101070-7101079, "Storage keys"). A character first seen above level 20
+  (`quietAbove`) never gets it. One first seen at or below it starts the path; the steps it has done already pass silently,
+  without a reward (`K.skipDone`): the gear, passive, bounty and orb steps by their facts, the cast and the kills only for a
+  character that played before (above the start level 8, or a kit older than an hour), so a brand-new character's first
+  cast is its first reward. Staff (group 4+) walk no path.
+- **Skip.** "Skip welcome path" under the tracker rows; the first click turns it into "Click again to skip" for 4 s, the
+  second sends `welcomeSkip` (goals.lua -> `ChaosWelcomePath.skip`): state 2, nothing more is paid.
+- **Engine side.** The first look waits 12 s after login (the achievements and Next Goals load their counters; the
+  welcome comes at 2.5 s and the first first-hour hint at 9 s). A sweep every
+  second looks only at characters on the path (a done step moves on, one per look) and sends the row when it changed
+  (`K.sig`). Protocol on opcode 178: server -> client `welcome {title, step, count, rows = [{key, title, progress, target,
+  state, hint, where}]}` (rows = [] hides the section; `where` with the map position resolved by `ChaosGoals.resolver`);
+  client -> server `welcomeSkip`; `tracker` resends the row (`ChaosWelcomePath.forget`).
+- **Client** (`game_goals`): the step comes first in the tracker, the title reads "Welcome Path 2/7" while the path runs
+  (the goals then get their own "Next Goals" head), the row's tooltip is the hint and a click does its `where`; on a phone
+  the 3 row budget counts the welcome row first.
+- **Relation to the first-hour hints and Next Goals.** The hints (`firsthour.lua`) stay as they are (one message per
+  level band); the Next Goals band 1 goals (`bounty1`, `passive1`) still pay their own small reward too: the path is the
+  ordered walk through them.
+- **Tests:** `tests/welcomepath_test.lua` (config, validation, each check, the gear rule, first sight, silent skips,
+  rewards, the view; the engine file on a mocked engine: a new character through all 7 steps, kills and summons, the
+  level gates (12, 20), the goals.lua hooks, skip, a quiet level 300, an existing level 14, staff, the tracker request), client
+  `game_goals/goalsview_test.lua`. Not run on a live server.
+
+**PvP protection of low levels (O370 check).** The base config has `protectionLevel = 1`, and characters start at level 8,
+so nobody was protected. `tools/prod_config.py` now writes `protectionLevel = 50` (the Arena's entry level; the
+battleground, the siege and the Scorched Marches start at 100-150): below level 50 a player can neither attack a player nor
+be attacked by one (the engine's rule; the script spells ask `ChaosSpell.canAttack`, which reads the same setting).
+`tools/prod_config_test.py` checks it. A server already set up gets it at the next `prod_config.py` run.
 
 ## Server texts in pt-BR (Chaos.t)
 `i18n_core.lua` (ChaosI18n, pure) puts the helpers on `Chaos`: `Chaos.t(player, "English %s pattern", ...)`, the text in

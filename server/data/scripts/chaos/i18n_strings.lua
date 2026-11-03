@@ -128,6 +128,8 @@ return {
 			"Bem-vindo de volta! Por %d dias: +%d%% de experiência, +%d%% de loot e +%d%% de drops de tokens.",
 		["Catch-up: +%d%% experience from monsters until you near level %d, your account's best."] =
 			"Recuperação: +%d%% de experiência de monstros até chegar perto do level %d, o melhor da sua conta.",
+		["Newcomer bonus: +%d%% experience from monsters. It shrinks with every level and ends at level %d."] =
+			"Bônus de novato: +%d%% de experiência de monstros. Diminui a cada nível e acaba no nível %d.",
 		["Your stamina is below %d hours: monsters give %d%% experience and %d%% loot. Stamina comes back faster while you are offline."] =
 			"Sua stamina está abaixo de %d horas: monstros dão %d%% de experiência e %d%% de loot. A stamina volta mais rápido enquanto você está offline.",
 		-- Ember Cache, Daily Spark and the day book (embercache.lua)
@@ -6245,6 +6247,10 @@ return {
 			"Mais experiência, loot e drops de tokens para jogadores que voltam.",
 		["More experience from monsters below your account's best level."] =
 			"Mais experiência dos monstros abaixo do melhor nível da sua conta.",
+		["More experience from monsters for new adventurers; it fades with the level."] =
+			"Mais experiência dos monstros para novos aventureiros; diminui com o nível.",
+		["+%d%% experience from monsters for new adventurers. It shrinks with every level and ends at level %d."] =
+			"+%d%% de experiência dos monstros para novos aventureiros. Diminui a cada nível e acaba no nível %d.",
 		["Less experience and loot until your stamina comes back."] =
 			"Menos experiência e loot até a sua stamina voltar.",
 		["Health and mana come back faster."] =

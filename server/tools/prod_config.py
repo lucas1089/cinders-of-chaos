@@ -30,6 +30,11 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
                           300 (docs/BETA.md). 0 = unlimited in the engine
   worldType               "pvp" (default), "no-pvp" or "pvp-enforced"; the arena and the guild siege work in every
                           type (they never use real deaths)
+  protectionLevel = 50     PvP protection of low levels (O370): a player below level 50 can neither attack a player nor be
+                          attacked by one (the engine's Combat::isProtected; the spells that hit from the script ask
+                          ChaosSpell.canAttack, the same rule). The stock value 1 protected nobody: characters start at
+                          level 8. 50 is the Arena's entry level (arena_config.lua minLevel); the battleground, the guild
+                          siege and the Scorched Marches start at 100-150
   allowClones = false, onePlayerOnlinePerAccount = false
                           the multi-client rules live in data/scripts/chaos/multiclient.lua (2 characters per IP, a
                           second character cannot attack players or enter dungeons); the engine setting stays off so
@@ -163,6 +168,7 @@ def settings(opts, text=''):
         ('location', lua_string(opts.get('--location', ''))),
         ('maxPlayers', str(int(opts.get('--max-players', '400')))),
         ('worldType', lua_string(opts.get('--pvp', 'pvp'))),
+        ('protectionLevel', '50'),
         ('allowClones', 'false'),
         ('onePlayerOnlinePerAccount', 'false'),
         ('serverSaveShutdown', 'true'),
