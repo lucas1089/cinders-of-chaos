@@ -290,6 +290,16 @@ eq(sqlFile ~= nil and sqlFile:find("`chaos_transmog_sets`", 1, true) ~= nil, tru
 local action, data = K.request({action = "apply", data = {slot = 4, look = 2465}})
 eq(action, "apply", "apply request") eq(data.slot, 4, "slot") eq(data.look, 2465, "look")
 eq(K.request({action = "apply", data = {slot = 4}}), nil, "apply without look")
+-- O368: the level gate of the window
+eq(cfg.minLevel, 30, "transmog opens at level 30")
+do
+	local open, need = K.levelGate(cfg.minLevel - 1, cfg)
+	eq(open, false, "closed below the level"); eq(need, 30, "the level it names")
+	eq((K.levelGate(cfg.minLevel, cfg)), true, "open at the level")
+	eq((K.levelGate(nil, cfg)), false, "no level: closed")
+	local src = readFile("data/scripts/chaos/transmog.lua")
+	eq(src:find("K.levelGate(player:getLevel(), cfg)", 1, true) ~= nil, true, "the engine checks the gate")
+end
 eq(K.request({action = "apply", data = {slot = 11, look = 1}}), nil, "bad slot")
 eq(K.request({action = "remove", data = {slot = "6"}}), "remove", "remove request")
 eq(K.request({action = "looks", data = {kind = "armor"}}), "looks", "looks request")

@@ -566,6 +566,13 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if Chaos.limited(player, "gamble", cfg.requestMs) then
 		return
 	end
+	-- O368: below the level nothing answers; opening says when it opens
+	if player:getLevel() < (cfg.minLevel or 1) then
+		if m.action == "open" then
+			result(player, false, ChaosI18n.msg("The Gambler opens at level %d.", cfg.minLevel))
+		end
+		return
+	end
 	local d = type(m.data) == "table" and m.data or {}
 	local guid = player:getGuid()
 	if m.action == "open" then

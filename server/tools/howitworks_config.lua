@@ -88,7 +88,7 @@ P.features = {
 		often = {"{maxWins} rewarded wins per day. A match is a {cd} second countdown and then {fightMin} minutes at most.",
 			"{maxWins} vitórias com prêmio por dia. Uma partida tem {cd} segundos de contagem e depois no máximo {fightMin} minutos."}},
 
-	{key = "battleground", title = {"Battleground", "Campo de Batalha"}, window = "game_battleground",
+	{key = "battleground", title = {"Battleground", "Campo de Batalha"}, window = "game_battleground", unlocks = {"battleground"},
 		values = function(C, H)
 			local B = C.bg
 			local names = {}
@@ -151,7 +151,8 @@ P.features = {
 		often = {"World boss every {every} hours: {hours}. The portals stay open {portal} minutes. The boss leaves after {fight} minutes. Pocket boss: {daily} free tries per boss each day; more from the online-time shop (up to {bonusMax} saved).",
 			"Chefe mundial a cada {every} horas: {hours}. Os portais ficam abertos {portal} minutos. O chefe vai embora após {fight} minutos. Chefe de bolso: {daily} tentativas grátis por chefe por dia; mais na loja de tempo online (até {bonusMax} guardadas)."}},
 
-	{key = "descent", title = {"Ember Descent", "Ember Descent"}, window = "game_descent", goals = {"descent1", "descentclear"},
+	{key = "descent", title = {"Ember Descent", "Ember Descent"}, window = "game_descent", unlocks = {"descent"},
+		goals = {"descent1", "descentclear"},
 		values = function(C, H)
 			local D = C.descent
 			return {min = D.minLevel, max = D.maxPlayers, free = D.freePerDay, bank = D.freeBankDays, weekly = D.freeWeeklyPerWeek,
@@ -167,7 +168,8 @@ P.features = {
 		often = {"{free} free run a day (up to {bank} saved if you skip days) and {weekly} free weekly run. More runs cost 1 Ember Sigil: {shards} rune shards and {gold} gold, made in the Descent window. A run lasts {mins} minutes at most.",
 			"{free} corrida grátis por dia (até {bank} guardadas se você pular dias) e {weekly} corrida grátis por semana. Mais corridas custam 1 Ember Sigil: {shards} rune shards e {gold} de ouro, feito na janela do Descent. Uma corrida dura no máximo {mins} minutos."}},
 
-	{key = "raid", title = {"Ashen Sepulchre", "Ashen Sepulchre"}, window = "game_raid", goals = {"raid1", "raidclear", "raid3", "raidflawless"},
+	{key = "raid", title = {"Ashen Sepulchre", "Ashen Sepulchre"}, window = "game_raid", unlocks = {"raid"},
+		goals = {"raid1", "raidclear", "raid3", "raidflawless"},
 		values = function(C, H)
 			local R = C.raid
 			return {min = R.minLevel, max = R.maxPlayers, base = R.basePlayers, day = H.weekday(R.resetDay),
@@ -294,25 +296,26 @@ P.features = {
 		often = {"{name} runs from {start} to {finish}. Only one season runs at a time.",
 			"{name} vai de {start} a {finish}. Só uma temporada roda por vez."}},
 
-	{key = "factions", title = {"Factions", "Facções"}, window = "game_factions", goals = {"trusted", "honored", "revered", "exalted"},
+	{key = "factions", title = {"Factions", "Facções"}, window = "game_factions", unlocks = {"factions"},
+		goals = {"trusted", "honored", "revered", "exalted"},
 		values = function(C, H)
 			local F = C.factions
-			return {band1 = F.daily.bands[1].upTo, cap = F.weeklyCap, dc = F.contracts.daily, wc = F.contracts.weekly,
-				hour = H.hhmm(F.dayHour, 0)}
+			return {min = H.unlock("factions"), band1 = F.daily.bands[1].upTo, cap = F.weeklyCap, dc = F.contracts.daily,
+				wc = F.contracts.weekly, hour = H.hhmm(F.dayHour, 0)}
 		end,
-		who = {"Every player. Nothing is locked: even a Hostile faction still talks and trades.",
-			"Todo jogador. Nada fica trancado: até uma facção Hostil ainda fala e negocia."},
+		who = {"Level {min}+. Reputation you earn before that is kept. Nothing is locked: even a Hostile faction still talks and trades.",
+			"Nível {min}+. A reputação ganha antes disso fica guardada. Nada fica trancado: até uma facção Hostil ainda fala e negocia."},
 		drops = {"Ranks unlock gear, orb bundles and titles at the faction's quartermaster.",
 			"Os postos liberam equipamento, pacotes de orbes e títulos com o intendente da facção."},
 		often = {"Kills, rifts, bosses and more give reputation, less after {band1} a day, and at most {cap} per faction per week. Each faction has {dc} daily and {wc} weekly contracts. The day turns at {hour}.",
 			"Mortes, fendas, chefes e mais dão reputação, menos depois de {band1} por dia, e no máximo {cap} por facção por semana. Cada facção tem {dc} contratos diários e {wc} semanal. O dia vira às {hour}."}},
 
-	{key = "gamble", title = {"The Gambler", "O Apostador"}, window = "game_gamble",
+	{key = "gamble", title = {"The Gambler", "O Apostador"}, window = "game_gamble", unlocks = {"gamble"},
 		values = function(C, H)
-			return {hours = C.gamble.refresh.hours, size = C.gamble.stock.size}
+			return {min = H.unlock("gamble"), hours = C.gamble.refresh.hours, size = C.gamble.stock.size}
 		end,
-		who = {"Every player. The Gambler sells sealed gear for gold. You see how rare it is only after you buy it.",
-			"Todo jogador. O Apostador vende equipamento lacrado por ouro. Você só vê a raridade depois de comprar."},
+		who = {"Level {min}+. The Gambler sells sealed gear for gold. You see how rare it is only after you buy it.",
+			"Nível {min}+. O Apostador vende equipamento lacrado por ouro. Você só vê a raridade depois de comprar."},
 		drops = {"One piece of gear for your level and class.", "Uma peça de equipamento para o seu nível e a sua classe."},
 		often = {"The stock is new every {hours} hours, {size} pieces each time. You can buy an early refresh.",
 			"O estoque renova a cada {hours} horas, com {size} peças. Você pode comprar uma renovação antecipada."}},

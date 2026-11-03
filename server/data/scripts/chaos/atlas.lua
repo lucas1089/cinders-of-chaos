@@ -237,6 +237,14 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	local data = type(msg.data) == "table" and msg.data or {}
+	-- O368: below the level nothing answers; opening says when it opens (sealed rifts still credit the cells)
+	if player:getLevel() < (cfg.minLevel or 1) then
+		if msg.action == "open" then
+			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR,
+				Chaos.t(player, "The Rift Atlas opens at level %d.", cfg.minLevel))
+		end
+		return
+	end
 	local ok, err = pcall(function()
 		if msg.action == "open" then
 			if not S.treeSent[player:getId()] or data.tree then -- tree = true: the client has none (a module reload)

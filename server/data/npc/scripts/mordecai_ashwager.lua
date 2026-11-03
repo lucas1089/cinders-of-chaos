@@ -55,6 +55,11 @@ local function creatureSayCallback(cid, type, msg)
 	end
 	local text = msg:lower()
 	if has(text, "gamble", "trade", "crate", "buy", "offer", "wares", "stock", "seal") then
+		-- O368: the Gambler deals from cfg.minLevel on (gamble.lua checks it again)
+		if player:getLevel() < (cfg.minLevel or 1) then
+			npcHandler:say(t(cid, "Come back at level %d. Your gold buys potions for now.", cfg.minLevel), cid)
+			return true
+		end
 		openWindow(player)
 		npcHandler:say(t(cid, "Pick a crate. You see the make and the craft, never the luck inside. That you pay to learn."), cid)
 		return true

@@ -8530,5 +8530,22 @@ return {
 		["Forgemaster Brannoc, next to the temple of Mirewake"] = "Forgemaster Brannoc, ao lado do templo de Mirewake",
 		["Cantor Velith, next to the temple of Bellwatch"] = "Cantor Velith, ao lado do templo de Bellwatch",
 		["Elder Bramwyn, next to the temple of Thornmere"] = "Elder Bramwyn, ao lado do templo de Thornmere",
+		-- O368: new player level gates (the systems refuse below their level; their NPCs say it too)
+		["The Gambler opens at level %d."] = "The Gambler abre no nível %d.",
+		["Professions open at level %d."] = "As profissões abrem no nível %d.",
+		["Transmog opens at level %d."] = "O Transmog abre no nível %d.",
+		["The hideout opens at level %d."] = "O esconderijo abre no nível %d.",
+		["Factions open at level %d."] = "As facções abrem no nível %d.",
+		["Guild wars open at level %d."] = "As guerras de guilda abrem no nível %d.",
+		["The Conquest vendor opens at level %d."] = "O vendedor de Conquest abre no nível %d.",
+		["The Rift Atlas opens at level %d."] = "O Rift Atlas abre no nível %d.",
+		["The Waystone Atlas opens at level %d."] = "O Waystone Atlas abre no nível %d.",
+		["The Season Pass opens at level %d."] = "O Season Pass abre no nível %d.",
+		["Come back at level %d. Your gold buys potions for now."] =
+			"Volte no nível %d. Por enquanto, o seu ouro compra poções.",
+		["Come back at level %d. %s takes no oaths from the untried."] =
+			"Volte no nível %d. %s não aceita juramentos de quem não foi testado.",
+		["Come back at level %d. Keep the tokens you earn until then."] =
+			"Volte no nível %d. Guarde os tokens que ganhar até lá.",
 	},
 }

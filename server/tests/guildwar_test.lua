@@ -649,6 +649,22 @@ eq(sent[1] and sent[1].op, 197, "the state on opcode 197")
 eq(sent[1].data.action, "state", "state action")
 ok(#sent[1].data.data.wars.history >= 4, "history of the guild")
 ok(#sent[1].data.data.board.history >= 3, "the server board")
+-- O368: below cfg.minLevel the window does not open and nothing can be declared
+do
+	eq(cfg.minLevel, 50, "guild wars open at level 50")
+	local young = newPlayer(9, 109, 1, 3, cfg.minLevel - 1, 9, 99)
+	sent = {}
+	incoming = {action = "open", data = {}}
+	registry.ChaosGuildWarOpcode.onExtendedOpcode(young, ChaosOpcodes.guildWar, '{"action":"open"}')
+	for _, m in ipairs(sent) do
+		ok(not (m.data and m.data.action == "state"), "no state below the level")
+	end
+	ok(young.msgs[#young.msgs] and young.msgs[#young.msgs]:find("level " .. cfg.minLevel, 1, true), "opening names the level")
+	local wars0 = DB.nextId
+	incoming = {action = "declare", data = {target = "Iron Crows", fragLimit = 25, hours = 6}}
+	registry.ChaosGuildWarOpcode.onExtendedOpcode(young, ChaosOpcodes.guildWar, '{"action":"declare"}')
+	eq(DB.nextId, wars0, "no declaration below the level")
+end
 eq(ChaosOpcodes.guildWar, 197, "opcode 197")
 local seen = {}
 for name, v in pairs(ChaosOpcodes) do

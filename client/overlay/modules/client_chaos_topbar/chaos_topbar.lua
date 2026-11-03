@@ -444,6 +444,8 @@ local function decorateRow(option, item)
       option:setIcon(LOCK_IMAGE)
       option:setIconSize({ width = 10, height = 12 })
       option:setIconOffset({ x = 7, y = 3 })
+      -- O368: the row says when it opens on hover too (the click and a hotkey say it on the screen)
+      option:setTooltip(ChaosTopBarUnlocksLogic.unlocksAt(item.locked, tx))
     elseif (item.sub and subHasNew(item.sub)) or (not item.sub and unlockIsNew(item.entry.text)) then
       option:setColor(COLOR_NEW)
     end

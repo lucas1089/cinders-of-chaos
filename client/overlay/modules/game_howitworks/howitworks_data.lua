@@ -24,7 +24,7 @@ HowData = {
 			{id = "death", en = "No real death. The loser just leaves the match. You lose no experience and no items.", pt = "Sem morte de verdade. Quem perde só sai da partida. Você não perde experiência nem itens."},
 			{id = "often", en = "10 rewarded wins per day. A match is a 10 second countdown and then 5 minutes at most.", pt = "10 vitórias com prêmio por dia. Uma partida tem 10 segundos de contagem e depois no máximo 5 minutos."}
 		}},
-		{key = "battleground", title = {en = "Battleground", pt = "Campo de Batalha"}, window = "game_battleground", rows = {
+		{key = "battleground", title = {en = "Battleground", pt = "Campo de Batalha"}, window = "game_battleground", unlocks = {"battleground"}, rows = {
 			{id = "who", en = "Level 100+. Teams of 5 to 10 players per side. Queue alone or in a party of up to 5. You meet players of your level bracket: 100-299, 300-599, 600-899, 900+.", pt = "Nível 100+. Times de 5 a 10 jogadores por lado. Entre na fila sozinho ou em grupo de até 5. Você enfrenta jogadores da sua faixa de nível: 100-299, 300-599, 600-899, 900+."},
 			{id = "levels", en = "No monsters. Hits are scaled to your bracket, so a higher level gives only a small edge.", pt = "Sem monstros. Os golpes são ajustados à sua faixa, então um nível maior dá só uma pequena vantagem."},
 			{id = "drops", en = "Honor, the PvP vendor's money: 120 for a win, 80 for a draw, 50 for a loss. The first win of the week adds 300 honor and orbs. At most 6000 honor a week from matches. Be in at least 50% of the match.", pt = "Honra, o dinheiro do vendedor de PvP: 120 por vitória, 80 por empate, 50 por derrota. A primeira vitória da semana soma 300 de honra e orbes. No máximo 6000 de honra por semana em partidas. Fique em pelo menos 50% da partida."},
@@ -45,14 +45,14 @@ HowData = {
 			{id = "death", en = "World boss: A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half. Pocket boss: a deadly hit sends you back safe. You lose nothing, but the try is spent.", pt = "Chefe mundial: Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade. Chefe de bolso: um golpe mortal manda você de volta em segurança. Você não perde nada, mas a tentativa é gasta."},
 			{id = "often", en = "World boss every 6 hours: 03:00, 09:00, 15:00, 21:00. The portals stay open 30 minutes. The boss leaves after 45 minutes. Pocket boss: 3 free tries per boss each day; more from the online-time shop (up to 6 saved).", pt = "Chefe mundial a cada 6 horas: 03:00, 09:00, 15:00, 21:00. Os portais ficam abertos 30 minutos. O chefe vai embora após 45 minutos. Chefe de bolso: 3 tentativas grátis por chefe por dia; mais na loja de tempo online (até 6 guardadas)."}
 		}},
-		{key = "descent", title = {en = "Ember Descent", pt = "Ember Descent"}, window = "game_descent", goals = {"descent1", "descentclear"}, rows = {
+		{key = "descent", title = {en = "Ember Descent", pt = "Ember Descent"}, window = "game_descent", unlocks = {"descent"}, goals = {"descent1", "descentclear"}, rows = {
 			{id = "who", en = "Level 100+. Alone or in a party of up to 4.", pt = "Nível 100+. Sozinho ou em grupo de até 4."},
 			{id = "levels", en = "8 to 12 rooms, each harder than the last. Taking curses gives more reward.", pt = "8 a 12 salas, cada uma mais difícil que a anterior. Aceitar maldições dá mais recompensa."},
 			{id = "drops", en = "Rewards at the end of the run, by the depth you reached.", pt = "Recompensas no fim da corrida, conforme a profundidade que você alcançou."},
 			{id = "death", en = "No real death. A deadly hit ends your run, and you keep the rewards of the depth you reached. You lose no experience and no items.", pt = "Sem morte de verdade. Um golpe mortal termina a sua corrida, e você fica com as recompensas da profundidade alcançada. Você não perde experiência nem itens."},
 			{id = "often", en = "1 free run a day (up to 3 saved if you skip days) and 1 free weekly run. More runs cost 1 Ember Sigil: 25 rune shards and 50,000 gold, made in the Descent window. A run lasts 45 minutes at most.", pt = "1 corrida grátis por dia (até 3 guardadas se você pular dias) e 1 corrida grátis por semana. Mais corridas custam 1 Ember Sigil: 25 rune shards e 50.000 de ouro, feito na janela do Descent. Uma corrida dura no máximo 45 minutos."}
 		}},
-		{key = "raid", title = {en = "Ashen Sepulchre", pt = "Ashen Sepulchre"}, window = "game_raid", goals = {"raid1", "raidclear", "raid3", "raidflawless"}, rows = {
+		{key = "raid", title = {en = "Ashen Sepulchre", pt = "Ashen Sepulchre"}, window = "game_raid", unlocks = {"raid"}, goals = {"raid1", "raidclear", "raid3", "raidflawless"}, rows = {
 			{id = "who", en = "Level 800+. Alone or in a party of up to 15. The bosses are made for 5 players and scale to your group.", pt = "Nível 800+. Sozinho ou em grupo de até 15. Os chefes são feitos para 5 jogadores e se ajustam ao seu grupo."},
 			{id = "levels", en = "Several bosses in a row. Each one waits behind a door with its own monsters.", pt = "Vários chefes em sequência. Cada um espera atrás de uma porta, com os seus monstros."},
 			{id = "drops", en = "Boss rewards: orbs and the raid's own unique gear.", pt = "Recompensas dos chefes: orbes e os itens únicos da própria raide."},
@@ -101,13 +101,13 @@ HowData = {
 			{id = "death", en = "Normal season characters follow the normal death rules. In Hardcore mode you have one life.", pt = "Personagens de temporada normais seguem as regras normais de morte. No modo Hardcore você tem uma vida."},
 			{id = "often", en = "Season of Ash runs from 20 Nov 2026 to 19 Feb 2027. Only one season runs at a time.", pt = "Season of Ash vai de 20/11/2026 a 19/02/2027. Só uma temporada roda por vez."}
 		}},
-		{key = "factions", title = {en = "Factions", pt = "Facções"}, window = "game_factions", goals = {"trusted", "honored", "revered", "exalted"}, rows = {
-			{id = "who", en = "Every player. Nothing is locked: even a Hostile faction still talks and trades.", pt = "Todo jogador. Nada fica trancado: até uma facção Hostil ainda fala e negocia."},
+		{key = "factions", title = {en = "Factions", pt = "Facções"}, window = "game_factions", unlocks = {"factions"}, goals = {"trusted", "honored", "revered", "exalted"}, rows = {
+			{id = "who", en = "Level 40+. Reputation you earn before that is kept. Nothing is locked: even a Hostile faction still talks and trades.", pt = "Nível 40+. A reputação ganha antes disso fica guardada. Nada fica trancado: até uma facção Hostil ainda fala e negocia."},
 			{id = "drops", en = "Ranks unlock gear, orb bundles and titles at the faction's quartermaster.", pt = "Os postos liberam equipamento, pacotes de orbes e títulos com o intendente da facção."},
 			{id = "often", en = "Kills, rifts, bosses and more give reputation, less after 600 a day, and at most 7500 per faction per week. Each faction has 2 daily and 1 weekly contracts. The day turns at 06:00.", pt = "Mortes, fendas, chefes e mais dão reputação, menos depois de 600 por dia, e no máximo 7500 por facção por semana. Cada facção tem 2 contratos diários e 1 semanal. O dia vira às 06:00."}
 		}},
-		{key = "gamble", title = {en = "The Gambler", pt = "O Apostador"}, window = "game_gamble", rows = {
-			{id = "who", en = "Every player. The Gambler sells sealed gear for gold. You see how rare it is only after you buy it.", pt = "Todo jogador. O Apostador vende equipamento lacrado por ouro. Você só vê a raridade depois de comprar."},
+		{key = "gamble", title = {en = "The Gambler", pt = "O Apostador"}, window = "game_gamble", unlocks = {"gamble"}, rows = {
+			{id = "who", en = "Level 40+. The Gambler sells sealed gear for gold. You see how rare it is only after you buy it.", pt = "Nível 40+. O Apostador vende equipamento lacrado por ouro. Você só vê a raridade depois de comprar."},
 			{id = "drops", en = "One piece of gear for your level and class.", pt = "Uma peça de equipamento para o seu nível e a sua classe."},
 			{id = "often", en = "The stock is new every 4 hours, 14 pieces each time. You can buy an early refresh.", pt = "O estoque renova a cada 4 horas, com 14 peças. Você pode comprar uma renovação antecipada."}
 		}},
@@ -135,6 +135,58 @@ HowData = {
 		{key = "salvage", title = {en = "Salvage", pt = "Reciclagem"}, window = "game_crafting", unlocks = {"salvage"}, rows = {
 			{id = "what", en = "Break gear you do not need into shards and orbs. Lock the pieces you want to keep first.", pt = "Quebre o equipamento que não precisa em fragmentos e orbes. Tranque antes as peças que quer guardar."},
 			{id = "who", en = "Level 20+.", pt = "Nível 20+."}
+		}},
+		{key = "loadouts", title = {en = "Loadouts", pt = "Loadouts"}, unlocks = {"loadouts"}, rows = {
+			{id = "what", en = "Save your passive tree and gear as a build. Switch between builds in town.", pt = "Salve a sua árvore passiva e o equipamento como uma build. Troque de build na cidade."},
+			{id = "who", en = "Level 15+.", pt = "Nível 15+."}
+		}},
+		{key = "orbexchange", title = {en = "Orb Exchange", pt = "Orb Exchange"}, unlocks = {"orbexchange"}, rows = {
+			{id = "what", en = "Trade crafting orbs with other players. Post the price you want and wait for a buyer.", pt = "Troque orbes de criação com outros jogadores. Coloque o preço que quer e espere um comprador."},
+			{id = "who", en = "Level 20+.", pt = "Nível 20+."}
+		}},
+		{key = "charms", title = {en = "Charms", pt = "Charms"}, unlocks = {"charms"}, rows = {
+			{id = "what", en = "Place the charms you find for small bonuses. More cells open as you level.", pt = "Coloque os charms que encontrar para pequenos bônus. Mais espaços abrem conforme você sobe de nível."},
+			{id = "who", en = "Level 15+.", pt = "Nível 15+."}
+		}},
+		{key = "seasonpass", title = {en = "Season Pass", pt = "Season Pass"}, unlocks = {"seasonpass"}, rows = {
+			{id = "what", en = "Playing fills the pass; every tier has a reward. Claim what you earned in the window.", pt = "Jogar enche o passe; cada nível tem uma recompensa. Pegue o que ganhou na janela."},
+			{id = "who", en = "Level 10+.", pt = "Nível 10+."}
+		}},
+		{key = "professions", title = {en = "Professions", pt = "Profissões"}, unlocks = {"professions"}, rows = {
+			{id = "what", en = "Gather ore, herbs, hides and fish in the hunting grounds. Sell them to the Material Broker for gold.", pt = "Colete minério, ervas, couro e peixe nas áreas de caça. Venda para o Material Broker por ouro."},
+			{id = "who", en = "Level 20+.", pt = "Nível 20+."}
+		}},
+		{key = "transmog", title = {en = "Transmog", pt = "Transmog"}, unlocks = {"transmog"}, rows = {
+			{id = "what", en = "Make your gear look like other gear you have found. Only the look changes, never the stats.", pt = "Deixe o seu equipamento com a aparência de outro que já encontrou. Só a aparência muda, nunca os atributos."},
+			{id = "who", en = "Level 30+.", pt = "Nível 30+."}
+		}},
+		{key = "hideout", title = {en = "Hideout", pt = "Esconderijo"}, unlocks = {"hideout"}, rows = {
+			{id = "what", en = "A room of your own with a depot, a stash and dummies. Decorate it and invite your friends.", pt = "Uma sala só sua com depósito, baú e bonecos de treino. Decore e convide os seus amigos."},
+			{id = "who", en = "Level 30+.", pt = "Nível 30+."}
+		}},
+		{key = "conquest", title = {en = "Conquest Vendor", pt = "Conquest Vendor"}, unlocks = {"conquest"}, rows = {
+			{id = "what", en = "Spend Conquest Tokens on uniques and set pieces. Bosses and clears give the tokens.", pt = "Gaste Conquest Tokens em itens únicos e peças de conjunto. Chefes e conclusões dão os tokens."},
+			{id = "who", en = "Level 50+.", pt = "Nível 50+."}
+		}},
+		{key = "guildwar", title = {en = "Guild Wars", pt = "Guild Wars"}, unlocks = {"guildwar"}, rows = {
+			{id = "what", en = "Guild against guild: declare a war and count the kills. Leaders and vice-leaders declare it.", pt = "Guilda contra guilda: declare uma guerra e conte as mortes. Líderes e vice-líderes declaram."},
+			{id = "who", en = "Level 50+.", pt = "Nível 50+."}
+		}},
+		{key = "nemesis", title = {en = "Nemesis", pt = "Nemesis"}, unlocks = {"nemesis"}, rows = {
+			{id = "what", en = "A monster that kills you may come back stronger. Hunt it down for a trophy.", pt = "Um monstro que te mata pode voltar mais forte. Cace-o para ganhar um troféu."},
+			{id = "who", en = "Level 50+.", pt = "Nível 50+."}
+		}},
+		{key = "riftatlas", title = {en = "Rift Atlas", pt = "Rift Atlas"}, unlocks = {"riftatlas"}, rows = {
+			{id = "what", en = "Sealed rifts earn points for the Rift Atlas. Spend them to make your rifts richer.", pt = "Fendas seladas dão pontos para o Rift Atlas. Gaste para deixar as suas fendas mais ricas."},
+			{id = "who", en = "Level 100+.", pt = "Nível 100+."}
+		}},
+		{key = "pvpzone", title = {en = "Scorched Marches", pt = "Scorched Marches"}, unlocks = {"pvpzone"}, rows = {
+			{id = "what", en = "An open zone where players fight players. Go in only when you are ready to be hunted.", pt = "Uma zona aberta onde jogadores lutam contra jogadores. Entre só quando estiver pronto para ser caçado."},
+			{id = "who", en = "Level 150+.", pt = "Nível 150+."}
+		}},
+		{key = "waystoneatlas", title = {en = "Waystone Atlas", pt = "Waystone Atlas"}, unlocks = {"waystoneatlas"}, rows = {
+			{id = "what", en = "Waystone maps earn points for the Waystone Atlas. Spend them to make your maps richer.", pt = "Mapas de waystone dão pontos para o Waystone Atlas. Gaste para deixar os seus mapas mais ricos."},
+			{id = "who", en = "Level 1100+.", pt = "Nível 1100+."}
 		}}
 	}
 }

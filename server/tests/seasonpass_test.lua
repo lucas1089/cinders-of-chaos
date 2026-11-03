@@ -8,6 +8,19 @@ local P = ChaosSeasonPassCore
 local cfg = dofile("data/scripts/chaos/seasonpass_config.lua")
 local seasonCfg = dofile("data/scripts/chaos/season_config.lua")
 
+-- O368: the window's level gate
+do
+	local function eq0(a, b, m) if a ~= b then error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
+	eq0(cfg.minLevel, 10, "the Season Pass opens at level 10")
+	local open, need = P.levelGate(cfg.minLevel - 1, cfg)
+	eq0(open, false, "closed below the level"); eq0(need, 10, "the level it names")
+	eq0((P.levelGate(cfg.minLevel, cfg)), true, "open at the level")
+	local fh = io.open("data/scripts/chaos/seasonpass.lua", "r")
+	local src = fh:read("*a")
+	fh:close()
+	eq0(src:find("P.levelGate(player:getLevel(), cfg)", 1, true) ~= nil, true, "the engine checks the gate")
+end
+
 local function eq(a, b, m)
 	if a ~= b then
 		error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2)

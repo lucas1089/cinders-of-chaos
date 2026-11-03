@@ -10,6 +10,9 @@ return {
 	-- base server: 3 leader, 2 vice-leader, 1 member)
 	rank = 2, -- declare, accept, decline, cancel an offer, surrender: the leader and the vice-leaders
 	stakeRank = 3, -- a gold stake (from the guild bank) only by the leader, who alone may withdraw from the guild bank
+	-- O368: the Guild Wars window (wars, the board, the guild boss tab) and every declaration need this character level.
+	-- The kill rules have their own floor (minVictimLevel); the top menu shows Guild Wars from here on (unlocks_config.lua)
+	minLevel = 50,
 
 	-- ------------------------------------------------------------------ the terms of a declaration
 	fragLimits = {10, 25, 50, 100, 200}, -- counted kills that win the war (the window offers these)

@@ -150,7 +150,9 @@ C.salvage = {small = 2, tall = 4, wide = 4, grand = 8, unique = 15, radiantBonus
 C.reforge = {small = 6, tall = 12, wide = 12, grand = 24}
 
 -- ------------------------------------------------------------------ rules
-C.minLevel = 8
+-- placing, moving and taking out charms needs this level. O368: 8 -> 15, past the first passive point and the first
+-- systems of level 8; the top menu shows Charms from here on (unlocks_config.lua key "charms")
+C.minLevel = 15
 C.maxPlaced = 20
 -- placing, moving and taking out: anywhere but in combat (no fight condition, not PZ-locked)
 C.outOfCombat = true

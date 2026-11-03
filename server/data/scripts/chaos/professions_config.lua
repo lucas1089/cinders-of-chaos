@@ -22,6 +22,9 @@ C.opcode = 195 -- ChaosOpcodes.professions (server/README.md "Opcode collision c
 C.tables = {levels = "chaos_professions", sales = "chaos_professions_sales"}
 C.staffGroup = 4 -- /professions for this group id and above
 C.requestMs = 300 -- the client may send this often at most
+-- O368: the window, gathering, flaying and the Angling roll need this character level (stock fishing stays open). The
+-- first levels are for hunting; the top menu shows Professions from here on (unlocks_config.lua key "professions")
+C.minLevel = 20
 
 -- ------------------------------------------------------------------ professions
 -- order = the order everywhere (window, achievements, codex). tools: item ids that work; channelMs: the gather time

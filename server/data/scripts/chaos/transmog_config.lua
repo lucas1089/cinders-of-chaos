@@ -13,6 +13,9 @@
 
 local cfg = {
 	opcode = 212, -- ChaosOpcodes.transmog (client game_transmog)
+	-- O368: the window and every change need this character level (a fee of 2000 gold and up is a lot before it). Looks
+	-- still go into the wardrobe below it. The top menu shows Transmog from here on (unlocks_config.lua key "transmog")
+	minLevel = 30,
 	tables = {
 		looks = "chaos_transmog", -- one row per account and unlocked look (server item id)
 		sets = "chaos_transmog_sets" -- one row per account and owned appearance set

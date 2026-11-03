@@ -478,6 +478,16 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "transmog." .. action, action == "looks" and 150 or 300) then
 		return
 	end
+	-- O368: below the level nothing answers; opening says when it opens (the wardrobe still collects)
+	local levelOk, need = K.levelGate(player:getLevel(), cfg)
+	if not levelOk then
+		if action == "open" then
+			local text = ChaosI18n.msg("Transmog opens at level %d.", need)
+			sendResult(player, false, text)
+			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, Chaos.tx(player, text))
+		end
+		return
+	end
 	local ok, err = pcall(function()
 		if action == "open" then
 			if cfg.unlock.scanOnOpen then
