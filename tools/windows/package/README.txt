@@ -29,8 +29,10 @@ Map editor
     4. Double-click open-map-editor.bat. It opens the editor on the server's map, with the 10.98 client files
        (mapeditor\client: the Chaos Tibia.dat and Tibia.spr, and Tibia.otfi, which tells the editor the .spr has
        transparency; keep it there) and the server folder (server\: items.otb and items.xml
-       with every Chaos item, the map in server\data\world) already chosen. The Chaos monsters are in the creature
-       list (mapeditor\data\user\data\1098\creatures.xml).
+       with every Chaos item, the map in server\data\world) already chosen. Every monster and NPC of the server is in
+       the creature list (mapeditor\data\user\data\1098\creatures.xml), so their spawns show who stands there. NPCs
+       the server places at start (the Gambler, the Loot Buyer, the market stalls) are not in the map file and do not
+       show in the editor.
   Areas asked for in chat (the map inbox, docs/MAP_GUIDE.md "Map inbox"): the owner publishes them in the admin app
   (Comandos > Mapas pedidos > Publicar areas), which shows an address (the url= line). Double-click fetch-areas.bat, paste
   that address once (it is kept in mapeditor\inbox\source.txt), and it downloads the areas into mapeditor\inbox\<id>\
