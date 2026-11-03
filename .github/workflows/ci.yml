@@ -750,6 +750,11 @@ jobs:
           python3 -I tools/ci/check_credits_test.py
           python3 -I client/tools/gen_credits_test.py
 
+      - name: Map editor tools (mapeditor/tools; the build itself is mapeditor-build.yml)
+        run: |
+          python3 -I mapeditor/tools/run_profile_test.py
+          python3 -I mapeditor/tools/upstream_test.py
+
       - name: Client release host and site (client/tools/set_server_host.py)
         run: python3 -I client/tools/set_server_host_test.py
 

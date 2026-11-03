@@ -1,0 +1,384 @@
+# Our map editor (mapeditor/README.md, ROADMAP O382): the upstream editor at the commit pinned in mapeditor/UPSTREAM,
+# mapeditor/patches/*.patch applied in name order (git apply), built for Windows x64 with the upstream CMake preset and
+# vcpkg manifest (Qt 6 from vcpkg, pinned by the manifest's builtin-baseline), tested with the upstream CI test subset.
+#
+# Artifacts:
+#   mapeditor-windows-x64   the release folder (the editor exe, its Qt runtime, data/, LICENSE, NOTICE)
+#   mapeditor-source        the patched source as a zip, plus our patches, the pin and mapeditor/README.md in
+#                           cinders-patches/ (AGPL-3.0: the source of what we ship goes with it)
+#
+# Profile (input profile: true): a second build with only the harness patches (mapeditor/BASELINE_PATCHES), the
+# merged Tibia.dat / Tibia.spr and the map master from the private branch windows-assets (as windows-package.yml
+# gets them), and run_profile.py runs both builds on our map: load time, peak RAM, frame times while panning. The
+# table goes into the job summary. Rendering on the runner is software (Mesa llvmpipe OpenGL or D3D11 WARP), good for
+# before / after numbers of the same run, not for absolute FPS.
+#
+# The upstream repository is never written in this repo outside docs/CREDITS.md (tools/ci/check_names.py):
+# mapeditor/tools/upstream.py takes it from the input upstream_repo, the repository variable MAPEDITOR_UPSTREAM_REPO,
+# or the credits entry of the map editor.
+#
+# First run: vcpkg builds Qt (qtbase, qtdeclarative, qtshadertools, qtsvg), about 2 to 3 hours; the vcpkg binary cache
+# (actions/cache, key: the manifest, the triplets) keeps the result, so later runs take about 20-30 minutes.
+# Never on pull_request: PR checks stay fast.
+name: Map editor build
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Also build upstream + harness only and profile both on our map (needs the windows-assets branch)"
+        type: boolean
+        required: false
+        default: false
+      assets_ref:
+        description: "Branch with things/ (dat/spr parts), world/ (map master) and server/ (base server)"
+        required: false
+        default: "windows-assets"
+      profile_runs:
+        description: "Runs per build and scenario"
+        required: false
+        default: "3"
+      pan_seconds:
+        description: "Seconds of panning per run"
+        required: false
+        default: "8"
+      profile_backend:
+        description: "Graphics on the runner (no GPU): OpenGL through Mesa llvmpipe, or Direct3D 11 WARP"
+        type: choice
+        options: [opengl-mesa, d3d11-warp]
+        default: opengl-mesa
+      mesa_version:
+        description: "Mesa build for opengl-mesa (release tag of the Windows Mesa builds)"
+        required: false
+        default: "24.3.4"
+      upstream_repo:
+        description: "OWNER/NAME of the upstream editor (empty: variable MAPEDITOR_UPSTREAM_REPO, else docs/CREDITS.md)"
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    paths:
+      - "mapeditor/**"
+      - ".github/workflows/mapeditor-build.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mapeditor-build-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VCPKG_ROOT: C:\v
+  VCPKG_CACHE: C:\vb
+  VCPKG_DISABLE_METRICS: "1"
+  VCPKG_INSTALL_OPTIONS: --clean-after-build
+  MAPEDITOR_UPSTREAM_REPO: ${{ vars.MAPEDITOR_UPSTREAM_REPO }}
+
+jobs:
+  build:
+    name: Build (${{ matrix.variant }})
+    runs-on: windows-2022
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        # baseline: upstream plus the harness patches only, built for the profile's "before" numbers
+        variant: ${{ fromJSON(inputs.profile && '["patched","baseline"]' || '["patched"]') }}
+    steps:
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Upstream repository and pinned commit
+        id: pin
+        shell: bash
+        run: python -I chaos/mapeditor/tools/upstream.py --repo "${{ inputs.upstream_repo }}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Check out the upstream editor at the pin
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.pin.outputs.repo }}
+          ref: ${{ steps.pin.outputs.sha }}
+          path: src
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Apply our patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C src rev-parse HEAD)" = "${{ steps.pin.outputs.sha }}"
+          : > applied.txt
+          for p in chaos/mapeditor/patches/*.patch; do
+            name=$(basename "$p")
+            if [ "${{ matrix.variant }}" = baseline ] && ! grep -qx "$name" chaos/mapeditor/BASELINE_PATCHES; then
+              continue
+            fi
+            git -C src apply --whitespace=nowarn "../$p"
+            echo "$name" | tee -a applied.txt
+          done
+          git -C src status --short
+
+      - name: vcpkg at the manifest's baseline
+        shell: pwsh
+        run: |
+          $baseline = (Get-Content src/vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
+          $tag = Select-String -Path src/scripts/build-release.ps1 -Pattern '^\$vcpkgTag = "([^"]+)"' |
+            ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -First 1
+          if (-not $baseline) { throw "vcpkg.json has no builtin-baseline" }
+          Write-Host "vcpkg tag $tag, baseline $baseline"
+          if ($tag) { git clone --branch $tag --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_ROOT }
+          else { git clone --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_ROOT }
+          if ($LASTEXITCODE -ne 0) { throw "cloning vcpkg failed" }
+          if ((git -C $env:VCPKG_ROOT rev-parse HEAD).Trim() -ne $baseline) {
+            git -C $env:VCPKG_ROOT fetch --depth 1 origin $baseline
+            git -C $env:VCPKG_ROOT checkout --detach $baseline
+            if ($LASTEXITCODE -ne 0) { throw "checking out the vcpkg baseline failed" }
+          }
+          & "$env:VCPKG_ROOT\bootstrap-vcpkg.bat" -disableMetrics
+          if ($LASTEXITCODE -ne 0) { throw "bootstrapping vcpkg failed" }
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_CACHE | Out-Null
+          "VCPKG_BINARY_SOURCES=clear;files,$env:VCPKG_CACHE,readwrite" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Restore the vcpkg binary cache (Qt)
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: C:\vb
+          key: mapeditor-vcpkg-v1-${{ hashFiles('src/vcpkg.json', 'src/triplets/**') }}
+          restore-keys: mapeditor-vcpkg-v1-
+
+      - name: Configure (vcpkg installs the dependencies)
+        shell: pwsh
+        working-directory: src
+        run: |
+          cmake --preset windows-vcpkg
+          if ($LASTEXITCODE -ne 0) {
+            $log = "build/vcpkg-windows/vcpkg-manifest-install.log"
+            if (Test-Path $log) { Get-Content $log -Tail 80 }
+            throw "CMake configuration failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Save the vcpkg binary cache
+        # saved also when a later step fails: every port vcpkg built is kept; one variant saves
+        if: always() && matrix.variant == 'patched' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: C:\vb
+          key: mapeditor-vcpkg-v1-${{ hashFiles('src/vcpkg.json', 'src/triplets/**') }}
+
+      - name: Build the release package and the tests
+        shell: pwsh
+        working-directory: src
+        run: |
+          # the targets and tests of the upstream release workflow at the pinned commit
+          $targets = @('package_all')
+          if ('${{ matrix.variant }}' -eq 'patched') {
+            $targets += 'ground_brush_export_test','wall_brush_export_test','brush_png_archive_test','obd_export_test',
+              'dat_legacy_740_test','otbm_rme_compatibility_test','otbm_legacy_subtypes_test','otbm_numbered_zones_test',
+              'ui_colorize_test','tibia_ui_qml_test','weather_particles_test','tilemapgen_assets_test'
+          }
+          cmake --build build/vcpkg-windows --config Release --target $targets --parallel
+          if ($LASTEXITCODE -ne 0) { throw "the build failed with exit code $LASTEXITCODE" }
+
+      - name: Tests (upstream CI subset)
+        if: matrix.variant == 'patched'
+        shell: pwsh
+        working-directory: src
+        env:
+          QT_FORCE_STDERR_LOGGING: "1"
+        run: |
+          ctest --test-dir build/vcpkg-windows -C Release --output-on-failure `
+            -R '^(release_manifest|[a-z]+_startup|[a-z]+_updater_startup|ground_brush_export|wall_brush_export|brush_png_archive|obd_export|dat_legacy_740|otbm_rme_compatibility|otbm_legacy_subtypes|otbm_numbered_zones|ui_colorize|tibia_ui_qml|weather_particles|tilemapgen_assets)$'
+          if ($LASTEXITCODE -ne 0) { throw "tests failed with exit code $LASTEXITCODE" }
+
+      - name: Release folder and patched source
+        shell: pwsh
+        run: |
+          $release = Get-ChildItem src/release -Directory | Where-Object { $_.Name -like '*-windows-x64' } | Select-Object -First 1
+          $sourceZip = Get-ChildItem src/release -File | Where-Object { $_.Name -like '*-source.zip' } | Select-Object -First 1
+          if (-not $release -or -not $sourceZip) { throw "the release package has no windows-x64 folder or source zip" }
+          New-Item -ItemType Directory -Force -Path out/editor, out/source | Out-Null
+          Copy-Item -Recurse "$($release.FullName)/*" out/editor/
+          $info = @(
+            "upstream: ${{ steps.pin.outputs.sha }}",
+            "variant: ${{ matrix.variant }}",
+            "patches: $((Get-Content applied.txt) -join ', ')",
+            "cinders of chaos commit: $env:GITHUB_SHA",
+            "built: $((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mmZ')) by run $env:GITHUB_RUN_ID"
+          )
+          $info | Set-Content -Encoding utf8 out/editor/BUILD_INFO.txt
+          # AGPL-3.0: the patched source of this build, with our patches and the pin beside it
+          Expand-Archive -Path $sourceZip.FullName -DestinationPath out/source
+          $extra = New-Item -ItemType Directory -Force -Path out/source/cinders-patches
+          Copy-Item chaos/mapeditor/README.md, chaos/mapeditor/UPSTREAM, chaos/mapeditor/BASELINE_PATCHES $extra.FullName
+          Copy-Item -Recurse chaos/mapeditor/patches $extra.FullName
+          Copy-Item applied.txt "$($extra.FullName)/APPLIED.txt"
+          Compress-Archive -Path out/source/* -DestinationPath out/mapeditor-source.zip
+          Get-ChildItem out/editor | Format-Table Name, Length
+
+      - name: Upload the editor
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.variant == 'patched' && 'mapeditor-windows-x64' || 'mapeditor-baseline-windows-x64' }}
+          path: out/editor
+          retention-days: ${{ matrix.variant == 'patched' && 30 || 3 }}
+          if-no-files-found: error
+
+      - name: Upload the patched source
+        if: matrix.variant == 'patched'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapeditor-source
+          path: out/mapeditor-source.zip
+          retention-days: 30
+          if-no-files-found: error
+
+  profile-data:
+    name: Profile data (our items.otb and map)
+    if: inputs.profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the assets
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.assets_ref || 'windows-assets' }}
+          path: assets
+          sparse-checkout: |
+            server
+            world
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: The installed server's items and map (as the Windows package makes them)
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy luajit
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir -p base work out/world
+          tar -xJf assets/server/base-server.tar.xz -C base
+          mv base/*/ work/server
+          bash chaos/tools/windows/prepare_server.sh work/server assets/world
+          cp work/server/data/items/items.otb work/server/data/items/items.xml out/
+          name=$(sed -n 's/^mapName *= *"\([^"]*\)".*/\1/p' work/server/config.lua | head -1)
+          test -n "$name" && test -f "work/server/data/world/$name.otbm"
+          cp work/server/data/world/"$name".otbm out/world/map.otbm
+          # the spawn and house files the map names (optional for the editor)
+          for f in work/server/data/world/"$name"-*.xml; do if [ -f "$f" ]; then cp "$f" out/world/; fi; done
+          du -sh out/*
+
+      - name: Upload the profile data
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapeditor-profile-data
+          path: out
+          retention-days: 1
+          if-no-files-found: error
+
+  profile:
+    name: Profile (upstream + harness against ours)
+    if: inputs.profile
+    needs: [build, profile-data]
+    runs-on: windows-2022
+    timeout-minutes: 180
+    steps:
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the dat/spr parts
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.assets_ref || 'windows-assets' }}
+          path: assets
+          sparse-checkout: |
+            things
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Get both builds and the profile data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mapeditor-*
+          path: art
+
+      - name: Client folder (Tibia.dat, Tibia.spr, items.otb, Tibia.otfi)
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir -p client
+          cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C client
+          test -f client/Tibia.dat && test -f client/Tibia.spr
+          cp art/mapeditor-profile-data/items.otb art/mapeditor-profile-data/items.xml client/
+          # the sprite info file: transparency and the extended format read from the spr (as the package does)
+          python -I chaos/tools/windows/editor_versions.py client --otfi client/Tibia.otfi
+          rm -rf assets/things
+          ls -la client art/mapeditor-profile-data/world
+
+      - name: Software OpenGL (Mesa llvmpipe) next to both builds
+        if: inputs.profile_backend != 'd3d11-warp'
+        shell: bash
+        run: |
+          set -euo pipefail
+          v="${{ inputs.mesa_version || '24.3.4' }}"
+          curl -fsSL -o mesa.7z "https://github.com/pal1000/mesa-dist-win/releases/download/$v/mesa3d-$v-release-msvc.7z"
+          7z x -y -omesa mesa.7z > /dev/null
+          for d in art/mapeditor-windows-x64 art/mapeditor-baseline-windows-x64; do
+            cp mesa/x64/opengl32.dll "$d/"
+            for f in libgallium_wgl.dll libglapi.dll; do if [ -f "mesa/x64/$f" ]; then cp "mesa/x64/$f" "$d/"; fi; done
+          done
+          echo "QSG_RHI_BACKEND=opengl" >> "$GITHUB_ENV"
+          echo "GALLIUM_DRIVER=llvmpipe" >> "$GITHUB_ENV"
+          echo "PROFILE_GRAPHICS=OpenGL, Mesa $v llvmpipe" >> "$GITHUB_ENV"
+
+      - name: Direct3D 11 WARP
+        if: inputs.profile_backend == 'd3d11-warp'
+        shell: bash
+        run: |
+          echo "QSG_RHI_BACKEND=d3d11" >> "$GITHUB_ENV"
+          echo "QSG_RHI_PREFER_SOFTWARE_RENDERER=1" >> "$GITHUB_ENV"
+          echo "PROFILE_GRAPHICS=Direct3D 11 WARP" >> "$GITHUB_ENV"
+
+      - name: Profile both builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          exe() { find "$1" -maxdepth 1 -name '*.exe' ! -iname '*updater*' | head -1; }
+          base=$(exe art/mapeditor-baseline-windows-x64)
+          ours=$(exe art/mapeditor-windows-x64)
+          test -n "$base" && test -n "$ours"
+          status=0
+          python -I chaos/mapeditor/tools/run_profile.py \
+            --build "upstream+harness=$base" --build "ours=$ours" \
+            --map art/mapeditor-profile-data/world/map.otbm --client client --version 1098 \
+            --runs "${{ inputs.profile_runs || '3' }}" --pan-seconds "${{ inputs.pan_seconds || '8' }}" \
+            --logs profile-logs --markdown profile.md --json profile.json || status=$?
+          {
+            cat profile.md
+            echo "- graphics: $PROFILE_GRAPHICS (software rendering: compare the two builds, not absolute FPS)"
+            echo "- upstream: $(sed -n 's/^upstream: //p' art/mapeditor-windows-x64/BUILD_INFO.txt)"
+            echo "- ours: $(sed -n 's/^patches: //p' art/mapeditor-windows-x64/BUILD_INFO.txt)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+      - name: Upload the profile logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapeditor-profile-logs
+          path: |
+            profile-logs
+            profile.md
+            profile.json
+          retention-days: 7
+          if-no-files-found: ignore

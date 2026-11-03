@@ -1,0 +1,221 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Tue, 3 Nov 2026 14:06:44 +0000
+Subject: [PATCH 1/6] Profile: time map panning frames (--profile-pan)
+
+Adds an automated pan mode for timing runs. After the initial view is
+ready the camera moves east, then south, at a fixed speed in tiles per
+second (--profile-pan SECONDS, --profile-pan-speed N). Every presented
+frame is timed on the render thread and the DME_LOAD record
+map_pan_complete reports frames, fps and the avg/p50/p95/p99/worst
+frame interval. Optional view setup: --profile-tile-size, --profile-floor,
+--profile-lighting 0|1, --profile-animations 0|1,
+--profile-lower-floors 0|1. --profile-timeout SECONDS replaces the fixed
+60 s readiness limit (default unchanged). Without these options the
+editor behaves as before.
+---
+ editor/main.cpp      | 143 ++++++++++++++++++++++++++++++++++++++++++-
+ editor/map/mapview.h |   7 +++
+ 2 files changed, 148 insertions(+), 2 deletions(-)
+
+diff --git a/editor/main.cpp b/editor/main.cpp
+index 3e81dcc..3e46a7e 100644
+--- a/editor/main.cpp
++++ b/editor/main.cpp
+@@ -11,7 +11,12 @@
+ #include <QSurfaceFormat>
+ #include <QTimer>
+ 
++#include <algorithm>
+ #include <cstdio>
++#include <functional>
++#include <memory>
++#include <mutex>
++#include <vector>
+ 
+ #include "backend.h"
+ #include "dmewindow.h"
+@@ -67,6 +72,109 @@ void profilePalette(QObject *root, Backend *backend, QGuiApplication *app, bool
+     });
+     timer->start();
+ }
++
++// Automated map panning (--profile-pan SECONDS). The camera moves east for the
++// first half and south for the second half at a fixed speed in tiles per
++// second. Every presented frame of the window is timed on the render thread;
++// the record reports the distribution of frame intervals while panning.
++struct PanOptions {
++    int seconds = 6;
++    double speed = 60.0;
++    int tileSize = 0;
++    int floor = -1;
++    int lighting = -1;
++    int animations = -1;
++    int lowerFloors = -1;
++};
++
++void profileMapPan(QObject *root, MapView *view, const PanOptions &options,
++                   std::function<void(int)> done)
++{
++    auto *window = qobject_cast<QQuickWindow *>(root);
++    if (!window || !view) { done(3); return; }
++    // Measure the renderer, not the FPS limit of the settings (default 60).
++    for (MapRhiView *rhiView : root->findChildren<MapRhiView *>())
++        if (!rhiView->previewWindow()) rhiView->setMaxFps(0);
++    if (options.tileSize > 0) view->setTileSize(options.tileSize);
++    if (options.floor >= 0 && options.floor <= 15) view->setFloor(options.floor);
++    if (options.lighting >= 0) view->setTorchOn(options.lighting != 0);
++    if (options.animations >= 0) view->setShowAnimations(options.animations != 0);
++    if (options.lowerFloors >= 0) view->setShowLowerFloors(options.lowerFloors != 0);
++
++    struct PanMeasurement {
++        QElapsedTimer clock;
++        std::mutex mutex;
++        std::vector<qint64> swaps;
++        double x0 = 0, y0 = 0;
++        bool finished = false;
++    };
++    auto measurement = std::make_shared<PanMeasurement>();
++    measurement->x0 = view->renderOriginX();
++    measurement->y0 = view->renderOriginY();
++    measurement->swaps.reserve(16384);
++    const qint64 durationMs = qint64(std::max(1, options.seconds)) * 1000;
++    const QString setup = QStringLiteral("tile_size=%1 floor=%2 lighting=%3 animations=%4 lower_floors=%5 speed=%6")
++        .arg(view->tileSize()).arg(view->floor()).arg(view->torchOn() ? 1 : 0)
++        .arg(view->showAnimations() ? 1 : 0).arg(view->showLowerFloors() ? 1 : 0)
++        .arg(options.speed);
++    LoadProfile::record(QStringLiteral("map_pan_begin"), -1, setup);
++    measurement->clock.start();
++    auto connection = std::make_shared<QMetaObject::Connection>();
++    *connection = QObject::connect(window, &QQuickWindow::frameSwapped, window, [measurement] {
++        const qint64 now = measurement->clock.nsecsElapsed();
++        std::lock_guard<std::mutex> lock(measurement->mutex);
++        if (!measurement->finished) measurement->swaps.push_back(now);
++    }, Qt::DirectConnection);
++
++    auto *timer = new QTimer(root);
++    timer->setTimerType(Qt::PreciseTimer);
++    timer->setInterval(4);
++    QObject::connect(timer, &QTimer::timeout, root, [=] {
++        const qint64 elapsed = measurement->clock.elapsed();
++        if (elapsed < durationMs) {
++            const double half = durationMs / 2000.0;
++            const double t = elapsed / 1000.0;
++            const double east = options.speed * std::min(t, half);
++            const double south = options.speed * std::max(0.0, t - half);
++            view->profileSetOrigin(measurement->x0 + east, measurement->y0 + south);
++            return;
++        }
++        timer->stop();
++        QObject::disconnect(*connection);
++        std::vector<qint64> swaps;
++        {
++            std::lock_guard<std::mutex> lock(measurement->mutex);
++            measurement->finished = true;
++            swaps.swap(measurement->swaps);
++        }
++        std::vector<double> intervals;
++        for (size_t i = 1; i < swaps.size(); ++i)
++            intervals.push_back((swaps[i] - swaps[i - 1]) / 1.0e6);
++        std::sort(intervals.begin(), intervals.end());
++        double sum = 0;
++        for (double value : intervals) sum += value;
++        const auto percentile = [&intervals](double p) {
++            if (intervals.empty()) return 0.0;
++            const size_t index = std::min(intervals.size() - 1,
++                size_t(p * double(intervals.size() - 1) + 0.5));
++            return intervals[index];
++        };
++        const double average = intervals.empty() ? 0.0 : sum / double(intervals.size());
++        LoadProfile::record(QStringLiteral("map_pan_complete"), elapsed,
++            QStringLiteral("frames=%1 fps=%2 avg_ms=%3 p50_ms=%4 p95_ms=%5 p99_ms=%6 worst_ms=%7 %8")
++                .arg(swaps.size())
++                .arg(QString::number(swaps.size() * 1000.0 / double(elapsed), 'f', 1))
++                .arg(QString::number(average, 'f', 2))
++                .arg(QString::number(percentile(0.50), 'f', 2))
++                .arg(QString::number(percentile(0.95), 'f', 2))
++                .arg(QString::number(percentile(0.99), 'f', 2))
++                .arg(QString::number(intervals.empty() ? 0.0 : intervals.back(), 'f', 2))
++                .arg(setup));
++        timer->deleteLater();
++        done(swaps.size() > 10 ? 0 : 3);
++    });
++    timer->start();
++}
+ }
+ 
+ int main(int argc, char *argv[])
+@@ -190,7 +298,8 @@ int main(int argc, char *argv[])
+             QMetaObject::invokeMethod(root, "prepareProfileEditor");
+             const int repeats = qMax(1, option(QStringLiteral("--profile-repeat")).toInt());
+             if (args.contains(QStringLiteral("--profile-exit")) || repeats > 1
+-                    || args.contains(QStringLiteral("--profile-scroll"))) {
++                    || args.contains(QStringLiteral("--profile-scroll"))
++                    || args.contains(QStringLiteral("--profile-pan"))) {
+                 auto remaining = std::make_shared<int>(repeats);
+                 if (auto *view = root->findChild<MapView *>())
+                     QObject::connect(view, &MapView::initialViewReady, &app,
+@@ -201,6 +310,33 @@ int main(int argc, char *argv[])
+                                 QMetaObject::invokeMethod(root, "profileReload", Q_ARG(QVariant, path),
+                                     Q_ARG(QVariant, folder), Q_ARG(QVariant, version));
+                             });
++                        } else if (args.contains(QStringLiteral("--profile-pan"))) {
++                            QTimer::singleShot(0, root, [&app, &backend, root, args] {
++                                auto option = [&args](const QString &name) {
++                                    const int index = args.indexOf(name);
++                                    return index >= 0 && index + 1 < args.size() ? args[index + 1] : QString();
++                                };
++                                auto number = [&option](const QString &name, int fallback) {
++                                    bool ok = false;
++                                    const int value = option(name).toInt(&ok);
++                                    return ok ? value : fallback;
++                                };
++                                PanOptions options;
++                                options.seconds = qBound(1, number(QStringLiteral("--profile-pan"), 6), 120);
++                                options.speed = qBound(1, number(QStringLiteral("--profile-pan-speed"), 60), 1000);
++                                options.tileSize = number(QStringLiteral("--profile-tile-size"), 0);
++                                options.floor = number(QStringLiteral("--profile-floor"), -1);
++                                options.lighting = number(QStringLiteral("--profile-lighting"), -1);
++                                options.animations = number(QStringLiteral("--profile-animations"), -1);
++                                options.lowerFloors = number(QStringLiteral("--profile-lower-floors"), -1);
++                                const bool exitAfter = args.contains(QStringLiteral("--profile-exit"));
++                                const bool scroll = args.contains(QStringLiteral("--profile-scroll"));
++                                profileMapPan(root, root->findChild<MapView *>(), options,
++                                    [&app, &backend, root, exitAfter, scroll](int code) {
++                                        if (scroll) profilePalette(root, &backend, &app, exitAfter);
++                                        else if (exitAfter) app.exit(code);
++                                    });
++                            });
+                         } else if (args.contains(QStringLiteral("--profile-scroll"))) {
+                             QTimer::singleShot(0, root, [&app, &backend, root, args] {
+                                 profilePalette(root, &backend, &app, args.contains(QStringLiteral("--profile-exit")));
+@@ -212,7 +348,10 @@ int main(int argc, char *argv[])
+                             });
+                         }
+                     });
+-                if (args.contains(QStringLiteral("--profile-exit"))) QTimer::singleShot(60000, &app, [&app] {
++                bool timeoutValid = false;
++                const int timeoutSeconds = option(QStringLiteral("--profile-timeout")).toInt(&timeoutValid);
++                const int timeoutMs = timeoutValid && timeoutSeconds > 0 ? qMin(timeoutSeconds, 3600) * 1000 : 60000;
++                if (args.contains(QStringLiteral("--profile-exit"))) QTimer::singleShot(timeoutMs, &app, [&app] {
+                     LoadProfile::record(QStringLiteral("readiness_timeout"));
+                     app.exit(2);
+                 });
+diff --git a/editor/map/mapview.h b/editor/map/mapview.h
+index afc2ee1..b58a4ce 100644
+--- a/editor/map/mapview.h
++++ b/editor/map/mapview.h
+@@ -622,6 +622,13 @@ public:
+     Q_INVOKABLE void centerOnContent();
+ 
+     Q_INVOKABLE void centerOnTile(int x, int y, int z);
++    // Automated timing runs (--profile-pan): move the camera to an exact
++    // fractional origin, the same way arrow-key navigation does.
++    void profileSetOrigin(double x, double y) {
++        m_navigationController.originX() = x;
++        m_navigationController.originY() = y;
++        emit contentUpdated(); update();
++    }
+ 
+     Q_INVOKABLE void zoomSteps(int steps) {
+         zoomAt(steps, width() / 2.0, height() / 2.0);

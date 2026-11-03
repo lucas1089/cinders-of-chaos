@@ -85,6 +85,7 @@ python3 -I server/tools/patch_spell_ids_test.py      # stock spell ids below 256
 python3 -I server/tools/monster_level_patch_test.py   # src-patch 0082: monster level = middle of the <level> range, no level skull (O326)
 python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
+python3 -I mapeditor/tools/run_profile_test.py && python3 -I mapeditor/tools/upstream_test.py   # our map editor (O382): profile table, upstream pin; build and profile: mapeditor-build.yml, patches: mapeditor/tools/check_patches.sh UPSTREAM_CLONE
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
 for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests
 
@@ -147,6 +148,7 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
 - `ROADMAP.md`: status of each item.
 - `server/README.md`: one section per server system, install steps, assumptions.
 - `client/MANIFEST.md`: client modules. `client/BASE.md`: client base patches.
+- `mapeditor/README.md`: our map editor build, its patches and the profile.
 - `docs/CLASSES.md`: classes.
 - `docs/CREDITS.md`: every third-party source. The game and the website show it.
 - `server/data/spells/README.md`: measured balance numbers.

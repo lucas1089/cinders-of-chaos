@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Tue, 3 Nov 2026 14:10:04 +0000
+Subject: [PATCH 6/6] Palette: look up brush aliases only when name and id miss
+
+PaletteFilter::filterAcceptsRow() built the brush alias list of every
+row (six hash lookups, list appends and a sort in
+BrushStore::searchAliasesForServerId) on each search keystroke, also for
+rows whose name or server id already matched. With about 40k item types
+this ran 40k times per keystroke. The aliases are now looked up only when
+the name and the id do not match; the accepted rows are the same.
+---
+ editor/core/palettefilter.cpp | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/editor/core/palettefilter.cpp b/editor/core/palettefilter.cpp
+index 7bb53d0..ca7fb95 100644
+--- a/editor/core/palettefilter.cpp
++++ b/editor/core/palettefilter.cpp
+@@ -222,18 +222,21 @@ bool PaletteFilter::filterAcceptsRow(int sourceRow, const QModelIndex &sourcePar
+     } else if (!m_search.isEmpty()) {
+         const QString name = idx.data(OtbReader::NameRole).toString();
+         const QString sid = idx.data(OtbReader::ServerIdRole).toString();
+-        const QStringList aliases = m_brushStore
+-                ? m_brushStore->searchAliasesForServerId(sid.toInt()) : QStringList{};
+-        bool aliasMatches = false;
+-        for (const QString &alias : aliases) {
+-            if (alias.contains(m_search, Qt::CaseInsensitive)) {
+-                aliasMatches = true;
+-                break;
++        // The brush aliases are built per row (several hash lookups, a sorted
++        // list); look them up only when the name and the id do not match.
++        if (!name.contains(m_search, Qt::CaseInsensitive) && !sid.startsWith(m_search)) {
++            const QStringList aliases = m_brushStore
++                    ? m_brushStore->searchAliasesForServerId(sid.toInt()) : QStringList{};
++            bool aliasMatches = false;
++            for (const QString &alias : aliases) {
++                if (alias.contains(m_search, Qt::CaseInsensitive)) {
++                    aliasMatches = true;
++                    break;
++                }
+             }
++            if (!aliasMatches)
++                return false;
+         }
+-        if (!name.contains(m_search, Qt::CaseInsensitive)
+-                && !sid.startsWith(m_search) && !aliasMatches)
+-            return false;
+     }
+     return !m_hideInvisibleSprites
+             || itemHasVisibleSprite(idx.data(OtbReader::ServerIdRole).toInt());
