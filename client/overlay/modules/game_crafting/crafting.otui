@@ -417,6 +417,16 @@ ChaosMainWindow
     !tooltip: tr('Break rolled gear down into rune shards and combine the shards into orbs.')
     @onClick: modules.game_crafting.setMode('salvage')
 
+  ChaosButton
+    id: guideButton
+    anchors.top: orbLabel.top
+    anchors.right: orbLabel.right
+    width: 70
+    height: 22
+    !text: tr('Guide')
+    !tooltip: tr('What every orb does, a safe order to use them, and how gems work.')
+    @onClick: modules.game_crafting.showGuide()
+
   UIScrollArea
     id: orbList
     anchors.top: orbLabel.bottom

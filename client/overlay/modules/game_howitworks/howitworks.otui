@@ -66,6 +66,14 @@ ChaosMainWindow
     step: 24
     pixels-scroll: true
 
+  ChaosCheckBox
+    id: autoBox
+    !text: tr('Open these cards the first time a window opens')
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+
   ChaosButton
     id: closeButton
     !text: tr('Close')

@@ -13077,6 +13077,8 @@ The damage test used `Combat:execute` (the spell path, which runs onTargetCombat
 registered by hand. Not tested in game: a bounty payout and the weekly chest (unit tests of the rolls only), melee hits,
 life leech and attack speed from gems in a fight.
 
+**Crafting Guide (O369).** When the bench opens, `crafting.lua` sends `gemguide` after `info`: `ChaosGems.guide()`, the gem table as numbers (tiers, every type with its name, colour, client look per tier and its weapon / armour / jewel effect with values; effect labels, format and cap; remove costs; socket limits; the Orb of Sockets' name). The client's Guide window writes the texts (client/MANIFEST.md game_crafting). Under 6000 bytes, one message (`tests/gems_test.lua`).
+
 ## Vocation Trials (`trials*.lua`, `TRIALS.md`, client `game_passivetree/trials*.lua`)
 
 **Limits** (`trials_config.lua` `limits`, "Instance limits"): 8 / 9 / 10 minutes by tier (unchanged) with warnings at 2 min, 1 min and 10 s; time up loses the trial (nothing is lost, the 60 s cooldown); at most 8 chambers, the wait and the waiting line when all are in use; a staff close ends a trial without a cooldown.

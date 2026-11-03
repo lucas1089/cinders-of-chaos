@@ -556,6 +556,36 @@ end
 -- the Orb of Sockets: can it be used, and the range of the new count
 -- how to combine with the mouse: "use" is a right-click in the classic controls (the crosshair comes up), then a
 -- left-click on the same stack (gems.lua hint, items.xml text by install_gems.py, the Codex)
+-- The gem table of the crafting bench's guide (client game_crafting craftguide.lua, owner request 2026-11-03): numbers
+-- only, the client writes the texts. {tiers = names, types = [{name, color, look = client id per tier, weapon/armour/
+-- jewel = {effect, values, values2}}], effects = {key = {label, label2, fmt}}, combine = 3, removeCost, sockets =
+-- {kindMax, rarityMax}, socketOrb}. Small enough for one message (well under the 8192 bytes of an extended opcode).
+function G.guide()
+	local types, used = {}, {}
+	for i, t in ipairs(cfg.types) do
+		local looks = {}
+		for tier = 1, G.TIERS do
+			looks[tier] = G.clientIdOf(i, tier)
+		end
+		local row = {name = capital(t.name), color = t.color, look = looks}
+		for _, group in ipairs({"weapon", "armour", "jewel"}) do
+			local e = t[group]
+			if e then
+				row[group] = {effect = e.effect, values = e.values, values2 = e.values2}
+				used[e.effect] = true
+			end
+		end
+		types[#types + 1] = row
+	end
+	local effects = {}
+	for key in pairs(used) do
+		local d = cfg.effects[key]
+		effects[key] = {label = d.label, label2 = d.label2, fmt = d.fmt, cap = d.cap}
+	end
+	return {tiers = cfg.tiers, types = types, effects = effects, combine = 3, removeCost = cfg.removeCost,
+		sockets = {kindMax = cfg.kindMax, rarityMax = cfg.rarityMax}, socketOrb = cfg.socketOrb.name}
+end
+
 G.COMBINE_HOW = "To combine three into one of the next quality: use the stack, then left-click the same stack."
 
 G.reasons = {

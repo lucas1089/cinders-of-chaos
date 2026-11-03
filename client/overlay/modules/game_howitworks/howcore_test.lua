@@ -85,5 +85,17 @@ for _, k in ipairs({ 'What it is', 'Who is it for', 'Monster levels', 'What drop
   ok(pt[k] and pt[k] ~= '', 'pt-BR entry for "' .. k .. '"')
 end
 
+-- first open
+eq(H.charKey('Sir Ash-1'), 'Sir_Ash_1', 'char key keeps letters and digits')
+eq(H.charKey(nil), '_', 'char key of nil')
+local seen = {}
+eq(H.firstOpen(seen, 'A', 'arena'), true, 'first open of arena')
+eq(H.firstOpen(seen, 'A', 'arena'), false, 'second open of arena')
+eq(H.firstOpen(seen, 'B', 'arena'), true, 'another character sees it once too')
+eq(H.firstOpen(seen, 'A', 'tower'), true, 'another card')
+eq(H.firstOpen(nil, 'A', 'arena'), false, 'no settings table')
+eq(H.firstOpen(seen, 'A', nil), false, 'no key')
+eq(H.firstOpen({ A = 'bad' }, 'A', 'arena'), true, 'a broken entry is replaced')
+
 print(string.format('howcore: %d checks, %d failed', count, fails))
 if fails > 0 then os.exit(1) end

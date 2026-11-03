@@ -569,12 +569,10 @@ function setNodeTooltip(widget, node)
 		end
 	end
 	if texts then
-		if customStats and not node.isMastery and statInfoLines then
-			for _, line in ipairs(statInfoLines(customStats)) do
-				table.insert(texts, line) -- statinfo.lua: what each stat does
-			end
-		end
-		widget.setExtendedTooltip(widget, title, texts, tooltipType)
+		-- statinfo.lua: what each stat does; shown only while Alt is held (treetips.lua, pollTreeAlt below)
+		local extra = (customStats and not node.isMastery and statInfoLines) and statInfoLines(customStats) or {}
+		widget.treeTip = { title = title, texts = texts, extra = extra, style = tooltipType }
+		widget.setExtendedTooltip(widget, title, TreeTips.lines(texts, extra, treeAltDown, tr), tooltipType)
 	end
 	if markStatNode and not node.isMastery then
 		markStatNode(widget, customStats) -- statinfo.lua: gold / silver border for Primary / Secondary
@@ -612,6 +610,45 @@ function setTreeStatMarksShown(shown)
 	statMarksShown = shown
 	for _, widget in pairs(nodeWidgets or {}) do
 		applyTreeNodeBorder(widget)
+	end
+end
+
+-- Alt shows the stat explanations in node tooltips (treetips.lua). Polled while the window is open: on a change every
+-- node widget gets its tooltip text again, and the one under the mouse shows the new text at once.
+treeAltDown = false
+local altEvent
+
+local function pollTreeAlt()
+	if not window or not window:isVisible() then
+		return
+	end
+	local down = g_keyboard.isAltPressed() and true or false
+	if down == treeAltDown then
+		return
+	end
+	treeAltDown = down
+	for _, widget in pairs(nodeWidgets or {}) do
+		local t = not widget:isDestroyed() and widget.treeTip
+		if t then
+			widget.setExtendedTooltip(widget, t.title, TreeTips.lines(t.texts, t.extra, down, tr), t.style)
+		end
+	end
+	local hovered = g_ui.getHoveredWidget and g_ui.getHoveredWidget() -- not in every engine build
+	if hovered and hovered.treeTip and g_tooltip and g_tooltip.displayText then
+		g_tooltip.displayText(hovered:getTooltip())
+	end
+end
+
+function startTreeAltPoll()
+	if not altEvent then
+		altEvent = cycleEvent(pollTreeAlt, 100)
+	end
+end
+
+function stopTreeAltPoll()
+	if altEvent then
+		removeEvent(altEvent)
+		altEvent = nil
 	end
 end
 
@@ -1942,6 +1979,7 @@ function calculateStats()
 end
 
 function destroy()
+	stopTreeAltPoll()
 	serverVocation = nil -- the next character may have another class
 	serverClass, serverLine = nil, nil
 	destroyParagon() -- paragon.lua
@@ -2001,6 +2039,7 @@ function show()
 	window:show()
 	window:raise()
 	window:focus()
+	startTreeAltPoll()
 	layoutTreeToolbar()
 	-- The widgets are kept between openings: the tree shows the allocation it had (rebuilt only when the zoom went back
 	-- to the default) until the server's sendNodes, which then changes only the nodes that differ. Before the first
@@ -2027,6 +2066,7 @@ function hide()
 		return 
 	end
 
+	stopTreeAltPoll()
 	window.presets:hide()
 	closeParagon()
 	closeTrials()
