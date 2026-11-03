@@ -63,7 +63,8 @@ function chaos_seo_private_pages(): array {
 /** The plugin pages whose body follows the visitor's language (the <html lang> is set for these). */
 function chaos_seo_bilingual_pages(): array {
 	return array('page_chaos_wiki', 'page_chaos_legal', 'page_chaos_credits', 'page_chaos_coins', 'page_chaos_bazaar',
-		'page_chaos_creator', 'page_chaos_leaderboards', 'page_chaos_fairplay', 'page_chaos_calendar', 'page_chaos_creators');
+		'page_chaos_creator', 'page_chaos_leaderboards', 'page_chaos_fairplay', 'page_chaos_calendar', 'page_chaos_creators',
+		'page_chaos_guide');
 }
 
 /** Title (English key) and description key of the stock pages; the plugin pages set $page_title themselves. */
@@ -113,6 +114,7 @@ function chaos_seo_descriptions(): array {
 		'page_chaos_creator' => 'Creator codes of %s: support a creator with your donation.',
 		'page_chaos_fairplay' => 'What the store of %s never sells: our fair-play pledge, and the time savers with their limits.',
 		'page_chaos_calendar' => 'The calendar of %s: open betas, launch, seasons, patch notes and what resets.',
+		'page_chaos_guide' => 'Start here: the beginner guide of %s. Your first steps, then every feature by the level where it opens.',
 		'page_chaos_creators' => 'The creator program of %s: creator codes, a media kit and how to apply.',
 		'page_chaos_coins' => 'Donate to %s and receive Chaos Coins for the in-game store.',
 		'page_chaos_credits' => 'Every third-party source of %s: art, fonts, libraries and tools.',

@@ -1,0 +1,14 @@
+Module
+  name: game_helpsearch
+  description: Help search - type a question or a few words and get the How it works cards, unlock entries and Codex entries that answer it (System > Help Search, Alt+F); offline ranking in helpcore.lua, static data, no opcode
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ helpsearch_data, helpcore, helpsearch ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+    - game_howitworks
+  autoload: true
+  autoload-priority: 1100
+  @onLoad: init()
+  @onUnload: terminate()

@@ -1,0 +1,130 @@
+// Help search (game_helpsearch): one window, a search box and the best answers. Styles from client_chaos_theme.
+
+HelpResult < UIButton
+  height: 44
+  margin-top: 2
+  image-source: /images/chaos/button_normal
+  image-border: 6
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    image-source: /images/chaos/button_hover
+
+  UILabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: where.left
+    margin-top: 5
+    margin-left: 8
+    margin-right: 6
+    height: 16
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: where
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 6
+    margin-right: 8
+    width: 200
+    height: 14
+    font: verdana-11px-antialised
+    color: #8f8473
+    text-align: right
+    phantom: true
+
+  UILabel
+    id: snippet
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 3
+    margin-left: 8
+    margin-right: 8
+    height: 14
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+HelpHeading < UILabel
+  height: 18
+  margin-top: 6
+  font: verdana-11px-rounded
+  color: #f6cf72
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  phantom: true
+
+ChaosMainWindow
+  id: helpWindow
+  size: 560 470
+  !text: tr('Help')
+  @onEscape: modules.game_helpsearch.hide()
+
+  ChaosTextEdit
+    id: searchEdit
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    !tooltip: tr('Type a question or a few words, in English or Portuguese.')
+
+  UILabel
+    id: searchHint
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: searchEdit.left
+    margin-left: 7
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #6b6258
+    phantom: true
+    !text: tr('Ask anything: how do I get orbs, gems, rifts...')
+
+  UIScrollArea
+    id: list
+    anchors.top: searchEdit.bottom
+    anchors.left: parent.left
+    anchors.right: scroll.left
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-bottom: 8
+    margin-right: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: scroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: scroll
+    anchors.top: searchEdit.bottom
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-bottom: 8
+    step: 24
+    pixels-scroll: true
+
+  UILabel
+    id: footer
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    font: verdana-11px-antialised
+    color: #8f8473
+    text-align: left
+    !text: tr('Click an answer to open it.')
+
+  ChaosButton
+    id: closeButton
+    !text: tr('Close')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    @onClick: modules.game_helpsearch.hide()
