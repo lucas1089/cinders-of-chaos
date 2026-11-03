@@ -1833,6 +1833,10 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         durl=${durl#"${durl%%[![:space:]]*}"}
         durl=${durl%"${durl##*[![:space:]]}"}
         if [ -n "$durl" ] && ! [[ $durl =~ $DISCORD_RE ]]; then
+          if [[ $durl =~ ^[0-9]{15,22}$ ]]; then
+            unset durl
+            die "that is a Discord channel ID, not a webhook URL. A bot channel ID goes to discord-bot set DISCORD_BUGS_CHANNEL_ID or DISCORD_PATCH_CHANNEL_ID (app: Bot do Discord > Guardar ajuste); nothing changed"
+          fi
           unset durl
           die "that is not a Discord webhook URL (https://discord.com/api/webhooks/ID/TOKEN); nothing changed"
         fi

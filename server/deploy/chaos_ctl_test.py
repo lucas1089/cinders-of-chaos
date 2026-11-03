@@ -1583,6 +1583,9 @@ exit 0
             r = run('discord-set', 'records', stdin=bad + '\n')
             check(r.returncode != 0, 'discord-set refuses %r' % bad)
             check(not os.path.exists(denv), 'discord-set: a refused URL writes nothing: %r' % bad)
+        r = run('discord-set', 'records', stdin='1567178340434059494\n')
+        check(r.returncode != 0 and 'channel ID' in r.stderr and 'Guardar ajuste' in r.stderr and not os.path.exists(denv),
+              'discord-set: a channel ID points to the bot setting: ' + r.stderr)
         for bad in ('records;id', 'Records', 'all', '', '../x', 'records bosses', '$(id)', 'RECORDS'):
             r = run('discord-set', bad, stdin=hook + '\n')
             check(r.returncode != 0 and not os.path.exists(denv), 'discord-set refuses the channel %r' % bad)
