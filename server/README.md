@@ -27724,6 +27724,26 @@ monster levels, what drops, if you die, how often); the Next Goals rows and the 
   same places, a changed config changes the text, byte stability, the committed file is current); client `howcore_test.lua` (real data: rows,
   order, no leftover `{`, pt-BR converts to cp1252, lookups) and `howitworks_test.lua` (mocked widgets). Not run in a client.
 
+## Help search and beginner guide (O373) (`tools/gen_guide_data.lua`, `tools/guide_config.lua`)
+
+The same cards, reused twice for a new player: the client's help search (`game_helpsearch`, System > Help Search, Alt+F)
+and the website's beginner guide (`page?plugin=chaos&p=guide`, "Comece aqui").
+
+- **Install.** Nothing on the server. `cd server && luajit tools/gen_guide_data.lua` writes
+  `client/overlay/modules/game_helpsearch/helpsearch_data.lua` and `website/overlay/plugins/chaos/guide/guide_data.json`
+  (commit both); `--check` exits 1 when one is stale (CI, LuaJIT and Lua 5.3, byte-identical). Run it after a change to
+  the cards, `unlocks_config.lua`, `tools/guide_config.lua` or the client's top menu.
+- **Derived.** The cards come from `tools/gen_howitworks_data.lua` (`Gen.make`, not from the client file, so the guide never
+  lags behind). A card's level: the lowest level of its unlock entries, else the first "Level N+" of its "who" row, else
+  any level. Its menu path: the entry of `client_chaos_topbar/chaos_topbar.lua` CATEGORIES with its unlock entry's menu
+  text or its window module, else the entry its module adds itself (`ChaosTopBar.addEntry` in `game_x/x.lua`).
+- **Hand-written** (`tools/guide_config.lua`): the intro, the first steps (a card key and a one-line tip each, in order),
+  extra search words per card for the client and the website headings. No number is typed there.
+- **Order of the guide.** First steps, then every other card by level (lowest first, card order inside a level), then
+  the cards of any level. The generator stops on an unknown card in the steps or the words, or a step listed twice.
+- **Tests.** `tests/guide_gen_test.lua` (level sentences, menu parser, the order on synthetic data, every real card
+  placed once); client `game_helpsearch/helpcore_test.lua`, `helpsearch_test.lua`; website `tests/chaos_guide_page_test.php`.
+
 
 ## Imported hunts (O335)
 

@@ -6041,6 +6041,15 @@ ChaosLocaleStrings['pt-BR'] = {
   ["How often"] = "Quantas vezes",
   ["How it works: who it is for, what drops, what a death costs."] = "Como funciona: para quem é, o que cai, o que a morte custa.",
   ["Click: How it works"] = "Clique: Como funciona",
+  -- client/overlay/modules/game_helpsearch (O373)
+  ["Help"] = "Ajuda",
+  ["Type a question or a few words, in English or Portuguese."] = "Digite uma pergunta ou algumas palavras, em português ou inglês.",
+  ["Ask anything: how do I get orbs, gems, rifts..."] = "Pergunte qualquer coisa: como conseguir orbes, gemas, fendas...",
+  ["Click an answer to open it."] = "Clique numa resposta para abrir.",
+  ["First steps"] = "Primeiros passos",
+  ["Nothing found. Try other words, like \"orbs\", \"rift\" or \"nivel\"."] = "Nada encontrado. Tente outras palavras, como \"orbes\", \"fenda\" ou \"nivel\".",
+  -- the top menu entry (System > Help Search; a run-time key of client_chaos_topbar)
+  ["Help Search"] = "Buscar Ajuda",
   -- client/overlay/modules/client_chaos_rmltest/rmltest.lua (RmlUi spike)
   ["RmlUi test window"] = "Janela de teste do RmlUi",
   ["Test row %d"] = "Linha de teste %d",

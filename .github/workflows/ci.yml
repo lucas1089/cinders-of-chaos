@@ -1343,6 +1343,14 @@ jobs:
           lua5.3 tools/gen_howitworks_data.lua --check  # Lua 5.3 must write the same bytes
           git diff --exit-code ../client/overlay/modules/game_howitworks/howitworks_data.lua
 
+      - name: Help search and website beginner guide are up to date with the cards (O373)
+        # client game_helpsearch/helpsearch_data.lua and website guide/guide_data.json from the How it works cards,
+        # unlocks_config.lua, tools/guide_config.lua and the top menu
+        run: |
+          cd server
+          luajit tools/gen_guide_data.lua --check
+          lua5.3 tools/gen_guide_data.lua --check  # Lua 5.3 must give the same bytes
+
       - name: Card descriptions are up to date with the card config (gen_card_descriptions.lua)
         run: |
           cd server

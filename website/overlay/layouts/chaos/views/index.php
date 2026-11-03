@@ -44,6 +44,7 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 				<?php else: ?>
 					<a class="chaos-btn chaos-btn--ghost" href="register"><?= $h(chaos_t('Create an account')) ?></a>
 				<?php endif; ?>
+				<a class="chaos-btn chaos-btn--ghost" href="page?plugin=chaos&amp;p=guide"><?= $h(chaos_t('New player? Start here')) ?></a>
 			</div>
 		</div>
 		<dl class="chaos-hero__facts">

@@ -251,6 +251,9 @@ $menu = static function (string $label, string $url, string $icon, int $sort, in
 	$row = $find();
 	return is_array($row) ? (int)$row['id'] : 0;
 };
+// the beginner guide (plugins/chaos/pages/guide.php, O373): first steps, then features by level, from the game's cards
+$menu('Start Here', 'page?plugin=chaos&p=guide', 'fa-compass', 13);
+$out .= "menu: Start Here\n";
 // the player wiki (plugins/chaos/pages/wiki.php): guides and the reference generated from the game data
 $menu('Wiki', 'page?plugin=chaos&p=wiki', 'fa-book', 14);
 $out .= "menu: Wiki\n";
