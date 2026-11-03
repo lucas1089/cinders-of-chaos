@@ -1,0 +1,168 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "copperdelve_mine",
+  "name": "Copperdelve Mine",
+  "biome": "cave",
+  "size": [
+    100,
+    84
+  ],
+  "floors": 1,
+  "level": [
+    11,
+    17
+  ],
+  "seed": 37502,
+  "origin": {
+    "x": 15824,
+    "y": 15700,
+    "z": 8
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "northwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "ore_gallery",
+      "floor": 1,
+      "size": [
+        20,
+        15
+      ],
+      "place": "center"
+    },
+    {
+      "id": "shaft_head",
+      "floor": 1,
+      "size": [
+        20,
+        15
+      ],
+      "place": "east"
+    },
+    {
+      "id": "larva_seam",
+      "floor": 1,
+      "size": [
+        20,
+        15
+      ],
+      "place": "south"
+    },
+    {
+      "id": "cart_tunnels",
+      "floor": 1,
+      "size": [
+        20,
+        15
+      ],
+      "place": "west"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "ore_gallery",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "cart_tunnels",
+      "width": 3
+    },
+    {
+      "from": "ore_gallery",
+      "to": "shaft_head",
+      "width": 3
+    },
+    {
+      "from": "ore_gallery",
+      "to": "larva_seam",
+      "width": 3
+    },
+    {
+      "from": "cart_tunnels",
+      "to": "larva_seam",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "ore_gallery",
+      "monster": "Dwarf",
+      "count": 8,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "ore_gallery",
+      "monster": "Dwarf Soldier",
+      "count": 6,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "shaft_head",
+      "monster": "Dwarf Soldier",
+      "count": 8,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "shaft_head",
+      "monster": "Dwarf Miner",
+      "count": 5,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "larva_seam",
+      "monster": "Larva",
+      "count": 8,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "larva_seam",
+      "monster": "Carrion Worm",
+      "count": 5,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "cart_tunnels",
+      "monster": "Dwarf Miner",
+      "count": 5,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "cart_tunnels",
+      "monster": "Dwarf",
+      "count": 5,
+      "respawn": 40,
+      "pack": 2
+    },
+    {
+      "zone": "cart_tunnels",
+      "monster": "Carrion Worm",
+      "count": 3,
+      "respawn": 40,
+      "pack": 2
+    }
+  ],
+  "notes": "Content plan (O375 hall coverage, 2026-11-03): a cave hunt for levels 11-17 on floor 7 of the teleport hall (server/README.md \"Hall coverage (O375)\"). 4 hunting zones; monsters Dwarf, Dwarf Soldier, Dwarf Miner, Larva, Carrion Worm. Display monster: Dwarf Soldier."
+}

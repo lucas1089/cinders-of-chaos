@@ -1,0 +1,181 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "murkreed_fen",
+  "name": "Murkreed Fen",
+  "biome": "swamp",
+  "size": [
+    106,
+    88
+  ],
+  "floors": 1,
+  "level": [
+    24,
+    34
+  ],
+  "seed": 37605,
+  "origin": {
+    "x": 16232,
+    "y": 15700,
+    "z": 8
+  },
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "beetle_flats",
+      "floor": 1,
+      "size": [
+        21,
+        16
+      ],
+      "place": "center"
+    },
+    {
+      "id": "ooze_pools",
+      "floor": 1,
+      "size": [
+        21,
+        16
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "web_reeds",
+      "floor": 1,
+      "size": [
+        21,
+        16
+      ],
+      "place": "north"
+    },
+    {
+      "id": "swarm_hollow",
+      "floor": 1,
+      "size": [
+        21,
+        16
+      ],
+      "place": "west"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "beetle_flats",
+      "width": 3
+    },
+    {
+      "from": "beetle_flats",
+      "to": "ooze_pools",
+      "width": 3
+    },
+    {
+      "from": "beetle_flats",
+      "to": "web_reeds",
+      "width": 3
+    },
+    {
+      "from": "web_reeds",
+      "to": "swarm_hollow",
+      "width": 3
+    },
+    {
+      "from": "swarm_hollow",
+      "to": "ooze_pools",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "beetle_flats",
+      "monster": "Lancer Beetle",
+      "count": 11,
+      "respawn": 45,
+      "pack": 2
+    },
+    {
+      "zone": "beetle_flats",
+      "monster": "Swarmer",
+      "count": 5,
+      "respawn": 45,
+      "pack": 2
+    },
+    {
+      "zone": "ooze_pools",
+      "monster": "Acid Blob",
+      "count": 8,
+      "respawn": 45,
+      "pack": 2
+    },
+    {
+      "zone": "ooze_pools",
+      "monster": "Death Blob",
+      "count": 8,
+      "respawn": 45,
+      "pack": 2
+    },
+    {
+      "zone": "web_reeds",
+      "monster": "Sacred Spider",
+      "count": 8,
+      "respawn": 45,
+      "pack": 2
+    },
+    {
+      "zone": "web_reeds",
+      "monster": "Lancer Beetle",
+      "count": 6,
+      "respawn": 45,
+      "pack": 2
+    },
+    {
+      "zone": "swarm_hollow",
+      "monster": "Swarmer",
+      "count": 8,
+      "respawn": 45,
+      "pack": 2
+    },
+    {
+      "zone": "swarm_hollow",
+      "monster": "Death Blob",
+      "count": 6,
+      "respawn": 45,
+      "pack": 2
+    },
+    {
+      "path": [
+        "beetle_flats",
+        "ooze_pools"
+      ],
+      "monster": "Lancer Beetle",
+      "count": 1,
+      "respawn": 45,
+      "pack": 2
+    },
+    {
+      "path": [
+        "beetle_flats",
+        "web_reeds"
+      ],
+      "monster": "Swarmer",
+      "count": 1,
+      "respawn": 45,
+      "pack": 2
+    }
+  ],
+  "notes": "Content plan (O375 hall coverage, 2026-11-03): a swamp hunt for levels 24-34 on floor 7 of the teleport hall (server/README.md \"Hall coverage (O375)\"). 4 hunting zones; monsters Lancer Beetle, Swarmer, Acid Blob, Death Blob, Sacred Spider. Display monster: Lancer Beetle."
+}

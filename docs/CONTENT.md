@@ -144,6 +144,20 @@ docs/MAP_GUIDE.md "Content plans"). Monsters by count, the most first; Parties h
 | brinescar_strand | 390-450 | waste | Saltkin Raider, Saltkin Looter, Saltkin Plunderer, Bony Sea Devil | 12 | brinescar_wreck_cache |
 | rustcog_warrens | 420-480 | cave | Mountain Goblin, Enforced Mountain Goblin, Mechanic Goblin, Bat Goblin, Mounted Warrior Goblin | 11 | - |
 | mossgrave_tangle | 450-506 | forest | Rootling Amber Shaper, Rootling Bug Tracker, Rootling Nutshell, Mirethorn Hexer, Waterglow Conjurer | 11 | - |
+| thistlewood_hollow | 6-12 | forest | Goblin, Goblin Scavenger, Troll, Swamp Troll, Wolf, Bear | 4 | - |
+| copperdelve_mine | 11-17 | cave | Dwarf, Dwarf Soldier, Dwarf Miner, Larva, Carrion Worm | 4 | - |
+| ashgrave_barrow | 18-26 | crypt | Crypt Shambler, Ghost, Bonelord, Mummy, Tomb Servant | 4 | - |
+| murkreed_fen | 24-34 | swamp | Lancer Beetle, Swarmer, Acid Blob, Death Blob, Sacred Spider | 4 | - |
+| chitinmaw_warren | 44-56 | cave | Waspoid, Crawler, Spitter, Drillworm, Brimstone Bug | 5 | - |
+| scalewatch_bastion | 50-62 | hall | Lizard Legionnaire, Lizard Dragon Priest, Lizard High Guard | 5 | - |
+| anvilmourn_wastes | 1500-1650 | waste | Redmane Anvilbreaker, Cinderskull Reaver, Ashveil Hierarch, Hollowhorn, Bloodantler Fiend | 7 | - |
+| oathgrave_ossuary | 1750-1900 | catacomb | Gravecrown Oathbreaker, Cinderhorn Juggernaut, Wraithbone Stalker, Ironmask Warbreaker, Gnarlback | 7 | - |
+| pyrecrown_caldera | 1900-2100 | lava | Pyre Stork, Mirecoil Wyrm, Wraithbone Stalker, Gnarlback, Gnawbone Swarm, Pyrewing Tyrant | 7 | - |
+
+**Hall coverage (O375, 2026-11-03).** The last nine rows: six small hunts of levels 6-62 for the ground floor of the hall
+(53-113 monsters, 1,300-2,750 walkable tiles, packs of 2 below level 35) and three late hunts of 1500-2100 for floor 5
+(150-259 monsters). With them every level 8-100 has 5 hall hunts within 0.7-1.3 x L (was 3) and every level 1300-2200
+has 5 within 0.8-1.1 x L (was 4 at 2126-2200). server/README.md "Hall coverage (O375)".
 
 Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
 monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.

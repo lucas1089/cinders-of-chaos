@@ -169,7 +169,17 @@ C.hunts = {
 	{id = "cinderbrick_halls", name = "Cinderbrick Halls", level = {300, 470}},
 	{id = "dunereach_isle", name = "Dunereach Isle", level = {570, 700}},
 	{id = "rimewind_isle", name = "Rimewind Isle", level = {900, 1000}},
-	{id = "sunken_mirewood", name = "Sunken Mirewood", level = {480, 540}}
+	{id = "sunken_mirewood", name = "Sunken Mirewood", level = {480, 540}},
+	-- O375: more hunting choice for levels 6-62 (floor 7) and 1500-2100 (floor 5)
+	{id = "thistlewood_hollow", name = "Thistlewood Hollow", level = {6, 12}},
+	{id = "copperdelve_mine", name = "Copperdelve Mine", level = {11, 17}},
+	{id = "ashgrave_barrow", name = "Ashgrave Barrow", level = {18, 26}},
+	{id = "murkreed_fen", name = "Murkreed Fen", level = {24, 34}},
+	{id = "chitinmaw_warren", name = "Chitinmaw Warren", level = {44, 56}},
+	{id = "scalewatch_bastion", name = "Scalewatch Bastion", level = {50, 62}},
+	{id = "anvilmourn_wastes", name = "Anvilmourn Wastes", level = {1500, 1650}},
+	{id = "oathgrave_ossuary", name = "Oathgrave Ossuary", level = {1750, 1900}},
+	{id = "pyrecrown_caldera", name = "Pyrecrown Caldera", level = {1900, 2100}}
 }
 
 -- ------------------------------------------------------------------ bands

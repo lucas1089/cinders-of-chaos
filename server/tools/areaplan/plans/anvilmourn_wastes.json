@@ -1,0 +1,250 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "anvilmourn_wastes",
+  "name": "Anvilmourn Wastes",
+  "biome": "waste",
+  "size": [
+    168,
+    136
+  ],
+  "floors": 1,
+  "level": [
+    1500,
+    1650
+  ],
+  "seed": 37507,
+  "origin": {
+    "x": 16844,
+    "y": 15700,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "anvil_field",
+      "floor": 1,
+      "size": [
+        38,
+        30
+      ],
+      "place": "center"
+    },
+    {
+      "id": "ash_terraces",
+      "floor": 1,
+      "size": [
+        38,
+        30
+      ],
+      "place": "north"
+    },
+    {
+      "id": "bone_drifts",
+      "floor": 1,
+      "size": [
+        34,
+        24
+      ],
+      "place": "west"
+    },
+    {
+      "id": "antler_gulch",
+      "floor": 1,
+      "size": [
+        34,
+        24
+      ],
+      "place": "east"
+    },
+    {
+      "id": "slag_hollow",
+      "floor": 1,
+      "size": [
+        34,
+        24
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "hierarch_rise",
+      "floor": 1,
+      "size": [
+        34,
+        24
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "cinder_flats",
+      "floor": 1,
+      "size": [
+        34,
+        24
+      ],
+      "place": "southwest"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "anvil_field",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "cinder_flats",
+      "width": 3
+    },
+    {
+      "from": "anvil_field",
+      "to": "ash_terraces",
+      "width": 3
+    },
+    {
+      "from": "anvil_field",
+      "to": "antler_gulch",
+      "width": 3
+    },
+    {
+      "from": "cinder_flats",
+      "to": "bone_drifts",
+      "width": 3
+    },
+    {
+      "from": "bone_drifts",
+      "to": "slag_hollow",
+      "width": 3
+    },
+    {
+      "from": "slag_hollow",
+      "to": "ash_terraces",
+      "width": 3
+    },
+    {
+      "from": "ash_terraces",
+      "to": "hierarch_rise",
+      "width": 3
+    },
+    {
+      "from": "hierarch_rise",
+      "to": "antler_gulch",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "anvil_field",
+      "monster": "Redmane Anvilbreaker",
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "anvil_field",
+      "monster": "Cinderskull Reaver",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ash_terraces",
+      "monster": "Ashveil Hierarch",
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ash_terraces",
+      "monster": "Redmane Anvilbreaker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_drifts",
+      "monster": "Cinderskull Reaver",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_drifts",
+      "monster": "Hollowhorn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "antler_gulch",
+      "monster": "Bloodantler Fiend",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "antler_gulch",
+      "monster": "Redmane Anvilbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_hollow",
+      "monster": "Redmane Anvilbreaker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_hollow",
+      "monster": "Ashveil Hierarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hierarch_rise",
+      "monster": "Ashveil Hierarch",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hierarch_rise",
+      "monster": "Hollowhorn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_flats",
+      "monster": "Cinderskull Reaver",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_flats",
+      "monster": "Bloodantler Fiend",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O375 hall coverage, 2026-11-03): a waste hunt for levels 1500-1650 on floor 5 of the teleport hall (server/README.md \"Hall coverage (O375)\"). 7 hunting zones; monsters Redmane Anvilbreaker, Cinderskull Reaver, Ashveil Hierarch, Hollowhorn, Bloodantler Fiend. Display monster: Cinderskull Reaver."
+}

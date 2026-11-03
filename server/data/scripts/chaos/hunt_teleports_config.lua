@@ -52,9 +52,14 @@ return {
 		-- The other floors grow the same way (owner, 2026-10-18: the ground floor z 7 holds the hunts of levels 1-500,
 		-- more than its 16 alcoves): `from` is the floor whose alcoves are copied (bare of rewards and signs), the
 		-- ends are the floor's own; `sweep`: the new tiles may replace the open lawn beside the hall (checked: no
-		-- house, nothing but decoration). 8 modules a side: 32 new slots, 48 on z 7.
+		-- house, nothing but decoration). 8 modules a side: 32 new slots, 48 on z 7 (9 since 2026-10-30: 52).
+		-- O375 (server/README.md "Hall coverage (O375)"): z 7 grows to 10 modules a side (56 slots) for six hunts of
+		-- levels 6-62, and z 5 gets wings of its own, one module a side copied from floor 6 (22 slots, was 18) for three
+		-- hunts of 1500-2100. z 5 has no `sweep`: its new tiles must land where the map has none (the floor above the
+		-- grown floor 6, which spans 6 modules a side), else the install refuses with "target tiles are taken".
 		wings = {
-			{z = 7, from = 6, sweep = true, east = {modules = 9}, west = {modules = 9}}
+			{z = 7, from = 6, sweep = true, east = {modules = 10}, west = {modules = 10}},
+			{z = 5, from = 6, east = {modules = 1}, west = {modules = 1}}
 		}
 	},
 
@@ -85,7 +90,7 @@ return {
 		-- the hunt slots of each floor as the install counts them on the live map (2 a module a side, plus the base
 		-- room's); install_content_areas_test.py refuses more hunts on a floor (the base hunts of hall_hunts.csv and every
 		-- plan, by `levels`) than it has, so CI says "grow it" before an update fails on the server. Raise it with the room.
-		capacity = {{z = 7, slots = 52}, {z = 6, slots = 41}, {z = 5, slots = 18}},
+		capacity = {{z = 7, slots = 56}, {z = 6, slots = 41}, {z = 5, slots = 22}}, -- O375: z 7 56 (was 52), z 5 22 (was 18)
 		quests = {
 			z = 7,
 			north = {y = 32263, x = {31630, 31634, 31638, 31642, 31654, 31658, 31662, 31666}},
@@ -124,7 +129,7 @@ return {
 			borders = {n = 29166, e = 29167, w = 29168, s = 29177, dnw = 29169, dne = 29170, dsw = 29171, dse = 29172,
 				cnw = 29173, cne = 29174, csw = 29175, cse = 29176}
 		},
-		x = {31590, 31712},
+		x = {31586, 31716}, -- the hall's span: 10 modules a side on z 7 (O375; was 31590-31712 for 9)
 		endRow = 32256,
 		temple = {32369, 32241, 7},
 		labels = {
@@ -139,9 +144,9 @@ return {
 	-- where display monsters stand: the cell rows (room.cellRows) of the hall's floors, across the grown floor 6.
 	-- A monster there (no master) is a display: no boss mechanics, no tier roll, no treasure goblin, and it never hits
 	-- anyone (onTargetCombat). The base room's own display cells on floors 5 and 7 are covered too.
-	display = {x = {31594, 31706}, floors = {5, 7}},
+	display = {x = {31590, 31710}, floors = {5, 7}}, -- O375: z 7 one module wider a side (was 31594-31706)
 
-	-- 71 plans (67 generated, 4 imported; 66 on 2026-10-22). With the base hunts they fill every slot of the hall since 2026-10-22 (server/README.md "Hall order":
+	-- 80 plans (76 generated, 4 imported; 71 before O375, 66 on 2026-10-22). With the base hunts they fill every slot of the hall since 2026-10-22 (server/README.md "Hall order":
 	-- 48 of 48 on z 7, 37 of 37 on z 6, 18 of 18 on z 5). 2026-10-25: Sunken Mirewood is the 38th hunt of z 6, so floor 6
 	-- grew one module a side (5 -> 6, 41 slots; hall.capacity).
 	-- The order here does not count: install_content_areas.py gives the slots by level band ascending (the plan's
@@ -240,7 +245,20 @@ return {
 		{id = "brickhold_depths", monster = "Phantom Shade"},
 		{id = "cinderbrick_halls", monster = "Fire Man"},
 		{id = "dunereach_isle", monster = "Cunning Hyaena"},
-		{id = "rimewind_isle", monster = "Elite Yeti"}
+		{id = "rimewind_isle", monster = "Elite Yeti"},
+		-- O375 (2026-11-03, more hunting choice where the progression model showed few hunts; server/README.md "Hall
+		-- coverage (O375)"): six small hunts of levels 6-62 on z 7 and three of 1500-2100 on z 5, in the row y 15700 of
+		-- the annex block. Display monsters: stock 1x1 looks on z 7; the 2x2 owner art looks 2219 and 2218 and the stock
+		-- look 1449 on z 5 (check Wraithbone Stalker in a cell; `standIn` if it spills)
+		{id = "thistlewood_hollow", monster = "Goblin Scavenger"},
+		{id = "copperdelve_mine", monster = "Dwarf Soldier"},
+		{id = "ashgrave_barrow", monster = "Crypt Shambler"},
+		{id = "murkreed_fen", monster = "Lancer Beetle"},
+		{id = "chitinmaw_warren", monster = "Waspoid"},
+		{id = "scalewatch_bastion", monster = "Lizard Legionnaire"},
+		{id = "anvilmourn_wastes", monster = "Cinderskull Reaver"},
+		{id = "oathgrave_ossuary", monster = "Cinderhorn Juggernaut"},
+		{id = "pyrecrown_caldera", monster = "Wraithbone Stalker"}
 	},
 
 	-- The ways back (owner, 2026-10-20: "many teleports to hunts have no teleport back"; server/README.md "Hall order",

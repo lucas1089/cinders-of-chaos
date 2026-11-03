@@ -75,6 +75,48 @@ end
 ok(thinHall, "no hunts for the levels 200 and 450: the narrow window names the gap")
 ok(env.cfg.hall.tight and #env.cfg.hall.tight.ranges == 6, "six ranges with the narrow window")
 
+-- O375: 5 hall hunts in reach of every level, 2 in the narrow window at 8-100 and 5 at 1300-2200; without the nine
+-- new plans the check names both ends
+eq(env.cfg.hall.minHunts, 5, "five hall hunts in reach (0.7-1.3 L) of every level")
+local O375 = {thistlewood_hollow = true, copperdelve_mine = true, ashgrave_barrow = true, murkreed_fen = true,
+	chitinmaw_warren = true, scalewatch_bastion = true, anvilmourn_wastes = true, oathgrave_ossuary = true, pyrecrown_caldera = true}
+local before, found = {}, 0
+for _, b in ipairs(savedBands) do
+	if O375[b[3]] then found = found + 1 else before[#before + 1] = b end
+end
+eq(found, 9, "the nine O375 plans are hall hunts")
+for L = 8, 100 do ok(M.hallCount(env.bands, L, env.cfg.hall) >= 5, "level " .. L .. ": 5 hall hunts in reach") end
+for L = 1300, 2200 do ok(M.hallCount(env.bands, L, env.cfg.hall.tight) >= 5, "level " .. L .. ": 5 hall hunts within 0.8-1.1 L") end
+env.bands = before
+local thinner = M.problems(env)
+env.bands = savedBands
+local low, late = false, false
+for _, p in ipairs(thinner) do
+	if p:find("hall: levels 8-", 1, true) and p:find("fewer than 5", 1, true) then low = true end
+	if p:find("fewer than 5 hall hunts within 0.8x-1.1x", 1, true) and p:find("levels 2", 1, true) then late = true end
+end
+ok(low, "without the O375 hunts levels from 8 have fewer than 5 hall hunts in reach: " .. table.concat(thinner, "; "))
+ok(late, "without the O375 hunts levels 2000-2200 have fewer than 5 within 0.8-1.1 L")
+
+-- O375: the planned monsters the generated pool does not list yet join the model's pool
+local pool = {hunt = {{name = "Known", level = 10, exp = 1, health = 1}}, bosses = {{name = "Big Boss", level = 50}}}
+local plans = {a = '{"spawns": [{"zone": "z", "monster": "New One", "count": 4}, {"path": ["x", "y"], "monster": "Known", "count": 9}]}',
+	b = '{"spawns": [{"zone": "q", "monster": "New One", "count": 2}, {"zone": "q", "monster": "Too Few", "count": 5},\n' ..
+		'{"zone": "q", "monster": "Big Boss", "count": 8}, {"zone": "q", "monster": "Boss Flag", "count": 8}]}'}
+local xml = {
+	'<monster name="New One" experience="500" speed="1">\n\t<health now="900" max="900"/>\n\t<level min="1540" max="1561"/>',
+	'<monster name="Too Few" experience="5"><health now="9" max="9"/><level min="10" max="20"/>',
+	'<monster name="Boss Flag" experience="5"><health now="9" max="9"/><level min="10" max="20"/><flag isboss="1"/>',
+	'<!-- <monster name="Commented" --><monster name="Known" experience="1"><health now="1" max="1"/><level min="1" max="2"/>'}
+local add = M.plannedMonsters(pool, plans, xml)
+eq(#add, 1, "one planned monster joins: 6 spawns over two plans, not in the pool, not a boss")
+eq(add[1].name, "New One"); eq(add[1].level, 1550, "the middle of its level range"); eq(add[1].spawns, 6)
+eq(add[1].exp, 500); eq(add[1].health, 900)
+ok(#env.planned >= 1, "the repository's plans hold monsters the pool misses: " .. #env.planned)
+for _, e in ipairs(env.planned) do ok(e.spawns >= 6 and e.level > 0, e.name .. ": spawns and level") end
+local poolOnly = M.load({poolOnly = true})
+eq(#env.hunts, #poolOnly.hunts + #env.planned, "the model's hunts are the pool's and the planned ones")
+
 -- the journey: a level never takes much longer or shorter than the ones around it, and the hours add up
 local curve = select(2, M.problems(env))
 local h = M.hours(curve, 8, 1000)

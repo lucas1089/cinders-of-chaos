@@ -38,7 +38,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 => @reward | First contract | Adventure > Bounty Board: take a contract from level 8.
 => @level | First point | Your first passive point comes at level 12.
 
-- **Where to hunt.** During your first hour, hints mark the 3 nearest hunts of your level on the minimap. Good starts in the hall: Rat (1-6), Orc (5-15), Minotaur (5-15), Cave Rat (5-20), Dwarf Guard (10-25), Haunted Treeling (10-30), Stalker (15-30), Saltkin Mantassin (25-55), Frost Dragon Hatchling (25-75) and Fire Elemental (20-80).
+- **Where to hunt.** During your first hour, hints mark the 3 nearest hunts of your level on the minimap. Good starts in the hall: Rat (1-6), Orc (5-15), Minotaur (5-15), Cave Rat (5-20), Dwarf Guard (10-25), Haunted Treeling (10-30), Stalker (15-30), Saltkin Mantassin (25-55), Frost Dragon Hatchling (25-75) and Fire Elemental (20-80). Small, quick hunts made for solo play: Thistlewood Hollow (6-12), Copperdelve Mine (11-17), Ashgrave Barrow (18-26) and Murkreed Fen (24-34).
 - **Passive tree.** You get 1 point every {{tree.levelsPerPoint}} levels above level {{tree.startLevel}}. Spend it in Character > Passive Tree. See the [Passive tree](wiki:guide:tree) guide.
 - **Monster tiers.** Magic (blue), rare (yellow) and legendary (orange) monsters drop better gear. Wear what beats yours.
 - **Pack combat.** Chained kills, each within 3 s of the one before, give bonus experience: +10% at 4 kills, +20% at 6, +30% at 8 and +40% at 9.
@@ -54,7 +54,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 
 ## Level 50-150: ascension and your first rifts
 
-- **Where to hunt.** Wyrm (50-80), Rustheap Golem (60-80), Serpent Spawn (35-105), Dawnfire Asura (20-105), Hellspawn (80-135), Blightwalker (95-150), Usurper Archer (110-140) and Demon Outcast (120-140).
+- **Where to hunt.** Chitinmaw Warren (44-56), Scalewatch Bastion (50-62), Wyrm (50-80), Rustheap Golem (60-80), Serpent Spawn (35-105), Dawnfire Asura (20-105), Hellspawn (80-135), Blightwalker (95-150), Usurper Archer (110-140) and Demon Outcast (120-140).
 - **Arena.** At level {{arena.minLevel}}, Adventure > Arena. One goal of this bracket is to win a match.
 - **Bestiary.** Each stage (Discovered, Studied, Mastered, Completed) gives bonus experience against that creature. Fill 25 creatures in the Bestiary.
 - **Ascension at level {{class.ascensionLevel}}.** Talk to the Ascendant Oracle in the market of the teleport room. Gather the Proof of Strength ({{ascension.proofPoints}} points: a rare monster is worth 1, a legendary 3) and win a {{ascension.trialTime}} trial. If you lose, try again after {{ascension.retry}}.
