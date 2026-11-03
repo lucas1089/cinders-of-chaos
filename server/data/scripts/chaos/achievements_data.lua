@@ -69,6 +69,7 @@ end
 return {
 	categories = {
 		{key = "combat", name = "Combat & Leveling"},
+		{key = "milestones", name = "Level Milestones"},
 		{key = "monsters", name = "Monsters"},
 		{key = "bosses", name = "World Bosses"},
 		{key = "rifts", name = "Rifts"},
@@ -85,6 +86,7 @@ return {
 	-- the cosmetic of cosmetics_config.lua with category = <key> (granted by cosmetics.lua). See server/README.md.
 	categoryRewards = {
 		combat = {title = "Warmaster", frame = "ember"},
+		milestones = {title = "Hundredfold", frame = "amber"},
 		monsters = {title = "Beastwarden", frame = "verdant"},
 		bosses = {title = "Titanfeller", frame = "bone"},
 		rifts = {title = "Riftwarden", frame = "violet"},
@@ -114,8 +116,6 @@ return {
 			reward = {items = orbs(5, 1)}},
 		{id = "level_700", cat = "combat", name = "Into the Abyss", desc = "Reach level 700.", points = 25, stat = "level", target = 700,
 			reward = {items = orbs(5, 2)}},
-		{id = "level_1000", cat = "combat", name = "The Thousandth Step", desc = "Reach level 1000.", points = 50, stat = "level",
-			target = 1000, title = "the Unbroken", reward = {mount = {name = "Doombringer", id = 53}}},
 		{id = "ascended", cat = "combat", name = "Ascended", desc = "Ascend into one of your class's two paths.", points = 10,
 			stat = "ascended"},
 		-- Vocation Trials (trials.lua): trial_tier_<1-3> (a tier cleared), trial_runs (clears), trial_nodes (nodes held now),
@@ -140,6 +140,40 @@ return {
 			target = 100, title = "Paragon"},
 		{id = "paragon_282", cat = "combat", name = "Absolute", desc = "Reach Paragon level 282: every Paragon stat maxed.",
 			points = 50, stat = "paragon", target = 282, title = "the Absolute", reward = {items = orbs(0, 5)}},
+
+		-- ------------------------------------------------------------------ Level Milestones (O378, milestones_config.lua)
+		-- one every 100 levels from 800 to 2200: points and a title here; the Milestone Cache, the toast and the broadcast
+		-- are milestones.lua; level_1000 / 1500 / 2000 and the whole category unlock cosmetics (cosmetics_config.lua)
+		{id = "level_800", cat = "milestones", name = "Tempered in the Dark", desc = "Reach level 800.", points = 25, stat = "level",
+			target = 800, title = "the Tempered"},
+		{id = "level_900", cat = "milestones", name = "Nine Hundred Embers", desc = "Reach level 900.", points = 25, stat = "level",
+			target = 900, title = "Emberborn"},
+		{id = "level_1000", cat = "milestones", name = "The Thousandth Step", desc = "Reach level 1000.", points = 50, stat = "level",
+			target = 1000, title = "the Unbroken", reward = {mount = {name = "Doombringer", id = 53}}},
+		{id = "level_1100", cat = "milestones", name = "Will Unbending", desc = "Reach level 1100.", points = 25, stat = "level",
+			target = 1100, title = "the Unyielding"},
+		{id = "level_1200", cat = "milestones", name = "Forged in the Grave", desc = "Reach level 1200.", points = 25, stat = "level",
+			target = 1200, title = "Graveforged"},
+		{id = "level_1300", cat = "milestones", name = "The Thirteenth Bell", desc = "Reach level 1300.", points = 25, stat = "level",
+			target = 1300, title = "the Knelled"},
+		{id = "level_1400", cat = "milestones", name = "Sworn to the Cinders", desc = "Reach level 1400.", points = 25, stat = "level",
+			target = 1400, title = "Cindersworn"},
+		{id = "level_1500", cat = "milestones", name = "The Long Dusk", desc = "Reach level 1500.", points = 50, stat = "level",
+			target = 1500, title = "Duskbearer"},
+		{id = "level_1600", cat = "milestones", name = "Crown of Hollows", desc = "Reach level 1600.", points = 25, stat = "level",
+			target = 1600, title = "Hollowcrowned"},
+		{id = "level_1700", cat = "milestones", name = "Still Smoldering", desc = "Reach level 1700.", points = 25, stat = "level",
+			target = 1700, title = "the Smoldering"},
+		{id = "level_1800", cat = "milestones", name = "Bound to the Pyre", desc = "Reach level 1800.", points = 25, stat = "level",
+			target = 1800, title = "Pyrebound"},
+		{id = "level_1900", cat = "milestones", name = "Past the Last Light", desc = "Reach level 1900.", points = 25, stat = "level",
+			target = 1900, title = "Lightless"},
+		{id = "level_2000", cat = "milestones", name = "Two Thousand Fires", desc = "Reach level 2000.", points = 50, stat = "level",
+			target = 2000, title = "the Undimmed"},
+		{id = "level_2100", cat = "milestones", name = "Where Stars Die", desc = "Reach level 2100.", points = 25, stat = "level",
+			target = 2100, title = "Starless"},
+		{id = "level_2200", cat = "milestones", name = "The Summit of Ruin", desc = "Reach level 2200.", points = 50, stat = "level",
+			target = 2200, title = "Apex of Chaos"},
 
 		-- ------------------------------------------------------------------ Monsters
 		{id = "magic_1", cat = "monsters", name = "Touched by Chaos", desc = "Kill a magic monster.", points = 5, stat = "kills_magic"},

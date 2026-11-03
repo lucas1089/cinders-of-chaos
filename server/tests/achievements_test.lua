@@ -71,7 +71,7 @@ eq(#K.evaluate(index, stats, unlocked), 0, "unlocks only once")
 local jump = K.evaluate(index, {level = 1001}, {})
 ids = {}
 for _, def in ipairs(jump) do ids[#ids + 1] = def.id end
-eq(table.concat(ids, ","), "level_50,level_100,level_200,level_300,level_500,level_700,level_1000", "jump to 1001")
+eq(table.concat(ids, ","), "level_50,level_100,level_200,level_300,level_500,level_700,level_800,level_900,level_1000", "jump to 1001")
 -- "all": every listed stat at least once
 local wb = index.byId.wb_all
 eq(select(1, K.progressOf(wb, {wb_kaelgor = 3, wb_vharok = 1})), 2, "two of five bosses")
@@ -235,7 +235,7 @@ eq(#K.categoryTitles(index, {}), 0, "no title without completion")
 local tr = K.categoryTrack(index, {rift_t1 = true, level_50 = true})
 eq(#tr, #data.categories, "the track lists every category")
 eq(tr[1].key, "combat"); eq(tr[1].done, 1); eq(tr[1].complete, false); eq(tr[1].title, "Warmaster")
-eq(K.categoryTrack(index, ridsAll)[4].complete, true, "Rifts complete in the track")
+eq(K.categoryTrack(index, ridsAll)[5].complete, true, "Rifts complete in the track (Level Milestones is 2nd, O378)")
 -- the point milestones need account points: an alt's achievements count once
 eq(K.accountFromIds(index, {"level_1000", "level_1000"}).points, 50, "an achievement on two characters counts once")
 

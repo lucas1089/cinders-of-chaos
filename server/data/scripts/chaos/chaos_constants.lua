@@ -2295,7 +2295,9 @@ Chaos.storage.spellQuestSlots = 10
 Chaos.storage.spellQuestCount = 3
 -- The welcome path (O370; welcomepath.lua, welcomepath_core.lua, welcomepath_config.lua `storage`; server/README.md
 -- "Welcome path (O370)"): 7101070 - 7101079: +0 state, +1 step, +2 kills of the kill step, +3 flags; +4..9 free.
--- 7101080 - 7101099 stays free. No opcode: the tracker rows go over the goals channel (ChaosOpcodes.goals).
+-- No opcode: the tracker rows go over the goals channel (ChaosOpcodes.goals).
+-- Level milestones (O378; milestones_config.lua `storage`): 7101080 - 7101089, +0 the highest milestone paid; +1..9
+-- free. 7101090 - 7101099 stays free.
 Chaos.storage.welcomePath = 7101070
 -- Hunting level on screen (owner 2026-10-27): the bounty pool's level (ChaosLoot.monsterLevel) is half of the level
 -- players hunt a monster at; every text that prints a pool-scale level (monster level thresholds, map marks) prints

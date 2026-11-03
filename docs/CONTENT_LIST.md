@@ -41,7 +41,7 @@ Rules for this list:
 | of these: notables / keystone entries / masteries | 123 / 46 / 4 | wiki "Passive tree" tab |
 | Paragon stats | 8 | server/README.md "Paragon" |
 | Charm kinds | 4 shapes + 4 uniques | server/README.md "Charms" |
-| Achievements | 173 in 10 categories | server/README.md "Achievements" |
+| Achievements | 189 in 11 categories | server/README.md "Achievements" |
 | World hunts per band | see section 4 | docs/CONTENT.md |
 | Tales (story quests of our own) | 27 | docs/CONTENT.md |
 | Base quest lines | 35 lines, 310 missions | docs/CONTENT.md |
@@ -299,7 +299,7 @@ Boss systems:
 - **The Gambler.** Sealed gear for gold, stock refreshes every 4 hours (#83). Done.
 - **Conquest Tokens.** Tokens from every boss and clear; a vendor of any unique or set piece you have seen; Omen Keys
   and Ascended Shards of a chosen kind; bad-luck protection on boss, set, raid and monster uniques (#158). Done, not run live.
-- **Achievements.** 173 in 10 categories, 4,170 points; reward track (#26, #75). Done.
+- **Achievements.** 189 in 11 categories, 4,640 points (O378: level milestones); reward track (#26, #75). Done.
 - **Leaderboards.** Weekly boards: world boss, healer, tank, bounty, rifts, class ladder (#13). Done.
 - **Competitive records** for bosses, dungeons and the tower (#135). Done.
 - **The Ashen Chronicle.** Server-wide story per season (#145). Done, not run live.

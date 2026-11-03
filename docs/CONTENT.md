@@ -192,8 +192,22 @@ Revenant and Cinderskull Reaver in the chasm).
 | 1000+ | the Cinderheart; generated areas; **The Last Ember** and 4 more tales up to 2000 | nothing before; now five tales |
 
 The base world has 35 quest lines with 310 missions in its quest log, renamed at install by `worldtexts`. They were
-written for low and mid levels. Our achievements: 173 in 10 groups, mostly counters. Bestiary kill tasks and bounty
+written for low and mid levels. Our achievements: 189 in 11 groups, mostly counters. Bestiary kill tasks and bounty
 contracts cover every band but are tasks without a story.
+
+## Level milestones (O378)
+
+From 700 the leveling is flat: 10-14 minutes a level, about 290 hours to 2200. Now every 100 levels from 800 to 2200 is
+a step. Each one gives:
+
+- a level achievement with a title (800 the Tempered ... 2200 Apex of Chaos), in the new category Level Milestones;
+- a Milestone Cache of orbs, once per character: 5 Upheaval and 2 Fate at 800, up to 12 / 5 / 2 Grafting at 2200;
+- a LEVEL MILESTONE toast and one short server line;
+- a challenge in Next Goals: an Infinity Tower floor (30 at 800, 100 at 2200) or pocket boss kills at 1000 / 1500 / 2000;
+- a level-up effect at 1000, 1500 and 2000; all 15 give the title Hundredfold and the Summit Seal kill effect.
+
+Next Goals shows the next milestone, its title and its cache. Characters already past a milestone get the titles at
+login, not the caches. Full table: server/README.md "Level milestones (O378)".
 
 ## Tales
 
