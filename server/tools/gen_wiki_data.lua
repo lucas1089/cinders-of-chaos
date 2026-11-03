@@ -1188,6 +1188,8 @@ function W.eventEntries(D)
 			{h = "The fight", p = {
 				string.format("%d waves in %s; the last one brings the boss. Players of level %d or more see the HUD and get rewards by contribution.",
 					inv.waves.count, seconds(inv.timeLimitMinutes * 60), inv.minLevel),
+				string.format("An invasion needs %d players online. The invaders follow the area's level, raised towards the level of the players online. Damage, healing, kills and time in the fight count; time counts only while you act.",
+					inv.gate.minOnline),
 				"Win and everyone nearby gets the Victory buff; lose and the invaders occupy the place for a while."}},
 			{h = "Invaders", cols = {"Host", "Bosses"}, w = {40, 60}, rows = fRows}}}
 	-- the guild siege

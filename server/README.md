@@ -9071,6 +9071,7 @@ module's own script, never by the NPC.
 | Cassian Auric (banker) | 31654, 32230, 7 | the bank window; says the balance | `bank.lua`, opcode 60 |
 | Halvard Deedkeeper (house broker) | 31672, 32230, 7 | lists the free houses by town, sells one by name after a "yes", runs the base `!leavehouse` and `!sellhouse` | `commands_ui_core.lua` loader, opcode 237 page `house` |
 | Pell Ashmere (services clerk) | 31653, 32236, 7 | the Services page (name, class, frame); says the token counts; runs the base `!summonfamiliar`, `!familiarlevel`, `!choosefamiliar`, `!shop` | `commands_ui.lua` / `shop_services.lua`, opcode 237 page `services` |
+| Dorrin Alewright (rumourmonger, O394) | next to the temple (no stall free) | no window: sells a rumour of the next hour ("Tavern rumours (O394)") | `rumours_run.lua`, no opcode |
 
 **Pure logic** (`service_npcs_core.lua`, `tests/service_npcs_test.lua`): what each NPC understands (`K.intent`: ordered
 keyword rows, the narrow ones first), the house name after "buy", the house search (an exact name in any case, else the
@@ -9101,6 +9102,53 @@ five has one.
 
 **Install:** step `servicenpcs` (`tools/install_service_npcs.py`, `tools/install_service_npcs_test.py`). **Texts:** English
 keys, pt-BR in `i18n_strings.lua` (`tests/service_npcs_test.lua` checks every line has one).
+
+## Tavern rumours (O394) (`rumours.lua`, `rumours_core.lua`, `rumours_run.lua`, `rumours_config.lua`, NPC Dorrin Alewright)
+
+Owner idea of 2026-11-03: an NPC who hints where a rare monster or boss will show in the next hour. Checked first: no
+tavern or inn NPC exists in the repository and every stall of the hub is taken, so **Dorrin Alewright** is a sixth
+service NPC (`service_npcs_config.lua` `rumours`, `stall = false`): placed next to Cinderhold's temple by
+`service_npcs.lua` (`offsets`), installed by step `servicenpcs`. To move him into an inn on the map, give him a stall
+in `npc_booths_config.lua`. No opcode, storage key or table; one staff command.
+
+- **Talk.** "rumours" / "boatos" (also rumor, gossip, fofoca, news, novidade, dica), "price" / "preço", "job". Texts
+  in the player's language (`ChaosI18n.npcText`), pt-BR in `i18n_strings.lua`; names of monsters, places and bosses
+  stay English.
+- **What he knows** (`R.candidates`), from 3 to 60 minutes ahead, soonest first:
+  - **appearances**: the rare monsters `rumours.lua` itself spawns. Each hour has one with `chance` 35%, at a minute
+    of 8-52, in one region, a monster by weight (Treasure Goblin 70, Gem Goblin 20, Shard Goblin 10, through
+    `ChaosTreasureGoblin.spawn` at the region's level, so their loot, flee and escape rules hold). The plan is
+    `R.planHour`: from the hour and `salt` only, so the NPC's state and the spawner agree and a restart changes
+    nothing. Regions: the two hunting grounds of `invasion_config.lua` (points read from the real map) and, with
+    `huntPlaces`, every hunt of `data/lib/chaos_hunt_places.lua` (written by `install_content_areas.py`; arrival or
+    destination tile, middle of the level band, one per name, levels 20-2500). Spawn tile: 6-18 tiles from the point,
+    `ChaosInvasion.tileOk` (walkable, no protection zone, house, water, creature). Nobody online: skipped. A minute
+    missed by more than 180 s (server down) is not made up for.
+  - **invasions**: `invasion_core.lua` `I.upcoming` with its config, the secret random ones included: the faction
+    and the area.
+  - **the world boss**: the next slot (`R.worldBossNext`, the formula of `worldboss.lua`) and, in rotation mode, the
+    next boss from the global storage of the last one; random mode says "a great beast".
+  - The Ashen Chronicle has no timed events, so it is not a source. Treasure goblins of natural respawns and the base
+    raids are random in the engine and cannot be foretold.
+- **The rumour**: a window of 30 minutes in server time that holds the true minute, starting 5-20 minutes earlier,
+  rounded to 5 minutes: "A trapper swore he saw a Gem Goblin near Ashgrave Barrow. If he is right, it shows itself
+  between 14:15 and 14:45, server time."
+- **Fee**: 200 + 2 x level gold, at most 2,000 (`Chaos.pay`: coins, then the bank). A gold sink. Nothing new for that
+  player: no fee. Cannot pay: the rumour stays untold.
+- **Once per player per rumour**: the NPC state remembers each player's heard keys until an hour after the event
+  (memory only; a restart forgets it).
+- **False rumours** (`falseChance` 15%): a believable appearance in another region and another window of the hour.
+  The true rumour it replaced counts as heard.
+- **Economy**: about 8 extra goblins a day (35% of 24 hours), each only worth something when found. Natural goblins
+  stay 1 in 3000 respawns. The fee takes gold out.
+- **Staff**: `/rumours` lists what the NPC knows now and the appearances of the next 6 hours; `/rumours spawn` makes
+  the next planned one now. Group access and `Chaos.staffCommand`.
+
+Tests: `tests/rumours_test.lua` (regions, the hourly plan and its share, the world boss, candidates, the window, the
+fee, once per player, false rumours; `rumours_run.lua` with a mocked player; the NPC dialogue on a mocked NPC library;
+`rumours.lua` spawning at the planned minute, once, not late, not with nobody online; the staff guard),
+`tests/service_npcs_test.lua` (six NPCs, intents), `tools/install_service_npcs_test.py`. Not seen in a client or on a
+live server: his spot by the temple, a spawn in a real hunt.
 
 ## The Apothecary (`apothecary.lua`, `apothecary_config.lua`, `data/npc/Veyra the Apothecary.xml`, `data/npc/scripts/veyra_the_apothecary.lua`, `tools/install_apothecary.py`)
 
@@ -10880,6 +10928,41 @@ invasion.
 `defender`), `loot_config.lua` (`rateMult` x `ChaosWorldEvents.lootMult`), `monster_tiers.lua` (spawn roll x
 `ChaosWorldEvents.tierMult`), `events_schedule.lua` (`ChaosEvents.dynamic`: runtime events in `E.active`),
 client `game_chaosnotify/notifications.lua` (toast type `INVASION`, action `invasion`).
+
+### City invasions (O393)
+
+Owner idea of 2026-11-03: a city attacked from time to time, rewards for taking part (not only the last hit), game and
+Discord notices, a boss wave, a mild cost for a loss. The invasion system above did most of it already: schedule and
+random day, waves from outside walking to the temple steps, boss wave, contribution shares, broadcasts and toasts,
+occupation with dearer NPC shops. O393 extends it. No second system, no new opcode, storage key or table.
+
+- **Gate** (`gate`): an automatic start (schedule or random) needs `minOnline` (3) players online of `minLevel` or
+  more, tester bots left out. Too few: the horde turns back, with a broadcast. `cooldownMinutes` (120) after the last
+  invasion ended (won or lost): skipped, and so are its warnings. Staff starts (`/invasion start`, `schedule`) ignore
+  both. Memory only: a restart forgets the last end. `/invasion status` shows the gate. Pure: `I.gate`.
+- **Window**: the random invasion's `fromHour` / `toHour` (12-23) and the fixed `schedule`, as before.
+- **Level of the players online** (`scaling.online`): at the start the area level is pulled towards the median
+  level of the players online: area x 0.5 + median x 0.5, never below the area level, at most x2. Area 80 with a
+  median of 120 is fought at 100; with a median of 900, at 160. That level drives the roster, the scaling, the boss
+  and the rewards (gold is area level x (200 + 8000 x share), so at most twice the old gold). The config keeps its
+  own level; `state.area` is a copy with `level` and `baseLevel`. Pure: `I.effectiveLevel`.
+- **Time present, anti-AFK** (`contribution.presence`, `activeSeconds`, `presenceMargin`): every second a defender
+  within 10 tiles of the area who hit, healed or killed within the last 60 s gains a second of presence. A minute
+  counts 0.05 of an average invader (a 20 minute defence = one invader, four kills). Standing idle counts nothing,
+  and a player who never acted has no entry. Damage, healing and kills count as before; a kill credits both the last
+  hit and the most damage. The split stays by share of the total score (gold floor `goldBase`, one orb for everyone
+  rewarded). Pure: `I.credit` (time of the act), `I.presenceTick`, `I.score`.
+- **Discord** (`discord_config.lua` `city_invasion`, channel `announce`; `discord_core.lua` `D.cityInvasion`): one row
+  at the start (area, faction, level, time limit), one at the end: held (time, rewarded defenders, top 5) or fallen
+  (occupation minutes). The website worker knows the kind (`discord_lib.php`, colour of the world boss spawn).
+- **Notices in game**: the start broadcast and toast, plus one line on how rewards work ("Stand idle and you earn
+  nothing"); pt-BR in `i18n_strings.lua`.
+- **Failure**: unchanged and already mild: the occupation (30 min, NPC shops x1.25 buy / x0.75 sell in the town).
+
+Tests: `tests/invasion_test.lua` (gate, effective level, presence and the idle character, the status line, the
+online levels without testers), `tests/discord_test.lua` (the three rows, the PHP kind). How it works, the guide and
+the wiki say it (`howitworks_config.lua`, `gen_wiki_data.lua`). Not run live: a real start with the gate, a Discord
+post of the new kind.
 
 ### Hunts, level band and fixed notes (O389)
 

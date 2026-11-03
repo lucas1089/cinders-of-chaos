@@ -51,6 +51,29 @@ eq(st.dropped, 1, "dropped rows are counted")
 check(D.allow(st, lim, "level", 650), "another kind has its own count")
 check(D.allow(st, lim, "record", 660), "a new minute")
 
+-- ------------------------------------------------------------------ O393: invasions
+do
+	local ev = D.cityInvasion(cfg, "start", {area = "Cinderhold", faction = "Orc Warband", level = 120, waves = 5, minutes = 20})
+	eq(ev.kind, "city_invasion", "invasion kind")
+	eq(ev.channel, "announce", "invasion channel")
+	eq(ev.title, "Invasion: Cinderhold", "invasion start title")
+	check(ev.text:find("The Orc Warband attacks Cinderhold!", 1, true), "invasion start text: " .. ev.text)
+	eq(ev.fields[1].value, "120", "the level field")
+	ev = D.cityInvasion(cfg, "win", {area = "Cinderhold", faction = "Orc Warband", secs = 400, names = {"Ann", "Bob"}, defenders = 7})
+	eq(ev.title, "Cinderhold held", "win title")
+	check(ev.text:find("Top defenders: Ann and Bob.", 1, true), "win text: " .. ev.text)
+	eq(ev.fields[1].value, "6:40", "fight time"); eq(ev.fields[2].value, "7", "defenders")
+	ev = D.cityInvasion(cfg, "lost", {area = "Thornmere", faction = "Undead Legion", occupation = 30})
+	eq(ev.title, "Thornmere has fallen", "lost title")
+	check(ev.text:find("for 30 minutes", 1, true), "lost text")
+	check(D.enabled(cfg, "city_invasion"), "the kind is on")
+	-- the website worker knows the kind
+	local fh = io.open("../website/overlay/plugins/chaos/discord_lib.php")
+	local php = fh and fh:read("*a") or ""
+	if fh then fh:close() end
+	check(php:find("'city_invasion'", 1, true) ~= nil, "discord_lib.php lists city_invasion")
+end
+
 -- ------------------------------------------------------------------ events
 local ev = D.record(cfg, "New record: Ashmaw in 4:12 by Arwen.")
 check(ev.kind == "record" and ev.channel == "records" and ev.title == "New record", "record event")

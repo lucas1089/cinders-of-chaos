@@ -16,6 +16,11 @@ return {
 	-- minGapMinutes away from a scheduled one and from the world boss hours (avoidHours). Decided by the date alone,
 	-- so a restart does not roll again. Not shown in the calendar; announced 30 / 10 / 1 minutes before like the others.
 	random = {chance = 35, fromHour = 12, toHour = 23, minGapMinutes = 90, avoidHours = {15, 21}, salt = 7919},
+	-- O393 (owner 2026-11-03): an automatic start (schedule or random) goes ahead only with at least minOnline players
+	-- online of minLevel or more (else the horde turns back, announced) and cooldownMinutes after the last invasion
+	-- ended (else it is skipped, and so are its warnings). The /invasion staff commands ignore both. Memory only: a
+	-- restart forgets the last end.
+	gate = {minOnline = 3, cooldownMinutes = 120},
 	warnMinutes = {30, 10, 1},
 	calendarName = "Invasion",
 	calendarColors = {"#c8402a", "#6a1a10"},
@@ -44,8 +49,12 @@ return {
 	-- invaders are brought to the area level: ratio = area level / monster level, health x ratio^hpExp, damage x
 	-- ratio^dmgExp, experience x ratio^xpExp, each clamped [minMult, max*]. rosterLow/High: the faction's monsters
 	-- within [0.35, 1.25] x area level are used (at least minTypes, the closest by level)
+	-- online (O393): the area level is pulled towards the median level of the players online (minLevel and up) at the
+	-- start: level = area x (1 - weight) + median x weight, at least area x minRatio, at most area x maxRatio. That
+	-- level is used for the invaders, the boss and the rewards (I.effectiveLevel); weight 0 = the area level only.
 	scaling = {hpExp = 1.0, dmgExp = 0.4, xpExp = 0.8, minMult = 0.5, maxHp = 10, maxDmg = 2.5, maxXp = 6,
-		rosterLow = 0.35, rosterHigh = 1.25, minTypes = 3},
+		rosterLow = 0.35, rosterHigh = 1.25, minTypes = 3,
+		online = {weight = 0.5, minRatio = 1.0, maxRatio = 2.0}},
 	-- the boss: health = hpPerLevel x area level x player factor; damage scaled like the waves (boss level -> area
 	-- level); it gets the legendary tier (modifiers and shader) and the client's boss frame
 	boss = {hpPerLevel = 2500, minHealth = 40000, dmgExp = 0.6, minMult = 0.3, maxDmg = 2.5, xpMult = 3, tier = "legendary"},
@@ -67,8 +76,13 @@ return {
 	-- ======================================================================= rewards (a defended invasion)
 	-- score = damage dealt to invaders x damage + healing done to other players inside the area x healing
 	--         + kills x kill x the average invader health (so a kill is worth a quarter of a monster)
+	--         + minutes present x presence x the average invader health (O393: a 20 minute defence = one invader)
+	-- presence counts only while the player stands within presenceMargin tiles of the area and has dealt damage,
+	-- healed or killed in the last activeSeconds (anti-AFK: standing there counts nothing). Not only the last hit:
+	-- a kill credits both the last hit and the most damage, and the reward is split by share of the total score.
 	-- a player needs minPercent % of the total invader health in score to be rewarded
-	contribution = {damage = 1.0, healing = 0.6, kill = 0.25, minPercent = 0.2},
+	contribution = {damage = 1.0, healing = 0.6, kill = 0.25, presence = 0.05, activeSeconds = 60, presenceMargin = 10,
+		minPercent = 0.2},
 	rewards = {
 		goldBase = 200, goldPool = 8000, -- gold to the bank: area level x (goldBase + goldPool x share)
 		base = {{id = 29856, count = 1}}, -- every rewarded player: 1 Orb of Upheaval

@@ -67,9 +67,9 @@ HowData = {
 			{id = "often", en = "Once a week: Saturday at 20:00. Sign-ups close 5 minutes before. The match lasts 25 minutes.", pt = "Uma vez por semana: sábado às 20:00. As inscrições fecham 5 minutos antes. A partida dura 25 minutos."}
 		}},
 		{key = "invasion", title = {en = "Invasions", pt = "Invasões"}, window = "game_chaosinfo", unlocks = {"events"}, goals = {"invasion1"}, rows = {
-			{id = "who", en = "Level 30+, near the invaded area. The more defenders, the bigger the waves.", pt = "Nível 30+, perto da área invadida. Quanto mais defensores, maiores as ondas."},
-			{id = "levels", en = "The invaders are scaled to the level of the area.", pt = "Os invasores seguem o nível da área."},
-			{id = "drops", en = "A reward by how much you helped. Players below level 30 get none.", pt = "Uma recompensa conforme a sua ajuda. Quem está abaixo do nível 30 não ganha nada."},
+			{id = "who", en = "Level 30+, near the invaded area. The more defenders, the bigger the waves. It needs 3 players online.", pt = "Nível 30+, perto da área invadida. Quanto mais defensores, maiores as ondas. Precisa de 3 jogadores online."},
+			{id = "levels", en = "The invaders follow the level of the area, raised towards the level of the players online.", pt = "Os invasores seguem o nível da área, puxado para o nível dos jogadores online."},
+			{id = "drops", en = "A reward by your part: damage, healing, kills and time in the fight. Time counts only while you hit, heal or kill at least every 60 seconds. Players below level 30 get none.", pt = "Uma recompensa pela sua parte: dano, cura, abates e tempo na luta. O tempo só conta se você bater, curar ou abater pelo menos a cada 60 segundos. Quem está abaixo do nível 30 não ganha nada."},
 			{id = "death", en = "A real death: you never lose items. Experience loss is none up to level 30, half at level 100, full from level 250; the first death of the day costs half.", pt = "Morte de verdade: você nunca perde itens. A perda de experiência é zero até o nível 30, metade no nível 100 e total a partir do nível 250; a primeira morte do dia custa metade."},
 			{id = "often", en = "Every week: Wednesday 19:30 and Sunday 17:30. Some days bring a surprise invasion (35% of days). Each one lasts 20 minutes at most, with 5 waves; the last has a boss.", pt = "Toda semana: quarta-feira 19:30 e domingo 17:30. Alguns dias trazem uma invasão surpresa (35% dos dias). Cada uma dura no máximo 20 minutos, com 5 ondas; a última tem um chefe."}
 		}},

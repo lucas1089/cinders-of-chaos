@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dorrin Alewright: the rumourmonger of Cinderhold (O394; server/data/scripts/chaos/rumours*.lua, service_npcs_config.lua;
+     server/README.md "Tavern rumours (O394)"). For a small fee he tells where a rare monster, an invasion or the world boss
+     will show within the hour; now and then the rumour is false. Placed next to the temple by service_npcs.lua (every stall
+     of the hub is taken); installed by server/tools/install_service_npcs.py. -->
+<npc name="Dorrin Alewright" script="dorrin_alewright.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="128" head="78" body="58" legs="76" feet="114" addons="0" />
+	<parameters>
+		<parameter key="message_greet" value="Pull up a stool, |PLAYERNAME|. Ears open, purse open: want to hear the {rumours}?" />
+		<parameter key="message_farewell" value="Mind the hour, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="Some folk never finish their drink." />
+	</parameters>
+</npc>
