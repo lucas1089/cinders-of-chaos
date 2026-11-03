@@ -96,6 +96,13 @@ android {
         }
         release {
             minifyEnabled false
+            // AGP builds the release variant's engine as RelWithDebInfo (-O2 -g): the player APK wants the
+            // same CMake Release as a debug APK (first release-signed build, 2026-11-03: the workflow check stopped it)
+            externalNativeBuild {
+                cmake {
+                    arguments '-DCMAKE_BUILD_TYPE=Release'
+                }
+            }
             if (System.getenv('CHAOS_KS_FILE')) {
                 signingConfig signingConfigs.release
             }
