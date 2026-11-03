@@ -408,6 +408,7 @@ end
 
 function init()
   window = g_ui.displayUI('battlepass')
+  pcall(function() modules.game_howitworks.attach(window, 'seasonpass') end) -- game_howitworks: the ? button
   window:hide()
   local names = { { 'rewards', tr('Rewards') }, { 'challenges', tr('Challenges') }, { 'packs', tr('Packs') } }
   for _, n in ipairs(names) do

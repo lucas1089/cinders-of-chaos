@@ -316,6 +316,7 @@ function init()
   local ok, ui = pcall(g_ui.displayUI, 'transmog')
   if ok and ui then
     window = ui
+    pcall(function() modules.game_howitworks.attach(window, 'transmog') end) -- game_howitworks: the ? button
     window:hide()
     window.wardrobePanel.searchEdit.onTextChange = safe('search', function() refreshLooks() end)
     showPage('wardrobe')

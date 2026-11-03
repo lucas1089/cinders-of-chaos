@@ -27619,12 +27619,19 @@ monster levels, what drops, if you die, how often); the Next Goals rows and the 
   Cache, season, factions and Gambler numbers, weekdays and times; world boss hours (`Chaos.worldBoss`), pocket boss tries; the death rule
   (`gentledeath_config.lua`: items kept, experience loss by level, first death of the day). The generator refuses to run when
   `keepItems` is off, because the cards say nobody loses items.
+- **New-player windows (follow-up).** 22 more cards, one per window a level 1-50 player opens: passive tree (`Chaos.passive`,
+  `respec_config.lua`), spellbook, bestiary and kill tasks (`bestiary_config.lua`), professions, charms, achievements
+  (`achievements_data.lua`: count, groups, hidden), loadouts, town portal, stash (`stash_config.lua`, `pact_config.lua` limits),
+  auto loot (`Chaos.autoloot`), loot filter, item finder, codex, party finder, mentors, guild, season pass, hideout, transmog,
+  nemesis, Chaos Pact, store. Two claims are checked by the generator: the town portal card stops when `partyCanUse` is off, the
+  transmog card when `fee.remove` is not 0. The spellbook, codex and store cards have no numbers.
 - **Hand-written** (`tools/howitworks_config.lua`): the plain sentences in English and pt-BR with `{name}` places, which client window gets
   the `?`, which unlock keys and goal keys open the card, and the "no real death" lines of the modes that catch a lethal hit (arena,
   battleground, Descent, raid, siege, pocket boss; see "Instance limits" and "Death recap"). These claims are checked by reading the code
   and README, not by a test: when a mode's death rule changes, change its sentence.
-- **Cards without a hand-written one.** An unlock entry that no card claims (crafting, salvage, pets, market, passive tree) gets a card made
-  from the entry: its level and its own two lines (en and pt-BR).
+- **Cards without a hand-written one.** An unlock entry that no card names goes to the hand-written card of the same key, else to
+  the hand-written card whose window the entry opens (`go.open`): a new gate of a system that has a card opens that card. The
+  rest (crafting, salvage, pets, market) get a card made from the entry: its level and its own two lines (en and pt-BR).
 - **Not covered, on purpose.** Tower Defense and the roulette have no window of their own (a base event room and an NPC), so no `?`.
   The Rift card sits on the Rift Atlas window (the rift itself only has a HUD).
 - **Known mismatch found.** The unlock card of the Infinity Tower says "a boss every fifth" floor; `bossEvery` is 10 (`milestoneEvery` 5 is

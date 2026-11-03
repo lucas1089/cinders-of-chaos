@@ -258,6 +258,7 @@ function init()
   local ok, ui = pcall(g_ui.createWidget, 'PactWindow', rootWidget)
   if ok and ui then
     window = ui
+    pcall(function() modules.game_howitworks.attach(window, 'pact') end) -- game_howitworks: the ? button
     window:hide()
   else
     g_logger.warning('[pact] window not loaded: ' .. tostring(ui))

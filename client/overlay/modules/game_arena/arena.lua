@@ -284,6 +284,7 @@ end
 
 function init()
   window = g_ui.displayUI('arena')
+  pcall(function() modules.game_howitworks.attach(window, 'arena') end) -- game_howitworks: the ? button
   window:hide()
   hudPanel = g_ui.loadUI('arenahud', modules.game_interface.getRootPanel())
   if hudPanel then hudPanel:hide() end
