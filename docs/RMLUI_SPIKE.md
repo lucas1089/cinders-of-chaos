@@ -284,3 +284,14 @@ default features (png, brotli, bzip2, zlib) as a dependency of RmlUi, and the en
 The `rmlui` feature now names `freetype` with `default-features: false` (RmlUi loads plain TTF files, so FreeType needs
 none of them).
 
+APK 33 on the owner's phone (2026-11-04, O403): it starts and draws Options and the Helper in RmlUi. Found:
+- Options pages sat in a 220 dp list box with every control as a list row (the Reset button drawn as plain text). The
+  form layer took any `UIScrollArea` with `onChildFocusChange` for a list, and every one inherits the class method. Now
+  only a TextList or a handler the module set itself counts; a `ScrollablePanel` is walked as a container.
+- The Helper's rows (spell, "Health at or below", percent) were flowed into one wrapping box with the label and the next
+  combo box paired on a row of their own. A container whose short children (40 px or less) share one horizontal band is
+  now one `.line`, its children left to right, combo boxes in their OTUI width (`ChaosRmlForm.lineOf`).
+- Graphics Engine read "DirectX11": the phone's renderer is OpenGL ES, so the ANGLE list of the Windows build showed.
+  Base patch `0185` lists "OpenGL ES" alone on a phone.
+- Frame rate: 58 fps with Options on the first page, 30 fps on others and with the Helper open. Not explained yet;
+  the next test APK says whether it follows the layout (the list box) or the RmlUi draw itself.

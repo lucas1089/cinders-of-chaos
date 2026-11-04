@@ -43,8 +43,43 @@ local function imageOf(w)
 end
 
 -- a list: a TextList (or any scroll area the module listens to for the focused child); its children are its rows
+-- (every UIScrollArea inherits the class's own onChildFocusChange, so only a handler the module set counts: a
+-- ScrollablePanel of controls is a container, not a list)
 local function isList(w)
-  return classOf(w) == 'UIScrollArea' and (w.getStyleName and w:getStyleName() == 'TextList' or w.onChildFocusChange ~= nil)
+  if classOf(w) ~= 'UIScrollArea' then return false end
+  if w.getStyleName and w:getStyleName() == 'TextList' then return true end
+  local handler = w.onChildFocusChange
+  local base = rawget(_G, 'UIScrollArea')
+  return handler ~= nil and not (type(base) == 'table' and handler == base.onChildFocusChange)
+end
+M.isList = isList
+
+-- Pure: the drawable children of a container when they all sit on one horizontal line (their rects share a vertical
+-- band), sorted left to right; nil otherwise. Such a container (a row widget: spell, label, percent) is drawn as one
+-- line, not flowed into its neighbours.
+M.LINE_MAX_H = 40
+function M.lineOf(w)
+  local kids = {}
+  for _, c in ipairs(w:getChildren()) do
+    if c:isExplicitlyVisible() and (not c.getOpacity or c:getOpacity() > 0) then
+      if not c.getRect then return nil end
+      local r = c:getRect()
+      -- a row is short: a tall child (a page, a list beside its scroll bar) is laid out, not lined up
+      if not r or (r.width or 0) <= 0 or (r.height or 0) <= 0 or r.height > M.LINE_MAX_H then return nil end
+      kids[#kids + 1] = { w = c, r = r }
+    end
+  end
+  if #kids < 2 then return nil end
+  local top, bottom = -math.huge, math.huge
+  for _, k in ipairs(kids) do
+    top = math.max(top, k.r.y)
+    bottom = math.min(bottom, k.r.y + k.r.height)
+  end
+  if top >= bottom then return nil end
+  table.sort(kids, function(a, b) return a.r.x < b.r.x end)
+  local out = {}
+  for i, k in ipairs(kids) do out[i] = k.w end
+  return out
 end
 
 -- The controls of a widget tree in reading order. Kinds: group/endgroup (a FlatPanel), list/endlist, row/endrow (a list
@@ -58,8 +93,8 @@ function M.collect(root)
     if type(tip) == 'string' and tip ~= '' then item.tip = tip end
     items[#items + 1] = item
   end
-  local function walk(w, inRow)
-    for _, c in ipairs(w:getChildren()) do
+  local function walk(w, inRow, children)
+    for _, c in ipairs(children or w:getChildren()) do
       -- a widget a module hid with opacity 0 (moved away, faded out) is not drawn either
       -- the theme's corner pieces and crest (client_chaos_theme) are window furniture the skin draws itself
       if c:isExplicitlyVisible() and (not c.getOpacity or c:getOpacity() > 0) and not tostring(c:getId()):find('^chaosOrn') then
@@ -71,7 +106,8 @@ function M.collect(root)
         elseif cls == 'UIComboBox' then
           local opts = {}
           for i, o in ipairs(c.options or {}) do opts[i] = tostring(o.text) end
-          add({ kind = 'select', widget = c, options = opts })
+          local size = c.getSize and c:getSize()
+          add({ kind = 'select', widget = c, options = opts, width = size and size.width or 0 })
         elseif cls == 'UIScrollBar' then
           if c:getOrientation() ~= 'vertical' then
             add({ kind = 'range', widget = c, min = c:getMinimum() or 0, max = c:getMaximum() or 0 })
@@ -132,8 +168,11 @@ function M.collect(root)
           end
         else
           local group = not inRow and c.getStyleName and c:getStyleName() == 'FlatPanel'
+          local line = not group and M.lineOf(c)
           if group then add({ kind = 'group' }) end
-          walk(c, inRow)
+          if line then add({ kind = 'line' }) end
+          walk(c, inRow, line or nil)
+          if line then add({ kind = 'endline' }) end
           if group then add({ kind = 'endgroup' }) end
         end
       end
@@ -156,7 +195,7 @@ end
 -- top level (outside any panel or list) go into rows of their own like a panel. Pure: escape comes in.
 function M.rml(items, escape)
   local out, helps = {}, {}
-  local depth, loose, pair = 0, false, false
+  local depth, loose, pair, lines = 0, false, false, 0
   local function push(s) out[#out + 1] = s end
   local function endLoose()
     if not loose then return end
@@ -203,13 +242,22 @@ function M.rml(items, escape)
     elseif k == 'endrow' then
       push('</div>') -- i18n-ok: markup
       depth = depth - 1
+    elseif k == 'endline' then
+      push('</div>') -- i18n-ok: markup
+      depth = depth - 1
+      lines = lines - 1
     else
       if depth == 0 and not loose then
         push('<div class="group loose">') -- i18n-ok: markup
         loose = true
       end
       local nextKind = items[n + 1] and items[n + 1].kind
-      if k == 'label' and (nextKind == 'range' or nextKind == 'select' or nextKind == 'input') then
+      if k == 'line' then
+        -- one OTUI row: its controls side by side, in their own sizes
+        push('<div class="line">') -- i18n-ok: markup
+        depth = depth + 1
+        lines = lines + 1
+      elseif k == 'label' and lines == 0 and (nextKind == 'range' or nextKind == 'select' or nextKind == 'input') then
         -- a label and the control it names share one full row
         it.el = id
         push(string.format('<div class="pair"><span class="lbl" id="%s">%s</span>', id, escape(it.text))) -- i18n-ok: markup
@@ -233,7 +281,9 @@ function M.rml(items, escape)
         for i, o in ipairs(it.options) do
           opts[#opts + 1] = string.format('<option value="%d">%s</option>', i, escape(o)) -- i18n-ok: markup
         end
-        push(string.format('<select id="%s">%s</select>', id, table.concat(opts))) -- i18n-ok: markup
+        -- in a line a combo box keeps its OTUI width (a percent box stays small)
+        local style = (lines > 0 and (it.width or 0) > 0) and string.format(' style="width: %ddp;"', it.width) or '' -- i18n-ok: markup
+        push(string.format('<select id="%s"%s>%s</select>', id, style, table.concat(opts))) -- i18n-ok: markup
       elseif k == 'input' then
         it.el = id
         if it.multiline then

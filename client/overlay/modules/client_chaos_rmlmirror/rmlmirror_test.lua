@@ -182,5 +182,44 @@ eq(x, 1280 - F.TIP_MAX_W - 4, 'tipPos: kept inside on the right')
 x, y = F.tipPos({ x = 10, y = 690, width = 40, height = 20 }, 1280, 720)
 eq(y, 646, 'tipPos: above at the bottom')
 
+-- lists: a ScrollablePanel only inherits the class's onChildFocusChange, so it is a container, not a list
+UIScrollArea = { onChildFocusChange = function() end }
+local sp = widget('UIScrollArea', { style = 'ScrollablePanel', onChildFocusChange = UIScrollArea.onChildFocusChange })
+eq(F.isList(sp), false, 'isList: inherited handler')
+sp.onChildFocusChange = function() end
+eq(F.isList(sp), true, 'isList: own handler')
+eq(F.isList(widget('UIScrollArea', { style = 'TextList' })), true, 'isList: TextList')
+local page = add(widget('UIScrollArea', { style = 'ScrollablePanel', onChildFocusChange = UIScrollArea.onChildFocusChange }),
+  button('reset', 'Reset'))
+local pItems = F.collect(add(widget('UIWindow'), page))
+eq(pItems[1].kind, 'button', 'isList: a page button stays a button')
+UIScrollArea = nil
+
+-- lines: a row widget (spell, label, percent side by side) is drawn as one line, left to right
+local function at(w, x, y, wd, h) w.rect = { x = x, y = y, width = wd, height = h } return w end
+local function combo(id, width)
+  local c = widget('UIComboBox', { id = id, options = { { text = 'A' } } })
+  function c:getSize() return { width = width, height = 22 } end
+  return c
+end
+local healRow = add(at(widget('UIWidget'), 0, 0, 400, 36),
+  at(combo('percent', 64), 330, 7, 64, 22), at(combo('spell', 220), 40, 7, 220, 22), at(label('lbl', 'Health at or below'), 270, 10, 56, 15))
+local lineKids = F.lineOf(healRow)
+eq(lineKids and #lineKids, 3, 'lineOf: three on a line')
+eq(lineKids and lineKids[1].id, 'spell', 'lineOf: sorted by x')
+local stacked = add(at(widget('UIWidget'), 0, 0, 400, 80), at(label('a', 'A'), 0, 0, 50, 15), at(label('b', 'B'), 0, 30, 50, 15))
+eq(F.lineOf(stacked), nil, 'lineOf: stacked children')
+local tall = add(at(widget('UIWidget'), 0, 0, 400, 300), at(widget('UIScrollBar'), 380, 0, 12, 300), at(widget('UIWidget'), 0, 0, 370, 300))
+eq(F.lineOf(tall), nil, 'lineOf: a tall child is no row')
+eq(F.lineOf(add(widget('UIWidget'), at(label('one', 'One'), 0, 0, 50, 15))), nil, 'lineOf: one child')
+local lItems = F.collect(add(widget('UIWindow'), label('head', 'Healing spells'), healRow))
+local lKinds = {}
+for i, it in ipairs(lItems) do lKinds[i] = it.kind end
+eq(table.concat(lKinds, ','), 'label,line,select,label,select,endline', 'line: items')
+local lRml = F.rml(lItems, function(s) return s end)
+has(lRml, '<div class="line"><select id="c3" style="width: 220dp;">', 'line: combo keeps its width')
+has(lRml, '<span class="lbl" id="c4">Health at or below</span><select id="c5" style="width: 64dp;">', 'line: no pair inside')
+eq(lRml:find('class="pair"', 1, true), nil, 'line: no pair row')
+
 print(string.format('rmlmirror_test: %d checks, %d failures', checks, failures))
 if failures > 0 then os.exit(1) end

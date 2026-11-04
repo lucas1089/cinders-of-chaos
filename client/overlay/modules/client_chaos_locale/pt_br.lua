@@ -4046,6 +4046,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Orb size"] = "Tamanho dos orbes",
   ["Size of the health and mana orbs"] = "Tamanho dos orbes de vida e mana",
   ["This client draws with OpenGL."] = "Este cliente desenha com OpenGL.",
+  ["This client draws with OpenGL ES."] = "Este cliente desenha com OpenGL ES.",
   ["Rarity outline on dropped items"] = "Contorno de raridade nos itens no chão",
   ["Rarity outline in bags and inventory"] = "Contorno de raridade nas bolsas e no inventário",
   ["Shine on legendary and unique frames"] = "Brilho nas molduras lendárias e únicas",
