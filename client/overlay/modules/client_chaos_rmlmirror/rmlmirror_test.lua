@@ -195,31 +195,49 @@ local pItems = F.collect(add(widget('UIWindow'), page))
 eq(pItems[1].kind, 'button', 'isList: a page button stays a button')
 UIScrollArea = nil
 
--- lines: a row widget (spell, label, percent side by side) is drawn as one line, left to right
+-- geometry (the mirror): bands of overlapping rects become lines, columns cells with the OTUI gap and width
 local function at(w, x, y, wd, h) w.rect = { x = x, y = y, width = wd, height = h } return w end
-local function combo(id, width)
-  local c = widget('UIComboBox', { id = id, options = { { text = 'A' } } })
-  function c:getSize() return { width = width, height = 22 } end
-  return c
-end
-local healRow = add(at(widget('UIWidget'), 0, 0, 400, 36),
-  at(combo('percent', 64), 330, 7, 64, 22), at(combo('spell', 220), 40, 7, 220, 22), at(label('lbl', 'Health at or below'), 270, 10, 56, 15))
-local lineKids = F.lineOf(healRow)
-eq(lineKids and #lineKids, 3, 'lineOf: three on a line')
-eq(lineKids and lineKids[1].id, 'spell', 'lineOf: sorted by x')
-local stacked = add(at(widget('UIWidget'), 0, 0, 400, 80), at(label('a', 'A'), 0, 0, 50, 15), at(label('b', 'B'), 0, 30, 50, 15))
-eq(F.lineOf(stacked), nil, 'lineOf: stacked children')
-local tall = add(at(widget('UIWidget'), 0, 0, 400, 300), at(widget('UIScrollBar'), 380, 0, 12, 300), at(widget('UIWidget'), 0, 0, 370, 300))
-eq(F.lineOf(tall), nil, 'lineOf: a tall child is no row')
-eq(F.lineOf(add(widget('UIWidget'), at(label('one', 'One'), 0, 0, 50, 15))), nil, 'lineOf: one child')
-local lItems = F.collect(add(widget('UIWindow'), label('head', 'Healing spells'), healRow))
-local lKinds = {}
-for i, it in ipairs(lItems) do lKinds[i] = it.kind end
-eq(table.concat(lKinds, ','), 'label,line,select,label,select,endline', 'line: items')
-local lRml = F.rml(lItems, function(s) return s end)
-has(lRml, '<div class="line"><select id="c3" style="width: 220dp;">', 'line: combo keeps its width')
-has(lRml, '<span class="lbl" id="c4">Health at or below</span><select id="c5" style="width: 64dp;">', 'line: no pair inside')
-eq(lRml:find('class="pair"', 1, true), nil, 'line: no pair row')
+local function combo(id) return widget('UIComboBox', { id = id, options = { { text = 'A' } } }) end
+local b = F.bands({
+  { w = 'r', r = { x = 300, y = 10, width = 64, height = 22 } },
+  { w = 'l', r = { x = 0, y = 12, width = 200, height = 22 } },
+  { w = 'n', r = { x = 0, y = 40, width = 100, height = 15 } },
+  { w = 'm', r = { x = 50, y = 41, width = 100, height = 15 } },
+})
+eq(#b, 2, 'bands: two bands')
+eq(#b[1].columns, 2, 'bands: two columns')
+eq(b[1].columns[1].kids[1].w, 'l', 'bands: left first')
+eq(b[1].top .. ',' .. b[1].bottom, '10,34', 'bands: band extent')
+eq(#b[2].columns, 1, 'bands: overlapping x is one column')
+eq(b[2].columns[1].left .. ',' .. b[2].columns[1].right, '0,150', 'bands: column extent')
+
+-- a heal row: spell, label, percent side by side under a heading; the row is one line, each control a cell
+local healRow = add(at(widget('UIWidget'), 10, 30, 400, 36),
+  at(combo('percent'), 340, 37, 64, 22), at(combo('spell'), 50, 37, 220, 22), at(label('lbl', 'Health at or below'), 280, 40, 56, 15))
+local win = add(at(widget('UIWindow'), 0, 0, 420, 100), at(label('head', 'Healing spells'), 10, 10, 120, 15), healRow)
+local g = F.collect(win, { geometry = true })
+local kinds = {}
+for i, it in ipairs(g) do kinds[i] = it.kind end
+eq(table.concat(kinds, ','),
+  'line,cell,label,endcell,endline,line,cell,line,cell,select,endcell,cell,label,endcell,cell,select,endcell,endline,endcell,endline',
+  'geometry: items')
+eq(g[7].gap .. ',' .. g[7].width, '0,400', 'geometry: the row cell')
+eq(g[9].gap .. ',' .. g[9].width, '40,220', 'geometry: spell cell gap from the row left')
+eq(g[12].gap .. ',' .. g[12].width, '10,56', 'geometry: label cell gap from the spell')
+eq(g[15].gap, 4, 'geometry: percent cell gap')
+eq(g[6].gap, 5, 'geometry: line gap under the heading')
+local gRml = F.rml(g, function(s) return s end)
+has(gRml, '<div class="cell" style="margin-left: 40dp; width: 220dp;"><select id="c10">', 'geometry: cell rml')
+eq(gRml:find('class="pair"', 1, true), nil, 'geometry: no pair row')
+local plain = F.collect(win)
+eq(plain[1].kind, 'label', 'geometry: off by default')
+local sigA = F.signature(g)
+healRow.children[2].rect.x = 60
+eq(F.signature(F.collect(win, { geometry = true })) ~= sigA, true, 'geometry: a move changes the signature')
+-- kids on top of each other: plain reading order, no endless split
+local stack = add(at(widget('UIWindow'), 0, 0, 100, 100), at(label('x', 'X'), 0, 0, 50, 20), at(label('y', 'Y'), 0, 0, 50, 20))
+local sk = F.collect(stack, { geometry = true })
+eq(#sk, 2, 'geometry: overlapping kids')
 
 print(string.format('rmlmirror_test: %d checks, %d failures', checks, failures))
 if failures > 0 then os.exit(1) end

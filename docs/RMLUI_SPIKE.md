@@ -295,3 +295,13 @@ APK 33 on the owner's phone (2026-11-04, O403): it starts and draws Options and 
   Base patch `0185` lists "OpenGL ES" alone on a phone.
 - Frame rate: 58 fps with Options on the first page, 30 fps on others and with the Helper open. Not explained yet;
   the next test APK says whether it follows the layout (the list box) or the RmlUi draw itself.
+APK 34 (O404): the owner's screenshots still showed the old layout. Both test APKs were built with `update_baseline`
+105 while the live update is 105, so the first start put the live Lua over the APK's (docs/ANDROID_CLIENT.md: a test
+of new Lua needs a baseline above the live release). The next test APK is built with baseline 106.
+- The mirror now keeps OTUI places (`ChaosRmlForm.collect(root, { geometry = true })`, `ChaosRmlForm.bands`): the
+  children of each container split into bands (rects that overlap vertically, top to bottom) and each band into
+  columns (rects that overlap horizontally, left to right). A band is a `.line` (its OTUI gap above, 16 dp at most),
+  a column a `.cell` with the OTUI gap from the previous column and the OTUI width; a column of several widgets is laid
+  out the same way inside its cell. Rows of a table therefore keep their columns. Kids that lie on top of each other
+  fall back to reading order. The Options window keeps the flow layout (its window is not the OTUI size).
+

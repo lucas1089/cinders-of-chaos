@@ -22,15 +22,16 @@ ChaosMenuButton < UIButton
     text-offset: 29 2
 
   // O401 (owner 2026-11-04): bigger on a phone; chaos_topbar.lua adds the matching width (MOBILE_EXTRA)
+  // O403 (owner 2026-11-04): bigger still, Alegreya SC 16
   $mobile:
-    height: 34
-    font: chaos-body-13px
-    icon-size: 26 26
-    icon-offset: 6 4
-    text-offset: 37 1
+    height: 40
+    font: chaos-subtitle-16px
+    icon-size: 30 30
+    icon-offset: 6 5
+    text-offset: 42 1
 
   $mobile pressed:
-    text-offset: 38 2
+    text-offset: 43 2
 
 ChaosMenuBar < UIWidget
   id: chaosMenuBar
@@ -45,7 +46,7 @@ ChaosMenuBar < UIWidget
   visible: false
 
   $mobile:
-    height: 46
+    height: 52
 
   UIWidget
     id: buttons
@@ -150,3 +151,23 @@ ChaosUnlockWindow < UIWidget
     anchors.right: close.left
     margin-bottom: 8
     margin-right: 6
+
+// O403 (owner 2026-11-04): on a phone a category opens a scroll menu (UIPopupScrollMenu, its height fits the screen)
+// with taller rows in Alegreya SC 14; chaos_topbar.lua showList picks it. The base looks up <style>Button,
+// <style>Separator and <style>ShortcutLabel by name.
+ChaosMobileMenu < PopupScrollMenu
+  width: 50
+
+ChaosMobileMenuButton < PopupScrollMenuButton
+  size: 0 32
+  height: 32
+  font: chaos-heading-14px
+  text-offset: 8 0
+  color: #d6c9ae
+
+ChaosMobileMenuSeparator < PopupScrollMenuSeparator
+  margin-top: 3
+  margin-bottom: 3
+
+ChaosMobileMenuShortcutLabel < PopupScrollMenuShortcutLabel
+  margin-right: 6

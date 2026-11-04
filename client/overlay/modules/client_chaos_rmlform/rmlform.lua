@@ -54,38 +54,56 @@ local function isList(w)
 end
 M.isList = isList
 
--- Pure: the drawable children of a container when they all sit on one horizontal line (their rects share a vertical
--- band), sorted left to right; nil otherwise. Such a container (a row widget: spell, label, percent) is drawn as one
--- line, not flowed into its neighbours.
-M.LINE_MAX_H = 40
-function M.lineOf(w)
-  local kids = {}
-  for _, c in ipairs(w:getChildren()) do
-    if c:isExplicitlyVisible() and (not c.getOpacity or c:getOpacity() > 0) then
-      if not c.getRect then return nil end
-      local r = c:getRect()
-      -- a row is short: a tall child (a page, a list beside its scroll bar) is laid out, not lined up
-      if not r or (r.width or 0) <= 0 or (r.height or 0) <= 0 or r.height > M.LINE_MAX_H then return nil end
-      kids[#kids + 1] = { w = c, r = r }
+
+-- Pure: placed kids ({ w, r }) split into bands (rects that overlap vertically), top to bottom, and each band into
+-- columns (rects that overlap horizontally), left to right: { top, bottom, columns = { { left, right, kids } } }.
+function M.bands(placed)
+  table.sort(placed, function(a, b)
+    if a.r.y ~= b.r.y then return a.r.y < b.r.y end
+    return a.r.x < b.r.x
+  end)
+  local bands = {}
+  for _, p in ipairs(placed) do
+    local band = bands[#bands]
+    if band and p.r.y < band.bottom then
+      band.kids[#band.kids + 1] = p
+      band.bottom = math.max(band.bottom, p.r.y + p.r.height)
+    else
+      bands[#bands + 1] = { top = p.r.y, bottom = p.r.y + p.r.height, kids = { p } }
     end
   end
-  if #kids < 2 then return nil end
-  local top, bottom = -math.huge, math.huge
-  for _, k in ipairs(kids) do
-    top = math.max(top, k.r.y)
-    bottom = math.min(bottom, k.r.y + k.r.height)
+  for _, band in ipairs(bands) do
+    table.sort(band.kids, function(a, b) return a.r.x < b.r.x end)
+    local cols = {}
+    for _, p in ipairs(band.kids) do
+      local col = cols[#cols]
+      if col and p.r.x < col.right then
+        col.kids[#col.kids + 1] = p
+        col.right = math.max(col.right, p.r.x + p.r.width)
+      else
+        cols[#cols + 1] = { left = p.r.x, right = p.r.x + p.r.width, kids = { p } }
+      end
+    end
+    -- a column's kids in reading order (top to bottom)
+    for _, col in ipairs(cols) do
+      table.sort(col.kids, function(a, b)
+        if a.r.y ~= b.r.y then return a.r.y < b.r.y end
+        return a.r.x < b.r.x
+      end)
+    end
+    band.columns, band.kids = cols, nil
   end
-  if top >= bottom then return nil end
-  table.sort(kids, function(a, b) return a.r.x < b.r.x end)
-  local out = {}
-  for i, k in ipairs(kids) do out[i] = k.w end
-  return out
+  return bands
 end
 
 -- The controls of a widget tree in reading order. Kinds: group/endgroup (a FlatPanel), list/endlist, row/endrow (a list
 -- child), tabs/tab/endtabs (a TabBar), label, para (text with line breaks), check, range, select, button, input, progress, image, sep, help.
 -- Returns items and the classes it could not draw (sorted, unique); a non-empty list means "leave this window in OTUI".
-function M.collect(root)
+-- opts.geometry (the window mirror): the children of every container keep their OTUI places. They are split into bands
+-- (rects that overlap vertically) and each band into columns (rects that overlap horizontally); a band is a line item,
+-- a column a cell item with the OTUI gap and width, so a row of controls and a table keep their columns.
+function M.collect(root, opts)
+  local geometry = opts and opts.geometry
   local items, unsupported, seen = {}, {}, {}
   local function add(item)
     -- the widget's tooltip, shown in RmlUi while the mouse is over its element
@@ -93,11 +111,13 @@ function M.collect(root)
     if type(tip) == 'string' and tip ~= '' then item.tip = tip end
     items[#items + 1] = item
   end
-  local function walk(w, inRow, children)
-    for _, c in ipairs(children or w:getChildren()) do
-      -- a widget a module hid with opacity 0 (moved away, faded out) is not drawn either
-      -- the theme's corner pieces and crest (client_chaos_theme) are window furniture the skin draws itself
-      if c:isExplicitlyVisible() and (not c.getOpacity or c:getOpacity() > 0) and not tostring(c:getId()):find('^chaosOrn') then
+  -- a widget a module hid with opacity 0 (moved away, faded out) is not drawn either
+  -- the theme's corner pieces and crest (client_chaos_theme) are window furniture the skin draws itself
+  local function drawn(c)
+    return c:isExplicitlyVisible() and (not c.getOpacity or c:getOpacity() > 0) and not tostring(c:getId()):find('^chaosOrn')
+  end
+  local walk, layout
+  local function visit(c, inRow)
         local cls = classOf(c)
         if not M.KNOWN[cls] then
           if not seen[cls] then seen[cls] = true unsupported[#unsupported + 1] = cls end
@@ -106,8 +126,7 @@ function M.collect(root)
         elseif cls == 'UIComboBox' then
           local opts = {}
           for i, o in ipairs(c.options or {}) do opts[i] = tostring(o.text) end
-          local size = c.getSize and c:getSize()
-          add({ kind = 'select', widget = c, options = opts, width = size and size.width or 0 })
+          add({ kind = 'select', widget = c, options = opts })
         elseif cls == 'UIScrollBar' then
           if c:getOrientation() ~= 'vertical' then
             add({ kind = 'range', widget = c, min = c:getMinimum() or 0, max = c:getMaximum() or 0 })
@@ -168,17 +187,82 @@ function M.collect(root)
           end
         else
           local group = not inRow and c.getStyleName and c:getStyleName() == 'FlatPanel'
-          local line = not group and M.lineOf(c)
           if group then add({ kind = 'group' }) end
-          if line then add({ kind = 'line' }) end
-          walk(c, inRow, line or nil)
-          if line then add({ kind = 'endline' }) end
+          if geometry and not inRow then
+            local kids = {}
+            for _, k in ipairs(c:getChildren()) do
+              if drawn(k) then kids[#kids + 1] = k end
+            end
+            layout(kids, c.getRect and c:getRect().x or 0)
+          else
+            walk(c, inRow)
+          end
           if group then add({ kind = 'endgroup' }) end
         end
+  end
+  walk = function(w, inRow)
+    for _, c in ipairs(w:getChildren()) do
+      if drawn(c) then visit(c, inRow) end
+    end
+  end
+  -- the OTUI places of kids (left edge of their parent: left) as lines of cells; see opts.geometry
+  layout = function(kids, left)
+    local placed, loose = {}, {}
+    for _, k in ipairs(kids) do
+      local r = k.getRect and k:getRect()
+      if r and (r.width or 0) > 0 and (r.height or 0) > 0 then placed[#placed + 1] = { w = k, r = r }
+      else loose[#loose + 1] = k end
+    end
+    for _, k in ipairs(loose) do visit(k, false) end
+    local bands = M.bands(placed)
+    -- nothing to split (kids on top of each other): plain reading order
+    if #bands == 1 and #bands[1].columns == 1 and #bands[1].columns[1].kids > 1 then
+      for _, p in ipairs(bands[1].columns[1].kids) do visit(p.w, false) end
+      return
+    end
+    local prevBottom = nil
+    for _, band in ipairs(bands) do
+      add({ kind = 'line', h = band.bottom - band.top, gap = prevBottom and math.max(0, band.top - prevBottom) or 0 })
+      prevBottom = band.bottom
+      local cursor = left
+      for _, col in ipairs(band.columns) do
+        local start = #items
+        add({ kind = 'cell', gap = math.max(0, col.left - cursor), width = col.right - col.left })
+        if #col.kids == 1 then
+          visit(col.kids[1].w, false)
+        else
+          local ks = {}
+          for i, p in ipairs(col.kids) do ks[i] = p.w end
+          layout(ks, col.left)
+        end
+        if #items == start + 1 then
+          items[#items] = nil   -- an empty column: its room joins the next gap
+        else
+          add({ kind = 'endcell' })
+          cursor = col.right
+        end
+      end
+      if items[#items].kind == 'line' then
+        items[#items] = nil
+      else
+        add({ kind = 'endline' })
       end
     end
   end
-  walk(root, false)
+  if geometry then
+    local kids = {}
+    local minX = nil
+    for _, k in ipairs(root:getChildren()) do
+      if drawn(k) then
+        kids[#kids + 1] = k
+        local r = k.getRect and k:getRect()
+        if r and (r.width or 0) > 0 then minX = math.min(minX or r.x, r.x) end
+      end
+    end
+    layout(kids, minX or 0)
+  else
+    walk(root, false)
+  end
   table.sort(unsupported)
   return items, unsupported
 end
@@ -242,10 +326,10 @@ function M.rml(items, escape)
     elseif k == 'endrow' then
       push('</div>') -- i18n-ok: markup
       depth = depth - 1
-    elseif k == 'endline' then
+    elseif k == 'endline' or k == 'endcell' then
       push('</div>') -- i18n-ok: markup
       depth = depth - 1
-      lines = lines - 1
+      if k == 'endline' then lines = lines - 1 end
     else
       if depth == 0 and not loose then
         push('<div class="group loose">') -- i18n-ok: markup
@@ -253,10 +337,13 @@ function M.rml(items, escape)
       end
       local nextKind = items[n + 1] and items[n + 1].kind
       if k == 'line' then
-        -- one OTUI row: its controls side by side, in their own sizes
-        push('<div class="line">') -- i18n-ok: markup
+        -- one band of the OTUI window: its columns side by side at their OTUI places
+        push(string.format('<div class="line" style="margin-top: %ddp;">', math.min(it.gap or 0, 16))) -- i18n-ok: markup
         depth = depth + 1
         lines = lines + 1
+      elseif k == 'cell' then
+        push(string.format('<div class="cell" style="margin-left: %ddp; width: %ddp;">', it.gap or 0, it.width or 0)) -- i18n-ok: markup
+        depth = depth + 1
       elseif k == 'label' and lines == 0 and (nextKind == 'range' or nextKind == 'select' or nextKind == 'input') then
         -- a label and the control it names share one full row
         it.el = id
@@ -281,9 +368,7 @@ function M.rml(items, escape)
         for i, o in ipairs(it.options) do
           opts[#opts + 1] = string.format('<option value="%d">%s</option>', i, escape(o)) -- i18n-ok: markup
         end
-        -- in a line a combo box keeps its OTUI width (a percent box stays small)
-        local style = (lines > 0 and (it.width or 0) > 0) and string.format(' style="width: %ddp;"', it.width) or '' -- i18n-ok: markup
-        push(string.format('<select id="%s"%s>%s</select>', id, style, table.concat(opts))) -- i18n-ok: markup
+        push(string.format('<select id="%s">%s</select>', id, table.concat(opts))) -- i18n-ok: markup
       elseif k == 'input' then
         it.el = id
         if it.multiline then
@@ -341,6 +426,7 @@ function M.signature(items)
   local parts = {}
   for i, it in ipairs(items) do
     parts[i] = it.kind .. (it.kind == 'select' and #it.options or '') .. (it.widget and ('#' .. M.keyOf(it.widget)) or '')
+      .. ((it.kind == 'cell' or it.kind == 'line') and ('@' .. (it.gap or 0) .. ',' .. (it.width or it.h or 0)) or '')
   end
   return table.concat(parts, ';')
 end
@@ -444,12 +530,14 @@ local Form = {}
 Form.__index = Form
 
 function M.newForm(doc, elementId, root, hooks)
-  return setmetatable({ doc = doc, el = elementId, root = root, hooks = hooks or {}, items = {}, sig = '', open = {} }, Form)
+  hooks = hooks or {}
+  return setmetatable({ doc = doc, el = elementId, root = root, hooks = hooks, items = {}, sig = '', open = {},
+    opts = { geometry = hooks.geometry } }, Form)
 end
 
 function Form:build(items)
   local unsupported
-  if not items then items, unsupported = M.collect(self.root) end
+  if not items then items, unsupported = M.collect(self.root, self.opts) end
   self.items, self.sig, self.open = items, M.signature(items), {}
   self:hideTip()
   g_rml.setInnerRml(self.doc, self.el, M.rml(items, g_rml.escape))
@@ -509,7 +597,7 @@ end
 
 -- the tree changed shape (a panel shown, rows added): draw it again
 function Form:changed()
-  local items = M.collect(self.root)
+  local items = M.collect(self.root, self.opts)
   if M.signature(items) ~= self.sig then
     self:build(items)
     return true
