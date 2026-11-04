@@ -1,0 +1,89 @@
+# Android touch: a cancelled gesture ends the touch (no stuck walk pad), and a moving finger can be a scroll (g_ui.onTouchScrollStart / Move / End, overlay module game_touchscroll) instead of a left button drag. Applies after 0163.
+--- a/src/framework/platform/androidwindow.cpp	2026-11-04 01:00:32.645277158 +0000
++++ b/src/framework/platform/androidwindow.cpp	2026-11-04 01:00:47.536122316 +0000
+@@ -23,6 +23,7 @@
+ #include <framework/core/eventdispatcher.h>
+ #include "androidwindow.h"
+ #include "nativesplash.h"
++#include <framework/luaengine/luainterface.h>
+ 
+ AndroidWindow g_androidWindow;
+ 
+@@ -425,8 +426,42 @@
+         static ticks_t lastPress = 0;
+         static bool pressed = false;
+         static Point touchStartPos(0, 0);
++        // Chaos (base patch 0184): a finger that moves is a scroll when Lua says so (g_ui.onTouchScrollStart); then
++        // no left button is pressed (no item drag), moves go to g_ui.onTouchScrollMove and the lift to
++        // g_ui.onTouchScrollEnd without a click
++        static bool scrolling = false;
++        static Point scrollPos(0, 0);
+         if (eventType == AINPUT_EVENT_TYPE_MOTION) {
+             int actionType = action & AMOTION_EVENT_ACTION_MASK;
++            // Chaos (base patch 0184): Android cancels a gesture it takes over (a system edge swipe, a palm): the touch
++            // ends like a lift without a click. Before, MouseTouch stayed pressed and the walk pad kept walking.
++            if (actionType == AMOTION_EVENT_ACTION_CANCEL) {
++                m_inputEvent.reset(Fw::MouseReleaseInputEvent);
++                m_inputEvent.mouseButton = Fw::MouseTouch;
++                m_mouseButtonStates[Fw::MouseTouch] = false;
++                m_onInputEvent(m_inputEvent);
++                if (pressed) {
++                    pressed = false;
++                    m_inputEvent.reset(Fw::MouseReleaseInputEvent);
++                    m_inputEvent.mouseButton = Fw::MouseLeftButton;
++                    m_mouseButtonStates[Fw::MouseLeftButton] = false;
++                    m_onInputEvent(m_inputEvent);
++                }
++                if (scrolling) {
++                    scrolling = false;
++                    g_lua.callGlobalField("g_ui", "onTouchScrollEnd", mousePos);
++                }
++                for (int i = 1; i <= 2; ++i) {
++                    Fw::MouseButton b = i == 1 ? Fw::MouseTouch2 : Fw::MouseTouch3;
++                    if (m_mouseButtonStates[b]) {
++                        m_multiInputEvent[i].reset(Fw::MouseReleaseInputEvent);
++                        m_multiInputEvent[i].mouseButton = b;
++                        m_mouseButtonStates[b] = false;
++                        m_onInputEvent(m_multiInputEvent[i]);
++                    }
++                }
++                return;
++            }
+             if (pointerId == 1 || pointerId == 2) { // multitouch
+                 if (actionType == AMOTION_EVENT_ACTION_POINTER_DOWN) {
+                     m_multiInputEvent[pointerId].reset(Fw::MousePressInputEvent);
+@@ -456,12 +491,16 @@
+                 m_mouseButtonStates[Fw::MouseTouch] = true;
+                 m_onInputEvent(m_inputEvent);
+                 touchStartPos = mousePos;
++                scrolling = false;
+             } else if (actionType == AMOTION_EVENT_ACTION_UP || actionType == AMOTION_EVENT_ACTION_POINTER_UP) {
+                 m_inputEvent.reset(Fw::MouseReleaseInputEvent);
+                 m_inputEvent.mouseButton = Fw::MouseTouch;
+                 m_mouseButtonStates[Fw::MouseTouch] = false;
+                 m_onInputEvent(m_inputEvent);
+-                if (pointerId == 0) {
++                if (pointerId == 0 && scrolling) {
++                    scrolling = false;
++                    g_lua.callGlobalField("g_ui", "onTouchScrollEnd", mousePos);
++                } else if (pointerId == 0) {
+                     if (!pressed) {
+                         if (lastPress + 500 < stdext::millis()) {
+                             m_inputEvent.reset(Fw::MousePressInputEvent);
+@@ -491,7 +530,15 @@
+                 }
+             } else if (actionType == AMOTION_EVENT_ACTION_MOVE) {
+                 int dist = std::max(std::abs(touchStartPos.x - mousePos.x), std::abs(touchStartPos.y - mousePos.y));
+-                if (!pressed && dist > 8) {
++                if (scrolling) {
++                    g_lua.callGlobalField("g_ui", "onTouchScrollMove", mousePos, mousePos - scrollPos);
++                    scrollPos = mousePos;
++                } else if (!pressed && dist > 8 &&
++                           g_lua.callGlobalField<bool>("g_ui", "onTouchScrollStart", touchStartPos, mousePos,
++                                                       (int)(g_clock.millis() - lastPress))) {
++                    scrolling = true;
++                    scrollPos = mousePos;
++                } else if (!pressed && dist > 8) {
+                     pressed = true;
+                     m_inputEvent.reset(Fw::MouseMoveInputEvent);
+                     m_inputEvent.mouseMoved = touchStartPos - m_inputEvent.mousePos;

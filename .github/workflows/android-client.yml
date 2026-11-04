@@ -69,6 +69,11 @@ on:
         type: boolean
         required: false
         default: false
+      rmlui:
+        description: "TEST build: the RmlUi layer on (CMake CHAOS_RMLUI, docs/RMLUI_SPIKE.md): the Options window and plain windows draw in RmlUi. With publish_release the prerelease is android-rmltest-<client_build>, never for players"
+        type: boolean
+        required: false
+        default: false
       smoke_test:
         description: "Start the APK on an emulator (x86_64 image with arm64 translation) and keep its logcat as an artifact"
         type: boolean
@@ -103,6 +108,7 @@ env:
   SITE_URL: ${{ inputs.site_url }}
   PLAY_TEST: ${{ inputs.smoke_play && 'true' || 'false' }}
   ALLOW_DEV_KEY: ${{ inputs.allow_dev_key && 'true' || 'false' }}
+  RMLUI: ${{ inputs.rmlui && 'true' || 'false' }}
   # NDK r27d; the Gradle project (client/android/app/build.gradle) names the same version
   NDK_VERSION: "27.3.13750724"
   # the vcpkg tool is checked out at the builtin-baseline of client/android/vcpkg/vcpkg.json
@@ -223,11 +229,13 @@ jobs:
       - name: Build the libraries (boost headers, openssl, luajit, physfs, libzip, openal-soft, vorbis)
         run: |
           set -euo pipefail
+          FEATURES=()
+          if [ "$RMLUI" = true ]; then FEATURES=(--x-feature=rmlui); fi   # RmlUi 6.0 + FreeType (test build)
           "$VCPKG_ROOT/vcpkg" install \
             --x-manifest-root="$GITHUB_WORKSPACE/chaos/client/android/vcpkg" \
             --x-install-root="$GITHUB_WORKSPACE/vcpkg_installed" \
             --overlay-triplets="$GITHUB_WORKSPACE/chaos/client/android/triplets" \
-            --triplet "$VCPKG_TRIPLET" --host-triplet x64-linux --clean-after-build --disable-metrics
+            --triplet "$VCPKG_TRIPLET" --host-triplet x64-linux --clean-after-build --disable-metrics "${FEATURES[@]}"
           # the engine includes <luajit/lua.h> (the Windows layout); the make build installs include/luajit-2.1
           INC="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET/include"
           [ -e "$INC/luajit" ] || ln -s luajit-2.1 "$INC/luajit"
@@ -273,17 +281,22 @@ jobs:
           set -euo pipefail
           TASK=assembleDebug
           if [ "${{ steps.ks.outputs.release }}" = yes ]; then TASK=assembleRelease; fi
+          EXTRA=()
+          if [ "$RMLUI" = true ]; then EXTRA=(-PchaosCmakeExtra=-DCHAOS_RMLUI=ON); fi
           gradle --no-daemon ":app:$TASK" \
             -PchaosClientDir="$GITHUB_WORKSPACE/game" \
             -PchaosDepsPrefix="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" \
             -PchaosAssetsDir="$GITHUB_WORKSPACE/apk-assets" \
-            -PchaosClientBuild="$CLIENT_BUILD"
+            -PchaosClientBuild="$CLIENT_BUILD" "${EXTRA[@]}"
           # the player APK's engine is optimised (CMake Release, app/build.gradle): an -O0 engine ran under 30 fps on a
           # phone. Release also brings NDEBUG: without it the VALIDATE checks end the game
           CACHE=$(find app/.cxx -name CMakeCache.txt | head -1)
           grep -H -E '^CMAKE_BUILD_TYPE|^CMAKE_CXX_FLAGS:' "$CACHE"
           grep -q -E '^CMAKE_BUILD_TYPE:STRING=Release$' "$CACHE" \
             || { echo "::error::the engine was not built optimised (CMAKE_BUILD_TYPE is not Release)"; exit 1; }
+          if [ "$RMLUI" = true ]; then
+            grep -q -E '^CHAOS_RMLUI:BOOL=ON$' "$CACHE" || { echo "::error::RmlUi was not switched on"; exit 1; }
+          fi
 
       - name: Check the APK and write its update entry
         run: |
@@ -403,14 +416,22 @@ jobs:
         run: |
           set -euo pipefail
           TAG="android-$CLIENT_BUILD"
+          NOTE="Publish it as the app update: admin app, Comandos, Site e update do client, Publicar app Android, tag $TAG."
+          TITLE="Android client build $CLIENT_BUILD"
+          if [ "$RMLUI" = true ]; then
+            # a test build is installed by hand; its tag cannot be mistaken for a player release
+            TAG="android-rmltest-$CLIENT_BUILD"
+            TITLE="TEST Android client build $CLIENT_BUILD with RmlUi (not for players)"
+            NOTE="TEST build with the RmlUi layer (docs/RMLUI_SPIKE.md). Install it by hand; do not publish it as the app update."
+          fi
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             echo "::error::The release $TAG exists. A version code is published once: raise client_build."; exit 1
           fi
           SHA=$(cut -d' ' -f1 apk/CindersOfChaos-Android.apk.sha256)
           SIGNER=$(python3 -I -c "import json;print(json.load(open('apk/CindersOfChaos-Android.json'))['signer_sha256'])")
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
-            --title "Android client build $CLIENT_BUILD" \
-            --notes "APK sha256 $SHA, signer certificate sha256 $SIGNER. Publish it as the app update: admin app, Comandos, Site e update do client, Publicar app Android, tag $TAG." \
+            --title "$TITLE" \
+            --notes "APK sha256 $SHA, signer certificate sha256 $SIGNER. $NOTE" \
             apk/CindersOfChaos-Android.apk apk/CindersOfChaos-Android.json apk/CindersOfChaos-Android.apk.sha256
           echo "Release $TAG: sha256 $SHA, signer $SIGNER" >> "$GITHUB_STEP_SUMMARY"
 

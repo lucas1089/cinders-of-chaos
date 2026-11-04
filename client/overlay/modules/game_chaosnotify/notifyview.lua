@@ -92,3 +92,11 @@ function V.enqueue(queue, item, max)
   end
   return table.remove(queue, drop)
 end
+
+-- O401 (owner 2026-11-04): on a phone the toasts took too much of the small screen. Only the toasts that wait for an
+-- answer (a party invite, a free catacomb with its Start button) are shown there; the rest are dropped.
+V.PHONE_TYPES = { PARTY_INVITE = true, CATACOMB_FREE = true }
+
+function V.showOnPhone(notificationType)
+  return V.PHONE_TYPES[notificationType] == true
+end

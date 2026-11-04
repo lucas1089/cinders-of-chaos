@@ -266,3 +266,17 @@ cards or the credits), the cheap path is (a) for new screens only: keep `CHAOS_R
 Android items first (touch scroll, soft keyboard, a GPU frame-time and APK-size measurement on a real phone), then enable
 it for one module and look at the numbers. Until then the patch costs nothing: it can stay in `base-patches/` or be
 dropped; no other file depends on it.
+
+## Android test build (O402, 2026-11-04)
+
+The owner asked for a phone test before any wider use. `android-client.yml` has the input `rmlui` (test builds only):
+vcpkg installs the manifest feature `rmlui` (port `rmlui` 6.0 port-version 1 at the baseline `389e18e8`, with FreeType),
+Gradle passes `-DCHAOS_RMLUI=ON` (`chaosCmakeExtra`), and the job fails when the CMake cache does not have it. With
+`publish_release` the APK goes to the prerelease `android-rmltest-<client_build>`: installed by hand, never published as
+the app update. Same package and key as the player app, so it installs over it and keeps the downloaded data; the next
+player APK must have a higher `client_build`. With RmlUi on, `client_chaos_rmloptions` opens Options in RmlUi and
+`client_chaos_rmlmirror` draws plain windows in RmlUi (on by default). `game_touchscroll` (O400) does not take a drag
+that starts over an RmlUi document (`g_rml.isPointerOver`), so RmlUi's own touch scroll handles it.
+To check on the phone: it starts, frame rate in town and in a hunt, the Options window, a mirrored window, finger scroll
+and fling, a tap on a check box and a slider, a text field (the RmlUi `<input>` has no soft keyboard yet).
+

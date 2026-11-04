@@ -1,9 +1,12 @@
 -- game_walkpad: the walking pad of client_mobile (the round pad with 4 arrows, phones only) can be moved.
 -- A small handle sits in the top left corner of the pad. Drag it: the whole pad follows your finger and the place is
 -- saved in g_settings (as a fraction of the free room, so a scale change keeps it on screen). Double tap the handle: the
--- pad goes back to the default place (left edge, above the health orb). Walking on the pad itself is the base's and
--- unchanged: the handle is a child that takes its own touches. client_mobile creates the pad, this module only finds it
--- by id 'keypad' and moves its anchors. Rules in walkpad_logic.lua. No base patch.
+-- pad goes back to the default place (left edge, above the health orb). The handle is a child that takes its own
+-- touches. client_mobile creates the pad, this module finds it by id 'keypad' and moves its anchors.
+-- Walking (owner 2026-11-04: one tap walked far): the base pad asked for a step every 20 ms from the first touch, so a
+-- short tap queued more steps. This module takes the pad's touches from client_mobile: a tap is one step, a hold walks
+-- on after WalkPadLogic.HOLD_MS, the lift stops at once and drops the step the hold queued. Rules in walkpad_logic.lua.
+-- Base patch 0184 ends a touch that Android cancels, so a lost lift no longer keeps the pad walking.
 ChaosWalkPad = ChaosWalkPad or {}
 local M = ChaosWalkPad
 local L = WalkPadLogic
@@ -16,6 +19,9 @@ local findEvent
 local tries = 0
 local drag = nil       -- { sx, sy, px, py, moved }
 local lastTap = nil    -- { ms, x, y }
+local walk = nil       -- { down, fx, fy, event }
+local DIRS = { N = 'North', NE = 'NorthEast', E = 'East', SE = 'SouthEast', S = 'South', SW = 'SouthWest',
+  W = 'West', NW = 'NorthWest' }
 
 local function alive(w)
   return w ~= nil and not w:isDestroyed()
@@ -119,6 +125,108 @@ local function onRelease(widget, pos, button)
   return true
 end
 
+-- the pad's walking ----------------------------------------------------------------------------------------------
+
+local function walking()
+  return modules.game_walking
+end
+
+local function fingerAt(pos)
+  local w, h = keypad:getWidth(), keypad:getHeight()
+  if w <= 0 or h <= 0 then return 0.5, 0.5 end
+  return (pos.x - keypad:getX()) / w, (pos.y - keypad:getY()) / h
+end
+
+local function setPointer(fx, fy)
+  local pointer = keypad and keypad:getChildById('pointer')
+  if not alive(pointer) then return end
+  local top, left = 0, 0
+  if fx then top, left = L.pointer(fx, fy) end
+  pointer:setMarginTop(top)
+  pointer:setMarginLeft(left)
+end
+
+local function step()
+  if not walk then return end
+  local key = L.direction(walk.fx, walk.fy)
+  local gw = walking()
+  if key and gw and gw.walk and Directions then
+    pcall(gw.walk, Directions[DIRS[key]], 0)
+  end
+end
+
+local function stopWalk(dropQueued)
+  if not walk then return end
+  if walk.event then removeEvent(walk.event) end
+  walk = nil
+  setPointer(nil)
+  local gw = walking()
+  if dropQueued and gw then
+    gw.nextWalkDir = nil
+    if gw.autoWalkEvent then removeEvent(gw.autoWalkEvent) gw.autoWalkEvent = nil end
+  end
+end
+
+local function tick()
+  if not walk then return end
+  walk.event = nil
+  if not g_mouse.isPressed(MouseTouch) or not alive(keypad) then
+    stopWalk(true)
+    return
+  end
+  setPointer(walk.fx, walk.fy)
+  step()
+  walk.event = scheduleEvent(tick, L.REPEAT_MS)
+end
+
+local function padPress(widget, pos, button)
+  if button ~= MouseTouch then return false end
+  stopWalk(false)
+  local fx, fy = fingerAt(pos)
+  walk = { down = g_clock.millis(), fx = fx, fy = fy }
+  setPointer(fx, fy)
+  step()
+  walk.event = scheduleEvent(tick, L.HOLD_MS)
+  return true
+end
+
+local function padMove(widget, pos)
+  if walk then
+    walk.fx, walk.fy = fingerAt(pos)
+    setPointer(walk.fx, walk.fy)
+  end
+  return true
+end
+
+local function padRelease(widget, pos, button)
+  if button ~= MouseTouch then return false end
+  if walk then stopWalk(L.dropQueued(walk.down, g_clock.millis())) end
+  return true
+end
+
+local function baseHandlers()
+  local mob = modules.client_mobile
+  if not mob or type(mob.onKeypadTouchPress) ~= 'function' then return nil end
+  return { onTouchPress = mob.onKeypadTouchPress, onTouchRelease = mob.onKeypadTouchRelease,
+    onMouseMove = mob.onKeypadTouchMove }
+end
+
+local OURS = { onTouchPress = padPress, onTouchRelease = padRelease, onMouseMove = padMove }
+
+local function takePad()
+  local base = baseHandlers()
+  if base then pcall(disconnect, keypad, base) end
+  connect(keypad, OURS)
+end
+
+local function givePadBack()
+  if not alive(keypad) then return end
+  stopWalk(true)
+  pcall(disconnect, keypad, OURS)
+  local base = baseHandlers()
+  if base then pcall(connect, keypad, base) end
+end
+
 local function build()
   parent = keypad:getParent()
   handle = g_ui.createWidget('UIWidget', keypad)
@@ -140,6 +248,7 @@ local function build()
   handle.onTouchRelease = onRelease
   connect(parent, { onGeometryChange = restore })
   restore()
+  takePad()
 end
 
 local function find()
@@ -164,6 +273,7 @@ end
 
 function M.terminate()
   if findEvent then removeEvent(findEvent) findEvent = nil end
+  givePadBack()
   if alive(parent) then pcall(disconnect, parent, { onGeometryChange = restore }) end
   if alive(handle) then handle:destroy() end
   handle, keypad, parent = nil, nil, nil

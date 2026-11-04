@@ -1,0 +1,11 @@
+Module
+  name: game_mobilebag
+  description: Phones: bigger item cells in backpacks and other containers
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 1000
+  dependencies: [ game_containers ]
+  scripts: [ mobilebag_logic, mobilebag ]
+  @onLoad: ChaosMobileBag.init()
+  @onUnload: ChaosMobileBag.terminate()

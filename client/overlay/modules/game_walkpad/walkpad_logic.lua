@@ -60,3 +60,45 @@ end
 function L.isTap(moved)
   return num(moved, 0) <= L.TAP_SLOP
 end
+
+-- Walking on the pad (owner 2026-11-04: one tap walked far). A tap is one step; holding walks on after HOLD_MS and
+-- asks for the next step every REPEAT_MS; the lift ends it, and the step queued by the hold is dropped.
+L.HOLD_MS = 280
+L.REPEAT_MS = 40
+
+-- the direction under the finger, from its place on the pad as fractions 0..1 (the base pad's areas): a corner square
+-- of 0.3 is a diagonal, the middle 0.1 nothing, else the larger axis. Returns 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W',
+-- 'NW' or nil.
+function L.direction(fx, fy)
+  fx, fy = num(fx, 0.5), num(fy, 0.5)
+  fx, fy = math.min(1, math.max(0, fx)), math.min(1, math.max(0, fy))
+  if fy < 0.3 and fx < 0.3 then return 'NW' end
+  if fy < 0.3 and fx > 0.7 then return 'NE' end
+  if fy > 0.7 and fx < 0.3 then return 'SW' end
+  if fy > 0.7 and fx > 0.7 then return 'SE' end
+  local ax, ay = math.abs(fx - 0.5), math.abs(fy - 0.5)
+  if ay <= 0.1 and ax <= 0.1 then return nil end
+  if ay > ax then return fy < 0.5 and 'N' or 'S' end
+  return fx < 0.5 and 'W' or 'E'
+end
+
+-- the pointer knob's margins (top, left) for the finger place, as the base pad draws it
+function L.pointer(fx, fy)
+  fx, fy = num(fx, 0.5), num(fy, 0.5)
+  fx, fy = math.min(1, math.max(0, fx)), math.min(1, math.max(0, fy))
+  local angle = math.atan2 and math.atan2(fx - 0.5, fy - 0.5) or math.atan(fx - 0.5, fy - 0.5)
+  local maxTop = math.abs(math.cos(angle)) * 75
+  local maxLeft = math.abs(math.sin(angle)) * 75
+  return math.max(-maxTop, math.min(maxTop, (fy - 0.5) * 150)), math.max(-maxLeft, math.min(maxLeft, (fx - 0.5) * 150))
+end
+
+-- does the hold walk on at this moment (pressed at downMs)
+function L.repeating(downMs, now)
+  return num(now, 0) - num(downMs, 0) >= L.HOLD_MS
+end
+
+-- at the lift: drop the queued step? Only after a hold; a short tap keeps its one step even when it was queued
+-- behind the step that was still running.
+function L.dropQueued(downMs, now)
+  return L.repeating(downMs, now)
+end

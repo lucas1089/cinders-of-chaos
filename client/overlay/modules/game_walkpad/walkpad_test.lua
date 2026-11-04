@@ -49,4 +49,21 @@ eq(L.isDoubleTap(100, 5, 5, 700, 5, 5), false, 'too slow')
 eq(L.isDoubleTap(100, 5, 5, 300, 60, 5), false, 'too far')
 eq(L.isTap(3), true, 'tap'); eq(L.isTap(40), false, 'drag is not a tap')
 
+-- walking
+eq(L.direction(0.5, 0.5), nil, 'middle is nothing')
+eq(L.direction(0.55, 0.45), nil, 'near middle is nothing')
+eq(L.direction(0.5, 0.05), 'N', 'north'); eq(L.direction(0.5, 0.95), 'S', 'south')
+eq(L.direction(0.05, 0.5), 'W', 'west'); eq(L.direction(0.95, 0.5), 'E', 'east')
+eq(L.direction(0.1, 0.1), 'NW', 'north west'); eq(L.direction(0.9, 0.1), 'NE', 'north east')
+eq(L.direction(0.1, 0.9), 'SW', 'south west'); eq(L.direction(0.9, 0.9), 'SE', 'south east')
+eq(L.direction(-3, 0.5), 'W', 'clamped outside'); eq(L.direction(nil, 'x'), nil, 'bad input is the middle')
+local top, left = L.pointer(0.5, 0.5)
+eq(top, 0, 'pointer middle top'); eq(left, 0, 'pointer middle left')
+top, left = L.pointer(0.5, 0)
+eq(math.floor(top + 0.5), -75, 'pointer north top'); eq(math.floor(left + 0.5), 0, 'pointer north left')
+eq(L.repeating(1000, 1000 + L.HOLD_MS - 1), false, 'a tap does not repeat')
+eq(L.repeating(1000, 1000 + L.HOLD_MS), true, 'a hold repeats')
+eq(L.dropQueued(1000, 1100), false, 'a tap keeps its queued step')
+eq(L.dropQueued(1000, 2000), true, 'a hold drops the queued step')
+
 if fails == 0 then print('walkpad_test: ok') else os.exit(1) end

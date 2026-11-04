@@ -21,6 +21,17 @@ ChaosMenuButton < UIButton
     image-clip: 0 48 64 24
     text-offset: 29 2
 
+  // O401 (owner 2026-11-04): bigger on a phone; chaos_topbar.lua adds the matching width (MOBILE_EXTRA)
+  $mobile:
+    height: 34
+    font: chaos-body-13px
+    icon-size: 26 26
+    icon-offset: 6 4
+    text-offset: 37 1
+
+  $mobile pressed:
+    text-offset: 38 2
+
 ChaosMenuBar < UIWidget
   id: chaosMenuBar
   height: 36
@@ -32,6 +43,9 @@ ChaosMenuBar < UIWidget
   image-border: 8
   focusable: false
   visible: false
+
+  $mobile:
+    height: 46
 
   UIWidget
     id: buttons
