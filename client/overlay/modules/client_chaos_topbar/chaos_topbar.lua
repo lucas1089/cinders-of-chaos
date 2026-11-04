@@ -385,12 +385,22 @@ local function closeMenu()
   openMenu = nil
 end
 
+local function isPhone()
+  return g_app.isMobile and g_app.isMobile() or false
+end
+
+-- O403: a phone's rows are 32 high (ChaosMobileMenuButton), their icons 22
 local function setOptionIcon(option, icon)
   if option and icon then
     pcall(function()
       option:setIcon(ICON_DIR .. icon)
-      option:setIconSize({ width = 16, height = 16 })
-      option:setIconOffset({ x = 4, y = 2 })
+      if isPhone() then
+        option:setIconSize({ width = 22, height = 22 })
+        option:setIconOffset({ x = 4, y = 5 })
+      else
+        option:setIconSize({ width = 16, height = 16 })
+        option:setIconOffset({ x = 4, y = 2 })
+      end
     end)
   end
 end
@@ -498,7 +508,7 @@ local function openSub(menu, option, item)
       sep:setMarginLeft(1)
       sep:setMarginRight(1)
     else
-      local b = g_ui.createWidget('PopupMenuButton', sub)
+      local b = g_ui.createWidget(isPhone() and 'ChaosMobileMenuButton' or 'PopupMenuButton', sub)
       b:setText('      ' .. rowText(it))
       if not it.locked then setOptionIcon(b, it.entry.icon) end
       decorateRow(b, it)
@@ -533,9 +543,10 @@ end
 
 -- the drop-down's mouse handlers: the sub-menu's area belongs to the sub-menu
 local function routeSubClicks(menu)
+  local basePress = menu.onMousePress   -- UIPopupMenu's, or UIPopupScrollMenu's on a phone
   menu.onMousePress = function(self, mousePos, mouseButton)
     if isAlive(self.chaosSub) and self.chaosSub:containsPoint(mousePos) then return true end
-    return UIPopupMenu.onMousePress(self, mousePos, mouseButton)
+    return basePress(self, mousePos, mouseButton)
   end
   menu.onMouseRelease = function(self, mousePos, mouseButton)
     local sub = self.chaosSub
@@ -558,8 +569,11 @@ local function showList(list, pos)
   closeMenu()
   if #list == 0 then return end
   list = ChaosTopBarLogic.sortList(list, shownText)
-  local menu = g_ui.createWidget('PopupMenu')
-  menu:setGameMenu(true)
+  -- O403: a phone gets a scroll menu (taller rows, fits the screen, scroll bar and finger scroll)
+  local phone = isPhone()
+  local menu = g_ui.createWidget(phone and 'ChaosMobileMenu' or 'PopupMenu')
+  if menu.setGameMenu then menu:setGameMenu(true) end
+  local rows = menu.scrollArea or menu
   routeSubClicks(menu)
   for _, item in ipairs(list) do
     if item.separator then
@@ -567,7 +581,7 @@ local function showList(list, pos)
     elseif item.sub then
       -- leading spaces leave room for the icon drawn at the left of the option
       menu:addOption('      ' .. rowText(item) .. '  >', function() end)
-      local option = menu:getLastChild()
+      local option = rows:getLastChild()
       setOptionIcon(option, item.entry.icon)
       decorateRow(option, item)
       option.onClick = function(widget)
@@ -582,20 +596,29 @@ local function showList(list, pos)
       end
     elseif item.locked then
       menu:addOption('      ' .. rowText(item), function() lockedClick(item) end, item.entry.key)
-      local option = menu:getLastChild()
+      local option = rows:getLastChild()
       decorateRow(option, item)
       option.onHoverChange = function(widget, hovered)
         if hovered then closeSub(menu) end
       end
     else
       menu:addOption('      ' .. rowText(item), function() runItem(item) end, item.entry.key)
-      local option = menu:getLastChild()
+      local option = rows:getLastChild()
       setOptionIcon(option, item.entry.icon)
       decorateRow(option, item)
       option.onHoverChange = function(widget, hovered)
         if hovered then closeSub(menu) end
       end
     end
+  end
+  if phone then
+    -- as high as the rows, at most down to the screen bottom; room for the icons and the scroll bar
+    local total = menu:getPaddingTop() + menu:getPaddingBottom()
+    for _, c in ipairs(rows:getChildren()) do total = total + c:getHeight() + c:getMarginTop() + c:getMarginBottom() end
+    local room = rootWidget:getHeight() - pos.y - 4
+    menu:setHeight(math.max(math.min(total, room), math.min(total, 96)))
+    menu:setWidth(menu:getWidth() + 40)
+    if menu.setScrollbarStep then menu:setScrollbarStep(32) end
   end
   menu:display(pos)
   openMenu = menu
@@ -612,7 +635,7 @@ local function createCategoryButton(category)
   button:setText(category.text)
   button:setIcon(ICON_DIR .. category.icon)
   -- the icon and its gap; O401: bigger on a phone (topbar.otui $mobile)
-  button:setWidth(button:getTextSize().width + ((g_app.isMobile and g_app.isMobile()) and 48 or 38))
+  button:setWidth(button:getTextSize().width + (isPhone() and 54 or 38))
   button.onClick = function() showCategory(category, button) end
   categoryButtons[category.id] = button
   return button

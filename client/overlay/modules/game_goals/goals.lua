@@ -160,9 +160,10 @@ local function trackerEnabled()
 end
 
 -- the tracker's text area is 208 px wide (220 - padding): about 28 characters of verdana 11 per line, 14 px a line.
--- Phone: 150 px wide, verdana 9, 3 rows at most and a "+N more" line, header click folds it, header drag moves it.
+-- Phone: 184 px wide, verdana 11 (O403, owner 2026-11-04: the 9 px text was too small), 3 rows at most and a "+N more"
+-- line, header click folds it, header drag moves it.
 local TRACKER_DESKTOP = { chars = 28, line = 14, width = 220, rowGap = 12, font = 'verdana-11px-antialised', title = 'verdana-11px-rounded', titleH = 16, maxRows = nil }
-local TRACKER_PHONE = { chars = 24, line = 11, width = 150, rowGap = 8, font = 'verdana-9px', title = 'verdana-9px-rounded', titleH = 20, maxRows = 3 }
+local TRACKER_PHONE = { chars = 23, line = 14, width = 184, rowGap = 8, font = 'verdana-11px-antialised', title = 'verdana-11px-rounded', titleH = 20, maxRows = 3 }
 
 local function isPhone()
   local ok, m = pcall(function() return g_app.isMobile() end)

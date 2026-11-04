@@ -36,11 +36,11 @@ function M.eligible(w, deny)
   if not w:isExplicitlyVisible() then return nil, 'hidden' end
   if not M.WINDOW_CLASSES[classOf(w)] then return nil, 'class' end
   if w.chaosRmlSkip or w.chaosNoMirror or (deny and deny[M.keyOf(w)]) then return nil, 'skip' end
-  local items, unsupported = ChaosRmlForm.collect(w)
+  local items, unsupported = ChaosRmlForm.collect(w, { geometry = true })
   if #unsupported > 0 then return nil, 'unsupported: ' .. table.concat(unsupported, ', ') end
   local controls = 0
   for _, it in ipairs(items) do
-    if it.kind ~= 'group' and it.kind ~= 'endgroup' and it.kind ~= 'line' and it.kind ~= 'endline' and it.kind ~= 'sep' and it.kind ~= 'image' and it.kind ~= 'help' then
+    if it.kind ~= 'group' and it.kind ~= 'endgroup' and it.kind ~= 'line' and it.kind ~= 'endline' and it.kind ~= 'cell' and it.kind ~= 'endcell' and it.kind ~= 'sep' and it.kind ~= 'image' and it.kind ~= 'help' then
       controls = controls + 1
     end
   end
@@ -182,6 +182,7 @@ local function mirror(w, items)
   e.form = ChaosRmlForm.newForm(doc, 'content', w, {
     onEnter = function() if w.onEnter then signalcall(w.onEnter, w) end end,
     onEscape = function() if w.onEscape then signalcall(w.onEscape, w) end end,
+    geometry = true,
   })
   M.entries[e.key] = e
   g_rml.setText(doc, 'title', ChaosRmlForm.textOf(w))
