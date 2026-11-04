@@ -720,6 +720,19 @@ def display_cell_checks():
     check(got == [(31668, 32255, 5), (31668, 32257, 5)], 'end teleport: its outer cells: %s' % got)
     check(H.display_cells(w, room, (31667, 32256, 5), end_row=32256) == [], 'end teleport: only known cells')
     check(H.display_cells(w, room, (31667, 32256, 5), known=end) == [], 'no end row: no cells')
+    check(H.pz_cells(w, room, (31667, 32256, 5), known=end, end_row=32256) == [], 'no PZ: nothing to take off')
+
+    class PZ(W):
+        def flags(self, p):
+            return 1 if p in end or p == (31638, 32259, 6) else 0
+    # live 2026-11-04: the end cells of z 5 are corridor PZ ("Couldn't spawn monster" at every start)
+    w = PZ()
+    check(H.display_cells(w, room, (31667, 32256, 5), known=end, end_row=32256) == [], 'a PZ end cell is no cell')
+    got = H.pz_cells(w, room, (31667, 32256, 5), known=end, end_row=32256)
+    check(got == [(31668, 32255, 5), (31668, 32257, 5)], 'PZ end cells listed for take over: %s' % got)
+    got = H.display_cells(w, room, (31637, 32258, 6), known={(31638, 32259, 6)})
+    check(got == [(31637, 32259, 6)], 'a known PZ cell is no cell: %s' % got)
+    check(H.spare_cell(w, room, (31638, 32258, 6), known={(31638, 32259, 6)}) is None, 'a known PZ tile is no spare cell')
     check(T.spawned_tiles('<spawns>\n\t<spawn centerx="11" centery="11" centerz="6" radius="1">\n'
                           '\t\t<monster name="Warlock" x="0" y="-1" z="6" spawntime="120" />\n\t</spawn>\n</spawns>\n')
           == {(11, 10, 6)}, 'spawned tiles: the monster\'s tile')

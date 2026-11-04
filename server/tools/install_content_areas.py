@@ -1003,7 +1003,8 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log,
                 if f and H.is_invisible(f):
                     log('hall: WARNING: %s: %s turns invisible: its room shows nothing (choose another in hunt_teleports_config.lua)' % (hid, m))
                 displays[hid] = (m, s['cells'], cfg.get('displaySpawntime', 120))
-    takeover = {c for s in slots for c in s['cells']}
+    # the PZ tiles a base spawn stands a display monster on are taken over too: their blocks go (H.pz_cells)
+    takeover = {c for s in slots for c in s['cells']} | {c for s in slots for c in s.get('pz') or ()}
     # a hunt whose slot has no display cell (or no display monster) shows nothing in the hall: said loudly, once per
     # hunt (beta 2026-10-22/23: "Wyrmspine Hollows showcase empty"); install_all.py lifts these lines into its warnings
     nodisplay = []
