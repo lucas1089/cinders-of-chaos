@@ -22,11 +22,15 @@
     ],
     "features": {
         "rmlui": {
-            "description": "RmlUi documents next to the OTUI windows (CMake option CHAOS_RMLUI, spike)",
+            "description": "RmlUi documents next to the OTUI windows (CMake option CHAOS_RMLUI, spike); FreeType without its png, brotli, bzip2 and zlib defaults, whose libraries the engine does not link (first Android RmlUi build, 2026-11-04)",
             "dependencies": [
                 {
                     "name": "rmlui",
                     "default-features": true
+                },
+                {
+                    "name": "freetype",
+                    "default-features": false
                 }
             ]
         }

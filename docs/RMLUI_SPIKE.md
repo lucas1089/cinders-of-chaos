@@ -279,4 +279,8 @@ player APK must have a higher `client_build`. With RmlUi on, `client_chaos_rmlop
 that starts over an RmlUi document (`g_rml.isPointerOver`), so RmlUi's own touch scroll handles it.
 To check on the phone: it starts, frame rate in town and in a hunt, the Options window, a mirrored window, finger scroll
 and fling, a tap on a check box and a slider, a text field (the RmlUi `<input>` has no soft keyboard yet).
+First run (2026-11-04): the link failed on `png_*` and `BrotliDecoderDecompress`. vcpkg installed FreeType with its
+default features (png, brotli, bzip2, zlib) as a dependency of RmlUi, and the engine links none of those libraries.
+The `rmlui` feature now names `freetype` with `default-features: false` (RmlUi loads plain TTF files, so FreeType needs
+none of them).
 
