@@ -30,6 +30,9 @@ end
 
 -- the scroll bar a gesture moves, or nil
 local function target(startPos, dx, dy, heldMs)
+  -- an RmlUi document under the finger (a client built with CHAOS_RMLUI) scrolls itself from the left press
+  local rml = rawget(_G, 'g_rml')
+  if rml and rml.isPointerOver and rml.isPointerOver() then return nil end
   local root = g_ui.getRootWidget()
   local hit = root and root:recursiveGetChildByPos(startPos, false)
   if not alive(hit) then return nil end
