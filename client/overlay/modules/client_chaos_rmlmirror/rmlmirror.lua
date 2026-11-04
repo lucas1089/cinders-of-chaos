@@ -40,7 +40,7 @@ function M.eligible(w, deny)
   if #unsupported > 0 then return nil, 'unsupported: ' .. table.concat(unsupported, ', ') end
   local controls = 0
   for _, it in ipairs(items) do
-    if it.kind ~= 'group' and it.kind ~= 'endgroup' and it.kind ~= 'sep' and it.kind ~= 'image' and it.kind ~= 'help' then
+    if it.kind ~= 'group' and it.kind ~= 'endgroup' and it.kind ~= 'line' and it.kind ~= 'endline' and it.kind ~= 'sep' and it.kind ~= 'image' and it.kind ~= 'help' then
       controls = controls + 1
     end
   end

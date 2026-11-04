@@ -330,3 +330,15 @@ button.tab.on { color: #fff1d6; decorator: ninepatch(tab-c, tab-c-in); }
 	z-index: 200;
 }
 #tip.on { display: block; }
+
+/* one OTUI row widget (its controls share a line): side by side in their own sizes, wrapped only when too narrow */
+.line {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	width: 100%;
+	margin: 1dp 0dp;
+}
+.line .lbl, .line label.check { flex: 0 1 auto; }
+.line select { flex: 0 1 auto; max-width: 100%; }
