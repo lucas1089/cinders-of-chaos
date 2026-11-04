@@ -1,0 +1,10 @@
+Module
+  name: game_touchscroll
+  description: Phones: a finger swipe scrolls lists, windows and bags (base patch 0184)
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 1000
+  scripts: [ touchscroll_logic, touchscroll ]
+  @onLoad: ChaosTouchScroll.init()
+  @onUnload: ChaosTouchScroll.terminate()

@@ -435,6 +435,9 @@ library.
 | `game_chatpanel` | Does nothing on mobile (returns early). The base console keeps working. |
 | `game_chaosuiscale` | Sets the phone zoom 1.5 s after start and on a size change: the highest whole step that leaves 960x540 interface pixels (1080 high: 2x). The base phone zoom of 3x left 780x360 and cut the login and the windows. The zoom buttons still change it. |
 | `game_shaderfx` | The health and mana orbs sit in the window corner when there is no chat panel. |
+| `game_walkpad` | Moves the walk pad. Since O400 it also walks: a tap is one step, a hold walks on, the lift stops. |
+| `game_touchscroll` | O400: a swipe scrolls the list, window or bag under the finger, with a glide. Needs base patch `0184`. |
+| `game_mobilebag` | O400: container cells of 48-56 px that fill the side panel. |
 
 The base modules `client_mobile` (zoom, walk pad), `game_interface`, `game_console`, `game_battle`,
 `game_healthinfo`, `client_entergame`, `client_textedit` have mobile code. Whether the Chaos modules that replace
