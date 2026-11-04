@@ -458,15 +458,19 @@ def display_cells(world, room, pos, known=(), end_row=None):
     tile in `known`: where a spawn of the map already stands a monster). A teleport with no such cell beside it (two
     teleports sharing one counter, beta 2026-10-22: the base Dragons stayed in the cell behind it) takes the cell right
     behind it. A teleport on the corridor's end row (`end_row`) takes the two cells on its outer side, above and below
-    (the base server's own display spots there; only `known` ones)."""
+    (the base server's own display spots there; only `known` ones). A PZ tile is never a cell, known or not: no
+    monster spawns there (live 2026-11-04: the end cells of z 5 are corridor PZ, "Couldn't spawn monster" at every
+    start; pz_cells lists them so their spawns go)."""
     x, y, z = pos
     known = set(known)
 
     def ok(c):
+        if world.flags(c) & 1:
+            return False
         if c in known:
             return True
         st = world.stack(c)
-        return st is not None and len(st) == 1 and not world.flags(c) & 1
+        return st is not None and len(st) == 1
 
     rows = room['teleportRows']
     if y in rows:
@@ -476,9 +480,30 @@ def display_cells(world, room, pos, known=(), end_row=None):
             out = [(x, row, z)]
         return out
     if end_row is not None and y == end_row:
-        side = 1 if x > room.get('back', {}).get('x', x) else -1
-        return [c for c in ((x + side, y - 1, z), (x + side, y + 1, z)) if c in known]
+        return [c for c in end_cells(room, pos) if c in known and ok(c)]
     return []
+
+
+def end_cells(room, pos):
+    """the two cells on the outer side of a teleport on the corridor's end row, above and below"""
+    x, y, z = pos
+    side = 1 if x > room.get('back', {}).get('x', x) else -1
+    return [(x + side, y - 1, z), (x + side, y + 1, z)]
+
+
+def pz_cells(world, room, pos, known=(), end_row=None):
+    """the tiles beside a teleport a spawn of the map stands a monster on (`known`) that are PZ: never a display cell
+    (display_cells), so the install takes their spawn blocks off instead of leaving a monster that never spawns"""
+    x, y, z = pos
+    rows = room['teleportRows']
+    if y in rows:
+        row = room['cellRows'][rows.index(y)]
+        near = [(x - 1, row, z), (x, row, z), (x + 1, row, z)]
+    elif end_row is not None and y == end_row:
+        near = end_cells(room, pos)
+    else:
+        near = []
+    return [c for c in near if c in set(known) and world.flags(c) & 1]
 
 
 def spare_cell(world, room, pos, known=(), counter=None):
@@ -491,10 +516,12 @@ def spare_cell(world, room, pos, known=(), counter=None):
     if y not in rows:
         return None
     c = (x, room['cellRows'][rows.index(y)], z)
+    if world.flags(c) & 1:
+        return None
     if c in set(known):
         return c
     st = world.stack(c)
-    if st is None or world.flags(c) & 1:
+    if st is None:
         return None
     if len(st) == 1 or (counter is not None and len(st) == 2 and st[1] == counter):
         return c
@@ -550,7 +577,8 @@ def hall_slots(world, room, sign_id, base_rows, wing_slots, quest_rows=(), known
             raise HallError('%s: %d,%d,%d is not a tile of the map (hall_hunts.csv is for another map?)' % ((r['id'],) + p))
         cells = cells_of(room, p) if p in quest_at else display_cells(world, room, p, known, end_row)
         spare = None if p in quest_at else spare_cell(world, room, p, known, counter)
-        slots.append(dict(teleport=p, sign=sign_of(world, room, p, sign_id), cells=cells, base=r['id'], spare=spare))
+        slots.append(dict(teleport=p, sign=sign_of(world, room, p, sign_id), cells=cells, base=r['id'], spare=spare,
+                          pz=pz_cells(world, room, p, known, end_row)))
     have = {s['teleport'] for s in slots}
     for s in wing_slots:
         if tuple(s['teleport']) not in have:

@@ -20860,6 +20860,11 @@ west to east (north before south in a column). A floor with too few slots is gro
   of the map already stands a monster on counts as a cell (`install_content_areas.spawned_tiles`), and an end
   teleport takes the two cells on its outer side. On the base map only z 6 (31659, 32254) is left without a cell (it
   shares its one cell with 31657). The next install replaces the old blocks.
+  - **PZ end cells (live 2026-11-04).** The end teleports' outer cells of z 5 (31628 and 31668, y 32255 and 32257)
+    are corridor tiles with the PZ flag. No monster spawns on PZ, so Masque Dancer and Gnarlback logged "Couldn't
+    spawn monster" at every start. A PZ tile is now never a display cell or spare cell, even when a spawn stands
+    there (`display_cells`, `spare_cell`). `hall_order.pz_cells` lists those tiles; the install takes them over,
+    so their blocks leave the spawn file. The two end hunts get a `no display cell` warning instead.
   - **Wyrmspine Hollows and the cell-less slot (beta 2026-10-22/23, "Wyrmspine Hollows showcase empty").** Root cause
     of the empty Wyrmspine showcase: the plan had `display = false` (all its monsters are 4x4 or 5x5, they spilled over
     the cell walls), so the install added no display spawn for it. `standIn = true` with the base server's 2x2 Elder
