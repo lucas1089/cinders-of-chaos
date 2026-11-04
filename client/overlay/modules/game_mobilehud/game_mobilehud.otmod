@@ -1,0 +1,10 @@
+Module
+  name: game_mobilehud
+  description: Phones: the bottom hotkey bars are off by default, for more room
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 1000
+  scripts: [ mobilehud_logic, mobilehud ]
+  @onLoad: ChaosMobileHud.init()
+  @onUnload: ChaosMobileHud.terminate()

@@ -611,7 +611,8 @@ local function createCategoryButton(category)
   button:setId('chaosMenu_' .. category.id)
   button:setText(category.text)
   button:setIcon(ICON_DIR .. category.icon)
-  button:setWidth(button:getTextSize().width + 38)
+  -- the icon and its gap; O401: bigger on a phone (topbar.otui $mobile)
+  button:setWidth(button:getTextSize().width + ((g_app.isMobile and g_app.isMobile()) and 48 or 38))
   button.onClick = function() showCategory(category, button) end
   categoryButtons[category.id] = button
   return button

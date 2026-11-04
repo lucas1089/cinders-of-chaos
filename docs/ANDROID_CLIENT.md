@@ -438,6 +438,7 @@ library.
 | `game_walkpad` | Moves the walk pad. Since O400 it also walks: a tap is one step, a hold walks on, the lift stops. |
 | `game_touchscroll` | O400: a swipe scrolls the list, window or bag under the finger, with a glide. Needs base patch `0184`. |
 | `game_mobilebag` | O400: container cells of 48-56 px that fill the side panel. |
+| `game_mobilehud`, `game_chaosnotify`, `client_chaos_topbar` | O401: bottom hotkey bars off once, only answer toasts, a bigger top menu. |
 
 The base modules `client_mobile` (zoom, walk pad), `game_interface`, `game_console`, `game_battle`,
 `game_healthinfo`, `client_entergame`, `client_textedit` have mobile code. Whether the Chaos modules that replace

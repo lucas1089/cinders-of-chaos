@@ -1202,6 +1202,10 @@ function addNotification(notificationType, message, customIcon, monsterLookType,
     if not typeData then
         return
     end
+    -- O401: a phone shows only the toasts that wait for an answer (notifyview.lua showOnPhone)
+    if g_app.isMobile and g_app.isMobile() and not ChaosNotifyView.showOnPhone(notificationType) then
+        return
+    end
     
     local notificationData = {
         notificationType = notificationType,

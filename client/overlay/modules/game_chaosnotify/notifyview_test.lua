@@ -100,5 +100,12 @@ eq(h, 28 + 65 + 77, 'button toast grows over its buttons')
 local grown = V.stack({}, { [1] = { type = 'INVASION', height = 160 }, [2] = { type = 'SALE' } }, 0)
 eq(grown[2].y, 160 + 8, 'stacked below the grown toast')
 
+-- O401: phones show only the toasts that need an answer
+eq(V.showOnPhone('PARTY_INVITE'), true, 'phone keeps party invites')
+eq(V.showOnPhone('CATACOMB_FREE'), true, 'phone keeps the catacomb start')
+eq(V.showOnPhone('SALE'), false, 'phone drops a sale toast')
+eq(V.showOnPhone('GM_BROADCAST'), false, 'phone drops a broadcast toast')
+eq(V.showOnPhone(nil), false, 'phone drops an unknown toast')
+
 print(string.format('notifyview_test: %d checks, %d failed', n, fails))
 if fails > 0 then os.exit(1) end
