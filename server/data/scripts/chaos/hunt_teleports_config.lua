@@ -253,7 +253,7 @@ return {
 		{id = "thistlewood_hollow", monster = "Goblin Scavenger"},
 		{id = "copperdelve_mine", monster = "Dwarf Soldier"},
 		{id = "ashgrave_barrow", monster = "Crypt Shambler"},
-		{id = "murkreed_fen", monster = "Lancer Beetle"},
+		{id = "murkreed_fen", monster = "Sacred Spider"},  -- not Lancer Beetle: it turns invisible (install warning, live 2026-11-04)
 		{id = "chitinmaw_warren", monster = "Waspoid"},
 		{id = "scalewatch_bastion", monster = "Lizard Legionnaire"},
 		{id = "anvilmourn_wastes", monster = "Cinderskull Reaver"},

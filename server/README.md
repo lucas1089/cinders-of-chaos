@@ -19318,7 +19318,7 @@ the hunts around them. No reward chest.
 | thistlewood_hollow | Thistlewood Hollow | 6-12 (9) | 7 | forest | 96 x 80 | 64 (1514): Goblin, Goblin Scavenger, Troll, Swamp Troll, Wolf, Bear | Goblin Scavenger |
 | copperdelve_mine | Copperdelve Mine | 11-17 (14) | 7 | cave | 100 x 84 | 53 (1295): Dwarf, Dwarf Soldier, Dwarf Miner, Larva, Carrion Worm | Dwarf Soldier |
 | ashgrave_barrow | Ashgrave Barrow | 18-26 (22) | 7 | crypt | 104 x 86 | 88 (2113): Crypt Shambler, Ghost, Bonelord, Mummy, Tomb Servant | Crypt Shambler |
-| murkreed_fen | Murkreed Fen | 24-34 (29) | 7 | swamp | 106 x 88 | 62 (1480): Lancer Beetle, Swarmer, Acid Blob, Death Blob, Sacred Spider | Lancer Beetle |
+| murkreed_fen | Murkreed Fen | 24-34 (29) | 7 | swamp | 106 x 88 | 62 (1480): Lancer Beetle, Swarmer, Acid Blob, Death Blob, Sacred Spider | Sacred Spider (Lancer Beetle turns invisible) |
 | chitinmaw_warren | Chitinmaw Warren | 44-56 (50) | 7 | cave | 112 x 92 | 86 (2084): Waspoid, Crawler, Spitter, Drillworm, Brimstone Bug | Waspoid |
 | scalewatch_bastion | Scalewatch Bastion | 50-62 (56) | 7 | hall | 114 x 94 | 113 (2753): Lizard Legionnaire, Lizard Dragon Priest, Lizard High Guard | Lizard Legionnaire |
 | anvilmourn_wastes | Anvilmourn Wastes | 1500-1650 (1575) | 5 | waste | 168 x 136 | 152 (3743): Redmane Anvilbreaker, Cinderskull Reaver, Ashveil Hierarch, Hollowhorn, Bloodantler Fiend | Cinderskull Reaver |
