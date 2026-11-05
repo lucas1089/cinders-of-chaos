@@ -2075,7 +2075,8 @@ exit 0
         open(os.path.join(stub, 'curl.stdin'), 'w').close()
         r = run('pay-test')
         check(r.returncode == 0 and 'paypal=200 ok env=sandbox' in r.stdout and 'webhook_paypal=skipped' in r.stdout, 'pay-test: sandbox, provider off')
-        check('api-m.sandbox.paypal.com' in open(os.path.join(stub, 'curl.stdin')).read(), 'pay-test: sandbox host')
+        check(re.search(r'^url = "https://api-m\.sandbox\.paypal\.com/v1/oauth2/token"$',
+                        open(os.path.join(stub, 'curl.stdin')).read(), re.M) is not None, 'pay-test: sandbox host')
         check(run('pay-test', 'x').returncode != 0, 'pay-test takes no argument')
 
         # enable / disable
