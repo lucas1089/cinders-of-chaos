@@ -1,0 +1,9 @@
+Module
+  name: game_chaosshots
+  description: Automatic screenshots of level ups, valuable loot, boss kills, achievements and new records (the base Options > Misc. > Screenshot switches), with a toast naming the folder
+  author: Cinders of Chaos
+  sandboxed: true
+  autoload: true
+  scripts: [ shots_core, shots ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -6282,5 +6282,25 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Summary copied to the clipboard."] = "Resumo copiado para a área de transferência.",
   ["Takes effect at the next client start."] = "Vale a partir da próxima abertura do cliente.",
   ["Time Lua per module from client start"] = "Medir Lua por módulo desde a abertura",
+  -- client_chaos_streamer (streamer and cinema modes, O411; the option texts are base patch 0186's Options > Misc.)
+  ["STREAMER"] = "STREAMER",
+  ["Streamer mode is on (Ctrl+Shift+S). Options > Misc."] = "Modo streamer ligado (Ctrl+Shift+S). Options > Misc.",
+  ["Streamer mode on."] = "Modo streamer ligado.",
+  ["Streamer mode off."] = "Modo streamer desligado.",
+  ["(private message hidden: streamer mode)"] = "(mensagem privada oculta: modo streamer)",
+  ["[hidden]"] = "[oculto]",
+  ["Hidden character"] = "Personagem oculto",
+  ["Streamer mode (Ctrl+Shift+S)"] = "Modo streamer (Ctrl+Shift+S)",
+  ["Also hide who sent a private message"] = "Ocultar também quem mandou a mensagem privada",
+  ["Also hide my name above my character"] = "Ocultar também meu nome acima do personagem",
+  ["Cinema mode (Ctrl+Shift+H): also hide the names and bars of other players"] = "Modo cinema (Ctrl+Shift+H): ocultar também nomes e barras de outros jogadores",
+  ["While on: private messages show only who sent them, the window title and the login screen hide your\naccount and character names, the character list hides the other characters, server addresses are hidden\nand a STREAMER badge shows in the top menu."] = "Ligado: mensagens privadas mostram só quem mandou, o título da janela e a tela de login ocultam os nomes\nda conta e do personagem, a lista de personagens oculta os outros personagens, endereços de servidor ficam ocultos\ne um selo STREAMER aparece no menu do topo.",
+  ["In streamer mode a private message shows only that one arrived, without the name of the sender."] = "No modo streamer uma mensagem privada mostra só que chegou, sem o nome de quem mandou.",
+  ["In streamer mode your own name is not drawn above your character."] = "No modo streamer seu próprio nome não aparece acima do personagem.",
+  ["Ctrl+Shift+H hides every panel and window and leaves the map alone, for videos. Press it again to bring\neverything back. With this box ticked it also hides the names and health bars of the other players."] = "Ctrl+Shift+H oculta todos os painéis e janelas e deixa só o mapa, para vídeos. Aperte de novo para trazer\ntudo de volta. Com esta caixa marcada também oculta os nomes e barras de vida dos outros jogadores.",
+  -- game_chaosshots (automatic screenshots, O411; "New Record" is base patch 0186's box in Options > Misc. > Screenshot)
+  ["SCREENSHOT"] = "CAPTURA DE TELA",
+  ["Screenshot saved in %s"] = "Captura de tela salva em %s",
+  ["New Record"] = "Novo Recorde",
 }
 return ChaosLocaleStrings['pt-BR']
