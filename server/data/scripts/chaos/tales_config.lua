@@ -69,7 +69,8 @@ return {
 		book = {en = "the book \"%s\"", pt = "o livro \"%s\""},
 		status = {en = "Tales: %s", pt = "Histórias: %s"},
 		eliteRises = {en = "%s rises to meet you.", pt = "%s se ergue para enfrentar você."},
-		chapter = {en = "%s, chapter %d of %d", pt = "%s, capítulo %d de %d"}
+		chapter = {en = "%s, chapter %d of %d", pt = "%s, capítulo %d de %d"},
+		storyTake = {en = "Ask the Archivist for the tale", pt = "Peça a história à Arquivista"}
 	},
 
 	-- O396: the elites of the elite steps (tales.lua): the tier they rise with (monster_tiers.lua ChaosApplyTier), how
@@ -80,6 +81,40 @@ return {
 	-- set by tales.lua at every turn-in and at login)
 	sagas = {
 		cinderhold = {name = {en = "The Tale of Cinderhold", pt = "A História de Cinderhold"}, stat = "cinderhold_tale"}
+	},
+
+	-- O415 (owner 2026-11-05): the story quest is the Tale of Cinderhold. A new character is told about it once, after the
+	-- welcome (about `delayMs` later), and so is an old character that never took the next chapter: a message and a
+	-- toast in its language, the Archivist marked on its map (tales_core.lua M.questGoals) and a gold "!" over her head
+	-- (M.npcMarks). The first chapter opens at the start level (8), so the offer is never for later. Storage: tales
+	-- block +41 (`storage.base + story.intro`): 1 once the introduction was shown, or the character had started the tale.
+	story = {
+		saga = "cinderhold",
+		intro = 41,
+		delayMs = 30000,
+		text = {
+			en = "The Tale of Cinderhold: the city's founding ledger was torn apart the night the Cinders fell, and Archivist "
+				.. "Maelis wants its ten pages back. Chapter I, %s, is yours to take. Find her in the market of the teleport "
+				.. "room (marked on your map) and ask her for \"tales\".",
+			pt = "A História de Cinderhold: o registro da fundação da cidade foi rasgado na noite em que as Brasas caíram, e a "
+				.. "Arquivista Maelis quer as dez páginas de volta. O capítulo I, %s, é seu para aceitar. Encontre-a no "
+				.. "mercado da sala de teleportes (marcada no seu mapa) e peça \"histórias\"."
+		},
+		-- what she says when asked about the story ("story", "history", "cinderhold", "saga")
+		ask = {
+			en = "My oldest ledger is the founding of Cinderhold, and its ten pages are lost. Each chapter sends you to a hunt "
+				.. "of your level and back to me. Your next page: %s.",
+			pt = "Meu registro mais antigo é a fundação de Cinderhold, e suas dez páginas estão perdidas. Cada capítulo leva você "
+				.. "a uma caçada do seu nível e de volta a mim. Sua próxima página: %s."
+		},
+		askDone = {
+			en = "You have brought back every page. The city's tale is whole again, thanks to you.",
+			pt = "Você trouxe de volta todas as páginas. A história da cidade está inteira de novo, graças a você."
+		},
+		askWait = {
+			en = "The next page, %s, is for level %d and up. Hunt a little more, then come back.",
+			pt = "A próxima página, %s, é para o nível %d ou mais. Cace um pouco mais e volte."
+		}
 	},
 
 	factions = {vigil = "the Ashen Vigil", compact = "the Cinderforge Compact", choir = "the Veiled Choir",
@@ -718,7 +753,7 @@ return {
 		-- ---------------------------------------------------------------- O396: the Tale of Cinderhold, a saga of ten
 		-- chapters from level 10 to 560. Each chapter: (a faction NPC), a place in a hunt of its band where a named elite
 		-- rises (an elite step), back to the Archivist. The founding ledger's ten pages; the Chronicle's own prologue.
-		{key = "cinderhold_1", slot = 28, minLevel = 10, band = {10, 40}, faction = "vigil", saga = "cinderhold", chapter = 1,
+		{key = "cinderhold_1", slot = 28, minLevel = 8, band = {8, 40}, faction = "vigil", saga = "cinderhold", chapter = 1,
 			name = {en = "Cinderhold I: The Torn Ledger", pt = "Cinderhold I: O Registro Rasgado"},
 			story = {
 				en = "I keep the Chronicle of what the realm does. Older than the Chronicle is my first ledger: the founding of "

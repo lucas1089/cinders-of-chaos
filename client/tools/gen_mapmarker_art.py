@@ -12,6 +12,9 @@ outline so they stay visible over water, grass and the black of unexplored map.
   party_arrow_<dir>.png   12x12  the same for a member outside the shown map: a pointed arrow toward n, ne, e, se, s,
                                  sw, w, nw (tinted the same way)
   floor_up.png / floor_down.png 8x8  gold triangles: the member is on a higher / lower floor
+  npcmark_new.png         16x24  (O415) a gold exclamation mark with a dark outline: drawn over the head of an NPC that has
+  npcmark_ready.png              a quest this character can start now; a gold question mark: a step to turn in or
+  npcmark_locked.png             report to this NPC; a grey exclamation mark: a quest that waits for a level
   poi_<kind>.png          14x14  a dark round plate, gold rim, the kind's motif: temple, depot, bank, npc, shop,
                                  travel, bless, craft, guild, portal, boss, dungeon, hunt, quest (a quest giver or
                                  chest: a gold exclamation mark), questgoal (your next quest step: an ember target)
@@ -46,9 +49,10 @@ def c(ramp, i):
 
 
 class Canvas:
-    def __init__(self, size):
+    def __init__(self, size, height=None):
         self.size = size
-        self.img = Image.new('RGBA', (size * K, size * K), (0, 0, 0, 0))
+        self.height = height or size
+        self.img = Image.new('RGBA', (size * K, self.height * K), (0, 0, 0, 0))
         self.d = ImageDraw.Draw(self.img)
 
     def p(self, v):
@@ -67,7 +71,7 @@ class Canvas:
         self.d.line([(self.p(x), self.p(y)) for x, y in pts], fill=fill, width=max(1, round(self.p(w))), joint='curve')
 
     def done(self):
-        return self.img.resize((self.size, self.size), Image.LANCZOS)
+        return self.img.resize((self.size, self.height), Image.LANCZOS)
 
 
 def grow(pts, w):
@@ -235,8 +239,49 @@ def poi_icon(motif):
     return cv.done()
 
 
+# ------------------------------------------------------------------------------------------------ marks over NPC heads (O415)
+# 16x24, a dark outline all round so they read on grass, stone and water. Gold ramp for the quests of the character,
+# the stone ramp (grey) for a quest that waits for a level.
+def bang(ramp):
+    cv = Canvas(16, 24)
+    stem = [(5.2, 2.2), (10.8, 2.2), (9.6, 15.0), (6.4, 15.0)]
+    cv.poly(grow(stem, 1.4), INK)
+    cv.ellipse(4.3, 16.3, 11.7, 23.7, INK)
+    cv.poly(stem, c(ramp, 2))
+    cv.poly([(5.2, 2.2), (8.0, 2.2), (7.4, 15.0), (6.4, 15.0)], c(ramp, 3))     # lit from the top left
+    cv.poly([(9.4, 2.2), (10.8, 2.2), (9.6, 15.0), (8.8, 15.0)], c(ramp, 1))    # shaded right edge
+    cv.ellipse(5.6, 17.4, 10.4, 22.2, c(ramp, 2))
+    cv.ellipse(6.0, 17.6, 8.8, 20.4, c(ramp, 3))
+    return cv.done()
+
+
+def question(ramp):
+    cv = Canvas(16, 24)
+    cx, cy, r = 8.0, 7.4, 4.1
+    pts = [(cx + r * math.cos(math.radians(a)), cy + r * math.sin(math.radians(a))) for a in range(180, 411, 10)]
+    pts += [(8.1, 13.2), (8.0, 15.0)]
+
+    def stroke(width, fill, dx=0.0, dy=0.0):
+        cv.line([(x + dx, y + dy) for x, y in pts], fill, width)
+        for x, y in pts:
+            cv.ellipse(x + dx - width / 2, y + dy - width / 2, x + dx + width / 2, y + dy + width / 2, fill)
+    stroke(5.0, INK)
+    cv.ellipse(4.3, 16.3, 11.7, 23.7, INK)
+    stroke(2.8, c(ramp, 2))
+    stroke(1.0, c(ramp, 3), -0.5, -0.4)                                          # lit from the top left
+    cv.ellipse(5.6, 17.4, 10.4, 22.2, c(ramp, 2))
+    cv.ellipse(6.0, 17.6, 8.8, 20.4, c(ramp, 3))
+    return cv.done()
+
+
+MARKS = {'npcmark_new': lambda: bang('gold'), 'npcmark_ready': lambda: question('gold'),
+         'npcmark_locked': lambda: bang('stone')}
+
+
 def all_art():
     out = {'party_pin': party_pin(), 'floor_up': floor_arrow(True), 'floor_down': floor_arrow(False)}
+    for name, make in MARKS.items():
+        out[name] = make()
     for name, angle in DIRS.items():
         out['party_arrow_' + name] = party_arrow(angle)
     for kind, motif in POI.items():
@@ -246,8 +291,8 @@ def all_art():
 
 def sheet(art, path):
     names = sorted(art)
-    cell = 64
-    img = Image.new('RGBA', (cell * 6, cell * ((len(names) + 5) // 6)), (60, 70, 50, 255))
+    cell, cellh = 64, 100
+    img = Image.new('RGBA', (cell * 6, cellh * ((len(names) + 5) // 6)), (60, 70, 50, 255))
     for i, n in enumerate(names):
         a = art[n]
         if n.startswith('party_'):
@@ -257,7 +302,7 @@ def sheet(art, path):
             a = Image.merge('RGBA', (r.point(lambda v: v * 255 // 255), g.point(lambda v: v * 157 // 255),
                                      b.point(lambda v: v * 46 // 255), al))
         big = a.resize((a.width * 4, a.height * 4), Image.NEAREST)
-        img.alpha_composite(big, ((i % 6) * cell + 4, (i // 6) * cell + 4))
+        img.alpha_composite(big, ((i % 6) * cell + 4, (i // 6) * cellh + 4))
     img.save(path)
 
 

@@ -26,9 +26,9 @@ end
 local M = ChaosTalesCore
 
 local GREET = {
-	en = "Ash on your boots, |PLAYERNAME|. I keep the {ledger}. Ask me for {tales}, or for any {lore} you fear. "
+	en = "Ash on your boots, |PLAYERNAME|. I keep the {ledger}. Ask me for {tales}, the {story} of Cinderhold, or any {lore} you fear. "
 		.. "(Diga {portugues} para conversar em português.)",
-	pt = "Cinza nas suas botas, |PLAYERNAME|. Eu guardo o {registro}. Peça {histórias}, ou qualquer {lenda} que você tema. "
+	pt = "Cinza nas suas botas, |PLAYERNAME|. Eu guardo o {registro}. Peça {histórias}, a {saga} de Cinderhold ou qualquer {lenda} que você tema. "
 		.. "(Say {english} to talk in English.)"
 }
 local LINES = {
@@ -94,7 +94,7 @@ local function has(text, ...)
 	return false
 end
 
-local function creatureSayCallback(cid, type, msg)
+local function creatureSayCallback(cid, msgType, msg)
 	if not npcHandler:isFocused(cid) then
 		return false
 	end
@@ -113,6 +113,13 @@ local function creatureSayCallback(cid, type, msg)
 		return true
 	end
 	local lang = langOf(player)
+	-- O415: the story quest (the Tale of Cinderhold): the next page, then the list to take it
+	if M.asksStory(msg) and M.cfg().story then
+		local function stateOf(t) return player:getStorageValue(M.stateKey(t)) end
+		npcHandler:say(M.storyAnswer(stateOf, player:getLevel(), lang), cid)
+		sendList(player, lang)
+		return true
+	end
 	if M.asksTales(msg) then
 		npcHandler:say(LINES.tales[lang], cid)
 		sendList(player, lang)

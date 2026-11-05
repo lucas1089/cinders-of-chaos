@@ -459,4 +459,42 @@ do
 	end
 end
 
+-- ------------------------------------------------------------------ O415: the mark over the Oracle's head
+do
+	local AQ = ChaosAscensionQuest
+	local store = {}
+	local function who(voc, level)
+		local p = {}
+		function p:getVocation() return {getId = function() return voc end} end
+		function p:getLevel() return level end
+		function p:getStorageValue(k) return store[k] or -1 end
+		return p
+	end
+	assert(ChaosPoi and ChaosPoi.markSources and ChaosPoi.markSources.ascension == AQ.npcMarks, "the ascension is a mark source")
+	local K = cfg.storage
+	local STAGE = ChaosAscensionQuestCore.STAGE
+	local function marks(p) local m = AQ.npcMarks(p) return m[1] and m[1].mark, m[1] and m[1].npc end
+	eq(marks(who(4, 100)), "new", "a warrior at the ascension level: gold !")
+	eq(select(2, marks(who(4, 100))), "Ascendant Oracle", "over the Oracle")
+	eq(marks(who(4, 99)), nil, "below the level: nothing by default")
+	ChaosPoi.cfg = {marks = {locked = true}}
+	eq(marks(who(4, 99)), "locked", "grey ! when the option is on")
+	store[K.stage] = STAGE.PROOF
+	eq(marks(who(4, 99)), nil, "a quest in progress is not locked")
+	ChaosPoi.cfg = nil
+	eq(marks(who(4, 100)), nil, "the proof is in the field")
+	store[K.stage] = STAGE.TRIAL
+	store[K.cooldown] = os.time() + 100
+	eq(marks(who(4, 100)), nil, "the door is shut after a failed trial")
+	store[K.cooldown] = 0
+	eq(marks(who(4, 100)), "ready", "strength proven: gold ?")
+	store[K.stage] = STAGE.CHOICE
+	eq(marks(who(4, 100)), "ready", "the trial is behind: choose, gold ?")
+	store[K.stage] = STAGE.DONE
+	eq(marks(who(4, 100)), nil, "done")
+	store[K.stage] = STAGE.NONE
+	eq(marks(who(14, 300)), nil, "an ascended class has none")
+	eq(marks(who(0, 300)), nil, "no class, none")
+end
+
 print("ascension_quest_test: OK")

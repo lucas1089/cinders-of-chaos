@@ -74,7 +74,7 @@ MapMarkerCategory < ChaosCheckBox
 MapMarkerSettings < ChaosMainWindow
   id: mapMarkerSettings
   !text: tr('Map Markers')
-  size: 320 492
+  size: 320 522
 
   MapMarkerCheck
     id: partyBox
@@ -135,6 +135,14 @@ MapMarkerSettings < ChaosMainWindow
     text-align: left
     !text: tr('Hunting areas, dungeons, boss places and remote shops appear once you have been near them.')
 
+  MapMarkerCheck
+    id: npcMarksBox
+    anchors.top: poiNote.bottom
+    margin-top: 6
+    !text: tr('Quest marks over NPCs')
+    !tooltip: tr('A gold ! over an NPC with a quest you can start, a gold ? over one you have a step to turn in to.')
+    @onCheckChange: modules.game_mapmarkers.setNpcMarks(self:isChecked())
+
   ChaosButton
     id: closeButton
     !text: tr('Close')
@@ -142,3 +150,9 @@ MapMarkerSettings < ChaosMainWindow
     anchors.bottom: parent.bottom
     anchors.right: parent.right
     @onClick: modules.game_mapmarkers.hideSettings()
+
+// O415: a mark over an NPC's head (npcmarks.lua sets the image and the place); never takes the mouse
+NpcMark < UIWidget
+  size: 16 24
+  focusable: false
+  phantom: true

@@ -1,9 +1,9 @@
 Module
   name: game_mapmarkers
-  description: Map markers - party members and points of interest on the minimap and the full map (extended opcode 153, server partymarkers.lua and poi.lua)
+  description: Map markers - party members and points of interest on the minimap and the full map, and the quest marks over NPC heads (extended opcode 153, server partymarkers.lua and poi.lua)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ markermath, mapmarkers ]
+  scripts: [ markermath, npcmarkmath, npcmarks, mapmarkers ]
   dependencies:
     - client_chaos_theme
     - game_interface

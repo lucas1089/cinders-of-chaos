@@ -247,15 +247,20 @@ tale's band. "x" below is that share; gold goes to the bank.
 | Requiem for the Ash-Sister | 800 | kill 60 of the Sovereign's lost court; defeat Morwen the Ash-Sister in the Sepulchre; return | 0.4 of a level, 1,000,000 gold, 1 Orb of Grafting, 1,200 Ashen Vigil reputation, the book "The Ashen Sepulchre" |
 | The Last Ember | 1000 | defeat a warden of the deep places; defeat an Ascended Omen; return | 0.3 of a level, 2,500,000 gold, 2 Orbs of Grafting, 1,500 Veiled Choir reputation, the book "Ysgrath the Cinderheart" |
 
-**The Tale of Cinderhold (O396).** A chain of ten chapters, levels 10 to 560: the ten founding pages of the
+**The Tale of Cinderhold (O396).** A chain of ten chapters, levels 8 to 560 (O415: chapter I opens at the start level): the ten founding pages of the
 Archivist's oldest ledger, torn out the night the Cinders fell. Each chapter sends the character to a hunting mark of
 its band, where a named elite rises (a rare-tier monster with its own name) and must be killed; some chapters start
 with a faction leader. Rewards are modest (0.4-0.8x, gold between the tales around it, an orb from chapter III on); the
 last chapter's achievement gives the title "Keeper of the Founding". Each chapter is also a Next Goal.
 
+O415 (owner 2026-11-05): this is the game's story quest, and a new character meets it in its first minutes. About 30 s after
+the welcome (and once at the next login of an old character that never took a chapter) a message and a toast tell the
+story in the character's language, the Archivist is marked on its map (questgoal) and a gold "!" shows over her head; ask
+her for "tales" or the "story" to take the chapter.
+
 | Chapter | From level | Steps | Rewards |
 |---|---|---|---|
-| I. The Torn Ledger | 10 | defeat Gnawbone the Page-Eater (troll caves); report | 0.8x, 2,000 gold, 100 Vigil reputation |
+| I. The Torn Ledger | 8 | defeat Gnawbone the Page-Eater (troll caves); report | 0.8x, 2,000 gold, 100 Vigil reputation |
 | II. The Founders' Bell | 22 | ask Warden Ysolde; defeat the Old Bellwarden (gargoyle roost); report | 0.7x, 6,500 gold, 150 Vigil reputation |
 | III. Mortar of Dragon Ash | 45 | defeat Ashmaw the Mortar-Wyrm; kill 20 dragons; report | 0.7x, 18,000 gold, 1 Orb of Awakening, 200 Compact reputation |
 | IV. The Oathless Legion | 60 | ask Forgemaster Brannoc; defeat Sskareth the Oathbreaker (lizards); report | 0.6x, 25,000 gold, 1 Orb of Awakening, 250 Compact reputation |
