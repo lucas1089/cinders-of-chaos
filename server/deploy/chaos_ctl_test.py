@@ -43,6 +43,12 @@ old line only, CHAOS_SITE_URL filled from the site env, empty input removes a li
 with shell characters) refused; enable installs the units and the logrotate file, disable stops the timer; test reports
 the HTTP code per channel; status shows yes/no and the last 4 id digits, masks a token in log and queue lines.
 
+Donations (pay-status / -set / -test / -enable / -disable, O413): a value only on stdin, one line, checked per NAME
+(providers from a fixed list, never mock; https site URL; tokens by charset and length), never echoed; payments.env made
+from the example (mode 640), the line replaced in place, the payer salt made once; status shows yes/no and the webhook
+URLs, masks e-mails and tokens in log lines; test sends the secrets to curl on its stdin, calls the env's PayPal host
+and the webhook pages (401 = ok); enable installs the unit with the real paths.
+
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
 import json
@@ -634,6 +640,7 @@ def main():
     test_feedback()
     test_discord()
     test_discord_bot()
+    test_pay()
     test_server_user()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
@@ -1870,6 +1877,237 @@ exit 0
         check(not any(token in t or token[::-1] in t for t in seen), 'no output of any discord command holds a webhook token')
         check('webhooks' not in calls(), 'no command line (stubs) saw a webhook URL')
 
+
+def test_pay():
+    """pay-status | pay-set | pay-test | pay-enable | pay-disable (donations, O413; docs/PAYMENTS.md)"""
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    mp_token = 'APP_USR-1234567890123456-110512-0a1b2c3d4e5f60718293a4b5c6d7e8f9-123456789'
+    mp_secret = 'f00dfeedc0ffee1234567890abcdef0123456789abcdef0123456789abcdef01'
+    pp_id = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789_-AaBbCcDdEeFfGgHh'
+    pp_secret = 'EeSsCcRrEeTt0123456789_-EeSsCcRrEeTt0123456789_-EeSsCcRrEeTt0123456789_-EeSsCcRr'
+    secrets = (mp_token, mp_secret, pp_id, pp_secret)
+    # curl: records its arguments and stdin; the code by URL (on stdin for the providers, on the line for the webhooks)
+    curl = '''#!/usr/bin/env bash
+echo "curl $*" >> "$STUB/calls"
+in=""
+case " $* " in *" -K - "*) in=$(cat) ;; esac
+printf '%s\\n--\\n' "$in" >> "$STUB/curl.stdin"
+out=""
+while [ $# -gt 0 ]; do [ "$1" = -o ] && out=$2; shift; done
+case "$in" in
+  *mercadopago*) [ -n "$out" ] && [ "$out" != /dev/null ] && printf '{"id":1,"site_id":"MLB","email":"x@y.z"}' > "$out"
+                 printf '%s' "${STUB_MP_CODE:-200}" ;;
+  *paypal*) printf '%s' "${STUB_PP_CODE:-200}" ;;
+  *) printf '%s' "${STUB_HOOK_CODE:-401}" ;;
+esac
+'''
+    sysctl = '''#!/usr/bin/env bash
+echo "systemctl $*" >> "$STUB/calls"
+case "$*" in
+  is-active*) [ -e "$STUB/active" ] && echo active || { echo inactive; exit 3; } ;;
+  is-enabled*) [ -e "$STUB/enabled" ] && echo enabled || echo disabled ;;
+  "enable --now"*) touch "$STUB/enabled" "$STUB/active" ;;
+  "disable --now"*) rm -f "$STUB/enabled" "$STUB/active" ;;
+esac
+exit 0
+'''
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        site = os.path.join(tmp, 'site')
+        sysd = os.path.join(tmp, 'systemd')
+        for d in (stub, os.path.join(repo, 'server', 'deploy'), os.path.join(repo, 'website'),
+                  os.path.join(site, 'plugins', 'chaos', 'pay'), sysd):
+            os.makedirs(d)
+        for f in ('chaos-payworker.service', 'chaos.logrotate'):
+            shutil.copy(os.path.join(HERE, f), os.path.join(repo, 'server', 'deploy', f))
+        shutil.copy(os.path.join(repo_root, 'website', 'payments.env.example'), os.path.join(repo, 'website'))
+        open(os.path.join(site, 'plugins', 'chaos', 'pay', 'worker.php'), 'w').close()
+        for name, body in (('curl', curl), ('systemctl', sysctl)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        site_env = os.path.join(tmp, 'site.env')
+        with open(site_env, 'w') as f:
+            f.write('CHAOS_SITE_URL=https://example.org/\n')
+        penv = os.path.join(tmp, 'etc', 'payments.env')
+        wlog = os.path.join(tmp, 'logs', 'payworker.log')
+        os.makedirs(os.path.dirname(wlog))
+        with open(wlog, 'w') as f:
+            f.write('order 7: mercadopago charge 99, expires 12:00\nerror for donor@example.com token APP_USR-123-abc\n')
+        user = subprocess.run(['id', '-un'], capture_output=True, text=True).stdout.strip()
+        group = subprocess.run(['id', '-gn'], capture_output=True, text=True).stdout.strip()
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=os.path.join(tmp, 'chaos.env'),
+                   CHAOS_REPO=repo, CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'),
+                   CHAOS_PAY_ENV=penv, CHAOS_PAY_USER=user, CHAOS_PAY_GROUP=group, CHAOS_PAYWORKER_LOG=wlog,
+                   CHAOS_SITE_ENV=site_env, CHAOS_SITE_DIR=site, CHAOS_SYSTEMD_DIR=sysd,
+                   CHAOS_LOGROTATE_FILE=os.path.join(tmp, 'logrotate-chaos'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'CHAOS_BACKUP_DIR'):
+            env.pop(k, None)
+        seen = []
+
+        def run(*args, stdin=None, extra=None):
+            r = subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), input=stdin,
+                               capture_output=True, text=True)
+            seen.append(r.stdout + r.stderr)
+            return r
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def text():
+            return open(penv).read()
+
+        def kv(out):
+            d = {}
+            for line in out.splitlines():
+                if line.startswith('@'):
+                    break
+                if '=' in line:
+                    k, v = line.split('=', 1)
+                    d.setdefault(k, v)
+            return d
+
+        # refusals: nothing is written, not even the file
+        for name, bad in (('CHAOS_PAY_PIX_PROVIDER', 'mock'), ('CHAOS_PAY_PIX_PROVIDER', 'paypal'),
+                          ('CHAOS_PAY_PAYPAL_PROVIDER', 'mock'), ('CHAOS_PAYPAL_ENV', 'production'),
+                          ('CHAOS_PAY_SITE_URL', 'http://example.org'), ('CHAOS_PAY_SITE_URL', 'https://example.org/?a=1'),
+                          ('CHAOS_PAY_SITE_URL', 'https://user@example.org'), ('CHAOS_MP_ACCESS_TOKEN', 'abc'),
+                          ('CHAOS_MP_ACCESS_TOKEN', mp_token + '$(id)'), ('CHAOS_MP_ACCESS_TOKEN', 'XX-' + mp_token[8:]),
+                          ('CHAOS_PAYPAL_CLIENT_SECRET', 'short'), ('CHAOS_PAYPAL_WEBHOOK_ID', 'ab cd'),
+                          ('CHAOS_PAY_PAYER_EMAIL', 'not an email'), ('CHAOS_PAYPAL_CATEGORY', 'GOODS'),
+                          ('CHAOS_MP_WEBHOOK_SECRET', mp_secret + '\nCHAOS_PAY_ALLOW_MOCK=1')):
+            r = run('pay-set', name, stdin=bad + '\n')
+            check(r.returncode != 0, 'pay-set refuses %s=%r' % (name, bad))
+            check(not os.path.exists(penv), 'pay-set: a refused value writes nothing: %r' % bad)
+            check(bad not in r.stdout + r.stderr or len(bad) < 8, 'pay-set: a refused value is not echoed')
+        for bad in ('CHAOS_PAY_ALLOW_MOCK', 'CHAOS_PAY_PAYER_SALT', 'CHAOS_PAY_LOG', 'x;id', ''):
+            r = run('pay-set', bad, stdin='1\n')
+            check(r.returncode != 0 and not os.path.exists(penv), 'pay-set refuses the name %r' % bad)
+        check(run('pay-set', 'CHAOS_PAYPAL_ENV', 'live').returncode != 0 and not os.path.exists(penv),
+              'pay-set: a value on the command line is no input')
+
+        # the first save creates the file from the example, mode 640, with a random payer salt
+        r = run('pay-set', 'CHAOS_MP_ACCESS_TOKEN', stdin=mp_token + '\n')
+        check(r.returncode == 0 and 'CHAOS_MP_ACCESS_TOKEN saved' in r.stdout and 'created' in r.stdout
+              and 'payer salt' in r.stdout, 'pay-set first save: ' + r.stdout + r.stderr)
+        check(stat.S_IMODE(os.stat(penv).st_mode) == 0o640, 'payments.env is mode 640: %o' % os.stat(penv).st_mode)
+        t = text()
+        check('# Settings of the donation flow' in t and t.count('CHAOS_MP_ACCESS_TOKEN=') == 1
+              and 'CHAOS_MP_ACCESS_TOKEN=' + mp_token + '\n' in t, 'pay-set: the example kept, the line replaced in place')
+        salt = re.search(r'^CHAOS_PAY_PAYER_SALT=(\S+)$', t, re.M)
+        check(salt is not None and len(salt.group(1)) >= 40, 'pay-set: payer salt made')
+        r = run('pay-set', 'CHAOS_MP_WEBHOOK_SECRET', stdin=mp_secret + '\r\n')
+        check(r.returncode == 0 and 'payer salt' not in r.stdout and re.search(r'^CHAOS_PAY_PAYER_SALT=(\S+)$', text(), re.M).group(1) == salt.group(1),
+              'pay-set: the salt is made once and kept')
+        for name, val in (('CHAOS_PAY_PIX_PROVIDER', 'mercadopago'), ('CHAOS_PAY_PAYPAL_PROVIDER', 'paypal'),
+                          ('CHAOS_PAYPAL_CLIENT_ID', pp_id), ('CHAOS_PAYPAL_CLIENT_SECRET', pp_secret),
+                          ('CHAOS_PAYPAL_WEBHOOK_ID', '1JE4291016473214C'), ('CHAOS_PAYPAL_ENV', 'live'),
+                          ('CHAOS_PAY_PAYER_EMAIL', 'donor+{account}@example.org'), ('CHAOS_PAYPAL_CATEGORY', 'DIGITAL_GOODS')):
+            r = run('pay-set', name, stdin='  ' + val + '  \n')
+            check(r.returncode == 0 and name + ' saved' in r.stdout and name + '=' + val + '\n' in text(), 'pay-set %s: %s' % (name, r.stdout + r.stderr))
+            check(val not in r.stdout + r.stderr, 'pay-set %s: the value is never echoed' % name)
+        check(text().count('CHAOS_PAYPAL_ENV=') == 1 and 'CHAOS_PAYPAL_ENV=sandbox' not in text(), 'pay-set: PAYPAL_ENV replaced')
+        check(not [n for n in os.listdir(os.path.dirname(penv)) if n != 'payments.env'], 'pay-set: no temp file left')
+        check(stat.S_IMODE(os.stat(penv).st_mode) == 0o640, 'payments.env still mode 640 after rewrites')
+        r = run('pay-set', 'CHAOS_PAYPAL_CATEGORY', stdin='\n')
+        check(r.returncode == 0 and 'emptied' in r.stdout and 'CHAOS_PAYPAL_CATEGORY=\n' in text(), 'pay-set: empty input empties the value')
+        before = text()
+        r = run('pay-set', 'CHAOS_PAYPAL_ENV', stdin='live\nCHAOS_PAY_ALLOW_MOCK=1\n')
+        check(r.returncode != 0 and text() == before, 'pay-set: a second line is refused, nothing changed')
+        # a hand-made duplicate line: the first is replaced, later ones go
+        with open(penv, 'a') as f:
+            f.write('CHAOS_PAYPAL_ENV=sandbox\n')
+        run('pay-set', 'CHAOS_PAYPAL_ENV', stdin='sandbox\n')
+        check(text().count('CHAOS_PAYPAL_ENV=') == 1, 'pay-set: duplicate lines collapse to one')
+        run('pay-set', 'CHAOS_PAYPAL_ENV', stdin='live\n')
+        # a running worker restarts after a save
+        open(os.path.join(stub, 'active'), 'w').close()
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('pay-set', 'CHAOS_PAY_SITE_URL', stdin='https://donate.example.org/\n')
+        check(r.returncode == 0 and 'systemctl restart chaos-payworker' in calls() and 'restarted' in r.stdout, 'pay-set restarts a running worker')
+        os.remove(os.path.join(stub, 'active'))
+        # a mode or owner gone wrong is put back
+        os.chmod(penv, 0o666)
+        run('pay-set', 'CHAOS_PAY_SITE_URL', stdin='\n')
+        check(stat.S_IMODE(os.stat(penv).st_mode) == 0o640, 'pay-set puts mode 640 back')
+
+        # status: yes / no, never a value; the webhook URLs from the site URL
+        r = run('pay-status')
+        out = kv(r.stdout)
+        check(r.returncode == 0 and out.get('pix_provider') == 'mercadopago' and out.get('paypal_provider') == 'paypal'
+              and out.get('paypal_env') == 'live' and out.get('mp_token') == 'live', 'pay-status: providers: ' + r.stdout + r.stderr)
+        check(out.get('set_CHAOS_MP_ACCESS_TOKEN') == 'yes' and out.get('set_CHAOS_PAYPAL_CATEGORY') == 'no'
+              and out.get('set_CHAOS_PAY_PAYER_SALT') == 'yes' and out.get('set_CHAOS_PAY_SITE_URL') == 'no', 'pay-status: set flags')
+        check(out.get('paypal_category') == 'DONATION', 'pay-status: an empty category reads as the default')
+        check(out.get('site_url') == 'https://example.org'
+              and out.get('webhook_mercadopago') == 'https://example.org/chaos_pay_webhook.php?psp=mercadopago'
+              and out.get('webhook_paypal') == 'https://example.org/chaos_pay_webhook.php?psp=paypal', 'pay-status: webhook URLs from site.env')
+        check(out.get('env_file') == '640 %s:%s' % (user, group) and out.get('env_ok') == 'yes', 'pay-status: env file')
+        check(out.get('site_installed') == 'yes' and out.get('worker_installed') == 'no' and out.get('worker_active') == 'inactive'
+              and out.get('mock') == 'no', 'pay-status: worker and mock: ' + r.stdout)
+        check('@log' in r.stdout and '@worker' in r.stdout and 'order 7: mercadopago charge 99' in r.stdout, 'pay-status: logs')
+        check('donor@example.com' not in r.stdout and 'APP_USR-123' not in r.stdout, 'pay-status: e-mail and token masked in the log')
+        check(run('pay-status', 'x').returncode != 0, 'pay-status takes no argument')
+        run('pay-set', 'CHAOS_PAY_SITE_URL', stdin='https://donate.example.org/\n')
+        out = kv(run('pay-status').stdout)
+        check(out.get('webhook_paypal') == 'https://donate.example.org/chaos_pay_webhook.php?psp=paypal', 'pay-status: CHAOS_PAY_SITE_URL wins')
+
+        # test: the providers with the secrets on curl's stdin, the webhooks unsigned
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('pay-test')
+        check(r.returncode == 0 and 'pix=200 ok site=MLB token=live' in r.stdout and 'paypal=200 ok env=live' in r.stdout
+              and 'webhook_pix=401 ok' in r.stdout and 'webhook_paypal=401 ok' in r.stdout, 'pay-test: ' + r.stdout + r.stderr)
+        c = calls()
+        check(not any(s in c for s in secrets), 'pay-test: no secret on a curl command line')
+        cin = open(os.path.join(stub, 'curl.stdin')).read()
+        check('url = "https://api.mercadopago.com/users/me"' in cin and 'Authorization: Bearer ' + mp_token in cin, 'pay-test: Mercado Pago on stdin')
+        check('url = "https://api-m.paypal.com/v1/oauth2/token"' in cin and 'user = "%s:%s"' % (pp_id, pp_secret) in cin, 'pay-test: PayPal live host on stdin')
+        check('https://donate.example.org/chaos_pay_webhook.php?psp=mercadopago' in c, 'pay-test: webhook URL called')
+        r = run('pay-test', extra={'STUB_MP_CODE': '401', 'STUB_HOOK_CODE': '503'})
+        check(r.returncode == 1 and 'pix=401 fail' in r.stdout and 'webhook_pix=503 fail' in r.stdout, 'pay-test: failures: ' + r.stdout)
+        run('pay-set', 'CHAOS_PAYPAL_ENV', stdin='sandbox\n')
+        run('pay-set', 'CHAOS_PAY_PAYPAL_PROVIDER', stdin='off\n')
+        open(os.path.join(stub, 'curl.stdin'), 'w').close()
+        r = run('pay-test')
+        check(r.returncode == 0 and 'paypal=200 ok env=sandbox' in r.stdout and 'webhook_paypal=skipped' in r.stdout, 'pay-test: sandbox, provider off')
+        check(re.search(r'^url = "https://api-m\.sandbox\.paypal\.com/v1/oauth2/token"$',
+                        open(os.path.join(stub, 'curl.stdin')).read(), re.M) is not None, 'pay-test: sandbox host')
+        check(run('pay-test', 'x').returncode != 0, 'pay-test takes no argument')
+
+        # enable / disable
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('pay-enable')
+        unit = os.path.join(sysd, 'chaos-payworker.service')
+        check(r.returncode == 0 and 'chaos-payworker is on' in r.stdout and 'methods on: pix' in r.stdout, 'pay-enable: ' + r.stdout + r.stderr)
+        ut = open(unit).read() if os.path.exists(unit) else ''
+        check('--site ' + site + ' ' in ut and 'EnvironmentFile=-' + penv in ut and 'append:' + wlog in ut
+              and 'ReadWritePaths=' + os.path.dirname(wlog) + '\n' in ut, 'pay-enable: unit with the real paths')
+        check(os.path.isfile(os.path.join(tmp, 'logrotate-chaos')), 'pay-enable: logrotate installed')
+        c = calls()
+        check(c.index('systemctl daemon-reload') < c.index('systemctl enable --now chaos-payworker'), 'pay-enable: daemon-reload, then enable --now')
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('pay-enable')
+        check(r.returncode == 0 and 'already' in r.stdout and 'daemon-reload' not in calls(), 'pay-enable twice: no reload')
+        out = kv(run('pay-status').stdout)
+        check(out.get('worker_installed') == 'yes' and out.get('worker_active') == 'active', 'pay-status after enable')
+        r = run('pay-disable')
+        check(r.returncode == 0 and 'systemctl disable --now chaos-payworker' in calls(), 'pay-disable: ' + r.stderr)
+        r = run('pay-enable', extra={'CHAOS_SITE_DIR': os.path.join(tmp, 'nosite')})
+        check(r.returncode != 0 and 'site-not-installed' in r.stderr, 'pay-enable: no site, no worker')
+        check(run('pay-enable', 'x').returncode != 0 and run('pay-disable', 'x').returncode != 0, 'enable / disable take no argument')
+
+        # a mock provider left in the file shows
+        with open(penv, 'a') as f:
+            f.write('CHAOS_PAY_PIX_PROVIDER=mock\n')
+        out = kv(run('pay-status').stdout)
+        check(out.get('mock') == 'yes' and out.get('pix_provider') == 'mock', 'pay-status: mock shows')
+
+        check(not any(s in t for t in seen for s in secrets + (salt.group(1),)), 'no output of any pay command holds a secret')
 
 def test_discord_bot():
     """discord-bot install | set | start | stop | restart | status | logs | patchnotes (server/deploy/discord_bot/)"""

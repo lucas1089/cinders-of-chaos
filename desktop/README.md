@@ -63,7 +63,8 @@ lines, follows the end or not, and copies what is shown. Nothing is asked while 
 It runs the system `ssh` program (OpenSSH, built into Windows 10 and 11) with `-i KEY -p PORT user@host`, and on the
 VPS `sudo -n chaos-ctl.sh ARGS`, exactly like the phone. No new port, service or opcode on the server. The host key
 is pinned on first use (`StrictHostKeyChecking=accept-new`); a changed key is refused. Passwords (accounts, Discord
-webhook) go to the command's stdin, never on a command line.
+webhook, donation keys of VPS e manutenção > Pagamentos (doações), O413) go to the command's stdin, never on a
+command line.
 
 Install the key on the VPS the way the Android app does. Config page, card "Chave deste PC": "Gerar chave" (only while
 the key path is empty) makes an ed25519 key without passphrase next to the settings file (`cinders_admin_ed25519`) and

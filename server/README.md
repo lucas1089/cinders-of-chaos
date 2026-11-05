@@ -664,7 +664,7 @@ collision check") and be added here.
 | 79 | `notifications` | `notifications.lua` (`ChaosNotify`) and many senders | `game_chaosnotify` | toasts, server -> client |
 | 91 | none (base server) | the base crafting script (`tools/patch_base_crafting_ui.py`) | `game_craftingtable` | the base server's own crafting opcode; listed so no module takes it |
 | 109 | `dungeons` | `dungeons.lua` | `game_dungeons` | `dungeon` may carry `health = {monsters = {6 %}, boss = {6 %}}` (a dungeon with its own health curves, `dungeons_difficulty.lua` `D.healthCurves`); without it the client shows the table |
-| 110 | `stash` | `stash.lua` | `game_stash` | |
+| 110 | `stash` | `stash.lua` | `game_stash` | also Find my item (`make` "Find", O412) |
 | 111 | `depotTabs` | none (retired, O316) | none (`game_depottabs` deleted) | reserved: nothing sends or reads it, no new opcode takes it |
 | 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
 | 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226), m = "ice" / "swamp" / "desert" / "fire" / "crypt" (optional, O234)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)", "Area colour mood (O234)") |
@@ -6408,6 +6408,32 @@ resolved engine item or by item id / row id, never by a list position; `tests/st
 one by one, withdraws the 13th, then entries and half stacks, and checks character + stash sums after every step, and that
 every `addItems` packet is under 8192 bytes. No duplication was found on the server. A neighbour item leaving with a deposit can
 only come from a stale container slot in the client request (the slot is the index at the time of the drag); not reproduced.
+
+### Find my item (O412: `itemsearch_core.lua`, `stash.lua` `S.find`, `stash_config.lua` `find`, client `game_stash`)
+
+One search over every place a character keeps items, read only. The client asks on the stash opcode (110), no new opcode:
+`{"action":"Stash","data":{"make":"Find","q":"fire sword","page":1}}`; the answer is `found {q, page, pages, total, shown,
+capped, items}` or `found {q, error = "short" | "long"}`.
+- **Places, in this order:** the equipped slots 1..10 (`equip`), every container they hold, closed ones too, up to `maxDepth`
+  (8) containers deep (`bag`: `slot`, `path` = index of each container below the slot's, `at` = index of the item, `ids` =
+  client ids of the containers on the way, `where` = their names), the purse (`player:getStoreInbox()`, `purse`), the depot
+  inbox (`player:getInbox()`: market and mail, `inbox`) and the stash entries (`stash`: `tab`, `tabName`, `old`, `row` of a
+  stored item or `item` of a merged stack; read through `S.entries`, the same as opening the window).
+- **Matching:** every word of the query is in the item's name, its rarity names in English and pt-BR (`chaos_rarity.lua`) or,
+  for rarity and unique gear, its affix lines (`ChaosItemMods.summary`); a stored stash item uses its saved look text. Case and
+  pt-BR accents are ignored (`K.fold`). 2 to 40 letters, 5 words at most.
+- **Limits:** 200 results kept (the total still counts all, `capped`), 3000 items looked at, pages of 20 (20 rows with the
+  longest texts stay under the 8192 byte packet limit: `tests/itemsearch_test.lua`), one request per 500 ms per player
+  (`ChaosRateLimit`, key `stash.Find`; a dropped request gets no answer, the client says so after 3 s). Every page runs the
+  search again: nothing is kept between requests. Nothing moves and nothing is written, except the tab placement
+  `S.entries` saves, as the window does.
+- **Client:** "Find my item" button in the stash header (it takes the stash's search text) and Ctrl+Shift+F (Ctrl+F is the base
+  client's Toggle Fullscreen, Alt+F the Help Search). A click opens the stash at the tab and flashes the entry, opens the bags
+  on the way (`game_chaoslayout` `ChaosLayout.Containers.openPath`, ids checked) and flashes the slot, flashes an equipment
+  slot or the purse button, or opens the stash and flashes its Inbox button. `game_itemfinder` (opcode 155, where an item
+  drops) is a different window.
+- Tests: `tests/itemsearch_test.lua` (the rules), `tests/stash_test.lua` "Find my item" (the engine side with a closed bag, the
+  purse, the inbox, a stash row, the rate limit and pages).
 
 ## Chaos Pact and account storage (`pact.lua`, `pact_core.lua`, `pact_config.lua`, `sql/chaos_pact.sql`, client `game_pact`)
 

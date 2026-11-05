@@ -893,7 +893,8 @@ a donation by hand with the admin panel (Store > Record a donation).
 
 1. Accounts, the operator's own: a **Mercado Pago** account with Pix keys and an application with the Payments API; a
    **PayPal Business** account and a REST app. docs/LAUNCH.md "Donations" has the legal notes (taxes, refund policy,
-   PayPal's donation category) and the go-live checklist.
+   PayPal's donation category) and the go-live checklist. The owner sets everything up from the admin app (card
+   Pagamentos (doações), `chaos-ctl.sh pay-*`, O413): docs/PAYMENTS.md.
 2. Credentials **never** go into the repository or the web root. Copy `website/payments.env.example` to
    `/etc/chaos/payments.env` (owner root, group www-data, mode 640; another path in `CHAOS_PAY_ENV`) and fill it in:
 

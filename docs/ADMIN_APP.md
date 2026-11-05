@@ -117,6 +117,16 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   600): o token e a chave da API vão pela entrada do comando, nunca na linha de comando nem em log, e o app não os mostra de
   volta. Iniciar recusa com `config-missing` e os nomes que faltam. Levar patch notes ao jogo copia os arquivos novos para
   `data/patchnotes`. Passo a passo para o dono: `server/deploy/discord_bot/README.md`. O app precisa ser recompilado para ter o cartão.
+- **Pagamentos (doações)** (`pay-status`, `pay-set NOME`, `pay-test`, `pay-enable`, `pay-disable`, O413; aba Comandos >
+  Ações rápidas > cartão Pagamentos (doações); no desktop, VPS e manutenção > Pagamentos (doações)): um campo por chave
+  com Salvar (Access Token e assinatura do Mercado Pago, Client ID, Secret e Webhook ID do PayPal, endereço do site,
+  e-mail para Pix), Ligar / Desligar Pix e PayPal, Sandbox / Live, Categoria, os dois endereços de webhook com Copiar,
+  Ativar worker / Desativar, Testar e Estado. O valor vai pela entrada do comando, nunca na linha de comando nem em log,
+  e fica só em `/etc/chaos/payments.env` (modo 640, root:www-data; o primeiro Salvar cria o arquivo do exemplo e o salt
+  dos pagadores). O app confere o formato antes de enviar; o Estado diz só sim ou não. Testar só lê: `/users/me` do
+  Mercado Pago, o token OAuth do PayPal do ambiente salvo e uma chamada sem assinatura a cada webhook (401 = certo).
+  Ativar instala o `chaos-payworker.service` do repositório com os caminhos reais. Passo a passo: docs/PAYMENTS.md. O app
+  precisa ser recompilado para ter o cartão.
 - **Saúde e espaço** (`health`, `cleanup [--yes]`, `backups`): servidor, banco, serviços web (nginx, apache, php-fpm),
   disco e memória. Limpar mostra a lista e pede confirmação antes de apagar: pastas de trabalho de atualizações e
   publicações em `/var/tmp` com mais de um dia, pastas `srvNN` lá, `tfs.antes-*` além dos 2 mais novos,
@@ -243,7 +253,7 @@ Windows podem ter cada um a sua chave. Rodar de novo com a mesma chave não dupl
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
 update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `xp-rate`, `client-pair [show | set N]`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
-`account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `discord-bot status | install | set NOME | start | stop | restart | logs [N] | patchnotes`, `newplayer-funnel`, `survey`, `game-health [--days N] [--kv | --json] [--pt]`, `balance-report [--days N | --season ID|current] [--pt] [--json] [--save] [--dm] | last | auto | timer on|off|status`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
+`account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `discord-bot status | install | set NOME | start | stop | restart | logs [N] | patchnotes`, `pay-status`, `pay-set NOME` (valor no stdin), `pay-test`, `pay-enable`, `pay-disable`, `newplayer-funnel`, `survey`, `game-health [--days N] [--kv | --json] [--pt]`, `balance-report [--days N | --season ID|current] [--pt] [--json] [--save] [--dm] | last | auto | timer on|off|status`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.
 

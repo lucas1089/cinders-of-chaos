@@ -1,0 +1,155 @@
+// Find my item (O412, game_stash stash.lua "Find my item"): one search over the equipment, every carried container,
+// the purse, the inbox and the stash tabs (the server searches: stash.lua S.find). Styles from client_chaos_theme.
+
+StashFindText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  phantom: true
+
+// one result: the icon, the name (in its rarity colour) and where it is; a click goes there
+StashFindRow < UIWidget
+  image-color: #ffffff
+  height: 40
+  margin-bottom: 2
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  focusable: false
+
+  $hover:
+    image-color: #f6cf72
+
+  UIItem
+    id: icon
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    virtual: true
+    phantom: true
+
+  StashFindText
+    id: name
+    anchors.top: parent.top
+    anchors.left: icon.right
+    anchors.right: parent.right
+    margin-top: 5
+    margin-left: 6
+    margin-right: 4
+    height: 14
+    font: verdana-11px-rounded
+
+  StashFindText
+    id: where
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: name.right
+    margin-top: 2
+    height: 14
+    color: #8c8070
+
+ChaosMainWindow
+  id: stashFindWindow
+  size: 440 470
+  $mobile:
+    height: 520
+  !text: tr('Find my item')
+  @onEscape: modules.game_stash.closeFind()
+
+  ChaosTextEdit
+    id: query
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    margin-right: 8
+    !tooltip: tr('A name, a rarity or an affix (at least two letters). Searches what you wear and carry (closed bags too), your purse, your inbox and every stash tab.')
+
+  UILabel
+    id: hint
+    anchors.verticalCenter: query.verticalCenter
+    anchors.left: query.left
+    margin-left: 7
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #6b6258
+    phantom: true
+    !text: tr('Find my item...')
+
+  ChaosButton
+    id: closeButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    size: 60 22
+    !text: tr('Close')
+    @onClick: modules.game_stash.closeFind()
+
+  ChaosLabelDim
+    id: status
+    anchors.top: query.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 16
+    text-align: left
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: status.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: pager.top
+    margin-top: 4
+    margin-bottom: 4
+
+  UIScrollArea
+    id: results
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: resultScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 5 3 5 5
+    vertical-scrollbar: resultScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: resultScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin: 3 3 3 0
+    step: 42
+    pixels-scroll: true
+
+  UIWidget
+    id: pager
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    height: 24
+    phantom: true
+
+    ChaosButton
+      id: prevButton
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      size: 70 22
+      !text: tr('Previous')
+      @onClick: modules.game_stash.findPage(-1)
+
+    ChaosButton
+      id: nextButton
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      size: 70 22
+      !text: tr('Next')
+      @onClick: modules.game_stash.findPage(1)
+
+    ChaosLabel
+      id: pageLabel
+      anchors.left: prevButton.right
+      anchors.right: nextButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      text-align: center

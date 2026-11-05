@@ -493,6 +493,9 @@ end
 tellGameSound = function(data, alerted)
   local cs = modules.game_chaossound
   if cs and cs.onLootKill then pcall(cs.onLootKill, data, alerted) end
+  -- O411: game_chaosshots takes a screenshot of a Legendary, Divine or unique drop (Options > Misc. > Screenshot)
+  local shots = modules.game_chaosshots
+  if shots and shots.onLootKill then pcall(shots.onLootKill, data) end
 end
 
 local function notifyHunt()

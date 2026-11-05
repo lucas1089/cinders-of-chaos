@@ -737,6 +737,42 @@ function ChaosTopBar.setAdmin(value)
   ChaosTopBar.refresh()
 end
 
+-- O411: a small badge right of the bar (ChaosMenuBadge) while a mode is on, by key; text nil removes it.
+-- ChaosTopBar.setBadge('streamer', tr('STREAMER'), tooltip). Badges follow the bar (login screen and game).
+local badges = {}             -- { key, widget }, in the order they were added
+function ChaosTopBar.setBadge(key, text, tooltip)
+  if not isAlive(menuBar) or not key then return false end
+  local at
+  for i, b in ipairs(badges) do if b.key == key then at = i end end
+  if not text or text == '' then
+    if at then
+      if isAlive(badges[at].widget) then badges[at].widget:destroy() end
+      table.remove(badges, at)
+    end
+  else
+    if not at or not isAlive(badges[at].widget) then
+      local w = g_ui.createWidget('ChaosMenuBadge', menuBar)
+      w:setId('chaosBadge_' .. tostring(key))
+      if at then badges[at].widget = w else badges[#badges + 1] = { key = key, widget = w } end
+    end
+    local w = badges[at or #badges].widget
+    w:setText(text)
+    w:setTooltip(tooltip or '')
+  end
+  local prev
+  for _, b in ipairs(badges) do
+    local w = b.widget
+    if isAlive(w) then
+      w:breakAnchors()
+      w:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+      if prev then w:addAnchor(AnchorLeft, prev:getId(), AnchorRight) else w:addAnchor(AnchorLeft, 'parent', AnchorRight) end
+      w:setMarginLeft(prev and 4 or 6)
+      prev = w
+    end
+  end
+  return true
+end
+
 -- Lets other modules add an entry: ChaosTopBar.addEntry('adventure', {text=..., icon=..., modules=..., fns=...});
 -- with `under` = the text of a sub-menu entry ('More'), it goes into that sub-menu. A top-level entry goes before a
 -- closing 'More' so that one stays last. An entry with `key` gets its hotkey at the next login.
@@ -945,5 +981,6 @@ function terminate()
     stockTopMenu:show()
   end
   menuBar, buttonsPanel, categoryButtons, gameParent, stockTopMenu = nil, nil, {}, nil, nil
+  badges = {}
   ChaosTopBar = nil
 end

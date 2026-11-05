@@ -172,6 +172,24 @@ local function showHero(m, animate)
 end
 
 -- ---------------------------------------------------------------- the cards
+-- O411: streamer mode (client_chaos_streamer) shows only the chosen character's name on the cards
+local function shownName(name, chosen)
+  local s = ChaosStreamer
+  if s and s.listName then return s.listName(name, chosen) end
+  return name
+end
+
+local function refreshCardNames()
+  for j, c in ipairs(cards) do
+    if alive(c.widget) and c.widget.name then c.widget.name:setText(shownName(c.model.name, j == selected)) end
+  end
+end
+
+-- client_chaos_streamer calls this when streamer mode turns on or off
+function CharSelect.refreshNames()
+  if alive(screen) then refreshCardNames() end
+end
+
 function CharSelect.select(i, quiet)
   if not alive(screen) then return end
   if i < 1 or i > #cards then
@@ -182,6 +200,7 @@ function CharSelect.select(i, quiet)
   local changed = i ~= selected
   selected = i
   for j, c in ipairs(cards) do c.widget:setChecked(j == i) end
+  refreshCardNames()
   local c = cards[i]
   area:ensureChildVisible(c.widget)
   local list = stockList()
@@ -210,7 +229,7 @@ local function rebuild()
   for i, m in ipairs(models) do
     local w = g_ui.createWidget('ChaosCharCard', area)
     w.icon:setImageSource(m.icon)
-    w.name:setText(m.name)
+    w.name:setText(shownName(m.name, false))
     if th and th.applyFont then th.applyFont(w.name, 'heading') end
     w.line:setText(m.classText .. (m.levelText ~= '' and (', ' .. m.levelText) or ''))
     w.sub:setText(m.world .. (m.lastShort ~= '' and (', ' .. m.lastShort) or ''))

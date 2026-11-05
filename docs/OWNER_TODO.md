@@ -93,7 +93,11 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   (anúncios do jogo) > paste each URL > Salvar; then Ativar; then Testar (204 = ok). The URLs stay on the server in
   `/etc/chaos/discord.env`, never in the repository. Details and the shell fallback: docs/LAUNCH.md "Discord announcements".
   The invite link above (`CHAOS_DISCORD_URL`) also shows on the downloads page.
-- [ ] **Payment accounts:** Mercado Pago (Pix) and PayPal, with live credentials in `payments.env`.
+- [ ] **Payment accounts:** Mercado Pago (Pix, a Pix key in the account) and PayPal Business, each with an app and a
+  webhook. Then, in the admin app (nothing to type on the VPS): tab Comandos > Ações rápidas > card Pagamentos (doações) >
+  Estado (copy the two webhook URLs into the panels) > paste each key > Salvar > Ligar Pix / Ligar PayPal > Ativar worker >
+  Testar. PayPal Sandbox first, then Live. Fill in the legal texts first. Step by step in Portuguese, with the test
+  donation and its refund: [docs/PAYMENTS.md](PAYMENTS.md).
 
 ## Keys
 
