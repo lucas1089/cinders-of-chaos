@@ -185,6 +185,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#7a5410",
         duration = 10000,
     },
+    -- automatic screenshots (game_chaosshots, O411): where the picture went
+    SCREENSHOT = {
+        icon = "images/toast/announce.png",
+        title = tr("SCREENSHOT"),
+        titleColor = "#d8c08a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 5000,
+    },
     CATACOMB_FREE = {
         icon = "images/toast/catacomb_invite.png",
         title = "CATACOMB AVAILABLE",

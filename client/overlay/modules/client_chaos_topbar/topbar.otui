@@ -61,6 +61,19 @@ ChaosMenuBar < UIWidget
       type: horizontalBox
       spacing: 4
 
+// O411: a small badge right of the bar while a mode is on (STREAMER, client_chaos_streamer), ChaosTopBar.setBadge
+ChaosMenuBadge < UILabel
+  font: verdana-11px-antialised
+  color: #ffe7a6
+  background-color: #7a1a10dd
+  border-width: 1
+  border-color: #d8a03a
+  text-auto-resize: true
+  text-offset: 0 1
+  padding: 2 6 2 6
+  anchors.verticalCenter: parent.verticalCenter
+  focusable: false
+
 // O259: the screen text "New: <title>!" when an entry unlocks (topbar_unlocks.lua), over the game map, fading out
 ChaosUnlockText < UILabel
   font: sans-bold-16px

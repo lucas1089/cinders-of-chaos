@@ -1,0 +1,245 @@
+# Chaos: streamer mode, cinema mode and the New Record auto screenshot (O411; client/BASE.md "0186";
+# mods/client_settings/classes/dataset.lua, options/misc.otui, options/screenshot.otui, src/client/creature.h, creature.cpp,
+# luafunctions_client.cpp; after 0001-0185). The overlay modules client_chaos_streamer and game_chaosshots do the work.
+#  * dataset.lua: `streamerMode`, `streamerHideSender`, `streamerHideOwnName`, `cinemaHideOthers` (all off); their apply
+#    tells the global ChaosStreamer (`onOption(name, value)`). `screenshotRecord` (on): one more auto screenshot event.
+#  * options/misc.otui: a panel after "Quick Login" with the four boxes (Options > Misc.).
+#  * options/screenshot.otui: "New Record" under "Boss Defeated" (Options > Misc. > Screenshot); the panel has the room.
+#  * C++: `Creature.setInfoHide(mask)` / `getInfoHide()` (static). Bit 1 leaves out the local player's name (plate, guild
+#    and title lines too), bit 2 the name, bars and icons of every other player. 0 draws as before. The engine has one
+#    switch for all names (UIMap.setDrawNames), so the per-creature rule needs this check in Creature::drawInformation.
+# Without the patch: the modes still work from their hotkeys (saved in g_settings), without the two name rules; the
+# New Record shot counts as on. Applies cleanly after 0001-0185; the C++ part not built here.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2266,6 +2266,49 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0186, O411): streamer mode and cinema mode (overlay module client_chaos_streamer). Streamer
++  -- mode hides private message text, the character name in the window title, the login fields, the other characters of
++  -- the list and server addresses; Ctrl+Shift+S. Cinema mode (Ctrl+Shift+H) hides the interface around the map.
++  streamerMode = {
++    value = false,
++    apply = function(value)
++      if ChaosStreamer and ChaosStreamer.onOption then ChaosStreamer.onOption('streamerMode', value) end
++      return true
++    end,
++  },
++
++  streamerHideSender = {
++    value = false,
++    apply = function(value)
++      if ChaosStreamer and ChaosStreamer.onOption then ChaosStreamer.onOption('streamerHideSender', value) end
++      return true
++    end,
++  },
++
++  streamerHideOwnName = {
++    value = false,
++    apply = function(value)
++      if ChaosStreamer and ChaosStreamer.onOption then ChaosStreamer.onOption('streamerHideOwnName', value) end
++      return true
++    end,
++  },
++
++  cinemaHideOthers = {
++    value = false,
++    apply = function(value)
++      if ChaosStreamer and ChaosStreamer.onOption then ChaosStreamer.onOption('cinemaHideOthers', value) end
++      return true
++    end,
++  },
++
++  -- Chaos (base patch 0186, O411): auto screenshot of a new personal record (overlay module game_chaosshots)
++  screenshotRecord = {
++    value = true,
++    apply = function(value)
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/misc.otui
++++ b/mods/client_settings/options/misc.otui
+@@ -182,6 +182,92 @@
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('If you tick this box, you enable a quicker client start and login to \nthe game. This can lead to temporary invisible game graphics if \nyour hardware is rather slow. However, this effect should only last \na few seconds.')
+ 
++  FlatPanel
++    // Chaos (base patch 0186, O411; overlay module client_chaos_streamer): streamer mode and cinema mode
++    size: 505 81
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    SettingsCheckBox
++      id: streamerMode
++      size: 12 12
++      !text: tr('Streamer mode (Ctrl+Shift+S)')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 5
++      margin-left: 4
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('While on: private messages show only who sent them, the window title and the login screen hide your\naccount and character names, the character list hides the other characters, server addresses are hidden\nand a STREAMER badge shows in the top menu.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('streamerMode')
++        self:setChecked(value == true)
++
++    SettingsCheckBox
++      id: streamerHideSender
++      size: 12 12
++      !text: tr('Also hide who sent a private message')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: streamerMode.bottom
++      margin-top: 7
++      margin-left: 20
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('In streamer mode a private message shows only that one arrived, without the name of the sender.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('streamerHideSender')
++        self:setChecked(value == true)
++
++    SettingsCheckBox
++      id: streamerHideOwnName
++      size: 12 12
++      !text: tr('Also hide my name above my character')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: streamerHideSender.bottom
++      margin-top: 7
++      margin-left: 20
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('In streamer mode your own name is not drawn above your character.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('streamerHideOwnName')
++        self:setChecked(value == true)
++
++    SettingsCheckBox
++      id: cinemaHideOthers
++      size: 12 12
++      !text: tr('Cinema mode (Ctrl+Shift+H): also hide the names and bars of other players')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: streamerHideOwnName.bottom
++      margin-top: 7
++      margin-left: 4
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('Ctrl+Shift+H hides every panel and window and leaves the map alone, for videos. Press it again to bring\neverything back. With this box ticked it also hides the names and health bars of the other players.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('cinemaHideOthers')
++        self:setChecked(value == true)
++
+   Button
+     id: resetButton
+     size: 43 20
+--- a/mods/client_settings/options/screenshot.otui
++++ b/mods/client_settings/options/screenshot.otui
+@@ -235,6 +235,22 @@
+       image-clip: 0 0 12 12
+ 
+     SettingsCheckBox
++      id: screenshotRecord
++      // Chaos (base patch 0186, O411): a new personal record (overlay module game_chaosshots)
++      size: 12 12
++      !text: tr('New Record')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: prev.bottom
++      margin-top: 6
++      margin-left: 20
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++
++    SettingsCheckBox
+       id: screenshotDeathPve
+       size: 12 12
+       !text: tr('Death PvE')
+--- a/src/client/creature.h
++++ b/src/client/creature.h
+@@ -141,6 +141,11 @@
+     // module game_visualfx sets it). See chaosbars.h; computed from the clock at draw time, filled rects only.
+     static void setSmoothBars(bool enabled) { s_smoothBars = enabled; }
+     static bool isSmoothBars() { return s_smoothBars; }
++    // Chaos (base patch 0186, O411): streamer and cinema modes (overlay module client_chaos_streamer) leave out some of the
++    // information drawn over creatures. Bit 1: the local player's name (with its plate, guild and title lines); bit 2: the
++    // name, bars and icons of every other player. 0 (the default) draws everything as before.
++    static void setInfoHide(int mask) { s_infoHide = mask; }
++    static int getInfoHide() { return s_infoHide; }
+     // Chaos (base patch 0111): the name and bars lifted over a look taller than the stock ones, in sprite pixels at
+     // 1x, per look type (client_chaos_infolift sets the table generated from the pair). Players and NPCs only.
+     static void setInformationLift(int lookType, int pixels);
+@@ -353,6 +358,7 @@
+     int m_recoilDy = 0;
+     int m_recoilPx = 0;
+     static bool s_smoothBars; // base patch 0146
++    static int s_infoHide; // base patch 0186
+     chaos::bars::Track m_healthBar;
+     chaos::bars::Track m_manaBar;
+     OutfitOutline m_outline;
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -193,6 +193,8 @@
+ static chaos::hitflash::Budget s_hitTintBudget;
+ // Chaos (base patch 0146): eased health and mana bars (chaosbars.h) and the pale chip colour
+ bool Creature::s_smoothBars = false;
++// Chaos (base patch 0186): what streamer and cinema modes leave out over creatures (setInfoHide)
++int Creature::s_infoHide = 0;
+ static const Color s_barChipColor(236, 224, 200);
+ 
+ static TexturePtr softShadowTexture()
+@@ -563,6 +565,16 @@
+             return;
+     }
+ 
++    // Chaos (base patch 0186): streamer mode can leave out the own name, cinema mode the other players' names and bars
++    if (s_infoHide != 0) {
++        if (isLocalPlayer()) {
++            if (s_infoHide & 1)
++                drawFlags &= ~Otc::DrawNames;
++        } else if (isPlayer() && (s_infoHide & 2)) {
++            return;
++        }
++    }
++
+     Color fillColor = Color(96, 96, 96);
+ 
+     if (!useGray)
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -703,6 +703,8 @@
+     g_lua.bindClassStaticFunction<Creature>("isHitTint", &Creature::isHitTint);
+     g_lua.bindClassStaticFunction<Creature>("setSmoothBars", &Creature::setSmoothBars); // base patch 0146
+     g_lua.bindClassStaticFunction<Creature>("isSmoothBars", &Creature::isSmoothBars);
++    g_lua.bindClassStaticFunction<Creature>("setInfoHide", &Creature::setInfoHide); // base patch 0186
++    g_lua.bindClassStaticFunction<Creature>("getInfoHide", &Creature::getInfoHide);
+     g_lua.bindClassStaticFunction<Creature>("setInformationLift", &Creature::setInformationLift);
+     g_lua.bindClassStaticFunction<Creature>("clearInformationLifts", &Creature::clearInformationLifts);
+     g_lua.bindClassStaticFunction<Creature>("getLookInformationLift", &Creature::getLookInformationLift);

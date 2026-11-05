@@ -236,6 +236,9 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     if selected == V.TRACK then showRows() end
   elseif msg.action == 'unlock' then
     if window and window:isVisible() then send('get') end
+    -- O411: the auto screenshot of an unlock (game_chaosshots, Options > Misc. > Screenshot "Achievement")
+    local shots = modules.game_chaosshots
+    if shots and shots.onAchievement then pcall(shots.onAchievement, data) end
   end
 end
 

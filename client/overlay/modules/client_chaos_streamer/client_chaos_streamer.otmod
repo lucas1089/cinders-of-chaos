@@ -1,0 +1,11 @@
+Module
+  name: client_chaos_streamer
+  description: Streamer mode (Ctrl+Shift+S: private messages, names, login fields and addresses hidden, STREAMER badge) and cinema mode (Ctrl+Shift+H: only the map, for videos); global ChaosStreamer / ChaosCinema
+  author: Cinders of Chaos
+  sandboxed: false
+  reloadable: true
+  scripts: [ streamer_core, streamer, cinema, streamer_main ]
+  autoload: true
+  autoload-priority: 15
+  @onLoad: ChaosStreamerModule.init()
+  @onUnload: ChaosStreamerModule.terminate()
