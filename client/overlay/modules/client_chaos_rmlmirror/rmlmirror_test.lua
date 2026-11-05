@@ -239,5 +239,51 @@ local stack = add(at(widget('UIWindow'), 0, 0, 100, 100), at(label('x', 'X'), 0,
 local sk = F.collect(stack, { geometry = true })
 eq(#sk, 2, 'geometry: overlapping kids')
 
+
+-- APK 35 findings (O406)
+-- a wrapped OTUI label is a paragraph; a plain one a label
+local wrapLbl = label('desc', 'Spells the helper casts by itself')
+function wrapLbl:getTextWrap() return true end
+eq(F.textKind(wrapLbl, wrapLbl.text), 'para', 'textKind: OTUI wraps it')
+eq(F.textKind(label('x', 'One line'), 'One line'), 'label', 'textKind: one line')
+eq(F.textKind(label('x', 'a\nb'), 'a\nb'), 'para', 'textKind: line break')
+-- a spell icon with a tooltip stays an icon (it was drawn as a help mark)
+local function icon(id, tip)
+  local w = widget('UIWidget', { id = id, tooltip = tip })
+  function w:getImageSource() return '/images/game/spells/x' end
+  function w:getSize() return { width = 32, height = 32 } end
+  return w
+end
+local iw = F.collect(add(widget('UIWindow'), icon('spellIcon', 'Shadow Mend'), button('ok', 'Ok')))
+eq(iw[1].kind, 'image', 'icon with tooltip: an image')
+eq(iw[1].tip, 'Shadow Mend', 'icon with tooltip: keeps the tooltip')
+local bare = F.collect(add(widget('UIWindow'), widget('UIWidget', { tooltip = 'Help text' }), button('ok', 'Ok')))
+eq(bare[1].kind, 'help', 'bare tooltip: a help mark')
+-- a drawn view (many icons, the passive tree) stays in OTUI
+local view = widget('UIWindow', { id = 'tree' })
+for i = 1, F.MAX_IMAGES + 1 do add(view, icon('n' .. i)) end
+add(view, button('close', 'Close'))
+local _, why = M.eligible(view)
+has(why, 'images:', 'eligible: a drawn view stays OTUI')
+-- a cell with one text button may grow, other cells keep their width
+local cellRml = F.rml({ { kind = 'line', h = 22 }, { kind = 'cell', gap = 0, width = 150 },
+  { kind = 'button', text = 'Fill for my class' }, { kind = 'endcell' }, { kind = 'cell', gap = 4, width = 80 },
+  { kind = 'label', text = 'x' }, { kind = 'endcell' }, { kind = 'endline' } }, function(t) return t end)
+has(cellRml, 'style="margin-left: 0dp; min-width: 150dp;"><button', 'lone button cell: min-width')
+has(cellRml, 'style="margin-left: 4dp; width: 80dp;"><span', 'label cell: width')
+-- "Classic" is kept by window id
+eq(M.formatClassic(M.parseClassic('helperWindow,optionsWindow,,')), 'helperWindow,optionsWindow', 'classic: parse and format')
+eq(M.idOf(widget('UIWindow', { id = 'widget123' })), nil, 'classic: generated ids are not kept')
+M.classic = { helperWindow = true }
+local kept = add(widget('UIWindow', { id = 'helperWindow' }), button('x', 'X'))
+eq(select(2, M.eligible(kept)), 'skip', 'classic: a window sent to the classic look stays OTUI when it opens again')
+M.classic = {}
+eq(M.eligible(kept) ~= nil, true, 'classic: mirrored again once the list is cleared')
+
+-- no Classic button on a message box (Auto setup's answer) or an input box
+eq(M.hasClassic(widget('UIMessageBox')), false, 'classic button: not on a message box')
+eq(M.hasClassic(widget('UIInputBox')), false, 'classic button: not on an input box')
+eq(M.hasClassic(widget('UIWindow')), true, 'classic button: on a window')
+
 print(string.format('rmlmirror_test: %d checks, %d failures', checks, failures))
 if failures > 0 then os.exit(1) end

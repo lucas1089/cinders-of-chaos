@@ -85,6 +85,7 @@ python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lu
 python3 -I server/tools/patch_spell_ids_test.py      # stock spell ids below 256; a retired spell's new id is free for a Chaos spell (install_all step spells)
 python3 -I server/tools/monster_level_patch_test.py   # src-patch 0082: monster level = middle of the <level> range, no level skull (O326)
 python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
+python3 -I client/tools/rml_window_audit.py && python3 -I client/tools/rml_window_audit_test.py   # which windows the RmlUi mirror draws and which stay classic, from the .otui files (O406; --otui)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I mapeditor/tools/run_profile_test.py && python3 -I mapeditor/tools/upstream_test.py   # our map editor (O382): profile table, upstream pin; build and profile: mapeditor-build.yml, patches: mapeditor/tools/check_patches.sh UPSTREAM_CLONE
 cd unity/Core.Tests && dotnet run -c Release   # Unity prototype core (O405): protocol, map, dat/spr, a fake-server game login; unity/README.md

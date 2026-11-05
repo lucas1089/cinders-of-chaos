@@ -304,4 +304,21 @@ of new Lua needs a baseline above the live release). The next test APK is built 
   a column a `.cell` with the OTUI gap from the previous column and the OTUI width; a column of several widgets is laid
   out the same way inside its cell. Rows of a table therefore keep their columns. Kids that lie on top of each other
   fall back to reading order. The Options window keeps the flow layout (its window is not the OTUI size).
+APK 35 (O406), the owner's screenshots:
+- The passive tree window mirrored as an empty frame that could not be closed. A window with more than 40 icons
+  (`ChaosRmlForm.MAX_IMAGES`) is a drawn view and stays in OTUI; the tree window is also marked `chaosNoMirror`.
+- "Classic" lasted until the window was made again (a death rebuilds the Helper). It is now kept by window id in the
+  setting `chaosRmlClassic`. Ctrl+Alt+M twice (mirror off, on) clears the list.
+- Helper: a wrapped OTUI label (the Support tab description) was one clipped line; it is a paragraph now. Buttons
+  ("Fill for my class", "Auto setup") wrapped their last word under the button; a button never wraps and a cell
+  holding one text button may grow past its OTUI width. A spell icon with a tooltip (the healing rows) was drawn as a
+  help mark; it stays an icon with its tooltip. The Support tab showed "Paused: protection zone" twice: the window's
+  status line hides on that tab, which has its own.
+- Frame rate: 31 fps with the Helper open, 5 fps with a combo box list open. Not explained yet.
+- Auto setup's answer box had a "Classic" button: message and input boxes have none now. A box that opens over a
+  mirror is mirrored in the same tick, before the cover check, so the window under it no longer flips to OTUI.
+- `client/tools/rml_window_audit.py` lists every window of the .otui files: mirrored or classic, and why (a widget
+  class the form layer cannot draw, more than 40 icons, `chaosNoMirror`), with notes on buttons narrower than their
+  skin text and containers that Lua fills. 2026-11-05: 114 windows, 93 mirrored, 21 classic (items, creatures, the
+  passive tree). Lua-made content is not seen; the mirror checks it again at run time.
 
