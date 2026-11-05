@@ -5,6 +5,20 @@ their outfit colours and walks. Its UI: login, the character list, names and hea
 and a chat window (Enter talks, the x hides it). F12 shows the debug line and the protocol log.
 The map shows exactly the 15 x 11 tiles around the player, centred; the rest of the screen stays dark.
 Text and windows grow with the window height (720 px is scale 1).
+Game windows are `GameWindow` classes (`ChaosApp.Windows.cs`), one file each, listed in `ChaosApp.MakeWindows`.
+- Equipment (Ctrl+E): the 10 slots as a paper doll, cap and soul. Right-click uses an item (a bag opens).
+- Containers (Ctrl+O): all open bags stacked, 4 slots per row. Opens by itself. Right-click uses. Drag a slot onto
+  an equipment slot or another bag slot to move it. ^ goes up one bag, x closes.
+- Skills (Ctrl+K): level and experience bar, magic level, the 7 skills, stamina, speed, cap.
+- Windows live in `Assets/Chaos/Unity/Windows/`. `ItemSlots.cs` is the shared slot and drag code.
+They are movable, open from the toolbar left of Log out or with Ctrl + their key, and hide the creature names under them.
+The splash screen and the login header show our logo (`docs/brand`, copied in by `ChaosBuild`).
+A Personal license keeps the engine's "Made with" line under our logo; the setting turns it off on a license that allows it.
+Windows so far (files in `Assets/Chaos/Unity/Windows/`):
+- Battle (Ctrl+B): creatures on your floor in view, nearest first. Left-click attacks (again stops), right-click follows. The target has a red row and a red frame on the map.
+- Minimap (Ctrl+M): the remembered minimap round you (2 px per tile), floor up/down and zoom buttons. `MinimapMemory` (`Core/Minimap.cs`) keeps explored ground per floor.
+- Hotkeys: 12 slots, F1 to F12, open at the bottom. Click a slot to type what it says; Enter or ok saves, per character in PlayerPrefs. The keys work while the bar is open and the chat line is not focused.
+- Right-click on a creature on the map attacks it (`ChaosApp.Combat.cs`).
 It does not replace the client in `client/`.
 
 ## Layout
@@ -25,6 +39,8 @@ It does not replace the client in `client/`.
     - `SpriteAtlas.cs` is a 4096x4096 atlas of 32 px cells.
   - `Assets/Chaos/Editor/ChaosBuild.cs` is the batch build.
 - `Core.Tests/` is a .NET 8 console project. It compiles `Core/` and runs the checks.
+- `Client.Check/` compiles the Unity scripts (`Core/` and `Unity/`) against the engine's reference assemblies from NuGet,
+  so a C# error shows on every PR without a Unity license: `cd unity/Client.Check && dotnet build`.
 
 ## Tests
 

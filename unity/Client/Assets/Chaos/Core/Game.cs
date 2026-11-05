@@ -23,7 +23,22 @@ namespace Chaos.Core
         public Action<Dir> WalkCancelled = delegate { };
         public Action<Creature> PlayerMoved = delegate { };
         public bool LoggedIn;
+        /// <summary>The creature we attack (0 none). Set by GameSession.Attack, cleared by the server's 0xA3.</summary>
+        public uint AttackTarget;
         public int Health, MaxHealth, Mana, MaxMana, Level;
+        // more of 0xA0 (player stats)
+        public uint FreeCap, TotalCap;
+        public ulong Experience;
+        public int LevelPercent, MagicLevel, BaseMagicLevel, MagicPercent, Soul, Stamina, Speed;
+        /// <summary>0xA1: fist, club, sword, axe, distance, shielding, fishing.</summary>
+        public readonly SkillValue[] Skills = new SkillValue[7];
+        /// <summary>Equipment slots 1..10 (0 unused). Null when empty.</summary>
+        public readonly Item[] Inventory = new Item[11];
+        /// <summary>Open containers by server container id.</summary>
+        public readonly Dictionary<byte, Container> Containers = new Dictionary<byte, Container>();
+        /// <summary>A container was opened (by id) or closed.</summary>
+        public Action<byte> ContainerOpened = delegate { };
+        public Action<byte> ContainerClosed = delegate { };
         public readonly Dictionary<byte, int> Seen = new Dictionary<byte, int>();
 
         public GameParser(World w) { W = w; }
@@ -102,14 +117,54 @@ namespace Chaos.Core
                 }
                 case 0x6D: MoveCreature(r); break;
                 case 0x6E:
-                    r.U8(); ReadItem(r, r.U16()); r.Str(); r.U8(); r.U8(); r.U8(); r.U8(); r.U16(); r.U16();
-                    for (int n = r.U8(), i = 0; i < n; i++) ReadItem(r, r.U16());
+                {
+                    var c = new Container { Id = r.U8() };
+                    c.ItemId = r.U16(); ReadItem(r, c.ItemId);
+                    c.Name = r.Str(); c.Capacity = r.U8(); c.HasParent = r.U8() != 0;
+                    r.U8(); r.U8();   // isUnlocked, hasPages
+                    c.Size = r.U16(); c.FirstIndex = r.U16();
+                    for (int n = r.U8(), i = 0; i < n; i++) c.Items.Add(ReadItem(r, r.U16()));
+                    Containers[c.Id] = c;
+                    ContainerOpened(c.Id);
                     break;
-                case 0x6F: r.U8(); break;
-                case 0x70: case 0x71: r.U8(); r.U16(); ReadItem(r, r.U16()); break;
-                case 0x72: { r.U8(); r.U16(); ushort id = r.U16(); if (id != 0) ReadItem(r, id); break; }
-                case 0x78: r.U8(); ReadItem(r, r.U16()); break;
-                case 0x79: r.U8(); break;
+                }
+                case 0x6F: { byte cid = r.U8(); Containers.Remove(cid); ContainerClosed(cid); break; }
+                case 0x70:
+                {
+                    byte cid = r.U8(); int slot = r.U16(); var it = ReadItem(r, r.U16());
+                    if (Containers.TryGetValue(cid, out var c))
+                    {
+                        int at = slot - c.FirstIndex;
+                        c.Items.Insert(Math.Max(0, Math.Min(at, c.Items.Count)), it);
+                        c.Size++;
+                    }
+                    break;
+                }
+                case 0x71:
+                {
+                    byte cid = r.U8(); int slot = r.U16(); var it = ReadItem(r, r.U16());
+                    if (Containers.TryGetValue(cid, out var c))
+                    {
+                        int at = slot - c.FirstIndex;
+                        if (at >= 0 && at < c.Items.Count) c.Items[at] = it;
+                    }
+                    break;
+                }
+                case 0x72:
+                {
+                    byte cid = r.U8(); int slot = r.U16(); ushort id = r.U16();
+                    var last = id != 0 ? ReadItem(r, id) : null;
+                    if (Containers.TryGetValue(cid, out var c))
+                    {
+                        int at = slot - c.FirstIndex;
+                        if (at >= 0 && at < c.Items.Count) c.Items.RemoveAt(at);
+                        if (c.Size > 0) c.Size--;
+                        if (last != null) c.Items.Add(last);   // the item that slid in from the next page
+                    }
+                    break;
+                }
+                case 0x78: { int slot = r.U8(); var it = ReadItem(r, r.U16()); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = it; break; }
+                case 0x79: { int slot = r.U8(); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = null; break; }
                 case 0x82: W.WorldLight = r.U8(); W.WorldLightColor = r.U8(); break;
                 case 0x83: ReadPos(r); r.U16(); break;
                 case 0x84: ReadPos(r); r.U8(); r.Str(); break;
@@ -128,15 +183,20 @@ namespace Chaos.Core
                 case 0x9F: r.U8(); r.U32(); r.U8(); r.Skip(r.U16()); break;
                 case 0xA0:
                     Health = (int)r.U32(); MaxHealth = (int)r.U32();
-                    r.U32(); r.U32(); r.U64();
-                    Level = r.U16(); r.U8();
-                    r.Skip(10);
+                    FreeCap = r.U32(); TotalCap = r.U32(); Experience = r.U64();
+                    Level = r.U16(); LevelPercent = r.U8();
+                    r.Skip(10);   // xp display, bonuses (5 x u16)
                     Mana = (int)r.U32(); MaxMana = (int)r.U32();
-                    r.Skip(3 + 1 + 2 + 2 + 2 + 2 + 2 + 1);
+                    MagicLevel = r.U8(); BaseMagicLevel = r.U8(); MagicPercent = r.U8();
+                    Soul = r.U8(); Stamina = r.U16(); Speed = r.U16();
+                    r.Skip(2 + 2 + 2 + 1);   // regen, offline training, store xp boost, flag
                     break;
-                case 0xA1: r.Skip(14 * 5 + 6 * 4); break;
+                case 0xA1:
+                    for (int i = 0; i < Skills.Length; i++) Skills[i] = new SkillValue { Level = r.U16(), Base = r.U16(), Percent = r.U8() };
+                    r.Skip(14 * 5 + 6 * 4 - Skills.Length * 5);   // the rest: more skills, special skills
+                    break;
                 case 0xA2: r.U16(); break;
-                case 0xA3: r.U32(); break;
+                case 0xA3: r.U32(); AttackTarget = 0; break;   // cancel target
                 case 0xA4: r.U8(); r.U32(); break;
                 case 0xA5: r.U8(); r.U32(); break;
                 case 0xA7: r.U8(); r.U8(); r.U8(); r.U8(); break;
@@ -434,6 +494,19 @@ namespace Chaos.Core
         }
     }
 
+    public struct SkillValue { public int Level, Base, Percent; }
+
+    /// <summary>An open container (0x6E). Items is the visible page, FirstIndex its first slot.</summary>
+    public sealed class Container
+    {
+        public byte Id;
+        public ushort ItemId;
+        public string Name = "";
+        public int Capacity, Size, FirstIndex;
+        public bool HasParent;
+        public readonly List<Item> Items = new List<Item>();
+    }
+
     /// <summary>A logged-in game connection: login handshake, client guard, pings, walking. Poll() from one thread.</summary>
     public sealed class GameSession : IDisposable
     {
@@ -583,6 +656,42 @@ namespace Chaos.Core
             if (string.IsNullOrWhiteSpace(text) || conn == null) return;
             if (text.Length > 255) text = text.Substring(0, 255);
             conn.Send(Protocol.SayPacket(text));
+        }
+
+        /// <summary>Inventory slot position (0xFFFF, slot, 0).</summary>
+        public static Pos InventoryPos(int slot) => new Pos(0xFFFF, slot, 0);
+        /// <summary>Container slot position (0xFFFF, 0x40 | cid, slot).</summary>
+        public static Pos ContainerPos(int cid, int slot) => new Pos(0xFFFF, 0x40 | cid, slot);
+
+        public void UseItem(Pos p, ushort id, byte stackPos, byte index = 0) => conn?.Send(Protocol.UseItemPacket(p, id, stackPos, index));
+        public void CloseContainer(byte cid) => conn?.Send(Protocol.CloseContainerPacket(cid));
+        public void UpContainer(byte cid) => conn?.Send(Protocol.UpContainerPacket(cid));
+        public void MoveItem(Pos from, ushort id, byte stackPos, Pos to, byte count) => conn?.Send(Protocol.MoveItemPacket(from, id, stackPos, to, count));
+        uint attackSeq;
+        /// <summary>The creature we attack, 0 when none or when it left the view.</summary>
+        public uint AttackTarget => parser.AttackTarget != 0 && world.Creatures.ContainsKey(parser.AttackTarget) ? parser.AttackTarget : 0;
+
+        /// <summary>Attacks a creature (0xA1).</summary>
+        public void Attack(uint id)
+        {
+            if (id == 0) { CancelAttack(); return; }
+            parser.AttackTarget = id;
+            conn?.Send(Protocol.AttackPacket(0xA1, id, ++attackSeq));
+        }
+
+        /// <summary>Follows a creature (0xA2). The attack, if any, ends.</summary>
+        public void Follow(uint id)
+        {
+            if (id == 0) { CancelAttack(); return; }
+            parser.AttackTarget = 0;
+            conn?.Send(Protocol.AttackPacket(0xA2, id, ++attackSeq));
+        }
+
+        /// <summary>Stops attacking and following (0xA1 with id 0).</summary>
+        public void CancelAttack()
+        {
+            parser.AttackTarget = 0;
+            conn?.Send(Protocol.AttackPacket(0xA1, 0, ++attackSeq));
         }
 
         public void Logout()

@@ -50,6 +50,9 @@ jobs:
       - name: Core tests
         working-directory: unity/Core.Tests
         run: dotnet run -c Release
+      - name: Unity scripts compile (reference assemblies, no license)
+        working-directory: unity/Client.Check
+        run: dotnet build -c Release
 
   build:
     if: github.event_name == 'workflow_dispatch'

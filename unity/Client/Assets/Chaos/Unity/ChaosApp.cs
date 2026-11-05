@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Chaos.Client
 {
-    public sealed class ChaosApp : MonoBehaviour
+    public sealed partial class ChaosApp : MonoBehaviour
     {
         enum Screen { Login, Characters, Game }
 
@@ -201,6 +201,7 @@ namespace Chaos.Client
             if (view != null) Destroy(view.gameObject);
             view = null;
             cam.rect = new Rect(0f, 0f, 1f, 1f);
+            ResetWindows();
             world = null;
             status = why;
             screen = Screen.Characters;
@@ -215,6 +216,11 @@ namespace Chaos.Client
             cam.rect = MapRect(UnityEngine.Screen.width, UnityEngine.Screen.height);
             cam.orthographicSize = ViewTilesH / 2f;
             if (Input.GetKeyDown(KeyCode.F12)) showDebug = !showDebug;
+            if (!chatFocused)
+                foreach (var win in windows)
+                    if (win.Hotkey != KeyCode.None && Input.GetKeyDown(win.Hotkey) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
+                        win.Open = !win.Open;
+            CombatUpdate();
             HandleWalk();
         }
 
@@ -239,7 +245,7 @@ namespace Chaos.Client
 
         void HandleWalk()
         {
-            if (chatFocused) return;   // typing: the letters go to the chat line
+            if (chatFocused || TextEditing) return;   // typing: the letters go to the chat line
             Dir? d = null;
             bool up = Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.Keypad8);
             bool down = Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.Keypad2);
@@ -299,8 +305,21 @@ namespace Chaos.Client
             }
         }
 
+        Texture2D logo;
+        bool logoTried;
+
+        /// <summary>Our logo above the login and character boxes (docs/brand, copied in by ChaosBuild).</summary>
+        void Logo(float w, float top)
+        {
+            if (!logoTried) { logo = Resources.Load<Texture2D>("chaos_logo"); logoTried = true; }
+            if (logo == null || top < 60) return;
+            float lh = Mathf.Min(top - 16, 220f), lw = lh * logo.width / logo.height;
+            GUI.DrawTexture(new Rect(w / 2 - lw / 2, top - lh - 8, lw, lh), logo, ScaleMode.ScaleToFit, true);
+        }
+
         void LoginGui(float w, float h)
         {
+            Logo(w, h / 2 - 150);
             GUILayout.BeginArea(new Rect(w / 2 - 170, h / 2 - 150, 340, 300), GUI.skin.box);
             GUILayout.Label("Cinders of Chaos - Unity prototype");
             GUILayout.Label("Server");
@@ -321,6 +340,7 @@ namespace Chaos.Client
 
         void CharactersGui(float w, float h)
         {
+            Logo(w, h / 2 - 160);
             GUILayout.BeginArea(new Rect(w / 2 - 170, h / 2 - 160, 340, 320), GUI.skin.box);
             GUILayout.Label("Characters");
             charScroll = GUILayout.BeginScrollView(charScroll, GUILayout.Height(220));
@@ -335,19 +355,33 @@ namespace Chaos.Client
         void GameGui(float w, float h, float scale)
         {
             uiRects.Clear();
+            // the windows, in UI units: names under them are not drawn
+            var covers = new List<Rect> { StatusRect(), ChatRect(w, h), LogoutRect(w), ToolbarRect(w) };
+            foreach (var win in windows) if (win.Open) covers.Add(win.Area);
             if (view != null)
             {
+                // the map on screen, in UI units: names are clipped to it, creatures outside the 15 x 11 view get none
+                Rect px = cam.pixelRect;
+                Rect map = new Rect(px.x / scale, (UnityEngine.Screen.height - px.yMax) / scale, px.width / scale, px.height / scale);
+                GUI.BeginGroup(map);
                 // one tile in UI units: names and bars follow the map's zoom
-                float tile = UnityEngine.Screen.height * cam.rect.height / ViewTilesH / scale;
+                float tile = map.height / ViewTilesH;
                 float barW = Mathf.Round(tile * 0.8f), barH = Mathf.Max(3f, Mathf.Round(tile / 14f));
                 foreach (var (c, at) in view.Labels)
                 {
                     // above the creature's tile, left-shifted by its outfit's displacement
                     Vector3 sp = cam.WorldToScreenPoint(new Vector3(at.x + 0.25f, at.y + 0.4f, 0));
                     float x = sp.x / scale, y = (UnityEngine.Screen.height - sp.y) / scale;
+                    if (x < map.x || x > map.xMax || y < map.y || y > map.yMax + tile * 0.5f) continue;
+                    x -= map.x;
+                    y -= map.y;
                     var col = c.Type == 1 ? new Color(1f, 0.6f, 0.6f) : c.Type == 2 ? new Color(0.6f, 0.9f, 1f) : new Color(0.6f, 1f, 0.6f);
                     var hp = c.HealthPercent > 50 ? new Color(0.2f, 0.85f, 0.2f) : c.HealthPercent > 20 ? new Color(0.95f, 0.8f, 0.1f) : new Color(0.9f, 0.15f, 0.1f);
                     Rect nr = new Rect(x - 100, y - barH - 22, 200, 18);
+                    Rect onScreen = new Rect(map.x + x - 60, map.y + nr.y, 120, 22 + barH);
+                    bool hidden = false;
+                    foreach (var r in covers) if (r.Overlaps(onScreen)) { hidden = true; break; }
+                    if (hidden) continue;
                     nameStyle.normal.textColor = Color.black;
                     GUI.Label(new Rect(nr.x + 1, nr.y + 1, nr.width, nr.height), c.Name, nameStyle);
                     nameStyle.normal.textColor = col;
@@ -356,9 +390,12 @@ namespace Chaos.Client
                     Fill(new Rect(bar.x - 1, bar.y - 1, bar.width + 2, bar.height + 2), new Color(0f, 0f, 0f, 0.85f));
                     Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
                 }
+                DrawAttackFrame(map, scale);
+                GUI.EndGroup();
             }
             StatusPanel(scale);
             ChatWindow(w, h, scale);
+            DrawWindows(w, h, scale);
             if (showDebug)
             {
                 var me = world?.Player;
@@ -367,20 +404,29 @@ namespace Chaos.Client
                 lock (log)
                     for (int i = 0; i < log.Count; i++) GUI.Label(new Rect(w * 0.45f, 120 + 20 * i, w * 0.55f - 8, 20), log[i], small);
             }
-            Rect outR = new Rect(w - 96, 8, 88, 30);
+            Rect outR = LogoutRect(w);
             uiRects.Add(Scaled(outR, scale));
             if (GUI.Button(outR, "Log out")) { session?.Logout(); Leave("Logged out."); }
         }
 
-        static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);
+        public static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);
         static Rect Scaled(Rect r, float s) => new Rect(r.x * s, r.y * s, r.width * s, r.height * s);
+
+        static Rect StatusRect() => new Rect(8, 8, 240, 78);
+        static Rect LogoutRect(float w) => new Rect(w - 96, 8, 88, 30);
+        Rect ChatRect(float w, float h)
+        {
+            if (!chatOpen) return new Rect(8, h - 38, 90, 30);
+            float ch = Mathf.Min(240f, h * 0.36f);
+            return new Rect(8, h - ch - 8, Mathf.Min(460f, w * 0.42f), ch);
+        }
 
         void StatusPanel(float scale)
         {
             var p = session?.Parser;
             var me = world?.Player;
             if (p == null) return;
-            Rect box = new Rect(8, 8, 240, 78);
+            Rect box = StatusRect();
             uiRects.Add(Scaled(box, scale));
             Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.8f));
             GUI.Label(new Rect(16, 10, 224, 22), (me?.Name ?? "...") + "   Lv " + p.Level, titleStyle);
@@ -399,19 +445,17 @@ namespace Chaos.Client
 
         void ChatWindow(float w, float h, float scale)
         {
-            float cw = Mathf.Min(460f, w * 0.42f);
             if (!chatOpen)
             {
-                Rect open = new Rect(8, h - 38, 90, 30);
+                Rect open = ChatRect(w, h);
                 uiRects.Add(Scaled(open, scale));
                 if (GUI.Button(open, "Chat")) chatOpen = true;
                 chatFocused = false;
                 return;
             }
-            float ch = Mathf.Min(240f, h * 0.36f);
-            Rect box = new Rect(8, h - ch - 8, cw, ch);
+            Rect box = ChatRect(w, h);
             uiRects.Add(Scaled(box, scale));
-            Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.78f));
+            Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.9f));
             GUI.Label(new Rect(box.x + 8, box.y + 4, 200, 22), "Chat", titleStyle);
             if (GUI.Button(new Rect(box.xMax - 30, box.y + 4, 24, 22), "x")) { chatOpen = false; GUI.FocusControl(null); return; }
 
@@ -425,7 +469,7 @@ namespace Chaos.Client
                 GUI.FocusControl(null);
                 e.Use();
             }
-            else if (enter) { GUI.FocusControl("chatInput"); e.Use(); }
+            else if (enter && !TextEditing) { GUI.FocusControl("chatInput"); e.Use(); }
             else if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && chatFocused) { GUI.FocusControl(null); e.Use(); }
 
             Rect list = new Rect(box.x + 4, box.y + 28, box.width - 8, box.height - 64);

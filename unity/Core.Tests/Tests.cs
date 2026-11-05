@@ -47,6 +47,7 @@ namespace Chaos.Core.Tests
         public static readonly List<Action<Action<bool, string>>> Suites = new List<Action<Action<bool, string>>>
         {
             ProtocolTests.Run,
+            WindowTests.Run,
         };
 
         static void CryptoChecks()

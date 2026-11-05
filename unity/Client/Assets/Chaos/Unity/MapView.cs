@@ -151,7 +151,7 @@ namespace Chaos.Client
             }
         }
 
-        static int StackIndex(int count)
+        internal static int StackIndex(int count)
         {
             if (count <= 1) return 0;
             if (count < 5) return count - 1;

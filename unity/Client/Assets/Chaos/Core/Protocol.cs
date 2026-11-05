@@ -84,6 +84,19 @@ namespace Chaos.Core
         /// <summary>Talk on the default channel: 0x96, talk type 1 (say), the text.</summary>
         public static byte[] SayPacket(string text) => new ByteWriter().U8(0x96).U8(1).Str(text).ToArray();
 
+        static ByteWriter PutPos(ByteWriter w, Pos p) => w.U16((ushort)p.X).U16((ushort)p.Y).U8((byte)p.Z);
+
+        /// <summary>Use item: 0x82, position, item id, stack position, container index.</summary>
+        public static byte[] UseItemPacket(Pos p, ushort id, byte stackPos, byte index) =>
+            PutPos(new ByteWriter().U8(0x82), p).U16(id).U8(stackPos).U8(index).ToArray();
+        public static byte[] CloseContainerPacket(byte cid) => new ByteWriter().U8(0x87).U8(cid).ToArray();
+        public static byte[] UpContainerPacket(byte cid) => new ByteWriter().U8(0x88).U8(cid).ToArray();
+        /// <summary>Move item: 0x78, from position, item id, stack position, to position, count.</summary>
+        public static byte[] MoveItemPacket(Pos from, ushort id, byte stackPos, Pos to, byte count) =>
+            PutPos(PutPos(new ByteWriter().U8(0x78), from).U16(id).U8(stackPos), to).U8(count).ToArray();
+        /// <summary>Attack (0xA1) or follow (0xA2): the creature id (0 cancels) and a sequence number.</summary>
+        public static byte[] AttackPacket(byte op, uint id, uint seq) => new ByteWriter().U8(op).U32(id).U32(seq).ToArray();
+
         /// <summary>The first packet on the login port (src-patch 0021: clientId = guard identifier).</summary>
         public static byte[] LoginPacket(Rsa rsa, uint[] xtea, string account, string password, uint clientId)
         {
