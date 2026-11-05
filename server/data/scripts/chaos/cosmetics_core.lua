@@ -17,7 +17,9 @@ C.EMOTE_MAX = 32
 C.COMBAT_KINDS = {levelfx = true, rarefx = true, emote = true}
 -- pvp: battleground.lua / arena_season.lua grant it; boss: a rare personal drop of a boss (exclusives.lua grants it)
 -- collection: granted once when the account's collection score reaches `collection` points (collection.lua)
-C.SOURCES = {store = true, achievement = true, pvp = true, boss = true, pact = true, candlemarks = true, collection = true}
+-- daily: granted once when the account's login streak reaches `days` (daily.lua, daily_config.lua milestones, O409)
+C.SOURCES = {store = true, achievement = true, pvp = true, boss = true, pact = true, candlemarks = true, collection = true,
+	daily = true}
 -- the kinds every viewer's client draws itself (client game_cosmeticfx): the art key names the client's picture
 C.DRAWN = {footprint = "prints", outline = "glows"}
 C.SWAP_TYPES = {"fx", "missile", "vfx", "vmissile"}
@@ -415,6 +417,8 @@ function C.how(c, achievementName, categoryName)
 		return "Candlemarks: Osric the Chandler, in the teleport room's market"
 	elseif c.source == "collection" then
 		return "Collection score: " .. tostring(c.collection) .. " points"
+	elseif c.source == "daily" then
+		return "Daily reward: a login streak of " .. tostring(c.days) .. " days"
 	elseif c.points then
 		return "Achievements: " .. tostring(c.points) .. " account points"
 	elseif c.category then
@@ -775,6 +779,14 @@ function C.validate(cfg, opts)
 			end
 			if c.price ~= nil then
 				bad("%s: a collection cosmetic has no price (never sold)", w)
+			end
+		elseif c.source == "daily" then
+			-- a login streak milestone (daily_config.lua milestones `cosmetic`; daily_test.lua checks the link)
+			if type(c.days) ~= "number" or c.days < 1 or c.days % 1 ~= 0 then
+				bad("%s: a daily cosmetic needs the whole number of streak days it is granted at (days)", w)
+			end
+			if c.price ~= nil then
+				bad("%s: a daily cosmetic has no price (never sold)", w)
 			end
 		elseif c.source == "boss" then
 			-- a rare personal drop (exclusives_config.lua names it in one boss group; exclusives_test.lua checks that)

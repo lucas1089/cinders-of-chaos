@@ -48,5 +48,6 @@ $siteUrl = (string)($GLOBALS['config']['site_url'] ?? '');
 				<input type="text" name="c" maxlength="<?= CHAOS_BUILDCODE_MAX ?>" value="<?= chaos_h($card !== null ? '' : $code) ?>" placeholder="CC1-..."></label>
 			<button type="submit" class="chaos-pick__go">Show</button>
 		</form>
+		<p class="chaos-muted">Looking for ideas? <a href="page?plugin=chaos&amp;p=trends">Trending builds</a>: the most played builds of every class this week.</p>
 	</div>
 </div>

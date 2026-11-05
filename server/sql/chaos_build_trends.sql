@@ -1,0 +1,4 @@
+-- Trending builds (O409; build_trends.lua, server/README.md "Trending builds (O409)"): per daily snapshot the most
+-- played builds of every class. No character name or id. build_trends.lua creates it at startup too; the text is
+-- ChaosBuildTrendsCore.schemaSql (tests/build_trends_test.lua compares both).
+CREATE TABLE IF NOT EXISTS `chaos_build_trends` (`snapshot` int unsigned NOT NULL, `class_base` smallint unsigned NOT NULL, `rank` tinyint unsigned NOT NULL, `class_name` varchar(32) NOT NULL DEFAULT '', `signature` varchar(255) NOT NULL DEFAULT '', `keystones` varchar(512) NOT NULL DEFAULT '', `count` int unsigned NOT NULL DEFAULT 0, `total` int unsigned NOT NULL DEFAULT 0, `share` smallint unsigned NOT NULL DEFAULT 0, `avg_level` int unsigned NOT NULL DEFAULT 0, `tree_code` varchar(600) NOT NULL DEFAULT '', `code` varchar(1000) NOT NULL DEFAULT '', PRIMARY KEY (`snapshot`, `class_base`, `rank`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
