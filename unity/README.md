@@ -1,7 +1,10 @@
 # Unity prototype client (O405)
 
 A test of the game in Unity. It logs in to the real server, draws the map from the real sprites, shows creatures with
-their outfit colours and walks. It has no UI beyond login, the character list, names and health bars.
+their outfit colours and walks. Its UI: login, the character list, names and health bars, a health and mana panel
+and a chat window (Enter talks, the x hides it). F12 shows the debug line and the protocol log.
+The map shows exactly the 15 x 11 tiles around the player, centred; the rest of the screen stays dark.
+Text and windows grow with the window height (720 px is scale 1).
 It does not replace the client in `client/`.
 
 ## Layout

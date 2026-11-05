@@ -16,6 +16,8 @@ namespace Chaos.Core
         public Func<double> Clock = () => 0;
         public Action<byte, string> ExtendedOpcode = delegate { };
         public Action<string> Text = delegate { };
+        /// <summary>A chat line: speaker (empty for a server message), text, talk type (0 for a server message).</summary>
+        public Action<string, string, byte> Chat = delegate { };
         public Action<string> Disconnected = delegate { };
         public Action Pinged = delegate { };
         public Action<Dir> WalkCancelled = delegate { };
@@ -382,7 +384,7 @@ namespace Chaos.Core
             if (type == 1 || type == 2 || type == 3 || type == 36 || type == 37) ReadPos(r);
             else if (type == 7 || type == 8 || type == 14 || type == 6 || type == 12 || type == 13) r.U16();
             string text = r.Str();
-            if (type == 1 || type == 2 || type == 3 || type == 36 || type == 37) Text(name + ": " + text);
+            Chat(name, text, type);
         }
 
         void TextMessage(ByteReader r)
@@ -396,7 +398,7 @@ namespace Chaos.Core
             }
             else if (kind >= 33 && kind <= 35) r.U16();
             string text = r.Str();
-            if (kind < 23 || kind > 29) Text(text);
+            if (kind < 23 || kind > 29) { Text(text); Chat("", text, 0); }
         }
 
         void FloorUp(ByteReader r)
@@ -455,6 +457,7 @@ namespace Chaos.Core
         double stepSent = -1;
         public string Closed;
         public event Action<string> Log = delegate { };
+        public event Action<string, string, byte> Chat = delegate { };
         public int Packets, Bytes;
 
         public GameSession(World w, Options o)
@@ -464,6 +467,7 @@ namespace Chaos.Core
             parser = new GameParser(w) { Clock = () => Now };
             parser.ExtendedOpcode = OnExtended;
             parser.Text = t => Log(t);
+            parser.Chat = (who, text, type) => Chat(who, text, type);
             parser.Disconnected = reason => Closed = reason;
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
             parser.WalkCancelled = _ => stepSent = -1;
@@ -571,6 +575,14 @@ namespace Chaos.Core
         public void Turn(Dir d)
         {
             if ((int)d < 4) conn?.Send(new[] { (byte)(0x6F + (int)d) });
+        }
+
+        /// <summary>Says a line on the default channel (0x96, talk type 1).</summary>
+        public void Say(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text) || conn == null) return;
+            if (text.Length > 255) text = text.Substring(0, 255);
+            conn.Send(Protocol.SayPacket(text));
         }
 
         public void Logout()

@@ -81,6 +81,9 @@ namespace Chaos.Core
             return rsa.Encrypt(block);
         }
 
+        /// <summary>Talk on the default channel: 0x96, talk type 1 (say), the text.</summary>
+        public static byte[] SayPacket(string text) => new ByteWriter().U8(0x96).U8(1).Str(text).ToArray();
+
         /// <summary>The first packet on the login port (src-patch 0021: clientId = guard identifier).</summary>
         public static byte[] LoginPacket(Rsa rsa, uint[] xtea, string account, string password, uint clientId)
         {
