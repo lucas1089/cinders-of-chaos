@@ -10999,6 +10999,38 @@ Protocol additions: `post {..., maxLevel, nk}`, `init {..., notes}`, rows `xl`, 
 an applicant above the band, the queue skipping it, the row fields) and `partyfinderview_test.lua` (band fit and text,
 note line, a hunt's band, the post input). Not run against a live server.
 
+
+### Invasion clashes (O410)
+
+Two hosts invade the same place at once and fight each other as well as the players. Script only: no engine patch.
+
+- **When.** `clash.chance` (25) percent of the scheduled and random invasions roll a rival host (`I.pickRival`,
+  `lcg(at + salt)`, deterministic per start time). An area with `clash = false` never gets one; `clash.rivals` per
+  faction limits the pairs. A schedule entry may force it with `clash = true` or forbid it with `clash = false`.
+  Staff: `/invasion start <area> [faction|random] [clash|<rival>]` (default: no rival), `/invasion schedule <min>
+  [area] [faction] [clash]`.
+- **Spawns.** Each host gets `sideShare` (0.6) of a wave's count; with four edges the hosts come from north + east and
+  south + west (`I.clashEdges`). One warlord per host on the last wave.
+- **Fighting.** Every `thinkMs` (1000) `I.clashPairs` gives each unit the nearest enemy unit within `radius` (6) on
+  its floor, at most `maxPairs` (60) per think. The unit walks toward it when it cannot reach. The hit uses the
+  monster type's own attacks (`I.clashAttack`: melee next to it, a ranged attack within its range, the strongest
+  average), times `dmgMult`, at most `maxHitShare` (0.12) of the foe's max health; a unit without a fitting attack
+  bumps for `fallbackShare` (0.03) when adjacent. Effects per faction: `clashHit`, `clashShot`.
+- **Damage without an attacker.** `Creature:addHealth(-dmg)`: no player gains from it and the damage map stays the
+  players'. A unit that dies to the other host with no player hit gets `setDropLoot(false)` and is counted in
+  `clashKills`. The experience of an invader is scaled by the players' share (`I.clashXpShare`, at least `minXpShare`
+  0.1) in the `onGainExperience` callback. `tests/pz_guard_test.lua` lists the `addHealth` (target: a listed invader).
+- **Warlords.** The other host never takes a warlord below `bossFloor` (0.3) of its health: only players win.
+  The invasion stays on while any warlord stands.
+- **End.** A win gives the rewards as before; reputation goes to the faction hunting the host the player hit most
+  (`I.mainSide`, `r.factionKey`). A loss (timeout or breach) keeps the host with more units left as the occupier
+  (`clashSettle`); the other one leaves.
+- **Client.** HUD message `sides = [{key, name, color, left, boss, bossHp}]`: a line per host (`InvasionMath.sideLines`)
+  in place of the single boss line. Announcements, the calendar ("X and Y clash at Z"), Discord and `/invasion status`
+  name both hosts. pt-BR: `i18n_strings.lua` and `client_chaos_locale/pt_br.lua`.
+- **Tests.** `tests/invasion_test.lua` (O410 block: rival pick, edges, pairs, attack choice, damage cap and floor,
+  experience share, side counts, main side, status text), `invasionmath_test.lua`. Not run on a live server.
+
 ## Leaderboards (`leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua`)
 
 Client `game_leaderboard` (opcode 229), opened with Social > Leaderboards in the top menu. Settings:
@@ -23070,6 +23102,26 @@ script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (
   for a member 600 tiles east with its hover text, the full map view, leave and disband clearing the markers, the
   option off and on, a hunting area discovered on approach with the message, the discoveries kept over a relog, a
   category switched off. Screenshots were taken but are not in the repository.
+
+
+### Quest markers (O410)
+
+- **Givers and chests.** Kind `quest`: the NPCs of `poi_config.lua` `questNpcs` (Archivist Maelis, Archivist Odrenna,
+  Ascendant Oracle, Keeper of Trials) are placed as `quest` instead of `npc` (`P.npcKind`), r = 0 in town. `gen_poi.py`
+  adds the quest chests of the planned areas (`data/scripts/chaos_areaplan/*_chests.lua`: ORIGIN plus each chest's
+  offset), "Quest chest (<area>)", r = 1. Run install step `poi` again to write them into `data/chaos_poi.lua`.
+- **Next steps.** Action `quests {marks = [{k = "questgoal", x, y, z, n}]}`: the next step of each running quest of a
+  character, from `ChaosPoi.questSources` (tales: `T.questGoals`, spell quests: `S.questGoals`). A step with a place is
+  that tile, a talk step is its NPC's mark, a hunt step the nearest `questHunts` (2) hunting areas of its monsters
+  (`P.huntMonsters` reads the hunting marks' names), a report step the giver. At most `questGoalMax` (12), checked
+  every `questMs` (4000) for players with markers on, sent only when the list's hash changes, again at hello / set.
+- **Client.** `game_mapmarkers` category Quests (first in the list, on by default, also for old settings): the givers
+  and chests (gold exclamation mark) and the goals (ember target), `M.withGoals`. Cleared when the markers are off and
+  at logout.
+- **Tests.** `tests/poi_test.lua` (O410 block), `tests/tales_test.lua` (questGoals), `tools/gen_poi_test.py` (chests),
+  `markermath_test.lua`. Not run on a live server.
+- **Wiki.** `tools/gen_wiki_data.lua` tab Quests: every tale (giver, place, level, faction, chain, steps with where,
+  rewards, the book), the three line spell quests and the ascension.
 
 ## The Weekly Challenge (O390) (`weekly_challenge.lua`, `weekly_challenge_core.lua`, `weekly_challenge_config.lua`)
 

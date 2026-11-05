@@ -27,8 +27,11 @@ What is read, and the kinds written:
            The band is printed as the HUNTING level: the pool level times pace_config.lua baseLevelMult (owner 2026-10-27;
            lo = max(1, lo10 * mult), hi = hi10 * mult). baseLevelMult is 1 since 2026-10-28 (O285): the pool level.
   boss     the island, raid and lair bosses of bossspawns_config.lua (their places). r = 1.
+  quest    (O410) the quest chests of the planned areas (data/scripts/chaos_areaplan/*_chests.lua, written by
+           tools/area_planner.py compile and placed by its install: ORIGIN plus each chest's offset), named after the
+           area: "Quest chest (<area>)". r = 1.
 The Chaos NPCs, the portals next to the temples and the dungeons are added by poi.lua at runtime (they are placed when
-the server starts).
+the server starts); the quest givers among the NPCs are of kind quest there (poi_config.lua questNpcs).
 
 Names: never an old-world name. Every name is checked against the rename lists (data/npc/base_npc_names.csv,
 data/npc/base_world_names.csv, data/monster/base_monster_names.csv, by the sha256 of each phrase); a mark whose name
@@ -65,7 +68,7 @@ HUNT_JOIN = 40
 HUNT_MIN = 12         # spawn entries of a hunting area at least
 HUNT_MAX = 300        # at most this many hunting areas (the biggest)
 NAME_TOWN_RADIUS = 200
-KIND_ORDER = ['temple', 'depot', 'craft', 'bank', 'bless', 'travel', 'shop', 'boss', 'hunt']
+KIND_ORDER = ['temple', 'depot', 'craft', 'bank', 'bless', 'travel', 'shop', 'boss', 'hunt', 'quest']
 SERVICE_LABEL = {'travel': 'travel', 'bank': 'bank', 'bless': 'blessings', 'shop': 'shop'}
 BOSS_LABEL = {'island': 'island boss', 'raid': 'raid boss', 'lair': 'boss lair'}
 
@@ -307,6 +310,33 @@ def boss_spots(chaos_dir):
     return out
 
 
+CHEST_HEAD = re.compile(r'Quest chests of the planned area "(.*)" \([^()\n]*\)\. GENERATED')
+CHEST_ORIGIN = re.compile(r'local ORIGIN = \{x = (-?\d+), y = (-?\d+), z = (-?\d+)\}')
+CHEST_ROW = re.compile(r'\["(-?\d+):(-?\d+):(-?\d+)"\] = \{quest = "((?:[^"\\]|\\.)*)"')
+
+
+def quest_chests(scripts_dir):
+    """the quest chests of the planned areas: [(area name, quest key, x, y, z)] from
+    scripts_dir/chaos_areaplan/*_chests.lua (area_plan_compile.chest_script), files in name order"""
+    folder = os.path.join(scripts_dir, 'chaos_areaplan')
+    out = []
+    if not os.path.isdir(folder):
+        return out
+    for fname in sorted(os.listdir(folder)):
+        if not fname.endswith('_chests.lua'):
+            continue
+        text = read_text(os.path.join(folder, fname))
+        origin = CHEST_ORIGIN.search(text)
+        if not origin:
+            continue
+        head = CHEST_HEAD.search(text)
+        name = head.group(1) if head else fname[:-len('_chests.lua')].replace('_', ' ').title()
+        ox, oy, oz = (int(v) for v in origin.groups())
+        for dx, dy, dz, quest in CHEST_ROW.findall(text):
+            out.append((name, quest, ox + int(dx), oy + int(dy), oz + int(dz)))
+    return out
+
+
 def read_hashes(paths):
     out = set()
     for p in paths:
@@ -409,10 +439,11 @@ def nearest_town(pos, temples):
     return best, bd
 
 
-def build_marks(towns, depots, crafts, npcs, services, levels, spawns, bosses, town_names, mult=1):
+def build_marks(towns, depots, crafts, npcs, services, levels, spawns, bosses, town_names, mult=1, chests=()):
     """the marks from parsed inputs (pure; tested by gen_poi_test.py)
     towns [(id, name, x, y, z)], depots [(x, y, z)], crafts [(aid, (x, y, z))], npcs [(name, x, y, z)],
-    services {lower name: kind}, levels / spawns (hunting_data), bosses [(cat, name, x, y, z)], town_names {id: name}"""
+    services {lower name: kind}, levels / spawns (hunting_data), bosses [(cat, name, x, y, z)], town_names {id: name},
+    chests [(area name, quest key, x, y, z)] (quest_chests)"""
     marks, temples = [], []
     for tid, name, x, y, z in towns:
         town = town_names.get(tid) or name
@@ -439,6 +470,8 @@ def build_marks(towns, depots, crafts, npcs, services, levels, spawns, bosses, t
     for cat, name, x, y, z in bosses:
         marks.append({'k': 'boss', 'x': x, 'y': y, 'z': z, 'n': '%s (%s)' % (name, BOSS_LABEL[cat]), 'r': 1})
     marks += hunting_areas(levels, spawns, mult)
+    for name, _quest, x, y, z in chests:
+        marks.append({'k': 'quest', 'x': x, 'y': y, 'z': z, 'n': 'Quest chest (%s)' % name, 'r': 1})
     # one mark of a kind per tile
     seen, out = set(), []
     for m in marks:
@@ -513,10 +546,12 @@ def generate(server_dir, map_file=None):
     # a town name the map still has from the old world is not written: the temple is then just "Temple"
     towns = [(tid, name if not any(digest(p) in hashes for p in phrases(name, 4)) else '', x, y, z)
              for tid, name, x, y, z in towns]
+    chests = quest_chests(os.path.join(data_dir, 'scripts'))
     marks = build_marks(towns, depots, crafts, npcs, services, levels, spawns, bosses, town_names,
-                        base_level_mult(chaos_dir))
+                        base_level_mult(chaos_dir), chests)
     marks, dropped = drop_old_names(marks, hashes)
-    stats = {'towns': len(towns), 'lockers': len(depots), 'tables': len(crafts), 'npcs': len(npcs), 'unrenamed': dropped}
+    stats = {'towns': len(towns), 'lockers': len(depots), 'tables': len(crafts), 'npcs': len(npcs), 'unrenamed': dropped,
+             'chests': len(chests)}
     return marks, stats
 
 

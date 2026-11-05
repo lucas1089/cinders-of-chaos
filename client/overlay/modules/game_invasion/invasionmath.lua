@@ -32,7 +32,37 @@ end
 function InvasionMath.subtitle(d)
   d = type(d) == 'table' and d or {}
   if d.phase == 'occupied' then return tr('Slay the occupiers to free it') end
+  local s = InvasionMath.sides(d)
+  if #s > 1 then -- a clash of two hordes (O410)
+    return tr('%s and %s - defend %s', tostring(s[1].name or '?'), tostring(s[2].name or '?'), tostring(d.target or 'the target'))
+  end
   return tr('%s - defend %s', tostring(d.faction or 'A horde'), tostring(d.target or 'the target'))
+end
+
+-- O410: the hordes of a clash, as sent ({key, name, color, left, boss, bossHp}); entries that are no table are left out
+function InvasionMath.sides(d)
+  local out = {}
+  for _, s in ipairs(type(d) == 'table' and type(d.sides) == 'table' and d.sides or {}) do
+    if type(s) == 'table' then out[#out + 1] = s end
+  end
+  return out
+end
+
+-- one row per horde: {text, color}. "Orc Warband: 12 left" or "Orc Warband: 3 left, Grashnak 40%"
+function InvasionMath.sideLines(d)
+  local out = {}
+  for _, s in ipairs(InvasionMath.sides(d)) do
+    local left = tonumber(s.left) or 0
+    local text
+    if s.boss then
+      text = tr('%s: %d left, %s %d%%', tostring(s.name or '?'), left, tostring(s.boss), tonumber(s.bossHp) or 100)
+    else
+      text = tr('%s: %d left', tostring(s.name or '?'), left)
+    end
+    local color = type(s.color) == 'string' and s.color:match('^#%x%x%x%x%x%x$') and s.color or '#d6c9ae'
+    out[#out + 1] = { text = text, color = color }
+  end
+  return out
 end
 
 function InvasionMath.waveLine(d)

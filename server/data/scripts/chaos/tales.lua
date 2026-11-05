@@ -85,6 +85,14 @@ function T.revealPlaces(player)
 	return #list
 end
 
+-- O410: the character's next tale steps on its map (poi.lua asks every questMs; tales_core.lua M.questGoals)
+function T.questGoals(player)
+	return M.questGoals(stateFn(player), T.langOf(player))
+end
+ChaosPoi = ChaosPoi or {}
+ChaosPoi.questSources = ChaosPoi.questSources or {}
+ChaosPoi.questSources.tales = T.questGoals
+
 -- keep the character on the visit watch list while one of its tales waits for a visit; a new wait shows the place
 function T.rewatch(player)
 	local id = player:getId()

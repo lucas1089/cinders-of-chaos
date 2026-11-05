@@ -29,6 +29,21 @@ return {
 		["archivist odrenna"] = "Archivist Odrenna (line spell quests)"
 	},
 
+	-- O410: the quest givers among them: their mark is of kind "quest" (the quest marker and the Quests filter of
+	-- game_mapmarkers), always shown like the other NPCs in town
+	questNpcs = {
+		["archivist maelis"] = true, -- the tales (tales.lua)
+		["archivist odrenna"] = true, -- the line spell quests (spellquest.lua)
+		["ascendant oracle"] = true, -- the ascension quest (ascension_quest.lua)
+		["keeper of trials"] = true -- the Vocation Trials (trials.lua)
+	},
+	-- O410: the character's next quest steps (the quest sources: tales.lua, spellquest.lua) as "questgoal" marks, sent
+	-- to a client that shows points of interest when they change, checked every questMs; at most questGoalMax marks,
+	-- questHunts hunting areas per kill step
+	questMs = 4000,
+	questGoalMax = 12,
+	questHunts = 2,
+
 	-- the portals the systems put next to the temples, found by their action id, read from the owning system's config
 	-- (config file + path) or from a global table (global path), so the numbers live in one place only
 	portals = {

@@ -1,6 +1,7 @@
 -- Invasion HUD over the map and the upcoming events window.
 -- Server: server/data/scripts/chaos/invasion.lua and worldevents.lua, extended opcode 251 (JSON {action, data}).
 --   server -> client  hud {phase = running|occupied, area, faction, color, target, wave, waves, left, progress, breach,
+--                          sides = [{key, name, color, left, boss, bossHp}] (a clash of two hordes, O410),
 --                          time, next, boss, bossHp, top = [{name, share}], you = {rank, share, kills}}   every 2 s
 --                     end {result = win|breach|time|liberated|withdrawn, text}
 --                     hide {}
@@ -118,6 +119,16 @@ local function render()
   else
     hud.boss:setVisible(false)
   end
+  -- O410: a clash: one row per horde (the main boss line then repeats nothing: each row names its warlord)
+  hud.sides:destroyChildren()
+  local sideRows = InvasionMath.sideLines(data)
+  for _, row in ipairs(sideRows) do
+    local l = g_ui.createWidget('InvasionTopLabel', hud.sides)
+    l:setText(row.text)
+    l:setColor(row.color)
+  end
+  hud.sides:setVisible(#sideRows > 0)
+  if #sideRows > 0 then hud.boss:setVisible(false) end
   hud.top:destroyChildren()
   if not folded then
     for _, line in ipairs(InvasionMath.topLines(data.top)) do

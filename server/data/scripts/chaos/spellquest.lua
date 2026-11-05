@@ -70,6 +70,19 @@ function S.current(player)
 	return Q.current(player:getVocation():getId(), player:getLevel(), S.read(player))
 end
 
+-- O410: the next step on the map (poi.lua quest goals, poi_core.lua P.goals): once the hunt is done, the trial is
+-- asked of the Archivist (the hunt itself has no fixed place: any hunt of the quest's level counts)
+function S.questGoals(player)
+	local _, step, code = S.current(player)
+	if code == "ok" and step == Q.STEP.TRIAL then
+		return {{npc = C().npc.name, n = Chaos.t(player, "The hunt is done: the trial awaits.")}}
+	end
+	return {}
+end
+ChaosPoi = ChaosPoi or {}
+ChaosPoi.questSources = ChaosPoi.questSources or {}
+ChaosPoi.questSources.spellquest = S.questGoals
+
 -- the Archivist within `range` tiles (the trial question only counts at her)
 function S.archivistNear(player)
 	local pos = player:getPosition()

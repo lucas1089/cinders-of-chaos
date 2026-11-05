@@ -1494,6 +1494,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["%s is occupied"] = "%s está ocupada",
   ["Slay the occupiers to free it"] = "Mate os ocupantes para libertá-la",
   ["%s - defend %s"] = "%s - defenda %s",
+  ["%s and %s - defend %s"] = "%s e %s - defenda %s",
+  ["%s: %d left, %s %d%%"] = "%s: %d restantes, %s %d%%",
+  ["%s: %d left"] = "%s: %d restantes",
   ["You: not in the defence yet"] = "Você: ainda fora da defesa",
   ["You: #%d, %d%% of the defence, %d kill%s"] = "Você: #%d, %d%% da defesa, %d abate%s",
   -- game_itemfinder/itemfinder.lua
@@ -3348,6 +3351,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["no room"] = "sem espaço",
   ["too many"] = "demais",
   ["busy"] = "ocupado",
+  ["Quests: givers and your next steps"] = "Quests: quem as dá e seus próximos passos",
   ["Temples, depots and banks"] = "Templos, depots e bancos",
   ["Chaos NPCs (services)"] = "NPCs Chaos (serviços)",
   ["Shops, travel and blessings"] = "Lojas, viagens e bênçãos",

@@ -233,7 +233,7 @@ local function money(v)
 end
 
 local COLORS = {class = "#f6cf72", spell = "#9fdc7f", tree = "#e8b84a", boss = "#ff7050", dungeon = "#c0a0ff",
-	event = "#ffb050", monster = "#d6c9ae", store = "#ff70c0", basics = "#d6c9ae"}
+	event = "#ffb050", monster = "#d6c9ae", store = "#ff70c0", basics = "#d6c9ae", quest = "#f0d27a"}
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- loading
@@ -272,6 +272,8 @@ function W.load()
 	D.pets = cfg("pets_config")
 	D.newplayer = cfg("newplayer_config")
 	D.ascq = cfg("ascension_quest_config")
+	D.tales = cfg("tales_config")
+	D.spellq = cfg("spellquest_config")
 	D.pact = cfg("pact_config")
 	D.seasonpass = cfg("seasonpass_config")
 	D.coins = cfg("shop_coins_config")
@@ -1191,6 +1193,11 @@ function W.eventEntries(D)
 				string.format("An invasion needs %d players online. The invaders follow the area's level, raised towards the level of the players online. Damage, healing, kills and time in the fight count; time counts only while you act.",
 					inv.gate.minOnline),
 				"Win and everyone nearby gets the Victory buff; lose and the invaders occupy the place for a while."}},
+			{h = "Clashes", p = {
+				string.format("Some invasions bring two hosts at once (a clash, about %d%% of the scheduled and random ones): they come from opposite sides and fight each other as well as you. The HUD shows how many of each are left.",
+					inv.clash and inv.clash.chance or 0),
+				"Monsters killed by the other host give no loot, and experience only for the share players dealt. Each host has its own warlord; the other host can wear a warlord down but never kill it, so only players win a clash.",
+				"Reputation goes to the faction that hunts the host you fought most. If the clash is lost, the host with more monsters left occupies the place."}},
 			{h = "Invaders", cols = {"Host", "Bosses"}, w = {40, 60}, rows = fRows}}}
 	-- the guild siege
 	local sg = D.siege
@@ -1277,6 +1284,145 @@ function W.harvestEntry(D)
 			{h = "Monsters", cols = {"Monster", "Level", "Health", "Experience"}, w = {40, 20, 20, 20}, rows = mRows},
 			{h = "Widow Hessa", p = {"Every monster of the event drops hollow candy. Widow Hessa at the crossroads trades it (candy cannot be sold). A hollow charm unlocks a haunted cosmetic your account does not own yet."},
 				cols = {"Trade", "Hollow candy"}, w = {70, 30}, rows = shop}}}
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- quests (O410): the tales of Archivist Maelis, the line spell quests of Archivist Odrenna and the ascension quest of
+-- the Ascendant Oracle. Giver, place, level, steps and rewards of each; the world map marks the givers and the next
+-- step of every quest a character has running (poi.lua questSources)
+-- ---------------------------------------------------------------------------------------------------------------
+local HUB = "the teleport room's market (the hub)"
+local STEP_KIND = {kill = "Hunt", visit = "Go", talk = "Talk", deliver = "Deliver", report = "Report", elite = "Elite"}
+
+local function taleWhere(s, giver)
+	if s.kind == "kill" then
+		return list(s.monsters or {}, ", ")
+	elseif s.kind == "visit" or s.kind == "elite" then
+		return "Marked on your map"
+	elseif s.kind == "talk" then
+		return tostring(s.npc)
+	end
+	return giver
+end
+
+local function taleRewards(D, T, t)
+	local r, out = t.rewards or {}, {}
+	if r.xpLevels then
+		out[#out + 1] = {"Experience", string.format("%d%% of a level's experience (at most at level %d)",
+			floor(r.xpLevels * 100 + 0.5), t.band[2])}
+	end
+	if r.gold then
+		out[#out + 1] = {"Gold", money(r.gold) .. " (to the bank)"}
+	end
+	if r.items and #r.items > 0 then
+		out[#out + 1] = {"Items", rewardItems(D, r.items)}
+	end
+	if r.rep and t.faction then
+		out[#out + 1] = {"Reputation", string.format("%s with %s", money(r.rep), T.factions[t.faction] or t.faction)}
+	end
+	return out
+end
+
+function W.questEntries(D)
+	local T, SQ, AQ = D.tales, D.spellq, D.ascq
+	local out = {}
+	local loreName = {}
+	for _, e in ipairs(D.lore and D.lore.entries or {}) do
+		loreName[e.id] = e.name
+	end
+	local nameOf = {}
+	for _, t in ipairs(T.tales) do
+		nameOf[t.key] = t.name.en
+	end
+	out[#out + 1] = {id = "quest:about", name = "How quests work", color = COLORS.quest, group = "about",
+		sub = "Who gives them, where, and how the map shows your next step.",
+		sections = {{h = "Quests", p = {
+			string.format("Three people in %s give the quests: %s (the tales), %s (the line spell quests) and the %s (the ascension).",
+				HUB, T.npc.name, SQ.npc.name, AQ.npc.name),
+			"Open the world map: a gold exclamation mark is a quest giver or a quest chest; an ember target is the next step of a quest you have running (the place to go, the NPC to talk to, the hunt to clear). The Quests switch of the map markers shows or hides both.",
+			"Hunt steps count kills of party members close by; a level lowered by death pauses a quest that needs the level."}}}}
+	-- the tales, in level order
+	local tales = {}
+	for _, t in ipairs(T.tales) do
+		tales[#tales + 1] = t
+	end
+	table.sort(tales, function(a, b)
+		if a.minLevel ~= b.minLevel then
+			return a.minLevel < b.minLevel
+		end
+		return a.slot < b.slot
+	end)
+	for _, t in ipairs(tales) do
+		local rows = {}
+		for i, s in ipairs(t.steps) do
+			rows[#rows + 1] = {tostring(i), STEP_KIND[s.kind] or cap1(s.kind), s.text.en, taleWhere(s, T.npc.name)}
+		end
+		local info = {
+			{"Giver", T.npc.name .. ", in " .. HUB},
+			{"Level", string.format("%d or more (written for %d to %d)", t.minLevel, t.band[1], t.band[2])},
+			{"Faction", cap1(T.factions[t.faction] or t.faction)}
+		}
+		if t.requires then
+			info[#info + 1] = {"After", nameOf[t.requires] or t.requires}
+		end
+		if t.saga and T.sagas[t.saga] then
+			info[#info + 1] = {"Saga", string.format("%s, chapter %d", T.sagas[t.saga].name.en, t.chapter or 0)}
+		end
+		local rewards = taleRewards(D, T, t)
+		local secs = {
+			{h = "Story", p = {t.story.en}},
+			{h = "Quest", cols = {"", ""}, w = {25, 75}, rows = info},
+			{h = "Steps", cols = {"#", "Step", "What", "Where"}, w = {6, 12, 52, 30}, rows = rows},
+			{h = "Rewards", cols = {"Reward", ""}, w = {25, 75}, rows = rewards}
+		}
+		local book = t.rewards and t.rewards.book
+		if book then
+			table.insert(rewards, {"Book", loreName[book] or book})
+			secs[#secs + 1] = {h = "Lore", p = {"The tale's book holds this lore."}, links = {"lore:" .. book}}
+		end
+		out[#out + 1] = {id = "quest:tale:" .. t.key, name = t.name.en, color = COLORS.quest,
+			group = t.saga and "saga" or "tale",
+			sub = string.format("Tale, level %d+: %s", t.minLevel, T.npc.name), sections = secs}
+	end
+	-- the line spell quests
+	for n, q in ipairs(SQ.quests) do
+		local spellRows = {}
+		for _, l in ipairs(SQ.lines) do
+			spellRows[#spellRows + 1] = {cap1(l.key), l.spells[n]}
+		end
+		out[#out + 1] = {id = "quest:spell:" .. n, name = string.format("Line spell quest %d", n), color = COLORS.quest,
+			group = "spell", sub = string.format("Level %d+: a new spell for your class line. %s", q.level, SQ.npc.name),
+			sections = {
+				{h = "Quest", cols = {"", ""}, w = {25, 75}, rows = {
+					{"Giver", SQ.npc.name .. ", in " .. HUB .. ", next to the Keeper of Trials"},
+					{"Level", string.format("%d or more, checked at every step", q.level)},
+					{"After", n > 1 and string.format("Line spell quest %d on the same line", n - 1) or "Nothing"}}},
+				{h = "Steps", cols = {"#", "Step", "What"}, w = {6, 14, 80}, rows = {
+					{"1", "Talk", "Ask " .. SQ.npc.name .. " for the quest"},
+					{"2", "Hunt", string.format("%d kills of monsters of hunting level %d or more and %d fragments (a boss kill counts %d and drops one for sure)",
+						q.kills, q.level, q.fragments, SQ.hunt.bossKills)},
+					{"3", "Trial", "Ask " .. SQ.npc.name .. " again: she opens the trial. Win it"}}},
+				{h = "Rewards", p = {string.format("The spell of your line below and %s gold per character level (to the bank), once.",
+					money(SQ.reward.goldPerLevel))}, cols = {"Line", "Spell"}, w = {30, 70}, rows = spellRows}}}
+	end
+	-- the ascension
+	local minLevel = D.C0.classes.ascension.minLevel
+	out[#out + 1] = {id = "quest:ascension", name = "The ascension", color = COLORS.quest, group = "ascension",
+		sub = string.format("Level %d+: become one of the two ascended classes of your line. %s", minLevel, AQ.npc.name),
+		sections = {
+			{h = "Quest", cols = {"", ""}, w = {25, 75}, rows = {
+				{"Giver", "The " .. AQ.npc.name .. ", in " .. HUB},
+				{"Level", string.format("%d or more", minLevel)}}},
+			{h = "Steps", cols = {"#", "Step", "What"}, w = {6, 14, 80}, rows = {
+				{"1", "Talk", "Hear the Calling from the " .. AQ.npc.name},
+				{"2", "Hunt", string.format("Proof of Strength: %d points from rare (%d) and legendary (%d) monsters of at least %s x your level",
+					AQ.proof.needed, AQ.proof.points.rare, AQ.proof.points.legendary, num(AQ.proof.levelShare))},
+				{"3", "Trial", string.format("Alone against your line's guardian for %s; another try after %s",
+					seconds(AQ.trial.timeLimitSeconds), seconds(AQ.trial.cooldownSeconds))},
+				{"4", "Choice", "Pick one of the two ascended classes"}}},
+			{h = "Rewards", p = {"The ascended class you chose" .. (AQ.title.enabled and
+				string.format(" and the title \"%s<class>\".", AQ.title.prefix) or ".")}}}}
+	return out
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -2062,12 +2208,12 @@ local TAB_ICON = {classes = top("skills"), spells = top("spells"), tree = top("p
 	sets = item("oathsteel", "armor"), orbs = orb("arcane", "swirl"), gems = gemLook("ruby"),
 	supports = ICON .. "sup-emberbrand.png", rift = ICON .. "rx-portal.png", dungeons = top("dungeons"),
 	bosses = kit("blood", "skull"), events = top("events"), monsters = kit("shadow", "ghost"),
-	materials = kit("nature", "leaf"), lore = kit("ember", "eye"), store = top("vip")}
+	materials = kit("nature", "leaf"), lore = kit("ember", "eye"), store = top("vip"), quests = kit("light", "banner")}
 -- the banner's tint
 local TAB_TONE = {classes = "#f6cf72", spells = "#9fdc7f", tree = "#e8b84a", basics = "#d6c9ae", modifiers = "#7d96ff",
 	powers = "#ff9a3c", uniques = "#ff9c3a", sets = "#58c878", orbs = "#e8b84a", gems = "#ff5a4a", supports = "#ff8228",
 	rift = "#a064e6", dungeons = "#c0a0ff", bosses = "#ff7050", events = "#ffb050", monsters = "#d6c9ae",
-	materials = "#7ec46a", lore = "#c9a27a", store = "#ff70c0"}
+	materials = "#7ec46a", lore = "#c9a27a", store = "#ff70c0", quests = "#f0d27a"}
 
 local BASICS = {["basics:items"] = top("inventory"), ["basics:rarity"] = kit("light", "crystal"),
 	["basics:tiers"] = kit("steel", "arrowup"), ["basics:itemlevel"] = kit("ember", "arrowup"),
@@ -2342,6 +2488,10 @@ function W.entryIcon(tab, e, src)
 		return kit(MAT_THEME[tier] or "steel", MAT_GLYPH[prof] or "dots")
 	elseif tab == "store" then
 		return id == "store:about" and top("vip") or STORE[e.name] or top("vip")
+	elseif tab == "quests" then
+		local QUEST = {about = top("help"), tale = kit("light", "eye"), saga = kit("ember", "flame"),
+			spell = kit("arcane", "burst"), ascension = rift("rx", "ascended")}
+		return QUEST[e.group or ""] or kit("light", "banner")
 	elseif tab == "lore" then
 		-- the lore of the world (lore_data.lua): by the kind of the entry (the Codex's filter group)
 		local g = e.group or ""
@@ -2622,6 +2772,7 @@ function W.build(D)
 		{id = "dungeons", name = "Dungeons", entries = dungeons},
 		{id = "bosses", name = "Bosses", entries = bosses},
 		{id = "events", name = "Events", entries = events},
+		{id = "quests", name = "Quests", entries = W.questEntries(D)},
 		{id = "monsters", name = "Monsters", entries = W.monsterEntries(D)},
 		codex.materials,
 		codex.lore,

@@ -7,6 +7,8 @@
 -- A character's discoveries are a set of keys (P.key: a kind letter and the position in hex, 10 characters), kept as
 -- one comma-separated text per character (chaos_poi_seen). A key names a place, not a line of the data file, so
 -- regenerating the data keeps what was discovered where the place stayed.
+-- Quests (O410): kind "quest" marks a quest giver (the quest NPCs of cfg.questNpcs, r = 0 in town) or an area's quest
+-- chest (r = 1); kind "questgoal" is a character's own next quest step (P.goals), sent apart and never stored.
 -- Lua 5.1 / LuaJIT and 5.3.
 
 ChaosPoi = ChaosPoi or {}
@@ -14,7 +16,7 @@ local P = ChaosPoi
 
 P.KINDS = {
 	temple = "T", depot = "D", craft = "C", bank = "b", bless = "l", travel = "t", shop = "s", boss = "B", hunt = "h",
-	npc = "n", portal = "p", guild = "g", dungeon = "d"
+	npc = "n", portal = "p", guild = "g", dungeon = "d", quest = "q", questgoal = "Q"
 }
 P.CELL = 32 -- the reveal index cell (squares)
 
@@ -174,6 +176,11 @@ function P.npcName(cfg, name)
 	return cfg and cfg.npcs and cfg.npcs[tostring(name or ""):lower()] or nil
 end
 
+-- the kind of a Chaos NPC's mark: "quest" for the quest givers (cfg.questNpcs, O410), else "npc"
+function P.npcKind(cfg, name)
+	return cfg and cfg.questNpcs and cfg.questNpcs[tostring(name or ""):lower()] and "quest" or "npc"
+end
+
 -- the Chaos NPCs in the stalls of the hub (npc_booths_config.lua), 700 tiles from the temple, so the temple scan
 -- cannot see them. booths: {{name, x, y, z}} (ChaosNpcBoothsCore.booths); find(booth) -> {{name, x, y, z}} the NPCs
 -- standing at the stall. An NPC counts when its name is the stall's. The shown name is cfg.npcs, else the NPC's name.
@@ -183,7 +190,7 @@ function P.hubMarks(cfg, booths, find)
 		local want = tostring(b.name or ""):lower()
 		for _, c in ipairs(find(b) or {}) do
 			if tostring(c.name or ""):lower() == want then
-				local m = P.mark("npc", c.x, c.y, c.z, P.npcName(cfg, c.name) or c.name, 0)
+				local m = P.mark(P.npcKind(cfg, c.name), c.x, c.y, c.z, P.npcName(cfg, c.name) or c.name, 0)
 				if m then
 					out[#out + 1] = m
 				end
@@ -224,6 +231,117 @@ function P.portalIds(list, load, globals)
 		end
 	end
 	return out
+end
+
+-- ---------------------------------------------------------------- quest goals (O410)
+-- A character's next quest steps on its map. The quest systems name places in three ways (poi.lua asks them through
+-- ChaosPoi.addQuestSource): {x, y, z, n} a fixed place, {npc = name, n} the NPC to talk to or turn in at (its npc or
+-- quest mark, by name), {hunts = {monster names}, n} the hunting areas of those monsters (their hunt marks, at most
+-- cfg.questHunts per step). The result: clean "questgoal" marks, one per tile, at most cfg.questGoalMax.
+
+local function lower(s)
+	return tostring(s or ""):lower()
+end
+
+-- the npc / quest mark of an NPC: its shown name is the NPC's name, or starts with it followed by " ", "," or "("
+function P.findNpc(marks, name)
+	local want = lower(name)
+	if want == "" then
+		return nil
+	end
+	for _, m in ipairs(marks or {}) do
+		if m.k == "npc" or m.k == "quest" then
+			local n = lower(m.n)
+			if n == want then
+				return m
+			end
+			local nxt = n:sub(#want + 1, #want + 1)
+			if n:sub(1, #want) == want and (nxt == " " or nxt == "," or nxt == "(") then
+				return m
+			end
+		end
+	end
+	return nil
+end
+
+-- the monsters a hunting mark names ("Hunting: Dragon, Dragon Lord (level 50-120)") in lower case
+function P.huntMonsters(m)
+	local out = {}
+	local body = tostring(m and m.n or ""):match("^Hunting: (.-) %(") or ""
+	for name in body:gmatch("[^,]+") do
+		out[#out + 1] = lower(name:match("^%s*(.-)%s*$"))
+	end
+	return out
+end
+
+-- the hunting marks of any of these monsters, in the order of the list, at most `limit`
+function P.huntsFor(marks, monsters, limit)
+	local want = {}
+	for _, n in ipairs(monsters or {}) do
+		want[lower(n)] = true
+	end
+	local out = {}
+	for _, m in ipairs(marks or {}) do
+		if m.k == "hunt" then
+			for _, n in ipairs(P.huntMonsters(m)) do
+				if want[n] then
+					out[#out + 1] = m
+					break
+				end
+			end
+			if limit and #out >= limit then
+				break
+			end
+		end
+	end
+	return out
+end
+
+-- entries of the quest sources -> clean "questgoal" marks {k, x, y, z, n}
+function P.goals(entries, marks, cfg)
+	cfg = cfg or {}
+	local max = cfg.questGoalMax or 12
+	local out, seen = {}, {}
+	local function add(x, y, z, n)
+		if #out >= max then
+			return
+		end
+		local m = P.mark("questgoal", x, y, z, n, 0)
+		if m then
+			local key = P.key(m)
+			if not seen[key] then
+				seen[key] = true
+				out[#out + 1] = {k = m.k, x = m.x, y = m.y, z = m.z, n = m.n}
+			end
+		end
+	end
+	for _, e in ipairs(entries or {}) do
+		if type(e) == "table" then
+			local n = tostring(e.n or "")
+			if e.npc then
+				local m = P.findNpc(marks, e.npc)
+				if m then
+					add(m.x, m.y, m.z, n)
+				end
+			elseif type(e.hunts) == "table" then
+				for _, m in ipairs(P.huntsFor(marks, e.hunts, cfg.questHunts or 2)) do
+					add(m.x, m.y, m.z, n)
+				end
+			else
+				add(e.x, e.y, e.z, n)
+			end
+		end
+	end
+	return out
+end
+
+-- a short hash of a goal list: poi.lua sends the list again only when it changed
+function P.goalsHash(list)
+	local parts = {}
+	for _, m in ipairs(list or {}) do
+		parts[#parts + 1] = P.key(m) .. "=" .. tostring(m.n)
+	end
+	return P.hash(table.concat(parts, "|"))
 end
 
 return P
