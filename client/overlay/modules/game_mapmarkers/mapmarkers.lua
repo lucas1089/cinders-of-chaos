@@ -12,8 +12,10 @@
 --   edge of the game map panel with the name and the distance in tiles (MapMarkerMath.gameIndicator). Nothing for a
 --   member in view. A member on another floor gets a hint too (MapMarkerMath.gameFloorHint): in view a pin on their
 --   tile, out of view the edge arrow, both with the gold floor triangle and the floors in the text (+1 up, -2 down). Refreshed on a party update and on the player's step, every 150 ms at most.
+-- * NPC marks (O415, npcmarks.lua): a gold "!" over an NPC with a quest you can start, a gold "?" over one you have a step to
+--   turn in to, drawn over its head (server action npcmarks); a check box "Quest marks over NPCs" (`npcmarks`).
 -- * Settings (g_settings node 'mapMarkers'; window from the top menu, "Map Markers"): party members on / off, arrows on the game view on / off, points of
---   interest on / off, one check box per category. Turning a kind off on the client also tells the server, which then
+--   interest on / off, one check box per category, the NPC quest marks on / off. Turning a kind off on the client also tells the server, which then
 --   stops sending it.
 -- The markers sit in one layer inside the minimap widget and never take the mouse: clicks, drags and the wheel stay the
 -- minimap's own. The hover text comes from a hit test in the minimap's mouse move (MapMarkerMath.hit).
@@ -463,6 +465,9 @@ local function onMessage(protocol, opcode, msg)
     if settings.poi then onReveal(d) end
   elseif msg.action == 'quests' then
     if settings.poi then onQuests(d) end
+  elseif msg.action == 'npcmarks' then
+    -- O415: the gold ! and ? over NPC heads (npcmarks.lua)
+    if settings.npcmarks then NpcMarks.onMessage(d) end
   end
 end
 
@@ -476,12 +481,13 @@ end
 local function onGameStart()
   ensureAttached()
   attachGame()
-  send('hello', { party = settings.party, poi = settings.poi })
+  send('hello', { party = settings.party, poi = settings.poi, npcmarks = settings.npcmarks })
 end
 
 local function onGameEnd()
   clearParty()
   detachGame()
+  NpcMarks.reset()
   pois, floors, goals = {}, {}, {}
   place()
 end
@@ -493,6 +499,7 @@ local function updateSettingsWindow()
   settingsWindow.poiBox:setChecked(settings.poi, true)
   settingsWindow.gameBox:setChecked(settings.game, true)
   settingsWindow.gameBox:setEnabled(settings.party)
+  settingsWindow.npcMarksBox:setChecked(settings.npcmarks, true)
   for _, c in ipairs(M.CATEGORIES) do
     local box = settingsWindow.categories:getChildById(c)
     if box then
@@ -531,6 +538,17 @@ function setPoi(on)
   if not on then pois, floors, goals = {}, {}, {} end
   send('set', { poi = on })
   place()
+  updateSettingsWindow()
+end
+
+-- O415: the gold ! and ? over the heads of NPCs with a quest for you (apart from the map markers: its own switch)
+function setNpcMarks(on)
+  on = on == true
+  if settings.npcmarks == on then return end
+  settings.npcmarks = on
+  saveSettings()
+  NpcMarks.setEnabled(on)
+  send('set', { npcmarks = on })
   updateSettingsWindow()
 end
 
@@ -587,6 +605,7 @@ end
 
 function init()
   loadSettings()
+  NpcMarks.init(settings.npcmarks)
   g_ui.importStyle('mapmarkers')
   handlers.opcode = safe('opcode', onMessage)
   handlers.game = { onGameStart = safe('start', onGameStart), onGameEnd = safe('end', onGameEnd) }
@@ -606,6 +625,7 @@ function terminate()
   clearParty()
   detach()
   detachGame()
+  NpcMarks.terminate()
   if settingsWindow then settingsWindow:destroy() settingsWindow = nil end
   pois, floors = {}, {}
   handlers = {}

@@ -679,7 +679,7 @@ collision check") and be added here.
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
 | 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
-| 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua` | `game_mapmarkers` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked` |
+| 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua` | `game_mapmarkers` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked`; O415: `poi.lua` action `npcmarks` (the marks over NPC heads) |
 | 155 | `itemFinder` | `itemfinder.lua` | `game_itemfinder` | answers through `Chaos.sendChunked` |
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
@@ -856,7 +856,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
 | 7101400 - 7101419 | boss points (`bosspoints_config.lua`) |
-| 7101500 - 7101549 | tales (`tales_config.lua` `storage`): +0 language (1 en, 2 pt), +1 + slot quest state, +21 + slot kill count |
+| 7101500 - 7101549 | tales (`tales_config.lua` `storage`): +0 language (1 en, 2 pt), +1 + slot quest state, +21 + slot kill count, +41 the story introduction was told (O415, `story.intro`) |
 | 7101550 - 7101559 | first hour (`firsthour_config.lua` `storage`): +0 hints given (bits), +1 hunt reveals given (bits), +2 hints known, +3 reveals known |
 | 7101560 - 7101599 | tales, slots 20-39 (`tales_config.lua` `storage.ext`): +(slot - 20) quest state, +20 + (slot - 20) kill count |
 | 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
@@ -23224,6 +23224,85 @@ script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (
 - **Wiki.** `tools/gen_wiki_data.lua` tab Quests: every tale (giver, place, level, faction, chain, steps with where,
   rewards, the book), the three line spell quests and the ascension.
 
+### The story at the start and the marks over NPC heads (O415)
+
+Owner 2026-11-05: "present the story quest at the start; a quest exclamation mark over NPCs that have one, a question mark
+when a quest is ready to turn in".
+
+- **The story quest.** The Tale of Cinderhold (O396, the ten chapters of `tales_config.lua` saga `cinderhold`). The docs
+  (ROADMAP O396, `docs/CONTENT.md` "Tales") call it the story quest chain across the levels; the other 27 tales are side
+  quests. Its giver is Archivist Maelis, who stands in the main city (stall in the hub market, `npc_booths_config.lua`), the
+  town a new character lives in (`newplayer_config.lua` `homeTown`). No first step to send the player there is needed.
+  Chapter I opened at level 10, two levels after the start level (8). It opens at 8 now (`minLevel` 8, band 8-40), so the
+  first login can offer it. Chapter II still needs chapter I and level 22.
+- **The introduction.** `tales_config.lua` `story`: about `delayMs` (30 s) after the welcome (the kit; the first-hour hints
+  come at 9 s and then every 75 s) a message and a toast tell the story in the character's language and name chapter I.
+  `tales.lua` `T.storyIntro` / `T.storyLater`: scheduled at every login and after `NP.showWelcome` (a character that
+  leaves the tutorial island gets its kit later), waits for the kit, sets the flag (tales block +41, `story.intro`) first.
+  `M.storyDue` (`tales_core.lua`): "show" when no chapter was ever started and chapter I can be taken, "skip" (flag set,
+  silent) when any chapter was started, "wait" otherwise. An old character that never started it hears it once at its next
+  login. A character in the story never does. The quest is offered, not auto-started: accepting needs the Archivist within
+  6 tiles (`T.accept`), and a started chapter I would send step 1 to the troll caves, not to the giver.
+- **Step 1 points at the giver.** `M.questGoals(stateOf, lang, level)` adds a questgoal at the Archivist while the next
+  chapter can be taken ("Cinderhold I: The Torn Ledger: Ask the Archivist for the tale"); the O410 marker draws it. After a
+  chapter the next one is offered the same way once its level is reached.
+- **Asking.** She answers "story", "saga" and "cinderhold" (`M.asksStory`): the next page, the level it waits for or that the
+  tale is whole, then the list of tales. Her greeting offers {story} ({saga} in Portuguese).
+- **Marks over NPC heads.** Quest systems register `ChaosPoi.markSources[name] = fn(player) -> {{npc, mark}}` (like
+  `questSources`): tales (`T.npcMarks`, `M.npcMarks`), line spell quests (`S.npcMarks`: Archivist Odrenna), ascension
+  (`S.npcMarks` of `ascension_quest.lua`: Ascendant Oracle). Marks: `new` (gold "!": a quest the character can start now,
+  level and chain met, not started), `ready` (gold "?": a deliver or report step at the Archivist, a talk step at the NPC it
+  names, a spell quest whose hunt is done and whose door is open, the ascension trial or choice), `locked` (grey "!": a
+  quest that waits for a level; off, `poi_config.lua` `marks.locked`). The strongest mark per NPC wins (`P.mergeMarks`:
+  ready over new over locked), at most `marks.max` (24). The Keeper of Trials has no quest state and gets none.
+- **Protocol.** Extended opcode 153. The client's hello and set carry `npcmarks = true | false` (its own switch, apart from
+  `poi`). Server to client: `npcmarks {full, set = [{n, m}], clear = [name]}`, the whole list as a reset (`full = true`)
+  after the hello, then differences only (`P.markDiff`), checked every `questMs` (4 s) with the quest goals and sent at once
+  when a tale is accepted, turned in or a step is done (`T.pokeMarks`). Matched by NPC name, never by creature id.
+- **Client** (`game_mapmarkers`, no engine patch: client base patch 0189 stays free). `npcmarkmath.lua` (pure) and
+  `npcmarks.lua`: one phantom `NpcMark` widget per marked NPC in view on the map panel, 16x24 art (`npcmark_new`,
+  `npcmark_ready`, `npcmark_locked`, `client/tools/gen_mapmarker_art.py`) placed every 33 ms over the NPC's name from the
+  camera and the walk offsets (the same maths as the NPC dialogue's bubble). Hidden on another floor and when the NPC
+  leaves the screen, no timer while no marked NPC is in view. Option "Quest marks over NPCs" in the Map Markers window
+  (`npcmarks`, on by default). A mark drawn by the engine itself would need a base patch.
+- **Tests.** `tests/tales_test.lua` (O415 blocks: the story, the marks, the introduction through the engine),
+  `tests/poi_test.lua` (merge, diff), `tests/npcmarks_test.lua` (`poi.lua` on a mocked engine), `tests/spellquest_test.lua`,
+  `tests/ascension_quest_test.lua`, client `game_mapmarkers/npcmarkmath_test.lua`. Not run on a live server or in a client.
+
+## NPC review (O415)
+
+Static review of the 22 NPCs the repository adds (`data/npc/*.xml`, `data/npc/scripts`), owner request 2026-11-05. Nothing
+here ran on a live server. `tests/npc_review_test.lua` keeps it true. For every XML it checks that the script exists and
+parses, the greeting, farewell and walk away lines, that the script loads the focus module (hi, bye) and reads its XML
+parameters. It runs every script on a mocked NPC library and says every {keyword} of the greeting and of the NPC's own lines
+to it (an answer, a window, a keyword node or the shop module's trade words). It checks that every shop id is a surveyed
+base item or ours, that the `Chaos.storage.*`, `ChaosOpcodes.*` and fallback opcode numbers exist and match, that every NPC
+is placed (a stall, the service list or its system's startup placement), that every NPC name a config uses has an XML, and
+that every tale step is reachable in dialogue (a talk step names a faction NPC, the rest is done at the Archivist).
+
+| NPC | File | What works | What was broken | Fix |
+|---|---|---|---|---|
+| Archivist Maelis | `archivist_maelis.lua` | tales list (modal), lore, language switch, job, hunt, Chronicle; stall in the hub (`tales_config.lua` npc, `npc_booths_config.lua`) | Asking for the {chronicle} (offered in her own job line) raised "attempt to call local 'type'" and she said nothing: the callback's `type` parameter hid the function `type()` | Parameter renamed `msgType`. Added {story}. Test: every {keyword} a script says must be answered |
+| Archivist Odrenna | `archivist_odrenna.lua` | {spell} and {quest}: starts the quest, hunt text, trial window; stall | none found | none |
+| Ascendant Oracle | `ascendant_oracle.lua` | {ascension}: Calling, proof, Trial, Choice, promotion line; startup placement | none found | none |
+| Keeper of Trials | `keeper_of_trials.lua` | {trials} opens the window; no window on the greeting, by design | none found | none |
+| Cantor Velith, Elder Bramwyn, Forgemaster Brannoc, Warden Ysolde | `chaos_faction_npc.lua` (4-line scripts) | {contracts}, {quartermaster}, {lore}; the tales' talk steps ("tale", "Archivist"); each in its faction town | none found. Every talk step of the 37 tales names one of these four | none |
+| Cassian Auric (banker), Tavish Coldhand (stash), Vessa Hollowmark (pocket bosses), Halvard Deedkeeper (houses), Pell Ashmere (services), Dorrin Alewright (rumours) | `chaos_service_npc.lua` (4-line scripts) | every greeting word ({open}, {stash}, {bosses}, {charges}, {list}, {buy}, {services}, {rumours}) and every word of each job line reaches its answer; stalls in the hub, Dorrin next to the temple (`service_npcs_config.lua`) | none found | none |
+| Iselde Varrow | `iselde_varrow.lua` | {wares}, {tokens}, {luck}; level gate; the window opcode 167 equals `conquest_config.lua` | none found | none |
+| Mordecai Ashwager | `mordecai_ashwager.lua` | {gamble}, {odds}, {crates}; level gate; opcode 199 equals `gamble_config.lua` | none found | none |
+| Osric the Chandler | `osric_the_chandler.lua` | {wares}; opcode 176 equals `candlemarks_config.lua` | none found | none |
+| Material Broker | `material_broker.lua` | {sell}, {demand}, {trade} (tools from `professions_config.lua`), opcode 195 | none found. Tool 5908 (obsidian knife) is a stock id the base survey has no row for | listed in the test as a stock id to check with `check_content.py --base` |
+| Loot Buyer | `loot_buyer.lua` | {trade} (carried items at the price table), {appraise}, uniques, orbs, materials, rarity lines | none found. "The list is in your server log" is right: the list goes to the Server Log tab | none |
+| Veyra the Apothecary | `veyra_the_apothecary.lua` | {trade} from `module_shop`, {upgrade} (Everfull flask), level gates, restore; 30 shop ids, all surveyed base items or ours | none found | none |
+| Wandering Merchant | `wandering_merchant.lua` | {trade}; the list from `invasion_config.lua` (all ids known), season refusal, per-stop limit | none found. Created by the invasion world event, not at startup | none |
+| Widow Hessa | `widow_hessa.lua` | {trade} (hollow candy list), {buy} and a number, {harvest}; items from `harvest_event_config.lua` (pumpkinhead 2096 is a stock id like the knife) | none found. Created by the Haunted Harvest event | none |
+
+- **Cannot be verified without a live server.** The base NPC library (`FocusModule` answering hi and bye, `ShopModule`
+  keywords "trade", "buy <name>", "sell <name>", `NpcSystem.parseParameters` reading the XML, pugixml parsing the files);
+  where the startup placement really puts each NPC (`npc_place.lua`, free tiles, the stalls); that the base `items.xml` has
+  the stock ids the survey has no row for (`python3 -I tools/ci/check_content.py --base DATA_DIR` reads it); that the quest
+  windows open on a real client; the marks over the heads (a client run: the place over the name, a walking NPC and camera).
+
 ## The Weekly Challenge (O390) (`weekly_challenge.lua`, `weekly_challenge_core.lua`, `weekly_challenge_config.lua`)
 
 One queue dungeon of the dungeon system whose layout comes from the week: the same map for everyone, a new one every
@@ -25979,7 +26058,7 @@ Every text is English and Brazilian Portuguese: a player says "portugues" or "en
 language decides. The Archivist also answers lore questions from `lore_data.lua`.
 
 **The Tale of Cinderhold (O396).** Ten chapters, slots 28-37 (storages 7101568-7101576 state, 7101588-7101596 count;
-slot 37 is 7101577 / 7101597), a chain from level 10 to 560. The Archivist, who is also the Chronicler of the Ashen
+slot 37 is 7101577 / 7101597), a chain from level 8 to 560 (O415: chapter I opens at the start level). The Archivist, who is also the Chronicler of the Ashen
 Chronicle, has lost the ten founding pages of her oldest ledger: the night the Cinders fell they went where the ash
 went. Each chapter is one page, carried by a named elite in a hunt of its band; the Chronicle tells what the realm does
 now, the tale tells what the city was. Reused: the tales framework (window, chains, rewards, party credit, the faction
@@ -25987,7 +26066,7 @@ NPCs' talk steps), the hunting marks of `chaos_poi.lua`, the monster tiers, the 
 
 | Ch. | Level | Title | Talk | Elite (monster, hunting mark) | Reward |
 |---|---|---|---|---|---|
-| I | 10 | The Torn Ledger | | Gnawbone the Page-Eater (Troll, 32354 32129 8, 1-10) | 2,000 gold |
+| I | 8 | The Torn Ledger | | Gnawbone the Page-Eater (Troll, 32354 32129 8, 1-10) | 2,000 gold |
 | II | 22 | The Founders' Bell | Warden Ysolde | Old Bellwarden (Gargoyle, 32252 32578 8, 20-30) | 6,500 |
 | III | 45 | Mortar of Dragon Ash | | Ashmaw the Mortar-Wyrm (Dragon, 33215 31297 7, 40-50), then 20 Dragon / Dragon Hatchling | 18,000, Orb of Awakening |
 | IV | 60 | The Oathless Legion | Forgemaster Brannoc | Sskareth the Oathbreaker (Lizard High Guard, 33076 31152 7, 50-70) | 25,000, Orb of Awakening |

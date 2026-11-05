@@ -178,6 +178,49 @@ do
 	ok(cfg.questMs >= 1000 and cfg.questGoalMax > 0, "quest goal config")
 end
 
+-- ------------------------------------------------------------------ O415: marks over NPC heads
+do
+	ok(cfg.marks and cfg.marks.locked == false, "the grey mark for a level-locked quest is off by default")
+	ok(cfg.marks.max >= 8, "marks config")
+	local merged = P.mergeMarks({
+		{npc = "Archivist Maelis", mark = "new"},
+		{npc = "archivist maelis", mark = "ready"},
+		{npc = "Warden Ysolde", mark = "locked"},
+		{npc = "Warden Ysolde", mark = "new"},
+		{npc = "Archivist Odrenna", mark = "locked"},
+		{npc = "Nobody", mark = "sparkly"}, {npc = "", mark = "new"}, {mark = "new"}, "junk"
+	}, cfg)
+	eq(merged["archivist maelis"].m, "ready", "the strongest mark wins (ready over new)")
+	eq(merged["archivist maelis"].n, "Archivist Maelis", "the name of the first entry is kept")
+	eq(merged["warden ysolde"].m, "new", "new over locked")
+	eq(merged["archivist odrenna"].m, "locked", "locked alone stays")
+	eq(merged["nobody"], nil, "an unknown mark is dropped")
+	local n = 0
+	for _ in pairs(merged) do n = n + 1 end
+	eq(n, 3, "three NPCs")
+	local many = {}
+	for i = 1, 40 do many[#many + 1] = {npc = "Npc " .. string.format("%02d", i), mark = i <= 3 and "ready" or "new"} end
+	local capped = P.mergeMarks(many, {marks = {max = 5}})
+	local c = 0
+	for _ in pairs(capped) do c = c + 1 end
+	eq(c, 5, "at most marks.max NPCs")
+	ok(capped["npc 01"] and capped["npc 02"] and capped["npc 03"], "the strongest are kept when capped")
+	-- diffs: only what changed
+	local set, clear = P.markDiff({}, merged)
+	eq(#set, 3, "first send: all of them"); eq(#clear, 0, "none cleared")
+	eq(set[1].n, "Archivist Maelis", "sorted by name")
+	set, clear = P.markDiff(merged, merged)
+	eq(#set + #clear, 0, "nothing changed: nothing to send")
+	local after = P.mergeMarks({{npc = "Archivist Maelis", mark = "ready"}, {npc = "Warden Ysolde", mark = "ready"}}, cfg)
+	set, clear = P.markDiff(merged, after)
+	eq(#set, 1, "one changed"); eq(set[1].n, "Warden Ysolde", "which"); eq(set[1].m, "ready", "to ready")
+	eq(#clear, 1, "one gone"); eq(clear[1], "Archivist Odrenna", "which")
+	set, clear = P.markDiff(after, {})
+	eq(#set, 0, "all gone"); eq(#clear, 2, "both cleared")
+	set, clear = P.markDiff(nil, nil)
+	eq(#set + #clear, 0, "nil lists")
+end
+
 -- ------------------------------------------------------------------ the committed data and the config
 local data = dofile("data/chaos_poi.lua")
 local loaded, ver = P.load(data)

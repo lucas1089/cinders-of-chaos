@@ -341,4 +341,29 @@ okE, why = S.enterTrial(p2); eq(okE, false); eq(entered, 1, "step 1: no trial")
 p2:setStorageValue(k1.step, 2); p2:setStorageValue(k1.cooldown, os.time() + 30)
 okE = S.enterTrial(p2); eq(okE, false, "the door is shut"); eq(entered, 1)
 
+-- ------------------------------------------------------------------ O415: the mark over Odrenna's head
+do
+	check(ChaosPoi.markSources.spellquest == S.npcMarks, "the spell quests are a mark source")
+	local m = newPlayer(JUGG, 600)
+	local mk = S.npcMarks(m)
+	eq(#mk, 1, "a quest to start: one mark"); eq(mk[1].mark, "new", "gold !"); eq(mk[1].npc, "Archivist Odrenna", "over the Archivist")
+	m:setStorageValue(k1.step, 1)
+	eq(#S.npcMarks(m), 0, "the hunt is in the field: no mark")
+	m:setStorageValue(k1.step, 2)
+	eq(S.npcMarks(m)[1].mark, "ready", "the hunt is done and the door is open: gold ?")
+	m:setStorageValue(k1.cooldown, os.time() + 60)
+	eq(#S.npcMarks(m), 0, "the door is shut for now")
+	m:setStorageValue(k1.cooldown, 0)
+	m.level = 300
+	eq(#S.npcMarks(m), 0, "a quest above the level: no mark by default")
+	ChaosPoi.cfg = {marks = {locked = true}}
+	eq(#S.npcMarks(m), 0, "a started quest stays quiet below the level")
+	local low = newPlayer(JUGG, 300)
+	eq(S.npcMarks(low)[1].mark, "locked", "not started and below the level: grey !, when the option is on")
+	ChaosPoi.cfg = nil
+	eq(#S.npcMarks(low), 0, "and nothing by default")
+	local none = newPlayer(0, 900)
+	eq(#S.npcMarks(none), 0, "a class without a line: no mark")
+end
+
 print("spellquest_test: " .. checks .. " checks OK")

@@ -335,6 +335,65 @@ function P.goals(entries, marks, cfg)
 	return out
 end
 
+-- ---------------------------------------------------------------- marks over NPC heads (O415)
+-- The quest systems say which NPC a character has something with (poi.lua asks them through ChaosPoi.markSources):
+-- {npc = name, mark = "new" | "ready" | "locked"}. "new": a quest the character can start now (gold "!"), "ready": a
+-- step to turn in or report to this NPC (gold "?"), "locked": a quest that waits for a level (grey "!"). An NPC with
+-- several keeps the strongest (ready, then new, then locked). The client matches by the NPC's name.
+P.MARK_RANK = {locked = 1, new = 2, ready = 3}
+
+-- entries -> {[lower case name] = {n = name, m = mark}}, at most cfg.marks.max NPCs (the strongest, then by name)
+function P.mergeMarks(entries, cfg)
+	local max = cfg and cfg.marks and cfg.marks.max or 24
+	local best = {}
+	for _, e in ipairs(entries or {}) do
+		local rank = type(e) == "table" and P.MARK_RANK[e.mark]
+		local name = type(e) == "table" and tostring(e.npc or "") or ""
+		if rank and name ~= "" then
+			local key = lower(name)
+			if not best[key] then
+				best[key] = {n = name, m = e.mark}
+			elseif P.MARK_RANK[best[key].m] < rank then
+				best[key].m = e.mark -- the name of the first entry stays
+			end
+		end
+	end
+	local list = {}
+	for key, v in pairs(best) do
+		list[#list + 1] = {key = key, rank = P.MARK_RANK[v.m]}
+	end
+	table.sort(list, function(a, b)
+		if a.rank ~= b.rank then
+			return a.rank > b.rank
+		end
+		return a.key < b.key
+	end)
+	local out = {}
+	for i = 1, math.min(#list, max) do
+		out[list[i].key] = best[list[i].key]
+	end
+	return out
+end
+
+-- what changed from the marks last sent to the marks now: set = [{n, m}] (new or changed), clear = [name] (gone)
+function P.markDiff(old, new)
+	local set, clear = {}, {}
+	for key, v in pairs(new or {}) do
+		local o = (old or {})[key]
+		if not o or o.m ~= v.m then
+			set[#set + 1] = {n = v.n, m = v.m}
+		end
+	end
+	for key, o in pairs(old or {}) do
+		if not (new or {})[key] then
+			clear[#clear + 1] = o.n
+		end
+	end
+	table.sort(set, function(a, b) return lower(a.n) < lower(b.n) end)
+	table.sort(clear, function(a, b) return lower(a) < lower(b) end)
+	return set, clear
+end
+
 -- a short hash of a goal list: poi.lua sends the list again only when it changed
 function P.goalsHash(list)
 	local parts = {}

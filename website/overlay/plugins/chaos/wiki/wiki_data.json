@@ -40390,7 +40390,7 @@
 				{
 					"id": "quest:tale:cinderhold_1",
 					"name": "Cinderhold I: The Torn Ledger",
-					"sub": "Tale, level 10+: Archivist Maelis",
+					"sub": "Tale, level 8+: Archivist Maelis",
 					"color": "#f0d27a",
 					"group": "saga",
 					"sections": [
@@ -40406,7 +40406,7 @@
 							"w": [25, 75],
 							"rows": [
 								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
-								["Level", "10 or more (written for 10 to 40)"],
+								["Level", "8 or more (written for 8 to 40)"],
 								["Faction", "The Ashen Vigil"],
 								["Saga", "The Tale of Cinderhold, chapter 1"]
 							]

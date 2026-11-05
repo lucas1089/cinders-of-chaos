@@ -87,11 +87,24 @@ end
 
 -- O410: the character's next tale steps on its map (poi.lua asks every questMs; tales_core.lua M.questGoals)
 function T.questGoals(player)
-	return M.questGoals(stateFn(player), T.langOf(player))
+	return M.questGoals(stateFn(player), T.langOf(player), player:getLevel())
+end
+-- O415: the NPCs that get a mark over their heads for this character (poi.lua mark sources, poi_core.lua P.mergeMarks)
+function T.npcMarks(player)
+	local marks = ChaosPoi and ChaosPoi.cfg and ChaosPoi.cfg.marks or {}
+	return M.npcMarks(stateFn(player), player:getLevel(), {locked = marks.locked == true})
+end
+-- send the character's NPC marks now (a quest state changed); poi.lua also checks every few seconds
+function T.pokeMarks(player)
+	if ChaosPoi and ChaosPoi.sendMarks then
+		pcall(ChaosPoi.sendMarks, player)
+	end
 end
 ChaosPoi = ChaosPoi or {}
 ChaosPoi.questSources = ChaosPoi.questSources or {}
 ChaosPoi.questSources.tales = T.questGoals
+ChaosPoi.markSources = ChaosPoi.markSources or {}
+ChaosPoi.markSources.tales = T.npcMarks
 
 -- keep the character on the visit watch list while one of its tales waits for a visit; a new wait shows the place
 function T.rewatch(player)
@@ -316,6 +329,7 @@ function T.accept(player, t)
 	player:setStorageValue(M.countKey(t), 0)
 	msg(player, string.format(M.t(C().ui.accepted, lang), M.t(t.name, lang)))
 	T.rewatch(player)
+	T.pokeMarks(player)
 	return true
 end
 
@@ -331,6 +345,7 @@ function T.stepMessage(player, t, newState, lang)
 	end
 	msg(player, text)
 	toast(player, text)
+	T.pokeMarks(player)
 end
 
 function T.turnIn(player, t)
@@ -359,6 +374,7 @@ function T.turnIn(player, t)
 	player:setStorageValue(M.stateKey(t), a)
 	player:setStorageValue(M.countKey(t), 0)
 	T.rewatch(player)
+	T.pokeMarks(player)
 	if c then
 		T.reward(player, t)
 	else
@@ -598,6 +614,52 @@ if visits.interval then
 end
 visits:register()
 
+-- ======================================================================== the story (O415)
+local function kitGiven(player)
+	local base = Chaos.storage and Chaos.storage.newPlayer
+	return base and player:getStorageValue(base) > 0
+end
+
+-- tell the character about the story quest once (M.storyDue decides): a message and a toast; the flag is set first, so a
+-- failed message is not repeated. A character that started the story before is only marked.
+function T.storyIntro(player)
+	local st = C().story
+	if not C().enabled or not st then
+		return false
+	end
+	local key = C().storage.base + st.intro
+	local due = M.storyDue(getS(player, key), stateFn(player), player:getLevel())
+	if due == "skip" then
+		player:setStorageValue(key, 1)
+		return false
+	elseif due ~= "show" then
+		return false
+	end
+	local offer = M.storyOffer(stateFn(player), player:getLevel())
+	player:setStorageValue(key, 1)
+	local text = M.storyText(offer, T.langOf(player))
+	msg(player, text)
+	toast(player, text)
+	T.pokeMarks(player)
+	return true
+end
+
+-- after `delayMs`, when the character has its kit (a tutorial island keeps it until the character leaves: the welcome
+-- hook below asks again then)
+function T.storyLater(player)
+	local st = C().story
+	if not C().enabled or not st then
+		return
+	end
+	local pid = player:getId()
+	addEvent(function()
+		local p = Player(pid)
+		if p and kitGiven(p) then
+			pcall(T.storyIntro, p)
+		end
+	end, st.delayMs or 30000)
+end
+
 -- ======================================================================== login, logout, startup
 local login = CreatureEvent("ChaosTalesLogin")
 function login.onLogin(player)
@@ -607,6 +669,7 @@ function login.onLogin(player)
 	-- a talk step done in an NPC's own Lua state may have ended a visit wait, or started one
 	pcall(T.rewatch, player)
 	pcall(T.syncSagas, player)
+	pcall(T.storyLater, player)
 	return true
 end
 login:register()
@@ -623,6 +686,20 @@ local startup = GlobalEvent("ChaosTalesStartup")
 function startup.onStartup()
 	for _, p in ipairs(M.problems()) do
 		log("config: " .. p)
+	end
+	-- O415: the welcome (newplayer.lua) comes when the kit is given, also when a character leaves the tutorial island: the
+	-- story follows it, after the first-hour hint
+	local NP = ChaosNewPlayer
+	if NP and NP.showWelcome and not NP.talesWrapped then
+		NP.talesWrapped = true
+		local show = NP.showWelcome
+		NP.showWelcome = function(player, ...)
+			local shown = show(player, ...)
+			if shown and player then
+				pcall(T.storyLater, player)
+			end
+			return shown
+		end
 	end
 	if C().enabled and C().npc.spawn then
 		-- after the Ascendant Oracle and the Keeper of Trials (1 s), so they keep their tiles
