@@ -217,7 +217,7 @@
 		"factions": {
 			"title": {"en": "Factions", "pt-BR": "Facções"},
 			"level": 40,
-			"menu": "Adventure > Factions",
+			"menu": null,
 			"rows": [
 				{"id": "who", "text": {"en": "Level 40+. Reputation you earn before that is kept. Nothing is locked: even a Hostile faction still talks and trades.", "pt-BR": "Nível 40+. A reputação ganha antes disso fica guardada. Nada fica trancado: até uma facção Hostil ainda fala e negocia."}},
 				{"id": "drops", "text": {"en": "Ranks unlock gear, orb bundles and titles at the faction's quartermaster.", "pt-BR": "Os postos liberam equipamento, pacotes de orbes e títulos com o intendente da facção."}},
@@ -227,7 +227,7 @@
 		"gamble": {
 			"title": {"en": "The Gambler", "pt-BR": "O Apostador"},
 			"level": 40,
-			"menu": "Economy > The Gambler",
+			"menu": null,
 			"rows": [
 				{"id": "who", "text": {"en": "Level 40+. The Gambler sells sealed gear for gold. You see how rare it is only after you buy it.", "pt-BR": "Nível 40+. O Apostador vende equipamento lacrado por ouro. Você só vê a raridade depois de comprar."}},
 				{"id": "drops", "text": {"en": "One piece of gear for your level and class.", "pt-BR": "Uma peça de equipamento para o seu nível e a sua classe."}},

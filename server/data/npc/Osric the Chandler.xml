@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Osric the Chandler: keeps the Candlemark shop, the currency for time online (server/data/scripts/chaos/candlemarks.lua,
      candlemarks_config.lua; server/README.md "Candlemarks"). Placed next to the temples at startup; installed by
-     server/tools/install_candlemarks.py. The same window opens from the game menu (Economy > Candlemarks). -->
+     server/tools/install_candlemarks.py. Osric the Chandler opens the window. -->
 <npc name="Osric the Chandler" script="osric_the_chandler.lua" walkinterval="0" floorchange="0">
 	<health now="100" max="100" />
 	<look type="133" head="78" body="58" legs="76" feet="115" addons="1" />

@@ -121,7 +121,7 @@ local function creatureSayCallback(cid, type, msg)
 			return true
 		end
 		openWindow(player)
-		npcHandler:say(t(cid, "Here is what %s asks, and what it gives. Your contracts, your standing and my stores are in the ledger (Adventure > Factions). Bring %s and deliveries to me.",
+		npcHandler:say(t(cid, "Here is what %s asks, and what it gives. Your contracts, your standing and my stores are in the ledger. Bring %s and deliveries to me.",
 			faction.name, token.plural), cid)
 		return true
 	elseif has(text, "lore", "who", "faction", "about") then

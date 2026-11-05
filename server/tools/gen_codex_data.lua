@@ -300,7 +300,7 @@ function Gen.conquestRows(D, id)
 		return nil
 	end
 	local band = D.conquest.vendor.levelBand or 0
-	local vendor = {"Conquest vendor", string.format("%s Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): %s. " ..
+	local vendor = {"Conquest vendor", string.format("%s Conquest Tokens (Iselde Varrow): %s. " ..
 		"Bought pieces are made like a drop.", Gen.num(o.price), o.always and "always on sale" or
 		string.format("once it dropped for you, once you slew a monster that drops it, or from level %d", math.max(1, o.level - band)))}
 	local group = o.group == "ascended" and "boss" or o.group
@@ -1720,7 +1720,7 @@ function Gen.basicsEntries(D)
 		add("conquest", "Conquest Tokens", "The sure path: tokens for every boss and clear, any item you have seen for sale.", {
 			{h = "Earning", p = {"Every boss you help slay (damage, last hit, or a party member within range), every sealed rift, dungeon clear, Ember Descent run and invasion reward gives Conquest Tokens. Each source has a daily limit; the window's Progress tab shows today's tokens."},
 				cols = {"Source", "Tokens", "Per day"}, w = {40, 35, 25}, rows = src},
-			{h = "The Conquest vendor", p = {string.format("Iselde Varrow in the teleport room's market, or Economy > Conquest Vendor, from a protection zone. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + %d. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.",
+			{h = "The Conquest vendor", p = {string.format("Iselde Varrow in the teleport room's market. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + %d. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.",
 				cq.vendor.levelBand),
 				string.format("The Cinderheart chain: an Omen Key of the kind you choose (%d), your Omen Key attuned to another kind (%d), an Ascended Shard of the kind you choose (%d); %d shards or %d relics of one kind become one of another.",
 					cq.cinder.omenKey, cq.cinder.attune, cq.cinder.shard, cq.cinder.convert.shards, cq.cinder.convert.relics),

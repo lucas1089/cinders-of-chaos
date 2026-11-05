@@ -892,7 +892,7 @@ local function langText(v)
 	return v
 end
 
--- D.candlemarks = candlemarks_config.lua: the Candlemark shop (Osric the Chandler; Economy > Candlemarks). D.gems =
+-- D.candlemarks = candlemarks_config.lua: the Candlemark shop (Osric the Chandler). D.gems =
 -- chaos_gems_config.lua (a "gem" offer: a random gem of one quality)
 S.REWARDS[#S.REWARDS + 1] = {key = "candlemarks", fn = function(D, emit)
 	local c = D.candlemarks

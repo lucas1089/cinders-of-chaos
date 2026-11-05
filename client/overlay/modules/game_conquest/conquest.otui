@@ -1,6 +1,6 @@
 // The Conquest vendor window (game_conquest): Conquest Tokens, the offers by tab (uniques, set pieces, raid and Ascended
 // uniques, the Cinderheart chain, the rarity refinement) and the Progress page (bad-luck protection, today's tokens).
-// Styles from client_chaos_theme. Opened from the menu (Economy > Conquest Vendor) or by Iselde Varrow.
+// Styles from client_chaos_theme. Opened by Iselde Varrow (not in the top menu: topbarlogic.lua NPC_ONLY).
 
 ConquestRow < UIWidget
   height: 40

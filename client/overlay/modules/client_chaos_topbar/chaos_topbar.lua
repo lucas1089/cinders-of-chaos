@@ -778,6 +778,8 @@ end
 -- closing 'More' so that one stays last. An entry with `key` gets its hotkey at the next login.
 function ChaosTopBar.addEntry(categoryId, entry, under)
   categoryId = CATEGORY_ALIAS[categoryId] or categoryId
+  -- an NPC opens it: not in the menu (topbarlogic.lua NPC_ONLY); true, so the module does not try again
+  if entry and ChaosTopBarLogic and ChaosTopBarLogic.npcOnly and ChaosTopBarLogic.npcOnly(entry.text) then return true end
   for _, category in ipairs(CATEGORIES) do
     if category.id == categoryId and entry and entry.text then
       local target = category.entries

@@ -3,7 +3,7 @@
 -- crafting orbs, gems, supplies and other help to progress. Every number of the system is here. Engine part:
 -- candlemarks.lua; pure logic: candlemarks_core.lua (tests: server/tests/candlemarks_test.lua); NPC: data/npc/Osric the
 -- Chandler.xml (server/tools/install_candlemarks.py); tables: server/sql/chaos_candlemarks.sql; client
--- game_candlemarks (menu Economy > Candlemarks); overview: server/README.md "Candlemarks".
+-- game_candlemarks (opened by Osric the Chandler); overview: server/README.md "Candlemarks".
 -- Prices, limits and the IP rule: decided 2026-10-15 (docs/OWNER_TODO.md "Decided").
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible. Edit here, then /reload scripts (or restart).
 
@@ -46,7 +46,7 @@ C.earn = {
 
 -- ------------------------------------------------------------------ the NPC
 -- Osric the Chandler next to these towns' temples (startup, npc_place.lua). The window opens anywhere (the game menu,
--- Economy > Candlemarks, the counter, or Osric's trade), but buyNearNpc (owner 2026-10-15): a purchase needs Osric
+-- the counter or Osric's trade), but buyNearNpc (owner 2026-10-15): a purchase needs Osric
 -- within `range` tiles on the same floor (the server checks).
 C.npc = {
 	name = "Osric the Chandler", range = 3, towns = {1, 2, 3, 4, 5}, delayMs = 3500, buyNearNpc = true,

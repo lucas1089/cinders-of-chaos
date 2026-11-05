@@ -64,7 +64,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 - **{{descent.name}}.** Nível {{descent.minLevel}}, Adventure > Ember Descent. Veja a [página dela](wiki:dungeon:descent).
 ::: end
 - **Masmorras e torre.** Adventure > Dungeons (Alt+J), em {{dungeon.difficulties}} dificuldades: mate 85% dos monstros para abrir o chefe. A [Infinity Tower](wiki:dungeon:tower) fica em Adventure > Infinity Tower.
-- **Facções.** Adventure > Factions (Facções). Chegue a Trusted no nível 120 numa delas.
+- **Facções.** Fale com o intendente de uma facção. Chegue a Trusted no nível 120 numa delas.
 
 ## Nível 150-300: veterano
 

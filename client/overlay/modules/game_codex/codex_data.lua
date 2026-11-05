@@ -6045,7 +6045,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6090,7 +6090,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6136,7 +6136,7 @@ CodexData = {
 								{"Monsters", "Vorgrun of the Jade Fangs, Fractalis the Shardmaw, Armorcoil, Blazefang, Gorgulith, Nexlurith, Voidwagner, Aegis Sentinel, Flarevein Wyrm, Gloomstinger, Pyroquill, Toxic Mauler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2550 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2550 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6178,7 +6178,7 @@ CodexData = {
 								{"Monsters", "Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6223,7 +6223,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3450 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1850. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3450 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1850. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6269,7 +6269,7 @@ CodexData = {
 								{"Monsters", "Morgrath the Umbral Archmage, Nyxdrath the Midnight Terror, Hellmaw Brute, Mirethorn Hexer, Mossfang Drake, Plague Warbringer, Viridscale Wrym, Embermaw Archon, Inferno Juggernaut, Pitlord Incarnate, Stormvein Wrym, Waterglow Conjurer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3900 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2150. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3900 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 2150. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6315,7 +6315,7 @@ CodexData = {
 								{"Monsters", "Morgrath the Umbral Archmage, Nyxdrath the Midnight Terror, Hellmaw Brute, Mirethorn Hexer, Mossfang Drake, Plague Warbringer, Viridscale Wrym, Embermaw Archon, Inferno Juggernaut, Pitlord Incarnate, Stormvein Wrym, Waterglow Conjurer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3900 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2150. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3900 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 2150. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6360,7 +6360,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6402,7 +6402,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -6443,7 +6443,7 @@ CodexData = {
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -6485,7 +6485,7 @@ CodexData = {
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -6523,7 +6523,7 @@ CodexData = {
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -6561,7 +6561,7 @@ CodexData = {
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -6599,7 +6599,7 @@ CodexData = {
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -6644,7 +6644,7 @@ CodexData = {
 								{"Monsters", "Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6686,7 +6686,7 @@ CodexData = {
 								{"Monsters", "Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Warlock, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6728,7 +6728,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6770,7 +6770,7 @@ CodexData = {
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Bonelord, Elder Bonelord, Skeleton Warrior, Undead Gladiator, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "680 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "680 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6815,7 +6815,7 @@ CodexData = {
 								{"Monsters", "Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6856,7 +6856,7 @@ CodexData = {
 								{"Bosses", "Morgrath the Umbral Archmage, Nyxdrath the Midnight Terror, Ysgrath the Cinderheart."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "8200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "8200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 2350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -6899,7 +6899,7 @@ CodexData = {
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "900 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 150. Bought pieces are made like a drop."},
+								{"Conquest vendor", "900 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 150. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6941,7 +6941,7 @@ CodexData = {
 								{"Monsters", "Barbarian Headsplitter, Gladiator, Valkyrie, Stalker, Assassin, Ghoul, Pirate Skeleton, Scar Tribe Shaman, Dark Apprentice, Gazer, Tortoise, Firestarter."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "650 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "650 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -6983,7 +6983,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -7025,7 +7025,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1390 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1390 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7067,7 +7067,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7107,7 +7107,7 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"Bosses", "Ysgrath the Cinderheart."},
 								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."},
-								{"Conquest vendor", "5400 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
+								{"Conquest vendor", "5400 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7149,7 +7149,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7187,7 +7187,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7225,7 +7225,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7267,7 +7267,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7305,7 +7305,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7343,7 +7343,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7381,7 +7381,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7424,7 +7424,7 @@ CodexData = {
 								{"Monsters", "Embermaw Archon, Flarevein Wyrm, Glacial Hellcharger, Inferno Juggernaut, Nightflare Dreadknight, Plague Warbringer, Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Vhalkareth Mortal Shell."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1600. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3080 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1600. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -7466,7 +7466,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -7508,7 +7508,7 @@ CodexData = {
 								{"Monsters", "Embermaw Archon, Flarevein Wyrm, Glacial Hellcharger, Inferno Juggernaut, Nightflare Dreadknight, Plague Warbringer, Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Vhalkareth Mortal Shell."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2930 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1500. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2930 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1500. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -7553,7 +7553,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -7598,7 +7598,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3600 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1950. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3600 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1950. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -7644,7 +7644,7 @@ CodexData = {
 								{"Monsters", "Vorgrun of the Jade Fangs, Fractalis the Shardmaw, Armorcoil, Blazefang, Gorgulith, Nexlurith, Voidwagner, Aegis Sentinel, Flarevein Wyrm, Gloomstinger, Pyroquill, Toxic Mauler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -7686,7 +7686,7 @@ CodexData = {
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
+								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -7724,7 +7724,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7762,7 +7762,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7803,7 +7803,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7845,7 +7845,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7886,7 +7886,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7924,7 +7924,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -7970,7 +7970,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1420 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 90. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1420 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 90. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -8012,7 +8012,7 @@ CodexData = {
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8055,7 +8055,7 @@ CodexData = {
 								{"Monsters", "Azure Dragon, Golden Lord, Many Faces, Tomb Guardian, Frost Hydra, Blazebringer, Bony Sea Devil, Armored Giant, Velomire, Warpdread, Axebringer Fiend, Hazardous Phantom."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1950 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 850. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1950 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 850. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8101,7 +8101,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3530 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1900. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3530 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1900. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8143,7 +8143,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -8188,7 +8188,7 @@ CodexData = {
 								{"Monsters", "Bonelich, Tombwraith, Cinderclaw, Scaledrake, Grave Sentinel, Frost Behemoth, Archon, Bonecleaver, Sapphire Warrior, Seraphiel, Blackblade, Wraith Archer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1500 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1500 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8230,7 +8230,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1010 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1010 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -8275,7 +8275,7 @@ CodexData = {
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8315,7 +8315,7 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.6% (x item find)."},
 								{"Bosses", "Ascended Thalcyra, Ysgrath the Cinderheart."},
 								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."},
-								{"Conquest vendor", "4200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
+								{"Conquest vendor", "4200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -8354,7 +8354,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1360 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1360 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -8399,7 +8399,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8442,7 +8442,7 @@ CodexData = {
 								{"Monsters", "Wolf, Troll, Goblin, Orc, Bear, Skeleton, Elf, Dwarf, Bandit, Orc Spearman, Goblin Scavenger, Winter Wolf."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "610 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "610 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8485,7 +8485,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8526,7 +8526,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -8568,7 +8568,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -8606,7 +8606,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -8644,7 +8644,7 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -8686,7 +8686,7 @@ CodexData = {
 								{"Monsters", "Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8728,7 +8728,7 @@ CodexData = {
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8770,7 +8770,7 @@ CodexData = {
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8815,7 +8815,7 @@ CodexData = {
 								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1580 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): always on sale. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1580 Conquest Tokens (Iselde Varrow): always on sale. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8861,7 +8861,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3300 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1750. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3300 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1750. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8907,7 +8907,7 @@ CodexData = {
 								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1500 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1500 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8950,7 +8950,7 @@ CodexData = {
 								{"Monsters", "Hunter, Cyclops, Gargoyle, Mummy, Orc Berserker, Dark Magician, Vampire, Ghost, Witch, Crypt Shambler, Fire Devil, Elf Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -8995,7 +8995,7 @@ CodexData = {
 								{"Monsters", "Vorgrun of the Jade Fangs, Fractalis the Shardmaw, Armorcoil, Blazefang, Gorgulith, Nexlurith, Voidwagner, Aegis Sentinel, Flarevein Wyrm, Gloomstinger, Pyroquill, Toxic Mauler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9040,7 +9040,7 @@ CodexData = {
 								{"Monsters", "Vorgrun of the Jade Fangs, Fractalis the Shardmaw, Armorcoil, Blazefang, Gorgulith, Nexlurith, Voidwagner, Aegis Sentinel, Flarevein Wyrm, Gloomstinger, Pyroquill, Toxic Mauler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2400 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1150. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2400 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1150. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9082,7 +9082,7 @@ CodexData = {
 								{"Monsters", "Embermaw Archon, Flarevein Wyrm, Glacial Hellcharger, Inferno Juggernaut, Nightflare Dreadknight, Plague Warbringer, Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Vhalkareth Mortal Shell."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1600. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3080 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1600. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9127,7 +9127,7 @@ CodexData = {
 								{"Monsters", "Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "650 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "650 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9172,7 +9172,7 @@ CodexData = {
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9217,7 +9217,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9259,7 +9259,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9304,7 +9304,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9346,7 +9346,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Massive Fire Elemental, Dragon Lord, Blazebringer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "680 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "680 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9391,7 +9391,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Massive Fire Elemental, Dragon Lord, Blazebringer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9437,7 +9437,7 @@ CodexData = {
 								{"Monsters", "Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9477,7 +9477,7 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.6% (x item find)."},
 								{"Bosses", "Ascended Morvane, Ysgrath the Cinderheart."},
 								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."},
-								{"Conquest vendor", "4200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
+								{"Conquest vendor", "4200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -9523,7 +9523,7 @@ CodexData = {
 								{"Monsters", "Embermaw Archon, Flarevein Wyrm, Glacial Hellcharger, Inferno Juggernaut, Nightflare Dreadknight, Plague Warbringer, Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Vhalkareth Mortal Shell."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3450 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1850. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3450 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1850. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9569,7 +9569,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2930 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1500. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2930 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1500. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9612,7 +9612,7 @@ CodexData = {
 								{"Monsters", "Orc Warrior, Minotaur, Minotaur Archer, Elf Scout, Amazon, Poacher, Hunter, Wild Warrior, Gang Member, Dwarf Soldier, Troll Champion, War Wolf."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9655,7 +9655,7 @@ CodexData = {
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "980 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Conquest vendor", "980 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9693,7 +9693,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -9731,7 +9731,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -9773,7 +9773,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -9811,7 +9811,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -9853,7 +9853,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "630 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "630 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9895,7 +9895,7 @@ CodexData = {
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -9937,7 +9937,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "980 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Conquest vendor", "980 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -9979,7 +9979,7 @@ CodexData = {
 								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10021,7 +10021,7 @@ CodexData = {
 								{"Monsters", "Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10066,7 +10066,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3150 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1650. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3150 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1650. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10111,7 +10111,7 @@ CodexData = {
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10157,7 +10157,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3300 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1750. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3300 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1750. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10199,7 +10199,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10244,7 +10244,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
+								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10282,7 +10282,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -10320,7 +10320,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -10358,7 +10358,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -10400,7 +10400,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -10438,7 +10438,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -10476,7 +10476,7 @@ CodexData = {
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -10522,7 +10522,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3450 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1850. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3450 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1850. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10568,7 +10568,7 @@ CodexData = {
 								{"Monsters", "Vorgrun of the Jade Fangs, Fractalis the Shardmaw, Armorcoil, Blazefang, Gorgulith, Nexlurith, Voidwagner, Aegis Sentinel, Flarevein Wyrm, Gloomstinger, Pyroquill, Toxic Mauler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1950 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 850. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1950 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 850. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10613,7 +10613,7 @@ CodexData = {
 								{"Monsters", "Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10655,7 +10655,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10697,7 +10697,7 @@ CodexData = {
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
+								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10742,7 +10742,7 @@ CodexData = {
 								{"Monsters", "Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "650 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "650 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10788,7 +10788,7 @@ CodexData = {
 								{"Monsters", "Vorgrun of the Jade Fangs, Fractalis the Shardmaw, Armorcoil, Blazefang, Gorgulith, Nexlurith, Voidwagner, Aegis Sentinel, Flarevein Wyrm, Gloomstinger, Pyroquill, Toxic Mauler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2480 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1200. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2480 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1200. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10833,7 +10833,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10876,7 +10876,7 @@ CodexData = {
 								{"Monsters", "Pyrrhaxis, Voidwagner, Hellmaw Brute, Nightfang Widow, Bloodshade Reaper, Dybuk, Hodag, Lochtag, Malvaroth, Snallygaster, Gloomstinger, Oznik."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2400 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1150. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2400 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1150. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10918,7 +10918,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -10961,7 +10961,7 @@ CodexData = {
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "870 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 130. Bought pieces are made like a drop."},
+								{"Conquest vendor", "870 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 130. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11003,7 +11003,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
+								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11045,7 +11045,7 @@ CodexData = {
 								{"Monsters", "Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11087,7 +11087,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "630 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "630 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11129,7 +11129,7 @@ CodexData = {
 								{"Monsters", "Alpha Demon, Hellflayer, Skullshade, Deathrattle, Guardian of Tales, Arcwarden of Tales, Ruby Archer, Butcher Ogre, Skullcrusher Demon, Demon of the Depths, Frost Larva, Azure Guard."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1280 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 400. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1280 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 400. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11172,7 +11172,7 @@ CodexData = {
 								{"Monsters", "Goblin, Orc, Dwarf, Skeleton, Elf, Troll, Minotaur, Orc Spearman, Dark Apprentice, Crazed Dwarf, Larva, Swampling."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11214,7 +11214,7 @@ CodexData = {
 								{"Monsters", "Embermaw Archon, Flarevein Wyrm, Glacial Hellcharger, Inferno Juggernaut, Nightflare Dreadknight, Plague Warbringer, Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Vhalkareth Mortal Shell."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1550. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3000 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1550. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11256,7 +11256,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11302,7 +11302,7 @@ CodexData = {
 								{"Monsters", "Embermaw Archon, Flarevein Wyrm, Glacial Hellcharger, Inferno Juggernaut, Nightflare Dreadknight, Plague Warbringer, Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Vhalkareth Mortal Shell."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2050. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 2050. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11345,7 +11345,7 @@ CodexData = {
 								{"Monsters", "Frosted Dragon, Infernal Demon, Scalebreaker, Cleftfiend, Mould Phantom, Vibrant Phantom, Courage Leech, Cloak Of Terror, Dreamgorger, Swamp Snapper, Wandering Pillar, Garack."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1730 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 700. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1730 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 700. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11391,7 +11391,7 @@ CodexData = {
 								{"Monsters", "Embermaw Archon, Flarevein Wyrm, Glacial Hellcharger, Inferno Juggernaut, Nightflare Dreadknight, Plague Warbringer, Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Charged Mechanic Goblin."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1550. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3000 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1550. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11437,7 +11437,7 @@ CodexData = {
 								{"Monsters", "Vorgrun of the Jade Fangs, Fractalis the Shardmaw, Armorcoil, Blazefang, Gorgulith, Nexlurith, Voidwagner, Aegis Sentinel, Flarevein Wyrm, Gloomstinger, Pyroquill, Toxic Mauler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2850 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1450. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2850 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1450. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11479,7 +11479,7 @@ CodexData = {
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "930 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 170. Bought pieces are made like a drop."},
+								{"Conquest vendor", "930 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 170. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11521,7 +11521,7 @@ CodexData = {
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11563,7 +11563,7 @@ CodexData = {
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11605,7 +11605,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11645,7 +11645,7 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.6% (x item find)."},
 								{"Bosses", "Ascended Sangrith, Ysgrath the Cinderheart."},
 								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."},
-								{"Conquest vendor", "4200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
+								{"Conquest vendor", "4200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -11690,7 +11690,7 @@ CodexData = {
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11732,7 +11732,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11775,7 +11775,7 @@ CodexData = {
 								{"Monsters", "Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Plague Warbringer, Nightflare Dreadknight, Inferno Juggernaut, Glacial Hellcharger, Flarevein Wyrm."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11818,7 +11818,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11863,7 +11863,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11908,7 +11908,7 @@ CodexData = {
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11950,7 +11950,7 @@ CodexData = {
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "800 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
+								{"Conquest vendor", "800 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -11992,7 +11992,7 @@ CodexData = {
 								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12035,7 +12035,7 @@ CodexData = {
 								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1050 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1050 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12077,7 +12077,7 @@ CodexData = {
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12123,7 +12123,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1550. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3000 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1550. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12168,7 +12168,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12210,7 +12210,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12252,7 +12252,7 @@ CodexData = {
 								{"Monsters", "Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -12294,7 +12294,7 @@ CodexData = {
 								{"Monsters", "Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -12336,7 +12336,7 @@ CodexData = {
 								{"Monsters", "Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -12378,7 +12378,7 @@ CodexData = {
 								{"Monsters", "Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -12420,7 +12420,7 @@ CodexData = {
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12462,7 +12462,7 @@ CodexData = {
 								{"Monsters", "Embermaw Archon, Flarevein Wyrm, Glacial Hellcharger, Inferno Juggernaut, Nightflare Dreadknight, Plague Warbringer, Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Vhalkareth Mortal Shell."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3300 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1750. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3300 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1750. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12501,7 +12501,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1360 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1360 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -12543,7 +12543,7 @@ CodexData = {
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "870 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 130. Bought pieces are made like a drop."},
+								{"Conquest vendor", "870 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 130. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12589,7 +12589,7 @@ CodexData = {
 								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3600 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1950. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3600 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1950. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12631,7 +12631,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12673,7 +12673,7 @@ CodexData = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "1360 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Conquest vendor", "1360 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
@@ -12718,7 +12718,7 @@ CodexData = {
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "800 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
+								{"Conquest vendor", "800 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12760,7 +12760,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12806,7 +12806,7 @@ CodexData = {
 								{"Monsters", "Morgrath the Umbral Archmage, Nyxdrath the Midnight Terror, Hellmaw Brute, Mirethorn Hexer, Mossfang Drake, Plague Warbringer, Viridscale Wrym, Embermaw Archon, Inferno Juggernaut, Pitlord Incarnate, Stormvein Wrym, Waterglow Conjurer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "3750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2050. Bought pieces are made like a drop."},
+								{"Conquest vendor", "3750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 2050. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12848,7 +12848,7 @@ CodexData = {
 								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "630 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "630 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12893,7 +12893,7 @@ CodexData = {
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12938,7 +12938,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -12980,7 +12980,7 @@ CodexData = {
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -13026,7 +13026,7 @@ CodexData = {
 								{"Monsters", "Vorgrun of the Jade Fangs, Fractalis the Shardmaw, Armorcoil, Blazefang, Gorgulith, Nexlurith, Voidwagner, Aegis Sentinel, Flarevein Wyrm, Gloomstinger, Pyroquill, Toxic Mauler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
-								{"Conquest vendor", "2850 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1450. Bought pieces are made like a drop."},
+								{"Conquest vendor", "2850 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1450. Bought pieces are made like a drop."},
 								{"Bad-luck protection", "Monster uniques: every miss gives +2% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
@@ -17255,7 +17255,7 @@ CodexData = {
 						},
 						{
 							h = "The Conquest vendor",
-							p = {"Iselde Varrow in the teleport room's market, or Economy > Conquest Vendor, from a protection zone. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + 50. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.", "The Cinderheart chain: an Omen Key of the kind you choose (150), your Omen Key attuned to another kind (40), an Ascended Shard of the kind you choose (300); 2 shards or 2 relics of one kind become one of another.", "Refinement: a worn item with a rarity rises one rarity (up to Legendary), keeps every modifier and gains one; 60 + 60 x the new rarity tokens.", "Salvage: a unique on the bench gives 10% of its price in tokens (at least 25)."},
+							p = {"Iselde Varrow in the teleport room's market. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + 50. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.", "The Cinderheart chain: an Omen Key of the kind you choose (150), your Omen Key attuned to another kind (40), an Ascended Shard of the kind you choose (300); 2 shards or 2 relics of one kind become one of another.", "Refinement: a worn item with a rarity rises one rarity (up to Legendary), keeps every modifier and gains one; 60 + 60 x the new rarity tokens.", "Salvage: a unique on the bench gives 10% of its price in tokens (at least 25)."},
 							cols = {"Group", "Price"},
 							w = {40, 60},
 							rows = {

@@ -15,6 +15,11 @@ local function texts(list, textOf)
 end
 local en = function(it) return it.entry.text end
 
+-- windows an NPC opens stay out of the menu
+eq(T.npcOnly('The Gambler'), true, 'gambler'); eq(T.npcOnly('Candlemarks'), true, 'candlemarks')
+eq(T.npcOnly('Conquest Vendor'), true, 'conquest'); eq(T.npcOnly('Factions'), true, 'factions')
+eq(T.npcOnly('Bank'), false, 'bank stays'); eq(T.npcOnly(nil), false, 'nil')
+
 -- a drop-down with a "More" sub-menu: alphabetical, More last, the shortcut kept
 local hunt = {
   item('Loot Filter', 'Alt+L'), item('Bestiary', 'Alt+B'), item('Hunt Tracker'), item('analyzer'),
