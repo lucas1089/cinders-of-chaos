@@ -1252,6 +1252,16 @@ local function tryMatch(id)
 	for i = 1, math.min(size, #chosen) do
 		players[#players + 1] = online(chosen[i].guid)
 	end
+	-- the Group Queue (groupqueue.lua, O407): a party's ready check first (false = everyone stays queued, tried again)
+	if ChaosGroupQueue and ChaosGroupQueue.gate then
+		local cids = {}
+		for _, p in ipairs(players) do
+			cids[#cids + 1] = p:getId()
+		end
+		if not ChaosGroupQueue.gate("dungeon", cids) then
+			return
+		end
+	end
 	startRun(id, chosenDiff, players)
 	-- a lone player: the Party Finder's open groups for this dungeon, one line (groupnudge.lua, O261)
 	if ChaosGroupNudge and ChaosGroupNudge.onEnter and #players == 1 and players[1] then
@@ -1574,6 +1584,63 @@ function ChaosDungeonsOpen(creature)
 	return true
 end
 
+-- The Group Queue (groupqueue.lua, O407) joins and leaves this queue without the window. true, or false + the reason.
+function ChaosDungeons.queueJoin(player, id, difficulty)
+	local dg = baseDungeons()[id]
+	if not dg then
+		return false, Chaos.t(player, "That dungeon does not exist.")
+	end
+	local guid = player:getGuid()
+	if queuedIn[guid] then
+		return false, Chaos.t(player, "You are in a dungeon queue already.")
+	end
+	-- a dungeon with one difficulty for every run (the Weekly Challenge: one rule for every time on its board)
+	difficulty = extraOf(id).fixedDifficulty or difficulty
+	local problem = entryProblem(player, id, dg, difficulty)
+	if problem then
+		return false, problem
+	end
+	queues[id] = queues[id] or {}
+	queues[id][#queues[id] + 1] = {guid = guid, difficulty = difficulty, joined = os.time()}
+	queuedIn[guid] = id
+	send(player, "queue", {id = id, joined = true})
+	broadcastQueue(id)
+	tryMatch(id)
+	ensureTicker()
+	return true
+end
+
+function ChaosDungeons.queueLeave(player)
+	return leaveQueue(player:getGuid(), true)
+end
+
+-- the dungeon id the player queues for, or nil
+function ChaosDungeons.queuedFor(player)
+	return queuedIn[player:getGuid()]
+end
+
+function ChaosDungeons.titleFor(id)
+	local dg = baseDungeons()[id]
+	return dg and titleOf(id, dg) or tostring(id)
+end
+
+-- the Group Queue window's dungeon list: {id, title, level, max = the highest difficulty unlocked, fixed?}
+function ChaosDungeons.groupQueueList(player)
+	local guid = player:getGuid()
+	local ids = {}
+	for id in pairs(baseDungeons()) do
+		ids[#ids + 1] = id
+	end
+	table.sort(ids)
+	local out = {}
+	for _, id in ipairs(ids) do
+		local dg = baseDungeons()[id]
+		out[#out + 1] = {id = id, title = titleOf(id, dg), level = levelOf(dg), max = loadProgress(guid, id).difficulty,
+			fixed = extraOf(id).fixedDifficulty}
+	end
+	return out
+end
+
 local ExtendedEvent = CreatureEvent("ChaosDungeonsExtended")
 
 function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
@@ -1607,22 +1674,11 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		end
 
 		local difficulty = Chaos.toInt(msg.data.difficulty, 1, cfg.maxDifficulty) or 1
-		-- a dungeon with one difficulty for every run (the Weekly Challenge: one rule for every time on its board)
-		difficulty = extraOf(id).fixedDifficulty or difficulty
-		local problem = entryProblem(player, id, dg, difficulty)
-		if problem then
+		local ok, problem = ChaosDungeons.queueJoin(player, id, difficulty)
+		if not ok then
 			player:sendCancelMessage(problem)
 			send(player, "queue", {id = id, joined = false})
-			return
 		end
-
-		queues[id] = queues[id] or {}
-		queues[id][#queues[id] + 1] = {guid = guid, difficulty = difficulty, joined = os.time()}
-		queuedIn[guid] = id
-		send(player, "queue", {id = id, joined = true})
-		broadcastQueue(id)
-		tryMatch(id)
-		ensureTicker()
 	end
 end
 

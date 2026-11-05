@@ -154,7 +154,10 @@ local function insideOther(player)
 	if ChaosSiege and ChaosSiege.isInside and ChaosSiege.isInside(player) then
 		return "a siege"
 	end
-	if ChaosBattleground and ChaosBattleground.isBusy and ChaosBattleground.isBusy(player) then
+	-- a battleground queue the Group Queue put next to this one does not count (groupqueue.lua, O407)
+	if ChaosBattleground and ChaosBattleground.isBusy and ChaosBattleground.isBusy(player) and
+			not (ChaosBattleground.isQueued(player) and not ChaosBattleground.isInside(player) and ChaosGroupQueue and
+				ChaosGroupQueue.shares and ChaosGroupQueue.shares(player, "arena", "bg")) then
 		return "the battleground (queue or match)"
 	end
 	return nil
@@ -682,6 +685,18 @@ local function startMatch(a, b)
 	local slot = freeSlot()
 	if not slot then
 		return false
+	end
+	-- the Group Queue (groupqueue.lua, O407): a party's ready check first (false = everyone stays queued, tried again)
+	if ChaosGroupQueue and ChaosGroupQueue.gate then
+		local cids = {}
+		for _, entry in ipairs({a, b}) do
+			for _, cid in ipairs(entry.members) do
+				cids[#cids + 1] = cid
+			end
+		end
+		if not ChaosGroupQueue.gate("arena", cids) then
+			return false
+		end
 	end
 	removeEntry(a)
 	removeEntry(b)

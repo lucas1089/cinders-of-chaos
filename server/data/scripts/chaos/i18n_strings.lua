@@ -8661,6 +8661,71 @@ return {
 			"O Desafio Semanal desta semana abre no próximo server save (o calabouço ainda tem o mapa da semana passada).",
 		["Weekly Challenge %s cleared in %s (%s). Your best this week: %s. See Leaderboards."] =
 			"Desafio Semanal %s concluído em %s (%s). Seu melhor tempo nesta semana: %s. Veja os Leaderboards.",
+		-- The Group Queue (O407, groupqueue.lua, groupqueue_core.lua; dungeons.lua ChaosDungeons.queueJoin)
+		["Dungeon: %s"] =
+			"Dungeon: %s",
+		["Arena %s"] =
+			"Arena %s",
+		["Dungeon %s (difficulty %d)"] =
+			"Dungeon %s (dificuldade %d)",
+		["the raid"] =
+			"a raid",
+		["Group Queue: %s found. Ready check: accept within %d seconds."] =
+			"Fila em Grupo: %s encontrada. Confirmação de prontidão: aceite em até %d segundos.",
+		["Group Queue: %s found. You left your other queues."] =
+			"Fila em Grupo: %s encontrada. Você saiu das outras filas.",
+		["The Group Queue is closed."] =
+			"A Fila em Grupo está fechada.",
+		["You are in the Group Queue already: leave it first."] =
+			"Você já está na Fila em Grupo: saia dela primeiro.",
+		["A party member is in the Group Queue already."] =
+			"Um membro do grupo já está na Fila em Grupo.",
+		["No queue took your group (the reasons are in the messages above)."] =
+			"Nenhuma fila aceitou o seu grupo (os motivos estão nas mensagens acima).",
+		["Group Queue: you joined %s."] =
+			"Fila em Grupo: você entrou em %s.",
+		["Group Queue: not joined: %s."] =
+			"Fila em Grupo: não entrou em: %s.",
+		["You are not in the Group Queue."] =
+			"Você não está na Fila em Grupo.",
+		["Group Queue: you left every queue."] =
+			"Fila em Grupo: você saiu de todas as filas.",
+		["Group Queue: %s left the queues, so did your party."] =
+			"Fila em Grupo: %s saiu das filas, e o seu grupo também.",
+		["Group Queue: the party leader is gone, the raid stays closed."] =
+			"Fila em Grupo: o líder do grupo saiu, a raid continua fechada.",
+		["Group Queue: the raid did not open: %s"] =
+			"Fila em Grupo: a raid não abriu: %s",
+		["Group Queue: everyone is ready for %s."] =
+			"Fila em Grupo: todos estão prontos para %s.",
+		["Group Queue: %s declined the ready check. Your group left every queue."] =
+			"Fila em Grupo: %s recusou a confirmação de prontidão. O seu grupo saiu de todas as filas.",
+		["The raid ready check is not available."] =
+			"A confirmação de prontidão da raid não está disponível.",
+		["A ready check needs a party. Alone, open the raid from the Raid window."] =
+			"A confirmação de prontidão precisa de um grupo. Sozinho, abra a raid pela janela Raid.",
+		["Group Queue: %s asks for a raid ready check. Accept within %d seconds."] =
+			"Fila em Grupo: %s pede uma confirmação de prontidão para a raid. Aceite em até %d segundos.",
+		["Group Queue: no answer from %s. Your group left every queue."] =
+			"Fila em Grupo: sem resposta de %s. O seu grupo saiu de todas as filas.",
+		["Group Queue: you are in no queue any more."] =
+			"Fila em Grupo: você não está mais em nenhuma fila.",
+		["Group Queue: %s logged out during the ready check. Your group left every queue."] =
+			"Fila em Grupo: %s saiu do jogo durante a confirmação de prontidão. O seu grupo saiu de todas as filas.",
+		["Only the party leader can queue the party."] =
+			"Só o líder do grupo pode colocar o grupo na fila.",
+		["Pick at least one queue."] =
+			"Escolha pelo menos uma fila.",
+		["That arena mode does not exist."] =
+			"Esse modo de arena não existe.",
+		["Arena: 1v1 is played alone, 2v2 as a party of two, 3v3 as a party of three."] =
+			"Arena: o 1v1 se joga sozinho, o 2v2 em um grupo de dois, o 3v3 em um grupo de três.",
+		["Your party is too large for the battleground."] =
+			"O seu grupo é grande demais para o battleground.",
+		["That dungeon does not exist."] =
+			"Essa dungeon não existe.",
+		["You are in a dungeon queue already."] =
+			"Você já está em uma fila de dungeon.",
 		["solo"] = "sozinho",
 		["party"] = "em grupo",
 	},

@@ -130,6 +130,9 @@ ChaosOpcodes.candlemarks = 176
 -- NPCs that trade for something other than gold: the currency's name, icon and the player's balance in the NPC trade
 -- window (client game_npctradewindow; data/lib/chaos_npc_currency.lua, tools/patch_npc_currency.py; README "NPC currencies")
 ChaosOpcodes.npcCurrency = 113
+-- The Group Queue: one window joins the arena, the battleground and a dungeon at once, ready checks (client
+-- game_groupqueue; groupqueue.lua, groupqueue_core.lua, groupqueue_config.lua; server/README.md "Group Queue (O407)")
+ChaosOpcodes.groupQueue = 160
 Chaos.candlemarksTables = {accounts = "chaos_candlemarks", progress = "chaos_candlemark_progress",
 	purchases = "chaos_candlemark_purchases"}
 

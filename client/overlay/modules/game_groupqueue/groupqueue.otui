@@ -1,0 +1,223 @@
+// The Group Queue (game_groupqueue, O407): the window (pick the arena, the battleground and a dungeon, join them at once)
+// and the ready check popup. Theme styles from client_chaos_theme.
+
+GqText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-auto-resize: true
+  phantom: true
+
+GqWrap < GqText
+  text-wrap: true
+  text-auto-resize: false
+  text-vertical-auto-resize: true
+
+GqHead < GqText
+  font: verdana-11px-rounded
+  color: #e8b84a
+
+GqArenaButton < ChaosTabButton
+  size: 70 24
+  margin-right: 6
+
+GqWindow < ChaosMainWindow
+  id: groupQueueWindow
+  size: 500 470
+  !text: tr('Group Queue')
+  @onEscape: modules.game_groupqueue.hide()
+
+  GqWrap
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    color: #b8ab92
+    !text: tr('Join several queues at once. The first one that finds a match pops: a party gets a ready check, then you leave the other queues.')
+
+  ChaosPanelDark
+    id: frame
+    anchors.top: intro.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: message.top
+    margin-top: 8
+    margin-bottom: 6
+    padding: 10
+
+    GqHead
+      id: arenaHead
+      anchors.top: parent.top
+      anchors.left: parent.left
+      !text: tr('Arena')
+
+    UIWidget
+      id: arenaRow
+      anchors.top: arenaHead.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 24
+      layout:
+        type: horizontalBox
+
+    GqHead
+      id: bgHead
+      anchors.top: arenaRow.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      !text: tr('Battleground')
+
+    ChaosCheckBox
+      id: bgCheck
+      anchors.top: bgHead.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      !text: tr('Queue for Ember Wells (your role from the Battleground window)')
+      @onCheckChange: modules.game_groupqueue.onChoice()
+
+    GqHead
+      id: dungeonHead
+      anchors.top: bgCheck.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      !text: tr('Dungeon')
+
+    ChaosCheckBox
+      id: dungeonCheck
+      anchors.top: dungeonHead.bottom
+      anchors.left: parent.left
+      margin-top: 8
+      width: 80
+      !text: tr('Queue')
+      @onCheckChange: modules.game_groupqueue.onChoice()
+
+    ChaosComboBox
+      id: dungeonCombo
+      anchors.left: dungeonCheck.right
+      anchors.verticalCenter: dungeonCheck.verticalCenter
+      margin-left: 4
+      size: 200 22
+      !tooltip: tr('The dungeon')
+
+    ChaosComboBox
+      id: diffCombo
+      anchors.left: dungeonCombo.right
+      anchors.verticalCenter: dungeonCheck.verticalCenter
+      margin-left: 6
+      size: 110 22
+      !tooltip: tr('The difficulty (up to the highest you unlocked)')
+
+    GqHead
+      id: statusHead
+      anchors.top: dungeonCheck.bottom
+      anchors.left: parent.left
+      margin-top: 14
+      !text: tr('Status')
+
+    UIWidget
+      id: statusList
+      anchors.top: statusHead.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      layout:
+        type: verticalBox
+        spacing: 3
+
+  GqText
+    id: message
+    anchors.bottom: buttons.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: false
+    height: 16
+    margin-bottom: 6
+    color: #f6cf72
+
+  UIWidget
+    id: buttons
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+
+    ChaosButton
+      id: joinButton
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 110 24
+      @onClick: modules.game_groupqueue.joinOrLeave()
+
+    ChaosButton
+      id: raidButton
+      anchors.left: joinButton.right
+      anchors.top: parent.top
+      margin-left: 6
+      size: 136 24
+      !text: tr('Raid Check')
+      !tooltip: tr('Party leader: everyone gets a ready check; when all accept, the raid opens as from the Raid window.')
+      @onClick: modules.game_groupqueue.raidCheck()
+
+    ChaosButton
+      id: groupButton
+      anchors.left: raidButton.right
+      anchors.top: parent.top
+      margin-left: 6
+      size: 110 24
+      !text: tr('Find a Group')
+      !tooltip: tr('Open the Party Finder to find players for a party.')
+      @onClick: modules.game_groupqueue.findGroup()
+
+    ChaosButton
+      id: closeButton
+      anchors.right: parent.right
+      anchors.top: parent.top
+      size: 70 24
+      !text: tr('Close')
+      @onClick: modules.game_groupqueue.hide()
+
+// the ready check: pops on every party member when a queue found a match
+GqCheckWindow < ChaosMainWindow
+  id: groupQueueCheck
+  size: 340 170
+  !text: tr('Ready Check')
+
+  GqText
+    id: checkTitle
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    font: verdana-11px-rounded
+    color: #f6cf72
+
+  GqText
+    id: checkSub
+    anchors.top: checkTitle.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 6
+
+  ChaosProgressBar
+    id: checkBar
+    anchors.top: checkSub.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    background-color: #b8862a
+
+  ChaosButton
+    id: acceptButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    size: 140 24
+    !text: tr('Accept')
+    @onClick: modules.game_groupqueue.answer(true)
+
+  ChaosButton
+    id: declineButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    size: 140 24
+    !text: tr('Decline')
+    @onClick: modules.game_groupqueue.answer(false)

@@ -685,6 +685,7 @@ collision check") and be added here.
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
 | 157 | `displayScale` | `display_scale.lua`, `i18n.lua` | `game_chaosscale`, `client_chaos_locale` | server -> client `scale {level, f}`, client -> server `hello` (with `lang` from `client_chaos_locale`: the language of the server texts; see "Display scale" and "Server texts in pt-BR (Chaos.t)") |
 | 159 | `waystoneAtlas` | `waystone_atlas.lua` | `game_riftatlas` (waystone mode) | client -> server `open` / `alloc {id}` / `refund {id, pay}` / `reset {pay}`, server -> client `tree` through `Chaos.sendChunked`, `state`, `credit {cells, points}` (see "Waystone Atlas") |
+| 160 | `groupQueue` | `groupqueue.lua` (the gate called by `arena.lua`, `battleground.lua`, `dungeons.lua`) | `game_groupqueue` | client -> server `open` / `query` / `join {arena?, bg?, role?, dungeon? {id, difficulty}}` / `leave` / `accept` / `decline` / `raid`, server -> client `state`, `check {key, label, left, accepted, total, mine}`, `checkEnd`, `msg {text}` (see "Group Queue (O407)") |
 | 167 | `conquest` | `conquest.lua`, the Conquest vendor's NPC script | `game_conquest` | `state` through `Chaos.sendChunked`; client -> server `open` / `close` / `buy {k}` (see "Conquest Tokens, the Conquest vendor and bad-luck protection") |
 | 171 | `chronicle` | `chronicle.lua`, `memorial.lua` | `game_chronicle` | chronicle.lua: `open` / `close`, `state` through `Chaos.sendChunked`; memorial.lua: `mem` / `memset` |
 | 172 | `cardState` | `cards.lua` | `game_cardborder` | server -> client `state {on, cards, decks}` (the cards that are on); client -> server `sync` (see "Cards and decks") |
@@ -23179,6 +23180,68 @@ quick join, full, staff close, logout); raid listings of 15 (sizes and role caps
 accepts, the 16th refused, full at 15, an update to a rift refused). Client: `game_partyfinder/partyfinderview_test.lua`
 (limits per activity, the slot grid: 15 boxes wrap into 8 + 7). The 15-slot raid listing was rendered offline too. The window was rendered in
 the Linux client with payloads built by the core (offline); not run against a live server.
+
+## Group Queue (O407) (`groupqueue.lua`, `groupqueue_core.lua`, `groupqueue_config.lua`, client `game_groupqueue`)
+
+One window joins several queues at once. The queues stay the modes' own. Matchmaking is untouched.
+
+**What a player does.** Adventure > Group Queue. Alone or as party leader, pick any of:
+- Arena: the mode of the party size (1v1 alone, 2v2 a party of two, 3v3 a party of three).
+- Battleground: the role comes from the Battleground window (`B.pref`), else the class default.
+- One dungeon and a difficulty up to the highest unlocked (`ChaosDungeons.groupQueueList`).
+
+Join Queues calls each mode's own join: `ChaosArena.join`, `ChaosBattleground.join`, `ChaosDungeons.queueJoin`.
+Every check of the mode applies (level, protection zone, combat, deserter, cooldown, unlock).
+A mode that refuses is left out; the others still join. Each mode's own messages say why.
+A party dungeon join is all or none: every member joins that dungeon and difficulty, one entry each.
+Leave Queues takes the whole group out of every queue. Any member may press it.
+
+**The pop.** Each mode calls `ChaosGroupQueue.gate(key, cids)` right before it starts a match it found.
+- `arena.lua` `startMatch` and `battleground.lua` `startMatch`: after the free slot check, before the entries leave the queue.
+- `dungeons.lua` `tryMatch`: before `startRun`.
+- No Group Queue player in the match: it starts as before.
+- A group of 2 or more gets a ready check (`readyCheckSeconds` = 20). The mode keeps everyone queued and tries again at its next matchmaking.
+- Everyone accepted: the group holds that mode for `confirmSeconds` (60). The next try starts the match.
+- At the start the group leaves its other queues ("You left your other queues").
+- A lone player gets no check (`soloReadyCheck = false`). The pop starts at once and the other queues are left.
+- A decline, no answer in time or a logout during the check: the decliner's group leaves every queue.
+  The other groups of that match stay queued. Their mode pairs them again. An accepted group needs no second check inside `confirmSeconds`.
+- A group in a check, or accepted for another mode, makes every other mode wait for it.
+
+**Arena next to the battleground.** Both refused a player queued in the other one.
+A group that picked both may now stand in both (`ChaosGroupQueue.shares(player, "arena", "bg")`).
+Changed lines: `arena.lua` `insideOther` and `battleground.lua` `insideOther`. Everyone else is refused as before.
+
+**Raid.** The raid has no queue. The party leader presses Raid Check. Every member gets the ready check; the leader counts as ready.
+All accept: the raid opens for the leader as from the Raid window (`ChaosRaid.open`, the party within `partyRange` comes along).
+A decline or no answer keeps it closed. Alone: the Raid window, no check.
+
+**Kept in step.** A tick every `tickMs` (1 s):
+- times out the open checks;
+- asks each mode if the group is still queued (`queued`): a queue left in the mode's own window, a mode time-out or a refusal at start drops that pick. No pick left: the group is gone and told.
+Logout outside a check takes the member out of the group. The modes drop their own queue entries.
+
+**Limits.**
+- One arena mode and one dungeon per group (the modes keep one queue entry per player).
+- A dungeon run takes the first queued players of its difficulty. A party larger than the dungeon's group size can be split. The rest stays in the dungeon queue.
+- The battleground role is not picked in this window.
+- A party that changes while queued keeps the members it joined with.
+
+**Protocol** (opcode **160**, JSON `{action, data}`, "Extended opcodes in use"):
+client -> server `open`, `query`, `join {arena?, bg?, role?, dungeon? {id, difficulty}}`, `leave`, `accept`, `decline`, `raid`;
+server -> client `state {open, enabled, size, leader, inParty, arena, bg, raid, dungeons?, group?}`, `check {key, label, left, seconds, accepted, total, mine}`, `checkEnd`, `msg {text}`.
+Requests are rate limited (`readMs`, `actMs`). Texts in pt-BR through `Chaos.t` (`i18n_strings.lua`).
+
+**Storage, tables, patches.** None. The groups live in memory; a restart empties the mode queues anyway.
+The block 7120000 - 7120099 was reserved for O407 but lies inside the loadouts block (7112000 - 7127999), so it stays unused.
+No engine patch.
+
+**Tests.** `tests/groupqueue_test.lua`: the core (choice, gate, answers, time-outs, members leaving, sync, view), then
+`groupqueue.lua` with the real `arena.lua` on a mock (battleground, dungeon and raid stand-ins). Client: `gqview_test.lua`.
+
+**To check live.** Two characters, each alone: both pick Arena 1v1, one also Battleground. The 1v1 starts; the battleground queue is left.
+Then two parties of two: one through the Group Queue, one from the Arena window. The ready check pops on the first party only; the match starts after both accept.
+Decline once: that party is out of every queue, the other party stays queued.
 
 ## Anti-bot and player reports (`antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py`, client `game_antibot`)
 
