@@ -315,4 +315,10 @@ APK 35 (O406), the owner's screenshots:
   help mark; it stays an icon with its tooltip. The Support tab showed "Paused: protection zone" twice: the window's
   status line hides on that tab, which has its own.
 - Frame rate: 31 fps with the Helper open, 5 fps with a combo box list open. Not explained yet.
+- Auto setup's answer box had a "Classic" button: message and input boxes have none now. A box that opens over a
+  mirror is mirrored in the same tick, before the cover check, so the window under it no longer flips to OTUI.
+- `client/tools/rml_window_audit.py` lists every window of the .otui files: mirrored or classic, and why (a widget
+  class the form layer cannot draw, more than 40 icons, `chaosNoMirror`), with notes on buttons narrower than their
+  skin text and containers that Lua fills. 2026-11-05: 114 windows, 93 mirrored, 21 classic (items, creatures, the
+  passive tree). Lua-made content is not seen; the mirror checks it again at run time.
 

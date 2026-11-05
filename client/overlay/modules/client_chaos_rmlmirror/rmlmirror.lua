@@ -136,6 +136,12 @@ local function showOtui(e)
   e.window:setPhantom(e.phantom)
 end
 
+-- Pure: does this window get the "Classic" button? Only a window the player keeps open (not a message or input box).
+function M.hasClassic(w)
+  local cls = classOf(w)
+  return cls ~= 'UIMessageBox' and cls ~= 'UIInputBox'
+end
+
 local NARROW = 260   -- below this width the crest goes and the title gets the whole bar
 
 -- The RmlUi window takes the OTUI window's place and width; its height grows when the skin's larger text needs more room
@@ -222,6 +228,8 @@ local function mirror(w, items)
   M.entries[e.key] = e
   g_rml.setText(doc, 'title', ChaosRmlForm.textOf(w))
   g_rml.setText(doc, 'classic', tr('Classic'))
+  -- a message or input box (Auto setup's answer, a question) is gone in a moment: no Classic button on it
+  if not M.hasClassic(w) then g_rml.setProperty(doc, 'classic', 'display', 'none') end
   ChaosRmlForm.listen(doc, function(id, ev) onEvent(e, id, ev) end)
   e.form:build(items)
   place(e)
@@ -264,6 +272,19 @@ function M.tick()
       M.skipped[k] = nil
     end
   end
+  -- new ones first: a box that just opened over a mirror is mirrored too and does not send it back to OTUI
+  local d = deny()
+  for _, w in ipairs(M.candidates(roots())) do
+    if not M.entries[M.keyOf(w)] and M.WINDOW_CLASSES[classOf(w)] and w:isExplicitlyVisible() then
+      local items, why = M.eligible(w, d)
+      if items then
+        mirror(w, items)
+      elseif M.debug and why ~= 'hidden' and w.chaosRmlWhy ~= why then
+        w.chaosRmlWhy = why   -- logged once per window and reason
+        g_logger.info('[rmlmirror] ' .. tostring(w:getId()) .. ' stays OTUI: ' .. tostring(why)) -- i18n-ok: log
+      end
+    end
+  end
   local mirrored = {}
   for k in pairs(M.entries) do mirrored[k] = true end
   -- live ones: shape, values, place, and whether an OTUI window lies over them
@@ -286,19 +307,6 @@ function M.tick()
       recentre(e)
       local title = ChaosRmlForm.textOf(w)
       if e.title ~= title then e.title = title g_rml.setText(e.doc, 'title', title) end
-    end
-  end
-  -- new ones
-  local d = deny()
-  for _, w in ipairs(M.candidates(roots())) do
-    if not M.entries[M.keyOf(w)] and M.WINDOW_CLASSES[classOf(w)] and w:isExplicitlyVisible() then
-      local items, why = M.eligible(w, d)
-      if items then
-        mirror(w, items)
-      elseif M.debug and why ~= 'hidden' and w.chaosRmlWhy ~= why then
-        w.chaosRmlWhy = why   -- logged once per window and reason
-        g_logger.info('[rmlmirror] ' .. tostring(w:getId()) .. ' stays OTUI: ' .. tostring(why)) -- i18n-ok: log
-      end
     end
   end
 end

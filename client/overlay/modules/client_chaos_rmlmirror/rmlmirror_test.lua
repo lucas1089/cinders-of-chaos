@@ -280,5 +280,10 @@ eq(select(2, M.eligible(kept)), 'skip', 'classic: a window sent to the classic l
 M.classic = {}
 eq(M.eligible(kept) ~= nil, true, 'classic: mirrored again once the list is cleared')
 
+-- no Classic button on a message box (Auto setup's answer) or an input box
+eq(M.hasClassic(widget('UIMessageBox')), false, 'classic button: not on a message box')
+eq(M.hasClassic(widget('UIInputBox')), false, 'classic button: not on an input box')
+eq(M.hasClassic(widget('UIWindow')), true, 'classic button: on a window')
+
 print(string.format('rmlmirror_test: %d checks, %d failures', checks, failures))
 if failures > 0 then os.exit(1) end
