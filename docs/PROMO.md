@@ -33,6 +33,12 @@ It writes `trailer-1920x1080.{pt-BR,en}.mp4`, `trailer-1080x1920.pt-BR.mp4`, `sh
 the gameplay cuts of sections 3 and 4 (spells, combos, loot beams, the passive tree, a Rift run, the Infinity Tower, a raid, Arena)
 still want real recorded footage. Replace the matching shots with it when it exists.
 
+Recorded gameplay (2026-11-05): a 64 s reel and nine raw clips (1920x1080, 30 fps) from the real Linux client on a local test
+server: title screen, character list, Cinderhold temple, Mystic, Warrior and Thief hunts with their spells, a Ranger against a
+lair boss, the top menu, the passive tree and the spellbook. Not committed (size). How: the release's server package with
+`CHAOS_TEST_ACCOUNTS=1`, a client built as client/LINUX.md says (public dev keys, so it logs in to a local server), Xvfb at
+1920x1080 and `ffmpeg -f x11grab`; spells on the action bar F4 to F8, a GM character teleports and summons packs.
+
 ## 2. Recording setup
 
 - Client: Windows client, window 1920x1080, UI scale 100%, graphics options at the highest.
