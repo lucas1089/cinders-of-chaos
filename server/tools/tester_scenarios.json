@@ -6698,6 +6698,7 @@
    "keywords": [
     "ledger",
     "tales",
+    "story",
     "lore",
     "portugues"
    ],
@@ -8178,6 +8179,7 @@
     "game_mapmarkers"
    ],
    "dataKeys": [
+    "npcmarks",
     "party",
     "poi"
    ],

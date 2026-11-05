@@ -83,6 +83,28 @@ ChaosPoi = ChaosPoi or {}
 ChaosPoi.questSources = ChaosPoi.questSources or {}
 ChaosPoi.questSources.spellquest = S.questGoals
 
+-- O415: the mark over the Archivist's head: a quest to start ("new"), the trial that waits once the hunt is done and the
+-- door is open ("ready"), a quest that waits for a level ("locked", only when poi_config.lua marks.locked is on)
+function S.npcMarks(player)
+	local n, step, code = S.current(player)
+	local name = C().npc.name
+	if code == "ok" and step == Q.STEP.NONE then
+		return {{npc = name, mark = "new"}}
+	elseif code == "ok" and step == Q.STEP.TRIAL then
+		if getS(player, Q.keys(n).cooldown) - os.time() <= 0 then
+			return {{npc = name, mark = "ready"}}
+		end
+	elseif code == "level" and step == Q.STEP.NONE then
+		local marks = ChaosPoi and ChaosPoi.cfg and ChaosPoi.cfg.marks or {}
+		if marks.locked == true then
+			return {{npc = name, mark = "locked"}}
+		end
+	end
+	return {}
+end
+ChaosPoi.markSources = ChaosPoi.markSources or {}
+ChaosPoi.markSources.spellquest = S.npcMarks
+
 -- the Archivist within `range` tiles (the trial question only counts at her)
 function S.archivistNear(player)
 	local pos = player:getPosition()

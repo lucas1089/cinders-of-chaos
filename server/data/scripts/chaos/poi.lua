@@ -17,6 +17,12 @@
 --                     reveal {marks = [{k, x, y, z, n}]}               (newly discovered)
 --                     quests {marks = [{k = "questgoal", x, y, z, n}]} (O410: the character's next quest steps, the
 --                                                                       whole list, when it changed; poi_core.lua P.goals)
+--                     npcmarks {full, set = [{n, m}], clear = [n]}     (O415: the marks over NPC heads, by NPC name, m =
+--                                                                       new | ready | locked; a difference, `full` after the
+--                                                                       hello; sent when the client's hello / set has
+--                                                                       npcmarks = true)
+-- Mark sources (O415): ChaosPoi.markSources[name] = fn(player) -> {{npc = name, mark = "new" | "ready" | "locked"}}
+-- (tales.lua, spellquest.lua, ascension_quest.lua); poi_core.lua P.mergeMarks / P.markDiff.
 -- Quest sources (O410): a quest system registers ChaosPoi.addQuestSource(name, fn); fn(player) -> entries of P.goals
 -- ({x, y, z, n} | {npc = name, n} | {hunts = {monster names}, n}). tales.lua and spellquest.lua do.
 -- Staff: /poi status | reset (forget my discoveries) | all (discover everything). Lua 5.1 / LuaJIT compatible.
@@ -42,9 +48,16 @@ I.runtime = I.runtime or {}
 I.stats = I.stats or {checks = 0, checkMs = 0, reveals = 0}
 I.questSources = I.questSources or {} -- name -> fn(player) -> quest goal entries (O410)
 I.goalSent = I.goalSent or {} -- creature id -> hash of the goal list last sent
+I.markSources = I.markSources or {} -- name -> fn(player) -> {{npc, mark}} (O415, the marks over NPC heads)
+I.markWatch = I.markWatch or {} -- creature id -> true while the client draws the NPC marks
+I.markSent = I.markSent or {} -- creature id -> the marks last sent {[lower case name] = {n, m}}
 
 function I.addQuestSource(name, fn)
 	I.questSources[name] = fn
+end
+
+function I.addMarkSource(name, fn)
+	I.markSources[name] = fn
 end
 
 local function loadStatic()
@@ -139,6 +152,41 @@ local function sendGoals(player, force)
 	end
 end
 I.sendGoals = sendGoals
+
+-- O415: the NPCs that get a mark over their heads for this character, from every mark source
+local function marksOf(player)
+	local names, entries = {}, {}
+	for name in pairs(I.markSources) do
+		names[#names + 1] = name
+	end
+	table.sort(names)
+	for _, name in ipairs(names) do
+		local ok, list = pcall(I.markSources[name], player)
+		if ok and type(list) == "table" then
+			for _, e in ipairs(list) do
+				entries[#entries + 1] = e
+			end
+		elseif not ok then
+			print("[Chaos poi] mark source " .. name .. ": " .. tostring(list))
+		end
+	end
+	return I.mergeMarks(entries, cfg)
+end
+
+-- sent as a difference ({set = [{n, m}], clear = [name]}); `force` (hello) sends the whole list as a full reset
+local function sendMarks(player, force)
+	local id = player:getId()
+	if not I.markWatch[id] then
+		return
+	end
+	local now = marksOf(player)
+	local set, clear = I.markDiff(not force and I.markSent[id] or {}, now)
+	if force or #set > 0 or #clear > 0 then
+		I.markSent[id] = now
+		Chaos.send(player, OPCODE, "npcmarks", {full = force == true, set = set, clear = clear})
+	end
+end
+I.sendMarks = sendMarks
 
 local function sendReveal(player, found)
 	local list = {}
@@ -298,6 +346,12 @@ function think.onThink(interval)
 				sendGoals(p)
 			end
 		end
+		for id in pairs(I.markWatch) do
+			local p = Player(id)
+			if p then
+				sendMarks(p)
+			end
+		end
 	end
 	if (now - lastRescan) * 1000 >= cfg.rescanMs then
 		lastRescan = now
@@ -325,6 +379,7 @@ function logout.onLogout(player)
 	I.seen[guid], I.dirty[guid] = nil, nil
 	I.watch[player:getId()] = nil
 	I.goalSent[player:getId()] = nil
+	I.markWatch[player:getId()], I.markSent[player:getId()] = nil, nil
 	return true
 end
 logout:type("logout")
@@ -340,6 +395,17 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	local data = type(msg.data) == "table" and msg.data or {}
+	-- O415: the marks over NPC heads are their own switch (the client's option), apart from the map markers
+	if data.npcmarks ~= nil and not (msg.action == "set" and ChaosRateLimit
+			and not ChaosRateLimit.allow(player, "poi.marks", cfg.setMs)) then
+		local id = player:getId()
+		if data.npcmarks == true then
+			I.markWatch[id] = true
+			sendMarks(player, true)
+		else
+			I.markWatch[id], I.markSent[id] = nil, nil
+		end
+	end
 	if data.poi == nil then
 		return
 	end

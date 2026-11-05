@@ -768,4 +768,217 @@ bia:setStorageValue(M.stateKey(gc), 2)
 callbacks[CALLBACK_MESSAGE_DEFAULT](12, 1, "tale")
 eq(bia:getStorageValue(M.stateKey(gc)), 2, "Brannoc is not Ysolde")
 
+-- ------------------------------------------------------------------ O415: the story quest at the start
+do
+	local start = dofile("data/scripts/chaos/start_stats.lua").startLevel
+	local st = cfg.story
+	assert(st and st.saga == "cinderhold", "the story quest is the Tale of Cinderhold")
+	local first = M.chapters(st.saga)[1]
+	eq(first.key, "cinderhold_1", "its first chapter")
+	assert(first.minLevel <= start, "the first chapter opens at the level a new character starts at (" .. start .. ")")
+	assert(not first.requires, "and needs nothing first")
+	eq(cfg.npc.name, "Archivist Maelis", "the giver")
+	-- the giver stands in the main city, where a new character lives (newplayer_config.lua homeTown)
+	local home = dofile("data/scripts/chaos/newplayer_config.lua").homeTown.id
+	local inHome = false
+	for _, id in ipairs(cfg.npc.townIds) do if id == home then inHome = true end end
+	assert(inHome, "Archivist Maelis is placed in the home town")
+	local booths = dofile("data/scripts/chaos/npc_booths_config.lua").booths
+	local stall
+	for _, b in ipairs(booths) do if b.npc == cfg.npc.name then stall = b end end
+	assert(stall, "and has her stall in the hub market of the main city")
+	-- the intro flag: a free offset in the first block, apart from every state and count key
+	local flag = cfg.storage.base + st.intro
+	assert(flag > cfg.storage.base and flag <= cfg.storage.last, "the flag is in the tales block")
+	for _, t in ipairs(cfg.tales) do
+		assert(M.stateKey(t) ~= flag and M.countKey(t) ~= flag, "the flag is no tale's key: " .. t.key)
+	end
+	assert(M.langKey() ~= flag)
+	eq(flag, 7101541)
+	-- config problems are caught
+	local bad = {}
+	for k, v in pairs(cfg) do bad[k] = v end
+	bad.story = {saga = "nope", intro = 3, text = {en = "x"}, ask = {en = "x", pt = "x"}, askDone = {en = "x", pt = "x"},
+		askWait = {en = "x", pt = "x"}}
+	local joined = table.concat(M.problems(bad), "\n")
+	assert(joined:find("unknown saga nope", 1, true) and joined:find("intro 3", 1, true) and joined:find("text needs en and pt", 1, true))
+
+	-- who is told, and when
+	local states = {}
+	local function stateOf(t) return states[t.key] or -1 end
+	eq(M.storyDue(-1, stateOf, start), "show", "a new character: tell the story")
+	eq(M.storyDue(-1, stateOf, 2000), "show", "an old character that never took it: the same offer")
+	eq(M.storyDue(1, stateOf, start), "wait", "told once: not again")
+	eq(M.storyDue(-1, stateOf, first.minLevel - 1), "wait", "below the first chapter's level: asked again at the next login")
+	states.cinderhold_1 = 3
+	eq(M.storyDue(-1, stateOf, start), "skip", "started: marked as told, silently")
+	states.cinderhold_1 = 100
+	eq(M.storyDue(-1, stateOf, start), "skip", "done: marked as told, silently")
+	states.cinderhold_1 = nil
+	states.cinderhold_5 = 100
+	eq(M.storyDue(-1, stateOf, start), "skip", "any chapter started counts")
+	states.cinderhold_5 = nil
+
+	-- the text, in both languages, names the chapter and the giver
+	local en, pt = M.storyText(first, "en"), M.storyText(first, "pt")
+	assert(en:find("Archivist Maelis", 1, true) and en:find(first.name.en, 1, true) and en:find("tales", 1, true), en)
+	assert(pt:find("Arquivista Maelis", 1, true) and pt:find(first.name.pt, 1, true) and pt:find("histórias", 1, true), pt)
+	noDash(en .. pt, "story text")
+
+	-- next chapter and offer
+	local t, state = M.storyNext(stateOf)
+	eq(t.key, "cinderhold_1"); eq(state, 0)
+	eq(M.storyOffer(stateOf, start).key, "cinderhold_1")
+	eq(M.storyOffer(stateOf, first.minLevel - 1), nil, "no offer below its level")
+	states.cinderhold_1 = 2
+	eq(M.storyOffer(stateOf, 500), nil, "no offer while the chapter is in progress")
+	states.cinderhold_1 = 100
+	eq(M.storyNext(stateOf).key, "cinderhold_2", "the next chapter after a done one")
+	eq(M.storyOffer(stateOf, 10), nil, "chapter 2 waits for level 22")
+	eq(M.storyOffer(stateOf, 22).key, "cinderhold_2", "and is offered at it")
+	for _, c in ipairs(M.chapters("cinderhold")) do states[c.key] = 100 end
+	eq(M.storyNext(stateOf), nil, "all done")
+	assert(M.storyAnswer(stateOf, 800, "pt"):find("todas as páginas", 1, true), "the Archivist says it is done")
+	states = {}
+	assert(M.storyAnswer(stateOf, start, "en"):find(first.name.en, 1, true), "she names the next page")
+	states.cinderhold_1 = 100
+	assert(M.storyAnswer(stateOf, 10, "en"):find("level 22", 1, true), "or the level it waits for")
+	states = {}
+	assert(M.asksStory("tell me the story") and M.asksStory("a saga de Cinderhold") and not M.asksStory("tales"))
+
+	-- step 1 points at the giver: a goal at the Archivist, only when the chapter can be taken
+	local goals = M.questGoals(stateOf, "en", start)
+	eq(#goals, 1, "one goal before the tale is taken"); eq(goals[1].npc, "Archivist Maelis", "at the giver")
+	assert(goals[1].n:find(first.name.en, 1, true) and goals[1].n:find("Ask the Archivist", 1, true))
+	assert(M.questGoals(stateOf, "pt", start)[1].n:find("Peça a história", 1, true), "in Portuguese")
+	eq(#M.questGoals(stateOf, "en", first.minLevel - 1), 0, "none below the level")
+	eq(#M.questGoals(stateOf, "en"), 0, "none without a level (the older callers)")
+	states.cinderhold_1 = 1
+	goals = M.questGoals(stateOf, "en", start)
+	eq(#goals, 1); assert(goals[1].x, "taken: step 1 of the chapter is its place (the troll caves)")
+end
+
+-- ------------------------------------------------------------------ O415: the marks over the NPCs' heads
+do
+	local states = {}
+	local function stateOf(t) return states[t.key] or -1 end
+	local function find(list, npc, mark)
+		for _, e in ipairs(list) do if e.npc == npc and e.mark == mark then return true end end
+		return false
+	end
+	-- a level 8 character: gold "!" over the Archivist for every tale it can take, none locked by default
+	local list = M.npcMarks(stateOf, 8)
+	assert(find(list, "Archivist Maelis", "new"), "a tale to take: new")
+	for _, e in ipairs(list) do eq(e.mark, "new", "only new marks for a fresh character") end
+	assert(not find(M.npcMarks(stateOf, 8), "Archivist Maelis", "locked"), "locked is off by default")
+	assert(find(M.npcMarks(stateOf, 8, {locked = true}), "Archivist Maelis", "locked"), "locked when asked for (tales above the level)")
+	eq(#M.npcMarks(stateOf, 1), 0, "level 1 can take nothing")
+	-- everything done or in the field: nothing
+	for _, t in ipairs(cfg.tales) do states[t.key] = 100 end
+	eq(#M.npcMarks(stateOf, 3000, {locked = true}), 0, "all done: no mark")
+	-- a field step (kill, elite, visit): no mark
+	states.cinderhold_1 = 1
+	eq(#M.npcMarks(stateOf, 8), 0 + #M.npcMarks(function(t) return t.key == "cinderhold_1" and 1 or 100 end, 8), "in the field")
+	local onlyField = function(t) return t.key == "cinderhold_1" and 1 or 100 end
+	eq(#M.npcMarks(onlyField, 8), 0, "an elite step in the field: no mark")
+	-- a report step: gold "?" over the Archivist
+	local report = function(t) return t.key == "cinderhold_1" and #t.steps or 100 end
+	list = M.npcMarks(report, 8)
+	eq(#list, 1); assert(find(list, "Archivist Maelis", "ready"), "a report step: ready")
+	-- a deliver step is ready at the Archivist too
+	local wt = M.tale("wyrm_tithe")
+	list = M.npcMarks(function(t) return t.key == "wyrm_tithe" and #wt.steps or 100 end, 600)
+	assert(find(list, "Archivist Maelis", "ready"), "a deliver step: ready")
+	-- a talk step is ready at the NPC it names
+	local lr = M.tale("lantern_road")
+	list = M.npcMarks(function(t) return t.key == "lantern_road" and 1 or 100 end, 20)
+	assert(find(list, "Warden Ysolde", "ready") and not find(list, "Archivist Maelis", "ready"), "a talk step: ready at its NPC")
+	eq(lr.steps[1].kind, "talk")
+	-- a closed chain is not offered
+	local chainClosed = function(t) return t.key == "cinderhold_2" and -1 or 100 end
+	eq(#M.npcMarks(function(t) if t.key == "cinderhold_1" then return -1 end return 100 end, 10), 1, "chapter 1 alone is new")
+	assert(not find(M.npcMarks(function(t) return t.key == "lantern_road" and -1 or (t.key == "cellar_teeth" and 1 or 100) end, 50),
+		"Archivist Maelis", "new"), "a tale whose chain is open is not offered")
+	eq(chainClosed({key = "cinderhold_2"}), -1)
+end
+
+-- ------------------------------------------------------------------ O415: the introduction through the engine
+do
+	Chaos.storage.newPlayer = 7100250 -- chaos_constants.lua: the kit flag the introduction waits for
+	local kit = Chaos.storage.newPlayer
+	local waiting = {}
+	local sentToasts = {}
+	local oldAdd, oldSend = addEvent, Chaos.send
+	addEvent = function(fn, ms) waiting[#waiting + 1] = {fn = fn, ms = ms} end
+	ChaosOpcodes = ChaosOpcodes or {}
+	ChaosOpcodes.notifications = 98
+	json = json or {encode = function(t) return t.message end}
+	local newbie = mkPlayer(41, 8)
+	function newbie:getGuid() return 541 end
+	function newbie:sendExtendedOpcode(op, payload) sentToasts[#sentToasts + 1] = {op, payload} end
+	online[41] = newbie
+	local flagKey = cfg.storage.base + cfg.story.intro
+	-- the login schedules the introduction, after the story delay
+	events.ChaosTalesLogin.onLogin(newbie)
+	eq(#waiting, 1, "one introduction scheduled at login"); eq(waiting[1].ms, cfg.story.delayMs, "after the story delay")
+	assert(cfg.story.delayMs >= 15000, "later than the first-hour hint (9 s)")
+	-- no kit yet (a tutorial island): nothing, and the flag stays free
+	waiting[1].fn()
+	eq(newbie:getStorageValue(flagKey), -1, "no kit, no introduction"); eq(#newbie.msgs, 0)
+	-- with the kit: the message and the toast once, the flag set
+	newbie:setStorageValue(kit, 1)
+	waiting[1].fn()
+	eq(newbie:getStorageValue(flagKey), 1, "the flag is set")
+	eq(#newbie.msgs, 1, "one message"); assert(newbie.msgs[1]:find("Tale of Cinderhold", 1, true) and newbie.msgs[1]:find("Torn Ledger", 1, true))
+	eq(#sentToasts, 1, "and one toast"); eq(sentToasts[1][1], 98)
+	waiting[1].fn()
+	eq(#newbie.msgs, 1, "never twice")
+	-- Portuguese
+	local bia2 = mkPlayer(42, 8); function bia2:getGuid() return 542 end
+	online[42] = bia2
+	bia2:setStorageValue(M.langKey(), 2); bia2:setStorageValue(kit, 1)
+	waiting = {}
+	events.ChaosTalesLogin.onLogin(bia2); waiting[1].fn()
+	assert(bia2.msgs[1]:find("A História de Cinderhold", 1, true) and bia2.msgs[1]:find("Registro Rasgado", 1, true), bia2.msgs[1])
+	-- an old character that never took it gets it once at its next login; one that took it is only marked
+	local old = mkPlayer(43, 900); function old:getGuid() return 543 end
+	online[43] = old
+	old:setStorageValue(kit, 1)
+	waiting = {}
+	events.ChaosTalesLogin.onLogin(old); waiting[1].fn()
+	eq(#old.msgs, 1, "an old character is told once"); eq(old:getStorageValue(flagKey), 1)
+	waiting = {}
+	events.ChaosTalesLogin.onLogin(old); waiting[1].fn()
+	eq(#old.msgs, 1, "and not at the next login")
+	local started = mkPlayer(44, 900); function started:getGuid() return 544 end
+	online[44] = started
+	started:setStorageValue(kit, 1); started:setStorageValue(M.stateKey(M.tale("cinderhold_1")), 2)
+	waiting = {}
+	events.ChaosTalesLogin.onLogin(started); waiting[1].fn()
+	eq(#started.msgs, 0, "a character in the story is not told"); eq(started:getStorageValue(flagKey), 1, "but marked")
+	-- the welcome hook (a character that leaves the tutorial island gets the kit later)
+	local calls = 0
+	ChaosNewPlayer = {showWelcome = function() calls = calls + 1 return true end}
+	events.ChaosTalesStartup.onStartup()
+	local late = mkPlayer(45, 8); function late:getGuid() return 545 end
+	online[45] = late
+	waiting = {}
+	eq(ChaosNewPlayer.showWelcome(late), true, "the welcome still shows"); eq(calls, 1)
+	eq(#waiting, 1, "and the story follows it")
+	late:setStorageValue(kit, 1); waiting[1].fn()
+	eq(#late.msgs, 1, "told after the welcome")
+	-- the mark sources and the diffs sent to the client
+	local fresh = mkPlayer(46, 8)
+	local marks = T.npcMarks(fresh)
+	assert(#marks >= 1 and marks[1].npc == "Archivist Maelis" and marks[1].mark == "new", "a fresh character: a gold ! over the Archivist")
+	local goals = T.questGoals(fresh)
+	eq(goals[1].npc, "Archivist Maelis", "and the questgoal points at her")
+	local pokes = 0
+	ChaosPoi.sendMarks = function() pokes = pokes + 1 end
+	ChaosPoi.cfg = {marks = {locked = false}}
+	T.pokeMarks(fresh)
+	eq(pokes, 1, "a quest change pokes the marks")
+	addEvent, Chaos.send = oldAdd, oldSend
+end
+
 print("tales_test: OK")

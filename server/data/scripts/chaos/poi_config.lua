@@ -43,6 +43,11 @@ return {
 	questMs = 4000,
 	questGoalMax = 12,
 	questHunts = 2,
+	-- O415: the marks over the NPCs' heads (action `npcmarks`, the quest sources `ChaosPoi.markSources`: tales.lua,
+	-- spellquest.lua, ascension_quest.lua), checked every questMs and sent as a difference. gold "!" a quest this character
+	-- can start now, gold "?" a step to turn in or report to this NPC, grey "!" a quest that waits for a level (`locked`,
+	-- off by default). `max`: NPCs marked at once
+	marks = {locked = false, max = 24},
 
 	-- the portals the systems put next to the temples, found by their action id, read from the owning system's config
 	-- (config file + path) or from a global table (global path), so the numbers live in one place only

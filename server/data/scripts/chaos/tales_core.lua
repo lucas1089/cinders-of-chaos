@@ -333,9 +333,15 @@ end
 -- O410: the character's next tale steps on its map (poi.lua quest goals, poi_core.lua P.goals): a visit or elite
 -- step's place, the NPC of a talk step, the hunting areas of a kill step's monsters, the Archivist for a deliver or
 -- report step. stateOf(t) -> stored state. -> {{x, y, z, n} | {npc, n} | {hunts, n}}, n = "<tale>: <step>"
-function M.questGoals(stateOf, lang)
+-- O415: with the character's level, the story chapter it can take (not started) is a goal at the Archivist: step 1 of
+-- the story points at the giver.
+function M.questGoals(stateOf, lang, level)
 	local out = {}
 	local archivist = (M.cfg().npc or {}).name
+	local offer = level and archivist and M.storyOffer(stateOf, level)
+	if offer then
+		out[#out + 1] = {npc = archivist, n = M.t(offer.name, lang) .. ": " .. M.t(M.cfg().ui.storyTake, lang)}
+	end
 	for _, t in ipairs(M.tales()) do
 		local state = M.state(t, stateOf(t))
 		local step = state >= 1 and state <= #t.steps and t.steps[state] or nil
@@ -424,6 +430,111 @@ function M.sagaStats(stateOf)
 	return out
 end
 
+-- ------------------------------------------------------------------------------------------------ the story (O415)
+-- The story quest is the saga cfg.story.saga (the Tale of Cinderhold). A new character is told about it once; the
+-- Archivist is marked on its map while its next chapter waits to be taken, and a mark shows over her head.
+
+-- does the message ask about the story ("story", "cinderhold", "saga", "historia de cinderhold")
+function M.asksStory(msg)
+	local s = plain(msg)
+	for _, w in ipairs({"story", "storyline", "cinderhold", "saga", "ledger pages", "paginas"}) do
+		if hasWord(s, w) then
+			return true
+		end
+	end
+	return false
+end
+
+-- the next chapter of the story the character has not done -> tale, stored state; nil when the saga is complete
+function M.storyNext(stateOf)
+	local st = M.cfg().story
+	if not st then
+		return nil
+	end
+	for _, t in ipairs(M.chapters(st.saga)) do
+		local state = M.state(t, stateOf(t))
+		if state ~= M.cfg().done then
+			return t, state
+		end
+	end
+	return nil
+end
+
+-- the next chapter when the character can take it now (not taken, level and chain met), else nil
+function M.storyOffer(stateOf, level)
+	local t, state = M.storyNext(stateOf)
+	if t and state == 0 and M.canTake(t, level, stateOf) then
+		return t
+	end
+	return nil
+end
+
+-- what to do with the introduction at a login or after the welcome: "show" (tell the story once), "skip" (the character
+-- has started the story already: mark it as told, say nothing) or "wait" (told already, or the first chapter is not open
+-- to the character yet: nothing now, the next login asks again). introFlag: the stored value (> 0 once told).
+function M.storyDue(introFlag, stateOf, level)
+	local st = M.cfg().story
+	if not st or (tonumber(introFlag) or 0) > 0 then
+		return "wait"
+	end
+	for _, t in ipairs(M.chapters(st.saga)) do
+		if M.state(t, stateOf(t)) ~= 0 then
+			return "skip"
+		end
+	end
+	if M.storyOffer(stateOf, level) then
+		return "show"
+	end
+	return "wait"
+end
+
+-- the introduction, in the character's language; the first chapter's name fills the %s
+function M.storyText(t, lang)
+	return string.format(M.t(M.cfg().story.text, lang), M.t(t.name, lang))
+end
+
+-- what the Archivist says when asked about the story: the next page, or that it is done, or the level it waits for
+function M.storyAnswer(stateOf, level, lang)
+	local st = M.cfg().story
+	local t, state = M.storyNext(stateOf)
+	if not t then
+		return M.t(st.askDone, lang)
+	end
+	if state == 0 and (tonumber(level) or 0) < t.minLevel and M.unlocked(t, stateOf) then
+		return string.format(M.t(st.askWait, lang), M.t(t.name, lang), t.minLevel)
+	end
+	return string.format(M.t(st.ask, lang), M.t(t.name, lang))
+end
+
+-- O415: the marks over the NPCs' heads: entries {npc = name, mark = "new" | "ready" | "locked"} (poi_core.lua P.mergeMarks
+-- keeps the strongest per NPC). "new": a tale the character can take now, at the Archivist; "ready": a talk step at its
+-- NPC, a deliver or report step at the Archivist; "locked" (opts.locked only): a tale waiting for the level.
+function M.npcMarks(stateOf, level, opts)
+	opts = opts or {}
+	local out = {}
+	local archivist = (M.cfg().npc or {}).name
+	for _, t in ipairs(M.tales()) do
+		local state = M.state(t, stateOf(t))
+		if state == 0 then
+			if archivist then
+				if M.canTake(t, level, stateOf) then
+					out[#out + 1] = {npc = archivist, mark = "new"}
+				elseif opts.locked and M.unlocked(t, stateOf) and (tonumber(level) or 0) < t.minLevel then
+					out[#out + 1] = {npc = archivist, mark = "locked"}
+				end
+			end
+		elseif state < M.cfg().done then
+			local step = t.steps[state]
+			if step and (step.kind == "report" or step.kind == "deliver") and archivist then
+				out[#out + 1] = {npc = archivist, mark = "ready"}
+			elseif step and step.kind == "talk" and step.npc then
+				out[#out + 1] = {npc = step.npc, mark = "ready"}
+			end
+		end
+	end
+	return out
+end
+
 -- the config's mistakes (the test, and tales.lua at startup): a list of lines, empty when sound
 function M.problems(cfg)
 	cfg = cfg or M.cfg()
@@ -431,6 +542,22 @@ function M.problems(cfg)
 	local s = cfg.storage
 	local function bad(t, why)
 		out[#out + 1] = tostring(t.key) .. ": " .. why
+	end
+	local story = cfg.story
+	if story then
+		if not (cfg.sagas or {})[story.saga] then
+			out[#out + 1] = "story: unknown saga " .. tostring(story.saga)
+		end
+		-- the introduction flag sits in the first block after the last kill count (slot `slots`: +21 + slots)
+		local lastCount = s.count + (s.slots or 19)
+		if type(story.intro) ~= "number" or story.intro <= lastCount or s.base + story.intro > s.last then
+			out[#out + 1] = "story: intro " .. tostring(story.intro) .. " is not a free offset of the tales block"
+		end
+		for _, k in ipairs({"text", "ask", "askDone", "askWait"}) do
+			if type(story[k]) ~= "table" or not story[k].en or not story[k].pt then
+				out[#out + 1] = "story: " .. k .. " needs en and pt"
+			end
+		end
 	end
 	for _, t in ipairs(cfg.tales) do
 		if byKey[t.key] then

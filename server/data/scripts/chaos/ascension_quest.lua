@@ -146,6 +146,37 @@ function S.oracleNear(player)
 	return nil
 end
 
+-- O415: the mark over the Oracle's head: the Calling to start ("new"), the Trial that waits once the proof is done and
+-- the door is open, or the Choice ("ready"), a Calling that waits for the level ("locked", only with poi_config.lua
+-- marks.locked). A character with no ascension (an ascended or lineless class) gets none.
+function S.npcMarks(player)
+	local name = C().npc.name
+	local ok, code = Q.eligibility(player:getVocation():getId(), player:getLevel(), "en")
+	if not ok then
+		if code == "level" then
+			local marks = ChaosPoi and ChaosPoi.cfg and ChaosPoi.cfg.marks or {}
+			if marks.locked == true and stageOf(player) == Q.STAGE.NONE then
+				return {{npc = name, mark = "locked"}}
+			end
+		end
+		return {}
+	end
+	local stage = stageOf(player)
+	if stage == Q.STAGE.NONE then
+		return {{npc = name, mark = "new"}}
+	elseif stage == Q.STAGE.TRIAL then
+		if getS(player, K().cooldown) - now() <= 0 then
+			return {{npc = name, mark = "ready"}}
+		end
+	elseif stage == Q.STAGE.CHOICE then
+		return {{npc = name, mark = "ready"}}
+	end
+	return {}
+end
+ChaosPoi = ChaosPoi or {}
+ChaosPoi.markSources = ChaosPoi.markSources or {}
+ChaosPoi.markSources.ascension = S.npcMarks
+
 -- ======================================================================== the ascension
 -- ChaosAscension.ascend(player, word[, opts]): the Choice. word = an ascended class word of the character's line
 -- (Chaos.classes.ascension.choices). opts.staff = true skips the quest rules (stage, level, the Oracle, combat) and
