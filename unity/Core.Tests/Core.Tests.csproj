@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Console tests of the engine-free core of the Unity prototype (unity/Client/Assets/Chaos/Core).
+       "dotnet run -c Release" runs the unit tests; the probe and live commands: see Probe.cs, LiveProbe.cs -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>9.0</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Client/Assets/Chaos/Core/**/*.cs" />
+  </ItemGroup>
+</Project>
