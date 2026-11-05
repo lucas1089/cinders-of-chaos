@@ -94,9 +94,12 @@ $a = strpos($html, 'Slow Hammer'); $b = strpos($html, 'Mid Arrow'); $c = strpos(
 check($a !== false && $b !== false && $c !== false && $a < $b && $b < $c, 'worldboss ranked highest first');
 check(strpos($html, '>900<') !== false, 'worldboss value as a number');
 
-// class tabs (byClass, leaderboard_config.lua): the Cinderheart boards have them, the others not
+// class tabs (O409, LB.hasClassTabs): every weekly board but the noClassTabs ones (siege, factions, professions)
 check(!empty($boards['cinder_solo']['byClass']) && !empty($boards['cinder_small']['byClass']) && !empty($boards['cinder_party']['byClass']), 'cinderheart boards: byClass');
-check(empty($boards['worldboss']['byClass']) && empty($boards['raid_clear']['byClass']), 'worldboss / raid_clear: no class tabs');
+check(!empty($boards['worldboss']['byClass']) && !empty($boards['raid_clear']['byClass']), 'worldboss / raid_clear: class tabs (O409)');
+check(empty($boards['siege']['byClass']) && empty($boards['factions']['byClass']) && empty($boards['professions']['byClass']), 'siege / factions / professions: no class tabs');
+// the weekly class board (weekly_class.lua): class tabs, ranked per class, no overall title
+check(!empty($boards['weekly_xp']['byClass']) && !empty($boards['weekly_xp']['classAwards']), 'weekly_xp: class tabs and class awards');
 foreach ($boards as $k => $b) {
 	check(is_bool($b['byClass']), "$k: byClass read as a boolean");
 }
@@ -182,9 +185,21 @@ check(array_column(array_filter($selectOf($html, 'class'), static function ($o) 
 // a bad class value or a board without class tabs: every class, no class tabs
 check(array_column($rowsOf($renderClass('cinder_solo', '999')), 1) === array('Fast Mystic', 'Old Mystic', 'Quick Blade', 'Iron Juggernaut', 'Mid Arrow', 'Slow Hammer'), 'unknown class: every class');
 check(array_column($rowsOf($renderClass('cinder_solo', '4 OR 1=1')), 1)[0] === 'Fast Mystic', 'non-numeric class: every class');
+$html = $renderClass('siege', '4');
+check($selectOf($html, 'class') === array(), 'siege: no class dropdown');
 $html = $renderClass('worldboss', '4');
-check($selectOf($html, 'class') === array(), 'worldboss: no class dropdown');
-check(count($rowsOf($html)) === 3 && strpos($html, 'Mid Arrow') !== false, 'worldboss: the class value is ignored');
+check($selectOf($html, 'class') !== array(), 'worldboss: a class dropdown (O409)');
+check(array_column($rowsOf($html), 1) === array('Slow Hammer', 'Quick Blade'), 'worldboss: the Warrior tab only');
+// the weekly class board: last week's podium of every class (chaos_weekly_class_podium)
+$pdo->exec("CREATE TABLE chaos_weekly_class_podium (week INT, board TEXT, class_base INT, rank INT, player_id INT, value INT, tokens INT, awarded_at INT, PRIMARY KEY (week, board, class_base, rank))");
+$pdo->exec("INSERT INTO chaos_weekly_class_podium VALUES (20261026, 'weekly_xp', 4, 1, 1, 9000000, 30, 1), (20261026, 'weekly_xp', 3, 1, 3, 4000000, 30, 1), (20261019, 'weekly_xp', 4, 1, 2, 5, 30, 1)");
+list($pw, $pod) = chaos_weekly_class_podium('weekly_xp');
+check($pw === 20261026, 'podium: the newest week');
+check(count($pod) === 2 && ($pod[4][0]['name'] ?? '') === 'Quick Blade', 'podium: per class');
+$html = $renderClass('weekly_xp', 'all');
+check(strpos($html, 'id="podium"') !== false && strpos($html, '9,000,000') !== false, 'weekly_xp: the podium is shown');
+check(strpos($html, 'Title:') === false, 'weekly_xp: no overall title');
+check(strpos($html, 'p=trends') !== false, 'a link to the trending builds');
 
 
 // ---- records (records.lua): the boards the server published, the filters, ties to the earlier time, staff left out

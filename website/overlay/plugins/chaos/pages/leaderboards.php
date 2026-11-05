@@ -19,7 +19,8 @@ if (!isset($boards[$board])) {
 	$board = (string)array_key_first($boards);
 }
 $def = $boards[$board];
-// class tabs (byClass): the class group asked for, anything else = every class (LB.sendBoard)
+// class tabs (byClass: every weekly board without noClassTabs, LB.hasClassTabs): the class group asked for, anything
+// else = every class (LB.sendBoard)
 $classGroups = !empty($def['byClass']) ? chaos_leaderboard_class_groups() : array();
 $classKey = (string)($_GET['class'] ?? 'all');
 if (!ctype_digit($classKey) || !isset($classGroups[(int)$classKey])) {
@@ -29,6 +30,8 @@ $classIds = $classKey === 'all' ? array() : $classGroups[(int)$classKey]['ids'];
 $week = chaos_week_key(time(), 6);
 $rows = chaos_leaderboard_rows($board, $week, 20, ($def['mode'] ?? '') === 'min', $classIds);
 list($titleWeek, $titleRows) = chaos_leaderboard_titles();
+// a board ranked per class (classAwards, weekly_class.lua): last week's podium of every class
+list($podiumWeek, $podium) = !empty($def['classAwards']) ? chaos_weekly_class_podium($board) : array(0, array());
 $fallenMarks = chaos_fallen_marks(); // season modes: the skull of a fallen Hardcore character on the Class Ladder
 // ---- records: the board, its filters and the rows
 $rBoards = chaos_records_boards();
@@ -81,6 +84,7 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 		<h1 class="chaos-heading"><?= chaos_h(chaos_t('Leaderboards')) ?></h1>
 		<p class="chaos-muted chaos-lang-row"><?= chaos_lang_link($url($board)) ?></p>
 		<p class="chaos-lead"><?= chaos_h(chaos_t('Weekly boards reset every Monday at 06:00 server time. The top 3 of each board earn a title for the next week and orbs in their inbox. Staff characters are left out of every board.')) ?></p>
+		<p class="chaos-muted"><a href="page?plugin=chaos&amp;p=trends"><?= chaos_h(chaos_t('Trending builds: what each class plays this week')) ?></a></p>
 
 		<?php
 		// the boards: one dropdown sorted by the name shown, as the client's Leaderboards window (boardpick.lua); the
@@ -100,7 +104,7 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 		?>
 
 		<h2 class="chaos-subheading"><?= chaos_h($def['name']) ?><?php if ($classKey !== 'all'): ?> &middot; <?= chaos_h($classGroups[(int)$classKey]['name']) ?><?php endif; ?> <small><?= chaos_h(chaos_t('week of %s', chaos_week_label($week))) ?></small></h2>
-		<?php if ($def['info'] !== ''): ?><p class="chaos-muted"><?= chaos_h($def['info']) ?><?php if ($def['title'] !== ''): ?> <?= chaos_h(chaos_t('Title:')) ?> <span class="chaos-gold"><?= chaos_h($def['title']) ?></span>.<?php endif; ?></p><?php endif; ?>
+		<?php if ($def['info'] !== ''): ?><p class="chaos-muted"><?= chaos_h($def['info']) ?><?php if ($def['title'] !== '' && empty($def['classAwards'])): ?> <?= chaos_h(chaos_t('Title:')) ?> <span class="chaos-gold"><?= chaos_h($def['title']) ?></span>.<?php endif; ?></p><?php endif; ?>
 		<table class="chaos-table">
 			<thead><tr><th>#</th><th><?= chaos_h(chaos_t('Name')) ?></th><th><?= chaos_h(chaos_t('Class')) ?></th><th class="num"><?= chaos_h(chaos_t($def['value'])) ?></th><?php if ($def['count'] !== ''): ?><th class="num"><?= chaos_h($def['count']) ?></th><?php endif; ?></tr></thead>
 			<tbody>
@@ -117,6 +121,28 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 			<?php endforeach; endif; ?>
 			</tbody>
 		</table>
+		<?php if (!empty($def['classAwards'])): ?>
+			<h3 class="chaos-subheading" id="podium"><?= chaos_h(chaos_t('Last week\'s podium of every class')) ?><?php if ($podiumWeek > 0): ?> <small><?= chaos_h(chaos_t('week of %s', chaos_week_label($podiumWeek))) ?></small><?php endif; ?></h3>
+			<p class="chaos-muted"><?= chaos_h(chaos_t('Every class is ranked on its own: the top 3 of each class earn Conquest Tokens at the Monday reset.')) ?></p>
+			<?php if (!$podium): ?>
+				<p class="chaos-muted"><?= chaos_h(chaos_t('No week has been scored yet. The podium appears after the Monday reset.')) ?></p>
+			<?php else: ?>
+				<div class="chaos-ladder">
+					<?php foreach (chaos_leaderboard_class_groups() as $base => $g): if (empty($podium[$base])) { continue; } ?>
+						<div class="chaos-ladder__col">
+							<h4 class="chaos-ladder__name"><?= chaos_h($g['name']) ?></h4>
+							<ol class="chaos-ladder__list">
+								<?php foreach ($podium[$base] as $r): ?>
+									<li><a href="characterprofile?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a>
+										<span class="chaos-muted"><?= chaos_h(chaos_class_name((int)$r['vocation'])) ?></span>
+										<span class="chaos-ladder__lvl"><?= chaos_h(chaos_leaderboard_value($def, $r['value'])) ?></span></li>
+								<?php endforeach; ?>
+							</ol>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
+		<?php endif; ?>
 	</div>
 
 	<div class="chaos-box" id="records">

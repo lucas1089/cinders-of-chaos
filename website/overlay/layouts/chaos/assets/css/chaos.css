@@ -590,6 +590,10 @@ ol.chaos-build__spells { list-style: decimal inside; }
 .chaos-build__gear { display: flex; align-items: center; gap: 8px; }
 .chaos-build__item { width: 32px; height: 32px; image-rendering: pixelated; flex: none; }
 .chaos-build__share { width: 100%; max-width: 46rem; font-size: 13px; padding: 4px 8px; }
+/* trending builds (plugins/chaos/pages/trends.php, O409) */
+.chaos-trends__list { margin: 0; padding-left: 1.4em; }
+.chaos-trends__item { padding: 6px 0; border-bottom: 1px solid var(--c-line); overflow-wrap: anywhere; }
+.chaos-copy { padding: 2px 10px; font-size: 13px; cursor: pointer; }
 .chaos-character { display: flex; align-items: center; gap: 12px; }
 .chaos-character .chaos-lead { margin: 0; }
 @media (max-width: 720px) { .chaos-build__cols { grid-template-columns: minmax(0, 1fr); } }

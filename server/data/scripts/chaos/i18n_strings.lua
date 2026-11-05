@@ -1384,6 +1384,11 @@ return {
 		["You do not have enough room or capacity for the reward."] =
 			"Você não tem espaço ou capacidade para a recompensa.",
 		["Daily reward (day %d, streak %d): %dx %s."] = "Recompensa diária (dia %d, sequência %d): %dx %s.",
+		-- O409: the login streak cosmetics (daily.lua, daily_core.lua) and the weekly class podium (weekly_class_core.lua)
+		["the cosmetic \"%s\""] = "o cosmético \"%s\"",
+		["Login streak of %d days: the cosmetic %s is yours. Choose it in the Wardrobe."] = "Sequência de login de %d dias: o cosmético %s é seu. Escolha-o no Guarda-roupa.",
+		["%s, the best of every class last week - %s."] = "%s, os melhores de cada classe na semana passada - %s.",
+		["Weekly Experience"] = "Experiência Semanal",
 		["Week completed! Bonus reward collected."] = "Semana completa! Recompensa bônus recebida.",
 		["A grace charge kept your streak alive (%d left)."] =
 			"Uma carga de tolerância manteve sua sequência viva (restam %d).",

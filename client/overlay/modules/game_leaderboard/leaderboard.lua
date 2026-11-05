@@ -233,9 +233,16 @@ local function showBoard()
   -- last week's title holders (weekly boards) / the class shown (ladder)
   if b.weekly then
     local champions = rowsOf(current.champions)
-    window.championPanel.championTitle:setText(tr('%s: the title holders this week (last week\'s top 3)', b.title or ''))
+    if b.classAwards then
+      -- ranked per class (server weekly_class.lua, O409): last week's podium of the class tab shown
+      window.championPanel.championTitle:setText(tr('%s: last week\'s podium (the top 3 of every class get Conquest Tokens)',
+        groupName(current.championGroup)))
+    else
+      window.championPanel.championTitle:setText(tr('%s: the title holders this week (last week\'s top 3)', b.title or ''))
+    end
     if #champions == 0 then
-      window.championPanel.championNames:setText(tr('Nobody yet: the top 3 of this week get the title on Monday.'))
+      window.championPanel.championNames:setText(b.classAwards and tr('Nobody yet: the podium of every class is rewarded on Monday.')
+        or tr('Nobody yet: the top 3 of this week get the title on Monday.'))
       window.championPanel.championNames:setTooltip('')
     else
       local parts, exacts = {}, {}

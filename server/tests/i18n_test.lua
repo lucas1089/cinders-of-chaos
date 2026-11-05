@@ -238,6 +238,7 @@ local SITES = {
 	["admin/actions_players.lua"] = {}, ["../../lib/chaos_unique_items.lua"] = TR,
 	["classes.lua"] = CORE_T, ["class_unlocks_core.lua"] = CORE_T, ["class_migration.lua"] = {}, ["partyframes.lua"] = {},
 	["../../lib/chaos_archery_core.lua"] = {}, ["buffbar.lua"] = {},
+	["weekly_class.lua"] = {}, ["weekly_class_core.lua"] = CORE_T,
 }
 local used = 0
 for f, extra in pairs(SITES) do

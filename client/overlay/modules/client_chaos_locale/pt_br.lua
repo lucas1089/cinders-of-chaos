@@ -3316,6 +3316,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Weekly Challenge Party"] = "Desafio Semanal em Grupo",
   ["Scorched Marches"] = "Scorched Marches",
   ["Gatherers"] = "Coletores",
+  ["Weekly Experience"] = "Experiência Semanal",
+  ["Tireless"] = "Incansável",
   ["Class Ladder"] = "Ranking de classes",
   -- game_hunt: the Restock button (server restock.lua)
   ["Restock"] = "Reabastecer",
@@ -6273,5 +6275,27 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Summary copied to the clipboard."] = "Resumo copiado para a área de transferência.",
   ["Takes effect at the next client start."] = "Vale a partir da próxima abertura do cliente.",
   ["Time Lua per module from client start"] = "Medir Lua por módulo desde a abertura",
+  -- O409: the weekly class board (game_leaderboard)
+  ["%s: last week's podium (the top 3 of every class get Conquest Tokens)"] = "%s: pódio da semana passada (os 3 melhores de cada classe ganham Conquest Tokens)",
+  ["Nobody yet: the podium of every class is rewarded on Monday."] = "Ninguém ainda: o pódio de cada classe é premiado na segunda-feira.",
+  -- O409: trending builds (game_passivetree trends)
+  ["Trending Builds"] = "Builds em Alta",
+  ["The most played builds of every class this week (no names). Import one from the list."] = "As builds mais jogadas de cada classe nesta semana (sem nomes). Importe uma da lista.",
+  ["#%d  %s of the class, %d characters, average level %d"] = "#%d  %s da classe, %d personagens, nível médio %d",
+  ["Keystones: %s"] = "Keystones: %s",
+  ["no keystone"] = "nenhuma keystone",
+  ["Asking the server..."] = "Consultando o servidor...",
+  ["Most played keystones of each class. No names."] = "Keystones mais jogadas de cada classe. Sem nomes.",
+  ["Next class"] = "Próxima classe",
+  ["Previous class"] = "Classe anterior",
+  ["No snapshot yet: the server counts the builds once a day."] = "Ainda não há retrato: o servidor conta as builds uma vez por dia.",
+  ["Paste this build into the Build Code panel and preview it in your tree"] = "Cola esta build no painel Código de Build e mostra a prévia na sua árvore",
+  ["Snapshot of %s: %d active characters of this class (level 100+, last 7 days)."] = "Retrato de %s: %d personagens ativos desta classe (nível 100+, últimos 7 dias).",
+  ["Snapshot of %s: no build of this class is played by enough characters yet."] = "Retrato de %s: nenhuma build desta classe é jogada por personagens suficientes ainda.",
+  -- O409: the login streak cosmetics (game_daily)
+  ["%s (%d days)"] = "%s (%d dias)",
+  ["%s (%d days, owned)"] = "%s (%d dias, obtido)",
+  ["Streak cosmetics: %s"] = "Cosméticos da sequência: %s",
+  ["Granted once to the account when its streak first gets there. Choose them in the Wardrobe."] = "Concedidos uma vez à conta quando a sequência chega lá pela primeira vez. Escolha-os no Guarda-roupa.",
 }
 return ChaosLocaleStrings['pt-BR']

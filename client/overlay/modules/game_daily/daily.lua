@@ -102,6 +102,18 @@ local function streakInfo()
 		panel.milestoneLabel:setText(tr("Every milestone reached. Keep the streak going!"))
 	end
 	panel.titleLabel:setText(dailyData.Title and tr("Your title: %s", dailyData.Title) or "")
+	-- the cosmetics of the streak milestones (O409): granted by the server, chosen in the Wardrobe
+	local parts = {}
+	for _, c in ipairs(type(dailyData.Cosmetics) == "table" and dailyData.Cosmetics or {}) do
+		if type(c) == "table" and type(c.Name) == "string" then
+			parts[#parts + 1] = c.Owned == 1 and tr("%s (%d days, owned)", c.Name, tonumber(c.Days) or 0)
+				or tr("%s (%d days)", c.Name, tonumber(c.Days) or 0)
+		end
+	end
+	if panel.cosmeticLabel then
+		panel.cosmeticLabel:setText(#parts > 0 and tr("Streak cosmetics: %s", table.concat(parts, ", ")) or "")
+		panel.cosmeticLabel:setTooltip(#parts > 0 and tr("Granted once to the account when its streak first gets there. Choose them in the Wardrobe.") or "")
+	end
 end
 
 function init()

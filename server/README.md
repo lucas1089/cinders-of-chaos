@@ -3835,6 +3835,46 @@ validates and applies; the client only shows what the server sends.
   Build Code panel flow (export / import / apply) and "You need 3,945,000 gold coins" with too little gold. Screenshots in the
   session's scratchpad. Not tested in game: the Paragon part (the character is below level 1000; unit tests only).
 
+## Trending builds (O409) (`build_trends.lua`, `build_trends_core.lua`, `build_trends_config.lua`, `sql/chaos_build_trends.sql`)
+
+"Builds em alta": the most played passive tree builds of every class, once a day.
+- Who counts: characters that logged in during the last `activeDays` (7), level `minLevel` (100) or more, below the
+  staff group, not deleted, not tester bots. Their active preset (the lowest preset row of `chaos_passive_tree`).
+- Grouping: per base class (the class tab: base class and its ascensions), by the set of keystones taken (the `ks*` /
+  `ar*` flags of the node's stats for the class's keystone variant). The signature is the sorted flags joined by `+`.
+- Per class the top `top` (5) builds with at least `minCount` (3) characters: count, share of the class (per mille),
+  average level and one representative tree (the member closest to the bucket's majority of nodes).
+- Codes: the tree code (`CB<n>-`, `ChaosBuildShare.encode`) and the full build code (`CC1-`, class + average level +
+  tree, `K.encodeFull`; checked against `docs/build_code_vectors.txt`).
+- Privacy: no character name or id is stored, sent or shown. A build of one or two characters is never listed.
+- When: at startup after `startDelaySeconds` when the last snapshot is older than `refreshHours` (24), then checked
+  every `checkSeconds` (3600). `server_config` key `chaos_build_trends_at`. Snapshots older than `keepDays` are deleted.
+- Table `chaos_build_trends` (snapshot, class, rank, class name, signature, keystone names, count, total, share, average
+  level, tree code, full code). `build_trends.lua` creates it at startup too.
+
+**Protocol** (opcode 65 `ChaosOpcodes.passivetree`, `ChaosPassiveTree.extraActions.buildTrends`; no new opcode):
+- client -> server `buildTrends {class?}` (a base class id; none = the own class). At most once per `askMs`.
+- server -> client `buildTrends {class, className, at, total, classes = [{key, name}], rows = [{rank, share, count,
+  level, keystones, code, full}]}`.
+
+**Client:** Passive Tree > Build Code > Trending Builds (`game_passivetree` `trends.lua`, `trends.otui`, texts
+`trendsview.lua`). Class arrows, up to 5 rows, Import pastes the code into the Build Code panel and runs its Import:
+the server's preview, class and respec rules decide, as for any pasted code.
+
+**Website:** `page?plugin=chaos&p=trends` (`pages/trends.php`, `lib.php` `chaos_build_trends`): per class the top 5
+with share, keystones, count and level, a link to the build page and a copy button (`assets/js/chaos-copy.js`). Menu:
+The World > Trending Builds; linked from the build and leaderboards pages.
+
+Staff: `/buildtrends` (status), `/buildtrends run` (a snapshot now; economy group).
+
+**Tests:** `tests/build_trends_test.lua` (keystone names against the client and the tree data, classes against the
+client's `buildcode.lua`, grouping, minCount, the representative, the full code vectors, the SQL file, the mocked
+engine: the query filters, the rows, no name or id, the window answer); client `trendsview_test.lua`;
+`website/tests/chaos_trends_page_test.php`.
+
+**Reserved for O409:** storage 7122000 - 7122099 and opcode 162 are not used (no new storage, no new opcode). Note: that
+storage range lies inside the loadouts block 7112000 - 7127999 (`runeMirrorBase`), so it should not be taken later.
+
 ## Passive tree: Auto build, class lanes, Primary / Secondary and stat help (2026-10)
 
 Files: `passive_builds.lua` (engine), `passive_builds_core.lua` (pure), `passive_builds_config.lua` (numbers), `passive_builds_data.lua`
@@ -11078,6 +11118,32 @@ from the DB, the reward of an unrewarded row delivered at login. Tabs, class tab
 verified: the look text from another player's view ("He"/"She"; unit-tested), the real Monday 06:00 change (a
 once-a-minute check of the week key), the rift source (the rift scripts do not call it yet).
 
+### Weekly class ranking (O409) (`weekly_class.lua`, `weekly_class_core.lua`, `weekly_class_config.lua`, `sql/chaos_weekly_class.sql`)
+
+A weekly board of the experience gained from monsters, ranked per class. Board `weekly_xp` ("Weekly Experience") in
+`leaderboard_config.lua`: `byClass`, `classAwards`, `noReward`.
+- Counting: an `onGainExperience` callback (index 1500, between the hunt tracker 1000 and party XP 2000) adds the
+  experience of monster kills to a buffer per character. Quests, tasks and other sources do not count.
+- The buffer goes to the board (`LB.record`, mode `add`) every `flushSeconds` (60) and at logout.
+- Fair per class: the board has class tabs; `LB.awards` skips a `classAwards` board, so no overall title and no orbs.
+- At the weekly reset (`LB.onReset`, Monday `resetHour` 6) the top `rewardTop` (3) of every class with at least
+  `minValue` experience get Conquest Tokens 30 / 20 / 10 (`ChaosConquest.grantGuid`, source `weekly_class`; offline too).
+- The podium rows go to `chaos_weekly_class_podium` (week, board, class, rank, player, value, tokens). A week with rows
+  is never paid twice (a manual `/leaderboard reset` included). Rows older than `keepWeeks` (12) are deleted.
+- A broadcast names the winner of every class. A Discord post (kind `weekly_class`, channel `records`) lists the podium
+  of every class, one inline field per class (`ChaosDiscordCore.weeklyClass`, `discord_lib.php` kind and colour).
+- The client window shows last week's podium of the class tab (or the player's own class) in the champion panel.
+- The website Leaderboards page shows the board, its class dropdown and last week's podium of every class.
+- Staff: `/weeklyclass` prints the buffer size and the last paid week.
+
+**Class tabs on every weekly board (O409).** `leaderboard_config.lua` `classTabs = true`: every board gets class tabs
+(`LB.hasClassTabs`), but the boards with `noClassTabs` (siege, factions, professions: guild and gathering scores).
+`byClass` boards keep their tabs either way. Awards stay overall for those boards.
+
+**Tests:** `tests/weekly_class_test.lua` (board flags, tabs, buffer, tops, awards, texts, Discord kind on both ends, the
+SQL file, the mocked engine: monster kills only, flush, logout, the week end, no double pay);
+`website/tests/chaos_leaderboards_page_test.php`.
+
 ## Competitive records (`records.lua`, `records_core.lua`, `records_config.lua`, `sql/chaos_records.sql`)
 
 Fastest kills and best results of every competitive system, beside the weekly boards (owner request: "Faça uma
@@ -18049,7 +18115,15 @@ through one queue, so they never stack on top of each other:
 
 **Protocol additions** (the shipped protocol and its quirks are unchanged; see the header of `daily.lua`):
 - `OpenDailyWindow` also carries `Streak, Best, Grace, GraceMax, GraceUse, Broken, Title, Next {Days, In, Reward,
-  Title}` and `Login`.
+  Title, Cosmetic}`, `Cosmetics [{Days, Name, Owned}]` and `Login`.
+
+**Streak cosmetics (O409).** A milestone may name a cosmetic (`daily_config.lua` `cosmetic`, a `cosmetics_config.lua`
+key of source `daily` with the same `days`). Day 7: Devoted Labels (`loot_devoted`, loot label accent). Day 60: Vigil
+Ascent (`lvl_vigil`, level-up effect, the existing `holy_seal` effect). No new sprite.
+- Granted once per account with the milestone's claim (`ChaosCosmetics.grant`, source `daily`), never taken back.
+- An account whose best streak got there before (or a claim that failed to grant) gets it when the daily window opens.
+- The window's milestone row lists the streak cosmetics, owned or not. The Wardrobe shows "Daily reward: a login
+  streak of N days".
 - The client also sends `closed`.
 
 Staff: `/daily` shows the own account's state, `/daily shift <days>` moves the daily clock (tests),

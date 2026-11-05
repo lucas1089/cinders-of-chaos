@@ -86,6 +86,8 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_guide_page_test.php` | `php website/tests/chaos_guide_page_test.php`: the data (every card placed once, levels rising, both languages), a card's HTML and escaping, the page in both languages, the menu, home page and sitemap links (php-cli only) |
 | `overlay/plugins/chaos/buildcode_lib.php`, `pages/build.php` | build codes (`CC1-`): the PHP twin of the client codec and the build page `page?plugin=chaos&p=build&c=CODE` (see "Build codes and character page (O391, O392)") |
 | `overlay/plugins/chaos/character_lib.php`, `pages/character.php`, `patches/znotex-chaos-character-page.patch` | the character page `page?plugin=chaos&p=character&name=X` and its link on the stock character profile (same section) |
+| `overlay/plugins/chaos/pages/trends.php`, `assets/js/chaos-copy.js` | Trending builds (O409, "Builds em alta"): `page?plugin=chaos&p=trends`, per class the most played builds of the game's daily snapshot (`chaos_build_trends`, server/README.md "Trending builds (O409)"): share, keystones, characters, average level, a link to the build page and a copy button (no inline script; without JavaScript a read-only field). No names. Menu: The World > Trending Builds |
+| `tests/chaos_trends_page_test.php` | `php website/tests/chaos_trends_page_test.php`: the newest snapshot only, the order, share and texts, the build link, the copy button and script, no character link (php-cli only) |
 | `tests/chaos_build_page_test.php` | `php website/tests/chaos_build_page_test.php`: the shared vectors `docs/build_code_vectors.txt`, every one-character typo, the class and slot tables against the Lua codec and the server core, item names, the page and escaping, SEO (php-cli only) |
 | `tests/chaos_character_page_test.php` | `php website/tests/chaos_character_page_test.php`: SQLite fake db: hidden and tester characters, gear, tree, the build code, achievements, titles, milestones, runs, seasons, the memorial opt-out, escaping (needs pdo_sqlite) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
@@ -1223,12 +1225,12 @@ the environment only.
   `chaos-ctl.sh discord-set | discord-enable | discord-disable | discord-test | discord-status` (docs/LAUNCH.md
   "Discord announcements"); the URL goes on stdin and is only ever written to the file below.
 - **Environment** (`/etc/chaos/discord.env`, mode 600, owned by www-data; never in the repository):
-  `CHAOS_DISCORD_WEBHOOK_RECORDS` (records, realm firsts, the Weekly Challenge's week), `_BOSSES` (world boss spawn and kill, Ascended,
+  `CHAOS_DISCORD_WEBHOOK_RECORDS` (records, realm firsts, the Weekly Challenge's week, the weekly class podium), `_BOSSES` (world boss spawn and kill, Ascended,
   Cinderheart), `_PLAYERS` (levels 500 and 1000), `_ANNOUNCE` (season start and end, invasions), `_STATUS` (server up, daily
   restart, down), `_BAZAAR` (auctions and sales), `_DEFAULT` (every channel without its own); `CHAOS_DISCORD_OFF`
   (kinds not to post, comma separated: `record`, `first`, `worldboss_spawn`, `worldboss_kill`, `ascended_kill`,
   `cinderheart_kill`, `level`, `season_start`, `season_end`, `status_up`, `status_down`, `status_restart`,
-  `bazaar_list`, `bazaar_sale`, `weekly_challenge`, `city_invasion`); `CHAOS_DISCORD_NAME` (the poster's name); `CHAOS_SITE_URL` (the bazaar link). Only
+  `bazaar_list`, `bazaar_sale`, `weekly_challenge`, `weekly_class`, `city_invasion`); `CHAOS_DISCORD_NAME` (the poster's name); `CHAOS_SITE_URL` (the bazaar link). Only
   `https://discord.com/api/webhooks/<id>/<token>` URLs are taken.
 - **Rate limits:** at most 20 posts a run, 0.6 s apart per webhook; Discord's 429 `retry_after` and
   `X-RateLimit-Remaining: 0` hold that webhook's rows back. A failed post is tried again after 1, 2, 4, 8 minutes and

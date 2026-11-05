@@ -507,8 +507,11 @@ function chaos_leaderboard_boards(): array {
 				// mode "min": the lowest value ranks first (fastest kills); format "time": seconds shown as m:ss
 				'mode'   => (string)(chaos_lua_field($entry, 'mode') ?? 'add'),
 				'format' => (string)(chaos_lua_field($entry, 'format') ?? ''),
-				// byClass: class tabs, as in the client (the Cinderheart fastest kills)
-				'byClass' => chaos_lua_bool($entry, 'byClass'),
+				// class tabs, as in the client (LB.hasClassTabs, O409): every weekly board but one with noClassTabs (a guild
+				// or gathering score), and every byClass board (the Cinderheart fastest kills)
+				'byClass' => chaos_lua_bool($entry, 'byClass') || !chaos_lua_bool($entry, 'noClassTabs'),
+				// classAwards (weekly_class.lua): ranked per class, no overall title; last week's podium per class
+				'classAwards' => chaos_lua_bool($entry, 'classAwards'),
 			);
 		}
 		if ($read) {
@@ -584,6 +587,58 @@ function chaos_leaderboard_class_groups(): array {
 		}
 	}
 	return $groups;
+}
+
+/** Last week's podium of a classAwards board (weekly_class.lua, O409; chaos_weekly_class_podium): the newest week
+ * with rows and, per base class id, its rows (rank, name, vocation, value), ranks in order. [week, array]. */
+function chaos_weekly_class_podium(string $board): array {
+	if (!chaos_table_exists('chaos_weekly_class_podium')) {
+		return array(0, array());
+	}
+	$row = db()->fetchOne('SELECT MAX(`week`) AS `w` FROM `chaos_weekly_class_podium` WHERE `board` = ?;', array($board));
+	$week = is_array($row) ? (int)($row['w'] ?? 0) : 0;
+	if ($week <= 0) {
+		return array(0, array());
+	}
+	$out = array();
+	foreach (chaos_rows('
+		SELECT `w`.`class_base`, `w`.`rank`, `w`.`value`, `p`.`name`, `p`.`vocation`
+		FROM `chaos_weekly_class_podium` `w`
+		JOIN `players` `p` ON `p`.`id` = `w`.`player_id`
+		WHERE `w`.`week` = ? AND `w`.`board` = ?
+		ORDER BY `w`.`class_base` ASC, `w`.`rank` ASC;', array($week, $board)) as $r) {
+		$out[(int)$r['class_base']][] = $r;
+	}
+	return array($week, $out);
+}
+
+/** Trending builds (build_trends.lua, O409; chaos_build_trends): the newest daily snapshot and, per base class id, its
+ * builds (rank, keystones, count, total, share per mille, avg_level, tree_code, code) most played first. No character
+ * name or id is in the table. [snapshot time, array]. */
+function chaos_build_trends(): array {
+	if (!chaos_table_exists('chaos_build_trends')) {
+		return array(0, array());
+	}
+	$row = db()->fetchOne('SELECT MAX(`snapshot`) AS `s` FROM `chaos_build_trends`;');
+	$at = is_array($row) ? (int)($row['s'] ?? 0) : 0;
+	if ($at <= 0) {
+		return array(0, array());
+	}
+	$out = array();
+	foreach (chaos_rows('
+		SELECT `class_base`, `rank`, `keystones`, `count`, `total`, `share`, `avg_level`, `tree_code`, `code`
+		FROM `chaos_build_trends`
+		WHERE `snapshot` = ?
+		ORDER BY `class_base` ASC, `rank` ASC;', array($at)) as $r) {
+		$out[(int)$r['class_base']][] = $r;
+	}
+	return array($at, $out);
+}
+
+/** A share per mille as a percentage text: 429 -> "42.9%", 1000 -> "100%" (the client's TrendsView.share). */
+function chaos_share_text(int $perMille): string {
+	$n = max(0, min(1000, $perMille));
+	return $n % 10 === 0 ? sprintf('%d%%', intdiv($n, 10)) : sprintf('%d.%d%%', intdiv($n, 10), $n % 10);
 }
 
 /** The title holders of the most recent scored week: [week, rows]. */
