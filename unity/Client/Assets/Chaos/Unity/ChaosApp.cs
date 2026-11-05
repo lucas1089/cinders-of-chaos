@@ -24,7 +24,12 @@ namespace Chaos.Client
         Camera cam;
         Vector2 charScroll;
         readonly List<string> log = new List<string>();
-        GUIStyle small, nameStyle;
+        readonly List<(string text, Color color)> chat = new List<(string, Color)>();
+        GUIStyle small, nameStyle, chatStyle, titleStyle;
+        Vector2 chatScroll;
+        string chatInput = "";
+        bool chatOpen = true, chatFocused, showDebug, chatToBottom;
+        readonly List<Rect> uiRects = new List<Rect>();   // screen pixels the windows cover: clicks there do not walk
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -50,6 +55,32 @@ namespace Chaos.Client
             cam.backgroundColor = new Color32(12, 10, 14, 255);
             cam.transform.position = new Vector3(0.5f, -0.5f, -10);
             cam.orthographicSize = 5.5f;
+            // a second camera under the map clears the whole screen: the map camera draws only its 15 x 11 view
+            var backGo = new GameObject("Backdrop");
+            backGo.transform.SetParent(transform);
+            var back = backGo.AddComponent<Camera>();
+            back.depth = cam.depth - 1;
+            back.cullingMask = 0;
+            back.clearFlags = CameraClearFlags.SolidColor;
+            back.backgroundColor = new Color32(6, 5, 8, 255);
+        }
+
+        // The server sends the 15 x 11 view plus one tile left and top and two right and bottom (World.Range*). A wider
+        // view showed unknown tiles at the sides, black, and they flashed while walking. The map keeps the 15 x 11 shape
+        // and is centred; the rest of the screen is the backdrop.
+        public const float ViewTilesW = 15f, ViewTilesH = 11f;
+        public static float UiScale(float screenW, float screenH, float dpi)
+        {
+            float byHeight = Mathf.Min(screenH / 720f, screenW / 960f);
+            return Mathf.Max(1f, Mathf.Max(byHeight, dpi / 160f));
+        }
+
+        public static Rect MapRect(float screenW, float screenH)
+        {
+            float target = ViewTilesW / ViewTilesH, a = screenW / Mathf.Max(1f, screenH);
+            if (a > target) { float w = target / a; return new Rect((1f - w) / 2f, 0f, w, 1f); }
+            float h = a / target;
+            return new Rect(0f, (1f - h) / 2f, 1f, h);
         }
 
         static string DefaultPairDir()
@@ -151,6 +182,8 @@ namespace Chaos.Client
                 RsaModulus = RsaModulus(),
             });
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
+            session.Chat += AddChat;
+            chat.Clear();
             session.Start();
             var go = new GameObject("Map");
             go.transform.SetParent(transform);
@@ -167,6 +200,7 @@ namespace Chaos.Client
             session = null;
             if (view != null) Destroy(view.gameObject);
             view = null;
+            cam.rect = new Rect(0f, 0f, 1f, 1f);
             world = null;
             status = why;
             screen = Screen.Characters;
@@ -177,13 +211,35 @@ namespace Chaos.Client
             if (screen != Screen.Game || session == null) return;
             session.Poll();
             if (session.Closed != null) { Leave(session.Closed); return; }
-            // keep ~11 rows visible whatever the aspect, as the stock view shows 15 x 11
-            cam.orthographicSize = Mathf.Max(5.5f, 7.5f / Mathf.Max(0.1f, cam.aspect));
+            // exactly the 15 x 11 view, centred (MapRect): nothing outside what the server sent is on screen
+            cam.rect = MapRect(UnityEngine.Screen.width, UnityEngine.Screen.height);
+            cam.orthographicSize = ViewTilesH / 2f;
+            if (Input.GetKeyDown(KeyCode.F12)) showDebug = !showDebug;
             HandleWalk();
+        }
+
+        void AddChat(string who, string text, byte type)
+        {
+            // talk types of 10.98: 1 say, 2 whisper, 3 yell, 4/5 private, 7-14 channels, 36/37 monster; 0 a server message
+            Color col = type == 0 ? new Color(1f, 1f, 1f) : type == 3 ? new Color(1f, 0.55f, 0.35f) :
+                        type == 4 || type == 5 ? new Color(0.55f, 0.85f, 1f) : type == 36 || type == 37 ? new Color(1f, 0.6f, 0.2f) :
+                        type >= 7 && type <= 14 ? new Color(0.95f, 0.85f, 0.5f) : new Color(1f, 0.95f, 0.4f);
+            string line = (who.Length > 0 ? who + ": " : "") + text;
+            chat.Add((DateTime.Now.ToString("HH:mm") + " " + line, col));
+            if (chat.Count > 200) chat.RemoveAt(0);
+            chatToBottom = true;
+        }
+
+        bool OverUi(Vector2 mouse)
+        {
+            var p = new Vector2(mouse.x, UnityEngine.Screen.height - mouse.y);
+            foreach (var r in uiRects) if (r.Contains(p)) return true;
+            return false;
         }
 
         void HandleWalk()
         {
+            if (chatFocused) return;   // typing: the letters go to the chat line
             Dir? d = null;
             bool up = Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.Keypad8);
             bool down = Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.Keypad2);
@@ -201,7 +257,7 @@ namespace Chaos.Client
             else if (down) d = Dir.South;
             else if (left) d = Dir.West;
             else if (right) d = Dir.East;
-            if (d == null && Input.GetMouseButton(0) && GUIUtility.hotControl == 0)
+            if (d == null && Input.GetMouseButton(0) && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition))
             {
                 // touch / click: walk towards the pointer from the screen centre
                 Vector2 v = (Vector2)Input.mousePosition - new Vector2(UnityEngine.Screen.width, UnityEngine.Screen.height) / 2;
@@ -223,10 +279,16 @@ namespace Chaos.Client
         {
             if (small == null)
             {
-                small = new GUIStyle(GUI.skin.label) { fontSize = 12 };
-                nameStyle = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.LowerCenter, fontStyle = FontStyle.Bold };
+                small = new GUIStyle(GUI.skin.label) { fontSize = 14 };
+                nameStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.LowerCenter, fontStyle = FontStyle.Bold, clipping = TextClipping.Overflow };
+                chatStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, wordWrap = true, richText = false, padding = new RectOffset(2, 2, 0, 0), margin = new RectOffset(0, 0, 0, 0) };
+                titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold };
+                GUI.skin.button.fontSize = 14;
+                GUI.skin.textField.fontSize = 14;
+                GUI.skin.label.fontSize = 14;
             }
-            float scale = Mathf.Max(1, UnityEngine.Screen.dpi / 160f);
+            // the UI is laid out for 720 px of height and grows with the window (and with dense phone screens)
+            float scale = UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi);
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1));
             float w = UnityEngine.Screen.width / scale, h = UnityEngine.Screen.height / scale;
             switch (screen)
@@ -272,26 +334,124 @@ namespace Chaos.Client
 
         void GameGui(float w, float h, float scale)
         {
+            uiRects.Clear();
             if (view != null)
             {
+                // one tile in UI units: names and bars follow the map's zoom
+                float tile = UnityEngine.Screen.height * cam.rect.height / ViewTilesH / scale;
+                float barW = Mathf.Round(tile * 0.8f), barH = Mathf.Max(3f, Mathf.Round(tile / 14f));
                 foreach (var (c, at) in view.Labels)
                 {
                     // above the creature's tile, left-shifted by its outfit's displacement
                     Vector3 sp = cam.WorldToScreenPoint(new Vector3(at.x + 0.25f, at.y + 0.4f, 0));
                     float x = sp.x / scale, y = (UnityEngine.Screen.height - sp.y) / scale;
-                    nameStyle.normal.textColor = c.Type == 1 ? new Color(1f, 0.6f, 0.6f) : c.Type == 2 ? new Color(0.6f, 0.9f, 1f) : new Color(0.6f, 1f, 0.6f);
-                    GUI.Label(new Rect(x - 80, y - 22, 160, 16), c.Name, nameStyle);
-                    GUI.DrawTexture(new Rect(x - 14, y - 5, 28, 4), Texture2D.blackTexture);
-                    var hp = c.HealthPercent > 50 ? Color.green : c.HealthPercent > 20 ? Color.yellow : Color.red;
-                    GUI.DrawTexture(new Rect(x - 13, y - 4, 26 * c.HealthPercent / 100f, 2), Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, hp, 0, 0);
+                    var col = c.Type == 1 ? new Color(1f, 0.6f, 0.6f) : c.Type == 2 ? new Color(0.6f, 0.9f, 1f) : new Color(0.6f, 1f, 0.6f);
+                    var hp = c.HealthPercent > 50 ? new Color(0.2f, 0.85f, 0.2f) : c.HealthPercent > 20 ? new Color(0.95f, 0.8f, 0.1f) : new Color(0.9f, 0.15f, 0.1f);
+                    Rect nr = new Rect(x - 100, y - barH - 22, 200, 18);
+                    nameStyle.normal.textColor = Color.black;
+                    GUI.Label(new Rect(nr.x + 1, nr.y + 1, nr.width, nr.height), c.Name, nameStyle);
+                    nameStyle.normal.textColor = col;
+                    GUI.Label(nr, c.Name, nameStyle);
+                    Rect bar = new Rect(x - barW / 2, y - barH - 3, barW, barH);
+                    Fill(new Rect(bar.x - 1, bar.y - 1, bar.width + 2, bar.height + 2), new Color(0f, 0f, 0f, 0.85f));
+                    Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
                 }
             }
+            StatusPanel(scale);
+            ChatWindow(w, h, scale);
+            if (showDebug)
+            {
+                var me = world?.Player;
+                string where = me != null ? me.Name + "  " + me.Position : "entering...";
+                GUI.Label(new Rect(8, h - 24, w - 16, 20), where + "   " + session?.Stats, small);
+                lock (log)
+                    for (int i = 0; i < log.Count; i++) GUI.Label(new Rect(w * 0.45f, 120 + 20 * i, w * 0.55f - 8, 20), log[i], small);
+            }
+            Rect outR = new Rect(w - 96, 8, 88, 30);
+            uiRects.Add(Scaled(outR, scale));
+            if (GUI.Button(outR, "Log out")) { session?.Logout(); Leave("Logged out."); }
+        }
+
+        static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);
+        static Rect Scaled(Rect r, float s) => new Rect(r.x * s, r.y * s, r.width * s, r.height * s);
+
+        void StatusPanel(float scale)
+        {
+            var p = session?.Parser;
             var me = world?.Player;
-            string where = me != null ? me.Name + "  " + me.Position : "entering...";
-            GUI.Label(new Rect(8, 8, 600, 20), where + "   " + session?.Stats, small);
-            lock (log)
-                for (int i = 0; i < log.Count; i++) GUI.Label(new Rect(8, h - 20 * (log.Count - i) - 8, w - 16, 20), log[i], small);
-            if (GUI.Button(new Rect(w - 88, 8, 80, 26), "Log out")) { session?.Logout(); Leave("Logged out."); }
+            if (p == null) return;
+            Rect box = new Rect(8, 8, 240, 78);
+            uiRects.Add(Scaled(box, scale));
+            Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.8f));
+            GUI.Label(new Rect(16, 10, 224, 22), (me?.Name ?? "...") + "   Lv " + p.Level, titleStyle);
+            Bar(new Rect(16, 36, 224, 18), p.Health, p.MaxHealth, new Color(0.75f, 0.12f, 0.1f));
+            Bar(new Rect(16, 60, 224, 18), p.Mana, p.MaxMana, new Color(0.15f, 0.35f, 0.85f));
+        }
+
+        void Bar(Rect r, int v, int max, Color c)
+        {
+            Fill(r, new Color(0f, 0f, 0f, 0.9f));
+            if (max > 0) Fill(new Rect(r.x + 1, r.y + 1, (r.width - 2) * Mathf.Clamp01((float)v / max), r.height - 2), c);
+            var st = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter, fontSize = 13 };
+            st.normal.textColor = Color.white;
+            GUI.Label(r, v + " / " + max, st);
+        }
+
+        void ChatWindow(float w, float h, float scale)
+        {
+            float cw = Mathf.Min(460f, w * 0.42f);
+            if (!chatOpen)
+            {
+                Rect open = new Rect(8, h - 38, 90, 30);
+                uiRects.Add(Scaled(open, scale));
+                if (GUI.Button(open, "Chat")) chatOpen = true;
+                chatFocused = false;
+                return;
+            }
+            float ch = Mathf.Min(240f, h * 0.36f);
+            Rect box = new Rect(8, h - ch - 8, cw, ch);
+            uiRects.Add(Scaled(box, scale));
+            Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.78f));
+            GUI.Label(new Rect(box.x + 8, box.y + 4, 200, 22), "Chat", titleStyle);
+            if (GUI.Button(new Rect(box.xMax - 30, box.y + 4, 24, 22), "x")) { chatOpen = false; GUI.FocusControl(null); return; }
+
+            // Enter focuses the line and sends it; Escape leaves it
+            var e = Event.current;
+            bool enter = e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter);
+            if (enter && chatFocused)
+            {
+                session?.Say(chatInput.Trim());
+                chatInput = "";
+                GUI.FocusControl(null);
+                e.Use();
+            }
+            else if (enter) { GUI.FocusControl("chatInput"); e.Use(); }
+            else if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && chatFocused) { GUI.FocusControl(null); e.Use(); }
+
+            Rect list = new Rect(box.x + 4, box.y + 28, box.width - 8, box.height - 64);
+            float lineW = list.width - 20, total = 0;
+            var heights = new float[chat.Count];
+            for (int i = 0; i < chat.Count; i++) { heights[i] = chatStyle.CalcHeight(new GUIContent(chat[i].text), lineW); total += heights[i]; }
+            if (chatToBottom && e.type == EventType.Repaint) { chatScroll.y = Mathf.Max(0, total - list.height); chatToBottom = false; }
+            chatScroll = GUI.BeginScrollView(list, chatScroll, new Rect(0, 0, lineW, Mathf.Max(total, list.height)));
+            float y = 0;
+            for (int i = 0; i < chat.Count; i++)
+            {
+                chatStyle.normal.textColor = chat[i].color;
+                GUI.Label(new Rect(0, y, lineW, heights[i]), chat[i].text, chatStyle);
+                y += heights[i];
+            }
+            GUI.EndScrollView();
+
+            GUI.SetNextControlName("chatInput");
+            chatInput = GUI.TextField(new Rect(box.x + 6, box.yMax - 32, box.width - 12, 26), chatInput, 255);
+            chatFocused = GUI.GetNameOfFocusedControl() == "chatInput";
+            if (!chatFocused && chatInput.Length == 0)
+            {
+                var hint = new GUIStyle(small);
+                hint.normal.textColor = new Color(1f, 1f, 1f, 0.4f);
+                GUI.Label(new Rect(box.x + 10, box.yMax - 31, box.width - 20, 24), "Press Enter to talk", hint);
+            }
         }
 
         void OnApplicationQuit() { session?.Dispose(); spr?.Dispose(); }

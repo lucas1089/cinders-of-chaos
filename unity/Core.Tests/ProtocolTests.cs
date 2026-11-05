@@ -178,6 +178,18 @@ namespace Chaos.Core.Tests
             try { parser.Parse(new byte[] { 0x0A, 0x01 }); } catch (ProtocolException) { threw = true; }
             check(threw, "an unknown opcode stops the packet");
 
+            // chat: a say in, a server message in, a say out
+            var said = new System.Collections.Generic.List<string>();
+            parser.Chat = (who, text, type) => said.Add(type + "|" + who + "|" + text);
+            w = new ByteWriter().U8(0xAA).U32(1).Str("Rat").U16(1).U8(1).U16((ushort)Start.X).U16((ushort)Start.Y).U8(7).Str("squeak");
+            w.U8(0xAA).U32(2).Str("Mira").U16(9).U8(7).U16(5).Str("hello world");
+            w.U8(0xB4).U8(20).Str("You see a rat.");
+            parser.Parse(w.ToArray());
+            check(said.Count == 3 && said[0] == "1|Rat|squeak" && said[1] == "7|Mira|hello world" && said[2] == "0||You see a rat.",
+                  "chat: say, channel and server lines: " + string.Join(" / ", said));
+            byte[] say = Protocol.SayPacket("hi");
+            check(say.SequenceEqual(new byte[] { 0x96, 1, 2, 0, (byte)'h', (byte)'i' }), "chat: say packet");
+
             var k = ClientGuard.ParseKey("\"" + new string('a', 64) + "," + new string('0', 62) + "ff\"");
             check(k != null && k[31] == 0xff && k[0] == 0 && ClientGuard.ParseKey("xyz") == null, "guard key from hex, last of a list");
 
