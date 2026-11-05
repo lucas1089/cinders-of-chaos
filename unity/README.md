@@ -5,6 +5,10 @@ their outfit colours and walks. Its UI: login, the character list, names and hea
 and a chat window (Enter talks, the x hides it). F12 shows the debug line and the protocol log.
 The map shows exactly the 15 x 11 tiles around the player, centred; the rest of the screen stays dark.
 Text and windows grow with the window height (720 px is scale 1).
+Game windows are `GameWindow` classes (`ChaosApp.Windows.cs`), one file each, listed in `ChaosApp.MakeWindows`.
+They are movable, open from the toolbar left of Log out or with Ctrl + their key, and hide the creature names under them.
+The splash screen and the login header show our logo (`docs/brand`, copied in by `ChaosBuild`).
+A Personal license keeps the engine's "Made with" line under our logo; the setting turns it off on a license that allows it.
 It does not replace the client in `client/`.
 
 ## Layout

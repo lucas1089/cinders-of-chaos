@@ -8,6 +8,7 @@
 using System;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -21,6 +22,8 @@ namespace Chaos.Client.Editor
         const string KeyPath = Generated + "/Resources/chaos_client_key.txt";
         const string RsaPath = Generated + "/Resources/chaos_rsa.txt";      // public: the server's RSA modulus
         const string BuildPath = Generated + "/Resources/chaos_build.txt";  // the client build the guard expects
+        const string LogoPath = Generated + "/Resources/chaos_logo.png";    // docs/brand: splash screen and login header
+        const string IconPath = Generated + "/chaos_icon.png";
 
         static string Arg(string name, string fallback)
         {
@@ -33,6 +36,26 @@ namespace Chaos.Client.Editor
         static void WriteIfSet(string path, string value)
         {
             if (!string.IsNullOrWhiteSpace(value)) File.WriteAllText(path, value.Trim());
+        }
+
+        /// <summary>Copies a docs/brand file into the project (the repo root is two levels above the project).</summary>
+        static void CopyBrand(string name, string to)
+        {
+            string from = Path.GetFullPath(Path.Combine(Application.dataPath, "../../../docs/brand", name));
+            if (File.Exists(from)) File.Copy(from, to, true);
+            else Debug.LogWarning("chaos build: no " + from + "; the splash screen keeps its default");
+        }
+
+        static Sprite ImportSprite(string path)
+        {
+            if (!(AssetImporter.GetAtPath(path) is TextureImporter imp)) return null;
+            imp.textureType = TextureImporterType.Sprite;
+            imp.spriteImportMode = SpriteImportMode.Single;
+            imp.alphaIsTransparency = true;
+            imp.mipmapEnabled = false;
+            imp.isReadable = true;   // the login screen reads it from Resources too
+            imp.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
         public static void Build()
@@ -48,7 +71,11 @@ namespace Chaos.Client.Editor
             WriteIfSet(RsaPath, Environment.GetEnvironmentVariable("CHAOS_RSA_PUBLIC"));
             WriteIfSet(BuildPath, Environment.GetEnvironmentVariable("CHAOS_CLIENT_BUILD"));
             embed = File.Exists(KeyPath);
+            CopyBrand("cinders_logo.png", LogoPath);
+            CopyBrand("cinders_logo_icon.png", IconPath);
             AssetDatabase.Refresh();
+            var logo = ImportSprite(LogoPath);
+            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(IconPath);
 
             var target = EditorUserBuildSettings.activeBuildTarget;
             string outPath = Arg("-customBuildPath", "Builds/" + target);
@@ -67,6 +94,20 @@ namespace Chaos.Client.Editor
             PlayerSettings.defaultScreenHeight = 720;
             PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
             PlayerSettings.resizableWindow = true;
+            if (icon != null) PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
+
+            // splash screen: our logo on the game's dark background. A Personal license keeps the engine's
+            // "Made with" line under it; showUnityLogo = false takes effect only on a license that allows it.
+            PlayerSettings.SplashScreen.show = true;
+            PlayerSettings.SplashScreen.showUnityLogo = false;
+            PlayerSettings.SplashScreen.drawMode = PlayerSettings.SplashScreen.DrawMode.UnityLogoBelow;
+            PlayerSettings.SplashScreen.unityLogoStyle = PlayerSettings.SplashScreen.UnityLogoStyle.LightOnDark;
+            PlayerSettings.SplashScreen.animationMode = PlayerSettings.SplashScreen.AnimationMode.Dolly;
+            PlayerSettings.SplashScreen.backgroundColor = new Color32(6, 5, 8, 255);
+            PlayerSettings.SplashScreen.overlayOpacity = 0f;
+            PlayerSettings.SplashScreen.logos = logo != null
+                ? new[] { PlayerSettings.SplashScreenLogo.Create(2.5f, logo) }
+                : new PlayerSettings.SplashScreenLogo[0];
 
             var options = new BuildPlayerOptions
             {

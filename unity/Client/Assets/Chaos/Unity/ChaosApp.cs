@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Chaos.Client
 {
-    public sealed class ChaosApp : MonoBehaviour
+    public sealed partial class ChaosApp : MonoBehaviour
     {
         enum Screen { Login, Characters, Game }
 
@@ -201,6 +201,7 @@ namespace Chaos.Client
             if (view != null) Destroy(view.gameObject);
             view = null;
             cam.rect = new Rect(0f, 0f, 1f, 1f);
+            ResetWindows();
             world = null;
             status = why;
             screen = Screen.Characters;
@@ -215,6 +216,10 @@ namespace Chaos.Client
             cam.rect = MapRect(UnityEngine.Screen.width, UnityEngine.Screen.height);
             cam.orthographicSize = ViewTilesH / 2f;
             if (Input.GetKeyDown(KeyCode.F12)) showDebug = !showDebug;
+            if (!chatFocused)
+                foreach (var win in windows)
+                    if (win.Hotkey != KeyCode.None && Input.GetKeyDown(win.Hotkey) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
+                        win.Open = !win.Open;
             HandleWalk();
         }
 
@@ -299,8 +304,21 @@ namespace Chaos.Client
             }
         }
 
+        Texture2D logo;
+        bool logoTried;
+
+        /// <summary>Our logo above the login and character boxes (docs/brand, copied in by ChaosBuild).</summary>
+        void Logo(float w, float top)
+        {
+            if (!logoTried) { logo = Resources.Load<Texture2D>("chaos_logo"); logoTried = true; }
+            if (logo == null || top < 60) return;
+            float lh = Mathf.Min(top - 16, 220f), lw = lh * logo.width / logo.height;
+            GUI.DrawTexture(new Rect(w / 2 - lw / 2, top - lh - 8, lw, lh), logo, ScaleMode.ScaleToFit, true);
+        }
+
         void LoginGui(float w, float h)
         {
+            Logo(w, h / 2 - 150);
             GUILayout.BeginArea(new Rect(w / 2 - 170, h / 2 - 150, 340, 300), GUI.skin.box);
             GUILayout.Label("Cinders of Chaos - Unity prototype");
             GUILayout.Label("Server");
@@ -321,6 +339,7 @@ namespace Chaos.Client
 
         void CharactersGui(float w, float h)
         {
+            Logo(w, h / 2 - 160);
             GUILayout.BeginArea(new Rect(w / 2 - 170, h / 2 - 160, 340, 320), GUI.skin.box);
             GUILayout.Label("Characters");
             charScroll = GUILayout.BeginScrollView(charScroll, GUILayout.Height(220));
@@ -336,7 +355,8 @@ namespace Chaos.Client
         {
             uiRects.Clear();
             // the windows, in UI units: names under them are not drawn
-            var covers = new List<Rect> { StatusRect(), ChatRect(w, h), LogoutRect(w) };
+            var covers = new List<Rect> { StatusRect(), ChatRect(w, h), LogoutRect(w), ToolbarRect(w) };
+            foreach (var win in windows) if (win.Open) covers.Add(win.Area);
             if (view != null)
             {
                 // the map on screen, in UI units: names are clipped to it, creatures outside the 15 x 11 view get none
@@ -373,6 +393,7 @@ namespace Chaos.Client
             }
             StatusPanel(scale);
             ChatWindow(w, h, scale);
+            DrawWindows(w, h, scale);
             if (showDebug)
             {
                 var me = world?.Player;
