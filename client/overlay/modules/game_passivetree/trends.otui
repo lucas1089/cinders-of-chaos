@@ -1,0 +1,212 @@
+// Trending builds of the passive tree window (O409; trends.lua, texts trendsview.lua). Ornate skin styles from
+// client_chaos_theme. Opened from the Build Code panel; the server's daily snapshot (build_trends.lua), no names.
+ChaosWindow
+  id: trendsWindow
+  !text: tr('Trending Builds')
+  size: 440 356
+  anchors.top: parent.top
+  anchors.right: parent.right
+  margin-top: 100
+  margin-right: 430
+  @onEscape: modules.game_passivetree.closeTrends()
+
+  ChaosButton
+    id: prevButton
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 30
+    text: <
+    !tooltip: tr('Previous class')
+    @onClick: modules.game_passivetree.stepTrends(-1)
+
+  ChaosButton
+    id: nextButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    width: 30
+    text: >
+    !tooltip: tr('Next class')
+    @onClick: modules.game_passivetree.stepTrends(1)
+
+  ChaosLabel
+    id: classLabel
+    anchors.top: parent.top
+    anchors.left: prevButton.right
+    anchors.right: nextButton.left
+    height: 22
+    text-align: center
+    color: #e8c860
+
+  ChaosLabelDim
+    id: info
+    anchors.top: classLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 30
+    text-wrap: true
+    text-auto-resize: false
+    text-align: center
+
+  Panel
+    id: row1
+    anchors.top: info.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 36
+    visible: false
+
+    ChaosLabel
+      id: rowText1
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: rowImport1.left
+      anchors.bottom: parent.bottom
+      margin-right: 6
+      text-wrap: true
+      text-auto-resize: false
+      text-align: left
+
+    ChaosButton
+      id: rowImport1
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      width: 80
+      !text: tr('Import')
+      !tooltip: tr('Paste this build into the Build Code panel and preview it in your tree')
+      @onClick: modules.game_passivetree.importTrend(1)
+
+  Panel
+    id: row2
+    anchors.top: row1.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 36
+    visible: false
+
+    ChaosLabel
+      id: rowText2
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: rowImport2.left
+      anchors.bottom: parent.bottom
+      margin-right: 6
+      text-wrap: true
+      text-auto-resize: false
+      text-align: left
+
+    ChaosButton
+      id: rowImport2
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      width: 80
+      !text: tr('Import')
+      !tooltip: tr('Paste this build into the Build Code panel and preview it in your tree')
+      @onClick: modules.game_passivetree.importTrend(2)
+
+  Panel
+    id: row3
+    anchors.top: row2.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 36
+    visible: false
+
+    ChaosLabel
+      id: rowText3
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: rowImport3.left
+      anchors.bottom: parent.bottom
+      margin-right: 6
+      text-wrap: true
+      text-auto-resize: false
+      text-align: left
+
+    ChaosButton
+      id: rowImport3
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      width: 80
+      !text: tr('Import')
+      !tooltip: tr('Paste this build into the Build Code panel and preview it in your tree')
+      @onClick: modules.game_passivetree.importTrend(3)
+
+  Panel
+    id: row4
+    anchors.top: row3.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 36
+    visible: false
+
+    ChaosLabel
+      id: rowText4
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: rowImport4.left
+      anchors.bottom: parent.bottom
+      margin-right: 6
+      text-wrap: true
+      text-auto-resize: false
+      text-align: left
+
+    ChaosButton
+      id: rowImport4
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      width: 80
+      !text: tr('Import')
+      !tooltip: tr('Paste this build into the Build Code panel and preview it in your tree')
+      @onClick: modules.game_passivetree.importTrend(4)
+
+  Panel
+    id: row5
+    anchors.top: row4.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 36
+    visible: false
+
+    ChaosLabel
+      id: rowText5
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: rowImport5.left
+      anchors.bottom: parent.bottom
+      margin-right: 6
+      text-wrap: true
+      text-auto-resize: false
+      text-align: left
+
+    ChaosButton
+      id: rowImport5
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      width: 80
+      !text: tr('Import')
+      !tooltip: tr('Paste this build into the Build Code panel and preview it in your tree')
+      @onClick: modules.game_passivetree.importTrend(5)
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 110
+    !text: tr('Close')
+    @onClick: modules.game_passivetree.closeTrends()
+
+  ChaosLabelDim
+    id: footer
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    margin-right: 6
+    height: 22
+    text-align: left
+    !text: tr('Most played keystones of each class. No names.')

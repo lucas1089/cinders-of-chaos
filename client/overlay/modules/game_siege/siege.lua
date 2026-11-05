@@ -207,3 +207,8 @@ function terminate()
   if window then window:destroy() window = nil end
   info = nil
 end
+
+-- for game_chaosmusic (O408): the HUD shows while the player is in a siege
+function getState()
+  return { hud = hud ~= nil and hud:isVisible() or false }
+end

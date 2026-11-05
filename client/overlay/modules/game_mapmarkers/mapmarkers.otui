@@ -74,7 +74,7 @@ MapMarkerCategory < ChaosCheckBox
 MapMarkerSettings < ChaosMainWindow
   id: mapMarkerSettings
   !text: tr('Map Markers')
-  size: 320 470
+  size: 320 492
 
   MapMarkerCheck
     id: partyBox
@@ -120,7 +120,7 @@ MapMarkerSettings < ChaosMainWindow
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 6
-    height: 198
+    height: 220
     layout:
       type: verticalBox
 

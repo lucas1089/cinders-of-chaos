@@ -330,6 +330,31 @@ function M.talkTo(npcName, stateOf, setState)
 	return out
 end
 
+-- O410: the character's next tale steps on its map (poi.lua quest goals, poi_core.lua P.goals): a visit or elite
+-- step's place, the NPC of a talk step, the hunting areas of a kill step's monsters, the Archivist for a deliver or
+-- report step. stateOf(t) -> stored state. -> {{x, y, z, n} | {npc, n} | {hunts, n}}, n = "<tale>: <step>"
+function M.questGoals(stateOf, lang)
+	local out = {}
+	local archivist = (M.cfg().npc or {}).name
+	for _, t in ipairs(M.tales()) do
+		local state = M.state(t, stateOf(t))
+		local step = state >= 1 and state <= #t.steps and t.steps[state] or nil
+		if step then
+			local n = M.t(t.name, lang) .. ": " .. M.t(step.text, lang)
+			if M.PLACED[step.kind] and type(step.pos) == "table" then
+				out[#out + 1] = {x = step.pos.x, y = step.pos.y, z = step.pos.z, n = n}
+			elseif step.kind == "talk" and step.npc then
+				out[#out + 1] = {npc = step.npc, n = n}
+			elseif step.kind == "kill" and type(step.monsters) == "table" then
+				out[#out + 1] = {hunts = step.monsters, n = n}
+			elseif (step.kind == "deliver" or step.kind == "report") and archivist then
+				out[#out + 1] = {npc = archivist, n = n}
+			end
+		end
+	end
+	return out
+end
+
 -- does any tale of the character wait for a visit or an elite (tales.lua keeps those characters on its watch list)
 function M.visiting(stateOf)
 	for _, t in ipairs(M.tales()) do

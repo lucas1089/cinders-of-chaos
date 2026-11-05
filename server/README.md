@@ -685,6 +685,7 @@ collision check") and be added here.
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
 | 157 | `displayScale` | `display_scale.lua`, `i18n.lua` | `game_chaosscale`, `client_chaos_locale` | server -> client `scale {level, f}`, client -> server `hello` (with `lang` from `client_chaos_locale`: the language of the server texts; see "Display scale" and "Server texts in pt-BR (Chaos.t)") |
 | 159 | `waystoneAtlas` | `waystone_atlas.lua` | `game_riftatlas` (waystone mode) | client -> server `open` / `alloc {id}` / `refund {id, pay}` / `reset {pay}`, server -> client `tree` through `Chaos.sendChunked`, `state`, `credit {cells, points}` (see "Waystone Atlas") |
+| 160 | `groupQueue` | `groupqueue.lua` (the gate called by `arena.lua`, `battleground.lua`, `dungeons.lua`) | `game_groupqueue` | client -> server `open` / `query` / `join {arena?, bg?, role?, dungeon? {id, difficulty}}` / `leave` / `accept` / `decline` / `raid`, server -> client `state`, `check {key, label, left, accepted, total, mine}`, `checkEnd`, `msg {text}` (see "Group Queue (O407)") |
 | 167 | `conquest` | `conquest.lua`, the Conquest vendor's NPC script | `game_conquest` | `state` through `Chaos.sendChunked`; client -> server `open` / `close` / `buy {k}` (see "Conquest Tokens, the Conquest vendor and bad-luck protection") |
 | 171 | `chronicle` | `chronicle.lua`, `memorial.lua` | `game_chronicle` | chronicle.lua: `open` / `close`, `state` through `Chaos.sendChunked`; memorial.lua: `mem` / `memset` |
 | 172 | `cardState` | `cards.lua` | `game_cardborder` | server -> client `state {on, cards, decks}` (the cards that are on); client -> server `sync` (see "Cards and decks") |
@@ -3834,6 +3835,46 @@ validates and applies; the client only shows what the server sends.
   identical again; a 200 node code applied its first 147 nodes; bad checksum, wrong class and old version gave their messages; the
   Build Code panel flow (export / import / apply) and "You need 3,945,000 gold coins" with too little gold. Screenshots in the
   session's scratchpad. Not tested in game: the Paragon part (the character is below level 1000; unit tests only).
+
+## Trending builds (O409) (`build_trends.lua`, `build_trends_core.lua`, `build_trends_config.lua`, `sql/chaos_build_trends.sql`)
+
+"Builds em alta": the most played passive tree builds of every class, once a day.
+- Who counts: characters that logged in during the last `activeDays` (7), level `minLevel` (100) or more, below the
+  staff group, not deleted, not tester bots. Their active preset (the lowest preset row of `chaos_passive_tree`).
+- Grouping: per base class (the class tab: base class and its ascensions), by the set of keystones taken (the `ks*` /
+  `ar*` flags of the node's stats for the class's keystone variant). The signature is the sorted flags joined by `+`.
+- Per class the top `top` (5) builds with at least `minCount` (3) characters: count, share of the class (per mille),
+  average level and one representative tree (the member closest to the bucket's majority of nodes).
+- Codes: the tree code (`CB<n>-`, `ChaosBuildShare.encode`) and the full build code (`CC1-`, class + average level +
+  tree, `K.encodeFull`; checked against `docs/build_code_vectors.txt`).
+- Privacy: no character name or id is stored, sent or shown. A build of one or two characters is never listed.
+- When: at startup after `startDelaySeconds` when the last snapshot is older than `refreshHours` (24), then checked
+  every `checkSeconds` (3600). `server_config` key `chaos_build_trends_at`. Snapshots older than `keepDays` are deleted.
+- Table `chaos_build_trends` (snapshot, class, rank, class name, signature, keystone names, count, total, share, average
+  level, tree code, full code). `build_trends.lua` creates it at startup too.
+
+**Protocol** (opcode 65 `ChaosOpcodes.passivetree`, `ChaosPassiveTree.extraActions.buildTrends`; no new opcode):
+- client -> server `buildTrends {class?}` (a base class id; none = the own class). At most once per `askMs`.
+- server -> client `buildTrends {class, className, at, total, classes = [{key, name}], rows = [{rank, share, count,
+  level, keystones, code, full}]}`.
+
+**Client:** Passive Tree > Build Code > Trending Builds (`game_passivetree` `trends.lua`, `trends.otui`, texts
+`trendsview.lua`). Class arrows, up to 5 rows, Import pastes the code into the Build Code panel and runs its Import:
+the server's preview, class and respec rules decide, as for any pasted code.
+
+**Website:** `page?plugin=chaos&p=trends` (`pages/trends.php`, `lib.php` `chaos_build_trends`): per class the top 5
+with share, keystones, count and level, a link to the build page and a copy button (`assets/js/chaos-copy.js`). Menu:
+The World > Trending Builds; linked from the build and leaderboards pages.
+
+Staff: `/buildtrends` (status), `/buildtrends run` (a snapshot now; economy group).
+
+**Tests:** `tests/build_trends_test.lua` (keystone names against the client and the tree data, classes against the
+client's `buildcode.lua`, grouping, minCount, the representative, the full code vectors, the SQL file, the mocked
+engine: the query filters, the rows, no name or id, the window answer); client `trendsview_test.lua`;
+`website/tests/chaos_trends_page_test.php`.
+
+**Reserved for O409:** storage 7122000 - 7122099 and opcode 162 are not used (no new storage, no new opcode). Note: that
+storage range lies inside the loadouts block 7112000 - 7127999 (`runeMirrorBase`), so it should not be taken later.
 
 ## Passive tree: Auto build, class lanes, Primary / Secondary and stat help (2026-10)
 
@@ -11025,6 +11066,38 @@ Protocol additions: `post {..., maxLevel, nk}`, `init {..., notes}`, rows `xl`, 
 an applicant above the band, the queue skipping it, the row fields) and `partyfinderview_test.lua` (band fit and text,
 note line, a hunt's band, the post input). Not run against a live server.
 
+
+### Invasion clashes (O410)
+
+Two hosts invade the same place at once and fight each other as well as the players. Script only: no engine patch.
+
+- **When.** `clash.chance` (25) percent of the scheduled and random invasions roll a rival host (`I.pickRival`,
+  `lcg(at + salt)`, deterministic per start time). An area with `clash = false` never gets one; `clash.rivals` per
+  faction limits the pairs. A schedule entry may force it with `clash = true` or forbid it with `clash = false`.
+  Staff: `/invasion start <area> [faction|random] [clash|<rival>]` (default: no rival), `/invasion schedule <min>
+  [area] [faction] [clash]`.
+- **Spawns.** Each host gets `sideShare` (0.6) of a wave's count; with four edges the hosts come from north + east and
+  south + west (`I.clashEdges`). One warlord per host on the last wave.
+- **Fighting.** Every `thinkMs` (1000) `I.clashPairs` gives each unit the nearest enemy unit within `radius` (6) on
+  its floor, at most `maxPairs` (60) per think. The unit walks toward it when it cannot reach. The hit uses the
+  monster type's own attacks (`I.clashAttack`: melee next to it, a ranged attack within its range, the strongest
+  average), times `dmgMult`, at most `maxHitShare` (0.12) of the foe's max health; a unit without a fitting attack
+  bumps for `fallbackShare` (0.03) when adjacent. Effects per faction: `clashHit`, `clashShot`.
+- **Damage without an attacker.** `Creature:addHealth(-dmg)`: no player gains from it and the damage map stays the
+  players'. A unit that dies to the other host with no player hit gets `setDropLoot(false)` and is counted in
+  `clashKills`. The experience of an invader is scaled by the players' share (`I.clashXpShare`, at least `minXpShare`
+  0.1) in the `onGainExperience` callback. `tests/pz_guard_test.lua` lists the `addHealth` (target: a listed invader).
+- **Warlords.** The other host never takes a warlord below `bossFloor` (0.3) of its health: only players win.
+  The invasion stays on while any warlord stands.
+- **End.** A win gives the rewards as before; reputation goes to the faction hunting the host the player hit most
+  (`I.mainSide`, `r.factionKey`). A loss (timeout or breach) keeps the host with more units left as the occupier
+  (`clashSettle`); the other one leaves.
+- **Client.** HUD message `sides = [{key, name, color, left, boss, bossHp}]`: a line per host (`InvasionMath.sideLines`)
+  in place of the single boss line. Announcements, the calendar ("X and Y clash at Z"), Discord and `/invasion status`
+  name both hosts. pt-BR: `i18n_strings.lua` and `client_chaos_locale/pt_br.lua`.
+- **Tests.** `tests/invasion_test.lua` (O410 block: rival pick, edges, pairs, attack choice, damage cap and floor,
+  experience share, side counts, main side, status text), `invasionmath_test.lua`. Not run on a live server.
+
 ## Leaderboards (`leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua`)
 
 Client `game_leaderboard` (opcode 229), opened with Social > Leaderboards in the top menu. Settings:
@@ -11103,6 +11176,32 @@ Look text "You hold the title Riftwalker (3rd).". Restart: no second reset, titl
 from the DB, the reward of an unrewarded row delivered at login. Tabs, class tabs, own rank, the top menu entry. Not
 verified: the look text from another player's view ("He"/"She"; unit-tested), the real Monday 06:00 change (a
 once-a-minute check of the week key), the rift source (the rift scripts do not call it yet).
+
+### Weekly class ranking (O409) (`weekly_class.lua`, `weekly_class_core.lua`, `weekly_class_config.lua`, `sql/chaos_weekly_class.sql`)
+
+A weekly board of the experience gained from monsters, ranked per class. Board `weekly_xp` ("Weekly Experience") in
+`leaderboard_config.lua`: `byClass`, `classAwards`, `noReward`.
+- Counting: an `onGainExperience` callback (index 1500, between the hunt tracker 1000 and party XP 2000) adds the
+  experience of monster kills to a buffer per character. Quests, tasks and other sources do not count.
+- The buffer goes to the board (`LB.record`, mode `add`) every `flushSeconds` (60) and at logout.
+- Fair per class: the board has class tabs; `LB.awards` skips a `classAwards` board, so no overall title and no orbs.
+- At the weekly reset (`LB.onReset`, Monday `resetHour` 6) the top `rewardTop` (3) of every class with at least
+  `minValue` experience get Conquest Tokens 30 / 20 / 10 (`ChaosConquest.grantGuid`, source `weekly_class`; offline too).
+- The podium rows go to `chaos_weekly_class_podium` (week, board, class, rank, player, value, tokens). A week with rows
+  is never paid twice (a manual `/leaderboard reset` included). Rows older than `keepWeeks` (12) are deleted.
+- A broadcast names the winner of every class. A Discord post (kind `weekly_class`, channel `records`) lists the podium
+  of every class, one inline field per class (`ChaosDiscordCore.weeklyClass`, `discord_lib.php` kind and colour).
+- The client window shows last week's podium of the class tab (or the player's own class) in the champion panel.
+- The website Leaderboards page shows the board, its class dropdown and last week's podium of every class.
+- Staff: `/weeklyclass` prints the buffer size and the last paid week.
+
+**Class tabs on every weekly board (O409).** `leaderboard_config.lua` `classTabs = true`: every board gets class tabs
+(`LB.hasClassTabs`), but the boards with `noClassTabs` (siege, factions, professions: guild and gathering scores).
+`byClass` boards keep their tabs either way. Awards stay overall for those boards.
+
+**Tests:** `tests/weekly_class_test.lua` (board flags, tabs, buffer, tops, awards, texts, Discord kind on both ends, the
+SQL file, the mocked engine: monster kills only, flush, logout, the week end, no double pay);
+`website/tests/chaos_leaderboards_page_test.php`.
 
 ## Competitive records (`records.lua`, `records_core.lua`, `records_config.lua`, `sql/chaos_records.sql`)
 
@@ -18075,7 +18174,15 @@ through one queue, so they never stack on top of each other:
 
 **Protocol additions** (the shipped protocol and its quirks are unchanged; see the header of `daily.lua`):
 - `OpenDailyWindow` also carries `Streak, Best, Grace, GraceMax, GraceUse, Broken, Title, Next {Days, In, Reward,
-  Title}` and `Login`.
+  Title, Cosmetic}`, `Cosmetics [{Days, Name, Owned}]` and `Login`.
+
+**Streak cosmetics (O409).** A milestone may name a cosmetic (`daily_config.lua` `cosmetic`, a `cosmetics_config.lua`
+key of source `daily` with the same `days`). Day 7: Devoted Labels (`loot_devoted`, loot label accent). Day 60: Vigil
+Ascent (`lvl_vigil`, level-up effect, the existing `holy_seal` effect). No new sprite.
+- Granted once per account with the milestone's claim (`ChaosCosmetics.grant`, source `daily`), never taken back.
+- An account whose best streak got there before (or a claim that failed to grant) gets it when the daily window opens.
+- The window's milestone row lists the streak cosmetics, owned or not. The Wardrobe shows "Daily reward: a login
+  streak of N days".
 - The client also sends `closed`.
 
 Staff: `/daily` shows the own account's state, `/daily shift <days>` moves the daily clock (tests),
@@ -23097,6 +23204,26 @@ script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (
   option off and on, a hunting area discovered on approach with the message, the discoveries kept over a relog, a
   category switched off. Screenshots were taken but are not in the repository.
 
+
+### Quest markers (O410)
+
+- **Givers and chests.** Kind `quest`: the NPCs of `poi_config.lua` `questNpcs` (Archivist Maelis, Archivist Odrenna,
+  Ascendant Oracle, Keeper of Trials) are placed as `quest` instead of `npc` (`P.npcKind`), r = 0 in town. `gen_poi.py`
+  adds the quest chests of the planned areas (`data/scripts/chaos_areaplan/*_chests.lua`: ORIGIN plus each chest's
+  offset), "Quest chest (<area>)", r = 1. Run install step `poi` again to write them into `data/chaos_poi.lua`.
+- **Next steps.** Action `quests {marks = [{k = "questgoal", x, y, z, n}]}`: the next step of each running quest of a
+  character, from `ChaosPoi.questSources` (tales: `T.questGoals`, spell quests: `S.questGoals`). A step with a place is
+  that tile, a talk step is its NPC's mark, a hunt step the nearest `questHunts` (2) hunting areas of its monsters
+  (`P.huntMonsters` reads the hunting marks' names), a report step the giver. At most `questGoalMax` (12), checked
+  every `questMs` (4000) for players with markers on, sent only when the list's hash changes, again at hello / set.
+- **Client.** `game_mapmarkers` category Quests (first in the list, on by default, also for old settings): the givers
+  and chests (gold exclamation mark) and the goals (ember target), `M.withGoals`. Cleared when the markers are off and
+  at logout.
+- **Tests.** `tests/poi_test.lua` (O410 block), `tests/tales_test.lua` (questGoals), `tools/gen_poi_test.py` (chests),
+  `markermath_test.lua`. Not run on a live server.
+- **Wiki.** `tools/gen_wiki_data.lua` tab Quests: every tale (giver, place, level, faction, chain, steps with where,
+  rewards, the book), the three line spell quests and the ascension.
+
 ## The Weekly Challenge (O390) (`weekly_challenge.lua`, `weekly_challenge_core.lua`, `weekly_challenge_config.lua`)
 
 One queue dungeon of the dungeon system whose layout comes from the week: the same map for everyone, a new one every
@@ -23205,6 +23332,68 @@ quick join, full, staff close, logout); raid listings of 15 (sizes and role caps
 accepts, the 16th refused, full at 15, an update to a rift refused). Client: `game_partyfinder/partyfinderview_test.lua`
 (limits per activity, the slot grid: 15 boxes wrap into 8 + 7). The 15-slot raid listing was rendered offline too. The window was rendered in
 the Linux client with payloads built by the core (offline); not run against a live server.
+
+## Group Queue (O407) (`groupqueue.lua`, `groupqueue_core.lua`, `groupqueue_config.lua`, client `game_groupqueue`)
+
+One window joins several queues at once. The queues stay the modes' own. Matchmaking is untouched.
+
+**What a player does.** Adventure > Group Queue. Alone or as party leader, pick any of:
+- Arena: the mode of the party size (1v1 alone, 2v2 a party of two, 3v3 a party of three).
+- Battleground: the role comes from the Battleground window (`B.pref`), else the class default.
+- One dungeon and a difficulty up to the highest unlocked (`ChaosDungeons.groupQueueList`).
+
+Join Queues calls each mode's own join: `ChaosArena.join`, `ChaosBattleground.join`, `ChaosDungeons.queueJoin`.
+Every check of the mode applies (level, protection zone, combat, deserter, cooldown, unlock).
+A mode that refuses is left out; the others still join. Each mode's own messages say why.
+A party dungeon join is all or none: every member joins that dungeon and difficulty, one entry each.
+Leave Queues takes the whole group out of every queue. Any member may press it.
+
+**The pop.** Each mode calls `ChaosGroupQueue.gate(key, cids)` right before it starts a match it found.
+- `arena.lua` `startMatch` and `battleground.lua` `startMatch`: after the free slot check, before the entries leave the queue.
+- `dungeons.lua` `tryMatch`: before `startRun`.
+- No Group Queue player in the match: it starts as before.
+- A group of 2 or more gets a ready check (`readyCheckSeconds` = 20). The mode keeps everyone queued and tries again at its next matchmaking.
+- Everyone accepted: the group holds that mode for `confirmSeconds` (60). The next try starts the match.
+- At the start the group leaves its other queues ("You left your other queues").
+- A lone player gets no check (`soloReadyCheck = false`). The pop starts at once and the other queues are left.
+- A decline, no answer in time or a logout during the check: the decliner's group leaves every queue.
+  The other groups of that match stay queued. Their mode pairs them again. An accepted group needs no second check inside `confirmSeconds`.
+- A group in a check, or accepted for another mode, makes every other mode wait for it.
+
+**Arena next to the battleground.** Both refused a player queued in the other one.
+A group that picked both may now stand in both (`ChaosGroupQueue.shares(player, "arena", "bg")`).
+Changed lines: `arena.lua` `insideOther` and `battleground.lua` `insideOther`. Everyone else is refused as before.
+
+**Raid.** The raid has no queue. The party leader presses Raid Check. Every member gets the ready check; the leader counts as ready.
+All accept: the raid opens for the leader as from the Raid window (`ChaosRaid.open`, the party within `partyRange` comes along).
+A decline or no answer keeps it closed. Alone: the Raid window, no check.
+
+**Kept in step.** A tick every `tickMs` (1 s):
+- times out the open checks;
+- asks each mode if the group is still queued (`queued`): a queue left in the mode's own window, a mode time-out or a refusal at start drops that pick. No pick left: the group is gone and told.
+Logout outside a check takes the member out of the group. The modes drop their own queue entries.
+
+**Limits.**
+- One arena mode and one dungeon per group (the modes keep one queue entry per player).
+- A dungeon run takes the first queued players of its difficulty. A party larger than the dungeon's group size can be split. The rest stays in the dungeon queue.
+- The battleground role is not picked in this window.
+- A party that changes while queued keeps the members it joined with.
+
+**Protocol** (opcode **160**, JSON `{action, data}`, "Extended opcodes in use"):
+client -> server `open`, `query`, `join {arena?, bg?, role?, dungeon? {id, difficulty}}`, `leave`, `accept`, `decline`, `raid`;
+server -> client `state {open, enabled, size, leader, inParty, arena, bg, raid, dungeons?, group?}`, `check {key, label, left, seconds, accepted, total, mine}`, `checkEnd`, `msg {text}`.
+Requests are rate limited (`readMs`, `actMs`). Texts in pt-BR through `Chaos.t` (`i18n_strings.lua`).
+
+**Storage, tables, patches.** None. The groups live in memory; a restart empties the mode queues anyway.
+The block 7120000 - 7120099 was reserved for O407 but lies inside the loadouts block (7112000 - 7127999), so it stays unused.
+No engine patch.
+
+**Tests.** `tests/groupqueue_test.lua`: the core (choice, gate, answers, time-outs, members leaving, sync, view), then
+`groupqueue.lua` with the real `arena.lua` on a mock (battleground, dungeon and raid stand-ins). Client: `gqview_test.lua`.
+
+**To check live.** Two characters, each alone: both pick Arena 1v1, one also Battleground. The 1v1 starts; the battleground queue is left.
+Then two parties of two: one through the Group Queue, one from the Arena window. The ready check pops on the first party only; the match starts after both accept.
+Decline once: that party is out of every queue, the other party stays queued.
 
 ## Anti-bot and player reports (`antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py`, client `game_antibot`)
 

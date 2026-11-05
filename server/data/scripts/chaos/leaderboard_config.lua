@@ -35,7 +35,7 @@ return {
 			info = "Highest rift tier completed this week."},
 		{key = "goblin", name = "Goblin Slayer", mode = "add", value = "Goblins", title = "Goblin Slayer",
 			info = "Treasure goblins slain this week."},
-		{key = "siege", name = "Guild Siege", mode = "add", value = "Points", title = "Siegebreaker",
+		{key = "siege", name = "Guild Siege", mode = "add", value = "Points", title = "Siegebreaker", noClassTabs = true,
 			info = "Guild siege points this week: enemies struck down and seconds holding the obelisk."},
 		{key = "arena1v1", name = "Arena 1v1", mode = "max", value = "Rating", title = "Duelist",
 			info = "Best 1v1 arena rating reached this week."},
@@ -49,7 +49,7 @@ return {
 		{key = "defender", name = "Defender", mode = "add", value = "Points", count = "Invasions", title = "Defender of the Realm",
 			info = "Invasions defended this week: 10 points each plus your share of the defence in percent."},
 		-- factions.lua: reputation gained with every faction this week (after diminishing returns and caps)
-		{key = "factions", name = "Reputation", mode = "add", value = "Reputation", title = "Banner-Sworn",
+		{key = "factions", name = "Reputation", mode = "add", value = "Reputation", title = "Banner-Sworn", noClassTabs = true,
 			info = "Faction reputation gained this week (every faction together)."},
 		-- the Cinderheart (uber.lua): fastest kill this week in seconds (mode "min": lower is better), per party size;
 		-- byClass: class tabs (the class the character had at the kill); format "time": shown as m:ss
@@ -81,8 +81,19 @@ return {
 		-- professions (professions.lua): materials gathered this week (every profession together)
 		-- noReward: the title only (professions give no orbs: the owner's rule, professions_config.lua)
 		{key = "professions", name = "Gatherers", mode = "add", value = "Materials", title = "Gatherer of the Week",
-			noReward = true, info = "Materials gathered this week with the professions (Delving, Wortcunning, Flaying, Angling)."}
+			noReward = true, noClassTabs = true,
+			info = "Materials gathered this week with the professions (Delving, Wortcunning, Flaying, Angling)."},
+		-- the weekly class board (weekly_class.lua, O409): experience from monsters this week, recorded once a minute and
+		-- at logout. classAwards: no overall title and no orbs (LB.awards skips it); at the reset the top of every class
+		-- tab gets Conquest Tokens, a broadcast line and a Discord post (weekly_class_config.lua)
+		{key = "weekly_xp", name = "Weekly Experience", mode = "add", value = "Experience", title = "Tireless",
+			byClass = true, classAwards = true, noReward = true,
+			info = "Experience from monsters this week. Ranked per class: the top 3 of every class are rewarded at the reset."}
 	},
+	-- class tabs (O409): every weekly board has them ("All classes" first, then one per base class with its ascensions),
+	-- except a board with noClassTabs = true (a guild or gathering score that no class does better). byClass keeps its
+	-- old meaning too: a board made for class tabs (the Cinderheart and Weekly Challenge times).
+	classTabs = true,
 	top = 3,
 	rewards = {
 		{{id = 29857, count = 5}, {id = 29856, count = 10}}, -- 1st: Orbs of Fate, Orbs of Upheaval

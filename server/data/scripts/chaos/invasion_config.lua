@@ -110,18 +110,38 @@ return {
 	occupation = {minutes = 30, garrison = 6, garrisonTiers = {rare = 70, legendary = 30}, hpMult = 1.5,
 		buyMult = 1.25, sellMult = 0.75},
 
+	-- ======================================================================= clash (O410): two hordes at once
+	-- chance percent of the invasions bring a second horde of another faction (decided by the start time, so the
+	-- warnings name both; a schedule entry with clash = true always does, clash = false never; /invasion start <area>
+	-- <faction> clash forces one). The two come from opposite edges (invasion_core.lua I.clashEdges), each with
+	-- sideShare of a normal wave and its own warlord, push to the same target and fight each other: every thinkMs each
+	-- invader that does not fight a player takes the nearest enemy invader within `radius` (at most maxPairs a tick),
+	-- walks to it and, within reach of its attack (melee next to it, a ranged attack within the attack's range: the
+	-- monster's own attack list x its invasion damage scale x dmgMult; no attack in reach and next to it:
+	-- fallbackShare of its max health), hits it, at most maxHitShare of the foe's max health per hit. A warlord is
+	-- never brought below bossFloor of its health by the other horde: the players slay the warlords. A kill of the
+	-- clash drops no loot unless a player hit that invader; the experience of an invader the clash wore down shrinks
+	-- with the clash's share of its health (at least minXpShare). Rewards and the outcome are the same as for one
+	-- horde; the faction reputation goes to the foes of the horde each defender fought most (factions.lua).
+	-- A lost clash: the horde with more invaders left holds the area, the other one flees.
+	-- rivals: faction key -> the keys it may meet (nil = any two). Effects per faction: clashHit / clashShot below.
+	clash = {chance = 25, salt = 4421, sideShare = 0.6, thinkMs = 1000, radius = 6, maxPairs = 60, dmgMult = 1.0,
+		maxHitShare = 0.12, fallbackShare = 0.03, bossFloor = 0.3, minXpShare = 0.1},
+
 	-- ======================================================================= factions
 	-- monsters: existing monster types with their hunting level (bounty_pool.lua estimates). bosses: an existing
 	-- boss look, renamed (rename) when given; the one with the highest level not above the area level is used.
+	-- clashHit / clashShot (O410): the magic effect on a foe hit in a clash and the missile of a ranged clash hit
+	-- (engine constant names; unknown names fall back to CONST_ME_DRAWBLOOD / CONST_ANI_SMALLSTONE)
 	factions = {
-		orcs = {name = "Orc Warband", color = "#7fb04a", monsters = {
+		orcs = {name = "Orc Warband", color = "#7fb04a", clashHit = "CONST_ME_DRAWBLOOD", clashShot = "CONST_ANI_SPEAR", monsters = {
 			{name = "Orc", level = 8}, {name = "Orc Spearman", level = 10}, {name = "Orc Warrior", level = 11},
 			{name = "Orc Shaman", level = 17}, {name = "Orc Rider", level = 17}, {name = "Orc Berserker", level = 22},
 			{name = "Orc Marauder", level = 23}, {name = "Orc Leader", level = 26}, {name = "Orc Warlord", level = 41}
 		}, bosses = {
 			{name = "Orc Warlord", level = 41, rename = "Warchief Grashnak"}
 		}},
-		undead = {name = "Undead Legion", color = "#9ab0c8", monsters = {
+		undead = {name = "Undead Legion", color = "#9ab0c8", clashHit = "CONST_ME_MORTAREA", clashShot = "CONST_ANI_DEATH", monsters = {
 			{name = "Skeleton", level = 9}, {name = "Ghoul", level = 15}, {name = "Mummy", level = 20},
 			{name = "Zombie", level = 27}, {name = "Vampire", level = 28}, {name = "Grave Guard", level = 35},
 			{name = "Bonebeast", level = 39}, {name = "Necromancer", level = 39}, {name = "Lich", level = 48},
@@ -132,7 +152,7 @@ return {
 			{name = "Sanguidrake", level = 110, rename = "Sanguidrake the Unburied"},
 			{name = "The Ashen Count", level = 200}
 		}},
-		demons = {name = "Infernal Host", color = "#e0603a", monsters = {
+		demons = {name = "Infernal Host", color = "#e0603a", clashHit = "CONST_ME_FIREAREA", clashShot = "CONST_ANI_FIRE", monsters = {
 			{name = "Fire Devil", level = 19}, {name = "Fire Elemental", level = 24}, {name = "Demon Skeleton", level = 25},
 			{name = "Destroyer", level = 80}, {name = "Diabolic Imp", level = 86}, {name = "Defiler", level = 97},
 			{name = "Hellfire Fighter", level = 100}, {name = "Dark Torturer", level = 122}, {name = "Hellhound", level = 132},
@@ -141,7 +161,7 @@ return {
 			{name = "Morgashal", level = 150},
 			{name = "Moloveth", level = 300}
 		}},
-		minotaurs = {name = "Minotaur Horde", color = "#c89a5a", monsters = {
+		minotaurs = {name = "Minotaur Horde", color = "#c89a5a", clashHit = "CONST_ME_DRAWBLOOD", clashShot = "CONST_ANI_BOLT", monsters = {
 			{name = "Minotaur", level = 11}, {name = "Minotaur Archer", level = 13}, {name = "Minotaur Guard", level = 20},
 			{name = "Minotaur Mage", level = 20}, {name = "Hornsworn Warrior", level = 48}, {name = "Worm Priestess", level = 62},
 			{name = "Minotaur Hunter", level = 66}, {name = "Minotaur Amazon", level = 75}, {name = "The Bovine Headsman", level = 78},
@@ -150,7 +170,7 @@ return {
 			{name = "Ironbrow", level = 250, rename = "Ironbrow the Gorer"}
 		}},
 		-- the pack monsters (data/monster/monsters/chaos/goblins, wildwood; server/README.md "Pack items and monsters")
-		goblins = {name = "Goblin Tribe", color = "#8fbf3f", monsters = {
+		goblins = {name = "Goblin Tribe", color = "#8fbf3f", clashHit = "CONST_ME_DRAWBLOOD", clashShot = "CONST_ANI_SMALLSTONE", monsters = {
 			{name = "Goblin Grunt", level = 15}, {name = "Goblin Spearman", level = 18}, {name = "Goblin Archer", level = 18},
 			{name = "Goblin Sneak", level = 20}, {name = "Goblin Bomber", level = 22}, {name = "Goblin Sapper", level = 22},
 			{name = "Goblin Trapper", level = 24}, {name = "Goblin War-Drummer", level = 25}, {name = "Goblin Shaman", level = 28},
@@ -159,7 +179,7 @@ return {
 		}, bosses = {
 			{name = "Goblin Chieftain", level = 80}
 		}},
-		wildwood = {name = "Wildwood Uprising", color = "#5fa860", monsters = {
+		wildwood = {name = "Wildwood Uprising", color = "#5fa860", clashHit = "CONST_ME_SMALLPLANTS", clashShot = "CONST_ANI_EARTH", monsters = {
 			{name = "Forest Wolf", level = 10}, {name = "Shroomling", level = 12}, {name = "Gloomtusk Boar", level = 18},
 			{name = "Blightwing Hornet", level = 20}, {name = "Morel Imp", level = 22}, {name = "Moss Slime", level = 22},
 			{name = "Forest Pixie", level = 25}, {name = "Glowcap Cluster", level = 28}, {name = "Treant Sapling", level = 30},

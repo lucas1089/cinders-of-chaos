@@ -60,11 +60,21 @@ ChaosWindow
     id: exportFullButton
     anchors.top: exportButton.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
     margin-top: 6
+    width: 182
     !text: tr('Copy Full Build')
     !tooltip: tr('Copies one code with your passive tree, class, level, spell rotation and gear. The website draws it.')
     @onClick: modules.game_passivetree.exportFullBuild()
+
+  ChaosButton
+    id: trendsButton
+    anchors.top: exportButton.bottom
+    anchors.right: parent.right
+    margin-top: 6
+    width: 182
+    !text: tr('Trending Builds')
+    !tooltip: tr('The most played builds of every class this week (no names). Import one from the list.')
+    @onClick: modules.game_passivetree.toggleTrends()
 
   ChaosSeparator
     id: sep

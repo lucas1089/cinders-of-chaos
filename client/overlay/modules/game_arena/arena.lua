@@ -307,3 +307,8 @@ function terminate()
   if hudPanel then hudPanel:destroy() hudPanel = nil end
   state = nil
 end
+
+-- for game_chaosmusic (O408): the HUD shows while the player is in a match
+function getState()
+  return { hud = hudPanel ~= nil and hudPanel:isVisible() or false }
+end

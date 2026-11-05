@@ -40,6 +40,9 @@ files may not be extracted, decrypted or reused elsewhere: some art is licensed 
 - **Owner-supplied outfits**
   - Source: supplied by the owner, source pack unnamed
   - Used for: the moon outfits and the costumes (plush bears, crawling hands, fry box)
+- **Region music**
+  - Author: the Cinders of Chaos team (own work, synthesised by `client/tools/gen_music.py`; no samples)
+  - Used for: the music of the login screen, towns, hunting grounds, dungeons and rifts, boss fights and arenas
 
 ## Art with required credit {pt-BR: Arte com crédito obrigatório}
 

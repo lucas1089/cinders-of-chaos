@@ -157,5 +157,20 @@ eq(h.kind, 'edge', 'kept aspect: one past the view'); ok(h.x <= panel.x + panel.
 eq(M.gameText('Ann', 5, 1), 'Ann 5 +1', 'text with floors up'); eq(M.gameText('Ann', 5, -2), 'Ann 5 -2', 'text with floors down')
 eq(M.gameText('Ann', 0, -1), 'Ann -1', 'text without a distance'); eq(M.gameText('Ann', 3, 0), 'Ann 3', 'delta zero is the plain text')
 
+-- O410: quests category and goals
+eq(M.KIND_CATEGORY.quest, 'quest', 'quest givers and chests are quests'); eq(M.KIND_CATEGORY.questgoal, 'quest', 'goals too')
+eq(M.CATEGORIES[1], 'quest', 'quests listed first'); ok(M.CATEGORY_LABEL.quest ~= nil, 'quest label')
+for _, c in ipairs(M.CATEGORIES) do ok(M.CATEGORY_ICON[c] ~= nil and M.CATEGORY_LABEL[c] ~= nil, 'icon and label: ' .. c) end
+eq(M.sanitize({ cats = { hunt = false } }).cats.quest, true, 'old settings: quests on')
+local wp = { { k = 'temple', x = 1, y = 1, z = 7 } }
+local wg = M.withGoals(wp, { { k = 'questgoal', x = 1, y = 1, z = 7, n = 'Tale: go' }, { k = 'temple', x = 5, y = 5, z = 7 }, 'x' })
+eq(#wg, 2, 'goals join the pois, only kind questgoal'); eq(wg[2].k, 'questgoal', 'goal after the pois'); eq(#wp, 1, 'pois list untouched')
+eq(#M.withGoals(nil, nil), 0, 'nothing in, nothing out')
+local wf = M.byFloor(wg); eq(#wf[7], 2, 'goal on the same tile is kept')
+local wb = { x1 = 0, y1 = 0, x2 = 10, y2 = 10, z = 7 }
+eq(#M.visiblePoi(wf, wb, M.sanitize({}).cats, 10), 2, 'quests on: goal shown')
+local vis = M.visiblePoi(wf, wb, M.sanitize({ cats = { quest = false } }).cats, 10)
+eq(#vis, 1, 'quests off hides the goal'); eq(vis[1].k, 'temple', 'the temple stays')
+
 print(string.format('markermath_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

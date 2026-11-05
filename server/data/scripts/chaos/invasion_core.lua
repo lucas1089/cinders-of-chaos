@@ -9,6 +9,8 @@
 --   after         I.occupationOver, I.buffActive
 --   world events  I.pickWorldEvent, I.nextWorldEventAt
 --   HUD           I.hud, I.clock
+--   clash (O410)  I.pickRival, I.rival, I.clashEdges, I.clashPairs, I.clashAttack, I.clashDamage, I.clashXpShare,
+--                 I.sideCounts, I.mainSide, I.facing
 
 ChaosInvasionCore = ChaosInvasionCore or {}
 local I = ChaosInvasionCore
@@ -137,7 +139,7 @@ function I.scheduledStarts(cfg, fromT, toT)
 	for i, e in ipairs(cfg.schedule or {}) do
 		if e.at then
 			if e.at >= fromT and e.at < toT then
-				out[#out + 1] = {at = e.at, area = e.area, faction = e.faction, source = "once", index = i}
+				out[#out + 1] = {at = e.at, area = e.area, faction = e.faction, clash = e.clash, source = "once", index = i}
 			end
 		else
 			local day = dayStart(fromT) - 86400
@@ -146,7 +148,8 @@ function I.scheduledStarts(cfg, fromT, toT)
 				if not e.weekdays or contains(e.weekdays, d.wday) then
 					local at = os.time({year = d.year, month = d.month, day = d.day, hour = e.hour or 20, min = e.minute or 0, sec = 0})
 					if at >= fromT and at < toT then
-						out[#out + 1] = {at = at, area = e.area, faction = e.faction, source = "schedule", index = i}
+						out[#out + 1] = {at = at, area = e.area, faction = e.faction, clash = e.clash, source = "schedule",
+							index = i}
 					end
 				end
 				day = dayStart(day + 86400 + 43200)
@@ -220,6 +223,15 @@ function I.upcoming(cfg, now, horizon)
 	end)
 	for _, s in ipairs(list) do
 		s.areaKey, s.factionKey = I.resolve(cfg, s.at, s.area, s.faction)
+		-- O410: a second horde (the start time decides, so the warnings name both); clash = true forces one,
+		-- clash = false never
+		if s.areaKey and s.factionKey then
+			if s.clash == true then
+				s.rivalKey = I.pickRival(cfg, s.at, s.areaKey, s.factionKey)
+			elseif s.clash ~= false then
+				s.rivalKey = I.rival(cfg, s.at, s.areaKey, s.factionKey)
+			end
+		end
 	end
 	return list
 end
@@ -360,10 +372,12 @@ I.rollTier = rollTier
 
 -- One wave: {index, count, packs = {{monsters = {{name, level, tier, scale}}}}}. Wave i favours the stronger half of
 -- the roster as i grows; packs of packSize monsters arrive together at one edge point.
-function I.planWave(cfg, area, faction, i, players, rng)
+-- mult (optional): the share of the wave this horde brings (a clash, O410: clash.sideShare each)
+function I.planWave(cfg, area, faction, i, players, rng, mult)
 	local w = cfg.waves or {}
 	local roster = I.roster(faction, area.level, cfg.scaling)
-	local count = floor(((w.base or 10) + (w.perWave or 4) * (i - 1)) * I.playerFactor(players, cfg.players) + 0.5)
+	local count = floor(((w.base or 10) + (w.perWave or 4) * (i - 1)) * I.playerFactor(players, cfg.players) * (mult or 1)
+		+ 0.5)
 	local total = max(1, w.count or 5)
 	local chances = I.tierChances(i, cfg.tiers)
 	local monsters = {}
@@ -817,7 +831,7 @@ function I.hud(st, now, list, mine, cfg)
 		top = {}
 	}
 	if st.bossAlive then
-		d.boss = st.bossName
+		d.boss = st.bossHudName or st.bossName
 		d.bossHp = st.bossHp or 100
 	end
 	if st.phase == "occupied" then
@@ -828,6 +842,18 @@ function I.hud(st, now, list, mine, cfg)
 	end
 	for i = 1, min(cfg.hudTop or 3, #(list or {})) do
 		d.top[i] = {name = list[i].name, share = floor(list[i].share * 100 + 0.5)}
+	end
+	-- O410: two hordes: what is left of each, and its warlord
+	if type(st.sides) == "table" and #st.sides > 1 then
+		d.sides = {}
+		for _, s in ipairs(st.sides) do
+			local e = {key = s.key, name = s.name, color = s.color, left = (st.sideAlive or {})[s.key] or 0}
+			local b = (st.sideBoss or {})[s.key]
+			if b and b.alive then
+				e.boss, e.bossHp = b.name, b.hp or 100
+			end
+			d.sides[#d.sides + 1] = e
+		end
 	end
 	if mine then
 		d.you = {rank = mine.rank, share = floor(mine.share * 100 + 0.5), kills = mine.kills or 0}
@@ -849,6 +875,217 @@ function I.merchantArea(candidates, slot)
 		return nil
 	end
 	return candidates[(floor(slot) % #candidates) + 1]
+end
+
+-- ============================================================================ clash (O410): two hordes at once
+-- Some invasions bring two hordes to the same area. They come from opposite edges, push to the same target and fight
+-- each other on the way (the engine has no monster-vs-monster targeting: invasion.lua pairs them every clash.thinkMs
+-- and deals the hits itself). Players defend against both; their damage to each side is kept apart (I.mainSide).
+
+-- the second horde for an invasion at `at` (no roll): a faction the area allows, not the first one, not barred by
+-- the area (clash = false) or by clash.rivals (key -> list of keys it may meet; nil = any). nil when there is none.
+function I.pickRival(cfg, at, areaKey, factionKey)
+	local cl = cfg.clash or {}
+	local area = I.areaByKey(cfg, areaKey)
+	if not area or area.clash == false then
+		return nil
+	end
+	local keys = area.factions and #area.factions > 0 and area.factions or I.factionKeys(cfg)
+	local allowed = cl.rivals and cl.rivals[factionKey]
+	local valid = {}
+	for _, k in ipairs(keys) do
+		if k ~= factionKey and (cfg.factions or {})[k] and (not allowed or contains(allowed, k)) then
+			valid[#valid + 1] = k
+		end
+	end
+	if #valid == 0 then
+		return nil
+	end
+	table.sort(valid)
+	local rng = I.lcg((tonumber(at) or 0) % 2147483647 + (cl.salt or 0) + 17)
+	return valid[rng(1, #valid)]
+end
+
+-- the second horde or nil: clash.chance percent of the starts, decided by the start time alone (a restart, the
+-- warnings and the start agree)
+function I.rival(cfg, at, areaKey, factionKey)
+	local cl = cfg.clash
+	if not cl or cl.enabled == false or (cl.chance or 0) <= 0 then
+		return nil
+	end
+	local rng = I.lcg((tonumber(at) or 0) % 2147483647 + (cl.salt or 0))
+	if rng(1, 100) > cl.chance then
+		return nil
+	end
+	return I.pickRival(cfg, at, areaKey, factionKey)
+end
+
+local OPPOSITE = {north = "south", south = "north", east = "west", west = "east"}
+
+-- the edges of each horde: opposite edges apart (all four: north + east and south + west); one edge: both share it
+function I.clashEdges(edges)
+	local list = edges or {"north", "south", "east", "west"}
+	if #list < 2 then
+		return list, list
+	end
+	local a, b, used = {}, {}, {}
+	for _, e in ipairs(list) do
+		if not used[e] then
+			used[e] = true
+			a[#a + 1] = e
+			local o = OPPOSITE[e]
+			if o and contains(list, o) and not used[o] then
+				used[o] = true
+				b[#b + 1] = o
+			end
+		end
+	end
+	if #b == 0 then
+		a, b = {}, {}
+		for i, e in ipairs(list) do
+			if i % 2 == 1 then
+				a[#a + 1] = e
+			else
+				b[#b + 1] = e
+			end
+		end
+	end
+	return a, b
+end
+
+-- who fights whom this tick. units = {{id, side, x, y, z, busy}} (busy: it fights a player, leave it be). Every free
+-- unit takes the nearest unit of another side within cl.radius on its floor (ties: the lower id), at most cl.maxPairs
+-- of them (by id). -> {[id] = {foe = id, dist = squares}}
+function I.clashPairs(units, cl)
+	cl = cl or {}
+	local radius, cap = cl.radius or 6, cl.maxPairs or 60
+	local list = {}
+	for _, u in ipairs(units or {}) do
+		list[#list + 1] = u
+	end
+	table.sort(list, function(a, b)
+		return a.id < b.id
+	end)
+	local out, n = {}, 0
+	for _, u in ipairs(list) do
+		if n >= cap then
+			break
+		end
+		if not u.busy then
+			local best, bd
+			for _, v in ipairs(list) do
+				if v.side ~= u.side and v.z == u.z then
+					local d = max(math.abs(v.x - u.x), math.abs(v.y - u.y))
+					if d <= radius and (not bd or d < bd) then
+						best, bd = v, d
+					end
+				end
+			end
+			if best then
+				out[u.id] = {foe = best.id, dist = bd}
+				n = n + 1
+			end
+		end
+	end
+	return out
+end
+
+-- the attack a unit uses at `dist` squares: attacks = {{melee = bool, min, max, range}} (MonsterType:getAttackList,
+-- the values as written: negative = damage). Melee next to the foe, else the strongest attack whose range reaches.
+-- nil when nothing reaches (walk closer).
+function I.clashAttack(attacks, dist)
+	local best, bv
+	for _, a in ipairs(attacks or {}) do
+		local lo, hi = math.abs(tonumber(a.min) or 0), math.abs(tonumber(a.max) or 0)
+		local range = tonumber(a.range) or 0
+		local reach
+		if a.melee then
+			reach = dist <= 1
+		else
+			reach = range > 0 and dist <= range
+		end
+		local v = (lo + hi) / 2
+		if reach and v > 0 and (not bv or v > bv) then
+			best, bv = a, v
+		end
+	end
+	return best
+end
+
+-- one hit: the attack's roll x the attacker's invasion damage scale x clash.dmgMult. Without an attack that reaches,
+-- next to the foe: a bump of fallbackShare of the attacker's max health. At most maxHitShare of the foe's max health;
+-- a boss is never brought below bossFloor of its health by the other horde (the players slay the warlords).
+-- o = {attack, dist, dmg (scale), hp (attacker max health), foeHealth, foeMax, foeBoss}. -> damage >= 0
+function I.clashDamage(o, cl, rng)
+	cl = cl or {}
+	rng = rng or math.random
+	local dmg = 0
+	local a = o.attack
+	if a then
+		local lo, hi = math.abs(tonumber(a.min) or 0), math.abs(tonumber(a.max) or 0)
+		if hi < lo then
+			lo, hi = hi, lo
+		end
+		dmg = rng(floor(lo), max(floor(lo), floor(hi)))
+	elseif (o.dist or 99) <= 1 then
+		dmg = (o.hp or 0) * (cl.fallbackShare or 0.03)
+	end
+	dmg = dmg * (o.dmg or 1) * (cl.dmgMult or 1)
+	local foeMax = max(1, o.foeMax or 1)
+	dmg = floor(min(dmg, foeMax * (cl.maxHitShare or 0.12)))
+	if o.foeBoss then
+		local floorHp = floor(foeMax * (cl.bossFloor or 0.3))
+		dmg = max(0, min(dmg, (o.foeHealth or foeMax) - floorHp))
+	end
+	return max(0, dmg)
+end
+
+-- the experience share left for the players of an invader the other horde wore down: 1 - the share of its max health
+-- the clash took, at least minXpShare (the engine gives the players the whole experience otherwise)
+function I.clashXpShare(clashDamage, maxHealth, cl)
+	local d = tonumber(clashDamage) or 0
+	if d <= 0 then
+		return 1
+	end
+	local share = 1 - min(1, d / max(1, tonumber(maxHealth) or 1))
+	return max((cl or {}).minXpShare or 0.1, share)
+end
+
+-- invaders alive per side: invaders = {[id] = {side}} -> {[side] = n}
+function I.sideCounts(invaders)
+	local out = {}
+	for _, info in pairs(invaders or {}) do
+		if info.side then
+			out[info.side] = (out[info.side] or 0) + 1
+		end
+	end
+	return out
+end
+
+-- the horde a defender fought most (damage by side, e.vs = {[side] = damage}); nil without any. Ties: the lower key.
+function I.mainSide(e)
+	local best, bv
+	local keys = {}
+	for k in pairs(type(e) == "table" and type(e.vs) == "table" and e.vs or {}) do
+		keys[#keys + 1] = k
+	end
+	table.sort(keys)
+	for _, k in ipairs(keys) do
+		local v = tonumber(e.vs[k]) or 0
+		if v > 0 and (not bv or v > bv) then
+			best, bv = k, v
+		end
+	end
+	return best
+end
+
+-- the direction from one position to another (engine order: 0 north, 1 east, 2 south, 3 west), the longer axis first
+function I.facing(from, to)
+	local dx, dy = to.x - from.x, to.y - from.y
+	if math.abs(dx) > math.abs(dy) then
+		return dx > 0 and 1 or 3
+	end
+	return dy > 0 and 2 or 0
 end
 
 return I

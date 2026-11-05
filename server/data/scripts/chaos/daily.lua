@@ -216,6 +216,40 @@ function DY.record(player)
 	return rec
 end
 
+-- ---------------------------------------------------------------- the streak cosmetics (O409)
+local function cosmeticCfg()
+	return ChaosCosmeticsConfig
+end
+
+local function cosmeticName(key)
+	local ccfg = cosmeticCfg()
+	local c = ccfg and ChaosCosmeticsCore and ChaosCosmeticsCore.byKey(ccfg, key)
+	return c and c.name or key
+end
+
+local function ownsCosmetic(accountId, key)
+	return ChaosCosmetics and ChaosCosmetics.owns and ChaosCosmetics.owns(accountId, key) or false
+end
+
+-- grants the cosmetics of the milestones the account's best streak reached and it does not own yet; -> the keys granted
+function DY.grantCosmetics(player, best)
+	if not (ChaosCosmetics and ChaosCosmetics.grant) then
+		return {}
+	end
+	local accountId, granted = player:getAccountId(), {}
+	for _, c in ipairs(DC.cosmeticsUpTo(SC, best)) do
+		if not ownsCosmetic(accountId, c.key) then
+			local ok = ChaosCosmetics.grant(accountId, c.key, "daily")
+			if ok then
+				granted[#granted + 1] = c.key
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+					"Login streak of %d days: the cosmetic %s is yours. Choose it in the Wardrobe.", c.days, cosmeticName(c.key)))
+			end
+		end
+	end
+	return granted
+end
+
 local function getState(player)
 	local rec = DY.record(player)
 	return DC.view(rec, DY.today(), SC), rec
@@ -235,6 +269,13 @@ local function sendWindow(player, login)
 	local midnight = os.time({year = d.year, month = d.month, day = d.day + 1, hour = 0, min = 0, sec = 0})
 	local nextM = DC.nextMilestone(SC, v.achieved)
 	local title = DC.titleFor(SC, rec.best)
+	-- the streak cosmetics: an account that got there before they existed gets them now
+	pcall(DY.grantCosmetics, player, rec.best)
+	local cosmetics = {}
+	for _, c in ipairs(DC.cosmetics(SC)) do
+		cosmetics[#cosmetics + 1] = {Days = c.days, Name = cosmeticName(c.key),
+			Owned = ownsCosmetic(player:getAccountId(), c.key) and 1 or 0}
+	end
 	Chaos.send(player, OPCODE, "OpenDailyWindow", {
 		Day = v.slot - 2,
 		TakenReward = v.taken and 1 or 0,
@@ -247,8 +288,10 @@ local function sendWindow(player, login)
 		GraceUse = v.graceUse,
 		Broken = v.broken and 1 or 0,
 		Title = title,
-		Next = nextM and {Days = nextM.days, In = nextM.days - v.achieved, Reward = DC.milestoneText(nextM, itemName, Chaos.lang(player)),
-			Title = nextM.title} or nil,
+		Next = nextM and {Days = nextM.days, In = nextM.days - v.achieved,
+			Reward = DC.milestoneText(nextM, itemName, Chaos.lang(player), cosmeticName),
+			Title = nextM.title, Cosmetic = nextM.cosmetic and cosmeticName(nextM.cosmetic) or nil} or nil,
+		Cosmetics = #cosmetics > 0 and cosmetics or nil,
 		Login = login and 1 or nil
 	})
 end
@@ -331,7 +374,10 @@ local function claim(player, value)
 	local m = res.milestone
 	if m then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Login streak of %d days! Milestone reward: %s.", m.days,
-			DC.milestoneText(m, itemName, Chaos.lang(player))))
+			DC.milestoneText(m, itemName, Chaos.lang(player), cosmeticName)))
+		if m.cosmetic then
+			pcall(DY.grantCosmetics, player, math.max(newRec.best or 0, m.days))
+		end
 		if m.title and (rec.best or 0) < m.days then
 			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s reached a login streak of %d days and earned the title %s!",
 				player:getName(), m.days, m.title)

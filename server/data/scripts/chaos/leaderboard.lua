@@ -25,10 +25,11 @@
 --
 -- Protocol (JSON {action, data}):
 --   client -> server  open {board?} | get {board, group?}
---   server -> client  meta {open, boards = [{key, name, weekly, value, count, title, info}], groups = [{key, name}]}
+--   server -> client  meta {open, boards = [{key, name, weekly, value, count, title, info, byClass, format,
+--                            classAwards}], groups = [{key, name}]}   byClass: class tabs (LB.hasClassTabs, O409)
 --                     board {key, group, week, resetIn, rows = [{rank, name, value, count, level, vocation, title}],
 --                            own = {rank, value, count} | nil, champions = [{rank, rankName, name, value, title}],
---                            total}
+--                            championGroup (classAwards: the class whose podium champions is), total}
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -123,10 +124,10 @@ local function loadHeld(week)
 	LB.held = {week = week, awards = awards, byGuid = LB.titleMap(awards)}
 end
 
--- who -> guid, name, group (or nil)
+-- who -> guid, name, group, vocation (or nil); the vocation feeds the class tabs (O409)
 local function identify(who)
 	if type(who) == "userdata" then
-		return who:getGuid(), who:getName(), who:getGroup():getId()
+		return who:getGuid(), who:getName(), who:getGroup():getId(), who:getVocation():getId()
 	end
 	local guid, name
 	if type(who) == "table" then
@@ -139,16 +140,17 @@ local function identify(who)
 	end
 	local online = name and Player(name)
 	if online and online:getGuid() == guid then
-		return guid, online:getName(), online:getGroup():getId()
+		return guid, online:getName(), online:getGroup():getId(), online:getVocation():getId()
 	end
-	local id = db.storeQuery("SELECT `name`, `group_id` FROM `players` WHERE `id` = " .. guid)
+	local id = db.storeQuery("SELECT `name`, `group_id`, `vocation` FROM `players` WHERE `id` = " .. guid)
 	if not id then
 		return nil
 	end
 	name = result.getString(id, "name")
 	local group = result.getNumber(id, "group_id")
+	local voc = result.getNumber(id, "vocation")
 	result.free(id)
-	return guid, name, group
+	return guid, name, group, voc
 end
 
 -- ---------------------------------------------------------------- public API
@@ -167,15 +169,15 @@ function LB.record(board, who, value, mode)
 		return nil
 	end
 	local cur = ensureWeek()
-	local guid, name, group = identify(who)
+	local guid, name, group, voc = identify(who)
 	if not guid or (Chaos.isTesterGuid and Chaos.isTesterGuid(guid)) then
 		return nil -- tester bots never rank (testers.lua)
 	end
 	local now = LB.now()
 	local e = LB.merge(cur.scores[board][guid], value, mode or b.mode, now)
 	e.name, e.group = name, group
-	if type(who) == "userdata" then
-		e.voc = who:getVocation():getId() -- the class tabs of byClass boards
+	if voc and voc > 0 then
+		e.voc = voc -- the class tabs (LB.hasClassTabs)
 	end
 	cur.scores[board][guid] = e
 	LB.ranked[board] = nil
@@ -441,8 +443,10 @@ end
 local function sendMeta(player, open)
 	local boards = {}
 	for _, b in ipairs(cfg.boards) do
+		-- byClass: the client draws class tabs for it (every board with LB.hasClassTabs, O409)
 		boards[#boards + 1] = {key = b.key, name = b.name, weekly = true, value = b.value, count = b.count,
-			title = b.title, info = b.info, byClass = b.byClass, format = b.format}
+			title = not b.classAwards and b.title or nil, info = b.info, byClass = LB.hasClassTabs(cfg, b) or nil,
+			format = b.format, classAwards = b.classAwards or nil}
 	end
 	boards[#boards + 1] = {key = cfg.ladder.key, name = cfg.ladder.name, weekly = false, value = "Level",
 		info = "Highest level per class, all time."}
@@ -471,8 +475,8 @@ function LB.sendBoard(player, key, groupKey, season, mode)
 	else
 		local b = boardByKey[key] or cfg.boards[1]
 		local ranked = LB.rankedBoard(b.key)
-		-- a board with class tabs (byClass): the class group asked for, none = every class
-		local g = b.byClass and groupKey and groupByKey(tonumber(groupKey))
+		-- a board with class tabs (LB.hasClassTabs): the class group asked for, none = every class
+		local g = LB.hasClassTabs(cfg, b) and groupKey and groupByKey(tonumber(groupKey))
 		if g then
 			ranked = LB.filterClass(ranked, g.ids)
 		end
@@ -482,15 +486,26 @@ function LB.sendBoard(player, key, groupKey, season, mode)
 			rows[#rows + 1] = {rank = e.rank, name = e.name, value = e.value, count = e.count, title = firstTitle(e.guid, b.key)}
 		end
 		local mine = LB.find(ranked, player:getGuid())
-		local champions = {}
-		for _, a in ipairs(LB.held.awards) do
-			if a.board == b.key then
-				champions[#champions + 1] = {rank = a.rank, rankName = a.rankName, name = a.name, value = a.value,
-					title = a.title}
+		local champions, championGroup = {}, nil
+		if b.classAwards then
+			-- ranked per class (weekly_class.lua, O409): last week's podium of the class tab shown (the own class on
+			-- "All classes")
+			local cg = g or groupOfPlayer(player)
+			championGroup = cg and cg.key or nil
+			if championGroup and ChaosWeeklyClass and ChaosWeeklyClass.champions then
+				local okC, list = pcall(ChaosWeeklyClass.champions, championGroup)
+				champions = okC and list or {}
+			end
+		else
+			for _, a in ipairs(LB.held.awards) do
+				if a.board == b.key then
+					champions[#champions + 1] = {rank = a.rank, rankName = a.rankName, name = a.name, value = a.value,
+						title = a.title}
+				end
 			end
 		end
 		data = {key = b.key, group = g and g.key or nil, rows = rows, total = #ranked, champions = champions,
-			own = mine and {rank = mine.rank, value = mine.value, count = mine.count} or nil}
+			championGroup = championGroup, own = mine and {rank = mine.rank, value = mine.value, count = mine.count} or nil}
 	end
 	data.week = LB.current and LB.current.week or weekNow()
 	data.resetIn = math.max(0, LB.nextReset(now, cfg.resetHour) - now)

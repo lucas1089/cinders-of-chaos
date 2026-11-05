@@ -38,6 +38,8 @@
 -- colour while the Pact is active, the monthly cosmetic kept for good; never sold.
 -- And "candlemarks": bought for Candlemarks at Osric the Chandler (candlemarks_config.lua offers of kind "cosmetic",
 -- one per account); never sold for Chaos Coins.
+-- And "daily" (days = the streak length): a login streak milestone (daily_config.lua milestones `cosmetic`, O409),
+-- granted once per account by daily.lua; never sold.
 
 return {
 	opcode = 225, -- ChaosOpcodes.cosmetics (client game_cosmetics)
@@ -448,6 +450,14 @@ return {
 			color = "#c8e070", name = "Laurel Steps", desc = "Pale laurel leaves mark your steps. Collection score: 60 points."},
 		{id = 340, key = "chat_collector", kind = "chatcolor", icon = 2154, source = "collection", collection = 220,
 			color = "#f2d27a", name = "Collector's Gold", desc = "Your name in chat shows museum gold for everyone. Collection score: 220 points."},
+
+		-- ------------------------------------------------------------------ the login streak rewards (O409,
+		-- daily_config.lua milestones `cosmetic`; source "daily": granted once when the account's streak reaches `days`,
+		-- never sold; daily_test.lua checks the link)
+		{id = 240, key = "loot_devoted", kind = "lootbeam", icon = 2048, source = "daily", days = 7, accent = "#2c1a0cf0",
+			name = "Devoted Labels", desc = "Your highlighted loot labels sit on banked ember brown. Rarity colours stay. Login streak: 7 days."},
+		{id = 610, key = "lvl_vigil", kind = "levelfx", icon = 2050, source = "daily", days = 60, vfx = "holy_seal",
+			name = "Vigil Ascent", desc = "A seal of candlelight blooms under you when you gain a level. Login streak: 60 days."},
 
 		-- the Chaos Pact (VIP) perks (pact_config.lua perks): the chat colour while active, one cosmetic a month
 		{id = 315, key = "chat_pactbound", kind = "chatcolor", icon = 16101, source = "pact", pact = "While the Chaos Pact is active",

@@ -152,7 +152,7 @@ for _, c in ipairs(cfg.cosmetics) do
 end
 eq(count.spellskin, 12, "12 spell skins")
 eq(count.killfx, 25, "25 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 9 reward track, 3 Pact months, 1 Candlemarks)")
-eq(count.lootbeam, 16, "16 label accents (three PvP, 4 reward track, 3 Pact months, 1 Candlemarks)")
+eq(count.lootbeam, 17, "17 label accents (three PvP, 4 reward track, 3 Pact months, 1 Candlemarks, the 7-day streak)")
 eq(count.chatcolor, 17, "17 chat colours (three PvP, 5 reward track, the Pact's, 1 Candlemarks, the collection reward)")
 -- the Chaos Pact (VIP) perks: never sold, every monthly key and the chat colour are pact cosmetics
 local pactCfg = dofile("data/scripts/chaos/pact_config.lua")
@@ -1051,7 +1051,7 @@ do
 	for _, c in ipairs(cfg.cosmetics) do
 		if kinds[c.kind] then
 			kinds[c.kind] = kinds[c.kind] + 1
-			eq(c.source == "store" or c.source == "achievement", true, c.key .. " is sold or a milestone reward (O378)") eq(ChaosVfx[c.vfx] ~= nil, true, c.key .. " plays a known effect")
+			eq(c.source == "store" or c.source == "achievement" or c.source == "daily", true, c.key .. " is sold or a milestone or login streak reward (O378, O409)") eq(ChaosVfx[c.vfx] ~= nil, true, c.key .. " plays a known effect")
 			eq(c.kind == "emote" and #c.say >= 1 and #c.say <= K.EMOTE_MAX or c.say == nil, true, c.key .. " line")
 		end
 	end
