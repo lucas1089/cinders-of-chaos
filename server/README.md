@@ -674,7 +674,7 @@ collision check") and be added here.
 | 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)") |
 | 119 | `combatStats` | `combat_stats.lua`, `combat_stats_core.lua` | `game_skillstats` | client -> server `get`; server -> client `stats {damage?, attack?, defense, armor, mitigation}` (mitigation a share 0 .. 1), at login, after an equip, a level or skill advance or a passive tree change, only when a number changed (see "Combat stat rows of the Skills window") |
 | 121 | `npcTravel` | `npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua` | `game_npctravel` | client -> server `travel {k}` (a key of `npc_travel_config.lua` `npcs`); the answer is a game message (status line, or the reason as a cancel message), see "Travel to an NPC (O330)" |
-| 122 | `survey` | `survey.lua`, `survey_core.lua`, `survey_config.lua` | `game_chaossurvey` | server -> client `open {s, max}` (the stage, level 20 or 50, and the text limit) and `done {s}`; client -> server `answer {s, fun, rec, text}` / `skip {s}`, once per account and stage, see "New player funnel and survey (O374)" |
+| 122 | `survey` | `survey.lua`, `survey_core.lua`, `survey_config.lua` | `game_chaossurvey` | server -> client `open {s, max}` (the stage, level 20 or 50, and the text limit) and `done {s}`; client -> server `answer {s, fun, rec, text, src}` / `skip {s}`, once per account and stage, see "New player funnel and survey (O374)" |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -27609,6 +27609,12 @@ written (`chaos_survey`, unique account + stage) and the window never comes back
 - Storage 7103060 (`survey_config.lua` `storage`, 7103060 - 7103069): bit per stage handled for the account, a cache so a
   login asks the database only while a stage could be due.
 - Opcode 122 (see "Opcode collision check"), table `chaos_survey` (created by the `sql` step or at startup).
+At level 20 the window (400 x 436) also asks "Where did you hear about the game?" (2026-11, promo measurement,
+docs/PROMO.md): Discord, a forum, a server list, YouTube, TikTok / Reels / Shorts, a streamer, a friend, a web search,
+somewhere else. Column `source` (`survey_core.lua` `S.SOURCES`; the client's `surveylogic.lua` `L.SOURCES` has the same
+keys, `tests/survey_test.lua` checks it). A source alone is an answer. An older table gets the column at startup
+(`S.migrateSql`, MariaDB `ADD COLUMN IF NOT EXISTS`). The survey report prints one line per stage:
+"Where did you hear about the game? forum 3, friend 2".
 
 **Report.** `newplayer_report.py survey`: per stage answered / skipped, mean fun and the spread 1-5, recommend yes / no and
 the share, the texts newest first with level and played time (50 in the text, `--texts N` up to 500; the apps ask 100).

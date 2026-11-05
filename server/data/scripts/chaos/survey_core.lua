@@ -8,15 +8,24 @@
 --   S.dueAtAdvance(old, new, mask, cfg)       the highest stage crossed by a level up whose bit is clear, or nil
 --   S.needsLookup(level, mask, cfg)           true when a stage could be due (the login asks the database then)
 --   S.maskFromStages(mask, stages, cfg)       the mask with the bits of the stages the account already has rows for
---   S.parse(action, data, offered, cfg)       the client's answer / skip -> row {stage, status, fun, recommend, confused}, or nil
+--   S.parse(action, data, offered, cfg)       the client's answer / skip -> row {stage, status, fun, recommend, confused, source}, or nil
 --                                             and a reason ("action", "stage", "empty" is no reason: an empty answer is a skip)
 --   S.allowGlobal(state, now, cfg)            true while fewer than cfg.perMinute rows were written in this minute; counts it
---   S.createSql(t) / S.insertSql(t, accountId, row, level, minutes, now, escape)
+--   S.createSql(t) / S.migrateSql(t) / S.insertSql(t, accountId, row, level, minutes, now, escape)
+--   S.SOURCES                                 keys of "Where did you hear about the game?" (stage S.SOURCE_STAGE)
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
 
 ChaosSurveyCore = ChaosSurveyCore or {}
 local S = ChaosSurveyCore
 local floor = math.floor
+
+-- "Where did you hear about the game?" (asked at the first stage only; client surveylogic.lua L.SOURCES, same keys)
+S.SOURCES = {"discord", "forum", "serverlist", "youtube", "shorts", "streamer", "friend", "search", "other"}
+S.SOURCE_STAGE = 20
+local SOURCE_OK = {}
+for _, k in ipairs(S.SOURCES) do
+	SOURCE_OK[k] = true
+end
 
 -- ---------------------------------------------------------------- text
 -- Walks the bytes: keeps ASCII letters 32-126 and well formed 2- and 3-byte sequences (no surrogates, no overlongs);
@@ -143,7 +152,7 @@ function S.maskFromStages(mask, stages, cfg)
 end
 
 -- ---------------------------------------------------------------- the answer
--- data = {s, fun, rec, text}; offered = the stage the server opened the window for this character
+-- data = {s, fun, rec, text, src}; offered = the stage the server opened the window for this character
 function S.parse(action, data, offered, cfg)
 	if action ~= "answer" and action ~= "skip" then
 		return nil, "action"
@@ -152,7 +161,7 @@ function S.parse(action, data, offered, cfg)
 	if not offered or tonumber(data.s) ~= offered or not S.stageIndex(offered, cfg) then
 		return nil, "stage"
 	end
-	local row = {stage = offered, status = "skipped", fun = 0, recommend = -1, confused = ""}
+	local row = {stage = offered, status = "skipped", fun = 0, recommend = -1, confused = "", source = ""}
 	if action == "skip" then
 		return row
 	end
@@ -166,7 +175,10 @@ function S.parse(action, data, offered, cfg)
 		row.recommend = 0
 	end
 	row.confused = S.cleanText(data.text, cfg.textMax)
-	if row.fun > 0 or row.recommend >= 0 or row.confused ~= "" then
+	if offered == S.SOURCE_STAGE and type(data.src) == "string" and SOURCE_OK[data.src] then
+		row.source = data.src
+	end
+	if row.fun > 0 or row.recommend >= 0 or row.confused ~= "" or row.source ~= "" then
 		row.status = "answered"
 	end
 	return row
@@ -190,17 +202,24 @@ function S.createSql(t)
 		"`id` int(10) unsigned NOT NULL AUTO_INCREMENT, `account_id` int(10) unsigned NOT NULL, " ..
 		"`stage` smallint(5) unsigned NOT NULL, `status` varchar(8) NOT NULL, `fun` tinyint(3) NOT NULL DEFAULT 0, " ..
 		"`recommend` tinyint(3) NOT NULL DEFAULT -1, `confused` varchar(200) NOT NULL DEFAULT '', " ..
+		"`source` varchar(16) NOT NULL DEFAULT '', " ..
 		"`level` int(10) unsigned NOT NULL DEFAULT 0, `minutes` int(10) unsigned NOT NULL DEFAULT 0, " ..
 		"`created_at` int(10) unsigned NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `account_stage` (`account_id`, `stage`), " ..
 		"KEY `created_at` (`created_at`)) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+end
+
+-- a table of the first version gets the source column (MariaDB's ADD COLUMN IF NOT EXISTS)
+function S.migrateSql(t)
+	return "ALTER TABLE `" .. t .. "` ADD COLUMN IF NOT EXISTS `source` varchar(16) NOT NULL DEFAULT '' AFTER `confused`"
 end
 
 -- INSERT IGNORE: the unique key (account, stage) keeps the first row (a second character of the account, a race)
 function S.insertSql(t, accountId, row, level, minutes, now, escape)
 	local status = row.status == "answered" and "answered" or "skipped"
 	return string.format("INSERT IGNORE INTO `%s` (`account_id`, `stage`, `status`, `fun`, `recommend`, `confused`, " ..
-		"`level`, `minutes`, `created_at`) VALUES (%d, %d, %s, %d, %d, %s, %d, %d, %d)", t, floor(accountId),
+		"`source`, `level`, `minutes`, `created_at`) VALUES (%d, %d, %s, %d, %d, %s, %s, %d, %d, %d)", t, floor(accountId),
 		floor(row.stage), escape(status), floor(row.fun), floor(row.recommend), escape(row.confused or ""),
+		escape(SOURCE_OK[row.source] and row.source or ""),
 		math.max(0, floor(tonumber(level) or 0)), math.max(0, floor(tonumber(minutes) or 0)), floor(now))
 end
 

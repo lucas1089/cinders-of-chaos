@@ -1427,6 +1427,14 @@ All three are in the menu The World, the sitemap and the SEO descriptions.
   `creators/media_kit_manifest.json` (names, sizes, sha256), checked by `--check` in CI and by the page test against the
   art on disk. The repository has no gameplay screenshots, so the kit has none. All art is original (see "Art").
 
+### Promo kit
+- `python3 -I website/tools/gen_promo_kit.py` writes 24 files under `website/overlay/plugins/chaos/assets/promo/`. CI runs `--check`
+  with the fx venv. Same art as the streamer kit. Texts, the site and the dates: `website/tools/promo_source.json`. An empty date
+  draws no date line.
+  - `post/`: beta and launch squares, 1080x1080, JPEG. `story/`: the beta story, 1080x1920. `classes/`: one card per class line.
+  - `forum/`: banner 728x90 and signature 468x60, PNG.
+- The media kit zip carries them under `social/`. Where each one goes: docs/PROMO.md.
+
 ### Streamer kit
 - Art: `python3 -I website/tools/gen_streamer_kit.py` writes 24 files under `website/overlay/plugins/chaos/assets/streamer/`, and
   `--check` verifies them. CI runs `--check` with the fx venv. The files:

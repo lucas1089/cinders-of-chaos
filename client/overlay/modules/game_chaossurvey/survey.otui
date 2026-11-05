@@ -7,7 +7,7 @@ SurveyChoice < ChaosTabButton
 
 SurveyWindow < ChaosStaticMainWindow
   id: surveyWindow
-  size: 400 380
+  size: 400 436
   !text: tr('A quick survey')
   @onEscape: modules.game_chaossurvey.skip()
 
@@ -88,8 +88,23 @@ SurveyWindow < ChaosStaticMainWindow
     @onClick: modules.game_chaossurvey.chooseRec(false)
 
   ChaosLabel
-    id: status
+    id: sourceLabel
     anchors.top: yesButton.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 12
+    !text: tr('Where did you hear about the game?')
+
+  ChaosComboBox
+    id: sourceCombo
+    anchors.top: sourceLabel.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    size: 220 22
+
+  ChaosLabel
+    id: status
+    anchors.top: sourceCombo.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 10

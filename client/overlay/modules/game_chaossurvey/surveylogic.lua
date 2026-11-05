@@ -7,6 +7,26 @@ local L = SurveyLogic
 L.TEXT_MAX = 200
 L.STAGES = { 20, 50 }
 
+-- "Where did you hear about the game?": asked at L.SOURCE_STAGE only; keys = survey_core.lua S.SOURCES (server test)
+L.SOURCE_STAGE = 20
+L.SOURCES = {
+  { key = 'discord', name = 'Discord' },
+  { key = 'forum', name = 'A forum' },
+  { key = 'serverlist', name = 'A server list' },
+  { key = 'youtube', name = 'YouTube' },
+  { key = 'shorts', name = 'TikTok, Reels or Shorts' },
+  { key = 'streamer', name = 'A streamer' },
+  { key = 'friend', name = 'A friend' },
+  { key = 'search', name = 'A web search' },
+  { key = 'other', name = 'Somewhere else' },
+}
+local SOURCE_OK = {}
+for _, s in ipairs(L.SOURCES) do SOURCE_OK[s.key] = true end
+
+function L.validSource(src)
+  return type(src) == 'string' and SOURCE_OK[src] == true
+end
+
 -- The engine's text edits hold cp1252 (one byte a letter; client_chaos_locale locale_core.lua): the edit's max-length
 -- is the letter limit, and the text is turned into UTF-8 before it is sent (the server keeps UTF-8).
 local CP = { [0x80] = 0x20AC, [0x82] = 0x201A, [0x83] = 0x0192, [0x84] = 0x201E, [0x85] = 0x2026, [0x86] = 0x2020,
@@ -56,9 +76,10 @@ function L.parseOpen(data)
   return { stage = s, max = math.floor(max) }
 end
 
--- the answer the server reads; fun 1..5 or nil, rec true / false / nil
-function L.answer(stage, fun, rec, text, max)
+-- the answer the server reads; fun 1..5 or nil, rec true / false / nil, src a L.SOURCES key or nil
+function L.answer(stage, fun, rec, text, max, src)
   local data = { s = stage }
+  if stage == L.SOURCE_STAGE and L.validSource(src) then data.src = src end
   if type(fun) == 'number' and fun >= 1 and fun <= 5 then data.fun = math.floor(fun) end
   if rec == true or rec == false then data.rec = rec end
   local t = L.toUtf8(L.cut(L.tidy(text), max or L.TEXT_MAX))
@@ -71,8 +92,9 @@ function L.skip(stage)
 end
 
 -- the Send button: something was given
-function L.canSend(fun, rec, text)
+function L.canSend(fun, rec, text, src)
   return (type(fun) == 'number' and fun >= 1 and fun <= 5) or rec == true or rec == false or L.tidy(text) ~= ''
+    or L.validSource(src)
 end
 
 function L.counter(text, max)

@@ -44,4 +44,12 @@ eq(L.canSend(nil, false, ''), true, 'a no')
 eq(L.canSend(nil, nil, 'hi'), true, 'a text')
 eq(L.counter('n\227o', 200), '3/200', 'counter')
 
+-- where did you hear about the game
+eq(L.answer(20, nil, nil, '', nil, 'friend').data.src, 'friend', 'source at level 20')
+eq(L.answer(50, nil, nil, '', nil, 'friend').data.src, nil, 'no source at level 50')
+eq(L.answer(20, nil, nil, '', nil, 'bogus').data.src, nil, 'unknown source left out')
+eq(L.canSend(nil, nil, '', 'forum'), true, 'a source alone')
+eq(L.canSend(nil, nil, '', ''), false, 'the empty choice is nothing')
+eq(#L.SOURCES, 9, 'nine sources')
+
 print('surveylogic_test: ' .. n .. ' checks ok')

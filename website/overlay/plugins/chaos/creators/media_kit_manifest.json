@@ -3,8 +3,8 @@
  "zip": {
   "name": "cinders-of-chaos-media-kit.zip",
   "path": "press/cinders-of-chaos-media-kit.zip",
-  "bytes": 3725182,
-  "sha256": "96d39286a4297a736e4ba1d8caad9e69a6e6484dbd911e7aff4e6542ab460d73"
+  "bytes": 8858165,
+  "sha256": "1bc42da3dbc7e6b51721d64e2ba517522bf45214369619db9749eddac1d03a2e"
  },
  "files": [
   {
@@ -44,18 +44,138 @@
   },
   {
    "name": "fact-sheet.en.txt",
-   "bytes": 1570,
-   "sha256": "406f1766013cf2746eded581056f1f62821eb895b7c84a60b9987cc71714e573"
+   "bytes": 1679,
+   "sha256": "a8b12254e3ba76c8b012f9e163227c86ac81bbc3421d594db83cc16a929dd566"
   },
   {
    "name": "ficha-tecnica.pt-BR.txt",
-   "bytes": 1650,
-   "sha256": "6c5db006a78b3d7d1569cdc273c220de4b34ae8a980ad8ad55b37446a463fbea"
+   "bytes": 1773,
+   "sha256": "c0eb1f1270fdb5fd1e4544317a2235a95907968b7d54c0a4ad2aaa3b6ecdba13"
   },
   {
    "name": "logo.png",
    "bytes": 28134,
    "sha256": "1db25c5019d9bc89e76c4ae0f328d3f3308fd93da35e3786f17d1abfa301a954"
+  },
+  {
+   "name": "social/classes/monk-1080.en.jpg",
+   "bytes": 221762,
+   "sha256": "3c209bd42aed5a4381b4fb9fe8005f35447ca33a195ae28bd35186abb8eac71e"
+  },
+  {
+   "name": "social/classes/monk-1080.pt-BR.jpg",
+   "bytes": 226585,
+   "sha256": "e25b6a0713390190253dc5ceb52ace9fd261a453503018d345307dcca884280f"
+  },
+  {
+   "name": "social/classes/mystic-1080.en.jpg",
+   "bytes": 222901,
+   "sha256": "3d8ac8f8d416aef134190035c702aefc23112616cd4719d922edb479aa0032b1"
+  },
+  {
+   "name": "social/classes/mystic-1080.pt-BR.jpg",
+   "bytes": 227611,
+   "sha256": "a5aa9d2aef8ddd47f5055135974511f0fc593e09803b98f736de3c608ff1c2b4"
+  },
+  {
+   "name": "social/classes/necromancer-1080.en.jpg",
+   "bytes": 233897,
+   "sha256": "722d413defefa1b6f3c2e0feda0098ca34780225858f363a1a8938601556ed8b"
+  },
+  {
+   "name": "social/classes/necromancer-1080.pt-BR.jpg",
+   "bytes": 236920,
+   "sha256": "41688f876e0d3869d26b70b1a598a4f1a629948a8efb6ccde798143f7f5cf5c6"
+  },
+  {
+   "name": "social/classes/ranger-1080.en.jpg",
+   "bytes": 226663,
+   "sha256": "297655c0249af8746ddc83b7bac09a90f569e554eccdd9073ab16ad36056d25e"
+  },
+  {
+   "name": "social/classes/ranger-1080.pt-BR.jpg",
+   "bytes": 231495,
+   "sha256": "f6f348623d779f3dd1196138cbe3890f19ee51f3f60ae8cc826ebce84532f116"
+  },
+  {
+   "name": "social/classes/templar-1080.en.jpg",
+   "bytes": 230935,
+   "sha256": "8fd721d6f78b9e830ade0f0bd3d06aa71c969952b39b673903591ac34a67c0c6"
+  },
+  {
+   "name": "social/classes/templar-1080.pt-BR.jpg",
+   "bytes": 237353,
+   "sha256": "1b7a83a622e7e3698bba13531a7c858d7644430355c0516ee75baaa77bdcf09f"
+  },
+  {
+   "name": "social/classes/thief-1080.en.jpg",
+   "bytes": 220099,
+   "sha256": "d6c7317d02073ef7ff616ba3638b72e0e86088fb878eb14adcaea4b0de66c727"
+  },
+  {
+   "name": "social/classes/thief-1080.pt-BR.jpg",
+   "bytes": 224785,
+   "sha256": "4f3dfef89cc628752a8573b345266839b8884d886f422560ef4b865379c3be0a"
+  },
+  {
+   "name": "social/classes/warrior-1080.en.jpg",
+   "bytes": 230060,
+   "sha256": "0af638ed916d1f4336cbec67b5e316b5a7f9adab4109203eef284dc1131eb66d"
+  },
+  {
+   "name": "social/classes/warrior-1080.pt-BR.jpg",
+   "bytes": 233080,
+   "sha256": "7e09e12292aa112bd5adea974c8fc2e110580d2b1383985cc1997f966eaf4fc0"
+  },
+  {
+   "name": "social/forum/banner-728x90.en.png",
+   "bytes": 33601,
+   "sha256": "3195e91b955dd488e8d837ce60c4b1620420ada60f4bda223b52b28a76c1bf64"
+  },
+  {
+   "name": "social/forum/banner-728x90.pt-BR.png",
+   "bytes": 33591,
+   "sha256": "4947835214a24caf5e6b4aa181174e5943c265d3d9f77ba7a730964bed6dd4d3"
+  },
+  {
+   "name": "social/forum/signature-468x60.en.png",
+   "bytes": 13437,
+   "sha256": "a64f3dab5bd712c792a96020803b42573e16f87030c67000da49cb9559debc2f"
+  },
+  {
+   "name": "social/forum/signature-468x60.pt-BR.png",
+   "bytes": 13403,
+   "sha256": "04a90b4c43c0aeea30e3ca15fed78990bdc876e2d1be09874e87a0fabf924206"
+  },
+  {
+   "name": "social/post/beta-1080.en.jpg",
+   "bytes": 249530,
+   "sha256": "ada63937986cf63f8dea2ba964232f35dd584efc1afc5ac53feecafb8750ff6a"
+  },
+  {
+   "name": "social/post/beta-1080.pt-BR.jpg",
+   "bytes": 255805,
+   "sha256": "f7bfcb59e0d6366adafc2db4358f8b8a063e159dd6e7b307b104c9c936dfe921"
+  },
+  {
+   "name": "social/post/launch-1080.en.jpg",
+   "bytes": 246290,
+   "sha256": "549b04e57ec4db78af44a9f69c890757a62306678f7a96e08bcb824bed8cdeeb"
+  },
+  {
+   "name": "social/post/launch-1080.pt-BR.jpg",
+   "bytes": 255588,
+   "sha256": "0e1f85212317adbb72e6cd2b44af9c1093d65ab0c5c40770937a45d9ef5d2128"
+  },
+  {
+   "name": "social/story/beta-1080x1920.en.jpg",
+   "bytes": 407889,
+   "sha256": "87c5406d5ea01b6a0779666ef6729976738ac44d2e005e9bc267e11fdd5d5938"
+  },
+  {
+   "name": "social/story/beta-1080x1920.pt-BR.jpg",
+   "bytes": 414695,
+   "sha256": "f32c39b8e3c0f484a4846d00807cf595fa3685b1b5707f01c23c0edb9fbbb2c7"
   },
   {
    "name": "streamer/banners/offline.en.png",
