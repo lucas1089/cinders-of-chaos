@@ -57,6 +57,9 @@ namespace Chaos.Client
             windows.Add(new EquipmentWindow());
             windows.Add(new ContainersWindow());
             windows.Add(new SkillsWindow());
+            windows.Add(new BattleListWindow());
+            windows.Add(new MinimapWindow());
+            windows.Add(new HotkeyBarWindow());
         }
 
         static Rect ToolbarRect(float w) => new Rect(w - 104 - 76 * 6, 8, 76 * 6, 30);

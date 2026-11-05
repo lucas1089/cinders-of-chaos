@@ -220,6 +220,7 @@ namespace Chaos.Client
                 foreach (var win in windows)
                     if (win.Hotkey != KeyCode.None && Input.GetKeyDown(win.Hotkey) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
                         win.Open = !win.Open;
+            CombatUpdate();
             HandleWalk();
         }
 
@@ -244,7 +245,7 @@ namespace Chaos.Client
 
         void HandleWalk()
         {
-            if (chatFocused) return;   // typing: the letters go to the chat line
+            if (chatFocused || TextEditing) return;   // typing: the letters go to the chat line
             Dir? d = null;
             bool up = Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.Keypad8);
             bool down = Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.Keypad2);
@@ -389,6 +390,7 @@ namespace Chaos.Client
                     Fill(new Rect(bar.x - 1, bar.y - 1, bar.width + 2, bar.height + 2), new Color(0f, 0f, 0f, 0.85f));
                     Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
                 }
+                DrawAttackFrame(map, scale);
                 GUI.EndGroup();
             }
             StatusPanel(scale);
@@ -467,7 +469,7 @@ namespace Chaos.Client
                 GUI.FocusControl(null);
                 e.Use();
             }
-            else if (enter) { GUI.FocusControl("chatInput"); e.Use(); }
+            else if (enter && !TextEditing) { GUI.FocusControl("chatInput"); e.Use(); }
             else if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && chatFocused) { GUI.FocusControl(null); e.Use(); }
 
             Rect list = new Rect(box.x + 4, box.y + 28, box.width - 8, box.height - 64);
