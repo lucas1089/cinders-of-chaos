@@ -1,0 +1,10 @@
+Module
+  name: game_chaosmusic
+  description: Region music (O408) - a looping track for login, town, hunt, dungeon, boss and arena, picked from where the player is (protection zone, map markers, the HUDs of rifts, dungeons and arenas, the boss tier) and cross-faded on a change; settings in System > Sound
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ musiclogic, chaosmusic ]
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

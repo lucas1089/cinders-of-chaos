@@ -597,3 +597,9 @@ function terminate()
   pois, floors = {}, {}
   handlers = {}
 end
+
+-- the points of interest the client knows ({k, x, y, z, n, r}; read only): game_chaosmusic (O408) picks the town
+-- track near a temple, depot or bank
+function getPois()
+  return pois
+end

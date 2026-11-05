@@ -7,7 +7,7 @@ ChaosSoundCheck < ChaosCheckBox
 
 ChaosSoundWindow < ChaosMainWindow
   id: chaosSoundWindow
-  size: 420 340
+  size: 420 452
   !text: tr('Game Sound')
   @onEscape: modules.game_chaossound.hide()
 
@@ -64,6 +64,47 @@ ChaosSoundWindow < ChaosMainWindow
     anchors.left: volumeLabel.right
     margin-left: 8
     size: 110 22
+
+  // region music (game_chaosmusic, O408): chaossound.lua reads and writes its settings
+  ChaosSoundCheck
+    id: musicEnabled
+    anchors.top: volumeLabel.bottom
+    margin-top: 22
+    !text: tr('Region music')
+    !tooltip: tr('A music track for where you are: town, hunting grounds, dungeons and rifts, boss fights, arenas and the login screen. It changes with a soft cross-fade.')
+
+  ChaosLabel
+    id: musicVolumeLabel
+    anchors.top: musicEnabled.bottom
+    anchors.left: parent.left
+    margin-top: 14
+    width: 120
+    !text: tr('Music volume')
+
+  ChaosLabel
+    id: musicVolumeValue
+    anchors.verticalCenter: musicVolumeLabel.verticalCenter
+    anchors.right: parent.right
+    width: 44
+    text-align: right
+
+  HorizontalScrollBar
+    id: musicVolume
+    anchors.verticalCenter: musicVolumeLabel.verticalCenter
+    anchors.left: musicVolumeLabel.right
+    anchors.right: musicVolumeValue.left
+    margin-left: 8
+    margin-right: 8
+    minimum: 0
+    maximum: 100
+    step: 5
+
+  ChaosSoundCheck
+    id: musicBackground
+    anchors.top: musicVolumeLabel.bottom
+    margin-top: 14
+    !text: tr('Mute the music when the client is not in front')
+    !tooltip: tr('The music fades out while another window has the focus. A minimized client is always silent.')
 
   ChaosLabelDim
     id: savedLabel

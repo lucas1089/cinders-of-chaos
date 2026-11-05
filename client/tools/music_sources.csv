@@ -1,0 +1,7 @@
+file,region,key,bpm,bars,seconds,rms_db,peak_db,recipe,sha256
+music_town,town,F major,72,24,80.000,-20.0,-7.5,5ba2f94900af68c5,3ca4c239b58fb048d2bdac00c6669bec8038e5aadacf96e5296dc1c0784dfff6
+music_hunt,hunt,E phrygian,84,32,91.429,-20.0,-6.5,5ba2f94900af68c5,0107d4a8b3635839c46c7ed77ba71db48a003ea39932a2da4479a2a4c8b933fe
+music_dungeon,dungeon,C (dissonant),64,24,90.000,-20.0,-7.1,5ba2f94900af68c5,1277db5a1829c1a63d1e08399095aa5cf2828c6e6d48564dda195ee5208e0e53
+music_boss,boss,D minor,120,32,64.000,-20.0,-6.4,5ba2f94900af68c5,73abeb26a67bb40a9c76fc47f664bc280e3ec9b5bf1471c4455f189647dc101d
+music_arena,arena,A minor,112,32,68.571,-20.0,-6.8,5ba2f94900af68c5,b7a09188c106c667f88f2a24ae6d072dea2e1e7b5b52cd20c07a4011ed93608d
+music_login,login,D minor,66,24,87.273,-20.0,-7.1,5ba2f94900af68c5,6bcc60ea1fa0343e3eb2269f078217076c9b3a430bd3b6947ccd55a68606f31b

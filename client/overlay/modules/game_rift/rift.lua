@@ -224,3 +224,8 @@ function terminate()
     hud = nil
   end
 end
+
+-- for game_chaosmusic (O408): the HUD shows while the player is in a rift
+function getState()
+  return { hud = hud ~= nil and hud:isVisible() or false }
+end
