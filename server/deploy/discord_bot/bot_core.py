@@ -201,6 +201,42 @@ def in_bugs_channel(channel_id, parent_id, bugs_channel_id):
     return channel_id == bugs_channel_id or (parent_id is not None and parent_id == bugs_channel_id)
 
 
+DISCORD_EPOCH_MS = 1420070400000
+CATCHUP_HOURS = 48      # at start the bot reads the bugs channel back this far at most (missed while it was off)
+CATCHUP_LIMIT = 100     # and at most this many messages per channel or forum post
+LAST_SEEN_KEY = 'bugs_last_message'
+
+
+def snowflake_at(ts):
+    """The smallest Discord id made at unix time ts (for history(after=...))."""
+    return max(0, int(ts * 1000) - DISCORD_EPOCH_MS) << 22
+
+
+def catchup_after(last_seen, now_ts, hours=CATCHUP_HOURS):
+    """The id to read the bugs channel after at start: the last message the bot handled, never older than `hours`."""
+    floor = snowflake_at(now_ts - hours * 3600)
+    try:
+        last = int(last_seen or 0)
+    except (TypeError, ValueError):
+        last = 0
+    return max(last, floor)
+
+
+def note_seen(store, message_id):
+    """Remember the newest bugs channel message handled (any outcome), so a restart does not read it again."""
+    try:
+        cur = int(store.meta_get(LAST_SEEN_KEY, 0) or 0)
+    except (TypeError, ValueError):
+        cur = 0
+    if int(message_id) > cur:
+        store.meta_set(LAST_SEEN_KEY, int(message_id))
+
+
+def already_handled(store, message_id):
+    """A message the bot answered before (its report is stored)."""
+    return store.db.execute('SELECT 1 FROM reports WHERE message_id=?', (int(message_id),)).fetchone() is not None
+
+
 # What the bot needs in each channel (README step 7). Names are discord.Permissions attributes.
 PERM_LABEL = {
     'view_channel': 'Ver canal',

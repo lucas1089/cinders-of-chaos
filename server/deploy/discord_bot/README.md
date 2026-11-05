@@ -15,6 +15,10 @@ No canal de bugs o bot lê toda mensagem, inclusive prints anexados. O Claude v�
 | Bug crítico | Manda DM para você na hora. Vale para crash, exploit e perda de item |
 | Sugestão ou conversa | Não faz nada. O bot fica em silêncio |
 
+Ao iniciar, o bot lê o que foi postado no canal de bugs enquanto ele estava desligado. Lê até 48 horas para trás e até
+100 mensagens por canal ou post do fórum. O que ele já respondeu fica de fora. Os **Logs** mostram
+`catch-up: N message(s) read`.
+
 Todo dia às 09:00 de São Paulo você recebe um resumo por DM.
 
 O bot também entrega por DM os relatórios do servidor. Hoje: o relatório de equilíbrio da season (Painel > Relatório de
@@ -185,7 +189,7 @@ Mensagens curtas demais e sem print não chamam o Claude. Cada `/patch gerar` e 
 
 | Sintoma | O que fazer |
 |---|---|
-| O bot está online e ignora as mensagens | Veja **Logs** logo depois de **Reiniciar**. Ao iniciar, o bot confere os dois canais e escreve uma linha por canal: `bugs channel ...9494: text, ok` ou o que falta. Se algo falta, ele também manda DM. Confira também **Message Content Intent** na aba Bot |
+| O bot está online e ignora as mensagens | Veja **Logs** logo depois de **Reiniciar**. Ao iniciar, o bot confere os dois canais e escreve uma linha por canal: `bugs channel ...9494: text, ok` ou o que falta. Se algo falta, ele também manda DM. Confira também **Message Content Intent** na aba Bot. Uma linha `message in channel X ignored: the bugs channel is Y` quer dizer que o id salvo não é o do canal: salve X em `DISCORD_BUGS_CHANNEL_ID`. Sem nenhuma linha `ready as bot id` o bot nem conectou: veja o erro logo acima |
 | Salvei um ajuste e nada mudou | Desde 2026-11-03, **Guardar ajuste** reinicia o bot sozinho quando ele está rodando. Antes era preciso clicar em **Reiniciar** |
 | Os comandos não aparecem | Salve `DISCORD_GUILD_ID`, reinicie e confira o convite com `applications.commands`. Sem o id do servidor pode levar uma hora |
 | `403 Forbidden (error code: 50001): Missing Access` ao iniciar | O bot não está no servidor de `DISCORD_GUILD_ID`, ou foi convidado sem `applications.commands`, ou o id não é de servidor. Convide de novo com o link da seção 1 (pode convidar por cima). Para o id: modo desenvolvedor ligado, clique direito no nome do servidor > Copiar ID do servidor, e salve com **Guardar ajuste**. Depois **Reiniciar**. Desde 2026-10-31 o bot segue rodando sem os comandos e explica isso nos **Logs** |

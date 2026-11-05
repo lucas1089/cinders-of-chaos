@@ -215,6 +215,10 @@ class BugBot(discord.Client):
                 await self.check_channels()
             except Exception as e:
                 log.error('channel check failed: %s', type(e).__name__)
+            try:
+                await self.catch_up()
+            except Exception as e:
+                log.error('catch-up failed: %s', type(e).__name__)
 
     async def check_channels(self):
         """At start: can the bot see the bugs and patch channels, with the permissions it needs? Logs one line per
@@ -306,6 +310,37 @@ class BugBot(discord.Client):
             await asyncio.sleep(60)
 
     # ---- the bugs channel
+    async def catch_up(self):
+        """At start: read what was posted in the bugs channel while the bot was off (at most CATCHUP_HOURS back,
+        CATCHUP_LIMIT messages per channel or forum post). Messages answered before are skipped."""
+        cid = self.cfg.bugs_channel_id
+        if not cid:
+            return
+        ch = self.get_channel(cid) or await self.fetch_channel(cid)
+        after = core.catchup_after(self.store.meta_get(core.LAST_SEEN_KEY, 0), time.time())
+        sources = []
+        if isinstance(ch, discord.ForumChannel):
+            threads = list(ch.threads)
+            try:
+                threads += [th async for th in ch.archived_threads(limit=50)]
+            except discord.HTTPException as e:
+                log.info('catch-up: archived posts not readable (%s)', type(e).__name__)
+            seen = set()
+            for th in threads:
+                if th.id not in seen and (th.last_message_id or th.id) > after:
+                    seen.add(th.id)
+                    sources.append(th)
+        else:
+            sources.append(ch)
+        done = 0
+        for src in sources:
+            async for m in src.history(after=discord.Object(id=after), oldest_first=True, limit=core.CATCHUP_LIMIT):
+                if m.author.bot or core.already_handled(self.store, m.id):
+                    continue
+                await self.handle_report(m)
+                done += 1
+        log.info('catch-up: %d message(s) read from the bugs channel since id %s', done, after)
+
     async def on_message(self, m):
         if m.author.bot:
             return
@@ -319,6 +354,12 @@ class BugBot(discord.Client):
                 log.info('message in channel %s%s ignored: the bugs channel is %s', m.channel.id,
                          ' (thread of %s)' % parent if parent else '', self.cfg.bugs_channel_id or 'not set')
             return
+        await self.handle_report(m)
+
+    async def handle_report(self, m):
+        """One message of the bugs channel (live or read back at start)."""
+        thread = m.channel if isinstance(m.channel, discord.Thread) else None
+        core.note_seen(self.store, m.id)
         # a forum post: the starter message has the thread's id; its title goes in front of the text
         text = core.report_text(m.content, thread.name if thread else None, bool(thread) and m.id == thread.id)
         idx = core.pick_images([(a.filename, a.content_type, a.size) for a in m.attachments])
