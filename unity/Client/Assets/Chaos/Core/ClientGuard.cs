@@ -46,5 +46,21 @@ namespace Chaos.Core
         }
 
         public static string Hello(ushort build) => "{\"action\":\"hello\",\"data\":{\"build\":" + build + ",\"modules\":99}}";
+
+        /// <summary>A key as the server's CHAOS_CLIENT_KEY holds it: 64 hex digits (a "OLD,NEW" list: the last one).
+        /// Null when the text is not such a key.</summary>
+        public static byte[] ParseKey(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return null;
+            string[] parts = text.Trim().Trim('"').Split(',');
+            string hex = parts[parts.Length - 1].Trim();
+            if (hex.Length != 64) return null;
+            var b = new byte[32];
+            for (int i = 0; i < 32; i++)
+            {
+                if (!byte.TryParse(hex.Substring(2 * i, 2), System.Globalization.NumberStyles.HexNumber, null, out b[i])) return null;
+            }
+            return b;
+        }
     }
 }

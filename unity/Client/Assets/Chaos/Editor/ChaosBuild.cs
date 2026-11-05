@@ -2,8 +2,9 @@
 //   Unity -batchmode -quit -projectPath unity/Client -executeMethod Chaos.Client.Editor.ChaosBuild.Build
 //         -buildTarget StandaloneWindows64|StandaloneLinux64|Android -customBuildPath OUT
 // The scene is made here (one empty scene; ChaosApp builds everything from code at start).
-// The client guard key goes into the build only when CHAOS_EMBED_CLIENT_KEY=1 and CHAOS_CLIENT_KEY is set; the file
-// is deleted again after the build and is git-ignored (Assets/Chaos/Generated).
+// The client guard key goes into the build only when CHAOS_EMBED_CLIENT_KEY=1 and CHAOS_CLIENT_KEY is set (or a CI step
+// wrote Generated/Resources/chaos_client_key.txt on the owner's opt-in); the file is deleted after the build and is
+// git-ignored (Assets/Chaos/Generated).
 using System;
 using System.IO;
 using UnityEditor;
@@ -18,6 +19,8 @@ namespace Chaos.Client.Editor
         const string Generated = "Assets/Chaos/Generated";
         const string ScenePath = Generated + "/Main.unity";
         const string KeyPath = Generated + "/Resources/chaos_client_key.txt";
+        const string RsaPath = Generated + "/Resources/chaos_rsa.txt";      // public: the server's RSA modulus
+        const string BuildPath = Generated + "/Resources/chaos_build.txt";  // the client build the guard expects
 
         static string Arg(string name, string fallback)
         {
@@ -25,6 +28,11 @@ namespace Chaos.Client.Editor
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == name) return args[i + 1];
             return fallback;
+        }
+
+        static void WriteIfSet(string path, string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value)) File.WriteAllText(path, value.Trim());
         }
 
         public static void Build()
@@ -35,8 +43,11 @@ namespace Chaos.Client.Editor
 
             string key = Environment.GetEnvironmentVariable("CHAOS_CLIENT_KEY");
             bool embed = Environment.GetEnvironmentVariable("CHAOS_EMBED_CLIENT_KEY") == "1" && !string.IsNullOrEmpty(key);
+            // files a CI step wrote before the build (the container may not pass the environment on) stay as they are
             if (embed) File.WriteAllText(KeyPath, key.Trim());
-            else if (File.Exists(KeyPath)) File.Delete(KeyPath);
+            WriteIfSet(RsaPath, Environment.GetEnvironmentVariable("CHAOS_RSA_PUBLIC"));
+            WriteIfSet(BuildPath, Environment.GetEnvironmentVariable("CHAOS_CLIENT_BUILD"));
+            embed = File.Exists(KeyPath);
             AssetDatabase.Refresh();
 
             var target = EditorUserBuildSettings.activeBuildTarget;

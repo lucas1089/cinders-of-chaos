@@ -273,6 +273,11 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 - **Client engine (OTClient family)**
   - Author: the OTClient contributors
   - Licence: open source, the base tree's LICENSE file ships with the client
+- **Unity**
+  - Author: Unity Technologies
+  - Licence: Unity Software Additional Terms (Personal or Pro licence of the builder)
+  - Used for: the engine of the Unity prototype client (unity/), built only on request, not shipped to players
+  - Source: https://unity.com
 - **xBRZ 1.8**
   - Author: Zenju
   - Licence: GPL-3.0

@@ -34,13 +34,17 @@ namespace Chaos.Core
         public bool Fluid, Splash, NotWalkable, NotMoveable, BlockMissile, BlockPath, Pickupable, Hangable;
         public bool HookSouth, HookEast, Rotateable, DontHide, Translucent, Lying, AnimateAlways, FullGround;
         public bool IgnoreLook, Usable, TopEffect, NoMoveAnimation;
+        public int MarketCategory = -1;
         public int GroundSpeed, LightLevel, LightColor, DisplacementX, DisplacementY, Elevation, MinimapColor;
         public FrameGroup[] Groups;
 
         public FrameGroup Idle => Groups[0];
         public FrameGroup Moving => Groups.Length > 1 ? Groups[1] : Groups[0];
+        public const int QuiverCategory = 25;   // client base patch 0174: quivers carry a count, by market category
         /// <summary>The server sends a count / fluid byte after the id of these items.</summary>
-        public bool HasSubType => Stackable || Fluid || Splash;
+        public bool HasSubType => Stackable || Fluid || Splash || MarketCategory == QuiverCategory;
+        /// <summary>The server sends a phase byte after these items (the dat has more than one phase).</summary>
+        public bool HasPhaseByte => Groups[0].Phases > 1;
     }
 
     public sealed class DatOptions
@@ -169,7 +173,7 @@ namespace Chaos.Core
                     case 32: t.IgnoreLook = true; break;
                     case 33: r.U16(); break;                      // cloth slot
                     case 34:                                      // market
-                        r.U16(); r.U16(); r.U16(); r.Str(); r.U16(); r.U16();
+                        t.MarketCategory = r.U16(); r.U16(); r.U16(); r.Str(); r.U16(); r.U16();
                         break;
                     case 35: r.U16(); break;                      // default action
                     case 36: case 37: break;                      // wrappable, unwrappable

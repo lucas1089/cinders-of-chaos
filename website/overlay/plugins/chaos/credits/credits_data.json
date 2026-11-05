@@ -359,6 +359,13 @@
      "licence": "open source, the base tree's LICENSE file ships with the client"
     },
     {
+     "name": "Unity",
+     "author": "Unity Technologies",
+     "licence": "Unity Software Additional Terms (Personal or Pro licence of the builder)",
+     "use": "the engine of the Unity prototype client (unity/), built only on request, not shipped to players",
+     "source": "https://unity.com"
+    },
+    {
      "name": "xBRZ 1.8",
      "author": "Zenju",
      "licence": "GPL-3.0",

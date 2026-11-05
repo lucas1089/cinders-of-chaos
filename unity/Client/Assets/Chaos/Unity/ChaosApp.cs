@@ -23,7 +23,6 @@ namespace Chaos.Client
         MapView view;
         Camera cam;
         Vector2 charScroll;
-        double walkReady;
         readonly List<string> log = new List<string>();
         GUIStyle small, nameStyle;
 
@@ -86,17 +85,33 @@ namespace Chaos.Client
 
         static byte[] GuardKey()
         {
-            // runtime only, never built in: the environment, else a client_key.txt (hex) beside the pair, else the dev key
-            string hex = Environment.GetEnvironmentVariable("CHAOS_CLIENT_KEY");
-            if (string.IsNullOrEmpty(hex))
+            // the environment, else a key the build embedded on purpose (CHAOS_EMBED_CLIENT_KEY=1), else the dev key
+            var key = ClientGuard.ParseKey(Environment.GetEnvironmentVariable("CHAOS_CLIENT_KEY"));
+            if (key == null)
             {
-                var key = Resources.Load<TextAsset>("chaos_client_key");
-                if (key != null) hex = key.text.Trim();
+                var asset = Resources.Load<TextAsset>("chaos_client_key");
+                if (asset != null) key = ClientGuard.ParseKey(asset.text);
             }
-            if (string.IsNullOrEmpty(hex)) return ClientGuard.DevKey;
-            var b = new byte[hex.Length / 2];
-            for (int i = 0; i < b.Length; i++) b[i] = Convert.ToByte(hex.Substring(2 * i, 2), 16);
-            return b;
+            return key ?? ClientGuard.DevKey;
+        }
+
+        static string RsaModulus()
+        {
+            // the server's public key: the environment, else the one the build baked in (CHAOS_RSA_PUBLIC), else the open one
+            string m = Environment.GetEnvironmentVariable("CHAOS_RSA_PUBLIC");
+            if (string.IsNullOrWhiteSpace(m))
+            {
+                var asset = Resources.Load<TextAsset>("chaos_rsa");
+                if (asset != null) m = asset.text;
+            }
+            m = (m ?? "").Trim();
+            return m.Length > 0 && System.Text.RegularExpressions.Regex.IsMatch(m, "^[0-9]+$") ? m : Protocol.OpenRsaModulus;
+        }
+
+        static ushort ClientBuild()
+        {
+            var asset = Resources.Load<TextAsset>("chaos_build");
+            return asset != null && ushort.TryParse(asset.text.Trim(), out var b) ? b : (ushort)30;
         }
 
         async void DoLogin()
@@ -109,7 +124,7 @@ namespace Chaos.Client
             status = "Connecting...";
             try
             {
-                login = await LoginClient.Login(host, int.Parse(port), account, password);
+                login = await LoginClient.Login(host, int.Parse(port), account, password, RsaModulus(), ClientBuild());
                 if (login.Error != null) { status = login.Error; return; }
                 status = "";
                 screen = Screen.Characters;
@@ -132,7 +147,8 @@ namespace Chaos.Client
                 SessionKey = login.SessionKey,
                 Character = ch.Name,
                 GuardKey = GuardKey(),
-                Build = 1,
+                Build = ClientBuild(),
+                RsaModulus = RsaModulus(),
             });
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
             session.Start();
@@ -200,8 +216,7 @@ namespace Chaos.Client
                     };
                 }
             }
-            if (d == null || session.Now < walkReady) return;
-            walkReady = session.Now + session.Walk(d.Value);
+            if (d != null) session.Walk(d.Value);
         }
 
         void OnGUI()

@@ -1,0 +1,115 @@
+# Unity prototype client (unity/README.md, ROADMAP O405).
+#
+# core: the pure C# core (protocol, map, dat/spr readers) built and tested with the .NET SDK on every push and pull
+#   request that touches unity/. No Unity needed.
+# build: MANUAL ONLY (workflow_dispatch). The Unity editor in a container (game-ci). Needs the repository secrets
+#   UNITY_LICENSE (the .ulf file text), UNITY_EMAIL and UNITY_PASSWORD; without them the job says so and stops green.
+#   The server's RSA modulus comes from the secret CHAOS_RSA_PUBLIC (public data, baked in). The client guard key goes in
+#   only when the input embed_client_key is true AND the secret CHAOS_CLIENT_KEY is set: this repository is public and a
+#   build artifact can be downloaded by anyone with access to the run, so the default build answers with the dev key.
+name: Unity prototype
+
+on:
+  push:
+    branches: [main]
+    paths: ["unity/**", ".github/workflows/unity-prototype.yml"]
+  pull_request:
+    paths: ["unity/**", ".github/workflows/unity-prototype.yml"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Unity build target"
+        type: choice
+        options: [StandaloneWindows64, StandaloneLinux64, Android]
+        default: StandaloneWindows64
+      embed_client_key:
+        description: "Embed CHAOS_CLIENT_KEY in the build (private use only; default: dev key)"
+        type: boolean
+        default: false
+      client_build:
+        description: "Client build number the guard expects"
+        required: false
+        default: "30"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unity-prototype-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Core tests
+        working-directory: unity/Core.Tests
+        run: dotnet run -c Release
+
+  build:
+    if: github.event_name == 'workflow_dispatch'
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Unity license present?
+        id: lic
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [ -z "$UNITY_LICENSE" ]; then
+            echo "::warning::No UNITY_LICENSE secret: the Unity build is skipped (unity/README.md 'Build in GitHub Actions')."
+            echo "ok=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=1" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.lic.outputs.ok == '1'
+      - uses: actions/cache@v4
+        if: steps.lic.outputs.ok == '1'
+        with:
+          path: unity/Client/Library
+          key: unity-library-${{ inputs.target }}-${{ hashFiles('unity/Client/Packages/manifest.json', 'unity/Client/ProjectSettings/ProjectVersion.txt') }}
+      - name: Bake server data into Resources
+        if: steps.lic.outputs.ok == '1'
+        env:
+          CHAOS_RSA_PUBLIC: ${{ secrets.CHAOS_RSA_PUBLIC }}
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+          CLIENT_BUILD: ${{ inputs.client_build }}
+          EMBED: ${{ inputs.embed_client_key }}
+        run: |
+          res=unity/Client/Assets/Chaos/Generated/Resources
+          mkdir -p "$res"
+          case "$CLIENT_BUILD" in ''|*[!0-9]*) echo "client_build must be a number"; exit 1;; esac
+          printf '%s' "$CLIENT_BUILD" > "$res/chaos_build.txt"
+          if [ -n "$CHAOS_RSA_PUBLIC" ]; then printf '%s' "$CHAOS_RSA_PUBLIC" > "$res/chaos_rsa.txt"
+          else echo "::warning::No CHAOS_RSA_PUBLIC secret: the build uses the open RSA key and cannot log in to the live server."; fi
+          if [ "$EMBED" = "true" ]; then
+            if [ -z "$CHAOS_CLIENT_KEY" ]; then echo "embed_client_key: no CHAOS_CLIENT_KEY secret"; exit 1; fi
+            printf '%s' "$CHAOS_CLIENT_KEY" > "$res/chaos_client_key.txt"
+            echo "::warning::The client guard key is inside this build: do not share the artifact."
+          fi
+      - name: Build
+        if: steps.lic.outputs.ok == '1'
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity/Client
+          targetPlatform: ${{ inputs.target }}
+          buildMethod: Chaos.Client.Editor.ChaosBuild.Build
+          buildName: ChaosUnity
+          allowDirtyBuild: true
+      - uses: actions/upload-artifact@v4
+        if: steps.lic.outputs.ok == '1'
+        with:
+          name: chaos-unity-${{ inputs.target }}
+          path: build/${{ inputs.target }}
+          retention-days: 7

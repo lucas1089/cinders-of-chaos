@@ -86,7 +86,7 @@ namespace Chaos.Core.Tests
             Check(threw, "reading past the end throws");
         }
 
-        static byte[] SyntheticDat()
+        internal static byte[] SyntheticDat()
         {
             var w = new ByteWriter().U32(0x42a3).U16(101).U16(1).U16(1).U16(1);
             // item 100: ground speed 150, 1x1, one sprite (id 7)

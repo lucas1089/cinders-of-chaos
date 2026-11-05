@@ -99,6 +99,7 @@ ChaosCreditsData = {
     entries = {
       { name = "Server engine (TFS 1.4.2 fork)", author = "The Forgotten Server contributors", licence = "GPL-2.0, the base tree's LICENSE file" },
       { name = "Client engine (OTClient family)", author = "the OTClient contributors", licence = "open source, the base tree's LICENSE file ships with the client" },
+      { name = "Unity", author = "Unity Technologies", licence = "Unity Software Additional Terms (Personal or Pro licence of the builder)", use = "the engine of the Unity prototype client (unity/), built only on request, not shipped to players", source = "https://unity.com" },
       { name = "xBRZ 1.8", author = "Zenju", licence = "GPL-3.0", use = "HD sprite upscaling in the client", source = "https://sourceforge.net/projects/xbrz/" },
       { name = "eframe and egui", author = "Emil Ernerfeldt, Rerun and the egui contributors", licence = "MIT or Apache-2.0", use = "the window of the desktop admin app and of the game launcher (with their dependencies, each under its own permissive licence in the crate's metadata)", source = "https://github.com/emilk/egui" },
       { name = "serde_json", author = "David Tolnay and the serde contributors", licence = "MIT or Apache-2.0", use = "JSON in the desktop admin app and the game launcher", source = "https://github.com/serde-rs/json" },
