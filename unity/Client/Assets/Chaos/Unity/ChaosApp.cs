@@ -407,7 +407,7 @@ namespace Chaos.Client
             if (GUI.Button(outR, "Log out")) { session?.Logout(); Leave("Logged out."); }
         }
 
-        static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);
+        public static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);
         static Rect Scaled(Rect r, float s) => new Rect(r.x * s, r.y * s, r.width * s, r.height * s);
 
         static Rect StatusRect() => new Rect(8, 8, 240, 78);

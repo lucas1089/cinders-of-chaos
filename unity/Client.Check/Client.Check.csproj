@@ -1,0 +1,18 @@
+<!-- Compiles the Unity scripts (Core and Unity, not Editor) against the engine's reference assemblies from NuGet,
+     so a C# error shows on every PR without a Unity license. A 2021.3 API set: close to 2022.3 for what the
+     prototype uses. Run: cd unity/Client.Check && dotnet build -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0618;CS0649;CS0414</NoWarn>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Client/Assets/Chaos/Core/**/*.cs" />
+    <Compile Include="../Client/Assets/Chaos/Unity/**/*.cs" />
+    <PackageReference Include="UnityEngine.Modules" Version="2021.3.33" />
+  </ItemGroup>
+</Project>

@@ -29,6 +29,8 @@ It does not replace the client in `client/`.
     - `SpriteAtlas.cs` is a 4096x4096 atlas of 32 px cells.
   - `Assets/Chaos/Editor/ChaosBuild.cs` is the batch build.
 - `Core.Tests/` is a .NET 8 console project. It compiles `Core/` and runs the checks.
+- `Client.Check/` compiles the Unity scripts (`Core/` and `Unity/`) against the engine's reference assemblies from NuGet,
+  so a C# error shows on every PR without a Unity license: `cd unity/Client.Check && dotnet build`.
 
 ## Tests
 
