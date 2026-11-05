@@ -1,0 +1,13 @@
+Module
+  name: game_groupqueue
+  description: Group Queue - join the arena, the battleground and a dungeon at once, the party ready check popup, the raid ready check (extended opcode 160)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ gqview, groupqueue ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1006
+  @onLoad: init()
+  @onUnload: terminate()
