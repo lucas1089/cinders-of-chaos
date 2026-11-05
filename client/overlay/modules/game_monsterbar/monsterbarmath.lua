@@ -95,7 +95,7 @@ function M.screenLimits(root, rect)
   if lp then limits.left = math.max(limits.left, lp.x + lp.width) end
   local rp = rect('gameRightPanels')
   if rp then limits.right = math.min(limits.right, rp.x) end
-  for _, id in ipairs({ 'bottomSplitter', 'gameBottomActionPanel', 'gameBottomPanel' }) do
+  for _, id in ipairs({ 'bottomSplitter', 'gameBottomActionPanel', 'gameBottomPanel', 'chaosHotbar' }) do
     local b = rect(id)
     if b and b.y > root.y + root.height / 2 then limits.bottom = math.min(limits.bottom, b.y) end
   end

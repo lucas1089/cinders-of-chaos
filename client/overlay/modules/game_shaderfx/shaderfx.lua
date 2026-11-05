@@ -17,6 +17,8 @@ local orbs -- {health = widget, mana = widget} while the orbs exist
 local orbsFit = true -- game_chatpanel: false when the window leaves no room for them beside the chat
 local options = { shine = true, orbs = false, orbSize = L.ORB_DEFAULT_SIZE }
 local orbState = {} -- 'health' / 'mana' -> {fill, slosh}
+local suppressed = false -- docked mode with the globes off: no orbs at all, whatever the liquid option says
+local dock = nil -- {diameter} while the orbs are docked in the central hotbar (game_hotbar, O414)
 local sloshEvent
 local SLOSH_TICK = 50
 local registered = false
@@ -107,8 +109,15 @@ local function paintOrb(kind)
   local st = orbState[kind]
   if not w or not st then return end
   local liquid = w:getChildById('liquid')
-  if liquid and hasUiShaders(liquid) then
+  if liquid and hasUiShaders(liquid) and liquid:getUiShader() == 'chaos_ui_orb' then
     liquid:setUiShaderParams(L.orbParams(st.fill, st.slosh, kind == 'health' and 0.13 or 0.71))
+  elseif liquid and w.sfxPlain then
+    -- a plain globe (liquid orbs off, or no ui shaders): the mask cut to the fill from the bottom
+    local _, liquidSize = L.orbSize(options.orbSize)
+    if dock then liquidSize = select(2, L.dockedSize(dock.diameter)) end
+    local clip, height = L.plainClip(st.fill, liquidSize * 2, liquidSize)
+    pcall(liquid.setImageClip, liquid, clip)
+    liquid:setHeight(math.max(1, height))
   end
 end
 
@@ -160,6 +169,7 @@ end
 local function applyOrbSize()
   local size, liquidSize, font = L.orbSize(options.orbSize)
   local ringImage, maskImage = L.orbArt(options.orbSize)
+  if dock then size, liquidSize, font, ringImage, maskImage = L.dockedSize(dock.diameter) end
   for _, kind in ipairs({ 'health', 'mana' }) do
     local w = orbWidget(kind)
     if w then
@@ -168,6 +178,15 @@ local function applyOrbSize()
       if liquid then
         liquid:setSize({ width = liquidSize, height = liquidSize })
         liquid:setImageSource(maskImage)
+        if w.sfxPlain then
+          -- the fill grows from the bottom of the opening: anchored there, not in the middle
+          liquid:breakAnchors()
+          liquid:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+          liquid:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+          liquid:setMarginBottom(math.floor((size - liquidSize) / 2))
+          local st = orbState[kind]
+          if st then paintOrb(kind) end
+        end
       end
       local ring = w:getChildById('ring')
       if ring then ring:setImageSource(ringImage) end
@@ -182,6 +201,26 @@ end
 -- (mobile) or game_chatpanel: the bottom corners of the root panel.
 local function placeOrbs()
   if not orbs then return end
+  if dock then
+    -- docked in the hotbar's end caps: left and right of its frame (the frame is a sibling in the root panel)
+    for _, kind in ipairs({ 'health', 'mana' }) do
+      local w = orbWidget(kind)
+      if w then
+        w:breakAnchors()
+        w:addAnchor(AnchorBottom, 'chaosHotbar', AnchorBottom)
+        w:setMarginBottom(0)
+        if kind == 'health' then
+          w:addAnchor(AnchorLeft, 'chaosHotbar', AnchorLeft)
+          w:setMarginLeft(3)
+        else
+          w:addAnchor(AnchorRight, 'chaosHotbar', AnchorRight)
+          w:setMarginRight(3)
+        end
+        w:raise()
+      end
+    end
+    return
+  end
   local gi = modules.game_interface
   local root = gi and gi.getRootPanel and gi.getRootPanel()
   local splitter = root and root:getChildById('bottomSplitter')
@@ -219,7 +258,7 @@ end
 
 -- game_chatpanel: the room the orbs take beside the chat (0 while they are off)
 function getOrbReserve()
-  if not options.orbs then return 0 end
+  if dock or not options.orbs then return 0 end
   return (L.orbSize(options.orbSize))
 end
 
@@ -261,8 +300,10 @@ local function createOrbs()
     local liquid = w and w:getChildById('liquid')
     if liquid then
       liquid:setImageColor(color)
-      if hasUiShaders(liquid) then
+      if options.orbs and hasUiShaders(liquid) then
         liquid:setUiShader('chaos_ui_orb')
+      elseif w then
+        w.sfxPlain = true -- liquid orbs off (or no ui shaders): a plain globe, cut to the fill (paintOrb)
       end
     end
   end
@@ -272,8 +313,24 @@ local function createOrbs()
 end
 
 local function applyOrbs()
-  if options.orbs then createOrbs() else destroyOrbs() end
+  if (options.orbs and not suppressed) or dock then createOrbs() else destroyOrbs() end
   relayoutChat() -- the chat makes room for the orbs (or takes it back)
+end
+
+-- game_hotbar: dock the orbs into the hotbar's end caps (diameter in pixels) or give them back (nil). Without the
+-- liquid orbs option the docked globes are plain filled discs. suppress: the player turned the globes off, so no orbs
+-- are drawn beside the splitter either.
+function setOrbDock(diameter, suppress)
+  local wanted = tonumber(diameter) and { diameter = tonumber(diameter) } or nil
+  local changed = (wanted == nil) ~= (dock == nil) or (suppress == true) ~= suppressed
+  dock = wanted
+  suppressed = suppress == true
+  if changed then destroyOrbs() end
+  applyOrbs()
+  if orbs then
+    applyOrbSize()
+    placeOrbs()
+  end
 end
 
 -- ---------------------------------------------------------------- options (client_settings, base patch 0044)
@@ -283,6 +340,7 @@ function onOption(which, value)
     if g_game.isOnline() then refreshFrames() end
   elseif which == 'orbs' then
     options.orbs = value == true
+    destroyOrbs() -- rebuilt as liquid or plain (a docked globe stays)
     applyOrbs()
   elseif which == 'orbSize' then
     options.orbSize = tonumber(value) or L.ORB_DEFAULT_SIZE

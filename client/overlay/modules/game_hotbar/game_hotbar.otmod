@@ -1,0 +1,11 @@
+Module
+  name: game_hotbar
+  description: The central hotbar of the action bar layout (O414). The first action bar of game_actionbar in one ornate bar with a big cooldown number and a key box per slot, two round side sockets, an event line, the health and mana globes docked into the end caps (option), scale, slot count and place per character; the layout options window
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 970
+  dependencies: [ client_chaos_theme, game_interface, game_actionbar, game_shaderfx, game_chatpanel, game_floatchat ]
+  scripts: [ hotbar_logic, hotbar_options, hotbar ]
+  @onLoad: ChaosHotbar.init()
+  @onUnload: ChaosHotbar.terminate()

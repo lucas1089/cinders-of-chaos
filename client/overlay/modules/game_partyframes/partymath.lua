@@ -88,6 +88,24 @@ function PartyMath.freeArea(rect, win, sides, bottoms)
   return { x = x1, y = y1, width = math.max(0, x2 - x1), height = math.max(0, y2 - y1) }
 end
 
+-- The default spot like defaultPosition, but clear of `avoid` {x, y, width, height} (the central hotbar, game_hotbar,
+-- which is not one of the bottom panels): when the spot would sit on it, the bar counts as a bottom panel and the
+-- frames sit above it. rect, win, sides, bottoms as freeArea; (px, py) the parent's corner.
+function PartyMath.defaultAvoiding(rect, win, sides, bottoms, w, h, avoid, px, py)
+  local free = PartyMath.freeArea(rect, win, sides, bottoms)
+  local x, y = PartyMath.defaultPosition(free, w, h, px, py)
+  if avoid and avoid.width > 0 and avoid.height > 0 then
+    local sx, sy = x + (px or 0), y + (py or 0)
+    if sx < avoid.x + avoid.width and avoid.x < sx + w and sy < avoid.y + avoid.height and avoid.y < sy + h then
+      local list = {}
+      for _, r in ipairs(bottoms or {}) do list[#list + 1] = r end
+      list[#list + 1] = avoid
+      x, y = PartyMath.defaultPosition(PartyMath.freeArea(rect, win, sides, list), w, h, px, py)
+    end
+  end
+  return x, y
+end
+
 function PartyMath.stepScale(scale, dir)
   return clamp((scale or 100) + dir * PartyMath.SCALE_STEP, PartyMath.SCALE_MIN, PartyMath.SCALE_MAX)
 end

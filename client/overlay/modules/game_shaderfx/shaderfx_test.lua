@@ -141,6 +141,26 @@ do
   end
 end
 
+-- globes docked into the hotbar: any diameter, the nearest art
+do
+  local d, liquid, font, ring, mask = L.dockedSize(110)
+  eq(d, 110, 'docked size is the asked diameter'); eq(liquid, 72, 'docked liquid keeps the ring proportion')
+  eq(ring, L.ORB_IMAGES .. 'orb_ring_76', 'docked 110 is nearer the 76 art'); eq((select(4, L.dockedSize(138))), L.ORB_IMAGES .. 'orb_ring_150', 'docked 138 uses the 150 art'); eq(font, 'chaos-display-16px', 'docked font')
+  d, liquid, font, ring, mask = L.dockedSize(80)
+  eq(ring, L.ORB_IMAGES .. 'orb_ring_76', 'docked 80 uses the 76 art'); eq(font, 'chaos-outline-11px', 'small docked font')
+  eq(mask, L.ORB_IMAGES .. 'orb_mask_50', 'docked 80 mask')
+  eq(L.dockedSize(5), 40, 'docked size floor'); eq((select(4, L.dockedSize(nil))), L.ORB_IMAGES .. 'orb_ring_76', 'no size')
+  eq(L.ORB_SIZES[2].size, 150, 'the art sizes the docked globes pick from')
+  local clip, h = L.plainClip(0.5, 100, 50)
+  eq(clip.y, 50, 'plain globe half: cut from the top half'); eq(clip.height, 50, 'plain globe half height'); eq(h, 25, 'plain height')
+  clip, h = L.plainClip(1, 100, 50)
+  eq(clip.y, 0, 'plain globe full'); eq(h, 50, 'plain full height')
+  clip, h = L.plainClip(0, 100, 50)
+  eq(clip.height, 0, 'plain globe empty'); eq(h, 0, 'plain empty height')
+  clip = L.plainClip(7, 100, 50)
+  eq(clip.height, 100, 'plain fill capped at 1')
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)
