@@ -78,6 +78,7 @@ python3 -I server/tools/survey_base_weapons_test.py   # base_weapons.csv: re-run
 python3 client/tools/make_fonts_test.py
 python3 -I client/tools/check_text_fit.py          # options menu entries fit their buttons (en + pt-BR)
 python3 -I client/tools/check_mobile_layout.py && python3 -I client/tools/check_mobile_layout_test.py   # windows over 960x540 logical pixels need a $mobile rule or an entry in client/tools/mobile_layout_baseline.txt; the list may only shrink (O313; --write-baseline)
+python3 -I client/tools/gen_music.py --check       # region music of game_chaosmusic (O408): hash, format, length, size, built by the current script (--build needs numpy and ffmpeg)
 python3 -I client/tools/gen_orb_art.py --check     # liquid orb art, one ring and mask per orb size
 python3 client/tools/gen_rain_art.py --check        # rain tiles of game_chaosweather (O208)
 python3 -I client/tools/gen_aura_art.py --check     # chest and Templar aura strips of game_chestaura (O315; CI uses the fx venv)

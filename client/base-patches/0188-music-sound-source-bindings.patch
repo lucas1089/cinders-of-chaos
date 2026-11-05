@@ -1,0 +1,29 @@
+# Music (O408, game_chaosmusic): Lua bindings for a played sound (stop, isPlaying, setLooping, setGain, getGain, setFading, getName), so a module can cross-fade two music sources and loop one without a gap. StreamSoundSource gets its own setLooping: the base never set its m_looping, and SoundSource::setLooping set AL_LOOPING, which on a streamed source replays the queued fragments. Nothing else changes; without this patch game_chaosmusic loops a track through a channel queue (a short gap at each loop).
+--- a/src/framework/sound/streamsoundsource.h
++++ b/src/framework/sound/streamsoundsource.h
+@@ -45,6 +45,9 @@
+     void stop();
+ 
+     bool isPlaying() { return m_playing; }
++    // looping: the file is rewound when a buffer is refilled at its end (fillBufferAndQueue), so a loop has no gap.
++    // SoundSource::setLooping sets AL_LOOPING, which on a source with a buffer queue would replay the queued fragments
++    void setLooping(bool looping) { m_looping = looping; }
+ 
+     void setSoundFile(const SoundFilePtr& soundFile);
+ 
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -1083,6 +1083,13 @@
+     g_lua.bindSingletonFunction("g_sounds", "isAudioEnabled", &SoundManager::isAudioEnabled, &g_sounds);
+ 
+     g_lua.registerClass<SoundSource>();
++    g_lua.bindClassMemberFunction<SoundSource>("stop", &SoundSource::stop);
++    g_lua.bindClassMemberFunction<SoundSource>("isPlaying", &SoundSource::isPlaying);
++    g_lua.bindClassMemberFunction<SoundSource>("setLooping", &SoundSource::setLooping);
++    g_lua.bindClassMemberFunction<SoundSource>("setGain", &SoundSource::setGain);
++    g_lua.bindClassMemberFunction<SoundSource>("getGain", &SoundSource::getGain);
++    g_lua.bindClassMemberFunction<SoundSource>("setFading", &SoundSource::setFading);
++    g_lua.bindClassMemberFunction<SoundSource>("getName", &SoundSource::getName);
+     g_lua.registerClass<CombinedSoundSource, SoundSource>();
+     g_lua.registerClass<StreamSoundSource, SoundSource>();
+ 

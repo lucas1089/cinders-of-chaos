@@ -5038,6 +5038,12 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Quiet"] = "Baixo",
   ["Sounds"] = "Sons",
   ["Loud"] = "Alto",
+  -- game_chaossound/chaossound.otui: the region music of game_chaosmusic (O408)
+  ["Region music"] = "Música da região",
+  ["A music track for where you are: town, hunting grounds, dungeons and rifts, boss fights, arenas and the login screen. It changes with a soft cross-fade."] = "Uma música para onde você está: cidade, áreas de caça, masmorras e fendas, lutas contra chefes, arenas e a tela de login. Ela muda com uma transição suave.",
+  ["Music volume"] = "Volume da música",
+  ["Mute the music when the client is not in front"] = "Silenciar a música com o cliente em segundo plano",
+  ["The music fades out while another window has the focus. A minimized client is always silent."] = "A música some enquanto outra janela tem o foco. Um cliente minimizado fica sempre em silêncio.",
   -- client_chaos_topbar/topbar_unlocks.lua, topbarunlockslogic.lua (O259: the top menu reveals systems by level) and the
   -- option of base patch 0154
   ["Go"] = "Ir",

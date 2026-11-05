@@ -9,6 +9,7 @@ ChaosCreditsData = {
       { name = "Owner art", author = "the Cinders of Chaos owner (own or commissioned art)", use = "monster looks, wings, decoration and equipment sets", source = "the equipment set sheets are the owner's own art, made for us" },
       { name = "Login artwork", author = "the Cinders of Chaos team", use = "the login screen" },
       { name = "Owner-supplied outfits", use = "the moon outfits and the costumes (plush bears, crawling hands, fry box)", source = "supplied by the owner, source pack unnamed" },
+      { name = "Region music", author = "the Cinders of Chaos team (own work, synthesised by client/tools/gen_music.py; no samples)", use = "the music of the login screen, towns, hunting grounds, dungeons and rifts, boss fights and arenas" },
     },
   },
   {
