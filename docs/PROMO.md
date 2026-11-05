@@ -22,8 +22,8 @@ Not in the repo: gameplay footage and screenshots. They need the real client. Se
 ## 2. Recording setup
 
 - Client: Windows client, window 1920x1080, UI scale 100%, graphics options at the highest.
-- Cinema mode hides every panel, the chat and the top bar. Streamer mode hides private messages and names (O411; hotkeys
-  in client/MANIFEST.md).
+- Cinema mode hides every panel, the chat and the top bar. Streamer mode hides private messages and names (O411).
+  Hotkeys: Ctrl+Shift+H cinema mode, Ctrl+Shift+S streamer mode.
 - Use a GM or test character with gear of the scene's level. Never show real players' names without their consent.
 - OBS: 1920x1080, 60 fps, CQP 18 to 20, MKV, remux to MP4 after. A second scene cropped 1080x1920 for vertical video
   (game at the centre, captions above and below).
