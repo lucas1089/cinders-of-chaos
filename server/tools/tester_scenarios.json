@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 65,
   "out": 38,
-  "passive": 91,
+  "passive": 92,
   "place": 15,
   "staff": 15
  },
@@ -8967,14 +8967,21 @@
     "game_stash"
    ],
    "dataKeys": [
+    "container",
     "count",
     "item",
     "itemId",
     "make",
     "migrate",
+    "name",
+    "page",
+    "q",
+    "rarity",
     "row",
     "sendBlocks",
-    "version"
+    "unique",
+    "version",
+    "words"
    ],
    "files": [
     "stash.lua"
@@ -8990,7 +8997,8 @@
      "ChangeStash",
      "Open",
      "StashAllRequest",
-     "CollectInbox"
+     "CollectInbox",
+     "Find"
     ]
    },
    "systems": [
@@ -10236,6 +10244,13 @@
     "itemLink"
    ],
    "talkactions": []
+  },
+  "itemsearch": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "kitewalk": {
    "files": [
