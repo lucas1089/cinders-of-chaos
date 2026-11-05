@@ -6,6 +6,11 @@ and a chat window (Enter talks, the x hides it). F12 shows the debug line and th
 The map shows exactly the 15 x 11 tiles around the player, centred; the rest of the screen stays dark.
 Text and windows grow with the window height (720 px is scale 1).
 Game windows are `GameWindow` classes (`ChaosApp.Windows.cs`), one file each, listed in `ChaosApp.MakeWindows`.
+- Equipment (Ctrl+E): the 10 slots as a paper doll, cap and soul. Right-click uses an item (a bag opens).
+- Containers (Ctrl+O): all open bags stacked, 4 slots per row. Opens by itself. Right-click uses. Drag a slot onto
+  an equipment slot or another bag slot to move it. ^ goes up one bag, x closes.
+- Skills (Ctrl+K): level and experience bar, magic level, the 7 skills, stamina, speed, cap.
+- Windows live in `Assets/Chaos/Unity/Windows/`. `ItemSlots.cs` is the shared slot and drag code.
 They are movable, open from the toolbar left of Log out or with Ctrl + their key, and hide the creature names under them.
 The splash screen and the login header show our logo (`docs/brand`, copied in by `ChaosBuild`).
 A Personal license keeps the engine's "Made with" line under our logo; the setting turns it off on a license that allows it.

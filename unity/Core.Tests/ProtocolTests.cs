@@ -190,6 +190,61 @@ namespace Chaos.Core.Tests
             byte[] say = Protocol.SayPacket("hi");
             check(say.SequenceEqual(new byte[] { 0x96, 1, 2, 0, (byte)'h', (byte)'i' }), "chat: say packet");
 
+            // inventory and containers (item 100 plain, item 101 stackable with a phase byte)
+            w = new ByteWriter().U8(0x78).U8(6).U16(101).U8(0xFF).U8(25).U8(0);
+            w.U8(0x78).U8(3).U16(100).U8(0xFF);
+            parser.Parse(w.ToArray());
+            check(parser.Inventory[6].Id == 101 && parser.Inventory[6].Count == 25 && parser.Inventory[3].Id == 100 &&
+                  parser.Inventory[1] == null, "inventory: slots set");
+            parser.Parse(new ByteWriter().U8(0x79).U8(6).ToArray());
+            check(parser.Inventory[6] == null && parser.Inventory[3] != null, "inventory: slot cleared");
+            byte opened = 255, closed = 255;
+            parser.ContainerOpened = id => opened = id;
+            parser.ContainerClosed = id => closed = id;
+            w = new ByteWriter().U8(0x6E).U8(2).U16(100).U8(0xFF).Str("Backpack").U8(20).U8(1).U8(1).U8(0).U16(2).U16(0).U8(2);
+            w.U16(101).U8(0xFF).U8(5).U8(0).U16(100).U8(0xFF);
+            parser.Parse(w.ToArray());
+            var cont = parser.Containers[2];
+            check(opened == 2 && cont.Name == "Backpack" && cont.Capacity == 20 && cont.HasParent && cont.ItemId == 100 &&
+                  cont.Items.Count == 2 && cont.Items[0].Count == 5 && cont.Items[1].Id == 100, "container: open");
+            parser.Parse(new ByteWriter().U8(0x70).U8(2).U16(0).U16(101).U8(0xFF).U8(9).U8(0).ToArray());
+            check(cont.Items.Count == 3 && cont.Items[0].Count == 9 && cont.Items[1].Count == 5, "container: add at the front");
+            parser.Parse(new ByteWriter().U8(0x71).U8(2).U16(1).U16(100).U8(0xFF).ToArray());
+            check(cont.Items.Count == 3 && cont.Items[1].Id == 100, "container: update");
+            parser.Parse(new ByteWriter().U8(0x72).U8(2).U16(0).U16(0).ToArray());
+            check(cont.Items.Count == 2 && cont.Items[0].Id == 100, "container: remove");
+            parser.Parse(new ByteWriter().U8(0x72).U8(2).U16(0).U16(101).U8(0xFF).U8(3).U8(0).ToArray());
+            check(cont.Items.Count == 2 && cont.Items[1].Id == 101 && cont.Items[1].Count == 3, "container: remove with a last item");
+            parser.Parse(new ByteWriter().U8(0x6F).U8(2).ToArray());
+            check(closed == 2 && !parser.Containers.ContainsKey(2), "container: close");
+
+            // stats (0xA0) and skills (0xA1), with the trailing messages still read in line
+            w = new ByteWriter().U8(0xA0).U32(150).U32(200).U32(4000).U32(5000).U32((uint)(123456789012UL & 0xFFFFFFFF)).U32((uint)(123456789012UL >> 32)).U16(80).U8(42);
+            w.U16(100).U16(0).U16(0).U16(0).U16(0);
+            w.U32(60).U32(90).U8(25).U8(20).U8(17).U8(5).U16(2520).U16(310).U16(0).U16(0).U16(0).U8(0);
+            w.U8(0xA2).U16(7);
+            parser.Parse(w.ToArray());
+            check(parser.Health == 150 && parser.MaxHealth == 200 && parser.FreeCap == 4000 && parser.TotalCap == 5000 &&
+                  parser.Experience == 123456789012UL && parser.Level == 80 && parser.LevelPercent == 42 && parser.Mana == 60 &&
+                  parser.MaxMana == 90 && parser.MagicLevel == 25 && parser.BaseMagicLevel == 20 && parser.MagicPercent == 17 &&
+                  parser.Soul == 5 && parser.Stamina == 2520 && parser.Speed == 310, "stats: all fields");
+            w = new ByteWriter().U8(0xA1);
+            for (int i = 0; i < 14; i++) w.U16((ushort)(10 + i)).U16((ushort)(9 + i)).U8((byte)(i * 5));
+            for (int i = 0; i < 6; i++) w.U32(0);
+            w.U8(0xA2).U16(7);
+            parser.Parse(w.ToArray());
+            check(parser.Skills[0].Level == 10 && parser.Skills[0].Base == 9 && parser.Skills[6].Level == 16 &&
+                  parser.Skills[6].Percent == 30, "skills: seven named");
+
+            // outgoing item packets
+            var invPos = GameSession.InventoryPos(6);
+            var bagPos = GameSession.ContainerPos(2, 3);
+            check(Protocol.UseItemPacket(bagPos, 101, 3, 2).SequenceEqual(new byte[] { 0x82, 0xFF, 0xFF, 0x42, 0, 3, 101, 0, 3, 2 }), "out: use item");
+            check(Protocol.CloseContainerPacket(2).SequenceEqual(new byte[] { 0x87, 2 }) &&
+                  Protocol.UpContainerPacket(2).SequenceEqual(new byte[] { 0x88, 2 }), "out: close and up container");
+            check(Protocol.MoveItemPacket(bagPos, 101, 3, invPos, 5).SequenceEqual(
+                      new byte[] { 0x78, 0xFF, 0xFF, 0x42, 0, 3, 101, 0, 3, 0xFF, 0xFF, 6, 0, 0, 5 }), "out: move item");
+
             var k = ClientGuard.ParseKey("\"" + new string('a', 64) + "," + new string('0', 62) + "ff\"");
             check(k != null && k[31] == 0xff && k[0] == 0 && ClientGuard.ParseKey("xyz") == null, "guard key from hex, last of a list");
 
