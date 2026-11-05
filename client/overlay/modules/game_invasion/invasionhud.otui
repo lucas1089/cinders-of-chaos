@@ -82,6 +82,16 @@ ChaosPanelDark
     margin-top: 4
     visible: false
 
+  // O410: a clash of two hordes: what is left of each and its warlord, one row per horde in its colour
+  UIWidget
+    id: sides
+    phantom: true
+    margin-top: 4
+    visible: false
+    layout:
+      type: verticalBox
+      fit-children: true
+
   UIWidget
     id: top
     phantom: true

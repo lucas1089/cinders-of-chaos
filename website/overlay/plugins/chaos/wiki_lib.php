@@ -97,7 +97,8 @@ function chaos_wiki_tab_name(array $tab, string $lang): string {
 	static $pt = array('classes' => 'Classes', 'spells' => 'Magias', 'tree' => 'Árvore passiva', 'basics' => 'Noções básicas',
 		'modifiers' => 'Modificadores', 'powers' => 'Poderes lendários', 'uniques' => 'Itens únicos', 'sets' => 'Conjuntos',
 		'orbs' => 'Orbes', 'gems' => 'Gemas', 'supports' => 'Suportes', 'rift' => 'Rifts', 'dungeons' => 'Masmorras',
-		'bosses' => 'Chefes', 'events' => 'Eventos', 'monsters' => 'Monstros', 'materials' => 'Materiais', 'store' => 'Loja');
+		'bosses' => 'Chefes', 'events' => 'Eventos', 'monsters' => 'Monstros', 'materials' => 'Materiais', 'store' => 'Loja',
+		'quests' => 'Quests');
 	$id = (string)($tab['id'] ?? '');
 	return $lang === 'pt-BR' && isset($pt[$id]) ? $pt[$id] : (string)($tab['name'] ?? $id);
 }

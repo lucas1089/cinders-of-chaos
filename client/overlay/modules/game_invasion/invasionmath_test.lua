@@ -17,6 +17,18 @@ eq(M.countdown(30), 'in 1m', 'countdown under a minute')
 eq(M.title({ area = 'Cinderhold' }), 'Invasion: Cinderhold', 'title')
 eq(M.title({ area = 'Cinderhold', phase = 'occupied' }), 'Cinderhold is occupied', 'title occupied')
 eq(M.subtitle({ faction = 'Orc Warband', target = 'the temple steps' }), 'Orc Warband - defend the temple steps', 'subtitle')
+-- O410: a clash of two hordes
+local clash = { target = 'the temple steps', sides = { { key = 'orcs', name = 'Orc Warband', color = '#7fb04a', left = 12 },
+  { key = 'undead', name = 'Undead Legion', color = 'bad', left = 3, boss = 'Lich King', bossHp = 40 }, 'junk' } }
+eq(M.subtitle(clash), 'Orc Warband and Undead Legion - defend the temple steps', 'subtitle clash')
+eq(#M.sides(clash), 2, 'sides: junk left out')
+local rows = M.sideLines(clash)
+eq(rows[1].text, 'Orc Warband: 12 left', 'side line')
+eq(rows[1].color, '#7fb04a', 'side colour')
+eq(rows[2].text, 'Undead Legion: 3 left, Lich King 40%', 'side line with its warlord')
+eq(rows[2].color, '#d6c9ae', 'a bad colour falls back')
+eq(#M.sideLines({}), 0, 'no sides')
+eq(#M.sideLines({ sides = 'x' }), 0, 'sides not a table')
 eq(M.waveLine({ wave = 3, waves = 5, left = 14 }), 'Wave 3 of 5 - 14 invaders left', 'wave line')
 eq(M.waveLine({ wave = 5, waves = 5, left = 1 }), 'Wave 5 of 5 - 1 invader left', 'wave line singular')
 eq(M.waveLine({ wave = 0, waves = 5, next = 25 }), 'Wave 1 of 5 in 0:25', 'first wave countdown')

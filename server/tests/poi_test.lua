@@ -112,7 +112,7 @@ do
 	eq(#marks, 16, "one mark per hub NPC, other creatures left out")
 	local names = {}
 	for _, m in ipairs(marks) do
-		eq(m.k, "npc", "an NPC mark")
+		eq(m.k, P.npcKind(cfg, m.n:match("^[^(,]*"):gsub("%s+$", "")), "an NPC mark, a quest mark for a quest giver: " .. m.n)
 		eq(m.r, 0, "always on the map")
 		ok(math.abs(m.x - temple.x) > 100, "far from the temple scan: " .. m.n)
 		names[m.n] = true
@@ -123,6 +123,59 @@ do
 	eq(#P.hubMarks(cfg, stalls, function() return {} end), 0, "an empty stall has no mark")
 	eq(#P.hubMarks(cfg, nil, function() return {} end), 0, "no stalls")
 	ok(cfg.hubRadius >= 0 and cfg.hubRadius <= 3, "hub radius is small")
+end
+
+-- ------------------------------------------------------------------ O410: quests on the map
+do
+	eq(P.npcKind(cfg, "Archivist Maelis"), "quest", "the tales' Archivist gives quests")
+	eq(P.npcKind(cfg, "ASCENDANT ORACLE"), "quest", "the ascension quest, any case")
+	eq(P.npcKind(cfg, "Material Broker"), "npc", "a service NPC")
+	for name in pairs(cfg.questNpcs) do
+		ok(cfg.npcs[name] ~= nil, "a quest giver is a Chaos NPC with a shown name: " .. name)
+	end
+	ok(P.KINDS.quest and P.KINDS.questgoal, "quest kinds")
+	local stalls = ChaosNpcBoothsCore.booths(ChaosNpcBoothsCore.cfg())
+	local quests = 0
+	for _, m in ipairs(P.hubMarks(cfg, stalls, function(b) return {{name = b.name, x = b.x, y = b.y, z = b.z}} end)) do
+		if m.k == "quest" then
+			quests = quests + 1
+			eq(m.r, 0, "a quest giver in town is always on the map")
+		end
+	end
+	ok(quests >= 3, "the hub's quest givers are quest marks (" .. quests .. ")")
+	local marks = {
+		P.mark("quest", 100, 100, 7, "Archivist Maelis (tales and lore)"),
+		P.mark("npc", 110, 100, 7, "Warden Ysolde (faction quartermaster)"),
+		P.mark("npc", 120, 100, 7, "Mordecai Ashwager, the Gambler"),
+		P.mark("hunt", 300, 300, 8, "Hunting: Dragon, Dragon Lord (level 50-120)", 1),
+		P.mark("hunt", 400, 300, 8, "Hunting: Dragon Hatchling, Rat (level 5-60)", 1),
+		P.mark("hunt", 500, 300, 8, "Hunting: Dragon (level 40-90)", 1),
+		P.mark("hunt", 600, 300, 8, "Hunting: Rat (level 1-10)", 1)
+	}
+	eq(P.findNpc(marks, "archivist maelis"), marks[1], "find an NPC: its name then a bracket")
+	eq(P.findNpc(marks, "Mordecai Ashwager"), marks[3], "find an NPC: its name then a comma")
+	eq(P.findNpc(marks, "Ward"), nil, "a part of a word is not the NPC")
+	eq(P.findNpc(marks, ""), nil, "no name")
+	local hm = P.huntMonsters(marks[4])
+	eq(#hm, 2, "hunt monsters") eq(hm[2], "dragon lord", "hunt monsters lower case")
+	local hs = P.huntsFor(marks, {"Dragon"}, 2)
+	eq(#hs, 2, "hunts of a monster, at most the limit") eq(hs[1], marks[4], "in the list's order")
+	eq(#P.huntsFor(marks, {"Dragon Hatchling"}, 5), 1, "a whole name only")
+	local goals = P.goals({
+		{x = 32378, y = 32226, z = 8, n = "Teeth in the Cellars: go down"},
+		{npc = "Warden Ysolde", n = "Lantern Road: ask Ysolde"},
+		{npc = "Nobody Here", n = "lost"},
+		{hunts = {"Dragon", "Rat"}, n = "Dragon Census: 40 dragons"},
+		{x = 32378, y = 32226, z = 8, n = "the same tile again"},
+		{x = 0, y = 1, z = 7, n = "bad"}, "junk"
+	}, marks, {questHunts = 2, questGoalMax = 12})
+	eq(#goals, 4, "goals: a place, an NPC, two hunts; unknown NPC, a repeated tile and a bad place left out")
+	eq(goals[1].k, "questgoal", "a goal mark") eq(goals[2].x, 110, "the NPC's tile") eq(goals[3].x, 300, "a hunting area")
+	eq(goals[2].n, "Lantern Road: ask Ysolde", "the step text")
+	eq(#P.goals({{x = 1, y = 1, z = 7}, {x = 2, y = 1, z = 7}, {x = 3, y = 1, z = 7}}, {}, {questGoalMax = 2}), 2, "at most questGoalMax")
+	ok(P.goalsHash(goals) ~= P.goalsHash({goals[1]}), "the hash follows the list")
+	eq(P.goalsHash({}), P.goalsHash(nil), "no goals")
+	ok(cfg.questMs >= 1000 and cfg.questGoalMax > 0, "quest goal config")
 end
 
 -- ------------------------------------------------------------------ the committed data and the config

@@ -40134,6 +40134,14 @@
 							]
 						},
 						{
+							"h": "Clashes",
+							"p": [
+								"Some invasions bring two hosts at once (a clash, about 25% of the scheduled and random ones): they come from opposite sides and fight each other as well as you. The HUD shows how many of each are left.",
+								"Monsters killed by the other host give no loot, and experience only for the share players dealt. Each host has its own warlord; the other host can wear a warlord down but never kill it, so only players win a clash.",
+								"Reputation goes to the faction that hunts the host you fought most. If the clash is lost, the host with more monsters left occupies the place."
+							]
+						},
+						{
 							"h": "Invaders",
 							"cols": ["Host", "Bosses"],
 							"w": [40, 60],
@@ -40303,6 +40311,2265 @@
 			"banner": "wiki/hero/tab-events.webp",
 			"icon": "wiki/i/top-events.png",
 			"tone": "#ffb050"
+		},
+		{
+			"id": "quests",
+			"name": "Quests",
+			"entries": [
+				{
+					"id": "quest:about",
+					"name": "How quests work",
+					"sub": "Who gives them, where, and how the map shows your next step.",
+					"color": "#f0d27a",
+					"group": "about",
+					"sections": [
+						{
+							"h": "Quests",
+							"p": [
+								"Three people in the teleport room's market (the hub) give the quests: Archivist Maelis (the tales), Archivist Odrenna (the line spell quests) and the Ascendant Oracle (the ascension).",
+								"Open the world map: a gold exclamation mark is a quest giver or a quest chest; an ember target is the next step of a quest you have running (the place to go, the NPC to talk to, the hunt to clear). The Quests switch of the map markers shows or hides both.",
+								"Hunt steps count kills of party members close by; a level lowered by death pauses a quest that needs the level."
+							]
+						}
+					],
+					"icon": "wiki/i/top-help.png"
+				},
+				{
+					"id": "quest:tale:cellar_teeth",
+					"name": "Teeth in the Cellars",
+					"sub": "Tale, level 8+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Something gnaws at the ledgers I keep below the city. The cellars under Cinderhold were dug before the Cinders fell, and the rats there have grown fat on ash and old paper. Go down, see the place with your own eyes, and thin them before they eat the year I was born."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "8 or more (written for 8 to 30)"],
+								["Faction", "The Thornbound Circle"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Go",
+									"Go down into the cellars under Cinderhold (marked on your map)",
+									"Marked on your map"
+								],
+								["2", "Hunt", "Kill 25 rats of the cellars (Rat, Cave Rat)", "Rat, Cave Rat"],
+								["3", "Report", "Tell the Archivist the ledgers are safe", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "100% of a level's experience (at most at level 30)"],
+								["Gold", "1,500 (to the bank)"],
+								["Reputation", "100 with the Thornbound Circle"],
+								["Book", "The Cellars of Cinderhold"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:cellars"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_1",
+					"name": "Cinderhold I: The Torn Ledger",
+					"sub": "Tale, level 10+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"I keep the Chronicle of what the realm does. Older than the Chronicle is my first ledger: the founding of Cinderhold, written by the city's first archivist. The night the Cinders fell, someone tore its ten chapters out, and the pages went where the ash went. One went down a troll's throat in the caves north of the city, and the troll grew clever on it. Bring the page back. The city's tale begins again."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "10 or more (written for 10 to 40)"],
+								["Faction", "The Ashen Vigil"],
+								["Saga", "The Tale of Cinderhold, chapter 1"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Elite",
+									"Find Gnawbone the Page-Eater in the troll caves north of Cinderhold (marked on your map) and defeat him",
+									"Marked on your map"
+								],
+								["2", "Report", "Bring the first page to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "80% of a level's experience (at most at level 40)"],
+								["Gold", "2,000 (to the bank)"],
+								["Reputation", "100 with the Ashen Vigil"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:lantern_road",
+					"name": "The Lantern Road",
+					"sub": "Tale, level 12+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"You found the cellars; now find the road. The Ashen Vigil once lit a lantern on every grave between the towns, so the dead would know the way to rest. The lanterns went out. Ask Warden Ysolde in Cinderhold where the road begins, then put down what walks it."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "12 or more (written for 12 to 40)"],
+								["Faction", "The Ashen Vigil"],
+								["After", "Teeth in the Cellars"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								["1", "Talk", "Ask Warden Ysolde in Cinderhold about the tale", "Warden Ysolde"],
+								[
+									"2",
+									"Hunt",
+									"Put down 30 of the restless dead (Skeleton, Skeleton Warrior, Ghost, Tarnished Spirit, Ghoul)",
+									"Skeleton, Skeleton Warrior, Ghost, Tarnished Spirit, Ghoul"
+								],
+								["3", "Report", "Tell the Archivist how far the road goes", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "100% of a level's experience (at most at level 40)"],
+								["Gold", "3,000 (to the bank)"],
+								["Reputation", "150 with the Ashen Vigil"],
+								["Book", "The Lantern Road"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:lantern_road"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:troll_toll",
+					"name": "The Troll Toll",
+					"sub": "Tale, level 15+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Trolls have learned to charge a toll on the roads the Compact's wagons use, and they collect it in teeth. Forgemaster Brannoc in Mirewake wants the roads open and a count he can trust. Break the toll gangs, then tell him yourself; he believes no one's ink but his own."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "15 or more (written for 15 to 40)"],
+								["Faction", "The Cinderforge Compact"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Break the toll gangs: 35 trolls (Troll, Swamp, Mountain, Frost or Island Troll)",
+									"Troll, Swamp Troll, Mountain Troll, Frost Troll, Island Troll"
+								],
+								[
+									"2",
+									"Talk",
+									"Tell Forgemaster Brannoc in Mirewake about the tale",
+									"Forgemaster Brannoc"
+								],
+								["3", "Report", "Bring Brannoc's word to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "100% of a level's experience (at most at level 40)"],
+								["Gold", "4,000 (to the bank)"],
+								["Reputation", "150 with the Cinderforge Compact"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:anvildeep_deserters",
+					"name": "The Deserters of Anvildeep",
+					"sub": "Tale, level 20+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"A company of dwarves broke their oath to the obsidian forges and took a mine with them. The Compact calls it theft; the dwarves call it a strike. I call it a page I want written. Find their tunnels near Anvildeep and end the strike the way the Compact ends everything."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "20 or more (written for 20 to 50)"],
+								["Faction", "The Cinderforge Compact"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Go",
+									"Find the deserters' tunnels near Anvildeep (marked on your map)",
+									"Marked on your map"
+								],
+								[
+									"2",
+									"Hunt",
+									"Defeat 40 deserters (Dwarf, Dwarf Soldier, Dwarf Guard, Dwarf Geomancer)",
+									"Dwarf Soldier, Dwarf Guard, Dwarf Geomancer, Dwarf"
+								],
+								["3", "Report", "Tell the Archivist how the strike ended", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "80% of a level's experience (at most at level 50)"],
+								["Gold", "6,000 (to the bank)"],
+								["Items", "2 Orb of Awakening"],
+								["Reputation", "200 with the Cinderforge Compact"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_2",
+					"name": "Cinderhold II: The Founders' Bell",
+					"sub": "Tale, level 22+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The second page speaks of a bell cast from the founders' first fire. The Ashen Vigil rang it for every death in the young city. Warden Ysolde will know where it hung. A gargoyle carried the page to its roost south of the city and guards it as if it were its own heart."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "22 or more (written for 22 to 60)"],
+								["Faction", "The Ashen Vigil"],
+								["After", "Cinderhold I: The Torn Ledger"],
+								["Saga", "The Tale of Cinderhold, chapter 2"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								["1", "Talk", "Ask Warden Ysolde in Cinderhold about the tale", "Warden Ysolde"],
+								[
+									"2",
+									"Elite",
+									"Find the Old Bellwarden at the gargoyle roost (marked on your map) and break it",
+									"Marked on your map"
+								],
+								["3", "Report", "Bring the second page to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "70% of a level's experience (at most at level 60)"],
+								["Gold", "6,500 (to the bank)"],
+								["Reputation", "150 with the Ashen Vigil"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:rime_giants",
+					"name": "Rime and Ruin",
+					"sub": "Tale, level 25+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The frost giants of the north have come down from their halls and trampled the Thornbound Circle's winter groves. Elder Bramwyn asked me for someone who does not mind the cold. Walk into the giants' halls near Rimeholt, drive them back, then let Bramwyn in Thornmere hear it from you."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "25 or more (written for 25 to 60)"],
+								["Faction", "The Thornbound Circle"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Go",
+									"Enter the giants' halls near Rimeholt (marked on your map)",
+									"Marked on your map"
+								],
+								[
+									"2",
+									"Hunt",
+									"Drive back 40 frost giants (Frost Giant, Frost Giantess)",
+									"Frost Giant, Frost Giantess"
+								],
+								["3", "Talk", "Tell Elder Bramwyn in Thornmere about the tale", "Elder Bramwyn"],
+								["4", "Report", "Return to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "80% of a level's experience (at most at level 60)"],
+								["Gold", "7,500 (to the bank)"],
+								["Items", "2 Orb of Awakening"],
+								["Reputation", "200 with the Thornbound Circle"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:stone_watchers",
+					"name": "The Stone Watchers",
+					"sub": "Tale, level 30+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The Lantern Road ends at a roost of gargoyles. The Vigil carved them to watch over the graves; the Cinders woke them, and now they watch for the living instead. Find the roost, break the watchers and the dead they guard."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "30 or more (written for 30 to 70)"],
+								["Faction", "The Ashen Vigil"],
+								["After", "The Lantern Road"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Go",
+									"Find the gargoyle roost at the road's end (marked on your map)",
+									"Marked on your map"
+								],
+								[
+									"2",
+									"Hunt",
+									"Break 40 watchers and their dead (Gargoyle, Zombie, Stone Golem)",
+									"Gargoyle, Zombie, Stone Golem"
+								],
+								["3", "Report", "Tell the Archivist what the watchers guarded", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "80% of a level's experience (at most at level 70)"],
+								["Gold", "10,000 (to the bank)"],
+								["Items", "3 Orb of Awakening"],
+								["Reputation", "250 with the Ashen Vigil"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:grave_circle",
+					"name": "The Grave Circle",
+					"sub": "Tale, level 40+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The open graves lead to a circle of necromancers who think the Cinders were a gift. They raise bonebeasts from the Vigil's own dead, and a lich and a banshee keep their books. Go to the circle, end its servants, then its keepers. Bring me whatever they were writing."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "40 or more (written for 40 to 90)"],
+								["Faction", "The Ashen Vigil"],
+								["After", "The Stone Watchers"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								["1", "Go", "Find the grave circle (marked on your map)", "Marked on your map"],
+								[
+									"2",
+									"Hunt",
+									"End 40 of the circle's servants (Necromancer, Bonebeast)",
+									"Necromancer, Bonebeast"
+								],
+								["3", "Hunt", "End 15 keepers of its books (Lich, Banshee)", "Lich, Banshee"],
+								["4", "Report", "Bring the circle's pages to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "75% of a level's experience (at most at level 90)"],
+								["Gold", "15,000 (to the bank)"],
+								["Items", "2 Whetstone, 1 Orb of Tempering"],
+								["Reputation", "300 with the Ashen Vigil"],
+								["Book", "The Grave Circle"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:grave_circle"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_3",
+					"name": "Cinderhold III: Mortar of Dragon Ash",
+					"sub": "Tale, level 45+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The walls of Cinderhold were mortared with dragon ash, the third page says; the Cinderforge Compact still swears by the recipe. An old dragon in the east, the one the Compact calls Ashmaw, swallowed the page with the mortar-masters who carried it. Take the page back, and enough ash from its kin for the Compact's kilns."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "45 or more (written for 45 to 100)"],
+								["Faction", "The Cinderforge Compact"],
+								["After", "Cinderhold II: The Founders' Bell"],
+								["Saga", "The Tale of Cinderhold, chapter 3"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Elite",
+									"Find Ashmaw the Mortar-Wyrm at the Dragon Scar (marked on your map) and slay it",
+									"Marked on your map"
+								],
+								[
+									"2",
+									"Hunt",
+									"Gather ash for the kilns: slay 20 of its kin (Dragon, Dragon Hatchling)",
+									"Dragon, Dragon Hatchling"
+								],
+								["3", "Report", "Bring the third page to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "70% of a level's experience (at most at level 100)"],
+								["Gold", "18,000 (to the bank)"],
+								["Items", "1 Orb of Awakening"],
+								["Reputation", "200 with the Cinderforge Compact"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:dragon_census",
+					"name": "The Dragon Census",
+					"sub": "Tale, level 50+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The Veiled Choir counts dragons the way farmers count clouds: to know what the year will bring. Their count is old. Find the lair near Ashstrand, thin the brood so the count means something, then tell Cantor Velith in Bellwatch what you saw."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "50 or more (written for 50 to 100)"],
+								["Faction", "The Veiled Choir"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Go",
+									"Find the dragon lair near Ashstrand (marked on your map)",
+									"Marked on your map"
+								],
+								[
+									"2",
+									"Hunt",
+									"Thin the brood: 40 dragons (Dragon, Dragon Hatchling)",
+									"Dragon, Dragon Hatchling"
+								],
+								["3", "Talk", "Tell Cantor Velith in Bellwatch about the tale", "Cantor Velith"],
+								["4", "Report", "Bring the new count to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "75% of a level's experience (at most at level 100)"],
+								["Gold", "22,000 (to the bank)"],
+								["Items", "2 Whetstone"],
+								["Reputation", "300 with the Veiled Choir"],
+								["Book", "The Dragon Census"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:dragon_census"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_4",
+					"name": "Cinderhold IV: The Oathless Legion",
+					"sub": "Tale, level 60+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Lizard legions marched with the founders once, sworn to the city for a share of its fire. The fourth page holds their oath. Their warlord broke it the night the Cinders fell, and his heirs keep the page as a trophy. Forgemaster Brannoc kept the Compact's copy of that oath; ask him what it was worth."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "60 or more (written for 60 to 110)"],
+								["Faction", "The Cinderforge Compact"],
+								["After", "Cinderhold III: Mortar of Dragon Ash"],
+								["Saga", "The Tale of Cinderhold, chapter 4"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Talk",
+									"Ask Forgemaster Brannoc in Mirewake about the tale",
+									"Forgemaster Brannoc"
+								],
+								[
+									"2",
+									"Elite",
+									"Find Sskareth the Oathbreaker among the lizard legions (marked on your map) and defeat him",
+									"Marked on your map"
+								],
+								["3", "Report", "Bring the fourth page to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "60% of a level's experience (at most at level 110)"],
+								["Gold", "25,000 (to the bank)"],
+								["Items", "1 Orb of Awakening"],
+								["Reputation", "250 with the Cinderforge Compact"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:moon_sick",
+					"name": "The Moon-Sick",
+					"sub": "Tale, level 65+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Under a Cinder moon some hunters do not come home as hunters. The Thornbound Circle calls them the moon-sick and will not kill its own. You will. End the beasts they became, then tell Elder Bramwyn, so the Circle can stop setting places at its table."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "65 or more (written for 65 to 120)"],
+								["Faction", "The Thornbound Circle"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"End 40 of the moon-sick (Werewolf, Werebear, Werebadger, Wereboar, Werelion, Werelioness)",
+									"Werewolf, Werebear, Werebadger, Wereboar, Werelion, Werelioness"
+								],
+								["2", "Talk", "Tell Elder Bramwyn in Thornmere about the tale", "Elder Bramwyn"],
+								["3", "Report", "Return to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "70% of a level's experience (at most at level 120)"],
+								["Gold", "30,000 (to the bank)"],
+								["Items", "1 Orb of Upheaval"],
+								["Reputation", "400 with the Thornbound Circle"],
+								["Book", "The Moon-Sick"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:moon_sick"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:dragon_lords",
+					"name": "Lords of the Brood",
+					"sub": "Tale, level 70+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The census named the lords of the brood: the great red ones and the white ones of the ice. The Choir wants them fewer, and I want rune shards to bind the pages, since dragon fire eats ordinary glue. Hunt the lords and bring me the shards."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "70 or more (written for 70 to 130)"],
+								["Faction", "The Veiled Choir"],
+								["After", "The Dragon Census"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Hunt 30 lords of the brood (Dragon Lord, Frost Dragon and their hatchlings)",
+									"Dragon Lord, Dragon Lord Hatchling, Frost Dragon, Frost Dragon Hatchling"
+								],
+								["2", "Deliver", "Bring 10 rune shards to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "70% of a level's experience (at most at level 130)"],
+								["Gold", "35,000 (to the bank)"],
+								["Items", "2 Orb of Tempering"],
+								["Reputation", "400 with the Veiled Choir"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:hundred_heads",
+					"name": "The Hundred Heads",
+					"sub": "Tale, level 85+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The marsh near Brassgate has a mother. Every head you cut from her children grows back as two, and the bog raiders feed them. The moon-sick were running from her. Go into the marsh and cut until the count runs the other way."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "85 or more (written for 85 to 150)"],
+								["Faction", "The Thornbound Circle"],
+								["After", "The Moon-Sick"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Go",
+									"Enter the hydra marsh near Brassgate (marked on your map)",
+									"Marked on your map"
+								],
+								[
+									"2",
+									"Hunt",
+									"Cut down 40 of the marsh's children (Hydra, Bog Raider)",
+									"Hydra, Bog Raider"
+								],
+								["3", "Report", "Tell the Archivist the count", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "70% of a level's experience (at most at level 150)"],
+								["Gold", "40,000 (to the bank)"],
+								["Items", "2 Orb of Upheaval"],
+								["Reputation", "400 with the Thornbound Circle"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:lost_souls",
+					"name": "Where the Lost Souls Walk",
+					"sub": "Tale, level 100+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The Vigil's bells ring by themselves now, deep under Slagdelve, where the lost souls walk in a ring and the betrayed follow them. Warden Ysolde wants the bells quiet. Quiet the souls, then tell her the bells can rest."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "100 or more (written for 100 to 180)"],
+								["Faction", "The Ashen Vigil"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Quiet 50 souls (Lost Soul, Betrayed Wraith)",
+									"Lost Soul, Betrayed Wraith"
+								],
+								["2", "Talk", "Tell Warden Ysolde in Cinderhold about the tale", "Warden Ysolde"],
+								["3", "Report", "Bring Ysolde's warning to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "60% of a level's experience (at most at level 180)"],
+								["Gold", "50,000 (to the bank)"],
+								["Items", "2 Orb of Upheaval"],
+								["Reputation", "450 with the Ashen Vigil"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_5",
+					"name": "Cinderhold V: The Choking Hymn",
+					"sub": "Tale, level 105+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The fifth page is a hymn, the first song sung in Cinderhold. The Veiled Choir lost it, and something else learned it: in the east a horror sings it backwards, and those who hear it choke. Ask Cantor Velith what the hymn was; then silence the thing that stole it."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "105 or more (written for 105 to 180)"],
+								["Faction", "The Veiled Choir"],
+								["After", "Cinderhold IV: The Oathless Legion"],
+								["Saga", "The Tale of Cinderhold, chapter 5"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								["1", "Talk", "Ask Cantor Velith in Bellwatch about the tale", "Cantor Velith"],
+								[
+									"2",
+									"Elite",
+									"Find the Hymn That Chokes among the eastern horrors (marked on your map) and silence it",
+									"Marked on your map"
+								],
+								["3", "Report", "Bring the fifth page to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "60% of a level's experience (at most at level 180)"],
+								["Gold", "55,000 (to the bank)"],
+								["Items", "1 Orb of Tempering"],
+								["Reputation", "300 with the Veiled Choir"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:bone_court",
+					"name": "The Bone Court",
+					"sub": "Tale, level 120+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Before the Sepulchre had its Sovereign, the Bone Court had its own: archers who never miss, berserkers who never tire, masters who never forget an insult. They have risen in the west. Break the court and bring me rune shards; I will seal its records so it cannot rise a third time."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "120 or more (written for 120 to 200)"],
+								["Faction", "The Ashen Vigil"],
+								["After", "Where the Lost Souls Walk"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Break 50 of the Bone Court (Bone Archer, Berserker, Slicer, Warrior, Master)",
+									"Bone Archer, Bone Berserker, Bone Slicer, Bone Warrior, Bone Master"
+								],
+								["2", "Deliver", "Bring 15 rune shards to seal the records", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "60% of a level's experience (at most at level 200)"],
+								["Gold", "70,000 (to the bank)"],
+								["Items", "3 Orb of Upheaval"],
+								["Reputation", "500 with the Ashen Vigil"],
+								["Book", "The Bone Court"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:bone_court"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:pit_outcasts",
+					"name": "Outcasts of the Pit",
+					"sub": "Tale, level 130+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Even demons have exiles. The outcasts near Nightwrack were thrown out of something deeper, and they sell what they know to anyone with steel. The Compact would rather they sold nothing. End the outcasts and their torturers, then tell Forgemaster Brannoc the market is closed."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "130 or more (written for 130 to 220)"],
+								["Faction", "The Cinderforge Compact"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"End 50 of the pit's exiles (Demon Outcast, Dark Torturer, Hellspawn)",
+									"Demon Outcast, Dark Torturer, Hellspawn"
+								],
+								[
+									"2",
+									"Talk",
+									"Tell Forgemaster Brannoc in Mirewake about the tale",
+									"Forgemaster Brannoc"
+								],
+								["3", "Report", "Return to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "60% of a level's experience (at most at level 220)"],
+								["Gold", "75,000 (to the bank)"],
+								["Items", "2 Orb of Upheaval"],
+								["Reputation", "500 with the Cinderforge Compact"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_6",
+					"name": "Cinderhold VI: The Unwritten Page",
+					"sub": "Tale, level 150+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The sixth page was never written. The first archivist died with her quill in hand, and the quill went on writing without her, in a library across the western sea. It writes the city's tale wrong, and the books there believe it. Break the quill and bring me what it wrote."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "150 or more (written for 150 to 260)"],
+								["Faction", "The Veiled Choir"],
+								["After", "Cinderhold V: The Choking Hymn"],
+								["Saga", "The Tale of Cinderhold, chapter 6"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Elite",
+									"Find the Founder's Quill in the drowned library (marked on your map) and break it",
+									"Marked on your map"
+								],
+								["2", "Report", "Bring the sixth page to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "60% of a level's experience (at most at level 260)"],
+								["Gold", "80,000 (to the bank)"],
+								["Items", "1 Orb of Tempering"],
+								["Reputation", "350 with the Veiled Choir"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:unburied_wings",
+					"name": "Wings of the Unburied",
+					"sub": "Tale, level 160+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The lords you hunted did not all stay dead. Under Nightwrack their bones fly again, with the flayers that serve them, and the black dragons come to feed on what is left. Find the boneyard, end the unburied, then the black ones. The census must count the dead too."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "160 or more (written for 160 to 260)"],
+								["Faction", "The Veiled Choir"],
+								["After", "Lords of the Brood"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Go",
+									"Find the dragons' boneyard under Nightwrack (marked on your map)",
+									"Marked on your map"
+								],
+								[
+									"2",
+									"Hunt",
+									"End 40 of the unburied (Undead Dragon, Hellflayer)",
+									"Undead Dragon, Hellflayer"
+								],
+								["3", "Hunt", "End 15 Black Dragons that feed there", "Black Dragon"],
+								["4", "Report", "Bring the count of the dead to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "60% of a level's experience (at most at level 260)"],
+								["Gold", "100,000 (to the bank)"],
+								["Items", "3 Orb of Upheaval"],
+								["Reputation", "550 with the Veiled Choir"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:bone_choir",
+					"name": "The Bone Choir",
+					"sub": "Tale, level 200+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"A chapel sank into the marsh the night the Cinders fell. Its monks sang the dead asleep for a hundred years; now the dead sing back, and the song walks. The Ashen Vigil wants it silenced, and I want to know the words. Break the choir: forty of its singers."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "200 or more (written for 200 to 299)"],
+								["Faction", "The Ashen Vigil"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Silence 40 of the choir's dead (Deathrattle, Skullshade, Bonecleaver, Doombone, Blackblade)",
+									"Deathrattle, Skullshade, Bonecleaver, Doombone, Blackblade"
+								],
+								["2", "Report", "Tell the Archivist what they sang", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "50% of a level's experience (at most at level 299)"],
+								["Gold", "150,000 (to the bank)"],
+								["Items", "3 Orb of Upheaval"],
+								["Reputation", "600 with the Ashen Vigil"],
+								["Book", "Ashen Crypt"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:rift_ashen"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_7",
+					"name": "Cinderhold VII: Rimecrown's Winter",
+					"sub": "Tale, level 230+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The seventh page tells of the founders' first winter, when the Thornbound Circle kept the city alive with seed and root. A hydra in the frozen far west ate that winter's stores and the page with them, and it has not been warm there since. Elder Bramwyn remembers the seed; ask him, then end the hydra."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "230 or more (written for 230 to 340)"],
+								["Faction", "The Thornbound Circle"],
+								["After", "Cinderhold VI: The Unwritten Page"],
+								["Saga", "The Tale of Cinderhold, chapter 7"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								["1", "Talk", "Ask Elder Bramwyn in Thornmere about the tale", "Elder Bramwyn"],
+								[
+									"2",
+									"Elite",
+									"Find Rimecrown the Winter-Eater in the frozen west (marked on your map) and slay it",
+									"Marked on your map"
+								],
+								["3", "Report", "Bring the seventh page to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "50% of a level's experience (at most at level 340)"],
+								["Gold", "160,000 (to the bank)"],
+								["Items", "1 Orb of Fate"],
+								["Reputation", "450 with the Thornbound Circle"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_8",
+					"name": "Cinderhold VIII: The Last Light",
+					"sub": "Tale, level 300+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The eighth page tells of the night the Cinders fell: the founders lit a last light in the high tower so the people could find their way out of the ash. Above Bellwatch an archon took the light up and now believes it is the light. Put it out, gently if you can, and tell Warden Ysolde; the Vigil swore to keep that light."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "300 or more (written for 300 to 420)"],
+								["Faction", "The Ashen Vigil"],
+								["After", "Cinderhold VII: Rimecrown's Winter"],
+								["Saga", "The Tale of Cinderhold, chapter 8"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Elite",
+									"Find the Archon of the Last Light above Bellwatch (marked on your map) and put it out",
+									"Marked on your map"
+								],
+								["2", "Talk", "Tell Warden Ysolde in Cinderhold about the tale", "Warden Ysolde"],
+								["3", "Report", "Bring the eighth page to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "50% of a level's experience (at most at level 420)"],
+								["Gold", "200,000 (to the bank)"],
+								["Items", "1 Orb of Fate"],
+								["Reputation", "550 with the Ashen Vigil"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:mould_gardens",
+					"name": "The Mould Gardens",
+					"sub": "Tale, level 340+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Far east of Ashstrand, a garden grew on a fallen Cinder. Its golems are made of rot and its phantoms of spores, and the Thornbound Circle wants it pruned before the wind changes. Walk into the garden and cut it back to the stone."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "340 or more (written for 340 to 480)"],
+								["Faction", "The Thornbound Circle"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								["1", "Go", "Enter the mould gardens (marked on your map)", "Marked on your map"],
+								[
+									"2",
+									"Hunt",
+									"Cut back 60 of the garden (Rotten Golem, Mould Phantom, Branchy Crawler)",
+									"Rotten Golem, Mould Phantom, Branchy Crawler"
+								],
+								["3", "Report", "Tell the Archivist the garden is pruned", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "50% of a level's experience (at most at level 480)"],
+								["Gold", "250,000 (to the bank)"],
+								["Items", "2 Orb of Upheaval, 1 Orb of Fate"],
+								["Reputation", "700 with the Thornbound Circle"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:furnace_phantoms",
+					"name": "Phantoms of the Furnace",
+					"sub": "Tale, level 360+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The Compact dug one forge too deep, and what came up the flue was not smoke. Infernal demons and their phantoms now hold the old furnace. Clear it, and bring me rune shards to bind the Compact's confession: they asked me to write it, and I want it to last."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "360 or more (written for 360 to 500)"],
+								["Faction", "The Cinderforge Compact"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Clear 60 of the furnace (Infernal Demon, Infernal Phantom)",
+									"Infernal Demon, Infernal Phantom"
+								],
+								["2", "Deliver", "Bring 20 rune shards to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "50% of a level's experience (at most at level 500)"],
+								["Gold", "280,000 (to the bank)"],
+								["Items", "1 Orb of Fate"],
+								["Reputation", "700 with the Cinderforge Compact"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_9",
+					"name": "Cinderhold IX: Brine and Ember",
+					"sub": "Tale, level 430+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The ninth page went to sea with the founders' ships, which carried the city's fire to the islands. The pyrarchs of the brine burned the ships and kept the fire, and the page, in the crown of their eldest. Take the crown. The Compact will want the fire back too, but the page is mine."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "430 or more (written for 430 to 560)"],
+								["Faction", "The Cinderforge Compact"],
+								["After", "Cinderhold VIII: The Last Light"],
+								["Saga", "The Tale of Cinderhold, chapter 9"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Elite",
+									"Find Saltcrown the Eldest Pyrarch on the brine shore (marked on your map) and take the crown",
+									"Marked on your map"
+								],
+								["2", "Report", "Bring the ninth page to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "40% of a level's experience (at most at level 560)"],
+								["Gold", "300,000 (to the bank)"],
+								["Items", "1 Orb of Fate"],
+								["Reputation", "650 with the Cinderforge Compact"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:ash_widows",
+					"name": "The Ash Widows",
+					"sub": "Tale, level 470+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"South of Dunescar the widows spin silk out of ash, and the hexers sell it as burial cloth. Whatever is wrapped in it does not stay buried. End the widows and the hands that trade their silk, then tell Elder Bramwyn the trade is cut."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "470 or more (written for 470 to 650)"],
+								["Faction", "The Thornbound Circle"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"End 60 widows and traders (Nightfang Widow, Mirethorn Hexer, Gloomstinger, Bloodspark Adept)",
+									"Nightfang Widow, Mirethorn Hexer, Gloomstinger, Bloodspark Adept"
+								],
+								["2", "Talk", "Tell Elder Bramwyn in Thornmere about the tale", "Elder Bramwyn"],
+								["3", "Report", "Return to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "50% of a level's experience (at most at level 650)"],
+								["Gold", "350,000 (to the bank)"],
+								["Items", "2 Orb of Fate"],
+								["Reputation", "800 with the Thornbound Circle"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:wyrm_tithe",
+					"name": "The Wyrm Tithe",
+					"sub": "Tale, level 500+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The wrym broods swallow Cinder shards the way birds swallow stones, and the Cinderforge Compact pays for every crop cut open. Their ledger is short twenty shards this season. Hunt the wrym and bring me the shards; I will see that the Compact remembers who paid the tithe."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "500 or more (written for 500 to 699)"],
+								["Faction", "The Cinderforge Compact"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Slay 50 wrym (Ashfang, Shadowvein, Stormvein, Viridscale, Flarevein)",
+									"Ashfang Wrym, Shadowvein Wrym, Stormvein Wrym, Viridscale Wrym, Flarevein Wyrm"
+								],
+								["2", "Deliver", "Bring 20 rune shards to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "50% of a level's experience (at most at level 699)"],
+								["Gold", "400,000 (to the bank)"],
+								["Items", "2 Orb of Fate"],
+								["Reputation", "800 with the Cinderforge Compact"],
+								["Book", "Obsidian Hall"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:rift_obsidian"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:cinderhold_10",
+					"name": "Cinderhold X: The Founding Stone",
+					"sub": "Tale, level 560+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "saga",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The last page names the Founding Stone, the first hearth of Cinderhold, which the survivors carried south when the city burned. Something from the pit sat down on it and never got up, and it drinks the city's first fire. End it, and come back to me. We will write the last chapter together."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "560 or more (written for 560 to 700)"],
+								["Faction", "The Ashen Vigil"],
+								["After", "Cinderhold IX: Brine and Ember"],
+								["Saga", "The Tale of Cinderhold, chapter 10"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Elite",
+									"Find the Pitlord of the Founding Stone in the southern pits (marked on your map) and end it",
+									"Marked on your map"
+								],
+								["2", "Report", "Write the last page with the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "40% of a level's experience (at most at level 700)"],
+								["Gold", "450,000 (to the bank)"],
+								["Items", "2 Orb of Fate"],
+								["Reputation", "800 with the Ashen Vigil"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "quest:tale:ash_requiem",
+					"name": "Requiem for the Ash-Sister",
+					"sub": "Tale, level 800+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Morwen sang the dead to sleep inside the Sepulchre until the sleep turned to ash. Her court did not all stay behind the walls: some of it wanders the world, wearing other names. Thin them, then go in and end her song. I have kept a page for her last verse."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "800 or more (written for 800 to 999)"],
+								["Faction", "The Ashen Vigil"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Thin the lost court: 60 of Royal Man, Golden Lord, Frost Maiden, Dreamgorger, Loricate Orger, Tundra Troll, Swamp Snapper",
+									"Royal Man, Golden Lord, Frost Maiden, Dreamgorger, Loricate Orger, Tundra Troll, Swamp Snapper"
+								],
+								[
+									"2",
+									"Hunt",
+									"Defeat Morwen the Ash-Sister in the Ashen Sepulchre",
+									"Morwen the Ash-Sister"
+								],
+								["3", "Report", "Bring her last verse to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "40% of a level's experience (at most at level 999)"],
+								["Gold", "1,000,000 (to the bank)"],
+								["Items", "1 Orb of Grafting"],
+								["Reputation", "1,200 with the Ashen Vigil"],
+								["Book", "The Ashen Sepulchre"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:sepulchre"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:vault_keeper",
+					"name": "The Keeper's Key",
+					"sub": "Tale, level 800+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"The Hollow Vault was the Compact's treasury before it was hollow. Its keeper, Ossrim, still counts coins that are not there and kills anyone who disagrees with the sum. End him, and bring me rune shards to close the Compact's oldest open account."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "800 or more (written for 800 to 1000)"],
+								["Faction", "The Cinderforge Compact"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Defeat Vault Keeper Ossrim in the Hollow Vault",
+									"Vault Keeper Ossrim"
+								],
+								["2", "Deliver", "Bring 30 rune shards to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "40% of a level's experience (at most at level 1000)"],
+								["Gold", "900,000 (to the bank)"],
+								["Items", "1 Orb of Grafting"],
+								["Reputation", "1,100 with the Cinderforge Compact"],
+								["Book", "The Wardens of the Deep"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:deep_wardens"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:last_ember",
+					"name": "The Last Ember",
+					"sub": "Tale, level 1000+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Every Omen sings of the first Cinder, the one that never cooled. The Veiled Choir says it has a name now. Before I write it, I want proof that someone can walk where it walks: end a warden of the deep places, then an Ascended Omen. Then come back, and I will tell you its name."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "1000 or more (written for 1000 to 1500)"],
+								["Faction", "The Veiled Choir"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Defeat a warden of the deep: the Emberdeep Maw, the Ossuary Warden or Cinderwing",
+									"The Emberdeep Maw, The Ossuary Warden, Cinderwing"
+								],
+								[
+									"2",
+									"Hunt",
+									"Defeat an Ascended Omen behind the Ember Gate",
+									"Ascended Sangrith, Ascended Morvane, Ascended Thalcyra"
+								],
+								["3", "Report", "Hear the name from the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "30% of a level's experience (at most at level 1500)"],
+								["Gold", "2,500,000 (to the bank)"],
+								["Items", "2 Orb of Grafting"],
+								["Reputation", "1,500 with the Veiled Choir"],
+								["Book", "Ysgrath the Cinderheart"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:cinderheart"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:gravecage",
+					"name": "The Gravecage",
+					"sub": "Tale, level 1000+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"In the Marrow Crypts, Ossivane keeps the dead in a cage of their own ribs, and the Vigil cannot burn what will not come out. Open the cage the hard way. Then tell Warden Ysolde, so the Vigil can light the pyres it has waited a century to light."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "1000 or more (written for 1000 to 1300)"],
+								["Faction", "The Ashen Vigil"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Defeat Ossivane the Gravecage in the Marrow Crypts",
+									"Ossivane the Gravecage"
+								],
+								["2", "Talk", "Tell Warden Ysolde in Cinderhold about the tale", "Warden Ysolde"],
+								["3", "Report", "Return to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "30% of a level's experience (at most at level 1300)"],
+								["Gold", "2,200,000 (to the bank)"],
+								["Items", "2 Orb of Grafting"],
+								["Reputation", "1,400 with the Ashen Vigil"],
+								["Book", "The Four Deeper Doors"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:deep_dungeons"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:kharzun_anvil",
+					"name": "Kharzun's Anvil",
+					"sub": "Tale, level 1300+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Forgewarden Kharzun was the Compact's finest smith until he forged himself into the Iron Crucible. His crystal servants still feed the fire. Break eighty of them, then the Forgewarden, and the Compact will stop pretending he retired."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "1300 or more (written for 1300 to 1600)"],
+								["Faction", "The Cinderforge Compact"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Break 80 of the Crucible's servants (Facetis, Thal, Silicron, Winterstride, Gloamfang Ravager)",
+									"Facetis, Thal, Silicron, Winterstride, Gloamfang Ravager"
+								],
+								[
+									"2",
+									"Hunt",
+									"Defeat Forgewarden Kharzun in the Iron Crucible",
+									"Forgewarden Kharzun"
+								],
+								["3", "Report", "Return to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "30% of a level's experience (at most at level 1600)"],
+								["Gold", "3,000,000 (to the bank)"],
+								["Items", "2 Orb of Grafting"],
+								["Reputation", "1,600 with the Cinderforge Compact"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:fallen_seraph",
+					"name": "The Fallen Seraph",
+					"sub": "Tale, level 1600+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Kharzun's last ledger names his buyer: Vaelith, who fell with the first Cinder and built the Fallen Sanctum from the wreck. Her court of antlers and skulls guards the way. Cut through it, end her, and tell Cantor Velith; the Choir has sung her name for an age and never knew her face."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "1600 or more (written for 1600 to 2000)"],
+								["Faction", "The Veiled Choir"],
+								["After", "Kharzun's Anvil"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Cut through 80 of her court (Bloodantler Fiend, Cinderskull Reaver, Rimeshroud Revenant)",
+									"Bloodantler Fiend, Cinderskull Reaver, Rimeshroud Revenant"
+								],
+								[
+									"2",
+									"Hunt",
+									"Defeat Vaelith the Fallen Seraph in the Fallen Sanctum",
+									"Vaelith the Fallen Seraph"
+								],
+								["3", "Talk", "Tell Cantor Velith in Bellwatch about the tale", "Cantor Velith"],
+								["4", "Report", "Return to the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "30% of a level's experience (at most at level 2000)"],
+								["Gold", "4,000,000 (to the bank)"],
+								["Items", "3 Orb of Grafting"],
+								["Reputation", "1,800 with the Veiled Choir"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:tale:chained_wyrm",
+					"name": "The Chained Wyrm",
+					"sub": "Tale, level 2000+: Archivist Maelis",
+					"color": "#f0d27a",
+					"group": "tale",
+					"sections": [
+						{
+							"h": "Story",
+							"p": [
+								"Vaelith's chains hold Azhkarrath, mother of the pyrewings, to the Pyre Throne, and she burns everything that comes to free her or to end her. The Vigil says a thing chained that long has earned its pyre. Give her one. This is the last page I have kept blank."
+							]
+						},
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "Archivist Maelis, in the teleport room's market (the hub)"],
+								["Level", "2000 or more (written for 2000 to 2500)"],
+								["Faction", "The Ashen Vigil"],
+								["After", "The Fallen Seraph"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What", "Where"],
+							"w": [6, 12, 52, 30],
+							"rows": [
+								[
+									"1",
+									"Hunt",
+									"Defeat Azhkarrath the Chained Wyrm on the Pyre Throne",
+									"Azhkarrath the Chained Wyrm"
+								],
+								["2", "Report", "Fill the last page with the Archivist", "Archivist Maelis"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"cols": ["Reward", ""],
+							"w": [25, 75],
+							"rows": [
+								["Experience", "25% of a level's experience (at most at level 2500)"],
+								["Gold", "5,000,000 (to the bank)"],
+								["Items", "3 Orb of Grafting"],
+								["Reputation", "2,000 with the Ashen Vigil"],
+								["Book", "The Fall of the Cinders"]
+							]
+						},
+						{"h": "Lore", "p": ["The tale's book holds this lore."], "links": ["lore:cinders"]}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "quest:spell:1",
+					"name": "Line spell quest 1",
+					"sub": "Level 500+: a new spell for your class line. Archivist Odrenna",
+					"color": "#f0d27a",
+					"group": "spell",
+					"sections": [
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								[
+									"Giver",
+									"Archivist Odrenna, in the teleport room's market (the hub), next to the Keeper of Trials"
+								],
+								["Level", "500 or more, checked at every step"],
+								["After", "Nothing"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What"],
+							"w": [6, 14, 80],
+							"rows": [
+								["1", "Talk", "Ask Archivist Odrenna for the quest"],
+								[
+									"2",
+									"Hunt",
+									"400 kills of monsters of hunting level 500 or more and 20 fragments (a boss kill counts 25 and drops one for sure)"
+								],
+								["3", "Trial", "Ask Archivist Odrenna again: she opens the trial. Win it"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"p": ["The spell of your line below and 2,000 gold per character level (to the bank), once."],
+							"cols": ["Line", "Spell"],
+							"w": [30, 70],
+							"rows": [
+								["Warrior", "Keepfall"],
+								["Ranger", "Moonshard Rain"],
+								["Mystic", "Prismatic Rupture"],
+								["Thief", "Eclipse Edge"],
+								["Necromancer", "Soulflay Wave"],
+								["Monk", "Thousand-Echo Palm"],
+								["Templar", "Pyre of Absolution"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-burst.png"
+				},
+				{
+					"id": "quest:spell:2",
+					"name": "Line spell quest 2",
+					"sub": "Level 800+: a new spell for your class line. Archivist Odrenna",
+					"color": "#f0d27a",
+					"group": "spell",
+					"sections": [
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								[
+									"Giver",
+									"Archivist Odrenna, in the teleport room's market (the hub), next to the Keeper of Trials"
+								],
+								["Level", "800 or more, checked at every step"],
+								["After", "Line spell quest 1 on the same line"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What"],
+							"w": [6, 14, 80],
+							"rows": [
+								["1", "Talk", "Ask Archivist Odrenna for the quest"],
+								[
+									"2",
+									"Hunt",
+									"700 kills of monsters of hunting level 800 or more and 30 fragments (a boss kill counts 25 and drops one for sure)"
+								],
+								["3", "Trial", "Ask Archivist Odrenna again: she opens the trial. Win it"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"p": ["The spell of your line below and 2,000 gold per character level (to the bank), once."],
+							"cols": ["Line", "Spell"],
+							"w": [30, 70],
+							"rows": [
+								["Warrior", "Ironbound Oath"],
+								["Ranger", "Unblinking Gaze"],
+								["Mystic", "Veil of Whispers"],
+								["Thief", "Shroud of Knives"],
+								["Necromancer", "Dirge of the Legion"],
+								["Monk", "Lotus Stance"],
+								["Templar", "Mantle of Dawn"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-burst.png"
+				},
+				{
+					"id": "quest:spell:3",
+					"name": "Line spell quest 3",
+					"sub": "Level 1200+: a new spell for your class line. Archivist Odrenna",
+					"color": "#f0d27a",
+					"group": "spell",
+					"sections": [
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								[
+									"Giver",
+									"Archivist Odrenna, in the teleport room's market (the hub), next to the Keeper of Trials"
+								],
+								["Level", "1200 or more, checked at every step"],
+								["After", "Line spell quest 2 on the same line"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What"],
+							"w": [6, 14, 80],
+							"rows": [
+								["1", "Talk", "Ask Archivist Odrenna for the quest"],
+								[
+									"2",
+									"Hunt",
+									"1000 kills of monsters of hunting level 1200 or more and 40 fragments (a boss kill counts 25 and drops one for sure)"
+								],
+								["3", "Trial", "Ask Archivist Odrenna again: she opens the trial. Win it"]
+							]
+						},
+						{
+							"h": "Rewards",
+							"p": ["The spell of your line below and 2,000 gold per character level (to the bank), once."],
+							"cols": ["Line", "Spell"],
+							"w": [30, 70],
+							"rows": [
+								["Warrior", "Judgment of Iron"],
+								["Ranger", "Dawnbreaker Shot"],
+								["Mystic", "Eclipse of Ruin"],
+								["Thief", "Death Between Heartbeats"],
+								["Necromancer", "Funeral of Kings"],
+								["Monk", "Heaven's Ninth Gate"],
+								["Templar", "Hammer of Ember Dawn"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-burst.png"
+				},
+				{
+					"id": "quest:ascension",
+					"name": "The ascension",
+					"sub": "Level 100+: become one of the two ascended classes of your line. Ascendant Oracle",
+					"color": "#f0d27a",
+					"group": "ascension",
+					"sections": [
+						{
+							"h": "Quest",
+							"cols": ["", ""],
+							"w": [25, 75],
+							"rows": [
+								["Giver", "The Ascendant Oracle, in the teleport room's market (the hub)"],
+								["Level", "100 or more"]
+							]
+						},
+						{
+							"h": "Steps",
+							"cols": ["#", "Step", "What"],
+							"w": [6, 14, 80],
+							"rows": [
+								["1", "Talk", "Hear the Calling from the Ascendant Oracle"],
+								[
+									"2",
+									"Hunt",
+									"Proof of Strength: 10 points from rare (1) and legendary (3) monsters of at least 0.6 x your level"
+								],
+								[
+									"3",
+									"Trial",
+									"Alone against your line's guardian for 3 min; another try after 10 min"
+								],
+								["4", "Choice", "Pick one of the two ascended classes"]
+							]
+						},
+						{"h": "Rewards", "p": ["The ascended class you chose and the title \"Ascended <class>\"."]}
+					],
+					"icon": "wiki/i/rx-ascended.png"
+				}
+			],
+			"banner": "wiki/hero/tab-quests.webp",
+			"icon": "wiki/i/k-light-banner.png",
+			"tone": "#f0d27a"
 		},
 		{
 			"id": "monsters",

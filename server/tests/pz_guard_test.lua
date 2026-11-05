@@ -120,7 +120,8 @@ check(#files > 100, "the Chaos scripts are listed (" .. #files .. ")")
 local addHealthOk = {
 	["/raid.lua"] = "hurt(): raid monsters and bosses only",
 	["/descent.lua"] = "hurt(): monsters, and the shrine's self cost the player chose (never lethal)",
-	["/trials.lua"] = "the trial boss's own health"
+	["/trials.lua"] = "the trial boss's own health",
+	["/invasion.lua"] = "clashHit(): one invader hits another (Monster() of a listed invader, O410), never a player"
 }
 for _, path in ipairs(files) do
 	local src = read(path) or ""

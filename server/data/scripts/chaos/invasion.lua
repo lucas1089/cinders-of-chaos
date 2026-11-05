@@ -46,6 +46,7 @@ local NOTIFY = ChaosOpcodes.notifications or 79
 V.state = V.state or {phase = "idle", token = 0}
 V.invaders = V.invaders or {} -- creature id -> {scale, boss, occupier, wave, path, nextStep, stuck}
 V.recent = V.recent or {} -- creature id -> scale, kept a few seconds after a death (experience runs before the death event)
+V.recentShare = V.recentShare or {} -- creature id -> the experience share a clash left (O410), as V.recent
 V.pending = V.pending or {} -- guid -> list of rewards for players offline at the end
 V.warned = V.warned or {}
 V.buff = V.buff or nil -- Victory buff {endsAt, xp, scope, areaKey, name}
@@ -196,10 +197,10 @@ function V.tileOk(pos, area, allowCreature)
 	return true
 end
 
--- valid spawn points of an area (shuffled), at most `want`
-local function spawnPoints(area, want, rng)
+-- valid spawn points of an area (shuffled), at most `want`; edges (optional): only these borders (a clash, O410)
+local function spawnPoints(area, want, rng, edges)
 	local out = {}
-	for _, p in ipairs(I.edgePoints(area, rng, (C().waves or {}).edgeDepth or 3)) do
+	for _, p in ipairs(I.edgePoints(area, rng, (C().waves or {}).edgeDepth or 3, edges)) do
 		if V.tileOk(p, area) then
 			out[#out + 1] = p
 			if #out >= want then
@@ -320,8 +321,11 @@ function V.calendar()
 		if not s.secret or s.at - t <= warnFirst then
 			local area = s.areaKey and I.areaByKey(c, s.areaKey)
 			local faction = s.factionKey and c.factions[s.factionKey]
+			local rival = s.rivalKey and c.factions[s.rivalKey]
 			list[#list + 1] = {kind = "invasion", at = s.at, inSeconds = s.at - t, when = os.date("%a %H:%M", s.at),
-				name = (faction and faction.name or "A horde") .. " invades " .. (area and area.name or "?")}
+				name = rival and ((faction and faction.name or "A horde") .. " and " .. rival.name .. " clash at "
+					.. (area and area.name or "?"))
+					or ((faction and faction.name or "A horde") .. " invades " .. (area and area.name or "?"))}
 		end
 		if #list >= 6 then
 			break
@@ -388,6 +392,8 @@ local function spawnOne(name, pos, tier, scale, info, rename)
 	end
 	scaleMonster(monster, scale)
 	info.scale = scale
+	info.typeName = name -- its attack list for the clash (O410)
+	info.side = info.side or state.factionKey
 	info.areaLevel = state.area and state.area.level -- monster_damage.lua: an invader counts at least at this level
 	registerInvader(monster, info)
 	return monster
@@ -425,7 +431,7 @@ local function discord(phase, extra)
 	if ChaosDiscord and ChaosDiscord.queue and ChaosDiscordCore and ChaosDiscordCore.cityInvasion and ChaosDiscordConfig then
 		pcall(function()
 			ChaosDiscord.queue(ChaosDiscordCore.cityInvasion(ChaosDiscordConfig, phase, {area = state.areaName,
-				faction = state.factionName, level = state.area and state.area.level, waves = state.waves,
+				faction = state.sides and (state.sides[1].name .. " and " .. state.sides[2].name) or state.factionName, level = state.area and state.area.level, waves = state.waves,
 				minutes = C().timeLimitMinutes or 20, occupation = (C().occupation or {}).minutes or 30,
 				secs = state.startedAt and (now() - state.startedAt), names = extra and extra.names,
 				defenders = extra and extra.defenders}))
@@ -433,53 +439,110 @@ local function discord(phase, extra)
 	end
 end
 
+-- the hordes of this invasion: {{key, name, color, edges}}; one horde, or two in a clash (O410)
+local function hordes()
+	local c = C()
+	if state.sides and #state.sides > 1 then
+		return state.sides
+	end
+	local f = c.factions[state.factionKey]
+	return {{key = state.factionKey, name = f and f.name, color = f and f.color}}
+end
+
+-- a warlord fell or left: its side has none any more; bossAlive while any warlord stands
+local function bossFell(id)
+	local side = state.bossIds and state.bossIds[id]
+	if not side then
+		if id ~= nil and id == state.bossId and state.bossAlive then
+			state.bossAlive, state.bossHp = false, 0
+			return true
+		end
+		return false
+	end
+	state.bossIds[id] = nil
+	local sb = state.sideBoss and state.sideBoss[side]
+	if sb then
+		sb.alive, sb.hp = false, 0
+	end
+	state.bossAlive = next(state.bossIds) ~= nil
+	if not state.bossAlive then
+		state.bossHp = 0
+	end
+	return true
+end
+
 local function spawnWave(i)
 	local c = C()
 	local area = state.area
-	local faction = c.factions[state.factionKey]
 	local players = countPlayers(area)
-	local plan = I.planWave(c, area, faction, i, players, math.random)
-	local points = spawnPoints(area, #plan.packs * 3 + 6, I.lcg(state.startedAt + i * 31))
+	local list = hordes()
+	local clash = #list > 1
+	local share = clash and ((c.clash or {}).sideShare or 0.6) or nil
 	state.wave = i
 	state.waveAt = now()
 	state.waveAlive = 0
 	local spawned = 0
-	if #points == 0 then
-		log("wave " .. i .. ": no valid spawn tile on the border of " .. area.key)
-	else
-		for k, pack in ipairs(plan.packs) do
-			local p = points[(k - 1) % #points + 1]
-			for _, m in ipairs(pack.monsters) do
-				if spawnOne(m.name, p, m.tier, m.scale, {wave = i}) then
-					spawned = spawned + 1
+	local bosses = {}
+	for h, side in ipairs(list) do
+		local faction = c.factions[side.key]
+		local plan = I.planWave(c, area, faction, i, players, math.random, share)
+		local points = spawnPoints(area, #plan.packs * 3 + 6, I.lcg(state.startedAt + i * 31 + (h - 1) * 7919), side.edges)
+		if #points == 0 then
+			log("wave " .. i .. ": no valid spawn tile on the border of " .. area.key .. " for " .. tostring(side.key))
+		else
+			for k, pack in ipairs(plan.packs) do
+				local p = points[(k - 1) % #points + 1]
+				for _, m in ipairs(pack.monsters) do
+					if spawnOne(m.name, p, m.tier, m.scale, {wave = i, side = side.key}) then
+						spawned = spawned + 1
+					end
 				end
+				P(p):sendMagicEffect(CONST_ME_TELEPORT)
 			end
-			P(p):sendMagicEffect(CONST_ME_TELEPORT)
+		end
+		if i == state.waves then
+			bosses[#bosses + 1] = {side = side, plan = I.planBoss(c, area, faction, players), at = points[1]}
 		end
 	end
 	state.waveSize = math.max(1, spawned)
 	state.planned = (state.planned or 0) + spawned
 	if i == state.waves then
-		local boss = I.planBoss(c, area, faction, players)
-		if boss then
-			local bp = points[1] or state.target
-			local monster = spawnOne(boss.name, bp, boss.tier, {hp = 1, dmg = boss.dmg, xp = boss.xp}, {wave = i, boss = true},
-				boss.rename)
-			if monster then
-				monster:setMaxHealth(boss.health)
-				monster:setHealth(boss.health)
-				state.bossId = monster:getId()
-				state.bossName = monster:getName()
-				-- its type ("Orc Warlord" behind "Warchief Grashnak"): the unique drop lists name types
-				state.bossType = Chaos.monsterTypeName and Chaos.monsterTypeName(monster) or boss.name
-				state.bossAlive = true
-				state.bossHp = 100
-				state.planned = state.planned + 1
-				announce(ChaosI18n.msg("Wave %d of %d: %s leads the last assault on %s!", i, state.waves, state.bossName,
-					state.areaName))
-			else
-				log("boss " .. boss.name .. " could not be created")
+		state.bossIds = state.bossIds or {}
+		state.sideBoss = state.sideBoss or {}
+		local names = {}
+		for _, b in ipairs(bosses) do
+			local boss = b.plan
+			if boss then
+				local bp = b.at or state.target
+				local monster = spawnOne(boss.name, bp, boss.tier, {hp = 1, dmg = boss.dmg, xp = boss.xp},
+					{wave = i, boss = true, side = b.side.key}, boss.rename)
+				if monster then
+					monster:setMaxHealth(boss.health)
+					monster:setHealth(boss.health)
+					local id = monster:getId()
+					state.bossIds[id] = b.side.key
+					state.sideBoss[b.side.key] = {name = monster:getName(), hp = 100, alive = true, id = id}
+					if not state.bossId then -- the first horde's warlord names the rewards (unique drop lists name types)
+						state.bossId = id
+						state.bossName = monster:getName()
+						-- its type ("Orc Warlord" behind "Warchief Grashnak")
+						state.bossType = Chaos.monsterTypeName and Chaos.monsterTypeName(monster) or boss.name
+					end
+					state.bossAlive = true
+					state.bossHp = 100
+					state.planned = state.planned + 1
+					names[#names + 1] = monster:getName()
+				else
+					log("boss " .. boss.name .. " could not be created")
+				end
 			end
+		end
+		if #names == 1 then
+			announce(ChaosI18n.msg("Wave %d of %d: %s leads the last assault on %s!", i, state.waves, names[1],
+				state.areaName))
+		elseif #names > 1 then
+			announce(ChaosI18n.msg("Wave %d of %d: %s and %s lead the last assault on %s!", i, state.waves, names[1],
+				names[2], state.areaName))
 		end
 		state.bossSpawned = true
 	end
@@ -540,6 +603,20 @@ local function moveInvader(id, info, t, target, radius)
 	if pos.z ~= target.z then
 		return
 	end
+	-- O410: an invader paired with one of the other horde walks to it (the clash loop hits once it is in reach)
+	local foe = info.foe and V.invaders[info.foe] and Monster(info.foe)
+	if foe then
+		local fp = foe:getPosition()
+		if fp.z == pos.z and math.max(math.abs(fp.x - pos.x), math.abs(fp.y - pos.y)) > (info.foeReach or 1) then
+			info.nextStep = t + math.max(C().moveMs or 400, math.floor(150000 / math.max(50, monster:getSpeed())))
+			info.path = nil
+			if greedyStep(monster, pos, fp) then
+				info.stuckSince = nil
+			end
+		end
+		return
+	end
+	info.foe = nil
 	if math.max(math.abs(pos.x - target.x), math.abs(pos.y - target.y)) <= radius then
 		return
 	end
@@ -586,6 +663,94 @@ local function moveLoop(token)
 	addEvent(moveLoop, C().moveMs or 400, token)
 end
 
+-- ======================================================================== the clash (O410)
+-- Two hordes fight each other. The engine's monsters never target monsters, so this loop pairs them
+-- (I.clashPairs), turns each to its foe, shows the faction's hit (and missile when ranged) and takes the health with
+-- Creature:addHealth (no attacker: no player gains experience or loot from it, the damage maps stay the players').
+V.attackCache = V.attackCache or {} -- monster type name -> {{melee, min, max, range}}
+
+local function attacksOf(name)
+	local cached = V.attackCache[name]
+	if cached then
+		return cached
+	end
+	local list = {}
+	local ok, mt = pcall(MonsterType, name)
+	if ok and mt and mt.getAttackList then
+		local okA, attacks = pcall(function() return mt:getAttackList() end)
+		for _, a in ipairs(okA and attacks or {}) do
+			list[#list + 1] = {melee = a.isMelee == 1 or a.isMelee == true, min = a.minCombatValue, max = a.maxCombatValue,
+				range = a.range}
+		end
+	end
+	V.attackCache[name] = list
+	return list
+end
+
+local function constant(name, fallback)
+	local v = type(name) == "string" and rawget(_G, name)
+	return type(v) == "number" and v or fallback
+end
+
+local function clashHit(id, info, foeId, dist, cl)
+	local m, foe, foeInfo = Monster(id), Monster(foeId), V.invaders[foeId]
+	if not m or not foe or not foeInfo then
+		return
+	end
+	local attack = I.clashAttack(attacksOf(info.typeName or m:getName()), dist)
+	info.foeReach = 1
+	if not attack and dist > 1 then
+		return -- nothing reaches: walk closer (moveInvader)
+	end
+	if attack and not attack.melee then
+		info.foeReach = math.max(1, math.min(tonumber(attack.range) or 1, cl.radius or 6))
+	end
+	local health = foe:getHealth()
+	local dmg = I.clashDamage({attack = attack, dist = dist, dmg = info.scale and info.scale.dmg or 1, hp = m:getMaxHealth(),
+		foeHealth = health, foeMax = foe:getMaxHealth(), foeBoss = foeInfo.boss}, cl, math.random)
+	local from, to = m:getPosition(), foe:getPosition()
+	pcall(function() m:setDirection(I.facing(from, to)) end)
+	local f = C().factions[info.side] or {}
+	if dist > 1 then
+		from:sendDistanceEffect(to, constant(f.clashShot, CONST_ANI_SMALLSTONE))
+	end
+	to:sendMagicEffect(constant(f.clashHit, CONST_ME_DRAWBLOOD))
+	if dmg <= 0 then
+		return
+	end
+	if dmg >= health and not foeInfo.lastHitAt and foe.setDropLoot then
+		pcall(function() foe:setDropLoot(false) end) -- no player touched it: no loot pile for nobody
+	end
+	foeInfo.clashDamage = (foeInfo.clashDamage or 0) + math.min(dmg, health)
+	pcall(function() foe:addHealth(-dmg) end)
+end
+
+local function clashLoop(token)
+	if state.token ~= token or state.phase ~= "running" or not state.sides then
+		return
+	end
+	local cl = C().clash or {}
+	local units = {}
+	for id, info in pairs(V.invaders) do
+		local m = not info.occupier and Monster(id)
+		if m then
+			local p = m:getPosition()
+			local okT, target = pcall(function() return m:getTarget() end)
+			units[#units + 1] = {id = id, side = info.side, x = p.x, y = p.y, z = p.z, busy = okT and target ~= nil}
+		end
+	end
+	local paired = I.clashPairs(units, cl)
+	for id, info in pairs(V.invaders) do
+		local pr = paired[id]
+		info.foe = pr and pr.foe or nil
+		if pr then
+			info.stuckSince = nil
+			pcall(clashHit, id, info, pr.foe, pr.dist, cl)
+		end
+	end
+	addEvent(clashLoop, cl.thinkMs or 1000, token)
+end
+
 -- ======================================================================== the fight
 local function invadersAtTarget()
 	local radius = (C().breach or {}).radius or 2
@@ -617,7 +782,7 @@ local function cleanupInvaders()
 	V.invaders = {}
 end
 
-local giveRewards, occupy, finish
+local giveRewards, occupy, finish, clashSettle
 
 -- the breach meter over the target point for the players near it (tilebars.lua, client game_tileoverlays)
 local function breachBar(on)
@@ -675,10 +840,8 @@ local function reconcileInvaders()
 		local info = V.invaders[id]
 		V.invaders[id] = nil
 		state.gone = (state.gone or 0) + 1
-		if info and info.boss and id == state.bossId and state.bossAlive then
-			state.bossAlive = false
-			state.bossHp = 0
-			state.bossDownAt = state.bossDownAt or now()
+		if info and info.boss then
+			bossFell(id)
 		end
 	end
 	for _, id in ipairs(res.strays) do
@@ -695,9 +858,8 @@ local function reconcileInvaders()
 			if info.wave and info.wave == state.wave then
 				res.waveAlive = res.waveAlive - 1
 			end
-			if info.boss and id == state.bossId then
-				state.bossAlive, state.bossHp = false, 0
-				state.bossDownAt = state.bossDownAt or now()
+			if info.boss then
+				bossFell(id)
 			end
 			m:remove()
 		end
@@ -721,12 +883,20 @@ local function tick(token)
 			announce(ChaosI18n.msg("%s is about to fall: the breach is at 80%%!", state.areaName))
 		end
 		breachBar(true)
-		if state.bossAlive then
-			local b = Monster(state.bossId)
+		-- the warlords' health; the HUD's main line shows the first one still standing (O410: one per horde)
+		local shown = false
+		for _, side in ipairs(hordes()) do
+			local sb = (state.sideBoss or {})[side.key]
+			local b = sb and sb.alive and Monster(sb.id)
 			if b then
-				state.bossHp = math.floor(b:getHealth() * 100 / math.max(1, b:getMaxHealth()))
+				sb.hp = math.floor(b:getHealth() * 100 / math.max(1, b:getMaxHealth()))
+				if not shown then
+					shown = true
+					state.bossHp, state.bossHudName = sb.hp, sb.name
+				end
 			end
 		end
+		state.sideAlive = I.sideCounts(V.invaders)
 		if I.nextWaveDue(state, t, C().waves) then
 			spawnWave(state.wave + 1)
 		end
@@ -781,7 +951,9 @@ local function tick(token)
 	addEvent(tick, 1000, token)
 end
 
-function V.start(areaKey, factionKey)
+-- rivalKey (O410): a faction key for a second horde, "clash" for any (I.pickRival), "none" for none; nil rolls
+-- clash.chance by the start time (I.rival)
+function V.start(areaKey, factionKey, rivalKey)
 	if state.phase ~= "idle" then
 		return false, "an invasion is running (" .. tostring(state.areaName) .. ", " .. state.phase .. ")"
 	end
@@ -796,6 +968,18 @@ function V.start(areaKey, factionKey)
 	end
 	area = I.areaByKey(c, ak)
 	local faction = c.factions[fk]
+	local rk
+	if rivalKey == "clash" then
+		rk = I.pickRival(c, now(), ak, fk)
+	elseif rivalKey and rivalKey ~= "none" then
+		if not c.factions[rivalKey] or rivalKey == fk then
+			return false, "unknown or same rival faction " .. tostring(rivalKey)
+		end
+		rk = rivalKey
+	elseif rivalKey == nil then
+		rk = I.rival(c, now(), ak, fk)
+	end
+	local rival = rk and c.factions[rk]
 	-- O393: fought at the area level pulled towards the players online (a copy: the config keeps its own level)
 	do
 		local copy = {}
@@ -841,8 +1025,19 @@ function V.start(areaKey, factionKey)
 	state.breach = 0
 	state.contrib = {}
 	state.mc = {}
-	announce(ChaosI18n.msg("INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord.",
-		faction.name, area.name, state.targetName, state.waves, c.timeLimitMinutes or 20))
+	if rival then
+		-- O410: two hordes from opposite edges (I.clashEdges); the first one names the invasion
+		local ea, eb = I.clashEdges(area.edges)
+		state.rivalKey = rk
+		state.sides = {{key = fk, name = faction.name, color = faction.color, edges = ea},
+			{key = rk, name = rival.name, color = rival.color, edges = eb}}
+		state.sideAlive, state.sideBoss, state.clashKills = {}, {}, 0
+		announce(ChaosI18n.msg("CLASH! The %s and the %s both march on %s and fight each other on the way! Defend %s: %d waves in %d minutes, each horde led by its warlord.",
+			faction.name, rival.name, area.name, state.targetName, state.waves, c.timeLimitMinutes or 20))
+	else
+		announce(ChaosI18n.msg("INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord.",
+			faction.name, area.name, state.targetName, state.waves, c.timeLimitMinutes or 20))
+	end
 	announce(ChaosI18n.msg("Every defender is rewarded by their part: damage, healing, kills and time in the fight. Stand idle and you earn nothing."), false)
 	if area.level ~= area.baseLevel then
 		log(string.format("%s fought at level %d (area level %d, players online)", area.key, area.level, area.baseLevel))
@@ -850,6 +1045,9 @@ function V.start(areaKey, factionKey)
 	discord("start")
 	addEvent(tick, 1000, state.token)
 	addEvent(moveLoop, c.moveMs or 400, state.token)
+	if state.sides then
+		addEvent(clashLoop, (c.clash or {}).thinkMs or 1000, state.token)
+	end
 	V.broadcastHud()
 	return true
 end
@@ -867,8 +1065,17 @@ finish = function(result)
 		for i = 1, math.min(3, #list) do
 			names[#names + 1] = string.format("%s (%d%%)", list[i].name, math.floor(list[i].share * 100 + 0.5))
 		end
-		announce(ChaosI18n.msg("VICTORY! %s held: the %s is broken in %s. Top defenders: %s.", state.areaName,
-			state.factionName, I.clock(now() - state.startedAt), #names > 0 and table.concat(names, ", ") or "nobody"))
+		if state.sides then
+			announce(ChaosI18n.msg("VICTORY! %s held: the %s and the %s are broken in %s. Top defenders: %s.", state.areaName,
+				state.sides[1].name, state.sides[2].name, I.clock(now() - state.startedAt),
+				#names > 0 and table.concat(names, ", ") or "nobody"))
+			if (state.clashKills or 0) > 0 then
+				announce(ChaosI18n.msg("The two hordes slew %d of each other.", state.clashKills), false)
+			end
+		else
+			announce(ChaosI18n.msg("VICTORY! %s held: the %s is broken in %s. Top defenders: %s.", state.areaName,
+				state.factionName, I.clock(now() - state.startedAt), #names > 0 and table.concat(names, ", ") or "nobody"))
+		end
 		V.lastEndAt = now()
 		local top = {}
 		for i = 1, math.min(5, #list) do
@@ -892,6 +1099,7 @@ finish = function(result)
 	end
 	state.result = result
 	V.lastEndAt = now()
+	clashSettle()
 	discord("lost")
 	sendAll("end", {result = result, text = result == "breach" and ChaosI18n.msg("%s has fallen!", state.areaName)
 		or ChaosI18n.msg("Time is up: %s is overrun!", state.areaName)})
@@ -902,9 +1110,41 @@ finish = function(result)
 end
 
 -- the invaders stay: survivors stop pushing and toughen up, a garrison joins them at the target
+-- O410: a lost clash: the horde with more invaders left holds the area (ties: the first one), the other one flees
+clashSettle = function()
+	if not state.sides then
+		return
+	end
+	local counts = I.sideCounts(V.invaders)
+	local win = state.sides[1]
+	for _, s in ipairs(state.sides) do
+		if (counts[s.key] or 0) > (counts[win.key] or 0) then
+			win = s
+		end
+	end
+	local lose = state.sides[1] == win and state.sides[2] or state.sides[1]
+	for id, info in pairs(V.invaders) do
+		if info.side ~= win.key then
+			local m = Monster(id)
+			if m then
+				m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+				m:remove()
+			end
+			V.invaders[id] = nil
+			if state.bossIds then
+				state.bossIds[id] = nil
+			end
+		end
+	end
+	state.factionKey, state.factionName, state.factionColor = win.key, win.name, win.color
+	state.sides = nil
+	announce(ChaosI18n.msg("The %s drives the %s off and holds %s.", win.name, lose.name, state.areaName))
+end
+
 occupy = function()
 	local c = C()
 	local o = c.occupation or {}
+	clashSettle()
 	state.phase = "occupied"
 	state.occupation = {endsAt = now() + (o.minutes or 30) * 60, alive = 0}
 	state.libContrib = {}
@@ -1120,6 +1360,8 @@ giveRewards = function(mult, contrib, liberation)
 		r.bossName = state.bossName
 		r.bossType = state.bossType
 		r.liberation = liberation
+		-- the horde this defender fought most: its foes' faction reputation (factions.lua F.onInvasion; O410)
+		r.factionKey = I.mainSide(contrib[r.guid]) or state.factionKey
 		local who = {guid = r.guid, name = r.name}
 		if not liberation and ChaosLeaderboard and ChaosLeaderboard.record then -- weekly Defender board
 			ChaosLeaderboard.record("defender", who, r.points, "add")
@@ -1200,6 +1442,12 @@ xpCb.onGainExperience = function(self, source, exp, rawExp)
 	if scale and scale.xp and scale.xp ~= 1 then
 		exp = math.floor(exp * scale.xp)
 	end
+	-- O410: the other horde wore it down: the players get the share of its health they took (at least minXpShare)
+	local share = info and info.clashDamage and I.clashXpShare(info.clashDamage, source:getMaxHealth(), C().clash)
+		or V.recentShare[id]
+	if share and share < 1 then
+		exp = math.floor(exp * share)
+	end
 	local b = V.buff
 	if b and I.buffActive(b, now()) and not b.viaEvents then
 		if b.scope ~= "area" or I.inArea(self:getPosition(), b.area) then
@@ -1251,10 +1499,15 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		dmg = math.min(dmg, creature:getHealth())
 		local player = playerOf(attacker)
 		if player and dmg > 0 then
-			V.invaders[creature:getId()].lastHitAt = now()
+			local info = V.invaders[creature:getId()]
+			info.lastHitAt = now()
 			local e = creditPlayer(contrib, player, "damage", dmg)
-			if e and V.invaders[creature:getId()].boss then
+			if e and info.boss then
 				e.boss = (e.boss or 0) + dmg
+			end
+			if e and info.side then -- O410: which horde each defender fought (the faction reputation of a clash)
+				e.vs = e.vs or {}
+				e.vs[info.side] = (e.vs[info.side] or 0) + dmg
 			end
 		end
 	end
@@ -1271,28 +1524,35 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller)
 	end
 	V.invaders[id] = nil
 	V.recent[id] = info.scale
-	addEvent(function(cid) V.recent[cid] = nil end, 5000, id)
+	V.recentShare[id] = I.clashXpShare(info.clashDamage, creature:getMaxHealth(), C().clash)
+	addEvent(function(cid) V.recent[cid], V.recentShare[cid] = nil, nil end, 5000, id)
 	state.alive = math.max(0, (state.alive or 0) - 1)
 	if info.wave and info.wave == state.wave then
 		state.waveAlive = math.max(0, (state.waveAlive or 0) - 1)
 	end
 	state.slain = (state.slain or 0) + 1
 	local contrib = activeContrib()
-	if contrib then
-		local credited = {}
-		for _, cr in ipairs({killer, mostDamageKiller}) do
-			local p = playerOf(cr)
-			if p and not credited[p:getGuid()] then
-				credited[p:getGuid()] = true
+	local byPlayer = false
+	local credited = {}
+	for _, cr in ipairs({killer, mostDamageKiller}) do
+		local p = playerOf(cr)
+		if p and not credited[p:getGuid()] then
+			credited[p:getGuid()] = true
+			byPlayer = true
+			if contrib then
 				creditPlayer(contrib, p, "kills", 1)
 			end
 		end
 	end
-	if info.boss and id == state.bossId then
-		state.bossAlive = false
-		state.bossHp = 0
+	if not byPlayer and info.clashDamage then
+		state.clashKills = (state.clashKills or 0) + 1 -- the other horde slew it (O410)
+	end
+	if info.boss then
+		local sb = state.sideBoss and state.sideBoss[info.side]
+		local name = sb and sb.name or state.bossName
+		bossFell(id)
 		local p = playerOf(mostDamageKiller) or playerOf(killer)
-		announce(p and ChaosI18n.msg("%s is slain by %s!", tostring(state.bossName), p:getName()) or ChaosI18n.msg("%s is slain!", tostring(state.bossName)))
+		announce(p and ChaosI18n.msg("%s is slain by %s!", tostring(name), p:getName()) or ChaosI18n.msg("%s is slain!", tostring(name)))
 	end
 	return true
 end
@@ -1408,6 +1668,7 @@ function schedule.onThink(interval)
 	for _, s in ipairs(I.upcoming(c, t - 90, horizon + 90)) do
 		local area = s.areaKey and I.areaByKey(c, s.areaKey)
 		local faction = s.factionKey and c.factions[s.factionKey]
+		local rival = s.rivalKey and c.factions[s.rivalKey] -- O410: a second horde
 		-- O393: the cooldown after the last invasion is known in advance: no warnings for a start it will skip.
 		-- A staff one-off (/invasion schedule, source "once") ignores the gate.
 		local auto = s.source ~= "once"
@@ -1417,8 +1678,13 @@ function schedule.onThink(interval)
 				local key = s.at .. ":" .. m
 				if cooled and not V.warned[key] and t >= s.at - m * 60 and t < s.at - m * 60 + 120 and t < s.at then
 					V.warned[key] = true
-					announce(ChaosI18n.msg("The %s gathers: %s will be invaded in %d minute%s!", faction.name, area.name, m,
-						m == 1 and "" or "s"))
+					if rival then
+						announce(ChaosI18n.msg("The %s and the %s gather: both will fall on %s in %d minute%s!", faction.name,
+							rival.name, area.name, m, m == 1 and "" or "s"))
+					else
+						announce(ChaosI18n.msg("The %s gathers: %s will be invaded in %d minute%s!", faction.name, area.name, m,
+							m == 1 and "" or "s"))
+					end
 				end
 			end
 			local key = s.at .. ":start"
@@ -1435,7 +1701,7 @@ function schedule.onThink(interval)
 							faction.name, area.name))
 					end
 				else
-					local ok, err = V.start(s.areaKey, s.factionKey)
+					local ok, err = V.start(s.areaKey, s.factionKey, s.rivalKey or "none")
 					if not ok then
 						log("scheduled start failed: " .. tostring(err))
 					end
@@ -1482,6 +1748,12 @@ calendarEntries()
 local function statusText()
 	local t = now()
 	local lines = {}
+	if state.phase == "running" and state.sides then
+		local counts = I.sideCounts(V.invaders)
+		lines[#lines + 1] = string.format("Clash (O410) at %s: %s %d left, %s %d left, %d slain by each other.",
+			state.areaName, state.sides[1].name, counts[state.sides[1].key] or 0, state.sides[2].name,
+			counts[state.sides[2].key] or 0, state.clashKills or 0)
+	end
 	if state.phase == "running" then
 		lines[#lines + 1] = string.format("Invasion of %s by the %s: wave %d/%d, %d invaders left, breach %d%%, %s left%s.",
 			state.areaName, state.factionName, state.wave, state.waves, state.alive or 0, math.floor(state.breach + 0.5),
@@ -1521,8 +1793,9 @@ function gm.onSay(player, words, param)
 	local cmd = (args[1] or ""):lower()
 	local reply
 	if cmd == "start" then
-		local ok, err = V.start(args[2] or "random", args[3])
-		reply = ok and ("Invasion started: " .. state.areaName .. ", " .. state.factionName .. ".") or ("Not started: " .. tostring(err))
+		local ok, err = V.start(args[2] or "random", args[3] ~= "random" and args[3] or nil, args[4] or "none")
+		reply = ok and ("Invasion started: " .. state.areaName .. ", " .. state.factionName ..
+			(state.sides and (" against the " .. state.sides[2].name) or "") .. ".") or ("Not started: " .. tostring(err))
 	elseif cmd == "stop" then
 		reply = V.stop() and "Invasion stopped." or "No invasion is running."
 	elseif cmd == "status" or cmd == "" then
@@ -1530,12 +1803,16 @@ function gm.onSay(player, words, param)
 	elseif cmd == "schedule" then
 		local minutes = tonumber(args[2])
 		if not minutes or minutes < 1 then
-			reply = "Usage: /invasion schedule <minutes> [area|random] [faction|random]"
+			reply = "Usage: /invasion schedule <minutes> [area|random] [faction|random] [clash]"
 		else
 			local at = now() + math.floor(minutes * 60)
-			table.insert(C().schedule, {at = at, area = args[3] or "random", faction = args[4] or "random"})
+			local clash = args[5] == "clash" or nil
+			table.insert(C().schedule, {at = at, area = args[3] or "random", faction = args[4] or "random",
+				clash = clash or false})
 			local ak, fk = I.resolve(V.cfg(), at, args[3] or "random", args[4])
-			reply = string.format("Invasion scheduled at %s: %s, %s.", os.date("%H:%M:%S", at), tostring(ak), tostring(fk))
+			local rk = clash and ak and I.pickRival(V.cfg(), at, ak, fk)
+			reply = string.format("Invasion scheduled at %s: %s, %s%s.", os.date("%H:%M:%S", at), tostring(ak), tostring(fk),
+				rk and (" against " .. rk) or "")
 		end
 	elseif cmd == "check" then
 		local list = args[2] and {V.area(args[2])} or V.areas()
@@ -1572,7 +1849,7 @@ function gm.onSay(player, words, param)
 		end
 		reply = "Areas: " .. table.concat(out, ", ") .. "\nFactions: " .. table.concat(I.factionKeys(C()), ", ")
 	else
-		reply = "Usage: /invasion start <area|random> [faction], stop, status, schedule <minutes> [area] [faction], " ..
+		reply = "Usage: /invasion start <area|random> [faction|random] [clash|<rival faction>], stop, status, schedule <minutes> [area] [faction], " ..
 			"check [area], areas, event <storm|merchant|golden|stop> [area], wave, breach <n>"
 	end
 	player:showTextDialog(2175, reply)

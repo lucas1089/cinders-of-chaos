@@ -407,6 +407,16 @@ return {
 		["The horde of %s breaks: the last %d invaders flee in %d seconds."] =
 			"A horda de %s se desfaz: os últimos %d invasores fogem em %d segundos.",
 		["The last %d invaders flee from %s."] = "Os últimos %d invasores fogem de %s.",
+		-- the clash of two hordes (O410)
+		["Wave %d of %d: %s and %s lead the last assault on %s!"] = "Onda %d de %d: %s e %s lideram o último ataque a %s!",
+		["CLASH! The %s and the %s both march on %s and fight each other on the way! Defend %s: %d waves in %d minutes, each horde led by its warlord."] =
+			"CONFRONTO! %s e %s marcham sobre %s e lutam entre si no caminho! Defenda %s: %d ondas em %d minutos, cada horda liderada por seu senhor da guerra.",
+		["VICTORY! %s held: the %s and the %s are broken in %s. Top defenders: %s."] =
+			"VITÓRIA! %s resistiu: %s e %s foram derrotados em %s. Melhores defensores: %s.",
+		["The two hordes slew %d of each other."] = "As duas hordas mataram %d dos seus entre si.",
+		["The %s drives the %s off and holds %s."] = "%s expulsa %s e domina %s.",
+		["The %s and the %s gather: both will fall on %s in %d minute%s!"] =
+			"%s e %s se reúnem: ambos cairão sobre %s em %d minuto%s!",
 		["INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord."] =
 			"INVASÃO! %s ataca %s! Defenda %s: %d ondas em %d minutos, a última liderada pelo senhor da guerra deles.",
 		-- O393
