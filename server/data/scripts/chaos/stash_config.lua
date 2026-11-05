@@ -162,6 +162,21 @@ return {
 	-- zone or a hideout, at most `batch` items per press.
 	inbox = {batch = 60, rateMs = 1500},
 
+	-- ------------------------------------------------------------------ Find my item (O412)
+	-- One search over the equipped slots, every carried container (closed ones too, any depth up to maxDepth), the
+	-- purse, the inbox and the stash tabs (itemsearch_core.lua). By name, rarity name (en and pt-BR) and the affix
+	-- lines of rarity and unique gear. Read only. The client asks for a page ({make = "Find", q, page}); every page
+	-- runs the search again (nothing is kept between requests), at most one request every rateMs per player.
+	find = {
+		rateMs = 500, -- ms between two Find requests of a player (the client waits 700 ms after the last key)
+		minChars = 2, maxChars = 40, maxWords = 5, -- the query
+		max = 200, -- results kept per search (the list says "more" past it)
+		pageSize = 20, -- results per answer: 20 rows of at most ~300 bytes stay under the 8192 byte packet limit
+		scanLimit = 3000, -- items looked at per search at most (a huge loot bag ends the walk, the list says "more")
+		maxDepth = 8, -- containers inside containers walked at most
+		nameChars = 40, whereChars = 80 -- text cut per row
+	},
+
 	-- ------------------------------------------------------------------ protocol
 	chunkSize = 40, -- entries per addItems packet at most
 	chunkBytes = 6000, -- and its entries' JSON at most this long: a packet over 8192 bytes is lost to this window (stash.lua sendItems)

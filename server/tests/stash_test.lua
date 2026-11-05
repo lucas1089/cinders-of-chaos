@@ -2093,6 +2093,77 @@ end
 end
 o316()
 
+-- ====================================================================== Find my item (O412)
+-- S.find against the mocked engine: equipment, a closed bag in the backpack, the purse, the inbox, the stash rows
+;(function()
+	resetDB()
+	CONST_SLOT_FIRST, CONST_SLOT_LAST = 1, 10 -- the engine's (this file's global table makes up a number for any unknown name)
+	local p = newPlayer(4120)
+	local bpk = p.bp()
+	local blade2 = newItem(2400)
+	blade2.custom.rarity = 5
+	local bag2 = container(1987, {newItem(2148, 3), blade2})
+	bpk.children[#bpk.children + 1] = bag2
+	bag2.parent = bpk
+	p.slots[1] = newItem(2457)
+	local purse = container(14404, {newItem(2400)})
+	function p:getStoreInbox() return purse end
+	local inboxF = container(14404, {container(1987, {newItem(2400)})})
+	function p:getInbox() return inboxF end
+	DB.nextId = DB.nextId + 1
+	DB.rows[DB.nextId] = {id = DB.nextId, player = 4120, item = 2400, count = 1, codec = "blob", data = "", tab = 1,
+		classes = "", name = "magic sword", info = "You see a magic sword. Fire Damage +7%", rarity = 3, state = 0, seq = 0,
+		source = "deposit"}
+	local rowId = DB.nextId
+	addPlain(4120, 2148, 900, 1)
+	local name2400 = types[2400] and types[2400].name or "item 2400"
+	req(p, {make = "Find", q = name2400})
+	local f = last("found")
+	check(f ~= nil and f.error == nil, "Find answers found")
+	eq(f.total, 4, "the bag, the purse, the inbox parcel and the stash")
+	eq(f.items[1].loc, "bag", "the carried one first")
+	eq(f.items[1].slot, CONST_SLOT_BACKPACK, "in the backpack slot")
+	eq(f.items[1].path[1], 0, "the bag is the first item of the backpack") eq(f.items[1].at, 1, "the blade is its second item")
+	eq(f.items[1].ids[1], 1988 + 100000, "the backpack's client id") eq(f.items[1].ids[2], 1987 + 100000, "the bag's")
+	eq(f.items[1].rarity, 5, "the rarity of the carried blade")
+	eq(f.items[2].loc, "purse", "then the purse") eq(f.items[3].loc, "inbox", "then the inbox")
+	eq(f.items[4].loc, "stash", "then the stash") eq(f.items[4].row, rowId, "its row") eq(f.items[4].tab, 1, "its tab")
+	req(p, {make = "Find", q = "fire damage"})
+	f = last("found")
+	eq(f.total, 1, "the look text of a stored item (its affix lines)")
+	req(p, {make = "Find", q = "lendaria"})
+	f = last("found")
+	eq(f.total, 1, "a rarity name in pt-BR") eq(f.items[1].loc, "bag", "the Legendary blade")
+	req(p, {make = "Find", q = "x"})
+	f = last("found")
+	eq(f.error, "short", "a one-letter query is refused") eq(f.items, nil, "with no rows")
+	req(p, {make = "Find", q = string.rep("y", 300)})
+	eq(last("found").error, "long", "a long query is refused")
+	eq(#last("found").q <= 41, true, "and not echoed whole")
+	req(p, {make = "Find", q = {1}})
+	eq(last("found").error, "short", "not a string")
+	-- read only: nothing moved, nothing written
+	eq(#bag2.children, 2, "the bag keeps its items") eq(#purse.children, 1, "the purse") eq(#inboxF.children, 1, "the inbox")
+	eq(activeRows(4120), 1, "the stash row stays")
+	-- the rate limit: a burst is dropped
+	local allowed = {}
+	ChaosRateLimit = {allow = function(_, key, ms) allowed[#allowed + 1] = key .. ":" .. ms return false end}
+	req(p, {make = "Find", q = name2400})
+	eq(last("found"), nil, "a rate-limited request gets no answer")
+	eq(allowed[1], "stash.Find:" .. Chaos.stashConfig.find.rateMs, "Find has its own rate key")
+	ChaosRateLimit = nil
+	-- many matches: pages
+	for i = 1, 45 do
+		local it = newItem(2400)
+		bpk.children[#bpk.children + 1] = it
+		it.parent = bpk
+	end
+	req(p, {make = "Find", q = name2400, page = 3})
+	f = last("found")
+	eq(f.total, 49, "every match counted") eq(f.pages, 3, "three pages of 20") eq(f.page, 3, "page three")
+	eq(#f.items, 9, "the rest")
+end)()
+
 -- ====================================================================== the SQL
 -- the real store, against a recording database: integers formatted as integers, texts escaped
 dofile("data/scripts/chaos/stash.lua")

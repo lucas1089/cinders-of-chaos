@@ -210,6 +210,17 @@ ChaosMainWindow
     width: 135
     !text: tr("Disabled Items")
 
+  // Find my item (O412): the stash search text as the start of a search over every place the character keeps items
+  Button
+    id: FindButton
+    anchors.left: DisableListButton.right
+    anchors.bottom: Filter.bottom
+    margin-left: 10
+    width: 110
+    !text: tr("Find my item")
+    !tooltip: tr("Search what you wear and carry (closed bags too), your purse, your inbox and every stash tab (Ctrl+Shift+F).")
+    @onClick: modules.game_stash.openFind()
+
   Button
     id: CloseButton
     !text: tr("Close")

@@ -1,5 +1,6 @@
 Stash = {}
 local V = StashView -- stashview.lua: texts and rules (tested by stashview_test.lua)
+local F = StashFind -- stashfind.lua: Find my item (O412; tested by stashfind_test.lua)
 local CODE = 57
 local Filter = "AllItems"
 local DepotId = 3502
@@ -48,6 +49,13 @@ Stash.Init = function()
 	end
 
 	Stash.HookDragHint()
+	-- Find my item: Ctrl+Shift+F (Ctrl+F is the base client's Toggle Fullscreen); it types no text, so it works while
+	-- the chat line has the keyboard
+	Stash.FindKey = function()
+		if g_game.isOnline() then toggleFind() end
+		return true
+	end
+	g_keyboard.bindKeyDown(F.HOTKEY, Stash.FindKey)
 end
 
 -- Monkey-patches UIItem.onDragEnter/onDragLeave to flash the stash drop hint.
@@ -118,6 +126,11 @@ Stash.Terminate = function()
 	})
 
 	Stash.UnhookDragHint()
+	if Stash.FindKey then
+		pcall(g_keyboard.unbindKeyDown, F.HOTKEY, Stash.FindKey)
+		Stash.FindKey = nil
+	end
+	Stash.DestroyFind()
 end
 
 Stash.CreateUI = function()
@@ -179,6 +192,7 @@ end
 
 Stash.OnEnd = function()
 	Stash.Destroy()
+	Stash.DestroyFind()
 
 	Stash.BlockList = nil
 	Stash.BlockList = {}
@@ -254,6 +268,9 @@ Stash.Reveal = function()
 	if Stash.UI then
 		Stash.UI:show()
 	end
+	local after = Stash.AfterOpen -- Find my item: the Inbox button flashed once the window is there
+	Stash.AfterOpen = nil
+	if after then pcall(after) end
 end
 
 -- a depot locker opened by the engine: closed at once (again one cycle later, in case the container window was made
@@ -310,6 +327,7 @@ Stash.DataManager = function(protocol, opcode, buffer)
 			if Stash.opening and V.revealReady(true, 0) then
 				Stash.Reveal()
 			end
+			Stash.ApplyHighlight()
 		end
 	elseif buffer.make == "tabs" then
 		Stash.Tabs = buffer
@@ -352,6 +370,8 @@ Stash.DataManager = function(protocol, opcode, buffer)
 		Stash.StashAll(buffer)
 	elseif buffer.make == "addBlockItem" then
 		Stash.BlockListUpdate(buffer)
+	elseif buffer.make == "found" then
+		Stash.OnFound(buffer)
 	elseif buffer.make == "forceBlockList" then
 		-- Full block-list snapshot (sent once on category load).
 		Stash.BlockList = {}
@@ -827,6 +847,196 @@ Stash.BlockListUpdate = function(Data)
 			self:getParent():destroy()
 		end
 	end
+end
+
+-- ---------------------------------------------------------------- Find my item (O412)
+-- One search over the equipment, every carried container (closed ones too: the server walks them), the purse, the
+-- inbox and the stash tabs (server stash.lua S.find). A click goes to the item: the stash window at its tab, the bags
+-- it is in (game_chaoslayout opens them), the slot, the purse button or the stash's Inbox button.
+Stash.FindState = { q = nil, page = 1, msg = nil }
+
+local function flashWidget(w, ms)
+	if not w or w:isDestroyed() then return end
+	w:setBorderWidth(2)
+	w:setBorderColor('#ffd040')
+	scheduleEvent(function()
+		if not w:isDestroyed() then w:setBorderWidth(0) end
+	end, ms or 2500)
+end
+
+local function failure(text)
+	if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
+		modules.game_textmessage.displayFailureMessage(text)
+	end
+end
+
+Stash.DestroyFind = function()
+	local st = Stash.FindState
+	if st.debounce then removeEvent(st.debounce) st.debounce = nil end
+	if st.timeout then removeEvent(st.timeout) st.timeout = nil end
+	st.q, st.page, st.msg = nil, 1, nil
+	Stash.PendingHighlight = nil
+	if Stash.FindUI then
+		Stash.FindUI:destroy()
+		Stash.FindUI = nil
+	end
+end
+
+Stash.FindRequest = function(q, page)
+	local st = Stash.FindState
+	local ui = Stash.FindUI
+	if not ui then return end
+	if st.timeout then removeEvent(st.timeout) st.timeout = nil end
+	st.q, st.page = q, page or 1
+	if not q then
+		ui.status:setText(ui.query:getText() == '' and '' or tr('Type at least %d letters.', F.MIN_CHARS))
+		ui.results:destroyChildren()
+		ui.pager:setVisible(false)
+		return
+	end
+	ui.status:setText(tr('Searching...'))
+	Stash.Communicate(json.encode({action = "Stash", data = {make = "Find", q = q, page = st.page}}))
+	-- a request the server dropped (too fast) gets no answer: the line says so and the next key asks again
+	st.timeout = scheduleEvent(function()
+		st.timeout = nil
+		if Stash.FindUI and st.msg == nil then Stash.FindUI.status:setText(tr('No answer. Type again or press Enter.')) end
+	end, F.TIMEOUT_MS)
+	st.msg = nil
+end
+
+Stash.OnFound = function(msg)
+	local st = Stash.FindState
+	local ui = Stash.FindUI
+	if not ui or not F.current(msg, st.q) then return end
+	if st.timeout then removeEvent(st.timeout) st.timeout = nil end
+	st.msg = msg
+	st.page = tonumber(msg.page) or 1
+	ui.status:setText(F.statusText(msg))
+	ui.results:destroyChildren()
+	for _, r in ipairs(type(msg.items) == 'table' and msg.items or {}) do
+		local row = g_ui.createWidget('StashFindRow', ui.results)
+		row.icon:setItemId(tonumber(r.cid) or 0)
+		row.icon:setItemCount(math.min(tonumber(r.count) or 1, 100))
+		row.name:setText(F.title(r))
+		row.name:setColor(F.color(r))
+		row.where:setText(F.whereText(r, V.tabLabel))
+		row:setTooltip(F.hint(r))
+		row.onClick = function() Stash.FindGo(r) end
+	end
+	local pages = tonumber(msg.pages) or 1
+	ui.pager:setVisible(pages > 1)
+	ui.pager.pageLabel:setText(F.pageText(msg))
+	ui.pager.prevButton:setEnabled(st.page > 1)
+	ui.pager.nextButton:setEnabled(st.page < pages)
+end
+
+-- the stash window at the result's tab, the entry flashed (now when the list is there, else once it arrives)
+Stash.ApplyHighlight = function()
+	local r = Stash.PendingHighlight
+	if not r or not (Stash.UI and Stash.UI:isVisible() and Stash.Data) then return end
+	Stash.PendingHighlight = nil
+	if Stash.UI.Search and Stash.UI.Search:getText() ~= '' then Stash.UI.Search:clearText() end
+	Stash.SelectTab(tonumber(r.tab) or 0)
+	for _, w in ipairs(Stash.UI.SupplyList:getChildren()) do
+		if F.isEntry(r, w.data) then
+			pcall(function() Stash.UI.SupplyList:ensureChildVisible(w) end)
+			flashWidget(w)
+			return
+		end
+	end
+	failure(tr('That item is not in the stash any more. Search again.'))
+end
+
+-- the stash window open, then `then_` (nil: the item list's arrival applies Stash.PendingHighlight)
+local function showStash(then_)
+	if Stash.UI and Stash.UI:isVisible() then
+		if then_ then then_() end
+	else
+		Stash.AfterOpen = then_
+		vipToggle()
+	end
+end
+
+Stash.FindGo = function(r)
+	local a = F.action(r)
+	if a == 'stash' then
+		Stash.PendingHighlight = r
+		showStash(Stash.UI and Stash.UI:isVisible() and Stash.ApplyHighlight or nil)
+	elseif a == 'container' then
+		local steps = F.steps(r)
+		local K = ChaosLayout and ChaosLayout.Containers
+		if not (steps and K and K.openPath(steps, tonumber(r.at))) then
+			failure(tr('Open your bags to reach it: %s.', tostring(r.where or '')))
+		end
+	elseif a == 'equip' then
+		local inv = modules.game_inventory
+		local panel = inv and inv.getInventoryPanel and inv.getInventoryPanel()
+		flashWidget(panel and panel:getChildById('slot' .. (tonumber(r.slot) or 0)))
+	elseif a == 'purse' then
+		local inv = modules.game_inventory
+		flashWidget(inv and inv.purseButton)
+		failure(tr('It is in your purse: the purse button under your equipment opens it.'))
+	elseif a == 'inbox' then
+		showStash(function()
+			if Stash.UI and Stash.UI.InboxButton then flashWidget(Stash.UI.InboxButton) end
+		end)
+		failure(tr('It is in your inbox: the Inbox button of the stash moves it into your stash (in a protection zone).'))
+	end
+end
+
+-- the window: from the stash header (with the stash's search text) or Ctrl+Shift+F
+function openFind(text)
+	if not g_game.isOnline() then return end
+	if not Stash.FindUI then
+		local ok, ui = pcall(g_ui.displayUI, 'stash_find')
+		if not ok or not ui then return end
+		Stash.FindUI = ui
+		ui.chaosNoMirror = true -- item icons in Lua-made rows: the RmlUi window mirror leaves it in OTUI
+		ui.pager:setVisible(false)
+		ui.query.onTextChange = function(self, value)
+			ui.hint:setVisible(value == '')
+			local st = Stash.FindState
+			if st.debounce then removeEvent(st.debounce) end
+			st.debounce = scheduleEvent(function()
+				st.debounce = nil
+				Stash.FindRequest(F.query(ui.query:getText()), 1)
+			end, F.DEBOUNCE_MS)
+		end
+		g_keyboard.bindKeyDown('Enter', function()
+			Stash.FindRequest(F.query(ui.query:getText()), 1)
+			return true
+		end, ui.query)
+	end
+	local ui = Stash.FindUI
+	if text == nil and Stash.UI and Stash.UI:isVisible() and Stash.UI.Search then
+		text = Stash.UI.Search:getText()
+	end
+	if type(text) == 'string' and text ~= '' then
+		ui.query:setText(text)
+	end
+	ui:show()
+	ui:raise()
+	ui:focus()
+	ui.query:focus()
+end
+
+function closeFind()
+	Stash.DestroyFind()
+end
+
+function toggleFind()
+	if Stash.FindUI and Stash.FindUI:isVisible() then
+		closeFind()
+	else
+		openFind()
+	end
+end
+
+function findPage(delta)
+	local st = Stash.FindState
+	if not st.q or not st.msg then return end
+	local page = math.max(1, math.min(tonumber(st.msg.pages) or 1, st.page + (tonumber(delta) or 0)))
+	if page ~= st.page then Stash.FindRequest(st.q, page) end
 end
 
 function confirmOk()

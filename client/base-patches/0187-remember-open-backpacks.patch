@@ -1,0 +1,65 @@
+# Chaos: the option "Remember open backpacks" (O412; client/BASE.md "0187"; mods/client_settings/classes/dataset.lua,
+# options/interface.otui; after 0001-0186). Lua and OTUI only, no engine code. The overlay module game_chaoslayout
+# (containers.lua) opens again at login the containers that were open at logout (by the place of their item: the
+# inventory slot, then the index in each parent), in their panel, order, height and scroll, and reads this option.
+#  * dataset.lua: `rememberBackpacks` (default on); its apply tells game_chaoslayout (`ChaosLayout.onOption`).
+#  * options/interface.otui: one checkbox under "Show the whole menu" (0154); that panel grows from 22 to 41 px.
+# Without this patch the option counts as on. Not run in a client; goes live with the next client build.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2266,6 +2266,15 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0187): the containers open at logout open again at login, in their panel and order (game_chaoslayout)
++  rememberBackpacks = {
++    value = true,
++    apply = function(value)
++      if ChaosLayout and ChaosLayout.onOption then ChaosLayout.onOption('rememberBackpacks', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -721,8 +721,9 @@
+         value: 1
+ 
+     FlatPanel
+-      // Chaos (base patch 0154, overlay module client_chaos_topbar): the top menu shows systems as the character unlocks them
+-      size: 505 22
++      // Chaos (base patch 0154, overlay module client_chaos_topbar): the top menu shows systems as the character unlocks them;
++      // base patch 0187 (game_chaoslayout): the containers open at logout open again at login
++      size: 505 41
+       anchors.top: prev.bottom
+       anchors.right: parent.right
+       anchors.left: parent.left
+@@ -749,6 +750,25 @@
+           local value = modules.client_settings.getOption('showWholeMenu')
+           self:setChecked(value == true)
+ 
++      SettingsCheckBox
++        id: rememberBackpacks
++        size: 12 12
++        !text: tr('Remember open backpacks')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: showWholeMenu.bottom
++        margin-top: 7
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('The backpacks and bags open when you log out open again at your next login, in the same panel, order, height and scroll.\nA bag that is no longer there is skipped.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('rememberBackpacks')
++          self:setChecked(value ~= false)
++
+     Button
+       id: resetButton
+       size: 43 20

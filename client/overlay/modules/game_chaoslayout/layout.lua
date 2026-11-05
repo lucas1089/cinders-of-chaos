@@ -2,8 +2,8 @@
 -- The base client restores miniwindows from a settings node no module ever writes (and skips it past 50 entries), so
 -- the layout never persisted. This module keeps, per character (world/name, client settings node chaos_layout):
 -- * the side panel miniwindows (Skills, Battle, VIP, Party, our Chaos panels...): panel and side, order, height,
---   collapsed, open or closed, locked; and how many side panels there were. Container windows are left out (their
---   ids are slots, not containers);
+--   collapsed, open or closed, locked; and how many side panels there were. Container windows are not miniwindows
+--   here (their ids are server container ids): containers.lua keeps them by the place of their item (O412);
 -- * the position (and the size of a resizable one) of the big Chaos windows, clamped to the game window.
 -- Restored after login once the panels exist; a window created later is placed when it appears. Saved within a
 -- second of a change (a 1 s check while online) and never before this character's layout was restored (a fresh
@@ -40,6 +40,7 @@ end
 local function isMini(w)
   return w and w.minimize ~= nil and w.maximize ~= nil and w.isResizeable ~= nil
 end
+M.isMini = isMini
 
 -- the side panels in order: { id, side, persistent, widget }
 local function sidePanels()
@@ -56,6 +57,15 @@ local function sidePanels()
     end
   end
   return out
+end
+M.sidePanels = sidePanels
+
+-- the open containers to save: none while the option is off or a restore runs (the saved list stays)
+local function containersNow()
+  local K = M.Containers
+  if not K or K.busy or not K.enabled() then return nil end
+  local ok, list = pcall(K.snapshot)
+  return ok and list or nil
 end
 
 local function snapshotNow()
@@ -74,6 +84,7 @@ local function snapshotNow()
     containers[#containers + 1] = { id = p.id, side = p.side, persistent = p.persistent, windows = windows }
   end
   local snap = L.snapshot(containers)
+  snap.containers = containersNow()
   snap.windows = {}
   for id, b in pairs(big) do
     if b.restored and b.rect then snap.windows[id] = b.rect end
@@ -149,6 +160,7 @@ local function panelsMaps()
   end
   return existing, first, byId
 end
+M.panelsMaps = panelsMaps
 
 local function restoreMini()
   pending = {}
@@ -276,6 +288,7 @@ end
 
 local function onGameStart()
   L.begin(st)
+  if M.Containers then M.Containers.reset() end
   saved, pending = nil, {}
   for _, b in pairs(big) do b.restored, b.rect = false, nil end
   if startEvent then removeEvent(startEvent) end
@@ -290,6 +303,13 @@ local function onGameStart()
     if not saved then saved = memory[key] end
     pcall(restoreMini)
     L.restored(st, key, saved)
+    -- the open containers of the last session, one by one after the miniwindows (containers.lua)
+    if saved and saved.containers and M.Containers then
+      local list = saved.containers
+      scheduleEvent(function()
+        if g_game.isOnline() then pcall(M.Containers.restore, list) end
+      end, 300)
+    end
     watchBig()
     if not tickEvent then tickEvent = scheduleEvent(tick, TICK) end
     -- the passes after the first: the base client and some modules close or move windows a little later
@@ -312,12 +332,14 @@ end
 local function onGameEnd()
   -- the last change is already written (tick); a logout's window closing must not be saved
   L.begin(st)
+  if M.Containers then M.Containers.reset() end
   if startEvent then removeEvent(startEvent) startEvent = nil end
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
   clearPasses()
 end
 
 function M.init()
+  if M.Containers then M.Containers.init() end
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onDeath = onDeath })
   if g_game.isOnline() then onGameStart() end
 end
@@ -325,4 +347,9 @@ end
 function M.terminate()
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onDeath = onDeath })
   onGameEnd()
+  if M.Containers then M.Containers.terminate() end
+end
+
+-- the option "Remember open backpacks" (client_settings rememberBackpacks, base patch 0187): read when it is used
+function M.onOption(name, value)
 end
