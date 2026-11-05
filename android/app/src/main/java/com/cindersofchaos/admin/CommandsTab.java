@@ -225,6 +225,7 @@ final class CommandsTab {
         buildAccounts();
         buildDiscord();
         buildDiscordBot();
+        buildPayments();
         buildHealth();
         buildServerUser();
         buildVps();
@@ -698,6 +699,188 @@ final class CommandsTab {
                 String end = DiscordInfo.idEnd(f.raw, e.getKey());
                 e.getValue().setHelperText(end.isEmpty() ? "Sem webhook salvo. Cole a URL e toque em Salvar."
                         : "Salvo (final do id " + end + "). Cole outra URL para trocar; vazio + Salvar remove.");
+            }
+        });
+    }
+
+    // Donations (chaos-ctl.sh pay-status / pay-set / pay-test / pay-enable / pay-disable, O413; docs/PAYMENTS.md). Tokens
+    // and secrets are passwords: each goes on stdin of pay-set, never on a command line, the field is emptied after saving
+    // and pay-status only says whether a setting is saved.
+    private void buildPayments() {
+        MaterialCardView c = ui.titledCard("Pagamentos (doações)");
+        LinearLayout b = Ui.body(c);
+        TextView now = ui.text(PayInfo.summary(""));
+        b.addView(now);
+        b.addView(ui.hint("Pix pelo Mercado Pago e PayPal. Ordem: cole as chaves e toque em Salvar em cada campo, ligue "
+                + "o Pix e o PayPal, cole os endereços de webhook abaixo nos painéis do Mercado Pago e do PayPal, toque em "
+                + "Ativar worker e depois em Testar. PayPal: Sandbox primeiro, Live só com as chaves Live. Os valores "
+                + "vão pelo SSH, ficam só na VPS (/etc/chaos/payments.env, modo 640) e o app não os mostra de volta. "
+                + "Passo a passo: docs/PAYMENTS.md."), ui.gap(4));
+        final Map<String, TextInputLayout> fields = new LinkedHashMap<>();
+        final TextView[] hooks = new TextView[2];
+        Runnable refresh = () -> payStatus(now, fields, hooks, false);
+        for (Map.Entry<String, String> e : PayInfo.FIELDS.entrySet()) {
+            final String key = e.getKey();
+            final boolean secret = PayInfo.secret(key);
+            TextInputLayout f = ui.field(e.getValue(), "Cole o valor. Vazio + Salvar apaga.", "",
+                    secret ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
+                            | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                            : InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            fields.put(key, f);
+            final android.widget.EditText pe = f.getEditText();
+            if (pe != null && secret) {
+                // the window is FLAG_SECURE while a secret field is in focus or holds text
+                final String skey = "pay-" + key;
+                pe.setOnFocusChangeListener((v, focus) -> a.secret(skey, focus || pe.length() > 0));
+                pe.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int st, int cnt, int af) {
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int st, int bf, int cnt) {
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable ed) {
+                        a.secret(skey, pe.hasFocus() || ed.length() > 0);
+                    }
+                });
+            }
+            MaterialButton save = ui.secondary("Salvar", 0);
+            save.setOnClickListener(v -> {
+                String value = Ui.value(f).trim();
+                if (!PayInfo.valid(key, value)) {
+                    f.setError(PayInfo.hint(key));
+                    return;
+                }
+                f.setError(null);
+                Runnable go = () -> paySet(key, e.getValue(), value, f, refresh);
+                if (value.isEmpty()) {
+                    a.confirm("Apagar " + e.getValue() + "?", "O valor salvo na VPS fica vazio.", "Apagar", true, go);
+                } else {
+                    go.run();
+                }
+            });
+            b.addView(f, ui.gap(8));
+            b.addView(save, ui.gap(2));
+        }
+        // the choices: one tap each (pay-set NAME with the word on stdin)
+        b.addView(ui.hint("Pix (Mercado Pago):"), ui.gap(12));
+        MaterialButton pixOn = ui.secondary("Ligar Pix", 0);
+        pixOn.setOnClickListener(v -> paySet("CHAOS_PAY_PIX_PROVIDER", "Pix", "mercadopago", null, refresh));
+        MaterialButton pixOff = ui.secondary("Desligar Pix", 0);
+        pixOff.setOnClickListener(v -> paySet("CHAOS_PAY_PIX_PROVIDER", "Pix", "off", null, refresh));
+        b.addView(ui.evenRow(pixOn, pixOff), ui.gap(4));
+        b.addView(ui.hint("PayPal:"), ui.gap(8));
+        MaterialButton ppOn = ui.secondary("Ligar PayPal", 0);
+        ppOn.setOnClickListener(v -> paySet("CHAOS_PAY_PAYPAL_PROVIDER", "PayPal", "paypal", null, refresh));
+        MaterialButton ppOff = ui.secondary("Desligar PayPal", 0);
+        ppOff.setOnClickListener(v -> paySet("CHAOS_PAY_PAYPAL_PROVIDER", "PayPal", "off", null, refresh));
+        b.addView(ui.evenRow(ppOn, ppOff), ui.gap(4));
+        MaterialButton sandbox = ui.secondary("Sandbox (teste)", 0);
+        sandbox.setOnClickListener(v -> paySet("CHAOS_PAYPAL_ENV", "PayPal sandbox", "sandbox", null, refresh));
+        MaterialButton live = ui.danger("Live (real)", 0);
+        live.setOnClickListener(v -> a.confirm("PayPal em Live?", "Doações passam a cobrar dinheiro de verdade. O Client ID, "
+                + "o Secret e o Webhook ID salvos precisam ser os do app Live (os do Sandbox não funcionam em Live).",
+                "Live", true, () -> paySet("CHAOS_PAYPAL_ENV", "PayPal live", "live", null, refresh)));
+        b.addView(ui.evenRow(sandbox, live), ui.gap(4));
+        MaterialButton donation = ui.secondary("Categoria DONATION", 0);
+        donation.setOnClickListener(v -> paySet("CHAOS_PAYPAL_CATEGORY", "Categoria", "DONATION", null, refresh));
+        MaterialButton digital = ui.secondary("DIGITAL_GOODS", 0);
+        digital.setOnClickListener(v -> paySet("CHAOS_PAYPAL_CATEGORY", "Categoria", "DIGITAL_GOODS", null, refresh));
+        b.addView(ui.evenRow(donation, digital), ui.gap(4));
+        b.addView(ui.hint("DIGITAL_GOODS só se o PayPal recusar a categoria de doação na sua conta."), ui.gap(2));
+        // the webhook URLs to paste in the panels, from pay-status
+        String[][] psp = {{"mercadopago", "Webhook do Mercado Pago (evento Pagamentos)"}, {"paypal", "Webhook do PayPal"}};
+        for (int i = 0; i < psp.length; i++) {
+            final String label = psp[i][1];
+            b.addView(ui.hint(label + ":"), ui.gap(12));
+            hooks[i] = ui.text("Toque em Estado para ver o endereço.");
+            hooks[i].setTextIsSelectable(true);
+            b.addView(hooks[i]);
+            final TextView hv = hooks[i];
+            MaterialButton copy = ui.flat("Copiar", R.drawable.ic_copy);
+            copy.setOnClickListener(v -> {
+                String url = hv.getText().toString();
+                if (!url.startsWith("http")) {
+                    a.snack("Toque em Estado primeiro (e salve o endereço do site se faltar).", false);
+                    return;
+                }
+                a.copy(url, label + ": copiado.");
+            });
+            b.addView(copy, ui.gap(2));
+        }
+        MaterialButton on = ui.primary("Ativar worker", 0);
+        on.setOnClickListener(v -> payCtl("Pagamentos: worker ativado", "pay-enable", 90, refresh));
+        MaterialButton off = ui.danger("Desativar", 0);
+        off.setOnClickListener(v -> a.confirm("Desativar o worker de doações?", "Doações novas ficam esperando a cobrança "
+                + "até você ativar de novo. As chaves salvas ficam.", "Desativar", true,
+                () -> payCtl("Pagamentos: worker desativado", "pay-disable", 60, refresh)));
+        b.addView(ui.evenRow(on, off), ui.gap(12));
+        MaterialButton test = ui.secondary("Testar", 0);
+        test.setOnClickListener(v -> payCtl("Pagamentos: teste", "pay-test", 120, refresh));
+        MaterialButton status = ui.secondary("Estado", R.drawable.ic_refresh);
+        status.setOnClickListener(v -> payStatus(now, fields, hooks, true));
+        b.addView(ui.evenRow(test, status), ui.gap(4));
+        b.addView(ui.hint("Testar só lê: confere as chaves no Mercado Pago e no PayPal e se a página de webhook responde "
+                + "(401 = certo). Não cria cobrança."), ui.gap(2));
+        quick.addView(c, ui.gap(12));
+    }
+
+    private void paySet(String key, String label, String value, TextInputLayout field, Runnable refresh) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        result.running("Pagamentos: " + label);
+        // the value is the command's stdin: never on its command line
+        a.ctlAction("pay-set " + key, 40, value + "\n", f -> {
+            result.show("Pagamentos: " + label, f);
+            a.snack(label + ": " + (f.ok ? (value.isEmpty() ? "apagado" : "salvo") : f.title), f.ok);
+            if (f.ok) {
+                if (field != null) {
+                    Ui.setValue(field, "");
+                }
+                refresh.run();
+            }
+        });
+    }
+
+    private void payCtl(String what, String args, int timeout, Runnable refresh) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        result.running(what);
+        a.ctlAction(args, timeout, f -> {
+            result.show(what, f);
+            a.snack(what + ": " + (f.ok ? "feito" : f.title), f.ok);
+            refresh.run();
+        });
+    }
+
+    /** pay-status: the summary, each field saved or not, the two webhook URLs. */
+    private void payStatus(TextView now, Map<String, TextInputLayout> fields, TextView[] hooks, boolean showResult) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        a.ctlAction("pay-status", 40, f -> {
+            if (showResult || !f.ok) {
+                result.show("Pagamentos", f);
+            }
+            if (!f.ok) {
+                return;
+            }
+            now.setText(PayInfo.summary(f.raw));
+            for (Map.Entry<String, TextInputLayout> e : fields.entrySet()) {
+                e.getValue().setHelperText(PayInfo.fieldState(f.raw, e.getKey()));
+            }
+            String[] psp = {"mercadopago", "paypal"};
+            for (int i = 0; i < psp.length; i++) {
+                String url = PayInfo.webhook(f.raw, psp[i]);
+                hooks[i].setText(url.isEmpty() ? "Sem endereço do site: salve o endereço do site acima." : url);
             }
         });
     }

@@ -303,6 +303,26 @@ const BOT_SET_P: &[Param] = &[
     ),
     secret("value", "Valor (vazio remove)"),
 ];
+const PAY_SET_P: &[Param] = &[
+    choice(
+        "key",
+        "Ajuste",
+        &[
+            "CHAOS_PAY_PIX_PROVIDER",
+            "CHAOS_PAY_PAYPAL_PROVIDER",
+            "CHAOS_PAY_SITE_URL",
+            "CHAOS_PAY_PAYER_EMAIL",
+            "CHAOS_MP_ACCESS_TOKEN",
+            "CHAOS_MP_WEBHOOK_SECRET",
+            "CHAOS_PAYPAL_CLIENT_ID",
+            "CHAOS_PAYPAL_CLIENT_SECRET",
+            "CHAOS_PAYPAL_WEBHOOK_ID",
+            "CHAOS_PAYPAL_ENV",
+            "CHAOS_PAYPAL_CATEGORY",
+        ],
+    ),
+    secret("value", "Valor (vazio apaga)"),
+];
 const NP_DAYS_P: &[Param] = &[int("days", "Últimos dias", 1, 3650, "30")];
 const GH_DAYS_P: &[Param] = &[int("days", "Últimos dias", 1, 90, "7")];
 const BAL_DAYS_P: &[Param] = &[int("days", "Últimos dias", 1, 730, "30")];
@@ -423,6 +443,11 @@ pub static ACTIONS: &[Action] = &[
     act(Machine, "Servidor como usuário chaos", "Corrigir e reiniciar", "server-user fix --restart {secs}").p(SECS_P).ask().live(Live::Restarts).t(180),
     act(Machine, "Servidor como usuário chaos", "Desfazer", "server-user rollback").ask().t(60),
     act(Machine, "Servidor como usuário chaos", "Log do reinício", "server-user log 60").t(30),
+    act(Machine, "Pagamentos (doações)", "Estado", "pay-status").t(60).h("O que está salvo (sim ou não, nunca o valor) e os endereços para colar nos painéis do Mercado Pago e do PayPal. docs/PAYMENTS.md"),
+    act(Machine, "Pagamentos (doações)", "Guardar ajuste", "pay-set {key}").p(PAY_SET_P).t(60).h("O valor vai pelo stdin e só fica na VPS (/etc/chaos/payments.env, modo 640). Provedor: mercadopago, paypal ou off; ambiente: sandbox ou live."),
+    act(Machine, "Pagamentos (doações)", "Testar", "pay-test").t(120).h("Só lê: confere as chaves no Mercado Pago e no PayPal e se a página de aviso responde 401. Nenhuma cobrança."),
+    act(Machine, "Pagamentos (doações)", "Ativar worker", "pay-enable").t(90),
+    act(Machine, "Pagamentos (doações)", "Desativar worker", "pay-disable").ask().t(60).h("Doações novas esperam a cobrança até ativar de novo."),
     // ---- Logs
     act(Logs, "Console", "Últimas linhas", "logs {n}").p(N_P).t(40),
     act(Logs, "Erros", "Desde o último início", "errors {n}").p(N_P).t(40),
