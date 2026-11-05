@@ -162,6 +162,14 @@ def make_server(root):
     write(os.path.join(chaos, 'bounty_pool.lua'), POOL)
     write(os.path.join(chaos, 'bestiary_spawns.lua'), BESTIARY)
     write(os.path.join(chaos, 'bossspawns_config.lua'), BOSSES)
+    # O410: a planned area's quest chests, written by the area planner's own generator (area_plan_compile.chest_script)
+    import area_plan_compile as APC
+    chests = [dict(at=(2105, 2110, 8), aid=47960, storage=7101200, quest='lost_relic',
+                   reward=dict(gold=100, experience=0, message='', items=[])),
+              dict(at=(2120, 2101, 9), aid=47960, storage=7101201, quest='sealed "vault"', reward=None)]
+    write(os.path.join(data, 'scripts', 'chaos_areaplan', 'ember_hollow_chests.lua'),
+          APC.chest_script({'name': 'Ember "Hollow"', 'id': 'ember_hollow'}, chests, (2100, 2100, 8)))
+    write(os.path.join(data, 'scripts', 'chaos_areaplan', 'notes.lua'), '-- not a chest script\n')
     return data
 
 
@@ -215,6 +223,13 @@ try:
     ok(not any('Big Boss' in m['n'] for m in marks), 'the bounty pool\'s bosses are no hunting area')
     eq(sorted(m['n'] for m in by['boss']), ['Apocalypse (boss lair)', 'Dreadscale the Ancient (island boss)'], 'bosses')
     ok(all(m['r'] == 1 for m in by['boss']), 'bosses are discovered')
+    # O410: the planned areas' quest chests (ORIGIN plus the offsets the chest script keys them by)
+    eq(stats['chests'], 2, 'quest chests read')
+    eq(sorted((m['x'], m['y'], m['z'], m['n'], m['r']) for m in by['quest']),
+       [(2105, 2110, 8, 'Quest chest (Ember "Hollow")', 1), (2120, 2101, 9, 'Quest chest (Ember "Hollow")', 1)],
+       'quest chests: at their tiles, named after the area, discovered')
+    eq(G.quest_chests(os.path.join(tmp, 'nowhere')), [], 'no planned areas: no chests')
+    eq(G.KIND_ORDER[-1], 'quest', 'quest marks are written last')
     text = G.render(marks)
     eq(G.render(G.generate(tmp)[0]), text, 'deterministic')
     ok(text.startswith('-- Points of interest'), 'header')

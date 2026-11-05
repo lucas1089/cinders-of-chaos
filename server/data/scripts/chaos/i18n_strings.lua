@@ -407,6 +407,16 @@ return {
 		["The horde of %s breaks: the last %d invaders flee in %d seconds."] =
 			"A horda de %s se desfaz: os últimos %d invasores fogem em %d segundos.",
 		["The last %d invaders flee from %s."] = "Os últimos %d invasores fogem de %s.",
+		-- the clash of two hordes (O410)
+		["Wave %d of %d: %s and %s lead the last assault on %s!"] = "Onda %d de %d: %s e %s lideram o último ataque a %s!",
+		["CLASH! The %s and the %s both march on %s and fight each other on the way! Defend %s: %d waves in %d minutes, each horde led by its warlord."] =
+			"CONFRONTO! %s e %s marcham sobre %s e lutam entre si no caminho! Defenda %s: %d ondas em %d minutos, cada horda liderada por seu senhor da guerra.",
+		["VICTORY! %s held: the %s and the %s are broken in %s. Top defenders: %s."] =
+			"VITÓRIA! %s resistiu: %s e %s foram derrotados em %s. Melhores defensores: %s.",
+		["The two hordes slew %d of each other."] = "As duas hordas mataram %d dos seus entre si.",
+		["The %s drives the %s off and holds %s."] = "%s expulsa %s e domina %s.",
+		["The %s and the %s gather: both will fall on %s in %d minute%s!"] =
+			"%s e %s se reúnem: ambos cairão sobre %s em %d minuto%s!",
 		["INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord."] =
 			"INVASÃO! %s ataca %s! Defenda %s: %d ondas em %d minutos, a última liderada pelo senhor da guerra deles.",
 		-- O393
@@ -1384,6 +1394,11 @@ return {
 		["You do not have enough room or capacity for the reward."] =
 			"Você não tem espaço ou capacidade para a recompensa.",
 		["Daily reward (day %d, streak %d): %dx %s."] = "Recompensa diária (dia %d, sequência %d): %dx %s.",
+		-- O409: the login streak cosmetics (daily.lua, daily_core.lua) and the weekly class podium (weekly_class_core.lua)
+		["the cosmetic \"%s\""] = "o cosmético \"%s\"",
+		["Login streak of %d days: the cosmetic %s is yours. Choose it in the Wardrobe."] = "Sequência de login de %d dias: o cosmético %s é seu. Escolha-o no Guarda-roupa.",
+		["%s, the best of every class last week - %s."] = "%s, os melhores de cada classe na semana passada - %s.",
+		["Weekly Experience"] = "Experiência Semanal",
 		["Week completed! Bonus reward collected."] = "Semana completa! Recompensa bônus recebida.",
 		["A grace charge kept your streak alive (%d left)."] =
 			"Uma carga de tolerância manteve sua sequência viva (restam %d).",
@@ -8661,6 +8676,71 @@ return {
 			"O Desafio Semanal desta semana abre no próximo server save (o calabouço ainda tem o mapa da semana passada).",
 		["Weekly Challenge %s cleared in %s (%s). Your best this week: %s. See Leaderboards."] =
 			"Desafio Semanal %s concluído em %s (%s). Seu melhor tempo nesta semana: %s. Veja os Leaderboards.",
+		-- The Group Queue (O407, groupqueue.lua, groupqueue_core.lua; dungeons.lua ChaosDungeons.queueJoin)
+		["Dungeon: %s"] =
+			"Dungeon: %s",
+		["Arena %s"] =
+			"Arena %s",
+		["Dungeon %s (difficulty %d)"] =
+			"Dungeon %s (dificuldade %d)",
+		["the raid"] =
+			"a raid",
+		["Group Queue: %s found. Ready check: accept within %d seconds."] =
+			"Fila em Grupo: %s encontrada. Confirmação de prontidão: aceite em até %d segundos.",
+		["Group Queue: %s found. You left your other queues."] =
+			"Fila em Grupo: %s encontrada. Você saiu das outras filas.",
+		["The Group Queue is closed."] =
+			"A Fila em Grupo está fechada.",
+		["You are in the Group Queue already: leave it first."] =
+			"Você já está na Fila em Grupo: saia dela primeiro.",
+		["A party member is in the Group Queue already."] =
+			"Um membro do grupo já está na Fila em Grupo.",
+		["No queue took your group (the reasons are in the messages above)."] =
+			"Nenhuma fila aceitou o seu grupo (os motivos estão nas mensagens acima).",
+		["Group Queue: you joined %s."] =
+			"Fila em Grupo: você entrou em %s.",
+		["Group Queue: not joined: %s."] =
+			"Fila em Grupo: não entrou em: %s.",
+		["You are not in the Group Queue."] =
+			"Você não está na Fila em Grupo.",
+		["Group Queue: you left every queue."] =
+			"Fila em Grupo: você saiu de todas as filas.",
+		["Group Queue: %s left the queues, so did your party."] =
+			"Fila em Grupo: %s saiu das filas, e o seu grupo também.",
+		["Group Queue: the party leader is gone, the raid stays closed."] =
+			"Fila em Grupo: o líder do grupo saiu, a raid continua fechada.",
+		["Group Queue: the raid did not open: %s"] =
+			"Fila em Grupo: a raid não abriu: %s",
+		["Group Queue: everyone is ready for %s."] =
+			"Fila em Grupo: todos estão prontos para %s.",
+		["Group Queue: %s declined the ready check. Your group left every queue."] =
+			"Fila em Grupo: %s recusou a confirmação de prontidão. O seu grupo saiu de todas as filas.",
+		["The raid ready check is not available."] =
+			"A confirmação de prontidão da raid não está disponível.",
+		["A ready check needs a party. Alone, open the raid from the Raid window."] =
+			"A confirmação de prontidão precisa de um grupo. Sozinho, abra a raid pela janela Raid.",
+		["Group Queue: %s asks for a raid ready check. Accept within %d seconds."] =
+			"Fila em Grupo: %s pede uma confirmação de prontidão para a raid. Aceite em até %d segundos.",
+		["Group Queue: no answer from %s. Your group left every queue."] =
+			"Fila em Grupo: sem resposta de %s. O seu grupo saiu de todas as filas.",
+		["Group Queue: you are in no queue any more."] =
+			"Fila em Grupo: você não está mais em nenhuma fila.",
+		["Group Queue: %s logged out during the ready check. Your group left every queue."] =
+			"Fila em Grupo: %s saiu do jogo durante a confirmação de prontidão. O seu grupo saiu de todas as filas.",
+		["Only the party leader can queue the party."] =
+			"Só o líder do grupo pode colocar o grupo na fila.",
+		["Pick at least one queue."] =
+			"Escolha pelo menos uma fila.",
+		["That arena mode does not exist."] =
+			"Esse modo de arena não existe.",
+		["Arena: 1v1 is played alone, 2v2 as a party of two, 3v3 as a party of three."] =
+			"Arena: o 1v1 se joga sozinho, o 2v2 em um grupo de dois, o 3v3 em um grupo de três.",
+		["Your party is too large for the battleground."] =
+			"O seu grupo é grande demais para o battleground.",
+		["That dungeon does not exist."] =
+			"Essa dungeon não existe.",
+		["You are in a dungeon queue already."] =
+			"Você já está em uma fila de dungeon.",
 		["solo"] = "sozinho",
 		["party"] = "em grupo",
 	},

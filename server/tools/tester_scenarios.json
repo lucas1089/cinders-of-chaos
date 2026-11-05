@@ -7,11 +7,11 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 65,
+  "opcode": 66,
   "out": 38,
   "passive": 92,
   "place": 15,
-  "staff": 15
+  "staff": 17
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
  "keytest": {
@@ -7702,6 +7702,32 @@
     "groundloot"
    ]
   },
+  "groupQueue": {
+   "actions": [
+    "open",
+    "leave",
+    "join",
+    "raid",
+    "query"
+   ],
+   "client": [
+    "game_groupqueue"
+   ],
+   "dataKeys": [
+    "bg",
+    "dungeons",
+    "group"
+   ],
+   "files": [
+    "groupqueue.lua"
+   ],
+   "opcode": 160,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "groupqueue"
+   ]
+  },
   "guild": {
    "actions": [],
    "client": [
@@ -9483,6 +9509,17 @@
    ],
    "talkactions": []
   },
+  "build_trends": {
+   "files": [
+    "build_trends.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/buildtrends"
+   ],
+   "why": "staff command only (/buildtrends); testers are never staff"
+  },
   "buildshare": {
    "files": [
     "buildshare.lua"
@@ -9995,6 +10032,17 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "groupqueue": {
+   "files": [
+    "chaos_constants.lua",
+    "groupqueue.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "groupQueue"
+   ],
+   "talkactions": []
   },
   "guild": {
    "files": [
@@ -11546,6 +11594,17 @@
     "/challenge"
    ],
    "why": "staff command only (/challenge); testers are never staff"
+  },
+  "weekly_class": {
+   "files": [
+    "weekly_class.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/weeklyclass"
+   ],
+   "why": "staff command only (/weeklyclass); testers are never staff"
   },
   "weeklychest": {
    "files": [

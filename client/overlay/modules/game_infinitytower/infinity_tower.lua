@@ -789,3 +789,8 @@ function populateSeasonInfos(data)
   
   updateTimers()
 end
+
+-- for game_chaosmusic (O408): the HUD shows while the player is in a tower run
+function getState()
+  return { hud = skipPanel ~= nil and skipPanel:isVisible() or false }
+end

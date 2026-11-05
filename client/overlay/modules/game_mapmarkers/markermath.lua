@@ -10,8 +10,11 @@ M.JUMP_TILES = 40      -- a bigger step (a teleport) is a jump, not a glide
 M.EDGE_MARGIN = 7      -- pixels between a clamped marker and the minimap's edge
 
 -- the categories of points of interest (one check box each) and the kinds in them
-M.CATEGORIES = { 'town', 'npc', 'shop', 'craft', 'guild', 'portal', 'dungeon', 'boss', 'hunt' }
+-- quest (O410): the quest givers and quest chests (kind quest) and the character's next quest steps (kind questgoal,
+-- sent apart by the server: action quests)
+M.CATEGORIES = { 'quest', 'town', 'npc', 'shop', 'craft', 'guild', 'portal', 'dungeon', 'boss', 'hunt' }
 M.CATEGORY_LABEL = {
+  quest = 'Quests: givers and your next steps',
   town = 'Temples, depots and banks', npc = 'Chaos NPCs (services)', shop = 'Shops, travel and blessings',
   craft = 'Crafting tables', guild = 'Guild hall', portal = 'Entrances and portals', dungeon = 'Dungeons',
   boss = 'Boss places', hunt = 'Hunting areas',
@@ -19,6 +22,12 @@ M.CATEGORY_LABEL = {
 M.KIND_CATEGORY = {
   temple = 'town', depot = 'town', bank = 'town', npc = 'npc', shop = 'shop', travel = 'shop', bless = 'shop',
   craft = 'craft', guild = 'guild', portal = 'portal', dungeon = 'dungeon', boss = 'boss', hunt = 'hunt',
+  quest = 'quest', questgoal = 'quest',
+}
+-- the icon of a category's check box (the legend of the settings window)
+M.CATEGORY_ICON = {
+  quest = 'quest', town = 'temple', npc = 'npc', shop = 'shop', craft = 'craft', guild = 'guild', portal = 'portal',
+  dungeon = 'dungeon', boss = 'boss', hunt = 'hunt',
 }
 -- party colours, by slot (a member keeps its colour while it stays in the party)
 M.COLORS = { '#ff9d2e', '#5fd0ff', '#8ee05a', '#e070ff', '#ffd84a', '#ff6464', '#5fffc8', '#c8a0ff',
@@ -264,6 +273,17 @@ function M.byFloor(marks)
       out[z] = out[z] or {}
       table.insert(out[z], m)
     end
+  end
+  return out
+end
+
+-- O410: the marks to draw: the points of interest and then the character's quest goals (only kind questgoal is taken
+-- from the goals; a goal keeps its own tile even where a point of interest stands, and is drawn over it)
+function M.withGoals(pois, goals)
+  local out = {}
+  for _, m in ipairs(type(pois) == 'table' and pois or {}) do out[#out + 1] = m end
+  for _, m in ipairs(type(goals) == 'table' and goals or {}) do
+    if type(m) == 'table' and m.k == 'questgoal' then out[#out + 1] = m end
   end
   return out
 end

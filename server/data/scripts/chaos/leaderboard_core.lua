@@ -4,7 +4,8 @@
 --   ChaosLeaderboard.weekStart(week, hour)  unix time the week starts; nextReset(t, hour); prevWeek(week, hour)
 --   ChaosLeaderboard.merge(e, value, mode, now)   apply one record ("add" or "max") to a score entry
 --   ChaosLeaderboard.rank(scores, staffGroup)     sorted list with ranks (value desc, then who got there first, then guid)
---   ChaosLeaderboard.awards(boards, ranked, cfg)  the titles and rewards of a weekly reset
+--   ChaosLeaderboard.awards(boards, ranked, cfg)  the titles and rewards of a weekly reset (classAwards boards: none)
+--   ChaosLeaderboard.hasClassTabs(cfg, board)      class tabs on a weekly board (O409)
 --   ChaosLeaderboard.groupOf(vocId, baseOf, demotion)   base class of a vocation (class ladder)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -114,6 +115,15 @@ function LB.filterClass(ranked, ids)
 	return out
 end
 
+-- whether a weekly board has class tabs (O409): a byClass board, or any board while cfg.classTabs is on and the board
+-- has no noClassTabs
+function LB.hasClassTabs(cfg, b)
+	if not b then
+		return false
+	end
+	return b.byClass == true or (cfg and cfg.classTabs == true and not b.noClassTabs) or false
+end
+
 -- rank of guid in a ranked list, or nil
 function LB.find(ranked, guid)
 	for _, e in ipairs(ranked) do
@@ -130,7 +140,8 @@ end
 function LB.awards(boards, ranked, cfg)
 	local out = {}
 	for _, b in ipairs(boards) do
-		local list = ranked[b.key] or {}
+		-- classAwards (O409, weekly_class.lua): ranked per class at the reset, no overall title or orbs
+		local list = not b.classAwards and ranked[b.key] or {}
 		for i = 1, math.min(cfg.top or 3, #list) do
 			local e = list[i]
 			local items = {}

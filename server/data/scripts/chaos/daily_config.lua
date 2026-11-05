@@ -13,14 +13,17 @@ return {
 
 	-- milestones: paid together with the daily reward of the day the streak reaches `days` (all or nothing with it),
 	-- every time a streak gets there. `title`: shown in the look text of every character of the account while its
-	-- best streak ever is at least `days` (the highest one wins). Server item ids: 29856 Orb of Upheaval, 29857 Orb of Fate,
+	-- best streak ever is at least `days` (the highest one wins). `cosmetic` (O409): a cosmetics_config.lua key of
+	-- source "daily" (days = the same), granted once per account the first time its best streak gets there (also to an
+	-- account that got there before the cosmetic existed, when the daily window opens); the Wardrobe shows it. Server item ids: 29856 Orb of Upheaval, 29857 Orb of Fate,
 	-- 29855 Orb of Grafting, 2160 crystal coin.
 	milestones = {
-		{days = 7, items = {{itemId = 29856, count = 2}, {itemId = 29857, count = 1}}},
+		{days = 7, items = {{itemId = 29856, count = 2}, {itemId = 29857, count = 1}}, cosmetic = "loot_devoted"},
 		{days = 14, items = {{itemId = 29856, count = 3}, {itemId = 29857, count = 2}}},
 		{days = 30, items = {{itemId = 29856, count = 5}, {itemId = 29857, count = 3}, {itemId = 29855, count = 1}},
 			title = "the Devoted"},
-		{days = 60, items = {{itemId = 29856, count = 8}, {itemId = 29857, count = 5}, {itemId = 29855, count = 2}}},
+		{days = 60, items = {{itemId = 29856, count = 8}, {itemId = 29857, count = 5}, {itemId = 29855, count = 2}},
+			cosmetic = "lvl_vigil"},
 		{days = 100, items = {{itemId = 29856, count = 12}, {itemId = 29857, count = 8}, {itemId = 29855, count = 3},
 			{itemId = 2160, count = 10}}, title = "the Relentless"},
 		{days = 180, items = {{itemId = 29856, count = 20}, {itemId = 29857, count = 12}, {itemId = 29855, count = 5},

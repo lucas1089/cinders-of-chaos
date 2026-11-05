@@ -392,6 +392,31 @@ for _, want in ipairs({"e1: step 1: an elite needs pos, monster and name", "e2: 
 end
 assert(cfg.elite.tier and cfg.elite.lifeSec > 0, "elite settings")
 
+-- ------------------------------------------------------------------ O410: the next tale steps on the map
+do
+	local states = {}
+	local function stateOf(t) return states[t.key] or 0 end
+	eq(#M.questGoals(stateOf, "en"), 0, "no tale taken: no goal")
+	local ct, lr, tt, bc = M.tale("cellar_teeth"), M.tale("lantern_road"), M.tale("troll_toll"), M.tale("bone_choir")
+	states.cellar_teeth, states.lantern_road, states.troll_toll, states.bone_choir = 1, 1, 1, 2
+	local g = M.questGoals(stateOf, "en")
+	local byName = {}
+	for _, e in ipairs(g) do byName[e.n] = e end
+	local visit = byName["Teeth in the Cellars: " .. ct.steps[1].text.en]
+	assert(visit and visit.x == ct.steps[1].pos.x and visit.z == ct.steps[1].pos.z, "a visit step: its place")
+	local talk = byName["The Lantern Road: " .. lr.steps[1].text.en]
+	eq(talk and talk.npc, "Warden Ysolde", "a talk step: the NPC")
+	local kill = byName["The Troll Toll: " .. tt.steps[1].text.en]
+	assert(kill and kill.hunts and kill.hunts[1] == "Troll", "a kill step: the hunts of its monsters")
+	local report = byName["The Bone Choir: " .. bc.steps[2].text.en]
+	eq(report and report.npc, cfg.npc.name, "a report step: the Archivist")
+	states.cellar_teeth = cfg.done
+	eq(#M.questGoals(stateOf, "en"), 3, "a finished tale has no goal")
+	local pt = M.questGoals(stateOf, "pt")
+	assert(pt[1].n:find(lr.name.pt, 1, true) or pt[2].n:find(lr.name.pt, 1, true) or pt[3].n:find(lr.name.pt, 1, true),
+		"the goal in the character's language")
+end
+
 -- ------------------------------------------------------------------ tales.lua against a mocked engine
 local events, talks, modals, messages = {}, {}, {}, {}
 local function reg(kind)

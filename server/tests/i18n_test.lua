@@ -236,8 +236,10 @@ local SITES = {
 	["../../spells/chaos/ironsage/chi_ward.lua"] = TR, ["../../spells/chaos/sentinel/aegis_of_faith.lua"] = TR,
 	["../../spells/chaos/shared/sense_prey.lua"] = TR, ["prizes.lua"] = {}, ["respec.lua"] = {}, ["vigils.lua"] = {},
 	["admin/actions_players.lua"] = {}, ["../../lib/chaos_unique_items.lua"] = TR,
+	["groupqueue.lua"] = {"dropped%(%w+[%w.]*,%s*", "return nil,%s*", "refuse%(player,%s*"}, ["groupqueue_core.lua"] = {"return nil,%s*"},
 	["classes.lua"] = CORE_T, ["class_unlocks_core.lua"] = CORE_T, ["class_migration.lua"] = {}, ["partyframes.lua"] = {},
 	["../../lib/chaos_archery_core.lua"] = {}, ["buffbar.lua"] = {},
+	["weekly_class.lua"] = {}, ["weekly_class_core.lua"] = CORE_T,
 }
 local used = 0
 for f, extra in pairs(SITES) do

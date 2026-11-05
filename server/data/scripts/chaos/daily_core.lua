@@ -83,6 +83,23 @@ function D.titleFor(cfg, best)
 	return title, days
 end
 
+-- the cosmetics of the milestones at or below `best` days (O409; `cosmetic` = a cosmetics_config.lua key, source
+-- "daily"): {{days, key}} in milestone order. daily.lua grants the missing ones (once per account, never taken back).
+function D.cosmeticsUpTo(cfg, best)
+	local out = {}
+	for _, m in ipairs(cfg.milestones or {}) do
+		if m.cosmetic and m.days <= (best or 0) then
+			out[#out + 1] = {days = m.days, key = m.cosmetic}
+		end
+	end
+	return out
+end
+
+-- every milestone with a cosmetic: {{days, key}} (the daily window's cosmetic line)
+function D.cosmetics(cfg)
+	return D.cosmeticsUpTo(cfg, math.huge)
+end
+
 -- ---------------------------------------------------------------- today's state
 -- -> {taken, streak (the streak now: kept, or 0 when broken), next (the streak after claiming today), slot (the
 --     reward slot claimable or claimed today), graceUse (charges today's claim uses), broken (a streak was lost),
@@ -166,11 +183,15 @@ function D.itemsText(items, name)
 	return table.concat(parts, ", ")
 end
 
-function D.milestoneText(m, name, lang)
+-- cosName(key) gives a cosmetic's name (cosmetics_config.lua), else the key is shown
+function D.milestoneText(m, name, lang, cosName)
 	if not m then
 		return ""
 	end
 	local text = D.itemsText(m.items, name)
+	if m.cosmetic then
+		text = text .. (text ~= "" and ", " or "") .. T(lang, "the cosmetic \"%s\"", cosName and cosName(m.cosmetic) or m.cosmetic)
+	end
 	if m.title then
 		text = text .. (text ~= "" and T(lang, " and ") or "") .. T(lang, "the title \"%s\"", m.title)
 	end

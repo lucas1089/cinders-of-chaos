@@ -9,6 +9,8 @@
 --   ChaosDiscordCore.patchnotes(cfg, title, text)      the patch note post (patchnotes.lua, English and pt-BR rows)
 --   ChaosDiscordCore.weeklyChallenge(cfg, label, theme, sections)   the Weekly Challenge's week (O390,
 --                                                      weekly_challenge.lua): the top 3 of each class
+--   ChaosDiscordCore.weeklyClass(cfg, label, boardName, sections)   a weekly class board's week (O409,
+--                                                      weekly_class.lua): the podium of each class
 --   ChaosDiscordCore.cityInvasion(cfg, phase, info)    an invasion starts, is won or is lost (O393, invasion.lua)
 --   ChaosDiscordCore.milestones(old, new, list)        the milestone levels crossed by a level up
 --   ChaosDiscordCore.saveTime(xml)                     hour, minute of the server save in globalevents.xml
@@ -170,6 +172,25 @@ function D.weeklyChallenge(cfg, label, theme, sections)
 			tostring(theme))
 	end
 	return event(cfg, "weekly_challenge", "Weekly Challenge " .. tostring(label), text, fields)
+end
+
+-- O409, the weekly class board at the week's end (weekly_class.lua): label "2026-11-02" (the week's Monday), boardName
+-- = the board's name, sections = {{name = class, value = "1. A 1.2M\n2. ..."}} (weekly_class_core.lua K.discordSections)
+function D.weeklyClass(cfg, label, boardName, sections)
+	local fields = {}
+	for i = 1, math.min(#(sections or {}), 25) do
+		local s = sections[i]
+		fields[i] = {name = clip(s.name, 256), value = clip(s.value, 1024), inline = true}
+	end
+	local text
+	if #fields == 0 then
+		text = string.format("%s, week of %s: the week has ended. Nobody placed this week.", tostring(boardName),
+			tostring(label))
+	else
+		text = string.format("%s, week of %s: the week has ended. The podium of every class:", tostring(boardName),
+			tostring(label))
+	end
+	return event(cfg, "weekly_class", string.format("%s: week of %s", tostring(boardName), tostring(label)), text, fields)
 end
 
 -- O393, an invasion (invasion.lua): phase "start" | "win" | "lost"; info = {area, faction, level, waves, minutes,

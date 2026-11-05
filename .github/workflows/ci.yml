@@ -940,6 +940,9 @@ jobs:
       - name: Game sounds match their sources file (gen_sfx.py, the CC0 picks of game_chaossound)
         run: python3 -I client/tools/gen_sfx.py --check
 
+      - name: Region music matches its sources file (gen_music.py, the own tracks of game_chaosmusic, O408)
+        run: python3 -I client/tools/gen_music.py --check
+
       - name: Liquid orb art is up to date (gen_orb_art.py, one ring and mask per orb size at 2x)
         run: python3 client/tools/gen_orb_art.py --check  # not -I: Pillow from the user site (installed above)
 

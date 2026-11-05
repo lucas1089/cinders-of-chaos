@@ -30,6 +30,7 @@ local minimap, layer
 local party = {}       -- member id -> {e = entry, anim, widget, slot}
 local slots = {}
 local pois, floors = {}, {}
+local goals = {}       -- O410: the character's next quest steps (action quests)
 local poiPool = {}
 local hitList = {}
 local hoverText
@@ -427,17 +428,28 @@ local function onParty(data)
   requestGame()
 end
 
+local function refloor()
+  floors = M.byFloor(M.withGoals(pois, goals))
+end
+
 local function onPoi(data)
   pois = type(data.marks) == 'table' and data.marks or {}
-  floors = M.byFloor(pois)
+  refloor()
   place()
 end
 
 local function onReveal(data)
   if M.addMarks(pois, data.marks) > 0 then
-    floors = M.byFloor(pois)
+    refloor()
     place()
   end
+end
+
+-- O410: the full list of quest goals, sent again when it changes
+local function onQuests(data)
+  goals = type(data.marks) == 'table' and data.marks or {}
+  refloor()
+  place()
 end
 
 local function onMessage(protocol, opcode, msg)
@@ -449,6 +461,8 @@ local function onMessage(protocol, opcode, msg)
     if settings.poi then onPoi(d) end
   elseif msg.action == 'reveal' then
     if settings.poi then onReveal(d) end
+  elseif msg.action == 'quests' then
+    if settings.poi then onQuests(d) end
   end
 end
 
@@ -468,7 +482,7 @@ end
 local function onGameEnd()
   clearParty()
   detachGame()
-  pois, floors = {}, {}
+  pois, floors, goals = {}, {}, {}
   place()
 end
 
@@ -514,7 +528,7 @@ function setPoi(on)
   if settings.poi == on then return end
   settings.poi = on
   saveSettings()
-  if not on then pois, floors = {}, {} end
+  if not on then pois, floors, goals = {}, {}, {} end
   send('set', { poi = on })
   place()
   updateSettingsWindow()
@@ -534,8 +548,7 @@ function showSettings()
       local box = g_ui.createWidget('MapMarkerCategory', settingsWindow.categories)
       box:setId(c)
       box:setText(tr(M.CATEGORY_LABEL[c]))
-      box:setIcon(ICONS .. 'poi_' .. ({ town = 'temple', npc = 'npc', shop = 'shop', craft = 'craft', guild = 'guild',
-        portal = 'portal', dungeon = 'dungeon', boss = 'boss', hunt = 'hunt' })[c])
+      box:setIcon(ICONS .. 'poi_' .. M.CATEGORY_ICON[c])
       box.onCheckChange = function(self) setCategory(c, self:isChecked()) end
     end
   end
@@ -596,4 +609,10 @@ function terminate()
   if settingsWindow then settingsWindow:destroy() settingsWindow = nil end
   pois, floors = {}, {}
   handlers = {}
+end
+
+-- the points of interest the client knows ({k, x, y, z, n, r}; read only): game_chaosmusic (O408) picks the town
+-- track near a temple, depot or bank
+function getPois()
+  return pois
 end

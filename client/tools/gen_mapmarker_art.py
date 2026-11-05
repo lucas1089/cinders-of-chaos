@@ -13,7 +13,8 @@ outline so they stay visible over water, grass and the black of unexplored map.
                                  sw, w, nw (tinted the same way)
   floor_up.png / floor_down.png 8x8  gold triangles: the member is on a higher / lower floor
   poi_<kind>.png          14x14  a dark round plate, gold rim, the kind's motif: temple, depot, bank, npc, shop,
-                                 travel, bless, craft, guild, portal, boss, dungeon, hunt
+                                 travel, bless, craft, guild, portal, boss, dungeon, hunt, quest (a quest giver or
+                                 chest: a gold exclamation mark), questgoal (your next quest step: an ember target)
 Our own art; deterministic. Needs Pillow."""
 import math
 import os
@@ -209,9 +210,22 @@ def m_hunt(cv):
     cv.line([(4.2, 8.0), (6.0, 9.8)], c('blood', 3), 1.0)
 
 
+def m_quest(cv):
+    cv.poly([(5.6, 2.6), (8.4, 2.6), (7.7, 8.4), (6.3, 8.4)], c('gold', 3))
+    cv.poly([(5.6, 2.6), (8.4, 2.6), (8.2, 4.0), (5.8, 4.0)], c('gold', 4))
+    cv.ellipse(5.9, 9.3, 8.1, 11.5, c('gold', 4))
+
+
+def m_questgoal(cv):
+    cv.ellipse(2.8, 2.8, 11.2, 11.2, c('ember', 2))
+    cv.ellipse(4.2, 4.2, 9.8, 9.8, PLATE[0])
+    cv.ellipse(5.4, 5.4, 8.6, 8.6, c('ember', 4))
+    cv.ellipse(6.3, 6.3, 7.7, 7.7, c('gold', 4))
+
+
 POI = {'temple': m_temple, 'depot': m_depot, 'bank': m_bank, 'npc': m_npc, 'shop': m_shop, 'travel': m_travel,
        'bless': m_bless, 'craft': m_craft, 'guild': m_guild, 'portal': m_portal, 'boss': m_boss, 'dungeon': m_dungeon,
-       'hunt': m_hunt}
+       'hunt': m_hunt, 'quest': m_quest, 'questgoal': m_questgoal}
 
 
 def poi_icon(motif):

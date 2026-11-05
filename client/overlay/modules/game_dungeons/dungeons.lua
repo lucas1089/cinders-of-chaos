@@ -1082,3 +1082,8 @@ function MsToShortTime(ms)
     return mins .. ":" .. secs .. "." .. millis
   end
 end
+
+-- for game_chaosmusic (O408): the HUD shows while the player is in a dungeon run
+function getState()
+  return { hud = killCounter ~= nil and killCounter:isVisible() or false }
+end

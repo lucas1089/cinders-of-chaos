@@ -21,7 +21,7 @@ local STAFF = {
 	["/candlemarks"] = "candlemarks.lua", ["/charm"] = "charms.lua", ["/chronicle"] = "chronicle.lua",
 	["/classunlock"] = "class_unlocks.lua", ["/community"] = "community.lua", ["/conquest"] = "conquest.lua",
 	["/cosmetic"] = "cosmetics.lua", ["/creatorcodes"] = "creator_codes.lua", ["/daily"] = "daily.lua",
-	["/challenge"] = "weekly_challenge.lua", ["/descent"] = "descent.lua", ["/exclusive"] = "exclusives.lua", ["/faction"] = "factions.lua",
+	["/challenge"] = "weekly_challenge.lua", ["/weeklyclass"] = "weekly_class.lua", ["/buildtrends"] = "build_trends.lua", ["/descent"] = "descent.lua", ["/exclusive"] = "exclusives.lua", ["/faction"] = "factions.lua",
 	["/gamble"] = "gamble.lua", ["/guild"] = "guild.lua", ["/guildboss"] = "guildboss.lua",
 	["/guildwar"] = "guildwar.lua", ["/harvest"] = "harvest_event.lua", ["/weekend"] = "weekend.lua", ["/hideout"] = "hideout.lua", ["/towerrun"] = "infinitytower.lua",
 	["/towerseason"] = "infinitytower.lua", ["/instances"] = "instance_limits.lua", ["/invasion"] = "invasion.lua",

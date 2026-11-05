@@ -604,6 +604,110 @@ do
 	ok(cfg.contribution.presence > 0 and cfg.contribution.activeSeconds > 0, "O393: presence configured")
 end
 
+-- ------------------------------------------------------------------ O410: two hordes at once (the clash)
+do
+	local cl = cfg.clash
+	ok(cl and cl.chance > 0 and cl.chance <= 100, "clash: a chance in percent")
+	ok(cl.sideShare > 0 and cl.sideShare <= 1, "clash: each horde brings a share of a wave")
+	ok(cl.bossFloor > 0 and cl.bossFloor < 1, "clash: a warlord keeps part of its health against the other horde")
+	for key, f in pairs(cfg.factions) do
+		ok(type(f.clashHit) == "string" and f.clashHit:match("^CONST_ME_"), key .. ": clash hit effect")
+		ok(type(f.clashShot) == "string" and f.clashShot:match("^CONST_ANI_"), key .. ": clash missile")
+	end
+	-- the rival: never the same faction, deterministic, allowed by the area and the rivals table
+	local area = cfg.areas[1].key
+	local hits, seen = 0, {}
+	for k = 0, 399 do
+		local at = 1800000000 + k * 3600
+		local r = I.rival(cfg, at, area, "orcs")
+		eq(r, I.rival(cfg, at, area, "orcs"), "rival: the start time decides")
+		if r then
+			hits = hits + 1
+			ok(r ~= "orcs" and cfg.factions[r] ~= nil, "rival: another known faction")
+			seen[r] = true
+		end
+	end
+	ok(hits > 400 * cl.chance / 100 * 0.6 and hits < 400 * cl.chance / 100 * 1.4, "rival: about chance percent (" .. hits .. ")")
+	ok(next(seen) ~= nil, "rival: some picked")
+	local c2 = {factions = cfg.factions, areas = {{key = "a", factions = {"orcs", "undead"}}, {key = "b", clash = false}},
+		clash = {chance = 100, rivals = {orcs = {"demons"}}}}
+	eq(I.pickRival(c2, 5, "a", "undead"), "orcs", "pickRival: the area's other faction")
+	eq(I.pickRival(c2, 5, "a", "orcs"), nil, "pickRival: the rivals table leaves none")
+	eq(I.pickRival(c2, 5, "b", "orcs"), nil, "pickRival: an area without clashes")
+	eq(I.rival({factions = cfg.factions, areas = c2.areas, clash = {chance = 0}}, 5, "a", "undead"), nil, "rival: chance 0")
+	-- upcoming: clash = true forces a rival, clash = false never
+	local c3 = {factions = cfg.factions, areas = {{key = "a", enabled = true, factions = {"orcs", "undead"}}}, clash = {chance = 100},
+		schedule = {{at = 1800003600, area = "a", faction = "orcs", clash = false}, {at = 1800007200, area = "a", faction = "orcs", clash = true}}}
+	local up = I.upcoming(c3, 1800000000, 86400)
+	eq(up[1].rivalKey, nil, "upcoming: clash = false")
+	eq(up[2].rivalKey, "undead", "upcoming: clash = true")
+	-- the edges of each horde
+	local a, b = I.clashEdges(nil)
+	eq(table.concat(a, ","), "north,east", "clash edges: all four, horde 1")
+	eq(table.concat(b, ","), "south,west", "clash edges: all four, horde 2")
+	a, b = I.clashEdges({"south", "east"})
+	eq(table.concat(a, ","), "south", "clash edges: two, no opposite pair")
+	eq(table.concat(b, ","), "east", "clash edges: two, the other one")
+	a, b = I.clashEdges({"west"})
+	eq(a[1] .. b[1], "westwest", "clash edges: one edge is shared")
+	-- the wave share
+	local f = cfg.factions.orcs
+	local full = I.planWave(cfg, {level = 40}, f, 3, 1, I.lcg(9))
+	local half = I.planWave(cfg, {level = 40}, f, 3, 1, I.lcg(9), 0.5)
+	eq(half.count, math.floor(full.count * 0.5 + 0.5), "planWave: a horde's share of the wave")
+	-- pairs: the nearest enemy within the radius on the floor, not a unit busy with a player
+	local units = {{id = 1, side = "a", x = 10, y = 10, z = 7}, {id = 2, side = "b", x = 12, y = 10, z = 7},
+		{id = 3, side = "b", x = 11, y = 11, z = 7}, {id = 4, side = "a", x = 30, y = 30, z = 7},
+		{id = 5, side = "b", x = 10, y = 10, z = 6}, {id = 6, side = "a", x = 12, y = 11, z = 7, busy = true}}
+	local pr = I.clashPairs(units, {radius = 6})
+	eq(pr[1].foe, 3, "pairs: the nearest foe") eq(pr[1].dist, 1, "pairs: its distance")
+	eq(pr[2].foe, 6, "pairs: a busy unit can still be hit") eq(pr[3].foe, 1, "pairs: back")
+	eq(pr[4], nil, "pairs: nobody in range") eq(pr[5], nil, "pairs: another floor") eq(pr[6], nil, "pairs: busy with a player")
+	local capped, n = I.clashPairs(units, {radius = 6, maxPairs = 1}), 0
+	for _ in pairs(capped) do n = n + 1 end
+	eq(n, 1, "pairs: at most maxPairs a tick")
+	-- the attack and the damage
+	local attacks = {{melee = true, min = 0, max = -40}, {melee = false, min = -10, max = -30, range = 7}, {melee = false, min = -5, max = -5, range = 0}}
+	eq(I.clashAttack(attacks, 1), attacks[1], "attack: a tie (20 on average each): the first listed")
+	attacks[1].max = -60
+	eq(I.clashAttack(attacks, 1), attacks[1], "attack: melee next to the foe")
+	eq(I.clashAttack(attacks, 5), attacks[2], "attack: ranged at a distance")
+	eq(I.clashAttack(attacks, 9), nil, "attack: out of reach")
+	eq(I.clashAttack({{melee = true, min = 0, max = 0}}, 1), nil, "attack: no damage, no attack")
+	local fixed = function(lo, hi) return hi end
+	eq(I.clashDamage({attack = attacks[1], dist = 1, dmg = 1.5, foeMax = 10000, foeHealth = 10000}, cl, fixed), 90, "damage: roll x scale")
+	eq(I.clashDamage({attack = attacks[1], dist = 1, dmg = 1, foeMax = 200, foeHealth = 200}, cl, fixed), math.floor(200 * cl.maxHitShare),
+		"damage: at most maxHitShare of the foe")
+	eq(I.clashDamage({attack = nil, dist = 1, hp = 1000, foeMax = 100000}, cl, fixed), math.floor(1000 * cl.fallbackShare),
+		"damage: no attack, next to it: a bump")
+	eq(I.clashDamage({attack = nil, dist = 3, hp = 1000, foeMax = 100000}, cl, fixed), 0, "damage: no attack at a distance")
+	eq(I.clashDamage({attack = attacks[1], dist = 1, foeMax = 1000, foeHealth = 320, foeBoss = true}, cl, fixed), 20,
+		"damage: a warlord stops at bossFloor")
+	eq(I.clashDamage({attack = attacks[1], dist = 1, foeMax = 1000, foeHealth = 250, foeBoss = true}, cl, fixed), 0,
+		"damage: a warlord at bossFloor takes nothing")
+	-- experience, sides, the main side, facing
+	eq(I.clashXpShare(nil, 100, cl), 1, "xp share: untouched")
+	near(I.clashXpShare(40, 100, cl), 0.6, 1e-9, "xp share: the players' part")
+	eq(I.clashXpShare(500, 100, cl), cl.minXpShare, "xp share: at least minXpShare")
+	local sc = I.sideCounts({[1] = {side = "a"}, [2] = {side = "a"}, [3] = {side = "b"}, [4] = {}})
+	eq(sc.a, 2, "side counts a") eq(sc.b, 1, "side counts b")
+	eq(I.mainSide({vs = {orcs = 10, undead = 30}}), "undead", "main side: most damage")
+	eq(I.mainSide({vs = {orcs = 10, undead = 10}}), "orcs", "main side: a tie, the lower key")
+	eq(I.mainSide({}), nil, "main side: none")
+	eq(I.facing({x = 0, y = 0}, {x = 0, y = -3}), 0, "facing north") eq(I.facing({x = 0, y = 0}, {x = 4, y = 1}), 1, "facing east")
+	eq(I.facing({x = 0, y = 0}, {x = 1, y = 2}), 2, "facing south") eq(I.facing({x = 0, y = 0}, {x = -5, y = 2}), 3, "facing west")
+	-- the HUD: what is left of each horde and its warlord
+	local st = {phase = "running", wave = 2, waves = 5, breach = 0, endsAt = 100, alive = 7,
+		sides = {{key = "orcs", name = "Orc Warband", color = "#7fb04a"}, {key = "undead", name = "Undead Legion", color = "#9ab0c8"}},
+		sideAlive = {orcs = 4, undead = 3}, sideBoss = {undead = {name = "Lich King", hp = 40, alive = true}}}
+	local d = I.hud(st, 10, {}, nil, cfg)
+	eq(#d.sides, 2, "hud: two sides") eq(d.sides[1].left, 4, "hud: orcs left") eq(d.sides[2].left, 3, "hud: undead left")
+	eq(d.sides[2].boss, "Lich King", "hud: a warlord standing") eq(d.sides[2].bossHp, 40, "hud: its health")
+	eq(d.sides[1].boss, nil, "hud: no warlord yet")
+	st.sides = nil
+	eq(I.hud(st, 10, {}, nil, cfg).sides, nil, "hud: one horde, no sides")
+end
+
 -- ------------------------------------------------------------------ engine: the boss unique by the boss's type
 -- invasion.lua against a mocked engine: a renamed boss ("Warchief Grashnak", an Orc Warlord) rolls the unique drop
 -- lists by its type name, which is what chaos_unique_items.lua lists, not by the name it is shown under.
@@ -681,6 +785,21 @@ do
 	local lv = ChaosInvasion.onlineLevels()
 	eq(#lv, 2, "online levels: below minLevel and the tester bot left out")
 	ok(ChaosInvasion.statusText():find("Gate (O393): 2 of " .. cfg.gate.minOnline, 1, true) ~= nil, "status names the gate")
+	-- O410: a clash: the status counts each horde
+	do
+		local st = ChaosInvasion.state
+		local save = {st.phase, st.sides, st.areaName, st.wave, st.waves, st.breach, st.endsAt, st.factionName}
+		st.phase, st.areaName, st.wave, st.waves, st.breach, st.endsAt, st.factionName = "running", "Cinderhold", 1, 5, 0,
+			os.time() + 60, "Orc Warband"
+		st.sides = {{key = "orcs", name = "Orc Warband"}, {key = "undead", name = "Undead Legion"}}
+		ChaosInvasion.invaders[901] = {side = "orcs"}
+		ChaosInvasion.invaders[902] = {side = "undead"}
+		ChaosInvasion.invaders[903] = {side = "undead"}
+		ok(ChaosInvasion.statusText():find("Orc Warband 1 left, Undead Legion 2 left", 1, true) ~= nil, "status: a clash counts each horde")
+		ChaosInvasion.invaders[901], ChaosInvasion.invaders[902], ChaosInvasion.invaders[903] = nil, nil, nil
+		st.phase, st.sides, st.areaName, st.wave, st.waves, st.breach, st.endsAt, st.factionName = save[1], save[2], save[3],
+			save[4], save[5], save[6], save[7], save[8]
+	end
 	Game.getPlayers, Chaos.isTester = oldPlayers, oldTester
 	setmetatable(_G, nil)
 end

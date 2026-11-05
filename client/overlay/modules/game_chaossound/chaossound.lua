@@ -291,6 +291,43 @@ local function volumeNames()
   return { quiet = tr('Quiet'), normal = tr('Normal'), loud = tr('Loud') }
 end
 
+-- ---------------------------------------------------------------- region music (game_chaosmusic, O408): its settings live there
+local MUSIC_IDS = { 'musicEnabled', 'musicVolumeLabel', 'musicVolume', 'musicVolumeValue', 'musicBackground' }
+
+local function music()
+  local mu = modules.game_chaosmusic
+  return mu and type(mu.getSettings) == 'function' and type(mu.setSettings) == 'function' and mu or nil
+end
+
+local function refreshMusic()
+  if not window or not window.musicEnabled then return end
+  local mu = music()
+  local ms = mu and mu.getSettings() or nil
+  if not ms then
+    for _, id in ipairs(MUSIC_IDS) do window[id]:setEnabled(false) end
+    return
+  end
+  window.musicEnabled:setEnabled(true)
+  window.musicEnabled:setChecked(ms.enabled)
+  window.musicVolume:setValue(ms.volume)
+  window.musicVolumeValue:setText(tostring(ms.volume) .. '%')
+  for _, id in ipairs({ 'musicVolumeLabel', 'musicVolume', 'musicVolumeValue', 'musicBackground' }) do
+    window[id]:setEnabled(ms.enabled)
+  end
+  window.musicBackground:setChecked(ms.background)
+end
+
+local function onMusicChange()
+  if updatingUi or not window then return end
+  local mu = music()
+  if not mu then return end
+  mu.setSettings({ enabled = window.musicEnabled:isChecked(), volume = window.musicVolume:getValue(),
+    background = window.musicBackground:isChecked() })
+  updatingUi = true
+  refreshMusic()
+  updatingUi = false
+end
+
 local function refreshWindow()
   if not window then return end
   updatingUi = true
@@ -304,6 +341,7 @@ local function refreshWindow()
   end
   for _, id in ipairs({ 'combat', 'spells', 'events', 'ui' }) do window[id]:setEnabled(settings.enabled) end
   combo:setEnabled(settings.enabled)
+  refreshMusic()
   updatingUi = false
 end
 
@@ -380,6 +418,11 @@ function init()
     window:hide()
     for _, id in ipairs({ 'enabled', 'combat', 'spells', 'events', 'ui' }) do window[id].onCheckChange = safe('ui', onUiChange) end
     window.volumeCombo.onOptionChange = safe('ui', onUiChange)
+    if window.musicEnabled then
+      window.musicEnabled.onCheckChange = safe('music', onMusicChange)
+      window.musicBackground.onCheckChange = safe('music', onMusicChange)
+      window.musicVolume.onValueChange = safe('music', onMusicChange)
+    end
   else
     g_logger.warning('[chaossound] settings window not loaded: ' .. tostring(ui))
   end

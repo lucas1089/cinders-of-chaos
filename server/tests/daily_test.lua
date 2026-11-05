@@ -130,7 +130,39 @@ eq(tdays, 30, "its days")
 eq(D.titleFor(SC, 500), D.milestoneAt(SC, 180).title, "highest title")
 local names = {[29856] = "Orb of Upheaval", [29857] = "Orb of Fate", [29855] = "Orb of Grafting"}
 local function nm(id) return names[id] or ("item " .. id) end
-eq(D.milestoneText(D.milestoneAt(SC, 7), nm), "2x Orb of Upheaval, 1x Orb of Fate", "milestone text")
+eq(D.milestoneText(D.milestoneAt(SC, 14), nm), "3x Orb of Upheaval, 2x Orb of Fate", "milestone text")
+eq(D.milestoneText(D.milestoneAt(SC, 7), nm, nil, function(k) return k == "loot_devoted" and "Devoted Labels" or k end),
+	"2x Orb of Upheaval, 1x Orb of Fate, the cosmetic \"Devoted Labels\"", "milestone text with the cosmetic")
+
+-- ---------------------------------------------------------------- the streak cosmetics (O409)
+dofile("data/scripts/chaos/cosmetics_core.lua")
+local CC = dofile("data/scripts/chaos/cosmetics_config.lua")
+local K = ChaosCosmeticsCore
+local withCosmetic = {}
+for _, m in ipairs(SC.milestones) do
+	if m.cosmetic then
+		local c = K.byKey(CC, m.cosmetic)
+		assert(c, "milestone " .. m.days .. ": cosmetic " .. m.cosmetic .. " exists")
+		eq(c.source, "daily", m.cosmetic .. " source")
+		eq(c.days, m.days, m.cosmetic .. " days = the milestone's")
+		eq(c.price, nil, m.cosmetic .. " never sold")
+		withCosmetic[#withCosmetic + 1] = m.days
+	end
+end
+eq(table.concat(withCosmetic, ","), "7,60", "cosmetics at 7 and 60 days")
+-- every daily cosmetic belongs to a milestone
+for _, c in ipairs(CC.cosmetics) do
+	if c.source == "daily" then
+		local m = D.milestoneAt(SC, c.days)
+		eq(m and m.cosmetic, c.key, c.key .. " is a milestone's cosmetic")
+	end
+end
+eq(#D.cosmeticsUpTo(SC, 6), 0, "none before 7")
+eq(#D.cosmeticsUpTo(SC, 7), 1, "the 7-day one")
+eq(D.cosmeticsUpTo(SC, 59)[1].key, "loot_devoted", "still one at 59")
+eq(#D.cosmeticsUpTo(SC, 400), 2, "both")
+eq(#D.cosmetics(SC), 2, "the window lists both")
+eq(K.how(K.byKey(CC, "lvl_vigil")), "Daily reward: a login streak of 60 days", "how it is got")
 assert(D.milestoneText(D.milestoneAt(SC, 30), nm):find("and the title \"", 1, true), "title in the milestone text")
 eq(D.lookText(nil, 0, "He"), nil, "no look text without a title")
 eq(D.lookText("the Devoted", 30, "You"), "You hold the login streak title the Devoted (30 days in a row).", "look text")
@@ -203,6 +235,16 @@ local function mkPlayer(account)
 	players[p.id] = p
 	return p
 end
+-- the cosmetics of the account (cosmetics.lua M.owns / M.grant)
+ChaosCosmeticsConfig = CC
+local owned, grants = {}, {}
+ChaosCosmetics = {owns = function(acc, key) return owned[acc .. ":" .. key] == true end,
+	grant = function(acc, key, source)
+		if owned[acc .. ":" .. key] then return false end
+		owned[acc .. ":" .. key] = true
+		grants[#grants + 1] = {acc = acc, key = key, source = source}
+		return true
+	end}
 dofile("data/scripts/chaos/daily.lua")
 local cfg = Chaos.daily
 eq(#cfg.rewards, 7, "seven rewards")
@@ -268,6 +310,17 @@ eq(a.items[29856], (cfg.rewards[2].itemId == 29856 and 0 or 0) + orbs + (cfg.rew
 local found = false
 for _, t in ipairs(a.msgs) do if t:find("Login streak of 7 days", 1, true) then found = true end end
 eq(found, true, "milestone message")
+-- the 7-day cosmetic: granted once to the account, the window shows it owned
+eq(#grants, 1, "one cosmetic granted")
+eq(grants[1].key, "loot_devoted", "the 7-day cosmetic")
+eq(grants[1].source, "daily", "source daily")
+eq(grants[1].acc, 1, "to the account")
+found = false
+for _, t in ipairs(a.msgs) do if t:find("Devoted Labels", 1, true) and t:find("Wardrobe", 1, true) then found = true end end
+eq(found, true, "the cosmetic message")
+local cw = lastWindow()
+eq(cw.Cosmetics[1].Days, 7, "window: the 7-day cosmetic") eq(cw.Cosmetics[1].Name, "Devoted Labels", "its name")
+eq(cw.Cosmetics[1].Owned, 1, "owned") eq(cw.Cosmetics[2].Days, 60, "the 60-day one") eq(cw.Cosmetics[2].Owned, 0, "not yet")
 -- all or nothing: day 14's milestone does not fit -> nothing given, streak unchanged
 DY.accounts[1] = {streak = 13, best = 13, grace = 1, last = TODAY - 1, claims = 13}
 room = 2
@@ -277,6 +330,16 @@ assert(a.cancel and a.cancel:find("room"), "refused when the milestone does not 
 eq(a.items[cfg.rewards[7].itemId], before14, "taken back")
 eq(DY.accounts[1].streak, 13, "no streak change on failure")
 room = 1000
+-- an account whose best streak passed 60 before the cosmetics existed gets both when the window opens
+DY.accounts[1].best = 61
+DY.sendWindow(a)
+eq(#grants, 2, "the 60-day cosmetic granted late")
+eq(grants[2].key, "lvl_vigil", "the 60-day cosmetic")
+DY.sendWindow(a)
+eq(#grants, 2, "never twice")
+eq(lastWindow().Cosmetics[2].Owned, 1, "now owned")
+eq(lastWindow().Next.Cosmetic, nil, "no cosmetic on the next milestone (100)")
+DY.accounts[1].best = 13
 -- look text: title after a best streak of 30
 DY.accounts[1].best = 30
 local text = looks[#looks](a, b, nil, 1, "You see Char.")

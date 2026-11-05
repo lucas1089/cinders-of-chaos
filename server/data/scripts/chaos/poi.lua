@@ -15,6 +15,10 @@
 --   client -> server  hello {poi = true|false, party = ...} | set {poi = true|false}
 --   server -> client  poi {v = version, marks = [{k, x, y, z, n}]}   (Chaos.sendChunked: it can pass 8 KB)
 --                     reveal {marks = [{k, x, y, z, n}]}               (newly discovered)
+--                     quests {marks = [{k = "questgoal", x, y, z, n}]} (O410: the character's next quest steps, the
+--                                                                       whole list, when it changed; poi_core.lua P.goals)
+-- Quest sources (O410): a quest system registers ChaosPoi.addQuestSource(name, fn); fn(player) -> entries of P.goals
+-- ({x, y, z, n} | {npc = name, n} | {hunts = {monster names}, n}). tales.lua and spellquest.lua do.
 -- Staff: /poi status | reset (forget my discoveries) | all (discover everything). Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -36,6 +40,12 @@ I.seen = I.seen or {} -- player guid -> set of keys
 I.dirty = I.dirty or {} -- player guid -> true while unsaved
 I.runtime = I.runtime or {}
 I.stats = I.stats or {checks = 0, checkMs = 0, reveals = 0}
+I.questSources = I.questSources or {} -- name -> fn(player) -> quest goal entries (O410)
+I.goalSent = I.goalSent or {} -- creature id -> hash of the goal list last sent
+
+function I.addQuestSource(name, fn)
+	I.questSources[name] = fn
+end
 
 local function loadStatic()
 	local ok, data = pcall(dofile, cfg.dataFile)
@@ -100,6 +110,36 @@ local function sendAll(player)
 	Chaos.sendChunked(player, OPCODE, buffer)
 end
 
+-- the character's next quest steps from every quest source (O410), sent when they changed (or `force`)
+local function goalsOf(player)
+	local names, entries = {}, {}
+	for name in pairs(I.questSources) do
+		names[#names + 1] = name
+	end
+	table.sort(names)
+	for _, name in ipairs(names) do
+		local ok, list = pcall(I.questSources[name], player)
+		if ok and type(list) == "table" then
+			for _, e in ipairs(list) do
+				entries[#entries + 1] = e
+			end
+		elseif not ok then
+			print("[Chaos poi] quest source " .. name .. ": " .. tostring(list))
+		end
+	end
+	return I.goals(entries, I.all or {}, cfg)
+end
+
+local function sendGoals(player, force)
+	local list = goalsOf(player)
+	local h = I.goalsHash(list)
+	if force or I.goalSent[player:getId()] ~= h then
+		I.goalSent[player:getId()] = h
+		Chaos.send(player, OPCODE, "quests", {marks = list})
+	end
+end
+I.sendGoals = sendGoals
+
 local function sendReveal(player, found)
 	local list = {}
 	for _, m in ipairs(found) do
@@ -132,7 +172,7 @@ local function scanRuntime()
 				if c:isNpc() then
 					local name = I.npcName(cfg, c:getName())
 					local pos = c:getPosition()
-					local m = name and I.mark("npc", pos.x, pos.y, pos.z, name, 0)
+					local m = name and I.mark(I.npcKind(cfg, c:getName()), pos.x, pos.y, pos.z, name, 0)
 					if m then
 						list[#list + 1] = m
 					end
@@ -221,7 +261,7 @@ end
 start:type("startup")
 start:register()
 
-local lastRescan, lastSave = os.time(), os.time()
+local lastRescan, lastSave, lastGoals = os.time(), os.time(), os.time()
 local think = GlobalEvent("ChaosPoiThink")
 function think.onThink(interval)
 	local t0 = os.mtime and os.mtime() or os.clock() * 1000
@@ -250,6 +290,15 @@ function think.onThink(interval)
 			saveSeen(guid)
 		end
 	end
+	if (now - lastGoals) * 1000 >= (cfg.questMs or 4000) then
+		lastGoals = now
+		for id in pairs(I.watch) do
+			local p = Player(id)
+			if p then
+				sendGoals(p)
+			end
+		end
+	end
 	if (now - lastRescan) * 1000 >= cfg.rescanMs then
 		lastRescan = now
 		refreshRuntime()
@@ -275,6 +324,7 @@ function logout.onLogout(player)
 	saveSeen(guid)
 	I.seen[guid], I.dirty[guid] = nil, nil
 	I.watch[player:getId()] = nil
+	I.goalSent[player:getId()] = nil
 	return true
 end
 logout:type("logout")
@@ -299,8 +349,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if data.poi == true then
 		I.watch[player:getId()] = true
 		sendAll(player)
+		sendGoals(player, true)
 	else
 		I.watch[player:getId()] = nil
+		I.goalSent[player:getId()] = nil
 	end
 end
 ext:type("extendedopcode")

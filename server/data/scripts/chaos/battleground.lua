@@ -256,7 +256,10 @@ local function insideOther(player)
 		return "the world boss arena"
 	end
 	local A = ChaosArena
-	if A and ((A.isInside and A.isInside(player)) or (A.isQueued and A.isQueued(player))) then
+	-- an arena queue the Group Queue put next to this one does not count (groupqueue.lua, O407)
+	local GQ = ChaosGroupQueue
+	if A and ((A.isInside and A.isInside(player)) or (A.isQueued and A.isQueued(player) and
+			not (GQ and GQ.shares and GQ.shares(player, "arena", "bg")))) then
 		return "the arena (queue or match)"
 	end
 	return nil
@@ -997,6 +1000,18 @@ local function startMatch(found)
 	local slot = freeSlot()
 	if not slot then
 		return false
+	end
+	-- the Group Queue (groupqueue.lua, O407): a party's ready check first (false = everyone stays queued, tried again)
+	if ChaosGroupQueue and ChaosGroupQueue.gate then
+		local cids = {}
+		for _, entry in ipairs(all) do
+			for _, mem in ipairs(entry.members) do
+				cids[#cids + 1] = mem.cid
+			end
+		end
+		if not ChaosGroupQueue.gate("bg", cids) then
+			return false
+		end
 	end
 	local now = os.time()
 	for _, entry in ipairs(all) do
