@@ -213,6 +213,7 @@ button {
 	text-align: center;
 	font-size: 13dp;
 	color: #cdbfa4;
+	white-space: nowrap;
 	decorator: ninepatch(btn, btn-in);
 }
 button:hover { color: #ffe7a6; decorator: ninepatch(btn-h, btn-h-in); }
@@ -351,6 +352,6 @@ button.tab.on { color: #fff1d6; decorator: ninepatch(tab-c, tab-c-in); }
 .cell > .line { flex: 0 0 auto; }
 .cell .lbl, .cell label.check { flex: 1 1 auto; margin: 1dp 0dp; white-space: nowrap; }
 .cell select { flex: 1 1 auto; width: auto; margin: 1dp 0dp; }
-.cell button, .cell button.act { flex: 1 1 auto; min-width: 0dp; margin: 1dp 0dp; }
+.cell button, .cell button.act { flex: 1 0 auto; min-width: 0dp; margin: 1dp 0dp; }
 .cell input.field { flex: 1 1 auto; width: auto; }
 .cell .para { margin: 1dp 0dp; }

@@ -1045,6 +1045,8 @@ local function showTab(id)
     if button then button:setChecked(tab == id) end
     if widget then widget:setVisible(tab == id) end
   end
+  -- the Support tab has a status line of its own (supportspells_ui.lua): one "Paused" line, not two
+  if W.statusLine then W.statusLine:setVisible(id ~= 'supportMenu') end
   if id == 'supportMenu' and ChaosHelperSupportUI and ChaosHelperSupportUI.rebuild then
     pcall(ChaosHelperSupportUI.rebuild)
   end

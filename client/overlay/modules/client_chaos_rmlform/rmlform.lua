@@ -102,6 +102,20 @@ end
 -- opts.geometry (the window mirror): the children of every container keep their OTUI places. They are split into bands
 -- (rects that overlap vertically) and each band into columns (rects that overlap horizontally); a band is a line item,
 -- a column a cell item with the OTUI gap and width, so a row of controls and a table keep their columns.
+-- Pure: a label with line breaks, or one OTUI wraps, is a paragraph (it wraps in RmlUi too); else a one-line label.
+function M.textKind(w, text)
+  if text:find('\n', 1, true) then return 'para' end
+  local wraps = false
+  if w.getTextWrap then
+    local ok, v = pcall(w.getTextWrap, w)
+    wraps = ok and v == true
+  end
+  return wraps and 'para' or 'label'
+end
+
+-- More icons than this in one window: a drawn view (the passive tree, a map), not a form. It stays in OTUI.
+M.MAX_IMAGES = 40
+
 function M.collect(root, opts)
   local geometry = opts and opts.geometry
   local items, unsupported, seen = {}, {}, {}
@@ -140,7 +154,7 @@ function M.collect(root, opts)
           end
         elseif cls == 'UILabel' then
           local t = textOf(c)
-          if t ~= '' then add({ kind = t:find('\n', 1, true) and 'para' or 'label', widget = c, text = t }) end
+          if t ~= '' then add({ kind = M.textKind(c, t), widget = c, text = t }) end
         elseif cls == 'UITextEdit' or cls == 'UISpinBox' then
           add({ kind = 'input', widget = c, password = c.isTextHidden and c:isTextHidden() or false,
                 multiline = c.isMultiline and c:isMultiline() or false })
@@ -173,17 +187,19 @@ function M.collect(root, opts)
         elseif c:getChildCount() == 0 then
           local tip = c.getTooltip and c:getTooltip()
           local style = c.getStyleName and c:getStyleName() or ''
-          if type(tip) == 'string' and tip ~= '' and textOf(c) == '' then
-            add({ kind = 'help', text = tip })
-          elseif textOf(c) ~= '' then
+          -- an icon, not a background or a frame: small, drawn from a clip or a file of its own
+          local img = textOf(c) == '' and imageOf(c)
+          if img and not (img.w > 0 and img.w <= 64 and img.h > 0 and img.h <= 64) then img = nil end
+          if textOf(c) ~= '' then
             local t = textOf(c)
-            add({ kind = t:find('\n', 1, true) and 'para' or 'label', widget = c, text = t })
+            add({ kind = M.textKind(c, t), widget = c, text = t })
+          elseif img then
+            -- a spell icon with a tooltip stays an icon (add() keeps the tooltip); only a bare tooltip is a help mark
+            add({ kind = 'image', widget = c, image = img })
+          elseif type(tip) == 'string' and tip ~= '' then
+            add({ kind = 'help', text = tip })
           elseif style == 'HorizontalSeparator' then
             if not inRow then add({ kind = 'sep' }) end
-          else
-            local img = imageOf(c)
-            -- an icon, not a background or a frame: small, drawn from a clip or a file of its own
-            if img and img.w > 0 and img.w <= 64 and img.h > 0 and img.h <= 64 then add({ kind = 'image', widget = c, image = img }) end
           end
         else
           local group = not inRow and c.getStyleName and c:getStyleName() == 'FlatPanel'
@@ -263,6 +279,11 @@ function M.collect(root, opts)
   else
     walk(root, false)
   end
+  local images = 0
+  for _, it in ipairs(items) do
+    if it.kind == 'image' or (it.kind == 'button' and it.image) then images = images + 1 end
+  end
+  if images > M.MAX_IMAGES then unsupported[#unsupported + 1] = 'images:' .. images end
   table.sort(unsupported)
   return items, unsupported
 end
@@ -342,7 +363,11 @@ function M.rml(items, escape)
         depth = depth + 1
         lines = lines + 1
       elseif k == 'cell' then
-        push(string.format('<div class="cell" style="margin-left: %ddp; width: %ddp;">', it.gap or 0, it.width or 0)) -- i18n-ok: markup
+        -- a cell that holds one text button may grow: the skin's text is wider than OTUI's, a button never wraps
+        local lone = items[n + 1] and items[n + 1].kind == 'button' and not items[n + 1].image and
+          items[n + 2] and items[n + 2].kind == 'endcell'
+        push(string.format('<div class="cell" style="margin-left: %ddp; %s: %ddp;">', it.gap or 0, -- i18n-ok: markup
+          lone and 'min-width' or 'width', it.width or 0))
         depth = depth + 1
       elseif k == 'label' and lines == 0 and (nextKind == 'range' or nextKind == 'select' or nextKind == 'input') then
         -- a label and the control it names share one full row

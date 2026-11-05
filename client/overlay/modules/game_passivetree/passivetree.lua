@@ -318,6 +318,7 @@ function create()
 	end
 
 	window = g_ui.loadUI("passivetree", modules.game_interface.getRootPanel())
+	window.chaosNoMirror = true -- a drawn view: the RmlUi window mirror (client_chaos_rmlmirror) leaves it in OTUI
 	pcall(function() modules.game_howitworks.attach(window, 'passive') end) -- game_howitworks: the ? button
 	window.onMouseWheel = function (self, mousePos, mouseWheel)
 		if mouseWheel == MouseWheelUp then

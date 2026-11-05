@@ -6,6 +6,8 @@
 -- A window a module styled itself (the login panel) sets w.chaosNoMirror = true and stays in OTUI.
 -- A window with something the layer cannot draw (items, creatures, the map, tables...) stays in OTUI. So does a mirrored
 -- window while an OTUI window or menu that is not mirrored lies over it, and any window after its "Classic" button.
+-- "Classic" is kept by window id (setting chaosRmlClassic): the window stays OTUI when it opens again, after a death or
+-- a restart. Ctrl+Alt+M twice (mirror off, on) gives every window its mirror back.
 -- Only a client built with -DCHAOS_RMLUI=ON has g_rml; without it this module does nothing.
 --   ChaosRmlMirror.setEnabled(bool) / .toggle()  (Ctrl+Alt+M; saved as the setting chaosRmlMirror, on by default)
 
@@ -27,6 +29,33 @@ end
 -- tables of windows are keyed by ChaosRmlForm.keyOf (a widget reaches Lua as a new userdata each time)
 function M.keyOf(w) return ChaosRmlForm.keyOf(w) end
 
+-- the windows the player sent to the classic look, by OTUI id (a window made again after a death keeps its id)
+M.classic = M.classic or {}
+
+function M.idOf(w)
+  local id = w.getId and w:getId()
+  if type(id) ~= 'string' or id == '' or id:find('^widget') then return nil end   -- generated ids change
+  return id
+end
+
+-- Pure: the saved list "a,b,c" as a set, and back (sorted, so the setting does not change for nothing)
+function M.parseClassic(text)
+  local set = {}
+  for id in tostring(text or ''):gmatch('[^,]+') do set[id] = true end
+  return set
+end
+
+function M.formatClassic(set)
+  local list = {}
+  for id in pairs(set) do list[#list + 1] = id end
+  table.sort(list)
+  return table.concat(list, ',')
+end
+
+local function saveClassic()
+  if g_settings and g_settings.set then g_settings.set('chaosRmlClassic', M.formatClassic(M.classic)) end
+end
+
 local function meets(a, b)
   return a.x < b.x + b.width and b.x < a.x + a.width and a.y < b.y + b.height and b.y < a.y + a.height
 end
@@ -36,6 +65,7 @@ function M.eligible(w, deny)
   if not w:isExplicitlyVisible() then return nil, 'hidden' end
   if not M.WINDOW_CLASSES[classOf(w)] then return nil, 'class' end
   if w.chaosRmlSkip or w.chaosNoMirror or (deny and deny[M.keyOf(w)]) then return nil, 'skip' end
+  if M.classic[M.idOf(w)] then return nil, 'skip' end
   local items, unsupported = ChaosRmlForm.collect(w, { geometry = true })
   if #unsupported > 0 then return nil, 'unsupported: ' .. table.concat(unsupported, ', ') end
   local controls = 0
@@ -162,6 +192,11 @@ local function onEvent(e, elementId, eventType)
   if eventType == 'click' and elementId == 'classic' then
     e.window.chaosRmlSkip = true
     M.skipped[e.key] = e.window
+    local id = M.idOf(e.window)
+    if id then
+      M.classic[id] = true
+      saveClassic()
+    end
     close(e)
     return
   end
@@ -222,7 +257,7 @@ function M.tick()
     local w = e.window
     if w:isDestroyed() or not w:isExplicitlyVisible() then close(e) end
   end
-  -- a window the player sent to the classic look gets the mirror again the next time it opens
+  -- a window without an id of its own that the player sent to the classic look gets the mirror again when it reopens
   for k, w in pairs(M.skipped) do
     if w:isDestroyed() or not w:isExplicitlyVisible() then
       if not w:isDestroyed() then w.chaosRmlSkip = nil end
@@ -270,6 +305,11 @@ end
 
 function M.setEnabled(on)
   M.enabled = on and true or false
+  if M.enabled then
+    -- switched on again: every window the player sent to the classic look gets its mirror back
+    M.classic = {}
+    saveClassic()
+  end
   if g_settings and g_settings.set then g_settings.set('chaosRmlMirror', M.enabled) end
   M.tick()
 end
@@ -281,6 +321,10 @@ end
 function init()
   if not g_rml then return end
   M.enabled = settingOn()
+  if g_settings and g_settings.getString then
+    local ok, v = pcall(g_settings.getString, 'chaosRmlClassic')
+    M.classic = M.parseClassic(ok and v or '')
+  end
   M.debug = os.getenv and os.getenv('CHAOS_RMLMIRROR_DEBUG') ~= nil
   if g_keyboard then g_keyboard.bindKeyDown('Ctrl+Alt+M', M.toggle) end
   tickEvent = cycleEvent(M.tick, TICK_MS)
