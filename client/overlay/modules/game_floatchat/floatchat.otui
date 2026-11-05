@@ -1,0 +1,129 @@
+// The floating chat of the action bar layout (game_floatchat, client/MANIFEST.md "Floating chat and central hotbar (O414)").
+// A dark see-through body (its alpha is set from the opacity option in floatchat.lua), the nine-slice border drawn by
+// tools/gen_hotbar_art.py, a compact header and the base console panel below it.
+
+ChaosFloatIcon < UIWidget
+  size: 14 14
+  phantom: true
+  image-smooth: true
+
+ChaosFloatBadge < Label
+  size: 16 14
+  text-align: center
+  font: verdana-11px-rounded
+  color: #ffffff
+  background-color: #e2622cff
+  phantom: true
+  visible: false
+
+ChaosFloatTab < UIButton
+  height: 20
+  focusable: false
+  color: #e8c89a
+  font: verdana-11px-rounded
+  text-align: left
+  padding-left: 18
+  padding-right: 32
+  text-auto-resize: true
+  background-color: #00000000
+  $hover:
+    background-color: #5a3a2960
+    color: #ffe0b0
+  $pressed:
+    background-color: #c8782e80
+
+  ChaosFloatIcon
+    id: icon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 2
+
+  ChaosFloatIcon
+    id: caret
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: -2
+    image-source: /modules/game_floatchat/images/chat_caret
+
+  ChaosFloatBadge
+    id: badge
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 15
+
+ChaosFloatChat < UIWidget
+  id: chaosFloatChat
+  size: 380 150
+  focusable: false
+  image-source: /modules/game_floatchat/images/chat_border
+  image-border: 10
+  background-color: #0e0a0cbf
+  clipping: true
+
+  UIWidget
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 5 5 0 5
+    height: 24
+    !tooltip: tr('Drag to move the chat. Double-click: back to the bottom left.')
+
+    ChaosFloatTab
+      id: channels
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      !text: tr('Channels')
+      !tooltip: tr('Open channels')
+
+    ChaosFloatTab
+      id: private
+      anchors.left: channels.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 6
+      !text: tr('Private')
+      !tooltip: tr('Private chats')
+
+    UIButton
+      id: close
+      size: 16 16
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 2
+      image-source: /modules/game_floatchat/images/chat_close
+      image-smooth: true
+      !tooltip: tr('Hide the chat (Ctrl+Shift+C shows it again)')
+      opacity: 0.8
+      $hover:
+        opacity: 1
+
+    UIButton
+      id: options
+      size: 16 16
+      anchors.right: prev.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 4
+      image-source: /modules/game_floatchat/images/chat_gear
+      image-smooth: true
+      !tooltip: tr('Layout options')
+      opacity: 0.8
+      $hover:
+        opacity: 1
+
+  UIWidget
+    id: content
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin: 2 5 5 5
+
+  UIWidget
+    id: grip
+    size: 14 14
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin: 0 3 3 0
+    image-source: /modules/game_floatchat/images/chat_grip
+    image-smooth: true
+    !tooltip: tr('Drag to resize the chat')

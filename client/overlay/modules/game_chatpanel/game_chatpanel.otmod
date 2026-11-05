@@ -1,11 +1,11 @@
 Module
   name: game_chatpanel
-  description: The chat panel's size and place (centred group with the orbs, moved anywhere by its handle or left grip, width grip keeps the left edge, per character, limits) and the Enter rule of the chat (ChaosChatLogic, read by modules/game_console through base patch 0056)
+  description: The chat panel's size and place (centred group with the orbs, moved anywhere by its handle or left grip, width grip keeps the left edge, per character, limits), the layout mode of a character (classic or action bar, O414) and the Enter rule of the chat (ChaosChatLogic, read by modules/game_console through base patch 0056)
   author: Cinders of Chaos
   sandboxed: false
   autoload: true
   autoload-priority: 960
   dependencies: [ game_interface ]
-  scripts: [ chatpanel_logic, chatpanel ]
+  scripts: [ layoutmode_logic, layoutmode, chatpanel_logic, chatpanel ]
   @onLoad: ChaosChatPanel.init()
   @onUnload: ChaosChatPanel.terminate()

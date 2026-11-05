@@ -173,4 +173,19 @@ do
   M.clear(st); eq(st.xp, nil, 'cleared')
 end
 
+-- the default spot keeps clear of the central hotbar (O414)
+do
+  local map, win = { x = 0, y = 0, width = 1280, height = 720 }, { width = 1280, height = 720 }
+  local sides = { { x = 1090, y = 0, width = 190, height = 720 } }
+  local bar = { x = 173, y = 606, width = 744, height = 110 }
+  local x0, y0 = M.defaultPosition(M.freeArea(map, win, sides, {}), 200, 400, 0, 0)
+  local x1, y1 = M.defaultAvoiding(map, win, sides, {}, 200, 400, nil, 0, 0)
+  eq(x1 == x0 and y1 == y0, true, 'no bar: the plain default')
+  local x2, y2 = M.defaultAvoiding(map, win, sides, {}, 200, 400, bar, 0, 0)
+  eq(y2 + 400 <= bar.y, true, 'a tall party sits above the bar')
+  local x3, y3 = M.defaultAvoiding(map, win, sides, {}, 200, 150, bar, 0, 0)
+  local px, py = M.defaultPosition(M.freeArea(map, win, sides, {}), 200, 150, 0, 0)
+  eq(x3 == px and y3 == py, true, 'a short party that is clear of the bar stays where it was')
+end
+
 print('party frames tests OK (' .. checks .. ' checks)')

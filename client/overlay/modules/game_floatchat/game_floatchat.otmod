@@ -1,0 +1,11 @@
+Module
+  name: game_floatchat
+  description: The chat as a floating window over the map in the action bar layout (O414). The base console is reparented into it; header menus for channels and private chats with unread badges; hide and show (Ctrl+Shift+C, the X, the hotbar button, Enter); body opacity 40-100% with an optional fade; place, size, hidden and opacity per character
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 965
+  dependencies: [ game_interface, game_console, game_chatpanel ]
+  scripts: [ floatchat_logic, floatchat ]
+  @onLoad: ChaosFloatChat.init()
+  @onUnload: ChaosFloatChat.terminate()

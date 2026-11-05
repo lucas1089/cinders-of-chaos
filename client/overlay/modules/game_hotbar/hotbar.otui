@@ -1,0 +1,257 @@
+// The central hotbar of the action bar layout (game_hotbar, client/MANIFEST.md "Floating chat and central hotbar (O414)").
+// Art: tools/gen_hotbar_art.py. Sizes and places are set in hotbar.lua from hotbar_logic.lua's metrics (the scale option).
+
+ChaosHotbarPart < UIWidget
+  focusable: false
+  phantom: true
+  image-smooth: true
+
+ChaosHotbarKey < ChaosHotbarPart
+  size: 30 14
+  image-source: /modules/game_hotbar/images/hotbar_key
+  image-border: 4
+
+  Label
+    id: text
+    anchors.fill: parent
+    text-align: center
+    font: verdana-11px-rounded
+    color: #f0dcaa
+    phantom: true
+
+ChaosHotbarCooldown < Label
+  text-align: center
+  font: chaos-display-16px
+  color: #ffffff
+  phantom: true
+  visible: false
+
+ChaosHotbarButton < UIButton
+  size: 22 22
+  image-source: /modules/game_hotbar/images/hotbar_btn_chat
+  image-clip: 0 0 22 22
+  image-smooth: true
+  focusable: false
+  $hover:
+    image-clip: 22 0 22 22
+  $pressed:
+    image-clip: 44 0 22 22
+
+ChaosHotbar < UIWidget
+  id: chaosHotbar
+  focusable: false
+  phantom: false
+
+  // the frame under everything
+  ChaosHotbarPart
+    id: body
+    image-source: /modules/game_hotbar/images/hotbar_body
+    image-border: 20
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+
+  ChaosHotbarPart
+    id: capL
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+
+  ChaosHotbarPart
+    id: capR
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+
+  ChaosHotbarPart
+    id: gem
+    size: 14 14
+    image-source: /modules/game_hotbar/images/hotbar_gem
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.top: body.top
+    margin-top: -5
+
+  // the last loot or level event, fading after 5 seconds
+  Label
+    id: line
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.bottom: body.top
+    margin-bottom: 2
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #f0dcaa
+    phantom: true
+    visible: false
+
+  ChaosHotbarPart
+    id: socketL
+    size: 44 44
+    image-source: /modules/game_hotbar/images/hotbar_socket
+
+  ChaosHotbarPart
+    id: socketR
+    size: 44 44
+    image-source: /modules/game_hotbar/images/hotbar_socket
+
+  // drag handle under the body's middle
+  UIWidget
+    id: handle
+    size: 36 10
+    image-source: /modules/game_hotbar/images/hotbar_handle
+    image-smooth: true
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    margin-bottom: -4
+    !tooltip: tr('Drag to move the bar. Double-click: back to the centre. Right-click: bar options.')
+
+  ChaosHotbarButton
+    id: chatButton
+    !tooltip: tr('Show or hide the chat (Ctrl+Shift+C)')
+
+  ChaosHotbarButton
+    id: gearButton
+    image-source: /modules/game_hotbar/images/hotbar_btn_gear
+    !tooltip: tr('Layout options')
+
+  ChaosHotbarPart
+    id: chatDot
+    size: 8 8
+    image-source: /modules/game_hotbar/images/hotbar_dot
+    visible: false
+
+// the layout options window (hotbar_options.lua): layout mode, the bar and the chat
+ChaosLayoutOptionsWindow < ChaosMainWindow
+  id: chaosLayoutOptions
+  !text: tr('Layout options')
+  size: 400 470
+  @onEscape: modules.game_hotbar.closeOptions()
+
+  ChaosLabel
+    id: modeLabel
+    !text: tr('Layout')
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 4
+    color: #e8c89a
+
+  ChaosComboBox
+    id: mode
+    anchors.top: modeLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+  ChaosLabel
+    id: modeNote
+    !text: tr('A new layout applies when you log in again. Phones keep the classic layout.')
+    anchors.top: mode.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-wrap: true
+    text-auto-resize: true
+
+  ChaosLabel
+    id: barLabel
+    !text: tr('Hotbar')
+    anchors.top: modeNote.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    color: #e8c89a
+
+  ChaosCheckBox
+    id: globes
+    !text: tr('Health and mana globes on the bar')
+    anchors.top: barLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+  ChaosLabel
+    id: countLabel
+    !text: tr('Slots on the bar')
+    anchors.top: globes.bottom
+    anchors.left: parent.left
+    margin-top: 8
+
+  ChaosComboBox
+    id: count
+    width: 90
+    anchors.verticalCenter: countLabel.verticalCenter
+    anchors.right: parent.right
+
+  ChaosLabel
+    id: scaleLabel
+    anchors.top: countLabel.bottom
+    anchors.left: parent.left
+    margin-top: 12
+
+  HorizontalScrollBar
+    id: scale
+    anchors.verticalCenter: scaleLabel.verticalCenter
+    anchors.right: parent.right
+    width: 180
+    step: 5
+
+  ChaosLabel
+    id: chatLabel
+    !text: tr('Chat')
+    anchors.top: scaleLabel.bottom
+    anchors.left: parent.left
+    margin-top: 14
+    color: #e8c89a
+
+  ChaosCheckBox
+    id: hideOnSend
+    !text: tr('Show the chat while typing, hide it again after sending')
+    anchors.top: chatLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+  ChaosLabel
+    id: opacityLabel
+    anchors.top: hideOnSend.bottom
+    anchors.left: parent.left
+    margin-top: 10
+
+  HorizontalScrollBar
+    id: opacity
+    anchors.verticalCenter: opacityLabel.verticalCenter
+    anchors.right: parent.right
+    width: 180
+    step: 5
+
+  ChaosCheckBox
+    id: fade
+    !text: tr('Fade the chat when nothing new arrives (hover brings it back)')
+    anchors.top: opacityLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+
+  ChaosLabel
+    id: fadeLabel
+    anchors.top: fade.bottom
+    anchors.left: parent.left
+    margin-top: 10
+
+  HorizontalScrollBar
+    id: fadeSeconds
+    anchors.verticalCenter: fadeLabel.verticalCenter
+    anchors.right: parent.right
+    width: 180
+    step: 1
+
+  ChaosButton
+    id: resetPlace
+    !text: tr('Reset place of the bar and the chat')
+    anchors.top: fadeLabel.bottom
+    anchors.left: parent.left
+    margin-top: 14
+    width: 270
+
+  ChaosButton
+    id: close
+    !text: tr('Close')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 80

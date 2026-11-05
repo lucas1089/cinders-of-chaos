@@ -84,7 +84,8 @@ place = function()
   local box = shownRect(overlay)
   if box and box.width < view.width * 0.6 then obstacles[#obstacles + 1] = box end -- the corner box (not the full view)
   local bottom = g_window.getHeight()
-  for _, getter in ipairs({ gi.getBottomPanel, gi.getBottomActionPanel }) do
+  -- the central hotbar (game_hotbar) counts too
+  for _, getter in ipairs({ gi.getBottomPanel, gi.getBottomActionPanel, function() local hb = rawget(_G, 'ChaosHotbar') return hb and hb.getWidget and hb.getWidget() or nil end }) do
     local ok, w = pcall(function() return getter and getter() end)
     local r = ok and shownRect(w)
     if r and r.height > 0 and r.y > bottom / 2 then bottom = math.min(bottom, r.y) end

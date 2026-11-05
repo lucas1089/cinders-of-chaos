@@ -39,6 +39,28 @@ function L.orbSize(option)
   return entry.size, math.floor(entry.size * 50 / 76 + 0.5), entry.font
 end
 
+-- Globes docked into the central hotbar (game_hotbar, O414): any diameter, drawn from the nearest ring and mask art
+-- (scaled by the widget, image-smooth). Returns size, liquid size, font, ring image, mask image.
+function L.dockedSize(diameter)
+  local d = math.max(40, math.floor(tonumber(diameter) or L.ORB_SIZES[1].size))
+  local nearest, best = 1, math.huge
+  for i, e in ipairs(L.ORB_SIZES) do
+    local gap = math.abs(e.size - d)
+    if gap < best then nearest, best = i, gap end
+  end
+  local artSize, artLiquid = L.orbSize(nearest)
+  local font = d < 100 and L.ORB_SIZES[1].font or (d < 160 and L.ORB_SIZES[2].font or L.ORB_SIZES[3].font)
+  return d, math.floor(d * 50 / 76 + 0.5), font, L.ORB_IMAGES .. 'orb_ring_' .. artSize, L.ORB_IMAGES .. 'orb_mask_' .. artLiquid
+end
+
+-- The plain globe (liquid orbs off, or no ui shaders): the mask drawn as far up as the fill, cut from the bottom.
+-- Returns the clip {x, y, width, height} of an image `texels` wide and the height in pixels of a liquid `liquid` high.
+function L.plainClip(fill, texels, liquid)
+  local f = math.max(0, math.min(1, tonumber(fill) or 0))
+  local h = math.floor(texels * f + 0.5)
+  return { x = 0, y = texels - h, width = texels, height = h }, math.floor(liquid * f + 0.5)
+end
+
 -- the ring and mask images of an orb size: one pair per size, each at twice the size it is drawn
 -- (tools/gen_orb_art.py). One 76 px ring and 64 px mask stretched to the medium and large orbs looked blurred and
 -- stepped (owner screenshot 2026-10-21).

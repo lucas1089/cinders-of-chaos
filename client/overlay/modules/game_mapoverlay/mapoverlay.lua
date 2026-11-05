@@ -123,7 +123,8 @@ local function visibleArea(view)
     end
   end
   local r
-  for _, getter in ipairs({ gi.getBottomPanel, gi.getBottomActionPanel }) do
+  -- the central hotbar (game_hotbar) counts too
+  for _, getter in ipairs({ gi.getBottomPanel, gi.getBottomActionPanel, function() local hb = rawget(_G, 'ChaosHotbar') return hb and hb.getWidget and hb.getWidget() or nil end }) do
     r = panelRect(getter)
     if r and r.height > 0 then insets.bottom = math.max(insets.bottom or 0, win.height - r.y) end
   end

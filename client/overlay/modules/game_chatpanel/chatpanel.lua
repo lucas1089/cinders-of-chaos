@@ -115,7 +115,14 @@ local function applyLift(s, newLift)
 end
 
 -- place the group (returns true when it did: base patch 0065 then leaves the splitter's left margin alone)
+local function actionMode()
+  local lm = rawget(_G, 'ChaosLayoutMode')
+  return lm ~= nil and lm.isAction ~= nil and lm.isAction()
+end
+
 function M.relayout()
+  -- the action bar layout (O414): game_floatchat and game_hotbar own the bottom area, this module stands down
+  if actionMode() then return false end
   local s, r = splitter(), root()
   if not s or not r or not g_game.isOnline() or g_app.isMobile() or not s:isVisible() then return false end
   local anchorLeft, anchorRight, left, right = region()
@@ -143,7 +150,7 @@ end
 
 local function save()
   local s = splitter()
-  if not s or not character then return end
+  if not s or not character or actionMode() then return end
   local saved = g_settings.getNode(SETTINGS_NODE) or {}
   saved[character] = { width = wantedWidth, height = chatHeight(s), x = placeX, lift = lift }
   g_settings.setNode(SETTINGS_NODE, saved)
@@ -189,6 +196,7 @@ local function applySaved()
   local player = g_game.getLocalPlayer()
   if not s or not player or g_app.isMobile() then return end
   character = player:getName()
+  if actionMode() then return end
   local size = L.sizeFor(g_settings.getNode(SETTINGS_NODE), character)
   wantedWidth = size.width
   placeX, legacyOffset = size.x, size.offset
@@ -326,7 +334,7 @@ local function onGameStart()
 end
 
 local function onGameEnd()
-  save()
+  if not actionMode() then save() end
   character = nil
   lastPlace = nil
   drag = nil
@@ -346,14 +354,38 @@ local function watch(on)
   end
 end
 
+-- the layout mode changed (layoutmode.lua): the action bar layout hides the grips and gives the bottom edge up; the classic
+-- layout brings them back and places the chat from the saved size and place
+local function onMode(mode)
+  if g_app.isMobile() or not g_game.isOnline() then return end
+  local s = splitter()
+  if mode == 'action' then
+    drag = nil
+    for _, g in ipairs({ widthGrip, moveGrip, handle }) do
+      if g then cursorOff(g) g:setVisible(false) end
+    end
+    if s then applyLift(s, 0) end
+  else
+    createGrips()
+    for _, g in ipairs({ widthGrip, moveGrip, handle }) do
+      if g then g:setVisible(true) end
+    end
+    applySaved()
+  end
+end
+
 function M.init()
   g_ui.importStyle('chatpanel')
+  if ChaosLayoutMode and ChaosLayoutMode.init then ChaosLayoutMode.init() end -- layoutmode.lua, loaded with this module
+  if ChaosLayoutMode and ChaosLayoutMode.subscribe then ChaosLayoutMode.subscribe(onMode) end
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   watch(true)
   if g_game.isOnline() then onGameStart() end
 end
 
 function M.terminate()
+  if ChaosLayoutMode and ChaosLayoutMode.unsubscribe then ChaosLayoutMode.unsubscribe(onMode) end
+  if ChaosLayoutMode and ChaosLayoutMode.terminate then ChaosLayoutMode.terminate() end
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   watch(false)
   if g_game.isOnline() then save() end

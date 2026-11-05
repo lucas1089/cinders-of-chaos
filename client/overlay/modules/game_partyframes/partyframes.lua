@@ -310,9 +310,12 @@ local function defaultMargins(parent)
   rectOf('getLeftPanel', sides)
   rectOf('getBottomPanel', bottoms)
   rectOf('getBottomActionPanel', bottoms)
-  local free = PartyMath.freeArea(parent:getRect(), { width = g_window.getWidth(), height = g_window.getHeight() }, sides, bottoms)
   local pr = parent:getRect()
-  return PartyMath.defaultPosition(free, panel:getWidth(), panel:getHeight(), pr.x, pr.y)
+  -- the central hotbar (game_hotbar, action layout) is not a bottom panel: the frames keep clear of it
+  local hb = rawget(_G, 'ChaosHotbar')
+  local avoid = hb and hb.getRect and hb.getRect() or nil
+  return PartyMath.defaultAvoiding(pr, { width = g_window.getWidth(), height = g_window.getHeight() }, sides, bottoms,
+    panel:getWidth(), panel:getHeight(), avoid, pr.x, pr.y)
 end
 
 local function clampPanel()

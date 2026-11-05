@@ -162,8 +162,14 @@ local function coveredBottom(map)
   local gi = modules.game_interface
   local bottom = map:getY() + map:getHeight()
   local covered = 0
-  for _, name in ipairs({ 'getBottomPanel', 'getBottomActionPanel' }) do
-    local ok, w = pcall(function() return gi[name] and gi[name]() end)
+  for _, name in ipairs({ 'getBottomPanel', 'getBottomActionPanel', 'chaosHotbar' }) do
+    local ok, w = pcall(function()
+      if name == 'chaosHotbar' then -- the central hotbar (game_hotbar)
+        local hb = rawget(_G, 'ChaosHotbar')
+        return hb and hb.getWidget and hb.getWidget() or nil
+      end
+      return gi[name] and gi[name]()
+    end)
     if ok and w and w:isVisible() and w:getHeight() > 0 and w:getY() < bottom then
       covered = math.max(covered, bottom - w:getY())
     end

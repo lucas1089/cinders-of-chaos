@@ -62,7 +62,9 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_targetguard | none | base patch 0112 (the helper's locked target and the battle list's attack next call `ChaosTargetGuard`) | Which creatures the player's own targeting may pick, see "Target guard" |
 | game_autotarget | none of its own; asks the server for a creature's tier through `game_monsterbar` (opcode 125 `query`, answer `info`) | base patch 0117 (the helper's Auto Target calls `ChaosAutoTargetEngine`; two boxes in its Targeting panel); `g_map.findPath` / `g_map.isSightClear` of the base engine | Which monster the helper's Auto Target picks: only reachable ones, loot goblins / bosses / special monsters first, then the nearest with the lowest health, see "Auto Target priority and reach" |
 | game_helpersupport | none | none (overlay only: it uses the helper's `_Helper` functions and `game_buffbar`'s `activeBuffs`) | The helper's Support spells tab: a list of support spells the helper casts by itself whenever they are off cooldown, see "Helper Support spells" |
-| game_chatpanel | none | base patches 0056 (`game_console` reads `ChaosChatLogic.enterAction`; splitter minimum 96), 0065 (splitter drag, left margin) | Chat panel size and place (with the orbs; moved anywhere by its "Chat" handle, width grip keeps the left edge) and the chat's Enter rule, see "Chat panel" |
+| game_chatpanel | none | base patches 0056 (`game_console` reads `ChaosChatLogic.enterAction`; splitter minimum 96), 0065 (splitter drag, left margin) | Chat panel size and place (with the orbs; moved anywhere by its "Chat" handle, width grip keeps the left edge) and the chat's Enter rule, see "Chat panel"; also the layout mode of a character (`layoutmode*.lua`, O414), see "Floating chat and central hotbar (O414)" |
+| game_floatchat | none | none (the base console is reparented, nothing patched) | O414: the chat as a floating window over the map in the action bar layout: header menus Channels / Private with unread badges, hide and show (Ctrl+Shift+C, the X, the hotbar button, Enter), body opacity 40-100%, optional fade, place, size, hidden per character. Not run in a client, see "Floating chat and central hotbar (O414)" |
+| game_hotbar | none | none (the first action bar is adopted, nothing patched) | O414: the central hotbar: the first action bar of `game_actionbar` in one ornate bar, big cooldown numbers, key boxes, two round side sockets, an event line, the globes of `game_shaderfx` docked into the end caps, scale, slot count and place per character, the layout options window. Not run in a client, see "Floating chat and central hotbar (O414)" |
 | game_chaoslayout | none | `0187` (option "Remember open backpacks") | Window layout per character and the open containers (O412), see "Window layout per character" |
 | game_chaosview | none (asks for the server's largest map area with `g_game.changeMapAwareRange`, server limit 29 x 21) | none | The map's zoom, see "Map zoom" |
 | game_cosmeticfx | none of its own (`game_cosmetics` hands it the server's `looks` and `tryfx`) | `0038` for the outline line (`Creature:setOutline` / `setOutlineGradient` / `clearOutline`); `0078` for the footprints (`Tile:setFloorWidget`: under creatures; without it `Tile:setWidget`, drawn over everything); without `0038` the glow picture (uses `Creature:addBottomWidget` / `clearBottomWidgets`, `UIWidget:setRotation`) | Footprints and outlines of every player on screen, drawn by this client: a print on the tile a player left (turned to the step, fading in 3.2 s; 160 on screen, 8 per walker; never on a tile with another module's widget; none while the own character stands in a protection zone) and an outline: a 2 px line that follows the player's silhouette (body, addons, mount and rider, the walking frame; drawn by the engine under the outfit's parts, so it stacks with outfit shaders, wings and auras and stays off names and bars). Colours per art key in `CF.OUTLINES` (one colour, or a vertical gradient: Ember, Storm, Paragon's Radiance, Void Corona, Cinderheart Blaze); pulsing ones breathe in the engine (1.8 s). Feature check per creature (`CF.hasEngineOutline`): a client without base patch 0038 gets the old soft glow behind the player (a bottom widget) instead. `applyOutline(creature, art, pulse)` for `game_cosmetics`' sample. Settings (g_settings node `chaosCosmeticFx`) hide other players' footprints / outlines; the own character always shows. Pictures `images/prints/*.png` (64 x 64, pointing north) and, for old engines only, `images/glows/*.png` (128 x 128) from `tools/gen_cosmeticfx_art.py` (shapes and noise with a fixed seed, no reference art). Logic `cosmeticfxlogic.lua` (tested by `cosmeticfxlogic_test.lua`, which also checks a picture and outline colours for every art key of the server's `cosmetics_config.lua`, the gradients and the feature check); tested in game with two clients (server/README.md "Footprints and outlines") Print `laurel` (O318, `gen_cosmeticfx_art.py`, appended last so the other pictures stay byte for byte): the collection score's footprints Laurel Steps. |
@@ -5504,6 +5506,111 @@ Owner: "the task tracker window can't be moved. Make every window draggable and 
 - Saved in g_settings node `chaosHudPos`: `{ [panel id] = { ["world/name"] = { x, y } } }`, relative to the parent. Restored when the panel shows and at game start; nothing saved: the module's anchors are never touched. Clamped fully on screen (the part of the parent inside the window), again when the window, the parent or the panel resizes. Double-click (not on a button): back to the default place, the spot forgotten. Tooltip "Drag to move. Double-click to put it back." (pt-BR in `pt_br.lua`).
 - Used by: `game_bestiary` (task tracker), `game_invasion`, `game_rift`, `game_siege`, `game_arena`, `game_battleground`, `game_raid`, `game_descent`, `game_pvpzone`, `game_dungeons` (kill counter), `game_chaoshud` (character plate), `game_helperhud` (bot HUD).
 - Left as they are: miniwindows of the side panels and the Chaos windows (`ChaosWindow` / `MainWindow`, draggable already); already draggable with a saved spot: `game_infinitytower`, `game_chatpanel`, `game_dpsmeter`, `game_partyframes`, `game_goals` (tracker, by its title), `game_walkpad`; `game_monsterbar` and its boss cast bar (placed every frame to follow the visible map and avoid the plate; the cast bar sits under it); `game_monkchi` (click-through, just below the character); the cast bars of `game_castbar` / `game_townportal` (over the character, while casting); `game_buffbar` and `game_energyshield` (hang on the plate); modal or short-lived: `game_descent` offer, `game_antibot` presence check, `game_bank` amount, `game_stash` progress and confirm, `game_partyfinder` / `game_shop` pay / `game_arena` result toasts, `game_raid` call-outs, `game_chaosnotify`, `game_lootfilter` flash, `game_dungeons` challenge banner; full screen or overlays: `game_mapoverlay`, `game_passivetree`, `client_chaos_firststart`, `client_chaos_updater`, `client_chaos_charselect`; anchored to the world: `game_npctalk`, `game_groundlabels`, `game_mapmarkers`, `game_lootbeams`; liquid orbs of `game_shaderfx` (anchored to the chat panel, which moves). Not run in a live client yet.
+
+## Floating chat and central hotbar (O414)
+
+Owner 2026-11-05: "make our chat window look like this on PC, and the player can hide it whenever they want; make the main
+hotkey and cooldown window look like this, in the middle, with the option to put and remove the health and mana globes."
+Two layout ideas only (a compact floating chat, one centred ornate bar); the art is our own, drawn by
+`client/tools/gen_hotbar_art.py`. **Not run in a client**: the base tree is not in the repo, so every access to
+`game_console`, `game_actionbar` and `game_interface` below is written from what the other overlay modules and the base
+patches show, behind `pcall` and `nil` guards. Check it in a build before it ships (list at the end). No base patch.
+
+### Layout mode (`game_chatpanel/layoutmode*.lua`, global `ChaosLayoutMode`)
+- Two modes per character, kept in `g_settings` node `chaos_layout_mode`: `classic` (the bottom splitter with the chat, the
+  action bars under it and the orbs beside it: `game_chatpanel`, unchanged) and `action` (the floating chat and the
+  central hotbar). A new character gets `action`; a character that has an entry in `chaos_chatpanel`, `chaos_layout`,
+  `chaos_view` or `chaosHudPos` keeps `classic` until it picks. The first resolution is saved as the pick, so a new
+  character is not turned into a "known" one by the entries the other modules write at logout. Phones are always `classic`.
+- The pick is saved at once and used at the **next login** (the layouts move the base console and action bar between panels
+  once per login). The layout options window says so.
+- `ChaosLayoutMode.get() / isAction() / set(mode) / picked() / subscribe(fn)`. In `action`, `ChaosChatPanel.relayout`
+  returns false (it stands down: grips hidden, no saving) and the splitter belongs to `game_hotbar`.
+- Rules and tests: `layoutmode_logic.lua`, `layoutmode_test.lua` (new / known / pick / phone, the g_settings round trip).
+
+### Floating chat (`game_floatchat`, global `ChaosFloatChat`)
+- A `ChaosFloatChat` window (380 x 150 by default, bottom-left, above the hotbar when that would sit on it) in the game root
+  panel. The base console panel is **reparented** into its content area (anchors reset, `fill`), not restyled: tabs,
+  channels, private chats, the Loot tab overlay of `game_lootfilter`, chat links, the Enter rule and the streamer wrapping
+  stay the base module's own. The base tab row is pushed above the content area, which clips it; the header is raised over it.
+- Header: "Channels" and "Private" buttons open a menu of the open tabs (`UIMoveableTabBar:selectTab`), with an unread
+  badge each (a blinking tab counts 1; `FloatChatLogic.menus` sorts a tab with a channel id, or a system tab, into
+  Channels and the rest into Private). Gear: the layout options. X: hide. Drag the header to move, the corner grip to
+  resize, double-click the header for the default place. Move and resize are clamped to the game area (60% of it at most).
+- Hide and show: **Ctrl+Shift+C** (free: the other chords in use are Ctrl+Shift+F, H, M, N, S, Z), the X, the button on the
+  hotbar. Hidden = the window is parked 30000 px left of the screen and stays a live widget, so the console's key
+  bindings keep working; nothing is drawn or clickable. A message while hidden counts as unread (up to 99, `99+`
+  past it) and lights a dot on the hotbar's chat button.
+- Enter: the console's text edit going from disabled to enabled (polled every 100 ms) shows a hidden chat; the line sent or
+  an empty Enter hides it again, only if it was shown by the Enter (option "Show the chat while typing, hide it again after
+  sending", default on). A chat the player showed stays shown.
+- Looks: body alpha 75% by default (options 40-100%), border and icons from the generator (`chat_*.png`); the console's own
+  background is made clear so the window's body shows. Optional fade (default off): after N seconds (3-60, default 8)
+  without a message the body sinks to 40%; hover or typing brings it back.
+- Saved per character in node `chaos_floatchat` (x, y, width, height, hidden, opacity, fade, fadeSeconds, hideOnSend).
+  Pure rules: `floatchat_logic.lua`; `floatchat_test.lua` (clamp, default place, the hide / show / Enter state machine, unread
+  count and badge, fade, opacity, menus, settings round trip).
+- Not built: the four icon filter toggles of the reference (they need the console's message routing).
+
+### Central hotbar (`game_hotbar`, global `ChaosHotbar`)
+- The first bottom bar of `game_actionbar` is found by its slot buttons (the widgets that carry a `cooldown` field, as
+  base patch 0161 reads them), moved into the bar's frame and restyled: button size, margins, layout spacing and order
+  (`moveChildToIndex`, so no button leaves its parent and the base lookups by id keep working), the row clipped to the
+  slots shown. Hotkeys, spells, items, drag and assign stay the base module's. A retry every 300 ms for 21 s waits for the
+  bars at login (base patch 0178 builds hidden bars later). Other bottom bars sit just above the hotbar.
+- Slots 1..count in the main row (an option: 6, 8, 10 or 12; default 8). The sockets use slots **13** (potion, key label Q
+  when the slot has no hotkey) and **14** (utility, E), whatever the count is, so a slot never changes its spell when the
+  count changes. A bar with fewer than 14 slots has no sockets.
+- Per slot: our frame under it (green when it holds something and is not cooling down), a big number over it (whole seconds
+  rounded up, one decimal under 2 s, `1m` from 60 s: `HotbarLogic.cooldown`), a key box under it (the slot's hotkey text,
+  shortened). The base button's own cooldown fill and hotkey label stay; the label is hidden so the key box shows it.
+- The line above the bar shows `Gained <loot>` or `Level N` from the game's text messages (`onTextMessage`, the
+  "Loot of ...: ..." and "You advanced ..." lines), 4 s full then 1 s fading. No new server message.
+- Globes: option "Health and mana globes on the bar" (default on). On: `game_shaderfx.setOrbDock(diameter)` docks the two orbs
+  into the end caps (anchored to the frame's left and right edges), diameter 110 px at 100% scaled with the bar; the art is
+  the nearest ring and mask size, scaled by the widget (`ShaderFxLogic.dockedSize`). With the liquid orbs option off (or no
+  ui shaders) the docked globes are plain filled discs cut to the fill (`plainClip`). Off: closed caps, the bar is narrower,
+  and no orbs are drawn (`setOrbDock(nil, true)`).
+- Scale 75-125% in steps of 5, slot count and globes are options; a window too small gets a smaller bar first (down to 60%),
+  then fewer slots (down to 4) (`HotbarLogic.fit`). The handle under the bar drags it (a drag ending within 10 px of the
+  centre or the bottom snaps back), double-click centres it. Right-click on the bar: chat, globes, slot count, size,
+  centre, options. Saved per character in node `chaos_hotbar` (count, scale, globes, x, lift).
+- The classic bottom area gives way: the splitter margin is 0, its height 1 and it is phantom; `gameBottomPanel` is
+  hidden; `gameBottomActionPanel` is hidden when no other bottom bar is on.
+- Other HUD keeps clear: `ChaosHotbar.getRect()` / `getWidget()` count as a bottom panel for `game_partyframes` (default
+  spot, `PartyMath.defaultAvoiding`), `game_invasion`, `game_mapoverlay` (free area), `game_townportal` and, by id
+  `chaosHotbar`, `game_monsterbar` and `game_npctalk`. The floating chat's first place sits above the bar when they
+  would overlap. `hotbar_test.lua` computes the bar, the party frames' default spot (a 400 px party), the chat's first place
+  and a buff bar under the character plate for 6 / 8 / 10 / 12 slots, scale 75 / 100 / 125 and globes on / off at 1280x720
+  and 1920x1080 (right panel 190 px) and checks nothing overlaps and everything is on screen.
+- Cinema mode (`client_chaos_streamer`) hides every visible sibling of the map chain, so the hotbar, the floating chat and the
+  docked orbs go with it and come back; nothing here calls `setVisible` on them each tick (the orbs' dock does not either).
+  Streamer mode wraps the console's Chat class, which is untouched.
+- Layout options window (`hotbar_options.lua`, `ChaosLayoutOptionsWindow`, 400 x 470): layout mode, globes, slots, bar size,
+  chat: show while typing, opacity, fade and its seconds, reset place. Opened from the right-click menu, the hotbar's and the
+  chat's gear buttons; a "Layout options..." button is added to the base Options window when a panel with one of the ids
+  `interfacePanel`, `interface`, `interfaceTab`, `optionsTabContent` exists (best effort). The proper place, a section in
+  Options > Interface with the other options, needs a base patch (`dataset.lua`, `interface.otui`) against the base tree:
+  next number 0189, not written because its context lines could not be checked.
+- Art: `client/tools/gen_hotbar_art.py` (Pillow, numpy, seeded, own geometry only; `--check` in CI with the fx venv checks the
+  pixels, the stray files and that the sizes equal the `L.*` constants of `hotbar_logic.lua` / `floatchat_logic.lua`;
+  `--preview OUT.png` draws the bar with and without globes and the chat skin). `game_hotbar/images/hotbar_*.png`: body (nine-slice,
+  border 20), slot and ready slot (44), key box (nine-slice, 4), socket (44), open and closed caps left and right, gem,
+  handle, unread dot, chat and gear button sheets (3 states of 22); `game_floatchat/images/chat_*.png`: border (nine-slice, 10), icons.
+- pt-BR: 34 keys in `client_chaos_locale/pt_br.lua` (check_locales).
+
+### To check in a client (not run)
+1. The Lua names of the base: `modules.game_console.consolePanel` / `consoleTabBar` / `consoleTextEdit` (falls back to ids
+   under `gameBottomPanel`), `gameBottomActionPanel` holding the bar widgets, slot buttons with a `cooldown` field, the
+   buttons' hotkey label (`hotkey`, child `text` / `hotkey`) and what marks a filled slot (`words`, `spellId`, `itemId`,
+   `getItemId`), `UIWidget:moveChildToIndex`, the layout's `setSpacing`. If the bar is not found the hotbar logs
+   `[hotbar] no action bar found` and stays off; the floating chat still works.
+2. That the clipped base tab row does not take clicks over the header, and that the console's input line and its Chat On
+   state survive the reparent.
+3. That a map anchored to `bottomSplitter` fills the window with the splitter at margin 0 and height 1.
+4. The look at 1280x720 and 1920x1080 and with the UI scale 200%; the docked orbs at 75%, 100%, 125%; the plain globes with
+   the liquid orbs off.
+5. Hide / show with Ctrl+Shift+C while the chat is "Chat On"; Enter on a hidden chat; the unread dot.
 
 ## Alt explains (O372)
 
