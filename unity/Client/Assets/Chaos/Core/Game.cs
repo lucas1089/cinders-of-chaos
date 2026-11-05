@@ -23,6 +23,8 @@ namespace Chaos.Core
         public Action<Dir> WalkCancelled = delegate { };
         public Action<Creature> PlayerMoved = delegate { };
         public bool LoggedIn;
+        /// <summary>The creature we attack (0 none). Set by GameSession.Attack, cleared by the server's 0xA3.</summary>
+        public uint AttackTarget;
         public int Health, MaxHealth, Mana, MaxMana, Level;
         public readonly Dictionary<byte, int> Seen = new Dictionary<byte, int>();
 
@@ -136,7 +138,7 @@ namespace Chaos.Core
                     break;
                 case 0xA1: r.Skip(14 * 5 + 6 * 4); break;
                 case 0xA2: r.U16(); break;
-                case 0xA3: r.U32(); break;
+                case 0xA3: r.U32(); AttackTarget = 0; break;   // cancel target
                 case 0xA4: r.U8(); r.U32(); break;
                 case 0xA5: r.U8(); r.U32(); break;
                 case 0xA7: r.U8(); r.U8(); r.U8(); r.U8(); break;
@@ -583,6 +585,33 @@ namespace Chaos.Core
             if (string.IsNullOrWhiteSpace(text) || conn == null) return;
             if (text.Length > 255) text = text.Substring(0, 255);
             conn.Send(Protocol.SayPacket(text));
+        }
+
+        uint attackSeq;
+        /// <summary>The creature we attack, 0 when none or when it left the view.</summary>
+        public uint AttackTarget => parser.AttackTarget != 0 && world.Creatures.ContainsKey(parser.AttackTarget) ? parser.AttackTarget : 0;
+
+        /// <summary>Attacks a creature (0xA1).</summary>
+        public void Attack(uint id)
+        {
+            if (id == 0) { CancelAttack(); return; }
+            parser.AttackTarget = id;
+            conn?.Send(Protocol.AttackPacket(0xA1, id, ++attackSeq));
+        }
+
+        /// <summary>Follows a creature (0xA2). The attack, if any, ends.</summary>
+        public void Follow(uint id)
+        {
+            if (id == 0) { CancelAttack(); return; }
+            parser.AttackTarget = 0;
+            conn?.Send(Protocol.AttackPacket(0xA2, id, ++attackSeq));
+        }
+
+        /// <summary>Stops attacking and following (0xA1 with id 0).</summary>
+        public void CancelAttack()
+        {
+            parser.AttackTarget = 0;
+            conn?.Send(Protocol.AttackPacket(0xA1, 0, ++attackSeq));
         }
 
         public void Logout()

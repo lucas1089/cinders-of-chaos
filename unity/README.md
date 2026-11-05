@@ -9,6 +9,11 @@ Game windows are `GameWindow` classes (`ChaosApp.Windows.cs`), one file each, li
 They are movable, open from the toolbar left of Log out or with Ctrl + their key, and hide the creature names under them.
 The splash screen and the login header show our logo (`docs/brand`, copied in by `ChaosBuild`).
 A Personal license keeps the engine's "Made with" line under our logo; the setting turns it off on a license that allows it.
+Windows so far (files in `Assets/Chaos/Unity/Windows/`):
+- Battle (Ctrl+B): creatures on your floor in view, nearest first. Left-click attacks (again stops), right-click follows. The target has a red row and a red frame on the map.
+- Minimap (Ctrl+M): the remembered minimap round you (2 px per tile), floor up/down and zoom buttons. `MinimapMemory` (`Core/Minimap.cs`) keeps explored ground per floor.
+- Hotkeys: 12 slots, F1 to F12, open at the bottom. Click a slot to type what it says; Enter or ok saves, per character in PlayerPrefs. The keys work while the bar is open and the chat line is not focused.
+- Right-click on a creature on the map attacks it (`ChaosApp.Combat.cs`).
 It does not replace the client in `client/`.
 
 ## Layout

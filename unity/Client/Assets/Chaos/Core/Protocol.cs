@@ -84,6 +84,9 @@ namespace Chaos.Core
         /// <summary>Talk on the default channel: 0x96, talk type 1 (say), the text.</summary>
         public static byte[] SayPacket(string text) => new ByteWriter().U8(0x96).U8(1).Str(text).ToArray();
 
+        /// <summary>Attack (0xA1) or follow (0xA2): the creature id (0 cancels) and a sequence number.</summary>
+        public static byte[] AttackPacket(byte op, uint id, uint seq) => new ByteWriter().U8(op).U32(id).U32(seq).ToArray();
+
         /// <summary>The first packet on the login port (src-patch 0021: clientId = guard identifier).</summary>
         public static byte[] LoginPacket(Rsa rsa, uint[] xtea, string account, string password, uint clientId)
         {

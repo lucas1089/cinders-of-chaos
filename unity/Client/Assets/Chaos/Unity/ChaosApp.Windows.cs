@@ -52,6 +52,9 @@ namespace Chaos.Client
         /// <summary>Every game window, in toolbar order. Add a new window here (one line).</summary>
         void MakeWindows()
         {
+            windows.Add(new BattleListWindow());
+            windows.Add(new MinimapWindow());
+            windows.Add(new HotkeyBarWindow());
         }
 
         static Rect ToolbarRect(float w) => new Rect(w - 104 - 76 * 6, 8, 76 * 6, 30);
