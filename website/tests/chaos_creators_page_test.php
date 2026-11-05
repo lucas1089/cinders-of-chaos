@@ -60,7 +60,7 @@ foreach ($kit['files'] as $f) {
 check(in_array('logo.png', $names, true) && in_array('art/social-share-1200x630.png', $names, true), 'logo and banner in the kit');
 check(in_array('ficha-tecnica.pt-BR.txt', $names, true) && in_array('fact-sheet.en.txt', $names, true), 'fact sheets in pt-BR and en');
 check(glob(CHAOS_TEST_REPO . '/website/{,overlay/}press/*.zip', GLOB_BRACE) === array(), 'no zip committed under website/');
-check($kit['zip']['bytes'] < 5 * 1048576, 'the kit stays small');
+check($kit['zip']['bytes'] < 12 * 1048576, 'the kit stays small (12 MB: art, streamer kit and the social posts)');
 
 // the page
 $en = chaos_render_page('creators', 'en');

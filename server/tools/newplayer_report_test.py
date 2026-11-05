@@ -136,13 +136,13 @@ def test_funnel():
 
 def test_survey():
     raw = [
-        '20\tanswered\t4\t1\t21\t95\t1790000000\tWhere is the bank?\\nAnd the depot',
-        '20\tanswered\t2\t0\t20\t70\t1789990000\tspells \\\\ runes\x07 ‮ok',
-        '20\tskipped\t0\t-1\t22\t130\t1789980000\t',
-        '50\tanswered\t5\t-1\t50\t900\t1789970000\tNULL',
-        '50\tanswered\t0\t1\t51\t960\t1789960000\t' + 'x' * 400,
+        '20\tanswered\t4\t1\t21\t95\t1790000000\tforum\tWhere is the bank?\\nAnd the depot',
+        '20\tanswered\t2\t0\t20\t70\t1789990000\tfriend\tspells \\\\ runes\x07 ‮ok',
+        '20\tskipped\t0\t-1\t22\t130\t1789980000\t\t',
+        '50\tanswered\t5\t-1\t50\t900\t1789970000\t\tNULL',
+        '50\tanswered\t0\t1\t51\t960\t1789960000\tbogus\t' + 'x' * 400,
         'bad line',
-        '77\tweird\tx\ty\t1\t1\t1\thello\tthere',
+        '77\tweird\tx\ty\t1\t1\t1\t\thello\tthere',
     ]
     rows = R.parse_survey(raw)
     check(len(rows) == 6, 'parse: a short line dropped')
@@ -158,8 +158,11 @@ def test_survey():
     check(by[50]['funMean'] == 5.0 and by[50]['yes'] == 1 and by[50]['no'] == 0, 'stage 50: a 0 score is not counted')
     check(len(by[50]['texts']) == 1, 'stage 50: the empty text is not listed')
     check(77 in by and by[77]['skipped'] == 1, 'an unknown stage is shown, not lost')
+    check(by[20]['sources']['forum'] == 1 and by[20]['sources']['friend'] == 1, 'sources counted')
+    check(rows[4]['source'] == '' and sum(by[50]['sources'].values()) == 0, 'an unknown source is dropped')
     t = R.survey_text(s, 'en', texts=1)
     check('Level 20 survey: 2 answered, 1 skipped' in t and 'mean 3.00' in t and 'yes 1, no 1 (50.0%)' in t, 'text: ' + t)
+    check('Where did you hear about the game? forum 1, friend 1' in t, 'sources line: ' + t)
     check('(newest first, 1 of 2)' in t and 'Where is the bank? And the depot (level 21, 1h35 played, ' in t, 'text rows')
     p = R.survey_text(s, 'pt')
     check('Pesquisa do nível 20: 2 responderam, 1 pularam' in p and 'Recomendaria? sim 1' in p, 'pt text')

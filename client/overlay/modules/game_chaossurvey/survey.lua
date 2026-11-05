@@ -51,6 +51,13 @@ local function setStatus(text, color)
   window.status:setColor(color or COLORS.dim)
 end
 
+-- the picked source key, or nil (hidden at other stages)
+function sourceKey()
+  if not window or not window.sourceCombo:isVisible() then return nil end
+  local o = window.sourceCombo:getCurrentOption()
+  return o and L.validSource(o.data) and o.data or nil
+end
+
 local function refresh()
   if not window then return end
   for i = 1, 5 do
@@ -60,8 +67,9 @@ local function refresh()
   window.yesButton:setChecked(rec == true)
   window.noButton:setChecked(rec == false)
   local text = window.textEdit:getText()
+  local src = sourceKey()
   window.counter:setText(L.counter(text, current and current.max))
-  window.sendButton:setEnabled(current ~= nil and L.canSend(fun, rec, text))
+  window.sendButton:setEnabled(current ~= nil and L.canSend(fun, rec, text, src))
 end
 
 local function hide()
@@ -85,8 +93,9 @@ end
 function send()
   if not current or not window then return end
   local text = window.textEdit:getText()
-  if not L.canSend(fun, rec, text) then return end
-  if sendMsg(L.answer(current.stage, fun, rec, text, current.max)) then
+  local src = sourceKey()
+  if not L.canSend(fun, rec, text, src) then return end
+  if sendMsg(L.answer(current.stage, fun, rec, text, current.max, src)) then
     window.sendButton:setEnabled(false)
     window.skipButton:setEnabled(false)
     setStatus(tr('Sending...'))
@@ -111,6 +120,11 @@ local function onOpen(data)
   window.textEdit:setMaxLength(o.max)
   window.textEdit:setText('')
   window.skipButton:setEnabled(true)
+  local asks = o.stage == L.SOURCE_STAGE
+  window.sourceLabel:setVisible(asks)
+  window.sourceCombo:setVisible(asks)
+  window.sourceCombo:setCurrentIndex(1)
+  window:setHeight(asks and 436 or 380)
   setStatus('')
   refresh()
   window:show()
@@ -148,6 +162,9 @@ function init()
     b.onClick = function() chooseFun(i) return true end
   end
   window.textEdit.onTextChange = safe('text', refresh)
+  window.sourceCombo:addOption(tr('Choose...'), '')
+  for _, s in ipairs(L.SOURCES) do window.sourceCombo:addOption(tr(s.name), s.key) end
+  window.sourceCombo.onOptionChange = safe('source', refresh)
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, safe('opcode', onMessage))
   connect(g_game, { onGameEnd = onGameEnd })
 end

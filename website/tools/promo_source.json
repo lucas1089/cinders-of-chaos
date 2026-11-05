@@ -1,0 +1,50 @@
+{
+ "note": "Texts of the social / forum promo kit (gen_promo_kit.py). dates: leave empty to draw no date line. After a change run python3 -I website/tools/gen_promo_kit.py.",
+ "site": "www.cindersofchaos.com",
+ "dates": {
+  "pt-BR": {"beta": "", "launch": ""},
+  "en": {"beta": "", "launch": ""}
+ },
+ "text": {
+  "pt-BR": {
+   "beta": "BETA ABERTO",
+   "beta_sub": "Grátis para jogar. Sem chave, sem convite.",
+   "launch": "LANÇAMENTO",
+   "launch_sub": "Season 1 começa com o mundo novo",
+   "platforms": "PC  ·  Android",
+   "tag": "RPG online de fantasia sombria",
+   "join": "Baixe em",
+   "features": ["7 classes e 14 ascensões", "Árvore passiva por classe", "Rifts, Torre Infinita e raids", "Arena e battleground"],
+   "class_title": "Classe",
+   "forum": "Beta aberto, grátis para jogar"
+  },
+  "en": {
+   "beta": "OPEN BETA",
+   "beta_sub": "Free to play. No key, no invite.",
+   "launch": "LAUNCH",
+   "launch_sub": "Season 1 starts with a fresh world",
+   "platforms": "PC  ·  Android",
+   "tag": "Dark fantasy online RPG",
+   "join": "Download at",
+   "features": ["7 classes and 14 ascensions", "A passive tree per class", "Rifts, Infinity Tower and raids", "Arena and battleground"],
+   "class_title": "Class",
+   "forum": "Open beta, free to play"
+  }
+ },
+ "classes": {
+  "warrior": {"pt-BR": ["Guerreiro", "Corpo a corpo, armadura pesada, a maior vida.", "Juggernaut: o tanque", "Berserker: área com duas mãos"],
+              "en": ["Warrior", "Melee, heavy armour, the most health.", "Juggernaut: the tank", "Berserker: two-handed area damage"]},
+  "ranger": {"pt-BR": ["Patrulheiro", "Arcos e bestas à distância.", "Deadeye: o melhor alvo único", "Beastmaster: lobos lutam por você"],
+             "en": ["Ranger", "Bows and crossbows at range.", "Deadeye: the best single target", "Beastmaster: wolves fight for you"]},
+  "mystic": {"pt-BR": ["Místico", "Magias, varinhas e cajados.", "Elementalist: o maior dano em área", "Illusionist: o melhor curador"],
+             "en": ["Mystic", "Spells, wands and rods.", "Elementalist: the top area damage", "Illusionist: the best healer"]},
+  "thief": {"pt-BR": ["Ladino", "Golpes rápidos, shurikens e furtividade.", "Ninja: rajada em um alvo", "Samurai: duelista que aguenta"],
+            "en": ["Thief", "Fast strikes, shurikens and stealth.", "Ninja: single target burst", "Samurai: the duelist off-tank"]},
+  "monk": {"pt-BR": ["Monge", "Mãos livres, chi e esquiva.", "Shadowfist: rajada com chi", "Iron Sage: curador corpo a corpo"],
+           "en": ["Monk", "Bare hands, chi and evasion.", "Shadowfist: chi burst", "Iron Sage: the melee healer"]},
+  "necromancer": {"pt-BR": ["Necromante", "Esqueletos, espíritos, maldições e cadáveres.", "Lich: maldições e dreno de vida", "Bone Lord: o exército"],
+                  "en": ["Necromancer", "Skeletons, spirits, curses and corpses.", "Lich: curses and life drain", "Bone Lord: the army"]},
+  "templar": {"pt-BR": ["Templário", "Espada e escudo sagrados, aura que protege o grupo.", "Inquisitor: dano sagrado em área", "Sentinel: tanque de suporte"],
+              "en": ["Templar", "Holy sword and shield, an aura that guards the party.", "Inquisitor: holy area damage", "Sentinel: the support tank"]}
+ }
+}

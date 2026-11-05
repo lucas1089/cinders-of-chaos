@@ -51,6 +51,17 @@ TEXT_MAX = 200
 SURVEY_TABLE = "chaos_survey"
 STAGES = [20, 50]
 
+# "Where did you hear about the game?" (survey_core.lua S.SOURCES, level 20 only)
+SOURCES = ['discord', 'forum', 'serverlist', 'youtube', 'shorts', 'streamer', 'friend', 'search', 'other']
+SOURCE_NAMES = {
+    'en': {'discord': 'Discord', 'forum': 'forum', 'serverlist': 'server list', 'youtube': 'YouTube',
+           'shorts': 'TikTok/Reels/Shorts', 'streamer': 'streamer', 'friend': 'friend', 'search': 'web search',
+           'other': 'other'},
+    'pt': {'discord': 'Discord', 'forum': 'fórum', 'serverlist': 'lista de servidores', 'youtube': 'YouTube',
+           'shorts': 'TikTok/Reels/Shorts', 'streamer': 'streamer', 'friend': 'amigo', 'search': 'busca na internet',
+           'other': 'outro'},
+}
+
 MIN_SHOWN = 5
 SMALL = '<%d' % MIN_SHOWN
 
@@ -80,6 +91,7 @@ WORDS = {
         'minutes_over': 'over %s min',
         'young': 'Characters younger than %d days cannot count as stopped yet.',
         'survey_title': 'In-game survey: answers of the last %d days',
+        'sources': 'Where did you hear about the game? %s',
         'stage': 'Level %d survey: %d answered, %d skipped',
         'fun': 'How fun is it? mean %s (1: %d, 2: %d, 3: %d, 4: %d, 5: %d)',
         'recommend': 'Would you recommend it? yes %d, no %d%s',
@@ -105,6 +117,7 @@ WORDS = {
         'minutes_over': 'mais de %s min',
         'young': 'Personagens com menos de %d dias ainda não contam como parados.',
         'survey_title': 'Pesquisa no jogo: respostas dos últimos %d dias',
+        'sources': 'Onde conheceu o jogo? %s',
         'stage': 'Pesquisa do nível %d: %d responderam, %d pularam',
         'fun': 'Quão divertido é? média %s (1: %d, 2: %d, 3: %d, 4: %d, 5: %d)',
         'recommend': 'Recomendaria? sim %d, não %d%s',
@@ -294,7 +307,7 @@ def funnel_text(f, lang):
 def survey_sql(days, now):
     days = check_days(days)
     since = int(now) - days * 86400
-    return ('SELECT `stage`, `status`, `fun`, `recommend`, `level`, `minutes`, `created_at`, `confused` FROM `%s` '
+    return ('SELECT `stage`, `status`, `fun`, `recommend`, `level`, `minutes`, `created_at`, `source`, `confused` FROM `%s` '
             'WHERE `created_at` >= %d ORDER BY `id` DESC LIMIT 1000') % (SURVEY_TABLE, since)
 
 
@@ -325,15 +338,17 @@ def clean_text(s):
 def parse_survey(lines):
     rows = []
     for line in lines:
-        parts = line.rstrip('\r\n').split('\t', 7)
+        parts = line.rstrip('\r\n').split('\t', 8)
         if len(parts) < 7:
             continue
-        text = parts[7] if len(parts) > 7 else ''
+        source = parts[7] if len(parts) > 8 else ''
+        text = parts[8] if len(parts) > 8 else (parts[7] if len(parts) > 7 else '')
         if text == 'NULL':
             text = ''
         rows.append({'stage': num(parts[0]), 'status': parts[1] if parts[1] in ('answered', 'skipped') else 'skipped',
                      'fun': num(parts[2]), 'recommend': num(parts[3], -1), 'level': num(parts[4]),
-                     'minutes': num(parts[5]), 'at': num(parts[6]), 'text': clean_text(text)})
+                     'minutes': num(parts[5]), 'at': num(parts[6]), 'text': clean_text(text),
+                     'source': source if source in SOURCES else ''})
     return rows
 
 
@@ -350,7 +365,8 @@ def survey(rows, days):
         no = sum(1 for r in ans if r['recommend'] == 0)
         texts = [{'text': r['text'], 'level': r['level'], 'minutes': r['minutes'], 'at': r['at']}
                  for r in ans if r['text']]
-        stages.append({'stage': st, 'answered': len(ans), 'skipped': len(rs) - len(ans),
+        sources = {k: sum(1 for r in ans if r.get('source') == k) for k in SOURCES}
+        stages.append({'stage': st, 'answered': len(ans), 'skipped': len(rs) - len(ans), 'sources': sources,
                        'funMean': round(sum(funs) / float(len(funs)), 2) if funs else None, 'fun': spread,
                        'yes': yes, 'no': no, 'yesPct': round(100.0 * yes / (yes + no), 1) if yes + no else None,
                        'texts': texts[:500]})
@@ -379,6 +395,10 @@ def survey_text(s, lang, texts=TEXTS):
         mean = '-' if st['funMean'] is None else ('%.2f' % st['funMean'])
         out.append('  ' + w['fun'] % tuple([mean] + st['fun']))
         out.append('  ' + w['recommend'] % (st['yes'], st['no'], share(st['yesPct'])))
+        src = st.get('sources') or {}
+        if any(src.values()):
+            ranked = sorted((k for k in SOURCES if src[k]), key=lambda k: (-src[k], SOURCES.index(k)))
+            out.append('  ' + w['sources'] % ', '.join('%s %d' % (SOURCE_NAMES[lang][k], src[k]) for k in ranked))
         shown = st['texts'][:texts]
         out.append('  ' + w['texts'] % (len(shown), len(st['texts'])))
         if not shown:

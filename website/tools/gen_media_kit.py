@@ -62,6 +62,7 @@ O que tem neste kit
 - Banners: social, Discord, listas de servidores.
 - Uma imagem das classes e uma dos recursos do jogo.
 - streamer/: kit para streamers, com molduras e telas para o OBS, painéis da Twitch, banner social, ícone do Discord, guia do parceiro e comandos de chat.
+- social/: posts quadrados do beta e do lançamento, story vertical, um card por classe, banner e assinatura para fóruns.
 - Esta ficha em pt-BR e en.
 Não há capturas de tela de jogo neste kit. Peça à equipe quando houver uma versão estável.
 
@@ -94,6 +95,7 @@ What is in this kit
 - Banners: social, Discord, server lists.
 - One image of the classes and one of the game features.
 - streamer/: the streamer kit, with OBS frames and scenes, Twitch panels, a social banner, the Discord icon, the partner guide and chat commands.
+- social/: square beta and launch posts, a vertical story, one card per class, a forum banner and signature.
 - This sheet in pt-BR and en.
 There are no gameplay screenshots in this kit. Ask the team when a stable version exists.
 
@@ -138,6 +140,9 @@ def files():
         out.append((ROOT + "/streamer/" + name, data))
     for name, path in sorted(gen_streamer_kit.walk(gen_streamer_kit.OUT).items()):
         out.append((ROOT + "/streamer/" + name, read_bytes(path)))
+    promo = os.path.join(REPO, "website", "overlay", "plugins", "chaos", "assets", "promo")
+    for name, path in sorted(gen_streamer_kit.walk(promo).items()):
+        out.append((ROOT + "/social/" + name, read_bytes(path)))
     for lang, name in (("pt-BR", "ficha-tecnica.pt-BR.txt"), ("en", "fact-sheet.en.txt")):
         out.append((ROOT + "/" + name, FACTS[lang].format(dates=dates_text(lang)).encode("utf-8")))
     out.sort(key=lambda x: x[0])

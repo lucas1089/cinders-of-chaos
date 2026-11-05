@@ -132,6 +132,13 @@ do
 	-- the client's text limit equals the server's
 	local logic = readFile("../client/overlay/modules/game_chaossurvey/surveylogic.lua") or ""
 	check(logic:find("L.TEXT_MAX = " .. cfg.textMax, 1, true) ~= nil, "client text limit " .. cfg.textMax)
+	for _, k in ipairs(S.SOURCES) do
+		check(logic:find("key = '" .. k .. "'", 1, true) ~= nil, "client source " .. k)
+	end
+	local nkeys = 0
+	for _ in logic:gmatch("{ key = '") do nkeys = nkeys + 1 end
+	eq(nkeys, #S.SOURCES, "client and server sources match")
+	check(logic:find("L.SOURCE_STAGE = " .. S.SOURCE_STAGE, 1, true) ~= nil, "client source stage")
 	-- the report tool reads the same table and stages
 	local tool = readFile("tools/newplayer_report.py") or ""
 	check(tool:find('SURVEY_TABLE = "chaos_survey"', 1, true) ~= nil, "report tool reads chaos_survey")
@@ -195,6 +202,13 @@ do
 	check(bad == nil and why == "action", "unknown action")
 	r = S.parse("answer", {s = 20, text = string.rep("x", 5000)}, 20, cfg)
 	eq(#r.confused, 200, "text capped")
+	r = S.parse("answer", {s = 20, src = "streamer"}, 20, cfg)
+	check(r and r.status == "answered" and r.source == "streamer", "a source alone is an answer")
+	r = S.parse("answer", {s = 20, src = "bogus", fun = 3}, 20, cfg)
+	check(r and r.source == "", "an unknown source is dropped")
+	r = S.parse("answer", {s = 50, src = "forum", fun = 3}, 50, cfg)
+	check(r and r.source == "", "the source is asked at level 20 only")
+	eq(S.SOURCE_STAGE, cfg.stages[1], "the source stage is the first stage")
 	r = S.parse("answer", "junk", 20, cfg)
 	eq(r, nil, "data not a table: no stage")
 end
@@ -211,7 +225,15 @@ do
 	local q = S.insertSql("chaos_survey", 7, {stage = 20, status = "answered", fun = 3, recommend = 1, confused = "it's"},
 		22, 95, 1234, db.escapeString)
 	check(q:find("^INSERT IGNORE INTO `chaos_survey`") ~= nil, "INSERT IGNORE")
-	check(q:find("VALUES (7, 20, 'answered', 3, 1, 'it\\'s', 22, 95, 1234)", 1, true) ~= nil, "values escaped: " .. q)
+	check(q:find("VALUES (7, 20, 'answered', 3, 1, 'it\\'s', '', 22, 95, 1234)", 1, true) ~= nil, "values escaped: " .. q)
+	q = S.insertSql("chaos_survey", 7, {stage = 20, status = "answered", fun = 0, recommend = -1, confused = "",
+		source = "forum"}, 22, 95, 1234, db.escapeString)
+	check(q:find("'', 'forum', 22", 1, true) ~= nil, "source written: " .. q)
+	q = S.insertSql("chaos_survey", 7, {stage = 20, status = "answered", fun = 0, recommend = -1, confused = "",
+		source = "x'); DROP"}, 22, 95, 1234, db.escapeString)
+	check(not q:find("DROP", 1, true), "an unknown source is never written")
+	check(S.createSql("chaos_survey"):find("`source` varchar(16)", 1, true) ~= nil, "createSql: source column")
+	check(S.migrateSql("chaos_survey"):find("ADD COLUMN IF NOT EXISTS `source`", 1, true) ~= nil, "migrate: source column")
 	check(not q:find("`name`", 1, true), "no name column")
 end
 

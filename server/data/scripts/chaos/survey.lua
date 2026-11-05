@@ -1,6 +1,7 @@
 -- New player survey (O374; server/README.md "New player funnel and survey (O374)"; rules in survey_core.lua, numbers in
 -- survey_config.lua; tests/survey_test.lua). At level 20 and at level 50 a small window (client game_chaossurvey) asks
 -- "What confused you so far?" (free text, 200 letters), "How fun is it?" (1-5) and "Would you recommend it?" (yes / no).
+-- At level 20 also "Where did you hear about the game?" (one of S.SOURCES; promo measurement, docs/PROMO.md).
 -- Once per account and stage: an answer or a skip writes the row (chaos_survey, unique account + stage) and the window
 -- never comes back for that account. A logout before either offers it again at the next login while the level is in
 -- the stage's window. The owner reads the answers with chaos-ctl.sh survey (admin app Painel > Novos jogadores).
@@ -8,7 +9,7 @@
 -- Protocol (JSON {action, data}) on ChaosOpcodes.survey = 122:
 --   server -> client  open {s, max}        s = the stage (level), max = letters of the text
 --                     done {s}             the row was written (the client thanks and closes)
---   client -> server  answer {s, fun, rec, text} | skip {s}
+--   client -> server  answer {s, fun, rec, text, src} | skip {s}
 -- Only the stage the server opened is accepted; one message per requestMs per character, perMinute rows per minute for
 -- the server. Staff and tester bots are never asked.
 -- Assumed engine API (TFS 1.4.2): CreatureEvent login/logout/advance/extendedopcode, GlobalEvent startup/think,
@@ -52,6 +53,9 @@ local tableReady
 local function ensureTable()
 	if tableReady == nil then
 		tableReady = db.query(S.createSql(T)) and true or false
+		if tableReady then
+			db.query(S.migrateSql(T)) -- the source column (2026-11); a failure keeps the old columns working
+		end
 	end
 	return tableReady
 end

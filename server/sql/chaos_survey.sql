@@ -7,6 +7,9 @@
 --   fun        "How fun is it?" 1-5, 0 = not answered
 --   recommend  "Would you recommend it?" 1 yes, 0 no, -1 not answered
 --   confused   "What confused you so far?" up to 200 characters, cleaned by the server (survey_core.lua S.cleanText)
+--   source     "Where did you hear about the game?" (level 20 only): discord, forum, serverlist, youtube, shorts,
+--              streamer, friend, search, other; '' = not answered. An older table gets it at startup (survey_core.lua
+--              S.migrateSql).
 --   level      the character's level when it answered; minutes: its played minutes
 CREATE TABLE IF NOT EXISTS `chaos_survey` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -16,6 +19,7 @@ CREATE TABLE IF NOT EXISTS `chaos_survey` (
   `fun` tinyint(3) NOT NULL DEFAULT 0,
   `recommend` tinyint(3) NOT NULL DEFAULT -1,
   `confused` varchar(200) NOT NULL DEFAULT '',
+  `source` varchar(16) NOT NULL DEFAULT '',
   `level` int(10) unsigned NOT NULL DEFAULT 0,
   `minutes` int(10) unsigned NOT NULL DEFAULT 0,
   `created_at` int(10) unsigned NOT NULL,
