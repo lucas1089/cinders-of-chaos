@@ -1,5 +1,5 @@
 // Candlemarks (game_candlemarks): the counter next to the Chaos menu bar and the shop window.
-// Styles from client_chaos_theme. Opened from the menu (Economy > Candlemarks), the counter, or Osric the Chandler.
+// Styles from client_chaos_theme. Opened by the counter or Osric the Chandler.
 
 CandlemarkCounter < UIButton
   height: 22

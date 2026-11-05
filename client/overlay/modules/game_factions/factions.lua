@@ -4,7 +4,7 @@
 -- Chaos.sendChunked and is joined by ProtocolGame.registerExtendedJSONOpcode).
 --   client -> server  open {f?} | close | turnin {f} | deliver {key} | buy {key} | craft {key}
 --   server -> client  state {...} (factionsview.lua has the shape) | msg {text, ok} | npc {f} (a faction NPC: open on f)
--- Menu: Adventure > Factions (added with ChaosTopBar.addEntry). Emblems: /images/factions/<key>.png
+-- Opened by the faction NPCs (the top bar drops the menu entry: topbarlogic.lua NPC_ONLY). Emblems: /images/factions/<key>.png
 -- (client/tools/gen_faction_art.py).
 
 local OPCODE = 215

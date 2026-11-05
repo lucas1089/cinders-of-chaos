@@ -64,7 +64,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 - **{{descent.name}}.** Level {{descent.minLevel}}, Adventure > Ember Descent. See [its page](wiki:dungeon:descent).
 ::: end
 - **Dungeons and the tower.** Adventure > Dungeons (Alt+J), in {{dungeon.difficulties}} difficulties: kill 85% of the monsters to open the boss. The [Infinity Tower](wiki:dungeon:tower) is in Adventure > Infinity Tower.
-- **Factions.** Adventure > Factions. Reach Trusted with one of them at level 120.
+- **Factions.** Talk to a faction quartermaster. Reach Trusted with one of them at level 120.
 
 ## Level 150-300: veteran
 

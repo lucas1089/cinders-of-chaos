@@ -4,7 +4,7 @@
 --   server -> client  state {...} (see conquestview.lua) | result {ok, text} | npc {} (Iselde Varrow opens the window)
 -- Tabs: Uniques, Set Pieces, Raid & Ascended, Cinderheart (Omen Keys of a chosen kind, Ascended Shards, conversions),
 -- Refine (a worn item one rarity up), Progress (bad-luck protection, today's tokens per source). One purchase at a time:
--- a Buy click disables every Buy button until the answer comes (BUY_WAIT_MS at most). Menu: Economy > Conquest Vendor.
+-- a Buy click disables every Buy button until the answer comes (BUY_WAIT_MS at most). Opened by Iselde Varrow (the top bar drops the menu entry).
 
 local OPCODE = 167
 local V = ConquestView

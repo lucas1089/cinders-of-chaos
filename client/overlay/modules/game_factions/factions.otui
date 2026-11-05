@@ -1,6 +1,6 @@
 // Factions window (game_factions): faction cards with emblem and rank bar, the shown faction's lore, standing, tokens,
 // contracts and quartermaster. Styles from client_chaos_theme; emblems from client/tools/gen_faction_art.py.
-// Opened from the menu (Adventure > Factions) or by a faction NPC.
+// Opened by a faction NPC (not in the top menu: topbarlogic.lua NPC_ONLY).
 
 FactionCard < UIWidget
   height: 92

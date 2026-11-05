@@ -172,7 +172,7 @@ C.announceFrom = 10
 -- placed next to the temple of every town in `towns` (ids; the main city is Cinderhold, 2, server/README.md "Main
 -- city"; Mirewake, 1, keeps him too) on the first free tile of `offsets`
 -- (none of the other temple NPCs, portals and the Great Brazier use these), at startup after them. Buying and the
--- early refresh need the Gambler within `range` tiles; the window opens anywhere (Economy > The Gambler) to look.
+-- early refresh need the Gambler within `range` tiles; the window opens from the Gambler.
 C.npc = {
 	name = "Mordecai Ashwager", range = 4, towns = {2}, delayMs = 3000, -- the main city only: its stall in the hub
 	offsets = {{-5, -2}, {5, -2}, {-5, 2}, {5, 2}, {-1, -5}, {1, 5}, {-6, -3}, {6, -3}, {-6, 3}, {6, 3}}

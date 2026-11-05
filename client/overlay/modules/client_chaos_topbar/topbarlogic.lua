@@ -4,6 +4,15 @@
 ChaosTopBarLogic = {}
 local T = ChaosTopBarLogic
 
+-- windows an NPC opens when you talk to it (owner 2026-11-05: out of the top menu). The modules still ask to add them;
+-- addEntry drops them. The window keeps working from its NPC: Mordecai Ashwager, Osric the Chandler, Iselde Varrow
+-- and the four faction NPCs.
+T.NPC_ONLY = { ['The Gambler'] = true, ['Candlemarks'] = true, ['Conquest Vendor'] = true, ['Factions'] = true }
+
+function T.npcOnly(text)
+  return T.NPC_ONLY[text] == true
+end
+
 -- accented letters of the menu languages (UTF-8 and the client's cp1252) folded to their plain letter, so "É" sorts
 -- with "E" in pt-BR
 local FOLD = {

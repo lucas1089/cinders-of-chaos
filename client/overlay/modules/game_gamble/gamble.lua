@@ -4,7 +4,7 @@
 --   server -> client  state {...} (see gambleview.lua) | result {ok, text, reveal} | npc {} (the Gambler opens the window)
 -- A grid of sealed crates (the look, the slot, the item level and the price; the rarity hidden), the countdown to the
 -- next stock, the early refresh, the odds and the reveal of the last purchase. Buying works next to the Gambler only, the
--- server checks it. Menu: Economy > The Gambler (ChaosTopBar.addEntry).
+-- server checks it. Opened by the Gambler NPC (the top bar drops the menu entry: topbarlogic.lua NPC_ONLY).
 -- One purchase at a time: a Buy click disables every Buy button until the result or the state comes (BUY_WAIT_MS at
 -- most). A state with the same crates fills the cells in place; only another stock builds new cells. Every widget call
 -- checks that the window is still there: answers can come after Close or after the module was unloaded.

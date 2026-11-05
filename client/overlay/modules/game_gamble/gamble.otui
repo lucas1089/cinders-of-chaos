@@ -1,6 +1,6 @@
 // The Gambler window (game_gamble): a grid of sealed crates (look, slot, item level, price; the rarity hidden), the
 // countdown to the next stock, the early refresh, the odds and the reveal of the last crate opened.
-// Styles from client_chaos_theme. Opened from the menu (Economy > The Gambler) or by the Gambler himself.
+// Styles from client_chaos_theme. Opened by the Gambler himself (not in the top menu: topbarlogic.lua NPC_ONLY).
 
 GambleCell < UIWidget
   size: 152 102

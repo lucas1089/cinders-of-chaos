@@ -1,6 +1,6 @@
 Module
   name: game_candlemarks
-  description: Candlemarks - the currency for time online: a counter next to the menu bar and the shop window (server candlemarks.lua, extended opcode 176); Economy > Candlemarks
+  description: Candlemarks - the currency for time online: a counter next to the menu bar and the shop window (server candlemarks.lua, extended opcode 176); the counter or Osric the Chandler
   author: Cinders of Chaos
   sandboxed: true
   scripts: [ candlemarksview, candlemarks ]

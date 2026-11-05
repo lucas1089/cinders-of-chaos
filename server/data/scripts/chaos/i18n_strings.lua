@@ -1012,8 +1012,8 @@ return {
 			"Cinzas às cinzas, |PLAYERNAME|. The Ashen Vigil guarda as piras. Pergunte sobre nossos {contracts}, o {quartermaster} ou a {lore} da Vigil.",
 		["Keep your torch lit, |PLAYERNAME|."] = "Mantenha sua tocha acesa, |PLAYERNAME|.",
 		["The bell tolls on."] = "O sino continua a tocar.",
-		["Here is what %s asks, and what it gives. Your contracts, your standing and my stores are in the ledger (Adventure > Factions). Bring %s and deliveries to me."] =
-			"Eis o que %s pede, e o que dá. Seus contratos, sua reputação e meu estoque estão no registro (Adventure > Factions). Traga %s e as entregas para mim.",
+		["Here is what %s asks, and what it gives. Your contracts, your standing and my stores are in the ledger. Bring %s and deliveries to me."] =
+			"Eis o que %s pede, e o que dá. Seus contratos, sua reputação e meu estoque estão no registro. Traga %s e as entregas para mim.",
 		["Every favour you do %s is a favour we remember, and the same is true the other way. Choose, or work twice as hard."] =
 			"Todo favor que você faz para %s é um favor que lembramos, e o contrário também vale. Escolha, ou trabalhe em dobro.",
 		["Pyre-wardens who burn what will not stay dead. Since the Cinders fell, their bells ring at every grave that stirs, and they ring for the rifts too."] =

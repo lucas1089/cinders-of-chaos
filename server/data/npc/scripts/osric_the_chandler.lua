@@ -1,7 +1,7 @@
 -- Osric the Chandler, the Candlemark shop (server/data/scripts/chaos/candlemarks.lua, candlemarks_config.lua;
 -- server/README.md "Candlemarks"). Runs in the NPC's own Lua state. "wares" / "trade" / "shop" / "buy" opens the
 -- client's Candlemark window (extended opcode 176, action "npc"); prices, limits and purchases are checked by
--- candlemarks.lua, never here. The window opens from the game menu too (Economy > Candlemarks).
+-- candlemarks.lua, never here. Osric the Chandler opens the window.
 local keywordHandler = KeywordHandler:new()
 local npcHandler = NpcHandler:new(keywordHandler)
 NpcSystem.parseParameters(npcHandler)

@@ -613,7 +613,7 @@ when it was last killed, the countdown to the next world boss, and your own cool
 > *"Four banners still fly over the ash. Each wants your blade, and each remembers whom you served."*
 > (a quartermaster of the Ashen Vigil)
 
-Four factions want your help (Adventure > Factions, or their quartermasters): the **Ashen Vigil**, the **Cinderforge
+Four factions want your help (talk to their quartermasters): the **Ashen Vigil**, the **Cinderforge
 Compact**, the **Veiled Choir** and the **Thornbound Circle**.
 - **Ranks** from Hostile to Exalted. Reputation comes from daily and weekly contracts, from kills of the families they
   hunt, bounties, sealed rifts, invasions, world bosses and turned-in tokens. Daily gains taper off, and each week has
@@ -927,7 +927,7 @@ A currency order book for the crafting orbs (Economy > Orb Exchange, or the butt
 ![The Gambler's sealed crates and a reveal](docs/images/feature_gambler.png)
 
 Mordecai Ashwager stands in his stall in the market of the teleport room of Cinderhold, the main city, and sells **sealed equipment for gold**
-(talk to him, or Economy > The Gambler).
+(talk to him).
 - **Your own stock:** 14 sealed pieces made for your character: gear your class can use, at an item level close to
   what your own kills drop. You see the base, the slot and the item level. The rarity stays hidden until you pay.
 - **New crates every 4 hours,** at 00:00, 04:00, 08:00, 12:00, 16:00 and 20:00 server time, with a countdown in the

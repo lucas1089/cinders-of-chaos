@@ -323,6 +323,13 @@ function Guide.make()
 	local G = dofile("tools/guide_config.lua")
 	local menu = Guide.parseMenu(assert(readFile(TOPBAR), TOPBAR))
 	assert(#menu > 20, TOPBAR .. ": the top menu entries were not found (CATEGORIES changed shape?)")
+	-- entries the top bar drops because an NPC opens the window (client_chaos_topbar/topbarlogic.lua T.NPC_ONLY)
+	local npcOnly = {}
+	local logic = readFile("../client/overlay/modules/client_chaos_topbar/topbarlogic.lua") or ""
+	local list = logic:match("T%.NPC_ONLY = (%b{})") or "{}"
+	for text in list:gmatch("%['([^']+)'%]") do
+		npcOnly[text] = true
+	end
 	-- the windows no entry of CATEGORIES opens: the entry their module adds (client/overlay/modules/game_x/x.lua)
 	local known = {}
 	for _, m in ipairs(menu) do
@@ -335,6 +342,9 @@ function Guide.make()
 		if w and not known[w] and w:match("^game_[%w_]+$") then
 			local src = readFile("../client/overlay/modules/" .. w .. "/" .. w:sub(6) .. ".lua")
 			local m = src and Guide.addedEntry(src, w, menu.categories)
+			if m and npcOnly[m.text] then
+				m = nil   -- the top bar drops it (topbarlogic.lua NPC_ONLY): its NPC opens the window
+			end
 			if m then
 				menu[#menu + 1] = m
 			end
