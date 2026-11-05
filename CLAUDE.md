@@ -92,6 +92,7 @@ python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or s
 python3 -I mapeditor/tools/run_profile_test.py && python3 -I mapeditor/tools/upstream_test.py   # our map editor (O382): profile table, upstream pin; build and profile: mapeditor-build.yml, patches: mapeditor/tools/check_patches.sh UPSTREAM_CLONE
 cd unity/Core.Tests && dotnet run -c Release   # Unity prototype core (O405): protocol, map, dat/spr, a fake-server game login; unity/README.md
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
+python3 -I website/tools/gen_promo_video_test.py   # promo videos (gen_promo_video.py, docs/PROMO.md section 1): timeline, captions, pan, tempo, scene choice on synthetic data
 for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests
 
 # generated files must be committed up to date (CI diffs them)
