@@ -296,6 +296,9 @@ jobs:
       - name: Website sprite images (gen_sprite_images_test.py; outfit colours on hand-made masks, a synthetic pair)
         run: python3 -I website/tools/gen_sprite_images_test.py
 
+      - name: Promo videos (gen_promo_video_test.py; timeline, captions, pan, tempo, scene choice on synthetic data; no pair, no map)
+        run: python3 -I website/tools/gen_promo_video_test.py
+
       - name: Live spectator renderer (spectate_render_test.py; a synthetic pair, draw order, outfits, the pair archive)
         run: python3 -I server/tools/spectate_render_test.py
 
