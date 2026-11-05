@@ -870,6 +870,14 @@ Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua`
   permanent ban by an administrator (docs/GM_HANDBOOK.md section 4, Rules 7.9, Donation Terms section 6).
 - Set the real prices (`usdCents` of each pack) before launch: the ones in the repository are placeholders.
 
+**From the admin app (the way to do it, O413).** Step by step in Portuguese: [docs/PAYMENTS.md](PAYMENTS.md). Tab
+Comandos > Ações rápidas > card Pagamentos (doações): one field per setting with Salvar (the value goes on stdin over SSH
+into `/etc/chaos/payments.env`, mode 640 root:www-data, never shown back), Ligar / Desligar Pix and PayPal, Sandbox / Live,
+the two webhook URLs with Copiar, Ativar worker (installs and starts `chaos-payworker`), Testar (read-only: Mercado Pago
+`/users/me`, PayPal OAuth token, an unsigned call to each webhook page must get 401) and Estado. Desktop app: VPS e
+manutenção > Pagamentos (doações). The steps below are the shell fallback (`chaos-ctl.sh pay-status | pay-set NAME |
+pay-test | pay-enable | pay-disable` does the same).
+
 **Go-live steps.**
 1. Mercado Pago: Your integrations > create an application (Checkout Transparente / Payments API). Copy the **test**
    access token first. Webhooks > Configure notifications: URL `https://<site>/chaos_pay_webhook.php?psp=mercadopago`,

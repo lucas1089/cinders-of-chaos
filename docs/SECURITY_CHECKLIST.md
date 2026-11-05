@@ -83,7 +83,8 @@ prints the RSA fingerprint; it must match step 2.4.
 7. Refuse old builds: `clientGuardBuilds = "N"` in `config.lua` (N = the new `client_build`).
 
 ### 2.7 Website
-1. `sudo ls -l /etc/chaos/`: `site.env`, `payments.env` mode 600; `config.local.php` not world-readable.
+1. `sudo ls -l /etc/chaos/`: `site.env` mode 600, `payments.env` mode 640 root:www-data (admin app: Pagamentos (doações) >
+   Estado says `env_ok=yes`); `config.local.php` not world-readable.
 2. `php.ini`: `expose_php = Off`, `display_errors = Off`.
 3. `systemctl list-timers | grep certbot`: certificate renewal runs.
 4. `curl -sI https://SITE/ | grep -i -e strict-transport -e x-frame -e server:`: HSTS and X-Frame-Options present,

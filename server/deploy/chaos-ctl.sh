@@ -206,6 +206,28 @@
 #   discord-status              key=value lines: channel_NAME=yes id_end=NNNN | no (never the URL), off_kinds, site_url,
 #                               env_file (mode owner), timer_installed / _enabled / _active; "@log" the last worker log
 #                               lines, "@queue" the last 10 rows of chaos_discord_queue (id kind status attempts error)
+#   pay-status                  donations (Pix / PayPal, docs/PAYMENTS.md; O413), key=value lines: pix_provider,
+#                               paypal_provider, paypal_env, paypal_category, mp_token (live | test | no), set_NAME=yes|no
+#                               for each setting (never a value), env_file (mode owner) and env_ok, site_url, the two
+#                               webhook URLs to paste in the Mercado Pago and PayPal panels (webhook_mercadopago,
+#                               webhook_paypal; from CHAOS_PAY_SITE_URL, else CHAOS_SITE_URL of CHAOS_SITE_ENV),
+#                               site_installed, worker_installed / _enabled / _active, mock; "@log" the last lines of
+#                               CHAOS_PAY_LOG, "@worker" of the worker log (ids and amounts; e-mails and tokens masked)
+#   pay-set NAME                saves one setting into /etc/chaos/payments.env (CHAOS_PAY_ENV; mode 640 root:www-data,
+#                               created from website/payments.env.example when missing), the value on stdin (one line,
+#                               checked per NAME, never printed, never on a command line). NAME: CHAOS_PAY_PIX_PROVIDER
+#                               (mercadopago|off) CHAOS_PAY_PAYPAL_PROVIDER (paypal|off) CHAOS_PAY_SITE_URL (https)
+#                               CHAOS_PAY_PAYER_EMAIL CHAOS_MP_ACCESS_TOKEN CHAOS_MP_WEBHOOK_SECRET CHAOS_PAYPAL_CLIENT_ID
+#                               CHAOS_PAYPAL_CLIENT_SECRET CHAOS_PAYPAL_WEBHOOK_ID CHAOS_PAYPAL_ENV (sandbox|live)
+#                               CHAOS_PAYPAL_CATEGORY (DONATION|DIGITAL_GOODS). Empty input empties the value. The payer
+#                               salt (CHAOS_PAY_PAYER_SALT) is made once, at random, when it is empty. A running
+#                               chaos-payworker restarts
+#   pay-test                    read-only checks with the saved credentials: Mercado Pago GET /users/me (pix=CODE ok|fail,
+#                               site, token kind), PayPal OAuth token of CHAOS_PAYPAL_ENV's host (paypal=CODE ok|fail,
+#                               env), and for each method that is on an unsigned POST to its webhook URL (401 = ok: the
+#                               page is there and refuses it). Secrets go to curl on its stdin; exit 1 when one fails
+#   pay-enable | pay-disable    installs chaos-payworker.service (and the logrotate file) from the repo when missing or
+#                               different, daemon-reload, enable --now (disable --now) chaos-payworker
 #   discord-bot [status]        the Discord bot for bug reports and patch notes (server/deploy/discord_bot/, README.md pt-BR;
 #                               server/README.md "Discord bot"): key=value lines (installed, user, unit state, env_file mode,
 #                               set_NAME=yes|no for each required setting, never a value, db size), "@log" the last lines
@@ -289,6 +311,8 @@
 # $CHAOS_ROOT/pair, CHAOS_SPECTATE_STATE /var/lib/chaos/spectate (lock, renewal time, the dat index), CHAOS_PAIR_BRANCH
 # windows-assets, CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log. For cast: CHAOS_CAST_PORT (else castPort of
 # the server's config.lua). For clientservices-impl: CHAOS_SYSTEMD_DIR /etc/systemd/system.
+# For pay-*: CHAOS_PAY_ENV /etc/chaos/payments.env, CHAOS_PAY_USER root, CHAOS_PAY_GROUP www-data (the file's owner and
+# group), CHAOS_PAYWORKER_LOG /var/log/chaos/payworker.log, CHAOS_SITE_DIR /var/www/chaos, CHAOS_SITE_ENV.
 # They come from /etc/chaos/ctl.conf (server/deploy/ctl.conf.example): simple KEY=VALUE lines, only those keys, read
 # only when the file is owned by root (or by the user running the script) and not writable by group or others. It is
 # never sourced. The environment wins over the file, but sudo drops the environment, so the app (which runs this through
@@ -315,7 +339,7 @@ CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPEC
 CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STAGING CHAOS_CACHE_DIR \
 CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE \
 CHAOS_SERVER_USER_STATE CHAOS_SERVER_USER_LOG CHAOS_BOT_USER CHAOS_BOT_ENV CHAOS_BOT_DIR CHAOS_BOT_DATA CHAOS_BOT_LOG \
-CHAOS_BOT_PYTHON CHAOS_BALANCE_DIR "
+CHAOS_BOT_PYTHON CHAOS_BALANCE_DIR CHAOS_PAY_ENV CHAOS_PAY_USER CHAOS_PAY_GROUP CHAOS_PAYWORKER_LOG "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -862,6 +886,118 @@ discord_prepare_env() {
     fi
   fi
   return 0
+}
+
+# ---- Donations (pay-* commands, O413; docs/PAYMENTS.md, website/README.md "Donations"): the settings in $PENV, mode 640
+# root:www-data (the web server reads them for the webhook, the worker through its unit). Values come in on stdin only.
+PENV=$(setting CHAOS_PAY_ENV /etc/chaos/payments.env)
+PUSER=$(setting CHAOS_PAY_USER root)
+PGROUP=$(setting CHAOS_PAY_GROUP www-data)
+PWLOG=$(setting CHAOS_PAYWORKER_LOG /var/log/chaos/payworker.log)
+PUNIT=chaos-payworker
+# the settings pay-set writes; the payer salt is made by pay-set itself, once, and never typed
+PAY_KEYS="CHAOS_PAY_PIX_PROVIDER CHAOS_PAY_PAYPAL_PROVIDER CHAOS_PAY_SITE_URL CHAOS_PAY_PAYER_EMAIL CHAOS_MP_ACCESS_TOKEN \
+CHAOS_MP_WEBHOOK_SECRET CHAOS_PAYPAL_CLIENT_ID CHAOS_PAYPAL_CLIENT_SECRET CHAOS_PAYPAL_WEBHOOK_ID CHAOS_PAYPAL_ENV \
+CHAOS_PAYPAL_CATEGORY"
+# the value on stdin fits the setting NAME (the Android card checks the same patterns: PayInfo.java)
+pay_value_ok() {
+  case $1 in
+    CHAOS_PAY_PIX_PROVIDER) [[ $2 =~ ^(mercadopago|off)$ ]] ;;
+    CHAOS_PAY_PAYPAL_PROVIDER) [[ $2 =~ ^(paypal|off)$ ]] ;;
+    CHAOS_PAY_SITE_URL) [[ $2 =~ ^https://[A-Za-z0-9]([A-Za-z0-9.-]{0,250}[A-Za-z0-9])?(:[0-9]{1,5})?(/[A-Za-z0-9._~/-]{0,200})?$ ]] ;;
+    CHAOS_PAY_PAYER_EMAIL) [[ $2 =~ ^[A-Za-z0-9._%+{}-]{1,64}@[A-Za-z0-9-]{1,63}(\.[A-Za-z0-9-]{1,63}){0,8}\.[A-Za-z]{2,24}$ ]] ;;
+    CHAOS_MP_ACCESS_TOKEN) [[ $2 =~ ^(APP_USR|TEST)-[A-Za-z0-9-]{20,250}$ ]] ;;
+    CHAOS_MP_WEBHOOK_SECRET) [[ $2 =~ ^[A-Za-z0-9_-]{16,200}$ ]] ;;
+    CHAOS_PAYPAL_CLIENT_ID|CHAOS_PAYPAL_CLIENT_SECRET) [[ $2 =~ ^[A-Za-z0-9_-]{20,200}$ ]] ;;
+    CHAOS_PAYPAL_WEBHOOK_ID) [[ $2 =~ ^[A-Za-z0-9]{8,40}$ ]] ;;
+    CHAOS_PAYPAL_ENV) [[ $2 =~ ^(sandbox|live)$ ]] ;;
+    CHAOS_PAYPAL_CATEGORY) [[ $2 =~ ^(DONATION|DIGITAL_GOODS)$ ]] ;;
+    *) return 1 ;;
+  esac
+}
+# the value of KEY in $PENV (the last line wins, as in the PHP reader; quotes around it removed). Only ever kept in a
+# variable of this script, never printed
+pay_get() {
+  local v
+  v=$(sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*//p" "$PENV" 2>/dev/null | tail -n 1)
+  v=${v%$'\r'}
+  v=${v%"${v##*[![:space:]]}"}
+  if [[ $v =~ ^\"(.*)\"$ ]] || [[ $v =~ ^\'(.*)\'$ ]]; then v=${BASH_REMATCH[1]}; else v=${v%%[[:space:]]#*}; fi
+  printf '%s' "$v"
+}
+pay_has() { [ -n "$(pay_get "$1")" ]; }
+# the site's public address (CHAOS_PAY_SITE_URL, else CHAOS_SITE_URL of the site settings), without the last /
+pay_site() {
+  local s senv
+  s=$(pay_get CHAOS_PAY_SITE_URL)
+  if [ -z "$s" ]; then
+    senv=$(setting CHAOS_SITE_ENV /etc/chaos/site.env)
+    s=$(sed -n 's/^CHAOS_SITE_URL=\([^ #]*\).*/\1/p' "$senv" 2>/dev/null | tail -n 1)
+  fi
+  s=${s%$'\r'}
+  s=${s%/}
+  [[ $s =~ ^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~/-]*)?$ ]] && printf '%s' "$s"
+  return 0
+}
+# e-mails, Mercado Pago tokens, bearer tokens and long ids in a log line are masked
+pay_redact() {
+  sed -E 's#(APP_USR|TEST)-[A-Za-z0-9-]+#\1-***#g; s#[A-Za-z0-9._%+{}-]+@[A-Za-z0-9.-]+#***@***#g' \
+    | sed -E 's#(Bearer|Basic) [A-Za-z0-9._~+/=-]+#\1 ***#g; s#[A-Za-z0-9_-]{40,}#***#g'
+}
+# KEY=VALUE replaces the first KEY= line of $PENV in place (comments and order kept), later KEY= lines go, or it is
+# appended. The value stays in this shell (printf is a builtin): never on a command line.
+pay_write() {
+  local key=$1 val=$2 real tmp line seen=0
+  real=$(readlink -m -- "$PENV") || return 1
+  tmp=$(mktemp "$real.XXXXXX") || return 1
+  chmod 0640 "$tmp"
+  {
+    while IFS= read -r line || [ -n "$line" ]; do
+      if [[ $line == "$key="* ]]; then
+        [ "$seen" -eq 1 ] || printf '%s=%s\n' "$key" "$val"
+        seen=1
+      else
+        printf '%s\n' "$line"
+      fi
+    done < "$real"
+    [ "$seen" -eq 1 ] || printf '%s=%s\n' "$key" "$val"
+  } > "$tmp" || { rm -f "$tmp"; return 1; }
+  chown "$PUSER:$PGROUP" -- "$tmp" 2>/dev/null || chown --reference="$real" -- "$tmp" 2>/dev/null || true
+  mv -f -- "$tmp" "$real" || { rm -f "$tmp"; return 1; }
+}
+# $PENV exists (from the example when missing), mode 640, owner $PUSER:$PGROUP, and has a payer salt (made here, once)
+pay_prepare_env() {
+  local real ex salt
+  real=$(readlink -m -- "$PENV") || return 1
+  if [ ! -e "$real" ]; then
+    install -d -m 0755 "$(dirname "$real")" || return 1
+    install -m 640 -o "$PUSER" -g "$PGROUP" /dev/null "$real" || return 1
+    ex="$REPO/website/payments.env.example"
+    if [ -f "$ex" ]; then
+      cat "$ex" > "$real" || return 1
+    else
+      printf 'CHAOS_PAY_PIX_PROVIDER=off\nCHAOS_PAY_PAYPAL_PROVIDER=off\nCHAOS_PAYPAL_ENV=sandbox\n' > "$real" || return 1
+    fi
+    echo "settings file: created $PENV (mode 640 $PUSER:$PGROUP)"
+  fi
+  chmod 0640 "$real" 2>/dev/null || return 1
+  chown "$PUSER:$PGROUP" -- "$real" 2>/dev/null || true
+  if ! pay_has CHAOS_PAY_PAYER_SALT; then
+    salt=$(head -c 36 /dev/urandom | base64 | tr '+/' '-_' | tr -d '\n=')
+    [ "${#salt}" -ge 40 ] || return 1
+    pay_write CHAOS_PAY_PAYER_SALT "$salt" || return 1
+    unset salt
+    echo "payer salt: made once at random (CHAOS_PAY_PAYER_SALT; keep it)"
+  fi
+  return 0
+}
+# the worker unit with the real paths (site folder, settings file, log)
+pay_unit_text() {
+  local site
+  site=$(setting CHAOS_SITE_DIR /var/www/chaos)
+  sed -e "s#/var/www/chaos#$site#g; s#/etc/chaos/payments.env#$PENV#g; s#/var/log/chaos/payworker.log#$PWLOG#g" \
+      -e "s#^ReadWritePaths=/var/log/chaos\$#ReadWritePaths=$(dirname "$PWLOG")#" \
+      "$REPO/server/deploy/$PUNIT.service"
 }
 
 # ---- tester bots (server/README.md "Tester bots")
@@ -2166,6 +2302,195 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         else
           echo "(the queue could not be read: is the database up?)"
         fi
+        ;;
+    esac
+    ;;
+  pay-status|pay-set|pay-test|pay-enable|pay-disable)
+    # Donations (O413, docs/PAYMENTS.md). The credentials live only in $PENV (mode 640, root:www-data). They come in on
+    # stdin (pay-set), are never put on a command line and never printed (status says yes/no, logs are masked).
+    case $cmd in
+      pay-status)
+        [ $# -eq 0 ] || die "pay-status (no arguments)"
+        for pk in CHAOS_PAY_PIX_PROVIDER CHAOS_PAY_PAYPAL_PROVIDER; do
+          pv=$(pay_get "$pk")
+          [[ $pv =~ ^[a-z]{1,20}$ ]] || pv=${pv:+invalid}
+          if [ "$pk" = CHAOS_PAY_PIX_PROVIDER ]; then echo "pix_provider=${pv:-off}"; else echo "paypal_provider=${pv:-off}"; fi
+        done
+        pv=$(pay_get CHAOS_PAYPAL_ENV)
+        [ "$pv" = live ] || pv=sandbox
+        echo "paypal_env=$pv"
+        pv=$(pay_get CHAOS_PAYPAL_CATEGORY)
+        [[ $pv =~ ^(DONATION|DIGITAL_GOODS)$ ]] || pv=DONATION
+        echo "paypal_category=$pv"
+        pv=$(pay_get CHAOS_MP_ACCESS_TOKEN)
+        case $pv in APP_USR-*) echo "mp_token=live" ;; TEST-*) echo "mp_token=test" ;; '') echo "mp_token=no" ;; *) echo "mp_token=invalid" ;; esac
+        unset pv
+        for pk in $PAY_KEYS CHAOS_PAY_PAYER_SALT; do
+          if pay_has "$pk"; then echo "set_$pk=yes"; else echo "set_$pk=no"; fi
+        done
+        if [ -e "$PENV" ]; then
+          pmeta=$(stat -L -c '%a %U:%G' "$PENV" 2>/dev/null)
+          echo "env_file=$pmeta"
+          if [ "$pmeta" = "640 $PUSER:$PGROUP" ]; then echo env_ok=yes; else echo env_ok=no; fi
+        else
+          echo "env_file=missing"
+          echo "env_ok=no"
+        fi
+        psite=$(pay_site)
+        echo "site_url=$psite"
+        if [ -n "$psite" ]; then
+          echo "webhook_mercadopago=$psite/chaos_pay_webhook.php?psp=mercadopago"
+          echo "webhook_paypal=$psite/chaos_pay_webhook.php?psp=paypal"
+        else
+          echo "webhook_mercadopago="
+          echo "webhook_paypal="
+        fi
+        psd=$(setting CHAOS_SITE_DIR /var/www/chaos)
+        if [ -f "$psd/plugins/chaos/pay/worker.php" ]; then echo site_installed=yes; else echo site_installed=no; fi
+        if [ -f "$SYSD/$PUNIT.service" ]; then echo worker_installed=yes; else echo worker_installed=no; fi
+        echo "worker_enabled=$(systemctl is-enabled "$PUNIT" 2>/dev/null | head -n 1 || true)"
+        echo "worker_active=$(systemctl is-active "$PUNIT" 2>/dev/null | head -n 1 || true)"
+        if [ "$(pay_get CHAOS_PAY_PIX_PROVIDER)" = mock ] || [ "$(pay_get CHAOS_PAY_PAYPAL_PROVIDER)" = mock ]; then
+          echo mock=yes
+        else
+          echo mock=no
+        fi
+        echo "@log"
+        plog=$(pay_get CHAOS_PAY_LOG)
+        if [ -z "$plog" ]; then
+          echo "(CHAOS_PAY_LOG is empty: the worker's lines are in its log below, the webhook's in the PHP error log)"
+        elif ! [[ $plog =~ ^/var/log/[A-Za-z0-9._/-]{1,200}$ ]] || [[ $plog == *..* ]]; then
+          echo "(CHAOS_PAY_LOG is not a file under /var/log: not shown)"
+        elif [ -r "$plog" ] && [ ! -L "$plog" ]; then
+          tail -n 10 "$plog" 2>/dev/null | pay_redact
+        else
+          echo "(no $plog yet)"
+        fi
+        echo "@worker"
+        if [ -r "$PWLOG" ]; then tail -n 6 "$PWLOG" 2>/dev/null | pay_redact; else echo "(no $PWLOG yet)"; fi
+        ;;
+      pay-set)
+        pname=${1:-}
+        { [ $# -eq 1 ] && [[ " $PAY_KEYS " == *" $pname "* ]]; } \
+          || die "pay-set NAME (NAME: $PAY_KEYS; the value on stdin, empty empties it)"
+        pval=""
+        IFS= read -r -t 30 -n 400 pval; prc=$?
+        [ "$prc" -le 128 ] || die "no value on stdin (timed out)"
+        pval=${pval%$'\r'}
+        # one line only: more text after it is refused, so nothing else can ride along
+        px=""
+        if IFS= read -r -t 2 -n 1 px && [ -n "$px" ]; then unset pval; die "one line only on stdin; nothing changed"; fi
+        pval=${pval#"${pval%%[![:space:]]*}"}
+        pval=${pval%"${pval##*[![:space:]]}"}
+        if [ -n "$pval" ] && ! pay_value_ok "$pname" "$pval"; then
+          unset pval
+          die "that value does not look like $pname; nothing changed"
+        fi
+        pay_prepare_env || die "cannot prepare $PENV"
+        # one writer at a time: two quick saves must not drop each other's line
+        exec 9<"$(dirname -- "$(readlink -m -- "$PENV")")" || die "cannot lock $PENV"
+        flock -w 10 9 || die "another pay-set is running; try again"
+        pay_write "$pname" "$pval" || { unset pval; die "cannot write $PENV"; }
+        if [ -n "$pval" ]; then echo "pay-set: $pname saved (${#pval} characters)"; else echo "pay-set: $pname emptied"; fi
+        unset pval
+        # the worker reads the file only at start; the webhook reads it on each call
+        if [ "$(systemctl is-active "$PUNIT" 2>/dev/null | head -n 1)" = active ]; then
+          if systemctl restart "$PUNIT"; then echo "$PUNIT was running: restarted with the new setting"
+          else echo "warning: restart of $PUNIT failed; use service $PUNIT restart" >&2; fi
+        else
+          echo "$PUNIT is not running: pay-enable starts it"
+        fi
+        ;;
+      pay-test)
+        [ $# -eq 0 ] || die "pay-test (no arguments)"
+        command -v curl >/dev/null 2>&1 || die "curl-not-found: install curl"
+        [ -r "$PENV" ] || die "no settings file $PENV (pay-set NAME creates it)"
+        pfail=0; pdone=0
+        pbody=$(mktemp) || die "mktemp failed"
+        ptok=$(pay_get CHAOS_MP_ACCESS_TOKEN)
+        if [ -n "$ptok" ]; then
+          pdone=$((pdone + 1))
+          # the token goes to curl on stdin as a config line: it never shows in ps
+          pcode=$(printf 'url = "https://api.mercadopago.com/users/me"\nheader = "Authorization: Bearer %s"\n' "$ptok" \
+            | curl -K - -sS -o "$pbody" -w '%{http_code}' --max-time 20 2>/dev/null) || pcode=${pcode:-000}
+          case $ptok in TEST-*) pkind="test" ;; *) pkind="live" ;; esac
+          unset ptok
+          psite=$(grep -o '"site_id"[[:space:]]*:[[:space:]]*"[A-Z]\{3\}"' "$pbody" 2>/dev/null | head -n 1 | grep -o '[A-Z]\{3\}"$' | tr -d '"')
+          if [ "$pcode" = 200 ]; then echo "pix=200 ok site=${psite:-?} token=$pkind"; else echo "pix=${pcode:-000} fail token=$pkind"; pfail=1; fi
+        else
+          unset ptok
+          echo "pix=not-configured (CHAOS_MP_ACCESS_TOKEN)"
+        fi
+        pcid=$(pay_get CHAOS_PAYPAL_CLIENT_ID)
+        psec=$(pay_get CHAOS_PAYPAL_CLIENT_SECRET)
+        ppenv=$(pay_get CHAOS_PAYPAL_ENV)
+        [ "$ppenv" = live ] || ppenv=sandbox
+        if [ -n "$pcid" ] && [ -n "$psec" ]; then
+          pdone=$((pdone + 1))
+          if [ "$ppenv" = live ]; then phost=https://api-m.paypal.com; else phost=https://api-m.sandbox.paypal.com; fi
+          pcode=$(printf 'url = "%s/v1/oauth2/token"\nuser = "%s:%s"\n' "$phost" "$pcid" "$psec" \
+            | curl -K - -sS -o /dev/null -w '%{http_code}' --max-time 20 -H 'Accept: application/json' \
+              -d 'grant_type=client_credentials' 2>/dev/null) || pcode=${pcode:-000}
+          unset psec
+          if [ "$pcode" = 200 ]; then echo "paypal=200 ok env=$ppenv"; else echo "paypal=${pcode:-000} fail env=$ppenv"; pfail=1; fi
+        else
+          unset psec
+          echo "paypal=not-configured (CHAOS_PAYPAL_CLIENT_ID, CHAOS_PAYPAL_CLIENT_SECRET)"
+        fi
+        rm -f "$pbody"
+        # the webhook page of each method that is on: an unsigned call must come back 401 (there, and refusing it)
+        psite=$(pay_site)
+        for pm in pix paypal; do
+          if [ "$pm" = pix ]; then ppsp=mercadopago; pon=$(pay_get CHAOS_PAY_PIX_PROVIDER)
+          else ppsp=paypal; pon=$(pay_get CHAOS_PAY_PAYPAL_PROVIDER); fi
+          if [ "$pon" != "$ppsp" ]; then echo "webhook_$pm=skipped (provider off)"; continue; fi
+          if [ -z "$psite" ]; then echo "webhook_$pm=no-site-url fail"; pfail=1; continue; fi
+          pdone=$((pdone + 1))
+          pcode=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 -H 'Content-Type: application/json' -d '{}' \
+            "$psite/chaos_pay_webhook.php?psp=$ppsp" 2>/dev/null) || pcode=${pcode:-000}
+          case $pcode in
+            401) echo "webhook_$pm=401 ok" ;;
+            503) echo "webhook_$pm=503 fail (secret or webhook id missing)"; pfail=1 ;;
+            404) echo "webhook_$pm=404 fail (page missing, or the site sees the provider off)"; pfail=1 ;;
+            *) echo "webhook_$pm=${pcode:-000} fail"; pfail=1 ;;
+          esac
+        done
+        [ "$pdone" -gt 0 ] || { echo "nothing to test: no credentials saved (pay-set NAME)"; exit 1; }
+        [ "$pfail" -eq 0 ] || exit 1
+        ;;
+      pay-enable|pay-disable)
+        [ $# -eq 0 ] || die "$cmd (no arguments)"
+        if [ "$cmd" = pay-disable ]; then
+          systemctl disable --now "$PUNIT" >/dev/null 2>&1 || die "could not disable $PUNIT"
+          echo "pay-disable: $PUNIT is off (the settings stay; new donations wait for their charge until it is on again)"
+          exit 0
+        fi
+        psd=$(setting CHAOS_SITE_DIR /var/www/chaos)
+        [ -f "$psd/plugins/chaos/pay/worker.php" ] \
+          || die "site-not-installed: $psd/plugins/chaos/pay/worker.php is missing (run site-install first)"
+        [ -f "$REPO/server/deploy/$PUNIT.service" ] || die "no $REPO/server/deploy/$PUNIT.service (update-apply first)"
+        pay_prepare_env || die "cannot prepare $PENV"
+        install -d -m 0755 "$(dirname "$PWLOG")" || die "cannot create $(dirname "$PWLOG")"
+        ptmp=$(mktemp) || die "mktemp failed"
+        pay_unit_text > "$ptmp" || { rm -f "$ptmp"; die "cannot build the unit"; }
+        pchanged=0
+        if ! cmp -s "$ptmp" "$SYSD/$PUNIT.service"; then
+          install -m 0644 "$ptmp" "$SYSD/$PUNIT.service" || { rm -f "$ptmp"; die "cannot install $PUNIT.service"; }
+          pchanged=1
+        fi
+        rm -f "$ptmp"
+        # the logrotate file also rotates payworker.log (docs/LAUNCH.md)
+        if [ -f "$REPO/server/deploy/chaos.logrotate" ] && ! cmp -s "$REPO/server/deploy/chaos.logrotate" "$DLROT"; then
+          install -m 0644 "$REPO/server/deploy/chaos.logrotate" "$DLROT" || die "cannot install $DLROT"
+        fi
+        [ "$pchanged" -eq 0 ] || systemctl daemon-reload || die "daemon-reload failed"
+        systemctl enable --now "$PUNIT" >/dev/null 2>&1 || die "could not enable $PUNIT"
+        if [ "$pchanged" -eq 1 ]; then systemctl restart "$PUNIT" >/dev/null 2>&1 || die "could not restart $PUNIT"; fi
+        pon=""
+        [ "$(pay_get CHAOS_PAY_PIX_PROVIDER)" = mercadopago ] && pon="pix"
+        [ "$(pay_get CHAOS_PAY_PAYPAL_PROVIDER)" = paypal ] && pon="${pon:+$pon }paypal"
+        echo "pay-enable: $PUNIT is on (unit installed: $([ "$pchanged" -eq 1 ] && echo updated || echo already), methods on: ${pon:-none})"
+        [ -n "$pon" ] || echo "note: no method on yet (pay-set CHAOS_PAY_PIX_PROVIDER mercadopago, CHAOS_PAY_PAYPAL_PROVIDER paypal)"
         ;;
     esac
     ;;
