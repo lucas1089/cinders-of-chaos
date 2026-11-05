@@ -20,6 +20,8 @@ namespace Chaos.Client
         protected abstract void Body(ChaosApp app, Rect inner);
         /// <summary>Clears what the window remembers of the last character.</summary>
         public virtual void Reset() { }
+        /// <summary>Called on every OnGUI pass for every window, open or not (for example to open itself on a server message).</summary>
+        public virtual void Tick(ChaosApp app) { }
 
         internal void Draw(ChaosApp app, int id, float w, float h)
         {
@@ -52,6 +54,9 @@ namespace Chaos.Client
         /// <summary>Every game window, in toolbar order. Add a new window here (one line).</summary>
         void MakeWindows()
         {
+            windows.Add(new EquipmentWindow());
+            windows.Add(new ContainersWindow());
+            windows.Add(new SkillsWindow());
         }
 
         static Rect ToolbarRect(float w) => new Rect(w - 104 - 76 * 6, 8, 76 * 6, 30);
@@ -66,6 +71,7 @@ namespace Chaos.Client
                 var b = new Rect(x + 76 * i, 8, 72, 30);
                 uiRects.Add(Scaled(b, scale));
                 var win = windows[i];
+                win.Tick(this);
                 if (GUI.Toggle(b, win.Open, win.Title, GUI.skin.button) != win.Open) win.Open = !win.Open;
             }
             for (int i = 0; i < windows.Count; i++)
