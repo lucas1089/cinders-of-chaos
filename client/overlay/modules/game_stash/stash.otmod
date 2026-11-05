@@ -3,6 +3,6 @@ Module
   description: Supply Stash System
   author: Lazarocp
   sandboxed: true
-  scripts: [ stashview, stash ]
+  scripts: [ stashview, stashfind, stash ]
   @onLoad: Stash.Init()
   @onUnload: Stash.Terminate()

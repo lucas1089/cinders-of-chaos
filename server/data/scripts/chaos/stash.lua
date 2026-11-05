@@ -38,6 +38,9 @@
 --     Open                              -> Toggle
 --   server -> client data.make:
 --     CollectInbox                      move the inbox into the stash / backpack (a protection zone)
+--     Find {q, page}                    Find my item (O412): -> found {q, page, pages, total, shown, capped, items =
+--                                       [{loc, name, count, cid, rarity?, unique?, slot?, path?, at?, ids?, where?, tab?,
+--                                       tabName?, old?, row?, item?}]} | found {q, error = "short" | "long"}
 --     Store                             -> the client opens the store at the Storage & Slots category (no server action)
 --     tabs {tabs=[{id, name, used, size, locked, affinity, icon, old, source}], limit, pact, tabSize, canWithdraw,
 --           slots (entries of the general tab), freeSlots, perPack, packs (expansions owned), maxPacks, store (the store category),
@@ -62,6 +65,7 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 dofile("data/scripts/chaos/stash_core.lua")
+dofile("data/scripts/chaos/itemsearch_core.lua")
 if not ChaosItemCodec then
 	dofile("data/scripts/chaos/item_codec.lua")
 end
@@ -1664,6 +1668,126 @@ function S.inboxCount(player)
 	return #(call(box, "getItems", false) or {})
 end
 
+-- ---------------------------------------------------------------- Find my item (O412)
+-- One read-only search over the equipped slots and every container they hold (closed ones too: the client only knows
+-- the open ones), the purse (store inbox), the inbox and the stash (itemsearch_core.lua; numbers: cfg.find).
+local FK = ChaosItemSearchCore
+
+local function storeInboxOf(player)
+	if not player.getStoreInbox then
+		return nil
+	end
+	local ok, box = pcall(function() return player:getStoreInbox() end)
+	if ok and box and call(box, "isContainer") == true then
+		return box
+	end
+	return nil
+end
+
+-- the rarity names an item answers to (English and pt-BR: "lendaria" finds a Legendary sword)
+local function rarityWords(rarity, unique)
+	local parts = {}
+	local id = unique and ChaosRarity.UNIQUE or rarity
+	if id and id > 0 then
+		local row = ChaosRarity.byId and ChaosRarity.byId[unique and id or ChaosRarity.canon(id)]
+		if row then
+			parts[#parts + 1] = row.name
+			parts[#parts + 1] = row.pt
+		end
+	end
+	return table.concat(parts, " ")
+end
+
+-- an engine item as the search sees it; the affix lines only for rarity and unique gear (the rest has none)
+function S.describeForFind(item)
+	local id = int(call(item, "getId"))
+	local f = S.typeFacts(id)
+	local d = {cid = f.clientId or 0, count = math.max(1, int(call(item, "getCount")))}
+	local name = call(item, "getName")
+	d.name = type(name) == "string" and name ~= "" and name or f.typeName or ""
+	d.container = call(item, "isContainer") == true
+	d.rarity = ChaosRarity.canon(int(custom(item, "rarity"))) % ChaosRarity.UNIQUE
+	d.unique = custom(item, "chaos_unique") ~= nil
+	local words = rarityWords(d.rarity, d.unique)
+	if (d.rarity > 0 or d.unique) and ChaosItemMods and ChaosItemMods.summary then
+		local ok, text = pcall(ChaosItemMods.summary, item)
+		if ok and type(text) == "string" then
+			words = words .. " " .. text
+		end
+	end
+	d.words = words
+	return d
+end
+
+local findApi = {
+	describe = function(item) return S.describeForFind(item) end,
+	children = function(item)
+		if call(item, "isContainer") ~= true then
+			return nil
+		end
+		return call(item, "getItems", false) or {}
+	end
+}
+
+-- the stash entries as search rows (the tab each is in now; the look text of a stored item carries its affix lines)
+local function stashPlace(player)
+	local okV, view = pcall(S.viewOf, player)
+	local entries = {}
+	if okV and view then
+		local okE, list = pcall(S.entries, player, view)
+		entries = okE and list or {}
+	end
+	local out = {}
+	for _, e in ipairs(entries) do
+		local f = S.typeFacts(e.item)
+		if f.clientId and f.clientId ~= 0 then
+			local rarity = int(e.rarity)
+			out[#out + 1] = {name = e.name and e.name ~= "" and e.name or f.typeName, count = e.count, cid = f.clientId,
+				rarity = rarity, words = rarityWords(rarity, false) .. " " .. (e.info or ""), tab = e.tab,
+				tabName = tabName(e.tab), old = int(e.tab) == int(cfg.oldDepot and cfg.oldDepot.tab) or nil,
+				row = e.row, item = not e.row and e.item or nil}
+		end
+	end
+	return {kind = "stash", entries = out}
+end
+
+-- the places of a character, in the order the list shows them
+function S.findPlaces(player)
+	local places = {}
+	for slot = CONST_SLOT_FIRST or 1, CONST_SLOT_LAST or 10 do
+		local item = call(player, "getSlotItem", slot)
+		if item then
+			places[#places + 1] = {kind = "equip", slot = slot, item = item}
+		end
+	end
+	local purse = storeInboxOf(player)
+	if purse then
+		places[#places + 1] = {kind = "purse", item = purse}
+	end
+	local box = inboxOf(player)
+	if box then
+		places[#places + 1] = {kind = "inbox", item = box}
+	end
+	places[#places + 1] = stashPlace(player)
+	return places
+end
+
+-- Find {q, page}: one page of the matches (every page runs the search again: nothing is kept between requests)
+function S.find(player, data)
+	local fc = cfg.find or {}
+	local q = type(data.q) == "string" and data.q or ""
+	local words, why = FK.query(q, fc)
+	if not words then
+		send(player, {make = "found", q = q:sub(1, int(fc.maxChars or 40) + 1), error = why})
+		return
+	end
+	local result = FK.search(fc, words, S.findPlaces(player), findApi)
+	local page = FK.page(result, data.page, fc.pageSize or 20)
+	send(player, {make = "found", q = q, page = page.page, pages = page.pages, total = page.total, shown = page.shown,
+		capped = page.capped or nil, items = page.items})
+	return page
+end
+
 -- Collect inbox: the items of the inbox (its top level; a parcel or bag goes whole to the backpack, a container is
 -- never stashed) go into the stash, else into the backpack, in a protection zone or a hideout. At most inbox.batch
 -- items per press. Returns the counts.
@@ -1827,7 +1951,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	-- (a deposit) needs a real item each time; its list echo is limited below
 	local R = cfg.rate
 	local limit = ({SendCategories = R.list, SendItems = R.list, Redeem = R.withdraw, ChangeStash = R.block, Open = R.open,
-		StashAllRequest = R.stow, CollectInbox = (cfg.inbox or {}).rateMs or 1500})[data.make]
+		StashAllRequest = R.stow, CollectInbox = (cfg.inbox or {}).rateMs or 1500,
+		Find = (cfg.find or {}).rateMs or 500})[data.make]
 	if limit and ChaosRateLimit and not ChaosRateLimit.allow(player, "stash." .. data.make, limit) then
 		return
 	end
@@ -1869,6 +1994,11 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		S.stow(player)
 	elseif data.make == "CollectInbox" then
 		S.collectInbox(player)
+	elseif data.make == "Find" then
+		local ok, err = pcall(S.find, player, data)
+		if not ok then
+			warn("find: " .. tostring(err))
+		end
 	end
 end
 

@@ -1,6 +1,7 @@
 -- Pure rules of game_chaoslayout (client/MANIFEST.md "Window layout per character"; tested by layout_test.lua).
 -- ChaosLayoutLogic: the saved layout of one character, { panels = { left = n, right = n }, mini = { [windowId] =
--- { panel, side, index, height, minimized, closed, locked } }, windows = { [windowId] = { x, y, width, height } } }.
+-- { panel, side, index, height, minimized, closed, locked } }, windows = { [windowId] = { x, y, width, height } },
+-- containers = { { key, panel, side, index, height, minimized, scroll } } (O412, containers_logic.lua) }.
 ChaosLayoutLogic = {}
 local L = ChaosLayoutLogic
 
@@ -44,6 +45,9 @@ function L.merge(saved, snap)
   for id, e in pairs(snap.mini or {}) do out.mini[id] = e end
   for id, r in pairs(saved and saved.windows or {}) do out.windows[id] = r end
   for id, r in pairs(snap.windows or {}) do out.windows[id] = r end
+  -- the open containers (O412, containers_logic.lua): the snapshot's list when it has one, else the saved one
+  if snap.containers ~= nil then out.containers = snap.containers
+  elseif saved and saved.containers ~= nil then out.containers = saved.containers end
   return out
 end
 
