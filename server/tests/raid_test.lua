@@ -1318,6 +1318,18 @@ eq(ChaosAchievements.got["R1:raid_sovereign"], 1, "the final achievement (the co
 eq(ChaosAchievements.got["R1:raid_clears"], 1, "a clear")
 check(Game.lastBroadcast and Game.lastBroadcast:find("Varkhul", 1, true) ~= nil, "the broadcast")
 eq(mem.players[lead.guid].clears, 1, "the record")
+-- after the final boss: an exit portal on its spot, everyone out after finalExitSeconds, the portal gone with the run
+do
+	local fx = run.finalExit
+	check(fx ~= nil, "the final boss leaves an exit portal")
+	local it = fx and Tile(Position(fx.x, fx.y, fx.z)):getItemById(cfg.objects.exit)
+	check(it and it:getActionId() == cfg.aid.exit, "the exit forcefield on the throne")
+	check(X.runOf[lead.id] == run, "still inside right after the kill")
+	runTo(T + (cfg.finalExitSeconds or 90) * 1000 + 1000)
+	check(X.runOf[lead.id] == nil and run.closed, "everyone sent out after the countdown, the run closed")
+	local t = fx and Tile(Position(fx.x, fx.y, fx.z))
+	check(not (t and t:getItemById(cfg.objects.exit)), "the final exit portal is removed")
+end
 
 -- the hex and the Font of Ash: the cleansed raider is spared, the other bursts on its neighbours
 X.interruptAll()

@@ -300,6 +300,7 @@ return {
 		["Rear Sweep: get out from behind!"] = "Rear Sweep: saiam de trás!",
 		["Ember Brand: SOAK the circles (%d each)!"] = "Ember Brand: ABSORVAM os círculos (%d em cada)!",
 		["%s arrive: kill them first!"] = "%s chegam: matem primeiro!",
+		["The way out opens on the throne: step into the portal. Everyone returns in %d seconds."] = "A saída se abre no trono: entre no portal. Todos voltam em %d segundos.",
 		["Bone Bloom: step out of your circle!"] = "Bone Bloom: saia do seu círculo!",
 		["%s rises: KILL IT!"] = "%s se ergue: MATEM!",
 		["Withering Hex on %s: cleanse it!"] = "Withering Hex em %s: purifiquem!",

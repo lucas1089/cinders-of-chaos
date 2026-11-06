@@ -56,6 +56,10 @@ return {
 	aid = {portal = 47801, exit = 47802, font = 47803},
 	objects = {exit = 1387, font = 1360}, -- the exit forcefield in the hall; the Font of Ash (a fountain, used from next
 	-- to it) in the corners of the rooms with hexes
+	-- after the final boss (owner 2026-11-06: "depois que o player mata o ultimo boss da raid, nada acontece"): an exit
+	-- portal (objects.exit, aid.exit) rises on the final boss's spot and everyone still inside is sent back where they
+	-- came from after this many seconds (time to loot the corpse); the instance then closes, cleared for the week
+	finalExitSeconds = 90,
 	idleMinutes = 5, -- an empty instance (nobody inside) is closed after this; its progress stays saved for the week (was 10)
 	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): one opening of a raid lasts at most
 	-- sessionMinutes; then everyone goes back where they came from and the slot closes. Nothing is lost: the kills and

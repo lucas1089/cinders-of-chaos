@@ -24212,6 +24212,13 @@ monster types while the pool has one valid monster. `spawnSet` lets a type the e
 made 0 monsters is retried (`spawn.retries`, `spawn.retrySeconds`) with the types picked again and is never a cleared room; after the
 retries the run ends with result `error` (depth rewards) and one `[Chaos descent] ERROR` line in the log.
 ## The Ashen Sepulchre, the weekly raid (`raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql`, client `game_raid`)
+**After the final boss** (owner 2026-11-06: "depois que o player mata o ultimo boss da raid, nada acontece"; before,
+only the alert and the broadcast came, the way out was the hall's exit portal at the far end). An exit forcefield
+(`objects.exit`, `aid.exit`) rises on the final boss's spot and the raid is told "The way out opens on the throne...";
+after `finalExitSeconds` (90, time to loot) the run closes and everyone still inside goes back where they came from.
+The extra portal is removed with the run. Test: `tests/raid_test.lua` (the portal, the countdown, the removal). Not
+seen on a live server.
+
 
 **Limits** (`raid_config.lua` `sessionMinutes`, `idleMinutes`, `limits`, "Instance limits"): one opening lasts at most 150 minutes, warnings at 10, 5 and 1 minute and 10 s; then everyone goes back where they came from, the slot closes and the progress stays saved for the week (a fight still going ends as a wipe). An empty raid closes after 5 minutes (was 10). At most 4 raids, the wait and the waiting line when every wing is taken.
 
