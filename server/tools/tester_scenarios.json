@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 66,
   "out": 38,
-  "passive": 94,
+  "passive": 95,
   "place": 15,
   "staff": 17
  },
@@ -9367,6 +9367,7 @@
   },
   "attack_rate": {
    "files": [
+    "attack_pace.lua",
     "berserker_combat.lua",
     "monk_combat.lua",
     "templar_combat.lua",
@@ -10067,6 +10068,13 @@
     "groupQueue"
    ],
    "talkactions": []
+  },
+  "guardian": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "guild": {
    "files": [
