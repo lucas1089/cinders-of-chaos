@@ -17,6 +17,13 @@ if (!function_exists('chaos_t') && is_file(dirname(__DIR__, 3) . '/plugins/chaos
 if (!function_exists('chaos_t')) {
 	function chaos_t(string $en, ...$args): string { return $args ? vsprintf($en, $args) : $en; }
 }
+if (!function_exists('chaos_media_trailer_html') && is_file(dirname(__DIR__, 3) . '/plugins/chaos/media_lib.php')) {
+	require_once dirname(__DIR__, 3) . '/plugins/chaos/media_lib.php';
+}
+// trailer, shorts and screenshots (plugins/chaos/media_lib.php): '' without the plugin or its media files
+$mediaTrailer = function_exists('chaos_media_trailer_html') ? chaos_media_trailer_html() : '';
+$mediaShorts = function_exists('chaos_media_shorts_html') ? chaos_media_shorts_html() : '';
+$mediaGallery = function_exists('chaos_media_gallery_html') ? chaos_media_gallery_html() : '';
 $plugin = function_exists('chaos_class_lines');
 $lines = $plugin ? chaos_class_lines() : array();
 $icon = static function (string $name): string {
@@ -39,6 +46,9 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 			<p class="chaos-hero__text"><?= $h(chaos_t('Cinders of Chaos is a dark fantasy online RPG with its own client: classes with ascensions, a huge passive tree, items with rarities and modifiers, crafting orbs, and an endgame built for weeks of play.')) ?></p>
 			<div class="chaos-cta">
 				<a class="chaos-btn" href="downloads"><?= $h(chaos_t('Download the client')) ?></a>
+				<?php if ($mediaTrailer !== ''): ?>
+					<a class="chaos-btn chaos-btn--ghost" href="#trailer"><?= $h(chaos_t('Watch the trailer')) ?></a>
+				<?php endif; ?>
 				<?php if (function_exists('user_logged_in') && user_logged_in()): ?>
 					<a class="chaos-btn chaos-btn--ghost" href="createcharacter"><?= $h(chaos_t('Create a character')) ?></a>
 				<?php else: ?>
@@ -54,6 +64,9 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 			<div><dt><?= $h(chaos_t('World bosses')) ?></dt><dd>5</dd></div>
 		</dl>
 	</section>
+
+	<?= $mediaTrailer ?>
+	<?= $mediaShorts ?>
 
 	<?php if ($lines): ?>
 	<section class="chaos-box">
@@ -89,6 +102,9 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 		</div>
 		<a class="chaos-btn chaos-btn--ghost chaos-features__more" href="page?plugin=chaos&amp;p=wiki"><?= $h(chaos_t('Read the guide')) ?></a>
 	</section>
+
+	<?= $mediaGallery ?>
+	<?= function_exists('chaos_media_script_html') ? chaos_media_script_html($mediaTrailer . $mediaGallery) : '' ?>
 
 	<?php $community = function_exists('chaos_community_state') ? chaos_community_block_html(chaos_community_state(time())) : ''; ?>
 	<?php if ($community !== ''): // the community goal and the week's world modifiers (plugins/chaos/community_lib.php) ?>

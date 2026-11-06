@@ -597,3 +597,53 @@ ol.chaos-build__spells { list-style: decimal inside; }
 .chaos-character { display: flex; align-items: center; gap: 12px; }
 .chaos-character .chaos-lead { margin: 0; }
 @media (max-width: 720px) { .chaos-build__cols { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------------------------------------------------------------- trailer, shorts and screenshots (O422, plugins/chaos/media_lib.php) */
+.chaos-trailer__frame { background: var(--c-black); box-shadow: inset 0 0 0 1px var(--c-iron3); line-height: 0; max-width: 960px; margin: 0 auto; }
+.chaos-trailer__video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--c-black); }
+.chaos-trailer__video.is-hero { cursor: pointer; }
+.chaos-trailer__note { text-align: center; margin: 12px 0 0; }
+.chaos-shorts__strip { display: flex; gap: 16px; justify-content: center; }
+.chaos-short { margin: 0; flex: 0 1 220px; min-width: 0; }
+.chaos-short video { display: block; width: 100%; height: auto; aspect-ratio: 9 / 16; background: var(--c-black); box-shadow: inset 0 0 0 1px var(--c-iron3); }
+.chaos-short figcaption { margin-top: 8px; font-size: 14px; color: var(--c-text2); text-align: center; }
+.chaos-gallery__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.chaos-shot { position: relative; display: block; line-height: 0; background: var(--c-black); box-shadow: inset 0 0 0 1px var(--c-iron3); overflow: hidden; }
+.chaos-shot img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; transition: transform .25s var(--ease), opacity .25s var(--ease); }
+.chaos-shot:hover img, .chaos-shot:focus-visible img { transform: scale(1.04); }
+.chaos-shot:focus-visible { outline: 2px solid var(--c-gold3); outline-offset: 2px; }
+.chaos-shot__cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 6px; line-height: 1.25; font-size: 13px; color: var(--c-text);
+  background: linear-gradient(to top, rgba(5,4,5,.9), rgba(5,4,5,0)); }
+.chaos-lightbox { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(5,4,5,.94); }
+.chaos-lightbox[hidden] { display: none; }
+.chaos-lightbox__fig { margin: 0; max-width: min(100%, 1280px); }
+.chaos-lightbox__img { display: block; max-width: 100%; max-height: calc(100vh - 96px); max-height: calc(100dvh - 96px); width: auto; height: auto; margin: 0 auto;
+  box-shadow: 0 0 0 1px var(--c-gold1); }
+.chaos-lightbox__cap { margin-top: 10px; text-align: center; color: var(--c-text2); font-size: 15px; }
+.chaos-lightbox__btn { position: absolute; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; padding: 0;
+  background: var(--c-iron1); color: var(--c-gold3); border: 0; box-shadow: inset 0 0 0 1px var(--c-iron4); font-size: 30px; line-height: 1; cursor: pointer; }
+.chaos-lightbox__btn:hover, .chaos-lightbox__btn:focus-visible { background: var(--c-iron2); box-shadow: inset 0 0 0 1px var(--c-gold2); outline: 0; }
+.chaos-lightbox__close { top: 12px; right: 12px; }
+.chaos-lightbox__prev { left: 12px; top: 50%; margin-top: -24px; }
+.chaos-lightbox__next { right: 12px; top: 50%; margin-top: -24px; }
+.chaos-lightbox-open, .chaos-lightbox-open body { overflow: hidden; }
+@media (max-width: 900px) {
+  .chaos-gallery__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  /* media (O422) phones */
+  .chaos-gallery__grid { gap: 8px; }
+  .chaos-shot__cap { font-size: 12px; padding: 14px 6px 4px; }
+  /* the shorts: a strip that scrolls sideways, each one a little less than the width of the screen */
+  .chaos-shorts__strip { justify-content: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+  .chaos-short { flex: 0 0 62%; scroll-snap-align: start; }
+  .chaos-lightbox { padding: 8px; }
+  .chaos-lightbox__prev { left: 4px; }
+  .chaos-lightbox__next { right: 4px; }
+  .chaos-lightbox__btn { background: rgba(23,20,26,.8); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chaos-shot img { transition: none; }
+  .chaos-shot:hover img, .chaos-shot:focus-visible img { transform: none; }
+}
