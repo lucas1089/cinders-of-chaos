@@ -48,10 +48,6 @@ if not ChaosWeaponPower then
 	dofile("data/scripts/chaos/weapon_power_core.lua")
 end
 local WP = ChaosWeaponPower
-if not ChaosAttackRate then
-	dofile("data/scripts/chaos/attack_rate_core.lua")
-end
-local AR = ChaosAttackRate
 
 local splashArea = createCombatArea({
 	{1, 1, 1},
@@ -333,22 +329,9 @@ local function styled(creature, attacker, primaryDamage, primaryType, secondaryD
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
 
--- The 3 attacks per second cap (O426, attack_rate_core.lua): a swing faster than one per second hits for (interval /
--- 1000) ^ 0.63 of a full hit, so the damage per second of the auto attack grows about +50% from one to three attacks per
--- second instead of x3. Taken before the styles above so the splash, the extra projectile and every share of the hit
--- follow it. Auto attacks only: a spell's weapon strike (ChaosSpell.weaponStrike) is not one.
+-- Auto attack hits keep their full damage at any swing rate (owner 2026-11-06); the extras a hit triggers are limited per
+-- second (attack_rate_core.lua). The styles above run on the hit as it is.
 function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
-	if AR and extraDepth == 0 and attacker and primaryType ~= COMBAT_HEALING and attacker:isPlayer()
-			and (origin == ORIGIN_MELEE or origin == ORIGIN_RANGED or origin == WAND_ORIGIN)
-			and attacker:getStorageValue(STRIKE_KEY) ~= 1 then
-		local weapon, weaponItem = handWeapon(attacker)
-		local ms = ChaosItemMods and ChaosItemMods.playerInterval and ChaosItemMods.playerInterval(attacker, weaponItem, weapon)
-		local f = AR.hitFactor(ms)
-		if f ~= 1 then
-			primaryDamage = scale(primaryDamage, f)
-			secondaryDamage = scale(secondaryDamage, f)
-		end
-	end
 	return styled(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 end
 hit:register()

@@ -468,8 +468,8 @@ Samurai totals): the weapon hits of the three are cut by new / old interval, and
 The Thief's total per swing is unchanged (a dagger swing used to be one hit; it is now two hits adding up to that), so the class
 stays in its balance band and the Ninja (the one that always dual wielded) stays 50% above a single dagger as before. Attack speed
 modifiers (item and gem `attackspeed`, dexterity) still work: they shorten the vocation's interval in the engine, and the cap
-(src-patches 0011 and 0088, `minPlayerAttackInterval` 333 ms since O426, 1000 ms before) is far from the Ninja's 1400: its off-hand strike is limited to 1.5 per second
-(`attack_rate_config.lua`) and a fast swing hits for less (`(interval / 1000) ^ 0.63` under 1000 ms), see server/README.md "Attack speed cap".
+(src-patches 0011 and 0088, `minPlayerAttackInterval` 333 ms since O426, 1000 ms before) is far from the Ninja's 900 ms base (O429): its off-hand strike is limited to 1.5 per second
+(`attack_rate_config.lua`) and a hit keeps its full damage at any rate, see server/README.md "Attack speed cap". The hit cut now / was above is a fixed ratio of this tie decision; the XML intervals of this table were all lowered by O429 (Ninja 900, Thief 1000, Samurai 1150).
 Test: `tests/classes_test.lua` (the vocation XML against `Chaos.classes.attackSpeed`, the Thief tied with the Monk and faster than
 every class outside the two lines, the damage per second of every entry, the neutral cut with equal and unequal daggers).
 

@@ -892,7 +892,7 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 		end
 		if b.ksUndyingRage and origin == ORIGIN_MELEE and MELEE_WEAPON[weapon:getWeaponType()] then
 			local heal = K.undyingHeal(math.abs(pd) + math.abs(sd), player:getHealth(), player:getMaxHealth())
-			if heal > 0 then
+			if heal > 0 and arGate(pid, "undyingRage") then
 				addEvent(function()
 					local p = Player(pid)
 					if p and p:getHealth() > 0 and Chaos and Chaos.heal then

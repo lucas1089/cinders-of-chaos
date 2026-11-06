@@ -15,7 +15,7 @@
      A caster with a little more health than the Mystic (hp 5 / mana 30 / cap 10): Necromancer hp 8 / mana 26 / cap 13,
      Lich hp 7 / mana 28 / cap 12 (the spell caster), Bone Lord hp 9 / mana 24 / cap 15, defense / armor 1.05 (it stands
      in its army). Skills and magic level (manamultiplier 1.1) like the Mystic; wands and rods. -->
-	<vocation id="20" clientid="7" name="Necromancer" description="a necromancer" gaincap="13" gainhp="8" gainmana="26" gainhpticks="6" gainhpamount="5" gainmanaticks="3" gainmanaamount="5" manamultiplier="1.1" attackspeed="2000" basespeed="220" soulmax="100" gainsoulticks="120" fromvoc="20" noPongKickTime="40">
+	<vocation id="20" clientid="7" name="Necromancer" description="a necromancer" gaincap="13" gainhp="8" gainmana="26" gainhpticks="6" gainhpamount="5" gainmanaticks="3" gainmanaamount="5" manamultiplier="1.1" attackspeed="1300" basespeed="220" soulmax="100" gainsoulticks="120" fromvoc="20" noPongKickTime="40">
 		<formula meleeDamage="1.0" distDamage="1.0" defense="1.0" armor="1.0" />
 		<skill id="0" multiplier="1.5" />
 		<skill id="1" multiplier="2.0" />
@@ -32,7 +32,7 @@
 		<skill id="12" multiplier="1.1" />
 		<skill id="13" multiplier="1.1" />
 	</vocation>
-	<vocation id="21" clientid="17" name="Lich" description="a lich" gaincap="12" gainhp="7" gainmana="28" gainhpticks="4" gainhpamount="10" gainmanaticks="2" gainmanaamount="10" manamultiplier="1.1" attackspeed="2000" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="20" noPongKickTime="40">
+	<vocation id="21" clientid="17" name="Lich" description="a lich" gaincap="12" gainhp="7" gainmana="28" gainhpticks="4" gainhpamount="10" gainmanaticks="2" gainmanaamount="10" manamultiplier="1.1" attackspeed="1300" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="20" noPongKickTime="40">
 		<formula meleeDamage="1.0" distDamage="1.0" defense="1.0" armor="1.0" />
 		<skill id="0" multiplier="1.5" />
 		<skill id="1" multiplier="2.0" />
@@ -49,7 +49,7 @@
 		<skill id="12" multiplier="1.1" />
 		<skill id="13" multiplier="1.1" />
 	</vocation>
-	<vocation id="22" clientid="27" name="Bone Lord" description="a bone lord" gaincap="15" gainhp="9" gainmana="24" gainhpticks="4" gainhpamount="10" gainmanaticks="2" gainmanaamount="10" manamultiplier="1.1" attackspeed="2000" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="20" noPongKickTime="40">
+	<vocation id="22" clientid="27" name="Bone Lord" description="a bone lord" gaincap="15" gainhp="9" gainmana="24" gainhpticks="4" gainhpamount="10" gainmanaticks="2" gainmanaamount="10" manamultiplier="1.1" attackspeed="1300" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="20" noPongKickTime="40">
 		<formula meleeDamage="1.0" distDamage="1.0" defense="1.05" armor="1.05" />
 		<skill id="0" multiplier="1.5" />
 		<skill id="1" multiplier="2.0" />

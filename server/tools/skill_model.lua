@@ -97,6 +97,18 @@ end
 local function stagesOf(env, skill) return skill == "magic" and env.cfg.stages.magic or env.cfg.stages.skill end
 
 -- tries an hour of hunting brings at a trained level (nil: this class has no hunting figure for the skill)
+-- the attack interval training counts: the xml interval cut by the O429 compensation (data/scripts/chaos/attack_pace.lua, the
+-- tries of weapon use keep the share new / old base interval), so training speed stays where it was before the lower bases
+local function trainMs(voc)
+	local AR = M.attackRate
+	if not AR then
+		dofile("data/scripts/chaos/attack_rate_core.lua")
+		AR = ChaosAttackRate
+		M.attackRate = AR
+	end
+	return voc.attackMs / AR.trainFactor(voc.id, voc.attackMs)
+end
+
 function M.hunting(env, voc, skill, level)
 	local c, h = env.cfg, env.cfg.hunting
 	local mult = M.stageMult(stagesOf(env, skill), level)
@@ -106,7 +118,7 @@ function M.hunting(env, voc, skill, level)
 		return mpm * 60 * h.castShare * c.rates.magic * mult
 	end
 	if skill == "shield" then return nil end
-	return 3600000 / voc.attackMs * h.attackShare * c.rates.skill * mult
+	return 3600000 / trainMs(voc) * h.attackShare * c.rates.skill * mult
 end
 
 local KIND_OF = {melee = "melee", fist = "melee", distance = "ranged", magic = "rod"}
@@ -129,7 +141,7 @@ function M.offline(env, voc, skill, level)
 	end
 	if skill == "shield" then return nil end
 	local div = skill == "distance" and o.distanceDivisor or o.meleeDivisor
-	return 3600 / (voc.attackMs / 1000) / div * c.rates.skill * mult
+	return 3600 / (trainMs(voc) / 1000) / div * c.rates.skill * mult
 end
 
 -- hours to go from level a to level b at tries(level) an hour

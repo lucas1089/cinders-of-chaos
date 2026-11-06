@@ -39,7 +39,7 @@ a party with an Illusionist out-damages the same party without one.
 ## Class kits (first draft)
 
 **Thief** (base): fights with a dagger in each hand (dual wield since 2026-10-23: the kit is two daggers, one in each hand; the
-off-hand dagger adds a second strike on each hit) and attacks as fast as the Monk (1500 ms); shuriken spells with a shuriken spells with a
+off-hand dagger adds a second strike on each hit) and attacks as fast as the Monk (1000 ms since O429, 1500 before); shuriken spells with a shuriken spells with a
 short range (no stars to carry); **Shadow Veil** stealth (monsters lose track of you, broken by attacking; the first hit out of
 stealth crits); poison blades (a poison tick is 30% of the hit a second, the Ninja's 18%, 2026-10-17); evasion (dodge chance); Blade Flurry (a spin that strikes every monster next to you,
 the line's area strike, 2026-10-15).
@@ -607,13 +607,17 @@ for free, at the migration.
 
   | id | Name | from | client byte | hp / mana / cap per level | attackspeed | base speed | melee / dist damage |
   |---|---|---|---|---|---|---|---|
-  | 11 | Thief | 11 | 6 | 12 / 10 / 22 | 1500 (was 1600) | 230 | 1.2 |
-  | 12 | Ninja | 11 | 16 | 12 / 10 / 22 | 1300 (was 1400) | 232 | 1.2 |
-  | 13 | Samurai | 11 | 26 | 13 / 9 / 24 (defense / armor 1.1) | 1700 (was 1800) | 230 | 1.3 |
+  | 11 | Thief | 11 | 6 | 12 / 10 / 22 | 1000 (O429; 1500, 1600) | 230 | 1.2 |
+  | 12 | Ninja | 11 | 16 | 12 / 10 / 22 | 900 (O429; 1300, 1400) | 232 | 1.2 |
+  | 13 | Samurai | 11 | 26 | 13 / 9 / 24 (defense / armor 1.1) | 1150 (O429; 1700, 1800) | 230 | 1.3 |
 
-  Attack speed since 2026-10-23 (owner: the Thief attacks faster than the other classes, tied with the Monk): Thief = Monk 1500,
-  Ninja = Shadowfist 1300, Samurai = Iron Sage 1700 ms; every class outside the two lines keeps 2000. The weapon hits of the
-  three are cut by new / old (`Chaos.classes.attackSpeed`), so the auto attack's damage per second is where it was balanced.
+  Attack speed since 2026-10-23 (owner: the Thief attacks faster than the other classes, tied with the Monk): Thief = Monk,
+  Ninja = Shadowfist, Samurai = Iron Sage. **O429 (owner 2026-11-06, lower the base intervals): Shadowfist and Ninja 900 ms, Monk
+  and Thief 1000, Iron Sage and Samurai 1150, every other class 1300 (was 1300 / 1500 / 1700 / 2000); a typical build swings
+  1.3 - 1.9 times a second, a min-maxed one reaches the 3 per second floor in every class; the hit keeps its full damage, so the
+  auto attack's damage per second rises (server/README.md "Attack speed cap" has the table); skill training is held at its old
+  speed (`attack_pace.lua`).** The weapon hits of the three are cut by a fixed ratio (`Chaos.classes.attackSpeed`, now / was of
+  the 2026-10-23 tie: 15/16, 13/14, 17/18).
   A Thief with a dagger in each hand also gives up the share the off-hand strike adds (main hit x 1 / 1.5 with equal daggers).
   The Thief's starting kit is two daggers (main hand and shield hand); a Thief made before gets the second dagger once at login
   (`Chaos.storage.offhandGranted`, 7100204). Daggers by band: server/README.md "Thief daggers".
@@ -779,9 +783,9 @@ Open for the Necromancer:
 
   | id | Name | from | client byte | hp / mana / cap per level | attackspeed | base speed | fist hits |
   |---|---|---|---|---|---|---|---|
-  | 17 | Monk | 17 | 8 | 12 / 10 / 22 | 1500 | 230 | x1.2 |
-  | 18 | Shadowfist | 17 | 18 | 12 / 10 / 22 | 1300 | 232 | x1.2 |
-  | 19 | Iron Sage | 17 | 28 | 14 / 9 / 25 (defense / armor 1.15) | 1700 | 228 | x1.1 |
+  | 17 | Monk | 17 | 8 | 12 / 10 / 22 | 1000 (O429; 1500) | 230 | x1.2 |
+  | 18 | Shadowfist | 17 | 18 | 12 / 10 / 22 | 900 (O429; 1300) | 232 | x1.2 |
+  | 19 | Iron Sage | 17 | 28 | 14 / 9 / 25 (defense / armor 1.15) | 1150 (O429; 1700) | 228 | x1.1 |
 
   Skills: fist fighting and the three melee skills (club, sword, axe) 1.1, distance 1.3, shielding 1.2 (Iron Sage 1.1), magic level 2.0. the Ascendant Oracle
   at level 100. All ids (vocations, client bytes, spells 63-72, storages 7100800-7100809, condition sub ids 71030-71044, opcode 247) are in

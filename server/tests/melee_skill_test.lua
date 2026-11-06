@@ -354,7 +354,7 @@ do
 	same(L("a stone"), "a stone", "look: other texts unchanged")
 end
 
--- ------------------------------------------------------------------ fast swings hit for less (attack_rate_core.lua, O426)
+-- ------------------------------------------------------------------ fast swings keep the full hit (owner 2026-11-06)
 do
 	local b = attacker(100, {[SKILL_SWORD] = 100, [SKILL_AXE] = 20, [SKILL_CLUB] = 10})
 	b.slots[CONST_SLOT_LEFT] = newItem(1)
@@ -363,11 +363,8 @@ do
 	ChaosItemMods = {playerInterval = function() return seen end}
 	seen = 1000
 	eq(-swing(b, -1000), full, "one swing per second: a full hit")
-	seen = 2000
-	eq(-swing(b, -1000), full, "a slow swing: a full hit")
 	seen = 333
-	local fast = -swing(b, -1000)
-	ok(math.abs(fast / full - 0.50) < 0.01, "3 swings per second: half a hit (" .. fast / full .. ")")
+	eq(-swing(b, -1000), full, "3 swings per second: still a full hit")
 	b.storage[Chaos and Chaos.storage and Chaos.storage.weaponStrike or 7100028] = 1
 	seen = 1000
 	local strike = -swing(b, -1000)

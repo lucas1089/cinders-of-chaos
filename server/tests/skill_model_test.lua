@@ -20,7 +20,7 @@ local war, mys, nin = env.vocs[4], env.vocs[1], env.vocs[12]
 
 check(#M.problems(env) == 0, "the real model has no problems")
 check(#env.order == 21, "21 vocations")
-check(war.skill.melee == 1.1 and war.attackMs == 2000 and nin.attackMs == 1300 and mys.manaMult == 1.1, "vocation attributes read from the XML")
+check(war.skill.melee == 1.1 and war.attackMs == 1300 and nin.attackMs == 900 and mys.manaMult == 1.1, "vocation attributes read from the XML")
 
 -- engine formulas: skillBase x mult^(level - 10); 1600 x mult^level
 near(M.need(env, war, "melee", 10), 50, 1e-9, "10 -> 11 is 50 tries")

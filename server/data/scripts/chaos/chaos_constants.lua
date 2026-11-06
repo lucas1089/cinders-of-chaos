@@ -1233,7 +1233,8 @@ Chaos.classes = {
 	-- README.md "Thief dual wield and attack speed"); the Ninja, who always dual wielded, is not cut
 	dualWield = {share = 0.5, minRatio = 0.5, maxRatio = 1.25, delayMs = 150, vocations = {[11] = true, [12] = true},
 		neutral = {[11] = true}},
-	-- Attack interval in ms (the `attackspeed` of chaos_vocations.xml), `was` -> `now` (2026-10-23, owner: the Thief
+	-- Hit ratio of the 2026-10-23 tie decision, `now` / `was` (the interval column is history: the base intervals of the
+	-- xml were all lowered by O429, 2026-11-06, the ratio of the hits stays). Was: attack interval in ms, `was` -> `now` (2026-10-23, owner: the Thief
 	-- attacks as fast as the Monk, 1500; the ascended classes tie with the Monk line's: Ninja = Shadowfist 1300,
 	-- Samurai = Iron Sage 1700). The weapon hits of these vocations are scaled by was / now so that the damage per
 	-- second of the auto attack stays where it was measured (classes.lua speedComp; every other vocation 2000, unchanged)
