@@ -370,8 +370,11 @@ jobs:
           if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release delete "$tag" -R "$GITHUB_REPOSITORY" -y --cleanup-tag
           fi
+          # created without files, then uploaded (as windows-package.yml does): a create with files goes through a draft
+          # release, which the workflow token is refused (HTTP 403 "Resource not accessible by integration", run 42290055431)
           gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --latest=false \
-            --title "Map editor build ${GITHUB_SHA:0:7}" --notes-file notes.md rel/*
+            --title "Map editor build ${GITHUB_SHA:0:7}" --notes-file notes.md
+          gh release upload "$tag" -R "$GITHUB_REPOSITORY" --clobber rel/*
           {
             echo "## Map editor release $tag"
             echo
@@ -408,7 +411,8 @@ jobs:
             gh release edit "$roll" -R "$GITHUB_REPOSITORY" --prerelease --latest=false --notes-file roll.md
           else
             gh release create "$roll" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --latest=false \
-              --title "Map editor updates" --notes-file roll.md rel/update-manifest.json
+              --title "Map editor updates" --notes-file roll.md
+            gh release upload "$roll" -R "$GITHUB_REPOSITORY" --clobber rel/update-manifest.json
           fi
           echo "keep=$keep" >> "$GITHUB_OUTPUT"
           echo "- self-updater: $roll now names $new ($keep)" >> "$GITHUB_STEP_SUMMARY"
