@@ -31,6 +31,7 @@ local queued = false
 local cycle = nil
 local handlers = {}
 local reported = {}
+local ensureTries = 0
 local hiddenWindows = {} -- container id -> true for the stock windows this module hid
 
 local function safe(name, fn)
@@ -310,6 +311,14 @@ function M.draw()
   drawGrid(c)
   drawPages(pages, main)
   drawMoney()
+  -- the window grows to show the whole layout: the side panel's fitting shrank it when a stock window opened beside it
+  -- and the pages and Sort went under the edge (seen in a client)
+  addEvent(safe('fit', function()
+    local buttons = child('buttons')
+    if not (alive(window) and buttons) then return end
+    local need = buttons:getRect().y + buttons:getHeight() + 10 - window:getRect().y
+    if need > 0 and window:getHeight() < need then window:setHeight(need) end
+  end))
 end
 
 function M.refresh()
@@ -500,6 +509,16 @@ local function buildTabs()
     end
     tabButtons[#tabButtons + 1] = b
   end
+  -- widths share the row by text length: the pt-BR names are longer than the English ones (seen in a client)
+  local widths, total = {}, 0
+  for i, b in ipairs(tabButtons) do
+    widths[i] = b:getTextSize().width + 6
+    total = total + widths[i]
+  end
+  local room = row:getWidth() - #tabButtons
+  if room > 0 and total > 0 then
+    for i, b in ipairs(tabButtons) do b:setWidth(math.floor(widths[i] * room / total)) end
+  end
 end
 
 -- ---------------------------------------------------------------- the option
@@ -520,7 +539,7 @@ function M.setEnabled(on)
   sorting = nil
   if not alive(window) then return end
   if on then
-    window:show()
+    window:open()
     hideAllInPanel()
     M.refresh()
     message(tr('Inventory panel on.'))
@@ -556,7 +575,13 @@ local function createWindow()
   local parent = gi and gi.getRightPanel and gi.getRightPanel() or nil
   if not alive(parent) then return end
   window = g_ui.loadUI('bagpanel', parent)
+  -- the option (g_settings chaosBagPanel) decides if it shows, not the MiniWindow's saved closed state: setup closes a
+  -- window saved closed, and a logout hide saved it so (seen in a local client 2026-11-06)
+  window.forceOpen = true
   pcall(function() window:setup() end)
+  -- forceOpen also makes MiniWindow:close a no-op, so the X button turns the option off itself
+  local closeButton = window:getChildById('closeButton')
+  if closeButton then closeButton.onClick = function() M.setEnabled(false) end end
   local grid = child('grid')
   if grid then connect(grid, { onGeometryChange = function() M.refresh() end }) end
   buildEquip()
@@ -577,13 +602,22 @@ local function onGameStart()
   if not alive(window) then return end
   buildEquip()
   addMenu()
-  if enabled then window:show() else window:hide() end
+  if enabled then window:open() else window:hide() end
   scheduleEvent(safe('tabs', buildTabs), 1500)
   -- the login restore (game_chaoslayout) opens the containers of the last session first; the main backpack opens here
   -- when it did not
   scheduleEvent(safe('ensure', function() ensureMain() hideAllInPanel() M.refresh() end), 2500)
   if cycle then removeEvent(cycle) end
-  cycle = cycleEvent(safe('money', function() if enabled and alive(window) then drawMoney() end end), 2000)
+  ensureTries = 0
+  cycle = cycleEvent(safe('money', function()
+    if not (enabled and alive(window)) then return end
+    drawMoney()
+    -- the first open at login can be lost (seen in a client: the panel stayed empty); a few more tries, then none
+    if ensureTries < 5 and not mainContainer() then
+      ensureTries = ensureTries + 1
+      ensureMain()
+    end
+  end), 2000)
   M.refresh()
 end
 

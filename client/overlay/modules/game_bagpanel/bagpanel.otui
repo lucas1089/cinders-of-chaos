@@ -2,10 +2,10 @@
 // one page button per bag, Sort. Styles from client_chaos_theme. Drawn from bagpanel.lua; sizes in bagpanel_core.lua.
 
 BagPanelTab < ChaosTabButton
-  size: 33 22
-  font: verdana-11px-antialised
+  size: 34 20
+  font: Verdana-8px-antialiased
   padding: 0
-  margin-right: 1
+  margin-right: 0
   text-offset: 0 0
 
 // an equipment slot or an item cell: a UIItem, so the base drag and drop (g_game.move to its position) and the
@@ -33,7 +33,10 @@ BagPanelButton < ChaosButton
 MiniWindow
   id: bagPanelWindow
   !text: tr('Inventory')
-  height: 420
+  height: 520
+  // the phone interface is 960 x 540: shorter, the grid scrolls by page
+  $mobile:
+    height: 420
   &save: true
   @onClose: modules.game_bagpanel.onWindowClose()
 
@@ -45,7 +48,7 @@ MiniWindow
       anchors.top: parent.top
       anchors.left: parent.left
       anchors.right: parent.right
-      height: 22
+      height: 20
       layout:
         type: horizontalBox
 

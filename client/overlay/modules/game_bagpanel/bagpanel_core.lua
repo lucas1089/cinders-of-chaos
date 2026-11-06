@@ -29,8 +29,8 @@ C.COINS = { [3031] = 1, [3035] = 100, [3043] = 10000 }
 C.TABS = {
   { id = 'equip', text = 'Equip' },
   { id = 'quest', text = 'Quest', targets = { { 'game_questlog', 'toggle' }, { 'game_goals', 'toggle' } } },
-  { id = 'status', text = 'Status', targets = { { 'game_skills', 'toggle' } } },
-  { id = 'active', text = 'Active', targets = { { 'game_buffbar', 'toggle' } } },
+  { id = 'status', text = 'Stats', targets = { { 'game_skills', 'toggle' } } },
+  { id = 'active', text = 'Buffs', targets = { { 'game_buffbar', 'toggle' } } },
   { id = 'shop', text = 'Shop', targets = { { 'game_shop', 'toggle' } } },
 }
 

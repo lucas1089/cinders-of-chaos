@@ -6439,6 +6439,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Smaller bar"] = "Barra menor",
   -- game_bagpanel/bagpanel.lua, bagpanel.otui, bagpanel_core.lua (run-time keys: tr(slot name))
   ["Bag %d"] = "Bolsa %d",
+  ["Buffs"] = "Buffs",
   ["Chaos Coins: %s"] = "Chaos Coins: %s",
   ["Could not sort this page."] = "Não foi possível ordenar esta página.",
   ["Gold in your open backpacks: %s"] = "Ouro nas suas mochilas abertas: %s",

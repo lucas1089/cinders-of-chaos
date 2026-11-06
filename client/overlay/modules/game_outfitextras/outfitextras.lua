@@ -193,7 +193,8 @@ end
 -- ---------------------------------------------------------------- pictures
 -- spec = {kind = 'outfit', outfit} | {kind = 'play', row} | {kind = 'print', art} | nil, on a card's creature / icon
 local function paint(w, spec, boxW, boxH, iconSize)
-  local cr, ic = w:getChildById('creature'), w:getChildById('icon')
+  local box = w:getChildById('pic') or w
+  local cr, ic = box:getChildById('creature'), box:getChildById('icon')
   if not cr or not ic then return end
   cr:setVisible(false)
   ic:setVisible(false)

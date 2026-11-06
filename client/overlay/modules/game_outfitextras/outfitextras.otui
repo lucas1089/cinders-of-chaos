@@ -79,8 +79,8 @@ CustomiseStripCard < UIWidget
     id: name
     anchors.left: parent.left
     anchors.top: slot.bottom
-    anchors.right: icon.left
-    margin: 2 0 0 5
+    anchors.right: pic.left
+    margin: 2 2 0 5
     height: 28
     text-align: topLeft
     text-wrap: true
@@ -88,23 +88,31 @@ CustomiseStripCard < UIWidget
     color: #f6cf72
     phantom: true
 
-  UICreature
-    id: creature
+  // the picture box: the look is fitted inside it (game_lookpreview.fitCard anchors to the box), so it never covers the text
+  UIWidget
+    id: pic
     anchors.right: parent.right
     anchors.bottom: parent.bottom
     margin: 0 2 2 0
     size: 44 40
+    clipping: true
     phantom: true
-    visible: false
 
-  UIWidget
-    id: icon
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    margin: 0 4 4 0
-    size: 36 36
-    phantom: true
-    visible: false
+    UICreature
+      id: creature
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 44 40
+      phantom: true
+      visible: false
+
+    UIWidget
+      id: icon
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.verticalCenter: parent.verticalCenter
+      size: 36 36
+      phantom: true
+      visible: false
 
 CustomiseColorCell < UIWidget
   size: 14 14

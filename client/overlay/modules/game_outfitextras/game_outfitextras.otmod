@@ -6,6 +6,7 @@ Module
   scripts: [ outfitextrascore, customisecore, outfitextras ]
   dependencies:
     - client_chaos_theme
+    - game_lookpreview
   autoload: true
   autoload-priority: 988
   @onLoad: init()
