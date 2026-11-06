@@ -19,9 +19,9 @@ local OPCODE = 242
 local L = ItemTooltipLogic
 local C = L.COLORS
 
-local PAD_X, PAD_TOP, LINE_GAP, SEP_GAP = 8, 46, 1, 5
-local MIN_WIDTH = 190
-local HELP_WRAP = 54 -- characters per Alt help line (itemhelp.lua)
+local PAD_X, LINE_GAP = 16, 1
+local CARD_W = 320 -- the card is this wide (phone: the 960x540 interface keeps it readable)
+local HELP_WRAP = 46 -- characters per Alt help line (itemhelp.lua)
 local ASK_DELAY = 60 -- ms of hover before asking the server
 local PENDING_TIMEOUT = 2 -- s before an unanswered request may be sent again
 local CTRL_POLL = 100 -- ms
@@ -115,28 +115,215 @@ local function clearPanels()
   panels = {}
 end
 
-local function addLine(panel, y, row)
-  local label = g_ui.createWidget('ItemTooltipLine', panel)
-  if row.parts and label.setColoredText then
-    label:setColoredText(row.parts)
+-- every engine call that may be missing on an older client runs here
+local function try(fn, ...)
+  local ok, a = pcall(fn, ...)
+  if ok then return a end
+  return nil
+end
+
+-- a measuring label per style (hidden); the pixel width of a text in that style
+local meters = {}
+local function textWidth(style, text)
+  local m = meters[style]
+  if not m or m:isDestroyed() then
+    m = try(g_ui.createWidget, style, rootWidget)
+    if m then try(m.hide, m) end
+    meters[style] = m
+  end
+  if m then
+    local w = try(function() m:setText(text) return m:getTextSize().width end)
+    if w then return w end
+  end
+  return #text * (style == 'ItemTooltipTitle' and 10 or 6)
+end
+
+local function destroyMeters()
+  for _, m in pairs(meters) do
+    if m and not m:isDestroyed() then m:destroy() end
+  end
+  meters = {}
+end
+
+-- a label at x of its parent (absolute: the card has a fixed width); returns its size
+local function putLabel(parent, style, y, x, text, color, parts)
+  local label = g_ui.createWidget(style, parent)
+  if parts and label.setColoredText then
+    label:setColoredText(parts)
   else
-    label:setText(row.text)
-    label:setColor(row.color or C.text)
+    label:setText(text)
+    label:setColor(color or C.text)
   end
   label:addAnchor(AnchorTop, 'parent', AnchorTop)
   label:addAnchor(AnchorLeft, 'parent', AnchorLeft)
   label:setMarginTop(y)
-  label:setMarginLeft(PAD_X)
   local size = label:getTextSize()
   label:resize(size.width, size.height)
-  return size
+  local left = type(x) == 'function' and x(size.width) or x
+  label:setMarginLeft(left)
+  return size, label
 end
 
--- one plate: icon and name, the lines, then extra rows (the differences); returns the panel
+-- centred in a box of width w (the card or a tile)
+local function centred(w)
+  return function(width) return math.max(0, math.floor((w - width) / 2)) end
+end
+
+local function partsText(parts)
+  local t = {}
+  for i = 1, #parts, 2 do t[#t + 1] = parts[i] end
+  return table.concat(t)
+end
+
+local function color(c)
+  return c or C.text
+end
+
+-- the pieces of one card, each returns the y below it
+local function divider(panel, y)
+  local rule = g_ui.createWidget('ItemTooltipRule', panel)
+  rule:addAnchor(AnchorTop, 'parent', AnchorTop)
+  rule:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  rule:addAnchor(AnchorRight, 'parent', AnchorRight)
+  rule:setMarginTop(y + 5)
+  rule:setMarginLeft(PAD_X)
+  rule:setMarginRight(PAD_X)
+  local d = g_ui.createWidget('ItemTooltipDiamond', panel)
+  d:addAnchor(AnchorTop, 'parent', AnchorTop)
+  d:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  d:setMarginTop(y)
+  d:setMarginLeft(math.floor((CARD_W - 11) / 2))
+  return y + 14
+end
+
+local function caption(panel, y, text, col)
+  local size = putLabel(panel, 'ItemTooltipCap', y, centred(CARD_W), text, col or '#7a6240')
+  return y + size.height + 3
+end
+
+local function centredRow(panel, y, row)
+  local size = putLabel(panel, 'ItemTooltipLine', y, centred(CARD_W), row.text, row.color, row.parts)
+  return y + size.height + LINE_GAP
+end
+
+local function statTiles(panel, y, tiles)
+  local n = #tiles
+  local gap = 6
+  local tw = math.floor((CARD_W - 2 * PAD_X - (n - 1) * gap) / n)
+  for i, t in ipairs(tiles) do
+    local tile = g_ui.createWidget('ItemTooltipTile', panel)
+    tile:addAnchor(AnchorTop, 'parent', AnchorTop)
+    tile:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    tile:setMarginTop(y)
+    tile:setMarginLeft(PAD_X + (i - 1) * (tw + gap))
+    tile:resize(tw, 38)
+    if t.hero then
+      try(tile.setBorderColor, tile, '#8a5a1e')
+      try(tile.setBackgroundColor, tile, '#241a0e')
+    end
+    putLabel(tile, 'ItemTooltipCap', 5, centred(tw), L.caps(t.caption))
+    putLabel(tile, 'ItemTooltipLine', 19, centred(tw), t.value, t.hero and C.gold or '#f2e6cc')
+  end
+  return y + 38 + 5
+end
+
+-- the highlighted main effect of a rune: one wide tile with the text wrapped inside it
+local function effectTile(panel, y, effect)
+  local w = CARD_W - 2 * PAD_X
+  local lines = L.wrapPx(effect.text, w - 16, function(t) return textWidth('ItemTooltipLine', t) end)
+  local h = 12 + #lines * 14
+  local tile = g_ui.createWidget('ItemTooltipTile', panel)
+  tile:addAnchor(AnchorTop, 'parent', AnchorTop)
+  tile:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  tile:setMarginTop(y)
+  tile:setMarginLeft(PAD_X)
+  tile:resize(w, h)
+  try(tile.setBorderColor, tile, '#8a5a1e')
+  try(tile.setBackgroundColor, tile, '#241a0e')
+  for i, line in ipairs(lines) do
+    putLabel(tile, 'ItemTooltipLine', 6 + (i - 1) * 14, centred(w), line, effect.color)
+  end
+  return y + h + 5
+end
+
+local function modRow(panel, y, row)
+  local textX = PAD_X + 32
+  local rangeW = row.range and (textWidth('ItemTooltipCap', row.range) + 4) or 0
+  local maxw = CARD_W - PAD_X - textX - rangeW - 4
+  local lines = L.wrapPx(row.text, maxw, function(t) return textWidth('ItemTooltipLine', t) end)
+  if #lines == 0 then lines = { '' } end
+  if row.tag then
+    local tag = g_ui.createWidget('ItemTooltipTag', panel)
+    tag:addAnchor(AnchorTop, 'parent', AnchorTop)
+    tag:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    tag:setMarginTop(y)
+    tag:setMarginLeft(PAD_X)
+    tag:setText(row.tag)
+    if row.top then
+      try(tag.setColor, tag, C.quality)
+      try(tag.setBorderColor, tag, '#3f9a5a')
+      try(tag.setBackgroundColor, tag, '#12301c')
+    elseif row.tagColor then
+      try(tag.setColor, tag, row.tagColor)
+    end
+  end
+  local h = 0
+  for i, line in ipairs(lines) do
+    local parts
+    if row.parts and i == #lines then parts = { line, row.parts[2], row.parts[3], row.parts[4] } end
+    local size = putLabel(panel, 'ItemTooltipLine', y + h + 1, textX, line, row.color, parts)
+    h = h + math.max(size.height, 13)
+  end
+  if row.range then
+    putLabel(panel, 'ItemTooltipCap', y + 3, function(w) return CARD_W - PAD_X - w end, row.range, '#7a7060')
+  end
+  return y + math.max(16, h + 2) + 2
+end
+
+local function groupRows(panel, y, groups)
+  for gi, g in ipairs(groups) do
+    if gi > 1 then y = y + 3 end
+    if g.caption then y = caption(panel, y, g.caption, g.capColor) end
+    for _, row in ipairs(g.rows) do
+      y = row.kind == 'mod' and modRow(panel, y, row) or centredRow(panel, y, row)
+    end
+  end
+  return y
+end
+
+local function chipRows(panel, y, chips)
+  local widths = {}
+  for i, c in ipairs(chips) do widths[i] = textWidth('ItemTooltipCap', c.text) + 16 end
+  local gap = 5
+  for _, row in ipairs(L.chipRows(widths, gap, CARD_W - 2 * PAD_X)) do
+    local total = -gap
+    for _, i in ipairs(row) do total = total + widths[i] + gap end
+    local x = math.floor((CARD_W - total) / 2)
+    for _, i in ipairs(row) do
+      local chip = g_ui.createWidget('ItemTooltipChip', panel)
+      chip:addAnchor(AnchorTop, 'parent', AnchorTop)
+      chip:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+      chip:setMarginTop(y)
+      chip:setMarginLeft(x)
+      chip:setText(chips[i].text)
+      chip:setColor(color(chips[i].color))
+      chip:resize(widths[i], 17)
+      if chips[i].low then try(chip.setBorderColor, chip, '#7a2a1a') end
+      x = x + widths[i] + gap
+    end
+    y = y + 17 + 4
+  end
+  return y
+end
+
+-- one card: icon, name, kind, level, the blocks, then the extra rows (the differences, hints, Alt help); returns the panel
 local function buildPanel(tip, extra, heading)
   local panel = g_ui.createWidget('ItemTooltipPanel', rootWidget)
-  local titleColor = L.titleColor(tip)
-  panel:getChildById('band'):setBackgroundColor(titleColor)
+  local player = g_game.getLocalPlayer()
+  local card = L.card(tip, { level = player and player:getLevel() or 0 })
+  local rarity = card.titleColor
+  try(function() panel:getChildById('glow'):setImageColor(rarity) end)
+  try(function() panel:getChildById('ring'):setImageColor(rarity) end)
   local icon = panel:getChildById('icon')
   icon:setItemId(tip.id or 0)
   if (tip.count or 1) > 1 then icon:setItemCount(tip.count) end
@@ -150,37 +337,63 @@ local function buildPanel(tip, extra, heading)
     h:setText(heading)
     h:show()
   end
-  local width = MIN_WIDTH
-  local title = g_ui.createWidget('ItemTooltipTitle', panel)
-  title:setText(L.title(tip.name))
-  title:setColor(titleColor)
-  title:addAnchor(AnchorTop, 'parent', AnchorTop)
-  title:addAnchor(AnchorLeft, 'icon', AnchorRight)
-  title:setMarginTop(heading and 20 or 12)
-  title:setMarginLeft(6)
-  local ts = title:getTextSize()
-  title:resize(ts.width, ts.height)
-  width = math.max(width, 46 + ts.width + PAD_X)
 
-  local y = PAD_TOP
-  local rows = L.lines(tip, { level = g_game.getLocalPlayer() and g_game.getLocalPlayer():getLevel() or 0 })
-  for _, r in ipairs(extra or {}) do rows[#rows + 1] = r end
-  for _, row in ipairs(rows) do
-    if row.sep then
-      local rule = g_ui.createWidget('ItemTooltipRule', panel)
-      rule:addAnchor(AnchorTop, 'parent', AnchorTop)
-      rule:addAnchor(AnchorLeft, 'parent', AnchorLeft)
-      rule:addAnchor(AnchorRight, 'parent', AnchorRight)
-      rule:setMarginTop(y + 2)
-      rule:setMarginLeft(PAD_X)
-      rule:setMarginRight(PAD_X)
-      y = y + SEP_GAP
-    end
-    local size = addLine(panel, y, row)
-    y = y + size.height + LINE_GAP
-    width = math.max(width, size.width + 2 * PAD_X)
+  -- head: name (wrapped to the card), kind, item level, flags
+  local y = 14 + 52 + 8
+  local nameLines = L.wrapPx(card.title, CARD_W - 2 * PAD_X, function(t) return textWidth('ItemTooltipTitle', t) end)
+  if #nameLines == 0 then nameLines = { '' } end
+  for i = 1, math.min(#nameLines, 3) do
+    local size = putLabel(panel, 'ItemTooltipTitle', y, centred(CARD_W), nameLines[i], card.titleColor)
+    y = y + size.height
   end
-  panel:resize(width, y + 6)
+  y = y + 2
+  if card.kind then
+    local size = putLabel(panel, 'ItemTooltipKind', y, centred(CARD_W), card.kind, card.kindColor)
+    y = y + size.height
+  end
+  if card.slotLine then y = centredRow(panel, y, { text = card.slotLine, color = C.dim }) end
+  if card.level then y = centredRow(panel, y, { text = card.level, color = C.dim }) end
+  for _, f in ipairs(card.flags) do y = centredRow(panel, y, f) end
+
+  -- blocks, a divider before each
+  if card.stats then
+    y = divider(panel, y + 4)
+    if #card.stats.tiles > 0 then y = statTiles(panel, y, card.stats.tiles) end
+    if card.stats.effect then y = effectTile(panel, y, card.stats.effect) end
+    for _, parts in ipairs(card.stats.extra) do
+      y = centredRow(panel, y, { text = partsText(parts), color = C.text, parts = parts })
+    end
+  end
+  if card.mods then
+    y = divider(panel, y + 2)
+    y = groupRows(panel, y, card.mods)
+  end
+  if card.extras then
+    y = divider(panel, y + 2)
+    y = groupRows(panel, y, card.extras)
+  end
+  if #card.chips > 0 or #card.foot > 0 or card.fitChips then
+    y = divider(panel, y + 2)
+    if card.fitChips then
+      y = caption(panel, y, card.fitCaption)
+      y = chipRows(panel, y, card.fitChips)
+    end
+    y = chipRows(panel, y, card.chips)
+    for _, row in ipairs(card.foot) do y = centredRow(panel, y, row) end
+  end
+  -- extra rows: the differences of the Ctrl compare, the hints, the Alt help
+  for _, row in ipairs(extra or {}) do
+    if row.sep then y = divider(panel, y + 2) end
+    local text = row.text
+    if textWidth('ItemTooltipLine', text) > CARD_W - 2 * PAD_X then
+      for _, part in ipairs(L.wrapPx(text, CARD_W - 2 * PAD_X, function(t) return textWidth('ItemTooltipLine', t) end)) do
+        y = centredRow(panel, y, { text = part, color = row.color })
+      end
+    else
+      y = centredRow(panel, y, row)
+    end
+  end
+  panel:resize(CARD_W, y + 12)
   return panel
 end
 
@@ -256,7 +469,8 @@ local function render()
   if not hovered then return end
   local tip = L.cacheGet(cache, hovered.key, now())
   if not tip then return end
-  local wantCompare = g_keyboard.isCtrlPressed() and tip.cmp ~= nil
+  local comparable = L.comparable(tip) -- wearable gear with numbers only: no Ctrl hint on runes, potions, gems, materials
+  local wantCompare = g_keyboard.isCtrlPressed() and comparable
   local extra, others = {}, {}
   for _, r in ipairs(hovered.extra or {}) do extra[#extra + 1] = r end
   if wantCompare then
@@ -280,7 +494,7 @@ local function render()
     if #others == 0 and #missing == 0 then
       extra[#extra + 1] = { text = tr('Nothing equipped to compare'), color = C.dim, sep = true }
     end
-  elseif tip.cmp then
+  elseif comparable then
     extra[#extra + 1] = { text = tr('Hold Ctrl to compare'), color = C.dim, sep = true }
   end
   -- Alt (O372, itemhelp.lua): a plain line on what each term of the item does; without Alt a hint line
@@ -294,7 +508,7 @@ local function render()
         end
       end
     else
-      extra[#extra + 1] = { text = altHint(), color = C.dim, sep = not (tip.cmp and not wantCompare) }
+      extra[#extra + 1] = { text = altHint(), color = C.dim, sep = not (comparable and not wantCompare) }
     end
   end
   compareShown = wantCompare
@@ -493,6 +707,7 @@ function terminate()
   disconnect(LocalPlayer, { onInventoryChange = handlers.inventory })
   disconnect(g_game, { onGameEnd = handlers.reset, onGameStart = handlers.reset })
   pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
+  destroyMeters()
   if askEvent then removeEvent(askEvent) askEvent = nil end
   if pollEvent then removeEvent(pollEvent) pollEvent = nil end
   reset()

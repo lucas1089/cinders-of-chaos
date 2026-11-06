@@ -93,6 +93,7 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
           /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check   # chest and Templar aura strips of game_chestaura (O315)
           /tmp/fxenv/bin/python -I client/tools/gen_toast_art.py --check  # toast icons of game_chaosnotify, Pact hourglass included (O317)
+          /tmp/fxenv/bin/python -I client/tools/gen_tooltip_art.py --check  # ring, glow and diamond of the card item tooltip (O422)
           /tmp/fxenv/bin/python -I client/tools/gen_hotbar_art.py --check  # nine-slice frames, slots, caps and chat skin of game_hotbar / game_floatchat (O414)
           /tmp/fxenv/bin/python -I launcher/tools/gen_launcher_art.py --check  # banner and icon of the game launcher window (O339)
           /tmp/fxenv/bin/python -I desktop/tools/gen_admin_art.py --check  # header strip and icon of the desktop admin window (O344)
