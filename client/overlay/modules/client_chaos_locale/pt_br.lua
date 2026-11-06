@@ -5108,6 +5108,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["The party leader can switch shared experience on from the party shield menu. With it the party gets +%d%% XP."] = "O líder do grupo pode ligar a experiência compartilhada no menu do escudo do grupo. Com ela o grupo ganha +%d%% de XP.",
   -- game_dropfeed, Records (O260)
   ["Drop Feed"] = "Feed de drops",
+  ["New Window Look"] = "Visual novo das janelas",
+  ["New window look: on."] = "Visual novo das janelas: ligado.",
+  ["New window look: off (classic windows)."] = "Visual novo das janelas: desligado (janelas clássicas).",
   ["Legendary and better"] = "Lendário ou melhor",
   ["Unique and Divine only"] = "Somente Único e Divino",
   ["Show"] = "Mostrar",

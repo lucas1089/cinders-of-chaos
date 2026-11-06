@@ -5569,7 +5569,7 @@ One test window in HTML and RCSS, to measure what RmlUi costs. Report and recomm
 - Phase 4 (no new patch): `client_chaos_rmlform` (`rmlform.lua`, `skin.rcss`), the form layer shared by the Options
   window and the mirror: OTUI tree to RML, sync, events, the skin. `client_chaos_rmlmirror` (`rmlmirror.lua`,
   `rmlmirror.rml`, `rmlmirror.rcss`) shows every plain OTUI window, message box and input box in RmlUi over the
-  hidden OTUI window; windows with items, creatures or other unknown widgets stay in OTUI, Ctrl+Alt+M toggles it,
+  hidden OTUI window; windows with items, creatures or other unknown widgets stay in OTUI, Ctrl+Alt+M toggles it (on a phone: top menu System > New Window Look, which also says the new state),
   "Classic" sends one window back and is kept by window id (setting `chaosRmlClassic`; Ctrl+Alt+M twice clears it).
   A window with more than 40 icons stays in OTUI; `client_chaos_login` and `game_passivetree` mark theirs `chaosNoMirror`. Tab bars draw as tabs and
   widget tooltips show on hover (`#tip` in each document). Test: `rmlmirror_test.lua`.
