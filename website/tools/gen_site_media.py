@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Web media of the front page (O422; website/README.md "Trailer, gallery and shorts"): small H.264 versions of the
+"""Web media of the front page (O425; website/README.md "Trailer, gallery and shorts"): small H.264 versions of the
 recorded trailer and shorts, a poster for each, and a screenshot gallery, committed under
 website/overlay/plugins/chaos/assets/media/ together with media/manifest.json (name, size, sha256).
 

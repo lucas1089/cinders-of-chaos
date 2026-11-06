@@ -284,7 +284,7 @@ function chaos_seo_jsonld(array $site, array $seo): string {
 			'operatingSystem' => 'Windows, Linux', 'isAccessibleForFree' => true, 'inLanguage' => array('pt-BR', 'en')),
 	);
 	if ($video !== null && $trailer !== null) {
-		// the trailer (O422): what a search engine needs to show it as a video result
+		// the trailer (O425): what a search engine needs to show it as a video result
 		$graph[] = array('@type' => 'VideoObject', 'name' => $site['name'] . ' - ' . chaos_t_in($seo['lang'], 'Trailer of Cinders of Chaos'),
 			'description' => $seo['description'], 'thumbnailUrl' => $site['url'] . '/' . ltrim($trailer['poster'], '/'),
 			'contentUrl' => $video['url'], 'uploadDate' => '2026-11-06', 'duration' => 'PT59S', 'inLanguage' => $seo['lang']);
@@ -294,7 +294,7 @@ function chaos_seo_jsonld(array $site, array $seo): string {
 	return '<script type="application/ld+json">' . $json . '</script>' . "\n";
 }
 
-/** og:video of the front page (O422): the trailer in the language of the tags, an absolute address. '' elsewhere. */
+/** og:video of the front page (O425): the trailer in the language of the tags, an absolute address. '' elsewhere. */
 function chaos_seo_video_tags(array $seo, array $site): string {
 	if (empty($seo['video'])) {
 		return '';

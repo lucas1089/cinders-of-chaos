@@ -632,7 +632,7 @@ ol.chaos-build__spells { list-style: decimal inside; }
   .chaos-gallery__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
-  /* media (O422) phones */
+  /* media (O425) phones */
   .chaos-gallery__grid { gap: 8px; }
   .chaos-shot__cap { font-size: 12px; padding: 14px 6px 4px; }
   /* the shorts: a strip that scrolls sideways, each one a little less than the width of the screen */

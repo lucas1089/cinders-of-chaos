@@ -1,4 +1,4 @@
-// Cinders of Chaos: the front page trailer and the screenshot lightbox (plugins/chaos/media_lib.php, O422).
+// Cinders of Chaos: the front page trailer and the screenshot lightbox (plugins/chaos/media_lib.php, O425).
 // Trailer: video[data-chaos-trailer] has its controls in the markup (no script: a normal player). With script it plays
 // muted and looped while it is on screen, without controls, unless the visitor asked for less motion or less data;
 // a click gives it sound and controls and starts it over. Screenshots: a[data-chaos-shot] opens a lightbox (arrows,

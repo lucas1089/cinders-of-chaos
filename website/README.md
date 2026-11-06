@@ -1340,7 +1340,7 @@ Facebook, X): `plugins/chaos/seo_lib.php`, test `tests/chaos_seo_test.php`.
 - **Check a preview**: paste the address in a WhatsApp chat (it shows the image, the title and the description), or
   use Facebook's Sharing Debugger / X's Card Validator to refresh a cached preview after a change.
 
-## Trailer, gallery and shorts (O422)
+## Trailer, gallery and shorts (O425)
 
 The front page shows the game: a trailer under the hero, a strip of shorts, a screenshot gallery. Code:
 `plugins/chaos/media_lib.php` (HTML and meta data), `plugins/chaos/assets/js/chaos-media.js`, the `.chaos-trailer`,

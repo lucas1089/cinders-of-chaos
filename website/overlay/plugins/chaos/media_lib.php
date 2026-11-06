@@ -1,6 +1,6 @@
 <?php
 /**
- * Trailer, shorts and screenshot gallery of the front page (O422; website/README.md "Trailer, gallery and shorts").
+ * Trailer, shorts and screenshot gallery of the front page (O425; website/README.md "Trailer, gallery and shorts").
  * The files are in assets/media/ (made by website/tools/gen_site_media.py, listed in media/manifest.json):
  * trailer.<lang>.mp4 with its poster, short-<name>.<lang>.mp4 with posters, shot-<name>.jpg. <lang> is en or pt-BR and
  * follows the visitor's language (i18n_lib.php). This file only builds HTML and meta data; it reads no file except

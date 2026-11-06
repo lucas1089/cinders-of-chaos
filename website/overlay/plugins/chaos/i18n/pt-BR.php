@@ -478,7 +478,7 @@ return array(
 	'Copied' => 'Copiado',
 	'Copy code' => 'Copiar código',
 	'Build code' => 'Código de build',
-	// front page: trailer, shorts and screenshots (media_lib.php, O422)
+	// front page: trailer, shorts and screenshots (media_lib.php, O425)
 	'Watch the trailer' => 'Assista ao trailer',
 	'Trailer of Cinders of Chaos' => 'Trailer de Cinders of Chaos',
 	'Recorded in the game itself, one minute. Click the video for sound and controls.' => 'Gravado no próprio jogo, um minuto. Clique no vídeo para ter som e controles.',

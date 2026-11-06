@@ -1,5 +1,5 @@
 <?php
-// php website/tests/chaos_media_page_test.php : the trailer, shorts and screenshot gallery of the front page (O422;
+// php website/tests/chaos_media_page_test.php : the trailer, shorts and screenshot gallery of the front page (O425;
 // plugins/chaos/media_lib.php, layouts/chaos/views/index.php, assets/js/chaos-media.js, website/README.md "Trailer,
 // gallery and shorts"): every file the page names is in media/manifest.json and on disk, in both languages; the
 // trailer and the shorts follow the language; the gallery is lazy and links to the pictures; the call to action; a
@@ -99,7 +99,7 @@ $css = (string)file_get_contents($root . '/overlay/layouts/chaos/assets/css/chao
 foreach (array('.chaos-trailer__video', '.chaos-shorts__strip', '.chaos-gallery__grid', '.chaos-lightbox', 'chaos-lightbox-open') as $rule) {
 	check(strpos($css, $rule) !== false, "style rule $rule");
 }
-check(strpos($css, '/* media (O422) phones */') !== false, 'phone rules for the gallery and the strip');
+check(strpos($css, '/* media (O425) phones */') !== false, 'phone rules for the gallery and the strip');
 check(chaos_no_dashes((string)file_get_contents($plugin . '/media_lib.php')), 'no em or en dash in media_lib.php');
 
 echo $failed ? "chaos_media_page_test: $failed of $checks checks failed\n" : "chaos_media_page_test: $checks checks OK\n";
