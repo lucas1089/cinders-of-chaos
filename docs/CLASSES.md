@@ -1185,6 +1185,15 @@ Table: `server/data/spells/README.md` "Pack farming for every class".
 The cleave shares above are the state of 2026-10-15; the class identity pass (2026-10-28) changed every one of them: "Class
 identity (2026-10-28)" below.
 
+### Class DPS balance (O430, 2026-11-06)
+
+The measured DPS of all 21 classes (levels 100, 500, 1000) put classes from -77% (Sentinel) to +188% (Deadeye) of the level median, so
+the identity pass below no longer holds as written: the strengths stay (area casters on a pack, the Deadeye and the Ranger on one
+target, the Beastmaster's wolves, the Necromancer's minions) but inside +-25% of the median, on 1 target and on 5 targets. The
+helper casts every spell of its rotation on a boss, `classDamage` and the new extra target factor were retuned per class, the
+Beastmaster's bite follows its owner's level. `server/data/spells/README.md` "Class DPS balance (O430)" has the cause and the numbers
+of each class, `server/tools/class_dps_model.py --check` holds the band. Not measured after the change.
+
 ### Class identity (2026-10-28)
 
 Owner approved: every class has a clear strength and a real weakness. Until now every class farmed packs at about 1.00 of the

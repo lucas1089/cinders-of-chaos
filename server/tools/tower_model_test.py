@@ -50,7 +50,7 @@ check([b[0] for b in cfg['bosses']][:2] == ['the ashen count', 'the grey widow']
 check(dict(cfg['bosses'])['zeburoth'] == 1750, 'Zeburoth heals 1,750 a second')
 check(len(cfg['sawtooth']) == int(cfg['milestoneEvery']), 'the sawtooth is one climb')
 check(sorted(cfg['bossHealth']) == list(range(10, 121, 10)), 'a boss health for every boss floor')
-check(cfg['limits']['reachMin'] == 30 and cfg['limits']['reachMax'] == 40, 'a level 800 player gets 30-40 floors deep')
+check(cfg['limits']['reachMin'] == 30 and cfg['limits']['reachMax'] == 46, 'a level 800 player gets 30-46 floors deep (O430: 40 before)')
 
 # ---- the tiers
 hp, cnt, mod = T.tier_info()
@@ -68,7 +68,8 @@ check(T.reach(old, cfg, 800, oi) == 29, 'before: level 800 stops at floor 29 (re
 t30 = T.floor_time(old, cfg, 30, [(None, 800)], oi)
 # the median class (the middle five) deals 1,865 a second to one boss after the class identity pass, so the 1,750 heal leaves it
 # 15 minutes instead of for ever (it was out-healed before the pass)
-check(t30[2] > 600, 'before: the floor 30 boss out-heals (all but) a level 800 median class: %.0f s' % t30[2])
+# O430: the median class deals more (the classes far below it were raised), the old floor 30 boss takes it 5 minutes, not 15
+check(t30[2] > 300, 'before: the floor 30 boss out-heals (all but) a level 800 median class: %.0f s' % t30[2])
 check(T.floor_time(old, cfg, 30, [(None, 1500)], oi)[2] < float('inf'), 'before: it dies for a level 1500 player')
 check(old['count'](35) == 15 and old['count'](100) == 16, 'before: 15 monsters on floor 35, 16 from floor 36')
 check(old['mix'](40)[0] == 0.45 and old['mix'](40)[2] == 0.04, 'before: the tier chances rose with every floor')
@@ -78,7 +79,7 @@ new = T.new_scheme(cfg)
 code, out = run_check(cfg, info)
 check(code == 0, 'the committed config passes --check: ' + out[-400:])
 check('tower check: ok' in out, 'it says ok')
-check(T.reach(new, cfg, 800, info) in range(30, 41), 'after: level 800 gets to floor %d' % T.reach(new, cfg, 800, info))
+check(T.reach(new, cfg, 800, info) in range(30, 47), 'after: level 800 gets to floor %d' % T.reach(new, cfg, 800, info))
 for f in range(1, 121):
     t, pack, boss = T.floor_time(new, cfg, f, [(None, T.lin(cfg['level'], f))], info)
     check(t < float('inf'), 'floor %d can be cleared at its level' % f)

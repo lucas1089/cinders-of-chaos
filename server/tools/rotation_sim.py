@@ -189,6 +189,25 @@ def spell_curves():
     return out
 
 
+@functools.lru_cache(maxsize=None)
+def extra_curves():
+    """{vocation id: [(level, factor), ...]} of ChaosSpellFactorConfig.extra (O430): the extra target factor, the factor on a
+    spell's hits on every target of a cast but the first (spell_factor_core.lua F.extraFor)"""
+    text = open(SPELL_FACTOR, encoding='utf-8').read()
+    m = re.search(r'\n\textra\s*=\s*\{(.*?)\n\t\}', text, re.S)
+    out = {}
+    for v, pts in re.findall(r'\[(\d+)\]\s*=\s*\{((?:\s*\{\d+,\s*[0-9.]+\},?)+)\s*\}', m.group(1) if m else ''):
+        out[int(v)] = [(int(a), float(b)) for a, b in re.findall(r'\{(\d+),\s*([0-9.]+)\}', pts)]
+    return out
+
+
+def extra_factor(cls, level):
+    """the extra target factor of class `cls` at `level` (1 when not listed). Only tools/class_dps_model.py uses it: the best
+    sets, the pack and boss models and the quest bounds of this tool are the class baseline without it"""
+    pts = extra_curves().get(VOC[cls])
+    return interp(pts, level) if pts else 1.0
+
+
 def spell_factor(cls, level=None):
     """the class spell factor of class `cls` at `level` (1 when not listed): every spell's damage of the model is x this"""
     v = VOC[cls]
@@ -686,11 +705,12 @@ def breakpoints(spells, model, cls):
 
 
 def creatures(rotation, model):
-    """the helper's monster count per spell: an area spell (3+ of the pack) waits for 2 monsters when the rotation has a
-    single-target spell to cast on a lone target; otherwise 1, so a lone target never leaves the helper idle"""
-    area = [model[s.words]['t5'] >= 3 for s in rotation]
-    ok = any(not a for a in area)
-    return [2 if a and ok else 1 for a in area]
+    """the helper's monster count per spell: always 1 (O430, owner 2026-11-06). Until then an area spell (3+ of the pack) waited
+    for 2 monsters when the rotation had a single-target spell to cast on a lone target, so the classes built on area spells
+    (Sentinel, Inquisitor, Templar, Mystic) cast one or two spells on a boss and fell back to the auto attack (the measured DPS
+    of 2026-11-06: -50 to -77% of the median on one target). An area spell hits a lone target too, so it casts there as well;
+    on a pack the area spells still go first (autorotation.lua areaFirst), the same order as before."""
+    return [1 for _ in rotation]
 
 
 def heals(spells, cls):

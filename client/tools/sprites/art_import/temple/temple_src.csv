@@ -1,0 +1,40 @@
+key,x,y,w,h,how,from
+marble_floor,0,0,64,64,tile,4 1
+checker_black,66,0,64,64,tile,6 4
+rune_pad,132,0,64,64,tile,6 6
+border_n,198,0,64,64,tile,3 0
+border_e,264,0,64,64,tile,12 4
+border_s,330,0,64,64,tile,3 12
+border_w,396,0,64,64,tile,0 3
+corner_nw,462,0,64,64,tile,0 0
+corner_ne,528,0,64,64,tile,12 0
+corner_sw,594,0,64,64,tile,0 12
+corner_se,660,0,64,64,tile,12 12
+mosaic,726,0,192,192,mosaic,
+carpet,0,194,192,256,block,5 9 3 4
+blood_1,194,194,107,77,blood,545 305 140 100
+blood_2,303,194,69,37,blood,615 455 110 65
+blood_3,374,194,66,37,blood,180 490 125 70
+blood_4,442,194,94,28,blood,270 130 125 55
+wall_a,538,194,130,86,comp,1190 180 126 82
+wall_b,670,194,127,86,comp,1058 48 123 82
+wall_c,799,194,114,86,comp,1322 180 110 82
+wall_thick,0,452,132,86,comp,266 972 128 82
+wall_ns_a,134,452,86,130,comp,972 266 82 126
+wall_ns_b,222,452,86,121,comp,1104 266 82 117
+wall_ns_c,310,452,86,116,comp,1104 662 82 112
+wall_ns_thick,398,452,86,132,comp,1368 398 82 128
+wall_corner,486,452,132,84,comp,1454 180 128 80
+wall_corner_thick,620,452,132,132,comp,1058 926 128 128
+wall_end_ew,754,452,84,86,comp,1104 180 80 82
+wall_end_ns,840,452,86,84,comp,972 708 82 80
+pillar_a,0,586,116,106,comp,1464 22 112 102
+pillar_b,118,586,117,106,comp,542 946 113 102
+pillar_c,237,586,106,117,comp,946 535 102 113
+pillar_d,345,586,106,117,comp,1342 538 102 113
+torch,453,586,70,96,comp,1496 280 66 92
+pedestal_a,525,586,112,96,comp,1342 302 108 92
+pedestal_b,639,586,113,103,comp,1077 427 109 99
+pedestal_c,754,586,121,108,comp,1201 686 117 104
+pedestal_d,877,586,97,98,comp,961 828 93 94
+gargoyle,0,705,110,98,comp,940 160 106 94

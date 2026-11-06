@@ -200,6 +200,10 @@ Free effect, icon, font and sprite packs. Their files name no author, except the
   - Author: free asset pack
   - Licence: free to use
   - Used for: status words over creatures
+- **Temple tileset**
+  - Author: supplied by the owner, source author not recorded
+  - Licence: free to use, per the owner (2026-11-06); no licence text came with the file
+  - Used for: temple floors, gilded borders, mosaic, carpet, walls, pillars, torch and statue pedestals, placed with the map editor
 - **Hunting area maps**
   - Author: RyuKage
   - Licence: free map, shared as free to use; the map files carry no licence text

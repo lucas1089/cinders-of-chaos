@@ -142,7 +142,7 @@ function A.select(vocId, level, canCast, opts)
   -- The simulator keeps the smallest set that holds the 2 s rhythm (one spell from level 8 to 11 for a Mystic),
   -- so the button wrote a single rule. Top it up to MAX_SPELLS with the other spells the character can cast, below
   -- the preset's: earlier presets newest first, then the later ones. Those only fire while the ones above wait;
-  -- an area spell among them waits for 2 monsters (when the preset itself is complete).
+  -- an area spell among them casts on one monster too (O430), like the preset's own area spells.
   -- opts.topUp == false: the preset alone (the level-up check only looks for new spells, it never tops up)
   local spells = (data() and data().spells) or {}
   local order = {}
@@ -158,8 +158,8 @@ function A.select(vocId, level, canCast, opts)
     for _, id in ipairs(c.presets[j].spells) do
       if #ids < A.MAX_SPELLS and not seen[id] and canCast(id) then
         ids[#ids + 1] = id
-        -- an area filler waits for 2 monsters, like the preset's own area spells
-        creatures[#creatures + 1] = (spells[id] and spells[id].area) and 2 or 1
+        -- an area filler casts on one monster too (O430: an area spell hits a lone target as well)
+        creatures[#creatures + 1] = 1
         seen[id] = true
         added = true
       end
@@ -174,7 +174,7 @@ function A.select(vocId, level, canCast, opts)
       end
       if not seen[id] and canCast(id) then
         ids[#ids + 1] = id
-        creatures[#creatures + 1] = (spells[id] and spells[id].area) and 2 or 1
+        creatures[#creatures + 1] = 1
         seen[id] = true
         added = true
       end

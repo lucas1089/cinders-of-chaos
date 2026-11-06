@@ -1,0 +1,40 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+44511,48511,marble_floor,ground,new,temple marble floor,1x1,1,0,0,100,0,0,family=temple|part=marble_floor|block=0
+44512,48512,checker_black,ground,new,temple black marble floor,1x1,1,0,0,100,0,0,family=temple|part=checker_black|block=0
+44513,48513,rune_pad,ground,new,temple blue rune pad,1x1,1,0,0,100,0,0,family=temple|part=rune_pad|block=0
+44514,48514,border_n,ground,new,temple gilded border north,1x1,1,0,0,100,0,0,family=temple|part=border|block=0
+44515,48515,border_e,ground,new,temple gilded border east,1x1,1,0,0,100,0,0,family=temple|part=border|block=0
+44516,48516,border_s,ground,new,temple gilded border south,1x1,1,0,0,100,0,0,family=temple|part=border|block=0
+44517,48517,border_w,ground,new,temple gilded border west,1x1,1,0,0,100,0,0,family=temple|part=border|block=0
+44518,48518,corner_nw,ground,new,temple gilded corner north west,1x1,1,0,0,100,0,0,family=temple|part=corner_nw|block=0
+44519,48519,corner_ne,ground,new,temple gilded corner north east,1x1,1,0,0,100,0,0,family=temple|part=corner_ne|block=0
+44520,48520,corner_sw,ground,new,temple gilded corner south west,1x1,1,0,0,100,0,0,family=temple|part=corner_sw|block=0
+44521,48521,corner_se,ground,new,temple gilded corner south east,1x1,1,0,0,100,0,0,family=temple|part=corner_se|block=0
+44522,48522,mosaic,decor,new,temple mosaic floor,3x3,0,0,0,0,0,0,family=temple|part=mosaic|block=0
+44523,48523,carpet,decor,new,temple red carpet,3x4,0,0,0,0,0,0,family=temple|part=carpet|block=0
+44524,48524,blood_1,decor,new,temple blood stain,2x2,0,0,0,0,0,0,family=temple|part=blood|block=0
+44525,48525,blood_2,decor,new,temple blood stain,2x1,0,0,0,0,0,0,family=temple|part=blood|block=0
+44526,48526,blood_3,decor,new,temple blood stain,1x1,0,0,0,0,0,0,family=temple|part=blood|block=0
+44527,48527,blood_4,decor,new,temple blood stain,2x1,0,0,0,0,0,0,family=temple|part=blood|block=0
+44528,48528,wall_a,stump,new,temple wall,2x2,0,8193,2,0,0,0,family=temple|part=wall|block=1
+44529,48529,wall_b,stump,new,temple wall,2x2,0,8193,2,0,0,0,family=temple|part=wall|block=1
+44530,48530,wall_c,stump,new,temple wall,2x2,0,8193,2,0,0,0,family=temple|part=wall|block=1
+44531,48531,wall_thick,stump,new,temple thick wall,2x2,0,8193,2,0,0,0,family=temple|part=wall_thick|block=1
+44532,48532,wall_ns_a,stump,new,temple wall,2x2,0,8193,2,0,0,0,family=temple|part=wall_ns|block=1
+44533,48533,wall_ns_b,stump,new,temple wall,2x2,0,8193,2,0,0,0,family=temple|part=wall_ns|block=1
+44534,48534,wall_ns_c,stump,new,temple wall,2x2,0,8193,2,0,0,0,family=temple|part=wall_ns|block=1
+44535,48535,wall_ns_thick,stump,new,temple thick wall end,2x2,0,8193,2,0,0,0,family=temple|part=wall_ns_thick|block=1
+44536,48536,wall_corner,stump,new,temple wall corner,2x2,0,8193,2,0,0,0,family=temple|part=wall_corner|block=1
+44537,48537,wall_corner_thick,stump,new,temple thick wall corner,2x2,0,8193,2,0,0,0,family=temple|part=wall_corner_thick|block=1
+44538,48538,wall_end_ew,stump,new,temple wall end,2x2,0,8193,2,0,0,0,family=temple|part=wall_end_ew|block=1
+44539,48539,wall_end_ns,stump,new,temple wall end,2x2,0,8193,2,0,0,0,family=temple|part=wall_end_ns|block=1
+44540,48540,pillar_a,stump,new,temple pillar,2x2,0,8193,2,0,0,0,family=temple|part=pillar|block=1
+44541,48541,pillar_b,stump,new,temple pillar,2x2,0,8193,2,0,0,0,family=temple|part=pillar|block=1
+44542,48542,pillar_c,stump,new,temple pillar,2x2,0,8193,2,0,0,0,family=temple|part=pillar|block=1
+44543,48543,pillar_d,stump,new,temple pillar,2x2,0,8193,2,0,0,0,family=temple|part=pillar|block=1
+44544,48544,torch,stump,new,temple torch,2x2,0,8193,2,0,6,206,family=temple|part=torch|block=1
+44545,48545,pedestal_a,stump,new,temple statue pedestal,2x2,0,8193,2,0,0,0,family=temple|part=pedestal|block=1
+44546,48546,pedestal_b,stump,new,temple statue pedestal,2x2,0,8193,2,0,0,0,family=temple|part=pedestal|block=1
+44547,48547,pedestal_c,stump,new,temple statue pedestal,2x2,0,8193,2,0,0,0,family=temple|part=pedestal|block=1
+44548,48548,pedestal_d,stump,new,temple statue pedestal,2x2,0,8193,2,0,0,0,family=temple|part=pedestal|block=1
+44549,48549,gargoyle,stump,new,temple gargoyle,2x2,0,8193,2,0,0,0,family=temple|part=gargoyle|block=1

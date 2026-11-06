@@ -4035,6 +4035,146 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Shield Wave | attack | 150 | 4 s | 250 | Sentinel |
 |  | Zealotry | support | 150 | 30 s | 200 | Inquisitor |
 
+### Class DPS balance (O430, owner 2026-11-06: "balance the classes that are far from the median DPS"; MODEL after the change, not measured)
+
+**Measured (before).** A DPS test of all 21 classes at levels 100, 500 and 1000 on the local rig, 2026-11-06, before O429 (the faster
+auto attacks): one character per class and level, the same gear rule, the passive tree build of the class (Auto build, damage
+kind), the helper's Auto setup rotation cast by a protocol bot, 60 s on training dummies (1 target and 5 targets, the four others
+beside the main one). The table is `server/data/spells/class_dps_measured.csv` (helper 1 target, every spell on 1 target, helper
+5 targets). Outliers beyond +-25% of the level median: above, Beastmaster (all 9 checks, +180% on 5 targets at 1000, mostly the
+wolves), Berserker (+98 to +148%), Deadeye (+188% on 1 target at 500), Ranger, Warrior (+79%), Necromancer (+53%); below, Sentinel
+(all 9 checks, -73%), Inquisitor, Templar, Samurai, Mystic (1 target). The run to run spread was +-5% to +-15%.
+
+**Cause per outlier.**
+
+| Class | Cause |
+|---|---|
+| Beastmaster | wolves: 46-65% of its damage (companion_model.py), their area spells (Pack Howl, Rending Pounce) hit all five dummies, and the companion's own bite is dealt without an event, so `classDamage.beastmaster` never reached it |
+| Berserker | `classDamage` rose to 1.21 at 1000 (identity pass), its tree build (rage engine) and the two-handed auto attack; the helper already cast every spell (no single-target spell in its rotation) |
+| Deadeye | 4 of its 5 rules are single-target hits plus Hunters' Focus (+20% on one target): +188% on 1 target at 500; on 5 targets the weak area spell goes first and delays the strong single hits (-32% at 1000) |
+| Ranger | the same single-target lean (a distance weapon auto attack is 30% of its 1 target damage), `classDamage` 0.95 |
+| Warrior | `classDamage` 1.10 at 500 to 1.32 at 1000 (identity pass) and the slayer build |
+| Necromancer | minions: their hits take `classDamage` too, but 0.80 held a +53% lead at level 500 |
+| Sentinel, Inquisitor, Templar, Mystic | the helper's Auto rule: an area spell waited for 2 monsters, so on a lone target they cast one or two spells and fell back to the auto attack (every list spell cast on cooldown: Mystic 692 -> 1109 at 500, Sentinel 547 -> 707, Inquisitor 2344 -> 3094 at 1000); and low class factors (0.61-0.84) |
+| Samurai, Iron Sage, Thief, Ninja, Shadowfist, Elementalist, Illusionist | smaller gaps: low class factors (Samurai 0.30 at 100 to 0.61 at 1000), a weak 5 target number (Thief, Ninja, Samurai, Shadowfist: blade and fist classes with 1 target spells), a weak 1 target number (Elementalist, Illusionist at 1000: area casters) |
+
+**The helper fix.** `rotation_sim.py creatures()` and `ChaosAutoRotation.select` set the monster count of every rule to 1 (was 2 for
+an area spell when the rotation had a single-target spell). An area spell hits a lone target too, so the Auto setup casts the best
+spells it has on a boss; on a pack the area spells still go first (`areaFirst`), so the order is the same as before. The measured
+"every list spell" column of the test is this behaviour on 1 target, and it is the 1 target base of the model below.
+
+**The model** (`server/tools/class_dps_model.py`, `--check` in CI; `class_dps_model.py` docstring has the formulas): the measured
+numbers moved by what changed since the test: the helper fix (every-spell column for 1 target), the auto attack gain of O429 (old
+base interval / new, x1.44 - 1.54, on the auto attack's share of the measured damage: 10-55%, from `rotation_sim.py` spell damage
+next to `weapon_sim.py` auto damage), the class damage factor now over then, and the extra target factor on the share of 5 target
+damage that is a hit on a second target. Every weight is the model's guess: the tool says where a class lands, not what a player
+sees; the measurement spread (+-5% to +-15%) is as large as the margin (the fit aims at +-15%, the check allows +-25%, +-30% at 100).
+
+**The changes** (all numbers in config; no new engine mechanic except the extra target factor):
+
+- `class_tree.lua classDamage`: every class got points at 60, 100, 500, 800 and 1000 (the other points scaled by the factor at their
+  level, interpolated in the logarithm between 100 and 500 and between 500 and 1000); levels below 60 are untouched. The factor
+  of each class over the old curve:
+
+| Class | class damage x (100 / 500 / 1000) | extra target factor (100 / 500 / 1000) |
+|---|---|---|
+| Beastmaster | 0.88 / 0.56 / 0.50 | 1.00 / 0.85 / 0.55 |
+| Berserker | 0.94 / 0.68 / 0.44 | 1 (none) |
+| Bone Lord | 1.00 / 1.06 / 1.00 | 1 (none) |
+| Deadeye | 0.54 / 0.62 / 0.80 | 1.60 / 1.50 / 2.50 |
+| Elementalist | 1.00 / 1.14 / 1.22 | 1.00 / 0.55 / 0.75 |
+| Illusionist | 1.00 / 1.12 / 1.04 | 1 (none) |
+| Inquisitor | 1.90 / 1.38 / 1.46 | 1 (none) |
+| Iron Sage | 1.26 / 1.68 / 1.00 | 1 (none) |
+| Juggernaut | 1.00 / 1.00 / 0.86 | 1 (none) |
+| Lich | 1.00 / 1.02 / 1.00 | 1 (none) |
+| Monk | 1.00 / 1.06 / 0.86 | 1 (none) |
+| Mystic | 0.88 / 2.08 / 1.26 | 0.75 / 0.50 / 0.70 |
+| Necromancer | 0.82 / 0.80 / 0.88 | 1.00 / 1.15 / 1.00 |
+| Ninja | 1.42 / 1.46 / 1.16 | 1.25 / 1.25 / 1.10 |
+| Ranger | 0.48 / 0.76 / 0.66 | 1.70 / 1.00 / 1.60 |
+| Samurai | 2.90 / 2.24 / 1.22 | 1 (none) |
+| Sentinel | 2.00 / 3.22 / 2.42 | 1.00 / 0.75 / 1.00 |
+| Shadowfist | 1.24 / 1.24 / 1.02 | 1.00 / 1.15 / 1.00 |
+| Templar | 1.66 / 1.82 / 1.28 | 1.00 / 0.80 / 1.00 |
+| Thief | 1.60 / 1.70 / 0.78 | 1.00 / 1.00 / 1.30 |
+| Warrior | 0.96 / 0.60 / 0.62 | 1 (none) |
+
+- `spell_factor_config.lua extra` (new, `spell_factor_core.lua F.extraFor / F.additionalTarget`, the event of `passivetree_effects.lua`):
+  a spell's hits on the other targets of one cast (inside 25 ms, a creature other than the first hit) are x the factor. It is the one
+  lever that moves a class's pack damage and its single target damage apart: a class far ahead on 1 target but not on a pack
+  (Deadeye, Ranger, Thief, Ninja) gets a factor above 1, an area caster far ahead on a pack but behind on 1 target (Mystic,
+  Elementalist, Beastmaster, Templar, Sentinel) one below 1. Points at 60 (1), 100, 500, 1000, linear between, flat above.
+  `rotation_sim.py` leaves it out of the best sets (`extra_factor` is for `class_dps_model.py`), so the presets, the pack, boss and
+  quest numbers of the other models are the class baseline.
+- `chaos_constants.lua companion.autoByLevel` (new, `classes.lua companionAutoFactor`): the Beastmaster's own bite x 0.88 / 0.56 / 0.50
+  at 100 / 500 / 1000 (the bite is dealt without an event; the wolf spells take `classDamage`).
+- The helper (`autorotation.lua`, `autorotation_data.lua` regenerated by `rotation_sim.py --write`): see above.
+- The models were re-anchored (each config says why): `boss_balance_config.lua` (the identity bands of 2026-10-28 rested on the
+  C4 measurement; the rows now pin the state after O430, `lead` -1: no leader rule), `necro_balance_config.lua` (ratio1 >= 0.70,
+  ratio5 >= 0.78), `companion_balance_config.lua` (drift against before O332 up to -70%), `infinitytower_balance_config.lua`
+  (curves derived again, four limits moved a little).
+
+**Model after (percent of the level median; before = measured, helper mode, before O429).** Level median in damage per second in the
+last row.
+
+| Class | 500: 1 target before | after | 500: 5 targets before | after | 1000: 1 target before | after | 1000: 5 targets before | after |
+|---|---|---|---|---|---|---|---|---|
+| Warrior | +79% | +13% | +64% | -8% | +38% | +14% | +48% | -3% |
+| Juggernaut | -24% | +5% | +7% | +0% | -3% | +14% | +6% | -5% |
+| Berserker | +97% | -11% | +81% | +14% | +129% | -7% | +148% | +13% |
+| Ranger | +104% | +13% | +37% | +1% | +78% | +14% | -6% | -15% |
+| Deadeye | +188% | +12% | +30% | -14% | +98% | +21% | -32% | -23% |
+| Beastmaster | +101% | -15% | +130% | +14% | +108% | -12% | +180% | +12% |
+| Mystic | -65% | -19% | +0% | +18% | -50% | -15% | +11% | +10% |
+| Elementalist | +25% | -14% | +63% | +9% | -23% | -14% | +12% | +12% |
+| Illusionist | -11% | -14% | +15% | +18% | -35% | -14% | +1% | +7% |
+| Thief | -11% | +15% | -49% | -17% | +33% | +13% | -12% | -13% |
+| Ninja | +0% | +14% | -47% | -15% | +6% | +13% | -33% | -14% |
+| Samurai | -18% | +8% | -59% | -14% | -10% | +9% | -33% | -14% |
+| Necromancer | +53% | +14% | +7% | -14% | +9% | +13% | +14% | +3% |
+| Lich | -10% | -15% | +1% | -6% | +1% | +0% | +0% | +3% |
+| Bone Lord | +4% | +7% | -11% | -13% | -17% | +0% | -11% | -9% |
+| Monk | +2% | +0% | -17% | -15% | +0% | +15% | +8% | +0% |
+| Shadowfist | +22% | +12% | -35% | -15% | +18% | +9% | -23% | -14% |
+| Iron Sage | -37% | -14% | -34% | +4% | -14% | -8% | +4% | +10% |
+| Templar | -51% | -14% | -21% | +15% | -54% | -14% | -18% | +9% |
+| Inquisitor | -30% | -14% | -9% | +18% | -53% | -14% | -31% | +5% |
+| Sentinel | -73% | -15% | -55% | +11% | -77% | -14% | -61% | -2% |
+| median (dps) | 2004 | 3084 | 6919 | 7761 | 4956 | 6016 | 13711 | 13731 |
+
+| Class | 100: 1 target before | after | 100: 5 targets before | after |
+|---|---|---|---|---|
+| Warrior | -2% | +0% | +21% | +19% |
+| Juggernaut | -20% | -15% | +1% | +3% |
+| Berserker | +0% | +12% | +25% | +20% |
+| Ranger | +109% | +18% | +15% | -19% |
+| Deadeye | +116% | +16% | +5% | -19% |
+| Beastmaster | +48% | +11% | +25% | +19% |
+| Mystic | +13% | -17% | +69% | +19% |
+| Elementalist | -35% | -16% | +0% | +0% |
+| Illusionist | +13% | +8% | +19% | +20% |
+| Thief | -15% | +4% | -52% | -19% |
+| Ninja | +0% | +20% | -50% | -19% |
+| Samurai | -49% | +20% | -74% | -21% |
+| Necromancer | +54% | +15% | +46% | +20% |
+| Lich | +24% | +0% | +3% | +4% |
+| Bone Lord | +9% | -2% | -10% | -4% |
+| Monk | +1% | -15% | +0% | +3% |
+| Shadowfist | -14% | -19% | -33% | -12% |
+| Iron Sage | -20% | -20% | -5% | +23% |
+| Templar | -55% | -19% | -44% | -7% |
+| Inquisitor | -44% | +0% | -60% | -20% |
+| Sentinel | -57% | -15% | -61% | -20% |
+| median (dps) | 428 | 606 | 959 | 1007 |
+
+**Limits.** Not measured on a live server after the change: the numbers are the measured table moved by a model. Levels between the
+measured ones (the factors are interpolated between 100, 500 and 1000) and level 300 (the C4 harness of 2026-10-11 put the classes
+nearer each other there) were not re-measured: a re-run of the same test after the next server install is the proof. The dummies
+have no resistances or monster levels, the stat window and the tree are optimistic (20 in every stat, all points in one damage
+build), no gems, runes, orbs or uniques. The extra target factor reaches the real hunt: a pack of monsters is the 5 target case.
+The best sets, pack, boss and quest numbers of `rotation_sim.py`, `pack_model.py`, `boss_model.py` do not include it.
+
 ## Honest notes / limitations
 
 - Tested on the base server (TFS 1.4 based, protocol 10.98) with the real client: every spell was cast through its script against dummies and

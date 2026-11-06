@@ -10,6 +10,8 @@
 #  - MAP_MASTER_DIR (windows-assets' world/: the owner's edited map, server/README.md "Map master"), when given and
 #    it holds MAP_MASTER.json: the map master replaces the base map (server/tools/map_master.py install; the base map
 #    is not kept in the folder), so the install steps below run on top of it and find their own work in place
+#  - config.lua chaosClientPair = the pair on windows-assets (server/tools/client_pair.py PAIR_ASSETS): the package's
+#    client ships that pair, so the guarded steps (relic sets, temple tileset, ...) install their items
 #  - every Chaos install step (server/tools/install_all.py); the SQL it would run is captured, not run
 #  - sql-setup/: the SQL a fresh database needs, in order (base schema, Chaos tables, test accounts);
 #    start-server.bat loads it at the first start
@@ -39,6 +41,10 @@ for key, value in want.items():
     print('  %s = %s' % (key, value))
 open(path, 'w', encoding='latin-1', newline='').write(text)
 PY
+
+echo "== client pair (the package's client ships the windows-assets pair)"
+python3 -I "$REPO/server/tools/client_pair.py" set "$SERVER" "$(python3 -I "$REPO/server/tools/client_pair.py" assets)" --force | sed 's/^/  /'
+[ "${PIPESTATUS[0]}" = 0 ] || { echo "client pair not recorded" >&2; exit 1; }
 
 echo "== map master"
 MASTER=${2:-}

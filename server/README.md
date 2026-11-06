@@ -7205,6 +7205,28 @@ Snakebite Rod against a Plagueroot (10% earth), 23 shots each: mean 10.0 before,
 x1.22). The hook now takes `ORIGIN_WAND` (and still `ORIGIN_MELEE`). Test: `tests/melee_skill_test.lua` sends the wand
 shot with `ORIGIN_WAND`. Wand users hit as hard as the models and the tooltip say; a reload of the scripts is enough.
 
+## Class DPS balance (O430, owner 2026-11-06)
+
+Owner: "balance the classes that are far from the median DPS". Input: the measured DPS of the 21 classes at levels 100 / 500 / 1000
+on the local rig (before O429; `server/data/spells/class_dps_measured.csv`). Outliers: Beastmaster, Berserker, Deadeye, Ranger,
+Warrior, Necromancer above +25% of the level median; Sentinel, Inquisitor, Templar, Samurai, Mystic below -25%. The cause per class,
+the changes and the before / after tables are in `server/data/spells/README.md` "Class DPS balance (O430)". In short:
+
+- **Helper.** Auto setup gives every rule a monster count of 1 (`rotation_sim.py creatures()`, `autorotation.lua`, `autorotation_data.lua`
+  regenerated): an area spell hits a lone target too, so Sentinel, Inquisitor, Templar and Mystic cast their best spells on a boss
+  instead of one or two; area spells still go first on a pack.
+- **Class factors.** `class_tree.lua classDamage` has points at 60, 100, 500, 800, 1000 retuned per class (x0.44 Berserker at 1000
+  to x3.22 Sentinel at 500 over the old curve).
+- **Extra target factor** (new): `spell_factor_config.lua extra`, a spell's hits on the other targets of one cast x a factor per class
+  and level (`spell_factor_core.lua`, applied in `passivetree_effects.lua`; 0.5 Mystic at 500 to 2.5 Deadeye at 1000). It moves a
+  class's pack damage and its single target damage apart. Cast detection: hits of one attacker within 25 ms; the first creature hit is
+  the cast's first target.
+- **Beastmaster bite**: `companion.autoByLevel` (x0.88 / 0.56 / 0.50 at 100 / 500 / 1000); wolf spells follow `classDamage`.
+- **Model**: `python3 -I server/tools/class_dps_model.py [--check | --before]` (CI): the measured numbers moved by the changes since the
+  test; every class within +-25% of the level median on 1 and 5 targets (+-30% at level 100). It is a model: re-measure with the same
+  test after the next install. The identity bands of `boss_balance_config.lua` and the limits of the minion, companion and tower models
+  were re-anchored to the new state (reasons in each config).
+
 ## Auto attack power (`weapon_power_core.lua`, `weapon_power_config.lua`, `weapon_styles.lua`)
 
 Owner 2026-10-23: "parece que auto attack nao esta escalando com a skill e lvl. ele esta muito fraco. reveja a formula dele
@@ -28415,6 +28437,7 @@ README warned.
   | `fistweapons`, rows of mode `new4` (48409-48411) | 56 | not installed (no node, no `items.xml` entry, no shop, no equip entry) |
   | `weapons800` (the 34 weapons above level 800, "Weapons above level 800") | 56 | the whole step is skipped |
   | `relicsets` (the 65 pieces of the five relic sets, "Relic sets (pair 58)") | 58 | the whole step is skipped |
+  | `templeart` (the 39 pieces of the temple tileset, "Temple tileset (pair 60)") | 60 | the whole step is skipped |
 
   The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
   `ItemType(id)` exists, and the scaled class roll (`loot.lua` `classWeapons`) drops an id the server has no item for.
@@ -28425,6 +28448,11 @@ README warned.
      `chaosClientPair=missing`); a number lower than the record is refused. Without the kit: `python3 -I
      server/tools/client_pair.py set SERVER_DIR 56 [--force] [--dry-run]`.
   3. Then the admin app **Update** (or `install_all.py`) installs the held rows; no restart is needed for the record itself.
+* **Windows package.** Its client ships the pair on `windows-assets`, so `tools/windows/prepare_server.sh` records
+  `client_pair.py` `PAIR_ASSETS` (`python3 -I server/tools/client_pair.py assets`) in the package's own `config.lua` and every
+  guarded step installs there (and in the map editor's items.otb / items.xml). Before this, winpkg-107 and older skipped them
+  all. The package job stops when the archive's Tibia.dat md5 is not `PAIR_ASSETS_DAT_MD5`. Raise both constants with every
+  windows-assets pair push; `client_pair_test.py` checks the md5 against the generated client files of the pair.
 * **Adding a guard.** A new step with items of pair N: `import client_pair`, `ok, why = client_pair.allows(data_dir, N, 'step')`,
   print `why`, return 0 when not `ok`; in `install_all.py` run the tool with `tool_result_warn` so the warning reaches the
   report; add the row to the table above and to `tools/client_pair_test.py`.
@@ -29030,3 +29058,28 @@ Keeper 700), it takes too much damage; is the Thief line's defence normal? Compu
   `tools/survival_model_test.py` (formulas, parsers, both interpreters, the guard read from `classes.lua`, the state before
   fails on the Ninja only), `tests/ninja_guard_test.lua` (the reduction by level, the hook on a mock engine).
 - **Install:** reload scripts (or restart). No engine, client, database or map change.
+
+## Temple tileset (pair 60) (`install_temple_art.py`, step `templeart`, O431)
+
+Owner 2026-11-06 (pt-BR): "pode usar, são todas livres, comece pelo templo". The first of the owner's free art sheets: a temple room
+and loose oblique pieces, cut and rebuilt at our 32 px grid by `client/tools/sprites/gen_temple_art.py` (client/MANIFEST.md "Pair 60").
+The server only needs the items to exist so the map editor can place them. No spell, loot, shop, quest or area plan uses them yet.
+
+* **Items.** 39 items, client ids 44511-44549 appended to pair 59, server ids = client id + 4000 = **48511-48549** (the pair 50 rule;
+  after the relic sets' 48446-48510; free: no csv of `data/items`, no `chaos_*.lua` lib and no id table of this README uses them). The
+  manifest `data/items/temple_art.csv` is what `import_art_things.py --manifest-out` writes for `art_import/temple.csv`;
+  `gen_temple_art.py build` writes the same file and `build --check` (CI) compares.
+  * 11 ground items (otb group 1, speed 100): marble floor, black marble floor, blue rune pad, four gilded borders, four gilded corners.
+  * 6 decor items (walkable, over a floor): mosaic floor 3x3 and red carpet 3x4 (put each on the south-east tile of the square it
+    covers, like the waypoint seal), four blood stains.
+  * 22 stump items (otb solid): 12 walls, 4 pillars, 4 statue pedestals, the gargoyle, the torch (light 6, colour 206). All 2x2 and
+    drawn up and left of their base, which is their bottom right edge: put a wall piece on the tile at the bottom right of its base.
+  * Names all start with "temple " ("temple marble floor", "temple pillar", "temple torch", ...): a stock item of the same name would
+    make the engine refuse a monster's loot ("Unique loot names").
+* **Install.** `install_temple_art.py DATA_DIR [--dry-run]` writes the items.otb nodes and one items.xml entry each, with the node
+  rules of `install_owner_decor.py` (same bytes: left alone; same group and flags: replaced; another item on that id: stops; items.otb.bak
+  the first time; the written file parsed again). Idempotent. Client pair guard: the step skips with a warning until `config.lua`
+  `chaosClientPair` is 60 or more (admin app: Comandos > card "Par do cliente" > Gravar 60; shell: `chaos-ctl.sh client-pair set 60`).
+* **Pair 60** is built and on windows-assets 7a5c19e (client/MANIFEST.md "Pair 60"). **Not done:** any look in a client.
+* **Tests.** `tools/install_temple_art_test.py` (39 rows, ids, kinds, flags, names, manifest equal to the generator's, otb and items.xml
+  rules on synthetic files, the guard end to end), `tools/client_pair_test.py`, `client/tools/sprites/gen_temple_art_test.py`.

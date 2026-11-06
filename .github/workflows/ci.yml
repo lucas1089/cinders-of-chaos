@@ -259,6 +259,10 @@ jobs:
           python3 -I client/tools/sprites/gen_gear_sets_art_test.py
           python3 -I server/tools/install_gear_sets.py --lua --check
           python3 -I server/tools/install_gear_sets_test.py
+          # the temple tileset of pair 60 (O431, 39 pieces cut from the owner's sheet): committed source sheet, atlas, things file, server
+          # manifest, credits row and sums match the generator, each piece passes style_check against gildcrown (floors: no outline rule)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_temple_art.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_temple_art_test.py
           # pack art of pair 30 (import-only): item installer, generated item Lua and Hideout list match the manifests (none yet: empty)
           python3 -I server/tools/install_pack30_items.py --lua --check
           python3 -I server/tools/install_pack30_items.py --hideout-lua --check
@@ -924,6 +928,8 @@ jobs:
       - name: Rift looks the client pair draws (rift_looks_test.py; check_content.py reads them, O309)
         run: python3 -I tools/ci/rift_looks_test.py
 
+      - name: Every class within 25% of the level median on 1 and 5 targets at levels 100, 500, 1000 (class_dps_model.py --check; class_dps_measured.csv, class_tree.lua classDamage, spell_factor_config.lua extra; O430)
+        run: python3 -I server/tools/class_dps_model.py --check && python3 -I server/tools/class_dps_model_test.py
       - name: Necromancer minions live through a hunt and the class stays at the median (minion_model.py --check and its test; necro_balance_config.lua)
         run: python3 -I server/tools/minion_model.py --check && python3 -I server/tools/minion_model_test.py
 
@@ -1094,13 +1100,14 @@ jobs:
       - name: Store pouches install (four pouches, capacities, the Gem Pouch look, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pouches_test.py
 
-      - name: Client pair guard and the pair 55, 56 and 58 item installs (chaosClientPair in config.lua, pickups 55, fist weapons and weapons above level 800 56, relic sets 58)
+      - name: Client pair guard and the pair 55, 56, 58 and 60 item installs (chaosClientPair in config.lua, pickups 55, fist weapons and weapons above level 800 56, relic sets 58, temple tileset 60)
         run: |
           python3 -I server/tools/client_pair_test.py
           python3 -I server/tools/install_fist_weapons_test.py
           python3 -I server/tools/install_weapons800_test.py
           python3 -I server/tools/install_relic_sets.py --lua --check
           python3 -I server/tools/install_relic_sets_test.py
+          python3 -I server/tools/install_temple_art_test.py
 
       - name: Base NPC script names (patch_base_npcs.py step 5, the letter case of the script file)
         run: python3 -I server/tools/patch_base_npcs_test.py

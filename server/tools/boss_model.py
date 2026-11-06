@@ -87,11 +87,12 @@ def check(cfg_text=None):
     lead = 0
     for i, L in enumerate(cfg['levels']):
         for c in PM.C4:
-            if c != REF and t[c][i][1] * (1 + cfg['lead']) > 1 + 1e-9:
+            if cfg['lead'] >= 0 and c != REF and t[c][i][1] * (1 + cfg['lead']) > 1 + 1e-9:  # a negative lead: no leader rule (O430)
                 print('FAIL %s at %d: boss ratio %.2f is within %d%% of the %s' % (c, L, t[c][i][1], round(100 * cfg['lead']), REF))
                 lead += 1
-    print('boss check: %s (%d classes, levels %s, %s %d%% ahead)' % (
-        'FAIL' if bad or missing or lead else 'ok', len(PM.C4), ','.join(str(L) for L in cfg['levels']), REF, round(100 * cfg['lead'])))
+    print('boss check: %s (%d classes, levels %s, %s)' % (
+        'FAIL' if bad or missing or lead else 'ok', len(PM.C4), ','.join(str(L) for L in cfg['levels']),
+        '%s %d%% ahead' % (REF, round(100 * cfg['lead'])) if cfg['lead'] >= 0 else 'no single target leader rule'))
     return 1 if bad or missing or lead else 0
 
 

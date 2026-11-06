@@ -79,6 +79,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                58, client ids 44446-44510, server ids 48446-48510) in items.otb / items.xml, their equip entries in movements.xml
                and weapon entries in weapons.xml (README "Relic sets (pair 58)"; after vocations; waits for config.lua
                chaosClientPair >= 58, README "Client pair guard"; nothing is sold; drops: ChaosGearSets.PAIR58)
+  templeart    tools/install_temple_art.py       the temple tileset (39 pieces: marble floors, gilded borders and corners, mosaic,
+               carpet, blood stains, walls, pillars, statue pedestals, torch; client pair 60, client ids 44511-44549, server ids
+               48511-48549, names "temple ...") in items.otb / items.xml for the map editor (README "Temple tileset (pair 60)";
+               waits for config.lua chaosClientPair >= 60, README "Client pair guard"; nothing is sold or dropped)
   themeitems   tools/install_theme_items.py      the themed set pieces and grounds of client pair things_custom24 in
                items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; used since
                ChaosThemeArt.PAIR24 is on, 2026-10-13; README "Themed sets, auras and grounds")
@@ -821,6 +825,14 @@ def step_relicsets(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('weapons800') + 1, 'relicsets')  # right after the weapons above 800 (client ids appended after theirs, pair 58)
+
+
+def step_templeart(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 60) is in the tool; its warning reaches the report
+    return tool_result_warn(run_tool([tool('install_temple_art.py'), data], 'install_temple_art.py'))
+
+
+STEPS.insert(STEPS.index('relicsets') + 1, 'templeart')  # right after the relic sets (client ids appended after theirs, pair 60)
 
 
 def step_ownerdecor(server, data, ctx):

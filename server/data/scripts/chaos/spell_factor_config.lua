@@ -88,6 +88,28 @@ ChaosSpellFactorConfig = {
 		[24] = {{15, 0.70}, {30, 0.70}, {39, 1.13}, {40, 1.02}, {60, 1.04}, {70, 1.04}, {80, 0.88}, {90, 0.77}, {100, 0.67}, {120, 0.77}, {150, 0.79}, {180, 0.72}, {190, 0.73}, {200, 0.67}, {215, 0.70}, {230, 0.68}, {260, 0.70}, {300, 0.73}, {450, 0.74}, {600, 0.75}, {1000, 0.76}},  -- Inquisitor
 		[25] = {{15, 0.60}, {30, 0.60}, {39, 0.97}, {40, 0.87}, {60, 0.89}, {70, 0.89}, {80, 0.76}, {90, 0.76}, {100, 0.59}, {120, 0.55}, {130, 0.57}, {140, 0.54}, {150, 0.61}, {180, 0.56}, {200, 0.57}, {230, 0.52}, {260, 0.55}, {300, 0.57}, {360, 0.58}, {380, 0.58}, {450, 0.59}, {600, 0.61}, {1000, 0.62}},  -- Sentinel
 	},
+	-- O430 (2026-11-06, owner: "balance the classes that are far from the median DPS"): the extra target factor. A spell
+	-- cast that hits several targets deals its hit on the first target as the factor above says and its hits on every other
+	-- target of the same cast x this factor (spell_factor_core.lua F.extraFor / F.additionalTarget; the event is
+	-- passivetree_effects.lua). {level, factor} points like byLevel: 1 below the first point (level 60), linear between points,
+	-- the last value above level 1000; a class not listed keeps 1. The measured DPS of 2026-11-06 (server/data/spells/README.md
+	-- "Class DPS balance (O430)") showed classes whose single target and pack numbers could not both be brought to the median
+	-- with one factor: a class that is far ahead on one target but not on a pack (Deadeye, Ranger, Thief, Ninja) gets a factor
+	-- above 1, a class built on area spells that is far ahead on a pack but behind on one target (Mystic, Elementalist,
+	-- Beastmaster, Templar, Sentinel) one below 1. Fitted with server/tools/class_dps_model.py (model, not measured).
+	extra = {
+		[1] = {{60, 1}, {100, 0.75}, {500, 0.5}, {1000, 0.7}},  -- Mystic
+		[3] = {{60, 1}, {100, 1.7}, {500, 1}, {1000, 1.6}},  -- Ranger
+		[5] = {{60, 1}, {100, 1}, {500, 0.55}, {1000, 0.75}},  -- Elementalist
+		[7] = {{60, 1}, {100, 1.6}, {500, 1.5}, {1000, 2.5}},  -- Deadeye
+		[11] = {{60, 1}, {100, 1}, {500, 1}, {1000, 1.3}},  -- Thief
+		[12] = {{60, 1}, {100, 1.25}, {500, 1.25}, {1000, 1.1}},  -- Ninja
+		[15] = {{60, 1}, {100, 1}, {500, 0.85}, {1000, 0.55}},  -- Beastmaster
+		[18] = {{60, 1}, {100, 1}, {500, 1.15}, {1000, 1}},  -- Shadowfist
+		[20] = {{60, 1}, {100, 1}, {500, 1.15}, {1000, 1}},  -- Necromancer
+		[23] = {{60, 1}, {100, 1}, {500, 0.8}, {1000, 1}},  -- Templar
+		[25] = {{60, 1}, {100, 1}, {500, 0.75}, {1000, 1}},  -- Sentinel
+	},
 }
 
 return ChaosSpellFactorConfig
