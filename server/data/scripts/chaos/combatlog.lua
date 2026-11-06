@@ -413,6 +413,7 @@ local function takenSource(attacker)
 end
 
 -- mana: true for the part a mana shield took (the death recap tells health and mana damage apart)
+CL.maxHit = CL.maxHit or {} -- player id -> the biggest hit so far (loaded from the storage at the first hit)
 local function dealt(creature, attacker, amount, ptype, origin, critical, now, mana)
 	local el = EL[ptype]
 	local owner, summon = ownerOf(attacker)
@@ -423,6 +424,20 @@ local function dealt(creature, attacker, amount, ptype, origin, critical, now, m
 		local isMonster = creature:isMonster()
 		CL.add(a, now, DMG, src, amount, critical, 0, el, creature:getName(), isMonster and bossName(creature) or nil)
 		-- the balance telemetry's damage per class (telemetry.lua T.onDamage, O398): monsters only
+		-- the biggest single hit (Inspect Player, O423): one compare per hit, a storage write only for a new record
+		local st = Chaos.storage and Chaos.storage.maxHit
+		if st and amount > 0 and owner:isPlayer() and owner.getStorageValue then
+			local pid = owner:getId()
+			local best = CL.maxHit[pid]
+			if best == nil then
+				best = math.max(0, owner:getStorageValue(st))
+			end
+			if amount > best then
+				best = math.floor(amount)
+				owner:setStorageValue(st, best)
+			end
+			CL.maxHit[pid] = best
+		end
 		local dh = CL.dealtHook
 		if dh and isMonster then
 			pcall(dh, owner, amount)
@@ -767,6 +782,7 @@ login:register()
 
 local logout = CreatureEvent("ChaosCombatLogLogout")
 function logout.onLogout(player)
+	CL.maxHit[player:getId()] = nil
 	local a = CL.actors[player:getGuid()]
 	if a then
 		CL.endFight(a)

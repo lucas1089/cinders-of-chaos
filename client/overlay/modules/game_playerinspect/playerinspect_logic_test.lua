@@ -100,6 +100,31 @@ eq(rows['PvP: Arena'].value, '900', 'pvp without tier or name')
 eq(rows['Passive points'].value, '3 / 3', 'passive without total')
 eq(rows['Paragon points'], nil, 'bad paragon: no row')
 
+-- the combat sheet page
+eq(#L.combatStats({}), 0, 'no combat block (older server): no page')
+local cs = L.combatStats({ combat = { attack = 40, hit = 1234, maxHit = 98765, attackSpeed = 9, critChance = 12.5, critAmount = 55,
+  lifeLeech = { chance = 5, amount = 3 }, damage = { { k = 'fire', pct = 20 } }, defense = 30, armor = 22, mitigation = 34.6,
+  resist = { { k = 'fire', pct = 40 }, { k = 'death', pct = -10 } }, maxHealth = 5000, maxMana = 2500, moveSpeed = 450 } })
+eq(#cs, 3, 'offense, defense, resistances')
+eq(cs[1].title, 'Offense', 'offense title')
+local function crow(sec, label) for _, r in ipairs(cs[sec].rows) do if r.label == label then return r end end end
+eq(crow(1, 'Weapon attack').value, '40', 'attack')
+eq(crow(1, 'Highest hit').value, '98,765', 'highest hit')
+eq(crow(1, 'Attack speed').value, '+9%', 'attack speed')
+eq(crow(1, 'Critical chance').value, '12.5%', 'crit chance')
+eq(crow(1, 'Life leech').value, '5% / 3%', 'leech')
+eq(crow(1, 'Mana leech'), nil, 'no mana leech row')
+eq(crow(1, 'Fire damage').value, '+20%', 'damage bonus')
+eq(crow(2, 'Damage reduction').value, '34.6%', 'damage reduction')
+eq(crow(2, 'Maximum health').value, '5,000', 'max health')
+eq(crow(3, 'Fire').value, '40%', 'resistance')
+eq(crow(3, 'Fire').color, L.COLORS.good, 'positive resistance is green')
+eq(crow(3, 'Death').color, L.COLORS.red, 'negative resistance is red')
+eq(crow(3, 'Ice'), nil, 'no row for a missing element')
+cs = L.combatStats({ combat = { attack = 5 } })
+eq(#cs[2].rows, 0, 'empty defense section')
+eq(#cs[3].rows, 0, 'empty resistances section')
+
 local st = L.newState()
 eq(L.complete(st), false, 'nothing yet')
 eq(L.onEquip(st, { name = 'Anna', rows = {} }), false, 'equipment before a result is ignored')

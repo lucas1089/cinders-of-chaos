@@ -18,6 +18,13 @@ if not ChaosSpell then
 	pcall(dofile, "data/spells/scripts/chaos/_common.lua")
 end
 local C = ChaosClasses
+if not ChaosAttackRate then
+	dofile("data/scripts/chaos/attack_rate_core.lua")
+end
+-- at most ChaosAttackRate limits[key] triggers per second per player (O426, the 3 attacks per second cap)
+local function arGate(pid, key)
+	return ChaosAttackRate.gate(pid, key)
+end
 local function cfg()
 	return Chaos.classes
 end
@@ -101,7 +108,7 @@ local function onOffence(creature, attacker, primaryDamage, primaryType, seconda
 		local value = C.bloodrageCleave(math.abs(primaryDamage) + math.abs(secondaryDamage))
 		if value > 0 then
 			local ids = cleaveTargets(player, creature:getId())
-			if #ids > 0 then
+			if #ids > 0 and arGate(player:getId(), "bloodrage") then
 				addEvent(cleave, cfg().bloodrage.delayMs, player:getId(), ids, value, primaryType)
 			end
 		end

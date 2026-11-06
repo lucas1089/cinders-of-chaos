@@ -33,6 +33,13 @@ if not ChaosMonk then
 	dofile("data/scripts/chaos/monk_chi_core.lua")
 end
 local M = ChaosMonk
+if not ChaosAttackRate then
+	dofile("data/scripts/chaos/attack_rate_core.lua")
+end
+-- at most ChaosAttackRate limits[key] triggers per second per player (O426, the 3 attacks per second cap)
+local function arGate(pid, key)
+	return ChaosAttackRate.gate(pid, key)
+end
 local ID = M.ids
 if not ChaosClassTree then
 	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
@@ -195,7 +202,7 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 	if dualMain then
 		local value = M.dualFistStrike(math.abs(primaryDamage) + math.abs(secondaryDamage), dualMain, dualOff,
 			creature:isPlayer())
-		if value > 0 then
+		if value > 0 and arGate(player:getId(), "fistOffhand") then
 			addEvent(offhandFist, M.cfg.unarmed.dualFists.delayMs, player:getId(), creature:getId(), value)
 		end
 	end

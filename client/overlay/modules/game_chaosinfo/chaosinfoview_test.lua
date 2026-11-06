@@ -21,17 +21,19 @@ end
 eq(V.page('services').title, 'Services', 'page lookup')
 eq(V.page('nope'), nil, 'unknown page')
 
--- Character Info shows the cards on its own: the deck command runs when the page opens (at most six commands a request,
+-- Character Info shows the cards on its own: the deck command runs when the page opens (at most eight commands a request,
 -- the server's MAX_IDS), under its heading
 do
   local p = V.page('character')
   local has = false
   for _, id in ipairs(p.auto) do if id == 'deck' then has = true end end
   eq(has, true, 'Character Info runs the deck command on open')
-  eq(#p.auto <= 6, true, 'at most six commands per request')
+  eq(#p.auto <= 8, true, 'at most eight commands per request')
+  eq(p.auto[1], 'sheet', 'the character sheet comes first')
+  eq(p.headings.sheet, nil, 'the sheet text has its own headings')
   eq(p.headings.deck, 'Card Deck', 'deck heading')
-  local all = V.autoIds(p, V.idSet({ 'classes', 'ascension', 'exp', 'pos', 'sets', 'deck', 'resis' }))
-  eq(#all, 6, 'all six auto commands offered'); eq(all[6], 'deck', 'deck last')
+  local all = V.autoIds(p, V.idSet({ 'sheet', 'classes', 'ascension', 'exp', 'pos', 'sets', 'deck', 'resis' }))
+  eq(#all, 7, 'all seven auto commands offered'); eq(all[7], 'deck', 'deck last')
   eq(#V.autoIds(p, V.idSet({ 'classes' })), 1, 'only what the server offers')
   eq(V.resultText({ { id = 'deck', text = 'Cards on (1 of 5):\n  X' } }, p.headings, function(s) return s end),
     '[ Card Deck ]\nCards on (1 of 5):\n  X', 'the card text under its heading')

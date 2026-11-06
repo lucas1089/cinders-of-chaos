@@ -172,6 +172,11 @@ eq(dealt[1].target, 11); eq(dealt[2].target, 12)
 eq(dealt[1].amount, -400, "40% of the hit (the two-handed factor is already in it: this event runs after weapon_styles)")
 eq(dealt[1].origin, ORIGIN_SPELL, "procs are spell origin (weapon_styles ignores them)"); eq(dealt[1].depth, 1, "guard up")
 eq(#queue, 0, "the proc's own damage events started nothing")
+-- the cleave is limited per second (attack_rate_core.lua, O426): a second hit at once does not cleave
+dealt = {}
+ev.onHealthChange(main, knight, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE); runEvents()
+eq(#dealt, 0, "3 swings per second do not cleave 3 times per second")
+ChaosAttackRate.clear(1)
 other.pvpOk = true; dealt = {}
 ev.onHealthChange(main, knight, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE); runEvents()
 eq(#dealt, 3, "a player PvP rules allow is cleaved too")

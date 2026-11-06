@@ -28,6 +28,26 @@ return {
 		portal = 1387 -- magic forcefield (type teleport); entrance and exit carry the action ids above
 	},
 
+	-- Decoration fit (O428, owner report 2026-11-06, "some errors in the rift map"). Only an area whose def sets
+	-- `decorFit` (the rifts, rift_layout_core.lua) uses it; every other area comes out as before. The client draws a
+	-- WxH item up and to the left of its tile (a 1x2 brazier rises one tile, a 2x2 rock covers the tile west, north and
+	-- north-west) and a 2x2 wall piece the same way (def.wallSize): the wall south, east or south-east of a floor tile
+	-- draws over it. So with decorFit a piece stands only where its whole footprint is floor that no wall piece draws
+	-- over, and a light or prop only on a tile whose ground and 8 neighbours are one family (no border piece, no lone
+	-- patch tile under it). `sizes` = {w, h} per id (a dark tile name or a server id; measured: client/tools/sprites/
+	-- gen_dark_tiles.py obj() calls); an id not listed takes the `defaults` of its class: the stock lights and props are
+	-- not measured here (no client pair in git), so a light counts as 1x2 and a prop as 2x2 (the safe side: such a piece
+	-- stands one tile off the walls it would be drawn over); scatter pieces and obstacles count as 1x1 unless listed.
+	fit = {
+		defaults = {lights = {1, 2}, props = {2, 2}, decor = {1, 1}, obstacles = {1, 1}},
+		sizes = {
+			brazier = {1, 2}, standing_torch = {1, 2}, ruined_pillar = {1, 2}, broken_pillar = {1, 1},
+			rock_outcrop = {2, 2}, dead_tree = {2, 2}, twisted_tree = {2, 2}, dark_boulder = {1, 1},
+			dead_bush = {1, 1}, blood_crystals = {1, 1}, glowcap_purple = {1, 1}, glowcap_teal = {1, 1},
+			bone_pile = {1, 1}, rubble = {1, 1}
+		}
+	},
+
 	-- ground families: grounds with their weights and the z order (the higher family draws its border over the lower)
 	families = {
 		cave = {z = 200, grounds = {{351, 6}, {352, 1}, {353, 1}, {354, 1}, {355, 1}}},

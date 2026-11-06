@@ -43,6 +43,12 @@ L.MAX_CACHE = max
 -- ---------------------------------------------------------------- formatting
 eq(L.formatValue(3, 'pct', true), '+3%', 'signed percent')
 eq(L.formatValue(2.2, 'sec'), '2.2s', 'seconds')
+eq(L.formatValue(1, 'sec', nil, true), '1s', 'one second: no rate')
+eq(L.formatValue(0.5, 'sec'), '0.5s', 'a difference shows no rate')
+eq(L.formatValue(0.33, 'sec', nil, true), '0.33s (3/s)', 'the floor: 3 attacks per second')
+eq(L.formatValue(0.5, 'sec', nil, true), '0.5s (2/s)', 'two per second')
+eq(L.formatValue(0.37, 'sec', nil, true), '0.37s (2.7/s)', 'a rate with a decimal')
+eq(L.formatValue(0.83, 'sec', nil, true), '0.83s (1.2/s)', 'under a second')
 eq(L.formatValue(1.25, nil), '1.25', 'decimals')
 eq(L.formatValue(15, nil, true), '+15', 'signed flat')
 eq(L.formatValue(-4, 'pct', true), '-4%', 'negative')

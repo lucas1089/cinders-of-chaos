@@ -317,7 +317,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Local to the weapon: it shortens that weapon's attack interval. With topaz gems at most 15% on one weapon."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Local to the weapon: it shortens that weapon's attack interval. With topaz gems at most 30% on one weapon."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -5839,7 +5839,7 @@ CodexData = {
 						},
 						{
 							h = "Caps (all gems together)",
-							p = {"Attack Speed at most 15%.", "Energy Resistance at most 30%.", "Energy Damage at most 40%."}
+							p = {"Attack Speed at most 30%.", "Energy Resistance at most 30%.", "Energy Damage at most 40%."}
 						},
 						{
 							h = "Combining",

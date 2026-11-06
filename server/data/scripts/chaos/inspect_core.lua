@@ -7,9 +7,15 @@
 -- equipment slots with their full tooltips and the active passive tree (node ids, the chosen mastery effects, class and
 -- line; shown read-only). O413 adds the profile fields of I.publicStats: Paragon points, the active title, Bestiary
 -- points and rank, Boss Points, the best PvP season bracket (name, tier, rating), the Collection score and the passive
--- points spent against owned. Nothing else: no health, mana, skills, storages, gold, containers. A character that switched "Allow others to inspect me" off (storage Chaos.storage.inspectOff, 1 = off,
+-- points spent against owned. Owner decision 2026-11-06 (O423): the combat sheet is public too (I.combatSheet: attack,
+-- average hit, highest hit, attack speed, critical chance and damage, leech, damage bonuses, defence, armour, damage
+-- reduction, resistances, maximum health and mana, movement speed). Nothing else: no skills, storages, gold,
+-- containers or current health and mana. A character that switched "Allow others to inspect me" off (storage Chaos.storage.inspectOff, 1 = off,
 -- default on) answers with a refusal.
 
+if not (ChaosCharSheet and ChaosCharSheet.clean) then
+	dofile("data/scripts/chaos/charsheet_core.lua") -- the combat sheet (O423), shared with Character Info
+end
 ChaosInspect = ChaosInspect or {}
 local I = ChaosInspect
 
@@ -184,6 +190,15 @@ function I.publicStats(raw)
 		out.passive = {spent = spent or 0, total = math.max(owned or 0, spent or 0)}
 	end
 	return out
+end
+
+-- the combat sheet (O423, owner decision 2026-11-06: public). `raw` is what inspect.lua read: attack, hit, maxHit,
+-- attackSpeed (percent), critChance, critAmount (percent), lifeLeech / manaLeech = {chance, amount}, damage = [{k, pct}]
+-- (damage bonus per type), defense, armor, mitigation (share 0 .. 1), resist = [{k, pct}] (per element, may be
+-- negative), maxHealth, maxMana, moveSpeed. Numbers only (one decimal), type keys plain words, no zero offence rows;
+-- a block with nothing in it is nil. Returns a new table.
+function I.combatSheet(raw)
+	return ChaosCharSheet.clean(raw)
 end
 
 -- the best placed PvP bracket of ChaosPvpSeason.viewOf(guid) ({[bracket] = {rating, placed, tierName, name}}), by rating;

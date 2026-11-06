@@ -1362,6 +1362,8 @@ local function guildTrophies(run, eligible)
 	end
 end
 
+local closeRun -- below (removePlayer first); the final boss's timer calls it
+
 local function bossKilled(run, i)
 	local cfg = C()
 	local b = cfg.bosses[i]
@@ -1459,6 +1461,25 @@ local function bossKilled(run, i)
 	end
 	alert(run, ChaosI18n.msg("%s is slain! %d looted, %d helped.%s", b.name, #eligible, #helpers,
 		b.final and " The Sepulchre is cleared." or " The way on opens."), "kill")
+	-- the final boss: an exit portal on its spot, everyone out after finalExitSeconds (the run then closes)
+	if b.final then
+		local spot = run.L.rooms[i] and run.L.rooms[i].bossSpawn
+		local ex = spot and placeItem(P(spot), cfg.objects.exit)
+		if ex then
+			ex:setActionId(cfg.aid.exit)
+			run.finalExit = {x = spot.x, y = spot.y, z = spot.z}
+			P(spot):sendMagicEffect(CONST_ME_TELEPORT)
+		end
+		local secs = cfg.finalExitSeconds or 90
+		say(run, ChaosI18n.msg("The way out opens on the throne: step into the portal. Everyone returns in %d seconds.", secs))
+		local id = run.inst.id
+		addEvent(function()
+			local r = X.runs[run.slot]
+			if r == run and not run.closed and run.inst.id == id then
+				closeRun(run, "exit")
+			end
+		end, secs * 1000)
+	end
 	-- the next corridor: its trash wakes up
 	if cfg.bosses[i + 1] then
 		spawnTrash(run, i + 1)
@@ -1499,7 +1520,6 @@ local function enter(run, m)
 	send(m, "closeInfo", {})
 end
 
-local closeRun
 
 -- mode: "exit" | "logout" (back where the player came from) | "temple"
 local function removePlayer(run, pid, mode)
@@ -1542,6 +1562,15 @@ closeRun = function(run, mode)
 		X.monsterRun[mid] = nil
 	end
 	cleanSlot(run.L)
+	-- the final boss's exit portal (cleanSlot keeps exit forcefields: the hall's own stays)
+	if run.finalExit then
+		local t = Tile(P(run.finalExit))
+		local it = t and t:getItemById(C().objects.exit)
+		if it and it:getActionId() == C().aid.exit then
+			it:remove()
+		end
+		run.finalExit = nil
+	end
 	X.runs[run.slot] = nil
 	S().saveInstance(run.inst)
 	if ChaosInstanceLimits then

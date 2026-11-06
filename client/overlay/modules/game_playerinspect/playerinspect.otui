@@ -162,13 +162,48 @@ ChaosMainWindow
     width: 356
     padding: 10
 
-    UIWidget
+    // two pages of the same panel: Profile (progress, records) and Combat (offense, defense, resistances)
+    ChaosTabButton
+      id: profileTab
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: 100
+      checked: true
+      !text: tr('Profile')
+      @onClick: modules.game_playerinspect.showPage('profile')
+
+    ChaosTabButton
+      id: combatTab
+      anchors.top: parent.top
+      anchors.left: profileTab.right
+      margin-left: 4
+      width: 100
+      enabled: false
+      !text: tr('Combat')
+      @onClick: modules.game_playerinspect.showPage('combat')
+
+    UIScrollArea
       id: list
-      anchors.fill: parent
-      phantom: true
+      anchors.top: profileTab.bottom
+      anchors.left: parent.left
+      anchors.right: scroll.left
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      margin-right: 4
       layout:
         type: verticalBox
         spacing: 1
+      vertical-scrollbar: scroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: scroll
+      anchors.top: profileTab.bottom
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      step: 24
+      pixels-scroll: true
 
   ChaosPanelDark
     id: gearPanel
