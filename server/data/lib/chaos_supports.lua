@@ -250,6 +250,28 @@ function S.setOpened(player, spellId)
 	player:setStorageValue(S.storageKey(spellId, 0), 1)
 end
 
+-- the spells of cfg.none (utility, no sockets): empties their sockets and closes an opened third one.
+-- Returns the rune ids taken out and the number of opened third sockets closed (the caller gives them back).
+function S.releaseUtility(player)
+	local runes, opened = {}, 0
+	for _, spellId in ipairs(cfg.none or {}) do
+		local sock = S.read(player, spellId)
+		if sock then
+			for slot = 1, cfg.maxSockets do
+				if (sock.runes[slot] or 0) > 0 then
+					runes[#runes + 1] = sock.runes[slot]
+					S.setRune(player, spellId, slot, 0)
+				end
+			end
+			if sock.opened then
+				opened = opened + 1
+				player:setStorageValue(S.storageKey(spellId, 0), -1)
+			end
+		end
+	end
+	return runes, opened
+end
+
 -- how many sockets a spell has: level = character level, spellLevel = the spell's level, opened = 3rd socket bought
 function S.socketCount(level, spellLevel, opened)
 	level, spellLevel = tonumber(level) or 0, tonumber(spellLevel) or 0

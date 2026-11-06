@@ -179,7 +179,10 @@ return {
 	-- which spells get sockets: instants with a spell id of their own (a spell id used twice gets none), not
 	-- conjuring, not house spells. stockSpells = false limits it to the Chaos spells (scripts under chaos/).
 	stockSpells = true,
-	none = {},
+	-- utility spells: no sockets (owner 2026-11-06). Runes already in them go back to the player at login, and an
+	-- opened third socket gives its Orbs of Sockets back (supports.lua S.releaseUtility). Light, food, find person,
+	-- haste, levitate, rope, invisibility, illusion, Town Portal, Flickerdash, Vigil of Haste, Warhorse Rush
+	none = {6, 9, 10, 11, 20, 38, 39, 42, 44, 45, 75, 76, 81, 93, 134, 161, 232, 254},
 
 	-- ------------------------------------------------------------------ drops (the Chaos loot layer, loot.lua)
 	-- chance per kill in 1/10000 by monster tier x the loot layer's rate x item find (gems: 25/150/500/1500/3000)

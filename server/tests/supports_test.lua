@@ -349,6 +349,24 @@ cfg.stockSpells = false
 eq(S.eligible(entries)[1], nil, "stockSpells = false: Chaos spells only")
 ok(S.eligible(entries)[201], "chaos spell stays")
 cfg.stockSpells = true
+-- utility spells (cfg.none, owner 2026-11-06): no sockets; runes in them come back at login
+local util = S.parseSpellsXml([[<spells><instant spellid="45" name="Fleetfoot" words="ruan ul" level="14" script="support/haste.lua" />
+	<instant spellid="254" name="Town Portal" words="ash domh" level="1" script="chaos/town_portal.lua" /></spells>]])
+local uel = S.eligible(util)
+eq(uel[45], nil, "haste: no sockets"); eq(uel[254], nil, "Town Portal: no sockets")
+do
+	local p = newCreature({level = 300})
+	creatures[p.id] = nil -- not on the map
+	local r1, r2 = S.runeId(1, 1), S.runeId(2, 3)
+	S.setRune(p, 254, 1, r1); S.setRune(p, 254, 2, r2); S.setOpened(p, 254)
+	S.setRune(p, 201, 1, r1)
+	local runes, opened = S.releaseUtility(p)
+	eq(#runes, 2, "two runes back"); eq(opened, 1, "one third socket closed")
+	eq(S.read(p, 254).runes[1], 0, "socket emptied"); eq(S.read(p, 254).opened, false, "third socket closed")
+	eq(S.read(p, 201).runes[1], r1, "a non-utility spell keeps its rune")
+	local again = S.releaseUtility(p)
+	eq(#again, 0, "nothing the second time")
+end
 eq(S.kindOf(201, "damage", "single"), "single", "kind single")
 eq(S.kindOf(206, "damage", "area"), "area", "kind area")
 eq(S.kindOf(208, "heal", "self"), "heal", "kind heal")
