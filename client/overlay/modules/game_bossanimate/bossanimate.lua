@@ -1,13 +1,16 @@
--- game_bossanimate: boss looks that animate while standing (bossanimatelogic.lua; base patch 0189).
+-- game_bossanimate: boss looks that animate while standing (bossanimatelogic.lua; base patch 0189) and boss looks
+-- moved onto their tile (L.SHIFTS).
 -- A client without patch 0189 has no ThingType:setAnimateAlways: nothing changes.
 local L = BossAnimateLogic
 
 local function apply()
   if not g_things or not g_things.getThingType then return end
-  L.apply(function(id)
+  local function getType(id)
     local ok, t = pcall(g_things.getThingType, id, ThingCategoryCreature)
     return ok and t or nil
-  end)
+  end
+  L.apply(getType)
+  L.shift(getType)
 end
 
 function init()
