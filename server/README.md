@@ -28641,7 +28641,9 @@ asks Claude what each message is, keeps a bug list and helps write patch notes. 
   only the data dir, exit 2 = settings missing is not restarted), logrotate. `set NAME` takes one value on stdin and checks it per name;
   `start` refuses with `config-missing` until the five required ones are set. Settings in `ctl.conf`: `CHAOS_BOT_USER`,
   `CHAOS_BOT_ENV`, `CHAOS_BOT_DIR`, `CHAOS_BOT_DATA`, `CHAOS_BOT_LOG`, `CHAOS_BOT_PYTHON`. Admin app: Comandos > Bot do Discord;
-  desktop table: `commands.rs` group Bot do Discord.
+  desktop table: `commands.rs` group Bot do Discord. `update-apply` (chaos_kit_update.sh, end of step 10) runs
+  `discord-bot install` when `CHAOS_SYSTEMD_DIR/chaos-discordbot.service` exists, so the bot follows each server update;
+  a failure there is a warning (exit 3), never a rollback.
 - **Outbox (O398).** Other tools DM the owner through the bot: a file dropped into `CHAOS_BOT_DATA/outbox` (owned by the
   bot user) is sent as DMs within 60 s, in parts of 1900 characters (at most 20,000 read), then deleted
   (`bot_core.outbox_files`, `read_outbox`, `split_message`; `bot.py` `outbox_loop`). `balance-report --dm` and `auto` use it.

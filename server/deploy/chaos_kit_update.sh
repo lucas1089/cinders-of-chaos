@@ -63,7 +63,8 @@
 #                         (the downloads page shows release, date, size, checksum) (--no-downloads skips it)
 #           10 site       website/install_site.sh when website/ changed since the site was last installed (state
 #                         site_commit; else since this update's start) and CHAOS_SITE_ENV exists
-#                         (--no-site skips it)
+#                         (--no-site skips it); then, when the Discord bot unit is installed, chaos-ctl.sh
+#                         discord-bot install (the bot's code from the new checkout, restarted only when it changed)
 #           Steps 8-10 never undo the server update: a failure there ends with RESULT warn.
 # downloads only step 9, on its own (no server restart, no code change): the newest release's Windows zip and Linux
 #           tar.gz into CHAOS_DL_DIR, the same checks, NAME.prev, NAME.sha256 and downloads.json. For the case where the
@@ -83,6 +84,7 @@
 #   plan compile cache; set it to an empty folder name of your own to move it)
 #   CHAOS_SITE_DIR /var/www/chaos      CHAOS_DL_DIR $SITE/dl            CHAOS_SITE_ENV /etc/chaos/site.env
 #   CHAOS_MAP_BRANCH windows-assets    CHAOS_MAP_BACKUP_DIR $KIT/map-backups
+#   CHAOS_SYSTEMD_DIR /etc/systemd/system (where the Discord bot unit is looked for)
 #   CHAOS_BACKUP_DIR (else the env file's, else /var/backups/chaos); publish_client_update.sh reads its own
 #   (CHAOS_UPDATE_KEY, ...). Exit: 0 ok, 1 failed, 2 rolled back, 3 ok with warnings.
 set -uo pipefail
@@ -108,6 +110,7 @@ MYSQL=${CHAOS_MYSQL:-$KIT/mariadb/bin/mariadb}
 STATE_DIR=${CHAOS_KIT_STATE:-/var/lib/chaos/kit-update}
 WORKBASE=${CHAOS_WORK_DIR:-/var/tmp}
 BOOT_TIMEOUT=${CHAOS_BOOT_TIMEOUT:-900}
+SYSD=${CHAOS_SYSTEMD_DIR:-/etc/systemd/system}
 STAGING=${CHAOS_STAGING:-1}
 CACHE_DIR=${CHAOS_CACHE_DIR:-$STATE_DIR/cache}
 SITE=${CHAOS_SITE_DIR:-/var/www/chaos}
@@ -939,6 +942,15 @@ cmd_apply() {
     state_set "site_commit=$(g rev-parse HEAD)"
   else
     warn="$warn site"; log "WARN: install_site.sh failed (above)"
+  fi
+  # the Discord bot follows the code (owner 2026-11-06: the bot ran old code after updates); install restarts it
+  # only when its files changed
+  if [ -f "$SYSD/chaos-discordbot.service" ]; then
+    if "$REPO/server/deploy/chaos-ctl.sh" discord-bot install 2>&1 | tail -n 15; [ "${PIPESTATUS[0]}" = 0 ]; then
+      log "discord bot: code up to date"
+    else
+      warn="$warn discord-bot"; log "WARN: discord-bot install failed (above)"
+    fi
   fi
 
   if [ -n "$warn" ]; then

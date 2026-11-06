@@ -88,7 +88,7 @@ No app Android: aba **Comandos**, cartão **Bot do Discord (bugs e patch notes)*
 3. Botão **Iniciar**. Se faltar algum valor, o app diz o nome do que falta.
 4. **Estado** mostra se o serviço está ativo e quais valores existem, sem mostrar nenhum. **Logs** mostra as últimas linhas, com tokens e chaves cobertos. **Reiniciar** e **Parar** fazem o que dizem.
 
-Para atualizar o bot depois de um update do repositório, toque em **Instalar ou atualizar** de novo. Ele copia o código novo e reinicia o bot se estiver ligado.
+O **Atualizar servidor** já atualiza o bot no fim, quando ele está instalado. Ele copia o código novo e reinicia o bot se estiver ligado. Para atualizar só o bot, toque em **Instalar ou atualizar** de novo.
 
 ### Pelo terminal
 
