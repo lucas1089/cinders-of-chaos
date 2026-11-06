@@ -1,9 +1,9 @@
 -- game_bagpanel (O420): one inventory panel in the right side panel instead of a window per backpack. Owner request
 -- 2026-11-06 ("conseguimos fazer isso com as nossas bags?"). Rules in bagpanel_core.lua (tested by
 -- bagpanel_core_test.lua); the tabs, the grid and the page buttons are drawn from bagpanel.otui.
---  * Equip tab: the ten equipment slots (UIItem widgets on the slot positions, so drag and drop, the right-click menu
---    and the rich tooltip of game_itemtooltip work as in the classic windows), the outfit, gold counted from the open
---    containers and the Chaos Coins of game_shop.
+--  * Equip tab: the equipment slots (UIItem widgets on the slot positions, so drag and drop, the right-click menu
+--    and the rich tooltip of game_itemtooltip work as in the classic windows), the fight controls of the stock
+--    window, gold counted from the open containers and the Chaos Coins of game_shop.
 --  * The grid mirrors one container: page 1 is the main backpack (the container of inventory slot 3), every bag in it
 --    is another page. A bag page opens the bag with g_game.open on its item and reuses the container id of the bag
 --    shown before, so at most one bag is open for the panel. Cells carry the container slot position, so a drop
@@ -166,13 +166,6 @@ local function drawEquipSlot(slot)
   w:setTooltip(item and '' or tr(C.SLOT_NAMES[slot] or ''))
 end
 
-local function drawOutfit()
-  local view = child('outfit')
-  local player = g_game.getLocalPlayer()
-  if not view or not player then return end
-  view:setOutfit(player:getOutfit())
-end
-
 local function buildEquip()
   local panel = child('slots')
   if not panel then return end
@@ -191,7 +184,6 @@ local function buildEquip()
     end
   end
   for slot in pairs(equip) do drawEquipSlot(slot) end
-  drawOutfit()
 end
 
 local function clearGrid()
@@ -371,6 +363,9 @@ end
 
 local function onClose(c)
   if not c then return end
+  -- a bag opened into the id of the bag shown before: the old one's close comes after the new one's open
+  local now = g_game.getContainer(c:getId())
+  if now and now ~= c then return M.refresh() end
   hiddenWindows[c:getId()] = nil
   if bagMemo[c:getId()] then
     local m = bagMemo[c:getId()]
@@ -520,12 +515,18 @@ local function buildTabs()
 end
 
 -- ---------------------------------------------------------------- the stock inventory window
--- The panel shows the equipment, so the stock window is hidden. Its fight modes, chase, safe fight, PvP, soul, capacity,
--- Stop and condition icons move into the panel's two rows: the same widgets, so game_inventory keeps updating them
--- and their clicks still reach g_game. They go back on terminate.
-local MOVED_COMBAT = { 'fightOffensiveBox', 'fightBalancedBox', 'fightDefensiveBox', 'chaseModeBoxStand',
-  'chaseModeBoxChase', 'safeFightBox', 'openPvpButton' }
-local MOVED_STATUS = { 'soulLabel', 'capLabel', 'stopButton', 'conditionPanel' }
+-- The panel shows the equipment, so the stock window is hidden. Its controls move into the panel, laid out as in that
+-- window: the same widgets, so game_inventory keeps updating them and their clicks still reach g_game. They go back
+-- on terminate. Right of the equipment, at { x, y } in the controls panel: the fight modes in one column, stand,
+-- chase and the PvP modes button in the next, safe fight, Stop and the condition icons under them. Soul and capacity
+-- sit in the empty corners of the last equipment row, under the ring and the badge (the stock window's places).
+local CONTROLS = {
+  fightOffensiveBox = { 0, 0 }, fightBalancedBox = { 0, 22 }, fightDefensiveBox = { 0, 44 },
+  chaseModeBoxStand = { 22, 0 }, chaseModeBoxChase = { 22, 22 }, openPvpButton = { 22, 44 },
+  safeFightBox = { 0, 68 }, stopButton = { 0, 92 }, conditionPanel = { 0, 112 },
+  pvpModesPanel = { 0, 68 },   -- opens over safe fight and Stop
+}
+local CORNERS = { soulLabel = 0, capLabel = 2 }   -- equipment column of the last row
 local moved = {}          -- widget -> its stock parent
 
 local function stockWindow()
@@ -539,26 +540,38 @@ local function hideStockInventory()
   if w and w:isVisible() then w:hide() end
 end
 
-local function moveInto(row, ids)
-  local stock = stockWindow()
-  if not stock or not row then return end
-  for _, id in ipairs(ids) do
-    local w = stock:recursiveGetChildById(id)
-    if alive(w) and w:getParent() ~= row then
-      moved[w] = w:getParent()
-      w:breakAnchors()
-      w:setMargin(0)
-      w:setParent(row)
-    end
+-- w goes into parent, its top left at (x, y) of target's top left
+local function place(w, parent, target, x, y)
+  if w:getParent() ~= parent then
+    moved[w] = moved[w] or w:getParent()
+    w:setParent(parent)
   end
+  w:breakAnchors()
+  w:setMargin(0)
+  w:addAnchor(AnchorLeft, target, AnchorLeft)
+  w:addAnchor(AnchorTop, target, AnchorTop)
+  w:setMarginLeft(x)
+  w:setMarginTop(y)
 end
 
 local function moveControls()
-  moveInto(child('combatRow'), MOVED_COMBAT)
-  local status = child('statusRow')
-  moveInto(status, MOVED_STATUS)
-  local cond = status and status:getChildById('conditionPanel')
-  if alive(cond) then cond:setWidth(math.max(20, status:getWidth() - 34 * 2 - 44 - 6)) end
+  local stock, controls, equipPanel = stockWindow(), child('controls'), child('equipPanel')
+  if not stock or not controls or not equipPanel then return end
+  for id, at in pairs(CONTROLS) do
+    local w = stock:recursiveGetChildById(id) or controls:getChildById(id)
+    if alive(w) then place(w, controls, 'parent', at[1], at[2]) end
+  end
+  local stop = controls:getChildById('stopButton')
+  if alive(stop) then stop:setWidth(42) end
+  local cond = controls:getChildById('conditionPanel')
+  if alive(cond) then cond:setWidth(controls:getWidth()) end
+  local modes = controls:getChildById('pvpModesPanel')
+  if alive(modes) then modes:raise() end
+  local step = C.CELL + 3
+  for id, col in pairs(CORNERS) do
+    local w = stock:recursiveGetChildById(id) or equipPanel:getChildById(id)
+    if alive(w) then place(w, equipPanel, 'slots', col * step, 3 * step + 7) end
+  end
 end
 
 local function restoreControls()
@@ -572,7 +585,9 @@ local function watchStock()
   local w = stockWindow()
   if not w or handlers.stock then return end
   -- game_interface and the layout restore open it again (game_inventory.move): hide it each time it shows
-  handlers.stock = { onVisibilityChange = function(widget, visible) if visible then addEvent(hideStockInventory) end end }
+  handlers.stock = { onVisibilityChange = function(widget, visible)
+    if visible then addEvent(hideStockInventory) end
+  end }
   connect(w, handlers.stock)
 end
 
@@ -643,10 +658,6 @@ local function onInventoryChange(player, slot)
   M.refresh()
 end
 
-local function onOutfitChange(creature)
-  if creature == g_game.getLocalPlayer() then safe('outfit', drawOutfit)() end
-end
-
 function M.init()
   handlers.container = {
     onOpen = safe('open', onOpen), onClose = safe('close', onClose),
@@ -657,8 +668,6 @@ function M.init()
   connect(g_game, handlers.game)
   handlers.player = { onInventoryChange = safe('inventory', onInventoryChange) }
   connect(LocalPlayer, handlers.player)
-  handlers.creature = { onOutfitChange = safe('outfit', onOutfitChange) }
-  connect(Creature, handlers.creature)
   if g_game.isOnline() then addEvent(handlers.game.onGameStart) end
 end
 
@@ -666,7 +675,6 @@ function M.terminate()
   disconnect(Container, handlers.container)
   disconnect(g_game, handlers.game)
   disconnect(LocalPlayer, handlers.player)
-  disconnect(Creature, handlers.creature)
   local stock = stockWindow()
   if stock and handlers.stock then disconnect(stock, handlers.stock) end
   restoreControls()
@@ -678,7 +686,7 @@ function M.terminate()
   handlers = {}
 end
 
--- ---------------------------------------------------------------- module functions (bagpanel.otui, the top menu, game_bagpanel.otmod)
+-- ---------------------------------------------------------------- module functions (bagpanel.otui, game_bagpanel.otmod)
 function init() M.init() end
 function terminate() M.terminate() end
 function sort() M.sort() end

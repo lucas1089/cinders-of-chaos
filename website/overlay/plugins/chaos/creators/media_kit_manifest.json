@@ -3,8 +3,8 @@
  "zip": {
   "name": "cinders-of-chaos-media-kit.zip",
   "path": "press/cinders-of-chaos-media-kit.zip",
-  "bytes": 8858165,
-  "sha256": "1bc42da3dbc7e6b51721d64e2ba517522bf45214369619db9749eddac1d03a2e"
+  "bytes": 8858929,
+  "sha256": "8841e6fd9376fcb2c9125c3cd6cf203560bdfb8ed889c65a00b3e88a429d2a01"
  },
  "files": [
   {
@@ -114,8 +114,8 @@
   },
   {
    "name": "social/classes/thief-1080.pt-BR.jpg",
-   "bytes": 224785,
-   "sha256": "4f3dfef89cc628752a8573b345266839b8884d886f422560ef4b865379c3be0a"
+   "bytes": 225549,
+   "sha256": "dc6c23f1951c3a067a0f34ee4ecddd7b14f9fd84078574d2093ff4824e0d0fe5"
   },
   {
    "name": "social/classes/warrior-1080.en.jpg",

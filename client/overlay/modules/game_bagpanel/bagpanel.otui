@@ -1,5 +1,5 @@
-// Inventory panel (game_bagpanel, O420): tab row, equipment with the outfit, gold and coins, the backpack as one grid,
-// one page button per bag, Sort. Styles from client_chaos_theme. Drawn from bagpanel.lua; sizes in bagpanel_core.lua.
+// Inventory panel (game_bagpanel, O420): tab row, equipment with the fight controls, gold and coins, the backpack as
+// one grid, one page button per bag, Sort. Styles from client_chaos_theme. Drawn from bagpanel.lua; sizes in bagpanel_core.lua.
 
 BagPanelTab < ChaosTabButton
   size: 34 20
@@ -72,43 +72,18 @@ MiniWindow
           flow: true
           num-columns: 3
 
-      UICreature
-        id: outfit
+      // the stock inventory window's fight modes, chase, PvP, safe fight, Stop and conditions (moved by bagpanel.lua)
+      Panel
+        id: controls
         anchors.top: parent.top
         anchors.left: slots.right
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        margin-left: 6
-        phantom: true
-        fixed-creature-size: true
-
-    // the fight modes, chase, safe fight and PvP of the stock inventory window (moved here by bagpanel.lua, which hides
-    // that window), then soul, capacity, Stop and the condition icons
-    Panel
-      id: combatRow
-      anchors.top: equipPanel.bottom
-      anchors.left: parent.left
-      anchors.right: parent.right
-      margin-top: 4
-      height: 20
-      layout:
-        type: horizontalBox
-        spacing: 2
-
-    Panel
-      id: statusRow
-      anchors.top: combatRow.bottom
-      anchors.left: parent.left
-      anchors.right: parent.right
-      margin-top: 3
-      height: 20
-      layout:
-        type: horizontalBox
-        spacing: 2
+        margin-left: 8
 
     ChaosLabelDim
       id: goldLabel
-      anchors.top: statusRow.bottom
+      anchors.top: equipPanel.bottom
       anchors.left: parent.left
       anchors.right: parent.right
       margin-top: 4
