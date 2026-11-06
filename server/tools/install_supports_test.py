@@ -37,6 +37,7 @@ def otb(nodes):
 cfg = C.read_config()
 rows = C.runes(cfg)
 check(len(rows) == 100 and cfg['clientFirstId'] == 38658, 'a hundred runes, clientFirstId 38658')
+check(all('(Character > Spell Supports)' in r[4] and '!' not in r[4] for r in rows), 'rune texts point to the menu, no chat command')
 check([r[0] for r in rows] == list(range(32101, 32201)) and [r[5] for r in rows] == list(range(38658, 38758)),
       'server ids 32101-32200 and client ids 38658-38757')
 
