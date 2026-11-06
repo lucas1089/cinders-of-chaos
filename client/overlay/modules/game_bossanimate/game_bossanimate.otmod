@@ -1,0 +1,12 @@
+Module
+  name: game_bossanimate
+  description: Boss looks with walk frames but no idle group animate while they stand (base patch 0189)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ bossanimatelogic, bossanimate ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

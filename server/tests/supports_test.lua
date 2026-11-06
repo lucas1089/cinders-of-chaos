@@ -349,6 +349,24 @@ cfg.stockSpells = false
 eq(S.eligible(entries)[1], nil, "stockSpells = false: Chaos spells only")
 ok(S.eligible(entries)[201], "chaos spell stays")
 cfg.stockSpells = true
+-- utility spells (cfg.none, owner 2026-11-06): no sockets; runes in them come back at login
+local util = S.parseSpellsXml([[<spells><instant spellid="45" name="Fleetfoot" words="ruan ul" level="14" script="support/haste.lua" />
+	<instant spellid="254" name="Town Portal" words="ash domh" level="1" script="chaos/town_portal.lua" /></spells>]])
+local uel = S.eligible(util)
+eq(uel[45], nil, "haste: no sockets"); eq(uel[254], nil, "Town Portal: no sockets")
+do
+	local p = newCreature({level = 300})
+	creatures[p.id] = nil -- not on the map
+	local r1, r2 = S.runeId(1, 1), S.runeId(2, 3)
+	S.setRune(p, 254, 1, r1); S.setRune(p, 254, 2, r2); S.setOpened(p, 254)
+	S.setRune(p, 201, 1, r1)
+	local runes, opened = S.releaseUtility(p)
+	eq(#runes, 2, "two runes back"); eq(opened, 1, "one third socket closed")
+	eq(S.read(p, 254).runes[1], 0, "socket emptied"); eq(S.read(p, 254).opened, false, "third socket closed")
+	eq(S.read(p, 201).runes[1], r1, "a non-utility spell keeps its rune")
+	local again = S.releaseUtility(p)
+	eq(#again, 0, "nothing the second time")
+end
 eq(S.kindOf(201, "damage", "single"), "single", "kind single")
 eq(S.kindOf(206, "damage", "area"), "area", "kind area")
 eq(S.kindOf(208, "heal", "self"), "heal", "kind heal")
@@ -373,6 +391,12 @@ eq(#drop, 1, "a drop"); eq(drop[1], S.runeId(1, 1), "level 1 emberbrand")
 seq = {1, 1, 1, 1}
 eq(S.rollDrop("boss", 10, 1, dice)[1], S.runeId(1, 2), "a boss drop can be a level better")
 eq(#S.rollDrop("normal", 10, 0, dice), 0, "rate 0")
+eq(S.dropLevelMult(10), 1, "no level bonus below 500"); eq(S.dropLevelMult(499), 1, "499 plain")
+eq(S.dropLevelMult(500), 2, "x2 from monster level 500"); eq(S.dropLevelMult(800), 2.5, "x2.5 from 800")
+seq = {2001}
+eq(#S.rollDrop("normal", 600, 1, dice), 0, "a level 600 normal: chance 0.2% misses at 2001")
+seq = {2000, 1, 1}
+eq(#S.rollDrop("normal", 600, 1, dice), 1, "a level 600 normal: twice the base chance (0.1%)")
 seq = {1, 1, 1}
 local rr = S.rewardRunes("rift", {tier = 7}, dice)
 eq(#rr, 1, "rift tier 7: one rune (1.0)"); eq(S.runeOf(rr[1].id).level, 1, "lowest level with dice 1")

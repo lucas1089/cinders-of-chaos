@@ -12,9 +12,8 @@ InspectSlot < ChaosItemSlot
     phantom: true
     border-width: 0
 
-// a row of infoPanel.lines, a verticalBox: the layout places it and gives it the full width (no anchors: the client
-// refuses anchors on a child of a box layout and logs an error for each one)
-// a row of the Records panel (recordsPanel.list, a verticalBox): the name left, the value right
+// a stat row of statsPanel.list, a verticalBox (the layout places it and gives it the full width: no anchors on a child of a box
+// layout, the client logs an error for each one) and a row of the Records panel (recordsPanel.list): the name left, the value right
 InspectRecord < UIWidget
   height: 16
   phantom: true
@@ -37,16 +36,38 @@ InspectRecord < UIWidget
     text-align: right
     phantom: true
 
-InspectLine < UILabel
+// a section heading of the stats list: gold text over a thin rule
+InspectSection < UIWidget
+  height: 20
+  phantom: true
+
+  UILabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+    height: 14
+    phantom: true
+
+  ChaosSeparator
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+// one line of the header band beside the character
+InspectHeadLine < UILabel
   font: verdana-11px-antialised
   color: #d6c9ae
   text-align: left
-  height: 15
+  text-auto-resize: false
+  height: 16
   phantom: true
 
 ChaosMainWindow
   id: playerInspectWindow
-  size: 500 440
+  size: 660 530
   !text: tr('Inspect Player')
   @onEscape: modules.game_playerinspect.hide()
 
@@ -75,55 +96,97 @@ ChaosMainWindow
     !text: tr('Inspect')
     @onClick: modules.game_playerinspect.inspectTyped()
 
-  ChaosPanelDark
-    id: infoPanel
+  // the header band: the character at 128 px, the name, class, title and guild beside it
+  ChaosPanelHighlight
+    id: headPanel
     anchors.top: nameEdit.bottom
     anchors.left: parent.left
-    anchors.bottom: statusLabel.top
     margin-top: 8
-    margin-bottom: 6
-    width: 210
-    padding: 8
+    width: 356
+    height: 148
+    padding: 10
 
     UICreature
       id: creature
       anchors.top: parent.top
-      anchors.horizontalCenter: parent.horizontalCenter
-      size: 96 96
-      margin-top: 4
+      anchors.left: parent.left
+      size: 128 128
       phantom: true
 
     ChaosTitle
       id: charName
-      anchors.top: creature.bottom
-      anchors.left: parent.left
+      anchors.top: parent.top
+      anchors.left: creature.right
+      anchors.right: parent.right
+      margin-left: 12
+      margin-top: 6
+      text-align: left
+      text-auto-resize: false
+      height: 20
+
+    InspectHeadLine
+      id: classLine
+      anchors.top: charName.bottom
+      anchors.left: charName.left
       anchors.right: parent.right
       margin-top: 6
-      text-align: center
-      text-auto-resize: false
-      height: 18
+
+    InspectHeadLine
+      id: badgeLine
+      anchors.top: classLine.bottom
+      anchors.left: charName.left
+      anchors.right: parent.right
+      margin-top: 4
+
+    InspectHeadLine
+      id: titleLine
+      anchors.top: badgeLine.bottom
+      anchors.left: charName.left
+      anchors.right: parent.right
+      margin-top: 4
+
+    InspectHeadLine
+      id: guildLine
+      anchors.top: titleLine.bottom
+      anchors.left: charName.left
+      anchors.right: parent.right
+      margin-top: 4
+
+  ChaosPanelDark
+    id: statsPanel
+    anchors.top: headPanel.bottom
+    anchors.left: parent.left
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 6
+    width: 356
+    padding: 10
 
     UIWidget
-      id: lines
-      anchors.top: charName.bottom
-      anchors.left: parent.left
-      anchors.right: parent.right
-      anchors.bottom: parent.bottom
-      margin-top: 8
+      id: list
+      anchors.fill: parent
       phantom: true
       layout:
         type: verticalBox
-        spacing: 3
+        spacing: 1
 
   ChaosPanelDark
     id: gearPanel
     anchors.top: nameEdit.bottom
-    anchors.left: infoPanel.right
+    anchors.left: headPanel.right
     anchors.right: parent.right
     anchors.bottom: statusLabel.top
     margin-top: 8
     margin-left: 8
     margin-bottom: 6
+
+    ChaosTitle
+      id: gearTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      !text: tr('Equipment')
 
     ChaosLabelDim
       id: gearHint
@@ -137,7 +200,7 @@ ChaosMainWindow
   ChaosPanelDark
     id: recordsPanel
     anchors.top: nameEdit.bottom
-    anchors.left: infoPanel.right
+    anchors.left: headPanel.right
     anchors.right: parent.right
     anchors.bottom: statusLabel.top
     margin-top: 8
@@ -167,16 +230,18 @@ ChaosMainWindow
     anchors.bottom: privacyBox.top
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-bottom: 6
+    margin-bottom: 4
     height: 16
     text-align: left
 
+  // the privacy setting has a row of its own above the buttons, so nothing is clipped
   ChaosCheckBox
     id: privacyBox
-    anchors.bottom: closeButton.bottom
+    anchors.bottom: closeButton.top
     anchors.left: parent.left
-    margin-bottom: 4
-    text-horizontal-auto-resize: true
+    anchors.right: parent.right
+    margin-bottom: 6
+    height: 20
     !text: tr('Allow others to inspect me')
     @onCheckChange: modules.game_playerinspect.onPrivacyToggle()
 

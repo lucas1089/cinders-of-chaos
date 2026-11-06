@@ -18,6 +18,7 @@
  */
 
 require_once __DIR__ . '/i18n_lib.php';
+require_once __DIR__ . '/media_lib.php';
 
 /** The language of the tags: the explicit choice, else the browser's, else Portuguese (crawlers). */
 function chaos_seo_lang(?array $get = null, ?array $cookie = null, ?array $server = null): string {
@@ -241,6 +242,7 @@ function chaos_seo_page(array $ctx): array {
 		'lang' => $lang,
 		'html_lang' => in_array($page, chaos_seo_bilingual_pages(), true) ? $lang : null,
 		'jsonld' => $jsonld,
+		'video' => $jsonld,
 		'admin' => $admin,
 	);
 }
@@ -270,6 +272,8 @@ function chaos_seo_jsonld(array $site, array $seo): string {
 	if ($site['discord'] !== '' && preg_match('#^https://#', $site['discord'])) {
 		$org['sameAs'] = array($site['discord']);
 	}
+	$video = chaos_media_seo_video($site['url'], $seo['lang']);
+	$trailer = chaos_media_trailer($seo['lang']);
 	$graph = array(
 		$org,
 		array('@type' => 'WebSite', 'name' => $site['name'], 'url' => $site['url'] . '/',
@@ -279,9 +283,32 @@ function chaos_seo_jsonld(array $site, array $seo): string {
 			'genre' => 'MMORPG', 'playMode' => 'MultiPlayer', 'applicationCategory' => 'Game',
 			'operatingSystem' => 'Windows, Linux', 'isAccessibleForFree' => true, 'inLanguage' => array('pt-BR', 'en')),
 	);
+	if ($video !== null && $trailer !== null) {
+		// the trailer (O425): what a search engine needs to show it as a video result
+		$graph[] = array('@type' => 'VideoObject', 'name' => $site['name'] . ' - ' . chaos_t_in($seo['lang'], 'Trailer of Cinders of Chaos'),
+			'description' => $seo['description'], 'thumbnailUrl' => $site['url'] . '/' . ltrim($trailer['poster'], '/'),
+			'contentUrl' => $video['url'], 'uploadDate' => '2026-11-06', 'duration' => 'PT59S', 'inLanguage' => $seo['lang']);
+	}
 	$json = json_encode(array('@context' => 'https://schema.org', '@graph' => $graph),
 		JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
 	return '<script type="application/ld+json">' . $json . '</script>' . "\n";
+}
+
+/** og:video of the front page (O425): the trailer in the language of the tags, an absolute address. '' elsewhere. */
+function chaos_seo_video_tags(array $seo, array $site): string {
+	if (empty($seo['video'])) {
+		return '';
+	}
+	$v = chaos_media_seo_video($site['url'], $seo['lang']);
+	if ($v === null) {
+		return '';
+	}
+	$h = static function ($x): string { return htmlspecialchars((string)$x, ENT_QUOTES, 'UTF-8'); };
+	return '<meta property="og:video" content="' . $h($v['url']) . '">' . "\n"
+		. (strncmp($v['url'], 'https://', 8) === 0 ? '<meta property="og:video:secure_url" content="' . $h($v['url']) . '">' . "\n" : '')
+		. '<meta property="og:video:type" content="' . $h($v['type']) . '">' . "\n"
+		. '<meta property="og:video:width" content="' . (int)$v['width'] . '">' . "\n"
+		. '<meta property="og:video:height" content="' . (int)$v['height'] . '">' . "\n";
 }
 
 /** The tags that go before </head>. */
@@ -318,6 +345,7 @@ function chaos_seo_head(array $seo, array $site): string {
 		. '<meta name="twitter:title" content="' . $h($seo['og_title']) . '">' . "\n"
 		. '<meta name="twitter:description" content="' . $h($seo['description']) . '">' . "\n"
 		. '<meta name="twitter:image" content="' . $h($image) . '">' . "\n"
+		. chaos_seo_video_tags($seo, $site)
 		. '<link rel="icon" href="' . $h($icons['ico']) . '" sizes="any">' . "\n"
 		. '<link rel="icon" type="image/png" sizes="32x32" href="' . $h($site['favicon'] !== '' ? $site['favicon'] : $icons['png32']) . '">' . "\n"
 		. '<link rel="icon" type="image/png" sizes="16x16" href="' . $h($icons['png16']) . '">' . "\n"

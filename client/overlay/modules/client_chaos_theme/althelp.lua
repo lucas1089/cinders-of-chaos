@@ -95,12 +95,24 @@ function A.shown()
   return state.shown
 end
 
+-- the widget under the mouse (other modules: ChaosAltHelp.hovered())
 local function hoveredWidget()
   local ui = rawget(_G, 'g_ui')
-  if not ui or not ui.getHoveredWidget then return nil end -- not in every engine build
-  local ok, w = pcall(ui.getHoveredWidget)
+  if not ui then return nil end
+  if ui.getHoveredWidget then -- not bound in our engine build
+    local ok, w = pcall(ui.getHoveredWidget)
+    if ok and w then return w end
+  end
+  -- fallback: the widget under the mouse, phantom widgets (labels on an icon) skipped
+  local win = rawget(_G, 'g_window')
+  if not ui.getRootWidget or not win or not win.getMousePosition then return nil end
+  local ok, w = pcall(function()
+    return ui.getRootWidget():recursiveGetChildByPos(win.getMousePosition(), false)
+  end)
   return ok and w or nil
 end
+
+A.hovered = function() return hoveredWidget() end
 
 -- the hovered widget, or a parent of it, that has an altTip
 function A.tipOwner(widget)

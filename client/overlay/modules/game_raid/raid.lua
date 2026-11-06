@@ -292,6 +292,20 @@ local function showCallout(text, kind)
   if not callout then return end
   callout:setText(tostring(text or ''))
   callout:setColor(V.alertColor(kind))
+  -- below the menu bar and the boss bar (they sit over the top of the map)
+  local parent = callout:getParent()
+  if parent then
+    local rects = {}
+    for _, id in ipairs({ 'chaosMenuBar', 'monsterBar', 'monsterBarMech' }) do
+      local w = rootWidget:recursiveGetChildById(id)
+      if w and w:isVisible() then
+        local r = w:getRect()
+        rects[#rects + 1] = { r.y, r.height }
+      end
+    end
+    local top = V.calloutTop(rects, parent:getY(), 120)
+    if callout:getMarginTop() ~= top then callout:setMarginTop(top) end
+  end
   callout:show()
   callout:raise()
   if calloutEvent then removeEvent(calloutEvent) end

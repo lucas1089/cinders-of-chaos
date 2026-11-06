@@ -1,0 +1,101 @@
+{
+ "files": {
+  "short-boss.en.jpg": {
+   "sha256": "d9c0164370e87ec7535bb3665f6689aaad64fd154c6b14e1ec4c1c3971a55142",
+   "size": 78132
+  },
+  "short-boss.en.mp4": {
+   "sha256": "323c2e5f416ae486115bccb178e83bf90a992de1412f5af21e0511e7e7fbb946",
+   "size": 1335867
+  },
+  "short-boss.pt-BR.jpg": {
+   "sha256": "a1a55849dbe020b32bf743661f2ea94548110bffbe33fd409fdfc8caa872d0f5",
+   "size": 78348
+  },
+  "short-boss.pt-BR.mp4": {
+   "sha256": "2a3b52f3beedc665d1efc8335918eb8d747b1ff2403bb6353b5687e9e03f528e",
+   "size": 1336633
+  },
+  "short-classes.en.jpg": {
+   "sha256": "5ab0aa3670c28bfb283fdd77a4bf81bc57d1c0fae1eba893b71d28329f1fa222",
+   "size": 88278
+  },
+  "short-classes.en.mp4": {
+   "sha256": "b63d31c68c98311be818316e2f5b78e2462e1191b2e863357a75a84a82023218",
+   "size": 1898022
+  },
+  "short-classes.pt-BR.jpg": {
+   "sha256": "4c225538b82cceffca2fd959e101f11eb43717cfe4418be71116b2321bc2ac1c",
+   "size": 88934
+  },
+  "short-classes.pt-BR.mp4": {
+   "sha256": "abff86d258e56464daf8003a9306303257175acd1314e92043c60759756131d9",
+   "size": 1877713
+  },
+  "short-rift.en.jpg": {
+   "sha256": "810a2bf59bbd80f310fac1387592273db366943823beebe7647702c4d413e198",
+   "size": 50648
+  },
+  "short-rift.en.mp4": {
+   "sha256": "7db99656852683c27b02f73f31b24885ca632f523f4ad3b854e29819dc2525ec",
+   "size": 1493736
+  },
+  "short-rift.pt-BR.jpg": {
+   "sha256": "d63e59f2212d70db675f72527637d9f74c8bc62a65502a3ea5a8ce0cad676d18",
+   "size": 50683
+  },
+  "short-rift.pt-BR.mp4": {
+   "sha256": "48311f9e8166a7f6eff264420221729ea36ab26e89c5cb760d13febff737a069",
+   "size": 1481606
+  },
+  "shot-arena.jpg": {
+   "sha256": "e2de5e6d43a55ca8d164e3d75c497b08a3dcf95ae6ec2fdc8179129466b264d6",
+   "size": 133181
+  },
+  "shot-boss.jpg": {
+   "sha256": "e02e98a56f83c6e20fb95990773559cec54dae93d6879a1ee13a8743386be561",
+   "size": 144508
+  },
+  "shot-hunt.jpg": {
+   "sha256": "71d6af5f8f0c814b689404b5e57adad18c3ca0ac52534d8ecbef7934607d7ee7",
+   "size": 209927
+  },
+  "shot-ice.jpg": {
+   "sha256": "4bf0be7dc55d5b29e4903ba17fc0c4763a5375fa9a2d0710b76cc66f92466bc4",
+   "size": 187578
+  },
+  "shot-inferno.jpg": {
+   "sha256": "fe013d523cedc0b18a2bc091c9fdec8bf1110f2c1e1dda248908e7369bf4965d",
+   "size": 155728
+  },
+  "shot-passive-tree.jpg": {
+   "sha256": "8c56c22d6cb3b0a878bf5b0ca09f89d53bcda03836e893c7dd38931e80e472b7",
+   "size": 99141
+  },
+  "shot-rift.jpg": {
+   "sha256": "f32b5b7a57ab42a4ee27cdee798328312b7beff519643b969759424733af5274",
+   "size": 130796
+  },
+  "shot-tower.jpg": {
+   "sha256": "e517112fe4fbf9194dbbb51624ba6bf34ea573116066f75ab547bd4bb4c94219",
+   "size": 192602
+  },
+  "trailer.en.jpg": {
+   "sha256": "e14016358d051e3de0c8605b213c8fef03b8601123e75e9e7725ab582165d9b6",
+   "size": 104982
+  },
+  "trailer.en.mp4": {
+   "sha256": "c52164c0aaaa22892c662a1733da734f2668e955acfdaec0d783b34800f0e59d",
+   "size": 4760107
+  },
+  "trailer.pt-BR.jpg": {
+   "sha256": "c0c1546e17960a34799e295bb2e648df91ab12345df940ad5b632041579d36c9",
+   "size": 104753
+  },
+  "trailer.pt-BR.mp4": {
+   "sha256": "bc8c8a25fea1b69552e15b1635bda3a26398abf71c71a3b9f34ee88fa1a87813",
+   "size": 4748914
+  }
+ },
+ "total": 20830817
+}

@@ -76,6 +76,22 @@ do
 	check(m and not (m[1] == h[1] and m[2] == h[2]) and not (m[1] == g[1] and m[2] == g[2]), "Mirewake: a memorial spot of its own")
 	check(math.max(math.abs(m[1] - h[1]), math.abs(m[2] - h[2])) <= 2, "Mirewake: the memorial spot by the other two")
 end
+-- Mirewake's temple keeps only its waypoint (owner 2026-11-06): no city portal there, every other town keeps them
+eq(C.townOpen(cfg, 1), false, "Mirewake: no city portals")
+eq(C.townOpen(cfg, 2), true, "Cinderhold: city portals")
+eq(C.townOpen(cfg, 3), true, "Anvildeep: city portals")
+eq(C.townOpen({}, 1), true, "no list: every town")
+for _, f in ipairs({"raid_config.lua", "descent_config.lua"}) do
+	local rc = dofile("data/scripts/chaos/" .. f)
+	for _, id in ipairs(rc.portal.townIds) do
+		check(C.townOpen(cfg, id), f .. ": no portal in a town without city portals (" .. id .. ")")
+	end
+end
+for _, f in ipairs({{"memorial_config.lua", "portalTowns"}, {"chronicle_config.lua", "gateTowns"}}) do
+	for _, id in ipairs(dofile("data/scripts/chaos/" .. f[1])[f[2]]) do
+		check(C.townOpen(cfg, id), f[1] .. ": no portal in a town without city portals (" .. id .. ")")
+	end
+end
 -- Cinderhold: every portal of the gallery (temple_portals_config.lua) is one spot here, or the Descent's / the raid's
 -- fixed tile, and nothing else of Cinderhold stands anywhere but in the gallery
 do

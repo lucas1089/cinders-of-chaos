@@ -81,8 +81,9 @@ function Game.broadcastMessage(text) broadcasts[#broadcasts + 1] = text end
 function Game.getPlayers() local l = {}; for _, p in pairs(players) do if p.online then l[#l + 1] = p end end; return l end
 local temples = {Position(100, 100, 7), Position(200, 200, 7), Position(100, 100, 7)} -- town 3 shares town 1's temple
 function Game.getTowns()
+-- town ids from 2: town 1 (Mirewake) has no city portals (cityportals_config.lua noPortalTowns)
   local l = {}
-  for i, t in ipairs(temples) do l[i] = {getId = function() return i end, getTemplePosition = function() return t end} end
+  for i, t in ipairs(temples) do l[i] = {getId = function() return i + 1 end, getTemplePosition = function() return t end} end
   return l
 end
 function Game.getSpectators(pos, multi, onlyPlayers, rx)

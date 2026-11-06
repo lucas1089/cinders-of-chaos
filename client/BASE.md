@@ -1356,6 +1356,8 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
 - **Linux / local:** `CHAOS_CLIENT_KEY=$(cat ~/chaos-keys/client.key) cmake <game-dir> ... -DCHAOS_CLIENT_BUILD=N`
   (`LINUX.md`); a build without it is a development client.
 
+`0189` for `src/client/thingtype.h`, `thingtype.cpp`, `luafunctions_client.cpp`: **boss looks animate while standing (owner 2026-11-06).** `ThingType:setAnimateAlways(bool)` for Lua (the base had only the getter). A creature look with walk phases and no idle group drew one frame while it stood; with the flag, `outfit.cpp` plays its phases on a clock (the existing `isAnimateAlways` path). The overlay module `game_bossanimate` sets it on the looks of its list (Skaldra the Rime Queen, 1534) at every game start. Without the patch the module does nothing. Applies after `0001`-`0188`; checked with `patch --dry-run` on the patched tree, the client was not built.
+
 ## What the overlay replaces
 - `game_stash` (the client's own targets a different protocol): ours, extended opcode 110.
 - `game_battlepass`: ours, the Chaos season pass (extended opcode 227, server `seasonpass.lua`).

@@ -1265,7 +1265,7 @@ function W.harvestEntry(D)
 			day(H.window.to)),
 		sections = {
 			{h = "Getting there", p = {
-				string.format("From %s to %s (server time) a Harvest Portal stands next to the temples of Cinderhold and Mirewake. It leads to the crossroads camp, where Widow Hessa trades hollow candy. The exit portals lead back to your temple.",
+				string.format("From %s to %s (server time) a Harvest Portal stands in the portal gallery of the temple of Cinderhold. It leads to the crossroads camp, where Widow Hessa trades hollow candy. The exit portals lead back to your temple.",
 					day(H.window.from), day(H.window.to)),
 				"The village: pumpkin fields, a corn maze, the hamlet of the hedge witches, the dead orchard, the gibbet hill, the graveyard and the ruined chapel. Under the chapel lie the catacombs and the King's Crypt."}},
 			{h = "Things to do", p = {

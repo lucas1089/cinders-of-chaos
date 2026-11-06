@@ -90,6 +90,10 @@ eq(V.progress({ total = 0 }), 0, 'progress without bosses')
 
 -- call-outs and loot
 eq(V.alertColor('fail'), '#ff4030', 'fail colour'); eq(V.alertColor('nope'), '#f6cf72', 'default colour')
+eq(V.calloutTop({}, 30, 120), 120, 'nothing in the way: the base margin')
+eq(V.calloutTop({ { 40, 40 }, { 110, 64 } }, 30, 120), 150, 'below the boss bar (110 + 64 + 6 - 30)')
+eq(V.calloutTop({ { 0, 20 } }, 30, 120), 120, 'a bar above the base line changes nothing')
+eq(V.calloutTop({ { 'x', 1 } }, 0, 10), 10, 'a bad rect is skipped')
 eq(V.alertSeconds('kill'), 6, 'kill stays longer'); eq(V.alertSeconds('mech'), 4, 'mechanics')
 eq(V.lootSummary({ boss = 'B', eligible = true, lines = { 'x', 'y' } }), 'Spoils of B: x, y', 'loot')
 eq(V.lootSummary({ boss = 'B' }), 'B slain. You looted it already this week: no spoils until the reset.', 'helped')

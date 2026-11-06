@@ -12,6 +12,7 @@ Ready-to-paste post texts are in pt-BR and en. Related: docs/BETA.md (the beta i
 | OBS overlays, Twitch panels, social banner 1500x500, offline screen, YouTube thumbnail template, Discord icon | `.../assets/streamer/`; media kit `streamer/` | `gen_streamer_kit.py` |
 | Server list banners, social share image, class and feature images | `.../assets/img/`; media kit `art/` | `gen_site_art.py` |
 | Media kit zip with a fact sheet (pt-BR, en) | `<site>/press/`, linked from the Creators page | `gen_media_kit.py` at install |
+| Web trailer (1280x720), 3 shorts (720x1280) and 8 screenshots for the front page, pt-BR and en | `.../assets/media/`; shown on the front page, `og:video` in link previews (O425) | `gen_site_media.py --build` from the montages and clips |
 | Creator program, creator codes, referral link | site Creators page; game | O320, referral |
 | Trailer 60 s (16:9 and 9:16), class short, world short (pt-BR, en) | built on demand, not committed (too big); see below | `website/tools/gen_promo_video.py` |
 

@@ -98,8 +98,8 @@ local function buildSlots()
     local w = g_ui.createWidget('InspectSlot', window.gearPanel)
     w:setId('slot' .. slot)
     w.slotNumber = slot
-    w:setMarginLeft(24 + p.col * 52)
-    w:setMarginTop(12 + p.row * 52)
+    w:setMarginLeft(52 + p.col * 52) -- the 3 columns centred in the 264 px panel
+    w:setMarginTop(34 + p.row * 52)
     w.onHoverChange = safe('hover', onSlotHover)
   end
 end
@@ -146,30 +146,58 @@ function openInspectedTree()
   tree.showOtherTree(state.tree)
 end
 
+-- one header line: hidden without text
+local function setHeadLine(widget, line)
+  widget:setVisible(line ~= nil)
+  widget:setText(line and line.text or '')
+  if line then widget:setColor(line.color) end
+end
+
+local function setHeader(h)
+  local p = window.headPanel
+  p.charName:setText(h.name and h.name.text or '')
+  setHeadLine(p.classLine, h.class)
+  setHeadLine(p.badgeLine, h.badge)
+  setHeadLine(p.titleLine, h.title)
+  setHeadLine(p.guildLine, h.guild)
+end
+
+local function fillStats(d)
+  local list = window.statsPanel.list
+  list:destroyChildren()
+  for _, section in ipairs(L.stats(d)) do
+    if #section.rows > 0 then
+      local head = g_ui.createWidget('InspectSection', list)
+      head.title:setText(section.title)
+      for _, r in ipairs(section.rows) do
+        local row = g_ui.createWidget('InspectRecord', list)
+        row.name:setText(r.label)
+        row.value:setText(r.value)
+        row.value:setColor(r.color)
+      end
+    end
+  end
+end
+
 local function clearAll()
   refreshTreeButton()
   refreshRecords()
   for slot in pairs(L.SLOTS) do clearSlot(slot) end
-  window.infoPanel.lines:destroyChildren()
-  window.infoPanel.charName:setText('')
-  window.infoPanel.creature:setOutfit({ type = 0 })
+  window.statsPanel.list:destroyChildren()
+  setHeader({})
+  window.headPanel.creature:setOutfit({ type = 0 })
 end
 
 -- ---------------------------------------------------------------- showing a result
 local function showResult(d)
   L.onResult(state, d)
   for slot in pairs(L.SLOTS) do clearSlot(slot) end
-  window.infoPanel.charName:setText(d.name or '')
+  setHeader(L.header(d))
   window.nameEdit:setText(d.name or '')
   local o = d.outfit or {}
-  window.infoPanel.creature:setOutfit({ type = o.type or 0, head = o.head, body = o.body, legs = o.legs, feet = o.feet, addons = o.addons,
+  window.headPanel.creature:setOutfit({ type = o.type or 0, head = o.head, body = o.body, legs = o.legs, feet = o.feet, addons = o.addons,
     mount = o.mount })
-  window.infoPanel.lines:destroyChildren()
-  for _, line in ipairs(L.lines(d)) do
-    local label = g_ui.createWidget('InspectLine', window.infoPanel.lines)
-    label:setText(line.text)
-    label:setColor(line.color)
-  end
+  fillStats(d)
   setStatus(d.self and tr('This is you.') or '', L.COLORS.dim)
   refreshTreeButton()
   refreshRecords()

@@ -179,14 +179,20 @@ return {
 	-- which spells get sockets: instants with a spell id of their own (a spell id used twice gets none), not
 	-- conjuring, not house spells. stockSpells = false limits it to the Chaos spells (scripts under chaos/).
 	stockSpells = true,
-	none = {},
+	-- utility spells: no sockets (owner 2026-11-06). Runes already in them go back to the player at login, and an
+	-- opened third socket gives its Orbs of Sockets back (supports.lua S.releaseUtility). Light, food, find person,
+	-- haste, levitate, rope, invisibility, illusion, Town Portal, Flickerdash, Vigil of Haste, Warhorse Rush
+	none = {6, 9, 10, 11, 20, 38, 39, 42, 44, 45, 75, 76, 81, 93, 134, 161, 232, 254},
 
 	-- ------------------------------------------------------------------ drops (the Chaos loot layer, loot.lua)
 	-- chance per kill in 1/10000 by monster tier x the loot layer's rate x item find (gems: 25/150/500/1500/3000)
 	drop = {
 		chance = {normal = 10, magic = 60, rare = 200, legendary = 700, boss = 1500},
 		-- level weights by monster level: the gems' table (chaos_gems_config.lua drop.levelWeights)
-		tierUp = {legendary = 25, boss = 40}
+		tierUp = {legendary = 25, boss = 40},
+		-- drop chance x mult from this monster level up (the late hunts, owner request): first row whose level the
+		-- monster reaches, from the top
+		levelMult = {{800, 2.5}, {500, 2}}
 	},
 	-- rewards: like the gems' (count = runes per reward, a fraction is the chance of one more; weights = level 1..5)
 	rewards = {

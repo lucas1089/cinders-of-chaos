@@ -13,7 +13,7 @@ return {
 	-- positions: a fixed tile per town: Cinderhold's is an alcove of the temple's portal gallery
 	-- (temple_portals_config.lua `portals`, owner 2026-10-22; tests/cityportals_test.lua checks it); a town without
 	-- one uses `offsets`
-	portal = {itemId = 1387, townIds = {2, 1}, offsets = {{-3, 3}, {3, 3}, {-3, -3}, {3, -3}, {0, 4}, {4, 1}, {-4, 1}},
+	portal = {itemId = 1387, townIds = {2}, offsets = {{-3, 3}, {3, 3}, {-3, -3}, {3, -3}, {0, 4}, {4, 1}, {-4, 1}},
 		positions = {{town = 2, x = 32363, y = 32245, z = 7}}},
 	minLevel = 100,
 	maxPlayers = 4,

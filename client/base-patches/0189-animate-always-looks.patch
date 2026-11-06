@@ -1,0 +1,39 @@
+# Chaos (0189, owner 2026-11-06: a boss stood still as a picture): ThingType:setAnimateAlways(bool) for Lua. A creature look with walk phases but no idle group draws its phases on a clock while it stands (outfit.cpp already does this for isAnimateAlways). game_bossanimate sets it on the looks of its list. Nothing else changes; without the patch the module does nothing.
+--- a/src/client/thingtype.h
++++ b/src/client/thingtype.h
+@@ -356,6 +356,8 @@
+     float getOpacity() { return m_opacity; }
+     bool isNotPreWalkable() { return m_attribs.has(ThingAttrNotPreWalkable); }
+     void setPathable(bool var);
++    // Chaos (0189): a creature look that animates while standing (the overlay sets it on boss looks without an idle group)
++    void setAnimateAlways(bool var);
+ 
+ private:
+     const TexturePtr& getTexture(int animationPhase);
+--- a/src/client/thingtype.cpp
++++ b/src/client/thingtype.cpp
+@@ -1012,6 +1012,14 @@
+         m_attribs.set(ThingAttrNotPathable, true);
+ }
+ 
++void ThingType::setAnimateAlways(bool var)
++{
++    if(var)
++        m_attribs.set(ThingAttrAnimateAlways, true);
++    else
++        m_attribs.remove(ThingAttrAnimateAlways);
++}
++
+ void DrawQueueItemThingWithShader::draw()
+ {
+     if (!m_texture) return;
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -801,6 +801,7 @@
+     g_lua.bindClassMemberFunction<ThingType>("blockProjectile", &ThingType::blockProjectile);
+     g_lua.bindClassMemberFunction<ThingType>("isNotPathable", &ThingType::isNotPathable);
+     g_lua.bindClassMemberFunction<ThingType>("setPathable", &ThingType::setPathable);
++    g_lua.bindClassMemberFunction<ThingType>("setAnimateAlways", &ThingType::setAnimateAlways);
+     g_lua.bindClassMemberFunction<ThingType>("isPickupable", &ThingType::isPickupable);
+     g_lua.bindClassMemberFunction<ThingType>("isHangable", &ThingType::isHangable);
+     g_lua.bindClassMemberFunction<ThingType>("isHookSouth", &ThingType::isHookSouth);

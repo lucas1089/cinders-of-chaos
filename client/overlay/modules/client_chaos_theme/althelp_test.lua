@@ -80,6 +80,17 @@ A.unwatch('test2')
 assert(#removed == 1 and A._state.event == nil, 'poll stopped')
 A.unwatch('nothing')
 
+-- engine without g_ui.getHoveredWidget: the widget under the mouse from the root
+local under = { name = 'under' }
+local asked
+g_ui = { getRootWidget = function()
+  return { recursiveGetChildByPos = function(_, pos, phantom) asked = { pos = pos, phantom = phantom } return under end }
+end }
+g_window = { getMousePosition = function() return { x = 5, y = 7 } end }
+assert(A.hovered() == under and asked.pos.x == 5 and asked.phantom == false, 'hovered by mouse position')
+g_ui = {}
+assert(A.hovered() == nil, 'no root: nothing hovered')
+
 -- no keyboard API: never down
 g_keyboard = nil
 assert(A.pressed() == false, 'no keyboard')

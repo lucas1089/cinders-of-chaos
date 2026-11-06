@@ -1,8 +1,8 @@
 -- game_damagescatter: damage numbers spread out (client/MANIFEST.md "Damage number scatter"). Base patch 0081 gives the
 -- animated texts above the map a pixel shift and a speed scale; on every new text (g_map.onAnimatedText) this module
 -- rolls both (scatterlogic.lua) so an area hit or a group hunt does not stack the numbers in one column. The two
--- numbers of one hit (physical + element) share a roll, so they stay side by side. Window: Character > Damage Numbers
--- (on / off and strength: Subtle, Normal, Wide), kept per character in g_settings node chaosDamageScatter. A client
+-- numbers of one hit (physical + element) share a roll, so they stay side by side. No menu entry (owner 2026-11-06: the options are
+-- in Settings); the window (on / off and strength: Subtle, Normal, Wide) stays for toggle(), kept per character in g_settings node chaosDamageScatter. A client
 -- without patch 0081 has no setScatter: one warning, nothing changes.
 -- Base patch 0100 (client/MANIFEST.md "Typed impact numbers"): the damage, heal, mana and experience numbers come
 -- through g_map.onImpactText before they reach the map, with the type the server tagged (normal, critical, damage over
@@ -19,7 +19,6 @@ local charKey = nil
 local group = {}
 local rng = L.newRng(1)
 local warned = false
-local MENU_TEXT = 'Damage Numbers'
 
 local function alive(w)
   return w and not w:isDestroyed()
@@ -127,22 +126,6 @@ function setLevel(level)
   saveSettings()
 end
 
--- ---------------------------------------------------------------- menu
-local function addMenu()
-  local top = modules.client_chaos_topbar
-  local api = top and top.ChaosTopBar
-  if not api or not api.addEntry or handlers.menu then return end
-  local ok, shown = pcall(api.available)
-  for _, text in ipairs(ok and type(shown) == 'table' and shown.character or {}) do
-    if text == MENU_TEXT then
-      handlers.menu = true
-      return
-    end
-  end
-  handlers.menu = pcall(api.addEntry, 'character',
-    { text = MENU_TEXT, icon = 'skills', modules = { 'game_damagescatter' }, fns = { 'toggle' } })
-end
-
 -- ---------------------------------------------------------------- numbers follow their creature (base patch 0100)
 local function attachedOption()
   local cs = modules.client_settings
@@ -175,7 +158,6 @@ local function onGameStart()
   group = {}
   loadSettings()
   sync()
-  addMenu()
 end
 
 local function onGameEnd()

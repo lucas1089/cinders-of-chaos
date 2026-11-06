@@ -32,20 +32,73 @@ for slot, p in pairs(L.SLOTS) do
   seen[k] = true
 end
 
-local lines = L.lines({ level = 120, voc = 'Berserker', ascended = true, guild = { name = 'Ravens', rank = 'Officer' },
-  ach = 12500, rift = 7, trials = 2 })
-eq(lines[1].text, 'Level 120 Berserker', 'level line')
-eq(lines[2].text, 'Ascended class', 'ascended')
-eq(lines[3].text, 'Officer of Ravens', 'guild')
-eq(lines[4].text, 'Achievement points: 12,500', 'points')
-eq(lines[5].text, 'Best rift sealed: tier 7', 'rift')
-eq(lines[6].text, 'Vocation Trials: tier 2 of 3', 'trials')
-lines = L.lines({ level = 8, voc = '', ach = 0, rift = 0, trials = 0 })
-eq(lines[1].text, 'Level 8 No vocation', 'no vocation')
-eq(lines[2].text, 'No guild', 'no guild')
-eq(lines[4].text, 'No rift sealed yet', 'no rift')
-eq(lines[5].text, 'No Vocation Trial cleared', 'no trial')
-eq(#lines, 5, 'five lines without the ascended one')
+local full = { name = 'Anna', level = 120, voc = 'Berserker', ascended = true, guild = { name = 'Ravens', rank = 'Officer' },
+  ach = 12500, rift = 7, trials = 3, title = 'Bossbane', paragon = 1234, collection = 410,
+  bestiary = { points = 310, rank = 'Tracker' }, bosses = { got = 9, total = 12 },
+  pvp = { name = 'Arena 1v1', tier = 'Gold', rating = 1650 }, passive = { spent = 80, total = 120 } }
+local h = L.header(full)
+eq(h.name.text, 'Anna', 'header name')
+eq(h.class.text, 'Level 120 Berserker', 'level and class')
+eq(h.badge.text, 'Ascended class', 'ascended badge')
+eq(h.title.text, 'Bossbane', 'title')
+eq(h.guild.text, 'Officer of Ravens', 'guild')
+h = L.header({ name = 'Bob', level = 8, voc = '' })
+eq(h.class.text, 'Level 8 No vocation', 'no vocation')
+eq(h.badge, nil, 'no badge')
+eq(h.title, nil, 'no title')
+eq(h.guild.text, 'No guild', 'no guild')
+eq(h.guild.color, L.COLORS.dim, 'no guild is dim')
+eq(L.header({ name = 'C', level = 1, voc = 'X', guild = { name = 'G' } }).guild.text, 'Member of G', 'guild without rank')
+
+local function flat(sections)
+  local out = {}
+  for _, sec in ipairs(sections) do
+    for _, r in ipairs(sec.rows) do out[r.label] = r end
+  end
+  return out
+end
+local sections = L.stats(full)
+eq(#sections, 2, 'two sections')
+eq(sections[1].title, 'Progress', 'progress section')
+eq(sections[2].title, 'Combat', 'combat section')
+local rows = flat(sections)
+eq(rows['Paragon points'].value, '1,234', 'paragon')
+eq(rows['Passive points'].value, '80 / 120', 'passive points')
+eq(rows['Achievement points'].value, '12,500', 'achievements')
+eq(rows['Collection score'].value, '410', 'collection')
+eq(rows['Bestiary'].value, '310 (Tracker)', 'bestiary')
+eq(rows['Boss Points'].value, '9 / 12', 'boss points')
+eq(rows['Best rift sealed'].value, 'Tier 7', 'rift')
+eq(rows['Vocation Trials'].value, 'Tier 3 of 3', 'trials')
+eq(rows['Vocation Trials'].color, L.COLORS.good, 'all trials cleared is green')
+eq(rows['PvP: Arena 1v1'].value, '1,650 (Gold)', 'pvp')
+eq(#sections[1].rows, 6, 'six progress rows')
+eq(#sections[2].rows, 3, 'three combat rows')
+
+-- an older server: only the first fields; no row for what was not sent, dim None for rift and trials
+rows = flat(L.stats({ level = 8, voc = '', ach = 0, rift = 0, trials = 0 }))
+eq(rows['Paragon points'], nil, 'no paragon row')
+eq(rows['Passive points'], nil, 'no passive row')
+eq(rows['Collection score'], nil, 'no collection row')
+eq(rows['Bestiary'], nil, 'no bestiary row')
+eq(rows['Boss Points'], nil, 'no boss row')
+eq(rows['PvP: Arena'], nil, 'no pvp row')
+eq(rows['Achievement points'].value, '0', 'zero achievements still show')
+eq(rows['Achievement points'].color, L.COLORS.dim, 'and dim')
+eq(rows['Best rift sealed'].value, 'None', 'no rift')
+eq(rows['Best rift sealed'].color, L.COLORS.dim, 'dim')
+eq(rows['Vocation Trials'].value, 'None', 'no trial')
+sections = L.stats({})
+eq(#sections[1].rows, 1, 'an empty packet: just the achievement row')
+eq(#sections[2].rows, 2, 'and the two combat rows')
+-- partial and odd values never raise
+rows = flat(L.stats({ bestiary = { points = 5 }, bosses = { got = 0, total = 5 }, pvp = { rating = 900 }, passive = { spent = 3 },
+  paragon = 'x' }))
+eq(rows['Bestiary'].value, '5', 'bestiary without rank')
+eq(rows['Boss Points'], nil, 'zero boss points: no row')
+eq(rows['PvP: Arena'].value, '900', 'pvp without tier or name')
+eq(rows['Passive points'].value, '3 / 3', 'passive without total')
+eq(rows['Paragon points'], nil, 'bad paragon: no row')
 
 local st = L.newState()
 eq(L.complete(st), false, 'nothing yet')

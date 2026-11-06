@@ -1020,6 +1020,22 @@ function login.onLogin(player)
 	player:registerEvent("ChaosSupportsLogout")
 	player:registerEvent("ChaosSupportsAdvance")
 	player:setStorageValue(cfg.storageContext, -1)
+	-- utility spells lost their sockets (cfg.none): their runes and third socket orbs come back once
+	local runes, opened = S.releaseUtility(player)
+	if #runes > 0 or opened > 0 then
+		local where = ""
+		for _, id in ipairs(runes) do
+			where = ChaosCombine.whereText(give(player, id, 1))
+		end
+		local orb = ChaosGems and ChaosGems.config.socketOrb or {id = 24692}
+		if opened > 0 then
+			give(player, orb.id, opened * cfg.third.orbs)
+		end
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+			"Utility spells no longer take support runes: %d rune(s) and %d Orb(s) of Sockets came back to you.%s",
+			#runes, opened * cfg.third.orbs, where))
+		changed(player)
+	end
 	refreshActive(player)
 	local pid = player:getId()
 	addEvent(function()

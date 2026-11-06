@@ -5,7 +5,9 @@
 -- What is public (and all that is ever sent): name, level, vocation and whether it is an ascended class, guild and
 -- rank, achievement points, the best rift tier sealed, the highest Vocation Trial tier cleared, the outfit, the ten
 -- equipment slots with their full tooltips and the active passive tree (node ids, the chosen mastery effects, class and
--- line; shown read-only). Nothing else: no health, mana, skills, storages, gold, containers. A character that switched "Allow others to inspect me" off (storage Chaos.storage.inspectOff, 1 = off,
+-- line; shown read-only). O413 adds the profile fields of I.publicStats: Paragon points, the active title, Bestiary
+-- points and rank, Boss Points, the best PvP season bracket (name, tier, rating), the Collection score and the passive
+-- points spent against owned. Nothing else: no health, mana, skills, storages, gold, containers. A character that switched "Allow others to inspect me" off (storage Chaos.storage.inspectOff, 1 = off,
 -- default on) answers with a refusal.
 
 ChaosInspect = ChaosInspect or {}
@@ -140,6 +142,61 @@ function I.equipPackets(name, rows, encode, limit)
 		out[i] = encode({action = "equip", data = {name = name, rows = group, part = i}})
 	end
 	return out
+end
+
+-- the profile fields of the result packet (O413). `raw` is what inspect.lua read from the other systems (any field may be
+-- missing when that system is not loaded); the answer has only whole non-negative numbers and short plain strings, and a
+-- field without a value is left out (the client shows no row). Returns a new table, never raw itself.
+function I.publicStats(raw)
+	raw = type(raw) == "table" and raw or {}
+	local function count(v)
+		v = tonumber(v)
+		if not v or v ~= v or v <= 0 or v == math.huge then
+			return nil
+		end
+		return math.floor(v)
+	end
+	local function text(v, max)
+		if type(v) ~= "string" then
+			return nil
+		end
+		v = v:gsub("[%c]", " "):gsub("^%s+", ""):gsub("%s+$", "")
+		if v == "" then
+			return nil
+		end
+		return v:sub(1, max or 40)
+	end
+	local out = {paragon = count(raw.paragon), title = text(raw.title, 24), collection = count(raw.collection)}
+	local points, rank = count(raw.bestiaryPoints), text(raw.bestiaryRank)
+	if points or rank then
+		out.bestiary = {points = points or 0, rank = rank}
+	end
+	local got, total = count(raw.bossGot), count(raw.bossTotal)
+	if got then
+		out.bosses = {got = got, total = math.max(total or got, got)}
+	end
+	local pvp = type(raw.pvp) == "table" and raw.pvp or nil
+	if pvp and count(pvp.rating) and text(pvp.name) then
+		out.pvp = {name = text(pvp.name), tier = text(pvp.tier), rating = count(pvp.rating)}
+	end
+	local spent, owned = count(raw.passiveSpent), count(raw.passiveTotal)
+	if spent or owned then
+		out.passive = {spent = spent or 0, total = math.max(owned or 0, spent or 0)}
+	end
+	return out
+end
+
+-- the best placed PvP bracket of ChaosPvpSeason.viewOf(guid) ({[bracket] = {rating, placed, tierName, name}}), by rating;
+-- `order` lists the bracket keys (battlegroundConfig.season.brackets). Returns {name, tier, rating} or nil
+function I.bestPvp(view, order)
+	local best
+	for _, key in ipairs(order or {}) do
+		local row = type(view) == "table" and view[key] or nil
+		if type(row) == "table" and row.placed and tonumber(row.rating) and (not best or row.rating > best.rating) then
+			best = {name = row.name or key, tier = row.tierName, rating = row.rating}
+		end
+	end
+	return best
 end
 
 -- the passive tree packet: view = ChaosPassiveTree.publicView (nodes, masteries = [{id, choice}], cls, line, vocation).

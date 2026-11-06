@@ -32,7 +32,7 @@ return {
 	--            temple's portal gallery), with a look text, an orange label and an effect. Stepping in
 	--            leads to the arrival; the plaza's exit portal (areagen's) leads to the character's temple.
 	plaza = {plan = "capital_memorial", at = {x = 14800, y = 14800, z = 7}, arrival = {23, 33, 0}},
-	portalTowns = {2, 1}, -- Cinderhold (the portal gallery at its temple) and Mirewake (beside its temple)
+	portalTowns = {2}, -- Cinderhold (the portal gallery at its temple); Mirewake has none (cityportals_config.lua noPortalTowns)
 	portalItem = 1387, -- magic forcefield (type teleport, no destination: memorial.lua moves the player)
 
 	-- action ids 47940-47949 (47930-47939 is the hunt teleports' block, hunt_teleports_config.lua)
