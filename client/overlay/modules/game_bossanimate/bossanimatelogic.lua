@@ -14,7 +14,7 @@ function L.apply(getType, looks)
   local n = 0
   for _, id in ipairs(looks or L.LOOKS) do
     local t = getType(id)
-    if t and t.setAnimateAlways then
+    if (type(t) == "table" or type(t) == "userdata") and t.setAnimateAlways then
       local ok = pcall(t.setAnimateAlways, t, true)
       if ok then n = n + 1 end
     end

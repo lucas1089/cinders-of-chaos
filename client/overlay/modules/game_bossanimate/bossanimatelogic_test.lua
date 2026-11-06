@@ -11,6 +11,7 @@ assert(n == 1, 'one look set')
 assert(set[1534] == true, 'Skaldra animates')
 assert(set[7] == nil, 'no setter: skipped')
 assert(L.apply(function() return nil end) == 0, 'no types: nothing')
+assert(L.apply(function() return 5 end) == 0, 'a number: skipped')
 local found = false
 for _, id in ipairs(L.LOOKS) do if id == 1534 then found = true end end
 assert(found, 'Skaldra on the list')
