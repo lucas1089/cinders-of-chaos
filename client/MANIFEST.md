@@ -3879,7 +3879,7 @@ md5 lines (committed with the push).
     the dat and spr md5s above (checked).
 - **Switch on:** none on the server (same client ids). The new looks show once a client update with pair 59 is published.
 
-### Pair 60: pair 59 with the temple tileset, 39 items (`gen_temple_art.py`, `art_import/temple*`; sources committed 2026-11-06, pair NOT built yet)
+### Pair 60: pair 59 with the temple tileset, 39 items (`gen_temple_art.py`, `art_import/temple*`; built 2026-11-06, on windows-assets 7a5c19e)
 Owner 2026-11-06 (pt-BR): "pode usar, são todas livres, comece pelo templo". The owner put a sheet on Google Drive (neutral name
 `temple_sheet.png`, `SOURCE_ID` and md5 in `gen_temple_art.py`) and says the art is free to use. No author, no licence text:
 docs/CREDITS.md "Temple tileset" says so. More sheets of the owner follow; this is the first.
@@ -3922,12 +3922,23 @@ python3 -I client/tools/sprites/import_art_things.py --ours-dat pair59/Tibia.dat
     --manifest-out server/data/items/temple_art.csv
 python3 -I client/tools/sprites/check_pair.py pair60/Tibia.dat pair60/Tibia.spr --old pair59/Tibia.dat pair59/Tibia.spr --new-only
 ```
-  Then the usual pair steps: md5s and archive parts here, `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 60, push to
-  windows-assets with the owner's go, client update. The importer's manifest must equal the committed one (the ids are fixed by
-  `--first-item 44511`).
+Output **pair 60** (owner's go 2026-11-06, "sim, monte o par 60 com o templo"): dat a158f6e6af5ed94148c73c03a854e575 (8,848,169
+bytes), spr 073f206ef1bea0c24bb1227f0510785d (1,132,967,207 bytes; 947,311 sprites, 123 appended). The importer verified 129 sprite
+slots pixel-identical to the art and every old thing byte-identical; its manifest equals the committed `temple_art.csv`.
+check_pair `--new-only`: 0 errors, 0 warnings (INFO: items 44524 and 44544 have one empty slot); full `--old`: 0 errors, the
+warnings of pair 59. `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 60 change only the dat md5 lines.
+- **Archive parts** (the recipe of pair 58; pushed to windows-assets as **7a5c19e**, only the two part files and their lines of
+  `SHA256SUMS.parts` change):
+  - part00 99,614,720 bytes, sha256 `514375464a1f1edd2fcfc1dc4ad25fd4e0ed4717040c3999f2dbaab6565c6df6`
+  - part01 30,287,044 bytes, sha256 `e06ece8bb71fe11d3f8583c91eece475e609e331bcc2f9a4f311dd383c3fc0fd`
+  - joined `things-1098.tar.xz` (129,901,764 bytes) sha256 `ba61f9d1756e614bf192808a96e185a9655ac44a50613948975b99332093810d`;
+    `things-1098.tar` sha256 `81fe4aac3124f6444fc2cb38d9c8855b6e7116c4050d53de91c2851c90c72f19`. Decompressing the joined parts gives
+    the dat md5 above (checked).
+- **Switch on:** publish a client update with pair 60, then set `chaosClientPair` to 60 (admin app: Comandos > "Par do cliente" >
+  Gravar 60) and run the server install, so step `templeart` writes the items.
 - **Server.** `server/tools/install_temple_art.py` (step `templeart` of `install_all.py`): items.otb nodes and items.xml names so the
   map editor can place the pieces. It waits for `chaosClientPair >= 60` (server/README.md "Client pair guard", "Temple tileset (pair 60)").
-  Nothing in the game places, sells or drops them. Not tested in a client; the importer was not run (no pair here).
+  Nothing in the game places, sells or drops them. Not tested in a client yet.
 - **Preview.** `gen_temple_art.py preview --out DIR`: every piece at 2x on dark and light, and a 13 x 13 room built from the 32 px
   pieces in the layout of the owner's mockup (not committed).
 
