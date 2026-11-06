@@ -22,6 +22,13 @@ if not ChaosSpell then
 	pcall(dofile, "data/spells/scripts/chaos/_common.lua")
 end
 local T = ChaosTemplar
+if not ChaosAttackRate then
+	dofile("data/scripts/chaos/attack_rate_core.lua")
+end
+-- at most ChaosAttackRate limits[key] triggers per second per player (O426, the 3 attacks per second cap)
+local function arGate(pid, key)
+	return ChaosAttackRate.gate(pid, key)
+end
 if not ChaosClassTree then
 	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
 end
@@ -250,7 +257,7 @@ local function onOffence(creature, player, primaryDamage, secondaryDamage, origi
 	if isMeleeHit then
 		local value = T.radiantDamage(voc, amount, creature:isPlayer(), CT.value(player, "ctBurningZeal", "share"),
 			QB.holyFactor(hasTimer(player, QB.cfg().subId.mantle)))
-		if value > 0 then
+		if value > 0 and arGate(player:getId(), "radiant") then
 			addEvent(radiantStrike, cfg().radiant.delayMs, player:getId(), creature:getId(), value)
 		end
 	end

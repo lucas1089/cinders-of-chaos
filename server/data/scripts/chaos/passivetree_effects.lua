@@ -42,7 +42,7 @@ local cfg = {
 	rarityLootPerPoint = 1.0, -- node value 10 = +10% (added to item find)
 	speedPerPoint = 0.1,      -- node value 600 = +60 speed, before the cap
 	maxSpeed = 80,
-	maxAttackSpeed = 8,       -- percent (12 before 2026-10-28: the 40% total cap is reached only min-maxed), attackSpeed nodes of the tree (item pieces add under ChaosItemMods playerSpeedCap)
+	maxAttackSpeed = 15,      -- percent (12, then 8 before the 3 attacks per second cap, O426), attackSpeed nodes of the tree (item pieces add under ChaosItemMods playerSpeedCap)
 	maxAbsorb = 75,           -- percent, passive absorbs only (equipment adds on top)
 	maxDamagePercent = 150,
 	-- the stat window formulas are percentages (vitality = % health, dexterity = % damage taken less).

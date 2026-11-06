@@ -149,14 +149,19 @@ function L.baseValue(b, signed)
   if b.fmt == 'range' and tonumber(b.lo) and tonumber(b.hi) then
     return b.lo == b.hi and L.int(b.lo) or (L.int(b.lo) .. '-' .. L.int(b.hi))
   end
-  return L.formatValue(b.v, b.fmt, signed)
+  return L.formatValue(b.v, b.fmt, signed, true)
 end
 
-function L.formatValue(v, fmt, signed)
+function L.formatValue(v, fmt, signed, rate)
   v = tonumber(v) or 0
   local s
   if fmt == 'sec' then
     s = trim(v) .. 's'
+    -- under a second the swings per second say more than the interval does (the cap is 3 per second, server/README.md
+    -- "Attack speed cap"): 0.33s (3/s)
+    if rate and v > 0 and v < 1 then
+      s = s .. ' (' .. trim(math.floor(10 / v + 0.5) / 10) .. '/s)'
+    end
   elseif fmt == 'pct' then
     s = trim(v) .. '%'
   elseif fmt == 'est' then

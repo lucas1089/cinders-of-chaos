@@ -1688,59 +1688,114 @@ rarity items that already exist keep the values they were made with. Class crits
 the Keen Edge support) are rolled in Lua with `math.random` and were always uniform: unchanged. The patch also rolls the
 chance of a `<monsters>` set in a spawn file uniformly (no spawn file of ours uses sets).
 
-## Attack speed cap (`src-patches/0011-attack-speed-cap.patch`)
+## Attack speed cap (`src-patches/0011-attack-speed-cap.patch`, `0078`, `0088-attack-speed-3-per-second.patch`)
 
 Life and mana leech roll on every hit a player deals (melee, distance, single-target spells, every scripted
 `doTargetCombat` with the player as attacker; an area spell rolls once per cast; damage over time never), so more hits
-per second meant more healing per second. Every source of extra or faster hits, at its maximum:
+per second meant more healing per second. Patch 0011 bounded every source of extra or faster hits; **O426 (owner
+2026-11-06: "raise the attack limit to 3 per second. Make it reachable too, but balanced") raised the limit from 1 to 3
+attacks per second**, made 3 reachable only by a min-maxed fast class, and made the damage per hit fall with the rate so
+the auto attack does not triple. Every source of extra or faster hits, at its maximum:
 
 | Source | Max |
 |---|---|
-| Vocation attack speed (patch 0002 scales a weapon's own interval by it) | Shadowfist 1300, Ninja 1400, Monk 1500, Thief 1600, Iron Sage 1700, Samurai 1800, others 2000 ms |
-| Weapon: Chaos `attackspeed` modifier + topaz gems (`M.syncAttackSpeed`) | -15% of the weapon's own interval (2000 without one; -20% before 2026-10-28) |
-| Dexterity of the stat window (engine: interval - dex%) | 20 points = -20% (the passive tree's dexterity is a damage multiplier only) |
-| Ninja off-hand strike (`thief_combat.lua`) | +1 hit per melee hit |
-| Bloodrage cleave / Cleaving Arc keystone | +4 / +3 hits per melee hit |
-| Ricochet / Arcane Echo keystones, support repeats and Reprisal | +2 bounces; one hit per enemy of the echoed spell; one repeat per cast |
-| Shadowfist Flurry | 2 + chi hits, one every 200 ms |
-| Pets, Beastmaster companion, Necromancer minions (hit as their owner) | one hit per 2 - 2.5 s each, pet auras up to 3 targets |
+| Vocation attack speed (patch 0002 scales a weapon's own interval by it) | Shadowfist 1300, Ninja 1400, Monk 1500, Thief 1600, Iron Sage 1700, Samurai 1800, others 2000 ms (unchanged) |
+| Weapon: Chaos `attackspeed` modifier (at most 15) + topaz gems (`M.syncAttackSpeed`) | -30% of the weapon's own interval (gems config `attackspeed` cap; was 15 since 2026-10-28, 20 before) |
+| Dexterity of the stat window (engine: interval - dex%) | 20 points = -20% (unchanged; the passive tree's dexterity is a damage multiplier only) |
+| Passive tree `attackSpeed` stat (`maxAttackSpeed` of `passivetree_effects.lua`, `caps.attackSpeed` of `passive_builds_config.lua`) | 15 (was 8) |
+| Worn pieces: `gearspeed` modifier of rings, amulets, belts and the like (cap 10 per piece, top tier 7) | summed with the tree under `playerSpeedCap` |
+| Tree + worn pieces together (patch 0078 player bonus, counted like dexterity points) | 45 (was 12): tree 15 + about four good pieces |
+| All bonuses together (engine `maxPlayerAttackSpeedBonus`) | -76% of the vocation-scaled interval (was 40) |
+| Hard floor of everything (engine `minPlayerAttackInterval`) | 333 ms = 3 attacks per second (was 1000) |
+| Ninja / Monk off-hand strike, Bloodrage cleave, Cleaving Arc, Ricochet, Templar radiant strike | each at most 1.5 triggers per second per player (`attack_rate_config.lua` `limits`); was one per swing, so at most 1 per second under the old floor |
+| Arcane Echo keystone, support repeats, Reprisal, Monk chi per auto hit | unchanged: a 3 s cooldown, one repeat per cast, a cooldown, one chi per 2 s |
+| Shadowfist Flurry | 2 + chi hits, one every 200 ms (a spell, not an auto attack; unchanged) |
+| Pets, Beastmaster companion, Necromancer minions (hit as their owner) | one hit per 2 - 2.5 s each (their own timers; unchanged) |
 | Waystones, store, world buffs | no attack speed |
 
-Before: fastest single-target swing 832 ms (Shadowfist, weapon -20%, dexterity 20), a Ninja 896 ms + off-hand = 2.2
-hits and 2.2 leech heals per second. Three engine rules (config.lua; 0 turns one off; defaults when not named):
+Engine rules (config.lua; 0 turns one off; defaults when not named, after patch 0088):
 
-- `minPlayerAttackInterval = 1000`: no player swings faster than once a second. The fastest vocation unbuffed is 1300 ms,
-  so 1000 is reached only by the fastest classes with most of the bonuses; everyone else never sees it.
-- `maxPlayerAttackSpeedBonus = 40` (25 until 2026-10-28; owner: "40%, reachable but min-maxed"): all bonuses together
-  (weapon attribute against its type's interval, dexterity, the player bonus of patch 0078) shorten the vocation-scaled
-  interval by at most 40%. A 2000 class bottoms out at 1200 ms; the Shadowfist and the Ninja reach the 1000 ms floor first.
-  Reachable only min-maxed: weapon modifier and topaz together at most 15% (gems config `attackspeed` cap, 20 before),
-  dexterity 20 (the stat window), passive tree and worn pieces together at most 12% (`playerSpeedCap`, 20 before; tree
-  `maxAttackSpeed` 8, 12 before). All at their maximum reach -40%; a weapon 4 short, dexterity 5 short or tree and gear 3
-  short miss it (`tests/attack_speed_cap_test.lua` "only min-maxed").
-- `minPlayerLeechInterval = 900`: life leech heals at most once per 900 ms, mana leech too; a roll inside the window is
-  skipped. One rule for every extra-hit source above (off-hands, cleaves, procs, pets, multi-hit spells), so leech is
-  about one heal per second however many hits land. 900 rather than 1000 so a swing at the 1000 ms floor that the
-  timer fires a few ms early still leeches.
+- `minPlayerAttackInterval = 333` (1000 before O426): no player swings faster than 3 times a second. Only the Shadowfist
+  reaches it, and only with every source at its maximum.
+- `maxPlayerAttackSpeedBonus = 76` (40 before): all bonuses together (weapon attribute against its type's interval,
+  dexterity, the player bonus of patch 0078) shorten the vocation-scaled interval by at most 76%. A min-maxed build cuts
+  75.5%: weapon 30, dexterity 20, tree + worn pieces 45 (the percent form is kept: the weapon's -30% multiplies with the
+  dexterity and player points -65%, 0.70 x 0.35 = 0.245 of the base). A 2000 ms class bottoms out at 490 ms.
+- `minPlayerLeechInterval = 900` (unchanged): life leech heals at most once per 900 ms, mana leech too. One rule for every
+  extra-hit source, so leech is about one heal per second whatever the swing rate (3 swings per second heal about 1.1
+  times per second; tested). Healing per second does not grow with the new floor.
+- Patch 0088 moves only the first two defaults (two lines of `configmanager.cpp`; the patch was checked with
+  `patch --dry-run` on the lines of 0011 and 0015, **the engine was not compiled**). The damage rules below are Lua.
 
-**Maximum attack speed: one attack per second** (owner 2026-10-28). `minPlayerAttackInterval = 1000` is the hard floor for every
-source together (vocation, weapon modifier, gems, dexterity, the passive tree, worn pieces) and is never lowered;
-`tests/attack_speed_cap_test.lua` sweeps the combinations and asserts none goes under 1000 ms.
+**Damage per hit falls with the rate** (`data/scripts/chaos/attack_rate_core.lua`, numbers in `attack_rate_config.lua`,
+applied by `weapon_styles.lua` to every weapon hit: melee, distance, wand; a spell's weapon strike is not an auto attack
+and is left out; the splash of a bow, the extra projectile and the keystone shares are taken of the cut hit, the keystone
+event runs after this one). A swing of 1000 ms or slower is a full hit. Faster: hit x (interval / 1000) ^ 0.63. So the damage
+per second grows with rate ^ 0.37, not linearly:
+
+| Swings per second | Interval | Hit | Damage per second against 1 per second |
+|---|---|---|---|
+| 1 | 1000 | 100% | x1.00 |
+| 1.5 | 667 | 77% | x1.16 |
+| 2 | 500 | 65% | x1.29 |
+| 2.5 | 400 | 56% | x1.40 |
+| 3 | 333 | 50% | x1.50 |
+
+Why 0.63: the owner design asked +40-60% damage per second at 3 attacks per second over 1 (3 ^ (1 - k) = 1.5 gives
+k = 0.63). The balance models (`weapon_sim.py`, `pack_model.py`, `survival_model.py`, `rotation_sim.py`, the minion and
+companion models) all use the weapons' own intervals (2000 ms and up) or fixed spell cooldowns, where the factor is 1, so
+none of their numbers move and every `--check` stays green. The only place the factor shows is a weapon tooltip's "Estimated
+DPS" row (`weapon_dps_core.lua` `D.rateFactor`) and the real hit. Leech, crit chance per hit and on-hit chances roll on
+every swing, so at 3 swings per second they roll 3 times as often on half-size hits: leech is held by its own interval
+(above), the extras by the per-second limits (table above, `AR.allow`, `AR.gate`).
+
+**What each class reaches** (2000 ms weapon type, auto attack only; DPS is the auto attack's damage per second against the
+same class with no speed bonus, hit and rate together; "old max" is the best build of the old rules, floor 1000 ms, 40% cap,
+sources 15 / 20 / 12):
+
+| Class (base interval) | No bonus | Typical build | Min-maxed | Old max |
+|---|---|---|---|---|
+| Shadowfist (1300) | 1300 ms, 0.77/s | 751 ms, 1.33/s, DPS x1.45 | 333 ms, 3.00/s, DPS x1.95 | 1000 ms, 1.00/s, x1.30 |
+| Ninja (1400) | 1400 ms, 0.71/s | 809 ms, 1.24/s, DPS x1.51 | 343 ms, 2.92/s, DPS x2.08 | 1000 ms, 1.00/s, x1.40 |
+| Monk (1500) | 1500 ms, 0.67/s | 867 ms, 1.15/s, DPS x1.58 | 367 ms, 2.72/s, DPS x2.17 | 1000 ms, 1.00/s, x1.50 |
+| Thief (1600) | 1600 ms, 0.63/s | 924 ms, 1.08/s, DPS x1.65 | 392 ms, 2.55/s, DPS x2.26 | 1000 ms, 1.00/s, x1.60 |
+| Iron Sage (1700) | 1700 ms, 0.59/s | 982 ms, 1.02/s, DPS x1.71 | 416 ms, 2.40/s, DPS x2.35 | 1020 ms, 0.98/s, x1.67 |
+| Samurai (1800) | 1800 ms, 0.56/s | 1040 ms, 0.96/s, DPS x1.73 | 441 ms, 2.27/s, DPS x2.44 | 1080 ms, 0.93/s, x1.67 |
+| All others (2000) | 2000 ms, 0.50/s | 1156 ms, 0.87/s, DPS x1.73 | 490 ms, 2.04/s, DPS x2.60 | 1200 ms, 0.83/s, x1.67 |
+
+- Typical = half of every source: weapon -15%, dexterity 10, tree + worn pieces 22. Min-maxed = every source at its
+  maximum: weapon -30% (modifier 15 + topaz 15), dexterity 20, tree 15 + worn pieces 30.
+- Min-maxed against the old maximum build, damage per second: Shadowfist +50%, Ninja +49%, Monk +45%, Thief +41%,
+  Iron Sage +41%, Samurai +46%, others +56%. The slower classes gain a little more because they have more room.
+- Each vocation's own hits are already cut by now / was (`classes.lua` `speedComp`), so the table is against each class's own
+  balanced baseline; the numbers say how much more a build gets from its speed, not how classes compare.
+- 3 per second is Shadowfist only; the Ninja and Monk come within 3-9%, everyone else stays under 2.6. A source 6-9
+  points short of its maximum misses 3 per second even for the Shadowfist (`tests/attack_speed_cap_test.lua`).
+- A typical build lands near 1 attack per second (0.9 - 1.3), not at 1.3 - 2: the vocation base intervals are 1300 - 2000
+  ms (0.5 - 0.77 per second), so reaching 1.3 - 2 per second without a min-max would need a 2.6 - 4x speed-up of the
+  base. That would raise every class's auto attack, which the balance models pin to the base intervals, so the base
+  intervals were left as they are.
 
 **Player attack speed bonus (patch 0078).** `Player:setAttackSpeedBonus(percent)` (0 .. 100, not saved) is counted like
-dexterity points before the rules above, so it only shortens the interval inside the 40% cap and above the 1000 ms floor.
-Sources, summed by `ChaosItemMods.setPlayerAttackSpeed` and held at `config.playerSpeedCap` (12): the passive tree's
-`attackSpeed` stat (at most `maxAttackSpeed` = 8 in `passivetree_effects.lua`, see "Passive tree: attack speed nodes") and
-the `gearspeed` modifier of rings, amulets and other worn pieces (cap 10). The weapon's own `attackspeed` modifier stays local
-to the weapon (`M.syncAttackSpeed`). Without the patch the Lua call does nothing. Item share among suffix rolls (before ->
-after): weapon 9.1% -> 20.0%; jewel 0% -> 11.0%; other (belts, gloves..) 0% -> 17.6%; the other kinds 0%.
+dexterity points before the rules above, so it only shortens the interval inside the 76% cap and above the 333 ms floor.
+Sources, summed by `ChaosItemMods.setPlayerAttackSpeed` and held at `config.playerSpeedCap` (45): the passive tree's
+`attackSpeed` stat (at most `maxAttackSpeed` = 15 in `passivetree_effects.lua`, see "Passive tree: attack speed nodes") and
+the `gearspeed` modifier of rings, amulets and other worn pieces. The weapon's own `attackspeed` modifier stays local
+to the weapon (`M.syncAttackSpeed`). Item share among suffix rolls (before -> after): weapon 9.1% -> 20.0%; jewel 0% ->
+11.0%; other (belts, gloves..) 0% -> 17.6%; the other kinds 0%.
 
-Lua mirror: `ChaosItemMods.effectiveInterval` / `attackCapConfig` (`data/lib/chaos_item_mods.lua`, reads the config
-keys through `configManager`); weapon tooltips add "Your Attack Interval" for the viewer's vocation and dexterity,
-"(capped)" when the cap raised it. Tests: `tests/attack_speed_cap_test.lua`, `tests/item_tooltip_test.lua`.
+Lua mirror: `ChaosItemMods.effectiveInterval` / `attackCapConfig` / `playerInterval` (`data/lib/chaos_item_mods.lua`, reads the
+config keys through `configManager`; defaults 333 / 76), `ChaosAttackRate` (`attack_rate_core.lua`: `hitFactor`,
+`dpsFactor`, `allow`, `gate`). Weapon tooltips add "Your Attack Interval" for the viewer's vocation, dexterity and bonus,
+"(capped)" when the cap raised it; the client shows an interval under a second with the swings per second
+(`0.33s (3/s)`, `tooltiplogic.lua` `L.formatValue`). Tests: `tests/attack_speed_cap_test.lua` (nothing under 333 ms in
+about 115 000 combinations, only the min-maxed Shadowfist reaches it, typical builds in range, the damage per second gain
+bounded at +40-60%, the per-second limits, every gate present in the engine files), `tests/melee_skill_test.lua` (the hit
+cut in `weapon_styles.lua`), `tests/passivetree_keystones_test.lua` (Cleaving Arc limit), `tests/item_tooltip_test.lua`,
+`tools/attack_speed_bonus_patch_test.py` (0088 text). Not compiled and not run on a live server.
 
-Measured on a test server (engine built from the base source + patches 0001-0011 in order, 100% leech chance, a dummy,
-30 s each; "before" = the same build with the three keys at 0):
+Measured on a test server before O426 (engine built from the base source + patches 0001-0011 in order, 100% leech chance, a
+dummy, 30 s each; "before" = the same build with the three keys at 0). Not re-measured for 0088:
 
 | Build | Hits/s before | after | Life (= mana) leech heals/s before | after |
 |---|---|---|---|---|

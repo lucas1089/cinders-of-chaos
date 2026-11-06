@@ -62,6 +62,13 @@
 
 ChaosKeystones = ChaosKeystones or {}
 local K = ChaosKeystones
+if not ChaosAttackRate then
+	dofile("data/scripts/chaos/attack_rate_core.lua")
+end
+-- at most ChaosAttackRate limits[key] triggers per second per player (O426, the 3 attacks per second cap)
+local function arGate(pid, key)
+	return ChaosAttackRate.gate(pid, key)
+end
 K.depth = K.depth or 0
 
 -- the combat log names what a keystone did (keystone_labels.lua): its extra hits are "Keystone: <name>" rows, a factor or
@@ -903,11 +910,12 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 			combatFx("crit", creature:getPosition())
 		end
 		local base = math.abs(pd) + math.abs(sd)
-		if b.ksCleavingArc and origin == ORIGIN_MELEE and isTwoHanded(weapon) and MELEE_WEAPON[weapon:getWeaponType()] then
+		if b.ksCleavingArc and origin == ORIGIN_MELEE and isTwoHanded(weapon) and MELEE_WEAPON[weapon:getWeaponType()]
+				and arGate(pid, "cleavingArc") then
 			addEvent(cleave, 0, pid, creature:getId(), base * cfg.cleave.percent, procType(pt))
 		end
 		if b.ksRicochet and origin == ORIGIN_RANGED and weapon:getWeaponType() == WEAPON_DISTANCE
-				and K.roll(cfg.ricochet.chance) then
+				and K.roll(cfg.ricochet.chance) and arGate(pid, "ricochet") then
 			local missile = weapon:getAmmoType() == AMMO_BOLT and CONST_ANI_BOLT or CONST_ANI_ARROW
 			addEvent(ricochet, 0, pid, creature:getId(), copyPos(creature:getPosition()), base, procType(pt), missile)
 		end

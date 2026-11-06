@@ -39,6 +39,13 @@ if not ChaosQuestBuffs then
 end
 local QB = ChaosQuestBuffs
 local C = ChaosClasses
+if not ChaosAttackRate then
+	dofile("data/scripts/chaos/attack_rate_core.lua")
+end
+-- at most ChaosAttackRate limits[key] triggers per second per player (O426, the 3 attacks per second cap)
+local function arGate(pid, key)
+	return ChaosAttackRate.gate(pid, key)
+end
 local CT = ChaosClassTree -- the class nodes of the passive tree (classes.lua loads class_tree.lua)
 local function cfg()
 	return Chaos.classes
@@ -215,7 +222,7 @@ local function onOffence(creature, attacker, primaryDamage, primaryType, seconda
 	if dual then
 		local value = C.offhandDamage(amount, itemAttack(main), itemAttack(off), creature:isPlayer(),
 			CT.value(player, "ctTwinFangs", "offhandShare"))
-		if value > 0 then
+		if value > 0 and arGate(player:getId(), "offhand") then
 			addEvent(offhandStrike, cfg().dualWield.delayMs, player:getId(), creature:getId(), value,
 				primaryType)
 		end

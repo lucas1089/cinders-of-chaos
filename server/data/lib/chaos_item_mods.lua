@@ -70,7 +70,7 @@ M.config = {
 	absorbCeiling = 75,
 	maxTier = 8,
 	-- the most the passive tree and the worn pieces give together as a player-level attack speed (M.setPlayerAttackSpeed)
-	playerSpeedCap = 12, -- tree + worn pieces (20 before 2026-10-28: the 40% total cap is reached only min-maxed)
+	playerSpeedCap = 45, -- tree (15) + worn pieces (30): 12 on 2026-10-28, raised for the 3 attacks per second cap (O426)
 	-- the item level a tier needs (T1 .. T8)
 	tierLevels = {1, 15, 30, 50, 70, 95, 120, 140},
 	-- roll weight of each tier: higher tiers are rarer
@@ -942,7 +942,7 @@ end
 
 -- Attack speed cap (engine patch 0011; server/README.md "Attack speed cap"). The engine owns the numbers (config.lua
 -- minPlayerAttackInterval, maxPlayerAttackSpeedBonus); these are its defaults, used where configManager is missing.
-M.attackCap = {minInterval = 1000, maxBonus = 40} -- 40 since 2026-10-28 (owner; 25 before)
+M.attackCap = {minInterval = 333, maxBonus = 76} -- O426 (owner 2026-11-06): 3 attacks per second; was 1000 / 40 (src-patch 0088)
 
 function M.attackCapConfig()
 	local cap = {minInterval = M.attackCap.minInterval, maxBonus = M.attackCap.maxBonus}
@@ -958,7 +958,7 @@ end
 -- the interval (ms) a character swings at, as the engine's Player::getAttackSpeed computes it: typeSpeed = the weapon
 -- type's own interval (0 = none), itemSpeed = the weapon's interval (its attribute, else typeSpeed; 0 / nil = no
 -- weapon or none), vocSpeed = the vocation's attackspeed, dexterity = the stat window's points, bonus = the player's
--- attack speed bonus % (tree + gloves / rings / amulets, never below 1000 ms: one attack per second at most). Returns the interval,
+-- attack speed bonus % (tree + gloves / rings / amulets, never below 333 ms: three attacks per second at most). Returns the interval,
 -- whether the cap raised it, and the interval without the cap.
 function M.effectiveInterval(typeSpeed, itemSpeed, vocSpeed, dexterity, cap, bonus)
 	cap = cap or M.attackCapConfig()
@@ -980,6 +980,25 @@ function M.effectiveInterval(typeSpeed, itemSpeed, vocSpeed, dexterity, cap, bon
 	end
 	interval = floor(math.max(interval, math.max(0, tonumber(cap.minInterval) or 0)) + 1e-9)
 	return interval, interval > uncapped, uncapped
+end
+
+-- the interval (ms) a player swings at right now: the weapon in the hands (left, then right: its own interval attribute
+-- and its type's), the vocation, dexterity and the player-level bonus. nil when the engine lacks what it needs.
+function M.playerInterval(player, item, it)
+	local ok, ms = pcall(function()
+		local voc = player:getVocation()
+		local dex = CHARSTAT_DEXTERITY and player.getCharacterStat and player:getCharacterStat(CHARSTAT_DEXTERITY) or 0
+		local typeSpeed, own = 0, 0
+		if item and it then
+			typeSpeed = typeNumber(it, "getAttackSpeed") or 0
+			own = item:getAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED) or 0
+			if own == 0 then
+				own = typeSpeed
+			end
+		end
+		return (M.effectiveInterval(typeSpeed, own, voc and voc:getAttackSpeed() or 2000, dex, nil, M.playerAttackSpeed(player)))
+	end)
+	return ok and ms or nil
 end
 
 -- keep the weapon's attack interval in line with its attack speed modifier and its topaz gems (chaos_gems.lua: both
@@ -1010,7 +1029,7 @@ end
 -- and the "gearspeed" modifier of rings, amulets and other worn pieces (the weapon's own "attackspeed" stays on the
 -- weapon, M.syncAttackSpeed). Each source reports its percent here; the sum is held at M.config.playerSpeedCap and handed
 -- to the engine, whose rules of patch 0011 still apply on top: all attack speed bonuses together shorten the interval by at
--- most 40% and no player swings faster than once per second (minPlayerAttackInterval = 1000 ms), whatever the sources.
+-- most 76% and no player swings faster than three times per second (minPlayerAttackInterval = 333 ms), whatever the sources.
 M.playerSpeed = M.playerSpeed or {} -- player id -> {tree = pct, gear = pct, total = pct}
 
 function M.playerSpeedTotal(sources)

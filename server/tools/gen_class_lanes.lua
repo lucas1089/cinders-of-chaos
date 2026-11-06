@@ -269,8 +269,8 @@ Gen.OVERRIDES = {
 -- node of its own: the classes that fight with weapon hits get attackSpeed on nodes that gave them dexterity only (a lane
 -- never takes a stat from a node that has others). Per class: `small` plain Attribute nodes (+1%, +2% on a node that gave
 -- 3 dexterity or more) on the routes the class walks most, and `notables` named or big nodes (+4%, +5% from 6 dexterity)
--- that nothing else is on. The tree caps the stat at passivetree_effects.lua maxAttackSpeed (12); the engine keeps
--- one attack per second as the floor whatever the sources (minPlayerAttackInterval = 1000, patch 0011).
+-- that nothing else is on. The tree caps the stat at passivetree_effects.lua maxAttackSpeed (15 since O426; 8 before);
+-- the engine keeps three attacks per second as the floor whatever the sources (minPlayerAttackInterval = 333, patch 0088).
 Gen.ATTACK_SPEED = {
 	classes = {"beastmaster", "berserker", "deadeye", "juggernaut", "knight", "monk", "ninja", "paladin", "samurai",
 		"shadowfist", "templar", "thief"},
