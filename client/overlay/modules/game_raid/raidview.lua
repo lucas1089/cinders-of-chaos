@@ -221,6 +221,18 @@ function RaidView.stacksLine(d)
   return table.concat(parts, '   ')
 end
 
+-- where the call-out goes (owner 2026-11-06: "os avisos do boss na raid ficam escondidos"): the top margin inside the
+-- map panel, below every visible widget on top of the map (the menu bar, the boss bar and its mechanic strip).
+-- rects: {{y, height}, ...} in screen pixels; mapY: the map panel's top; base: the margin when nothing is in the way.
+function RaidView.calloutTop(rects, mapY, base)
+  local top = base or 120
+  for _, r in ipairs(rects or {}) do
+    local y, h = tonumber(r[1]), tonumber(r[2])
+    if y and h then top = math.max(top, y + h + 6 - (mapY or 0)) end
+  end
+  return top
+end
+
 RaidView.ALERT_COLORS = { mech = '#f6cf72', tank = '#ff9a30', swap = '#9fd8ff', fail = '#ff4030', phase = '#e8b84a',
   pull = '#ff7a2a', kill = '#7fd07f', wipe = '#ff4030', fall = '#c8a0a0', door = '#9fd89f' }
 function RaidView.alertColor(kind)
