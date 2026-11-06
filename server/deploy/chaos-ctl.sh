@@ -243,7 +243,7 @@
 #                               printed, never on a command line). NAME: DISCORD_TOKEN ANTHROPIC_API_KEY DISCORD_OWNER_ID
 #                               DISCORD_BUGS_CHANNEL_ID DISCORD_PATCH_CHANNEL_ID DISCORD_GUILD_ID DISCORD_ADMIN_ROLE_ID
 #                               DISCORD_BOT_MODEL DISCORD_BOT_PATCH_AUTO (preview|publish|off: the patch notes after a
-#                               server update, default preview). Empty input removes the line. A running bot restarts
+#                               server update, default publish). Empty input removes the line. A running bot restarts
 #   discord-bot start | stop | restart
 #                               start refuses with config-missing (names only) until the five required settings are set
 #   discord-bot logs [N]        the last N (default 60, at most 500) lines of the bot log, tokens and keys masked
@@ -2517,7 +2517,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         echo "data_dir=$BOTDATA"
         if [ -f "$BOTDATA/bugs.sqlite3" ]; then echo "db_bytes=$(stat -c %s "$BOTDATA/bugs.sqlite3" 2>/dev/null)"; else echo "db_bytes=0"; fi
         bauto=$(sed -n 's/^DISCORD_BOT_PATCH_AUTO=\(preview\|publish\|off\)[[:space:]]*$/\1/p' "$BOTENV" 2>/dev/null | head -n 1)
-        echo "patch_auto=${bauto:-preview}"
+        echo "patch_auto=${bauto:-publish}"
         echo "sync_timer=$(systemctl is-active "$BOTSYNC.timer" 2>/dev/null | head -n 1 || true)"
         if [ -f "$BOTDATA/changes.json" ]; then echo "changes_file=$(date -u -r "$BOTDATA/changes.json" '+%F %H:%M UTC' 2>/dev/null)"; else echo "changes_file=missing"; fi
         echo "@log"

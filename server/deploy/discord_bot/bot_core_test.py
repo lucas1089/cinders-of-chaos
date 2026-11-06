@@ -423,7 +423,7 @@ def test_changes():
     the first-run window, caps, the prompt, the empty case and the automatic patch plan."""
     now = 1_800_000_000
     c = core.load_config(GOOD)
-    check(c.patch_auto == 'preview' and c.changes_path.endswith('changes.json'), 'patch_auto default preview')
+    check(c.patch_auto == 'publish' and c.changes_path.endswith('changes.json'), 'patch_auto default publish')
     for v in ('publish', 'off', 'PREVIEW '):
         check(core.load_config(dict(GOOD, DISCORD_BOT_PATCH_AUTO=v)).patch_auto == v.strip().lower(), 'patch_auto ' + v)
     check(raises(lambda: core.load_config(dict(GOOD, DISCORD_BOT_PATCH_AUTO='yes')), 'DISCORD_BOT_PATCH_AUTO'),
@@ -499,8 +499,8 @@ def test_changes():
     check(core.auto_patch_plan('off', ex, None, None, None, now)['action'] == 'none', 'auto off: nothing')
     check(core.auto_patch_plan('preview', None, None, None, None, now)['action'] == 'none', 'auto without file: nothing')
     p = core.auto_patch_plan('publish', ex, None, None, None, now)
-    check(p['action'] == 'generate' and not p['publish'] and len(p['changes']) == 2,
-          'auto publish: the first time is a preview')
+    check(p['action'] == 'generate' and p['publish'] and len(p['changes']) == 2,
+          'auto publish: the first time posts too')
     p = core.auto_patch_plan('preview', ex, None, set(), now - DAY, now)
     check(p['action'] == 'generate' and not p['publish'], 'auto preview: preview')
     p = core.auto_patch_plan('publish', ex, 'b' * 40, set(), now - DAY, now)

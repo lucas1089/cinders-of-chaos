@@ -28630,11 +28630,11 @@ asks Claude what each message is, keeps a bug list and helps write patch notes. 
   most 60), newest first, at most 12,000 characters, with the fixed bugs and extras. The system prompt turns commit messages into
   player notes and drops tooling, docs, tests, admin; the schema has `player_facing` (false: no notes). Nothing new at all: "Nada novo
   desde <date>". Runs as root code of the checkout, like `chaos-health.service`.
-- **Automatic patch (O385).** `DISCORD_BOT_PATCH_AUTO` = `preview` (default), `publish` or `off`. Every 5 min the bot reads
+- **Automatic patch (O385).** `DISCORD_BOT_PATCH_AUTO` = `publish` (default, owner 2026-11-06), `preview` or `off`. Every 5 min the bot reads
   `changes.json`; a new head (meta `auto_head`, one attempt per head) with unseen changes makes notes versioned `YYYY-MM-DD`
   (`bot_core.auto_patch_plan`). `preview` DMs the owner the preview with persistent buttons (meta `auto_pending`, restored with
   `add_view` at start; a newer preview or any publish with changes retires it). `publish` posts and writes the site files, then DMs a
-  short note; its first run is still a preview. `player_facing` false: one log line, the changes are marked seen.
+  short note, the first run too. `player_facing` false: one log line, the changes are marked seen.
 - **Install.** `chaos-ctl.sh discord-bot install` (idempotent): user `chaosbot`, `CHAOS_BOT_DIR/venv` (default `/opt/chaos/discord-bot`)
   from the pinned `requirements.txt`, the code copied to `CHAOS_BOT_DIR/app`, `/etc/chaos/discord-bot.env` (mode 600, from
   `.env.example`), data dir `/var/lib/chaos/discord-bot` (750), `chaos-discordbot.service` (sandboxed like the other services, writes
