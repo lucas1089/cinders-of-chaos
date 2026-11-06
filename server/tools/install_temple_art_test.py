@@ -51,10 +51,8 @@ names = {r['name'] for r in rows}
 check({'temple marble floor', 'temple pillar', 'temple torch', 'temple red carpet'} <= names and all(n.startswith('temple ') for n in names),
       'names start with "temple " (marble floor, pillar, torch, carpet present)')
 
-# the manifest is the one the art generator writes (the importer's --manifest-out of art_import/temple.csv)
-import gen_temple_art as G  # noqa: E402
-want = G.manifest_text(open(G.THINGS, encoding='utf-8').read())
-check(open(T.DEFAULT_MANIFEST, encoding='utf-8').read() == want, 'temple_art.csv is what the importer writes for temple.csv (gen_temple_art.py build)')
+# that the manifest is what the generator writes for art_import/temple.csv is checked by gen_temple_art_test.py (it
+# needs Pillow and numpy, which run in the fx venv job, not in this one)
 
 # items.otb
 base = otb([item_node(2671, 3582)])
