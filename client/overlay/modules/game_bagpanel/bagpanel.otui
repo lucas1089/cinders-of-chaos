@@ -104,7 +104,7 @@ MiniWindow
       height: 20
       layout:
         type: horizontalBox
-        spacing: 2
+        spacing: 8
 
     ChaosLabelDim
       id: goldLabel

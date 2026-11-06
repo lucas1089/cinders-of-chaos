@@ -371,6 +371,9 @@ end
 
 local function onClose(c)
   if not c then return end
+  -- a bag opened into the id of the bag shown before: the old one's close comes after the new one's open
+  local now = g_game.getContainer(c:getId())
+  if now and now ~= c then return M.refresh() end
   hiddenWindows[c:getId()] = nil
   if bagMemo[c:getId()] then
     local m = bagMemo[c:getId()]
@@ -523,8 +526,9 @@ end
 -- The panel shows the equipment, so the stock window is hidden. Its fight modes, chase, safe fight, PvP, soul, capacity,
 -- Stop and condition icons move into the panel's two rows: the same widgets, so game_inventory keeps updating them
 -- and their clicks still reach g_game. They go back on terminate.
+-- (the PvP modes button stays behind: its modes panel lives in the stock window, and the row has no room)
 local MOVED_COMBAT = { 'fightOffensiveBox', 'fightBalancedBox', 'fightDefensiveBox', 'chaseModeBoxStand',
-  'chaseModeBoxChase', 'safeFightBox', 'openPvpButton' }
+  'chaseModeBoxChase', 'safeFightBox' }
 local MOVED_STATUS = { 'soulLabel', 'capLabel', 'stopButton', 'conditionPanel' }
 local moved = {}          -- widget -> its stock parent
 
@@ -558,7 +562,14 @@ local function moveControls()
   local status = child('statusRow')
   moveInto(status, MOVED_STATUS)
   local cond = status and status:getChildById('conditionPanel')
-  if alive(cond) then cond:setWidth(math.max(20, status:getWidth() - 34 * 2 - 44 - 6)) end
+  if alive(cond) then
+    local used = 0
+    for _, id in ipairs(MOVED_STATUS) do
+      local w = status:getChildById(id)
+      if alive(w) and w ~= cond then used = used + w:getWidth() + 8 end
+    end
+    cond:setWidth(math.max(20, status:getWidth() - used))
+  end
 end
 
 local function restoreControls()
