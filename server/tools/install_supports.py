@@ -94,7 +94,7 @@ def description(cfg, s, level):
     text = 'A support rune for a spell socket: %s. Fits %s spells.' % (effect[:1].lower() + effect[1:], fits)
     if level < cfg['levels']:
         text += ' Three of them combine into one of the next level: use the stack, then left-click the same stack.'
-    return text + ' Use it to open the spell supports (!supports).'
+    return text + ' Use it to open the spell supports (Character > Spell Supports).'
 
 
 def runes(cfg):

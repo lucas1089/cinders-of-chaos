@@ -441,7 +441,7 @@ return array(
 	'Awakening and Gilding make magic items' => 'Awakening e Gilding criam itens mágicos',
 	'Grafting adds a modifier, Unmaking removes one' => 'Grafting adiciona um modificador, Unmaking remove um',
 	'Upheaval and Fate reroll; Erasure starts over' => 'Upheaval e Fate sorteiam de novo; Erasure recomeça',
-	'All at the Crafting Bench (!craft)' => 'Tudo na Crafting Bench (!craft)',
+	'All at the Crafting Bench (Alt+C)' => 'Tudo na Crafting Bench (Alt+C)',
 	'Endgame' => 'Endgame',
 	'Five colossal world bosses with phases' => 'Cinco chefes colossais do mundo, com fases',
 	'Rifts: keys with tiers 1-15 and modifiers' => 'Rifts: chaves com tiers 1-15 e modificadores',
