@@ -1,4 +1,6 @@
-// Rich item tooltip (game_itemtooltip): a dark gold-rimmed plate of the Chaos skin, laid out by item_tooltip.lua.
+// Rich item tooltip (game_itemtooltip): a framed card (double gold border, a glow in the rarity colour, a round icon
+// frame, stat tiles, tier tags, chips), laid out by item_tooltip.lua from tooltiplogic.lua L.card (O422).
+// Art: images/ring, disc, glow, diamond from tools/gen_tooltip_art.py; the rest are plain widgets.
 
 ItemTooltipLine < UILabel
   font: verdana-11px-rounded
@@ -8,45 +10,115 @@ ItemTooltipLine < UILabel
   focusable: false
 
 ItemTooltipTitle < ItemTooltipLine
-  font: verdana-11px-rounded
+  font: chaos-title-15px
+
+ItemTooltipKind < ItemTooltipLine
+  font: chaos-heading-14px
+
+ItemTooltipCap < ItemTooltipLine
+  font: verdana-9px-rounded
+  color: #8c8070
 
 ItemTooltipRule < UIWidget
   height: 1
-  background-color: #3a3339
+  background-color: #3a2e1e
+  phantom: true
+  focusable: false
+
+ItemTooltipDiamond < UIWidget
+  image-source: images/diamond
+  image-color: #e8a030
+  size: 11 11
+  phantom: true
+  focusable: false
+
+ItemTooltipTile < UIWidget
+  background-color: #1c1712
+  border-width: 1
+  border-color: #3a3025
+  height: 38
+  phantom: true
+  focusable: false
+
+ItemTooltipTag < UILabel
+  font: verdana-9px-rounded
+  color: #8c8070
+  text-align: center
+  background-color: #241d16
+  border-width: 1
+  border-color: #4a3d2c
+  size: 26 16
+  phantom: true
+  focusable: false
+
+ItemTooltipChip < UILabel
+  font: verdana-9px-rounded
+  color: #d6c9ae
+  text-align: center
+  background-color: #1e1913
+  border-width: 1
+  border-color: #4a3d2c
+  height: 17
   phantom: true
   focusable: false
 
 ItemTooltipPanel < UIWidget
-  image-source: /images/chaos/skin/tooltip
-  image-border: 4
+  background-color: #120e0b
+  border-width: 1
+  border-color: #8a5a1e
   phantom: true
   focusable: false
-  size: 200 60
+  size: 320 60
 
   UIWidget
-    id: band
+    id: inner
+    anchors.fill: parent
+    margin: 3
+    border-width: 1
+    border-color: #3a2a14
+    phantom: true
+
+  UIWidget
+    id: glow
+    image-source: images/glow
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    height: 3
-    margin: 3 4 0 4
+    height: 96
+    margin: 1
+    phantom: true
+
+  UIWidget
+    id: disc
+    image-source: images/disc
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    size: 52 52
+    margin-top: 14
+    phantom: true
+
+  UIWidget
+    id: ring
+    image-source: images/ring
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    size: 52 52
+    margin-top: 14
     phantom: true
 
   UIItem
     id: icon
     anchors.top: parent.top
-    anchors.left: parent.left
+    anchors.horizontalCenter: parent.horizontalCenter
     size: 32 32
-    margin-top: 9
-    margin-left: 8
+    margin-top: 24
     virtual: true
     phantom: true
 
-  ItemTooltipLine
+  ItemTooltipCap
     id: header
     anchors.top: parent.top
-    anchors.right: parent.right
-    margin-top: 6
-    margin-right: 8
-    color: #8c8070
+    anchors.left: parent.left
+    margin-top: 8
+    margin-left: 10
     visible: false

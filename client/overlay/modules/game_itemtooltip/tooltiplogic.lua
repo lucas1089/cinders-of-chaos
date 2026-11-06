@@ -208,6 +208,26 @@ function L.titleColor(tip)
   return L.rarityColor(tip.rarity) or L.COLORS.normal
 end
 
+-- the kind line of a tooltip: 'Legendary Wand' / 'Unique Quiver' / 'Set Ring' (nil when nothing is known) and the slot
+-- line when the slot reads 'Where: What' (the server's quiver: 'Off-hand: Quiver'; the kind line names what, the slot
+-- line says where it is worn)
+function L.kindText(tip)
+  local sub = {}
+  if tip.unique and tip.unique.set then
+    sub[#sub + 1] = 'Set'
+  elseif tip.unique then
+    sub[#sub + 1] = tr('Unique')
+  elseif tip.rarityName then
+    sub[#sub + 1] = tr(tip.rarityName)
+  end
+  local slotWhat, slotLine = tip.slot, nil
+  if type(tip.slot) == 'string' and tip.slot:find(': ', 1, true) then
+    slotWhat, slotLine = tip.slot:match(': (.+)$'), tip.slot
+  end
+  if slotWhat then sub[#sub + 1] = tr(slotWhat) end -- 'Two-handed sword', 'Dagger' ... (pt-BR in client_chaos_locale)
+  return #sub > 0 and table.concat(sub, ' ') or nil, slotLine
+end
+
 -- the lines of a tooltip: {text, color, sep (a gap before), parts = {text, color, text, color, ...}}
 -- ctx = {level = the player's level}
 function L.lines(tip, ctx)
@@ -217,22 +237,8 @@ function L.lines(tip, ctx)
   local function add(text, color, sep, parts)
     out[#out + 1] = { text = text, color = color or C.text, sep = sep or false, parts = parts }
   end
-  local sub = {}
-  if tip.unique and tip.unique.set then
-    sub[#sub + 1] = 'Set'
-  elseif tip.unique then
-    sub[#sub + 1] = tr('Unique')
-  elseif tip.rarityName then
-    sub[#sub + 1] = tr(tip.rarityName)
-  end
-  -- a slot of the form 'Where: What' (the server's quiver: 'Off-hand: Quiver'): the title names what, a line of its
-  -- own says where it is worn
-  local slotWhat, slotLine = tip.slot, nil
-  if type(tip.slot) == 'string' and tip.slot:find(': ', 1, true) then
-    slotWhat, slotLine = tip.slot:match(': (.+)$'), tip.slot
-  end
-  if slotWhat then sub[#sub + 1] = tr(slotWhat) end -- 'Two-handed sword', 'Dagger' ... (pt-BR in client_chaos_locale)
-  if #sub > 0 then add(table.concat(sub, ' '), L.titleColor(tip)) end
+  local kindText, slotLine = L.kindText(tip)
+  if kindText then add(kindText, L.titleColor(tip)) end
   if slotLine then add(slotLine, C.dim) end
   if tip.level then
     add(tr('Item Level %d', tip.level) .. (tip.maxTier and tr('  (up to T%d)', tip.maxTier) or ''),
@@ -640,5 +646,356 @@ function L.veilLines(veil)
   end
   return out
 end
+
+-- ---------------------------------------------------------------- the card layout (O422)
+-- The tooltip as a card (item_tooltip.lua draws it): head (name, kind, item level, flags), stat tiles and one line of
+-- the other base stats, modifier groups (prefixes, suffixes, the veiled slot), extra groups (sockets, set, notes,
+-- passive, charges), requirement chips with the source and weight lines. Pure: no widgets, no sizes.
+L.SEP = ' - ' -- between the items of the extra stat line and the foot
+L.TILE_MAX = 4
+L.EXTRA_LINE = 44 -- characters of one extra stat line
+L.FOOT_LINE = 50 -- characters of the foot line that may take the weight
+
+-- capitals for the captions (ASCII only: the bytes of an accent stay as they are)
+function L.caps(text)
+  return (tostring(text or ''):upper())
+end
+
+-- which base rows become tiles, in this order: the damage and speed of a weapon, then the protection of the rest
+L.TILE_ORDER = { 'dps', 'attack', 'speed', 'range', 'armor', 'defense', 'extradefense', 'hitchance' }
+
+local function tileCaption(key)
+  if key == 'dps' then return tr('DPS') end
+  if key == 'attack' then return tr('Attack') end
+  if key == 'speed' then return tr('Speed') end
+  if key == 'range' then return tr('Range') end
+  if key == 'armor' then return tr('Armour') end
+  if key == 'defense' then return tr('Defense') end
+  if key == 'extradefense' then return tr('Extra Defense') end
+  if key == 'hitchance' then return tr('Hit Chance') end
+  return key
+end
+
+L.UNSIGNED = { attack = true, defense = true, extradefense = true, armor = true, range = true, hitchance = true,
+  attackspeed = true, yourinterval = true, dps = true } -- plain numbers; the other rows are bonuses and show a sign
+
+-- the base rows split into tiles ({key, caption, value, hero}, at most L.TILE_MAX, DPS the hero) and the rest
+-- ({label, value, imp}); returns tiles, rest
+function L.statTiles(base)
+  local list = type(base) == 'table' and base or {}
+  local byKey = {}
+  for _, b in ipairs(list) do
+    if type(b) == 'table' and b.k and byKey[b.k] == nil then byKey[b.k] = b end
+  end
+  local speed = byKey.yourinterval or byKey.attackspeed
+  local tiles, used = {}, {}
+  for _, key in ipairs(L.TILE_ORDER) do
+    local b = key == 'speed' and speed or byKey[key]
+    if b and #tiles < L.TILE_MAX then
+      tiles[#tiles + 1] = { key = key, caption = tileCaption(key), value = L.baseValue(b), hero = key == 'dps' }
+      used[b] = true
+    end
+  end
+  local rest = {}
+  for _, b in ipairs(list) do
+    if type(b) == 'table' and not used[b] then
+      local signed = b.imp or not L.UNSIGNED[b.k]
+      rest[#rest + 1] = { label = tostring(b.l or b.k or '?'), value = L.baseValue(b, signed), imp = b.imp or false }
+    end
+  end
+  return tiles, rest
+end
+
+-- the rest of the base rows as centred lines: each line is parts {text, color, text, color, ...} (labels in the text
+-- colour, values green, separators dim), at most L.EXTRA_LINE characters
+function L.extraLines(rest)
+  local C = L.COLORS
+  local lines, parts, len = {}, {}, 0
+  for _, r in ipairs(rest or {}) do
+    local label, value = r.label .. ' ', r.value
+    local need = #label + #value + (len > 0 and #L.SEP or 0)
+    if len > 0 and len + need > L.EXTRA_LINE then
+      lines[#lines + 1] = parts
+      parts, len, need = {}, 0, #label + #value
+    end
+    if len > 0 then
+      parts[#parts + 1] = L.SEP
+      parts[#parts + 1] = C.dim
+    end
+    parts[#parts + 1] = label
+    parts[#parts + 1] = C.text
+    parts[#parts + 1] = value
+    parts[#parts + 1] = C.better
+    len = len + need
+  end
+  if #parts > 0 then lines[#lines + 1] = parts end
+  return lines
+end
+
+local function rangeText(lo, hi)
+  if not lo or not hi then return nil end
+  return lo == hi and trim(lo) or (trim(lo) .. '-' .. trim(hi))
+end
+
+-- the modifier groups: [{caption, capColor, rows}], rows {kind = 'mod', tag, top, tagColor, text, color, range, parts}
+-- (top: the best tier of the item level, the green tag; parts: the text with a gold [bound] after it)
+function L.modGroups(tip)
+  local C = L.COLORS
+  local groups, group, side = {}, nil, nil
+  for _, m in ipairs(tip.mods or {}) do
+    if not group or m.sd ~= side then
+      side = m.sd
+      local caption
+      if side == 'i' then
+        caption = L.caps(tr('Corrupted implicit'))
+      elseif side then
+        local head = L.caps(side == 'p' and tr('Prefixes') or tr('Suffixes'))
+        local sides = tip.sides
+        if sides and sides.max then
+          local limit = (side == 'p' and sides.mp or sides.ms) or sides.max
+          head = string.format('%s %d/%d', head, side == 'p' and (sides.p or 0) or (sides.s or 0), limit)
+        end
+        caption = head
+      end
+      group = { caption = caption, rows = {} }
+      groups[#groups + 1] = group
+    end
+    local color = (m.sd == 'i' and C.corrupted) or (m.pw and C.power) or (m.g == 'chaos' and C.chaos)
+      or (m.g == 'element' and C.element) or C.mod
+    local row = { kind = 'mod', text = tostring(m.t or ''), color = color, range = rangeText(m.lo, m.hi) }
+    if m.tr then
+      row.tag = 'T' .. trim(m.tr)
+      row.top = tonumber(tip.maxTier) ~= nil and tonumber(m.tr) == tonumber(tip.maxTier)
+    end
+    if m.bd then
+      row.parts = { row.text, color, ' [bound]', C.bound }
+    end
+    group.rows[#group.rows + 1] = row
+  end
+  -- the veiled slot (server data/lib/chaos_veiled.lua): its own group, in its colour
+  local veil = tip.veil
+  if type(veil) == 'table' then
+    if veil.s == 'veiled' then
+      groups[#groups + 1] = { caption = L.caps(tr('Veiled modifier')), capColor = C.veiled, rows = {
+        { kind = 'text', text = (tr('  Reveal it with an Orb of Unveiling'):gsub('^%s+', '')), color = C.dim } } }
+    elseif veil.s == 'open' then
+      local rows = { { kind = 'mod', tag = tostring(veil.tn or ('V' .. tostring(veil.tr or 1))),
+        tagColor = L.VEIL_TIER_COLORS[tonumber(veil.tr) or 0] or C.veiled, text = tostring(veil.n or '?'),
+        color = C.veiled, range = rangeText(veil.lo, veil.hi) } }
+      for _, line in ipairs(L.wrap(veil.t, L.WRAP)) do
+        rows[#rows + 1] = { kind = 'text', text = line, color = C.veiledText }
+      end
+      groups[#groups + 1] = { caption = L.caps(tr('Veiled')), capColor = C.veiled, rows = rows }
+    end
+  end
+  return groups
+end
+
+local function textRows(lines, color)
+  local rows = {}
+  for _, line in ipairs(lines) do rows[#rows + 1] = { kind = 'text', text = line, color = color } end
+  return rows
+end
+
+-- the extra groups: sockets, the set, the note, the flavour, a unique's passive, then locked / appearance / store /
+-- charges; [{caption, capColor, rows}]
+function L.extraGroups(tip)
+  local C = L.COLORS
+  local groups = {}
+  local function add(caption, capColor, rows)
+    if #rows > 0 or caption then groups[#groups + 1] = { caption = caption, capColor = capColor, rows = rows } end
+  end
+  local s = tip.sockets
+  if s and (tonumber(s.count) or 0) > 0 then
+    local filled, rows = 0, {}
+    for i = 1, s.count do
+      local g = s.list and s.list[i] or {}
+      if g.name then
+        filled = filled + 1
+        local extra = (g.text and g.text ~= '') and (': ' .. g.text) or ''
+        rows[#rows + 1] = { kind = 'text', text = g.name .. extra, color = g.color or C.gem,
+          parts = { g.name, g.color or C.gem, extra, C.gem } }
+      else
+        rows[#rows + 1] = { kind = 'text', text = (tr('  empty socket'):gsub('^%s+', '')), color = C.empty }
+      end
+    end
+    add(L.caps(tr('Sockets %d/%d', filled, s.count)), C.gold, rows)
+  end
+  local setBlock = (tip.unique and tip.unique.set) or tip.set -- tip.set: a plain piece of an open set (pair 28)
+  if setBlock then
+    local setRows = L.setLines(setBlock)
+    local rows = {}
+    for i = 2, #setRows do
+      rows[#rows + 1] = { kind = 'text', text = (setRows[i].text:gsub('^%s+', '')), color = setRows[i].color }
+    end
+    add(setRows[1].text, C.set, rows)
+  end
+  if tip.note then add(nil, nil, textRows(L.wrap(tip.note, L.WRAP), C.gold)) end
+  local passive = type(tip.passive) == 'table' and type(tip.passive.name) == 'string' and type(tip.passive.text) == 'string'
+    and tip.passive or nil
+  local desc = passive and passive.flavor or tip.desc
+  if type(desc) == 'string' and desc ~= '' and not L.supportInfo(desc) then
+    add(nil, nil, textRows(L.wrap(desc, L.WRAP), C.dim))
+  end
+  if passive then add(passive.name, C.passive, textRows(L.wrap(passive.text, L.WRAP), C.passiveText)) end
+  local misc = {}
+  if tip.locked then misc[#misc + 1] = { kind = 'text', text = 'Locked', color = C.gold } end
+  if type(tip.look) == 'table' and tip.look.name then
+    misc[#misc + 1] = { kind = 'text', text = 'Appearance: ' .. tostring(tip.look.name), color = C.mod }
+  end
+  if tip.store then misc[#misc + 1] = { kind = 'text', text = tostring(tip.store), color = C.gold } end
+  if tip.collects then
+    for _, row in ipairs(textRows(L.wrap(tip.collects, L.WRAP), C.dim)) do misc[#misc + 1] = row end
+  end
+  local chargeText = L.chargesText(tip.charges)
+  if chargeText then misc[#misc + 1] = { kind = 'text', text = chargeText, color = C.text } end
+  add(nil, nil, misc)
+  return groups
+end
+
+-- the requirement chips: [{text, color, low}] (level in rust red while the player is below it, magic level, one chip
+-- per class)
+function L.reqChips(req, ctx)
+  local C = L.COLORS
+  local chips = {}
+  if type(req) ~= 'table' then return chips end
+  if req.level then
+    local low = (tonumber((ctx or {}).level) or 0) < req.level
+    chips[#chips + 1] = { text = tr('Level %d', req.level), color = low and C.red or C.text, low = low }
+  end
+  if req.magic then chips[#chips + 1] = { text = tr('Magic level %d', req.magic), color = C.text } end
+  if type(req.voc) == 'string' then
+    for name in req.voc:gmatch('[^,]+') do
+      name = name:gsub('^%s+', ''):gsub('%s+$', '')
+      if name ~= '' then chips[#chips + 1] = { text = name, color = C.text } end
+    end
+  end
+  return chips
+end
+
+-- the foot: the sources lines (dim, the effort in gold) and the weight; the weight joins the last dim line when it
+-- fits ("Drops from: Axebringer Fiend - 24.9 oz"); rows {text, color}
+function L.footLines(tip, hints)
+  local C = L.COLORS
+  local rows = {}
+  for _, h in ipairs(hints or {}) do rows[#rows + 1] = { text = h, color = C.dim } end
+  for _, line in ipairs(L.sourceLines(tip.src)) do rows[#rows + 1] = { text = line.text, color = line.color } end
+  if tip.weight then
+    local w = tr('Weight %s oz', trim(tip.weight))
+    local last = rows[#rows]
+    if last and last.color == C.dim and #last.text + #L.SEP + #w <= L.FOOT_LINE then
+      last.text = last.text .. L.SEP .. w
+    else
+      rows[#rows + 1] = { text = w, color = C.dim }
+    end
+  end
+  return rows
+end
+
+-- a spell support rune (server data/lib/chaos_supports.lua S.description): "A support rune for a spell socket: mana cost
+-- -9%, refunded after the cast. Fits single target, area, healing, buff / utility spells. Three of them combine into
+-- one of the next level: ... (!supports)". Returns {effect, fits = [kinds], combine, command} or nil for any other text
+-- (also a translated one: the card then shows the description as it is).
+function L.supportInfo(desc)
+  if type(desc) ~= 'string' then return nil end
+  local effect, fits, rest = desc:match('^A support rune for a spell socket: (.-)%.%s+Fits (.-) spells%.(.*)$')
+  if not effect then return nil end
+  local kinds = {}
+  for k in fits:gmatch('[^,]+') do
+    k = k:gsub('^%s+', ''):gsub('%s+$', '')
+    if k ~= '' then kinds[#kinds + 1] = k end
+  end
+  return { effect = L.title(effect), fits = kinds, combine = rest:find('combine', 1, true) ~= nil,
+    command = rest:find('!supports', 1, true) ~= nil }
+end
+
+-- Ctrl compares only wearable gear: an item the server marks as equipment (cmp slots) that has numbers to compare (base
+-- stats or modifiers). A rune, potion, gem or material never shows "Hold Ctrl to compare".
+function L.comparable(tip)
+  return type(tip) == 'table' and type(tip.cmp) == 'table' and #tip.cmp > 0 and tip.kind ~= nil
+    and type(tip.stats) == 'table' and #tip.stats > 0
+end
+
+-- the whole card of a tip. ctx = {level = the player's level}
+-- {title, titleColor, kind (caps), kindColor, level (the dim line), slotLine, flags = [{text, color}],
+--  stats = {tiles, extra = [parts]} | nil, mods = [group] | nil, extras = [group] | nil, chips = [chip], foot = [row]}
+function L.card(tip, ctx)
+  local C = L.COLORS
+  local card = { title = L.title(tip.name), titleColor = L.titleColor(tip), flags = {}, chips = {}, foot = {} }
+  local kindText, slotLine = L.kindText(tip)
+  card.kind = kindText and L.caps(kindText) or nil
+  if L.supportInfo(tip.desc) then
+    card.kind = L.caps((kindText and (kindText .. ' ') or '') .. tr('Support rune'))
+  end
+  card.kindColor = card.titleColor
+  card.slotLine = slotLine
+  if tip.level then
+    card.level = tr('Item Level %d', tip.level) .. (tip.maxTier and (L.SEP .. tr('up to T%d', tip.maxTier)) or '')
+  end
+  if tip.quality and (tonumber(tip.quality.q) or 0) > 0 then
+    card.flags[#card.flags + 1] = { text = tr('Quality +%d%%  (up to %d%%)', tip.quality.q, tip.quality.cap or 20),
+      color = C.quality }
+  end
+  if tip.ruined then card.flags[#card.flags + 1] = { text = tr('Ruined: no orb can change this item'), color = C.red } end
+  if tip.corrupted then
+    card.flags[#card.flags + 1] = { text = tr('Corrupted: no orb can change this item'), color = C.corrupted }
+  end
+  local tiles, rest = L.statTiles(tip.base)
+  local extra = L.extraLines(rest)
+  if #tiles > 0 or #extra > 0 then card.stats = { tiles = tiles, extra = extra } end
+  local mods = L.modGroups(tip)
+  if #mods > 0 then card.mods = mods end
+  local extras = L.extraGroups(tip)
+  if #extras > 0 then card.extras = extras end
+  card.chips = L.reqChips(tip.req, ctx)
+  local rune = L.supportInfo(tip.desc)
+  local hints
+  if rune then
+    -- a spell support rune: the effect stands out as a wide tile, the spell kinds are chips, the rules are dim lines
+    card.stats = card.stats or { tiles = {}, extra = {} }
+    card.stats.effect = { text = rune.effect, color = C.gold }
+    card.fitCaption = L.caps(tr('Fits spells'))
+    card.fitChips = {}
+    for _, f in ipairs(rune.fits) do card.fitChips[#card.fitChips + 1] = { text = f, color = C.text } end
+    hints = {}
+    if rune.combine then hints[#hints + 1] = tr('Three combine into one of the next level.') end
+    if rune.command then hints[#hints + 1] = tr('Open the spell supports with !supports.') end
+  end
+  card.foot = L.footLines(tip, hints)
+  card.comparable = L.comparable(tip)
+  return card
+end
+
+-- pixel-measured wrap: words of text into lines no wider than maxw; measure(text) -> pixels (the view passes a label)
+function L.wrapPx(text, maxw, measure)
+  local lines, line = {}, ''
+  for word in tostring(text or ''):gmatch('%S+') do
+    local try = line == '' and word or (line .. ' ' .. word)
+    if line ~= '' and measure(try) > maxw then
+      lines[#lines + 1] = line
+      line = word
+    else
+      line = try
+    end
+  end
+  if line ~= '' then lines[#lines + 1] = line end
+  return lines
+end
+
+-- chips laid out in rows: widths[i] = the pixel width of chip i; returns [[index, ...], ...] (rows of at most maxw)
+function L.chipRows(widths, gap, maxw)
+  local rows, row, x = {}, {}, 0
+  for i, w in ipairs(widths) do
+    if #row > 0 and x + gap + w > maxw then
+      rows[#rows + 1] = row
+      row, x = {}, 0
+    end
+    x = x + (#row > 0 and gap or 0) + w
+    row[#row + 1] = i
+  end
+  if #row > 0 then rows[#rows + 1] = row end
+  return rows
+end
+
 
 return L

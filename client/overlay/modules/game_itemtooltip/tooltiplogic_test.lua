@@ -391,6 +391,196 @@ eq(L.baseValue({ k = 'attack', l = 'Attack', v = 1500, lo = 1500, hi = 1500, fmt
 eq(L.baseValue({ k = 'attack', l = 'Attack', v = 48 }), '48', 'a plain row as before')
 eq(L.baseValue({ k = 'attack', v = 7, fmt = 'range' }), '7', 'a range row without its ends shows the value')
 
+-- ---------------------------------------------------------------- the card layout (O422)
+local wand = {
+  key = '9:9', id = 3074, name = 'venomous vigils wand of mercy', kind = 'weapon', slot = 'Wand', rarity = 5,
+  rarityName = 'Legendary', level = 84, maxTier = 5, sides = { p = 2, s = 3, max = 3 },
+  base = {
+    { k = 'attack', l = 'Attack', v = 112, lo = 92, hi = 133, fmt = 'range' },
+    { k = 'range', l = 'Range', v = 5 },
+    { k = 'attackspeed', l = 'Attack Interval', v = 1.8, fmt = 'sec', low = true },
+    { k = 'maglevel', l = 'Magic Level', v = 3 },
+    { k = 'protect4', l = 'Fire Protection', v = 3, fmt = 'pct' },
+    { k = 'yourinterval', l = 'Your Attack Interval', v = 1.08, fmt = 'sec', low = true },
+    { k = 'dps', l = 'Estimated DPS', v = 104, fmt = 'est' },
+  },
+  mods = {
+    { k = 'a', t = 'Chance to Poison +12%', g = 'chaos', lo = 9, hi = 13, tr = 4, sd = 'p' },
+    { k = 'b', t = 'Arc Lightning: 2% on hit, arcs to 3 monsters', pw = true, lo = 2, hi = 3, tr = 5, sd = 'p' },
+    { k = 'c', t = 'Fire +2%', g = 'element', lo = 2, hi = 2, tr = 1, sd = 's', bd = true },
+    { k = 'd', t = 'Life Chance +1%', lo = 1, hi = 2, tr = 2, sd = 's' },
+  },
+  req = { level = 300, voc = 'Mystic, Necromancer' }, weight = 24.9,
+  src = { s = { { k = 'monster', n = 'Axebringer Fiend' } } },
+}
+local card = L.card(wand, { level = 100 })
+eq(card.title, 'Venomous vigils wand of mercy', 'card title')
+eq(card.kind, 'LEGENDARY WAND', 'card kind in capitals')
+eq(card.kindColor, L.RARITY_COLORS[5], 'kind in the rarity colour')
+eq(card.level, 'Item Level 84 - up to T5', 'card level line')
+eq(#card.stats.tiles, 4, 'four tiles')
+eq(card.stats.tiles[1].key, 'dps', 'DPS first')
+eq(card.stats.tiles[1].hero, true, 'DPS is the hero tile')
+eq(card.stats.tiles[1].value, '~104', 'DPS value')
+eq(card.stats.tiles[2].value, '92-133', 'wand attack range')
+eq(card.stats.tiles[3].key, 'speed', 'speed tile')
+eq(card.stats.tiles[3].value, '1.08s', 'the speed tile is the player interval')
+eq(card.stats.tiles[4].value, '5', 'range tile')
+eq(#card.stats.extra, 2, 'the extra items wrap at the line limit')
+local extraText = {}
+for i = 1, #card.stats.extra[1], 2 do extraText[#extraText + 1] = card.stats.extra[1][i] end
+eq(table.concat(extraText), 'Attack Interval 1.8s - Magic Level +3', 'the raw interval and the bonuses')
+eq(card.stats.extra[2][3], '+3%', 'second line value')
+eq(card.stats.extra[1][#card.stats.extra[1]], L.COLORS.better, 'values are green')
+eq(#card.mods, 2, 'prefix and suffix groups')
+eq(card.mods[1].caption, 'PREFIXES 2/3', 'prefix caption')
+eq(card.mods[2].caption, 'SUFFIXES 3/3', 'suffix caption')
+eq(card.mods[1].rows[1].tag, 'T4', 'tier tag')
+eq(card.mods[1].rows[1].top, false, 'T4 is not the best tier')
+eq(card.mods[1].rows[2].top, true, 'the best tier of the item level')
+eq(card.mods[1].rows[1].range, '9-13', 'roll range')
+eq(card.mods[2].rows[1].range, '2', 'a single value range')
+eq(card.mods[1].rows[1].color, L.COLORS.chaos, 'modifier colour kept')
+eq(card.mods[1].rows[2].color, L.COLORS.power, 'power colour kept')
+eq(card.mods[2].rows[1].parts[3], ' [bound]', 'bound marker')
+eq(card.extras, nil, 'no extra groups')
+eq(#card.chips, 3, 'level and two classes')
+eq(card.chips[1].text, 'Level 300', 'level chip')
+eq(card.chips[1].low, true, 'level chip low')
+eq(card.chips[3].text, 'Necromancer', 'class chip')
+eq(L.card(wand, { level = 300 }).chips[1].low, false, 'level reached')
+eq(#card.foot, 1, 'source and weight on one line')
+eq(card.foot[1].text, 'Drops from: Axebringer Fiend - Weight 24.9 oz', 'foot line')
+
+-- armour: Armour and Defense tiles, the rest in the extra line; no DPS hero
+local armor = { name = 'plate armor', kind = 'armor', slot = 'Armour', rarity = 3, rarityName = 'Magic', level = 20,
+  base = { { k = 'armor', l = 'Armour', v = 15 }, { k = 'defense', l = 'Defense', v = 4 },
+    { k = 'maxhealth', l = 'Max Health', v = 80 }, { k = 'protect1', l = 'Physical Protection', v = 5, fmt = 'pct' } } }
+local ac = L.card(armor, {})
+eq(#ac.stats.tiles, 2, 'armour tiles')
+eq(ac.stats.tiles[1].key, 'armor', 'armour first')
+eq(ac.stats.tiles[1].hero, false, 'no hero without DPS')
+eq(#ac.stats.extra, 1, 'armour extra line')
+eq(ac.stats.extra[1][1], 'Max Health ', 'extra label')
+eq(ac.stats.extra[1][3], '+80', 'bonus signed')
+eq(ac.kind, 'MAGIC ARMOUR', 'armour kind')
+eq(ac.level, 'Item Level 20', 'no tier text without a max tier')
+eq(ac.mods, nil, 'no mods')
+
+-- a melee weapon: attack, speed (no range), defense as the 4th tile when there is room; the item interval alone is the speed
+local mace = { name = 'mace', kind = 'weapon', base = { { k = 'attack', l = 'Attack', v = 30 },
+  { k = 'defense', l = 'Defense', v = 12 }, { k = 'attackspeed', l = 'Attack Interval', v = 2, fmt = 'sec' } } }
+local mc = L.card(mace, {})
+eq(mc.stats.tiles[1].key, 'attack', 'no DPS tile without the row')
+eq(mc.stats.tiles[2].key, 'speed', 'speed tile from the item interval')
+eq(mc.stats.tiles[3].key, 'defense', 'defense tile')
+eq(#mc.stats.extra, 0, 'nothing left over')
+-- more candidates than tiles: the rest goes to the extra line
+local many = L.card({ name = 'x', base = { { k = 'dps', l = 'Estimated DPS', v = 5, fmt = 'est' },
+  { k = 'attack', l = 'Attack', v = 5 }, { k = 'yourinterval', l = 'Your Attack Interval', v = 1, fmt = 'sec' },
+  { k = 'range', l = 'Range', v = 4 }, { k = 'defense', l = 'Defense', v = 9 } } }, {})
+eq(#many.stats.tiles, 4, 'at most four tiles')
+eq(#many.stats.extra, 1, 'the fifth goes to the extra line')
+eq(many.stats.extra[1][1], 'Defense ', 'the leftover')
+
+-- a plain item: no stats, mods, chips; only a name
+local plain = L.card({ name = 'rope', id = 3003, weight = 18 }, {})
+eq(plain.stats, nil, 'plain: no stats')
+eq(plain.kind, nil, 'plain: no kind')
+eq(plain.level, nil, 'plain: no level')
+eq(#plain.chips, 0, 'plain: no chips')
+eq(plain.foot[1].text, 'Weight 18 oz', 'plain: weight alone')
+
+-- extras: sockets, set, passive, charges, veil, implicit
+local rich = L.card({ name = 'ring', rarity = 4, rarityName = 'Rare', slot = 'Ring', maxTier = 3, level = 50,
+  mods = { { t = 'Implicit +1', tr = 1, sd = 'i' }, { t = 'Fire +1%', tr = 3, sd = 'p' } },
+  veil = { s = 'open', n = 'Wraithstride', tr = 4, tn = 'V4', lo = 8, hi = 10, t = 'Faster steps.' },
+  sockets = { count = 2, list = { { name = 'Ruby', text = 'Fire +9%', color = '#ff5a4a' }, {} } },
+  unique = { name = 'ring', set = { name = 'Embers', have = 1, total = 3, pieces = { { n = 'Ring', eq = true } } } },
+  passive = { name = 'Last Voice', text = 'Hits hard.', flavor = 'A choir sang.' },
+  locked = true, charges = { n = 5, max = 10 } }, {})
+eq(rich.mods[1].caption, 'CORRUPTED IMPLICIT', 'implicit group first')
+eq(rich.mods[2].caption, 'PREFIXES', 'prefix caption without side counts')
+eq(rich.mods[2].rows[1].top, true, 'T3 of max T3')
+eq(rich.mods[3].caption, 'VEILED', 'veil group')
+eq(rich.mods[3].rows[1].tag, 'V4', 'veil tag')
+eq(rich.mods[3].rows[1].range, '8-10', 'veil range')
+eq(rich.mods[3].rows[2].text, 'Faster steps.', 'veil text')
+eq(rich.extras[1].caption, 'SOCKETS 1/2', 'sockets caption')
+eq(rich.extras[1].rows[1].parts[1], 'Ruby', 'gem name part')
+eq(rich.extras[1].rows[2].text, 'empty socket', 'empty socket row without the indent')
+eq(rich.extras[2].caption, 'Set: Embers (1/3)', 'set caption')
+eq(rich.extras[2].rows[1].text, 'Ring', 'set piece row')
+eq(rich.extras[3].rows[1].text, 'A choir sang.', 'flavour')
+eq(rich.extras[4].caption, 'Last Voice', 'passive caption')
+eq(rich.extras[5].rows[1].text, 'Locked', 'locked')
+eq(rich.extras[5].rows[2].text, 'Charges: 5 of 10', 'charges')
+eq(rich.kind, 'SET RING', 'a set piece is a set kind')
+local veiled = L.card({ name = 'x', veil = { s = 'veiled' } }, {})
+eq(veiled.mods[1].caption, 'VEILED MODIFIER', 'veiled slot caption')
+eq(veiled.mods[1].rows[1].text, 'Reveal it with an Orb of Unveiling', 'veiled slot text')
+local flags = L.card({ name = 'x', quality = { q = 5, cap = 20 }, ruined = true, corrupted = true }, {})
+eq(#flags.flags, 3, 'quality, ruined and corrupted flags')
+local quiver = L.card({ name = 'quiver', slot = 'Off-hand: Quiver', note = 'Works only with a bow.',
+  base = { { k = 'x', l = 'Arrow Damage', v = 4, fmt = 'pct', imp = true } } }, {})
+eq(quiver.kind, 'QUIVER', 'quiver kind names what')
+eq(quiver.slotLine, 'Off-hand: Quiver', 'quiver slot line')
+eq(quiver.stats.extra[1][3], '+4%', 'implicit signed')
+eq(quiver.extras[1].rows[1].color, L.COLORS.gold, 'note in gold')
+-- the foot keeps the effort and used-in lines; the weight stays a line of its own after a gold line
+local foot = L.card({ name = 'x', weight = 3, src = { e = { p = 0.002 } } }, {})
+eq(foot.foot[#foot.foot].text, 'Weight 3 oz', 'weight after the effort line')
+eq(L.caps('Armadura n\195\163o'), 'ARMADURA N\195\163O', 'capitals leave the UTF-8 bytes alone')
+
+-- measured wrap and chip rows
+local function measure(t) return #t * 6 end
+local wr = L.wrapPx('Venomous Vigils Wand of Mercy', 100, measure)
+eq(#wr, 2, 'two lines')
+eq(wr[1], 'Venomous Vigils', 'first line')
+eq(wr[2], 'Wand of Mercy', 'second line')
+eq(#L.wrapPx('Supercalifragilistic', 30, measure), 1, 'a word longer than the width stays whole')
+eq(#L.wrapPx('', 30, measure), 0, 'empty')
+local cr = L.chipRows({ 60, 50, 90, 40 }, 6, 150)
+eq(#cr, 2, 'chips in two rows')
+eq(#cr[1], 2, 'two on the first row')
+eq(cr[2][1], 3, 'the third starts the second')
+eq(#L.chipRows({}, 6, 100), 0, 'no chips')
+
+
+-- spell support runes and other items that are no gear (owner 2026-11-06)
+local runeDesc = 'A support rune for a spell socket: mana cost -9%, refunded after the cast. Fits single target, area, healing, buff / utility spells. Three of them combine into one of the next level: use the stack, then left-click the same stack. Use it to open the spell supports (!supports).'
+local rune = L.card({ name = 'rare thrift rune', id = 5000, rarity = 3, rarityName = 'Rare', desc = runeDesc, weight = 1.5,
+  cmp = { 5 }, kind = 'other' }, {})
+eq(rune.kind, 'RARE SUPPORT RUNE', 'rune kind line')
+eq(rune.stats.effect.text, 'Mana cost -9%, refunded after the cast', 'rune effect as the highlighted row')
+eq(#rune.stats.tiles, 0, 'rune: no tiles')
+eq(#rune.fitChips, 4, 'four spell kinds')
+eq(rune.fitChips[4].text, 'buff / utility', 'last kind')
+eq(rune.fitCaption, 'FITS SPELLS', 'fits caption')
+eq(rune.extras, nil, 'the description is not repeated')
+eq(#rune.foot, 3, 'combine line, command line, weight')
+eq(rune.foot[1].text, 'Three combine into one of the next level.', 'combine rule')
+eq(rune.foot[2].text, 'Open the spell supports with !supports.', 'command hint')
+eq(rune.foot[3].text, 'Weight 1.5 oz', 'weight')
+eq(rune.comparable, false, 'a rune is not compared')
+eq(L.comparable({ cmp = { 5 }, kind = 'other' }), false, 'no stats, no compare')
+eq(L.comparable({ cmp = { 5 }, kind = 'weapon', stats = { { k = 'attack', v = 1 } } }), true, 'a weapon is compared')
+eq(L.comparable({ kind = 'weapon', stats = { { k = 'attack', v = 1 } } }), false, 'no slots, no compare')
+eq(L.supportInfo('A healing potion.'), nil, 'other text is no rune')
+eq(L.supportInfo(nil), nil, 'no text')
+local top = L.supportInfo('A support rune for a spell socket: cast speed +5%. Fits area spells.')
+eq(top.fits[1], 'area', 'one kind')
+eq(top.combine, false, 'no combine rule on the top level')
+eq(top.command, false, 'no command')
+-- other non-gear items keep a plain card
+local potion = L.card({ name = 'strong health potion', id = 7588, desc = 'Restores health.', weight = 2 }, {})
+eq(potion.stats, nil, 'potion: no stats')
+eq(potion.extras[1].rows[1].text, 'Restores health.', 'potion: the description')
+eq(potion.comparable, false, 'potion: no compare')
+local gem = L.card({ name = 'flawless ruby', rarity = 3, rarityName = 'Rare', desc = 'A gem for a socket.' }, {})
+eq(gem.kind, 'RARE', 'gem: the rarity as kind')
+eq(gem.extras[1].rows[1].text, 'A gem for a socket.', 'gem: description')
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)
