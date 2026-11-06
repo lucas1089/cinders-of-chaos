@@ -29075,6 +29075,6 @@ The server only needs the items to exist so the map editor can place them. No sp
   rules of `install_owner_decor.py` (same bytes: left alone; same group and flags: replaced; another item on that id: stops; items.otb.bak
   the first time; the written file parsed again). Idempotent. Client pair guard: the step skips with a warning until `config.lua`
   `chaosClientPair` is 60 or more (admin app: Comandos > card "Par do cliente" > Gravar 60; shell: `chaos-ctl.sh client-pair set 60`).
-* **Not done.** The pair 60 build itself (windows-assets is not touched from this repo) and any look in a client.
+* **Pair 60** is built and on windows-assets 7a5c19e (client/MANIFEST.md "Pair 60"). **Not done:** any look in a client.
 * **Tests.** `tools/install_temple_art_test.py` (39 rows, ids, kinds, flags, names, manifest equal to the generator's, otb and items.xml
   rules on synthetic files, the guard end to end), `tools/client_pair_test.py`, `client/tools/sprites/gen_temple_art_test.py`.
