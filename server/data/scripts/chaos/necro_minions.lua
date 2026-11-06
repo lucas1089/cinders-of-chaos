@@ -345,9 +345,6 @@ function guard.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	-- a monster hits a minion as it would hit the owner (O160): x its pace damage curve; a summon of a player is no monster here
 	if attacker and attacker:isMonster() and not attacker:getMaster() and owner:isPlayer() then
 		local gm = ChaosRift and ChaosRift.guardianHitMult and ChaosRift.guardianHitMult(attacker)
-		if gm and ChaosGuardianCore and RiftCfg then
-			gm = gm
-		end
 		local gcfg = gm and ChaosRiftConfig
 		if gm and gcfg and ChaosGuardianCore then
 			-- a rift or Omen guardian (O427): no incoming factor, no pace curve, the guardian's own multiplier, and part of the

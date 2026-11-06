@@ -2842,7 +2842,9 @@ end
 
 -- damage taken by players from rift monsters: Brutality and the tiers above the table
 local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
-	local run = attacker and not reflecting and RF.monsterRun[attacker:getId()]
+	-- a guardian's splash through a summon (necro_minions.lua, O427) is already scaled by the run: no second pass
+	local splash = ChaosNecroMinions and ChaosNecroMinions.splashing
+	local run = attacker and not reflecting and not splash and RF.monsterRun[attacker:getId()]
 	if run and primaryType ~= COMBAT_HEALING then
 		-- a player back from a lost life: rift monsters cannot hurt it for lives.shieldSeconds
 		local entry = run.players[creature:getId()]
