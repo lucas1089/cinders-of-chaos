@@ -577,6 +577,11 @@ function processStatus(data)
   end
 end
 
+-- the Chaos Coin balance of the last status, nil before one came (game_bagpanel shows it)
+function getCoins()
+  return tonumber(STATUS and STATUS['points'])
+end
+
 function processAd(data)
   if table.equal(AD,data) then
     return

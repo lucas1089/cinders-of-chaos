@@ -6437,5 +6437,20 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Show the health and mana globes"] = "Mostrar os globos de vida e mana",
   ["Slots on the bar"] = "Espaços na barra",
   ["Smaller bar"] = "Barra menor",
+  -- game_bagpanel/bagpanel.lua, bagpanel.otui, bagpanel_core.lua (run-time keys: tr(slot name))
+  ["Bag %d"] = "Bolsa %d",
+  ["Chaos Coins: %s"] = "Chaos Coins: %s",
+  ["Could not sort this page."] = "Não foi possível ordenar esta página.",
+  ["Gold in your open backpacks: %s"] = "Ouro nas suas mochilas abertas: %s",
+  ["Inventory"] = "Inventário",
+  ["Inventory panel"] = "Painel de inventário",
+  ["Inventory panel off: backpacks open in their own windows."] = "Painel de inventário desligado: as mochilas abrem em janelas próprias.",
+  ["Inventory panel on."] = "Painel de inventário ligado.",
+  ["Nothing here."] = "Nada aqui.",
+  ["Page sorted."] = "Página ordenada.",
+  ["Puts the items of this page in order: by item, then the bigger stack first."] = "Põe os itens desta página em ordem: por item, depois a pilha maior primeiro.",
+  ["Sort"] = "Ordenar",
+  ["Turns this panel off: backpacks open in their own windows again. Inventory panel in the top menu turns it on."] = "Desliga este painel: as mochilas voltam a abrir em janelas próprias. Painel de inventário no menu superior liga de novo.",
+  ["Ammunition"] = "Munição",
 }
 return ChaosLocaleStrings['pt-BR']

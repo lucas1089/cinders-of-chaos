@@ -1,0 +1,171 @@
+// Inventory panel (game_bagpanel, O420): tab row, equipment with the outfit, gold and coins, the backpack as one grid,
+// one page button per bag, Sort. Styles from client_chaos_theme. Drawn from bagpanel.lua; sizes in bagpanel_core.lua.
+
+BagPanelTab < ChaosTabButton
+  size: 33 22
+  font: verdana-11px-antialised
+  padding: 0
+  margin-right: 1
+  text-offset: 0 0
+
+// an equipment slot or an item cell: a UIItem, so the base drag and drop (g_game.move to its position) and the
+// right-click menu and the rich tooltip work as in the classic windows
+BagPanelCell < ChaosItemSlot
+  size: 34 34
+  font: Verdana-9px-antialiased
+  color: #6b6258
+  text-align: center
+  text-wrap: true
+
+// a page button: the icon of the bag, virtual so it only draws
+BagPanelPage < ChaosItemSlot
+  size: 26 26
+  virtual: true
+  border-width: 1
+  border-color: #00000000
+  change-cursor-image: true
+  cursor: pointer
+
+BagPanelButton < ChaosButton
+  size: 64 20
+  font: verdana-11px-antialised
+
+MiniWindow
+  id: bagPanelWindow
+  !text: tr('Inventory')
+  height: 420
+  &save: true
+  @onClose: modules.game_bagpanel.onWindowClose()
+
+  MiniWindowContents
+    padding: 2
+
+    Panel
+      id: tabRow
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 22
+      layout:
+        type: horizontalBox
+
+    Panel
+      id: equipPanel
+      anchors.top: tabRow.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 144
+
+      Panel
+        id: slots
+        anchors.top: parent.top
+        anchors.left: parent.left
+        width: 108
+        height: 144
+        layout:
+          type: grid
+          cell-size: 34 34
+          cell-spacing: 3
+          flow: true
+          num-columns: 3
+
+      UICreature
+        id: outfit
+        anchors.top: parent.top
+        anchors.left: slots.right
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-left: 6
+        phantom: true
+        fixed-creature-size: true
+
+    ChaosLabelDim
+      id: goldLabel
+      anchors.top: equipPanel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      text-auto-resize: false
+      height: 14
+      color: #f6cf72
+      font: verdana-11px-antialised
+
+    ChaosLabelDim
+      id: coinsLabel
+      anchors.top: goldLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 14
+      color: #d6c9ae
+      font: verdana-11px-antialised
+
+    ChaosSeparator
+      id: separator
+      anchors.top: coinsLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 3
+
+    Panel
+      id: grid
+      anchors.top: separator.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 3
+      height: 36
+      layout:
+        type: grid
+        cell-size: 34 34
+        cell-spacing: 2
+        flow: true
+
+    ChaosLabelDim
+      id: emptyLabel
+      anchors.top: grid.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 2
+      height: 14
+      text-auto-resize: false
+      font: verdana-11px-antialised
+      !text: tr('Nothing here.')
+      visible: false
+
+    Panel
+      id: pages
+      anchors.top: emptyLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 26
+      layout:
+        type: grid
+        cell-size: 26 26
+        cell-spacing: 2
+        flow: true
+
+    Panel
+      id: buttons
+      anchors.top: pages.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      height: 20
+
+      BagPanelButton
+        id: sortButton
+        anchors.top: parent.top
+        anchors.left: parent.left
+        !text: tr('Sort')
+        !tooltip: tr('Puts the items of this page in order: by item, then the bigger stack first.')
+        @onClick: modules.game_bagpanel.sort()
+
+      BagPanelButton
+        id: classicButton
+        anchors.top: parent.top
+        anchors.right: parent.right
+        width: 80
+        !text: tr('Classic')
+        !tooltip: tr('Turns this panel off: backpacks open in their own windows again. Inventory panel in the top menu turns it on.')
+        @onClick: modules.game_bagpanel.setEnabled(false)
