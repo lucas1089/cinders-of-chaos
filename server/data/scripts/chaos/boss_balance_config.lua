@@ -3,6 +3,17 @@
 -- LuaJIT compatible. No engine calls. server/data/spells/README.md "Boss damage per class" and docs/CLASSES.md "Class identity
 -- (2026-10-28)" have the method and the final table.
 --
+-- O430 (2026-11-06, owner: "balance the classes that are far from the median DPS"): THE ROWS BELOW WERE RE-FITTED. The identity
+-- pass of 2026-10-28 (the bands in the list that follows) rested on the C4 measurement of 2026-10-11; the DPS test of
+-- 2026-11-06 (server/data/spells/class_dps_measured.csv, 21 classes at levels 100 / 500 / 1000) put classes at +188% (Deadeye)
+-- and -77% (Sentinel) of the level median, and class_tree.lua classDamage, the spell factor's extra target factor and the
+-- Beastmaster's bite were retuned to bring every class within +-25% of the median on 1 target and on 5 targets
+-- (tools/class_dps_model.py --check holds that). The ratios of boss_model.py / pack_model.py start from the C4 numbers and move
+-- with the class factors, so after a change of x2.5 (Sentinel) they no longer read as "damage against the Deadeye in a hunt";
+-- the rows now pin the state after O430 (the model's own value of each class at each level, plus or minus 2%), so a later change
+-- of a class factor shows up here, and `lead` is -1: no class has to lead (the single target and the pack leader rules of the
+-- identity pass are replaced by the median band of class_dps_model.py). The text that follows is the identity pass as it was.
+--
 -- Every class has a strength and a weakness:
 --   * pure area (Elementalist, Berserker, Bone Lord, Beastmaster): the best pack farmers, 1.00-1.10 of the reference; mid
 --     single target (0.64-0.80 of the Deadeye)
@@ -31,55 +42,56 @@ return {
 
 	-- ENFORCED: boss damage against the Deadeye's
 	limits = {
-		["Warrior"] = {0.62, 0.76},
-		["Juggernaut"] = {0.55, 0.70},
-		["Berserker"] = {0.66, 0.80},
-		["Ranger"] = {0.78, 0.90},
+		["Warrior"] = {0.50, 0.92},
+		["Juggernaut"] = {0.58, 1.05},
+		["Berserker"] = {0.36, 1.05},
+		["Ranger"] = {0.64, 0.88},
 		["Deadeye"] = {0.98, 1.02},
-		["Beastmaster"] = {0.70, 0.80},
-		["Mystic"] = {0.55, 0.68},
-		["Elementalist"] = {0.64, 0.80},
-		["Illusionist"] = {0.55, 0.65},
-		["Thief"] = {0.75, 0.88},
-		["Ninja"] = {0.75, 0.90},
-		["Samurai"] = {0.68, 0.80},
-		["Necromancer"] = {0.64, 0.78},
-		["Lich"] = {0.75, 0.92},
-		["Bone Lord"] = {0.70, 0.80},
-		["Monk"] = {0.62, 0.76},
-		["Shadowfist"] = {0.75, 0.92},
-		["Iron Sage"] = {0.58, 0.68},
-		["Templar"] = {0.55, 0.70},
-		["Inquisitor"] = {0.76, 0.88},
-		["Sentinel"] = {0.55, 0.70},
+		["Beastmaster"] = {0.45, 0.96},
+		["Mystic"] = {0.93, 1.46},
+		["Elementalist"] = {0.96, 1.31},
+		["Illusionist"] = {0.75, 1.12},
+		["Thief"] = {0.73, 2.23},
+		["Ninja"] = {1.07, 2.16},
+		["Samurai"] = {1.06, 3.21},
+		["Necromancer"] = {0.74, 1.05},
+		["Lich"] = {1.02, 1.57},
+		["Bone Lord"] = {0.91, 1.37},
+		["Monk"] = {0.72, 1.26},
+		["Shadowfist"] = {1.00, 1.95},
+		["Iron Sage"] = {0.77, 1.60},
+		["Templar"] = {0.93, 1.88},
+		["Inquisitor"] = {1.35, 2.34},
+		["Sentinel"] = {1.69, 2.61},
 	},
 
 	-- ENFORCED: kills per hour in packs against the reference
 	packLimits = {
-		["Warrior"] = {0.88, 0.95},
-		["Juggernaut"] = {0.88, 0.95},
-		["Berserker"] = {1.00, 1.10},
-		["Ranger"] = {0.88, 0.95},
-		["Deadeye"] = {0.80, 0.86},
-		["Beastmaster"] = {1.00, 1.10},
-		["Mystic"] = {0.95, 1.05},
-		["Elementalist"] = {1.00, 1.10},
-		["Illusionist"] = {0.85, 0.93},
-		["Thief"] = {0.80, 0.86},
-		["Ninja"] = {0.80, 0.88},
-		["Samurai"] = {0.80, 0.86},
-		["Necromancer"] = {0.88, 0.96},
-		["Lich"] = {0.80, 0.86},
-		["Bone Lord"] = {1.00, 1.10},
-		["Monk"] = {0.88, 0.95},
-		["Shadowfist"] = {0.80, 0.86},
-		["Iron Sage"] = {0.85, 0.93},
-		["Templar"] = {0.88, 0.95},
-		["Inquisitor"] = {0.88, 0.95},
-		["Sentinel"] = {0.88, 0.95},
+		["Warrior"] = {0.67, 0.88},
+		["Juggernaut"] = {0.84, 0.96},
+		["Berserker"] = {0.65, 0.99},
+		["Ranger"] = {0.73, 0.81},
+		["Deadeye"] = {0.66, 0.76},
+		["Beastmaster"] = {0.67, 0.94},
+		["Mystic"] = {1.06, 1.24},
+		["Elementalist"] = {1.06, 1.20},
+		["Illusionist"] = {0.90, 0.96},
+		["Thief"] = {0.71, 1.00},
+		["Ninja"] = {0.88, 1.02},
+		["Samurai"] = {0.89, 1.09},
+		["Necromancer"] = {0.78, 0.92},
+		["Lich"] = {0.80, 0.89},
+		["Bone Lord"] = {0.97, 1.05},
+		["Monk"] = {0.83, 0.96},
+		["Shadowfist"] = {0.81, 0.92},
+		["Iron Sage"] = {0.88, 1.04},
+		["Templar"] = {0.99, 1.10},
+		["Inquisitor"] = {1.01, 1.12},
+		["Sentinel"] = {1.13, 1.37},
 	},
 
 	-- the leaders: every other class is at most 1 / (1 + lead) of the Deadeye's boss damage, and of the Elementalist's damage on a
 	-- pack of 5 (with the pack cleave), at every level of `levels`
-	lead = 0.08,
+	-- O430: -1 = no leader rule (the identity pass had 0.08); the median band of class_dps_model.py replaces it
+	lead = -1,
 }

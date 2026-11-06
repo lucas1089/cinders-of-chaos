@@ -82,7 +82,11 @@ return {
 		-- pack of 5 (with the pack cleave of each state) and on 1 target (the pack and boss bands of pack_model.py /
 		-- boss_model.py hold the class itself: a pure area class has the lower boss band, and the lead of the Elementalist
 		-- on a pack holds it back, so the single target total gives some up for the pack)
-		drift5 = 0.08, drift1 = {-0.12, 0.08},
+		-- O430 (2026-11-06, owner: balance the classes far from the median DPS): the measured Beastmaster ran +101% to +180% of the
+		-- level median (wolves), so the class total is cut on purpose: classDamage.beastmaster (x0.50 at 1000), the bite
+		-- (companion.autoByLevel) and the extra target factor (spell_factor_config.lua) bring it into +-25% of the median
+		-- (server/tools/class_dps_model.py). The drift against the state before O332 is therefore allowed up to -70% / 70%.
+		drift5 = 0.70, drift1 = {-0.70, 0.08},
 		-- share of the pack fight the companion is alive
 		uptimeMin = 0.85,
 	},

@@ -6,7 +6,7 @@
 -- _Helper.MagicShooter.rebuildCache, _Helper.getHelperConfig, onLoadHelperData, _Helper.saveSettings).
 -- A click: the character's class (server vocation id), level and the spells it can cast (the helper's spell entries,
 -- which game_chaosspells/spellfix.lua lines up with the server) pick the rotation; the shooter's rules become those
--- spells in priority order (an area spell waits for 2 monsters when the rest keeps the 2 s rhythm on a lone target);
+-- spells in priority order (every spell casts on a lone monster too since O430; the area spells go first on a pack);
 -- the healing tab gets the class's heals when it is empty. When the preset has the player's own rules the button asks:
 -- "Add to my rules" (the default: their rules stay on top, the class spells not in the list yet go below) or "Replace".
 -- The list before the click is kept for "Undo" (the button beside it and the result box) for the session. A filled

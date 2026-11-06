@@ -98,6 +98,9 @@ def bite(c, level, skill, legacy=False, bal=None):
         a, b = bal['legacy']['autoLevel'], bal['legacy']['autoSkill']
     else:
         a, b = c['autoLevel'], c['autoSkill']
+        pts = c.get('autoByLevel')  # O430: the bite follows the owner's level curve (classes.lua companionAutoFactor)
+        if pts:
+            return (level * a + skill * b) * R.interp([tuple(p) for p in pts], level)
     return level * a + skill * b
 
 

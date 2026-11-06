@@ -321,7 +321,7 @@ def identity_config(text=None):
     'packLimits': {...}, 'bossWindows': {level: (below, above)}, 'packWindows': {...}, 'lead': float}"""
     text = text if text is not None else open(BALANCE, encoding='utf-8').read()
     out = {'levels': [int(x) for x in re.search(r'levels = \{([0-9, ]+)\}', text).group(1).split(',') if x.strip()],
-           'lead': float(re.search(r'\blead = ([0-9.]+)', text).group(1))}
+           'lead': float(re.search(r'\blead = (-?[0-9.]+)', text).group(1))}
     for key in ('limits', 'packLimits'):
         block = re.search(r'\b' + key + r' = \{(.*?)\n\t\}', text, re.S).group(1)
         out[key] = {c: (float(a), float(b)) for c, a, b in re.findall(r'\["([^"]+)"\] = \{([0-9.]+), ([0-9.]+)\}', block)}
@@ -365,15 +365,16 @@ def check_identity(conf=None, cfg=None, mons=None):
             if not lo - 1e-9 <= r <= hi + 1e-9:
                 print('FAIL %s at %d: pack ratio %.2f outside %.2f-%.2f' % (c, L, r, lo, hi))
                 bad += 1
-    for L in levels:
+    for L in levels if conf['lead'] >= 0 else ():  # a negative lead: no leader rule (O430: class_dps_model.py holds the classes to the median)
         top = area_power('Elementalist', L, cfg)
         for c in C4:
             if c != 'Elementalist' and area_power(c, L, cfg) * (1 + conf['lead']) > top + 1e-9:
                 print('FAIL %s at %d: area damage on a pack %.0f is within %d%% of the Elementalist\'s %.0f' % (
                     c, L, area_power(c, L, cfg), round(100 * conf['lead']), top))
                 bad += 1
-    print('pack band check: %s (%d classes, levels %s, Elementalist %d%% ahead on a pack)' % (
-        'FAIL' if bad else 'ok', len(C4), ','.join(str(L) for L in levels), round(100 * conf['lead'])))
+    print('pack band check: %s (%d classes, levels %s, %s)' % (
+        'FAIL' if bad else 'ok', len(C4), ','.join(str(L) for L in levels),
+        'Elementalist %d%% ahead on a pack' % round(100 * conf['lead']) if conf['lead'] >= 0 else 'no area leader rule'))
     return 1 if bad else 0
 
 

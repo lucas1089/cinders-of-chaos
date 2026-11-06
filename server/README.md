@@ -7205,6 +7205,28 @@ Snakebite Rod against a Plagueroot (10% earth), 23 shots each: mean 10.0 before,
 x1.22). The hook now takes `ORIGIN_WAND` (and still `ORIGIN_MELEE`). Test: `tests/melee_skill_test.lua` sends the wand
 shot with `ORIGIN_WAND`. Wand users hit as hard as the models and the tooltip say; a reload of the scripts is enough.
 
+## Class DPS balance (O430, owner 2026-11-06)
+
+Owner: "balance the classes that are far from the median DPS". Input: the measured DPS of the 21 classes at levels 100 / 500 / 1000
+on the local rig (before O429; `server/data/spells/class_dps_measured.csv`). Outliers: Beastmaster, Berserker, Deadeye, Ranger,
+Warrior, Necromancer above +25% of the level median; Sentinel, Inquisitor, Templar, Samurai, Mystic below -25%. The cause per class,
+the changes and the before / after tables are in `server/data/spells/README.md` "Class DPS balance (O430)". In short:
+
+- **Helper.** Auto setup gives every rule a monster count of 1 (`rotation_sim.py creatures()`, `autorotation.lua`, `autorotation_data.lua`
+  regenerated): an area spell hits a lone target too, so Sentinel, Inquisitor, Templar and Mystic cast their best spells on a boss
+  instead of one or two; area spells still go first on a pack.
+- **Class factors.** `class_tree.lua classDamage` has points at 60, 100, 500, 800, 1000 retuned per class (x0.44 Berserker at 1000
+  to x3.22 Sentinel at 500 over the old curve).
+- **Extra target factor** (new): `spell_factor_config.lua extra`, a spell's hits on the other targets of one cast x a factor per class
+  and level (`spell_factor_core.lua`, applied in `passivetree_effects.lua`; 0.5 Mystic at 500 to 2.5 Deadeye at 1000). It moves a
+  class's pack damage and its single target damage apart. Cast detection: hits of one attacker within 25 ms; the first creature hit is
+  the cast's first target.
+- **Beastmaster bite**: `companion.autoByLevel` (x0.88 / 0.56 / 0.50 at 100 / 500 / 1000); wolf spells follow `classDamage`.
+- **Model**: `python3 -I server/tools/class_dps_model.py [--check | --before]` (CI): the measured numbers moved by the changes since the
+  test; every class within +-25% of the level median on 1 and 5 targets (+-30% at level 100). It is a model: re-measure with the same
+  test after the next install. The identity bands of `boss_balance_config.lua` and the limits of the minion, companion and tower models
+  were re-anchored to the new state (reasons in each config).
+
 ## Auto attack power (`weapon_power_core.lua`, `weapon_power_config.lua`, `weapon_styles.lua`)
 
 Owner 2026-10-23: "parece que auto attack nao esta escalando com a skill e lvl. ele esta muito fraco. reveja a formula dele

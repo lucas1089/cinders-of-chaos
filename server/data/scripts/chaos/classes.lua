@@ -382,9 +382,27 @@ end
 
 -- O306: the companion's own bite (beastmaster.lua): the same shape on autoLevel / autoSkill. Feral Command and Pack
 -- Frenzy keep biteValues (a spell's maul).
+-- the factor of the bite by the owner's level (companion.autoByLevel, O430)
+function M.companionAutoFactor(level)
+	local pts = cfg().companion.autoByLevel
+	if not pts or #pts == 0 or not level then
+		return 1
+	end
+	if level <= pts[1][1] then
+		return pts[1][2]
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if level <= b[1] then
+			return a[2] + (b[2] - a[2]) * (level - a[1]) / (b[1] - a[1])
+		end
+	end
+	return pts[#pts][2]
+end
+
 function M.autoBiteValues(level, distanceSkill, factor)
 	local c = cfg().companion
-	local avg = (level * c.autoLevel + (distanceSkill or 0) * c.autoSkill) * (factor or 1)
+	local avg = (level * c.autoLevel + (distanceSkill or 0) * c.autoSkill) * (factor or 1) * M.companionAutoFactor(level)
 	return math.floor(avg * (1 - c.spread)), math.floor(avg * (1 + c.spread))
 end
 

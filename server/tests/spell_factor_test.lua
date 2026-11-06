@@ -129,6 +129,60 @@ eq(d1, -1000, "event: a keystone proc unchanged")
 d1 = ev.onHealthChange({}, player(7), -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
 eq(d1, -940, "event: a level 300 Deadeye spell hit x0.94")
 
+-- O430 (2026-11-06): the extra target factor: spell hits on the other targets of one cast
+local xs = {byVocation = {}, extra = {[9] = {{60, 1}, {100, 2}, {500, 0.5}}}}
+eq(F.extraFor(9, xs, 30), 1, "extra: 1 below the first point")
+eq(F.extraFor(9, xs, 100), 2, "extra: at a point")
+eq(F.extraFor(9, xs, 300), 1.25, "extra: linear between points")
+eq(F.extraFor(9, xs, 900), 0.5, "extra: the last value above")
+eq(F.extraFor(9, xs), 1, "extra: 1 without a level")
+eq(F.extraFor(2, xs, 100), 1, "extra: a class without a curve keeps 1")
+eq(F.extra(9, SPELL, FIRE, SPELL, HEAL, false, xs, 100), 2, "extra: a spell hit")
+eq(F.extra(9, MELEE, FIRE, SPELL, HEAL, false, xs, 100), 1, "extra: not a weapon hit")
+eq(F.extra(9, SPELL, HEAL, SPELL, HEAL, false, xs, 100), 1, "extra: not healing")
+eq(F.extra(9, SPELL, FIRE, SPELL, HEAL, true, xs, 100), 1, "extra: not a keystone proc")
+F.depth = 1
+eq(F.extra(9, SPELL, FIRE, SPELL, HEAL, false, xs, 100), 1, "extra: not a guarded hit")
+F.depth = 0
+for id, pts in pairs(C.extra) do
+	eq(C.byVocation[id] ~= nil, true, "extra: vocation " .. id .. " is a listed class")
+	for i = 2, #pts do
+		eq(pts[i][1] > pts[i - 1][1], true, "extra curve " .. id .. " rises in level")
+	end
+	for _, pt in ipairs(pts) do
+		eq(pt[2] >= 0.5 and pt[2] <= 3, true, "extra curve " .. id .. " stays between 0.5 and 3")
+	end
+end
+-- the first target of a cast and the others: the hits of one cast come inside the window
+local st = {}
+eq(F.additionalTarget(st, 1, 10, 1000), false, "the first hit of a cast")
+eq(F.additionalTarget(st, 1, 11, 1000), true, "another target of the same cast")
+eq(F.additionalTarget(st, 1, 12, 1003), true, "and a third")
+eq(F.additionalTarget(st, 1, 10, 1004), false, "a second hit on the first target (a second companion) is not extra")
+eq(F.additionalTarget(st, 1, 11, 1500), false, "after the window the next cast starts over")
+eq(F.additionalTarget(st, 1, 10, 1501), true, "and its other target")
+eq(F.additionalTarget(st, 2, 11, 1501), false, "another attacker has its own cast")
+-- the event: a Deadeye (the factor above 1) hits two targets of one cast
+local clock = 5000
+os.mtime = function() return clock end
+local function target(id) return {getId = function() return id end} end
+local dead = player(7)
+local x = F.extraFor(7, nil, 300)
+local a = ev.onHealthChange(target(1), dead, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+eq(a, -940, "event: the first target of a cast takes the class factor only")
+local b = ev.onHealthChange(target(2), dead, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+eq(math.abs(b + 940 * x) <= 1, true, "event: another target takes the class factor x the extra factor (" .. tostring(b) .. ")")
+clock = clock + 1000
+b = ev.onHealthChange(target(2), dead, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+eq(b, -940, "event: a lone hit of a later cast on that target is the first target of its cast")
+b = ev.onHealthChange(target(3), dead, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+eq(b, -1000, "event: a weapon hit never takes the extra factor")
+local tmplr = player(23)
+a = ev.onHealthChange(target(1), tmplr, -1000, COMBAT_HOLYDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+b = ev.onHealthChange(target(2), tmplr, -1000, COMBAT_HOLYDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+eq(a, -570, "event: the first target of a Templar cast")
+eq(math.abs(b + 570 * F.extraFor(23, nil, 300)) <= 1, true, "event: a Templar's other target takes the factor below 1 (an area class)")
+
 -- the guards in the combat scripts
 local function read(p) local f = io.open(p); local s = f:read("*a"); f:close(); return s end
 local templarSrc = read("data/scripts/chaos/templar_combat.lua")

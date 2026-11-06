@@ -1285,6 +1285,12 @@ Chaos.classes = {
 		taken = 0.6,
 		biteMs = 2000, biteLevel = 0.12, biteSkill = 0.6, spread = 0.2,
 		autoLevel = 0.75, autoSkill = 1.35,
+		-- O430 (2026-11-06, owner: balance the classes far from the median DPS): the companion's own bite x this factor by
+		-- the owner's level ({level, factor}; 1 below the first point, linear, the last value above). The bite is dealt
+		-- without an event, so class_tree.lua classDamage never reached it; the measured Beastmaster ran +101..+180% of the
+		-- median and classDamage.beastmaster was cut by the same ratio, so the bite follows it (server/README.md
+		-- "Class DPS balance (O430)")
+		autoByLevel = {{60, 1}, {100, 0.88}, {500, 0.56}, {1000, 0.5}},
 		minionStorage = 7100041,
 		spells = {
 			feral = {mauls = 1.5},
