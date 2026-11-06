@@ -1164,10 +1164,10 @@ do
 	end
 	-- live cap: 60 (+10 per extra player) + 1 per 100 walkable tiles; the worst case of all 16 slots (server/README.md
 	-- "Instance limits", Load: the monsters away from every player are idle)
-	eq(R.liveCap(cfg, 1, 0), 60, "60 alive solo without area")
-	eq(R.liveCap(cfg, 5, 0), 100, "100 for 5 without area")
-	eq(R.liveCap(cfg, 1, 12000), 180, "a layout of 12,000 walkable tiles: 180 solo")
-	eq(R.liveCap(cfg, 1), 60 + math.floor(cfg.density.live.per100 * cfg.layout.typical[1].walkable / 100),
+	eq(R.liveCap(cfg, 1, 0), cfg.density.live.base, "the base alive solo without area")
+	eq(R.liveCap(cfg, 5, 0), cfg.density.live.base + 4 * cfg.density.live.perExtraPlayer, "base + 10 a player for 5 without area")
+	eq(R.liveCap(cfg, 1, 12000), cfg.density.live.base + math.floor(cfg.density.live.per100 * 120), "a layout of 12,000 walkable tiles")
+	eq(R.liveCap(cfg, 1), cfg.density.live.base + math.floor(cfg.density.live.per100 * cfg.layout.typical[1].walkable / 100),
 		"no area: the typical layout of tier 1's band")
 	eq(R.liveCap(cfg, 5, 60000), cfg.density.live.max, "capped")
 	ok(R.slotCount(cfg) * (cfg.density.live.max + cfg.density.extraSlack) <= 4500, "every slot full: at most 4,500 monsters")
@@ -1178,8 +1178,8 @@ do
 	ok(R.densityCount(cfg, 10, 1, 20000) > R.densityCount(cfg, 10, 1, 8000), "a bigger layout plans more monsters")
 	ok(R.packHealth(cfg, 10, 20000) < R.packHealth(cfg, 10, 8000), "and each one is weaker (the same health budget)")
 	local typ15 = R.density(cfg, 15, 1)
-	ok(typ15.count >= 450 and typ15.count <= 550, "tier 15 solo on a typical big layout: 450-550 monsters (" .. typ15.count .. ")")
-	ok(R.density(cfg, 1, 1).count >= 160 and R.density(cfg, 1, 1).count <= 200, "tier 1 solo: 160-200 monsters")
+	ok(typ15.count >= 550 and typ15.count <= 700, "tier 15 solo on a typical big layout: 550-700 monsters (" .. typ15.count .. ")")
+	ok(R.density(cfg, 1, 1).count >= 200 and R.density(cfg, 1, 1).count <= 240, "tier 1 solo: 200-240 monsters")
 	-- walking speed (engine patch 0018 table: 3.70 tiles/s at level 100, 5.88 at 300, 7.69 at 1000)
 	ok(math.abs(R.tilesPerSecond(100) - 1000 / 270) < 1e-9, "level 100: 270 ms a step")
 	ok(math.abs(R.tilesPerSecond(300) - 1000 / 170) < 1e-9, "level 300: 170 ms")
@@ -1189,9 +1189,10 @@ do
 	eq(R.timeLimit(cfg, 15), cfg.layout.sizes[3][3], "tier 15: band 3's limit")
 	eq(R.newRun(cfg, 1000, 10, 8, {}, 900).limit, 900, "a run takes its base limit")
 	eq(R.newRun(cfg, 1000, 10, 8, {timeMult = 0.8}, 900).limit, 720, "Waning Veil on the band's limit")
-	eq(R.packDamage(cfg), cfg.density.damage, "pack damage")
+	eq(R.packDamage(cfg, 1), cfg.density.damage.base, "pack damage")
+	eq(R.packDamage(cfg, 15), cfg.density.damage.min, "pack damage: the tier curve falls to its floor")
 	eq(R.packDamage(legacy), 1, "pack damage off")
-	eq(R.effects(cfg, {}, 4).packDamage, cfg.density.damage, "effects carry the pack damage")
+	eq(R.effects(cfg, {}, 4).packDamage, R.packDamage(cfg, 4), "effects carry the pack damage")
 	-- the plan: packs, laden flags, elites always laden, Warbands, Single Brood
 	local types = {{name = "A", level = 300}, {name = "B", level = 320}, {name = "C", level = 350}}
 	local r = rng(41)
@@ -1246,9 +1247,9 @@ do
 	for b, typ in ipairs(cfg.layout.typical) do
 		local tier = cfg.layout.sizes[b][1]
 		local live = R.liveCap(cfg, 1, typ.walkable) / typ.walkable * 100
-		ok(live >= 0.9 and live <= 2.3, string.format("band %d: %.2f alive a 100 tiles solo", b, live))
+		ok(live >= 0.9 and live <= 2.9, string.format("band %d: %.2f alive a 100 tiles solo", b, live))
 		local plan = R.density(cfg, tier, 1, nil, typ.walkable).count / typ.walkable * 100
-		ok(plan >= 2.6 and plan <= 3.9, string.format("band %d: %.2f planned a 100 tiles solo", b, plan))
+		ok(plan >= 2.6 and plan <= 5.0, string.format("band %d: %.2f planned a 100 tiles solo", b, plan))
 	end
 end
 
@@ -1350,7 +1351,7 @@ do
 	eq(p .. "/" .. pt .. "/" .. s .. "/" .. st, "-100/1/0/0", "no modifiers: unchanged")
 	local dens = R.effects(cfg, {}, 4)
 	p = R.monsterHit(cfg, dens, {primary = -100, ptype = 1, secondary = 0, stype = 0}, T, never)
-	eq(p, math.floor(-100 * cfg.density.damage), "density: pack monsters hit softer")
+	eq(p, math.floor(-100 * dens.packDamage), "density: pack monsters hit by the tier curve")
 	p = R.monsterHit(cfg, dens, {primary = -100, ptype = 1, secondary = 0, stype = 0, boss = true}, T, never)
 	eq(p, -100, "the guardian keeps its damage")
 	local fb = R.effects(legacy, {{key = "emberbrand", value = 50}, {key = "searing", value = 20}}, 4)

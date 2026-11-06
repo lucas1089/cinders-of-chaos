@@ -53,11 +53,55 @@ return {
 	-- x (1 + perExtraPlayer x (players - 1))
 	boss = {healthMult = 3, perExtraPlayer = 1.0, tier = "legendary"},
 
+	-- the guardians' teeth (O427, owner 2026-11-06: "the rift bosses hit too little, you can solo them with the Necromancer").
+	-- server/README.md "Rifts", Guardian damage; rules in guardian_core.lua, limits in guardian_balance_config.lua.
+	--   damage   x on the guardian's own hits to players (not on its marked telegraphs, which are a share of the victim's
+	--            health): a rift guardian base + perTier x (tier - 1), at least min; an Omen guardian omen. On top of the
+	--            legendary tier x2, the tier's own damage (tiers above 10), Dread Guardian and the party's +10% per extra
+	--            player. The curve FALLS with the tier: the low tiers' guardians are stock monsters of level 80-420 hitting
+	--            a median class that heals its whole pool a second (tools/guardian_model.py: 0.20 x its healing at tier 1,
+	--            0.30 at tier 5), while at tier 15 the window's own level-scaled hits and the tier's +15% a tier are already
+	--            0.87 x. The curve puts every tier near 0.8 x the median healing (with the kit's marks).
+	--   minion   (below) x 0.5 and half of it to the owner: the front minion lives 4-13 s, not 20-118 s as before.
+	--   minion   what a guardian's hit does to a player's summon: x factor (the Necromancer's incoming factor 0.25 and the
+	--            pace curve do not apply to a guardian; the summon takes the guardian's damage multiplier too) and splash = the share of that hit the summon's owner takes as well
+	--            (so a summon is no wall, and the guardian does not have to pick the owner)
+	--   kit      extra attacks a guardian gets when it appears, drawn from `abilities` by the run's seed (the theme's own
+	--            abilities weigh `themeWeight` times): a rift guardian count = base + floor(tier / perTiers), an Omen guardian
+	--            omenCount more on top of its own. Each is a marked telegraph of boss_mechanics (the share of the victim's max
+	--            health it hits for x (1 + sharePerTier x (tier - 1)), at most shareCap; an Omen one x omenShareMult); every extra
+	--            attack makes its marks come everyMult times as far apart (the engine keeps warning + gap). The marks
+	--            hit players only: a summon in them takes nothing, a Necromancer in them takes the hit.
+	guardian = {
+		damage = {base = 3.6, perTier = -0.23, min = 1.0, omen = 4.5},
+		minion = {factor = 0.5, splash = 0.5},
+		kit = {base = 1, perTiers = 5, omenCount = 2, sharePerTier = 0.03, shareCap = 0.6, omenShareMult = 1.25,
+			themeWeight = 3, everyMult = 0.85},
+		abilities = {
+			{key = "rift_nova", label = "Rift Nova", kind = "ring", inner = 2, outer = 7, share = 0.32, hit = "shadow_hit",
+				fallback = "CONST_ME_MORTAREA", tip = "A ring round the guardian: hug it or run out past it.",
+				themes = {"Abyssal Rift", "Ashen Crypt"}},
+			{key = "rift_lance", label = "Rift Lance", kind = "line", halfWidth = 1, length = 12, share = 0.35,
+				hit = "earth_spikes", fallback = "CONST_ME_STONES", tip = "A three-wide line towards you: sidestep.",
+				themes = {"Obsidian Hall"}},
+			{key = "rift_wave", label = "Rift Wave", kind = "cone", length = 8, spread = 3, share = 0.33,
+				hit = "blunt_smash", fallback = "CONST_ME_GROUNDSHAKER", tip = "A wide cone towards you: step around it.",
+				themes = {"Obsidian Hall", "Forsaken Sanctum"}},
+			{key = "rift_cross", label = "Rift Cross", kind = "cross", halfWidth = 1, share = 0.32,
+				hit = "shadow_hit", fallback = "CONST_ME_MORTAREA", tip = "Four arms from the guardian: stand in a corner.",
+				themes = {"Abyssal Rift"}},
+			{key = "rift_hunt", label = "Hunter's Mark", kind = "follow", radius = 2, followMs = 1500, share = 0.35,
+				hit = "bleeding", fallback = "CONST_ME_DRAWBLOOD",
+				tip = "A mark follows YOU, not your summons, then stops: walk out of it.",
+				themes = {"Ashen Crypt", "Forsaken Sanctum"}}
+		}
+	},
+
 	-- ------------------------------------------------------------------ density (server/README.md "Rifts", Density)
 	-- enabled = false brings back the packs above exactly (packs.*, the type's own health, every monster drops loot).
 	-- Enabled, a run plans many more, weaker monsters and feeds them in as the party advances:
 	--   count     planned monsters solo at tier t: base + perTier x (t - 1), x (1 + perExtraPlayer x (players - 1)),
-	--             in packs of `size` (+ Swarm), x Teeming / atlas density. Tier 1 80, tier 10 152, tier 15 192 solo;
+	--             in packs of `size` (+ Swarm), x Teeming / atlas density. Tier 1 100, tier 10 190, tier 15 240 solo (O427; was 80 / 152 / 192);
 	--             a party of 5 twice that.
 	--   live      monsters alive at once: base + perExtraPlayer x (players - 1), at most max. The rest wait in a queue;
 	--             reinforce.perTick packs a second come in when there is room, in the open room farthest from the
@@ -69,7 +113,8 @@ return {
 	--             single-target damage (dps1 x (L / 1000)^dps1Exp x gear x guardianUptime). tierHp: the health
 	--             multipliers of monster_tiers.lua (magic, rare, legendary), for the average. Tiers 11-15 add their +15%
 	--             health on top (`beyond`), so they run longer.
-	--   damage    pack monsters (not the guardians) hit x this: a pack is about twice the size of before.
+	--   damage    pack monsters (not the guardians) hit x this: a pack is about twice the size of before (a number or a tier
+	--             curve, below).
 	-- Spoils stay per run as before (orbs, gold, uniques, keys, fragments, bounty and bestiary credit): elite chances x
 	-- the share (old monsters / new monsters), and only that share of the normal monsters carries loot (the others are
 	-- husks: experience only, no corpse loot, no kill credit).
@@ -77,9 +122,9 @@ return {
 	-- tiles, the run's walking is part of the clear time:
 	--   area      count x (walkable / ref) ^ exp, 1 to maxMult (ref = the open floor of the old three-room slot);
 	--             typical layouts (layout.typical): band 1 x1.67, band 2 x1.92, band 3 x2.10, but never fewer than
-	--             walkable / tilesPerMonster ({tier 1, tier 15}, O309): tier 1 solo 178, tier 10 ~290, tier 15 498
+	--             walkable / tilesPerMonster ({tier 1, tier 15}, O309; {27, 22} since O427, was {33, 27}): tier 1 solo 216, tier 10 ~384, tier 15 612
 	--             (a party of 5 twice that).
-	--   live      + per100 per 100 walkable tiles: about 120 / 150 / 195 alive solo in the three bands, max 260
+	--   live      + per100 per 100 walkable tiles: about 148 / 189 / 243 alive solo in the three bands (O427: base 75, 1.25 a 100 tiles; was 60 / 1.0 and 118 / 151 / 194), max 265 (16 slots x (max + extraSlack) stay under 4,500 monsters)
 	--   reinforce packs come in the section farthest from the players among the unvisited ones up to `window`
 	--             walking steps past the party's progress, at least minDistance sqm from each player (out of
 	--             sight); `visit` = a section counts as reached when a player comes this close to its centre
@@ -87,17 +132,21 @@ return {
 	--   model.walk the clear time adds the layout's walking distance arrival -> arena x sweep at the tier's level
 	density = {
 		enabled = true,
-		count = {base = 80, perTier = 8, perExtraPlayer = 0.25},
-		area = {ref = 1081, exp = 0.25, maxMult = 2.5, tilesPerMonster = {33, 27}},
+		count = {base = 100, perTier = 10, perExtraPlayer = 0.25},
+		area = {ref = 1081, exp = 0.25, maxMult = 2.5, tilesPerMonster = {27, 22}},
 		size = {5, 7},
 		spread = 3,
-		live = {base = 60, perExtraPlayer = 10, per100 = 1.0, max = 260},
+		live = {base = 75, perExtraPlayer = 10, per100 = 1.25, max = 265},
 		reinforce = {perTick = 2, minDistance = 16, window = 90, visit = 10},
 		populate = {perStep = 20, stepMs = 100},
 		model = {dps5 = 5240, dps5Exp = 1.35, dps1 = 2600, dps1Exp = 1.1, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
 			packSeconds = 225, guardianSeconds = 55, tierHp = {magic = 2.0, rare = 3.5, legendary = 6.0},
 			walk = {sweep = 1.8}},
-		damage = 0.6,
+		-- O427: one number, or {base, perTier, min} (base + perTier x (tier - 1), at least min). Before: 0.6 flat. The pack of a
+		-- low tier was a soft one (stock monsters against a class that heals its whole pool a second: it out-healed a lured
+		-- pack 3.2 x at tier 1, 2.2 x at tier 5) and a high tier's was already hard (0.78 x at tier 15 with the tier's
+		-- +15% a tier), so the curve falls: tier 1 1.3, tier 5 1.06, tier 10 0.76, tier 12 and up 0.6 (tools/guardian_model.py)
+		damage = {base = 1.3, perTier = -0.06, min = 0.6},
 		-- extra monsters (Veilbreach, the Wrathful Guardian's thralls) stop when this many more than `live` are up
 		extraSlack = 12
 	},
