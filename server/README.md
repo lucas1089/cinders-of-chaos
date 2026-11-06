@@ -845,6 +845,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | Range | Owner |
 |---|---|
 | 80000 + n | autoloot list, shared on purpose with the base autoloot (`Chaos.storage.autolootBase`) |
+| 7100961 | the biggest single hit a character dealt (`Chaos.storage.maxHit`, `combatlog.lua`, O423; 7100961 - 7100969 reserved) |
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
@@ -13752,7 +13753,7 @@ A window with the public side of another player. Extended opcode `ChaosOpcodes.i
 |---|---|---|
 | client -> server | `inspect` | `{cid}` the creature id of a player the player right-clicked, or `{name}` typed in the window |
 | client -> server | `privacy` | `{}` asks for the own setting, `{allow = true / false}` sets it |
-| server -> client | `result` | `{name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit = {type, head, body, legs, feet, addons, mount}, self, parts, tree, paragon, title, bestiary = {points, rank}, bosses = {got, total}, pvp = {name, tier, rating}, collection, passive = {spent, total}}` (the last seven: O422, see below) |
+| server -> client | `result` | `{name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit = {type, head, body, legs, feet, addons, mount}, self, parts, tree, paragon, title, bestiary = {points, rank}, bosses = {got, total}, pvp = {name, tier, rating}, collection, passive = {spent, total}, combat}` (the last eight: O422 and O423, see below) |
 | server -> client | `equip` | `{name, rows = [{slot, tip}], part}` `parts` packets follow a `result`; slot 1-10 as the inventory, `tip` the rich tooltip. Each packet is at most 8000 bytes of JSON, the whole message counted (`ChaosInspect.equipPackets`, `config.packetBytes`), and goes through `Chaos.sendChunked`: a single row bigger than that arrives in `S`/`P`/`E` parts, joined by the client's `L.joinPart` like the tree |
 | server -> client | `tree` | `{name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}` the active passive tree, after the equipment (`ChaosInspect.treePayload` of `ChaosPassiveTree.publicView`), through `Chaos.sendChunked`; `result.tree` says one follows |
 | server -> client | `denied` | `{code, text}` code: `notfound`, `private`, `range`, `rate`, `bad` |
@@ -13775,6 +13776,22 @@ not loaded: `paragon` = `ChaosParagon.pointsOf`; `title` = the active name plate
 `ChaosPvpSeason.viewOf(guid)` by rating (`ChaosInspect.bestPvp`); `collection` = `ChaosCollection.scoreOf(accountId)`;
 `passive` = nodes of `ChaosPassiveTree.publicView` against its `total`. The Infinity Tower floor stays in the `records` packet.
 No health, mana, skills, storage, gold or containers.
+
+**Combat sheet (O423, public by owner decision 2026-11-06).** The owner relaxed the old rule: the `combat` block of the
+`result` packet shows the inspected player's combat numbers. Still never sent: skills, storages, gold, containers, current
+health and mana. One sheet serves two places. `charsheet_core.lua` (`ChaosCharSheet`, pure, `tests/charsheet_test.lua`)
+cleans the numbers (`clean`) and writes the text sections (`text`); `charsheet.lua` reads them off a player (`read`,
+`readOwn`), from the systems the player's own Stats use: weapon attack, average hit, defence, armour and damage reduction
+`ChaosCombatStats.compute`; critical chance and damage, attack speed and the damage bonus per type `ChaosPassiveTotals.build`;
+life and mana leech the engine special skills; resistances (physical, fire, energy, earth, ice, holy, death)
+`ChaosDeathRecap.resistOf` (gear, tree and gems); maximum health and mana and movement speed the player; **highest hit** a
+new cheap tracker: `combatlog.lua` `dealt` compares each hit a character (or its summon) deals with an in-memory best and
+writes storage `Chaos.storage.maxHit` (7100961, block 7100961 - 7100969) only for a new record (no extra cost per hit; the
+damage counted is capped by the target's health, so no overkill), shown at the character's display scale. The same sheet is
+the first part of **Info & Services > Character Info**: command `sheet` (`commands_ui.lua`, first of the page's auto
+commands, MAX_IDS now 8) answers `[ Offense ]`, `[ Defense ]`, `[ Resistances ]` and, for the own character only,
+`[ Character ]` (level, class, health, mana, capacity, speed, experience to the next level, magic level and skills with
+percent, soul, stamina), in the player's language (`Chaos.t`; pt-BR in `i18n_strings.lua`).
 
 **Rules.**
 - `cid` (right-click): the same floor, at most 10 tiles away in x and y and in view (`player:canSee`). `name` (the menu
@@ -17619,6 +17636,28 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
     halls with pillars and braziers (Obsidian), ash soil and bone earth with moss, bones and catacomb rooms (Crypt),
     wet and mossy rock with moss and glowcaps and worn stone chambers (Sanctum). Every id is checked against the live
     items.otb and pair (`areagen_export.py check`: 211 ids stock, 280 with the dark set, 0 problems).
+  - *Decoration fit* (O428, owner report 2026-11-06, four shots: a brazier on a tile of another floor at a room corner, a
+    big blue piece next to it cut off by the wall, a strip crossing a wall). Cause: the walls of a dungeon layout are
+    2x2 pieces (darkstone, ruin), and the client draws a WxH item or wall piece up and to the left of its tile. So the wall
+    south, east or south-east of a floor tile draws over it: a light on the floor row north of a south wall or the column
+    west of an east wall was half hidden under the wall's top face (the "patch of another floor"), a prop beside it lost
+    its right or lower part, and a 1x2 brazier or torch (or a 2x2 piece) against a north or west wall rose into the wall.
+    Lone ash or moss tiles and patch edges under a light (the light stood on a border piece) looked the same. Fix
+    (`areagen_core.lua` `decorFit`, `def.wallSize`, both set by `RL.plan`; every other area comes out as before):
+    - a piece stands only where its whole footprint is floor (never wall, rock or pool), no wall piece draws over any
+      tile of it, and no other piece stands on it. Lights, props, scatter, clusters and obstacles all follow it;
+    - a light or prop also needs one ground family under and around its footprint (no border piece on the tile, every
+      floor neighbour of the same family);
+    - sizes (`areagen_config.lua` `fit`): the dark braziers, torches and pillars 1x2, the rock outcrop and trees 2x2.
+      The stock lights and props are not measured in git (no client pair): a light counts 1x2 and a prop 2x2, so such a
+      piece stands one tile off the walls it would be drawn over. Put a measured size in `fit.sizes` to let it stand
+      against a wall again;
+    - the model keeps `model.fit` = {floor, covered, deco} (footprints in absolute keys) for the tests.
+    Cost: about half of the lights and props, the rest keep their spacing. Not in the fix: the hunting areas and the
+    Descent, which use the same generator without `decorFit`. Test: `tests/rift_decor_test.lua` (72 maps over every
+    theme, band and palette: footprints on floor, none under a wall piece found again from the wall ids on the tiles,
+    one ground under lights and props, the sizes, and that the same maps without the fit put pieces under the walls).
+    Not seen in a client yet: look at a dungeon rift (Obsidian Hall, Ashen Crypt) at the room corners.
   - *Seeded*: the builder draws the seed of each layout; one seed always gives the same map (LuaJIT and Lua 5.3), and
     the run's log line names it, so `tools/areagen_export.py preview OUT ... --area "rift:<theme>:<band>:<seed>"`
     draws the map a player saw. A map the validator rejects (a link that did not fit) is made again with another

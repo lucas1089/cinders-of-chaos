@@ -3,7 +3,10 @@
 --   result {name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit, self, parts, tree,
 --           and the profile fields of O413, each missing on an older server or when its system is not loaded:
 --           paragon (points), title (active title text), bestiary {points, rank}, bosses {got, total},
---           pvp {name, tier, rating}, collection (score), passive {spent, total}}
+--           pvp {name, tier, rating}, collection (score), passive {spent, total},
+--           combat {attack, hit, maxHit, attackSpeed, critChance, critAmount, lifeLeech {chance, amount}, manaLeech,
+--           damage = [{k, pct}], defense, armor, mitigation, resist = [{k, pct}], maxHealth, maxMana, moveSpeed}
+--           (public by owner decision 2026-11-06, O423)}
 --   equip  {name, rows = [{slot, tip}], part}      (parts packets of equipment follow a result; each fits one message,
 --          a single big row comes in parts "S..", "P..", "E.." like the tree, joined by L.joinPart)
 --   tree   {name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}   the passive tree, after the
@@ -113,6 +116,69 @@ function L.stats(d)
   return {
     { title = tr('Progress'), rows = progress },
     { title = tr('Combat'), rows = combat },
+  }
+end
+
+L.TYPE_NAMES = { physical = 'Physical', fire = 'Fire', energy = 'Energy', earth = 'Earth', ice = 'Ice', holy = 'Holy', death = 'Death',
+  water = 'Water', arcane = 'Arcane', drown = 'Drowning', lifedrain = 'Life drain', manadrain = 'Mana drain' }
+L.TYPE_ORDER = { 'physical', 'fire', 'energy', 'earth', 'ice', 'holy', 'death', 'water', 'arcane', 'drown', 'lifedrain', 'manadrain' }
+
+local function pct(v)
+  v = tonumber(v) or 0
+  if v == math.floor(v) then return string.format('%d', v) end
+  return string.format('%.1f', v)
+end
+L.percentText = pct
+
+local function byType(list)
+  local map = {}
+  for _, row in ipairs(type(list) == 'table' and list or {}) do
+    if type(row) == 'table' and type(row.k) == 'string' then map[row.k] = tonumber(row.pct) end
+  end
+  return map
+end
+
+-- the combat sheet page (O423, the server's public `combat` block): sections Offense, Defense and Resistances as
+-- { { title, rows = { { label, value, color } } } }; {} when the server sent no combat block (an older server) so the
+-- window disables the tab. A number the server left out has no row.
+function L.combatStats(d)
+  local c = type(d) == 'table' and d.combat
+  if type(c) ~= 'table' then return {} end
+  local C = L.COLORS
+  local off, def, res = {}, {}, {}
+  local function add(list, label, value, color) list[#list + 1] = { label = label, value = value, color = color or C.text } end
+  local function has(v) return (tonumber(v) or 0) > 0 end
+  if has(c.attack) then add(off, tr('Weapon attack'), L.numberText(c.attack)) end
+  if has(c.hit) then add(off, tr('Average hit'), L.numberText(c.hit)) end
+  if has(c.maxHit) then add(off, tr('Highest hit'), L.numberText(c.maxHit), C.gold) end
+  if has(c.attackSpeed) then add(off, tr('Attack speed'), '+' .. pct(c.attackSpeed) .. '%') end
+  if has(c.critChance) then add(off, tr('Critical chance'), pct(c.critChance) .. '%') end
+  if has(c.critAmount) then add(off, tr('Critical damage'), '+' .. pct(c.critAmount) .. '%') end
+  if type(c.lifeLeech) == 'table' then
+    add(off, tr('Life leech'), string.format('%s%% / %s%%', pct(c.lifeLeech.chance), pct(c.lifeLeech.amount)))
+  end
+  if type(c.manaLeech) == 'table' then
+    add(off, tr('Mana leech'), string.format('%s%% / %s%%', pct(c.manaLeech.chance), pct(c.manaLeech.amount)))
+  end
+  local dmg = byType(c.damage)
+  for _, key in ipairs(L.TYPE_ORDER) do
+    if dmg[key] then add(off, tr('%s damage', tr(L.TYPE_NAMES[key])), '+' .. pct(dmg[key]) .. '%') end
+  end
+  if has(c.defense) then add(def, tr('Defense'), L.numberText(c.defense)) end
+  if has(c.armor) then add(def, tr('Armor'), L.numberText(c.armor)) end
+  if has(c.mitigation) then add(def, tr('Damage reduction'), pct(c.mitigation) .. '%') end
+  if has(c.maxHealth) then add(def, tr('Maximum health'), L.numberText(c.maxHealth)) end
+  if has(c.maxMana) then add(def, tr('Maximum mana'), L.numberText(c.maxMana)) end
+  if has(c.moveSpeed) then add(def, tr('Movement speed'), L.numberText(c.moveSpeed)) end
+  local rmap = byType(c.resist)
+  for _, key in ipairs(L.TYPE_ORDER) do
+    local v = rmap[key]
+    if v then add(res, tr(L.TYPE_NAMES[key]), pct(v) .. '%', v < 0 and C.red or C.good) end
+  end
+  return {
+    { title = tr('Offense'), rows = off },
+    { title = tr('Defense'), rows = def },
+    { title = tr('Resistances'), rows = res },
   }
 end
 

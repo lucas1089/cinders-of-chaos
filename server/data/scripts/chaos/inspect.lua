@@ -10,7 +10,8 @@
 --                              tree, and the profile fields of I.publicStats (O413; a field is left out when its system is
 --                              not loaded or the value is empty): paragon (Paragon points), title (the active name plate
 --                              title), bestiary {points, rank}, bosses {got, total}, pvp {name, tier, rating} (best placed
---                              bracket of the PvP season), collection (score), passive {spent, total}}
+--                              bracket of the PvP season), collection (score), passive {spent, total},
+--                              combat (O423, public by owner decision 2026-11-06): see I.combatSheet}
 --                     equip {name, rows = [{slot, tip}], part}      parts packets follow `result`; slot 1-10 as the inventory,
 --                                                                    tip = the rich tooltip of item_tooltip_core.lua; each
 --                                                                    packet at most 8000 bytes (ChaosInspect.equipPackets),
@@ -39,6 +40,9 @@ if not ChaosItemTooltip then
 end
 if not ChaosInspect then
 	dofile("data/scripts/chaos/inspect_core.lua")
+end
+if not (ChaosCharSheet and ChaosCharSheet.read) then
+	dofile("data/scripts/chaos/charsheet.lua")
 end
 
 local I = ChaosInspect
@@ -109,6 +113,14 @@ local function achievementPoints(target)
 		return tonumber((pcallv(A.pointsOf, target))) or 0
 	end
 	return 0
+end
+
+-- the combat sheet (O423, public by owner decision 2026-11-06): charsheet.lua reads it once for here and for Character Info
+local function combat(target)
+	if not ChaosCharSheet or not ChaosCharSheet.read then
+		return nil
+	end
+	return pcallv(function() return ChaosCharSheet.clean(ChaosCharSheet.read(target)) end)
 end
 
 -- the profile fields (O413), each from the system that owns it; a missing system leaves the field out
@@ -218,6 +230,7 @@ local function inspect(player, data)
 	for k, v in pairs(profile(target)) do
 		result[k] = v
 	end
+	result.combat = combat(target)
 	reply(player, "result", result)
 	-- the personal records (records.lua, O260), in the viewer's language
 	if ChaosRecords and ChaosRecords.personalRows then

@@ -162,10 +162,14 @@ local function setHeader(h)
   setHeadLine(p.guildLine, h.guild)
 end
 
+-- the stats panel has two pages: the profile (L.stats) and the combat sheet (L.combatStats)
+local page = 'profile'
+
 local function fillStats(d)
   local list = window.statsPanel.list
   list:destroyChildren()
-  for _, section in ipairs(L.stats(d)) do
+  local sections = d and (page == 'combat' and L.combatStats(d) or L.stats(d)) or {}
+  for _, section in ipairs(sections) do
     if #section.rows > 0 then
       local head = g_ui.createWidget('InspectSection', list)
       head.title:setText(section.title)
@@ -179,11 +183,24 @@ local function fillStats(d)
   end
 end
 
+function showPage(id)
+  if not window then return end
+  if id == 'combat' and not window.statsPanel.combatTab:isEnabled() then id = 'profile' end
+  page = id
+  window.statsPanel.profileTab:setChecked(page == 'profile')
+  window.statsPanel.combatTab:setChecked(page == 'combat')
+  fillStats(state.data)
+end
+
 local function clearAll()
   refreshTreeButton()
   refreshRecords()
   for slot in pairs(L.SLOTS) do clearSlot(slot) end
   window.statsPanel.list:destroyChildren()
+  window.statsPanel.combatTab:setEnabled(false)
+  page = 'profile'
+  window.statsPanel.profileTab:setChecked(true)
+  window.statsPanel.combatTab:setChecked(false)
   setHeader({})
   window.headPanel.creature:setOutfit({ type = 0 })
 end
@@ -197,6 +214,10 @@ local function showResult(d)
   local o = d.outfit or {}
   window.headPanel.creature:setOutfit({ type = o.type or 0, head = o.head, body = o.body, legs = o.legs, feet = o.feet, addons = o.addons,
     mount = o.mount })
+  window.statsPanel.combatTab:setEnabled(#L.combatStats(d) > 0)
+  if not window.statsPanel.combatTab:isEnabled() then page = 'profile' end
+  window.statsPanel.profileTab:setChecked(page == 'profile')
+  window.statsPanel.combatTab:setChecked(page == 'combat')
   fillStats(d)
   setStatus(d.self and tr('This is you.') or '', L.COLORS.dim)
   refreshTreeButton()

@@ -528,6 +528,23 @@ eq(r["Sword attacks"].crits, 1, "crit from the engine's 8th argument")
 eq(r["Wand attacks"].total, 50, "wand")
 eq(r["Distance attacks"].total, 40, "distance")
 eq(r["Axe attacks"].total, 10, "weapon in the other hand")
+
+-- the biggest single hit (Inspect Player, O423): one storage write per new record, none for a smaller hit
+do
+	local writes, store = 0, {}
+	hero.getStorageValue = function(_, k) return store[k] or -1 end
+	hero.setStorageValue = function(_, k, v) writes = writes + 1 store[k] = v end
+	local key = Chaos.storage.maxHit
+	eq(type(key), "number", "the max hit storage key exists")
+	engineHit(hero, dragon, COMBAT_PHYSICALDAMAGE, 30, ORIGIN_MELEE)
+	eq(store[key], 30, "first hit is the record")
+	engineHit(hero, dragon, COMBAT_PHYSICALDAMAGE, 20, ORIGIN_MELEE)
+	eq(store[key], 30, "a smaller hit keeps it")
+	eq(writes, 1, "and writes nothing")
+	engineHit(hero, dragon, COMBAT_PHYSICALDAMAGE, 55, ORIGIN_MELEE)
+	eq(store[key], 55, "a bigger hit raises it")
+	eq(writes, 2, "one more write")
+end
 -- damage over time (the condition owner is the attacker)
 engineHit(hero, dragon, COMBAT_EARTHDAMAGE, 7, ORIGIN_CONDITION)
 engineHit(hero, dragon, COMBAT_FIREDAMAGE, 9, ORIGIN_CONDITION)

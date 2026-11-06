@@ -1849,6 +1849,101 @@ local function addItem(F, i, id)
 	list[#list + 1] = id
 end
 
+-- ---------------------------------------------------------------- decoration fit (areagen_config.lua `fit`, O428)
+-- Only with def.decorFit. F.fit = {sizes = {[id] = {w, h}}, defaults, floor = {[i] = true} (the floor before any piece
+-- blocks a tile), covered = {[i] = true} (floor a wall piece draws over), deco = {{i, id, w, h, kind}}}.
+local function fitSizes(cfg, opts)
+	local out = {}
+	for key, wh in pairs((cfg.fit and cfg.fit.sizes) or {}) do
+		local id = idOf(cfg, opts, key)
+		if id then
+			out[id] = wh
+		end
+	end
+	return out
+end
+
+local function fitStart(cfg, def, opts, F)
+	local fit = {sizes = fitSizes(cfg, opts), defaults = (cfg.fit and cfg.fit.defaults) or {}, floor = {}, covered = {},
+		deco = {}, wall = def.wallSize or 1}
+	for i in pairs(F.walk) do
+		fit.floor[i] = true
+	end
+	-- a wall piece of size S draws over the S-1 tiles to its west and north (and the ones between)
+	for i in pairs(F.wallKind or {}) do
+		local x, y = xy(F, i)
+		for a = 0, fit.wall - 1 do
+			for b = 0, fit.wall - 1 do
+				if a + b > 0 and inside(F, x - a, y - b) then
+					fit.covered[idx(F, x - a, y - b)] = true
+				end
+			end
+		end
+	end
+	F.fit = fit
+end
+
+local function fitSize(F, id, cls)
+	local wh = F.fit.sizes[id] or F.fit.defaults[cls] or {1, 1}
+	return wh[1], wh[2]
+end
+
+-- the whole footprint of a w x h piece anchored at cell i is floor, not covered by a wall piece, and (but the anchor)
+-- not taken by another piece
+local function fitFootprint(F, i, w, h)
+	local x, y = xy(F, i)
+	local taken = F.hasDeco or {}
+	for a = 0, w - 1 do
+		for b = 0, h - 1 do
+			local nx, ny = x - a, y - b
+			if not inside(F, nx, ny) then
+				return false
+			end
+			local j = idx(F, nx, ny)
+			if not F.fit.floor[j] or F.fit.covered[j] or ((a > 0 or b > 0) and taken[j]) then
+				return false
+			end
+		end
+	end
+	return true
+end
+
+-- one ground family under the footprint and around it: no border piece on the tiles, and every floor tile of the 8
+-- neighbours of each has the family of the tile (no lone patch tile, no patch edge under a piece)
+local function fitUniform(F, i, w, h)
+	local x, y = xy(F, i)
+	for a = 0, w - 1 do
+		for b = 0, h - 1 do
+			local j = idx(F, x - a, y - b)
+			if #F.items[j] > 0 then
+				return false
+			end
+			local fam = F.fam[j]
+			for _, d in ipairs(D8) do
+				local nx, ny = x - a + d[1], y - b + d[2]
+				if inside(F, nx, ny) then
+					local k = idx(F, nx, ny)
+					if F.fit.floor[k] and F.fam[k] ~= fam then
+						return false
+					end
+				end
+			end
+		end
+	end
+	return true
+end
+
+local function fitMark(F, i, id, w, h, kind)
+	local x, y = xy(F, i)
+	for a = 0, w - 1 do
+		for b = 0, h - 1 do
+			F.hasDeco[idx(F, x - a, y - b)] = true
+		end
+	end
+	local d = F.fit.deco
+	d[#d + 1] = {i = i, id = id, w = w, h = h, kind = kind}
+end
+
 -- decoration: clusters of walkable pieces, single pieces, blocking obstacles; never on paths or reserved cells
 local function decorate(cfg, theme, opts, r, F, reserved, stats)
 	local walkList = {}
@@ -1864,8 +1959,9 @@ local function decorate(cfg, theme, opts, r, F, reserved, stats)
 	end
 	local deco = theme.decor or {}
 	local hasDeco = {}
+	F.hasDeco = hasDeco
 	local function free(i)
-		return F.walk[i] and not reserved[i] and not F.path[i] and not hasDeco[i]
+		return F.walk[i] and not reserved[i] and not F.path[i] and not hasDeco[i] and not (F.fit and F.fit.covered[i])
 	end
 	-- 1. clusters
 	local clusters = deco.clusters or {}
@@ -1885,8 +1981,12 @@ local function decorate(cfg, theme, opts, r, F, reserved, stats)
 				if inside(F, x, y) then
 					local i = idx(F, x, y)
 					if free(i) and #rows > 0 then
-						addItem(F, i, r:weighted(rows))
+						local id = r:weighted(rows)
+						addItem(F, i, id)
 						hasDeco[i] = true
+						if F.fit then
+							fitMark(F, i, id, 1, 1, "decor")
+						end
 						stats.deco = stats.deco + 1
 						k = k - 1
 					end
@@ -1901,8 +2001,12 @@ local function decorate(cfg, theme, opts, r, F, reserved, stats)
 		for _, i in ipairs(walkList) do
 			T2048()
 			if free(i) and r:int(1, 10000) <= share * 10000 then
-				addItem(F, i, r:weighted(rows))
+				local id = r:weighted(rows)
+				addItem(F, i, id)
 				hasDeco[i] = true
+				if F.fit then
+					fitMark(F, i, id, 1, 1, "decor")
+				end
 				stats.deco = stats.deco + 1
 			end
 		end
@@ -1932,10 +2036,20 @@ local function decorate(cfg, theme, opts, r, F, reserved, stats)
 						ok = false
 					end
 				end
+				local id, ow, oh
+				if ok and F.fit then
+					id = r:weighted(obs)
+					ow, oh = fitSize(F, id, "obstacles")
+					ok = fitFootprint(F, i, ow, oh)
+				end
 				if ok and simple(F, i) then
-					addItem(F, i, r:weighted(obs))
+					id = id or r:weighted(obs)
+					addItem(F, i, id)
 					blockCell(F, i)
 					hasDeco[i] = true
+					if F.fit then
+						fitMark(F, i, id, ow, oh, "obstacle")
+					end
 					stats.deco = stats.deco + 1
 					made = made + 1
 				end
@@ -1948,6 +2062,7 @@ end
 -- pieces against the walls (a walkable cell next to the edge), spaced out: the lights, then the furniture (props);
 -- in a dungeon never in a corridor (they would narrow it), only in the rooms
 local function edgePieces(cfg, theme, opts, r, F, reserved, stats, L, statKey)
+	local cls = statKey == "lights" and "lights" or "props"
 	if not L then
 		return
 	end
@@ -1968,7 +2083,8 @@ local function edgePieces(cfg, theme, opts, r, F, reserved, stats, L, statKey)
 					edge = true
 				end
 			end
-			if edge and not reserved[i] and not F.path[i] and not F.hasDeco[i] and not (F.corridor and F.corridor[i]) then
+			if edge and not reserved[i] and not F.path[i] and not F.hasDeco[i] and not (F.corridor and F.corridor[i])
+				and not (F.fit and F.fit.covered[i]) then
 				cand[#cand + 1] = i
 			end
 		end
@@ -1990,12 +2106,25 @@ local function edgePieces(cfg, theme, opts, r, F, reserved, stats, L, statKey)
 				break
 			end
 		end
+		local id, w, h
+		if not near and F.fit and F.walk[i] and not F.hasDeco[i] then
+			-- the footprint is floor no wall piece draws over, on one ground family (areagen_config.lua `fit`)
+			id = r:weighted(rows)
+			w, h = fitSize(F, id, cls)
+			if not (fitFootprint(F, i, w, h) and fitUniform(F, i, w, h)) then
+				near = true
+			end
+		end
 		if not near and F.walk[i] and not F.hasDeco[i] and simple(F, i) then
-			addItem(F, i, r:weighted(rows))
+			id = id or r:weighted(rows)
+			addItem(F, i, id)
 			if L.blocking ~= false then
 				blockCell(F, i)
 			end
 			F.hasDeco[i] = true
+			if F.fit then
+				fitMark(F, i, id, w, h, cls == "lights" and "light" or "prop")
+			end
 			placed[#placed + 1] = {x, y}
 			made = made + 1
 		end
@@ -2214,6 +2343,9 @@ generate = function(cfg, def, opts)
 		paintGrounds(cfg, def, theme, opts, fr, F, reserved)
 		paintBorders(cfg, def, theme, opts, F)
 		local stats = model.stats
+		if def.decorFit then
+			fitStart(cfg, def, opts, F)
+		end
 		decorate(cfg, theme, opts, fr, F, reserved, stats)
 		edgePieces(cfg, theme, opts, fr, F, reserved, stats, theme.lights, "lights")
 		edgePieces(cfg, theme, opts, fr, F, reserved, stats, theme.props, "deco")
@@ -2287,6 +2419,25 @@ generate = function(cfg, def, opts)
 					local pos = absPos(model, F, x, y)
 					model.tiles[#model.tiles + 1] = {x = pos.x, y = pos.y, z = pos.z, ground = F.ground[i], items = items}
 				end
+			end
+		end
+		if F.fit then
+			-- the footprint data of the decoration (absolute keys y * 65536 + x), for the tests and the validator
+			local fm = model.fit or {floor = {}, covered = {}, deco = {}}
+			model.fit = fm
+			local function absSet(src)
+				local set = {}
+				for i in pairs(src) do
+					local x, y = xy(F, i)
+					set[(def.origin.y + y - 1) * 65536 + def.origin.x + x - 1] = true
+				end
+				return set
+			end
+			fm.floor[F.z], fm.covered[F.z] = absSet(F.fit.floor), absSet(F.fit.covered)
+			for _, d in ipairs(F.fit.deco) do
+				local x, y = xy(F, d.i)
+				fm.deco[#fm.deco + 1] = {x = def.origin.x + x - 1, y = def.origin.y + y - 1, z = F.z, id = d.id, w = d.w,
+					h = d.h, kind = d.kind}
 			end
 		end
 		model.floors[k] = {z = F.z, walkable = walkable, hunt = hunt, monsters = monsters}
