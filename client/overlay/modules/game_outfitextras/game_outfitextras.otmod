@@ -1,9 +1,11 @@
 Module
   name: game_outfitextras
-  description: Customise Character window - Change Appearance rows for wings, outline, footprints, kill effect, loot label, chat colour, spell effect, name plate frame and pet
+  description: Customise Character window - one window with the look preview, layer boxes, colour palette, a card grid per category and the Equipped now strip
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ outfitextrascore, outfitextras ]
+  scripts: [ outfitextrascore, customisecore, outfitextras ]
+  dependencies:
+    - client_chaos_theme
   autoload: true
   autoload-priority: 988
   @onLoad: init()

@@ -1,68 +1,360 @@
-// Customise Character extras (game_outfitextras): the cosmetic rows of Change Appearance (base patch 0090) and the list
-// of a row's choices in the right-hand area. The row widgets copy the window's Aura / Preset rows.
+// Customise Character (game_outfitextras, O421): one window. Left: the large look preview (game_lookpreview) with the
+// layer checkboxes, the colour palette with its tabs and the addon boxes. Right: a search box over the card grid of the
+// category picked. Across the bottom: the Equipped now strip, one card per slot; a click on a card shows its category.
+// The cards, the palette cells and the strip cards are made by outfitextras.lua.
 
-OutfitExtrasCheck < CheckBoxCircle
-  size: 12 12
-  font: Verdana Bold-11px
-  text-offset: 16 -3
-  text-auto-resize: true
-  color: #c0c0c0
-  image-source: /images/ui/checkboxcircle
-  image-clip: 0 0 12 12
-  anchors.top: parent.top
-  anchors.left: parent.left
-  margin-left: 7
-  change-cursor-image: false
-  $hover !disabled:
-    color: $var-text-cip-color
-  $disabled:
-    color: #707070
+CustomiseLayerCheck < ChaosCheckBox
+  size: 80 20
+  text-offset: 21 2
 
-OutfitExtrasValue < FlatPanel
-  size: 230 20
-  image-source: /game_cyclopedia/images/ui/panel-background
-  padding: 1 1 1 1
-  anchors.top: parent.top
-  anchors.left: parent.left
-  margin-left: 130
-  font: $var-cip-font
-  color: $var-text-cip-color
-
-OutfitExtrasOption < UIWidget
-  height: 24
-  font: Verdana Bold-11px
-  color: #c0c0c0
-  text-align: left
-  text-offset: 8 0
-  background-color: #00000040
-  focusable: true
+// a card of the grid: the look or an icon over the name
+CustomiseCard < UIWidget
+  size: 116 94
+  background-color: #00000066
+  border-width: 1
+  border-color: #3a3339
+  clipping: true
+  change-cursor-image: true
+  cursor: pointer
   $hover:
     background-color: #ffffff18
-  $focus:
-    background-color: #5a4a3a
-    color: #f0f0f0
+    border-color: #7d7176
 
-OutfitExtrasList < UIWidget
-  id: extrasList
-  anchors.fill: parent
-  visible: false
-
-  ScrollablePanel
-    id: list
-    anchors.top: parent.top
-    anchors.bottom: parent.bottom
+  UICreature
+    id: creature
     anchors.left: parent.left
-    anchors.right: extrasScrollBar.left
-    padding: 3
-    vertical-scrollbar: extrasScrollBar
-    layout:
-      type: verticalBox
-      spacing: 2
-
-  VerticalScrollBar
-    id: extrasScrollBar
     anchors.top: parent.top
-    anchors.bottom: parent.bottom
+    size: 116 64
+    phantom: true
+    visible: false
+
+  UIWidget
+    id: icon
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.top: parent.top
+    margin-top: 8
+    size: 48 48
+    phantom: true
+    visible: false
+
+  UILabel
+    id: name
+    anchors.left: parent.left
     anchors.right: parent.right
-    step: 24
-    pixels-scroll: true
+    anchors.bottom: parent.bottom
+    margin: 0 3 3 3
+    height: 28
+    text-align: center
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+// a card of the Equipped now strip: slot name and the current choice on the left, its picture on the right
+CustomiseStripCard < UIWidget
+  size: 116 52
+  background-color: #00000066
+  border-width: 1
+  border-color: #3a3339
+  clipping: true
+  change-cursor-image: true
+  cursor: pointer
+  $hover:
+    background-color: #ffffff18
+    border-color: #7d7176
+
+  UILabel
+    id: slot
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin: 4 4 0 5
+    height: 12
+    text-align: left
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.top: slot.bottom
+    anchors.right: icon.left
+    margin: 2 0 0 5
+    height: 28
+    text-align: topLeft
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #f6cf72
+    phantom: true
+
+  UICreature
+    id: creature
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin: 0 2 2 0
+    size: 44 40
+    phantom: true
+    visible: false
+
+  UIWidget
+    id: icon
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin: 0 4 4 0
+    size: 36 36
+    phantom: true
+    visible: false
+
+CustomiseColorCell < UIWidget
+  size: 14 14
+  border-width: 1
+  border-color: #00000080
+  change-cursor-image: true
+  cursor: pointer
+  $hover:
+    border-color: #d6c9ae
+
+ChaosMainWindow
+  id: customiseWindow
+  size: 880 690
+  // the phone interface is 960 x 540: the strip and the palette are shorter, the cards keep their size
+  $mobile:
+    width: 940
+    height: 520
+  !text: tr('Customise Character')
+  @onEscape: modules.game_outfitextras.cancel()
+
+  ChaosButton
+    id: cancelButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 90
+    !text: tr('Cancel')
+    @onClick: modules.game_outfitextras.cancel()
+
+  ChaosPrimaryButton
+    id: okButton
+    anchors.right: cancelButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 90
+    !text: tr('Ok')
+    @onClick: modules.game_outfitextras.accept()
+
+  ChaosLabelDim
+    id: hintLabel
+    anchors.left: parent.left
+    anchors.right: okButton.left
+    anchors.verticalCenter: okButton.verticalCenter
+    margin-right: 8
+    text-align: left
+    !text: tr('Point at a card to preview it, click to pick it. A greyed card is not unlocked yet.')
+
+  ChaosPanelDark
+    id: strip
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: okButton.top
+    margin-bottom: 8
+    height: 128
+    padding: 6
+    $mobile:
+      height: 90
+
+    ChaosLabel
+      id: stripTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 14
+      text-align: center
+      color: #e8b84a
+      !text: tr('Equipped now')
+
+    UIWidget
+      id: slots
+      anchors.top: stripTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      layout:
+        type: grid
+        cell-size: 116 52
+        cell-spacing: 4
+        flow: true
+
+  UIWidget
+    id: left
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.bottom: strip.top
+    margin-bottom: 8
+    width: 330
+
+    UIWidget
+      id: previewHost
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: layers.top
+      margin-bottom: 6
+
+    // the pet stands in the lower left corner of the preview stage (the shared panel draws the character only)
+    UICreature
+      id: petView
+      anchors.left: previewHost.left
+      anchors.bottom: previewHost.bottom
+      margin-left: 14
+      margin-bottom: 124
+      size: 56 56
+      phantom: true
+      visible: false
+
+    UIWidget
+      id: layers
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: colors.top
+      margin-bottom: 6
+      height: 42
+      layout:
+        type: grid
+        cell-size: 82 20
+        cell-spacing: 0
+        flow: true
+
+    ChaosPanelDark
+      id: colors
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      height: 160
+      padding: 6
+      $mobile:
+        height: 134
+
+      UIWidget
+        id: tabs
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 22
+        layout:
+          type: horizontalBox
+          spacing: 2
+
+      UIWidget
+        id: palette
+        anchors.top: tabs.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        margin-top: 4
+        width: 266
+        height: 98
+        layout:
+          type: grid
+          cell-size: 14 14
+          cell-spacing: 0
+          flow: true
+
+      UIWidget
+        id: addons
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: 18
+
+        ChaosCheckBox
+          id: addon1
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          width: 90
+          !text: tr('Addon 1')
+
+        ChaosCheckBox
+          id: addon2
+          anchors.left: addon1.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 12
+          width: 90
+          !text: tr('Addon 2')
+
+  UIWidget
+    id: right
+    anchors.top: parent.top
+    anchors.left: left.right
+    anchors.right: parent.right
+    anchors.bottom: strip.top
+    margin-left: 10
+    margin-bottom: 8
+
+    ChaosTextEdit
+      id: searchEdit
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: clearButton.left
+      margin-right: 4
+      height: 24
+      !placeholder: tr('Search')
+
+    ChaosButton
+      id: clearButton
+      anchors.top: parent.top
+      anchors.right: parent.right
+      size: 28 24
+      text: x
+      !tooltip: tr('Clear the search')
+      @onClick: modules.game_outfitextras.clearSearch()
+
+    ChaosCheckBox
+      id: onlyMineBox
+      anchors.top: searchEdit.bottom
+      anchors.right: parent.right
+      margin-top: 6
+      margin-right: 4
+      width: 100
+      !text: tr('Only mine')
+      !tooltip: tr('Show only what you have unlocked')
+
+    ChaosLabel
+      id: titleLabel
+      anchors.top: searchEdit.bottom
+      anchors.left: parent.left
+      anchors.right: onlyMineBox.left
+      margin-top: 6
+      height: 18
+      text-align: left
+      font: verdana-11px-rounded
+      color: #f6cf72
+
+    ChaosPanelDark
+      id: gridFrame
+      anchors.top: titleLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      padding: 3
+
+      ScrollablePanel
+        id: grid
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: gridScroll.left
+        anchors.bottom: parent.bottom
+        margin-right: 3
+        vertical-scrollbar: gridScroll
+        layout:
+          type: grid
+          cell-size: 116 94
+          cell-spacing: 4
+          flow: true
+
+      ChaosScrollBar
+        id: gridScroll
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        step: 48
+        pixels-scroll: true
