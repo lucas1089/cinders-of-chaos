@@ -16,6 +16,9 @@ usage: python3 -I client_pair.py show SERVER_DIR                 prints `chaosCl
               writes the key into SERVER_DIR/config.lua (appended when missing, a trailing comment is kept); N is 1..999;
               lowering the record needs --force (a lower record only holds back steps, but the rule is: it follows the client)
 SERVER_DIR is the folder with config.lua; the install tools take the data folder (SERVER_DIR/data) and use its parent.
+       python3 -I client_pair.py assets
+              prints PAIR_ASSETS, the pair on the private branch windows-assets (the Windows package's client ships it;
+              tools/windows/prepare_server.sh records it in the package's own config.lua)
 Also: chaos-ctl.sh client-pair [show | set N] on the VPS (README "Client pair guard").
 """
 import os
@@ -32,6 +35,12 @@ PAIR_FIST = 56      # the fist weapon redraws and the three new fist weapons (in
 PAIR_W800 = 56      # the 34 weapons above level 800 (install_weapons800.py)
 PAIR_RELIC = 58     # the 65 pieces of the five relic sets (install_relic_sets.py)
 PAIR_TEMPLE = 60    # the 39 pieces of the temple tileset (install_temple_art.py)
+
+# the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
+# this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
+# job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
+PAIR_ASSETS = 60
+PAIR_ASSETS_DAT_MD5 = 'a158f6e6af5ed94148c73c03a854e575'
 
 
 def parse(text):
@@ -88,6 +97,12 @@ def main(argv):
     dry = '--dry-run' in args
     force = '--force' in args
     args = [a for a in args if a not in ('--dry-run', '--force')]
+    if args == ['assets']:
+        print(PAIR_ASSETS)
+        return 0
+    if args == ['assets-md5']:
+        print(PAIR_ASSETS_DAT_MD5)
+        return 0
     if len(args) < 2 or args[0] not in ('show', 'set') or (args[0] == 'show') != (len(args) == 2):
         print(__doc__)
         return 1

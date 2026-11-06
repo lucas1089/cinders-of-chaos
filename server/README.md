@@ -28448,6 +28448,11 @@ README warned.
      `chaosClientPair=missing`); a number lower than the record is refused. Without the kit: `python3 -I
      server/tools/client_pair.py set SERVER_DIR 56 [--force] [--dry-run]`.
   3. Then the admin app **Update** (or `install_all.py`) installs the held rows; no restart is needed for the record itself.
+* **Windows package.** Its client ships the pair on `windows-assets`, so `tools/windows/prepare_server.sh` records
+  `client_pair.py` `PAIR_ASSETS` (`python3 -I server/tools/client_pair.py assets`) in the package's own `config.lua` and every
+  guarded step installs there (and in the map editor's items.otb / items.xml). Before this, winpkg-107 and older skipped them
+  all. The package job stops when the archive's Tibia.dat md5 is not `PAIR_ASSETS_DAT_MD5`. Raise both constants with every
+  windows-assets pair push; `client_pair_test.py` checks the md5 against the generated client files of the pair.
 * **Adding a guard.** A new step with items of pair N: `import client_pair`, `ok, why = client_pair.allows(data_dir, N, 'step')`,
   print `why`, return 0 when not `ok`; in `install_all.py` run the tool with `tool_result_warn` so the warning reaches the
   report; add the row to the table above and to `tools/client_pair_test.py`.

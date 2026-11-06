@@ -762,6 +762,10 @@ jobs:
           # the pair is one archive cut in 95 MB parts since pair 36 (GitHub refuses files over 100 MB)
           cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C things
           test -f things/Tibia.dat && test -f things/Tibia.spr || { echo "::error::the pair archive has no Tibia.dat / Tibia.spr"; exit 1; }
+          # the server job recorded client_pair.py PAIR_ASSETS (prepare_server.sh); the dat must be that pair
+          want=$(python3 -I chaos/server/tools/client_pair.py assets-md5)
+          have=$(md5sum things/Tibia.dat | cut -d' ' -f1)
+          [ "$have" = "$want" ] || { echo "::error::Tibia.dat md5 $have is not pair $(python3 -I chaos/server/tools/client_pair.py assets) ($want): raise PAIR_ASSETS / PAIR_ASSETS_DAT_MD5 in server/tools/client_pair.py"; exit 1; }
           # the client gets the dat and the spr as sprite shards (client/MANIFEST.md "Sharded sprites"): the single spr
           # is over 1 GiB since pair 37, which the updater of every client build refuses; the shards are byte-checked
           # against it. The single Tibia.spr goes to the map editor only (below).

@@ -183,5 +183,18 @@ ok, msg = C.allows(os.path.join(d, 'data'), C.PAIR_TEMPLE, 'templeart')
 check(not ok and msg.startswith('WARNING: templeart skipped') and 'client pair 60' in msg and 'client-pair set 60' in msg, 'templeart, pair 59: skipped with how to set it')
 check(C.allows(os.path.join(server('chaosClientPair = 60\n'), 'data'), C.PAIR_TEMPLE, 'templeart')[0], 'templeart, pair 60: runs')
 
+# the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
+# pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
+check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE), 'PAIR_ASSETS covers every guarded pair')
+mods = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules')
+for rel in ('client_chaos_charselect/outfit_anchors.lua', 'client_chaos_infolift/info_lifts.lua'):
+    with open(os.path.join(mods, rel), encoding='utf-8') as f:
+        head = f.read(4000)
+    check(C.PAIR_ASSETS_DAT_MD5 in head, '%s names the dat md5 of PAIR_ASSETS' % rel)
+rc, out = run(os.path.join(HERE, 'client_pair.py'), 'assets')
+check(rc == 0 and out.strip() == str(C.PAIR_ASSETS), 'assets prints PAIR_ASSETS (%s)' % out.strip())
+rc, out = run(os.path.join(HERE, 'client_pair.py'), 'assets-md5')
+check(rc == 0 and out.strip() == C.PAIR_ASSETS_DAT_MD5, 'assets-md5 prints the dat md5')
+
 print('client_pair_test: %s' % ('ok' if not failed else '%d failed' % failed))
 sys.exit(1 if failed else 0)
