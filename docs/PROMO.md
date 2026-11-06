@@ -39,6 +39,21 @@ lair boss, the top menu, the passive tree and the spellbook. Not committed (size
 `CHAOS_TEST_ACCOUNTS=1`, a client built as client/LINUX.md says (public dev keys, so it logs in to a local server), Xvfb at
 1920x1080 and `ffmpeg -f x11grab`; spells on the action bar F4 to F8, a GM character teleports and summons packs.
 
+### Recorded montages (O418, 2026-11-06)
+
+14 videos cut from real client recordings, pt-BR and en each: `trailer-1920x1080`, `trailer-1080x1920` (59 s) and the
+shorts `short-classes` (all 7 classes, 25 s), `short-boss` (18 s), `short-rift` (20 s), `short-tower` (22 s),
+`short-arena` (18 s), 1080x1920. Not committed (about 350 MB). Captions, logo burn and end card as above; music: the
+region tracks of game_chaosmusic. The own name is hidden by streamer mode; the other characters on screen carry in-world
+names, never "Test".
+
+    python3 -I website/tools/gen_promo_montage.py --clips CLIP_DIR --out OUT_DIR [--only short-arena,...] [--check]
+
+Clips it needs (1920x1080, 30 fps, character near the centre): `temple_s` (temple walk), `mystic_s`, `warrior_s`,
+`thief_s`, `ranger_s`, `monk`, `necro`, `templar` (a hunt per class, spells F4 to F8), `09_ui_tour` (passive tree at
+6.7 s), `rift_s` (a tier 5 Rift), `tower_s` (Infinity Tower), `boss_s` (a world boss), `arena_s` (a 1v1 from the queue,
+fight from about 9 s). `--check` says when a segment runs past its clip. Picture crops: CROP and FULL in the tool.
+
 ## 2. Recording setup
 
 - Client: Windows client, window 1920x1080, UI scale 100%, graphics options at the highest.

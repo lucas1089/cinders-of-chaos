@@ -299,6 +299,9 @@ jobs:
       - name: Promo videos (gen_promo_video_test.py; timeline, captions, pan, tempo, scene choice on synthetic data; no pair, no map)
         run: python3 -I website/tools/gen_promo_video_test.py
 
+      - name: Promo montages (gen_promo_montage_test.py; plans, captions in pt-BR and en, music, seven classes; no clips)
+        run: python3 -I website/tools/gen_promo_montage_test.py
+
       - name: Live spectator renderer (spectate_render_test.py; a synthetic pair, draw order, outfits, the pair archive)
         run: python3 -I server/tools/spectate_render_test.py
 
