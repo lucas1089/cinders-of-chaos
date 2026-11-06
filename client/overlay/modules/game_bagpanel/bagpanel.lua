@@ -526,9 +526,9 @@ end
 -- The panel shows the equipment, so the stock window is hidden. Its fight modes, chase, safe fight, PvP, soul, capacity,
 -- Stop and condition icons move into the panel's two rows: the same widgets, so game_inventory keeps updating them
 -- and their clicks still reach g_game. They go back on terminate.
--- (the PvP modes button stays behind: its modes panel lives in the stock window, and the row has no room)
+-- the PvP modes button opens the modes panel, which moves too: it floats under the row, over the status row
 local MOVED_COMBAT = { 'fightOffensiveBox', 'fightBalancedBox', 'fightDefensiveBox', 'chaseModeBoxStand',
-  'chaseModeBoxChase', 'safeFightBox' }
+  'chaseModeBoxChase', 'safeFightBox', 'openPvpButton' }
 local MOVED_STATUS = { 'soulLabel', 'capLabel', 'stopButton', 'conditionPanel' }
 local moved = {}          -- widget -> its stock parent
 
@@ -558,7 +558,20 @@ local function moveInto(row, ids)
 end
 
 local function moveControls()
-  moveInto(child('combatRow'), MOVED_COMBAT)
+  local row = child('combatRow')
+  moveInto(row, MOVED_COMBAT)
+  local stock = stockWindow()
+  local modes = stock and stock:recursiveGetChildById('pvpModesPanel')
+  if row and alive(modes) then
+    moved[modes] = modes:getParent()
+    modes:breakAnchors()
+    modes:setMargin(0)
+    modes:setParent(row:getParent())
+    modes:addAnchor(AnchorTop, 'combatRow', AnchorBottom)
+    modes:addAnchor(AnchorRight, 'combatRow', AnchorRight)
+    modes:setMarginTop(2)
+    modes:raise()
+  end
   local status = child('statusRow')
   moveInto(status, MOVED_STATUS)
   local cond = status and status:getChildById('conditionPanel')
