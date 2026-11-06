@@ -12,15 +12,14 @@
 --    they feed the grid). Any other container (a corpse, the depot, a bag in a bag, a quiver) keeps its window.
 --  * Sort: moves items to the front of the page one by one (the server adds an item at the front), one move every
 --    C.STEP_MS, recomputed from the page after each answer (bagpanel_core.lua C.sortStep).
---  * Quest / Status / Active / Shop link to the windows that exist (C.TABS); a tab with no target is not shown.
---  * The option (g_settings 'chaosBagPanel', on for a new player): Classic button in the panel and the top menu entry
---    Adventure > Inventory panel. Off: the hidden windows come back and the panel hides.
+--  * Quest / Stats / Buffs / Shop link to the windows that exist (C.TABS); a tab with no target is not shown.
+--  * Always on (the Classic option was dropped, owner 2026-11-06). The stock inventory window is hidden; its fight
+--    modes, soul, capacity, Stop and condition icons move into the panel (see "the stock inventory window").
 -- Container keys come from game_chaoslayout (ChaosLayout.Containers.keyOf); a container with no key is left alone.
 local M = {}
 local C = BagPanelCore
 
 local window
-local enabled = true
 local selected = 'main'
 local bagMemo = {}      -- container id -> { slot = index in the main backpack, id = the bag's item id }
 local cells, cellsFor = {}, nil
@@ -281,7 +280,7 @@ end
 
 function M.draw()
   queued = false
-  if not alive(window) or not enabled then return end
+  if not alive(window) then return end
   local main = mainContainer()
   local pages = { { key = 'main' } }
   if main then
@@ -357,7 +356,7 @@ local function restoring()
 end
 
 local function onOpen(c, previous)
-  if not enabled or not c then return end
+  if not c then return end
   local kind, slot = C.classify(keyOf(c))
   if not kind then return end
   hideStock(c)
@@ -399,12 +398,12 @@ local function shiftAll(slot, add)
 end
 
 local function onAdd(c, slot)
-  if enabled and c and isMain(c) then shiftAll(slot, true) end
+  if c and isMain(c) then shiftAll(slot, true) end
   M.refresh()
 end
 
 local function onRemove(c, slot)
-  if enabled and c and isMain(c) then shiftAll(slot, false) end
+  if c and isMain(c) then shiftAll(slot, false) end
   M.refresh()
 end
 
@@ -414,7 +413,6 @@ end
 
 -- ---------------------------------------------------------------- pages and sort
 function M.selectPage(key)
-  if not enabled then return end
   if sorting then sorting = nil end
   if key == 'main' then
     selected = 'main'
@@ -456,7 +454,7 @@ end
 local function sortStep(cid, session)
   if sorting ~= session then return end
   local c = g_game.getContainer(cid)
-  if not c or not enabled then sorting = nil return end
+  if not c then sorting = nil return end
   local action, slot = C.sortStep(session, pageEntries(c))
   if action == 'move' then
     local item = c:getItem(slot)
@@ -475,7 +473,7 @@ local function sortStep(cid, session)
 end
 
 function M.sort()
-  if not enabled or sorting or not g_game.isOnline() then return end
+  if sorting or not g_game.isOnline() then return end
   local main = mainContainer()
   local pages = { { key = 'main' } }
   if main then pages = C.pages(C.bagSlots(mainItems(main))) end
@@ -521,51 +519,61 @@ local function buildTabs()
   end
 end
 
--- ---------------------------------------------------------------- the option
-function M.isEnabled()
-  return enabled
+-- ---------------------------------------------------------------- the stock inventory window
+-- The panel shows the equipment, so the stock window is hidden. Its fight modes, chase, safe fight, PvP, soul, capacity,
+-- Stop and condition icons move into the panel's two rows: the same widgets, so game_inventory keeps updating them
+-- and their clicks still reach g_game. They go back on terminate.
+local MOVED_COMBAT = { 'fightOffensiveBox', 'fightBalancedBox', 'fightDefensiveBox', 'chaseModeBoxStand',
+  'chaseModeBoxChase', 'safeFightBox', 'openPvpButton' }
+local MOVED_STATUS = { 'soulLabel', 'capLabel', 'stopButton', 'conditionPanel' }
+local moved = {}          -- widget -> its stock parent
+
+local function stockWindow()
+  local inv = modules.game_inventory
+  local w = inv and inv.inventoryWindow
+  return alive(w) and w or nil
 end
 
-local function readOption()
-  local ok, v = pcall(function() return g_settings.getBoolean(C.OPTION, true) end)
-  return ok and C.isOn(v) or true
+local function hideStockInventory()
+  local w = stockWindow()
+  if w and w:isVisible() then w:hide() end
 end
 
-function M.setEnabled(on)
-  on = on and true or false
-  pcall(function() g_settings.set(C.OPTION, on) end)
-  if on == enabled and alive(window) and window:isVisible() == on then return end
-  enabled = on
-  sorting = nil
-  if not alive(window) then return end
-  if on then
-    window:open()
-    hideAllInPanel()
-    M.refresh()
-    message(tr('Inventory panel on.'))
-  else
-    window:hide()
-    showAllHidden()
-    message(tr('Inventory panel off: backpacks open in their own windows.'))
+local function moveInto(row, ids)
+  local stock = stockWindow()
+  if not stock or not row then return end
+  for _, id in ipairs(ids) do
+    local w = stock:recursiveGetChildById(id)
+    if alive(w) and w:getParent() ~= row then
+      moved[w] = w:getParent()
+      w:breakAnchors()
+      w:setMargin(0)
+      w:setParent(row)
+    end
   end
 end
 
-function M.toggle()
-  M.setEnabled(not enabled)
+local function moveControls()
+  moveInto(child('combatRow'), MOVED_COMBAT)
+  local status = child('statusRow')
+  moveInto(status, MOVED_STATUS)
+  local cond = status and status:getChildById('conditionPanel')
+  if alive(cond) then cond:setWidth(math.max(20, status:getWidth() - 34 * 2 - 44 - 6)) end
 end
 
--- the X of the window: the way back to the classic windows (without it the backpack would have no window at all)
-function M.onWindowClose()
-  if enabled then M.setEnabled(false) end
-end
-
-local function addMenu()
-  local top = modules.client_chaos_topbar
-  local api = top and top.ChaosTopBar
-  if api and api.addEntry and not handlers.menu then
-    handlers.menu = pcall(api.addEntry, 'adventure',
-      { text = 'Inventory panel', icon = 'inventory', modules = { 'game_bagpanel' }, fns = { 'toggle' } })
+local function restoreControls()
+  for w, parent in pairs(moved) do
+    if alive(w) and alive(parent) then w:setParent(parent) end
   end
+  moved = {}
+end
+
+local function watchStock()
+  local w = stockWindow()
+  if not w or handlers.stock then return end
+  -- game_interface and the layout restore open it again (game_inventory.move): hide it each time it shows
+  handlers.stock = { onVisibilityChange = function(widget, visible) if visible then addEvent(hideStockInventory) end end }
+  connect(w, handlers.stock)
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -575,13 +583,12 @@ local function createWindow()
   local parent = gi and gi.getRightPanel and gi.getRightPanel() or nil
   if not alive(parent) then return end
   window = g_ui.loadUI('bagpanel', parent)
-  -- the option (g_settings chaosBagPanel) decides if it shows, not the MiniWindow's saved closed state: setup closes a
-  -- window saved closed, and a logout hide saved it so (seen in a local client 2026-11-06)
+  -- always shown, whatever the MiniWindow's saved closed state: setup closes a window saved closed, and a logout hide
+  -- saved it so (seen in a local client 2026-11-06). forceOpen makes MiniWindow:close a no-op; the X is hidden
   window.forceOpen = true
   pcall(function() window:setup() end)
-  -- forceOpen also makes MiniWindow:close a no-op, so the X button turns the option off itself
   local closeButton = window:getChildById('closeButton')
-  if closeButton then closeButton.onClick = function() M.setEnabled(false) end end
+  if closeButton then closeButton:hide() end
   local grid = child('grid')
   if grid then connect(grid, { onGeometryChange = function() M.refresh() end }) end
   buildEquip()
@@ -589,20 +596,22 @@ local function createWindow()
 end
 
 local function ensureMain()
-  if not enabled or not g_game.isOnline() or mainContainer() or restoring() then return end
+  if not g_game.isOnline() or mainContainer() or restoring() then return end
   local player = g_game.getLocalPlayer()
   local item = player and player:getInventoryItem(C.BACK_SLOT)
   if item and item.isContainer and item:isContainer() then g_game.open(item) end
 end
 
 local function onGameStart()
-  enabled = readOption()
   bagMemo, hiddenWindows, selected, sorting = {}, {}, 'main', nil
   createWindow()
   if not alive(window) then return end
   buildEquip()
-  addMenu()
-  if enabled then window:open() else window:hide() end
+  window:open()
+  hideStockInventory()
+  watchStock()
+  moveControls()
+  scheduleEvent(safe('controls', function() hideStockInventory() moveControls() end), 1500)
   scheduleEvent(safe('tabs', buildTabs), 1500)
   -- the login restore (game_chaoslayout) opens the containers of the last session first; the main backpack opens here
   -- when it did not
@@ -610,7 +619,7 @@ local function onGameStart()
   if cycle then removeEvent(cycle) end
   ensureTries = 0
   cycle = cycleEvent(safe('money', function()
-    if not (enabled and alive(window)) then return end
+    if not alive(window) then return end
     drawMoney()
     -- the first open at login can be lost (seen in a client: the panel stayed empty); a few more tries, then none
     if ensureTries < 5 and not mainContainer() then
@@ -639,7 +648,6 @@ local function onOutfitChange(creature)
 end
 
 function M.init()
-  enabled = readOption()
   handlers.container = {
     onOpen = safe('open', onOpen), onClose = safe('close', onClose),
     onAddItem = safe('add', onAdd), onRemoveItem = safe('remove', onRemove), onUpdateItem = safe('update', onChange),
@@ -659,6 +667,10 @@ function M.terminate()
   disconnect(g_game, handlers.game)
   disconnect(LocalPlayer, handlers.player)
   disconnect(Creature, handlers.creature)
+  local stock = stockWindow()
+  if stock and handlers.stock then disconnect(stock, handlers.stock) end
+  restoreControls()
+  if stock then stock:show() end
   if cycle then removeEvent(cycle) cycle = nil end
   showAllHidden()
   if alive(window) then window:destroy() end
@@ -669,9 +681,5 @@ end
 -- ---------------------------------------------------------------- module functions (bagpanel.otui, the top menu, game_bagpanel.otmod)
 function init() M.init() end
 function terminate() M.terminate() end
-function toggle() M.toggle() end
 function sort() M.sort() end
-function setEnabled(on) M.setEnabled(on) end
-function isEnabled() return M.isEnabled() end
 function selectPage(key) M.selectPage(key) end
-function onWindowClose() M.onWindowClose() end

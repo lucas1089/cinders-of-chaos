@@ -7,14 +7,7 @@ local function eq(a, b, what)
   if a ~= b then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
 end
 
--- the option: on unless turned off
-eq(C.isOn(nil), true, 'new player: on')
-eq(C.isOn(true), true, 'true')
-eq(C.isOn(false), false, 'false')
-eq(C.isOn('false'), false, 'text false')
-eq(C.isOn(0), false, 'zero')
-
--- equipment grid: the ten slots once each
+-- equipment grid: the nine worn slots and the badge, once each
 local seen, count = {}, 0
 for _, row in ipairs(C.EQUIP_ROWS) do
   eq(#row, 3, 'row of 3')
@@ -22,8 +15,9 @@ for _, row in ipairs(C.EQUIP_ROWS) do
     if s ~= 0 then seen[s] = (seen[s] or 0) + 1; count = count + 1 end
   end
 end
-eq(count, 10, 'ten slots in the grid')
-for s = 1, 10 do
+eq(count, #C.EQUIP_SLOTS, 'every slot in the grid')
+eq(seen[10], nil, 'no ammunition slot')
+for _, s in ipairs(C.EQUIP_SLOTS) do
   eq(seen[s], 1, 'slot ' .. s .. ' once')
   eq(type(C.SLOT_NAMES[s]), 'string', 'slot ' .. s .. ' has a name')
 end

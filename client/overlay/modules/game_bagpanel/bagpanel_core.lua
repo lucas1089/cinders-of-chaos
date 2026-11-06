@@ -13,13 +13,14 @@ C.MAX_STEPS_PER_ITEM = 2   -- the sort stops after this many moves per item (a s
 C.STUCK = 3                -- moves that changed nothing in a row: the sort gives up
 C.STEP_MS = 220            -- between two sort moves (the answer of the server comes in between)
 C.WHOLE = 255              -- the "whole container" index: the server adds the item to the front of the container
-C.OPTION = 'chaosBagPanel'
 
 -- the equipment grid, rows of 3 (inventory slot ids, 0 = no slot): the client's slot numbers
-C.EQUIP_ROWS = { { 2, 1, 10 }, { 6, 4, 5 }, { 9, 7, 3 }, { 0, 8, 0 } }
+-- 13 is the badge slot (base patch 0113): the Chaos server takes nothing in the ammunition slot (10), so it is not shown
+C.EQUIP_SLOTS = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 13 }
+C.EQUIP_ROWS = { { 2, 1, 13 }, { 6, 4, 5 }, { 9, 7, 3 }, { 0, 8, 0 } }
 -- English names (tr() keys at run time)
 C.SLOT_NAMES = { [1] = 'Head', [2] = 'Necklace', [3] = 'Backpack', [4] = 'Armor', [5] = 'Right hand',
-  [6] = 'Left hand', [7] = 'Legs', [8] = 'Feet', [9] = 'Ring', [10] = 'Ammunition' }
+  [6] = 'Left hand', [7] = 'Legs', [8] = 'Feet', [9] = 'Ring', [13] = 'Badge' }
 
 -- coins by client id, in gold
 C.COINS = { [3031] = 1, [3035] = 100, [3043] = 10000 }
@@ -38,14 +39,6 @@ local function int(v)
   v = tonumber(v)
   if not v or v ~= v or v == math.huge or v == -math.huge then return nil end
   return math.floor(v)
-end
-
--- ---------------------------------------------------------------- the option
--- on unless it was turned off (a new player has none saved)
-function C.isOn(v)
-  if v == nil then return true end
-  if v == false or v == 0 or v == 'false' or v == '0' then return false end
-  return true
 end
 
 -- ---------------------------------------------------------------- tabs

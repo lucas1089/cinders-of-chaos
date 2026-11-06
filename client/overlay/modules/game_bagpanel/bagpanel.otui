@@ -38,7 +38,6 @@ MiniWindow
   $mobile:
     height: 420
   &save: true
-  @onClose: modules.game_bagpanel.onWindowClose()
 
   MiniWindowContents
     padding: 2
@@ -83,9 +82,33 @@ MiniWindow
         phantom: true
         fixed-creature-size: true
 
+    // the fight modes, chase, safe fight and PvP of the stock inventory window (moved here by bagpanel.lua, which hides
+    // that window), then soul, capacity, Stop and the condition icons
+    Panel
+      id: combatRow
+      anchors.top: equipPanel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 20
+      layout:
+        type: horizontalBox
+        spacing: 2
+
+    Panel
+      id: statusRow
+      anchors.top: combatRow.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 3
+      height: 20
+      layout:
+        type: horizontalBox
+        spacing: 2
+
     ChaosLabelDim
       id: goldLabel
-      anchors.top: equipPanel.bottom
+      anchors.top: statusRow.bottom
       anchors.left: parent.left
       anchors.right: parent.right
       margin-top: 4
@@ -163,12 +186,3 @@ MiniWindow
         !text: tr('Sort')
         !tooltip: tr('Puts the items of this page in order: by item, then the bigger stack first.')
         @onClick: modules.game_bagpanel.sort()
-
-      BagPanelButton
-        id: classicButton
-        anchors.top: parent.top
-        anchors.right: parent.right
-        width: 80
-        !text: tr('Classic')
-        !tooltip: tr('Turns this panel off: backpacks open in their own windows again. Inventory panel in the top menu turns it on.')
-        @onClick: modules.game_bagpanel.setEnabled(false)
