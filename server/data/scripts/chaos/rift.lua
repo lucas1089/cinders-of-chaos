@@ -1504,8 +1504,23 @@ function spawnBoss(run) -- the forward-declared local (reinforce)
 			if ChaosBossMech and ChaosBossMech.attach then
 				local key = run.omen and m:getName() or "rift_guardian"
 				local radius = cfg.layout and cfg.layout.arena and cfg.layout.arena.radius or 9
+				-- the guardian's kit (O427): extra marked attacks drawn by the run's seed and theme, shares by tier
+				local base = ChaosBossMech.profileOf and ChaosBossMech.profileOf(key)
+				local profile
+				if base and ChaosGuardianCore then
+					local tier = run.key and run.key.tier or 1
+					local skip = {}
+					for _, t in ipairs(base.telegraphs or {}) do
+						skip[t.key] = true
+					end
+					local keys = ChaosGuardianCore.pickKit(cfg, (run.id or 1) * 131 + tier * 7 + i, run.themeName or run.theme,
+						tier, run.omen ~= nil and run.omen ~= false, skip)
+					profile = ChaosGuardianCore.profile(cfg, base, keys, tier, run.omen ~= nil and run.omen ~= false)
+					profile.ownTelegraphs = true
+					run.kit = keys
+				end
 				pcall(ChaosBossMech.attach, m, key, {center = run.L.bossSpawn, radius = radius, tier = run.key and run.key.tier or nil,
-					solo = (run.size or 1) == 1})
+					solo = (run.size or 1) == 1, profile = profile})
 			end
 			first = first or m
 			packFx(P(at), "rift_boss_arrives", CONST_ME_MORTAREA)
@@ -2408,7 +2423,7 @@ function RF.openOmen(player, item)
 	setMarker(player, key)
 
 	RF.nextId = RF.nextId + 1
-	local fx = R.applyParty(cfg, R.effects(cfg, {}, 1), #group, nil) -- party scaling: damage, rewards
+	local fx = R.applyParty(cfg, R.effects(cfg, {}, 1), #group, nil, true) -- party scaling: damage, rewards; the Omen guardian number
 	local now = os.time()
 	local run = R.newRun(cfg, now, 0, 0, fx)
 	run.limit = o.timeLimit
@@ -2815,9 +2830,21 @@ function monsterHealth.onHealthChange(creature, attacker, primaryDamage, primary
 end
 monsterHealth:register()
 
+-- a rift or Omen guardian's hit on a player's summon (necro_minions.lua, O427): the run's hit multiplier of the guardian
+-- (damage, party, Dread Guardian, the guardian curve) or nil when the attacker is no guardian
+function RF.guardianHitMult(attacker)
+	local run = attacker and RF.monsterRun[attacker:getId()]
+	if not (run and run.bossIds and run.bossIds[attacker:getId()]) then
+		return nil
+	end
+	return (run.fx.damage or 1) * (run.fx.boss or 1) * (run.fx.guardian or 1)
+end
+
 -- damage taken by players from rift monsters: Brutality and the tiers above the table
 local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
-	local run = attacker and not reflecting and RF.monsterRun[attacker:getId()]
+	-- a guardian's splash through a summon (necro_minions.lua, O427) is already scaled by the run: no second pass
+	local splash = ChaosNecroMinions and ChaosNecroMinions.splashing
+	local run = attacker and not reflecting and not splash and RF.monsterRun[attacker:getId()]
 	if run and primaryType ~= COMBAT_HEALING then
 		-- a player back from a lost life: rift monsters cannot hurt it for lives.shieldSeconds
 		local entry = run.players[creature:getId()]
@@ -2828,7 +2855,9 @@ local function scaleHit(creature, attacker, primaryDamage, primaryType, secondar
 		local info
 		primaryDamage, primaryType, secondaryDamage, secondaryType, info = R.monsterHit(C(), run.fx,
 			{primary = primaryDamage, ptype = primaryType, secondary = secondaryDamage, stype = secondaryType,
-				boss = run.bossIds and run.bossIds[attacker:getId()] or false}, hitTypes(), rand)
+				boss = run.bossIds and run.bossIds[attacker:getId()] or false,
+				scripted = ChaosBossMech and ChaosBossMech.scriptedHit and ChaosBossMech.scriptedHit(attacker) or false},
+			hitTypes(), rand)
 		if info.crit then
 			packFx(creature:getPosition(), "rift_crit_wound", CONST_ME_DRAWBLOOD or CONST_ME_HITAREA)
 		end

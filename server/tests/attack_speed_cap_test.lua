@@ -5,7 +5,10 @@
 -- the patch; and a simulation of the patch's leech rule (one life leech heal per minPlayerLeechInterval).
 -- O426 (owner 2026-11-06, "raise the attack limit to 3 per second. Make it reachable too, but balanced"): the floor is 333 ms
 -- (engine patch 0088), only a min-maxed build reaches it (the fast classes first), a typical build lands in range, and the
--- damage per hit falls with the rate (attack_rate_core.lua) so the damage per second gain stays bounded.
+-- extras a hit triggers are limited per second (attack_rate_core.lua).
+-- O429 (owner 2026-11-06, "lower the classes' base interval", then "keep the auto hit worth the same"): the vocation base
+-- intervals are 900 / 1000 / 1150 / 1300 ms; a hit keeps its full damage at any rate, so the auto attack's damage per second
+-- grows with the swing rate on purpose (no per-hit reduction any more).
 
 local checks = 0
 local function eq(a, b, m)
@@ -46,26 +49,28 @@ eq(cap.minInterval, 333, "3 attacks per second (O426)") eq(cap.maxBonus, 76, "76
 -- ---------------------------------------------------------------- the old formula when the cap is off
 local OFF = {minInterval = 0, maxBonus = 0}
 eq(E(0, 0, 2000, 0, OFF), 2000, "no weapon: the vocation's")
-eq(E(0, 0, 1300, 0, OFF), 1300, "Shadowfist unarmed")
+eq(E(0, 0, 900, 0, OFF), 900, "Shadowfist unarmed")
 eq(E(3000, 3000, 2000, 0, OFF), 3000, "two-handed, own interval")
-eq(E(0, 1600, 1300, 0, OFF), 1040, "Shadowfist, weapon +20% (2000 -> 1600) x 1300/2000")
-eq(E(0, 1600, 1300, 20, OFF), 832, "... and dexterity 20")
-eq(E(0, 1600, 1400, 20, OFF), 896, "Ninja: same")
+eq(E(0, 1600, 900, 0, OFF), 720, "Shadowfist, weapon +20% (2000 -> 1600) x 900/2000")
+eq(E(0, 1600, 900, 20, OFF), 576, "... and dexterity 20")
+eq(E(0, 1600, 1000, 20, OFF), 640, "Monk: same")
 eq(E(3000, 2400, 2000, 20, OFF), 1920, "two-handed: -20% weapon, -20% dexterity")
 
 -- ---------------------------------------------------------------- with the cap (defaults: floor 333 ms, bonus 76%)
-local ms, capped, raw = E(0, 0, 1300, 0)
-eq(ms, 1300) eq(capped, false) eq(raw, 1300)
-ms, capped = E(0, 0, 1300, 20)
-eq(ms, 1040, "Shadowfist unarmed + dexterity 20: -20%, under the bonus cap and the floor") eq(capped, false)
-ms, capped, raw = E(0, 1600, 1300, 20)
-eq(ms, 832, "Shadowfist, weapon +20% and dexterity 20: no longer at a floor") eq(capped, false) eq(raw, 832)
-ms, capped = E(0, 1600, 1300, 0)
-eq(ms, 1040, "Shadowfist, weapon +20%: above the floor") eq(capped, false)
-ms, capped = E(0, 1600, 1400, 20)
-eq(ms, 896, "Ninja: same") eq(capped, false)
-ms, capped = E(0, 1600, 1600, 20)
-eq(ms, 1024, "Thief: -36%") eq(capped, false)
+local ms, capped, raw = E(0, 0, 900, 0)
+eq(ms, 900) eq(capped, false) eq(raw, 900)
+ms, capped = E(0, 0, 900, 20)
+eq(ms, 720, "Shadowfist unarmed + dexterity 20: -20%, under the bonus cap and the floor") eq(capped, false)
+ms, capped, raw = E(0, 1600, 900, 20)
+eq(ms, 576, "Shadowfist, weapon +20% and dexterity 20") eq(capped, false) eq(raw, 576)
+ms, capped = E(0, 1600, 900, 0)
+eq(ms, 720, "Shadowfist, weapon +20%") eq(capped, false)
+ms, capped = E(0, 1600, 1000, 20)
+eq(ms, 640, "Monk / Thief: -36%") eq(capped, false)
+ms, capped = E(0, 1600, 1300, 20)
+eq(ms, 832, "any 1300 class: weapon -20% and dexterity 20 multiply to -36%") eq(capped, false)
+ms, capped = E(3000, 2400, 1300, 20)
+eq(ms, 1248, "two-handed: 3000 x 0.64 x 1300/2000") eq(capped, false)
 ms, capped = E(0, 1600, 2000, 20)
 eq(ms, 1280, "any 2000 class: weapon -20% and dexterity 20 multiply to -36%") eq(capped, false)
 ms, capped = E(3000, 2400, 2000, 20)
@@ -84,7 +89,7 @@ ms = E(0, 1600, 2000, -5)
 eq(ms, 1600, "negative dexterity counts as 0")
 
 -- every vocation and every bonus combination: never under the floor, never more than 76% off its base
-for _, voc in ipairs({1300, 1400, 1500, 1600, 1700, 1800, 2000}) do
+for _, voc in ipairs({900, 1000, 1150, 1300, 2000}) do
 	for _, typeSpeed in ipairs({0, 1700, 1800, 2700, 3000}) do
 		for pct = 0, 20, 5 do
 			for dex = 0, 20, 5 do
@@ -137,7 +142,7 @@ eq(heals({0, 999, 1998, 2997}, 900), 4)
 -- gems, dexterity and the player-level bonus (passive tree + worn pieces, engine patch 0078), whatever their size.
 eq(M.attackCap.minInterval, 333, "the floor is three attacks per second")
 local lowest = math.huge
-for _, voc in ipairs({1300, 1400, 1500, 1600, 1700, 1800, 2000}) do
+for _, voc in ipairs({900, 1000, 1150, 1300, 2000}) do
 	for _, typeSpeed in ipairs({0, 1000, 1500, 2000, 2500}) do
 		for pct = 0, 90, 5 do
 			local itemSpeed = (typeSpeed > 0 or pct > 0) and M.attackInterval(typeSpeed, pct) or 0
@@ -168,7 +173,6 @@ eq(M.playerSpeedTotal({tree = -4, gear = 3}), 3, "a negative source counts as ze
 -- ---------------------------------------------------------------- 3 per second is reachable, but only min-maxed
 -- The sources at their maximum: the weapon's modifier and topaz gems together (gems config attackspeed cap), the stat
 -- window's dexterity (charStatMax), the passive tree (maxAttackSpeed 15) and worn pieces together (playerSpeedCap 45).
--- Only the fast classes reach 333 ms, only with every source at its maximum; the 2000 ms classes bottom out near 2 per second.
 local G = dofile("data/lib/chaos_gems_config.lua")
 local weaponMax = (G.effects or G).attackspeed and (G.effects or G).attackspeed.cap or 30
 local dexMax, playerMax = 20, M.config.playerSpeedCap
@@ -179,55 +183,56 @@ local function perSecond(voc, w, d, b)
 	return 1000 / ms(voc, w, d, b)
 end
 eq(weaponMax, 30, "weapon modifier and gems together") eq(playerMax, 45, "tree and worn pieces together")
-eq(ms(1300, weaponMax, dexMax, playerMax), 333, "a Shadowfist with every source at its maximum swings 3 times per second")
-eq(perSecond(1400, weaponMax, dexMax, playerMax) >= 2.8, true, "a Ninja min-maxed: 2.9 per second")
-eq(perSecond(1500, weaponMax, dexMax, playerMax) >= 2.6, true, "a Monk min-maxed: 2.7 per second")
-eq(perSecond(2000, weaponMax, dexMax, playerMax) < 2.1, true, "a 2000 ms class min-maxed: about 2 per second, never 3")
-eq(perSecond(2000, weaponMax, dexMax, playerMax) > 1.9, true)
-for _, voc in ipairs({1400, 1500, 1600, 1700, 1800, 2000}) do
-	eq(ms(voc, weaponMax, dexMax, playerMax) > 333, true, "only the Shadowfist reaches the floor itself: " .. voc)
+-- O429 base intervals (xml): Shadowfist / Ninja 900, Monk / Thief 1000, Iron Sage / Samurai 1150, every other class 1300
+local BASES = {900, 1000, 1150, 1300}
+for _, voc in ipairs(BASES) do
+	eq(ms(voc, weaponMax, dexMax, playerMax), 333, "min-maxed, base " .. voc .. " reaches the floor: 3 per second")
 end
--- one source clearly short of its maximum misses 3 per second, even for the fastest class
+-- a 1300 ms class (the slowest) needs every source near its maximum; a source clearly short of it misses 3 per second
 eq(ms(1300, weaponMax - 8, dexMax, playerMax) > 333, true, "a weapon 8 short misses it")
 eq(ms(1300, weaponMax, dexMax - 6, playerMax) > 333, true, "dexterity 6 short misses it")
 eq(ms(1300, weaponMax, dexMax, playerMax - 9) > 333, true, "tree and gear 9 short miss it")
 eq(ms(1300, 0, dexMax, playerMax) > 333, true, "no weapon speed misses it")
-eq(perSecond(1300, 0, dexMax, playerMax) < 2.6, true, "... and lands near 2.4 per second")
--- a typical build (half of every source: weapon 15, dexterity 10, tree and worn pieces 22) lands in range
+-- the fastest classes have room: the Shadowfist reaches the floor without any weapon speed
+eq(ms(900, 0, dexMax, playerMax), 333, "Shadowfist: dexterity and tree / gear alone reach 3 per second")
+eq(ms(900, weaponMax, dexMax, 0) > 333, true, "... but dexterity and a weapon alone do not (500 ms)")
+eq(ms(900, weaponMax, 0, 0) > 333, true)
+-- a typical build (half of every source: weapon 15, dexterity 10, tree and worn pieces 22) lands in 1.3 - 2.0 per second;
+-- the class order holds (faster base, faster typical build)
 local TYP = {15, 10, 22}
-for _, row in ipairs({{1300, 1.2, 1.5}, {1400, 1.1, 1.4}, {1500, 1.0, 1.3}, {1600, 0.95, 1.2}, {1800, 0.9, 1.1}, {2000, 0.8, 1.0}}) do
-	local r = perSecond(row[1], TYP[1], TYP[2], TYP[3])
-	eq(r >= row[2] and r <= row[3], true, string.format("typical %d ms class: %.2f per second in %.2f - %.2f", row[1], r, row[2], row[3]))
+local last = math.huge
+for _, voc in ipairs(BASES) do
+	local r = perSecond(voc, TYP[1], TYP[2], TYP[3])
+	eq(r >= 1.3 and r <= 2.0, true, string.format("typical base %d ms: %.2f per second in 1.30 - 2.00", voc, r))
+	eq(r < last, true, "the order of the classes holds at " .. voc)
+	last = r
 end
 -- the old best build (floor 1000, 40% cap, caps 15 / 20 / 12) swung once per second
 local OLD = {minInterval = 1000, maxBonus = 40}
-eq(E(2000, M.attackInterval(2000, 15), 1300, 20, OLD, 12), 1000, "the old Shadowfist maximum was 1 per second")
+eq(E(2000, M.attackInterval(2000, 15), 1300, 20, OLD, 12), 1000, "an old Shadowfist maximum was 1 per second")
 
--- ---------------------------------------------------------------- the damage per hit falls with the rate (attack_rate_core.lua)
+-- ---------------------------------------------------------------- the hit keeps its full damage (owner 2026-11-06)
 dofile("data/scripts/chaos/attack_rate_core.lua")
 local AR = ChaosAttackRate
-eq(AR.hitFactor(1000), 1, "one attack per second: a full hit") eq(AR.hitFactor(2000), 1, "slow swings are unchanged")
-eq(AR.hitFactor(0), 1, "unknown interval") eq(AR.hitFactor(nil), 1)
-local function near(a, b, tol, m)
-	eq(math.abs(a - b) <= tol, true, (m or "") .. ": " .. a .. " vs " .. b)
+eq(AR.hitFactor, nil, "no per-hit reduction any more") eq(AR.dpsFactor, nil)
+eq(AR.config.curveExponent, nil) eq(AR.config.refIntervalMs, nil)
+-- so the auto attack's damage per second is hit x rate: the typical build and the min-maxed build against before (the
+-- classes' old base intervals are 1300 / 1400 / 1500 / 1600 / 1700 / 1800 / 2000, with the old per-hit cut below 1000 ms)
+local function oldHit(i) return i >= 1000 and 1 or (i / 1000) ^ 0.63 end
+local function oldInterval(base, w, d, b) return (E(2000, M.attackInterval(2000, w), base, d, nil, b)) end
+local classes = {{"Shadowfist", 1300, 900}, {"Monk", 1500, 1000}, {"Iron Sage", 1700, 1150}, {"other", 2000, 1300}}
+for _, c in ipairs(classes) do
+	local oldTyp = oldInterval(c[2], TYP[1], TYP[2], TYP[3])
+	local newTyp = ms(c[3], TYP[1], TYP[2], TYP[3])
+	local gainTyp = (1000 / newTyp) / (oldHit(oldTyp) * 1000 / oldTyp)
+	local newMax = ms(c[3], weaponMax, dexMax, playerMax)
+	local oldMax = math.max(1000, (E(2000, M.attackInterval(2000, 15), c[2], 20, OLD, 12)))
+	local gainMax = (1000 / newMax) / (1000 / oldMax)
+	eq(gainTyp > 1 and gainTyp < 2.2, true, string.format("%s typical DPS x%.2f against before", c[1], gainTyp))
+	eq(gainMax > 2.0 and gainMax < 4.0, true, string.format("%s min-maxed DPS x%.2f against the old best", c[1], gainMax))
 end
-near(AR.hitFactor(333), 0.50, 0.01, "a hit at the floor is half")
-near(AR.dpsFactor(333), 1.50, 0.02, "3 per second: +50% damage per second over 1 per second (not +200%)")
-eq(AR.dpsFactor(333) >= 1.4 and AR.dpsFactor(333) <= 1.6, true, "owner design: +40-60%")
-near(AR.dpsFactor(500), 1.29, 0.02, "2 per second: about +29%")
-eq(AR.dpsFactor(1000), 1)
--- monotonic: faster never loses damage per second, never gains linearly
-local prev = 0
-for i = 1000, 333, -1 do
-	local d = AR.dpsFactor(i)
-	eq(d >= prev - 1e-9, true, "damage per second grows with the rate " .. i)
-	eq(d <= (1000 / i) * 0.8 or i >= 700, true, "and clearly under linear below 700 ms: " .. i)
-	prev = d
-end
--- the fastest build against the old maximum (1 per second, a full hit): +50% damage per second
-near(AR.hitFactor(ms(1300, weaponMax, dexMax, playerMax)) * 3.003, 1.50, 0.03, "the fastest build against the old maximum")
-eq(AR.hitFactor(500, {refIntervalMs = 1000, curveExponent = 1}), 0.5, "exponent 1: damage per second flat")
-eq(AR.hitFactor(500, {refIntervalMs = 1000, curveExponent = 0}), 1, "exponent 0: off")
+-- a faster swing always does more auto attack damage per second now (full hit each)
+eq(1000 / ms(900, 15, 10, 22) > 1000 / ms(1300, 15, 10, 22), true, "faster class, more damage per second")
 
 -- ---------------------------------------------------------------- per-second limits of on-hit extras
 -- Swings at the floor (every 333 ms, 6 s): the extras (off-hand strike, cleave, ricochet...) trigger at most limits[key] per
@@ -241,7 +246,7 @@ local function triggers(key, intervalMs, seconds, cfg)
 	end
 	return n
 end
-for _, key in ipairs({"offhand", "fistOffhand", "bloodrage", "cleavingArc", "ricochet", "radiant"}) do
+for _, key in ipairs({"offhand", "fistOffhand", "bloodrage", "cleavingArc", "ricochet", "radiant", "undyingRage"}) do
 	local per = AR.limit(key)
 	eq(per > 0 and per <= 1.5, true, key .. " is limited to 1.5 per second at most")
 	local n = triggers(key, 333, 6)
@@ -260,7 +265,8 @@ eq(AR.gate(pid, "offhand"), true, "a cleared player starts fresh") AR.clear(pid)
 -- every on-hit extra of the config is gated where it is triggered (the engine files call arGate(pid, key))
 local sites = {
 	offhand = "thief_combat.lua", fistOffhand = "monk_combat.lua", bloodrage = "berserker_combat.lua",
-	radiant = "templar_combat.lua", cleavingArc = "passivetree_keystones.lua", ricochet = "passivetree_keystones.lua"}
+	radiant = "templar_combat.lua", cleavingArc = "passivetree_keystones.lua", ricochet = "passivetree_keystones.lua",
+	undyingRage = "passivetree_keystones.lua"}
 for key, file in pairs(sites) do
 	local fh = io.open("data/scripts/chaos/" .. file, "r")
 	local src = fh:read("*a")

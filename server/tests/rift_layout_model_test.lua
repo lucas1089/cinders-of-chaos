@@ -45,7 +45,7 @@ for tier = 2, cfg.maxTier do
 	ok(R.densityCount(cfg, tier, 1, 9000) > R.densityCount(cfg, tier - 1, 1, 9000), "more monsters on tier " .. tier)
 end
 -- a small map keeps the tier's own count (the floor does not apply)
-eq(R.densityCount(cfg, 1, 1, 1081), 80, "a map of the reference size: the base count")
+eq(R.densityCount(cfg, 1, 1, 1081), cfg.density.count.base, "a map of the reference size: the base count")
 -- a party's growth comes on top of the floor
 ok(R.densityCount(cfg, 6, 5, 9000) >= 9000 / tpm(6) * 2 - 1e-6, "a party of five: twice the floor")
 -- no area: the band's typical layout
@@ -111,6 +111,7 @@ do
 		dens[k] = v
 	end
 	dens.area = {ref = a.ref, exp = a.exp, maxMult = a.maxMult}
+	dens.count = {base = 80, perTier = 8, perExtraPlayer = 0.25} -- the counts of 2026-10-29 (O427 raised them)
 	dens.live = {base = 60, perExtraPlayer = 10, per100 = 0.5, max = 260}
 	old.density = dens
 	-- two themes, one sample each, band 3 (the biggest) and band 2 (the report): enough to see it

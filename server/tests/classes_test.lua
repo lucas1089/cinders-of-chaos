@@ -373,23 +373,23 @@ do
 	local MONK = cfg.ids.monk
 	eq(speeds[THIEF], speeds[MONK], "thief attacks as fast as the monk")
 	eq(speeds[NINJA], speeds[18], "ninja ties with the shadowfist"); eq(speeds[SAMURAI], speeds[19], "samurai ties with the iron sage")
+	-- the base intervals of O429 (owner 2026-11-06, "lower the classes' base interval"): the two lines are faster than every
+	-- class outside them, which share one interval; Shadowfist / Ninja fastest, then Monk / Thief, then Iron Sage / Samurai
+	local OTHER = 1300
+	eq(speeds[18], 900, "shadowfist"); eq(speeds[MONK], 1000, "monk"); eq(speeds[19], 1150, "iron sage")
 	for id, spd in pairs(speeds) do
 		local line = C.isThiefLine(id) or cfg.baseOf[id] == MONK
 		if not line then
-			eq(spd, 2000, "vocation " .. id .. " keeps the stock interval")
-			assert(speeds[THIEF] < spd, "the thief is faster than vocation " .. id)
+			eq(spd, OTHER, "vocation " .. id .. " has the shared base interval")
+			assert(speeds[19] < spd, "the slowest line class is faster than vocation " .. id)
 		end
 	end
+	-- speedComp is a fixed hit ratio of the 2026-10-23 tie decision (hit x now / was); it is no longer tied to the xml
 	for id, a in pairs(cfg.attackSpeed) do
-		eq(speeds[id], a.now, "attackSpeed table matches the xml for " .. id)
 		assert(a.now < a.was, "shortened")
 		eq(C.speedComp(id), a.now / a.was, "speedComp " .. id)
 	end
 	eq(C.speedComp(4), 1, "warrior: no compensation"); eq(C.speedComp(MONK), 1, "monk: none")
-	-- damage per second: hit x comp / now interval = hit / was interval
-	for id, a in pairs(cfg.attackSpeed) do
-		assert(math.abs(C.speedComp(id) / a.now - 1 / a.was) < 1e-12, "dps unchanged for " .. id)
-	end
 
 	-- dual neutral: two equal daggers: the Thief's main + off-hand strike deal one old hit; the Ninja is not cut
 	local n = C.dualNeutral(THIEF, 20, 20)

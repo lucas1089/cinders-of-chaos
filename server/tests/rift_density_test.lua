@@ -492,7 +492,7 @@ do
 	RF.monsterRun[m.id] = run
 	local onHit = events.ChaosRiftPlayerHit.onHealthChange
 	local a, at, b, bt = onHit(p, m, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
-	eq(a, math.floor(-1000 * cfg.density.damage), "the pack monster's hit, density-softened")
+	eq(a, math.floor(-1000 * run.fx.packDamage), "the pack monster's hit, density-softened")
 	eq(bt, COMBAT_FIREDAMAGE, "the brand's fire in the free slot")
 	eq(b, math.floor(a * 0.4), "40% of it as fire")
 	RF.runs[3] = nil

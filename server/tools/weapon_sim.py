@@ -8,8 +8,8 @@ The model (computed, not measured; the engine's formula, Weapons::getMaxWeaponDa
   hit      = a bell curve over min..max hit (min 0 for melee, a fifth of the level for a launcher), x the style factor
              of weapon_styles.lua
   per sec  = mean hit x hit chance / attack interval
-(The 3 attacks per second cap, O426: a swing faster than one per second hits for (interval / 1000) ^ 0.63, attack_rate_core.lua.
-The model's intervals are the weapons' own, 2000 ms and up, so the factor is 1 and the numbers here do not change.)
+(The 3 attacks per second cap, O426 / O429: a hit keeps its full damage at any rate, the model's intervals are the weapons' own,
+2000 ms and up, scaled alike by every class, so the numbers here do not change.)
 The attack factor is 1 in the offensive stance, the skill is the same for every style (one melee skill, see server/README.md
 "One melee skill"), the interval is the weapon's own (one-handed 2000 ms, two-handed and launchers 3000 ms, scaled alike by
 every vocation). The tier of a level comes from the equipment sets (install_gear_sets.py CURVES: one-handed melee attack,
