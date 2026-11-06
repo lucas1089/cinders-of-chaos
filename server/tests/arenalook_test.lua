@@ -94,6 +94,19 @@ local function verify(label, spec)
   for k, t in pairs(look.tiles) do
     if t.road then check(not look.blocked[k] and seen[k], label .. ": road tile free") end
   end
+  -- a sunken patch ground (lava cracks) never touches a road, so its border is whole
+  local sunken = {}
+  for _, pt in ipairs(spec.theme.patches or {}) do
+    if pt.lower then for _, g in ipairs(pt.grounds) do sunken[g[1]] = true end end
+  end
+  for _, t in pairs(look.tiles) do
+    if sunken[t.gid] then
+      for dx = -1, 1 do for dy = -1, 1 do
+        local n = look.tiles[A.key(t.x + dx, t.y + dy)]
+        check(not (n and n.road), label .. ": sunken patch off the road")
+      end end
+    end
+  end
   -- solid pieces never touch, not even on a diagonal
   for k in pairs(look.blocked) do
     local x, y = k:match("(-?%d+),(-?%d+)")
@@ -148,6 +161,12 @@ do
   for _, t in ipairs(A.rectTiles(1, 9, 8, 20)) do tiles[#tiles + 1] = t end
   verify("L room", {tiles = tiles, theme = A.theme("stone"), seed = 9, keep = {{x = 2, y = 19, r = 1}, {x = 19, y = 2, r = 1}},
     roads = {{from = {x = 2, y = 19}, to = {x = 2, y = 2}}, {from = {x = 2, y = 2}, to = {x = 19, y = 2}}}})
+end
+
+-- ember with a road through the middle: the lava cracks keep off it (owner report 2026-11-06)
+for seed = 1, 12 do
+  verify("ember road " .. seed, {tiles = A.rectTiles(1, 1, 21, 21), theme = A.theme("ember"), seed = seed,
+    keep = {{x = 11, y = 20, r = 1}}, roads = {{from = {x = 11, y = 20}, to = {x = 11, y = 2}}}})
 end
 
 -- theme choice: keywords, else a hash; always a theme name

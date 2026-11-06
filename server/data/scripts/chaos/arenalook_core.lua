@@ -503,6 +503,21 @@ function A.generate(spec)
 		end
 	end
 
+	-- a sunken patch (lower = true, the lava cracks) keeps one tile off the roads: its border pieces stand on its own
+	-- tiles and a road neighbour gets none, so a crack touching a lane was drawn cut off (owner report 2026-11-06)
+	for k, t in pairs(floor) do
+		local pt = nat[k] > 0 and theme.patches[nat[k]] or nil
+		if pt and pt.lower then
+			for dx = -1, 1 do
+				for dy = -1, 1 do
+					if road[key(t.x + dx, t.y + dy)] then
+						nat[k] = 0
+					end
+				end
+			end
+		end
+	end
+
 	for k, t in pairs(floor) do
 		local cx, cy = canon(t.x, t.y)
 		local pi = nat[k]
