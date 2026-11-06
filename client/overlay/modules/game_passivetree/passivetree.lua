@@ -631,7 +631,7 @@ local function onTreeAlt(down)
 			widget.setExtendedTooltip(widget, t.title, TreeTips.lines(t.texts, t.extra, down, tr), t.style)
 		end
 	end
-	local hovered = g_ui.getHoveredWidget and g_ui.getHoveredWidget() -- not in every engine build
+	local hovered = ChaosAltHelp.hovered and ChaosAltHelp.hovered() -- g_ui.getHoveredWidget is not bound in our engine
 	if hovered and hovered.treeTip then
 		ChaosAltHelp.redraw(hovered:getTooltip())
 	end
