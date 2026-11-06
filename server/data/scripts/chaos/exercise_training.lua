@@ -143,7 +143,9 @@ local function step(pid, gen, startPos, itemId, dummyPos, dummyId)
 		player:addManaSpent(E.step(kind, player:getMagicLevel(), rate, bonus))
 	else
 		local rate = tonumber(configManager.getNumber(configKeys.RATE_SKILL)) or 1
-		player:addSkillTries(SKILL_ID[skill], E.step(kind, player:getEffectiveSkillLevel(SKILL_ID[skill]), rate, bonus))
+		Chaos.exerciseTries = true -- not a swing: attack_pace.lua leaves these tries alone
+		pcall(player.addSkillTries, player, SKILL_ID[skill], E.step(kind, player:getEffectiveSkillLevel(SKILL_ID[skill]), rate, bonus))
+		Chaos.exerciseTries = nil
 	end
 	Position(dummyPos.x, dummyPos.y, dummyPos.z):sendMagicEffect(CONST_ME_HITAREA)
 	local ani = cfg.kinds[kind].ani
