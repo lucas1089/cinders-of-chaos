@@ -117,6 +117,10 @@ function RL.plan(cfg, req)
 		id = "rift", name = req.theme, kind = kind, theme = lt.areagen, seed = req.seed, floors = floors,
 		linksPerFloor = lc.links, size = {side, side}, layout = p, arrival = {ax, ay}, bossAt = {bx, by},
 		origin = {x = req.origin.x + off, y = req.origin.y + off, z = req.origin.z},
+		-- decoration fit (areagen_config.lua `fit`, O428): the 2x2 wall pieces draw over the floor row north of a south wall
+		-- and the column west of an east wall, so lights, props and decoration stay out from under them, and a piece taller
+		-- or wider than one tile stands only where its whole footprint is floor
+		decorFit = true, wallSize = lc.wallSize or 2,
 		noExit = true, fastPaths = true, linkAvoid = {{bx, by, lc.arena.radius + 12}, {ax, ay, lc.safeRadius}},
 		spawns = {density = 0, minDistance = 4, safeRadius = lc.safeRadius, monsters = {{"none", 1}}, level = {1, 1},
 			spawntime = 0},

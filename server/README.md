@@ -17619,6 +17619,28 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
     halls with pillars and braziers (Obsidian), ash soil and bone earth with moss, bones and catacomb rooms (Crypt),
     wet and mossy rock with moss and glowcaps and worn stone chambers (Sanctum). Every id is checked against the live
     items.otb and pair (`areagen_export.py check`: 211 ids stock, 280 with the dark set, 0 problems).
+  - *Decoration fit* (O428, owner report 2026-11-06, four shots: a brazier on a tile of another floor at a room corner, a
+    big blue piece next to it cut off by the wall, a strip crossing a wall). Cause: the walls of a dungeon layout are
+    2x2 pieces (darkstone, ruin), and the client draws a WxH item or wall piece up and to the left of its tile. So the wall
+    south, east or south-east of a floor tile draws over it: a light on the floor row north of a south wall or the column
+    west of an east wall was half hidden under the wall's top face (the "patch of another floor"), a prop beside it lost
+    its right or lower part, and a 1x2 brazier or torch (or a 2x2 piece) against a north or west wall rose into the wall.
+    Lone ash or moss tiles and patch edges under a light (the light stood on a border piece) looked the same. Fix
+    (`areagen_core.lua` `decorFit`, `def.wallSize`, both set by `RL.plan`; every other area comes out as before):
+    - a piece stands only where its whole footprint is floor (never wall, rock or pool), no wall piece draws over any
+      tile of it, and no other piece stands on it. Lights, props, scatter, clusters and obstacles all follow it;
+    - a light or prop also needs one ground family under and around its footprint (no border piece on the tile, every
+      floor neighbour of the same family);
+    - sizes (`areagen_config.lua` `fit`): the dark braziers, torches and pillars 1x2, the rock outcrop and trees 2x2.
+      The stock lights and props are not measured in git (no client pair): a light counts 1x2 and a prop 2x2, so such a
+      piece stands one tile off the walls it would be drawn over. Put a measured size in `fit.sizes` to let it stand
+      against a wall again;
+    - the model keeps `model.fit` = {floor, covered, deco} (footprints in absolute keys) for the tests.
+    Cost: about half of the lights and props, the rest keep their spacing. Not in the fix: the hunting areas and the
+    Descent, which use the same generator without `decorFit`. Test: `tests/rift_decor_test.lua` (72 maps over every
+    theme, band and palette: footprints on floor, none under a wall piece found again from the wall ids on the tiles,
+    one ground under lights and props, the sizes, and that the same maps without the fit put pieces under the walls).
+    Not seen in a client yet: look at a dungeon rift (Obsidian Hall, Ashen Crypt) at the room corners.
   - *Seeded*: the builder draws the seed of each layout; one seed always gives the same map (LuaJIT and Lua 5.3), and
     the run's log line names it, so `tools/areagen_export.py preview OUT ... --area "rift:<theme>:<band>:<seed>"`
     draws the map a player saw. A map the validator rejects (a link that did not fit) is made again with another
