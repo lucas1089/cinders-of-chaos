@@ -6437,5 +6437,19 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Show the health and mana globes"] = "Mostrar os globos de vida e mana",
   ["Slots on the bar"] = "Espaços na barra",
   ["Smaller bar"] = "Barra menor",
+  -- game_outfitextras: the one-window Customise Character (O421)
+  ["Customise Character"] = "Personalizar personagem",
+  ["Equipped now"] = "Equipado agora",
+  ["Outfit"] = "Roupa",
+  ["Mount"] = "Montaria",
+  ["Shader"] = "Shader",
+  ["Detail"] = "Detalhe",
+  ["Addon 1"] = "Addon 1",
+  ["Addon 2"] = "Addon 2",
+  ["Clear the search"] = "Limpar a busca",
+  ["%s (%d of %d)"] = "%s (%d de %d)",
+  ["Point at a card to preview it, click to pick it. A greyed card is not unlocked yet."] = "Aponte para um cartão para ver, clique para escolher. Um cartão apagado ainda não foi desbloqueado.",
+  ["Show the outfit in the preview"] = "Mostrar a roupa na prévia",
+  ["Wear it. Off: none of it is applied."] = "Usar. Desligado: nada disso é aplicado.",
 }
 return ChaosLocaleStrings['pt-BR']
