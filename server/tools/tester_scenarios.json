@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 66,
   "out": 38,
-  "passive": 92,
+  "passive": 94,
   "place": 15,
   "staff": 17
  },
@@ -9365,6 +9365,19 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "attack_rate": {
+   "files": [
+    "berserker_combat.lua",
+    "monk_combat.lua",
+    "templar_combat.lua",
+    "thief_combat.lua",
+    "weapon_styles.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "autosell": {
    "files": [
     "autosell.lua",
@@ -9592,6 +9605,15 @@
    "talkactions": [
     "/charm"
    ]
+  },
+  "charsheet": {
+   "files": [
+    "charsheet.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "chronicle": {
    "files": [
