@@ -14,7 +14,7 @@ T.elem = {
 }
 T.lineName = {
 	warrior = {"Warrior", "Guerreiro"}, ranger = {"Ranger", "Ranger"}, mystic = {"Mystic", "Místico"},
-	thief = {"Thief", "Ladino"}, necromancer = {"Necromancer", "Necromante"}, monk = {"Monk", "Monge"},
+	thief = {"Thief", "Gatuno"}, necromancer = {"Necromancer", "Necromante"}, monk = {"Monk", "Monge"},
 	templar = {"Templar", "Templário"},
 }
 

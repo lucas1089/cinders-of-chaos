@@ -28,7 +28,7 @@ FPS = 30
 CROP = {'wide': (300, 100, 1280, 720), 'tall': (680, 38, 522, 928)}
 FULL = {'wide': (0, 0, 1920, 1080), 'tall': (656, 0, 608, 1080)}
 SIZE = {'wide': (1920, 1080), 'tall': (1080, 1920)}
-CLASS_NAMES = {'pt-BR': {'mystic': 'Místico', 'warrior': 'Guerreiro', 'thief': 'Ladino', 'ranger': 'Patrulheiro',
+CLASS_NAMES = {'pt-BR': {'mystic': 'Místico', 'warrior': 'Guerreiro', 'thief': 'Gatuno', 'ranger': 'Patrulheiro',
                          'monk': 'Monge', 'necro': 'Necromante', 'templar': 'Templário'},
                'en': {'mystic': 'Mystic', 'warrior': 'Warrior', 'thief': 'Thief', 'ranger': 'Ranger',
                       'monk': 'Monk', 'necro': 'Necromancer', 'templar': 'Templar'}}

@@ -38,7 +38,7 @@
              "en": ["Ranger", "Bows and crossbows at range.", "Deadeye: the best single target", "Beastmaster: wolves fight for you"]},
   "mystic": {"pt-BR": ["Místico", "Magias, varinhas e cajados.", "Elementalist: o maior dano em área", "Illusionist: o melhor curador"],
              "en": ["Mystic", "Spells, wands and rods.", "Elementalist: the top area damage", "Illusionist: the best healer"]},
-  "thief": {"pt-BR": ["Ladino", "Golpes rápidos, shurikens e furtividade.", "Ninja: rajada em um alvo", "Samurai: duelista que aguenta"],
+  "thief": {"pt-BR": ["Gatuno", "Golpes rápidos, shurikens e furtividade.", "Ninja: rajada em um alvo", "Samurai: duelista que aguenta"],
             "en": ["Thief", "Fast strikes, shurikens and stealth.", "Ninja: single target burst", "Samurai: the duelist off-tank"]},
   "monk": {"pt-BR": ["Monge", "Mãos livres, chi e esquiva.", "Shadowfist: rajada com chi", "Iron Sage: curador corpo a corpo"],
            "en": ["Monk", "Bare hands, chi and evasion.", "Shadowfist: chi burst", "Iron Sage: the melee healer"]},

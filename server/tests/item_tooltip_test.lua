@@ -551,13 +551,13 @@ end
 -- ---------------------------------------------------------------- a unique's passive as a block of its own
 do
 	local en = "Hungry Blade: Each kill restores 7.1% of your maximum health. For: Warrior, Thief."
-	local pt = "Hungry Blade: Cada morte restaura 7.1% da sua vida máxima. Só para: Guerreiro, Ladino."
+	local pt = "Hungry Blade: Cada morte restaura 7.1% da sua vida máxima. Só para: Guerreiro, Gatuno."
 	local p = T.splitPassive("Every soul it cuts feeds the blade. " .. en .. " (Requires level 120.)", {pt, en}, "Hungry Blade")
 	eq(p.name, "Hungry Blade", "the passive's name")
 	eq(p.text, "Each kill restores 7.1% of your maximum health. For: Warrior, Thief.", "the rule without the name")
 	eq(p.flavor, "Every soul it cuts feeds the blade. (Requires level 120.)", "the rest of the description")
 	local q = T.splitPassive("Uma alma. " .. pt .. " (Requer nível 120.)", {pt, en}, "Hungry Blade")
-	eq(q.text, "Cada morte restaura 7.1% da sua vida máxima. Só para: Guerreiro, Ladino.", "the pt-BR text")
+	eq(q.text, "Cada morte restaura 7.1% da sua vida máxima. Só para: Guerreiro, Gatuno.", "the pt-BR text")
 	eq(q.flavor, "Uma alma. (Requer nível 120.)", "the pt-BR rest")
 	eq(T.splitPassive(en, {en}, "Hungry Blade").flavor, "", "a description of only the passive")
 	eq(T.splitPassive("Plain text.", {en}, "Hungry Blade"), nil, "no passive text in it")
