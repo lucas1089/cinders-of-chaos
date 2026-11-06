@@ -152,6 +152,15 @@ ChaosAchievements = {stats = {[2] = {rift_tier = 7}}, pointsOf = function() retu
 ChaosTrials = {tierCleared = function() return 2 end}
 ChaosPassiveTree = {publicView = function(p) return {nodes = {626, 627, 628, 665}, masteries = {{id = 665, choice = 3}},
 	cls = "ninja", line = "thief", vocation = "ninja", total = 28} end}
+ChaosParagon = {pointsOf = function() return 55 end}
+ChaosNameplate = {choice = {}, pick = function(list, choice) return list[1] end}
+ChaosTitles = {of = function() return {{key = "x", text = "Bossbane"}} end}
+ChaosBestiary = {pointsOf = function() return 310 end, rankOf = function() return {name = "Tracker"} end}
+ChaosBossPoints = {count = function() return 9 end, index = {list = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}}}
+Chaos.battlegroundConfig = {season = {brackets = {"1v1", "bg"}}}
+ChaosPvpSeason = {viewOf = function() return {["1v1"] = {rating = 1650, placed = true, tierName = "Gold", name = "Arena 1v1"},
+	bg = {rating = 1400, placed = true, tierName = "Silver", name = "Battleground"}} end}
+ChaosCollection = {scoreOf = function() return 77 end}
 os.mtime = nil
 local clock = 100
 local realTime = os.time
@@ -165,6 +174,7 @@ local function newPlayer(name, guid, over)
 	for k, v in pairs(over or {}) do p[k] = v end
 	function p:getId() return self.pid end
 	function p:getGuid() return self.guid end
+	function p:getAccountId() return self.guid + 1000 end
 	function p:getName() return self.name end
 	function p:getLevel() return self.level end
 	function p:getAccountType() return self.account end
@@ -261,9 +271,20 @@ eq(msgs[2].data.rows[2].tip.name, "Magic Sword", "tooltip")
 eq(msgs[2].data.part, 1, "part 1")
 for k in pairs(d) do
 	local known = {name = 1, level = 1, voc = 1, vocId = 1, ascended = 1, guild = 1, ach = 1, rift = 1, trials = 1, outfit = 1, self = 1, parts = 1,
-		tree = 1}
+		tree = 1, paragon = 1, title = 1, bestiary = 1, bosses = 1, pvp = 1, collection = 1, passive = 1}
 	eq(known[k], 1, "only public fields are sent: " .. k)
 end
+eq(d.paragon, 55, "paragon points")
+eq(d.title, "Bossbane", "active title")
+eq(d.bestiary.points, 310, "bestiary points")
+eq(d.bestiary.rank, "Tracker", "bestiary rank")
+eq(d.bosses.got, 9, "boss points")
+eq(d.bosses.total, 12, "boss total")
+eq(d.pvp.name, "Arena 1v1", "best pvp bracket")
+eq(d.pvp.rating, 1650, "its rating")
+eq(d.collection, 77, "collection score")
+eq(d.passive.spent, 4, "passive points spent")
+eq(d.passive.total, 28, "passive points owned")
 eq(d.tree, true, "a tree follows")
 eq(msgs[3].action, "tree", "the tree packet last")
 eq(msgs[3].data.name, "Anna", "the tree of the inspected player")

@@ -13743,7 +13743,7 @@ A window with the public side of another player. Extended opcode `ChaosOpcodes.i
 |---|---|---|
 | client -> server | `inspect` | `{cid}` the creature id of a player the player right-clicked, or `{name}` typed in the window |
 | client -> server | `privacy` | `{}` asks for the own setting, `{allow = true / false}` sets it |
-| server -> client | `result` | `{name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit = {type, head, body, legs, feet, addons, mount}, self, parts}` |
+| server -> client | `result` | `{name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit = {type, head, body, legs, feet, addons, mount}, self, parts, tree, paragon, title, bestiary = {points, rank}, bosses = {got, total}, pvp = {name, tier, rating}, collection, passive = {spent, total}}` (the last seven: O422, see below) |
 | server -> client | `equip` | `{name, rows = [{slot, tip}], part}` `parts` packets follow a `result`; slot 1-10 as the inventory, `tip` the rich tooltip. Each packet is at most 8000 bytes of JSON, the whole message counted (`ChaosInspect.equipPackets`, `config.packetBytes`), and goes through `Chaos.sendChunked`: a single row bigger than that arrives in `S`/`P`/`E` parts, joined by the client's `L.joinPart` like the tree |
 | server -> client | `tree` | `{name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}` the active passive tree, after the equipment (`ChaosInspect.treePayload` of `ChaosPassiveTree.publicView`), through `Chaos.sendChunked`; `result.tree` says one follows |
 | server -> client | `denied` | `{code, text}` code: `notfound`, `private`, `range`, `rate`, `bad` |
@@ -13757,6 +13757,15 @@ health, mana, skills, storage, gold or backpack contents. The tree is sent only 
 setting covers it. The window's **Passive Tree (n)** button shows it read-only in the passive tree window
 (`game_passivetree/viewother.lua`): that class's section and keystone variants, the effects in the tooltips, its bonuses
 in "Info & Bonuses", no planning, refund or apply, a banner with "Back to my tree".
+
+**Profile fields (O422).** `ChaosInspect.publicStats` cleans what `inspect.lua` reads (whole non-negative numbers, short plain
+strings; an empty value is left out, so the client shows no row). Each is wrapped in `pcallv` and absent when its system is
+not loaded: `paragon` = `ChaosParagon.pointsOf`; `title` = the active name plate title (`ChaosNameplate.pick` of
+`ChaosTitles.of` with the player's choice, the title the plate shows); `bestiary` = `ChaosBestiary.pointsOf` and
+`.rankOf().name`; `bosses` = `ChaosBossPoints.count` of `#ChaosBossPoints.index.list`; `pvp` = the best placed bracket of
+`ChaosPvpSeason.viewOf(guid)` by rating (`ChaosInspect.bestPvp`); `collection` = `ChaosCollection.scoreOf(accountId)`;
+`passive` = nodes of `ChaosPassiveTree.publicView` against its `total`. The Infinity Tower floor stays in the `records` packet.
+No health, mana, skills, storage, gold or containers.
 
 **Rules.**
 - `cid` (right-click): the same floor, at most 10 tiles away in x and y and in view (`player:canSee`). `name` (the menu

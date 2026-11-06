@@ -1,6 +1,9 @@
 -- Inspect Player (game_playerinspect), the logic without client API (tested by playerinspect_logic_test.lua).
 -- The server (extended opcode 240, server/data/scripts/chaos/inspect.lua + inspect_core.lua) answers
---   result {name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit, self, parts}
+--   result {name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit, self, parts, tree,
+--           and the profile fields of O413, each missing on an older server or when its system is not loaded:
+--           paragon (points), title (active title text), bestiary {points, rank}, bosses {got, total},
+--           pvp {name, tier, rating}, collection (score), passive {spent, total}}
 --   equip  {name, rows = [{slot, tip}], part}      (parts packets of equipment follow a result; each fits one message,
 --          a single big row comes in parts "S..", "P..", "E.." like the tree, joined by L.joinPart)
 --   tree   {name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}   the passive tree, after the
@@ -16,7 +19,7 @@ local L = PlayerInspectLogic
 L.OPCODE = 240
 L.MAX_TRIAL_TIER = 3
 L.MAX_RECORD_ROWS = 24
-L.COLORS = { text = '#d6c9ae', dim = '#8c8070', gold = '#f6cf72', red = '#e03a1e', good = '#5ccf5c' }
+L.COLORS = { text = '#d6c9ae', dim = '#8c8070', gold = '#f6cf72', accent = '#7fc4d6', red = '#e03a1e', good = '#5ccf5c' }
 
 -- where each inventory slot sits in the window: column and row (0-based), and its name
 L.SLOTS = {
@@ -47,26 +50,70 @@ function L.numberText(n)
   return out
 end
 
--- the lines of the character panel: { text, color }
-function L.lines(d)
+-- the header band: the name, "Level N Class", the ascended badge, the active title and the guild line. Every field is
+-- { text, color } or nil (an empty line is hidden by the window).
+function L.header(d)
   local C = L.COLORS
-  local out = {}
-  local voc = d.voc ~= '' and d.voc or tr('No vocation')
-  out[#out + 1] = { text = tr('Level %d %s', tonumber(d.level) or 0, voc), color = C.text }
-  if d.ascended then out[#out + 1] = { text = tr('Ascended class'), color = C.gold } end
+  local voc = (d.voc and d.voc ~= '') and d.voc or tr('No vocation')
+  local out = {
+    name = { text = tostring(d.name or ''), color = C.gold },
+    class = { text = tr('Level %d %s', tonumber(d.level) or 0, voc), color = C.text },
+  }
+  if d.ascended then out.badge = { text = tr('Ascended class'), color = C.gold } end
+  if type(d.title) == 'string' and d.title ~= '' then out.title = { text = d.title, color = C.accent } end
   if type(d.guild) == 'table' and d.guild.name then
-    out[#out + 1] = { text = tr('%s of %s', d.guild.rank and tr(d.guild.rank) or tr('Member'), d.guild.name), color = C.text }
+    out.guild = { text = tr('%s of %s', d.guild.rank and tr(d.guild.rank) or tr('Member'), d.guild.name), color = C.text }
   else
-    out[#out + 1] = { text = tr('No guild'), color = C.dim }
+    out.guild = { text = tr('No guild'), color = C.dim }
   end
-  out[#out + 1] = { text = tr('Achievement points: %s', L.numberText(d.ach)), color = C.text }
-  local rift = tonumber(d.rift) or 0
-  out[#out + 1] = rift > 0 and { text = tr('Best rift sealed: tier %d', rift), color = C.text }
-    or { text = tr('No rift sealed yet'), color = C.dim }
-  local trials = tonumber(d.trials) or 0
-  out[#out + 1] = trials > 0 and { text = tr('Vocation Trials: tier %d of %d', trials, L.MAX_TRIAL_TIER), color = C.text }
-    or { text = tr('No Vocation Trial cleared'), color = C.dim }
   return out
+end
+
+local function num(v)
+  local n = math.floor(tonumber(v) or 0)
+  return n > 0 and n or nil
+end
+
+-- the stat rows of the window, in sections: { { title, rows = { { label, value, color } } } }. A field the server did not
+-- send (an older server, or a system that is not loaded) has no row; the rift and trial rows always show, dim "None"
+-- without a record (they have been in the packet from the start).
+function L.stats(d)
+  local C = L.COLORS
+  local progress, combat = {}, {}
+  local function add(list, label, value, color) list[#list + 1] = { label = label, value = value, color = color or C.text } end
+
+  if num(d.paragon) then add(progress, tr('Paragon points'), L.numberText(d.paragon)) end
+  if type(d.passive) == 'table' and (num(d.passive.total) or num(d.passive.spent)) then
+    add(progress, tr('Passive points'), string.format('%s / %s', L.numberText(d.passive.spent),
+      L.numberText(math.max(tonumber(d.passive.total) or 0, tonumber(d.passive.spent) or 0))))
+  end
+  add(progress, tr('Achievement points'), L.numberText(d.ach), num(d.ach) and C.text or C.dim)
+  if num(d.collection) then add(progress, tr('Collection score'), L.numberText(d.collection)) end
+  if type(d.bestiary) == 'table' and num(d.bestiary.points) then
+    local rank = type(d.bestiary.rank) == 'string' and d.bestiary.rank ~= '' and d.bestiary.rank or nil
+    add(progress, tr('Bestiary'), rank and string.format('%s (%s)', L.numberText(d.bestiary.points), tr(rank)) or L.numberText(d.bestiary.points))
+  end
+  if type(d.bosses) == 'table' and num(d.bosses.got) then
+    add(progress, tr('Boss Points'), string.format('%s / %s', L.numberText(d.bosses.got), L.numberText(d.bosses.total)))
+  end
+
+  local rift = num(d.rift)
+  if rift then add(combat, tr('Best rift sealed'), tr('Tier %d', rift)) else add(combat, tr('Best rift sealed'), tr('None'), C.dim) end
+  local trials = num(d.trials)
+  if trials then
+    add(combat, tr('Vocation Trials'), tr('Tier %d of %d', trials, L.MAX_TRIAL_TIER), trials >= L.MAX_TRIAL_TIER and C.good or C.text)
+  else
+    add(combat, tr('Vocation Trials'), tr('None'), C.dim)
+  end
+  if type(d.pvp) == 'table' and num(d.pvp.rating) then
+    local tier = type(d.pvp.tier) == 'string' and d.pvp.tier ~= '' and d.pvp.tier or nil
+    add(combat, tr('PvP: %s', tr(type(d.pvp.name) == 'string' and d.pvp.name or 'Arena')),
+      tier and string.format('%s (%s)', L.numberText(d.pvp.rating), tier) or L.numberText(d.pvp.rating))
+  end
+  return {
+    { title = tr('Progress'), rows = progress },
+    { title = tr('Combat'), rows = combat },
+  }
 end
 
 -- state of the window while packets arrive: a result starts a new set of slots

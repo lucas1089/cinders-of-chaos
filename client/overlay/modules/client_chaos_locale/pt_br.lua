@@ -2483,9 +2483,15 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Show this character's passive tree (read-only)"] = "Mostrar a árvore passiva deste personagem (só leitura)",
   -- game_playerinspect/playerinspect_logic.lua
   ["No vocation"] = "Sem vocação",
-  ["Achievement points: %s"] = "Pontos de conquista: %s",
-  ["Best rift sealed: tier %d"] = "Melhor rift selado: tier %d",
-  ["Vocation Trials: tier %d of %d"] = "Vocation Trials: tier %d de %d",
+  ["Achievement points"] = "Pontos de conquista",
+  ["Best rift sealed"] = "Melhor rift selado",
+  ["Boss Points"] = "Pontos de boss",
+  ["Collection score"] = "Pontuação da coleção",
+  ["Paragon points"] = "Pontos de Paragon",
+  ["Passive points"] = "Pontos passivos",
+  ["PvP: %s"] = "PvP: %s",
+  ["Tier %d"] = "Tier %d",
+  ["Tier %d of %d"] = "Tier %d de %d",
   ["Passive Tree (%d)"] = "Árvore passiva (%d)",
   -- game_pouches/autoseller.otui
   ["Auto Seller"] = "Auto Seller",
@@ -6075,8 +6081,6 @@ ChaosLocaleStrings['pt-BR'] = {
   ["In %s"] = "Em %s",
   -- Player inspect (playerinspect_logic.lua)
   ["Ascended class"] = "Classe ascendida",
-  ["No rift sealed yet"] = "Nenhuma rift selada ainda",
-  ["No Vocation Trial cleared"] = "Nenhum Vocation Trial concluído",
   ["Member"] = "Membro",
   ["Backpack"] = "Mochila",
   ["Left hand"] = "Mão esquerda",
