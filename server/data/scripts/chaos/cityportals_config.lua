@@ -75,6 +75,12 @@ return {
 		[34] = {temple = {33657, 31665, 8}, hideout = {0, 4}, guildhall = {1, 4}}, -- Wyrmscar
 	},
 
+	-- towns without city portals (no hideout, guild hall, memorial, Chronicle gate, event or boss portal beside the
+	-- temple; the waypoint portal of the base map stays). Owner 2026-11-06 (pt-BR), Mirewake's temple: "tire todos
+	-- esses teleports daqui. deixe somente o waypoint". cityportals.lua X.place skips them (C.townOpen); the raid and
+	-- Ember Descent portals have their own town lists (raid_config.lua, descent_config.lua portal.townIds).
+	noPortalTowns = {1}, -- Mirewake
+
 	-- the last resort on any map: the first free tile (ground, nothing on it, no teleport, stairs or house)
 	offsets = {{3, -3}, {-3, -3}, {3, 3}, {-3, 3}, {4, -2}, {-4, -2}, {4, 2}, {-4, 2}, {2, -4}, {-2, -4}, {2, 4}, {-2, 4}},
 }

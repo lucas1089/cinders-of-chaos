@@ -12,7 +12,7 @@ return {
 	-- the city portal: a magic forcefield (no destination) with action id aid.portal next to the temple of each town of
 	-- townIds (the main city Cinderhold first, server/README.md "Main city"; the first free tile of offsets,
 	-- after the world boss and Descent portals). Stepping in opens the window.
-	portal = {itemId = 1387, townIds = {2, 1}, offsets = {{4, 3}, {-4, 3}, {4, -3}, {-4, -3}, {0, 5}, {5, 0}, {-5, 0}, {2, 3},
+	portal = {itemId = 1387, townIds = {2}, offsets = {{4, 3}, {-4, 3}, {4, -3}, {-4, -3}, {0, 5}, {5, 0}, {-5, 0}, {2, 3},
 		{-2, 3}, {3, -2}, {-3, -2}},
 		-- positions: a fixed tile per town: Cinderhold's is an alcove of the temple's portal gallery
 		-- (temple_portals_config.lua `portals`; tests/cityportals_test.lua checks it); a town without one uses `offsets`

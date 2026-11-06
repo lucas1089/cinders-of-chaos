@@ -27,7 +27,7 @@ C.globalStorage = {force = 7102810}
 -- action ids 47720 - 47729: the Harvest Portals next to the temples (cityportals kind "harvest"), the ground under the
 -- crypt seal and under the ritual circle (harvest_event.lua sets them at startup)
 C.aid = {portal = 47720, seal = 47721, circle = 47722}
-C.portal = {item = 1387, towns = {2, 1}} -- Cinderhold and Mirewake, like the Memorial Portal
+C.portal = {item = 1387, towns = {2}} -- Cinderhold, like the Memorial Portal (Mirewake has none: noPortalTowns)
 
 C.items = {candy = 41620, key = 41621, candle = 41622, charm = 41623}
 

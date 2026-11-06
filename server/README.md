@@ -9050,7 +9050,8 @@ tiles away. Mirewake had the Chaos anchors; those are configuration, so they mov
   Warden Ysolde and the five service NPCs) stand in the stalls of the hub, the market of the teleport room ("Hub NPC
   booths"), and its portals stand in the gallery along the temple's south wall ("Temple portal gallery"). The
   progression NPCs, the Gambler, Iselde and the service NPCs are the main city's only (their `townIds` are `{2}`);
-  Mirewake keeps its Loot Buyer, Material Broker, Osric, Forgemaster Brannoc and its portals next to its temple (the
+  Mirewake keeps its Loot Buyer, Material Broker, Osric and Forgemaster Brannoc (its city portals went 2026-11-06,
+  "City portals" `noPortalTowns`; the base waypoint portal stays) (the
   Halls of Services of 2026-10-15 to 2026-10-22 are gone). The rune vendor Isora is a base NPC of Cinderhold.
 - Moved: the Great Brazier (`community_config.lua` `brazier.townId` 2) and the Chronicle's capital
   (`chronicle_config.lua` `townId` 2: the town scars go around Cinderhold's temple). The Chronicle's two gates and the
@@ -9427,13 +9428,21 @@ names over the temple arcade's stands are gone with them. The portals' own orang
 `combat_fx.lua`, tested). `tests/tile_labels_test.lua`.
 
 ## City portals (`cityportals.lua`, `cityportals_core.lua`, `cityportals_config.lua`, `cityportals_fx.lua`)
+**Mirewake: the waypoint only** (owner 2026-11-06, pt-BR: "tire todos esses teleports daqui. deixe somente o
+waypoint"). `noPortalTowns = {1}`: `X.place` skips Mirewake (`C.townOpen`), so no Hideout, Guild Hall, Memorial,
+Chronicle gate, Harvest, world boss or siege portal stands beside its temple; the raid's and the Ember Descent's
+`portal.townIds`, `memorial_config.lua` `portalTowns`, `chronicle_config.lua` `gateTowns` and the Harvest's
+`portal.towns` are `{2}` now. The base map's round waypoint portal (32955-32956, 32073-32076) stays. Every other town
+keeps its Hideout and Guild Hall portals. The portals were startup items, not map items: a restart leaves none behind.
+Test: `tests/cityportals_test.lua` (no town list names a town without portals). Not seen on a live server.
+
 
 Owner test 2026-10-16: the hideout and guild hall entries stood "in the middle of nowhere", with nothing saying what
 they were. One shared helper now places every labelled portal near a temple, so a later portal gets the same for a
 config line: `ChaosCityPortals.place({kind, aid, item?, towns?, offsets?, log?})` (one per town, kept when it already
 stands, checked again by the caller once a minute) and `ChaosCityPortals.register(kind, aid, pos, town)` for a portal
 placed by other means. Users: `hideout.lua` (kind `hideout`, action id 47610), `guild_hall.lua` (`guildhall`, 47602),
-`memorial.lua` (`memorial`, 47944: Cinderhold and Mirewake), `harvestevent.lua` (`harvest`), `siege.lua` (`siege`, 47211: the Guild Siege Portals while a siege is open, from
+`memorial.lua` (`memorial`, 47944: Cinderhold), `harvestevent.lua` (`harvest`), `siege.lua` (`siege`, 47211: the Guild Siege Portals while a siege is open, from
 its `portalOffsets`; closing removes them and the pulse drops them; `portalPositions` and the staff `/siege portal` only
 register theirs), `worldboss.lua` (`worldboss`, the World Boss Portals while a boss is awake, the same way). Labelled
 only (they keep their own placement, `ChaosCityPortals.register`): the Ember Descent and raid portals (`descent`,
@@ -9442,8 +9451,8 @@ for every area, so each portal carries its own title, "Emberdeep Hollows, levels
 from the area's `name` and `spawns.level`; a new area gets one with no other change), the Idle Hall's exit
 (`idlehall`, 47911, below). `chronicle.lua` places the **Chronicle Gates** (`chronicle`, 47920 + the area's index;
 one spot per area, `spec.spot` "chronicle_<key>", and the area's name as `spec.title`) when a chapter opens an area,
-for `gateTowns` (Cinderhold and Mirewake) beside the temple (Cinderhold: the gallery, Breach 32359, 32245, 7 and
-Ossuary Stair 32377, 32245, 7; Mirewake 32959, 32073, 7 and 32961, 32074, 7); `ChaosCityPortals.remove(aid)` takes them away when the area closes. The installer's hunt teleports
+for `gateTowns` (Cinderhold) beside the temple (Cinderhold: the gallery, Breach 32359, 32245, 7 and
+Ossuary Stair 32377, 32245, 7; Mirewake none since 2026-11-06, `noPortalTowns`); `ChaosCityPortals.remove(aid)` takes them away when the area closes. The installer's hunt teleports
 (`hunt_teleports.lua`) already carry "Name, levels A-B" (both languages) and a sign, so they stay as they are.
 
 **The Idle Hall's exit** gets its own action id 47911 (`idlehall_config.lua` `aid.exit`, `hall.exit` 22, 11, the plan's
@@ -9485,7 +9494,7 @@ temple takes first, and the area stays connected with both placed.
 | 33 Brassgate | 33594, 31896, 6 | 33593, 31896, 6 |
 | 34 Wyrmscar | 33657, 31669, 8 | 33658, 31669, 8 |
 
-The Memorial Portal: Cinderhold's gallery (32361, 32245, 7), Mirewake 32960, 32073, 7 (next to the other two,
+The Memorial Portal: Cinderhold's gallery (32361, 32245, 7); Mirewake none since 2026-11-06 (its old spot 32960, 32073, 7 was next to the other two,
 checked the same way). The Hall of Services Portal (47880) and its exit (47881) are gone (2026-10-22).
 
 **Recognisable** (`cityportals_fx.lua`): every placed portal shows its kind's effect every `pulseMs` (4 s: hideout
@@ -12422,7 +12431,7 @@ never opens, the monsters keep stock looks.
   black candles, jack-o'-lanterns and lantern posts (the lights), plus the mechanics below. Never on a spawn, the NPC,
   the arrival or a portal, no blocking piece on the walk to a zone (but the maze's own walls), and every tile the
   arrival reached stays reached (`tools/gen_harvest_places_test.py`).
-- **Way in and out.** While open, a **Harvest Portal** stands next to the temples of Cinderhold and Mirewake
+- **Way in and out.** While open, a **Harvest Portal** stands in Cinderhold's temple portal gallery (Mirewake has no city portals since 2026-11-06)
   (`cityportals.lua` kind `harvest`, action id 47720) and leads to the crossroads (camp, PZ, Widow Hessa); the exit
   portals of both areas lead to the temple. The crypt seal in the ruined chapel leads down to the catacombs; the
   King's Crypt's own teleport leads back to the crypt stair.
@@ -24072,7 +24081,7 @@ room chain, escalation, waves, boon offers, picks, stacks and curses, the hit ma
 free runs) is `descent_core.lua`, tested by `tests/descent_test.lua` with LuaJIT and Lua 5.3, including fixed values of
 the generator that both interpreters must give (so a weekly run is the same run everywhere). Extended opcode **205**.
 
-**Entry.** A portal (magic forcefield 1387, action id 47701) is placed for each town of `portal.townIds` (Cinderhold, the main city, and Mirewake): Cinderhold's at its fixed tile in the temple's portal gallery (`portal.positions` 32363, 32245, 7), Mirewake's (and a taken fixed tile) next to the temple at startup (the first
+**Entry.** A portal (magic forcefield 1387, action id 47701) is placed for each town of `portal.townIds` (Cinderhold, the main city; Mirewake's went 2026-11-06, `noPortalTowns`): Cinderhold's at its fixed tile in the temple's portal gallery (`portal.positions` 32363, 32245, 7), a taken fixed tile next to the temple at startup (the first
 free tile of `portal.offsets`); stepping in opens the Descent window, and Adventure > Ember Descent opens it anywhere. The
 window shows the free runs, the sigils carried, the best depths and the forge. A run starts in a protection zone, out of
 combat, level 100+, not multi-clienting; the party within 8 sqm comes along (up to 4). Each member pays for himself:
@@ -24176,7 +24185,7 @@ the journal, the HUD payload) is `raid_core.lua`, tested by `tests/raid_test.lua
 (`Chaos.storage.raid`: +0 inside a raid instance, the crash marker; +1 .. +5 the end of this week's lockout of boss 1 .. 5,
 the Boss Spawns cooldown). Monsters: `data/monster/monsters/chaos/raid/` (registered by the `monsters` step).
 
-**Entry.** A portal (magic forcefield 1387, action id 47801) for each town of `portal.townIds` (Cinderhold, the main city, and Mirewake): Cinderhold's at its fixed tile in the temple's portal gallery (`portal.positions` 32375, 32245, 7), Mirewake's (and a taken fixed tile) next to the temple, the first free tile of
+**Entry.** A portal (magic forcefield 1387, action id 47801) for each town of `portal.townIds` (Cinderhold, the main city; Mirewake's went 2026-11-06, `noPortalTowns`): Cinderhold's at its fixed tile in the temple's portal gallery (`portal.positions` 32375, 32245, 7), a taken fixed tile next to the temple, the first free tile of
 `portal.offsets`) and Adventure > Raid: Ashen Sepulchre open the raid window. "Open New Raid" (or "Continue" on a saved
 raid of this week) in a protection zone, out of combat, level 800+, not multi-clienting: the opener's party within 12 sqm
 comes along, 1 to 15 of them (owner 2026-10-24: all content solo; `minPlayers` 1, `basePlayers` 5 is the group the boss numbers were measured for; staff may still open with `/raid open[, id]`). **Solo scaling** (`raid_core.lua`): under 5 raiders the boss, trash and add health is x (the group's damage / five raiders' damage) from the balance model (`K.smallMult`; solo x0.217, 2 x0.43, 3 x0.65, 4 x0.87), so one raider takes the same time as five and the enrage fits; from 5 up the old +18% / +12% / +10% per raider. Mechanics for one: Ember Brand needs `min(need, raiders)` inside and its total scales with that need (solo: one circle on you, 50% of max health, stand in it), Sundering Blows fades the stacks instead of a Crushing Verdict when nobody else is in the room (`sunderDecide(..., alone)`), packs are 3 monsters alone. Loot is personal and the weekly lockout per character as before, so a solo run pays what one member of a group gets. A lethal hit still throws the player to the hall; alone that is a wipe (the boss resets). Each member's own
@@ -24496,7 +24505,7 @@ stays until the next season starts, which starts from nothing.
 with the area planner. Install step `contentareas` (`tools/install_content_areas.py`) places both at their origins with
 their spawns, as fixed areas: no hunt teleport (decided 2026-10-14). `areas[i].at` is that origin and `gate` an optional
 fixed world tile of the portal (a staff override; unset since 2026-10-16). The gates: the **Chronicle Gates** of
-`gateTowns` (Cinderhold and Mirewake), placed by "City portals" beside the temple (Cinderhold: the temple's portal
+`gateTowns` (Cinderhold), placed by "City portals" beside the temple (Cinderhold: the temple's portal
 gallery), with the area's name in the look text (they stood in the upper hall of Cinderhold's temple, 32362 / 32358,
 32240, 6, before; the owner found that odd). Without `at` (and `gate` or `gateTowns`) a chapter opens an area in the
 story only: the window says so and the console names the missing setting. Their exit
@@ -24543,7 +24552,7 @@ naming them; a record whose holder hides stays, without the name; a hidden fall 
 protected, no monsters): the hall of firsts (west), the hall of records (east), the garden of the fallen (north), the
 plaza with the Memorial stone, the approach with the exit portal. Install step `contentareas` places it at its origin
 (14800, 14800, 7) as a fixed area; `plaza.at` is that origin (decided 2026-10-14). The way in (moved 2026-10-16: the owner found the old tile
-in the temple's upper hall odd): the **Memorial Portal** (1387, action id 47944) of Cinderhold and Mirewake
+in the temple's upper hall odd): the **Memorial Portal** (1387, action id 47944) of Cinderhold
 (`portalTowns`), placed by "City portals" beside the temple (Cinderhold: the temple's portal gallery, 32361, 32245, 7;
 Mirewake 32960, 32073, 7), with a look text and
 a purple effect, at startup and at every tick when missing (`plaza.portal` set: one fixed tile instead); stepping in

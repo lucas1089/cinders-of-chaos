@@ -98,7 +98,7 @@ return {
 		{key = "ossuary_stair", name = "The Ossuary Stair", plan = "chronicle_ossuary_stair",
 			arrival = {59, 82, 0}, minLevel = 380, at = {x = 15100, y = 15140, z = 9}}
 	},
-	gateTowns = {2, 1}, -- Cinderhold (the portal gallery at its temple) and Mirewake (beside its temple): one gate each per open area
+	gateTowns = {2}, -- Cinderhold (the portal gallery at its temple): one gate per open area; Mirewake has none (noPortalTowns)
 
 	-- the town changes: decoration placed at runtime around the anchor (the capital's temple, or `anchor`) and taken
 	-- away again. Each piece goes on the first free tile of its offsets (ground, nothing blocking, no creature, no

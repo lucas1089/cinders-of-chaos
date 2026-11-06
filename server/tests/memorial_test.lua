@@ -43,8 +43,8 @@ check(cfg.defaults.records == true and cfg.defaults.fallen == false, "records on
 check(cfg.aid.portal and cfg.aid.portal >= 47940 and cfg.aid.portal <= 47949, "aid of the portal in 47940-47949")
 check(cfg.plaza.at and cfg.plaza.at.x == 14800 and cfg.plaza.at.y == 14800 and cfg.plaza.at.z == 7,
 	"the plaza at its plan's origin (install step contentareas)")
-check(cfg.plaza.portal == nil and #cfg.portalTowns == 2 and type(cfg.plaza.arrival) == "table" and cfg.portalItem == 1387,
-	"the way in: the Memorial Portal of Cinderhold and Mirewake (cityportals.lua)")
+check(cfg.plaza.portal == nil and #cfg.portalTowns == 1 and cfg.portalTowns[1] == 2 and type(cfg.plaza.arrival) == "table" and cfg.portalItem == 1387,
+	"the way in: the Memorial Portal of Cinderhold (cityportals.lua; Mirewake has none)")
 local seen = {}
 for kind, list in pairs(cfg.slots) do
 	if kind ~= "stone" then

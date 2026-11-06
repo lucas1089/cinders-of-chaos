@@ -125,7 +125,7 @@ function X.place(spec)
 		local id = town:getId()
 		local t = town:getTemplePosition()
 		local k = t and C.key(t)
-		if t and t.x > 0 and not seen[k] and (not want or want[id]) and Tile(t) then
+		if t and t.x > 0 and not seen[k] and (not want or want[id]) and C.townOpen(cfg, id) and Tile(t) then
 			seen[k] = true
 			local list = C.candidates(cfg, spot, id, t, spec.offsets)
 			local pos, had = C.pick(list, function(p)

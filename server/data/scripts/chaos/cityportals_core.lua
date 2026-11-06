@@ -14,6 +14,7 @@
 --   C.labelOf(cfg, kind, t, title)          the orange label over a portal: its title (a proper name, as is), else the
 --                                            kind's label through t; nil for a kind without a label
 --   C.key(pos)                               "x,y,z"
+--   C.townOpen(cfg, town)                    may portals stand at this town's temple (false: cfg.noPortalTowns)
 --   C.bandTitle(name, band)                  "Sulphur Gallery, levels 215-299" (band {low, high}; one level: "level N")
 ChaosCityPortalsCore = ChaosCityPortalsCore or {}
 local C = ChaosCityPortalsCore
@@ -27,6 +28,15 @@ end
 
 function C.key(p)
 	return p.x .. "," .. p.y .. "," .. p.z
+end
+
+function C.townOpen(cfg, town)
+	for _, id in ipairs((cfg or {}).noPortalTowns or {}) do
+		if id == town then
+			return false
+		end
+	end
+	return true
 end
 
 local function sameTemple(a, t)

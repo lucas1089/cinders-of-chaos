@@ -204,7 +204,7 @@ for _, a in ipairs(cfg.areas) do
 		a.key .. ": placed (at set, gates by gateTowns; install step contentareas puts the plan there)")
 	check(K.gateOf(a) == nil, a.key .. ": no fixed gate tile (the Chronicle Gates stand at the temples, cityportals.lua)")
 end
-eq(table.concat(cfg.gateTowns, ","), "2,1", "gates in Cinderhold and Mirewake")
+eq(table.concat(cfg.gateTowns, ","), "2", "gates in Cinderhold only (Mirewake: noPortalTowns)")
 do -- each area has a spot beside both temples (in Cinderhold an alcove of the temple's portal gallery)
 	local cp = dofile("data/scripts/chaos/cityportals_config.lua")
 	for _, a in ipairs(cfg.areas) do
