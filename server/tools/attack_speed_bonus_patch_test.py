@@ -8,8 +8,8 @@ checks that
   * it is the only patch numbered 0078 and touches player.h / player.cpp / luascript.h / luascript.cpp only,
   * the bonus is clamped to 0 .. 100 in the setter and in the Lua binding, and is not saved (iologindata untouched),
   * getAttackSpeed adds it to the dexterity points BEFORE the cap and the floor lines of 0011 (it does not replace them),
-  * the patch never touches the floor (minPlayerAttackInterval, 1000 ms) or the 25% cap numbers,
-  * 0011 still has the floor default of 1000 ms and no later patch changes it.
+  * the patch never touches the floor (minPlayerAttackInterval) or the cap numbers,
+  * 0011 still has the floor default of 1000 ms and only 0088 (3 attacks per second, O426) changes it, to 333 ms.
 
 Run: python3 -I server/tools/attack_speed_bonus_patch_test.py (standard library only)."""
 import os
@@ -57,11 +57,20 @@ def main():
     check('interval = std::max<double>(interval, std::max<int32_t>(0, g_config.getNumber(ConfigManager::MIN_PLAYER_ATTACK_INTERVAL)));' in p11,
           '0011 applies the floor last')
     for n in names:
-        if n > '0011-z' and n != mine[0]:
+        if n > '0011-z' and n != mine[0] and not n.startswith('0088-'):
             body = open(os.path.join(PATCHES, n), encoding='utf-8').read()
             code = [l for l in body.splitlines() if l.startswith(('+', '-')) and not l.startswith(('+++', '---'))]
             check(not any('integer[MIN_PLAYER_ATTACK_INTERVAL]' in l or 'getGlobalNumber(L, "minPlayerAttackInterval"' in l
                           for l in code), 'no other patch changes the floor: ' + n)
+    # 0088 (O426): the floor moves to 3 attacks per second and the bonus cap to 76%, only the two defaults
+    p88 = [n for n in names if n.startswith('0088-')]
+    check(len(p88) == 1, 'one patch 0088')
+    if p88:
+        t88 = open(os.path.join(PATCHES, p88[0]), encoding='utf-8').read()
+        code = [l for l in t88.splitlines() if l.startswith('+') and not l.startswith('+++')]
+        check(any('"minPlayerAttackInterval", 333)' in l for l in code), '0088 floor default is 333 ms')
+        check(any('"maxPlayerAttackSpeedBonus", 76)' in l for l in code), '0088 bonus cap default is 76%')
+        check(not any('minPlayerLeechInterval' in l for l in code), '0088 leaves the leech interval alone')
     if failures:
         return 1
     print('attack speed bonus patch test OK')

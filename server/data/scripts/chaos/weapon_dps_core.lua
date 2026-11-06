@@ -6,7 +6,7 @@
 --   mean hit = (min + max) / 2, min 0 for melee and a fifth of the level (rounded up) for a launcher    the hit is a bell curve
 --   hit      = mean hit x the style factor of weapon_styles.lua (two-handed melee, bow, crossbow: weapon_balance_core.lua)
 --              x the auto attack power (level and skill: weapon_power_core.lua) when that script is loaded
---   DPS      = hit x hit chance (launchers) / interval in seconds
+--   DPS      = hit x hit chance (launchers) x the fast swing factor (attack_rate_core.lua) / interval in seconds
 -- The attack is the item's own (a rarity roll writes it as an attribute), the skill is the character's best melee skill
 -- (one melee skill) or distance skill, the interval is "Your Attack Interval" of the tooltip. Left out: critical hits, the
 -- modifiers of the item and the passive tree, monster resistances, spells and the fist. Lua 5.1 / LuaJIT and 5.3.
@@ -31,6 +31,12 @@ function D.maxHit(level, skill, attack, factor)
 		f = 1
 	end
 	return floor(floor(num(level) / 5) + ((num(skill) / 4 + 1) * (num(attack) / 3) * 1.03) / f + 0.5)
+end
+
+-- a swing faster than one per second hits for less (attack_rate_core.lua, the 3 attacks per second cap, O426)
+function D.rateFactor(interval)
+	local AR = ChaosAttackRate
+	return AR and AR.hitFactor and AR.hitFactor(interval) or 1
 end
 
 -- p = {level, skill, attack, interval (ms), launcher = "bow" | "crossbow" | nil, twoHanded = bool, weaponType = "sword" |
@@ -67,7 +73,7 @@ function D.estimate(p)
 			power = WP.hitFactor(kind, level, p.skill)
 		end
 	end
-	return (low + top) / 2 * style * power * chance / (interval / 1000)
+	return (low + top) / 2 * style * power * chance * D.rateFactor(interval) / (interval / 1000)
 end
 
 -- the number the tooltip shows: a whole number, nil when there is nothing to show
@@ -100,7 +106,7 @@ function D.wandEstimate(p)
 	if not lo then
 		return nil
 	end
-	return (num(p.min) + num(p.max)) / 2 * num(p.factor) / (num(p.interval) / 1000)
+	return (num(p.min) + num(p.max)) / 2 * num(p.factor) * D.rateFactor(p.interval) / (num(p.interval) / 1000)
 end
 
 -- the wand and rod table {[server id] = {min, max}} from item tables: each a list or a map of entries

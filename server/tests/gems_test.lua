@@ -271,7 +271,12 @@ eq(blade.attrs[ITEM_ATTRIBUTE_ATTACK_SPEED], 1425, "1500 ms -5%")
 M.set(blade, "attackspeed", 10)
 eq(blade.attrs[ITEM_ATTRIBUTE_ATTACK_SPEED], 1275, "mod 10% + gem 5%")
 G.insert(blade, G.gemId(5, 5)); M.syncAttackSpeed(blade)
-eq(blade.attrs[ITEM_ATTRIBUTE_ATTACK_SPEED], 1275, "mod 10 + gems 10 held at the cap of 15 (20 before 2026-10-28)")
+eq(blade.attrs[ITEM_ATTRIBUTE_ATTACK_SPEED], 1200, "mod 10 + gems 10 = 20%, under the cap of 30 (O426; 15 before)")
+for _ = 1, 4 do
+	G.insert(blade, G.gemId(5, 5))
+end
+M.syncAttackSpeed(blade)
+eq(blade.attrs[ITEM_ATTRIBUTE_ATTACK_SPEED] >= 1050, true, "gems past the cap of 30 are held (1500 ms -30%)")
 eq(G.attackSpeedOf(gear(2466)), 0, "no topaz")
 
 -- ---------------------------------------------------------------- description

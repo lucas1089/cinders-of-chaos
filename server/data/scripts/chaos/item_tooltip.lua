@@ -32,6 +32,9 @@ end
 if not ChaosWeaponPower then
 	dofile("data/scripts/chaos/weapon_power_core.lua")
 end
+if not ChaosAttackRate then
+	dofile("data/scripts/chaos/attack_rate_core.lua") -- the fast swing factor of the DPS line (O426)
+end
 if not ChaosWeaponDps then
 	dofile("data/scripts/chaos/weapon_dps_core.lua")
 end

@@ -141,8 +141,8 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   hit a little harder to keep the late game honest.
 - **Crits and leech that mean what they say:** a 10% chance fires on 10% of hits. Critical hits, dodges, blocks and
   reflects show their own effect over the target.
-- **Attack speed:** nobody swings faster than once a second, and leech heals at most about once a second, however many
-  hits land.
+- **Attack speed:** nobody swings faster than three times a second, and only a fully built Shadowfist gets there; a fast
+  swing hits for less, and leech heals at most about once a second, however many hits land.
 - **Weapon styles:** two-handed weapons swing slower and hit much harder; bow shots splash onto the creatures around
   the target, crossbow bolts hit only their target. Bows and crossbows never run out of shots (see Archery and quivers).
 - **Cast times for the big spells:** Doomtide and Primordial Squall take 1.5 seconds to cast, Hail of Dawn and Colossus

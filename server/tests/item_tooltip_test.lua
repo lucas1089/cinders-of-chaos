@@ -429,9 +429,11 @@ fast:setAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED, 1600) -- attack speed +20% (no ow
 local y = yours(T.build(fast, {wielder = {voc = 2000, dex = 0}}))
 eq(y.v, 1.6) eq(y.l, "Your Attack Interval") eq(y.low, true)
 y = yours(T.build(fast, {wielder = {voc = 1300, dex = 20}}))
-eq(y.v, 1.0, "Shadowfist with dexterity: the floor") eq(y.l, "Your Attack Interval (capped)")
+eq(y.v, 0.83, "Shadowfist with dexterity: 832 ms, no floor in the way (3 per second since O426)") eq(y.l, "Your Attack Interval")
+y = yours(T.build(fast, {wielder = {voc = 1300, dex = 20, bonus = 80}}))
+eq(y.v, 0.33, "Shadowfist, 100 points stacked: held at the 3 per second floor") eq(y.l, "Your Attack Interval (capped)")
 y = yours(T.build(fast, {wielder = {voc = 2000, dex = 20}}))
-eq(y.v, 1.28, "weapon + dexterity: -36%, under the 40% cap") eq(y.l, "Your Attack Interval")
+eq(y.v, 1.28, "weapon + dexterity: -36%") eq(y.l, "Your Attack Interval")
 eq(yours(T.build(armor, {wielder = {voc = 2000, dex = 0}})), nil, "only weapons")
 
 -- the estimated DPS of a weapon (weapon_dps_core.lua): from the wielder's level and best skill

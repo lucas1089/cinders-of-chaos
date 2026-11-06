@@ -2826,8 +2826,8 @@ return {
 			"Velocidade",
 		["Attack speed"] =
 			"Velocidade de ataque",
-		["Shortens the time between your attacks by this percent (the weapon's own Attack Speed and dexterity count with it). The tree gives at most +8, the tree and the worn pieces together +12; the game never lets you attack more than once per second, whatever you stack."] =
-			"Encurta o tempo entre os seus ataques nesta porcentagem (o Attack Speed da própria arma e a destreza contam junto). A árvore dá no máximo +8, a árvore e as peças usadas juntas +12; o jogo nunca deixa você atacar mais de uma vez por segundo, não importa o quanto acumule.",
+		["Shortens the time between your attacks by this percent (the weapon's own Attack Speed and dexterity count with it). The tree gives at most +15, the tree and the worn pieces together +45; the game never lets you attack more than three times per second, whatever you stack, and a fast swing hits for less."] =
+			"Encurta o tempo entre os seus ataques nesta porcentagem (o Attack Speed da própria arma e a destreza contam junto). A árvore dá no máximo +15, a árvore e as peças usadas juntas +45; o jogo nunca deixa você atacar mais de três vezes por segundo, não importa o quanto acumule, e um golpe rápido bate mais fraco.",
 		["Experience"] =
 			"Experiência",
 		["Item find"] =

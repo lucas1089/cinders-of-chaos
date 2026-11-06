@@ -354,6 +354,29 @@ do
 	same(L("a stone"), "a stone", "look: other texts unchanged")
 end
 
+-- ------------------------------------------------------------------ fast swings hit for less (attack_rate_core.lua, O426)
+do
+	local b = attacker(100, {[SKILL_SWORD] = 100, [SKILL_AXE] = 20, [SKILL_CLUB] = 10})
+	b.slots[CONST_SLOT_LEFT] = newItem(1)
+	local full = -swing(b, -1000)
+	local seen
+	ChaosItemMods = {playerInterval = function() return seen end}
+	seen = 1000
+	eq(-swing(b, -1000), full, "one swing per second: a full hit")
+	seen = 2000
+	eq(-swing(b, -1000), full, "a slow swing: a full hit")
+	seen = 333
+	local fast = -swing(b, -1000)
+	ok(math.abs(fast / full - 0.50) < 0.01, "3 swings per second: half a hit (" .. fast / full .. ")")
+	b.storage[Chaos and Chaos.storage and Chaos.storage.weaponStrike or 7100028] = 1
+	seen = 1000
+	local strike = -swing(b, -1000)
+	seen = 333
+	eq(-swing(b, -1000), strike, "a spell's weapon strike is not an auto attack: no cut")
+	b.storage = {}
+	ChaosItemMods = nil
+end
+
 if fails > 0 then
 	print(fails .. " of " .. checks .. " checks failed")
 	os.exit(1)

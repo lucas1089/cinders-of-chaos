@@ -468,7 +468,8 @@ Samurai totals): the weapon hits of the three are cut by new / old interval, and
 The Thief's total per swing is unchanged (a dagger swing used to be one hit; it is now two hits adding up to that), so the class
 stays in its balance band and the Ninja (the one that always dual wielded) stays 50% above a single dagger as before. Attack speed
 modifiers (item and gem `attackspeed`, dexterity) still work: they shorten the vocation's interval in the engine, and the cap
-(src-patch 0011, `minPlayerAttackInterval` 1000 ms) is untouched, so a Ninja at 1300 reaches it with 23% faster attacks (a Thief at 1500 with 33%).
+(src-patches 0011 and 0088, `minPlayerAttackInterval` 333 ms since O426, 1000 ms before) is far from the Ninja's 1400: its off-hand strike is limited to 1.5 per second
+(`attack_rate_config.lua`) and a fast swing hits for less (`(interval / 1000) ^ 0.63` under 1000 ms), see server/README.md "Attack speed cap".
 Test: `tests/classes_test.lua` (the vocation XML against `Chaos.classes.attackSpeed`, the Thief tied with the Monk and faster than
 every class outside the two lines, the damage per second of every entry, the neutral cut with equal and unequal daggers).
 
@@ -2013,7 +2014,7 @@ and flags (keep: a debuff the set always keeps up, Withering Curse, Judgement, P
 skip: no direct damage or a condition the dummies never meet, Sunder Guard and Corpse Explosion). A priority rotation
 casts the first ready spell of its list whenever the attack group is free: the spell's cooldown, the cast spell's group
 cooldown on the attack group, its secondary group, a cast time holding the next cast, the Monk line's chi (one per auto
-attack hit, the auto attack never faster than `minPlayerAttackInterval`; finishers at 4 chi). The gap is the longest time
+attack hit, at most one per 2 s, so the 3 attacks per second floor of `minPlayerAttackInterval` (O426) changes nothing here; finishers at 4 chi). The gap is the longest time
 between two casts over 120 s from a fresh start. The best set: every set of up to 5 among the class's strongest spells;
 gap <= 2.0 s first, then one that keeps 95% of the measured kit's damage on one target and on five when one can (a
 second pass over more spells when none does, then the closest), then one target + 0.25 x the 5-target total. Damage
@@ -4111,3 +4112,14 @@ Shadow Twin's +18% or loses more than its price on one enemy.
   needs poison, Corpse Detonation and Reaper's Toll lose 8% outside their window, Seventh Palm and Piercing Palm lose on
   the plain hits, Dawnchain on the spells, Radiant Rebuke on the weapon hits and needs a shield).
 - Not measured on the dummies or in game. The pack numbers assume every proc finds its targets, as the Ricochet row does.
+
+## Attack speed to 3 per second (O426, owner 2026-11-06)
+
+The floor of the auto attack moved from 1000 ms to 333 ms (src-patch 0088), the bonus cap from 40% to 76%, the weapon + gems
+cap from 15 to 30, the tree from 8 to 15 and tree + worn pieces from 12 to 45 (server/README.md "Attack speed cap" has the
+table of every source and what each class reaches). A hit under 1000 ms is cut to `(interval / 1000) ^ 0.63`: at 3 per second
+a hit is 50% and the damage per second +50% against 1 per second (+16% at 1.5, +29% at 2, +40% at 2.5). The spell balance
+numbers of this file are unaffected (spells never use the auto attack interval; the Monk's chi is one per 2 s at most), and so
+are the weapon models: `weapon_sim.py` uses the weapons' own intervals (2000 ms and up), where the factor is 1. A min-maxed
+build gains +41% to +56% auto attack damage per second over the old best build (1 swing per second), a typical build up to
+1.45 - 1.73x of the same class without speed. Not measured on a live server.
