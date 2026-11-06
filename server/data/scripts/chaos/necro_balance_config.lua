@@ -88,7 +88,10 @@ return {
 		-- Lord's 5 target rows in README "Classes with the passive trees"); level 50 sits lower (0.85), a known gap of the
 		-- first levels where the median class has its area spells and the Necromancer its three minions. Experience per hour
 		-- at level 50 is 0.78 for the same reason (0.75 floor).
-		ratio1 = {0.95, 1.15}, ratio5 = {0.84, 1.25}, ratioExp = {0.75, 1.15},
+		-- O430 (2026-11-06): the lower ends moved to 0.70 (1 target) and 0.78 (5 targets). pack_model.py's median class now holds the
+		-- classes the DPS test of 2026-11-06 showed far below it (Sentinel, Inquisitor, Templar, Mystic: class_tree.lua classDamage
+		-- x1.3 to x3) while the Necromancer, measured +53% of the level median at 500, was cut to x0.68 (class_dps_model.py).
+		ratio1 = {0.70, 1.15}, ratio5 = {0.78, 1.25}, ratioExp = {0.75, 1.15},
 		-- the minions' own damage per second against one Bone Spear a second (the player's cheapest spell): every level
 		-- of the first 100 the trio at least this many
 		firstSummon = {minShare = 0.10},

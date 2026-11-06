@@ -41,6 +41,56 @@ function F.forVocation(vocId, cfg, level)
 	return v or 1
 end
 
+-- O430 (2026-11-06, owner: balance the classes far from the median DPS): the extra target factor. A spell cast that hits
+-- several targets deals its damage to the first target at the class factor above and to every other target of the same cast
+-- at the class factor x the extra target factor (spell_factor_config.lua `extra`: {level, factor} points like byLevel,
+-- 1 for a class without one). It is the one lever that moves a class's pack damage and its single target damage apart:
+-- a single-target class (Deadeye, Ranger) gets a factor above 1, an area caster (Mystic, Elementalist) below it.
+function F.extraFor(vocId, cfg, level)
+	cfg = cfg or ChaosSpellFactorConfig
+	local pts = cfg and cfg.extra and cfg.extra[tonumber(vocId) or -1]
+	if not pts or #pts == 0 or not level then
+		return 1
+	end
+	if level <= pts[1][1] then
+		return pts[1][2]
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if level <= b[1] then
+			return a[2] + (b[2] - a[2]) * (level - a[1]) / (b[1] - a[1])
+		end
+	end
+	return pts[#pts][2]
+end
+
+-- the extra target factor of one damage value: the same rule as F.factor (ORIGIN_SPELL damage, not healing, not a proc, not
+-- guarded) and the vocation's `extra` curve at the level
+function F.extra(vocId, origin, combatType, spellOrigin, healingType, procActive, cfg, level)
+	if procActive or F.depth > 0 then
+		return 1
+	end
+	if spellOrigin == nil or origin ~= spellOrigin or not combatType or combatType == 0 or combatType == healingType then
+		return 1
+	end
+	return F.extraFor(vocId, cfg, level)
+end
+
+-- Is this hit on another target than the first one of the same cast? One cast deals all its hits inside one engine loop (the
+-- same millisecond, well inside windowMs); the first target hit by an attacker after a quiet windowMs is the cast's first
+-- target, and every later hit inside the window on another creature is an extra one (a second companion's hit on the first
+-- target is not). state: a table kept by the caller { [attackerId] = { t, first } }; nowMs: the engine clock in ms
+F.EXTRA_WINDOW_MS = 25
+function F.additionalTarget(state, attackerId, targetId, nowMs, windowMs)
+	windowMs = windowMs or F.EXTRA_WINDOW_MS
+	local s = state[attackerId]
+	if not s or nowMs - s.t > windowMs then
+		state[attackerId] = {t = nowMs, first = targetId}
+		return false
+	end
+	return targetId ~= s.first
+end
+
 -- the factor on one damage value: the vocation, origin and combat type of the hit; spellOrigin / healingType are the
 -- engine's ORIGIN_SPELL and COMBAT_HEALING; procActive = a keystone proc is running
 function F.factor(vocId, origin, combatType, spellOrigin, healingType, procActive, cfg, level)

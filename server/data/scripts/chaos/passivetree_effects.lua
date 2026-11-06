@@ -447,6 +447,7 @@ end
 if not ChaosSpellFactor or not ChaosSpellFactor.factor then
 	dofile("data/scripts/chaos/spell_factor_core.lua")
 end
+ChaosSpellExtraState = ChaosSpellExtraState or {} -- O430: { [attacker id] = { t, first } } of F.additionalTarget
 -- Dirge of the Legion (quest_buffs_core.lua): +10% on the death damage of the Necromancer's own spells
 if not ChaosQuestBuffs then
 	dofile("data/scripts/chaos/quest_buffs_core.lua")
@@ -464,6 +465,13 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		local level = attacker.getLevel and attacker:getLevel() or nil
 		local f1 = ChaosSpellFactor.factor(vocId, origin, primaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)
 		local f2 = ChaosSpellFactor.factor(vocId, origin, secondaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)
+		-- O430: the extra target factor (spell_factor_core.lua F.extra): a spell's hits on the other targets of one cast
+		local x1 = ChaosSpellFactor.extra(vocId, origin, primaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)
+		local x2 = ChaosSpellFactor.extra(vocId, origin, secondaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)
+		if (x1 ~= 1 or x2 ~= 1) and creature and attacker.getId and creature.getId
+				and ChaosSpellFactor.additionalTarget(ChaosSpellExtraState, attacker:getId(), creature:getId(), os.mtime()) then
+			f1, f2 = f1 * x1, f2 * x2
+		end
 		if f1 ~= 1 then
 			primaryDamage = scale(primaryDamage, f1)
 		end

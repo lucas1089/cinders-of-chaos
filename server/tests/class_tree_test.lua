@@ -452,14 +452,25 @@ near(CT.damageFactor("ninja", "thief", 300), 0.5, "the line's factor"); near(CT.
 near(CT.damageFactor("ninja", "thief", 100), 0.5, "below the first point"); near(CT.damageFactor("ninja", "thief", 2000), 0.4)
 near(CT.damageFactor("samurai", "thief", 1000), 0.2, "a class entry wins"); near(CT.damageFactor("warrior", "warrior", 1000), 1)
 CT.classDamage = saved
--- the trims of 2026-10-12 (Covenant path builds at level 300), moved by the class identity pass (2026-10-28)
-near(CT.damageFactor("necromancer", "necromancer", 250), 0.93, "Necromancer 250: as before the identity pass")
-near(CT.damageFactor("necromancer", "necromancer", 300), 0.89, "Necromancer 300"); near(CT.damageFactor("necromancer", nil, 1000), 0.80)
-near(CT.damageFactor("bonelord", "necromancer", 300), 0.54, "Bone Lord 300"); near(CT.damageFactor("bonelord", nil, 1000), 0.51)
-near(CT.damageFactor("bonelord", "necromancer", 100), 0.63, "Bone Lord below 250: as before")
--- the identity pass: a point at 800, a class entry wins over its line's (the Juggernaut and the Elementalist are flat 1)
-near(CT.damageFactor("warrior", "warrior", 800), 1.24, "Warrior 800"); near(CT.damageFactor("juggernaut", "warrior", 1000), 1.0, "Juggernaut: its own entry")
-near(CT.damageFactor("elementalist", "mystic", 1000), 1.0, "Elementalist: its own entry"); near(CT.damageFactor("mystic", "mystic", 1000), 1.14)
-near(CT.damageFactor("deadeye", "ranger", 1000), 0.95, "Deadeye keeps the Ranger line's 0.95")
+-- the factors of the O430 DPS balance (2026-11-06, server/tools/class_dps_model.py): every class lands within 25% of the
+-- level median on 1 and 5 targets at levels 100, 500 and 1000, so the curves hold a point at 100, 500, 800 and 1000
+near(CT.damageFactor("necromancer", "necromancer", 1000), 0.704, "Necromancer 1000"); near(CT.damageFactor("bonelord", nil, 1000), 0.51)
+near(CT.damageFactor("necromancer", "necromancer", 500), 0.683, "Necromancer 500"); near(CT.damageFactor("bonelord", "necromancer", 500), 0.564)
+near(CT.damageFactor("warrior", "warrior", 500), 0.661, "Warrior 500: the slayer build ran far ahead (+126% of the median)")
+near(CT.damageFactor("sentinel", "templar", 500), 2.512, "Sentinel 500: the weakest class (-68% of the median after the helper fix)")
+near(CT.damageFactor("sentinel", "templar", 1000), 2.033); near(CT.damageFactor("sentinel", "templar", 100), 1.46, "Sentinel 100")
+near(CT.damageFactor("berserker", "warrior", 1000), 0.532, "Berserker 1000"); near(CT.damageFactor("beastmaster", "ranger", 1000), 0.39)
+near(CT.damageFactor("beastmaster", nil, 50), 0.97, "Beastmaster below level 60 keeps its old curve")
+near(CT.damageFactor("ranger", "ranger", 50), 1.0, "levels below 60 are untouched"); near(CT.damageFactor("ranger", "ranger", 100), 0.48)
+-- a class entry wins over its line's (the Juggernaut and the Elementalist have their own)
+near(CT.damageFactor("juggernaut", "warrior", 1000), 0.86, "Juggernaut: its own entry")
+near(CT.damageFactor("elementalist", "mystic", 1000), 1.22, "Elementalist: its own entry"); near(CT.damageFactor("mystic", "mystic", 1000), 1.436)
+near(CT.damageFactor("deadeye", "ranger", 1000), 0.76, "Deadeye")
+-- every curve rises in level
+for key, pts in pairs(CT.classDamage) do
+	for i = 2, #pts do
+		eq(pts[i][1] > pts[i - 1][1], true, key .. " curve rises in level")
+	end
+end
 
 print("class_tree_test: " .. checks .. " checks, OK")

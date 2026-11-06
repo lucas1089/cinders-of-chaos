@@ -22,6 +22,9 @@ for vocId, c in pairs(D.classes) do
     lastLevel = p.level
     ok(#p.spells >= 1 and #p.spells <= A.MAX_SPELLS, c.name .. ' ' .. p.level .. ': 1-5 spells')
     eq(#p.creatures, #p.spells, c.name .. ' ' .. p.level .. ': a monster count per spell')
+    for _, n in ipairs(p.creatures) do
+      eq(n, 1, c.name .. ' ' .. p.level .. ': every rule casts on one monster (O430)')
+    end
     local chi = false
     for _, id in ipairs(p.spells) do
       ok(D.spells[id], c.name .. ': spell ' .. id .. ' has its numbers')
@@ -103,10 +106,11 @@ for _, id in ipairs(sel2.ids) do
 end
 ok(#sel2.ids <= 5 and #sel2.ids >= #p300.spells - 1, 'filled up to 5')
 eq(sel2.gap, A.gap(sel2.ids), 'gap simulated again')
--- the monster count of a changed set is the preset's own (an area spell waits for 2, the rest for 1)
+-- the monster count of every rule is 1 (O430: an area spell hits a lone target too, so it casts on a boss as well; the area
+-- spells still go first, so a pack gets them before the single hits)
 eq(#sel2.creatures, #sel2.ids, 'one monster count per spell')
 for _, n in ipairs(sel2.creatures) do
-  ok(n == 1 or n == 2, 'a monster count of 1 or 2')
+  eq(n, 1, 'a monster count of 1')
 end
 -- below the first preset, an unknown class
 eq(A.select(4, 1), nil, 'level 1 Warrior: nothing yet')
@@ -171,7 +175,7 @@ for vocId, c in pairs(D.classes) do
         ok(not seen[id], c.name .. ': no spell twice')
         seen[id] = true
         ok(castable(id), c.name .. ': only castable spells')
-        ok(sel.creatures[i] == 1 or sel.creatures[i] == 2, c.name .. ': 1+ or 2+')
+        eq(sel.creatures[i], 1, c.name .. ': one monster is enough (O430)')
       end
       local preset = A.presetFor(vocId, level)
       local inSel = {}

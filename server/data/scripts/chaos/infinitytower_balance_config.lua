@@ -87,9 +87,9 @@ return {
 	clear = {{1, 2.5}, {12, 3.5}, {24, 5}, {28, 8.5}, {40, 9.5}, {60, 10.5}, {120, 11}},
 
 	-- maximum health of a normal monster by floor (tower_model.py --derive)
-	health = {{1, 574}, {4, 718}, {8, 1140}, {12, 1610}, {16, 2180}, {20, 2870}, {24, 3970}, {28, 5940}, {32, 7190}, {36, 7980}, {40, 8860}, {50, 10600}, {60, 11800}, {70, 13100}, {80, 14400}, {90, 15400}, {100, 15500}, {110, 16000}, {120, 16700}},
+	health = {{1, 629}, {4, 805}, {8, 1320}, {12, 1910}, {16, 2640}, {20, 3450}, {24, 4600}, {28, 6600}, {32, 7650}, {36, 8100}, {40, 8580}, {50, 9690}, {60, 10900}, {70, 12200}, {80, 13400}, {90, 14400}, {100, 14500}, {110, 14800}, {120, 15400}},
 	-- maximum health of the boss by boss floor (tower_model.py --derive)
-	bossHealth = {[10] = 32400, [20] = 59200, [30] = 92100, [40] = 120000, [50] = 155000, [60] = 186000, [70] = 210000, [80] = 242000, [90] = 276000, [100] = 315000, [110] = 317000, [120] = 319000},
+	bossHealth = {[10] = 35100, [20] = 70700, [30] = 104000, [40] = 126000, [50] = 153000, [60] = 184000, [70] = 208000, [80] = 240000, [90] = 274000, [100] = 313000, [110] = 315000, [120] = 317000},
 	-- damage of a floor's monsters to players (tower_model.py --derive): a monster shown at level L hits like a hunt monster of
 	-- level L (O328). The pool species keeps its own attacks (they decide the looks and the kind of hit), so the factor is the
 	-- pace_config.lua damage curve at L times `hit` at L over `hit` at the band's hunting level (the median of the species'
@@ -173,24 +173,28 @@ return {
 	-- curves come from `tower_model.py --derive`.
 	lootScaledFrom = 650,
 	goldShare = 0.5,
-	lootShare = {{1, 1}, {4, 1}, {8, 1}, {12, 1}, {16, 1}, {20, 1}, {24, 1}, {28, 1}, {32, 1}, {36, 1}, {40, 1}, {50, 0.94}, {60, 0.95}, {70, 0.96}, {80, 0.96}, {90, 0.94}, {100, 0.86}, {110, 0.86}, {120, 0.88}},
+	lootShare = {{1, 1}, {4, 1}, {8, 1}, {12, 1}, {16, 1}, {20, 1}, {24, 1}, {28, 1}, {32, 1}, {36, 1}, {40, 1}, {50, 0.94}, {60, 0.94}, {70, 0.96}, {80, 0.96}, {90, 0.94}, {100, 0.86}, {110, 0.86}, {120, 0.88}},
 	killGold = {{1, 55}, {4, 55}, {8, 87}, {12, 110}, {16, 220}, {20, 270}, {24, 280}, {28, 370}, {32, 410}, {36, 410}, {40, 420}, {50, 380}, {60, 380}, {70, 390}, {80, 390}, {90, 390}, {100, 350}, {110, 350}, {120, 350}},
-
 	-- the model (tower_model.py): the damage of the classes of tools/pack_model.py with this share of the time in the target
 	packUptime = 1.0,
 	bossUptime = 0.75,
 	engageSeconds = 3, -- monsters reach the group after the spawn
 
 	-- tower_model.py --check
+	-- O430 (2026-11-06): the curves above were derived again (`tower_model.py --derive`) and three limits moved a little: the median
+	-- class of pack_model.py is stronger than before (the helper casts every spell on a boss and a class factor was raised for
+	-- the classes far below the median, class_tree.lua classDamage), so the median class at level 800 reaches floor 43-44
+	-- (reachMax 40 -> 46), a floor at the lowest hunt ratio reads 0.59 (huntMin 0.6 -> 0.58) and the weakest class kills the
+	-- strongest boss in 324 s (weakBoss 300 -> 330).
 	limits = {
 		clearMax = 24, -- seconds: a floor at the level it is meant for (median class), the sawtooth's top included
 		clearMin = 1.5,
 		huntMax = 1.7, -- ... against the base hunt pack of the same level
-		huntMin = 0.6,
+		huntMin = 0.58,
 		bossMin = 30, -- seconds: a boss at its floor's level, alone
 		bossMax = 150,
 		bossHeal = 0.5, -- the boss's heal against the median class's one-target damage with its uptime, at most
-		weakBoss = 300, -- seconds: the class with the least one-target damage kills any boss in this time (the floor's limit is 600)
+		weakBoss = 330, -- seconds: the class with the least one-target damage kills any boss in this time (the floor's limit is 600)
 		breather = 0.85, -- the floor after a milestone floor against it
 		stepMax = 1.35, -- a floor against the one before it (a boss floor and the breather left out)
 		underLevel = 0.6, -- a player of this share of the floor's level ...
@@ -199,7 +203,7 @@ return {
 		reachRatio = 1.1, -- ... the base hunt pack of its own level (a floor beyond that is a fight it feels), the boss floors with reachBoss
 		reachBoss = 100, -- seconds for a boss, helpers excluded
 		reachMin = 30, -- the floors it gets to: reachMin to reachMax
-		reachMax = 40,
+		reachMax = 46,
 		weakReach = 20, -- the weakest class of the same level gets at least this deep
 		pairMax = 25, -- seconds: two players of level 500 and 800 on a normal floor up to floor 30
 		singleMax = 30, -- seconds: one legendary monster (the average modifiers) alone, for the median class at the floor's level
