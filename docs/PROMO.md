@@ -13,11 +13,31 @@ Ready-to-paste post texts are in pt-BR and en. Related: docs/BETA.md (the beta i
 | Server list banners, social share image, class and feature images | `.../assets/img/`; media kit `art/` | `gen_site_art.py` |
 | Media kit zip with a fact sheet (pt-BR, en) | `<site>/press/`, linked from the Creators page | `gen_media_kit.py` at install |
 | Creator program, creator codes, referral link | site Creators page; game | O320, referral |
+| Trailer 60 s (16:9 and 9:16), class short, world short (pt-BR, en) | built on demand, not committed (too big); see below | `website/tools/gen_promo_video.py` |
 
 Dates on the posters: `website/tools/promo_source.json` `dates`. Empty today, so no date line is drawn. Ask Claude to fill
 them and regenerate once the beta dates are fixed.
 
 Not in the repo: gameplay footage and screenshots. They need the real client. Sections 3 to 5 say what to capture.
+
+The videos are drawn from the real map with the game's own sprites, not recorded: the Cinderhold area, dense hunts, an
+underground floor, a boss lair with a party of the seven classes and a player clash, with a camera pan, embers, rain, captions in
+the poster font and the game's own music, cut on the beat. Regenerate (about 10 minutes, needs ffmpeg, an installed server
+folder and the sprite pair; the map is read once for a minute):
+
+    python3 -I website/tools/gen_promo_video.py --server SERVER_DIR --pair PAIR_DIR --out OUT_DIR [--stills DIR] [--only TEXT]
+
+It writes `trailer-1920x1080.{pt-BR,en}.mp4`, `trailer-1080x1920.pt-BR.mp4`, `short-classes-1080x1920.{pt-BR,en}.mp4` and
+`short-world-1080x1920.pt-BR.mp4`, each under 40 MB. Scenes are chosen automatically; `--list-scenes` prints them and
+`--scenes FILE.json` moves any of them. These cuts have no spell effects, no fights and no animation (creatures stand still), so
+the gameplay cuts of sections 3 and 4 (spells, combos, loot beams, the passive tree, a Rift run, the Infinity Tower, a raid, Arena)
+still want real recorded footage. Replace the matching shots with it when it exists.
+
+Recorded gameplay (2026-11-05): a 64 s reel and nine raw clips (1920x1080, 30 fps) from the real Linux client on a local test
+server: title screen, character list, Cinderhold temple, Mystic, Warrior and Thief hunts with their spells, a Ranger against a
+lair boss, the top menu, the passive tree and the spellbook. Not committed (size). How: the release's server package with
+`CHAOS_TEST_ACCOUNTS=1`, a client built as client/LINUX.md says (public dev keys, so it logs in to a local server), Xvfb at
+1920x1080 and `ffmpeg -f x11grab`; spells on the action bar F4 to F8, a GM character teleports and summons packs.
 
 ## 2. Recording setup
 

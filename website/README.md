@@ -1437,6 +1437,10 @@ All three are in the menu The World, the sitemap and the SEO descriptions.
   - `post/`: beta and launch squares, 1080x1080, JPEG. `story/`: the beta story, 1080x1920. `classes/`: one card per class line.
   - `forum/`: banner 728x90 and signature 468x60, PNG.
 - The media kit zip carries them under `social/`. Where each one goes: docs/PROMO.md.
+- Videos: `python3 -I website/tools/gen_promo_video.py --server SERVER_DIR --pair PAIR_DIR --out OUT_DIR` builds the 60 s trailer
+  (16:9 and 9:16), the class short and the world short from real scenes of the installed map drawn with the game's sprites (through
+  `server/tools/spectate_render.py`), the poster font and the game's own music. Not committed and not in CI: it needs the map, the
+  sprite pair and ffmpeg. `gen_promo_video_test.py` runs on synthetic data. Details and the missing gameplay cuts: docs/PROMO.md section 1.
 
 ### Streamer kit
 - Art: `python3 -I website/tools/gen_streamer_kit.py` writes 24 files under `website/overlay/plugins/chaos/assets/streamer/`, and

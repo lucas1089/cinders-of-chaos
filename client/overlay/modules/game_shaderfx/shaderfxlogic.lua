@@ -40,7 +40,9 @@ function L.orbSize(option)
 end
 
 -- Globes docked into the central hotbar (game_hotbar, O414): any diameter, drawn from the nearest ring and mask art
--- (scaled by the widget, image-smooth). Returns size, liquid size, font, ring image, mask image.
+-- (scaled by the widget, image-smooth). Returns size, liquid size, font, ring image, mask image and the mask image's
+-- width in texels (the plain globe's clip is in the image's texels, not the drawn size: owner screenshot 2026-11-05,
+-- the fill sat up and left of the ring when the docked diameter was not one of the art sizes).
 function L.dockedSize(diameter)
   local d = math.max(40, math.floor(tonumber(diameter) or L.ORB_SIZES[1].size))
   local nearest, best = 1, math.huge
@@ -50,7 +52,8 @@ function L.dockedSize(diameter)
   end
   local artSize, artLiquid = L.orbSize(nearest)
   local font = d < 100 and L.ORB_SIZES[1].font or (d < 160 and L.ORB_SIZES[2].font or L.ORB_SIZES[3].font)
-  return d, math.floor(d * 50 / 76 + 0.5), font, L.ORB_IMAGES .. 'orb_ring_' .. artSize, L.ORB_IMAGES .. 'orb_mask_' .. artLiquid
+  return d, math.floor(d * 50 / 76 + 0.5), font, L.ORB_IMAGES .. 'orb_ring_' .. artSize, L.ORB_IMAGES .. 'orb_mask_' .. artLiquid,
+    artLiquid * 2
 end
 
 -- The plain globe (liquid orbs off, or no ui shaders): the mask drawn as far up as the fill, cut from the bottom.
