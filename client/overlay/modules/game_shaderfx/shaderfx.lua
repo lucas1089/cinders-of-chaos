@@ -114,8 +114,12 @@ local function paintOrb(kind)
   elseif liquid and w.sfxPlain then
     -- a plain globe (liquid orbs off, or no ui shaders): the mask cut to the fill from the bottom
     local _, liquidSize = L.orbSize(options.orbSize)
-    if dock then liquidSize = select(2, L.dockedSize(dock.diameter)) end
-    local clip, height = L.plainClip(st.fill, liquidSize * 2, liquidSize)
+    local texels = liquidSize * 2 -- the mask art is drawn at twice its size (L.orbArt)
+    if dock then
+      local _, docked, _, _, _, maskTexels = L.dockedSize(dock.diameter)
+      liquidSize, texels = docked, maskTexels
+    end
+    local clip, height = L.plainClip(st.fill, texels, liquidSize)
     pcall(liquid.setImageClip, liquid, clip)
     liquid:setHeight(math.max(1, height))
   end

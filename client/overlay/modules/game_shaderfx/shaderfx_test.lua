@@ -149,6 +149,11 @@ do
   d, liquid, font, ring, mask = L.dockedSize(80)
   eq(ring, L.ORB_IMAGES .. 'orb_ring_76', 'docked 80 uses the 76 art'); eq(font, 'chaos-outline-11px', 'small docked font')
   eq(mask, L.ORB_IMAGES .. 'orb_mask_50', 'docked 80 mask')
+  -- the plain fill is cut in the mask image's texels (100 for orb_mask_50), not the drawn liquid's (53 * 2): a clip
+  -- of 106 of 100 texels drew the fill up and left of the ring (owner screenshot 2026-11-05)
+  eq((select(6, L.dockedSize(80))), 100, 'docked 80 mask texels'); eq((select(6, L.dockedSize(138))), 198, 'docked 138 mask texels')
+  local clip = L.plainClip(1, select(6, L.dockedSize(80)), 53)
+  eq(clip.width, 100, 'full docked fill spans the whole mask'); eq(clip.y, 0, 'full docked fill starts at the top')
   eq(L.dockedSize(5), 40, 'docked size floor'); eq((select(4, L.dockedSize(nil))), L.ORB_IMAGES .. 'orb_ring_76', 'no size')
   eq(L.ORB_SIZES[2].size, 150, 'the art sizes the docked globes pick from')
   local clip, h = L.plainClip(0.5, 100, 50)
