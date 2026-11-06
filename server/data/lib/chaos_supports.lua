@@ -556,9 +556,20 @@ end
 
 -- a monster kill: list of rune ids (0 or 1). tier = monster tier, level = monster level (or the killer's),
 -- scale = the loot layer's rate x item find
+-- the drop chance multiplier of a monster level (cfg.drop.levelMult, 1 below its rows)
+function S.dropLevelMult(level)
+	level = tonumber(level) or 0
+	for _, row in ipairs(cfg.drop.levelMult or {}) do
+		if level >= row[1] then
+			return row[2]
+		end
+	end
+	return 1
+end
+
 function S.rollDrop(tier, level, scale, rand)
 	rand = rand or S.random
-	local chance = (cfg.drop.chance[tier] or 0) * (tonumber(scale) or 1)
+	local chance = (cfg.drop.chance[tier] or 0) * (tonumber(scale) or 1) * S.dropLevelMult(level)
 	if chance <= 0 or rand(1, 1000000) > chance * 100 then
 		return {}
 	end

@@ -373,6 +373,12 @@ eq(#drop, 1, "a drop"); eq(drop[1], S.runeId(1, 1), "level 1 emberbrand")
 seq = {1, 1, 1, 1}
 eq(S.rollDrop("boss", 10, 1, dice)[1], S.runeId(1, 2), "a boss drop can be a level better")
 eq(#S.rollDrop("normal", 10, 0, dice), 0, "rate 0")
+eq(S.dropLevelMult(10), 1, "no level bonus below 500"); eq(S.dropLevelMult(499), 1, "499 plain")
+eq(S.dropLevelMult(500), 2, "x2 from monster level 500"); eq(S.dropLevelMult(800), 2.5, "x2.5 from 800")
+seq = {2001}
+eq(#S.rollDrop("normal", 600, 1, dice), 0, "a level 600 normal: chance 0.2% misses at 2001")
+seq = {2000, 1, 1}
+eq(#S.rollDrop("normal", 600, 1, dice), 1, "a level 600 normal: twice the base chance (0.1%)")
 seq = {1, 1, 1}
 local rr = S.rewardRunes("rift", {tier = 7}, dice)
 eq(#rr, 1, "rift tier 7: one rune (1.0)"); eq(S.runeOf(rr[1].id).level, 1, "lowest level with dice 1")
