@@ -308,7 +308,19 @@ function M.draw()
     local buttons = child('buttons')
     if not (alive(window) and buttons) then return end
     local need = buttons:getRect().y + buttons:getHeight() + 10 - window:getRect().y
-    if need > 0 and window:getHeight() < need then window:setHeight(need) end
+    -- never past the room the side panel has left: taller, its fitAll closes other windows, the layout restore opens
+    -- them again and this grows again, so windows opened and closed in a loop on a phone (owner 2026-11-06)
+    local room = nil
+    local parent = window:getParent()
+    if alive(parent) and parent:getClassName() == 'UIMiniWindowContainer' then
+      local used = 0
+      for _, c in ipairs(parent:getChildren()) do
+        if c ~= window and c:isVisible() then used = used + c:getHeight() end
+      end
+      room = parent:getHeight() - parent:getPaddingTop() - parent:getPaddingBottom() - used
+    end
+    local h = C.fitHeight(window:getHeight(), need, room)
+    if h then window:setHeight(h) end
   end))
 end
 

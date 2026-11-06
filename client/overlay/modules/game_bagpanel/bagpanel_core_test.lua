@@ -207,4 +207,12 @@ for _ = 1, 10 do
 end
 eq(last, 'stuck', 'no answer: stuck')
 
+-- fit: grows to the layout, never past the room the side panel has left (no window closed to make room)
+eq(C.fitHeight(300, 400, nil), 400, 'fit: grows to need')
+eq(C.fitHeight(300, 400, 500), 400, 'fit: room enough')
+eq(C.fitHeight(300, 400, 350), 350, 'fit: capped by room')
+eq(C.fitHeight(300, 400, 250), nil, 'fit: no room to grow, no change')
+eq(C.fitHeight(400, 300, 500), nil, 'fit: tall enough')
+eq(C.fitHeight(300, 400, -20), nil, 'fit: full panel')
+
 if fails == 0 then print('bagpanel_core_test: ok') else os.exit(1) end
