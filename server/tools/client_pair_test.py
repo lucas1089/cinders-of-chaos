@@ -176,5 +176,12 @@ ok, msg = C.allows(os.path.join(d, 'data'), C.PAIR_RELIC, 'relicsets')
 check(not ok and msg.startswith('WARNING: relicsets skipped') and 'client pair 58' in msg and 'client-pair set 58' in msg, 'relicsets, pair 57: skipped with how to set it')
 check(C.allows(os.path.join(server('chaosClientPair = 58\n'), 'data'), C.PAIR_RELIC, 'relicsets')[0], 'relicsets, pair 58: runs')
 
+# the temple tileset (pair 60): the guard number and the end-to-end guard are in install_temple_art_test.py
+check(C.PAIR_TEMPLE == 60 and C.PAIR_TEMPLE > C.PAIR_RELIC, 'the temple tileset needs pair 60')
+d = server('chaosClientPair = 59\n')
+ok, msg = C.allows(os.path.join(d, 'data'), C.PAIR_TEMPLE, 'templeart')
+check(not ok and msg.startswith('WARNING: templeart skipped') and 'client pair 60' in msg and 'client-pair set 60' in msg, 'templeart, pair 59: skipped with how to set it')
+check(C.allows(os.path.join(server('chaosClientPair = 60\n'), 'data'), C.PAIR_TEMPLE, 'templeart')[0], 'templeart, pair 60: runs')
+
 print('client_pair_test: %s' % ('ok' if not failed else '%d failed' % failed))
 sys.exit(1 if failed else 0)

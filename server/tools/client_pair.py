@@ -31,6 +31,7 @@ PAIR_PICKUPS = 55   # the Ember portal, health and mana globe looks (install_pic
 PAIR_FIST = 56      # the fist weapon redraws and the three new fist weapons (install_fist_weapons.py)
 PAIR_W800 = 56      # the 34 weapons above level 800 (install_weapons800.py)
 PAIR_RELIC = 58     # the 65 pieces of the five relic sets (install_relic_sets.py)
+PAIR_TEMPLE = 60    # the 39 pieces of the temple tileset (install_temple_art.py)
 
 
 def parse(text):

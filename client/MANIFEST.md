@@ -3878,6 +3878,58 @@ md5 lines (committed with the push).
     the dat and spr md5s above (checked).
 - **Switch on:** none on the server (same client ids). The new looks show once a client update with pair 59 is published.
 
+### Pair 60: pair 59 with the temple tileset, 39 items (`gen_temple_art.py`, `art_import/temple*`; sources committed 2026-11-06, pair NOT built yet)
+Owner 2026-11-06 (pt-BR): "pode usar, são todas livres, comece pelo templo". The owner put a sheet on Google Drive (neutral name
+`temple_sheet.png`, `SOURCE_ID` and md5 in `gen_temple_art.py`) and says the art is free to use. No author, no licence text:
+docs/CREDITS.md "Temple tileset" says so. More sheets of the owner follow; this is the first.
+- **Sheet.** 1584 x 1056 RGBA. Left: a composed temple room, 13 x 13 tiles of 64 px (the true pitch: seams at multiples of 64). Right
+  and bottom: loose oblique pieces. Same view as ours (height goes up and left, light from the top left), at 2x our size. The sheet
+  is not committed (1.4 MB). `art_import/temple/temple_src.png` (397 KB) holds the 39 pieces only, packed at 64 px, with
+  `temple_src.csv` (where each came from). `gen_temple_art.py extract --src DIR` makes both; `build --src DIR --check` compares.
+- **Cut.** Floors from the room: one clean marble tile, the black checker tile, the blue rune pad, four border pieces, four
+  corners, the 3x3 corner mosaic (the four mosaics are one drawing with different decals, so each pixel is the mean of the two
+  brightest of the four), the 3x4 red carpet, four blood pools keyed by colour (the soot is soft grey and stays baked into the
+  floor: no soot decal). Loose pieces cut at their box: 12 walls, 4 pillars, 4 statue pedestals, the gargoyle, the torch. The
+  sheet repeats pieces (the torch four times, pillars, walls); only different ones are kept. The torches are one frame, so the
+  torch is not animated. Marble variants cut from other tiles differ only by noise and snap to the same picture, so one is kept.
+  Torn fragments of the sheet (ragged grey edges) are left out.
+- **Build.** Exact 2 x 2 box average to 32 px (integers, alpha-weighted, opaque where the mean alpha is 128 or more), loose
+  pieces anchored bottom right on whole cells (a wall's base is its bottom right edge), every pixel to the nearest colour of the
+  **gildcrown** palette (lightness weighted, chroma 0.25; `gen_temple_art.py themes` prints the distances: gildcrown fits the
+  marble and gold best, 7.6 floors and 9.4 props, no other theme is under 8.6 on the floors), the mosaic lightness contrast x1.8
+  first. Props get the one pixel gildcrown outline `#050101`. Floors, mosaic, carpet and blood have no silhouette, so the outline
+  rule is not judged for them. The flat-colour rule (11 colours) is waived down to 2 and printed: marble, brick and blood are
+  painted flat, 2 to 10 shades. Every other `style_check` rule passes on every piece (judged on the whole piece, not per cell).
+- **Items 44511-44549** (server ids 48511-48549 = client id + 4000, free: no csv, lib or table uses them; manifest
+  `server/data/items/temple_art.csv`, written by `gen_temple_art.py`; the test checks it equals what the importer writes).
+  Names all start with "temple " (stock names are loot names).
+
+  | Client ids | Kind | Pieces | Size |
+  |---|---|---|---|
+  | 44511-44521 | ground (`ground:100 notmoveable minimap fullground`) | marble floor, black marble floor, blue rune pad, 4 gilded borders (n, e, s, w), 4 gilded corners | 1x1 |
+  | 44522-44523 | decor (walkable) | mosaic floor 3x3, red carpet 3x4 | put on the south-east tile of the square |
+  | 44524-44527 | decor | 4 blood stains | 2x2, 2x1, 1x1, 2x1 |
+  | 44528-44539 | stump (solid, `bottom notwalkable notmoveable`) | 12 walls: 3 straight east-west, 3 north-south, 2 thick, 2 corners, 2 ends | 2x2 |
+  | 44540-44543 | stump | 4 pillars | 2x2 |
+  | 44544 | stump, light 6 colour 206 | torch | 2x2 |
+  | 44545-44549 | stump | 4 statue pedestals, 1 gargoyle | 2x2 |
+- **Rebuild** (needs pair 59 from windows-assets; NOT done: that branch is not touched from this repo):
+```
+python3 -I client/tools/sprites/gen_temple_art.py build            # atlas, things, manifest, sums, credits row (CI: --check)
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair59/Tibia.dat --ours-spr pair59/Tibia.spr --out-dir pair60 \
+    --things client/tools/sprites/art_import/temple.csv --first-item 44511 --expect-items 44510 --server-offset 4000 \
+    --manifest-out server/data/items/temple_art.csv
+python3 -I client/tools/sprites/check_pair.py pair60/Tibia.dat pair60/Tibia.spr --old pair59/Tibia.dat pair59/Tibia.spr --new-only
+```
+  Then the usual pair steps: md5s and archive parts here, `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 60, push to
+  windows-assets with the owner's go, client update. The importer's manifest must equal the committed one (the ids are fixed by
+  `--first-item 44511`).
+- **Server.** `server/tools/install_temple_art.py` (step `templeart` of `install_all.py`): items.otb nodes and items.xml names so the
+  map editor can place the pieces. It waits for `chaosClientPair >= 60` (server/README.md "Client pair guard", "Temple tileset (pair 60)").
+  Nothing in the game places, sells or drops them. Not tested in a client; the importer was not run (no pair here).
+- **Preview.** `gen_temple_art.py preview --out DIR`: every piece at 2x on dark and light, and a 13 x 13 room built from the 32 px
+  pieces in the layout of the owner's mockup (not committed).
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

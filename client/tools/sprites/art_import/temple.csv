@@ -1,0 +1,40 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+marble_floor,item,ground,temple marble floor,temple,0,0,1,1,1,1,ground:100 notmoveable minimap:171 fullground,new,,family=temple|part=marble_floor|block=0
+checker_black,item,ground,temple black marble floor,temple,32,0,1,1,1,1,ground:100 notmoveable minimap:36 fullground,new,,family=temple|part=checker_black|block=0
+rune_pad,item,ground,temple blue rune pad,temple,64,0,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=temple|part=rune_pad|block=0
+border_n,item,ground,temple gilded border north,temple,96,0,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=temple|part=border|block=0
+border_e,item,ground,temple gilded border east,temple,128,0,1,1,1,1,ground:100 notmoveable minimap:128 fullground,new,,family=temple|part=border|block=0
+border_s,item,ground,temple gilded border south,temple,160,0,1,1,1,1,ground:100 notmoveable minimap:128 fullground,new,,family=temple|part=border|block=0
+border_w,item,ground,temple gilded border west,temple,192,0,1,1,1,1,ground:100 notmoveable minimap:128 fullground,new,,family=temple|part=border|block=0
+corner_nw,item,ground,temple gilded corner north west,temple,224,0,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=temple|part=corner_nw|block=0
+corner_ne,item,ground,temple gilded corner north east,temple,256,0,1,1,1,1,ground:100 notmoveable minimap:128 fullground,new,,family=temple|part=corner_ne|block=0
+corner_sw,item,ground,temple gilded corner south west,temple,288,0,1,1,1,1,ground:100 notmoveable minimap:128 fullground,new,,family=temple|part=corner_sw|block=0
+corner_se,item,ground,temple gilded corner south east,temple,320,0,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=temple|part=corner_se|block=0
+mosaic,item,decor,temple mosaic floor,temple,352,0,3,3,1,1,notmoveable,new,,family=temple|part=mosaic|block=0
+carpet,item,decor,temple red carpet,temple,0,96,3,4,1,1,notmoveable,new,,family=temple|part=carpet|block=0
+blood_1,item,decor,temple blood stain,temple,96,96,2,2,1,1,notmoveable,new,,family=temple|part=blood|block=0
+blood_2,item,decor,temple blood stain,temple,160,96,2,1,1,1,notmoveable,new,,family=temple|part=blood|block=0
+blood_3,item,decor,temple blood stain,temple,224,96,1,1,1,1,notmoveable,new,,family=temple|part=blood|block=0
+blood_4,item,decor,temple blood stain,temple,256,96,2,1,1,1,notmoveable,new,,family=temple|part=blood|block=0
+wall_a,item,stump,temple wall,temple,320,96,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall|block=1
+wall_b,item,stump,temple wall,temple,384,96,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall|block=1
+wall_c,item,stump,temple wall,temple,448,96,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall|block=1
+wall_thick,item,stump,temple thick wall,temple,0,224,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall_thick|block=1
+wall_ns_a,item,stump,temple wall,temple,64,224,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall_ns|block=1
+wall_ns_b,item,stump,temple wall,temple,128,224,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall_ns|block=1
+wall_ns_c,item,stump,temple wall,temple,192,224,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall_ns|block=1
+wall_ns_thick,item,stump,temple thick wall end,temple,256,224,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall_ns_thick|block=1
+wall_corner,item,stump,temple wall corner,temple,320,224,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall_corner|block=1
+wall_corner_thick,item,stump,temple thick wall corner,temple,384,224,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=wall_corner_thick|block=1
+wall_end_ew,item,stump,temple wall end,temple,448,224,2,2,1,1,bottom notwalkable notmoveable minimap:128,new,,family=temple|part=wall_end_ew|block=1
+wall_end_ns,item,stump,temple wall end,temple,0,288,2,2,1,1,bottom notwalkable notmoveable minimap:128,new,,family=temple|part=wall_end_ns|block=1
+pillar_a,item,stump,temple pillar,temple,64,288,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=pillar|block=1
+pillar_b,item,stump,temple pillar,temple,128,288,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=pillar|block=1
+pillar_c,item,stump,temple pillar,temple,192,288,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=pillar|block=1
+pillar_d,item,stump,temple pillar,temple,256,288,2,2,1,1,bottom notwalkable notmoveable minimap:129,new,,family=temple|part=pillar|block=1
+torch,item,stump,temple torch,temple,320,288,2,2,1,1,bottom notwalkable notmoveable light:6:206,new,,family=temple|part=torch|block=1
+pedestal_a,item,stump,temple statue pedestal,temple,384,288,2,2,1,1,bottom notwalkable notmoveable minimap:128,new,,family=temple|part=pedestal|block=1
+pedestal_b,item,stump,temple statue pedestal,temple,448,288,2,2,1,1,bottom notwalkable notmoveable minimap:128,new,,family=temple|part=pedestal|block=1
+pedestal_c,item,stump,temple statue pedestal,temple,0,352,2,2,1,1,bottom notwalkable notmoveable minimap:128,new,,family=temple|part=pedestal|block=1
+pedestal_d,item,stump,temple statue pedestal,temple,64,352,2,2,1,1,bottom notwalkable notmoveable minimap:128,new,,family=temple|part=pedestal|block=1
+gargoyle,item,stump,temple gargoyle,temple,128,352,2,2,1,1,bottom notwalkable notmoveable minimap:128,new,,family=temple|part=gargoyle|block=1

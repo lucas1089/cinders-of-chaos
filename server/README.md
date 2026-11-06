@@ -28415,6 +28415,7 @@ README warned.
   | `fistweapons`, rows of mode `new4` (48409-48411) | 56 | not installed (no node, no `items.xml` entry, no shop, no equip entry) |
   | `weapons800` (the 34 weapons above level 800, "Weapons above level 800") | 56 | the whole step is skipped |
   | `relicsets` (the 65 pieces of the five relic sets, "Relic sets (pair 58)") | 58 | the whole step is skipped |
+  | `templeart` (the 39 pieces of the temple tileset, "Temple tileset (pair 60)") | 60 | the whole step is skipped |
 
   The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
   `ItemType(id)` exists, and the scaled class roll (`loot.lua` `classWeapons`) drops an id the server has no item for.
@@ -29030,3 +29031,28 @@ Keeper 700), it takes too much damage; is the Thief line's defence normal? Compu
   `tools/survival_model_test.py` (formulas, parsers, both interpreters, the guard read from `classes.lua`, the state before
   fails on the Ninja only), `tests/ninja_guard_test.lua` (the reduction by level, the hook on a mock engine).
 - **Install:** reload scripts (or restart). No engine, client, database or map change.
+
+## Temple tileset (pair 60) (`install_temple_art.py`, step `templeart`, O431)
+
+Owner 2026-11-06 (pt-BR): "pode usar, são todas livres, comece pelo templo". The first of the owner's free art sheets: a temple room
+and loose oblique pieces, cut and rebuilt at our 32 px grid by `client/tools/sprites/gen_temple_art.py` (client/MANIFEST.md "Pair 60").
+The server only needs the items to exist so the map editor can place them. No spell, loot, shop, quest or area plan uses them yet.
+
+* **Items.** 39 items, client ids 44511-44549 appended to pair 59, server ids = client id + 4000 = **48511-48549** (the pair 50 rule;
+  after the relic sets' 48446-48510; free: no csv of `data/items`, no `chaos_*.lua` lib and no id table of this README uses them). The
+  manifest `data/items/temple_art.csv` is what `import_art_things.py --manifest-out` writes for `art_import/temple.csv`;
+  `gen_temple_art.py build` writes the same file and `build --check` (CI) compares.
+  * 11 ground items (otb group 1, speed 100): marble floor, black marble floor, blue rune pad, four gilded borders, four gilded corners.
+  * 6 decor items (walkable, over a floor): mosaic floor 3x3 and red carpet 3x4 (put each on the south-east tile of the square it
+    covers, like the waypoint seal), four blood stains.
+  * 22 stump items (otb solid): 12 walls, 4 pillars, 4 statue pedestals, the gargoyle, the torch (light 6, colour 206). All 2x2 and
+    drawn up and left of their base, which is their bottom right edge: put a wall piece on the tile at the bottom right of its base.
+  * Names all start with "temple " ("temple marble floor", "temple pillar", "temple torch", ...): a stock item of the same name would
+    make the engine refuse a monster's loot ("Unique loot names").
+* **Install.** `install_temple_art.py DATA_DIR [--dry-run]` writes the items.otb nodes and one items.xml entry each, with the node
+  rules of `install_owner_decor.py` (same bytes: left alone; same group and flags: replaced; another item on that id: stops; items.otb.bak
+  the first time; the written file parsed again). Idempotent. Client pair guard: the step skips with a warning until `config.lua`
+  `chaosClientPair` is 60 or more (admin app: Comandos > card "Par do cliente" > Gravar 60; shell: `chaos-ctl.sh client-pair set 60`).
+* **Not done.** The pair 60 build itself (windows-assets is not touched from this repo) and any look in a client.
+* **Tests.** `tools/install_temple_art_test.py` (39 rows, ids, kinds, flags, names, manifest equal to the generator's, otb and items.xml
+  rules on synthetic files, the guard end to end), `tools/client_pair_test.py`, `client/tools/sprites/gen_temple_art_test.py`.

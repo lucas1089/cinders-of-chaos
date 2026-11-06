@@ -257,6 +257,12 @@
      "use": "status words over creatures"
     },
     {
+     "name": "Temple tileset",
+     "author": "supplied by the owner, source author not recorded",
+     "licence": "free to use, per the owner (2026-11-06); no licence text came with the file",
+     "use": "temple floors, gilded borders, mosaic, carpet, walls, pillars, torch and statue pedestals, placed with the map editor"
+    },
+    {
      "name": "Hunting area maps",
      "author": "RyuKage",
      "licence": "free map, shared as free to use; the map files carry no licence text",
