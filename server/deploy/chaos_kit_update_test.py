@@ -141,6 +141,7 @@ print('[ok] files')
 '''
 PUBLISH = '#!/usr/bin/env bash\necho "publish $* site=${CHAOS_SITE_DIR:-}" >> "$STUB/calls"\n'
 SITE = '#!/usr/bin/env bash\necho "site $*" >> "$STUB/calls"\n'
+BOTCTL = '#!/usr/bin/env bash\necho "ctl $*" >> "$STUB/calls"\n[ -z "${STUB_BOT_FAIL:-}" ]\n'
 
 FAILS = []
 
@@ -207,6 +208,7 @@ class World:
         shutil.copy(SCRIPT, os.path.join(o, 'server/deploy/chaos_kit_update.sh'))
         write(os.path.join(o, 'server/deploy/publish_client_update.sh'), PUBLISH, 0o755)
         write(os.path.join(o, 'website/install_site.sh'), SITE, 0o755)
+        write(os.path.join(o, 'server/deploy/chaos-ctl.sh'), BOTCTL, 0o755)
         write(os.path.join(o, 'website/page.txt'), 'v1\n')
         write(os.path.join(o, 'server/tools/version.txt'), 'v1\n')
         self.commit('v1')
@@ -312,7 +314,8 @@ class World:
         env = dict(self.env, CHAOS_REPO=self.repo, CHAOS_KIT_DIR=self.kit, CHAOS_RELEASE_REPO='owner/game',
                    CHAOS_KIT_STATE=self.state, CHAOS_WORK_DIR=self.root, CHAOS_BOOT_TIMEOUT='10',
                    CHAOS_SITE_DIR=self.site, CHAOS_SITE_ENV=self.siteenv, CHAOS_MYSQL='mariadb',
-                   CHAOS_ENV=self.envfile, CHAOS_LOG=os.path.join(self.kit, 'logs/server.log'), **(extra or {}))
+                   CHAOS_ENV=self.envfile, CHAOS_LOG=os.path.join(self.kit, 'logs/server.log'),
+                   CHAOS_SYSTEMD_DIR=os.path.join(self.root, 'systemd'), **(extra or {}))
         write(os.path.join(self.stub, 'calls'), '')
         if ctl:
             env.update(CHAOS_CTL_NO_SUDO='1', CHAOS_CTL_CONF=os.path.join(self.root, 'none.conf'),
@@ -506,6 +509,18 @@ def test_flow():
         check(w.state_value('site_commit') == w.git('-C', w.repo, 'rev-parse', 'HEAD'), 'state: the site commit moves')
         w.run('check')
         check(w.kv().get('website_changed') == 'no', 'check: the site current', w.out)
+        check(not any(c.startswith('ctl ') for c in w.calls), 'no Discord bot unit: the bot is left alone', w.calls)
+
+        # the Discord bot follows the update when its unit is installed; a failure is a warning
+        write(os.path.join(w.root, 'systemd', 'chaos-discordbot.service'), '[Unit]\n')
+        w.push('Bot fix', {'server/deploy/discord_bot/bot.py': '# v2\n'})
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and 'ctl discord-bot install' in w.calls and 'discord bot: code up to date' in w.out,
+              'apply: discord-bot install after the update', w.out)
+        w.push('Bot fix 2', {'server/deploy/discord_bot/bot.py': '# v3\n'})
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', extra={'STUB_BOT_FAIL': '1'})
+        check(rc == 3 and 'RESULT warn' in w.out and 'discord-bot' in w.out, 'apply: a failed bot install is a warning', w.out)
+        os.remove(os.path.join(w.root, 'systemd', 'chaos-discordbot.service'))
 
         # a broken engine: rolled back automatically
         good_commit = w.git('-C', w.repo, 'rev-parse', 'HEAD')

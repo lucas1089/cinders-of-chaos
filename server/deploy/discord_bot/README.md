@@ -88,7 +88,7 @@ No app Android: aba **Comandos**, cartão **Bot do Discord (bugs e patch notes)*
 3. Botão **Iniciar**. Se faltar algum valor, o app diz o nome do que falta.
 4. **Estado** mostra se o serviço está ativo e quais valores existem, sem mostrar nenhum. **Logs** mostra as últimas linhas, com tokens e chaves cobertos. **Reiniciar** e **Parar** fazem o que dizem.
 
-Para atualizar o bot depois de um update do repositório, toque em **Instalar ou atualizar** de novo. Ele copia o código novo e reinicia o bot se estiver ligado.
+O **Atualizar servidor** já atualiza o bot no fim, quando ele está instalado. Ele copia o código novo e reinicia o bot se estiver ligado. Para atualizar só o bot, toque em **Instalar ou atualizar** de novo.
 
 ### Pelo terminal
 
@@ -139,8 +139,8 @@ Você não precisa rodar nada. Quando o `changes.json` muda e tem mudança nova 
 
 | Modo | O que acontece |
 |---|---|
-| `preview` (padrão) | O bot manda a prévia por DM, com Publicar, Editar e Cancelar. Os botões continuam valendo depois de reiniciar o bot. Uma prévia nova substitui a anterior |
-| `publish` | O bot publica direto no canal de patch notes, grava os arquivos do site e manda uma DM curta com o link do canal. A primeira vez é sempre prévia, para você ver como fica |
+| `preview` | O bot manda a prévia por DM, com Publicar, Editar e Cancelar. Os botões continuam valendo depois de reiniciar o bot. Uma prévia nova substitui a anterior |
+| `publish` (padrão) | O bot publica direto no canal de patch notes, grava os arquivos do site e manda uma DM curta com o link do canal. Todas as vezes, a primeira também |
 | `off` | Só com `/patch gerar` |
 
 Se o Claude disser que nada muda para o jogador, o bot não manda nada e escreve uma linha nos **Logs**. O mesmo conjunto de mudanças nunca vira dois patches: o bot guarda o último estado do repositório que já tratou. Se a prévia ficou velha porque outro patch saiu antes, o Publicar dela recusa e manda usar `/patch gerar`.

@@ -387,6 +387,17 @@ def test_channel_check():
     check(core.missing_permissions(allp, 'bugs', True) == [] and core.missing_permissions(allp, 'patch') == [], 'all granted')
     check(core.missing_permissions({'view_channel'}, 'patch') == ['Enviar mensagens', 'Inserir links'], 'patch needs')
     check('Enviar mensagens em threads' in core.missing_permissions(set(core.BUGS_PERMS), 'bugs', True), 'forum threads')
+
+    class Perms:  # like discord.Permissions: view_channel answers by name, iteration skips it (an alias)
+        view_channel = read_message_history = send_messages = add_reactions = send_messages_in_threads = True
+        embed_links = False
+
+        def __iter__(self):
+            return iter([('read_messages', True), ('send_messages', True)])
+    got = core.granted_permissions(Perms())
+    check('view_channel' in got and 'embed_links' not in got, 'granted read by name, aliases included')
+    check(core.missing_permissions(got, 'bugs', True) == [] and core.missing_permissions(got, 'patch') == ['Inserir links'],
+          'no false Ver canal')
     check(core.missing_permissions(set(core.BUGS_PERMS), 'bugs', False) == [], 'text bugs channel')
     check(core.channel_check_text([('Canal de bugs', 1567178340434059494, None)]) is None, 'nothing wrong, no DM')
     t = core.channel_check_text([('Canal de bugs', 1567178340434059494, 'missing'), ('Canal de patch notes', 0, 'not-set'),
@@ -412,7 +423,7 @@ def test_changes():
     the first-run window, caps, the prompt, the empty case and the automatic patch plan."""
     now = 1_800_000_000
     c = core.load_config(GOOD)
-    check(c.patch_auto == 'preview' and c.changes_path.endswith('changes.json'), 'patch_auto default preview')
+    check(c.patch_auto == 'publish' and c.changes_path.endswith('changes.json'), 'patch_auto default publish')
     for v in ('publish', 'off', 'PREVIEW '):
         check(core.load_config(dict(GOOD, DISCORD_BOT_PATCH_AUTO=v)).patch_auto == v.strip().lower(), 'patch_auto ' + v)
     check(raises(lambda: core.load_config(dict(GOOD, DISCORD_BOT_PATCH_AUTO='yes')), 'DISCORD_BOT_PATCH_AUTO'),
@@ -488,8 +499,8 @@ def test_changes():
     check(core.auto_patch_plan('off', ex, None, None, None, now)['action'] == 'none', 'auto off: nothing')
     check(core.auto_patch_plan('preview', None, None, None, None, now)['action'] == 'none', 'auto without file: nothing')
     p = core.auto_patch_plan('publish', ex, None, None, None, now)
-    check(p['action'] == 'generate' and not p['publish'] and len(p['changes']) == 2,
-          'auto publish: the first time is a preview')
+    check(p['action'] == 'generate' and p['publish'] and len(p['changes']) == 2,
+          'auto publish: the first time posts too')
     p = core.auto_patch_plan('preview', ex, None, set(), now - DAY, now)
     check(p['action'] == 'generate' and not p['publish'], 'auto preview: preview')
     p = core.auto_patch_plan('publish', ex, 'b' * 40, set(), now - DAY, now)

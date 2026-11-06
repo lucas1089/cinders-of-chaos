@@ -2346,7 +2346,7 @@ exit 0
               and kvs(run('status')).get('model') == 'claude-opus-5-5', 'the model setting shows in status')
         check(run('set', 'DISCORD_BOT_MODEL', stdin='\n').returncode == 0 and '\nDISCORD_BOT_MODEL=' not in open(envf).read(),
               'an empty value removes the line')
-        check(kvs(run('status')).get('patch_auto') == 'preview', 'patch_auto defaults to preview in status')
+        check(kvs(run('status')).get('patch_auto') == 'publish', 'patch_auto defaults to publish in status')
         for v in ('publish', 'off', 'preview'):
             check(run('set', 'DISCORD_BOT_PATCH_AUTO', stdin=v + '\n').returncode == 0
                   and kvs(run('status')).get('patch_auto') == v, 'DISCORD_BOT_PATCH_AUTO ' + v)

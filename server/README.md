@@ -28630,18 +28630,20 @@ asks Claude what each message is, keeps a bug list and helps write patch notes. 
   most 60), newest first, at most 12,000 characters, with the fixed bugs and extras. The system prompt turns commit messages into
   player notes and drops tooling, docs, tests, admin; the schema has `player_facing` (false: no notes). Nothing new at all: "Nada novo
   desde <date>". Runs as root code of the checkout, like `chaos-health.service`.
-- **Automatic patch (O385).** `DISCORD_BOT_PATCH_AUTO` = `preview` (default), `publish` or `off`. Every 5 min the bot reads
+- **Automatic patch (O385).** `DISCORD_BOT_PATCH_AUTO` = `publish` (default, owner 2026-11-06), `preview` or `off`. Every 5 min the bot reads
   `changes.json`; a new head (meta `auto_head`, one attempt per head) with unseen changes makes notes versioned `YYYY-MM-DD`
   (`bot_core.auto_patch_plan`). `preview` DMs the owner the preview with persistent buttons (meta `auto_pending`, restored with
   `add_view` at start; a newer preview or any publish with changes retires it). `publish` posts and writes the site files, then DMs a
-  short note; its first run is still a preview. `player_facing` false: one log line, the changes are marked seen.
+  short note, the first run too. `player_facing` false: one log line, the changes are marked seen.
 - **Install.** `chaos-ctl.sh discord-bot install` (idempotent): user `chaosbot`, `CHAOS_BOT_DIR/venv` (default `/opt/chaos/discord-bot`)
   from the pinned `requirements.txt`, the code copied to `CHAOS_BOT_DIR/app`, `/etc/chaos/discord-bot.env` (mode 600, from
   `.env.example`), data dir `/var/lib/chaos/discord-bot` (750), `chaos-discordbot.service` (sandboxed like the other services, writes
   only the data dir, exit 2 = settings missing is not restarted), logrotate. `set NAME` takes one value on stdin and checks it per name;
   `start` refuses with `config-missing` until the five required ones are set. Settings in `ctl.conf`: `CHAOS_BOT_USER`,
   `CHAOS_BOT_ENV`, `CHAOS_BOT_DIR`, `CHAOS_BOT_DATA`, `CHAOS_BOT_LOG`, `CHAOS_BOT_PYTHON`. Admin app: Comandos > Bot do Discord;
-  desktop table: `commands.rs` group Bot do Discord.
+  desktop table: `commands.rs` group Bot do Discord. `update-apply` (chaos_kit_update.sh, end of step 10) runs
+  `discord-bot install` when `CHAOS_SYSTEMD_DIR/chaos-discordbot.service` exists, so the bot follows each server update;
+  a failure there is a warning (exit 3), never a rollback.
 - **Outbox (O398).** Other tools DM the owner through the bot: a file dropped into `CHAOS_BOT_DATA/outbox` (owned by the
   bot user) is sent as DMs within 60 s, in parts of 1900 characters (at most 20,000 read), then deleted
   (`bot_core.outbox_files`, `read_outbox`, `split_message`; `bot.py` `outbox_loop`). `balance-report --dm` and `auto` use it.

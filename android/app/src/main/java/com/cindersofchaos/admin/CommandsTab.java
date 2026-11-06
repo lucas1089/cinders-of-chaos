@@ -595,8 +595,8 @@ final class CommandsTab {
             b.addView(save, ui.gap(2));
         }
         // O385: the patch notes after a server update (DISCORD_BOT_PATCH_AUTO); one choice, the bot restarts with it
-        b.addView(ui.hint("Patch notes automáticas depois de cada atualização do servidor: Prévia (padrão) manda a "
-                + "prévia para você no Discord, com Publicar, Editar e Cancelar. Publicar posta sozinho e avisa você. "
+        b.addView(ui.hint("Patch notes automáticas depois de cada atualização do servidor: Publicar (padrão) posta sozinho no "
+                + "canal e avisa você. Prévia manda a prévia para você no Discord, com Publicar, Editar e Cancelar. "
                 + "Desligado: só com /patch gerar."), ui.gap(12));
         final String[][] autoModes = {{"preview", "Prévia"}, {"publish", "Publicar"}, {"off", "Desligado"}};
         MaterialButton[] autoButtons = new MaterialButton[autoModes.length];

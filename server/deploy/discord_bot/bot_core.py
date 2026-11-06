@@ -75,7 +75,7 @@ class Config:
         self.fallbacks = kw.get('fallbacks', True)
         self.per_user_hour = kw.get('per_user_hour', 20)
         self.daily_hour = kw.get('daily_hour', 9)
-        self.patch_auto = kw.get('patch_auto', 'preview')
+        self.patch_auto = kw.get('patch_auto', 'publish')
 
     @property
     def db_path(self):
@@ -118,7 +118,7 @@ def load_config(env):
             raise BotError('%s deve ser um número de %d a %d' % (k, lo, hi))
         return int(v)
 
-    auto = str(env.get('DISCORD_BOT_PATCH_AUTO', '')).strip().lower() or 'preview'
+    auto = str(env.get('DISCORD_BOT_PATCH_AUTO', '')).strip().lower() or 'publish'
     if auto not in PATCH_AUTO_MODES:
         raise BotError('DISCORD_BOT_PATCH_AUTO deve ser preview, publish ou off')
 
@@ -248,6 +248,13 @@ PERM_LABEL = {
 }
 BUGS_PERMS = ('view_channel', 'read_message_history', 'send_messages', 'add_reactions')
 PATCH_PERMS = ('view_channel', 'send_messages', 'embed_links')
+
+
+def granted_permissions(perms):
+    """The PERM_LABEL names a discord.Permissions grants, read by name. Iterating Permissions skips aliases and
+    view_channel is one (of read_messages): the set built that way reported Ver canal missing on channels the bot
+    reads (owner log 2026-11-06)."""
+    return {n for n in PERM_LABEL if getattr(perms, n, False)}
 
 
 def missing_permissions(granted, role, forum=False):
@@ -1164,8 +1171,8 @@ def auto_patch_plan(mode, export, handled_head, seen, last_at, now):
     mode: Config.patch_auto. handled_head: the head of the last file the bot acted on (meta 'auto_head').
     Returns {'action': 'none'} (off, no file, this head already handled), {'action': 'skip', 'head'} (a new head
     without a new player-facing change: remember it, log a line) or {'action': 'generate', 'head', 'changes',
-    'since', 'publish'}. The first time (no head handled, no patch with changes yet) it is always a preview: the
-    owner sees what 'publish' would post before it posts by itself."""
+    'since', 'publish'}. 'publish' posts every time, the first one too (owner 2026-11-06: every patch note goes to
+    the patch notes channel by itself)."""
     if mode not in ('preview', 'publish') or not export:
         return {'action': 'none'}
     head = export['head']
@@ -1174,9 +1181,7 @@ def auto_patch_plan(mode, export, handled_head, seen, last_at, now):
     changes, since = select_changes(export, seen, last_at, now)
     if not changes:
         return {'action': 'skip', 'head': head}
-    first = handled_head is None and seen is None
-    return {'action': 'generate', 'head': head, 'changes': changes, 'since': since,
-            'publish': mode == 'publish' and not first}
+    return {'action': 'generate', 'head': head, 'changes': changes, 'since': since, 'publish': mode == 'publish'}
 
 
 def auto_version(now_dt):
