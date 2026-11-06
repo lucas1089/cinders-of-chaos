@@ -24,7 +24,7 @@ if not ChaosCommandsCore or not ChaosCommandsCore.capture or not ChaosCommands t
 end
 local K = ChaosCommandsCore
 local OPCODE = ChaosOpcodes.info or 237
-local MAX_IDS = 6 -- commands per request (a page shows a few at once)
+local MAX_IDS = 8 -- commands per request (a page shows a few at once)
 
 -- ChaosCommands.register(id, fn): commands_ui_core.lua. fn(player, param) shows its answer as usual (text message,
 -- popup, dialog); the window catches it.
@@ -52,6 +52,20 @@ local function baseHandler(id)
 end
 
 -- ---------------------------------------------------------------- native commands
+-- Character Info > the character sheet (O423): [ Offense ], [ Defense ], [ Resistances ] and [ Character ] of the player's
+-- own character, built by charsheet_core.lua from what charsheet.lua reads (the same numbers Inspect Player shows others)
+if not (ChaosCharSheet and ChaosCharSheet.read) then
+	dofile("data/scripts/chaos/charsheet.lua")
+end
+M.register("sheet", function(player)
+	local CS = ChaosCharSheet
+	local sheet = CS.clean(CS.read(player))
+	local text = CS.text(sheet, CS.readOwn(player), function(fmt, ...) return Chaos.t(player, fmt, ...) end)
+	if text ~= "" then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
+	end
+end)
+
 M.register("pos", function(player)
 	local p = player:getPosition()
 	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Your position: %d, %d, %d.", p.x, p.y, p.z))

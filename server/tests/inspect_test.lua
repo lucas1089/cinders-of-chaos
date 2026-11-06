@@ -161,6 +161,11 @@ Chaos.battlegroundConfig = {season = {brackets = {"1v1", "bg"}}}
 ChaosPvpSeason = {viewOf = function() return {["1v1"] = {rating = 1650, placed = true, tierName = "Gold", name = "Arena 1v1"},
 	bg = {rating = 1400, placed = true, tierName = "Silver", name = "Battleground"}} end}
 ChaosCollection = {scoreOf = function() return 77 end}
+ChaosCombatStats = {compute = function() return {attack = 40, damage = 120, defense = 30, armor = 22, mitigation = 0.3456} end}
+ChaosPassiveTotals = {build = function() return {crit = {chance = {total = 12.34}, amount = {total = 55}},
+	attackSpeed = {total = 9}, damage = {{k = "incrementFire", eff = 18.5}, {k = "incrementIce", eff = 0}}} end}
+ChaosDeathRecap = {resistOf = function(_, el) return el == "fire" and 40 or el == "death" and -10 or 0 end}
+Chaos.storage.maxHit = 7100961
 os.mtime = nil
 local clock = 100
 local realTime = os.time
@@ -271,7 +276,7 @@ eq(msgs[2].data.rows[2].tip.name, "Magic Sword", "tooltip")
 eq(msgs[2].data.part, 1, "part 1")
 for k in pairs(d) do
 	local known = {name = 1, level = 1, voc = 1, vocId = 1, ascended = 1, guild = 1, ach = 1, rift = 1, trials = 1, outfit = 1, self = 1, parts = 1,
-		tree = 1, paragon = 1, title = 1, bestiary = 1, bosses = 1, pvp = 1, collection = 1, passive = 1}
+		tree = 1, paragon = 1, title = 1, bestiary = 1, bosses = 1, pvp = 1, collection = 1, passive = 1, combat = 1}
 	eq(known[k], 1, "only public fields are sent: " .. k)
 end
 eq(d.paragon, 55, "paragon points")
@@ -285,6 +290,20 @@ eq(d.pvp.rating, 1650, "its rating")
 eq(d.collection, 77, "collection score")
 eq(d.passive.spent, 4, "passive points spent")
 eq(d.passive.total, 28, "passive points owned")
+eq(d.combat.attack, 40, "weapon attack")
+eq(d.combat.hit, 120, "average hit")
+eq(d.combat.defense, 30, "defence")
+eq(d.combat.armor, 22, "armour")
+eq(d.combat.mitigation, 34.6, "damage reduction in percent")
+eq(d.combat.critChance, 12.3, "crit chance")
+eq(d.combat.critAmount, 55, "crit damage")
+eq(d.combat.attackSpeed, 9, "attack speed")
+eq(#d.combat.damage, 1, "zero damage bonus left out")
+eq(d.combat.damage[1].k, "fire", "damage bonus type")
+eq(d.combat.damage[1].pct, 18.5, "damage bonus")
+eq(d.combat.resist[1].k, "fire", "physical 0 is not a row")
+eq(#d.combat.resist, 2, "fire and death")
+eq(d.combat.resist[2].pct, -10, "negative resistance kept")
 eq(d.tree, true, "a tree follows")
 eq(msgs[3].action, "tree", "the tree packet last")
 eq(msgs[3].data.name, "Anna", "the tree of the inspected player")

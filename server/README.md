@@ -845,6 +845,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | Range | Owner |
 |---|---|
 | 80000 + n | autoloot list, shared on purpose with the base autoloot (`Chaos.storage.autolootBase`) |
+| 7100961 | the biggest single hit a character dealt (`Chaos.storage.maxHit`, `combatlog.lua`, O423; 7100961 - 7100969 reserved) |
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
@@ -13743,7 +13744,7 @@ A window with the public side of another player. Extended opcode `ChaosOpcodes.i
 |---|---|---|
 | client -> server | `inspect` | `{cid}` the creature id of a player the player right-clicked, or `{name}` typed in the window |
 | client -> server | `privacy` | `{}` asks for the own setting, `{allow = true / false}` sets it |
-| server -> client | `result` | `{name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit = {type, head, body, legs, feet, addons, mount}, self, parts, tree, paragon, title, bestiary = {points, rank}, bosses = {got, total}, pvp = {name, tier, rating}, collection, passive = {spent, total}}` (the last seven: O422, see below) |
+| server -> client | `result` | `{name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit = {type, head, body, legs, feet, addons, mount}, self, parts, tree, paragon, title, bestiary = {points, rank}, bosses = {got, total}, pvp = {name, tier, rating}, collection, passive = {spent, total}, combat}` (the last eight: O422 and O423, see below) |
 | server -> client | `equip` | `{name, rows = [{slot, tip}], part}` `parts` packets follow a `result`; slot 1-10 as the inventory, `tip` the rich tooltip. Each packet is at most 8000 bytes of JSON, the whole message counted (`ChaosInspect.equipPackets`, `config.packetBytes`), and goes through `Chaos.sendChunked`: a single row bigger than that arrives in `S`/`P`/`E` parts, joined by the client's `L.joinPart` like the tree |
 | server -> client | `tree` | `{name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}` the active passive tree, after the equipment (`ChaosInspect.treePayload` of `ChaosPassiveTree.publicView`), through `Chaos.sendChunked`; `result.tree` says one follows |
 | server -> client | `denied` | `{code, text}` code: `notfound`, `private`, `range`, `rate`, `bad` |
@@ -13766,6 +13767,22 @@ not loaded: `paragon` = `ChaosParagon.pointsOf`; `title` = the active name plate
 `ChaosPvpSeason.viewOf(guid)` by rating (`ChaosInspect.bestPvp`); `collection` = `ChaosCollection.scoreOf(accountId)`;
 `passive` = nodes of `ChaosPassiveTree.publicView` against its `total`. The Infinity Tower floor stays in the `records` packet.
 No health, mana, skills, storage, gold or containers.
+
+**Combat sheet (O423, public by owner decision 2026-11-06).** The owner relaxed the old rule: the `combat` block of the
+`result` packet shows the inspected player's combat numbers. Still never sent: skills, storages, gold, containers, current
+health and mana. One sheet serves two places. `charsheet_core.lua` (`ChaosCharSheet`, pure, `tests/charsheet_test.lua`)
+cleans the numbers (`clean`) and writes the text sections (`text`); `charsheet.lua` reads them off a player (`read`,
+`readOwn`), from the systems the player's own Stats use: weapon attack, average hit, defence, armour and damage reduction
+`ChaosCombatStats.compute`; critical chance and damage, attack speed and the damage bonus per type `ChaosPassiveTotals.build`;
+life and mana leech the engine special skills; resistances (physical, fire, energy, earth, ice, holy, death)
+`ChaosDeathRecap.resistOf` (gear, tree and gems); maximum health and mana and movement speed the player; **highest hit** a
+new cheap tracker: `combatlog.lua` `dealt` compares each hit a character (or its summon) deals with an in-memory best and
+writes storage `Chaos.storage.maxHit` (7100961, block 7100961 - 7100969) only for a new record (no extra cost per hit; the
+damage counted is capped by the target's health, so no overkill), shown at the character's display scale. The same sheet is
+the first part of **Info & Services > Character Info**: command `sheet` (`commands_ui.lua`, first of the page's auto
+commands, MAX_IDS now 8) answers `[ Offense ]`, `[ Defense ]`, `[ Resistances ]` and, for the own character only,
+`[ Character ]` (level, class, health, mana, capacity, speed, experience to the next level, magic level and skills with
+percent, soul, stamina), in the player's language (`Chaos.t`; pt-BR in `i18n_strings.lua`).
 
 **Rules.**
 - `cid` (right-click): the same floor, at most 10 tiles away in x and y and in view (`player:canSee`). `name` (the menu

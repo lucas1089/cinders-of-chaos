@@ -15,8 +15,9 @@ local V = ChaosInfoView
 
 V.PAGES = {
   { id = 'character', title = 'Character Info',
-    text = 'Your classes, ascension, double experience, position, the item sets you wear and your cards. The buttons show more.',
-    auto = { 'classes', 'ascension', 'exp', 'pos', 'sets', 'deck' },
+    text = 'Your attacks, defenses and resistances, classes, ascension, double experience, position, the item sets you wear and your cards. The buttons show more.',
+    -- 'sheet' first: its text brings its own headings [ Offense ] [ Defense ] [ Resistances ] [ Character ] (server charsheet_core.lua)
+    auto = { 'sheet', 'classes', 'ascension', 'exp', 'pos', 'sets', 'deck' },
     headings = { classes = 'Classes', ascension = 'Ascension', exp = 'Double EXP', pos = 'Position', sets = 'Item Sets',
                  resis = 'Resistances', kills = 'Kills', deathlist = 'Deaths', ancestral = 'Ancestral Tasks',
                  deck = 'Card Deck' },

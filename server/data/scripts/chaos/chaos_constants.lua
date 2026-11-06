@@ -210,6 +210,7 @@ Chaos.storage = {
 	-- Town Portal (townportal_config.lua storage): 7101600 - 7101639 reserved; selected style, cooldown, store styles owned
 	monk = 7100800, -- the Monk line (ChaosMonk.ids.storage in monk_chi_core.lua): 7100800 - 7100809 reserved; chi, its time, focus, Chi Ward
 	inspectOff = 7100960, -- 1 = this character does not allow others to inspect it (inspect.lua; default on, so unset)
+	maxHit = 7100961, -- the biggest single hit the character dealt (combatlog.lua dealt; shown by Inspect Player, O423); 7100961 - 7100969 reserved
 	-- market (market_config.lua storage): 7100970 - 7100979 reserved; listSeq, deliverSeq (crash-safe escrow markers)
 	-- orb exchange (orbexchange_config.lua storage): 7100950 - 7100954 reserved; placeSeq, deliverSeq (crash-safe escrow markers)
 	-- season pass (seasonpass_config.lua storage): 7100980 - 7100984 reserved; 7100980 = the season name frame is hidden
