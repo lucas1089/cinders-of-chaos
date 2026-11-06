@@ -243,7 +243,7 @@ class BugBot(discord.Client):
                 log.error('%s channel ...%s: not a server channel', role, str(cid)[-4:])
                 continue
             perms = ch.permissions_for(me)
-            granted = {n for n, v in perms if v}
+            granted = core.granted_permissions(perms)
             forum = isinstance(ch, discord.ForumChannel)
             missing = core.missing_permissions(granted, role, forum)
             results.append((label, cid, missing or None))

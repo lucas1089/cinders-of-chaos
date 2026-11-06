@@ -250,6 +250,13 @@ BUGS_PERMS = ('view_channel', 'read_message_history', 'send_messages', 'add_reac
 PATCH_PERMS = ('view_channel', 'send_messages', 'embed_links')
 
 
+def granted_permissions(perms):
+    """The PERM_LABEL names a discord.Permissions grants, read by name. Iterating Permissions skips aliases and
+    view_channel is one (of read_messages): the set built that way reported Ver canal missing on channels the bot
+    reads (owner log 2026-11-06)."""
+    return {n for n in PERM_LABEL if getattr(perms, n, False)}
+
+
 def missing_permissions(granted, role, forum=False):
     """The permission labels the bot lacks in a channel. granted: names the bot has; role: 'bugs' or 'patch'.
     A forum bugs channel answers inside each post's thread, so it also needs Enviar mensagens em threads."""

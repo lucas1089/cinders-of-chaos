@@ -387,6 +387,17 @@ def test_channel_check():
     check(core.missing_permissions(allp, 'bugs', True) == [] and core.missing_permissions(allp, 'patch') == [], 'all granted')
     check(core.missing_permissions({'view_channel'}, 'patch') == ['Enviar mensagens', 'Inserir links'], 'patch needs')
     check('Enviar mensagens em threads' in core.missing_permissions(set(core.BUGS_PERMS), 'bugs', True), 'forum threads')
+
+    class Perms:  # like discord.Permissions: view_channel answers by name, iteration skips it (an alias)
+        view_channel = read_message_history = send_messages = add_reactions = send_messages_in_threads = True
+        embed_links = False
+
+        def __iter__(self):
+            return iter([('read_messages', True), ('send_messages', True)])
+    got = core.granted_permissions(Perms())
+    check('view_channel' in got and 'embed_links' not in got, 'granted read by name, aliases included')
+    check(core.missing_permissions(got, 'bugs', True) == [] and core.missing_permissions(got, 'patch') == ['Inserir links'],
+          'no false Ver canal')
     check(core.missing_permissions(set(core.BUGS_PERMS), 'bugs', False) == [], 'text bugs channel')
     check(core.channel_check_text([('Canal de bugs', 1567178340434059494, None)]) is None, 'nothing wrong, no DM')
     t = core.channel_check_text([('Canal de bugs', 1567178340434059494, 'missing'), ('Canal de patch notes', 0, 'not-set'),
