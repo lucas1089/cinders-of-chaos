@@ -24,7 +24,10 @@ local function T(lang, key, ...)
 end
 
 if not ChaosGuardianCore then
-	dofile("data/scripts/chaos/guardian_core.lua")
+	-- next to this file: the engine runs from the server folder, client tests load this file by a longer path
+	local src = debug and debug.getinfo and debug.getinfo(1, "S").source or ""
+	local dir = src:sub(1, 1) == "@" and src:sub(2):match("^(.*[/\\])") or "data/scripts/chaos/"
+	dofile(dir .. "guardian_core.lua")
 end
 
 local floor = math.floor
