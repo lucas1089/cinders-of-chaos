@@ -1,0 +1,15 @@
+Module
+  name: game_bagpanel
+  description: Inventory panel in the right side panel (O420): tab row, equipment slots and outfit, gold and coins, the backpack and its bags as pages of one grid, Sort; the stock windows of the main backpack and its bags are hidden while it is on
+  author: Cinders of Chaos
+  sandboxed: true
+  autoload: true
+  autoload-priority: 1004
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+    - game_containers
+    - game_chaoslayout
+  scripts: [ bagpanel_core, bagpanel ]
+  @onLoad: init()
+  @onUnload: terminate()

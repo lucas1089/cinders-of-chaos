@@ -612,6 +612,9 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     off (10.98); Show Floor moves into its place. Aura, Shader and Show Aura stay: the server sells auras and shaders
     (they are greyed out only while the character owns none). Protocol unchanged. Applies after `0001`-`0085` (the
     full chain applies to the base archive). Not tried in a client run.
+    O421 (2026-11-06): the overlay module `game_outfitextras` now builds its own Customise Character window and takes the
+    outfit window packet from this module (it disconnects `create`); this window and its `0075` / `0090` hooks stay in the
+    chain, unused, and are the way back when the new window fails to open (MANIFEST.md "Customise Character, one window").
 66. `0086` (Lua `mods/game_helper/helper.lua`): **a death keeps the helper's target options**. Owner beta, 2026-10-20:
     "The target options still turn off when the player dies." Cause: `0074`'s `_Helper.disableCombatOnDeath` ran
     `pzDisableSystem` for Auto Target and Magic Shooter (checkbox, config flag, shortcut buttons; the change was saved),

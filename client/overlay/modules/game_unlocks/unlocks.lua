@@ -1,5 +1,5 @@
 -- Unlocks: the shared owned / locked list behaviour (client/MANIFEST.md "Owned and locked lists"); the rule is
--- unlocks_core.lua. Used by the Customise Character window (base module game_outfit, base patch 0058) and by
+-- unlocks_core.lua. Used by the Customise Character window (game_outfitextras since O421; the base module game_outfit, base patch 0058, is retired) and by
 -- game_cosmetics. API (modules.game_unlocks):
 --   UnlocksCore                        the rule (display, filter, isLocked, tooltip, lockedParts, ...)
 --   wardrobe()                         the last wardrobe catalogue of the server (nil before it came)
@@ -44,6 +44,12 @@ function setWardrobe(msg)
   if outfit and type(outfit.onUnlocksChanged) == 'function' then
     local ok, err = pcall(outfit.onUnlocksChanged)
     if not ok then g_logger.warning('[unlocks] outfit window: ' .. tostring(err)) end
+  end
+  -- the Customise Character window (game_outfitextras, O421) redraws its cards the same way
+  local extras = modules.game_outfitextras
+  if extras and type(extras.onData) == 'function' then
+    local ok, err = pcall(extras.onData, 'wardrobe')
+    if not ok then g_logger.warning('[unlocks] customise window: ' .. tostring(err)) end
   end
 end
 

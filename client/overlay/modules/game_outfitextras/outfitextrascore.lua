@@ -1,11 +1,13 @@
 -- Customise Character extras: the rules without client API (tested by outfitextrascore_test.lua with luajit and lua5.3).
--- The Customise Character window (base module game_outfit) picks the outfit, mount, aura, shader and preset. The other
--- cosmetics a character owns were only reachable elsewhere: wings (the outfit packet's wings list, which the stock
+-- The Customise Character window (this module, customisecore.lua: O421; the base game_outfit window is retired) picks the
+-- outfit, mount, aura and shader itself; the rows below are its other categories. These cosmetics a character owns were
+-- only reachable elsewhere: wings (the outfit packet's wings list, which the stock
 -- window has no row for), outlines, footprints, kill effects, loot label accents, chat name colours, the spell effect
 -- skin of the character's class line (all Character > Cosmetics, server cosmetics.lua), the name plate frame (Info &
--- Services > Services, server shop.lua) and the pet (Character > Pets). Each is one row of Change Appearance here (base
--- patch 0090): the row shows the choice, and selecting it lists the choices in the window's right-hand area, the owned
--- ones first, then the locked ones greyed out (game_unlocks rule; "Only mine" hides them).
+-- Services > Services, server shop.lua) and the pet (Character > Pets). Each is one category of the window's card grid
+-- and one card of its Equipped now strip: the owned choices first, then the locked ones greyed out (game_unlocks rule;
+-- "Only mine" hides them). An option or a locked choice also carries the server's row (`row`, for the preview) and a
+-- pet's `look`.
 -- Sources, all optional (a source that has not answered yet leaves its row off):
 --   cosmetics  the server's cosmetics state {line, lineName, rows = [{id, kind, name, owned, selected, line}]}
 --   wings      {stock = [{look, name}] (the outfit packet's owned wings), wardrobe = [{l, n, o}] (the catalogue), current}
@@ -50,7 +52,7 @@ function E.cosmeticRow(state, kind)
   for _, r in ipairs(state.rows) do
     if type(r) == 'table' and r.kind == kind and (kind ~= 'spellskin' or r.line == state.line) then
       if r.owned == true then
-        options[#options + 1] = { text = tostring(r.name or r.key or r.id), value = num(r.id) }
+        options[#options + 1] = { text = tostring(r.name or r.key or r.id), value = num(r.id), row = r }
         if r.selected then current = num(r.id) end
       else
         locked = locked + 1
@@ -103,7 +105,7 @@ function E.petRow(state)
     if type(p) == 'table' and type(p.species) == 'string' and p.species ~= '' then
       known[p.species] = true
       local name = tostring(p.name or p.speciesName or p.species)
-      options[#options + 1] = { text = p.level and tr('%s (level %d)', name, num(p.level)) or name, value = p.species }
+      options[#options + 1] = { text = p.level and tr('%s (level %d)', name, num(p.level)) or name, value = p.species, look = num(p.look) }
     end
   end
   local current = type(state.active) == 'string' and known[state.active] and state.active or ''
@@ -176,14 +178,14 @@ function E.lockedOf(src, key)
     end
     for _, c in ipairs(type(state.catalog) == 'table' and state.catalog or {}) do
       if type(c) == 'table' and type(c.key) == 'string' and c.owned ~= true and not known[c.key] then
-        out[#out + 1] = { value = c.key, text = tostring(c.name or c.key), how = c.how }
+        out[#out + 1] = { value = c.key, text = tostring(c.name or c.key), how = c.how, look = num(c.look) }
       end
     end
   elseif E.COSMETIC_KINDS[key] then
     local state = type(src.cosmetics) == 'table' and src.cosmetics or {}
     for _, r in ipairs(type(state.rows) == 'table' and state.rows or {}) do
       if type(r) == 'table' and r.kind == key and r.owned ~= true and (key ~= 'spellskin' or r.line == state.line) then
-        out[#out + 1] = { value = num(r.id), text = tostring(r.name or r.key or r.id), how = r.how }
+        out[#out + 1] = { value = num(r.id), text = tostring(r.name or r.key or r.id), how = r.how, row = r }
       end
     end
   end
@@ -197,10 +199,10 @@ function E.choices(src, key, onlyMine, search)
   local row = E.row(src, key)
   if not row then return nil end
   local all = {}
-  for _, o in ipairs(row.options) do all[#all + 1] = { value = o.value, text = o.text } end
+  for _, o in ipairs(row.options) do all[#all + 1] = { value = o.value, text = o.text, row = o.row, look = o.look } end
   if not onlyMine then
     for _, l in ipairs(E.lockedOf(src, key)) do
-      all[#all + 1] = { value = l.value, text = l.text, locked = true, how = l.how }
+      all[#all + 1] = { value = l.value, text = l.text, locked = true, how = l.how, row = l.row, look = l.look }
     end
   end
   local q = type(search) == 'string' and search:lower() or ''
