@@ -6,7 +6,11 @@
 --                                                         10 tiles, in view), name: typed in the window (any online player)
 --                     privacy {}                          ask for the own setting
 --                     privacy {allow = true | false}      set it ("Allow others to inspect me", default on)
---   server -> client  result {name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit, self, parts}
+--   server -> client  result {name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit, self, parts,
+--                              tree, and the profile fields of I.publicStats (O413; a field is left out when its system is
+--                              not loaded or the value is empty): paragon (Paragon points), title (the active name plate
+--                              title), bestiary {points, rank}, bosses {got, total}, pvp {name, tier, rating} (best placed
+--                              bracket of the PvP season), collection (score), passive {spent, total}}
 --                     equip {name, rows = [{slot, tip}], part}      parts packets follow `result`; slot 1-10 as the inventory,
 --                                                                    tip = the rich tooltip of item_tooltip_core.lua; each
 --                                                                    packet at most 8000 bytes (ChaosInspect.equipPackets),
@@ -107,6 +111,50 @@ local function achievementPoints(target)
 	return 0
 end
 
+-- the profile fields (O413), each from the system that owns it; a missing system leaves the field out
+local function profile(target)
+	local raw = {}
+	local P = ChaosParagon
+	if P and P.pointsOf then
+		raw.paragon = pcallv(P.pointsOf, target)
+	end
+	local N, TT = ChaosNameplate, ChaosTitles
+	if N and N.pick and N.choice and TT and TT.of then
+		local title = pcallv(function() return N.pick(TT.of(target), N.choice[target:getGuid()]) end)
+		raw.title = title and title.text or nil
+	end
+	local X = ChaosBestiary
+	if X and X.pointsOf then
+		raw.bestiaryPoints = pcallv(X.pointsOf, target)
+		local rank = X.rankOf and pcallv(X.rankOf, target)
+		raw.bestiaryRank = type(rank) == "table" and rank.name or nil
+	end
+	local B = ChaosBossPoints
+	if B and B.count then
+		raw.bossGot = pcallv(B.count, target)
+		raw.bossTotal = B.index and B.index.list and #B.index.list or nil
+	end
+	local S = ChaosPvpSeason
+	local bg = Chaos.battlegroundConfig
+	if S and S.viewOf and bg and bg.season then
+		local view = pcallv(S.viewOf, target:getGuid())
+		raw.pvp = I.bestPvp(view, bg.season.brackets)
+	end
+	local C = ChaosCollection
+	if C and C.scoreOf then
+		raw.collection = pcallv(function() return C.scoreOf(target:getAccountId()) end)
+	end
+	local T2 = ChaosPassiveTree
+	if T2 and T2.publicView then
+		local view = pcallv(T2.publicView, target)
+		if type(view) == "table" then
+			raw.passiveSpent = type(view.nodes) == "table" and #view.nodes or nil
+			raw.passiveTotal = view.total
+		end
+	end
+	return I.publicStats(raw)
+end
+
 local function equipment(target)
 	local equipped = {}
 	for _, slot in ipairs(I.SLOTS) do
@@ -160,13 +208,17 @@ local function inspect(player, data)
 	local packets = I.equipPackets(target:getName(), equipment(target), json.encode)
 	local voc = target:getVocation()
 	local vocId = voc and voc:getId() or 0
-	reply(player, "result", {
+	local result = {
 		name = target:getName(), level = target:getLevel(), voc = voc and voc:getName() or "", vocId = vocId,
 		ascended = ChaosClasses and ChaosClasses.isAscended(vocId) or false, guild = guildOf(target),
 		ach = achievementPoints(target), rift = riftBest(target), trials = trialsTier(target),
 		outfit = I.outfitOf(target:getOutfit()), self = target:getId() == pid, parts = #packets,
 		tree = ChaosPassiveTree ~= nil and ChaosPassiveTree.publicView ~= nil
-	})
+	}
+	for k, v in pairs(profile(target)) do
+		result[k] = v
+	end
+	reply(player, "result", result)
 	-- the personal records (records.lua, O260), in the viewer's language
 	if ChaosRecords and ChaosRecords.personalRows then
 		local okRec, rows = pcall(ChaosRecords.personalRows, target:getGuid(), player)
