@@ -344,9 +344,25 @@ function guard.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	end
 	-- a monster hits a minion as it would hit the owner (O160): x its pace damage curve; a summon of a player is no monster here
 	if attacker and attacker:isMonster() and not attacker:getMaster() and owner:isPlayer() then
-		local pm = ChaosPace and ChaosPace.damageMultOf and ChaosPace.damageMultOf(attacker) or 1
-		primaryDamage = N.minionTaken(cfg(), primaryDamage, pm)
-		secondaryDamage = N.minionTaken(cfg(), secondaryDamage, pm)
+		local gm = ChaosRift and ChaosRift.guardianHitMult and ChaosRift.guardianHitMult(attacker)
+		local gcfg = gm and ChaosRiftConfig
+		if gm and gcfg and ChaosGuardianCore then
+			-- a rift or Omen guardian (O427): no incoming factor, no pace curve, the guardian's own multiplier, and part of the
+			-- hit reaches the owner (a summon is no wall)
+			local total = (primaryDamage or 0) + (secondaryDamage or 0)
+			local own, splash = ChaosGuardianCore.minionHit(gcfg, total * gm)
+			local k = total ~= 0 and own / total or 0
+			primaryDamage, secondaryDamage = math.floor((primaryDamage or 0) * k), math.floor((secondaryDamage or 0) * k)
+			if splash > 0 and not M.splashing and doTargetCombatHealth then
+				M.splashing = true
+				doTargetCombatHealth(attacker:getId(), owner, primaryType, -splash, -splash, CONST_ME_NONE)
+				M.splashing = false
+			end
+		else
+			local pm = ChaosPace and ChaosPace.damageMultOf and ChaosPace.damageMultOf(attacker) or 1
+			primaryDamage = N.minionTaken(cfg(), primaryDamage, pm)
+			secondaryDamage = N.minionTaken(cfg(), secondaryDamage, pm)
+		end
 		M.lastFight[owner:getId()] = now()
 	end
 	if owner:isPlayer() and L.hasCond(owner, cfg().subId.boneAura) then

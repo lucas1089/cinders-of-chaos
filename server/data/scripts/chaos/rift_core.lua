@@ -23,6 +23,10 @@ local function T(lang, key, ...)
 	return string.format(key, ...)
 end
 
+if not ChaosGuardianCore then
+	dofile("data/scripts/chaos/guardian_core.lua")
+end
+
 local floor = math.floor
 
 local function clamp(v, lo, hi)
@@ -502,7 +506,7 @@ function R.effects(cfg, mods, tier)
 			fx.fragile = fx.fragile + v -- fewer lives
 		end
 	end
-	fx.packDamage = R.packDamage(cfg) -- density: pack monsters hit softer (R.monsterHit)
+	fx.packDamage = R.packDamage(cfg, tier) -- density: pack monsters hit softer (R.monsterHit)
 	return fx
 end
 
@@ -942,9 +946,17 @@ function R.timeLimit(cfg, tier)
 	return limit or cfg.timeLimit
 end
 
--- pack monster damage multiplier (the guardians keep theirs)
-function R.packDamage(cfg)
-	return R.densityOn(cfg) and cfg.density.damage or 1
+-- pack monster damage multiplier (the guardians keep theirs): density.damage, one number or {base, perTier, min} (base +
+-- perTier x (tier - 1), at least min; O427: a pack costs real healing at the tier's level)
+function R.packDamage(cfg, tier)
+	if not R.densityOn(cfg) then
+		return 1
+	end
+	local d = cfg.density.damage
+	if type(d) == "table" then
+		return math.max(d.min or 0, d.base + d.perTier * (R.clampTier(cfg, tier or 1) - 1))
+	end
+	return d
 end
 
 -- ===================================================================== party scaling
@@ -985,9 +997,10 @@ end
 -- the party part of a run's effects (after R.effects / R.applyAtlasFx): fx.damage x party damage (every rift monster
 -- and guardian), fx.partyHealth (each pack monster's extra health), fx.party (the R.party table). Omen arenas pass
 -- tier nil (no packs). Changes and returns fx.
-function R.applyParty(cfg, fx, players, tier)
+function R.applyParty(cfg, fx, players, tier, omen)
 	local ps = R.party(cfg, players)
 	fx.party = ps
+	fx.guardian = ChaosGuardianCore.damageMult(cfg, tier, omen) -- the guardian's own hits (O427, rift_config.lua guardian)
 	fx.damage = (fx.damage or 1) * ps.damage
 	fx.partyHealth = tier and R.partyMonsterHealth(cfg, tier, players) or 1
 	return fx
@@ -1052,7 +1065,8 @@ end
 
 -- ---------------------------------------------------------------- hits (third set of modifiers)
 -- T = the engine's combat types: {physical, none, brand = {fire = ..., ice = ..., energy = ...}}.
--- A rift monster hits a player: hit = {primary, ptype, secondary, stype, boss = true for a guardian}. Returns
+-- A rift monster hits a player: hit = {primary, ptype, secondary, stype, boss = true for a guardian, scripted = true for
+-- a guardian's marked attack}. Returns
 -- primary, ptype, secondary, stype, info = {crit = true, fester = amount (positive) or nil}.
 -- Order: the run's damage (Brutality, tiers above 10, party, x Dread Guardian for a guardian, x density.damage for a
 -- pack monster), Keen Fangs, the brand (extra damage of its element, in the free secondary slot, else on the primary),
@@ -1063,6 +1077,9 @@ function R.monsterHit(cfg, fx, hit, T, rand)
 	local mult = fx.damage or 1
 	if hit.boss then
 		mult = mult * (fx.boss or 1)
+		if not hit.scripted then -- a marked attack is a share of the victim's health: the kit grows by tier instead
+			mult = mult * (fx.guardian or 1)
+		end
 	else
 		mult = mult * (fx.packDamage or 1)
 	end

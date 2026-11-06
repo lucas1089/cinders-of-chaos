@@ -643,7 +643,7 @@ function M.attach(monster, key, opts)
 		return M.fights[id]
 	end
 	local name = monster:getName()
-	local profile = cfg.profiles[(key or name):lower()]
+	local profile = opts and opts.profile or cfg.profiles[(key or name):lower()]
 	if not profile then
 		return nil
 	end
