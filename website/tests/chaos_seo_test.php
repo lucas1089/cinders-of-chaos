@@ -67,11 +67,16 @@ foreach (array('<meta name="description" content="Cinders of Chaos: um RPG', '<l
 	'<script type="application/ld+json">') as $tag) {
 	check(has($h, $tag), "home head has $tag");
 }
+check(has($h, '<meta property="og:video" content="https://www.example.org/plugins/chaos/assets/media/trailer.pt-BR.mp4">')
+	&& has($h, '<meta property="og:video:type" content="video/mp4">') && has($h, '<meta property="og:video:width" content="1280">'), 'home head: og:video, the trailer of the language (O422)');
+check(!has(head(array('page' => 'highscores')), 'og:video') && !has(head(array('page' => 'index', 'get' => array('view' => '3'))), 'og:video'), 'og:video only on the front page, not on the news or other pages');
 if (preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $h, $m)) {
 	$ld = json_decode($m[1], true);
-	check(is_array($ld) && ($ld['@context'] ?? '') === 'https://schema.org' && count($ld['@graph'] ?? array()) === 3, 'JSON-LD parses: three nodes');
+	check(is_array($ld) && ($ld['@context'] ?? '') === 'https://schema.org' && count($ld['@graph'] ?? array()) === 4, 'JSON-LD parses: four nodes');
 	$types = array_column($ld['@graph'] ?? array(), '@type');
-	check($types === array('Organization', 'WebSite', 'VideoGame'), 'JSON-LD: Organization, WebSite, VideoGame');
+	check($types === array('Organization', 'WebSite', 'VideoGame', 'VideoObject'), 'JSON-LD: Organization, WebSite, VideoGame, VideoObject (the trailer, O422)');
+	check(($ld['@graph'][3]['contentUrl'] ?? '') === 'https://www.example.org/plugins/chaos/assets/media/trailer.pt-BR.mp4'
+		&& ($ld['@graph'][3]['thumbnailUrl'] ?? '') === 'https://www.example.org/plugins/chaos/assets/media/trailer.pt-BR.jpg', 'JSON-LD: the trailer, absolute, in the language of the tags');
 	check(($ld['@graph'][0]['logo'] ?? '') === 'https://www.example.org/layouts/chaos/assets/img/android-chrome-512x512.png', 'JSON-LD logo is absolute');
 	check(($ld['@graph'][0]['sameAs'][0] ?? '') === 'https://discord.example/abc', 'JSON-LD sameAs: the Discord invite');
 	check(strpos($m[1], 'aggregateRating') === false && strpos($m[1], 'review') === false, 'JSON-LD: no ratings or reviews');
@@ -277,7 +282,7 @@ check(strpos($sh, 'write_seo_files.php" robots > "$SITE/robots.txt"') !== false 
 
 // ---------------------------------------------------------------- the web server rules let the SEO files through
 $ht = (string)file_get_contents($root . '/overlay/.htaccess');
-$served = array('/robots.txt', '/sitemap.xml', '/site.webmanifest', '/favicon.ico', '/layouts/chaos/assets/img/og-image-1200x630.jpg', '/layouts/chaos/assets/img/android-chrome-512x512.png');
+$served = array('/robots.txt', '/sitemap.xml', '/site.webmanifest', '/favicon.ico', '/layouts/chaos/assets/img/og-image-1200x630.jpg', '/layouts/chaos/assets/img/android-chrome-512x512.png', '/plugins/chaos/assets/media/trailer.en.mp4', '/plugins/chaos/assets/media/shot-boss.jpg');
 if (preg_match_all('/RedirectMatch 404 "([^"]+)"/', $ht, $m)) {
 	foreach ($m[1] as $rule) {
 		foreach ($served as $u) {
@@ -286,7 +291,7 @@ if (preg_match_all('/RedirectMatch 404 "([^"]+)"/', $ht, $m)) {
 	}
 }
 if (preg_match('/<FilesMatch "([^"]+)">\s*Require all denied/', $ht, $m)) {
-	foreach (array('robots.txt', 'sitemap.xml', 'site.webmanifest', 'favicon.ico', 'og-image-1200x630.jpg') as $f) {
+	foreach (array('robots.txt', 'sitemap.xml', 'site.webmanifest', 'favicon.ico', 'og-image-1200x630.jpg', 'trailer.en.mp4', 'shot-boss.jpg') as $f) {
 		check(preg_match('#' . $m[1] . '#', $f) === 0, ".htaccess serves $f");
 	}
 }

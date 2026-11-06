@@ -303,6 +303,9 @@ jobs:
       - name: Promo montages (gen_promo_montage_test.py; plans, captions in pt-BR and en, music, seven classes; no clips)
         run: python3 -I website/tools/gen_promo_montage_test.py
 
+      - name: Website trailer, shorts and screenshots (gen_site_media.py --check; O422; files, size budgets and sha256 against media/manifest.json, no source videos needed)
+        run: python3 -I website/tools/gen_site_media.py --check
+
       - name: Live spectator renderer (spectate_render_test.py; a synthetic pair, draw order, outfits, the pair archive)
         run: python3 -I server/tools/spectate_render_test.py
 

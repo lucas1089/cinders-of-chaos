@@ -93,6 +93,7 @@ python3 -I mapeditor/tools/run_profile_test.py && python3 -I mapeditor/tools/ups
 cd unity/Core.Tests && dotnet run -c Release   # Unity prototype core (O405): protocol, map, dat/spr, a fake-server game login; unity/README.md
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
 python3 -I website/tools/gen_promo_video_test.py   # promo videos (gen_promo_video.py, docs/PROMO.md section 1): timeline, captions, pan, tempo, scene choice on synthetic data
+python3 -I website/tools/gen_site_media.py --check   # trailer, shorts and screenshots of the front page (O422): files, size budgets (total 25 MB) and sha256 against media/manifest.json; --build SRC_DIR re-encodes from the recordings (ffmpeg; not in git); chaos_media_page_test.php covers the page
 for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests
 
 # generated files must be committed up to date (CI diffs them)

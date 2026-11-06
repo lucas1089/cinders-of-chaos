@@ -1340,6 +1340,37 @@ Facebook, X): `plugins/chaos/seo_lib.php`, test `tests/chaos_seo_test.php`.
 - **Check a preview**: paste the address in a WhatsApp chat (it shows the image, the title and the description), or
   use Facebook's Sharing Debugger / X's Card Validator to refresh a cached preview after a change.
 
+## Trailer, gallery and shorts (O422)
+
+The front page shows the game: a trailer under the hero, a strip of shorts, a screenshot gallery. Code:
+`plugins/chaos/media_lib.php` (HTML and meta data), `plugins/chaos/assets/js/chaos-media.js`, the `.chaos-trailer`,
+`.chaos-shorts`, `.chaos-gallery` and `.chaos-lightbox` rules of `chaos.css`, the call in `layouts/chaos/views/index.php`.
+Test: `tests/chaos_media_page_test.php`.
+
+- **Files**: `overlay/plugins/chaos/assets/media/`, copied with the rest of the plugin by `install_site.sh` (no extra
+  step). `trailer.<lang>.mp4` (1280x720, about 4.8 MB, one minute), `short-classes|boss|rift.<lang>.mp4` (720x1280, 1.3 to
+  1.9 MB), a poster `.jpg` for each, `shot-*.jpg` (8 gallery frames, 1280 wide) and `manifest.json` (size and SHA-256).
+  `<lang>` is `en` or `pt-BR`. Total 20.8 MB; the budget is 25 MB, a trailer 6 MB, a short 3 MB.
+- **Make them**: the recordings are not in git (docs/PROMO.md). `python3 -I website/tools/gen_site_media.py --build SRC`
+  needs ffmpeg and a folder `SRC` with `montagens/` (the output of `gen_promo_montage.py`) and `rec/clips/` (the raw
+  clips the gallery frames come from). H.264 high, `-crf 30` with a `maxrate` cap, AAC 48 kb/s (the music is the game's
+  own, docs/CREDITS.md), `+faststart`. In the gallery frames the recorded test character's name is blurred (top left
+  and over its head). `--check` needs no source: files, sizes under budget, no stray file, SHA-256 as in the manifest.
+  Change a gallery frame or a time in `gen_site_media.py` (`GALLERY`), rebuild, commit the files and the manifest.
+- **Page**: the trailer section (`#trailer`) has `controls` in the markup, so it is a normal player without script.
+  The script removes them and plays it muted and looped while on screen, unless the visitor asks for reduced motion or
+  data saving; a click turns the sound and the controls on and starts over. `preload="none"` until then. The "Watch
+  the trailer" button next to Download jumps to it. The shorts are posters that play on a tap (a sideways strip on
+  phones). The gallery thumbnails are the pictures themselves (lazy, `width` and `height` set); a click opens a
+  lightbox (arrows, Escape, swipe, focus kept in it); without script the links open the picture.
+- **Language**: the video and poster files follow the visitor's language (`chaos_media_lang`: pt-BR, else English);
+  captions and headings are `chaos_t()` keys in `i18n/pt-BR.php`.
+- **Link previews**: on the front page `seo_lib.php` adds `og:video` (+ `secure_url`, type, width, height) and a
+  `VideoObject` to the JSON-LD, with the trailer of the tags' language and an absolute address. `og:image` stays the
+  share image. A file the manifest does not list is never named in the page, so a missing file leaves no broken player.
+- **Web server**: videos need no setting beyond static files; Apache and nginx send `Accept-Ranges`, which phones need to
+  seek. The Content-Security-Policy (`default-src 'self'`) already allows them.
+
 ## Beginner guide (O373)
 - `page?plugin=chaos&p=guide` ("Comece aqui" / "Start here"; `guide_lib.php`, `pages/guide.php`): the first steps of a new
   player, then every feature by the level where it opens ("Abre no nível 20" ...), then the ones of any level. Each card
