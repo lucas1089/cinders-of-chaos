@@ -8,15 +8,17 @@ Resources/FrontArt/pk_<name>/ (ignored by git). Without the secret the scene sim
 
 Steps:
   build PACKS_DIR OUT_DIR   from the extracted packs (any folder tree with the *_idle_strip*.png files below) write
-                            OUT_DIR/pk_<name>/<direction>.png, <direction>_n.png (normal map) and <direction>_e.png (emission mask)
+                            OUT_DIR/pk_<name>/idle.png (the idle animation, frames side by side, facing right), idle_w.png
+                            (each frame mirrored, facing left), and for both _n (normal map) and _e (emission mask)
   seal OUT_DIR ENC          tar.gz OUT_DIR's pk_* folders and encrypt to ENC (key from the environment variable CHAOS_ART_KEY)
   open ENC DEST             decrypt ENC and unpack its pk_* folders into DEST (CI: Resources/FrontArt); exit 0 and say so when
                             CHAOS_ART_KEY is not set
 
-A figure: the first idle frame, trimmed and set on a square canvas (the strip's frame size) with the feet on the bottom row and
-centred. The packs draw one side view facing right: it stands for the four east-ish and the north and south pictures, the mirror
-for the three west ones. The normal map is a dome over the silhouette (distance to the nearest clear pixel), the emission mask the
-glow rule of gen_front_art_emission.py.
+A figure: every idle frame, trimmed by the box around all frames (so the figure never jumps) and set on a square canvas of the
+frame's size with the feet on the bottom row and centred. The packs draw one side view facing right: it stands for the four
+east-ish and the north and south pictures, the mirror (idle_w) for the three west ones. The normal map is a dome over each frame's
+silhouette (distance to the nearest clear pixel), the emission mask the glow rule of gen_front_art_emission.py, frame by frame.
+The scene plays the frames at FPS (Unity/FrontArtScene.cs PackFps).
 
 Usage: python3 -I unity/tools/front_art_packs.py build|seal|open ...
 """
@@ -36,8 +38,6 @@ try:   # build needs Pillow; seal and open (the CI step) do not
 except ImportError:
     Image = emission = None
 
-DIRS = ["south", "south-east", "east", "north-east", "north", "north-west", "west", "south-west"]
-MIRRORED = {"south-west", "west", "north-west"}
 DOME = 4.0          # pixels from the edge to the flat top of the dome
 OPENSSL = ["openssl", "enc", "-aes-256-cbc", "-pbkdf2", "-iter", "200000", "-md", "sha256", "-pass", "env:CHAOS_ART_KEY"]
 
@@ -68,18 +68,36 @@ def frame_count(name):
     return int(m.group(1)) if m else 1
 
 
-def figure(strip, frames):
-    """The first frame of an idle strip on a square canvas of the frame's size, trimmed, feet on the bottom row, centred."""
+def frames_of(strip, frames):
+    """The frames of a strip, each on a square canvas of the frame's larger side: cropped by the box around all frames, feet on
+    the bottom row, centred."""
     w, h = strip.size
     fw = w // frames
-    fr = strip.crop((0, 0, fw, h))
+    raw = [strip.crop((k * fw, 0, (k + 1) * fw, h)) for k in range(frames)]
     size = max(fw, h)
-    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    bb = fr.getbbox()
-    if not bb:
-        return out
-    fr = fr.crop(bb)
-    out.alpha_composite(fr, ((size - fr.width) // 2, size - fr.height))
+    boxes = [r.getbbox() for r in raw if r.getbbox()]
+    if not boxes:
+        return [Image.new("RGBA", (size, size), (0, 0, 0, 0)) for _ in raw]
+    x0 = min(b[0] for b in boxes); y0 = min(b[1] for b in boxes)
+    x1 = max(b[2] for b in boxes); y1 = max(b[3] for b in boxes)
+    out = []
+    for r in raw:
+        c = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        c.alpha_composite(r.crop((x0, y0, x1, y1)), ((size - (x1 - x0)) // 2, size - (y1 - y0)))
+        out.append(c)
+    return out
+
+
+def figure(strip, frames):
+    """The first frame (frames_of)."""
+    return frames_of(strip, frames)[0]
+
+
+def side_by_side(pics, mode):
+    size = pics[0].width
+    out = Image.new(mode, (size * len(pics), size), (0, 0, 0, 0) if mode == "RGBA" else (128, 128, 255) if mode == "RGB" else 0)
+    for k, p in enumerate(pics):
+        out.paste(p, (k * size, 0))
     return out
 
 
@@ -150,12 +168,6 @@ def emission_mask(im, glow="rule"):
     return out
 
 
-def pictures(base):
-    """{direction: picture} for one figure: the drawing faces right; the west three are its mirror."""
-    mirror = base.transpose(Image.FLIP_LEFT_RIGHT)
-    return {d: (mirror if d in MIRRORED else base) for d in DIRS}
-
-
 def build(packs_dir, out_dir):
     found = {}
     for f in glob.glob(os.path.join(packs_dir, "**", "*.png"), recursive=True):
@@ -165,18 +177,16 @@ def build(packs_dir, out_dir):
         print("missing strips: " + ", ".join(missing))
         return 1
     for name, strip, _, glow in FIGURES:
-        base = figure(Image.open(found[strip]).convert("RGBA"), frame_count(strip))
+        frames = frames_of(Image.open(found[strip]).convert("RGBA"), frame_count(strip))
         d = os.path.join(out_dir, "pk_" + name)
         os.makedirs(d, exist_ok=True)
-        done = {}
-        for direction, pic in pictures(base).items():
-            key = id(pic)
-            if key not in done:
-                done[key] = (normal_map(pic), emission_mask(pic, glow))
-            pic.save(os.path.join(d, direction + ".png"), optimize=True)
-            done[key][0].save(os.path.join(d, direction + "_n.png"), optimize=True)
-            done[key][1].save(os.path.join(d, direction + "_e.png"), optimize=True)
-        print("pk_%s %dx%d" % (name, base.width, base.height))
+        for f in glob.glob(os.path.join(d, "*.png")):
+            os.remove(f)
+        for side, pics in (("idle", frames), ("idle_w", [p.transpose(Image.FLIP_LEFT_RIGHT) for p in frames])):
+            side_by_side(pics, "RGBA").save(os.path.join(d, side + ".png"), optimize=True)
+            side_by_side([normal_map(p) for p in pics], "RGB").save(os.path.join(d, side + "_n.png"), optimize=True)
+            side_by_side([emission_mask(p, glow) for p in pics], "L").save(os.path.join(d, side + "_e.png"), optimize=True)
+        print("pk_%s %d frames of %dx%d" % (name, len(frames), frames[0].width, frames[0].height))
     return 0
 
 
@@ -201,7 +211,7 @@ def safe_members(tar):
     """Only plain files directly inside a pk_<name>/ folder."""
     for m in tar.getmembers():
         parts = m.name.split("/")
-        if m.isfile() and len(parts) == 2 and re.fullmatch(r"pk_[a-z0-9_]+", parts[0]) and re.fullmatch(r"[a-z-]+(_[ne])?\.png", parts[1]):
+        if m.isfile() and len(parts) == 2 and re.fullmatch(r"pk_[a-z0-9_]+", parts[0]) and re.fullmatch(r"idle(_w)?(_[ne])?\.png", parts[1]):
             yield m
 
 

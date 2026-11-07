@@ -25,6 +25,7 @@ Shader "Chaos/FrontArtCast"
             #pragma target 3.0
             #include "UnityCG.cginc"
             sampler2D _MainTex;
+            float4 _MainTex_ST;   // the pack monsters pick an animation frame by scale and offset
             half _Strength;
             struct appdata { float4 vertex : POSITION; float2 uv : TEXCOORD0; fixed4 color : COLOR; };
             struct v2f { float4 pos : SV_POSITION; float2 uv : TEXCOORD0; fixed4 color : COLOR; };
@@ -32,7 +33,7 @@ Shader "Chaos/FrontArtCast"
             {
                 v2f o;
                 o.pos = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.color = v.color;
                 return o;
             }
