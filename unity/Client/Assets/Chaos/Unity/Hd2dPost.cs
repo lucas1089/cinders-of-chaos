@@ -47,13 +47,13 @@ namespace Chaos.Client
                     hdr = cam.allowHDR, msaaAllowed = cam.allowMSAA, clear = cam.clearFlags, background = cam.backgroundColor,
                 };
             }
-            var fogColor = new Color(0.07f, 0.05f, 0.07f);
+            var fogColor = new Color(0.10f, 0.08f, 0.12f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Exponential;
-            RenderSettings.fogDensity = lowQuality ? 0.03f : 0.022f;
+            RenderSettings.fogDensity = lowQuality ? 0.025f : 0.016f;
             RenderSettings.fogColor = fogColor;
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.30f, 0.26f, 0.30f);
+            RenderSettings.ambientLight = new Color(0.34f, 0.30f, 0.32f);
             QualitySettings.shadows = lowQuality ? ShadowQuality.HardOnly : ShadowQuality.All;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = fogColor;
@@ -104,8 +104,8 @@ namespace Chaos.Client
     public sealed class Hd2dEffect : MonoBehaviour
     {
         public bool dof = true;
-        public float bloomThreshold = 0.9f, bloomKnee = 0.5f, bloomIntensity = 0.7f;
-        public float focusHalf = 0.22f, focusFeather = 0.28f;   // sharp band is the middle 44% of the screen height
+        public float bloomThreshold = 0.8f, bloomKnee = 0.5f, bloomIntensity = 0.95f;
+        public float focusHalf = 0.14f, focusFeather = 0.22f;   // sharp band is the middle 28% of the screen height (tilt-shift)
         public float vignette = 0.35f, saturation = 1.08f, contrast = 1.05f;
         public Color tint = new Color(1.06f, 0.98f, 0.86f);      // warm
         Material mat;
@@ -148,10 +148,10 @@ namespace Chaos.Client
                 {
                     halfB = RenderTexture.GetTemporary(w, h, 0, fmt);
                     Graphics.Blit(src, half);
-                    for (int i = 0; i < 2; i++)
+                    for (int i = 0; i < 4; i++)   // a wide, soft blur: the miniature look
                     {
-                        mat.SetVector("_Dir", new Vector4(1.5f, 0, 0, 0)); Graphics.Blit(half, halfB, mat, 1);
-                        mat.SetVector("_Dir", new Vector4(0, 1.5f, 0, 0)); Graphics.Blit(halfB, half, mat, 1);
+                        mat.SetVector("_Dir", new Vector4(2.2f, 0, 0, 0)); Graphics.Blit(half, halfB, mat, 1);
+                        mat.SetVector("_Dir", new Vector4(0, 2.2f, 0, 0)); Graphics.Blit(halfB, half, mat, 1);
                     }
                     mat.SetTexture("_BlurTex", half);
                 }

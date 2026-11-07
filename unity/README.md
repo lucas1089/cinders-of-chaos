@@ -56,18 +56,20 @@ is open and the chat line has no focus, use Ctrl+F9. The UI windows are the same
 - A sprite of W x H cells keeps its footprint: anchored on its own tile's east edge, extending west (the way a 64 px item is drawn up and
   left in the classic view) and up. Upright heights are stretched by 1 / cos(pitch) so a sprite keeps its height on screen. Displacement
   and elevation of the dat are applied.
-- The game art draws height going up and to the left. A blocking or on-top item of at least 2 x 2 cells (walls, pillars, arches) is
-  sheared one tile east per cell of height, so it stands straight with its top over its base. Creatures, loose objects, one-cell-wide
-  things and light sources are not sheared (a standing torch leans on purpose in its art); a torch hung on a sheared wall follows the wall.
-  The preview never shears a light source. The synthetic demo art is drawn straight and is never sheared (`Hd2dView.StraightArt`, `Hd2d.Layout(..., slantedArt)`).
-  The preview (`hd2d_preview.py shear_of`) applies the same rule.
+- The game art draws height going up and to the left. Every upright thing, creatures included, is straightened row by row:
+  `Hd2d.Lean` measures, on the thing's first idle frame (an outfit facing south), where the middle of its art sits at each
+  height, and each upright cell is drawn in `Hd2d.Strips` strips moved east so that middle sits over the base (never leaning
+  back, at most `MaxSlant` tiles per tile up). A pillar, a torch on its pole (the flame stays over it) and a figure all stand
+  up. Profiles are measured once per type (`Hd2dView.LeanOf`). The synthetic demo art is drawn straight and is never moved
+  (`Hd2dView.StraightArt`). Without a profile (tests) `Hd2d.ShearFor` shears 2 x 2 walls and pillars one tile per cell.
+  The preview (`hd2d_preview.py lean_of`) applies the same profile.
 - Lights come from things with the dat light attribute (level = range in tiles, colour = the 8-bit 6 x 6 x 6 index, 0 means white) and from
   creatures with a light. The nearest 8 become Unity point lights (4 on mobile); the nearest 2 cast soft shadows (none on mobile). A wall light
   hangs 0.4 tile in front of its wall.
 - The camera looks at the player's tile from the south at pitch 40 degrees and a 25 degree field of view, at the smallest distance that keeps the
   whole 15 x 11 tile rectangle in the frame at the window's aspect. Walking is smooth.
 - `Unity/Hd2dView.cs` builds two dynamic meshes over the sprite atlas (floor quads, and billboards that cast shadows) every frame, sets
-  the lights and a dim cool ambient (brighter with the server's world light). `Resources/Hd2dSprite.shader` is a lit alpha-cutout shader
+  the lights and a warm dusk ambient (brighter with the server's world light). `Resources/Hd2dSprite.shader` is a lit alpha-cutout shader
   (bright texels like flames are emissive). Bloom, depth of field and fog: `Unity/Hd2dPost.cs`. Built-in render pipeline.
 - Quality: on mobile, or with PlayerPrefs `chaos.hd2d.low` = 1, shadows and depth of field are off and fewer lights are used.
 
@@ -145,7 +147,7 @@ The artifact `chaos-unity-<target>` is kept 7 days.
 
 `Assets/Chaos/Unity/Hd2dPost.cs`: `Hd2dPost.Attach(camera, lowQuality)` turns the look on, `Detach(camera)` restores the camera,
 fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the lit cutout material for billboards (point filter, mip 0, casts shadows).
-- Effects: bloom on bright pixels, tilt-shift depth of field (middle 44% of the height sharp, top and bottom blurred, by screen Y),
+- Effects: bloom on bright pixels, tilt-shift depth of field (middle 28% of the height sharp, top and bottom blurred wide, by screen Y),
   exponential fog, vignette, warm grade.
 - `lowQuality` (phones): keeps bloom and fog, drops depth of field, HDR and soft shadows.
 - Pipeline: the built-in one with our own image effect (`Hd2dEffect.OnRenderImage`), post shader in `Assets/Chaos/Shaders/`; the sprite shader `Chaos/Hd2dSprite` is the view's `Resources/Hd2dSprite.shader` (one shader of that name).

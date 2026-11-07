@@ -62,6 +62,55 @@ namespace Chaos.Core.Tests
                 && Near(Hd2d.ShearFor(Hd2dKind.OnTop, 2, 2), 1f) && Near(Hd2d.ShearFor(Hd2dKind.Decal, 2, 2), 0f),
                 "hd2d: no shear for creatures, loose objects, one-cell-wide or one-cell-high things, or flat things");
             {
+                // measured lean profile: per strip boundary, how far east the art is moved to sit over its base
+                double[] Rows(int n, Func<int, double> xAtHeight, out int[] count)
+                {
+                    var sum = new double[n]; count = new int[n];
+                    for (int y = 0; y < n; y++) { double h = n - 1 - y; sum[y] = xAtHeight((int)h) * 3; count[y] = 3; }
+                    return sum;
+                }
+                var diag = Hd2d.LeanOfRows(Rows(64, h => 60 - h * 0.9, out int[] dc), dc);
+                var post = Hd2d.LeanOfRows(Rows(64, h => 30, out int[] pc), pc);
+                var right = Hd2d.LeanOfRows(Rows(64, h => 4 + h * 0.5, out int[] rc), rc);
+                check(diag != null && diag.Length == 2 * Hd2d.Strips + 1 && diag[0] == 0f && Near(diag[7] - diag[4], 0.9f * 24 / 32f, 0.02f) && Near(diag[4], 0.9f, 0.1f),
+                    "hd2d: a line climbing up-left is moved back over its base, strip by strip: " + (diag == null ? "null" : string.Join(",", diag)));
+                check(post != null && post.All(v => v == 0f) && right != null && right.All(v => v == 0f), "hd2d: a post stays, a right lean is never pushed further");
+                check(Hd2d.LeanOfRows(Rows(8, h => 20 - h, out int[] sc2), sc2) == null, "hd2d: no profile for a speck");
+                var capLean = Hd2d.LeanOfRows(Rows(64, h => 63 - h * 3.0, out int[] fc), fc);
+                check(capLean != null && Near(capLean[1], Hd2d.MaxSlant / Hd2d.Strips), "hd2d: the lean per strip is capped");
+                // a torch: a pole climbing up-left with an upright flame on top: the flame ends over the pole's base
+                var torchLean = Hd2d.LeanOfRows(Rows(64, h => h < 32 ? 50 - h : 18, out int[] tc), tc);
+                check(torchLean != null && torchLean[3] > 0.5f && Near(torchLean[8], torchLean[6], 0.01f) && torchLean[8] < 1.05f, "hd2d: an upright flame on a leaning pole gets no extra lean: " + (torchLean == null ? "null" : string.Join(",", torchLean)));
+                // a 2 x 2 thing whose art is a diagonal bar, through Lean and the layout
+                var barType = T(t => { t.NotWalkable = true; }, 2, 2);
+                byte[] Cell(int cw, int ch)
+                {
+                    var px = new byte[32 * 32 * 4];
+                    for (int y = 0; y < 32; y++)
+                        for (int x = 0; x < 32; x++)
+                        {
+                            int gx = (1 - cw) * 32 + x, gy = (1 - ch) * 32 + y, h = 63 - gy;
+                            if (Math.Abs(gx - (63 - h)) <= 2) px[(y * 32 + x) * 4 + 3] = 255;
+                        }
+                    return px;
+                }
+                var cells = new System.Collections.Generic.Dictionary<uint, byte[]>();
+                for (int k = 0; k < barType.Idle.Sprites.Length; k++) barType.Idle.Sprites[k] = (uint)(900 + k);
+                for (int ch = 0; ch < 2; ch++) for (int cw = 0; cw < 2; cw++) cells[barType.Idle.Sprite(cw, ch, 0, 0, 0, 0, 0)] = Cell(cw, ch);
+                var bar = Hd2d.Lean(barType, false, id => cells.TryGetValue(id, out var bb) ? bb : null);
+                check(bar != null && Near(bar[4], 1f, 0.12f), "hd2d: a diagonal bar drawn across a 2 x 2 sprite is moved one tile east at one tile up: " + (bar == null ? "null" : string.Join(",", bar)));
+                var bt = new Tile(new Pos(100, 100, 7));
+                bt.Things.Add(new Thing { Item = new Item { Id = 9, Type = barType } });
+                var bp = new System.Collections.Generic.List<Hd2dPiece>();
+                var prof = new float[2 * Hd2d.Strips + 1];
+                for (int k = 0; k < prof.Length; k++) prof[k] = k * 0.25f;
+                Hd2d.LayoutTile(dat, bt, origin, stretch, bp, null, true, (t, o) => prof);
+                Hd2d.LayoutTile(dat, bt, origin, stretch, bp, null, false, (t, o) => prof);
+                var st = bp[0].Strip(0, 1, 2, Hd2d.Strips);
+                check(bp.Count == 2 && bp[0].Lean == prof && bp[1].Lean == null && Near(bp[0].OffsetAt(1.5f), 1.5f) && Near(st[0].X, 1.5f) && Near(st[3].X, 1.75f),
+                    "hd2d: the layout straightens by the measured profile in strips, never for straight art");
+            }
+            {
                 var torchType = T(t => { t.NotWalkable = true; t.LightLevel = 6; t.LightColor = 206; }, 2, 2);
                 var standing = new Tile(new Pos(100, 100, 7));
                 standing.Things.Add(new Thing { Item = new Item { Id = 7, Type = torchType } });

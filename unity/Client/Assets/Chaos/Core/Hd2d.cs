@@ -22,9 +22,11 @@
 // cells is drawn as in the classic view, anchored on the tile's east edge and extending west (x) and up (height), the
 // way a 64 px item is drawn up and to the left. The height is stretched by 1 / cos(pitch) so that the sprite keeps its
 // height on screen under the tilted camera (the floor is foreshortened on purpose, that is the look).
-// The classic sprites draw height going up and to the left (one tile west per tile up): an upright quad of a thing at
-// least two cells wide and high that blocks or is on top (walls, pillars, arches; not creatures or loose objects) is sheared one tile east per
-// cell of height, so its vertical edges come out vertical in 3D and its top sits over its base (Hd2dPiece.Shear).
+// The classic sprites draw height going up and to the left (about one tile west per tile up). Every upright quad is cut
+// into strips (Hd2d.Strips per cell) moved east as they rise by the lean profile of its own art (Hd2dPiece.Lean, measured
+// by Hd2d.Lean: the middle of each height over the base), creatures included, so walls, pillars, torches and figures stand
+// straight in 3D with their top over their base. Without a measurement (the tests,
+// the synthetic demo) the fixed rule ShearFor applies: one tile per cell for 2 x 2 walls and pillars.
 // Displacement (dat) moves a thing west by dx / 32 and up by dy / 32; elevation lifts the things above it in the stack.
 // Only the player's floor is laid out (no floors above or below).
 using System;
@@ -61,6 +63,19 @@ namespace Chaos.Core
         public int Width = 1, Height = 1;
         public float Stretch = 1f;  // upright: world height of one cell
         public float Shear;         // upright: tiles east per cell of height (undoes the classic up-left slant), 0 or 1
+        public float[] Lean;        // upright: measured offsets east per strip boundary (Hd2d.Lean); overrides Shear
+
+        /// <summary>How far east the art at `cells` cells up is moved (Lean, else Shear).</summary>
+        public float OffsetAt(float cells)
+        {
+            if (Lean == null) return cells * Shear;
+            float f = cells * Hd2d.Strips;
+            if (f <= 0) return 0f;
+            int last = Lean.Length - 1;
+            if (f >= last) return Lean[last];
+            int i = (int)f;
+            return Lean[i] + (Lean[i + 1] - Lean[i]) * (f - i);
+        }
 
         public bool Flat => Kind == Hd2dKind.Floor || Kind == Hd2dKind.Border || Kind == Hd2dKind.Decal;
         public bool CastsShadow => !Flat;
@@ -75,15 +90,24 @@ namespace Chaos.Core
                 float north = Z + h, south = north - 1f;
                 return new[] { new Vec3(west, Y, south), new Vec3(east, Y, south), new Vec3(east, Y, north), new Vec3(west, Y, north) };
             }
-            float y0 = Y + h * Stretch, y1 = y0 + Stretch;
-            float s0 = h * Shear, s1 = s0 + Shear;   // the quad leans east as it rises: the sprite's slant comes out upright
+            return Strip(w, h, 0, 1);
+        }
+
+        /// <summary>Strip k of n (from the bottom) of upright cell (w, h): the quad moves east as it rises (OffsetAt), so the
+        /// sprite's slant comes out upright.</summary>
+        public Vec3[] Strip(int w, int h, int k, int n)
+        {
+            float east = Right - w, west = east - 1f;
+            float c0 = h + k / (float)n, c1 = h + (k + 1) / (float)n;
+            float y0 = Y + c0 * Stretch, y1 = Y + c1 * Stretch;
+            float s0 = OffsetAt(c0), s1 = OffsetAt(c1);
             return new[] { new Vec3(west + s0, y0, Z), new Vec3(east + s0, y0, Z), new Vec3(east + s1, y1, Z), new Vec3(west + s1, y1, Z) };
         }
 
         /// <summary>The middle of the thing's footprint and body: the point a light or a name label hangs on.</summary>
         public Vec3 Center => Flat
             ? new Vec3(Right - Width / 2f, Y, Z - Height / 2f)
-            : new Vec3(Right - Width / 2f + Height * Shear / 2f, Y + Height * Stretch / 2f, Z);
+            : new Vec3(Right - Width / 2f + OffsetAt(Height / 2f), Y + Height * Stretch / 2f, Z);
     }
 
     public struct Hd2dLight
@@ -128,6 +152,64 @@ namespace Chaos.Core
         public static float ShearFor(Hd2dKind kind, int width, int height) =>
             width > 1 && height > 1 && (kind == Hd2dKind.Billboard || kind == Hd2dKind.OnTop) ? 1f : 0f;
 
+        public const float MaxSlant = 1.25f;
+        /// <summary>Strips per cell of an upright quad: the lean is straightened in steps of 32 / Strips pixels.</summary>
+        public const int Strips = 4;
+
+        /// <summary>The lean profile of a thing's art, measured on its first idle frame (layer 0; an outfit facing south): for
+        /// each strip boundary (Strips per cell, from the bottom) how far east, in tiles, that height is moved so the middle of
+        /// the art sits over its base. The classic art draws height up and to the left; straightened row by row, a pillar,
+        /// a torch on its pole and a figure all stand up. Never leans back, at most MaxSlant tiles per tile up; null when the
+        /// art is too small to tell. `sprite` gives a sprite's 32 x 32 RGBA, or null.</summary>
+        public static float[] Lean(ThingType t, bool outfit, Func<uint, byte[]> sprite)
+        {
+            if (t == null || t.Idle == null || t.Idle.Sprites == null) return null;
+            var g = t.Idle;
+            int W = g.Width, H = g.Height, ih = H * 32;
+            int px = outfit ? Math.Min(2, g.PatternX - 1) : 0;
+            var rowSum = new double[ih];
+            var rowCount = new int[ih];
+            for (int hh = 0; hh < H; hh++)
+                for (int ww = 0; ww < W; ww++)
+                {
+                    var rgba = sprite(g.Sprite(ww, hh, 0, px, 0, 0, 0));
+                    if (rgba == null) continue;
+                    int ox = (W - 1 - ww) * 32, oy = (H - 1 - hh) * 32;
+                    for (int y = 0; y < 32; y++)
+                        for (int x = 0; x < 32; x++)
+                            if (rgba[(y * 32 + x) * 4 + 3] >= 128) { rowSum[oy + y] += ox + x; rowCount[oy + y]++; }
+                }
+            return LeanOfRows(rowSum, rowCount);
+        }
+
+        /// <summary>The profile behind Lean: per image row (top first, 32 rows per cell) the sum of the x of its opaque pixels
+        /// and their count. Returns cells * Strips + 1 offsets, the first 0.</summary>
+        public static float[] LeanOfRows(double[] rowSum, int[] rowCount)
+        {
+            int ih = rowCount.Length, cells = Math.Max(1, ih / 32), n = cells * Strips;
+            int bottom = -1, rows = 0;
+            for (int y = 0; y < ih; y++) if (rowCount[y] > 0) { bottom = y; rows++; }
+            if (rows < 12) return null;
+            // the base: the middle of the lowest 6 opaque rows
+            double bs = 0, bc = 0;
+            for (int y = Math.Max(0, bottom - 5); y <= bottom; y++) { bs += rowSum[y]; bc += rowCount[y]; }
+            double baseX = bs / bc;
+            const int window = 4, step = 32 / Strips;
+            var off = new float[n + 1];
+            float prev = 0f;
+            for (int j = 1; j <= n; j++)
+            {
+                int yc = ih - 1 - j * step;   // the image row at this boundary
+                double s = 0, c = 0;
+                for (int y = Math.Max(0, yc - window); y <= Math.Min(ih - 1, yc + window); y++) { s += rowSum[y]; c += rowCount[y]; }
+                float want = c > 0 && yc < bottom ? (float)((baseX - s / c) / 32.0) : prev;
+                float d = Math.Max(0f, Math.Min(MaxSlant / Strips, want - prev));
+                prev += d;
+                off[j] = prev;
+            }
+            return off;
+        }
+
         /// <summary>1 / cos(pitch): the height factor of an upright sprite under a camera looking down by `pitchDeg`.</summary>
         public static float StretchFor(float pitchDeg) => 1f / (float)Math.Cos(pitchDeg * Math.PI / 180.0);
 
@@ -135,7 +217,10 @@ namespace Chaos.Core
         public static float WorldZ(Pos origin, float tileY) => -(tileY - origin.Y);
 
         /// <summary>The pieces of one tile in stack order. `drawn` gives a creature's drawn tile position (walking); null: its tile.</summary>
-        public static void LayoutTile(DatFile dat, Tile tile, Pos origin, float stretch, List<Hd2dPiece> into, Func<Creature, float[]> drawn = null, bool slantedArt = true)
+        /// `lean` (type, is an outfit) gives the measured lean profile of a thing's art (Lean); with it every upright piece,
+        /// creatures included, is straightened by its own profile. Without it the fixed rules apply (ShearFor, the torch rule).
+        public static void LayoutTile(DatFile dat, Tile tile, Pos origin, float stretch, List<Hd2dPiece> into, Func<Creature, float[]> drawn = null, bool slantedArt = true,
+                                      Func<ThingType, bool, float[]> lean = null)
         {
             float elevation = 0f;
             bool shearedBelow = false;   // a wall on this tile was sheared: a torch hung on it follows
@@ -152,6 +237,7 @@ namespace Chaos.Core
                     if (ct == null) continue;
                     var cp = Make(Hd2dKind.Creature, ct, tile.Pos, i, tx, ty, elevation, origin, stretch, TileMiddle, slantedArt);
                     cp.Creature = c;
+                    if (lean != null && slantedArt) { cp.Lean = lean(ct, c.Outfit.LookType != 0); cp.Shear = 0f; }
                     into.Add(cp);
                     continue;
                 }
@@ -162,8 +248,12 @@ namespace Chaos.Core
                 var p = Make(kind, type, tile.Pos, i, tx, ty, elevation, origin, stretch, depth, slantedArt);
                 p.Item = th.Item;
                 // a light source (a standing torch) leans on purpose in its art: sheared only when it hangs on a sheared wall
-                if (type.LightLevel > 0 && !shearedBelow) p.Shear = 0f;
-                if (p.Shear > 0f && type.LightLevel == 0) shearedBelow = true;
+                if (lean != null) { p.Lean = slantedArt && !p.Flat ? lean(type, false) : null; p.Shear = 0f; }
+                else
+                {
+                    if (type.LightLevel > 0 && !shearedBelow) p.Shear = 0f;
+                    if (p.Shear > 0f && type.LightLevel == 0) shearedBelow = true;
+                }
                 into.Add(p);
                 if (type.Elevation > 0) elevation = Math.Min(24f, elevation + type.Elevation);
             }
@@ -195,14 +285,15 @@ namespace Chaos.Core
         /// <summary>All pieces of the tiles near `origin` (the player's floor), ready to draw.</summary>
         /// `slantedArt`: the sprites are the game's, drawn in the classic slant (sheared upright); false for art drawn straight
         /// up (the synthetic demo art).
-        public static List<Hd2dPiece> Layout(World w, Pos origin, float pitchDeg, Func<Creature, float[]> drawn = null, bool slantedArt = true)
+        public static List<Hd2dPiece> Layout(World w, Pos origin, float pitchDeg, Func<Creature, float[]> drawn = null, bool slantedArt = true,
+                                             Func<ThingType, bool, float[]> lean = null)
         {
             var list = new List<Hd2dPiece>();
             float stretch = StretchFor(pitchDeg);
             foreach (var tile in w.Tiles.Values)
             {
                 if (tile.Pos.Z != origin.Z) continue;
-                LayoutTile(w.Dat, tile, origin, stretch, list, drawn, slantedArt);
+                LayoutTile(w.Dat, tile, origin, stretch, list, drawn, slantedArt, lean);
             }
             return list;
         }
