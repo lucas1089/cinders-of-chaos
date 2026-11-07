@@ -34,6 +34,152 @@ namespace Chaos.Core
         public float X, Y, Z, FaceX, FaceZ;
         public float Units;           // the picture's side in units; 0: the scene's default (48 texels, 1.5 units)
         public bool Monster;
+        public bool Walks;            // pack monsters: walks to (WalkX, WalkZ) and back (FrontArtWalk)
+        public float WalkX, WalkZ;
+    }
+
+    /// <summary>Where a patrolling figure is at time t: it stands at its spot (X, Z) facing (FaceX, FaceZ), walks to (WalkX, WalkZ),
+    /// stands there looking back, walks home. Phase shifts each figure's start so they do not move in step.</summary>
+    public static class FrontArtWalk
+    {
+        public const float Speed = 0.75f;   // units a second
+        public const float Pause = 1.4f;    // seconds standing at each end
+
+        public struct Pose { public float X, Z, FaceX, FaceZ; public bool Walking; }
+
+        /// <summary>The start shift of the i-th extra.</summary>
+        public static float Phase(int i) { return i * 1.37f; }
+
+        public static float Cycle(FaActor a)
+        {
+            return 2f * (Length(a) / Speed + Pause);
+        }
+
+        public static float Length(FaActor a)
+        {
+            float dx = a.WalkX - a.X, dz = a.WalkZ - a.Z;
+            return (float)Math.Sqrt(dx * dx + dz * dz);
+        }
+
+        public static Pose At(FaActor a, float t, float phase)
+        {
+            var p = new Pose { X = a.X, Z = a.Z, FaceX = a.FaceX, FaceZ = a.FaceZ };
+            float len = Length(a);
+            if (!a.Walks || len < 1e-4f) return p;
+            float dx = (a.WalkX - a.X) / len, dz = (a.WalkZ - a.Z) / len, go = len / Speed, cycle = 2f * (go + Pause);
+            float u = (float)((((t + phase) % cycle) + cycle) % cycle);
+            if (u < Pause) return p;                                   // at home, facing the scene
+            u -= Pause;
+            if (u < go) { float d = u * Speed; return new Pose { X = a.X + dx * d, Z = a.Z + dz * d, FaceX = dx, FaceZ = dz, Walking = true }; }
+            u -= go;
+            if (u < Pause) return new Pose { X = a.WalkX, Z = a.WalkZ, FaceX = -dx, FaceZ = -dz };   // at the far end, looking back
+            u -= Pause;
+            float back = len - u * Speed;
+            return new Pose { X = a.X + dx * back, Z = a.Z + dz * back, FaceX = -dx, FaceZ = -dz, Walking = true };
+        }
+    }
+
+    /// <summary>An attack spell: the caster plays its attack, a missile flies to the target (following it), an impact plays there.
+    /// Art: Resources/FrontArt/fx_&lt;Missile&gt;/missile.png and fx_&lt;Impact&gt;/impact.png (unity/tools/front_art_packs.py fx).</summary>
+    public struct FaSpell
+    {
+        public string Caster, Target;   // names of extras or actors
+        public string Missile, Impact;
+        public float R, G, B;           // the missile's light
+        public float Offset;            // seconds into the caster's cycle the cast starts (a walker: inside its stand at home)
+        public float Period;            // a caster that does not walk: seconds between casts
+    }
+
+    /// <summary>The state of a spell at a time: casting, the missile in flight, the impact.</summary>
+    public static class FrontArtSpells
+    {
+        public const float CastTime = 0.75f;   // the attack animation (9 frames at 12)
+        public const float Release = 0.45f;    // the missile leaves this far into the cast
+        public const float Speed = 5.5f;       // units a second
+        public const float ImpactTime = 1.0f;  // the impact animation
+        public const float Arc = 0.45f;        // the missile's rise at mid flight
+        public const float Chest = 0.42f;      // launch and hit height, times the picture's side
+
+        public struct State
+        {
+            public bool Casting, Flying, Hit;
+            public float CastU, HitU;          // 0..1 through the cast and the impact
+            public float X, Y, Z;              // the missile, or the impact's centre
+            public float DirX, DirY, DirZ;     // the missile's heading
+            public float FaceX, FaceZ;         // the caster turns to the target while casting
+        }
+
+        static bool Find(FrontArtLayout L, string name, out FaActor a, out float phase)
+        {
+            for (int i = 0; i < L.Extras.Count; i++) if (L.Extras[i].Name == name) { a = L.Extras[i]; phase = FrontArtWalk.Phase(i); return true; }
+            for (int i = 0; i < L.Actors.Count; i++) if (L.Actors[i].Name == name) { a = L.Actors[i]; phase = 0f; return true; }
+            a = default(FaActor); phase = 0f;
+            return false;
+        }
+
+        static float Size(FaActor a) { return a.Units > 0f ? a.Units : 1.5f; }
+
+        /// <summary>Where a figure is at time t (walkers follow FrontArtWalk), at chest height.</summary>
+        public static void Chest3(FrontArtLayout L, FaActor a, float phase, float t, out float x, out float y, out float z)
+        {
+            var p = FrontArtWalk.At(a, t, phase);
+            x = p.X; z = p.Z;
+            y = L.GroundY(x, z) + Chest * Size(a);
+        }
+
+        /// <summary>The seconds between two casts of this spell.</summary>
+        public static float Cycle(FrontArtLayout L, FaSpell s)
+        {
+            FaActor c; float ph;
+            if (!Find(L, s.Caster, out c, out ph)) return 1f;
+            return c.Walks ? FrontArtWalk.Cycle(c) : s.Period;
+        }
+
+        /// <summary>Seconds from release to hit for the cast that started at t0.</summary>
+        public static float Flight(FrontArtLayout L, FaSpell s, float t0)
+        {
+            FaActor c, g; float pc, pg;
+            if (!Find(L, s.Caster, out c, out pc) || !Find(L, s.Target, out g, out pg)) return 0f;
+            float ax, ay, az, bx, by, bz;
+            Chest3(L, c, pc, t0 + Release, out ax, out ay, out az);
+            Chest3(L, g, pg, t0 + Release, out bx, out by, out bz);
+            float d = (float)Math.Sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay) + (bz - az) * (bz - az));
+            return d / Speed;
+        }
+
+        public static State At(FrontArtLayout L, FaSpell s, float t)
+        {
+            var st = new State();
+            FaActor c, g; float pc, pg;
+            if (!Find(L, s.Caster, out c, out pc) || !Find(L, s.Target, out g, out pg)) return st;
+            float cycle = Cycle(L, s);
+            float k = (float)Math.Floor((t + pc - s.Offset) / cycle);
+            float t0 = k * cycle + s.Offset - pc;   // this cast's start
+            float local = t - t0;
+            float ax, ay, az, bx, by, bz;
+            Chest3(L, c, pc, t0 + Release, out ax, out ay, out az);
+            Chest3(L, g, pg, t0 + Release, out bx, out by, out bz);
+            st.FaceX = bx - ax; st.FaceZ = bz - az;
+            if (local < CastTime) { st.Casting = true; st.CastU = local / CastTime; }
+            float fly = Flight(L, s, t0);
+            if (local >= Release && local < Release + fly)
+            {
+                float f = (local - Release) / fly;
+                float tx, ty, tz;
+                Chest3(L, g, pg, t, out tx, out ty, out tz);   // the missile follows the target
+                float lift = Arc * 4f * f * (1f - f);
+                st.Flying = true;
+                st.X = ax + (tx - ax) * f; st.Y = ay + (ty - ay) * f + lift; st.Z = az + (tz - az) * f;
+                st.DirX = tx - ax; st.DirY = ty - ay + Arc * 4f * (1f - 2f * f); st.DirZ = tz - az;
+            }
+            else if (local >= Release + fly && local < Release + fly + ImpactTime)
+            {
+                st.Hit = true;
+                st.HitU = (local - Release - fly) / ImpactTime;
+                Chest3(L, g, pg, t0 + Release + fly, out st.X, out st.Y, out st.Z);
+            }
+            return st;
+        }
     }
 
     /// <summary>Which of the 8 direction pictures shows a character: the facing against the camera's yaw.</summary>
@@ -89,6 +235,8 @@ namespace Chaos.Core
         public readonly List<FaActor> Actors = new List<FaActor>();
         /// <summary>Purchased pack monsters around the four (pictures not in git: unity/tools/front_art_packs.py); the scene skips a missing one.</summary>
         public readonly List<FaActor> Extras = new List<FaActor>();
+        /// <summary>Attack spells between the figures (FrontArtSpells); the scene skips one whose art is missing.</summary>
+        public readonly List<FaSpell> Spells = new List<FaSpell>();
         public float GateX, GateZ;
 
         public FrontArtLayout(int w, int d)
@@ -332,6 +480,14 @@ namespace Chaos.Core
             // graves facing it, two cultists before the gate looking down the path ----
             Action<string, string, float, float, float, float, float> extra = (name, folder, x, z, fx, fz, units) =>
                 L.Extras.Add(new FaActor { Name = name, Folder = "pk_" + folder, X = x, Z = z, FaceX = fx, FaceZ = fz, Units = units, Monster = true });
+            // patrols: the monster walks from its spot to (wx, wz) and back on flat open ground (FrontArtWalk)
+            Action<string, float, float> patrol = (name, wx, wz) =>
+            {
+                int k = L.Extras.FindIndex(e => e.Name == name);
+                var e2 = L.Extras[k];
+                e2.Walks = true; e2.WalkX = wx; e2.WalkZ = wz;
+                L.Extras[k] = e2;
+            };
             extra("Fire demon", "fire_demon", 13.6f, 9.0f, -1f, -0.6f, 1.6f);
             extra("Winged demon", "winged_demon", 15.5f, 9.7f, -1f, -0.4f, 1.6f);
             extra("Vampire", "vampire", 13.4f, 5.0f, -1f, 0.3f, 1.6f);
@@ -346,6 +502,29 @@ namespace Chaos.Core
             extra("Ghost knight", "ghost_knight", 6.2f, 4.3f, 1f, 0.4f, 1.6f);
             extra("Red cultist", "cultist_red", 9.0f, 9.4f, -0.2f, -1f, 1.6f);
             extra("Dark cultist", "cultist_dark", 11.0f, 9.4f, 0.2f, -1f, 1.6f);
+            patrol("Fire demon", 14.6f, 9.0f);
+            patrol("Winged demon", 16.3f, 9.7f);
+            patrol("Vampire", 12.2f, 5.0f);
+            patrol("Werewolf", 16.0f, 4.0f);
+            patrol("Headless rider", 16.4f, 8.2f);
+            patrol("Frost demon", 14.7f, 5.6f);
+            patrol("Rat king", 11.6f, 3.0f);
+            patrol("Lizard mystic", 14.9f, 10.7f);
+            patrol("Ghost king", 4.6f, 8.6f);
+            patrol("Ghost knight", 6.2f, 3.0f);
+            patrol("Red cultist", 9.0f, 8.4f);
+            patrol("Dark cultist", 11.0f, 8.4f);
+            // ---- attack spells: the horde, the ghost king and the cultists at the knight and the mage; the mage answers ----
+            Action<string, string, string, string, float, float, float, float, float> spell = (caster, target, missile, impact, r, g, b, offset, period) =>
+                L.Spells.Add(new FaSpell { Caster = caster, Target = target, Missile = missile, Impact = impact, R = r, G = g, B = b, Offset = offset, Period = period });
+            spell("Fire demon", "Knight", "fireball", "fireball", 1.0f, 0.45f, 0.12f, 0.3f, 0f);
+            spell("Frost demon", "Mage", "frost", "frost", 0.35f, 0.8f, 1.0f, 0.35f, 0f);
+            spell("Lizard mystic", "Knight", "arcane", "arcane", 0.7f, 0.35f, 1.0f, 0.3f, 0f);
+            spell("Goblin shaman", "Mage", "skull_necrotic", "skull_necrotic", 0.45f, 1.0f, 0.35f, 0.6f, 4.2f);
+            spell("Red cultist", "Knight", "blood", "blood", 1.0f, 0.15f, 0.15f, 0.3f, 0f);
+            spell("Dark cultist", "Mage", "shadow", "shadow", 0.6f, 0.25f, 1.0f, 0.35f, 0f);
+            spell("Ghost king", "Knight", "skull_spirit", "skull_spirit", 0.4f, 1.0f, 0.85f, 0.3f, 0f);
+            spell("Mage", "Fire demon", "holy", "holy", 1.0f, 0.85f, 0.4f, 1.2f, 3.6f);
             foreach (var list in new[] { L.Actors, L.Extras })
                 for (int i = 0; i < list.Count; i++)
                 {

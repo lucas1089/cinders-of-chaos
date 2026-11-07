@@ -155,6 +155,88 @@ namespace Chaos.Core.Tests
             check(L.Extras.All(a => a.X > 2.5f && a.X < 16.6f && a.Z > 2.5f && a.Z < 11.5f && L.H[(int)a.X, (int)a.Z] <= 0 && !L.Masonry[(int)a.X, (int)a.Z] && Math.Abs(a.Y - L.GroundY(a.X, a.Z)) < 1e-4f), "front art: the pack monsters stand on the open ground inside the ring");
             check(everyone.All(a => everyone.All(o => ReferenceEquals(a.Name, o.Name) || (a.X - o.X) * (a.X - o.X) + (a.Z - o.Z) * (a.Z - o.Z) > 0.8f * 0.8f)), "front art: no two figures stand closer than 0.8");
             check(L.Extras.All(a => !L.Boxes.Any(bx => bx.Tag != "rubble" && a.X > bx.X0 - 0.25f && a.X < bx.X1 + 0.25f && a.Z > bx.Z0 - 0.25f && a.Z < bx.Z1 + 0.25f)), "front art: no pack monster stands in a grave, pillar, brazier, crate or the sarcophagus");
+            // patrols: open flat ground the whole way, nobody walks into anyone, the walk faces its way
+            var walkers = L.Extras.Where(a => a.Walks).ToList();
+            check(walkers.Count >= 10 && walkers.All(a => FrontArtWalk.Length(a) > 0.6f && FrontArtWalk.Length(a) < 2.0f), "front art: ten or more pack monsters patrol 0.6 to 2 units (" + walkers.Count + ")");
+            bool pathOpen = true;
+            string blocked = "";
+            foreach (var a in walkers)
+                for (int k = 0; k <= 20; k++)
+                {
+                    float x = a.X + (a.WalkX - a.X) * k / 20f, z = a.Z + (a.WalkZ - a.Z) * k / 20f;
+                    bool ok = x > 2.5f && x < 16.6f && z > 2.5f && z < 11.5f && L.H[(int)x, (int)z] <= 0 && !L.Masonry[(int)x, (int)z]
+                        && Math.Abs(L.GroundY(x, z) - a.Y) < 1e-4f
+                        && !L.Boxes.Any(bx => bx.Tag != "rubble" && x > bx.X0 - 0.25f && x < bx.X1 + 0.25f && z > bx.Z0 - 0.25f && z < bx.Z1 + 0.25f);
+                    if (!ok) { pathOpen = false; blocked = a.Name + " at " + x.ToString("0.00") + "," + z.ToString("0.00"); break; }
+                }
+            check(pathOpen, "front art: every patrol runs on flat open ground, no grave, pillar or crate in the way (" + blocked + ")");
+            float closest = float.MaxValue;
+            string pair = "";
+            for (float t = 0f; t < 60f; t += 0.1f)
+            {
+                var at = new List<FrontArtWalk.Pose>();
+                for (int i = 0; i < L.Extras.Count; i++) at.Add(FrontArtWalk.At(L.Extras[i], t, FrontArtWalk.Phase(i)));
+                foreach (var b in L.Actors) at.Add(new FrontArtWalk.Pose { X = b.X, Z = b.Z });
+                for (int i = 0; i < at.Count; i++)
+                    for (int j = i + 1; j < at.Count; j++)
+                    {
+                        float d = (float)Math.Sqrt((at[i].X - at[j].X) * (at[i].X - at[j].X) + (at[i].Z - at[j].Z) * (at[i].Z - at[j].Z));
+                        if (d < closest) { closest = d; pair = i + "/" + j + " at " + t.ToString("0.0"); }
+                    }
+            }
+            check(closest > 0.7f, "front art: walking figures keep 0.7 apart (closest " + closest.ToString("0.00") + ", " + pair + ")");
+            var w0 = walkers[0];
+            var half = FrontArtWalk.At(w0, FrontArtWalk.Pause + 0.5f * FrontArtWalk.Length(w0) / FrontArtWalk.Speed, 0f);
+            check(half.Walking && Math.Abs(half.X - (w0.X + w0.WalkX) / 2) < 1e-3f && Math.Abs(half.Z - (w0.Z + w0.WalkZ) / 2) < 1e-3f && half.FaceX * (w0.WalkX - w0.X) + half.FaceZ * (w0.WalkZ - w0.Z) > 0f, "front art walk: half way out, facing the far end");
+            var home = FrontArtWalk.At(w0, 0.5f, 0f);
+            check(!home.Walking && home.X == w0.X && home.FaceX == w0.FaceX, "front art walk: standing at home facing the scene");
+            var far = FrontArtWalk.At(w0, FrontArtWalk.Pause + FrontArtWalk.Length(w0) / FrontArtWalk.Speed + 0.5f, 0f);
+            check(!far.Walking && Math.Abs(far.X - w0.WalkX) < 1e-3f && far.FaceX * (w0.X - w0.WalkX) + far.FaceZ * (w0.Z - w0.WalkZ) > 0f, "front art walk: at the far end, looking back");
+            var back = FrontArtWalk.At(w0, FrontArtWalk.Cycle(w0) - 0.01f, 0f);
+            check(back.Walking && Math.Abs(back.X - w0.X) < 0.05f && Math.Abs(back.Z - w0.Z) < 0.05f, "front art walk: home again at the end of the cycle");
+            var still = FrontArtWalk.At(L.Actors[0], 3f, 0f);
+            check(!still.Walking && still.X == L.Actors[0].X, "front art walk: a figure without a patrol stands");
+            // attack spells: casters stand still while casting, the missile lands before the next cast, it flies from the caster to the target
+            check(L.Spells.Count >= 6, "front art: six or more attack spells (" + L.Spells.Count + ")");
+            Func<string, bool> known = n => everyone.Any(a => a.Name == n);
+            check(L.Spells.All(sp => known(sp.Caster) && known(sp.Target) && sp.Caster != sp.Target && !string.IsNullOrEmpty(sp.Missile) && !string.IsNullOrEmpty(sp.Impact)), "front art spells: casters and targets are figures of the scene");
+            string spellBad = "";
+            foreach (var sp in L.Spells)
+            {
+                var caster = everyone.First(a => a.Name == sp.Caster);
+                int ci = L.Extras.FindIndex(a => a.Name == sp.Caster);
+                float phase = ci >= 0 ? FrontArtWalk.Phase(ci) : 0f;
+                float cyc = FrontArtSpells.Cycle(L, sp);
+                if (caster.Walks && (sp.Offset < 0f || sp.Offset + FrontArtSpells.CastTime > FrontArtWalk.Pause)) spellBad += sp.Caster + " casts outside its stand at home; ";
+                if (!caster.Walks && sp.Period < FrontArtSpells.CastTime + 1f) spellBad += sp.Caster + " has no period; ";
+                bool sawCast = false, sawFly = false, sawHit = false;
+                for (float t = 0f; t < 60f; t += 0.05f)
+                {
+                    var st = FrontArtSpells.At(L, sp, t);
+                    if (st.Casting) { sawCast = true; if (FrontArtWalk.At(caster, t, phase).Walking) { spellBad += sp.Caster + " walks while casting at " + t.ToString("0.00") + "; "; break; } }
+                    if (st.Flying) { sawFly = true; if (st.Y < L.GroundY(st.X, st.Z) + 0.2f) { spellBad += sp.Caster + " missile in the ground at " + t.ToString("0.00") + "; "; break; } }
+                    if (st.Hit) sawHit = true;
+                    if (st.Flying && st.Hit) { spellBad += "flying and hit at once; "; break; }
+                }
+                if (!sawCast || !sawFly || !sawHit) spellBad += sp.Caster + " never casts, flies or hits; ";
+                for (int k = 0; k < 12; k++)
+                {
+                    float t0 = k * cyc + sp.Offset - phase;
+                    float flight = FrontArtSpells.Flight(L, sp, t0);
+                    if (flight <= 0.1f || FrontArtSpells.Release + flight + FrontArtSpells.ImpactTime > cyc - 0.05f) { spellBad += sp.Caster + " flight " + flight.ToString("0.00") + " of cycle " + cyc.ToString("0.00") + "; "; break; }
+                    var start = FrontArtSpells.At(L, sp, t0 + FrontArtSpells.Release + 0.001f);
+                    float cx, cy, cz;
+                    FrontArtSpells.Chest3(L, caster, phase, t0 + FrontArtSpells.Release, out cx, out cy, out cz);
+                    if (!start.Flying || Math.Abs(start.X - cx) > 0.05f || Math.Abs(start.Z - cz) > 0.05f) { spellBad += sp.Caster + " missile does not leave the caster; "; break; }
+                    var hit = FrontArtSpells.At(L, sp, t0 + FrontArtSpells.Release + flight + 0.01f);
+                    var target = everyone.First(a => a.Name == sp.Target);
+                    int ti = L.Extras.FindIndex(a => a.Name == sp.Target);
+                    float tx, ty, tz;
+                    FrontArtSpells.Chest3(L, target, ti >= 0 ? FrontArtWalk.Phase(ti) : 0f, t0 + FrontArtSpells.Release + flight, out tx, out ty, out tz);
+                    if (!hit.Hit || Math.Abs(hit.X - tx) > 0.05f || Math.Abs(hit.Z - tz) > 0.05f) { spellBad += sp.Caster + " impact not on the target; "; break; }
+                }
+            }
+            check(spellBad == "", "front art spells: cast at home, missile from caster to target, lands before the next cast (" + spellBad + ")");
             var brazier = L.Lights.Where(l => l.Flame).ToList();
             check(brazier.Count >= 6 && brazier.All(l => l.R > l.B + 0.4f), "front art: warm flame lights at the braziers and torches (" + brazier.Count + ")");
             check(L.Lights.Any(l => !l.Flame && l.B > l.R), "front art: a cold light too");

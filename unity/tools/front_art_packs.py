@@ -7,18 +7,21 @@ file, unity/art/front_art_packs.enc (AES-256, key in the repository secret CHAOS
 Resources/FrontArt/pk_<name>/ (ignored by git). Without the secret the scene simply leaves the extras out.
 
 Steps:
-  build PACKS_DIR OUT_DIR   from the extracted packs (any folder tree with the *_idle_strip*.png files below) write
-                            OUT_DIR/pk_<name>/idle.png (the idle animation, frames side by side, facing right), idle_w.png
-                            (each frame mirrored, facing left), and for both _n (normal map) and _e (emission mask)
-  seal OUT_DIR ENC          tar.gz OUT_DIR's pk_* folders and encrypt to ENC (key from the environment variable CHAOS_ART_KEY)
-  open ENC DEST             decrypt ENC and unpack its pk_* folders into DEST (CI: Resources/FrontArt); exit 0 and say so when
-                            CHAOS_ART_KEY is not set
+  build PACKS_DIR OUT_DIR   from the extracted packs (any folder tree with the *_idle_strip*.png and *_walk_strip*.png files
+                            below) write OUT_DIR/pk_<name>/idle.png (the idle animation, frames side by side, facing right),
+                            idle_w.png (each frame mirrored, facing left), the same for walk and for attack (when the pack
+                            has one), and for each _n (normal map) and _e (emission mask)
+  fx PROJ_DIR OUT_DIR       the spell art: OUT_DIR/fx_<name>/missile.png from the projectile pack's sheets (PROJ_DIR: its
+                            sheets/32px/projectiles; MISSILES) and fx_<name>/impact.png, a burst drawn in its colours
+  seal OUT_DIR ENC          tar.gz OUT_DIR's pk_* and fx_* folders and encrypt to ENC (key from the environment variable CHAOS_ART_KEY)
+  open ENC DEST             decrypt ENC and unpack its pk_* and fx_* folders into DEST (CI: Resources/FrontArt); exit 0 and
+                            say so when CHAOS_ART_KEY is not set
 
-A figure: every idle frame, trimmed by the box around all frames (so the figure never jumps) and set on a square canvas of the
-frame's size with the feet on the bottom row and centred. The packs draw one side view facing right: it stands for the four
+A figure: every idle and walk frame, trimmed by the box around all of them (so the figure never jumps, also when it starts
+walking) and set on a square canvas of the frame's size with the feet on the bottom row and centred. The packs draw one side view facing right: it stands for the four
 east-ish and the north and south pictures, the mirror (idle_w) for the three west ones. The normal map is a dome over each frame's
 silhouette (distance to the nearest clear pixel), the emission mask the glow rule of gen_front_art_emission.py, frame by frame.
-The scene plays the frames at FPS (Unity/FrontArtScene.cs PackFps).
+The scene plays idle at PackFps and walk at WalkFps (Unity/FrontArtScene.cs) along the patrols of Core/FrontArt.cs.
 
 Usage: python3 -I unity/tools/front_art_packs.py build|seal|open ...
 """
@@ -63,28 +66,59 @@ FIGURES = [
 ]
 
 
+def walk_name(idle_strip):
+    """The walk strip next to an idle strip: Vampire_idle_strip9.png -> Vampire_walk_strip9.png."""
+    return idle_strip.replace("_idle_", "_walk_")
+
+
+def attack_name(idle_strip):
+    """The attack strip next to an idle strip (not every figure has one: the ghosts do not)."""
+    return idle_strip.replace("_idle_", "_attack_")
+
+
 def frame_count(name):
     m = re.search(r"strip(\d+)", name)
     return int(m.group(1)) if m else 1
 
 
-def frames_of(strip, frames):
-    """The frames of a strip, each on a square canvas of the frame's larger side: cropped by the box around all frames, feet on
-    the bottom row, centred."""
+def raw_frames(strip, frames):
     w, h = strip.size
     fw = w // frames
-    raw = [strip.crop((k * fw, 0, (k + 1) * fw, h)) for k in range(frames)]
-    size = max(fw, h)
-    boxes = [r.getbbox() for r in raw if r.getbbox()]
+    return [strip.crop((k * fw, 0, (k + 1) * fw, h)) for k in range(frames)]
+
+
+def place(raws, size):
+    """Frames on square canvases of size: cropped by the box around all of them, feet on the bottom row, centred."""
+    boxes = [r.getbbox() for r in raws if r.getbbox()]
     if not boxes:
-        return [Image.new("RGBA", (size, size), (0, 0, 0, 0)) for _ in raw]
+        return [Image.new("RGBA", (size, size), (0, 0, 0, 0)) for _ in raws]
     x0 = min(b[0] for b in boxes); y0 = min(b[1] for b in boxes)
     x1 = max(b[2] for b in boxes); y1 = max(b[3] for b in boxes)
     out = []
-    for r in raw:
+    for r in raws:
         c = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         c.alpha_composite(r.crop((x0, y0, x1, y1)), ((size - (x1 - x0)) // 2, size - (y1 - y0)))
         out.append(c)
+    return out
+
+
+def frames_of(strip, frames):
+    """The frames of a strip, each on a square canvas of the frame's larger side: cropped by the box around all frames, feet on
+    the bottom row, centred."""
+    raws = raw_frames(strip, frames)
+    return place(raws, max(raws[0].size))
+
+
+def frames_of_set(strips):
+    """frames_of for several strips of one figure (idle, walk) at once: one box and one canvas size for all, so switching between
+    them keeps the feet and the size. strips: [(picture, frame count)]; returns one frame list per strip."""
+    raws = [raw_frames(s, n) for s, n in strips]
+    size = max(max(r[0].size) for r in raws)
+    every = place([f for r in raws for f in r], size)
+    out, k = [], 0
+    for r in raws:
+        out.append(every[k:k + len(r)])
+        k += len(r)
     return out
 
 
@@ -172,21 +206,109 @@ def build(packs_dir, out_dir):
     found = {}
     for f in glob.glob(os.path.join(packs_dir, "**", "*.png"), recursive=True):
         found.setdefault(os.path.basename(f), f)
-    missing = [s for _, s, _, _ in FIGURES if s not in found]
+    missing = [n for _, s, _, _ in FIGURES for n in (s, walk_name(s)) if n not in found]
     if missing:
         print("missing strips: " + ", ".join(missing))
         return 1
     for name, strip, _, glow in FIGURES:
-        frames = frames_of(Image.open(found[strip]).convert("RGBA"), frame_count(strip))
+        names = [strip, walk_name(strip)] + ([attack_name(strip)] if attack_name(strip) in found else [])
+        sets = frames_of_set([(Image.open(found[n]).convert("RGBA"), frame_count(n)) for n in names])
+        idle, walk = sets[0], sets[1]
+        attack = sets[2] if len(sets) > 2 else []
         d = os.path.join(out_dir, "pk_" + name)
         os.makedirs(d, exist_ok=True)
         for f in glob.glob(os.path.join(d, "*.png")):
             os.remove(f)
-        for side, pics in (("idle", frames), ("idle_w", [p.transpose(Image.FLIP_LEFT_RIGHT) for p in frames])):
-            side_by_side(pics, "RGBA").save(os.path.join(d, side + ".png"), optimize=True)
-            side_by_side([normal_map(p) for p in pics], "RGB").save(os.path.join(d, side + "_n.png"), optimize=True)
-            side_by_side([emission_mask(p, glow) for p in pics], "L").save(os.path.join(d, side + "_e.png"), optimize=True)
-        print("pk_%s %d frames of %dx%d" % (name, len(frames), frames[0].width, frames[0].height))
+        for anim, frames in (("idle", idle), ("walk", walk), ("attack", attack)):
+            if not frames:
+                continue
+            for side, pics in ((anim, frames), (anim + "_w", [p.transpose(Image.FLIP_LEFT_RIGHT) for p in frames])):
+                side_by_side(pics, "RGBA").save(os.path.join(d, side + ".png"), optimize=True)
+                side_by_side([normal_map(p) for p in pics], "RGB").save(os.path.join(d, side + "_n.png"), optimize=True)
+                side_by_side([emission_mask(p, glow) for p in pics], "L").save(os.path.join(d, side + "_e.png"), optimize=True)
+        print("pk_%s idle %d, walk %d, attack %d frames of %dx%d" % (name, len(idle), len(walk), len(attack), idle[0].width, idle[0].height))
+    return 0
+
+
+# spell art for the casters (Core/FrontArt.cs FaSpell): fx_<name>/missile.png is the projectile pack's sheet as it is (8 rows of
+# directions E, SE, S, SW, W, NW, N, NE; 8 frames of 64 x 64 side by side) and fx_<name>/impact.png a burst drawn here in the
+# missile's own colours (IMPACT_FRAMES square frames of 128, side by side). Pack: docs/CREDITS.md "Projectiles" (32px renders).
+MISSILES = [
+    ("fireball", "proj_fireball", "hellfire"),
+    ("frost", "proj_frost_shard", "frost"),
+    ("arcane", "proj_arcane_missile", "arcane"),
+    ("skull_necrotic", "proj_soul_skull", "necrotic"),
+    ("skull_spirit", "proj_soul_skull", "spirit"),
+    ("blood", "proj_shadow_bolt", "blood"),
+    ("shadow", "proj_shadow_bolt", "shadow"),
+    ("holy", "proj_holy_orb", "holy"),
+]
+IMPACT_FRAMES = 12
+
+
+def palette(sheet):
+    """Three colours of a missile: its hot core (the brightest), its body and its rim (the darker opaque pixels)."""
+    px = [p for p in sheet.getdata() if p[3] >= 160]
+    if not px:
+        return [(255, 255, 255), (200, 200, 200), (120, 120, 120)]
+    px.sort(key=lambda p: p[0] + p[1] + p[2])
+    pick = lambda q: tuple(px[min(len(px) - 1, int(q * len(px)))][:3])
+    return [pick(0.97), pick(0.7), pick(0.35)]
+
+
+def impact_strip(sheet):
+    """A burst in the missile's colours: a flash that shrinks, a ring that grows and thins, sparks that fly out and fade. Drawn
+    on 64 x 64 and doubled (hard pixels like the packs), IMPACT_FRAMES frames side by side."""
+    import math
+    core, body, rim = palette(sheet)
+    small = 64
+    out = Image.new("RGBA", (small * 2 * IMPACT_FRAMES, small * 2), (0, 0, 0, 0))
+    sparks = [(k * 2.399963 % (2 * math.pi), 0.6 + 0.4 * ((k * 7919) % 13) / 12.0) for k in range(14)]
+    for f in range(IMPACT_FRAMES):
+        u = f / (IMPACT_FRAMES - 1.0)
+        im = Image.new("RGBA", (small, small), (0, 0, 0, 0))
+        px = im.load()
+        c = small / 2.0 - 0.5
+        flash = 9.0 * (1.0 - u) ** 1.3 + (2.0 if u < 0.9 else 0.0)
+        ring = 6.0 + 22.0 * u ** 0.7
+        width = 4.0 * (1.0 - u) + 1.0
+        for y in range(small):
+            for x in range(small):
+                d = math.hypot(x - c, y - c)
+                if d <= flash:
+                    px[x, y] = core + (255,) if d < flash * 0.55 else body + (255,)
+                elif abs(d - ring) <= width / 2 and u < 0.95:
+                    px[x, y] = (body if abs(d - ring) < width / 4 else rim) + (int(255 * (1.0 - u * 0.6)),)
+        for a, sp in sparks:
+            r = (8.0 + 24.0 * sp) * u ** 0.6 + 3.0
+            if u > 0.92:
+                continue
+            sx, sy = int(round(c + math.cos(a) * r)), int(round(c + math.sin(a) * r))
+            size = 2 if u < 0.5 else 1
+            for dy in range(size):
+                for dx in range(size):
+                    if 0 <= sx + dx < small and 0 <= sy + dy < small:
+                        px[sx + dx, sy + dy] = core + (255,)
+        out.paste(im.resize((small * 2, small * 2), Image.NEAREST), (f * small * 2, 0))
+    return out
+
+
+def build_fx(proj_dir, out_dir):
+    """fx_<missile>/missile.png from the projectile sheets and fx_<missile>/impact.png drawn in its colours."""
+    for name, proj, variant in MISSILES:
+        src = os.path.join(proj_dir, proj, variant, "%s_%s_main.png" % (proj, variant))
+        if not os.path.isfile(src):
+            print("missing " + src)
+            return 1
+        im = Image.open(src).convert("RGBA")
+        if im.size != (512, 512):
+            print("%s: expected 8 x 8 frames of 64, got %s" % (src, im.size))
+            return 1
+        d = os.path.join(out_dir, "fx_" + name)
+        os.makedirs(d, exist_ok=True)
+        im.save(os.path.join(d, "missile.png"), optimize=True)
+        impact_strip(im).save(os.path.join(d, "impact.png"), optimize=True)
+    print("fx: %d missiles with their impacts" % len(MISSILES))
     return 0
 
 
@@ -196,7 +318,7 @@ def seal(out_dir, enc):
         return 1
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz", format=tarfile.PAX_FORMAT) as tar:
-        for d in sorted(glob.glob(os.path.join(out_dir, "pk_*"))):
+        for d in sorted(glob.glob(os.path.join(out_dir, "pk_*")) + glob.glob(os.path.join(out_dir, "fx_*"))):
             for f in sorted(os.listdir(d)):
                 info = tar.gettarinfo(os.path.join(d, f), arcname=os.path.basename(d) + "/" + f)
                 info.mtime = 0; info.uid = info.gid = 0; info.uname = info.gname = ""
@@ -208,10 +330,14 @@ def seal(out_dir, enc):
 
 
 def safe_members(tar):
-    """Only plain files directly inside a pk_<name>/ folder."""
+    """Only plain picture files directly inside a pk_<name>/ or fx_<name>/ folder."""
     for m in tar.getmembers():
         parts = m.name.split("/")
-        if m.isfile() and len(parts) == 2 and re.fullmatch(r"pk_[a-z0-9_]+", parts[0]) and re.fullmatch(r"idle(_w)?(_[ne])?\.png", parts[1]):
+        if not (m.isfile() and len(parts) == 2):
+            continue
+        if re.fullmatch(r"pk_[a-z0-9_]+", parts[0]) and re.fullmatch(r"(idle|walk|attack)(_w)?(_[ne])?\.png", parts[1]):
+            yield m
+        elif re.fullmatch(r"fx_[a-z0-9_]+", parts[0]) and parts[1] in ("missile.png", "impact.png"):
             yield m
 
 
@@ -234,6 +360,8 @@ def open_(enc, dest):
 def main(argv):
     if len(argv) == 3 and argv[0] == "build":
         return build(argv[1], argv[2])
+    if len(argv) == 3 and argv[0] == "fx":
+        return build_fx(argv[1], argv[2])
     if len(argv) == 3 and argv[0] == "seal":
         return seal(argv[1], argv[2])
     if len(argv) == 3 and argv[0] == "open":
