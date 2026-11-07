@@ -35,6 +35,9 @@ namespace Chaos.Client
 
         IEnumerator Run()
         {
+            // xvfb reports a 0 Hz screen: no vsync, so frames never wait on a swap
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = 30;
             Debug.Log("chaos hd2d shot: " + SystemInfo.graphicsDeviceType + ", " + SystemInfo.graphicsDeviceName + ", " + SystemInfo.graphicsDeviceVersion);
             int code = 0;
             var body = Body();
@@ -63,6 +66,7 @@ namespace Chaos.Client
             string source = Demo(out World world, out SprFile spr);
             Debug.Log("chaos hd2d shot: art " + source);
             var atlas = new SpriteAtlas(spr);
+            Debug.Log("chaos hd2d shot: atlas ready");
 
             var camGo = new GameObject("Camera");
             var cam = camGo.AddComponent<Camera>();
@@ -80,9 +84,9 @@ namespace Chaos.Client
             cam.orthographic = true;
             cam.orthographicSize = ChaosApp.ViewTilesH / 2f;
             cam.transform.SetPositionAndRotation(new Vector3(0.5f, -0.5f, -10), Quaternion.identity);
-            yield return null; yield return null; yield return null;
-            yield return new WaitForEndOfFrame();
+            for (int i = 0; i < 3; i++) { yield return null; Debug.Log("chaos hd2d shot: classic frame " + i); }
             Save(cam, tex, "classic.png");
+            Debug.Log("chaos hd2d shot: wrote classic.png");
 
             // HD-2D: the same world in the 3D scene
             map.SetVisible(false);
@@ -93,8 +97,7 @@ namespace Chaos.Client
             hd.Atlas = atlas;
             hd.Cam = cam;
             hdGo.SetActive(true);
-            yield return null; yield return null; yield return null; yield return null;
-            yield return new WaitForEndOfFrame();
+            for (int i = 0; i < 4; i++) { yield return null; Debug.Log("chaos hd2d shot: hd2d frame " + i); }
             Save(cam, tex, "hd2d.png");
             Debug.Log("chaos hd2d shot: wrote classic.png and hd2d.png to " + OutDir);
         }
