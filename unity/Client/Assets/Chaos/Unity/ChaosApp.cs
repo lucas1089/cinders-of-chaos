@@ -234,8 +234,31 @@ namespace Chaos.Client
             screen = Screen.Characters;
         }
 
+        FrontArtScene frontArt;   // F11: the front-art test scene (FrontArtScene.cs), offline, on its own camera
+        Camera frontCam;
+
+        /// <summary>F11 opens the front-art test scene on its own camera over the screen, F11 again closes it. The mouse wheel zooms.</summary>
+        void ToggleFrontArt()
+        {
+            if (frontArt != null)
+            {
+                Destroy(frontArt.gameObject);
+                if (frontCam != null) Destroy(frontCam.gameObject, 0.2f);   // after the scene gave the camera's look back
+                frontArt = null; frontCam = null;
+                cam.enabled = true;
+                return;
+            }
+            var cg = new GameObject("Front art camera");
+            frontCam = cg.AddComponent<Camera>();
+            frontCam.clearFlags = CameraClearFlags.SolidColor;
+            frontCam.depth = cam.depth + 1;
+            cam.enabled = false;
+            frontArt = FrontArtScene.Open(frontCam, Hd2dView.LowQuality, true);
+        }
+
         void Update()
         {
+            if (Input.GetKeyDown(KeyCode.F11) && !chatFocused) ToggleFrontArt();
             if (screen != Screen.Game || session == null) return;
             session.Poll();
             if (session.Closed != null) { Leave(session.Closed); return; }
