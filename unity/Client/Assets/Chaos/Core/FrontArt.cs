@@ -140,7 +140,7 @@ namespace Chaos.Core
             Add(Box(FaTex.Cobble, x, y + 0.74f, z - 0.33f, 0.58f, 0.16f, 0.08f, 0f, 0.5f, seed + 5, "brazier"));
             Add(Box(FaTex.Cobble, x, y + 0.74f, z + 0.33f, 0.58f, 0.16f, 0.08f, 0f, 0.5f, seed + 6, "brazier"));
             Add(Box(FaTex.Coal, x, y + 0.74f, z, 0.56f, 0.07f, 0.56f, 12f, 1f, seed + 7, "coal"));
-            FlameLight(x, y + 1.25f, z, x, y + 0.81f, z, 1f, 8.5f, 2.3f, seed);
+            FlameLight(x, y + 1.25f, z, x, y + 0.81f, z, 1f, 6.5f, 1.5f, seed);
         }
 
         void Torch(float x, float y, float z, int seed)

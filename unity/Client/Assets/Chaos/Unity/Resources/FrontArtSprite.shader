@@ -12,7 +12,8 @@ Shader "Chaos/FrontArtSprite"
         _Cutoff ("Alpha cutoff", Range(0, 1)) = 0.5
         _Wrap ("Wrap", Range(0, 1)) = 0.5
         _Bend ("Bend up", Range(0, 1)) = 0.55
-        _Fill ("Warm fill", Range(0, 0.5)) = 0.08
+        _Fill ("Warm fill", Range(0, 0.5)) = 0.05
+        _PointScale ("Point light scale", Range(0, 1)) = 0.45
     }
     SubShader
     {
@@ -22,7 +23,7 @@ Shader "Chaos/FrontArtSprite"
         #pragma target 3.0
         #pragma surface surf FrontSprite alphatest:_Cutoff addshadow
         sampler2D _MainTex;
-        half _Wrap, _Bend, _Fill;
+        half _Wrap, _Bend, _Fill, _PointScale;
 
         struct SurfaceOutputFS
         {
@@ -52,7 +53,14 @@ Shader "Chaos/FrontArtSprite"
         {
             half d = saturate((dot(s.N, lightDir) + _Wrap) / (1.0 + _Wrap));
             half4 c;
-            c.rgb = s.Albedo * _LightColor0.rgb * (d * atten);
+            half3 l = _LightColor0.rgb * (d * atten);
+            #if defined(POINT) || defined(POINT_COOKIE) || defined(SPOT)
+            // a flame facing the picture lights all of it at once (a card has no turned-away side): scale it down and roll off the
+            // top so a figure next to a brazier keeps its colours instead of burning to white
+            l *= _PointScale;
+            l = l / (1.0 + 0.6 * l);
+            #endif
+            c.rgb = s.Albedo * l;
             c.a = s.Alpha;
             return c;
         }

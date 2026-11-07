@@ -259,11 +259,11 @@ namespace Chaos.Client
             moon = mgo.AddComponent<Light>();
             moon.type = LightType.Directional;
             moon.color = new Color(0.55f, 0.67f, 1.0f);
-            moon.intensity = 1.15f;
+            moon.intensity = 1.5f;
             moon.shadows = LowQuality ? LightShadows.Hard : LightShadows.Soft;
-            moon.shadowStrength = 0.9f;
-            moon.shadowBias = 0.03f;
-            moon.shadowNormalBias = 0.45f;
+            moon.shadowStrength = 1f;
+            moon.shadowBias = 0.02f;
+            moon.shadowNormalBias = 0.25f;
             moon.shadowNearPlane = 0.5f;
             moon.shadowResolution = LightShadowResolution.FromQualitySettings;
             if (!LowQuality) moon.shadowCustomResolution = 2048;
@@ -357,7 +357,7 @@ namespace Chaos.Client
                 uv.Add(new Vector4(0, 0, 0, strength)); uv.Add(new Vector4(1, 0, 0, strength)); uv.Add(new Vector4(1, 1, 0, strength)); uv.Add(new Vector4(0, 1, 0, strength));
                 t.Add(i); t.Add(i + 3); t.Add(i + 2); t.Add(i); t.Add(i + 2); t.Add(i + 1);
             };
-            foreach (var a in Layout.Actors) blob(a.X, a.Y, a.Z, 0.62f, 0.36f, 0.7f);
+            foreach (var a in Layout.Actors) blob(a.X, a.Y, a.Z, 0.62f, 0.36f, 0.9f);
             foreach (var b in Layout.Boxes)
             {
                 if (b.Tag == null || b.Tag == "rubble" || b.Tag == "coal" || b.Tag == "torch" || b.Tag == "gate") continue;
@@ -401,7 +401,7 @@ namespace Chaos.Client
             QualitySettings.pixelLightCount = Mathf.Max(oldPixelLights, LowQuality ? 4 : 8);
             QualitySettings.shadows = LowQuality ? ShadowQuality.HardOnly : ShadowQuality.All;
             QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
-            QualitySettings.shadowCascades = 0;
+            QualitySettings.shadowCascades = 1;
             QualitySettings.shadowDistance = 70f;
             QualitySettings.shadowProjection = ShadowProjection.StableFit;
             if (Cam == null) return;
@@ -434,10 +434,10 @@ namespace Chaos.Client
             if (fx == null) return;
             fx.focusHalf = close ? 0.20f : 0.13f;
             fx.focusFeather = close ? 0.26f : 0.30f;
-            fx.bloomThreshold = 0.85f;
+            fx.bloomThreshold = 1.0f;
             fx.bloomKnee = 0.5f;
-            fx.bloomIntensity = 1.15f;
-            fx.exposure = LowQuality ? 1.5f : 1.2f;
+            fx.bloomIntensity = 0.9f;
+            fx.exposure = LowQuality ? 1.25f : 1.0f;
             fx.vignette = 0.5f;
             fx.grain = 0.035f;
             fx.saturation = 1.1f;
