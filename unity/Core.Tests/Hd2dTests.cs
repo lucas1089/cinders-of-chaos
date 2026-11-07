@@ -161,6 +161,26 @@ namespace Chaos.Core.Tests
             var wide = Hd2dCamera.ForTile(100, 100, origin, 15f / 11f, 40f, 25f, margin: 1f);
             check(wide.Distance > cam.Distance, "hd2d: a margin backs the camera off");
 
+            // ---- contact shadows and wall ambient occlusion
+            {
+                var gp = new System.Collections.Generic.List<Hd2dPiece>
+                {
+                    new Hd2dPiece { Kind = Hd2dKind.Floor, Right = 1f, Z = 0f, Width = 1, Height = 1 },
+                    new Hd2dPiece { Kind = Hd2dKind.Creature, Right = 5f, Z = -2.5f, Width = 1, Height = 1, Stretch = 1.3f, Y = 0f },
+                    new Hd2dPiece { Kind = Hd2dKind.Object, Right = 3f, Z = -1.5f, Width = 1, Height = 1, Stretch = 1.3f, Y = 0.13f },
+                    new Hd2dPiece { Kind = Hd2dKind.Billboard, Right = 8f, Z = -3f, Width = 2, Height = 2, Stretch = 1.3f, Y = 0f },
+                };
+                var blobs = Hd2d.ContactShadows(gp);
+                check(blobs.Count == 3, "hd2d ground: one blob per upright piece, none for the floor: " + blobs.Count);
+                check(Near(blobs[0].X, 4.5f) && blobs[0].Z < -2.5f && blobs[0].Z > -2.6f && Near(blobs[0].RadiusZ, blobs[0].RadiusX * Hd2dGroundMath.Flatten), "hd2d ground: a creature blob sits under its feet, flattened");
+                check(blobs[0].Strength > blobs[1].Strength && blobs[1].Strength > blobs[2].Strength, "hd2d ground: creatures darker than objects, objects than walls");
+                check(Near(blobs[2].X, 7f) && Near(blobs[2].RadiusX, 2 * Hd2dGroundMath.WidthShare) && blobs[2].Z < -3f, "hd2d ground: a 2 wide wall blob is twice as wide, in front of the wall");
+                check(blobs[1].Y > blobs[0].Y && Near(blobs[1].Y, 0.1f + Hd2dGroundMath.Lift), "hd2d ground: an elevated object's blob follows its floor height");
+                var ao = Hd2d.WallAo(gp);
+                check(ao.Count == 1 && Near(ao[0].X0, 6f) && Near(ao[0].X1, 8f) && Near(ao[0].ZWall, -3f) && ao[0].Depth > 0f, "hd2d ground: a wall strip covers its footprint along its base");
+                check(Hd2d.ContactShadows(new Hd2dPiece[0]).Count == 0 && Hd2d.WallAo(new Hd2dPiece[0]).Count == 0, "hd2d ground: no pieces, no shadows");
+            }
+
             // ---- the synthetic demo room: real dat and spr bytes
             var demo = Hd2dDemo.Synthetic();
             check(demo.Dat.Item(105).LightLevel == 6 && demo.Dat.Item(105).LightColor == 206 && demo.Dat.Item(103).Idle.Width == 2, "hd2d demo: dat holds the torch light and 2 x 2 walls");

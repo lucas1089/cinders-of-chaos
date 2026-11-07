@@ -248,7 +248,65 @@ namespace Chaos.Core
             return all;
         }
 
+        public static List<Hd2dBlob> ContactShadows(IEnumerable<Hd2dPiece> pieces) => Hd2dGroundMath.ContactShadows(pieces);
+        public static List<Hd2dAoStrip> WallAo(IEnumerable<Hd2dPiece> pieces) => Hd2dGroundMath.WallAo(pieces);
+
         static float Dist2(Vec3 a, Vec3 b) { var d = a - b; return Vec3.Dot(d, d); }
+    }
+
+    /// <summary>A soft dark ellipse on the floor (world units: x east, z north). Strength 0..1 is the alpha at its middle.</summary>
+    public struct Hd2dBlob
+    {
+        public float X, Y, Z, RadiusX, RadiusZ, Strength;
+        public override string ToString() => "blob (" + X.ToString("0.###") + ", " + Z.ToString("0.###") + ") r " + RadiusX.ToString("0.###") + " x " + RadiusZ.ToString("0.###") + " s " + Strength.ToString("0.##");
+    }
+
+    /// <summary>A gradient strip on the floor along the base of a wall: darkest at the wall (z = ZWall), fading `Depth` tiles south.</summary>
+    public struct Hd2dAoStrip
+    {
+        public float X0, X1, Y, ZWall, Depth, Strength;
+    }
+
+    public static class Hd2dGroundMath
+    {
+        public const float CreatureStrength = 0.55f, ObjectStrength = 0.38f, WallBlobStrength = 0.28f, AoStrength = 0.5f, AoDepth = 0.45f;
+        /// <summary>A blob sits this far above the floor of its piece (clears borders and decals, whose stack bias is 0.0015 per entry).</summary>
+        public const float Lift = 0.03f;
+        /// <summary>The blob of a creature or object is this fraction of its width, and RadiusZ is this fraction of RadiusX (a flattened ellipse).</summary>
+        public const float WidthShare = 0.46f, Flatten = 0.6f;
+
+        static float FloorY(Hd2dPiece p) => p.Stretch > 0f ? p.Y / p.Stretch : p.Y;
+
+        /// <summary>One blob under every upright piece (creatures darker, then objects, billboards softest), scaled to the footprint width.
+        /// Flat pieces and empty ones give none. The blob is centred a little south of the plane the sprite stands in, under its feet.</summary>
+        public static List<Hd2dBlob> ContactShadows(IEnumerable<Hd2dPiece> pieces)
+        {
+            var list = new List<Hd2dBlob>();
+            foreach (var p in pieces)
+            {
+                if (p.Flat || p.Width <= 0 || p.Kind == Hd2dKind.None) continue;
+                float strength = p.Kind == Hd2dKind.Creature ? CreatureStrength
+                    : p.Kind == Hd2dKind.Billboard ? WallBlobStrength : ObjectStrength;
+                float rx = Math.Max(0.2f, p.Width * WidthShare);
+                float rz = rx * Flatten;
+                // a billboard stands on the back edge of its tile: its blob reaches out in front of it; others stand mid tile
+                float z = p.Z - (p.Kind == Hd2dKind.Billboard ? rz * 0.5f : 0.04f);
+                list.Add(new Hd2dBlob { X = p.Right - p.Width / 2f, Y = FloorY(p) + Lift, Z = z, RadiusX = rx, RadiusZ = rz, Strength = strength });
+            }
+            return list;
+        }
+
+        /// <summary>A strip along the foot of every Billboard piece (walls, pillars, trees): the floor in front of its footprint is darkened.</summary>
+        public static List<Hd2dAoStrip> WallAo(IEnumerable<Hd2dPiece> pieces)
+        {
+            var list = new List<Hd2dAoStrip>();
+            foreach (var p in pieces)
+            {
+                if (p.Kind != Hd2dKind.Billboard || p.Width <= 0) continue;
+                list.Add(new Hd2dAoStrip { X0 = p.Right - p.Width, X1 = p.Right, Y = FloorY(p) + Lift * 0.5f, ZWall = p.Z, Depth = AoDepth, Strength = AoStrength });
+            }
+            return list;
+        }
     }
 
     public struct Hd2dCameraPose
