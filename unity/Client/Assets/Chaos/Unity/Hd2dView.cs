@@ -48,6 +48,7 @@ namespace Chaos.Client
         }
 
         Batch flat, upright;
+        Hd2dGround ground;   // contact shadows and wall ambient occlusion (Hd2dGround.cs)
         Material material;
         readonly List<Light> lights = new List<Light>();
         readonly Vector3 upNormal = Vector3.up;
@@ -82,6 +83,7 @@ namespace Chaos.Client
             material.SetFloat("_Cutoff", 0.5f);
             flat = NewBatch("floor", false);
             upright = NewBatch("upright", true);
+            ground = new Hd2dGround(transform);
         }
 
         void OnEnable()
@@ -96,7 +98,7 @@ namespace Chaos.Client
             QualitySettings.pixelLightCount = Math.Max(oldPixelLights, MaxLights);
             QualitySettings.shadowDistance = 60f;
             RenderSettings.ambientMode = AmbientMode.Flat;
-            if (flat != null) { flat.Renderer.enabled = true; upright.Renderer.enabled = true; }
+            if (flat != null) { flat.Renderer.enabled = true; upright.Renderer.enabled = true; ground.Enabled = true; }
             if (Cam != null) Hd2dPost.Attach(Cam, LowQuality);
             if (Particles == null) { var pg = new GameObject("particles"); pg.transform.SetParent(transform, false); Particles = pg.AddComponent<Hd2dParticles>(); }
             Particles.Cam = Cam;
@@ -111,7 +113,7 @@ namespace Chaos.Client
                 QualitySettings.shadows = oldShadows; QualitySettings.pixelLightCount = oldPixelLights; QualitySettings.shadowDistance = oldShadowDistance;
                 saved = false;
             }
-            if (flat != null) { flat.Renderer.enabled = false; upright.Renderer.enabled = false; }
+            if (flat != null) { flat.Renderer.enabled = false; upright.Renderer.enabled = false; ground.Enabled = false; }
             foreach (var l in lights) if (l != null) l.enabled = false;
             if (Cam != null) Hd2dPost.Detach(Cam);
             if (Particles != null) Particles.enabled = false;
@@ -172,6 +174,7 @@ namespace Chaos.Client
                 else AddItem(piece);
             }
             flat.Upload(); upright.Upload();
+            ground.Build(pieces);
 
             var pose = Hd2dCamera.ForTile(pd[0], pd[1], origin, Cam.aspect, Pitch, Fov);
             LastPose = pose;
