@@ -69,7 +69,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Magic VFX Spells & Impacts**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: spell effects; since pair 36 every impact and circle (one colour each) and our procedural hits redrawn with them
+  - Used for: spell effects; since pair 36 every impact and circle (one colour each) and our procedural hits redrawn with them; the impacts of the attack spells in the Unity front-art scene (shipped encrypted)
 - **Auras & Buffs**
   - Author: WsT
   - Licence: purchased; credit not required
@@ -81,7 +81,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Projectiles**
   - Author: WsT
   - Licence: purchased; credit not required; no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
-  - Used for: missiles; since pair 36 our procedural and the stock element missiles redrawn with them; since pair 41 (Projectiles 32px, the pack's native 32 px renders) the same missiles redrawn from those and three more appended; since pair 42 six more arrows and spears redrawn in place and fifteen more variants in free missile slots
+  - Used for: missiles; since pair 36 our procedural and the stock element missiles redrawn with them; since pair 41 (Projectiles 32px, the pack's native 32 px renders) the same missiles redrawn from those and three more appended; since pair 42 six more arrows and spears redrawn in place and fifteen more variants in free missile slots; the missiles of the attack spells in the Unity front-art scene (shipped encrypted)
 - **Fields & Traps**
   - Author: WsT
   - Licence: purchased; credit not required

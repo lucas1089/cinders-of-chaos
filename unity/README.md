@@ -312,12 +312,20 @@ The ideas follow the MIT-licensed Luminati engine (docs/CREDITS.md); the code is
   ground silhouettes (`FrontArtCast` reads `_MainTex_ST`) all follow. 12 of them patrol (`FaActor.Walks`, `FrontArtWalk` in
   Core): stand at home facing the scene, walk to `WalkX, WalkZ` at 0.75 units a second, stand there looking back, walk home;
   a start shift per figure. Their contact blobs move with them. Core tests: every patrol on flat open ground clear of graves,
-  pillars and crates, figures 0.7 apart at every tenth of a second over a minute. `Hd2dShot` adds
-  `front_art_anim_00..39.png`, the east horde over five seconds. `seal OUT ENC` encrypts,
+  pillars and crates, figures 0.7 apart at every tenth of a second over a minute. Attack spells (`Layout.Spells`, `FaSpell`,
+  `FrontArtSpells` in Core): the horde, the ghost king and the cultists cast at the knight and the mage, the mage answers at the
+  fire demon. A walker casts while it stands at home: it turns to the target and plays its pack attack strip (`attack.png`; the
+  ghosts have none and stay idle), the missile leaves at 0.45 s, flies at 5.5 units a second in a small arc following the
+  target, and the impact plays on the target for a second; a point light in the spell's colour travels with the missile and
+  flashes on the hit. Art: `front_art_packs.py fx PROJ_DIR IMPACT_DIR OUT` writes `fx_<name>/missile.png` (the projectile
+  pack's sheet: 8 direction rows E, SE, S, SW, W, NW, N, NE, 8 frames of 64; the row follows the missile's heading on screen)
+  and `fx_<name>/impact.png` (a strip of 128 x 128 frames), sealed into the same `.enc`. Shader `FrontArtSpell` (premultiplied,
+  brightened for the bloom). Core tests: casters stand while casting, the missile leaves the caster and lands on the target,
+  before the next cast, never in the ground. `Hd2dShot` adds `front_art_anim_00..39.png`, the east horde over five seconds. `seal OUT ENC` encrypts,
   `open ENC Resources/FrontArt` is the step of `unity-prototype.yml` before the build. The opened `pk_*` folders are ignored by git;
   without them (no secret) the scene leaves the extras out. 40 texels a unit (1.6 units; the 32-texel skeleton 1.0). To change the
   figures: download the packs from the owner's Drive, run build and seal with the key, commit the new `.enc`.
-  `Editor/FrontArtImport.cs` keeps the pictures uncompressed, point filtered, without mips; normal and emission maps linear.
+  `Editor/FrontArtImport.cs` keeps the pictures (and the `fx_*` spell art) uncompressed, point filtered, without mips; normal and emission maps linear.
 - Shaders (built-in pipeline, in `Resources/`, so a player build includes them): `FrontArtBlock` (world mapped uv from the mesh, the
   relief from the normal map per face axis, vertex colour as tint and occlusion, lambert with the moon's shadows and point lights,
   `_Emit` for coal) and `FrontArtSprite` (cutout sampled at mip 0, bent normal between the direction to the camera and up, wrap

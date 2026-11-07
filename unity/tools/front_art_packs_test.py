@@ -60,6 +60,21 @@ i2, w2 = fap.frames_of_set([(idle, 1), (walk, 2)])
 check(len(i2) == 1 and len(w2) == 2 and all(f.size == (20, 20) for f in i2 + w2), "frame set: one canvas size for idle and walk")
 check(i2[0].getbbox()[3] == 20 and w2[0].getbbox()[3] == 20, "frame set: both stand on the bottom row")
 check(fap.walk_name("Ghost_6_idle_strip16.png") == "Ghost_6_walk_strip16.png", "the walk strip's name")
+check(fap.attack_name("Vampire_idle_strip9.png") == "Vampire_attack_strip9.png", "the attack strip's name")
+
+# fx: a missile sheet must be 8 x 8 frames of 64, an impact a strip of square frames
+with tempfile.TemporaryDirectory() as tmp:
+    proj, imp, out = (os.path.join(tmp, d) for d in ("proj", "imp", "out"))
+    for name, pr, var in fap.MISSILES:
+        os.makedirs(os.path.join(proj, pr, var), exist_ok=True)
+        Image.new("RGBA", (512, 512), (200, 100, 0, 255)).save(os.path.join(proj, pr, var, "%s_%s_main.png" % (pr, var)))
+    os.makedirs(imp)
+    for name in fap.IMPACTS:
+        Image.new("RGBA", (128 * 3, 128), (0, 0, 0, 0)).save(os.path.join(imp, name + ".png"))
+    check(fap.build_fx(proj, imp, out) == 0, "fx build")
+    check(os.path.isfile(os.path.join(out, "fx_fireball", "missile.png")) and os.path.isfile(os.path.join(out, "fx_holy_hit", "impact.png")), "fx files")
+    Image.new("RGBA", (100, 128), (0, 0, 0, 0)).save(os.path.join(imp, "holy_hit.png"))
+    check(fap.build_fx(proj, imp, out) == 1, "fx: an impact that is no strip of square frames is refused")
 strip_out = fap.side_by_side(fr, "RGBA")
 check(strip_out.size == (40, 20) and strip_out.crop((20, 0, 40, 20)).tobytes() == fr[1].tobytes(), "side by side: frame k at k * size")
 check(fap.side_by_side([Image.new("RGB", (4, 4), (1, 2, 3))], "RGB").size == (4, 4), "side by side of one frame")
@@ -93,10 +108,10 @@ check((2, 2) in rule, "glow rule: cyan glows")
 check((2, 2) not in nocool and nocool <= rule, "glow nocool: the rule without cyan")
 check(fap.emission_mask(body, "warm").getpixel((9, 9)) == 255, "the emission mask is white where it glows")
 
-# tar filter: only pk_<name>/(idle|walk)[_w][_n|_e].png files
+# tar filter: only pk_<name>/(idle|walk|attack)[_w][_n|_e].png and fx_<name>/(missile|impact).png files
 buf = io.BytesIO()
 with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-    for name in ["pk_ok/idle.png", "pk_ok/idle_w_n.png", "pk_ok/walk_w_e.png", "pk_ok/run_w.png", "../evil/idle.png", "pk_ok/../../x.png", "pk_ok/sub/idle.png",
+    for name in ["pk_ok/idle.png", "pk_ok/idle_w_n.png", "pk_ok/walk_w_e.png", "pk_ok/attack_w.png", "fx_fire/missile.png", "fx_fire/impact.png", "fx_fire/run.sh", "fx_fire/idle.png", "pk_ok/run_w.png", "../evil/idle.png", "pk_ok/../../x.png", "pk_ok/sub/idle.png",
                  "other/idle.png", "pk_ok/run.sh", "pk_Bad/idle.png", "pk_ok/east.png"]:
         info = tarfile.TarInfo(name)
         info.size = 1
@@ -108,7 +123,7 @@ with tarfile.open(fileobj=buf, mode="w:gz") as tar:
 buf.seek(0)
 with tarfile.open(fileobj=buf, mode="r:gz") as tar:
     names = [m.name for m in fap.safe_members(tar)]
-check(names == ["pk_ok/idle.png", "pk_ok/idle_w_n.png", "pk_ok/walk_w_e.png"], "tar filter keeps only safe picture files (%s)" % names)
+check(names == ["pk_ok/idle.png", "pk_ok/idle_w_n.png", "pk_ok/walk_w_e.png", "pk_ok/attack_w.png", "fx_fire/missile.png", "fx_fire/impact.png"], "tar filter keeps only safe picture files (%s)" % names)
 
 # seal / open round trip
 with tempfile.TemporaryDirectory() as tmp:

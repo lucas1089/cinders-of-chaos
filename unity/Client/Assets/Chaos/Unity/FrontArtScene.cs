@@ -52,12 +52,30 @@ namespace Chaos.Client
             // the walk animation the same way (walk, walk_w; WalkFrames 0 = none: the monster stands)
             public readonly Texture2D[] Strip = new Texture2D[2], StripN = new Texture2D[2], StripE = new Texture2D[2];
             public readonly Texture2D[] Walk = new Texture2D[2], WalkN = new Texture2D[2], WalkE = new Texture2D[2];
-            public int Frames, WalkFrames, Frame = -1;
+            // the attack animation (attack, attack_w; AttackFrames 0 = none: a caster stays in its idle while casting)
+            public readonly Texture2D[] Attack = new Texture2D[2], AttackN = new Texture2D[2], AttackE = new Texture2D[2];
+            public int Frames, WalkFrames, AttackFrames, Frame = -1;
+            public readonly List<int> Casts = new List<int>();   // indices into Layout.Spells this figure casts
             public float Phase;   // FrontArtWalk.Phase of its index among the extras
             public Transform Blob; // a walker's own contact shadow (the others are in the static blob mesh)
         }
 
         sealed class LightView { public Light L; public FaLight S; }
+
+        // an attack spell: a missile quad, an impact quad and a light that travels with the missile and flashes on the hit
+        sealed class SpellView
+        {
+            public FaSpell S;
+            public Transform Missile, Impact;
+            public Renderer MissileR, ImpactR;
+            public Material MissileMat, ImpactMat;
+            public Light L;
+            public int ImpactFrames;
+        }
+
+        readonly List<SpellView> spells = new List<SpellView>();
+        /// <summary>The spell art's side in units: a missile frame (64 texels), an impact frame (128 texels).</summary>
+        public const float MissileUnits = 1.6f, ImpactUnits = 2.6f, MissileFps = 12f;
 
         readonly List<ActorView> actors = new List<ActorView>();
         readonly List<LightView> lights = new List<LightView>();
@@ -98,6 +116,7 @@ namespace Chaos.Client
             var mats = MakeMaterials();
             BuildBlocks(mats);
             BuildActors();
+            BuildSpells();
             BuildLights();
             BuildFlames();
             BuildBlobs();
@@ -252,6 +271,14 @@ namespace Chaos.Client
                         v.WalkE[k] = Point(Resources.Load<Texture2D>(b + "_e"));
                     }
                     if (v.Walk[0] != null && v.Walk[1] != null) v.WalkFrames = Mathf.Max(1, v.Walk[0].width / Mathf.Max(1, v.Walk[0].height));
+                    for (int k = 0; k < 2; k++)
+                    {
+                        string b = Folder + a.Folder + (k == 0 ? "/attack" : "/attack_w");
+                        v.Attack[k] = Point(Resources.Load<Texture2D>(b));
+                        v.AttackN[k] = Point(Resources.Load<Texture2D>(b + "_n"));
+                        v.AttackE[k] = Point(Resources.Load<Texture2D>(b + "_e"));
+                    }
+                    if (v.Attack[0] != null && v.Attack[1] != null) v.AttackFrames = Mathf.Max(1, v.Attack[0].width / Mathf.Max(1, v.Attack[0].height));
                     v.Phase = FrontArtWalk.Phase(Layout.Extras.IndexOf(a));
                     found = 8;
                 }
@@ -292,6 +319,82 @@ namespace Chaos.Client
                     cmr.reflectionProbeUsage = ReflectionProbeUsage.Off;
                 }
                 actors.Add(v);
+            }
+        }
+
+        /// <summary>The attack spells whose art is there (Resources/FrontArt/fx_*, opened with the pack monsters) and whose caster and
+        /// target are in the scene.</summary>
+        void BuildSpells()
+        {
+            var sh = FindShader("FrontArtSpell", "Sprites/Default");
+            for (int i = 0; i < Layout.Spells.Count; i++)
+            {
+                var s = Layout.Spells[i];
+                var caster = actors.Find(v => v.A.Name == s.Caster);
+                if (caster == null || !actors.Exists(v => v.A.Name == s.Target)) continue;
+                var mt = Point(Resources.Load<Texture2D>(Folder + "fx_" + s.Missile + "/missile"));
+                var it = Point(Resources.Load<Texture2D>(Folder + "fx_" + s.Impact + "/impact"));
+                if (mt == null || it == null) continue;
+                var sv = new SpellView { S = s, ImpactFrames = Mathf.Max(1, it.width / Mathf.Max(1, it.height)) };
+                sv.MissileMat = Own(new Material(sh) { name = "front-art-missile-" + s.Missile, mainTexture = mt });
+                sv.ImpactMat = Own(new Material(sh) { name = "front-art-impact-" + s.Impact, mainTexture = it });
+                sv.Missile = MakeSpriteObject("missile " + s.Caster, sv.MissileMat, ShadowCastingMode.Off);
+                sv.Impact = MakeSpriteObject("impact " + s.Caster, sv.ImpactMat, ShadowCastingMode.Off);
+                sv.MissileR = sv.Missile.GetComponent<Renderer>();
+                sv.ImpactR = sv.Impact.GetComponent<Renderer>();
+                sv.MissileR.receiveShadows = false; sv.ImpactR.receiveShadows = false;
+                sv.MissileR.enabled = false; sv.ImpactR.enabled = false;
+                var lgo = new GameObject("spell light " + s.Caster);
+                lgo.transform.SetParent(transform, false);
+                sv.L = lgo.AddComponent<Light>();
+                sv.L.type = LightType.Point;
+                sv.L.color = new Color(s.R, s.G, s.B);
+                sv.L.range = 3.2f;
+                sv.L.shadows = LightShadows.None;
+                sv.L.renderMode = LightRenderMode.ForcePixel;
+                sv.L.enabled = false;
+                caster.Casts.Add(i);
+                spells.Add(sv);
+            }
+            Debug.Log("chaos front art: " + spells.Count + " of " + Layout.Spells.Count + " attack spells");
+        }
+
+        /// <summary>Places the missiles and impacts at time t. A missile sheet has 8 direction rows (E, SE, S, SW, W, NW, N, NE from the
+        /// top) of 8 frames; the row follows the missile's heading on screen.</summary>
+        void TickSpells(float t, Quaternion face)
+        {
+            Vector3 right = Cam != null ? Cam.transform.right : Vector3.right, up = Cam != null ? Cam.transform.up : Vector3.up;
+            foreach (var sv in spells)
+            {
+                var st = FrontArtSpells.At(Layout, sv.S, t);
+                sv.MissileR.enabled = st.Flying;
+                sv.ImpactR.enabled = st.Hit;
+                sv.L.enabled = st.Flying || st.Hit;
+                var at = new Vector3(st.X, st.Y, st.Z);
+                if (st.Flying)
+                {
+                    var d = new Vector3(st.DirX, st.DirY, st.DirZ);
+                    float sx = Vector3.Dot(d, right), sy = Vector3.Dot(d, up);
+                    float deg = Mathf.Atan2(-sy, sx) * Mathf.Rad2Deg;   // clockwise from east on screen: 90 = down (S)
+                    int row = ((Mathf.RoundToInt(deg / 45f) % 8) + 8) % 8;
+                    int frame = (int)Mathf.Repeat(Mathf.Floor(t * MissileFps), 8f);
+                    sv.MissileMat.mainTextureScale = new Vector2(1f / 8f, 1f / 8f);
+                    sv.MissileMat.mainTextureOffset = new Vector2(frame / 8f, 1f - (row + 1) / 8f);
+                    sv.Missile.SetPositionAndRotation(at - up * (MissileUnits / 2f), face);
+                    sv.Missile.localScale = new Vector3(MissileUnits, MissileUnits, 1f);
+                    sv.L.transform.position = at;
+                    sv.L.intensity = 2.4f;
+                }
+                if (st.Hit)
+                {
+                    int frame = Mathf.Min(sv.ImpactFrames - 1, (int)(st.HitU * sv.ImpactFrames));
+                    sv.ImpactMat.mainTextureScale = new Vector2(1f / sv.ImpactFrames, 1f);
+                    sv.ImpactMat.mainTextureOffset = new Vector2((float)frame / sv.ImpactFrames, 0f);
+                    sv.Impact.SetPositionAndRotation(at - up * (ImpactUnits / 2f), face);
+                    sv.Impact.localScale = new Vector3(ImpactUnits, ImpactUnits, 1f);
+                    sv.L.transform.position = at;
+                    sv.L.intensity = 4f * (1f - st.HitU);
+                }
             }
         }
 
@@ -621,18 +724,26 @@ namespace Chaos.Client
                 var v = actors[i];
                 // pack monsters patrol (FrontArtWalk); the four stand
                 var pose = v.Frames > 0 ? FrontArtWalk.At(v.A, t, v.Phase) : new FrontArtWalk.Pose { X = v.A.X, Z = v.A.Z, FaceX = v.A.FaceX, FaceZ = v.A.FaceZ };
-                int dir = FrontArtFacing.Index(pose.FaceX, pose.FaceZ, yaw);
-                bool walking = pose.Walking && v.WalkFrames > 0;
+                // a caster turns to its target and plays its attack while it casts
+                float castU = -1f, fx = pose.FaceX, fz = pose.FaceZ;
+                foreach (int si in v.Casts)
+                {
+                    var cs = FrontArtSpells.At(Layout, Layout.Spells[si], t);
+                    if (cs.Casting) { castU = cs.CastU; fx = cs.FaceX; fz = cs.FaceZ; break; }
+                }
+                int dir = FrontArtFacing.Index(fx, fz, yaw);
+                bool walking = pose.Walking && v.WalkFrames > 0 && castU < 0f;
+                bool attacking = castU >= 0f && v.AttackFrames > 0;
                 if (v.Frames > 0)
                 {
                     // the pack drawings face right; the three west headings (south-west, west, north-west) show the mirror
-                    int side = dir >= 5 ? 1 : 0, key = side + (walking ? 2 : 0);
+                    int side = dir >= 5 ? 1 : 0, key = side + (attacking ? 4 : walking ? 2 : 0);
                     if (key != v.Dir)
                     {
                         v.Dir = key;
-                        var pic = walking ? v.Walk : v.Strip;
-                        var nrm = walking ? v.WalkN : v.StripN;
-                        var emit = walking ? v.WalkE : v.StripE;
+                        var pic = attacking ? v.Attack : walking ? v.Walk : v.Strip;
+                        var nrm = attacking ? v.AttackN : walking ? v.WalkN : v.StripN;
+                        var emit = attacking ? v.AttackE : walking ? v.WalkE : v.StripE;
                         SetPic(v.Mat, pic[side]);
                         v.Mat.SetTexture("_BumpMap", nrm[side] != null ? nrm[side] : Texture2D.normalTexture);
                         v.Mat.SetFloat("_NormalAmount", nrm[side] != null ? 0.85f : 0f);
@@ -643,8 +754,9 @@ namespace Chaos.Client
                         SetPic(v.CastMat[1], pic[side]);
                         v.Frame = -1;
                     }
-                    int frames = walking ? v.WalkFrames : v.Frames;
-                    int frame = (int)Mathf.Repeat(Mathf.Floor(t * (walking ? WalkFps : PackFps)) + i * 3, frames);
+                    int frames = attacking ? v.AttackFrames : walking ? v.WalkFrames : v.Frames;
+                    int frame = attacking ? Mathf.Min(frames - 1, (int)(castU * frames))
+                        : (int)Mathf.Repeat(Mathf.Floor(t * (walking ? WalkFps : PackFps)) + i * 3, frames);
                     if (frame != v.Frame)
                     {
                         v.Frame = frame;
@@ -680,6 +792,7 @@ namespace Chaos.Client
             {
                 if (lv.S.Flame) lv.L.intensity = lv.S.Intensity * Hd2d.Flicker(t, lv.S.Seed);
             }
+            TickSpells(t, face);
             if (flameMesh != null) BuildFlameMesh(t);
             if (particles != null) { particles.Cam = Cam; particles.BuildMesh(); }
         }
