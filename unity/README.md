@@ -38,8 +38,9 @@ It does not replace the client in `client/`.
     - `MapView.cs` is one dynamic mesh per frame, drawn in the stock order.
     - `SpriteAtlas.cs` is a 4096x4096 atlas of 32 px cells.
     - `Hd2dView.cs`, `Hd2dShot.cs`, `Hd2dPost.cs`: the HD-2D view (see below). Core: `Hd2d.cs`, `Hd2dDemo.cs`.
-    - `Hd2dRuins3d.cs`, `Hd2dChars3d.cs`: 3D models for the map and the creatures. Core: `Hd2dRuins.cs`, `Hd2dTerrain.cs`, `Hd2dWorld3d.cs`, `Hd2dChars.cs`.
+    - `Hd2dRuins3d.cs`, `Hd2dChars3d.cs`: 3D models for the map and the creatures. Core: `Hd2dRuins.cs`, `Hd2dTerrain.cs`, `Hd2dWorld3d.cs`, `Hd2dChars.cs`, `PixelText.cs` (the label font of the line-up shot).
   - `Assets/Chaos/Editor/ChaosBuild.cs` is the batch build.
+- `tools/` holds Python tools: `hd2d_preview.py` (offline HD-2D pictures) and `fetch_3d_assets.py` (the KayKit characters, see "3D characters"), each with a test.
 - `Core.Tests/` is a .NET 8 console project. It compiles `Core/` and runs the checks.
 - `Client.Check/` compiles the Unity scripts (`Core/` and `Unity/`) against the engine's reference assemblies from NuGet,
   so a C# error shows on every PR without a Unity license: `cd unity/Client.Check && dotnet build`.
@@ -115,23 +116,7 @@ client (OTClient family) does not use it and nothing here changes the server or 
 - Unsure until seen: which side of the pack's walls is the nicer face, and the colour balance (the restyle lifts the pack's linear
   colours with a gamma first). Both are one-line changes in `Hd2dRuins.cs`.
 
-3D characters (Chars3d): the creatures of the HD-2D view as 3D models. Unity only, like Ruins3d.
-- Models: the CC0 RPG Character Pack by Quaternius (FBX, rigged, animations inside), Warrior, Cleric and Wizard with their textures
-  and `License.txt` in `Assets/Chaos/Resources/Chars3d/` (credited in `docs/CREDITS.md`). No `.meta` is committed:
-  `Editor/Chars3dImport.cs` sets Generic rig and animations on import.
-- Mapping (`Core/Hd2dChars.cs`, tested in `Core.Tests/CharsTests.cs`): the player is the Warrior; other creatures hash their look type
-  (their id when it is 0) onto Cleric or Wizard. Yaw from `Dir` (North = +z, away from the camera, then 90 degrees per quarter turn),
-  position from the drawn tile (same x / z mapping as Ruins3d), scaled to 1.7 tiles, feet on the floor. Item looks stay sprites.
-- `Unity/Hd2dChars3d.cs`: `Attach(view)` sets `Hd2dView.SkipCreature` (sprites hidden, labels, lights and shadows stay),
-  `Build()` places the characters. They cast and receive shadows. Materials are copies: texture bound by code from Resources
-  (`Chars3d/NAME_Texture`, weapon material by name), colour x 0.75 and a little grey.
-- Pose without a frame: the idle clip is found by name (`Idle`, else `Idle_Weapon`) in `Resources.LoadAll<AnimationClip>` and sampled
-  by hand with `clip.SampleAnimation(model, t)` (t differs per creature); the Animator is then switched off. No idle clip: bind pose.
-  `Live = true` resamples every frame.
-- See it: `hd2d_3d.png` now shows them; `hd2d_3d_close.png` is the same scene from half the distance, aimed at the hero. Missing models:
-  the step logs a warning and the sprites stay.
-- Unsure until seen: the models' facing (assumed +z, `Hd2dChars.ModelYaw` fixes it), the texture binding by material name, the height
-  measure from the mesh bounds.
+3D characters (Chars3d, KayKit): see the section "3D characters" below. `hd2d_3d.png` and `hd2d_3d_close.png` show them.
 
 3D world (World3d, Unity-only): the real game maps drawn with 3D models instead of sprites. Unity only, like Ruins3d; the game client
 (OTClient family) does not use it and nothing here changes the server or the sprite pair. It reuses the Ruins3d plan and adds a role set
@@ -200,6 +185,94 @@ Limits, said plainly:
 - Not run in a Unity editor or player in the session that wrote it: the code compiles in `Client.Check` and the layout is tested, the look is
   unchecked until the first screenshot run.
 
+## 3D characters
+
+3D characters: every class and every monster of the HD-2D view as a 3D model, the monsters dark (skeletons, undead). Unity only, like Ruins3d.
+- Models, in this order: `Resources/KayKit` (the CC0 KayKit Adventurers and Skeletons packs by Kay Lousberg: Knight, Barbarian, Mage, Rogue,
+  RogueHooded, Skeleton_Warrior, Skeleton_Mage, Skeleton_Rogue, Skeleton_Minion, rigged, about 90 takes each), then `Resources/Chars3d` (the CC0
+  RPG Character Pack by Quaternius: Warrior, Cleric, Wizard, committed, the fallback), then the creature sprites. Both packs are in `docs/CREDITS.md`.
+  No `.meta` is committed: `Editor/Chars3dImport.cs` sets Generic rig and animations on import (the weapon FBX files keep no animation).
+- Fetch step: the KayKit files are not in the repository (every character FBX is about 20 MB). `python3 -I unity/tools/fetch_3d_assets.py`
+  shallow-fetches the two upstream repositories with git at pinned commits (their FBX folders are export-ignore, so a GitHub zip lacks them) (Adventurers `672074b7`, Skeletons `15b62b9b`), extracts only the
+  used files (9 character FBX, 4 textures, 6 skeleton weapons, 2 licence texts, 22 files, about 190 MB) into `Assets/Chaos/Resources/KayKit/`
+  (ignored by the Client folder's ignore file) and checks each against its sha256 in the script. `--check` verifies what is there, `--force`
+  downloads again, `--zip PACK=PATH` uses a local archive. `unity-prototype.yml` runs it before the Unity build; a wrong hash fails the build.
+  `python3 -I unity/tools/fetch_3d_assets_test.py` tests the pure parts on a fake archive (CI: `ci.yml`).
+- `Unity/Hd2dChars3d.cs`: `Attach(view)` sets `Hd2dView.SkipCreature` (sprites hidden; labels, lights and shadows stay), `Build()` places the
+  characters, which cast and receive shadows; materials are copies. Without any model the sprites stay and the log says so.
+- Mapping (`Core/Hd2dChars.cs`, tested in `Core.Tests/CharsTests.cs`): `SpecFor(creature, isPlayer, playerVocation)` gives a `CharSpec` (model,
+  fallback model, items, colour multiplier, brightness, size). Who gets what:
+  - the local player: its class, from the vocation id of the login (`World.PlayerVocation`, set in `ChaosApp.Enter`); the Warrior when unknown;
+  - another player: the protocol does not send the class, so the look type picks one of the 21 classes (stable). A creature with
+    `Creature.Vocation` set (the offline cast) is that class;
+  - a monster or summon: by name, below; an NPC: a plain adventurer without a weapon.
+- Classes (the vocation ids of `server/data/XML/chaos_vocations*.xml`, `docs/CLASSES.md`; the test checks that the 21 ids match). The colour
+  is a multiplier on the model's colour before the dark restyle (x 0.75 and a little grey; holy classes x 0.95):
+
+  | id | Class | Model | Items | Colour |
+  |---|---|---|---|---|
+  | 4 | Warrior | Knight | sword, round shield | plain |
+  | 8 | Juggernaut | Knight | sword, spiked shield | steel blue |
+  | 14 | Berserker | Barbarian | two-handed axe | blood red |
+  | 3 | Ranger | RogueHooded | two-handed crossbow | forest green |
+  | 7 | Deadeye | Rogue | two-handed crossbow | slate blue |
+  | 15 | Beastmaster | Rogue | one-handed crossbow | earth brown |
+  | 1 | Mystic | Mage | staff | plain |
+  | 5 | Elementalist | Mage | staff | fire orange |
+  | 10 | Illusionist | Mage | wand, spellbook | violet |
+  | 11 | Thief | Rogue | two knives | plain |
+  | 12 | Ninja | RogueHooded | two knives | near black |
+  | 13 | Samurai | Knight | sword, no shield | crimson |
+  | 20 | Necromancer | Mage | wand, spellbook | sickly green |
+  | 21 | Lich | Skeleton_Mage | skeleton staff | pale violet |
+  | 22 | Bone Lord | Skeleton_Warrior | skeleton axe, large shield | plain |
+  | 17 | Monk | Barbarian | bare hands | amber |
+  | 18 | Shadowfist | Barbarian | bare hands | dark violet |
+  | 19 | Iron Sage | Mage | staff | gold |
+  | 23 | Templar | Knight | sword, badge shield | warm gold, light |
+  | 24 | Inquisitor | Knight | two-handed sword | white, light |
+  | 25 | Sentinel | Knight | sword, rectangular shield | blue steel, light |
+
+  Melee heavy: Knight and Barbarian; casters: Mage; ranged and stealth: Rogue and RogueHooded; holy: Knight in a light tint; the two skeleton
+  classes of the Necromancer line are skeletons.
+- Monsters (`Hd2dChars.MonsterSpec(name, lookType)`, first match wins; stems match inside the lower-case name for undead, at the start of a word
+  otherwise). Every name gets a model, the default is the Skeleton_Minion:
+  1. Undead (skeleton, bone, skull, lich, undead, zombie, ghoul, ghost, wraith, necro, mummy, death, grave, crypt, vampire, risen, revenant,
+     marrow, barrow, shade, reaper, thrall and more), by role: casters and liches (mage, lich, priest, seer, caller, cultist...) Skeleton_Mage with
+     the staff; ethereal ones and archers (wraith, ghost, shade, banshee, count, archer, stalker) Skeleton_Rogue, ghosts with empty hands,
+     archers with the crossbow; fighters (warrior, knight, golem, colossus, reaver, lancer, lord, king, warden) Skeleton_Warrior with blade and
+     small shield (large shield for knights and guards, axe for golems and colossi); the rest Skeleton_Minion.
+  2. Goblins and small folk: Skeleton_Minion, green.
+  3. Humans and bandits, an adventurer with a darker tint (x 0.65 and x 0.85): casters (mage, witch, cultist, priest, seer...) Mage; rogues (bandit,
+     thief, archer, pirate, assassin...) Rogue, hooded for assassins and shadows; brutes (barbarian, brute, warlord, butcher...) Barbarian;
+     knights (knight, guard, captain, mercenary, royal, lord, `man`...) Knight.
+  4. Beasts and the rest, a skeleton with empty hands by build: odd and magical shapes (elemental, wisp, slime, fungus, construct...) Skeleton_Mage;
+     fast hunters (wolf, hound, spider, snake, wing...) Skeleton_Rogue; heavy brutes (bear, boar, troll, dragon, behemoth...) Skeleton_Warrior;
+     anything else Skeleton_Minion.
+  A colour family by word tints the body, never the glowing eyes: fire, ice, poison and rot, blood, void and shadow, gold, storm and tide, stone.
+- Size: `Hd2dChars.SizeFor(creature, spriteW, spriteH)` from the outfit's sprite size in the dat (1 x 1: 1.0, 2 x 2: 1.3, 3 x 3: 1.5, more: 1.6)
+  times 1.15 for a big word in the name (lord, king, dragon, colossus...) or 0.85 for a small one (whelp, imp, little...), between 0.85 and 1.6.
+  Players and NPCs are 1. Base height 1.7 tiles, the Skeleton_Minion 0.9 of it.
+- Items: an adventurer's FBX carries every weapon and shield as a node of the rig (`Hd2dChars.WeaponNodes`); the code hides all but the spec's
+  items. A skeleton's weapons are separate FBX files, attached to the hand bone found by name (`Hd2dChars.HandBone`: `handslot.r` or
+  `handslot.l`, never an IK helper), shields and offhand blades on the left.
+- Look: a skeleton's "Glow" material (the eyes) is bright yellow and emissive (`_EmissionColor` x 1.6), never dimmed or tinted, no shadow.
+  Everything else keeps the dark restyle times the spec's colour. Textures are bound by code (`KayKit/knight_texture`, ...).
+- Pose without a frame: the idle clip is found by name in `Resources.LoadAll<AnimationClip>` (`Idle`, else `Idle_Combat`; `2H_Melee_Idle` for a
+  two-handed grip, `Unarmed_Idle` for bare hands) and sampled by hand with `clip.SampleAnimation(model, t)` (t differs per creature); the Animator
+  is then switched off. No idle clip: bind pose. `Live = true` resamples every frame.
+- See it: `hd2d_3d_cast.png` in the `hd2d-shots` artifact is the line-up on the temple floor: one class per group in front (Juggernaut, Deadeye,
+  Elementalist, Ninja, Lich, Shadowfist, Inquisitor) and the four dark skeletons behind (Risen Skeleton, Warrior, Mage, Archer), lit by the torches
+  (two more are added at the row ends), names drawn from the 5 x 7 pixel font of `Core/PixelText.cs` (the screenshot is read from a render
+  texture, so the game's own labels are not in it), the camera fitted to the cast. `hd2d_3d.png`, `hd2d_3d_close.png` and `hd2d_3d_outdoor.png` stay.
+- Monster share per model over all 701 names (280 custom monsters of `server/data/monster/monsters` and 421 base names of
+  `base_monster_names.csv`; the test prints the table): Skeleton_Minion 52.8 %, Skeleton_Rogue 10.0 %, Skeleton_Mage 9.3 %, Skeleton_Warrior 9.1 %,
+  Knight 8.1 %, Barbarian 4.0 %, Mage 3.4 %, Rogue 2.6 %, RogueHooded 0.7 %.
+- Not run in a Unity editor or player in the session that wrote it: the code compiles in `Client.Check` and the mapping is tested. Unsure until
+  seen: the clip names after the FBX import (the files hold `Idle`, `Idle_Combat`, `2H_Melee_Idle`, `Unarmed_Idle`), the weapons' fit on the hand
+  slots (identity, scale cancelled), the models' facing (`Hd2dChars.ModelYaw`), the look of the chibi proportions at 1.7 tiles, the camera fit of
+  the line-up and the label positions.
+
 ## Tests
 
 ```
@@ -210,7 +283,9 @@ The checks cover:
 - crypto vectors shared with `server/tools/loadtest.py`;
 - the dat and spr readers on synthetic files;
 - the login answer, map descriptions with skip counters, moves, the east strip, turns, items, pings;
-- a whole game login against a fake server on localhost. It uses its own RSA key, real XTEA and the guard handshake.
+- a whole game login against a fake server on localhost. It uses its own RSA key, real XTEA and the guard handshake;
+- the 3D character mapping (`CharsTests.cs`): the 21 classes against the vocation files, the monster rules over every monster name of the server
+  (it prints the share per model), size, hand bones, idle clips, the label font and the line-up. The fetch script: `python3 -I unity/tools/fetch_3d_assets_test.py`.
 
 On the real pair: `dotnet run -c Release -- probe DAT SPR OUTDIR [outfit ids...]` draws outfits.png and items.png.
 

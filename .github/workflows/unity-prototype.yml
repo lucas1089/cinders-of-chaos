@@ -78,6 +78,13 @@ jobs:
         with:
           path: unity/Client/Library
           key: unity-library-${{ inputs.target }}-${{ hashFiles('unity/Client/Packages/manifest.json', 'unity/Client/ProjectSettings/ProjectVersion.txt') }}
+      # the KayKit 3D characters (CC0, docs/CREDITS.md) are not in the repository: two upstream archives at pinned commits, every
+      # used file checked against its sha256 (unity/tools/fetch_3d_assets.py). A wrong hash fails the build.
+      - name: Fetch the KayKit 3D characters
+        if: steps.lic.outputs.ok == '1'
+        run: |
+          python3 -I unity/tools/fetch_3d_assets.py
+          python3 -I unity/tools/fetch_3d_assets.py --check
       - name: Bake server data into Resources
         if: steps.lic.outputs.ok == '1'
         env:

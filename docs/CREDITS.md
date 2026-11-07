@@ -221,8 +221,18 @@ Free effect, icon, font and sprite packs. Their files name no author, except the
 - **RPG Character Pack**
   - Author: Quaternius
   - Licence: Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Chars3d/License.txt
-  - Used for: the 3D characters of the Unity prototype (Warrior, Cleric and Wizard, rigged, idle pose, tinted darker in code), not in the main game client
+  - Used for: the fallback 3D characters of the Unity prototype (Warrior, Cleric and Wizard, rigged, idle pose, tinted darker in code; used when the KayKit characters are not in the build), not in the main game client
   - Source: https://quaternius.com/packs/rpgcharacters.html
+- **KayKit Character Pack: Adventurers (1.0)**
+  - Author: Kay Lousberg (KayKit)
+  - Licence: Creative Commons Zero 1.0 (CC0); the licence text is fetched with the files as unity/Client/Assets/Chaos/Resources/KayKit/LICENSE_Adventurers.txt
+  - Used for: the 3D characters of the Unity prototype: the Knight, Barbarian, Mage, Rogue and hooded Rogue models with their weapons and shields stand for the 21 classes and the human monsters, rigged, idle pose, tinted in code. Not stored in the repository: unity/tools/fetch_3d_assets.py downloads it at a pinned commit and checks every file; it ships in the Unity build. Not in the main game client
+  - Source: https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0
+- **KayKit Character Pack: Skeletons (1.0)**
+  - Author: Kay Lousberg (KayKit)
+  - Licence: Creative Commons Zero 1.0 (CC0); the licence text is fetched with the files as unity/Client/Assets/Chaos/Resources/KayKit/LICENSE_Skeletons.txt
+  - Used for: the dark monsters of the Unity prototype: the skeleton warrior, mage, rogue and minion (with the blade, axe, staff, crossbow and shields) stand for the undead and the other monsters, and for the Lich and the Bone Lord classes; glowing eyes, tinted in code. Not stored in the repository: unity/tools/fetch_3d_assets.py downloads it at a pinned commit and checks every file; it ships in the Unity build. Not in the main game client
+  - Source: https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0
 - **AI Sprite Studio**
   - Author: AI Sprite Studio, AI-generated free sample pack (the art is AI-generated and is not claimed to be hand-drawn)
   - Licence: personal and commercial use allowed, no exclusivity; terms at https://aispritestudio.com/terms/

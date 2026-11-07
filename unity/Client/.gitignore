@@ -11,3 +11,7 @@
 *.sln
 *.pidb
 *.userprefs
+
+# KayKit 3D characters: fetched by unity/tools/fetch_3d_assets.py (too big to commit)
+/Assets/Chaos/Resources/KayKit/
+/Assets/Chaos/Resources/KayKit.meta
