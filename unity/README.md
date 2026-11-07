@@ -326,7 +326,7 @@ The ideas follow the MIT-licensed Luminati engine (docs/CREDITS.md); the code is
   target (a lunge: a 0.3 step), swings (the pack attack strip; the four lean in), a slash drawn in Core (`FrontArtSlash`, a
   crescent in the attack's colour with a white edge) and a flash light land 0.4 s in, it holds, then runs home. The target is
   pushed back and flashes red (`_Hit` of `FrontArtSprite`). Core tests: home inside the period, swing and slash at the blow,
-  the target flinches, the slash within reach, every figure 0.5 apart. `Hd2dShot` adds `front_art_melee_00..71.png`. `Hd2dShot` adds `front_art_anim_00..39.png`, the east horde over five seconds. `seal OUT ENC` encrypts,
+  the target flinches, the slash within reach, every figure 0.5 apart. `Hd2dShot` adds `front_art_melee_000..299.png` (60 a second). `Hd2dShot` adds `front_art_anim_00..39.png`, the east horde over five seconds. `seal OUT ENC` encrypts,
   `open ENC Resources/FrontArt` is the step of `unity-prototype.yml` before the build. The opened `pk_*` folders are ignored by git;
   without them (no secret) the scene leaves the extras out. 40 texels a unit (1.6 units; the 32-texel skeleton 1.0). To change the
   figures: download the packs from the owner's Drive, run build and seal with the key, commit the new `.enc`.
