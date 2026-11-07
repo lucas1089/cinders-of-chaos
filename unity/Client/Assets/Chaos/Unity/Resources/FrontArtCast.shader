@@ -1,18 +1,19 @@
 // Ground shadow of a front-art figure (test of a new look, Unity/FrontArtScene.cs): the figure's own picture laid flat on the floor
 // and stretched away from a light, drawn as a dark see-through silhouette. It does not use the shadow map, so it looks the same on
-// every machine. The vertex colour's alpha is the strength; the far end fades. Lives in Resources/ so a player build includes it.
+// every machine. Multiplied into the frame (no alpha blending): _Strength darkens, the far end fades. Lives in Resources/ so a player build includes it.
 Shader "Chaos/FrontArtCast"
 {
     Properties
     {
         _MainTex ("Sprite", 2D) = "white" {}
+        _Strength ("Strength", Range(0, 1)) = 0.5
     }
     SubShader
     {
         Tags { "Queue" = "Transparent-10" "RenderType" = "Transparent" "IgnoreProjector" = "True" }
         Pass
         {
-            Blend SrcAlpha OneMinusSrcAlpha
+            Blend DstColor Zero
             ZWrite Off
             Cull Off
             Offset -1, -1
@@ -22,6 +23,7 @@ Shader "Chaos/FrontArtCast"
             #pragma target 3.0
             #include "UnityCG.cginc"
             sampler2D _MainTex;
+            half _Strength;
             struct appdata { float4 vertex : POSITION; float2 uv : TEXCOORD0; fixed4 color : COLOR; };
             struct v2f { float4 pos : SV_POSITION; float2 uv : TEXCOORD0; fixed4 color : COLOR; };
             v2f vert (appdata v)
@@ -36,7 +38,8 @@ Shader "Chaos/FrontArtCast"
             {
                 fixed a = tex2Dlod(_MainTex, float4(i.uv, 0, 0)).a;
                 clip(a - 0.5);
-                return fixed4(0.02, 0.015, 0.04, i.color.a * (1.0 - 0.6 * i.uv.y));
+                half s = _Strength * (1.0 - 0.6 * i.uv.y);
+                return fixed4(lerp(half3(1, 1, 1), half3(0.10, 0.08, 0.16), s), 1);
             }
             ENDCG
         }

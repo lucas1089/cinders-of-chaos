@@ -37,7 +37,8 @@ namespace Chaos.Client
             public FaActor A;
             public readonly Texture2D[] Pics = new Texture2D[8];
             public readonly Texture2D[] Nrm = new Texture2D[8];   // the pictures' normal maps (<dir>_n.png), null when missing
-            public Material Mat, ShadowMat, CastMat;
+            public Material Mat, ShadowMat;
+            public readonly Material[] CastMat = new Material[2];
             public Transform Quad, Proxy;
             public readonly Mesh[] Cast = new Mesh[2];   // ground silhouettes: [0] away from the nearest flame, [1] away from the moon
             public int Dir = -1;
@@ -95,8 +96,8 @@ namespace Chaos.Client
             if (actors.Count > 0)
             {
                 var v0 = actors[0];
-                var sh = v0.CastMat != null ? v0.CastMat.shader : null;
-                Debug.Log("chaos front art: cast mesh " + v0.Cast[0].vertexCount + " verts, bounds " + v0.Cast[0].bounds + ", shader " + (sh != null ? sh.name + " supported " + sh.isSupported : "none") + ", queue " + (v0.CastMat != null ? v0.CastMat.renderQueue : -1) + ", feet y " + v0.A.Y);
+                var sh = v0.CastMat[0] != null ? v0.CastMat[0].shader : null;
+                Debug.Log("chaos front art: cast mesh " + v0.Cast[0].vertexCount + " verts, bounds " + v0.Cast[0].bounds + ", shader " + (sh != null ? sh.name + " supported " + sh.isSupported : "none") + ", queue " + (v0.CastMat[0] != null ? v0.CastMat[0].renderQueue : -1) + ", feet y " + v0.A.Y);
             }
             Debug.Log("chaos front art: shadows " + QualitySettings.shadows + ", distance " + QualitySettings.shadowDistance + ", cascades " + QualitySettings.shadowCascades + ", moon " + (moon != null ? moon.shadows.ToString() : "none") + ", supported " + SystemInfo.supportsShadows + ", low " + LowQuality);
         }
@@ -236,7 +237,6 @@ namespace Chaos.Client
                 v.ShadowMat = Own(new Material(shader) { name = "front-art-shadow-" + a.Folder });
                 v.Quad = MakeSpriteObject("sprite " + a.Name, v.Mat, ShadowCastingMode.Off);
                 v.Proxy = MakeSpriteObject("shadow " + a.Name, v.ShadowMat, ShadowCastingMode.ShadowsOnly);
-                v.CastMat = Own(new Material(FindShader("FrontArtCast", "Sprites/Default")) { name = "front-art-cast-" + a.Folder });
                 for (int k = 0; k < v.Cast.Length; k++)
                 {
                     var cgo = new GameObject("cast " + k + " " + a.Name);
@@ -245,7 +245,8 @@ namespace Chaos.Client
                     v.Cast[k].MarkDynamic();
                     cgo.AddComponent<MeshFilter>().sharedMesh = v.Cast[k];
                     var cmr = cgo.AddComponent<MeshRenderer>();
-                    cmr.sharedMaterial = v.CastMat;
+                    v.CastMat[k] = Own(new Material(FindShader("FrontArtCast", "Sprites/Default")) { name = "front-art-cast-" + k + "-" + a.Folder });
+                    cmr.sharedMaterial = v.CastMat[k];
                     cmr.shadowCastingMode = ShadowCastingMode.Off;
                     cmr.receiveShadows = false;
                     cmr.lightProbeUsage = LightProbeUsage.Off;
@@ -549,7 +550,8 @@ namespace Chaos.Client
                     if (v.Nrm[dir] != null) v.Mat.SetTexture("_BumpMap", v.Nrm[dir]);
                     v.Mat.SetFloat("_NormalAmount", v.Nrm[dir] != null ? 0.85f : 0f);
                     SetPic(v.ShadowMat, v.Pics[dir]);
-                    SetPic(v.CastMat, v.Pics[dir]);
+                    SetPic(v.CastMat[0], v.Pics[dir]);
+                    SetPic(v.CastMat[1], v.Pics[dir]);
                 }
                 float breath = 1f + 0.012f * Mathf.Sin(t * 2.1f + i * 1.7f);
                 var pos = new Vector3(v.A.X, v.A.Y + 0.01f, v.A.Z);
@@ -589,32 +591,30 @@ namespace Chaos.Client
                 float h = Mathf.Max(0.35f, lp.y - feet.y);
                 float len = SpriteUnits * Mathf.Clamp(0.55f * dist / h + 0.35f, 0.5f, 1.4f);
                 float strength = 0.62f * Mathf.Clamp01(1f - dist / Mathf.Max(0.1f, near.S.Range));
-                SetCast(v.Cast[0], feet, dist > 0.01f ? away / dist : Vector3.forward, len, strength);
+                SetCast(v.Cast[0], feet, dist > 0.01f ? away / dist : Vector3.forward, len);
+                v.CastMat[0].SetFloat("_Strength", strength);
             }
             else v.Cast[0].Clear();
             var flat = new Vector3(sun.x, 0f, sun.z);
             float fl = flat.magnitude;
             float elev = Mathf.Atan2(-sun.y, Mathf.Max(0.01f, fl));
-            SetCast(v.Cast[1], feet, fl > 0.01f ? flat / fl : Vector3.forward, SpriteUnits * Mathf.Clamp(0.8f / Mathf.Tan(Mathf.Max(0.2f, elev)), 0.4f, 1.3f), 0.28f);
+            SetCast(v.Cast[1], feet, fl > 0.01f ? flat / fl : Vector3.forward, SpriteUnits * Mathf.Clamp(0.8f / Mathf.Tan(Mathf.Max(0.2f, elev)), 0.4f, 1.3f));
+            v.CastMat[1].SetFloat("_Strength", 0.3f);
         }
 
         static readonly Vector3[] castVerts = new Vector3[4];
-        static readonly Color[] castColors = new Color[4];
         static readonly Vector2[] castUv = { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
         static readonly int[] castTris = { 0, 1, 2, 0, 2, 3 };
 
-        static void SetCast(Mesh m, Vector3 feet, Vector3 dir, float len, float strength)
+        static void SetCast(Mesh m, Vector3 feet, Vector3 dir, float len)
         {
             var side = Vector3.Cross(Vector3.up, dir) * (SpriteUnits * 0.5f);
             var f = feet + Vector3.up * 0.012f;
             castVerts[0] = f + side; castVerts[1] = f - side;
             castVerts[2] = f - side + dir * len; castVerts[3] = f + side + dir * len;
-            var c = new Color(0f, 0f, 0f, strength);
-            for (int i = 0; i < 4; i++) castColors[i] = c;
             m.Clear();
             m.vertices = castVerts;
             m.uv = castUv;
-            m.colors = castColors;
             m.triangles = castTris;
             m.RecalculateBounds();
         }
