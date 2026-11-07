@@ -56,19 +56,27 @@ is open and the chat line has no focus, use Ctrl+F9. The UI windows are the same
 - A sprite of W x H cells keeps its footprint: anchored on its own tile's east edge, extending west (the way a 64 px item is drawn up and
   left in the classic view) and up. Upright heights are stretched by 1 / cos(pitch) so a sprite keeps its height on screen. Displacement
   and elevation of the dat are applied.
-- The game art draws height going up and to the left. A blocking or on-top item of at least 2 x 2 cells (walls, pillars, arches) is
-  sheared one tile east per cell of height, so it stands straight with its top over its base. Creatures, loose objects, one-cell-wide
-  things and light sources are not sheared (a standing torch leans on purpose in its art); a torch hung on a sheared wall follows the wall.
-  The preview never shears a light source. The synthetic demo art is drawn straight and is never sheared (`Hd2dView.StraightArt`, `Hd2d.Layout(..., slantedArt)`).
-  The preview (`hd2d_preview.py shear_of`) applies the same rule.
+- The game art draws height going up and to the left. Every upright thing, creatures included, is straightened row by row:
+  `Hd2d.Lean` measures, on the thing's first idle frame (an outfit facing south), where the middle of its art sits at each
+  height, and each upright cell is drawn in `Hd2d.Strips` strips moved east so that middle sits over the base (never leaning
+  back, at most `MaxSlant` tiles per tile up). A pillar, a torch on its pole (the flame stays over it) and a figure all stand
+  up. Profiles are measured once per type (`Hd2dView.LeanOf`). The synthetic demo art is drawn straight and is never moved
+  (`Hd2dView.StraightArt`). Without a profile (tests) `Hd2d.ShearFor` shears 2 x 2 walls and pillars one tile per cell.
+  The preview (`hd2d_preview.py lean_of`) applies the same profile.
 - Lights come from things with the dat light attribute (level = range in tiles, colour = the 8-bit 6 x 6 x 6 index, 0 means white) and from
   creatures with a light. The nearest 8 become Unity point lights (4 on mobile); the nearest 2 cast soft shadows (none on mobile). A wall light
   hangs 0.4 tile in front of its wall.
 - The camera looks at the player's tile from the south at pitch 40 degrees and a 25 degree field of view, at the smallest distance that keeps the
   whole 15 x 11 tile rectangle in the frame at the window's aspect. Walking is smooth.
 - `Unity/Hd2dView.cs` builds two dynamic meshes over the sprite atlas (floor quads, and billboards that cast shadows) every frame, sets
-  the lights and a dim cool ambient (brighter with the server's world light). `Resources/Hd2dSprite.shader` is a lit alpha-cutout shader
+  the lights and a warm dusk ambient (brighter with the server's world light). `Resources/Hd2dSprite.shader` is a lit alpha-cutout shader
   (bright texels like flames are emissive). Bloom, depth of field and fog: `Unity/Hd2dPost.cs`. Built-in render pipeline.
+- Grounding: `Hd2d.ContactShadows` (a soft blob under every upright piece: creatures darkest, then objects, then walls; width from the footprint)
+  and `Hd2d.WallAo` (a gradient strip on the floor along the foot of every wall-like billboard) are Core maths with tests. `Unity/Hd2dGround.cs`
+  builds them as one flat mesh just above the floor, drawn by `Resources/Hd2dBlob.shader` (alpha blended, procedural radial / linear alpha).
+  `Hd2dView.Build` calls `ground.Build(pieces)` once per build, so `Refresh()` (the screenshot mode) draws them too.
+- Sprite light: `Hd2dSprite.shader` gives upright sprites volume: a fake normal from the alpha edge and luminance gradient of the 32 x 32 cell
+  (neighbour texels clamped inside the cell), a warm rim per light, and a darker foot by world height. Floor quads stay flat. Not compiled here.
 - Quality: on mobile, or with PlayerPrefs `chaos.hd2d.low` = 1, shadows and depth of field are off and fewer lights are used.
 
 Screenshot mode: `ChaosUnity -chaosHd2dShot OUT_DIR` skips the login, builds the offline demo room (`Core/Hd2dDemo.cs`), renders it once
@@ -77,6 +85,52 @@ placeholder sprites drawn by code, unless the real pair is found (`-chaosPair DI
 and holds the temple tileset (pair 60); the pair is private and is not baked into the build. In the manual build with target
 StandaloneLinux64 the workflow runs it under xvfb with Mesa software OpenGL and uploads the artifact `hd2d-shots` (a failure of that step
 does not fail the build; the step log says why).
+
+3D architecture test (Ruins3d): an experiment to see whether free 3D assets make the HD-2D view look better. Unity only; the game
+client (OTClient family) does not use it and nothing here changes the server or the sprite pair.
+- What: real low-poly architecture with the game's pixel sprites standing in it (3D diorama, pixel characters, depth of field, warm
+  lights). Models: the CC0 Modular Ruins Pack by Quaternius (OBJ + MTL, no textures), 36 pieces in `Assets/Chaos/Resources/Ruins3d/`
+  with the pack's `License.txt` (credited in `docs/CREDITS.md`). The repo commits no `.meta`: Unity makes them on import.
+  `Resources.Load<GameObject>("Ruins3d/Wall")` works in the player; `ChaosBuild.cs` does not exclude them.
+- Mapping (`Core/Hd2dRuins.cs`, tested in `Core.Tests/RuinsTests.cs`): from the HD-2D layout, ground becomes a floor piece per tile
+  (Floor_Standard, Floor_Squares, a few Floor_Diamond); a ground border is dropped; a blocking on-bottom upright thing (the wall) becomes
+  one Wall segment per cell of width and one course per cell of height, turned to face the open side (south, east, west, north);
+  a blocking upright thing that is not on-bottom (pillar) becomes a column; a light source becomes a Torch on the wall of its tile,
+  else candles on a short column. Decals (carpet), loose items and creatures stay sprites. A few props (barrel, crate, pots, chest,
+  skull, bookcase) stand on free tiles in front of a wall. The Hd2dView light list is unchanged. One tile is one unit (pack scale 0.5).
+  Dressing (all by tile hash, same layout same room): a wall run of 6+ tiles is 3 courses high, its top course is sometimes
+  Wall_Broken / Wall_Hole / Wall_Half / Window_Bars, its middle two tiles are an arch (Wall_ArchRound or Wall_ArchGothic, the gothic one
+  holds Doors_GothicArch), Flag_Wall banners and Support_Tall beams stand on some faces; a stag and a fox statue on plinths at the wall
+  ends, a dead tree and a broken column in the far corners; up to `MaxProps` (22) barrels, crates, chest, pots (whole and broken), skulls,
+  candles, rubble and wall bookcases along the room. No prop on a tile that holds an item, a creature or the carpet, nor within one tile of
+  the carpet or a creature. The Overgrown (bright moss) variants are not shipped.
+- Look: `Unity/Hd2dRuins3d.cs` copies the pack's materials per role and restyles them (`Hd2dRuins.Restyle(name, r, g, b, role)`, after a gamma
+  lift): walls, columns and beams x 0.42 with a blue-grey tint and contrast x 1.18, floor x 0.55 with a warm brown dirt tint, stone props and
+  statues x 0.5, wood and metal dark and dull, banners dull red, bark dark brown, flames warm and emissive. Walls get a faint fixed cold
+  self-light (the first render lost the back wall: stone this dark vanished into the background). No soot gradient: the Standard shader reads
+  no vertex colours. Standard shader, the view's point lights and ambient, shadows on.
+- See it: the `hd2d-shots` artifact of `unity-prototype.yml` (Linux target) holds `hd2d_3d.png` next to `hd2d.png` and `classic.png`.
+  Same room, same camera, same post effects. If the models are not in the build the step skips `hd2d_3d.png` and says so in the log.
+- Unsure until seen: which side of the pack's walls is the nicer face, and the colour balance (the restyle lifts the pack's linear
+  colours with a gamma first). Both are one-line changes in `Hd2dRuins.cs`.
+
+3D characters (Chars3d): the creatures of the HD-2D view as 3D models. Unity only, like Ruins3d.
+- Models: the CC0 RPG Character Pack by Quaternius (FBX, rigged, animations inside), Warrior, Cleric and Wizard with their textures
+  and `License.txt` in `Assets/Chaos/Resources/Chars3d/` (credited in `docs/CREDITS.md`). No `.meta` is committed:
+  `Editor/Chars3dImport.cs` sets Generic rig and animations on import.
+- Mapping (`Core/Hd2dChars.cs`, tested in `Core.Tests/CharsTests.cs`): the player is the Warrior; other creatures hash their look type
+  (their id when it is 0) onto Cleric or Wizard. Yaw from `Dir` (North = +z, away from the camera, then 90 degrees per quarter turn),
+  position from the drawn tile (same x / z mapping as Ruins3d), scaled to 1.7 tiles, feet on the floor. Item looks stay sprites.
+- `Unity/Hd2dChars3d.cs`: `Attach(view)` sets `Hd2dView.SkipCreature` (sprites hidden, labels, lights and shadows stay),
+  `Build()` places the characters. They cast and receive shadows. Materials are copies: texture bound by code from Resources
+  (`Chars3d/NAME_Texture`, weapon material by name), colour x 0.75 and a little grey.
+- Pose without a frame: the idle clip is found by name (`Idle`, else `Idle_Weapon`) in `Resources.LoadAll<AnimationClip>` and sampled
+  by hand with `clip.SampleAnimation(model, t)` (t differs per creature); the Animator is then switched off. No idle clip: bind pose.
+  `Live = true` resamples every frame.
+- See it: `hd2d_3d.png` now shows them; `hd2d_3d_close.png` is the same scene from half the distance, aimed at the hero. Missing models:
+  the step logs a warning and the sprites stay.
+- Unsure until seen: the models' facing (assumed +z, `Hd2dChars.ModelYaw` fixes it), the texture binding by material name, the height
+  measure from the mesh bounds.
 
 Limits, said plainly:
 - The sprites are drawn for an oblique view. Upright walls look right only with this fixed camera: there is no camera rotation.
@@ -145,12 +199,30 @@ The artifact `chaos-unity-<target>` is kept 7 days.
 
 `Assets/Chaos/Unity/Hd2dPost.cs`: `Hd2dPost.Attach(camera, lowQuality)` turns the look on, `Detach(camera)` restores the camera,
 fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the lit cutout material for billboards (point filter, mip 0, casts shadows).
-- Effects: bloom on bright pixels, tilt-shift depth of field (middle 44% of the height sharp, top and bottom blurred, by screen Y),
-  exponential fog, vignette, warm grade.
-- `lowQuality` (phones): keeps bloom and fog, drops depth of field, HDR and soft shadows.
+- Effects, in shader order: tilt-shift depth of field (middle 48% of the height sharp, `focusHalf` 0.24, `focusFeather` 0.26; a light
+  half-size blur and a heavy quarter-size blur blend by the distance from the band, so the top and bottom read as a miniature), bloom (`bloomThreshold` 0.8, `bloomIntensity` 0.95),
+  light shafts, ACES tonemap with `exposure`, grade (lifted blacks, split toning, midtone saturation, contrast), vignette tinted toward
+  the shadow colour, light film grain (`grain` 0.025, steps 24 times a second). Exponential fog is set by `Attach`.
+- Tonemap: the camera is HDR on desktop, so flames and bloom are added before the curve and roll off instead of clipping. `Core/Hd2dGrade.cs`
+  holds the same curve for the unit tests (`Hd2dGrade.Aces`); keep it in step with `Aces` in the shader.
+- Grade fields on `Hd2dEffect` (defaults): `exposure` 1.0, `shadowTint` (0.78, 0.86, 1.16), `highlightTint` (1.14, 1.0, 0.80),
+  `splitStrength` 0.75, `lift` (0.020, 0.018, 0.045), `tint` (1.02, 0.99, 0.95), `saturation` 1.04, `midSaturation` 0.22, `contrast` 1.05,
+  `vignette` 0.38, `grain` 0.025.
+- Light shafts: a radial blur of the bright pass toward up to 2 screen points, 20 samples each at quarter size, warm and subtle.
+  Fields: `shaftIntensity` 0.55, `shaftDecay` 0.93, `shaftDensity` 0.9. There are none until the view says where the lights are. Once per
+  frame, after the camera has moved: `Hd2dEffect.SetLightsWorld(cam, positions, colours)` (world positions, light colours; it keeps the 2 best
+  by brightness over distance, drops lights behind the camera and fades those leaving the frame). `fx.SetShaftSources(list of ShaftSource)`
+  takes screen uv points directly; null or an empty list turns the shafts off.
+- `lowQuality` (phones): keeps bloom, tonemap (`exposure` 1.3 because the LDR image tops out at 1), grade and fog; drops depth of field,
+  shafts, grain, HDR and soft shadows.
 - Pipeline: the built-in one with our own image effect (`Hd2dEffect.OnRenderImage`), post shader in `Assets/Chaos/Shaders/`; the sprite shader `Chaos/Hd2dSprite` is the view's `Resources/Hd2dSprite.shader` (one shader of that name).
   URP was not taken: its assemblies are not on NuGet, so `Client.Check` could not compile it and nothing in CI would check the URP asset
   that an editor script makes. `ChaosBuild` adds the shaders to Always Included Shaders.
+- Life (`Hd2dParticles.cs`, shader `Resources/Hd2dGlow.shader`, additive, vertex colour times a radial texture made in code): 60 dust motes
+  around the focus, 12 embers rising from each flame light (max 8 lights), a soft halo on every light. Own CPU quads in one dynamic mesh,
+  fixed seed, no frame needed: `Prewarm(s)` then `BuildMesh()` (the screenshot mode does both). `lowQuality` halves the counts.
+  `Hd2dView.Particles` is fed the same light list as `SetLights`.
+- Flicker: `Hd2d.Flicker(t, seed)` (Core, layered sines, 0.88..1.12) scales warm lights (`Hd2d.IsFlame`) and the halo, plus a small position jitter.
 - Not checked without a Unity license: the shader text (`Client.Check` compiles the C# only). Look at it once in the editor.
 
 ## HD-2D preview (O432)

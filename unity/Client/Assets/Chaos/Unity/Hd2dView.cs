@@ -1,7 +1,7 @@
 // The HD-2D view (O432): the world's sprites placed in a 3D scene. The layout (what stands, what lies, where, which lights)
 // is Core/Hd2d.cs; this file turns it into two dynamic meshes over the sprite atlas (flat floor quads that receive shadows,
 // upright billboards that cast them), a tilted perspective camera that keeps the 15 x 11 tile view, Unity point lights
-// (nearest first, capped) and a dim cool ambient. Bloom, depth of field and fog are Hd2dPost. Built-in render pipeline.
+// (nearest first, capped) and a warm dusk ambient. Bloom, depth of field and fog are Hd2dPost. Built-in render pipeline.
 // Only the player's floor is drawn. Quality: mobile and the "chaos.hd2d.low" pref turn shadows off and cap the lights.
 using System;
 using System.Collections.Generic;
@@ -25,6 +25,10 @@ namespace Chaos.Client
 
         /// <summary>The sprites are drawn straight up (the synthetic demo art), not in the classic slant: no shear.</summary>
         public bool StraightArt;
+        /// <summary>Pieces this returns true for are not drawn as sprites (a 3D model takes their place: Hd2dRuins3d). Lights still come from them.</summary>
+        public Func<Hd2dPiece, bool> Skip;
+        /// <summary>Creatures this returns true for are not drawn as sprites (a 3D character takes their place: Hd2dChars3d). Their name label stays.</summary>
+        public Func<Creature, bool> SkipCreature;
         public static bool LowQuality => Application.isMobilePlatform || PlayerPrefs.GetInt("chaos.hd2d.low", 0) == 1;
         public int MaxLights => LowQuality ? 4 : 8;
         public int MaxShadowLights => LowQuality ? 0 : 2;
@@ -48,6 +52,7 @@ namespace Chaos.Client
         }
 
         Batch flat, upright;
+        Hd2dGround ground;   // contact shadows and wall ambient occlusion (Hd2dGround.cs)
         Material material;
         readonly List<Light> lights = new List<Light>();
         readonly Vector3 upNormal = Vector3.up;
@@ -55,6 +60,8 @@ namespace Chaos.Client
         bool saved;
         AmbientMode oldMode; Color oldAmbient; ShadowQuality oldShadows; int oldPixelLights; float oldShadowDistance;
         public Hd2dCameraPose LastPose;
+        /// <summary>Dust, embers and flame halos (Hd2dParticles); null until the view is enabled.</summary>
+        public Hd2dParticles Particles { get; private set; }
 
         Batch NewBatch(string name, bool casts)
         {
@@ -80,6 +87,7 @@ namespace Chaos.Client
             material.SetFloat("_Cutoff", 0.5f);
             flat = NewBatch("floor", false);
             upright = NewBatch("upright", true);
+            ground = new Hd2dGround(transform);
         }
 
         void OnEnable()
@@ -94,8 +102,11 @@ namespace Chaos.Client
             QualitySettings.pixelLightCount = Math.Max(oldPixelLights, MaxLights);
             QualitySettings.shadowDistance = 60f;
             RenderSettings.ambientMode = AmbientMode.Flat;
-            if (flat != null) { flat.Renderer.enabled = true; upright.Renderer.enabled = true; }
+            if (flat != null) { flat.Renderer.enabled = true; upright.Renderer.enabled = true; ground.Enabled = true; }
             if (Cam != null) Hd2dPost.Attach(Cam, LowQuality);
+            if (Particles == null) { var pg = new GameObject("particles"); pg.transform.SetParent(transform, false); Particles = pg.AddComponent<Hd2dParticles>(); }
+            Particles.Cam = Cam;
+            Particles.enabled = true;
         }
 
         void OnDisable()
@@ -106,9 +117,21 @@ namespace Chaos.Client
                 QualitySettings.shadows = oldShadows; QualitySettings.pixelLightCount = oldPixelLights; QualitySettings.shadowDistance = oldShadowDistance;
                 saved = false;
             }
-            if (flat != null) { flat.Renderer.enabled = false; upright.Renderer.enabled = false; }
+            if (flat != null) { flat.Renderer.enabled = false; upright.Renderer.enabled = false; ground.Enabled = false; }
             foreach (var l in lights) if (l != null) l.enabled = false;
             if (Cam != null) Hd2dPost.Detach(Cam);
+            if (Particles != null) Particles.enabled = false;
+        }
+
+        // the measured lean profile of each thing's art (Hd2d.Lean), once per type
+        readonly Dictionary<(ThingType, bool), float[]> leans = new Dictionary<(ThingType, bool), float[]>();
+
+        float[] LeanOf(ThingType t, bool outfit)
+        {
+            if (leans.TryGetValue((t, outfit), out var v)) return v;
+            v = Hd2d.Lean(t, outfit, id => id == 0 ? null : Atlas.Raw(id));
+            leans[(t, outfit)] = v;
+            return v;
         }
 
         double Now => Clock != null ? Clock() : Time.realtimeSinceStartupAsDouble * 1000;
@@ -126,6 +149,9 @@ namespace Chaos.Client
         }
 
         float[] DrawnPos(Creature c) { return Drawn(c, out float _); }
+
+        /// <summary>The tile position a creature is drawn at now, fractional while it walks (x east, y south).</summary>
+        public Vector2 DrawnTile(Creature c) { var d = DrawnPos(c); return new Vector2(d[0], d[1]); }
 
         void LateUpdate() { Refresh(); }
 
@@ -146,15 +172,18 @@ namespace Chaos.Client
             Pos origin = World.Center;
             var player = World.Player;
             float[] pd = player != null ? DrawnPos(player) : new float[] { origin.X, origin.Y };
-            var pieces = Hd2d.Layout(World, origin, Pitch, DrawnPos, !StraightArt);
+            var pieces = Hd2d.Layout(World, origin, Pitch, DrawnPos, !StraightArt, LeanOf);
             double p = Pitch * Math.PI / 180.0;
             camNormal = new Vector3(0f, (float)Math.Sin(p), -(float)Math.Cos(p));
             foreach (var piece in pieces)
             {
+                if (piece.Creature != null && SkipCreature != null && SkipCreature(piece.Creature)) { AddLabel(piece); continue; }
+                if (Skip != null && Skip(piece)) continue;
                 if (piece.Creature != null) AddCreature(piece);
                 else AddItem(piece);
             }
             flat.Upload(); upright.Upload();
+            ground.Build(pieces);
 
             var pose = Hd2dCamera.ForTile(pd[0], pd[1], origin, Cam.aspect, Pitch, Fov);
             LastPose = pose;
@@ -168,9 +197,19 @@ namespace Chaos.Client
 
             // world light: darker and cooler underground and at night; 255 is full daylight
             float day = Mathf.Clamp01(World.WorldLight / 255f);
-            RenderSettings.ambientLight = Color.Lerp(new Color(0.10f, 0.12f, 0.20f), new Color(0.42f, 0.45f, 0.55f), day);
-            SetLights(Hd2d.Lights(pieces, pose.Target, MaxLights));
+            // never pitch black: the HD-2D look keeps a warm dusk under the torches
+            RenderSettings.ambientLight = Color.Lerp(new Color(0.20f, 0.18f, 0.24f), new Color(0.50f, 0.48f, 0.52f), day);
+            var lightList = Hd2d.Lights(pieces, pose.Target, MaxLights);
+            SetLights(lightList);
+            if (Particles != null) Particles.SetLights(lightList, pose.Target);
+            // light shafts toward the strongest lights (Hd2dPost)
+            shaftPos.Clear(); shaftCol.Clear();
+            foreach (var d in lightList) { shaftPos.Add(new Vector3(d.Position.X, d.Position.Y, d.Position.Z)); shaftCol.Add(new Color(d.R, d.G, d.B) * d.Intensity); }
+            Hd2dEffect.SetLightsWorld(Cam, shaftPos, shaftCol);
         }
+
+        readonly List<Vector3> shaftPos = new List<Vector3>();
+        readonly List<Color> shaftCol = new List<Color>();
 
         void SetLights(List<Hd2dLight> list)
         {
@@ -190,8 +229,14 @@ namespace Chaos.Client
                 l.enabled = true;
                 l.transform.position = new Vector3(d.Position.X, d.Position.Y, d.Position.Z);
                 l.color = new Color(d.R, d.G, d.B);
-                l.range = d.Range * 1.4f;
-                l.intensity = d.Intensity * 1.6f;
+                l.range = d.Range * 1.8f;
+                l.intensity = d.Intensity * 2.0f;
+                if (Hd2d.IsFlame(d))   // torch flicker (Hd2d.Flicker): intensity and a tiny position jitter
+                {
+                    float ft = (float)(Now / 1000.0);
+                    l.intensity *= Hd2d.Flicker(ft, i + 1);
+                    l.transform.position += new Vector3(Hd2d.Flicker(ft * 1.7f, i + 11) - 1f, Hd2d.Flicker(ft * 1.3f, i + 21) - 1f, Hd2d.Flicker(ft * 1.9f, i + 31) - 1f) * 0.25f;
+                }
                 l.shadows = i < MaxShadowLights ? LightShadows.Soft : LightShadows.None;
                 l.shadowStrength = 0.85f;
                 l.shadowBias = 0.03f;
@@ -295,20 +340,26 @@ namespace Chaos.Client
         void Quad(Hd2dPiece piece, int ww, int hh, int slot, int layer)
         {
             if (slot == 0) return;
-            var c = piece.Cell(ww, hh);
             var b = piece.Flat ? flat : upright;
             var normal = piece.Flat ? upNormal : camNormal;
             Vector3 bias = piece.Flat ? new Vector3(0, 0.0004f * layer, 0) : new Vector3(0, 0, -0.0004f * layer);
             var r = Atlas.Uv(slot);
-            int i = b.V.Count;
-            for (int k = 0; k < 4; k++) { b.V.Add(new Vector3(c[k].X, c[k].Y, c[k].Z) + bias); b.N.Add(normal); }
-            b.UV.Add(new Vector2(r.xMin, r.yMin));
-            b.UV.Add(new Vector2(r.xMax, r.yMin));
-            b.UV.Add(new Vector2(r.xMax, r.yMax));
-            b.UV.Add(new Vector2(r.xMin, r.yMax));
-            // corners: bottom-left, bottom-right, top-right, top-left as the camera sees them; these triangles face it
-            b.T.Add(i); b.T.Add(i + 2); b.T.Add(i + 1);
-            b.T.Add(i); b.T.Add(i + 3); b.T.Add(i + 2);
+            // an upright cell with a lean profile is drawn in strips, each moved by the profile (the art straightened)
+            int n = !piece.Flat && piece.Lean != null ? Hd2d.Strips : 1;
+            for (int k = 0; k < n; k++)
+            {
+                var c = n == 1 ? piece.Cell(ww, hh) : piece.Strip(ww, hh, k, n);
+                float v0 = r.yMin + (r.yMax - r.yMin) * k / n, v1 = r.yMin + (r.yMax - r.yMin) * (k + 1) / n;
+                int i = b.V.Count;
+                for (int q = 0; q < 4; q++) { b.V.Add(new Vector3(c[q].X, c[q].Y, c[q].Z) + bias); b.N.Add(normal); }
+                b.UV.Add(new Vector2(r.xMin, v0));
+                b.UV.Add(new Vector2(r.xMax, v0));
+                b.UV.Add(new Vector2(r.xMax, v1));
+                b.UV.Add(new Vector2(r.xMin, v1));
+                // corners: bottom-left, bottom-right, top-right, top-left as the camera sees them; these triangles face it
+                b.T.Add(i); b.T.Add(i + 2); b.T.Add(i + 1);
+                b.T.Add(i); b.T.Add(i + 3); b.T.Add(i + 2);
+            }
         }
     }
 }

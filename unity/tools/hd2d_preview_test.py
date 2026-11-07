@@ -46,10 +46,23 @@ check(abs(f[0] - 1) < 1e-9 and 0 < f[1] < 1 and f[2] == 0 and f[3] == 0 and f[0]
 check(H.floor_rect(I(3, 3), 5, 7) == (3, 5, 6, 8), 'floor rect covers up and left')
 x0, x1, h, z = H.billboard_rect(I(2, 2), 4, 4)
 check((x0, x1, h) == (3, 5, 2.0) and z == 4 + H.BASE_Z, 'billboard rect 2 x 2 keeps its tile as bottom-right')
-check(H.shear_of(I(2, 2, {'bottom': True, 'notwalkable': True})) == 1.0, 'a 2 x 2 wall leans east as it rises')
-check(H.shear_of(I(1, 2, {'notwalkable': True})) == 0.0 and H.shear_of(I(2, 2, {}, 'outfit')) == 0.0
-      and H.shear_of(I(3, 3, {'notmoveable': True})) == 0.0
-      and H.shear_of(I(2, 2, {'pickupable': True})) == 0.0, 'no shear: one cell wide, outfits, flat things, loose objects')
+# measured lean: a bar climbing up-left one pixel per pixel is 1, a post 0, a right lean 0, a speck 0
+def bar(slope, x0, n=64, w=64):
+    img = np.zeros((n, w, 4), np.uint8)
+    for y in range(n):
+        x = int(round(x0 - slope * (n - 1 - y)))
+        if 0 <= x < w:
+            img[y, max(0, x - 1):x + 2, 3] = 255
+    return img
+
+
+prof = H.lean_of(bar(0.9, 62))
+check(prof is not None and prof[0] == 0 and abs((prof[7] - prof[4]) - 0.9 * 24 / 32) < 0.03, 'a bar leaning up-left is moved back over its base, strip by strip')
+check(np.all(H.lean_of(bar(0.0, 30)) == 0) and np.all(H.lean_of(bar(-0.5, 4)) == 0), 'a post stays, a right lean is never pushed further')
+check(H.lean_of(bar(1.0, 10, n=8)) is None, 'no profile for a speck')
+cap = H.lean_of(bar(3.0, 63))
+check(cap is not None and abs(cap[1] - H.MAX_SLANT / H.STRIPS) < 1e-9, 'the lean per strip is capped')
+check(abs(float(H.lean_at(np.array([0, 0.25, 0.5]), 0.125)) - 0.125) < 1e-9 and float(H.lean_at(None, 2.0)) == 0.0, 'lean_at interpolates')
 
 # camera: the room stays in frame for several sizes
 for w, h_ in ((480, 300), (960, 600), (1280, 720)):
@@ -114,7 +127,7 @@ wall = [(H.Placement('item', 2, 6, 5), I(2, 2, {'notwalkable': True}), 0)]
 sm = H.shadow_maps(wall, [A.image('item', 2)], lights, (-4.0, -4.0), (H.ROOM_W + 8, H.ROOM_H + 8))[0]
 res = H.SHADOW_RES
 z_i = int((5.8 + 4) * res)
-sh_w = sm[z_i, int((4.5 + 4) * res)]       # west of the wall (away from the light; the 2 x 2 wall leans east)
+sh_w = sm[z_i, int((3.8 + 4) * res)]       # west of the wall (away from the light)
 sh_e = sm[z_i, int((9.0 + 4) * res)]       # east of it, towards the light
 check(sm.max() > 0.5 and sh_w > 0.4 and sh_e < 0.05, 'shadow away from the light (%.2f west, %.2f east)' % (sh_w, sh_e))
 

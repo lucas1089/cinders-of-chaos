@@ -269,6 +269,20 @@
      "use": "the terrain of four hunts (Brickhold Depths, Cinderbrick Halls, Rimewind Isle, Dunereach Isle), cut from free community maps"
     },
     {
+     "name": "Modular Ruins Pack (Ultimate Modular Ruins)",
+     "author": "Quaternius",
+     "licence": "Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Ruins3d/License.txt",
+     "use": "the 3D architecture test of the Unity prototype (floors, walls, pillars, torches and props, restyled in code), not in the main game client",
+     "source": "https://quaternius.com/packs/ultimatemodularruins.html"
+    },
+    {
+     "name": "RPG Character Pack",
+     "author": "Quaternius",
+     "licence": "Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Chars3d/License.txt",
+     "use": "the 3D characters of the Unity prototype (Warrior, Cleric and Wizard, rigged, idle pose, tinted darker in code), not in the main game client",
+     "source": "https://quaternius.com/packs/rpgcharacters.html"
+    },
+    {
      "name": "AI Sprite Studio",
      "author": "AI Sprite Studio, AI-generated free sample pack (the art is AI-generated and is not claimed to be hand-drawn)",
      "licence": "personal and commercial use allowed, no exclusivity; terms at https://aispritestudio.com/terms/",

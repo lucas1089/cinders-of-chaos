@@ -62,6 +62,55 @@ namespace Chaos.Core.Tests
                 && Near(Hd2d.ShearFor(Hd2dKind.OnTop, 2, 2), 1f) && Near(Hd2d.ShearFor(Hd2dKind.Decal, 2, 2), 0f),
                 "hd2d: no shear for creatures, loose objects, one-cell-wide or one-cell-high things, or flat things");
             {
+                // measured lean profile: per strip boundary, how far east the art is moved to sit over its base
+                double[] Rows(int n, Func<int, double> xAtHeight, out int[] count)
+                {
+                    var sum = new double[n]; count = new int[n];
+                    for (int y = 0; y < n; y++) { double h = n - 1 - y; sum[y] = xAtHeight((int)h) * 3; count[y] = 3; }
+                    return sum;
+                }
+                var diag = Hd2d.LeanOfRows(Rows(64, h => 60 - h * 0.9, out int[] dc), dc);
+                var post = Hd2d.LeanOfRows(Rows(64, h => 30, out int[] pc), pc);
+                var right = Hd2d.LeanOfRows(Rows(64, h => 4 + h * 0.5, out int[] rc), rc);
+                check(diag != null && diag.Length == 2 * Hd2d.Strips + 1 && diag[0] == 0f && Near(diag[7] - diag[4], 0.9f * 24 / 32f, 0.02f) && Near(diag[4], 0.9f, 0.1f),
+                    "hd2d: a line climbing up-left is moved back over its base, strip by strip: " + (diag == null ? "null" : string.Join(",", diag)));
+                check(post != null && post.All(v => v == 0f) && right != null && right.All(v => v == 0f), "hd2d: a post stays, a right lean is never pushed further");
+                check(Hd2d.LeanOfRows(Rows(8, h => 20 - h, out int[] sc2), sc2) == null, "hd2d: no profile for a speck");
+                var capLean = Hd2d.LeanOfRows(Rows(64, h => 63 - h * 3.0, out int[] fc), fc);
+                check(capLean != null && Near(capLean[1], Hd2d.MaxSlant / Hd2d.Strips), "hd2d: the lean per strip is capped");
+                // a torch: a pole climbing up-left with an upright flame on top: the flame ends over the pole's base
+                var torchLean = Hd2d.LeanOfRows(Rows(64, h => h < 32 ? 50 - h : 18, out int[] tc), tc);
+                check(torchLean != null && torchLean[3] > 0.5f && Near(torchLean[8], torchLean[6], 0.01f) && torchLean[8] < 1.05f, "hd2d: an upright flame on a leaning pole gets no extra lean: " + (torchLean == null ? "null" : string.Join(",", torchLean)));
+                // a 2 x 2 thing whose art is a diagonal bar, through Lean and the layout
+                var barType = T(t => { t.NotWalkable = true; }, 2, 2);
+                byte[] Cell(int cw, int ch)
+                {
+                    var px = new byte[32 * 32 * 4];
+                    for (int y = 0; y < 32; y++)
+                        for (int x = 0; x < 32; x++)
+                        {
+                            int gx = (1 - cw) * 32 + x, gy = (1 - ch) * 32 + y, h = 63 - gy;
+                            if (Math.Abs(gx - (63 - h)) <= 2) px[(y * 32 + x) * 4 + 3] = 255;
+                        }
+                    return px;
+                }
+                var cells = new System.Collections.Generic.Dictionary<uint, byte[]>();
+                for (int k = 0; k < barType.Idle.Sprites.Length; k++) barType.Idle.Sprites[k] = (uint)(900 + k);
+                for (int ch = 0; ch < 2; ch++) for (int cw = 0; cw < 2; cw++) cells[barType.Idle.Sprite(cw, ch, 0, 0, 0, 0, 0)] = Cell(cw, ch);
+                var bar = Hd2d.Lean(barType, false, id => cells.TryGetValue(id, out var bb) ? bb : null);
+                check(bar != null && Near(bar[4], 1f, 0.12f), "hd2d: a diagonal bar drawn across a 2 x 2 sprite is moved one tile east at one tile up: " + (bar == null ? "null" : string.Join(",", bar)));
+                var bt = new Tile(new Pos(100, 100, 7));
+                bt.Things.Add(new Thing { Item = new Item { Id = 9, Type = barType } });
+                var bp = new System.Collections.Generic.List<Hd2dPiece>();
+                var prof = new float[2 * Hd2d.Strips + 1];
+                for (int k = 0; k < prof.Length; k++) prof[k] = k * 0.25f;
+                Hd2d.LayoutTile(dat, bt, origin, stretch, bp, null, true, (t, o) => prof);
+                Hd2d.LayoutTile(dat, bt, origin, stretch, bp, null, false, (t, o) => prof);
+                var st = bp[0].Strip(0, 1, 2, Hd2d.Strips);
+                check(bp.Count == 2 && bp[0].Lean == prof && bp[1].Lean == null && Near(bp[0].OffsetAt(1.5f), 1.5f) && Near(st[0].X, 1.5f) && Near(st[3].X, 1.75f),
+                    "hd2d: the layout straightens by the measured profile in strips, never for straight art");
+            }
+            {
                 var torchType = T(t => { t.NotWalkable = true; t.LightLevel = 6; t.LightColor = 206; }, 2, 2);
                 var standing = new Tile(new Pos(100, 100, 7));
                 standing.Things.Add(new Thing { Item = new Item { Id = 7, Type = torchType } });
@@ -91,6 +140,18 @@ namespace Chaos.Core.Tests
             check(pieces.Count == 2 && Near(pieces[0].Y, 0f) && Near(pieces[1].Y, 0.5f), "hd2d: elevation 16 lifts the next item by half a tile");
 
             // ---- light colours
+            {
+                float lo = 9f, hi = 0f, fprev = Hd2d.Flicker(0f, 3), maxStep = 0f;
+                for (int i = 1; i <= 2000; i++)
+                {
+                    float f = Hd2d.Flicker(i * 0.01f, 3);
+                    lo = Math.Min(lo, f); hi = Math.Max(hi, f); maxStep = Math.Max(maxStep, Math.Abs(f - fprev)); fprev = f;
+                }
+                check(lo >= 0.879f && hi <= 1.121f && hi - lo > 0.1f, "hd2d: flicker stays within +-12% and moves");
+                check(maxStep < 0.04f, "hd2d: flicker is smooth between frames");
+                check(Hd2d.Flicker(1.25f, 5) == Hd2d.Flicker(1.25f, 5) && Hd2d.Flicker(1.25f, 5) != Hd2d.Flicker(1.25f, 6), "hd2d: flicker is deterministic and differs per seed");
+                check(Hd2d.IsFlame(new Hd2dLight { R = 1f, G = 0.6f, B = 0.2f }) && !Hd2d.IsFlame(new Hd2dLight { R = 1f, G = 1f, B = 1f }) && !Hd2d.IsFlame(new Hd2dLight { R = 0.3f, G = 0.5f, B = 1f }), "hd2d: warm lights are flames, white and blue are not");
+            }
             Hd2d.ColorFromIndex(0, out int r, out int g, out int b);
             check(r == 0 && g == 0 && b == 0, "hd2d: colour 0 is black");
             Hd2d.ColorFromIndex(215, out r, out g, out b);
@@ -160,6 +221,37 @@ namespace Chaos.Core.Tests
             check(steep.Distance > 0 && flat.Distance > 0 && Near(steep.Distance, flat.Distance, steep.Distance * 0.05f), "hd2d: pitch 35 to 45 needs about the same distance (width bound)");
             var wide = Hd2dCamera.ForTile(100, 100, origin, 15f / 11f, 40f, 25f, margin: 1f);
             check(wide.Distance > cam.Distance, "hd2d: a margin backs the camera off");
+
+            // ---- contact shadows and wall ambient occlusion
+            {
+                var gp = new System.Collections.Generic.List<Hd2dPiece>
+                {
+                    new Hd2dPiece { Kind = Hd2dKind.Floor, Right = 1f, Z = 0f, Width = 1, Height = 1 },
+                    new Hd2dPiece { Kind = Hd2dKind.Creature, Right = 5f, Z = -2.5f, Width = 1, Height = 1, Stretch = 1.3f, Y = 0f },
+                    new Hd2dPiece { Kind = Hd2dKind.Object, Right = 3f, Z = -1.5f, Width = 1, Height = 1, Stretch = 1.3f, Y = 0.13f },
+                    new Hd2dPiece { Kind = Hd2dKind.Billboard, Right = 8f, Z = -3f, Width = 2, Height = 2, Stretch = 1.3f, Y = 0f },
+                };
+                var blobs = Hd2d.ContactShadows(gp);
+                check(blobs.Count == 3, "hd2d ground: one blob per upright piece, none for the floor: " + blobs.Count);
+                check(Near(blobs[0].X, 4.5f) && blobs[0].Z < -2.5f && blobs[0].Z > -2.6f && Near(blobs[0].RadiusZ, blobs[0].RadiusX * Hd2dGroundMath.Flatten), "hd2d ground: a creature blob sits under its feet, flattened");
+                check(blobs[0].Strength > blobs[1].Strength && blobs[1].Strength > blobs[2].Strength, "hd2d ground: creatures darker than objects, objects than walls");
+                check(Near(blobs[2].X, 7f) && Near(blobs[2].RadiusX, 2 * Hd2dGroundMath.WidthShare) && blobs[2].Z < -3f, "hd2d ground: a 2 wide wall blob is twice as wide, in front of the wall");
+                check(blobs[1].Y > blobs[0].Y && Near(blobs[1].Y, 0.1f + Hd2dGroundMath.Lift), "hd2d ground: an elevated object's blob follows its floor height");
+                var ao = Hd2d.WallAo(gp);
+                check(ao.Count == 1 && Near(ao[0].X0, 6f) && Near(ao[0].X1, 8f) && Near(ao[0].ZWall, -3f) && ao[0].Depth > 0f, "hd2d ground: a wall strip covers its footprint along its base");
+                check(Hd2d.ContactShadows(new Hd2dPiece[0]).Count == 0 && Hd2d.WallAo(new Hd2dPiece[0]).Count == 0, "hd2d ground: no pieces, no shadows");
+            }
+            // ---- post maths: filmic curve, shaft ranking, edge fade
+            check(Hd2dGrade.Aces(0f) == 0f && Hd2dGrade.Aces(-1f) == 0f, "hd2d post: the filmic curve keeps black black");
+            check(Near(Hd2dGrade.Aces(0.18f), 0.267f, 2e-3f), "hd2d post: mid grey 0.18 maps to about 0.267");
+            float prev = 0f; bool mono = true, below = true;
+            for (float x = 0.01f; x < 64f; x *= 1.3f) { float a = Hd2dGrade.Aces(x); if (a < prev) mono = false; if (a > 1f) below = false; prev = a; }
+            check(mono && below && Hd2dGrade.Aces(1000f) > 0.99f, "hd2d post: the curve rises, rolls off and never clips above 1");
+            check(Hd2dGrade.Aces(4f) - Hd2dGrade.Aces(2f) < Hd2dGrade.Aces(1f) - Hd2dGrade.Aces(0.5f), "hd2d post: highlights are compressed more than mids");
+            check(Hd2dGrade.ShaftScore(1f, 2f) > Hd2dGrade.ShaftScore(1f, 9f) && Hd2dGrade.ShaftScore(1.5f, 4f) > Hd2dGrade.ShaftScore(0.5f, 4f) && Hd2dGrade.ShaftScore(0f, 1f) == 0f,
+                  "hd2d post: a nearer and brighter light ranks higher as a shaft source");
+            check(Hd2dGrade.EdgeFade(0.5f, 0.5f) == 1f && Hd2dGrade.EdgeFade(1f, 0f) == 1f && Hd2dGrade.EdgeFade(1.35f, 0.5f) == 0f && Hd2dGrade.EdgeFade(-2f, 0.5f) == 0f &&
+                  Near(Hd2dGrade.EdgeFade(1.175f, 0.5f), 0.5f), "hd2d post: shaft fade is 1 on screen and 0 well outside");
 
             // ---- the synthetic demo room: real dat and spr bytes
             var demo = Hd2dDemo.Synthetic();
