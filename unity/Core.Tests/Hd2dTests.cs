@@ -141,11 +141,11 @@ namespace Chaos.Core.Tests
 
             // ---- light colours
             {
-                float lo = 9f, hi = 0f, prev = Hd2d.Flicker(0f, 3), maxStep = 0f;
+                float lo = 9f, hi = 0f, fprev = Hd2d.Flicker(0f, 3), maxStep = 0f;
                 for (int i = 1; i <= 2000; i++)
                 {
                     float f = Hd2d.Flicker(i * 0.01f, 3);
-                    lo = Math.Min(lo, f); hi = Math.Max(hi, f); maxStep = Math.Max(maxStep, Math.Abs(f - prev)); prev = f;
+                    lo = Math.Min(lo, f); hi = Math.Max(hi, f); maxStep = Math.Max(maxStep, Math.Abs(f - fprev)); fprev = f;
                 }
                 check(lo >= 0.879f && hi <= 1.121f && hi - lo > 0.1f, "hd2d: flicker stays within +-12% and moves");
                 check(maxStep < 0.04f, "hd2d: flicker is smooth between frames");
@@ -241,6 +241,17 @@ namespace Chaos.Core.Tests
                 check(ao.Count == 1 && Near(ao[0].X0, 6f) && Near(ao[0].X1, 8f) && Near(ao[0].ZWall, -3f) && ao[0].Depth > 0f, "hd2d ground: a wall strip covers its footprint along its base");
                 check(Hd2d.ContactShadows(new Hd2dPiece[0]).Count == 0 && Hd2d.WallAo(new Hd2dPiece[0]).Count == 0, "hd2d ground: no pieces, no shadows");
             }
+            // ---- post maths: filmic curve, shaft ranking, edge fade
+            check(Hd2dGrade.Aces(0f) == 0f && Hd2dGrade.Aces(-1f) == 0f, "hd2d post: the filmic curve keeps black black");
+            check(Near(Hd2dGrade.Aces(0.18f), 0.267f, 2e-3f), "hd2d post: mid grey 0.18 maps to about 0.267");
+            float prev = 0f; bool mono = true, below = true;
+            for (float x = 0.01f; x < 64f; x *= 1.3f) { float a = Hd2dGrade.Aces(x); if (a < prev) mono = false; if (a > 1f) below = false; prev = a; }
+            check(mono && below && Hd2dGrade.Aces(1000f) > 0.99f, "hd2d post: the curve rises, rolls off and never clips above 1");
+            check(Hd2dGrade.Aces(4f) - Hd2dGrade.Aces(2f) < Hd2dGrade.Aces(1f) - Hd2dGrade.Aces(0.5f), "hd2d post: highlights are compressed more than mids");
+            check(Hd2dGrade.ShaftScore(1f, 2f) > Hd2dGrade.ShaftScore(1f, 9f) && Hd2dGrade.ShaftScore(1.5f, 4f) > Hd2dGrade.ShaftScore(0.5f, 4f) && Hd2dGrade.ShaftScore(0f, 1f) == 0f,
+                  "hd2d post: a nearer and brighter light ranks higher as a shaft source");
+            check(Hd2dGrade.EdgeFade(0.5f, 0.5f) == 1f && Hd2dGrade.EdgeFade(1f, 0f) == 1f && Hd2dGrade.EdgeFade(1.35f, 0.5f) == 0f && Hd2dGrade.EdgeFade(-2f, 0.5f) == 0f &&
+                  Near(Hd2dGrade.EdgeFade(1.175f, 0.5f), 0.5f), "hd2d post: shaft fade is 1 on screen and 0 well outside");
 
             // ---- the synthetic demo room: real dat and spr bytes
             var demo = Hd2dDemo.Synthetic();

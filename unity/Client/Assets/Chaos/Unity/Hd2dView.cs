@@ -193,7 +193,14 @@ namespace Chaos.Client
             var lightList = Hd2d.Lights(pieces, pose.Target, MaxLights);
             SetLights(lightList);
             if (Particles != null) Particles.SetLights(lightList, pose.Target);
+            // light shafts toward the strongest lights (Hd2dPost)
+            shaftPos.Clear(); shaftCol.Clear();
+            foreach (var d in lightList) { shaftPos.Add(new Vector3(d.Position.X, d.Position.Y, d.Position.Z)); shaftCol.Add(new Color(d.R, d.G, d.B) * d.Intensity); }
+            Hd2dEffect.SetLightsWorld(Cam, shaftPos, shaftCol);
         }
+
+        readonly List<Vector3> shaftPos = new List<Vector3>();
+        readonly List<Color> shaftCol = new List<Color>();
 
         void SetLights(List<Hd2dLight> list)
         {
