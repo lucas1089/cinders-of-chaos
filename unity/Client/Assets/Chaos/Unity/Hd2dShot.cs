@@ -1,6 +1,7 @@
 // Screenshot mode of the HD-2D view (O432): `ChaosUnity -chaosHd2dShot OUT_DIR` skips the login, builds the offline demo room
 // (Core/Hd2dDemo.cs), renders it once in the classic flat view and once in HD-2D into a 1200 x 880 texture (the 15 : 11
-// shape of the classic view), writes classic.png and hd2d.png to OUT_DIR and quits (exit code 0, or 1 with the reason in
+// shape of the classic view), writes classic.png and hd2d.png, then hd2d_3d.png (the 3D architecture test,
+// Unity/Hd2dRuins3d.cs, when its models are in the build) to OUT_DIR and quits (exit code 0, or 1 with the reason in
 // the log). It needs no server and no game files: the art is the synthetic demo art, unless the real pair is found
 // (`-chaosPair DIR`, the env CHAOS_PAIR_DIR, or things/ beside the executable) and holds the temple tileset (pair 60).
 // The CI run (unity-prototype.yml, Linux target) runs it under xvfb with software OpenGL.
@@ -107,6 +108,21 @@ namespace Chaos.Client
             Debug.Log("chaos hd2d shot: rendering HD-2D");
             Save(cam, tex, "hd2d.png");
             Debug.Log("chaos hd2d shot: wrote classic.png and hd2d.png to " + OutDir);
+
+            // 3D architecture test (Ruins3d): the same room with 3D pieces in place of the sprite floors, walls, pillars and lights
+            var ruinsGo = new GameObject("Ruins3d");
+            var ruins = ruinsGo.AddComponent<Hd2dRuins3d>();
+            ruins.World = world;
+            if (ruins.Attach(hd))
+            {
+                Debug.Log("chaos hd2d shot: building the 3D architecture");
+                hd.Refresh();   // the view skips the sprites the models replace
+                ruins.Build();
+                Debug.Log("chaos hd2d shot: rendering HD-2D with 3D architecture");
+                Save(cam, tex, "hd2d_3d.png");
+                Debug.Log("chaos hd2d shot: wrote hd2d_3d.png (" + ruins.Placed + " models)");
+            }
+            else Debug.LogWarning("chaos hd2d shot: no 3D models in this build, hd2d_3d.png skipped");
             yield break;
         }
 

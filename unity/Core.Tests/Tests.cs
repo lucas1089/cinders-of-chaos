@@ -49,6 +49,7 @@ namespace Chaos.Core.Tests
             ProtocolTests.Run,
             WindowTests.Run,
             Hd2dTests.Run,
+            RuinsTests.Run,
         };
 
         static void CryptoChecks()
