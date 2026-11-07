@@ -3,7 +3,7 @@
 // loose items stay the sprite billboards of Hd2dView. Which piece goes where is Core/Hd2dRuins.cs.
 // Attach(view) makes the view skip the sprite pieces that are replaced; Build() places the models once. Needs the models in
 // Resources: when the required ones are missing, Attach does nothing and the view keeps all its sprites.
-// The pack's colours are restyled on copies of its materials (never the assets): cold grey stone, dark wood, warm emissive flames.
+// The pack's colours are restyled on copies of its materials (never the assets): cold dark stone walls, warm dirt floor, dark wood, warm emissive flames.
 // Standard shader, lit by the view's point lights and ambient. Unity only; the game client does not use it.
 using System;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace Chaos.Client
 
         const string Folder = "Ruins3d/";
         readonly Dictionary<string, GameObject> prefabs = new Dictionary<string, GameObject>();
-        readonly Dictionary<Material, Material> styled = new Dictionary<Material, Material>();
+        readonly Dictionary<string, Material> styled = new Dictionary<string, Material>();
         readonly List<GameObject> made = new List<GameObject>();
         bool attached;
 
@@ -76,35 +76,36 @@ namespace Chaos.Client
                 go.name = q.Piece;
                 go.transform.localPosition = new Vector3(q.X, q.Y, q.Z);
                 go.transform.localRotation = Quaternion.Euler(0f, q.Yaw, 0f);
-                go.transform.localScale = Vector3.one * q.Scale;
-                Restyle(go);
+                go.transform.localScale = new Vector3(q.Scale, q.ScaleY > 0f ? q.ScaleY : q.Scale, q.Scale);
+                Restyle(go, q.Role);
                 made.Add(go);
                 Placed++;
             }
             Debug.Log("chaos ruins3d: placed " + Placed + " models of " + plan.Count + " planned");
         }
 
-        void Restyle(GameObject go)
+        void Restyle(GameObject go, RuinsRole role)
         {
             foreach (var r in go.GetComponentsInChildren<Renderer>())
             {
                 var src = r.sharedMaterials;
                 var dst = new Material[src.Length];
-                for (int i = 0; i < src.Length; i++) dst[i] = Styled(src[i]);
+                for (int i = 0; i < src.Length; i++) dst[i] = Styled(src[i], role);
                 r.sharedMaterials = dst;
                 r.shadowCastingMode = ShadowCastingMode.On;
                 r.receiveShadows = true;
             }
         }
 
-        Material Styled(Material m)
+        Material Styled(Material m, RuinsRole role)
         {
             if (m == null) return null;
-            if (styled.TryGetValue(m, out var s)) return s;
+            string key = m.GetInstanceID() + "|" + role;
+            if (styled.TryGetValue(key, out var s)) return s;
             s = new Material(m) { name = m.name + " (dark)" };
             Color c = m.HasProperty("_Color") ? m.color : Color.grey;
             // the importer hands over the mtl's Kd as it is: Core restyles it from there
-            var st = Hd2dRuins.Restyle(m.name, c.r, c.g, c.b);
+            var st = Hd2dRuins.Restyle(m.name, c.r, c.g, c.b, role);
             s.color = new Color(st.R, st.G, st.B, 1f);
             if (s.HasProperty("_Glossiness")) s.SetFloat("_Glossiness", st.Smoothness);
             if (s.HasProperty("_Metallic")) s.SetFloat("_Metallic", 0f);
@@ -114,7 +115,15 @@ namespace Chaos.Client
                 s.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
                 s.SetColor("_EmissionColor", new Color(st.EmitR, st.EmitG, st.EmitB));
             }
-            styled[m] = s;
+            else if (role == RuinsRole.Wall || role == RuinsRole.Pillar || role == RuinsRole.Trim)
+            {
+                // The restyled stone is so dark that the flat ambient alone leaves it as black as the background (the first render lost the
+                // back wall that way): a fixed faint cold self-light keeps it a dark blue-grey shape, the torches still make the pools.
+                s.EnableKeyword("_EMISSION");
+                s.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+                s.SetColor("_EmissionColor", new Color(0.07f, 0.08f, 0.11f));
+            }
+            styled[key] = s;
             return s;
         }
     }

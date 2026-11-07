@@ -89,7 +89,7 @@ does not fail the build; the step log says why).
 3D architecture test (Ruins3d): an experiment to see whether free 3D assets make the HD-2D view look better. Unity only; the game
 client (OTClient family) does not use it and nothing here changes the server or the sprite pair.
 - What: real low-poly architecture with the game's pixel sprites standing in it (3D diorama, pixel characters, depth of field, warm
-  lights). Models: the CC0 Modular Ruins Pack by Quaternius (OBJ + MTL, no textures), 19 pieces in `Assets/Chaos/Resources/Ruins3d/`
+  lights). Models: the CC0 Modular Ruins Pack by Quaternius (OBJ + MTL, no textures), 36 pieces in `Assets/Chaos/Resources/Ruins3d/`
   with the pack's `License.txt` (credited in `docs/CREDITS.md`). The repo commits no `.meta`: Unity makes them on import.
   `Resources.Load<GameObject>("Ruins3d/Wall")` works in the player; `ChaosBuild.cs` does not exclude them.
 - Mapping (`Core/Hd2dRuins.cs`, tested in `Core.Tests/RuinsTests.cs`): from the HD-2D layout, ground becomes a floor piece per tile
@@ -98,8 +98,17 @@ client (OTClient family) does not use it and nothing here changes the server or 
   a blocking upright thing that is not on-bottom (pillar) becomes a column; a light source becomes a Torch on the wall of its tile,
   else candles on a short column. Decals (carpet), loose items and creatures stay sprites. A few props (barrel, crate, pots, chest,
   skull, bookcase) stand on free tiles in front of a wall. The Hd2dView light list is unchanged. One tile is one unit (pack scale 0.5).
-- Look: `Unity/Hd2dRuins3d.cs` copies the pack's materials and restyles them (`Hd2dRuins.Restyle`): stone pulled to cold grey and x 0.7,
-  wood and metal dark, flames warm and emissive. Standard shader, the view's point lights and ambient, shadows on.
+  Dressing (all by tile hash, same layout same room): a wall run of 6+ tiles is 3 courses high, its top course is sometimes
+  Wall_Broken / Wall_Hole / Wall_Half / Window_Bars, its middle two tiles are an arch (Wall_ArchRound or Wall_ArchGothic, the gothic one
+  holds Doors_GothicArch), Flag_Wall banners and Support_Tall beams stand on some faces; a stag and a fox statue on plinths at the wall
+  ends, a dead tree and a broken column in the far corners; up to `MaxProps` (22) barrels, crates, chest, pots (whole and broken), skulls,
+  candles, rubble and wall bookcases along the room. No prop on a tile that holds an item, a creature or the carpet, nor within one tile of
+  the carpet or a creature. The Overgrown (bright moss) variants are not shipped.
+- Look: `Unity/Hd2dRuins3d.cs` copies the pack's materials per role and restyles them (`Hd2dRuins.Restyle(name, r, g, b, role)`, after a gamma
+  lift): walls, columns and beams x 0.42 with a blue-grey tint and contrast x 1.18, floor x 0.55 with a warm brown dirt tint, stone props and
+  statues x 0.5, wood and metal dark and dull, banners dull red, bark dark brown, flames warm and emissive. Walls get a faint fixed cold
+  self-light (the first render lost the back wall: stone this dark vanished into the background). No soot gradient: the Standard shader reads
+  no vertex colours. Standard shader, the view's point lights and ambient, shadows on.
 - See it: the `hd2d-shots` artifact of `unity-prototype.yml` (Linux target) holds `hd2d_3d.png` next to `hd2d.png` and `classic.png`.
   Same room, same camera, same post effects. If the models are not in the build the step skips `hd2d_3d.png` and says so in the log.
 - Unsure until seen: which side of the pack's walls is the nicer face, and the colour balance (the restyle lifts the pack's linear
