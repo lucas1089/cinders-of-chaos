@@ -18,6 +18,7 @@ Shader "Chaos/FrontArtSprite"
         _Bend ("Bend up", Range(0, 1)) = 0.55
         _Fill ("Warm fill", Range(0, 0.5)) = 0.05
         _PointScale ("Point light scale", Range(0, 1)) = 0.45
+        _Hit ("Hit flash", Range(0, 1)) = 0
     }
     SubShader
     {
@@ -28,7 +29,7 @@ Shader "Chaos/FrontArtSprite"
         #pragma surface surf FrontSprite alphatest:_Cutoff addshadow fullforwardshadows
         sampler2D _MainTex, _BumpMap, _EmitTex;
         half _NormalAmount, _EmitAmount;
-        half _Wrap, _Bend, _Fill, _PointScale;
+        half _Wrap, _Bend, _Fill, _PointScale, _Hit;
 
         struct SurfaceOutputFS
         {
@@ -62,6 +63,8 @@ Shader "Chaos/FrontArtSprite"
             o.Emission = c.rgb * (amb + _Fill * half3(1.0, 0.9, 0.8));
             // the glowing parts (a staff flame, eyes; unity/tools/gen_front_art_emission.py) light themselves, past 1 so the bloom takes them
             o.Emission += c.rgb * tex2Dlod(_EmitTex, float4(IN.uv_MainTex, 0, 0)).r * _EmitAmount;
+            // struck by a melee blow (FrontArtMelee.Flinch): a red-white flash over the picture
+            o.Emission = lerp(o.Emission, (0.35 + c.rgb) * half3(2.0, 0.55, 0.45), _Hit * 0.7);
         }
 
         half4 LightingFrontSprite (SurfaceOutputFS s, half3 lightDir, half atten)

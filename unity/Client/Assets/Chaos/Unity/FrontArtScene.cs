@@ -56,6 +56,8 @@ namespace Chaos.Client
             public readonly Texture2D[] Attack = new Texture2D[2], AttackN = new Texture2D[2], AttackE = new Texture2D[2];
             public int Frames, WalkFrames, AttackFrames, Frame = -1;
             public readonly List<int> Casts = new List<int>();   // indices into Layout.Spells this figure casts
+            public int Melee = -1;   // index into Layout.Melees of the attack this figure makes, -1 none
+            public float HitShown = -1f;   // the _Hit last set on its material
             public float Phase;   // FrontArtWalk.Phase of its index among the extras
             public Transform Blob; // a walker's own contact shadow (the others are in the static blob mesh)
         }
@@ -74,6 +76,20 @@ namespace Chaos.Client
         }
 
         readonly List<SpellView> spells = new List<SpellView>();
+
+        // a melee blow's slash (drawn in Core, FrontArtSlash) and a flash of light where it lands
+        sealed class MeleeView
+        {
+            public FaMelee M;
+            public Transform Slash;
+            public Renderer SlashR;
+            public Material SlashMat;
+            public Light L;
+        }
+
+        readonly List<MeleeView> melees = new List<MeleeView>();
+        /// <summary>A slash frame's side in units; how fast a runner's walk strip plays; how high a figure without one hops.</summary>
+        public const float SlashUnits = 1.35f, RunFps = 16f, Hop = 0.09f;
         /// <summary>The spell art's side in units: a missile frame (64 texels), an impact frame (128 texels).</summary>
         public const float MissileUnits = 1.6f, ImpactUnits = 2.6f, MissileFps = 12f;
 
@@ -117,6 +133,7 @@ namespace Chaos.Client
             BuildBlocks(mats);
             BuildActors();
             BuildSpells();
+            BuildMelees();
             BuildLights();
             BuildFlames();
             BuildBlobs();
@@ -357,6 +374,62 @@ namespace Chaos.Client
                 spells.Add(sv);
             }
             Debug.Log("chaos front art: " + spells.Count + " of " + Layout.Spells.Count + " attack spells");
+        }
+
+        /// <summary>The melee attacks whose attacker and target are in the scene: a slash texture each, in its colour.</summary>
+        void BuildMelees()
+        {
+            var sh = FindShader("FrontArtSpell", "Sprites/Default");
+            for (int i = 0; i < Layout.Melees.Count; i++)
+            {
+                var m = Layout.Melees[i];
+                var attacker = actors.Find(v => v.A.Name == m.Attacker);
+                if (attacker == null || !actors.Exists(v => v.A.Name == m.Target)) continue;
+                var tex = Own(new Texture2D(FrontArtSlash.Size * FrontArtSlash.Frames, FrontArtSlash.Size, TextureFormat.RGBA32, false) { name = "front-art-slash-" + m.Attacker });
+                tex.LoadRawTextureData(FrontArtSlash.Pixels(m.R, m.G, m.B));
+                tex.Apply(false, true);
+                Point(tex);
+                var mv = new MeleeView { M = m };
+                mv.SlashMat = Own(new Material(sh) { name = "front-art-slash-" + m.Attacker, mainTexture = tex });
+                mv.Slash = MakeSpriteObject("slash " + m.Attacker, mv.SlashMat, ShadowCastingMode.Off);
+                mv.SlashR = mv.Slash.GetComponent<Renderer>();
+                mv.SlashR.receiveShadows = false;
+                mv.SlashR.enabled = false;
+                var lgo = new GameObject("slash light " + m.Attacker);
+                lgo.transform.SetParent(transform, false);
+                mv.L = lgo.AddComponent<Light>();
+                mv.L.type = LightType.Point;
+                mv.L.color = Color.Lerp(new Color(m.R, m.G, m.B), Color.white, 0.35f);
+                mv.L.range = 2.6f;
+                mv.L.shadows = LightShadows.None;
+                mv.L.renderMode = LightRenderMode.ForcePixel;
+                mv.L.enabled = false;
+                attacker.Melee = i;
+                melees.Add(mv);
+            }
+            Debug.Log("chaos front art: " + melees.Count + " of " + Layout.Melees.Count + " melee attacks");
+        }
+
+        /// <summary>Places the slashes at time t; mirrored when the blow goes to the left on screen.</summary>
+        void TickMelees(float t, Quaternion face)
+        {
+            Vector3 right = Cam != null ? Cam.transform.right : Vector3.right, up = Cam != null ? Cam.transform.up : Vector3.up;
+            foreach (var mv in melees)
+            {
+                var st = FrontArtMelee.At(Layout, mv.M, t);
+                mv.SlashR.enabled = st.Slash;
+                mv.L.enabled = st.Slash;
+                if (!st.Slash) continue;
+                int frame = Mathf.Min(FrontArtSlash.Frames - 1, (int)(st.SlashU * FrontArtSlash.Frames));
+                bool left = Vector3.Dot(new Vector3(st.FaceX, 0f, st.FaceZ), right) < 0f;
+                mv.SlashMat.mainTextureScale = new Vector2((left ? -1f : 1f) / FrontArtSlash.Frames, 1f);
+                mv.SlashMat.mainTextureOffset = new Vector2((float)(left ? frame + 1 : frame) / FrontArtSlash.Frames, 0f);
+                var at = new Vector3(st.SX, st.SY, st.SZ);
+                mv.Slash.SetPositionAndRotation(at - up * (SlashUnits / 2f) - (Cam != null ? Cam.transform.forward : Vector3.forward) * 0.3f, face);
+                mv.Slash.localScale = new Vector3(SlashUnits, SlashUnits, 1f);
+                mv.L.transform.position = at;
+                mv.L.intensity = 3f * (1f - st.SlashU);
+            }
         }
 
         /// <summary>Places the missiles and impacts at time t. A missile sheet has 8 direction rows (E, SE, S, SW, W, NW, N, NE from the
@@ -691,6 +764,7 @@ namespace Chaos.Client
         /// <summary>The four characters across the brazier, 11 units away.</summary>
         /// <summary>The close look on the pack monsters east of the path (the screenshot mode's animation frames).</summary>
         public void FrameHorde() { zoom = 1f; PlaceCamera(new Vector3(14.4f, Layout.GroundY(14.4f, 7.2f) + 0.9f, 7.2f), 13f); Tune(true); }
+        public void FrameFight() { zoom = 1f; PlaceCamera(new Vector3(10.4f, Layout.GroundY(10.4f, 6.8f) + 0.9f, 6.8f), 13.5f); Tune(true); }
         public void FrameClose() { zoom = 1f; PlaceCamera(CloseTarget, 11f); Tune(true); }
 
         // ---- per frame ----
@@ -724,8 +798,25 @@ namespace Chaos.Client
                 var v = actors[i];
                 // pack monsters patrol (FrontArtWalk); the four stand
                 var pose = v.Frames > 0 ? FrontArtWalk.At(v.A, t, v.Phase) : new FrontArtWalk.Pose { X = v.A.X, Z = v.A.Z, FaceX = v.A.FaceX, FaceZ = v.A.FaceZ };
+                // a melee attacker runs (or steps) at its target, swings, goes home (FrontArtMelee)
+                float swingU = -1f, hop = 0f;
+                bool running = false;
+                if (v.Melee >= 0)
+                {
+                    var ms = FrontArtMelee.At(Layout, Layout.Melees[v.Melee], t);
+                    if (ms.Active)
+                    {
+                        pose = new FrontArtWalk.Pose { X = ms.X, Z = ms.Z, FaceX = ms.FaceX, FaceZ = ms.FaceZ, Walking = ms.Moving };
+                        running = ms.Moving;
+                        if (ms.Swinging) swingU = ms.SwingU;
+                    }
+                }
+                // a figure hit by a blow is pushed back and flashes
+                float px, pz, flinch = FrontArtMelee.Flinch(Layout, v.A.Name, t, out px, out pz);
+                if (flinch > 0f) { pose.X += px * FrontArtMelee.Knock * flinch; pose.Z += pz * FrontArtMelee.Knock * flinch; }
+                if (Mathf.Abs(flinch - v.HitShown) > 1e-3f) { v.HitShown = flinch; v.Mat.SetFloat("_Hit", flinch); }
                 // a caster turns to its target and plays its attack while it casts
-                float castU = -1f, fx = pose.FaceX, fz = pose.FaceZ;
+                float castU = swingU, fx = pose.FaceX, fz = pose.FaceZ;
                 foreach (int si in v.Casts)
                 {
                     var cs = FrontArtSpells.At(Layout, Layout.Spells[si], t);
@@ -756,7 +847,7 @@ namespace Chaos.Client
                     }
                     int frames = attacking ? v.AttackFrames : walking ? v.WalkFrames : v.Frames;
                     int frame = attacking ? Mathf.Min(frames - 1, (int)(castU * frames))
-                        : (int)Mathf.Repeat(Mathf.Floor(t * (walking ? WalkFps : PackFps)) + i * 3, frames);
+                        : (int)Mathf.Repeat(Mathf.Floor(t * (walking ? (running ? RunFps : WalkFps) : PackFps)) + i * 3, frames);
                     if (frame != v.Frame)
                     {
                         v.Frame = frame;
@@ -779,7 +870,10 @@ namespace Chaos.Client
                     SetPic(v.CastMat[1], v.Pics[dir]);
                 }
                 float breath = walking ? 1f : 1f + 0.012f * Mathf.Sin(t * 2.1f + i * 1.7f);
-                var pos = new Vector3(pose.X, Layout.GroundY(pose.X, pose.Z) + 0.01f, pose.Z);
+                // the four have no walk or attack strips: they hop as they run and lean into the swing
+                if (v.Frames == 0 && running) hop = Hop * Mathf.Abs(Mathf.Sin(t * Mathf.PI * 4f));
+                if (v.Frames == 0 && swingU >= 0f) { float k = Mathf.Sin(Mathf.PI * Mathf.Clamp01(swingU * 1.6f)); pose.X += fx * 0.12f * k / Mathf.Max(1e-3f, Mathf.Sqrt(fx * fx + fz * fz)); pose.Z += fz * 0.12f * k / Mathf.Max(1e-3f, Mathf.Sqrt(fx * fx + fz * fz)); }
+                var pos = new Vector3(pose.X, Layout.GroundY(pose.X, pose.Z) + 0.01f + hop, pose.Z);
                 if (v.Blob != null) v.Blob.position = new Vector3(pose.X, pos.y - 0.01f, pose.Z);
                 var scale = new Vector3(v.Units, v.Units * breath, 1f);
                 v.Quad.SetPositionAndRotation(pos, face);
@@ -793,6 +887,7 @@ namespace Chaos.Client
                 if (lv.S.Flame) lv.L.intensity = lv.S.Intensity * Hd2d.Flicker(t, lv.S.Seed);
             }
             TickSpells(t, face);
+            TickMelees(t, face);
             if (flameMesh != null) BuildFlameMesh(t);
             if (particles != null) { particles.Cam = Cam; particles.BuildMesh(); }
         }

@@ -237,6 +237,62 @@ namespace Chaos.Core.Tests
                 }
             }
             check(spellBad == "", "front art spells: cast at home, missile from caster to target, lands before the next cast (" + spellBad + ")");
+            // melee: attackers stand (no patrol), go and come back inside their period, strike within reach, keep clear of the others
+            check(L.Melees.Count >= 4, "front art: four or more melee attacks (" + L.Melees.Count + ")");
+            check(L.Melees.All(m => known(m.Attacker) && known(m.Target) && m.Attacker != m.Target && !everyone.First(a => a.Name == m.Attacker).Walks),
+                "front art melee: attackers and targets are figures of the scene, attackers do not patrol");
+            string meleeBad = "";
+            foreach (var m in L.Melees)
+            {
+                float len = FrontArtMelee.Length(L, m);
+                if (len > m.Period - 0.2f) meleeBad += m.Attacker + " attack of " + len.ToString("0.00") + " s in a period of " + m.Period + "; ";
+                var mhome = everyone.First(a => a.Name == m.Attacker);
+                var done = FrontArtMelee.At(L, m, m.Offset + len + 0.01f);
+                if (done.Active || Math.Abs(done.X - mhome.X) > 1e-3f || Math.Abs(done.Z - mhome.Z) > 1e-3f) meleeBad += m.Attacker + " not home after its attack; ";
+                var mback = FrontArtMelee.At(L, m, m.Offset + len - 0.01f);
+                if (!mback.Active || Math.Abs(mback.X - mhome.X) > 0.05f || Math.Abs(mback.Z - mhome.Z) > 0.05f) meleeBad += m.Attacker + " does not walk all the way home; ";
+                float hit = FrontArtMelee.HitTime(L, m, m.Offset + 0.01f);
+                var blow = FrontArtMelee.At(L, m, hit + 0.01f);
+                if (!blow.Swinging || !blow.Slash) meleeBad += m.Attacker + " no swing and slash at the blow; ";
+                float fx, fz;
+                if (FrontArtMelee.Flinch(L, m.Target, hit + FrontArtMelee.FlinchTime / 2f, out fx, out fz) < 0.9f) meleeBad += m.Target + " does not flinch at " + m.Attacker + "'s blow; ";
+                if (FrontArtMelee.Flinch(L, m.Target, hit - 0.05f, out fx, out fz) > 0f && L.Melees.Count(o => o.Target == m.Target) == 1) meleeBad += m.Target + " flinches before the blow; ";
+            }
+            // where everyone is: a melee attacker by FrontArtMelee, a walker by FrontArtWalk
+            Func<string, float, float[]> where = (name, t) =>
+            {
+                foreach (var m in L.Melees)
+                    if (m.Attacker == name) { var st = FrontArtMelee.At(L, m, t); return new[] { st.X, st.Z }; }
+                var a = everyone.First(e => e.Name == name);
+                int i = L.Extras.FindIndex(e => e.Name == name);
+                var p = FrontArtWalk.At(a, t, i >= 0 ? FrontArtWalk.Phase(i) : 0f);
+                return new[] { p.X, p.Z };
+            };
+            float near = 9f; string nearAt = "";
+            for (float t = 0f; t < 24f; t += 0.02f)
+            {
+                var spots = everyone.Select(a => where(a.Name, t)).ToList();
+                for (int i = 0; i < spots.Count; i++)
+                    for (int j = i + 1; j < spots.Count; j++)
+                    {
+                        float d = (float)Math.Sqrt((spots[i][0] - spots[j][0]) * (spots[i][0] - spots[j][0]) + (spots[i][1] - spots[j][1]) * (spots[i][1] - spots[j][1]));
+                        if (d < near) { near = d; nearAt = everyone[i].Name + " / " + everyone[j].Name + " at " + t.ToString("0.00"); }
+                    }
+                foreach (var m in L.Melees)
+                {
+                    var st = FrontArtMelee.At(L, m, t);
+                    if (!st.Slash) continue;
+                    var tg = where(m.Target, t);
+                    float d = (float)Math.Sqrt((st.X - tg[0]) * (st.X - tg[0]) + (st.Z - tg[1]) * (st.Z - tg[1]));
+                    if (d > 1.3f) { meleeBad += m.Attacker + " slashes at air (" + d.ToString("0.00") + " from " + m.Target + " at " + t.ToString("0.00") + "); "; break; }
+                }
+            }
+            check(near > 0.5f, "front art melee: figures keep 0.5 apart, fights included (closest " + near.ToString("0.00") + ", " + nearAt + ")");
+            check(meleeBad == "", "front art melee: home again, swing and slash at the blow, the target flinches, within reach (" + meleeBad + ")");
+            var slash = FrontArtSlash.Pixels(1f, 0.3f, 0.2f);
+            int sw = FrontArtSlash.Size * FrontArtSlash.Frames;
+            Func<int, int> slashLit = f => { int n = 0; for (int y = 0; y < FrontArtSlash.Size; y++) for (int x = 0; x < FrontArtSlash.Size; x++) if (slash[(y * sw + f * FrontArtSlash.Size + x) * 4 + 3] > 0) n++; return n; };
+            check(slash.Length == sw * FrontArtSlash.Size * 4 && slashLit(0) > 10 && slashLit(2) > slashLit(0) && slashLit(FrontArtSlash.Frames - 1) < slashLit(2), "front art slash: grows across the frame, then thins (" + slashLit(0) + ", " + slashLit(2) + ", " + slashLit(FrontArtSlash.Frames - 1) + ")");
             var brazier = L.Lights.Where(l => l.Flame).ToList();
             check(brazier.Count >= 6 && brazier.All(l => l.R > l.B + 0.4f), "front art: warm flame lights at the braziers and torches (" + brazier.Count + ")");
             check(L.Lights.Any(l => !l.Flame && l.B > l.R), "front art: a cold light too");
