@@ -117,7 +117,7 @@ namespace Chaos.Client
 
         public bool dof = true, shafts = true, lowQuality;
         public float bloomThreshold = 0.8f, bloomKnee = 0.5f, bloomIntensity = 0.95f;
-        public float focusHalf = 0.14f, focusFeather = 0.22f;   // sharp band is the middle 28% of the screen height
+        public float focusHalf = 0.24f, focusFeather = 0.26f;   // sharp band is the middle 48% of the screen height: the back wall stays readable
         // tonemap (ACES fitted), applied before the grade
         public float exposure = 1.0f;
         // grade
