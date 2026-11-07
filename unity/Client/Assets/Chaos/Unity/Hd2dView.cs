@@ -55,6 +55,8 @@ namespace Chaos.Client
         bool saved;
         AmbientMode oldMode; Color oldAmbient; ShadowQuality oldShadows; int oldPixelLights; float oldShadowDistance;
         public Hd2dCameraPose LastPose;
+        /// <summary>Dust, embers and flame halos (Hd2dParticles); null until the view is enabled.</summary>
+        public Hd2dParticles Particles { get; private set; }
 
         Batch NewBatch(string name, bool casts)
         {
@@ -96,6 +98,9 @@ namespace Chaos.Client
             RenderSettings.ambientMode = AmbientMode.Flat;
             if (flat != null) { flat.Renderer.enabled = true; upright.Renderer.enabled = true; }
             if (Cam != null) Hd2dPost.Attach(Cam, LowQuality);
+            if (Particles == null) { var pg = new GameObject("particles"); pg.transform.SetParent(transform, false); Particles = pg.AddComponent<Hd2dParticles>(); }
+            Particles.Cam = Cam;
+            Particles.enabled = true;
         }
 
         void OnDisable()
@@ -109,6 +114,7 @@ namespace Chaos.Client
             if (flat != null) { flat.Renderer.enabled = false; upright.Renderer.enabled = false; }
             foreach (var l in lights) if (l != null) l.enabled = false;
             if (Cam != null) Hd2dPost.Detach(Cam);
+            if (Particles != null) Particles.enabled = false;
         }
 
         double Now => Clock != null ? Clock() : Time.realtimeSinceStartupAsDouble * 1000;
@@ -169,7 +175,9 @@ namespace Chaos.Client
             // world light: darker and cooler underground and at night; 255 is full daylight
             float day = Mathf.Clamp01(World.WorldLight / 255f);
             RenderSettings.ambientLight = Color.Lerp(new Color(0.10f, 0.12f, 0.20f), new Color(0.42f, 0.45f, 0.55f), day);
-            SetLights(Hd2d.Lights(pieces, pose.Target, MaxLights));
+            var lightList = Hd2d.Lights(pieces, pose.Target, MaxLights);
+            SetLights(lightList);
+            if (Particles != null) Particles.SetLights(lightList, pose.Target);
         }
 
         void SetLights(List<Hd2dLight> list)
@@ -192,6 +200,12 @@ namespace Chaos.Client
                 l.color = new Color(d.R, d.G, d.B);
                 l.range = d.Range * 1.4f;
                 l.intensity = d.Intensity * 1.6f;
+                if (Hd2d.IsFlame(d))   // torch flicker (Hd2d.Flicker): intensity and a tiny position jitter
+                {
+                    float ft = (float)(Now / 1000.0);
+                    l.intensity *= Hd2d.Flicker(ft, i + 1);
+                    l.transform.position += new Vector3(Hd2d.Flicker(ft * 1.7f, i + 11) - 1f, Hd2d.Flicker(ft * 1.3f, i + 21) - 1f, Hd2d.Flicker(ft * 1.9f, i + 31) - 1f) * 0.25f;
+                }
                 l.shadows = i < MaxShadowLights ? LightShadows.Soft : LightShadows.None;
                 l.shadowStrength = 0.85f;
                 l.shadowBias = 0.03f;

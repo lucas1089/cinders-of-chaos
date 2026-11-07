@@ -103,6 +103,7 @@ namespace Chaos.Client
             hdGo.SetActive(true);
             Debug.Log("chaos hd2d shot: building the HD-2D meshes");
             hd.Refresh();
+            if (hd.Particles != null) { hd.Particles.Prewarm(4f); hd.Particles.BuildMesh(); }   // dust and embers without a frame
             Debug.Log("chaos hd2d shot: rendering HD-2D");
             Save(cam, tex, "hd2d.png");
             Debug.Log("chaos hd2d shot: wrote classic.png and hd2d.png to " + OutDir);
