@@ -16,6 +16,13 @@ namespace Chaos.Core
         public static DemoIds Temple() => new DemoIds { Floor = 44511, Checker = 44512, Border = 44514, Wall = 44528, Pillar = 44540, Torch = 44544, Carpet = 44523, OutfitA = 128, OutfitB = 129 };
     }
 
+    /// <summary>The ids the outdoor demo picked from the real pair by looking at the sprites' pixels (0: none found).</summary>
+    public sealed class OutdoorIds
+    {
+        public int Grass, Dirt, Water, Tree, Rock, Bush, OutfitA, OutfitB;
+        public override string ToString() => "grass " + Grass + ", dirt " + Dirt + ", water " + Water + ", tree " + Tree + ", rock " + Rock + ", bush " + Bush;
+    }
+
     public sealed class Hd2dDemo
     {
         public DatFile Dat;
@@ -43,6 +50,98 @@ namespace Chaos.Core
             var d = new Hd2dDemo { Dat = dat, Real = true };
             d.Build(ids);
             return d;
+        }
+
+        public OutdoorIds Ids;
+
+        /// <summary>Picks the outdoor demo's ids from the pair by the pixels of its sprites (Hd2dTerrain): a plain ground of each class
+        /// (Grass, Dirt: one phase, the least noise, a whole tile; Water: the most phases), a tall blocking green thing for a tree, a
+        /// grey 1 x 1 lump for a rock, a small green blocking thing for a bush. `sprite` gives a sprite's 32 x 32 RGBA, or null.
+        /// Null when the pair has no grass, water or tree.</summary>
+        public static OutdoorIds PickOutdoor(DatFile dat, Func<uint, byte[]> sprite, SpriteClassifier cls = null)
+        {
+            cls = cls ?? new SpriteClassifier(sprite);
+            var ids = new OutdoorIds();
+            float grassSpread = 9f, dirtSpread = 9f, treeGreen = 0f, rockFill = 0f, bushGreen = 0f;
+            int waterPhases = 0;
+            for (int id = 100; id < dat.Items.Length; id++)
+            {
+                var t = dat.Items[id];
+                if (t == null || t.Idle == null || t.Idle.Sprites == null || t.Idle.Sprites.Length == 0) continue;
+                var g = t.Idle;
+                if (t.Ground)
+                {
+                    if (g.Width != 1 || g.Height != 1 || t.GroundBorder) continue;
+                    var i = cls.Info(t);
+                    if (i.Stats.Alpha < 0.95f) continue;
+                    if (i.Class == GroundClass.Grass && g.Phases == 1 && i.Stats.Spread < grassSpread) { grassSpread = i.Stats.Spread; ids.Grass = id; }
+                    else if (i.Class == GroundClass.Dirt && g.Phases == 1 && i.Stats.Spread < dirtSpread) { dirtSpread = i.Stats.Spread; ids.Dirt = id; }
+                    else if (i.Class == GroundClass.Water && g.Phases > waterPhases) { waterPhases = g.Phases; ids.Water = id; }
+                    continue;
+                }
+                // upright candidates: the cheap flags first, the pixels only for those
+                if (t.OnBottom || t.OnTop || t.Pickupable || t.Container || t.Stackable || t.LightLevel > 0 || !Hd2d.Blocking(t)) continue;
+                if (Hd2d.Classify(t) != Hd2dKind.Billboard || g.Width * g.Height > 4) continue;
+                var piece = new Hd2dPiece { Kind = Hd2dKind.Billboard, Type = t, Width = g.Width, Height = g.Height };
+                var role = Hd2dWorld3d.RoleOf(piece, cls, true);
+                var st = cls.Info(t).Stats;
+                if (role == RuinsRole.Tree && st.GreenShare >= Hd2dWorld3d.GreenShare && st.GreenShare > treeGreen) { treeGreen = st.GreenShare; ids.Tree = id; }
+                else if (role == RuinsRole.Rock && st.Alpha >= 0.4f && st.Value >= 0.3f && st.Value <= 0.75f && st.Alpha > rockFill) { rockFill = st.Alpha; ids.Rock = id; }
+                else if (role == RuinsRole.Bush && st.GreenShare > bushGreen) { bushGreen = st.GreenShare; ids.Bush = id; }
+            }
+            if (ids.Grass == 0 || ids.Water == 0 || ids.Tree == 0) return null;
+            if (ids.Dirt == 0) ids.Dirt = ids.Grass;
+            for (int id = 1; id < dat.Outfits.Length && (ids.OutfitA == 0 || ids.OutfitB == 0); id++)
+            {
+                if (dat.Outfit(id) == null) continue;
+                if (ids.OutfitA == 0 && (id >= 128 || dat.Outfit(128) == null)) ids.OutfitA = id;
+                else if (ids.OutfitB == 0 && id != ids.OutfitA) ids.OutfitB = id;
+            }
+            if (ids.OutfitA == 0) return null;
+            if (ids.OutfitB == 0) ids.OutfitB = ids.OutfitA;
+            return ids;
+        }
+
+        /// <summary>An outdoor scene from the real pair: a meadow with a winding dirt path, a pond, trees round it, rocks and bushes, the
+        /// hero on the path and one creature. The ids are picked from the pixels (PickOutdoor); null when the pair lacks them.</summary>
+        public static Hd2dDemo Outdoor(DatFile dat, Func<uint, byte[]> sprite, SpriteClassifier cls = null)
+        {
+            var ids = PickOutdoor(dat, sprite, cls);
+            if (ids == null) return null;
+            var d = new Hd2dDemo { Dat = dat, Real = true, Ids = ids };
+            d.BuildOutdoor(ids);
+            return d;
+        }
+
+        void BuildOutdoor(OutdoorIds ids)
+        {
+            World = new World(Dat) { Center = Center, WorldLight = 200 };
+            int cx = Center.X, cy = Center.Y, z = Center.Z;
+            var ground = new Dictionary<long, int>();
+            for (int x = cx - 8; x <= cx + 9; x++)
+                for (int y = cy - 6; y <= cy + 7; y++)
+                {
+                    int id = ids.Grass;
+                    int px = cx - 1 + (int)Math.Round(1.5 * Math.Sin(0.7 * (y - cy)));
+                    if (x == px || x == px + 1) id = ids.Dirt;
+                    double dx = (x - (cx - 4)) / 3.4, dy = (y - (cy + 3)) / 2.4;
+                    if (dx * dx + dy * dy <= 1.0) id = ids.Water;
+                    ground[Hd2dRuins.Key(x, y)] = id;
+                    Add(new Pos(x, y, z), id);
+                }
+            Func<int, int, bool> grass = (x, y) => ground.TryGetValue(Hd2dRuins.Key(x, y), out var g) && g == ids.Grass;
+            // trees (2 x 2 or taller, anchored on the south-east tile) round the edge, never on the path or the water
+            foreach (var t in new[] { new[] { -7, -3 }, new[] { -4, -5 }, new[] { 2, -5 }, new[] { 6, -4 }, new[] { 8, 0 }, new[] { 6, 5 }, new[] { 8, 6 }, new[] { -7, 6 }, new[] { -7, 1 }, new[] { 3, 6 } })
+                if (grass(cx + t[0], cy + t[1]) && grass(cx + t[0] - 1, cy + t[1])) Add(new Pos(cx + t[0], cy + t[1], z), ids.Tree);
+            if (ids.Rock != 0)
+                foreach (var r in new[] { new[] { 3, 4 }, new[] { -2, -2 }, new[] { 4, 1 }, new[] { -1, 6 } })
+                    if (grass(cx + r[0], cy + r[1])) Add(new Pos(cx + r[0], cy + r[1], z), ids.Rock);
+            if (ids.Bush != 0)
+                foreach (var b in new[] { new[] { -1, -3 }, new[] { 2, -2 }, new[] { 5, 2 }, new[] { -6, -1 } })
+                    if (grass(cx + b[0], cy + b[1])) Add(new Pos(cx + b[0], cy + b[1], z), ids.Bush);
+            MakeCreature(1, "Hero", ids.OutfitA, new Pos(cx, cy + 2, z), 3, 215, Dir.North);
+            MakeCreature(2, "Wanderer", ids.OutfitB, new Pos(cx + 3, cy - 1, z), 0, 0, Dir.West);
+            World.PlayerId = 1;
         }
 
         void Add(Pos p, int id) { World.AddThing(p, new Thing { Item = World.MakeItem(id, 0) }); }

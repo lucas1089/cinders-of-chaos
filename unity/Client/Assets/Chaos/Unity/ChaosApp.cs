@@ -23,6 +23,9 @@ namespace Chaos.Client
         MapView view;
         Hd2dView hd2dView;
         bool hd2d;   // F9: the HD-2D view (Hd2dView) instead of the classic flat one
+        bool world3d;   // F10: the 3D world (Hd2dRuins3d in WorldMode and Hd2dChars3d), only together with HD-2D
+        GameObject world3dRoot;
+        bool world3dReady;   // the 3D models are in the build
         Camera cam;
         Vector2 charScroll;
         readonly List<string> log = new List<string>();
@@ -56,6 +59,7 @@ namespace Chaos.Client
             port = PlayerPrefs.GetString("chaos.port", port);
             account = PlayerPrefs.GetString("chaos.account", "");
             hd2d = PlayerPrefs.GetInt("chaos.hd2d", 0) == 1;
+            world3d = PlayerPrefs.GetInt("chaos.world3d", 0) == 1;
             var camGo = new GameObject("Camera");
             camGo.transform.SetParent(transform);
             cam = camGo.AddComponent<Camera>();
@@ -208,6 +212,7 @@ namespace Chaos.Client
             hd2dView.Atlas = atlas;
             hd2dView.Clock = () => session.Now;
             hd2dView.Cam = cam;
+            SetupWorld3d();
             ApplyHd2d();
             screen = Screen.Game;
         }
@@ -219,6 +224,7 @@ namespace Chaos.Client
             if (view != null) Destroy(view.gameObject);
             view = null;
             hd2dView = null;
+            world3dRoot = null;
             ApplyMode(false);
             cam.rect = new Rect(0f, 0f, 1f, 1f);
             ResetWindows();
@@ -249,6 +255,20 @@ namespace Chaos.Client
                 bool barOpen = windows.Exists(win => win is HotkeyBarWindow && win.Open);
                 if (ctrl || !barOpen) { hd2d = !hd2d; PlayerPrefs.SetInt("chaos.hd2d", hd2d ? 1 : 0); ApplyHd2d(); }
             }
+            // F10 switches the 3D world (models instead of sprites for the map) on top of HD-2D; F10 is hotkey slot 10: Ctrl+F10 while the bar is open
+            if (Input.GetKeyDown(KeyCode.F10) && !chatFocused)
+            {
+                bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+                bool barOpen = windows.Exists(win => win is HotkeyBarWindow && win.Open);
+                if (ctrl || !barOpen)
+                {
+                    world3d = !world3d;
+                    PlayerPrefs.SetInt("chaos.world3d", world3d ? 1 : 0);
+                    ApplyWorld3d();
+                    if (world3d && !world3dReady) AddChat("", "3D world: the 3D models are not in this build, the map stays sprites.", 0);
+                    else if (world3d && !hd2d) AddChat("", "3D world is on, it shows with the HD-2D view (F9).", 0);
+                }
+            }
             if (!chatFocused)
                 foreach (var win in windows)
                     if (win.Hotkey != KeyCode.None && Input.GetKeyDown(win.Hotkey) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
@@ -257,7 +277,31 @@ namespace Chaos.Client
             HandleWalk();
         }
 
-        void ApplyHd2d() { ApplyMode(hd2d); }
+        void ApplyHd2d() { ApplyMode(hd2d); ApplyWorld3d(); }
+
+        /// <summary>The 3D world's objects under the HD-2D view: the map's models (Hd2dRuins3d, WorldMode, Live) and the 3D characters.
+        /// Created once per session; switched on and off with SetActive (each hooks and unhooks the view's Skip on enable / disable).</summary>
+        void SetupWorld3d()
+        {
+            world3dRoot = new GameObject("World3d");
+            world3dRoot.transform.SetParent(hd2dView.transform, false);
+            world3dRoot.SetActive(false);
+            var ruins = world3dRoot.AddComponent<Hd2dRuins3d>();
+            ruins.World = world;
+            ruins.WorldMode = true;
+            ruins.Live = true;
+            world3dReady = ruins.Attach(hd2dView);
+            var chars = world3dRoot.AddComponent<Hd2dChars3d>();
+            chars.World = world;
+            chars.Live = true;
+            chars.Attach(hd2dView);
+        }
+
+        /// <summary>The 3D world is on only together with the HD-2D view and when the models are in the build.</summary>
+        void ApplyWorld3d()
+        {
+            if (world3dRoot != null) world3dRoot.SetActive(world3d && hd2d && world3dReady);
+        }
 
         /// <summary>Turns the HD-2D view on or off: the classic mesh and the 3D scene never draw together.</summary>
         void ApplyMode(bool on)

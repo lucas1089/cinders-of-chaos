@@ -44,6 +44,8 @@ namespace Chaos.Client
 
         readonly Dictionary<string, Model> models = new Dictionary<string, Model>();
         readonly Dictionary<uint, Entry> entries = new Dictionary<uint, Entry>();
+        readonly HashSet<uint> alive = new HashSet<uint>();   // reused by Sync: no allocation per frame
+        readonly List<uint> gone = new List<uint>();
         readonly Dictionary<string, Material> styled = new Dictionary<string, Material>();
         bool attached;
 
@@ -59,12 +61,19 @@ namespace Chaos.Client
                 Debug.LogWarning("chaos chars3d: no model Resources/" + Folder + Hd2dChars.PlayerModel + ", the view keeps its creature sprites");
                 return false;
             }
-            view.SkipCreature = Hd2dChars.Replaces;
             attached = true;
+            if (isActiveAndEnabled) Hook();
             return true;
         }
 
-        void OnDestroy() { if (attached && View != null && View.SkipCreature == (Func<Creature, bool>)Hd2dChars.Replaces) View.SkipCreature = null; }
+        // enabled and disabled with its object (the game's F10 switch): the sprites come back while it is off
+        void Hook() { if (View != null) View.SkipCreature = Hd2dChars.Replaces; }
+
+        void Unhook() { if (View != null && View.SkipCreature == (Func<Creature, bool>)Hd2dChars.Replaces) View.SkipCreature = null; }
+
+        void OnEnable() { if (attached) Hook(); }
+
+        void OnDisable() { Unhook(); }
 
         void LateUpdate() { if (Live) Sync(); }
 
@@ -86,7 +95,7 @@ namespace Chaos.Client
             Placed = 0;
             if (!attached || World == null || View == null) return;
             Pos origin = World.Center;
-            var alive = new HashSet<uint>();
+            alive.Clear();
             foreach (var c in World.Creatures.Values)
             {
                 if (c.Position.Z != origin.Z || !Hd2dChars.Replaces(c)) continue;
@@ -103,9 +112,9 @@ namespace Chaos.Client
                 if (Live) Pose(e, c.Id, Time.time);
                 Placed++;
             }
-            List<uint> gone = null;
-            foreach (var kv in entries) if (!alive.Contains(kv.Key)) (gone ?? (gone = new List<uint>())).Add(kv.Key);
-            if (gone != null) foreach (var id in gone) { if (entries[id].Holder != null) Destroy(entries[id].Holder); entries.Remove(id); }
+            gone.Clear();
+            foreach (var kv in entries) if (!alive.Contains(kv.Key)) gone.Add(kv.Key);
+            foreach (var id in gone) { if (entries[id].Holder != null) Destroy(entries[id].Holder); entries.Remove(id); }
         }
 
         Model Load(string name)
