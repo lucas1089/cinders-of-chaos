@@ -76,7 +76,7 @@ namespace Chaos.Core
 
         // ---- the plan -----------------------------------------------------------------------------------------------
 
-        static long Key(int x, int y) => ((long)x << 32) ^ (uint)y;
+        public static long Key(int x, int y) => ((long)x << 32) ^ (uint)y;
 
         static int Hash(int x, int y, int salt)
         {
@@ -103,6 +103,14 @@ namespace Chaos.Core
             if (yaw < 0) yaw += 360f;
         }
 
+        /// <summary>True when no other wall piece starts within one piece width of it along its row or its column.</summary>
+        public static bool Isolated(HashSet<long> wallAt, int tx, int ty, int width)
+        {
+            for (int d = 1; d <= width; d++)
+                if (wallAt.Contains(Key(tx - d, ty)) || wallAt.Contains(Key(tx + d, ty)) || wallAt.Contains(Key(tx, ty - d)) || wallAt.Contains(Key(tx, ty + d))) return false;
+            return true;
+        }
+
         sealed class WallTile { public int Courses = 1; public bool Mounted; public int Dx, Dz; public float Yaw; }
 
         /// <summary>The 3D pieces of a layout. Deterministic: the same layout gives the same list (variants come from a hash of the tile).</summary>
@@ -114,10 +122,16 @@ namespace Chaos.Core
             var pillars = new Dictionary<long, int[]>();
             var lights = new Dictionary<long, int[]>();
             var busy = new HashSet<long>();                // tiles that hold anything that is not plain floor
-            foreach (var p in pieces)
+            // a blocking upright piece with no other one beside it on its row is a pillar, not a wall run
+            var all = new List<Hd2dPiece>(pieces);
+            var wallAt = new HashSet<long>();
+            foreach (var p in all) if (RoleOf(p) == RuinsRole.Wall) wallAt.Add(Key(p.Tile.X, p.Tile.Y));
+            foreach (var p in all)
             {
                 int tx = p.Tile.X, ty = p.Tile.Y;
-                switch (RoleOf(p))
+                var role = RoleOf(p);
+                if (role == RuinsRole.Wall && Isolated(wallAt, tx, ty, Math.Max(1, p.Width))) role = RuinsRole.Pillar;
+                switch (role)
                 {
                     case RuinsRole.Floor: floors[Key(tx, ty)] = new[] { tx, ty }; break;
                     case RuinsRole.Border: break;

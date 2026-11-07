@@ -92,7 +92,7 @@ namespace Chaos.Core.Tests
             Hd2dRuins.Facing((x, y) => false, 5, 5, out dx, out dz, out yaw);
             check(dz == -1 && Near(yaw, 180f), "ruins: a closed wall faces south");
 
-            // a one-cell wall at the west edge of a floor faces east, its face on the west side of the tile
+            // a run of one-cell walls at the west edge of a floor faces east, its face on the west side of the tile
             var fl = new ThingType { Category = ThingCategory.Item, Id = 1, Ground = true, Groups = new[] { One() } };
             var wl = new ThingType { Category = ThingCategory.Item, Id = 2, OnBottom = true, NotWalkable = true, Groups = new[] { One() } };
             var side = new List<Hd2dPiece>
@@ -100,10 +100,17 @@ namespace Chaos.Core.Tests
                 new Hd2dPiece { Kind = Hd2dKind.Floor, Type = fl, Tile = new Pos(99, 100, 7) },
                 new Hd2dPiece { Kind = Hd2dKind.Floor, Type = fl, Tile = new Pos(100, 100, 7) },
                 new Hd2dPiece { Kind = Hd2dKind.Billboard, Type = wl, Tile = new Pos(99, 100, 7), Width = 1, Height = 1 },
+                new Hd2dPiece { Kind = Hd2dKind.Floor, Type = fl, Tile = new Pos(99, 101, 7) },
+                new Hd2dPiece { Kind = Hd2dKind.Floor, Type = fl, Tile = new Pos(100, 101, 7) },
+                new Hd2dPiece { Kind = Hd2dKind.Billboard, Type = wl, Tile = new Pos(99, 101, 7), Width = 1, Height = 1 },
             };
             var sp = Hd2dRuins.Plan(side, origin);
             var sw = sp.Where(q => q.Role == RuinsRole.Wall).ToList();
-            check(sw.Count == 1 && Near(sw[0].Yaw, 90f) && Near(sw[0].X, Hd2dRuins.TileX(origin, 99) - Hd2dRuins.WallFace) && Near(sw[0].Y, 0f), "ruins: a west edge wall faces east and is one course");
+            check(sw.Count == 2 && sw.All(q => Near(q.Yaw, 90f)) && Near(sw[1].X, sw[0].X) && Near(sw[0].X, Hd2dRuins.TileX(origin, 99) - Hd2dRuins.WallFace) && Near(sw[0].Y, 0f), "ruins: a west edge wall faces east and is one course");
+            // a lone blocking on-bottom piece (the temple pillar) is a column, not a wall
+            var lone = new List<Hd2dPiece> { side[0], side[1], side[2] };
+            var lp = Hd2dRuins.Plan(lone, origin);
+            check(lp.Count(q => q.Role == RuinsRole.Wall) == 0 && lp.Count(q => q.Role == RuinsRole.Pillar) == 1, "ruins: a lone on-bottom blocker becomes a column");
             check(Hd2dRuins.Plan(new List<Hd2dPiece>(), origin).Count == 0, "ruins: an empty layout plans nothing");
 
             // the restyle
