@@ -32,6 +32,14 @@ namespace Chaos.Client
             mr.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
         }
 
+        /// <summary>Off while the HD-2D view draws the world (F9): no mesh is built, nothing is drawn.</summary>
+        public void SetVisible(bool on)
+        {
+            enabled = on;
+            var mr = GetComponent<MeshRenderer>();
+            if (mr != null) mr.enabled = on;
+        }
+
         void LateUpdate()
         {
             if (World == null || Atlas == null) return;

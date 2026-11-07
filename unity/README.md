@@ -37,10 +37,49 @@ It does not replace the client in `client/`.
     - `ChaosApp.cs` builds everything from code at start.
     - `MapView.cs` is one dynamic mesh per frame, drawn in the stock order.
     - `SpriteAtlas.cs` is a 4096x4096 atlas of 32 px cells.
+    - `Hd2dView.cs`, `Hd2dShot.cs`, `Hd2dPost.cs`: the HD-2D view (see below). Core: `Hd2d.cs`, `Hd2dDemo.cs`.
   - `Assets/Chaos/Editor/ChaosBuild.cs` is the batch build.
 - `Core.Tests/` is a .NET 8 console project. It compiles `Core/` and runs the checks.
 - `Client.Check/` compiles the Unity scripts (`Core/` and `Unity/`) against the engine's reference assemblies from NuGet,
   so a C# error shows on every PR without a Unity license: `cd unity/Client.Check && dotnet build`.
+
+## HD-2D view (O432)
+
+A visual proof: the same pixel-art sprites in a 3D scene, with real lights, shadows and a tilted camera. F9 switches between
+the classic flat view and HD-2D; the choice is saved in PlayerPrefs (`chaos.hd2d`). F9 is also hotkey slot 9: while the hotkey bar
+is open and the chat line has no focus, use Ctrl+F9. The UI windows are the same in both views.
+
+- `Core/Hd2d.cs` (pure C#, tested in `Core.Tests/Hd2dTests.cs`) lays out a tile stack from the dat flags. The rule is in the file comment:
+  ground and ground borders are flat quads on the floor; fluids, splashes, lying items, walkable on-bottom items and large walkable
+  decorations (carpets) lie flat as decals; blocking on-bottom items (walls) and blocking items (pillars, statues) stand as upright
+  billboards at the tile's back edge; other items, on-top items and creatures stand in the tile's middle.
+- A sprite of W x H cells keeps its footprint: anchored on its own tile's east edge, extending west (the way a 64 px item is drawn up and
+  left in the classic view) and up. Upright heights are stretched by 1 / cos(pitch) so a sprite keeps its height on screen. Displacement
+  and elevation of the dat are applied.
+- Lights come from things with the dat light attribute (level = range in tiles, colour = the 8-bit 6 x 6 x 6 index, 0 means white) and from
+  creatures with a light. The nearest 8 become Unity point lights (4 on mobile); the nearest 2 cast soft shadows (none on mobile). A wall light
+  hangs 0.4 tile in front of its wall.
+- The camera looks at the player's tile from the south at pitch 40 degrees and a 25 degree field of view, at the smallest distance that keeps the
+  whole 15 x 11 tile rectangle in the frame at the window's aspect. Walking is smooth.
+- `Unity/Hd2dView.cs` builds two dynamic meshes over the sprite atlas (floor quads, and billboards that cast shadows) every frame, sets
+  the lights and a dim cool ambient (brighter with the server's world light). `Resources/Hd2dSprite.shader` is a lit alpha-cutout shader
+  (bright texels like flames are emissive). Bloom, depth of field and fog: `Unity/Hd2dPost.cs`. Built-in render pipeline.
+- Quality: on mobile, or with PlayerPrefs `chaos.hd2d.low` = 1, shadows and depth of field are off and fewer lights are used.
+
+Screenshot mode: `ChaosUnity -chaosHd2dShot OUT_DIR` skips the login, builds the offline demo room (`Core/Hd2dDemo.cs`), renders it once
+classic and once HD-2D at 1200 x 880 and writes `classic.png` and `hd2d.png`, then quits. It needs no server. The art is synthetic
+placeholder sprites drawn by code, unless the real pair is found (`-chaosPair DIR`, CHAOS_PAIR_DIR or `things/` beside the executable)
+and holds the temple tileset (pair 60); the pair is private and is not baked into the build. In the manual build with target
+StandaloneLinux64 the workflow runs it under xvfb with Mesa software OpenGL and uploads the artifact `hd2d-shots` (a failure of that step
+does not fail the build; the step log says why).
+
+Limits, said plainly:
+- The sprites are drawn for an oblique view. Upright walls look right only with this fixed camera: there is no camera rotation.
+- Only the player's floor is drawn (no floors above or below).
+- The classic UI windows are not ported to anything 3D; they draw over the scene as before.
+- Lights and shadows are an approximation (shadows from billboards, no baked light). A creature's light is its dat or server light level.
+- Not run in a Unity editor or player in the session that wrote it: the code compiles in `Client.Check` and the layout is tested, the look is
+  unchecked until the first screenshot run.
 
 ## Tests
 
