@@ -47,6 +47,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Front fx id table is current (server effect and missile ids to elements)
+        run: python3 -I unity/tools/gen_front_fx_ids.py --check
       - name: Core tests
         working-directory: unity/Core.Tests
         run: dotnet run -c Release
