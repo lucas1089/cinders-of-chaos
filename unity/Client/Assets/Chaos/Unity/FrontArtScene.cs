@@ -90,6 +90,7 @@ namespace Chaos.Client
             FrameWide();
             Tick(0.4f);
             Debug.Log("chaos front art: " + Layout.Boxes.Count + " boxes, " + actors.Count + " characters, " + lights.Count + " lights");
+            Debug.Log("chaos front art: shadows " + QualitySettings.shadows + ", distance " + QualitySettings.shadowDistance + ", cascades " + QualitySettings.shadowCascades + ", moon " + (moon != null ? moon.shadows.ToString() : "none") + ", supported " + SystemInfo.supportsShadows + ", low " + LowQuality);
         }
 
         void SaveState()
@@ -269,6 +270,19 @@ namespace Chaos.Client
             if (!LowQuality) moon.shadowCustomResolution = 2048;
 
             int pixel = 0;
+            // the two flames nearest the figures also cast soft shadows: the figures' shadows then fall away from the fire, the way
+            // the HD-2D view lights its rooms (Hd2dView.cs MaxShadowLights)
+            var mid = Vector3.zero;
+            foreach (var a in Layout.Actors) mid += new Vector3(a.X, a.Y, a.Z);
+            mid /= Mathf.Max(1, Layout.Actors.Count);
+            var casters = new List<FaLight>();
+            if (!LowQuality)
+            {
+                var flames = new List<FaLight>();
+                foreach (var s in Layout.Lights) if (s.Flame) flames.Add(s);
+                flames.Sort((p, q) => (new Vector3(p.X, p.Y, p.Z) - mid).sqrMagnitude.CompareTo((new Vector3(q.X, q.Y, q.Z) - mid).sqrMagnitude));
+                for (int i = 0; i < flames.Count && i < 2; i++) casters.Add(flames[i]);
+            }
             foreach (var s in Layout.Lights)
             {
                 var go = new GameObject("light " + lights.Count);
@@ -279,7 +293,8 @@ namespace Chaos.Client
                 l.color = new Color(s.R, s.G, s.B);
                 l.range = s.Range;
                 l.intensity = s.Intensity;
-                l.shadows = LightShadows.None;
+                l.shadows = casters.Contains(s) ? LightShadows.Soft : LightShadows.None;
+                if (l.shadows != LightShadows.None) { l.shadowStrength = 0.85f; l.shadowBias = 0.02f; l.shadowNormalBias = 0.2f; l.shadowNearPlane = 0.2f; }
                 l.renderMode = pixel++ < 8 ? LightRenderMode.ForcePixel : LightRenderMode.Auto;
                 lights.Add(new LightView { L = l, S = s });
             }
