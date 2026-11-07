@@ -31,7 +31,7 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 | Spells, hotbar, cooldowns | partial | This track: spellbook, 12 hotbar slots with cooldown numbers. No item or rune slots, no icons. |
 | Chat | partial | One window, say on the default channel. No channels, no private messages, no yell or whisper keys. |
 | Containers, equipment, use, move | partial | Open, close, up, use, drag. No split stack dialog, no use-with, no look. |
-| NPC trade, NPC talk | missing | 0x7A, 0x7B, 0x7C and the buy and sell requests. |
+| NPC trade, NPC talk | done | `NpcTalkWindow`, `NpcTradeWindow`, `Core/NpcTrade.cs`. 0x7A, 0x7B, 0x7C in, 0x79, 0x7A, 0x7B, 0x7C out, NPC speech, currency (opcode 113). Not tried on the live server. No buy-in-backpacks fee, no modal windows. |
 | Death | missing | 0x28 is read. No death screen and no recap. |
 | Party | missing | The shield (0x91) is read. No invite, join, leave, no frames. |
 | Outfit window | missing | 0xC8 and the set outfit request. Chaos identity brings wings, aura and shader fields. |
@@ -57,8 +57,8 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_chatpanel` | none | Chat panel. Unity has one chat window with Enter to talk; no channels, no private messages. | partial | P0 | M |
 | `game_floatchat` | none | Floating chat over the map. Unity chat window is fixed at the bottom left. | partial | P0 | M |
 | `game_hotbar` | none | Central hotbar. Unity has 12 F-key slots that say a line or a spell, saved per character, with cooldown numbers; no ornate frame, no globes, no item or rune slots. | partial | P0 | M |
-| `game_npctalk` | none | NPC dialogue. Needs the NPC speech (0xAA types) and channel handling. | missing | P0 | M |
-| `game_npctradewindow` | 113 | NPC buy and sell list. Needs 0x7A, 0x7B, 0x7C and the buy and sell requests. | missing | P0 | L |
+| `game_npctalk` | none | NPC dialogue: private NPC speech (0xAA type 10), words to the NPC (0x96 type 12), quick words, {keyword} chips. No speech bubble over the NPC, no walk-up on Talk. | partial | P0 | M |
+| `game_npctradewindow` | 113 | NPC buy and sell list: tabs, search, amount slider, total, currency of opcode 113. No buy-in-backpacks option. | done | P0 | L |
 | `game_partyframes` | 235 | Party member frames. Party shield (0x91) is read; no frames. | missing | P0 | M |
 | `game_spellbook` | 219 | Spellbook. Unity has the list, filters, search, cast by click, hotkey assignment; no area preview, no icons. | partial | P0 | M |
 | `client_chaos_locale` | 157 | English and pt-BR texts. Core/Loc.cs does it for Unity windows; no language option in a menu yet. | partial | P1 | S |
@@ -230,9 +230,6 @@ Server to client, not read by `GameParser`:
 |---|---|---|---|
 | 0x0B | GM actions | none | P3 |
 | 0x33, 0x42 other sizes | change of the aware range | a larger view than 18 x 14 (map zoom, game_chaosview) | P2 |
-| 0x7A | open NPC shop | NPC trade | P0 |
-| 0x7B | player goods (sell list) | NPC trade | P0 |
-| 0x7C | close shop | NPC trade | P0 |
 | 0x7D, 0x7E, 0x7F | player trade offer, counter offer, close | trade between players | P2 |
 | 0x96 | text window | books, signs, writeable items | P1 |
 | 0x97 | house window | houses | P2 |
@@ -250,8 +247,8 @@ Server to client, not read by `GameParser`:
 
 Inside packets Unity reads, it skips or ignores: 0x9F spell list body, 0xAB channel list names, 0xB2 and 0xB3 private channel events (read, not shown), 0xDD map flags (read, not shown), 0x8D to 0x95 creature fields beyond the ones in `Creature`.
 
-Client to server packets Unity sends: walk and turn, say, use, move, close, up, attack, follow, pong, logout, extended opcodes.
-Not sent yet: fight modes (0xA0), use with (0x83), use on creature (0x84), look (0x8C), rotate (0x85), channels (0x97 to 0x9A), party (0xA3 to 0xA8), NPC shop (0x79 to 0x7C), outfit (0xD2, 0xD3, 0xD4), auto-walk (0x64), stop (0xBE), VIP (0xDC to 0xDE), quest log (0xF0, 0xF1), equip hotkey (0x77).
+Client to server packets Unity sends: walk and turn, say, use, move, close, up, attack, follow, pong, logout, extended opcodes, NPC shop (0x79 to 0x7C), words to an NPC (0x96 type 12).
+Not sent yet: fight modes (0xA0), use with (0x83), use on creature (0x84), look (0x8C), rotate (0x85), channels (0x97 to 0x9A), party (0xA3 to 0xA8), outfit (0xD2, 0xD3, 0xD4), auto-walk (0x64), stop (0xBE), VIP (0xDC to 0xDE), quest log (0xF0, 0xF1), equip hotkey (0x77).
 
 ## Migration plan
 
