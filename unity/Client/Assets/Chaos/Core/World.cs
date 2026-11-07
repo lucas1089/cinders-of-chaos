@@ -73,6 +73,8 @@ namespace Chaos.Core
         public int PlayerVocation;   // the local character's vocation id from the character list (0 = unknown)
         public Pos Center;
         public int WorldLight = 255, WorldLightColor = 215;
+        /// <summary>Combat effects the parser read (magic effects, missiles, damage numbers): drained by the front-art live view (Core/FrontFx.cs). Off until a consumer sets Enabled.</summary>
+        public readonly FxFeed Fx = new FxFeed();
 
         public World(DatFile dat) { Dat = dat; }
 

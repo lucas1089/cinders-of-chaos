@@ -166,10 +166,10 @@ namespace Chaos.Core
                 case 0x78: { int slot = r.U8(); var it = ReadItem(r, r.U16()); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = it; break; }
                 case 0x79: { int slot = r.U8(); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = null; break; }
                 case 0x82: W.WorldLight = r.U8(); W.WorldLightColor = r.U8(); break;
-                case 0x83: ReadPos(r); r.U16(); break;
-                case 0x84: ReadPos(r); r.U8(); r.Str(); break;
-                case 0x85: ReadPos(r); ReadPos(r); r.U8(); break;
-                case 0x86: r.U32(); r.U8(); break;
+                case 0x83: { var p = ReadPos(r); int id = r.U16(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Effect(p, id)); break; }
+                case 0x84: { var p = ReadPos(r); byte col = r.U8(); string t = r.Str(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.AnimText(p, col, t)); break; }
+                case 0x85: { var a = ReadPos(r); var b = ReadPos(r); int id = r.U8(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Missile(a, b, id)); break; }
+                case 0x86: { uint cid = r.U32(); byte col = r.U8(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Square(cid, col)); break; }
                 case 0x8C: { var c = Find(r.U32()); byte hp = r.U8(); if (c != null) c.HealthPercent = Math.Min(100, (int)hp); break; }
                 case 0x8D: { var c = Find(r.U32()); byte l = r.U8(), col = r.U8(); if (c != null) { c.LightLevel = l; c.LightColor = col; } break; }
                 case 0x8E: { var c = Find(r.U32()); var o = ReadOutfit(r); if (c != null) c.Outfit = o; break; }
@@ -450,15 +450,17 @@ namespace Chaos.Core
         void TextMessage(ByteReader r)
         {
             byte kind = r.U8();
+            Pos at = default; uint v1 = 0, v2 = 0; byte c1 = 0, c2 = 0;
             if (kind >= 23 && kind <= 29)
             {
-                ReadPos(r);
-                r.U32(); r.U8();
-                if (kind == 23 || kind == 24 || kind == 27) { r.U32(); r.U8(); }
+                at = ReadPos(r);
+                v1 = r.U32(); c1 = r.U8();
+                if (kind == 23 || kind == 24 || kind == 27) { v2 = r.U32(); c2 = r.U8(); }
             }
             else if (kind >= 33 && kind <= 35) r.U16();
             string text = r.Str();
             if (kind < 23 || kind > 29) { Text(text); Chat("", text, 0); }
+            else if (W.Fx.Enabled) W.Fx.Push(FxEvent.Number(kind, at, v1, c1, v2, c2, text));   // damage, heal and experience numbers
         }
 
         void FloorUp(ByteReader r)
