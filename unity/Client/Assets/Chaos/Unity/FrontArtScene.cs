@@ -92,6 +92,12 @@ namespace Chaos.Client
             FrameWide();
             Tick(0.4f);
             Debug.Log("chaos front art: " + Layout.Boxes.Count + " boxes, " + actors.Count + " characters, " + lights.Count + " lights");
+            if (actors.Count > 0)
+            {
+                var v0 = actors[0];
+                var sh = v0.CastMat != null ? v0.CastMat.shader : null;
+                Debug.Log("chaos front art: cast mesh " + v0.Cast[0].vertexCount + " verts, bounds " + v0.Cast[0].bounds + ", shader " + (sh != null ? sh.name + " supported " + sh.isSupported : "none") + ", queue " + (v0.CastMat != null ? v0.CastMat.renderQueue : -1) + ", feet y " + v0.A.Y);
+            }
             Debug.Log("chaos front art: shadows " + QualitySettings.shadows + ", distance " + QualitySettings.shadowDistance + ", cascades " + QualitySettings.shadowCascades + ", moon " + (moon != null ? moon.shadows.ToString() : "none") + ", supported " + SystemInfo.supportsShadows + ", low " + LowQuality);
         }
 
