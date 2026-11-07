@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Purchased pack monsters for the Unity front-art scene (the extras around the four test figures).
 
-The packs (docs/CREDITS.md "MutterPixel Studio pixel art packs") may ship inside the game but their files may not be shared on
+The purchased monster packs (docs/CREDITS.md, tracing alias "set30 mutter") may ship inside the game but their files may not be shared on
 their own. This repository is public, so the converted pictures are never committed in the clear: they travel as one encrypted
 file, unity/art/front_art_packs.enc (AES-256, key in the repository secret CHAOS_ART_KEY), and the Unity build opens it into
 Resources/FrontArt/pk_<name>/ (ignored by git). Without the secret the scene simply leaves the extras out.

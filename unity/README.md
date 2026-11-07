@@ -300,8 +300,8 @@ The ideas follow the MIT-licensed Luminati engine (docs/CREDITS.md); the code is
   silhouettes (`FrontArtCast`, multiplied into the frame, lifted 0.04): one stretched away from the nearest flame (0.95 strength,
   fading with distance), one away from the moon (0.55). Weaker silhouettes vanish on the night floor.
 - Pack monsters (`Layout.Extras`, 14 of them: demons, a vampire, a werewolf, a headless rider, ghosts, cultists, a lizard mystic, a
-  goblin shaman, a rat king, an armoured skeleton) come from purchased packs (`docs/CREDITS.md` "MutterPixel Studio pixel art
-  packs"). Their licence lets them ship inside the built game but not as files on their own, and this repository is public, so they
+  goblin shaman, a rat king, an armoured skeleton) come from purchased packs (`docs/CREDITS.md`, tracing alias
+  "set30 mutter"). Their licence lets them ship inside the built game but not as files on their own, and this repository is public, so they
   are committed encrypted: `unity/art/front_art_packs.enc` (AES-256, the key is the repository secret `CHAOS_ART_KEY`).
   `unity/tools/front_art_packs.py build PACKS_DIR OUT` takes the first idle frame of each strip (64 x 64 on a square canvas, feet on
   the bottom row), mirrors it for the three west pictures, makes a dome normal map from the silhouette and the emission mask (glow
