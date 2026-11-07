@@ -23,7 +23,7 @@
 // way a 64 px item is drawn up and to the left. The height is stretched by 1 / cos(pitch) so that the sprite keeps its
 // height on screen under the tilted camera (the floor is foreshortened on purpose, that is the look).
 // The classic sprites draw height going up and to the left (one tile west per tile up): an upright quad of a thing at
-// least two cells wide and high (walls, pillars, tall objects; not creatures, whose art stands straight) is sheared one tile east per
+// least two cells wide and high that blocks or is on top (walls, pillars, arches; not creatures or loose objects) is sheared one tile east per
 // cell of height, so its vertical edges come out vertical in 3D and its top sits over its base (Hd2dPiece.Shear).
 // Displacement (dat) moves a thing west by dx / 32 and up by dy / 32; elevation lifts the things above it in the stack.
 // Only the player's floor is laid out (no floors above or below).
@@ -121,10 +121,11 @@ namespace Chaos.Core
             return Blocking(t) ? Hd2dKind.Billboard : Hd2dKind.Object;
         }
 
-        /// <summary>The shear of an upright piece: 1 for a wall, pillar or object at least two cells wide and high (the
-        /// sprites whose art climbs up-left across cells), else 0: a one-cell-wide sprite stands straight in its column.</summary>
+        /// <summary>The shear of an upright piece: 1 for architecture (a blocking or on-top thing: walls, pillars, arches) at
+        /// least two cells wide and high, whose art climbs up-left across cells; else 0. A one-cell-wide sprite stands straight
+        /// in its column; loose objects (a standing torch) keep their art, which often leans on purpose.</summary>
         public static float ShearFor(Hd2dKind kind, int width, int height) =>
-            width > 1 && height > 1 && (kind == Hd2dKind.Billboard || kind == Hd2dKind.OnTop || kind == Hd2dKind.Object) ? 1f : 0f;
+            width > 1 && height > 1 && (kind == Hd2dKind.Billboard || kind == Hd2dKind.OnTop) ? 1f : 0f;
 
         /// <summary>1 / cos(pitch): the height factor of an upright sprite under a camera looking down by `pitchDeg`.</summary>
         public static float StretchFor(float pitchDeg) => 1f / (float)Math.Cos(pitchDeg * Math.PI / 180.0);

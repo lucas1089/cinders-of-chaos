@@ -17,8 +17,8 @@ The scene rules below are the contract with the Unity core (C#). Keep both in st
   colour_from_index(i) r = i // 36, g = (i // 6) % 6, b = i % 6, each * 51   (8-bit 6x6x6 cube)
   billboard_rect(...)  an upright thing of w x h tiles stands with its bottom-right cell on its tile: it spans
                        x in [tx + 1 - w, tx + 1], y in [0, h] (tiles up) on the plane z = ty + BASE_Z
-  shear_of(thing)      an upright item at least 2 x 2 leans 1 tile east per tile up (the classic art climbs up-left);
-                       outfits and smaller things 0   (Hd2d.ShearFor)
+  shear_of(thing)      a blocking or on-top item at least 2 x 2 leans 1 tile east per tile up (the classic art climbs
+                       up-left); outfits, loose objects and smaller things 0   (Hd2d.ShearFor)
   floor quads          a thing of w x h tiles covers tiles [tx + 1 - w, tx] x [ty + 1 - h, ty] on y = 0
   world axes           x east, y up, z south; one tile is 1 unit on x and z, a sprite pixel is 1/32 unit
   draw order           floors: dat order (ground, borders, bottom, rest), then uprights far to near (z, then x)
@@ -107,10 +107,12 @@ def floor_rect(info, tx, ty):
 
 
 def shear_of(info):
-    """Tiles east per tile up of an upright thing: 1 for an item at least 2 x 2 (walls, pillars), else 0."""
+    """Tiles east per tile up of an upright thing: 1 for a blocking or on-top item at least 2 x 2 (walls, pillars), else 0."""
     if info.category != 'item' or classify(info) != 'upright':
         return 0.0
-    return 1.0 if info.w > 1 and info.h > 1 else 0.0
+    f = info.flags
+    blocking = f.get('notwalkable') or f.get('blockpath') or f.get('top')
+    return 1.0 if blocking and info.w > 1 and info.h > 1 else 0.0
 
 
 def billboard_rect(info, tx, ty):

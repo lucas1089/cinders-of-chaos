@@ -48,7 +48,8 @@ x0, x1, h, z = H.billboard_rect(I(2, 2), 4, 4)
 check((x0, x1, h) == (3, 5, 2.0) and z == 4 + H.BASE_Z, 'billboard rect 2 x 2 keeps its tile as bottom-right')
 check(H.shear_of(I(2, 2, {'bottom': True, 'notwalkable': True})) == 1.0, 'a 2 x 2 wall leans east as it rises')
 check(H.shear_of(I(1, 2, {'notwalkable': True})) == 0.0 and H.shear_of(I(2, 2, {}, 'outfit')) == 0.0
-      and H.shear_of(I(3, 3, {'notmoveable': True})) == 0.0, 'no shear: one cell wide, outfits, flat things')
+      and H.shear_of(I(3, 3, {'notmoveable': True})) == 0.0
+      and H.shear_of(I(2, 2, {'pickupable': True})) == 0.0, 'no shear: one cell wide, outfits, flat things, loose objects')
 
 # camera: the room stays in frame for several sizes
 for w, h_ in ((480, 300), (960, 600), (1280, 720)):

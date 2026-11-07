@@ -58,9 +58,9 @@ namespace Chaos.Core.Tests
             var c11 = wall.Cell(1, 1);
             check(Near(wall.Shear, 1f) && Near(c00[2].X, 5f) && Near(c11[0].X, 3f) && Near(c11[1].X, 4f),
                 "hd2d: a 2 x 2 wall leans one tile east per cell: its top-left cell sits over its base (x 3..4)");
-            check(Near(Hd2d.ShearFor(Hd2dKind.Creature, 2, 2), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 1, 2), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 2, 1), 0f)
+            check(Near(Hd2d.ShearFor(Hd2dKind.Creature, 2, 2), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 1, 2), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 2, 1), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 2, 2), 0f)
                 && Near(Hd2d.ShearFor(Hd2dKind.OnTop, 2, 2), 1f) && Near(Hd2d.ShearFor(Hd2dKind.Decal, 2, 2), 0f),
-                "hd2d: no shear for creatures, one-cell-wide or one-cell-high things, or flat things");
+                "hd2d: no shear for creatures, loose objects, one-cell-wide or one-cell-high things, or flat things");
             var shifted = T(t => { t.Ground = true; t.DisplacementX = 8; t.DisplacementY = 16; });
             var t2 = new Tile(new Pos(100, 100, 7));
             t2.Things.Add(new Thing { Item = new Item { Id = 3, Type = shifted } });
