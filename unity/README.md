@@ -135,3 +135,15 @@ The artifact `chaos-unity-<target>` is kept 7 days.
   An adler32 of 0, which would mean a compressed packet, is refused.
 - The step time follows `server/tools/cast_relay.py` `step_ms` (src-patch 0018).
 - An opcode the parser does not know stops that packet. The next packets go on. `live` lists what it read.
+
+## HD-2D post-processing (O432)
+
+`Assets/Chaos/Unity/Hd2dPost.cs`: `Hd2dPost.Attach(camera, lowQuality)` turns the look on, `Detach(camera)` restores the camera,
+fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the lit cutout material for billboards (point filter, mip 0, casts shadows).
+- Effects: bloom on bright pixels, tilt-shift depth of field (middle 44% of the height sharp, top and bottom blurred, by screen Y),
+  exponential fog, vignette, warm grade.
+- `lowQuality` (phones): keeps bloom and fog, drops depth of field, HDR and soft shadows.
+- Pipeline: the built-in one with our own image effect (`Hd2dEffect.OnRenderImage`), shaders in `Assets/Chaos/Shaders/`.
+  URP was not taken: its assemblies are not on NuGet, so `Client.Check` could not compile it and nothing in CI would check the URP asset
+  that an editor script makes. `ChaosBuild` adds the shaders to Always Included Shaders.
+- Not checked without a Unity license: the shader text (`Client.Check` compiles the C# only). Look at it once in the editor.
