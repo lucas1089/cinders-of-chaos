@@ -84,7 +84,10 @@ namespace Chaos.Client
             cam.orthographic = true;
             cam.orthographicSize = ChaosApp.ViewTilesH / 2f;
             cam.transform.SetPositionAndRotation(new Vector3(0.5f, -0.5f, -10), Quaternion.identity);
-            for (int i = 0; i < 3; i++) { yield return null; Debug.Log("chaos hd2d shot: classic frame " + i); }
+            // no frame waits: xvfb with software GL may never finish a frame, so build and render by hand
+            Debug.Log("chaos hd2d shot: building the classic mesh");
+            map.Refresh();
+            Debug.Log("chaos hd2d shot: rendering classic");
             Save(cam, tex, "classic.png");
             Debug.Log("chaos hd2d shot: wrote classic.png");
 
@@ -97,9 +100,12 @@ namespace Chaos.Client
             hd.Atlas = atlas;
             hd.Cam = cam;
             hdGo.SetActive(true);
-            for (int i = 0; i < 4; i++) { yield return null; Debug.Log("chaos hd2d shot: hd2d frame " + i); }
+            Debug.Log("chaos hd2d shot: building the HD-2D meshes");
+            hd.Refresh();
+            Debug.Log("chaos hd2d shot: rendering HD-2D");
             Save(cam, tex, "hd2d.png");
             Debug.Log("chaos hd2d shot: wrote classic.png and hd2d.png to " + OutDir);
+            yield break;
         }
 
         void Save(Camera cam, Texture2D tex, string name)

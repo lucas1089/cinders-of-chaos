@@ -40,7 +40,10 @@ namespace Chaos.Client
             if (mr != null) mr.enabled = on;
         }
 
-        void LateUpdate()
+        void LateUpdate() { Refresh(); }
+
+        /// <summary>Builds the mesh for the current world now (LateUpdate, or the screenshot mode without a frame).</summary>
+        public void Refresh()
         {
             if (World == null || Atlas == null) return;
             int gen = Atlas.Generation;

@@ -125,7 +125,10 @@ namespace Chaos.Client
 
         float[] DrawnPos(Creature c) { return Drawn(c, out float _); }
 
-        void LateUpdate()
+        void LateUpdate() { Refresh(); }
+
+        /// <summary>Builds the mesh for the current world now (LateUpdate, or the screenshot mode without a frame).</summary>
+        public void Refresh()
         {
             if (World == null || Atlas == null || Cam == null) return;
             int gen = Atlas.Generation;
