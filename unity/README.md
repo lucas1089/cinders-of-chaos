@@ -56,6 +56,10 @@ is open and the chat line has no focus, use Ctrl+F9. The UI windows are the same
 - A sprite of W x H cells keeps its footprint: anchored on its own tile's east edge, extending west (the way a 64 px item is drawn up and
   left in the classic view) and up. Upright heights are stretched by 1 / cos(pitch) so a sprite keeps its height on screen. Displacement
   and elevation of the dat are applied.
+- The game art draws height going up and to the left. An upright item of at least 2 x 2 cells (walls, pillars, standing torches) is
+  sheared one tile east per cell of height, so it stands straight with its top over its base. Creatures and one-cell-wide things are not
+  sheared. The synthetic demo art is drawn straight and is never sheared (`Hd2dView.StraightArt`, `Hd2d.Layout(..., slantedArt)`).
+  The preview (`hd2d_preview.py shear_of`) applies the same rule.
 - Lights come from things with the dat light attribute (level = range in tiles, colour = the 8-bit 6 x 6 x 6 index, 0 means white) and from
   creatures with a light. The nearest 8 become Unity point lights (4 on mobile); the nearest 2 cast soft shadows (none on mobile). A wall light
   hangs 0.4 tile in front of its wall.

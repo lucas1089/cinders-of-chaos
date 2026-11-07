@@ -17,6 +17,8 @@ The scene rules below are the contract with the Unity core (C#). Keep both in st
   colour_from_index(i) r = i // 36, g = (i // 6) % 6, b = i % 6, each * 51   (8-bit 6x6x6 cube)
   billboard_rect(...)  an upright thing of w x h tiles stands with its bottom-right cell on its tile: it spans
                        x in [tx + 1 - w, tx + 1], y in [0, h] (tiles up) on the plane z = ty + BASE_Z
+  shear_of(thing)      an upright item at least 2 x 2 leans 1 tile east per tile up (the classic art climbs up-left);
+                       outfits and smaller things 0   (Hd2d.ShearFor)
   floor quads          a thing of w x h tiles covers tiles [tx + 1 - w, tx] x [ty + 1 - h, ty] on y = 0
   world axes           x east, y up, z south; one tile is 1 unit on x and z, a sprite pixel is 1/32 unit
   draw order           floors: dat order (ground, borders, bottom, rest), then uprights far to near (z, then x)
@@ -102,6 +104,13 @@ def light_of(info):
 def floor_rect(info, tx, ty):
     """(x0, z0, x1, z1) of the tiles a floor thing covers."""
     return (tx + 1 - info.w, ty + 1 - info.h, tx + 1, ty + 1)
+
+
+def shear_of(info):
+    """Tiles east per tile up of an upright thing: 1 for an item at least 2 x 2 (walls, pillars), else 0."""
+    if info.category != 'item' or classify(info) != 'upright':
+        return 0.0
+    return 1.0 if info.w > 1 and info.h > 1 else 0.0
 
 
 def billboard_rect(info, tx, ty):
@@ -419,8 +428,8 @@ def shadow_maps(ups, imgs, lights, origin, size_tiles):
         if rows.size == 0:
             continue
         x0, x1, h, z = billboard_rect(info, p.tx, p.ty)
-        X = x0 + (cols + 0.5) / TILE
         Y = h - (rows + 0.5) / TILE
+        X = x0 + (cols + 0.5) / TILE + Y * shear_of(info)
         pts.append(np.stack([X, Y, np.full(X.shape, z), np.full(X.shape, k)], axis=1))
     maps = []
     allp = np.concatenate(pts, 0) if pts else np.zeros((0, 4))
@@ -480,7 +489,8 @@ def hd2d_render(placements, assets, width=1440, height=900, return_parts=False):
     glow_of = {L.owner: L for L in lights}
     for k, ((p, info, _), img) in enumerate(zip(ups, imgs)):
         x0, x1, h, z = billboard_rect(info, p.tx, p.ty)
-        corners = np.array([[x0, 0, z], [x1, 0, z], [x0, h, z], [x1, h, z]])
+        sh = shear_of(info)
+        corners = np.array([[x0, 0, z], [x1, 0, z], [x0 + h * sh, h, z], [x1 + h * sh, h, z]])
         q = cam.project(corners)
         bx0, bx1 = max(int(math.floor(q[:, 0].min())), 0), min(int(math.ceil(q[:, 0].max())) + 1, width)
         by0, by1 = max(int(math.floor(q[:, 1].min())), 0), min(int(math.ceil(q[:, 1].max())) + 1, height)
@@ -490,7 +500,7 @@ def hd2d_render(placements, assets, width=1440, height=900, return_parts=False):
         tt = (z - cp[2]) / r[..., 2]
         X = cp[0] + tt * r[..., 0]
         Y = cp[1] + tt * r[..., 1]
-        u = np.floor((X - x0) * TILE).astype(int)
+        u = np.floor((X - x0 - Y * sh) * TILE).astype(int)
         v = np.floor((h - Y) * TILE).astype(int)
         ok = (u >= 0) & (u < img.shape[1]) & (v >= 0) & (v < img.shape[0])
         s = img[np.clip(v, 0, img.shape[0] - 1), np.clip(u, 0, img.shape[1] - 1)]

@@ -99,6 +99,7 @@ namespace Chaos.Client
             hd.World = world;
             hd.Atlas = atlas;
             hd.Cam = cam;
+            hd.StraightArt = source.StartsWith("synthetic", StringComparison.Ordinal);
             hdGo.SetActive(true);
             Debug.Log("chaos hd2d shot: building the HD-2D meshes");
             hd.Refresh();

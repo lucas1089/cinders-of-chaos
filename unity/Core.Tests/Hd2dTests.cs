@@ -55,6 +55,12 @@ namespace Chaos.Core.Tests
             var c01 = wall.Cell(0, 1);
             check(Near(c00[1].X, 4f) && Near(c00[0].X, 3f) && Near(c10[0].X, 2f) && Near(c10[1].X, 3f), "hd2d: a 64 px item extends west of its east-edge anchor, footprint x 2..4");
             check(Near(c00[2].Y - c00[1].Y, stretch) && Near(c01[0].Y, c00[3].Y), "hd2d: cells stack upwards, each one stretch high");
+            var c11 = wall.Cell(1, 1);
+            check(Near(wall.Shear, 1f) && Near(c00[2].X, 5f) && Near(c11[0].X, 3f) && Near(c11[1].X, 4f),
+                "hd2d: a 2 x 2 wall leans one tile east per cell: its top-left cell sits over its base (x 3..4)");
+            check(Near(Hd2d.ShearFor(Hd2dKind.Creature, 2, 2), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 1, 2), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 2, 1), 0f)
+                && Near(Hd2d.ShearFor(Hd2dKind.OnTop, 2, 2), 1f) && Near(Hd2d.ShearFor(Hd2dKind.Decal, 2, 2), 0f),
+                "hd2d: no shear for creatures, one-cell-wide or one-cell-high things, or flat things");
             var shifted = T(t => { t.Ground = true; t.DisplacementX = 8; t.DisplacementY = 16; });
             var t2 = new Tile(new Pos(100, 100, 7));
             t2.Things.Add(new Thing { Item = new Item { Id = 3, Type = shifted } });
@@ -158,7 +164,8 @@ namespace Chaos.Core.Tests
                 var hero = demo.Dat.Outfit(1);
                 check(hero.Idle.PatternX == 4 && spr.Rgba(hero.Idle.Sprite(0, 0, 0, 2, 0, 0, 0)) != null, "hd2d demo: the outfit has 4 facings");
             }
-            var dl = Hd2d.Layout(demo.World, demo.Center, 40f);
+            var dl = Hd2d.Layout(demo.World, demo.Center, 40f, null, false);   // the synthetic art stands straight
+            check(dl.All(p => p.Shear == 0f) && Hd2d.Layout(demo.World, demo.Center, 40f).Any(p => p.Shear == 1f), "hd2d demo: straight art is not sheared, the same room as game art is");
             int ground = dl.Count(p => p.Kind == Hd2dKind.Floor), walls = dl.Count(p => p.Kind == Hd2dKind.Billboard), mobs = dl.Count(p => p.Kind == Hd2dKind.Creature);
             check(ground == 18 * 14 && mobs == 2 && walls >= 12 && dl.Any(p => p.Kind == Hd2dKind.Decal && p.Width == 2 && p.Height == 3), "hd2d demo: floor, walls, creatures and the carpet decal are laid out");
             var dlights = Hd2d.Lights(dl, new Vec3(0.5f, 0f, -0.5f), 8);
