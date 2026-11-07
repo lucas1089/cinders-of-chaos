@@ -61,6 +61,8 @@ namespace Chaos.Client
             windows.Add(new MinimapWindow());
             windows.Add(new HotkeyBarWindow());
             windows.Add(new SpellbookWindow());
+            windows.Add(new ChannelsWindow());
+            windows.Add(new FightWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>

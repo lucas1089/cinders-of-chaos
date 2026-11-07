@@ -11,7 +11,7 @@ namespace Chaos.Core
 {
     /// <summary>Reads server messages into a World. Stateless apart from the World and a few counters, so tests can feed
     /// it payloads directly.</summary>
-    public sealed class GameParser
+    public sealed partial class GameParser
     {
         public readonly World W;
         public Func<double> Clock = () => 0;
@@ -86,7 +86,7 @@ namespace Chaos.Core
                 case 0x1D: Pinged(); break;
                 case 0x1E: break;
                 case 0x1F: r.U32(); r.U8(); break;
-                case 0x28: r.U8(); break;
+                case 0x28: Death(r); break;
                 case 0x32: ExtendedOpcode(r.U8(), r.Str()); break;
                 case 0x42:
                 {
@@ -230,15 +230,11 @@ namespace Chaos.Core
                 case 0xA5: { int g = r.U8(); GroupCooldown(g, r.U32()); break; }
                 case 0xA7: r.U8(); r.U8(); r.U8(); r.U8(); break;
                 case 0xAA: Talk(r); break;
-                case 0xAB: for (int n = r.U8(), i = 0; i < n; i++) { r.U16(); r.Str(); } break;
-                case 0xAC:
-                    r.U16(); r.Str();
-                    for (int n = r.U16(), i = 0; i < n; i++) r.Str();
-                    for (int n = r.U16(), i = 0; i < n; i++) r.Str();
-                    break;
-                case 0xAD: r.Str(); break;
-                case 0xB2: r.U16(); r.Str(); r.U16(); r.U16(); break;
-                case 0xB3: r.U16(); break;
+                case 0xAB: ChannelList(r); break;
+                case 0xAC: ChannelOpened(r, true); break;
+                case 0xAD: PrivateOpened(r); break;
+                case 0xB2: ChannelOpened(r, true); break;
+                case 0xB3: ChannelClosed(r); break;
                 case 0xB4: TextMessage(r); break;
                 case 0xB5:
                 {
@@ -478,34 +474,6 @@ namespace Chaos.Core
             return c;
         }
 
-        void Talk(ByteReader r)
-        {
-            r.U32();
-            string name = r.Str();
-            r.U16();
-            byte type = r.U8();
-            if (type == 1 || type == 2 || type == 3 || type == 36 || type == 37) ReadPos(r);
-            else if (type == 7 || type == 8 || type == 14 || type == 6 || type == 12 || type == 13) r.U16();
-            string text = r.Str();
-            Chat(name, text, type);
-        }
-
-        void TextMessage(ByteReader r)
-        {
-            byte kind = r.U8();
-            Pos at = default; uint v1 = 0, v2 = 0; byte c1 = 0, c2 = 0;
-            if (kind >= 23 && kind <= 29)
-            {
-                at = ReadPos(r);
-                v1 = r.U32(); c1 = r.U8();
-                if (kind == 23 || kind == 24 || kind == 27) { v2 = r.U32(); c2 = r.U8(); }
-            }
-            else if (kind >= 33 && kind <= 35) r.U16();
-            string text = r.Str();
-            if (kind < 23 || kind > 29) { Text(text); Chat("", text, 0); }
-            else if (W.Fx.Enabled) W.Fx.Push(FxEvent.Number(kind, at, v1, c1, v2, c2, text));   // damage, heal and experience numbers
-        }
-
         void FloorUp(ByteReader r)
         {
             var c = W.Center;
@@ -555,7 +523,7 @@ namespace Chaos.Core
     }
 
     /// <summary>A logged-in game connection: login handshake, client guard, pings, walking. Poll() from one thread.</summary>
-    public sealed class GameSession : IDisposable
+    public sealed partial class GameSession : IDisposable
     {
         public sealed class Options
         {
@@ -689,6 +657,7 @@ namespace Chaos.Core
                 Log("Server features: " + string.Join(",", parser.Features.All.OrderBy(f => f)));
             }
             if (parser.LoggedIn && enteredAt < 0) enteredAt = Now;
+            ChatPoll();
             // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
             if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
             if (conn.Closed && Closed == null) Closed = conn.Error ?? "The server closed the connection.";

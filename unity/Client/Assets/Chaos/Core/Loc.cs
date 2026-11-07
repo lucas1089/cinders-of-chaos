@@ -83,6 +83,28 @@ namespace Chaos.Core
             // HotkeyBarWindow
             { "Hotkeys", "Atalhos" },
             { "Click a slot to set what it says. Right-click: pick a spell.", "Clique num espaço para definir o que ele diz. Clique direito: escolher magia." },
+            // chat, channels, death, fight modes (ChaosApp.Chat.cs, ChannelsWindow, FightWindow)
+            { "Chat", "Conversa" },
+            { "Default", "Padrão" },
+            { "Server Log", "Registro do servidor" },
+            { "Press Enter to talk", "Aperte Enter para falar" },
+            { "Channels", "Canais" },
+            { "Loading channels...", "Carregando canais..." },
+            { "No channels.", "Nenhum canal." },
+            { "Message to", "Mensagem para" },
+            { "Open", "Abrir" },
+            { "Death", "Morte" },
+            { "You are dead.", "Você morreu." },
+            { "You died.", "Você morreu." },
+            { "Experience and skill loss: {0}% of the normal penalty.", "Perda de experiência e habilidades: {0}% da penalidade normal." },
+            { "OK", "OK" },
+            { "Fight", "Combate" },
+            { "Offensive", "Ofensivo" },
+            { "Balanced", "Equilibrado" },
+            { "Defensive", "Defensivo" },
+            { "Stand", "Parado" },
+            { "Chase", "Perseguir" },
+            { "Secure mode", "Modo seguro" },
         };
     }
 }

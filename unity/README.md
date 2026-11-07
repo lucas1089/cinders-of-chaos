@@ -637,3 +637,14 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
   - Light: the dat light attribute, radius in tiles, colour from the 6x6x6 cube.
 - Test: `python3 -I unity/tools/hd2d_preview_test.py` (synthetic sprites, runs in CI).
 - Side walls are left out: the art is oblique, a camera-facing card floats.
+
+## Chat, death and fight modes (O433 phase 2, track F)
+
+- Model: `Core/Chat.cs` (`ChatModel`, `TalkType`, `ChatPackets`, `BubbleSet`, `FightModes`), parser side `Core/GameChat.cs`, tests `Core.Tests/ChatTests.cs`.
+- Chat window (`ChaosApp.Chat.cs`): tabs Default, Server Log, channels and private. Enter focuses the line. With the line focused: Tab and Shift+Tab switch tabs,
+  Ctrl+O opens the channel list, Ctrl+E closes the tab (the windows keep those keys otherwise). Right-click on a tab closes it. The "+" button opens the channel list
+  (`ChannelsWindow`: click joins, "Message to" opens a private tab). Private message: `*name* text`. `#y text` yells, `#w text` whispers, `/ignore name` and `/unignore name`.
+- Floating speech (`DrawBubbles`): say, whisper, yell, spells and monster speech float over the speaker, in the classic and the front-art live view.
+  Lifetime 60 ms per character, 3 to 12 s, at most 3 lines stack per creature.
+- Death (0x28): a modal window with the penalty. OK logs out and goes to the character list.
+- Fight modes (`FightWindow`): offensive / balanced / defensive, stand / chase, secure mode. Saved in PlayerPrefs (`chaos.fight`), sent after the login and at each change (0xA0).

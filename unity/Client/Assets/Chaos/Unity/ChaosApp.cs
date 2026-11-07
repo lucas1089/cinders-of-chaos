@@ -31,11 +31,10 @@ namespace Chaos.Client
         Camera cam;
         Vector2 charScroll;
         readonly List<string> log = new List<string>();
-        readonly List<(string text, Color color)> chat = new List<(string, Color)>();
         GUIStyle small, nameStyle, chatStyle, titleStyle;
         Vector2 chatScroll;
         string chatInput = "";
-        bool chatOpen = true, chatFocused, showDebug, chatToBottom;
+        bool chatOpen = true, chatFocused, showDebug;
         readonly List<Rect> uiRects = new List<Rect>();   // screen pixels the windows cover: clicks there do not walk
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -210,8 +209,7 @@ namespace Chaos.Client
                 Identity = IdentityChoice(),
             });
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
-            session.Chat += AddChat;
-            chat.Clear();
+            ChatEntered();
             session.Start();
             var go = new GameObject("Map");
             go.transform.SetParent(transform);
@@ -387,17 +385,8 @@ namespace Chaos.Client
             }
         }
 
-        void AddChat(string who, string text, byte type)
-        {
-            // talk types of 10.98: 1 say, 2 whisper, 3 yell, 4/5 private, 7-14 channels, 36/37 monster; 0 a server message
-            Color col = type == 0 ? new Color(1f, 1f, 1f) : type == 3 ? new Color(1f, 0.55f, 0.35f) :
-                        type == 4 || type == 5 ? new Color(0.55f, 0.85f, 1f) : type == 36 || type == 37 ? new Color(1f, 0.6f, 0.2f) :
-                        type >= 7 && type <= 14 ? new Color(0.95f, 0.85f, 0.5f) : new Color(1f, 0.95f, 0.4f);
-            string line = (who.Length > 0 ? who + ": " : "") + text;
-            chat.Add((DateTime.Now.ToString("HH:mm") + " " + line, col));
-            if (chat.Count > 200) chat.RemoveAt(0);
-            chatToBottom = true;
-        }
+        /// <summary>A client-side notice in the Server Log tab (the server's lines go there from the parser).</summary>
+        void AddChat(string who, string text, byte type) { session?.Talks.AddLocal(text); }
 
         bool OverUi(Vector2 mouse)
         {
@@ -548,6 +537,7 @@ namespace Chaos.Client
                     GUI.Label(new Rect(nr.x + 1, nr.y + 1, nr.width, nr.height), c.Name, nameStyle);
                     nameStyle.normal.textColor = col;
                     GUI.Label(nr, c.Name, nameStyle);
+                    DrawBubbles(c, x, nr.y);
                     Rect bar = new Rect(x - barW / 2, y - barH - 3, barW, barH);
                     Fill(new Rect(bar.x - 1, bar.y - 1, bar.width + 2, bar.height + 2), new Color(0f, 0f, 0f, 0.85f));
                     Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
@@ -558,6 +548,7 @@ namespace Chaos.Client
             StatusPanel(scale);
             ChatWindow(w, h, scale);
             DrawWindows(w, h, scale);
+            DeathWindow(w, h, scale);
             if (showDebug)
             {
                 var me = world?.Player;
@@ -605,60 +596,7 @@ namespace Chaos.Client
             GUI.Label(r, v + " / " + max, st);
         }
 
-        void ChatWindow(float w, float h, float scale)
-        {
-            if (!chatOpen)
-            {
-                Rect open = ChatRect(w, h);
-                uiRects.Add(Scaled(open, scale));
-                if (GUI.Button(open, "Chat")) chatOpen = true;
-                chatFocused = false;
-                return;
-            }
-            Rect box = ChatRect(w, h);
-            uiRects.Add(Scaled(box, scale));
-            Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.9f));
-            GUI.Label(new Rect(box.x + 8, box.y + 4, 200, 22), "Chat", titleStyle);
-            if (GUI.Button(new Rect(box.xMax - 30, box.y + 4, 24, 22), "x")) { chatOpen = false; GUI.FocusControl(null); return; }
-
-            // Enter focuses the line and sends it; Escape leaves it
-            var e = Event.current;
-            bool enter = e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter);
-            if (enter && chatFocused)
-            {
-                session?.Say(chatInput.Trim());
-                chatInput = "";
-                GUI.FocusControl(null);
-                e.Use();
-            }
-            else if (enter && !TextEditing) { GUI.FocusControl("chatInput"); e.Use(); }
-            else if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && chatFocused) { GUI.FocusControl(null); e.Use(); }
-
-            Rect list = new Rect(box.x + 4, box.y + 28, box.width - 8, box.height - 64);
-            float lineW = list.width - 20, total = 0;
-            var heights = new float[chat.Count];
-            for (int i = 0; i < chat.Count; i++) { heights[i] = chatStyle.CalcHeight(new GUIContent(chat[i].text), lineW); total += heights[i]; }
-            if (chatToBottom && e.type == EventType.Repaint) { chatScroll.y = Mathf.Max(0, total - list.height); chatToBottom = false; }
-            chatScroll = GUI.BeginScrollView(list, chatScroll, new Rect(0, 0, lineW, Mathf.Max(total, list.height)));
-            float y = 0;
-            for (int i = 0; i < chat.Count; i++)
-            {
-                chatStyle.normal.textColor = chat[i].color;
-                GUI.Label(new Rect(0, y, lineW, heights[i]), chat[i].text, chatStyle);
-                y += heights[i];
-            }
-            GUI.EndScrollView();
-
-            GUI.SetNextControlName("chatInput");
-            chatInput = GUI.TextField(new Rect(box.x + 6, box.yMax - 32, box.width - 12, 26), chatInput, 255);
-            chatFocused = GUI.GetNameOfFocusedControl() == "chatInput";
-            if (!chatFocused && chatInput.Length == 0)
-            {
-                var hint = new GUIStyle(small);
-                hint.normal.textColor = new Color(1f, 1f, 1f, 0.4f);
-                GUI.Label(new Rect(box.x + 10, box.yMax - 31, box.width - 20, 24), "Press Enter to talk", hint);
-            }
-        }
+        void ChatWindow(float w, float h, float scale) => ChatPanel(w, h, scale);
 
         void OnApplicationQuit() { session?.Dispose(); spr?.Dispose(); }
     }
