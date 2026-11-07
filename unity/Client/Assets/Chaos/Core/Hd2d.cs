@@ -22,6 +22,9 @@
 // cells is drawn as in the classic view, anchored on the tile's east edge and extending west (x) and up (height), the
 // way a 64 px item is drawn up and to the left. The height is stretched by 1 / cos(pitch) so that the sprite keeps its
 // height on screen under the tilted camera (the floor is foreshortened on purpose, that is the look).
+// The classic sprites draw height going up and to the left (one tile west per tile up): an upright quad of a thing at
+// least two cells wide and high that blocks or is on top (walls, pillars, arches; not creatures or loose objects) is sheared one tile east per
+// cell of height, so its vertical edges come out vertical in 3D and its top sits over its base (Hd2dPiece.Shear).
 // Displacement (dat) moves a thing west by dx / 32 and up by dy / 32; elevation lifts the things above it in the stack.
 // Only the player's floor is laid out (no floors above or below).
 using System;
@@ -57,6 +60,7 @@ namespace Chaos.Core
         public float Y;             // height of the base
         public int Width = 1, Height = 1;
         public float Stretch = 1f;  // upright: world height of one cell
+        public float Shear;         // upright: tiles east per cell of height (undoes the classic up-left slant), 0 or 1
 
         public bool Flat => Kind == Hd2dKind.Floor || Kind == Hd2dKind.Border || Kind == Hd2dKind.Decal;
         public bool CastsShadow => !Flat;
@@ -72,13 +76,14 @@ namespace Chaos.Core
                 return new[] { new Vec3(west, Y, south), new Vec3(east, Y, south), new Vec3(east, Y, north), new Vec3(west, Y, north) };
             }
             float y0 = Y + h * Stretch, y1 = y0 + Stretch;
-            return new[] { new Vec3(west, y0, Z), new Vec3(east, y0, Z), new Vec3(east, y1, Z), new Vec3(west, y1, Z) };
+            float s0 = h * Shear, s1 = s0 + Shear;   // the quad leans east as it rises: the sprite's slant comes out upright
+            return new[] { new Vec3(west + s0, y0, Z), new Vec3(east + s0, y0, Z), new Vec3(east + s1, y1, Z), new Vec3(west + s1, y1, Z) };
         }
 
         /// <summary>The middle of the thing's footprint and body: the point a light or a name label hangs on.</summary>
         public Vec3 Center => Flat
             ? new Vec3(Right - Width / 2f, Y, Z - Height / 2f)
-            : new Vec3(Right - Width / 2f, Y + Height * Stretch / 2f, Z);
+            : new Vec3(Right - Width / 2f + Height * Shear / 2f, Y + Height * Stretch / 2f, Z);
     }
 
     public struct Hd2dLight
@@ -116,6 +121,13 @@ namespace Chaos.Core
             return Blocking(t) ? Hd2dKind.Billboard : Hd2dKind.Object;
         }
 
+        /// <summary>The shear of an upright piece: 1 for architecture (a blocking or on-top thing: walls, pillars, arches) at
+        /// least two cells wide and high, whose art climbs up-left across cells; else 0. LayoutTile also leaves a light source unsheared
+        /// unless it hangs on a sheared wall of its tile. A one-cell-wide sprite stands straight
+        /// in its column; loose objects (a standing torch) keep their art, which often leans on purpose.</summary>
+        public static float ShearFor(Hd2dKind kind, int width, int height) =>
+            width > 1 && height > 1 && (kind == Hd2dKind.Billboard || kind == Hd2dKind.OnTop) ? 1f : 0f;
+
         /// <summary>1 / cos(pitch): the height factor of an upright sprite under a camera looking down by `pitchDeg`.</summary>
         public static float StretchFor(float pitchDeg) => 1f / (float)Math.Cos(pitchDeg * Math.PI / 180.0);
 
@@ -123,9 +135,10 @@ namespace Chaos.Core
         public static float WorldZ(Pos origin, float tileY) => -(tileY - origin.Y);
 
         /// <summary>The pieces of one tile in stack order. `drawn` gives a creature's drawn tile position (walking); null: its tile.</summary>
-        public static void LayoutTile(DatFile dat, Tile tile, Pos origin, float stretch, List<Hd2dPiece> into, Func<Creature, float[]> drawn = null)
+        public static void LayoutTile(DatFile dat, Tile tile, Pos origin, float stretch, List<Hd2dPiece> into, Func<Creature, float[]> drawn = null, bool slantedArt = true)
         {
             float elevation = 0f;
+            bool shearedBelow = false;   // a wall on this tile was sheared: a torch hung on it follows
             for (int i = 0; i < tile.Things.Count; i++)
             {
                 var th = tile.Things[i];
@@ -137,7 +150,7 @@ namespace Chaos.Core
                     // an outfit look, or an item look (a chest, a statue)
                     var ct = c.Outfit.LookType != 0 ? dat.Outfit(c.Outfit.LookType) : dat.Item(c.Outfit.LookTypeEx);
                     if (ct == null) continue;
-                    var cp = Make(Hd2dKind.Creature, ct, tile.Pos, i, tx, ty, elevation, origin, stretch, TileMiddle);
+                    var cp = Make(Hd2dKind.Creature, ct, tile.Pos, i, tx, ty, elevation, origin, stretch, TileMiddle, slantedArt);
                     cp.Creature = c;
                     into.Add(cp);
                     continue;
@@ -146,20 +159,24 @@ namespace Chaos.Core
                 var kind = Classify(type);
                 if (kind == Hd2dKind.None) continue;
                 float depth = kind == Hd2dKind.Billboard ? BackEdge : TileMiddle;
-                var p = Make(kind, type, tile.Pos, i, tx, ty, elevation, origin, stretch, depth);
+                var p = Make(kind, type, tile.Pos, i, tx, ty, elevation, origin, stretch, depth, slantedArt);
                 p.Item = th.Item;
+                // a light source (a standing torch) leans on purpose in its art: sheared only when it hangs on a sheared wall
+                if (type.LightLevel > 0 && !shearedBelow) p.Shear = 0f;
+                if (p.Shear > 0f && type.LightLevel == 0) shearedBelow = true;
                 into.Add(p);
                 if (type.Elevation > 0) elevation = Math.Min(24f, elevation + type.Elevation);
             }
         }
 
-        static Hd2dPiece Make(Hd2dKind kind, ThingType t, Pos tile, int index, float tx, float ty, float elevation, Pos origin, float stretch, float depth)
+        static Hd2dPiece Make(Hd2dKind kind, ThingType t, Pos tile, int index, float tx, float ty, float elevation, Pos origin, float stretch, float depth, bool slantedArt)
         {
             var g = t.Idle;
             var p = new Hd2dPiece
             {
                 Kind = kind, Type = t, Tile = tile, StackIndex = index, Width = g.Width, Height = g.Height, Stretch = stretch,
                 Right = WorldX(origin, tx) + 1f - t.DisplacementX / 32f,
+                Shear = slantedArt ? ShearFor(kind, g.Width, g.Height) : 0f,
             };
             float lift = elevation / 32f;
             if (p.Flat)
@@ -176,14 +193,16 @@ namespace Chaos.Core
         }
 
         /// <summary>All pieces of the tiles near `origin` (the player's floor), ready to draw.</summary>
-        public static List<Hd2dPiece> Layout(World w, Pos origin, float pitchDeg, Func<Creature, float[]> drawn = null)
+        /// `slantedArt`: the sprites are the game's, drawn in the classic slant (sheared upright); false for art drawn straight
+        /// up (the synthetic demo art).
+        public static List<Hd2dPiece> Layout(World w, Pos origin, float pitchDeg, Func<Creature, float[]> drawn = null, bool slantedArt = true)
         {
             var list = new List<Hd2dPiece>();
             float stretch = StretchFor(pitchDeg);
             foreach (var tile in w.Tiles.Values)
             {
                 if (tile.Pos.Z != origin.Z) continue;
-                LayoutTile(w.Dat, tile, origin, stretch, list, drawn);
+                LayoutTile(w.Dat, tile, origin, stretch, list, drawn, slantedArt);
             }
             return list;
         }

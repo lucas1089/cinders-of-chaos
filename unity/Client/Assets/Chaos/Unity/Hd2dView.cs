@@ -23,6 +23,8 @@ namespace Chaos.Client
         public struct Label { public Creature C; public Vector3 Head, BottomLeft, TopRight; }
         public readonly List<Label> Labels = new List<Label>();
 
+        /// <summary>The sprites are drawn straight up (the synthetic demo art), not in the classic slant: no shear.</summary>
+        public bool StraightArt;
         public static bool LowQuality => Application.isMobilePlatform || PlayerPrefs.GetInt("chaos.hd2d.low", 0) == 1;
         public int MaxLights => LowQuality ? 4 : 8;
         public int MaxShadowLights => LowQuality ? 0 : 2;
@@ -144,7 +146,7 @@ namespace Chaos.Client
             Pos origin = World.Center;
             var player = World.Player;
             float[] pd = player != null ? DrawnPos(player) : new float[] { origin.X, origin.Y };
-            var pieces = Hd2d.Layout(World, origin, Pitch, DrawnPos);
+            var pieces = Hd2d.Layout(World, origin, Pitch, DrawnPos, !StraightArt);
             double p = Pitch * Math.PI / 180.0;
             camNormal = new Vector3(0f, (float)Math.Sin(p), -(float)Math.Cos(p));
             foreach (var piece in pieces)
