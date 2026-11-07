@@ -25,6 +25,8 @@ namespace Chaos.Client
 
         /// <summary>The sprites are drawn straight up (the synthetic demo art), not in the classic slant: no shear.</summary>
         public bool StraightArt;
+        /// <summary>Pieces this returns true for are not drawn as sprites (a 3D model takes their place: Hd2dRuins3d). Lights still come from them.</summary>
+        public Func<Hd2dPiece, bool> Skip;
         public static bool LowQuality => Application.isMobilePlatform || PlayerPrefs.GetInt("chaos.hd2d.low", 0) == 1;
         public int MaxLights => LowQuality ? 4 : 8;
         public int MaxShadowLights => LowQuality ? 0 : 2;
@@ -151,6 +153,7 @@ namespace Chaos.Client
             camNormal = new Vector3(0f, (float)Math.Sin(p), -(float)Math.Cos(p));
             foreach (var piece in pieces)
             {
+                if (Skip != null && Skip(piece)) continue;
                 if (piece.Creature != null) AddCreature(piece);
                 else AddItem(piece);
             }

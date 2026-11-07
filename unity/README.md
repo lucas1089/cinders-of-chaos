@@ -78,6 +78,25 @@ and holds the temple tileset (pair 60); the pair is private and is not baked int
 StandaloneLinux64 the workflow runs it under xvfb with Mesa software OpenGL and uploads the artifact `hd2d-shots` (a failure of that step
 does not fail the build; the step log says why).
 
+3D architecture test (Ruins3d): an experiment to see whether free 3D assets make the HD-2D view look better. Unity only; the game
+client (OTClient family) does not use it and nothing here changes the server or the sprite pair.
+- What: real low-poly architecture with the game's pixel sprites standing in it (3D diorama, pixel characters, depth of field, warm
+  lights). Models: the CC0 Modular Ruins Pack by Quaternius (OBJ + MTL, no textures), 19 pieces in `Assets/Chaos/Resources/Ruins3d/`
+  with the pack's `License.txt` (credited in `docs/CREDITS.md`). The repo commits no `.meta`: Unity makes them on import.
+  `Resources.Load<GameObject>("Ruins3d/Wall")` works in the player; `ChaosBuild.cs` does not exclude them.
+- Mapping (`Core/Hd2dRuins.cs`, tested in `Core.Tests/RuinsTests.cs`): from the HD-2D layout, ground becomes a floor piece per tile
+  (Floor_Standard, Floor_Squares, a few Floor_Diamond); a ground border is dropped; a blocking on-bottom upright thing (the wall) becomes
+  one Wall segment per cell of width and one course per cell of height, turned to face the open side (south, east, west, north);
+  a blocking upright thing that is not on-bottom (pillar) becomes a column; a light source becomes a Torch on the wall of its tile,
+  else candles on a short column. Decals (carpet), loose items and creatures stay sprites. A few props (barrel, crate, pots, chest,
+  skull, bookcase) stand on free tiles in front of a wall. The Hd2dView light list is unchanged. One tile is one unit (pack scale 0.5).
+- Look: `Unity/Hd2dRuins3d.cs` copies the pack's materials and restyles them (`Hd2dRuins.Restyle`): stone pulled to cold grey and x 0.7,
+  wood and metal dark, flames warm and emissive. Standard shader, the view's point lights and ambient, shadows on.
+- See it: the `hd2d-shots` artifact of `unity-prototype.yml` (Linux target) holds `hd2d_3d.png` next to `hd2d.png` and `classic.png`.
+  Same room, same camera, same post effects. If the models are not in the build the step skips `hd2d_3d.png` and says so in the log.
+- Unsure until seen: which side of the pack's walls is the nicer face, and the colour balance (the restyle lifts the pack's linear
+  colours with a gamma first). Both are one-line changes in `Hd2dRuins.cs`.
+
 Limits, said plainly:
 - The sprites are drawn for an oblique view. Upright walls look right only with this fixed camera: there is no camera rotation.
 - Only the player's floor is drawn (no floors above or below).
