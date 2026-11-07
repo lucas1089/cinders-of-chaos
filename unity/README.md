@@ -38,6 +38,7 @@ It does not replace the client in `client/`.
     - `Spells.cs`: the spell list (opcode 219), filters, cooldowns, cast by words. `Loc.cs`: UI texts in English and pt-BR.
     - `World.cs`: tiles, stacks, creatures.
     - `Protocol.cs`: framing, login packets, the TCP connection, the login answer.
+    - `NpcTrade.cs`: NPC shop and talk model, the shop packets.
     - `Game.cs`: `GameParser` reads the server's messages into a `World`. `GameSession` adds login, guard, pings and walking.
   - `Assets/Chaos/Unity/` holds the app.
     - `ChaosApp.cs` builds everything from code at start.
@@ -509,6 +510,7 @@ The checks cover:
 - the front-art live view (`FrontLiveTests.cs`): the new block textures, ground and wall classes to blocks, heights, items as sprites or boxes,
   lights, floors below and voids, the world mapping and anchors, the rebuild hash, size and time bounds;
 - the front-art creatures (`FrontLooksTests.cs`): the name rules over every monster name of the server, the 21 classes, the outfit composer, the label, the state machine (steps, facing, swings, flinch);
+- NPC talk and trade (`NpcTests.cs`): byte-level 0x7A, 0x7B, 0x7C in and the buy, sell, look, close and NPC speech packets out, lists, search, quantity bounds (money, capacity, stock, 100), totals, currency (opcode 113), {keywords}, the talk log and its channel rule, NPC speech in the parser;
 - the front-art live effects (`FrontFxTests.cs`): byte-level packets of 0x83, 0x84, 0x85, 0x86 and 0xB4, every effect and missile id of the server's Lua files has an element, palettes and missile arts, number text, the melee rule, timing and the director's rules;
 - the 3D character mapping (`CharsTests.cs`): the 21 classes against the vocation files, the monster rules over every monster name of the server
   (it prints the share per model), size, hand bones, idle clips, the label font and the line-up. The fetch script: `python3 -I unity/tools/fetch_3d_assets_test.py`.
@@ -518,6 +520,18 @@ On the real pair: `dotnet run -c Release -- probe DAT SPR OUTDIR [outfit ids...]
 Against a server: `dotnet run -c Release -- live PAIR_DIR HOST ACCOUNT PASSWORD [CHARACTER] [RSA_MODULUS_FILE]`.
 It logs in, enters, takes four steps and prints the opcodes it read. The guard key is read from `CHAOS_CLIENT_KEY`
 (64 hex digits). Without it the dev key is used, which the live server refuses in mode "enforce".
+
+## NPC talk and trade
+
+- `NpcTalkWindow` opens when an NPC speaks to us (talk type 10 or 11 of 0xAA, with or without a position: `NpcTalkState.HasPosition`).
+  Quick words hi, trade, bye, yes, no, a chip per `{keyword}` of the last line, a line to type. Hi and any line outside a conversation go on the
+  default channel; once the NPC is focused on us words go as talk type 12 (the NPC channel), because the stock NPC library takes keywords of
+  a focused player only from there. The NPC channel is a client tab in the main client, so Unity keeps the log itself.
+- `NpcTradeWindow` opens on 0x7A (npc name, u16 count, items with id, sub type, name, weight, buy, sell) and 0x7B (u64 money, goods). Buy and Sell tabs,
+  search, amount slider bounded by money, capacity (unless ignored), stock and 100, total, OK. Closing it sends 0x7C. Right-click on a row looks (0x79).
+  Requests: buy 0x7A (id, sub type, u8 amount, ignore capacity, in backpacks), sell 0x7B (id, sub type, u8 amount, ignore equipped).
+  An NPC that trades for another currency says so on opcode 113 first (`NpcTradeState.ReceiveCurrency`).
+- Not done: buy in backpacks, the speech bubble over the NPC, walking up to an NPC on a click, NPC modal windows. Not tried on a live server.
 
 ## Running it
 

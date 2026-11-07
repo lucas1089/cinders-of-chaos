@@ -83,6 +83,32 @@ namespace Chaos.Core
             // HotkeyBarWindow
             { "Hotkeys", "Atalhos" },
             { "Click a slot to set what it says. Right-click: pick a spell.", "Clique num espaço para definir o que ele diz. Clique direito: escolher magia." },
+            // NpcTalkWindow, NpcTradeWindow
+            { "NPC", "NPC" },
+            { "Nobody is talking to you.", "Ninguém está falando com você." },
+            { "Send", "Enviar" },
+            { "hi", "oi" },
+            { "trade", "negociar" },
+            { "bye", "tchau" },
+            { "yes", "sim" },
+            { "no", "não" },
+            { "Trade", "Negociar" },
+            { "No shop is open. Say hi and trade to an NPC.", "Nenhuma loja aberta. Diga hi e trade a um NPC." },
+            { "Gold", "Ouro" },
+            { "{0}: {1}", "{0}: {1}" },
+            { "Capacity: {0}", "Capacidade: {0}" },
+            { "Buy", "Comprar" },
+            { "Sell", "Vender" },
+            { "Nothing for sale.", "Nada à venda." },
+            { "The NPC buys nothing you carry.", "O NPC não compra nada do que você leva." },
+            { "Price {0}", "Preço {0}" },
+            { "Amount", "Quantidade" },
+            { "Total: {0}", "Total: {0}" },
+            { "Ignore capacity", "Ignorar capacidade" },
+            { "Ignore equipped", "Ignorar equipados" },
+            { "Not enough money.", "Dinheiro insuficiente." },
+            { "Not enough capacity.", "Capacidade insuficiente." },
+            { "OK", "OK" },
         };
     }
 }

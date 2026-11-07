@@ -24,6 +24,9 @@ namespace Chaos.Core
         public Action<Dir> WalkCancelled = delegate { };
         public Action<Creature> PlayerMoved = delegate { };
         public bool LoggedIn;
+        /// <summary>The NPC shop of 0x7A, 0x7B and 0x7C, and the NPC conversation (Core/NpcTrade.cs).</summary>
+        public readonly NpcTradeState Trade = new NpcTradeState();
+        public readonly NpcTalkState NpcTalk = new NpcTalkState();
         /// <summary>What we told the server at the game login: Markers decides whether outfits carry wings, aura and shader.</summary>
         public ClientIdentity Identity = ClientIdentity.Extended;
         /// <summary>The 0x43 feature list (only on an Identity.Chaos connection). Item attributes (126) and the width of the
@@ -194,6 +197,9 @@ namespace Chaos.Core
                 }
                 case 0x78: { int slot = r.U8(); var it = ReadItem(r, r.U16()); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = it; break; }
                 case 0x79: { int slot = r.U8(); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = null; break; }
+                case 0x7A: Trade.ReadShop(r, Clock()); break;
+                case 0x7B: Trade.ReadGoods(r); break;
+                case 0x7C: Trade.Close(); break;
                 case 0x82: W.WorldLight = r.U8(); W.WorldLightColor = r.U8(); break;
                 case 0x83: { var p = ReadPos(r); int id = r.U16(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Effect(p, id)); break; }
                 case 0x84: { var p = ReadPos(r); byte col = r.U8(); string t = r.Str(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.AnimText(p, col, t)); break; }
@@ -485,9 +491,18 @@ namespace Chaos.Core
             r.U16();
             byte type = r.U8();
             if (type == 1 || type == 2 || type == 3 || type == 36 || type == 37) ReadPos(r);
+            else if (NpcTalkState.IsNpcTalkType(type)) { if (NpcTalkState.HasPosition(r)) ReadPos(r); }
             else if (type == 7 || type == 8 || type == 14 || type == 6 || type == 12 || type == 13) r.U16();
             string text = r.Str();
+            if (NpcTalkState.IsNpcTalkType(type)) NpcTalk.FromNpc(name, text, Clock());
+            else if (type == 1 && NpcTalk.Focused(Clock()) && IsNpc(name)) NpcTalk.FromNpc(name, text, Clock());
             Chat(name, text, type);
+        }
+
+        bool IsNpc(string name)
+        {
+            foreach (var c in W.Creatures.Values) if (c.Type == 2 && c.Name == name) return true;
+            return false;
         }
 
         void TextMessage(ByteReader r)
@@ -603,6 +618,7 @@ namespace Chaos.Core
             parser.Text = t => Log(t);
             parser.Chat = (who, text, type) => Chat(who, text, type);
             parser.Disconnected = reason => Closed = reason;
+            Ext.On(NpcTradeState.OpcodeCurrency, m => parser.Trade.ReceiveCurrency(NpcTradeState.ParseCurrency(m), Now));
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
@@ -727,6 +743,47 @@ namespace Chaos.Core
             if (string.IsNullOrWhiteSpace(text) || conn == null) return;
             if (text.Length > 255) text = text.Substring(0, 255);
             conn.Send(Protocol.SayPacket(text));
+        }
+
+        /// <summary>Words to an NPC: the default channel to greet it or when no conversation runs, else the NPC channel (talk type 12).
+        /// The line also goes into the NPC log (the server does not echo it).</summary>
+        public void SayToNpc(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text) || conn == null) return;
+            text = text.Trim();
+            if (text.Length > 255) text = text.Substring(0, 255);
+            var talk = parser.NpcTalk;
+            bool channel = talk.ToNpcChannel(text, Now);
+            talk.FromPlayer(world.Player?.Name ?? opt.Character ?? "", text, Now);
+            conn.Send(channel ? NpcPackets.SayToNpc(text) : Protocol.SayPacket(text));
+        }
+
+        /// <summary>Buys from the open shop (0x7A). False when the rules forbid it (money, capacity, amount).</summary>
+        public bool NpcBuy(ShopItem it, int amount, bool ignoreCap, bool inBackpacks = false)
+        {
+            byte[] p = parser.Trade.BuyRequest(it, amount, parser.FreeCap, ignoreCap, inBackpacks);
+            if (p == null || conn == null) return false;
+            conn.Send(p);
+            return true;
+        }
+
+        /// <summary>Sells to the open shop (0x7B).</summary>
+        public bool NpcSell(ShopItem it, int amount, bool ignoreEquipped = true)
+        {
+            byte[] p = parser.Trade.SellRequest(it, amount, ignoreEquipped);
+            if (p == null || conn == null) return false;
+            conn.Send(p);
+            return true;
+        }
+
+        /// <summary>Looks at a shop row (0x79).</summary>
+        public void NpcLook(ShopItem it) { if (it != null) conn?.Send(NpcPackets.Look(it.Id, it.SubType)); }
+
+        /// <summary>Closes the shop (0x7C).</summary>
+        public void NpcClose()
+        {
+            if (parser.Trade.Open) conn?.Send(NpcPackets.Close());
+            parser.Trade.Close();
         }
 
         /// <summary>Inventory slot position (0xFFFF, slot, 0).</summary>
