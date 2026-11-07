@@ -1,5 +1,6 @@
 // Attacking from the map, the red frame round the target and the remembered minimap. Used by the Battle list and Minimap windows.
 using Chaos.Core;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Chaos.Client
@@ -29,7 +30,21 @@ namespace Chaos.Client
                 Minimap.Update(world);
             }
             // right-click on a creature on the map attacks it
-            if (view != null && Input.GetMouseButtonDown(1) && !OverUi(Input.mousePosition) && cam.pixelRect.Contains(Input.mousePosition))
+            if (hd2d && hd2dView != null && Input.GetMouseButtonDown(1) && !OverUi(Input.mousePosition) && cam.pixelRect.Contains(Input.mousePosition))
+            {
+                // HD-2D: the creature whose sprite quad the pointer is over (nearest to the camera wins)
+                uint me3 = world?.PlayerId ?? 0;
+                Creature hit3 = null;
+                float best = float.MaxValue;
+                foreach (var l in hd2dView.Labels)
+                {
+                    Vector3 a = cam.WorldToScreenPoint(l.BottomLeft), b = cam.WorldToScreenPoint(l.TopRight);
+                    var r = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+                    if (l.C.Id != me3 && r.Contains(Input.mousePosition) && a.z < best) { best = a.z; hit3 = l.C; }
+                }
+                if (hit3 != null) session.Attack(hit3.Id);
+            }
+            else if (view != null && Input.GetMouseButtonDown(1) && !OverUi(Input.mousePosition) && cam.pixelRect.Contains(Input.mousePosition))
             {
                 Vector3 wp = cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 10f));
                 uint me = world?.PlayerId ?? 0;
@@ -40,11 +55,40 @@ namespace Chaos.Client
             }
         }
 
+        /// <summary>Creature name points in screen pixels: the classic view's tiles or the HD-2D scene's head points.</summary>
+        IEnumerable<(Creature c, Vector3 sp)> LabelPoints()
+        {
+            if (hd2d && hd2dView != null)
+            {
+                foreach (var l in hd2dView.Labels) yield return (l.C, cam.WorldToScreenPoint(l.Head));
+                yield break;
+            }
+            foreach (var (c, at) in view.Labels) yield return (c, cam.WorldToScreenPoint(new Vector3(at.x + 0.25f, at.y + 0.4f, 0)));
+        }
+
         /// <summary>A red square frame round the attacked creature. Called inside the map group (map is its rect, in UI units).</summary>
         void DrawAttackFrame(Rect map, float scale)
         {
             uint target = session?.AttackTarget ?? 0;
             if (target == 0 || view == null) return;
+            if (hd2d && hd2dView != null)
+            {
+                foreach (var l in hd2dView.Labels)
+                {
+                    if (l.C.Id != target) continue;
+                    Vector3 a = cam.WorldToScreenPoint(l.BottomLeft), b = cam.WorldToScreenPoint(l.TopRight);
+                    float x0 = Mathf.Min(a.x, b.x) / scale - map.x, x1 = Mathf.Max(a.x, b.x) / scale - map.x;
+                    float y0 = (UnityEngine.Screen.height - Mathf.Max(a.y, b.y)) / scale - map.y, y1 = (UnityEngine.Screen.height - Mathf.Min(a.y, b.y)) / scale - map.y;
+                    var red = new Color(0.95f, 0.1f, 0.1f, 1f);
+                    const float t = 2f;
+                    Fill(new Rect(x0, y0, x1 - x0, t), red);
+                    Fill(new Rect(x0, y1 - t, x1 - x0, t), red);
+                    Fill(new Rect(x0, y0, t, y1 - y0), red);
+                    Fill(new Rect(x1 - t, y0, t, y1 - y0), red);
+                    return;
+                }
+                return;
+            }
             foreach (var (c, at) in view.Labels)
             {
                 if (c.Id != target) continue;

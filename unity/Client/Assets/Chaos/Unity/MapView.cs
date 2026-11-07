@@ -32,7 +32,18 @@ namespace Chaos.Client
             mr.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
         }
 
-        void LateUpdate()
+        /// <summary>Off while the HD-2D view draws the world (F9): no mesh is built, nothing is drawn.</summary>
+        public void SetVisible(bool on)
+        {
+            enabled = on;
+            var mr = GetComponent<MeshRenderer>();
+            if (mr != null) mr.enabled = on;
+        }
+
+        void LateUpdate() { Refresh(); }
+
+        /// <summary>Builds the mesh for the current world now (LateUpdate, or the screenshot mode without a frame).</summary>
+        public void Refresh()
         {
             if (World == null || Atlas == null) return;
             int gen = Atlas.Generation;

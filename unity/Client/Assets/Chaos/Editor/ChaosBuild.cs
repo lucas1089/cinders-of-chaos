@@ -58,9 +58,30 @@ namespace Chaos.Client.Editor
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
+        /// <summary>Shader.Find only finds shaders that are in a build: add the HD-2D ones (O432) to Always Included Shaders.</summary>
+        static void IncludeShaders()
+        {
+            var gs = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>("ProjectSettings/GraphicsSettings.asset");
+            if (gs == null) return;
+            var so = new SerializedObject(gs);
+            var list = so.FindProperty("m_AlwaysIncludedShaders");
+            foreach (var guid in AssetDatabase.FindAssets("t:Shader", new[] { "Assets/Chaos/Shaders" }))
+            {
+                var sh = AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(guid));
+                if (sh == null) continue;
+                bool have = false;
+                for (int i = 0; i < list.arraySize; i++) if (list.GetArrayElementAtIndex(i).objectReferenceValue == sh) have = true;
+                if (have) continue;
+                list.InsertArrayElementAtIndex(list.arraySize);
+                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = sh;
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         public static void Build()
         {
             Directory.CreateDirectory(Generated + "/Resources");
+            IncludeShaders();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             EditorSceneManager.SaveScene(scene, ScenePath);
 

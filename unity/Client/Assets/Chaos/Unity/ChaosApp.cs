@@ -21,6 +21,8 @@ namespace Chaos.Client
         SprFile spr;
         SpriteAtlas atlas;
         MapView view;
+        Hd2dView hd2dView;
+        bool hd2d;   // F9: the HD-2D view (Hd2dView) instead of the classic flat one
         Camera cam;
         Vector2 charScroll;
         readonly List<string> log = new List<string>();
@@ -35,6 +37,12 @@ namespace Chaos.Client
         static void Boot()
         {
             if (FindObjectOfType<ChaosApp>() != null) return;
+            if (Hd2dShot.Requested(out string shotDir))
+            {
+                // screenshot mode (-chaosHd2dShot DIR): an offline demo room, no login, no app
+                new GameObject("Hd2d shot").AddComponent<Hd2dShot>().OutDir = shotDir;
+                return;
+            }
             var go = new GameObject("Cinders of Chaos");
             DontDestroyOnLoad(go);
             go.AddComponent<ChaosApp>();
@@ -47,6 +55,7 @@ namespace Chaos.Client
             host = PlayerPrefs.GetString("chaos.host", host);
             port = PlayerPrefs.GetString("chaos.port", port);
             account = PlayerPrefs.GetString("chaos.account", "");
+            hd2d = PlayerPrefs.GetInt("chaos.hd2d", 0) == 1;
             var camGo = new GameObject("Camera");
             camGo.transform.SetParent(transform);
             cam = camGo.AddComponent<Camera>();
@@ -191,6 +200,15 @@ namespace Chaos.Client
             view.World = world;
             view.Atlas = atlas;
             view.Clock = () => session.Now;
+            var hd = new GameObject("Hd2d");
+            hd.transform.SetParent(go.transform, false);
+            hd.SetActive(false);   // Awake / OnEnable run when the mode turns it on
+            hd2dView = hd.AddComponent<Hd2dView>();
+            hd2dView.World = world;
+            hd2dView.Atlas = atlas;
+            hd2dView.Clock = () => session.Now;
+            hd2dView.Cam = cam;
+            ApplyHd2d();
             screen = Screen.Game;
         }
 
@@ -200,6 +218,8 @@ namespace Chaos.Client
             session = null;
             if (view != null) Destroy(view.gameObject);
             view = null;
+            hd2dView = null;
+            ApplyMode(false);
             cam.rect = new Rect(0f, 0f, 1f, 1f);
             ResetWindows();
             world = null;
@@ -213,15 +233,42 @@ namespace Chaos.Client
             session.Poll();
             if (session.Closed != null) { Leave(session.Closed); return; }
             // exactly the 15 x 11 view, centred (MapRect): nothing outside what the server sent is on screen
-            cam.rect = MapRect(UnityEngine.Screen.width, UnityEngine.Screen.height);
-            cam.orthographicSize = ViewTilesH / 2f;
+            if (!hd2d)
+            {
+                cam.orthographic = true;
+                cam.transform.SetPositionAndRotation(new Vector3(0.5f, -0.5f, -10), Quaternion.identity);
+                cam.rect = MapRect(UnityEngine.Screen.width, UnityEngine.Screen.height);
+                cam.orthographicSize = ViewTilesH / 2f;
+            }
             if (Input.GetKeyDown(KeyCode.F12)) showDebug = !showDebug;
+            // F9 switches classic / HD-2D. F9 is also hotkey slot 9: while the hotkey bar is open and the chat line has no
+            // focus use Ctrl+F9 instead.
+            if (Input.GetKeyDown(KeyCode.F9) && !chatFocused)
+            {
+                bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+                bool barOpen = windows.Exists(win => win is HotkeyBarWindow && win.Open);
+                if (ctrl || !barOpen) { hd2d = !hd2d; PlayerPrefs.SetInt("chaos.hd2d", hd2d ? 1 : 0); ApplyHd2d(); }
+            }
             if (!chatFocused)
                 foreach (var win in windows)
                     if (win.Hotkey != KeyCode.None && Input.GetKeyDown(win.Hotkey) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
                         win.Open = !win.Open;
             CombatUpdate();
             HandleWalk();
+        }
+
+        void ApplyHd2d() { ApplyMode(hd2d); }
+
+        /// <summary>Turns the HD-2D view on or off: the classic mesh and the 3D scene never draw together.</summary>
+        void ApplyMode(bool on)
+        {
+            if (view != null) view.SetVisible(!on);
+            if (hd2dView != null) hd2dView.gameObject.SetActive(on);
+            if (!on)
+            {
+                cam.orthographic = true;
+                cam.transform.SetPositionAndRotation(new Vector3(0.5f, -0.5f, -10), Quaternion.identity);
+            }
         }
 
         void AddChat(string who, string text, byte type)
@@ -367,10 +414,9 @@ namespace Chaos.Client
                 // one tile in UI units: names and bars follow the map's zoom
                 float tile = map.height / ViewTilesH;
                 float barW = Mathf.Round(tile * 0.8f), barH = Mathf.Max(3f, Mathf.Round(tile / 14f));
-                foreach (var (c, at) in view.Labels)
+                foreach (var (c, sp) in LabelPoints())
                 {
                     // above the creature's tile, left-shifted by its outfit's displacement
-                    Vector3 sp = cam.WorldToScreenPoint(new Vector3(at.x + 0.25f, at.y + 0.4f, 0));
                     float x = sp.x / scale, y = (UnityEngine.Screen.height - sp.y) / scale;
                     if (x < map.x || x > map.xMax || y < map.y || y > map.yMax + tile * 0.5f) continue;
                     x -= map.x;

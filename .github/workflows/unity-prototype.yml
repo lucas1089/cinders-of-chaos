@@ -110,6 +110,63 @@ jobs:
           buildMethod: Chaos.Client.Editor.ChaosBuild.Build
           buildName: ChaosUnity
           allowDirtyBuild: true
+      # HD-2D screenshots (unity/README.md "HD-2D view (O432)"): the Linux player renders the offline demo room once in the
+      # classic view and once in HD-2D (flag -chaosHd2dShot), under a virtual display with Mesa software OpenGL. It needs no
+      # server and no game files. A failure here never fails the build; the log says why.
+      # the real sprite pair for the screenshots (the temple room of pair 60), from the private branch windows-assets as
+      # windows-package.yml gets it; without it the demo room uses its synthetic sprites. Only the PNGs leave the job.
+      - name: Check out the sprite pair (screenshots)
+        if: steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneLinux64'
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: windows-assets
+          path: assets
+          sparse-checkout: |
+            things
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+      - name: HD-2D screenshots (Linux player, xvfb)
+        id: hd2dshots
+        if: steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneLinux64'
+        continue-on-error: true
+        run: |
+          out="$PWD/hd2d-shots"
+          mkdir -p "$out"
+          exe=$(find build/StandaloneLinux64 -name ChaosUnity.x86_64 -type f | head -n 1); exe=${exe:-build/StandaloneLinux64/ChaosUnity/ChaosUnity.x86_64}
+          if [ ! -e "$exe" ]; then echo "::warning::HD-2D screenshots: no player at $exe"; ls -R build | head -20; exit 1; fi
+          sudo chmod -R a+rX build
+          sudo chmod a+x "$exe"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 libglu1-mesa
+          pair=""
+          if ls assets/things/things-1098.tar.xz.part* >/dev/null 2>&1; then
+            (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts) && mkdir -p pair \
+              && cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C pair \
+              && [ -f pair/Tibia.dat ] && pair="$PWD/pair"
+          fi
+          if [ -n "$pair" ]; then echo "real pair: $pair"; else echo "::notice::no sprite pair: the demo room uses synthetic sprites"; fi
+          set +e
+          if [ -n "$pair" ]; then export CHAOS_PAIR_DIR="$pair"; fi
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 600 xvfb-run -a -s "-screen 0 1280x960x24" "$exe" \
+            -force-glcore -screen-width 1280 -screen-height 960 -screen-fullscreen 0 \
+            -logFile "$out/player.log" -chaosHd2dShot "$out"
+          rc=$?
+          set -e
+          echo "player exit code: $rc"
+          if [ ! -s "$out/classic.png" ] || [ ! -s "$out/hd2d.png" ]; then
+            echo "::warning::HD-2D screenshots failed (exit $rc); last lines of the player log follow"
+            tail -n 60 "$out/player.log" || true
+            exit 1
+          fi
+          grep "chaos hd2d shot" "$out/player.log" || true
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneLinux64'
+        with:
+          name: hd2d-shots
+          path: hd2d-shots
+          if-no-files-found: warn
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: steps.lic.outputs.ok == '1'
         with:
