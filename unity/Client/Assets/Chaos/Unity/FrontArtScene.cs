@@ -93,13 +93,6 @@ namespace Chaos.Client
             FrameWide();
             Tick(0.4f);
             Debug.Log("chaos front art: " + Layout.Boxes.Count + " boxes, " + actors.Count + " characters, " + lights.Count + " lights");
-            if (actors.Count > 0)
-            {
-                var v0 = actors[0];
-                var sh = v0.CastMat[0] != null ? v0.CastMat[0].shader : null;
-                Debug.Log("chaos front art: cast mesh " + v0.Cast[0].vertexCount + " verts, bounds " + v0.Cast[0].bounds + ", shader " + (sh != null ? sh.name + " supported " + sh.isSupported : "none") + ", queue " + (v0.CastMat[0] != null ? v0.CastMat[0].renderQueue : -1) + ", feet y " + v0.A.Y);
-            }
-            Debug.Log("chaos front art: shadows " + QualitySettings.shadows + ", distance " + QualitySettings.shadowDistance + ", cascades " + QualitySettings.shadowCascades + ", moon " + (moon != null ? moon.shadows.ToString() : "none") + ", supported " + SystemInfo.supportsShadows + ", low " + LowQuality);
         }
 
         void SaveState()
@@ -597,7 +590,7 @@ namespace Chaos.Client
                 float dist = away.magnitude;
                 float h = Mathf.Max(0.35f, lp.y - feet.y);
                 float len = SpriteUnits * Mathf.Clamp(0.55f * dist / h + 0.35f, 0.5f, 1.4f);
-                float strength = 0.62f * Mathf.Clamp01(1f - dist / Mathf.Max(0.1f, near.S.Range));
+                float strength = 0.95f * Mathf.Clamp01(1.15f - dist / Mathf.Max(0.1f, near.S.Range));
                 SetCast(v.Cast[0], feet, dist > 0.01f ? away / dist : Vector3.forward, len);
                 v.CastMat[0].SetFloat("_Strength", strength);
             }
@@ -606,16 +599,15 @@ namespace Chaos.Client
             float fl = flat.magnitude;
             float elev = Mathf.Atan2(-sun.y, Mathf.Max(0.01f, fl));
             SetCast(v.Cast[1], feet, fl > 0.01f ? flat / fl : Vector3.forward, SpriteUnits * Mathf.Clamp(0.8f / Mathf.Tan(Mathf.Max(0.2f, elev)), 0.4f, 1.3f));
-            v.CastMat[1].SetFloat("_Strength", 0.3f);
+            v.CastMat[1].SetFloat("_Strength", 0.55f);
         }
 
         static readonly Vector3[] castVerts = new Vector3[4];
         static readonly Vector2[] castUv = { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
         static readonly int[] castTris = { 0, 1, 2, 0, 2, 3 };
 
-        /// <summary>How far the ground silhouettes and blobs float over the floor. Closer ones were hidden by the floor in the
-        /// screenshot renderer (front_art_debug.png showed them drawn); from this camera the lift does not show.</summary>
-        const float CastLift = 0.12f;
+        /// <summary>How far the ground silhouettes and blobs float over the floor, so they never fight it for depth.</summary>
+        const float CastLift = 0.04f;
 
         static void SetCast(Mesh m, Vector3 feet, Vector3 dir, float len)
         {
@@ -630,20 +622,6 @@ namespace Chaos.Client
             m.RecalculateBounds();
             // a flat mesh has a bounding box with no height; give it some so no culling step ever drops it
             var bb = m.bounds; bb.Expand(new Vector3(0f, 1f, 0f)); m.bounds = bb;
-        }
-
-        /// <summary>Screenshot-mode check: the ground silhouettes drawn over everything at full strength (front_art_debug.png), to tell a
-        /// silhouette that is not drawn from one that is hidden under the floor.</summary>
-        public void DebugCastsOnTop(bool always, float full)
-        {
-            foreach (var v in actors)
-                foreach (var m in v.CastMat)
-                    if (m != null)
-                    {
-                        Debug.Log("chaos front art: cast " + v.A.Name + " strength " + m.GetFloat("_Strength") + " ztest " + m.GetFloat("_ZTest") + " queue " + m.renderQueue);
-                        m.SetFloat("_ZTest", (float)(always ? CompareFunction.Always : CompareFunction.LessEqual));
-                        if (full >= 0f) m.SetFloat("_Strength", full);
-                    }
         }
 
         /// <summary>The scene's clock, for the screenshot mode.</summary>
