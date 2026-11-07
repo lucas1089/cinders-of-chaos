@@ -1,5 +1,6 @@
-// HD-2D look (O432): bloom on bright pixels, tilt-shift depth of field (sharp middle band, blurred top and bottom),
-// distance fog, a slight vignette and warm grading, on one camera.
+// HD-2D look (O432): bloom on bright pixels, light shafts from the strongest lights, tilt-shift depth of field (sharp middle
+// band, two blur levels toward top and bottom), distance fog, ACES tonemap, split-toned grade, tinted vignette and light grain,
+// on one camera.
 //
 // PIPELINE: the built-in render pipeline with our own image effect (OnRenderImage on Hd2dEffect), shaders in
 // Assets/Chaos/Shaders. Why not URP: the URP and Post Processing assemblies are not on NuGet, so unity/Client.Check
@@ -8,6 +9,7 @@
 // DoF is by screen Y (no depth texture), which is what the tilt-shift look is.
 //
 // Use: Hd2dPost.Attach(cam, lowQuality) once the 3D scene exists, Detach(cam) to go back.
+// Shafts: Hd2dEffect.SetLightsWorld(cam, positions, colours) once per frame (none without the call).
 // Sprites and billboards: Hd2dPost.SpriteMaterial(atlas) (lit, cutout, casts shadows).
 using System.Collections.Generic;
 using UnityEngine;
@@ -33,7 +35,7 @@ namespace Chaos.Client
         }
         static readonly Dictionary<Camera, Saved> saved = new Dictionary<Camera, Saved>();
 
-        /// <summary>Turns the HD-2D look on for this camera. lowQuality (phones): bloom and fog stay, depth of field and soft shadows go.</summary>
+        /// <summary>Turns the HD-2D look on for this camera. lowQuality (phones): bloom, tonemap, grade and fog stay; depth of field, shafts, grain and soft shadows go.</summary>
         public static void Attach(Camera cam, bool lowQuality)
         {
             if (cam == null) return;
@@ -63,6 +65,9 @@ namespace Chaos.Client
             var fx = cam.GetComponent<Hd2dEffect>();
             if (fx == null) fx = cam.gameObject.AddComponent<Hd2dEffect>();
             fx.dof = !lowQuality;
+            fx.shafts = !lowQuality;
+            fx.lowQuality = lowQuality;
+            fx.exposure = lowQuality ? 1.3f : 1.0f;   // the LDR image tops out at 1 and the curve would dim it
             fx.enabled = true;
         }
 
@@ -103,12 +108,31 @@ namespace Chaos.Client
     [RequireComponent(typeof(Camera))]
     public sealed class Hd2dEffect : MonoBehaviour
     {
-        public bool dof = true;
+        /// <summary>A light shaft source: position on screen as viewport uv (0..1, y up), colour (rgb), strength 0..1.</summary>
+        public struct ShaftSource
+        {
+            public Vector2 uv; public Color color; public float strength;
+            public ShaftSource(Vector2 uv, Color color, float strength) { this.uv = uv; this.color = color; this.strength = strength; }
+        }
+
+        public bool dof = true, shafts = true, lowQuality;
         public float bloomThreshold = 0.9f, bloomKnee = 0.5f, bloomIntensity = 0.7f;
-        public float focusHalf = 0.22f, focusFeather = 0.28f;   // sharp band is the middle 44% of the screen height
-        public float vignette = 0.35f, saturation = 1.08f, contrast = 1.05f;
-        public Color tint = new Color(1.06f, 0.98f, 0.86f);      // warm
+        public float focusHalf = 0.14f, focusFeather = 0.22f;   // sharp band is the middle 28% of the screen height
+        // tonemap (ACES fitted), applied before the grade
+        public float exposure = 1.0f;
+        // grade
+        public Color shadowTint = new Color(0.78f, 0.86f, 1.16f);      // teal-violet shadows (multiply)
+        public Color highlightTint = new Color(1.14f, 1.0f, 0.80f);    // warm highlights (multiply)
+        public float splitStrength = 0.75f;
+        public Color lift = new Color(0.020f, 0.018f, 0.045f);         // blacks rise to deep blue-violet
+        public Color tint = new Color(1.02f, 0.99f, 0.95f);            // overall, light
+        public float saturation = 1.04f, midSaturation = 0.22f, contrast = 1.05f;
+        public float vignette = 0.38f, grain = 0.025f;
+        // light shafts
+        public float shaftIntensity = 0.55f, shaftDecay = 0.93f, shaftDensity = 0.9f;
         Material mat;
+        readonly ShaftSource[] sources = new ShaftSource[2];
+        int sourceCount;
 
         void OnEnable()
         {
@@ -119,12 +143,60 @@ namespace Chaos.Client
 
         void OnDisable() { if (mat != null) Destroy(mat); mat = null; }
 
+        /// <summary>Sets up to 2 shaft sources (screen uv, colour, strength). null or an empty list turns shafts off. Without a call there are none.</summary>
+        public void SetShaftSources(IList<ShaftSource> src)
+        {
+            sourceCount = 0;
+            if (src == null) return;
+            for (int i = 0; i < src.Count && sourceCount < 2; i++) sources[sourceCount++] = src[i];
+        }
+
+        static readonly ShaftSource[] pick = new ShaftSource[2];
+        static readonly float[] pickScore = new float[2];
+
+        /// <summary>
+        /// Picks the 1-2 strongest lights in front of the camera from world positions and colours and passes them to the effect on cam
+        /// (nothing happens if the camera has none). Call once per frame, after the camera has moved. Brightness is the largest colour channel.
+        /// </summary>
+        public static void SetLightsWorld(Camera cam, IList<Vector3> pos, IList<Color> col)
+        {
+            if (cam == null) return;
+            var fx = cam.GetComponent<Hd2dEffect>();
+            if (fx == null) return;
+            int n = 0;
+            pickScore[0] = pickScore[1] = 0f;
+            if (pos != null && col != null)
+            {
+                int count = Mathf.Min(pos.Count, col.Count);
+                for (int i = 0; i < count; i++)
+                {
+                    var vp = cam.WorldToViewportPoint(pos[i]);
+                    if (vp.z <= 0.1f) continue;                         // behind the camera
+                    float fade = Chaos.Core.Hd2dGrade.EdgeFade(vp.x, vp.y);
+                    if (fade <= 0f) continue;
+                    var c = col[i];
+                    float br = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+                    float score = Chaos.Core.Hd2dGrade.ShaftScore(br, vp.z) * fade;
+                    if (score <= 0f) continue;
+                    var s = new ShaftSource(new Vector2(vp.x, vp.y), new Color(c.r / br, c.g / br, c.b / br, 1f), Mathf.Clamp01(br) * fade);
+                    int slot;
+                    if (n < 2) slot = n++;
+                    else if (score > pickScore[0] || score > pickScore[1]) slot = pickScore[0] <= pickScore[1] ? 0 : 1;
+                    else continue;
+                    pick[slot] = s; pickScore[slot] = score;
+                }
+            }
+            fx.sourceCount = 0;
+            for (int i = 0; i < n; i++) fx.sources[fx.sourceCount++] = pick[i];
+        }
+
         void OnRenderImage(RenderTexture src, RenderTexture dst)
         {
             if (mat == null) { Graphics.Blit(src, dst); return; }
             int w = Mathf.Max(2, src.width / 2), h = Mathf.Max(2, src.height / 2);
             var fmt = src.format;
-            RenderTexture half = null, halfB = null, q1 = null, q2 = null;
+            RenderTexture half = null, halfB = null, q1 = null, q2 = null, qs = null, qh1 = null, qh2 = null;
+            bool useDof = dof && !lowQuality, useShafts = shafts && !lowQuality && sourceCount > 0 && shaftIntensity > 0f;
             try
             {
                 // bloom: bright pass to half size, blur at quarter size
@@ -134,6 +206,20 @@ namespace Chaos.Client
                 Graphics.Blit(src, half, mat, 0);
                 q1 = RenderTexture.GetTemporary(w / 2, h / 2, 0, fmt);
                 q2 = RenderTexture.GetTemporary(w / 2, h / 2, 0, fmt);
+
+                // light shafts: radial blur of the bright pass toward the sources, at quarter size (before half is reused)
+                if (useShafts)
+                {
+                    qs = RenderTexture.GetTemporary(w / 2, h / 2, 0, fmt);
+                    SetShaft("_ShaftA", "_ShaftColA", 0);
+                    SetShaft("_ShaftB", "_ShaftColB", 1);
+                    mat.SetFloat("_ShaftDecay", shaftDecay);
+                    mat.SetFloat("_ShaftDensity", shaftDensity);
+                    Graphics.Blit(half, qs, mat, 3);
+                    mat.SetTexture("_ShaftTex", qs);
+                }
+                mat.SetFloat("_ShaftOn", useShafts ? 1f : 0f);
+
                 Graphics.Blit(half, q1);
                 for (int i = 0; i < 2; i++)
                 {
@@ -143,8 +229,8 @@ namespace Chaos.Client
                 mat.SetTexture("_BloomTex", q1);
                 mat.SetFloat("_BloomIntensity", bloomIntensity);
 
-                // depth of field: blurred copy at half size
-                if (dof)
+                // depth of field: a light blur at half size and a heavy blur at quarter size, blended in the shader by the distance from the focus band
+                if (useDof)
                 {
                     halfB = RenderTexture.GetTemporary(w, h, 0, fmt);
                     Graphics.Blit(src, half);
@@ -154,14 +240,31 @@ namespace Chaos.Client
                         mat.SetVector("_Dir", new Vector4(0, 1.5f, 0, 0)); Graphics.Blit(halfB, half, mat, 1);
                     }
                     mat.SetTexture("_BlurTex", half);
+                    qh1 = RenderTexture.GetTemporary(w / 2, h / 2, 0, fmt);
+                    qh2 = RenderTexture.GetTemporary(w / 2, h / 2, 0, fmt);
+                    Graphics.Blit(half, qh1);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        mat.SetVector("_Dir", new Vector4(2.5f, 0, 0, 0)); Graphics.Blit(qh1, qh2, mat, 1);
+                        mat.SetVector("_Dir", new Vector4(0, 2.5f, 0, 0)); Graphics.Blit(qh2, qh1, mat, 1);
+                    }
+                    mat.SetTexture("_BlurTex2", qh1);
                 }
-                mat.SetFloat("_DofOn", dof ? 1f : 0f);
+                mat.SetFloat("_DofOn", useDof ? 1f : 0f);
                 mat.SetFloat("_FocusHalf", focusHalf);
                 mat.SetFloat("_FocusFeather", focusFeather);
                 mat.SetFloat("_Vignette", vignette);
                 mat.SetVector("_Tint", new Vector4(tint.r, tint.g, tint.b, 1));
                 mat.SetFloat("_Saturation", saturation);
+                mat.SetFloat("_MidSat", midSaturation);
                 mat.SetFloat("_Contrast", contrast);
+                mat.SetFloat("_Exposure", exposure);
+                mat.SetVector("_ShadowTint", new Vector4(shadowTint.r, shadowTint.g, shadowTint.b, 1));
+                mat.SetVector("_HighlightTint", new Vector4(highlightTint.r, highlightTint.g, highlightTint.b, 1));
+                mat.SetFloat("_SplitStrength", splitStrength);
+                mat.SetVector("_Lift", new Vector4(lift.r, lift.g, lift.b, 0));
+                mat.SetFloat("_Grain", lowQuality ? 0f : grain);
+                mat.SetFloat("_GrainSeed", Mathf.Floor(Time.time * 24f) * 17.31f);
                 Graphics.Blit(src, dst, mat, 2);
             }
             finally
@@ -170,6 +273,24 @@ namespace Chaos.Client
                 if (halfB != null) RenderTexture.ReleaseTemporary(halfB);
                 if (q1 != null) RenderTexture.ReleaseTemporary(q1);
                 if (q2 != null) RenderTexture.ReleaseTemporary(q2);
+                if (qs != null) RenderTexture.ReleaseTemporary(qs);
+                if (qh1 != null) RenderTexture.ReleaseTemporary(qh1);
+                if (qh2 != null) RenderTexture.ReleaseTemporary(qh2);
+            }
+        }
+
+        void SetShaft(string posName, string colName, int index)
+        {
+            if (index < sourceCount)
+            {
+                var s = sources[index];
+                mat.SetVector(posName, new Vector4(s.uv.x, s.uv.y, shaftIntensity * Mathf.Clamp01(s.strength), 0));
+                mat.SetVector(colName, new Vector4(s.color.r, s.color.g, s.color.b, 1));
+            }
+            else
+            {
+                mat.SetVector(posName, Vector4.zero);
+                mat.SetVector(colName, Vector4.zero);
             }
         }
     }

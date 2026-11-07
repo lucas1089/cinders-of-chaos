@@ -161,6 +161,18 @@ namespace Chaos.Core.Tests
             var wide = Hd2dCamera.ForTile(100, 100, origin, 15f / 11f, 40f, 25f, margin: 1f);
             check(wide.Distance > cam.Distance, "hd2d: a margin backs the camera off");
 
+            // ---- post maths: filmic curve, shaft ranking, edge fade
+            check(Hd2dGrade.Aces(0f) == 0f && Hd2dGrade.Aces(-1f) == 0f, "hd2d post: the filmic curve keeps black black");
+            check(Near(Hd2dGrade.Aces(0.18f), 0.267f, 2e-3f), "hd2d post: mid grey 0.18 maps to about 0.267");
+            float prev = 0f; bool mono = true, below = true;
+            for (float x = 0.01f; x < 64f; x *= 1.3f) { float a = Hd2dGrade.Aces(x); if (a < prev) mono = false; if (a > 1f) below = false; prev = a; }
+            check(mono && below && Hd2dGrade.Aces(1000f) > 0.99f, "hd2d post: the curve rises, rolls off and never clips above 1");
+            check(Hd2dGrade.Aces(4f) - Hd2dGrade.Aces(2f) < Hd2dGrade.Aces(1f) - Hd2dGrade.Aces(0.5f), "hd2d post: highlights are compressed more than mids");
+            check(Hd2dGrade.ShaftScore(1f, 2f) > Hd2dGrade.ShaftScore(1f, 9f) && Hd2dGrade.ShaftScore(1.5f, 4f) > Hd2dGrade.ShaftScore(0.5f, 4f) && Hd2dGrade.ShaftScore(0f, 1f) == 0f,
+                  "hd2d post: a nearer and brighter light ranks higher as a shaft source");
+            check(Hd2dGrade.EdgeFade(0.5f, 0.5f) == 1f && Hd2dGrade.EdgeFade(1f, 0f) == 1f && Hd2dGrade.EdgeFade(1.35f, 0.5f) == 0f && Hd2dGrade.EdgeFade(-2f, 0.5f) == 0f &&
+                  Near(Hd2dGrade.EdgeFade(1.175f, 0.5f), 0.5f), "hd2d post: shaft fade is 1 on screen and 0 well outside");
+
             // ---- the synthetic demo room: real dat and spr bytes
             var demo = Hd2dDemo.Synthetic();
             check(demo.Dat.Item(105).LightLevel == 6 && demo.Dat.Item(105).LightColor == 206 && demo.Dat.Item(103).Idle.Width == 2, "hd2d demo: dat holds the torch light and 2 x 2 walls");
