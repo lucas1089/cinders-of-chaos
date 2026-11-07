@@ -147,7 +147,8 @@ jobs:
           fi
           if [ -n "$pair" ]; then echo "real pair: $pair"; else echo "::notice::no sprite pair: the demo room uses synthetic sprites"; fi
           set +e
-          ${pair:+CHAOS_PAIR_DIR="$pair"} LIBGL_ALWAYS_SOFTWARE=1 timeout 600 xvfb-run -a -s "-screen 0 1280x960x24" "$exe" \
+          if [ -n "$pair" ]; then export CHAOS_PAIR_DIR="$pair"; fi
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 600 xvfb-run -a -s "-screen 0 1280x960x24" "$exe" \
             -force-glcore -screen-width 1280 -screen-height 960 -screen-fullscreen 0 \
             -logFile "$out/player.log" -chaosHd2dShot "$out"
           rc=$?
