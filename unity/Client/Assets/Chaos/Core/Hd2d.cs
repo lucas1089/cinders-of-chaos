@@ -237,7 +237,8 @@ namespace Chaos.Core
                     if (ct == null) continue;
                     var cp = Make(Hd2dKind.Creature, ct, tile.Pos, i, tx, ty, elevation, origin, stretch, TileMiddle, slantedArt);
                     cp.Creature = c;
-                    if (lean != null && slantedArt) { cp.Lean = lean(ct, c.Outfit.LookType != 0); cp.Shear = 0f; }
+                    // characters stand upright already: a measured lean bends their pose and weapons, so only item looks lean
+                    if (lean != null && slantedArt) { cp.Lean = c.Outfit.LookType != 0 ? null : lean(ct, false); cp.Shear = 0f; }
                     into.Add(cp);
                     continue;
                 }
