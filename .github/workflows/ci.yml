@@ -263,6 +263,8 @@ jobs:
           # manifest, credits row and sums match the generator, each piece passes style_check against gildcrown (floors: no outline rule)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_temple_art.py build --check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_temple_art_test.py
+          # HD-2D offline preview (O432): classification, light colour, camera framing, shadows, depth of field on synthetic sprites
+          python3 -I unity/tools/hd2d_preview_test.py
           # pack art of pair 30 (import-only): item installer, generated item Lua and Hideout list match the manifests (none yet: empty)
           python3 -I server/tools/install_pack30_items.py --lua --check
           python3 -I server/tools/install_pack30_items.py --hideout-lua --check

@@ -143,7 +143,21 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
 - Effects: bloom on bright pixels, tilt-shift depth of field (middle 44% of the height sharp, top and bottom blurred, by screen Y),
   exponential fog, vignette, warm grade.
 - `lowQuality` (phones): keeps bloom and fog, drops depth of field, HDR and soft shadows.
-- Pipeline: the built-in one with our own image effect (`Hd2dEffect.OnRenderImage`), shaders in `Assets/Chaos/Shaders/`.
+- Pipeline: the built-in one with our own image effect (`Hd2dEffect.OnRenderImage`), post shader in `Assets/Chaos/Shaders/`; the sprite shader `Chaos/Hd2dSprite` is the view's `Resources/Hd2dSprite.shader` (one shader of that name).
   URP was not taken: its assemblies are not on NuGet, so `Client.Check` could not compile it and nothing in CI would check the URP asset
   that an editor script makes. `ChaosBuild` adds the shaders to Always Included Shaders.
 - Not checked without a Unity license: the shader text (`Client.Check` compiles the C# only). Look at it once in the editor.
+
+## HD-2D preview (O432)
+
+`unity/tools/hd2d_preview.py` draws the offline picture of the HD-2D look. It needs numpy and Pillow, not Unity.
+- Run: `python3 -I unity/tools/hd2d_preview.py DAT SPR OUT_DIR [--scale N]`. It reads the real pair in place and writes
+  `classic.png`, `hd2d.png` and `side_by_side.png`. The pictures are not committed.
+- The scene is one temple room of 15 x 11 tiles (client ids 44511-44549) with three outfits.
+- The classification, light and footprint rules are small functions at the top of the script (`classify`,
+  `light_of`, `colour_from_index`, `billboard_rect`, `floor_rect`). The C# core repeats them. Keep both in step.
+  - Floor quad: dat ground, ground border, flat on-bottom items, items with no blocking attribute.
+  - Upright billboard: walls, objects and creatures, bottom-right cell on the tile.
+  - Light: the dat light attribute, radius in tiles, colour from the 6x6x6 cube.
+- Test: `python3 -I unity/tools/hd2d_preview_test.py` (synthetic sprites, runs in CI).
+- Side walls are left out: the art is oblique, a camera-facing card floats.
