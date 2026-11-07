@@ -34,6 +34,49 @@ namespace Chaos.Core
         public float X, Y, Z, FaceX, FaceZ;
         public float Units;           // the picture's side in units; 0: the scene's default (48 texels, 1.5 units)
         public bool Monster;
+        public bool Walks;            // pack monsters: walks to (WalkX, WalkZ) and back (FrontArtWalk)
+        public float WalkX, WalkZ;
+    }
+
+    /// <summary>Where a patrolling figure is at time t: it stands at its spot (X, Z) facing (FaceX, FaceZ), walks to (WalkX, WalkZ),
+    /// stands there looking back, walks home. Phase shifts each figure's start so they do not move in step.</summary>
+    public static class FrontArtWalk
+    {
+        public const float Speed = 0.75f;   // units a second
+        public const float Pause = 1.4f;    // seconds standing at each end
+
+        public struct Pose { public float X, Z, FaceX, FaceZ; public bool Walking; }
+
+        /// <summary>The start shift of the i-th extra.</summary>
+        public static float Phase(int i) { return i * 1.37f; }
+
+        public static float Cycle(FaActor a)
+        {
+            return 2f * (Length(a) / Speed + Pause);
+        }
+
+        public static float Length(FaActor a)
+        {
+            float dx = a.WalkX - a.X, dz = a.WalkZ - a.Z;
+            return (float)Math.Sqrt(dx * dx + dz * dz);
+        }
+
+        public static Pose At(FaActor a, float t, float phase)
+        {
+            var p = new Pose { X = a.X, Z = a.Z, FaceX = a.FaceX, FaceZ = a.FaceZ };
+            float len = Length(a);
+            if (!a.Walks || len < 1e-4f) return p;
+            float dx = (a.WalkX - a.X) / len, dz = (a.WalkZ - a.Z) / len, go = len / Speed, cycle = 2f * (go + Pause);
+            float u = (float)((((t + phase) % cycle) + cycle) % cycle);
+            if (u < Pause) return p;                                   // at home, facing the scene
+            u -= Pause;
+            if (u < go) { float d = u * Speed; return new Pose { X = a.X + dx * d, Z = a.Z + dz * d, FaceX = dx, FaceZ = dz, Walking = true }; }
+            u -= go;
+            if (u < Pause) return new Pose { X = a.WalkX, Z = a.WalkZ, FaceX = -dx, FaceZ = -dz };   // at the far end, looking back
+            u -= Pause;
+            float back = len - u * Speed;
+            return new Pose { X = a.X + dx * back, Z = a.Z + dz * back, FaceX = -dx, FaceZ = -dz, Walking = true };
+        }
     }
 
     /// <summary>Which of the 8 direction pictures shows a character: the facing against the camera's yaw.</summary>
@@ -332,6 +375,14 @@ namespace Chaos.Core
             // graves facing it, two cultists before the gate looking down the path ----
             Action<string, string, float, float, float, float, float> extra = (name, folder, x, z, fx, fz, units) =>
                 L.Extras.Add(new FaActor { Name = name, Folder = "pk_" + folder, X = x, Z = z, FaceX = fx, FaceZ = fz, Units = units, Monster = true });
+            // patrols: the monster walks from its spot to (wx, wz) and back on flat open ground (FrontArtWalk)
+            Action<string, float, float> patrol = (name, wx, wz) =>
+            {
+                int k = L.Extras.FindIndex(e => e.Name == name);
+                var e2 = L.Extras[k];
+                e2.Walks = true; e2.WalkX = wx; e2.WalkZ = wz;
+                L.Extras[k] = e2;
+            };
             extra("Fire demon", "fire_demon", 13.6f, 9.0f, -1f, -0.6f, 1.6f);
             extra("Winged demon", "winged_demon", 15.5f, 9.7f, -1f, -0.4f, 1.6f);
             extra("Vampire", "vampire", 13.4f, 5.0f, -1f, 0.3f, 1.6f);
@@ -346,6 +397,18 @@ namespace Chaos.Core
             extra("Ghost knight", "ghost_knight", 6.2f, 4.3f, 1f, 0.4f, 1.6f);
             extra("Red cultist", "cultist_red", 9.0f, 9.4f, -0.2f, -1f, 1.6f);
             extra("Dark cultist", "cultist_dark", 11.0f, 9.4f, 0.2f, -1f, 1.6f);
+            patrol("Fire demon", 14.6f, 9.0f);
+            patrol("Winged demon", 16.3f, 9.7f);
+            patrol("Vampire", 12.2f, 5.0f);
+            patrol("Werewolf", 16.0f, 4.0f);
+            patrol("Headless rider", 16.4f, 8.2f);
+            patrol("Frost demon", 14.7f, 5.6f);
+            patrol("Rat king", 11.6f, 3.0f);
+            patrol("Lizard mystic", 14.9f, 10.7f);
+            patrol("Ghost king", 4.6f, 8.6f);
+            patrol("Ghost knight", 6.2f, 3.0f);
+            patrol("Red cultist", 9.0f, 8.4f);
+            patrol("Dark cultist", 11.0f, 8.4f);
             foreach (var list in new[] { L.Actors, L.Extras })
                 for (int i = 0; i < list.Count; i++)
                 {

@@ -48,6 +48,18 @@ fr = fap.frames_of(bob, 2)
 check(len(fr) == 2 and all(f.size == (20, 20) for f in fr), "frames: one square canvas each")
 check(fr[0].getbbox()[3] == 20 and fr[1].getbbox()[3] == 19, "frames: the lowest frame stands on the bottom row, the bob stays")
 check(fr[0].getbbox()[0] == fr[1].getbbox()[0], "frames: the post keeps its column")
+# idle and walk share one box and canvas: a walk stride wider than the idle pose does not move the idle feet
+idle = Image.new("RGBA", (20, 16), (0, 0, 0, 0))
+for y in range(4, 14):
+    idle.putpixel((5, y), (90, 80, 70, 255))
+walk = Image.new("RGBA", (24, 16), (0, 0, 0, 0))   # 2 frames of 12 x 16, the same feet row as idle
+for y in range(4, 14):
+    walk.putpixel((2, y), (90, 80, 70, 255))
+    walk.putpixel((9, y), (90, 80, 70, 255))
+i2, w2 = fap.frames_of_set([(idle, 1), (walk, 2)])
+check(len(i2) == 1 and len(w2) == 2 and all(f.size == (20, 20) for f in i2 + w2), "frame set: one canvas size for idle and walk")
+check(i2[0].getbbox()[3] == 20 and w2[0].getbbox()[3] == 20, "frame set: both stand on the bottom row")
+check(fap.walk_name("Ghost_6_idle_strip16.png") == "Ghost_6_walk_strip16.png", "the walk strip's name")
 strip_out = fap.side_by_side(fr, "RGBA")
 check(strip_out.size == (40, 20) and strip_out.crop((20, 0, 40, 20)).tobytes() == fr[1].tobytes(), "side by side: frame k at k * size")
 check(fap.side_by_side([Image.new("RGB", (4, 4), (1, 2, 3))], "RGB").size == (4, 4), "side by side of one frame")
@@ -81,10 +93,10 @@ check((2, 2) in rule, "glow rule: cyan glows")
 check((2, 2) not in nocool and nocool <= rule, "glow nocool: the rule without cyan")
 check(fap.emission_mask(body, "warm").getpixel((9, 9)) == 255, "the emission mask is white where it glows")
 
-# tar filter: only pk_<name>/<direction>[_n|_e].png files
+# tar filter: only pk_<name>/(idle|walk)[_w][_n|_e].png files
 buf = io.BytesIO()
 with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-    for name in ["pk_ok/idle.png", "pk_ok/idle_w_n.png", "../evil/idle.png", "pk_ok/../../x.png", "pk_ok/sub/idle.png",
+    for name in ["pk_ok/idle.png", "pk_ok/idle_w_n.png", "pk_ok/walk_w_e.png", "pk_ok/run_w.png", "../evil/idle.png", "pk_ok/../../x.png", "pk_ok/sub/idle.png",
                  "other/idle.png", "pk_ok/run.sh", "pk_Bad/idle.png", "pk_ok/east.png"]:
         info = tarfile.TarInfo(name)
         info.size = 1
@@ -96,7 +108,7 @@ with tarfile.open(fileobj=buf, mode="w:gz") as tar:
 buf.seek(0)
 with tarfile.open(fileobj=buf, mode="r:gz") as tar:
     names = [m.name for m in fap.safe_members(tar)]
-check(names == ["pk_ok/idle.png", "pk_ok/idle_w_n.png"], "tar filter keeps only safe picture files (%s)" % names)
+check(names == ["pk_ok/idle.png", "pk_ok/idle_w_n.png", "pk_ok/walk_w_e.png"], "tar filter keeps only safe picture files (%s)" % names)
 
 # seal / open round trip
 with tempfile.TemporaryDirectory() as tmp:

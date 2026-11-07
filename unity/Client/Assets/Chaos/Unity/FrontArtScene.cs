@@ -48,9 +48,13 @@ namespace Chaos.Client
             public readonly Mesh[] Cast = new Mesh[2];   // ground silhouettes: [0] away from the nearest flame, [1] away from the moon
             public int Dir = -1;
             public float Units = SpriteUnits;   // the picture's side in units
-            // pack monsters: an idle animation, frames side by side, [0] facing right, [1] its mirror (idle_w); Frames 0 = none
+            // pack monsters: an idle animation, frames side by side, [0] facing right, [1] its mirror (idle_w); Frames 0 = none;
+            // the walk animation the same way (walk, walk_w; WalkFrames 0 = none: the monster stands)
             public readonly Texture2D[] Strip = new Texture2D[2], StripN = new Texture2D[2], StripE = new Texture2D[2];
-            public int Frames, Frame = -1;
+            public readonly Texture2D[] Walk = new Texture2D[2], WalkN = new Texture2D[2], WalkE = new Texture2D[2];
+            public int Frames, WalkFrames, Frame = -1;
+            public float Phase;   // FrontArtWalk.Phase of its index among the extras
+            public Transform Blob; // a walker's own contact shadow (the others are in the static blob mesh)
         }
 
         sealed class LightView { public Light L; public FaLight S; }
@@ -240,6 +244,15 @@ namespace Chaos.Client
                     }
                     if (v.Strip[0] == null || v.Strip[1] == null) continue;   // the pack monsters (Resources/FrontArt/pk_*) come only with the CHAOS_ART_KEY secret
                     v.Frames = Mathf.Max(1, v.Strip[0].width / Mathf.Max(1, v.Strip[0].height));
+                    for (int k = 0; k < 2; k++)
+                    {
+                        string b = Folder + a.Folder + (k == 0 ? "/walk" : "/walk_w");
+                        v.Walk[k] = Point(Resources.Load<Texture2D>(b));
+                        v.WalkN[k] = Point(Resources.Load<Texture2D>(b + "_n"));
+                        v.WalkE[k] = Point(Resources.Load<Texture2D>(b + "_e"));
+                    }
+                    if (v.Walk[0] != null && v.Walk[1] != null) v.WalkFrames = Mathf.Max(1, v.Walk[0].width / Mathf.Max(1, v.Walk[0].height));
+                    v.Phase = FrontArtWalk.Phase(Layout.Extras.IndexOf(a));
                     found = 8;
                 }
                 else for (int i = 0; i < 8; i++)
@@ -302,8 +315,8 @@ namespace Chaos.Client
             return t;
         }
 
-        /// <summary>Frames a second of the pack monsters' idle animations.</summary>
-        public const float PackFps = 8f;
+        /// <summary>Frames a second of the pack monsters' idle and walk animations.</summary>
+        public const float PackFps = 8f, WalkFps = 10f;
 
         static void SetFrame(Material m, int frame, int frames)
         {
@@ -440,7 +453,8 @@ namespace Chaos.Client
                 uv.Add(new Vector4(0, 0, 0, strength)); uv.Add(new Vector4(1, 0, 0, strength)); uv.Add(new Vector4(1, 1, 0, strength)); uv.Add(new Vector4(0, 1, 0, strength));
                 t.Add(i); t.Add(i + 3); t.Add(i + 2); t.Add(i); t.Add(i + 2); t.Add(i + 1);
             };
-            foreach (var av in actors) blob(av.A.X, av.A.Y, av.A.Z, 0.62f * av.Units / SpriteUnits, 0.36f * av.Units / SpriteUnits, 0.9f);
+            foreach (var av in actors)
+                if (!(av.A.Walks && av.WalkFrames > 0)) blob(av.A.X, av.A.Y, av.A.Z, 0.62f * av.Units / SpriteUnits, 0.36f * av.Units / SpriteUnits, 0.9f);
             foreach (var b in Layout.Boxes)
             {
                 if (b.Tag == null || b.Tag == "rubble" || b.Tag == "coal" || b.Tag == "torch" || b.Tag == "gate") continue;
@@ -459,9 +473,29 @@ namespace Chaos.Client
             go.transform.SetParent(transform, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = Own(new Material(sh) { name = "front-art-blob" });
+            var blobMat = Own(new Material(sh) { name = "front-art-blob" });
+            mr.sharedMaterial = blobMat;
             mr.shadowCastingMode = ShadowCastingMode.Off;
             mr.receiveShadows = false;
+            // the walkers' blobs move with them (Tick places them)
+            foreach (var av in actors)
+            {
+                if (!(av.A.Walks && av.WalkFrames > 0)) continue;
+                v.Clear(); uv.Clear(); t.Clear();
+                blob(0f, 0f, 0f, 0.62f * av.Units / SpriteUnits, 0.36f * av.Units / SpriteUnits, 0.9f);
+                var one = Own(new Mesh { name = "front-art-blob-" + av.A.Folder });
+                one.SetVertices(v); one.SetUVs(0, uv); one.SetTriangles(t, 0);
+                one.RecalculateBounds();
+                var bgo = new GameObject("blob " + av.A.Name);
+                bgo.transform.SetParent(transform, false);
+                bgo.AddComponent<MeshFilter>().sharedMesh = one;
+                var bmr = bgo.AddComponent<MeshRenderer>();
+                bmr.sharedMaterial = blobMat;
+                bmr.shadowCastingMode = ShadowCastingMode.Off;
+                bmr.receiveShadows = false;
+                av.Blob = bgo.transform;
+                av.Blob.position = new Vector3(av.A.X, av.A.Y, av.A.Z);
+            }
         }
 
         void BuildParticles()
@@ -585,32 +619,39 @@ namespace Chaos.Client
             for (int i = 0; i < actors.Count; i++)
             {
                 var v = actors[i];
-                int dir = FrontArtFacing.Index(v.A.FaceX, v.A.FaceZ, yaw);
+                // pack monsters patrol (FrontArtWalk); the four stand
+                var pose = v.Frames > 0 ? FrontArtWalk.At(v.A, t, v.Phase) : new FrontArtWalk.Pose { X = v.A.X, Z = v.A.Z, FaceX = v.A.FaceX, FaceZ = v.A.FaceZ };
+                int dir = FrontArtFacing.Index(pose.FaceX, pose.FaceZ, yaw);
+                bool walking = pose.Walking && v.WalkFrames > 0;
                 if (v.Frames > 0)
                 {
                     // the pack drawings face right; the three west headings (south-west, west, north-west) show the mirror
-                    int side = dir >= 5 ? 1 : 0;
-                    if (side != v.Dir)
+                    int side = dir >= 5 ? 1 : 0, key = side + (walking ? 2 : 0);
+                    if (key != v.Dir)
                     {
-                        v.Dir = side;
-                        SetPic(v.Mat, v.Strip[side]);
-                        v.Mat.SetTexture("_BumpMap", v.StripN[side] != null ? v.StripN[side] : Texture2D.normalTexture);
-                        v.Mat.SetFloat("_NormalAmount", v.StripN[side] != null ? 0.85f : 0f);
-                        v.Mat.SetTexture("_EmitTex", v.StripE[side] != null ? v.StripE[side] : Texture2D.blackTexture);
-                        v.Mat.SetFloat("_EmitAmount", v.StripE[side] != null ? EmitAmount : 0f);
-                        SetPic(v.ShadowMat, v.Strip[side]);
-                        SetPic(v.CastMat[0], v.Strip[side]);
-                        SetPic(v.CastMat[1], v.Strip[side]);
+                        v.Dir = key;
+                        var pic = walking ? v.Walk : v.Strip;
+                        var nrm = walking ? v.WalkN : v.StripN;
+                        var emit = walking ? v.WalkE : v.StripE;
+                        SetPic(v.Mat, pic[side]);
+                        v.Mat.SetTexture("_BumpMap", nrm[side] != null ? nrm[side] : Texture2D.normalTexture);
+                        v.Mat.SetFloat("_NormalAmount", nrm[side] != null ? 0.85f : 0f);
+                        v.Mat.SetTexture("_EmitTex", emit[side] != null ? emit[side] : Texture2D.blackTexture);
+                        v.Mat.SetFloat("_EmitAmount", emit[side] != null ? EmitAmount : 0f);
+                        SetPic(v.ShadowMat, pic[side]);
+                        SetPic(v.CastMat[0], pic[side]);
+                        SetPic(v.CastMat[1], pic[side]);
                         v.Frame = -1;
                     }
-                    int frame = (int)Mathf.Repeat(Mathf.Floor(t * PackFps) + i * 3, v.Frames);
+                    int frames = walking ? v.WalkFrames : v.Frames;
+                    int frame = (int)Mathf.Repeat(Mathf.Floor(t * (walking ? WalkFps : PackFps)) + i * 3, frames);
                     if (frame != v.Frame)
                     {
                         v.Frame = frame;
-                        SetFrame(v.Mat, frame, v.Frames);
-                        SetFrame(v.ShadowMat, frame, v.Frames);
-                        SetFrame(v.CastMat[0], frame, v.Frames);
-                        SetFrame(v.CastMat[1], frame, v.Frames);
+                        SetFrame(v.Mat, frame, frames);
+                        SetFrame(v.ShadowMat, frame, frames);
+                        SetFrame(v.CastMat[0], frame, frames);
+                        SetFrame(v.CastMat[1], frame, frames);
                     }
                 }
                 else if (dir != v.Dir)
@@ -625,8 +666,9 @@ namespace Chaos.Client
                     SetPic(v.CastMat[0], v.Pics[dir]);
                     SetPic(v.CastMat[1], v.Pics[dir]);
                 }
-                float breath = 1f + 0.012f * Mathf.Sin(t * 2.1f + i * 1.7f);
-                var pos = new Vector3(v.A.X, v.A.Y + 0.01f, v.A.Z);
+                float breath = walking ? 1f : 1f + 0.012f * Mathf.Sin(t * 2.1f + i * 1.7f);
+                var pos = new Vector3(pose.X, Layout.GroundY(pose.X, pose.Z) + 0.01f, pose.Z);
+                if (v.Blob != null) v.Blob.position = new Vector3(pose.X, pos.y - 0.01f, pose.Z);
                 var scale = new Vector3(v.Units, v.Units * breath, 1f);
                 v.Quad.SetPositionAndRotation(pos, face);
                 v.Quad.localScale = scale;

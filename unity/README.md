@@ -303,13 +303,17 @@ The ideas follow the MIT-licensed Luminati engine (docs/CREDITS.md); the code is
   goblin shaman, a rat king, an armoured skeleton) come from purchased packs (`docs/CREDITS.md`, tracing alias
   "set30 mutter"). Their licence lets them ship inside the built game but not as files on their own, and this repository is public, so they
   are committed encrypted: `unity/art/front_art_packs.enc` (AES-256, the key is the repository secret `CHAOS_ART_KEY`).
-  `unity/tools/front_art_packs.py build PACKS_DIR OUT` takes every idle frame of each strip (64 x 64 canvases cut by the box
-  around all frames, so the figure never jumps; feet on the bottom row) into `idle.png` (frames side by side, facing right) and
-  `idle_w.png` (each frame mirrored, for the three west headings), each with a dome normal map `_n` and an emission mask `_e` per
-  frame (glow modes per figure: the rule, every warm pixel for the fire demon, no cyan for the frost demon). The scene plays them
-  at 8 frames a second (`PackFps`, each figure 3 frames apart) by the material's texture scale and offset, which the sprite, its
-  shadow caster and the ground silhouettes (`FrontArtCast` reads `_MainTex_ST`) all follow; `Hd2dShot` adds
-  `front_art_anim_00..15.png`, the east horde over two seconds. `seal OUT ENC` encrypts,
+  `unity/tools/front_art_packs.py build PACKS_DIR OUT` takes every idle and walk frame of each figure (64 x 64 canvases cut by
+  one box around all of them, so the figure never jumps, also when it starts walking; feet on the bottom row) into `idle.png` and
+  `walk.png` (frames side by side, facing right) and `idle_w.png` / `walk_w.png` (each frame mirrored, for the three west
+  headings), each with a dome normal map `_n` and an emission mask `_e` per frame (glow modes per figure: the rule, every warm
+  pixel for the fire demon, no cyan for the frost demon). The scene plays idle at 8 frames a second and walk at 10 (`PackFps`,
+  `WalkFps`, each figure 3 frames apart) by the material's texture scale and offset, which the sprite, its shadow caster and the
+  ground silhouettes (`FrontArtCast` reads `_MainTex_ST`) all follow. 12 of them patrol (`FaActor.Walks`, `FrontArtWalk` in
+  Core): stand at home facing the scene, walk to `WalkX, WalkZ` at 0.75 units a second, stand there looking back, walk home;
+  a start shift per figure. Their contact blobs move with them. Core tests: every patrol on flat open ground clear of graves,
+  pillars and crates, figures 0.7 apart at every tenth of a second over a minute. `Hd2dShot` adds
+  `front_art_anim_00..39.png`, the east horde over five seconds. `seal OUT ENC` encrypts,
   `open ENC Resources/FrontArt` is the step of `unity-prototype.yml` before the build. The opened `pk_*` folders are ignored by git;
   without them (no secret) the scene leaves the extras out. 40 texels a unit (1.6 units; the 32-texel skeleton 1.0). To change the
   figures: download the packs from the owner's Drive, run build and seal with the key, commit the new `.enc`.
