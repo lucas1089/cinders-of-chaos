@@ -1,7 +1,8 @@
 // Screenshot mode of the HD-2D view (O432): `ChaosUnity -chaosHd2dShot OUT_DIR` skips the login, builds the offline demo room
 // (Core/Hd2dDemo.cs), renders it once in the classic flat view and once in HD-2D into a 1200 x 880 texture (the 15 : 11
 // shape of the classic view), writes classic.png and hd2d.png, then hd2d_3d.png (the 3D architecture test,
-// Unity/Hd2dRuins3d.cs, when its models are in the build) to OUT_DIR and quits (exit code 0, or 1 with the reason in
+// Unity/Hd2dRuins3d.cs, when its models are in the build, with the 3D characters of Unity/Hd2dChars3d.cs when theirs are) and
+// hd2d_3d_close.png (the same scene from half the distance, aimed at the hero) to OUT_DIR and quits (exit code 0, or 1 with the reason in
 // the log). It needs no server and no game files: the art is the synthetic demo art, unless the real pair is found
 // (`-chaosPair DIR`, the env CHAOS_PAIR_DIR, or things/ beside the executable) and holds the temple tileset (pair 60).
 // The CI run (unity-prototype.yml, Linux target) runs it under xvfb with software OpenGL.
@@ -115,12 +116,30 @@ namespace Chaos.Client
             ruins.World = world;
             if (ruins.Attach(hd))
             {
+                // 3D characters (Chars3d) in place of the creature sprites; without their models the sprites stay
+                var charsGo = new GameObject("Chars3d");
+                var chars = charsGo.AddComponent<Hd2dChars3d>();
+                chars.World = world;
+                bool haveChars = chars.Attach(hd);
                 Debug.Log("chaos hd2d shot: building the 3D architecture");
                 hd.Refresh();   // the view skips the sprites the models replace
                 ruins.Build();
+                if (haveChars) { chars.Build(); Debug.Log("chaos hd2d shot: placed " + chars.Placed + " 3D characters"); }
                 Debug.Log("chaos hd2d shot: rendering HD-2D with 3D architecture");
                 Save(cam, tex, "hd2d_3d.png");
                 Debug.Log("chaos hd2d shot: wrote hd2d_3d.png (" + ruins.Placed + " models)");
+
+                // the same scene from half the distance, aimed at the hero, so the characters show in detail
+                if (haveChars && world.Player != null && chars.PointOf(world.Player.Id, 0.9f, out Vector3 heroPt))
+                {
+                    var camPos = cam.transform.position;
+                    float dist = Vector3.Distance(camPos, heroPt);
+                    var toHero = (heroPt - camPos).normalized;
+                    cam.transform.SetPositionAndRotation(heroPt - toHero * (dist * 0.5f), Quaternion.LookRotation(toHero, Vector3.up));
+                    Debug.Log("chaos hd2d shot: rendering the close view");
+                    Save(cam, tex, "hd2d_3d_close.png");
+                    Debug.Log("chaos hd2d shot: wrote hd2d_3d_close.png");
+                }
             }
             else Debug.LogWarning("chaos hd2d shot: no 3D models in this build, hd2d_3d.png skipped");
             yield break;

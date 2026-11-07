@@ -213,6 +213,11 @@ Free effect, icon, font and sprite packs. Their files name no author, except the
   - Licence: Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Ruins3d/License.txt
   - Used for: the 3D architecture test of the Unity prototype (floors, walls, pillars, torches and props, restyled in code), not in the main game client
   - Source: https://quaternius.com/packs/ultimatemodularruins.html
+- **RPG Character Pack**
+  - Author: Quaternius
+  - Licence: Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Chars3d/License.txt
+  - Used for: the 3D characters of the Unity prototype (Warrior, Cleric and Wizard, rigged, idle pose, tinted darker in code), not in the main game client
+  - Source: https://quaternius.com/packs/rpgcharacters.html
 - **AI Sprite Studio**
   - Author: AI Sprite Studio, AI-generated free sample pack (the art is AI-generated and is not claimed to be hand-drawn)
   - Licence: personal and commercial use allowed, no exclusivity; terms at https://aispritestudio.com/terms/

@@ -105,6 +105,24 @@ client (OTClient family) does not use it and nothing here changes the server or 
 - Unsure until seen: which side of the pack's walls is the nicer face, and the colour balance (the restyle lifts the pack's linear
   colours with a gamma first). Both are one-line changes in `Hd2dRuins.cs`.
 
+3D characters (Chars3d): the creatures of the HD-2D view as 3D models. Unity only, like Ruins3d.
+- Models: the CC0 RPG Character Pack by Quaternius (FBX, rigged, animations inside), Warrior, Cleric and Wizard with their textures
+  and `License.txt` in `Assets/Chaos/Resources/Chars3d/` (credited in `docs/CREDITS.md`). No `.meta` is committed:
+  `Editor/Chars3dImport.cs` sets Generic rig and animations on import.
+- Mapping (`Core/Hd2dChars.cs`, tested in `Core.Tests/CharsTests.cs`): the player is the Warrior; other creatures hash their look type
+  (their id when it is 0) onto Cleric or Wizard. Yaw from `Dir` (North = +z, away from the camera, then 90 degrees per quarter turn),
+  position from the drawn tile (same x / z mapping as Ruins3d), scaled to 1.7 tiles, feet on the floor. Item looks stay sprites.
+- `Unity/Hd2dChars3d.cs`: `Attach(view)` sets `Hd2dView.SkipCreature` (sprites hidden, labels, lights and shadows stay),
+  `Build()` places the characters. They cast and receive shadows. Materials are copies: texture bound by code from Resources
+  (`Chars3d/NAME_Texture`, weapon material by name), colour x 0.75 and a little grey.
+- Pose without a frame: the idle clip is found by name (`Idle`, else `Idle_Weapon`) in `Resources.LoadAll<AnimationClip>` and sampled
+  by hand with `clip.SampleAnimation(model, t)` (t differs per creature); the Animator is then switched off. No idle clip: bind pose.
+  `Live = true` resamples every frame.
+- See it: `hd2d_3d.png` now shows them; `hd2d_3d_close.png` is the same scene from half the distance, aimed at the hero. Missing models:
+  the step logs a warning and the sprites stay.
+- Unsure until seen: the models' facing (assumed +z, `Hd2dChars.ModelYaw` fixes it), the texture binding by material name, the height
+  measure from the mesh bounds.
+
 Limits, said plainly:
 - The sprites are drawn for an oblique view. Upright walls look right only with this fixed camera: there is no camera rotation.
 - Only the player's floor is drawn (no floors above or below).

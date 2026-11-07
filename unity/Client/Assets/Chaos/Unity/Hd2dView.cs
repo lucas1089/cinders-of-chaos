@@ -27,6 +27,8 @@ namespace Chaos.Client
         public bool StraightArt;
         /// <summary>Pieces this returns true for are not drawn as sprites (a 3D model takes their place: Hd2dRuins3d). Lights still come from them.</summary>
         public Func<Hd2dPiece, bool> Skip;
+        /// <summary>Creatures this returns true for are not drawn as sprites (a 3D character takes their place: Hd2dChars3d). Their name label stays.</summary>
+        public Func<Creature, bool> SkipCreature;
         public static bool LowQuality => Application.isMobilePlatform || PlayerPrefs.GetInt("chaos.hd2d.low", 0) == 1;
         public int MaxLights => LowQuality ? 4 : 8;
         public int MaxShadowLights => LowQuality ? 0 : 2;
@@ -148,6 +150,9 @@ namespace Chaos.Client
 
         float[] DrawnPos(Creature c) { return Drawn(c, out float _); }
 
+        /// <summary>The tile position a creature is drawn at now, fractional while it walks (x east, y south).</summary>
+        public Vector2 DrawnTile(Creature c) { var d = DrawnPos(c); return new Vector2(d[0], d[1]); }
+
         void LateUpdate() { Refresh(); }
 
         /// <summary>Builds the mesh for the current world now (LateUpdate, or the screenshot mode without a frame).</summary>
@@ -172,6 +177,7 @@ namespace Chaos.Client
             camNormal = new Vector3(0f, (float)Math.Sin(p), -(float)Math.Cos(p));
             foreach (var piece in pieces)
             {
+                if (piece.Creature != null && SkipCreature != null && SkipCreature(piece.Creature)) { AddLabel(piece); continue; }
                 if (Skip != null && Skip(piece)) continue;
                 if (piece.Creature != null) AddCreature(piece);
                 else AddItem(piece);
