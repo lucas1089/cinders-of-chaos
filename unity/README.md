@@ -96,3 +96,17 @@ The artifact `chaos-unity-<target>` is kept 7 days.
   An adler32 of 0, which would mean a compressed packet, is refused.
 - The step time follows `server/tools/cast_relay.py` `step_ms` (src-patch 0018).
 - An opcode the parser does not know stops that packet. The next packets go on. `live` lists what it read.
+
+## HD-2D preview (O432)
+
+`unity/tools/hd2d_preview.py` draws the offline picture of the HD-2D look. It needs numpy and Pillow, not Unity.
+- Run: `python3 -I unity/tools/hd2d_preview.py DAT SPR OUT_DIR [--scale N]`. It reads the real pair in place and writes
+  `classic.png`, `hd2d.png` and `side_by_side.png`. The pictures are not committed.
+- The scene is one temple room of 15 x 11 tiles (client ids 44511-44549) with three outfits.
+- The classification, light and footprint rules are small functions at the top of the script (`classify`,
+  `light_of`, `colour_from_index`, `billboard_rect`, `floor_rect`). The C# core repeats them. Keep both in step.
+  - Floor quad: dat ground, ground border, flat on-bottom items, items with no blocking attribute.
+  - Upright billboard: walls, objects and creatures, bottom-right cell on the tile.
+  - Light: the dat light attribute, radius in tiles, colour from the 6x6x6 cube.
+- Test: `python3 -I unity/tools/hd2d_preview_test.py` (synthetic sprites, runs in CI).
+- Side walls are left out: the art is oblique, a camera-facing card floats.
