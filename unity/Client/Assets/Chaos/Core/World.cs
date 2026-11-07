@@ -4,13 +4,14 @@ using System.Collections.Generic;
 
 namespace Chaos.Core
 {
-    public struct Pos
+    public struct Pos : System.IEquatable<Pos>
     {
         public int X, Y, Z;
         public Pos(int x, int y, int z) { X = x; Y = y; Z = z; }
         public override string ToString() => X + "," + Y + "," + Z;
         public override int GetHashCode() => (X * 73856093) ^ (Y * 19349663) ^ (Z * 83492791);
         public override bool Equals(object o) => o is Pos p && p.X == X && p.Y == Y && p.Z == Z;
+        public bool Equals(Pos p) => p.X == X && p.Y == Y && p.Z == Z;   // no boxing in a Dictionary<Pos, T> lookup
         public static bool operator ==(Pos a, Pos b) => a.X == b.X && a.Y == b.Y && a.Z == b.Z;
         public static bool operator !=(Pos a, Pos b) => !(a == b);
         public Pos Offset(int dx, int dy, int dz = 0) => new Pos(X + dx, Y + dy, Z + dz);

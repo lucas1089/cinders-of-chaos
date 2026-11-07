@@ -30,7 +30,9 @@ using System.Collections.Generic;
 namespace Chaos.Core
 {
     /// <summary>Trim: a wooden or stone beam against a wall (dark like the wall). Props and statues are None.</summary>
-    public enum RuinsRole { None, Floor, Border, Wall, Pillar, Light, Trim }
+    /// <summary>The roles from Terrain on belong to World3d (Core/Hd2dWorld3d.cs): terrain tile, water, lava, tree, bush, rock, a
+    /// scattered grass tuft, plant or rock.</summary>
+    public enum RuinsRole { None, Floor, Border, Wall, Pillar, Light, Trim, Terrain, Water, Lava, Tree, Bush, Rock, Scatter }
 
     /// <summary>One model to place: the pack file name (Resources/Ruins3d/NAME), where, turned by Yaw degrees round y, scaled.</summary>
     public sealed class RuinsPlacement
@@ -40,6 +42,9 @@ namespace Chaos.Core
         /// <summary>Height scale when it differs from Scale (a squat plinth from a tall column); 0 means the same as Scale.</summary>
         public float ScaleY;
         public RuinsRole Role;
+        /// <summary>World3d terrain tiles: the ground class and the mean colour of the sprite the tile is tinted from.</summary>
+        public GroundClass Ground;
+        public float TintR, TintG, TintB;
         public override string ToString() => Piece + " at (" + X.ToString("0.##") + ", " + Y.ToString("0.##") + ", " + Z.ToString("0.##") + ") yaw " + Yaw.ToString("0");
     }
 
@@ -100,7 +105,7 @@ namespace Chaos.Core
 
         public static long Key(int x, int y) => ((long)x << 32) ^ (uint)y;
 
-        static int Hash(int x, int y, int salt)
+        internal static int Hash(int x, int y, int salt)
         {
             unchecked
             {
@@ -141,7 +146,7 @@ namespace Chaos.Core
         }
 
         /// <summary>Marks the tiles a piece covers (its anchor is the south-east cell) plus `margin` tiles all round.</summary>
-        static void Block(HashSet<long> busy, Hd2dPiece p, int margin)
+        internal static void Block(HashSet<long> busy, Hd2dPiece p, int margin)
         {
             int w = Math.Max(1, p.Width), h = Math.Max(1, p.Height);
             for (int x = p.Tile.X - w + 1 - margin; x <= p.Tile.X + margin; x++)
@@ -150,8 +155,9 @@ namespace Chaos.Core
         }
 
         /// <summary>The 3D pieces of a layout. Deterministic: the same layout gives the same list (variants come from a hash of the tile).</summary>
-        public static List<RuinsPlacement> Plan(IEnumerable<Hd2dPiece> pieces, Pos origin)
+        public static List<RuinsPlacement> Plan(IEnumerable<Hd2dPiece> pieces, Pos origin, Func<Hd2dPiece, RuinsRole> roleOf = null)
         {
+            roleOf = roleOf ?? RoleOf;
             var floors = new Dictionary<long, int[]>();    // tile -> {x, y}
             var walls = new Dictionary<long, WallTile>();
             var wallXY = new Dictionary<long, int[]>();
@@ -161,16 +167,17 @@ namespace Chaos.Core
             // a blocking upright piece with no other one beside it on its row is a pillar, not a wall run
             var all = new List<Hd2dPiece>(pieces);
             var wallAt = new HashSet<long>();
-            foreach (var p in all) if (RoleOf(p) == RuinsRole.Wall) wallAt.Add(Key(p.Tile.X, p.Tile.Y));
+            foreach (var p in all) if (roleOf(p) == RuinsRole.Wall) wallAt.Add(Key(p.Tile.X, p.Tile.Y));
             foreach (var p in all)
             {
                 int tx = p.Tile.X, ty = p.Tile.Y;
-                var role = RoleOf(p);
+                var role = roleOf(p);
                 if (role == RuinsRole.Wall && Isolated(wallAt, tx, ty, Math.Max(1, p.Width))) role = RuinsRole.Pillar;
                 switch (role)
                 {
                     case RuinsRole.Floor: floors[Key(tx, ty)] = new[] { tx, ty }; break;
                     case RuinsRole.Border: break;
+                    case RuinsRole.Terrain: case RuinsRole.Water: case RuinsRole.Lava: break;   // World3d tiles: no halo for props
                     case RuinsRole.Wall:
                         for (int w = 0; w < Math.Max(1, p.Width); w++)
                         {
@@ -567,6 +574,8 @@ namespace Chaos.Core
             if (n.Contains("wood")) { keep = 0.45f; dark = 0.5f; tr = 1.05f; tb = 0.92f; }
             else if (n.Contains("metal") || n.Contains("black")) { keep = 0.3f; dark = 0.5f; smooth = 0.3f; }
             else if (n.StartsWith("flag", StringComparison.Ordinal)) { keep = 0.7f; dark = 0.55f; }
+            else if (n.StartsWith("green", StringComparison.Ordinal)) { keep = 0.8f; dark = 0.85f; tr = 0.95f; tg = 1.02f; tb = 0.9f; }   // leaves, grass, moss (World3d)
+            else if (n.StartsWith("berry", StringComparison.Ordinal)) { keep = 0.8f; dark = 0.8f; }
             else if (n.StartsWith("bark", StringComparison.Ordinal)) { keep = 0f; dark = 0.32f; tr = 1.1f; tg = 0.95f; tb = 0.78f; }
             else if (n.StartsWith("candle", StringComparison.Ordinal) || n.Contains("pages")) { keep = 0.5f; dark = 0.75f; }
             else if (n.Contains("bone")) { keep = 0.5f; dark = 0.65f; }

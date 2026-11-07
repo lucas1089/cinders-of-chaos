@@ -111,13 +111,14 @@ namespace Chaos.Client
             Debug.Log("chaos hd2d shot: wrote classic.png and hd2d.png to " + OutDir);
 
             // 3D architecture test (Ruins3d): the same room with 3D pieces in place of the sprite floors, walls, pillars and lights
+            GameObject charsGo = null;
             var ruinsGo = new GameObject("Ruins3d");
             var ruins = ruinsGo.AddComponent<Hd2dRuins3d>();
             ruins.World = world;
             if (ruins.Attach(hd))
             {
                 // 3D characters (Chars3d) in place of the creature sprites; without their models the sprites stay
-                var charsGo = new GameObject("Chars3d");
+                charsGo = new GameObject("Chars3d");
                 var chars = charsGo.AddComponent<Hd2dChars3d>();
                 chars.World = world;
                 bool haveChars = chars.Attach(hd);
@@ -142,8 +143,49 @@ namespace Chaos.Client
                 }
             }
             else Debug.LogWarning("chaos hd2d shot: no 3D models in this build, hd2d_3d.png skipped");
+
+            // 3D world (World3d): a meadow with a path, a pond and trees from the real pair, the ids picked by the sprites' pixels
+            DestroyImmediate(ruinsGo);   // the demo room's models and characters go; no frame runs to destroy them later
+            if (charsGo != null) DestroyImmediate(charsGo);
+            Outdoor(cam, tex, hd, atlas, source);
             yield break;
         }
+
+        void Outdoor(Camera cam, Texture2D tex, Hd2dView hd, SpriteAtlas roomAtlas, string source)
+        {
+            if (realDat == null) { Debug.Log("chaos hd2d shot: no real sprite pair, hd2d_3d_outdoor.png skipped"); return; }
+            var atlas = roomAtlas;
+            if (!source.StartsWith("real pair", StringComparison.Ordinal)) atlas = new SpriteAtlas(SprFile.Open(realSpr));
+            var cls = new SpriteClassifier(id => id == 0 ? null : atlas.Raw(id));
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var outdoor = Hd2dDemo.Outdoor(realDat, id => id == 0 ? null : atlas.Raw(id), cls);
+            if (outdoor == null) { Debug.Log("chaos hd2d shot: the pair has no grass, water and tree to pick, hd2d_3d_outdoor.png skipped"); return; }
+            Debug.Log("chaos hd2d shot: outdoor ids " + outdoor.Ids + " (picked from pixels in " + sw.ElapsedMilliseconds + " ms, " + cls.Count + " items measured)");
+            hd.World = outdoor.World;
+            hd.Atlas = atlas;
+            hd.StraightArt = false;
+            var go = new GameObject("World3d");
+            var ruins = go.AddComponent<Hd2dRuins3d>();
+            ruins.World = outdoor.World;
+            ruins.WorldMode = true;
+            if (!ruins.Attach(hd)) { Debug.LogWarning("chaos hd2d shot: no 3D models in this build, hd2d_3d_outdoor.png skipped"); return; }
+            var chars = go.AddComponent<Hd2dChars3d>();
+            chars.World = outdoor.World;
+            bool haveChars = chars.Attach(hd);
+            hd.Refresh();   // the view skips the sprites the models replace
+            ruins.Build();
+            if (haveChars) chars.Build();
+            Debug.Log("chaos hd2d shot: 3D world placed " + ruins.Placed + " models in " + ruins.LastBuildMs.ToString("0.0") + " ms");
+            bool again = ruins.Refresh();   // nothing changed: no rebuild
+            Debug.Log("chaos hd2d shot: a second Refresh with nothing changed rebuilt: " + again);
+            Debug.Log("chaos hd2d shot: rendering the 3D world");
+            Save(cam, tex, "hd2d_3d_outdoor.png");
+            Debug.Log("chaos hd2d shot: wrote hd2d_3d_outdoor.png");
+        }
+
+        // the real pair when found, even without the temple tileset (the outdoor demo needs only its grass, water and tree)
+        static DatFile realDat;
+        static string realSpr;
 
         void Save(Camera cam, Texture2D tex, string name)
         {
@@ -166,6 +208,7 @@ namespace Chaos.Client
                 try
                 {
                     var dat = DatFile.Load(d);
+                    realDat = dat; realSpr = s;
                     var room = Hd2dDemo.FromPair(dat);
                     if (room != null)
                     {

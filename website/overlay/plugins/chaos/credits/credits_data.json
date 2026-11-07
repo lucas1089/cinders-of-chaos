@@ -276,6 +276,13 @@
      "source": "https://quaternius.com/packs/ultimatemodularruins.html"
     },
     {
+     "name": "Ultimate Nature Pack",
+     "author": "Quaternius",
+     "licence": "Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Nature3d/License.txt",
+     "use": "the 3D world of the Unity prototype (trees, bushes, rocks, grass and plants on the maps, restyled in code; 28 of the pack's models, the autumn, snow, cactus and palm variants not used), not in the main game client",
+     "source": "https://quaternius.com/packs/ultimatenature.html"
+    },
+    {
      "name": "RPG Character Pack",
      "author": "Quaternius",
      "licence": "Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Chars3d/License.txt",

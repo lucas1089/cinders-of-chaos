@@ -213,6 +213,11 @@ Free effect, icon, font and sprite packs. Their files name no author, except the
   - Licence: Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Ruins3d/License.txt
   - Used for: the 3D architecture test of the Unity prototype (floors, walls, pillars, torches and props, restyled in code), not in the main game client
   - Source: https://quaternius.com/packs/ultimatemodularruins.html
+- **Ultimate Nature Pack**
+  - Author: Quaternius
+  - Licence: Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Nature3d/License.txt
+  - Used for: the 3D world of the Unity prototype (trees, bushes, rocks, grass and plants on the maps, restyled in code; 28 of the pack's models, the autumn, snow, cactus and palm variants not used), not in the main game client
+  - Source: https://quaternius.com/packs/ultimatenature.html
 - **RPG Character Pack**
   - Author: Quaternius
   - Licence: Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Chars3d/License.txt
