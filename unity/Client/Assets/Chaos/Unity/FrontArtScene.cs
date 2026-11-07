@@ -394,8 +394,8 @@ namespace Chaos.Client
             Action<float, float, float, float, float, float> blob = (x, y, z, rx, rz, strength) =>
             {
                 int i = v.Count;
-                v.Add(new Vector3(x - rx, y + 0.02f, z - rz)); v.Add(new Vector3(x + rx, y + 0.02f, z - rz));
-                v.Add(new Vector3(x + rx, y + 0.02f, z + rz)); v.Add(new Vector3(x - rx, y + 0.02f, z + rz));
+                v.Add(new Vector3(x - rx, y + CastLift, z - rz)); v.Add(new Vector3(x + rx, y + CastLift, z - rz));
+                v.Add(new Vector3(x + rx, y + CastLift, z + rz)); v.Add(new Vector3(x - rx, y + CastLift, z + rz));
                 uv.Add(new Vector4(0, 0, 0, strength)); uv.Add(new Vector4(1, 0, 0, strength)); uv.Add(new Vector4(1, 1, 0, strength)); uv.Add(new Vector4(0, 1, 0, strength));
                 t.Add(i); t.Add(i + 3); t.Add(i + 2); t.Add(i); t.Add(i + 2); t.Add(i + 1);
             };
@@ -606,10 +606,14 @@ namespace Chaos.Client
         static readonly Vector2[] castUv = { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
         static readonly int[] castTris = { 0, 1, 2, 0, 2, 3 };
 
+        /// <summary>How far the ground silhouettes and blobs float over the floor. Closer ones were hidden by the floor in the
+        /// screenshot renderer (front_art_debug.png showed them drawn); from this camera the lift does not show.</summary>
+        const float CastLift = 0.12f;
+
         static void SetCast(Mesh m, Vector3 feet, Vector3 dir, float len)
         {
             var side = Vector3.Cross(Vector3.up, dir) * (SpriteUnits * 0.5f);
-            var f = feet + Vector3.up * 0.012f;
+            var f = feet + Vector3.up * CastLift;
             castVerts[0] = f + side; castVerts[1] = f - side;
             castVerts[2] = f - side + dir * len; castVerts[3] = f + side + dir * len;
             m.Clear();

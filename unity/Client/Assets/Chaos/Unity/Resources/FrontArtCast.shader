@@ -11,14 +11,14 @@ Shader "Chaos/FrontArtCast"
     }
     SubShader
     {
-        Tags { "Queue" = "Transparent-10" "RenderType" = "Transparent" "IgnoreProjector" = "True" }
+        Tags { "Queue" = "AlphaTest-50" "RenderType" = "Transparent" "IgnoreProjector" = "True" }
         Pass
         {
             Blend DstColor Zero
             ZWrite Off
             ZTest [_ZTest]
             Cull Off
-            Offset -1, -1
+            Offset -4, -4
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
