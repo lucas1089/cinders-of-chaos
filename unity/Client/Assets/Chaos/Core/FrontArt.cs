@@ -517,14 +517,14 @@ namespace Chaos.Core
             // ---- attack spells: the horde, the ghost king and the cultists at the knight and the mage; the mage answers ----
             Action<string, string, string, string, float, float, float, float, float> spell = (caster, target, missile, impact, r, g, b, offset, period) =>
                 L.Spells.Add(new FaSpell { Caster = caster, Target = target, Missile = missile, Impact = impact, R = r, G = g, B = b, Offset = offset, Period = period });
-            spell("Fire demon", "Knight", "fireball", "fireball_hit", 1.0f, 0.45f, 0.12f, 0.3f, 0f);
-            spell("Frost demon", "Mage", "frost", "ice_shatter", 0.35f, 0.8f, 1.0f, 0.35f, 0f);
-            spell("Lizard mystic", "Knight", "arcane", "arcane_hit", 0.7f, 0.35f, 1.0f, 0.3f, 0f);
-            spell("Goblin shaman", "Mage", "skull_necrotic", "shadow_hit", 0.45f, 1.0f, 0.35f, 0.6f, 4.2f);
-            spell("Red cultist", "Knight", "blood", "shadow_hit", 1.0f, 0.15f, 0.15f, 0.3f, 0f);
-            spell("Dark cultist", "Mage", "shadow", "shadow_hit", 0.6f, 0.25f, 1.0f, 0.35f, 0f);
-            spell("Ghost king", "Knight", "skull_spirit", "arcane_hit", 0.4f, 1.0f, 0.85f, 0.3f, 0f);
-            spell("Mage", "Fire demon", "holy", "holy_hit", 1.0f, 0.85f, 0.4f, 1.2f, 3.6f);
+            spell("Fire demon", "Knight", "fireball", "fireball", 1.0f, 0.45f, 0.12f, 0.3f, 0f);
+            spell("Frost demon", "Mage", "frost", "frost", 0.35f, 0.8f, 1.0f, 0.35f, 0f);
+            spell("Lizard mystic", "Knight", "arcane", "arcane", 0.7f, 0.35f, 1.0f, 0.3f, 0f);
+            spell("Goblin shaman", "Mage", "skull_necrotic", "skull_necrotic", 0.45f, 1.0f, 0.35f, 0.6f, 4.2f);
+            spell("Red cultist", "Knight", "blood", "blood", 1.0f, 0.15f, 0.15f, 0.3f, 0f);
+            spell("Dark cultist", "Mage", "shadow", "shadow", 0.6f, 0.25f, 1.0f, 0.35f, 0f);
+            spell("Ghost king", "Knight", "skull_spirit", "skull_spirit", 0.4f, 1.0f, 0.85f, 0.3f, 0f);
+            spell("Mage", "Fire demon", "holy", "holy", 1.0f, 0.85f, 0.4f, 1.2f, 3.6f);
             foreach (var list in new[] { L.Actors, L.Extras })
                 for (int i = 0; i < list.Count; i++)
                 {

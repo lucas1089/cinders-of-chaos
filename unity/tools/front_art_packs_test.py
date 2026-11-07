@@ -62,19 +62,27 @@ check(i2[0].getbbox()[3] == 20 and w2[0].getbbox()[3] == 20, "frame set: both st
 check(fap.walk_name("Ghost_6_idle_strip16.png") == "Ghost_6_walk_strip16.png", "the walk strip's name")
 check(fap.attack_name("Vampire_idle_strip9.png") == "Vampire_attack_strip9.png", "the attack strip's name")
 
-# fx: a missile sheet must be 8 x 8 frames of 64, an impact a strip of square frames
+# fx: a missile sheet must be 8 x 8 frames of 64; its impact is a burst in its colours
 with tempfile.TemporaryDirectory() as tmp:
-    proj, imp, out = (os.path.join(tmp, d) for d in ("proj", "imp", "out"))
+    proj, out = (os.path.join(tmp, d) for d in ("proj", "out"))
     for name, pr, var in fap.MISSILES:
         os.makedirs(os.path.join(proj, pr, var), exist_ok=True)
-        Image.new("RGBA", (512, 512), (200, 100, 0, 255)).save(os.path.join(proj, pr, var, "%s_%s_main.png" % (pr, var)))
-    os.makedirs(imp)
-    for name in fap.IMPACTS:
-        Image.new("RGBA", (128 * 3, 128), (0, 0, 0, 0)).save(os.path.join(imp, name + ".png"))
-    check(fap.build_fx(proj, imp, out) == 0, "fx build")
-    check(os.path.isfile(os.path.join(out, "fx_fireball", "missile.png")) and os.path.isfile(os.path.join(out, "fx_holy_hit", "impact.png")), "fx files")
-    Image.new("RGBA", (100, 128), (0, 0, 0, 0)).save(os.path.join(imp, "holy_hit.png"))
-    check(fap.build_fx(proj, imp, out) == 1, "fx: an impact that is no strip of square frames is refused")
+        sheet = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
+        for y in range(20, 44):
+            for x in range(20, 44):
+                sheet.putpixel((x, y), (250, 240, 200, 255) if abs(x - 32) + abs(y - 32) < 6 else (220, 90, 20, 255))
+        sheet.save(os.path.join(proj, pr, var, "%s_%s_main.png" % (pr, var)))
+    check(fap.build_fx(proj, out) == 0, "fx build")
+    imp = Image.open(os.path.join(out, "fx_fireball", "impact.png"))
+    check(os.path.isfile(os.path.join(out, "fx_fireball", "missile.png")) and imp.size == (128 * fap.IMPACT_FRAMES, 128), "fx: missile and a strip of 128 x 128 impact frames")
+    first, last = imp.crop((0, 0, 128, 128)), imp.crop((128 * (fap.IMPACT_FRAMES - 1), 0, 128 * fap.IMPACT_FRAMES, 128))
+    reds = [p for p in first.getdata() if p[3] and p[0] > p[2] + 60]
+    check(len(reds) > 50, "fx: the burst takes the missile's warm colours")
+    check(sum(1 for p in last.getdata() if p[3]) < sum(1 for p in first.getdata() if p[3]), "fx: the burst fades out")
+    os.remove(os.path.join(proj, "proj_fireball", "hellfire", "proj_fireball_hellfire_main.png"))
+    Image.new("RGBA", (100, 512), (0, 0, 0, 0)).save(os.path.join(proj, "proj_fireball", "hellfire", "proj_fireball_hellfire_main.png"))
+    check(fap.build_fx(proj, out) == 1, "fx: a sheet that is not 8 x 8 frames of 64 is refused")
+
 strip_out = fap.side_by_side(fr, "RGBA")
 check(strip_out.size == (40, 20) and strip_out.crop((20, 0, 40, 20)).tobytes() == fr[1].tobytes(), "side by side: frame k at k * size")
 check(fap.side_by_side([Image.new("RGB", (4, 4), (1, 2, 3))], "RGB").size == (4, 4), "side by side of one frame")

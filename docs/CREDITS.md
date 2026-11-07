@@ -69,7 +69,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Magic VFX Spells & Impacts**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: spell effects; since pair 36 every impact and circle (one colour each) and our procedural hits redrawn with them; the impacts of the attack spells in the Unity front-art scene (shipped encrypted)
+  - Used for: spell effects; since pair 36 every impact and circle (one colour each) and our procedural hits redrawn with them
 - **Auras & Buffs**
   - Author: WsT
   - Licence: purchased; credit not required

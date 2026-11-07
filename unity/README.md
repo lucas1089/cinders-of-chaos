@@ -317,9 +317,9 @@ The ideas follow the MIT-licensed Luminati engine (docs/CREDITS.md); the code is
   fire demon. A walker casts while it stands at home: it turns to the target and plays its pack attack strip (`attack.png`; the
   ghosts have none and stay idle), the missile leaves at 0.45 s, flies at 5.5 units a second in a small arc following the
   target, and the impact plays on the target for a second; a point light in the spell's colour travels with the missile and
-  flashes on the hit. Art: `front_art_packs.py fx PROJ_DIR IMPACT_DIR OUT` writes `fx_<name>/missile.png` (the projectile
+  flashes on the hit. Art: `front_art_packs.py fx PROJ_DIR OUT` writes `fx_<name>/missile.png` (the projectile
   pack's sheet: 8 direction rows E, SE, S, SW, W, NW, N, NE, 8 frames of 64; the row follows the missile's heading on screen)
-  and `fx_<name>/impact.png` (a strip of 128 x 128 frames), sealed into the same `.enc`. Shader `FrontArtSpell` (premultiplied,
+  and `fx_<name>/impact.png` (a burst drawn in the missile's own colours: flash, ring, sparks; 12 frames of 128), sealed into the same `.enc`. Shader `FrontArtSpell` (premultiplied,
   brightened for the bloom). Core tests: casters stand while casting, the missile leaves the caster and lands on the target,
   before the next cast, never in the ground. `Hd2dShot` adds `front_art_anim_00..39.png`, the east horde over five seconds. `seal OUT ENC` encrypts,
   `open ENC Resources/FrontArt` is the step of `unity-prototype.yml` before the build. The opened `pk_*` folders are ignored by git;

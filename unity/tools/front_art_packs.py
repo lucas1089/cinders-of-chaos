@@ -11,10 +11,8 @@ Steps:
                             below) write OUT_DIR/pk_<name>/idle.png (the idle animation, frames side by side, facing right),
                             idle_w.png (each frame mirrored, facing left), the same for walk and for attack (when the pack
                             has one), and for each _n (normal map) and _e (emission mask)
-  fx PROJ_DIR IMPACT_DIR OUT_DIR
-                            the spell art: OUT_DIR/fx_<name>/missile.png from the projectile pack's sheets (PROJ_DIR: its
-                            sheets/32px/projectiles) and fx_<name>/impact.png from the impact strips in IMPACT_DIR
-                            (MISSILES, IMPACTS)
+  fx PROJ_DIR OUT_DIR       the spell art: OUT_DIR/fx_<name>/missile.png from the projectile pack's sheets (PROJ_DIR: its
+                            sheets/32px/projectiles; MISSILES) and fx_<name>/impact.png, a burst drawn in its colours
   seal OUT_DIR ENC          tar.gz OUT_DIR's pk_* and fx_* folders and encrypt to ENC (key from the environment variable CHAOS_ART_KEY)
   open ENC DEST             decrypt ENC and unpack its pk_* and fx_* folders into DEST (CI: Resources/FrontArt); exit 0 and
                             say so when CHAOS_ART_KEY is not set
@@ -233,8 +231,8 @@ def build(packs_dir, out_dir):
 
 
 # spell art for the casters (Core/FrontArt.cs FaSpell): fx_<name>/missile.png is the projectile pack's sheet as it is (8 rows of
-# directions E, SE, S, SW, W, NW, N, NE; 8 frames of 64 x 64 side by side), fx_<name>/impact.png an impact strip (square frames
-# side by side). Packs: docs/CREDITS.md "Projectiles" (32px renders) and the impacts of "Magic VFX Spells & Impacts" (64px).
+# directions E, SE, S, SW, W, NW, N, NE; 8 frames of 64 x 64 side by side) and fx_<name>/impact.png a burst drawn here in the
+# missile's own colours (IMPACT_FRAMES square frames of 128, side by side). Pack: docs/CREDITS.md "Projectiles" (32px renders).
 MISSILES = [
     ("fireball", "proj_fireball", "hellfire"),
     ("frost", "proj_frost_shard", "frost"),
@@ -245,11 +243,58 @@ MISSILES = [
     ("shadow", "proj_shadow_bolt", "shadow"),
     ("holy", "proj_holy_orb", "holy"),
 ]
-IMPACTS = ["fireball_hit", "ice_shatter", "arcane_hit", "shadow_hit", "holy_hit"]
+IMPACT_FRAMES = 12
 
 
-def build_fx(proj_dir, impact_dir, out_dir):
-    """fx_<missile>/missile.png and fx_<impact>/impact.png from the projectile sheets and the impact strips."""
+def palette(sheet):
+    """Three colours of a missile: its hot core (the brightest), its body and its rim (the darker opaque pixels)."""
+    px = [p for p in sheet.getdata() if p[3] >= 160]
+    if not px:
+        return [(255, 255, 255), (200, 200, 200), (120, 120, 120)]
+    px.sort(key=lambda p: p[0] + p[1] + p[2])
+    pick = lambda q: tuple(px[min(len(px) - 1, int(q * len(px)))][:3])
+    return [pick(0.97), pick(0.7), pick(0.35)]
+
+
+def impact_strip(sheet):
+    """A burst in the missile's colours: a flash that shrinks, a ring that grows and thins, sparks that fly out and fade. Drawn
+    on 64 x 64 and doubled (hard pixels like the packs), IMPACT_FRAMES frames side by side."""
+    import math
+    core, body, rim = palette(sheet)
+    small = 64
+    out = Image.new("RGBA", (small * 2 * IMPACT_FRAMES, small * 2), (0, 0, 0, 0))
+    sparks = [(k * 2.399963 % (2 * math.pi), 0.6 + 0.4 * ((k * 7919) % 13) / 12.0) for k in range(14)]
+    for f in range(IMPACT_FRAMES):
+        u = f / (IMPACT_FRAMES - 1.0)
+        im = Image.new("RGBA", (small, small), (0, 0, 0, 0))
+        px = im.load()
+        c = small / 2.0 - 0.5
+        flash = 9.0 * (1.0 - u) ** 1.3 + (2.0 if u < 0.9 else 0.0)
+        ring = 6.0 + 22.0 * u ** 0.7
+        width = 4.0 * (1.0 - u) + 1.0
+        for y in range(small):
+            for x in range(small):
+                d = math.hypot(x - c, y - c)
+                if d <= flash:
+                    px[x, y] = core + (255,) if d < flash * 0.55 else body + (255,)
+                elif abs(d - ring) <= width / 2 and u < 0.95:
+                    px[x, y] = (body if abs(d - ring) < width / 4 else rim) + (int(255 * (1.0 - u * 0.6)),)
+        for a, sp in sparks:
+            r = (8.0 + 24.0 * sp) * u ** 0.6 + 3.0
+            if u > 0.92:
+                continue
+            sx, sy = int(round(c + math.cos(a) * r)), int(round(c + math.sin(a) * r))
+            size = 2 if u < 0.5 else 1
+            for dy in range(size):
+                for dx in range(size):
+                    if 0 <= sx + dx < small and 0 <= sy + dy < small:
+                        px[sx + dx, sy + dy] = core + (255,)
+        out.paste(im.resize((small * 2, small * 2), Image.NEAREST), (f * small * 2, 0))
+    return out
+
+
+def build_fx(proj_dir, out_dir):
+    """fx_<missile>/missile.png from the projectile sheets and fx_<missile>/impact.png drawn in its colours."""
     for name, proj, variant in MISSILES:
         src = os.path.join(proj_dir, proj, variant, "%s_%s_main.png" % (proj, variant))
         if not os.path.isfile(src):
@@ -262,19 +307,8 @@ def build_fx(proj_dir, impact_dir, out_dir):
         d = os.path.join(out_dir, "fx_" + name)
         os.makedirs(d, exist_ok=True)
         im.save(os.path.join(d, "missile.png"), optimize=True)
-    for name in IMPACTS:
-        src = os.path.join(impact_dir, name + ".png")
-        if not os.path.isfile(src):
-            print("missing " + src)
-            return 1
-        im = Image.open(src).convert("RGBA")
-        if im.width % im.height:
-            print("%s: not a strip of square frames %s" % (src, im.size))
-            return 1
-        d = os.path.join(out_dir, "fx_" + name)
-        os.makedirs(d, exist_ok=True)
-        im.save(os.path.join(d, "impact.png"), optimize=True)
-    print("fx: %d missiles, %d impacts" % (len(MISSILES), len(IMPACTS)))
+        impact_strip(im).save(os.path.join(d, "impact.png"), optimize=True)
+    print("fx: %d missiles with their impacts" % len(MISSILES))
     return 0
 
 
@@ -326,8 +360,8 @@ def open_(enc, dest):
 def main(argv):
     if len(argv) == 3 and argv[0] == "build":
         return build(argv[1], argv[2])
-    if len(argv) == 4 and argv[0] == "fx":
-        return build_fx(argv[1], argv[2], argv[3])
+    if len(argv) == 3 and argv[0] == "fx":
+        return build_fx(argv[1], argv[2])
     if len(argv) == 3 and argv[0] == "seal":
         return seal(argv[1], argv[2])
     if len(argv) == 3 and argv[0] == "open":
