@@ -269,6 +269,7 @@ jobs:
           python3 -I unity/tools/fetch_3d_assets_test.py
           # front-art scene: emission masks (<dir>_e.png) match the glow rule on the committed sprites
           /tmp/fxenv/bin/python -I unity/tools/gen_front_art_emission.py --check
+          /tmp/fxenv/bin/python -I unity/tools/front_art_packs_test.py
           # pack art of pair 30 (import-only): item installer, generated item Lua and Hideout list match the manifests (none yet: empty)
           python3 -I server/tools/install_pack30_items.py --lua --check
           python3 -I server/tools/install_pack30_items.py --hideout-lua --check

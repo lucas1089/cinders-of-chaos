@@ -299,6 +299,16 @@ The ideas follow the MIT-licensed Luminati engine (docs/CREDITS.md); the code is
   the camera yaw only, a blob under the feet (`Hd2dBlob`), a quad facing the sun drawn in the shadow pass only, and two ground
   silhouettes (`FrontArtCast`, multiplied into the frame, lifted 0.04): one stretched away from the nearest flame (0.95 strength,
   fading with distance), one away from the moon (0.55). Weaker silhouettes vanish on the night floor.
+- Pack monsters (`Layout.Extras`, 14 of them: demons, a vampire, a werewolf, a headless rider, ghosts, cultists, a lizard mystic, a
+  goblin shaman, a rat king, an armoured skeleton) come from purchased packs (`docs/CREDITS.md`, tracing alias
+  "set30 mutter"). Their licence lets them ship inside the built game but not as files on their own, and this repository is public, so they
+  are committed encrypted: `unity/art/front_art_packs.enc` (AES-256, the key is the repository secret `CHAOS_ART_KEY`).
+  `unity/tools/front_art_packs.py build PACKS_DIR OUT` takes the first idle frame of each strip (64 x 64 on a square canvas, feet on
+  the bottom row), mirrors it for the three west pictures, makes a dome normal map from the silhouette and the emission mask (glow
+  modes per figure: the rule, every warm pixel for the fire demon, no cyan for the frost demon); `seal OUT ENC` encrypts,
+  `open ENC Resources/FrontArt` is the step of `unity-prototype.yml` before the build. The opened `pk_*` folders are ignored by git;
+  without them (no secret) the scene leaves the extras out. 40 texels a unit (1.6 units; the 32-texel skeleton 1.0). To change the
+  figures: download the packs from the owner's Drive, run build and seal with the key, commit the new `.enc`.
   `Editor/FrontArtImport.cs` keeps the pictures uncompressed, point filtered, without mips; normal and emission maps linear.
 - Shaders (built-in pipeline, in `Resources/`, so a player build includes them): `FrontArtBlock` (world mapped uv from the mesh, the
   relief from the normal map per face axis, vertex colour as tint and occlusion, lambert with the moon's shadows and point lights,

@@ -85,6 +85,16 @@ jobs:
         run: |
           python3 -I unity/tools/fetch_3d_assets.py
           python3 -I unity/tools/fetch_3d_assets.py --check
+      # the purchased pack monsters of the front-art scene: their licence allows them inside a built game but not as files on their
+      # own, so the repository holds them encrypted (unity/tools/front_art_packs.py). Without the secret CHAOS_ART_KEY the scene
+      # leaves them out (a warning).
+      - name: Open the front-art pack monsters
+        if: steps.lic.outputs.ok == '1'
+        env:
+          CHAOS_ART_KEY: ${{ secrets.CHAOS_ART_KEY }}
+        run: |
+          if [ -z "$CHAOS_ART_KEY" ]; then echo "::warning::No CHAOS_ART_KEY secret: the front-art scene runs without the pack monsters."; fi
+          python3 -I unity/tools/front_art_packs.py open unity/art/front_art_packs.enc unity/Client/Assets/Chaos/Unity/Resources/FrontArt
       - name: Bake server data into Resources
         if: steps.lic.outputs.ok == '1'
         env:

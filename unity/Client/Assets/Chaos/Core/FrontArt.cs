@@ -30,8 +30,9 @@ namespace Chaos.Core
 
     public struct FaActor
     {
-        public string Name, Folder;   // Folder: knight, mage, skeleton, ghoul (Resources/FrontArt/<Folder>/<direction>.png)
+        public string Name, Folder;   // Folder: knight, mage, skeleton, ghoul, pk_<name> (Resources/FrontArt/<Folder>/<direction>.png)
         public float X, Y, Z, FaceX, FaceZ;
+        public float Units;           // the picture's side in units; 0: the scene's default (48 texels, 1.5 units)
         public bool Monster;
     }
 
@@ -86,6 +87,8 @@ namespace Chaos.Core
         public readonly List<FaBox> Boxes = new List<FaBox>();
         public readonly List<FaLight> Lights = new List<FaLight>();
         public readonly List<FaActor> Actors = new List<FaActor>();
+        /// <summary>Purchased pack monsters around the four (pictures not in git: unity/tools/front_art_packs.py); the scene skips a missing one.</summary>
+        public readonly List<FaActor> Extras = new List<FaActor>();
         public float GateX, GateZ;
 
         public FrontArtLayout(int w, int d)
@@ -325,12 +328,31 @@ namespace Chaos.Core
             L.Actors.Add(new FaActor { Name = "Mage", Folder = "mage", X = 8.9f, Z = 6.2f, FaceX = 1f, FaceZ = 0f });
             L.Actors.Add(new FaActor { Name = "Skeleton", Folder = "skeleton", X = 12.3f, Z = 7.8f, FaceX = -1f, FaceZ = -0.9f, Monster = true });
             L.Actors.Add(new FaActor { Name = "Ghoul", Folder = "ghoul", X = 11.1f, Z = 6.1f, FaceX = -1f, FaceZ = -0.1f, Monster = true });
-            for (int i = 0; i < L.Actors.Count; i++)
-            {
-                var a = L.Actors[i];
-                a.Y = L.GroundY(a.X, a.Z);
-                L.Actors[i] = a;
-            }
+            // ---- extras: pack monsters (64 texels at 40 per unit, the 32-texel skeleton at 32): the horde east, ghosts among the
+            // graves facing it, two cultists before the gate looking down the path ----
+            Action<string, string, float, float, float, float, float> extra = (name, folder, x, z, fx, fz, units) =>
+                L.Extras.Add(new FaActor { Name = name, Folder = "pk_" + folder, X = x, Z = z, FaceX = fx, FaceZ = fz, Units = units, Monster = true });
+            extra("Fire demon", "fire_demon", 13.6f, 9.0f, -1f, -0.6f, 1.6f);
+            extra("Winged demon", "winged_demon", 15.5f, 9.7f, -1f, -0.4f, 1.6f);
+            extra("Vampire", "vampire", 13.4f, 5.0f, -1f, 0.3f, 1.6f);
+            extra("Werewolf", "werewolf", 16.0f, 5.2f, -1f, 0.2f, 1.6f);
+            extra("Headless rider", "headless", 15.7f, 8.2f, -1f, -0.3f, 1.6f);
+            extra("Frost demon", "frost_demon", 14.7f, 4.9f, -1f, 0.5f, 1.6f);
+            extra("Rat king", "rat_king", 13.0f, 3.0f, -1f, 0.6f, 1.6f);
+            extra("Goblin shaman", "goblin_shaman", 16.0f, 10.9f, -1f, -0.6f, 1.6f);
+            extra("Lizard mystic", "lizard_mystic", 13.9f, 10.7f, -1f, -0.5f, 1.6f);
+            extra("Armored skeleton", "armored_skeleton", 13.3f, 7.75f, -1f, 0.4f, 1.0f);
+            extra("Ghost king", "ghost_king", 4.6f, 7.4f, 1f, -0.3f, 1.6f);
+            extra("Ghost knight", "ghost_knight", 6.2f, 4.3f, 1f, 0.4f, 1.6f);
+            extra("Red cultist", "cultist_red", 9.0f, 9.4f, -0.2f, -1f, 1.6f);
+            extra("Dark cultist", "cultist_dark", 11.0f, 9.4f, 0.2f, -1f, 1.6f);
+            foreach (var list in new[] { L.Actors, L.Extras })
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var a = list[i];
+                    a.Y = L.GroundY(a.X, a.Z);
+                    list[i] = a;
+                }
             return L;
         }
 
