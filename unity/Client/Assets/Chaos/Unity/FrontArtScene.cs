@@ -634,11 +634,16 @@ namespace Chaos.Client
 
         /// <summary>Screenshot-mode check: the ground silhouettes drawn over everything at full strength (front_art_debug.png), to tell a
         /// silhouette that is not drawn from one that is hidden under the floor.</summary>
-        public void DebugCastsOnTop()
+        public void DebugCastsOnTop(bool always, bool full)
         {
             foreach (var v in actors)
                 foreach (var m in v.CastMat)
-                    if (m != null) { m.SetFloat("_ZTest", (float)CompareFunction.Always); m.SetFloat("_Strength", 1f); }
+                    if (m != null)
+                    {
+                        Debug.Log("chaos front art: cast " + v.A.Name + " strength " + m.GetFloat("_Strength") + " ztest " + m.GetFloat("_ZTest") + " queue " + m.renderQueue);
+                        m.SetFloat("_ZTest", (float)(always ? CompareFunction.Always : CompareFunction.LessEqual));
+                        if (full) m.SetFloat("_Strength", 1f);
+                    }
         }
 
         /// <summary>The scene's clock, for the screenshot mode.</summary>
