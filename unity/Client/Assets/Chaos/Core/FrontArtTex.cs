@@ -9,7 +9,7 @@ using System;
 namespace Chaos.Core
 {
     /// <summary>A block texture kind.</summary>
-    public enum FaTex { Flagstone, Cobble, Dirt, MossDirt, DeadGrass, Brick, Wood, Coal, Count }
+    public enum FaTex { Flagstone, Cobble, Dirt, MossDirt, DeadGrass, Brick, Wood, Coal, Grass, Sand, Snow, Water, Lava, Count }
 
     /// <summary>RGBA texels (row 0 is the bottom row, like Unity) and a height per texel in 0..1.</summary>
     public sealed class PixelTex
@@ -70,6 +70,11 @@ namespace Chaos.Core
         static readonly uint[] WoodRamp = { 0x1d1626, 0x2f2022, 0x432d29, 0x593c30, 0x735238, 0x8d6c43 };
         static readonly uint[] GrassRamp = { 0x252336, 0x39342b, 0x4d4a2c, 0x6a5f32, 0x877943, 0xa59155 };
         static readonly uint[] CoalRamp = { 0x2a0e18, 0x5a1612, 0x9a2c10, 0xd9570f, 0xff8a1c, 0xffc650 };
+        // the live view's ground kinds (Core/FrontLive.cs): living grass, sand, snow, water
+        static readonly uint[] GreenRamp = { 0x1b2a33, 0x27402f, 0x365730, 0x497033, 0x628b3c, 0x86a94b };
+        static readonly uint[] SandRamp = { 0x2a2434, 0x4a3f45, 0x6e5f55, 0x927f69, 0xb59d7c, 0xd6bf94 };
+        static readonly uint[] SnowRamp = { 0x2c3050, 0x4a5076, 0x7078a0, 0x9ea6c6, 0xcdd2e6, 0xf6f0ea };
+        static readonly uint[] WaterRamp = { 0x10152e, 0x16254a, 0x1f3a66, 0x2d5586, 0x4a7aa6, 0x86b0c8 };
         const uint Mortar = 0x15121e;
 
         /// <summary>The colour ramp of a kind, dark to light (6 steps). Shadows are cool, lights warm.</summary>
@@ -85,6 +90,11 @@ namespace Chaos.Core
                 case FaTex.Brick: return BrickRamp;
                 case FaTex.Wood: return WoodRamp;
                 case FaTex.Coal: return CoalRamp;
+                case FaTex.Grass: return GreenRamp;
+                case FaTex.Sand: return SandRamp;
+                case FaTex.Snow: return SnowRamp;
+                case FaTex.Water: return WaterRamp;
+                case FaTex.Lava: return CoalRamp;
                 default: return StoneRamp;
             }
         }
@@ -160,10 +170,24 @@ namespace Chaos.Core
                 case FaTex.Brick: t = Brick(seed); break;
                 case FaTex.Wood: t = Wood(seed); break;
                 case FaTex.Coal: t = Coal(seed); break;
+                case FaTex.Grass: t = GreenGrass(seed); break;
+                case FaTex.Sand: t = Sand(seed); break;
+                case FaTex.Snow: t = Snow(seed); break;
+                case FaTex.Water: t = Water(seed); break;
+                case FaTex.Lava: t = Lava(seed); break;
                 default: throw new ArgumentOutOfRangeException("kind");
             }
             t.FlipY();
             return t;
+        }
+
+        /// <summary>How much a kind glows by itself (the block shader's _Emit): coal and lava.</summary>
+        public static float Emit(FaTex kind) { return kind == FaTex.Coal ? 1.7f : kind == FaTex.Lava ? 1.3f : 0f; }
+
+        /// <summary>The relief strength of a kind's normal map: soft ground (grass, sand, snow, water) and coal a gentle one, stone a hard one.</summary>
+        public static float ReliefStrength(FaTex kind)
+        {
+            return kind == FaTex.Coal || kind == FaTex.DeadGrass || kind == FaTex.Grass || kind == FaTex.Sand || kind == FaTex.Snow || kind == FaTex.Water || kind == FaTex.Lava ? 1.5f : 3.0f;
         }
 
         /// <summary>A tangent-space normal map (RGBA, 128/128/255 is flat) from the height map; strength scales the slope.</summary>
@@ -492,6 +516,126 @@ namespace Chaos.Core
                     float n = 0.5f * VN(u, v, 6, 6, seed) + 0.5f * VN(u, v, 14, 14, seed + 1);
                     int level = (int)(n * n * 7f);
                     t.Set(x, y, Pick(CoalRamp, level), 0.3f + 0.1f * level);
+                }
+            return t;
+        }
+
+        // ---- grass: dark soil under green blades, tufts and a few flowers ----
+
+        static PixelTex GreenGrass(uint seed)
+        {
+            var t = new PixelTex(Size, Size);
+            for (int y = 0; y < Size; y++)
+                for (int x = 0; x < Size; x++)
+                {
+                    float u = x / (float)Size, v = y / (float)Size;
+                    float n = 0.55f * VN(u, v, 5, 5, seed) + 0.45f * VN(u, v, 18, 18, seed + 1);
+                    int level = (int)(n * 3.4f);
+                    t.Set(x, y, Pick(GreenRamp, level, (int)(VN(u, v, 3, 3, seed + 12) * 4f)), 0.15f + 0.05f * level);
+                }
+            var rnd = new Rng(seed + 4);
+            for (int i = 0; i < 260; i++)
+            {
+                int bx = rnd.Int(Size), by = rnd.Int(Size), len = 3 + rnd.Int(3), bend = rnd.Int(3) - 1;
+                int kind = rnd.Int(10);
+                for (int k = 0; k < len; k++)
+                {
+                    int level = kind < 5 ? 3 + (k > len / 2 ? 1 : 0) : kind < 8 ? 2 : 4;
+                    int xx = bx + (k > 1 ? bend * (k - 1) / 2 : 0);
+                    t.Set(xx, by - k, Pick(GreenRamp, level, kind), 0.4f + 0.1f * k);
+                }
+                t.Set(bx, by + 1, GreenRamp[0], 0.1f);
+            }
+            uint[] flower = { 0xd2c25a, 0xc0628f, 0xd9d6c8 };
+            for (int i = 0; i < 7; i++) t.Set(rnd.Int(Size), rnd.Int(Size), flower[i % 3], 0.6f);
+            return t;
+        }
+
+        // ---- sand: ripples in the dune, pebbles and dark grains ----
+
+        static PixelTex Sand(uint seed)
+        {
+            var t = new PixelTex(Size, Size);
+            for (int y = 0; y < Size; y++)
+                for (int x = 0; x < Size; x++)
+                {
+                    float u = x / (float)Size, v = y / (float)Size;
+                    float n = 0.6f * VN(u, v, 4, 4, seed) + 0.4f * VN(u, v, 16, 16, seed + 1);
+                    float ripple = (float)Math.Sin((v * 8f + VN(u, v, 3, 3, seed + 3) * 1.1f) * 2.0 * Math.PI);
+                    int level = (int)(n * 4.4f) + (ripple > 0.55f ? 1 : ripple < -0.7f ? -1 : 0);
+                    float sp = F(Hash(x, y, seed + 2));
+                    if (sp < 0.04f) level--; else if (sp > 0.97f) level++;
+                    t.Set(x, y, Pick(SandRamp, level + 1, (int)(VN(u, v, 3, 3, seed + 12) * 4f)), 0.3f + 0.08f * level + (ripple > 0.55f ? 0.1f : 0f));
+                }
+            var rnd = new Rng(seed + 9);
+            for (int i = 0; i < 12; i++)
+            {
+                int cx = rnd.Int(Size), cy = rnd.Int(Size);
+                t.Set(cx, cy, Pick(StoneRamp, 4), 0.8f); t.Set(cx + 1, cy, Pick(StoneRamp, 3), 0.7f); t.Set(cx + 1, cy + 1, SandRamp[1], 0.2f);
+            }
+            return t;
+        }
+
+        // ---- snow: soft drifts, a blue shade in the hollows, sparkles ----
+
+        static PixelTex Snow(uint seed)
+        {
+            var t = new PixelTex(Size, Size);
+            for (int y = 0; y < Size; y++)
+                for (int x = 0; x < Size; x++)
+                {
+                    float u = x / (float)Size, v = y / (float)Size;
+                    float n = 0.7f * VN(u, v, 3, 3, seed) + 0.3f * VN(u, v, 12, 12, seed + 1);
+                    int level = 2 + (int)(n * 3.4f);
+                    float sp = F(Hash(x, y, seed + 2));
+                    if (sp > 0.985f) level = 5; else if (sp < 0.03f) level--;
+                    t.Set(x, y, Pick(SnowRamp, level, (int)(VN(u, v, 2, 2, seed + 12) * 4f)), 0.4f + 0.07f * level);
+                }
+            var rnd = new Rng(seed + 5);
+            for (int i = 0; i < 10; i++) t.Set(rnd.Int(Size), rnd.Int(Size), SnowRamp[1], 0.2f);
+            return t;
+        }
+
+        // ---- water: dark blue with wave bands and short bright glints ----
+
+        static PixelTex Water(uint seed)
+        {
+            var t = new PixelTex(Size, Size);
+            for (int y = 0; y < Size; y++)
+                for (int x = 0; x < Size; x++)
+                {
+                    float u = x / (float)Size, v = y / (float)Size;
+                    float warp = VN(u, v, 4, 4, seed) * 0.9f;
+                    float w1 = (float)Math.Sin((v * 6f + warp) * 2.0 * Math.PI);
+                    float w2 = (float)Math.Sin((u * 4f + v * 3f + VN(u, v, 5, 5, seed + 1) * 0.8f) * 2.0 * Math.PI);
+                    float w = 0.65f * w1 + 0.35f * w2;
+                    int level = 2 + (int)Math.Round(w * 1.4f);
+                    t.Set(x, y, Pick(WaterRamp, level, (int)(VN(u, v, 3, 3, seed + 12) * 4f)), 0.3f + 0.1f * level);
+                }
+            var rnd = new Rng(seed + 7);
+            for (int i = 0; i < 26; i++)
+            {
+                int cx = rnd.Int(Size), cy = rnd.Int(Size), len = 2 + rnd.Int(4);
+                for (int k = 0; k < len; k++) t.Set(cx + k, cy, Pick(WaterRamp, k == 0 || k == len - 1 ? 4 : 5), 0.9f);
+            }
+            return t;
+        }
+
+        // ---- lava: a dark crust cracked by glowing veins (the shader makes it emissive) ----
+
+        static PixelTex Lava(uint seed)
+        {
+            var t = new PixelTex(Size, Size);
+            for (int y = 0; y < Size; y++)
+                for (int x = 0; x < Size; x++)
+                {
+                    float u = x / (float)Size, v = y / (float)Size;
+                    float n = 0.65f * VN(u, v, 4, 4, seed) + 0.35f * VN(u, v, 10, 10, seed + 1);
+                    float d = Math.Abs(n - 0.5f) * 2f;
+                    int level = d < 0.03f ? 5 : d < 0.07f ? 4 : d < 0.12f ? 3 : d < 0.3f ? 2 : 1;
+                    float sp = F(Hash(x, y, seed + 2));
+                    if (sp > 0.93f && level < 5) level++; else if (sp < 0.07f && level > 0) level--;
+                    t.Set(x, y, Pick(CoalRamp, level), level >= 4 ? 0.15f : 0.4f + 0.1f * level);
                 }
             return t;
         }

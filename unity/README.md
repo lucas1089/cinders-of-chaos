@@ -346,6 +346,60 @@ The ideas follow the MIT-licensed Luminati engine (docs/CREDITS.md); the code is
   normal bias 0.45), the sun-facing proxy bias, the exposure and the tilt-shift values, the strength of the flame halos
   (`Hd2dParticles` clamps their size), the number of point lights (nine, eight forced to pixel).
 
+## Front-art live view (F8)
+
+The front-art look (previous section) on the real map: the live server world around the player as a blocky diorama with pixel textures,
+the things standing on it as upright front-facing sprites of the real art, moon, flickering point lights, tilt-shift, bloom, fog, embers.
+Creatures and effects are not drawn by this view: `FrontLiveCreatures` and `FrontLiveFx` (written apart) join it.
+
+- Switch: F8 in the game, saved in PlayerPrefs `chaos.frontlive`. It takes over from the classic and HD-2D views (F9 stays saved but hidden);
+  F8 is hotkey slot 8: with the hotkey bar open use Ctrl+F8. Mouse wheel zooms (not over a window). The camera follows the player's drawn
+  position with a short smoothing: FOV 28, pitch 33, at the distance where the classic 15 x 11 tiles fit the screen times the zoom.
+  The sharp band of the tilt-shift is thicker than the scene's (0.26, `FrontLiveView.FocusHalf`) so the map stays readable.
+- `Core/FrontLive.cs` (pure C#, tested in `Core.Tests/FrontLiveTests.cs`): `FrontLive.Build(world, anchor, classifier, options, lean)` gives a
+  `FrontLiveLayout`: a `FrontArtLayout` grid (heights, textures, tints, voids, boxes for props), upright and flat sprite pieces, lights.
+  `FrontLive.ViewHash` is the rebuild key (centre, item ids of the 20 x 16 window and of the floors below; creatures not read; no allocation).
+- Window: the tiles the client keeps, 8 left, 9 right, 6 up, 7 down of the player and one more round it, 20 x 16. A tile the server did not send
+  is a void: no top, the neighbours' sides fall away (the cut edge of the slab). World units: one tile is one unit, +x east, +z north, tile
+  (x, y) is x - Anchor.X, Anchor.Y - y. The anchor is the first centre and moves only after 192 tiles. Textures are mapped by world position and
+  the variety of a tile comes from a hash of its tile position, so a tile keeps its look when the window moves.
+- Ground, by the pixels of its sprite (`Hd2dTerrain.Classify`): Stone is Flagstone (one in six Cobble), Wood Wood, Grass Grass, Dirt Dirt (one in
+  eight MossDirt), Sand Sand, Snow Snow, Water Water and Lava Lava (both one level, 0.5 units, lower; the lava glows, the water drifts), Unknown
+  Dirt, Dark a hole. The sprite's mean colour leans through as a vertex tint (a third of the way from grey). A ground the dat marks not walkable
+  and that reads Stone or Dirt is a cliff of 4 levels. Five new block kinds in `FrontArtTex` (Grass, Sand, Snow, Water, Lava; 64 x 64, hue-shifted
+  ramps, tileable, `FrontArtTex.Emit` and `ReliefStrength` per kind).
+- Walls: an on-bottom blocking item raises its tile to a block. A sprite that fills 70 percent of the cell or more is a full wall (5 levels, 2.5 units),
+  45 percent a low wall (3 levels), less a fence (2 levels), a green one (40 percent green pixels) a hedge of grass (2 levels). The side texture from
+  the colour: grey Flagstone, red-brown Brick, brown with lines Wood, pale yellow-brown Cobble.
+- Items: ground borders are dropped (hard tile edges). Decals, and loose one-cell things that fill their tile (stairs, a hatch, a rug), lie flat on the
+  block top. A grey blocking 1 x 1 thing is three rock boxes, a tall or wide grey one a pillar of four boxes (base, shaft, capital, band), a brown blocking
+  thing of two cells or more a wooden box and its lid (big furniture). Everything else, light sources and trees included, is an upright sprite of
+  the real art in the plane through the middle of its tile (cells going west and up, straightened by the measured lean profile as the HD-2D view does).
+  Items stand on the top of their block (on the water at -0.5), lifted by their elevation.
+- Lights: every item or ground with a dat light level becomes a `FaLight` at its tile, range `level * 0.85 + 2` (3 to 8), intensity 0.6 to 1.6, Flame
+  for warm colours (flicker, embers, shadow). At most 96 per layout; the view lights the nearest 8 (4 on phones) each frame, the player's own light first,
+  and the two nearest flames cast soft shadows. The world light level lifts the moon and the ambient from the night look toward day.
+- Floors below: a tile without ground on the player's floor shows the floor below at the cell one tile south-east (what the stock client draws), 3 units
+  lower and darker (x 0.55 per floor), ground and walls only, two floors at most; with nothing below it is a void.
+- Rebuild, without churn: `FrontLiveView.Refresh` hashes the window and rebuilds only when it changes (a step, an item). The 13 terrain meshes, 13 prop
+  meshes and the two sprite meshes are refilled in place. A layout with animated sprites refreshes the sprite meshes five times a second.
+  Core.Tests prints the numbers (mixed window: build about 0.4 ms, meshing about 3 ms, 835 block quads, 41 sprite quads on the test map; limits in the
+  test: 25 ms each, 6000 block quads, 1200 sprite quads).
+- Contract for the creature and effect components (reflection in `FrontLiveView.Init`: `Chaos.Client.FrontLiveCreatures`, `Chaos.Client.FrontLiveFx`):
+  `Cam`, `World`, `Atlas`, `Vector3 TileToWorld(x, y, z)` (middle of the tile at its ground height; a tile on a floor below is drawn shifted),
+  `float GroundY(x, y, z)`, `DrawnTile(creature)` and `DrawnPoint(creature)` (smooth walking position), `event Action<float> Ticked` (every frame after
+  the world update, clock in seconds), `Labels` (a `List<Hd2dView.Label>` the creatures fill: ChaosApp draws names, health bars, the attack frame and
+  right-click attacks from it while the view is on), `AddFrameLight(FaLight)` (a light for one frame), `Layout`. Terrain materials sit in render queue 1990
+  and the ground silhouette shader (`FrontArtCast`, 1995) draws after them, as in the front-art scene.
+- CI: `-chaosHd2dShot DIR` also writes `front_live.png` (wide, 1.7 times the classic fit) and `front_live_close.png` (0.6) from the outdoor world of the real
+  pair (the meadow, pond and trees of `hd2d_3d_outdoor.png`), else the temple room. The player is not drawn (no creatures here). Log lines start with
+  `chaos front live:`. A failure of this shot alone is logged as an error and does not stop the run.
+- Not done: stairs and ramps (the dat does not say which item changes the floor: they stay sprites or flat sprites), doors as doors (a closed door is a wall
+  block, an open one a flat sprite), a hand-modelled tree, floors above, animated water beyond the texture drift, creature lights beyond the player's.
+- Not run in a Unity editor or player in the session that wrote it: it compiles in `Client.Check` and the layout is tested. Unsure until seen: the
+  look of the ground tints on real maps, whether the heuristic wall heights (cell fill) fit the real walls, fences and doors, the cost of the sprite
+  meshes with many animated items, the sharp band at 0.26, the shadow of the upright sprites through the cutout, the pick of grey and brown things for boxes.
+
 ## Tests
 
 ```
@@ -357,6 +411,8 @@ The checks cover:
 - the dat and spr readers on synthetic files;
 - the login answer, map descriptions with skip counters, moves, the east strip, turns, items, pings;
 - a whole game login against a fake server on localhost. It uses its own RSA key, real XTEA and the guard handshake;
+- the front-art live view (`FrontLiveTests.cs`): the new block textures, ground and wall classes to blocks, heights, items as sprites or boxes,
+  lights, floors below and voids, the world mapping and anchors, the rebuild hash, size and time bounds;
 - the 3D character mapping (`CharsTests.cs`): the 21 classes against the vocation files, the monster rules over every monster name of the server
   (it prints the share per model), size, hand bones, idle clips, the label font and the line-up. The fetch script: `python3 -I unity/tools/fetch_3d_assets_test.py`.
 
