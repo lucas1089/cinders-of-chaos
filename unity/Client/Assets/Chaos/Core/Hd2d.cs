@@ -309,6 +309,19 @@ namespace Chaos.Core
             b = index % 6 * 51;
         }
 
+        /// <summary>Smooth torch flicker (O432): a factor around 1 (0.88..1.12) from layered sines, different per `seed`. Pure, so a
+        /// light and its glow halo can share it.</summary>
+        public const float FlickerAmount = 0.12f;
+        public static float Flicker(float t, int seed)
+        {
+            float a = (seed * 1.618f) % 6.2832f, b = (seed * 2.399f) % 6.2832f, c = (seed * 0.731f) % 6.2832f;
+            float n = 0.5f * (float)Math.Sin(t * 7.3f + a) + 0.3f * (float)Math.Sin(t * 13.1f + b) + 0.2f * (float)Math.Sin(t * 23.7f + c);
+            return 1f + FlickerAmount * n;
+        }
+
+        /// <summary>Warm (flame) light: red clearly above blue. Only these flicker and throw embers.</summary>
+        public static bool IsFlame(Hd2dLight l) { return l.R >= 0.6f && l.R > l.B + 0.15f; }
+
         /// <summary>The point lights of a layout: things with the dat light attribute and creatures with a light, nearest to
         /// `focus` first, at most `max`. A light colour of 0 (or 216+) means white. Range is the light level in tiles.</summary>
         public static List<Hd2dLight> Lights(IEnumerable<Hd2dPiece> pieces, Vec3 focus, int max)

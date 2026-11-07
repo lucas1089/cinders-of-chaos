@@ -140,6 +140,18 @@ namespace Chaos.Core.Tests
             check(pieces.Count == 2 && Near(pieces[0].Y, 0f) && Near(pieces[1].Y, 0.5f), "hd2d: elevation 16 lifts the next item by half a tile");
 
             // ---- light colours
+            {
+                float lo = 9f, hi = 0f, prev = Hd2d.Flicker(0f, 3), maxStep = 0f;
+                for (int i = 1; i <= 2000; i++)
+                {
+                    float f = Hd2d.Flicker(i * 0.01f, 3);
+                    lo = Math.Min(lo, f); hi = Math.Max(hi, f); maxStep = Math.Max(maxStep, Math.Abs(f - prev)); prev = f;
+                }
+                check(lo >= 0.879f && hi <= 1.121f && hi - lo > 0.1f, "hd2d: flicker stays within +-12% and moves");
+                check(maxStep < 0.04f, "hd2d: flicker is smooth between frames");
+                check(Hd2d.Flicker(1.25f, 5) == Hd2d.Flicker(1.25f, 5) && Hd2d.Flicker(1.25f, 5) != Hd2d.Flicker(1.25f, 6), "hd2d: flicker is deterministic and differs per seed");
+                check(Hd2d.IsFlame(new Hd2dLight { R = 1f, G = 0.6f, B = 0.2f }) && !Hd2d.IsFlame(new Hd2dLight { R = 1f, G = 1f, B = 1f }) && !Hd2d.IsFlame(new Hd2dLight { R = 0.3f, G = 0.5f, B = 1f }), "hd2d: warm lights are flames, white and blue are not");
+            }
             Hd2d.ColorFromIndex(0, out int r, out int g, out int b);
             check(r == 0 && g == 0 && b == 0, "hd2d: colour 0 is black");
             Hd2d.ColorFromIndex(215, out r, out g, out b);
