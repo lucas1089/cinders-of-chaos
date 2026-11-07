@@ -37,6 +37,7 @@ namespace Chaos.Client
             public FaActor A;
             public readonly Texture2D[] Pics = new Texture2D[8];
             public readonly Texture2D[] Nrm = new Texture2D[8];   // the pictures' normal maps (<dir>_n.png), null when missing
+            public readonly Texture2D[] Emit = new Texture2D[8];  // the pictures' emission masks (<dir>_e.png), null when missing
             public Material Mat, ShadowMat;
             public readonly Material[] CastMat = new Material[2];
             public Transform Quad, Proxy;
@@ -231,6 +232,9 @@ namespace Chaos.Client
                     var nt = Resources.Load<Texture2D>(Folder + a.Folder + "/" + FrontArtFacing.Dirs[i] + "_n");
                     if (nt != null) { nt.filterMode = FilterMode.Point; nt.wrapMode = TextureWrapMode.Clamp; nt.anisoLevel = 0; }
                     v.Nrm[i] = nt;
+                    var et = Resources.Load<Texture2D>(Folder + a.Folder + "/" + FrontArtFacing.Dirs[i] + "_e");
+                    if (et != null) { et.filterMode = FilterMode.Point; et.wrapMode = TextureWrapMode.Clamp; et.anisoLevel = 0; }
+                    v.Emit[i] = et;
                 }
                 if (found < 8) Debug.LogWarning("chaos front art: " + a.Folder + " has " + found + " of 8 pictures in Resources/" + Folder);
                 v.Mat = Own(new Material(shader) { name = "front-art-sprite-" + a.Folder });
@@ -549,6 +553,8 @@ namespace Chaos.Client
                     SetPic(v.Mat, v.Pics[dir]);
                     if (v.Nrm[dir] != null) v.Mat.SetTexture("_BumpMap", v.Nrm[dir]);
                     v.Mat.SetFloat("_NormalAmount", v.Nrm[dir] != null ? 0.85f : 0f);
+                    v.Mat.SetTexture("_EmitTex", v.Emit[dir] != null ? v.Emit[dir] : Texture2D.blackTexture);
+                    v.Mat.SetFloat("_EmitAmount", v.Emit[dir] != null ? EmitAmount : 0f);
                     SetPic(v.ShadowMat, v.Pics[dir]);
                     SetPic(v.CastMat[0], v.Pics[dir]);
                     SetPic(v.CastMat[1], v.Pics[dir]);
@@ -608,6 +614,9 @@ namespace Chaos.Client
 
         /// <summary>How far the ground silhouettes and blobs float over the floor, so they never fight it for depth.</summary>
         const float CastLift = 0.04f;
+
+        /// <summary>How bright the glowing pixels of a picture are, as light added to their colour (past 1 feeds the bloom).</summary>
+        const float EmitAmount = 2.2f;
 
         static void SetCast(Mesh m, Vector3 feet, Vector3 dir, float len)
         {

@@ -11,6 +11,8 @@ Shader "Chaos/FrontArtSprite"
         _MainTex ("Sprite", 2D) = "white" {}
         _BumpMap ("Normal map (OpenGL, linear)", 2D) = "bump" {}
         _NormalAmount ("Normal map amount", Range(0, 1)) = 0
+        _EmitTex ("Emission mask (linear)", 2D) = "black" {}
+        _EmitAmount ("Emission amount", Range(0, 8)) = 0
         _Cutoff ("Alpha cutoff", Range(0, 1)) = 0.5
         _Wrap ("Wrap", Range(0, 1)) = 0.35
         _Bend ("Bend up", Range(0, 1)) = 0.55
@@ -24,15 +26,15 @@ Shader "Chaos/FrontArtSprite"
         CGPROGRAM
         #pragma target 3.0
         #pragma surface surf FrontSprite alphatest:_Cutoff addshadow fullforwardshadows
-        sampler2D _MainTex, _BumpMap;
-        half _NormalAmount;
+        sampler2D _MainTex, _BumpMap, _EmitTex;
+        half _NormalAmount, _EmitAmount;
         half _Wrap, _Bend, _Fill, _PointScale;
 
         struct SurfaceOutputFS
         {
             fixed3 Albedo;
             fixed3 Normal;
-            fixed3 Emission;
+            half3 Emission;
             half Specular;
             fixed Gloss;
             fixed Alpha;
@@ -58,6 +60,8 @@ Shader "Chaos/FrontArtSprite"
             o.N = normalize(lerp(bent, wn, _NormalAmount));
             half3 amb = ShadeSH9(half4(o.N, 1));
             o.Emission = c.rgb * (amb + _Fill * half3(1.0, 0.9, 0.8));
+            // the glowing parts (a staff flame, eyes; unity/tools/gen_front_art_emission.py) light themselves, past 1 so the bloom takes them
+            o.Emission += c.rgb * tex2Dlod(_EmitTex, float4(IN.uv_MainTex, 0, 0)).r * _EmitAmount;
         }
 
         half4 LightingFrontSprite (SurfaceOutputFS s, half3 lightDir, half atten)
