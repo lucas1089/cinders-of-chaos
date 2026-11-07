@@ -133,7 +133,7 @@ jobs:
         run: |
           out="$PWD/hd2d-shots"
           mkdir -p "$out"
-          exe="build/StandaloneLinux64/ChaosUnity.x86_64"
+          exe=$(find build/StandaloneLinux64 -name ChaosUnity.x86_64 -type f | head -n 1); exe=${exe:-build/StandaloneLinux64/ChaosUnity/ChaosUnity.x86_64}
           if [ ! -e "$exe" ]; then echo "::warning::HD-2D screenshots: no player at $exe"; ls -R build | head -20; exit 1; fi
           sudo chmod -R a+rX build
           sudo chmod a+x "$exe"
