@@ -182,6 +182,7 @@ namespace Chaos.Client
         {
             var sets = new[] { FrontArtMesher.Terrain(Layout), FrontArtMesher.Boxes(Layout.Boxes) };
             string[] names = { "terrain ", "props " };
+            var terrainMats = new Material[mats.Length];
             for (int s = 0; s < sets.Length; s++)
                 for (int k = 0; k < sets[s].Length; k++)
                 {
@@ -190,7 +191,13 @@ namespace Chaos.Client
                     go.transform.SetParent(transform, false);
                     go.AddComponent<MeshFilter>().sharedMesh = ToMesh(sets[s][k], names[s] + (FaTex)k);
                     var mr = go.AddComponent<MeshRenderer>();
-                    mr.sharedMaterial = mats[k];
+                    // the terrain draws first (queue 1990), then the ground silhouettes (1995), then the props and the rest, so a
+                    // silhouette is tested only against the floor and the walls; something else in the opaque pass hid them
+                    if (terrainMats[k] == null)
+                    {
+                        terrainMats[k] = Own(new Material(mats[k]) { name = mats[k].name + "-terrain", renderQueue = 1990 });
+                    }
+                    mr.sharedMaterial = s == 0 ? terrainMats[k] : mats[k];
                     mr.shadowCastingMode = ShadowCastingMode.On;
                     mr.receiveShadows = true;
                     mr.lightProbeUsage = LightProbeUsage.Off;

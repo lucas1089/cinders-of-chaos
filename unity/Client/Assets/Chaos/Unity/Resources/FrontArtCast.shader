@@ -11,7 +11,7 @@ Shader "Chaos/FrontArtCast"
     }
     SubShader
     {
-        Tags { "Queue" = "AlphaTest-50" "RenderType" = "Transparent" "IgnoreProjector" = "True" }
+        Tags { "Queue" = "Geometry-5" "RenderType" = "Transparent" "IgnoreProjector" = "True" }
         Pass
         {
             Blend DstColor Zero
