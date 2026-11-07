@@ -1,5 +1,7 @@
 // Hotkey bar: 12 slots, F1 to F12. Each holds a line (spell words or any text) that is said when its key is pressed.
-// Click a slot to edit its text (Enter or ok saves). Saved per character in PlayerPrefs. The keys work while the bar is open.
+// Click a slot to edit its text (Enter or ok saves), right-click to pick a spell from the spellbook. Saved per character in PlayerPrefs.
+// A slot that holds the words of a spell shows its cooldown. The keys work while the bar is open.
+using Chaos.Core;
 using UnityEngine;
 
 namespace Chaos.Client
@@ -13,7 +15,7 @@ namespace Chaos.Client
         string loadedFor;
         int editing = -1;
         bool focusEdit;
-        GUIStyle keyStyle, textStyle, hintStyle;
+        GUIStyle keyStyle, textStyle, hintStyle, cooldownStyle;
 
         public HotkeyBarWindow()
         {
@@ -21,7 +23,7 @@ namespace Chaos.Client
             for (int i = 0; i < Slots; i++) texts[i] = "";
         }
 
-        public override string Title => "Hotkeys";
+        public override string Title => Loc.T("Hotkeys");
         protected override Rect Place(float w, float h)
         {
             // bottom centre, but right of the chat window (it ends at about 468)
@@ -52,6 +54,15 @@ namespace Chaos.Client
             PlayerPrefs.Save();
         }
 
+        /// <summary>Puts a line on a slot (the spellbook does it for a spell).</summary>
+        public void Assign(int slot, string words)
+        {
+            if (slot < 0 || slot >= Slots || loadedFor == null) return;
+            texts[slot] = words ?? "";
+            Save(slot);
+            Open = true;
+        }
+
         void Commit()
         {
             if (editing >= 0) Save(editing);
@@ -71,7 +82,7 @@ namespace Chaos.Client
             for (int i = 0; i < Slots; i++)
             {
                 if (e.keyCode != KeyCode.F1 + i) continue;
-                if (!string.IsNullOrWhiteSpace(texts[i])) app.Session?.Say(texts[i]);
+                if (!string.IsNullOrWhiteSpace(texts[i])) app.Session?.Spells.CastOrSay(texts[i]);
                 e.Use();
                 break;
             }
@@ -87,6 +98,7 @@ namespace Chaos.Client
                 keyStyle = new GUIStyle(app.SmallStyle) { fontSize = 10, alignment = TextAnchor.UpperLeft };
                 keyStyle.normal.textColor = new Color(1f, 0.85f, 0.4f);
                 textStyle = new GUIStyle(app.SmallStyle) { fontSize = 11, alignment = TextAnchor.LowerLeft, clipping = TextClipping.Clip };
+                cooldownStyle = new GUIStyle(app.SmallStyle) { fontSize = 16, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
                 hintStyle = new GUIStyle(app.SmallStyle) { fontSize = 12 };
                 hintStyle.normal.textColor = new Color(1f, 1f, 1f, 0.5f);
             }
@@ -98,11 +110,28 @@ namespace Chaos.Client
                 ChaosApp.Fill(r, i == editing ? new Color(0.45f, 0.3f, 0.12f, 0.95f) : new Color(1f, 1f, 1f, 0.08f));
                 GUI.Label(new Rect(r.x + 2, r.y, r.width - 2, 14), "F" + (i + 1), keyStyle);
                 GUI.Label(new Rect(r.x + 2, r.y + 14, r.width - 2, r.height - 14), texts[i], textStyle);
-                if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(e.mousePosition))
+                var spell = string.IsNullOrWhiteSpace(texts[i]) ? null : app.Session?.Spells.ByWords(texts[i]);
+                int cd = spell != null ? app.Session.Spells.CooldownSeconds(spell) : 0;
+                if (cd > 0)
                 {
-                    if (editing >= 0) Save(editing);
-                    editing = i;
-                    focusEdit = true;
+                    ChaosApp.Fill(r, new Color(0f, 0f, 0f, 0.65f));
+                    GUI.Label(r, cd.ToString(), cooldownStyle);
+                }
+                if (e.type == EventType.MouseDown && r.Contains(e.mousePosition))
+                {
+                    if (e.button == 0)
+                    {
+                        if (editing >= 0) Save(editing);
+                        editing = i;
+                        focusEdit = true;
+                    }
+                    else if (e.button == 1)
+                    {
+                        // right-click: pick a spell for this slot in the spellbook
+                        if (editing >= 0) Commit();
+                        var book = app.FindWindow<SpellbookWindow>();
+                        if (book != null) { book.PickFor = i; book.Open = true; }
+                    }
                     e.Use();
                 }
             }
@@ -110,7 +139,7 @@ namespace Chaos.Client
             var line = new Rect(inner.x, inner.y + SlotH + 6, inner.width, 24);
             if (editing < 0)
             {
-                GUI.Label(line, "Click a slot to set what it says.", hintStyle);
+                GUI.Label(line, Loc.T("Click a slot to set what it says. Right-click: pick a spell."), hintStyle);
                 return;
             }
             // the walking keys must not move the character while a slot is edited
