@@ -295,6 +295,9 @@ local CATEGORIES = {
     entry('Report a Bug',    'help',        { modules = { 'game_bugreport' }, fns = { 'show' } }),
     entry('Join Discord',    'community',   { custom = openCommunity, offline = true }),
     entry('Credits',         'help',        { modules = { 'client_chaos_credits' }, fns = { 'toggle' }, offline = true }),
+    -- the window mirror on or off (client_chaos_rmlmirror; Ctrl+Alt+M on a keyboard): a phone has no Ctrl+Alt+M
+    entry('New Window Look', 'options',     { custom = function() ChaosRmlMirror.toggleWithMessage() end,
+      available = function() return rawget(_G, 'g_rml') ~= nil and rawget(_G, 'ChaosRmlMirror') ~= nil end, offline = true }),
     { separator = true, offline = true },
     entry('Developer',       'console',     { offline = true, sub = {
       entry('Console',           'console', { modules = { 'client_terminal' }, fns = { 'toggle' }, offline = true }),

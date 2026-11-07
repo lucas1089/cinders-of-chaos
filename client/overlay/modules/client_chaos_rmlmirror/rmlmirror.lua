@@ -326,6 +326,18 @@ function M.toggle()
   M.setEnabled(not M.enabled)
 end
 
+-- the top menu entry System > New Window Look (a phone has no Ctrl+Alt+M): toggle and say which look is on now
+function M.toggleWithMessage()
+  M.toggle()
+  local text = M.enabled and tr('New window look: on.') or tr('New window look: off (classic windows).')
+  local tm = modules and modules.game_textmessage
+  if g_game and g_game.isOnline and g_game.isOnline() and tm and type(tm.displayStatusMessage) == 'function' then
+    pcall(tm.displayStatusMessage, text)
+  elseif displayInfoBox then
+    pcall(displayInfoBox, tr('New Window Look'), text)
+  end
+end
+
 function init()
   if not g_rml then return end
   M.enabled = settingOn()

@@ -176,6 +176,18 @@ function C.gridHeight(count, cols, cell, spacing)
   return rows * (cell + spacing) - spacing
 end
 
+-- the height the panel grows to so its whole layout shows: `need`, but never more than `room`, the height its side panel
+-- has left besides the other shown windows. Taller, the side panel's fitAll (onHeightChange) closes other windows to
+-- make room; the layout restore opens them again and the panel grows again: windows opening and closing on a phone,
+-- whose side panel is short (owner 2026-11-06). nil: no change (already tall enough, or no room to grow).
+function C.fitHeight(current, need, room)
+  current, need = int(current) or 0, int(need) or 0
+  local target = need
+  if room ~= nil then target = math.min(need, int(room) or 0) end
+  if target > current then return target end
+  return nil
+end
+
 -- the cell of a slot in a grid of `cols` columns: column, row (0-based)
 function C.cellOf(index, cols)
   cols = math.max(int(cols) or 1, 1)
