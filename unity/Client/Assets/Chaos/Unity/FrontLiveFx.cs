@@ -25,6 +25,8 @@ namespace Chaos.Client
 
         FrontLiveView view;
         readonly FrontFxDirector director = new FrontFxDirector();
+        /// <summary>What the effects are doing (FrontLiveCreatures reads the slashes to swing the attacker).</summary>
+        public FrontFxDirector Director => director;
         readonly List<FxLight> lightBuf = new List<FxLight>();
         Shader shader;
         Mesh quad;

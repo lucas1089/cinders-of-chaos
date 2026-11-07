@@ -29,6 +29,9 @@ namespace Chaos.Client
         FrontLiveView view;
         bool subscribed;
         float clock;
+        FrontLiveFx fx;
+        int lastSlash = -1;
+        readonly HashSet<uint> struck = new HashSet<uint>();
         int frameId;
         readonly Dictionary<uint, Slot> active = new Dictionary<uint, Slot>();
         readonly Stack<Slot> free = new Stack<Slot>();
@@ -218,11 +221,13 @@ namespace Chaos.Client
 
         // ---- every frame -----------------------------------------------------------------------------------------------------
 
-        void Tick(float dt)
+        /// <summary>FrontLiveView.Ticked passes its clock in seconds (not a delta).</summary>
+        void Tick(float t)
         {
             if (view == null || view.World == null || view.Cam == null) return;
             EnsureShared();
-            clock += dt;
+            clock = t;
+            view.Labels.Clear();
             frameId++;
             var w = view.World;
             var cam = view.Cam;
@@ -240,6 +245,12 @@ namespace Chaos.Client
             var ex = view.TileToWorld(w.Center.X + 1, w.Center.Y, floor) - o0;
             var ey = view.TileToWorld(w.Center.X, w.Center.Y + 1, floor) - o0;
 
+            // melee blows the effects component saw (FrontFxDirector slashes): the attacker swings now
+            struck.Clear();
+            if (fx == null) fx = GetComponent<FrontLiveFx>();
+            if (fx != null)
+                foreach (var sl in fx.Director.Slashes)
+                    if (sl.Id > lastSlash) { lastSlash = sl.Id; if (sl.AttackerId != 0) struck.Add(sl.AttackerId); }
             onFloor.Clear();
             foreach (var c in w.Creatures.Values) if (c.Position.Z == floor) onFloor.Add(c);
             uint pick = w.PlayerId != 0 && LocalTarget != null ? LocalTarget() : 0;
@@ -259,6 +270,7 @@ namespace Chaos.Client
                 if (s.Look == null || key != s.LookKey) { s.LookKey = key; Choose(s, c, isLocal, w.PlayerVocation); }
                 var foe = FrontTargets.Foe(onFloor, c, isLocal ? pick : 0);
                 s.State.Update(clock, c, foe);
+                if (struck.Contains(c.Id)) s.State.Strike(clock);
                 if (Draw(s, c, w, yaw, face, sun, sunFace, o0, ex, ey)) drawn++;
             }
             gone.Clear();
@@ -337,6 +349,9 @@ namespace Chaos.Client
             var pos = feet + Vector3.up * lift;
             s.Quad.SetPositionAndRotation(pos, face);
             s.Quad.localScale = scale;
+            // ChaosApp draws the name and health bar at Head and hit-tests the right-click on the quad (FrontLiveView.Labels)
+            var right = face * Vector3.right;
+            view.Labels.Add(new Hd2dView.Label { C = c, Head = pos + Vector3.up * scale.y, BottomLeft = pos - right * (scale.x * 0.5f), TopRight = pos + right * (scale.x * 0.5f) + Vector3.up * scale.y });
             if (Silhouettes)
             {
                 s.Proxy.gameObject.SetActive(true);

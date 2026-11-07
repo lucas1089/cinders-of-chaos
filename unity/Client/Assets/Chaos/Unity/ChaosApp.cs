@@ -324,6 +324,9 @@ namespace Chaos.Client
             frontLive = g.AddComponent<FrontLiveView>();
             frontLive.Init(world, atlas, cam, () => session.Now);
             frontLive.BlockInput = () => OverUi(Input.mousePosition);
+            // the creatures (added by Init) swing at our target; ChaosApp draws the names and health bars from FrontLiveView.Labels
+            var creatures = frontLive.GetComponent<FrontLiveCreatures>();
+            if (creatures != null) { creatures.LocalTarget = () => session != null ? session.AttackTarget : 0u; creatures.ShowLabels = false; }
         }
 
         void ApplyLive()

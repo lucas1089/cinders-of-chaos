@@ -47,6 +47,7 @@ namespace Chaos.Core
     {
         public int Id;
         public Pos From, To;
+        public uint AttackerId;   // the creature that swings (0: unknown)
         public FxElement El;
         public float T0;
         public float U(float now) { return (now - T0) / FrontFxTiming.SlashTime; }
@@ -166,7 +167,7 @@ namespace Chaos.Core
             if (lastSlash.TryGetValue(who.Id, out last) && Now - last < SlashGap) return;
             lastSlash[who.Id] = Now;
             Cap(Slashes, MaxSlashes);
-            Slashes.Add(new FxSlashItem { Id = nextId++, From = who.Position, To = e.Pos, El = FrontFx.ElementOfTextColor(e.Color), T0 = Now });
+            Slashes.Add(new FxSlashItem { Id = nextId++, AttackerId = who.Id, From = who.Position, To = e.Pos, El = FrontFx.ElementOfTextColor(e.Color), T0 = Now });
         }
 
         void AddText(FxEvent e)
