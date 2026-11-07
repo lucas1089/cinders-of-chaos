@@ -1,7 +1,8 @@
 """Fetches the KayKit 3D characters of the Unity prototype (unity/README.md "3D characters").
 
 The two KayKit packs (CC0, Kay Lousberg, docs/CREDITS.md) are too big to commit: every character FBX is about 20 MB with
-about 90 animation takes. This script downloads each upstream repository as a GitHub zip archive at a PINNED commit,
+about 90 animation takes. This script fetches each upstream repository at a PINNED commit with a shallow git fetch (the
+repositories mark their FBX folders export-ignore, so a GitHub zip archive lacks them), packs the used files into a zip,
 extracts only the files the client uses into unity/Client/Assets/Chaos/Resources/KayKit/ (git-ignored) and checks every
 extracted file against the sha256 in the table below. Anything not in the table is never written.
 
@@ -18,6 +19,8 @@ import argparse
 import hashlib
 import io
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import urllib.request
@@ -26,6 +29,7 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT_DIR = os.path.join(ROOT, "unity", "Client", "Assets", "Chaos", "Resources", "KayKit")
 CODELOAD = "https://codeload.github.com/{repo}/zip/{sha}"
+GIT_URL = "https://github.com/{repo}.git"
 MAX_ZIP = 400 * 1024 * 1024        # the largest archive is about 140 MB
 MAX_FILE = 64 * 1024 * 1024        # the largest used file is about 23 MB
 TIMEOUT = 60
@@ -159,8 +163,30 @@ def download(url, dest):
     return total
 
 
-def fetch(out_dir, packs, zips=None, force=False, log=print, opener=download):
-    """Fetches every pack that has a missing or wrong file (all of them with force). `zips` maps a pack key to a local archive."""
+def git_zip(pack, dest):
+    """Shallow-fetches pack["repo"] at pack["sha"] into a temp folder and writes the pack's table files into the zip dest,
+    under the "REPO-SHA/" root a GitHub archive has. Returns the zip size. Only table paths are read from the checkout."""
+    work = tempfile.mkdtemp(prefix="kaykit_git_")
+    try:
+        url = GIT_URL.format(repo=pack["repo"])
+        env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
+        for cmd in (["git", "init", "-q"], ["git", "fetch", "-q", "--depth", "1", url, pack["sha"]],
+                    ["git", "-c", "core.autocrlf=false", "checkout", "-q", pack["sha"]]):
+            subprocess.run(cmd, cwd=work, env=env, check=True, timeout=TIMEOUT * 10)
+        root = pack["repo"].split("/", 1)[1] + "-" + pack["sha"] + "/"
+        with zipfile.ZipFile(dest, "w", zipfile.ZIP_STORED) as zf:
+            for src, _name, _digest in pack["files"]:
+                path = os.path.join(work, *(pack["base"] + src).split("/"))
+                if os.path.isfile(path) and os.path.getsize(path) <= MAX_FILE:
+                    zf.write(path, root + pack["base"] + src)
+        return os.path.getsize(dest)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def fetch(out_dir, packs, zips=None, force=False, log=print, opener=None):
+    """Fetches every pack that has a missing or wrong file (all of them with force). `zips` maps a pack key to a local archive.
+    `opener(url, dest)` downloads an archive by url (tests); without it the pack is shallow-fetched with git (git_zip)."""
     zips = zips or {}
     for key, pack in packs.items():
         need = list(expected_files({key: pack}))
@@ -175,9 +201,13 @@ def fetch(out_dir, packs, zips=None, force=False, log=print, opener=download):
             if path is None:
                 tmpdir = tempfile.mkdtemp(prefix="kaykit_")
                 path = os.path.join(tmpdir, key + ".zip")
-                url = archive_url(pack)
-                log(key + ": downloading " + url)
-                n = opener(url, path)
+                if opener is None:
+                    log(key + ": git fetch " + GIT_URL.format(repo=pack["repo"]) + " at " + pack["sha"])
+                    n = git_zip(pack, path)
+                else:
+                    url = archive_url(pack)
+                    log(key + ": downloading " + url)
+                    n = opener(url, path)
                 log(key + ": " + str(n) + " bytes")
             with zipfile.ZipFile(path) as zf:
                 done = extract(zf, pack, out_dir, only=set(todo))
@@ -206,7 +236,7 @@ def main(argv=None):
             zips[k] = p
         try:
             fetch(a.out, PACKS, zips=zips, force=a.force)
-        except (OSError, ValueError, zipfile.BadZipFile) as e:
+        except (OSError, ValueError, zipfile.BadZipFile, subprocess.SubprocessError) as e:
             print("fetch failed: " + str(e), file=sys.stderr)
             return 1
     missing, wrong = check_dir(a.out, PACKS)
