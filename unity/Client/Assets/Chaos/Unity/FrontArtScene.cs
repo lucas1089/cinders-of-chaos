@@ -36,8 +36,9 @@ namespace Chaos.Client
         {
             public FaActor A;
             public readonly Texture2D[] Pics = new Texture2D[8];
-            public Material Mat, ShadowMat;
+            public Material Mat, ShadowMat, CastMat;
             public Transform Quad, Proxy;
+            public readonly Mesh[] Cast = new Mesh[2];   // ground silhouettes: [0] away from the nearest flame, [1] away from the moon
             public int Dir = -1;
         }
 
@@ -225,6 +226,21 @@ namespace Chaos.Client
                 v.ShadowMat = Own(new Material(shader) { name = "front-art-shadow-" + a.Folder });
                 v.Quad = MakeSpriteObject("sprite " + a.Name, v.Mat, ShadowCastingMode.Off);
                 v.Proxy = MakeSpriteObject("shadow " + a.Name, v.ShadowMat, ShadowCastingMode.ShadowsOnly);
+                v.CastMat = Own(new Material(FindShader("FrontArtCast", "Sprites/Default")) { name = "front-art-cast-" + a.Folder });
+                for (int k = 0; k < v.Cast.Length; k++)
+                {
+                    var cgo = new GameObject("cast " + k + " " + a.Name);
+                    cgo.transform.SetParent(transform, false);
+                    v.Cast[k] = Own(new Mesh { name = "front-art-cast" });
+                    v.Cast[k].MarkDynamic();
+                    cgo.AddComponent<MeshFilter>().sharedMesh = v.Cast[k];
+                    var cmr = cgo.AddComponent<MeshRenderer>();
+                    cmr.sharedMaterial = v.CastMat;
+                    cmr.shadowCastingMode = ShadowCastingMode.Off;
+                    cmr.receiveShadows = false;
+                    cmr.lightProbeUsage = LightProbeUsage.Off;
+                    cmr.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                }
                 actors.Add(v);
             }
         }
@@ -521,6 +537,7 @@ namespace Chaos.Client
                     v.Dir = dir;
                     SetPic(v.Mat, v.Pics[dir]);
                     SetPic(v.ShadowMat, v.Pics[dir]);
+                    SetPic(v.CastMat, v.Pics[dir]);
                 }
                 float breath = 1f + 0.012f * Mathf.Sin(t * 2.1f + i * 1.7f);
                 var pos = new Vector3(v.A.X, v.A.Y + 0.01f, v.A.Z);
@@ -529,6 +546,7 @@ namespace Chaos.Client
                 v.Quad.localScale = scale;
                 v.Proxy.SetPositionAndRotation(pos + sun * 0.18f, sunFace);
                 v.Proxy.localScale = scale;
+                CastShadows(v, pos, sun);
             }
             foreach (var lv in lights)
             {
@@ -536,6 +554,57 @@ namespace Chaos.Client
             }
             if (flameMesh != null) BuildFlameMesh(t);
             if (particles != null) { particles.Cam = Cam; particles.BuildMesh(); }
+        }
+
+        /// <summary>The figure's ground silhouettes: one stretched away from the nearest flame (strong when close, longer the lower the
+        /// flame), one away from the moon (faint, length from its height). They stand in for the shadow map, which the screenshot
+        /// renderer does not give this scene.</summary>
+        void CastShadows(ActorView v, Vector3 feet, Vector3 sun)
+        {
+            LightView near = null;
+            float best = float.MaxValue;
+            foreach (var lv in lights)
+            {
+                if (!lv.S.Flame) continue;
+                float d = (lv.L.transform.position - feet).sqrMagnitude;
+                if (d < best) { best = d; near = lv; }
+            }
+            if (near != null)
+            {
+                var lp = near.L.transform.position;
+                var away = new Vector3(feet.x - lp.x, 0f, feet.z - lp.z);
+                float dist = away.magnitude;
+                float h = Mathf.Max(0.35f, lp.y - feet.y);
+                float len = SpriteUnits * Mathf.Clamp(0.55f * dist / h + 0.35f, 0.5f, 1.4f);
+                float strength = 0.62f * Mathf.Clamp01(1f - dist / Mathf.Max(0.1f, near.S.Range));
+                SetCast(v.Cast[0], feet, dist > 0.01f ? away / dist : Vector3.forward, len, strength);
+            }
+            else v.Cast[0].Clear();
+            var flat = new Vector3(sun.x, 0f, sun.z);
+            float fl = flat.magnitude;
+            float elev = Mathf.Atan2(-sun.y, Mathf.Max(0.01f, fl));
+            SetCast(v.Cast[1], feet, fl > 0.01f ? flat / fl : Vector3.forward, SpriteUnits * Mathf.Clamp(0.8f / Mathf.Tan(Mathf.Max(0.2f, elev)), 0.4f, 1.3f), 0.28f);
+        }
+
+        static readonly Vector3[] castVerts = new Vector3[4];
+        static readonly Color[] castColors = new Color[4];
+        static readonly Vector2[] castUv = { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
+        static readonly int[] castTris = { 0, 1, 2, 0, 2, 3 };
+
+        static void SetCast(Mesh m, Vector3 feet, Vector3 dir, float len, float strength)
+        {
+            var side = Vector3.Cross(Vector3.up, dir) * (SpriteUnits * 0.5f);
+            var f = feet + Vector3.up * 0.012f;
+            castVerts[0] = f + side; castVerts[1] = f - side;
+            castVerts[2] = f - side + dir * len; castVerts[3] = f + side + dir * len;
+            var c = new Color(0f, 0f, 0f, strength);
+            for (int i = 0; i < 4; i++) castColors[i] = c;
+            m.Clear();
+            m.vertices = castVerts;
+            m.uv = castUv;
+            m.colors = castColors;
+            m.triangles = castTris;
+            m.RecalculateBounds();
         }
 
         /// <summary>The scene's clock, for the screenshot mode.</summary>
