@@ -53,6 +53,7 @@ namespace Chaos.Core.Tests
             CharsTests.Run,
             World3dTests.Run,
             FrontArtTests.Run,
+            FrontLiveTests.Run,
         };
 
         static void CryptoChecks()

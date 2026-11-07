@@ -191,12 +191,12 @@ namespace Chaos.Client
                 tex.LoadRawTextureData(pt.Rgba);
                 tex.Apply(false, false);
                 var bump = Own(new Texture2D(pt.W, pt.H, TextureFormat.RGBA32, false, true) { name = "front-art-relief-" + kind, filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Repeat, anisoLevel = 0 });
-                bump.LoadRawTextureData(FrontArtTex.NormalMap(pt, kind == FaTex.Coal || kind == FaTex.DeadGrass ? 1.5f : 3.0f));
+                bump.LoadRawTextureData(FrontArtTex.NormalMap(pt, FrontArtTex.ReliefStrength(kind)));
                 bump.Apply(false, false);
                 var m = Own(new Material(shader) { name = "front-art-" + kind });
                 m.mainTexture = tex;
                 if (m.HasProperty("_BumpTex")) m.SetTexture("_BumpTex", bump);
-                if (m.HasProperty("_Emit")) m.SetFloat("_Emit", kind == FaTex.Coal ? 1.7f : 0f);
+                if (m.HasProperty("_Emit")) m.SetFloat("_Emit", FrontArtTex.Emit(kind));
                 mats[i] = m;
             }
             return mats;

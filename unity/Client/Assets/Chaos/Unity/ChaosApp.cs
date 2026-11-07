@@ -23,6 +23,8 @@ namespace Chaos.Client
         MapView view;
         Hd2dView hd2dView;
         bool hd2d;   // F9: the HD-2D view (Hd2dView) instead of the classic flat one
+        FrontLiveView frontLive;
+        bool live;   // F8: the front-art live view (FrontLiveView) instead of the classic or HD-2D one
         bool world3d;   // F10: the 3D world (Hd2dRuins3d in WorldMode and Hd2dChars3d), only together with HD-2D
         GameObject world3dRoot;
         bool world3dReady;   // the 3D models are in the build
@@ -60,6 +62,7 @@ namespace Chaos.Client
             account = PlayerPrefs.GetString("chaos.account", "");
             hd2d = PlayerPrefs.GetInt("chaos.hd2d", 0) == 1;
             world3d = PlayerPrefs.GetInt("chaos.world3d", 0) == 1;
+            live = PlayerPrefs.GetInt("chaos.frontlive", 0) == 1;
             var camGo = new GameObject("Camera");
             camGo.transform.SetParent(transform);
             cam = camGo.AddComponent<Camera>();
@@ -214,6 +217,7 @@ namespace Chaos.Client
             hd2dView.Clock = () => session.Now;
             hd2dView.Cam = cam;
             SetupWorld3d();
+            SetupFrontLive(go.transform);
             ApplyHd2d();
             screen = Screen.Game;
         }
@@ -225,6 +229,7 @@ namespace Chaos.Client
             if (view != null) Destroy(view.gameObject);
             view = null;
             hd2dView = null;
+            frontLive = null;
             world3dRoot = null;
             ApplyMode(false);
             cam.rect = new Rect(0f, 0f, 1f, 1f);
@@ -263,7 +268,7 @@ namespace Chaos.Client
             session.Poll();
             if (session.Closed != null) { Leave(session.Closed); return; }
             // exactly the 15 x 11 view, centred (MapRect): nothing outside what the server sent is on screen
-            if (!hd2d)
+            if (!hd2d && !live)
             {
                 cam.orthographic = true;
                 cam.transform.SetPositionAndRotation(new Vector3(0.5f, -0.5f, -10), Quaternion.identity);
@@ -278,6 +283,13 @@ namespace Chaos.Client
                 bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
                 bool barOpen = windows.Exists(win => win is HotkeyBarWindow && win.Open);
                 if (ctrl || !barOpen) { hd2d = !hd2d; PlayerPrefs.SetInt("chaos.hd2d", hd2d ? 1 : 0); ApplyHd2d(); }
+            }
+            // F8 switches the front-art live view (FrontLiveView) on and off over the other two. F8 is hotkey slot 8: Ctrl+F8 while the bar is open
+            if (Input.GetKeyDown(KeyCode.F8) && !chatFocused)
+            {
+                bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+                bool barOpen = windows.Exists(win => win is HotkeyBarWindow && win.Open);
+                if (ctrl || !barOpen) { live = !live; PlayerPrefs.SetInt("chaos.frontlive", live ? 1 : 0); ApplyHd2d(); }
             }
             // F10 switches the 3D world (models instead of sprites for the map) on top of HD-2D; F10 is hotkey slot 10: Ctrl+F10 while the bar is open
             if (Input.GetKeyDown(KeyCode.F10) && !chatFocused)
@@ -301,7 +313,29 @@ namespace Chaos.Client
             HandleWalk();
         }
 
-        void ApplyHd2d() { ApplyMode(hd2d); ApplyWorld3d(); }
+        void ApplyHd2d() { ApplyMode(hd2d && !live); ApplyWorld3d(); ApplyLive(); }
+
+        /// <summary>The live view (F8): made once per session next to the HD-2D view; FrontLiveView adds the creatures and effects components itself.</summary>
+        void SetupFrontLive(Transform parent)
+        {
+            var g = new GameObject("FrontLive");
+            g.transform.SetParent(parent, false);
+            g.SetActive(false);   // Init first, then the mode turns it on
+            frontLive = g.AddComponent<FrontLiveView>();
+            frontLive.Init(world, atlas, cam, () => session.Now);
+            frontLive.BlockInput = () => OverUi(Input.mousePosition);
+        }
+
+        void ApplyLive()
+        {
+            if (frontLive == null) return;
+            bool on = live && screen == Screen.Game;
+            if (on && view != null) view.SetVisible(false);   // the classic mesh and the live view never draw together
+            frontLive.gameObject.SetActive(on);
+        }
+
+        /// <summary>True while the live view is on screen.</summary>
+        bool LiveOn => live && frontLive != null && frontLive.isActiveAndEnabled;
 
         /// <summary>The 3D world's objects under the HD-2D view: the map's models (Hd2dRuins3d, WorldMode, Live) and the 3D characters.
         /// Created once per session; switched on and off with SetActive (each hooks and unhooks the view's Skip on enable / disable).</summary>
@@ -324,7 +358,7 @@ namespace Chaos.Client
         /// <summary>The 3D world is on only together with the HD-2D view and when the models are in the build.</summary>
         void ApplyWorld3d()
         {
-            if (world3dRoot != null) world3dRoot.SetActive(world3d && hd2d && world3dReady);
+            if (world3dRoot != null) world3dRoot.SetActive(world3d && hd2d && !live && world3dReady);
         }
 
         /// <summary>Turns the HD-2D view on or off: the classic mesh and the 3D scene never draw together.</summary>
