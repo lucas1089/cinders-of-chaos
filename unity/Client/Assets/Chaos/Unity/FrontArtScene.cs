@@ -617,6 +617,17 @@ namespace Chaos.Client
             m.uv = castUv;
             m.triangles = castTris;
             m.RecalculateBounds();
+            // a flat mesh has a bounding box with no height; give it some so no culling step ever drops it
+            var bb = m.bounds; bb.Expand(new Vector3(0f, 1f, 0f)); m.bounds = bb;
+        }
+
+        /// <summary>Screenshot-mode check: the ground silhouettes drawn over everything at full strength (front_art_debug.png), to tell a
+        /// silhouette that is not drawn from one that is hidden under the floor.</summary>
+        public void DebugCastsOnTop()
+        {
+            foreach (var v in actors)
+                foreach (var m in v.CastMat)
+                    if (m != null) { m.SetFloat("_ZTest", (float)CompareFunction.Always); m.SetFloat("_Strength", 1f); }
         }
 
         /// <summary>The scene's clock, for the screenshot mode.</summary>

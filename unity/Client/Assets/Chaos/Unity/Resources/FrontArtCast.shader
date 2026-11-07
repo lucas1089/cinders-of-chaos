@@ -7,6 +7,7 @@ Shader "Chaos/FrontArtCast"
     {
         _MainTex ("Sprite", 2D) = "white" {}
         _Strength ("Strength", Range(0, 1)) = 0.5
+        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
     }
     SubShader
     {
@@ -15,6 +16,7 @@ Shader "Chaos/FrontArtCast"
         {
             Blend DstColor Zero
             ZWrite Off
+            ZTest [_ZTest]
             Cull Off
             Offset -1, -1
             CGPROGRAM

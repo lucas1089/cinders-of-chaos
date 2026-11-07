@@ -187,6 +187,9 @@ namespace Chaos.Client
                 Debug.Log("chaos front art: rendering the close view");
                 Save(cam, tex, "front_art_close.png");
                 Debug.Log("chaos front art: wrote front_art_close.png");
+                scene.DebugCastsOnTop();
+                Save(cam, tex, "front_art_debug.png");
+                Debug.Log("chaos front art: wrote front_art_debug.png");
             }
             catch (Exception e)
             {
