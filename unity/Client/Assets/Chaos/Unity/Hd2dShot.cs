@@ -168,7 +168,8 @@ namespace Chaos.Client
         }
 
         /// <summary>The front-art scene (Unity/FrontArtScene.cs): front_art.png wide and front_art_close.png on the four characters;
-        /// with the pack monsters also front_art_anim_00..39.png (5 seconds at 8 a second: idle and patrol walks).
+        /// with the pack monsters also front_art_anim_00..39.png (5 seconds at 8 a second: idle and patrol walks); the melee fights
+        /// front_art_melee_000..299.png (5 seconds at 60 a second).
         /// Log lines start with "chaos front art:". A failure is logged and does not stop the run: its shaders only compile in CI.</summary>
         void FrontArt(Camera cam, Texture2D tex)
         {
@@ -198,6 +199,16 @@ namespace Chaos.Client
                         Save(cam, tex, "front_art_anim_" + k.ToString("00") + ".png");
                     }
                     Debug.Log("chaos front art: wrote 40 animation frames");
+                }
+                // the melee fights: 300 frames at 60 a second, 5 seconds, the game's own frame rate, framed on the four and the runners (front_art_melee_NN.png)
+                {
+                    scene.FrameFight();
+                    for (int k = 0; k < 300; k++)
+                    {
+                        scene.Tick(0.4f + k / 60f);
+                        Save(cam, tex, "front_art_melee_" + k.ToString("000") + ".png");
+                    }
+                    Debug.Log("chaos front art: wrote 300 melee frames");
                 }
             }
             catch (Exception e)

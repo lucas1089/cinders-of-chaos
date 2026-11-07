@@ -182,6 +182,169 @@ namespace Chaos.Core
         }
     }
 
+    /// <summary>A melee attack: the attacker runs at the target (Charge) or steps at it (a lunge), strikes (its pack attack strip, a
+    /// slash in front of it), holds, goes home. The target flinches on the hit. Attackers do not patrol.</summary>
+    public struct FaMelee
+    {
+        public string Attacker, Target;   // names of extras or actors
+        public bool Charge;               // run to the target; otherwise a short lunge toward it
+        public float R, G, B;             // the slash and its flash
+        public float Offset, Period;      // seconds: the first attack, then one each Period
+    }
+
+    /// <summary>Where a melee attacker is and what it does at a time; when its target flinches.</summary>
+    public static class FrontArtMelee
+    {
+        public const float Run = 3.2f;       // units a second, running or lunging
+        public const float Reach = 0.95f;    // a charge stops this far from the target
+        public const float Lunge = 0.3f;     // a lunge's step
+        public const float Swing = 0.75f;    // the attack animation (9 frames at 12)
+        public const float HitAt = 0.4f;     // the blow lands this far into the swing
+        public const float Hold = 0.25f;     // standing after the swing before going home
+        public const float SlashTime = 0.35f;// the slash plays from the blow
+        public const float FlinchTime = 0.3f;
+        public const float Knock = 0.16f;    // the target's knock back at the peak
+
+        public struct State
+        {
+            public bool Active, Moving, Swinging, Slash;
+            public float X, Z, FaceX, FaceZ;   // the attacker's spot and facing
+            public float SwingU, SlashU;       // 0..1 through the swing and the slash
+            public float SX, SY, SZ;           // the slash's centre
+        }
+
+        static bool Find(FrontArtLayout L, string name, out FaActor a, out float phase)
+        {
+            for (int i = 0; i < L.Extras.Count; i++) if (L.Extras[i].Name == name) { a = L.Extras[i]; phase = FrontArtWalk.Phase(i); return true; }
+            for (int i = 0; i < L.Actors.Count; i++) if (L.Actors[i].Name == name) { a = L.Actors[i]; phase = 0f; return true; }
+            a = default(FaActor); phase = 0f;
+            return false;
+        }
+
+        /// <summary>How far the attacker goes (from home toward the target's home) and the unit heading.</summary>
+        public static float Out(FrontArtLayout L, FaMelee m, out float dx, out float dz)
+        {
+            FaActor a, g; float pa, pg;
+            dx = 1f; dz = 0f;
+            if (!Find(L, m.Attacker, out a, out pa) || !Find(L, m.Target, out g, out pg)) return 0f;
+            float ex = g.X - a.X, ez = g.Z - a.Z, d = (float)Math.Sqrt(ex * ex + ez * ez);
+            if (d < 1e-4f) return 0f;
+            dx = ex / d; dz = ez / d;
+            return Math.Max(0f, m.Charge ? d - Reach : Math.Min(Lunge, d - Reach));
+        }
+
+        /// <summary>The seconds from the start of an attack to the end of its way home.</summary>
+        public static float Length(FrontArtLayout L, FaMelee m)
+        {
+            float dx, dz, run = Out(L, m, out dx, out dz) / Run;
+            return run + Swing + Hold + run;
+        }
+
+        /// <summary>The start of the attack that is going on (or last went) at time t.</summary>
+        public static float Start(FaMelee m, float t)
+        {
+            return (float)Math.Floor((t - m.Offset) / m.Period) * m.Period + m.Offset;
+        }
+
+        public static State At(FrontArtLayout L, FaMelee m, float t)
+        {
+            var st = new State();
+            FaActor a, g; float pa, pg;
+            if (!Find(L, m.Attacker, out a, out pa) || !Find(L, m.Target, out g, out pg)) return st;
+            float dx, dz, go = Out(L, m, out dx, out dz), run = go / Run;
+            st.X = a.X; st.Z = a.Z; st.FaceX = a.FaceX; st.FaceZ = a.FaceZ;
+            float u = t - Start(m, t);
+            if (u >= run + Swing + Hold + run) return st;
+            st.Active = true; st.FaceX = dx; st.FaceZ = dz;
+            float d;
+            if (u < run) { d = u * Run; st.Moving = true; }
+            else if (u < run + Swing + Hold)
+            {
+                d = go;
+                float w = u - run;
+                if (w < Swing) { st.Swinging = true; st.SwingU = w / Swing; }
+                if (w >= HitAt && w < HitAt + SlashTime) { st.Slash = true; st.SlashU = (w - HitAt) / SlashTime; }
+            }
+            else
+            {
+                d = go - (u - run - Swing - Hold) * Run; st.Moving = true;
+                if (m.Charge) { st.FaceX = -dx; st.FaceZ = -dz; }   // runs home; a lunge steps back facing the foe
+            }
+            st.X = a.X + dx * d; st.Z = a.Z + dz * d;
+            float size = a.Units > 0f ? a.Units : 1.5f;
+            st.SX = st.X + dx * Reach * 0.55f; st.SZ = st.Z + dz * Reach * 0.55f;
+            st.SY = L.GroundY(st.X, st.Z) + 0.42f * size;
+            return st;
+        }
+
+        /// <summary>The time of the blow of the attack going on at t.</summary>
+        public static float HitTime(FrontArtLayout L, FaMelee m, float t)
+        {
+            float dx, dz;
+            return Start(m, t) + Out(L, m, out dx, out dz) / Run + HitAt;
+        }
+
+        /// <summary>How hard a figure flinches at time t (0 = not at all, 1 = the peak) and which way it is pushed.</summary>
+        public static float Flinch(FrontArtLayout L, string name, float t, out float px, out float pz)
+        {
+            px = 0f; pz = 0f;
+            float best = 0f;
+            foreach (var m in L.Melees)
+            {
+                if (m.Target != name) continue;
+                float h = HitTime(L, m, t);
+                if (h > t) h -= m.Period;   // the blow of this attack is still to come: the last one
+                float u = (t - h) / FlinchTime;
+                if (u < 0f || u >= 1f) continue;
+                float k = (float)Math.Sin(Math.PI * u);
+                if (k <= best) continue;
+                float dx, dz;
+                Out(L, m, out dx, out dz);
+                best = k; px = dx; pz = dz;
+            }
+            return best;
+        }
+    }
+
+    /// <summary>The slash of a melee blow, drawn here: a crescent that sweeps across a square frame and thins out, in a colour with a
+    /// white edge. RGBA, rows bottom first (a Unity texture), Frames frames of Size side by side.</summary>
+    public static class FrontArtSlash
+    {
+        public const int Frames = 6, Size = 48;
+
+        public static byte[] Pixels(float r, float g, float b)
+        {
+            int w = Size * Frames;
+            var px = new byte[w * Size * 4];
+            float c = (Size - 1) / 2f, rad = Size * 0.36f;
+            for (int f = 0; f < Frames; f++)
+            {
+                float u = f / (Frames - 1f);
+                float head = -1.1f + 2.6f * Math.Min(1f, u * 1.6f);          // the leading edge's angle (radians)
+                float tail = head - (0.25f + 1.5f * Math.Min(1f, u * 2.5f)) * (1f - 0.5f * u);   // the trail behind it, long once the swing is under way
+                float thick = Size * 0.10f * (1f - 0.75f * u) + 1f;
+                float fade = u < 0.6f ? 1f : 1f - (u - 0.6f) / 0.4f;
+                for (int y = 0; y < Size; y++)
+                    for (int x = 0; x < Size; x++)
+                    {
+                        float ox = x - c, oy = y - c, d = (float)Math.Sqrt(ox * ox + oy * oy);
+                        float ang = (float)Math.Atan2(-oy, ox);   // clockwise from the right on screen, rows bottom first
+                        if (ang < tail || ang > head) continue;
+                        float along = (ang - tail) / Math.Max(1e-3f, head - tail);   // 0 at the tail, 1 at the head
+                        float half = thick * (0.25f + 0.75f * along) / 2f;
+                        float off = Math.Abs(d - rad);
+                        if (off > half) continue;
+                        bool edge = d > rad + half * 0.2f;
+                        float a = fade * (0.35f + 0.65f * along);
+                        int i = (y * w + f * Size + x) * 4;
+                        px[i] = (byte)(255 * (edge ? 1f : r)); px[i + 1] = (byte)(255 * (edge ? 1f : g)); px[i + 2] = (byte)(255 * (edge ? 1f : b));
+                        px[i + 3] = (byte)(255 * a);
+                    }
+            }
+            return px;
+        }
+    }
+
     /// <summary>Which of the 8 direction pictures shows a character: the facing against the camera's yaw.</summary>
     public static class FrontArtFacing
     {
@@ -237,6 +400,8 @@ namespace Chaos.Core
         public readonly List<FaActor> Extras = new List<FaActor>();
         /// <summary>Attack spells between the figures (FrontArtSpells); the scene skips one whose art is missing.</summary>
         public readonly List<FaSpell> Spells = new List<FaSpell>();
+        /// <summary>Melee attacks (FrontArtMelee).</summary>
+        public readonly List<FaMelee> Melees = new List<FaMelee>();
         public float GateX, GateZ;
 
         public FrontArtLayout(int w, int d)
@@ -490,7 +655,7 @@ namespace Chaos.Core
             };
             extra("Fire demon", "fire_demon", 13.6f, 9.0f, -1f, -0.6f, 1.6f);
             extra("Winged demon", "winged_demon", 15.5f, 9.7f, -1f, -0.4f, 1.6f);
-            extra("Vampire", "vampire", 13.4f, 5.0f, -1f, 0.3f, 1.6f);
+            extra("Vampire", "vampire", 13.0f, 4.6f, -1f, 0.3f, 1.6f);
             extra("Werewolf", "werewolf", 16.0f, 5.2f, -1f, 0.2f, 1.6f);
             extra("Headless rider", "headless", 15.7f, 8.2f, -1f, -0.3f, 1.6f);
             extra("Frost demon", "frost_demon", 14.7f, 4.9f, -1f, 0.5f, 1.6f);
@@ -504,14 +669,12 @@ namespace Chaos.Core
             extra("Dark cultist", "cultist_dark", 11.0f, 9.4f, 0.2f, -1f, 1.6f);
             patrol("Fire demon", 14.6f, 9.0f);
             patrol("Winged demon", 16.3f, 9.7f);
-            patrol("Vampire", 12.2f, 5.0f);
             patrol("Werewolf", 16.0f, 4.0f);
             patrol("Headless rider", 16.4f, 8.2f);
             patrol("Frost demon", 14.7f, 5.6f);
             patrol("Rat king", 11.6f, 3.0f);
             patrol("Lizard mystic", 14.9f, 10.7f);
             patrol("Ghost king", 4.6f, 8.6f);
-            patrol("Ghost knight", 6.2f, 3.0f);
             patrol("Red cultist", 9.0f, 8.4f);
             patrol("Dark cultist", 11.0f, 8.4f);
             // ---- attack spells: the horde, the ghost king and the cultists at the knight and the mage; the mage answers ----
@@ -525,6 +688,15 @@ namespace Chaos.Core
             spell("Dark cultist", "Mage", "shadow", "shadow", 0.6f, 0.25f, 1.0f, 0.35f, 0f);
             spell("Ghost king", "Knight", "skull_spirit", "skull_spirit", 0.4f, 1.0f, 0.85f, 0.3f, 0f);
             spell("Mage", "Fire demon", "holy", "holy", 1.0f, 0.85f, 0.4f, 1.2f, 3.6f);
+            // ---- melee: the skeleton and the ghoul run at the knight and the mage, the knight cuts back, the vampire and the ghost
+            // knight come in from the sides ----
+            Action<string, string, bool, float, float, float, float, float> melee = (attacker, target, charge, r, g, b, offset, period) =>
+                L.Melees.Add(new FaMelee { Attacker = attacker, Target = target, Charge = charge, R = r, G = g, B = b, Offset = offset, Period = period });
+            melee("Skeleton", "Knight", true, 0.85f, 0.9f, 1.0f, 0.2f, 4.0f);
+            melee("Knight", "Skeleton", false, 0.55f, 0.75f, 1.0f, 1.55f, 4.0f);
+            melee("Ghoul", "Mage", true, 1.0f, 0.3f, 0.25f, 1.1f, 6.0f);
+            melee("Vampire", "Mage", true, 0.9f, 0.1f, 0.25f, 3.2f, 6.0f);
+            melee("Ghost knight", "Knight", true, 0.5f, 1.0f, 0.85f, 3.4f, 4.0f);
             foreach (var list in new[] { L.Actors, L.Extras })
                 for (int i = 0; i < list.Count; i++)
                 {
