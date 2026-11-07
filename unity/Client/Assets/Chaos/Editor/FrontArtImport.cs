@@ -20,6 +20,12 @@ namespace Chaos.Client.Editor
             t.alphaIsTransparency = true;
             t.npotScale = TextureImporterNPOTScale.None;
             t.isReadable = true;
+            if (path.EndsWith("_n.png"))
+            {
+                // a normal map (PixelLab, OpenGL convention): linear, its alpha is coverage, not transparency to bleed
+                t.sRGBTexture = false;
+                t.alphaIsTransparency = false;
+            }
         }
     }
 }

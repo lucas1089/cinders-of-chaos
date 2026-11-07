@@ -9,8 +9,10 @@ Shader "Chaos/FrontArtSprite"
     Properties
     {
         _MainTex ("Sprite", 2D) = "white" {}
+        _BumpMap ("Normal map (OpenGL, linear)", 2D) = "bump" {}
+        _NormalAmount ("Normal map amount", Range(0, 1)) = 0
         _Cutoff ("Alpha cutoff", Range(0, 1)) = 0.5
-        _Wrap ("Wrap", Range(0, 1)) = 0.5
+        _Wrap ("Wrap", Range(0, 1)) = 0.35
         _Bend ("Bend up", Range(0, 1)) = 0.55
         _Fill ("Warm fill", Range(0, 0.5)) = 0.05
         _PointScale ("Point light scale", Range(0, 1)) = 0.45
@@ -22,7 +24,8 @@ Shader "Chaos/FrontArtSprite"
         CGPROGRAM
         #pragma target 3.0
         #pragma surface surf FrontSprite alphatest:_Cutoff addshadow fullforwardshadows
-        sampler2D _MainTex;
+        sampler2D _MainTex, _BumpMap;
+        half _NormalAmount;
         half _Wrap, _Bend, _Fill, _PointScale;
 
         struct SurfaceOutputFS
@@ -44,7 +47,15 @@ Shader "Chaos/FrontArtSprite"
             o.Albedo = c.rgb;
             o.Alpha = c.a;
             float3 toCam = normalize(_WorldSpaceCameraPos - IN.worldPos);
-            o.N = normalize(lerp(toCam, float3(0, 1, 0), _Bend));
+            float3 bent = normalize(lerp(toCam, float3(0, 1, 0), _Bend));
+            // the picture's own normal map (right, up, toward the viewer) on the quad's axes: a head is round, a shield faces out, so
+            // a flame beside the figure lights one side of it, the way a lit 3D body would
+            half3 tn = tex2Dlod(_BumpMap, float4(IN.uv_MainTex, 0, 0)).xyz * 2.0 - 1.0;
+            float3 R = normalize(mul((float3x3)unity_ObjectToWorld, float3(1, 0, 0)));
+            float3 U = normalize(mul((float3x3)unity_ObjectToWorld, float3(0, 1, 0)));
+            float3 F = normalize(mul((float3x3)unity_ObjectToWorld, float3(0, 0, -1)));
+            float3 wn = normalize(tn.x * R + tn.y * U + tn.z * F + float3(0, 0.35 * _Bend, 0));
+            o.N = normalize(lerp(bent, wn, _NormalAmount));
             half3 amb = ShadeSH9(half4(o.N, 1));
             o.Emission = c.rgb * (amb + _Fill * half3(1.0, 0.9, 0.8));
         }

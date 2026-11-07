@@ -36,6 +36,7 @@ namespace Chaos.Client
         {
             public FaActor A;
             public readonly Texture2D[] Pics = new Texture2D[8];
+            public readonly Texture2D[] Nrm = new Texture2D[8];   // the pictures' normal maps (<dir>_n.png), null when missing
             public Material Mat, ShadowMat, CastMat;
             public Transform Quad, Proxy;
             public readonly Mesh[] Cast = new Mesh[2];   // ground silhouettes: [0] away from the nearest flame, [1] away from the moon
@@ -220,6 +221,9 @@ namespace Chaos.Client
                         found++;
                     }
                     v.Pics[i] = t;
+                    var nt = Resources.Load<Texture2D>(Folder + a.Folder + "/" + FrontArtFacing.Dirs[i] + "_n");
+                    if (nt != null) { nt.filterMode = FilterMode.Point; nt.wrapMode = TextureWrapMode.Clamp; nt.anisoLevel = 0; }
+                    v.Nrm[i] = nt;
                 }
                 if (found < 8) Debug.LogWarning("chaos front art: " + a.Folder + " has " + found + " of 8 pictures in Resources/" + Folder);
                 v.Mat = Own(new Material(shader) { name = "front-art-sprite-" + a.Folder });
@@ -536,6 +540,8 @@ namespace Chaos.Client
                 {
                     v.Dir = dir;
                     SetPic(v.Mat, v.Pics[dir]);
+                    if (v.Nrm[dir] != null) v.Mat.SetTexture("_BumpMap", v.Nrm[dir]);
+                    v.Mat.SetFloat("_NormalAmount", v.Nrm[dir] != null ? 0.85f : 0f);
                     SetPic(v.ShadowMat, v.Pics[dir]);
                     SetPic(v.CastMat, v.Pics[dir]);
                 }
