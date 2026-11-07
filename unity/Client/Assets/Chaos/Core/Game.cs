@@ -586,7 +586,9 @@ namespace Chaos.Core
         public readonly ExtOpcodes Ext = new ExtOpcodes();
         /// <summary>The spell list (opcode 219) and the spell cooldowns.</summary>
         public readonly SpellBook Spells;
-        bool featuresLogged, spellsAsked;
+        /// <summary>The party frames (opcode 235) and the party packets.</summary>
+        public readonly PartyFrames Party;
+        bool featuresLogged, spellsAsked, partyOpened;
         double enteredAt = -1;
 
         public GameSession(World w, Options o)
@@ -597,11 +599,12 @@ namespace Chaos.Core
             Ext.Transmit = payload => conn?.Send(payload);
             Ext.Log = m => Log(m);
             Spells = new SpellBook(Ext) { Clock = () => Now, Say = Say, LevelNow = () => parser.Level, MagicLevelNow = () => parser.MagicLevel };
+            Party = new PartyFrames(Ext) { Clock = () => Now, Packet = payload => conn?.Send(payload) };
             parser.SpellCooldown = (id, ms) => Spells.OnSpellCooldown(id, ms);
             parser.GroupCooldown = (g, ms) => Spells.OnGroupCooldown(g, ms);
             parser.ExtendedOpcode = OnExtended;
             parser.Text = t => Log(t);
-            parser.Chat = (who, text, type) => Chat(who, text, type);
+            parser.Chat = (who, text, type) => { Chat(who, text, type); if (who.Length == 0) Party.OnServerText(text); };
             parser.Disconnected = reason => Closed = reason;
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
             parser.WalkCancelled = _ => stepSent = -1;
@@ -691,6 +694,8 @@ namespace Chaos.Core
             if (parser.LoggedIn && enteredAt < 0) enteredAt = Now;
             // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
             if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
+            // the party frames: watch a moment after the login (the main client waits 400 ms)
+            if (!partyOpened && enteredAt >= 0 && Now - enteredAt > 600) { partyOpened = true; Party.Open(); }
             if (conn.Closed && Closed == null) Closed = conn.Error ?? "The server closed the connection.";
             if (stepSent >= 0 && Now - stepSent > 1500) stepSent = -1;   // no answer to a step: let the next one go
         }
