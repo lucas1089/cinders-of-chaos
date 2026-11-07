@@ -2,12 +2,14 @@
 // (Core/Hd2dDemo.cs), renders it once in the classic flat view and once in HD-2D into a 1200 x 880 texture (the 15 : 11
 // shape of the classic view), writes classic.png and hd2d.png, then hd2d_3d.png (the 3D architecture test,
 // Unity/Hd2dRuins3d.cs, when its models are in the build, with the 3D characters of Unity/Hd2dChars3d.cs when theirs are) and
-// hd2d_3d_close.png (the same scene from half the distance, aimed at the hero) to OUT_DIR and quits (exit code 0, or 1 with the reason in
-// the log). It needs no server and no game files: the art is the synthetic demo art, unless the real pair is found
+// hd2d_3d_close.png (the same scene from half the distance, aimed at the hero) and hd2d_3d_cast.png (the line-up: a 3D character per
+// class group and the four dark skeleton monsters on the temple floor, with name labels drawn from Core/PixelText.cs, the camera fitted
+// to the cast) to OUT_DIR and quits (exit code 0, or 1 with the reason in the log). It needs no server and no game files: the art is the synthetic demo art, unless the real pair is found
 // (`-chaosPair DIR`, the env CHAOS_PAIR_DIR, or things/ beside the executable) and holds the temple tileset (pair 60).
 // The CI run (unity-prototype.yml, Linux target) runs it under xvfb with software OpenGL.
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using Chaos.Core;
 using UnityEngine;
@@ -130,6 +132,8 @@ namespace Chaos.Client
                 Save(cam, tex, "hd2d_3d.png");
                 Debug.Log("chaos hd2d shot: wrote hd2d_3d.png (" + ruins.Placed + " models)");
 
+                var camPos0 = cam.transform.position;
+                var camRot0 = cam.transform.rotation;
                 // the same scene from half the distance, aimed at the hero, so the characters show in detail
                 if (haveChars && world.Player != null && chars.PointOf(world.Player.Id, 0.9f, out Vector3 heroPt))
                 {
@@ -141,6 +145,10 @@ namespace Chaos.Client
                     Save(cam, tex, "hd2d_3d_close.png");
                     Debug.Log("chaos hd2d shot: wrote hd2d_3d_close.png");
                 }
+
+                // the line-up: the room's two creatures give way to the cast (a class per group in front, four dark skeletons behind)
+                cam.transform.SetPositionAndRotation(camPos0, camRot0);
+                if (haveChars && demoRoom != null) CastShot(cam, tex, hd, ruins, chars);
             }
             else Debug.LogWarning("chaos hd2d shot: no 3D models in this build, hd2d_3d.png skipped");
 
@@ -149,6 +157,86 @@ namespace Chaos.Client
             if (charsGo != null) DestroyImmediate(charsGo);
             Outdoor(cam, tex, hd, atlas, source);
             yield break;
+        }
+
+        // the temple room the demo built (null: no line-up)
+        static Hd2dDemo demoRoom;
+
+        void CastShot(Camera cam, Texture2D tex, Hd2dView hd, Hd2dRuins3d ruins, Hd2dChars3d chars)
+        {
+            var cast = demoRoom.Lineup();
+            chars.Clear();
+            hd.Refresh();      // the view lays the new creatures out and skips their sprites
+            ruins.Build();     // the torches the line-up added
+            chars.Build();
+            Debug.Log("chaos hd2d shot: line-up of " + cast.Count + " creatures, " + chars.Placed + " 3D characters placed");
+            // fit the camera: keep its angle, slide it along its view direction until every head and foot is inside the picture
+            var pts = new List<Vector3>();
+            foreach (var c in cast)
+                foreach (float h in new[] { 0f, 2.5f })
+                    if (chars.PointOf(c.Id, h, out Vector3 p)) pts.Add(p);
+            if (pts.Count == 0) { Debug.LogWarning("chaos hd2d shot: the line-up has no characters, hd2d_3d_cast.png skipped"); return; }
+            FitCamera(cam, pts);
+            Debug.Log("chaos hd2d shot: rendering the line-up");
+            Save(cam, tex, "hd2d_3d_cast.png", px =>
+            {
+                for (int i = 0; i < cast.Count; i++)
+                {
+                    if (!chars.PointOf(cast[i].Id, 2.2f, out Vector3 head)) continue;
+                    Vector3 sp = cam.WorldToScreenPoint(head);
+                    bool monster = cast[i].Type == 1;
+                    int stagger = monster ? 0 : (i % 2) * 18;
+                    DrawLabel(px, cast[i].Name, Mathf.RoundToInt(sp.x), Mathf.RoundToInt(sp.y) + 6 + stagger, monster ? new Color32(240, 150, 130, 255) : new Color32(245, 225, 160, 255));
+                }
+            });
+            Debug.Log("chaos hd2d shot: wrote hd2d_3d_cast.png");
+        }
+
+        /// <summary>Slides the camera back along its view direction (angle kept) from the cast's centre until every point is in the picture.</summary>
+        static void FitCamera(Camera cam, List<Vector3> pts)
+        {
+            Vector3 centre = Vector3.zero;
+            foreach (var p in pts) centre += p;
+            centre /= pts.Count;
+            Vector3 fwd = cam.transform.forward;
+            for (float d = 4f; d < 80f; d += 0.25f)
+            {
+                cam.transform.position = centre - fwd * d;
+                bool ok = true;
+                foreach (var p in pts)
+                {
+                    Vector3 v = cam.WorldToViewportPoint(p);
+                    if (v.z <= 0f || v.x < 0.05f || v.x > 0.95f || v.y < 0.06f || v.y > 0.90f) { ok = false; break; }
+                }
+                if (ok) { Debug.Log("chaos hd2d shot: the line-up fits at distance " + d.ToString("0.00")); return; }
+            }
+            Debug.LogWarning("chaos hd2d shot: the line-up did not fit in any distance up to 80");
+        }
+
+        /// <summary>A text centred on (cx, cy) (pixels from the bottom left) with a dark outline, in the 5 x 7 font of Core/PixelText.cs.</summary>
+        static void DrawLabel(Color32[] px, string text, int cx, int cy, Color32 col)
+        {
+            const int scale = 2;
+            var mask = PixelText.Mask(text, scale, out int w, out int h);
+            int x0 = Mathf.Clamp(cx - w / 2, 2, Width - w - 2), y0 = Mathf.Clamp(cy, 2, Height - h - 2);
+            var dark = new Color32(10, 8, 12, 255);
+            for (int pass = 0; pass < 2; pass++)
+                for (int y = 0; y < h; y++)
+                    for (int x = 0; x < w; x++)
+                    {
+                        if (!mask[y * w + x]) continue;
+                        int px0 = x0 + x, py0 = y0 + (h - 1 - y);   // the mask's top row is the top of the text
+                        if (pass == 0)
+                        {
+                            for (int dy = -1; dy <= 1; dy++)
+                                for (int dx = -1; dx <= 1; dx++)
+                                {
+                                    int xx = px0 + dx, yy = py0 + dy;
+                                    if (xx >= 0 && xx < Width && yy >= 0 && yy < Height) px[yy * Width + xx] = dark;
+                                }
+                        }
+                        else px[py0 * Width + px0] = col;
+                    }
         }
 
         void Outdoor(Camera cam, Texture2D tex, Hd2dView hd, SpriteAtlas roomAtlas, string source)
@@ -187,7 +275,7 @@ namespace Chaos.Client
         static DatFile realDat;
         static string realSpr;
 
-        void Save(Camera cam, Texture2D tex, string name)
+        void Save(Camera cam, Texture2D tex, string name, Action<Color32[]> overlay = null)
         {
             cam.Render();
             var old = RenderTexture.active;
@@ -195,6 +283,13 @@ namespace Chaos.Client
             tex.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
             tex.Apply();
             RenderTexture.active = old;
+            if (overlay != null)
+            {
+                var px = tex.GetPixels32();
+                overlay(px);
+                tex.SetPixels32(px);
+                tex.Apply();
+            }
             File.WriteAllBytes(Path.Combine(OutDir, name), tex.EncodeToPNG());
         }
 
@@ -212,6 +307,7 @@ namespace Chaos.Client
                     var room = Hd2dDemo.FromPair(dat);
                     if (room != null)
                     {
+                        demoRoom = room;
                         world = room.World;
                         spr = SprFile.Open(s);
                         return "real pair, temple room (" + dir + ")";
@@ -220,6 +316,7 @@ namespace Chaos.Client
                 catch (Exception e) { Debug.LogWarning("chaos hd2d shot: the pair in " + dir + " was not usable: " + e.Message); }
             }
             var demo = Hd2dDemo.Synthetic();
+            demoRoom = demo;
             world = demo.World;
             spr = new SprFile(new MemoryStream(demo.SprBytes));
             return "synthetic placeholder sprites (no game files)";

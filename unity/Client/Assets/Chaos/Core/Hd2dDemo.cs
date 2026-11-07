@@ -146,8 +146,66 @@ namespace Chaos.Core
 
         void Add(Pos p, int id) { World.AddThing(p, new Thing { Item = World.MakeItem(id, 0) }); }
 
+        /// <summary>The ids the temple room was built with (null for the outdoor demo).</summary>
+        public DemoIds Used;
+
+        /// <summary>One creature of the line-up: a class or a monster, and where it stands (tiles from the room's centre).</summary>
+        public sealed class CastMember
+        {
+            public string Name;
+            public byte Type;       // 0 player, 1 monster
+            public int Vocation;    // a class (vocation id) for a player
+            public int Dx, Dy;
+        }
+
+        /// <summary>The line-up of the 3D characters (hd2d_3d_cast.png): the front row is one class per class group (Juggernaut, Deadeye, Elementalist,
+        /// Ninja, Lich, Shadowfist, Inquisitor: Knight, Rogue, Mage, hooded Rogue, Skeleton_Mage, Barbarian, a holy Knight), the back row is
+        /// the four dark monsters (a skeleton warrior, mage, rogue and minion: the summons of the Necromancer's dead).</summary>
+        public static readonly CastMember[] Cast =
+        {
+            new CastMember { Name = "Risen Skeleton", Type = 1, Dx = -3, Dy = -3 },
+            new CastMember { Name = "Risen Warrior", Type = 1, Dx = -1, Dy = -3 },
+            new CastMember { Name = "Risen Mage", Type = 1, Dx = 1, Dy = -3 },
+            new CastMember { Name = "Risen Archer", Type = 1, Dx = 3, Dy = -3 },
+            new CastMember { Name = "Juggernaut", Vocation = 8, Dx = -6, Dy = 4 },
+            new CastMember { Name = "Deadeye", Vocation = 7, Dx = -4, Dy = 4 },
+            new CastMember { Name = "Elementalist", Vocation = 5, Dx = -2, Dy = 4 },
+            new CastMember { Name = "Ninja", Vocation = 12, Dx = 0, Dy = 4 },
+            new CastMember { Name = "Lich", Vocation = 21, Dx = 2, Dy = 4 },
+            new CastMember { Name = "Shadowfist", Vocation = 18, Dx = 4, Dy = 4 },
+            new CastMember { Name = "Inquisitor", Vocation = 24, Dx = 6, Dy = 4 },
+        };
+
+        /// <summary>Replaces the room's creatures by the cast and puts a torch at each end of both rows, so the torches light them. Needs a room built by
+        /// Synthetic() or FromPair(). Returns the cast's creatures in order of Cast; they face the camera (south).</summary>
+        public List<Creature> Lineup()
+        {
+            var made = new List<Creature>();
+            if (Used == null || World == null) return made;
+            foreach (var t in World.Tiles.Values) t.Things.RemoveAll(th => th.IsCreature);
+            World.Creatures.Clear();
+            int cx = Center.X, cy = Center.Y, z = Center.Z;
+            foreach (var at in new[] { new[] { -7, 4 }, new[] { 7, 4 }, new[] { -5, -3 }, new[] { 5, -3 } })
+                Add(new Pos(cx + at[0], cy + at[1], z), Used.Torch);
+            uint id = 100;
+            foreach (var m in Cast)
+            {
+                var c = new Creature
+                {
+                    Id = id++, Name = m.Name, Type = m.Type, Vocation = m.Vocation, Direction = Dir.South,
+                    Outfit = new Outfit(Used.OutfitA, 78, 69, 58, 76),
+                };
+                World.Creatures[c.Id] = c;
+                World.AddThing(new Pos(cx + m.Dx, cy + m.Dy, z), new Thing { Creature = c });
+                made.Add(c);
+            }
+            World.PlayerId = made.Count > 0 ? made[made.Count / 2 + 2].Id : 0;   // somebody of the front row is "the player": no effect on the models
+            return made;
+        }
+
         void Build(DemoIds ids)
         {
+            Used = ids;
             World = new World(Dat) { Center = Center, WorldLight = 90 };
             int cx = Center.X, cy = Center.Y, z = Center.Z;
             for (int x = cx - 8; x <= cx + 9; x++)

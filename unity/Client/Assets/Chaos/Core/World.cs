@@ -31,6 +31,7 @@ namespace Chaos.Core
         public uint Id;
         public string Name = "";
         public byte Type;       // 0 player, 1 monster, 2 npc, 3 own summon, 4 other summon
+        public int Vocation;    // the class (vocation id) when known: the local player from the login, the offline demo's cast; 0 = unknown (the protocol does not send it)
         public int HealthPercent = 100;
         public Dir Direction = Dir.South;
         public Outfit Outfit = new Outfit();
@@ -69,6 +70,7 @@ namespace Chaos.Core
         public readonly Dictionary<Pos, Tile> Tiles = new Dictionary<Pos, Tile>();
         public readonly Dictionary<uint, Creature> Creatures = new Dictionary<uint, Creature>();
         public uint PlayerId;
+        public int PlayerVocation;   // the local character's vocation id from the character list (0 = unknown)
         public Pos Center;
         public int WorldLight = 255, WorldLightColor = 215;
 

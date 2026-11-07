@@ -286,8 +286,22 @@
      "name": "RPG Character Pack",
      "author": "Quaternius",
      "licence": "Creative Commons Zero 1.0 (CC0); the licence text is in unity/Client/Assets/Chaos/Resources/Chars3d/License.txt",
-     "use": "the 3D characters of the Unity prototype (Warrior, Cleric and Wizard, rigged, idle pose, tinted darker in code), not in the main game client",
+     "use": "the fallback 3D characters of the Unity prototype (Warrior, Cleric and Wizard, rigged, idle pose, tinted darker in code; used when the KayKit characters are not in the build), not in the main game client",
      "source": "https://quaternius.com/packs/rpgcharacters.html"
+    },
+    {
+     "name": "KayKit Character Pack: Adventurers (1.0)",
+     "author": "Kay Lousberg (KayKit)",
+     "licence": "Creative Commons Zero 1.0 (CC0); the licence text is fetched with the files as unity/Client/Assets/Chaos/Resources/KayKit/LICENSE_Adventurers.txt",
+     "use": "the 3D characters of the Unity prototype: the Knight, Barbarian, Mage, Rogue and hooded Rogue models with their weapons and shields stand for the 21 classes and the human monsters, rigged, idle pose, tinted in code. Not stored in the repository: unity/tools/fetch_3d_assets.py downloads it at a pinned commit and checks every file; it ships in the Unity build. Not in the main game client",
+     "source": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0"
+    },
+    {
+     "name": "KayKit Character Pack: Skeletons (1.0)",
+     "author": "Kay Lousberg (KayKit)",
+     "licence": "Creative Commons Zero 1.0 (CC0); the licence text is fetched with the files as unity/Client/Assets/Chaos/Resources/KayKit/LICENSE_Skeletons.txt",
+     "use": "the dark monsters of the Unity prototype: the skeleton warrior, mage, rogue and minion (with the blade, axe, staff, crossbow and shields) stand for the undead and the other monsters, and for the Lich and the Bone Lord classes; glowing eyes, tinted in code. Not stored in the repository: unity/tools/fetch_3d_assets.py downloads it at a pinned commit and checks every file; it ships in the Unity build. Not in the main game client",
+     "source": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0"
     },
     {
      "name": "AI Sprite Studio",

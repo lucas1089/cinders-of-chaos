@@ -182,6 +182,7 @@ namespace Chaos.Client
         void Enter(CharacterEntry ch)
         {
             world = new World(dat);
+            world.PlayerVocation = ch.Vocation;   // the 3D character's class (Hd2dChars.SpecFor)
             session = new GameSession(world, new GameSession.Options
             {
                 Host = ch.Host,

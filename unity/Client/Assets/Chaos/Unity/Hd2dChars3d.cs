@@ -1,13 +1,18 @@
-// 3D characters (Chars3d): rigged low-poly models (Resources/Chars3d, the CC0 RPG Character Pack by Quaternius, see
-// docs/CREDITS.md) stand on the drawn position of each creature of the HD-2D view in place of its sprite billboard. Which model
-// a creature gets, its yaw, scale, tint and idle clip are Core/Hd2dChars.cs. Lights, shadows and name labels stay the view's;
-// the characters cast and receive shadows.
+// 3D characters: rigged low-poly models stand on the drawn position of each creature of the HD-2D view in place of its sprite
+// billboard. Which model, items, tint and size a creature gets (a class per vocation id, a monster per name) is Core/Hd2dChars.cs.
+// Models, in order: Resources/KayKit (the CC0 KayKit Adventurers and Skeletons packs by Kay Lousberg, fetched at build time by
+// unity/tools/fetch_3d_assets.py, see docs/CREDITS.md), then Resources/Chars3d (the CC0 RPG Character Pack by Quaternius, committed),
+// then the sprites stay. Lights, shadows and name labels stay the view's; the characters cast and receive shadows.
 // Pose: the screenshot mode never finishes a frame (xvfb, software GL), so nothing waits on an Animator. The idle clip is found by
-// name (Resources.LoadAll<AnimationClip>) and sampled by hand with clip.SampleAnimation(model, t): the bones move at once, then
-// the Animator is switched off so nothing resets the pose. No idle clip: the bind pose stays.
-// Textures are bound at runtime (the repo commits no .meta, so the importer may not link them): Resources "Chars3d/NAME_Texture"
-// goes on the body material and "Chars3d/NAME_Weapon_Texture" on the weapon material, picked by material name.
-// Colours are restyled on copies of the materials: x 0.75 and a little grey (Hd2dChars.Tint). Unity only.
+// name (Resources.LoadAll<AnimationClip>: Idle, else Idle_Combat; a two-handed grip or bare hands prefer their own idle) and sampled by
+// hand with clip.SampleAnimation(model, t): the bones move at once, then the Animator is switched off so nothing resets the pose.
+// No idle clip: the bind pose stays.
+// Items: an adventurer's FBX carries every weapon and shield as a node of the rig (Hd2dChars.WeaponNodes): the ones the spec does not
+// name are hidden. A skeleton's weapons are separate FBX files (Resources/KayKit/Skeleton_Blade, ...) attached to the hand bone
+// ("handslot.r" or "handslot.l"). Textures are bound at runtime (the repo commits no .meta, so the importer may not link them):
+// Resources "KayKit/NAME_texture" for KayKit, "Chars3d/NAME_Texture" for the fallback pack. Colours are restyled on copies of the
+// materials: a dark restyle (Hd2dChars.Tint) times the spec's tint; a skeleton's glowing eyes (the "Glow" material) stay bright and
+// emissive. Unity only.
 using System;
 using System.Collections.Generic;
 using Chaos.Core;
@@ -25,14 +30,17 @@ namespace Chaos.Client
         /// <summary>True: Sync runs every frame (positions, facing, animated idle). False: the scene is built by hand with Build().</summary>
         public bool Live;
 
-        const string Folder = "Chars3d/";
-
         sealed class Model
         {
             public GameObject Prefab;
-            public AnimationClip Idle;
+            public string Folder, Name;
+            public bool Kay;
+            public AnimationClip[] Clips;
+            public string[] ClipNames;
+            public readonly Dictionary<string, AnimationClip> IdleBy = new Dictionary<string, AnimationClip>();
             public float Height;            // in prefab units, bind pose
             public float MinY;
+            public bool Measured;
         }
 
         sealed class Entry
@@ -40,6 +48,7 @@ namespace Chaos.Client
             public GameObject Holder, Body;
             public Model Model;
             public Animator Animator;
+            public AnimationClip Idle;
         }
 
         readonly Dictionary<string, Model> models = new Dictionary<string, Model>();
@@ -47,20 +56,25 @@ namespace Chaos.Client
         readonly HashSet<uint> alive = new HashSet<uint>();   // reused by Sync: no allocation per frame
         readonly List<uint> gone = new List<uint>();
         readonly Dictionary<string, Material> styled = new Dictionary<string, Material>();
+        readonly HashSet<string> warned = new HashSet<string>();
         bool attached;
 
-        /// <summary>True when the player's model can be loaded.</summary>
-        public static bool Available() => Resources.Load<GameObject>(Folder + Hd2dChars.PlayerModel) != null;
+        /// <summary>True when the KayKit models are in the build (Resources/KayKit/Knight, from unity/tools/fetch_3d_assets.py).</summary>
+        public static bool HaveKayKit() => Resources.Load<GameObject>(Hd2dChars.KayKitFolder + Hd2dChars.KayKitProbe) != null;
 
-        /// <summary>Hides the sprites the characters replace. False (and nothing changed) when the models are not in the build.</summary>
+        /// <summary>True when the player's model can be loaded: KayKit, else the fallback pack.</summary>
+        public static bool Available() => HaveKayKit() || Resources.Load<GameObject>(Hd2dChars.FallbackFolder + Hd2dChars.PlayerModel) != null;
+
+        /// <summary>Hides the sprites the characters replace. False (and nothing changed) when no models are in the build.</summary>
         public bool Attach(Hd2dView view)
         {
             View = view;
             if (!Available())
             {
-                Debug.LogWarning("chaos chars3d: no model Resources/" + Folder + Hd2dChars.PlayerModel + ", the view keeps its creature sprites");
+                Debug.LogWarning("chaos chars3d: no model in Resources/" + Hd2dChars.KayKitFolder + " or Resources/" + Hd2dChars.FallbackFolder + ", the view keeps its creature sprites");
                 return false;
             }
+            if (!HaveKayKit()) Debug.LogWarning("chaos chars3d: no KayKit models (python3 -I unity/tools/fetch_3d_assets.py), using the " + Hd2dChars.FallbackFolder + " fallback pack");
             attached = true;
             if (isActiveAndEnabled) Hook();
             return true;
@@ -87,6 +101,14 @@ namespace Chaos.Client
             if (!entries.TryGetValue(id, out var e) || e.Holder == null) return false;
             p = e.Holder.transform.position + Vector3.up * height;
             return true;
+        }
+
+        /// <summary>Forgets every character (the next Sync makes them again, for example after the world's creatures changed).</summary>
+        public void Clear()
+        {
+            foreach (var e in entries.Values) if (e.Holder != null) Destroy(e.Holder);
+            entries.Clear();
+            Placed = 0;
         }
 
         /// <summary>Creates, moves and turns the characters to match the creatures of the world.</summary>
@@ -117,48 +139,124 @@ namespace Chaos.Client
             foreach (var id in gone) { if (entries[id].Holder != null) Destroy(entries[id].Holder); entries.Remove(id); }
         }
 
-        Model Load(string name)
+        void WarnOnce(string key, string text)
         {
-            if (models.TryGetValue(name, out var m)) return m;
+            if (warned.Add(key)) Debug.LogWarning("chaos chars3d: " + text);
+        }
+
+        Model Load(string folder, string name)
+        {
+            string key = folder + name;
+            if (models.TryGetValue(key, out var m)) return m;
             m = null;
-            var prefab = Resources.Load<GameObject>(Folder + name);
-            if (prefab == null) Debug.LogWarning("chaos chars3d: no model Resources/" + Folder + name);
-            else
+            var prefab = Resources.Load<GameObject>(folder + name);
+            if (prefab != null)
             {
-                m = new Model { Prefab = prefab };
-                var all = Resources.LoadAll<AnimationClip>(Folder + name);
+                m = new Model { Prefab = prefab, Folder = folder, Name = name, Kay = folder == Hd2dChars.KayKitFolder };
+                var all = Resources.LoadAll<AnimationClip>(folder + name);
                 var clips = new List<AnimationClip>();
                 foreach (var a in all) if (a != null && !a.name.StartsWith("__preview__", StringComparison.Ordinal)) clips.Add(a);
-                var names = new string[clips.Count];
-                for (int i = 0; i < names.Length; i++) names[i] = clips[i].name;
-                int idle = Hd2dChars.IdleClip(names);
-                if (idle >= 0) m.Idle = clips[idle];
-                else Debug.LogWarning("chaos chars3d: no idle clip in " + name + " (" + clips.Count + " clips), bind pose");
+                m.Clips = clips.ToArray();
+                m.ClipNames = new string[m.Clips.Length];
+                for (int i = 0; i < m.Clips.Length; i++) m.ClipNames[i] = m.Clips[i].name;
             }
-            models[name] = m;
+            models[key] = m;
             return m;
+        }
+
+        // KayKit first, then the fallback pack; null when neither has the model
+        Model ModelFor(CharSpec spec)
+        {
+            var m = Load(Hd2dChars.KayKitFolder, spec.Model);
+            if (m != null) return m;
+            m = Load(Hd2dChars.FallbackFolder, spec.Fallback);
+            if (m == null) WarnOnce("model " + spec.Model, "no model Resources/" + Hd2dChars.KayKitFolder + spec.Model + " or Resources/" + Hd2dChars.FallbackFolder + spec.Fallback);
+            return m;
+        }
+
+        AnimationClip IdleOf(Model m, string prefer)
+        {
+            prefer = prefer ?? "";
+            if (m.IdleBy.TryGetValue(prefer, out var c)) return c;
+            int idle = Hd2dChars.IdleClip(m.ClipNames, prefer);
+            c = idle >= 0 ? m.Clips[idle] : null;
+            if (c == null) WarnOnce("idle " + m.Folder + m.Name, "no idle clip in " + m.Name + " (" + m.Clips.Length + " clips), bind pose");
+            m.IdleBy[prefer] = c;
+            return c;
+        }
+
+        // the sprite size of the creature's outfit, in tiles (a 2 x 2 look is a big monster)
+        float SizeOf(Creature c)
+        {
+            int w = 1, h = 1;
+            var t = World != null && World.Dat != null && c.Outfit != null ? World.Dat.Outfit(c.Outfit.LookType) : null;
+            if (t != null && t.Groups != null && t.Groups.Length > 0 && t.Groups[0] != null) { w = Mathf.Max(1, t.Groups[0].Width); h = Mathf.Max(1, t.Groups[0].Height); }
+            return Hd2dChars.SizeFor(c, w, h);
         }
 
         Entry Make(Creature c, bool isPlayer)
         {
-            string name = Hd2dChars.ModelFor(c, isPlayer);
-            var m = Load(name);
+            var spec = Hd2dChars.SpecFor(c, isPlayer, World != null ? World.PlayerVocation : 0);
+            var m = ModelFor(spec);
             if (m == null) return null;
-            var holder = new GameObject("char " + c.Name + " (" + name + ")");
+            var holder = new GameObject("char " + c.Name + " (" + m.Name + ", " + spec.Label + ")");
             holder.transform.SetParent(transform, false);
             var body = Instantiate(m.Prefab, holder.transform);
-            body.name = name;
+            body.name = m.Name;
             body.transform.localPosition = Vector3.zero;
             body.transform.localRotation = Quaternion.identity;
             body.transform.localScale = Vector3.one;
+            if (m.Kay) Items(body, spec);
             var e = new Entry { Holder = holder, Body = body, Model = m, Animator = body.GetComponentInChildren<Animator>() };
-            Restyle(body, name);
+            Restyle(body, m, spec);
+            e.Idle = IdleOf(m, m.Kay ? spec.Idle : "");
             Pose(e, c.Id, 0f);
-            if (m.Height <= 0f) Measure(m, holder, body);
-            float s = Hd2dChars.ScaleFor(m.Height);
+            if (!m.Measured) Measure(m, holder, body);
+            float s = Hd2dChars.ScaleFor(m.Height) * (m.Kay ? spec.Scale : 1f) * SizeOf(c);
             body.transform.localScale = Vector3.one * s;
             body.transform.localPosition = new Vector3(0f, -m.MinY * s, 0f);   // the feet on the floor
             return e;
+        }
+
+        // ---- items ----------------------------------------------------------------------------------------------------------
+
+        // an adventurer's weapon and shield nodes: only the spec's items are shown; a skeleton's weapon files go on its hand bones
+        void Items(GameObject body, CharSpec spec)
+        {
+            var all = body.GetComponentsInChildren<Transform>(true);
+            foreach (var t in all)
+                if (Hd2dChars.IsWeaponNode(t.name)) t.gameObject.SetActive(Array.IndexOf(spec.Items, t.name) >= 0);
+            var bones = new string[all.Length];
+            for (int i = 0; i < all.Length; i++) bones[i] = all[i].name;
+            foreach (var item in spec.Items)
+            {
+                if (Hd2dChars.IsWeaponNode(item)) continue;
+                var prefab = Resources.Load<GameObject>(Hd2dChars.KayKitFolder + item);
+                if (prefab == null) { WarnOnce("item " + item, "no weapon Resources/" + Hd2dChars.KayKitFolder + item); continue; }
+                int hand = Hd2dChars.HandBone(bones, !Hd2dChars.LeftHand(item));
+                if (hand < 0) { WarnOnce("hand " + spec.Model, "no hand bone in " + spec.Model + " for " + item); continue; }
+                var bone = all[hand];
+                var w = Instantiate(prefab, bone, false);
+                w.name = item;
+                w.transform.localPosition = Vector3.zero;
+                w.transform.localRotation = Quaternion.identity;
+                // the weapon is modelled in character units: cancel any scale the rig's bones carry
+                Vector3 bs = bone.lossyScale, ks = body.transform.lossyScale;
+                w.transform.localScale = new Vector3(Div(ks.x, bs.x), Div(ks.y, bs.y), Div(ks.z, bs.z));
+            }
+        }
+
+        static float Div(float a, float b) => Mathf.Abs(b) > 1e-6f ? a / b : 1f;
+
+        // a renderer on a hand slot (a weapon) is not part of the body's height
+        static bool OnHand(Transform t, Transform root)
+        {
+            for (var p = t; p != null && p != root; p = p.parent)
+            {
+                string n = p.name.ToLowerInvariant();
+                if (n.IndexOf("hand", StringComparison.Ordinal) >= 0 && n.IndexOf("ik", StringComparison.Ordinal) < 0) return true;
+            }
+            return false;
         }
 
         // the posed model's height from its meshes' bounds, in the holder's space at scale 1 (the pose is the idle's first sample)
@@ -175,6 +273,7 @@ namespace Chaos.Client
                 else continue;
                 if (r.name.IndexOf("Sword", StringComparison.OrdinalIgnoreCase) >= 0 || r.name.IndexOf("Staff", StringComparison.OrdinalIgnoreCase) >= 0
                     || r.name.IndexOf("Bow", StringComparison.OrdinalIgnoreCase) >= 0 || r.name.IndexOf("Dagger", StringComparison.OrdinalIgnoreCase) >= 0) continue;   // weapons can stand above the head
+                if (OnHand(r.transform, body.transform) || Hd2dChars.IsWeaponNode(r.name)) continue;
                 for (int i = 0; i < 8; i++)
                 {
                     var corner = b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
@@ -182,13 +281,14 @@ namespace Chaos.Client
                     lo = Mathf.Min(lo, y); hi = Mathf.Max(hi, y);
                 }
             }
+            m.Measured = true;
             if (hi > lo) { m.MinY = lo; m.Height = hi - lo; }
-            else { m.MinY = 0f; m.Height = 0f; Debug.LogWarning("chaos chars3d: could not measure " + body.name + ", scale 1"); }
+            else { m.MinY = 0f; m.Height = 0f; WarnOnce("measure " + m.Name, "could not measure " + body.name + ", scale 1"); }
         }
 
         void Pose(Entry e, uint id, float time)
         {
-            var clip = e.Model.Idle;
+            var clip = e.Idle;
             if (clip == null) return;
             try
             {
@@ -196,31 +296,43 @@ namespace Chaos.Client
                 clip.SampleAnimation(e.Body, t);
                 if (e.Animator != null) e.Animator.enabled = false;   // keep the sampled pose
             }
-            catch (Exception ex) { Debug.LogWarning("chaos chars3d: could not sample " + clip.name + ": " + ex.Message); e.Model.Idle = null; }
+            catch (Exception ex) { Debug.LogWarning("chaos chars3d: could not sample " + clip.name + ": " + ex.Message); e.Idle = null; }
         }
 
-        void Restyle(GameObject go, string model)
+        // ---- look -----------------------------------------------------------------------------------------------------------
+
+        void Restyle(GameObject go, Model model, CharSpec spec)
         {
-            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
             {
                 var src = r.sharedMaterials;
                 var dst = new Material[src.Length];
-                for (int i = 0; i < src.Length; i++) dst[i] = Styled(model, src[i], r.name);
+                for (int i = 0; i < src.Length; i++) dst[i] = Styled(model, spec, src[i], r.name);
                 r.sharedMaterials = dst;
-                r.shadowCastingMode = ShadowCastingMode.On;
-                r.receiveShadows = true;
+                bool eyes = model.Kay && src.Length == 1 && src[0] != null && CleanName(src[0]) == Hd2dChars.GlowMaterial;
+                r.shadowCastingMode = eyes ? ShadowCastingMode.Off : ShadowCastingMode.On;
+                r.receiveShadows = !eyes;
                 if (r is SkinnedMeshRenderer smr) smr.updateWhenOffscreen = true;
             }
         }
 
-        Material Styled(string model, Material m, string rendererName)
+        static string CleanName(Material m) => m != null ? m.name.Replace(" (Instance)", "").Trim() : "";
+
+        Material Styled(Model model, CharSpec spec, Material m, string rendererName)
         {
-            string mname = m != null ? m.name : "";
-            // the weapon sub-mesh may carry the body's material name: its mesh name says which one it is
-            string texName = Hd2dChars.TextureFor(model, mname);
-            if (texName == model + "_Texture" && rendererName.StartsWith(model + "_", StringComparison.Ordinal) && !rendererName.EndsWith("Body", StringComparison.Ordinal))
-                texName = Hd2dChars.TextureFor(model, rendererName);
-            string key = model + "|" + texName;
+            string mname = CleanName(m);
+            bool glow = model.Kay && mname == Hd2dChars.GlowMaterial;
+            string texName;
+            if (glow) texName = "";
+            else if (model.Kay) texName = Hd2dChars.KayKitTexture(spec.Model);
+            else
+            {
+                // the weapon sub-mesh may carry the body's material name: its mesh name says which one it is
+                texName = Hd2dChars.TextureFor(model.Name, mname);
+                if (texName == model.Name + "_Texture" && rendererName.StartsWith(model.Name + "_", StringComparison.Ordinal) && !rendererName.EndsWith("Body", StringComparison.Ordinal))
+                    texName = Hd2dChars.TextureFor(model.Name, rendererName);
+            }
+            string key = glow ? "glow" : model.Folder + model.Name + "|" + texName + "|" + spec.R.ToString("0.00") + "," + spec.G.ToString("0.00") + "," + spec.B.ToString("0.00") + "," + spec.Dim.ToString("0.00");
             if (styled.TryGetValue(key, out var s)) return s;
             if (m != null && m.shader != null && m.HasProperty("_MainTex")) s = new Material(m);
             else
@@ -229,12 +341,29 @@ namespace Chaos.Client
                 if (sh == null) sh = Shader.Find("Legacy Shaders/Diffuse");
                 s = new Material(sh);
             }
+            if (glow)
+            {
+                // the eyes: bright, never dimmed or tinted, emissive where the shader has an emission colour
+                s.name = "Glow (eyes)";
+                s.mainTexture = null;
+                s.color = new Color(Hd2dChars.GlowR, Hd2dChars.GlowG, Hd2dChars.GlowB, 1f);
+                if (s.HasProperty("_EmissionColor"))
+                {
+                    s.EnableKeyword("_EMISSION");
+                    s.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+                    s.SetColor("_EmissionColor", new Color(Hd2dChars.GlowR, Hd2dChars.GlowG, Hd2dChars.GlowB, 1f) * Hd2dChars.GlowEmission);
+                }
+                if (s.HasProperty("_Glossiness")) s.SetFloat("_Glossiness", 0f);
+                if (s.HasProperty("_Metallic")) s.SetFloat("_Metallic", 0f);
+                styled[key] = s;
+                return s;
+            }
             s.name = texName + " (dark)";
-            var tex = Resources.Load<Texture2D>(Folder + texName);
-            if (tex == null && texName != model + "_Texture") tex = Resources.Load<Texture2D>(Folder + model + "_Texture");
+            var tex = Resources.Load<Texture2D>(model.Folder + texName);
+            if (tex == null && !model.Kay && texName != model.Name + "_Texture") tex = Resources.Load<Texture2D>(model.Folder + model.Name + "_Texture");
             if (tex != null) s.mainTexture = tex;
-            else Debug.LogWarning("chaos chars3d: no texture Resources/" + Folder + texName);
-            Hd2dChars.Tint(1f, 1f, 1f, out float r, out float g, out float b);
+            else WarnOnce("tex " + model.Folder + texName, "no texture Resources/" + model.Folder + texName);
+            Hd2dChars.Tint(spec, out float r, out float g, out float b);
             s.color = new Color(r, g, b, 1f);
             if (s.HasProperty("_Glossiness")) s.SetFloat("_Glossiness", 0.12f);
             if (s.HasProperty("_Metallic")) s.SetFloat("_Metallic", 0f);
