@@ -400,6 +400,54 @@ Creatures and effects are not drawn by this view: `FrontLiveCreatures` and `Fron
   look of the ground tints on real maps, whether the heuristic wall heights (cell fill) fit the real walls, fences and doors, the cost of the sprite
   meshes with many animated items, the sharp band at 0.26, the shadow of the upright sprites through the cutout, the pick of grey and brown things for boxes.
 
+## Front-art creatures
+
+The live game's creatures (players, monsters, NPCs, summons) in the front-art look: upright front-facing pixel billboards, lit by
+`Resources/FrontArtSprite.shader`, with a contact blob, the two ground silhouettes, a shadow caster, a name and a health bar.
+`Unity/FrontLiveCreatures.cs` is added to the `FrontLiveView` object by reflection; it reads `Cam`, `TileToWorld`, `GroundY` and
+`World` from the view and moves on its `Ticked` event. Objects are pooled (one set per creature on screen). Log lines start with
+`chaos front creatures:`.
+
+- Looks (`Core/FrontLooks.cs`, tests `Core.Tests/FrontLooksTests.cs`):
+  - Monsters and summons go by name to one of the 14 pack figures (`pk_<folder>`): goblins, rats, flyers, headless riders, vampires,
+    cultists and casters (red for fire and blood, dark for the rest), ghosts (king for a crowned one), skeletons and bone, wolves and
+    other furred beasts, lizards and snakes, the ice family, the fire family and brutes. Plain ghouls use the committed `ghoul`
+    pictures. First rule that matches wins; the order is in `ForMonster`. Over the server's 701 monster names (280 custom, 421 base)
+    about half get a figure; humans, bosses with invented names, plants and slimes stay their outfit.
+  - Players go by class (`Hd2dChars.Classes`, 21 vocations): knight, barbarian, holy and melee classes are the `knight` pictures, casters
+    the `mage`, the Lich and the Bone Lord the `skeleton`, each in the class tint softened (0.75 to 1.25, shader `_Tint`). The five
+    ranged and stealth classes (Ranger, Deadeye, Beastmaster, Thief, Ninja) have no picture yet and are drawn as their outfit; a new
+    hero set needs a folder and one row in `FrontLooks.HeroOfModel`. The local player is its class from the login; another player,
+    whose class the protocol does not tell, is the knight or the mage by the outfit's look type.
+  - Everything else (NPCs, no rule, art missing) is the creature's own outfit: `FrontOutfit.Compose` builds the classic art (base
+    layer coloured by the mask layer, addons, all cells of a 2 x 2 or bigger sprite) into one picture standing on the tile, 1 cell = 1
+    unit, same shader and lighting. It is not straightened (no `Hd2d.Lean`). Pictures are cached by type, direction, phase and colours.
+  - Fallback chain when art is missing (the pack art exists only in CI after opening `front_art_packs.enc`): pack figure, then the
+    committed `skeleton` or `ghoul` pictures (`FrontLook.Alt`), then the outfit. Nothing is ever left out.
+- State (`Core/FrontLiveAnim.cs`): `FrontCreatureState.Update(t, creature, foe)` on its own clock, so it needs no game clock.
+  - Movement: a step is told by `Creature.WalkStart` changing; the picture goes from where it is (the step's origin when far) to the
+    tile over `WalkMs`. Jumps snap. Walk clip while stepping, hop for pictures without a walk strip.
+  - Facing: the server's direction (`FrontLooks.Face`, x east, z north); the heroes pick one of 8 pictures with `FrontArtFacing`, the
+    pack strips face right and the three west headings use the `_w` mirror, outfits pick the dat direction.
+  - Attack: a creature with a foe next to it (`FrontTargets.Foe`: a monster fights players and own summons, a player or summon fights
+    monsters; the local player's picked target first, `FrontLiveCreatures.LocalTarget`) that is not mid-step swings every 2 s for
+    0.75 s, turned to the foe: the attack strip, or for heroes a lean of 0.12 tile. `Strike(t)` forces a swing.
+  - Flinch: when `HealthPercent` drops it is pushed 0.16 tile away from the foe (backwards without one) over 0.3 s and flashes red
+    (`_Hit` of the shader).
+- Name and health bar (`FrontLabel`, `PixelText` font): outlined name in a pale tint of the health colour (green, yellow, orange,
+  red), a 26 x 3 texel bar under it; NPCs have the name only. One texture per creature, redrawn when name or health change.
+- `Unity/FrontArtSprites.cs` holds what `FrontArtScene` and the live creatures share: shader lookup, point filtering, strip frames, the
+  quad, the ground silhouettes (`ApplyCast`) and `FrontArtSet`, the loader of a figure folder (8 pictures or idle, walk and attack strips
+  with `_n` and `_e` maps). Silhouettes and shadows take the nearest point light and the first directional light of the scene.
+- What the server and parser do not tell yet (needed for exact attack animation): who attacks whom and damage effects. `Game.cs` reads
+  the magic effect (0x83) and the animated text (0x84) and drops them; with a hook for them `FrontCreatureState.Strike` swings the
+  creatures next to the effect. Until then attacks are the adjacent-foe rule above, a good guess for melee and wrong for ranged.
+- Needs from the host: `FrontLiveCreatures.SpriteSource` (`SpriteAtlas.Raw`; found by reflection on a member `Atlas` of the view when
+  unset) for outfit art, and `LocalTarget` (`Game.AttackTarget`) for the local fights. Without a source, outfit creatures are not drawn.
+- Not seen in a Unity editor or player in the session that wrote it: it compiles in `Client.Check` and the logic is tested. Unsure until
+  seen: label size and position at both zoom levels, the pack figure scale next to a 1 x 1 outfit, outfit pictures with the oblique lean
+  of the art, the `_Tint` strength.
+
 ## Tests
 
 ```
@@ -413,6 +461,8 @@ The checks cover:
 - a whole game login against a fake server on localhost. It uses its own RSA key, real XTEA and the guard handshake;
 - the front-art live view (`FrontLiveTests.cs`): the new block textures, ground and wall classes to blocks, heights, items as sprites or boxes,
   lights, floors below and voids, the world mapping and anchors, the rebuild hash, size and time bounds;
+
+- the front-art creatures (`FrontLooksTests.cs`): the name rules over every monster name of the server, the 21 classes, the outfit composer, the label, the state machine (steps, facing, swings, flinch);
 - the 3D character mapping (`CharsTests.cs`): the 21 classes against the vocation files, the monster rules over every monster name of the server
   (it prints the share per model), size, hand bones, idle clips, the label font and the line-up. The fetch script: `python3 -I unity/tools/fetch_3d_assets_test.py`.
 

@@ -169,13 +169,7 @@ namespace Chaos.Client
 
         T Own<T>(T o) where T : UnityEngine.Object { owned.Add(o); return o; }
 
-        static Shader FindShader(string name, string fallback)
-        {
-            var sh = Resources.Load<Shader>(name);
-            if (sh == null) sh = Shader.Find("Chaos/" + name);
-            if (sh == null) sh = Shader.Find(fallback);
-            return sh;
-        }
+        static Shader FindShader(string name, string fallback) { return FrontArtSprites.FindShader(name, fallback); }
 
         // ---- blocks ----
 
@@ -251,13 +245,7 @@ namespace Chaos.Client
 
         Mesh Quad()
         {
-            if (quadMesh != null) return quadMesh;
-            quadMesh = Own(new Mesh { name = "front-art-quad" });
-            quadMesh.vertices = new[] { new Vector3(-0.5f, 0, 0), new Vector3(0.5f, 0, 0), new Vector3(0.5f, 1, 0), new Vector3(-0.5f, 1, 0) };
-            quadMesh.normals = new[] { new Vector3(0, 0, -1), new Vector3(0, 0, -1), new Vector3(0, 0, -1), new Vector3(0, 0, -1) };
-            quadMesh.uv = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
-            quadMesh.triangles = new[] { 0, 3, 2, 0, 2, 1 };
-            quadMesh.bounds = new Bounds(new Vector3(0, 0.5f, 0), new Vector3(1.2f, 1.2f, 0.4f));
+            if (quadMesh == null) quadMesh = Own(FrontArtSprites.MakeQuad());
             return quadMesh;
         }
 
@@ -322,18 +310,9 @@ namespace Chaos.Client
                 v.Proxy = MakeSpriteObject("shadow " + a.Name, v.ShadowMat, ShadowCastingMode.ShadowsOnly);
                 for (int k = 0; k < v.Cast.Length; k++)
                 {
-                    var cgo = new GameObject("cast " + k + " " + a.Name);
-                    cgo.transform.SetParent(transform, false);
-                    v.Cast[k] = Own(new Mesh { name = "front-art-cast" });
-                    v.Cast[k].MarkDynamic();
-                    cgo.AddComponent<MeshFilter>().sharedMesh = v.Cast[k];
-                    var cmr = cgo.AddComponent<MeshRenderer>();
-                    v.CastMat[k] = Own(new Material(FindShader("FrontArtCast", "Sprites/Default")) { name = "front-art-cast-" + k + "-" + a.Folder });
-                    cmr.sharedMaterial = v.CastMat[k];
-                    cmr.shadowCastingMode = ShadowCastingMode.Off;
-                    cmr.receiveShadows = false;
-                    cmr.lightProbeUsage = LightProbeUsage.Off;
-                    cmr.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                    FrontArtSprites.MakeCastObject(transform, "cast " + k + " " + a.Name, "front-art-cast-" + k + "-" + a.Folder, out Mesh cm, out Material cmat);
+                    v.Cast[k] = Own(cm);
+                    v.CastMat[k] = Own(cmat);
                 }
                 actors.Add(v);
             }
@@ -473,38 +452,17 @@ namespace Chaos.Client
 
         Transform MakeSpriteObject(string name, Material m, ShadowCastingMode mode)
         {
-            var go = new GameObject(name);
-            go.transform.SetParent(transform, false);
-            go.AddComponent<MeshFilter>().sharedMesh = Quad();
-            var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = m;
-            mr.shadowCastingMode = mode;
-            mr.receiveShadows = mode != ShadowCastingMode.ShadowsOnly;
-            mr.lightProbeUsage = LightProbeUsage.Off;
-            mr.reflectionProbeUsage = ReflectionProbeUsage.Off;
-            return go.transform;
+            return FrontArtSprites.MakeSpriteObject(transform, Quad(), name, m, mode);
         }
 
-        static Texture2D Point(Texture2D t)
-        {
-            if (t != null) { t.filterMode = FilterMode.Point; t.wrapMode = TextureWrapMode.Clamp; t.anisoLevel = 0; }
-            return t;
-        }
+        static Texture2D Point(Texture2D t) { return FrontArtSprites.Point(t); }
 
         /// <summary>Frames a second of the pack monsters' idle and walk animations.</summary>
         public const float PackFps = 8f, WalkFps = 10f;
 
-        static void SetFrame(Material m, int frame, int frames)
-        {
-            m.mainTextureScale = new Vector2(1f / frames, 1f);
-            m.mainTextureOffset = new Vector2((float)frame / frames, 0f);
-        }
+        static void SetFrame(Material m, int frame, int frames) { FrontArtSprites.SetFrame(m, frame, frames); }
 
-        static void SetPic(Material m, Texture2D t)
-        {
-            m.mainTexture = t;
-            if (m.HasProperty("_Cutoff")) m.SetFloat("_Cutoff", 0.5f);
-        }
+        static void SetPic(Material m, Texture2D t) { FrontArtSprites.SetPic(m, t); }
 
         // ---- lights, flames, blobs, particles ----
 
@@ -905,49 +863,14 @@ namespace Chaos.Client
                 float d = (lv.L.transform.position - feet).sqrMagnitude;
                 if (d < best) { best = d; near = lv; }
             }
-            if (near != null)
-            {
-                var lp = near.L.transform.position;
-                var away = new Vector3(feet.x - lp.x, 0f, feet.z - lp.z);
-                float dist = away.magnitude;
-                float h = Mathf.Max(0.35f, lp.y - feet.y);
-                float len = v.Units * Mathf.Clamp(0.55f * dist / h + 0.35f, 0.5f, 1.4f);
-                float strength = 0.95f * Mathf.Clamp01(1.15f - dist / Mathf.Max(0.1f, near.S.Range));
-                SetCast(v.Cast[0], feet, dist > 0.01f ? away / dist : Vector3.forward, len, v.Units);
-                v.CastMat[0].SetFloat("_Strength", strength);
-            }
-            else v.Cast[0].Clear();
-            var flat = new Vector3(sun.x, 0f, sun.z);
-            float fl = flat.magnitude;
-            float elev = Mathf.Atan2(-sun.y, Mathf.Max(0.01f, fl));
-            SetCast(v.Cast[1], feet, fl > 0.01f ? flat / fl : Vector3.forward, v.Units * Mathf.Clamp(0.8f / Mathf.Tan(Mathf.Max(0.2f, elev)), 0.4f, 1.3f), v.Units);
-            v.CastMat[1].SetFloat("_Strength", 0.55f);
+            FrontArtSprites.ApplyCast(v.Cast, v.CastMat, feet, v.Units, near != null, near != null ? near.L.transform.position : Vector3.zero, near != null ? near.S.Range : 0f, sun);
         }
 
-        static readonly Vector3[] castVerts = new Vector3[4];
-        static readonly Vector2[] castUv = { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
-        static readonly int[] castTris = { 0, 1, 2, 0, 2, 3 };
-
         /// <summary>How far the ground silhouettes and blobs float over the floor, so they never fight it for depth.</summary>
-        const float CastLift = 0.04f;
+        const float CastLift = FrontArtSprites.CastLift;
 
         /// <summary>How bright the glowing pixels of a picture are, as light added to their colour (past 1 feeds the bloom).</summary>
         const float EmitAmount = 2.2f;
-
-        static void SetCast(Mesh m, Vector3 feet, Vector3 dir, float len, float units)
-        {
-            var side = Vector3.Cross(Vector3.up, dir) * (units * 0.5f);
-            var f = feet + Vector3.up * CastLift;
-            castVerts[0] = f + side; castVerts[1] = f - side;
-            castVerts[2] = f - side + dir * len; castVerts[3] = f + side + dir * len;
-            m.Clear();
-            m.vertices = castVerts;
-            m.uv = castUv;
-            m.triangles = castTris;
-            m.RecalculateBounds();
-            // a flat mesh has a bounding box with no height; give it some so no culling step ever drops it
-            var bb = m.bounds; bb.Expand(new Vector3(0f, 1f, 0f)); m.bounds = bb;
-        }
 
         /// <summary>The scene's clock, for the screenshot mode.</summary>
         public float Clock => clock;
