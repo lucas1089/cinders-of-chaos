@@ -87,7 +87,7 @@ def main(argv):
     count = 0
     for fig in sorted(os.listdir(ROOT)):
         d = os.path.join(ROOT, fig)
-        if not os.path.isdir(d):
+        if not os.path.isdir(d) or fig.startswith("pk_"):   # the pack monsters: front_art_packs.py makes their masks
             continue
         for name in DIRS:
             src = os.path.join(d, name + ".png")

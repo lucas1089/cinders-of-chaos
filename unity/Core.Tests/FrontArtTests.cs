@@ -150,6 +150,11 @@ namespace Chaos.Core.Tests
             check(L.Actors.All(a => a.X > 0 && a.X < L.W && a.Z > 0 && a.Z < L.D && L.H[(int)a.X, (int)a.Z] <= 2 && !L.Masonry[(int)a.X, (int)a.Z]), "front art: the characters stand on open ground");
             check(L.Actors.All(a => Math.Abs(a.Y - L.GroundY(a.X, a.Z)) < 1e-4f), "front art: the characters stand on the ground");
             check(L.Actors.Where(a => !a.Monster).All(a => a.X < 10f) && L.Actors.Where(a => a.Monster).All(a => a.X > 10f), "front art: the heroes stand west of the brazier, the monsters east");
+            var everyone = L.Actors.Concat(L.Extras).ToList();
+            check(L.Extras.Count == 14 && L.Extras.All(a => a.Folder.StartsWith("pk_") && a.Units > 0.5f && a.Monster), "front art: fourteen pack monsters with their own picture size");
+            check(L.Extras.All(a => a.X > 2.5f && a.X < 16.6f && a.Z > 2.5f && a.Z < 11.5f && L.H[(int)a.X, (int)a.Z] <= 0 && !L.Masonry[(int)a.X, (int)a.Z] && Math.Abs(a.Y - L.GroundY(a.X, a.Z)) < 1e-4f), "front art: the pack monsters stand on the open ground inside the ring");
+            check(everyone.All(a => everyone.All(o => ReferenceEquals(a.Name, o.Name) || (a.X - o.X) * (a.X - o.X) + (a.Z - o.Z) * (a.Z - o.Z) > 0.8f * 0.8f)), "front art: no two figures stand closer than 0.8");
+            check(L.Extras.All(a => !L.Boxes.Any(bx => bx.Tag != "rubble" && a.X > bx.X0 - 0.25f && a.X < bx.X1 + 0.25f && a.Z > bx.Z0 - 0.25f && a.Z < bx.Z1 + 0.25f)), "front art: no pack monster stands in a grave, pillar, brazier, crate or the sarcophagus");
             var brazier = L.Lights.Where(l => l.Flame).ToList();
             check(brazier.Count >= 6 && brazier.All(l => l.R > l.B + 0.4f), "front art: warm flame lights at the braziers and torches (" + brazier.Count + ")");
             check(L.Lights.Any(l => !l.Flame && l.B > l.R), "front art: a cold light too");

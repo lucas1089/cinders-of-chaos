@@ -9,11 +9,15 @@
 // Sprites: an upright quad that turns with the camera's yaw (never tilts), alpha cutout, a bent normal and wrap light (the shader),
 // a soft blob under the feet, and a shadow thrown by a second quad that faces the sun (shadow pass only) and sits a little behind the
 // picture along the light, so the picture never shadows itself and the ground shadow is the same.
+// Extras: purchased pack monsters (Layout.Extras, Resources/FrontArt/pk_<name>/, 64 x 64 at 40 texels per unit) stand around the
+// four; their pictures are not in git (licence: no sharing of the files) but come encrypted, unity/tools/front_art_packs.py, and the
+// CI opens them with the CHAOS_ART_KEY secret. Missing pictures leave an extra out.
 // Open it: F11 in the game (offline, no login), mouse wheel zooms between the wide view and the close view on the four characters.
 // CI: Hd2dShot (-chaosHd2dShot DIR) builds it and writes front_art.png and front_art_close.png.
 // The idea (not the code) follows the MIT-licensed Luminati engine, see docs/CREDITS.md.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Chaos.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -43,6 +47,7 @@ namespace Chaos.Client
             public Transform Quad, Proxy;
             public readonly Mesh[] Cast = new Mesh[2];   // ground silhouettes: [0] away from the nearest flame, [1] away from the moon
             public int Dir = -1;
+            public float Units = SpriteUnits;   // the picture's side in units
         }
 
         sealed class LightView { public Light L; public FaLight S; }
@@ -216,9 +221,10 @@ namespace Chaos.Client
         void BuildActors()
         {
             var shader = FindShader("FrontArtSprite", "Unlit/Transparent Cutout");
-            foreach (var a in Layout.Actors)
+            foreach (var a in Layout.Actors.Concat(Layout.Extras))
             {
-                var v = new ActorView { A = a };
+                bool extra = Layout.Extras.Contains(a);
+                var v = new ActorView { A = a, Units = a.Units > 0f ? a.Units : SpriteUnits };
                 int found = 0;
                 for (int i = 0; i < 8; i++)
                 {
@@ -236,6 +242,7 @@ namespace Chaos.Client
                     if (et != null) { et.filterMode = FilterMode.Point; et.wrapMode = TextureWrapMode.Clamp; et.anisoLevel = 0; }
                     v.Emit[i] = et;
                 }
+                if (extra && found == 0) continue;   // the pack monsters (Resources/FrontArt/pk_*) come only with the CHAOS_ART_KEY secret
                 if (found < 8) Debug.LogWarning("chaos front art: " + a.Folder + " has " + found + " of 8 pictures in Resources/" + Folder);
                 v.Mat = Own(new Material(shader) { name = "front-art-sprite-" + a.Folder });
                 v.ShadowMat = Own(new Material(shader) { name = "front-art-shadow-" + a.Folder });
@@ -403,7 +410,7 @@ namespace Chaos.Client
                 uv.Add(new Vector4(0, 0, 0, strength)); uv.Add(new Vector4(1, 0, 0, strength)); uv.Add(new Vector4(1, 1, 0, strength)); uv.Add(new Vector4(0, 1, 0, strength));
                 t.Add(i); t.Add(i + 3); t.Add(i + 2); t.Add(i); t.Add(i + 2); t.Add(i + 1);
             };
-            foreach (var a in Layout.Actors) blob(a.X, a.Y, a.Z, 0.62f, 0.36f, 0.9f);
+            foreach (var av in actors) blob(av.A.X, av.A.Y, av.A.Z, 0.62f * av.Units / SpriteUnits, 0.36f * av.Units / SpriteUnits, 0.9f);
             foreach (var b in Layout.Boxes)
             {
                 if (b.Tag == null || b.Tag == "rubble" || b.Tag == "coal" || b.Tag == "torch" || b.Tag == "gate") continue;
@@ -561,7 +568,7 @@ namespace Chaos.Client
                 }
                 float breath = 1f + 0.012f * Mathf.Sin(t * 2.1f + i * 1.7f);
                 var pos = new Vector3(v.A.X, v.A.Y + 0.01f, v.A.Z);
-                var scale = new Vector3(SpriteUnits, SpriteUnits * breath, 1f);
+                var scale = new Vector3(v.Units, v.Units * breath, 1f);
                 v.Quad.SetPositionAndRotation(pos, face);
                 v.Quad.localScale = scale;
                 v.Proxy.SetPositionAndRotation(pos + sun * 0.18f, sunFace);
@@ -595,16 +602,16 @@ namespace Chaos.Client
                 var away = new Vector3(feet.x - lp.x, 0f, feet.z - lp.z);
                 float dist = away.magnitude;
                 float h = Mathf.Max(0.35f, lp.y - feet.y);
-                float len = SpriteUnits * Mathf.Clamp(0.55f * dist / h + 0.35f, 0.5f, 1.4f);
+                float len = v.Units * Mathf.Clamp(0.55f * dist / h + 0.35f, 0.5f, 1.4f);
                 float strength = 0.95f * Mathf.Clamp01(1.15f - dist / Mathf.Max(0.1f, near.S.Range));
-                SetCast(v.Cast[0], feet, dist > 0.01f ? away / dist : Vector3.forward, len);
+                SetCast(v.Cast[0], feet, dist > 0.01f ? away / dist : Vector3.forward, len, v.Units);
                 v.CastMat[0].SetFloat("_Strength", strength);
             }
             else v.Cast[0].Clear();
             var flat = new Vector3(sun.x, 0f, sun.z);
             float fl = flat.magnitude;
             float elev = Mathf.Atan2(-sun.y, Mathf.Max(0.01f, fl));
-            SetCast(v.Cast[1], feet, fl > 0.01f ? flat / fl : Vector3.forward, SpriteUnits * Mathf.Clamp(0.8f / Mathf.Tan(Mathf.Max(0.2f, elev)), 0.4f, 1.3f));
+            SetCast(v.Cast[1], feet, fl > 0.01f ? flat / fl : Vector3.forward, v.Units * Mathf.Clamp(0.8f / Mathf.Tan(Mathf.Max(0.2f, elev)), 0.4f, 1.3f), v.Units);
             v.CastMat[1].SetFloat("_Strength", 0.55f);
         }
 
@@ -618,9 +625,9 @@ namespace Chaos.Client
         /// <summary>How bright the glowing pixels of a picture are, as light added to their colour (past 1 feeds the bloom).</summary>
         const float EmitAmount = 2.2f;
 
-        static void SetCast(Mesh m, Vector3 feet, Vector3 dir, float len)
+        static void SetCast(Mesh m, Vector3 feet, Vector3 dir, float len, float units)
         {
-            var side = Vector3.Cross(Vector3.up, dir) * (SpriteUnits * 0.5f);
+            var side = Vector3.Cross(Vector3.up, dir) * (units * 0.5f);
             var f = feet + Vector3.up * CastLift;
             castVerts[0] = f + side; castVerts[1] = f - side;
             castVerts[2] = f - side + dir * len; castVerts[3] = f + side + dir * len;

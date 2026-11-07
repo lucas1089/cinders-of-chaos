@@ -152,8 +152,8 @@ namespace Chaos.Core.Tests
                             }
                     }
                 }
-            // characters: upright quads 2 x 2 units facing the camera
-            foreach (var a in L.Actors)
+            // characters and the pack monsters (when opened): upright quads of Units (1.5 by default) facing the camera
+            foreach (var a in System.Linq.Enumerable.Concat(L.Actors, L.Extras))
             {
                 string dirName = FrontArtFacing.Name(a.FaceX, a.FaceZ, yaw);
                 string file = Path.Combine(picsDir, a.Folder, dirName + ".png");
@@ -161,17 +161,17 @@ namespace Chaos.Core.Tests
                 var pic = LoadPng(file);
                 var foot = new Vec3(a.X, a.Y, a.Z);
                 var lt = light(a.X, a.Y + 1f, a.Z, 0f, 0.8f, -0.6f);
-                for (int sy = 0; sy < 128; sy++)
-                    for (int sx = 0; sx < 128; sx++)
+                float units = a.Units > 0f ? a.Units : 1.5f, texel = units / pic.W;
+                for (int sy = 0; sy < pic.H * 2; sy++)
+                    for (int sx = 0; sx < pic.W * 2; sx++)
                     {
-                        int tx = sx / 2, ty = 63 - sy / 2 * 1;
-                        ty = 63 - (sy / 2);
-                        int ti = (ty * 64 + tx) * 4;
+                        int tx = sx / 2, ty = pic.H - 1 - sy / 2;
+                        int ti = (ty * pic.W + tx) * 4;
                         if (pic.Rgba[ti + 3] < 128) continue;
-                        var wp = foot + right * ((sx + 0.5f) / 64f - 1f) + new Vec3(0, (sy + 0.5f) / 64f, 0);
+                        var wp = foot + right * ((sx + 0.5f) * texel / 2f - units / 2f) + new Vec3(0, (sy + 0.5f) * texel / 2f, 0);
                         var s = proj(wp);
                         int x0 = (int)s[0], y0 = (int)s[1];
-                        float size = W / (2f * s[2] * tanH * aspect) / 64f + 1f;
+                        float size = W / (2f * s[2] * tanH * aspect) * texel / 2f + 1f;
                         for (int yy = 0; yy < size; yy++)
                             for (int xx = 0; xx < size; xx++)
                             {
