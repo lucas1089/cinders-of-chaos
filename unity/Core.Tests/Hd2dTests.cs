@@ -61,6 +61,19 @@ namespace Chaos.Core.Tests
             check(Near(Hd2d.ShearFor(Hd2dKind.Creature, 2, 2), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 1, 2), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 2, 1), 0f) && Near(Hd2d.ShearFor(Hd2dKind.Object, 2, 2), 0f)
                 && Near(Hd2d.ShearFor(Hd2dKind.OnTop, 2, 2), 1f) && Near(Hd2d.ShearFor(Hd2dKind.Decal, 2, 2), 0f),
                 "hd2d: no shear for creatures, loose objects, one-cell-wide or one-cell-high things, or flat things");
+            {
+                var torchType = T(t => { t.NotWalkable = true; t.LightLevel = 6; t.LightColor = 206; }, 2, 2);
+                var standing = new Tile(new Pos(100, 100, 7));
+                standing.Things.Add(new Thing { Item = new Item { Id = 7, Type = torchType } });
+                var hung = new Tile(new Pos(101, 100, 7));
+                hung.Things.Add(new Thing { Item = new Item { Id = 2, Type = wallType } });
+                hung.Things.Add(new Thing { Item = new Item { Id = 7, Type = torchType } });
+                var tp = new System.Collections.Generic.List<Hd2dPiece>();
+                Hd2d.LayoutTile(dat, standing, origin, stretch, tp);
+                Hd2d.LayoutTile(dat, hung, origin, stretch, tp);
+                check(tp.Count == 3 && tp[0].Shear == 0f && tp[1].Shear == 1f && tp[2].Shear == 1f,
+                    "hd2d: a standing torch keeps its leaning art, a torch hung on a sheared wall follows the wall");
+            }
             var shifted = T(t => { t.Ground = true; t.DisplacementX = 8; t.DisplacementY = 16; });
             var t2 = new Tile(new Pos(100, 100, 7));
             t2.Things.Add(new Thing { Item = new Item { Id = 3, Type = shifted } });

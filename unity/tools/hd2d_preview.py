@@ -112,7 +112,8 @@ def shear_of(info):
         return 0.0
     f = info.flags
     blocking = f.get('notwalkable') or f.get('blockpath') or f.get('top')
-    return 1.0 if blocking and info.w > 1 and info.h > 1 else 0.0
+    # a light source (a torch) leans on purpose in its art; Unity shears it only when it hangs on a sheared wall
+    return 1.0 if blocking and not f.get('light') and info.w > 1 and info.h > 1 else 0.0
 
 
 def billboard_rect(info, tx, ty):

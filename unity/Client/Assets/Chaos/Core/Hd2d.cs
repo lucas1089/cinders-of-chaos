@@ -122,7 +122,8 @@ namespace Chaos.Core
         }
 
         /// <summary>The shear of an upright piece: 1 for architecture (a blocking or on-top thing: walls, pillars, arches) at
-        /// least two cells wide and high, whose art climbs up-left across cells; else 0. A one-cell-wide sprite stands straight
+        /// least two cells wide and high, whose art climbs up-left across cells; else 0. LayoutTile also leaves a light source unsheared
+        /// unless it hangs on a sheared wall of its tile. A one-cell-wide sprite stands straight
         /// in its column; loose objects (a standing torch) keep their art, which often leans on purpose.</summary>
         public static float ShearFor(Hd2dKind kind, int width, int height) =>
             width > 1 && height > 1 && (kind == Hd2dKind.Billboard || kind == Hd2dKind.OnTop) ? 1f : 0f;
@@ -137,6 +138,7 @@ namespace Chaos.Core
         public static void LayoutTile(DatFile dat, Tile tile, Pos origin, float stretch, List<Hd2dPiece> into, Func<Creature, float[]> drawn = null, bool slantedArt = true)
         {
             float elevation = 0f;
+            bool shearedBelow = false;   // a wall on this tile was sheared: a torch hung on it follows
             for (int i = 0; i < tile.Things.Count; i++)
             {
                 var th = tile.Things[i];
@@ -159,6 +161,9 @@ namespace Chaos.Core
                 float depth = kind == Hd2dKind.Billboard ? BackEdge : TileMiddle;
                 var p = Make(kind, type, tile.Pos, i, tx, ty, elevation, origin, stretch, depth, slantedArt);
                 p.Item = th.Item;
+                // a light source (a standing torch) leans on purpose in its art: sheared only when it hangs on a sheared wall
+                if (type.LightLevel > 0 && !shearedBelow) p.Shear = 0f;
+                if (p.Shear > 0f && type.LightLevel == 0) shearedBelow = true;
                 into.Add(p);
                 if (type.Elevation > 0) elevation = Math.Min(24f, elevation + type.Elevation);
             }
