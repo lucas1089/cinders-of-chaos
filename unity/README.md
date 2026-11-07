@@ -18,6 +18,9 @@ Windows so far (files in `Assets/Chaos/Unity/Windows/`):
 - Battle (Ctrl+B): creatures on your floor in view, nearest first. Left-click attacks (again stops), right-click follows. The target has a red row and a red frame on the map.
 - Minimap (Ctrl+M): the remembered minimap round you (2 px per tile), floor up/down and zoom buttons. `MinimapMemory` (`Core/Minimap.cs`) keeps explored ground per floor.
 - Hotkeys: 12 slots, F1 to F12, open at the bottom. Click a slot to type what it says; Enter or ok saves, per character in PlayerPrefs. The keys work while the bar is open and the chat line is not focused.
+  Right-click a slot to pick a spell for it in the spellbook. A slot that holds the words of a spell counts its cooldown down.
+- Spells (Ctrl+P): the server's spell list (opcode 219) with the filters of the main client (learned, available soon, my vocation, all, runes; all, attack, support; search).
+  Left-click casts (says the words), right-click selects and shows F1 to F12 buttons that put the spell on a hotkey slot. Cooldowns come from 0xA4 and 0xA5.
 - Right-click on a creature on the map attacks it (`ChaosApp.Combat.cs`).
 It does not replace the client in `client/`.
 
@@ -30,6 +33,9 @@ It does not replace the client in `client/`.
     - `Things.cs`: the dat (10.98 flags plus our custom flags) and spr readers (extended, transparency).
     - `Outfits.cs`: outfit colours, the colour mask.
     - `ClientGuard.cs`: the client guard answer (HMAC-SHA256) and the hello.
+    - `Identity.cs`: who the client says it is (OS word, markers, capabilities) and the 0x43 feature list.
+    - `ExtOpcodes.cs`: extended opcodes (0x32): JSON reader and writer, chunk join, dispatcher by opcode.
+    - `Spells.cs`: the spell list (opcode 219), filters, cooldowns, cast by words. `Loc.cs`: UI texts in English and pt-BR.
     - `World.cs`: tiles, stacks, creatures.
     - `Protocol.cs`: framing, login packets, the TCP connection, the login answer.
     - `Game.cs`: `GameParser` reads the server's messages into a `World`. `GameSession` adds login, guard, pings and walking.
@@ -494,12 +500,15 @@ The checks cover:
 - crypto vectors shared with `server/tools/loadtest.py`;
 - the dat and spr readers on synthetic files;
 - the login answer, map descriptions with skip counters, moves, the east strip, turns, items, pings;
-- a whole game login against a fake server on localhost. It uses its own RSA key, real XTEA and the guard handshake;
+- a whole game login against a fake server on localhost. It uses its own RSA key, real XTEA and the guard handshake.
+  It runs twice: identity Extended, and identity Chaos with the markers, a feature list, extended outfits, item attributes and an
+  extended opcode round trip whose answer comes in parts;
+- `ExtTests.cs`: JSON (parse, write, 22 broken texts, depth), the extended opcode wire bytes, chunks (split and join like the server and the
+  main client, stray parts, a UTF-8 character cut by a part), the identity bytes, the Chaos parts of the parser (0x43, outfits, item attributes,
+  0x4B floors, 0xA4 and 0xA5), the spell model and the pt-BR texts (every `Loc.T` key in `Unity/` has an entry);
 - the front-art live view (`FrontLiveTests.cs`): the new block textures, ground and wall classes to blocks, heights, items as sprites or boxes,
   lights, floors below and voids, the world mapping and anchors, the rebuild hash, size and time bounds;
-
 - the front-art creatures (`FrontLooksTests.cs`): the name rules over every monster name of the server, the 21 classes, the outfit composer, the label, the state machine (steps, facing, swings, flinch);
-
 - the front-art live effects (`FrontFxTests.cs`): byte-level packets of 0x83, 0x84, 0x85, 0x86 and 0xB4, every effect and missile id of the server's Lua files has an element, palettes and missile arts, number text, the melee rule, timing and the director's rules;
 - the 3D character mapping (`CharsTests.cs`): the 21 classes against the vocation files, the monster rules over every monster name of the server
   (it prints the share per model), size, hand bones, idle clips, the label font and the line-up. The fetch script: `python3 -I unity/tools/fetch_3d_assets_test.py`.
@@ -540,12 +549,50 @@ The artifact `chaos-unity-<target>` is kept 7 days.
 
 ## Protocol notes
 
-- The game login sends u16 0 as client markers.
-  The server then sends no feature list and plain outfits (no wings, aura or shader).
-  It sends one 0x64 map and no item attributes, and never compresses.
+- The game login says who we are in two places (full audit in "Both clients"): the OS word and the marker bytes after the random byte.
+  Identity Extended (default): OS 21 and `u16 0`. The server sends no feature list, plain outfits (no wings, aura or shader), one 0x64 map, no item attributes, never compresses.
   An adler32 of 0, which would mean a compressed packet, is refused.
+  Identity Chaos: OS 21 and the markers of the main client (`ClientIdentity.WriteMarkers`). The server then sends 0x43 (feature list), outfits with
+  `u16 wings, u16 aura, string shader`, the floors of a change of level as 0x4B messages before 0xBE and 0xBF, item attributes (feature 126),
+  16-bit spell ids in 0xA4 (feature 152). `GameParser` reads all of that when `Identity.Markers` is set. Item attributes follow the feature, not the identity.
+- Every extended opcode reaches `GameSession.Ext` (`ExtOpcodes`). The guard challenge on 189 is answered inside the session. Modules register with
+  `Ext.On(opcode, handler)` for JSON `{action, data}` (chunks joined) or `Ext.OnText(opcode, handler)` for plain text, and send with `Ext.Send(opcode, action, data)`.
+  The text is UTF-8 on the wire; `ByteReader.Str` reads it as latin-1, so `ExtOpcodes.FromWire` and `ToWire` convert. A request over 16384 bytes is refused (the server drops it).
 - The step time follows `server/tools/cast_relay.py` `step_ms` (src-patch 0018).
 - An opcode the parser does not know stops that packet. The next packets go on. `live` lists what it read.
+
+## Both clients
+
+Players can use the main client (`client/`) or Unity on the same server. What the server tests, read from `server/src-patches` on 2026-11-07:
+
+| Where | Test | Effect |
+|---|---|---|
+| both logins (0021) | u32 version word is the tag 0x4343 in the high half and the build in the low half, build allowed | else the official-client message (mode enforce) |
+| game login (0021, 0015, base `login`) | OS word below 10 | no extended opcodes, the guard refuses it |
+| game login | marker `"OTCv8"` + version after the random byte | `sendFeatures` (0x43), wings / aura / shader in outfits, floors as 0x4B |
+| game login (0003) | then `"OTCv8TierByte"` and `"A"` | chaosClient: feature 126, item attributes after every item, packet compression when `packetCompression` is on (0069, 0073) |
+| game login (0051, 0079) | then u32, `"C"` and a capability byte | bit 7 typed impact numbers (155), bit 6 16-bit spell ids (152, needs `chaosWideSpellIds`) |
+| guard (0021) | challenge 189, hello 190 | `ClientGuard.cs`, unchanged. The real key comes from `CHAOS_CLIENT_KEY` at build time, never embedded by default. |
+| extended opcodes (0075) | string over 16384 bytes | dropped on the server |
+| Lua | `Player:sendExtendedOpcode` and the opcode dispatch | no check of the OS beyond the engine's, so Unity gets every module's messages |
+
+What Unity announces: OS 21, version word `0x4343 << 16 | build`, markers `u16 0` (Extended, default) or the full marker block (Chaos).
+OS 21 was always an extended opcode client, so the earlier note that Unity gets no extended opcodes was wrong: it got them and ignored all but the guard.
+No server change was needed.
+
+Choosing the identity: the setting `chaos.identity` (PlayerPrefs) or the environment variable `CHAOS_UNITY_IDENTITY` takes `extended` or `chaos`.
+Chaos is parsed and tested on a fake server only. Before it becomes the default:
+1. log in with `CHAOS_UNITY_IDENTITY=chaos` and read the log line `Server features: ...`. The full list is in the base engine, not in this repo.
+   A feature that changes a wire width the parser does not know (an effect id of 16 bits, for example) must be handled by the effect parser of track B through `GameParser.Features`.
+2. walk through a staircase and a hole (0x4B floors), open a bag with a rarity item, see a creature with wings or a shader.
+3. keep `packetCompression` off until Unity has an inflater (it throws on a compressed packet).
+4. leave capability bit 7 off until the 0xB4 parser reads the three extra fields (percent, type, creature id). `ClientIdentity.Capabilities` holds the bits.
+
+UI text: the English text is the key, `Loc.T("text", args)` looks it up in `LocStrings.PtBr` (`Core/Loc.cs`). Arguments are `{0}`. The language is `chaos.lang` or the system language.
+A test fails when a `Loc.T` key in `Unity/` has no pt-BR entry. Server texts come in the player's language from the server (opcode 157 `hello` with `lang`).
+Window titles of the older windows are not translated yet.
+
+Parity: `docs/UNITY_PARITY.md` has the module table (169 rows), the missing base opcodes and the migration plan.
 
 ## HD-2D post-processing (O432)
 

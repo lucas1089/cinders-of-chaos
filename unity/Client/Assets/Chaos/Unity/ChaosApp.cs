@@ -56,6 +56,7 @@ namespace Chaos.Client
         void Awake()
         {
             Application.targetFrameRate = 60;
+            Loc.Set(Loc.Choose(PlayerPrefs.GetString("chaos.lang", ""), Application.systemLanguage.ToString()));
             pairDir = PlayerPrefs.GetString("chaos.pair", DefaultPairDir());
             host = PlayerPrefs.GetString("chaos.host", host);
             port = PlayerPrefs.GetString("chaos.port", port);
@@ -155,6 +156,15 @@ namespace Chaos.Client
             return m.Length > 0 && System.Text.RegularExpressions.Regex.IsMatch(m, "^[0-9]+$") ? m : Protocol.OpenRsaModulus;
         }
 
+        /// <summary>Extended (plain 10.98 wire, extended opcodes) or Chaos (the main client's markers too: feature list, wings / aura /
+        /// shader, 0x4B floors, item attributes). The setting "chaos.identity" or the environment CHAOS_UNITY_IDENTITY names it.
+        /// Extended until a live test has passed with Chaos (unity/README.md "Both clients").</summary>
+        static ClientIdentity IdentityChoice()
+        {
+            string env = Environment.GetEnvironmentVariable("CHAOS_UNITY_IDENTITY");
+            return ClientIdentity.Parse(string.IsNullOrEmpty(env) ? PlayerPrefs.GetString("chaos.identity", "extended") : env, ClientBuild());
+        }
+
         static ushort ClientBuild()
         {
             var asset = Resources.Load<TextAsset>("chaos_build");
@@ -197,6 +207,7 @@ namespace Chaos.Client
                 GuardKey = GuardKey(),
                 Build = ClientBuild(),
                 RsaModulus = RsaModulus(),
+                Identity = IdentityChoice(),
             });
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
             session.Chat += AddChat;
