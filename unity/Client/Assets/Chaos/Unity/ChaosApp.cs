@@ -501,19 +501,7 @@ namespace Chaos.Client
             GUILayout.EndArea();
         }
 
-        void CharactersGui(float w, float h)
-        {
-            Logo(w, h / 2 - 160);
-            GUILayout.BeginArea(new Rect(w / 2 - 170, h / 2 - 160, 340, 320), GUI.skin.box);
-            GUILayout.Label("Characters");
-            charScroll = GUILayout.BeginScrollView(charScroll, GUILayout.Height(220));
-            foreach (var ch in login.Characters)
-                if (GUILayout.Button(ch.Name + "  (" + ch.World + ")")) Enter(ch);
-            GUILayout.EndScrollView();
-            if (GUILayout.Button("Back")) { screen = Screen.Login; status = ""; }
-            GUILayout.Label(status, small);
-            GUILayout.EndArea();
-        }
+        void CharactersGui(float w, float h) { CharSelectGui(w, h); }   // ChaosApp.CharSelect.cs
 
         void GameGui(float w, float h, float scale)
         {
@@ -569,12 +557,13 @@ namespace Chaos.Client
             Rect outR = LogoutRect(w);
             uiRects.Add(Scaled(outR, scale));
             if (GUI.Button(outR, "Log out")) { session?.Logout(); Leave("Logged out."); }
+            PartyGui(w, h, scale);   // the right-click menu and the party invitation, over the windows
         }
 
         public static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);
         static Rect Scaled(Rect r, float s) => new Rect(r.x * s, r.y * s, r.width * s, r.height * s);
 
-        static Rect StatusRect() => new Rect(8, 8, 240, 78);
+        static Rect StatusRect() => new Rect(8, 8, 248, 92);
         static Rect LogoutRect(float w) => new Rect(w - 96, 8, 88, 30);
         Rect ChatRect(float w, float h)
         {
@@ -583,18 +572,7 @@ namespace Chaos.Client
             return new Rect(8, h - ch - 8, Mathf.Min(460f, w * 0.42f), ch);
         }
 
-        void StatusPanel(float scale)
-        {
-            var p = session?.Parser;
-            var me = world?.Player;
-            if (p == null) return;
-            Rect box = StatusRect();
-            uiRects.Add(Scaled(box, scale));
-            Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.8f));
-            GUI.Label(new Rect(16, 10, 224, 22), (me?.Name ?? "...") + "   Lv " + p.Level, titleStyle);
-            Bar(new Rect(16, 36, 224, 18), p.Health, p.MaxHealth, new Color(0.75f, 0.12f, 0.1f));
-            Bar(new Rect(16, 60, 224, 18), p.Mana, p.MaxMana, new Color(0.15f, 0.35f, 0.85f));
-        }
+        void StatusPanel(float scale) { PlatePanel(scale); }   // the character plate: ChaosApp.Plate.cs
 
         void Bar(Rect r, int v, int max, Color c)
         {

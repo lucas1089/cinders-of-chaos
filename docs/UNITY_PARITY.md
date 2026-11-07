@@ -33,7 +33,7 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 | Containers, equipment, use, move | partial | Open, close, up, use, drag. No split stack dialog, no use-with, no look. |
 | NPC trade, NPC talk | done | `NpcTalkWindow`, `NpcTradeWindow`, `Core/NpcTrade.cs`. 0x7A, 0x7B, 0x7C in, 0x79, 0x7A, 0x7B, 0x7C out, NPC speech, currency (opcode 113). Not tried on the live server. No buy-in-backpacks fee, no modal windows. |
 | Death | missing | 0x28 is read. No death screen and no recap. |
-| Party | missing | The shield (0x91) is read. No invite, join, leave, no frames. |
+| Party | done | `PartyFramesWindow` (Ctrl+G, opcode 235), right-click menu on a player (invite, join, revoke, pass leadership, leave, shared experience: 0xA3 to 0xA8), invitation box with Accept and Decline. Not run against a live server. |
 | Outfit window | missing | 0xC8 and the set outfit request. Chaos identity brings wings, aura and shader fields. |
 | Skills, stats | partial | `SkillsWindow` reads 0xA0 and 0xA1. |
 | Text windows (books, signs), house windows | missing | 0x96, 0x97. |
@@ -48,18 +48,18 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 
 | Module | Opcode | What it does and where Unity is | Status | Prio | Effort |
 |---|---|---|---|---|---|
-| `client_chaos_charselect` | none | Character cards and creation. Unity lists the characters from the login answer; no cards, no creation form. | partial | P0 | M |
+| `client_chaos_charselect` | none | Character cards and creation. Unity draws cards from the login answer (outfit, name, level, class, world), keys and Enter; "Create character" opens the website page (createcharacter.php), as the login server only lists. No wings, aura, shader, season or last-login line (those come from the website account API). | partial | P0 | M |
 | `client_chaos_login` | none | Login screen. Unity has account, password, server fields and the logo; no news, no medallions. | partial | P0 | M |
 | `game_bagpanel` | none | Inventory panel. Unity has an equipment window and a containers window with drag and use; no tabs, no outfit, no coins. | partial | P0 | M |
 | `game_chaosguard` | 190 | Client guard hello (opcode 190) and the 189 handshake in Core/ClientGuard.cs. | done | P0 | S |
-| `game_chaoshud` | none | Character plate. Unity shows health and mana bars and numbers; no portrait, no experience chip. | partial | P0 | M |
+| `game_chaoshud` | none | Character plate: outfit portrait, name, level, health and mana bars (right-click: percent), experience line with the percent to the next level (0xA0). No opcode in the main client either. No eased bars, not movable. | partial | P0 | M |
 | `game_chaosspells` | 219 | Chaos spells in the spell list and action bar. Unity takes the list from opcode 219; no icon sheets. | partial | P0 | S |
 | `game_chatpanel` | none | Chat panel. Unity has one chat window with Enter to talk; no channels, no private messages. | partial | P0 | M |
 | `game_floatchat` | none | Floating chat over the map. Unity chat window is fixed at the bottom left. | partial | P0 | M |
 | `game_hotbar` | none | Central hotbar. Unity has 12 F-key slots that say a line or a spell, saved per character, with cooldown numbers; no ornate frame, no globes, no item or rune slots. | partial | P0 | M |
 | `game_npctalk` | none | NPC dialogue: private NPC speech (0xAA type 10), words to the NPC (0x96 type 12), quick words, {keyword} chips. No speech bubble over the NPC, no walk-up on Talk. | partial | P0 | M |
 | `game_npctradewindow` | 113 | NPC buy and sell list: tabs, search, amount slider, total, currency of opcode 113. No buy-in-backpacks option. | done | P0 | L |
-| `game_partyframes` | 235 | Party member frames. Party shield (0x91) is read; no frames. | missing | P0 | M |
+| `game_partyframes` | 235 | Party member frames. `Core/Party.cs`, `PartyFramesWindow`: outfit, class colour, level, leader mark, health and mana bars, state, distance, shared experience bonus, invite box. No buff icons, no settings window, not movable as a panel. | partial | P0 | M |
 | `game_spellbook` | 219 | Spellbook. Unity has the list, filters, search, cast by click, hotkey assignment; no area preview, no icons. | partial | P0 | M |
 | `client_chaos_locale` | 157 | English and pt-BR texts. Core/Loc.cs does it for Unity windows; no language option in a menu yet. | partial | P1 | S |
 | `client_chaos_topbar` | 115 | Top menu with unlocks by level. Unity has a flat toolbar of windows. | missing | P1 | L |
@@ -247,8 +247,8 @@ Server to client, not read by `GameParser`:
 
 Inside packets Unity reads, it skips or ignores: 0x9F spell list body, 0xAB channel list names, 0xB2 and 0xB3 private channel events (read, not shown), 0xDD map flags (read, not shown), 0x8D to 0x95 creature fields beyond the ones in `Creature`.
 
-Client to server packets Unity sends: walk and turn, say, use, move, close, up, attack, follow, pong, logout, extended opcodes, NPC shop (0x79 to 0x7C), words to an NPC (0x96 type 12).
-Not sent yet: fight modes (0xA0), use with (0x83), use on creature (0x84), look (0x8C), rotate (0x85), channels (0x97 to 0x9A), party (0xA3 to 0xA8), outfit (0xD2, 0xD3, 0xD4), auto-walk (0x64), stop (0xBE), VIP (0xDC to 0xDE), quest log (0xF0, 0xF1), equip hotkey (0x77).
+Client to server packets Unity sends: walk and turn, say, use, move, close, up, attack, follow, party (0xA3 invite, 0xA4 join, 0xA5 revoke, 0xA6 pass leadership, 0xA7 leave, 0xA8 shared experience), pong, logout, extended opcodes, NPC shop (0x79 to 0x7C), words to an NPC (0x96 type 12).
+Not sent yet: fight modes (0xA0), use with (0x83), use on creature (0x84), look (0x8C), rotate (0x85), channels (0x97 to 0x9A), outfit (0xD2, 0xD3, 0xD4), auto-walk (0x64), stop (0xBE), VIP (0xDC to 0xDE), quest log (0xF0, 0xF1), equip hotkey (0x77).
 
 ## Migration plan
 

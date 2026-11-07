@@ -63,6 +63,7 @@ namespace Chaos.Client
             windows.Add(new SpellbookWindow());
             windows.Add(new NpcTalkWindow());
             windows.Add(new NpcTradeWindow());
+            windows.Add(new PartyFramesWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>

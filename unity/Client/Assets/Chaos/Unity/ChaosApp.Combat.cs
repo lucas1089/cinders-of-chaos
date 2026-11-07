@@ -42,7 +42,7 @@ namespace Chaos.Client
                     var r = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
                     if (l.C.Id != me3 && r.Contains(Input.mousePosition) && a.z < best) { best = a.z; hit3 = l.C; }
                 }
-                if (hit3 != null) session.Attack(hit3.Id);
+                if (hit3 != null) OnCreatureRightClick(hit3);
             }
             else if (view != null && Input.GetMouseButtonDown(1) && !OverUi(Input.mousePosition) && cam.pixelRect.Contains(Input.mousePosition))
             {
@@ -51,7 +51,7 @@ namespace Chaos.Client
                 Creature hit = null;
                 foreach (var (c, at) in view.Labels)
                     if (c.Id != me && wp.x >= at.x && wp.x < at.x + 1f && wp.y <= at.y && wp.y > at.y - 1f) hit = c;
-                if (hit != null) session.Attack(hit.Id);
+                if (hit != null) OnCreatureRightClick(hit);
             }
         }
 
