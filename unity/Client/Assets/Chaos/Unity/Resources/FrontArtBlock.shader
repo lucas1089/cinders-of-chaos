@@ -17,7 +17,7 @@ Shader "Chaos/FrontArtBlock"
         Tags { "RenderType" = "Opaque" }
         CGPROGRAM
         #pragma target 3.0
-        #pragma surface surf FrontArt addshadow
+        #pragma surface surf FrontArt addshadow fullforwardshadows
         sampler2D _MainTex;
         sampler2D _BumpTex;
         half _Relief, _Emit;

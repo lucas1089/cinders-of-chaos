@@ -21,7 +21,7 @@ Shader "Chaos/FrontArtSprite"
         Cull Off
         CGPROGRAM
         #pragma target 3.0
-        #pragma surface surf FrontSprite alphatest:_Cutoff addshadow
+        #pragma surface surf FrontSprite alphatest:_Cutoff addshadow fullforwardshadows
         sampler2D _MainTex;
         half _Wrap, _Bend, _Fill, _PointScale;
 
