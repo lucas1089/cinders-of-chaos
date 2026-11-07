@@ -157,8 +157,18 @@ namespace Chaos.Core.Tests
             {
                 string dirName = FrontArtFacing.Name(a.FaceX, a.FaceZ, yaw);
                 string file = Path.Combine(picsDir, a.Folder, dirName + ".png");
-                if (!File.Exists(file)) continue;
-                var pic = LoadPng(file);
+                Pic pic;
+                if (File.Exists(file)) pic = LoadPng(file);
+                else
+                {
+                    // a pack monster: the first frame of its idle strip (idle_w for the three west headings)
+                    int di = FrontArtFacing.Index(a.FaceX, a.FaceZ, yaw);
+                    string strip = Path.Combine(picsDir, a.Folder, di >= 5 ? "idle_w.png" : "idle.png");
+                    if (!File.Exists(strip)) continue;
+                    var all = LoadPng(strip);
+                    pic = new Pic { W = all.H, H = all.H, Rgba = new byte[all.H * all.H * 4] };
+                    for (int y = 0; y < all.H; y++) Array.Copy(all.Rgba, y * all.W * 4, pic.Rgba, y * pic.W * 4, pic.W * 4);
+                }
                 var foot = new Vec3(a.X, a.Y, a.Z);
                 var lt = light(a.X, a.Y + 1f, a.Z, 0f, 0.8f, -0.6f);
                 float units = a.Units > 0f ? a.Units : 1.5f, texel = units / pic.W;

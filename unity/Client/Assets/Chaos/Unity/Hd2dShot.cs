@@ -167,7 +167,8 @@ namespace Chaos.Client
             yield break;
         }
 
-        /// <summary>The front-art scene (Unity/FrontArtScene.cs): front_art.png wide and front_art_close.png on the four characters.
+        /// <summary>The front-art scene (Unity/FrontArtScene.cs): front_art.png wide and front_art_close.png on the four characters;
+        /// with the pack monsters also front_art_anim_00..15.png (their idle animations, 8 a second).
         /// Log lines start with "chaos front art:". A failure is logged and does not stop the run: its shaders only compile in CI.</summary>
         void FrontArt(Camera cam, Texture2D tex)
         {
@@ -187,6 +188,17 @@ namespace Chaos.Client
                 Debug.Log("chaos front art: rendering the close view");
                 Save(cam, tex, "front_art_close.png");
                 Debug.Log("chaos front art: wrote front_art_close.png");
+                // the pack monsters' idle animations: 16 frames of the east horde, one animation frame apart (front_art_anim_NN.png)
+                if (scene.ActorCount > 4)
+                {
+                    scene.FrameHorde();
+                    for (int k = 0; k < 16; k++)
+                    {
+                        scene.Tick(0.4f + k / FrontArtScene.PackFps);
+                        Save(cam, tex, "front_art_anim_" + k.ToString("00") + ".png");
+                    }
+                    Debug.Log("chaos front art: wrote 16 animation frames");
+                }
             }
             catch (Exception e)
             {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests of front_art_packs.py on synthetic pictures: canvas placement, the mirror for the west pictures, the normal map's
+"""Tests of front_art_packs.py on synthetic pictures: canvas placement, frames sharing one box, the strip layout, the normal map's
 signs (OpenGL), the glow modes, the tar filter and a seal / open round trip (openssl).
 
 Usage: python3 -I unity/tools/front_art_packs_test.py
@@ -37,13 +37,20 @@ bb = fig.getbbox()
 check(bb == (7, 10, 13, 20), "figure: trimmed, centred, feet on the bottom row (%s)" % (bb,))
 check(fap.frame_count("Ghost_6_idle_strip16.png") == 16 and fap.frame_count("x.png") == 1, "frame count from the name")
 
-# mirror: an asymmetric picture
-pic = Image.new("RGBA", (8, 8), (0, 0, 0, 0))
-pic.putpixel((1, 4), (200, 10, 10, 255))
-pics = fap.pictures(pic)
-check(sorted(pics) == sorted(fap.DIRS), "eight pictures")
-check(pics["east"].getpixel((1, 4))[3] == 255 and pics["west"].getpixel((6, 4))[3] == 255, "the west pictures are the mirror")
-check(all(pics[d] is pics["east"] for d in ("north", "north-east", "south-east", "south")), "the other five are the drawing")
+# all frames share one box: a figure that bobs keeps its feet still and does not slide sideways
+bob = Image.new("RGBA", (40, 16), (0, 0, 0, 0))
+for y in range(4, 14):
+    bob.putpixel((5, y), (90, 80, 70, 255))      # frame 0: a post at x 5, rows 4-13
+for y in range(3, 13):
+    bob.putpixel((25, y), (90, 80, 70, 255))     # frame 1: the same post one row higher
+    bob.putpixel((28, y), (90, 80, 70, 255))     # and an arm 3 to the right
+fr = fap.frames_of(bob, 2)
+check(len(fr) == 2 and all(f.size == (20, 20) for f in fr), "frames: one square canvas each")
+check(fr[0].getbbox()[3] == 20 and fr[1].getbbox()[3] == 19, "frames: the lowest frame stands on the bottom row, the bob stays")
+check(fr[0].getbbox()[0] == fr[1].getbbox()[0], "frames: the post keeps its column")
+strip_out = fap.side_by_side(fr, "RGBA")
+check(strip_out.size == (40, 20) and strip_out.crop((20, 0, 40, 20)).tobytes() == fr[1].tobytes(), "side by side: frame k at k * size")
+check(fap.side_by_side([Image.new("RGB", (4, 4), (1, 2, 3))], "RGB").size == (4, 4), "side by side of one frame")
 
 # normal map of a disc: left edge points left, top edge up, the middle at the viewer
 disc = Image.new("RGBA", (24, 24), (0, 0, 0, 0))
@@ -77,25 +84,25 @@ check(fap.emission_mask(body, "warm").getpixel((9, 9)) == 255, "the emission mas
 # tar filter: only pk_<name>/<direction>[_n|_e].png files
 buf = io.BytesIO()
 with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-    for name in ["pk_ok/east.png", "pk_ok/east_n.png", "../evil/east.png", "pk_ok/../../x.png", "pk_ok/sub/east.png",
-                 "other/east.png", "pk_ok/run.sh", "pk_Bad/east.png"]:
+    for name in ["pk_ok/idle.png", "pk_ok/idle_w_n.png", "../evil/idle.png", "pk_ok/../../x.png", "pk_ok/sub/idle.png",
+                 "other/idle.png", "pk_ok/run.sh", "pk_Bad/idle.png", "pk_ok/east.png"]:
         info = tarfile.TarInfo(name)
         info.size = 1
         tar.addfile(info, io.BytesIO(b"x"))
-    link = tarfile.TarInfo("pk_ok/west.png")
+    link = tarfile.TarInfo("pk_ok/idle_w.png")
     link.type = tarfile.SYMTYPE
     link.linkname = "/etc/passwd"
     tar.addfile(link)
 buf.seek(0)
 with tarfile.open(fileobj=buf, mode="r:gz") as tar:
     names = [m.name for m in fap.safe_members(tar)]
-check(names == ["pk_ok/east.png", "pk_ok/east_n.png"], "tar filter keeps only safe picture files (%s)" % names)
+check(names == ["pk_ok/idle.png", "pk_ok/idle_w_n.png"], "tar filter keeps only safe picture files (%s)" % names)
 
 # seal / open round trip
 with tempfile.TemporaryDirectory() as tmp:
     src = os.path.join(tmp, "src")
     os.makedirs(os.path.join(src, "pk_demo"))
-    pic.save(os.path.join(src, "pk_demo", "east.png"))
+    strip_out.save(os.path.join(src, "pk_demo", "idle.png"))
     enc = os.path.join(tmp, "a.enc")
     os.environ["CHAOS_ART_KEY"] = "test-key-not-a-secret"
     check(fap.seal(src, enc) == 0 and os.path.getsize(enc) > 0, "seal writes the file")
@@ -103,7 +110,7 @@ with tempfile.TemporaryDirectory() as tmp:
         check(b"PNG" not in fh.read(), "the sealed file shows no picture")
     dst = os.path.join(tmp, "dst")
     check(fap.open_(enc, dst) == 0, "open")
-    with open(os.path.join(src, "pk_demo", "east.png"), "rb") as a, open(os.path.join(dst, "pk_demo", "east.png"), "rb") as b:
+    with open(os.path.join(src, "pk_demo", "idle.png"), "rb") as a, open(os.path.join(dst, "pk_demo", "idle.png"), "rb") as b:
         check(a.read() == b.read(), "open gives the same picture back")
     del os.environ["CHAOS_ART_KEY"]
     empty = os.path.join(tmp, "none")

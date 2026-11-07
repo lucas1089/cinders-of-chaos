@@ -10,7 +10,7 @@
 // a soft blob under the feet, and a shadow thrown by a second quad that faces the sun (shadow pass only) and sits a little behind the
 // picture along the light, so the picture never shadows itself and the ground shadow is the same.
 // Extras: purchased pack monsters (Layout.Extras, Resources/FrontArt/pk_<name>/, 64 x 64 at 40 texels per unit) stand around the
-// four; their pictures are not in git (licence: no sharing of the files) but come encrypted, unity/tools/front_art_packs.py, and the
+// four, playing their idle animations (PackFps); their pictures are not in git (licence: no sharing of the files) but come encrypted, unity/tools/front_art_packs.py, and the
 // CI opens them with the CHAOS_ART_KEY secret. Missing pictures leave an extra out.
 // Open it: F11 in the game (offline, no login), mouse wheel zooms between the wide view and the close view on the four characters.
 // CI: Hd2dShot (-chaosHd2dShot DIR) builds it and writes front_art.png and front_art_close.png.
@@ -48,6 +48,9 @@ namespace Chaos.Client
             public readonly Mesh[] Cast = new Mesh[2];   // ground silhouettes: [0] away from the nearest flame, [1] away from the moon
             public int Dir = -1;
             public float Units = SpriteUnits;   // the picture's side in units
+            // pack monsters: an idle animation, frames side by side, [0] facing right, [1] its mirror (idle_w); Frames 0 = none
+            public readonly Texture2D[] Strip = new Texture2D[2], StripN = new Texture2D[2], StripE = new Texture2D[2];
+            public int Frames, Frame = -1;
         }
 
         sealed class LightView { public Light L; public FaLight S; }
@@ -226,7 +229,20 @@ namespace Chaos.Client
                 bool extra = Layout.Extras.Contains(a);
                 var v = new ActorView { A = a, Units = a.Units > 0f ? a.Units : SpriteUnits };
                 int found = 0;
-                for (int i = 0; i < 8; i++)
+                if (extra)
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        string b = Folder + a.Folder + (k == 0 ? "/idle" : "/idle_w");
+                        v.Strip[k] = Point(Resources.Load<Texture2D>(b));
+                        v.StripN[k] = Point(Resources.Load<Texture2D>(b + "_n"));
+                        v.StripE[k] = Point(Resources.Load<Texture2D>(b + "_e"));
+                    }
+                    if (v.Strip[0] == null || v.Strip[1] == null) continue;   // the pack monsters (Resources/FrontArt/pk_*) come only with the CHAOS_ART_KEY secret
+                    v.Frames = Mathf.Max(1, v.Strip[0].width / Mathf.Max(1, v.Strip[0].height));
+                    found = 8;
+                }
+                else for (int i = 0; i < 8; i++)
                 {
                     var t = Resources.Load<Texture2D>(Folder + a.Folder + "/" + FrontArtFacing.Dirs[i]);
                     if (t != null)
@@ -242,7 +258,6 @@ namespace Chaos.Client
                     if (et != null) { et.filterMode = FilterMode.Point; et.wrapMode = TextureWrapMode.Clamp; et.anisoLevel = 0; }
                     v.Emit[i] = et;
                 }
-                if (extra && found == 0) continue;   // the pack monsters (Resources/FrontArt/pk_*) come only with the CHAOS_ART_KEY secret
                 if (found < 8) Debug.LogWarning("chaos front art: " + a.Folder + " has " + found + " of 8 pictures in Resources/" + Folder);
                 v.Mat = Own(new Material(shader) { name = "front-art-sprite-" + a.Folder });
                 v.ShadowMat = Own(new Material(shader) { name = "front-art-shadow-" + a.Folder });
@@ -279,6 +294,21 @@ namespace Chaos.Client
             mr.lightProbeUsage = LightProbeUsage.Off;
             mr.reflectionProbeUsage = ReflectionProbeUsage.Off;
             return go.transform;
+        }
+
+        static Texture2D Point(Texture2D t)
+        {
+            if (t != null) { t.filterMode = FilterMode.Point; t.wrapMode = TextureWrapMode.Clamp; t.anisoLevel = 0; }
+            return t;
+        }
+
+        /// <summary>Frames a second of the pack monsters' idle animations.</summary>
+        public const float PackFps = 8f;
+
+        static void SetFrame(Material m, int frame, int frames)
+        {
+            m.mainTextureScale = new Vector2(1f / frames, 1f);
+            m.mainTextureOffset = new Vector2((float)frame / frames, 0f);
         }
 
         static void SetPic(Material m, Texture2D t)
@@ -522,6 +552,8 @@ namespace Chaos.Client
         public void FrameWide() { zoom = 0f; PlaceCamera(WideTarget, 32f); Tune(false); }
 
         /// <summary>The four characters across the brazier, 11 units away.</summary>
+        /// <summary>The close look on the pack monsters east of the path (the screenshot mode's animation frames).</summary>
+        public void FrameHorde() { zoom = 1f; PlaceCamera(new Vector3(14.4f, Layout.GroundY(14.4f, 7.2f) + 0.9f, 7.2f), 13f); Tune(true); }
         public void FrameClose() { zoom = 1f; PlaceCamera(CloseTarget, 11f); Tune(true); }
 
         // ---- per frame ----
@@ -554,7 +586,34 @@ namespace Chaos.Client
             {
                 var v = actors[i];
                 int dir = FrontArtFacing.Index(v.A.FaceX, v.A.FaceZ, yaw);
-                if (dir != v.Dir)
+                if (v.Frames > 0)
+                {
+                    // the pack drawings face right; the three west headings (south-west, west, north-west) show the mirror
+                    int side = dir >= 5 ? 1 : 0;
+                    if (side != v.Dir)
+                    {
+                        v.Dir = side;
+                        SetPic(v.Mat, v.Strip[side]);
+                        v.Mat.SetTexture("_BumpMap", v.StripN[side] != null ? v.StripN[side] : Texture2D.normalTexture);
+                        v.Mat.SetFloat("_NormalAmount", v.StripN[side] != null ? 0.85f : 0f);
+                        v.Mat.SetTexture("_EmitTex", v.StripE[side] != null ? v.StripE[side] : Texture2D.blackTexture);
+                        v.Mat.SetFloat("_EmitAmount", v.StripE[side] != null ? EmitAmount : 0f);
+                        SetPic(v.ShadowMat, v.Strip[side]);
+                        SetPic(v.CastMat[0], v.Strip[side]);
+                        SetPic(v.CastMat[1], v.Strip[side]);
+                        v.Frame = -1;
+                    }
+                    int frame = (int)Mathf.Repeat(Mathf.Floor(t * PackFps) + i * 3, v.Frames);
+                    if (frame != v.Frame)
+                    {
+                        v.Frame = frame;
+                        SetFrame(v.Mat, frame, v.Frames);
+                        SetFrame(v.ShadowMat, frame, v.Frames);
+                        SetFrame(v.CastMat[0], frame, v.Frames);
+                        SetFrame(v.CastMat[1], frame, v.Frames);
+                    }
+                }
+                else if (dir != v.Dir)
                 {
                     v.Dir = dir;
                     SetPic(v.Mat, v.Pics[dir]);
