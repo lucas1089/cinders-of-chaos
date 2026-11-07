@@ -187,11 +187,12 @@ namespace Chaos.Client
                 Debug.Log("chaos front art: rendering the close view");
                 Save(cam, tex, "front_art_close.png");
                 Debug.Log("chaos front art: wrote front_art_close.png");
-                scene.DebugCastsOnTop(true, false);
-                Save(cam, tex, "front_art_debug_z.png");
-                scene.DebugCastsOnTop(false, true);
-                Save(cam, tex, "front_art_debug_s.png");
-                Debug.Log("chaos front art: wrote front_art_debug_z.png and front_art_debug_s.png");
+                foreach (var st in new[] { 0.39f, 0.6f, 0.8f, 0.95f, 1f })
+                {
+                    scene.DebugCastsOnTop(false, st);
+                    Save(cam, tex, "front_art_debug_" + Mathf.RoundToInt(st * 100) + ".png");
+                }
+                Debug.Log("chaos front art: wrote the strength test shots");
             }
             catch (Exception e)
             {
