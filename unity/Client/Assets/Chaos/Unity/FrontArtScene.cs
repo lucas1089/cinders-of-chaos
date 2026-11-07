@@ -1,6 +1,6 @@
 // The front-art scene: a test of a new look. Our 2D art is drawn at a slant, which looks wrong in 3D. The recipe here: a blocky 3D
 // diorama with crisp pixel textures (made in code, Core/FrontArtTex.cs: 16 texels per unit, point filtered) and small FRONT-FACING
-// pixel sprites standing upright as billboards (Resources/FrontArt/<name>/<direction>.png, 64 x 64, 8 directions picked by the
+// pixel sprites standing upright as billboards (Resources/FrontArt/<name>/<direction>.png, 48 x 48, 8 directions picked by the
 // facing against the camera yaw, Core/FrontArt.cs). Lit by one moon with soft shadows, a cool trilight ambient and warm flickering
 // point lights at braziers and torches; narrow field of view, far away, tilt-shift depth of field and bloom (Hd2dPost.cs),
 // ember particles (Hd2dParticles.cs) and fog. Built-in render pipeline. The layout and the meshing are Core (tested); this file turns
@@ -28,8 +28,8 @@ namespace Chaos.Client
         /// <summary>The mouse wheel zooms and the scene animates itself (the game); the screenshot mode frames and ticks by hand.</summary>
         public bool Interactive;
         public float CamYaw = 0f;
-        /// <summary>A sprite's picture covers 2 x 2 units: 64 texels at 32 per unit, a little finer than the 16 of the blocks.</summary>
-        public const float SpriteUnits = 2f;
+        /// <summary>A sprite's picture covers 1.5 x 1.5 units: 48 texels at 32 per unit, a little finer than the 16 of the blocks.</summary>
+        public const float SpriteUnits = 1.5f;
         public const string Folder = "FrontArt/";
 
         sealed class ActorView
