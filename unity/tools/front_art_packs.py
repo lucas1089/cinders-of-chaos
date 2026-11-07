@@ -234,7 +234,7 @@ def build(packs_dir, out_dir):
 
 # spell art for the casters (Core/FrontArt.cs FaSpell): fx_<name>/missile.png is the projectile pack's sheet as it is (8 rows of
 # directions E, SE, S, SW, W, NW, N, NE; 8 frames of 64 x 64 side by side), fx_<name>/impact.png an impact strip (square frames
-# side by side). Packs: docs/CREDITS.md "Projectiles" (32px renders) and the impacts of the WsT spell packs (64px topdown).
+# side by side). Packs: docs/CREDITS.md "Projectiles" (32px renders) and the impacts of "Magic VFX Spells & Impacts" (64px).
 MISSILES = [
     ("fireball", "proj_fireball", "hellfire"),
     ("frost", "proj_frost_shard", "frost"),
