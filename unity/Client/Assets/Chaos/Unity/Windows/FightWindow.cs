@@ -16,7 +16,8 @@ namespace Chaos.Client
             float sum = 0;
             foreach (var n in new[] { "Offensive", "Balanced", "Defensive" }) sum += bs.CalcSize(new GUIContent(Loc.T(n))).x + 12;
             ww = Mathf.Max(ww, sum + 8 + 16);
-            return new Rect(w - ww - 8, 582, ww, 118);
+            // above the bottom band: the hotkey bar (with its Q and E sockets) and the globes take the bottom centre
+            return new Rect(w - ww - 8, 462, ww, 118);
         }
         public FightWindow() { Open = true; }
         public override void Reset() { Open = true; }

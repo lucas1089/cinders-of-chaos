@@ -235,8 +235,9 @@ namespace Chaos.Client
             if (ring == null || mask == null) return;
             var bar = FindWindow<HotkeyBarWindow>();
             var a = bar != null && bar.Open ? bar.Area : new Rect(w / 2f - 220f, h - 110f, 440f, 102f);
-            float y = Mathf.Max(0f, Mathf.Min(h - GlobeSize - 2f, a.yMax - GlobeSize));
-            float hx = Mathf.Max(0f, a.x - GlobeSize - 4f), mx = Mathf.Min(w - GlobeSize, a.xMax + 4f);
+            // on top of the bar, in from its ends: beside it they hid under the chat and the Fight window
+            float y = Mathf.Max(0f, a.y - GlobeSize - 2f);
+            float hx = Mathf.Max(0f, a.x + 24f), mx = Mathf.Min(w - GlobeSize, a.xMax - GlobeSize - 24f);
             if (hx + GlobeSize > mx) hx = Mathf.Max(0f, mx - GlobeSize - 4f);
             var hr = new Rect(hx, y, GlobeSize, GlobeSize);
             var mr = new Rect(mx, y, GlobeSize, GlobeSize);
