@@ -32,7 +32,9 @@ namespace Chaos.Core
             byte type = r.U8();
             Pos at = default;
             int channel = -1;
-            if (TalkType.HasPosition(type)) at = ReadPos(r);
+            // an NPC line carries a position on the stock server; read it only when the bytes left say so (NpcTalkState.HasPosition)
+            if (NpcTalkState.IsNpcTalkType(type)) { if (NpcTalkState.HasPosition(r)) at = ReadPos(r); }
+            else if (TalkType.HasPosition(type)) at = ReadPos(r);
             else if (TalkType.HasChannel(type)) channel = r.U16();
             else if (!TalkType.IsBare(type)) throw new ProtocolException("unknown talk type " + type);
             string text = r.Str();
