@@ -599,6 +599,7 @@ namespace Chaos.Core
             InitSocial();   // Core/GameSocial.cs
             InitEndgame();
             InitCollect();
+            InitWorldUtils();
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
         }
@@ -688,6 +689,7 @@ namespace Chaos.Core
             ItemsPoll();
             EndgamePoll();
             CollectPoll();
+            WorldUtilsPoll();
             // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
             if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
             // the party frames: watch a moment after the login (the main client waits 400 ms)
