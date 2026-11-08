@@ -46,7 +46,7 @@ namespace Chaos.Core
             } },
             new MenuCategory { Id = "hunt", Text = Lk.N("Hunt"), Entries = new[]
             {
-                E("Battle List", "win:BattleListWindow"), E("Party Frames", "win:PartyFramesWindow"), E("Hunt Tracker", "win:HuntWindow"),
+                E("Battle List", "win:BattleListWindow"), E("Party Frames", "win:PartyFramesWindow"), E("Hunt Tracker", "win:HuntWindow"), E("DPS Meter", "win:DpsMeterWindow"),
                 E("Minimap", "win:MinimapWindow"), E("Fight", "win:FightWindow"),
                 E("Bestiary", "win:BestiaryWindow"),
                 E("Map Overlay", "win:MapOverlayWindow"), E("Map Markers", "win:MapMarkersWindow"), E("Auto Loot", "win:AutoLootWindow"),
@@ -68,7 +68,7 @@ namespace Chaos.Core
                 E("House", "info:house"), E("Ancestral Store", "info:ancestral"),
                 E("Market", "win:MarketWindow"),
                 E("Crafting Bench", "win:CraftingWindow"), E("Professions", "win:ProfessionsWindow"), E("Crafting Tables", "win:CraftTableWindow"),
-                E("Item Finder", "win:ItemFinderWindow"), E("Orb Exchange", "win:OrbExchangeWindow"), E("Candlemarks", "win:CandlemarksWindow"), E("Auto Seller", "win:AutoSellerWindow"),
+                E("Codex", "win:CodexWindow"), E("Item Finder", "win:ItemFinderWindow"), E("Orb Exchange", "win:OrbExchangeWindow"), E("Candlemarks", "win:CandlemarksWindow"), E("Auto Seller", "win:AutoSellerWindow"),
             } },
             new MenuCategory { Id = "social", Text = Lk.N("Social"), Entries = new[]
             {
@@ -78,7 +78,7 @@ namespace Chaos.Core
             } },
             new MenuCategory { Id = "system", Text = Lk.N("System"), Entries = new[]
             {
-                E("Hotkeys", "win:HotkeyBarWindow"), E("Server Info", "info:server"),
+                E("Hotkeys", "win:HotkeyBarWindow"), E("Help Search", "win:HelpSearchWindow"), E("Server Info", "info:server"),
             } },
         };
 

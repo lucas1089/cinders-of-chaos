@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Chaos.Client
 {
-    public sealed class HelperWindow : GameWindow
+    public sealed partial class HelperWindow : GameWindow
     {
         enum Pick { None, Heal, Training, Haste, Slot, Potion }
 
@@ -27,7 +27,7 @@ namespace Chaos.Client
 
         public override string Title => Loc.T("Helper");
         public override KeyCode Hotkey => KeyCode.R;
-        protected override Rect Place(float w, float h) => new Rect(w - 392f, 48f, 372f, 470f);
+        protected override Rect Place(float w, float h) => new Rect(w - 452f, 48f, 432f, 540f);
 
         /// <summary>The running helper (null before the character is in the game).</summary>
         public HelperEngine Engine => engine;
@@ -50,6 +50,8 @@ namespace Chaos.Client
                 engine = new HelperEngine(s.Spells, host);
                 engineFor = s; loadedFor = name;
                 engine.Config = HelperConfig.FromJson(PlayerPrefs.GetString(HelperConfig.PrefsKey("-", name), ""));
+                engine.Held = new EverfullHeld(s.Ext);
+                engine.Held.Ask();
                 var e = engine;
                 // the server's answers to a cast confirm it (0xA4 / 0xA5); the session's own handlers keep working
                 var spellCd = s.Parser.SpellCooldown; var groupCd = s.Parser.GroupCooldown;
@@ -125,12 +127,15 @@ namespace Chaos.Client
 
             if (pick != Pick.None) { DrawPicker(x, y, w, inner.yMax - y); return; }
 
-            int t = GUI.Toolbar(new Rect(x, y, w, 24), tab, new[] { Loc.T("Healing"), Loc.T("Shooter"), Loc.T("Target") });
+            if (extraPick != ExtraPick.None) { DrawExtraPicker(x, y, w, inner.yMax - y); return; }
+
+            int t = GUI.SelectionGrid(new Rect(x, y, w, 52), tab, new[] { Loc.T("Healing"), Loc.T("Shooter"), Loc.T("Target"), Loc.T("Runes"), Loc.T("Allies"), Loc.T("Support"), Loc.T("More") }, 4);
             if (t != tab) { tab = t; message = ""; }
-            y += 30;
+            y += 58;
             if (tab == 0) DrawHealing(x, y, w);
             else if (tab == 1) DrawShooter(x, y, w);
-            else DrawTarget(x, y, w);
+            else if (tab == 2) DrawTarget(x, y, w);
+            else DrawExtras(x, y, w, inner.yMax - y);
         }
 
         // ---- healing ----
@@ -191,6 +196,7 @@ namespace Chaos.Client
             bool at = GUI.Toggle(new Rect(x + 175, y, w - 175, 24), cfg.AutoTurn, Loc.T("Auto turn"));
             if (at != cfg.AutoTurn) { cfg.AutoTurn = at; dirty = true; }
             y += 30;
+            y += DrawProfiles(x, y, w);
             GUI.Label(new Rect(x, y, w, 18), Loc.T("Spells are tried from the top; a slot casts when the mana and the monster count are met."), hint);
             y += 34;
             for (int i = 0; i < cfg.Shooter.Count; i++, y += 28)
@@ -206,7 +212,7 @@ namespace Chaos.Client
             {
                 string m = engine.AutoSetup(Vocation());
                 message = m ?? Loc.T("No rotation for this class and level yet (is the spell list loaded?).");
-                if (m != null) dirty = true;
+                if (m != null) { engine.AutoSupport(); dirty = true; }
             }
             if (GUI.Button(new Rect(x + 156, y, w - 156, 28), Loc.T("Clear slots")))
             {

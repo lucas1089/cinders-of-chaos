@@ -11,6 +11,8 @@ namespace Chaos.Client
         public virtual KeyCode Hotkey => KeyCode.None;
         /// <summary>False for a window that opens by itself and has no place in the Windows list of the top menu (a HUD).</summary>
         public virtual bool InMenu => true;
+        /// <summary>The How it works card of this window (its key in Resources/HowItWorks.json), null when it has none: the title bar then shows a ? button.</summary>
+        public virtual string HowKey { get { string k; return Chaos.Core.HowItWorks.UnityWindows.TryGetValue(GetType().Name, out k) ? k : null; } }
         public bool Open;
         /// <summary>Where the window is, in UI units (720 px of height is scale 1). Set a default in Place.</summary>
         public Rect Area;
@@ -37,6 +39,7 @@ namespace Chaos.Client
                 ChaosApp.Fill(new Rect(0, 0, Area.width, 24), new Color(0.16f, 0.09f, 0.06f, 1f));
                 GUI.Label(new Rect(8, 2, Area.width - 40, 22), Title, app.TitleStyle);
                 if (GUI.Button(new Rect(Area.width - 26, 2, 22, 20), "x")) Open = false;
+                if (HowKey != null && GUI.Button(new Rect(Area.width - 50, 2, 22, 20), "?")) app.ShowHow(HowKey);
                 Body(app, new Rect(4, 28, Area.width - 8, Area.height - 32));
                 GUI.DragWindow(new Rect(0, 0, Area.width - 30, 24));
             }, GUIContent.none, GUIStyle.none);
@@ -57,6 +60,7 @@ namespace Chaos.Client
         void MakeWindows()
         {
             AddSocialWindows();   // ChaosApp.Social.cs
+            AddInfoWindows();   // ChaosApp.Info.cs
             windows.Add(new EquipmentWindow());
             windows.Add(new ContainersWindow());
             windows.Add(new SkillsWindow());

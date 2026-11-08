@@ -89,6 +89,7 @@ namespace Chaos.Core
             if (kind < 23 || kind > 29)
             {
                 Talks.Clock = Clock;
+                text = ShortNumbers.InMessage(kind, text);   // client_chaos_numbers: 15300 is 15.3k in status and look texts
                 Talks.OnText(kind, channel, text);
                 Text(text); Chat("", text, 0);
             }

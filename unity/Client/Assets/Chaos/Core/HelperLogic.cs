@@ -310,7 +310,7 @@ namespace Chaos.Core
     public sealed class HelperTimers
     {
         public const string Heal = "heal", Attack = "attack", Support = "support";
-        public const string Potion = "potion";
+        public const string Potion = "potion", HealRune = "healRune", AttackRune = "attackRune", SupportRune = "supportRune", Food = "food";
 
         sealed class Guard { public double SameWordsGap; public int MaxPerSecond; public readonly Dictionary<string, double> Last = new Dictionary<string, double>(); public readonly List<double> Recent = new List<double>(); }
         readonly Dictionary<string, Guard> casts = new Dictionary<string, Guard>
@@ -320,7 +320,7 @@ namespace Chaos.Core
             { Support, new Guard { SameWordsGap = 500, MaxPerSecond = 3 } },
         };
         // the server's potion channel is 500 ms; the helper waits 100 ms more (two uses a little under the server's delay apart were refused)
-        readonly Dictionary<string, double> useGap = new Dictionary<string, double> { { Potion, 600 } };
+        readonly Dictionary<string, double> useGap = new Dictionary<string, double> { { Potion, 600 }, { HealRune, 1000 }, { AttackRune, 1000 }, { SupportRune, 1000 }, { Food, 1000 } };
         readonly Dictionary<string, double> uses = new Dictionary<string, double>();
 
         /// <summary>May this cast go out now? Records it when it may. An unknown channel counts as support.</summary>
@@ -509,13 +509,16 @@ namespace Chaos.Core
             return p.Kind == "both" ? (row.Priority == 2 ? "mana" : "health") : p.Kind;
         }
 
-        static List<HelperPotionRow> Due(IList<HelperPotionRow> rows, string kind, double pct, Func<int, bool> available)
+        static List<HelperPotionRow> Due(IList<HelperPotionRow> rows, string kind, double pct, Func<int, bool> available, Func<int, int> resolve = null)
         {
             var list = new List<KeyValuePair<int, HelperPotionRow>>();
             for (int i = 0; i < rows.Count; i++)
             {
                 var r = rows[i];
-                if (r.Id > 0 && RowKind(r) == kind && pct <= r.Percent && (available == null || available(r.Id))) list.Add(new KeyValuePair<int, HelperPotionRow>(i, r));
+                if (r.Id <= 0 || RowKind(r) != kind || pct > r.Percent) continue;
+                // a row on the stock Health / Mana Potion follows the Everfull flask the character carries (opcode 116)
+                int use = resolve != null ? resolve(r.Id) : r.Id;
+                if (available == null || available(use)) list.Add(new KeyValuePair<int, HelperPotionRow>(i, new HelperPotionRow { Id = use, Percent = r.Percent, Priority = r.Priority }));
             }
             list.Sort((a, b) =>
             {
@@ -529,11 +532,11 @@ namespace Chaos.Core
         }
 
         /// <summary>The potion to drink now (0: none), health before mana, the lowest threshold first. kind says which pool.</summary>
-        public static int Pick(IList<HelperPotionRow> rows, double healthPct, double manaPct, Func<int, bool> available, out string kind)
+        public static int Pick(IList<HelperPotionRow> rows, double healthPct, double manaPct, Func<int, bool> available, out string kind, Func<int, int> resolve = null)
         {
-            var h = Due(rows, "health", healthPct, available);
+            var h = Due(rows, "health", healthPct, available, resolve);
             if (h.Count > 0) { kind = "health"; return h[0].Id; }
-            var m = Due(rows, "mana", manaPct, available);
+            var m = Due(rows, "mana", manaPct, available, resolve);
             if (m.Count > 0) { kind = "mana"; return m[0].Id; }
             kind = null;
             return 0;
