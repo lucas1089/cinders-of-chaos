@@ -874,7 +874,7 @@ connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds,
 - Files: the sounds and the music are the main client's own ogg files (`client/overlay/modules/game_chaossound/sounds`, `game_chaosmusic/music`, built by `client/tools/gen_music.py`), and the aura, decal and print
   pictures are its png files. Nothing is copied into the Unity project. The player looks in `CHAOS_OVERLAY_DIR`, `StreamingAssets/overlay/modules`, `overlay/modules` beside the executable, then the repository's
   `client/overlay/modules` (`OverlayFiles`). A build that ships the game folder copies the module folders `game_chaossound`, `game_chaosmusic`, `game_chestaura`, `game_combatdecals` and `game_cosmeticfx` to
-  `StreamingAssets/overlay/modules` (the build script does not do it yet). Without the files the game is silent and has no pictures for auras, decals and prints (drawn stand-ins for the rest); Options > Sound says so.
+  `StreamingAssets/overlay/modules`; the CI build does this (its ogg and png files only, `unity-prototype.yml`). Without the files the game is silent and has no pictures for auras, decals and prints (drawn stand-ins for the rest); Options > Sound says so.
 - Drawing: `Unity/ChaosApp.Visual.cs` draws in the map group through `TileScreenPx`, so the classic view and the front-art live view (F8) share it: ground rings (the 223 ground effect ids), decals, footprints, chest and
   Templar auras (the range frame as a nine-slice), cosmetic glows, loot beams, hit flashes and level-up wings. The HD-2D scene draws none of it. `Unity/ChaosApp.Audio.cs` plays the cues (8 voices) and cross-fades two
   music sources. The own name wears the picked name shader (`NameShadersWindow`, opcode 96).

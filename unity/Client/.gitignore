@@ -15,3 +15,7 @@
 # KayKit 3D characters: fetched by unity/tools/fetch_3d_assets.py (too big to commit)
 /Assets/Chaos/Resources/KayKit/
 /Assets/Chaos/Resources/KayKit.meta
+
+# main client module sounds and pictures: copied in by the CI build (unity-prototype.yml)
+/Assets/StreamingAssets/overlay/
+/Assets/StreamingAssets/overlay.meta

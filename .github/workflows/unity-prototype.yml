@@ -124,6 +124,15 @@ jobs:
             printf '%s' "$CHAOS_CLIENT_KEY" > "$res/chaos_client_key.txt"
             echo "::warning::The client guard key is inside this build: do not share the artifact."
           fi
+      - name: Copy the sound, music and picture files of the main client modules into StreamingAssets
+        if: steps.lic.outputs.ok == '1'
+        run: |
+          dst=unity/Client/Assets/StreamingAssets/overlay/modules
+          for m in game_chaossound game_chaosmusic game_chestaura game_combatdecals game_cosmeticfx; do
+            (cd client/overlay/modules && find "$m" -type f \( -name '*.ogg' -o -name '*.png' \) -print0) |
+              while IFS= read -r -d '' f; do mkdir -p "$dst/$(dirname "$f")"; cp "client/overlay/modules/$f" "$dst/$f"; done
+          done
+          echo "copied $(find "$dst" -type f | wc -l) files to $dst"
       - name: Build
         if: steps.lic.outputs.ok == '1'
         uses: game-ci/unity-builder@v4
