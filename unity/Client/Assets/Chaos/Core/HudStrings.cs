@@ -31,7 +31,7 @@ namespace Chaos.Core
             // shield
             { "Shield", "Escudo" },
             // monster bar
-            { "Magic", "Mágico" }, { "Rare", "Raro" }, { "Legendary", "Lendário" }, { "Rift Guardian", "Guardião da Fenda" }, { "Omen Guardian", "Guardião do Presságio" },
+            { "Rift Guardian", "Guardião da Fenda" }, { "Omen Guardian", "Guardião do Presságio" },
             { "Lv {0}", "Nv {0}" }, { "interrupted", "interrompida" },
             { "move out", "saia da área" }, { "kill the totem", "mate o totem" }, { "stand in the circle", "fique no círculo" }, { "hide behind a pillar", "esconda-se atrás de um pilar" },
             { "Blazing: its hits may set you on fire (30%).", "Flamejante: seus golpes podem incendiar você (30%)." },
