@@ -57,6 +57,7 @@ namespace Chaos.Client
             windows.Add(new EquipmentWindow());
             windows.Add(new ContainersWindow());
             windows.Add(new SkillsWindow());
+            windows.Add(new PassiveTreeWindow());
             windows.Add(new BattleListWindow());
             windows.Add(new MinimapWindow());
             windows.Add(new HotkeyBarWindow());
