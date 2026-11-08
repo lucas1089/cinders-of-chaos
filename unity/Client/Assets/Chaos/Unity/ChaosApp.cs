@@ -91,7 +91,9 @@ namespace Chaos.Client
         public static float UiScale(float screenW, float screenH, float dpi)
         {
             float byHeight = Mathf.Min(screenH / 720f, screenW / 960f);
-            return Mathf.Max(1f, Mathf.Max(byHeight, dpi / 160f));
+            float auto = Mathf.Max(1f, Mathf.Max(byHeight, dpi / 160f));
+            Phase7Prefs.Load();
+            return UiScaleOption.Factor(Phase7Prefs.UiScaleIndex, screenW, screenH, auto);   // the option Interface scale (Core/Phase7Q.cs)
         }
 
         public static Rect MapRect(float screenW, float screenH)
@@ -248,6 +250,7 @@ namespace Chaos.Client
 
         void Leave(string why)
         {
+            Phase7QLeave(why);   // ChaosApp.Phase7Q.cs: the explored map is saved, a death notes the open windows
             session?.Dispose();
             session = null;
             if (view != null) Destroy(view.gameObject);

@@ -121,6 +121,8 @@ namespace Chaos.Client
                 if (mark.Length == 0) continue;
                 float x = sp.x / scale - map.x, y = (UnityEngine.Screen.height - sp.y) / scale - map.y;
                 if (x < 0 || x > map.width || y < 0 || y > map.height + tile * 0.5f) continue;
+                float ms = Mathf.Clamp(Mathf.Round(tile / 32f), 1f, 3f);
+                if (ArtMark(MarkArt.NpcMark(mark), new Vector2(x, y - barH - 22 - 12 * ms), 16, 24, Color.white, ms)) continue;
                 var st = new GUIStyle(worldStyle) { fontSize = Mathf.RoundToInt(Mathf.Clamp(tile * 0.55f, 14f, 30f)) };
                 ShadowText(new Rect(x - 12, y - barH - 22 - st.fontSize - 2, 24, st.fontSize + 4), NpcMarks.Glyph(mark), st, HexColor(NpcMarks.GlyphColor(mark)));
             }
@@ -146,12 +148,16 @@ namespace Chaos.Client
                 bool inside = MapMarkMath.Edge(at.x, at.y, 0, 0, map.width, map.height, 20, out double ex, out double ey, out string dir);
                 var col = HexColor(MapMarkMath.Color(m.SlotOf(p.Id)));
                 var r = new Rect((float)ex - 5, (float)ey - 5, 10, 10);
-                Fill(new Rect(r.x - 1, r.y - 1, 12, 12), new Color(0f, 0f, 0f, 0.8f));
-                Fill(r, col);
+                string arrowArt = inside ? MarkArt.PartyPin : MarkArt.PartyArrow(dir);
+                if (!ArtMark(arrowArt, new Vector2((float)ex, (float)ey), MarkArt.ArrowPx, MarkArt.ArrowPx, col))
+                {
+                    Fill(new Rect(r.x - 1, r.y - 1, 12, 12), new Color(0f, 0f, 0f, 0.8f));
+                    Fill(r, col);
+                }
                 string arrow = MapMarkMath.FloorArrow(p.Z, me.Z);
                 string text = MapMarkMath.GameText(p.Name, System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)), dz);
                 if (arrow.Length > 0) text = (arrow == "up" ? "^ " : "v ") + text;
-                if (!inside) text = ArrowOf(dir) + " " + text;
+                if (!inside && MarkArt.PartyArrow(dir) == null) text = ArrowOf(dir) + " " + text;
                 ShadowText(new Rect((float)ex - 90, (float)ey + 6, 180, 16), text, worldTiny, col);
             }
         }
@@ -177,6 +183,7 @@ namespace Chaos.Client
         {
             if (Event.current.type != EventType.Repaint) return;
             var w = u.Weather;
+            w.OptionOn = Phase7Prefs.WeatherOn;   // Options > Visuals: Weather and ambient effects
             w.MoodTint(out float mr, out float mg, out float mb, out float ma);
             if (ma > 0.004f) Fill(r, new Color(mr, mg, mb, ma));
             // ambient specks: embers, motes, dust drift in the view
@@ -184,6 +191,12 @@ namespace Chaos.Client
             {
                 double op = w.AmbientCur[l.Name];
                 if (op <= WeatherState.MinOpacity) continue;
+                if (TiledArt.AmbientImage.TryGetValue(l.Name, out string ambImg) && ArtRepeat(TiledArt.Path(ambImg)) is Texture2D ambTex)
+                {
+                    WeatherState.AmbientOffset(l, now, out double aox, out double aoy);
+                    DrawTiled(ambTex, TiledArt.AmbientTile, r, aox, aoy, new Color(1f, 1f, 1f, (float)(op * WeatherState.AmbientPulse(l, now))));
+                    continue;
+                }
                 bool near = l.Name.EndsWith("near");
                 int count = Mathf.Max(6, (int)(r.width * r.height / (near ? 40000f : 22000f)));
                 WeatherState.AmbientOffset(l, now, out double ox, out double oy);
@@ -207,6 +220,12 @@ namespace Chaos.Client
             {
                 double op = w.Cur[l.Name];
                 if (op <= WeatherState.MinOpacity) continue;
+                if (TiledArt.RainImage.TryGetValue(l.Name, out string rainImg) && ArtRepeat(TiledArt.Path(rainImg)) is Texture2D rainTex)
+                {
+                    WeatherState.Offset(l, now, TiledArt.RainTile, out int rox, out int roy);
+                    DrawTiled(rainTex, TiledArt.RainTile, r, rox, roy, new Color(1f, 1f, 1f, (float)op));
+                    continue;
+                }
                 int count = Mathf.Max(20, (int)(r.width * r.height / (l.Name == "far" ? 4200f : l.Name == "mid" ? 5600f : 7500f)));
                 float len = l.Name == "far" ? 9f : l.Name == "mid" ? 13f : 18f;
                 var col = new Color(0.78f, 0.86f, 1f, (float)op * (l.Name == "far" ? 0.35f : 0.55f));
@@ -291,13 +310,17 @@ namespace Chaos.Client
                     float x = local.x + (m.X - (cx - halfW)) * ppt + ppt / 2f, y = local.y + (m.Y - (cy - halfH)) * ppt + ppt / 2f;
                     if (x < local.x || x > local.xMax || y < local.y || y > local.yMax) continue;
                     float sz = Mathf.Max(5f, ppt);
-                    Fill(new Rect(x - sz / 2 - 1, y - sz / 2 - 1, sz + 2, sz + 2), new Color(0f, 0f, 0f, 0.8f));
-                    Fill(new Rect(x - sz / 2, y - sz / 2, sz, sz), MarkColor(m.Kind));
                     var r = new Rect(x - sz / 2, y - sz / 2, sz, sz);
+                    if (ArtMark(MarkArt.Overlay(m.Kind), new Vector2(x, y), MarkArt.OverlayPx, MarkArt.OverlayPx, Color.white)) r = new Rect(x - 8, y - 8, 16, 16);
+                    else
+                    {
+                        Fill(new Rect(x - sz / 2 - 1, y - sz / 2 - 1, sz + 2, sz + 2), new Color(0f, 0f, 0f, 0.8f));
+                        Fill(new Rect(x - sz / 2, y - sz / 2, sz, sz), MarkColor(m.Kind));
+                    }
                     if (m.Name.Length > 0 && r.Contains(Event.current.mousePosition)) SetTip(m.Name);
                 }
                 float px0 = local.x + (me.X - (cx - halfW)) * ppt + ppt / 2f, py0 = local.y + (me.Y - (cy - halfH)) * ppt + ppt / 2f;
-                Fill(new Rect(px0 - 5, py0 - 1, 10, 2), Color.white); Fill(new Rect(px0 - 1, py0 - 5, 2, 10), Color.white);
+                if (!ArtMark(MarkArt.Overlay("self"), new Vector2(px0, py0), MarkArt.OverlayPx, MarkArt.OverlayPx, Color.white)) { Fill(new Rect(px0 - 5, py0 - 1, 10, 2), Color.white); Fill(new Rect(px0 - 1, py0 - 5, 2, 10), Color.white); }
             }
             var e = Event.current;
             Vector2 mouse = e.mousePosition;   // map group units
@@ -427,8 +450,11 @@ namespace Chaos.Client
             float gw = guild.Length > 0 ? plateStyle.CalcSize(new GUIContent(guild)).x + 14 : 0;
             float w = Mathf.Max(nw, gw), gh = guild.Length > 0 ? 12f : 0f;
             var frame = new Rect(x - w / 2, nameRect.yMax - 17 - gh, w, 17 + gh);
-            Fill(frame, new Color(0.05f, 0.04f, 0.06f, 0.78f));
-            Ui.Frame(frame, HexColor(NameplateState.FrameColor(plate.Frame)));
+            if (!DrawPlatePicture(plate.Frame, frame))   // the frame picture of game_nameplate cut in nine; the bordered box without it
+            {
+                Fill(frame, new Color(0.05f, 0.04f, 0.06f, 0.78f));
+                Ui.Frame(frame, HexColor(NameplateState.FrameColor(plate.Frame)));
+            }
             if (guild.Length > 0) ShadowText(new Rect(frame.x, frame.y - 1, frame.width, 14), guild, plateStyle, HexColor(NameplateState.GuildColorFor(c.Emblem)));
             if (plate.Title.Length > 0) ShadowText(new Rect(x - 100, frame.y - 15, 200, 14), plate.Title, plateStyle, HexColor(plate.Color));
         }
@@ -448,8 +474,12 @@ namespace Chaos.Client
                 {
                     float x = map.x + (mk.X - (p.X - half)) * ppt + ppt / 2f, y = map.y + (mk.Y - (p.Y - half)) * ppt + ppt / 2f;
                     var r = new Rect(x - 3, y - 3, 6, 6);
-                    Fill(new Rect(r.x - 1, r.y - 1, 8, 8), new Color(0f, 0f, 0f, 0.85f));
-                    Fill(r, MarkColor(mk.Kind));
+                    if (ArtMark(MarkArt.Poi(mk.Kind), new Vector2(x, y), MarkArt.PoiPx, MarkArt.PoiPx, Color.white)) r = new Rect(x - 7, y - 7, 14, 14);
+                    else
+                    {
+                        Fill(new Rect(r.x - 1, r.y - 1, 8, 8), new Color(0f, 0f, 0f, 0.85f));
+                        Fill(r, MarkColor(mk.Kind));
+                    }
                     if (mk.Name.Length > 0 && r.Contains(mouse)) SetTip(mk.Name);
                 }
             }
@@ -464,10 +494,14 @@ namespace Chaos.Client
                 bool inside = MapMarkMath.Edge(x, y, map.x, map.y, map.width, map.height, 7, out double ex, out double ey, out _);
                 var col = HexColor(MapMarkMath.Color(m.SlotOf(pm.Id)));
                 var r = new Rect((float)ex - 4, (float)ey - 4, 8, 8);
-                Fill(new Rect(r.x - 1, r.y - 1, 10, 10), new Color(0f, 0f, 0f, 0.9f));
-                Fill(r, col);
+                if (ArtMark(MarkArt.PartyPin, new Vector2((float)ex, (float)ey), MarkArt.ArrowPx, MarkArt.ArrowPx, col)) r = new Rect((float)ex - 6, (float)ey - 6, 12, 12);
+                else
+                {
+                    Fill(new Rect(r.x - 1, r.y - 1, 10, 10), new Color(0f, 0f, 0f, 0.9f));
+                    Fill(r, col);
+                }
                 string arrow = MapMarkMath.FloorArrow(pm.Z, floor);
-                if (arrow.Length > 0) GUI.Label(new Rect(r.x + 8, r.y - 4, 14, 14), arrow == "up" ? "^" : "v", worldTiny);
+                if (arrow.Length > 0 && !ArtMark(MarkArt.Floor(arrow), new Vector2(r.xMax + 5, r.y + 4), MarkArt.FloorPx, MarkArt.FloorPx, Color.white)) GUI.Label(new Rect(r.x + 8, r.y - 4, 14, 14), arrow == "up" ? "^" : "v", worldTiny);
                 if (r.Contains(mouse)) SetTip(MapMarkMath.MemberText(pm, world.Player.Position, true));
                 if (!inside) { }
             }

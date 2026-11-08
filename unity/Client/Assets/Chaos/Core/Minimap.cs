@@ -19,6 +19,22 @@ namespace Chaos.Core
             return c;
         }
 
+        /// <summary>The packed tile keys of a floor (for MinimapStore).</summary>
+        public IEnumerable<long> Keys(int z) => floors.TryGetValue(z, out var f) ? (IEnumerable<long>)f.Keys : new long[0];
+
+        public byte GetKey(int z, long key) { byte c = 0; if (floors.TryGetValue(z, out var f)) f.TryGetValue(key, out c); return c; }
+
+        /// <summary>Sets a remembered tile by its packed key (a map read back from a file); a colour of 0 is not stored.</summary>
+        public void SetKey(int z, long key, byte c)
+        {
+            if (c == 0 || z < 0 || z > 15) return;
+            if (!floors.TryGetValue(z, out var f)) { f = new Dictionary<long, byte>(); floors[z] = f; }
+            f[key] = c;
+            Version++;
+        }
+
+        public static long PackKey(int x, int y) => Key(x, y);
+
         public int Count(int z) => floors.TryGetValue(z, out var f) ? f.Count : 0;
 
         public void Clear() { floors.Clear(); Version++; }

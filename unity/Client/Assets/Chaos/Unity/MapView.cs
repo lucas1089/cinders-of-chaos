@@ -108,7 +108,7 @@ namespace Chaos.Client
             cam = player != null ? Drawn(player, out t0) : new Vector2(center.X, center.Y);
             int first = FirstVisibleFloor(center);
             int last = center.Z > 7 ? Math.Min(center.Z + 2, 15) : 7;
-            int w = World.ViewW + 4, h = World.ViewH + 4;
+            int w = World.Range.Horizontal + 4, h = World.Range.Vertical + 4;   // the area the server describes (0x42), 18 x 14 by default
             for (int z = last; z >= first; z--)
             {
                 int off = z - center.Z;   // a lower floor is drawn shifted right and down by its depth
@@ -116,7 +116,7 @@ namespace Chaos.Client
                     for (int sx = Math.Max(0, diag - h + 1); sx <= Math.Min(diag, w - 1); sx++)
                     {
                         int sy = diag - sx;
-                        int wx = center.X - World.RangeLeft - 1 + sx - off, wy = center.Y - World.RangeTop - 1 + sy - off;
+                        int wx = center.X - World.Range.Left - 1 + sx - off, wy = center.Y - World.Range.Top - 1 + sy - off;
                         var tile = World.Get(new Pos(wx, wy, z));
                         if (tile != null) DrawTile(tile, off);
                     }
