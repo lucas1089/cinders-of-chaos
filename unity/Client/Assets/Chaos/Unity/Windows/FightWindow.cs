@@ -49,8 +49,12 @@ namespace Chaos.Client
             if (fight != m.Fight || chase != m.Chase || secure != m.Secure)
             {
                 var n = new FightModes { Fight = fight, Chase = chase, Secure = secure };
+                bool secureChanged = secure != m.Secure;
+                if (secureChanged) EndgameBridge.Guard.UserChose(secure);
+                // a match holds secure mode off: the window shows that, the saved choice stays the player's own
+                var save = EndgameBridge.Guard.ToSave(n, secureChanged);
                 s.SetFightModes(n);
-                PlayerPrefs.SetString("chaos.fight", n.Encode());
+                PlayerPrefs.SetString("chaos.fight", save.Encode());
             }
         }
     }

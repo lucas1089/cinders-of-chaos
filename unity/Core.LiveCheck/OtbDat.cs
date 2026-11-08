@@ -13,7 +13,7 @@ namespace Chaos.Core.LiveCheck
     public static class OtbDat
     {
         const uint FlagBlockSolid = 1u << 0, FlagBlockProjectile = 1u << 1, FlagBlockPathfind = 1u << 2, FlagStackable = 1u << 7, FlagAlwaysOnTop = 1u << 13, FlagAnimation = 1u << 24;
-        const int GroupGround = 1, GroupSplash = 11, GroupFluid = 12;
+        const int GroupGround = 1, GroupContainer = 2, GroupSplash = 11, GroupFluid = 12;
 
         public sealed class Node { public int Server, Client, Group, TopOrder, Speed; public uint Flags; }
 
@@ -132,6 +132,7 @@ namespace Chaos.Core.LiveCheck
                 if ((n.Flags & FlagBlockPathfind) != 0) t.BlockPath = true;
                 if ((n.Flags & FlagBlockProjectile) != 0) t.BlockMissile = true;
                 if (n.Group == GroupGround && n.Speed > 0) t.GroundSpeed = n.Speed;
+                if (n.Group == GroupContainer) t.Container = true;   // bags, chests and corpses: the sell scenario opens the bags inside the backpack, the rift scenario finds the chest
                 if (n.Group == GroupSplash) t.Splash = true;
                 if (n.Group == GroupFluid) t.Fluid = true;
                 if (n.Group == GroupGround) t.Ground = true;

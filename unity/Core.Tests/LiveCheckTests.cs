@@ -18,6 +18,8 @@ namespace Chaos.Core.Tests
             return false;
         }
 
+        static string Hex(byte[] b) => string.Concat(b.Select(x => x.ToString("x2")));
+
         static GameParser NewParser() => new GameParser(new World(DatFile.Parse(Program.SyntheticDat())));
 
         public static void Run(Action<bool, string> check)
@@ -29,6 +31,12 @@ namespace Chaos.Core.Tests
             Market(check);
             ExperienceTexts(check);
             WalkSkipsStairs(check);
+            SecureModeRule(check);
+            SecureModeSession(check);
+            ModalTalesFlow(check);
+            BagCount(check);
+            RiftBossHud(check);
+            ScenarioList(check);
             Failures(check);
             Otb(check);
             Plan(check);
@@ -386,6 +394,167 @@ namespace Chaos.Core.Tests
         }
 
         // ------------------------------------------------------------------------------------------------ a whole run on the fake server
+        // ------------------------------------------------------------------------------------------------ secure mode (phase 23)
+        static void SecureModeRule(Action<bool, string> check)
+        {
+            // the default is secure on, like the main client, and the wire byte is 1 for on (Player::secureMode, found live in phase 22)
+            var def = new FightModes();
+            check(def.Secure && def.Packet()[3] == 1, "secure: the default is on and goes out as byte 1");
+            check(new FightModes { Secure = false }.Packet()[3] == 0, "secure: off goes out as byte 0");
+            check(FightModes.Decode("").Secure && FightModes.Decode("2,0,1").Secure && !FightModes.Decode("2,0,0").Secure, "secure: no saved choice means on, 1 is on, 0 is off");
+            var back = FightModes.Decode(new FightModes { Fight = FightModes.Defensive, Chase = true, Secure = false }.Encode());
+            check(back.Fight == FightModes.Defensive && back.Chase && !back.Secure && back.Packet()[3] == 0, "secure: the saved form round-trips an off choice");
+            check(FightModes.Decode(new FightModes().Encode()).Packet()[3] == 1, "secure: the saved form round-trips the default");
+
+            // the guard of a match: the arena, the battleground and the Marches hold secure off and give it back
+            var modes = new FightModes { Fight = FightModes.Offensive, Chase = true, Secure = true };
+            var sent = new List<FightModes>();
+            var g = new SecureGuard(() => modes, m => { modes = m; sent.Add(m); });
+            check(!g.Active && g.Before == null, "secure guard: nothing held at the start");
+            g.Off();
+            check(g.Active && g.Before == true && !modes.Secure && sent.Count == 1 && sent[0].Packet()[3] == 0, "secure guard: a match sends secure off (byte 0) once");
+            check(modes.Fight == FightModes.Offensive && modes.Chase, "secure guard: fight and chase modes are kept");
+            g.Off();
+            check(sent.Count == 1 && g.Before == true, "secure guard: a second match inside the first sends nothing and keeps the first choice");
+            g.On();
+            check(modes.Secure && sent.Count == 2 && sent[1].Packet()[3] == 1 && !g.Active && modes.Fight == FightModes.Offensive && modes.Chase, "secure guard: the end of the match sends secure on (byte 1)");
+            g.On();
+            check(sent.Count == 2, "secure guard: an end without a match sends nothing");
+
+            // a player who runs with secure off keeps it off
+            modes = new FightModes { Secure = false };
+            sent.Clear();
+            g.Off();
+            check(sent.Count == 0 && g.Before == false, "secure guard: secure already off, nothing is sent");
+            g.On();
+            check(sent.Count == 0 && !modes.Secure, "secure guard: and nothing is turned on afterwards");
+
+            // the Fight window while a match holds secure off: the window shows off, the saved choice stays on
+            modes = new FightModes { Fight = FightModes.Balanced, Secure = true };
+            g.Off();
+            var shown = new FightModes { Fight = FightModes.Defensive, Chase = false, Secure = modes.Secure };
+            var saved = g.ToSave(shown, false);
+            check(saved.Secure && saved.Fight == FightModes.Defensive, "secure guard: changing the fight mode during a match saves the player's own secure choice (on)");
+            check(g.ToSave(new FightModes { Secure = true }, true).Secure, "secure guard: a change of the switch itself is saved as chosen");
+            g.UserChose(false);
+            check(g.Before == false && !g.ToSave(shown, false).Secure, "secure guard: after the player turns it off in the window, off is their choice");
+            sent.Clear();
+            g.On();
+            check(!modes.Secure && sent.Count == 0, "secure guard: and the match's end does not turn it on");
+            modes = new FightModes { Secure = true };
+            check(!new SecureGuard(() => modes, m => modes = m).ToSave(new FightModes { Secure = false }, false).Secure, "secure guard: with no match, the window's state is saved as shown");
+            g.Off();
+            g.Reset();
+            check(!g.Active, "secure guard: a new session holds nothing");
+        }
+
+        /// <summary>A new session starts with secure mode on and keeps the modes it is given; the packet is the one the window shows.</summary>
+        static void SecureModeSession(Action<bool, string> check)
+        {
+            var world = new World(DatFile.Parse(Program.SyntheticDat()));
+            var s = new GameSession(world, new GameSession.Options { Host = "127.0.0.1", Port = 1, Account = "a", Password = "b", Character = "c" });
+            check(s.Modes.Secure && s.Modes.Packet()[3] == 1, "secure: a new session starts with secure mode on");
+            s.SetFightModes(new FightModes { Secure = false });
+            check(!s.Modes.Secure && s.Modes.Packet()[3] == 0, "secure: the session keeps the mode it was given");
+            s.Dispose();
+        }
+
+        // ------------------------------------------------------------------------------------------------ modal windows, the tales list (phase 23)
+        static void ModalTalesFlow(Action<bool, string> check)
+        {
+            // what the Archivist's "tales" sends (tales.lua sendList): window 7170 with Read (1) and Close (2) and one choice per tale, then the tale as window 7171 after the answer
+            var p = NewParser();
+            var sent = new List<byte[]>();
+            p.Modals.Send = x => sent.Add(x);
+            var list = new ByteWriter().U8(0xFA).U32(7170).Str("Tales").Str("Choose a tale.").U8(2).Str("Read").U8(1).Str("Close").U8(2).U8(3).Str("The first").U8(1).Str("The second").U8(2).Str("The third").U8(3).U8(2).U8(1).U8(0);
+            list.U8(0x1D);   // a ping in the same packet
+            int pings = 0;
+            p.Pinged = () => pings++;
+            p.Parse(list.ToArray());
+            var w = p.Modals.Current;
+            check(w != null && w.Id == 7170 && w.Buttons.Count == 2 && w.Choices.Count == 3 && w.Choices[2].Text == "The third" && w.EscapeButton == 2 && w.EnterButton == 1 && !w.Priority && pings == 1 && p.FailureCount == 0,
+                  "modal tales: the list window and the ping behind it are read");
+            check(p.Modals.Received == 1 && Hex(ModalWindows.AnswerPacket(7170, 1, 1)) == "f9" + "021c0000" + "01" + "01", "modal tales: the answer packet is 0xF9, id 7170 (02 1c 00 00), Read, first choice");
+            p.Modals.Answer(1, 1);
+            check(sent.Count == 1 && Hex(sent[0]) == "f9021c00000101" && p.Modals.Current == null, "modal tales: answering sends the packet and takes the window off");
+            var tale = new ByteWriter().U8(0xFA).U32(7171).Str("The first").Str("A long tale text.").U8(2).Str("Accept").U8(1).Str("Close").U8(3).U8(0).U8(3).U8(1).U8(0);
+            p.Parse(tale.ToArray());
+            check(p.Modals.Current != null && p.Modals.Current.Id == 7171 && p.Modals.Current.Choices.Count == 0 && p.Modals.Received == 2, "modal tales: the server's reaction is window 7171 without choices");
+            p.Modals.Cancel();
+            check(sent.Count == 2 && Hex(sent[1]) == "f9031c0000" + "03" + "ff" && p.Modals.Current == null, "modal tales: escape answers with the escape button (3) and no choice (ff)");
+            // a window without buttons or title is still read and answered with button 0
+            p.Parse(new ByteWriter().U8(0xFA).U32(5).Str("").Str("").U8(0).U8(0).U8(0).U8(0).U8(0).ToArray());
+            check(p.Modals.Current != null && p.Modals.Current.Buttons.Count == 0 && p.Modals.Answer(0, ModalWindows.NoChoice) && Hex(sent[2]) == "f90500000000ff", "modal tales: an empty window is read and answered");
+            // a truncated window is a parse failure with the opcode, not a hang
+            var p2 = NewParser();
+            bool threw = false;
+            try { p2.Parse(new ByteWriter().U8(0xFA).U32(9).Str("T").ToArray()); } catch (ProtocolException) { threw = true; }
+            check(threw || p2.FailureCount > 0, "modal tales: a cut window is a failure");
+        }
+
+        // ------------------------------------------------------------------------------------------------ the bag count of the sell scenario (phase 23)
+        static void BagCount(Action<bool, string> check)
+        {
+            var p = NewParser();
+            check(LiveRun.CarriedCount(p, 101) == 0, "bag count: nothing carried is 0");
+            var w = new ByteWriter().U8(0x6E).U8(2).U16(100).U8(0xFF).Str("Backpack").U8(20).U8(1).U8(1).U8(0).U16(2).U16(0).U8(2);
+            w.U16(101).U8(0xFF).U8(5).U8(0).U16(100).U8(0xFF);
+            p.Parse(w.ToArray());
+            check(LiveRun.CarriedCount(p, 101) == 5 && LiveRun.CarriedCount(p, 100) == 1, "bag count: a stack counts its size, a single item 1");
+            p.Parse(new ByteWriter().U8(0x70).U8(2).U16(0).U16(101).U8(0xFF).U8(9).U8(0).ToArray());
+            check(LiveRun.CarriedCount(p, 101) == 14, "bag count: an item added to the open bag shows");
+            p.Parse(new ByteWriter().U8(0x72).U8(2).U16(0).U16(0).ToArray());
+            check(LiveRun.CarriedCount(p, 101) == 5, "bag count: an item taken out is gone");
+            p.Parse(new ByteWriter().U8(0x6F).U8(2).ToArray());
+            check(LiveRun.CarriedCount(p, 101) == 0, "bag count: a closed bag shows nothing (the scenario opens the backpack again before it judges)");
+            // items.otb group 2 is a container: the sell scenario opens the bags inside the backpack and the riftboss one finds the chest by id
+            var o = new List<byte> { 0, 0, 0, 0 };
+            o.Add(0xFE); o.Add(0);
+            o.AddRange(new byte[] { 0, 0, 0, 0, 1, 4, 0, 1, 0, 0, 0 });
+            Node(o, 2, 0, 300, 400);
+            Node(o, 5, 0, 301, 401);
+            o.Add(0xFF);
+            var dat = OtbDat.Build(o.ToArray());
+            check(dat.Item(400).Container && !dat.Item(401).Container, "otb: group 2 is a container");
+        }
+
+        // ------------------------------------------------------------------------------------------------ the rift boss HUD (phase 23)
+        static void RiftBossHud(Action<bool, string> check)
+        {
+            var ext = new ExtOpcodes();
+            double now = 1000;
+            var r = new RiftHud(ext) { Clock = () => now };
+            var seq = new List<string>();
+            r.Changed = () => seq.Add(r.Boss + "/" + r.State + "/" + r.Killed);
+            Action<string> msg = json => ext.Receive(228, ExtOpcodes.ToWire(json));
+            // what rift.lua sends live (hudData): start waiting, updates while the packs die, the guardian alive, the end
+            msg("{\"action\":\"start\",\"data\":{\"tier\":1,\"theme\":\"Ash\",\"left\":600,\"limit\":600,\"total\":240,\"killed\":0,\"bossAt\":180,\"boss\":\"waiting\",\"state\":\"running\",\"bossName\":\"Sanctum Warden\",\"mods\":[],\"notes\":[\"2 more packs gather.\"]}}");
+            msg("{\"action\":\"update\",\"data\":{\"tier\":1,\"left\":580,\"limit\":600,\"total\":240,\"killed\":150,\"bossAt\":180,\"boss\":\"waiting\",\"state\":\"running\",\"bossName\":\"Sanctum Warden\"}}");
+            check(r.BossPercent() == 83 && r.BossLine() == "Guardian in 30 kills", "rift boss: the guardian line counts the kills still needed");
+            msg("{\"action\":\"update\",\"data\":{\"tier\":1,\"left\":570,\"limit\":600,\"total\":240,\"killed\":240,\"bossAt\":180,\"boss\":\"alive\",\"state\":\"running\",\"bossName\":\"Sanctum Warden\"}}");
+            check(r.Boss == "alive" && r.BossLine() == "The guardian Sanctum Warden is here!" && r.BossPercent() == 100, "rift boss: alive after bossAt kills");
+            msg("{\"action\":\"end\",\"data\":{\"result\":\"success\",\"text\":\"The rift is sealed! Open the chest within 60 seconds.\",\"exitIn\":60}}");
+            check(r.State == "success" && r.Boss == "dead" && r.Result == "success" && r.ExitIn == 60 && r.BossLine() == "The guardian is slain." && r.Active, "rift boss: the end message seals the run and keeps the HUD for the exit time");
+            check(r.HideAt == now + 62000, "rift boss: the HUD hides 2 s after the exit");
+            check(seq.Count == 4 && seq[0] == "waiting/running/0" && seq[3] == "dead/success/240", "rift boss: the HUD went waiting, waiting, alive, dead (" + string.Join(" > ", seq) + ")");
+            // a second end message (the rift script sends one at the exit too) does not break the state
+            msg("{\"action\":\"end\",\"data\":{\"result\":\"left\",\"text\":\"\",\"exitIn\":0}}");
+            check(r.Active && r.Result == "left", "rift boss: a second end message at the exit is read");
+            // a failed rift (the staff command or the timer)
+            var r2 = new RiftHud(ext);
+            r2.Handle("start", Json.TryParse("{\"tier\":1,\"boss\":\"waiting\",\"state\":\"running\",\"total\":10,\"bossAt\":8}"));
+            r2.Handle("end", Json.TryParse("{\"result\":\"failed\",\"text\":\"A gamemaster closed the rift.\",\"exitIn\":5}"));
+            check(r2.State == "failed" && r2.Boss == "waiting" && r2.ResultText.StartsWith("A gamemaster"), "rift boss: a failed end keeps the boss state and shows the text");
+        }
+
+        static void ScenarioList(Action<bool, string> check)
+        {
+            var all = LiveRun.AllScenarios.ToList();
+            check(all.Contains("modal") && all.Contains("riftboss") && all.IndexOf("riftboss") > all.IndexOf("rift") && all.IndexOf("modal") < all.IndexOf("party"), "scenarios: modal and riftboss are in the list, riftboss after rift");
+            var o = new LiveOptions();
+            check(o.ModalNpc == "Archivist Maelis" && o.ModalWord == "tales" && o.RiftKill == "/rkill" && o.RiftNear == "/rnear" && o.RiftChestServerId == 32311 && o.RiftChestFallbackServerId == 21584, "scenarios: the defaults of the phase 23 options");
+        }
+
         static void WholeRun(Action<bool, string> check)
         {
             var demo = Hd2dDemo.Synthetic();

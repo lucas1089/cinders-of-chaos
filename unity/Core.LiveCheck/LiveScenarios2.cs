@@ -12,10 +12,11 @@ namespace Chaos.Core.LiveCheck
     {
         // ------------------------------------------------------------------------------------ helpers
         /// <summary>How many of an item the client knows it carries: the inventory slots and the open containers (a sub-container that is not open is not counted).</summary>
-        static int CarriedCount(LiveClient a, int clientId)
+        static int CarriedCount(LiveClient a, int clientId) => CarriedCount(a.S.Parser, clientId);
+
+        internal static int CarriedCount(GameParser p, int clientId)
         {
             int n = 0;
-            var p = a.S.Parser;
             for (int i = 1; i < p.Inventory.Length; i++) if (p.Inventory[i] != null && p.Inventory[i].Id == clientId) n += Math.Max(1, p.Inventory[i].Count);
             foreach (var c in p.Containers.Values) foreach (var it in c.Items) if (it != null && it.Id == clientId) n += Math.Max(1, it.Count);
             return n;
@@ -28,6 +29,50 @@ namespace Chaos.Core.LiveCheck
             if (p.Containers.Count > 0 || p.Inventory.Length <= 3 || p.Inventory[3] == null) return;
             a.S.UseItem(GameSession.InventoryPos(3), (ushort)p.Inventory[3].Id, 0);
             WaitFor(2500, () => p.Containers.Count > 0);
+        }
+
+        /// <summary>The bag check of the sell scenario (phase 23), the same on both identities: how many of an item the open bags and the slots show, when the goods list says the
+        /// character carries `expected` of it. When fewer show, the backpack is closed and opened again (the first use of it can be dropped or answered late), then the bags inside it
+        /// are opened one by one (a bought item goes into a bag in the backpack when the backpack itself is full). `how` says what was done, for the report.</summary>
+        int CarriedChecked(LiveClient a, int clientId, int expected, out string how)
+        {
+            how = "";
+            int n = CarriedCount(a, clientId);
+            if (n >= expected || expected <= 0) return n;
+            var p = a.S.Parser;
+            if (p.Inventory.Length <= 3 || p.Inventory[3] == null) { how = "no backpack in slot 3"; return n; }
+            ushort bagId = (ushort)p.Inventory[3].Id;
+            for (int attempt = 1; attempt <= 2 && n < expected; attempt++)
+            {
+                foreach (var cid in p.Containers.Keys.ToList()) a.S.CloseContainer(cid);
+                Pump(500, () => false);
+                int opened0 = a.S.Parser.Seen.TryGetValue(0x6E, out int o0) ? o0 : 0;
+                a.S.UseItem(GameSession.InventoryPos(3), bagId, 0);
+                WaitFor(3000, () => p.Containers.Count > 0);
+                Pump(500, () => false);
+                int opened = (a.S.Parser.Seen.TryGetValue(0x6E, out int o1) ? o1 : 0) - opened0;
+                n = CarriedCount(a, clientId);
+                how += (how.Length > 0 ? "; " : "") + "backpack opened again (try " + attempt + "): 0x6E x" + opened + ", " + p.Containers.Count + " container(s) open, the item shows " + n + " time(s)";
+            }
+            if (n < expected)
+            {
+                // a bag inside the backpack: open each one (the server sends its content as one more container)
+                var inner = new List<(byte cid, int index, ushort id)>();
+                foreach (var c in p.Containers.Values)
+                    for (int i = 0; i < c.Items.Count; i++)
+                        if (c.Items[i] != null && c.Items[i].Type != null && c.Items[i].Type.Container) inner.Add((c.Id, i + c.FirstIndex, (ushort)c.Items[i].Id));
+                int tried = 0;
+                foreach (var b in inner.Take(6))
+                {
+                    a.S.UseItem(GameSession.ContainerPos(b.cid, b.index), b.id, (byte)b.index);
+                    Pump(900, () => false);
+                    tried++;
+                    n = CarriedCount(a, clientId);
+                    if (n >= expected) break;
+                }
+                how += (how.Length > 0 ? "; " : "") + "bags inside the backpack opened: " + tried + " of " + inner.Count + ", the item shows " + n + " time(s)";
+            }
+            return n;
         }
 
         /// <summary>Runs an administrator panel action (extended opcode 120, the way the panel does) and waits for its result. Null when no answer came.</summary>
@@ -96,7 +141,11 @@ namespace Chaos.Core.LiveCheck
                 }
             }
             ulong money0 = p.Trade.Money;
-            int have0 = p.Trade.GoodsCount(row.Id), carried0 = CarriedCount(me, row.Id);
+            int have0 = p.Trade.GoodsCount(row.Id);
+            EnsureBagOpen(me);
+            int carried0 = CarriedChecked(me, row.Id, have0, out string bagHow);
+            if (bagHow.Length > 0) r.Note("bag check before the sale: " + bagHow);
+            r.Note("bag check: goods list says " + have0 + ", the open bags and slots show " + carried0 + ", " + p.Containers.Count + " container(s) open");
             int goods0 = Seen(0x7B), cont0 = Seen(0x70) + Seen(0x71) + Seen(0x72) + Seen(0x78) + Seen(0x79);
             r.Note("selling 1 x " + row.Name + " (price " + row.Sell + "): goods say " + have0 + ", the open bags and slots hold " + carried0 + ", money " + money0);
             if (!s.NpcSell(row, 1, true)) { s.NpcClose(); r.Fail("the sell rules forbid selling '" + row.Name + "' (goods " + have0 + ")"); return; }
@@ -108,14 +157,15 @@ namespace Chaos.Core.LiveCheck
             if (p.Trade.Money <= money0) problems.Append("the money did not rise (" + money0 + " to " + p.Trade.Money + "); ");
             else if (p.Trade.Money - money0 != row.Sell) problems.Append("the money rose by " + (p.Trade.Money - money0) + ", the price is " + row.Sell + "; ");
             if (have1 != have0 - 1) problems.Append("the goods list says " + have1 + " after the sale, expected " + (have0 - 1) + "; ");
-            if (carried0 > 0 && carried1 != carried0 - 1) problems.Append("the item is not gone from the bag or slot (" + carried0 + " to " + carried1 + "; texts: " + string.Join(" | ", me.ServerTexts(0).TakeLast(3)) + "); ");
+            if (have0 > 0 && carried0 == 0) problems.Append("the goods list says the character carries " + have0 + " x " + row.Name + " but no open bag or slot shows one (" + p.Containers.Count + " container(s) open; " + bagHow + "); ");
+            else if (carried0 > 0 && carried1 != carried0 - 1) problems.Append("the item is not gone from the bag or slot (" + carried0 + " to " + carried1 + "; texts: " + string.Join(" | ", me.ServerTexts(0).TakeLast(3)) + "); ");
             s.NpcClose();
             s.SayToNpc("bye");
             Pump(600, () => false);
             if (p.Trade.Open) problems.Append("the trade window state stayed open after closing; ");
             problems.Append(mark.Diff(me, "primary"));
             if (problems.Length > 0) r.Fail(problems.ToString().Trim());
-            else r.Pass("sold 1 x " + row.Name + " for " + row.Sell + ": 0x7B read, money up by the price, the item gone from the goods and " + (carried0 > 0 ? "the bag" : "the sell list"));
+            else r.Pass("sold 1 x " + row.Name + " for " + row.Sell + ": 0x7B read, money up by the price, the item gone from the goods and the bag (" + carried0 + " to " + carried1 + ")");
         }
 
         // ------------------------------------------------------------------------------------ market

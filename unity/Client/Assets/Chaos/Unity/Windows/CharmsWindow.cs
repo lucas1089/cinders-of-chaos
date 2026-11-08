@@ -11,7 +11,7 @@ namespace Chaos.Client
         public override string Title => Loc.T("Charms");
         protected override Rect Place(float w, float h) => new Rect(w / 2 - 380, 50, 760, 520);
 
-        Vector2 bagScroll, sideScroll;
+        Vector2 sideScroll;
         CharmDrag drag;
         Dictionary<string, object> dragCharm;
         Rect gridRect, bagRect;
@@ -19,8 +19,6 @@ namespace Chaos.Client
         protected override bool ModelVisible(ChaosApp app) => app.Session.Charms.Visible;
         protected override void ModelShow(ChaosApp app) => app.Session.Charms.Show();
         protected override void ModelHide(ChaosApp app) { app.Session.Charms.Hide(); drag = null; }
-
-        static Dictionary<string, int> looks;
 
         protected override void Body(ChaosApp app, Rect inner)
         {

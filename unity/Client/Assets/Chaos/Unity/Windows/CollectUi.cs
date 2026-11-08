@@ -31,7 +31,7 @@ namespace Chaos.Client
 
     static class CU
     {
-        static GUIStyle wrap, wrapDim;
+        static GUIStyle wrap;
 
         public static Color Hex(string hex, Color fallback) => hex != null && ColorUtility.TryParseHtmlString(hex, out var c) ? c : fallback;
 

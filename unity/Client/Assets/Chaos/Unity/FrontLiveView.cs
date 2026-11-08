@@ -97,7 +97,6 @@ namespace Chaos.Client
         /// <summary>The spell lights of this moment, added to the frame's lights before the nearest layout lights are picked.</summary>
         public Action<List<FaLight>> FrameLights;
         Vector3 camNormal;
-        int atlasGen;
         float spriteNext;
 
         // light, post and the state to give back
