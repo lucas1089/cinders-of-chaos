@@ -188,6 +188,12 @@ namespace Chaos.Core.Tests
             var two = new GameParser(new World(dat));
             two.Parse(new ByteWriter().U8(0xC8).U16(1).U8(1).U8(2).U8(3).U8(4).U8(0).U16(0).U8(0).U8(0).U8(0x1D).ToArray());
             check(two.Outfits.Open && two.Seen.ContainsKey(0x1D), "outfit window: the message ends where it should");
+            // the window smoke's fake server answers 0xD2 with it (the window was empty, "Asking the server...")
+            var smoke = new GameParser(new World(dat));
+            var tourArt = TourArt.FromDemo(DemoIds.Synthetic());
+            smoke.Parse(new ByteWriter().Raw(FakeGameServer.OutfitWindow(tourArt)).U8(0x1D).ToArray());
+            check(smoke.Outfits.Opens == 1 && smoke.Outfits.Current.LookType == tourArt.OutfitHero && smoke.Outfits.Outfits.Count == 2 && smoke.Outfits.Outfits[1].Name == "Warden" && smoke.Outfits.Mounts.Count == 0 && smoke.Seen.ContainsKey(0x1D),
+                  "outfit window: the fake server's answer to 0xD2 reads whole, two outfits, no mounts");
 
             // packets
             check(Hex(OutfitWindowState.RequestPacket()) == "d2" && Hex(OutfitWindowState.ToggleMountPacket(true)) == "d401", "outfit window: request 0xD2 and mount toggle 0xD4");
