@@ -134,7 +134,7 @@ local function candidates(tile)
       ground = item:isGround(), border = item:isGroundBorder(), bottom = item:isOnBottom(), top = item:isOnTop(),
       pickupable = item:isPickupable(), container = item:isContainer(),
     }
-    f.corpse = f.container and (item:isCorpse() or item:isLyingCorpse())
+    f.corpse = f.container and GL.isCorpseThing(item:isCorpse(), item:isLyingCorpse(), item:getId())
     if GL.isCandidate(f) then
       out[#out + 1] = { thing = item, id = item:getId(), c = item:getCount() }
     end

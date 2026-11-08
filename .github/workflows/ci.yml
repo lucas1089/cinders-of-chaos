@@ -343,6 +343,14 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosdisplay_test.cpp -o "$d/chaosdisplay_test"
           "$d/chaosdisplay_test"
 
+      - name: "Loot bag instead of monster bodies, pure parts (C++; header from server src-patch 0089, O435)"
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaoslootbag\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0089-monster-loot-bag.patch > "$d/chaoslootbag.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoslootbag_test.cpp -o "$d/chaoslootbag_test"
+          "$d/chaoslootbag_test"
+
       - name: RmlUi layer input logic (C++; routing between OTUI and RmlUi, touch scroll, repaint signature; O334)
         run: |
           d=$(mktemp -d)
@@ -1241,6 +1249,9 @@ jobs:
 
       - name: A decay that cannot change the item ends (server src-patch 0033)
         run: python3 -I server/tools/decay_loop_patch_test.py
+
+      - name: "Loot bag instead of monster bodies, items.xml step and patch guard (server src-patch 0089, O435)"
+        run: python3 -I server/tools/patch_monster_corpses_test.py
 
       - name: A reconnect to a lingering character is not thrown out nor left in the game (server src-patches 0034, 0035)
         run: python3 -I server/tools/reattach_ping_patch_test.py

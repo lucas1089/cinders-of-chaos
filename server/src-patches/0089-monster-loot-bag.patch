@@ -1,0 +1,129 @@
+# Loot bag instead of monster bodies (O435, owner 2026-11-08: "remover os corpos de criaturas mortos do jogo e deixar so
+# aquela bagzinha"; server/README.md "Loot bag instead of corpses"). A killed monster that has a corpse leaves the item
+# Game.setMonsterLootBag(bagId, keepIds) names (item 6068, the container the import fallback already used), whatever its
+# own corpse attribute or Lua corpse field says. One hook: Monster::getLookCorpse, which Creature::getCorpse reads when a
+# creature dies, so loot, the corpse owner, decay, the onDeath / onDropLoot events and every script that reads the corpse
+# see an ordinary corpse container (the bag) and nothing else changes.
+#   * a monster whose own corpse is 0 leaves nothing, as before;
+#   * a monster whose own corpse id is in keepIds keeps it (the quest and boss corpses scripts look for by id);
+#   * bagId 0, or never calling the function, is the old behaviour: the switch is `enabled` in
+#     data/scripts/chaos/corpse_config.lua, applied by data/scripts/chaos/corpse_bag.lua at load and on every reload;
+#   * players are never touched: Player::getLookCorpse is not changed and ChaosLootBag::corpseOf is only called from
+#     Monster::getLookCorpse (guard: tools/patch_monster_corpses_test.py).
+# New header src/chaoslootbag.h (pure function, tests in server/tools/chaoslootbag_test.cpp, CI).
+# Apply in the server source root after 0001-0088: patch -p1 < 0089-monster-loot-bag.patch, then rebuild (not compiled
+# here: the base tree is not in git; the header is built and tested in CI, the three hunks dry-run checked on the base
+# tree up to patch 0044).
+diff --git a/src/monster.h b/src/monster.h
+--- a/src/monster.h
++++ b/src/monster.h
+@@ -6,6 +6,7 @@
+ 
+ #include "tile.h"
+ #include "monsters.h"
++#include "chaoslootbag.h"
+ 
+ class Creature;
+ class Game;
+@@ -280,7 +281,8 @@
+ 			return skillLoss ? mType->info.experience : 0;
+ 		}
+ 		uint16_t getLookCorpse() const override {
+-			return mType->info.lookcorpse;
++			// Chaos (src-patch 0089): the loot bag instead of the body; players have their own getLookCorpse
++			return ChaosLootBag::corpseOf(ChaosLootBag::current(), mType->info.lookcorpse);
+ 		}
+ 		void dropLoot(Container* corpse, Creature* lastHitCreature) override;
+ 		uint32_t getDamageImmunities() const override {
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2226,6 +2226,7 @@
+ 	registerMethod("Game", "setSpawnIntervalPercent", LuaScriptInterface::luaGameSetSpawnIntervalPercent);
+ 	registerMethod("Game", "setSpawnIntervalZones", LuaScriptInterface::luaGameSetSpawnIntervalZones);
+ 	registerMethod("Game", "setDisplayScale", LuaScriptInterface::luaGameSetDisplayScale); // Chaos (src-patch 0037)
++	registerMethod("Game", "setMonsterLootBag", LuaScriptInterface::luaGameSetMonsterLootBag); // Chaos (src-patch 0089)
+ 
+ 	// Variant
+ 	registerClass("Variant", "", LuaScriptInterface::luaVariantCreate);
+@@ -5123,6 +5124,27 @@
+ 	}
+ 	g_game.map.spawns.invalidateIntervalZones(); // Chaos (src-patches/0027)
+ 	lua_pushnumber(L, count);
++	return 1;
++}
++
++int LuaScriptInterface::luaGameSetMonsterLootBag(lua_State* L)
++{
++	// Game.setMonsterLootBag(bagId, keepIds) (Chaos, src-patch 0089): every monster that has a corpse leaves the item
++	// bagId instead, except the monsters whose own corpse id is in keepIds (a list of ids). bagId 0 (or no argument)
++	// turns it off. Player corpses are not touched. Returns true.
++	ChaosLootBag::Config config;
++	config.bagId = getNumber<uint16_t>(L, 1, 0);
++	if (isTable(L, 2)) {
++		lua_pushnil(L);
++		while (lua_next(L, 2) != 0) {
++			if (lua_isnumber(L, -1)) {
++				config.keep.insert(static_cast<uint16_t>(lua_tonumber(L, -1)));
++			}
++			lua_pop(L, 1);
++		}
++	}
++	ChaosLootBag::current() = std::move(config);
++	pushBoolean(L, true);
+ 	return 1;
+ }
+ 
+diff --git a/src/luascript.h b/src/luascript.h
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -601,6 +601,7 @@
+ 		static int luaGameSetSpawnIntervalPercent(lua_State* L);
+ 		static int luaGameSetSpawnIntervalZones(lua_State* L);
+ 		static int luaGameSetDisplayScale(lua_State* L); // Chaos (src-patch 0037)
++		static int luaGameSetMonsterLootBag(lua_State* L); // Chaos (src-patch 0089)
+ 
+ 		// Variant
+ 		static int luaVariantCreate(lua_State* L);
+diff --git a/src/chaoslootbag.h b/src/chaoslootbag.h
+new file mode 100644
+--- /dev/null
++++ b/src/chaoslootbag.h
+@@ -0,0 +1,37 @@
++// Chaos (src-patch 0089): the loot bag instead of monster bodies. Pure parts, tested by server/tools/chaoslootbag_test.cpp.
++#ifndef FS_CHAOSLOOTBAG_H
++#define FS_CHAOSLOOTBAG_H
++
++#include <cstdint>
++#include <unordered_set>
++
++namespace ChaosLootBag {
++
++struct Config {
++	uint16_t bagId = 0;                 // 0 = off: every monster leaves its own corpse
++	std::unordered_set<uint16_t> keep;  // monster corpse ids that stay as they are (quest and boss mechanics)
++};
++
++// the one table, filled by Game.setMonsterLootBag from data/scripts/chaos/corpse_config.lua
++inline Config& current()
++{
++	static Config config;
++	return config;
++}
++
++// The corpse item a monster leaves. corpse is its own look corpse (0 = it leaves nothing: stays nothing). Used by
++// Monster::getLookCorpse only: Player::getLookCorpse never asks, so a player's body is never changed.
++inline uint16_t corpseOf(const Config& config, uint16_t corpse)
++{
++	if (config.bagId == 0 || corpse == 0 || corpse == config.bagId) {
++		return corpse;
++	}
++	if (config.keep.count(corpse) != 0) {
++		return corpse;
++	}
++	return config.bagId;
++}
++
++} // namespace ChaosLootBag
++
++#endif
