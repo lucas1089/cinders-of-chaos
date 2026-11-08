@@ -92,6 +92,7 @@ namespace Chaos.Client
                     y += sz.y + 1;
                     bool over = r.Contains(e.mousePosition);
                     var bg = HexColor(l.Background); var border = HexColor(l.Border); var text = HexColor(l.Color);
+                    if (l.Decision.Highlight && CosmeticsLogic.ValidColor(session.Cosmetics?.Accent)) bg = HexColor(session.Cosmetics.Accent);   // the loot label accent cosmetic
                     bool hovered = over && !OverUi(Input.mousePosition);
                     if (hovered) bg = new Color(0.23f, 0.16f, 0.11f, 0.94f);
                     if (hovered && e.type == EventType.Repaint) groundLabelHoverFrame = Time.frameCount;   // PlayUpdate leaves the item under a label alone

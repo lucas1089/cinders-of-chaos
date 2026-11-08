@@ -536,6 +536,10 @@ namespace Chaos.Core
         public Func<DateTime> UtcNow = () => DateTime.UtcNow;
         public Func<string, bool> Exists = p => false;
         public Action<string> Saved = delegate { };
+        /// <summary>Boss Defeated: the bosses in view with their health, and the creature being attacked (set by the session).</summary>
+        public Func<IEnumerable<KeyValuePair<uint, int>>> BossesNow;
+        public Func<uint> TargetNow = () => 0u;
+        public readonly BossKillWatch Boss = new BossKillWatch();
 
         public ShotsState(ExtOpcodes e)
         {
@@ -619,6 +623,7 @@ namespace Chaos.Core
             int level = LevelNow();
             if (IsLevelUp(level, LastLevel)) Request("level", now);
             if (level > 0) LastLevel = level;
+            if (BossesNow != null && Boss.Step(now, TargetNow(), BossesNow()) > 0) Request("boss", now);   // Boss Defeated (BossKillWatch, Core/Phase7Q.cs)
             if (Pending != null && now - pendingAt >= DelayMs)
             {
                 string ev = Pending;

@@ -56,8 +56,11 @@ namespace Chaos.Client
                 v.Activity = ActivityRegion;
                 v.Random = () => Random.value;
             }
+            ViewCharacterUpdate();
+            Phase7QUpdate();
             ApplyViewRows(VisualPrefs.ViewRows);
             Phase7YUpdate();   // ChaosApp.Phase7Y.cs: monster sizes, item outlines, fonts
+            AwareUpdate();
             AudioUpdate(v);
             if (v == null) return;
             VisualLayoutUpdate();
@@ -80,15 +83,46 @@ namespace Chaos.Client
         }
 
         // ------------------------------------------------------------------------------------------------ map zoom and shake
-        int appliedRows;
+        int appliedRows, appliedMax;
+        string viewFor;
+        AwareRange awareAskedFor;
+        bool awareSent;
+
+        /// <summary>The most rows the current view can draw: what the aware range holds in the classic view, 11 in HD-2D and the live view (their tile windows are the default area).</summary>
+        public int ViewMaxRows => screen == Screen.Game && world != null && !hd2d && !LiveOn ? ViewZoom.MaxRowsFor(world.Range) : ViewZoom.MaxRows;
 
         void ApplyViewRows(int rows)
         {
-            rows = ViewZoom.Clamp(rows);
-            if (rows == appliedRows) return;
-            appliedRows = rows;
+            int max = ViewMaxRows;
+            rows = ViewZoom.Clamp(rows, max);
+            if (rows == appliedRows && max == appliedMax) return;
+            appliedRows = rows; appliedMax = max;
             ViewTilesH = rows;
-            ViewTilesW = rows * 15f / 11f;
+            ViewTilesW = ViewZoom.Cols(rows, world != null ? world.Range.Width : 17);
+        }
+
+        /// <summary>Per character zoom (game_chaosview): when the character is known its saved rows are loaded, a new one starts at about 72 px a tile.</summary>
+        void ViewCharacterUpdate()
+        {
+            string name = screen == Screen.Game ? world?.Player?.Name : null;
+            if (string.IsNullOrEmpty(name)) { viewFor = null; VisualPrefs.CurrentCharacter = null; return; }
+            if (viewFor == name) return;
+            viewFor = name;
+            VisualPrefs.CurrentCharacter = name;
+            string key = ViewZoom.CharKey(name);
+            int saved = key != null && PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key) : 0;
+            VisualPrefs.ViewRows = saved >= 3 ? ViewZoom.Clamp(saved, ViewZoom.HardMaxRows) : ViewZoom.Clamp(ViewZoom.DefaultZoom(UnityEngine.Screen.height, ViewZoom.HardMaxRows), ViewZoom.HardMaxRows);
+        }
+
+        /// <summary>The option "Wide view": asks the server for 29 x 21 (or the default 17 x 13 when off) once after the login and again when the option changes.
+        /// CHAOS_UNITY_AWARE keeps its own say; a connection without the Chaos markers cannot ask and stays at the default.</summary>
+        void AwareUpdate()
+        {
+            if (screen != Screen.Game || session == null || world?.Player == null || !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("CHAOS_UNITY_AWARE"))) { if (screen != Screen.Game) awareSent = false; return; }
+            var want = ViewZoom.Wanted(VisualPrefs.WideView);
+            if (awareSent && want.Width == awareAskedFor.Width && want.Height == awareAskedFor.Height) return;
+            awareSent = true; awareAskedFor = want;
+            if (want.Width != world.Range.Width || want.Height != world.Range.Height) session.RequestAwareRange(want.Width, want.Height);
         }
 
         /// <summary>Ctrl + wheel over the map zooms the classic view by whole rows (7 to 11). The live view has its own wheel zoom.</summary>
@@ -98,7 +132,7 @@ namespace Chaos.Client
             bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             float wheel = Input.mouseScrollDelta.y;
             if (!ctrl || Mathf.Abs(wheel) < 0.5f || OverUi(Input.mousePosition)) return;
-            VisualPrefs.ViewRows = ViewZoom.Step(VisualPrefs.ViewRows, wheel > 0 ? -1 : 1);   // wheel up: closer, fewer rows
+            VisualPrefs.ViewRows = ViewZoom.Step(ViewZoom.Clamp(VisualPrefs.ViewRows, ViewMaxRows), wheel > 0 ? -1 : 1, ViewMaxRows);   // wheel up: closer, fewer rows
             VisualPrefs.Save();
         }
 

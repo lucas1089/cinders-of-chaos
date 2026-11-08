@@ -97,7 +97,12 @@ namespace Chaos.Client
             if (!r.Collection)
             {
                 if (CU.Button(new Rect(d.x, d.yMax - 32, 100, 28), Loc.T("Use"), CosmeticsLogic.CanUse(r) && UnlocksCore.CanUse(r))) c.Select(r);
-                if (r.Preview && CU.Button(new Rect(d.x + 106, d.yMax - 32, 100, 28), Loc.T("Preview"), !CosmeticsLogic.Drawn(r.Kind))) c.PreviewRow(r);
+                if ((r.Preview || CosmeticsLogic.Drawn(r.Kind)) && CU.Button(new Rect(d.x + 106, d.yMax - 32, 100, 28), Loc.T("Preview"), !CosmeticsLogic.Drawn(r.Kind) || !string.IsNullOrEmpty(r.Art)))
+                {
+                    // an outline or a footprint is drawn on the character in the shared look preview; the others the server plays round you
+                    if (CosmeticsLogic.Drawn(r.Kind)) app.ShowLookPreview(new PreviewOption { Kind = r.Kind, Art = r.Art, Pulse = r.Pulse > 0 });
+                    else c.PreviewRow(r);
+                }
             }
         }
     }

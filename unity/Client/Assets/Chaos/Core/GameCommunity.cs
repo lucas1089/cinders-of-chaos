@@ -2,6 +2,7 @@
 // drop feed, credits, streamer and cinema mode, performance overlay, automatic screenshots, Customise Character extras. Each registers its extended opcode in its constructor
 // (InitCommunity, called by the GameSession constructor).
 using System;
+using System.Collections.Generic;
 
 namespace Chaos.Core
 {
@@ -63,6 +64,15 @@ namespace Chaos.Core
             parser.Talks.ServerText = Community.Shots.OnServerText;
             Community.Shots.LevelNow = () => parser.Level;
             Community.Shots.CharName = () => opt.Character ?? "";
+            Community.Shots.TargetNow = () => AttackTarget;
+            Community.Shots.BossesNow = BossesInView;
+        }
+
+        /// <summary>The boss-tier monsters in view with their health percent (Boss Defeated of the screenshot options).</summary>
+        IEnumerable<KeyValuePair<uint, int>> BossesInView()
+        {
+            foreach (var c in world.Creatures.Values)
+                if (c.Type == 1 && Hud.Monster.Tier(c.Id) == "boss") yield return new KeyValuePair<uint, int>(c.Id, c.HealthPercent);
         }
 
         /// <summary>Called by Poll: the first requests after the login (the admin catalog, the card border set, the drop feed option) and the timers.</summary>

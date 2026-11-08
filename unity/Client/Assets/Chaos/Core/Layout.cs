@@ -26,9 +26,48 @@ namespace Chaos.Core
         }
 
         /// <summary>Columns for a row count: the 15 x 11 shape, rounded to an odd number.</summary>
-        public static float Cols(int rows) => Clamp(rows) * 15f / 11f;
+        public static float Cols(int rows) => Clamp(rows, HardMaxRows) * 15f / 11f;
 
         public static int Step(int rows, int dir) => Clamp(rows + (dir > 0 ? 2 : dir < 0 ? -2 : 0));
+
+        // ---- the wider aware range (phase 7, track Q): the classic view draws as many rows as the area the server sends holds
+        public const int HardMaxRows = 19, MaxClassicWidth = 29;
+        public const string WidePref = "chaos.wideview", CharPref = "chaos.viewrows.";
+        /// <summary>Tiles of the area a view must leave unused: the server describes (x - Left .. x + Right), and while a step is drawn the camera is up to one tile off
+        /// and a half tile of the edge shows (the reason the 17 x 13 default draws 15 x 11).</summary>
+        public const int Margin = 2;
+
+        /// <summary>The most rows a view can draw from an aware range: odd, the area's height less the margin, with the 15 : 11 shape's columns inside its width less the margin
+        /// (the default 17 x 13 gives 11, as before; 29 x 21 gives 19, the zoom out the main client reaches too).</summary>
+        public static int MaxRowsFor(int awareWidth, int awareHeight)
+        {
+            int rows = Odd(Math.Min(awareHeight <= 0 ? 13 : awareHeight, HardMaxRows + Margin) - Margin);
+            while (rows > MaxRows && (int)Math.Floor(rows * 15f / 11f) > awareWidth - Margin) rows -= 2;
+            return Math.Max(MaxRows, Math.Min(HardMaxRows, rows));
+        }
+
+        public static int MaxRowsFor(AwareRange r) => MaxRowsFor(r.Width, r.Height);
+
+        /// <summary>Rows kept to the odd numbers MinRows..max.</summary>
+        public static int Clamp(int rows, int max)
+        {
+            if (rows % 2 == 0) rows++;
+            return Math.Max(MinRows, Math.Min(Math.Max(MinRows, max % 2 == 0 ? max - 1 : max), rows));
+        }
+
+        public static int Step(int rows, int dir, int max) => Clamp(rows + (dir > 0 ? 2 : dir < 0 ? -2 : 0), max);
+
+        /// <summary>The columns of the view for a row count: 15 x 11 shape, whole tiles inside the width of the area.</summary>
+        public static float Cols(int rows, int awareWidth) => Math.Min(Cols(rows), Math.Max(15, awareWidth - Margin));
+
+        /// <summary>The area to ask the server for: the largest one (29 x 21, as the main client does at the game start) or the default 17 x 13.</summary>
+        public static AwareRange Wanted(bool wide) => wide ? new AwareRange(AwareRange.MaxWidth, AwareRange.MaxHeight) : AwareRange.Default;
+
+        /// <summary>The key of the zoom a character keeps (game_chaosview saves it per character).</summary>
+        public static string CharKey(string name) => string.IsNullOrEmpty(name) ? null : CharPref + name.ToLowerInvariant();
+
+        /// <summary>The zoom to start with: the character's saved rows kept inside what the area holds, else the default for the window (DefaultZoom).</summary>
+        public static int StartRows(int saved, double windowHeight, int max) => saved >= 3 ? Clamp(saved, max) : Clamp(DefaultZoom(windowHeight, max), max);
 
         /// <summary>The furthest zoom out the area sent by the server allows (game_chaosview maxZoomOut): awareWidth / awareHeight, aspect = window width / height.</summary>
         public static int MaxZoomOut(int awareWidth, int awareHeight, double aspect)

@@ -130,7 +130,7 @@ jobs:
         if: steps.lic.outputs.ok == '1'
         run: |
           dst=unity/Client/Assets/StreamingAssets/overlay/modules
-          for m in game_chaossound game_chaosmusic game_chestaura game_combatdecals game_cosmeticfx game_shaderfx game_lootfilter game_nameplate; do
+          for m in game_chaossound game_chaosmusic game_chestaura game_combatdecals game_cosmeticfx game_shaderfx game_lootfilter game_nameplate game_chaosweather; do
             (cd client/overlay/modules && find "$m" -type f \( -name '*.ogg' -o -name '*.png' \) -print0) |
               while IFS= read -r -d '' f; do mkdir -p "$dst/$(dirname "$f")"; cp "client/overlay/modules/$f" "$dst/$f"; done
           done
@@ -141,7 +141,7 @@ jobs:
           mkdir -p "$dst/game_chaosnotify/images" && cp client/overlay/modules/game_chaosnotify/images/Background.png "$dst/game_chaosnotify/images/"
           # pictures of client/overlay/data (spell icon sheets, buff icons, monster bar art, the achievement toast icon): the player reads them as ../data
           ddst=unity/Client/Assets/StreamingAssets/overlay/data
-          for d in images/game/spells images/game/buffs images/chaos/monsterbar; do
+          for d in images/game/spells images/game/buffs images/chaos/monsterbar images/chaos/skin images/chaos/mapmarkers images/chaos/mapoverlay skins; do
             (cd client/overlay/data && find "$d" -type f -name '*.png' -print0) |
               while IFS= read -r -d '' f; do mkdir -p "$ddst/$(dirname "$f")"; cp "client/overlay/data/$f" "$ddst/$f"; done
           done

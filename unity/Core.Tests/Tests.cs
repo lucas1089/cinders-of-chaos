@@ -79,6 +79,7 @@ namespace Chaos.Core.Tests
             Phase6VTests.Run,
             WireAuditTests.Run,
             Phase7YTests.Run,
+            Phase7QTests.Run,
         };
 
         static void CryptoChecks()

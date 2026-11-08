@@ -314,6 +314,12 @@ namespace Chaos.Client
             // where it stands: its tile plus the offset to where the picture is now (a step, a push)
             var tw = view.TileToWorld(c.Position.X, c.Position.Y, c.Position.Z);
             float dx = st.X + st.OffX - c.Position.X, dy = st.Y - st.OffZ - c.Position.Y;
+            if (c.Outfit != null)
+            {
+                // game_bossanimate: a boss whose art sits off its tile (Gravewarden Ulthar) is moved down and right, as the classic view does
+                BossAnimate.Shift(c.Outfit.LookType, out int bsx, out int bsy);
+                dx -= bsx / 32f; dy -= bsy / 32f;
+            }
             float px = tw.x + ex.x * dx + ey.x * dy, pz = tw.z + ex.z * dx + ey.z * dy;
             float gy = view.GroundY(c.Position.X, c.Position.Y, c.Position.Z);
             if (st.Walking && (c.WalkFrom.X != c.Position.X || c.WalkFrom.Y != c.Position.Y))

@@ -68,8 +68,8 @@ namespace Chaos.Client
             float half = 0f;
             if (TileScreenPx(centre, out Vector3 p0) && TileScreenPx(centre.Offset(1, 0), out Vector3 p1)) half = Mathf.Abs(p1.x - p0.x) / 2f;
             if (half < 2f) half = cam.pixelRect.height / ViewTilesH / 2f;
-            for (int dx = -World.RangeLeft; dx <= World.RangeRight && tile == null; dx++)
-                for (int dy = -World.RangeTop; dy <= World.RangeBottom; dy++)
+            for (int dx = -world.Range.Left; dx <= world.Range.Right && tile == null; dx++)
+                for (int dy = -world.Range.Top; dy <= world.Range.Bottom; dy++)
                 {
                     var p = centre.Offset(dx, dy);
                     if (!TileScreenPx(p, out Vector3 px)) goto noTiles;
