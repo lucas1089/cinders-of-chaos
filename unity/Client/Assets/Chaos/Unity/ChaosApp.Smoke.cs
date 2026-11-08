@@ -1,0 +1,443 @@
+// The window smoke run (unity/README.md "Window smoke run"): `ChaosUnity -chaosWindowSmoke OUT_DIR` starts the fake game server of the demo tour in this process, logs in
+// to it and opens every window the app can open, one at a time: the login screen with its System bar and option pages, the character list, every top menu drop-down
+// (and its More sub-menu), every window class of ChaosApp.MakeWindows, every Info page and every options page. Each step draws a few frames, then closes.
+// Per step it records the exceptions and IMGUI layout errors Unity logged (Application.logMessageReceived), a try/catch around the open, and whether the window's rect
+// is empty or off the 1280x720 screen. It writes OUT_DIR/window_smoke.json, contact sheets OUT_DIR/window_smoke_sheet_N.png (24 crops per sheet, labelled) and logs
+// "chaos window smoke: N windows, M with errors". The pure parts (order, classification, rect checks, sheet maths, json) are Core/Phase10F.cs.
+// Windows that wait for a server reply draw their empty state: the fake server only answers what the demo tour needs. A report, not a gate: the exit code is 0 unless the
+// run itself broke (login failed, no screenshot at all, over time), then 1.
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using Chaos.Core;
+using UnityEngine;
+
+namespace Chaos.Client
+{
+    public sealed partial class ChaosApp
+    {
+        public static bool WindowSmokeRequested(out string dir)
+        {
+            dir = TourArg("-chaosWindowSmoke");
+            return !string.IsNullOrEmpty(dir);
+        }
+
+        // -chaosWindowSmoke alone: the normal app starts (Boot) and the director drives it. Next to -chaosHd2dShot or -chaosDemoTour those run instead (the CI step runs the smoke as its own player run).
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void BootWindowSmoke()
+        {
+            if (!WindowSmokeRequested(out string dir) || Hd2dShot.Requested(out _) || DemoTourRequested(out _)) return;
+            new GameObject("Window smoke").AddComponent<SmokeDirector>().Begin(dir);
+        }
+
+        sealed class SmokeDirector : MonoBehaviour
+        {
+            enum Phase { Start, Steps, Login, Entering, Settle, Sheets, Done }
+
+            sealed class Tile { public string Name; public Texture2D Tex; public bool Problem; public string Flags = ""; }
+
+            const int DrawFrames = 4;   // frames each step stays open: the placement frame, then three more
+
+            ChaosApp app;
+            string dir;
+            FakeGameServer server;
+            Phase phase = Phase.Start;
+            int tick, settleLeft, gameStart = -1, framesInStep, sheetIndex, sheetFrames;
+            float startedAt;
+            readonly Queue<SmokeStep> pending = new Queue<SmokeStep>();
+            SmokeStep current;
+            SmokeRecord rec;
+            Action afterSteps;
+            readonly SmokeReport report = new SmokeReport();
+            readonly List<Tile> tiles = new List<Tile>();
+            bool logHooked;
+
+            public void Begin(string outDir)
+            {
+                dir = outDir;
+                DontDestroyOnLoad(gameObject);
+            }
+
+            double Clock => tick * (1000.0 / TourFps);
+
+            void Start()
+            {
+                startedAt = Time.realtimeSinceStartup;
+                StartCoroutine(Capture());
+            }
+
+            void OnDestroy() { Unhook(); }
+
+            void Hook() { if (!logHooked) { Application.logMessageReceived += OnLog; logHooked = true; } }
+            void Unhook() { if (logHooked) { Application.logMessageReceived -= OnLog; logHooked = false; } }
+
+            void OnLog(string condition, string stack, LogType type)
+            {
+                report.Log(type == LogType.Exception, type == LogType.Error || type == LogType.Assert, condition, stack);
+            }
+
+            void Fail(string why)
+            {
+                Debug.LogError("chaos window smoke: failed: " + why);
+                try { WriteJson(); } catch (Exception) { }
+                try { server?.Dispose(); } catch (Exception) { }
+                phase = Phase.Done;
+                Unhook();
+                Application.Quit(1);
+            }
+
+            void Update()
+            {
+                if (phase == Phase.Done) return;
+                tick++;
+                try { Step(); }
+                catch (Exception e) { Fail(e.ToString()); }
+            }
+
+            void Step()
+            {
+                if (app == null)
+                {
+                    app = FindObjectOfType<ChaosApp>();
+                    if (app == null) return;
+                }
+                float wall = Time.realtimeSinceStartup - startedAt;
+                if ((phase == Phase.Login || phase == Phase.Entering) && wall > 300f) { Fail("no world after 300 s (phase " + phase + ", status '" + app.status + "', server problem '" + (server?.Problem ?? "") + "')"); return; }
+                if (wall > 1500f) { Fail("the smoke run ran over 1500 s (" + report.Records.Count + " steps done)"); return; }
+                if (gameStart >= 0 && server != null)
+                {
+                    // the server's script keeps playing (monsters, buffs, messages) so the windows have something to show
+                    try { server.Advance((tick - gameStart) * (1000.0 / TourFps)); } catch (Exception e) { Debug.LogWarning("chaos window smoke: server script: " + e.Message); }
+                }
+                switch (phase)
+                {
+                    case Phase.Start: StartSmoke(); break;
+                    case Phase.Steps: RunSteps(); break;
+                    case Phase.Login:
+                        if (app.login != null && app.login.Error != null) { Fail("login: " + app.login.Error); break; }
+                        if (app.screen == Screen.Characters && app.login != null && app.login.Characters.Count > 0)
+                        {
+                            foreach (var s in WindowSmokePlan.CharacterSteps()) pending.Enqueue(s);
+                            afterSteps = EnterGame;
+                            phase = Phase.Steps;
+                        }
+                        else if (app.status.StartsWith("Login failed", StringComparison.Ordinal)) Fail(app.status);
+                        break;
+                    case Phase.Entering:
+                        if (app.session != null && app.session.Closed != null) { Fail("the session closed: " + app.session.Closed); break; }
+                        if (app.session != null && app.session.Parser.LoggedIn && app.world != null && app.world.Player != null && server.InGame)
+                        {
+                            settleLeft = 90;
+                            gameStart = tick;
+                            phase = Phase.Settle;
+                            Debug.Log("chaos window smoke: in the world at " + app.world.Player.Position);
+                        }
+                        break;
+                    case Phase.Settle:
+                        if (--settleLeft <= 0) BeginGameSteps();
+                        break;
+                }
+            }
+
+            void StartSmoke()
+            {
+                Directory.CreateDirectory(dir);
+                Hook();
+                QualitySettings.vSyncCount = 0;
+                Time.captureFramerate = TourFps;
+                UnityEngine.Screen.SetResolution(TourWidth, TourHeight, false);
+                GameSession.TestClock = () => Clock;
+                VisualPrefs.UiFadeOn = false;   // a closed window is gone at once, so one window is on screen at a time
+                foreach (var s in WindowSmokePlan.LoginSteps(LoginMenu.OptionPages)) pending.Enqueue(s);
+                afterSteps = BeginLogin;
+                phase = Phase.Steps;
+                Debug.Log("chaos window smoke: started, " + pending.Count + " login screen steps first");
+            }
+
+            void BeginLogin()
+            {
+                server = TourStartServer(app);
+                phase = Phase.Login;
+            }
+
+            void EnterGame()
+            {
+                app.Enter(app.login.Characters[0]);
+                phase = Phase.Entering;
+            }
+
+            // ------------------------------------------------------------------------------------ the plan of the game steps
+            void BeginGameSteps()
+            {
+                if (app.windows.Count == 0) app.MakeWindows();
+                int count = TopMenuAdmin.ButtonCount(TopMenu.Categories.Length, app.StaffMenu());
+                var menus = new List<string>();
+                var more = new List<int>();
+                var infoPages = new List<string>();
+                for (int i = 0; i < count; i++)
+                {
+                    menus.Add(app.CategoryText(i));
+                    foreach (var it in app.CategoryItems(i)) if (it.Subs != null) { more.Add(i); break; }
+                }
+                foreach (var c in TopMenu.Categories)
+                    foreach (var e in TopMenu.Leaves(c))
+                        if (e.Target.StartsWith("info:", StringComparison.Ordinal)) infoPages.Add(e.Target.Substring(5));
+                foreach (var p in ChaosInfo.Pages) infoPages.Add(p.Id);
+                var classes = new List<string>();
+                foreach (var w in app.windows) classes.Add(w.GetType().Name);
+                var steps = WindowSmokePlan.GameSteps(menus, more, classes, infoPages, VisualOptionsUi.Pages);
+                foreach (var s in steps) pending.Enqueue(s);
+                afterSteps = BeginSheets;
+                phase = Phase.Steps;
+                Debug.Log("chaos window smoke: " + steps.Count + " game steps (" + classes.Count + " window classes, " + menus.Count + " menu buttons)");
+            }
+
+            // ------------------------------------------------------------------------------------ one step
+            void CloseAll()
+            {
+                app.topMenuOpen = -1; app.topSubOpen = -1;
+                app.loginMenuOpen = -1; app.loginOptions = false; app.loginCredits = false;
+                foreach (var w in app.windows) w.Open = false;
+            }
+
+            void RunSteps()
+            {
+                if (current != null) return;   // the capture coroutine ends it
+                if (pending.Count == 0)
+                {
+                    var next = afterSteps;
+                    afterSteps = null;
+                    if (next == null) { Fail("no step to run and nothing after them"); return; }
+                    next();
+                    return;
+                }
+                current = pending.Dequeue();
+                framesInStep = 0;
+                CloseAll();
+                rec = report.Begin(current.Name, current.Kind);
+                try { Prepare(current); }
+                catch (Exception e) { SmokeReport.AddIssue(rec, SmokeIssueKind.Exception, e.GetType().Name + ": " + e.Message, e.StackTrace); }
+            }
+
+            void Prepare(SmokeStep s)
+            {
+                switch (s.Kind)
+                {
+                    case WindowSmokePlan.Screen: break;
+                    case WindowSmokePlan.Login:
+                        if (s.Id == "bar" || s.Id == "characters bar") app.loginMenuOpen = 0;
+                        else if (s.Id == "credits") app.loginCredits = true;
+                        else { app.loginOptions = true; app.loginOptionsPage = s.Index; }
+                        break;
+                    case WindowSmokePlan.Menu: app.topMenuOpen = s.Index; break;
+                    case WindowSmokePlan.More:
+                        {
+                            app.topMenuOpen = s.Index;
+                            var items = app.CategoryItems(s.Index);
+                            for (int i = 0; i < items.Count; i++) if (items[i].Subs != null) { app.topSubOpen = i; break; }
+                            break;
+                        }
+                    case WindowSmokePlan.Window:
+                        {
+                            var win = app.WindowNamed(s.Id);
+                            if (win == null) SmokeReport.AddIssue(rec, SmokeIssueKind.Error, "no window of class " + s.Id, "");
+                            else win.Open = true;
+                            break;
+                        }
+                    case WindowSmokePlan.Info:
+                        app.OpenInfoPage(s.Id);
+                        break;
+                    case WindowSmokePlan.Options:
+                        app.FindWindow<OptionsWindow>().ShowPage(s.Index);
+                        break;
+                }
+            }
+
+            /// <summary>The rect of what the step opened, in UI units; false for steps that are the whole screen or a drop-down.</summary>
+            bool StepRect(SmokeStep s, out Rect r, out bool open)
+            {
+                r = default; open = true;
+                switch (s.Kind)
+                {
+                    case WindowSmokePlan.Window: { var w = app.WindowNamed(s.Id); if (w == null) { open = false; return false; } r = w.Area; open = w.Open; return true; }
+                    case WindowSmokePlan.Info: { var w = app.FindWindow<InfoWindow>(); r = w.Area; open = w.Open; return true; }
+                    case WindowSmokePlan.Options: { var w = app.FindWindow<OptionsWindow>(); r = w.Area; open = w.Open; return true; }
+                    case WindowSmokePlan.Menu: open = app.topMenuOpen == s.Index; return false;
+                    case WindowSmokePlan.More: open = app.topMenuOpen == s.Index && app.topSubOpen >= 0; return false;
+                    case WindowSmokePlan.Login:
+                        if (s.Id == "bar" || s.Id == "characters bar") { open = app.loginMenuOpen == 0; return false; }
+                        if (s.Id == "credits") { r = app.loginCreditsRect; open = app.loginCredits; return true; }
+                        r = app.loginOptionsRect; open = app.loginOptions; return true;
+                }
+                return false;
+            }
+
+            void FinishStep()
+            {
+                var s = current;
+                float scale = UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi);
+                float uw = UnityEngine.Screen.width / scale, uh = UnityEngine.Screen.height / scale;
+                bool hasRect = StepRect(s, out Rect r, out bool open);
+                rec.OpenAtEnd = open;
+                var crop = new SmokeBox(0, 0, UnityEngine.Screen.width, UnityEngine.Screen.height);
+                if (hasRect)
+                {
+                    rec.HasRect = true;
+                    rec.Rect = new SmokeBox(r.x, r.y, r.width, r.height);
+                    rec.ZeroSize = SmokeRect.Zero(r.width, r.height);
+                    rec.OffScreen = SmokeRect.OffScreen(r.x, r.y, r.width, r.height, uw, uh);
+                    crop = SmokeSheet.Crop(r.x * scale, r.y * scale, r.width * scale, r.height * scale, 8f, UnityEngine.Screen.width, UnityEngine.Screen.height);
+                }
+                var tile = new Tile { Name = s.Name };
+                var shot = ScreenCapture.CaptureScreenshotAsTexture();
+                if (shot == null) SmokeReport.AddIssue(rec, SmokeIssueKind.Error, "ScreenCapture gave no texture", "");
+                else
+                {
+                    try { tile.Tex = MakeTile(shot, crop); }
+                    catch (Exception e) { SmokeReport.AddIssue(rec, SmokeIssueKind.Exception, "tile: " + e.GetType().Name + ": " + e.Message, e.StackTrace); }
+                    Destroy(shot);
+                }
+                tiles.Add(tile);
+                report.End();
+                rec.Frames = framesInStep;
+                tile.Problem = rec.Problem;
+                tile.Flags = Flags(rec);
+                if (rec.Problem) Debug.Log("chaos window smoke: problem in " + s.Name + ": " + tile.Flags);
+                current = null; rec = null;
+            }
+
+            static string Flags(SmokeRecord r)
+            {
+                string f = "";
+                int e = r.Count(SmokeIssueKind.Exception), l = r.Count(SmokeIssueKind.Layout), g = r.Count(SmokeIssueKind.Error);
+                if (e > 0) f += "EX" + e + " ";
+                if (l > 0) f += "GUI" + l + " ";
+                if (g > 0) f += "ERR" + g + " ";
+                if (r.ZeroSize) f += "ZERO ";
+                if (r.OffScreen) f += "OFF ";
+                if (!r.OpenAtEnd) f += "SHUT ";
+                return f.TrimEnd();
+            }
+
+            /// <summary>The crop of a screenshot as a texture the size it takes on the sheet (the GPU does the shrinking).</summary>
+            Texture2D MakeTile(Texture2D shot, SmokeBox crop)
+            {
+                var fit = SmokeSheet.Fit(crop.W, crop.H, SmokeSheet.Image(SmokeSheet.Cell(0, UnityEngine.Screen.width, UnityEngine.Screen.height)));
+                int fw = Mathf.Max(1, Mathf.RoundToInt(fit.W)), fh = Mathf.Max(1, Mathf.RoundToInt(fit.H));
+                shot.filterMode = FilterMode.Bilinear;
+                var rt = RenderTexture.GetTemporary(fw, fh, 0, RenderTextureFormat.ARGB32);
+                var prev = RenderTexture.active;
+                try
+                {
+                    Graphics.Blit(shot, rt, new Vector2(crop.W / shot.width, crop.H / shot.height), new Vector2(crop.X / shot.width, 1f - (crop.Y + crop.H) / shot.height));
+                    RenderTexture.active = rt;
+                    var t = new Texture2D(fw, fh, TextureFormat.RGBA32, false);
+                    t.ReadPixels(new Rect(0, 0, fw, fh), 0, 0);
+                    t.Apply(false, false);
+                    return t;
+                }
+                finally { RenderTexture.active = prev; RenderTexture.ReleaseTemporary(rt); }
+            }
+
+            // ------------------------------------------------------------------------------------ the end: json and sheets
+            void WriteJson()
+            {
+                if (dir == null) return;
+                float scale = UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi);
+                File.WriteAllText(Path.Combine(dir, "window_smoke.json"), report.ToJson(UnityEngine.Screen.width / scale, UnityEngine.Screen.height / scale));
+            }
+
+            void BeginSheets()
+            {
+                CloseAll();
+                WriteJson();
+                Debug.Log(report.DetailLine());
+                Debug.Log(report.SummaryLine());
+                if (tiles.Count == 0) { Finish(1); return; }
+                sheetIndex = 0; sheetFrames = 0;
+                phase = Phase.Sheets;
+            }
+
+            void Finish(int code)
+            {
+                phase = Phase.Done;
+                try { server?.Dispose(); } catch (Exception) { }
+                Unhook();
+                Debug.Log("chaos window smoke: wrote window_smoke.json and " + SmokeSheet.SheetCount(tiles.Count) + " sheets to " + dir);
+                Application.Quit(code);
+            }
+
+            IEnumerator Capture()
+            {
+                var eof = new WaitForEndOfFrame();
+                while (true)
+                {
+                    yield return eof;
+                    if (phase == Phase.Steps && current != null)
+                    {
+                        framesInStep++;
+                        if (framesInStep >= DrawFrames)
+                        {
+                            try { FinishStep(); }
+                            catch (Exception e) { Fail("finishing " + current.Name + ": " + e); yield break; }
+                        }
+                    }
+                    else if (phase == Phase.Sheets)
+                    {
+                        if (++sheetFrames < 2) continue;
+                        sheetFrames = 0;
+                        var tex = ScreenCapture.CaptureScreenshotAsTexture();
+                        if (tex == null) { Fail("ScreenCapture gave no texture for a sheet"); yield break; }
+                        File.WriteAllBytes(Path.Combine(dir, SmokeSheet.FileName(sheetIndex)), tex.EncodeToPNG());
+                        Destroy(tex);
+                        if (++sheetIndex >= SmokeSheet.SheetCount(tiles.Count)) { Finish(0); yield break; }
+                    }
+                }
+            }
+
+            GUIStyle labelStyle;
+
+            /// <summary>The contact sheet, drawn over the whole screen in front of the app (GUI depth) so the capture of the frame is the sheet.</summary>
+            void OnGUI()
+            {
+                if (phase != Phase.Sheets) return;
+                GUI.depth = -1000;
+                GUI.matrix = Matrix4x4.identity;
+                if (labelStyle == null) labelStyle = new GUIStyle(GUI.skin.label) { fontSize = 11, clipping = TextClipping.Clip, padding = new RectOffset(0, 0, 0, 0), margin = new RectOffset(0, 0, 0, 0) };
+                float sw = UnityEngine.Screen.width, sh = UnityEngine.Screen.height;
+                var old = GUI.color;
+                GUI.color = new Color(0.07f, 0.06f, 0.08f, 1f);
+                GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
+                int first = sheetIndex * SmokeSheet.PerSheet;
+                for (int k = 0; k < SmokeSheet.PerSheet && first + k < tiles.Count; k++)
+                {
+                    var t = tiles[first + k];
+                    var cell = SmokeSheet.Cell(first + k, sw, sh);
+                    GUI.color = t.Problem ? new Color(0.9f, 0.2f, 0.15f, 1f) : new Color(0.25f, 0.45f, 0.3f, 1f);
+                    GUI.DrawTexture(new Rect(cell.X + 1, cell.Y + 1, cell.W - 2, 1), Texture2D.whiteTexture);
+                    GUI.DrawTexture(new Rect(cell.X + 1, cell.YMax - 2, cell.W - 2, 1), Texture2D.whiteTexture);
+                    GUI.DrawTexture(new Rect(cell.X + 1, cell.Y + 1, 1, cell.H - 2), Texture2D.whiteTexture);
+                    GUI.DrawTexture(new Rect(cell.XMax - 2, cell.Y + 1, 1, cell.H - 2), Texture2D.whiteTexture);
+                    var lab = SmokeSheet.Label(cell);
+                    GUI.color = t.Problem ? new Color(1f, 0.6f, 0.5f, 1f) : Color.white;
+                    labelStyle.alignment = TextAnchor.MiddleLeft;
+                    GUI.Label(new Rect(lab.X + 2, lab.Y + 1, lab.W - 4, lab.H), SmokeSheet.LabelText(t.Name, t.Flags.Length > 0 ? 24 : 36), labelStyle);
+                    if (t.Flags.Length > 0)
+                    {
+                        labelStyle.alignment = TextAnchor.MiddleRight;
+                        GUI.Label(new Rect(lab.X + 2, lab.Y + 1, lab.W - 4, lab.H), t.Flags, labelStyle);
+                    }
+                    GUI.color = Color.white;
+                    if (t.Tex != null)
+                    {
+                        var img = SmokeSheet.Image(cell);
+                        var fit = SmokeSheet.Fit(t.Tex.width, t.Tex.height, img);
+                        GUI.DrawTexture(new Rect(Mathf.Round(fit.X), Mathf.Round(fit.Y), t.Tex.width, t.Tex.height), t.Tex);
+                    }
+                }
+                GUI.color = old;
+            }
+        }
+    }
+}
