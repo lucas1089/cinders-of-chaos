@@ -27,7 +27,7 @@ namespace Chaos.Core
 
         public static string CategoryName(string key) { int i = Array.IndexOf(Categories, key ?? ""); return i >= 0 ? CategoryNames[i] : (key ?? ""); }
 
-        public static string RarityName(int id) => ItemRarity.Name(ItemRarity.Canon(id));
+        public static string RarityName(int id) { string n = ItemRarity.Name(ItemRarity.Canon(id)); return n == null ? null : Loc.T(n); }
 
         /// <summary>The listing fee in gold: pct of the gold price (or of the coin price converted), within min and max.</summary>
         public static long Fee(object meta, long gold, long coins)

@@ -737,3 +737,22 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
   Click on a corpse label opens the corpse. Hold Alt to show every item.
 - Tests: `Core.Tests/HelperTests.cs` mirrors `helper_logic_test.lua`, `rotation_test.lua`, `helper_potions_test.lua`, `helpertimers_test.lua`, `autorotation_test.lua`, `scatterlogic_test.lua`,
   `deathrecaplogic_test.lua`, `lootfilter_test.lua` and `groundlabels_test.lua`, drives the engine with a fake game and a fake clock, and reads typed 0xB4 packets.
+
+## Social and market (O433 phase 4, track M)
+
+- One model for the list-style windows: `Core/Social.cs` (`SocialPanel`, `RowList`, `SocialRow`: section, text, row with up to 3 buttons, input, combo, bar) and one window class for all of them
+  (`Unity/Windows/SocialWindow.cs`, the concrete windows in `SocialWindows.cs`). A panel turns the server's last message into rows, the window draws them (scroll, tabs, two header lines, status line,
+  item icon with rarity frame, hover tooltip). An input row is a text field, a combo row a button that cycles the options (right-click goes back). No window has a Ctrl hotkey: the top menu opens them
+  (`TopMenu` entries named like the unlock menu texts of opcode 115: Market, Guild Wars; Guild, Party Finder, Leaderboards, Inspect Player under Social; Group Queue under Adventure), or the server does
+  (NPCs, a depot market item, the guild hall stone). Factions and the Conquest vendor are NPC-only like the main client, they are in the Windows list.
+- Panels (all in `GameSession.Social`, `Core/GameSocial.cs`): `Market` (`Core/Market.cs`, opcode 221), `Guild` and `GuildWar` (`Core/Guild.cs`, 252 and 197), `PartyFinder` and `GroupQueue`
+  (`Core/PartyFinder.cs`, 208 and 160, the ready check box is `ReadyCheckWindow`), `Inspect` (`Core/Inspect.cs`, 240), `Leaderboard` (`Core/Leaderboard.cs`, 229), `Links` (`Core/ChatLinks.cs`, 249),
+  `Factions` and `Conquest` (`Core/Factions.cs`, 215 and 167; Go to NPC uses opcode 121). Requests carry what the main client sends (the guild and war windows add `tab` to every request).
+- Item links (`ChaosApp.Social.cs`): Shift+click on an item of the equipment or a bag asks opcode 249 `register` and puts "[Name] " in the chat line; Enter writes the chips out as `[Name]{<r><id>}`; a chat
+  line with links shows the names in the rarity colour and the tooltip of the link under the pointer. `ChaosApp.ShowTip(tip, extra, note)` is the one call a window makes to get the item tooltip box.
+- Right-click "Inspect Player" on a player of the map (`ChaosApp.Party.cs`) asks opcode 240 by creature id.
+- Texts: `Core/LocSocial.cs` (merged in `LocStrings`). `SocialTests` also checks that every `Loc.T` key of the social Core files, the tab names and the menu entries have a pt-BR text.
+- Tests: `Core.Tests/SocialTests.cs` drives each panel with the server's messages and reads the requests back from the packets (market flow with the fee and tax maths, guild tabs, war offers and the
+  boss, party finder filters and post input, group queue rules and the ready check countdown, inspect parts, leaderboard boards and records, link parsing and chips, factions, Conquest rows).
+- Not done: the Modifiers filter of the market (Browse and buy orders) and the price history chart, dragging an item onto the Sell slot, the read-only passive tree view of Inspect, the faction emblems,
+  the party finder menu badge and slot boxes, short numbers on the leaderboards, the guild hall's crafting bench window, the Ctrl compare of item tooltips. Nothing here ran against a live server.

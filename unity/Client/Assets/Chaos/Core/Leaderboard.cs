@@ -21,13 +21,7 @@ namespace Chaos.Core
         public const string DefaultBoard = "worldboss";
 
         /// <summary>The sort form of a name: accents folded to their base letter, lower case.</summary>
-        public static string Fold(string s)
-        {
-            var sb = new StringBuilder();
-            foreach (char c in (s ?? "").Normalize(NormalizationForm.FormD))
-                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(char.ToLowerInvariant(c));
-            return sb.ToString();
-        }
+        public static string Fold(string s) => TopMenu.SortKey(s);
 
         public sealed class Option { public string Key = "", Text = ""; public object Board; }
 

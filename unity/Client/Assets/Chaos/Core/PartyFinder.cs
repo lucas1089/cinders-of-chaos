@@ -381,7 +381,7 @@ namespace Chaos.Core
                 else
                 {
                     bool ok = PartyFinderMath.CanApply(row, My, Level, out string why);
-                    if (!ok) line.Right = why;
+                    if (!ok) line.Right += "  (" + why + ")";
                     foreach (var role in PartyFinderMath.ApplyRoles(row, My)) { string rr = role; line.Btn(Loc.T("Apply as {0}", PartyFinderMath.RoleName(rr, Init)), ok, () => Apply(r, rr)); }
                     if (line.Buttons.Count == 0) line.Btn(Loc.T("Apply"), false, null, why);
                 }
