@@ -59,6 +59,9 @@ namespace Chaos.Core.Tests
                     check(server.InGame, "tour server: the game port took the login and the guard handshake (" + server.Problem + ")");
                     // settle: the map arrives
                     for (int i = 0; i < 60 && !(session.Parser.LoggedIn && world.Player != null); i++) { clock += 1000.0 / 60; session.Poll(); Thread.Sleep(5); }
+                    // the stats can come in a later read than the map (seen on a loaded machine): poll for them without moving the clock
+                    var settle = DateTime.UtcNow.AddSeconds(10);
+                    while (DateTime.UtcNow < settle && session.Parser.Health != FakeGameServer.MaxHealth) { session.Poll(); Thread.Sleep(5); }
                     check(session.Parser.LoggedIn && world.Player != null && world.Player.Position == server.Start && world.Player.Name == FakeGameServer.HeroName,
                           "tour server: the hero stands on the start tile");
                     check(world.Tiles.Count >= World.ViewW * World.ViewH && world.Creatures.Count == 5, "tour server: the map and five creatures (" + world.Creatures.Count + ")");
