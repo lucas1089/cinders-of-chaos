@@ -77,8 +77,6 @@ namespace Chaos.Client
         public override bool ClampToScreen => true;
         /// <summary>True while the activity wants its HUD.</summary>
         protected abstract bool Wanted(ChaosApp app);
-        /// <summary>Opened by the server over a window of its own (a confirmation): drawn in front when it opens.</summary>
-        protected virtual bool RaiseOnOpen => false;
         public override void Reset() { wasWanted = false; dismissed = false; lastOpen = false; Open = false; }
 
         public override void Tick(ChaosApp app)
@@ -86,7 +84,7 @@ namespace Chaos.Client
             if (app.Session == null) return;
             EndgameBridge.Wire(app);
             bool wanted = Wanted(app);
-            if (wanted && !wasWanted) { Open = true; dismissed = false; if (RaiseOnOpen) RaiseNext = true; }
+            if (wanted && !wasWanted) { Open = true; dismissed = false; }
             if (!wanted) Open = false;
             else
             {
