@@ -964,7 +964,7 @@ connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds,
   `chaos.visualfx`, `chaos.effectopacity` and flags). Texts: `Core/LocVisual.cs` (pt-BR).
 - Not done: drawing a larger map area than 15 x 11 tiles (the wire is ready, see "Wire audit"); effects drawn under creatures (they are over them, IMGUI); the pack effect strips of the loot beams and wings
   (drawn in code instead); the outline shader of cosmetics; the grade, bloom, spell light, liquid shimmer, target and hover outlines and cooldown pulse of game_visualfx; the shift of Gravewarden Ulthar in the live view;
-  the container, panel and size parts of game_chaoslayout; name shaders of other players. The audio and picture loading and the drawing compile (`unity/Client.Check`) but were not run in a Unity player or against a live server.
+  the container, panel and size parts of game_chaoslayout. The audio and picture loading and the drawing compile (`unity/Client.Check`) but were not run in a Unity player or against a live server.
 - Tests: `Core.Tests/VisualTests.cs` (about 190 checks): the mixer rules and files against `soundlogic.lua` and the module folder, the music rules and hysteresis with the files, the cursed and foot aura messages and
   the strip sizes, decal colours, beams, prints, ground ids against `groundfx_data.lua`, the layout rules, and a session fed with the combat events (cue, flash, stain, shake, ring, wings, kill, chest, footprint).
 ## Helper extras and the info windows (O433 phase 5, track Q)
@@ -1127,7 +1127,16 @@ Rows of `docs/UNITY_PARITY.md`: game_itemrarity (done), game_cosmeticfx (done), 
 - Hover outline: `OutlineRules.Of` has the third kind (faint white, one pixel, steady; target and follow win). Option hoverOutline (off by default, as in the main client), found by `HoverCreatureId` (label box in the scene views, tile in the classic view).
 - Spell light (`SpellLightFx`, `SpellLightState`): the id lists, colours and numbers of `visualfx_logic.lua` (13 themes, 12 lights, 320 ms, 90 ms dedupe, 12 % floor). `VisualEffects.OnFx` feeds it from every effect message. HD-2D: Unity point lights put in front of the scene's lights (`Hd2dView.SpellLights`, at most 4). Live view: frame lights (`FrontLiveView.FrameLights`, picked before the layout lights). Classic view: a faint coloured disc, as the immediate-mode GUI cannot add light. Option spellLight (on).
 - Spell effects from the art file: the classic view draws the magic effects of the pair frame by frame (`SpellFxTrack`, `DrawSpellFx` over `DrawPackEffect`): the dat has them, the view needed only the list of what plays. An effect the pair lacks is forgotten; the level-up effect and the beams keep their own paths. The live view keeps its own look (`FrontLiveFx`).
-- Not done: effects of a glowing theme drawn added on the picture (patch 0152 of the main client; the GUI has no additive blend), and light added to a dark classic map. Nothing here ran in a Unity player: the shaders compile only in the CI Unity build, and `Phase9DTests` checks their text, the mode numbers and the one-entry-per-vertex rule of the mesh paths.
+- Added in phase 15 track B (below): glowing effects and light added to the classic map. Nothing here ran in a Unity player: the shaders compile only in the CI Unity build, and `Phase9DTests` checks their text, the mode numbers and the one-entry-per-vertex rule of the mesh paths.
+
+## Phase 15, track B: additive effects and light of the classic view
+
+Row game_visualfx of `docs/UNITY_PARITY.md` is done. Numbers: `Core/Phase15B.cs` (`AddFx`, tests `Core.Tests/Phase15BTests.cs`), glue: `Unity/ChaosApp.Phase15B.cs`, shader: `Resources/Shaders/ChaosAdd.shader` (plain vertex and fragment, `Blend SrcAlpha One`, `ZTest Always`, `Cull Off`; found by `Resources.Load`, so no always-included list is needed).
+- The immediate-mode GUI has no additive blend, so during `EventType.Repaint` the classic view calls `Graphics.DrawTexture(rect, tex, uv, 0, 0, 0, 0, colour, material)` with the `Chaos/Add` material. `Graphics.DrawTexture` ignores the GUI clip, so `AddFx.Clip` cuts each quad and its texture rect to the map rect.
+- Glowing effects: `AddFx.Glows` is `visualfx_logic.lua` `L.glows` (fire, energy, holy and arcane themes, not ids 5 and 6; 86 ids, a test pins count, first, last and sum). `DrawPackEffect` has an `add` flag; `DrawSpellFx` sets it for those ids while the option Light around spell effects is on, as in the main client.
+- Spell light: the coloured soft disc is added (`DrawSpellLightAdd`, alpha `AddFx.LightAlpha`, gain 0.7), so it brightens a dark map. The faint 0.32 tint (`DrawSpellLightDiscs`) stays as the fallback when the shader is missing or `CHAOS_NO_FX_SHADERS` is set. Options unchanged.
+- HD-2D and the live view are untouched (point lights and frame lights).
+- Untested: nothing ran in a Unity player. The group offset of `Graphics.DrawTexture` inside the map group, the shader compile and the look of the gain are for the CI build and a visual check.
 
 ## Phase 8, track C: shaders of the visual effect rows
 
@@ -1151,7 +1160,8 @@ The GLSL of `client/overlay/data/shaders` is ported to built-in pipeline shaders
 - Fallbacks: every shader is looked up by `FxShaders` (Resources, then `Shader.Find`; `CHAOS_NO_FX_SHADERS=1` turns them off). When one is null the view draws as before:
   the plain sprite, the soft disc for a hit, the glow picture for an outline, no grade.
 - The shaders are compiled only by the CI Unity build. `Client.Check` and `Core.Tests` do not see them; `Phase8CTests` checks their text (braces, includes, no GLSL left, names, defines).
-- Left (see the rows): the other players' name shaders (the wire is not in this repo), the spell light and glowing spell effects (the classic view draws no spell effects from the dat),
+- Name shaders of other players: nothing to port. The server has no opcode 96 handler and no base patch puts a shader in a creature packet, so the main client draws only its own (evidence in the `game_nameshaders` row of `docs/UNITY_PARITY.md`). The row is done.
+- Left (see the rows): the spell light and glowing spell effects (the classic view draws no spell effects from the dat),
   the hover outline, outlines and the flash shader in the live view.
 ## Phase 8, track B
 
