@@ -301,10 +301,10 @@ namespace Chaos.Core.Tests
                         byte rnd = plain.U8();
                         if (chaos)
                         {
-                            // the markers of the main client: "OTCv8", version, "OTCv8TierByte", "A", u32, "C", capabilities (bit 6 wide spell ids)
+                            // the markers of the main client: "OTCv8", version, "OTCv8TierByte", "A", u32, "C", capabilities (bit 6 wide spell ids, bit 7 typed impact numbers)
                             if (plain.U16() != 5 || plain.Bytes(5).Length != 5) throw new Exception("no OTCv8 marker");
                             if (plain.U16() != 261 || plain.Str() != "OTCv8TierByte" || plain.Str() != "A") throw new Exception("tier marker");
-                            if (plain.U32() != 7 || plain.Str() != "C" || plain.U8() != 0x40) throw new Exception("capabilities");
+                            if (plain.U32() != 7 || plain.Str() != "C" || plain.U8() != 0xC0) throw new Exception("capabilities");
                         }
                         else if (plain.U16() != 0) throw new Exception("markers are not u16 0");
                         if (ts != 0x11223344 || rnd != 0x55 || cid != 0x43430007) throw new Exception("challenge or client id");

@@ -66,6 +66,7 @@ namespace Chaos.Client
             windows.Add(new PartyFramesWindow());
             windows.Add(new ChannelsWindow());
             windows.Add(new FightWindow());
+            windows.Add(new HelperWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>

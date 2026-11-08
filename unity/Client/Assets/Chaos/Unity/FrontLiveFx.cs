@@ -350,7 +350,17 @@ namespace Chaos.Client
                 var q = Slot(numberQ, n++, "number");
                 float rise = FrontFxTiming.NumberRiseAt(u) + FrontFxTiming.NumberHeight + item.Stack * 0.4f;
                 float side = (item.Stack % 2 == 0 ? 1f : -1f) * ((item.Stack + 1) / 2) * 0.25f + ((item.Id * 37) % 7 - 3) * 0.04f;
-                var at = Where(item.At, 0f) + Vector3.up * (rise * tile) + right * (side * tile);
+                Pos spot = item.At;
+                // a typed number belongs to a creature and follows it (its tile; the creature may have moved since the hit)
+                Creature owner;
+                if (item.Creature != 0 && subscribed != null && subscribed.Creatures.TryGetValue(item.Creature, out owner) && owner.Position.Z == floor) spot = owner.Position;
+                // the scatter (DamageScatter.cs): a shift in pixels (32 px a tile), the drift over the life, the rise scaled to the roll (the stock rise is 48 px)
+                if (item.Scattered)
+                {
+                    side += item.Dx / 32f + item.Sx / 32f * FrontFxTiming.Clamp01(u);
+                    rise += -item.Dy / 32f + (-item.Sy - 48f) / 32f * FrontFxTiming.Clamp01(u);
+                }
+                var at = Where(spot, 0f) + Vector3.up * (rise * tile) + right * (side * tile);
                 float scale = FrontFxTiming.NumberScale(u) * item.Size * TexelTiles * tile;
                 float w = numberW[slot], h = numberH[slot];
                 Set(q, MatFor(numberTex[slot]), at, face, new Vector2(w * scale, h * scale),
