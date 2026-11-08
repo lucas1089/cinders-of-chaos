@@ -63,6 +63,16 @@ impl EngineInfo {
         self.state() == "success" && self.get("release_newer") == "yes"
     }
 
+    /// The client program changed since the published client: the same build number is refused, a new one is offered.
+    pub fn client_changed(&self) -> bool {
+        self.get("client_changed") == "yes"
+    }
+
+    /// The build number a new client would get (live + 1), or empty.
+    pub fn client_next(&self) -> &str {
+        self.get("client_next")
+    }
+
     fn secs(&self) -> u64 {
         self.get("elapsed_s").parse().unwrap_or(0)
     }
@@ -156,6 +166,14 @@ impl EngineInfo {
                 }
             ));
         }
+        if self.client_changed() && !self.running() {
+            let n = self.client_next();
+            b.push(format!(
+                "O programa do client mudou desde o client publicado: Recompilar com o mesmo número de build seria recusado. \
+                 Use Recompilar com client novo{}.",
+                if n.is_empty() { String::new() } else { format!(" (build {n})") }
+            ));
+        }
         if !self.has_token() {
             b.push("Sem token do GitHub: use Definir token do GitHub antes de recompilar.".into());
         }
@@ -183,14 +201,27 @@ pub fn confirm_text() -> String {
     )
 }
 
+/// The confirmation of a build with a new client (the desktop button asks with its static twin in commands.rs).
+pub fn confirm_new_client_text(n: &str) -> String {
+    let b = if n.is_empty() { "novo" } else { n };
+    format!(
+        "O programa do client mudou desde o client publicado. O GitHub vai compilar o engine e um client novo, com o número \
+         de build {b} (o atual continua aceito pelo servidor até a atualização). O número entra sozinho na lista \
+         clientGuardBuilds do config.lua. Leva {DURATION}. O jogo segue no ar. Depois, em Atualizar servidor, o client novo \
+         é publicado e os jogadores o recebem pelo atualizador; o APK do Android precisa acompanhar (android-client.yml com \
+         client_build {b}), senão os celulares ficam sem poder jogar."
+    )
+}
+
 /// A refusal of chaos-ctl.sh (its "word: text" error line) in Portuguese; empty when the text is not one of ours.
 pub fn refusal(out: &str) -> &'static str {
-    const WORDS: [(&str, &str); 12] = [
+    const WORDS: [(&str, &str); 13] = [
         ("token-missing", "Falta o token do GitHub. Use Definir token do GitHub com um token só deste repositório, com Actions leitura e escrita."),
         ("token-refused", "O GitHub recusou o token (401). Ele pode ter vencido ou sido apagado: defina um novo."),
         ("no-access", "O token não alcança o repositório ou não tem Actions leitura e escrita. Crie outro com essas permissões."),
         ("build-running", "Já há uma recompilação em andamento. Espere ela terminar."),
-        ("client-changed", "O programa do client mudou desde o client publicado: o mesmo número de client apontaria para dois executáveis diferentes. Suba o número do client (e coloque o novo em clientGuardBuilds) antes de recompilar; veja docs/ADMIN_APP.md."),
+        ("client-changed", "O programa do client mudou desde o client publicado: o mesmo número de client apontaria para dois executáveis diferentes. Use Recompilar com client novo."),
+        ("update-running", "Uma atualização do servidor está rodando. Espere ela terminar para recompilar com client novo."),
         ("client-build-backwards", "O número do client não pode ser menor que o do client publicado."),
         ("client-build-unknown", "Não há update de client publicado para tirar o número do client. Dê o número na linha de comando."),
         ("client-check-failed", "Não consegui comparar o programa do client com o publicado. Rode Atualizar servidor uma vez e tente de novo."),
@@ -290,6 +321,23 @@ mod tests {
     }
 
     #[test]
+    fn a_changed_client_offers_the_new_number() {
+        let c = EngineInfo::parse("token=yes\nstate=success\nrelease_newer=yes\nclient_next=31\nclient_changed=yes\n");
+        assert!(c.client_changed() && c.client_next() == "31");
+        assert!(c
+            .lines()
+            .iter()
+            .any(|l| l.contains("Recompilar com client novo (build 31)")));
+        let no = EngineInfo::parse("token=yes\nstate=none\nclient_next=31\nclient_changed=no\n");
+        assert!(!no.client_changed() && !no.lines().iter().any(|l| l.contains("client novo")));
+        let run = EngineInfo::parse("token=yes\nstate=queued\nclient_next=31\nclient_changed=yes\n");
+        assert!(
+            !run.lines().iter().any(|l| l.contains("client novo")),
+            "no offer while a build runs"
+        );
+    }
+
+    #[test]
     fn parsing_edges() {
         let e = EngineInfo::parse("state=failure\nfailed_job=-\nstate=success\n@jobs\nfailed_step=x\n");
         assert_eq!(e.state(), "failure", "the first value wins");
@@ -318,11 +366,20 @@ mod tests {
             "workflow-refused",
             "dispatch-failed",
             "github-unreachable",
+            "update-running",
         ] {
             assert!(!refusal(&format!("chaos-ctl: {w}: x")).is_empty(), "{w}");
         }
         assert!(refusal("chaos-ctl: something else").is_empty());
-        assert!(refusal("chaos-ctl: client-changed: x").contains("clientGuardBuilds"));
+        assert!(refusal("chaos-ctl: client-changed: x").contains("client novo"));
+        let nc = confirm_new_client_text("31");
+        assert!(
+            nc.contains("build 31")
+                && nc.contains("clientGuardBuilds")
+                && nc.contains("atualizador")
+                && nc.contains("APK")
+        );
+        assert!(nc.contains("20 a 60 minutos") && nc.contains("Atualizar servidor"));
         let tok = format!("github_pat_{}", "aB1_".repeat(12));
         assert!(token_ok(&tok));
         assert!(token_ok(&format!("ghp_{}", "a1B2c3D4e5".repeat(4))));

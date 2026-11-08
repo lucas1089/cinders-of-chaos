@@ -82,18 +82,34 @@ public final class EngineBuildInfoTest {
         expect(EngineBuildInfo.startText("started=yes\nrun_id=101\nclient_build=30\n")
                 .equals("A recompilação começou no GitHub (rodada 101), client build 30."), "start text");
         expect(EngineBuildInfo.startText("note: client build 31 is a new client number\nstarted=yes\nrun_id=unknown\nclient_build=31\n")
-                .contains("clientGuardBuilds") && !EngineBuildInfo.startText("started=yes\nrun_id=unknown\nclient_build=31\n").contains("rodada"),
+                .contains("APK") && !EngineBuildInfo.startText("started=yes\nrun_id=unknown\nclient_build=31\n").contains("rodada"),
                 "start text with a new number");
         expect(EngineBuildInfo.startText("nothing").equals("Não começou."), "start text without a start");
 
+        EngineBuildInfo ch = EngineBuildInfo.parse("token=yes\nstate=success\nrelease_newer=yes\nclient_next=31\nclient_changed=yes\n");
+        expect(ch.clientChanged() && ch.clientNext().equals("31") && ch.newClientLabel().equals("Recompilar com client novo (build 31)"),
+                "client changed and next");
+        expect(ch.details().contains("Recompilar com client novo (build 31)"), "details offer the new client: " + ch.details());
+        expect(!EngineBuildInfo.parse("token=yes\nstate=none\nclient_next=31\nclient_changed=no\n").clientChanged()
+                && !EngineBuildInfo.parse("token=yes\nstate=none\nclient_next=31\nclient_changed=no\n").details().contains("client novo"),
+                "client unchanged: no offer");
+        expect(!EngineBuildInfo.parse("token=yes\nstate=queued\nclient_changed=yes\nclient_next=31\n").details().contains("client novo"),
+                "no offer while running");
+        String nc = EngineBuildInfo.confirmNewClientText("31");
+        expect(nc.contains("build 31") && nc.contains("clientGuardBuilds") && nc.contains("atualizador") && nc.contains("APK")
+                && nc.contains("20 a 60 minutos") && nc.contains("Atualizar servidor"), "new client confirmation: " + nc);
+        expect(EngineBuildInfo.startText("started=yes\nrun_id=7\nclient_build=31\nnew_client=yes\nguard=added\n").contains("entrou na lista clientGuardBuilds")
+                && EngineBuildInfo.startText("started=yes\nrun_id=7\nclient_build=31\nguard=missing\n").contains("coloque o build nele"),
+                "start text tells the guard list");
+        expect(!EngineBuildInfo.refusal("chaos-ctl: update-running: x").isEmpty()
+                && EngineBuildInfo.refusal("chaos-ctl: client-changed: x").contains("client novo"), "refusals offer the new client");
         String[] words = {"token-missing", "token-refused", "no-access", "build-running", "client-changed", "client-build-backwards",
             "client-build-unknown", "client-check-failed", "fetch-failed", "workflow-refused", "dispatch-failed", "github-unreachable"};
         for (String w : words) {
             expect(!EngineBuildInfo.refusal("chaos-ctl: " + w + ": whatever").isEmpty(), "refusal of " + w);
         }
         expect(EngineBuildInfo.refusal("chaos-ctl: something else").isEmpty() && EngineBuildInfo.refusal(null).isEmpty(), "unknown refusal");
-        expect(EngineBuildInfo.refusal("chaos-ctl: client-changed: x").contains("clientGuardBuilds"), "client-changed names the guard list");
-        System.out.println("EngineBuildInfoTest: " + count + " checks, " + fails + " failures");
+                System.out.println("EngineBuildInfoTest: " + count + " checks, " + fails + " failures");
         System.exit(fails == 0 ? 0 : 1);
     }
 }

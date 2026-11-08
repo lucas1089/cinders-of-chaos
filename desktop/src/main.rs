@@ -694,7 +694,7 @@ impl App {
                     answer: match a.template.split(' ').next() {
                         Some("update-check") => Answer::Update,
                         Some("engine-build") if a.template == "engine-build status" => Answer::Engine,
-                        Some("engine-build") if a.template == "engine-build start" => Answer::EngineStart,
+                        Some("engine-build") if a.template.starts_with("engine-build start") => Answer::EngineStart,
                         Some("feedback") => Answer::Feedback,
                         _ => Answer::Plain,
                     },

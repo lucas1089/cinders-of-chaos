@@ -22285,9 +22285,11 @@ script re-runs itself with `sudo -n`, which drops the environment.
   (`client/base-patches`, `client/overlay/src`, `client/tools/chaos_hardening.cmake`, `launcher`; the commit is kept in
   `CHAOS_KIT_STATE/engine-build/client_exe_commit`, else `deployed_commit` of the kit state), because the workflow's
   compiled-client cache key is exactly that source plus the number: same inputs, byte-identical exe, so the number stays
-  true. A changed client program is refused (`client-changed`); a new number is given by hand with `--client-build N` after
-  listing it in `clientGuardBuilds` (its commit waits in `pending_client` and becomes the baseline once the manifest shows
-  it). The update step 8 then publishes the new release as a manifest version above the live one with the same
+  true. A changed client program is refused (`client-changed`); `status` says so before (`client_changed=yes|no|unknown`, not while a
+  build runs, and `client_next` = live + 1) and `start --new-client` (or `--client-build N`) builds the new number: the commit
+  waits in `pending_client` (baseline once the manifest shows it) and `eb_guard_add` puts N into `clientGuardBuilds` of
+  `SERVER/config.lua` (backup `config.lua.before-guard-TIME`, old builds stay, an empty list is left alone, a missing line is
+  told in the output `guard=missing`); refused with `update-running` while the kit update holds its lock. The update step 8 then publishes the new release as a manifest version above the live one with the same
   `min_package`, which `publish_client_update.sh` already requires to be higher. Admin app: Painel > Recompilar engine
   (desktop: Atualizacoes > Recompilar engine); docs/ADMIN_APP.md "Recompilar engine". Test: `chaos_ctl_test.py`
   `test_engine_build` (a fake curl plays the API: dispatch body, refusal while running, status parsing, the rule, the

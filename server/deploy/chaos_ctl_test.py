@@ -2334,6 +2334,7 @@ answer(404)
         check(st.get('state') == 'success' and st.get('release_tag') == 'winpkg-101' and st.get('release_ready') == 'yes'
               and st.get('release_newer') == 'yes' and st.get('finished') == '2026-11-08T10:40:00Z' and st.get('elapsed_s') == '2400',
               'status success: %s' % st)
+        check(st.get('client_next') == '31' and st.get('client_changed') == 'no', 'status: client_next 31, the client program unchanged: %s' % st)
         write_state(release=101)
         check(kv(run('engine-build').stdout).get('release_newer') == 'no', 'status: the installed release is this one: not newer')
         write_state(release=100)
@@ -2394,17 +2395,64 @@ answer(404)
         set_run('completed', 'success', run_id=102, number=102)
         n0 = len(dispatches())
         r = run('engine-build', 'start')
-        check(r.returncode != 0 and 'client-changed' in r.stderr and '--client-build 31' in r.stderr and len(dispatches()) == n0,
+        check(r.returncode != 0 and 'client-changed' in r.stderr and '--new-client' in r.stderr and len(dispatches()) == n0,
               'a changed client program refuses the live number: ' + r.stderr)
-        # the new number: allowed with a note about clientGuardBuilds; its commit becomes the baseline once it is live
+        st = kv(run('engine-build').stdout)
+        check(st.get('client_changed') == 'yes' and st.get('client_next') == '31', 'status says the client program changed and the next number: %s' % st)
+        # a running build is not asked about the client (no fetch while the app polls)
+        set_run('in_progress', run_id=102, number=102)
+        st = kv(run('engine-build').stdout)
+        check('client_changed' not in st and st.get('client_next') == '31', 'status while running: client_next only: %s' % st)
+        set_run('completed', 'success', run_id=102, number=102)
+        # the new number with --new-client: live + 1, built, and put into clientGuardBuilds (old builds stay)
+        os.makedirs(os.path.join(tmp, 'server'))
+        cfg = os.path.join(tmp, 'server', 'config.lua')
+        with open(cfg, 'w') as f:
+            f.write('ip = "x"\nclientGuardMode = "enforce"\nclientGuardBuilds = "29, 30"\nclientGuardManifest = ""\n')
+        # the kit update running: refused, nothing dispatched, nothing edited
+        os.makedirs(kstate, exist_ok=True)
+        import fcntl
+        lockf = open(os.path.join(kstate, '.lock'), 'w')
+        fcntl.flock(lockf, fcntl.LOCK_EX)
+        r = run('engine-build', 'start', '--new-client')
+        check(r.returncode != 0 and 'update-running' in r.stderr and len(dispatches()) == n0 and '31' not in open(cfg).read(),
+              'a new number waits for a running kit update: ' + r.stderr)
+        fcntl.flock(lockf, fcntl.LOCK_UN)
+        lockf.close()
+        check(run('engine-build', 'start', '--new-client', '--client-build', '31').returncode != 0 and len(dispatches()) == n0,
+              '--new-client and --client-build together are refused')
+        r = run('engine-build', 'start', '--new-client')
+        check(r.returncode == 0 and dispatches()[-1]['inputs']['client_build'] == '31' and 'new_client=yes' in r.stdout
+              and 'guard=added' in r.stdout and 'APK' in r.stdout, 'new client: ' + r.stdout + r.stderr)
+        check('clientGuardBuilds = "29, 30, 31"' in open(cfg).read() and 'clientGuardMode = "enforce"' in open(cfg).read()
+              and [n for n in os.listdir(os.path.dirname(cfg)) if n.startswith('config.lua.before-guard-')],
+              'the guard list got 31, old builds stay, a backup was kept: ' + open(cfg).read())
+        set_run('completed', 'success', run_id=103, number=103)
+        n0 = len(dispatches())
         r = run('engine-build', 'start', '--client-build', '31')
-        check(r.returncode == 0 and 'clientGuardBuilds' in r.stdout and dispatches()[-1]['inputs']['client_build'] == '31',
-              'a new client number is dispatched with a note: ' + r.stdout + r.stderr)
+        check(r.returncode == 0 and 'guard=present' in r.stdout and open(cfg).read().count('31') == 1,
+              'a second start of 31 changes nothing in the list: ' + r.stdout + r.stderr)
+        # an empty list accepts every build; a missing line is told
+        with open(cfg, 'w') as f:
+            f.write('clientGuardBuilds = ""\n')
+        set_run('completed', 'success', run_id=104, number=104)
+        check('guard=any' in run('engine-build', 'start', '--client-build', '31').stdout, 'an empty guard list is left alone')
+        with open(cfg, 'w') as f:
+            f.write('ip = "x"\n')
+        set_run('completed', 'success', run_id=105, number=105)
+        r = run('engine-build', 'start', '--client-build', '31')
+        check('guard=missing' in r.stdout and 'by hand' in r.stdout and r.returncode == 0, 'no guard line: told to add it by hand: ' + r.stdout)
+        os.remove(cfg)
+        set_run('completed', 'success', run_id=106, number=106)
+        check('guard=missing' in run('engine-build', 'start', '--client-build', '31').stdout, 'no config.lua: told')
+        n0 = len(dispatches())
+        set_run('completed', 'success', run_id=103, number=103)
         pend = os.path.join(kstate, 'engine-build', 'pending_client')
         check(open(pend).read().split() == ['31', client_head], 'the new number waits as pending until it is live')
         set_run('completed', 'success', run_id=103, number=103)
         r = run('engine-build', 'start')
         check(r.returncode != 0 and 'client-changed' in r.stderr, 'while 31 is not live the baseline stays: ' + r.stderr)
+        check(open(pend).read().split()[0] == '31', 'the pending number is still 31')
         write_manifest(31)
         r = run('engine-build', 'start')
         check(r.returncode == 0 and dispatches()[-1]['inputs']['client_build'] == '31' and not os.path.exists(pend)

@@ -140,11 +140,18 @@ O workflow tem o input `client_build` (o número que o executável do client car
   conta, porque esses vão pelo update assinado e não pelo executável.
 - Número menor que o publicado: recusado (`client-build-backwards`). Sem update de client publicado e sem número dado:
   recusado (`client-build-unknown`).
-- Programa do client mudou de verdade: suba o número pela linha de comando, `chaos-ctl.sh engine-build start
-  --client-build N` (N maior que o publicado), depois de listar N em `clientGuardBuilds` (`server/README.md` "Client
-  guard") e de planejar um APK de código N (`android-client.yml`), senão os jogadores com o executável novo são
-  recusados ou os celulares ficam sem poder jogar. O botão do app não sobe número sozinho, de propósito: um número novo
-  mexe com o jogo dos jogadores.
+- Programa do client mudou de verdade (é o caso quando o `main` mexeu em `client/base-patches`): o estado traz
+  `client_changed=yes` e `client_next=N` (publicado + 1), e o cartão mostra o segundo botão **Recompilar com client
+  novo (build N)** (no app do PC: o botão de mesmo nome; `chaos-ctl.sh engine-build start --new-client`). A confirmação
+  explica: sai um client novo com o build N, os jogadores o recebem pelo atualizador depois de Atualizar servidor, e o APK
+  do Android precisa acompanhar (`android-client.yml` com `client_build` N), senão os celulares ficam sem poder jogar.
+  O servidor aceita o N sozinho: ao começar, a VPS põe N na lista `clientGuardBuilds` do `config.lua` (`eb_guard_add`,
+  backup `config.lua.before-guard-DATA`, os builds antigos ficam; lista vazia já aceita qualquer build; sem a linha ou sem
+  o arquivo, o app avisa para pôr N à mão). Adiantar é inofensivo, porque os antigos continuam aceitos; o servidor lê o
+  `config.lua` no próximo início, que o Atualizar servidor faz, e o manifesto publicado no passo 8 (`min_package` N) só
+  passa a recusar os builds abaixo de N depois disso. Nada é removido neste passo: tirar os builds antigos da lista é
+  decisão sua, depois que os jogadores atualizaram. Recusa `update-running` se uma atualização está rodando (para não
+  editar o `config.lua` no meio da instalação). `--client-build N` continua existindo para outro número.
 - Com o mesmo número, Atualizar servidor publica o client novo como uma versão nova do manifesto (a versão é o número da
   rodada, sempre maior) com o mesmo `min_package`: ninguém precisa baixar o client de novo, os módulos novos chegam pelo
   update assinado, e `publish_client_update.sh` recusa republicar uma versão que não é maior que a publicada.

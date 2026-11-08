@@ -27,6 +27,8 @@ final class EngineBuildCard {
     private final TextView details;
     private final MaterialButton build;
     private final MaterialButton refresh;
+    private final MaterialButton newClient;
+    private String nextBuild = "";
     private final MaterialButton steps;
     private final MaterialButton tokenToggle;
     private final LinearLayout tokenBox;
@@ -59,10 +61,15 @@ final class EngineBuildCard {
 
         build = ui.primary("Recompilar", R.drawable.ic_play);
         build.setOnClickListener(v -> a.confirm("Recompilar o engine agora?", EngineBuildInfo.confirmText(), "Recompilar",
-                false, this::start));
+                false, () -> start("engine-build start")));
         refresh = ui.secondary("Atualizar estado", R.drawable.ic_refresh);
         refresh.setOnClickListener(v -> status(true));
         b.addView(ui.evenRow(build, refresh), ui.gap(8));
+        newClient = ui.secondary("Recompilar com client novo", R.drawable.ic_play);
+        newClient.setOnClickListener(v -> a.confirm("Recompilar com client novo?",
+                EngineBuildInfo.confirmNewClientText(nextBuild), "Recompilar", false, () -> start("engine-build start --new-client")));
+        newClient.setVisibility(View.GONE);
+        b.addView(newClient, ui.gap(4));
         steps = ui.flat("Ver passos", 0);
         steps.setOnClickListener(v -> log());
         tokenToggle = ui.flat("Definir token do GitHub", R.drawable.ic_key);
@@ -163,6 +170,12 @@ final class EngineBuildCard {
         boolean busy = s.running();
         build.setEnabled(!busy);
         build.setAlpha(busy ? 0.5f : 1f);
+        if (!busy && s.get("client_changed").length() > 0) {
+            nextBuild = s.clientNext();
+            newClient.setText(s.newClientLabel());
+            newClient.setVisibility(s.clientChanged() ? View.VISIBLE : View.GONE);
+        }
+        newClient.setEnabled(!busy);
         if (busy) {
             if (!polling) {
                 polling = true;
@@ -176,7 +189,7 @@ final class EngineBuildCard {
         }
     }
 
-    private void start() {
+    private void start(String command) {
         if (!a.store.configured()) {
             a.snack("Configure o servidor na aba Config.", false);
             return;
@@ -185,7 +198,7 @@ final class EngineBuildCard {
         build.setAlpha(0.5f);
         result.running("Recompilar engine");
         // up to 30 s waiting for GitHub to show the new run
-        a.ctlAction("engine-build start", 120, f -> {
+        a.ctlAction(command, 120, f -> {
             String why = f.ok ? "" : EngineBuildInfo.refusal(f.raw);
             Friendly shown = f.ok ? Friendly.ok("Recompilação iniciada", EngineBuildInfo.startText(f.raw), f.raw)
                     : why.isEmpty() ? f : Friendly.fail("Não começou", why, f.raw);

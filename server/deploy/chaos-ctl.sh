@@ -102,17 +102,19 @@
 #                               update; nothing changes when the downloads are the newest release's (--force replaces)
 #   update-status               the kit: running, status, result and time of the last update-apply / update-rollback
 #   update-rollback             the kit: chaos_kit_update.sh rollback in the background (update-log)
-#   engine-build [status | start [--client-build N] | log [N]]
+#   engine-build [status | start [--client-build N | --new-client] | log [N]]
 #                               rebuilds the server engine in GitHub Actions (O436): start dispatches windows-package.yml
 #                               on CHAOS_UPDATE_BRANCH through the GitHub API (token of engine-build-token-set) with
 #                               client_build = the live client update's min_package (a lower number is refused; the
 #                               same number only while client/base-patches, client/overlay/src and launcher are unchanged
-#                               since the live client's commit, else client-changed; --client-build N names a new number)
+#                               since the live client's commit, else client-changed; --new-client uses live+1 and puts it into
+#                               clientGuardBuilds of config.lua, old builds stay; --client-build N names another new number)
 #                               and allow_dev_key false, refuses while a run is queued or in progress, waits up to 30 s
 #                               for the run. status: key=value lines (token yes|no, state none|queued|in_progress|success|
 #                               failure|unknown, run_id, run_number, started, finished, elapsed_s, commit, step, jobs_done,
 #                               failed_job, failed_step, release_tag, release_ready, installed_release, release_newer,
-#                               client_build, url); release_newer=yes means update-apply installs a newer engine. log: the
+#                               client_build, url); release_newer=yes means update-apply installs a newer engine.
+#                               client_next (live build + 1) and client_changed yes|no|unknown (not while a build runs) log: the
 #                               jobs and failed steps of the run, then the start history. The game keeps running.
 #   engine-build-token-set      the GitHub token (a fine-grained token for this repository only, Actions read and write) on
 #                               stdin, one line, empty removes it: checked against GitHub, kept in CHAOS_ENGINE_TOKEN_FILE
@@ -1960,6 +1962,63 @@ PY
     }
     eb_kit_state() { [ -f "$KSTATE/state" ] && sed -n "s/^$1=//p" "$KSTATE/state" | tail -n 1; }
     eb_git() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+    # Is the client program changed since the live client's commit? Needs $live (the live min_package, may be empty).
+    # Sets EB_CC no|yes|unknown, EB_CC_WHY (an error word and text when unknown), EB_HEAD (the branch head), EB_BASE.
+    eb_client_check() {
+      EB_CC=unknown EB_CC_WHY="" EB_HEAD="" EB_BASE=""
+      command -v git >/dev/null 2>&1 || { EB_CC_WHY="git-not-found: install git"; return 0; }
+      { [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; } || { EB_CC_WHY="no repository checkout at $REPO (update-apply first)"; return 0; }
+      eb_git fetch -q origin "$EB_BRANCH" 2>/dev/null || { EB_CC_WHY="fetch-failed: cannot fetch $EB_BRANCH from origin in $REPO"; return 0; }
+      EB_HEAD=$(eb_git rev-parse FETCH_HEAD 2>/dev/null) || { EB_CC_WHY="fetch-failed: no FETCH_HEAD"; return 0; }
+      # a number published after an earlier engine-build with a new number: its commit is now the baseline
+      if [ -f "$EB_STATE/pending_client" ]; then
+        local pn pc
+        read -r pn pc < "$EB_STATE/pending_client" || true
+        if num "${pn:-}" && [ -n "$live" ] && [ "$live" -ge "$pn" ] && [[ ${pc:-} =~ ^[0-9a-f]{40}$ ]]; then
+          printf '%s\n' "$pc" > "$EB_STATE/client_exe_commit"
+          rm -f "$EB_STATE/pending_client"
+        fi
+      fi
+      [ -f "$EB_STATE/client_exe_commit" ] && EB_BASE=$(head -c 40 "$EB_STATE/client_exe_commit" | tr -dc 0-9a-f)
+      [ -n "$EB_BASE" ] || EB_BASE=$(eb_kit_state deployed_commit | tr -dc 0-9a-f)
+      [ -n "$EB_BASE" ] || { EB_CC_WHY="client-check-failed: no commit to compare the client program with (run update-apply once, or use --new-client)"; return 0; }
+      eb_git cat-file -e "$EB_BASE^{commit}" 2>/dev/null \
+        || { EB_CC_WHY="client-check-failed: commit ${EB_BASE:0:7} is not in the checkout $REPO; use --new-client if the client program changed"; return 0; }
+      eb_git diff --quiet "$EB_BASE" "$EB_HEAD" -- client/base-patches client/overlay/src client/tools/chaos_hardening.cmake launcher
+      case $? in
+        0) EB_CC=no ;;
+        1) EB_CC=yes ;;
+        *) EB_CC_WHY="client-check-failed: git diff failed" ;;
+      esac
+      return 0
+    }
+    # eb_guard_add N: puts build N into clientGuardBuilds of config.lua (old builds stay). Prints added | present | any
+    # (the list is empty: every build is accepted) | missing (no file or no such line). A backup is kept when it changes.
+    eb_guard_add() {
+      python3 -I - "$SERVER/config.lua" "$1" <<'PY'
+import re, shutil, sys, time
+p, n = sys.argv[1], sys.argv[2]
+try:
+    t = open(p, encoding='utf-8').read()
+except OSError:
+    print('missing')
+    sys.exit(0)
+m = re.search(r'^(\s*clientGuardBuilds\s*=\s*)"([^"\n]*)"', t, re.M)
+if not m:
+    print('missing')
+    sys.exit(0)
+vals = [x for x in re.split(r'[\s,;]+', m.group(2)) if x]
+if not vals:
+    print('any')
+elif n in vals:
+    print('present')
+else:
+    shutil.copy2(p, p + '.before-guard-' + time.strftime('%Y%m%d-%H%M%S'))
+    t = t[:m.start()] + m.group(1) + '"' + ', '.join(vals + [n]) + '"' + t[m.end():]
+    open(p, 'w', encoding='utf-8').write(t)
+    print('added')
+PY
+    }
     case $cmd in
       engine-build-token-set)
         [ $# -eq 0 ] || die "engine-build-token-set (no arguments; the GitHub token on stdin, one line, empty removes it)"
@@ -2024,6 +2083,15 @@ PY
             inst=$(eb_kit_state installed_release)
             num "$inst" || inst=unknown
             echo "installed_release=$inst"
+            if [ -n "$lc" ]; then
+              echo "client_next=$((lc + 1))"
+              # the check fetches the branch: not while a build runs (the app asks every 20 s then)
+              if [ "$EB_STATE_NOW" = queued ] || [ "$EB_STATE_NOW" = in_progress ]; then :; else
+                live=$lc
+                eb_client_check
+                echo "client_changed=$EB_CC"
+              fi
+            fi
             jline=""
             if [ "$EB_STATE_NOW" = none ]; then
               echo "release_newer=no"
@@ -2075,11 +2143,12 @@ PY
             fi
             ;;
           start)
-            ecb=""
+            ecb="" enew=0
             while [ $# -gt 0 ]; do
               case $1 in
-                --client-build) num "${2:-}" || die "engine-build start [--client-build N]"; ecb=$((10#$2)); shift 2 ;;
-                *) die "engine-build start [--client-build N]" ;;
+                --client-build) num "${2:-}" || die "engine-build start [--client-build N | --new-client]"; ecb=$((10#$2)); shift 2 ;;
+                --new-client) enew=1; shift ;;
+                *) die "engine-build start [--client-build N | --new-client]" ;;
               esac
             done
             [ -n "$(eb_token)" ] || die "token-missing: no GitHub token saved ($EB_TOKEN); save one first: engine-build-token-set (app: Painel > Recompilar engine > Definir token do GitHub)"
@@ -2095,7 +2164,11 @@ PY
             # the client build rule (docs/ADMIN_APP.md "Recompilar engine"): never below the live client update's
             # min_package, and the live number only while the client program is unchanged
             live=$(eb_live_client)
-            if [ -z "$live" ]; then
+            if [ "$enew" = 1 ]; then
+              [ -n "$live" ] || die "client-build-unknown: no live client update ($EB_SITE/updates/live/manifest.json) to count from; give the number: engine-build start --client-build N"
+              [ -z "$ecb" ] || die "engine-build start takes --client-build N or --new-client, not both"
+              cb=$((live + 1))
+            elif [ -z "$live" ]; then
               [ -n "$ecb" ] || die "client-build-unknown: no live client update ($EB_SITE/updates/live/manifest.json); give the number: engine-build start --client-build N"
               cb=$ecb
             else
@@ -2103,32 +2176,20 @@ PY
               [ "$cb" -ge "$live" ] || die "client-build-backwards: $cb is below the live client build $live; a build never goes backwards"
             fi
             { [ "$cb" -ge 1 ] && [ "$cb" -le 65535 ]; } || die "client-build must be 1..65535"
-            eb_git fetch -q origin "$EB_BRANCH" 2>/dev/null || die "fetch-failed: cannot fetch $EB_BRANCH from origin in $REPO"
-            head=$(eb_git rev-parse FETCH_HEAD 2>/dev/null) || die "fetch-failed: no FETCH_HEAD"
-            # a number published after an earlier engine-build with a new number: its commit is now the baseline
-            if [ -f "$EB_STATE/pending_client" ]; then
-              read -r pn pc < "$EB_STATE/pending_client" || true
-              if num "${pn:-}" && [ -n "$live" ] && [ "$live" -ge "$pn" ] && [[ ${pc:-} =~ ^[0-9a-f]{40}$ ]]; then
-                printf '%s\n' "$pc" > "$EB_STATE/client_exe_commit"
-                rm -f "$EB_STATE/pending_client"
+            eb_client_check
+            newnum=0
+            if [ -n "$live" ] && [ "$cb" -gt "$live" ]; then newnum=1; fi
+            if [ "$newnum" = 1 ]; then
+              # a new number: only the branch head is needed; the guard list is edited with the kit update stopped
+              [ -n "$EB_HEAD" ] || die "${EB_CC_WHY:-fetch-failed}"
+              if [ -f "$KSTATE/.lock" ] && ! flock -n "$KSTATE/.lock" true; then
+                die "update-running: an update or rollback is running (chaos-ctl.sh update-log); start the build when it ends"
               fi
-            fi
-            if [ -z "$live" ] || [ "$cb" = "$live" ]; then
-              base=""
-              [ -f "$EB_STATE/client_exe_commit" ] && base=$(head -c 40 "$EB_STATE/client_exe_commit" | tr -dc 0-9a-f)
-              [ -n "$base" ] || base=$(eb_kit_state deployed_commit | tr -dc 0-9a-f)
-              [ -n "$base" ] || die "client-check-failed: no commit to compare the client program with (run update-apply once, or give a new number: --client-build N)"
-              eb_git cat-file -e "$base^{commit}" 2>/dev/null \
-                || die "client-check-failed: commit ${base:0:7} is not in the checkout $REPO; give a new number if the client program changed: --client-build N"
-              eb_git diff --quiet "$base" "$head" -- client/base-patches client/overlay/src client/tools/chaos_hardening.cmake launcher
-              case $? in
-                0) ;;
-                1) die "client-changed: the client program (client/base-patches, client/overlay/src, launcher) changed since ${base:0:7}; build number $cb would name two different exes. Give a new number: engine-build start --client-build $((cb + 1)) (list it in clientGuardBuilds first, docs/ADMIN_APP.md)" ;;
-                *) die "client-check-failed: git diff failed" ;;
-              esac
             else
-              echo "note: client build $cb is a new client number (live: $live): list $cb in clientGuardBuilds before update-apply publishes it, and publish an APK of code $cb for the phones"
+              [ "$EB_CC" != unknown ] || die "${EB_CC_WHY:-client-check-failed}"
+              [ "$EB_CC" = no ] || die "client-changed: the client program (client/base-patches, client/overlay/src, launcher) changed since ${EB_BASE:0:7}; build number $cb would name two different exes. Use a new client number: engine-build start --new-client (build $((${live:-$cb} + 1)); the app has the button Recompilar com client novo)"
             fi
+            head=$EB_HEAD
             body=$(printf '{"ref":"%s","inputs":{"client_build":"%s","allow_dev_key":"false"}}' "$EB_BRANCH" "$cb")
             dcode=$(eb_api POST "/repos/$EB_REPO/actions/workflows/$EB_WF/dispatches" "$body")
             case $dcode in
@@ -2138,7 +2199,11 @@ PY
               422) die "workflow-refused: GitHub says 422: the workflow $EB_WF has no workflow_dispatch on $EB_BRANCH, or an input was refused" ;;
               *) die "dispatch-failed: HTTP ${dcode:-000} from api.github.com" ;;
             esac
-            if [ -n "$live" ] && [ "$cb" -gt "$live" ]; then printf '%s %s\n' "$cb" "$head" > "$EB_STATE/pending_client"; fi
+            guard=""
+            if [ "$newnum" = 1 ]; then
+              printf '%s %s\n' "$cb" "$head" > "$EB_STATE/pending_client"
+              guard=$(eb_guard_add "$cb")
+            fi
             # the dispatch answers 204 without the run: look for the one newer than before (about 30 s at most)
             nrun=""
             for _ in 1 2 3 4 5 6 7 8 9 10; do
@@ -2151,9 +2216,20 @@ PY
             echo "branch=$EB_BRANCH"
             echo "commit=${head:0:7}"
             echo "client_build=$cb"
+            if [ "$newnum" = 1 ]; then
+              echo "new_client=yes"
+              echo "guard=$guard"
+              case $guard in
+                added) echo "note: build $cb added to clientGuardBuilds of $SERVER/config.lua (older builds stay; the engine reads it at its next start, which update-apply does)" ;;
+                present) echo "note: build $cb was already in clientGuardBuilds" ;;
+                any) echo "note: clientGuardBuilds is empty, so every build is accepted; nothing to add" ;;
+                *) echo "note: could not edit clientGuardBuilds in $SERVER/config.lua: add $cb to it by hand before update-apply" ;;
+              esac
+              echo "note: players get the new client (build $cb) through the updater after update-apply; build and publish an Android APK of code $cb (android-client.yml) so the phones can play"
+            fi
             echo "next: chaos-ctl.sh engine-build status; when it says success, update-apply installs the new engine"
             ;;
-          *) die "engine-build [status | start [--client-build N] | log [N]]" ;;
+          *) die "engine-build [status | start [--client-build N | --new-client] | log [N]]" ;;
         esac
         ;;
     esac

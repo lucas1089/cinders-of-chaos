@@ -396,6 +396,7 @@ pub static ACTIONS: &[Action] = &[
     act(Updates, "Atualizar servidor", "Voltar à versão anterior", "update-rollback").ask().live(Live::Restarts).t(60),
     act(Updates, "Atualizar servidor", "Estado da última atualização", "update-status"),
     act(Updates, "Recompilar engine", "Recompilar", "engine-build start").ask().t(120).h("O GitHub compila o engine do servidor com todos os patches do código novo. Leva de 20 a 60 minutos (a primeira vez, ou depois de uma mudança grande, pode passar de uma hora). O jogo segue no ar e nada é trocado no servidor agora. Quando terminar, use Atualizar servidor para instalar."),
+    act(Updates, "Recompilar engine", "Recompilar com client novo", "engine-build start --new-client").ask().t(120).h("Use quando o cartão disser que o programa do client mudou. O GitHub compila o engine e um client novo, com o número de build seguinte ao publicado (o atual continua aceito pelo servidor). O número entra sozinho na lista clientGuardBuilds do config.lua. Leva de 20 a 60 minutos (a primeira vez, ou depois de uma mudança grande, pode passar de uma hora). O jogo segue no ar. Depois, em Atualizar servidor, o client novo é publicado e os jogadores o recebem pelo atualizador; o APK do Android precisa acompanhar (android-client.yml com o mesmo client_build), senão os celulares ficam sem poder jogar."),
     act(Updates, "Recompilar engine", "Atualizar estado", "engine-build status").t(90).h("Pergunta ao GitHub como está a última recompilação. Enquanto ela roda, a janela pergunta sozinha a cada 20 segundos."),
     act(Updates, "Recompilar engine", "Ver passos", "engine-build log 20").t(90).h("Os jobs da rodada, o passo que falhou e o histórico das partidas."),
     act(Updates, "Recompilar engine", "Definir token do GitHub", "engine-build-token-set").p(ENGINE_TOKEN_P).t(60).h("Token fine-grained só deste repositório, com Actions leitura e escrita. Vai pelo stdin e só fica na VPS (/etc/chaos/engine-build.token, modo 600). Vazio apaga. docs/ADMIN_APP.md"),
@@ -625,6 +626,13 @@ mod tests {
         assert_eq!(start.group, "Recompilar engine");
         assert!(start.hint.contains("20 a 60 minutos") && start.hint.contains("Atualizar servidor"));
         assert!(crate::engine::DURATION.contains("20 a 60 minutos"));
+        let nc = find("engine-build start --new-client");
+        assert!(
+            nc.confirm
+                && nc.hint.contains("clientGuardBuilds")
+                && nc.hint.contains("APK")
+                && nc.hint.contains("20 a 60 minutos")
+        );
         assert!(!find("engine-build status").confirm && !find("engine-build log 20").confirm);
         let tok = find("engine-build-token-set");
         let (line, stdin) = build(tok, &["github_pat_x".into()]).unwrap();

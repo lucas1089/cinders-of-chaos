@@ -65,6 +65,32 @@ final class EngineBuildInfo {
         return state().equals("success") && get("release_newer").equals("yes");
     }
 
+    /** The client program changed since the published client: the same build number is refused, a new one is offered. */
+    boolean clientChanged() {
+        return get("client_changed").equals("yes");
+    }
+
+    /** The build number a new client would get (live + 1), or "" when unknown. */
+    String clientNext() {
+        return get("client_next");
+    }
+
+    /** The label of the second button. */
+    String newClientLabel() {
+        return "Recompilar com client novo" + (clientNext().isEmpty() ? "" : " (build " + clientNext() + ")");
+    }
+
+    /** The confirmation of a build with a new client. */
+    static String confirmNewClientText(String n) {
+        String b = n.isEmpty() ? "novo" : n;
+        return "O programa do client mudou desde o client publicado. O GitHub vai compilar o engine e um client "
+                + "novo, com o número de build " + b + " (o atual continua aceito pelo servidor até a atualização). "
+                + "O número entra sozinho na lista clientGuardBuilds do config.lua. Leva " + DURATION + ". O jogo segue "
+                + "no ar. Depois, em Atualizar servidor, o client novo é publicado e os jogadores o recebem pelo "
+                + "atualizador; o APK do Android precisa acompanhar (android-client.yml com client_build " + b + "), senão "
+                + "os celulares ficam sem poder jogar.";
+    }
+
     /** "37 min", "1 h 05 min", "40 s". */
     static String elapsed(int secs) {
         if (secs < 60) {
@@ -160,6 +186,11 @@ final class EngineBuildInfo {
             b.append("Instalado no servidor: ").append(get("installed_release").equals("unknown") ? "desconhecido"
                     : "winpkg-" + get("installed_release")).append('\n');
         }
+        if (clientChanged() && !running()) {
+            b.append("O programa do client mudou desde o client publicado: Recompilar com o mesmo número de build seria "
+                    + "recusado. Use Recompilar com client novo").append(clientNext().isEmpty() ? "" : " (build " + clientNext() + ")")
+                    .append(".\n");
+        }
         if (!hasToken()) {
             b.append("Sem token do GitHub: toque em Definir token do GitHub antes de recompilar.\n");
         }
@@ -185,10 +216,14 @@ final class EngineBuildInfo {
             b.append(" (rodada ").append(run).append(')');
         }
         b.append(", client build ").append(e.get("client_build")).append('.');
+        if (e.get("guard").equals("added")) {
+            b.append(" O build entrou na lista clientGuardBuilds do config.lua (os antigos continuam).");
+        } else if (e.get("guard").equals("missing")) {
+            b.append(" Atenção: não consegui editar clientGuardBuilds no config.lua; coloque o build nele antes de Atualizar servidor.");
+        }
         for (String line : (out == null ? "" : out).split("\n")) {
             if (line.startsWith("note: client build")) {
-                b.append(" Atenção: é um número novo de client; coloque-o em clientGuardBuilds antes de Atualizar servidor "
-                        + "publicar, e publique um APK com esse código.");
+                b.append(" É um número novo de client: depois de Atualizar servidor, publique também um APK com esse código.");
             }
         }
         return b.toString();
@@ -202,7 +237,8 @@ final class EngineBuildInfo {
             {"token-refused", "O GitHub recusou o token (401). Ele pode ter vencido ou sido apagado: defina um novo."},
             {"no-access", "O token não alcança o repositório ou não tem Actions leitura e escrita. Crie outro com essas permissões."},
             {"build-running", "Já há uma recompilação em andamento. Espere ela terminar."},
-            {"client-changed", "O programa do client mudou desde o client publicado: o mesmo número de client apontaria para dois executáveis diferentes. Suba o número do client (e coloque o novo em clientGuardBuilds) antes de recompilar; veja docs/ADMIN_APP.md."},
+            {"client-changed", "O programa do client mudou desde o client publicado: o mesmo número de client apontaria para dois executáveis diferentes. Use Recompilar com client novo."},
+            {"update-running", "Uma atualização do servidor está rodando. Espere ela terminar para recompilar com client novo."},
             {"client-build-backwards", "O número do client não pode ser menor que o do client publicado."},
             {"client-build-unknown", "Não há update de client publicado para tirar o número do client. Dê o número na linha de comando."},
             {"client-check-failed", "Não consegui comparar o programa do client com o publicado. Rode Atualizar servidor uma vez e tente de novo."},
