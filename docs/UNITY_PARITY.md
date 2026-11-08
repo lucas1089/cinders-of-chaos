@@ -61,18 +61,18 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_npctradewindow` | 113 | NPC buy and sell list: tabs, search, amount slider, total, currency of opcode 113. No buy-in-backpacks option. | done | P0 | L |
 | `game_partyframes` | 235 | Party member frames. `Core/Party.cs`, `PartyFramesWindow`: outfit, class colour, level, leader mark, health and mana bars, state, distance, shared experience bonus, invite box. No buff icons, no settings window, not movable as a panel. | partial | P0 | M |
 | `game_spellbook` | 219 | Spellbook. Unity has the list, filters, search, cast by click, hotkey assignment; no area preview, no icons. | partial | P0 | M |
-| `client_chaos_locale` | 157 | English and pt-BR texts. Core/Loc.cs does it for Unity windows; no language option in a menu yet. | partial | P1 | S |
+| `client_chaos_locale` | 157 | English and pt-BR texts. Core/Loc.cs for Unity windows; the Options window (Ctrl+U) has the language selector (PlayerPrefs chaos.lang) and tells the server by hello on 157. Server texts follow the choice. | done | P1 | S |
 | `client_chaos_topbar` | 115 | Top menu with unlocks by level. Unity has a flat toolbar of windows. | missing | P1 | L |
-| `game_antibot` | 211 | Presence check modal and report dialog (antibot.lua). Unity cannot answer a check yet. | missing | P1 | S |
+| `game_antibot` | 211 | Presence check modal (click the picture of the word, countdown, another picture, answer) and the report dialog (reasons from the server, name, note), from the player right-click menu and Options. `Core/Hud.cs` Antibot, `ChaosApp.Hud.cs`. Items drawn from client ids. | done | P1 | S |
 | `game_bank` | 60 | Bank window. | missing | P1 | M |
-| `game_buffbar` | 234 | Buff and debuff icons with timers. | missing | P1 | M |
-| `game_castbar` | 231 | Cast bar for cast time spells. | missing | P1 | S |
+| `game_buffbar` | 234 | Buff and debuff squares (initials, colour by key, red for debuffs) with timers, stacks and Alt tooltip under the plate. `Core/Hud.cs` BuffBar. No icon art. | partial | P1 | M |
+| `game_castbar` | 231 | Own cast bar (click cancels) and bars over other casters. `Core/Hud.cs` CastBar. The Town Portal hand-off is not ported. | done | P1 | S |
 | `game_chaosinfo` | 237 | Info and Services window. | missing | P1 | M |
-| `game_chaosnotify` | 79 | Toasts. Many systems report through it. | missing | P1 | M |
-| `game_chaosscale` | 157 | Display scale factor for numbers. | missing | P1 | S |
+| `game_chaosnotify` | 79 | Toasts: 21 types with colours and times, three at once, queue of 12, wrapped height, Accept and Decline or Start on opcodes 151 and 152, danger line. `Core/Hud.cs` ToastCenter. No icons or monster look in the toast; catacomb Start sends without the protection zone check. | partial | P1 | M |
+| `game_chaosscale` | 157 | Factor kept from the scale message and hello on login and level change; the server scales its own numbers. Shown in Options (read only). | done | P1 | S |
 | `game_damagescatter` | none | Typed damage numbers. Needs the 0xB4 fields (capability bit 7); the text parser is track B. | missing | P1 | M |
 | `game_deathrecap` | 154 | Death recap window. Unity shows a death window (0x28); no recap data (opcode 154). | missing | P1 | M |
-| `game_energyshield` | 224 | Energy shield bar. The server sends plain text es:cur:max. | missing | P1 | S |
+| `game_energyshield` | 224 | Shield bar under the plate, eased over 900 ms, hello after login. `Core/Hud.cs` EnergyShield. | done | P1 | S |
 | `game_goals` | 178 | Next Goals window and tracker. | missing | P1 | M |
 | `game_groundlabels` | 230 | Loot labels on the ground. | missing | P1 | M |
 | `game_helper` | none | The helper: heals, potions, rotation, auto target. A large part of the play loop for many players. | missing | P1 | L |
@@ -80,13 +80,13 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_hunt` | 241 | Hunt tracker. | missing | P1 | M |
 | `game_itemrarity` | 126 (feature) | Item rarity. Item attributes are parsed in Chaos identity (Item.Attr); nothing draws a rarity frame yet. | partial | P1 | M |
 | `game_itemtooltip` | 242 | Rich item tooltips. | missing | P1 | L |
-| `game_kitewalk` | 186 | Option: keep attacking while moving. One message on opcode 186. | missing | P1 | S |
+| `game_kitewalk` | 186 | Option in the Options window, saved in PlayerPrefs, sent at login and at change as {on}. | done | P1 | S |
 | `game_lootfilter` | 238 | Loot filter and loot channel. | missing | P1 | M |
-| `game_monkchi` | 247 | Monk chi pips. Server text chi:chi:max:decay. | missing | P1 | S |
-| `game_monsterbar` | 125 | Tiered monster health bar. | missing | P1 | M |
+| `game_monkchi` | 247 | Chi pips under the plate that empty at the decay time, hidden for other classes. `Core/Hud.cs` MonkChi. | done | P1 | S |
+| `game_monsterbar` | 125 | Tiered target bar: tier colour, label, role, level, percent, damage trail, modifier chips with tips, boss mechanic cast bar. `Core/Hud.cs` MonsterBar. No frame art, no oversized monster scaling, no in-world tier labels. | partial | P1 | M |
 | `game_passivetree` | 65 | Passive tree. Opcode 65. Large JSON in chunks. | missing | P1 | L |
 | `game_rift` | 228 | Rift run HUD. | missing | P1 | M |
-| `game_rightclickequip` | 188 | Option: right-click equips. One message on opcode 188. | missing | P1 | S |
+| `game_rightclickequip` | 188 | Option in the Options window, sent as {on}; the multi-use id list is kept (`HudOptions.MultiUseIds`). Unity has no use-with, so the plain-use rule is not needed yet. | done | P1 | S |
 | `game_shop` | 218 | Chaos store. | missing | P1 | L |
 | `game_simpleskills` | none | Melee, Ranged, Magic, Shielding rows. Unity lists the seven weapon skills. | partial | P1 | S |
 | `game_skillstats` | 119 | Combat stat rows in the skills window. | missing | P1 | S |
