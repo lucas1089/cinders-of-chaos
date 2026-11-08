@@ -420,6 +420,8 @@ namespace Chaos.Client
         void HandleWalk()
         {
             if (chatFocused || TextEditing) return;   // typing: the letters go to the chat line
+            if (OverlayKeys.Pans(Utils != null && Utils.Overlay.Shown, Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift), false)
+                && (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))) return;   // Shift + arrows pan the map overlay
             Dir? d = null;
             bool up = Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.Keypad8);
             bool down = Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.Keypad2);
@@ -542,7 +544,7 @@ namespace Chaos.Client
                     if (CommunityHidesName(c)) continue;   // streamer / cinema mode (ChaosApp.Community.cs)
                     x -= map.x;
                     y -= map.y;
-                    y -= InfoLift.Scaled(c, tile);   // names over tall looks (Core/InfoLift.cs)
+                    y -= InfoLift.ForView(c, tile, HdLabelsOn);   // names over tall looks in the classic view (Core/InfoLift.cs); the 3D views place them at the figure's top
                     var col = c.Type == 1 ? new Color(1f, 0.6f, 0.6f) : c.Type == 2 ? new Color(0.6f, 0.9f, 1f) : new Color(0.6f, 1f, 0.6f);
                     var hp = c.HealthPercent > 50 ? new Color(0.2f, 0.85f, 0.2f) : c.HealthPercent > 20 ? new Color(0.95f, 0.8f, 0.1f) : new Color(0.9f, 0.15f, 0.1f);
                     Rect nr = new Rect(x - 100, y - barH - 22, 200, 18);

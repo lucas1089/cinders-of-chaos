@@ -197,12 +197,12 @@ namespace Chaos.Client
             flat.Upload(); upright.Upload();
             ground.Build(pieces);
 
-            var pose = Hd2dCamera.ForTile(pd[0], pd[1], origin, Cam.aspect, Pitch, Fov);
+            var pose = Hd2dCamera.ForTile(pd[0], pd[1], origin, Cam.aspect, Pitch, Fov, ChaosApp.ViewTilesW, ChaosApp.ViewTilesH);
             LastPose = pose;
             Cam.orthographic = false;
             Cam.fieldOfView = Fov;
             Cam.nearClipPlane = 0.5f;
-            Cam.farClipPlane = 150f;
+            Cam.farClipPlane = 260f;
             Cam.rect = new Rect(0f, 0f, 1f, 1f);
             Cam.transform.SetPositionAndRotation(new Vector3(pose.Position.X, pose.Position.Y, pose.Position.Z),
                                                  Quaternion.LookRotation(new Vector3(pose.Forward.X, pose.Forward.Y, pose.Forward.Z), Vector3.up));

@@ -535,6 +535,12 @@ namespace Chaos.Core
     // ---------------------------------------------------------------------------------------- what the engine needs on top of IHelperHost
     /// <summary>The optional part of the helper's host: other players in view, the class, use an item, the hunger state. A host without it runs the
     /// original helper (a fake game in a test may implement only the base interface).</summary>
+    /// <summary>Phase 8 B: what the Support section asks the buff bar (the lower-case names of the buffs on the character, null while the server has not sent its list).</summary>
+    public interface IHelperHostBuffs
+    {
+        HashSet<string> ActiveBuffs();
+    }
+
     public interface IHelperHostExt
     {
         int Vocation { get; }

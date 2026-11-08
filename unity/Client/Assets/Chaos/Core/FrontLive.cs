@@ -107,8 +107,9 @@ namespace Chaos.Core
         {
             var c = w.Center;
             int e = o == null ? 0 : o.Extra;
-            x0 = c.X - World.RangeLeft - 1 - e; x1 = c.X + World.RangeRight + 1 + e;
-            y0 = c.Y - World.RangeTop - 1 - e; y1 = c.Y + World.RangeBottom + 1 + e;
+            var r = w.Range;   // the area the server describes (phase 8 B: the wide view fills it too)
+            x0 = c.X - r.Left - 1 - e; x1 = c.X + r.Right + 1 + e;
+            y0 = c.Y - r.Top - 1 - e; y1 = c.Y + r.Bottom + 1 + e;
         }
 
         /// <summary>The world position of a (fractional) tile position: its middle, x east, z north.</summary>

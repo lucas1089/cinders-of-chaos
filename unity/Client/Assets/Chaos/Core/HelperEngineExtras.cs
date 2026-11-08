@@ -17,6 +17,10 @@ namespace Chaos.Core
         /// <summary>What the Support rows show: the reason of each row at the last pass, and the overall one.</summary>
         public string SupportWhy = "idle";
         public int RunesUsed, AllyHeals, Meals;
+        /// <summary>Set when the engine changed the saved settings itself (a vigil the player switched off is unticked): the window saves them.</summary>
+        public bool ConfigDirty;
+        readonly Dictionary<int, double> timerLast = new Dictionary<int, double>();
+        double timerAny = double.NaN;
         double lastMeal = -1;
 
         IHelperHostExt HostExt => Host as IHelperHostExt;
@@ -25,6 +29,8 @@ namespace Chaos.Core
         {
             AllyState.Last.Clear(); AllyState.Sent.Clear();
             SupportRun.Reset();
+            HelperSupport.NoteClear(SupportRun, Host.Now, HelperSupport.SessionGraceMs);   // a death or a login: the buffs go and come back, none of it is the player's switch
+            timerLast.Clear(); timerAny = double.NaN;
             lastMeal = -1;
         }
 
@@ -160,6 +166,14 @@ namespace Chaos.Core
                     return new KeyValuePair<int, int>(all.Count, own);
                 },
                 SummonCap = () => HelperSupport.SummonCap(ext != null ? ext.Vocation : 0, Host.Level),
+                BuffActive = names =>
+                {
+                    var set = (Host as IHelperHostBuffs)?.ActiveBuffs();
+                    if (set == null) return null;
+                    foreach (var n in names) if (set.Contains(n)) return true;
+                    return false;
+                },
+                Hasted = () => Host.Hasted,
                 Allowed = s => Timers.CastAllowed(HelperTimers.Support, s.Words, Host.Now),
             };
         }
@@ -170,11 +184,30 @@ namespace Chaos.Core
             string overall;
             var spell = HelperSupport.Pick(SupportRun, Config.Support, SupportCtx(pz), out overall);
             SupportWhy = overall;
-            if (spell == null) return;
+            if (HelperSupport.TakeUserOff(SupportRun, Config.Support, Host.Now).Count > 0) ConfigDirty = true;
+            if (spell == null) { TimerTick(pz); return; }
             Host.Say(spell.Words);
             Casts.Cast(spell.Id, GroupsOf(spell), Host.Now);
             Casted++;
             HelperSupport.NoteCast(SupportRun, spell, Host.Now);
+        }
+
+        /// <summary>The Timer rules (the stock helper's timer section): a rule casts its words every Cooldown seconds while a monster is attacked, outside a protection zone,
+        /// through the same rate guard as the Support rows. Runs when no Support row cast in this pass.</summary>
+        void TimerTick(bool pz)
+        {
+            if (!Config.Support.Enabled || !Config.Enabled || Config.Support.Timers.Count == 0) return;
+            bool attacking = Host.AttackTarget != 0;
+            foreach (var r in Config.Support.Timers)
+            {
+                double last = timerLast.TryGetValue(r.Id, out double l) ? l : double.NaN;
+                if (!HelperSupport.TimerDue(r, last, Host.Now, attacking, pz, timerAny)) continue;
+                if (Casts.Channeling(Host.Now) || !Timers.CastAllowed(HelperTimers.Support, r.Words, Host.Now)) return;
+                Host.Say(r.Words);
+                Casted++;
+                timerLast[r.Id] = timerAny = Host.Now;
+                return;
+            }
         }
 
         /// <summary>The Support part of Auto setup: fills the section from the class's support spells when it is empty (a list the player made stays).
@@ -183,11 +216,14 @@ namespace Chaos.Core
         {
             if (!Book.Loaded) return 0;
             if (!replace && Config.Support.Slots.Count > 0) return 0;
-            var plan = HelperSupport.AutoPlan(Book.Spells, CanCast);
+            var plan = HelperSupport.AutoPlanFull(Book.Spells, CanCast, out var timers);
             var merged = HelperSupport.MergeSlots(Config.Support.Slots, plan, replace);
             Config.Support.Slots.Clear();
             Config.Support.Slots.AddRange(merged);
-            return merged.Count;
+            var rules = HelperSupport.MergeTimers(Config.Support.Timers, timers, replace);
+            Config.Support.Timers.Clear();
+            Config.Support.Timers.AddRange(rules);
+            return merged.Count + rules.Count;
         }
     }
 }

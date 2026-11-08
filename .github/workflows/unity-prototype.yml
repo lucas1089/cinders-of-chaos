@@ -132,7 +132,7 @@ jobs:
         if: steps.lic.outputs.ok == '1'
         run: |
           dst=unity/Client/Assets/StreamingAssets/overlay/modules
-          for m in game_chaossound game_chaosmusic game_chestaura game_combatdecals game_cosmeticfx game_shaderfx game_lootfilter game_nameplate game_chaosweather; do
+          for m in game_chaossound game_chaosmusic game_chestaura game_combatdecals game_cosmeticfx game_cosmetics game_shaderfx game_lootfilter game_nameplate game_chaosweather; do
             (cd client/overlay/modules && find "$m" -type f \( -name '*.ogg' -o -name '*.png' \) -print0) |
               while IFS= read -r -d '' f; do mkdir -p "$dst/$(dirname "$f")"; cp "client/overlay/modules/$f" "$dst/$f"; done
           done
@@ -148,6 +148,8 @@ jobs:
               while IFS= read -r -d '' f; do mkdir -p "$ddst/$(dirname "$f")"; cp "client/overlay/data/$f" "$ddst/$f"; done
           done
           mkdir -p "$ddst/images/chaos" && cp client/overlay/data/images/chaos/topbutton_ranking.png "$ddst/images/chaos/"
+          # the charm slot pictures per shape (phase 8 track B: charmslot_1x1, 2x1, 1x2, 2x2) and, with game_cosmetics above, the effect icons of the Cosmetics rows
+          cp client/overlay/data/images/chaos/charmslot_*.png "$ddst/images/chaos/"
           # the bitmap fonts of the damage numbers (data/fonts/chaos: the .otfont text and its sheet; phase 7 track Y)
           mkdir -p "$ddst/fonts/chaos" && cp client/overlay/data/fonts/chaos/chaos-display-16px.* client/overlay/data/fonts/chaos/chaos-outline-11px.* "$ddst/fonts/chaos/"
           echo "copied $(find "$dst" "$ddst" -type f | wc -l) files to $dst and $ddst"

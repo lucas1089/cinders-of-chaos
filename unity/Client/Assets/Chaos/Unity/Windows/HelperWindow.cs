@@ -70,6 +70,7 @@ namespace Chaos.Client
             if (lastHealth >= 0 && hp < lastHealth) engine.OnHealthChanged(lastHealth, hp);
             lastHealth = hp;
             engine.Tick();
+            if (engine.ConfigDirty) { engine.ConfigDirty = false; dirty = true; }   // a vigil the player switched off by hand was unticked
             // a level-up with new spells opens the window on the Shooter tab, where Add and Ignore are (the main client asks in a box)
             if (engine.LevelNotice != null && engine.LevelNotice != noticeShown) { noticeShown = engine.LevelNotice; Open = true; tab = 1; pick = Pick.None; extraPick = ExtraPick.None; }
             if (engine.LevelMessage.Length > 0) { message = engine.LevelMessage; engine.LevelMessage = ""; dirty = true; app.PostLine(message); }

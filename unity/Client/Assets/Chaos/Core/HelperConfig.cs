@@ -226,7 +226,9 @@ namespace Chaos.Core
         {
             var slots = new List<object>();
             foreach (var s in Support.Slots) slots.Add(new Dictionary<string, object> { { "id", s.Id }, { "enabled", s.Enabled } });
-            return new Dictionary<string, object> { { "enabled", Support.Enabled }, { "reserve", Support.Reserve }, { "slots", slots } };
+            var timers = new List<object>();
+            foreach (var t in Support.Timers) timers.Add(new Dictionary<string, object> { { "id", t.Id }, { "words", t.Words }, { "name", t.Name }, { "cooldown", t.Cooldown }, { "enabled", t.Enabled } });
+            return new Dictionary<string, object> { { "enabled", Support.Enabled }, { "reserve", Support.Reserve }, { "slots", slots }, { "timers", timers } };
         }
 
         Dictionary<string, object> ProfilesJson()
@@ -365,6 +367,12 @@ namespace Chaos.Core
                 {
                     int id = Int(s, "id", 0, IdMax, 0);
                     if (id > 0 && seen.Add(id) && Support.Slots.Count < HelperSupport.SupportMax) Support.Slots.Add(new SupportSlot { Id = id, Enabled = Bool(s, "enabled", true) });
+                }
+                foreach (object t in Json.List(sup, "timers"))
+                {
+                    string words = Json.Text(t, "words");
+                    if (words.Length == 0 || Support.Timers.Count >= HelperSupport.TimerMax) continue;
+                    Support.Timers.Add(new SupportTimerRule { Id = Int(t, "id", 0, IdMax, 0), Words = words, Name = Json.Text(t, "name"), Cooldown = Int(t, "cooldown", 1, 3600, 30), Enabled = Bool(t, "enabled", true) });
                 }
             }
             var hud = Json.Get(root, "hud");

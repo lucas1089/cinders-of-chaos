@@ -17,6 +17,9 @@ namespace Chaos.Client
     {
         /// <summary>0.25 to 1: the live view's effect quads are multiplied by it (FrontLiveFx).</summary>
         public static float EffectAlpha = 1f;
+        /// <summary>Phase 8 B: the ground marks (game_groundfx) and the session clock in ms; the live view draws them as flat quads on the floor (FrontLiveFx), under its creatures.</summary>
+        public static List<GroundMark> Grounds;
+        public static System.Func<double> GroundNow;
     }
 
     public sealed partial class ChaosApp
@@ -57,6 +60,8 @@ namespace Chaos.Client
                 v.Random = () => Random.value;
             }
             ViewCharacterUpdate();
+            GroundFlatsUpdate(v);
+            Phase8BUpdate();   // ChaosApp.Phase8B.cs
             Phase7QUpdate();
             ApplyViewRows(VisualPrefs.ViewRows);
             Phase7YUpdate();   // ChaosApp.Phase7Y.cs: monster sizes, item outlines, fonts
@@ -89,8 +94,8 @@ namespace Chaos.Client
         AwareRange awareAskedFor;
         bool awareSent;
 
-        /// <summary>The most rows the current view can draw: what the aware range holds in the classic view, 11 in HD-2D and the live view (their tile windows are the default area).</summary>
-        public int ViewMaxRows => screen == Screen.Game && world != null && !hd2d && !LiveOn ? ViewZoom.MaxRowsFor(world.Range) : ViewZoom.MaxRows;
+        /// <summary>The most rows any view can draw: what the aware range holds (phase 8 B: HD-2D and the live view read the tile window from World.Range and fit their camera to ViewTilesW x ViewTilesH too).</summary>
+        public int ViewMaxRows => screen == Screen.Game && world != null ? ViewZoom.MaxRowsFor(world.Range) : ViewZoom.MaxRows;
 
         void ApplyViewRows(int rows)
         {
@@ -271,7 +276,7 @@ namespace Chaos.Client
             VisualTextures();
             double now = session.Now;
             float fxA = VisualRuntime.EffectAlpha;
-            DrawGroundRings(v, map, scale, now, fxA);
+            // the ground rings are quads of the map mesh (MapView.Flats) or of the floor of the live view: under the creatures, not here
             DrawDecals(v, map, scale);
             DrawPrints(v, map, scale, now);
             DrawChestAuras(v, map, scale, now);
@@ -282,17 +287,27 @@ namespace Chaos.Client
             DrawWings(v, map, scale, now, fxA);
         }
 
-        void DrawGroundRings(VisualEffects v, Rect map, float scale, double now, float fxA)
+        readonly List<float[]> ringQuads = new List<float[]>();
+
+        /// <summary>Every frame: the ground marks as flat quads of the classic map mesh (drawn in the tile's turn, before its creatures). In the live view FrontLiveFx reads
+        /// VisualRuntime.Grounds, in HD-2D there are none yet.</summary>
+        void GroundFlatsUpdate(VisualEffects v)
         {
+            VisualRuntime.Grounds = v != null ? v.Grounds : null;
+            VisualRuntime.GroundNow = () => session != null ? session.Now : 0.0;
+            if (view == null) return;
+            view.Flats.Clear();
+            if (v == null || hd2d || LiveOn || session == null) return;
+            double now = session.Now;
+            float fxA = VisualRuntime.EffectAlpha;
             foreach (var g in v.Grounds)
             {
-                if (!TileGeom(g.Pos, map, scale, out Vector2 at, out float tile)) continue;
                 float t = Mathf.Clamp01((float)((now - g.Born) / VisualEffects.GroundMs));
                 var pal = FrontFx.Palette(FrontFx.EffectTable.TryGetValue(g.Id, out var el) ? el : FxElement.Arcane);
-                var col = new Color(pal.BR, pal.BG, pal.BB, (1f - t) * 0.75f * fxA);
-                float size = tile * (0.8f + 1.9f * t);
-                Pic(texRing, Around(new Vector2(at.x, at.y + tile * 0.1f), size, size * 0.55f), col);   // a flat ring: the floor seen at a slant
-                Pic(texSoft, Around(new Vector2(at.x, at.y + tile * 0.1f), size * 0.8f, size * 0.45f), new Color(pal.CR, pal.CG, pal.CB, (1f - t) * 0.25f * fxA));
+                ringQuads.Clear();
+                GroundRing.Quads(t, ringQuads);
+                foreach (var q in ringQuads)
+                    view.Flats.Add(new MapView.FlatMark { Pos = g.Pos, W = q[0], H = q[1], Alpha = q[2] * fxA, Ring = q[3] > 0.5f, Tint = q[3] > 0.5f ? new Color(pal.BR, pal.BG, pal.BB) : new Color(pal.CR, pal.CG, pal.CB) });
             }
         }
 

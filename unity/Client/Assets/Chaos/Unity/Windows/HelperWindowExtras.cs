@@ -156,7 +156,8 @@ namespace Chaos.Client
             GUI.Label(new Rect(x, y + 2, w - 190, 20), Loc.T("Mana kept after a cast: {0}%", sup.Reserve), hint);
             y += 30;
             var view = new Rect(x, y, w, h - 120);
-            supportScroll = GUI.BeginScrollView(view, supportScroll, new Rect(0, 0, w - 18, Mathf.Max(sup.Slots.Count * 28f, 10f)));
+            float timerH = sup.Timers.Count > 0 ? 24f + sup.Timers.Count * 28f : 0f;
+            supportScroll = GUI.BeginScrollView(view, supportScroll, new Rect(0, 0, w - 18, Mathf.Max(sup.Slots.Count * 28f + timerH, 10f)));
             for (int i = 0; i < sup.Slots.Count; i++)
             {
                 var slot = sup.Slots[i];
@@ -169,6 +170,22 @@ namespace Chaos.Client
                 GUI.Label(new Rect(w - 18 - 150, ry + 2, 90, 20), HelperSupport.ReasonText(why), hint);
                 if (GUI.Button(new Rect(w - 18 - 56, ry, 26, 24), "^") && i > 0) { sup.Slots.RemoveAt(i); sup.Slots.Insert(i - 1, slot); dirty = true; break; }
                 if (GUI.Button(new Rect(w - 18 - 28, ry, 26, 24), "x")) { sup.Slots.RemoveAt(i); dirty = true; break; }
+            }
+            if (sup.Timers.Count > 0)
+            {
+                float ty = sup.Slots.Count * 28f + 4;
+                GUI.Label(new Rect(0, ty, w - 18, 20), Loc.T("Timer rules: cast every N seconds while you attack a monster"), hint);
+                ty += 20;
+                for (int i = 0; i < sup.Timers.Count; i++)
+                {
+                    var r = sup.Timers[i];
+                    float ry = ty + i * 28f;
+                    bool on = GUI.Toggle(new Rect(0, ry, 20, 24), r.Enabled, GUIContent.none);
+                    if (on != r.Enabled) { r.Enabled = on; dirty = true; }
+                    GUI.Label(new Rect(22, ry + 2, w - 18 - 22 - 90, 20), r.Name.Length > 0 ? r.Name : r.Words, rowName);
+                    GUI.Label(new Rect(w - 18 - 90, ry + 2, 62, 20), Loc.T("{0} s", r.Cooldown), hint);
+                    if (GUI.Button(new Rect(w - 18 - 28, ry, 26, 24), "x")) { sup.Timers.RemoveAt(i); dirty = true; break; }
+                }
             }
             GUI.EndScrollView();
             y += h - 120 + 4;
