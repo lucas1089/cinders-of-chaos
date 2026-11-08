@@ -585,7 +585,299 @@ namespace Chaos.Core.Tests
         }
 
         // ------------------------------------------------------------------------------------ filled in by the next steps
-        static void Death(Action<bool, string> check) { }
-        static void Loot(Action<bool, string> check) { }
+        static void Death(Action<bool, string> check)
+        {
+            Loc.Set("en");
+            check(DeathRecapRules.Short(1150) == "1.15k" && DeathRecapRules.Short(150000) == "150k" && DeathRecapRules.Short(2459999) == "2.45M" && DeathRecapRules.Short(999) == "999" && DeathRecapRules.Short(1234.9) == "1.23k", "recap: short numbers by the damage number rule");
+            check(DeathRecapRules.Short(-1500) == "-1.5k" && DeathRecapRules.Short(1000) == "1k" && DeathRecapRules.Short(12345) == "12.3k", "recap: short numbers keep the sign and trim zeros");
+            check(DeathRecapRules.Exact(1234567) == "1,234,567" && DeathRecapRules.Percent(1, 3) == 33.3 && DeathRecapRules.Percent(1, 2) == 50 && DeathRecapRules.Percent(1, 0) == 0, "recap: exact numbers and percent");
+            check(DeathRecapRules.Seconds(4200) == "4.2 s" && DeathRecapRules.Seconds(800) == "0.8 s" && DeathRecapRules.Seconds(65000) == "1:05" && DeathRecapRules.Seconds(-5) == "0.0 s", "recap: seconds");
+            check(DeathRecapRules.Clock(0) == "?" && System.Text.RegularExpressions.Regex.IsMatch(DeathRecapRules.Clock(1700000000), "^\\d\\d [A-Z][a-z]+ \\d\\d:\\d\\d$"), "recap: clock format");
+            check(DeathRecapRules.DisplayName("War Wolf", "Varek") == "War Wolf (Varek)" && DeathRecapRules.DisplayName(null, null) == "Unknown", "recap: names");
+            check(DeathRecapRules.ElementName("lifedrain") == "Life drain" && DeathRecapRules.ElementName("weird") == "Other", "recap: element names");
+            var o = DeathRecapRules.Outfit(Json.Parse("{\"type\":128,\"head\":78,\"addons\":7}"));
+            check(o != null && o["type"] == 128 && o["addons"] == 0, "recap: an outfit, addons out of range become 0");
+            check(DeathRecapRules.Outfit(Json.Parse("{\"type\":0}")) == null && DeathRecapRules.Outfit(Json.Parse("{\"auxType\":2160}"))["auxType"] == 2160 && DeathRecapRules.Outfit("x") == null, "recap: no outfit, an item outfit, bad input");
+
+            object recap = Json.Parse("{\"v\":1,\"at\":1700000000,\"real\":1,\"lvl\":120,\"xl\":150000,\"ll\":1,\"dur\":4200,\"win\":20000,\"tot\":1100,\"hp\":980,\"mp\":120,\"nh\":8,\"pvp\":1," +
+                "\"kb\":{\"n\":\"Dragon\",\"kind\":\"c\",\"el\":\"fire\",\"a\":250}," +
+                "\"el\":{\"fire\":630,\"energy\":230,\"manadrain\":40,\"physical\":200}," +
+                "\"att\":[{\"n\":\"Varek\",\"kind\":\"u\",\"tot\":270,\"hp\":150,\"mp\":120,\"h\":3,\"c\":1,\"x\":120,\"el\":{\"energy\":230,\"manadrain\":40}}," +
+                "{\"n\":\"Others\",\"kind\":\"o\",\"tot\":900,\"hp\":900,\"mp\":0,\"h\":9,\"c\":0,\"x\":200,\"el\":{\"physical\":900}}," +
+                "{\"n\":\"Dragon\",\"kind\":\"c\",\"tot\":750,\"hp\":750,\"mp\":0,\"h\":3,\"c\":1,\"x\":300,\"el\":{\"fire\":550,\"physical\":200},\"look\":{\"type\":34}}," +
+                "{\"n\":\"Fire Elemental\",\"m\":\"Varek\",\"kind\":\"c\",\"tot\":60,\"hp\":60,\"mp\":0,\"h\":1,\"c\":0,\"x\":60,\"el\":{\"fire\":60}}," +
+                "{\"n\":\"Environment\",\"kind\":\"e\",\"tot\":20,\"hp\":20,\"mp\":0,\"h\":1,\"c\":0,\"x\":20,\"el\":{}}]," +
+                "\"last\":[{\"dt\":1700,\"n\":\"Varek\",\"el\":\"energy\",\"a\":80,\"mp\":1},{\"dt\":0,\"n\":\"Dragon\",\"el\":\"fire\",\"a\":250,\"c\":1}]}");
+            var rows = DeathRecapRules.Rows(recap);
+            check(rows.Count == 5 && rows[0].Name == "Dragon" && rows[4].Name == "Others" && rows[1].Name == "Varek" && rows[2].Name == "Fire Elemental (Varek)", "recap: five rows, most damage first, Others last");
+            check(rows[4].Frac == 1 && Math.Abs(rows[0].Frac - 750.0 / 900) < 1e-9, "recap: the biggest row's bar is full, the others relative to it");
+            check(rows[0].Pct == 68.2 && rows[0].CritPct == 33 && rows[0].Outfit["type"] == 34 && rows[0].KindName == "Monster" && rows[1].KindName == "Player", "recap: share, crit rate, outfit, kind");
+            check(rows[0].ElText == "Fire 550, Physical 200" && rows[1].Mp == 120 && rows[3].ElText == "", "recap: element text, largest first");
+            var els = DeathRecapRules.ElementList(Json.Parse("{\"fire\":550,\"physical\":200,\"ice\":0}"));
+            check(els.Count == 2 && els[0].Key == "fire" && els[0].Pct == 73.3, "recap: zero elements left out, order and share");
+            var seg = DeathRecapRules.Segments(rows[0].Elements, rows[0].Total);
+            check(seg.Count == 2 && Math.Abs(seg[0].Frac + seg[1].Frac - 1) < 1e-9, "recap: the segments fill the bar");
+            check(DeathRecapRules.Rows(null).Count == 0 && DeathRecapRules.Rows(Json.Parse("{\"att\":[\"x\"]}")).Count == 0, "recap: no recap, no rows");
+
+            var h = DeathRecapRules.Header(recap);
+            check(h.Title == "Killed by Dragon" && h.Sub.Contains("level 120") && h.Sub.Contains("PvP"), "recap: title and sub line");
+            check(h.Loss == "Lost 150k experience and 1 level" && h.Window == "Last 4.2 s before the death, 8 hits" && h.Totals == "Damage taken: 1.1k (health 980, mana 120)", "recap: loss, window and totals");
+            check(DeathRecapRules.Header(Json.Parse("{\"real\":0,\"kb\":{\"n\":\"Varek\"},\"mode\":\"Arena\",\"tot\":0}")).Title == "Defeated by Varek" && DeathRecapRules.Header(Json.Parse("{\"real\":0,\"kb\":{\"n\":\"Varek\"}}")).Loss == "Nothing lost", "recap: a defeat in a mode loses nothing");
+            check(DeathRecapRules.Header(Json.Parse("{\"real\":0,\"mode\":\"Arena\"}")).Sub.Contains("Arena"), "recap: the mode in the sub line");
+            check(DeathRecapRules.Header(Json.Parse("{\"real\":1,\"kb\":{\"n\":\"x\"}}")).Loss == "Experience lost: shown at your next login" && DeathRecapRules.Header(Json.Parse("{\"real\":1,\"xl\":0,\"ll\":0}")).Loss == "No experience lost" && DeathRecapRules.Header(Json.Parse("{\"real\":1,\"xl\":5000,\"ll\":3}")).Loss == "Lost 5k experience and 3 levels", "recap: loss not known yet, none, levels plural");
+            check(DeathRecapRules.Header(Json.Parse("{}")).Window == "No hits recorded before the death" && DeathRecapRules.Header(null).Title == "Killed by Unknown", "recap: no hits, no recap");
+            check(DeathRecapRules.KillingBlow(recap) == "Killing blow: Dragon, 250 fire" && DeathRecapRules.KillingBlow(Json.Parse("{\"kb\":{\"n\":\"Varek\",\"a\":99,\"el\":\"energy\",\"c\":1}}")) == "Killing blow: Varek, 99 energy (critical)" && DeathRecapRules.KillingBlow(Json.Parse("{\"kb\":{\"n\":\"Demon\"}}")) == "Killing blow: Demon", "recap: the killing blow");
+            var tl = DeathRecapRules.Timeline(recap);
+            check(tl.Count == 2 && tl[0].Time == "-1.7 s" && tl[1].Time == "death" && tl[0].Text == "-1.7 s  Varek  80 energy (mana)" && tl[1].Text == "death  Dragon  250 fire (critical)", "recap: the timeline");
+            check(DeathRecapRules.Timeline(Json.Parse("{\"last\":[{\"dt\":8,\"n\":\"Dragon\",\"a\":1}]}"))[0].Time == "death" && DeathRecapRules.Timeline(Json.Parse("{\"last\":[{\"dt\":100,\"n\":\"Dragon\",\"a\":1}]}"))[0].Time == "-0.1 s", "recap: a hit within 100 ms is the death");
+            var list = Json.List(Json.Parse("{\"l\":[{\"id\":12,\"at\":1700000300,\"k\":\"Dragon\",\"lvl\":120,\"xl\":150000,\"ll\":1,\"real\":1},{\"id\":11,\"at\":1700000200,\"k\":\"Varek\",\"real\":0,\"mode\":\"Arena\"},{\"id\":10,\"at\":1700000100,\"k\":\"Rat\",\"lvl\":8,\"xl\":0,\"real\":1},{\"id\":\"bad\"}]}"), "l");
+            var hr = DeathRecapRules.HistoryRows(list, 11);
+            check(hr.Count == 3 && hr[0].Sub == "-150k exp, -1 lvl" && hr[1].Sub == "Arena" && hr[2].Sub == "Level 8" && hr[1].Selected && !hr[0].Selected && hr[0].Killer == "Dragon", "recap: the history rows");
+            var t = DeathRecapRules.Tips(Json.Parse("{\"tips\":[{\"k\":\"lvl\",\"d\":40},{\"k\":\"res\",\"el\":\"fire\",\"r\":0,\"s\":62},{\"k\":\"pot\"},{\"k\":\"pack\",\"n\":6}]}"));
+            check(t.Count == 3 && t[0].StartsWith("These monsters are 40 levels above you") && t[1].Contains("fire resistance is 0%") && t[2].StartsWith("You used no potions"), "recap: three tips at most");
+            t = DeathRecapRules.Tips(Json.Parse("{\"tips\":[{\"k\":\"heal\",\"s\":12},{\"k\":\"pack\",\"n\":6},{\"k\":\"what\"},{\"k\":\"res\",\"el\":\"lifedrain\",\"r\":0}]}"));
+            check(t.Count == 2 && t[0] == "Your healing covered only 12% of the damage: heal sooner or pull fewer monsters" && t[1] == "6 monsters hit you at once: pull fewer at a time", "recap: unknown tips are skipped");
+            check(DeathRecapRules.Tips(Json.Parse("{}")).Count == 0 && DeathRecapRules.Tips(null).Count == 0 && DeathRecapRules.Tips(Json.Parse("{\"tips\":\"x\"}")).Count == 0, "recap: an old recap has no tips");
+            check(DeathRecapRules.ResElements.All(e => DeathRecapRules.Tips(Json.Parse("{\"tips\":[{\"k\":\"res\",\"el\":\"" + e + "\",\"r\":5}]}")).Count == 1), "recap: a sentence for every resistance element");
+            Loc.Set("pt-BR");
+            check(DeathRecapRules.Header(recap).Title == "Morto por Dragon" && DeathRecapRules.Header(recap).Loss == "Perdeu 150k de experiência e 1 nível", "recap: pt-BR");
+            Loc.Set("en");
+
+            // the protocol: history and recap messages, open and get requests, the auto open
+            var ext = new ExtOpcodes();
+            var sent = new List<byte[]>(); ext.Transmit = p => sent.Add(p);
+            var dr = new DeathRecap(ext);
+            int auto = 0, changed = 0; dr.AutoOpen += () => auto++; dr.Changed += () => changed++;
+            dr.Open();
+            dr.Open(7);
+            dr.Get(9);
+            var texts = sent.Select(p => System.Text.Encoding.UTF8.GetString(p, 4, p.Length - 4)).ToList();
+            check(texts.Count == 3 && texts[0].Contains("\"action\":\"open\"") && texts[1].Contains("\"id\":7") && texts[2].Contains("\"action\":\"get\"") && texts[2].Contains("\"id\":9"), "recap protocol: open, open with an id and get requests");
+            ext.Receive(154, "{\"action\":\"history\",\"data\":{\"list\":[{\"id\":12,\"k\":\"Dragon\"},{\"id\":11}],\"sel\":12,\"recap\":{\"kb\":{\"n\":\"Dragon\"},\"tot\":5}}}");
+            check(dr.History.Count == 2 && dr.Selected == 12 && dr.Current != null && changed == 1 && auto == 0, "recap protocol: the history and the recap shown");
+            ext.Receive(154, "{\"action\":\"recap\",\"data\":{\"id\":11,\"recap\":{\"kb\":{\"n\":\"Rat\"}}}}");
+            check(dr.Selected == 11 && Json.Text(Json.Get(dr.Current, "kb"), "n") == "Rat" && auto == 0, "recap protocol: a recap of the list");
+            ext.Receive(154, "{\"action\":\"recap\",\"data\":{\"id\":13,\"auto\":true,\"recap\":{\"kb\":{\"n\":\"Troll\"}}}}");
+            check(dr.Selected == 13 && auto == 1, "recap protocol: an auto recap asks the window to open");
+            ext.Receive(154, "{\"action\":\"recap\",\"data\":{\"id\":14}}");
+            check(dr.Selected == 13, "recap protocol: a recap without data is ignored");
+            sent.Clear();
+            dr.Select(13);
+            check(sent.Count == 0, "recap protocol: selecting the shown recap asks nothing");
+            dr.Select(12);
+            check(sent.Count == 1 && dr.Selected == 12, "recap protocol: selecting another asks for it");
+        }
+        static LootInfo Li(int id, string nm, string g = "equipment", int r = 0, int c = 1, bool u = false, bool o = false, bool pw = false, int t = 0) =>
+            new LootInfo { Id = id, Nm = nm, G = g, R = r, C = c, U = u, O = o, Pw = pw, T = t };
+
+        static void Loot(Action<bool, string> check)
+        {
+            Loc.Set("en");
+            // ---- lootfilter_test.lua
+            check(LootFilterRules.RarityIds.Length == 6 && LootFilterRules.RarityName(3) == "Magic" && LootFilterRules.RarityName(4) == "Rare" && LootFilterRules.RarityName(5) == "Legendary" && LootFilterRules.RarityName(10) == "Divine", "loot: the rarity names");
+            check(LootFilterRules.RarityName(7) == "Legendary" && LootFilterRules.RarityName(13) == "Divine" && LootFilterRules.RarityName(0) == null, "loot: old ids are the rarity they became");
+            check(LootFilterRules.Canon(9) == 5 && LootFilterRules.Canon(12) == 10 && LootFilterRules.Canon(0) == 0 && LootFilterRules.Canon(99) == 10, "loot: canon");
+            var s = LootFilterRules.Normalize(Json.Parse("{\"highlight\":4,\"dim\":2,\"show\":{\"supplies\":false}}"));
+            check(s.LootMin == 0 && !s.Show["supplies"] && s.Show["other"], "loot: a missing field is the default, a category off");
+            check(LootFilterRules.Normalize(Json.Parse("{\"highlight\":40}")).Highlight == 10 && LootFilterRules.Normalize(Json.Parse("{\"highlight\":7}")).Highlight == 5 && LootFilterRules.Normalize(null).Highlight == 3, "loot: thresholds are clamped, an old id is the rarity it became");
+            check(LootFilterRules.Classify(Li(1, "x", "equipment", 4), s) == "highlight" && LootFilterRules.Classify(Li(1, "x", "equipment", 3), s) == "normal" && LootFilterRules.Classify(Li(1, "x", "equipment", 1), s) == "dim", "loot: Rare glows, Magic plain, Common dimmed");
+            check(LootFilterRules.Classify(Li(1, "x", "equipment", 8), LootFilterRules.Normalize(Json.Parse("{\"highlight\":5}"))) == "highlight", "loot: an old Chaos item glows from Legendary");
+            check(LootFilterRules.Classify(Li(1, "x", "supplies"), s) == "dim" && LootFilterRules.Classify(Li(1, "x", "other"), s) == "normal", "loot: a category off dims, others are plain");
+            check(LootFilterRules.Classify(Li(1, "x", "equipment", 0, 1, true), s) == "highlight" && LootFilterRules.Classify(Li(1, "x", "currency", 0, 1, false, true), s) == "highlight", "loot: uniques and orbs always glow");
+            var ts = LootFilterRules.Normalize(Json.Parse("{\"highlight\":5,\"tier\":7}"));
+            check(ts.Tier == 7 && LootFilterRules.Classify(Li(1, "x", "equipment", 1, 1, false, false, false, 7), ts) == "highlight" && LootFilterRules.Classify(Li(1, "x", "equipment", 1, 1, false, false, false, 6), ts) == "normal" && LootFilterRules.Normalize(Json.Parse("{\"tier\":99}")).Tier == 8, "loot: the modifier tier rule");
+            check(LootFilterRules.Color(Li(1, "x", "equipment", 5)) == "#ffd040" && LootFilterRules.Color(Li(1, "x", "equipment", 5, 1, true)) == LootFilterRules.UniqueColor && LootFilterRules.Color(Li(1, "x", "currency", 0, 1, false, true)) == LootFilterRules.OrbColor && LootFilterRules.Color(Li(1, "x")) == null, "loot: colours");
+            check(LootFilterRules.Label(Li(1, "Dawnforged Helmet", "equipment", 5)) == "[Legendary] Dawnforged Helmet" && LootFilterRules.Label(Li(1, "Soulreaper", "equipment", 0, 1, true)) == "[Unique] Soulreaper", "loot: labels");
+            var gold = Li(1, "gold coin", "currency", 0, 50); gold.HasLeft = true; gold.Left = 20;
+            check(LootFilterRules.Tooltip(gold) == "50x gold coin\n20 left in the corpse\nClick: loot all   Shift+click: loot one", "loot: a stack tooltip");
+            var gone = Li(1, "Sword", "equipment", 3); gone.HasLeft = true; gone.Left = 0;
+            var one = Li(1, "Sword"); one.HasLeft = true; one.Left = 1;
+            var mods = Li(1, "Sword", "equipment", 4); mods.HasLeft = true; mods.Left = 1; mods.X = "Attack Speed +5%";
+            check(LootFilterRules.Tooltip(gone) == "[Magic] Sword\nLooted (or gone)" && LootFilterRules.Tooltip(one) == "Sword\nClick: loot" && LootFilterRules.Tooltip(mods) == "[Rare] Sword\nAttack Speed +5%\nClick: loot", "loot: gone, single and modifier tooltips");
+            check(LootFilterRules.ThresholdText(0) == "Off" && LootFilterRules.ThresholdText(5) == "Legendary+", "loot: threshold text");
+            bool g2; int cnt = LootFilterRules.IconCount(gone, out g2);
+            check(cnt == 1 && g2, "loot: a gone item shows its dropped count");
+            var rt = Json.Parse(Json.Serialize(s.ToDict()));
+            check(Json.Int(rt, "highlight") == 4 && Json.Bool(Json.Get(rt, "show"), "equipment") && !Json.Bool(Json.Get(rt, "show"), "supplies"), "loot: the settings go back as the server reads them");
+
+            // ---- the protocol
+            var ext = new ExtOpcodes();
+            var sent = new List<string>(); ext.Transmit = p => sent.Add(System.Text.Encoding.UTF8.GetString(p, 4, p.Length - 4));
+            double clock = 10;
+            var lf = new LootFilterModel(ext) { Clock = () => clock };
+            int changes = 0, shows = 0; lf.Changed += () => changes++; lf.ShowRequested += () => shows++;
+            lf.Sync(); lf.Open();
+            check(sent[0].Contains("\"sync\"") && sent[1].Contains("\"open\""), "loot protocol: sync and open");
+            ext.Receive(238, "{\"action\":\"settings\",\"data\":{\"s\":{\"highlight\":4,\"dim\":2},\"unlocked\":true,\"presets\":[{\"key\":\"hunter\",\"name\":\"Hunter\"},{\"key\":\"all\",\"name\":\"Everything\"}],\"open\":true}}");
+            check(lf.Loaded && lf.Unlocked && lf.Settings.Highlight == 4 && lf.Presets.Count == 2 && lf.Presets[1].Key == "all" && shows == 1, "loot protocol: settings, presets and the open answer");
+            ext.Receive(238, "{\"action\":\"kill\",\"data\":{\"k\":7,\"m\":\"Dragon\",\"items\":[{\"id\":3031,\"c\":50,\"left\":50,\"nm\":\"gold coin\",\"g\":\"currency\"},{\"n\":5,\"id\":2400,\"r\":4,\"nm\":\"Fire Sword\",\"g\":\"equipment\"}]}}");
+            check(lf.Kills.Count == 1 && lf.Kills[0].K == 7 && lf.Kills[0].Monster == "Dragon" && lf.Kills[0].Items.Count == 2 && lf.Kills[0].Items[0].N == 1 && lf.Kills[0].Items[1].N == 5, "loot protocol: a kill with its items, every n set");
+            ext.Receive(238, "{\"action\":\"update\",\"data\":{\"k\":7,\"left\":[20,0]}}");
+            check(lf.Kills[0].Items[0].Left == 20 && lf.Kills[0].Items[1].Left == 0 && lf.Kills[0].Items[1].HasLeft, "loot protocol: what is left per item");
+            sent.Clear();
+            lf.Take(lf.Kills[0], lf.Kills[0].Items[0], true);
+            check(sent.Count == 1 && sent[0].Contains("\"take\"") && sent[0].Contains("\"k\":7") && sent[0].Contains("\"n\":1") && sent[0].Contains("\"id\":3031") && sent[0].Contains("\"one\":true"), "loot protocol: a click takes (Shift: one)");
+            ext.Receive(238, "{\"action\":\"decay\",\"data\":{\"k\":7}}");
+            check(lf.Kills[0].Decayed, "loot protocol: a corpse that decayed");
+            ext.Receive(238, "{\"action\":\"msg\",\"data\":{\"text\":\"Too far away.\"}}");
+            check(lf.Message == "Too far away." && lf.MessageAt == 10, "loot protocol: the server's refusal of a click");
+            for (int i = 0; i < LootFilterModel.MaxKills + 5; i++) ext.Receive(238, "{\"action\":\"kill\",\"data\":{\"k\":" + (100 + i) + ",\"m\":\"x\",\"items\":[]}}");
+            check(lf.Kills.Count == LootFilterModel.MaxKills && lf.Kills[0].K == 100 + LootFilterModel.MaxKills + 4, "loot protocol: the newest kills are kept, newest first");
+            sent.Clear();
+            var set = lf.Settings.Copy(); set.Highlight = 5; lf.Set(set); lf.Preset("hunter");
+            check(sent.Count == 2 && sent[0].Contains("\"set\"") && sent[0].Contains("\"highlight\":5") && sent[1].Contains("\"preset\"") && sent[1].Contains("hunter") && lf.Settings.Highlight == 5, "loot protocol: set and preset");
+
+            // ---- groundlabels_test.lua
+            var gs = new GroundLabelSettings();
+            check(gs.Enabled && gs.RarePlus && gs.AltAll && gs.Corpses && gs.Timers && gs.Size == "normal", "labels: all on by default");
+            var gp = GroundLabelSettings.From(Json.Parse("{\"enabled\":false,\"size\":\"huge\",\"timers\":false}"));
+            check(!gp.Enabled && gp.RarePlus && !gp.Timers && gp.Size == "normal" && GroundLabelSettings.From(Json.Parse("{\"size\":\"large\"}")).Size == "large" && GroundLabelSettings.From(null).Corpses, "labels: settings are read with defaults");
+            check(GroundLabelRules.IsCandidate(false, false, false, false, true, false, false) && !GroundLabelRules.IsCandidate(true, false, false, false, true, false, false) && !GroundLabelRules.IsCandidate(false, true, false, false, false, false, false) &&
+                  !GroundLabelRules.IsCandidate(false, false, true, false, true, false, false) && !GroundLabelRules.IsCandidate(false, false, false, true, true, false, false), "labels: candidates: a sword yes; ground, border, wall and on top no");
+            check(GroundLabelRules.IsCandidate(false, false, false, false, false, true, true) && !GroundLabelRules.IsCandidate(false, false, false, false, false, true, false) && !GroundLabelRules.IsCandidate(false, false, false, false, false, false, false), "labels: a corpse yes, a chest and furniture no");
+
+            var filter = LootFilterRules.Normalize(Json.Parse("{\"highlight\":4,\"dim\":2,\"show\":{\"supplies\":false}}"));
+            var on = new GroundLabelSettings();
+            Func<LootInfo, GroundRow> item = i => new GroundRow { Info = i, Expire = -1 };
+            var epic = Li(1, "fire sword", "equipment", 4); var rare = Li(1, "fire sword", "equipment", 3); var unc = Li(1, "sword", "equipment", 2); var common = Li(1, "sword", "equipment", 1);
+            var potion = Li(2, "mana potion", "supplies", 0, 5); var junk = Li(3, "bone", "other"); var unique = Li(4, "soulreaper", "equipment", 0, 1, true);
+            var orb = Li(5, "chaos orb", "currency", 0, 3, false, true); var power = Li(6, "axe", "equipment", 1, 1, false, false, true);
+            Func<LootInfo, bool, GroundLabelSettings, GroundDecision> decide = (i, alt, st) => GroundLabelRules.Decide(item(i), st ?? on, filter, alt);
+            check(decide(epic, false, null).Highlight, "labels: Rare glows, labelled and highlighted");
+            check(decide(rare, false, null) != null && !decide(rare, false, null).Highlight, "labels: Magic is labelled (Magic+), not highlighted");
+            check(decide(unc, false, null) == null && decide(common, false, null) == null && decide(potion, false, null) == null && decide(junk, false, null) == null, "labels: Uncommon, Common, a hidden category and junk have no label without Alt");
+            check(decide(unique, false, null).Highlight && decide(orb, false, null).Highlight && decide(power, false, null).Highlight, "labels: a unique, an orb and a legendary power always glow");
+            var noRare = GroundLabelSettings.From(Json.Parse("{\"rarePlus\":false}"));
+            check(decide(rare, false, noRare) == null && decide(epic, false, noRare).Highlight, "labels: Magic+ off: only what glows shows");
+            var strict = LootFilterRules.Normalize(Json.Parse("{\"highlight\":5,\"dim\":4}"));
+            check(GroundLabelRules.Decide(item(rare), on, strict, false) == null, "labels: the filter hides Magic: no label even with Magic+");
+            check(!decide(unc, true, null).Dim && decide(common, true, null).Dim && decide(potion, true, null).Dim && !decide(junk, true, null).Dim, "labels: Alt shows everything, the hidden ones faded");
+            check(decide(junk, true, GroundLabelSettings.From(Json.Parse("{\"altAll\":false}"))) == null && GroundLabelRules.Decide(item(epic), GroundLabelSettings.From(Json.Parse("{\"enabled\":false}")), filter, true) == null && GroundLabelRules.Decide(null, on, filter, false) == null, "labels: Alt off, labels off, no row");
+
+            var corpse = new GroundRow { Corpse = true, Items = 4, Expire = 100, At = 0 };
+            corpse.Inside.AddRange(new[] { epic, common, potion, Li(0, "gold coin", "currency", 0, 30) });
+            var cd = GroundLabelRules.Decide(corpse, on, filter, false);
+            check(cd.Corpse && cd.Matches == 1 && cd.Best.Nm == "fire sword", "labels: a corpse with one glowing item, the best for the colour");
+            check(GroundLabelRules.CorpseText(corpse, cd) == "Corpse: 1 item", "labels: singular");
+            var corpse2 = new GroundRow { Corpse = true, Items = 3 };
+            corpse2.Inside.AddRange(new[] { epic, rare, unique });
+            var cd2 = GroundLabelRules.Decide(corpse2, on, filter, false);
+            check(cd2.Matches == 3 && cd2.Best.U && GroundLabelRules.CorpseText(corpse2, cd2) == "Corpse: 3 items", "labels: Rare, Magic (Magic+) and the unique; the unique colour wins");
+            var dull = new GroundRow { Corpse = true, Items = 2 };
+            dull.Inside.AddRange(new[] { common, junk });
+            check(GroundLabelRules.Decide(dull, on, filter, false) == null && GroundLabelRules.Decide(dull, on, filter, true).Dim && GroundLabelRules.CorpseText(dull, GroundLabelRules.Decide(dull, on, filter, true)) == "Corpse: 2 items", "labels: a dull corpse only with Alt, faded, counting everything");
+            check(GroundLabelRules.Decide(new GroundRow { Corpse = true, Items = 0 }, on, filter, true) == null && GroundLabelRules.Decide(corpse, GroundLabelSettings.From(Json.Parse("{\"corpses\":false}")), filter, false) == null, "labels: an empty corpse never, corpse labels off");
+
+            check(GroundLabelRules.TitleCase("fire sword") == "Fire Sword" && GroundLabelRules.TitleCase("knight's axe") == "Knight's Axe", "labels: title case");
+            check(GroundLabelRules.ItemText(item(rare)) == "Magic Fire Sword" && GroundLabelRules.ItemText(item(unique)) == "Soulreaper" && GroundLabelRules.ItemText(item(orb)) == "3x Chaos Orb" && GroundLabelRules.ItemText(item(junk)) == "Bone", "labels: item text");
+            check(GroundLabelRules.TimerText(102) == "1:42" && GroundLabelRules.TimerText(7) == "0:07" && GroundLabelRules.TimerText(3723) == "1:02:03" && GroundLabelRules.TimerText(-5) == "0:00", "labels: timer text");
+            var timed = new GroundRow { Info = Li(1, "sword", "equipment", 3), Expire = 120, At = 1000 };
+            check(GroundLabelRules.SecondsLeft(timed, 1018) == 102 && GroundLabelRules.SecondsLeft(timed, 5000) == 0 && GroundLabelRules.SecondsLeft(item(rare), 5000) < 0, "labels: counts down from when it arrived");
+            var td = GroundLabelRules.Decide(timed, on, filter, false);
+            check(GroundLabelRules.Text(timed, td, on, 1018) == "Magic Sword  1:42" && GroundLabelRules.Text(timed, td, GroundLabelSettings.From(Json.Parse("{\"timers\":false}")), 1018) == "Magic Sword", "labels: the timer in the text, off in the settings");
+            var timedJunk = new GroundRow { Info = junk, Expire = 50 };
+            check(!GroundLabelRules.ShowTimer(timedJunk, GroundLabelRules.Decide(timedJunk, on, filter, true), on), "labels: no timer for junk");
+            check(GroundLabelRules.Text(corpse, cd, on, 10) == "Corpse: 1 item  1:30", "labels: a corpse timer");
+            check(GroundLabelRules.Color(item(epic), decide(epic, false, null)) == "#a35cf0" && GroundLabelRules.Color(item(unique), decide(unique, false, null)) == LootFilterRules.UniqueColor && GroundLabelRules.Color(item(junk), decide(junk, true, null)) == GroundLabelRules.TextColor &&
+                  GroundLabelRules.Color(item(common), decide(common, true, null)) == GroundLabelRules.DimColor && GroundLabelRules.Color(corpse2, cd2) == LootFilterRules.UniqueColor, "labels: colours");
+            check(GroundLabelRules.Priority(item(unique), decide(unique, false, null)) > GroundLabelRules.Priority(item(epic), decide(epic, false, null)) &&
+                  GroundLabelRules.Priority(item(epic), decide(epic, false, null)) > GroundLabelRules.Priority(item(rare), decide(rare, false, null)) &&
+                  GroundLabelRules.Priority(item(rare), decide(rare, false, null)) > GroundLabelRules.Priority(item(junk), decide(junk, true, null)) &&
+                  GroundLabelRules.Priority(item(junk), decide(junk, true, null)) > GroundLabelRules.Priority(item(common), decide(common, true, null)), "labels: unique, rarity, junk, faded");
+            var many = new List<GroundLabel>();
+            for (int i = 1; i <= 100; i++) many.Add(new GroundLabel { Prio = i % 3, Dist = i % 7, Order = i });
+            var kept = GroundLabelRules.Select(many);
+            check(kept.Count == GroundLabelRules.MaxLabels && kept[0].Prio == 2 && kept[0].Dist == 0, "labels: capped at 40, best first, then nearest");
+
+            // layout
+            Func<IList<GroundLabelRules.LayoutBlock>, float, float, float, bool> noOverlap = (groups, gap, lift, max) =>
+            {
+                var boxes = GroundLabelRules.Layout(groups, gap, lift, max);
+                var abs = groups.Select(g => new { x = g.Ax + boxes[g.Key].X, y = g.Ay + boxes[g.Key].Y, w = boxes[g.Key].W, h = boxes[g.Key].H }).ToList();
+                for (int i = 0; i < abs.Count; i++)
+                    for (int j = i + 1; j < abs.Count; j++)
+                        if (abs[i].x < abs[j].x + abs[j].w && abs[j].x < abs[i].x + abs[i].w && abs[i].y < abs[j].y + abs[j].h && abs[j].y < abs[i].y + abs[i].h) return false;
+                return true;
+            };
+            var single = new List<GroundLabelRules.LayoutBlock> { new GroundLabelRules.LayoutBlock { Key = 0, Ax = 100, Ay = 100, W = 80, H = 16 } };
+            var sb = GroundLabelRules.Layout(single, 2, 10, 200);
+            check(sb[0].X == -40 && sb[0].Y == -26, "labels layout: one label is centred, its bottom 10 px above the anchor");
+            var row = new List<GroundLabelRules.LayoutBlock>();
+            for (int i = 1; i <= 5; i++) row.Add(new GroundLabelRules.LayoutBlock { Key = i, Ax = i * 64, Ay = 0, W = 150, H = 16 });
+            check(noOverlap(row, 2, 10, 192), "labels layout: a row of five wide labels never overlaps");
+            var cluster = new List<GroundLabelRules.LayoutBlock> { new GroundLabelRules.LayoutBlock { Key = 99, Ax = 128, Ay = 64, W = 120, H = 50 } };
+            for (int x = 0; x < 4; x++) for (int y = 0; y < 3; y++) cluster.Add(new GroundLabelRules.LayoutBlock { Key = x * 10 + y, Ax = x * 64, Ay = y * 64, W = 100, H = 51 });
+            check(noOverlap(cluster, 2, 10, 192), "labels layout: a cluster of tiles never overlaps");
+            check(noOverlap(new List<GroundLabelRules.LayoutBlock> { new GroundLabelRules.LayoutBlock { Key = 1, W = 60, H = 16 }, new GroundLabelRules.LayoutBlock { Key = 2, W = 60, H = 16 } }, 1, 0, 200), "labels layout: two blocks on one anchor never share a spot");
+            var capped = GroundLabelRules.Layout(new List<GroundLabelRules.LayoutBlock> { new GroundLabelRules.LayoutBlock { Key = 1, W = 60, H = 100 }, new GroundLabelRules.LayoutBlock { Key = 2, W = 60, H = 16 } }, 0, 0, 50);
+            check(capped[2].Y >= 0, "labels layout: when going up goes too far, it goes down below the tall block");
+
+            // the scan and the asking
+            var w = new World(DatFile.Parse(Program.SyntheticDat()));
+            var center = new Pos(100, 100, 7);
+            w.Center = center;
+            var sword = new ThingType { Pickupable = true };
+            var floor = new ThingType { Ground = true };
+            var corpseType = new ThingType { Container = true };
+            Action<Pos, ThingType, int, int> put = (p, ty, id, count) => w.GetOrMake(p).Things.Add(new Thing { Item = new Item { Id = id, Count = count, Type = ty } });
+            Action<Pos> ground0 = p => put(p, floor, 100, 0);
+            ground0(center.Offset(1, 0)); put(center.Offset(1, 0), sword, 3264, 1);
+            ground0(center.Offset(2, 0)); put(center.Offset(2, 0), sword, 3031, 40); put(center.Offset(2, 0), corpseType, 3058, 0);
+            ground0(center.Offset(3, 0));
+            ground0(center.Offset(0, 1)); put(center.Offset(0, 1), new ThingType { Pickupable = true, OnTop = true }, 5, 1);
+            var ext2 = new ExtOpcodes();
+            var sent2 = new List<string>(); ext2.Transmit = p => sent2.Add(System.Text.Encoding.UTF8.GetString(p, 4, p.Length - 4));
+            double now2 = 0;
+            var gm = new GroundLabelsModel(ext2) { Clock = () => now2 };
+            check(GroundLabelRules.Signature(w.Get(center.Offset(2, 0))) == "3031x40;3058x1", "labels scan: the signature lists the candidates, a missing count is 1");
+            int asked = gm.Scan(w, center);
+            check(asked == 2 && sent2.Count == 1 && sent2[0].Contains("\"look\"") && sent2[0].Contains("[101,100,7]") && sent2[0].Contains("[102,100,7]") && !sent2[0].Contains("[103,100,7]") && !sent2[0].Contains("[100,101,7]"), "labels scan: only tiles with a candidate are asked, one request");
+            sent2.Clear();
+            check(gm.Scan(w, center) == 0 && sent2.Count == 0, "labels scan: a tile already asked is not asked again");
+            now2 = 3.5;
+            check(gm.Scan(w, center) == 2, "labels scan: an unanswered tile is asked again after 3 s");
+            ext2.Receive(230, "{\"action\":\"tiles\",\"data\":{\"t\":[{\"p\":[101,100,7],\"i\":[{\"s\":1,\"id\":3264,\"c\":1,\"nm\":\"fire sword\",\"r\":4,\"g\":\"equipment\"}]},{\"p\":[102,100,7],\"i\":[{\"s\":2,\"id\":3058,\"k\":1,\"n\":2,\"i\":[{\"nm\":\"Fire Axe\",\"r\":5,\"g\":\"equipment\"}],\"e\":90}]},{\"p\":[50,50,7],\"i\":[]}]}}");
+            check(gm.Answered == 2 && gm.Dirty, "labels scan: the answers are kept, an unknown tile is ignored");
+            gm.Dirty = false;
+            var labels = gm.Labels(center, filter, false);
+            check(labels.Count == 2 && labels[0].Row.Corpse && labels[0].Text.StartsWith("Corpse: 1 item") && labels[1].Text == "Rare Fire Sword" && labels[0].Decision.Highlight, "labels: a corpse with a Legendary and a Rare sword, corpse first");
+            now2 = 20;
+            check(gm.Scan(w, center) == 0, "labels scan: answered tiles are left alone");
+            // the tile changes: the rows are dropped and it is asked again
+            put(center.Offset(1, 0), sword, 3265, 1);
+            check(gm.Scan(w, center) == 1 && gm.Dirty && gm.Labels(center, filter, false).Count == 1, "labels scan: a changed tile loses its rows and is asked again");
+            // a tile that left the scan is forgotten, and the whole scan is off with the setting
+            var far = center.Offset(20, 0);
+            w.Clean(center.Offset(1, 0));
+            gm.Scan(w, center);
+            check(gm.TileCount == 1, "labels scan: a tile that has no candidate any more is forgotten");
+            gm.Settings.Enabled = false;
+            check(gm.Scan(w, center) == 0 && gm.TileCount == 0, "labels scan: off, nothing is asked and nothing kept");
+            sent2.Clear();
+            gm.Settings.Enabled = true; gm.Reset();
+            for (int i = 0; i < 40; i++) { var p = center.Offset(-8 + i % 17, -5 + i / 17, 0); ground0(p); put(p, sword, 4000 + i, 1); }
+            int total = gm.Scan(w, center);
+            check(total >= 40 && sent2.Count == 2 && sent2[0].Split('[').Length - 2 == 30, "labels scan: at most 30 tiles a request (" + total + " tiles, " + sent2.Count + " requests)");
+
+            // Core keys of the new classes have a pt-BR text (the source scan of the Unity folder does not see them)
+            var missing = new List<string>();
+            string coreDir = System.IO.Path.GetFullPath(System.IO.Path.Combine("..", "Client", "Assets", "Chaos", "Core"));
+            if (!System.IO.Directory.Exists(coreDir)) coreDir = System.IO.Path.GetFullPath(System.IO.Path.Combine("unity", "Client", "Assets", "Chaos", "Core"));
+            if (System.IO.Directory.Exists(coreDir))
+            {
+                foreach (var f in new[] { "HelperRotation.cs", "DeathRecap.cs", "LootFilter.cs", "GroundLabels.cs", "HelperEngine.cs" })
+                {
+                    string path = System.IO.Path.Combine(coreDir, f);
+                    if (!System.IO.File.Exists(path)) continue;
+                    foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(System.IO.File.ReadAllText(path), "Loc\\.T\\((?:[^\"\\n)]*\\?\\s*)?\"((?:[^\"\\\\]|\\\\.)*)\"(?:\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\")?"))
+                        foreach (int gi in new[] { 1, 2 })
+                            if (m.Groups[gi].Success && !LocStrings.PtBr.ContainsKey(m.Groups[gi].Value)) missing.Add(m.Groups[gi].Value);
+                }
+                // the long ternaries of the sentences
+                foreach (var key in new[] { "Defeated by {0}", "Killed by {0}", "Last {0} before the death, {1} hit", "Last {0} before the death, {1} hits", "Corpse: {0} item", "Corpse: {0} items", " and {0} level", " and {0} levels" })
+                    if (!LocStrings.PtBr.ContainsKey(key)) missing.Add(key);
+            }
+            check(missing.Count == 0, "loc: every Loc.T key of the helper, recap and loot Core files has a pt-BR text" + (missing.Count > 0 ? ": " + string.Join(" | ", missing) : ""));
+        }
     }
 }

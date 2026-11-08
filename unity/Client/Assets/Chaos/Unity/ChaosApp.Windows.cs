@@ -67,6 +67,8 @@ namespace Chaos.Client
             windows.Add(new ChannelsWindow());
             windows.Add(new FightWindow());
             windows.Add(new HelperWindow());
+            windows.Add(new DeathRecapWindow());
+            windows.Add(new LootWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>

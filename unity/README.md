@@ -669,3 +669,32 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
   Lifetime 60 ms per character, 3 to 12 s, at most 3 lines stack per creature.
 - Death (0x28): a modal window with the penalty. OK logs out and goes to the character list.
 - Fight modes (`FightWindow`): offensive / balanced / defensive, stand / chase, secure mode. Saved in PlayerPrefs (`chaos.fight`), sent after the login and at each change (0xA0).
+
+## Combat helper, typed numbers, death recap, loot (O433 phase 3, track I)
+
+- Helper (`Ctrl+H`, `HelperWindow`, loop in `Core/HelperEngine.cs`, rules in `Core/HelperLogic.cs`, settings in `Core/HelperConfig.cs`, Auto setup in `Core/HelperRotation.cs`).
+  A port of the main client's `game_helper` and `game_helperrotation`. It runs every frame whether the window is open or not (the window ticks it once a frame) and does
+  nothing until "Helper on". Tabs: Healing (3 spell rows, 3 potion rows, mana training, Auto Haste), Shooter (5 slots: spell, mana percent, monsters to cast on; Auto turn; Auto setup),
+  Target (Auto Target, modes A..H). Saved per character in PlayerPrefs (`chaos.helper.-/<name>`, JSON, every number clamped on load).
+- Pacing, as the main client's: a pass every 50 ms; heal every 250 ms, mana training 100, haste 500, Auto Target 250, shooter 100. Every cast goes through `HelperTimers` (per channel
+  heal / attack / support at most 4, 4, 3 casts a second, the same words not within 500 ms; a potion at most every 600 ms) and `HelperCasts` (a cast waits for the server's cooldown packet
+  0xA4 / 0xA5; no answer in 1.2 s or 3 round trips means refused and the spell backs off 2, 4, 8, 16 s; the group of a cast is held for two round trips; cast-time spells block other attacks).
+  One shooter cast per pass. A hit taken heals at once (at most every 100 ms). Nothing is sent for 1.5 s after the server went quiet for 2.5 s. Paused in a protection zone (0xA2 bit 14).
+  Potions are used on yourself (0x84 with your creature id) from the equipment or an open bag.
+- Auto setup: `HelperRotation.Select` picks the class preset for the level, replaces spells the character cannot cast, tops up to 5, puts area spells first and the class ultimate
+  (level 1200) in front. `Core/HelperRotationData.cs` is generated from `client/overlay/modules/game_helperrotation/autorotation_data.lua` by
+  `luajit unity/tools/gen_helper_rotation_data.lua` (`--check` in the `core` job).
+- Not ported: runes, party and friend heals, Follow, Auto sell, food, exercise, Everfull "follow the carried flask", the potion gate for closed backpacks, shooter profiles, the line-of-sight
+  check (every monster in the 7 x 5 window counts), the Auto Target engine and guard (summons are skipped by creature type), the helper HUD, helper timers window, support spells tab.
+- Typed damage numbers: with the Chaos identity the login now sends capability bit 7 (`0xC0` with wide spell ids). `GameParser.TextMessage` reads u16 percent, u8 type, u32 creature after
+  the value pairs when feature 155 is on, and `FxEvent.TypedNumber` carries them. In the live view (`FrontFxDirector`, `FrontLiveFx`) a critical hit is bigger and slower, a condition tick smaller,
+  mana drain and mana gain are water coloured, an energy shield hit is energy coloured, every number is scattered by `DamageScatter` (the main client's rolls: shift, speed, drift, the texts of one hit
+  share a roll) and follows its creature.
+- Death recap (`DeathRecapWindow`, `Core/DeathRecap.cs`, opcode 154): the server stores a recap at the death and sends it at the next login (auto), the window opens by itself unless
+  "Open after a death" is off (`chaos.deathrecap.auto`). The toolbar button "Recap" opens the history of the last deaths.
+- Loot (`LootWindow`, Ctrl+L): Loot (the loot channel, opcode 238: a click takes an item, Shift one), Filter (what glows and dims, presets, categories), Labels (ground labels, opcode 230,
+  settings per character in `chaos.groundlabels.<name>`). Ground labels (`ChaosApp.Loot.cs`) are drawn over the map in the classic and the live view: the scan looks at the 17 x 13 tiles round you every
+  400 ms (60 ms after a step), asks the server for the tiles whose candidate items changed (at most 30 a request, asked again after 3 s), and lays the labels out so none overlaps.
+  Click on a corpse label opens the corpse. Hold Alt to show every item.
+- Tests: `Core.Tests/HelperTests.cs` mirrors `helper_logic_test.lua`, `rotation_test.lua`, `helper_potions_test.lua`, `helpertimers_test.lua`, `autorotation_test.lua`, `scatterlogic_test.lua`,
+  `deathrecaplogic_test.lua`, `lootfilter_test.lua` and `groundlabels_test.lua`, drives the engine with a fake game and a fake clock, and reads typed 0xB4 packets.
