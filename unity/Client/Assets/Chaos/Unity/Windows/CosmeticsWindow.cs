@@ -105,10 +105,13 @@ namespace Chaos.Client
             if (!r.Collection)
             {
                 if (CU.Button(new Rect(d.x, d.yMax - 32, 100, 28), Loc.T("Use"), CosmeticsLogic.CanUse(r) && UnlocksCore.CanUse(r))) c.Select(r);
-                if ((r.Preview || CosmeticsLogic.Drawn(r.Kind)) && CU.Button(new Rect(d.x + 106, d.yMax - 32, 100, 28), Loc.T("Preview"), !CosmeticsLogic.Drawn(r.Kind) || !string.IsNullOrEmpty(r.Art)))
+                // a spell skin or kill effect with its steps plays on the look preview's effect stage (phase 9, track E; cosmetics.lua previewOption)
+                var playOpt = PreviewStage.FromPlayRow(r.Kind, r.Play);
+                if ((r.Preview || CosmeticsLogic.Drawn(r.Kind) || playOpt != null) && CU.Button(new Rect(d.x + 106, d.yMax - 32, 100, 28), Loc.T("Preview"), !CosmeticsLogic.Drawn(r.Kind) || !string.IsNullOrEmpty(r.Art)))
                 {
-                    // an outline or a footprint is drawn on the character in the shared look preview; the others the server plays round you
-                    if (CosmeticsLogic.Drawn(r.Kind)) app.ShowLookPreview(new PreviewOption { Kind = r.Kind, Art = r.Art, Pulse = r.Pulse > 0 });
+                    // an outline or a footprint is drawn on the character in the shared look preview, and so are the effects of a skin; the others the server plays round you
+                    if (playOpt != null) app.ShowLookPreview(playOpt);
+                    else if (CosmeticsLogic.Drawn(r.Kind)) app.ShowLookPreview(new PreviewOption { Kind = r.Kind, Art = r.Art, Pulse = r.Pulse > 0 });
                     else c.PreviewRow(r);
                 }
             }

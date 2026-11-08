@@ -13,6 +13,7 @@ namespace Chaos.Client
 {
     public sealed class PartyFramesWindow : GameWindow
     {
+        public override bool Resizable => false;   // sets its own size (phase 9, track E)
         Vector2 scroll;
         uint selected;
         bool wasInParty;

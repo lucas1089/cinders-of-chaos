@@ -1,6 +1,7 @@
 // Outfit window (Ctrl+U): the looks, addons, mounts and the four colours the server lists (0xC8, Core/Dialogs.cs OutfitWindowState); on an
 // Identity.Chaos connection also the wings, auras and shaders the character owns. Ok sends the look (0xD3). Opening it asks the server (0xD2),
-// which answers with the lists. The wings, auras and shaders are chosen by name: the preview draws the outfit and its colours only.
+// which answers with the lists. The preview draws the outfit with its mount, wings, aura and shader (DrawOutfitFx, as the look preview does; phase 9, track E). The Customise
+// Character window has the same categories as picture cards, the palette and the effect stage.
 using System.Collections.Generic;
 using Chaos.Core;
 using UnityEngine;
@@ -33,6 +34,8 @@ namespace Chaos.Client
             {
                 // the server sent the window (our request, or a script)
                 seenOpens = st.Opens;
+                var extras = app.FindWindow<OutfitExtrasWindow>();
+                if (extras != null && extras.Open) return;   // Customise Character asked for it: that window takes the packet
                 working = OutfitWindowState.Copy(st.Current);
                 Open = true;
                 wasOpen = true;
@@ -59,7 +62,7 @@ namespace Chaos.Client
             // preview and addons
             var pic = new Rect(inner.x + 4, inner.y + 4, 120, 120);
             ChaosApp.Fill(pic, new Color(0.11f, 0.09f, 0.12f, 1f));
-            app.DrawOutfit(new Rect(pic.x + 8, pic.y + 8, pic.width - 16, pic.height - 16), working);
+            app.DrawOutfitFx(new Rect(pic.x + 8, pic.y + 8, pic.width - 16, pic.height - 16), working, false);   // mount, wings, aura and the shader tint too
             int allowed = st.AddonsOf(working.LookType);
             for (int bit = 0; bit < 2; bit++)
             {
@@ -126,21 +129,12 @@ namespace Chaos.Client
         static bool OnlyMine(string kind) { try { return PlayerPrefs.GetInt(WardrobeView.PrefsKey(kind), 0) == 1; } catch { return false; } }
         static void SetOnlyMine(string kind, bool on) { try { PlayerPrefs.SetInt(WardrobeView.PrefsKey(kind), on ? 1 : 0); } catch { } }
 
-        // the stock list of the server plus the wardrobe's locked entries (game_unlocks)
+        // the stock list of the server plus the wardrobe's locked entries (game_unlocks; Core/Phase9E.cs ExtrasLook.Rows)
         static List<WardrobeRow> Display(ChaosApp app, OutfitWindowState st, string kind, bool onlyMine)
         {
-            var stock = new List<KeyValuePair<int, string>>();
-            switch (kind)
-            {
-                case "outfit": foreach (var o in st.Outfits) stock.Add(new KeyValuePair<int, string>(o.LookType, o.Name)); break;
-                case "mount": foreach (var m in st.Mounts) stock.Add(new KeyValuePair<int, string>(m.Id, m.Name)); break;
-                case "wings": foreach (var m in st.Wings) stock.Add(new KeyValuePair<int, string>(m.Id, m.Name)); break;
-                case "aura": foreach (var m in st.Auras) stock.Add(new KeyValuePair<int, string>(m.Id, m.Name)); break;
-                default: foreach (var m in st.Shaders) stock.Add(new KeyValuePair<int, string>(0, m.Name)); break;
-            }
             List<WardrobeEntry> cat = null;
             app.Session?.Cosmetics?.Wardrobe?.TryGetValue(kind, out cat);
-            return WardrobeView.Display(kind, stock, cat, onlyMine);
+            return ExtrasLook.Rows(kind, st, cat, onlyMine);
         }
 
         void ListPanel(ChaosApp app, OutfitWindowState st, Rect list)
@@ -198,7 +192,7 @@ namespace Chaos.Client
                 ChaosApp.Fill(r, rows[i].on ? new Color(0.6f, 0.45f, 0.12f, 0.4f) : new Color(1f, 1f, 1f, 0.05f));
                 if (rows[i].locked) GUI.color = new Color(oldColor.r, oldColor.g, oldColor.b, oldColor.a * UnlocksCore.LockedOpacity);
                 float x = 4;
-                if (rows[i].look != null) { app.DrawOutfit(new Rect(r.x + 2, r.y + 1, RowH - 4, RowH - 4), rows[i].look); x = RowH + 2; }
+                if (rows[i].look != null) { app.DrawLookCard(new Rect(r.x + 2, r.y + 1, RowH - 4, RowH - 4), rows[i].look); x = RowH + 2; }   // the list card layout of the main client (LookCards)
                 GUI.Label(new Rect(r.x + x, r.y + 8, r.width - x, 22), rows[i].name, app.SmallStyle);
                 GUI.color = oldColor;
                 if (rows[i].tip != null && r.Contains(Event.current.mousePosition)) app.SetTip(rows[i].tip);

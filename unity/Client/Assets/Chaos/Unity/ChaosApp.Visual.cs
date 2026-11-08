@@ -600,7 +600,12 @@ namespace Chaos.Client
                 GameWindow.Placed = RestoreWindowPlace;
             }
             if (!VisualPrefs.LayoutOn) return;
-            foreach (var win in windows) if (win.Area.width > 0) layout.Note(win.GetType().Name, win.Area.x, win.Area.y, win.Open);
+            foreach (var win in windows)
+                if (win.Area.width > 0)
+                {
+                    layout.Note(win.GetType().Name, win.Area.x, win.Area.y, win.Open);
+                    layout.NoteSize(win.GetType().Name, win.Resizable && win.UserSized ? win.Area.width : 0f, win.Resizable && win.UserSized ? win.Area.height : 0f);   // phase 9, track E: the size a player gave
+                }
             if (layout.Dirty && !Input.GetMouseButton(0) && Time.unscaledTime - layoutSaved > 1f)
             {
                 layoutSaved = Time.unscaledTime;
@@ -613,6 +618,12 @@ namespace Chaos.Client
         {
             if (!VisualPrefs.LayoutOn || !layout.TryGet(win.GetType().Name, out var slot)) return;
             win.Area.x = slot.X; win.Area.y = slot.Y;
+            if (win.Resizable && slot.W > 0 && slot.H > 0)
+            {
+                float w = slot.W, h = slot.H;
+                WindowSize.Clamp(ref w, ref h, UnityEngine.Screen.width / UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi), UnityEngine.Screen.height / UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi));
+                win.Area.width = w; win.Area.height = h; win.UserSized = true;
+            }
         }
 
         /// <summary>The fade bookkeeping of one window: false when it is closed and its fade is over. Sets the window's alpha.</summary>

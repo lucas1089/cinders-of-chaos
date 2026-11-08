@@ -18,6 +18,12 @@ namespace Chaos.Client
         public virtual string HowKey { get { string k; return Chaos.Core.HowItWorks.UnityWindows.TryGetValue(GetType().Name, out k) ? k : null; } }
         /// <summary>game_npctravel: the key of the NPC that fronts this window's service (Core/WorldTravel.cs NpcTravel.PanelNpc); the title bar then has a Go to NPC button.</summary>
         public virtual string TravelKey => null;
+        /// <summary>False for a window that sets its own size every frame or has its own grip (phase 9, track E: the grip in the corner and the saved size, game_chaoslayout).</summary>
+        public virtual bool Resizable => true;
+        /// <summary>True once the player set the size with the grip (or the saved layout did): only then the size is saved.</summary>
+        public bool UserSized;
+        /// <summary>The size the program gave the window when it was placed (a double click on the grip goes back to it).</summary>
+        public Vector2 DefaultSize;
         public bool Open;
         /// <summary>0..1: the window fade (client_chaos_uifade); 1 when no fade runs.</summary>
         public float Alpha = 1f;
@@ -36,11 +42,57 @@ namespace Chaos.Client
         /// <summary>Called on every OnGUI pass for every window, open or not (for example to open itself on a server message).</summary>
         public virtual void Tick(ChaosApp app) { }
 
+        int gripControl;
+        Vector2 gripGrab;
+
+        /// <summary>The resize grip in the bottom right corner (game_chaoslayout, phase 9 track E): drag to resize, double click to go back to the window's own size.
+        /// The mouse position inside the window is the new corner, since the window's top left stays.</summary>
+        void ResizeGrip(float screenW, float screenH)
+        {
+            Chaos.Core.WindowSize.GripRect(Area.width, Area.height, out float gx, out float gy, out float gs);
+            var grip = new Rect(gx, gy, gs, gs);
+            if (gripControl == 0) gripControl = GUIUtility.GetControlID(FocusType.Passive);
+            var ev = Event.current;
+            if (ev.type == EventType.Repaint)
+            {
+                var c = new Color(1f, 1f, 1f, GUIUtility.hotControl == gripControl || grip.Contains(ev.mousePosition) ? 0.7f : 0.3f);
+                for (int i = 0; i < 3; i++) ChaosApp.Fill(new Rect(grip.xMax - 3 - i * 4, grip.yMax - 2, 2, 1), c);
+                for (int i = 0; i < 3; i++) ChaosApp.Fill(new Rect(grip.xMax - 2, grip.yMax - 3 - i * 4, 1, 2), c);
+                for (int i = 0; i < 2; i++) ChaosApp.Fill(new Rect(grip.xMax - 7 - i * 4, grip.yMax - 6, 2, 1), c);
+            }
+            if (ev.type == EventType.MouseDown && ev.button == 0 && grip.Contains(ev.mousePosition))
+            {
+                if (ev.clickCount >= 2)
+                {
+                    Area.width = DefaultSize.x; Area.height = DefaultSize.y; UserSized = false;
+                }
+                else
+                {
+                    GUIUtility.hotControl = gripControl;
+                    gripGrab = new Vector2(Area.width - ev.mousePosition.x, Area.height - ev.mousePosition.y);
+                }
+                ev.Use();
+            }
+            else if (ev.type == EventType.MouseDrag && GUIUtility.hotControl == gripControl)
+            {
+                float nw = ev.mousePosition.x + gripGrab.x, nh = ev.mousePosition.y + gripGrab.y;
+                Chaos.Core.WindowSize.Clamp(ref nw, ref nh, screenW - Area.x, screenH - Area.y);
+                Area.width = nw; Area.height = nh; UserSized = true;
+                ev.Use();
+            }
+            else if (ev.type == EventType.MouseUp && GUIUtility.hotControl == gripControl)
+            {
+                GUIUtility.hotControl = 0;
+                ev.Use();
+            }
+        }
+
         internal void Draw(ChaosApp app, int id, float w, float h)
         {
             if (!placed)
             {
                 Area = Place(w, h); placed = true;
+                DefaultSize = Area.size;
                 Placed?.Invoke(this);
                 Area.x = Chaos.Core.ScreenFit.OpenStart(Area.x, Area.width, 0, w); Area.y = Chaos.Core.ScreenFit.OpenStart(Area.y, Area.height, 0, h);
             }
@@ -71,6 +123,7 @@ namespace Chaos.Client
                     if (br.Contains(Event.current.mousePosition)) app.SetTip(NpcTravel.PanelTip(travel));
                 }
                 Body(app, new Rect(4, 28, Area.width - 8, Area.height - 32));
+                if (Resizable) ResizeGrip(w, h);
                 if (!DragLocked) GUI.DragWindow(new Rect(0, 0, Area.width - 30, 24));
             }, GUIContent.none, GUIStyle.none);
             GUI.color = oldColor;

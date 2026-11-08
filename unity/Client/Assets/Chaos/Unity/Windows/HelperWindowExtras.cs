@@ -343,6 +343,7 @@ namespace Chaos.Client
     /// by itself while "Show Bot HUD" is on in the helper window, and is not in the Windows list.</summary>
     public sealed class HelperHudWindow : GameWindow
     {
+        public override bool Resizable => false;   // sets its own size (phase 9, track E)
         HelperWindow helper;
         GUIStyle small;
 

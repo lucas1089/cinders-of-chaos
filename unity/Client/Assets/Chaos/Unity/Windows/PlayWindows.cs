@@ -240,21 +240,23 @@ namespace Chaos.Client
     }
 
     /// <summary>The shared look preview: your character with the option another window picked (an outfit, a mount, wings, an aura, a shader or a store bundle), turn buttons and
-    /// the plain figure. Other windows call ChaosApp.ShowLookPreview. The map's effect stage and the shader are not drawn: the panel lists what the look changes.</summary>
+    /// the plain figure. Other windows call ChaosApp.ShowLookPreview. Phase 9, track E: a spell skin or kill effect plays on the effect stage (the character facing a troll, or the troll that dies;
+    /// Core/Phase9E.cs PreviewStage, ChaosApp.Phase9E.cs) with the compare switch; the panel also lists what the look changes.</summary>
     public sealed class LookPreviewWindow : GameWindow
     {
         public override string Title => Loc.T("Look Preview");
         public override bool InMenu => false;
-        protected override Rect Place(float w, float h) => new Rect(w - 360, 330, 220, 330);
+        protected override Rect Place(float w, float h) => new Rect(w - 360, 330, 220, 360);
 
         public PreviewOption Option;
         /// <summary>Session ms at which a store try-on ends (0: none): the panel then goes back to the character as worn and closes (game_shop TRY ON, phase 8 track A).</summary>
         public double TryUntil;
-        public bool Simple, AutoTurn;
+        public bool Simple, AutoTurn, Compare;
+        readonly StagePlay play = new StagePlay();
         int facing = LookPreview.South;
         double lastTurn;
 
-        public override void Reset() { Option = null; TryUntil = 0; Simple = false; AutoTurn = false; facing = LookPreview.South; Open = false; }
+        public override void Reset() { Option = null; TryUntil = 0; Simple = false; AutoTurn = false; Compare = false; play.Clear(); facing = LookPreview.South; Open = false; }
 
         protected override void Body(ChaosApp app, Rect inner)
         {
@@ -265,9 +267,14 @@ namespace Chaos.Client
             var o = LookPreview.Compose(Simple, me.Outfit, Option, null, out string note);
             var stage = new Rect(inner.x + 20, inner.y + 4, inner.width - 40, inner.width - 40);
             ChaosApp.Fill(stage, new Color(0.07f, 0.06f, 0.08f, 1f));
-            app.DrawPreviewUnder(Option, stage);   // outline glow and footprints (ChaosApp.Phase7Q.cs)
-            app.DrawOutfitFx(new Rect(stage.x + 8, stage.y + 8, stage.width - 16, stage.height - 16), o, false, (Dir)facing);   // mount, wings, aura and the shader tint too
-            app.DrawPreviewOver(Option, stage, me.Name);   // the name plate frame
+            var fx = PreviewStage.EffectsOf(Option);
+            if (fx == null || !app.DrawEffectStage(stage, fx, Option, o, me.Name, play, Compare))
+            {
+                if (fx == null) play.Clear();
+                app.DrawPreviewUnder(Option, stage);   // outline glow and footprints (ChaosApp.Phase7Q.cs)
+                app.DrawOutfitFx(new Rect(stage.x + 8, stage.y + 8, stage.width - 16, stage.height - 16), o, false, (Dir)facing);   // mount, wings, aura and the shader tint too
+                app.DrawPreviewOver(Option, stage, me.Name);   // the name plate frame
+            }
             float y = stage.yMax + 6;
             if (GUI.Button(new Rect(inner.x + 6, y, 34, 24), "<")) facing = LookPreview.Turn(facing, -1);
             if (GUI.Button(new Rect(inner.x + 44, y, 34, 24), ">")) facing = LookPreview.Turn(facing, 1);
@@ -278,6 +285,7 @@ namespace Chaos.Client
             Simple = GUI.Toggle(new Rect(inner.x + 6, y, inner.width - 12, 22), Simple && wearer, Loc.T("Plain figure"));
             GUI.enabled = true;
             y += 24;
+            if (fx != null && play.HasStock) { Compare = GUI.Toggle(new Rect(inner.x + 6, y, inner.width - 12, 22), Compare, Loc.T("Compare with default")); y += 24; }
             var st = new GUIStyle(app.SmallStyle) { wordWrap = true, fontSize = 11 };
             string what = Loc.T("Look {0}, addons {1}", o.LookType, o.Addons);
             if (o.Mount > 0) what += ", " + Loc.T("mount {0}", o.Mount);
