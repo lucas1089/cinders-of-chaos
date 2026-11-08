@@ -70,7 +70,7 @@ namespace Chaos.Core
             {
                 E("Battle List", "win:BattleListWindow"), E("Party Frames", "win:PartyFramesWindow"), E("Hunt Tracker", "win:HuntWindow"), E("DPS Meter", "win:DpsMeterWindow"),
                 E("Minimap", "win:MinimapWindow"), E("Fight", "win:FightWindow"),
-                E("Bestiary", "win:BestiaryWindow"),
+                E("Bestiary", "win:BestiaryWindow"), E("Kill Tasks", "act:killtasks"), E("Task Tracker", "act:tracker"),
                 E("Map Overlay", "win:MapOverlayWindow"), E("Auto Loot", "win:AutoLootWindow"),
                 More(E("Map Markers", "win:MapMarkersWindow")),
                 E("Nemesis", "win:NemesisWindow"), E("Boss Spawns", "win:BossSpawnsWindow"),

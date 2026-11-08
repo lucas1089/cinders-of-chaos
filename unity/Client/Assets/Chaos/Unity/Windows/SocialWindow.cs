@@ -96,6 +96,7 @@ namespace Chaos.Client
                 case RowKind.Section: return 24;
                 case RowKind.Text: return Mathf.Max(18, wrap.CalcHeight(new GUIContent(r.Text), w)) + 2;
                 case RowKind.Bar: return 20;
+                case RowKind.Chart: return 112;
                 case RowKind.Input: case RowKind.Combo: return 26;
                 default: return (r.ItemId > 0 ? 32 : 26) + (r.Sub.Length > 0 ? 16 : 0);
             }
@@ -139,6 +140,24 @@ namespace Chaos.Client
                     GUI.contentColor = Color.white;
                     GUI.Label(new Rect(rect.x + 4, rect.y + 1, rect.width - 8, 18), r.Text, wrap);
                     break;
+                case RowKind.Chart:
+                {
+                    var box = new Rect(rect.x, rect.y + 16, rect.width, rect.height - 18);
+                    ChaosApp.Fill(box, new Color(0.08f, 0.07f, 0.09f, 1f));
+                    GUI.contentColor = ToneColor("dim");
+                    GUI.Label(new Rect(rect.x + 2, rect.y, rect.width - 4, 16), r.Text, wrap);
+                    var rects = PriceChart.Rects(r.Points, r.Units, (int)box.width - 4, (int)box.height - 4);
+                    if (rects.Count == 0) GUI.Label(box, Loc.T("No sales yet."), wrap);
+                    foreach (var cr in rects)
+                        ChaosApp.Fill(new Rect(box.x + 2 + cr.X, box.y + 2 + cr.Y, cr.W, cr.H), cr.Line ? new Color(0.91f, 0.72f, 0.29f, 1f) : new Color(0.23f, 0.2f, 0.22f, 1f));
+                    if (PriceChart.Scale(r.Points, out string hi, out string lo))
+                    {
+                        GUI.contentColor = ToneColor("text");
+                        GUI.Label(new Rect(box.x + 4, box.y + 1, 80, 14), hi, wrap);
+                        GUI.Label(new Rect(box.x + 4, box.yMax - box.height / 4 - 16, 80, 14), lo, wrap);
+                    }
+                    break;
+                }
                 case RowKind.Input: InputRow(app, p, r, rect); break;
                 case RowKind.Combo: ComboRow(app, p, r, rect); break;
                 default: PlainRow(app, r, rect, e, view); break;

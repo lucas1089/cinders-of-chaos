@@ -483,6 +483,19 @@ namespace Chaos.Client
                     if (mk.Name.Length > 0 && r.Contains(mouse)) SetTip(mk.Name);
                 }
             }
+            // the safe exits and the shrine of the Scorched Marches while the zone is entered (game_pvpzone)
+            var zone = session?.Endgame?.PvpZone;
+            if (zone != null && zone.Marks.Count > 0)
+            {
+                foreach (var zm in PvpZoneFlags.Visible(zone.Marks, floor, p.X - half, p.Y - half, p.X - half + tiles, p.Y - half + tiles))
+                {
+                    float x = map.x + (zm.X - (p.X - half)) * ppt + ppt / 2f, y = map.y + (zm.Y - (p.Y - half)) * ppt + ppt / 2f;
+                    var r = new Rect(x - 4, y - 4, 8, 8);
+                    Fill(new Rect(r.x - 1, r.y - 1, 10, 10), new Color(0f, 0f, 0f, 0.9f));
+                    Fill(r, HexColor(PvpZoneFlags.Color(zm.Kind)));
+                    if (r.Contains(mouse)) SetTip(PvpZoneFlags.Tip(zm));
+                }
+            }
             if (!m.Settings.Party) return;
             double now = session.Now;
             foreach (var pm in m.Party.Values)

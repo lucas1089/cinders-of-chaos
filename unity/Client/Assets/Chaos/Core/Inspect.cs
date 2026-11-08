@@ -5,7 +5,7 @@
 //                     equip {name, rows [{slot, tip}]}   (one per part; a result says how many follow)
 //                     tree {name, nodes, masteries, ...}   records {name, rows [{key, name, value}]}   denied {code, text}   privacy {allow}
 // A big message comes in chunks (ExtOpcodes joins them). Windows: the right-click "Inspect" entry of a player on the map asks by creature id, the top menu
-// asks by typed name. The passive tree of the inspected character is summarised in a line (the read-only tree view of the main client is not ported).
+// asks by typed name. The passive tree of the inspected character is a summary line with a View tree button (the read-only window of Phase7ZInspect.cs).
 using System;
 using System.Collections.Generic;
 using System.Globalization;

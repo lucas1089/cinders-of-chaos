@@ -283,7 +283,17 @@ namespace Chaos.Client
             var line = Loc.T("Level {0}", sp.Level) + "   " + Loc.T("Magic level {0}", sp.MagicLevel) + "   " + Loc.T("Mana {0}", sp.Mana) + "   " + Loc.T("Cooldown {0}s", (sp.Cooldown / 1000f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture));
             GUI.Label(new Rect(r.x + 6, r.y + 20, r.width - (bigIcon ? 46 : 12), 16), line, wordsStyle);
             string status = StatusText(book.Status(sp));
-            GUI.Label(new Rect(r.x + 6, r.y + 36, r.width - 12, 36), status.Length > 0 ? status : sp.Description, hintStyle);
+            GUI.Label(new Rect(r.x + 6, r.y + 36, r.width - 12, 24), status.Length > 0 ? status : sp.Description, hintStyle);
+            // game_spellsupports: the runes socketed in this spell (BookLine), with the effects in the tooltip
+            string supTip = "";
+            var supports = app.Session?.Utils?.Supports;
+            string supLine = supports != null ? supports.BookLine(sp.Words, out supTip) : null;
+            if (supLine != null)
+            {
+                var sr = new Rect(r.x + 6, r.y + 60, r.width - 12, 16);
+                GUI.Label(sr, supLine, wordsStyle);
+                if (supTip.Length > 0 && sr.Contains(Event.current.mousePosition)) app.SetTip(supTip);
+            }
             // the area preview on the left, the rows of the main client on the right
             float top = r.y + 76f, boxH = r.yMax - 50f - top;
             DrawArea(app, sp, new Rect(r.x + 6, top, 160f, boxH));

@@ -7,7 +7,7 @@
 //                     | orderFind | fillable
 // Tabs: Browse (search, filters, sort, pages, hover tooltip, Buy with a confirmation), Sell (pick a backpack item, prices, days, the fee), My Offers
 // (Cancel), History, Buy Orders (the open orders with Sell to fill them, your own with Cancel, a form to post one).
-// Not ported: the Modifiers section of the Browse filter and of an order (typeahead over the Codex), the price history chart (opcode action "prices").
+// Not ported: the Modifiers section of the Browse filter and of an order (typeahead over the Codex). The price history (action "prices") and the drop on the Sell tab are in Phase7ZMarket.cs.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -244,6 +244,10 @@ namespace Chaos.Core
         public Func<double> Clock = () => 0;
         /// <summary>The offer a Buy confirmation is open for, or a cancel confirmation.</summary>
         public object ConfirmBuyOffer, ConfirmCancelOffer, ConfirmOrderCancel;
+        /// <summary>The price history (Phase7ZMarket.cs): the stats of the clicked Browse offer, and of the item chosen in the Sell form.</summary>
+        public object PriceOffer, PriceData, SellPriceData, SellPriceFor;
+        public string PriceCur = "gold";
+        int priceSeq, priceSeqOffer, priceSeqSell;
         public object Selected;   // the Sell item chosen
         public object ChosenKind; // the order form's item kind
         public object FillOrder, FillChosen;
@@ -271,6 +275,7 @@ namespace Chaos.Core
             base.Clear();
             Meta = PageData = MineData = HistoryData = SellData = OrdersData = MyOrdersData = FindData = FillData = null;
             Tips.Clear(); tipAsked.Clear(); Selected = ChosenKind = FillOrder = FillChosen = null;
+            PriceOffer = PriceData = SellPriceData = SellPriceFor = null; PriceCur = "gold";
             ConfirmBuyOffer = ConfirmCancelOffer = ConfirmOrderCancel = null;
             PageNo = Pages = 1; Total = 0;
         }
@@ -295,6 +300,7 @@ namespace Chaos.Core
                     if (Json.Get(d, "tip") is Dictionary<string, object> && IdKey(Json.Get(d, "id")).Length > 0)
                         Tips[IdKey(Json.Get(d, "id"))] = Json.Get(d, "tip");
                     break;
+                case "prices": OnPrices(d); break;
                 case "sellable": SellData = d; break;
                 case "mine": MineData = d; break;
                 case "history": HistoryData = d; break;
@@ -430,7 +436,76 @@ namespace Chaos.Core
         public void ChooseSell(object entry)
         {
             if (Json.Text(entry, "why").Length > 0) { Say(Json.Text(entry, "why"), false); return; }
-            Selected = entry; Form["count"] = Json.Int(entry, "count", 1).ToString(CultureInfo.InvariantCulture); Status = ""; Changed();
+            Selected = entry; Form["count"] = Json.Int(entry, "count", 1).ToString(CultureInfo.InvariantCulture); Status = "";
+            // the typical price of the chosen item (the Sell form suggests it and warns about a far price)
+            SellPriceData = null; SellPriceFor = entry;
+            if (SFmt.Has(entry, "sid"))
+            {
+                priceSeqSell = ++priceSeq;
+                Send("prices", SFmt.Map("sid", Json.Get(entry, "sid"), "rarity", Json.Int(entry, "rarity"), "ilvl", Json.Int(entry, "ilvl"), "seq", priceSeqSell));
+            }
+            Changed();
+        }
+
+        /// <summary>An item dropped on the Sell tab: the picker entry it matches is chosen; false when the tab is not Sell or the list does not hold it.</summary>
+        public bool DropItem(int clientId, int count, ulong iid)
+        {
+            if (Tab != "sell") return false;
+            var entry = MarketDrop.Match(SFmt.Rows(SellData, "items"), clientId, count, iid);
+            if (entry == null) { Say(Loc.T("That item is not in the list: it cannot be sold, or the list is old."), false); return true; }
+            ChooseSell(entry);
+            return true;
+        }
+
+        // ------------------------------------------------------------------------------------ price history (marketpriceview.lua)
+        /// <summary>A click on a Browse offer: the prices of its item key with the 30-day chart.</summary>
+        public void ShowPrices(object offer)
+        {
+            PriceOffer = offer; PriceData = null;
+            priceSeqOffer = ++priceSeq;
+            Send("prices", SFmt.Map("id", Json.Get(offer, "id"), "seq", priceSeqOffer));
+            Changed();
+        }
+
+        public void ClosePrices() { PriceOffer = null; PriceData = null; Changed(); }
+
+        void OnPrices(object d)
+        {
+            int seq = Json.Int(d, "seq");
+            if (PriceOffer != null && seq == priceSeqOffer) { PriceData = d; PriceCur = MarketPrices.Currency(d, PriceCur); }
+            else if (seq != 0 && seq == priceSeqSell) SellPriceData = d;
+            Changed();
+        }
+
+        /// <summary>The Sell form's price hint: the typical line and the suggested price; the suggestion is 0 without a typical price.</summary>
+        public string SellHint(out long suggest)
+        {
+            suggest = 0;
+            if (Selected == null || SellPriceData == null || SellPriceFor != Selected) return "";
+            object g = Json.Get(SellPriceData, "gold");
+            long count = Json.Bool(Selected, "stack") ? Math.Max(1, SFmt.ParseAmount(Text("count"))) : 1;
+            string key = MarketPrices.KeyText(Json.Int(SellPriceData, "rarity"), Json.Text(SellPriceData, "bandText"));
+            string text = (key.Length > 0 ? key + ": " : "") + MarketPrices.Typical(g, "gold").Text;
+            double typical = Json.Number(g, "typical");
+            long min = (long)Json.Number(Json.Get(Json.Get(Meta, "price"), "gold"), "min");
+            if (typical > 0) { suggest = MarketPrices.Suggest(typical, count, min); text += count > 1 ? Loc.T(". Suggested: {0} gold for {1}.", SFmt.Money(suggest), count) : Loc.T(". Suggested: {0} gold.", SFmt.Money(suggest)); }
+            return text;
+        }
+
+        /// <summary>The warnings for the asking prices in the Sell form (gold and coins), empty when they are near the typical price.</summary>
+        public List<PriceLine> SellWarnings()
+        {
+            var o = new List<PriceLine>();
+            if (Selected == null || SellPriceData == null || SellPriceFor != Selected) return o;
+            long count = Json.Bool(Selected, "stack") ? Math.Max(1, SFmt.ParseAmount(Text("count"))) : 1;
+            var warn = Json.Get(SellPriceData, "warn");
+            double low = warn != null && Json.Get(warn, "low") is double l ? l : 0.5, high = warn != null && Json.Get(warn, "high") is double h ? h : 2.0;
+            foreach (string cur in new[] { "gold", "coins" })
+            {
+                var w = MarketPrices.SellWarning(Math.Max(0, SFmt.ParseAmount(Text(cur))), count, Json.Number(Json.Get(SellPriceData, cur), "typical"), low, high, cur);
+                if (w != null) o.Add(w);
+            }
+            return o;
         }
 
         public int DaysOption()
@@ -515,6 +590,11 @@ namespace Chaos.Core
             bool unique = Json.Bool(offer, "unique");
             string name = (Json.Int(offer, "count", 1) > 1 ? Json.Int(offer, "count", 1) + "x " : "") + Json.Text(offer, "name", "?");
             string sub = mode == "browse" ? MarketMath.SubLine(offer) : mode == "history" ? MarketMath.HistoryLine(offer) + (Json.Bool(offer, "order") ? Loc.T(" (buy order)") : "") : MarketMath.StateLine(offer);
+            if (mode == "browse")
+            {
+                var mark = MarketPrices.RowMark(offer);
+                if (mark != null) sub += (sub.Length > 0 ? "  -  " : "") + mark.Text;
+            }
             string right = "";
             if (mode == "history" || (mode == "closed" && Json.Text(offer, "state") == "sold"))
                 right = SFmt.Money(Json.Number(offer, "paid")) + (Json.Text(offer, "cur") == "coins" ? " " + Loc.T("coins") : " " + Loc.T("gold"));
@@ -528,6 +608,7 @@ namespace Chaos.Core
             {
                 var o = offer;
                 r.Hover = () => AskTip(Json.Get(o, "id"));
+                r.Btn(Loc.T("Prices"), true, () => ShowPrices(o), MarketPrices.RowTypical(o) ?? "");
                 if (!Json.Bool(offer, "mine")) r.Btn(Loc.T("Buy"), true, () => { ConfirmBuyOffer = o; Changed(); });
                 else r.Btn(Loc.T("Cancel"), true, () => { ConfirmCancelOffer = o; Changed(); });
             }
@@ -595,7 +676,26 @@ namespace Chaos.Core
             l.Row(MarketMath.PageText(PageNo, Pages, Total), "", "dim").Btn("<", PageNo > 1, () => Page(-1)).Btn(">", PageNo < Pages, () => Page(1));
             var rows = SFmt.Rows(PageData, "rows");
             if (PageData != null && rows.Count == 0) l.Text(Loc.T("No offers match."), "dim");
+            if (PriceOffer != null) PriceRows(l);
             foreach (var o in rows) OfferRow(l, o, "browse");
+        }
+
+        void PriceRows(RowList l)
+        {
+            l.Section(Loc.T("Price history") + ": " + Json.Text(PriceOffer, "name", "?"));
+            if (PriceData == null) { l.Text(Loc.T("Loading..."), "dim"); l.Row("").Btn(Loc.T("Close"), true, ClosePrices); return; }
+            if (Json.Bool(PriceData, "gone")) { l.Text(Loc.T("That offer is gone."), "dim"); l.Row("").Btn(Loc.T("Close"), true, ClosePrices); return; }
+            string key = MarketPrices.KeyText(Json.Int(PriceData, "rarity"), Json.Text(PriceData, "bandText"));
+            l.Text((key.Length > 0 ? key + "; " : "") + Loc.T("sales on your market only"), "dim");
+            var s = Json.Get(PriceData, PriceCur);
+            foreach (var line in MarketPrices.Stats(s, PriceCur)) l.Text(line.Text, line.Tone);
+            l.Chart(Loc.T("Average price per day, last {0} days", s != null && Json.Get(s, "days") is double dd ? (int)dd : 30), PriceChart.Points(Json.Get(s, "points")), s != null && Json.Get(s, "days") is double d2 ? (int)d2 : 30);
+            string other = PriceCur == "gold" ? "coins" : "gold";
+            var row = l.Row("");
+            var o2 = Json.Get(PriceData, other);
+            if (o2 != null && (Json.Int(o2, "n30") > 0 || Json.Int(o2, "n7") > 0))
+                row.Btn(other == "coins" ? Loc.T("Coin prices") : Loc.T("Gold prices"), true, () => { PriceCur = other; Changed(); });
+            row.Btn(Loc.T("Close"), true, ClosePrices);
         }
 
         void SellRows(RowList l)
@@ -613,6 +713,13 @@ namespace Chaos.Core
                 l.Input(Loc.T("Gold price"), "gold", "5k, 2.5m");
                 if (CoinsOk) l.Input(Loc.T("Chaos Coins price"), "coins");
                 l.Combo(Loc.T("Duration"), "days", DaysOptions());
+                string hint = SellHint(out long suggest);
+                if (hint.Length > 0)
+                {
+                    l.Text(hint, "gold");
+                    if (suggest > 0) l.Row("").Btn(Loc.T("Use suggested price"), true, () => { Form["gold"] = suggest.ToString(CultureInfo.InvariantCulture); Changed(); });
+                }
+                foreach (var w in SellWarnings()) l.Text(w.Text, w.Tone);
                 l.Text(FeeText(), "dim");
                 l.Row("").Btn(Loc.T("List item"), true, () => ListItem()).Btn(Loc.T("Clear"), true, () => { Selected = null; Changed(); });
             }

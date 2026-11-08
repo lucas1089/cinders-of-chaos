@@ -79,6 +79,25 @@ namespace Chaos.Client
             PlayerPrefs.Save();
         }
 
+        /// <summary>The 12 row slots as they are saved (a loadout keeps them as its action bar profile, game_loadouts).</summary>
+        public string[] SnapshotBar()
+        {
+            var o = new string[HotbarModel.Count];
+            for (int i = 0; i < HotbarModel.Count; i++) o[i] = bar.Saved(i);
+            return o;
+        }
+
+        /// <summary>Puts a saved row back (loading a loadout) and saves it; the Q and E side slots stay as they are.</summary>
+        public void ApplyBar(string[] saved)
+        {
+            if (saved == null || loadedFor == null) return;
+            var keep = new string[HotbarModel.Total];
+            for (int i = 0; i < HotbarModel.Total; i++) keep[i] = i < HotbarModel.Count ? (i < saved.Length ? saved[i] : "") : bar.Saved(i);
+            bar.Load(i => i < keep.Length ? keep[i] : "");
+            editing = -1;
+            for (int i = 0; i < HotbarModel.Total; i++) Save(i);
+        }
+
         void SaveOptions()
         {
             if (loadedFor == null) return;
@@ -241,6 +260,19 @@ namespace Chaos.Client
                 if (!drawn) GUI.Label(new Rect(r.x + 2, r.y + 14, r.width - 2, r.height - 14), s.Text, textStyle);
             }
             GUI.Label(new Rect(r.x + 2, r.y, r.width - 2, 14), HotbarLayout.KeyLabel(i), keyStyle);
+            // game_spellsupports: a small pip per socketed rune, and the supports in the tooltip
+            if (spell != null)
+            {
+                var sup = app.Session?.Utils?.Supports;
+                var pips = SupportPips.Colors(sup, spell.Id);
+                float px = r.xMax - 3 - SupportPips.Width(pips.Count);
+                foreach (var pc in pips)
+                {
+                    ChaosApp.Fill(new Rect(px, r.y + 3, SupportPips.PipSize, SupportPips.PipSize), CU.Hex(pc, Color.white));
+                    px += SupportPips.PipSize + SupportPips.PipGap;
+                }
+                if (pips.Count > 0 && r.Contains(e.mousePosition)) app.SetTip(SupportPips.Tip(sup, spell.Id, spell.Name));
+            }
             int cd = spell != null ? app.Session.Spells.CooldownSeconds(spell) : 0;
             if (cd > 0)
             {

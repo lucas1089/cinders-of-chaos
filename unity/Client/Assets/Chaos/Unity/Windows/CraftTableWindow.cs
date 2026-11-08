@@ -1,6 +1,6 @@
 // Crafting Tables (opcode 91, Core/CollectCraftTable.cs): seven tabs of recipes (general crafting, woodcutting, mining, herbalist, armorsmith, weaponsmith, jewelsmith), search,
 // "craftable" filter, materials with what you carry, gold, skill, rarity odds, quantity and the craft with its progress bar. Using a table opens its tab; you must stand next to it.
-// The row tooltip of the main client (opcode 91 "tip") is shown as plain text. Top menu (Economy) opens the last tab.
+// The row tooltip of the main client (opcode 91 "tip") is the rich item tooltip (plain text while it is on its way). Top menu (Economy) opens the last tab.
 using System.Collections.Generic;
 using System.Linq;
 using Chaos.Core;
@@ -64,11 +64,19 @@ namespace Chaos.Client
                 else if (ctx.Skill.HasValue && ctx.Skill.Value < rec.Level) { st = Loc.T("Skill {0}", rec.Level); col = "#6b6258"; }
                 else { st = Loc.T("Missing"); col = CraftTableState.Warn; }
                 CU.Label(app, new Rect(r.xMax - 66, r.y + 12, 62, 18), st, col, false, TextAnchor.UpperRight);
+                if (r.Contains(Event.current.mousePosition)) RichTip(app, t, rec.Category, rec.Index);
                 if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && r.Contains(Event.current.mousePosition)) { t.SelectRecipe(rec.Index); Event.current.Use(); }
             });
 
             Detail(app, t, ctx, new Rect(inner.x + lw + 12, y, inner.width - lw - 16, inner.yMax - y - 4), now);
             CU.Tooltip(app, new Rect(0, 0, Area.width, Area.height));
+        }
+
+        // the item tooltip of opcode 91 "tip" (asked once per recipe when the pointer first rests on it), drawn like any item tooltip
+        static void RichTip(ChaosApp app, CraftTableState t, string category, int index)
+        {
+            if (t.NeedsTip(category, index)) t.AskTip(category, index);
+            if (t.TipOf(category, index) is Dictionary<string, object> tip) app.ShowTip(tip);
         }
 
         void Detail(ChaosApp app, CraftTableState t, CraftContext ctx, Rect d, double now)
@@ -79,7 +87,8 @@ namespace Chaos.Client
             var cat = CraftTableState.Category(r.Category);
             ChaosApp.Fill(new Rect(d.x, d.y, 44, 44), new Color(0.11f, 0.09f, 0.12f, 1f));
             app.DrawItem(new Rect(d.x + 6, d.y + 6, 32, 32), (ushort)r.ClientId, r.Count);
-            GUI.Label(new Rect(d.x + 50, d.y, d.width - 50, 22), new GUIContent(r.Name, CraftTableState.PlainTip(r)), app.TitleStyle);
+            GUI.Label(new Rect(d.x + 50, d.y, d.width - 50, 22), new GUIContent(r.Name, t.TipOf(r.Category, r.Index) is Dictionary<string, object> ? "" : CraftTableState.PlainTip(r)), app.TitleStyle);
+            if (new Rect(d.x, d.y, d.width, 44).Contains(Event.current.mousePosition)) RichTip(app, t, r.Category, r.Index);
             GUI.Label(new Rect(d.x + 50, d.y + 24, d.width - 50, 20), Loc.T("{0}{1} recipe {2}", r.Count > 1 ? "x" + r.Count + "  -  " : "", cat.Name, r.Index), app.SmallStyle);
             float y = d.y + 52;
             string skillName = Loc.T(CraftTableState.SkillNames[cat.Skill - 7]);

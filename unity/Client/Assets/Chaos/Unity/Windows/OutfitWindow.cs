@@ -118,47 +118,95 @@ namespace Chaos.Client
             return string.Join(", ", parts);
         }
 
+        static string KindOf(Tab t)
+        {
+            switch (t) { case Tab.Outfit: return "outfit"; case Tab.Mount: return "mount"; case Tab.Wings: return "wings"; case Tab.Aura: return "aura"; default: return "shader"; }
+        }
+
+        static bool OnlyMine(string kind) { try { return PlayerPrefs.GetInt(WardrobeView.PrefsKey(kind), 0) == 1; } catch { return false; } }
+        static void SetOnlyMine(string kind, bool on) { try { PlayerPrefs.SetInt(WardrobeView.PrefsKey(kind), on ? 1 : 0); } catch { } }
+
+        // the stock list of the server plus the wardrobe's locked entries (game_unlocks)
+        static List<WardrobeRow> Display(ChaosApp app, OutfitWindowState st, string kind, bool onlyMine)
+        {
+            var stock = new List<KeyValuePair<int, string>>();
+            switch (kind)
+            {
+                case "outfit": foreach (var o in st.Outfits) stock.Add(new KeyValuePair<int, string>(o.LookType, o.Name)); break;
+                case "mount": foreach (var m in st.Mounts) stock.Add(new KeyValuePair<int, string>(m.Id, m.Name)); break;
+                case "wings": foreach (var m in st.Wings) stock.Add(new KeyValuePair<int, string>(m.Id, m.Name)); break;
+                case "aura": foreach (var m in st.Auras) stock.Add(new KeyValuePair<int, string>(m.Id, m.Name)); break;
+                default: foreach (var m in st.Shaders) stock.Add(new KeyValuePair<int, string>(0, m.Name)); break;
+            }
+            List<WardrobeEntry> cat = null;
+            app.Session?.Cosmetics?.Wardrobe?.TryGetValue(kind, out cat);
+            return WardrobeView.Display(kind, stock, cat, onlyMine);
+        }
+
         void ListPanel(ChaosApp app, OutfitWindowState st, Rect list)
         {
-            // rows: (id, name, selected, pick, outfit to draw)
-            var rows = new List<(string name, bool on, System.Action pick, Outfit look)>();
+            // rows: name, selected, pick (null: locked), outfit to draw, tooltip
+            var rows = new List<(string name, bool on, System.Action pick, Outfit look, string tip, bool locked)>();
+            string kind = KindOf(tab);
+            bool onlyMine = OnlyMine(kind);
+            var shown = Display(app, st, kind, onlyMine);
+            WardrobeView.Count(shown, out int have, out int all);
             switch (tab)
             {
-                case Tab.Outfit:
-                    foreach (var o in st.Outfits)
-                    {
-                        var c = o;
-                        rows.Add((c.Name, working.LookType == c.LookType, () => working = st.WithLook(working, c.LookType),
-                            new Outfit(c.LookType, working.Head, working.Body, working.Legs, working.Feet, 0)));
-                    }
-                    break;
-                case Tab.Mount:
-                    rows.Add((Loc.T("None"), working.Mount == 0, () => working.Mount = 0, null));
-                    foreach (var m in st.Mounts) { var c = m; rows.Add((c.Name, working.Mount == c.Id, () => working.Mount = c.Id, new Outfit(c.Id, 0, 0, 0, 0))); }
-                    break;
-                case Tab.Wings:
-                    rows.Add((Loc.T("None"), working.Wings == 0, () => working.Wings = 0, null));
-                    foreach (var m in st.Wings) { var c = m; rows.Add((c.Name, working.Wings == c.Id, () => working.Wings = c.Id, null)); }
-                    break;
-                case Tab.Aura:
-                    rows.Add((Loc.T("None"), working.Aura == 0, () => working.Aura = 0, null));
-                    foreach (var m in st.Auras) { var c = m; rows.Add((c.Name, working.Aura == c.Id, () => working.Aura = c.Id, null)); }
-                    break;
-                case Tab.Shader:
-                    rows.Add((Loc.T("None"), string.IsNullOrEmpty(working.Shader), () => working.Shader = "", null));
-                    foreach (var m in st.Shaders) { var c = m; rows.Add((c.Name, working.Shader == c.Name, () => working.Shader = c.Name, null)); }
-                    break;
+                case Tab.Mount: rows.Add((Loc.T("None"), working.Mount == 0, () => working.Mount = 0, null, null, false)); break;
+                case Tab.Wings: rows.Add((Loc.T("None"), working.Wings == 0, () => working.Wings = 0, null, null, false)); break;
+                case Tab.Aura: rows.Add((Loc.T("None"), working.Aura == 0, () => working.Aura = 0, null, null, false)); break;
+                case Tab.Shader: rows.Add((Loc.T("None"), string.IsNullOrEmpty(working.Shader), () => working.Shader = "", null, null, false)); break;
             }
+            foreach (var w in shown)
+            {
+                var c = w;
+                string tip = c.Tip;
+                System.Action none = null;
+                switch (tab)
+                {
+                    case Tab.Outfit:
+                        rows.Add((c.Name, working.LookType == c.Id && !c.Locked, c.Locked ? none : () => working = st.WithLook(working, c.Id),
+                            new Outfit(c.Id, working.Head, working.Body, working.Legs, working.Feet, 0), tip, c.Locked));
+                        break;
+                    case Tab.Mount:
+                        rows.Add((c.Name, working.Mount == c.Id && !c.Locked, c.Locked ? none : () => working.Mount = c.Id, new Outfit(c.Id, 0, 0, 0, 0), tip, c.Locked));
+                        break;
+                    case Tab.Wings:
+                        rows.Add((c.Name, working.Wings == c.Id && !c.Locked, c.Locked ? none : () => working.Wings = c.Id, null, tip, c.Locked));
+                        break;
+                    case Tab.Aura:
+                        rows.Add((c.Name, working.Aura == c.Id && !c.Locked, c.Locked ? none : () => working.Aura = c.Id, null, tip, c.Locked));
+                        break;
+                    default:
+                        rows.Add((c.Name, working.Shader == c.Name && !c.Locked, c.Locked ? none : () => working.Shader = c.Name, null, tip, c.Locked));
+                        break;
+                }
+            }
+            // "Only what I own" and the count of the list (the locked rows of the catalogue come after the owned ones)
+            var head = new Rect(list.x + 4, list.y + 2, list.width - 8, 20);
+            bool om = GUI.Toggle(new Rect(head.x, head.y, head.width - 70, 20), onlyMine, Loc.T("Only what I own"));
+            if (om != onlyMine) SetOnlyMine(kind, om);
+            GUI.Label(new Rect(head.xMax - 66, head.y, 66, 20), have + " / " + all, app.SmallStyle);
+            var view = new Rect(list.x, list.y + 24, list.width, list.height - 24);
             const float RowH = 38f;
-            scroll = GUI.BeginScrollView(list, scroll, new Rect(0, 0, list.width - 18, Mathf.Max(list.height, rows.Count * RowH)));
+            scroll = GUI.BeginScrollView(view, scroll, new Rect(0, 0, view.width - 18, Mathf.Max(view.height, rows.Count * RowH)));
+            var oldColor = GUI.color;
             for (int i = 0; i < rows.Count; i++)
             {
-                var r = new Rect(0, i * RowH, list.width - 18, RowH - 2);
+                var r = new Rect(0, i * RowH, view.width - 18, RowH - 2);
                 ChaosApp.Fill(r, rows[i].on ? new Color(0.6f, 0.45f, 0.12f, 0.4f) : new Color(1f, 1f, 1f, 0.05f));
+                if (rows[i].locked) GUI.color = new Color(oldColor.r, oldColor.g, oldColor.b, oldColor.a * UnlocksCore.LockedOpacity);
                 float x = 4;
                 if (rows[i].look != null) { app.DrawOutfit(new Rect(r.x + 2, r.y + 1, RowH - 4, RowH - 4), rows[i].look); x = RowH + 2; }
                 GUI.Label(new Rect(r.x + x, r.y + 8, r.width - x, 22), rows[i].name, app.SmallStyle);
-                if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && r.Contains(Event.current.mousePosition)) { rows[i].pick(); Event.current.Use(); }
+                GUI.color = oldColor;
+                if (rows[i].tip != null && r.Contains(Event.current.mousePosition)) app.SetTip(rows[i].tip);
+                if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && r.Contains(Event.current.mousePosition))
+                {
+                    if (rows[i].pick != null) rows[i].pick();
+                    Event.current.Use();
+                }
             }
             GUI.EndScrollView();
         }

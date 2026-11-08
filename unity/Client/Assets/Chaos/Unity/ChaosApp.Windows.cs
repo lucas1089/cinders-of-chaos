@@ -1,3 +1,4 @@
+using Chaos.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,6 +16,8 @@ namespace Chaos.Client
         public virtual bool DragLocked => false;
         /// <summary>The How it works card of this window (its key in Resources/HowItWorks.json), null when it has none: the title bar then shows a ? button.</summary>
         public virtual string HowKey { get { string k; return Chaos.Core.HowItWorks.UnityWindows.TryGetValue(GetType().Name, out k) ? k : null; } }
+        /// <summary>game_npctravel: the key of the NPC that fronts this window's service (Core/WorldTravel.cs NpcTravel.PanelNpc); the title bar then has a Go to NPC button.</summary>
+        public virtual string TravelKey => null;
         public bool Open;
         /// <summary>0..1: the window fade (client_chaos_uifade); 1 when no fade runs.</summary>
         public float Alpha = 1f;
@@ -59,6 +62,14 @@ namespace Chaos.Client
                 GUI.Label(new Rect(8, 2, Area.width - 40, 22), Title, app.WindowTitleStyle);
                 if (GUI.Button(new Rect(Area.width - 26, 2, 22, 20), "x")) Open = false;
                 if (HowKey != null && GUI.Button(new Rect(Area.width - 50, 2, 22, 20), "?")) app.ShowHow(HowKey);
+                string travel = TravelKey;
+                if (travel != null)
+                {
+                    float bx = Area.width - 50 - (HowKey != null ? 26 : 0) - 82;
+                    var br = new Rect(bx, 2, 80, 20);
+                    if (GUI.Button(br, new GUIContent(Loc.T("Go to NPC"), NpcTravel.PanelTip(travel)))) app.Session?.Utils?.Travel?.Travel(travel);
+                    if (br.Contains(Event.current.mousePosition)) app.SetTip(NpcTravel.PanelTip(travel));
+                }
                 Body(app, new Rect(4, 28, Area.width - 8, Area.height - 32));
                 if (!DragLocked) GUI.DragWindow(new Rect(0, 0, Area.width - 30, 24));
             }, GUIContent.none, GUIStyle.none);
@@ -82,6 +93,7 @@ namespace Chaos.Client
             AddSocialWindows();   // ChaosApp.Social.cs
             AddPlayWindows();     // ChaosApp.Play.cs: trade, VIP list, quest log, look preview
             AddInfoWindows();   // ChaosApp.Info.cs
+            AddPhase7ZWindows();   // Windows/Phase7ZWindows.cs
             AddCommunityWindows();   // ChaosApp.Community.cs
             windows.Add(new EquipmentWindow());
             windows.Add(new ContainersWindow());

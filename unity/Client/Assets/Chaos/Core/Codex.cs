@@ -271,7 +271,7 @@ namespace Chaos.Core
         /// <summary>The list line: the entry's own, or its tiers at the chosen level.</summary>
         public static string Subline(CodexEntry e, int? level, CodexData d)
         {
-            if (!level.HasValue || e.Tv == null || d == null) return e.Sub;
+            if (!level.HasValue || e.Tv == null || d == null) return CodexText.Sub(e.Sub);
             var rows = TierRows(level.Value, d);
             int hi = rows[0].Key, lo = rows[rows.Count - 1].Key;
             string tv(int t) => t - 1 < e.Tv.Count ? e.Tv[t - 1] : "";

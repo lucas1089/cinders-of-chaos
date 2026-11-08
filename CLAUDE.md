@@ -122,6 +122,7 @@ python3 -I server/tools/weapon_sim.py --power --check             # -> data/scri
 luajit unity/tools/gen_tree_data.lua                          # -> unity/Client/Assets/Chaos/Resources/PassiveTree.json (Unity passive tree layout from client treedata; --check in CI)
 luajit unity/tools/gen_info_data.lua                          # -> unity/Client/Assets/Chaos/Resources/Codex.json, HowItWorks.json, HelpSearch.json and Core/InfoLiftData.cs (Unity info windows from the client data files; --check in CI, also lua5.3)
 python3 -I unity/tools/gen_spell_icon_data.py                 # -> unity Core/SpellIconData.cs (Unity spell icon cells from client spelldata.lua; --check in CI)
+python3 -I unity/tools/gen_codex_text.py                      # -> unity Core/CodexTextData.cs (Unity Codex texts in pt-BR from the Codex blocks of client pt_br.lua; --check in CI)
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
 python3 -I website/tools/gen_streamer_kit.py                  # -> website plugins/chaos/assets/streamer: OBS overlays, Twitch panels, banners, Discord icon (--check in CI with the fx venv; O320)
 python3 -I website/tools/gen_promo_kit.py                     # -> website plugins/chaos/assets/promo: beta and launch posts, story, class cards, forum banners (texts and dates: website/tools/promo_source.json; --check in CI with the fx venv)

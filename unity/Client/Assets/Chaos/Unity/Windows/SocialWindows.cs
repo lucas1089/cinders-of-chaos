@@ -9,6 +9,19 @@ namespace Chaos.Client
         public override string Title => Loc.T("Market");
         protected override SocialPanel Panel(GameSession s) => s?.Social?.Market;
         protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 300), 56, Mathf.Min(600, w - 16), Mathf.Min(580, h - 70));
+
+        // an item dragged from a bag and dropped on the Sell tab picks that item (market.lua onDropItem)
+        protected override void DrawExtra(ChaosApp app, SocialPanel p, Rect header)
+        {
+            var m = p as MarketPanel;
+            if (m == null || m.Tab != "sell") return;
+            ItemSlots.Drop(new Rect(0, 0, Area.width, Area.height), (pos, id, stack, count) =>
+            {
+                var it = MarketDrop.BagItem(app.Session?.Parser.Containers, pos);
+                m.DropItem(id, count, it != null ? it.Attr(ItemAttr.Id) : 0UL);
+            });
+            ItemSlots.Ghost(app, new Rect(0, 0, Area.width, Area.height));
+        }
     }
 
     public sealed class GuildWindow : SocialWindow
