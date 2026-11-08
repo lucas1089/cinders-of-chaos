@@ -39,19 +39,24 @@ namespace Chaos.Core
                 E("Skills", "win:SkillsWindow"), E("Spellbook", "win:SpellbookWindow"), E("Passive Tree", "win:PassiveTreeWindow"),
                 E("Character Info", "info:character"), E("Services", "info:services"),
                 E("Inventory", "win:EquipmentWindow"), E("Containers", "win:ContainersWindow"),
+                E("Achievements", "win:AchievementsWindow"), E("Pets", "win:PetsWindow"), E("Transmog", "win:TransmogWindow"), E("Cosmetics", "win:CosmeticsWindow"),
+                E("Charms", "win:CharmsWindow"),
             } },
             new MenuCategory { Id = "hunt", Text = Lk.N("Hunt"), Entries = new[]
             {
                 E("Battle List", "win:BattleListWindow"), E("Party Frames", "win:PartyFramesWindow"), E("Hunt Tracker", "win:HuntWindow"),
                 E("Minimap", "win:MinimapWindow"), E("Fight", "win:FightWindow"),
+                E("Bestiary", "win:BestiaryWindow"),
             } },
             new MenuCategory { Id = "adventure", Text = Lk.N("Adventure"), Entries = new[]
             {
                 E("Next Goals", "win:GoalsWindow"), E("Goal Tracker", "win:GoalTrackerWindow"), E("Rifts", "info:rift"), E("Events", "info:events"),
+                E("Daily Reward", "win:DailyWindow"), E("Season", "win:SeasonWindow"), E("Season Pass", "win:PassWindow"), E("Weekly Chest", "win:WeeklyChestWindow"),
             } },
             new MenuCategory { Id = "economy", Text = Lk.N("Economy"), Entries = new[]
             {
                 E("House", "info:house"), E("Ancestral Store", "info:ancestral"),
+                E("Crafting Bench", "win:CraftingWindow"), E("Professions", "win:ProfessionsWindow"), E("Crafting Tables", "win:CraftTableWindow"),
             } },
             new MenuCategory { Id = "social", Text = Lk.N("Social"), Entries = new[]
             {

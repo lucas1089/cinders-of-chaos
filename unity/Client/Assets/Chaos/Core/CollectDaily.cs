@@ -25,7 +25,8 @@ namespace Chaos.Core
 
         public DailyState(ExtOpcodes e) : base(e, OpcodeId) { }
 
-        public void Toggle() { if (Visible) Hide(); else Send("open"); }
+        public void Show() { Visible = true; Send("open"); }
+        public void Toggle() { if (Visible) Hide(); else Show(); }
         public void Hide() { if (Visible) { Visible = false; Send("closed"); } }
 
         public override void Handle(string action, object data)

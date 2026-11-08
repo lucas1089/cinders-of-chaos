@@ -28,8 +28,9 @@ namespace Chaos.Core
 
         public TransmogState(ExtOpcodes e) : base(e, OpcodeId) { }
 
-        public void Show() { Send("open"); }
-        public void Toggle() { if (Visible) Visible = false; else Show(); }
+        public void Show() { Visible = true; Send("open"); }
+        public void Hide() { Visible = false; SelectedLook = null; }
+        public void Toggle() { if (Visible) Hide(); else Show(); }
 
         public override void Handle(string action, object data)
         {

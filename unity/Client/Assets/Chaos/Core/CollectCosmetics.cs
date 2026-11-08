@@ -277,7 +277,9 @@ namespace Chaos.Core
         public CosmeticsState(ExtOpcodes e) : base(e, OpcodeId) { }
 
         public void Hello() { Send("hello"); }
-        public void Toggle() { if (Visible) Visible = false; else Send("open"); }
+        public void Show() { Visible = true; Send("open"); }
+        public void Hide() { Visible = false; }
+        public void Toggle() { if (Visible) Hide(); else Show(); }
         public void AskWardrobe() { Send("wardrobe"); }
         public void Select(CosRow r) { if (r != null && CosmeticsLogic.CanUse(r)) Send("select", D("kind", r.Kind, "id", NumOrText(r.Id), "line", r.Line ?? (object)CF.G(State, "line"))); }
         public void PreviewRow(CosRow r) { if (r != null && r.Preview && !CosmeticsLogic.Drawn(r.Kind)) Send("preview", D("id", NumOrText(r.Id))); }

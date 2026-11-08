@@ -40,7 +40,9 @@ namespace Chaos.Core
         public CharmsState(ExtOpcodes e) : base(e, OpcodeId) { }
 
         public void Open() { Send("open"); }
-        public void Toggle() { if (Visible) Visible = false; else { Visible = true; Send("open"); } }
+        public void Show() { Visible = true; Send("open"); }
+        public void Hide() { Visible = false; }
+        public void Toggle() { if (Visible) Hide(); else Show(); }
         public void Send(CharmAction a) { if (a != null) Send(a.Action, a.Data); }
 
         public override void Handle(string action, object data)

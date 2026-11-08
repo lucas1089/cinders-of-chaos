@@ -45,7 +45,9 @@ namespace Chaos.Core
 
         public CraftingState(ExtOpcodes e) : base(e, OpcodeId) { }
 
-        public void Toggle() { if (Visible) Visible = false; else Send("open"); }
+        public void Show() { Visible = true; Send("open"); }
+        public void Hide() { Visible = false; }
+        public void Toggle() { if (Visible) Hide(); else Show(); }
         public void OpenSalvage() { Send("salvageScope", D("mode", "salvage")); Send("open"); }
         public void Clear() { Send("clear"); }
 

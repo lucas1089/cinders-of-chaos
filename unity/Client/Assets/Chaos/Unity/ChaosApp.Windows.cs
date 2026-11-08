@@ -82,6 +82,11 @@ namespace Chaos.Client
             windows.Add(new HelperWindow());
             windows.Add(new DeathRecapWindow());
             windows.Add(new LootWindow());
+            // track N: collections, seasons and crafting (Core/Collect*.cs)
+            windows.Add(new AchievementsWindow()); windows.Add(new BestiaryWindow()); windows.Add(new CharmsWindow()); windows.Add(new PassWindow());
+            windows.Add(new SeasonWindow()); windows.Add(new DailyWindow()); windows.Add(new WeeklyChestWindow()); windows.Add(new CosmeticsWindow());
+            windows.Add(new TransmogWindow()); windows.Add(new PetsWindow()); windows.Add(new ProfessionsWindow()); windows.Add(new CraftingWindow());
+            windows.Add(new CraftTableWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>

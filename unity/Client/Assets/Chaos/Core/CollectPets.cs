@@ -35,7 +35,8 @@ namespace Chaos.Core
 
         public PetsState(ExtOpcodes e) : base(e, OpcodeId) { }
 
-        public void Toggle() { if (Visible) Hide(); else Send("open"); }
+        public void Show() { Visible = true; NextRefresh = 0; Send("open"); }
+        public void Toggle() { if (Visible) Hide(); else Show(); }
         public void Hide() { if (Visible) { Visible = false; Send("close"); } }
         public void Summon(string species) { if (!string.IsNullOrEmpty(species)) Send("summon", D("species", species)); }
         public void Dismiss() { Send("dismiss"); }

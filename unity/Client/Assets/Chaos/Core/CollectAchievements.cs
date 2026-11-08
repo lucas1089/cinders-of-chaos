@@ -44,9 +44,12 @@ namespace Chaos.Core
         public AchievementsState(ExtOpcodes e) : base(e, OpcodeId) { }
 
         /// <summary>The window asks the server, which answers with state and list; the window shows when the list is whole.</summary>
-        public void Toggle() { if (Visible) Visible = false; else Send("open"); }
+        public void Show() { Visible = true; Send("open"); }
+        public void Hide() { Visible = false; }
+        public void Toggle() { if (Visible) Hide(); else Show(); }
         public void Get() { Send("get"); }
-        public void SetTitle(string choice) { Send("title", D("title", choice ?? "")); }
+        /// <summary>Sends the choice and asks the state again (the main client waits 600 ms; the server handles them in order).</summary>
+        public void SetTitle(string choice) { Send("title", D("title", choice ?? "")); Get(); }
 
         public override void Handle(string action, object data)
         {

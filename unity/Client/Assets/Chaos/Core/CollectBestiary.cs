@@ -41,7 +41,9 @@ namespace Chaos.Core
 
         public BestiaryState(ExtOpcodes e) : base(e, OpcodeId) { }
 
-        public void Open() { if (Visible) Visible = false; else Send("open"); }
+        public void Show() { Visible = true; Send("open"); }
+        public void Hide() { Visible = false; }
+        public void Open() { if (Visible) Hide(); else Show(); }
         public void ShowTasks() { Send("board"); Visible = true; Tab = "tasks"; }
         public void SetTab(string tab) { Tab = tab; if (tab == "tasks") Send("board"); }
         public void Query() { Send("query"); }

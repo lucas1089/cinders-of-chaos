@@ -222,6 +222,7 @@ namespace Chaos.Core
 
         public void Refresh() { foreach (string k in cats.Keys.ToList()) MarkStale(k); FetchMissing(Current, Clock()); }
 
+        public void Show() { Visible = true; if (!Loaded(Current)) FetchMissing(Current, Clock()); }
         public void Hide() { Visible = false; if (Craft != null) StopCraft(null, null); }
 
         public void Clear()

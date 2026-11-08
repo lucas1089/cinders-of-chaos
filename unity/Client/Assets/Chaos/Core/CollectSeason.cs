@@ -87,7 +87,8 @@ namespace Chaos.Core
 
         public SeasonState(ExtOpcodes e) : base(e, OpcodeId) { }
 
-        public void Toggle() { if (Visible) Hide(); else Send("open"); }
+        public void Show() { Visible = true; Send("open"); }
+        public void Toggle() { if (Visible) Hide(); else Show(); }
         public void Hide() { if (Tab == "journey") CloseJourney(); Visible = false; CloseJoin(); }
         public void Sync() { Send("sync"); }
         public void AskJoin() { Send("join", D("confirm", false)); }

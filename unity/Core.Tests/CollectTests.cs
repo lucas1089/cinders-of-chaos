@@ -49,7 +49,7 @@ namespace Chaos.Core.Tests
             rig.Recv(250, "{\"action\":\"state\",\"data\":{\"points\":30,\"accountPoints\":55,\"unlocked\":2,\"total\":3,\"maxPoints\":900,\"open\":true," +
                 "\"categories\":[{\"key\":\"hunt\",\"name\":\"Hunting\",\"done\":1,\"total\":2,\"points\":10,\"max\":40}],\"recent\":[{\"name\":\"First Blood\",\"points\":5}],\"titlesOn\":true," +
                 "\"titles\":[{\"text\":\"Slayer\"}],\"activeTitle\":\"Slayer\"}}");
-            check(a.WantOpen && !a.Visible, "achievements: the window waits for the list");
+            check(a.WantOpen && a.Rows.Count == 0, "achievements: the window is open, the rows wait for the last part");
             rig.Recv(250, "{\"action\":\"list\",\"data\":{\"first\":true,\"last\":false,\"rows\":[{\"n\":\"First Blood\",\"p\":5,\"d\":\"Kill one.\",\"c\":\"hunt\",\"t\":1,\"v\":1,\"u\":1700000000,\"ti\":\"Slayer\"}]}}");
             check(a.Rows.Count == 0, "achievements: rows are held until the last part");
             rig.Recv(250, "{\"action\":\"list\",\"data\":{\"first\":false,\"last\":true,\"rows\":[{\"n\":\"Secret\",\"p\":50,\"d\":\"???\",\"c\":\"hunt\",\"t\":10,\"v\":3,\"u\":0,\"h\":1},{\"n\":\"Walker\",\"p\":10,\"d\":\"Walk.\",\"c\":\"misc\",\"t\":2000,\"v\":500,\"u\":0,\"r\":\"A boots\"}]}}");
@@ -67,7 +67,7 @@ namespace Chaos.Core.Tests
             check(a.RecentText() == "Recent: First Blood (+5)" && AchievementsState.CategoryLabel(CF.Rows(CF.G(a.State, "categories"))[0]) == "Hunting  1/2", "achievements: recent line and category label");
             check(a.TitlesOn && a.TitleOptions().Count == 1 && a.ActiveTitle == "Slayer", "achievements: titles");
             a.SetTitle("none");
-            check(rig.Last == "{\"action\":\"title\",\"data\":{\"title\":\"none\"}}", "achievements: title packet");
+            check(rig.Sent[rig.Sent.Count - 2] == "{\"action\":\"title\",\"data\":{\"title\":\"none\"}}" && rig.Last == "{\"action\":\"get\",\"data\":{}}", "achievements: title packet, then the state is asked again");
             rig.Recv(250, "{\"action\":\"track\",\"data\":{\"ap\":120,\"steps\":[{\"n\":\"Ember\",\"k\":\"killfx\",\"p\":100,\"d\":\"Burns. Reward track: 100 points.\"},{\"n\":\"Azure\",\"k\":\"chatcolor\",\"p\":500,\"c\":\"#4a8cff\"}]," +
                 "\"cats\":[{\"key\":\"hunt\",\"cn\":\"Hunting\",\"n\":\"Hunter\",\"k\":\"lootbeam\",\"t\":2,\"dn\":1,\"x\":0,\"ti\":\"Hunter\"}]}}");
             check(AchievementsState.TrackReached(a.Track) == 1 && AchievementsState.TrackPercent(a.Track) == 5, "achievements: track reached and percent: " + AchievementsState.TrackPercent(a.Track));

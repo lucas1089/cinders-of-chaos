@@ -37,7 +37,9 @@ namespace Chaos.Core
 
         public PassState(ExtOpcodes e) : base(e, OpcodeId) { }
 
-        public void Toggle() { if (Visible) Visible = false; else Send("open"); }
+        public void Show() { Visible = true; Send("open"); }
+        public void Hide() { Visible = false; CancelConfirm(); }
+        public void Toggle() { if (Visible) Hide(); else Show(); }
         public void ClaimAll() { Send("claimAll"); }
         public void Claim(int tier, int track) { Send("claim", D("tier", (double)tier, "track", (double)track)); }
         public void SetFrame(bool on) { Send("frame", D("on", on)); }
