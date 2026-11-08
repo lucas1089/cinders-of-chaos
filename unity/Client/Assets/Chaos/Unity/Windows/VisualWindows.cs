@@ -153,6 +153,7 @@ namespace Chaos.Client
             fx.HitFlash = Check(ref y, inner, fx.HitFlash, Loc.T("Hit flash"), app);
             fx.ScreenShake = Check(ref y, inner, fx.ScreenShake, Loc.T("Screen shake on big hits"), app);
             VisualPrefs.Decals = Check(ref y, inner, VisualPrefs.Decals, Loc.T("Stains on the ground after combat"), app);
+            VisualPrefs.Globes = Check(ref y, inner, VisualPrefs.Globes, Loc.T("Health and mana globes"), app);
             var b = VisualPrefs.Beams;
             b.Enabled = Check(ref y, inner, b.Enabled, Loc.T("Loot beams"), app);
             if (b.Enabled)

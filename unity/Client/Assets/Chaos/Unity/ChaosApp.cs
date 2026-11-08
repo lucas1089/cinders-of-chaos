@@ -167,6 +167,13 @@ namespace Chaos.Client
             return ClientIdentity.Parse(string.IsNullOrEmpty(env) ? PlayerPrefs.GetString("chaos.identity", "extended") : env, ClientBuild());
         }
 
+        /// <summary>The aware range to ask for after the login: the environment CHAOS_UNITY_AWARE ("29x21"), else none (width 0). The map is
+        /// still drawn 15 x 11 tiles; a larger area only fills the world model (unity/README.md "Wire audit").</summary>
+        static AwareRange AwareChoice()
+        {
+            return AwareRange.TryParse(Environment.GetEnvironmentVariable("CHAOS_UNITY_AWARE"), out var r) ? r : new AwareRange(0, 0);
+        }
+
         static ushort ClientBuild()
         {
             var asset = Resources.Load<TextAsset>("chaos_build");
@@ -211,6 +218,8 @@ namespace Chaos.Client
                 RsaModulus = RsaModulus(),
                 Identity = IdentityChoice(),
                 Streamer = streamer,
+                AwareWidth = AwareChoice().Width,   // CHAOS_UNITY_AWARE=29x21 asks the server for a larger map area (Identity Chaos only)
+                AwareHeight = AwareChoice().Height,
             });
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
             ChatEntered();
@@ -328,6 +337,7 @@ namespace Chaos.Client
             PlayUpdate();   // ChaosApp.Play.cs: look, use with, trade target, item menu on the map
             CommunityUpdate();   // ChaosApp.Community.cs
             CombatUpdate();
+            Phase6VUpdate();   // ChaosApp.Phase6V.cs: tap to walk, Escape, the walk-up to an NPC
             HandleWalk();
         }
 
@@ -424,7 +434,7 @@ namespace Chaos.Client
             else if (down) d = Dir.South;
             else if (left) d = Dir.West;
             else if (right) d = Dir.East;
-            if (d == null && Input.GetMouseButton(0) && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition) && !PlayBlocksWalk)
+            if (d == null && Input.GetMouseButton(0) && ClickHeldLong && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition) && !PlayBlocksWalk)
             {
                 // touch / click: walk towards the pointer from the screen centre
                 Vector2 v = (Vector2)Input.mousePosition - new Vector2(UnityEngine.Screen.width, UnityEngine.Screen.height) / 2;
@@ -439,7 +449,7 @@ namespace Chaos.Client
                     };
                 }
             }
-            if (d != null) session.Walk(d.Value);
+            if (d != null) { autoWalk.Cancel(); npcApproach.Cancel(); session.Walk(d.Value); }   // a manual step ends an auto-walk
         }
 
         void OnGUI()
@@ -497,6 +507,7 @@ namespace Chaos.Client
             if (GUILayout.Button("Log in")) DoLogin();
             GUILayout.Label(status, small);
             GUILayout.EndArea();
+            LoginExtrasGui(w, h, new Rect(w / 2 - 170, h / 2 - 150, 340, 300));   // ChaosApp.Phase6V.cs: medallions, crests, the news bar
         }
 
         void CharactersGui(float w, float h) { CharSelectGui(w, h); }   // ChaosApp.CharSelect.cs
@@ -544,6 +555,7 @@ namespace Chaos.Client
                     Fill(new Rect(bar.x - 1, bar.y - 1, bar.width + 2, bar.height + 2), new Color(0f, 0f, 0f, 0.85f));
                     Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
                 }
+                NpcBubbleGui(map, scale);   // ChaosApp.Phase6V.cs: the speech bubble over the NPC we talk to
                 DrawGroundLabels(map, scale);
                 DrawWorldOverlays(map, scale);   // ChaosApp.World.cs: tile overlays, NPC marks, map overlay, weather
                 DrawVisualOverlays(map, scale);  // ChaosApp.Visual.cs: ground rings, decals, auras, beams, flashes, wings
@@ -571,6 +583,7 @@ namespace Chaos.Client
             PlayGui(w, h, scale);    // the use with / trade crosshair hint (ChaosApp.Play.cs)
             ItemsGui(w, h, scale);   // the item tooltip, the modal window and the text window (ChaosApp.Items.cs)
             HudEditGui(w, h, scale); // ChaosApp.Visual.cs: the HUD piece frames of the edit mode
+            Phase6VGui(w, h, scale); // ChaosApp.Phase6V.cs: the split stack dialog
             WorldGui(w, h, scale);   // the Candlemarks counter, the Hideout placing bar and the small tooltip (ChaosApp.World.cs)
         }
 

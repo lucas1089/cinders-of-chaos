@@ -267,7 +267,8 @@ namespace Chaos.Core.Tests
             // aware range: the view of the 10.98 map is the only one read
             var aware = Entered(true, dat, feat);
             aware.Parse(new byte[] { 0x42, 17, 13 });
-            check(aware.AwareW == 17 && aware.AwareH == 13 && Throws<ProtocolException>(() => aware.Parse(new byte[] { 0x42, 21, 15 })), "parser: aware range 17 x 13 is read, another is refused");
+            check(aware.AwareW == 17 && aware.AwareH == 13 && Throws<ProtocolException>(() => aware.Parse(new byte[] { 0x42, 18, 13 })),
+                  "parser: aware range 17 x 13 is read, an even size is refused (a larger odd one is read: WireAuditTests)");
 
             // 0x4B: a floor on its own. Going up out of a cave: the surface floors come first, then 0xBE has none
             var cave = new World(dat);

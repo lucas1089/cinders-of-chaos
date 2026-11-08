@@ -32,6 +32,7 @@ namespace Chaos.Client
                 hudTiny = new GUIStyle(small) { fontSize = 11, alignment = TextAnchor.MiddleCenter, clipping = TextClipping.Clip };
             }
             double now = session.Now;
+            HudGlobes(w, h, scale);   // ChaosApp.Art.cs (the orb pictures; nothing without them)
             HudPlateExtras(hud, now, scale);
             HudMonsterBar(hud, w, now, scale);
             HudCastBars(hud, h, now, scale);
@@ -73,12 +74,15 @@ namespace Chaos.Client
             var nameStyle = new GUIStyle(hudTiny) { fontStyle = FontStyle.Bold };
             var timeStyle = new GUIStyle(hudTiny) { fontSize = 10, alignment = TextAnchor.LowerCenter };
             float textW = 0;
+            bool anyIcon = false;
             foreach (var bf in list)
             {
-                textW = Mathf.Max(textW, nameStyle.CalcSize(new GUIContent(BuffBar.Label(bf))).x);
+                // a buff with its own picture needs no label width; one without keeps the short name (track U)
+                if (BuffTexture(bf) != null) anyIcon = true;
+                else textW = Mathf.Max(textW, nameStyle.CalcSize(new GUIContent(BuffBar.Label(bf))).x);
                 if (hud.Buffs.Timers && bf.EndAt >= 0) textW = Mathf.Max(textW, timeStyle.CalcSize(new GUIContent(BuffBar.Format(bf.Remaining(now)))).x);
             }
-            int cw = (int)Mathf.Ceil(TopbarLayout.CellWidth(textW, 0, 26, 6)), ch = hud.Buffs.Timers ? 32 : 26;
+            int cw = (int)Mathf.Ceil(TopbarLayout.CellWidth(textW, 0, 26, 6)), ch = hud.Buffs.Timers ? (anyIcon ? 40 : 32) : 26;
             var cells = BuffBar.Flow(list.Count, (int)bw, cw, ch, 2, out int height);
             var e = Event.current;
             string tip = null;
@@ -89,16 +93,28 @@ namespace Chaos.Client
                 var b = list[i];
                 var r = new Rect(x + cells[i].x, y + cells[i].y, cw, ch);
                 var c = BuffBar.Colour(b);
-                Fill(new Rect(r.x - 1, r.y - 1, r.width + 2, r.height + 2), b.Debuff ? new Color(0.9f, 0.2f, 0.15f) : new Color(0.7f, 0.55f, 0.2f));
-                Fill(r, new Color(c[0], c[1], c[2]));
-                var st = new GUIStyle(hudTiny) { fontStyle = FontStyle.Bold };
-                st.normal.textColor = Color.white;
-                GUI.Label(hud.Buffs.Timers && b.EndAt >= 0 ? new Rect(r.x, r.y, r.width, 16) : r, BuffBar.Label(b), st);
+                var frameCol = b.Debuff ? new Color(0.9f, 0.2f, 0.15f) : new Color(0.7f, 0.55f, 0.2f);
+                // the buff's own 26 px picture in a thin frame; without the file the coloured cell with its short name
+                var pic = new Rect(r.x + Mathf.Floor((r.width - BuffIcons.Size) / 2f), r.y, BuffIcons.Size, BuffIcons.Size);
+                bool hasPic = BuffTexture(b) != null;
+                if (hasPic)
+                {
+                    Fill(new Rect(pic.x - 1, pic.y - 1, pic.width + 2, pic.height + 2), frameCol);
+                    DrawBuffIcon(pic, b);
+                }
+                else
+                {
+                    Fill(new Rect(r.x - 1, r.y - 1, r.width + 2, r.height + 2), frameCol);
+                    Fill(r, new Color(c[0], c[1], c[2]));
+                    var st = new GUIStyle(hudTiny) { fontStyle = FontStyle.Bold };
+                    st.normal.textColor = Color.white;
+                    GUI.Label(hud.Buffs.Timers && b.EndAt >= 0 ? new Rect(r.x, r.y, r.width, 16) : r, BuffBar.Label(b), st);
+                }
                 if (hud.Buffs.Timers && b.EndAt >= 0)
                 {
                     var tt = new GUIStyle(hudTiny) { fontSize = 10, alignment = TextAnchor.LowerCenter };
                     tt.normal.textColor = Color.black;
-                    var tr = new Rect(r.x, r.yMax - 14, r.width, 14);
+                    var tr = hasPic ? new Rect(r.x, r.y + BuffIcons.Size + 1, r.width, 13) : new Rect(r.x, r.yMax - 14, r.width, 14);
                     GUI.Label(new Rect(tr.x + 1, tr.y + 1, tr.width, tr.height), BuffBar.Format(b.Remaining(now)), tt);
                     tt.normal.textColor = Color.white;
                     GUI.Label(tr, BuffBar.Format(b.Remaining(now)), tt);
@@ -130,59 +146,66 @@ namespace Chaos.Client
             if (c != null && c.Type != 1) c = null;   // monsters only, as the main client
             hud.Monster.Update(c != null ? c.Id : 0u, c?.Name, c != null ? c.HealthPercent : 0, now, Mathf.Min(100f, Time.unscaledDeltaTime * 1000f));
             float y = 46;
+            bool artDone = false;
             if (c != null)
             {
                 var info = hud.Monster.Info(c.Id);
                 string key = MonsterBar.StyleKey(info?.Tier, info?.Role);
                 var style = MonsterBar.Styles[key];
-                Color nameCol = HexColor(style.name, Color.white);
-                var box = new Rect(w / 2 - 150, y, 300, 40);
-                uiRects.Add(Scaled(box, scale));
-                Fill(new Rect(box.x - 2, box.y - 2, box.width + 4, box.height + 4), nameCol * 0.7f);
-                Fill(box, new Color(0.05f, 0.03f, 0.04f, 0.92f));
-                string title = MonsterBar.Title(key, info?.Label ?? "", c.Name);
-                var ns = new GUIStyle(small) { fontSize = 13, fontStyle = FontStyle.Bold };
-                ns.normal.textColor = nameCol;
-                GUI.Label(new Rect(box.x + 6, box.y + 1, box.width - 70, 20), title, ns);
-                string lv = MonsterBar.LevelText(info?.Level ?? 0);
-                var rs = new GUIStyle(hudTiny) { alignment = TextAnchor.MiddleRight };
-                rs.normal.textColor = new Color(0.85f, 0.8f, 0.7f);
-                if (lv != null) GUI.Label(new Rect(box.xMax - 64, box.y + 1, 58, 20), lv, rs);
-                var bar = new Rect(box.x + 6, box.y + 22, box.width - 12, 12);
-                Fill(bar, new Color(0f, 0f, 0f, 0.9f));
-                int tw = MonsterBar.FillWidth(hud.Monster.TrailValue, (int)bar.width);
-                Fill(new Rect(bar.x, bar.y, tw, bar.height), new Color(1f, 1f, 1f, 0.55f));
-                int fw = MonsterBar.FillWidth(hud.Monster.Percent, (int)bar.width);
-                Fill(new Rect(bar.x, bar.y, fw, bar.height), key == "normal" ? new Color(0.78f, 0.25f, 0.2f) : nameCol * 0.9f);
-                var ps = new GUIStyle(hudTiny);
-                ps.normal.textColor = Color.white;
-                GUI.Label(bar, MonsterBar.PercentText(hud.Monster.Percent), ps);
-                // modifier chips under the bar
-                if (info != null && info.Mods.Count > 0)
+                // the frame art of game_monsterbar when its pictures are there (track U), else the drawn bar below
+                float artBottom = HudMonsterBarArt(hud, c, info, key, style, w, y, now, scale);
+                if (artBottom >= 0) { y = artBottom + 8; artDone = true; }
+                else
                 {
-                    string tip = null;
-                    var e = Event.current;
-                    for (int i = 0; i < info.Mods.Count; i++)
+                    Color nameCol = HexColor(style.name, Color.white);
+                    var box = new Rect(w / 2 - 150, y, 300, 40);
+                    uiRects.Add(Scaled(box, scale));
+                    Fill(new Rect(box.x - 2, box.y - 2, box.width + 4, box.height + 4), nameCol * 0.7f);
+                    Fill(box, new Color(0.05f, 0.03f, 0.04f, 0.92f));
+                    string title = MonsterBar.Title(key, info?.Label ?? "", c.Name);
+                    var ns = new GUIStyle(small) { fontSize = 13, fontStyle = FontStyle.Bold };
+                    ns.normal.textColor = nameCol;
+                    GUI.Label(new Rect(box.x + 6, box.y + 1, box.width - 70, 20), title, ns);
+                    string lv = MonsterBar.LevelText(info?.Level ?? 0);
+                    var rs = new GUIStyle(hudTiny) { alignment = TextAnchor.MiddleRight };
+                    rs.normal.textColor = new Color(0.85f, 0.8f, 0.7f);
+                    if (lv != null) GUI.Label(new Rect(box.xMax - 64, box.y + 1, 58, 20), lv, rs);
+                    var bar = new Rect(box.x + 6, box.y + 22, box.width - 12, 12);
+                    Fill(bar, new Color(0f, 0f, 0f, 0.9f));
+                    int tw = MonsterBar.FillWidth(hud.Monster.TrailValue, (int)bar.width);
+                    Fill(new Rect(bar.x, bar.y, tw, bar.height), new Color(1f, 1f, 1f, 0.55f));
+                    int fw = MonsterBar.FillWidth(hud.Monster.Percent, (int)bar.width);
+                    Fill(new Rect(bar.x, bar.y, fw, bar.height), key == "normal" ? new Color(0.78f, 0.25f, 0.2f) : nameCol * 0.9f);
+                    var ps = new GUIStyle(hudTiny);
+                    ps.normal.textColor = Color.white;
+                    GUI.Label(bar, MonsterBar.PercentText(hud.Monster.Percent), ps);
+                    // modifier chips under the bar
+                    if (info != null && info.Mods.Count > 0)
                     {
-                        var chip = new Rect(box.x + 6 + i * 22, box.yMax + 4, 20, 20);
-                        Fill(chip, new Color(0.25f, 0.12f, 0.12f, 0.95f));
-                        string nm = info.Mods[i];
-                        GUI.Label(chip, nm.Length > 0 ? nm.Substring(0, 1).ToUpperInvariant() : "?", hudTiny);
-                        if (chip.Contains(e.mousePosition)) tip = nm + ": " + MonsterBar.ModTip(nm);
+                        string tip = null;
+                        var e = Event.current;
+                        for (int i = 0; i < info.Mods.Count; i++)
+                        {
+                            var chip = new Rect(box.x + 6 + i * 22, box.yMax + 4, 20, 20);
+                            Fill(chip, new Color(0.25f, 0.12f, 0.12f, 0.95f));
+                            string nm = info.Mods[i];
+                            GUI.Label(chip, nm.Length > 0 ? nm.Substring(0, 1).ToUpperInvariant() : "?", hudTiny);
+                            if (chip.Contains(e.mousePosition)) tip = nm + ": " + MonsterBar.ModTip(nm);
+                        }
+                        if (tip != null)
+                        {
+                            var tr = new Rect(box.x, box.yMax + 28, 300, 36);
+                            Fill(tr, new Color(0.03f, 0.02f, 0.04f, 0.95f));
+                            GUI.Label(new Rect(tr.x + 4, tr.y + 2, tr.width - 8, tr.height - 4), tip, toastText);
+                        }
                     }
-                    if (tip != null)
-                    {
-                        var tr = new Rect(box.x, box.yMax + 28, 300, 36);
-                        Fill(tr, new Color(0.03f, 0.02f, 0.04f, 0.95f));
-                        GUI.Label(new Rect(tr.x + 4, tr.y + 2, tr.width - 8, tr.height - 4), tip, toastText);
-                    }
+                    y = box.yMax + 8;
                 }
-                y = box.yMax + 8;
             }
             var mech = hud.Monster.Mech;
             if (MonsterBar.MechVisible(mech, now))
             {
-                var r = new Rect(w / 2 - 150, c != null ? y + (info0(hud, c) ? 28 : 0) : y, 300, 22);
+                var r = new Rect(w / 2 - 150, c != null ? y + (!artDone && info0(hud, c) ? 28 : 0) : y, 300, 22);
                 uiRects.Add(Scaled(r, scale));
                 Fill(new Rect(r.x - 1, r.y - 1, r.width + 2, r.height + 2), new Color(0f, 0f, 0f, 0.9f));
                 Fill(new Rect(r.x, r.y, MonsterBar.MechFill(mech, now, (int)r.width), r.height), HexColor(MonsterBar.MechColors[mech.Kind], Color.red));
@@ -275,7 +298,10 @@ namespace Chaos.Client
                 if (GUI.Button(new Rect(box.xMax - 24, box.y + 3, 20, 18), "x")) close = t;
                 bool buttons = t.HasButtons;
                 float textBottom = buttons ? ToastKinds.ButtonTextBottom : ToastKinds.TextBottom;
-                var tr = new Rect(box.x + 8, box.y + ToastKinds.TextTop, box.width - 16, box.height - ToastKinds.TextTop - textBottom);
+                // the toast type's own 48 px icon at the left (game_chaosnotify); the text moves right of it when the picture is there
+                float iconY = box.y + ToastKinds.TextTop + Mathf.Max(0f, Mathf.Floor((box.height - ToastKinds.TextTop - textBottom - ToastIcons.Size) / 2f));
+                float textX = ToastHasIcon(t) && DrawToastIcon(new Rect(box.x + 8, iconY, ToastIcons.Size, ToastIcons.Size), t.Type) ? ToastIconIndent : 0f;
+                var tr = new Rect(box.x + 8 + textX, box.y + ToastKinds.TextTop, box.width - 16 - textX, box.height - ToastKinds.TextTop - textBottom);
                 GUI.Label(tr, t.Message, toastText);
                 if (buttons)
                 {
@@ -295,9 +321,12 @@ namespace Chaos.Client
             else if (close != null) tc.Close(close);
         }
 
+        const float ToastIconIndent = ToastIcons.Size + 8;
+        bool ToastHasIcon(Toast t) => ArtTexture(ToastIcons.Path(t.Type)) != null;
+
         int ToastHeight(Toast t, float width)
         {
-            float th = toastText.CalcHeight(new GUIContent(t.Message), width - 16);
+            float th = toastText.CalcHeight(new GUIContent(t.Message), width - 16 - (ToastHasIcon(t) ? ToastIconIndent : 0f));
             return ToastKinds.HeightFor(t.Type, th, out _);
         }
 

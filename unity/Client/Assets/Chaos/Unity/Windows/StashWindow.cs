@@ -18,9 +18,12 @@ namespace Chaos.Client
         string search = "", amountText = "1";
         bool byName;
         StashItem selected;
-        Vector2 scroll;
+        Vector2 scroll, panelScroll;
+        int mode;   // 0 the items, 1 Find my item, 2 the never-stash list
+        string findText = "", findSent = "";
+        double findTyped;
 
-        public override void Reset() { lastVisible = false; selected = null; search = ""; Open = false; scroll = Vector2.zero; }
+        public override void Reset() { mode = 0; findText = findSent = ""; lastVisible = false; selected = null; search = ""; Open = false; scroll = Vector2.zero; }
 
         public override void Tick(ChaosApp app)
         {
@@ -47,7 +50,9 @@ namespace Chaos.Client
             y += 30;
 
             // search and sort
-            var sr = new Rect(inner.x + 2, y, inner.width - 130, 22);
+            var sr = new Rect(inner.x + 2, y, inner.width - 130 - 164, 22);
+            if (GUI.Toggle(new Rect(inner.xMax - 124 - 162, y, 76, 22), mode == 1, Loc.T("Find"), GUI.skin.button) != (mode == 1)) mode = mode == 1 ? 0 : 1;
+            if (GUI.Toggle(new Rect(inner.xMax - 124 - 84, y, 80, 22), mode == 2, Loc.T("Never stash"), GUI.skin.button) != (mode == 2)) mode = mode == 2 ? 0 : 2;
             GUI.SetNextControlName("stashSearch");
             search = GUI.TextField(sr, search, 40);
             if (GUI.GetNameOfFocusedControl() == "stashSearch") app.MarkTextEditing();
@@ -60,10 +65,15 @@ namespace Chaos.Client
             var grid = new Rect(inner.x + 2, y, inner.width - 4, inner.height - (y - inner.y) - footer);
             ChaosApp.Fill(grid, new Color(1f, 1f, 1f, 0.04f));
             var items = st.View(st.SelectedTab, search, byName);
+            if (mode != 0)
+            {
+                if (mode == 1) FindPanel(app, st, grid, e); else BlockPanel(app, st, grid);
+                items = new List<StashItem>();
+            }
             int per = Mathf.Max(1, (int)((grid.width - 18) / (Cell + Gap)));
             int rows = (items.Count + per - 1) / per;
-            scroll = GUI.BeginScrollView(grid, scroll, new Rect(0, 0, grid.width - 18, Mathf.Max(grid.height, rows * (Cell + Gap))));
             StashItem hover = null;
+            if (mode == 0) scroll = GUI.BeginScrollView(grid, scroll, new Rect(0, 0, grid.width - 18, Mathf.Max(grid.height, rows * (Cell + Gap))));
             for (int i = 0; i < items.Count; i++)
             {
                 var it = items[i];
@@ -80,8 +90,8 @@ namespace Chaos.Client
                     else if (e.type == EventType.MouseDown && e.button == 1) { selected = it; amountText = it.Count.ToString(); st.Redeem(it, it.Count); e.Use(); }
                 }
             }
-            GUI.EndScrollView();
-            if (items.Count == 0)
+            if (mode == 0) GUI.EndScrollView();
+            if (items.Count == 0 && mode == 0)
                 GUI.Label(new Rect(grid.x + 6, grid.y + 6, grid.width - 12, 40), st.ItemsLoaded ? Loc.T("Nothing here.") : Loc.T("Loading the stash..."), app.SmallStyle);
 
             // detail
@@ -132,9 +142,104 @@ namespace Chaos.Client
             ItemSlots.Drop(all, (pos, id, stack, count) =>
             {
                 if (pos.X == 0xFFFF && pos.Y >= 0x40 && s.Parser.Containers.TryGetValue((byte)(pos.Y - 0x40), out var c)) pos = new Pos(pos.X, pos.Y, pos.Z - c.FirstIndex);
+                if (mode == 2) { st.ToggleBlock(pos, stack); return; }
                 if (!st.Deposit(pos, stack, id, count)) app.PostLine(st.LockedLine(false));
             });
             ItemSlots.Ghost(app, all);
+        }
+
+        // Find my item: one query over everything the character owns; a result in the stash opens its tab and selects the entry
+        void FindPanel(ChaosApp app, StashState st, Rect grid, Event e)
+        {
+            var f = st.Finder;
+            float now = Time.unscaledTime * 1000f;
+            ChaosApp.Fill(grid, new Color(0f, 0f, 0f, 0.35f));
+            var qr = new Rect(grid.x + 4, grid.y + 4, grid.width - 8, 22);
+            GUI.SetNextControlName("stashFind");
+            string typed = GUI.TextField(qr, findText, StashFinder.MaxChars);
+            if (GUI.GetNameOfFocusedControl() == "stashFind") app.MarkTextEditing();
+            if (typed != findText) { findText = typed; findTyped = now; }
+            if (findText.Length == 0 && e.type == EventType.Repaint && GUI.GetNameOfFocusedControl() != "stashFind")
+                GUI.Label(qr, "  " + Loc.T("Type at least {0} letters.", StashFinder.MinChars), app.SmallStyle);
+            bool enter = e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) && GUI.GetNameOfFocusedControl() == "stashFind";
+            if (findText != findSent && (enter || now - findTyped >= StashFinder.DebounceMs))
+            {
+                findSent = findText;
+                string q = StashFinder.CleanQuery(findText);
+                f.Request(q, 1, now);
+                if (q == null) f.Error = findText.Trim().Length > StashFinder.MaxChars ? "long" : findText.Trim().Length == 0 ? "" : "short";
+            }
+            string status = f.StatusText();
+            GUI.Label(new Rect(grid.x + 6, grid.y + 28, grid.width - 12, 20), status, app.SmallStyle);
+            var list = new Rect(grid.x + 2, grid.y + 50, grid.width - 4, grid.height - 50 - (f.Pages > 1 ? 26 : 0));
+            const float RowH = 36f;
+            panelScroll = GUI.BeginScrollView(list, panelScroll, new Rect(0, 0, list.width - 18, Mathf.Max(list.height, f.Results.Count * RowH)));
+            for (int i = 0; i < f.Results.Count; i++)
+            {
+                var r = f.Results[i];
+                var rr = new Rect(0, i * RowH, list.width - 20, RowH - 2);
+                ChaosApp.Fill(rr, new Color(1f, 1f, 1f, 0.06f));
+                app.DrawItem(new Rect(rr.x + 2, rr.y + 2, 32, 32), (ushort)r.Cid, Mathf.Min(r.Count, 100));
+                var ns = new GUIStyle(app.SmallStyle);
+                ns.normal.textColor = ColorOf(StashFinder.Color(r), Color.white);
+                GUI.Label(new Rect(rr.x + 40, rr.y, rr.width - 44, 18), StashFinder.Title(r), ns);
+                GUI.Label(new Rect(rr.x + 40, rr.y + 16, rr.width - 44, 18), StashFinder.WhereText(r, StashFinder.TabText), app.SmallStyle);
+                if (rr.Contains(e.mousePosition))
+                {
+                    if (e.type == EventType.Repaint) { ChaosApp.Fill(rr, new Color(1f, 1f, 1f, 0.08f)); app.SetTip(StashFinder.Hint(r)); }
+                    if (e.type == EventType.MouseDown && e.button == 0) { FindGo(app, st, r); e.Use(); }
+                }
+            }
+            GUI.EndScrollView();
+            if (f.Pages > 1)
+            {
+                float py = grid.yMax - 24;
+                GUI.enabled = f.Page > 1;
+                if (GUI.Button(new Rect(grid.x + 4, py, 60, 22), "<")) f.Turn(-1, now);
+                GUI.enabled = f.Page < f.Pages;
+                if (GUI.Button(new Rect(grid.x + 68, py, 60, 22), ">")) f.Turn(1, now);
+                GUI.enabled = true;
+                GUI.Label(new Rect(grid.x + 134, py + 2, 200, 20), f.PageText(), app.SmallStyle);
+            }
+        }
+
+        void FindGo(ChaosApp app, StashState st, FindResult r)
+        {
+            if (r.Loc == "stash")
+            {
+                mode = 0;
+                search = "";
+                st.SelectedTab = r.Tab;
+                foreach (var it in st.Items) if (StashFinder.IsEntry(r, it)) { selected = it; amountText = it.Count.ToString(); break; }
+                if (selected == null || !StashFinder.IsEntry(r, selected)) app.PostLine(Loc.T("That item is not in the stash any more. Search again."));
+                return;
+            }
+            string text = StashFinder.GoText(r);
+            if (text.Length > 0) app.PostLine(text);
+            if (r.Loc == "inbox") mode = 0;
+        }
+
+        // the never-stash list: item types that Stow everything and deposits keep out. Drop an item here to add its type, press x to remove
+        void BlockPanel(ChaosApp app, StashState st, Rect grid)
+        {
+            ChaosApp.Fill(grid, new Color(0f, 0f, 0f, 0.35f));
+            GUI.Label(new Rect(grid.x + 6, grid.y + 4, grid.width - 12, 36), Loc.T("Items of these types are never stowed. Drag an item of a bag here to add its type."), app.SmallStyle);
+            var list = new Rect(grid.x + 2, grid.y + 42, grid.width - 4, grid.height - 44);
+            const float RowH = 30f;
+            if (st.Blocks.Count == 0) GUI.Label(new Rect(list.x + 4, list.y + 2, list.width - 8, 20), Loc.T("The list is empty."), app.SmallStyle);
+            panelScroll = GUI.BeginScrollView(list, panelScroll, new Rect(0, 0, list.width - 18, Mathf.Max(list.height, st.Blocks.Count * RowH)));
+            StashBlock remove = null;
+            for (int i = 0; i < st.Blocks.Count; i++)
+            {
+                var b = st.Blocks[i];
+                var rr = new Rect(0, i * RowH, list.width - 20, RowH - 2);
+                ChaosApp.Fill(rr, new Color(1f, 1f, 1f, 0.06f));
+                app.DrawItem(new Rect(rr.x + 2, rr.y + 1, 26, 26), (ushort)b.Sprite, 0);
+                GUI.Label(new Rect(rr.x + 34, rr.y + 4, rr.width - 90, 20), b.Name, app.SmallStyle);
+                if (GUI.Button(new Rect(rr.xMax - 64, rr.y + 3, 62, 22), Loc.T("Remove"))) remove = b;
+            }
+            GUI.EndScrollView();
+            if (remove != null) st.Unblock(remove.Id);
         }
 
         static Color ColorOf(string hex, Color fallback) => hex != null && ColorUtility.TryParseHtmlString(hex, out var c) ? c : fallback;

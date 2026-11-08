@@ -44,7 +44,7 @@ namespace Chaos.Core
             Tips = new ItemTips(Ext) { Clock = () => Now };
             Bank = new BankState(Ext);
             Stash = new StashState(Ext);
-            Store = new StoreState(Ext);
+            Store = new StoreState(Ext) { Clock = () => Now / 1000.0 };
             Action<byte[]> send = p => conn?.Send(p);
             parser.Outfits.Send = send;
             parser.Modals.Send = send;

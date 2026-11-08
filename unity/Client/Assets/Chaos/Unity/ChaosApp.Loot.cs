@@ -99,6 +99,11 @@ namespace Chaos.Client
                     GUI.contentColor = text;
                     GUI.Label(new Rect(r.x + pad, r.y, r.width, r.height), l.Text, groundStyle);
                     GUI.contentColor = tint;
+                    if (over && !l.Row.Corpse && e.type == EventType.MouseDown && e.button == 0 && !OverUi(Input.mousePosition))
+                    {
+                        loot.Ground.Activate(l.Tile, l.Row);
+                        e.Use();
+                    }
                     if (over && l.Row.Corpse && e.type == EventType.MouseDown && e.button == 0 && !OverUi(Input.mousePosition))
                     {
                         byte free = 0;

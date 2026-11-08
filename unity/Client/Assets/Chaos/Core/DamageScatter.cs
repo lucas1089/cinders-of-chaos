@@ -18,6 +18,35 @@ namespace Chaos.Core
         public const float CritSize = 1.35f, ConditionSize = 0.7f;
     }
 
+    /// <summary>The scatter options of the logged-in character (main client: g_settings node chaosDamageScatter, key "world/name"): on or off and
+    /// the strength Subtle, Normal, Wide. The Options window edits Current, the live view reads it each frame.</summary>
+    public static class ScatterPrefs
+    {
+        public const string Pref = "chaos.damagescatter.";
+        public static ScatterSettings Current = ScatterSettings.Default;
+        public static readonly string[] LevelNames = { "Subtle", "Normal", "Wide" };
+
+        /// <summary>The PlayerPrefs key of a character (lower case), null without a name.</summary>
+        public static string Key(string name) => string.IsNullOrEmpty(name) ? null : Pref + name.ToLowerInvariant();
+
+        /// <summary>A stored value (JSON {enabled, level}, or anything) as settings; defaults for what is missing or hand-edited.</summary>
+        public static ScatterSettings Read(string json)
+        {
+            object o = string.IsNullOrEmpty(json) ? null : Json.TryParse(json);
+            bool? enabled = Json.Get(o, "enabled") is bool b ? b : (bool?)null;
+            double? level = Json.Get(o, "level") is double d ? d : (double?)null;
+            return DamageScatter.Sanitize(enabled, level);
+        }
+
+        public static string Write(ScatterSettings s)
+        {
+            var d = DamageScatter.Sanitize(s.Enabled, s.Level);
+            return Json.Serialize(new System.Collections.Generic.Dictionary<string, object> { { "enabled", d.Enabled }, { "level", d.Level } });
+        }
+
+        public static string LevelName(int level) => Loc.T(LevelNames[Math.Max(1, Math.Min(DamageScatter.Levels, level)) - 1]);
+    }
+
     public struct ScatterSettings
     {
         public bool Enabled;

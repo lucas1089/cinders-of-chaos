@@ -495,7 +495,7 @@ Not run in a Unity editor or player in the session that wrote it: it compiles in
 
 - Party (`Core/Party.cs`, `Unity/Windows/PartyFramesWindow.cs`, `Unity/ChaosApp.Party.cs`): the base packets 0xA3 invite, 0xA4 join, 0xA5 revoke, 0xA6 pass leadership, 0xA7 leave, 0xA8 shared experience, and the Chaos party frames on extended opcode 235 (`open`, `close`, `kick`, `lead`, `invite` out, `state` in). The window (Ctrl+G) opens when the character joins a party. Left click on a frame follows the member, right click opens the menu. Right-click on a player on the map opens a menu with attack, follow and the party entries by the shield (`PartyMenu.For`); a monster is still attacked at once. The server's line "X has invited you to join ..." opens an Accept and Decline box; accepting joins by the leader's creature, who must be in view.
 - Character select (`Core/CharSelect.cs`, `Unity/ChaosApp.CharSelect.cs`): cards from the login answer with the outfit drawn small, arrows, Home, End, Page keys and Enter, the last character is selected first. Characters are created on the website, not by an opcode: the "Create character" button opens `https://<login host without play.>/createcharacter.php`.
-- Character plate (`Core/Plate.cs`, `Unity/ChaosApp.Plate.cs`): outfit portrait, name, level, health and mana bars (right-click for percent, kept per character) and the experience line with the percent to the next level, all from 0xA0. The main client's plate uses no extended opcode.
+- Character plate (`Core/Plate.cs`, `Unity/ChaosApp.Plate.cs`): outfit portrait, name, level, health and mana bars (right-click for percent and eased bars, kept per character; eased bars and the movable plate: "Core loop user experience") and the experience line with the percent to the next level, all from 0xA0. The main client's plate uses no extended opcode.
 - `ChaosApp.DrawOutfit(rect, outfit)` draws a standing outfit in a GUI rectangle; `ChaosApp.ShowMenu(at, items)` is a small popup menu any window can use.
 
 ## HUD: toasts, buffs, bars, anti-bot, options (O433 phase 3, track H)
@@ -580,10 +580,22 @@ It logs in, enters, takes four steps and prints the opcodes it read. The guard k
 Same server messages as the main client. Pure code in `Core/PassiveTree.cs`, `Core/BuildCode.cs`, `Core/Progression.cs`, `Core/TopMenu.cs` (one `Progression` hub on `GameSession.Progress`), tests in `Core.Tests/ProgressionTests.cs`.
 - Passive tree, Ctrl+N (`PassiveTreeWindow`, opcode 65). The server sends only the allocation, so the layout is a file: `Resources/PassiveTree.json`, written by `luajit unity/tools/gen_tree_data.lua` from `client/overlay/modules/game_passivetree/treedata` (positions, links, names, stat lines per class; CI runs `--check`). Run it again when the main client's tree changes.
   Drag pans, the wheel zooms round the pointer, Fit shows all. Hover shows the tooltip (stats, description, mastery effects, "Requires", the cost of the path). A click plans the path to the node (green), a click on a planned node takes it and what hangs on it out, `<` and `>` undo and redo, Apply sends one `planApply`. A mastery asks for its effect. Right-click on a saved node refunds it, Reset resets the tree, both at the server's price. Search frames matches in orange (Enter and Shift+Enter step). Build Code exports the tree code, the full CC1 code (class, level, tree, gear), previews a pasted code on the tree and applies it; the server decides.
-  Not done: node icons, curved links, Paragon, trials, totals, auto build, other characters' trees, loadouts.
+  Totals button: raw against effective stats after the soft cap, critical chance and damage, attack speed (`statTotals`, asked again when the allocation changes).
+  Not done: node icons, curved links, Paragon, trials, auto build, other characters' trees, loadouts.
 - Skills (Ctrl+K): Melee (the best of sword, club and axe), Ranged, Magic / Wand, Shielding, Fishing, Fist for the Monk line, then the combat stat rows (opcode 119: damage, attack, defense, armor, mitigation).
 - Next Goals (Ctrl+Y, opcode 178) and the goal tracker (opens by itself when the server sends rows; the welcome path has a Skip button that asks twice). Hunt Tracker (Ctrl+I, opcode 241): session clock, pause, reset, restock, four lists. Rift HUD (opcode 228): opens on the server's start. Info and Services (opcode 237): pages from the Adventure, Character, Economy and System menus.
 - The top menu replaces the flat toolbar: Character, Hunt, Adventure, Economy, Social, System and Windows. Entries are sorted by text and follow the level unlocks of opcode 115 (hidden, grey with the level, a New badge, an on-screen text and a Go box). Windows lists every window no entry names. To put a new window in a category, add a line to `TopMenu.Categories` with `win:ClassName`; without one it shows under Windows.
+
+## Phase 6, track W: P1 systems (picking up, loot filter, tooltips, stash, store)
+
+Same server messages as the main client; pure code in Core, tests in `Core.Tests/Phase6WTests.cs`, texts in `Core/LocPhase6W.cs`.
+- Ground labels: a left click on an item label picks it up (`GroundPick`, `GroundLabelsModel.Activate`). The top item of a pile moves into the backpack (slot 3) at once, a lower one is raised by the server first (`raise`, answer `raised`), errors are told in the chat.
+- Loot filter (opcode 238): peek on open bags and corpses (glow, rarity frame, dim veil, `LootPeek`), the Rules tab (counters per rule, sound choice, volume, mute, Hunt Tracker flag; the sounds are not played), Autoloot steppers and a preview in the Filter tab.
+- Item tooltip: hold Ctrl to compare with the worn items of the same kind (`ItemCompare`), hold Alt for the plain line per term (`ItemHelp`, generated from `itemhelp.lua`), sources lines above the weight.
+- Stash: Find (query, pages, a stash result opens its tab) and Never stash (drop an item of a bag on the panel, Remove).
+- Store: Gift, the rotation countdown, TRY ON (the server plays the effect, no look preview panel).
+- Options > General: damage number spread on or off and its strength. Skills: bar tooltips and boosted levels in green.
+- Not done: map outlines for items, beams, rule sounds, tooltip card layout, in-world tier labels and oversized monsters of the monster bar, Helper follow, auto sell, exercise weapons.
 
 ## Running it
 
@@ -617,7 +629,7 @@ The artifact `chaos-unity-<target>` is kept 7 days.
 
 - The game login says who we are in two places (full audit in "Both clients"): the OS word and the marker bytes after the random byte.
   Identity Extended (default): OS 21 and `u16 0`. The server sends no feature list, plain outfits (no wings, aura or shader), one 0x64 map, no item attributes, never compresses.
-  An adler32 of 0, which would mean a compressed packet, is refused.
+  A zero where the adler32 goes means a deflated packet: `Core/Inflate.cs` inflates it (the server only deflates for Identity Chaos, config `packetCompression`).
   Identity Chaos: OS 21 and the markers of the main client (`ClientIdentity.WriteMarkers`). The server then sends 0x43 (feature list), outfits with
   `u16 wings, u16 aura, string shader`, the floors of a change of level as 0x4B messages before 0xBE and 0xBF, item attributes (feature 126),
   16-bit spell ids in 0xA4 (feature 152). `GameParser` reads all of that when `Identity.Markers` is set. Item attributes follow the feature, not the identity.
@@ -651,7 +663,7 @@ Chaos is parsed and tested on a fake server only. Before it becomes the default:
 1. log in with `CHAOS_UNITY_IDENTITY=chaos` and read the log line `Server features: ...`. The full list is in the base engine, not in this repo.
    A feature that changes a wire width the parser does not know (an effect id of 16 bits, for example) must be handled by the effect parser of track B through `GameParser.Features`.
 2. walk through a staircase and a hole (0x4B floors), open a bag with a rarity item, see a creature with wings or a shader.
-3. keep `packetCompression` off until Unity has an inflater (it throws on a compressed packet).
+3. `packetCompression` may be on: Unity inflates (`Core/Inflate.cs`, wire audit below). Not yet seen on a live server.
 4. leave capability bit 7 off until the 0xB4 parser reads the three extra fields (percent, type, creature id). `ClientIdentity.Capabilities` holds the bits.
 
 UI text: the English text is the key, `Loc.T("text", args)` looks it up in `LocStrings.PtBr` (`Core/Loc.cs`). Arguments are `{0}`. The language is `chaos.lang` or the system language.
@@ -659,6 +671,50 @@ A test fails when a `Loc.T` key in `Unity/` has no pt-BR entry. Server texts com
 Window titles of the older windows are not translated yet.
 
 Parity: `docs/UNITY_PARITY.md` has the module table (169 rows), the missing base opcodes and the migration plan.
+
+## Wire audit
+
+Phase 6, track T. The parser was checked against the patches, not against itself: `Core.Tests/WireAuditTests.cs` holds byte vectors written by hand from
+what the patches write (about 100 checks), plus `server/tools/cast_relay.py`, which parses the same server stream and has its own tests.
+The base server and the base client are not in this repo, so a layout only they define is marked "base" and stays on the live-run list.
+
+Verified, by patch:
+- Login markers (src 0003, 0051, 0079): `u16 5 "OTCv8"`, `u16` version, `"OTCv8TierByte"`, `"A"`, `u32`, `"C"`, capability byte 0xC0 (bit 7 typed numbers, bit 6 16-bit spell ids). The test
+  also reads the bytes the way `onRecvFirstMessage` does. Extended is `u16 0`.
+- 0x43 feature list (src 0003): `u16` count, `u8` feature and `u8` enabled. 126, 152 and 155 are the Chaos features.
+- Items (src 0003, 0050, 0081): id, mark, count byte for stackable, fluid, splash and quivers, phase byte for more than one phase, then `u16` count and `u16` key + `u64` value, in the inventory (0x78),
+  containers (0x6E, 0x70, 0x71, 0x72 with and without the sliding item), tiles (0x6A) and the browse field's bag (count 0). A 500 slot bag is a page of 250 (capacity byte 250, size 500, first index 250). Key 3 carries 1 or 2.
+- Creatures (src 0077, 0083): 0x61, 0x62, 0x63, the facing bytes 4 to 7 (north-east, south-east, south-west, north-west), the refresh by id (`0x6B 0xFFFF id` and the full form with remove = own id),
+  outfits with mount, wings, aura and shader (also 0x8E and the item look), the square 0x93 (id, 1, colour).
+- Text and numbers (src 0037, 0051, 0052; base 0100): 0xB4 modes 23 to 29 with and without feature 155, 0xA4 with a byte or a `u16` id (0079, ids above 255), 0xA5 group id stays a byte,
+  0xA0 and 0xA1 (display scaled `u32` health and mana, the seven crafting skills of base 0012, the 24 byte tail).
+- Basic data 0x9F (base 0016, `ascension.lua`): the class byte (1 to 29) becomes the vocation id with the table of that patch and is read again after an ascension.
+- UTF-8 text (base 0028): a string that is valid UTF-8 with a non-ASCII character is read as UTF-8, anything else as Latin-1, a byte order mark is dropped (`ByteReader.Str`). Extended opcode payloads keep their bytes (`StrRaw`) and decode their own UTF-8.
+- Map (src 0072, aware range): 0x64, 0x65 to 0x68, 0x4B, 0xBE and 0xBF with the skip chain across floors, at 17 x 13 and at 29 x 21.
+- Compression (src 0069, 0073; base 0131, 0135), below.
+- Verified from `cast_relay.py` only, not in a patch: the 0x17 login tail, 0xA0 field order, the tile and creature layout of the base (mark, speech bubble, helpers, unpassable), the step time.
+
+Mismatches found and fixed (patch, what the main client does, what Unity did):
+1. src 0069 / 0073, base 0131: the server deflates packets of an Identity Chaos connection when `packetCompression` is on. Unity threw on the zero checksum word. Now `RawInflater` (below).
+2. Aware range, src 0003 `GameChangeMapAwareRange`, `game_chaosview`: 0x42 other than 17 x 13 made Unity throw, and the map messages used the constants 8, 9, 6, 7 and 18 x 14. Now `World.Range` (`AwareRange`) drives every map read.
+3. Base 0016 (`GameChaosVocationIds`, always on in the 1098 profile) and `ascension.lua`: the class byte of 0x9F was dropped, so an ascension left the vocation of the character list. Now it sets `World.PlayerVocation`.
+4. Base 0028: server texts in UTF-8 ("ação" as `C3 A7 C3 A3`) showed as "Ã§Ã£" in chat and windows. Now `ByteReader.Str` applies the main client's rule.
+5. Src 0037 with 0085: health and mana come as `u32` clamped by the display scale; `(int)` turned a value above 2^31 negative. Now `FitInt` keeps the bar in range.
+6. The creature square 0x93 was skipped (the parser read a 0x86 that 10.98 does not send). Now it queues a Square event (nothing draws it yet).
+
+Compression: `Core/Inflate.cs` is a small inflate (stored, fixed and dynamic blocks, the decoder of zlib's `puff`). The server's stream is one raw deflate stream per connection with a sync flush after every packet,
+so each packet ends on an empty stored block and the only state between packets is the 32 KB history. Not `DeflateStream`: it cannot be fed one packet at a time. Packet layout: `u16` length, `u32` 0, XTEA of
+(`u16` length of the deflated bytes, the bytes, padding); bodies under 128 bytes stay plain with a real adler32 and do not touch the stream. At most 65536 bytes per packet (base 0131); a final block, a bad block or
+a stream that ends inside a block is a `CompressionException`, and `GameSession` closes the connection (the stream is out of step for good; the main client does the same). Tests: four packets of one stream made by zlib
+(level 3, window 2^14, memLevel 7, as the server's Deflater), sixty packets of a `DeflateStream` over 70 KB (history past 32 KB), the cap, error cases, and `Protocol.Decrypt` with plain packets between deflated ones.
+
+Aware range: the server tells it with 0x42 (`u8` width, `u8` height; 17 x 13 by default) to a client that sent the markers, and the client asks with 0x33 (`u8` width, `u8` height, at most 29 x 21, what `game_chaosview` sends at
+the game start). `AwareRange`: left = width / 2, right = 1 + width / 2, top and bottom the same for the height, a full map is (width + 1) x (height + 1) tiles from (x - left, y - top); only odd sizes make a window, so an even size
+is refused. `GameSession.RequestAwareRange(w, h)` sends 0x33 (Identity Chaos only), `CHAOS_UNITY_AWARE=29x21` asks after the login. The views still draw 15 x 11 tiles: `World.RangeLeft` and the other constants stay the drawn window,
+`World.Range` is what is read and kept (`ForgetOutside` follows it). The server's own answer to 0x33 (whether it resends the map) is in the base fork, so a live run should check that.
+
+Not verified, live run needed: the 0xC8 outfit window lists after the current look (wings and auras with `u16` ids, shaders with a byte id, the other width is tried when names do not read, tested both ways), the 0xD3 set packet tail,
+and everything marked "base" above.
 
 ## HD-2D post-processing (O432)
 
@@ -877,7 +933,7 @@ connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds,
 - Files: the sounds and the music are the main client's own ogg files (`client/overlay/modules/game_chaossound/sounds`, `game_chaosmusic/music`, built by `client/tools/gen_music.py`), and the aura, decal and print
   pictures are its png files. Nothing is copied into the Unity project. The player looks in `CHAOS_OVERLAY_DIR`, `StreamingAssets/overlay/modules`, `overlay/modules` beside the executable, then the repository's
   `client/overlay/modules` (`OverlayFiles`). A build that ships the game folder copies the module folders `game_chaossound`, `game_chaosmusic`, `game_chestaura`, `game_combatdecals` and `game_cosmeticfx` to
-  `StreamingAssets/overlay/modules`; the CI build does this (its ogg and png files only, `unity-prototype.yml`). Without the files the game is silent and has no pictures for auras, decals and prints (drawn stand-ins for the rest); Options > Sound says so.
+  `StreamingAssets/overlay/modules`; the CI build does this (its ogg and png files only, `unity-prototype.yml`; track U adds `game_shaderfx`, the toast icons and `overlay/data`, see "Art of the main client's modules"). Without the files the game is silent and has no pictures for auras, decals and prints (drawn stand-ins for the rest); Options > Sound says so.
 - Drawing: `Unity/ChaosApp.Visual.cs` draws in the map group through `TileScreenPx`, so the classic view and the front-art live view (F8) share it: ground rings (the 223 ground effect ids), decals, footprints, chest and
   Templar auras (the range frame as a nine-slice), cosmetic glows, loot beams, hit flashes and level-up wings. The HD-2D scene draws none of it. `Unity/ChaosApp.Audio.cs` plays the cues (8 voices) and cross-fades two
   music sources. The own name wears the picked name shader (`NameShadersWindow`, opcode 96).
@@ -885,7 +941,7 @@ connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds,
   saved per character in `chaos.hudpos.<name>`), windows taller than the screen (wheel scroll), the window fade, and the saved window places (`chaos.layout.<name>`, plus the open state of the minimap, battle list, equipment and containers).
 - Options: the existing options window got four pages (General, Sound, Visuals, Layout), `Unity/Windows/VisualWindows.cs`; every option is in PlayerPrefs (`VisualPrefs`: `chaos.sound`, `chaos.music`, `chaos.lootbeams`,
   `chaos.visualfx`, `chaos.effectopacity` and flags). Texts: `Core/LocVisual.cs` (pt-BR).
-- Not done: a larger map area than 11 rows (needs the aware range change, opcodes 0x33 and 0x42 of other sizes); effects drawn under creatures (they are over them, IMGUI); the pack effect strips of the loot beams and wings
+- Not done: drawing a larger map area than 15 x 11 tiles (the wire is ready, see "Wire audit"); effects drawn under creatures (they are over them, IMGUI); the pack effect strips of the loot beams and wings
   (drawn in code instead); the outline shader of cosmetics; the grade, bloom, spell light, liquid shimmer, target and hover outlines and cooldown pulse of game_visualfx; the shift of Gravewarden Ulthar in the live view;
   the container, panel and size parts of game_chaoslayout; name shaders of other players. The audio and picture loading and the drawing compile (`unity/Client.Check`) but were not run in a Unity player or against a live server.
 - Tests: `Core.Tests/VisualTests.cs` (about 190 checks): the mixer rules and files against `soundlogic.lua` and the module folder, the music rules and hysteresis with the files, the cursed and foot aura messages and
@@ -956,3 +1012,38 @@ streamer and cinema mode, performance record, automatic screenshots, Customise C
   the changelog, card borders, drop feed, credits, streamer masks through the chat model, the performance record (60 samples, CSV, report), screenshot rules, the extras plan, and that every text has a pt-BR entry.
 - Not done: Boss Defeated screenshots, the window title and login fields of streamer mode, the Customise Character look preview and colour palette, boss pictures and stage icons, a Nemesis tab in the Bestiary window.
   `game_event` is N/A (no server system behind it). Not run against a live server (as the other tracks).
+
+## Art of the main client's modules (O433 phase 6, track U)
+
+Icons, globes and the monster bar frame come from the main client's own png files, read the way the sounds are (`OverlayFiles`: `CHAOS_OVERLAY_DIR`, `StreamingAssets/overlay/modules`, beside the executable, the repository).
+Which file and which part is `Core/OverlayArt.cs`, the loading and drawing `Unity/ChaosApp.Art.cs`. Every drawing keeps its older stand-in, so a run without the files looks as before (one line in the log names the missing folder).
+- Files: the pictures of `client/overlay/data` are named `../data/...` under the modules folder, so the CI step copies them to `StreamingAssets/overlay/data` (`images/game/spells`, `images/game/buffs`,
+  `images/chaos/monsterbar`, `images/chaos/topbutton_ranking.png`) and `game_shaderfx` and `game_chaosnotify/images/toast` to `overlay/modules` (about 2 MB, gitignored). A game folder that ships the overlay needs the same two folders.
+- Spell icons: the three sheets have 20 columns, cell n at column (n - 1) % 20, row (n - 1) / 20. The Unity client draws the 32 px sheet. `SpellIcons.Cell(words, id)` maps a spell to its cell from `Core/SpellIconData.cs`, generated from
+  `game_chaosspells/spelldata.lua` by `python3 -I unity/tools/gen_spell_icon_data.py` (`--check` in CI). The spellbook rows and details, and the hotbar slots, draw the cell; a rune entry draws the rune's sprite; a stock spell has no cell
+  in the repository (the base client's own table) and keeps its element colour square. The painted icons option is not ported.
+- Buff icons: `BuffIcons.OwnName(spec, key)` is the rule of `buffmath.lua` (`buff:name`, else the key, else `spellbuff`), 26 px pictures, drawn in a thin gold (buff) or red (debuff) frame with the timer under them; a buff without a file keeps the coloured square.
+- Toast icons: the 48 px picture of each of the 21 types (`ToastIcons`, same rows as `notifications.lua`, checked by the tests) at the left, the text beside it.
+- Globes: `OrbArt` is the plain globe of `shaderfxlogic.lua`: a white mask cut to the fill from the bottom, tinted `#d8262c` or `#2f6ef0`, under the painted ring (art size 76, drawn 96 px), the number in the middle. They stand left and right of the hotkey bar
+  (the bottom centre while it is closed). Option: Options > Visuals > "Health and mana globes" (`chaos.globes`). The liquid shader and slosh are not ported; the character plate keeps its bars.
+- Monster bar: the 420 x 58 frame, the 344 x 16 fill and trail in its socket, the nine-slice name plate and level plate, and the modifier chip pictures (`MonsterBarArt`, numbers from `monsterbar.otui`). Without a picture the drawn bar of before.
+- Hotbar item and rune slots (`Core/HotbarSlots.cs`, `HotkeyBarWindow`): a slot is a line to say (as before), or an item. Drop an item from the equipment or a bag on a slot, or use "Add to hotbar" in the item menu (first empty slot; not for worn items, bags or map items).
+  The slot shows the sprite and how many you carry in the equipment and open bags (dimmed at 0). A press of the key or a left click uses it by its mode: Use (0x82), Use on yourself and Use on target (0x84 with your id or the attacked monster; nothing is sent without a target, as the base
+  action bar), Use with ... (the crosshair of `ChaosApp.Play.cs`, then 0x83 or 0x84 on the click). A rune or any multi-use item starts as Use with ..., others as Use. Right click on an item slot: the four modes and Remove from hotbar.
+  Saved with the other slots (`chaos.hotkey.<name>.<n>`): a line as before, an item as `item:<client id>:<mode>`, so an older save loads.
+- Not done: item hotbar slots on the base client's Q and E side slots, drag from slot to slot, equip mode, the ornate hotbar frame, slot count and scale options; the monster look in toasts, toast plate and button art; the liquid shader of the globes.
+  Nothing here was run in a Unity player or against a live server (the drawing compiles in `unity/Client.Check`).
+- Tests: `Core.Tests/ArtTests.cs`: the cell maths and the table against `spelldata.lua` and the three sheets' sizes, buff names and file sizes, toast rows against `notifications.lua`, orb sizes and colours against `shaderfxlogic.lua`, monster bar geometry
+  against `monsterbar.otui`, the slot model (parse, save, load, modes), the press rules on a fake host, the menu entry and the texts in pt-BR.
+## Core loop user experience (O433 phase 6, track V)
+
+The P0 rows of `docs/UNITY_PARITY.md` that the first phases left partial. Models are pure (`Core/AutoWalk.cs`, `Core/HudBars.cs`, `Core/SplitStack.cs`, `Core/NpcBubble.cs`, `Core/LoginExtras.cs`, `Core/PanelSettings.cs`), the glue is `Unity/ChaosApp.Phase6V.cs` plus edits in the plate, character select, equipment and party windows. Texts: `Core/LocPhase6V.cs`. Tests: `Core.Tests/Phase6VTests.cs`.
+- Login screen: the news bar is the website's login services, one GET on `https://<login host without play.>/clientservices` (the endpoint `server/tools/clientservices.py` serves, `docs/LAUNCH.md`). It lists the running and next events, the boosted creature and boss with their outfit (drawn when the sprite pair is loaded) and the players online. A panel shows only with data; no data or no room, no bar. The medallions and crests around the sign-in panel are drawn in code. Event dates are the server's calendar stamps, compared with the machine clock.
+- Character select: the website's account API (`chaos_client_api.php`, `website/README.md` "Client API") is asked once when the list opens: one `login` with the account and password the game login holds (HTTPS only, the token lives in memory and is ended on Back and on Enter). The answer adds the last login line, the season tag, wings, aura and shader names, merged into the card's outfit, and the slots header. A toggle on the screen turns it off (`chaos.account.api` in PlayerPrefs). Cards also get a class badge. Creating a character still opens the website page.
+- Plate: health and mana bars ease to a new value and a fall leaves a pale chip (`HudBarTrack`, the timing of the main client's `hudbars_logic.lua`); the right click menu switches percent and eased bars. The strip on top of the plate moves it (the "status" piece of `HudLayout`, saved per character, double click resets). Under it the buff bar, shield and chi follow.
+- Equipment window (the bag panel): tab row (Equip, Quest, Stats, Shop open their windows when the client has them), the coins of the open bags, Chaos Coins and the outfit.
+- Auto-walk: a quick click (under 0.25 s, under 8 px) on a known tile finds the path with A* (`PathFinder`: straight 10, diagonal 30 because a diagonal step takes three times as long; tiles with a ground, nothing not walkable or not pathable, no creature) and sends it in one 0x64 packet (directions 1 east to 8 south-east, walking order, at most 100 steps). Escape sends 0xBE. A key step, a held button or a push ends it. A held button walks towards the pointer as before. The HD-2D scene has no tile picking: a quick click does nothing there.
+- NPC: right click on an NPC (no more attack) offers Talk, Look, Copy Name. Talk says hi inside the talk radius (3 tiles), else walks to the nearest reachable tile within it, greets on arrival and gives up after 10 s or when the way is blocked. The bubble over the NPC shows its latest reply (wrapped, 8 lines at most), keyword chips and an end button (says bye); it closes when the NPC is out of range or the talk is idle for 120 s.
+- Split stack: dropping a stackable with more than one asks how many (`SplitStackModel`: number, slider, 1, Half, All, Enter, Esc); Ctrl at the drop moves the whole stack. There is no equip hotkey: no main client module has one (right click equips through the server option, already done).
+- Party frames: buff row and the gear settings of the main client (scale, show the panel, show myself, buffs, numbers, clicking follows, lock), saved as JSON in PlayerPrefs (`chaos.partyframes`).
+- Not done: wings, aura and shader are named on the cards, not drawn; the in-client create window; bag pages, Sort and fight mode controls of the bag panel; an option to switch the NPC bubble off; buff icon art. Nothing here ran against a live server or a live website.

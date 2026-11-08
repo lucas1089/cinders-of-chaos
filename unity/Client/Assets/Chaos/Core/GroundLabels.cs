@@ -7,10 +7,14 @@
 //   server -> client  tiles {t = [{p = [x, y, z], i = [item | corpse]}]}   every asked tile is answered (i may be [])
 //                       item   {s (stack index), id, c, nm, r, u, o, pw, g, t, il, e}
 //                       corpse {s, id, k = 1, n (items in it), i = [{c, nm, r, u, o, pw, g, t}], e}     (e: seconds until it decays)
-// Not ported: the tooltips (tip), picking an item up from its label (raise), the label accent cosmetic. A click on a corpse label opens
-// the corpse (Unity side). Tests: Core.Tests/HelperTests.cs (mirrors groundlabels_test.lua).
+//                     raise {p, s, id, c, iid}   put an item lower in a pile on top (then it is moved as usual)
+//                     raised {p, id[, err]}      answer to raise: err far | sight | gone | fixed
+// A left click on an item label picks it up (GroundPick, GroundLabelsModel.Activate): the top of a pile moves into the backpack at once
+// (0xFFFF, slot 3), an item lower down is raised by the server first. Not ported: the tooltips (tip), the label accent cosmetic. A click
+// on a corpse label opens the corpse (Unity side). Tests: Core.Tests/HelperTests.cs (mirrors groundlabels_test.lua).
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Chaos.Core
 {
@@ -63,6 +67,52 @@ namespace Chaos.Core
         public double Prio, Dist;
         public int Order;
         public bool Timer;
+    }
+
+    /// <summary>Picking an item up from its label: which thing the row stands for, whether it is on top of its pile, the raise errors.</summary>
+    public static class GroundPick
+    {
+        public const int BackpackSlot = 3;
+
+        /// <summary>The item of the tile a row stands for (groundlabels.lua thingOf): same id, best score for count, rarity, unique, stack position. Null when gone.</summary>
+        public static Item Find(Tile tile, GroundRow row, out int stack)
+        {
+            stack = -1;
+            if (tile == null || row == null) return null;
+            Item best = null; int bestScore = -1;
+            for (int i = 0; i < tile.Things.Count; i++)
+            {
+                var th = tile.Things[i];
+                if (th.IsCreature || th.Item == null || !GroundLabelRules.IsCandidate(th.Item) || th.Item.Id != row.Info.Id) continue;
+                int score = 0;
+                if (Math.Max(1, th.Item.Count) == Math.Max(1, row.Info.C)) score += 8;
+                if (ItemRarity.Of(th.Item) == LootFilterRules.Canon(row.Info.R)) score += 4;
+                if (ItemRarity.IsUnique(th.Item) == row.Info.U) score += 2;
+                if (i == row.Info.S) score += 1;
+                if (score > bestScore) { best = th.Item; bestScore = score; stack = i; }
+            }
+            return best;
+        }
+
+        /// <summary>The stack position of the top candidate (the lowest), -1 when none.</summary>
+        public static int TopStack(Tile tile)
+        {
+            if (tile == null) return -1;
+            for (int i = 0; i < tile.Things.Count; i++)
+                if (!tile.Things[i].IsCreature && tile.Things[i].Item != null && GroundLabelRules.IsCandidate(tile.Things[i].Item)) return i;
+            return -1;
+        }
+
+        public static string ErrorText(string err)
+        {
+            switch (err)
+            {
+                case "far": return Loc.T("That item is too far away.");
+                case "sight": return Loc.T("You cannot reach that item from here.");
+                case "fixed": return Loc.T("You cannot pick that up.");
+                default: return Loc.T("That item is gone.");
+            }
+        }
     }
 
     public static class GroundLabelRules
@@ -313,6 +363,13 @@ namespace Chaos.Core
         /// <summary>The rows or the tiles changed: the labels need laying out again.</summary>
         public bool Dirty;
         public int Asked, Answered;
+        /// <summary>The engine side of a pick: move the item at (tile, id, stack) into the backpack, say a failure, tell whether a backpack is worn.</summary>
+        public Action<Pos, ushort, byte, byte> MoveToBackpack = delegate { };
+        public Action<string> Notice = delegate { };
+        public Func<bool> HasBackpack = () => true;
+        World lastWorld;
+        sealed class PendingPick { public Pos Tile; public GroundRow Row; public double At; }
+        PendingPick pending;
 
         public GroundLabelsModel(ExtOpcodes e)
         {
@@ -331,6 +388,7 @@ namespace Chaos.Core
         /// Returns the number of tiles asked.</summary>
         public int Scan(World w, Pos center, int rx = GroundLabelRules.ServerRangeX, int ry = GroundLabelRules.ServerRangeY)
         {
+            lastWorld = w;
             rx = Math.Min(rx, GroundLabelRules.ServerRangeX); ry = Math.Min(ry, GroundLabelRules.ServerRangeY);
             double now = Clock();
             var seen = new HashSet<Pos>();
@@ -380,8 +438,46 @@ namespace Chaos.Core
             return i;
         }
 
+        /// <summary>A left click on an item label (not a corpse): pick it up. The top of a pile moves at once, a lower one is raised by the server first.</summary>
+        public void Activate(Pos tilePos, GroundRow row)
+        {
+            var tile = lastWorld?.Get(tilePos);
+            int stack;
+            var item = GroundPick.Find(tile, row, out stack);
+            if (item == null) { Notice(Loc.T("That item is gone.")); Rescan(tilePos); return; }
+            if (!HasBackpack()) { Notice(Loc.T("You have no backpack to put it in.")); return; }
+            if (GroundPick.TopStack(tile) == stack) { MoveToBackpack(tilePos, (ushort)item.Id, (byte)stack, (byte)Math.Max(1, item.Count)); return; }
+            pending = new PendingPick { Tile = tilePos, Row = row, At = Clock() };
+            ext.Send(Opcode, "raise", new Dictionary<string, object>
+            {
+                { "p", new List<object> { tilePos.X, tilePos.Y, tilePos.Z } }, { "s", row.Info.S }, { "id", row.Info.Id }, { "c", row.Info.C },
+                { "iid", item.Attr(ItemAttr.Id).ToString(CultureInfo.InvariantCulture) },
+            });
+        }
+
+        /// <summary>Forget what was seen of a tile so the next scan asks again.</summary>
+        void Rescan(Pos p) { TileState t; if (tiles.TryGetValue(p, out t)) { t.Sig = ""; t.Rows = null; Dirty = true; } }
+
+        void OnRaised(object data)
+        {
+            var p = Json.List(data, "p");
+            if (pending == null || p.Count < 3 || !(p[0] is double) || !(p[1] is double) || !(p[2] is double)) return;
+            var pos = new Pos((int)(double)p[0], (int)(double)p[1], (int)(double)p[2]);
+            var pick = pending;
+            if (pick.Tile != pos || Clock() - pick.At > GroundLabelRules.RetrySeconds) return;
+            pending = null;
+            string err = Json.Get(data, "err") as string;
+            if (err != null) { Notice(GroundPick.ErrorText(err)); return; }
+            var tile = lastWorld?.Get(pos);
+            int stack;
+            var item = GroundPick.Find(tile, pick.Row, out stack);
+            if (item != null && GroundPick.TopStack(tile) == stack) MoveToBackpack(pos, (ushort)item.Id, (byte)stack, (byte)Math.Max(1, item.Count));
+            else Notice(GroundPick.ErrorText("gone"));
+        }
+
         void OnMessage(ExtMessage m)
         {
+            if (m.Action == "raised") { OnRaised(m.Data); return; }
             if (m.Action != "tiles") return;
             double now = Clock();
             foreach (object entry in Json.List(m.Data, "t"))

@@ -22,6 +22,9 @@ namespace Chaos.Client
         public static int EffectPercent = EffectOpacity.Default;
         public static bool Decals = true, ChestAuras = true, ErrorColorOn = true, UiFadeOn = true, LayoutOn = true;
         public static bool WingsOwn = true, WingsOthers = true, PrintsOthers = true, GlowsOthers = true;
+        /// <summary>The health and mana globes beside the hotkey bar (track U; drawn only when the orb pictures are found).</summary>
+        public static bool Globes = true;
+        public const string GlobesPref = "chaos.globes";
         public static int ViewRows = ViewZoom.DefaultRows;
         static bool loaded;
 
@@ -42,6 +45,7 @@ namespace Chaos.Client
             WingsOwn = Flag(LevelWingsState.OwnPref, true); WingsOthers = Flag(LevelWingsState.OthersPref, true);
             PrintsOthers = Flag(CosmeticFxState.OthersPrintsPref, true); GlowsOthers = Flag(CosmeticFxState.OthersGlowPref, true);
             ViewRows = ViewZoom.Clamp(PlayerPrefs.GetInt(ViewZoom.Pref, ViewZoom.DefaultRows));
+            Globes = Flag(GlobesPref, true);
             ErrorColor.Enabled = ErrorColorOn;
         }
 
@@ -57,6 +61,7 @@ namespace Chaos.Client
             SetFlag(LevelWingsState.OwnPref, WingsOwn); SetFlag(LevelWingsState.OthersPref, WingsOthers);
             SetFlag(CosmeticFxState.OthersPrintsPref, PrintsOthers); SetFlag(CosmeticFxState.OthersGlowPref, GlowsOthers);
             PlayerPrefs.SetInt(ViewZoom.Pref, ViewRows);
+            SetFlag(GlobesPref, Globes);
             ErrorColor.Enabled = ErrorColorOn;
             PlayerPrefs.Save();
         }

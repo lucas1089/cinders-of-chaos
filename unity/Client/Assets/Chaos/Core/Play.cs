@@ -104,7 +104,7 @@ namespace Chaos.Core
     }
 
     /// <summary>What an item menu entry does. The menu is built by ItemMenu.Build, the window runs the action.</summary>
-    public enum ItemAction { Look, Use, Open, UseWith, Rotate, Trade, WhereToFind, LootAdd, LootRemove, PouchSettings, Transmog, Lock, Unlock }
+    public enum ItemAction { Look, Use, Open, UseWith, Rotate, Trade, WhereToFind, LootAdd, LootRemove, PouchSettings, Transmog, Lock, Unlock, AddToHotbar }
 
     public sealed class ItemMenuEntry
     {
@@ -152,6 +152,8 @@ namespace Chaos.Core
             if (t != null && t.Rotateable) o.Add(E(ItemAction.Rotate, Loc.T("Rotate")));
             o.Add(E(ItemAction.Look, Loc.T("Look")));
             if (r.Own && t != null && t.Pickupable && ctx.AnotherPlayerInView) o.Add(E(ItemAction.Trade, Loc.T("Trade with ...")));
+            // the hotkey bar holds the item in a slot (its sprite and count, a press uses it); only what you carry
+            if (r.Own && !r.Worn && t != null && t.Pickupable && !t.Container) o.Add(E(ItemAction.AddToHotbar, Loc.T("Add to hotbar")));
             var hooks = new List<ItemMenuEntry>();
             if (RealItem(it)) hooks.Add(E(ItemAction.WhereToFind, Loc.T("Where to find")));
             if (RealItem(it) && t != null && t.Pickupable && !t.Container)

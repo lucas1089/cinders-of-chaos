@@ -50,9 +50,35 @@ namespace Chaos.Client
             // the server wants the slot on the page the window shows
             if (pos.X == 0xFFFF && pos.Y >= 0x40 && session.Parser.Containers.TryGetValue((byte)(pos.Y - 0x40), out var cont))
                 pos = new Pos(pos.X, pos.Y, pos.Z - cont.FirstIndex);
-            var tip = tips.Lookup(ItemTips.Describe(it, pos), session.Now);
+            var ident = ItemTips.Describe(it, pos);
+            var tip = tips.Lookup(ident, session.Now);
             if (tip == null) return;
-            DrawTipBox(tip, null, null, w, h);
+            DrawTipBox(tip, WornCompareRows(tip, ident), null, w, h);
+        }
+
+        /// <summary>The Ctrl compare and the Alt help rows of an item tooltip (game_itemtooltip): worn items of the same kind come from the tip cache, asked at once.</summary>
+        List<TipLine> WornCompareRows(object tip, TipIdent hovered)
+        {
+            bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            bool alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+            var others = new List<object>();
+            bool waiting = false;
+            if (ctrl && ItemCompare.Comparable(tip))
+            {
+                var bySlot = new Dictionary<int, object>();
+                var keys = new Dictionary<int, string>();
+                var inv = session.Parser.Inventory;
+                foreach (int slot in ItemCompare.Slots(tip))
+                {
+                    if (slot < 1 || slot >= inv.Length || inv[slot] == null) continue;
+                    var d = ItemTips.Describe(inv[slot], GameSession.InventoryPos(slot));
+                    var worn = session.Tips.Quick(d, session.Now, out bool w);
+                    waiting |= w;
+                    bySlot[slot] = worn; keys[slot] = d.Key;
+                }
+                others = ItemCompare.CompareWith(tip, bySlot, hovered.Key, keys);
+            }
+            return ItemCompare.ExtraRows(tip, ctrl, alt, others, waiting);
         }
 
         // a window (market row, inspect slot, chat link) asks for a tooltip for this frame: a tip table with extra lines under it, or just a note
