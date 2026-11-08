@@ -128,7 +128,7 @@ namespace Chaos.Core.Tests
             {
                 "TowerPanelWindow", "DungeonCounterWindow", "RaidHudWindow", "RaidCalloutWindow", "DescentHudWindow", "DescentOfferWindow", "DescentShopWindow", "InvasionHudWindow",
                 "SiegeHudWindow", "ArenaHudWindow", "BattlegroundHudWindow", "BattlegroundBoardWindow", "PvpZoneConfirmWindow", "PvpZoneHudWindow", "RiftWindow", "ReadyCheckWindow",
-                "TaskTrackerWindow", "HelperHudWindow", "WaystoneWindow", "SurveyWindow",
+                "TaskTrackerWindow", "HelperHudWindow", "WaystoneWindow", "SurveyWindow", "ItemFinderWindow",
             };
             check(expected.All(w => FakeModules.Context(w) != null) && FakeModules.ContextWindows.Count() == expected.Length, "fake contexts: the " + expected.Length + " context HUDs");
             check(FakeModules.Context("HelperHudWindow") != null && !FakeModules.Context("HelperHudWindow").Drivable && FakeModules.Context("HelperHudWindow").Reason.Length > 10, "fake contexts: the Bot HUD says why no push opens it");

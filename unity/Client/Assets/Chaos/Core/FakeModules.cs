@@ -418,6 +418,9 @@ namespace Chaos.Core
             d["ReadyCheckWindow"].Close.Add(M(GroupQueuePanel.Opcode, "checkEnd", "{}", Sc + "groupqueue.lua (checkEnd)"));
             Ctx(d, "TaskTrackerWindow", Sc + "bestiary.lua", BestTracker(true));
             d["TaskTrackerWindow"].Close.Add(BestTracker(false));
+            // the finder asks only once two letters are typed: the answer to a search for "me" stands for it
+            Ctx(d, "ItemFinderWindow", Sc + "itemfinder.lua",
+                M(ItemFinderState.Opcode, "results", "{'q':'me','p':1,'pages':1,'total':2,'rows':[{'id':2666,'cid':2666,'name':'meat','n':4,'kinds':['monster','shop','sellto']},{'id':2674,'cid':2674,'name':'red apple','n':2,'kinds':['shop']}]}", Sc + "itemfinder.lua (results)"));
             // no server push opens it: the Bot HUD follows the helper's own client setting (HelperConfig Hud.Enabled), saved in the player
             AddContexts12(d);
             AddContexts14(d);   // phase 14, track H: the survey push and the Battleground match (Core/FakeModulesP14.cs)

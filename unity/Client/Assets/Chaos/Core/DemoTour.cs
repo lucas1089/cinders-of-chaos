@@ -402,6 +402,9 @@ namespace Chaos.Core
                         if (ModuleResponder) Respond(c, eo, r);
                         break;
                     }
+                    case OutfitWindowState.RequestOpcode:
+                        if (ModuleResponder) { c.Send(OutfitWindow(art)); Answered++; }
+                        break;
                     case 0x97:
                         if (ModuleResponder)
                         {
@@ -414,6 +417,14 @@ namespace Chaos.Core
                         break;
                 }
             }
+        }
+
+        /// <summary>The outfit window (engine protocolgame.cpp sendOutfitWindow, 10.98 plain wire): the hero's look with its mount, u8 count of (u16 look, name, u8 addons), u8 count of mounts.</summary>
+        public static byte[] OutfitWindow(TourArt art)
+        {
+            var w = new ByteWriter().U8(OutfitWindowState.WindowOpcode).U16((ushort)art.OutfitHero).U8(78).U8(69).U8(58).U8(76).U8(0).U16(0);
+            w.U8(2).U16((ushort)art.OutfitHero).Str("Wanderer").U8(0).U16((ushort)art.OutfitMonster).Str("Warden").U8(0);
+            return w.U8(0).ToArray();
         }
 
         /// <summary>Answers one extended request with the sample messages of Core/FakeModules.cs. Called with the gate held.</summary>
