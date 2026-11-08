@@ -109,6 +109,10 @@ impl Server {
         format!("{}/updates/live/manifest.json", self.base)
     }
 
+    pub fn unity_manifest_url(&self) -> String {
+        format!("{}/updates/unity/manifest.json", self.base)
+    }
+
     pub fn set(&self, path: &str, body: Vec<u8>) {
         self.state.lock().unwrap().routes.insert(path.to_string(), body);
     }
@@ -135,6 +139,10 @@ impl Server {
 
 pub fn blob_path(sha: &str) -> String {
     format!("/updates/live/native/{}/{sha}", &sha[..2])
+}
+
+pub fn unity_blob_path(sha: &str) -> String {
+    format!("/updates/unity/native/{}/{sha}", &sha[..2])
 }
 
 pub fn keypair(seed: u8) -> ed25519_compact::KeyPair {
@@ -193,6 +201,47 @@ impl Release {
     }
 }
 
+/// One published release of the Unity client: the files of its `native` section, a tree.
+#[derive(Clone)]
+pub struct UnityRelease {
+    pub version: u64,
+    pub package: u64,
+    pub files: Vec<(String, Vec<u8>)>,
+}
+
+impl UnityRelease {
+    pub fn payload(&self) -> String {
+        let files: Vec<_> = self
+            .files
+            .iter()
+            .map(|(n, d)| serde_json::json!({"path": n, "sha256": sha256_hex(d), "size": d.len()}))
+            .collect();
+        serde_json::json!({
+            "format": 1, "product": "cinders-of-chaos", "channel": "unity", "version": self.version,
+            "min_package": 0, "files": [],
+            "native": {"package": self.package, "game": "ChaosUnity.exe", "layout": "tree", "files_url": "native/",
+                       "files": files}
+        })
+        .to_string()
+    }
+
+    pub fn envelope(&self, kp: &ed25519_compact::KeyPair) -> String {
+        let payload = self.payload();
+        let sig = kp.sk.sign(payload.as_bytes(), None);
+        serde_json::json!({
+            "format": "chaos-update-1", "key": hex(&kp.pk[..]), "signature": hex(&sig[..]), "payload": payload
+        })
+        .to_string()
+    }
+
+    pub fn publish(&self, srv: &Server, kp: &ed25519_compact::KeyPair) {
+        for (_, d) in &self.files {
+            srv.set(&unity_blob_path(&sha256_hex(d)), d.clone());
+        }
+        srv.set("/updates/unity/manifest.json", self.envelope(kp).into_bytes());
+    }
+}
+
 pub struct World {
     pub srv: Server,
     pub kp: ed25519_compact::KeyPair,
@@ -216,6 +265,9 @@ impl World {
             args: vec![],
             feed: Some(format!("{}/{}", srv.base, cinders_launcher::config::FEED_NAME)),
             dir: dir.clone(),
+            unity_manifest: Some(srv.unity_manifest_url()),
+            unity_game: "ChaosUnity.exe".into(),
+            layout: cinders_launcher::manifest::Layout::Flat,
         };
         let exe = dir.join("CindersLauncher.exe");
         std::fs::write(&exe, b"launcher v0").unwrap();
@@ -229,6 +281,24 @@ impl World {
             exe: self.exe.clone(),
             opts,
         }
+    }
+
+    /// The Unity client's config: its own folder `unity/` in the install folder, its own manifest.
+    pub fn unity_cfg(&self) -> Config {
+        self.cfg.for_client(cinders_launcher::config::Client::Unity).unwrap()
+    }
+
+    pub fn unity_updater<'a>(&self, cfg: &'a Config, opts: Options) -> Updater<'a> {
+        Updater {
+            cfg,
+            fetch: &Curl,
+            exe: self.exe.clone(),
+            opts,
+        }
+    }
+
+    pub fn unity_read(&self, name: &str) -> Option<Vec<u8>> {
+        std::fs::read(self.dir.join("unity").join(name)).ok()
     }
 
     pub fn fast() -> Options {

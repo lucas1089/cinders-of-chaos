@@ -7,14 +7,18 @@
 #   The server's RSA modulus comes from the secret CHAOS_RSA_PUBLIC (public data, baked in). The client guard key goes in
 #   only when the input embed_client_key is true AND the secret CHAOS_CLIENT_KEY is set: this repository is public and a
 #   build artifact can be downloaded by anyone with access to the run, so the default build answers with the dev key.
+#   A StandaloneWindows64 build is also packed for the game launcher (unity/README.md "Shipping the Unity client"): the zip
+#   CindersOfChaos-Unity-Windows.zip (the player folder plus unity_build.json: every file with size and SHA-256) in the artifact
+#   chaos-unity-windows-package. The workflow publishes no release and holds no signing key: the VPS signs it
+#   (publish_client_update.sh --unity, admin app: Comandos > Site e update do client > Publicar client Unity).
 name: Unity prototype
 
 on:
   push:
     branches: [main]
-    paths: ["unity/**", ".github/workflows/unity-prototype.yml", "tools/ci/check_unity_opcodes*.py", "tools/ci/unity_opcodes_allowlist.txt", "server/data/scripts/chaos/chaos_constants.lua", "docs/CREDITS.md", "client/overlay/modules/**/*.lua"]
+    paths: ["unity/**", ".github/workflows/unity-prototype.yml", "tools/ci/check_unity_opcodes*.py", "tools/ci/unity_opcodes_allowlist.txt", "server/data/scripts/chaos/chaos_constants.lua", "docs/CREDITS.md", "client/overlay/modules/**/*.lua", "client/tools/make_unity_manifest*.py"]
   pull_request:
-    paths: ["unity/**", ".github/workflows/unity-prototype.yml", "tools/ci/check_unity_opcodes*.py", "tools/ci/unity_opcodes_allowlist.txt", "server/data/scripts/chaos/chaos_constants.lua", "docs/CREDITS.md", "client/overlay/modules/**/*.lua"]
+    paths: ["unity/**", ".github/workflows/unity-prototype.yml", "tools/ci/check_unity_opcodes*.py", "tools/ci/unity_opcodes_allowlist.txt", "server/data/scripts/chaos/chaos_constants.lua", "docs/CREDITS.md", "client/overlay/modules/**/*.lua", "client/tools/make_unity_manifest*.py"]
   workflow_dispatch:
     inputs:
       target:
@@ -61,6 +65,8 @@ jobs:
         run: python3 -I unity/tools/gen_spell_icon_data.py --check
       - name: Codex texts in pt-BR are current (pt_br.lua Codex blocks to C#)
         run: python3 -I unity/tools/gen_codex_text.py --check
+      - name: Unity client channel (pack, signed publish, verify; stdlib only)
+        run: python3 -I client/tools/make_unity_manifest_test.py
       - name: Core tests
         working-directory: unity/Core.Tests
         run: dotnet run -c Release
@@ -301,6 +307,30 @@ jobs:
           name: hd2d-shots
           path: hd2d-shots
           if-no-files-found: warn
+          retention-days: 7
+      # The Windows player as one zip for the game launcher: the files at the zip's root plus unity_build.json (path, size,
+      # SHA-256 of every file, the shape of the manifest's "native" section). Unsigned: the update key lives on the VPS only,
+      # publish_client_update.sh --unity checks the files against unity_build.json and signs. Never a GitHub release.
+      - name: Pack the Windows player for the launcher
+        if: steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneWindows64'
+        env:
+          CLIENT_BUILD: ${{ inputs.client_build }}
+          EMBED: ${{ inputs.embed_client_key }}
+        run: |
+          if [ "$EMBED" = "true" ]; then echo "::warning::The client guard key is inside this package: whoever gets the zip can read it. Publish it only after the owner decided that (unity/README.md 'Shipping the Unity client')."; fi
+          exe=$(find build/StandaloneWindows64 -maxdepth 3 -name ChaosUnity.exe -type f | head -n 1)
+          if [ -z "$exe" ]; then echo "::error::no ChaosUnity.exe under build/StandaloneWindows64"; ls -R build | head -30; exit 1; fi
+          sudo chmod -R a+rX build
+          mkdir -p unity-package
+          python3 -I client/tools/make_unity_manifest.py pack "$(dirname "$exe")" --out unity-package/CindersOfChaos-Unity-Windows.zip --package "$CLIENT_BUILD"
+          (cd unity-package && sha256sum CindersOfChaos-Unity-Windows.zip | tee CindersOfChaos-Unity-Windows.zip.sha256)
+          ls -l unity-package
+      - uses: actions/upload-artifact@v4
+        if: steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneWindows64'
+        with:
+          name: chaos-unity-windows-package
+          path: unity-package
+          if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
         if: steps.lic.outputs.ok == '1'

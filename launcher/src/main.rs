@@ -1,10 +1,10 @@
 //! Cinders of Chaos launcher: the window (or `--cli`). Logic is in the library.
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
-use cinders_launcher::config::{self, Config};
+use cinders_launcher::config::{self, Client, Config};
 use cinders_launcher::i18n::{self, Error, Lang, Status};
-use cinders_launcher::install::{Event, Options, Updater};
+use cinders_launcher::install::{Event, Options};
 use cinders_launcher::net::Curl;
-use cinders_launcher::{launch, selfupdate};
+use cinders_launcher::{choice, launch, selfupdate};
 use std::path::PathBuf;
 
 struct Args {
@@ -12,6 +12,7 @@ struct Args {
     no_start: bool,
     dir: Option<PathBuf>,
     lang: Option<Lang>,
+    client: Option<Client>,
     rest: Vec<String>,
 }
 
@@ -21,6 +22,7 @@ fn parse_args() -> Args {
         no_start: false,
         dir: None,
         lang: None,
+        client: None,
         rest: Vec::new(),
     };
     let mut it = std::env::args().skip(1);
@@ -30,8 +32,15 @@ fn parse_args() -> Args {
             "--no-start" => a.no_start = true,
             "--dir" => a.dir = it.next().map(PathBuf::from),
             "--lang" => a.lang = it.next().map(|t| Lang::from_tag(&t)),
+            "--client" => {
+                a.client = it.next().and_then(|t| Client::from_tag(&t));
+                if a.client.is_none() {
+                    eprintln!("--client main|unity");
+                    std::process::exit(2);
+                }
+            }
             "--help" | "-h" => {
-                println!("cinders-launcher [--cli] [--no-start] [--dir FOLDER] [--lang pt|en]");
+                println!("cinders-launcher [--cli] [--no-start] [--dir FOLDER] [--lang pt|en] [--client main|unity]");
                 std::process::exit(0);
             }
             _ => a.rest.push(x),
@@ -58,32 +67,42 @@ fn take_over(exe: &std::path::Path) {
     }
 }
 
-fn updater<'a>(cfg: &'a Config, exe: PathBuf) -> Updater<'a> {
-    Updater {
-        cfg,
-        fetch: &Curl,
-        exe,
-        opts: Options::default(),
+/// The client to use: the one given with `--client`, else the player's saved choice (the main client when it is not
+/// offered any more or nothing was saved).
+fn pick_client(cfg: &Config, given: Option<Client>) -> Client {
+    match given {
+        Some(c) => c,
+        None => match config::load_client(&cfg.dir) {
+            Client::Unity if cfg.unity_manifest.is_none() => Client::Main,
+            c => c,
+        },
     }
 }
 
-fn run_cli(cfg: &Config, exe: PathBuf, lang: Lang, no_start: bool) -> i32 {
-    let r = updater(cfg, exe).run(&mut |e| {
+fn run_cli(cfg: &Config, exe: PathBuf, lang: Lang, no_start: bool, client: Client) -> i32 {
+    let active = match choice::active_config(cfg, client) {
+        Ok(a) => a,
+        Err(e) => {
+            eprintln!("{}", e.text(lang));
+            return 1;
+        }
+    };
+    let r = choice::update(cfg, client, exe, &Curl, Options::default(), &mut |e| {
         if let Event::Status(s) = e {
             println!("{}", i18n::status(s, lang));
         }
     });
     let game = match &r {
-        Ok(o) => o.game.clone(),
+        Ok((o, _)) => o.game.clone(),
         Err(e) => {
             eprintln!("{}", e.text(lang));
-            cfg.game.clone()
+            active.game.clone()
         }
     };
     let code = if r.is_ok() { 0 } else { 1 };
     if !no_start && !matches!(r, Err(Error::Rollback(_))) {
         println!("{}", i18n::status(Status::Launching, lang));
-        if let Err(e) = launch::start(cfg, &game) {
+        if let Err(e) = launch::start(&active, &game) {
             eprintln!("{}", e.text(lang));
             return 1;
         }
@@ -122,6 +141,7 @@ mod gui {
 
     struct App {
         cfg: Config,
+        client: Client,
         exe: PathBuf,
         lang: Lang,
         phase: Phase,
@@ -139,10 +159,11 @@ mod gui {
     }
 
     impl App {
-        fn new(cfg: Config, exe: PathBuf, lang: Lang, ctx: &egui::Context) -> App {
+        fn new(cfg: Config, client: Client, exe: PathBuf, lang: Lang, ctx: &egui::Context) -> App {
             let (tx, rx) = channel();
             let mut app = App {
                 cfg,
+                client,
                 exe,
                 lang,
                 phase: Phase::Working,
@@ -282,23 +303,27 @@ mod gui {
             feed::safe_link(&format!("https://{}", &rest[..end]))
         }
 
+        /// The config of the chosen client (the Unity one has its own folder and manifest).
+        fn active(&self) -> Config {
+            choice::active_config(&self.cfg, self.client).unwrap_or_else(|_| self.cfg.clone())
+        }
+
         fn start(&mut self) {
             self.phase = Phase::Working;
             self.status = i18n::status(Status::Checking, self.lang).into();
             self.file.clear();
             (self.done, self.total) = (0, 0);
-            let (cfg, exe, tx) = (self.cfg.clone(), self.exe.clone(), self.tx.clone());
+            let (cfg, client, exe, tx) = (self.cfg.clone(), self.client, self.exe.clone(), self.tx.clone());
             std::thread::spawn(move || {
-                let up = updater(&cfg, exe);
-                let r = up.run(&mut |e| {
+                let r = choice::update(&cfg, client, exe, &Curl, Options::default(), &mut |e| {
                     let _ = tx.send(Msg::Ev(e));
                 });
-                let _ = tx.send(Msg::Done(r));
+                let _ = tx.send(Msg::Done(r.map(|(o, _)| o)));
             });
         }
 
         fn play(&mut self, ctx: &egui::Context, game: &str) {
-            match launch::start(&self.cfg, game) {
+            match launch::start(&self.active(), game) {
                 Ok(()) => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
                 Err(e) => self.launch_error = Some(e),
             }
@@ -325,6 +350,7 @@ mod gui {
             let lang = self.lang;
             let mut play: Option<String> = None;
             let mut retry = false;
+            let mut pick: Option<Client> = None;
             egui::TopBottomPanel::bottom("footer")
                 .frame(
                     egui::Frame::none()
@@ -362,6 +388,26 @@ mod gui {
                     });
                     ui.add_space(-6.0);
                     let busy = matches!(self.phase, Phase::Working);
+                    // the client choice (ROADMAP O433 phase 16): offered only when the Unity manifest address is set
+                    if self.cfg.unity_manifest.is_some() {
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing.x = 4.0;
+                            ui.label(egui::RichText::new(i18n::client_label(lang)).color(theme::MUTED));
+                            ui.add_enabled_ui(!busy, |ui| {
+                                for c in [Client::Main, Client::Unity] {
+                                    if theme::tab(ui, self.client == c, i18n::client_name(c, lang)).clicked()
+                                        && self.client != c
+                                    {
+                                        pick = Some(c);
+                                    }
+                                }
+                            });
+                        });
+                        if self.client == Client::Unity {
+                            ui.label(egui::RichText::new(i18n::unity_note(lang)).small().color(theme::MUTED));
+                        }
+                        ui.add_space(6.0);
+                    }
                     let failed = matches!(self.phase, Phase::Failed(_));
                     let (fill, edge) = if failed {
                         (egui::Color32::from_rgb(40, 18, 16), theme::ERROR)
@@ -427,7 +473,7 @@ mod gui {
                                                 if !matches!(e, Error::Rollback(_) | Error::Config(_))
                                                     && ui.button(i18n::play_anyway(lang)).clicked()
                                                 {
-                                                    play = Some(self.cfg.game.clone());
+                                                    play = Some(self.active().game);
                                                 }
                                             });
                                         }
@@ -454,6 +500,12 @@ mod gui {
             if self.feed_rx.is_some() {
                 ctx.request_repaint_after(std::time::Duration::from_millis(200));
             }
+            if let Some(c) = pick {
+                // saved first: the next start opens on the same client. A failed save is not worth an error window.
+                let _ = config::save_client(&self.cfg.dir, c);
+                self.client = c;
+                retry = true;
+            }
             if retry {
                 self.launch_error = None;
                 if !matches!(self.panel, Panel::Ready { cached: false, .. }) {
@@ -467,7 +519,7 @@ mod gui {
         }
     }
 
-    pub fn run(cfg: Config, exe: PathBuf, lang: Lang) -> eframe::Result<()> {
+    pub fn run(cfg: Config, client: Client, exe: PathBuf, lang: Lang) -> eframe::Result<()> {
         let opts = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
                 .with_inner_size([760.0, 700.0])
@@ -481,7 +533,7 @@ mod gui {
             opts,
             Box::new(move |cc| {
                 theme::apply(&cc.egui_ctx);
-                Ok(Box::new(App::new(cfg, exe, lang, &cc.egui_ctx)))
+                Ok(Box::new(App::new(cfg, client, exe, lang, &cc.egui_ctx)))
             }),
         )
     }
@@ -539,13 +591,14 @@ fn main() {
             std::process::exit(1);
         }
     };
+    let client = pick_client(&cfg, args.client);
     #[cfg(feature = "gui")]
     if !args.cli {
-        if let Err(e) = gui::run(cfg, exe, lang) {
+        if let Err(e) = gui::run(cfg, client, exe, lang) {
             eprintln!("{e}");
             std::process::exit(1);
         }
         return;
     }
-    std::process::exit(run_cli(&cfg, exe, lang, args.no_start));
+    std::process::exit(run_cli(&cfg, exe, lang, args.no_start, client));
 }

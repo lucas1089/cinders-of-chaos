@@ -4614,6 +4614,15 @@ reads a manifest signed by the Python tool. Python: `make_update_manifest_test.p
 **Open.** A code-signing certificate (antivirus and SmartScreen), the install path (the folder needs write rights; no
 per-user installer yet), a run on Windows (renaming a loaded exe and DLL, `curl.exe`), no delta for `chaos.pack`.
 
+**Unity channel (O433 phase 16).** The Unity client (beta) uses the same envelope, key and `native` rules in a manifest of its own,
+`updates/unity/manifest.json` with plain blobs in `updates/unity/native/`. Payload: `{"format": 1, "product": "cinders-of-chaos", "channel": "unity",
+"version", "files": [], "native": {"package", "game": "ChaosUnity.exe", "layout": "tree", "files_url": "native/", "files": [{"path", "sha256", "size"}]}}`.
+`layout: tree` allows relative paths with sub-folders (rules in `client/tools/make_unity_manifest.py` `check_tree_path`, the same in
+`launcher/src/manifest.rs`); the main client's section has no `layout` and plain names only, and neither is accepted as the other. The in-game Lua
+updater never reads this manifest. Built by `make_unity_manifest.py build` (from the zip of the workflow `unity-prototype.yml`), published by
+`publish_client_update.sh --unity` (`chaos-ctl.sh publish-unity`). Tests: `make_unity_manifest_test.py`, `launcher/tests/vector.rs`
+(a manifest signed by Python), `launcher/tests/unity_update.rs`. unity/README.md "Shipping the Unity client".
+
 ## Display scale (new, `game_chaosscale`; server/README.md "Display scale", server src-patch 0037)
 Every combat number a player sees is the internal number x the factor of the player's own level (x1 up to level 100,
 x1000 at level 1000, x10000 from level 1500; a whole number). The server sends those numbers already scaled: the damage

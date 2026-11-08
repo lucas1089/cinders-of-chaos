@@ -5,6 +5,7 @@
 # usage: publish_client_update.sh [options] TAG|ZIP          (as root: the private key is readable by root only)
 #        publish_client_update.sh --apk APKTAG|APKFILE [--apk-info JSON] [--apk-min-version-code N]   (app update only)
 #        publish_client_update.sh --no-apk | --apk-min-version-code N                                  (app update only)
+#        publish_client_update.sh --unity [--version N] TAG|ZIP                                        (Unity client channel only)
 #
 #   TAG   a release of the repository (winpkg-46): downloads its CindersOfChaos-Client-Windows.zip
 #   ZIP   a local client zip instead (not offered by chaos-ctl.sh, which publishes release tags only)
@@ -39,6 +40,14 @@
 #                     update is offered, the phone can still play). Alone it changes only that number of the published entry.
 #   --no-apk          remove the app update entry (alone), or leave it out of this publish (with a TAG|ZIP, it is kept
 #                     otherwise: a publish of new game files does not drop the app update)
+#   --unity           the Unity client channel (O433 phase 16, unity/README.md "Shipping the Unity client"): TAG|ZIP is the
+#                     Unity Windows player zip of the workflow unity-prototype.yml (CindersOfChaos-Unity-Windows.zip: the player
+#                     folder and unity_build.json). Nothing of the main client changes: its own manifest, signed with the same
+#                     key, goes to $CHAOS_SITE_DIR/updates/unity (plain blobs under native/, the Unity build holds no secret) and
+#                     the launcher installs it in a folder of its own when the player picks "Unity client (beta)". The files are
+#                     hashed again and must match unity_build.json. --version N: the manifest version, default the number at the
+#                     end of the tag (unity-3 -> 3), else the published unity version + 1; it must be above the published one.
+#                     Needs no CHAOS_CLIENT_KEY. Not with the options of the main client or the app update.
 #   --check-only     no publish: only the web server check of the published manifest (below)
 #   --no-check        skip the web server check
 #   --keep            keep the work folder (the download and the extracted client) for a look afterwards
@@ -69,6 +78,10 @@
 #                                             exists; else derived from the private key. All that are given must agree.
 #   CHAOS_UPDATE_REPO     lucas1089/cinders-of-chaos      the GitHub repository of the releases
 #   CHAOS_UPDATE_ASSET    CindersOfChaos-Client-Windows.zip
+#   CHAOS_UPDATE_UNITY_ASSET     CindersOfChaos-Unity-Windows.zip   the Unity player asset of a release (--unity TAG)
+#   CHAOS_UPDATE_UNITY_MIN_MB    20                a smaller Unity download is refused
+#   CHAOS_UPDATE_UNITY_URL       (empty)           the public URL of updates/unity/manifest.json for the check (default: CHAOS_UPDATE_URL
+#                                                  with its updates/<channel>/ folder replaced by updates/unity/)
 #   CHAOS_UPDATE_APK_ASSET       CindersOfChaos-Android.apk    the APK asset of an Android client release (--apk TAG)
 #   CHAOS_UPDATE_APK_INFO_ASSET  CindersOfChaos-Android.json   its info asset
 #   CHAOS_UPDATE_APK_MIN_MB      1                 a smaller APK download is refused
@@ -83,6 +96,7 @@ SELF=$(readlink -f "$0")
 REPO_DIR=$(cd "$(dirname "$SELF")/../.." && pwd)
 TOOL="$REPO_DIR/client/tools/make_update_manifest.py"
 SHARDS="$REPO_DIR/client/tools/sprites/spr_shards.py"
+UNITYTOOL="$REPO_DIR/client/tools/make_unity_manifest.py"
 
 SITE=${CHAOS_SITE_DIR:-/var/www/chaos}
 KEY=${CHAOS_UPDATE_KEY:-/etc/chaos/update-key.hex}
@@ -96,6 +110,9 @@ MIN_MB=${CHAOS_UPDATE_MIN_MB:-50}
 APK_ASSET=${CHAOS_UPDATE_APK_ASSET:-CindersOfChaos-Android.apk}
 APK_INFO_ASSET=${CHAOS_UPDATE_APK_INFO_ASSET:-CindersOfChaos-Android.json}
 APK_MIN_MB=${CHAOS_UPDATE_APK_MIN_MB:-1}
+UNITY_ASSET=${CHAOS_UPDATE_UNITY_ASSET:-CindersOfChaos-Unity-Windows.zip}
+UNITY_MIN_MB=${CHAOS_UPDATE_UNITY_MIN_MB:-20}
+UNITY_URL=${CHAOS_UPDATE_UNITY_URL:-}
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'publish: %s\n' "$*" >&2; exit 1; }
@@ -105,7 +122,7 @@ isnum() { [[ ${1:-} =~ ^[0-9]{1,9}$ ]]; }
 ENVFILE=${CHAOS_ENV:-/etc/chaos/chaos.env}
 ENCRYPTED_MIN_PACKAGE=13
 
-VERSION="" MINPKG="" CHECK=1 PUBLISH=1 KEEP=0 SRC="" KEYIDX="" APK="" APKINFO="" APKMIN="" NOAPK=0
+VERSION="" MINPKG="" CHECK=1 PUBLISH=1 KEEP=0 SRC="" KEYIDX="" APK="" APKINFO="" APKMIN="" NOAPK=0 UNITY=0
 while [ $# -gt 0 ]; do
   case $1 in
     --version) isnum "${2:-}" || die "--version N"; VERSION=$((10#$2)); shift 2 ;;
@@ -115,6 +132,7 @@ while [ $# -gt 0 ]; do
     --apk-info) [ -n "${2:-}" ] || die "--apk-info JSON"; APKINFO=$2; shift 2 ;;
     --apk-min-version-code) isnum "${2:-}" || die "--apk-min-version-code N"; APKMIN=$((10#$2)); shift 2 ;;
     --no-apk) NOAPK=1; shift ;;
+    --unity) UNITY=1; shift ;;
     --check-only) PUBLISH=0; shift ;;
     --no-check) CHECK=0; shift ;;
     --keep) KEEP=1; shift ;;
@@ -125,7 +143,14 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+if [ "$UNITY" = 1 ]; then
+  [ -n "$SRC" ] || die "--unity needs a TAG or ZIP (the Unity player zip)"
+  { [ -z "$APK" ] && [ -z "$APKINFO" ] && [ -z "$APKMIN" ] && [ "$NOAPK" = 0 ] && [ -z "$MINPKG" ] && [ -z "$KEYIDX" ]; } \
+    || die "--unity does not go with --apk, --no-apk, --apk-min-version-code, --min-package or --key-index (they are the main client's)"
+  [ "$PUBLISH" = 1 ] || die "--unity does not go with --check-only"
+fi
 LIVE="$SITE/updates/live"
+UNITYDIR="$SITE/updates/unity"
 [[ $SITE == /* ]] || die "CHAOS_SITE_DIR must be an absolute path"
 [ -d "$SITE" ] || die "no site folder $SITE (CHAOS_SITE_DIR)"
 command -v python3 >/dev/null || die "python3 is missing"
@@ -181,6 +206,36 @@ PY
     bcode=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 -r 0-15 "${url%manifest.json}$apkurl" 2>/dev/null || echo 000)
     say "check: Range GET of the app update -> HTTP $bcode"
     [ "$bcode" = 206 ] || { say "check: WARN the APK Range request should answer 206 (the phone resumes a download)"; ok=1; }
+  fi
+  rm -rf "$dir"
+  [ "$ok" = 0 ] && say "check: ok"
+  return "$ok"
+}
+
+# the web server check of the Unity channel: the manifest URL answers 200 with the published file, and a Range request on
+# the biggest blob (plain files under native/) answers 206
+web_check_unity() {
+  local url=$1 dir code blob bcode ok=0
+  command -v curl >/dev/null || { say "check: WARN curl is missing"; return 1; }
+  dir=$(mktemp -d)
+  code=$(curl -sS -o "$dir/body" -w '%{http_code}' --max-time 30 "$url?t=$(date +%s)" 2>"$dir/err") \
+    || { say "check: WARN $url: $(head -c 300 "$dir/err")"; rm -rf "$dir"; return 1; }
+  say "check: GET $url -> HTTP $code"
+  [ "$code" = 200 ] || { say "check: WARN the Unity manifest URL does not answer 200"; ok=1; }
+  if [ "$code" = 200 ] && ! cmp -s "$dir/body" "$UNITYDIR/manifest.json"; then
+    say "check: WARN the served manifest differs from $UNITYDIR/manifest.json (another folder, or a cache in front)"
+    ok=1
+  fi
+  blob=$(python3 -I - "$UNITYDIR/manifest.json" <<'PY' 2>/dev/null || true
+import json, sys
+m = json.loads(json.load(open(sys.argv[1]))['payload'])
+print(max(m['native']['files'], key=lambda f: f['size'])['sha256'])
+PY
+)
+  if [ -n "$blob" ]; then
+    bcode=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 -r 0-15 "${url%manifest.json}native/${blob:0:2}/$blob" 2>/dev/null || echo 000)
+    say "check: Range GET of the largest blob -> HTTP $bcode"
+    [ "$bcode" = 206 ] || { say "check: WARN a blob Range request should answer 206 (the launcher resumes a download)"; ok=1; }
   fi
   rm -rf "$dir"
   [ "$ok" = 0 ] && say "check: ok"
@@ -256,13 +311,16 @@ if [ -z "$SRC" ]; then
   exit 0
 fi
 
-# the blob key: the client guard secret of the game server (never printed, only passed on in the environment)
-if [ -z "${CHAOS_CLIENT_KEY:-}" ] && [ -r "$ENVFILE" ]; then
+# the blob key: the client guard secret of the game server (never printed, only passed on in the environment).
+# The Unity channel has plain blobs (no secret in a public build) and needs none.
+if [ "$UNITY" = 0 ] && [ -z "${CHAOS_CLIENT_KEY:-}" ] && [ -r "$ENVFILE" ]; then
   CHAOS_CLIENT_KEY=$(sed -n 's/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}CHAOS_CLIENT_KEY=//p' "$ENVFILE" | tail -n 1 \
     | tr -d " \"'\r")
 fi
-[ -n "${CHAOS_CLIENT_KEY:-}" ] || die "no CHAOS_CLIENT_KEY (the environment, or a CHAOS_CLIENT_KEY= line in $ENVFILE): the update blobs are encrypted with it and are never published plain"
-export CHAOS_CLIENT_KEY
+if [ "$UNITY" = 0 ]; then
+  [ -n "${CHAOS_CLIENT_KEY:-}" ] || die "no CHAOS_CLIENT_KEY (the environment, or a CHAOS_CLIENT_KEY= line in $ENVFILE): the update blobs are encrypted with it and are never published plain"
+  export CHAOS_CLIENT_KEY
+fi
 
 TAG="" ZIP="" NATIVE=""
 if [ -f "$SRC" ]; then
@@ -288,13 +346,15 @@ if [ -n "$APK" ]; then fetch_apk; fi
 
 if [ -n "$TAG" ]; then
   command -v curl >/dev/null || die "curl is missing"
-  url="https://github.com/$GHREPO/releases/download/$TAG/$ASSET"
+  if [ "$UNITY" = 1 ]; then url="https://github.com/$GHREPO/releases/download/$TAG/$UNITY_ASSET"
+  else url="https://github.com/$GHREPO/releases/download/$TAG/$ASSET"; fi
   say "download: $url"
   curl -fL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 --max-filesize 8589934592 \
     -sS -o "$WORK/dl/client.zip" "$url" || die "download failed ($url)"
   ZIP="$WORK/dl/client.zip"
 fi
 size=$(stat -c %s "$ZIP")
+if [ "$UNITY" = 1 ]; then MIN_MB=$UNITY_MIN_MB; fi
 [ "$size" -ge $((MIN_MB * 1024 * 1024)) ] || die "$ZIP: $size bytes, below $MIN_MB MB (an error page or a wrong asset?)"
 say "zip: $size bytes, sha256 $(sha256sum "$ZIP" | cut -d' ' -f1)"
 
@@ -336,6 +396,39 @@ with zipfile.ZipFile(src) as z:
                 out.write(block)
 print(f'extracted {len(infos)} entries, {total} bytes')
 PY
+
+# the Unity client channel (O433 phase 16): its own manifest in updates/unity, the main client's files are not touched
+if [ "$UNITY" = 1 ]; then
+  [ -f "$UNITYTOOL" ] || die "no $UNITYTOOL"
+  mapfile -t ubuilds < <(find "$WORK/x" -maxdepth 2 -type f -name unity_build.json -printf '%h\n')
+  [ "${#ubuilds[@]}" -eq 1 ] || die "expected one unity_build.json in the zip (the workflow's Unity player package), found ${#ubuilds[@]}"
+  UBUILD=${ubuilds[0]}
+  DERIVED=$(python3 -I "$TOOL" pubkey --private "$KEY") || die "cannot read the private key $KEY"
+  if [ -z "$PUBLIC" ] && [ -f "$PUBFILE" ]; then PUBLIC=$(tr -d ' \r\n' < "$PUBFILE"); fi
+  if [ -n "$PUBLIC" ]; then
+    [[ $PUBLIC =~ ^[0-9a-f]{64}$ ]] || die "the public key (CHAOS_UPDATE_PUBLIC or $PUBFILE) is not 64 lowercase hex digits"
+    [ "$PUBLIC" = "$DERIVED" ] || die "the public key $PUBLIC is not the one of $KEY ($DERIVED)"
+  fi
+  PUBLIC=$DERIVED
+  uargs=(build "$UBUILD" --out "$UNITYDIR" --key "$KEY")
+  [ -n "$VERSION" ] && uargs+=(--version "$VERSION")
+  say "build: unity channel, plain blobs -> $UNITYDIR"
+  python3 -I "$UNITYTOOL" "${uargs[@]}" || die "make_unity_manifest.py build failed; nothing new was published"
+  python3 -I "$UNITYTOOL" verify "$UNITYDIR" --public "$PUBLIC" || die "verify failed: check $UNITYDIR/manifest.json before players fetch it"
+  chk="skipped"
+  uurl=$UNITY_URL
+  if [ -z "$uurl" ] && [[ $CHECK_URL == */manifest.json ]]; then uurl=$(printf '%s' "$CHECK_URL" | sed 's#/updates/[^/]*/manifest\.json$#/updates/unity/manifest.json#'); fi
+  if [ "$CHECK" = 1 ] && [ -n "$uurl" ]; then
+    if web_check_unity "$uurl"; then chk=ok; else chk="WARN (see above)"; fi
+  fi
+  say ""
+  say "published: the Unity client, manifest version $(python3 -I -c 'import json,sys; print(json.loads(json.load(open(sys.argv[1]))["payload"])["version"])' "$UNITYDIR/manifest.json"), from ${TAG:-$SRC}"
+  say "  folder: $UNITYDIR"
+  say "  public key: $PUBLIC"
+  say "  the launcher offers it as \"Unity client (beta)\"; the main client's update is unchanged"
+  say "  web server check: $chk"
+  exit 0
+fi
 
 # the client folder: a packed client (build 13+: the exe and chaos.pack, decrypted here with the key that opens it),
 # else a loose one: init.lua, modules/ and data/things/1098/ (the package's CindersOfChaos-Client/)

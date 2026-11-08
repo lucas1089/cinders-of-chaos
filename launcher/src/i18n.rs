@@ -98,6 +98,33 @@ pub fn website(l: Lang) -> &'static str {
     }
 }
 
+/// The client choice (ROADMAP O433 phase 16): the label, the two names and the note under the Unity one.
+pub fn client_label(l: Lang) -> &'static str {
+    match l {
+        Lang::Pt => "Cliente:",
+        Lang::En => "Client:",
+    }
+}
+
+pub fn client_name(c: crate::config::Client, l: Lang) -> &'static str {
+    use crate::config::Client;
+    match (c, l) {
+        (Client::Main, Lang::Pt) => "Cliente principal",
+        (Client::Main, Lang::En) => "Main client",
+        (Client::Unity, Lang::Pt) => "Cliente Unity (beta)",
+        (Client::Unity, Lang::En) => "Unity client (beta)",
+    }
+}
+
+pub fn unity_note(l: Lang) -> &'static str {
+    match l {
+        Lang::Pt => "Versão beta, instalada na pasta unity/ do jogo. Ela lê Tibia.dat e Tibia.spr de unity/things.",
+        Lang::En => {
+            "Beta version, installed in the game's unity/ folder. It reads Tibia.dat and Tibia.spr from unity/things."
+        }
+    }
+}
+
 /// Texts of the News and Changelog panels (src/feed.rs).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum FeedText {
@@ -265,6 +292,17 @@ mod tests {
         // "Changelog" is the same word in both
         assert_eq!(feed_text(FeedText::TabChangelog, Lang::Pt), "Changelog");
         assert_eq!(feed_text(FeedText::TabNews, Lang::Pt), "Notícias");
+    }
+
+    #[test]
+    fn client_choice_texts_have_both_languages() {
+        use crate::config::Client;
+        assert_ne!(client_label(Lang::Pt), client_label(Lang::En));
+        assert_ne!(unity_note(Lang::Pt), unity_note(Lang::En));
+        for c in [Client::Main, Client::Unity] {
+            assert_ne!(client_name(c, Lang::Pt), client_name(c, Lang::En), "{c:?}");
+        }
+        assert!(client_name(Client::Unity, Lang::En).contains("beta"));
     }
 
     #[test]

@@ -1,10 +1,14 @@
 //! `launcher.json` beside the launcher. The Windows package workflow writes it (client/tools/set_launcher_config.py);
 //! it holds the same three facts as `Services.update` in the client's init.lua.
 use crate::i18n::Error;
+use crate::manifest::Layout;
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 
 pub const FILE: &str = "launcher.json";
+/// The Unity client lives in this sub-folder of the install folder, with its own `.cinders_launcher` state.
+pub const UNITY_DIR: &str = "unity";
+pub const UNITY_GAME: &str = "ChaosUnity.exe";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
@@ -22,6 +26,12 @@ pub struct Config {
     pub feed: Option<String>,
     /// The install folder: where `launcher.json` lives.
     pub dir: PathBuf,
+    /// URL of the Unity client's signed manifest, or `None` when the choice "Unity client (beta)" is not offered.
+    pub unity_manifest: Option<String>,
+    /// The Unity player program (the manifest's `native.game` wins when it is there).
+    pub unity_game: String,
+    /// How the `native` section of this config's manifest is laid out (`Tree` only for the Unity client).
+    pub layout: Layout,
 }
 
 pub fn decode_hex(s: &str) -> Option<Vec<u8>> {
@@ -62,6 +72,23 @@ pub fn derive_feed(manifest_url: &str) -> Option<String> {
 }
 
 pub const FEED_NAME: &str = "chaos_launcher_feed.php";
+
+/// The Unity channel of an old `launcher.json` without the key: the same site and key, the folder `updates/unity/`
+/// (`https://site/updates/live/manifest.json` -> `https://site/updates/unity/manifest.json`), or `None` when the update
+/// URL does not have that shape.
+pub fn derive_unity(manifest_url: &str) -> Option<String> {
+    let (base, query) = match manifest_url.find(['?', '#']) {
+        Some(i) => manifest_url.split_at(i),
+        None => (manifest_url, ""),
+    };
+    let at = base.find("/updates/")? + "/updates/".len();
+    let rest = &base[at..];
+    let (channel, file) = rest.split_once('/')?;
+    if channel.is_empty() || file != "manifest.json" {
+        return None;
+    }
+    Some(format!("{}{UNITY_DIR}/{file}{query}", &base[..at]))
+}
 
 pub fn parse(text: &str, dir: &Path) -> Result<Config, Error> {
     let bad = |d: &str| Error::Config(d.to_string());
@@ -107,6 +134,23 @@ pub fn parse(text: &str, dir: &Path) -> Result<Config, Error> {
             .filter(|u| u.starts_with("https://") || loopback_http(u))
             .map(str::to_string),
     };
+    // "unity_manifest": the Unity client's manifest. Absent: derived from the update URL. Empty or not https: the choice
+    // is not offered (a wrong setting never stops the main client).
+    let unity_manifest = match v.get("unity_manifest") {
+        None => derive_unity(&manifest_url),
+        Some(u) => u
+            .as_str()
+            .filter(|u| u.starts_with("https://") || loopback_http(u))
+            .map(str::to_string),
+    };
+    let unity_game = match v.get("unity_game") {
+        None => UNITY_GAME.to_string(),
+        Some(g) => g
+            .as_str()
+            .filter(|g| is_plain_name(g) && g.to_ascii_lowercase().ends_with(".exe"))
+            .ok_or_else(|| bad("unity_game must be a plain .exe file name"))?
+            .to_string(),
+    };
     Ok(Config {
         manifest_url,
         public_key,
@@ -115,7 +159,82 @@ pub fn parse(text: &str, dir: &Path) -> Result<Config, Error> {
         args,
         feed,
         dir: dir.to_path_buf(),
+        unity_manifest,
+        unity_game,
+        layout: Layout::Flat,
     })
+}
+
+/// Which client the launcher updates and starts. The main client is the default; the Unity client is a beta.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Client {
+    #[default]
+    Main,
+    Unity,
+}
+
+impl Client {
+    pub fn tag(self) -> &'static str {
+        match self {
+            Client::Main => "main",
+            Client::Unity => "unity",
+        }
+    }
+
+    pub fn from_tag(t: &str) -> Option<Client> {
+        match t.trim().to_ascii_lowercase().as_str() {
+            "main" => Some(Client::Main),
+            "unity" => Some(Client::Unity),
+            _ => None,
+        }
+    }
+}
+
+impl Config {
+    /// The config of one client: the main one as it is; the Unity one with its own manifest, its own folder
+    /// (`unity/` inside the install folder, so its files and its `.cinders_launcher` state never mix with the main
+    /// client's), the tree layout and no baseline. `None` for Unity when the manifest address is not set.
+    pub fn for_client(&self, client: Client) -> Option<Config> {
+        match client {
+            Client::Main => Some(self.clone()),
+            Client::Unity => {
+                let url = self.unity_manifest.clone()?;
+                Some(Config {
+                    manifest_url: url,
+                    baseline: 0,
+                    game: self.unity_game.clone(),
+                    args: Vec::new(),
+                    dir: self.dir.join(UNITY_DIR),
+                    unity_manifest: None,
+                    layout: Layout::Tree,
+                    ..self.clone()
+                })
+            }
+        }
+    }
+}
+
+pub const SETTINGS: &str = "settings.json";
+
+/// The player's choice, saved beside the other launcher state: `.cinders_launcher/settings.json`, `{"client": "unity"}`.
+/// Missing, unreadable or odd: the main client.
+pub fn load_client(dir: &Path) -> Client {
+    std::fs::read_to_string(dir.join(crate::install::STATE_DIR).join(SETTINGS))
+        .ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .and_then(|v| v.get("client").and_then(Value::as_str).and_then(Client::from_tag))
+        .unwrap_or_default()
+}
+
+pub fn save_client(dir: &Path, client: Client) -> Result<(), Error> {
+    let state = dir.join(crate::install::STATE_DIR);
+    let io = |e: std::io::Error| Error::Io(format!("{SETTINGS}: {e}"));
+    std::fs::create_dir_all(&state).map_err(io)?;
+    let path = state.join(SETTINGS);
+    let tmp = path.with_extension("tmp");
+    std::fs::write(&tmp, format!("{{\"client\":\"{}\"}}", client.tag())).map_err(io)?;
+    let _ = std::fs::remove_file(&path);
+    std::fs::rename(&tmp, &path).map_err(io)
 }
 
 pub fn load(dir: &Path) -> Result<Config, Error> {
@@ -193,6 +312,83 @@ mod tests {
             derive_feed("http://127.0.0.1:99/updates/live/manifest.json").as_deref(),
             Some("http://127.0.0.1:99/chaos_launcher_feed.php")
         );
+    }
+
+    #[test]
+    fn unity_manifest_setting() {
+        let d = Path::new("/g");
+        // absent: derived from the update URL, same site
+        let c = parse(&ok(""), d).unwrap();
+        assert_eq!(
+            c.unity_manifest.as_deref(),
+            Some("https://x.test/updates/unity/manifest.json")
+        );
+        assert_eq!(c.unity_game, "ChaosUnity.exe");
+        assert_eq!(c.layout, Layout::Flat);
+        // given
+        let c = parse(
+            &ok(r#","unity_manifest":"https://y.test/u/manifest.json","unity_game":"Play.exe""#),
+            d,
+        )
+        .unwrap();
+        assert_eq!(c.unity_manifest.as_deref(), Some("https://y.test/u/manifest.json"));
+        assert_eq!(c.unity_game, "Play.exe");
+        // empty, wrong type, plain http: the choice is not offered, no error
+        for b in [
+            r##","unity_manifest":"""##,
+            r##","unity_manifest":5"##,
+            r##","unity_manifest":"http://y.test/m.json""##,
+            r##","unity_manifest":null"##,
+        ] {
+            assert_eq!(parse(&ok(b), d).unwrap().unity_manifest, None, "{b}");
+        }
+        // an update URL that is not under /updates/<channel>/manifest.json derives nothing
+        let t = ok("").replace("/updates/live/manifest.json", "/m/manifest.json");
+        assert_eq!(parse(&t, d).unwrap().unity_manifest, None);
+        let t = ok("").replace("/updates/live/manifest.json", "/updates/live/other.json");
+        assert_eq!(parse(&t, d).unwrap().unity_manifest, None);
+        assert_eq!(
+            derive_unity("http://127.0.0.1:99/updates/live/manifest.json?t=5").as_deref(),
+            Some("http://127.0.0.1:99/updates/unity/manifest.json?t=5")
+        );
+        // a bad unity game name is a config error (the file name is started)
+        assert!(parse(&ok(r#","unity_game":"..\\x.exe""#), d).is_err());
+        assert!(parse(&ok(r#","unity_game":"run.bat""#), d).is_err());
+    }
+
+    #[test]
+    fn config_of_each_client() {
+        let c = parse(&ok(r#","baseline":47,"args":["-x"]"#), Path::new("/g")).unwrap();
+        let main = c.for_client(Client::Main).unwrap();
+        assert_eq!(main, c);
+        let u = c.for_client(Client::Unity).unwrap();
+        assert_eq!(u.manifest_url, "https://x.test/updates/unity/manifest.json");
+        assert_eq!((u.baseline, u.layout), (0, Layout::Tree));
+        assert_eq!((u.game.as_str(), u.args.len()), ("ChaosUnity.exe", 0));
+        assert_eq!(u.dir, Path::new("/g").join("unity"));
+        assert_eq!(u.public_key, c.public_key);
+        // no Unity address: no Unity config
+        let none = parse(&ok(r##","unity_manifest":"""##), Path::new("/g")).unwrap();
+        assert!(none.for_client(Client::Unity).is_none());
+    }
+
+    #[test]
+    fn client_choice_is_saved() {
+        let dir = std::env::temp_dir().join(format!("cinders-launcher-choice-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(load_client(&dir), Client::Main, "nothing saved: the main client");
+        save_client(&dir, Client::Unity).unwrap();
+        assert_eq!(load_client(&dir), Client::Unity);
+        save_client(&dir, Client::Main).unwrap();
+        assert_eq!(load_client(&dir), Client::Main);
+        let f = dir.join(crate::install::STATE_DIR).join(SETTINGS);
+        for junk in ["", "nope", r#"{"client":"other"}"#, r#"{"client":5}"#, "[]"] {
+            std::fs::write(&f, junk).unwrap();
+            assert_eq!(load_client(&dir), Client::Main, "{junk:?}");
+        }
+        assert_eq!(Client::from_tag(" Unity "), Some(Client::Unity));
+        assert_eq!(Client::from_tag("x"), None);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
