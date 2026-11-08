@@ -366,7 +366,7 @@ namespace Chaos.Core
             var t = W.Get(to);
             if (t != null && t.Things.Count > 0 && !t.Things[0].IsCreature && t.Things[0].Item.Type != null && t.Things[0].Item.Type.Ground)
                 ground = Math.Max(1, t.Things[0].Item.Type.GroundSpeed);
-            bool player = c.Id == W.PlayerId;
+            bool player = c.Id == W.PlayerId || WalkTiming.IsPlayerId(c.Id);   // 0018: every player steps by its rules, monsters and NPCs by stock
             double calc = Math.Floor(857.36 * Math.Log(Math.Max(0, c.Speed) + 261.29) - 4795.01 + 0.5);
             calc = Math.Max(1, calc);
             long ms = (long)(1000 * ground / calc);

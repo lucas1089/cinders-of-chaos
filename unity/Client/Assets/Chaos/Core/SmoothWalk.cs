@@ -15,9 +15,12 @@ namespace Chaos.Core
     public static class WalkTiming
     {
         /// <summary>A diagonal step takes DiagonalNum / DiagonalDen of a straight one (about sqrt(2), the length of the way). The server's side is
-        /// PLAYER_DIAGONAL_STEP_NUM / _DEN of server/src-patches/0018-movement-speed.patch; track M2 of phase 18 moves it to 141 / 100 in a later
-        /// numbered patch, and these two numbers follow it. Nothing else in the client holds a diagonal factor.</summary>
-        public const long DiagonalNum = 141, DiagonalDen = 100;
+        /// PLAYER_DIAGONAL_STEP_NUM / _DEN of server/src-patches/0018-movement-speed.patch (7 / 5), for players only: monsters and NPCs
+        /// keep the stock 1x diagonal there, so they get it here too. Nothing else in the client holds a diagonal factor.</summary>
+        public const long DiagonalNum = 7, DiagonalDen = 5;
+
+        /// <summary>Player creature ids: 0x10000000 up to the monster range at 0x40000000 (monsters 0x40000000, NPCs 0x80000000).</summary>
+        public static bool IsPlayerId(uint id) { return id >= 0x10000000u && id < 0x40000000u; }
 
         /// <summary>The server rounds a player's step up to 10 ms, the others' to its 50 ms beat.</summary>
         public const int PlayerRounding = 10, OtherRounding = 50;
@@ -34,7 +37,7 @@ namespace Chaos.Core
         public static long Scale(long straightMs, bool diagonal, bool player)
         {
             long ms = straightMs;
-            if (diagonal) ms = ms * DiagonalNum / DiagonalDen;
+            if (diagonal && player) ms = ms * DiagonalNum / DiagonalDen;   // 0018: a monster's or NPC's diagonal costs a straight step
             int step = player ? PlayerRounding : OtherRounding;
             ms = (ms + step - 1) / step * step;
             return Math.Max(step, Math.Min(5000, ms));

@@ -11,9 +11,10 @@ namespace Chaos.Core.Tests
         public static void Run(Action<bool, string> check)
         {
             // ---- step timing: one diagonal constant, rounded the way the server rounds
-            check(WalkTiming.DiagonalNum == 141 && WalkTiming.DiagonalDen == 100, "timing: the diagonal factor is sqrt(2) as 141 / 100");
-            check(WalkTiming.Scale(300, false, true) == 300 && WalkTiming.Scale(300, true, true) == 430, "timing: player step 300 ms, diagonal 423 rounds up to 430");
-            check(WalkTiming.Scale(300, true, false) == 450 && WalkTiming.Scale(310, false, false) == 350, "timing: other creatures round up to the 50 ms beat");
+            check(WalkTiming.DiagonalNum == 7 && WalkTiming.DiagonalDen == 5, "timing: the diagonal factor is the server's 7 / 5 (src-patch 0018)");
+            check(WalkTiming.Scale(300, false, true) == 300 && WalkTiming.Scale(305, true, true) == 430, "timing: player step 300 ms; diagonal of 305 is 427, rounds up to 430");
+            check(WalkTiming.Scale(300, true, false) == 300 && WalkTiming.Scale(310, false, false) == 350, "timing: monsters and NPCs: a diagonal costs a straight step (0018), rounded up to the 50 ms beat");
+            check(WalkTiming.IsPlayerId(0x10000001u) && !WalkTiming.IsPlayerId(0x40000001u) && !WalkTiming.IsPlayerId(0x80000001u), "timing: player ids below the monster range");
             check(WalkTiming.Scale(1, false, true) == 10 && WalkTiming.Scale(99999, true, true) == 5000, "timing: step clamps to 10 ms .. 5000 ms");
             check(Near(WalkTiming.Lead(300), 90) && Near(WalkTiming.Lead(100), 60), "pre-walk: lead 90 ms, at most 60% of a short step");
 
@@ -218,10 +219,10 @@ namespace Chaos.Core.Tests
             world.AddThing(me.Position, new Thing { Creature = me });
             double straight = parser.StepMs(me, new Pos(101, 100, 7), false), diag = parser.StepMs(me, new Pos(101, 99, 7), true);
             check(Near(diag / straight, 1.41, 0.04), "parser: the player's diagonal step is 1.41 of a straight one (" + straight + " / " + diag + ")");
-            var rat = new Creature { Id = 2, Position = new Pos(105, 100, 7), Speed = 220 };
-            world.Creatures[2] = rat;
+            var rat = new Creature { Id = 0x40000002u, Position = new Pos(105, 100, 7), Speed = 220 };
+            world.Creatures[rat.Id] = rat;
             double rs = parser.StepMs(rat, new Pos(106, 100, 7), false), rd = parser.StepMs(rat, new Pos(106, 99, 7), true);
-            check(Near(rd / rs, 1.41, 0.17), "parser: a creature's diagonal step uses the same factor, on the 50 ms beat (" + rs + " / " + rd + ")");
+            check(rd == rs, "parser: a monster's diagonal step costs a straight one, as on the server (" + rs + " / " + rd + ")");
             // a move of the player the client predicted keeps the predicted start; the next move of a creature chains behind the last glide
             clock = 1000;
             me.Direction = Dir.East;
@@ -234,10 +235,10 @@ namespace Chaos.Core.Tests
             parser.Parse(new ByteWriter().U8(0xB5).U8(1).ToArray());
             check(parser.Steps.Count == 0 && me.Pred == null && me.WalkStart < 0, "parser: a cancel (0xB5) clears the predicted steps");
             clock = 2000;
-            parser.Parse(new ByteWriter().U8(0x6D).U16(0xFFFF).U32(2).U16(106).U16(100).U8(7).ToArray());
+            parser.Parse(new ByteWriter().U8(0x6D).U16(0xFFFF).U32(0x40000002u).U16(106).U16(100).U8(7).ToArray());
             double firstEnd = rat.WalkStart + rat.WalkMs;
             clock = 2100;
-            parser.Parse(new ByteWriter().U8(0x6D).U16(0xFFFF).U32(2).U16(107).U16(100).U8(7).ToArray());
+            parser.Parse(new ByteWriter().U8(0x6D).U16(0xFFFF).U32(0x40000002u).U16(107).U16(100).U8(7).ToArray());
             check(rat.WalkStart == firstEnd && rat.PrevStart == 2000, "parser: a creature's next move starts when its last glide ends, with no gap (" + rat.WalkStart + " after " + firstEnd + ")");
         }
     }
