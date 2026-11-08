@@ -1017,7 +1017,7 @@ jobs:
       - name: Launcher settings tool (launcher.json from the init.lua updater settings, O314)
         run: python3 -I client/tools/set_launcher_config_test.py
 
-      - name: Unity client channel (make_unity_manifest.py: pack a player folder, signed publish into updates/unity, verify, refusals; O433 phase 16)
+      - name: 'Unity client channel (make_unity_manifest.py: pack a player folder, signed publish into updates/unity, verify, refusals; O433 phase 16)'
         run: python3 -I client/tools/make_unity_manifest_test.py
 
       - name: 'Client pack tool (format 2: round trip, exclusions, compression, determinism, wrong key, tamper, zlib length checks)'

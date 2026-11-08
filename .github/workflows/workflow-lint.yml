@@ -1,0 +1,29 @@
+name: Workflow files
+
+# a YAML error in a workflow file turns every push into a failed run with no jobs and stops that workflow on pull
+# requests without any red check; this small separate workflow parses every workflow file so the error shows up
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths: ['.github/workflows/**']
+
+permissions:
+  contents: read
+
+jobs:
+  parse:
+    name: Every workflow file parses as YAML
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse .github/workflows/*.yml
+        run: |
+          status=0
+          for f in .github/workflows/*.yml; do
+            python3 -I -c 'import sys, yaml; yaml.safe_load(open(sys.argv[1], encoding="utf-8"))' "$f" \
+              || { echo "::error file=$f::not valid YAML"; status=1; }
+          done
+          exit $status
