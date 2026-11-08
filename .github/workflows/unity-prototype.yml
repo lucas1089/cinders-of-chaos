@@ -130,13 +130,15 @@ jobs:
         if: steps.lic.outputs.ok == '1'
         run: |
           dst=unity/Client/Assets/StreamingAssets/overlay/modules
-          for m in game_chaossound game_chaosmusic game_chestaura game_combatdecals game_cosmeticfx game_shaderfx; do
+          for m in game_chaossound game_chaosmusic game_chestaura game_combatdecals game_cosmeticfx game_shaderfx game_lootfilter game_nameplate; do
             (cd client/overlay/modules && find "$m" -type f \( -name '*.ogg' -o -name '*.png' \) -print0) |
               while IFS= read -r -d '' f; do mkdir -p "$dst/$(dirname "$f")"; cp "client/overlay/modules/$f" "$dst/$f"; done
           done
           # toast icons only (the rest of game_chaosnotify is the window skin)
           (cd client/overlay/modules && find game_chaosnotify/images/toast -type f -name '*.png' -print0) |
             while IFS= read -r -d '' f; do mkdir -p "$dst/$(dirname "$f")"; cp "client/overlay/modules/$f" "$dst/$f"; done
+          # the toast plate (Background); the answer buttons are in images/toast (phase 7 track Y)
+          mkdir -p "$dst/game_chaosnotify/images" && cp client/overlay/modules/game_chaosnotify/images/Background.png "$dst/game_chaosnotify/images/"
           # pictures of client/overlay/data (spell icon sheets, buff icons, monster bar art, the achievement toast icon): the player reads them as ../data
           ddst=unity/Client/Assets/StreamingAssets/overlay/data
           for d in images/game/spells images/game/buffs images/chaos/monsterbar; do
@@ -144,6 +146,8 @@ jobs:
               while IFS= read -r -d '' f; do mkdir -p "$ddst/$(dirname "$f")"; cp "client/overlay/data/$f" "$ddst/$f"; done
           done
           mkdir -p "$ddst/images/chaos" && cp client/overlay/data/images/chaos/topbutton_ranking.png "$ddst/images/chaos/"
+          # the bitmap fonts of the damage numbers (data/fonts/chaos: the .otfont text and its sheet; phase 7 track Y)
+          mkdir -p "$ddst/fonts/chaos" && cp client/overlay/data/fonts/chaos/chaos-display-16px.* client/overlay/data/fonts/chaos/chaos-outline-11px.* "$ddst/fonts/chaos/"
           echo "copied $(find "$dst" "$ddst" -type f | wc -l) files to $dst and $ddst"
       - name: Build
         if: steps.lic.outputs.ok == '1'

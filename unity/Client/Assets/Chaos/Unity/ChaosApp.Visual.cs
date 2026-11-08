@@ -52,10 +52,12 @@ namespace Chaos.Client
             {
                 VisualPrefs.Apply(v);
                 v.LootKills = () => FindWindow<LootWindow>()?.Filter?.Kills;
+                v.LootAlerted = k => FindWindow<LootWindow>()?.Filter?.AlertedKill == k;
                 v.Activity = ActivityRegion;
                 v.Random = () => Random.value;
             }
             ApplyViewRows(VisualPrefs.ViewRows);
+            Phase7YUpdate();   // ChaosApp.Phase7Y.cs: monster sizes, item outlines, fonts
             AudioUpdate(v);
             if (v == null) return;
             VisualLayoutUpdate();

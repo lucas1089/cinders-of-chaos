@@ -22,6 +22,8 @@ namespace Chaos.Client
         public static int EffectPercent = EffectOpacity.Default;
         public static bool Decals = true, ChestAuras = true, ErrorColorOn = true, UiFadeOn = true, LayoutOn = true;
         public static bool WingsOwn = true, WingsOthers = true, PrintsOthers = true, GlowsOthers = true;
+        /// <summary>The rarity outline of items on the map (phase 7 track Y, MapItemOutline).</summary>
+        public static bool ItemOutlines = true;
         /// <summary>The health and mana globes beside the hotkey bar (track U; drawn only when the orb pictures are found).</summary>
         public static bool Globes = true;
         public const string GlobesPref = "chaos.globes";
@@ -46,6 +48,7 @@ namespace Chaos.Client
             PrintsOthers = Flag(CosmeticFxState.OthersPrintsPref, true); GlowsOthers = Flag(CosmeticFxState.OthersGlowPref, true);
             ViewRows = ViewZoom.Clamp(PlayerPrefs.GetInt(ViewZoom.Pref, ViewZoom.DefaultRows));
             Globes = Flag(GlobesPref, true);
+            ItemOutlines = Flag(MapItemOutline.PrefKey, true);
             ErrorColor.Enabled = ErrorColorOn;
         }
 
@@ -62,6 +65,7 @@ namespace Chaos.Client
             SetFlag(CosmeticFxState.OthersPrintsPref, PrintsOthers); SetFlag(CosmeticFxState.OthersGlowPref, GlowsOthers);
             PlayerPrefs.SetInt(ViewZoom.Pref, ViewRows);
             SetFlag(GlobesPref, Globes);
+            SetFlag(MapItemOutline.PrefKey, ItemOutlines);
             ErrorColor.Enabled = ErrorColorOn;
             PlayerPrefs.Save();
         }
@@ -173,7 +177,34 @@ namespace Chaos.Client
                     if (voice == null) continue;
                     voice.clip = clip; voice.volume = Mathf.Clamp01(pick.Gain); voice.Play();
                 }
+            RuleSoundUpdate();
             MusicUpdate(v);
+        }
+
+        /// <summary>Plays the loot filter's rule sound of a kill (phase 7 track Y; the file is the main client's own game_lootfilter/sounds/*.ogg).</summary>
+        void RuleSoundUpdate()
+        {
+            var f = FindWindow<LootWindow>()?.Filter;
+            if (f == null || !f.SoundPending) return;
+            f.SoundPending = false;
+            PlayRuleFile(f.SoundFile, f.SoundGain);
+        }
+
+        void PlayRuleFile(string rel, float gain)
+        {
+            if (string.IsNullOrEmpty(rel)) return;
+            LoadClip(rel, clip =>
+            {
+                var voice = FreeVoice();
+                if (clip == null || voice == null) return;
+                voice.clip = clip; voice.volume = Mathf.Clamp01(gain); voice.Play();
+            });
+        }
+
+        /// <summary>The play button of the Rules tab: a sound id (1 .. 5) at the volume (0 .. 100).</summary>
+        public void PlayRuleSound(int id, int volume)
+        {
+            PlayRuleFile(LootRuleSounds.File(id), Mathf.Clamp01(volume / 100f));
         }
 
         AudioSource FreeVoice()

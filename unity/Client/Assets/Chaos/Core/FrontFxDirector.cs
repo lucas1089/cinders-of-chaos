@@ -46,6 +46,8 @@ namespace Chaos.Core
         public int Dx, Dy, Sx, Sy;
         public float Speed = 1f;
         public bool Scattered;
+        /// <summary>The impact type (ImpactType): a critical hit and a condition tick are drawn in the main client's bitmap fonts when the files are there (phase 7 track Y).</summary>
+        public int Type;
         public float Life { get { return FrontFxTiming.NumberLife / (Speed > 0.05f ? Speed : 1f); } }
         public float U(float now) { return (now - T0) / Life; }
     }
@@ -141,7 +143,7 @@ namespace Chaos.Core
             int stack = 0;
             foreach (var n in Numbers) if (n.At == at && Math.Abs(n.T0 - t0) < 0.5f) stack++;
             Cap(Numbers, MaxNumbers);
-            var item = new FxNumberItem { Id = nextId++, At = at, Text = text, El = el, T0 = t0, Size = size, Stack = stack, Creature = creature };
+            var item = new FxNumberItem { Id = nextId++, At = at, Text = text, El = el, T0 = t0, Size = size, Stack = stack, Creature = creature, Type = type };
             ScatterRoll roll;
             if (Scatter.Pick(at, Now * 1000.0, type, experience, out roll))
             {

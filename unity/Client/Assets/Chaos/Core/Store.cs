@@ -78,6 +78,8 @@ namespace Chaos.Core
         /// <summary>preview.effect: the server can play the cosmetic round the character (the TRY ON button); Color tints the title, Accent sits behind it.</summary>
         public bool PreviewEffect;
         public string PreviewColor = "", PreviewAccent = "";
+        /// <summary>The icon of a look that is no creature (a footprint's print, a plate frame, a colour sample), phase 7 track Y; Mode "native" when the offer has none.</summary>
+        public StoreLookIcon LookIcon = new StoreLookIcon();
         public readonly List<string> Tags = new List<string>(), Path = new List<string>();
         public bool Buyable => Category > 0 && Page > 0 && Row > 0;
 
@@ -98,6 +100,7 @@ namespace Chaos.Core
                 Cost = Json.Number(e, "cost"), OldCost = Json.Number(e, "oldCost"), Gift = Json.Bool(e, "gift"), Owned = Json.Bool(e, "owned"),
                 Category = category, Page = page, Row = row,
             };
+            o.LookIcon = StoreLookIcon.Plan(Json.Get(e, "look"));
             object pv = Json.Get(e, "preview");
             if (pv is Dictionary<string, object>)
             {

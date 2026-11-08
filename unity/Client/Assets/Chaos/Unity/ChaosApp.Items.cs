@@ -78,6 +78,7 @@ namespace Chaos.Client
                 }
                 others = ItemCompare.CompareWith(tip, bySlot, hovered.Key, keys);
             }
+            compareSide = others;   // the worn items of the same kind are drawn as plates beside the main one (game_itemtooltip panels)
             return ItemCompare.ExtraRows(tip, ctrl, alt, others, waiting);
         }
 
@@ -92,6 +93,39 @@ namespace Chaos.Client
             hoverTip = tip; hoverExtra = extra; hoverNote = note; hoverTipFrame = Time.frameCount;
         }
 
+        /// <summary>The worn items' tips of the Ctrl compare for this frame (side plates), cleared when drawn.</summary>
+        List<object> compareSide = new List<object>();
+
+        /// <summary>One tooltip plate: its height for a tip and its lines.</summary>
+        float PlateHeight(object tip, List<TipLine> lines)
+        {
+            float height = 8f * 2 + (tip != null ? 22 : 0);
+            foreach (var l in lines) height += 16f + (l.Sep ? 6 : 0);
+            return height;
+        }
+
+        void DrawPlate(Rect r, object tip, List<TipLine> lines)
+        {
+            const float Pad = 8f, Line = 16f;
+            string name = tip != null ? TipLines.Title(Json.Text(tip, "name")) : "";
+            int count = tip != null ? Json.Int(tip, "count", 1) : 1;
+            if (count > 1) name += " x" + count;
+            Fill(new Rect(r.x - 1, r.y - 1, r.width + 2, r.height + 2), new Color(0.5f, 0.4f, 0.2f, 0.9f));
+            Fill(r, new Color(0.05f, 0.04f, 0.06f, 0.97f));
+            float y = r.y + Pad;
+            if (tip != null)
+            {
+                GUI.Label(new Rect(r.x + Pad, y, r.width - 2 * Pad, 22), "<color=" + Hex(TipLines.TitleColor(tip)) + ">" + RichSafe(name) + "</color>", tipTitleStyle);
+                y += 22;
+            }
+            foreach (var l in lines)
+            {
+                if (l.Sep) { Fill(new Rect(r.x + Pad, y + 2, r.width - 2 * Pad, 1), new Color(1f, 1f, 1f, 0.12f)); y += 6; }
+                GUI.Label(new Rect(r.x + Pad, y, r.width - 2 * Pad, Line + 2), Rich(l), tipStyle);
+                y += Line;
+            }
+        }
+
         void DrawTipBox(object tip, List<TipLine> extra, string note, float w, float h)
         {
             if (tipStyle == null)
@@ -102,30 +136,20 @@ namespace Chaos.Client
             var lines = tip != null ? TipLines.Lines(tip, session.Parser.Level) : new List<TipLine>();
             if (note != null) lines.Add(new TipLine { Text = note, Color = TipLines.Text });
             if (extra != null) lines.AddRange(extra);
-            string name = tip != null ? TipLines.Title(Json.Text(tip, "name")) : "";
-            int count = tip != null ? Json.Int(tip, "count", 1) : 1;
-            if (count > 1) name += " x" + count;
-            const float Width = 300f, Pad = 8f, Line = 16f;
-            float height = Pad * 2 + (tip != null ? 22 : 0);
-            foreach (var l in lines) height += Line + (l.Sep ? 6 : 0);
+            const float Width = 300f;
+            float height = PlateHeight(tip, lines);
             Vector2 m = MouseUi();
             var r = new Rect(m.x + 16, m.y + 16, Width, height);
             if (r.xMax > w - 4) r.x = Mathf.Max(4, m.x - 16 - Width);
             if (r.yMax > h - 4) r.y = Mathf.Max(4, h - 4 - height);
-            Fill(new Rect(r.x - 1, r.y - 1, r.width + 2, r.height + 2), new Color(0.5f, 0.4f, 0.2f, 0.9f));
-            Fill(r, new Color(0.05f, 0.04f, 0.06f, 0.97f));
-            float y = r.y + Pad;
-            if (tip != null)
-            {
-                GUI.Label(new Rect(r.x + Pad, y, Width - 2 * Pad, 22), "<color=" + Hex(TipLines.TitleColor(tip)) + ">" + RichSafe(name) + "</color>", tipTitleStyle);
-                y += 22;
-            }
-            foreach (var l in lines)
-            {
-                if (l.Sep) { Fill(new Rect(r.x + Pad, y + 2, Width - 2 * Pad, 1), new Color(1f, 1f, 1f, 0.12f)); y += 6; }
-                GUI.Label(new Rect(r.x + Pad, y, Width - 2 * Pad, Line + 2), Rich(l), tipStyle);
-                y += Line;
-            }
+            // the worn items of the Ctrl compare as plates beside the main one, on the side with room (TooltipPlates)
+            var side = new List<KeyValuePair<object, List<TipLine>>>();
+            foreach (object o in compareSide)
+                if (o != null) side.Add(new KeyValuePair<object, List<TipLine>>(o, TipLines.Lines(o, session.Parser.Level)));
+            compareSide = new List<object>();
+            var rects = TooltipPlates.Place(r.x, r.y, Width, height, w, h, side.Count, i => PlateHeight(side[i].Key, side[i].Value));
+            DrawPlate(r, tip, lines);
+            for (int i = 0; i < side.Count; i++) DrawPlate(new Rect(rects[i].x, rects[i].y, rects[i].width, rects[i].height), side[i].Key, side[i].Value);
         }
 
         // ------------------------------------------------------------------------------------ modal window

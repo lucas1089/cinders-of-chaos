@@ -134,7 +134,8 @@ namespace Chaos.Client
             ChaosApp.Fill(r, new Color(1f, 1f, 1f, 0.06f));
             var pic = new Rect(r.x + 4, r.y + 4, 56, 56);
             ChaosApp.Fill(pic, new Color(0.11f, 0.09f, 0.12f, 1f));
-            if (o.Type == "item" && o.Item != 0) app.DrawItem(new Rect(pic.x + 4, pic.y + 4, 48, 48), (ushort)o.Item, o.Count);
+            if (o.LookIcon.Mode != StoreLookIcon.Native && app.DrawStoreLook(pic, o.LookIcon)) { }   // a footprint's print, a plate frame, a colour sample (shopicon.lua)
+            else if (o.Type == "item" && o.Item != 0) app.DrawItem(new Rect(pic.x + 4, pic.y + 4, 48, 48), (ushort)o.Item, o.Count);
             else if (o.Type == "outfit" && o.Outfit != null) app.DrawOutfit(new Rect(pic.x + 4, pic.y + 4, 48, 48), o.Outfit);
             var ts = new GUIStyle(app.SmallStyle) { fontStyle = FontStyle.Bold };
             // a chat colour tints the title (the offer's preview.color), a loot label accent sits behind it (preview.accent)

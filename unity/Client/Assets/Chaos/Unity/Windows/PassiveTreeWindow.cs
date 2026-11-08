@@ -14,7 +14,7 @@ namespace Chaos.Client
 {
     public sealed class PassiveTreeWindow : GameWindow
     {
-        enum Panel { None, Mastery, Refund, Reset, Box, Build, Totals }
+        enum Panel { None, Mastery, Refund, Reset, Box, Build, Totals, Paragon }
 
         static TreeData cache;
         static Texture2D disc, ring;
@@ -214,24 +214,36 @@ namespace Chaos.Client
             if (tree.BossTotal > 0) head += "   " + Loc.T("Boss points {0}/{1}", tree.BossGot, tree.BossTotal);
             if (tree.Cls.Length > 0) head += "   " + char.ToUpperInvariant(tree.Cls[0]) + tree.Cls.Substring(1);
             GUI.Label(new Rect(r.x + 4, r.y, 330, 20), head, app.SmallStyle);
-            string plan = tree.CostText(out bool fits);
+            // phase 7 track Y: another character's tree on show (read-only), and the Paragon panel
+            bool viewing = tree.Viewing != null;
+            if (viewing)
+            {
+                var vs = new GUIStyle(app.SmallStyle);
+                vs.normal.textColor = new Color(0.96f, 0.81f, 0.45f);
+                GUI.Label(new Rect(r.x + 336, r.y, r.width - 336 - 124, 20), tree.Viewing.Banner, vs);
+                if (GUI.Button(new Rect(r.xMax - 120, r.y, 118, 22), Loc.T("Back to my tree"))) { tree.CloseOther(); fitted = false; }
+            }
+            else if (GUI.Button(new Rect(r.xMax - 72, r.y, 70, 22), Loc.T("Paragon"))) { panel = Panel.Paragon; tree.Paragon.Request(); }
+            bool fits = true;
+            string plan = viewing ? "" : tree.CostText(out fits);
             if (tree.PlanMessage.Length > 0 && tree.PlanList.Count == 0) { plan = tree.PlanMessage; fits = tree.PlanOk; }
             var ps = new GUIStyle(app.SmallStyle);
             ps.normal.textColor = fits ? new Color(0.85f, 0.81f, 0.75f) : new Color(0.9f, 0.4f, 0.35f);
-            GUI.Label(new Rect(r.x + 336, r.y, r.width - 340, 20), plan, ps);
+            if (!viewing) GUI.Label(new Rect(r.x + 336, r.y, r.width - 340 - 76, 20), plan, ps);
             // row 2: buttons and search
             float x = r.x + 2, by = r.y + 24;
-            GUI.enabled = tree.PlanList.Count > 0 && tree.PreviewNodes == null;
+            GUI.enabled = !viewing && tree.PlanList.Count > 0 && tree.PreviewNodes == null;
             if (GUI.Button(new Rect(x, by, 58, 24), Loc.T("Apply"))) tree.Apply();
-            GUI.enabled = tree.UndoCount > 0;
+            GUI.enabled = !viewing && tree.UndoCount > 0;
             if (GUI.Button(new Rect(x + 62, by, 26, 24), "<")) tree.Undo();
-            GUI.enabled = tree.RedoCount > 0;
+            GUI.enabled = !viewing && tree.RedoCount > 0;
             if (GUI.Button(new Rect(x + 90, by, 26, 24), ">")) tree.Redo();
-            GUI.enabled = tree.PlanList.Count > 0;
+            GUI.enabled = !viewing && tree.PlanList.Count > 0;
             if (GUI.Button(new Rect(x + 118, by, 52, 24), Loc.T("Clear"))) tree.ClearPlan();
-            GUI.enabled = true;
+            GUI.enabled = !viewing;
             if (GUI.Button(new Rect(x + 174, by, 52, 24), Loc.T("Reset"))) { panel = Panel.Reset; if (tree.Respec == null) tree.Open(); }
             if (GUI.Button(new Rect(x + 230, by, 82, 24), Loc.T("Build Code"))) { panel = Panel.Build; }
+            GUI.enabled = true;
             if (GUI.Button(new Rect(x + 316, by, 56, 24), Loc.T("Totals"))) { panel = Panel.Totals; tree.RequestTotals(); }
             x += 60;
             if (GUI.Button(new Rect(x + 316, by, 24, 24), "+")) zoom = Mathf.Min(1.5f, zoom * 1.25f);
@@ -402,7 +414,7 @@ namespace Chaos.Client
             if (button == 1)
             {
                 // right click: refund a saved node (priced by the server)
-                if (tree.Allocated.Contains(id) && !n.IsStart && tree.PreviewNodes == null) { panel = Panel.Refund; panelNode = id; if (tree.Respec == null) tree.Open(); }
+                if (tree.Viewing == null && tree.Allocated.Contains(id) && !n.IsStart && tree.PreviewNodes == null) { panel = Panel.Refund; panelNode = id; if (tree.Respec == null) tree.Open(); }
                 return;
             }
             if (button != 0) return;
@@ -493,8 +505,8 @@ namespace Chaos.Client
         void DrawPanel(ChaosApp app, PassiveTree tree, Rect vp)
         {
             ChaosApp.Fill(vp, new Color(0f, 0f, 0f, 0.55f));
-            float w = Mathf.Min(panel == Panel.Totals ? 640 : 460, vp.width - 24);
-            float h = panel == Panel.Totals ? Mathf.Min(vp.height - 12, 90 + 20 * (tree.Totals?.Lines.Count ?? 1)) : panel == Panel.Build ? 330 : panel == Panel.Mastery ? 130 + 52 * (tree.Data.Nodes.TryGetValue(panelNode, out var mn) ? mn.Effects.Length : 0) : 170;
+            float w = Mathf.Min(panel == Panel.Totals ? 640 : panel == Panel.Paragon ? 560 : 460, vp.width - 24);
+            float h = panel == Panel.Paragon ? vp.height - 12 : panel == Panel.Totals ? Mathf.Min(vp.height - 12, 90 + 20 * (tree.Totals?.Lines.Count ?? 1)) : panel == Panel.Build ? 330 : panel == Panel.Mastery ? 130 + 52 * (tree.Data.Nodes.TryGetValue(panelNode, out var mn) ? mn.Effects.Length : 0) : 170;
             h = Mathf.Min(h, vp.height - 12);
             var box = new Rect(vp.x + (vp.width - w) / 2, vp.y + (vp.height - h) / 2, w, h);
             ChaosApp.Fill(box, new Color(0.07f, 0.05f, 0.08f, 0.99f));
@@ -508,6 +520,77 @@ namespace Chaos.Client
                 case Panel.Mastery: MasteryPanel(app, tree, box, inner); break;
                 case Panel.Build: BuildPanel(app, tree, box, inner); break;
                 case Panel.Totals: TotalsPanel(app, tree, box, inner); break;
+                case Panel.Paragon: ParagonPanelView(app, tree, box, inner); break;
+            }
+        }
+
+        Vector2 paragonScroll;
+        bool paragonReset;
+
+        // the Paragon panel (paragon.lua): points per stat with + and - (Shift: five), Apply sends the allocation, Reset refunds all for the server's price
+        void ParagonPanelView(ChaosApp app, PassiveTree tree, Rect box, Rect inner)
+        {
+            var pg = tree.Paragon;
+            Head(box, Loc.T("Paragon"));
+            if (!pg.Known) { GUI.Label(new Rect(inner.x, inner.y, inner.width, 20), Loc.T("Asking the server..."), mid); }
+            else if (!pg.Unlocked)
+            {
+                GUI.Label(new Rect(inner.x, inner.y, inner.width, 20), pg.Summary(), mid);
+                GUI.Label(new Rect(inner.x, inner.y + 30, inner.width, 24), pg.LockedTitle, tipTitle);
+                GUI.Label(new Rect(inner.x, inner.y + 58, inner.width, 60), pg.LockedText, tip);
+            }
+            else
+            {
+                GUI.Label(new Rect(inner.x, inner.y, inner.width, 20), pg.Summary(), mid);
+                float listH = inner.height - 66;
+                float rowH = 24;
+                float total = 0;
+                foreach (var c in pg.Categories) total += 22 + c.Stats.Count * rowH;
+                paragonScroll = GUI.BeginScrollView(new Rect(inner.x, inner.y + 24, inner.width, listH), paragonScroll, new Rect(0, 0, inner.width - 18, Mathf.Max(listH, total)));
+                float y = 0;
+                bool shift = Event.current.shift;
+                foreach (var c in pg.Categories)
+                {
+                    GUI.Label(new Rect(0, y, inner.width - 18, 20), c.Name, tipTitle);
+                    y += 22;
+                    foreach (var st in c.Stats)
+                    {
+                        int pts = pg.PointsOf(st);
+                        bool pend = pg.CanRemove(st);
+                        var rr = new Rect(0, y, inner.width - 18, rowH - 2);
+                        ChaosApp.Fill(rr, new Color(1f, 1f, 1f, 0.05f));
+                        GUI.Label(new Rect(6, y, 200, rowH), new GUIContent(st.Name, ParagonPanel.Tip(st)), app.SmallStyle);
+                        var ps = new GUIStyle(app.SmallStyle) { alignment = TextAnchor.MiddleRight };
+                        ps.normal.textColor = pend ? new Color(0.96f, 0.81f, 0.45f) : new Color(0.84f, 0.79f, 0.68f);
+                        GUI.Label(new Rect(208, y, 60, rowH), pts + "/" + st.MaxPoints, ps);
+                        ps.normal.textColor = pts >= st.MaxPoints ? new Color(0.91f, 0.72f, 0.29f) : pend ? new Color(0.96f, 0.81f, 0.45f) : new Color(0.84f, 0.79f, 0.68f);
+                        GUI.Label(new Rect(272, y, 120, rowH), ParagonPanel.ValueText(st, pts), ps);
+                        GUI.enabled = pg.CanRemove(st);
+                        if (GUI.Button(new Rect(inner.width - 18 - 62, y, 28, rowH - 2), "-")) pg.Remove(st, shift ? 5 : 1);
+                        GUI.enabled = pg.CanAdd(st);
+                        if (GUI.Button(new Rect(inner.width - 18 - 32, y, 28, rowH - 2), "+")) pg.Add(st, shift ? 5 : 1);
+                        GUI.enabled = true;
+                        y += rowH;
+                    }
+                }
+                GUI.EndScrollView();
+                float by = inner.yMax - 28;
+                GUI.enabled = pg.PendingSum() > 0;
+                if (GUI.Button(new Rect(inner.x, by, 90, 24), Loc.T("Apply"))) pg.Apply();
+                GUI.enabled = pg.Spent > 0;
+                if (GUI.Button(new Rect(inner.x + 94, by, 90, 24), new GUIContent(Loc.T("Reset"), pg.ResetTip))) paragonReset = true;
+                GUI.enabled = true;
+                if (!string.IsNullOrEmpty(GUI.tooltip)) { var ts = new GUIStyle(tip); GUI.Label(new Rect(inner.x + 190, by - 2, inner.width - 290, 28), GUI.tooltip, ts); }
+            }
+            if (GUI.Button(new Rect(inner.xMax - 90, inner.yMax - 28, 90, 24), Loc.T("Close"))) { panel = Panel.None; paragonReset = false; }
+            if (paragonReset)
+            {
+                var ask = new Rect(box.x + 40, box.y + box.height / 2 - 50, box.width - 80, 100);
+                ChaosApp.Fill(new Rect(ask.x - 2, ask.y - 2, ask.width + 4, ask.height + 4), new Color(0.5f, 0.4f, 0.2f));
+                ChaosApp.Fill(ask, new Color(0.06f, 0.05f, 0.07f, 1f));
+                GUI.Label(new Rect(ask.x + 8, ask.y + 8, ask.width - 16, 50), pg.ResetAsk, mid);
+                if (GUI.Button(new Rect(ask.x + 10, ask.yMax - 32, 80, 24), Loc.T("Ok"))) { pg.Reset(); paragonReset = false; }
+                if (GUI.Button(new Rect(ask.xMax - 90, ask.yMax - 32, 80, 24), Loc.T("Cancel"))) paragonReset = false;
             }
         }
 

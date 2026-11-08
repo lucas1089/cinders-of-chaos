@@ -13,6 +13,11 @@ namespace Chaos.Client
         public World World;
         public SpriteAtlas Atlas;
         public Func<double> Clock;   // ms, the session's clock (walk animation)
+        /// <summary>Phase 7 track Y: the draw size of a creature (monster bar: bosses bigger, oversized monsters smaller; 1 when null) and the rarity outline of items on the map.</summary>
+        public Func<Creature, float> CreatureScale;
+        public bool ItemOutlines = true;
+        Color32 tint = new Color32(255, 255, 255, 255);
+        float quadScale = 1f, pivotX, pivotY;
 
         Mesh mesh;
         readonly List<Vector3> verts = new List<Vector3>();
@@ -203,6 +208,19 @@ namespace Chaos.Client
             }
             int phase = Phase(g, 0);
             float ox = tx - (elevation + t.DisplacementX) / 32f, oy = ty + (elevation + t.DisplacementY) / 32f;
+            // the rarity outline: the sprite again, tinted with the rarity colour, one pixel to each side, behind itself (game_itemrarity, world shader)
+            string outline = ItemOutlines ? MapItemOutline.Color(it) : null;
+            if (outline != null && ColorUtility.TryParseHtmlString(outline, out Color oc))
+            {
+                oc.a = MapItemOutline.Alpha(it, Now);
+                tint = oc;
+                foreach (var d in MapItemOutline.Offsets)
+                    for (int layer = 0; layer < g.Layers; layer++)
+                        for (int hh = 0; hh < g.Height; hh++)
+                            for (int ww = 0; ww < g.Width; ww++)
+                                Quad(Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), ox - ww + d[0] / MapItemOutline.PixelsPerTile, oy + hh + d[1] / MapItemOutline.PixelsPerTile);
+                tint = new Color32(255, 255, 255, 255);
+            }
             for (int layer = 0; layer < g.Layers; layer++)
                 for (int hh = 0; hh < g.Height; hh++)
                     for (int ww = 0; ww < g.Width; ww++)
@@ -235,6 +253,8 @@ namespace Chaos.Client
             int phase;
             if (walking && g.Phases > 1) phase = 1 + (int)(progress * (g.Phases - 1)) % (g.Phases - 1);
             else phase = g.Phases > 1 && !walking && (t.Groups.Length > 1 || BossAnimate.Animates(o.LookType)) ? Phase(g, c.Id) : 0;   // game_bossanimate: a look with walk frames only still beats its wings
+            float scale = CreatureScale != null && c.Type == 1 ? CreatureScale(c) : 1f;
+            if (scale != 1f) { quadScale = scale; pivotX = x + 0.5f; pivotY = y - 1f; }   // monster bar: drawn bigger or smaller round the middle of its feet
             BossAnimate.Shift(o.LookType, out int bsx, out int bsy);   // and a boss whose art sits off its tile is moved down and right
             float ox = x - (elevation + t.DisplacementX + bsx) / 32f, oy = y + (elevation + t.DisplacementY + bsy) / 32f;
             for (int addon = 0; addon < g.PatternY; addon++)
@@ -261,7 +281,10 @@ namespace Chaos.Client
                         Quad(slot, ox - ww, oy + hh);
                     }
             }
+            quadScale = 1f;
         }
+
+        Vector3 Piv(float px, float py) => new Vector3(pivotX + (px - pivotX) * quadScale, pivotY + (py - pivotY) * quadScale, 0);
 
         /// <summary>One 1 x 1 quad with its top-left corner at (x, y).</summary>
         void Quad(int slot, float x, float y)
@@ -269,15 +292,22 @@ namespace Chaos.Client
             if (slot == 0) return;
             var r = Atlas.Uv(slot);
             int i = verts.Count;
-            verts.Add(new Vector3(x, y - 1, 0));
-            verts.Add(new Vector3(x + 1, y - 1, 0));
-            verts.Add(new Vector3(x + 1, y, 0));
-            verts.Add(new Vector3(x, y, 0));
+            if (quadScale != 1f)
+            {
+                verts.Add(Piv(x, y - 1)); verts.Add(Piv(x + 1, y - 1)); verts.Add(Piv(x + 1, y)); verts.Add(Piv(x, y));
+            }
+            else
+            {
+                verts.Add(new Vector3(x, y - 1, 0));
+                verts.Add(new Vector3(x + 1, y - 1, 0));
+                verts.Add(new Vector3(x + 1, y, 0));
+                verts.Add(new Vector3(x, y, 0));
+            }
             uvs.Add(new Vector2(r.xMin, r.yMin));
             uvs.Add(new Vector2(r.xMax, r.yMin));
             uvs.Add(new Vector2(r.xMax, r.yMax));
             uvs.Add(new Vector2(r.xMin, r.yMax));
-            for (int k = 0; k < 4; k++) cols.Add(new Color32(255, 255, 255, 255));
+            for (int k = 0; k < 4; k++) cols.Add(tint);
             tris.Add(i); tris.Add(i + 2); tris.Add(i + 1);
             tris.Add(i); tris.Add(i + 3); tris.Add(i + 2);
         }

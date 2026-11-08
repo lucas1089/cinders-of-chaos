@@ -135,12 +135,17 @@ namespace Chaos.Core
         public readonly HashSet<int> Allocated = new HashSet<int>();
         public readonly Dictionary<int, int> Masteries = new Dictionary<int, int>();
         public int Preset;
+        /// <summary>The Paragon panel (paragonState, paragonApply, paragonReset; paragon.lua).</summary>
+        public readonly ParagonPanel Paragon;
         public readonly List<string> PresetNames = new List<string>();
         public string Cls = "", Line = "", Vocation = "";
         public RespecInfo Respec;
         public int BossGot, BossTotal;
         public string BossLabel = "";
         public bool Synced;
+        /// <summary>Another character's tree shown read-only in place of the own one (Inspect Player, phase 7 track Y); null otherwise.</summary>
+        public TreeViewing Viewing;
+        TreeViewing.OwnState ownState;
 
         // the plan
         public readonly List<int> PlanList = new List<int>();
@@ -173,7 +178,35 @@ namespace Chaos.Core
         public PassiveTree(ExtOpcodes e)
         {
             ext = e;
+            Paragon = new ParagonPanel(e);
             ext.On(Opcode, OnMessage);
+        }
+
+        /// <summary>Shows the tree of another character (the inspect packet {name, nodes, masteries, cls, line, vocation, spent, total}) in place of the own one; nothing can be planned, applied or refunded while it shows.</summary>
+        public bool ShowOther(object data)
+        {
+            if (!(data is Dictionary<string, object>) || !(Json.Get(data, "nodes") is List<object>)) return false;
+            if (Viewing == null) ownState = TreeViewing.OwnState.Take(this);
+            var v = new TreeViewing { Name = Json.Text(data, "name", "?"), Spent = Json.Int(data, "spent"), Total = Json.Int(data, "total") };
+            Allocated.Clear();
+            foreach (object o in Json.List(data, "nodes")) if (o is double d) { Allocated.Add((int)d); v.Count++; }
+            Masteries.Clear();
+            foreach (object o in Json.List(data, "masteries")) Masteries[Json.Int(o, "id")] = Json.Int(o, "choice");
+            Cls = Json.Text(data, "cls"); Line = Json.Text(data, "line"); Vocation = Json.Text(data, "vocation");
+            Viewing = v;
+            PreviewNodes = null;
+            Touch();
+            return true;
+        }
+
+        /// <summary>Back to the own tree.</summary>
+        public void CloseOther()
+        {
+            if (Viewing == null) return;
+            Viewing = null;
+            ownState?.Restore(this);
+            ownState = null;
+            Touch();
         }
 
         public void Load(string json) { SetData(TreeData.Parse(json)); }
@@ -200,6 +233,7 @@ namespace Chaos.Core
 
         public void Apply()
         {
+            if (Viewing != null) return;
             if (PlanList.Count == 0) { Say(Loc.T("Apply plan"), Loc.T("Nothing is planned. Click a node to plan the path to it.")); return; }
             var missing = MissingMasteries();
             if (missing.Count > 0) { Say(Loc.T("Apply plan"), Loc.T("Choose the effect of {0} first.", NameOf(missing[0]))); return; }
@@ -225,16 +259,18 @@ namespace Chaos.Core
             return new Dictionary<string, object> { { "nodes", nodes }, { "masteries", masteries } };
         }
 
-        public void RefundNode(int id) { ext.Send(Opcode, "refundNode", new Dictionary<string, object> { { "id", id } }); }
+        public void RefundNode(int id) { if (Viewing != null) return; ext.Send(Opcode, "refundNode", new Dictionary<string, object> { { "id", id } }); }
 
         public void ResetTree()
         {
+            if (Viewing != null) return;
             ext.Send(Opcode, "resetPreset", Preset > 0 ? Preset : 1);
             ext.Send(Opcode, "requestPoints");
         }
 
         public void ChangeSavedMastery(int id, int choice)
         {
+            if (Viewing != null) return;
             ext.Send(Opcode, "masteryChoose", new Dictionary<string, object> { { "id", id }, { "choice", choice } });
         }
 
@@ -242,6 +278,7 @@ namespace Chaos.Core
 
         public void PreviewBuild(string code)
         {
+            if (Viewing != null) return;
             code = (code ?? "").Trim();
             string tree = code;
             if (code.StartsWith("CC", StringComparison.Ordinal))
@@ -258,7 +295,7 @@ namespace Chaos.Core
 
         public void ApplyBuild()
         {
-            if (PreviewNodes == null || PreviewCode.Length == 0) return;
+            if (Viewing != null || PreviewNodes == null || PreviewCode.Length == 0) return;
             ext.Send(Opcode, "buildApply", new Dictionary<string, object> { { "code", PreviewCode }, { "cost", PreviewCost } });
         }
 
@@ -292,6 +329,7 @@ namespace Chaos.Core
                     };
                     break;
                 case "statTotals": Totals = TreeTotals.Parse(data); break;
+                case "paragonState": Paragon.Receive(data); break;
                 case "bossPoints":
                     BossGot = Json.Int(data, "got"); BossTotal = Json.Int(data, "total"); BossLabel = Json.Text(data, "label");
                     break;
@@ -348,6 +386,7 @@ namespace Chaos.Core
 
         void ApplyNodes(object data)
         {
+            if (Viewing != null) CloseOther();   // the server's own allocation arrived: the own tree is shown again
             Allocated.Clear();
             foreach (object o in Json.List(data, "nodes"))
             {
@@ -474,7 +513,7 @@ namespace Chaos.Core
         /// <summary>A left click on a node, as the main client's plannerClick.</summary>
         public Click ClickNode(int id)
         {
-            if (Data == null || !Data.Nodes.TryGetValue(id, out var n) || !Shown(n) || n.IsStart) return Click.None;
+            if (Viewing != null || Data == null || !Data.Nodes.TryGetValue(id, out var n) || !Shown(n) || n.IsStart) return Click.None;
             if (PreviewNodes != null)
             {
                 Say(Loc.T("Planner"), Loc.T("A build code preview is shown. Cancel the preview (Build Code) to plan again."));

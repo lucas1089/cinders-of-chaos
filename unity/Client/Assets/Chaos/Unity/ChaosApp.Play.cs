@@ -89,6 +89,7 @@ namespace Chaos.Client
             if (session == null || world?.Player == null || chatFocused || TextEditing) return;
             if (Crosshair.Active && Input.GetKeyDown(KeyCode.Escape)) Crosshair.Cancel();
             if (!PointerOnMap) return;
+            if (Input.GetMouseButtonDown(1) && Time.frameCount - groundLabelHoverFrame <= 1) return;   // the ground label under the pointer takes the right click
             if (Input.GetMouseButtonDown(0))
             {
                 if (Crosshair.Active)

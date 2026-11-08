@@ -166,6 +166,8 @@ namespace Chaos.Core
         public const byte Opcode = 240;
         readonly ExtOpcodes ext;
         public object Data, TreeData;
+        /// <summary>Phase 7 track Y: shows the inspected character's tree in the passive tree window (set by the app).</summary>
+        public Action<object> ViewTree = delegate { };
         public readonly Dictionary<int, object> Tips = new Dictionary<int, object>();
         public List<KeyValuePair<string, string>> Records;
         public int PartsExpected, PartsGot;
@@ -321,7 +323,9 @@ namespace Chaos.Core
         void TreeRow(RowList l)
         {
             if (TreeData == null) return;
-            l.Row(Loc.T("Passive Tree ({0})", Json.List(TreeData, "nodes").Count), Loc.T("{0} / {1} points", Json.Int(TreeData, "spent"), Json.Int(TreeData, "total")), "dim");
+            var tree = TreeData;
+            l.Row(Loc.T("Passive Tree ({0})", Json.List(TreeData, "nodes").Count), Loc.T("{0} / {1} points", Json.Int(TreeData, "spent"), Json.Int(TreeData, "total")), "dim")
+                .Btn(Loc.T("View tree"), true, () => ViewTree(tree));
         }
     }
 }

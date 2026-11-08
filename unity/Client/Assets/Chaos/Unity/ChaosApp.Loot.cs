@@ -10,6 +10,8 @@ namespace Chaos.Client
     public sealed partial class ChaosApp
     {
         GUIStyle groundStyle;
+        /// <summary>The frame the pointer last rested on a ground label (a right click on it opens the item menu, not the use of the map item under it).</summary>
+        int groundLabelHoverFrame = -10;
         readonly Dictionary<string, Vector2> groundSizes = new Dictionary<string, Vector2>();
 
         /// <summary>The middle of a tile in screen pixels (y up), false when the view cannot say (the HD-2D scene).</summary>
@@ -90,7 +92,9 @@ namespace Chaos.Client
                     y += sz.y + 1;
                     bool over = r.Contains(e.mousePosition);
                     var bg = HexColor(l.Background); var border = HexColor(l.Border); var text = HexColor(l.Color);
-                    if (over && !OverUi(Input.mousePosition)) bg = new Color(0.23f, 0.16f, 0.11f, 0.94f);
+                    bool hovered = over && !OverUi(Input.mousePosition);
+                    if (hovered) bg = new Color(0.23f, 0.16f, 0.11f, 0.94f);
+                    if (hovered && e.type == EventType.Repaint) groundLabelHoverFrame = Time.frameCount;   // PlayUpdate leaves the item under a label alone
                     Fill(r, bg);
                     Fill(new Rect(r.x, r.y, r.width, 1), border); Fill(new Rect(r.x, r.yMax - 1, r.width, 1), border);
                     Fill(new Rect(r.x, r.y, 1, r.height), border); Fill(new Rect(r.xMax - 1, r.y, 1, r.height), border);
@@ -99,6 +103,19 @@ namespace Chaos.Client
                     GUI.contentColor = text;
                     GUI.Label(new Rect(r.x + pad, r.y, r.width, r.height), l.Text, groundStyle);
                     GUI.contentColor = tint;
+                    if (hovered && e.type == EventType.Repaint)
+                    {
+                        // the rich tooltip of the item (the server answers tip), or the corpse's items (groundlabelslogic.lua corpseTooltip)
+                        if (l.Row.Corpse) ShowTip(null, null, string.Join("\n", GroundLabelsModel.CorpseTip(l.Row)));
+                        else { var tip = loot.Ground.Tip(l); if (tip != null) ShowTip(tip); }
+                    }
+                    // right click: the usual item menu of the item the label stands for
+                    if (hovered && !l.Row.Corpse && e.type == EventType.MouseDown && e.button == 1)
+                    {
+                        int stack;
+                        var item = GroundPick.Find(world.Get(l.Tile), l.Row, out stack);
+                        if (item != null) { ShowItemMenu(new ItemRef(l.Tile, (byte)stack, item), MouseUi()); e.Use(); }
+                    }
                     if (over && !l.Row.Corpse && e.type == EventType.MouseDown && e.button == 0 && !OverUi(Input.mousePosition))
                     {
                         loot.Ground.Activate(l.Tile, l.Row);

@@ -548,8 +548,10 @@ namespace Chaos.Client
                     nameStyle.normal.textColor = Color.black;
                     GUI.Label(new Rect(nr.x + 1, nr.y + 1, nr.width, nr.height), c.Name, nameStyle);
                     col = VisualNameColor(c, col);   // the own name shader
+                    col = MonsterNameColor(c, col);   // ChaosApp.Phase7Y.cs: a tiered monster's name in its tier colour
                     nameStyle.normal.textColor = col;
                     GUI.Label(nr, c.Name, nameStyle);
+                    DrawMonsterMods(c, x, nr);   // the tier word and the modifier lines over the name
                     DrawBubbles(c, x, nr.y);
                     Rect bar = new Rect(x - barW / 2, y - barH - 3, barW, barH);
                     Fill(new Rect(bar.x - 1, bar.y - 1, bar.width + 2, bar.height + 2), new Color(0f, 0f, 0f, 0.85f));
