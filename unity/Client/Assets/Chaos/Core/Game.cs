@@ -50,8 +50,8 @@ namespace Chaos.Core
         public readonly SkillValue[] Skills = new SkillValue[7];
         /// <summary>0xA1, the seven skills after fishing: crafting, woodcutting, mining, herbalist, armorsmith, weaponsmith, jewelsmith (Chaos wire).</summary>
         public readonly SkillValue[] CraftSkills = new SkillValue[7];
-        /// <summary>Equipment slots 1..10 (0 unused). Null when empty.</summary>
-        public readonly Item[] Inventory = new Item[11];
+        /// <summary>Equipment slots 1..10 and the badge slot 13 (0 unused). Null when empty.</summary>
+        public readonly Item[] Inventory = new Item[BadgeSlot.InventorySize];
         /// <summary>Open containers by server container id.</summary>
         public readonly Dictionary<byte, Container> Containers = new Dictionary<byte, Container>();
         /// <summary>A container was opened (by id) or closed.</summary>
@@ -258,8 +258,7 @@ namespace Chaos.Core
                 }
                 case 0xBE: FloorUp(r); break;
                 case 0xBF: FloorDown(r); break;
-                case 0xD2: r.U32(); r.Str(); r.Str(); r.U32(); r.U8(); r.U8(); break;
-                case 0xD3: r.U32(); r.U8(); break;
+                case 0x7D: case 0x7E: case 0x7F: case 0xD2: case 0xD3: case 0xD4: case 0xF0: case 0xF1: PlayMessage(op, r); break;   // player trade, VIP list, quest log (GamePlay.cs)
                 case 0xDC: r.U8(); break;
                 case 0xDD: ReadPos(r); r.U8(); r.Str(); break;
                 case 0xF3: r.U16(); r.Str(); r.U8(); break;
@@ -600,6 +599,7 @@ namespace Chaos.Core
             InitEndgame();
             InitCollect();
             InitWorldUtils();
+            InitPlay();   // Core/GamePlay.cs
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
         }
@@ -700,6 +700,7 @@ namespace Chaos.Core
             Hud.Tick(Now);
             // the progression requests (menu unlocks hello, combat stats, rift query, goal tracker): the main client waits 1.8 s
             if (!progressStarted && enteredAt >= 0 && Now - enteredAt > 1800) { progressStarted = true; Progress.Start(); }
+            PlayPoll();   // Core/GamePlay.cs: the dead guard
             if (conn.Closed && Closed == null) Closed = conn.Error ?? "The server closed the connection.";
             if (stepSent >= 0 && Now - stepSent > 1500) stepSent = -1;   // no answer to a step: let the next one go
         }

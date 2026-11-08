@@ -90,7 +90,8 @@ namespace Chaos.Core
             {
                 Talks.Clock = Clock;
                 Talks.OnText(kind, channel, text);
-                Text(text); Chat("", text, 0);
+                if (LootScreen.OnScreen(kind)) Text(text);   // game_lootscreen: the loot line stays off the screen, the chat tabs still get it
+                Chat("", text, 0);
             }
             else if (W.Fx.Enabled)   // damage, heal and experience numbers
                 W.Fx.Push(typed ? FxEvent.TypedNumber(kind, at, v1, c1, v2, c2, text, percent, impact, owner) : FxEvent.Number(kind, at, v1, c1, v2, c2, text));

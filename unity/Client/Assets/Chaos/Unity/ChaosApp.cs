@@ -319,6 +319,7 @@ namespace Chaos.Client
                 foreach (var win in windows)
                     if (win.Hotkey != KeyCode.None && Input.GetKeyDown(win.Hotkey) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
                         win.Open = !win.Open;
+            PlayUpdate();   // ChaosApp.Play.cs: look, use with, trade target, item menu on the map
             CombatUpdate();
             HandleWalk();
         }
@@ -416,7 +417,7 @@ namespace Chaos.Client
             else if (down) d = Dir.South;
             else if (left) d = Dir.West;
             else if (right) d = Dir.East;
-            if (d == null && Input.GetMouseButton(0) && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition))
+            if (d == null && Input.GetMouseButton(0) && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition) && !PlayBlocksWalk)
             {
                 // touch / click: walk towards the pointer from the screen centre
                 Vector2 v = (Vector2)Input.mousePosition - new Vector2(UnityEngine.Screen.width, UnityEngine.Screen.height) / 2;
@@ -554,6 +555,7 @@ namespace Chaos.Client
             if (GUI.Button(outR, "Log out")) { session?.Logout(); Leave("Logged out."); }
             HudGui(w, h, scale);     // toasts, buffs, monster and cast bars, anti-bot (ChaosApp.Hud.cs)
             PartyGui(w, h, scale);   // the right-click menu and the party invitation, over the windows
+            PlayGui(w, h, scale);    // the use with / trade crosshair hint (ChaosApp.Play.cs)
             ItemsGui(w, h, scale);   // the item tooltip, the modal window and the text window (ChaosApp.Items.cs)
             WorldGui(w, h, scale);   // the Candlemarks counter, the Hideout placing bar and the small tooltip (ChaosApp.World.cs)
         }

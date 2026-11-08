@@ -62,6 +62,7 @@ namespace Chaos.Core
             foreach (var kv in LocEndgame.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
             foreach (var kv in LocCollect.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
             foreach (var kv in LocWorld.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
+            foreach (var kv in LocPlay.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
         }
 
         public static readonly Dictionary<string, string> PtBr = new Dictionary<string, string>

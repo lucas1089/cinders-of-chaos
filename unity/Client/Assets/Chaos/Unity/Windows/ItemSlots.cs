@@ -53,7 +53,7 @@ namespace Chaos.Client
         public static void Cancel() { dragging = false; }
 
         /// <summary>The lowest container id the server is not using, for opening a bag.</summary>
-        static byte FreeContainerId(ChaosApp app)
+        internal static byte FreeContainerId(ChaosApp app)
         {
             var open = app.Session?.Parser.Containers;
             for (byte i = 0; i < 16; i++) if (open == null || !open.ContainsKey(i)) return i;
@@ -88,12 +88,29 @@ namespace Chaos.Client
                 return;
             }
             if (!over) return;
-            if (e.type == EventType.MouseDown && e.button == 1 && it != null)
+            var iref = new ItemRef(where, stackPos, it);
+            if (e.type == EventType.MouseDown && app.Crosshair.Active && it != null && e.button <= 1)
             {
-                app.Session?.UseItem(where, (ushort)it.Id, stackPos, FreeContainerId(app));
+                // "Use with ..." or "Trade with ...": this slot is the target (a right click ends it)
+                if (e.button == 0) app.CrosshairClick(iref, null); else app.Crosshair.Cancel();
                 e.Use();
             }
-            else if (e.type == EventType.MouseDown && e.button == 0 && it != null && e.shift && !e.control && app.LinkItem(it, where)) e.Use();   // item link in the chat
+            else if (e.type == EventType.MouseDown && e.button == 1 && it != null && e.control)
+            {
+                app.ShowItemMenu(iref, app.MouseUi());
+                e.Use();
+            }
+            else if (e.type == EventType.MouseDown && e.button == 1 && it != null)
+            {
+                app.RightClickItem(iref);   // a use, or "Use with ..." for a multi-use item (ChaosApp.Play.cs)
+                e.Use();
+            }
+            else if (e.type == EventType.MouseDown && e.button == 0 && it != null && e.shift && !e.control)
+            {
+                // Shift + click: an item link while the chat line is being written, else a look (0x8C)
+                if (!app.ChatFocused || !app.LinkItem(it, where)) app.Session?.Look(iref);
+                e.Use();
+            }
             else if (e.type == EventType.MouseDown && e.button == 0 && it != null)
             {
                 dragging = true; srcPos = where; srcId = (ushort)it.Id; srcStack = stackPos; srcCount = it.Count;

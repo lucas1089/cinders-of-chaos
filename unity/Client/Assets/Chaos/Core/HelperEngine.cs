@@ -59,6 +59,11 @@ namespace Chaos.Core
         public string Why;
         /// <summary>The creature Auto Target keeps attacking.</summary>
         public uint LockedTarget;
+        /// <summary>Auto Target class by creature id: 1 loot goblin, 2 boss, 3 special, 4 normal (AutoTargetCore.ClassOf, from the name and the monster bar). Null: no class rule.
+        /// With it a goblin, boss or special monster in reach comes before every normal one, and a lock on a worse class is dropped when a better one is in reach.</summary>
+        public Func<uint, int> RankOf;
+        /// <summary>The re-sends of the locked target: dropped after 3 in 3 s (TargetGuard, game_targetguard).</summary>
+        public readonly TargetLock LockGuard = new TargetLock();
         public int Casted, Potions;
 
         double lastTick = -1, frozenUntil;
@@ -166,8 +171,11 @@ namespace Chaos.Core
             HelperCreature locked;
             if (LockedTarget != 0 && InList(list, LockedTarget, out locked))
             {
-                if (Host.AttackTarget != LockedTarget) Host.Attack(LockedTarget);
-                return;
+                var act = LockGuard.Action(LockedTarget, Host.AttackTarget, Host.Now);
+                if (act == LockAction.Attack) Host.Attack(LockedTarget);
+                bool dropLock = act == LockAction.Drop;
+                if (!dropLock && RankOf != null && !AutoTargetCore.KeepLock(Cand(locked, pos), Cands(list, pos), null, true)) dropLock = true;   // a better class came into reach
+                if (!dropLock) return;
             }
             LockedTarget = 0;
             var cands = new List<HelperCreature>();
@@ -180,8 +188,22 @@ namespace Chaos.Core
             }
             HelperCreature pick;
             if (!HelperLogic.PickByMode(cands, pos, Config.AutoTargetMode, out pick)) return;
+            if (RankOf != null)
+            {
+                var first = AutoTargetCore.PickPriority(Cands(list, pos), null);   // a goblin, boss or special monster in reach comes first
+                if (first != null && InList(list, first.Id, out var better)) pick = better;
+            }
             if (Host.AttackTarget != pick.Id) Host.Attack(pick.Id);
             LockedTarget = pick.Id;
+        }
+
+        AutoCand Cand(HelperCreature c, Pos from) => new AutoCand { Id = c.Id, Dist = HelperLogic.Distance(from, c.Position), Health = c.Health, Rank = RankOf != null ? RankOf(c.Id) : AutoTargetCore.RankNormal };
+
+        List<AutoCand> Cands(IList<HelperCreature> list, Pos from)
+        {
+            var o = new List<AutoCand>();
+            foreach (var c in list) o.Add(Cand(c, from));
+            return o;
         }
 
         // the area the "most hits" mode counts around a creature (3 x 3 around the middle)

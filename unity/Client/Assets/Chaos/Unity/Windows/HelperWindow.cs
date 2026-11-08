@@ -50,6 +50,7 @@ namespace Chaos.Client
                 engine = new HelperEngine(s.Spells, host);
                 engineFor = s; loadedFor = name;
                 engine.Config = HelperConfig.FromJson(PlayerPrefs.GetString(HelperConfig.PrefsKey("-", name), ""));
+                engine.RankOf = s.AutoTargetRank;   // game_autotarget: goblins, bosses and special monsters first (Core/PlayGuards.cs)
                 var e = engine;
                 // the server's answers to a cast confirm it (0xA4 / 0xA5); the session's own handlers keep working
                 var spellCd = s.Parser.SpellCooldown; var groupCd = s.Parser.GroupCooldown;
