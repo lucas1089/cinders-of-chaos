@@ -93,7 +93,7 @@ namespace Chaos.Core.Tests
             check(r2.Hud.Toasts.Active.Count == 1, "toast: a task message with missing fields is ignored");
             r2.In(79, "{\"action\":\"partyInvite\",\"inviterName\":\"Lury\",\"inviterResets\":30,\"element\":\"ice\",\"level\":1}");
             var inv = r2.Hud.Toasts.Active[1];
-            check(inv.Message == "Lury [30] invited you to join their party for catacomb Ice level 1!" && inv.HasButtons, "toast: party invite text and buttons");
+            check(inv.Message == "Lury [30] invited you to join a party for catacomb Ice level 1!" && inv.HasButtons, "toast: party invite text and buttons");
             r2.Sent.Clear();
             r2.Hud.Toasts.Accept(inv);
             check(r2.Last() == "151 accept_invite|Lury" && !r2.Hud.Toasts.Active.Contains(inv), "toast: Accept sends accept_invite on opcode 151 (plain text) and closes");

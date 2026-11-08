@@ -506,7 +506,7 @@ namespace Chaos.Client
             uiRects.Clear();
             HudLayoutUpdate(w, h);   // ChaosApp.Visual.cs
             // the windows, in UI units: names under them are not drawn
-            var covers = new List<Rect> { StatusRect(), ChatRect(w, h), LogoutRect(w), HudPlace("toolbar", ToolbarRect(w)) };
+            var covers = new List<Rect> { StatusRect(), ChatRect(w, h), LogoutRect(w), topBarRect };
             foreach (var win in windows) if (win.Open) covers.Add(win.Area);
             if (view != null)
             {

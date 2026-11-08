@@ -443,7 +443,7 @@ namespace Chaos.Core
             { "far", "longe" },
             { "{0} up", "{0} acima" },
             { "{0} down", "{0} abaixo" },
-            { "{0} invited you to join their party.", "{0} convidou você para o grupo dele." },
+            { "{0} invited you to join a party.", "{0} convidou você para um grupo." },
             { "Accept", "Aceitar" },
             { "Decline", "Recusar" },
             { "Stop Attack", "Parar ataque" },

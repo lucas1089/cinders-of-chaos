@@ -18,7 +18,7 @@ namespace Chaos.Core
             { "CATACOMB AVAILABLE", "CATACUMBA DISPONÍVEL" }, { "CAUTION", "CUIDADO" }, { "DANGER", "PERIGO" },
             { "Task Complete: of {0}, killed {1} and received {2} task points", "Task completa: de {0}, matou {1} e recebeu {2} pontos de task" },
             { "Mission Complete: {0} and received {1} battle pass exp", "Missão completa: {0} e recebeu {1} de exp do battle pass" },
-            { "{0} [{1}] invited you to join their party for catacomb {2} level {3}!", "{0} [{1}] convidou você para o grupo dele na catacumba {2} nível {3}!" },
+            { "{0} [{1}] invited you to join a party for catacomb {2} level {3}!", "{0} [{1}] convidou você para um grupo na catacumba {2} nível {3}!" },
             { "The {0} Catacomb Level {1} is now free!", "A Catacumba {0} nível {1} está livre!" },
             { "Accept", "Aceitar" }, { "Decline", "Recusar" }, { "Start", "Iniciar" },
             // buff bar

@@ -8,7 +8,16 @@ namespace Chaos.Client
     public sealed class FightWindow : GameWindow
     {
         public override string Title => Loc.T("Fight");
-        protected override Rect Place(float w, float h) => new Rect(w - 216, 582, 208, 118);
+        protected override Rect Place(float w, float h)
+        {
+            // wide enough for the three mode labels in the current language
+            float ww = 208;
+            var bs = GUI.skin.button;
+            float sum = 0;
+            foreach (var n in new[] { "Offensive", "Balanced", "Defensive" }) sum += bs.CalcSize(new GUIContent(Loc.T(n))).x + 12;
+            ww = Mathf.Max(ww, sum + 8 + 16);
+            return new Rect(w - ww - 8, 582, ww, 118);
+        }
         public FightWindow() { Open = true; }
         public override void Reset() { Open = true; }
 
@@ -19,10 +28,19 @@ namespace Chaos.Client
             var m = s.Modes;
             byte fight = m.Fight;
             bool chase = m.Chase, secure = m.Secure;
-            float bw = (inner.width - 8) / 3f;
             string[] names = { Loc.T("Offensive"), Loc.T("Balanced"), Loc.T("Defensive") };
+            var bs = GUI.skin.button;
+            var nw = new float[3];
+            float total = 0;
+            for (int i = 0; i < 3; i++) { nw[i] = bs.CalcSize(new GUIContent(names[i])).x + 12; total += nw[i]; }
+            float spare = Mathf.Max(0, inner.width - 8 - total) / 3f;   // the spare width is shared so the row fills the window
+            float bx = inner.x;
             for (int i = 0; i < 3; i++)
-                if (GUI.Toggle(new Rect(inner.x + i * (bw + 4), inner.y, bw, 28), fight == i + 1, names[i], GUI.skin.button) && fight != i + 1) fight = (byte)(i + 1);
+            {
+                float bw = nw[i] + spare;
+                if (GUI.Toggle(new Rect(bx, inner.y, bw, 28), fight == i + 1, names[i], GUI.skin.button) && fight != i + 1) fight = (byte)(i + 1);
+                bx += bw + 4;
+            }
             float hw = (inner.width - 4) / 2f;
             if (GUI.Toggle(new Rect(inner.x, inner.y + 34, hw, 28), !chase, Loc.T("Stand"), GUI.skin.button) && chase) chase = false;
             if (GUI.Toggle(new Rect(inner.x + hw + 4, inner.y + 34, hw, 28), chase, Loc.T("Chase"), GUI.skin.button) && !chase) chase = true;
