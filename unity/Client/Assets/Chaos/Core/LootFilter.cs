@@ -434,6 +434,27 @@ namespace Chaos.Core
 
         LootKill Find(int k) { foreach (var x in Kills) if (x.K == k) return x; return null; }
 
+        /// <summary>A corpse the server says holds loot that may beam (opcode 238 "beam", phase 8 track C): kill number, tile and the items.</summary>
+        public sealed class ServerBeam { public int K; public Pos Pos; public readonly List<LootInfo> Items = new List<LootInfo>(); }
+        /// <summary>The corpses with a beam by kill number. An empty item list from the server (looted, decayed, left the history) removes it.</summary>
+        public readonly Dictionary<int, ServerBeam> Beams = new Dictionary<int, ServerBeam>();
+        public const int MaxServerBeams = 64;
+
+        /// <summary>The server's beam message {k, p = [x, y, z], i = [{r, u, o, pw, g, t}]}.</summary>
+        public void ReadBeam(object d)
+        {
+            int k = Json.Int(d, "k", -1);
+            if (k < 0) return;
+            var items = Json.List(d, "i");
+            if (items.Count == 0) { Beams.Remove(k); return; }
+            var p = Json.List(d, "p");
+            if (p.Count < 3 || !(p[0] is double) || !(p[1] is double) || !(p[2] is double)) return;
+            if (!Beams.ContainsKey(k) && Beams.Count >= MaxServerBeams) return;
+            var b = new ServerBeam { K = k, Pos = new Pos((int)(double)p[0], (int)(double)p[1], (int)(double)p[2]) };
+            foreach (object row in items) b.Items.Add(LootInfo.From(row));
+            Beams[k] = b;
+        }
+
         void OnMessage(ExtMessage m)
         {
             var d = m.Data;
@@ -490,8 +511,10 @@ namespace Chaos.Core
                 {
                     var kill = Find(Json.Int(d, "k", -1));
                     if (kill != null) { kill.Decayed = true; Changed(); }
+                    Beams.Remove(Json.Int(d, "k", -1));
                     return;
                 }
+                case "beam": ReadBeam(d); return;
                 case "counts": ReadCounts(d); Changed(); return;
                 case "peek":
                 {
@@ -514,6 +537,6 @@ namespace Chaos.Core
             }
         }
 
-        public void Reset() { Peeks.Clear(); CountSession = LootRules.Counts(null); CountTotal = LootRules.Counts(null); Sound = new LootSoundSettings(); LastHits.Clear(); Kills.Clear(); Loaded = false; Message = ""; Presets.Clear(); Settings = new LootFilterSettings(); }
+        public void Reset() { Peeks.Clear(); CountSession = LootRules.Counts(null); CountTotal = LootRules.Counts(null); Sound = new LootSoundSettings(); LastHits.Clear(); Kills.Clear(); Loaded = false; Message = ""; Presets.Clear(); Settings = new LootFilterSettings(); Beams.Clear(); }
     }
 }

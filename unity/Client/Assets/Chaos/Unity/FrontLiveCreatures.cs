@@ -20,6 +20,8 @@ namespace Chaos.Client
     {
         /// <summary>The id of the creature the local player attacks (0 none): the Game's AttackTarget. Without it a creature fights the foe next to it.</summary>
         public Func<uint> LocalTarget;
+        /// <summary>Phase 8 track C: the outfit shader of a creature's look (FrontArtSprite.shader _FxMode); null or a plain look draws the picture as it is.</summary>
+        public Func<Creature, MapFxLook> CreatureFx;
         /// <summary>The 32 x 32 RGBA of a sprite id (SpriteAtlas.Raw), for the outfit art. Found by reflection on the view's "Atlas" when unset.</summary>
         public Func<uint, byte[]> SpriteSource;
         public bool ShowLabels = true;
@@ -69,6 +71,7 @@ namespace Chaos.Client
             public Texture2D LabelTex;
             public int LabelKey = int.MinValue;
             public FrontCreatureState State;
+            public int FxMode = -1; public float FxStrength = -1f;
             public FrontLook Look;
             public int LookKey;
             public FrontArtSet Set;            // null: the outfit
@@ -372,8 +375,22 @@ namespace Chaos.Client
             }
             else { s.Proxy.gameObject.SetActive(false); s.Blob.gameObject.SetActive(false); s.Cast[0].Clear(); s.Cast[1].Clear(); }
             if (Mathf.Abs(st.Flinch - s.HitShown) > 1e-3f) { s.HitShown = st.Flinch; s.Mat.SetFloat("_Hit", st.Flinch); }
+            ApplyFx(s, c);
             DrawLabel(s, c, feet, scale.y, cam: view.Cam);
             return true;
+        }
+
+        /// <summary>The outfit shader of the creature's look on its material (only when it changes).</summary>
+        void ApplyFx(Slot s, Creature c)
+        {
+            var look = CreatureFx != null ? CreatureFx(c) : null;
+            int mode = look != null ? look.Mode : 0;
+            float str = look != null ? look.Strength : 1f;
+            if (mode == s.FxMode && Mathf.Abs(str - s.FxStrength) < 1e-3f) return;
+            s.FxMode = mode; s.FxStrength = str;
+            s.Mat.SetFloat("_FxMode", mode);
+            s.Mat.SetFloat("_FxStrength", str);
+            if (look != null) s.Mat.SetColor("_FxTint", look.Tint);
         }
 
         // hero pictures: one of 8 directions

@@ -274,6 +274,7 @@ namespace Chaos.Client
                 if (pips.Count > 0 && r.Contains(e.mousePosition)) app.SetTip(SupportPips.Tip(sup, spell.Id, spell.Name));
             }
             int cd = spell != null ? app.Session.Spells.CooldownSeconds(spell) : 0;
+            app.Phase8CCooldown(i, cd, r);   // the pulse when a long cooldown ends (game_visualfx)
             if (cd > 0)
             {
                 ChaosApp.Fill(r, new Color(0f, 0f, 0f, 0.65f));

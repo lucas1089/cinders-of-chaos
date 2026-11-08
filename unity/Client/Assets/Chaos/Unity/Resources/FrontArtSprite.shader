@@ -20,6 +20,9 @@ Shader "Chaos/FrontArtSprite"
         _PointScale ("Point light scale", Range(0, 1)) = 0.45
         _Hit ("Hit flash", Range(0, 1)) = 0
         _Tint ("Tint (a class colour)", Color) = (1, 1, 1, 1)
+        _FxMode ("Outfit shader mode (Core/Phase8CFx.cs FxMode)", Float) = 0
+        _FxStrength ("Outfit shader strength", Range(0, 1)) = 1
+        _FxTint ("Outfit shader colour", Color) = (1, 1, 1, 1)
     }
     SubShader
     {
@@ -28,10 +31,14 @@ Shader "Chaos/FrontArtSprite"
         CGPROGRAM
         #pragma target 3.0
         #pragma surface surf FrontSprite alphatest:_Cutoff addshadow fullforwardshadows
+        #include "Assets/Chaos/Resources/Shaders/ChaosFx.cginc"
         sampler2D _MainTex, _BumpMap, _EmitTex;
         half _NormalAmount, _EmitAmount;
         half _Wrap, _Bend, _Fill, _PointScale, _Hit;
         fixed4 _Tint;
+        float4 _MainTex_ST, _MainTex_TexelSize;
+        half _FxMode, _FxStrength;
+        fixed4 _FxTint;
 
         struct SurfaceOutputFS
         {
@@ -50,6 +57,20 @@ Shader "Chaos/FrontArtSprite"
         {
             fixed4 c = tex2Dlod(_MainTex, float4(IN.uv_MainTex, 0, 0));
             c.rgb *= _Tint.rgb;   // a class's tint (the live creatures); white leaves the picture as drawn
+            // phase 8, track C: an outfit shader or a hit flash of the creature's look (_FxMode 0 leaves the picture alone)
+            half3 fxEmit = 0;
+            if (_FxMode > 0.5)
+            {
+                float2 t = _MainTex_TexelSize.xy;
+                float2 uv0 = IN.uv_MainTex;
+                float rimv = 1.0 - min(min(tex2Dlod(_MainTex, float4(uv0 + float2(t.x, 0), 0, 0)).a, tex2Dlod(_MainTex, float4(uv0 - float2(t.x, 0), 0, 0)).a),
+                                       min(tex2Dlod(_MainTex, float4(uv0 + float2(0, t.y), 0, 0)).a, tex2Dlod(_MainTex, float4(uv0 - float2(0, t.y), 0, 0)).a));
+                float2 raw = saturate((uv0 - _MainTex_ST.zw) / _MainTex_ST.xy);
+                fixed3 c0 = c.rgb;
+                float4 fxc = FxApply(_FxMode, _FxStrength, c, uv0 / t, raw, rimv, _FxTint, _Time.y);
+                c = fixed4(fxc);
+                fxEmit = max(0, c.rgb - c0) * 0.8;
+            }
             o.Albedo = c.rgb;
             o.Alpha = c.a;
             float3 toCam = normalize(_WorldSpaceCameraPos - IN.worldPos);
@@ -66,6 +87,7 @@ Shader "Chaos/FrontArtSprite"
             o.Emission = c.rgb * (amb + _Fill * half3(1.0, 0.9, 0.8));
             // the glowing parts (a staff flame, eyes; unity/tools/gen_front_art_emission.py) light themselves, past 1 so the bloom takes them
             o.Emission += c.rgb * tex2Dlod(_EmitTex, float4(IN.uv_MainTex, 0, 0)).r * _EmitAmount;
+            o.Emission += fxEmit;
             // struck by a melee blow (FrontArtMelee.Flinch): a red-white flash over the picture
             o.Emission = lerp(o.Emission, (0.35 + c.rgb) * half3(2.0, 0.55, 0.45), _Hit * 0.7);
         }
