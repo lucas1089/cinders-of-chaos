@@ -35,6 +35,7 @@ namespace Chaos.Client
         public override void Reset()
         {
             engine = null; engineFor = null; loadedFor = null; lastHealth = -1; pick = Pick.None; message = ""; dirty = false;
+            noticeShown = null; followEdit = null;
         }
 
         // ------------------------------------------------------------------------------------ the loop, once per frame
@@ -54,6 +55,8 @@ namespace Chaos.Client
                 engine.Held = new EverfullHeld(s.Ext);
                 engine.Held.Ask();
                 var e = engine;
+                var prevText = s.Parser.Talks.ServerText;   // the potion gate reads the server's "Using ..." and "Sorry, not possible." (Phase7XHelper.cs)
+                s.Parser.Talks.ServerText = t => { prevText(t); e.OnServerText(t); };
                 // the server's answers to a cast confirm it (0xA4 / 0xA5); the session's own handlers keep working
                 var spellCd = s.Parser.SpellCooldown; var groupCd = s.Parser.GroupCooldown;
                 s.Parser.SpellCooldown = (id, ms) => { spellCd(id, ms); e.OnSpellCooldown(id); };
@@ -66,6 +69,9 @@ namespace Chaos.Client
             if (lastHealth >= 0 && hp < lastHealth) engine.OnHealthChanged(lastHealth, hp);
             lastHealth = hp;
             engine.Tick();
+            // a level-up with new spells opens the window on the Shooter tab, where Add and Ignore are (the main client asks in a box)
+            if (engine.LevelNotice != null && engine.LevelNotice != noticeShown) { noticeShown = engine.LevelNotice; Open = true; tab = 1; pick = Pick.None; extraPick = ExtraPick.None; }
+            if (engine.LevelMessage.Length > 0) { message = engine.LevelMessage; engine.LevelMessage = ""; dirty = true; app.PostLine(message); }
             if (dirty) { dirty = false; PlayerPrefs.SetString(HelperConfig.PrefsKey("-", loadedFor), engine.Config.ToJson()); PlayerPrefs.Save(); }
         }
 
@@ -130,7 +136,7 @@ namespace Chaos.Client
 
             if (extraPick != ExtraPick.None) { DrawExtraPicker(x, y, w, inner.yMax - y); return; }
 
-            int t = GUI.SelectionGrid(new Rect(x, y, w, 52), tab, new[] { Loc.T("Healing"), Loc.T("Shooter"), Loc.T("Target"), Loc.T("Runes"), Loc.T("Allies"), Loc.T("Support"), Loc.T("More") }, 4);
+            int t = GUI.SelectionGrid(new Rect(x, y, w, 52), tab, new[] { Loc.T("Healing"), Loc.T("Shooter"), Loc.T("Target"), Loc.T("Runes"), Loc.T("Allies"), Loc.T("Support"), Loc.T("More"), Loc.T("Follow and sell") }, 4);
             if (t != tab) { tab = t; message = ""; }
             y += 58;
             if (tab == 0) DrawHealing(x, y, w);
@@ -221,6 +227,7 @@ namespace Chaos.Client
                 dirty = true; message = "";
             }
             y += 34;
+            y += DrawLevelUp(x, y, w);
             if (message.Length > 0) GUI.Label(new Rect(x, y, w, 60), message, hint);
         }
 

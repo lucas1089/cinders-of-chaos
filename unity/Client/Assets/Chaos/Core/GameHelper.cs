@@ -36,6 +36,30 @@ namespace Chaos.Core
             return false;
         }
 
+        /// <summary>Use by id (0xFFFF, 0, 0: the hotkey use): the server finds the item in any carried bag, closed ones too, and answers "Using ...". Phase 7 track X: the potion gate's probe.</summary>
+        public bool UseByIdOnCreature(int clientId, uint creature)
+        {
+            if (conn == null || clientId <= 0 || clientId > 65535) return false;
+            conn.Send(HelperPackets.UseWithCreature(new Pos(0xFFFF, 0, 0), (ushort)clientId, 0, creature));
+            return true;
+        }
+
+        /// <summary>Uses a carried item (equipment or an open bag) on an item lying on the map (0x83): the exercise weapon on a training dummy. False when one of them is not there.</summary>
+        public bool UseCarriedOnMapItem(int clientId, Pos at, int mapItemId)
+        {
+            if (conn == null || !FindCarried(clientId, out var from)) return false;
+            Tile tile;
+            if (!world.Tiles.TryGetValue(at, out tile)) return false;
+            for (int i = 0; i < tile.Things.Count; i++)
+            {
+                var th = tile.Things[i];
+                if (th.IsCreature || th.Item == null || th.Item.Id != mapItemId) continue;
+                conn.Send(PlayPackets.UseWith(from.Pos, from.Id, from.Stack, at, (ushort)mapItemId, (byte)i));
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>Uses a carried item by itself (0x82: food) from the equipment or an open bag. False when no such item is at hand.</summary>
         public bool UseCarriedItem(int clientId)
         {
@@ -75,7 +99,7 @@ namespace Chaos.Core
     }
 
     /// <summary>IHelperHost over a GameSession: the stats, the creatures around and the actions of the main client's helper.</summary>
-    public sealed class SessionHelperHost : IHelperHost, IHelperHostExt
+    public sealed class SessionHelperHost : IHelperHost, IHelperHostExt, IHelperHostP7
     {
         public const int StateHaste = 64, StateProtectionZone = 16384;
         readonly GameSession s;
@@ -96,12 +120,58 @@ namespace Chaos.Core
         public bool InProtectionZone => (P.PlayerStates & StateProtectionZone) != 0;
         public bool Hasted => (P.PlayerStates & StateHaste) != 0;
         public uint AttackTarget => s.AttackTarget;
-        public bool Following => false;   // the Unity client has no follow state yet (GameSession.Follow clears the attack)
+        public bool Following => FollowTarget != 0;   // following pauses the fight systems, as in the main client
+
+        // ---- IHelperHostP7 (phase 7 track X)
+        public uint FollowTarget => P.FollowTarget != 0 && P.W.Creatures.ContainsKey(P.FollowTarget) ? P.FollowTarget : 0;
+        public void Follow(uint id) { s.Follow(id); }
+        public void CancelFollow() { s.CancelAttack(); }
+        public bool SightClear(Pos a, Pos b) => SightLine.Clear(P.W, a, b);
+        Pos lastPos; double lastMoveAt = -1;
+        void TrackMove()
+        {
+            var p = Position;
+            if (lastMoveAt < 0 || !(p == lastPos)) { lastPos = p; lastMoveAt = s.Now; }
+        }
+        public double IdleMs { get { TrackMove(); return s.Now - lastMoveAt; } }
+
+        public IList<KeyValuePair<Pos, int>> MapItems(int[] ids, int radius)
+        {
+            var o = new List<KeyValuePair<Pos, int>>();
+            var me = Position;
+            for (int dx = -radius; dx <= radius; dx++)
+                for (int dy = -radius; dy <= radius; dy++)
+                {
+                    var p = new Pos(me.X + dx, me.Y + dy, me.Z);
+                    if (!P.W.Tiles.TryGetValue(p, out var tile)) continue;
+                    foreach (var th in tile.Things)
+                        if (!th.IsCreature && th.Item != null && Array.IndexOf(ids, th.Item.Id) >= 0) { o.Add(new KeyValuePair<Pos, int>(p, th.Item.Id)); break; }
+                }
+            return o;
+        }
+
+        public bool UseWithMapItem(int clientId, Pos at, int mapItemId) => s.UseCarriedOnMapItem(clientId, at, mapItemId);
+        public bool UseByIdOnCreature(int clientId, uint creature) => s.UseByIdOnCreature(clientId, creature == 0 ? P.W.PlayerId : creature);
+
+        public SellerView Seller
+        {
+            get
+            {
+                var pouches = s.Utils?.Pouches;
+                if (pouches == null) return default(SellerView);
+                return new SellerView { Known = pouches.SellerKnown, Unlocked = pouches.Seller.Unlocked, Cooldown = pouches.Seller.CooldownLeft(s.Now) };
+            }
+        }
+        public void SellerSync() { s.Utils?.Pouches.Sync(); }
+        public void SellerSell() { s.Utils?.Pouches.Sell(); }
+        /// <summary>The 10.98 capacity words are hundredths of an ounce.</summary>
+        public double FreeCapacity => P.TotalCap == 0 ? -1 : P.FreeCap / 100.0;
 
         public double MsSinceLastRead
         {
             get
             {
+                TrackMove();
                 if (s.Packets != lastPackets) { lastPackets = s.Packets; lastReadAt = s.Now; }
                 return s.Now - lastReadAt;
             }

@@ -491,9 +491,11 @@ namespace Chaos.Core.Tests
                 new MenuEntry { Text = "alpha", Target = "b" }, new MenuEntry { Separator = true }, new MenuEntry { Text = "Beta", Target = "c" }, new MenuEntry { Text = "Aaa", Target = "d" },
             }, e => e.Text);
             check(string.Join(",", sorted.Select(e => e.Separator ? "|" : e.Text)) == "alpha,Zeta,More,|,Aaa,Beta", "menu: alphabetical, sub-menus last, groups kept: " + string.Join(",", sorted.Select(e => e.Separator ? "|" : e.Text)));
-            var texts = TopMenu.Categories.SelectMany(c => c.Entries).Select(e => e.Text).ToList();
-            check(texts.Count == texts.Distinct().Count() && TopMenu.Categories.SelectMany(c => c.Entries).All(e => e.Target.StartsWith("win:") || e.Target.StartsWith("info:") || e.Target.StartsWith("act:")), "menu: entries are unique and name a window, an info page or an action");
-            check(TopMenu.Categories.SelectMany(c => c.Entries).Where(e => e.Target.StartsWith("info:")).All(e => ChaosInfo.Page(e.Target.Substring(5)) != null), "menu: every info entry names a real page");
+            // the "More" sub-menus (phase 7 track X) are opened: the leaves are unique across the whole menu
+            var leaves = TopMenu.Categories.SelectMany(c => TopMenu.Leaves(c)).ToList();
+            var texts = leaves.Select(e => e.Text).ToList();
+            check(texts.Count == texts.Distinct().Count() && leaves.All(e => e.Target.StartsWith("win:") || e.Target.StartsWith("info:") || e.Target.StartsWith("act:")), "menu: entries are unique and name a window, an info page or an action");
+            check(leaves.Where(e => e.Target.StartsWith("info:")).All(e => ChaosInfo.Page(e.Target.Substring(5)) != null), "menu: every info entry names a real page");
         }
 
         // ------------------------------------------------------------------------------------ pt-BR

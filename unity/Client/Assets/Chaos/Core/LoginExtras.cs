@@ -175,6 +175,8 @@ namespace Chaos.Core
         public bool Ok;
         public string Token = "", Error = "";
         public int ExpiresIn = 1500, SlotsUsed = -1, SlotsLimit = -1;
+        /// <summary>The create window's part of the state (classes, season, name rules, Terms): Phase7XCharacter.cs. Null when the answer had no account block.</summary>
+        public CreateState Create;
         public readonly Dictionary<string, AccountLook> Looks = new Dictionary<string, AccountLook>();
     }
 
@@ -213,6 +215,7 @@ namespace Chaos.Core
             a.ExpiresIn = Math.Max(60, Json.Int(root, "expiresIn", 1500));
             object slots = Json.Get(Json.Get(root, "account"), "slots");
             if (slots != null) { a.SlotsUsed = Json.Int(slots, "used", -1); a.SlotsLimit = Json.Int(slots, "limit", -1); }
+            a.Create = CreateState.From(Json.Get(root, "account"));
             if (Json.Get(root, "looks") is Dictionary<string, object> looks)
                 foreach (var kv in looks)
                 {

@@ -77,6 +77,7 @@ namespace Chaos.Core.Tests
             ArtTests.Run,
             Phase6WTests.Run,
             Phase6VTests.Run,
+            Phase7XTests.Run,
             WireAuditTests.Run,
             Phase7YTests.Run,
             Phase7QTests.Run,
