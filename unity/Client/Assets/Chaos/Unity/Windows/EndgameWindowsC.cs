@@ -617,6 +617,7 @@ namespace Chaos.Client
         // phase 12, track H: at most the screen, however many rules the server sends (the text and the ticks scroll, the buttons do not)
         protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 250), 110, Mathf.Min(500, w - 16), Mathf.Min(380, h - 118));
         protected override bool Wanted(ChaosApp app) => app.Session.Endgame.PvpZone.ConfirmAsked;
+        protected override bool RaiseOnOpen => true;   // pvpzone.lua: confirm:show() raise() focus(), over the Marches window that opens with it
         public override void Reset() { base.Reset(); accept = hcAccept = false; scroll = Vector2.zero; }
 
         protected override void Body(ChaosApp app, Rect inner)

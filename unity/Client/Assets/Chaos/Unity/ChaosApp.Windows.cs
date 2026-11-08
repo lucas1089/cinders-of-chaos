@@ -24,6 +24,8 @@ namespace Chaos.Client
         /// and again whenever it grows. A window that sizes itself every frame (Resizable false) gets the same. The other windows keep the screen fit of client_chaos_screenfit (the wheel moves
         /// a window taller than the screen).</summary>
         public virtual bool ClampToScreen => false;
+        /// <summary>Set to draw this window above the others on its next frame (the main client's raise(), for a confirmation that opens over its own window).</summary>
+        public bool RaiseNext;
         /// <summary>True once the player set the size with the grip (or the saved layout did): only then the size is saved.</summary>
         public bool UserSized;
         /// <summary>The size the program gave the window when it was placed (a double click on the grip goes back to it).</summary>
@@ -115,6 +117,7 @@ namespace Chaos.Client
             if (tall && ev.type == EventType.ScrollWheel && Area.Contains(ev.mousePosition)) { Area.y = Chaos.Core.ScreenFit.Wheel(Area.y, Area.height, 0, h, ev.delta.y < 0); ev.Use(); }
             Area.x = wide ? Chaos.Core.ScreenFit.Clamp(Area.x, Area.width, 0, w) : Mathf.Clamp(Area.x, 0, Mathf.Max(0, w - Area.width));
             Area.y = tall ? Chaos.Core.ScreenFit.Clamp(Area.y, Area.height, 0, h) : Mathf.Clamp(Area.y, 0, Mathf.Max(0, h - 24));
+            if (RaiseNext) { GUI.BringWindowToFront(id); GUI.FocusWindow(id); RaiseNext = false; }
             var oldColor = GUI.color;
             if (Alpha < 0.999f) GUI.color = new Color(1f, 1f, 1f, Alpha);
             Area = GUI.Window(id, Area, _ =>
