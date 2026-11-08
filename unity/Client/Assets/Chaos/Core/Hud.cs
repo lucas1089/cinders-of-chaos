@@ -167,7 +167,7 @@ namespace Chaos.Core
                     if (Json.Get(d, "inviterName") != null)
                     {
                         string element = Capital(Json.Text(d, "element", "unknown"));
-                        var t = Add("PARTY_INVITE", Loc.T("{0} [{1}] invited you to join their party for catacomb {2} level {3}!", Json.Text(d, "inviterName"), Json.Int(d, "inviterResets"), element, Json.Int(d, "level")), 0);
+                        var t = Add("PARTY_INVITE", Loc.T("{0} [{1}] invited you to join a party for catacomb {2} level {3}!", Json.Text(d, "inviterName"), Json.Int(d, "inviterResets"), element, Json.Int(d, "level")), 0);
                         t.Inviter = Json.Text(d, "inviterName");
                         t.Level = Json.Int(d, "level");
                         t.Element = Json.Text(d, "element");
@@ -430,13 +430,17 @@ namespace Chaos.Core
         }
 
         /// <summary>Icon cells flowing left to right, a new row when one is full (buffmath.lua flow): x, y and the bar height.</summary>
-        public static List<(int x, int y)> Flow(int count, int rowWidth, int size, int gap, out int height)
+        public static List<(int x, int y)> Flow(int count, int rowWidth, int size, int gap, out int height) =>
+            Flow(count, rowWidth, size, size, gap, out height);
+
+        /// <summary>Same with cells of their own width and height (a short name over a timer needs more than a square).</summary>
+        public static List<(int x, int y)> Flow(int count, int rowWidth, int cellW, int cellH, int gap, out int height)
         {
-            int per = Math.Max(1, (rowWidth + gap) / (size + gap));
+            int per = Math.Max(1, (rowWidth + gap) / (cellW + gap));
             var cells = new List<(int, int)>();
-            for (int i = 0; i < count; i++) cells.Add(((i % per) * (size + gap), (i / per) * (size + gap)));
+            for (int i = 0; i < count; i++) cells.Add(((i % per) * (cellW + gap), (i / per) * (cellH + gap)));
             int rows = (count + per - 1) / per;
-            height = rows > 0 ? rows * (size + gap) - gap : 0;
+            height = rows > 0 ? rows * (cellH + gap) - gap : 0;
             return cells;
         }
     }

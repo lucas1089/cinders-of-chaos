@@ -69,7 +69,17 @@ namespace Chaos.Client
             }
             if (!hud.Buffs.Shown || hud.Buffs.Buffs.Count == 0) return;
             var list = hud.Buffs.Ordered(out int nBuffs);
-            var cells = BuffBar.Flow(list.Count, (int)bw, 26, 2, out int height);
+            // a cell is as wide as its widest short name or timer, and tall enough for the name over the timer
+            var nameStyle = new GUIStyle(hudTiny) { fontStyle = FontStyle.Bold };
+            var timeStyle = new GUIStyle(hudTiny) { fontSize = 10, alignment = TextAnchor.LowerCenter };
+            float textW = 0;
+            foreach (var bf in list)
+            {
+                textW = Mathf.Max(textW, nameStyle.CalcSize(new GUIContent(BuffBar.Label(bf))).x);
+                if (hud.Buffs.Timers && bf.EndAt >= 0) textW = Mathf.Max(textW, timeStyle.CalcSize(new GUIContent(BuffBar.Format(bf.Remaining(now)))).x);
+            }
+            int cw = (int)Mathf.Ceil(TopbarLayout.CellWidth(textW, 0, 26, 6)), ch = hud.Buffs.Timers ? 32 : 26;
+            var cells = BuffBar.Flow(list.Count, (int)bw, cw, ch, 2, out int height);
             var e = Event.current;
             string tip = null;
             Rect tipAt = default;
@@ -77,18 +87,18 @@ namespace Chaos.Client
             for (int i = 0; i < list.Count; i++)
             {
                 var b = list[i];
-                var r = new Rect(x + cells[i].x, y + cells[i].y, 26, 26);
+                var r = new Rect(x + cells[i].x, y + cells[i].y, cw, ch);
                 var c = BuffBar.Colour(b);
-                Fill(new Rect(r.x - 1, r.y - 1, 28, 28), b.Debuff ? new Color(0.9f, 0.2f, 0.15f) : new Color(0.7f, 0.55f, 0.2f));
+                Fill(new Rect(r.x - 1, r.y - 1, r.width + 2, r.height + 2), b.Debuff ? new Color(0.9f, 0.2f, 0.15f) : new Color(0.7f, 0.55f, 0.2f));
                 Fill(r, new Color(c[0], c[1], c[2]));
                 var st = new GUIStyle(hudTiny) { fontStyle = FontStyle.Bold };
                 st.normal.textColor = Color.white;
-                GUI.Label(r, BuffBar.Label(b), st);
+                GUI.Label(hud.Buffs.Timers && b.EndAt >= 0 ? new Rect(r.x, r.y, r.width, 16) : r, BuffBar.Label(b), st);
                 if (hud.Buffs.Timers && b.EndAt >= 0)
                 {
                     var tt = new GUIStyle(hudTiny) { fontSize = 10, alignment = TextAnchor.LowerCenter };
                     tt.normal.textColor = Color.black;
-                    var tr = new Rect(r.x, r.y + 12, r.width, 14);
+                    var tr = new Rect(r.x, r.yMax - 14, r.width, 14);
                     GUI.Label(new Rect(tr.x + 1, tr.y + 1, tr.width, tr.height), BuffBar.Format(b.Remaining(now)), tt);
                     tt.normal.textColor = Color.white;
                     GUI.Label(tr, BuffBar.Format(b.Remaining(now)), tt);
