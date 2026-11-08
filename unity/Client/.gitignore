@@ -19,3 +19,9 @@
 # main client module sounds and pictures: copied in by the CI build (unity-prototype.yml)
 /Assets/StreamingAssets/overlay/
 /Assets/StreamingAssets/overlay.meta
+
+# no .meta is committed: the editor makes them on import (local runs and CI alike)
+*.meta
+/ProjectSettings/*
+!/ProjectSettings/ProjectVersion.txt
+/Packages/packages-lock.json
