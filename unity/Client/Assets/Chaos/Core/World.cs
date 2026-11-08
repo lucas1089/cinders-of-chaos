@@ -48,6 +48,11 @@ namespace Chaos.Core
         // walking (the Unity side animates from WalkFrom to Position over WalkMs)
         public Pos WalkFrom;
         public double WalkStart = -1, WalkMs;
+        /// <summary>The local player's steps sent and not yet confirmed (Core/SmoothWalk.cs), drawn ahead of the server's answer; null when none.</summary>
+        public System.Collections.Generic.List<PredStep> Pred;
+        /// <summary>The glide before the one in WalkFrom / WalkStart, kept while the next one waits for it to end (it ends on WalkFrom); PrevStart -1 when none.</summary>
+        public Pos PrevFrom;
+        public double PrevStart = -1, PrevMs;
     }
 
     /// <summary>One stack entry of a tile: an item or a creature.</summary>

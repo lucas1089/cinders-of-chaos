@@ -73,6 +73,9 @@ pub struct Options {
     /// runs the main manifest this way after its own update, so a player who only uses the Unity client still gets a
     /// new launcher.
     pub launcher_only: bool,
+    /// Install a DEV Unity package (one built without the client guard key, manifest `"dev": true`). Off for players: such a
+    /// build cannot log in to a live server or open the sprite pair. The launcher's `--allow-dev-unity` turns it on (testers).
+    pub allow_dev: bool,
 }
 
 impl Default for Options {
@@ -82,6 +85,7 @@ impl Default for Options {
             backoff_ms: 500,
             fault: Fault::None,
             launcher_only: false,
+            allow_dev: false,
         }
     }
 }
@@ -362,6 +366,11 @@ impl<'a> Updater<'a> {
                 ..Outcome::default()
             });
         };
+
+        // a DEV Unity package is not offered to players (O433 phase 17): nothing is downloaded or changed
+        if native.dev && self.cfg.layout == manifest::Layout::Tree && !self.opts.allow_dev {
+            return Err(Error::DevPackage);
+        }
 
         ev(Event::Status(Status::Hashing));
         let mut cache = self.load_cache();

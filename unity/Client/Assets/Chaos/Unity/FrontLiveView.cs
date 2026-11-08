@@ -345,7 +345,7 @@ namespace Chaos.Client
 
         // ---- the contract ----
 
-        double Now => Clock != null ? Clock() : Time.realtimeSinceStartupAsDouble * 1000;
+        public double Now => Clock != null ? Clock() : Time.realtimeSinceStartupAsDouble * 1000;
 
         /// <summary>The middle of a tile at its ground height (a tile on a floor below is drawn shifted, FrontLiveLayout.TileToWorld).</summary>
         public Vector3 TileToWorld(int x, int y, int z)
@@ -365,12 +365,7 @@ namespace Chaos.Client
         /// <summary>Where a creature is drawn now, in tiles, fractional while it walks (x east, y south).</summary>
         public Vector2 DrawnTile(Creature c)
         {
-            float x = c.Position.X, y = c.Position.Y;
-            if (c.WalkStart >= 0 && c.WalkMs > 0)
-            {
-                float progress = (float)Math.Min(1.0, (Now - c.WalkStart) / c.WalkMs);
-                if (progress < 1f) { x = Mathf.Lerp(c.WalkFrom.X, x, progress); y = Mathf.Lerp(c.WalkFrom.Y, y, progress); }
-            }
+            WalkMath.Drawn(c, Now, out float x, out float y, out float _);   // Core/SmoothWalk.cs
             return new Vector2(x, y);
         }
 
@@ -380,11 +375,9 @@ namespace Chaos.Client
             var d = DrawnTile(c);
             var a = Layout != null ? Layout.Anchor : (anchored ? Anchor : c.Position);
             float gy = GroundY(Mathf.FloorToInt(d.x), Mathf.FloorToInt(d.y), c.Position.Z);
-            if (c.WalkStart >= 0 && c.WalkMs > 0 && Layout != null)
-            {
-                float progress = Mathf.Clamp01((float)((Now - c.WalkStart) / c.WalkMs));
-                gy = Mathf.Lerp(GroundY(c.WalkFrom.X, c.WalkFrom.Y, c.WalkFrom.Z), GroundY(c.Position.X, c.Position.Y, c.Position.Z), progress);
-            }
+            WalkMath.Between(c, Now, out Pos wf, out Pos wt, out float wu);
+            if (wf != wt && Layout != null)
+                gy = Mathf.Lerp(GroundY(wf.X, wf.Y, wf.Z), GroundY(wt.X, wt.Y, wt.Z), wu);
             var w = FrontLive.ToWorld(a, d.x, d.y, gy);
             return new Vector3(w.X, w.Y, w.Z);
         }

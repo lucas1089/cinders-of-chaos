@@ -279,7 +279,7 @@ namespace Chaos.Client
                 int key = FrontLooks.KeyOf(c, isLocal, w.PlayerVocation);
                 if (s.Look == null || key != s.LookKey) { s.LookKey = key; Choose(s, c, isLocal, w.PlayerVocation); }
                 var foe = FrontTargets.Foe(onFloor, c, isLocal ? pick : 0);
-                s.State.Update(clock, c, foe);
+                s.State.Update(clock, c, foe, view.Now);
                 if (struck.Contains(c.Id)) s.State.Strike(clock);
                 if (Draw(s, c, w, yaw, face, sun, sunFace, o0, ex, ey)) drawn++;
             }
@@ -332,8 +332,8 @@ namespace Chaos.Client
             }
             float px = tw.x + ex.x * dx + ey.x * dy, pz = tw.z + ex.z * dx + ey.z * dy;
             float gy = view.GroundY(c.Position.X, c.Position.Y, c.Position.Z);
-            if (st.Walking && (c.WalkFrom.X != c.Position.X || c.WalkFrom.Y != c.Position.Y))
-                gy = Mathf.Lerp(view.GroundY(c.WalkFrom.X, c.WalkFrom.Y, c.WalkFrom.Z), gy, st.WalkU);
+            if (st.Walking && st.SegFrom != st.SegTo)
+                gy = Mathf.Lerp(view.GroundY(st.SegFrom.X, st.SegFrom.Y, st.SegFrom.Z), view.GroundY(st.SegTo.X, st.SegTo.Y, st.SegTo.Z), st.WalkU);
             bool hop = false;
             Vector3 scale;
             int dirIdx = FrontArtFacing.Index(st.FaceX, st.FaceZ, yaw);

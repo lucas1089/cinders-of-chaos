@@ -79,18 +79,8 @@ namespace Chaos.Client
         /// <summary>A creature's drawn position in world tiles (between its last two tiles while it walks).</summary>
         Vector2 Drawn(Creature c, out float progress)
         {
-            progress = 1;
-            var p = new Vector2(c.Position.X, c.Position.Y);
-            if (c.WalkStart >= 0 && c.WalkMs > 0)
-            {
-                progress = (float)Math.Min(1.0, (Now - c.WalkStart) / c.WalkMs);
-                if (progress < 1)
-                {
-                    var from = new Vector2(c.WalkFrom.X, c.WalkFrom.Y);
-                    return Vector2.Lerp(from, p, progress);
-                }
-            }
-            return p;
+            WalkMath.Drawn(c, Now, out float x, out float y, out progress);   // Core/SmoothWalk.cs: the confirmed step or the predicted ones
+            return new Vector2(x, y);
         }
 
         int FirstVisibleFloor(Pos c)

@@ -6,6 +6,18 @@ use cinders_launcher::install::{Event, Options};
 use cinders_launcher::net::Curl;
 use cinders_launcher::{choice, launch, selfupdate};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// `--allow-dev-unity` (or CINDERS_ALLOW_DEV_UNITY=1): install a DEV Unity package, one built without the client key. For testers;
+/// players never get one offered (O433 phase 17).
+static ALLOW_DEV_UNITY: AtomicBool = AtomicBool::new(false);
+
+fn update_options() -> Options {
+    Options {
+        allow_dev: ALLOW_DEV_UNITY.load(Ordering::Relaxed),
+        ..Options::default()
+    }
+}
 
 struct Args {
     cli: bool,
@@ -25,11 +37,15 @@ fn parse_args() -> Args {
         client: None,
         rest: Vec::new(),
     };
+    if std::env::var("CINDERS_ALLOW_DEV_UNITY").as_deref() == Ok("1") {
+        ALLOW_DEV_UNITY.store(true, Ordering::Relaxed);
+    }
     let mut it = std::env::args().skip(1);
     while let Some(x) = it.next() {
         match x.as_str() {
             "--cli" => a.cli = true,
             "--no-start" => a.no_start = true,
+            "--allow-dev-unity" => ALLOW_DEV_UNITY.store(true, Ordering::Relaxed),
             "--dir" => a.dir = it.next().map(PathBuf::from),
             "--lang" => a.lang = it.next().map(|t| Lang::from_tag(&t)),
             "--client" => {
@@ -40,7 +56,7 @@ fn parse_args() -> Args {
                 }
             }
             "--help" | "-h" => {
-                println!("cinders-launcher [--cli] [--no-start] [--dir FOLDER] [--lang pt|en] [--client main|unity]");
+                println!("cinders-launcher [--cli] [--no-start] [--dir FOLDER] [--lang pt|en] [--client main|unity] [--allow-dev-unity]");
                 std::process::exit(0);
             }
             _ => a.rest.push(x),
@@ -87,7 +103,7 @@ fn run_cli(cfg: &Config, exe: PathBuf, lang: Lang, no_start: bool, client: Clien
             return 1;
         }
     };
-    let r = choice::update(cfg, client, exe, &Curl, Options::default(), &mut |e| {
+    let r = choice::update(cfg, client, exe, &Curl, update_options(), &mut |e| {
         if let Event::Status(s) = e {
             println!("{}", i18n::status(s, lang));
         }
@@ -315,7 +331,7 @@ mod gui {
             (self.done, self.total) = (0, 0);
             let (cfg, client, exe, tx) = (self.cfg.clone(), self.client, self.exe.clone(), self.tx.clone());
             std::thread::spawn(move || {
-                let r = choice::update(&cfg, client, exe, &Curl, Options::default(), &mut |e| {
+                let r = choice::update(&cfg, client, exe, &Curl, update_options(), &mut |e| {
                     let _ = tx.send(Msg::Ev(e));
                 });
                 let _ = tx.send(Msg::Done(r.map(|(o, _)| o)));

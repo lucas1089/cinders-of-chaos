@@ -118,9 +118,9 @@ pub fn client_name(c: crate::config::Client, l: Lang) -> &'static str {
 
 pub fn unity_note(l: Lang) -> &'static str {
     match l {
-        Lang::Pt => "Versão beta, instalada na pasta unity/ do jogo. Ela lê Tibia.dat e Tibia.spr de unity/things.",
+        Lang::Pt => "Versão beta, instalada na pasta unity/ do jogo. Ela lê as imagens do jogo dos arquivos cifrados que o launcher instala, ou do chaos.pack do cliente principal.",
         Lang::En => {
-            "Beta version, installed in the game's unity/ folder. It reads Tibia.dat and Tibia.spr from unity/things."
+            "Beta version, installed in the game's unity/ folder. It reads the game art from the encrypted files the launcher installs, or from the main client's chaos.pack."
         }
     }
 }
@@ -186,6 +186,8 @@ pub enum Error {
     NoGame(String),
     /// A local file operation failed.
     Io(String),
+    /// The published Unity package is a DEV build (no client key inside): not offered to players.
+    DevPackage,
 }
 
 impl Error {
@@ -195,6 +197,8 @@ impl Error {
             (Error::Network(d), Lang::En) => format!("Could not reach the update server. Check your internet and try again. ({d})"),
             (Error::BadSignature, Lang::Pt) => "A assinatura da atualização não confere. Nada foi instalado.".into(),
             (Error::BadSignature, Lang::En) => "The update signature does not match. Nothing was installed.".into(),
+            (Error::DevPackage, Lang::Pt) => "O cliente Unity publicado é uma versão de desenvolvimento, sem a chave do cliente, e não é oferecido aos jogadores. Nada foi instalado. Use o cliente principal.".into(),
+            (Error::DevPackage, Lang::En) => "The published Unity client is a development build without the client key and is not offered to players. Nothing was installed. Use the main client.".into(),
             (Error::BadManifest(d), Lang::Pt) => format!("A lista de atualização é inválida. Nada foi instalado. ({d})"),
             (Error::BadManifest(d), Lang::En) => format!("The update list is invalid. Nothing was installed. ({d})"),
             (Error::OlderManifest { got, have }, Lang::Pt) => format!("A atualização do servidor ({got}) é mais velha que a sua ({have}). Nada foi mudado."),
@@ -269,6 +273,7 @@ mod tests {
             Error::Config("x".into()),
             Error::NoGame("Chaos.exe".into()),
             Error::Io("x".into()),
+            Error::DevPackage,
         ];
         for e in all {
             let (pt, en) = (e.text(Lang::Pt), e.text(Lang::En));

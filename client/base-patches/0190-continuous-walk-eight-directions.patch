@@ -1,0 +1,246 @@
+# Continuous walk and 8-direction keys (owner request 2026-11-08, ROADMAP O434; client/BASE.md "0190"; applies after 0001-0189).
+# (1) Creature::walk: a step that starts right after the previous one ended on time starts as far into its animation as it
+# is late (at most 40 ms and a third of the step), so one frame or one dispatcher turn of lateness per step no longer
+# stretches the walk into stop-go (held key, monster walk packets, auto-walk). A real pause (over 40 ms) or a cancelled
+# step carries nothing. (2) Numpad keys keep their numpad key code with NumLock on (X11, Windows), so numpad 1/3/7/9 walk
+# the diagonals and 8/4/6/2 straight in either state (they were the number-row codes with NumLock on). (3) game_walking:
+# Diagonal movement (Smart Walk) is on by default and switched on once per computer; a walk from standing waits 35 ms for a
+# second direction key, so W+D / Up+Right walk the diagonal at once. The diagonal step time (7/5, server patch 0018)
+# is unchanged.
+--- a/src/client/creature.h
++++ b/src/client/creature.h
+@@ -380,6 +380,8 @@
+     uint8 m_walkedPixels;
+     uint m_footStep;
+     Timer m_walkTimer;
++    ticks_t m_lastWalkEndTicks = 0; // Chaos (base-patch 0190): when the last step ended on time (0: it did not)
++    int m_lastWalkOvershoot = 0;    // Chaos (base-patch 0190): ms past its duration that step was when it ended
+     ticks_t m_footLastStep;
+     TilePtr m_walkingTile;
+     stdext::boolean<false> m_walking;
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -61,6 +61,11 @@
+ 
+ std::array<double, Otc::LastSpeedFormula> Creature::m_speedFormula = { -1,-1,-1 };
+ 
++// Chaos (base-patch 0190): a step that starts right after the previous one ended on time (a held key, the next walk
++// packet of a monster, an auto-walk) starts as far into its animation as it is late, so a frame or a dispatcher turn of
++// lateness no longer stretches every step (a stop-go walk). At most this many ms, and at most a third of the step.
++static constexpr int ChaosWalkCarryMaxTicks = 40;
++
+ // Chaos (base-patch 0029, server src-patch 0018 "Movement speed"): the server rounds a player's step up to 10 ms (not the
+ // 50 ms beat) and a player's diagonal step takes 7/5 of a straight one (not 3x); monsters and NPCs keep the beat and
+ // step diagonally in the time of a straight step (the server's stock diagonal cost of 1.5 is truncated to 1).
+@@ -863,10 +868,23 @@
+     m_walkDirection = m_direction;
+ 
+     // starts counting walk
++    const bool chaosWasWalking = m_walking;
+     m_walking = true;
+     m_walkTimer.restart();
+     m_walkedPixels = 0;
+ 
++    // Chaos (base-patch 0190): carry the lateness of this start over from the step that just ended on time
++    if (!chaosWasWalking && m_lastWalkEndTicks != 0) {
++        const int gap = (int)(g_clock.millis() - m_lastWalkEndTicks);
++        if (gap >= 0 && gap <= ChaosWalkCarryMaxTicks) {
++            int late = std::min(gap + m_lastWalkOvershoot, ChaosWalkCarryMaxTicks);
++            late = std::min<int>(late, getStepDuration() / 3);
++            if (late > 0)
++                m_walkTimer.adjust(-late);
++        }
++    }
++    m_lastWalkEndTicks = 0;
++
+     if (m_walkFinishAnimEvent) {
+         m_walkFinishAnimEvent->cancel();
+         m_walkFinishAnimEvent = nullptr;
+@@ -1155,6 +1173,18 @@
+ 
+ void Creature::terminateWalk()
+ {
++    // Chaos (base-patch 0190): remember a step that ran its whole time, for the carry-over in Creature::walk
++    m_lastWalkEndTicks = 0;
++    m_lastWalkOvershoot = 0;
++    if (m_walking) {
++        const int elapsed = (int)m_walkTimer.ticksElapsed();
++        const int duration = (int)getStepDuration();
++        if (duration > 0 && elapsed >= duration) {
++            m_lastWalkEndTicks = g_clock.millis();
++            m_lastWalkOvershoot = std::min(elapsed - duration, ChaosWalkCarryMaxTicks);
++        }
++    }
++
+     // remove any scheduled walk update
+     if (m_walkUpdateEvent) {
+         m_walkUpdateEvent->cancel();
+--- a/src/framework/platform/x11window.cpp
++++ b/src/framework/platform/x11window.cpp
+@@ -363,16 +363,16 @@
+     m_keyMap[XK_KP_Delete] = Fw::KeyDelete;
+ 
+     // keypad with numlock on
+-    m_keyMap[XK_KP_0] = Fw::Key0;
+-    m_keyMap[XK_KP_1] = Fw::Key1;
+-    m_keyMap[XK_KP_2] = Fw::Key2;
+-    m_keyMap[XK_KP_3] = Fw::Key3;
+-    m_keyMap[XK_KP_4] = Fw::Key4;
+-    m_keyMap[XK_KP_5] = Fw::Key5;
+-    m_keyMap[XK_KP_6] = Fw::Key6;
+-    m_keyMap[XK_KP_7] = Fw::Key7;
+-    m_keyMap[XK_KP_8] = Fw::Key8;
+-    m_keyMap[XK_KP_9] = Fw::Key9;
++    m_keyMap[XK_KP_0] = Fw::KeyNumpad0; // Chaos (base-patch 0190): numpad walk with NumLock on
++    m_keyMap[XK_KP_1] = Fw::KeyNumpad1; // Chaos (base-patch 0190): numpad walk with NumLock on
++    m_keyMap[XK_KP_2] = Fw::KeyNumpad2; // Chaos (base-patch 0190): numpad walk with NumLock on
++    m_keyMap[XK_KP_3] = Fw::KeyNumpad3; // Chaos (base-patch 0190): numpad walk with NumLock on
++    m_keyMap[XK_KP_4] = Fw::KeyNumpad4; // Chaos (base-patch 0190): numpad walk with NumLock on
++    m_keyMap[XK_KP_5] = Fw::KeyNumpad5; // Chaos (base-patch 0190): numpad walk with NumLock on
++    m_keyMap[XK_KP_6] = Fw::KeyNumpad6; // Chaos (base-patch 0190): numpad walk with NumLock on
++    m_keyMap[XK_KP_7] = Fw::KeyNumpad7; // Chaos (base-patch 0190): numpad walk with NumLock on
++    m_keyMap[XK_KP_8] = Fw::KeyNumpad8; // Chaos (base-patch 0190): numpad walk with NumLock on
++    m_keyMap[XK_KP_9] = Fw::KeyNumpad9; // Chaos (base-patch 0190): numpad walk with NumLock on
+ 
+     m_keyMap[XK_F1] = Fw::KeyF1;
+     m_keyMap[XK_F2] = Fw::KeyF2;
+--- a/src/framework/platform/win32window.cpp
++++ b/src/framework/platform/win32window.cpp
+@@ -654,29 +654,28 @@
+ 
+     // lParam will have this state when receiving insert,end,down,etc presses from numpad
+     if(!(((HIWORD(lParam) >> 8) & 0xFF) & 1)) {
+-        bool numlockOn = GetKeyState(VK_NUMLOCK);
+-        // retranslate numpad keys
++                // retranslate numpad keys
+         switch(wParam) {
+             case VK_INSERT:
+-                return numlockOn ? Fw::Key0 : Fw::KeyNumpad0;
++                return Fw::KeyNumpad0; // Chaos (base-patch 0190): numpad walk with NumLock on
+             case VK_END:
+-                return numlockOn ? Fw::Key1 : Fw::KeyNumpad1;
++                return Fw::KeyNumpad1; // Chaos (base-patch 0190): numpad walk with NumLock on
+             case VK_DOWN:
+-                return numlockOn ? Fw::Key2 : Fw::KeyNumpad2;
++                return Fw::KeyNumpad2; // Chaos (base-patch 0190): numpad walk with NumLock on
+             case VK_NEXT:
+-                return numlockOn ? Fw::Key3 : Fw::KeyNumpad3;
++                return Fw::KeyNumpad3; // Chaos (base-patch 0190): numpad walk with NumLock on
+             case VK_LEFT:
+-                return numlockOn ? Fw::Key4 : Fw::KeyNumpad4;
++                return Fw::KeyNumpad4; // Chaos (base-patch 0190): numpad walk with NumLock on
+             case VK_CLEAR:
+-                return numlockOn ? Fw::Key5 : Fw::KeyNumpad5;
++                return Fw::KeyNumpad5; // Chaos (base-patch 0190): numpad walk with NumLock on
+             case VK_RIGHT:
+-                return numlockOn ? Fw::Key6 : Fw::KeyNumpad6;
++                return Fw::KeyNumpad6; // Chaos (base-patch 0190): numpad walk with NumLock on
+             case VK_HOME:
+-                return numlockOn ? Fw::Key7 : Fw::KeyNumpad7;
++                return Fw::KeyNumpad7; // Chaos (base-patch 0190): numpad walk with NumLock on
+             case VK_UP:
+-                return numlockOn ? Fw::Key8 : Fw::KeyNumpad8;
++                return Fw::KeyNumpad8; // Chaos (base-patch 0190): numpad walk with NumLock on
+             case VK_PRIOR:
+-                return numlockOn ? Fw::Key9 : Fw::KeyNumpad9;
++                return Fw::KeyNumpad9; // Chaos (base-patch 0190): numpad walk with NumLock on
+         }
+     }
+ 
+--- a/modules/game_walking/walking.lua
++++ b/modules/game_walking/walking.lua
+@@ -20,6 +20,10 @@
+ walkFirstStepDelay = 50
+ walkTurnDelay = 0
+ walkCtrlTurnDelay = 0
++-- Chaos (base-patch 0190): a walk that starts from standing waits this long (ms) for a second direction key, so W+D
++-- walks the diagonal at once instead of one step straight first
++local ChordDelay = 35
++chordUntil = 0
+ 
+ local FastTurnRepeatDelay = 50
+ 
+@@ -131,6 +135,22 @@
+   end
+ end
+ 
++-- Chaos (base-patch 0190): once per computer, Diagonal movement (Smart Walk) goes on (it was off by default)
++local function enableDiagonalKeysOnce()
++  if g_settings.getBoolean("chaosDiagonalKeysV1") then
++    return
++  end
++  g_settings.set("chaosDiagonalKeysV1", true)
++  if m_settings and m_settings.setOption then
++    pcall(m_settings.setOption, "smartWalk", true)
++  end
++end
++
++function onGameStartWalking()
++  enableDiagonalKeysOnce()
++  rebindTurnKeys()
++end
++
+ function init()
+   migrateClassicWalkDefaults()
+   migrateDirectTurnWalk()
+@@ -139,7 +159,7 @@
+   applyDirectWalkRuntimeOptions()
+ 
+   connect(g_game, {
+-    onGameStart = rebindTurnKeys,
++    onGameStart = onGameStartWalking,
+     onTeleport = onTeleport
+   })
+   connect(LocalPlayer, {
+@@ -156,7 +176,7 @@
+ 
+ function terminate()
+   disconnect(g_game, {
+-    onGameStart = rebindTurnKeys,
++    onGameStart = onGameStartWalking,
+     onTeleport = onTeleport
+   })
+ 
+@@ -483,6 +503,13 @@
+       return
+     end
+   else
++    if #smartWalkDirs == 0 then
++      -- Chaos (base-patch 0190): the first key of a chord from standing
++      local player = g_game.getLocalPlayer()
++      if player and not player:isWalking() and m_settings.getOption("smartWalk") then
++        chordUntil = g_clock.millis() + ChordDelay
++      end
++    end
+     table.insert(smartWalkDirs, 1, dir)
+   end
+ 
+@@ -514,6 +541,17 @@
+   walkEvent = nil
+ 
+   if g_keyboard.getModifiers() == KeyboardNoModifier then
++    -- Chaos (base-patch 0190): wait out the chord window, then walk what is held by then (a diagonal for two keys)
++    local wait = chordUntil - g_clock.millis()
++    if wait > 0 and #smartWalkDirs > 0 then
++      walkEvent = scheduleEvent(function()
++        walkEvent = nil
++        if #smartWalkDirs > 0 then
++          walk(smartWalkDir or smartWalkDirs[1], 0)
++        end
++      end, wait)
++      return true
++    end
+     return walk(smartWalkDir or dir, ticks)
+   end
+ 
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1333,7 +1333,7 @@
+ 	},
+ 
+ 	smartWalk = {
+-		value = false,
++		value = true, -- Chaos (base-patch 0190): two held direction keys walk the diagonal
+ 	},
+ 
+ 	walkCtrlTurnDelay = {

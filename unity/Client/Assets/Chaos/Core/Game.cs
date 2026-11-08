@@ -22,6 +22,8 @@ namespace Chaos.Core
         public Action<string> Disconnected = delegate { };
         public Action Pinged = delegate { };
         public Action<Dir> WalkCancelled = delegate { };
+        /// <summary>The local player's steps sent and not confirmed (Core/SmoothWalk.cs).</summary>
+        public readonly StepPredictor Steps = new StepPredictor();
         public Action<Creature> PlayerMoved = delegate { };
         public bool LoggedIn;
         /// <summary>The NPC shop of 0x7A, 0x7B and 0x7C, and the NPC conversation (Core/NpcTrade.cs).</summary>
@@ -126,6 +128,7 @@ namespace Chaos.Core
                 case 0x64:
                 {
                     var p = ReadPos(r);
+                    Steps.Clear(W.Player);
                     SetCenter(p);
                     W.Tiles.Clear();
                     MapDescription(r, p.X - W.Range.Left, p.Y - W.Range.Top, p.Z, W.Range.Horizontal, W.Range.Vertical);
@@ -272,6 +275,7 @@ namespace Chaos.Core
                     var d = (Dir)r.U8();
                     var me = W.Player;
                     if (me != null) { me.Direction = d; me.WalkStart = -1; }
+                    Steps.Clear(me);   // the server refused a step: the predicted ones go, the player is where the server says
                     WalkCancelled(d);
                     break;
                 }
@@ -327,14 +331,18 @@ namespace Chaos.Core
             from = c.Position;
             W.AddThing(to, new Thing { Creature = c });
             int dx = to.X - from.X, dy = to.Y - from.Y;
+            bool me = c.Id == W.PlayerId;
             if (from.Z == to.Z && Math.Max(Math.Abs(dx), Math.Abs(dy)) == 1)
             {
                 c.Direction = DirOf(dx, dy, c.Direction);
-                c.WalkFrom = from;
-                c.WalkStart = Clock();
-                c.WalkMs = StepMs(c, to, dx != 0 && dy != 0);
+                double ms = StepMs(c, to, dx != 0 && dy != 0);
+                double now = Clock();
+                var pred = me ? Steps.Confirm(c, from, to) : null;
+                // a predicted step already glides: keep its start. Any other move joins the glide before it (Core/SmoothWalk.cs WalkChain)
+                double start = pred != null ? pred.Start : WalkChain.Start(WalkChain.EndOf(c), now, ms);
+                WalkChain.Apply(c, from, start, ms, now);
             }
-            else c.WalkStart = -1;
+            else { c.WalkStart = -1; c.PrevStart = -1; if (me) Steps.Clear(c); }
             if (c.Id == W.PlayerId) PlayerMoved(c);
         }
 
@@ -358,14 +366,11 @@ namespace Chaos.Core
             var t = W.Get(to);
             if (t != null && t.Things.Count > 0 && !t.Things[0].IsCreature && t.Things[0].Item.Type != null && t.Things[0].Item.Type.Ground)
                 ground = Math.Max(1, t.Things[0].Item.Type.GroundSpeed);
-            bool player = c.Id == W.PlayerId;
+            bool player = c.Id == W.PlayerId || WalkTiming.IsPlayerId(c.Id);   // 0018: every player steps by its rules, monsters and NPCs by stock
             double calc = Math.Floor(857.36 * Math.Log(Math.Max(0, c.Speed) + 261.29) - 4795.01 + 0.5);
             calc = Math.Max(1, calc);
             long ms = (long)(1000 * ground / calc);
-            if (diagonal) ms = player ? ms * 7 / 5 : ms * 3 / 2;
-            int step = player ? 10 : 50;
-            ms = (ms + step - 1) / step * step;
-            return Math.Max(step, Math.Min(5000, ms));
+            return WalkTiming.Scale(ms, diagonal, player);
         }
 
         void MapDescription(ByteReader r, int x, int y, int z, int w, int h)
@@ -515,6 +520,7 @@ namespace Chaos.Core
 
         void FloorUp(ByteReader r)
         {
+            Steps.Clear(W.Player);
             var c = W.Center;
             int z = c.Z - 1;
             var nc = new Pos(c.X + 1, c.Y + 1, z);
@@ -532,6 +538,7 @@ namespace Chaos.Core
 
         void FloorDown(ByteReader r)
         {
+            Steps.Clear(W.Player);
             var c = W.Center;
             int z = c.Z + 1;
             var nc = new Pos(c.X - 1, c.Y - 1, z);
@@ -593,7 +600,6 @@ namespace Chaos.Core
         bool awareAsked;
         bool started;
         public bool GuardAnswered { get; private set; }
-        double stepSent = -1;
         public string Closed;
         public event Action<string> Log = delegate { };
         public event Action<string, string, byte> Chat = delegate { };
@@ -640,8 +646,6 @@ namespace Chaos.Core
             InitPlay();   // Core/GamePlay.cs
             InitVisual();   // Core/GameVisual.cs
             InitCommunity();   // Core/GameCommunity.cs
-            parser.WalkCancelled = _ => stepSent = -1;
-            parser.PlayerMoved = _ => stepSent = -1;
         }
 
         /// <summary>When set, the session's clock (Now) is this, not the wall clock: the demo tour feeds its fixed 60 fps frame clock (Core/DemoTour.cs).</summary>
@@ -753,18 +757,25 @@ namespace Chaos.Core
             if (!progressStarted && enteredAt >= 0 && Now - enteredAt > 1800) { progressStarted = true; Progress.Start(); }
             PlayPoll();   // Core/GamePlay.cs: the dead guard
             if (conn.Closed && Closed == null) Closed = conn.Error ?? "The server closed the connection.";
-            if (stepSent >= 0 && Now - stepSent > 1500) stepSent = -1;   // no answer to a step: let the next one go
+            parser.Steps.Expire(world.Player, Now);   // no answer to a step: let the next one go
         }
 
-        /// <summary>A step can go when the last one was answered and the walk animation is nearly over.</summary>
+        /// <summary>The check of a tile the client believes walkable, for the prediction (set by the Unity side: WalkMap.Walkable); null predicts everything.</summary>
+        public Func<Pos, bool> Walkable;
+
+        /// <summary>A step can go when fewer than WalkTiming.MaxPending are unanswered and the glide of the last one is nearly over (the pre-walk window):
+        /// the next step is sent before the current one ends, so the player never stops between tiles.</summary>
         public bool CanWalk
         {
             get
             {
-                if (!parser.LoggedIn || stepSent >= 0) return false;
+                if (!parser.LoggedIn) return false;
                 var me = world.Player;
                 if (me == null) return false;
-                return me.WalkStart < 0 || Now - me.WalkStart >= me.WalkMs - 30;
+                var steps = parser.Steps;
+                steps.Expire(me, Now);
+                double end = steps.EndTime(me);
+                return WalkTiming.CanSend(Now, end, me.WalkMs > 0 ? me.WalkMs : 150, steps.Count);
             }
         }
 
@@ -773,7 +784,16 @@ namespace Chaos.Core
         public void Walk(Dir d)
         {
             if (!CanWalk) return;
-            stepSent = Now;
+            var me = world.Player;
+            var steps = parser.Steps;
+            var to = WalkDirs.Step(steps.Tip(me), d);
+            bool diag = WalkDirs.Diagonal(d);
+            // a step the client thinks blocked is sent when nothing is in flight (the server may know better) and not drawn
+            bool ok = Walkable == null || Walkable(to);
+            if (!ok && steps.Count > 0) return;
+            double ms = parser.StepMs(me, to, diag);
+            me.Direction = d;
+            steps.Add(me, d, Now, ms, ok);
             conn.Send(new[] { WalkOps[(int)d] });
         }
 

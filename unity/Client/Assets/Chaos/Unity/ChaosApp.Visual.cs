@@ -225,11 +225,9 @@ namespace Chaos.Client
         bool CreatureCenter(Creature c, Rect map, float scale, out Vector2 at, out float tile)
         {
             if (!TileGeom(c.Position, map, scale, out at, out tile)) return false;
-            if (c.WalkStart >= 0 && c.WalkMs > 0 && c.WalkFrom != c.Position && TileInGroup(c.WalkFrom, map, scale, out Vector2 from))
-            {
-                float t = Mathf.Clamp01((float)((session.Now - c.WalkStart) / c.WalkMs));
-                at = Vector2.Lerp(from, at, t);
-            }
+            WalkMath.Between(c, session.Now, out Pos wf, out Pos wt, out float wu);   // Core/SmoothWalk.cs
+            if (wf != wt && TileGeom(wt, map, scale, out Vector2 toAt, out _) && TileInGroup(wf, map, scale, out Vector2 from))
+                at = Vector2.Lerp(from, toAt, wu);
             return true;
         }
 

@@ -116,20 +116,33 @@ namespace Chaos.Client
             if (dat != null) return true;
             try
             {
-                string d = Path.Combine(pairDir, "Tibia.dat"), s = Path.Combine(pairDir, "Tibia.spr");
-                if (!File.Exists(d) || !File.Exists(s))
+                // the order and the rules are Core/ThingsPair.cs (unity/README.md "Sprite pair"): -chaosThings DIR, loose files in pairDir
+                // (things/ beside the player by default), the encrypted blobs of the install, the main client's chaos.pack next to it
+                byte[] key = GuardKey();
+                var res = PairLocator.Find(new PairRequest
                 {
-                    status = "No Tibia.dat / Tibia.spr in " + pairDir;
+                    FlagDir = TourArg("-chaosThings"),
+                    PackFile = TourArg("-chaosPack"),
+                    LooseDir = pairDir,
+                    InstallDir = Path.GetDirectoryName(Application.dataPath) ?? ".",
+                    Key = key,
+                    KeyIsDev = ReferenceEquals(key, ClientGuard.DevKey),
+                }, new DiskPairFiles());
+                if (!res.Ok)
+                {
+                    status = Loc.T("No sprite pair found: {0}", res.Error);
+                    Debug.Log("chaos pair: " + res.Error);   // never holds the key (Core.Tests check the messages)
                     return false;
                 }
-                dat = DatFile.Load(d);
-                spr = SprFile.Open(s);
+                dat = res.Dat;
+                spr = res.Spr;
                 atlas = new SpriteAtlas(spr);
+                Debug.Log("chaos pair: " + res.Origin + " " + res.Where);
                 return true;
             }
             catch (Exception e)
             {
-                status = "Could not read the pair: " + e.Message;
+                status = Loc.T("Could not read the sprite pair: {0}", e.Message);
                 dat = null;
                 return false;
             }
@@ -223,6 +236,7 @@ namespace Chaos.Client
                 AwareWidth = AwareChoice().Width,   // CHAOS_UNITY_AWARE=29x21 asks the server for a larger map area (Identity Chaos only)
                 AwareHeight = AwareChoice().Height,
             });
+            session.Walkable = p => WalkMap.Walkable(world, p, world.PlayerId);   // the walk prediction (Core/SmoothWalk.cs) draws only steps onto tiles that look free
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
             ChatEntered();
             SocialEntered();   // ChaosApp.Social.cs
@@ -417,43 +431,32 @@ namespace Chaos.Client
             return false;
         }
 
+        readonly WalkInputState walkKeys = new WalkInputState();
+        Dir? pointerDir;
+
         void HandleWalk()
         {
             if (chatFocused || TextEditing) return;   // typing: the letters go to the chat line
             if (OverlayKeys.Pans(Utils != null && Utils.Overlay.Shown, Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift), false)
                 && (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))) return;   // Shift + arrows pan the map overlay
-            Dir? d = null;
-            bool up = Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.Keypad8);
-            bool down = Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.Keypad2);
-            bool left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.Keypad4);
-            bool right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.Keypad6);
-            if (Input.GetKey(KeyCode.Keypad7)) d = Dir.NorthWest;
-            else if (Input.GetKey(KeyCode.Keypad9)) d = Dir.NorthEast;
-            else if (Input.GetKey(KeyCode.Keypad1)) d = Dir.SouthWest;
-            else if (Input.GetKey(KeyCode.Keypad3)) d = Dir.SouthEast;
-            else if (up && left) d = Dir.NorthWest;
-            else if (up && right) d = Dir.NorthEast;
-            else if (down && left) d = Dir.SouthWest;
-            else if (down && right) d = Dir.SouthEast;
-            else if (up) d = Dir.North;
-            else if (down) d = Dir.South;
-            else if (left) d = Dir.West;
-            else if (right) d = Dir.East;
-            if (d == null && Input.GetMouseButton(0) && ClickHeldLong && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition) && !PlayBlocksWalk)
+            // held keys to one mask: two keys make a diagonal, the numpad 7 9 1 3 are diagonals (Core/SmoothWalk.cs)
+            int mask = 0;
+            if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W)) mask |= WalkInput.Up;
+            if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S)) mask |= WalkInput.Down;
+            if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A)) mask |= WalkInput.Left;
+            if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D)) mask |= WalkInput.Right;
+            KeyCode[] pad = { KeyCode.Keypad1, KeyCode.Keypad2, KeyCode.Keypad3, KeyCode.Keypad4, KeyCode.Keypad6, KeyCode.Keypad7, KeyCode.Keypad8, KeyCode.Keypad9 };
+            int[] padDigit = { 1, 2, 3, 4, 6, 7, 8, 9 };
+            for (int i = 0; i < pad.Length; i++) if (Input.GetKey(pad[i])) mask |= WalkInput.NumpadMask(padDigit[i]);
+            Dir? d = walkKeys.Update(session.Now, mask);
+            if (mask == 0 && Input.GetMouseButton(0) && ClickHeldLong && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition) && !PlayBlocksWalk)
             {
-                // touch / click: walk towards the pointer from the screen centre
+                // touch / click: walk towards the pointer from the screen centre, in 8 sectors
                 Vector2 v = (Vector2)Input.mousePosition - new Vector2(UnityEngine.Screen.width, UnityEngine.Screen.height) / 2;
-                if (v.magnitude > 40)
-                {
-                    float a = Mathf.Atan2(v.y, v.x) * Mathf.Rad2Deg;
-                    int oct = Mathf.RoundToInt(a / 45f);
-                    d = oct switch
-                    {
-                        0 => Dir.East, 1 => Dir.NorthEast, 2 => Dir.North, 3 => Dir.NorthWest,
-                        -1 => Dir.SouthEast, -2 => Dir.South, -3 => Dir.SouthWest, _ => Dir.West,
-                    };
-                }
+                d = WalkInput.Sector(v.x, v.y, 40, pointerDir);
+                pointerDir = d;
             }
+            else pointerDir = null;
             if (d != null) { autoWalk.Cancel(); npcApproach.Cancel(); session.Walk(d.Value); }   // a manual step ends an auto-walk
         }
 

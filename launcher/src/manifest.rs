@@ -57,6 +57,9 @@ pub struct Native {
     pub package: u64,
     pub game: String,
     pub launcher: Option<String>,
+    /// A DEV package: built without the client guard key (the manifest says `"dev": true`, O433 phase 17). The Unity choice
+    /// does not install one unless the player passes `--allow-dev-unity`. Absent means false.
+    pub dev: bool,
     pub files: Vec<NativeFile>,
 }
 
@@ -219,10 +222,16 @@ fn parse_native(n: &Value, layout: Layout) -> Result<Native, Error> {
             Some(l.to_string())
         }
     };
+    let dev = match obj.get("dev") {
+        None => false,
+        Some(Value::Bool(b)) => *b,
+        Some(_) => return bad("native: dev is not a boolean"),
+    };
     Ok(Native {
         package,
         game: game.to_string(),
         launcher,
+        dev,
         files,
     })
 }
@@ -492,6 +501,22 @@ mod tests {
         ];
         for c in cases {
             assert!(matches!(parse_tree(&c), Err(Error::BadManifest(_))), "{c}");
+        }
+    }
+
+    #[test]
+    fn dev_flag_is_a_boolean_and_defaults_to_false() {
+        let none = parse_tree(&tree(&["ChaosUnity.exe"], "")).unwrap();
+        assert!(!none.native.unwrap().dev, "absent means a keyed package");
+        let keyed = parse_tree(&tree(&["ChaosUnity.exe"], r#","dev":false"#)).unwrap();
+        assert!(!keyed.native.unwrap().dev);
+        let dev = parse_tree(&tree(&["ChaosUnity.exe"], r#","dev":true"#)).unwrap();
+        assert!(dev.native.unwrap().dev);
+        for odd in [r#","dev":"yes""#, r#","dev":1"#, r#","dev":null"#] {
+            assert!(
+                matches!(parse_tree(&tree(&["ChaosUnity.exe"], odd)), Err(Error::BadManifest(_))),
+                "{odd}"
+            );
         }
     }
 

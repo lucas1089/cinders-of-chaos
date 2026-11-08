@@ -17,6 +17,7 @@ fn urel(version: u64, files: &[(&str, &[u8])]) -> UnityRelease {
         version,
         package: 31,
         files: files.iter().map(|(n, d)| (n.to_string(), d.to_vec())).collect(),
+        dev: None,
     }
 }
 
@@ -413,4 +414,56 @@ fn the_choice_survives_a_restart() {
     urel(1, &player_v1()).publish(&w.srv, &w.kp);
     run_unity(&w, World::fast()).unwrap();
     assert_eq!(config::load_client(&w.dir), Client::Unity);
+}
+
+#[test]
+fn a_dev_package_is_not_offered_unless_allowed() {
+    // O433 phase 17: a Unity package built without the client key says "dev": true; the launcher installs nothing of it for a
+    // player, and says why; the tester's switch (Options::allow_dev, the flag --allow-dev-unity) installs it
+    let w = World::new("u-dev");
+    let mut r1 = urel(1, &player_v1());
+    r1.dev = Some(true);
+    r1.publish(&w.srv, &w.kp);
+    let err = run_unity(&w, World::fast()).unwrap_err();
+    assert!(matches!(err, Error::DevPackage), "{err:?}");
+    assert!(
+        w.unity_read("ChaosUnity.exe").is_none(),
+        "nothing of a dev package is installed"
+    );
+    assert!(
+        !w.dir.join("unity").join(STATE_DIR).join("state.json").exists(),
+        "no state saved for a refused package"
+    );
+    assert!(err.text(cinders_launcher::i18n::Lang::En).contains("development build"));
+    assert!(err.text(cinders_launcher::i18n::Lang::Pt).contains("desenvolvimento"));
+    // through the choice, the way the window and --cli call it
+    let via_choice = choice::update(
+        &w.cfg,
+        Client::Unity,
+        w.exe.clone(),
+        &cinders_launcher::net::Curl,
+        World::fast(),
+        &mut |_| {},
+    );
+    assert!(matches!(via_choice, Err(Error::DevPackage)));
+    // a tester allows it
+    let opts = Options {
+        allow_dev: true,
+        ..World::fast()
+    };
+    run_unity(&w, opts).unwrap();
+    assert_player(&w, &r1);
+    assert_unity_clean(&w);
+}
+
+#[test]
+fn a_keyed_package_is_installed_with_dev_false_or_absent() {
+    for (name, dev) in [("u-keyed-false", Some(false)), ("u-keyed-absent", None)] {
+        let w = World::new(name);
+        let mut r1 = urel(1, &player_v1());
+        r1.dev = dev;
+        r1.publish(&w.srv, &w.kp);
+        run_unity(&w, World::fast()).unwrap();
+        assert_player(&w, &r1);
+    }
 }

@@ -28,7 +28,7 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 | Account login, character list | done | `LoginClient`. Characters are created in the select screen (phase 7 track X, the website account API) or on the website. |
 | Game login, guard handshake, pings | done | `GameSession`. |
 | Map, floors, 8 directions, light | done | Read with the aware range the server tells (0x42: default 17 x 13 = 18 x 14 tiles, any odd size such as 29 x 21 is read by 0x64, 0x65 to 0x68, 0x4B, 0xBE, 0xBF); 15 x 11 shown. A larger range is asked with `GameSession.RequestAwareRange` (0x33) or `CHAOS_UNITY_AWARE=29x21`, Identity Chaos only. |
-| Walk by keys and by click | done | Phase 6 track V: a quick click on a tile finds the path here (`Core/AutoWalk.cs`, A* on the tiles the client knows, a diagonal costs 3) and sends it in one 0x64; Escape sends 0xBE; a key step, a held button or a push ends it; "There is no way." when no path. A held button (over 0.25 s) still walks towards the pointer. The HD-2D scene has no tile picking, so a quick click does nothing there. Not run on a live server. |
+| Walk by keys and by click | done | Phase 6 track V: a quick click on a tile finds the path here (`Core/AutoWalk.cs`, A* on the tiles the client knows, a diagonal costs 1.4 of a straight step) and sends it in one 0x64; Escape sends 0xBE; a key step, a held button or a push ends it; "There is no way." when no path. A held button (over 0.25 s) walks towards the pointer in 8 sectors. Phase 18 track M1: smooth 8-direction walking (`Core/SmoothWalk.cs`, README "Smooth 8-direction walking"). The HD-2D scene has no tile picking, so a quick click does nothing there. Not run on a live server. |
 | Attack, follow, cancel, battle list | done | `BattleListWindow`. Fight modes and secure mode (0xA0) are sent at the login and on change (`FightWindow`, saved in PlayerPrefs). |
 | Spells, hotbar, cooldowns | done | Spellbook and 12 hotbar slots with cooldown numbers; spell icons from the main client's sheets (Chaos spells; a stock spell keeps its element colour). Item and rune slots: drop an item or "Add to hotbar", sprite and carried count, a press uses it (use, on yourself, on target, or a crosshair for runes). Track U, `Core/HotbarSlots.cs`. Not run against a live server. |
 | Chat | done | Tabs (Default, Server Log, channels, private), channel list, `*name* text`, `#y` and `#w`, unread counts, floating speech. Item links through game_chatlinks (Shift+click, coloured names, hover tooltip). No channel creation or invites. |
@@ -212,7 +212,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `client_chaos_rmloptions` | none | RmlUi options window of the main client. | N/A | N/A | M |
 | `client_chaos_rmltest` | none | RmlUi spike test window. | N/A | N/A | S |
 | `client_chaos_settings` | none | g_settings list helper. Unity uses PlayerPrefs. | N/A | N/A | S |
-| `client_chaos_updater` | none | Signed updater of the main client. Unity ships through the launcher (O314): its own signed manifest `updates/unity`, chosen as "Unity client (beta)" in the launcher (phase 16, `unity/README.md` "Shipping the Unity client"). | N/A | N/A | L |
+| `client_chaos_updater` | none | Signed updater of the main client. Unity ships through the launcher (O314): its own signed manifest `updates/unity`, chosen as "Unity client (beta)" in the launcher (phase 16, `unity/README.md` "Shipping the Unity client"). The sprite pair comes from the main client's own encrypted container (phase 17, "Sprite pair"). | N/A | N/A | L |
 | `client_terminal` | none | Console stand-in. | N/A | N/A | S |
 | `game_mobilebag` | none | Phone item cells. | N/A | N/A | S |
 | `game_mobilehud` | none | Phone hotbars off. | N/A | N/A | S |
@@ -290,7 +290,7 @@ Goal: every module of the table is done or N/A.
 Goal: Unity is the game, the main client is retired.
 1. Launcher (O314) installs Unity by default, the main client stays as a fallback for one season.
    Phase 16 built the first half: the launcher offers "Main client" and "Unity client (beta)" side by side (the main one is the default; the Unity one has its own folder,
-   manifest and publish command). Making Unity the default is one value (`Client::default`) once the guard key and the sprite pair questions in `unity/README.md` are answered.
+   manifest and publish command). Phase 17 answered the guard key and the sprite pair questions (owner 2026-11-08, "Embutir como no principal": the player build carries the key like the main client, the pair comes as the main client's encrypted blobs, `unity/README.md` "Sprite pair"). Making Unity the default is now one value (`Client::default`), after a run on Windows against the live server.
 2. Remove the server paths that exist only for the main client when nothing uses them: the OS gate stays, the markers stay (they are the Unity identity too).
    Engine gates on the OTCv8 marker are the contract of the Chaos identity, so they stay.
 3. Move art tooling to Unity: sprite pair import, HD-2D, 3D characters (see `unity/README.md`).
