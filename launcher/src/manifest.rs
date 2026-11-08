@@ -2,6 +2,11 @@
 //! (`updater_core.lua` checkEnvelope): `{format, key, signature, payload}`, Ed25519 over the exact bytes of the
 //! `payload` text. The launcher uses the payload's `native` section only; the rules for it are the same as
 //! `check_native` in client/tools/make_update_manifest.py.
+//!
+//! Two layouts of the `native` section. `Flat` is the main client: plain file names (.exe .dll .pack) in the install
+//! folder. `Tree` is the Unity client (ROADMAP O433 phase 16): relative paths with sub-folders, installed in a folder
+//! of their own; the rules are `check_tree_native` in client/tools/make_unity_manifest.py. A manifest of one layout is
+//! never accepted as the other: the Unity one says `"layout": "tree"`, the main one says nothing.
 use crate::config::{self, decode_hex};
 use crate::i18n::Error;
 use cinders_selfupdate::hash::is_sha256_hex;
@@ -14,6 +19,31 @@ pub const MAX_FILES: usize = 64;
 pub const MAX_FILE_SIZE: u64 = 2 * 1024 * 1024 * 1024;
 const EXT: [&str; 3] = ["exe", "dll", "pack"];
 const RESERVED: [&str; 4] = ["con", "prn", "aux", "nul"];
+pub const TREE_MAX_FILES: usize = 4096;
+pub const TREE_MAX_DEPTH: usize = 12;
+const TREE_MAX_PATH: usize = 240;
+const TREE_MAX_NAME: usize = 96;
+const TREE_DENIED: [&str; 14] = [
+    "bat", "cmd", "com", "ps1", "vbs", "msi", "scr", "lnk", "hta", "wsf", "reg", "cpl", "pif", "jar",
+];
+
+/// How the paths of the `native` section look: plain names (the main client) or a tree (the Unity client).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Layout {
+    #[default]
+    Flat,
+    Tree,
+}
+
+impl Layout {
+    /// The reason a path is not allowed in this layout, or None.
+    pub fn check_path(self, p: &str) -> Option<&'static str> {
+        match self {
+            Layout::Flat => check_native_name(p),
+            Layout::Tree => check_tree_path(p),
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeFile {
@@ -58,13 +88,65 @@ fn is_com_lpt(lower: &str) -> bool {
     (stem.starts_with("com") || stem.starts_with("lpt")) && stem.len() == 4 && matches!(stem.as_bytes()[3], b'1'..=b'9')
 }
 
+/// The reason a relative path is not a file of the Unity player, or None. Same rules as `check_tree_path` of
+/// client/tools/make_unity_manifest.py: 1 to 12 names, each 1 to 96 characters of ASCII letters, digits and . _ - and
+/// space, starting with a letter or digit, not ending in a dot or space, no device name; script and shortcut endings
+/// never; .exe only in the root folder.
+pub fn check_tree_path(p: &str) -> Option<&'static str> {
+    if p.is_empty() || p.len() > TREE_MAX_PATH {
+        return Some("bad path");
+    }
+    let parts: Vec<&str> = p.split('/').collect();
+    if parts.len() > TREE_MAX_DEPTH {
+        return Some("too deep");
+    }
+    for n in &parts {
+        let b = n.as_bytes();
+        if b.is_empty()
+            || b.len() > TREE_MAX_NAME
+            || !b[0].is_ascii_alphanumeric()
+            || !b
+                .iter()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, b'.' | b'_' | b'-' | b' '))
+            || n.ends_with('.')
+            || n.ends_with(' ')
+        {
+            return Some("bad name");
+        }
+        let lower = n.to_ascii_lowercase();
+        let stem = lower.split('.').next().unwrap_or("").trim();
+        if RESERVED.contains(&stem) || is_com_lpt(stem) {
+            return Some("device name");
+        }
+    }
+    let last = parts[parts.len() - 1].to_ascii_lowercase();
+    let ext = last.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
+    if TREE_DENIED.contains(&ext) {
+        return Some("script or shortcut ending");
+    }
+    if ext == "exe" && parts.len() > 1 {
+        return Some(".exe only in the root folder");
+    }
+    None
+}
+
 fn bad<T>(d: impl Into<String>) -> Result<T, Error> {
     Err(Error::BadManifest(d.into()))
 }
 
-fn parse_native(n: &Value) -> Result<Native, Error> {
+fn parse_native(n: &Value, layout: Layout) -> Result<Native, Error> {
     let Some(obj) = n.as_object() else {
         return bad("native is not an object");
+    };
+    let declared = obj.get("layout").and_then(Value::as_str);
+    match (layout, declared) {
+        (Layout::Flat, None) | (Layout::Tree, Some("tree")) => {}
+        _ => return bad("native: the layout belongs to another client"),
+    }
+    let max_files = if layout == Layout::Tree {
+        TREE_MAX_FILES
+    } else {
+        MAX_FILES
     };
     let Some(package) = obj.get("package").and_then(Value::as_u64) else {
         return bad("native: bad package");
@@ -75,13 +157,13 @@ fn parse_native(n: &Value) -> Result<Native, Error> {
     let Some(list) = obj.get("files").and_then(Value::as_array) else {
         return bad("native: bad file list");
     };
-    if list.is_empty() || list.len() > MAX_FILES {
+    if list.is_empty() || list.len() > max_files {
         return bad("native: bad file list");
     }
     let mut files: Vec<NativeFile> = Vec::new();
     for f in list {
         let path = f.get("path").and_then(Value::as_str).unwrap_or("");
-        if let Some(why) = check_native_name(path) {
+        if let Some(why) = layout.check_path(path) {
             return bad(format!("native: refused path {path:?}: {why}"));
         }
         if files.iter().any(|x| x.path.eq_ignore_ascii_case(path)) {
@@ -100,6 +182,23 @@ fn parse_native(n: &Value) -> Result<Native, Error> {
             sha256: sha.to_string(),
             size,
         });
+    }
+    if layout == Layout::Tree {
+        // a file may not also be a folder of another file
+        let lower: std::collections::HashSet<String> = files.iter().map(|f| f.path.to_ascii_lowercase()).collect();
+        for p in &lower {
+            let mut at = 0;
+            while let Some(i) = p[at..].find('/') {
+                at += i;
+                if lower.contains(&p[..at]) {
+                    return bad(format!("native: {p} is under a path that is also a file"));
+                }
+                at += 1;
+            }
+        }
+        if obj.contains_key("launcher") {
+            return bad("native: this channel has no launcher entry");
+        }
     }
     let find = |name: &str| files.iter().any(|f| f.path.eq_ignore_ascii_case(name));
     let game = obj.get("game").and_then(Value::as_str).unwrap_or("");
@@ -128,8 +227,14 @@ fn parse_native(n: &Value) -> Result<Native, Error> {
     })
 }
 
-/// Checks the signature with `public_key` and the rules of the payload. Nothing is trusted before the signature.
+/// Checks the signature with `public_key` and the rules of the payload of the main client. Nothing is trusted before
+/// the signature.
 pub fn parse_envelope(bytes: &[u8], public_key: &[u8; 32]) -> Result<Manifest, Error> {
+    parse_envelope_for(bytes, public_key, Layout::Flat)
+}
+
+/// Same, for the layout of the client being updated.
+pub fn parse_envelope_for(bytes: &[u8], public_key: &[u8; 32], layout: Layout) -> Result<Manifest, Error> {
     let env: Value = serde_json::from_slice(bytes).map_err(|_| Error::BadManifest("not JSON".into()))?;
     if env.get("format").and_then(Value::as_str) != Some(FORMAT) {
         return bad("unknown manifest format");
@@ -167,7 +272,7 @@ pub fn parse_envelope(bytes: &[u8], public_key: &[u8; 32]) -> Result<Manifest, E
         return bad("bad version");
     };
     let min_package = m.get("min_package").and_then(Value::as_u64).unwrap_or(0);
-    let native = m.get("native").map(parse_native).transpose()?;
+    let native = m.get("native").map(|n| parse_native(n, layout)).transpose()?;
     Ok(Manifest {
         version,
         min_package,
@@ -295,6 +400,124 @@ mod tests {
         let (env, pk) = sign(1, &ok);
         let m = parse_envelope(env.as_bytes(), &pk).unwrap();
         assert_eq!(m.native.unwrap().launcher.as_deref(), Some("CindersLauncher.exe"));
+    }
+
+    fn tree(files: &[&str], extra: &str) -> String {
+        let list: Vec<String> = files.iter().map(|f| file(f)).collect();
+        format!(
+            r#","native":{{"package":31,"game":"ChaosUnity.exe","layout":"tree","files_url":"native/","files":[{}]{extra}}}"#,
+            list.join(",")
+        )
+    }
+
+    fn parse_tree(native: &str) -> Result<Manifest, Error> {
+        let (env, pk) = sign(1, &payload(native));
+        parse_envelope_for(env.as_bytes(), &pk, Layout::Tree)
+    }
+
+    #[test]
+    fn tree_layout_reads_nested_paths() {
+        let m = parse_tree(&tree(
+            &[
+                "ChaosUnity.exe",
+                "UnityPlayer.dll",
+                "ChaosUnity_Data/Managed/Assembly-CSharp.dll",
+                "ChaosUnity_Data/Resources/unity default resources",
+            ],
+            "",
+        ))
+        .unwrap();
+        let n = m.native.unwrap();
+        assert_eq!((n.package, n.game.as_str(), n.files.len()), (31, "ChaosUnity.exe", 4));
+        assert_eq!(n.launcher, None);
+    }
+
+    #[test]
+    fn tree_path_rules() {
+        let good = [
+            "ChaosUnity.exe",
+            "a/b.dll",
+            "a b/c d.assets.resS",
+            "ChaosUnity_Data/StreamingAssets/overlay/modules/game_x/sounds/a.ogg",
+        ];
+        for p in good {
+            assert_eq!(check_tree_path(p), None, "{p}");
+        }
+        let long = format!("{}f", "a/".repeat(12));
+        let name97 = "x".repeat(97);
+        let bad = [
+            "",
+            "/a",
+            "a//b",
+            "a/../b",
+            ".hidden",
+            "a/.git",
+            "a\\b",
+            "c:x",
+            "a b.",
+            "a/b ",
+            "con.dll",
+            "a/aux.txt",
+            "a/nul",
+            "a/com1.dll",
+            "run.bat",
+            "a/b.ps1",
+            "a/x.LNK",
+            "sub/x.exe",
+            "\u{e9}.dll",
+            long.as_str(),
+            name97.as_str(),
+        ];
+        for p in bad {
+            assert!(check_tree_path(p).is_some(), "{p:?}");
+        }
+        assert_eq!(check_tree_path("a/lnk.lnk"), Some("script or shortcut ending"));
+    }
+
+    #[test]
+    fn tree_manifest_rules() {
+        let no_layout = tree(&["ChaosUnity.exe"], "").replace("\"layout\":\"tree\",", "");
+        let cases = [
+            tree(&["ChaosUnity.exe", "d/x.dll", "D/X.dll"], ""),
+            tree(&["ChaosUnity.exe", "d", "d/x.dll"], ""),
+            tree(&["ChaosUnity.exe", "a/b/c", "a/b"], ""),
+            tree(&["x.dll"], ""),
+            tree(&["ChaosUnity.exe", "d/run.cmd"], ""),
+            tree(&["ChaosUnity.exe"], r#","launcher":"ChaosUnity.exe""#),
+            no_layout,
+            tree(&["ChaosUnity.exe"], "").replace("\"tree\"", "\"flat\""),
+            tree(&["ChaosUnity.exe"], "").replace("native/", "files/"),
+            tree(&["ChaosUnity.exe"], "").replace("\"size\":3", "\"size\":3000000000"),
+            tree(&[], ""),
+        ];
+        for c in cases {
+            assert!(matches!(parse_tree(&c), Err(Error::BadManifest(_))), "{c}");
+        }
+    }
+
+    #[test]
+    fn layouts_are_not_interchangeable() {
+        // a Unity manifest is no main client manifest, and a main one is no Unity manifest
+        let unity = payload(&tree(&["ChaosUnity.exe", "d/x.dll"], ""));
+        let (env, pk) = sign(1, &unity);
+        assert!(matches!(
+            parse_envelope(env.as_bytes(), &pk),
+            Err(Error::BadManifest(_))
+        ));
+        let flat = payload(&native(&file("Chaos.exe"), ""));
+        let (env, pk) = sign(1, &flat);
+        assert!(matches!(
+            parse_envelope_for(env.as_bytes(), &pk, Layout::Tree),
+            Err(Error::BadManifest(_))
+        ));
+        assert!(parse_envelope_for(env.as_bytes(), &pk, Layout::Flat).is_ok());
+        // a nested path is refused by the flat rules even without the layout key
+        let sneaky = payload(&tree(&["ChaosUnity.exe", "d/x.dll"], "").replace("\"layout\":\"tree\",", ""));
+        let (env, pk) = sign(1, &sneaky);
+        assert!(matches!(
+            parse_envelope(env.as_bytes(), &pk),
+            Err(Error::BadManifest(_))
+        ));
     }
 
     #[test]

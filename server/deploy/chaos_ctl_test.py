@@ -263,6 +263,21 @@ def main():
             out = run('publish-log', extra=pe).stdout
             check(want in out and 'site=/srv/site' in out, 'publish-apk %r passes %r: %s' % (argv, want, out))
 
+        # publish-unity (O433 phase 16): the Unity client channel, release tags only, same background log
+        for bad in (('publish-unity',), ('publish-unity', '/tmp/x.zip'), ('publish-unity', 'a;b'), ('publish-unity', 'v1..2'),
+                    ('publish-unity', 'unity-3', 'unity-4'), ('publish-unity', 'unity-3', '--version', 'x'),
+                    ('publish-unity', 'unity-3', '--min-package', '13'), ('publish-unity', 'unity-3', '--key', '/tmp/k')):
+            check(run(*bad, extra=pe).returncode != 0, 'publish-unity refuses %r' % (bad,))
+        for argv, want in ((('unity-3',), 'args --unity -- unity-3'),
+                           (('unity-3', '--version', '7'), 'args --unity --version 7 -- unity-3')):
+            r = run('publish-unity', *argv, extra=pe)
+            check(r.returncode == 0 and 'publish-log' in r.stdout, 'publish-unity %r starts: %s' % (argv, r.stdout + r.stderr))
+            for _ in range(50):
+                if os.path.exists(plog) and 'site=' in open(plog).read():
+                    break
+                time.sleep(0.1)
+            out = run('publish-log', extra=pe).stdout
+            check(want in out and 'site=/srv/site' in out, 'publish-unity %r passes %r: %s' % (argv, want, out))
 
         # catalog and panel: a thread plays the engine and answers what the script queued
         import threading

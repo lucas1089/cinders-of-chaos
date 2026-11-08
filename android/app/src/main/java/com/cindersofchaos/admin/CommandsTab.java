@@ -1320,6 +1320,23 @@ final class CommandsTab {
                 + "oferta de um app novo. O APK publicado é apagado do site.", "Tirar", true,
                 () -> ctl("Tirar o app Android", "publish-apk --remove", 30, null)));
         b.addView(ui.evenRow(apkPub, apkOff), ui.gap(8));
+        TextInputLayout unityTag = ui.field("Release do client Unity (beta)", "Ex.: unity-3. A release que tem o zip "
+                + "CindersOfChaos-Unity-Windows.zip do workflow Unity prototype. O launcher passa a oferecer o client "
+                + "Unity ao lado do principal. O update do client principal não muda.", "", 0);
+        b.addView(unityTag, ui.gap(8));
+        MaterialButton unityPub = ui.primary("Publicar client Unity", R.drawable.ic_send);
+        unityPub.setOnClickListener(v -> {
+            String t = Ui.value(unityTag);
+            if (!t.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}") || t.contains("..")) {
+                unityTag.setError("Uma tag de release, ex.: unity-3.");
+                return;
+            }
+            unityTag.setError(null);
+            a.confirm("Publicar o client Unity " + t + "?", "Quem escolher o client Unity (beta) no launcher recebe os "
+                    + "arquivos na próxima vez que abrir. O client principal não muda.", "Publicar", false,
+                    () -> ctl("Publicar Unity " + t, "publish-unity " + Ssh.sq(t), 30, null));
+        });
+        b.addView(unityPub, ui.gap(8));
         MaterialButton dl = ui.secondary("Trocar os downloads do site", 0);
         dl.setOnClickListener(v -> a.confirm("Trocar os downloads do site?", "Baixa o pacote Windows e o Linux da release "
                 + "mais nova para a página de downloads. Não reinicia o servidor e não mexe no update do client. "

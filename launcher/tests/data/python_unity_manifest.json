@@ -1,0 +1,9 @@
+{
+ "envelope": {
+  "format": "chaos-update-1",
+  "key": "22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6",
+  "payload": "{\"channel\":\"unity\",\"created\":\"2026-11-08T00:00:00Z\",\"files\":[],\"format\":1,\"min_package\":0,\"native\":{\"files\":[{\"path\":\"ChaosUnity.exe\",\"sha256\":\"9095bdb859308b62acf04036ffd4adfe366d7f737d276eb6c46ae434f3816c9b\",\"size\":3},{\"path\":\"UnityPlayer.dll\",\"sha256\":\"cdb59355f3ba293977fc0945fb85f11822d412c45c7520c7121bd2234f6c1f48\",\"size\":6},{\"path\":\"ChaosUnity_Data/Managed/Assembly-CSharp.dll\",\"sha256\":\"230d8ed852d19b05b55e945c08f089aa509457358f51c988109e0a619c943fd5\",\"size\":3},{\"path\":\"ChaosUnity_Data/Resources/unity default resources\",\"sha256\":\"6eeb55f76600d4ad08be72ad3ac13d969330e73d7ad53031557dab443eba22db\",\"size\":3}],\"files_url\":\"native/\",\"game\":\"ChaosUnity.exe\",\"layout\":\"tree\",\"package\":31},\"product\":\"cinders-of-chaos\",\"version\":4}",
+  "signature": "1100234b38428d3ac7ca119ee7ea6b8727757694afded90c340ef3fc636c2248ddcbde650eb3f876e92c01d966bf29fd08da5bb437d4f65458df7f57d5158904"
+ },
+ "public_key": "22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6"
+}

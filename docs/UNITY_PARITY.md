@@ -212,7 +212,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `client_chaos_rmloptions` | none | RmlUi options window of the main client. | N/A | N/A | M |
 | `client_chaos_rmltest` | none | RmlUi spike test window. | N/A | N/A | S |
 | `client_chaos_settings` | none | g_settings list helper. Unity uses PlayerPrefs. | N/A | N/A | S |
-| `client_chaos_updater` | none | Signed updater of the main client. Unity ships through the launcher (O314). | N/A | N/A | L |
+| `client_chaos_updater` | none | Signed updater of the main client. Unity ships through the launcher (O314): its own signed manifest `updates/unity`, chosen as "Unity client (beta)" in the launcher (phase 16, `unity/README.md` "Shipping the Unity client"). | N/A | N/A | L |
 | `client_terminal` | none | Console stand-in. | N/A | N/A | S |
 | `game_mobilebag` | none | Phone item cells. | N/A | N/A | S |
 | `game_mobilehud` | none | Phone hotbars off. | N/A | N/A | S |
@@ -289,6 +289,8 @@ Goal: every module of the table is done or N/A.
 ### Phase 3: the switch
 Goal: Unity is the game, the main client is retired.
 1. Launcher (O314) installs Unity by default, the main client stays as a fallback for one season.
+   Phase 16 built the first half: the launcher offers "Main client" and "Unity client (beta)" side by side (the main one is the default; the Unity one has its own folder,
+   manifest and publish command). Making Unity the default is one value (`Client::default`) once the guard key and the sprite pair questions in `unity/README.md` are answered.
 2. Remove the server paths that exist only for the main client when nothing uses them: the OS gate stays, the markers stay (they are the Unity identity too).
    Engine gates on the OTCv8 marker are the contract of the Chaos identity, so they stay.
 3. Move art tooling to Unity: sprite pair import, HD-2D, 3D characters (see `unity/README.md`).

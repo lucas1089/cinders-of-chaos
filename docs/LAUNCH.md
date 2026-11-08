@@ -1123,6 +1123,12 @@ Numbers, and why a client of build N accepts the update:
   `android-client.yml` workflow (release `android-N`). Admin app: Comandos > "Site e update do client" > "Release do app Android"
   > "Publicar app Android"; shell fallback `chaos-ctl.sh publish-apk android-N [--min-version-code N]`. It does not need a new
   Windows package and does not change the manifest version. docs/ANDROID_CLIENT.md "Step 8 status".
+- **The Unity client (beta, O433 phase 16):** the workflow `unity-prototype.yml` with target `StandaloneWindows64` makes the artifact
+  `chaos-unity-windows-package` (`CindersOfChaos-Unity-Windows.zip`). Download it, attach it to a GitHub release `unity-N` by hand (the
+  workflow publishes no release). Admin app: Comandos > "Site e update do client" > "Release do client Unity (beta)" > "Publicar client Unity";
+  shell fallback `chaos-ctl.sh publish-unity unity-N`. It signs `updates/unity/manifest.json` with the same key and leaves the main client's
+  update alone. Players choose "Unity client (beta)" in the launcher. Before that, decide the guard key and the sprite pair (unity/README.md
+  "Shipping the Unity client").
 - **A client without the updater** (built without `update_manifest` / `update_public_key`, or an exe without base
   patch 0031) never asks for the manifest: it keeps its files, is never blocked by the updater, and gets the update
   only by downloading a new package. Only the game server's client guard can turn it away (`clientGuardBuilds`, or

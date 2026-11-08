@@ -31,6 +31,35 @@ The launcher never replaces a file the manifest does not name, and only `.exe`, 
 folder itself (no sub-folders). It never deletes files. It refuses a manifest older than `baseline` of
 `launcher.json` or than the last one it applied.
 
+## Client choice (Unity client beta, O433 phase 16)
+
+Owner 2026-11-07 (pt-BR): "Quero que os jogadores consigam jogar em ambos os clientes." The window has a row "Cliente: Cliente principal | Cliente Unity (beta)"
+(`Client:` / `Main client` / `Unity client (beta)` in English) above the status card. It is there only when the Unity manifest address is known. The choice is
+saved in `.cinders_launcher/settings.json` (`{"client": "unity"}`; missing or odd means the main client) and the next start opens on it. Changing it while an
+update runs is not possible; changing it starts the update of the other client at once. `--client main|unity` picks one for a run of `--cli` or the window
+(not saved).
+
+- **Same code.** The Unity client goes through `Updater` like the main one: the same Ed25519 key and envelope, the same `native` section rules for hashes and
+  sizes, resumed downloads, journaled swap, rollback and crash recovery. `choice::update` is the one entry point (`src/choice.rs`).
+- **Own folder, own manifest.** Unity lives in `unity/` inside the game folder, with its own `.cinders_launcher/` state (version counter, hash cache, stage,
+  backup, journal). Its manifest is `updates/unity/manifest.json` of the same site, written by `publish_client_update.sh --unity`. The address is derived from
+  `manifest` of `launcher.json` (`.../updates/live/manifest.json` becomes `.../updates/unity/manifest.json`); optional keys `unity_manifest` (an https address;
+  `""` hides the choice) and `unity_game` (default `ChaosUnity.exe`). Nothing in `launcher.json` is written by the launcher.
+- **Tree layout.** The main client's `native` section is plain names (`.exe`, `.dll`, `.pack`, no sub-folders). The Unity player is a tree, so its section says
+  `"layout": "tree"` and lists relative paths (`manifest.rs` `Layout::Tree`, `check_tree_path`, the same rules as `client/tools/make_unity_manifest.py`): at most
+  4096 files and 12 folders deep, names of ASCII letters, digits and `. _ - space`, no device names, no script or shortcut endings, `.exe` only in the root.
+  A manifest of one layout is refused as the other. Folders are made when a file goes in, and removed when the last file of an old release leaves them
+  (a folder the player filled, like `unity/things/`, stays; the launcher only removes files an earlier manifest listed).
+- **The launcher still updates itself.** The Unity manifest has no launcher entry. After the Unity update the launcher reads the main manifest in `launcher_only` mode
+  (best effort, silent): only `CindersLauncher.exe` is looked at, nothing else is hashed, downloaded or installed, no state is saved. A player who only uses
+  Unity still gets a new launcher; a dead main manifest never stops the Unity update.
+- **What Unity needs on the player's side.** `unity/things/Tibia.dat` and `Tibia.spr` (not shipped, unity/README.md "Shipping the Unity client"). The window shows a
+  note under the choice.
+- Tests: `src/manifest.rs`, `src/config.rs`, `src/i18n.rs` (unit), `tests/unity_update.rs` (12 cases against the local HTTP server: nested first install and no-op,
+  change and removal with the player's files kept, a hand-changed file, rollback at every step, bad hash and signature, paths out of the folder, the wrong
+  client's manifest, own version counter, the choice, the launcher's self-update from a Unity run, no address, the saved choice) and `tests/vector.rs`
+  (a Unity manifest signed by `make_unity_manifest_test.py`).
+
 ## Look (O339)
 
 Owner, 2026-10-30 (pt-BR): "faça um launcher mais bonito". The window is dark fantasy: warm black background, ember
@@ -58,15 +87,17 @@ them out.
 - `launcher.json` (beside the exe, written by `client/tools/set_launcher_config.py` from the `Services.update`
   settings of `init.lua`, so the key, the manifest URL and the baseline cannot differ from the game's):
   `{"manifest": "https://.../updates/live/manifest.json", "public_key": "<64 hex>", "baseline": 47, "game": "Chaos.exe"}`.
+  Optional `unity_manifest`, `unity_game`: the Unity client beta, see "Client choice".
   Optional `args`: extra arguments for the game. `feed`: URL of the website's launcher feed. The tool writes
   `https://<site>/chaos_launcher_feed.php` (the site of the manifest); `--feed URL` sets another, `--no-feed` writes
   `""`. An old `launcher.json` without `feed` gets the same address derived from the manifest URL (when it has
   `/updates/` in it, else no panels). An empty, non-https or odd `feed` hides the panels and is never an error.
-- `.cinders_launcher/` in the install folder: `state.json`, `hashcache.txt`, `feed.json` (last good feed), and while a run is on `stage/`, `backup/`,
-  `journal.json`.
+- `.cinders_launcher/` in the install folder: `state.json`, `hashcache.txt`, `feed.json` (last good feed), `settings.json` (the client choice), and
+  while a run is on `stage/`, `backup/`, `journal.json`. `unity/.cinders_launcher/` holds the same for the Unity client.
 - `src/`: `manifest.rs` (envelope, signature, `native` rules), `install.rs` (diff, download, swap, rollback, recovery),
-  `selfupdate.rs`, `net.rs` (the system `curl`, built into Windows 10 and 11), `config.rs`, `feed.rs` (News and Changelog), `i18n.rs`, `launch.rs`,
-  `main.rs` (egui window, or `--cli [--no-start] [--dir DIR] [--lang pt|en]` for tests and scripts).
+  `selfupdate.rs`, `net.rs` (the system `curl`, built into Windows 10 and 11), `config.rs` (also the client choice), `choice.rs` (update the chosen client),
+  `feed.rs` (News and Changelog), `i18n.rs`, `launch.rs`,
+  `main.rs` (egui window, or `--cli [--no-start] [--dir DIR] [--lang pt|en] [--client main|unity]` for tests and scripts).
 - `theme.rs` (window look), `assets/` (embedded art), `tools/gen_launcher_art.py` (makes the art).
 - `../crates/selfupdate/`: SHA-256, version compare and the staged rename, shared with `desktop/`.
 

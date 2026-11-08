@@ -3,7 +3,7 @@
 //! `UPDATE_LAUNCHER_VECTOR=1 python3 -I client/tools/make_update_manifest_test.py`.
 use cinders_launcher::config::decode_hex;
 use cinders_launcher::i18n::Error;
-use cinders_launcher::manifest::parse_envelope;
+use cinders_launcher::manifest::{parse_envelope, parse_envelope_for, Layout};
 
 fn vector() -> (serde_json::Value, [u8; 32]) {
     let text =
@@ -42,4 +42,45 @@ fn the_python_signature_breaks_on_any_change() {
     let mut other = pk;
     other[0] ^= 1;
     assert!(parse_envelope(text.as_bytes(), &other).is_err());
+}
+
+/// The Unity client's manifest, signed by client/tools/make_unity_manifest_test.py (`python_unity_manifest.json`,
+/// rewritten with `UPDATE_LAUNCHER_VECTOR=1 python3 -I client/tools/make_unity_manifest_test.py`): the same rules on
+/// both sides, and the two layouts stay apart.
+#[test]
+fn reads_the_unity_manifest_the_python_tool_signed() {
+    let text = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/data/python_unity_manifest.json"
+    ))
+    .unwrap();
+    let v: serde_json::Value = serde_json::from_str(&text).unwrap();
+    let pk: [u8; 32] = decode_hex(v["public_key"].as_str().unwrap())
+        .unwrap()
+        .try_into()
+        .unwrap();
+    let env = v["envelope"].to_string();
+    let m = parse_envelope_for(env.as_bytes(), &pk, Layout::Tree).unwrap();
+    assert_eq!(m.version, 4);
+    let n = m.native.unwrap();
+    assert_eq!(
+        (n.package, n.game.as_str(), n.launcher.as_deref(), n.files.len()),
+        (31, "ChaosUnity.exe", None, 4)
+    );
+    assert_eq!(n.files[2].path, "ChaosUnity_Data/Managed/Assembly-CSharp.dll");
+    assert_eq!(n.files[3].path, "ChaosUnity_Data/Resources/unity default resources");
+    // it is not a main client manifest
+    assert!(matches!(
+        parse_envelope(env.as_bytes(), &pk),
+        Err(Error::BadManifest(_))
+    ));
+    // and any change breaks the signature
+    assert_eq!(
+        parse_envelope_for(
+            env.replace("\\\"version\\\":4", "\\\"version\\\":5").as_bytes(),
+            &pk,
+            Layout::Tree
+        ),
+        Err(Error::BadSignature)
+    );
 }

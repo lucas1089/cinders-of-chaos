@@ -173,6 +173,11 @@ if ($mailOn) {
 }
 $winUrl = env('CHAOS_CLIENT_WINDOWS_URL', '#download-coming-soon');
 $linuxUrl = env('CHAOS_CLIENT_LINUX_URL', '#download-coming-soon');
+// The Unity client (beta) is installed by the launcher of the Windows client (README "Downloads"): a direct link is optional
+$unityUrl = env('CHAOS_CLIENT_UNITY_URL', '');
+$unityEntries = $unityUrl !== '' ? array(
+	array('key' => 'unity_client', 'label' => 'Unity client (beta)', 'section' => 'client', 'enabled' => true, 'url' => $unityUrl, 'image' => '', 'description' => 'The Unity client of Cinders of Chaos (beta) for Windows 10 and 11 (64-bit).'),
+) : array();
 
 $out = "<?php\n"
 	. "// Written by website/install_site.sh (website/setup/write_config.php) on " . date('Y-m-d H:i:s') . ".\n"
@@ -222,10 +227,10 @@ $out = "<?php\n"
 	. "// Downloads (placeholders until the owner sets CHAOS_CLIENT_*_URL)\n"
 	. "\$config['client_download'] = " . export($winUrl) . ";\n"
 	. "\$config['client_download_linux'] = " . export($linuxUrl) . ";\n"
-	. "\$config['downloads']['entries'] = " . export(array(
+	. "\$config['downloads']['entries'] = " . export(array_merge(array(
 		array('key' => 'windows_client', 'label' => 'Windows client', 'section' => 'client', 'enabled' => true, 'url' => $winUrl, 'image' => '', 'description' => 'The Cinders of Chaos client for Windows 10 and 11 (64-bit).'),
 		array('key' => 'linux_client', 'label' => 'Linux client', 'section' => 'client', 'enabled' => true, 'url' => $linuxUrl, 'image' => '', 'description' => 'The Cinders of Chaos client for 64-bit Linux.'),
-	)) . ";\n\n"
+	), $unityEntries)) . ";\n\n"
 	. ($sprites
 		? "// Outfit and item images drawn from our own client pair (README \"Sprite images\"): chaos_outfit.php and chaos-sprites/\n"
 			. "\$config['show_outfits'] = array('shop' => true, 'highscores' => true, 'characterprofile' => true, 'onlinelist' => true, 'imageServer' => '/chaos_outfit.php');\n"

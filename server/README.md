@@ -22221,6 +22221,22 @@ script re-runs itself with `sudo -n`, which drops the environment.
   (`publish_client_update.sh --apk android-31 winpkg-60`), and a publish without them keeps the published app entry. Admin app:
   Comandos > "Site e update do client" > "Publicar app Android" and "Tirar o app do update". The web check asks the APK URL
   with a range request and warns unless it answers 206. client/MANIFEST.md "APK updater"; docs/ANDROID_CLIENT.md "Step 8 status".
+  **Unity client channel (O433 phase 16):** `publish-unity TAG [--version N]` runs `publish_client_update.sh --unity TAG` in the same
+  background log. TAG is a release (`unity-N`) that holds `CindersOfChaos-Unity-Windows.zip`, the artifact `chaos-unity-windows-package` of the
+  workflow `unity-prototype.yml` attached by hand (the workflow publishes no release and has no signing key; settings
+  `CHAOS_UPDATE_UNITY_ASSET`, `CHAOS_UPDATE_UNITY_MIN_MB` 20, `CHAOS_UPDATE_UNITY_URL` for the check, default the `CHAOS_UPDATE_URL` with its
+  folder replaced by `unity`). The script extracts the zip with the same safe extract, finds `unity_build.json`, and
+  `client/tools/make_unity_manifest.py build` hashes the files again (they must match it), copies them as plain blobs to
+  `updates/unity/native/<sha[:2]>/<sha>` and writes `updates/unity/manifest.json` signed with the same key, last; `verify` runs
+  after it and a web check asks the manifest and a Range request on the biggest blob. It needs no `CHAOS_CLIENT_KEY` (a public
+  build, plain blobs) and never touches `updates/live`. Its version counts on its own (the tag number, else the published one plus 1, and it
+  must go up). It does not go with `--apk`, `--no-apk`, `--min-package`, `--key-index` or `--check-only`. Admin app (Android and
+  desktop): Comandos > "Site e update do client" > "Release do client Unity (beta)" > "Publicar client Unity". The launcher then
+  offers "Unity client (beta)" (launcher/README.md "Client choice"; unity/README.md "Shipping the Unity client", with the open
+  guard key and sprite pair questions). nginx already covers `/updates/unity/` (the `location ^~ /updates/` block). Tests: `publish_client_update_test.py` (tag and
+  local zip, no client key, own manifest, main manifest untouched, web check, refusals: same version, main client zip, changed file, extra
+  script, main client options, small download), `chaos_ctl_test.py` (refusals and the arguments reaching a stub),
+  `client/tools/make_unity_manifest_test.py`.
   Tests: `chaos_ctl_test.py` (refusals, the arguments and settings reaching a stub) and `publish_client_update_test.py`
   (the real script on synthetic loose and packed packages with throwaway keys: the manifest verifies, every blob is
   ciphertext that decrypts to its signed content, version and min_package, unsafe zips, key mismatches, a missing or
