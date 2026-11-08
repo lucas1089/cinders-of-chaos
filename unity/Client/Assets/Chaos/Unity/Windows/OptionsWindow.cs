@@ -28,6 +28,30 @@ namespace Chaos.Client
             hud.Buffs.Timers = PlayerPrefs.GetInt("chaos.buffbar.timers", 1) == 1;
         }
 
+        string scatterFor;
+
+        // the damage number scatter of the character: on or off and the strength (kept per character)
+        void ScatterRows(ChaosApp app, Rect inner, ref float y)
+        {
+            string key = ScatterPrefs.Key(app.World?.Player?.Name);
+            if (key != null && key != scatterFor) { scatterFor = key; ScatterPrefs.Current = ScatterPrefs.Read(PlayerPrefs.GetString(key, "")); }
+            var cur = ScatterPrefs.Current;
+            bool on = GUI.Toggle(new Rect(inner.x + 2, y, inner.width - 4, 22), cur.Enabled, Loc.T("Spread the damage numbers"));
+            y += 24;
+            int level = cur.Level;
+            GUI.enabled = on;
+            float bw = (inner.width - 8) / DamageScatter.Levels;
+            for (int i = 1; i <= DamageScatter.Levels; i++)
+                if (GUI.Toggle(new Rect(inner.x + 2 + (i - 1) * (bw + 2), y, bw, 22), level == i, ScatterPrefs.LevelName(i), GUI.skin.button) && level != i) level = i;
+            GUI.enabled = true;
+            y += 28;
+            if (on != cur.Enabled || level != cur.Level)
+            {
+                ScatterPrefs.Current = new ScatterSettings { Enabled = on, Level = level };
+                if (key != null) { PlayerPrefs.SetString(key, ScatterPrefs.Write(ScatterPrefs.Current)); PlayerPrefs.Save(); }
+            }
+        }
+
         protected override void Body(ChaosApp app, Rect inner)
         {
             var hud = app.Session?.Hud;
@@ -72,6 +96,7 @@ namespace Chaos.Client
             bool timers = GUI.Toggle(new Rect(inner.x + 2, y, inner.width - 4, 22), hud.Buffs.Timers, Loc.T("Buff timers"));
             if (timers != hud.Buffs.Timers) { hud.Buffs.Timers = timers; PlayerPrefs.SetInt("chaos.buffbar.timers", timers ? 1 : 0); }
             y += 28;
+            ScatterRows(app, inner, ref y);
             GUI.Label(new Rect(inner.x + 2, y, inner.width - 4, 20), Loc.T("Display scale: x{0}", o.ScaleFactor), app.SmallStyle);
             y += 26;
             if (GUI.Button(new Rect(inner.x + 2, y, inner.width - 4, 26), Loc.T("Report a player...")))

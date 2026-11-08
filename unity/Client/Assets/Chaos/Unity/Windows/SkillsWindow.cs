@@ -23,17 +23,27 @@ namespace Chaos.Client
             ChaosApp.Fill(new Rect(r.x + 1, r.y + 1, (r.width - 2) * Mathf.Clamp(percent, 0, 100) / 100f, r.height - 2), fill);
         }
 
-        void Line(ChaosApp app, float x, float y, float w, string name, string value, int percent, Color fill)
+        void Line(ChaosApp app, float x, float y, float w, string name, string value, int percent, Color fill, GUIStyle valueStyle = null)
         {
             if (right == null) right = new GUIStyle(app.SmallStyle) { alignment = TextAnchor.UpperRight };
             GUI.Label(new Rect(x, y, w * 0.62f, 20), name, app.SmallStyle);
-            GUI.Label(new Rect(x + w * 0.5f, y, w * 0.5f, 20), value, right);
+            GUI.Label(new Rect(x + w * 0.5f, y, w * 0.5f, 20), value, valueStyle ?? right);
             Bar(new Rect(x, y + 20, w, 8), percent, fill);
         }
 
-        void Skill(ChaosApp app, float x, float y, float w, string name, SkillValue k)
+        void Skill(ChaosApp app, float x, float y, float w, string name, SkillValue k, string rowTip = null)
         {
-            Line(app, x, y, w, name, Value(k.Level, k.Base), k.Percent, new Color(0.35f, 0.7f, 0.3f, 1f));
+            Line(app, x, y, w, name, Value(k.Level, k.Base), k.Percent, new Color(0.35f, 0.7f, 0.3f, 1f), SkillStats.Boosted(k) ? BoostStyle(app) : null);
+            var area = new Rect(x, y, w, 30);
+            if (area.Contains(Event.current.mousePosition))
+                app.SetTip(rowTip != null ? rowTip + "\n" + SkillStats.BarTip(name, k.Level, k.Percent) : SkillStats.BarTip(name, k.Level, k.Percent));
+        }
+
+        GUIStyle boost;
+        GUIStyle BoostStyle(ChaosApp app)
+        {
+            if (boost == null) { boost = new GUIStyle(app.SmallStyle) { alignment = TextAnchor.UpperRight }; boost.normal.textColor = new Color(0.27f, 0.68f, 0.15f); }
+            return boost;
         }
 
         protected override void Body(ChaosApp app, Rect inner)
@@ -49,7 +59,7 @@ namespace Chaos.Client
             Line(app, x, y, w, Loc.T("Magic / Wand"), Value(p.MagicLevel, p.BaseMagicLevel), p.MagicPercent, new Color(0.3f, 0.45f, 0.95f, 1f));
             y += Row;
             var melee = SkillStats.Melee(p.Skills);
-            Skill(app, x, y, w, Loc.T("Melee"), melee);
+            Skill(app, x, y, w, Loc.T("Melee"), melee, SkillStats.MeleeTip());
             y += Row;
             if (SkillStats.ShowFist(app.World?.PlayerVocation ?? 0))
             {

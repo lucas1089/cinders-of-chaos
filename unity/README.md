@@ -580,10 +580,22 @@ It logs in, enters, takes four steps and prints the opcodes it read. The guard k
 Same server messages as the main client. Pure code in `Core/PassiveTree.cs`, `Core/BuildCode.cs`, `Core/Progression.cs`, `Core/TopMenu.cs` (one `Progression` hub on `GameSession.Progress`), tests in `Core.Tests/ProgressionTests.cs`.
 - Passive tree, Ctrl+N (`PassiveTreeWindow`, opcode 65). The server sends only the allocation, so the layout is a file: `Resources/PassiveTree.json`, written by `luajit unity/tools/gen_tree_data.lua` from `client/overlay/modules/game_passivetree/treedata` (positions, links, names, stat lines per class; CI runs `--check`). Run it again when the main client's tree changes.
   Drag pans, the wheel zooms round the pointer, Fit shows all. Hover shows the tooltip (stats, description, mastery effects, "Requires", the cost of the path). A click plans the path to the node (green), a click on a planned node takes it and what hangs on it out, `<` and `>` undo and redo, Apply sends one `planApply`. A mastery asks for its effect. Right-click on a saved node refunds it, Reset resets the tree, both at the server's price. Search frames matches in orange (Enter and Shift+Enter step). Build Code exports the tree code, the full CC1 code (class, level, tree, gear), previews a pasted code on the tree and applies it; the server decides.
-  Not done: node icons, curved links, Paragon, trials, totals, auto build, other characters' trees, loadouts.
+  Totals button: raw against effective stats after the soft cap, critical chance and damage, attack speed (`statTotals`, asked again when the allocation changes).
+  Not done: node icons, curved links, Paragon, trials, auto build, other characters' trees, loadouts.
 - Skills (Ctrl+K): Melee (the best of sword, club and axe), Ranged, Magic / Wand, Shielding, Fishing, Fist for the Monk line, then the combat stat rows (opcode 119: damage, attack, defense, armor, mitigation).
 - Next Goals (Ctrl+Y, opcode 178) and the goal tracker (opens by itself when the server sends rows; the welcome path has a Skip button that asks twice). Hunt Tracker (Ctrl+I, opcode 241): session clock, pause, reset, restock, four lists. Rift HUD (opcode 228): opens on the server's start. Info and Services (opcode 237): pages from the Adventure, Character, Economy and System menus.
 - The top menu replaces the flat toolbar: Character, Hunt, Adventure, Economy, Social, System and Windows. Entries are sorted by text and follow the level unlocks of opcode 115 (hidden, grey with the level, a New badge, an on-screen text and a Go box). Windows lists every window no entry names. To put a new window in a category, add a line to `TopMenu.Categories` with `win:ClassName`; without one it shows under Windows.
+
+## Phase 6, track W: P1 systems (picking up, loot filter, tooltips, stash, store)
+
+Same server messages as the main client; pure code in Core, tests in `Core.Tests/Phase6WTests.cs`, texts in `Core/LocPhase6W.cs`.
+- Ground labels: a left click on an item label picks it up (`GroundPick`, `GroundLabelsModel.Activate`). The top item of a pile moves into the backpack (slot 3) at once, a lower one is raised by the server first (`raise`, answer `raised`), errors are told in the chat.
+- Loot filter (opcode 238): peek on open bags and corpses (glow, rarity frame, dim veil, `LootPeek`), the Rules tab (counters per rule, sound choice, volume, mute, Hunt Tracker flag; the sounds are not played), Autoloot steppers and a preview in the Filter tab.
+- Item tooltip: hold Ctrl to compare with the worn items of the same kind (`ItemCompare`), hold Alt for the plain line per term (`ItemHelp`, generated from `itemhelp.lua`), sources lines above the weight.
+- Stash: Find (query, pages, a stash result opens its tab) and Never stash (drop an item of a bag on the panel, Remove).
+- Store: Gift, the rotation countdown, TRY ON (the server plays the effect, no look preview panel).
+- Options > General: damage number spread on or off and its strength. Skills: bar tooltips and boosted levels in green.
+- Not done: map outlines for items, beams, rule sounds, tooltip card layout, in-world tier labels and oversized monsters of the monster bar, Helper follow, auto sell, exercise weapons.
 
 ## Running it
 

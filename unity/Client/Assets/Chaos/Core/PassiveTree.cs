@@ -291,6 +291,7 @@ namespace Chaos.Core
                         Node = (long)Json.Number(data, "node"), Free = Json.Get(data, "free") as string ?? "", FreeBelowLevel = Json.Int(data, "freeBelowLevel", 50)
                     };
                     break;
+                case "statTotals": Totals = TreeTotals.Parse(data); break;
                 case "bossPoints":
                     BossGot = Json.Int(data, "got"); BossTotal = Json.Int(data, "total"); BossLabel = Json.Text(data, "label");
                     break;
@@ -339,6 +340,12 @@ namespace Chaos.Core
         /// <summary>The character level (for the full export); set by the window.</summary>
         public int Level;
 
+        /// <summary>Raw against effective stat totals (statTotals, passivetree_totals.lua); null until the server answered.</summary>
+        public TreeTotals Totals;
+        /// <summary>True when the allocation changed after the last statTotals request; the window asks again while open.</summary>
+        public bool TotalsStale = true;
+        public void RequestTotals() { TotalsStale = false; ext.Send(Opcode, "statTotals"); }
+
         void ApplyNodes(object data)
         {
             Allocated.Clear();
@@ -353,6 +360,7 @@ namespace Chaos.Core
             if (Json.Get(data, "cls") is string c) Cls = c;
             if (Json.Get(data, "line") is string l) Line = l;
             Preset = Json.Int(data, "preset");
+            TotalsStale = true;
             PresetNames.Clear();
             foreach (object p in Json.List(data, "presetsTable")) PresetNames.Add(Json.Text(p, "name"));
             PreviewNodes = null;
@@ -664,5 +672,55 @@ namespace Chaos.Core
             foreach (int id in Allocated) if (Data != null && Data.Nodes.TryGetValue(id, out var node) && !node.IsStart) n++;
             return n;
         }
+    }
+
+    /// <summary>One line of the totals section: text and whether it is an overflow or a head line.</summary>
+    public struct TotalsLine { public string Text; public char Kind; }
+
+    /// <summary>statTotals: attributes and damage rows {k, n, raw, eff, cap}, crit chance and damage, attack speed (totalsview.lua).</summary>
+    public sealed class TreeTotals
+    {
+        public readonly List<TotalsLine> Lines = new List<TotalsLine>();
+
+        public static string Num(double v)
+        {
+            string s = v.ToString("0.0", CultureInfo.InvariantCulture);
+            return s.EndsWith(".0", StringComparison.Ordinal) ? s.Substring(0, s.Length - 2) : s;
+        }
+
+        public static TreeTotals Parse(object data)
+        {
+            var t = new TreeTotals();
+            if (data == null) return t;
+            foreach (object row in Json.List(data, "attributes"))
+            {
+                string n = RowName(row);
+                double raw = Json.Number(row, "raw"), eff = Json.Number(row, "eff"), cap = Json.Number(row, "cap");
+                if (raw > cap) t.Add(Loc.T("{0}: {1} points -> {2} effective (full value up to {3})", n, Num(raw), Num(eff), Num(cap)), 'o');
+                else t.Add(Loc.T("{0}: {1} points (full value up to {2})", n, Num(raw), Num(cap)), 't');
+            }
+            foreach (object row in Json.List(data, "damage"))
+            {
+                string n = RowName(row);
+                double raw = Json.Number(row, "raw"), eff = Json.Number(row, "eff"), cap = Json.Number(row, "cap");
+                if (raw > cap) t.Add(Loc.T("{0}: +{1}% -> +{2}% effective (full value up to +{3}%)", n, Num(raw), Num(eff), Num(cap)), 'o');
+                else t.Add(Loc.T("{0}: +{1}% (full value up to +{2}%)", n, Num(raw), Num(cap)), 't');
+            }
+            object crit = Json.Get(data, "crit");
+            object ch = Json.Get(crit, "chance"), am = Json.Get(crit, "amount");
+            if (ch != null && am != null)
+            {
+                t.Add(Loc.T("Critical chance: {0}% (tree {1}%, gear and other {2}%)", Num(Json.Number(ch, "total")), Num(Json.Number(ch, "tree")), Num(Json.Number(ch, "other"))), 'h');
+                t.Add(Loc.T("Critical damage: +{0}% (tree {1}%, Paragon {2}%, gear and other {3}%)", Num(Json.Number(am, "total")), Num(Json.Number(am, "tree")),
+                    Num(Json.Number(am, "paragon")), Num(Json.Number(am, "other"))), 'h');
+            }
+            object a = Json.Get(data, "attackSpeed");
+            if (a != null && Json.Get(a, "total") != null)
+                t.Add(Loc.T("Attack speed: +{0}% (tree {1}%, gear {2}%; at most 1 attack per second)", Num(Json.Number(a, "total")), Num(Json.Number(a, "tree")), Num(Json.Number(a, "gear"))), 'h');
+            return t;
+        }
+
+        static string RowName(object row) { string n = Json.Text(row, "n"); return n.Length > 0 ? n : Json.Text(row, "k"); }
+        void Add(string text, char kind) { Lines.Add(new TotalsLine { Text = text, Kind = kind }); }
     }
 }

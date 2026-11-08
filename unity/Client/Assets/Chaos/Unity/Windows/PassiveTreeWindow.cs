@@ -14,7 +14,7 @@ namespace Chaos.Client
 {
     public sealed class PassiveTreeWindow : GameWindow
     {
-        enum Panel { None, Mastery, Refund, Reset, Box, Build }
+        enum Panel { None, Mastery, Refund, Reset, Box, Build, Totals }
 
         static TreeData cache;
         static Texture2D disc, ring;
@@ -36,6 +36,7 @@ namespace Chaos.Client
         int hover;
         GUIStyle tip, tipTitle, label, mid;
         string lastBox = "";
+        float lastTotals;
         Rect lastView = new Rect(0, 0, 800, 480);
 
         public override string Title => Loc.T("Passive Tree");
@@ -58,6 +59,7 @@ namespace Chaos.Client
                 tree.Open();
             }
             wasOpen = Open;
+            if (Open && tree.TotalsStale && Time.unscaledTime - lastTotals > 0.6f) { lastTotals = Time.unscaledTime; tree.RequestTotals(); }
             // a message from the server (an error, a refusal) shows in a box over the tree
             if (Open && tree.BoxText.Length > 0 && tree.BoxText != lastBox) { lastBox = tree.BoxText; panel = Panel.Box; }
         }
@@ -230,6 +232,8 @@ namespace Chaos.Client
             GUI.enabled = true;
             if (GUI.Button(new Rect(x + 174, by, 52, 24), Loc.T("Reset"))) { panel = Panel.Reset; if (tree.Respec == null) tree.Open(); }
             if (GUI.Button(new Rect(x + 230, by, 82, 24), Loc.T("Build Code"))) { panel = Panel.Build; }
+            if (GUI.Button(new Rect(x + 316, by, 56, 24), Loc.T("Totals"))) { panel = Panel.Totals; tree.RequestTotals(); }
+            x += 60;
             if (GUI.Button(new Rect(x + 316, by, 24, 24), "+")) zoom = Mathf.Min(1.5f, zoom * 1.25f);
             if (GUI.Button(new Rect(x + 342, by, 24, 24), "-")) zoom = Mathf.Max(0.04f, zoom / 1.25f);
             if (GUI.Button(new Rect(x + 368, by, 40, 24), Loc.T("Fit"))) Fit(tree, lastView);
@@ -489,8 +493,8 @@ namespace Chaos.Client
         void DrawPanel(ChaosApp app, PassiveTree tree, Rect vp)
         {
             ChaosApp.Fill(vp, new Color(0f, 0f, 0f, 0.55f));
-            float w = Mathf.Min(460, vp.width - 24);
-            float h = panel == Panel.Build ? 330 : panel == Panel.Mastery ? 130 + 52 * (tree.Data.Nodes.TryGetValue(panelNode, out var mn) ? mn.Effects.Length : 0) : 170;
+            float w = Mathf.Min(panel == Panel.Totals ? 640 : 460, vp.width - 24);
+            float h = panel == Panel.Totals ? Mathf.Min(vp.height - 12, 90 + 20 * (tree.Totals?.Lines.Count ?? 1)) : panel == Panel.Build ? 330 : panel == Panel.Mastery ? 130 + 52 * (tree.Data.Nodes.TryGetValue(panelNode, out var mn) ? mn.Effects.Length : 0) : 170;
             h = Mathf.Min(h, vp.height - 12);
             var box = new Rect(vp.x + (vp.width - w) / 2, vp.y + (vp.height - h) / 2, w, h);
             ChaosApp.Fill(box, new Color(0.07f, 0.05f, 0.08f, 0.99f));
@@ -503,7 +507,25 @@ namespace Chaos.Client
                 case Panel.Refund: RefundPanel(app, tree, box, inner); break;
                 case Panel.Mastery: MasteryPanel(app, tree, box, inner); break;
                 case Panel.Build: BuildPanel(app, tree, box, inner); break;
+                case Panel.Totals: TotalsPanel(app, tree, box, inner); break;
             }
+        }
+
+        void TotalsPanel(ChaosApp app, PassiveTree tree, Rect box, Rect inner)
+        {
+            Head(box, Loc.T("Totals"));
+            var lines = tree.Totals?.Lines;
+            float y = inner.y;
+            if (lines == null || lines.Count == 0) GUI.Label(new Rect(inner.x, y, inner.width, 20), Loc.T("Asking the server..."), mid);
+            else
+                foreach (var l in lines)
+                {
+                    var st = new GUIStyle(app.SmallStyle) { wordWrap = true };
+                    st.normal.textColor = l.Kind == 'o' ? new Color(0.96f, 0.81f, 0.45f) : l.Kind == 'h' ? new Color(0.91f, 0.78f, 0.38f) : new Color(0.85f, 0.81f, 0.75f);
+                    GUI.Label(new Rect(inner.x, y, inner.width, 20), l.Text, st);
+                    y += 20;
+                }
+            if (GUI.Button(new Rect(inner.center.x - 40, inner.yMax - 26, 80, 24), Loc.T("Ok"))) panel = Panel.None;
         }
 
         void Head(Rect box, string title) { GUI.Label(new Rect(box.x + 8, box.y + 2, box.width - 16, 20), title, tipTitle); }
