@@ -786,3 +786,21 @@ Eleven activities of the main client, each a pure model in `Core/` and windows i
   and checks the requests, the view text, the timers on a fake clock, the Adventure menu entries and the pt-BR placeholders.
 - Not done: the dungeon boss outfit and item finder, tier emblems and node art of the atlases, boon icons of the Descent, minimap flags for the Marches, saved HUD positions,
   the "how it works" cards. None of it ran against a live server.
+## Collections, seasons and crafting (O433 phase 4, track N)
+
+Thirteen windows, each a pure model in `Core/Collect*.cs` (the wire layout of its opcode is at the top of the file) and a window in `Unity/Windows/`. All models are built in `Core/GameCollect.cs`
+(`GameSession.Achievements`, `Bestiary`, `Charms`, `Pass`, `Seasons`, `Daily`, `Weekly`, `Cosmetics`, `Transmog`, `Pets`, `Professions`, `Crafting`, `CraftTable`); a model owns its opcode and
+a `Visible` flag, `ModelWindow` (`Unity/Windows/CollectUi.cs`) opens the window when the server sets it and asks the server when the player opens it. No Ctrl hotkeys: the windows are in the top menu
+(Character: Achievements, Charms, Cosmetics, Pets, Transmog. Hunt: Bestiary. Adventure: Daily Reward, Season, Season Pass, Weekly Chest. Economy: Crafting Bench, Professions, Crafting Tables) with the
+main client's level unlocks, or the server opens them (daily reward at the login, season pass and weekly chest, broker NPC, crafting tables).
+- Opcodes: achievements 250, bestiary 253, charms 198, season pass 227, seasons 246, daily 207, weekly chest 117, cosmetics and unlocks 225, transmog 212, pets 254, professions 195,
+  crafting bench 232, crafting tables 91. Crafting skills are in the 0xA1 skills packet (`GameParser.CraftSkills`, the seven skills after fishing) and drawn in the Professions window.
+- Faithful to the main client's actions and fields: the same packets (`open`, `claim`, `calim` with a bare server day number, `place` / `move` / `take`, `apply` with the aimed modifier, `giftPrice`
+  round trip, `salvageBatch` with its signature, `fetch` / `craft` with chunked replies), the same rules (stage percent, tier track, grid fit, quote with the daily cap, craft checks and pacing).
+- Seasons send the Hardcore heartbeat (`beat`) every `heartbeat` seconds without the window open; the pets window asks again every 3 seconds while open; a craft repeats with the main client's pacing
+  (860 ms craft, 1000 ms cooldown, 5 s without an answer stops it).
+- Texts: `Core/LocCollect.cs`, merged into `LocStrings.PtBr` (a key the main table has wins).
+- Tests: `Core.Tests/CollectTests.cs` (every model on the messages of the Lua tests and the server scripts, packets compared as text).
+- Not done: the on-screen kill task tracker, the chat name colour and label accent (read, not applied), look and effect previews (cosmetics, pets, transmog, footprints, outlines), the item right-click
+  entries (Transmog, Lock item), a charm item dropped from a backpack, rich item tooltips in the crafting tables, the gem guide table and the Codex link of the bench, the unlock toast of achievements,
+  the daily window waiting for other login windows. Not run against a live server (as the other tracks).

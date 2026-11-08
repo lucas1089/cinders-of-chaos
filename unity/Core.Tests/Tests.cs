@@ -66,6 +66,7 @@ namespace Chaos.Core.Tests
             HelperTests.Run,
             SocialTests.Run,
             EndgameTests.Run,
+            CollectTests.Run,
         };
 
         static void CryptoChecks()
