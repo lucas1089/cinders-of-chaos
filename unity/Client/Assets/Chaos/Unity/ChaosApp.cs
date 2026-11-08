@@ -23,17 +23,18 @@ namespace Chaos.Client
         MapView view;
         Hd2dView hd2dView;
         bool hd2d;   // F9: the HD-2D view (Hd2dView) instead of the classic flat one
+        FrontLiveView frontLive;
+        bool live;   // F8: the front-art live view (FrontLiveView) instead of the classic or HD-2D one
         bool world3d;   // F10: the 3D world (Hd2dRuins3d in WorldMode and Hd2dChars3d), only together with HD-2D
         GameObject world3dRoot;
         bool world3dReady;   // the 3D models are in the build
         Camera cam;
         Vector2 charScroll;
         readonly List<string> log = new List<string>();
-        readonly List<(string text, Color color)> chat = new List<(string, Color)>();
         GUIStyle small, nameStyle, chatStyle, titleStyle;
         Vector2 chatScroll;
         string chatInput = "";
-        bool chatOpen = true, chatFocused, showDebug, chatToBottom;
+        bool chatOpen = true, chatFocused, showDebug;
         readonly List<Rect> uiRects = new List<Rect>();   // screen pixels the windows cover: clicks there do not walk
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -54,12 +55,14 @@ namespace Chaos.Client
         void Awake()
         {
             Application.targetFrameRate = 60;
+            Loc.Set(Loc.Choose(PlayerPrefs.GetString("chaos.lang", ""), Application.systemLanguage.ToString()));
             pairDir = PlayerPrefs.GetString("chaos.pair", DefaultPairDir());
             host = PlayerPrefs.GetString("chaos.host", host);
             port = PlayerPrefs.GetString("chaos.port", port);
             account = PlayerPrefs.GetString("chaos.account", "");
             hd2d = PlayerPrefs.GetInt("chaos.hd2d", 0) == 1;
             world3d = PlayerPrefs.GetInt("chaos.world3d", 0) == 1;
+            live = PlayerPrefs.GetInt("chaos.frontlive", 0) == 1;
             var camGo = new GameObject("Camera");
             camGo.transform.SetParent(transform);
             cam = camGo.AddComponent<Camera>();
@@ -152,6 +155,15 @@ namespace Chaos.Client
             return m.Length > 0 && System.Text.RegularExpressions.Regex.IsMatch(m, "^[0-9]+$") ? m : Protocol.OpenRsaModulus;
         }
 
+        /// <summary>Extended (plain 10.98 wire, extended opcodes) or Chaos (the main client's markers too: feature list, wings / aura /
+        /// shader, 0x4B floors, item attributes). The setting "chaos.identity" or the environment CHAOS_UNITY_IDENTITY names it.
+        /// Extended until a live test has passed with Chaos (unity/README.md "Both clients").</summary>
+        static ClientIdentity IdentityChoice()
+        {
+            string env = Environment.GetEnvironmentVariable("CHAOS_UNITY_IDENTITY");
+            return ClientIdentity.Parse(string.IsNullOrEmpty(env) ? PlayerPrefs.GetString("chaos.identity", "extended") : env, ClientBuild());
+        }
+
         static ushort ClientBuild()
         {
             var asset = Resources.Load<TextAsset>("chaos_build");
@@ -194,10 +206,10 @@ namespace Chaos.Client
                 GuardKey = GuardKey(),
                 Build = ClientBuild(),
                 RsaModulus = RsaModulus(),
+                Identity = IdentityChoice(),
             });
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
-            session.Chat += AddChat;
-            chat.Clear();
+            ChatEntered();
             session.Start();
             var go = new GameObject("Map");
             go.transform.SetParent(transform);
@@ -214,6 +226,7 @@ namespace Chaos.Client
             hd2dView.Clock = () => session.Now;
             hd2dView.Cam = cam;
             SetupWorld3d();
+            SetupFrontLive(go.transform);
             ApplyHd2d();
             screen = Screen.Game;
         }
@@ -225,6 +238,7 @@ namespace Chaos.Client
             if (view != null) Destroy(view.gameObject);
             view = null;
             hd2dView = null;
+            frontLive = null;
             world3dRoot = null;
             ApplyMode(false);
             cam.rect = new Rect(0f, 0f, 1f, 1f);
@@ -263,7 +277,7 @@ namespace Chaos.Client
             session.Poll();
             if (session.Closed != null) { Leave(session.Closed); return; }
             // exactly the 15 x 11 view, centred (MapRect): nothing outside what the server sent is on screen
-            if (!hd2d)
+            if (!hd2d && !live)
             {
                 cam.orthographic = true;
                 cam.transform.SetPositionAndRotation(new Vector3(0.5f, -0.5f, -10), Quaternion.identity);
@@ -278,6 +292,13 @@ namespace Chaos.Client
                 bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
                 bool barOpen = windows.Exists(win => win is HotkeyBarWindow && win.Open);
                 if (ctrl || !barOpen) { hd2d = !hd2d; PlayerPrefs.SetInt("chaos.hd2d", hd2d ? 1 : 0); ApplyHd2d(); }
+            }
+            // F8 switches the front-art live view (FrontLiveView) on and off over the other two. F8 is hotkey slot 8: Ctrl+F8 while the bar is open
+            if (Input.GetKeyDown(KeyCode.F8) && !chatFocused)
+            {
+                bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+                bool barOpen = windows.Exists(win => win is HotkeyBarWindow && win.Open);
+                if (ctrl || !barOpen) { live = !live; PlayerPrefs.SetInt("chaos.frontlive", live ? 1 : 0); ApplyHd2d(); }
             }
             // F10 switches the 3D world (models instead of sprites for the map) on top of HD-2D; F10 is hotkey slot 10: Ctrl+F10 while the bar is open
             if (Input.GetKeyDown(KeyCode.F10) && !chatFocused)
@@ -301,7 +322,32 @@ namespace Chaos.Client
             HandleWalk();
         }
 
-        void ApplyHd2d() { ApplyMode(hd2d); ApplyWorld3d(); }
+        void ApplyHd2d() { ApplyMode(hd2d && !live); ApplyWorld3d(); ApplyLive(); }
+
+        /// <summary>The live view (F8): made once per session next to the HD-2D view; FrontLiveView adds the creatures and effects components itself.</summary>
+        void SetupFrontLive(Transform parent)
+        {
+            var g = new GameObject("FrontLive");
+            g.transform.SetParent(parent, false);
+            g.SetActive(false);   // Init first, then the mode turns it on
+            frontLive = g.AddComponent<FrontLiveView>();
+            frontLive.Init(world, atlas, cam, () => session.Now);
+            frontLive.BlockInput = () => OverUi(Input.mousePosition);
+            // the creatures (added by Init) swing at our target; ChaosApp draws the names and health bars from FrontLiveView.Labels
+            var creatures = frontLive.GetComponent<FrontLiveCreatures>();
+            if (creatures != null) { creatures.LocalTarget = () => session != null ? session.AttackTarget : 0u; creatures.ShowLabels = false; }
+        }
+
+        void ApplyLive()
+        {
+            if (frontLive == null) return;
+            bool on = live && screen == Screen.Game;
+            if (on && view != null) view.SetVisible(false);   // the classic mesh and the live view never draw together
+            frontLive.gameObject.SetActive(on);
+        }
+
+        /// <summary>True while the live view is on screen.</summary>
+        bool LiveOn => live && frontLive != null && frontLive.isActiveAndEnabled;
 
         /// <summary>The 3D world's objects under the HD-2D view: the map's models (Hd2dRuins3d, WorldMode, Live) and the 3D characters.
         /// Created once per session; switched on and off with SetActive (each hooks and unhooks the view's Skip on enable / disable).</summary>
@@ -324,7 +370,7 @@ namespace Chaos.Client
         /// <summary>The 3D world is on only together with the HD-2D view and when the models are in the build.</summary>
         void ApplyWorld3d()
         {
-            if (world3dRoot != null) world3dRoot.SetActive(world3d && hd2d && world3dReady);
+            if (world3dRoot != null) world3dRoot.SetActive(world3d && hd2d && !live && world3dReady);
         }
 
         /// <summary>Turns the HD-2D view on or off: the classic mesh and the 3D scene never draw together.</summary>
@@ -339,17 +385,8 @@ namespace Chaos.Client
             }
         }
 
-        void AddChat(string who, string text, byte type)
-        {
-            // talk types of 10.98: 1 say, 2 whisper, 3 yell, 4/5 private, 7-14 channels, 36/37 monster; 0 a server message
-            Color col = type == 0 ? new Color(1f, 1f, 1f) : type == 3 ? new Color(1f, 0.55f, 0.35f) :
-                        type == 4 || type == 5 ? new Color(0.55f, 0.85f, 1f) : type == 36 || type == 37 ? new Color(1f, 0.6f, 0.2f) :
-                        type >= 7 && type <= 14 ? new Color(0.95f, 0.85f, 0.5f) : new Color(1f, 0.95f, 0.4f);
-            string line = (who.Length > 0 ? who + ": " : "") + text;
-            chat.Add((DateTime.Now.ToString("HH:mm") + " " + line, col));
-            if (chat.Count > 200) chat.RemoveAt(0);
-            chatToBottom = true;
-        }
+        /// <summary>A client-side notice in the Server Log tab (the server's lines go there from the parser).</summary>
+        void AddChat(string who, string text, byte type) { session?.Talks.AddLocal(text); }
 
         bool OverUi(Vector2 mouse)
         {
@@ -453,19 +490,7 @@ namespace Chaos.Client
             GUILayout.EndArea();
         }
 
-        void CharactersGui(float w, float h)
-        {
-            Logo(w, h / 2 - 160);
-            GUILayout.BeginArea(new Rect(w / 2 - 170, h / 2 - 160, 340, 320), GUI.skin.box);
-            GUILayout.Label("Characters");
-            charScroll = GUILayout.BeginScrollView(charScroll, GUILayout.Height(220));
-            foreach (var ch in login.Characters)
-                if (GUILayout.Button(ch.Name + "  (" + ch.World + ")")) Enter(ch);
-            GUILayout.EndScrollView();
-            if (GUILayout.Button("Back")) { screen = Screen.Login; status = ""; }
-            GUILayout.Label(status, small);
-            GUILayout.EndArea();
-        }
+        void CharactersGui(float w, float h) { CharSelectGui(w, h); }   // ChaosApp.CharSelect.cs
 
         void GameGui(float w, float h, float scale)
         {
@@ -500,6 +525,7 @@ namespace Chaos.Client
                     GUI.Label(new Rect(nr.x + 1, nr.y + 1, nr.width, nr.height), c.Name, nameStyle);
                     nameStyle.normal.textColor = col;
                     GUI.Label(nr, c.Name, nameStyle);
+                    DrawBubbles(c, x, nr.y);
                     Rect bar = new Rect(x - barW / 2, y - barH - 3, barW, barH);
                     Fill(new Rect(bar.x - 1, bar.y - 1, bar.width + 2, bar.height + 2), new Color(0f, 0f, 0f, 0.85f));
                     Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
@@ -510,6 +536,7 @@ namespace Chaos.Client
             StatusPanel(scale);
             ChatWindow(w, h, scale);
             DrawWindows(w, h, scale);
+            DeathWindow(w, h, scale);
             if (showDebug)
             {
                 var me = world?.Player;
@@ -521,12 +548,13 @@ namespace Chaos.Client
             Rect outR = LogoutRect(w);
             uiRects.Add(Scaled(outR, scale));
             if (GUI.Button(outR, "Log out")) { session?.Logout(); Leave("Logged out."); }
+            PartyGui(w, h, scale);   // the right-click menu and the party invitation, over the windows
         }
 
         public static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);
         static Rect Scaled(Rect r, float s) => new Rect(r.x * s, r.y * s, r.width * s, r.height * s);
 
-        static Rect StatusRect() => new Rect(8, 8, 240, 78);
+        static Rect StatusRect() => new Rect(8, 8, 248, 92);
         static Rect LogoutRect(float w) => new Rect(w - 96, 8, 88, 30);
         Rect ChatRect(float w, float h)
         {
@@ -535,18 +563,7 @@ namespace Chaos.Client
             return new Rect(8, h - ch - 8, Mathf.Min(460f, w * 0.42f), ch);
         }
 
-        void StatusPanel(float scale)
-        {
-            var p = session?.Parser;
-            var me = world?.Player;
-            if (p == null) return;
-            Rect box = StatusRect();
-            uiRects.Add(Scaled(box, scale));
-            Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.8f));
-            GUI.Label(new Rect(16, 10, 224, 22), (me?.Name ?? "...") + "   Lv " + p.Level, titleStyle);
-            Bar(new Rect(16, 36, 224, 18), p.Health, p.MaxHealth, new Color(0.75f, 0.12f, 0.1f));
-            Bar(new Rect(16, 60, 224, 18), p.Mana, p.MaxMana, new Color(0.15f, 0.35f, 0.85f));
-        }
+        void StatusPanel(float scale) { PlatePanel(scale); }   // the character plate: ChaosApp.Plate.cs
 
         void Bar(Rect r, int v, int max, Color c)
         {
@@ -557,60 +574,7 @@ namespace Chaos.Client
             GUI.Label(r, v + " / " + max, st);
         }
 
-        void ChatWindow(float w, float h, float scale)
-        {
-            if (!chatOpen)
-            {
-                Rect open = ChatRect(w, h);
-                uiRects.Add(Scaled(open, scale));
-                if (GUI.Button(open, "Chat")) chatOpen = true;
-                chatFocused = false;
-                return;
-            }
-            Rect box = ChatRect(w, h);
-            uiRects.Add(Scaled(box, scale));
-            Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.9f));
-            GUI.Label(new Rect(box.x + 8, box.y + 4, 200, 22), "Chat", titleStyle);
-            if (GUI.Button(new Rect(box.xMax - 30, box.y + 4, 24, 22), "x")) { chatOpen = false; GUI.FocusControl(null); return; }
-
-            // Enter focuses the line and sends it; Escape leaves it
-            var e = Event.current;
-            bool enter = e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter);
-            if (enter && chatFocused)
-            {
-                session?.Say(chatInput.Trim());
-                chatInput = "";
-                GUI.FocusControl(null);
-                e.Use();
-            }
-            else if (enter && !TextEditing) { GUI.FocusControl("chatInput"); e.Use(); }
-            else if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && chatFocused) { GUI.FocusControl(null); e.Use(); }
-
-            Rect list = new Rect(box.x + 4, box.y + 28, box.width - 8, box.height - 64);
-            float lineW = list.width - 20, total = 0;
-            var heights = new float[chat.Count];
-            for (int i = 0; i < chat.Count; i++) { heights[i] = chatStyle.CalcHeight(new GUIContent(chat[i].text), lineW); total += heights[i]; }
-            if (chatToBottom && e.type == EventType.Repaint) { chatScroll.y = Mathf.Max(0, total - list.height); chatToBottom = false; }
-            chatScroll = GUI.BeginScrollView(list, chatScroll, new Rect(0, 0, lineW, Mathf.Max(total, list.height)));
-            float y = 0;
-            for (int i = 0; i < chat.Count; i++)
-            {
-                chatStyle.normal.textColor = chat[i].color;
-                GUI.Label(new Rect(0, y, lineW, heights[i]), chat[i].text, chatStyle);
-                y += heights[i];
-            }
-            GUI.EndScrollView();
-
-            GUI.SetNextControlName("chatInput");
-            chatInput = GUI.TextField(new Rect(box.x + 6, box.yMax - 32, box.width - 12, 26), chatInput, 255);
-            chatFocused = GUI.GetNameOfFocusedControl() == "chatInput";
-            if (!chatFocused && chatInput.Length == 0)
-            {
-                var hint = new GUIStyle(small);
-                hint.normal.textColor = new Color(1f, 1f, 1f, 0.4f);
-                GUI.Label(new Rect(box.x + 10, box.yMax - 31, box.width - 20, 24), "Press Enter to talk", hint);
-            }
-        }
+        void ChatWindow(float w, float h, float scale) => ChatPanel(w, h, scale);
 
         void OnApplicationQuit() { session?.Dispose(); spr?.Dispose(); }
     }

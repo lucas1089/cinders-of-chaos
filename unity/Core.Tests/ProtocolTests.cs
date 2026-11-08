@@ -17,10 +17,16 @@ namespace Chaos.Core.Tests
     {
         const uint Hero = 0x10000001, Rat = 0x40000002;
 
-        static void Creature(ByteWriter w, uint id, string name, byte type, ushort speed)
+        /// <summary>True while the synthetic server speaks to an Identity.Chaos client: outfits carry wings, aura and shader, items their
+        /// custom attributes (the ground under the hero has rarity 3).</summary>
+        internal static bool ChaosWire;
+        internal static readonly Pos StartPos = new Pos(100, 100, 7);
+
+        internal static void Creature(ByteWriter w, uint id, string name, byte type, ushort speed)
         {
             w.U16(0x61).U32(0).U32(id).U8(type).Str(name);
             w.U8(100).U8(2).U16(1).U8(1).U8(2).U8(3).U8(4).U8(0).U16(0);   // hp, dir south, outfit 1, colours, no mount
+            if (ChaosWire) { if (id == Hero) w.U16(7).U16(9).Str("fire"); else w.U16(0).U16(0).Str(""); }
             w.U8(0).U8(0).U16(speed).U8(0).U8(0).U8(0).U8(type).U8(0).U8(0xFF).U16(0).U8(1);
         }
 
@@ -59,6 +65,7 @@ namespace Chaos.Core.Tests
             return w =>
             {
                 w.U16(100).U8(0xFF);
+                if (ChaosWire) { if (p == Start) w.U16(1).U16(1).U32(3).U32(0); else w.U16(0); }   // item attributes: rarity 3 under the hero
                 if (p == Start) Creature(w, Hero, "Hero", 0, 220);
                 if (p == Start.Offset(2, 0)) Creature(w, Rat, "Rat", 1, 100);
             };
@@ -75,7 +82,7 @@ namespace Chaos.Core.Tests
             return w.ToArray();
         }
 
-        static byte[] EnterPayload()
+        internal static byte[] EnterPayload()
         {
             var w = new ByteWriter();
             w.U8(0x17).U32(Hero).U16(0x32);
@@ -248,12 +255,15 @@ namespace Chaos.Core.Tests
             var k = ClientGuard.ParseKey("\"" + new string('a', 64) + "," + new string('0', 62) + "ff\"");
             check(k != null && k[31] == 0xff && k[0] == 0 && ClientGuard.ParseKey("xyz") == null, "guard key from hex, last of a list");
 
-            FakeServer(check, dat);
+            FakeServer(check, dat, false);
+            FakeServer(check, dat, true);
         }
 
         /// <summary>A whole game login against a server on localhost with its own RSA key.</summary>
-        static void FakeServer(Action<bool, string> check, DatFile dat)
+        static void FakeServer(Action<bool, string> check, DatFile dat, bool chaos)
         {
+            string what = chaos ? "fake server (Chaos identity)" : "fake server";
+            ChaosWire = false;
             RSAParameters pk;
             using (var r = RSA.Create(1024)) pk = r.ExportParameters(true);
             string modulus = Rsa.FromBigEndian(pk.Modulus).ToString();
@@ -289,11 +299,22 @@ namespace Chaos.Core.Tests
                         string sessionKey = plain.Str(), character = plain.Str();
                         uint ts = plain.U32();
                         byte rnd = plain.U8();
+                        if (chaos)
+                        {
+                            // the markers of the main client: "OTCv8", version, "OTCv8TierByte", "A", u32, "C", capabilities (bit 6 wide spell ids)
+                            if (plain.U16() != 5 || plain.Bytes(5).Length != 5) throw new Exception("no OTCv8 marker");
+                            if (plain.U16() != 261 || plain.Str() != "OTCv8TierByte" || plain.Str() != "A") throw new Exception("tier marker");
+                            if (plain.U32() != 7 || plain.Str() != "C" || plain.U8() != 0x40) throw new Exception("capabilities");
+                        }
+                        else if (plain.U16() != 0) throw new Exception("markers are not u16 0");
                         if (ts != 0x11223344 || rnd != 0x55 || cid != 0x43430007) throw new Exception("challenge or client id");
                         var nonce = new byte[16];
                         for (int i = 0; i < 16; i++) nonce[i] = (byte)(i * 17);
                         string challenge = "cg1:" + string.Concat(nonce.Select(b => b.ToString("x2")));
-                        var payload = new ByteWriter().U8(0x32).U8(0).U16(0).U8(0x32).U8(189).Str(challenge).Raw(EnterPayload()).ToArray();
+                        ChaosWire = chaos;
+                        var pw = new ByteWriter().U8(0x32).U8(0).U16(0);
+                        if (chaos) pw.U8(0x43).U16(2).U8(126).U8(1).U8(152).U8(1);   // the feature list: item attributes, 16-bit spell ids
+                        var payload = pw.U8(0x32).U8(189).Str(challenge).Raw(EnterPayload()).ToArray();
                         var p = Protocol.Encrypt(payload, k);
                         s.Write(p, 0, p.Length);
                         var answers = new List<string>();
@@ -308,10 +329,36 @@ namespace Chaos.Core.Tests
                         got = answers[0] == expect && answers[1] == ClientGuard.Hello(7) ? "ok" : "answers " + string.Join(" | ", answers);
                         var ping = Protocol.Encrypt(new byte[] { 0x1D }, k);
                         s.Write(ping, 0, ping.Length);
-                        // the pong and the step, in either order
-                        var two = new[] { Protocol.Decrypt(ReadBody(s), k), Protocol.Decrypt(ReadBody(s), k) };
-                        if (!two.Any(x => x.Length == 1 && x[0] == 0x1E)) got = "no pong";
-                        if (!two.Any(x => x.Length == 1 && x[0] == 0x66)) got = "no walk east";
+                        // the pong, the step and (Chaos) the extended opcode request, in any order
+                        bool pongSeen = false, stepSeen = false, askSeen = !chaos;
+                        string asked = null;
+                        while (!(pongSeen && stepSeen && askSeen))
+                        {
+                            var x = Protocol.Decrypt(ReadBody(s), k);
+                            if (x.Length == 1 && x[0] == 0x1E) pongSeen = true;
+                            else if (x.Length == 1 && x[0] == 0x66) stepSeen = true;
+                            else if (x.Length > 2 && x[0] == 0x32 && x[1] == 99)
+                            {
+                                var ask = new ByteReader(x);
+                                ask.U8(); ask.U8();
+                                asked = ExtOpcodes.FromWire(ask.Str());
+                                askSeen = true;
+                            }
+                        }
+                        if (chaos)
+                        {
+                            // an extended opcode round trip: the client asks (UTF-8 text), the server answers in parts
+                            var root = Json.Parse(asked);
+                            if (Json.Text(root, "action") != "echo") throw new Exception("request " + asked);
+                            string word = Json.Text(Json.Get(root, "data"), "text");
+                            string big = Json.Serialize(new Dictionary<string, object> { { "action", "pong" },
+                                { "data", new Dictionary<string, object> { { "text", string.Concat(Enumerable.Repeat(word, 6000)) }, { "n", Json.Int(Json.Get(root, "data"), "n") } } } });
+                            var reply = new ByteWriter();
+                            foreach (var part in ExtChunks.Split(ExtOpcodes.ToWire(big))) reply.U8(0x32).U8(99).Str(part);
+                            var rp = Protocol.Encrypt(reply.ToArray(), k);
+                            s.Write(rp, 0, rp.Length);
+                            Thread.Sleep(300);   // keep the connection open while the client reads
+                        }
                     }
                 }
                 catch (Exception e) { problem = e.Message; }
@@ -324,21 +371,45 @@ namespace Chaos.Core.Tests
             {
                 Host = "127.0.0.1", Port = port, Account = "acc", Password = "pwd", SessionKey = "acc\npwd\n\n0", Character = "Hero",
                 GuardKey = guardKey, Build = 7, RsaModulus = modulus,
+                Identity = chaos ? ClientIdentity.Chaos(7) : ClientIdentity.Extended,
             });
+            ExtMessage pong = null;
+            string bigText = null;
+            session.Ext.On(99, m => { pong = m; bigText = Json.Text(m.Data, "text"); });
             session.Start();
             var until = DateTime.UtcNow.AddSeconds(10);
-            bool walked = false;
+            bool walked = false, asked = false;
             while (DateTime.UtcNow < until && server.IsAlive && session.Closed == null)
             {
                 session.Poll();
                 if (!walked && session.CanWalk) { session.Walk(Dir.East); walked = true; }
+                if (chaos && walked && !asked && session.Parser.LoggedIn && session.Now > 0)
+                {
+                    // after the step was sent (the server reads the pong and the step first)
+                    asked = true;
+                    session.Ext.Send(99, "echo", new Dictionary<string, object> { { "text", "ação " }, { "n", 5 } });
+                }
                 Thread.Sleep(5);
             }
             server.Join(2000);
-            check(problem == null, "fake server: " + (problem ?? "no error"));
-            check(got == "ok", "fake server: guard answer, hello, pong and a step: " + got);
+            ChaosWire = false;
+            check(problem == null, what + ": " + (problem ?? "no error"));
+            check(got == "ok", what + ": guard answer, hello, pong and a step: " + got);
             check(session.GuardAnswered && world.Player != null && world.Tiles.Count == World.ViewW * World.ViewH,
-                  "fake server: the session entered the world");
+                  what + ": the session entered the world");
+            if (chaos)
+            {
+                var hero = world.Player;
+                var ground = world.Get(StartPos)?.Things[0].Item;
+                check(session.Parser.Features.Announced && session.Parser.Features.Has(126) && session.Parser.Features.Has(152) &&
+                      !session.Parser.Features.Has(155), what + ": the feature list");
+                check(hero != null && hero.Outfit.Wings == 7 && hero.Outfit.Aura == 9 && hero.Outfit.Shader == "fire" &&
+                      world.Creatures[Rat].Outfit.Wings == 0 && world.Creatures[Rat].Outfit.Shader == "", what + ": extended outfits");
+                check(ground != null && ground.Attr(1) == 3 && ground.Attr(2) == 0, what + ": item attributes");
+                check(pong != null && pong.Action == "pong" && Json.Int(pong.Data, "n") == 5 && bigText != null &&
+                      bigText.Length == 30000 && bigText.StartsWith("ação ação "),
+                      what + ": extended opcode round trip, answer in parts (" + (bigText == null ? -1 : bigText.Length) + " chars)");
+            }
             session.Dispose();
         }
 

@@ -19,6 +19,7 @@ Shader "Chaos/FrontArtSprite"
         _Fill ("Warm fill", Range(0, 0.5)) = 0.05
         _PointScale ("Point light scale", Range(0, 1)) = 0.45
         _Hit ("Hit flash", Range(0, 1)) = 0
+        _Tint ("Tint (a class colour)", Color) = (1, 1, 1, 1)
     }
     SubShader
     {
@@ -30,6 +31,7 @@ Shader "Chaos/FrontArtSprite"
         sampler2D _MainTex, _BumpMap, _EmitTex;
         half _NormalAmount, _EmitAmount;
         half _Wrap, _Bend, _Fill, _PointScale, _Hit;
+        fixed4 _Tint;
 
         struct SurfaceOutputFS
         {
@@ -47,6 +49,7 @@ Shader "Chaos/FrontArtSprite"
         void surf (Input IN, inout SurfaceOutputFS o)
         {
             fixed4 c = tex2Dlod(_MainTex, float4(IN.uv_MainTex, 0, 0));
+            c.rgb *= _Tint.rgb;   // a class's tint (the live creatures); white leaves the picture as drawn
             o.Albedo = c.rgb;
             o.Alpha = c.a;
             float3 toCam = normalize(_WorldSpaceCameraPos - IN.worldPos);

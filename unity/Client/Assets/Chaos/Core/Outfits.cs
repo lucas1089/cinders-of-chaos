@@ -7,6 +7,8 @@ namespace Chaos.Core
     {
         public int LookType, Head, Body, Legs, Feet, Addons, Mount;
         public int LookTypeEx;   // an item shown instead of an outfit (look type 0)
+        public int Wings, Aura;  // only on an Identity.Chaos connection (markers sent): 0 = none
+        public string Shader = "";   // the outfit shader's name, "" = none (same condition)
 
         public Outfit() { }
 

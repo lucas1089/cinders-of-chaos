@@ -30,19 +30,19 @@ namespace Chaos.Client
                 Minimap.Update(world);
             }
             // right-click on a creature on the map attacks it
-            if (hd2d && hd2dView != null && Input.GetMouseButtonDown(1) && !OverUi(Input.mousePosition) && cam.pixelRect.Contains(Input.mousePosition))
+            if (HdLabelsOn && Input.GetMouseButtonDown(1) && !OverUi(Input.mousePosition) && cam.pixelRect.Contains(Input.mousePosition))
             {
                 // HD-2D: the creature whose sprite quad the pointer is over (nearest to the camera wins)
                 uint me3 = world?.PlayerId ?? 0;
                 Creature hit3 = null;
                 float best = float.MaxValue;
-                foreach (var l in hd2dView.Labels)
+                foreach (var l in HdLabels)
                 {
                     Vector3 a = cam.WorldToScreenPoint(l.BottomLeft), b = cam.WorldToScreenPoint(l.TopRight);
                     var r = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
                     if (l.C.Id != me3 && r.Contains(Input.mousePosition) && a.z < best) { best = a.z; hit3 = l.C; }
                 }
-                if (hit3 != null) session.Attack(hit3.Id);
+                if (hit3 != null) OnCreatureRightClick(hit3);
             }
             else if (view != null && Input.GetMouseButtonDown(1) && !OverUi(Input.mousePosition) && cam.pixelRect.Contains(Input.mousePosition))
             {
@@ -51,16 +51,20 @@ namespace Chaos.Client
                 Creature hit = null;
                 foreach (var (c, at) in view.Labels)
                     if (c.Id != me && wp.x >= at.x && wp.x < at.x + 1f && wp.y <= at.y && wp.y > at.y - 1f) hit = c;
-                if (hit != null) session.Attack(hit.Id);
+                if (hit != null) OnCreatureRightClick(hit);
             }
         }
+
+        /// <summary>The HD-2D view or the live view (F8) is on: creatures come as world-space labels, not classic tiles.</summary>
+        bool HdLabelsOn => LiveOn || (hd2d && hd2dView != null);
+        List<Hd2dView.Label> HdLabels => LiveOn ? frontLive.Labels : hd2dView.Labels;
 
         /// <summary>Creature name points in screen pixels: the classic view's tiles or the HD-2D scene's head points.</summary>
         IEnumerable<(Creature c, Vector3 sp)> LabelPoints()
         {
-            if (hd2d && hd2dView != null)
+            if (HdLabelsOn)
             {
-                foreach (var l in hd2dView.Labels) yield return (l.C, cam.WorldToScreenPoint(l.Head));
+                foreach (var l in HdLabels) yield return (l.C, cam.WorldToScreenPoint(l.Head));
                 yield break;
             }
             foreach (var (c, at) in view.Labels) yield return (c, cam.WorldToScreenPoint(new Vector3(at.x + 0.25f, at.y + 0.4f, 0)));
@@ -71,9 +75,9 @@ namespace Chaos.Client
         {
             uint target = session?.AttackTarget ?? 0;
             if (target == 0 || view == null) return;
-            if (hd2d && hd2dView != null)
+            if (HdLabelsOn)
             {
-                foreach (var l in hd2dView.Labels)
+                foreach (var l in HdLabels)
                 {
                     if (l.C.Id != target) continue;
                     Vector3 a = cam.WorldToScreenPoint(l.BottomLeft), b = cam.WorldToScreenPoint(l.TopRight);

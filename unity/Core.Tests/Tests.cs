@@ -47,12 +47,19 @@ namespace Chaos.Core.Tests
         public static readonly List<Action<Action<bool, string>>> Suites = new List<Action<Action<bool, string>>>
         {
             ProtocolTests.Run,
+            ExtTests.Run,
             WindowTests.Run,
             Hd2dTests.Run,
             RuinsTests.Run,
             CharsTests.Run,
             World3dTests.Run,
             FrontArtTests.Run,
+            FrontLiveTests.Run,
+            FrontLooksTests.Run,
+            FrontFxTests.Run,
+            NpcTests.Run,
+            PartyTests.Run,
+            ChatTests.Run,
         };
 
         static void CryptoChecks()

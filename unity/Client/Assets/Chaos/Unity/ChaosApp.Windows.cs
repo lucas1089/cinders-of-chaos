@@ -60,9 +60,23 @@ namespace Chaos.Client
             windows.Add(new BattleListWindow());
             windows.Add(new MinimapWindow());
             windows.Add(new HotkeyBarWindow());
+            windows.Add(new SpellbookWindow());
+            windows.Add(new NpcTalkWindow());
+            windows.Add(new NpcTradeWindow());
+            windows.Add(new PartyFramesWindow());
+            windows.Add(new ChannelsWindow());
+            windows.Add(new FightWindow());
         }
 
-        static Rect ToolbarRect(float w) => new Rect(w - 104 - 76 * 6, 8, 76 * 6, 30);
+        /// <summary>The window of that class (made on first use), for windows that work together.</summary>
+        public T FindWindow<T>() where T : GameWindow
+        {
+            if (windows.Count == 0) MakeWindows();
+            foreach (var win in windows) if (win is T t) return t;
+            return null;
+        }
+
+        static Rect ToolbarRect(float w) => new Rect(w - 104 - 76 * 7, 8, 76 * 7, 30);
 
         void DrawWindows(float w, float h, float scale)
         {

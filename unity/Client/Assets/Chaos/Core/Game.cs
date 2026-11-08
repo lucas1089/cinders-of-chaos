@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,7 +11,7 @@ namespace Chaos.Core
 {
     /// <summary>Reads server messages into a World. Stateless apart from the World and a few counters, so tests can feed
     /// it payloads directly.</summary>
-    public sealed class GameParser
+    public sealed partial class GameParser
     {
         public readonly World W;
         public Func<double> Clock = () => 0;
@@ -23,6 +24,19 @@ namespace Chaos.Core
         public Action<Dir> WalkCancelled = delegate { };
         public Action<Creature> PlayerMoved = delegate { };
         public bool LoggedIn;
+        /// <summary>The NPC shop of 0x7A, 0x7B and 0x7C, and the NPC conversation (Core/NpcTrade.cs).</summary>
+        public readonly NpcTradeState Trade = new NpcTradeState();
+        public readonly NpcTalkState NpcTalk = new NpcTalkState();
+        /// <summary>What we told the server at the game login: Markers decides whether outfits carry wings, aura and shader.</summary>
+        public ClientIdentity Identity = ClientIdentity.Extended;
+        /// <summary>The 0x43 feature list (only on an Identity.Chaos connection). Item attributes (126) and the width of the
+        /// spell id of 0xA4 (152) depend on it; the effect and text parsers read the rest from it.</summary>
+        public readonly ClientFeatures Features = new ClientFeatures();
+        /// <summary>The aware range of the last 0x42: the view is 18 x 14 tiles (17 x 13 plus one), the only size read.</summary>
+        public int AwareW = 17, AwareH = 13;
+        /// <summary>0xA4: spell id (u8, or u16 with feature 152) and the cooldown in ms. 0xA5: group id and ms.</summary>
+        public Action<int, uint> SpellCooldown = delegate { };
+        public Action<int, uint> GroupCooldown = delegate { };
         /// <summary>The creature we attack (0 none). Set by GameSession.Attack, cleared by the server's 0xA3.</summary>
         public uint AttackTarget;
         public int Health, MaxHealth, Mana, MaxMana, Level;
@@ -75,8 +89,26 @@ namespace Chaos.Core
                 case 0x1D: Pinged(); break;
                 case 0x1E: break;
                 case 0x1F: r.U32(); r.U8(); break;
-                case 0x28: r.U8(); break;
+                case 0x28: Death(r); break;
                 case 0x32: ExtendedOpcode(r.U8(), r.Str()); break;
+                case 0x42:
+                {
+                    AwareW = r.U8(); AwareH = r.U8();
+                    if (AwareW + 1 != World.ViewW || AwareH + 1 != World.ViewH)
+                        throw new ProtocolException("aware range " + AwareW + "x" + AwareH + ": only " + (World.ViewW - 1) + "x" + (World.ViewH - 1) + " is read");
+                    break;
+                }
+                case 0x43: Features.Read(r); break;
+                case 0x4B:
+                {
+                    // a floor of the view on its own (OTCv8 clients get the floors of a change of level this way, before 0xBE / 0xBF)
+                    var p = ReadPos(r);
+                    int floor = r.U8();
+                    if (floor > 15) throw new ProtocolException("floor " + floor);
+                    if (p.Z == floor) SetCenter(p);
+                    FloorDescription(r, p.X - World.RangeLeft, p.Y - World.RangeTop, floor, World.ViewW, World.ViewH, p.Z - floor, 0);
+                    break;
+                }
                 case 0x64:
                 {
                     var p = ReadPos(r);
@@ -165,11 +197,14 @@ namespace Chaos.Core
                 }
                 case 0x78: { int slot = r.U8(); var it = ReadItem(r, r.U16()); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = it; break; }
                 case 0x79: { int slot = r.U8(); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = null; break; }
+                case 0x7A: Trade.ReadShop(r, Clock()); break;
+                case 0x7B: Trade.ReadGoods(r); break;
+                case 0x7C: Trade.Close(); break;
                 case 0x82: W.WorldLight = r.U8(); W.WorldLightColor = r.U8(); break;
-                case 0x83: ReadPos(r); r.U16(); break;
-                case 0x84: ReadPos(r); r.U8(); r.Str(); break;
-                case 0x85: ReadPos(r); ReadPos(r); r.U8(); break;
-                case 0x86: r.U32(); r.U8(); break;
+                case 0x83: { var p = ReadPos(r); int id = r.U16(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Effect(p, id)); break; }
+                case 0x84: { var p = ReadPos(r); byte col = r.U8(); string t = r.Str(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.AnimText(p, col, t)); break; }
+                case 0x85: { var a = ReadPos(r); var b = ReadPos(r); int id = r.U8(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Missile(a, b, id)); break; }
+                case 0x86: { uint cid = r.U32(); byte col = r.U8(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Square(cid, col)); break; }
                 case 0x8C: { var c = Find(r.U32()); byte hp = r.U8(); if (c != null) c.HealthPercent = Math.Min(100, (int)hp); break; }
                 case 0x8D: { var c = Find(r.U32()); byte l = r.U8(), col = r.U8(); if (c != null) { c.LightLevel = l; c.LightColor = col; } break; }
                 case 0x8E: { var c = Find(r.U32()); var o = ReadOutfit(r); if (c != null) c.Outfit = o; break; }
@@ -197,19 +232,15 @@ namespace Chaos.Core
                     break;
                 case 0xA2: r.U16(); break;
                 case 0xA3: r.U32(); AttackTarget = 0; break;   // cancel target
-                case 0xA4: r.U8(); r.U32(); break;
-                case 0xA5: r.U8(); r.U32(); break;
+                case 0xA4: { int id = Features.Has(ClientFeatures.ExtendedSpellIds) ? r.U16() : r.U8(); SpellCooldown(id, r.U32()); break; }
+                case 0xA5: { int g = r.U8(); GroupCooldown(g, r.U32()); break; }
                 case 0xA7: r.U8(); r.U8(); r.U8(); r.U8(); break;
                 case 0xAA: Talk(r); break;
-                case 0xAB: for (int n = r.U8(), i = 0; i < n; i++) { r.U16(); r.Str(); } break;
-                case 0xAC:
-                    r.U16(); r.Str();
-                    for (int n = r.U16(), i = 0; i < n; i++) r.Str();
-                    for (int n = r.U16(), i = 0; i < n; i++) r.Str();
-                    break;
-                case 0xAD: r.Str(); break;
-                case 0xB2: r.U16(); r.Str(); r.U16(); r.U16(); break;
-                case 0xB3: r.U16(); break;
+                case 0xAB: ChannelList(r); break;
+                case 0xAC: ChannelOpened(r, true); break;
+                case 0xAD: PrivateOpened(r); break;
+                case 0xB2: ChannelOpened(r, true); break;
+                case 0xB3: ChannelClosed(r); break;
                 case 0xB4: TextMessage(r); break;
                 case 0xB5:
                 {
@@ -364,6 +395,14 @@ namespace Chaos.Core
             r.U8();   // mark
             if (it.Type.HasSubType) it.Count = r.U8();
             if (it.Type.HasPhaseByte) r.U8();
+            if (Features.Has(ClientFeatures.ItemCustomAttributes))
+            {
+                // src-patch 0003: u16 count, then u16 key and u64 value each
+                int n = r.U16();
+                if (n > 64) throw new ProtocolException("too many item attributes (" + n + ")");
+                if (n > 0) it.Attrs = new Dictionary<ushort, ulong>();
+                for (int i = 0; i < n; i++) { ushort k = r.U16(); it.Attrs[k] = r.U64(); }
+            }
             return it;
         }
 
@@ -376,6 +415,12 @@ namespace Chaos.Core
             }
             else o.LookTypeEx = r.U16();
             o.Mount = r.U16();
+            if (Identity.Markers)
+            {
+                o.Wings = r.U16();
+                o.Aura = r.U16();
+                o.Shader = r.Str();
+            }
             return o;
         }
 
@@ -435,32 +480,6 @@ namespace Chaos.Core
             return c;
         }
 
-        void Talk(ByteReader r)
-        {
-            r.U32();
-            string name = r.Str();
-            r.U16();
-            byte type = r.U8();
-            if (type == 1 || type == 2 || type == 3 || type == 36 || type == 37) ReadPos(r);
-            else if (type == 7 || type == 8 || type == 14 || type == 6 || type == 12 || type == 13) r.U16();
-            string text = r.Str();
-            Chat(name, text, type);
-        }
-
-        void TextMessage(ByteReader r)
-        {
-            byte kind = r.U8();
-            if (kind >= 23 && kind <= 29)
-            {
-                ReadPos(r);
-                r.U32(); r.U8();
-                if (kind == 23 || kind == 24 || kind == 27) { r.U32(); r.U8(); }
-            }
-            else if (kind >= 33 && kind <= 35) r.U16();
-            string text = r.Str();
-            if (kind < 23 || kind > 29) { Text(text); Chat("", text, 0); }
-        }
-
         void FloorUp(ByteReader r)
         {
             var c = W.Center;
@@ -469,8 +488,9 @@ namespace Chaos.Core
             if (z == 7)
             {
                 int skip = 0;
-                for (int i = 5; i >= 0; i--)
-                    skip = FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, i, World.ViewW, World.ViewH, 8 - i, skip);
+                if (!Identity.Markers)   // an OTCv8 client got these floors as 0x4B messages just before
+                    for (int i = 5; i >= 0; i--)
+                        skip = FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, i, World.ViewW, World.ViewH, 8 - i, skip);
             }
             else if (z > 7)
                 FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, z - 2, World.ViewW, World.ViewH, 3, 0);
@@ -485,8 +505,9 @@ namespace Chaos.Core
             if (z == 8)
             {
                 int skip = 0, j = -1;
-                for (int i = z; i <= z + 2; i++, j--)
-                    skip = FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, i, World.ViewW, World.ViewH, j, skip);
+                if (!Identity.Markers)
+                    for (int i = z; i <= z + 2; i++, j--)
+                        skip = FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, i, World.ViewW, World.ViewH, j, skip);
             }
             else if (z > 8 && z < 14)
                 FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, z + 2, World.ViewW, World.ViewH, -3, 0);
@@ -508,7 +529,7 @@ namespace Chaos.Core
     }
 
     /// <summary>A logged-in game connection: login handshake, client guard, pings, walking. Poll() from one thread.</summary>
-    public sealed class GameSession : IDisposable
+    public sealed partial class GameSession : IDisposable
     {
         public sealed class Options
         {
@@ -517,6 +538,9 @@ namespace Chaos.Core
             public string RsaModulus = Protocol.OpenRsaModulus;
             public byte[] GuardKey = ClientGuard.DevKey;
             public ushort Build = 30;
+            /// <summary>Extended (default): OS 21, markers u16 0, plain 10.98 wire, extended opcodes on. Chaos: the markers of the
+            /// main client too (feature list, wings / aura / shader, 0x4B floors, item attributes). See ClientIdentity.</summary>
+            public ClientIdentity Identity = ClientIdentity.Extended;
         }
 
         readonly World world;
@@ -532,16 +556,31 @@ namespace Chaos.Core
         public event Action<string> Log = delegate { };
         public event Action<string, string, byte> Chat = delegate { };
         public int Packets, Bytes;
+        /// <summary>Extended opcodes: modules register with Ext.On(opcode, handler) and send with Ext.Send(opcode, action, data).</summary>
+        public readonly ExtOpcodes Ext = new ExtOpcodes();
+        /// <summary>The spell list (opcode 219) and the spell cooldowns.</summary>
+        public readonly SpellBook Spells;
+        /// <summary>The party frames (opcode 235) and the party packets.</summary>
+        public readonly PartyFrames Party;
+        bool featuresLogged, spellsAsked, partyOpened;
+        double enteredAt = -1;
 
         public GameSession(World w, Options o)
         {
             world = w;
             opt = o;
-            parser = new GameParser(w) { Clock = () => Now };
+            parser = new GameParser(w) { Clock = () => Now, Identity = o.Identity ?? ClientIdentity.Extended };
+            Ext.Transmit = payload => conn?.Send(payload);
+            Ext.Log = m => Log(m);
+            Spells = new SpellBook(Ext) { Clock = () => Now, Say = Say, LevelNow = () => parser.Level, MagicLevelNow = () => parser.MagicLevel };
+            Party = new PartyFrames(Ext) { Clock = () => Now, Packet = payload => conn?.Send(payload) };
+            parser.SpellCooldown = (id, ms) => Spells.OnSpellCooldown(id, ms);
+            parser.GroupCooldown = (g, ms) => Spells.OnGroupCooldown(g, ms);
             parser.ExtendedOpcode = OnExtended;
             parser.Text = t => Log(t);
-            parser.Chat = (who, text, type) => Chat(who, text, type);
+            parser.Chat = (who, text, type) => { Chat(who, text, type); if (who.Length == 0) Party.OnServerText(text); };
             parser.Disconnected = reason => Closed = reason;
+            Ext.On(NpcTradeState.OpcodeCurrency, m => parser.Trade.ReceiveCurrency(NpcTradeState.ParseCurrency(m), Now));
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
@@ -570,7 +609,7 @@ namespace Chaos.Core
                     key = Protocol.NewXteaKey();
                     conn.Key = key;
                     conn.SendRaw(Protocol.GameLoginPacket(new Rsa(opt.RsaModulus), key, opt.SessionKey, opt.Character,
-                                                          ClientGuard.Identifier(opt.Build), ts, rnd));
+                                                          ClientGuard.Identifier(opt.Build), ts, rnd, opt.Identity));
                 });
                 conn.StartReading();
                 started = true;
@@ -593,7 +632,9 @@ namespace Chaos.Core
                 SendExtended(ClientGuard.ChallengeOpcode, ClientGuard.Answer(opt.GuardKey, nonce, account, opt.Character, opt.Build));
                 SendExtended(ClientGuard.HelloOpcode, ClientGuard.Hello(opt.Build));
                 Log(opt.GuardKey == ClientGuard.DevKey ? "Client guard answered with the development key." : "Client guard answered.");
+                return;
             }
+            Ext.Receive(op, data);
         }
 
         public void SendExtended(byte op, string data)
@@ -620,6 +661,17 @@ namespace Chaos.Core
                 }
                 if (Closed != null) return;
             }
+            if (parser.Features.Announced && !featuresLogged)
+            {
+                featuresLogged = true;
+                Log("Server features: " + string.Join(",", parser.Features.All.OrderBy(f => f)));
+            }
+            if (parser.LoggedIn && enteredAt < 0) enteredAt = Now;
+            ChatPoll();
+            // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
+            if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
+            // the party frames: watch a moment after the login (the main client waits 400 ms)
+            if (!partyOpened && enteredAt >= 0 && Now - enteredAt > 600) { partyOpened = true; Party.Open(); }
             if (conn.Closed && Closed == null) Closed = conn.Error ?? "The server closed the connection.";
             if (stepSent >= 0 && Now - stepSent > 1500) stepSent = -1;   // no answer to a step: let the next one go
         }
@@ -656,6 +708,47 @@ namespace Chaos.Core
             if (string.IsNullOrWhiteSpace(text) || conn == null) return;
             if (text.Length > 255) text = text.Substring(0, 255);
             conn.Send(Protocol.SayPacket(text));
+        }
+
+        /// <summary>Words to an NPC: the default channel to greet it or when no conversation runs, else the NPC channel (talk type 12).
+        /// The line also goes into the NPC log (the server does not echo it).</summary>
+        public void SayToNpc(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text) || conn == null) return;
+            text = text.Trim();
+            if (text.Length > 255) text = text.Substring(0, 255);
+            var talk = parser.NpcTalk;
+            bool channel = talk.ToNpcChannel(text, Now);
+            talk.FromPlayer(world.Player?.Name ?? opt.Character ?? "", text, Now);
+            conn.Send(channel ? NpcPackets.SayToNpc(text) : Protocol.SayPacket(text));
+        }
+
+        /// <summary>Buys from the open shop (0x7A). False when the rules forbid it (money, capacity, amount).</summary>
+        public bool NpcBuy(ShopItem it, int amount, bool ignoreCap, bool inBackpacks = false)
+        {
+            byte[] p = parser.Trade.BuyRequest(it, amount, parser.FreeCap, ignoreCap, inBackpacks);
+            if (p == null || conn == null) return false;
+            conn.Send(p);
+            return true;
+        }
+
+        /// <summary>Sells to the open shop (0x7B).</summary>
+        public bool NpcSell(ShopItem it, int amount, bool ignoreEquipped = true)
+        {
+            byte[] p = parser.Trade.SellRequest(it, amount, ignoreEquipped);
+            if (p == null || conn == null) return false;
+            conn.Send(p);
+            return true;
+        }
+
+        /// <summary>Looks at a shop row (0x79).</summary>
+        public void NpcLook(ShopItem it) { if (it != null) conn?.Send(NpcPackets.Look(it.Id, it.SubType)); }
+
+        /// <summary>Closes the shop (0x7C).</summary>
+        public void NpcClose()
+        {
+            if (parser.Trade.Open) conn?.Send(NpcPackets.Close());
+            parser.Trade.Close();
         }
 
         /// <summary>Inventory slot position (0xFFFF, slot, 0).</summary>

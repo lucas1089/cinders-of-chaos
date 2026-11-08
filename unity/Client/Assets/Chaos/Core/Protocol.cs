@@ -109,15 +109,18 @@ namespace Chaos.Core
             return Frame(body.ToArray());
         }
 
-        /// <summary>The first packet on the game port, answering the challenge. Markers: u16 0 (option B of the spec:
-        /// no feature list, outfits without wings / aura / shader, one 0x64 map, no item attributes, no compression).</summary>
+        /// <summary>The first packet on the game port, answering the challenge. The identity decides the OS word and the
+        /// markers: Extended (the default) sends u16 0 (plain 10.98 wire: one 0x64 map, no feature list, outfits without
+        /// wings / aura / shader, no item attributes, no compression), Chaos sends the OTCv8 markers of the main client.</summary>
         public static byte[] GameLoginPacket(Rsa rsa, uint[] xtea, string sessionKey, string character, uint clientId,
-                                             uint timestamp, byte random)
+                                             uint timestamp, byte random, ClientIdentity identity = null)
         {
+            identity = identity ?? ClientIdentity.Extended;
             var b = new ByteWriter().U8(0);
             foreach (uint k in xtea) b.U32(k);
-            b.U8(0).Str(sessionKey).Str(character).U32(timestamp).U8(random).U16(0);
-            var body = new ByteWriter().U8(0x0A).U16(Os).U16(Version).U32(clientId).U16(0).U8(0);
+            b.U8(0).Str(sessionKey).Str(character).U32(timestamp).U8(random);
+            identity.WriteMarkers(b);
+            var body = new ByteWriter().U8(0x0A).U16(identity.Os).U16(Version).U32(clientId).U16(0).U8(0);
             body.Raw(RsaBlock(rsa, b));
             return Frame(body.ToArray());
         }

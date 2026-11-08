@@ -18,6 +18,9 @@ Windows so far (files in `Assets/Chaos/Unity/Windows/`):
 - Battle (Ctrl+B): creatures on your floor in view, nearest first. Left-click attacks (again stops), right-click follows. The target has a red row and a red frame on the map.
 - Minimap (Ctrl+M): the remembered minimap round you (2 px per tile), floor up/down and zoom buttons. `MinimapMemory` (`Core/Minimap.cs`) keeps explored ground per floor.
 - Hotkeys: 12 slots, F1 to F12, open at the bottom. Click a slot to type what it says; Enter or ok saves, per character in PlayerPrefs. The keys work while the bar is open and the chat line is not focused.
+  Right-click a slot to pick a spell for it in the spellbook. A slot that holds the words of a spell counts its cooldown down.
+- Spells (Ctrl+P): the server's spell list (opcode 219) with the filters of the main client (learned, available soon, my vocation, all, runes; all, attack, support; search).
+  Left-click casts (says the words), right-click selects and shows F1 to F12 buttons that put the spell on a hotkey slot. Cooldowns come from 0xA4 and 0xA5.
 - Right-click on a creature on the map attacks it (`ChaosApp.Combat.cs`).
 It does not replace the client in `client/`.
 
@@ -30,14 +33,19 @@ It does not replace the client in `client/`.
     - `Things.cs`: the dat (10.98 flags plus our custom flags) and spr readers (extended, transparency).
     - `Outfits.cs`: outfit colours, the colour mask.
     - `ClientGuard.cs`: the client guard answer (HMAC-SHA256) and the hello.
+    - `Identity.cs`: who the client says it is (OS word, markers, capabilities) and the 0x43 feature list.
+    - `ExtOpcodes.cs`: extended opcodes (0x32): JSON reader and writer, chunk join, dispatcher by opcode.
+    - `Spells.cs`: the spell list (opcode 219), filters, cooldowns, cast by words. `Loc.cs`: UI texts in English and pt-BR.
     - `World.cs`: tiles, stacks, creatures.
     - `Protocol.cs`: framing, login packets, the TCP connection, the login answer.
+    - `NpcTrade.cs`: NPC shop and talk model, the shop packets.
     - `Game.cs`: `GameParser` reads the server's messages into a `World`. `GameSession` adds login, guard, pings and walking.
   - `Assets/Chaos/Unity/` holds the app.
     - `ChaosApp.cs` builds everything from code at start.
     - `MapView.cs` is one dynamic mesh per frame, drawn in the stock order.
     - `SpriteAtlas.cs` is a 4096x4096 atlas of 32 px cells.
     - `Hd2dView.cs`, `Hd2dShot.cs`, `Hd2dPost.cs`: the HD-2D view (see below). Core: `Hd2d.cs`, `Hd2dDemo.cs`.
+    - `FrontLiveFx.cs`: live combat effects over the front-art view (see "Front-art effects"). Core: `FrontFx.cs`, `FrontFxIds.cs` (generated), `FrontFxArt.cs`, `FrontFxDirector.cs`.
     - `Hd2dRuins3d.cs`, `Hd2dChars3d.cs`: 3D models for the map and the creatures. Core: `Hd2dRuins.cs`, `Hd2dTerrain.cs`, `Hd2dWorld3d.cs`, `Hd2dChars.cs`, `PixelText.cs` (the label font of the line-up shot).
   - `Assets/Chaos/Editor/ChaosBuild.cs` is the batch build.
 - `tools/` holds Python tools: `hd2d_preview.py` (offline HD-2D pictures) and `fetch_3d_assets.py` (the KayKit characters, see "3D characters"), each with a test.
@@ -346,6 +354,150 @@ The ideas follow the MIT-licensed Luminati engine (docs/CREDITS.md); the code is
   normal bias 0.45), the sun-facing proxy bias, the exposure and the tilt-shift values, the strength of the flame halos
   (`Hd2dParticles` clamps their size), the number of point lights (nine, eight forced to pixel).
 
+## Front-art live view (F8)
+
+The front-art look (previous section) on the real map: the live server world around the player as a blocky diorama with pixel textures,
+the things standing on it as upright front-facing sprites of the real art, moon, flickering point lights, tilt-shift, bloom, fog, embers.
+Creatures and effects are not drawn by this view: `FrontLiveCreatures` and `FrontLiveFx` (written apart) join it.
+
+- Switch: F8 in the game, saved in PlayerPrefs `chaos.frontlive`. It takes over from the classic and HD-2D views (F9 stays saved but hidden);
+  F8 is hotkey slot 8: with the hotkey bar open use Ctrl+F8. Mouse wheel zooms (not over a window). The camera follows the player's drawn
+  position with a short smoothing: FOV 28, pitch 33, at the distance where the classic 15 x 11 tiles fit the screen times the zoom.
+  The sharp band of the tilt-shift is thicker than the scene's (0.26, `FrontLiveView.FocusHalf`) so the map stays readable.
+- `Core/FrontLive.cs` (pure C#, tested in `Core.Tests/FrontLiveTests.cs`): `FrontLive.Build(world, anchor, classifier, options, lean)` gives a
+  `FrontLiveLayout`: a `FrontArtLayout` grid (heights, textures, tints, voids, boxes for props), upright and flat sprite pieces, lights.
+  `FrontLive.ViewHash` is the rebuild key (centre, item ids of the 20 x 16 window and of the floors below; creatures not read; no allocation).
+- Window: the tiles the client keeps, 8 left, 9 right, 6 up, 7 down of the player and one more round it, 20 x 16. A tile the server did not send
+  is a void: no top, the neighbours' sides fall away (the cut edge of the slab). World units: one tile is one unit, +x east, +z north, tile
+  (x, y) is x - Anchor.X, Anchor.Y - y. The anchor is the first centre and moves only after 192 tiles. Textures are mapped by world position and
+  the variety of a tile comes from a hash of its tile position, so a tile keeps its look when the window moves.
+- Ground, by the pixels of its sprite (`Hd2dTerrain.Classify`): Stone is Flagstone (one in six Cobble), Wood Wood, Grass Grass, Dirt Dirt (one in
+  eight MossDirt), Sand Sand, Snow Snow, Water Water and Lava Lava (both one level, 0.5 units, lower; the lava glows, the water drifts), Unknown
+  Dirt, Dark a hole. The sprite's mean colour leans through as a vertex tint (a third of the way from grey). A ground the dat marks not walkable
+  and that reads Stone or Dirt is a cliff of 4 levels. Five new block kinds in `FrontArtTex` (Grass, Sand, Snow, Water, Lava; 64 x 64, hue-shifted
+  ramps, tileable, `FrontArtTex.Emit` and `ReliefStrength` per kind).
+- Walls: an on-bottom blocking item raises its tile to a block. A sprite that fills 70 percent of the cell or more is a full wall (5 levels, 2.5 units),
+  45 percent a low wall (3 levels), less a fence (2 levels), a green one (40 percent green pixels) a hedge of grass (2 levels). The side texture from
+  the colour: grey Flagstone, red-brown Brick, brown with lines Wood, pale yellow-brown Cobble.
+- Items: ground borders are dropped (hard tile edges). Decals, and loose one-cell things that fill their tile (stairs, a hatch, a rug), lie flat on the
+  block top. A grey blocking 1 x 1 thing is three rock boxes, a tall or wide grey one a pillar of four boxes (base, shaft, capital, band), a brown blocking
+  thing of two cells or more a wooden box and its lid (big furniture). Everything else, light sources and trees included, is an upright sprite of
+  the real art in the plane through the middle of its tile (cells going west and up, straightened by the measured lean profile as the HD-2D view does).
+  Items stand on the top of their block (on the water at -0.5), lifted by their elevation.
+- Lights: every item or ground with a dat light level becomes a `FaLight` at its tile, range `level * 0.85 + 2` (3 to 8), intensity 0.6 to 1.6, Flame
+  for warm colours (flicker, embers, shadow). At most 96 per layout; the view lights the nearest 8 (4 on phones) each frame, the player's own light first,
+  and the two nearest flames cast soft shadows. The world light level lifts the moon and the ambient from the night look toward day.
+- Floors below: a tile without ground on the player's floor shows the floor below at the cell one tile south-east (what the stock client draws), 3 units
+  lower and darker (x 0.55 per floor), ground and walls only, two floors at most; with nothing below it is a void.
+- Rebuild, without churn: `FrontLiveView.Refresh` hashes the window and rebuilds only when it changes (a step, an item). The 13 terrain meshes, 13 prop
+  meshes and the two sprite meshes are refilled in place. A layout with animated sprites refreshes the sprite meshes five times a second.
+  Core.Tests prints the numbers (mixed window: build about 0.4 ms, meshing about 3 ms, 835 block quads, 41 sprite quads on the test map; limits in the
+  test: 25 ms each, 6000 block quads, 1200 sprite quads).
+- Contract for the creature and effect components (reflection in `FrontLiveView.Init`: `Chaos.Client.FrontLiveCreatures`, `Chaos.Client.FrontLiveFx`):
+  `Cam`, `World`, `Atlas`, `Vector3 TileToWorld(x, y, z)` (middle of the tile at its ground height; a tile on a floor below is drawn shifted),
+  `float GroundY(x, y, z)`, `DrawnTile(creature)` and `DrawnPoint(creature)` (smooth walking position), `event Action<float> Ticked` (every frame after
+  the world update, clock in seconds), `Labels` (a `List<Hd2dView.Label>` the creatures fill: ChaosApp draws names, health bars, the attack frame and
+  right-click attacks from it while the view is on), `AddFrameLight(FaLight)` (a light for one frame), `Layout`. Terrain materials sit in render queue 1990
+  and the ground silhouette shader (`FrontArtCast`, 1995) draws after them, as in the front-art scene.
+- CI: `-chaosHd2dShot DIR` also writes `front_live.png` (wide, 1.7 times the classic fit) and `front_live_close.png` (0.6) from the outdoor world of the real
+  pair (the meadow, pond and trees of `hd2d_3d_outdoor.png`), else the temple room. The player is not drawn (no creatures here). Log lines start with
+  `chaos front live:`. A failure of this shot alone is logged as an error and does not stop the run.
+- Not done: stairs and ramps (the dat does not say which item changes the floor: they stay sprites or flat sprites), doors as doors (a closed door is a wall
+  block, an open one a flat sprite), a hand-modelled tree, floors above, animated water beyond the texture drift, creature lights beyond the player's.
+- Not run in a Unity editor or player in the session that wrote it: it compiles in `Client.Check` and the layout is tested. Unsure until seen: the
+  look of the ground tints on real maps, whether the heuristic wall heights (cell fill) fit the real walls, fences and doors, the cost of the sprite
+  meshes with many animated items, the sharp band at 0.26, the shadow of the upright sprites through the cutout, the pick of grey and brown things for boxes.
+
+## Front-art creatures
+
+The live game's creatures (players, monsters, NPCs, summons) in the front-art look: upright front-facing pixel billboards, lit by
+`Resources/FrontArtSprite.shader`, with a contact blob, the two ground silhouettes, a shadow caster, a name and a health bar.
+`Unity/FrontLiveCreatures.cs` is added to the `FrontLiveView` object by reflection; it reads `Cam`, `TileToWorld`, `GroundY` and
+`World` from the view and moves on its `Ticked` event. Objects are pooled (one set per creature on screen). Log lines start with
+`chaos front creatures:`.
+
+- Looks (`Core/FrontLooks.cs`, tests `Core.Tests/FrontLooksTests.cs`):
+  - Monsters and summons go by name to one of the 14 pack figures (`pk_<folder>`): goblins, rats, flyers, headless riders, vampires,
+    cultists and casters (red for fire and blood, dark for the rest), ghosts (king for a crowned one), skeletons and bone, wolves and
+    other furred beasts, lizards and snakes, the ice family, the fire family and brutes. Plain ghouls use the committed `ghoul`
+    pictures. First rule that matches wins; the order is in `ForMonster`. Over the server's 701 monster names (280 custom, 421 base)
+    about half get a figure; humans, bosses with invented names, plants and slimes stay their outfit.
+  - Players go by class (`Hd2dChars.Classes`, 21 vocations): knight, barbarian, holy and melee classes are the `knight` pictures, casters
+    the `mage`, the Lich and the Bone Lord the `skeleton`, each in the class tint softened (0.75 to 1.25, shader `_Tint`). The five
+    ranged and stealth classes (Ranger, Deadeye, Beastmaster, Thief, Ninja) have no picture yet and are drawn as their outfit; a new
+    hero set needs a folder and one row in `FrontLooks.HeroOfModel`. The local player is its class from the login; another player,
+    whose class the protocol does not tell, is the knight or the mage by the outfit's look type.
+  - Everything else (NPCs, no rule, art missing) is the creature's own outfit: `FrontOutfit.Compose` builds the classic art (base
+    layer coloured by the mask layer, addons, all cells of a 2 x 2 or bigger sprite) into one picture standing on the tile, 1 cell = 1
+    unit, same shader and lighting. It is not straightened (no `Hd2d.Lean`). Pictures are cached by type, direction, phase and colours.
+  - Fallback chain when art is missing (the pack art exists only in CI after opening `front_art_packs.enc`): pack figure, then the
+    committed `skeleton` or `ghoul` pictures (`FrontLook.Alt`), then the outfit. Nothing is ever left out.
+- State (`Core/FrontLiveAnim.cs`): `FrontCreatureState.Update(t, creature, foe)` on its own clock, so it needs no game clock.
+  - Movement: a step is told by `Creature.WalkStart` changing; the picture goes from where it is (the step's origin when far) to the
+    tile over `WalkMs`. Jumps snap. Walk clip while stepping, hop for pictures without a walk strip.
+  - Facing: the server's direction (`FrontLooks.Face`, x east, z north); the heroes pick one of 8 pictures with `FrontArtFacing`, the
+    pack strips face right and the three west headings use the `_w` mirror, outfits pick the dat direction.
+  - Attack: a creature with a foe next to it (`FrontTargets.Foe`: a monster fights players and own summons, a player or summon fights
+    monsters; the local player's picked target first, `FrontLiveCreatures.LocalTarget`) that is not mid-step swings every 2 s for
+    0.75 s, turned to the foe: the attack strip, or for heroes a lean of 0.12 tile. `Strike(t)` forces a swing.
+  - Flinch: when `HealthPercent` drops it is pushed 0.16 tile away from the foe (backwards without one) over 0.3 s and flashes red
+    (`_Hit` of the shader).
+- Name and health bar (`FrontLabel`, `PixelText` font): outlined name in a pale tint of the health colour (green, yellow, orange,
+  red), a 26 x 3 texel bar under it; NPCs have the name only. One texture per creature, redrawn when name or health change.
+- `Unity/FrontArtSprites.cs` holds what `FrontArtScene` and the live creatures share: shader lookup, point filtering, strip frames, the
+  quad, the ground silhouettes (`ApplyCast`) and `FrontArtSet`, the loader of a figure folder (8 pictures or idle, walk and attack strips
+  with `_n` and `_e` maps). Silhouettes and shadows take the nearest point light and the first directional light of the scene.
+- What the server and parser do not tell yet (needed for exact attack animation): who attacks whom and damage effects. `Game.cs` reads
+  the magic effect (0x83) and the animated text (0x84) and drops them; with a hook for them `FrontCreatureState.Strike` swings the
+  creatures next to the effect. Until then attacks are the adjacent-foe rule above, a good guess for melee and wrong for ranged.
+- Needs from the host: `FrontLiveCreatures.SpriteSource` (`SpriteAtlas.Raw`; found by reflection on a member `Atlas` of the view when
+  unset) for outfit art, and `LocalTarget` (`Game.AttackTarget`) for the local fights. Without a source, outfit creatures are not drawn.
+- Not seen in a Unity editor or player in the session that wrote it: it compiles in `Client.Check` and the logic is tested. Unsure until
+  seen: label size and position at both zoom levels, the pack figure scale next to a 1 x 1 outfit, outfit pictures with the oblique lean
+  of the art, the `_Tint` strength.
+
+## Front-art effects
+
+Live combat in the front-art look (track C of the front-art game): what the server sends in a fight, drawn over `FrontLiveView`.
+Not run in a Unity editor or player in the session that wrote it: it compiles in `Client.Check` and the logic is tested.
+- Parser (`Core/Game.cs`, `GameParser`): the magic effect 0x83 (position, 16 bit id), the distance shot 0x85 (from, to, 8 bit id), the animated
+  text 0x84, the creature square 0x86 and the damage, heal and experience messages 0xB4 modes 23 to 29 (up to two values with their text colours,
+  and the sentence) become `FxEvent`s on `World.Fx` (`FxFeed`). Off until a consumer sets `World.Fx.Enabled`, capped at 512, oldest first.
+  The Unity client does not ask for the typed impact layout (client base patch 0100), so a message ends at its text.
+- Ids to elements: `Core/FrontFxIds.cs` is generated by `unity/tools/gen_front_fx_ids.py` (`--check` in the `core` job) from the server's
+  `server/data/lib/*.lua` (ChaosFx, ChaosVfx, ChaosVfxMissile, the pair 50 and 51 tables) and `server/data/spells/effects_catalog.csv`, plus the
+  stock ids of the base server. One letter per id by the keywords of its name and comment (fire, ice, energy, arcane, death, holy, physical,
+  blood, shadow, poison, earth, water, heal, neutral, and X for pictures that are not combat: loot rays, teleports, puffs). Rerun it when a
+  server fx id file changes. An id the table does not know is neutral. `FrontFx.ElementOfTextColor` maps the damage text colours the same way.
+- `Core/FrontFx.cs` (tested): the palette of each element (hot core, body, rim), the missile art of each element (the 8 sheets of the projectile
+  pack: fireball, frost, arcane, skull_necrotic, skull_spirit, blood, shadow, holy; energy, poison, earth and water use one tinted), number text
+  (12.3K, 1.2M), the melee rule and the timing. Melee: a physical (red) hit with no missile at its tile draws a slash from the creature next to the
+  target that swings: the one the sentence names ("due to an attack by a rat"), our own hit when we stand next to the target, else the hostile
+  neighbour that faces it. A bite of fire or a spell has its own effect and no slash.
+- `Core/FrontFxArt.cs` (tested): impacts are drawn in code, a port of `impact_strip` of `front_art_packs.py` (flash, ring, sparks, 12 frames of 64
+  texels), a heal is a thin ring and rising sparkles; a comet stands in for a missile when the sheets `fx_*` are not there (CI after the packs are
+  opened); the number picture is the pixel font (`PixelText`) with an outline. No art file is needed.
+- `Core/FrontFxDirector.cs` (tested): events to live items on a clock. A missile flies 16 tiles a second (0.12 to 0.7 s) in a small arc; an effect
+  or number at its end within 0.35 s of the launch waits for the landing, so the hit shows when the missile arrives. A burst is 0.5 s, a number
+  rises 1.2 tiles in 1.1 s (pop to 1.5 times, full for 60 percent, then fades; received numbers 1.25 times, those of others 0.8), a slash 0.3 s,
+  a light flash 0.3 s. The two values of a hit are two numbers, numbers on one tile stack. When more than 8 bursts start together (an area spell) the
+  rest are smaller and have no light. Pools: 24 missiles, 48 bursts, 32 numbers, 8 slashes.
+- `Unity/FrontLiveFx.cs`: a component that `FrontLiveView` adds. It reads `Cam`, `World`, `TileToWorld(x, y, z)`, `GroundY(x, y, z)` and `Ticked`,
+  switches `World.Fx` on and draws the director's items in pooled camera-facing quads (shader `FrontArtSpell`, premultiplied; it got a `_Tint`
+  property: colour multiplier, alpha = opacity; one material per picture, frame and tint by a `MaterialPropertyBlock`) and at most 6 point lights.
+  A tile's size is the distance between two neighbouring tiles' world points, so the sizes follow the view. Only the player's floor is drawn.
+- Not done: the target's flinch and red flash (`_Hit`) and the attacker's swing pose belong to the creature quads of `FrontLiveView`; the events and
+  the slash are there for them (`FrontFxDirector.Slashes`). Unsure until seen: the heights over the tile (0.5 tiles for effects, 0.9 plus the rise for
+  numbers, taken from `GroundY`), the sizes (a burst 1.7 tiles, a missile 1.2), the light range and intensity next to the scene's own lights, the
+  missile frame rate (14), and effect ids that scripts send as a bare number: those not in the Lua files are neutral white bursts.
+
+## Party, character select, character plate
+
+- Party (`Core/Party.cs`, `Unity/Windows/PartyFramesWindow.cs`, `Unity/ChaosApp.Party.cs`): the base packets 0xA3 invite, 0xA4 join, 0xA5 revoke, 0xA6 pass leadership, 0xA7 leave, 0xA8 shared experience, and the Chaos party frames on extended opcode 235 (`open`, `close`, `kick`, `lead`, `invite` out, `state` in). The window (Ctrl+G) opens when the character joins a party. Left click on a frame follows the member, right click opens the menu. Right-click on a player on the map opens a menu with attack, follow and the party entries by the shield (`PartyMenu.For`); a monster is still attacked at once. The server's line "X has invited you to join ..." opens an Accept and Decline box; accepting joins by the leader's creature, who must be in view.
+- Character select (`Core/CharSelect.cs`, `Unity/ChaosApp.CharSelect.cs`): cards from the login answer with the outfit drawn small, arrows, Home, End, Page keys and Enter, the last character is selected first. Characters are created on the website, not by an opcode: the "Create character" button opens `https://<login host without play.>/createcharacter.php`.
+- Character plate (`Core/Plate.cs`, `Unity/ChaosApp.Plate.cs`): outfit portrait, name, level, health and mana bars (right-click for percent, kept per character) and the experience line with the percent to the next level, all from 0xA0. The main client's plate uses no extended opcode.
+- `ChaosApp.DrawOutfit(rect, outfit)` draws a standing outfit in a GUI rectangle; `ChaosApp.ShowMenu(at, items)` is a small popup menu any window can use.
+
 ## Tests
 
 ```
@@ -356,7 +508,17 @@ The checks cover:
 - crypto vectors shared with `server/tools/loadtest.py`;
 - the dat and spr readers on synthetic files;
 - the login answer, map descriptions with skip counters, moves, the east strip, turns, items, pings;
-- a whole game login against a fake server on localhost. It uses its own RSA key, real XTEA and the guard handshake;
+- a whole game login against a fake server on localhost. It uses its own RSA key, real XTEA and the guard handshake.
+  It runs twice: identity Extended, and identity Chaos with the markers, a feature list, extended outfits, item attributes and an
+  extended opcode round trip whose answer comes in parts;
+- `ExtTests.cs`: JSON (parse, write, 22 broken texts, depth), the extended opcode wire bytes, chunks (split and join like the server and the
+  main client, stray parts, a UTF-8 character cut by a part), the identity bytes, the Chaos parts of the parser (0x43, outfits, item attributes,
+  0x4B floors, 0xA4 and 0xA5), the spell model and the pt-BR texts (every `Loc.T` key in `Unity/` has an entry);
+- the front-art live view (`FrontLiveTests.cs`): the new block textures, ground and wall classes to blocks, heights, items as sprites or boxes,
+  lights, floors below and voids, the world mapping and anchors, the rebuild hash, size and time bounds;
+- the front-art creatures (`FrontLooksTests.cs`): the name rules over every monster name of the server, the 21 classes, the outfit composer, the label, the state machine (steps, facing, swings, flinch);
+- NPC talk and trade (`NpcTests.cs`): byte-level 0x7A, 0x7B, 0x7C in and the buy, sell, look, close and NPC speech packets out, lists, search, quantity bounds (money, capacity, stock, 100), totals, currency (opcode 113), {keywords}, the talk log and its channel rule, NPC speech in the parser;
+- the front-art live effects (`FrontFxTests.cs`): byte-level packets of 0x83, 0x84, 0x85, 0x86 and 0xB4, every effect and missile id of the server's Lua files has an element, palettes and missile arts, number text, the melee rule, timing and the director's rules;
 - the 3D character mapping (`CharsTests.cs`): the 21 classes against the vocation files, the monster rules over every monster name of the server
   (it prints the share per model), size, hand bones, idle clips, the label font and the line-up. The fetch script: `python3 -I unity/tools/fetch_3d_assets_test.py`.
 
@@ -365,6 +527,18 @@ On the real pair: `dotnet run -c Release -- probe DAT SPR OUTDIR [outfit ids...]
 Against a server: `dotnet run -c Release -- live PAIR_DIR HOST ACCOUNT PASSWORD [CHARACTER] [RSA_MODULUS_FILE]`.
 It logs in, enters, takes four steps and prints the opcodes it read. The guard key is read from `CHAOS_CLIENT_KEY`
 (64 hex digits). Without it the dev key is used, which the live server refuses in mode "enforce".
+
+## NPC talk and trade
+
+- `NpcTalkWindow` opens when an NPC speaks to us (talk type 10 or 11 of 0xAA, with or without a position: `NpcTalkState.HasPosition`).
+  Quick words hi, trade, bye, yes, no, a chip per `{keyword}` of the last line, a line to type. Hi and any line outside a conversation go on the
+  default channel; once the NPC is focused on us words go as talk type 12 (the NPC channel), because the stock NPC library takes keywords of
+  a focused player only from there. The NPC channel is a client tab in the main client, so Unity keeps the log itself.
+- `NpcTradeWindow` opens on 0x7A (npc name, u16 count, items with id, sub type, name, weight, buy, sell) and 0x7B (u64 money, goods). Buy and Sell tabs,
+  search, amount slider bounded by money, capacity (unless ignored), stock and 100, total, OK. Closing it sends 0x7C. Right-click on a row looks (0x79).
+  Requests: buy 0x7A (id, sub type, u8 amount, ignore capacity, in backpacks), sell 0x7B (id, sub type, u8 amount, ignore equipped).
+  An NPC that trades for another currency says so on opcode 113 first (`NpcTradeState.ReceiveCurrency`).
+- Not done: buy in backpacks, the speech bubble over the NPC, walking up to an NPC on a click, NPC modal windows. Not tried on a live server.
 
 ## Running it
 
@@ -396,12 +570,50 @@ The artifact `chaos-unity-<target>` is kept 7 days.
 
 ## Protocol notes
 
-- The game login sends u16 0 as client markers.
-  The server then sends no feature list and plain outfits (no wings, aura or shader).
-  It sends one 0x64 map and no item attributes, and never compresses.
+- The game login says who we are in two places (full audit in "Both clients"): the OS word and the marker bytes after the random byte.
+  Identity Extended (default): OS 21 and `u16 0`. The server sends no feature list, plain outfits (no wings, aura or shader), one 0x64 map, no item attributes, never compresses.
   An adler32 of 0, which would mean a compressed packet, is refused.
+  Identity Chaos: OS 21 and the markers of the main client (`ClientIdentity.WriteMarkers`). The server then sends 0x43 (feature list), outfits with
+  `u16 wings, u16 aura, string shader`, the floors of a change of level as 0x4B messages before 0xBE and 0xBF, item attributes (feature 126),
+  16-bit spell ids in 0xA4 (feature 152). `GameParser` reads all of that when `Identity.Markers` is set. Item attributes follow the feature, not the identity.
+- Every extended opcode reaches `GameSession.Ext` (`ExtOpcodes`). The guard challenge on 189 is answered inside the session. Modules register with
+  `Ext.On(opcode, handler)` for JSON `{action, data}` (chunks joined) or `Ext.OnText(opcode, handler)` for plain text, and send with `Ext.Send(opcode, action, data)`.
+  The text is UTF-8 on the wire; `ByteReader.Str` reads it as latin-1, so `ExtOpcodes.FromWire` and `ToWire` convert. A request over 16384 bytes is refused (the server drops it).
 - The step time follows `server/tools/cast_relay.py` `step_ms` (src-patch 0018).
 - An opcode the parser does not know stops that packet. The next packets go on. `live` lists what it read.
+
+## Both clients
+
+Players can use the main client (`client/`) or Unity on the same server. What the server tests, read from `server/src-patches` on 2026-11-07:
+
+| Where | Test | Effect |
+|---|---|---|
+| both logins (0021) | u32 version word is the tag 0x4343 in the high half and the build in the low half, build allowed | else the official-client message (mode enforce) |
+| game login (0021, 0015, base `login`) | OS word below 10 | no extended opcodes, the guard refuses it |
+| game login | marker `"OTCv8"` + version after the random byte | `sendFeatures` (0x43), wings / aura / shader in outfits, floors as 0x4B |
+| game login (0003) | then `"OTCv8TierByte"` and `"A"` | chaosClient: feature 126, item attributes after every item, packet compression when `packetCompression` is on (0069, 0073) |
+| game login (0051, 0079) | then u32, `"C"` and a capability byte | bit 7 typed impact numbers (155), bit 6 16-bit spell ids (152, needs `chaosWideSpellIds`) |
+| guard (0021) | challenge 189, hello 190 | `ClientGuard.cs`, unchanged. The real key comes from `CHAOS_CLIENT_KEY` at build time, never embedded by default. |
+| extended opcodes (0075) | string over 16384 bytes | dropped on the server |
+| Lua | `Player:sendExtendedOpcode` and the opcode dispatch | no check of the OS beyond the engine's, so Unity gets every module's messages |
+
+What Unity announces: OS 21, version word `0x4343 << 16 | build`, markers `u16 0` (Extended, default) or the full marker block (Chaos).
+OS 21 was always an extended opcode client, so the earlier note that Unity gets no extended opcodes was wrong: it got them and ignored all but the guard.
+No server change was needed.
+
+Choosing the identity: the setting `chaos.identity` (PlayerPrefs) or the environment variable `CHAOS_UNITY_IDENTITY` takes `extended` or `chaos`.
+Chaos is parsed and tested on a fake server only. Before it becomes the default:
+1. log in with `CHAOS_UNITY_IDENTITY=chaos` and read the log line `Server features: ...`. The full list is in the base engine, not in this repo.
+   A feature that changes a wire width the parser does not know (an effect id of 16 bits, for example) must be handled by the effect parser of track B through `GameParser.Features`.
+2. walk through a staircase and a hole (0x4B floors), open a bag with a rarity item, see a creature with wings or a shader.
+3. keep `packetCompression` off until Unity has an inflater (it throws on a compressed packet).
+4. leave capability bit 7 off until the 0xB4 parser reads the three extra fields (percent, type, creature id). `ClientIdentity.Capabilities` holds the bits.
+
+UI text: the English text is the key, `Loc.T("text", args)` looks it up in `LocStrings.PtBr` (`Core/Loc.cs`). Arguments are `{0}`. The language is `chaos.lang` or the system language.
+A test fails when a `Loc.T` key in `Unity/` has no pt-BR entry. Server texts come in the player's language from the server (opcode 157 `hello` with `lang`).
+Window titles of the older windows are not translated yet.
+
+Parity: `docs/UNITY_PARITY.md` has the module table (169 rows), the missing base opcodes and the migration plan.
 
 ## HD-2D post-processing (O432)
 
@@ -446,3 +658,14 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
   - Light: the dat light attribute, radius in tiles, colour from the 6x6x6 cube.
 - Test: `python3 -I unity/tools/hd2d_preview_test.py` (synthetic sprites, runs in CI).
 - Side walls are left out: the art is oblique, a camera-facing card floats.
+
+## Chat, death and fight modes (O433 phase 2, track F)
+
+- Model: `Core/Chat.cs` (`ChatModel`, `TalkType`, `ChatPackets`, `BubbleSet`, `FightModes`), parser side `Core/GameChat.cs`, tests `Core.Tests/ChatTests.cs`.
+- Chat window (`ChaosApp.Chat.cs`): tabs Default, Server Log, channels and private. Enter focuses the line. With the line focused: Tab and Shift+Tab switch tabs,
+  Ctrl+O opens the channel list, Ctrl+E closes the tab (the windows keep those keys otherwise). Right-click on a tab closes it. The "+" button opens the channel list
+  (`ChannelsWindow`: click joins, "Message to" opens a private tab). Private message: `*name* text`. `#y text` yells, `#w text` whispers, `/ignore name` and `/unignore name`.
+- Floating speech (`DrawBubbles`): say, whisper, yell, spells and monster speech float over the speaker, in the classic and the front-art live view.
+  Lifetime 60 ms per character, 3 to 12 s, at most 3 lines stack per creature.
+- Death (0x28): a modal window with the penalty. OK logs out and goes to the character list.
+- Fight modes (`FightWindow`): offensive / balanced / defensive, stand / chase, secure mode. Saved in PlayerPrefs (`chaos.fight`), sent after the login and at each change (0xA0).

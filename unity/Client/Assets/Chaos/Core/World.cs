@@ -24,6 +24,10 @@ namespace Chaos.Core
         public int Id;          // client id
         public int Count;       // count or fluid subtype; 0 when the type has none
         public ThingType Type;  // null when the dat has no such item
+        /// <summary>The custom attributes of an Identity.Chaos connection (ChaosItemAttr keys: 1 rarity, 2 item level, 3 locked,
+        /// 4 unique, 5 sockets, 6 per-item id, 7 version); null when the item carries none.</summary>
+        public Dictionary<ushort, ulong> Attrs;
+        public ulong Attr(ushort key) => Attrs != null && Attrs.TryGetValue(key, out var v) ? v : 0;
     }
 
     public sealed class Creature
@@ -73,6 +77,8 @@ namespace Chaos.Core
         public int PlayerVocation;   // the local character's vocation id from the character list (0 = unknown)
         public Pos Center;
         public int WorldLight = 255, WorldLightColor = 215;
+        /// <summary>Combat effects the parser read (magic effects, missiles, damage numbers): drained by the front-art live view (Core/FrontFx.cs). Off until a consumer sets Enabled.</summary>
+        public readonly FxFeed Fx = new FxFeed();
 
         public World(DatFile dat) { Dat = dat; }
 

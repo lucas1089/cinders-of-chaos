@@ -5,7 +5,7 @@
 // hd2d_3d_close.png (the same scene from half the distance, aimed at the hero) and hd2d_3d_cast.png (the line-up: a 3D character per
 // class group and the four dark skeleton monsters on the temple floor, with name labels drawn from Core/PixelText.cs, the camera fitted
 // to the cast) to OUT_DIR, then front_art.png (the front-art test scene, Unity/FrontArtScene.cs: a blocky diorama with front-facing pixel
-// sprites, wide) and front_art_close.png (the four characters across a brazier), and quits (exit code 0, or 1 with the reason in the
+// sprites, wide) and front_art_close.png (the four characters across a brazier), then front_live.png and front_live_close.png (the front-art live view, Unity/FrontLiveView.cs: the real map in the front-art look), and quits (exit code 0, or 1 with the reason in the
 // log; a failure of the front-art scene alone is logged as an error and does not stop the run). It needs no server and no game files: the art is the synthetic demo art, unless the real pair is found
 // (`-chaosPair DIR`, the env CHAOS_PAIR_DIR, or things/ beside the executable) and holds the temple tileset (pair 60).
 // The CI run (unity-prototype.yml, Linux target) runs it under xvfb with software OpenGL.
@@ -164,6 +164,9 @@ namespace Chaos.Client
             var w3 = GameObject.Find("World3d");
             if (w3 != null) DestroyImmediate(w3);
             FrontArt(cam, tex);
+
+            // the front-art live view: the real map in the front-art look (the outdoor world when the real pair gave one, else the temple room)
+            FrontLiveShot(cam, tex, liveWorld ?? world, liveWorld != null ? liveAtlas : atlas, liveWorld != null ? "the outdoor world of the real pair" : source);
             yield break;
         }
 
@@ -218,6 +221,49 @@ namespace Chaos.Client
             finally
             {
                 if (scene != null) DestroyImmediate(scene.gameObject);
+            }
+        }
+
+        // the live view's shot: the world and atlas the outdoor demo made (null: the room of the demo)
+        static World liveWorld;
+        static SpriteAtlas liveAtlas;
+
+        /// <summary>The front-art live view (Unity/FrontLiveView.cs): front_live.png wide (the map's window and the diorama's edge) and
+        /// front_live_close.png on the player. It draws no creatures (FrontLiveCreatures does). Log lines start with "chaos front live:".
+        /// A failure is logged and does not stop the run: its shaders only compile in CI.</summary>
+        void FrontLiveShot(Camera cam, Texture2D tex, World world, SpriteAtlas atlas, string what)
+        {
+            GameObject go = null;
+            try
+            {
+                Debug.Log("chaos front live: building from " + what);
+                go = new GameObject("Front live");
+                var v = go.AddComponent<FrontLiveView>();
+                v.Interactive = false;
+                v.Init(world, atlas, cam, () => 400.0);
+                v.Refresh();
+                Debug.Log("chaos front live: " + v.Summary());
+                v.Refresh();
+                Debug.Log("chaos front live: a second Refresh with nothing changed rebuilt: " + (v.Rebuilds != 1));
+                v.Frame(1.7f);
+                v.Tick(0.4f);
+                v.Prewarm();
+                Debug.Log("chaos front live: rendering the wide view");
+                Save(cam, tex, "front_live.png");
+                Debug.Log("chaos front live: wrote front_live.png");
+                v.Frame(0.6f);
+                v.Tick(0.4f);
+                Debug.Log("chaos front live: rendering the close view");
+                Save(cam, tex, "front_live_close.png");
+                Debug.Log("chaos front live: wrote front_live_close.png");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("chaos front live: failed: " + e);
+            }
+            finally
+            {
+                if (go != null) DestroyImmediate(go);
             }
         }
 
@@ -314,6 +360,7 @@ namespace Chaos.Client
             hd.World = outdoor.World;
             hd.Atlas = atlas;
             hd.StraightArt = false;
+            liveWorld = outdoor.World; liveAtlas = atlas;   // the live view's shot draws the same meadow
             var go = new GameObject("World3d");
             var ruins = go.AddComponent<Hd2dRuins3d>();
             ruins.World = outdoor.World;

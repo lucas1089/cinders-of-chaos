@@ -404,6 +404,16 @@ namespace Chaos.Core
         public readonly List<FaMelee> Melees = new List<FaMelee>();
         public float GateX, GateZ;
 
+        // ---- the live view (Core/FrontLive.cs) uses the same grid as a window onto a map: ----
+        /// <summary>World position of cell (0, 0): cell (x, z) covers x + OriginX .. +1 and z + OriginZ .. +1 (0, 0 for the hand-made scene).</summary>
+        public int OriginX, OriginZ;
+        /// <summary>Cells with nothing to stand on (no tile, a hole into the dark): no top, the neighbours' sides fall away. Null: none.</summary>
+        public bool[,] Void;
+        /// <summary>A tint per cell on top of the texture (the map's own colours leaning through), null: none.</summary>
+        public float[,] TintR, TintG, TintB;
+        /// <summary>The far ground under the slab.</summary>
+        public FaTex OuterTex = FaTex.DeadGrass;
+
         public FrontArtLayout(int w, int d)
         {
             W = w; D = d;
@@ -412,11 +422,14 @@ namespace Chaos.Core
 
         public bool Inside(int x, int z) { return x >= 0 && z >= 0 && x < W && z < D; }
 
-        /// <summary>Ground height in units at a world point (0 outside the grid).</summary>
+        public bool IsVoid(int x, int z) { return Void != null && Void[x, z]; }
+
+        /// <summary>Ground height in units at a world point (0 outside the grid, the far ground's depth in a void cell).</summary>
         public float GroundY(float x, float z)
         {
-            int tx = (int)Math.Floor(x), tz = (int)Math.Floor(z);
-            return Inside(tx, tz) ? H[tx, tz] * Level : 0f;
+            int tx = (int)Math.Floor(x) - OriginX, tz = (int)Math.Floor(z) - OriginZ;
+            if (!Inside(tx, tz)) return 0f;
+            return IsVoid(tx, tz) ? OuterLevels * Level : H[tx, tz] * Level;
         }
 
         static float Rand(int x, int z, uint seed) { return FrontArtTex.Rand(x, z, seed); }
@@ -774,60 +787,64 @@ namespace Chaos.Core
         public static FaBucket[] Terrain(FrontArtLayout L)
         {
             var q = new Quads();
+            float ox = L.OriginX, oz = L.OriginZ;
             for (int z = 0; z < L.D; z++)
                 for (int x = 0; x < L.W; x++)
                 {
+                    if (L.IsVoid(x, z)) continue;
                     int h = L.H[x, z];
                     float y = h * FrontArtLayout.Level;
-                    float tint = 0.86f + 0.14f * FrontArtTex.Rand(x, z, 77);
+                    float ax = x + ox, az = z + oz;   // world position of the cell
+                    float tint = 0.86f + 0.14f * FrontArtTex.Rand((int)ax, (int)az, 77);
+                    float tr = tint * (L.TintR != null ? L.TintR[x, z] : 1f), tg = tint * (L.TintG != null ? L.TintG[x, z] : 1f), tb = tint * (L.TintB != null ? L.TintB[x, z] : 1f);
                     // top, with ambient occlusion at the corners from higher neighbours
-                    Func<int, int, bool> hi = (dx, dz) => L.Inside(x + dx, z + dz) && L.H[x + dx, z + dz] > h;
+                    Func<int, int, bool> hi = (dx, dz) => L.Inside(x + dx, z + dz) && !L.IsVoid(x + dx, z + dz) && L.H[x + dx, z + dz] > h;
                     float ao00 = AoValue(hi(-1, 0), hi(0, -1), hi(-1, -1)), ao10 = AoValue(hi(1, 0), hi(0, -1), hi(1, -1));
                     float ao11 = AoValue(hi(1, 0), hi(0, 1), hi(1, 1)), ao01 = AoValue(hi(-1, 0), hi(0, 1), hi(-1, 1));
-                    q.Quad(L.Top[x, z], new Vec3(x, y, z), new Vec3(x + 1, y, z), new Vec3(x + 1, y, z + 1), new Vec3(x, y, z + 1), new Vec3(0, 1, 0),
-                        new[] { x / Tile, (x + 1) / Tile, (x + 1) / Tile, x / Tile }, new[] { z / Tile, z / Tile, (z + 1) / Tile, (z + 1) / Tile },
-                        Col(ao00, ao10, ao11, ao01, tint, tint, tint));
+                    q.Quad(L.Top[x, z], new Vec3(ax, y, az), new Vec3(ax + 1, y, az), new Vec3(ax + 1, y, az + 1), new Vec3(ax, y, az + 1), new Vec3(0, 1, 0),
+                        new[] { ax / Tile, (ax + 1) / Tile, (ax + 1) / Tile, ax / Tile }, new[] { az / Tile, az / Tile, (az + 1) / Tile, (az + 1) / Tile },
+                        Col(ao00, ao10, ao11, ao01, tr, tg, tb));
                     // sides: west, east, south, north
                     int[] dxs = { -1, 1, 0, 0 }, dzs = { 0, 0, -1, 1 };
                     for (int k = 0; k < 4; k++)
                     {
                         int nx = x + dxs[k], nz = z + dzs[k];
                         bool inside = L.Inside(nx, nz);
-                        int nh = inside ? L.H[nx, nz] : FrontArtLayout.OuterLevels;
+                        int nh = inside ? (L.IsVoid(nx, nz) ? FrontArtLayout.OuterLevels : L.H[nx, nz]) : FrontArtLayout.OuterLevels;
                         if (nh >= h) continue;
                         float ny = nh * FrontArtLayout.Level;
                         Vec3 n = new Vec3(dxs[k], 0, dzs[k]);
                         // the face's corners: left and right as seen from the front
                         float x0, z0, x1, z1;
-                        if (k == 0) { x0 = x; z0 = z + 1; x1 = x; z1 = z; }
-                        else if (k == 1) { x0 = x + 1; z0 = z; x1 = x + 1; z1 = z + 1; }
-                        else if (k == 2) { x0 = x; z0 = z; x1 = x + 1; z1 = z; }
-                        else { x0 = x + 1; z0 = z + 1; x1 = x; z1 = z + 1; }
+                        if (k == 0) { x0 = ax; z0 = az + 1; x1 = ax; z1 = az; }
+                        else if (k == 1) { x0 = ax + 1; z0 = az; x1 = ax + 1; z1 = az + 1; }
+                        else if (k == 2) { x0 = ax; z0 = az; x1 = ax + 1; z1 = az; }
+                        else { x0 = ax + 1; z0 = az + 1; x1 = ax; z1 = az + 1; }
                         float ua = k < 2 ? z0 : x0, ub = k < 2 ? z1 : x1;
                         if (inside)
-                            SideQuad(q, L.Side[x, z], x0, z0, x1, z1, ny, y, ua / Tile, ub / Tile, n, tint, 0.62f);
+                            SideQuad(q, L.Side[x, z], x0, z0, x1, z1, ny, y, ua / Tile, ub / Tile, n, tr, tg, tb, 0.62f);
                         else
                         {
                             float cut = 0f;
-                            if (y > cut) SideQuad(q, L.Side[x, z], x0, z0, x1, z1, cut, y, ua / Tile, ub / Tile, n, tint, 0.85f);
-                            SideQuad(q, FaTex.MossDirt, x0, z0, x1, z1, ny, Math.Min(y, cut), ua / Tile, ub / Tile, n, tint, 0.45f);
+                            if (y > cut) SideQuad(q, L.Side[x, z], x0, z0, x1, z1, cut, y, ua / Tile, ub / Tile, n, tr, tg, tb, 0.85f);
+                            SideQuad(q, FaTex.MossDirt, x0, z0, x1, z1, ny, Math.Min(y, cut), ua / Tile, ub / Tile, n, tr, tg, tb, 0.45f);
                         }
                     }
                 }
             // the outer ground under the slab's edge, far and dark; the fog takes it
             float oy = FrontArtLayout.OuterLevels * FrontArtLayout.Level, e = 120f;
-            q.Quad(FaTex.DeadGrass, new Vec3(-e, oy, -e), new Vec3(L.W + e, oy, -e), new Vec3(L.W + e, oy, L.D + e), new Vec3(-e, oy, L.D + e), new Vec3(0, 1, 0),
-                new[] { -e / Tile, (L.W + e) / Tile, (L.W + e) / Tile, -e / Tile }, new[] { -e / Tile, -e / Tile, (L.D + e) / Tile, (L.D + e) / Tile },
+            q.Quad(L.OuterTex, new Vec3(ox - e, oy, oz - e), new Vec3(ox + L.W + e, oy, oz - e), new Vec3(ox + L.W + e, oy, oz + L.D + e), new Vec3(ox - e, oy, oz + L.D + e), new Vec3(0, 1, 0),
+                new[] { (ox - e) / Tile, (ox + L.W + e) / Tile, (ox + L.W + e) / Tile, (ox - e) / Tile }, new[] { (oz - e) / Tile, (oz - e) / Tile, (oz + L.D + e) / Tile, (oz + L.D + e) / Tile },
                 Col(0.5f, 0.5f, 0.5f, 0.5f, 0.8f, 0.85f, 1f));
             return q.B;
         }
 
-        static void SideQuad(Quads q, FaTex tex, float x0, float z0, float x1, float z1, float yb, float yt, float ua, float ub, Vec3 n, float tint, float bottomAo)
+        static void SideQuad(Quads q, FaTex tex, float x0, float z0, float x1, float z1, float yb, float yt, float ua, float ub, Vec3 n, float tr, float tg, float tb, float bottomAo)
         {
             if (yt - yb < 1e-4f) return;
             q.Quad(tex, new Vec3(x0, yb, z0), new Vec3(x1, yb, z1), new Vec3(x1, yt, z1), new Vec3(x0, yt, z0), n,
                 new[] { ua, ub, ub, ua }, new[] { yb / Tile, yb / Tile, yt / Tile, yt / Tile },
-                Col(bottomAo, bottomAo, 1f, 1f, tint, tint, tint));
+                Col(bottomAo, bottomAo, 1f, 1f, tr, tg, tb));
         }
 
         /// <summary>The boxes: top and four sides (the bottom rests on the ground and is dropped). One FaBucket per texture kind.</summary>
