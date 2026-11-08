@@ -5,7 +5,7 @@ This file lists every module of the main client (`client/overlay/modules/`, 169 
 It also lists the base protocol opcodes the Unity parser lacks and a plan in three phases.
 Edit the module rows by hand when a status changes. A module row changes in the same commit as its Unity window.
 
-Counts: 52 done, 51 partial, 51 missing, 15 not applicable.
+Counts: 56 done, 53 partial, 45 missing, 15 not applicable.
 By priority: 13 P0 core loop, 30 P1 needed to play, 83 P2 systems, 28 P3 polish, 15 N/A.
 
 ## Who Unity is on the server
@@ -30,7 +30,7 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 | Attack, follow, cancel, battle list | done | `BattleListWindow`. Fight modes and secure mode (0xA0) are sent at the login and on change (`FightWindow`, saved in PlayerPrefs). |
 | Spells, hotbar, cooldowns | partial | This track: spellbook, 12 hotbar slots with cooldown numbers. No item or rune slots, no icons. |
 | Chat | done | Tabs (Default, Server Log, channels, private), channel list, `*name* text`, `#y` and `#w`, unread counts, floating speech. Item links through game_chatlinks (Shift+click, coloured names, hover tooltip). No channel creation or invites. |
-| Containers, equipment, use, move | partial | Open, close, up, use, drag. No split stack dialog, no use-with, no look. |
+| Containers, equipment, use, move | partial | Open, close, up, use, drag, look, use with, item menu, badge slot 13. No split stack dialog. |
 | NPC trade, NPC talk | done | `NpcTalkWindow`, `NpcTradeWindow`, `Core/NpcTrade.cs`. 0x7A, 0x7B, 0x7C in, 0x79, 0x7A, 0x7B, 0x7C out, NPC speech, currency (opcode 113). Not tried on the live server. No buy-in-backpacks fee, no modal windows. |
 | Death | done | 0x28 shows a death window with the penalty; OK goes to the character list. The recap window (opcode 154) opens at the next login. |
 | Party | done | `PartyFramesWindow` (Ctrl+G, opcode 235), right-click menu on a player (invite, join, revoke, pass leadership, leave, shared experience: 0xA3 to 0xA8), invitation box with Accept and Decline. Not run against a live server. |
@@ -38,9 +38,9 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 | Skills, stats | done | `SkillsWindow` reads 0xA0 and 0xA1, the simple skill list (Melee, Ranged, Shielding, Fishing, Fist for the Monk line) and the combat stat rows (opcode 119). |
 | Text windows (books, signs), house windows | done | 0x96 in (the item with its attributes, text, writer, date), 0x89 write, 0x97 door list, 0x8D answer. `ChaosApp.Items.cs`, `TextWindows`. Not run on a live server. |
 | Modal windows | done | 0xFA in (title, message, buttons, choices, escape and enter button, priority), 0xF9 answer. Queue, Enter and Escape keys. `ModalWindows`. |
-| Look, use with, use on creature | missing | Needed for runes, tools, doors with keys. |
-| VIP list, quest log | missing | |
-| Player trade | missing | 0x7D, 0x7E, 0x7F. |
+| Look, use with, use on creature, rotate | done | Phase 5 track P (`Core/Play.cs`, `ChaosApp.Play.cs`): Shift + click looks (0x8C, creatures 0x8D), a right click uses a map item or a slot, a multi-use item starts the crosshair "Use with ..." (0x83 on an item, 0x84 on a creature), Rotate (0x85). Ctrl + right click opens the item menu with the Chaos hooks (Where to find, loot list, Pouch settings, Transmog, Lock). Map picking works in the classic and live views; the HD-2D scene picks creatures only. Not run on a live server. |
+| VIP list, quest log | done | `VipWindow` (0xD2, 0xD3 in, 0xDC, 0xDD, 0xDE out), `QuestLogWindow` (0xF0, 0xF1 both ways). No hotkey; the Windows menu lists them. Not run on a live server. |
+| Player trade | done | `TradeWindow`: 0x7D own offer, 0x7E counter offer, 0x7F close in; 0x7D request ("Trade with ..." in the item menu, then a click on a player), 0x7E look, 0x7F accept, 0x80 reject out. Not run on a live server. |
 
 
 ## The 169 client modules
@@ -99,8 +99,8 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_achievements` | 250 | `AchievementsWindow` (top menu Character, opcode 250, `Core/CollectAchievements.cs`): categories, All and Recently unlocked, the reward track with its strip, progress rows, the title chooser (auto, none, a title). Not here: the unlock toast of `game_chaosshots`. | done | P2 | M |
 | `game_arena` | 236 | Ranked PvP arena queue and HUD. Unity: `ArenaWindow` (mode cards with season line and rating, queue and leave, status, recent matches), `ArenaHudWindow` (both sides with health bars, countdown, result with rating and season change); secure mode off for the match and restored. Not run on a live server. | done | P2 | M |
 | `game_autoloot` | 216 | Auto Loot window (`AutoLootState`, `AutoLootWindow`): add by name or client id, remove, clear, slots; the item-menu add and remove are in the model, no item right-click menu in Unity. | done | P2 | M |
-| `game_autotarget` | none | Auto Target choice rules of the helper. | missing | P2 | M |
-| `game_badgeslot` | none | Badge slot 13 in the equipment. Unity equipment draws 10 slots. | missing | P2 | S |
+| `game_autotarget` | none | Auto Target class order and lock rule (`Core/PlayGuards.cs` AutoTargetCore, wired into the helper engine through `RankOf`): loot goblins, then bosses, then special tiers (monster bar, opcode 125), the nearest first, a lock on a worse class gives way. No reach rule: the Unity world has no pathfinder or line of sight, so the options "Priority targets" and "Only reachable" are not shown (priority is on once a session sets `RankOf`). | partial | P2 | M |
+| `game_badgeslot` | none | Badge slot 13 in the equipment window where the ammo slot was (`BadgeSlot`, `GameParser.Inventory` has 14 slots), empty tooltip "Badge", lock and use work from the item menu. | done | P2 | S |
 | `game_battleground` | 200 | Battleground queue, HUD and scoreboard. Unity: `BattlegroundWindow` (Queue, Season, Vendor tabs, roles, deserter confirm), `BattlegroundHudWindow` (score bars, wells, notices), `BattlegroundBoardWindow` (scoreboard and summary). No tier emblems. Not run on a live server. | done | P2 | L |
 | `game_battlepass` | 227 | `PassWindow` (top menu Adventure, opcode 227, `Core/CollectPass.cs`): the tier track with free and premium cells, claim and claim all, challenges and XP sources, packs (buy, upgrade, gift by name with the price round trip), the frame toggle. | done | P2 | M |
 | `game_bestiary` | 253 | `BestiaryWindow` (top menu Hunt, opcode 253, `Core/CollectBestiary.cs`): categories, search, known only, pages of 60, the entry (stage bar, elements, areas, loot, uniques, bonus, take task) and the Kill Tasks board (accept, abandon, reroll, limits, timer). Not here: the on-screen task tracker (the tracker rows are read, not drawn), the Kill Tasks and Task Tracker menu entries (the window has the tab). | partial | P2 | M |
@@ -121,7 +121,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_craftingtable` | 91 | `CraftTableWindow` (top menu Economy, opcode 91, `Core/CollectCraftTable.cs`): seven tabs, paged fetch (also the chunked reply), search, the craftable filter, materials, gold, skill, rarity odds, quantity, the craft with progress and the repeat pacing, the stay-near rule. The row tip is plain text (the rich item tooltip of opcode 91 is read, not drawn). | partial | P2 | M |
 | `game_craftskills` | none | The seven crafting skills of the 0xA1 packet (`GameParser.CraftSkills`), drawn with bars and tooltips in the Professions window (`CraftSkills` in `Core/CollectCraftTable.cs`). Not in the Skills window itself. | partial | P2 | S |
 | `game_daily` | 207 | `DailyWindow` (top menu Adventure, opcode 207, `Core/CollectDaily.cs`): seven reward cells, claim (the main client's day mapping, a bare number), the timer on the next cell, streak, best, grace charges, milestone, title and streak cosmetics. The server opens it at the login; closing sends `closed`. Not here: the wait for other login windows, closing after walking away. | partial | P2 | S |
-| `game_deadguard` | none | Removes a dead monster left at 0 percent after 3 seconds. | missing | P2 | S |
+| `game_deadguard` | none | `DeadGuard` (`Core/PlayGuards.cs`, swept once a second by `GameSession.PlayPoll`): a monster at 0 percent for 3 s is removed, the attack on it ends. The Lua module's duplicate and stale checks have nothing to find: the world keeps one creature per id. | done | P2 | S |
 | `game_descent` | 205 | Ember Descent trial HUD and boons. Unity: `DescentWindow` (info, forge, Descend, Weekly), `DescentHudWindow` (room, depth, embers, boons, curses, party, result), `DescentOfferWindow` (3 cards, curse box), `DescentShopWindow`. Boons as text, no icons. Not run on a live server. | done | P2 | L |
 | `game_dpsmeter` | 204 | DPS meter and combat log. | missing | P2 | M |
 | `game_dungeons` | 109 | Dungeon finder. Unity: `DungeonsWindow` (list with queue colours, difficulties, requirements, loot, challenges, solo and group boards, join and leave, queue timer), `DungeonCounterWindow` (kill counter, objectives, banner). No boss outfit, no item finder. | partial | P2 | M |
@@ -144,8 +144,8 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_itemfinder` | 155 | Item Finder (`ItemFinderState`, `ItemFinderWindow`): type-ahead search with resend, results with pages, the item with its sections and pages, history and Back; `WhereToFind(clientId)` is ready. No right-click Where to find entries, no Codex button. | partial | P2 | M |
 | `game_leaderboard` | 229 | Leaderboards (opcode 229): weekly boards pick list sorted by name (kept per character), class tab, season toggle and modes, champions, own rank, reset timer; the Records view (categories, boards, period, variant, size, class, Realm Firsts, My Records). LeaderboardWindow, Core/Leaderboard.cs. Exact numbers instead of short ones. | done | P2 | M |
 | `game_loadouts` | 206 | Loadouts (`LoadoutsState`, `LoadoutsWindow`): slots with tags, details, Save, Load, Rename, Delete (two clicks), icon, the switch hint and cooldown; a switch with a cast shows on the cast bar. The action bar profile per slot is only a callback (not wired to the hotkey bar). | partial | P2 | M |
-| `game_lookpreview` | none | Look preview panel. | missing | P2 | M |
-| `game_lootscreen` | none | Hides the loot line on the game screen. | missing | P2 | S |
+| `game_lookpreview` | none | `LookPreview` (`Core/PlayLook.cs`, rules of lookpreview_core.lua: base, compose, bundles, store look tables, outfit window buttons) and `LookPreviewWindow`: the character with the option, turn buttons, slow turn, plain figure, a line of what the look changes. Other windows call `ChaosApp.ShowLookPreview`; none does yet. Mount, wings, aura and shader are listed, not drawn; no effect stage, outline, footprints or card layout. | partial | P2 | M |
+| `game_lootscreen` | none | `LootScreen.OnScreen`: the loot line (kind 31) never goes to the on-screen text hook, the chat tabs still get it. Unity draws no status line over the map, so this holds already. | done | P2 | S |
 | `game_mapmarkers` | 153 | Party pins with colour slots and a glide, points of interest by category, reveals, quest goals and the gold ! / ? over NPC heads (`Core/WorldMarks.cs` MapMarkState, `ChaosApp.World.cs`), arrows with distance on the game view for members out of view, the settings window (Map Markers, saved in PlayerPrefs). Pins and points are coloured squares on the Minimap window (hover text), not the icon art. | partial | P2 | M |
 | `game_mapoverlay` | 245 | Explored map drawn see-through over the game view (opacity 20 to 100, zoom x1 to x16, centred or a corner box), marks of opcode 245, the control strip, Shift + wheel zoom, Ctrl + wheel opacity, Shift + middle drag pan, rift squares cleared. `MapOverlayState`, `MapOverlayWindow`. No hotkey (Tab), no Shift + arrow pan, no reopen after a death, marks are coloured squares. | partial | P2 | M |
 | `game_market` | 221 | Player market (opcode 221): Browse (search, category, rarity, currency, sort, level and price range, pages, hover tooltip, Buy with a confirmation per currency), Sell (backpack list, prices, duration, fee text), My Offers (cancel), History, Buy Orders (browse, own, post with item search, fill, cancel). MarketWindow, Core/Market.cs. Not ported: the Modifiers filter of Browse and of an order, the price history chart, drag an item onto the Sell slot. | partial | P2 | L |
@@ -167,7 +167,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_season` | 246 | `SeasonWindow` (top menu Adventure, opcode 246, `Core/CollectSeason.cs`): the overview (modifier, milestones, titles), the join dialog with modes and the Hardcore acknowledgement, the Hardcore heartbeat, and the Journey tab (chapters, objectives, rewards, done banner). | done | P2 | M |
 | `game_siege` | 233 | Guild siege HUD. Unity: `SiegeWindow` (sign-up, signed guilds, champions, rules, countdown) and `SiegeHudWindow` (teams by score, obelisk holder, you). Not run on a live server. | done | P2 | M |
 | `game_spellsupports` | 243 | Spell Supports (`SpellSupportsState`, `SpellSupportsWindow`): spells with pips, sockets (Socket, Remove, Shatter with a second click, Open), runes with Combine 3, the parts of a big answer joined. No drag and drop, no pips on the hotbar, no line in the spellbook (`BookLine` is ready). | partial | P2 | M |
-| `game_targetguard` | none | Which creatures Auto Target may pick. | missing | P2 | S |
+| `game_targetguard` | none | `TargetGuard` and `TargetLock` (`Core/PlayGuards.cs`): the helper's lock is dropped after 3 re-sends in 3 s (`HelperEngine.LockGuard`); the helper never targets summons (`Monsters()` takes type 1 only); `AttackCycle` skips own summons. The battle list has no attack next or previous in Unity. | done | P2 | S |
 | `game_tileoverlays` | 156 | Seconds over magic walls and the 15 timed fields (the world is scanned 4 times a second: a field on a tile already known starts its timer, one that came with its tile shows ~) and the server's labelled bars over positions (progress or countdown, stacked). Both map views. `TileOverlays`. | done | P2 | S |
 | `game_townportal` | 239 | Town Portal window (`TownPortalState`, `TownPortalWindow`): styles with route and lock reasons, Cast, Use this style, the cooldown; the cast shows on the cast bar of the HUD. No ground circle (fx 744), no store link. | done | P2 | S |
 | `game_transmog` | 212 | `TransmogWindow` (top menu Character, opcode 212, `Core/CollectTransmog.cs`): equipped slots, the looks of the item's kind (searched), fee and hint, apply, remove, and the Collection page (kinds, sets). Not here: the item right-click Transmog entry, the live look preview. | partial | P2 | M |
@@ -231,14 +231,10 @@ Server to client, not read by `GameParser`:
 |---|---|---|---|
 | 0x0B | GM actions | none | P3 |
 | 0x33, 0x42 other sizes | change of the aware range | a larger view than 18 x 14 (map zoom, game_chaosview) | P2 |
-| 0x7D, 0x7E, 0x7F | player trade offer, counter offer, close | trade between players | P2 |
 | 0xA8, 0xA9 | creature square and cancel variants | none known | P3 |
 | 0xAE | rule violation channel | none (Chaos has its own reports) | P3 |
 | 0xB6 | walk wait | smoother walking on slow ground | P2 |
 | 0xB7, 0xB8 | unjustified points, PvP situation | PvP skull display | P2 |
-| 0xD4 | VIP logout | VIP list | P2 |
-| 0xDE | edit VIP | VIP list | P3 |
-| 0xF0, 0xF1 | quest log, quest line | quest log | P2 |
 | 0xF6 to 0xF9 | base market | none (Chaos market uses opcode 221) | P3 |
 | 0xDF, 0xEE | coin and resource balance | base store, resources | P2 |
 
@@ -247,7 +243,8 @@ Inside packets Unity reads, it skips or ignores: 0x9F spell list body, 0xDD map 
 Client to server packets Unity sends: walk and turn, say, use, move, close, up, attack, follow, party (0xA3 invite, 0xA4 join, 0xA5 revoke, 0xA6 pass leadership, 0xA7 leave, 0xA8 shared experience), pong, logout, extended opcodes, NPC shop (0x79 to 0x7C), words to an NPC (0x96 type 12).
 Sent by the chat track: talk with type, channel or receiver (0x96), channels (0x97 to 0x9A), NPC channel close (0x9E), fight modes (0xA0). Read by it: 0xAA all 10.98 talk types (position for 1, 2, 3, 9, 10, 36, 37; channel id for 6, 7, 8, 14; none for 4, 13, 15), 0xAB to 0xB3, 0xB4 console kinds by tab, 0x28 with death type and penalty (the main client enables both features). 0xA7 is not a fight mode echo in 10.98 (it stays read and ignored). The NPC channel tab is a chat tab named NPCs; trade is the NPC track's.
 Items track: outfit window (0xC8 in, 0xD2, 0xD3, 0xD4 out), text windows (0x96, 0x97 in, 0x89, 0x8D out), modal windows (0xFA in, 0xF9 out).
-Not sent yet: use with (0x83), use on creature (0x84), look (0x8C), rotate (0x85), auto-walk (0x64), stop (0xBE), VIP (0xDC to 0xDE), quest log (0xF0, 0xF1), equip hotkey (0x77).
+Track P (phase 5) sends look (0x8C, 0x8D), use with (0x83), use on creature (0x84), rotate (0x85), trade (0x7D to 0x80), VIP (0xDC to 0xDE) and the quest log (0xF0, 0xF1), and reads 0x7D to 0x7F, 0xD2 to 0xD4, 0xF0, 0xF1 (the table above no longer lists them). 0xDE is a client message (edit VIP), not a server one.
+Not sent yet: auto-walk (0x64), stop (0xBE), equip hotkey (0x77).
 
 ## Progression track (phase 3, track K)
 

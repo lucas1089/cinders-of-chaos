@@ -823,3 +823,24 @@ windows: `Unity/Windows/WorldWindows.cs` and `ItemWindows.cs`. No window has a h
   Nothing here was run against a live server.
 - Tests: `Core.Tests/WorldTests.cs` drives every model with the messages of the server scripts and reads back what it sends (about 400 checks): the placement check of the hideout, field timers on a
   synthetic world, rain fades, plate batches and retries, order forms, crate cells, part joining, and that every text has a pt-BR entry.
+
+## Base gameplay actions (O433 phase 5, track P)
+
+What a player does with items and players. Pure models in `Core/Play.cs`, `PlayLists.cs`, `PlayGuards.cs`, `PlayLook.cs`, wired by `Core/GamePlay.cs`; the app side is `Unity/ChaosApp.Play.cs` and `Unity/Windows/PlayWindows.cs`.
+Wire layouts are TFS 1.4.2 `protocolgame.cpp` for 10.98 (the base tree is not in this repo, so check them on a live run).
+- Look: Shift + left click on the map (0x8C with the tile, the stack position and the item id; a creature goes as 0x8D) or on a slot of the equipment or a bag. While the chat line is being written Shift + click on a slot still links the item.
+  The answer is the text message the chat shows. Picking: `TilePick` (`LookIndex`, `UseIndex`, `TopCreature`) follows the base `getTopLookThing` and `getTopUseThing`.
+- Use: a right click uses a map item or a slot item (Classic Controls). A multi-use item (rope, shovel, runes) starts the crosshair "Use with ..." unless the server listed it as equipment and "Right-click equips items" is on
+  (opcode 188, `HudOptions.MultiUseIds`). The next left click is the target: a map item or a slot (0x83), a creature (0x84). A right click or Esc ends it. Rotate is 0x85.
+- Item menu: Ctrl + right click on a slot or a map item. Open or Use, Use with ..., Rotate, Look, Trade with ... (own items, another player in view), then the hooks of the Chaos modules: Where to find (`ItemFinderState`),
+  Add to / Remove from Loot List (`AutoLootState`), Pouch settings (`PouchesState.IsLootPouch`), Transmog (worn head, armor, hands, legs, feet), Lock item / Unlock item (`CraftingLockMenu`, `CraftingState.LockAt`, the server's lockAt).
+- Trade: "Trade with ..." in the menu, then a click on a player sends 0x7D. `TradeWindow` opens on the server's 0x7D and 0x7E, a click on an item looks at it (0x7E), Accept is 0x7F, Reject or the x is 0x80.
+  A changed counter offer clears your accept (TFS sends no accepted message).
+- VIP list (`VipWindow`): 0xD2 entries, 0xD3 status, 0xD4 for an old logout. Add by name (0xDC), edit description, icon and notify (0xDE), remove (0xDD), double click opens a private tab. Quest log (`QuestLogWindow`): 0xF0 list, a pick asks 0xF1.
+  Neither window has a hotkey (Ctrl keys are taken); the Windows menu lists them.
+- Badge slot: `Parser.Inventory` has 14 slots, the equipment window draws slot 13 where ammo was (the server gives slot 10 nothing since src-patch 0058).
+- Guards: `DeadGuard` (a monster at 0 percent for 3 s leaves the map), `TargetGuard` and `TargetLock` (the helper's locked target is dropped after 3 refused re-sends in 3 s), `AutoTargetCore` (goblins, bosses, special tiers first; `HelperEngine.RankOf` is set by the helper window from the name and the monster bar),
+  `LootScreen` (the loot line stays off the screen), `LookPreview` + `LookPreviewWindow` (`ChaosApp.ShowLookPreview(option)`).
+- Not done: map picking in the HD-2D scene (creatures only there), the reach rule of Auto Target (no pathfinder or line of sight in the Unity world) and its two options, the mount, wings, aura and shader drawn on the look preview and the effect stage, a call of `ShowLookPreview` from the Outfit, Cosmetics and Store windows,
+  split stack dialog on drag, the equip hotkey (0x77), "Browse field", the rules of the quest log tracker, a Rift Key name check for the lock entry (the client has no item names). Nothing here was run against a live server.
+- Tests: `Core.Tests/PlayTests.cs` (byte-level packets out and in, tile picking, menu entries, crosshair, trade, VIP, quest log, guards, Auto Target order and the engine with it, badge slot, look preview, texts).

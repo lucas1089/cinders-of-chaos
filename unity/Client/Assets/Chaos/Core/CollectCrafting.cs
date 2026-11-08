@@ -138,6 +138,8 @@ namespace Chaos.Core
         }
 
         public bool SalvageItem() { var i = Item; return i != null && Send("salvage", D("path", CF.G(i, "path"), "id", CF.G(i, "id"), "sig", CF.G(i, "sig"))); }
+        /// <summary>Locks or unlocks an item of the equipment or a bag from the item menu (lockAt: pos, cid, on).</summary>
+        public bool LockAt(Pos pos, int clientId, bool on) { var d = CraftingLockMenu.Request(pos, clientId, on); return d != null && Send("lockAt", d); }
         public bool ToggleLock() { var i = Item; return i != null && Send("lock", D("path", CF.G(i, "path"), "id", CF.G(i, "id"), "on", !CF.B(i, "locked"))); }
 
         public void SetScope(string bagPath, int maxRarity) { Send("salvageScope", D("bag", bagPath ?? "", "maxRarity", (double)maxRarity)); }
