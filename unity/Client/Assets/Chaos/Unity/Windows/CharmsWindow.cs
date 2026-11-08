@@ -53,7 +53,7 @@ namespace Chaos.Client
                 if (drag != null && drag.Kind == "placed" && drag.Id == CF.I(p, "id")) continue;
                 var rr = CharmsState.Rect(CF.I(p, "x"), CF.I(p, "y"), CF.I(p, "w"), CF.I(p, "h"));
                 var r = new Rect(gridRect.x + rr[0], gridRect.y + rr[1], rr[2], rr[3]);
-                Tile(app, r, p, true, CF.G(p, "active") is bool act && !act ? 0.4f : 1f);
+                Tile(app, r, p, true, CF.G(p, "active") is bool act && !act ? 0.4f : 1f, CF.I(p, "w"), CF.I(p, "h"));
                 if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(mouse) && drag == null) { drag = CharmsState.DragOf(p, "placed"); dragCharm = p; e.Use(); }
             }
 
@@ -71,7 +71,7 @@ namespace Chaos.Client
                 var r = new Rect(bagRect.x + 6 + (i % per) * 46, bagRect.y + 22 + (i / per) * 46, 44, 44);
                 if (r.yMax > bagRect.yMax) break;
                 if (drag != null && drag.Kind == "bag" && drag.Ref == CF.Str(CF.G(b, "ref"))) { ChaosApp.Fill(r, new Color(1f, 1f, 1f, 0.05f)); continue; }
-                Tile(app, new Rect(r.x, r.y, 44 * Mathf.Min(1, CF.I(b, "w")), 44), b, false, 1f);
+                Tile(app, new Rect(r.x, r.y, 44 * Mathf.Min(1, CF.I(b, "w")), 44), b, false, 1f, 1, 1);
                 if (CF.Str(CF.G(b, "ref")) == c.SelectedRef) ItemSlots.Frame(r, "#fff0c0");
                 if (r.Contains(mouse) && e.type == EventType.MouseDown && e.button == 0 && drag == null) { c.SelectedRef = CF.Str(CF.G(b, "ref")); drag = CharmsState.DragOf(b, "bag"); dragCharm = b; e.Use(); }
             }
@@ -107,7 +107,7 @@ namespace Chaos.Client
             {
                 float side2 = 44;
                 var gr = new Rect(mouse.x - side2 / 2, mouse.y - side2 / 2, side2 * Mathf.Max(1, drag.W), side2 * Mathf.Max(1, drag.H));
-                if (e.type == EventType.Repaint) Tile(app, gr, dragCharm, drag.Kind == "placed", 0.85f);
+                if (e.type == EventType.Repaint) Tile(app, gr, dragCharm, drag.Kind == "placed", 0.85f, drag.W, drag.H);
                 if (e.type == EventType.MouseUp && e.button == 0)
                 {
                     string target = gridRect.Contains(mouse) ? "grid" : bagRect.Contains(mouse) ? "bag" : null;
@@ -121,11 +121,15 @@ namespace Chaos.Client
             else if (e.type == EventType.Repaint) HoverTip(app, c, mouse, inner);
         }
 
-        void Tile(ChaosApp app, Rect r, Dictionary<string, object> ch, bool placed, float alpha)
+        void Tile(ChaosApp app, Rect r, Dictionary<string, object> ch, bool placed, float alpha, int cw, int chh)
         {
             var prev = GUI.color;
             GUI.color = new Color(1, 1, 1, alpha);
-            ChaosApp.Fill(r, new Color(0.11f, 0.09f, 0.12f, alpha));
+            // the slot picture of the tile's shape (the main client's charmslot_WxH), the plain dark square without it
+            string slotPath = CharmSlots.Path(cw, chh);
+            var slotTex = slotPath != null ? app.ArtTexture(slotPath) : null;
+            if (slotTex != null) GUI.DrawTexture(r, slotTex, ScaleMode.StretchToFill, true);
+            else ChaosApp.Fill(r, new Color(0.11f, 0.09f, 0.12f, alpha));
             string rarity = CF.T(ch, "rarity");
             Color frame = CU.Hex(CharmColor(ch), new Color(0.91f, 0.72f, 0.29f));
             ItemSlots.Frame(r, "#" + ColorUtility.ToHtmlStringRGB(frame));

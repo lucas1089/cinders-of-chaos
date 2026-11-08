@@ -41,7 +41,10 @@ namespace Chaos.Client
                 if (locked) GUI.color = new Color(1, 1, 1, UnlocksCore.LockedOpacity + 0.3f);
                 ChaosApp.Fill(r, on ? new Color(0.35f, 0.25f, 0.1f, 1f) : new Color(1f, 1f, 1f, 0.04f));
                 string sw = row.Color ?? row.Accent;
-                if (sw != null && CosmeticsLogic.ValidColor(sw)) ChaosApp.Fill(new Rect(r.x + 4, r.y + 6, 30, 30), CU.Hex(sw, Color.white));
+                string iconPath = CosmeticIcons.Path(row);
+                var icon = iconPath != null ? app.ArtTexture(iconPath) : null;
+                if (icon != null) GUI.DrawTexture(new Rect(r.x + 4, r.y + 6, 30, 30), icon, ScaleMode.ScaleToFit, true);   // the effect icon (game_cosmetics images/fx), a footprint's print
+                else if (sw != null && CosmeticsLogic.ValidColor(sw)) ChaosApp.Fill(new Rect(r.x + 4, r.y + 6, 30, 30), CU.Hex(sw, Color.white));
                 else if (row.Item > 0) app.DrawItem(new Rect(r.x + 3, r.y + 5, 32, 32), (ushort)row.Item, 1);
                 GUI.Label(new Rect(r.x + 40, r.y + 2, r.width - 44, 20), new GUIContent(row.Name + (row.Selected ? "  *" : ""), UnlocksCore.Tooltip(row) ?? ""), app.SmallStyle);
                 CU.Label(app, new Rect(r.x + 40, r.y + 21, r.width - 44, 20), CosmeticsLogic.SubText(row), "#8c8070", false);
@@ -85,6 +88,11 @@ namespace Chaos.Client
                     x += 104;
                 }
             }
+            else if (CosmeticIcons.Path(r) != null && app.ArtTexture(CosmeticIcons.Path(r)) is Texture2D big)
+            {
+                if (r.Kind == "footprint") { GUI.DrawTexture(new Rect(sample.center.x - 74, sample.y + 8, 40, 40), big, ScaleMode.ScaleToFit, true); GUI.DrawTexture(new Rect(sample.center.x + 34, sample.y + 8, 40, 40), big, ScaleMode.ScaleToFit, true); }
+                else GUI.DrawTexture(new Rect(sample.center.x - 24, sample.y + 4, 48, 48), big, ScaleMode.ScaleToFit, true);
+            }
             else if (r.Item > 0) app.DrawItem(new Rect(sample.center.x - 16, sample.y + 12, 32, 32), (ushort)r.Item, 1);
             else GUI.Label(new Rect(sample.x + 6, sample.y + 6, sample.width - 12, 46), Loc.T("Everyone near you sees the chosen effects."), CU.Wrap(app));
             string how = r.How ?? "";
@@ -97,10 +105,13 @@ namespace Chaos.Client
             if (!r.Collection)
             {
                 if (CU.Button(new Rect(d.x, d.yMax - 32, 100, 28), Loc.T("Use"), CosmeticsLogic.CanUse(r) && UnlocksCore.CanUse(r))) c.Select(r);
-                if ((r.Preview || CosmeticsLogic.Drawn(r.Kind)) && CU.Button(new Rect(d.x + 106, d.yMax - 32, 100, 28), Loc.T("Preview"), !CosmeticsLogic.Drawn(r.Kind) || !string.IsNullOrEmpty(r.Art)))
+                // a spell skin or kill effect with its steps plays on the look preview's effect stage (phase 9, track E; cosmetics.lua previewOption)
+                var playOpt = PreviewStage.FromPlayRow(r.Kind, r.Play);
+                if ((r.Preview || CosmeticsLogic.Drawn(r.Kind) || playOpt != null) && CU.Button(new Rect(d.x + 106, d.yMax - 32, 100, 28), Loc.T("Preview"), !CosmeticsLogic.Drawn(r.Kind) || !string.IsNullOrEmpty(r.Art)))
                 {
-                    // an outline or a footprint is drawn on the character in the shared look preview; the others the server plays round you
-                    if (CosmeticsLogic.Drawn(r.Kind)) app.ShowLookPreview(new PreviewOption { Kind = r.Kind, Art = r.Art, Pulse = r.Pulse > 0 });
+                    // an outline or a footprint is drawn on the character in the shared look preview, and so are the effects of a skin; the others the server plays round you
+                    if (playOpt != null) app.ShowLookPreview(playOpt);
+                    else if (CosmeticsLogic.Drawn(r.Kind)) app.ShowLookPreview(new PreviewOption { Kind = r.Kind, Art = r.Art, Pulse = r.Pulse > 0 });
                     else c.PreviewRow(r);
                 }
             }

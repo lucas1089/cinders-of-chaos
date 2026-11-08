@@ -259,8 +259,8 @@ namespace Chaos.Core
             {
                 int h = (int)2166136261u;
                 h = (h ^ c.X) * 16777619; h = (h ^ c.Y) * 16777619; h = (h ^ c.Z) * 16777619;
-                for (int y = c.Y - World.RangeTop; y <= c.Y + World.RangeBottom; y++)
-                    for (int x = c.X - World.RangeLeft; x <= c.X + World.RangeRight; x++)
+                for (int y = c.Y - w.Range.Top; y <= c.Y + w.Range.Bottom; y++)
+                    for (int x = c.X - w.Range.Left; x <= c.X + w.Range.Right; x++)
                     {
                         if (!w.Tiles.TryGetValue(new Pos(x, y, c.Z), out var tile)) continue;
                         h = (h ^ (x * 73856093 ^ y * 19349663)) * 16777619;

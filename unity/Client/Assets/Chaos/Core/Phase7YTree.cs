@@ -21,7 +21,7 @@ namespace Chaos.Core
         public readonly List<ParagonStat> Stats = new List<ParagonStat>();
     }
 
-    public sealed class ParagonPanel
+    public sealed partial class ParagonPanel
     {
         readonly ExtOpcodes ext;
         public bool Known, Unlocked;
@@ -53,6 +53,7 @@ namespace Chaos.Core
                 Categories.Add(cat);
             }
             Pending.Clear();
+            ParseMastery(data);   // phase 8 track A: the mastery rows and the exchange (Core/Phase8ATree.cs)
             Changed();
         }
 

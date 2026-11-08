@@ -12,9 +12,9 @@ using UnityEngine;
 
 namespace Chaos.Client
 {
-    public sealed class PassiveTreeWindow : GameWindow
+    public sealed partial class PassiveTreeWindow : GameWindow
     {
-        enum Panel { None, Mastery, Refund, Reset, Box, Build, Totals, Paragon }
+        enum Panel { None, Mastery, Refund, Reset, Box, Build, Totals, Paragon, Trials, AutoBuild, ParagonMastery }
 
         static TreeData cache;
         static Texture2D disc, ring;
@@ -29,7 +29,7 @@ namespace Chaos.Client
         string search = "", code = "";
         List<int> matches = new List<int>();
         int matchIndex;
-        int builtVersion = -1;
+        int builtVersion = -1, builtArcsFor = -1;
         string builtSearch = null;
         HashSet<int> reachable = new HashSet<int>();
         List<int[]> links = new List<int[]>();
@@ -58,6 +58,8 @@ namespace Chaos.Client
                 EnsureData(tree);
                 tree.Open();
             }
+            if (!Open && tree.Auto.Opened) { tree.Auto.Close(); if (panel == Panel.AutoBuild) panel = Panel.None; }
+            if (Open && tree.Auto.Opened) tree.Auto.Tick(app.Session.Now);
             wasOpen = Open;
             if (Open && tree.TotalsStale && Time.unscaledTime - lastTotals > 0.6f) { lastTotals = Time.unscaledTime; tree.RequestTotals(); }
             // a message from the server (an error, a refusal) shows in a box over the tree
@@ -185,6 +187,7 @@ namespace Chaos.Client
                             && !((a.IsStart && a.Line.Length == 0) || (b.IsStart && b.Line.Length == 0)))
                             links.Add(new[] { kv.Key, o });
             }
+            if (tree.Ready && builtArcsFor != tree.Version) { builtArcsFor = tree.Version; BuildArcs(tree); }
             if (builtSearch != search)
             {
                 builtSearch = search;
@@ -234,13 +237,18 @@ namespace Chaos.Client
                 GUI.Label(new Rect(r.x + 336, r.y, r.width - 336 - 124, 20), tree.Viewing.Banner, vs);
                 if (GUI.Button(new Rect(r.xMax - 120, r.y, 118, 22), Loc.T("Back to my tree"))) { tree.CloseOther(); fitted = false; }
             }
-            else if (GUI.Button(new Rect(r.xMax - 72, r.y, 70, 22), Loc.T("Paragon"))) { panel = Panel.Paragon; tree.Paragon.Request(); }
+            else
+            {
+                if (GUI.Button(new Rect(r.xMax - 72, r.y, 70, 22), Loc.T("Paragon"))) { panel = Panel.Paragon; tree.Paragon.Request(); }
+                if (GUI.Button(new Rect(r.xMax - 72 - 66, r.y, 64, 22), Loc.T("Trials"))) { panel = Panel.Trials; tree.Trials.Request(); }
+                if (GUI.Button(new Rect(r.xMax - 72 - 66 - 92, r.y, 90, 22), Loc.T("Auto build"))) { panel = Panel.AutoBuild; tree.Auto.Open(); }
+            }
             bool fits = true;
             string plan = viewing ? "" : tree.CostText(out fits);
             if (tree.PlanMessage.Length > 0 && tree.PlanList.Count == 0) { plan = tree.PlanMessage; fits = tree.PlanOk; }
             var ps = new GUIStyle(app.SmallStyle);
             ps.normal.textColor = fits ? new Color(0.85f, 0.81f, 0.75f) : new Color(0.9f, 0.4f, 0.35f);
-            if (!viewing) GUI.Label(new Rect(r.x + 336, r.y, r.width - 340 - 76, 20), plan, ps);
+            if (!viewing) GUI.Label(new Rect(r.x + 336, r.y, r.width - 340 - 76 - 160, 20), plan, ps);
             // row 2: buttons and search
             float x = r.x + 2, by = r.y + 24;
             GUI.enabled = !viewing && tree.PlanList.Count > 0 && tree.PreviewNodes == null;
@@ -352,7 +360,7 @@ namespace Chaos.Client
                     Color c = oa && ob ? new Color(0.9f, 0.72f, 0.3f, 0.95f) : pla && plb ? new Color(0.35f, 0.85f, 0.4f, 0.95f)
                         : pre != null && (pre.Contains(l[0]) || a.IsStart) && (pre.Contains(l[1]) || b.IsStart) ? new Color(0.3f, 0.8f, 0.9f, 0.9f)
                         : oa || ob ? new Color(0.55f, 0.45f, 0.25f, 0.8f) : new Color(0.3f, 0.28f, 0.3f, 0.7f);
-                    Line(pa, pb, Mathf.Max(1.2f, 4f * zoom), c);
+                    DrawLink(tree, l[0], l[1], pa, pb, vp, Mathf.Max(1.2f, 4f * zoom), c);   // an arc between two nodes of one orbit
                 }
                 // nodes
                 foreach (var n in data.Ordered)
@@ -368,12 +376,20 @@ namespace Chaos.Client
                     Color baseColor = TypeColor(n);
                     Color fill = saved ? Color.Lerp(baseColor, new Color(1f, 0.85f, 0.35f), 0.7f) : planned ? new Color(0.35f, 0.9f, 0.4f) : shownByPreview ? new Color(0.35f, 0.85f, 0.95f) : baseColor * 0.55f;
                     fill.a = locked && !saved ? 0.35f : 1f;
+                    // the icon and the frame of the node kind (phase 8 track A); the disc stays when the sheets are missing or the view is far
+                    bool lit = saved || planned || shownByPreview;
+                    var frameTint = planned ? new Color(0.65f, 1f, 0.65f) : shownByPreview ? new Color(0.5f, 0.85f, 1f) : Color.white;
+                    bool art = NodeArt(app, tree, n, p, lit, reachable.Contains(n.Id), frameTint, locked && !saved ? 0.45f : 1f);
+                    if (art) rad = Mathf.Max(rad, (float)TreeNodeArt.Of(n.Type).Size * zoom / 2f);
                     var r = new Rect(p.x - rad, p.y - rad, rad * 2, rad * 2);
                     var old = GUI.color;
-                    GUI.color = new Color(0f, 0f, 0f, fill.a);
-                    GUI.DrawTexture(new Rect(r.x - 1.5f, r.y - 1.5f, r.width + 3, r.height + 3), Disc(true));
-                    GUI.color = fill;
-                    GUI.DrawTexture(r, Disc(true));
+                    if (!art)
+                    {
+                        GUI.color = new Color(0f, 0f, 0f, fill.a);
+                        GUI.DrawTexture(new Rect(r.x - 1.5f, r.y - 1.5f, r.width + 3, r.height + 3), Disc(true));
+                        GUI.color = fill;
+                        GUI.DrawTexture(r, Disc(true));
+                    }
                     if (reachable.Contains(n.Id) && tree.PreviewNodes == null)
                     {
                         GUI.color = new Color(1f, 1f, 1f, 0.75f);
@@ -516,8 +532,8 @@ namespace Chaos.Client
         void DrawPanel(ChaosApp app, PassiveTree tree, Rect vp)
         {
             ChaosApp.Fill(vp, new Color(0f, 0f, 0f, 0.55f));
-            float w = Mathf.Min(panel == Panel.Totals ? 640 : panel == Panel.Paragon ? 560 : 460, vp.width - 24);
-            float h = panel == Panel.Paragon ? vp.height - 12 : panel == Panel.Totals ? Mathf.Min(vp.height - 12, 90 + 20 * (tree.Totals?.Lines.Count ?? 1)) : panel == Panel.Build ? 330 : panel == Panel.Mastery ? 130 + 52 * (tree.Data.Nodes.TryGetValue(panelNode, out var mn) ? mn.Effects.Length : 0) : 170;
+            float w = Mathf.Min(panel == Panel.Totals ? 640 : panel == Panel.Paragon || panel == Panel.ParagonMastery ? 560 : panel == Panel.Trials ? 700 : panel == Panel.AutoBuild ? 520 : 460, vp.width - 24);
+            float h = panel == Panel.Paragon || panel == Panel.Trials || panel == Panel.ParagonMastery ? vp.height - 12 : panel == Panel.AutoBuild ? 400 : panel == Panel.Totals ? Mathf.Min(vp.height - 12, 90 + 20 * (tree.Totals?.Lines.Count ?? 1)) : panel == Panel.Build ? 330 : panel == Panel.Mastery ? 130 + 52 * (tree.Data.Nodes.TryGetValue(panelNode, out var mn) ? mn.Effects.Length : 0) : 170;
             h = Mathf.Min(h, vp.height - 12);
             var box = new Rect(vp.x + (vp.width - w) / 2, vp.y + (vp.height - h) / 2, w, h);
             ChaosApp.Fill(box, new Color(0.07f, 0.05f, 0.08f, 0.99f));
@@ -532,6 +548,9 @@ namespace Chaos.Client
                 case Panel.Build: BuildPanel(app, tree, box, inner); break;
                 case Panel.Totals: TotalsPanel(app, tree, box, inner); break;
                 case Panel.Paragon: ParagonPanelView(app, tree, box, inner); break;
+                case Panel.Trials: TrialsPanel(app, tree, box, inner); break;
+                case Panel.AutoBuild: AutoBuildPanel(app, tree, box, inner); break;
+                case Panel.ParagonMastery: ParagonMasteryPanel(app, tree, box, inner); break;
             }
         }
 
@@ -593,6 +612,7 @@ namespace Chaos.Client
                 GUI.enabled = true;
                 if (!string.IsNullOrEmpty(GUI.tooltip)) { var ts = new GUIStyle(tip); GUI.Label(new Rect(inner.x + 190, by - 2, inner.width - 290, 28), GUI.tooltip, ts); }
             }
+            if (pg.Known && pg.Unlocked && pg.HasMastery && GUI.Button(new Rect(inner.xMax - 90 - 104, inner.yMax - 28, 100, 24), Loc.T("Masteries"))) { panel = Panel.ParagonMastery; paragonReset = false; pg.Request(); }
             if (GUI.Button(new Rect(inner.xMax - 90, inner.yMax - 28, 90, 24), Loc.T("Close"))) { panel = Panel.None; paragonReset = false; }
             if (paragonReset)
             {

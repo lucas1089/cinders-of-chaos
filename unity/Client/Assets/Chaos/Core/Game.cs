@@ -847,7 +847,9 @@ namespace Chaos.Core
         /// <summary>Container slot position (0xFFFF, 0x40 | cid, slot).</summary>
         public static Pos ContainerPos(int cid, int slot) => new Pos(0xFFFF, 0x40 | cid, slot);
 
-        public void UseItem(Pos p, ushort id, byte stackPos, byte index = 0) => conn?.Send(Protocol.UseItemPacket(p, id, stackPos, index));
+        /// <summary>An item was used at a position (phase 8 B: the open backpacks are remembered by where their item sits, ContainerMemory).</summary>
+        public Action<Pos, ushort> ItemUsed = delegate { };
+        public void UseItem(Pos p, ushort id, byte stackPos, byte index = 0) { ItemUsed(p, id); conn?.Send(Protocol.UseItemPacket(p, id, stackPos, index)); }
         public void CloseContainer(byte cid) => conn?.Send(Protocol.CloseContainerPacket(cid));
         public void UpContainer(byte cid) => conn?.Send(Protocol.UpContainerPacket(cid));
         public void MoveItem(Pos from, ushort id, byte stackPos, Pos to, byte count) => conn?.Send(Protocol.MoveItemPacket(from, id, stackPos, to, count));

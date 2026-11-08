@@ -126,12 +126,41 @@ namespace Chaos.Client
             }
         }
 
+        void DrawTipCardBox(object tip, List<TipLine> extra, string note, float w, float h)
+        {
+            var card = TipCard.Build(tip, session.Parser.Level);
+            int count = Json.Int(tip, "count", 1);
+            if (count > 1) card.Title += " x" + count;
+            var notes = new List<TipLine>();
+            if (note != null) notes.Add(new TipLine { Text = note, Color = TipLines.Text, Sep = true });
+            if (extra != null) notes.AddRange(extra);
+            const float Width = 320f;
+            var boxes = PlanCard(card, Width, notes, out float height);
+            Vector2 m = MouseUi();
+            var r = new Rect(m.x + 16, m.y + 16, Width, height);
+            if (r.xMax > w - 4) r.x = Mathf.Max(4, m.x - 16 - Width);
+            if (r.yMax > h - 4) r.y = Mathf.Max(4, h - 4 - height);
+            var side = new List<KeyValuePair<object, List<TipLine>>>();
+            foreach (object o in compareSide)
+                if (o != null) side.Add(new KeyValuePair<object, List<TipLine>>(o, TipLines.Lines(o, session.Parser.Level)));
+            compareSide = new List<object>();
+            var rects = TooltipPlates.Place(r.x, r.y, Width, height, w, h, side.Count, i => PlateHeight(side[i].Key, side[i].Value));
+            DrawCard(r, card, boxes);
+            for (int i = 0; i < side.Count; i++) DrawPlate(new Rect(rects[i].x, rects[i].y, rects[i].width, rects[i].height), side[i].Key, side[i].Value);
+        }
+
         void DrawTipBox(object tip, List<TipLine> extra, string note, float w, float h)
         {
             if (tipStyle == null)
             {
                 tipStyle = new GUIStyle(small) { fontSize = 12, richText = true, wordWrap = false, clipping = TextClipping.Clip };
                 tipTitleStyle = new GUIStyle(small) { fontSize = 15, fontStyle = FontStyle.Bold, richText = true, wordWrap = false };
+            }
+            if (tip != null)
+            {
+                // phase 8 track A: the card layout of game_itemtooltip (head, stat tiles, modifier groups, chips, foot, rarity glow)
+                DrawTipCardBox(tip, extra, note, w, h);
+                return;
             }
             var lines = tip != null ? TipLines.Lines(tip, session.Parser.Level) : new List<TipLine>();
             if (note != null) lines.Add(new TipLine { Text = note, Color = TipLines.Text });

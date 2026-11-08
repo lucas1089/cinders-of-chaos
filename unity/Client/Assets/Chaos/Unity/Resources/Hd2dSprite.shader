@@ -23,6 +23,7 @@ Shader "Chaos/Hd2dSprite"
         CGPROGRAM
         #pragma target 3.0
         #pragma surface surf Hd2d alphatest:_Cutoff addshadow fullforwardshadows
+        #include "Assets/Chaos/Resources/Shaders/ChaosFx.cginc"
         sampler2D _MainTex;
         float4 _MainTex_TexelSize;
         half _Bump, _Rim, _FootDark, _FootHeight;
@@ -38,7 +39,8 @@ Shader "Chaos/Hd2dSprite"
             half4 Edge;   // xy: outward edge direction (screen plane), z: rim mask, w: 0
         };
 
-        struct Input { float2 uv_MainTex; float3 worldPos; float3 worldNormal; };
+        // uv2_MainTex: the second UV channel, x the mode of Core/Phase8CFx.cs FxMode (0 = plain), y its strength; color: the family or silhouette colour of an effect quad
+        struct Input { float2 uv_MainTex; float2 uv2_MainTex; float4 color : COLOR; float3 worldPos; float3 worldNormal; };
 
         half Lum (fixed3 c) { return dot(c, fixed3(0.3, 0.59, 0.11)); }
 
@@ -59,6 +61,28 @@ Shader "Chaos/Hd2dSprite"
             fixed4 cd = tex2D(_MainTex, clamp(uv + float2(0, -tx.y), lo, hi));
             fixed4 cu = tex2D(_MainTex, clamp(uv + float2(0,  tx.y), lo, hi));
 
+            // phase 8, track C: an outfit shader, hit flash, outline silhouette or living ground on this quad (mode 0 leaves the sprite alone)
+            half3 fxEmit = 0;
+            int fxm = (int)(IN.uv2_MainTex.x + 0.5);
+            if (fxm != 0)
+            {
+                float2 cellUv = saturate((uv - cellMin) / cellSize);
+                if (fxm == FX_WATER || fxm == FX_LAVA)
+                {
+                    float2 norm = cellUv * 2.0 - 1.0;
+                    c = tex2D(_MainTex, clamp(uv + FxLiquidShift(fxm, norm, tx, _Time.y), lo, hi));
+                    c.rgb = saturate(c.rgb * FxLiquidGain(fxm, norm, _Time.y));
+                }
+                else
+                {
+                    fixed3 c0 = c.rgb;
+                    float rimv = 1.0 - min(min(cl.a, cr.a), min(cd.a, cu.a));
+                    float4 fxc = FxApply(IN.uv2_MainTex.x, IN.uv2_MainTex.y, c, uv / tx, cellUv, rimv, IN.color, _Time.y);
+                    c = fixed4(fxc);
+                    fxEmit = (fxm == FX_SOLID || fxm == FX_ITEMGLOW) ? c.rgb : max(0, c.rgb - c0) * 0.8;
+                }
+            }
+
             // upright quads face the camera (normal y < 0.8); floor quads face up and stay flat
             float upright = 1.0 - smoothstep(0.8, 0.9, abs(IN.worldNormal.y));
 
@@ -73,6 +97,8 @@ Shader "Chaos/Hd2dSprite"
             o.Alpha = c.a;
             half lum = max(c.r, max(c.g, c.b));
             o.Emission = c.rgb * saturate((lum - 0.8) * 5.0);
+            o.Emission += fxEmit;
+            if (fxm == FX_SOLID || fxm == FX_ITEMGLOW) o.Albedo = 0;
 
             // ground bounce / occlusion: darker near the floor (world height), not for floor quads
             float foot = smoothstep(0.0, _FootHeight, IN.worldPos.y);

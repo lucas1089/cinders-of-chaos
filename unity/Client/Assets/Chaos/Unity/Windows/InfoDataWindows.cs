@@ -10,6 +10,7 @@ namespace Chaos.Client
     // ============================================================================================================================ DPS meter
     public sealed class DpsMeterWindow : GameWindow
     {
+        public override bool Resizable => false;   // sets its own size (phase 9, track E)
         GameSession forSession;
         bool wasOpen, details, confirmReset;
         Vector2 scroll;

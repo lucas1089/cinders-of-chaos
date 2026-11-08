@@ -420,6 +420,8 @@ namespace Chaos.Client
         void HandleWalk()
         {
             if (chatFocused || TextEditing) return;   // typing: the letters go to the chat line
+            if (OverlayKeys.Pans(Utils != null && Utils.Overlay.Shown, Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift), false)
+                && (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))) return;   // Shift + arrows pan the map overlay
             Dir? d = null;
             bool up = Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.Keypad8);
             bool down = Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.Keypad2);
@@ -478,6 +480,7 @@ namespace Chaos.Client
                 case Screen.Characters: CharactersGui(w, h); break;
                 case Screen.Game: GameGui(w, h, scale); break;
             }
+            if (LoginMenu.Visible(screen == Screen.Game)) LoginBarGui(w, h);   // ChaosApp.Phase9E.cs: the System drop-down before the login
             StreamerBadgeGui(w, h);   // ChaosApp.Phase7Q.cs: the STREAMER badge while streamer mode is on
         }
 
@@ -542,7 +545,7 @@ namespace Chaos.Client
                     if (CommunityHidesName(c)) continue;   // streamer / cinema mode (ChaosApp.Community.cs)
                     x -= map.x;
                     y -= map.y;
-                    y -= InfoLift.Scaled(c, tile);   // names over tall looks (Core/InfoLift.cs)
+                    y -= InfoLift.ForView(c, tile, HdLabelsOn);   // names over tall looks in the classic view (Core/InfoLift.cs); the 3D views place them at the figure's top
                     var col = c.Type == 1 ? new Color(1f, 0.6f, 0.6f) : c.Type == 2 ? new Color(0.6f, 0.9f, 1f) : new Color(0.6f, 1f, 0.6f);
                     var hp = c.HealthPercent > 50 ? new Color(0.2f, 0.85f, 0.2f) : c.HealthPercent > 20 ? new Color(0.95f, 0.8f, 0.1f) : new Color(0.9f, 0.15f, 0.1f);
                     Rect nr = new Rect(x - 100, y - barH - 22, 200, 18);
@@ -564,6 +567,7 @@ namespace Chaos.Client
                     Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
                 }
                 NpcBubbleGui(map, scale);   // ChaosApp.Phase6V.cs: the speech bubble over the NPC we talk to
+                DrawItemRings(map, scale);   // ChaosApp.Phase8A.cs: rarity rings under items in the live and HD-2D views
                 DrawGroundLabels(map, scale);
                 DrawWorldOverlays(map, scale);   // ChaosApp.World.cs: tile overlays, NPC marks, map overlay, weather
                 DrawVisualOverlays(map, scale);  // ChaosApp.Visual.cs: ground rings, decals, auras, beams, flashes, wings

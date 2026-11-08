@@ -50,6 +50,10 @@ namespace Chaos.Core
         public int[] Links = new int[0];
         public TreeEffect[] Effects = new TreeEffect[0];
         public Dictionary<string, TreeView> Variants = new Dictionary<string, TreeView>();
+        /// <summary>Phase 8 track A: the icon key (PassiveTreeIcons.json), the icon keys of the class variants, the group and the orbit (0: none) of the node.</summary>
+        public string Icon = "";
+        public Dictionary<string, string> VariantIcons = new Dictionary<string, string>();
+        public int Group, Orbit;
 
         public bool IsStart => Type == 's';
         public bool IsMastery => Type == 'M';
@@ -68,6 +72,8 @@ namespace Chaos.Core
         public readonly Dictionary<int, TreeNode> Nodes = new Dictionary<int, TreeNode>();
         public readonly List<TreeNode> Ordered = new List<TreeNode>();
         public float MinX, MinY, MaxX, MaxY;
+        /// <summary>The centre of every group (the curved links go round it).</summary>
+        public readonly Dictionary<int, float[]> Groups = new Dictionary<int, float[]>();
 
         public static TreeData Parse(string json)
         {
@@ -83,6 +89,9 @@ namespace Chaos.Core
                 };
                 string t = Json.Text(o, "t", "c");
                 if (t.Length > 0) n.Type = t[0];
+                n.Icon = Json.Text(o, "k"); n.Group = Json.Int(o, "g"); n.Orbit = Json.Int(o, "b");
+                if (Json.Get(o, "ik") is Dictionary<string, object> iks)
+                    foreach (var kv in iks) if (kv.Value is string ics) n.VariantIcons[kv.Key] = ics;
                 n.Stats = Strings(Json.List(o, "s"));
                 n.Classes = Strings(Json.List(o, "c"));
                 var links = new List<int>();
@@ -103,6 +112,10 @@ namespace Chaos.Core
                     data.MinY = Math.Min(data.MinY, n.Y); data.MaxY = Math.Max(data.MaxY, n.Y);
                 }
             }
+            if (Json.Get(root, "groups") is Dictionary<string, object> gs)
+                foreach (var kv in gs)
+                    if (int.TryParse(kv.Key, NumberStyles.None, CultureInfo.InvariantCulture, out int gid) && kv.Value is List<object> xy && xy.Count == 2 && xy[0] is double gx && xy[1] is double gy)
+                        data.Groups[gid] = new[] { (float)gx, (float)gy };
             return data;
         }
 
@@ -137,6 +150,9 @@ namespace Chaos.Core
         public int Preset;
         /// <summary>The Paragon panel (paragonState, paragonApply, paragonReset; paragon.lua).</summary>
         public readonly ParagonPanel Paragon;
+        /// <summary>Phase 8 track A: the vocation trials (trialState, trialChoose, trialEnter) and the auto build (autobuildList, autobuildPreview, autobuildApply).</summary>
+        public readonly TreeTrials Trials;
+        public readonly AutoBuild Auto;
         public readonly List<string> PresetNames = new List<string>();
         public string Cls = "", Line = "", Vocation = "";
         public RespecInfo Respec;
@@ -169,7 +185,7 @@ namespace Chaos.Core
         public Action Changed = delegate { };
         /// <summary>Counts every change, so a window can cache what it derives (reachable nodes, search matches).</summary>
         public int Version;
-        void Touch() { Version++; Changed(); }
+        internal void Touch() { Version++; Changed(); }
 
         sealed class Snapshot { public List<int> List; public Dictionary<int, int> Masteries; }
 
@@ -179,6 +195,8 @@ namespace Chaos.Core
         {
             ext = e;
             Paragon = new ParagonPanel(e);
+            Trials = new TreeTrials(e);
+            Auto = new AutoBuild(e, this);
             ext.On(Opcode, OnMessage);
         }
 
@@ -358,7 +376,9 @@ namespace Chaos.Core
                     BuildMessage = Json.Text(data, "message", Loc.T("Build imported."));
                     BuildError = false;
                     break;
-                default: return;
+                default:
+                    if (!Phase8ATreeHandlers.Handle(this, action, data)) return;
+                    break;
             }
             Touch();
         }

@@ -14,6 +14,8 @@ namespace Chaos.Client
         ExtraPick extraPick;
         int extraIndex;
         string presetName = "";
+        string presetKey = "";   // phase 8 track A: the key that cycles the presets (HelperPresetKey), "" none
+        bool settingPresetKey;
         readonly string[] nameEdit = { null, null, null, null, null };
         Vector2 supportScroll;
 
@@ -58,7 +60,44 @@ namespace Chaos.Client
                 message = cfg.DeleteProfile() ? Loc.T("Preset deleted.") : Loc.T("The last preset stays.");
                 dirty = true;
             }
+            // the preset key (helper.lua toggleShooterPreset on a hotkey): one press goes to the next preset; no default key
+            string keyLabel = settingPresetKey ? Loc.T("Press a key...") : Loc.T("Key: {0}", HelperPresetKey.Label(presetKey));
+            if (GUI.Button(new Rect(x + 308, y, Mathf.Max(60f, w - 308f), 22), keyLabel)) { settingPresetKey = !settingPresetKey; }
+            if (settingPresetKey) CapturePresetKey();
             return 56f;
+        }
+
+        /// <summary>While the button waits for a key: the next key press is the preset key (Escape cancels, Backspace clears it).</summary>
+        void CapturePresetKey()
+        {
+            var e = Event.current;
+            if (e.type != EventType.KeyDown || e.keyCode == KeyCode.None) return;
+            if (e.keyCode == KeyCode.Escape) { settingPresetKey = false; e.Use(); return; }
+            if (e.keyCode == KeyCode.Backspace) { SavePresetKey(""); settingPresetKey = false; e.Use(); return; }
+            string name = e.keyCode.ToString();
+            if (!HelperPresetKey.Valid(name)) { message = Loc.T("That key is used by the game."); e.Use(); return; }
+            SavePresetKey(name);
+            settingPresetKey = false;
+            e.Use();
+        }
+
+        void SavePresetKey(string name)
+        {
+            presetKey = name;
+            if (loadedFor == null) return;
+            PlayerPrefs.SetString(HelperPresetKey.PrefKey(loadedFor), name);
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>Once per frame: the preset key cycles to the next preset and tells which (the main client's "Preset: Name").</summary>
+        void PresetKeyTick(ChaosApp app)
+        {
+            if (presetKey.Length == 0 || engine == null || app.TypingNow || settingPresetKey) return;
+            if (!System.Enum.TryParse(presetKey, out KeyCode code) || !Input.GetKeyDown(code)) return;
+            string msg = HelperPresetKey.Cycle(engine.Config);
+            if (msg == null) return;
+            dirty = true;
+            app.PostLine(msg);
         }
 
         static string Neighbour(List<string> names, string current, int step)
@@ -156,7 +195,8 @@ namespace Chaos.Client
             GUI.Label(new Rect(x, y + 2, w - 190, 20), Loc.T("Mana kept after a cast: {0}%", sup.Reserve), hint);
             y += 30;
             var view = new Rect(x, y, w, h - 120);
-            supportScroll = GUI.BeginScrollView(view, supportScroll, new Rect(0, 0, w - 18, Mathf.Max(sup.Slots.Count * 28f, 10f)));
+            float timerH = sup.Timers.Count > 0 ? 24f + sup.Timers.Count * 28f : 0f;
+            supportScroll = GUI.BeginScrollView(view, supportScroll, new Rect(0, 0, w - 18, Mathf.Max(sup.Slots.Count * 28f + timerH, 10f)));
             for (int i = 0; i < sup.Slots.Count; i++)
             {
                 var slot = sup.Slots[i];
@@ -169,6 +209,22 @@ namespace Chaos.Client
                 GUI.Label(new Rect(w - 18 - 150, ry + 2, 90, 20), HelperSupport.ReasonText(why), hint);
                 if (GUI.Button(new Rect(w - 18 - 56, ry, 26, 24), "^") && i > 0) { sup.Slots.RemoveAt(i); sup.Slots.Insert(i - 1, slot); dirty = true; break; }
                 if (GUI.Button(new Rect(w - 18 - 28, ry, 26, 24), "x")) { sup.Slots.RemoveAt(i); dirty = true; break; }
+            }
+            if (sup.Timers.Count > 0)
+            {
+                float ty = sup.Slots.Count * 28f + 4;
+                GUI.Label(new Rect(0, ty, w - 18, 20), Loc.T("Timer rules: cast every N seconds while you attack a monster"), hint);
+                ty += 20;
+                for (int i = 0; i < sup.Timers.Count; i++)
+                {
+                    var r = sup.Timers[i];
+                    float ry = ty + i * 28f;
+                    bool on = GUI.Toggle(new Rect(0, ry, 20, 24), r.Enabled, GUIContent.none);
+                    if (on != r.Enabled) { r.Enabled = on; dirty = true; }
+                    GUI.Label(new Rect(22, ry + 2, w - 18 - 22 - 90, 20), r.Name.Length > 0 ? r.Name : r.Words, rowName);
+                    GUI.Label(new Rect(w - 18 - 90, ry + 2, 62, 20), Loc.T("{0} s", r.Cooldown), hint);
+                    if (GUI.Button(new Rect(w - 18 - 28, ry, 26, 24), "x")) { sup.Timers.RemoveAt(i); dirty = true; break; }
+                }
             }
             GUI.EndScrollView();
             y += h - 120 + 4;
@@ -287,6 +343,7 @@ namespace Chaos.Client
     /// by itself while "Show Bot HUD" is on in the helper window, and is not in the Windows list.</summary>
     public sealed class HelperHudWindow : GameWindow
     {
+        public override bool Resizable => false;   // sets its own size (phase 9, track E)
         HelperWindow helper;
         GUIStyle small;
 

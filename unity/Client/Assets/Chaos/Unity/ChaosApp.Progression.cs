@@ -144,6 +144,13 @@ namespace Chaos.Client
         List<MenuItem> CategoryItems(int index)
         {
             var list = new List<MenuItem>();
+            if (index == AdminButtonIndex())
+            {
+                // the separate Admin button of the main client's top bar (phase 8 track A): the Admin Panel entry
+                var admin = Resolve(new MenuEntry { Text = TopMenuAdmin.PanelEntry, Target = "win:AdminWindow" });
+                if (admin != null) list.Add(admin);
+                return list;
+            }
             if (index < TopMenu.Categories.Length)
             {
                 foreach (var e in TopMenu.Sorted(TopMenu.Categories[index].Entries, x => Loc.T(x.Text)))
@@ -172,19 +179,28 @@ namespace Chaos.Client
             return list;
         }
 
-        string CategoryText(int index) => index < TopMenu.Categories.Length ? Loc.T(TopMenu.Categories[index].Text) : Loc.T("Windows");
+        string CategoryText(int index) => index == AdminButtonIndex() ? Loc.T(TopMenuAdmin.Text) : index < TopMenu.Categories.Length ? Loc.T(TopMenu.Categories[index].Text) : Loc.T("Windows");
+
+        /// <summary>The Admin button shows to staff only (the server sends the catalog to them alone; the window is in the menu then).</summary>
+        bool StaffMenu() => windows.Count > 0 && FindWindow<AdminWindow>()?.InMenu == true;
+        int AdminButtonIndex() => TopMenuAdmin.Index(TopMenu.Categories.Length, StaffMenu());
+
+        /// <summary>The icon of a category button (the main client's category icons); null for Windows.</summary>
+        string CategoryIcon(int index) => index == AdminButtonIndex() ? TopMenuIcons.OfCategory(TopMenuAdmin.Id) : index < TopMenu.Categories.Length ? TopMenuIcons.OfCategory(TopMenu.Categories[index].Id) : null;
+
+        bool HasMenuIcon(string icon) => icon != null && ArtTexture(TopMenuIcons.Path(icon), true) != null;
 
         /// <summary>The category buttons and the open drop-down. Called from DrawWindows in place of the old toolbar.</summary>
         void TopbarGui(float w, float h, float scale)
         {
             if (windows.Count == 0) MakeWindows();
-            int count = TopMenu.Categories.Length + 1;
+            int count = TopMenuAdmin.ButtonCount(TopMenu.Categories.Length, StaffMenu());
             var tbShift = HudShift("toolbar", ToolbarRect(w));   // the movable top menu (ChaosApp.Visual.cs): the fitted row moves as a whole
             var e = Event.current;
             // each button is as wide as its label, the row ends before Log out and wraps when it does not fit
             var bs = GUI.skin.button;
             var widths = new float[count];
-            for (int i = 0; i < count; i++) widths[i] = bs.CalcSize(new GUIContent(CategoryText(i))).x;
+            for (int i = 0; i < count; i++) widths[i] = bs.CalcSize(new GUIContent((HasMenuIcon(CategoryIcon(i)) ? "      " : "") + CategoryText(i))).x;
             var cells = TopbarLayout.Fit(widths, 10f, 56f, 4f, StatusRect().xMax + 8f, w - 104f);
             Rect bar = default;
             for (int i = 0; i < count; i++)
@@ -193,12 +209,16 @@ namespace Chaos.Client
                 bar = i == 0 ? b : Rect.MinMaxRect(Mathf.Min(bar.xMin, b.xMin), bar.yMin, Mathf.Max(bar.xMax, b.xMax), Mathf.Max(bar.yMax, b.yMax));
                 uiRects.Add(Scaled(b, scale));
                 bool on = topMenuOpen == i;
-                if (GUI.Toggle(b, on, CategoryText(i), GUI.skin.button) != on)
+                string catIcon = CategoryIcon(i);
+                bool catHasIcon = HasMenuIcon(catIcon);
+                bool catHover = b.Contains(Event.current.mousePosition);
+                if (GUI.Toggle(b, on, (catHasIcon ? "      " : "") + CategoryText(i), GUI.skin.button) != on)
                 {
                     topMenuOpen = on ? -1 : i;
                     topSubOpen = -1;
                     topMenuFrame = Time.frameCount;
                 }
+                if (catHasIcon && Event.current.type == EventType.Repaint) DrawMenuIcon(catIcon, new Rect(b.x + 7, b.y + (b.height - TopMenuIcons.ButtonSize) / 2f, TopMenuIcons.ButtonSize, TopMenuIcons.ButtonSize), catHover || on);
             }
             topBarRect = bar;
             if (topMenuOpen >= 0 && topMenuOpen < count)
@@ -289,6 +309,9 @@ namespace Chaos.Client
                 return rowH;
             }
             string text = it.Text + (it.LockedLevel > 0 ? "  " + Loc.T("Level {0}", it.LockedLevel) : it.IsNew ? "  " + Loc.T("New") : "");
+            string rowIcon = TopMenuIcons.Of(it.Entry.Text);
+            bool rowHasIcon = HasMenuIcon(rowIcon);
+            if (rowHasIcon) text = "      " + text;   // the room for the icon, as the main client pads its rows
             var old = GUI.color;
             if (it.LockedLevel > 0) GUI.color = new Color(1f, 1f, 1f, 0.45f);
             bool open = it.Entry.Target.StartsWith("win:", StringComparison.Ordinal) && WindowNamed(it.Entry.Target.Substring(4))?.Open == true;
@@ -298,6 +321,7 @@ namespace Chaos.Client
                 session?.Progress?.Unlocks.MarkSeen(it.Entry.Text);
                 topMenuOpen = -1; topSubOpen = -1;
             }
+            if (rowHasIcon && Event.current.type == EventType.Repaint) DrawMenuIcon(rowIcon, new Rect(r.x + 5, r.y + (r.height - TopMenuIcons.RowSize) / 2f, TopMenuIcons.RowSize, TopMenuIcons.RowSize), r.Contains(Event.current.mousePosition));
             if (it.Hotkey.Length > 0) GUI.Label(new Rect(r.x + r.width - 62, r.y + 3, 58, r.height - 4), it.Hotkey, new GUIStyle(small) { alignment = TextAnchor.MiddleRight, fontSize = 10 });
             GUI.color = old;
             return rowH;

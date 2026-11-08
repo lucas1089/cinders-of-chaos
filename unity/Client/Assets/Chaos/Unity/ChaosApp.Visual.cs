@@ -17,6 +17,9 @@ namespace Chaos.Client
     {
         /// <summary>0.25 to 1: the live view's effect quads are multiplied by it (FrontLiveFx).</summary>
         public static float EffectAlpha = 1f;
+        /// <summary>Phase 8 B: the ground marks (game_groundfx) and the session clock in ms; the live view draws them as flat quads on the floor (FrontLiveFx), under its creatures.</summary>
+        public static List<GroundMark> Grounds;
+        public static System.Func<double> GroundNow;
     }
 
     public sealed partial class ChaosApp
@@ -57,9 +60,12 @@ namespace Chaos.Client
                 v.Random = () => Random.value;
             }
             ViewCharacterUpdate();
+            GroundFlatsUpdate(v);
+            Phase8BUpdate();   // ChaosApp.Phase8B.cs
             Phase7QUpdate();
             ApplyViewRows(VisualPrefs.ViewRows);
             Phase7YUpdate();   // ChaosApp.Phase7Y.cs: monster sizes, item outlines, fonts
+            Phase8CUpdate();   // ChaosApp.Phase8C.cs: shader callbacks of the views, the grade post
             AwareUpdate();
             AudioUpdate(v);
             if (v == null) return;
@@ -88,8 +94,8 @@ namespace Chaos.Client
         AwareRange awareAskedFor;
         bool awareSent;
 
-        /// <summary>The most rows the current view can draw: what the aware range holds in the classic view, 11 in HD-2D and the live view (their tile windows are the default area).</summary>
-        public int ViewMaxRows => screen == Screen.Game && world != null && !hd2d && !LiveOn ? ViewZoom.MaxRowsFor(world.Range) : ViewZoom.MaxRows;
+        /// <summary>The most rows any view can draw: what the aware range holds (phase 8 B: HD-2D and the live view read the tile window from World.Range and fit their camera to ViewTilesW x ViewTilesH too).</summary>
+        public int ViewMaxRows => screen == Screen.Game && world != null ? ViewZoom.MaxRowsFor(world.Range) : ViewZoom.MaxRows;
 
         void ApplyViewRows(int rows)
         {
@@ -270,7 +276,7 @@ namespace Chaos.Client
             VisualTextures();
             double now = session.Now;
             float fxA = VisualRuntime.EffectAlpha;
-            DrawGroundRings(v, map, scale, now, fxA);
+            // the ground rings are quads of the map mesh (MapView.Flats) or of the floor of the live view: under the creatures, not here
             DrawDecals(v, map, scale);
             DrawPrints(v, map, scale, now);
             DrawChestAuras(v, map, scale, now);
@@ -278,20 +284,31 @@ namespace Chaos.Client
             DrawGlows(v, map, scale, now);
             DrawBeams(v, map, scale, now);
             DrawFlashes(v, map, scale, now);
+            DrawPhase9D(v, map, scale, now);   // ChaosApp.Phase9D.cs: spell effects of the art file and the spell light (classic view)
             DrawWings(v, map, scale, now, fxA);
         }
 
-        void DrawGroundRings(VisualEffects v, Rect map, float scale, double now, float fxA)
+        readonly List<float[]> ringQuads = new List<float[]>();
+
+        /// <summary>Every frame: the ground marks as flat quads of the classic map mesh (drawn in the tile's turn, before its creatures). In the live view FrontLiveFx reads
+        /// VisualRuntime.Grounds, in HD-2D there are none yet.</summary>
+        void GroundFlatsUpdate(VisualEffects v)
         {
+            VisualRuntime.Grounds = v != null ? v.Grounds : null;
+            VisualRuntime.GroundNow = () => session != null ? session.Now : 0.0;
+            if (view == null) return;
+            view.Flats.Clear();
+            if (v == null || hd2d || LiveOn || session == null) return;
+            double now = session.Now;
+            float fxA = VisualRuntime.EffectAlpha;
             foreach (var g in v.Grounds)
             {
-                if (!TileGeom(g.Pos, map, scale, out Vector2 at, out float tile)) continue;
                 float t = Mathf.Clamp01((float)((now - g.Born) / VisualEffects.GroundMs));
                 var pal = FrontFx.Palette(FrontFx.EffectTable.TryGetValue(g.Id, out var el) ? el : FxElement.Arcane);
-                var col = new Color(pal.BR, pal.BG, pal.BB, (1f - t) * 0.75f * fxA);
-                float size = tile * (0.8f + 1.9f * t);
-                Pic(texRing, Around(new Vector2(at.x, at.y + tile * 0.1f), size, size * 0.55f), col);   // a flat ring: the floor seen at a slant
-                Pic(texSoft, Around(new Vector2(at.x, at.y + tile * 0.1f), size * 0.8f, size * 0.45f), new Color(pal.CR, pal.CG, pal.CB, (1f - t) * 0.25f * fxA));
+                ringQuads.Clear();
+                GroundRing.Quads(t, ringQuads);
+                foreach (var q in ringQuads)
+                    view.Flats.Add(new MapView.FlatMark { Pos = g.Pos, W = q[0], H = q[1], Alpha = q[2] * fxA, Ring = q[3] > 0.5f, Tint = q[3] > 0.5f ? new Color(pal.BR, pal.BG, pal.BB) : new Color(pal.CR, pal.CG, pal.CB) });
             }
         }
 
@@ -385,6 +402,7 @@ namespace Chaos.Client
                 if (c.Type != 0 || !v.Cosmetic.Looks.TryGetValue(c.Name, out var look) || look.Glow == null) continue;
                 bool mine = c.Id == world.PlayerId;
                 if (!v.Cosmetic.Allowed(false, mine) || c.Position.Z != world.Center.Z) continue;
+                if ((ShaderMapOn || LiveFxOn) && OutlineFx.Cosmetic(look.Glow, look.Pulse) != null) continue;   // the shader draws it as an outline (Phase8CLook)
                 if (!CreatureCenter(c, map, scale, out Vector2 at, out float tile)) continue;
                 var tex = OverlayTex("game_cosmeticfx/images/glows/" + look.Glow + ".png");
                 if (tex == null) continue;
@@ -405,6 +423,13 @@ namespace Chaos.Client
                 beamsAt = now;
                 var all = new List<KeyValuePair<Pos, BeamLook>>();
                 var seen = new HashSet<Pos>();
+                // corpses the server named (opcode 238 "beam"): they come first, the ground labels fill in the rest
+                foreach (var sb in loot.Filter.Beams.Values)
+                {
+                    if (sb.Pos.Z != world.Player.Position.Z || !seen.Add(sb.Pos)) continue;
+                    var look = LootBeams.BeamOf(sb.Items, loot.Filter.Settings, s);
+                    if (look != null) all.Add(new KeyValuePair<Pos, BeamLook>(sb.Pos, look));
+                }
                 foreach (var l in loot.Ground.Labels(world.Player.Position, loot.Filter.Settings, false))
                 {
                     if (!seen.Add(l.Tile) || l.Row == null) continue;
@@ -420,6 +445,7 @@ namespace Chaos.Client
             {
                 if (!TileGeom(kv.Key, map, scale, out Vector2 at, out float tile)) continue;
                 var look = kv.Value;
+                if (DrawBeamPack(kv.Key, look, map, scale, now)) continue;   // the pair's own beam effect (pair 36)
                 var c = HexColor(look.Color, Color.white);
                 float pulse = 0.88f + 0.12f * Mathf.Sin((float)now / 260f + kv.Key.X * 1.7f);
                 float h = tile * look.Height, w = tile * 0.24f;
@@ -430,7 +456,7 @@ namespace Chaos.Client
 
         void DrawFlashes(VisualEffects v, Rect map, float scale, double now)
         {
-            if (!VisualPrefs.Fx.HitFlash) return;
+            if (!VisualPrefs.Fx.HitFlash || ShaderMapOn || LiveFxOn) return;   // the classic mesh and the live view's sprites flash the outfit itself (hit modes of the shaders)
             foreach (var f in v.Flashes)
             {
                 float k = HitFlasher.Strength(now, f.Start, f.Ms);
@@ -445,7 +471,9 @@ namespace Chaos.Client
             foreach (var p in v.Wings.Active)
             {
                 float t = LevelWingsState.Progress(now, p.Start);
-                if (t < 0 || !world.Creatures.TryGetValue(p.Creature, out var c) || !CreatureCenter(c, map, scale, out Vector2 at, out float tile)) continue;
+                if (t < 0 || !world.Creatures.TryGetValue(p.Creature, out var c)) continue;
+                if (DrawWingsPack(p, c, map, scale, now, fxA)) continue;   // the pair's level-up effect (pair 36)
+                if (!CreatureCenter(c, map, scale, out Vector2 at, out float tile)) continue;
                 float open = 1f - (1f - Mathf.Min(1f, t * 2.2f)) * (1f - Mathf.Min(1f, t * 2.2f));
                 float a = Mathf.Sin(t * Mathf.PI) * fxA;
                 var rise = new Vector2(at.x, at.y - tile * (0.15f + 0.45f * t));
@@ -573,7 +601,12 @@ namespace Chaos.Client
                 GameWindow.Placed = RestoreWindowPlace;
             }
             if (!VisualPrefs.LayoutOn) return;
-            foreach (var win in windows) if (win.Area.width > 0) layout.Note(win.GetType().Name, win.Area.x, win.Area.y, win.Open);
+            foreach (var win in windows)
+                if (win.Area.width > 0)
+                {
+                    layout.Note(win.GetType().Name, win.Area.x, win.Area.y, win.Open);
+                    layout.NoteSize(win.GetType().Name, win.Resizable && win.UserSized ? win.Area.width : 0f, win.Resizable && win.UserSized ? win.Area.height : 0f);   // phase 9, track E: the size a player gave
+                }
             if (layout.Dirty && !Input.GetMouseButton(0) && Time.unscaledTime - layoutSaved > 1f)
             {
                 layoutSaved = Time.unscaledTime;
@@ -586,6 +619,12 @@ namespace Chaos.Client
         {
             if (!VisualPrefs.LayoutOn || !layout.TryGet(win.GetType().Name, out var slot)) return;
             win.Area.x = slot.X; win.Area.y = slot.Y;
+            if (win.Resizable && slot.W > 0 && slot.H > 0)
+            {
+                float w = slot.W, h = slot.H;
+                WindowSize.Clamp(ref w, ref h, UnityEngine.Screen.width / UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi), UnityEngine.Screen.height / UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi));
+                win.Area.width = w; win.Area.height = h; win.UserSized = true;
+            }
         }
 
         /// <summary>The fade bookkeeping of one window: false when it is closed and its fade is over. Sets the window's alpha.</summary>

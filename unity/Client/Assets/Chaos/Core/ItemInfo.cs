@@ -180,14 +180,14 @@ namespace Chaos.Core
             return sub.Count > 0 ? string.Join(" ", sub) : null;
         }
 
-        static string Range(object m)
+        internal static string Range(object m)
         {
             if (!Has(m, "lo") || !Has(m, "hi")) return "";
             double lo = Num(m, "lo"), hi = Num(m, "hi");
             return lo == hi ? " [" + Int(lo) + "]" : " [" + Int(lo) + "-" + Int(hi) + "]";
         }
 
-        static string ChargesText(object ch)
+        internal static string ChargesText(object ch)
         {
             if (!(ch is Dictionary<string, object>)) return null;
             if (Json.Bool(ch, "unlimited")) return Loc.T("Charges: unlimited");
@@ -197,7 +197,7 @@ namespace Chaos.Core
             return Loc.T("Charges: {0}", Int(n));
         }
 
-        sealed class Out
+        internal sealed class Out
         {
             public readonly List<TipLine> Lines = new List<TipLine>();
             public void Add(string text, string color, bool sep = false, string[] parts = null)
@@ -207,7 +207,7 @@ namespace Chaos.Core
         }
 
         /// <summary>The set block of a piece: header, active tier, pieces (worn bright), bonuses (active bright).</summary>
-        static void SetLines(Out o, object set)
+        internal static void SetLines(Out o, object set)
         {
             if (!(set is Dictionary<string, object>)) return;
             string name = Json.Text(set, "name", "?");

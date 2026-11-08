@@ -177,6 +177,18 @@ namespace Chaos.Client
                         if (st.TryOn(o)) { triedKey = key; triedUntil = app.Session.Now + StoreTryOn.Ms; }
                     }
                 }
+                // a look worn on the character (outfit, mount, wings, aura, shader ...): the look preview panel shows it for ten seconds (game_shop tryon.lua, phase 8 track A)
+                if (StoreTryPanel.IsWorn(o.Look) && app.FindWindow<LookPreviewWindow>() != null && !o.PreviewEffect)
+                {
+                    string pkey = o.Category + ":" + o.Page + ":" + o.Row;
+                    int pleft = triedKey == pkey ? StoreTryOn.SecondsLeft(triedUntil, app.Session.Now) : 0;
+                    GUI.enabled = !modal && pleft == 0;
+                    if (GUI.Button(new Rect(r.xMax - (second ? 48 : 90), r.y + 52, second ? 44 : 84, 14), StoreTryOn.Countdown(pleft) ?? Loc.T("TRY ON")))
+                    {
+                        triedKey = pkey; triedUntil = app.Session.Now + StoreTryOn.Ms;
+                        app.TryLookPreview(o.Look, triedUntil);
+                    }
+                }
                 string plate = o.PreviewEffect ? null : PlateTry.Frame(o.Look);
                 if (plate != null)
                 {

@@ -24,6 +24,8 @@ namespace Chaos.Client
         public static bool WingsOwn = true, WingsOthers = true, PrintsOthers = true, GlowsOthers = true;
         /// <summary>The rarity outline of items on the map (phase 7 track Y, MapItemOutline).</summary>
         public static bool ItemOutlines = true;
+        /// <summary>The "Painted icons" option (phase 8 track A, PaintedIcons): spells, buffs and tree keystones draw their painted pictures.</summary>
+        public static bool Painted;
         /// <summary>The health and mana globes beside the hotkey bar (track U; drawn only when the orb pictures are found).</summary>
         public static bool Globes = true, WideView = true;
         public const string GlobesPref = "chaos.globes";
@@ -52,6 +54,7 @@ namespace Chaos.Client
             WideView = Flag(ViewZoom.WidePref, true);
             Globes = Flag(GlobesPref, true);
             ItemOutlines = Flag(MapItemOutline.PrefKey, true);
+            Painted = Flag(PaintedIcons.Pref, false);
             ErrorColor.Enabled = ErrorColorOn;
         }
 
@@ -71,6 +74,7 @@ namespace Chaos.Client
             if (ViewZoom.CharKey(CurrentCharacter) is string ck) PlayerPrefs.SetInt(ck, ViewRows);
             SetFlag(GlobesPref, Globes);
             SetFlag(MapItemOutline.PrefKey, ItemOutlines);
+            SetFlag(PaintedIcons.Pref, Painted);
             ErrorColor.Enabled = ErrorColorOn;
             PlayerPrefs.Save();
         }

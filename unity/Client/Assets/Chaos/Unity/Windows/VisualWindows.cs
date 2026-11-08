@@ -152,6 +152,8 @@ namespace Chaos.Client
             var fx = VisualPrefs.Fx;
             fx.HitFlash = Check(ref y, inner, fx.HitFlash, Loc.T("Hit flash"), app);
             fx.ScreenShake = Check(ref y, inner, fx.ScreenShake, Loc.T("Screen shake on big hits"), app);
+            fx.HoverOutline = Check(ref y, inner, fx.HoverOutline, Loc.T("Faint outline on the creature under the mouse"), app);
+            fx.SpellLight = Check(ref y, inner, fx.SpellLight, Loc.T("Light around spell effects"), app);
             VisualPrefs.Decals = Check(ref y, inner, VisualPrefs.Decals, Loc.T("Stains on the ground after combat"), app);
             VisualPrefs.Globes = Check(ref y, inner, VisualPrefs.Globes, Loc.T("Health and mana globes"), app);
             var b = VisualPrefs.Beams;
@@ -167,6 +169,14 @@ namespace Chaos.Client
             }
             VisualPrefs.ChestAuras = Check(ref y, inner, VisualPrefs.ChestAuras, Loc.T("Chest and Templar auras"), app);
             VisualPrefs.ItemOutlines = Check(ref y, inner, VisualPrefs.ItemOutlines, Loc.T("Rarity outline on items on the map"), app);
+            // phase 8, track C: the options of the shaders (saved on a change)
+            bool g8 = Phase8CPrefs.Grade, b8 = Phase8CPrefs.Bloom, l8 = Phase8CPrefs.Liquid, o8 = Phase8CPrefs.OutfitShaders;
+            Phase8CPrefs.Grade = Check(ref y, inner, Phase8CPrefs.Grade, Loc.T("Colour grade and vignette"), app);
+            Phase8CPrefs.Bloom = Check(ref y, inner, Phase8CPrefs.Bloom, Loc.T("Soft glow around bright light"), app);
+            Phase8CPrefs.Liquid = Check(ref y, inner, Phase8CPrefs.Liquid, Loc.T("Living water and lava"), app);
+            Phase8CPrefs.OutfitShaders = Check(ref y, inner, Phase8CPrefs.OutfitShaders, Loc.T("Outfit shaders on characters"), app);
+            if (g8 != Phase8CPrefs.Grade || b8 != Phase8CPrefs.Bloom || l8 != Phase8CPrefs.Liquid || o8 != Phase8CPrefs.OutfitShaders) Phase8CPrefs.Save();
+            VisualPrefs.Painted = Check(ref y, inner, VisualPrefs.Painted, Loc.T("Painted icons (bar, spellbook, passive tree)"), app);
             VisualPrefs.WingsOwn = Check(ref y, inner, VisualPrefs.WingsOwn, Loc.T("Level-up wings on my character"), app);
             VisualPrefs.WingsOthers = Check(ref y, inner, VisualPrefs.WingsOthers, Loc.T("Level-up wings on other characters"), app);
             VisualPrefs.PrintsOthers = Check(ref y, inner, VisualPrefs.PrintsOthers, Loc.T("Footprints of other characters"), app);

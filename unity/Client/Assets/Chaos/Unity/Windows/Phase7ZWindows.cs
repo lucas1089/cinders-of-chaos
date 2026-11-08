@@ -9,6 +9,7 @@ namespace Chaos.Client
     /// folds it, the x or the Hunt menu entry Task Tracker turns it off (saved per install). Not a menu window: the entry is act:tracker.</summary>
     public sealed class TaskTrackerWindow : GameWindow
     {
+        public override bool Resizable => false;   // sets its own size (phase 9, track E)
         public override string Title => Loc.T("Tasks");
         public override bool InMenu => false;
         protected override Rect Place(float w, float h) => new Rect(w - 178 - 232 - 214, h - 300, 214, 80);

@@ -51,6 +51,9 @@ namespace Chaos.Client
                 engine = new HelperEngine(s.Spells, host);
                 engineFor = s; loadedFor = name;
                 engine.Config = HelperConfig.FromJson(PlayerPrefs.GetString(HelperConfig.PrefsKey("-", name), ""));
+                presetKey = PlayerPrefs.GetString(HelperPresetKey.PrefKey(name), "");
+                if (presetKey.Length > 0 && !HelperPresetKey.Valid(presetKey)) presetKey = "";
+                settingPresetKey = false;
                 engine.Reach = s.AutoTargetReach;   // game_autotarget "Only reachable" (Core/Phase7Z.cs)
                 engine.RankOf = s.AutoTargetRank;   // game_autotarget: goblins, bosses and special monsters first (Core/PlayGuards.cs)
                 engine.Held = new EverfullHeld(s.Ext);
@@ -70,6 +73,8 @@ namespace Chaos.Client
             if (lastHealth >= 0 && hp < lastHealth) engine.OnHealthChanged(lastHealth, hp);
             lastHealth = hp;
             engine.Tick();
+            if (engine.ConfigDirty) { engine.ConfigDirty = false; dirty = true; }   // a vigil the player switched off by hand was unticked
+            PresetKeyTick(app);
             // a level-up with new spells opens the window on the Shooter tab, where Add and Ignore are (the main client asks in a box)
             if (engine.LevelNotice != null && engine.LevelNotice != noticeShown) { noticeShown = engine.LevelNotice; Open = true; tab = 1; pick = Pick.None; extraPick = ExtraPick.None; }
             if (engine.LevelMessage.Length > 0) { message = engine.LevelMessage; engine.LevelMessage = ""; dirty = true; app.PostLine(message); }

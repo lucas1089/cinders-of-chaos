@@ -64,6 +64,7 @@ namespace Chaos.Client
         void Phase7YUpdate()
         {
             Phase7YFonts.Path = OverlayPath;
+            Phase8AUpdate();   // ChaosApp.Phase8A.cs
             var inspect = session?.Social?.Inspect;
             if (inspect != null) inspect.ViewTree = ViewOtherTree;
             if (view != null)

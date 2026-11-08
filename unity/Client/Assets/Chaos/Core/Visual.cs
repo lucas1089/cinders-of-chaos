@@ -513,17 +513,19 @@ namespace Chaos.Core
     public sealed class VisualFxOptions
     {
         public const string Pref = "chaos.visualfx";
-        public static readonly string[] Names = { "hitFlash", "screenShake", "targetOutline", "numberMotion", "deathFade" };
+        public static readonly string[] Names = { "hitFlash", "screenShake", "targetOutline", "numberMotion", "deathFade", "hoverOutline", "spellLight" };
         public bool HitFlash = true, ScreenShake = true, TargetOutline = true, NumberMotion = true, DeathFade = true;
+        /// <summary>Phase 9 track D: the faint outline of the creature under the mouse (off by default, as in the main client) and the light round spell effects (on).</summary>
+        public bool HoverOutline, SpellLight = true;
 
         public bool Get(string n)
         {
-            switch (n) { case "hitFlash": return HitFlash; case "screenShake": return ScreenShake; case "targetOutline": return TargetOutline; case "numberMotion": return NumberMotion; case "deathFade": return DeathFade; default: return false; }
+            switch (n) { case "hitFlash": return HitFlash; case "screenShake": return ScreenShake; case "targetOutline": return TargetOutline; case "numberMotion": return NumberMotion; case "deathFade": return DeathFade; case "hoverOutline": return HoverOutline; case "spellLight": return SpellLight; default: return false; }
         }
 
         public void Set(string n, bool on)
         {
-            switch (n) { case "hitFlash": HitFlash = on; break; case "screenShake": ScreenShake = on; break; case "targetOutline": TargetOutline = on; break; case "numberMotion": NumberMotion = on; break; case "deathFade": DeathFade = on; break; }
+            switch (n) { case "hitFlash": HitFlash = on; break; case "screenShake": ScreenShake = on; break; case "targetOutline": TargetOutline = on; break; case "numberMotion": NumberMotion = on; break; case "deathFade": DeathFade = on; break; case "hoverOutline": HoverOutline = on; break; case "spellLight": SpellLight = on; break; }
         }
 
         public static VisualFxOptions From(object o)

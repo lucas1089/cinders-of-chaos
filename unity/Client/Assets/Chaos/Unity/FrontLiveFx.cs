@@ -242,6 +242,7 @@ namespace Chaos.Client
             int floor = c.Z;
 
             DrawMissiles(now, floor, face, right, up);
+            DrawGrounds(floor);
             DrawBursts(now, floor, face);
             DrawSlashes(now, floor, face, right);
             DrawNumbers(now, floor, face, right);
@@ -277,6 +278,39 @@ namespace Chaos.Client
                 }
             }
             HideFrom(missileQ, n);
+        }
+
+        readonly List<Q> groundQ = new List<Q>();
+        Texture2D ringTex, glowTex;
+        readonly List<float[]> groundQuads = new List<float[]>();
+
+        /// <summary>Phase 8 B (game_groundfx): the ring and the glow of a ground effect lie flat on the floor (a quad turned face up, depth tested), so a creature stands over it.</summary>
+        void DrawGrounds(int floor)
+        {
+            int n = 0;
+            var marks = VisualRuntime.Grounds;
+            if (marks != null && VisualRuntime.GroundNow != null)
+            {
+                if (ringTex == null) { ringTex = MakeTex("ground-ring", GroundRing.Rgba(true), GroundRing.Cell, GroundRing.Cell); glowTex = MakeTex("ground-glow", GroundRing.Rgba(false), GroundRing.Cell, GroundRing.Cell); ringTex.filterMode = glowTex.filterMode = FilterMode.Bilinear; }
+                double nowMs = VisualRuntime.GroundNow();
+                foreach (var g in marks)
+                {
+                    if (g.Pos.Z != floor) continue;
+                    float t = Mathf.Clamp01((float)((nowMs - g.Born) / VisualEffects.GroundMs));
+                    var pal = FrontFx.Palette(FrontFx.EffectTable.TryGetValue(g.Id, out var el) ? el : FxElement.Arcane);
+                    groundQuads.Clear();
+                    GroundRing.Quads(t, groundQuads);
+                    var at = Where(g.Pos, 0f) + Vector3.up * (0.02f * tile);
+                    foreach (var q in groundQuads)
+                    {
+                        bool ring = q[3] > 0.5f;
+                        var col = ring ? new Color(pal.BR, pal.BG, pal.BB, q[2]) : new Color(pal.CR, pal.CG, pal.CB, q[2]);
+                        // a round quad on the floor: the camera's pitch makes it the flat ring of the classic view
+                        Set(Slot(groundQ, n++, "ground"), MatFor(ring ? ringTex : glowTex), at + (ring ? Vector3.zero : Vector3.up * (0.005f * tile)), Quaternion.Euler(90f, 0f, 0f), new Vector2(q[0] * tile, q[0] * tile), new Vector4(1f, 1f, 0f, 0f), col);
+                    }
+                }
+            }
+            HideFrom(groundQ, n);
         }
 
         void DrawBursts(float now, int floor, Quaternion face)

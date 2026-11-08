@@ -205,7 +205,7 @@ namespace Chaos.Client
             if (e.type == EventType.Repaint && mouseInView && rect.Contains(e.mousePosition))
             {
                 if (r.Hover != null) r.Hover();
-                if (r.ItemTip != null) app.ShowTip(r.ItemTip);
+                if (r.ItemTip != null) app.ShowTip(r.ItemTip, r.TipExtra);
                 else if (r.Tip.Length > 0) app.ShowTip(null, null, r.Tip);
             }
         }

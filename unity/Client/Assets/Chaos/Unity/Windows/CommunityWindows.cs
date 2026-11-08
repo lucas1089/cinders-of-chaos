@@ -109,11 +109,4 @@ namespace Chaos.Client
         protected override SocialPanel Panel(GameSession s) => s?.Community?.ShotsWindow;
         protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 250), 90, Mathf.Min(500, w - 16), Mathf.Min(380, h - 100));
     }
-
-    public sealed class OutfitExtrasWindow : SocialWindow
-    {
-        public override string Title => Loc.T("Customise Character");
-        protected override SocialPanel Panel(GameSession s) => s?.Community?.OutfitExtras;
-        protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 270), 70, Mathf.Min(540, w - 16), Mathf.Min(460, h - 80));
-    }
 }

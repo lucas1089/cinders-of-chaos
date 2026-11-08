@@ -21,6 +21,9 @@ namespace Chaos.Core
         public readonly DecalField Decals = new DecalField();
         public readonly HitFlasher Flasher = new HitFlasher();
         public readonly ScreenShake Shake = new ScreenShake();
+        /// <summary>Phase 9 track D: the light round spell effects (game_visualfx spell light) and the effects the classic view draws from the art file.</summary>
+        public readonly SpellLightState SpellLights = new SpellLightState();
+        public readonly SpellFxTrack SpellFx = new SpellFxTrack();
         public readonly SoundMixer Mixer = new SoundMixer();
         public readonly SoundLogic.Hits Hits = new SoundLogic.Hits();
         public readonly MusicState MusicNow = new MusicState();
@@ -96,6 +99,8 @@ namespace Chaos.Core
                 {
                     string key = SoundLogic.EffectEvent(e.Id, out bool own);
                     if (key != null && me != null && (!own || me.Position == e.Pos)) Cue(key, SoundLogic.Distance(me.Position, e.Pos));
+                    SpellLights.Add(now, e.Pos, e.Id, Fx.SpellLight);
+                    SpellFx.Add(e.Id, e.Pos, now);
                     if (GroundFx.IsGround(e.Id))
                     {
                         Grounds.Add(new GroundMark { Pos = e.Pos, Id = e.Id, Born = now });

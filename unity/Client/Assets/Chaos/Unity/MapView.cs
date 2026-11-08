@@ -16,6 +16,18 @@ namespace Chaos.Client
         /// <summary>Phase 7 track Y: the draw size of a creature (monster bar: bosses bigger, oversized monsters smaller; 1 when null) and the rarity outline of items on the map.</summary>
         public Func<Creature, float> CreatureScale;
         public bool ItemOutlines = true;
+        /// <summary>Phase 8 track C: the outfit shader, hit flash and outline of a creature (null: drawn plain), and whether water and lava grounds shimmer. Both need the
+        /// Chaos/MapFx shader (FxShaders.Map); without it the mesh is drawn as before and these are ignored.</summary>
+        public Func<Creature, MapFxLook> CreatureFx;
+        public bool LiquidFx = true;
+        /// <summary>True when the map material is the Chaos/MapFx shader (the effects above can show).</summary>
+        public bool FxOn { get; private set; }
+        int fxMode; float fxStrength = 1f;
+        readonly List<Vector4> fxs = new List<Vector4>();
+        readonly List<(int slot, int ww, int hh)> cells = new List<(int, int, int)>();
+        /// <summary>Phase 8 B (game_groundfx): flat ring and glow quads, drawn in a tile's turn after its items and before its creatures, so a ring lies under the feet.</summary>
+        public readonly List<FlatMark> Flats = new List<FlatMark>();
+        public struct FlatMark { public Pos Pos; public float W, H, Alpha; public bool Ring; public Color Tint; }
         Color32 tint = new Color32(255, 255, 255, 255);
         float quadScale = 1f, pivotX, pivotY;
 
@@ -36,7 +48,9 @@ namespace Chaos.Client
             mesh.MarkDynamic();
             gameObject.AddComponent<MeshFilter>().sharedMesh = mesh;
             var mr = gameObject.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+            var fxShader = FxShaders.Map;
+            FxOn = fxShader != null;
+            mr.sharedMaterial = new Material(fxShader != null ? fxShader : Shader.Find("Sprites/Default"));
         }
 
         /// <summary>Off while the HD-2D view draws the world (F9): no mesh is built, nothing is drawn.</summary>
@@ -106,7 +120,7 @@ namespace Chaos.Client
 
         void Build()
         {
-            verts.Clear(); uvs.Clear(); cols.Clear(); tris.Clear(); Labels.Clear();
+            verts.Clear(); uvs.Clear(); cols.Clear(); tris.Clear(); Labels.Clear(); fxs.Clear();
             var player = World.Player;
             Pos center = World.Center;
             float t0;
@@ -130,6 +144,7 @@ namespace Chaos.Client
             mesh.SetVertices(verts);
             mesh.SetUVs(0, uvs);
             mesh.SetColors(cols);
+            if (FxOn) mesh.SetUVs(1, fxs);
             mesh.SetTriangles(tris, 0);
         }
 
@@ -152,6 +167,7 @@ namespace Chaos.Client
                 var th = things[i];
                 if (!th.IsCreature && World.StackPriority(th) == 5) DrawItem(th.Item, p, tx, ty, ref elevation);
             }
+            if (Flats.Count > 0) DrawFlats(p, tx, ty);
             foreach (var th in things)
             {
                 if (!th.IsCreature) continue;
@@ -167,6 +183,35 @@ namespace Chaos.Client
                 int none = 0;
                 DrawItem(th.Item, p, tx, ty, ref none);
             }
+        }
+
+        void DrawFlats(Pos p, float tx, float ty)
+        {
+            foreach (var m in Flats)
+            {
+                if (m.Pos != p) continue;
+                bool ring = m.Ring;
+                int slot = Atlas.Composed(ring ? 0x7f000001UL : 0x7f000002UL, () => GroundRing.Rgba(ring));
+                var c = m.Tint; c.a = m.Alpha;
+                tint = c;
+                float cx = tx + 0.5f, cy = ty - 0.5f - GroundRing.FootDrop;
+                Span(slot, cx - m.W / 2f, cy - m.H / 2f, cx + m.W / 2f, cy + m.H / 2f);
+                tint = new Color32(255, 255, 255, 255);
+            }
+        }
+
+        /// <summary>A quad over (x0, y0) to (x1, y1) in tiles, y up.</summary>
+        void Span(int slot, float x0, float y0, float x1, float y1)
+        {
+            if (slot == 0) return;
+            var r = Atlas.Uv(slot);
+            int i = verts.Count;
+            verts.Add(new Vector3(x0, y0, 0)); verts.Add(new Vector3(x1, y0, 0)); verts.Add(new Vector3(x1, y1, 0)); verts.Add(new Vector3(x0, y1, 0));
+            uvs.Add(new Vector2(r.xMin, r.yMin)); uvs.Add(new Vector2(r.xMax, r.yMin)); uvs.Add(new Vector2(r.xMax, r.yMax)); uvs.Add(new Vector2(r.xMin, r.yMax));
+            for (int k = 0; k < 4; k++) cols.Add(tint);
+            if (FxOn) for (int k = 0; k < 4; k++) fxs.Add(Vector4.zero);   // plain: the second UV set keeps one entry per vertex
+            tris.Add(i); tris.Add(i + 2); tris.Add(i + 1);
+            tris.Add(i); tris.Add(i + 3); tris.Add(i + 2);
         }
 
         internal static int StackIndex(int count)
@@ -210,7 +255,25 @@ namespace Chaos.Client
             float ox = tx - (elevation + t.DisplacementX) / 32f, oy = ty + (elevation + t.DisplacementY) / 32f;
             // the rarity outline: the sprite again, tinted with the rarity colour, one pixel to each side, behind itself (game_itemrarity, world shader)
             string outline = ItemOutlines ? MapItemOutline.Color(it) : null;
-            if (outline != null && ColorUtility.TryParseHtmlString(outline, out Color oc))
+            // phase 9, track D: with the map shader the outline is the silhouette in rings out to the reach with a falloff (the engine's soft glow), and a Divine item is drawn in metal
+            var glow = FxOn && outline != null ? ItemGlowFx.For(it) : null;
+            if (glow != null)
+            {
+                float pulse = ItemGlowFx.PulseAlpha(Now, glow.PulseMs);
+                fxMode = FxMode.Solid; fxStrength = 1f;
+                foreach (var st in ItemGlowFx.Steps(ItemGlowFx.Width))
+                {
+                    tint = new Color(glow.R, glow.G, glow.B, glow.A * st.Fall * pulse);
+                    for (int layer = 0; layer < g.Layers; layer++)
+                        for (int hh = 0; hh < g.Height; hh++)
+                            for (int ww = 0; ww < g.Width; ww++)
+                                Quad(Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), ox - ww + st.Dx / MapItemOutline.PixelsPerTile, oy + hh + st.Dy / MapItemOutline.PixelsPerTile);
+                }
+                fxMode = 0;
+                tint = new Color32(255, 255, 255, 255);
+                if (glow.Metal) { fxMode = FxMode.Metal; fxStrength = glow.MetalStrength; tint = new Color(glow.MetalR, glow.MetalG, glow.MetalB, 1f); }
+            }
+            else if (outline != null && ColorUtility.TryParseHtmlString(outline, out Color oc))
             {
                 oc.a = MapItemOutline.Alpha(it, Now);
                 tint = oc;
@@ -221,10 +284,13 @@ namespace Chaos.Client
                                 Quad(Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), ox - ww + d[0] / MapItemOutline.PixelsPerTile, oy + hh + d[1] / MapItemOutline.PixelsPerTile);
                 tint = new Color32(255, 255, 255, 255);
             }
+            if (FxOn && LiquidFx && t.Ground) fxMode = LiquidGrounds.ModeOf(t.Id);   // living water and lava (game_visualfx)
             for (int layer = 0; layer < g.Layers; layer++)
                 for (int hh = 0; hh < g.Height; hh++)
                     for (int ww = 0; ww < g.Width; ww++)
                         Quad(Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), ox - ww, oy + hh);
+            fxMode = 0; fxStrength = 1f;
+            tint = new Color32(255, 255, 255, 255);
             if (t.Elevation > 0) elevation = Math.Min(24, elevation + t.Elevation);
         }
 
@@ -257,6 +323,7 @@ namespace Chaos.Client
             if (scale != 1f) { quadScale = scale; pivotX = x + 0.5f; pivotY = y - 1f; }   // monster bar: drawn bigger or smaller round the middle of its feet
             BossAnimate.Shift(o.LookType, out int bsx, out int bsy);   // and a boss whose art sits off its tile is moved down and right
             float ox = x - (elevation + t.DisplacementX + bsx) / 32f, oy = y + (elevation + t.DisplacementY + bsy) / 32f;
+            cells.Clear();
             for (int addon = 0; addon < g.PatternY; addon++)
             {
                 if (addon > 0 && (o.Addons & (1 << (addon - 1))) == 0) continue;
@@ -278,9 +345,30 @@ namespace Chaos.Client
                                 return rgba;
                             });
                         }
-                        Quad(slot, ox - ww, oy + hh);
+                        cells.Add((slot, ww, hh));
                     }
             }
+            var look = FxOn && CreatureFx != null ? CreatureFx(c) : null;
+            if (look != null && look.Outline != null)
+            {
+                // the outline (game_visualfx target and follow, game_cosmeticfx): the silhouette in one colour, a ring of steps behind the creature
+                var ol = look.Outline;
+                float w = Math.Max(1f, ol.WidthPx);
+                fxMode = FxMode.Solid;
+                foreach (var d in OutlineFx.Ring)
+                    foreach (var cell in cells)
+                    {
+                        OutlineFx.ColorAt(ol, (cell.hh + 0.5f) / Math.Max(1, g.Height), out float cr, out float cg, out float cb);
+                        tint = new Color(cr, cg, cb, ol.A * look.OutlineAlpha);
+                        Quad(cell.slot, ox - cell.ww + d[0] * w / 32f, oy + cell.hh + d[1] * w / 32f);
+                    }
+                fxMode = 0;
+                tint = new Color32(255, 255, 255, 255);
+            }
+            if (look != null && look.Mode != FxMode.None) { fxMode = look.Mode; fxStrength = look.Strength; tint = look.Tint; }
+            foreach (var cell in cells) Quad(cell.slot, ox - cell.ww, oy + cell.hh);
+            fxMode = 0; fxStrength = 1f;
+            tint = new Color32(255, 255, 255, 255);
             quadScale = 1f;
         }
 
@@ -308,6 +396,7 @@ namespace Chaos.Client
             uvs.Add(new Vector2(r.xMax, r.yMax));
             uvs.Add(new Vector2(r.xMin, r.yMax));
             for (int k = 0; k < 4; k++) cols.Add(tint);
+            if (FxOn) { var fx = new Vector4(fxMode, fxStrength, r.xMin, r.yMin); for (int k = 0; k < 4; k++) fxs.Add(fx); }
             tris.Add(i); tris.Add(i + 2); tris.Add(i + 1);
             tris.Add(i); tris.Add(i + 3); tris.Add(i + 2);
         }
