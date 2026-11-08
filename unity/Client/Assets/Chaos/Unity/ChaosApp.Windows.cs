@@ -116,8 +116,6 @@ namespace Chaos.Client
             return null;
         }
 
-        static Rect ToolbarRect(float w) => new Rect(w - 104 - 76 * 7, 8, 76 * 7, 30);
-
         void DrawWindows(float w, float h, float scale)
         {
             if (windows.Count == 0) MakeWindows();

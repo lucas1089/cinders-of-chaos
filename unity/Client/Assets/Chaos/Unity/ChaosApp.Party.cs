@@ -45,7 +45,7 @@ namespace Chaos.Client
                 {
                     Fill(new Rect(0, 0, box.width, box.height), new Color(0.04f, 0.03f, 0.05f, 0.95f));
                     Fill(new Rect(0, 0, box.width, 3), new Color(0.96f, 0.81f, 0.45f));
-                    GUI.Label(new Rect(10, 8, box.width - 20, 24), Loc.T("{0} invited you to join their party.", party.InvitedBy), small);
+                    GUI.Label(new Rect(10, 8, box.width - 20, 24), Loc.T("{0} invited you to join a party.", party.InvitedBy), small);
                     if (GUI.Button(new Rect(10, 40, 150, 28), Loc.T("Accept"))) AcceptInvitation();
                     if (GUI.Button(new Rect(180, 40, 150, 28), Loc.T("Decline"))) party.InvitedBy = "";
                 }, GUIContent.none, GUIStyle.none);

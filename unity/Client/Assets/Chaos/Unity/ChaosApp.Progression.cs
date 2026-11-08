@@ -20,7 +20,8 @@ namespace Chaos.Client
         UnlockAnnouncement announceShown;
         bool announceBox;
 
-        const float TopButtonW = 76f, TopRowH = 24f, TopMenuW = 190f;
+        const float TopRowH = 24f, TopMenuW = 190f;
+        Rect topBarRect;
 
         // ------------------------------------------------------------------------------------ opening things
         /// <summary>The window of that class name, or null.</summary>
@@ -142,11 +143,17 @@ namespace Chaos.Client
         {
             if (windows.Count == 0) MakeWindows();
             int count = TopMenu.Categories.Length + 1;
-            float x0 = w - 104 - TopButtonW * count;
             var e = Event.current;
+            // each button is as wide as its label, the row ends before Log out and wraps when it does not fit
+            var bs = GUI.skin.button;
+            var widths = new float[count];
+            for (int i = 0; i < count; i++) widths[i] = bs.CalcSize(new GUIContent(CategoryText(i))).x;
+            var cells = TopbarLayout.Fit(widths, 10f, 56f, 4f, StatusRect().xMax + 8f, w - 104f);
+            Rect bar = default;
             for (int i = 0; i < count; i++)
             {
-                var b = new Rect(x0 + TopButtonW * i, 8, TopButtonW - 4, 30);
+                var b = new Rect(cells[i].X, 8 + cells[i].Row * 32, cells[i].W, 30);
+                bar = i == 0 ? b : Rect.MinMaxRect(Mathf.Min(bar.xMin, b.xMin), bar.yMin, Mathf.Max(bar.xMax, b.xMax), Mathf.Max(bar.yMax, b.yMax));
                 uiRects.Add(Scaled(b, scale));
                 bool on = topMenuOpen == i;
                 if (GUI.Toggle(b, on, CategoryText(i), GUI.skin.button) != on)
@@ -155,17 +162,18 @@ namespace Chaos.Client
                     topMenuFrame = Time.frameCount;
                 }
             }
+            topBarRect = bar;
             if (topMenuOpen >= 0 && topMenuOpen < count)
             {
                 var items = CategoryItems(topMenuOpen);
                 float rowH = TopRowH;
-                var box = new Rect(x0 + TopButtonW * topMenuOpen - (TopMenuW - TopButtonW) / 2f, 40, TopMenuW, 6 + rowH * Mathf.Max(1, items.Count));
+                var cell = cells[topMenuOpen];
+                var box = new Rect(cell.X + cell.W / 2f - TopMenuW / 2f, 8 + cell.Row * 32 + 32, TopMenuW, 6 + rowH * Mathf.Max(1, items.Count));
                 box.x = Mathf.Clamp(box.x, 4, Mathf.Max(4, w - box.width - 4));
                 uiRects.Add(Scaled(box, scale));
                 // a click outside closes it (not the click that opened it)
                 if (e.type == EventType.MouseDown && Time.frameCount != topMenuFrame && !box.Contains(e.mousePosition))
                 {
-                    var bar = new Rect(x0, 8, TopButtonW * count, 30);
                     if (!bar.Contains(e.mousePosition)) topMenuOpen = -1;
                 }
                 if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape) { topMenuOpen = -1; e.Use(); }
