@@ -8,8 +8,10 @@ namespace Chaos.Client
 {
     public sealed partial class ChaosApp
     {
-        bool plateAsPercent, plateChoiceLoaded;
+        bool plateAsPercent, plateChoiceLoaded, plateSmooth = true, plateDragging;
+        Vector2 plateDragLast;
         string plateChoiceFor = "";
+        readonly HudBarTrack plateHp = new HudBarTrack(), plateMp = new HudBarTrack();   // the eased bars (Core/HudBars.cs)
 
         void PlatePanel(float scale)
         {
@@ -23,7 +25,12 @@ namespace Chaos.Client
                 plateChoiceFor = name;
                 plateChoiceLoaded = true;
                 plateAsPercent = PlayerPrefs.GetInt("chaos.plate.percent." + name.ToLowerInvariant(), 0) == 1;
+                plateSmooth = PlayerPrefs.GetInt("chaos.plate.smooth", 1) == 1;
+                plateHp.Reset(); plateMp.Reset();   // another character: the first value is taken at once
             }
+            double plateNow = session.Now;
+            plateHp.Observe(HudBarTrack.Percent(p.Health, p.MaxHealth), plateNow);
+            plateMp.Observe(HudBarTrack.Percent(p.Mana, p.MaxMana), plateNow);
             Rect box = StatusRect();
             uiRects.Add(Scaled(box, scale));
             Fill(box, new Color(0.04f, 0.03f, 0.05f, 0.8f));
@@ -36,8 +43,9 @@ namespace Chaos.Client
             GUI.Label(new Rect(box.x + 58, box.y + 4, box.width - 64, 22), (name.Length > 0 ? name : "...") + "   " + Loc.T("Lv {0}", p.Level), titleStyle);
             var hp = new Rect(box.x + 58, box.y + 28, box.width - 66, 16);
             var mp = new Rect(box.x + 58, box.y + 46, box.width - 66, 16);
-            PlateBar(hp, p.Health, p.MaxHealth, new Color(0.75f, 0.12f, 0.1f));
-            PlateBar(mp, p.Mana, p.MaxMana, new Color(0.15f, 0.35f, 0.85f));
+            PlateBar(hp, p.Health, p.MaxHealth, new Color(0.75f, 0.12f, 0.1f), plateHp, plateNow);
+            PlateBar(mp, p.Mana, p.MaxMana, new Color(0.15f, 0.35f, 0.85f), plateMp, plateNow);
+            PlateGrip(box);
             // experience: the server's percent (0xA0), text with what is missing
             int pct = Plate.LevelPercent(p.LevelPercent);
             var xp = new Rect(box.x + 8, box.y + 70, box.width - 16, 14);
@@ -50,16 +58,53 @@ namespace Chaos.Client
             var e = Event.current;
             if (e.type == EventType.MouseDown && e.button == 1 && (hp.Contains(e.mousePosition) || mp.Contains(e.mousePosition)))
             {
-                plateAsPercent = !plateAsPercent;
-                PlayerPrefs.SetInt("chaos.plate.percent." + name.ToLowerInvariant(), plateAsPercent ? 1 : 0);
+                // the bar menu of the main client's plate: numbers or percent, eased bars on or off
+                string key = "chaos.plate.percent." + name.ToLowerInvariant();
+                var items = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, System.Action>>
+                {
+                    new System.Collections.Generic.KeyValuePair<string, System.Action>(plateAsPercent ? Loc.T("Show numbers") : Loc.T("Show percent"), () => { plateAsPercent = !plateAsPercent; PlayerPrefs.SetInt(key, plateAsPercent ? 1 : 0); }),
+                    new System.Collections.Generic.KeyValuePair<string, System.Action>(plateSmooth ? Loc.T("Eased bars: on") : Loc.T("Eased bars: off"), () => { plateSmooth = !plateSmooth; PlayerPrefs.SetInt("chaos.plate.smooth", plateSmooth ? 1 : 0); }),
+                };
+                ShowMenu(MouseUi(), items);
                 e.Use();
             }
         }
 
-        void PlateBar(Rect r, int v, int max, Color c)
+        /// <summary>The strip on top of the plate: drag it to move the plate (the saved place of the "status" HUD piece, as the layout edit mode keeps it), double click puts it back.</summary>
+        void PlateGrip(Rect box)
+        {
+            var grip = new Rect(box.x + 2, box.y, box.width - 2, 6);
+            var e = Event.current;
+            bool over = grip.Contains(e.mousePosition) || plateDragging;
+            if (e.type == EventType.Repaint)
+            {
+                Fill(grip, over ? new Color(0.6f, 0.45f, 0.18f, 0.55f) : new Color(1f, 1f, 1f, 0.05f));
+                for (int i = -2; i <= 2; i++) Fill(new Rect(grip.center.x + i * 6 - 1, grip.y + 2, 2, 2), new Color(1f, 1f, 1f, over ? 0.7f : 0.25f));
+            }
+            if (e.type == EventType.MouseDown && e.button == 0 && grip.Contains(e.mousePosition) && !HudLayout.Editing)
+            {
+                if (e.clickCount >= 2) { HudLayout.Reset("status"); SaveHud(); }
+                else { plateDragging = true; plateDragLast = e.mousePosition; }
+                e.Use();
+            }
+            else if (plateDragging && e.type == EventType.MouseDrag)
+            {
+                HudLayout.Drag("status", 8, 8, 248, 92, hudW, hudH, e.mousePosition.x - plateDragLast.x, e.mousePosition.y - plateDragLast.y);
+                plateDragLast = e.mousePosition;
+                e.Use();
+            }
+            else if (plateDragging && (e.type == EventType.MouseUp || e.rawType == EventType.MouseUp)) { plateDragging = false; SaveHud(); e.Use(); }
+        }
+
+        void PlateBar(Rect r, int v, int max, Color c, HudBarTrack track, double now)
         {
             Fill(r, new Color(0f, 0f, 0f, 0.9f));
             int px = Plate.FillWidth(v, max, (int)r.width - 2);
+            if (plateSmooth)
+            {
+                track.Widths(v, max, (int)r.width - 2, now, out px, out int chip, out _);
+                if (chip > px) Fill(new Rect(r.x + 1 + px, r.y + 1, chip - px, r.height - 2), new Color(1f, 1f, 1f, 0.55f));   // the pale chip of a fall
+            }
             if (px > 0) Fill(new Rect(r.x + 1, r.y + 1, px, r.height - 2), c);
             var st = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter, fontSize = 12 };
             st.normal.textColor = Color.white;

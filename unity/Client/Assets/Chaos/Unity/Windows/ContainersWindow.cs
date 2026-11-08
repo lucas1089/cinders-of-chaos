@@ -20,7 +20,7 @@ namespace Chaos.Client
 
         protected override Rect Place(float w, float h)
         {
-            float top = 48 + 270 + 8;
+            float top = 48 + EquipmentWindow.Height + 8;
             return new Rect(w - 198, top, 188, Mathf.Clamp(h - top - 8, 160, 380));
         }
 
