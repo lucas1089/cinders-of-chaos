@@ -1842,6 +1842,8 @@ Client patch 0029 predicts the same: 10 ms rounding and 7/5 diagonal for players
 offset spans the whole step, so a diagonal glides. Click-walk path finding costs a diagonal 1.4 (was 3), so paths use
 diagonals. The constants must match on both sides; `tests/movement_speed_test.lua` reads both patches.
 
+O434 (2026-11-08, owner: smoother walking, 8 directions): audited, no server change. A diagonal already costs 7/5 here (not the stock 3x), the click-walk path finders cost it 1.4, and the server queues a step that arrives early, so the client can send steps back to back. The smoothness fix is client side (base patch `0190`, client/BASE.md). Monsters and NPCs still step diagonally in a straight step's time, and the engine's A* costs a diagonal 2.5 (`MAP_DIAGONALWALKCOST` 25): left as is on purpose (monster balance). The Unity client uses 141/100, the server 140/100.
+
 Tiles per second, ground speed 150 (grass; the engine's default), a 220 vocation, ms per step in brackets:
 
 | Level | Speed before | Before | Speed now | Straight | Diagonal (was 3x on the client) | Strong haste | Paralyze rune |
