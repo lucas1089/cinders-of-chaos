@@ -44,6 +44,20 @@ namespace Chaos.Core.LiveCheck
         public string RiftKill = "/rkill", RiftNear = "/rnear";
         /// <summary>Server item ids of the rift reward chest (rift_config.lua chest.itemId and chest.fallbackId), whose client ids the scenario looks for on the map.</summary>
         public int RiftChestServerId = 32311, RiftChestFallbackServerId = 21584;
+        // ---- phase 24
+        /// <summary>The tier and the fixed modifiers ("name:value,name:value", as the staff command /rift key TIER MODS takes them; empty: random) of the rifttier and riftfail
+        /// scenarios. Tier 2 is the first one above the tier 1 of the earlier scenarios; the staff key allows up to rift_config.lua maxTier (15).</summary>
+        public int RiftTier = 2;
+        public string RiftMods;
+        /// <summary>Seconds the riftfail scenario leaves the rift (the local-only staff command /rtime sets the deadline: the server's own time-up rule then fails the run).</summary>
+        public int RiftFailSeconds = 12;
+        /// <summary>The staff command that sets the open rift's deadline in N seconds, and the one that moves the character next to the rift's chest or coffer (local-only, like --rift-kill).</summary>
+        public string RiftTime = "/rtime", RiftGo = "/rgo", RiftKeys = "/rkeys";
+        /// <summary>Server item ids of the Omen Key (rift_config.lua omen.key.id) and of the Sealed Coffer (coffer.itemId, coffer.fallbackId).</summary>
+        public int OmenKeyServerId = 32072, CofferServerId = 32312, CofferFallbackServerId = 12664;
+        /// <summary>The Keeper of Trials (the trial window) and the NPC beside him (the Ascendant Oracle's choice) for moremodals, and where to look for them.</summary>
+        public string KeeperNpc = "Keeper of Trials", OracleNpc = "Ascendant Oracle";
+        public Pos? KeeperAt;
         /// <summary>The aware range asked for after the login (Chaos identity only), 0 asks for nothing.</summary>
         public int AwareWidth, AwareHeight;
         /// <summary>Time limit of one scenario in ms (the death and rift ones take their own, longer, limits from it).</summary>
