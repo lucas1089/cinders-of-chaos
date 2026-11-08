@@ -295,7 +295,7 @@ namespace Chaos.Client
             {
                 int index = -1;
                 for (int i = 0; i < app.windows.Count; i++) if (app.windows[i].GetType().Name == s.Id) { index = i; break; }
-                if (index < 0) return;
+                if (index < 0 || app.windows[index].RaiseWhenShown) return;   // it comes to the front each time it is shown, whatever its place in the list
                 var above = new List<SmokeBox>();
                 for (int j = index + 1; j < app.windows.Count; j++)
                 {
