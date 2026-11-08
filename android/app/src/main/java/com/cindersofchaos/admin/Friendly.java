@@ -169,6 +169,9 @@ final class Friendly {
         if (t.startsWith("started (publish-update")) {
             return "Começou a publicar o update do client. Acompanhe em Logs, Atualização, log da publicação.";
         }
+        if (t.startsWith("started (publish-unity")) {
+            return "Começou a publicar o client Unity. Acompanhe em Logs, Atualização, log da publicação.";
+        }
         if (t.startsWith("started (publish-apk")) {
             return "Começou a publicar o app Android. Acompanhe em Logs, Atualização, log da publicação.";
         }

@@ -13,6 +13,9 @@ Encrypted blobs (build 13): the client guard key comes from the environment or t
 CHAOS_ENV; without it nothing is published; every published blob is ciphertext that decrypts to the signed content; a
 packed package (the exe and chaos.pack) is opened with the key of a rotation pair that fits; a development pack, a
 pack of another key and a min_package below 13 are refused; the old plain blobs are removed.
+Unity channel (O433 phase 16): --unity publishes the player zip of the workflow (a tag or a local zip) as updates/unity with
+plain blobs and no client key, leaves the main manifest alone, refuses a changed file, a main client zip, a lower version
+and the main client's options.
 Sprite shards (pair 37): a single Tibia.spr in a package is published as its shard set (split and verified), a pack
 that holds the shards publishes them as they are, one with both leaves the single file out, a broken spr is refused.
 
@@ -558,6 +561,102 @@ exec %s "$@"
         check(r.returncode != 0 and 'not signed by this key' in r.stderr, 'a manifest of another key is not changed')
         r = run()
         check(r.returncode != 0 and 'TAG or ZIP' in r.stderr, 'nothing to do: refused')
+
+        # ---- the Unity client channel (O433 phase 16): --unity, its own manifest in updates/unity, no client key needed
+        import make_unity_manifest as mun
+        unity_live = os.path.join(site, 'updates', 'unity')
+        player = os.path.join(tmp, 'uplayer')
+        for rel, data in (('ChaosUnity.exe', b'MZ unity'), ('UnityPlayer.dll', b'MZ player' * 50),
+                          ('ChaosUnity_Data/globalgamemanagers', os.urandom(3000)),
+                          ('ChaosUnity_Data/Managed/Assembly-CSharp.dll', b'MZ asm' * 40),
+                          ('ChaosUnity_Data/Resources/unity default resources', b'res' * 30)):
+            full = os.path.join(player, *rel.split('/'))
+            os.makedirs(os.path.dirname(full), exist_ok=True)
+            open(full, 'wb').write(data)
+        uzip = os.path.join(zips, 'unity.zip')
+        with open(os.devnull, 'w') as sink:
+            real, sys.stdout = sys.stdout, sink
+            try:
+                mun.main(['pack', player, '--out', uzip, '--package', '31'])
+            finally:
+                sys.stdout = real
+        env_u = {'CHAOS_UPDATE_UNITY_MIN_MB': '0'}
+        usrv = serve(site, True)   # a server of its own for the check of updates/unity
+        uurl = 'http://127.0.0.1:%d/updates/live/manifest.json' % usrv.server_address[1]
+
+        def upayload():
+            return json.loads(json.load(open(os.path.join(unity_live, 'manifest.json')))['payload'])
+
+        def uverify():
+            return subprocess.run([sys.executable, '-I', os.path.join(HERE, '..', '..', 'client', 'tools',
+                                                                      'make_unity_manifest.py'),
+                                   'verify', unity_live, '--public', public], capture_output=True, text=True).returncode == 0
+
+        main_before = open(os.path.join(live, 'manifest.json')).read()
+        r = run('--unity', '--version', '2', uzip, extra=env_u, drop=('CHAOS_CLIENT_KEY',))
+        check(r.returncode == 0, 'unity zip publishes without a client key: ' + r.stdout + r.stderr)
+        check('published: the Unity client, manifest version 2' in r.stdout, 'unity: the summary line')
+        um = upayload() if r.returncode == 0 else {}
+        check(um.get('channel') == 'unity' and um.get('version') == 2 and um.get('files') == [] and uverify(),
+              'unity: its own manifest, no in-game updater files, it verifies')
+        check(um.get('native', {}).get('layout') == 'tree' and um['native']['game'] == 'ChaosUnity.exe'
+              and um['native']['package'] == 31
+              and {f['path'] for f in um['native']['files']} == {'ChaosUnity.exe', 'UnityPlayer.dll',
+                                                                  'ChaosUnity_Data/globalgamemanagers',
+                                                                  'ChaosUnity_Data/Managed/Assembly-CSharp.dll',
+                                                                  'ChaosUnity_Data/Resources/unity default resources'},
+              'unity: the tree of the player folder, game and package from the build manifest')
+        check(open(os.path.join(live, 'manifest.json')).read() == main_before,
+              'unity: the main client manifest is not touched')
+        check(os.listdir(work) == [], 'unity: the work folder is removed')
+        # a release tag: the asset URL and the version from the tag; the web check against the local server
+        open(os.path.join(stub, 'urls'), 'w').close()
+        r = run('--unity', 'unity-3', extra=dict(env_u, STUB_ZIP=uzip, CHAOS_UPDATE_URL=uurl))
+        check(r.returncode == 0, 'unity tag publishes: ' + r.stdout + r.stderr)
+        check('releases/download/unity-3/CindersOfChaos-Unity-Windows.zip' in open(os.path.join(stub, 'urls')).read(),
+              'unity: the release asset URL')
+        check(upayload()['version'] == 3 and uverify(), 'unity: tag unity-3 -> version 3')
+        check('/updates/unity/manifest.json -> HTTP 200' in r.stdout and 'check: ok' in r.stdout,
+              'unity: the web server check of updates/unity: ' + r.stdout)
+        ubefore = open(os.path.join(unity_live, 'manifest.json')).read()
+        # refusals publish nothing
+        r = run('--unity', 'unity-3', extra=dict(env_u, STUB_ZIP=uzip))
+        check(r.returncode != 0 and 'not newer' in r.stderr, 'unity: the same version again refused: ' + r.stderr)
+        r = run('--unity', good, extra=env_u)
+        check(r.returncode != 0 and 'unity_build.json' in r.stderr, 'unity: a main client zip refused')
+        r = run('--version', '99', uzip)
+        check(r.returncode != 0 and 'no client folder' not in r.stdout and not os.path.exists(os.path.join(live, 'x')),
+              'a unity zip without --unity is not taken for a client')
+        check(open(os.path.join(live, 'manifest.json')).read() == main_before, 'the main manifest is still untouched')
+        r = run('--unity', uzip, '--apk', 'android-9', extra=env_u)
+        check(r.returncode != 0 and 'does not go with' in r.stderr, 'unity with --apk refused')
+        r = run('--unity', '--min-package', '13', uzip, extra=env_u)
+        check(r.returncode != 0 and 'does not go with' in r.stderr, 'unity with --min-package refused')
+        r = run('--unity', '--check-only', uzip, extra=env_u)
+        check(r.returncode != 0 and 'does not go with' in r.stderr, 'unity with --check-only refused')
+        r = run('--unity', extra=env_u)
+        check(r.returncode != 0 and 'needs a TAG or ZIP' in r.stderr, 'unity without a zip refused')
+        r = run('--unity', '--version', '9', uzip)
+        check(r.returncode != 0 and 'below 20 MB' in r.stderr, 'unity: a small download refused by default')
+        # a zip whose file differs from its build manifest
+        tampered = os.path.join(zips, 'unity_bad.zip')
+        with zipfile.ZipFile(uzip) as zin, zipfile.ZipFile(tampered, 'w') as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+                zout.writestr(item.filename, b'MZ evil' if item.filename == 'UnityPlayer.dll' else data)
+        r = run('--unity', '--version', '9', tampered, extra=env_u)
+        check(r.returncode != 0 and 'do not match' in r.stderr, 'unity: a changed file refused: ' + r.stderr)
+        # a zip with a script in it
+        scripted = os.path.join(zips, 'unity_script.zip')
+        with zipfile.ZipFile(uzip) as zin, zipfile.ZipFile(scripted, 'w') as zout:
+            for item in zin.infolist():
+                zout.writestr(item.filename, zin.read(item.filename))
+            zout.writestr('run.bat', 'echo x')
+        r = run('--unity', '--version', '9', scripted, extra=env_u)
+        check(r.returncode != 0, 'unity: a zip with an extra file refused')
+        check(open(os.path.join(unity_live, 'manifest.json')).read() == ubefore and os.listdir(work) == [],
+              'unity: refused runs change nothing')
+        usrv.shutdown()
         plain.shutdown()
 
     print('publish_client_update_test: %d failures' % failures)

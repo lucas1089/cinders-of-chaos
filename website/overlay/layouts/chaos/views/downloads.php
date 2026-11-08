@@ -3,8 +3,17 @@
  * Downloads: the client builds and how to connect. The links come from $config['downloads'] (written from
  * CHAOS_CLIENT_WINDOWS_URL / CHAOS_CLIENT_LINUX_URL by the installer; "#download-coming-soon" until they are set)
  * and can also be edited in Admin Panel > Downloads.
+ * The Unity client (beta, ROADMAP O433 phase 16) is installed by the launcher of the Windows client ("Client: Unity client
+ * (beta)"), so its card always explains that; an entry `unity_client` (CHAOS_CLIENT_UNITY_URL) adds a direct link.
  */
 $h = static function ($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
+// the page's language for the Unity client card (plugins/chaos/i18n_lib.php, README "Languages"); English without the plugin
+if (!function_exists('chaos_t') && is_file(dirname(__DIR__, 3) . '/plugins/chaos/i18n_lib.php')) {
+	require_once dirname(__DIR__, 3) . '/plugins/chaos/i18n_lib.php';
+}
+if (!function_exists('chaos_t')) {
+	function chaos_t(string $en, ...$args): string { return $args ? vsprintf($en, $args) : $en; }
+}
 $entries = function_exists('znote_download_entries') ? znote_download_entries() : array();
 $host = function_exists('chaos_cfg') ? (string)chaos_cfg('game_host', '') : '';
 $port = function_exists('chaos_cfg') ? (int)chaos_cfg('game_port', 7171) : 7171;
@@ -41,7 +50,13 @@ $fileMeta = static function (string $url) use ($dlInfo, $dlFiles): ?array {
 	<h1 class="chaos-heading">Download the client</h1>
 	<p class="chaos-lead">Cinders of Chaos is played with its own client: the dark skin, the top menu and a window for every system (passive tree, crafting bench, rifts, leaderboards, patch notes). It is free.</p>
 	<div class="chaos-dl">
-		<?php foreach ($entries as $e):
+		<?php $unityUrl = '';
+		foreach ($entries as $e):
+			if (($e['key'] ?? '') === 'unity_client') {
+				$u = (string)$e['url'];
+				$unityUrl = ($u !== '' && $u[0] !== '#') ? $u : '';
+				continue; // drawn below, with the launcher note
+			}
 			$url = (string)$e['url'];
 			$soon = ($url === '' || $url[0] === '#'); ?>
 			<div class="chaos-dl__card">
@@ -59,6 +74,15 @@ $fileMeta = static function (string $url) use ($dlInfo, $dlFiles): ?array {
 				<?php endif; ?>
 			</div>
 		<?php endforeach; ?>
+			<div class="chaos-dl__card chaos-dl__card--unity">
+				<i class="fa fa-cube"></i>
+				<h3><?= $h(chaos_t('Unity client (beta)')) ?></h3>
+				<p><?= $h(chaos_t('A second client of the same game, made with Unity, for Windows 10 and 11 (64-bit). It plays on the same server with the same account as the main client. It is a beta: some windows and effects are not finished.')) ?></p>
+				<p><?= $h(chaos_t('Install the Windows client, open its launcher and choose "Unity client (beta)" next to Client. The launcher downloads it and keeps it up to date.')) ?></p>
+				<?php if ($unityUrl !== ''): ?>
+					<a class="chaos-btn chaos-btn--ghost" href="<?= $h($unityUrl) ?>" rel="noopener"><?= $h(chaos_t('Download')) ?></a>
+				<?php endif; ?>
+			</div>
 	</div>
 </div>
 

@@ -298,6 +298,9 @@ mod tests {
             args: vec![],
             feed: feed.map(str::to_string),
             dir: dir.to_path_buf(),
+            unity_manifest: None,
+            unity_game: "ChaosUnity.exe".into(),
+            layout: crate::manifest::Layout::Flat,
         }
     }
 

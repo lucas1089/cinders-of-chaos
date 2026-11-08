@@ -163,6 +163,12 @@ no Discord button), the admin account names. The Rules page is a first draft to 
 With the client links pointing at the site's own `dl/` folder (`https://SITE/dl/CindersOfChaos-Client-Windows.zip`,
 `.../CindersOfChaos-Client-Linux.tar.gz`), the admin app's server update replaces those files with each new release and
 writes `dl/downloads.json`; the downloads page then shows the release, date, size and SHA-256 under each button.
+**Unity client (beta, O433 phase 16):** the downloads page always has a "Unity client (beta)" card (pt-BR: "Cliente Unity (beta)") next to the
+Windows and Linux ones. It says that the Unity client is a second client of the same game on the same server and account, still a beta,
+and that the launcher of the Windows client installs it ("choose Unity client (beta) next to Client"), so it has no download button of its own.
+`CHAOS_CLIENT_UNITY_URL` (empty by default; also an entry `unity_client` in Admin Panel > Downloads) adds a direct link to the card.
+Its texts are `chaos_t()` keys with pt-BR entries in `plugins/chaos/i18n/pt-BR.php`; `tests/chaos_downloads_page_test.php` checks the card,
+the optional link (an address that is a placeholder or hostile adds none) and that every text has a pt-BR entry.
 
 Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_DIR" website/setup/router.php`.
 The router stands in for the `.htaccess` deny rules and clean addresses; it is for local tests only.
@@ -1091,7 +1097,9 @@ location ^~ /updates/ {
 }
 ```
 
-`install_site.sh` copies `overlay/updates/.htaccess` and never touches `updates/live/`.
+`install_site.sh` copies `overlay/updates/.htaccess` and never touches `updates/live/` or `updates/unity/`.
+`updates/unity/` is the Unity client's channel (ROADMAP O433 phase 16): its own `manifest.json` and plain files in `native/<xx>/<sha256>`,
+written by `publish_client_update.sh --unity` (`chaos-ctl.sh publish-unity`). The same `location ^~ /updates/` block and `.htaccess` serve it.
 On the VPS, `server/deploy/publish_client_update.sh` (or `chaos-ctl.sh publish-update winpkg-N`) fills `updates/live/`
 from a release's client zip and checks these headers and a Range request afterwards (docs/LAUNCH.md "Publishing a
 client update").

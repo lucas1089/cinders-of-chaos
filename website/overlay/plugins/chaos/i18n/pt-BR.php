@@ -412,6 +412,10 @@ return array(
 	'Top-down hunt and loot with the depth of an action RPG' => 'Caça e loot com visão de cima e a profundidade de um RPG de ação',
 	'Cinders of Chaos is a dark fantasy online RPG with its own client: classes with ascensions, a huge passive tree, items with rarities and modifiers, crafting orbs, and an endgame built for weeks of play.' => 'Cinders of Chaos é um RPG online de fantasia sombria com cliente próprio: classes com ascensões, uma enorme árvore passiva, itens com raridades e modificadores, orbes de criação e um endgame feito para semanas de jogo.',
 	'Download the client' => 'Baixar o cliente',
+	// the downloads page: the Unity client card (layouts/chaos/views/downloads.php)
+	'Unity client (beta)' => 'Cliente Unity (beta)',
+	'A second client of the same game, made with Unity, for Windows 10 and 11 (64-bit). It plays on the same server with the same account as the main client. It is a beta: some windows and effects are not finished.' => 'Um segundo cliente do mesmo jogo, feito com Unity, para Windows 10 e 11 (64 bits). Joga no mesmo servidor, com a mesma conta do cliente principal. É um beta: algumas janelas e efeitos ainda não estão prontos.',
+	'Install the Windows client, open its launcher and choose "Unity client (beta)" next to Client. The launcher downloads it and keeps it up to date.' => 'Instale o cliente para Windows, abra o launcher dele e escolha "Cliente Unity (beta)" ao lado de Cliente. O launcher baixa o cliente e o mantém atualizado.',
 	'Create a character' => 'Criar um personagem',
 	'Create an account' => 'Criar uma conta',
 	'Passive nodes' => 'Nós passivos',

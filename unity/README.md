@@ -646,6 +646,49 @@ Keys: arrows, WASD, numpad. A held mouse button or finger walks towards the poin
 
 The artifact `chaos-unity-<target>` is kept 7 days.
 
+## Shipping the Unity client
+
+Owner 2026-11-07 (pt-BR): "Quero que os jogadores consigam jogar em ambos os clientes. Mais pra frente iremos migrar totalmente pro unity."
+Players pick the client in the game launcher (O314): "Main client" or "Unity client (beta)". Same account, same server, same signed update path.
+Phase 16 track A. Written and tested here (Python, Rust, PHP, shell); not run on Windows, not published yet.
+
+Route, step by step:
+1. Build. Actions > Unity prototype > target `StandaloneWindows64` (needs the Unity secrets above). The job keeps the raw build as the artifact
+   `chaos-unity-StandaloneWindows64` and packs it as the artifact `chaos-unity-windows-package` (7 days): `CindersOfChaos-Unity-Windows.zip` and its `.sha256`.
+   Linux and Android builds are unchanged and are not packed.
+2. The zip holds the player folder at its root (`ChaosUnity.exe`, `UnityPlayer.dll`, `ChaosUnity_Data/...`, `MonoBleedingEdge/...`) and `unity_build.json`:
+   every file with path, size and SHA-256, in the shape of the `native` section the launcher already reads, plus the package number (the `client_build` input).
+   `client/tools/make_unity_manifest.py pack` writes it. Not signed: the update key never leaves the VPS. Left out: `*_BurstDebugInformation_DoNotShip`,
+   `*_BackUpThisFolder_ButDontShipItWithYourGame`, `.pdb`. Refused: links, scripts (`.bat`, `.cmd`, `.ps1`, shortcuts), odd names, `.exe` outside the root,
+   more than 4096 files or 12 folders deep. The launcher applies the same rules.
+3. No release is made by the workflow. To publish, the owner downloads the zip and attaches it to a GitHub release by hand, tag `unity-N`
+   (asset name `CindersOfChaos-Unity-Windows.zip`).
+4. Publish on the VPS: admin app, tab Comandos > card "Site e update do client" > field "Release do client Unity (beta)" > button "Publicar client Unity".
+   Shell fallback: `chaos-ctl.sh publish-unity unity-N [--version N]`, which runs `publish_client_update.sh --unity unity-N`.
+   It downloads the zip, extracts it safely, hashes the files again (they must match `unity_build.json`), copies them as plain blobs to
+   `updates/unity/native/<sha[:2]>/<sha>` and writes `updates/unity/manifest.json` signed with the same Ed25519 key, last.
+   The main client's `updates/live` is not touched, and no `CHAOS_CLIENT_KEY` is needed (the Unity build is public client code, no secret in the blobs).
+   The manifest version counts on its own: the tag number, else the published one plus 1, and it must go up.
+5. Players: the launcher shows "Client: Main client | Unity client (beta)". Unity is installed in `unity/` inside the game folder with its own
+   `.cinders_launcher` state, through the same update code (resume, hash check, journaled swap with rollback). The choice is saved in
+   `.cinders_launcher/settings.json`. `Jogar` starts `unity/ChaosUnity.exe`. Details: `launcher/README.md` "Client choice".
+
+Files: `client/tools/make_unity_manifest.py` (pack, build, verify; tests `make_unity_manifest_test.py`), `server/deploy/publish_client_update.sh --unity`
+(tests `publish_client_update_test.py`), `server/deploy/chaos-ctl.sh publish-unity` (tests `chaos_ctl_test.py`), `launcher/src/choice.rs`, `manifest.rs`
+(layout `Tree`), `config.rs`, `launcher/tests/unity_update.rs`, `launcher/tests/vector.rs` (a manifest signed by Python), the website downloads page.
+
+Open before players use it (owner decisions, nothing here decides them):
+- **The guard key.** A default build answers the guard with the development key, so a live server in mode enforce refuses the login. The only way to a build
+  that logs in is the input `embed_client_key`, which puts `CHAOS_CLIENT_KEY` into a file every player downloads. This repository and the update folder are public,
+  so the key can be read out of the build. Choose between that (the guard is then only a hurdle) and the server guard in mode "log" for Unity.
+  The workflow prints a warning when the key is in the package.
+- **The sprite pair.** Unity reads `Tibia.dat` and `Tibia.spr` from `things/` beside the exe, so from `unity/things/`. The update channel does not carry
+  them: the pair holds art whose licence allows it inside a built game but not as plain files (docs/CREDITS.md), and the main client keeps it inside the
+  encrypted `chaos.pack`. Until the owner decides how to deliver it (for example an encrypted blob opened by the build), a tester puts the pair there by hand.
+  The launcher never touches files the manifest does not name.
+- **Not run on Windows or against a live server.** The window smoke run (CI) and the fake server are the only runs. The swap of a loaded player on Windows is untested, as for the main client.
+- **Code signing.** Same as the launcher: unsigned programs get antivirus and SmartScreen warnings.
+
 ## Protocol notes
 
 - The game login says who we are in two places (full audit in "Both clients"): the OS word and the marker bytes after the random byte.

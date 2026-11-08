@@ -263,6 +263,7 @@ const GM_P: &[Param] = &[
 ];
 const TAG_P: &[Param] = &[text("tag", "Tag da release (ex.: winpkg-123)")];
 const APK_P: &[Param] = &[text("tag", "Tag da release do app (ex.: android-31)")];
+const UNITY_P: &[Param] = &[text("tag", "Tag da release do client Unity (ex.: unity-3)")];
 const N_P: &[Param] = &[int("n", "Linhas", 1, 500, "100")];
 const SECS_P: &[Param] = &[int("secs", "Segundos de aviso", 30, 900, "300")];
 const MINS_P: &[Param] = &[int("mins", "Minutos", 1, 60, "5")];
@@ -399,6 +400,7 @@ pub static ACTIONS: &[Action] = &[
     act(Updates, "Site e update do client", "Publicar update do client", "publish-update {tag}").p(TAG_P).ask().t(30),
     act(Updates, "Site e update do client", "Publicar app Android", "publish-apk {tag}").p(APK_P).ask().t(30),
     act(Updates, "Site e update do client", "Tirar o app Android do update", "publish-apk --remove").ask().t(30),
+    act(Updates, "Site e update do client", "Publicar client Unity (beta)", "publish-unity {tag}").p(UNITY_P).ask().t(30),
     act(Updates, "Site e update do client", "Trocar os downloads", "update-downloads").ask().t(30),
     act(Updates, "Logs das atualizações", "Log do update do servidor", "update-log {n}").p(N_P).t(40),
     act(Updates, "Logs das atualizações", "Log da publicação do client", "publish-log {n}").p(N_P).t(40),

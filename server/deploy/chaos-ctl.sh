@@ -164,6 +164,12 @@
 #                               (android-31) of android-client.yml becomes the manifest's "android_apk" entry, same
 #                               version and game files, signed again; --remove drops it; alone, --min-version-code only
 #                               changes the number below which a phone cannot play (docs/ANDROID_CLIENT.md section 4).
+#   publish-unity TAG [--version N]
+#                               the Unity client channel (O433 phase 16) in the background (publish-log):
+#                               publish_client_update.sh --unity TAG signs the Unity player zip of that release
+#                               (CindersOfChaos-Unity-Windows.zip, the artifact of the workflow unity-prototype.yml attached to
+#                               a release by hand) as updates/unity. The launcher then offers "Unity client (beta)". The
+#                               main client's update is not touched. Release tags only (docs/LAUNCH.md).
 #   publish-log [N]             the last N lines of the publish log
 #   install-admin [--full] KEYFILE|-
 #                               creates the user "chaosadmin" and adds that ssh public key (a file, or - for stdin; keys
@@ -1717,6 +1723,31 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     : > "$PLOG"
     setsid env "${penv[@]}" "$pub" "${args[@]}" >> "$PLOG" 2>&1 < /dev/null &
     echo "started (publish-apk ${args[*]}); follow it with: chaos-ctl.sh publish-log"
+    ;;
+  publish-unity)
+    utag=${1:-}
+    if ! [[ $utag =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || [[ $utag == *..* ]]; then
+      die "publish-unity TAG [--version N] (TAG: a release tag like unity-3)"
+    fi
+    shift
+    args=()
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --version) { num "${2:-}" && [ "${#2}" -le 9 ]; } || die "--version N"; args+=("$1" "$2"); shift 2 ;;
+        *) die "publish-unity TAG [--version N]" ;;
+      esac
+    done
+    pub="$REPO/server/deploy/publish_client_update.sh"
+    [ -x "$pub" ] || die "no $pub"
+    penv=()
+    for k in CHAOS_SITE_DIR CHAOS_UPDATE_KEY CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR; do
+      v=$(setting "$k" "")
+      [ -z "$v" ] || penv+=("$k=$v")
+    done
+    mkdir -p "$(dirname "$PLOG")"
+    : > "$PLOG"
+    setsid env "${penv[@]}" "$pub" --unity "${args[@]}" -- "$utag" >> "$PLOG" 2>&1 < /dev/null &
+    echo "started (publish-unity $utag ${args[*]}); follow it with: chaos-ctl.sh publish-log"
     ;;
   publish-log)
     [ -f "$PLOG" ] || { echo "no publish log yet ($PLOG): nothing was published"; exit 0; }

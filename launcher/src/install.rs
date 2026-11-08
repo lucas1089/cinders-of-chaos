@@ -9,9 +9,13 @@
 //!   hashcache.txt         name, size, mtime and SHA-256 of installed files (a 900 MB pack is not read every start)
 //!   owned.json            {"files": [names]} the native files of the last manifest applied; a name that the next
 //!                         manifest no longer lists is an old file of this launcher and is removed (see `remove_stale`)
+//!
+//! The Unity client (ROADMAP O433 phase 16) goes through the same code with `cfg.layout == Layout::Tree`: its `cfg.dir`
+//! is the `unity/` folder inside the install folder, its names are relative paths with sub-folders, and a folder
+//! is made before a file is put in it. Its state folder is its own, so nothing is shared with the main client.
 use crate::config::Config;
 use crate::i18n::{Error, Status};
-use crate::manifest::{self, blob_url, Manifest, NativeFile};
+use crate::manifest::{self, blob_url, Layout, Manifest, NativeFile};
 use crate::net::Fetch;
 use crate::selfupdate;
 use cinders_selfupdate::hash::{is_sha256_hex, sha256_file};
@@ -65,6 +69,10 @@ pub struct Options {
     /// First wait before a retry in milliseconds; doubles each time.
     pub backoff_ms: u64,
     pub fault: Fault,
+    /// Only the launcher's own file: nothing else is downloaded or installed and no state is saved. The Unity choice
+    /// runs the main manifest this way after its own update, so a player who only uses the Unity client still gets a
+    /// new launcher.
+    pub launcher_only: bool,
 }
 
 impl Default for Options {
@@ -73,6 +81,7 @@ impl Default for Options {
             retries: 5,
             backoff_ms: 500,
             fault: Fault::None,
+            launcher_only: false,
         }
     }
 }
@@ -177,7 +186,7 @@ impl<'a> Updater<'a> {
         let mut keep: Vec<String> = native.files.iter().map(|f| f.path.clone()).collect();
         let mut removed = Vec::new();
         for name in self.load_owned() {
-            if current(&name) || manifest::check_native_name(&name).is_some() {
+            if current(&name) || self.cfg.layout.check_path(&name).is_some() {
                 continue;
             }
             if name.eq_ignore_ascii_case(&native.game)
@@ -193,6 +202,9 @@ impl<'a> Updater<'a> {
             match std::fs::symlink_metadata(&path) {
                 Ok(m) if m.is_file() => {
                     if std::fs::remove_file(&path).is_ok() {
+                        if self.cfg.layout == Layout::Tree {
+                            self.remove_empty_parents(&path);
+                        }
                         removed.push(name);
                     } else {
                         keep.push(name);
@@ -204,6 +216,18 @@ impl<'a> Updater<'a> {
         let v = json!({"files": keep});
         let _ = write_atomic(&self.owned_path(), &v.to_string());
         removed
+    }
+
+    /// Takes away the folders a removed file leaves empty, up to (not including) the install folder. `remove_dir` only
+    /// removes an empty folder, so a folder with anything in it (a `things/` the player added) stays.
+    fn remove_empty_parents(&self, file: &Path) {
+        let mut at = file.parent();
+        while let Some(d) = at {
+            if d == self.cfg.dir || !d.starts_with(&self.cfg.dir) || std::fs::remove_dir(d).is_err() {
+                break;
+            }
+            at = d.parent();
+        }
     }
 
     fn load_cache(&self) -> HashMap<String, (u64, u128, String)> {
@@ -262,7 +286,7 @@ impl<'a> Updater<'a> {
         let j = self.journal();
         if let Ok(text) = std::fs::read_to_string(&j) {
             let v: Value = serde_json::from_str(&text).unwrap_or(Value::Null);
-            let entries = parse_journal(&v);
+            let entries = parse_journal(&v, self.cfg.layout);
             self.rollback(&entries).map_err(Error::Rollback)?;
             let _ = std::fs::remove_file(&j);
         }
@@ -322,14 +346,16 @@ impl<'a> Updater<'a> {
         let sep = if self.cfg.manifest_url.contains('?') { '&' } else { '?' };
         let url = format!("{}{sep}t={stamp}", self.cfg.manifest_url);
         let body = self.fetch.get(&url).map_err(Error::Network)?;
-        let m = manifest::parse_envelope(&body, &self.cfg.public_key)?;
+        let m = manifest::parse_envelope_for(&body, &self.cfg.public_key, self.cfg.layout)?;
         let have = self.cfg.baseline.max(self.applied_version());
         if m.version < have {
             return Err(Error::OlderManifest { got: m.version, have });
         }
         let Some(native) = m.native.clone() else {
             // a manifest of modules only: nothing for the launcher
-            self.save_state(&m)?;
+            if !self.opts.launcher_only {
+                self.save_state(&m)?;
+            }
             return Ok(Outcome {
                 version: m.version,
                 game: self.cfg.game.clone(),
@@ -352,6 +378,9 @@ impl<'a> Updater<'a> {
                     launcher = Some(f);
                 }
                 continue;
+            }
+            if self.opts.launcher_only {
+                continue; // no hashing of the pack and the rest: only the launcher's own file matters now
             }
             let path = self.cfg.dir.join(&f.path);
             if self.local_hash(&f.path, &path, &mut cache)?.as_deref() != Some(&f.sha256) {
@@ -397,8 +426,11 @@ impl<'a> Updater<'a> {
             }
             self.save_cache(&cache);
         }
-        self.save_state(&m)?;
-        let removed = self.remove_stale(&native);
+        let mut removed = Vec::new();
+        if !self.opts.launcher_only {
+            self.save_state(&m)?;
+            removed = self.remove_stale(&native);
+        }
         let mut staged = false;
         if let Some(f) = launcher {
             io(
@@ -521,7 +553,14 @@ impl<'a> Updater<'a> {
             }
             let dest = self.cfg.dir.join(&e.path);
             if e.had_old {
-                std::fs::rename(&dest, self.backup_dir().join(&e.path)).map_err(|err| format!("{}: {err}", e.path))?;
+                let backup = self.backup_dir().join(&e.path);
+                if let Some(parent) = backup.parent() {
+                    std::fs::create_dir_all(parent).map_err(|err| format!("{}: {err}", e.path))?;
+                }
+                std::fs::rename(&dest, &backup).map_err(|err| format!("{}: {err}", e.path))?;
+            }
+            if let Some(parent) = dest.parent() {
+                std::fs::create_dir_all(parent).map_err(|err| format!("{}: {err}", e.path))?;
             }
             std::fs::rename(self.stage_dir().join(&e.sha), &dest).map_err(|err| format!("{}: {err}", e.path))?;
             #[cfg(unix)]
@@ -543,12 +582,12 @@ struct JournalEntry {
     had_old: bool,
 }
 
-fn parse_journal(v: &Value) -> Vec<JournalEntry> {
+fn parse_journal(v: &Value, layout: Layout) -> Vec<JournalEntry> {
     let mut out = Vec::new();
     for f in v.get("files").and_then(Value::as_array).into_iter().flatten() {
         let path = f.get("path").and_then(Value::as_str).unwrap_or("");
         // a journal is local, but never follow a path out of the install folder
-        if manifest::check_native_name(path).is_some() {
+        if layout.check_path(path).is_some() {
             continue;
         }
         out.push(JournalEntry {
