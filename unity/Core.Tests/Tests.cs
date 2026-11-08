@@ -87,6 +87,7 @@ namespace Chaos.Core.Tests
             Phase8BTests.Run,
             Phase8ATests.Run,
             Phase9DTests.Run,
+            Phase15BTests.Run,
             Phase10FTests.Run,
             FakeModulesTests.Run,
             Phase12HTests.Run,

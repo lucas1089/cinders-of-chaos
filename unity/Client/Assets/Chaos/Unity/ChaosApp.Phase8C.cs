@@ -102,7 +102,7 @@ namespace Chaos.Client
         // ------------------------------------------------------------------------------------------------ pack effects of the pair
         /// <summary>Draws an effect of the client pair on a tile frame by frame (the art's bottom-right cell is the tile). Returns false when the pair has no such effect
         /// (the caller then draws its stand-in), true when it handled it, a finished play included. frame: the dat frame, -1 for none.</summary>
-        bool DrawPackEffect(int effectId, Pos tile, double elapsed, bool loop, Rect map, float scale, float alpha)
+        bool DrawPackEffect(int effectId, Pos tile, double elapsed, bool loop, Rect map, float scale, float alpha, bool add = false)
         {
             var t = world?.Dat?.Effect(effectId);
             if (t == null || atlas == null || t.Groups == null || t.Groups.Length == 0) return false;
@@ -122,7 +122,8 @@ namespace Chaos.Client
                         atlas.Upload();
                         var uv = atlas.Uv(slot);
                         var dst = new Rect(at.x - size * (0.5f + ww), at.y - size * (0.5f + hh), size, size);
-                        GUI.DrawTextureWithTexCoords(dst, atlas.Texture, uv);
+                        if (add) AddQuad(dst, atlas.Texture, uv, new Color(1f, 1f, 1f, AddFx.GlowAlpha(alpha)), map);   // phase 15 track B: glowing themes drawn added
+                        else GUI.DrawTextureWithTexCoords(dst, atlas.Texture, uv);
                     }
             GUI.color = old;
             return true;
