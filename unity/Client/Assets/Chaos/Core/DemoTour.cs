@@ -593,6 +593,8 @@ namespace Chaos.Core
                 if (!s.mobs.ContainsKey(id)) return;
                 s.mobs.Remove(id);
                 w.U8(0x6C).U16(0xFFFF).U32(id);
+                // the server drops a dead target as the base does (cancel target), so the client's dead guard never has to
+                if (s.AttackTarget == id) w.U8(0xA3).U32(0);
             }
 
             public void SetHp(uint id, int percent)
