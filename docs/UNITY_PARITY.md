@@ -5,7 +5,7 @@ This file lists every module of the main client (`client/overlay/modules/`, 169 
 It also lists the base protocol opcodes the Unity parser lacks and a plan in three phases.
 Edit the module rows by hand when a status changes. A module row changes in the same commit as its Unity window.
 
-Counts: 27 done, 30 partial, 97 missing, 15 not applicable.
+Counts: 35 done, 33 partial, 86 missing, 15 not applicable.
 By priority: 13 P0 core loop, 30 P1 needed to play, 83 P2 systems, 28 P3 polish, 15 N/A.
 
 ## Who Unity is on the server
@@ -97,14 +97,14 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `client_chaos_screenfit` | none | Windows taller than the screen scroll. Unity clamps the title bar only. | missing | P2 | S |
 | `client_chaos_theme` | none | Dark fantasy UI theme. Unity windows use one flat dark style. | partial | P2 | M |
 | `game_achievements` | 250 | Achievements window. | missing | P2 | M |
-| `game_arena` | 236 | Ranked PvP arena queue and HUD. | missing | P2 | M |
+| `game_arena` | 236 | Ranked PvP arena queue and HUD. Unity: `ArenaWindow` (mode cards with season line and rating, queue and leave, status, recent matches), `ArenaHudWindow` (both sides with health bars, countdown, result with rating and season change); secure mode off for the match and restored. Not run on a live server. | done | P2 | M |
 | `game_autoloot` | 216 | Auto loot lists. | missing | P2 | M |
 | `game_autotarget` | none | Auto Target choice rules of the helper. | missing | P2 | M |
 | `game_badgeslot` | none | Badge slot 13 in the equipment. Unity equipment draws 10 slots. | missing | P2 | S |
-| `game_battleground` | 200 | Battleground queue, HUD and scoreboard. | missing | P2 | L |
+| `game_battleground` | 200 | Battleground queue, HUD and scoreboard. Unity: `BattlegroundWindow` (Queue, Season, Vendor tabs, roles, deserter confirm), `BattlegroundHudWindow` (score bars, wells, notices), `BattlegroundBoardWindow` (scoreboard and summary). No tier emblems. Not run on a live server. | done | P2 | L |
 | `game_battlepass` | 227 | Season pass window. | missing | P2 | M |
 | `game_bestiary` | 253 | Bestiary, kill tasks and tracker. | missing | P2 | M |
-| `game_bounty` | 223 | Bounty board. | missing | P2 | M |
+| `game_bounty` | 223 | Bounty board. Unity: `BountyWindow` (band tabs, contracts with task, reward, progress, Accept, Abandon, Reroll, weekly chest, refresh timer). No creature outfit preview. | partial | P2 | M |
 | `game_candlemarks` | 176 | Candlemarks counter and shop. | missing | P2 | M |
 | `game_chaoslayout` | none | Saved window layout per character. | missing | P2 | M |
 | `game_chaosshaders` | none | Outfit shaders. The shader name is parsed in Chaos identity, nothing draws it. | partial | P2 | L |
@@ -122,9 +122,9 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_craftskills` | none | Profession skills in the skills window (skills packet extra rows). | missing | P2 | S |
 | `game_daily` | 207 | Daily reward window. | missing | P2 | S |
 | `game_deadguard` | none | Removes a dead monster left at 0 percent after 3 seconds. | missing | P2 | S |
-| `game_descent` | 205 | Ember Descent trial HUD and boons. | missing | P2 | L |
+| `game_descent` | 205 | Ember Descent trial HUD and boons. Unity: `DescentWindow` (info, forge, Descend, Weekly), `DescentHudWindow` (room, depth, embers, boons, curses, party, result), `DescentOfferWindow` (3 cards, curse box), `DescentShopWindow`. Boons as text, no icons. Not run on a live server. | done | P2 | L |
 | `game_dpsmeter` | 204 | DPS meter and combat log. | missing | P2 | M |
-| `game_dungeons` | 109 | Dungeon finder. | missing | P2 | M |
+| `game_dungeons` | 109 | Dungeon finder. Unity: `DungeonsWindow` (list with queue colours, difficulties, requirements, loot, challenges, solo and group boards, join and leave, queue timer), `DungeonCounterWindow` (kill counter, objectives, banner). No boss outfit, no item finder. | partial | P2 | M |
 | `game_embercache` | 174 | Ember Cache and day book. | missing | P2 | M |
 | `game_factions` | 215 | Factions (opcode 215): faction tabs with rank bars, lore, rival, week cap, tokens with Turn in, Go to NPC (opcode 121), contracts with Deliver, quartermaster offers (Buy, Craft), opened by the faction NPCs. FactionsWindow, Core/Factions.cs. No emblem art. | done | P2 | M |
 | `game_gamble` | 199 | The Gambler window. | missing | P2 | M |
@@ -139,8 +139,8 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_hideout` | 192 | Hideout decoration and visits. | missing | P2 | L |
 | `game_howitworks` | none | How it works cards. | missing | P2 | S |
 | `game_hudmove` | none | Movable HUD panels. | missing | P2 | S |
-| `game_infinitytower` | 214 | Infinity Tower window. | missing | P2 | M |
-| `game_invasion` | 251 | Invasion HUD and event list. | missing | P2 | M |
+| `game_infinitytower` | 214 | Infinity Tower window. Unity: `TowerWindow` (season, points bar with claimable milestones, podium, ranking, Enter and Leave), `TowerPanelWindow` (floor, monsters, timers, Next floor now with Ctrl+Shift+N, Auto, Leave). Not run on a live server. | done | P2 | M |
+| `game_invasion` | 251 | Invasion HUD and event list. Unity: `InvasionHudWindow` (waves, breach, sides, top defenders, fold) and `InvasionWindow` (calendar), in the Adventure menu as Invasions. Not run on a live server. | done | P2 | M |
 | `game_itemfinder` | 155 | Item finder. | missing | P2 | M |
 | `game_leaderboard` | 229 | Leaderboards (opcode 229): weekly boards pick list sorted by name (kept per character), class tab, season toggle and modes, champions, own rank, reset timer; the Records view (categories, boards, period, variant, size, class, Realm Firsts, My Records). LeaderboardWindow, Core/Leaderboard.cs. Exact numbers instead of short ones. | done | P2 | M |
 | `game_loadouts` | 206 | Loadouts (Armory). | missing | P2 | M |
@@ -161,11 +161,11 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_pouches` | 226 | Loot bag rules and auto seller. | missing | P2 | M |
 | `game_professions` | 195 | Professions. | missing | P2 | M |
 | `game_proficiencycatalog` | none | Weapon list of the proficiency window, built on the client. | missing | P2 | S |
-| `game_pvpzone` | 193 | Scorched Marches zone. | missing | P2 | M |
-| `game_raid` | 213 | Weekly raid window and HUD. | missing | P2 | L |
-| `game_riftatlas` | 159, 210 | Rift Atlas and Waystone Atlas. | missing | P2 | L |
+| `game_pvpzone` | 193 | Scorched Marches zone. Unity: `PvpZoneWindow` (rules, shrine, pledge, vendor, record), `PvpZoneConfirmWindow` (risk and boxes), `PvpZoneHudWindow` (embers, contest, goals with the compass to the nearest exit and shrine). Marks are not drawn on the minimap. | partial | P2 | M |
+| `game_raid` | 213 | Weekly raid window and HUD. Unity: `RaidWindow` (Raids, Journal, Vendor tabs), `RaidHudWindow` (boss, phase, enrage, counts, stacks) and `RaidCalloutWindow` (alerts, loot). Not run on a live server. | done | P2 | L |
+| `game_riftatlas` | 159, 210 | Rift Atlas and Waystone Atlas. Unity: `RiftAtlasWindow` and `WaystoneAtlasWindow` (one model, `Core/EndgameAtlas.cs`): pannable and zoomable node map, allocate, refund with gold or orbs, reset, totals, the grid of completed cells. Nodes show a glyph letter, not the art. Not run on a live server. | done | P2 | L |
 | `game_season` | 246 | Seasons window. | missing | P2 | M |
-| `game_siege` | 233 | Guild siege HUD. | missing | P2 | M |
+| `game_siege` | 233 | Guild siege HUD. Unity: `SiegeWindow` (sign-up, signed guilds, champions, rules, countdown) and `SiegeHudWindow` (teams by score, obelisk holder, you). Not run on a live server. | done | P2 | M |
 | `game_spellsupports` | 243 | Spell supports and action bar pips. | missing | P2 | M |
 | `game_targetguard` | none | Which creatures Auto Target may pick. | missing | P2 | S |
 | `game_tileoverlays` | 156 | Timers over fields and server bars on map tiles. | missing | P2 | S |

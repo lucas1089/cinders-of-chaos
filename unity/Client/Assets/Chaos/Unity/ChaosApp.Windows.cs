@@ -83,6 +83,18 @@ namespace Chaos.Client
             windows.Add(new HelperWindow());
             windows.Add(new DeathRecapWindow());
             windows.Add(new LootWindow());
+            // endgame activities (track L): Core/Endgame*.cs, Windows/EndgameWindows[ABC].cs
+            windows.Add(new TowerWindow()); windows.Add(new TowerPanelWindow());
+            windows.Add(new DungeonsWindow()); windows.Add(new DungeonCounterWindow());
+            windows.Add(new RaidWindow()); windows.Add(new RaidHudWindow()); windows.Add(new RaidCalloutWindow());
+            windows.Add(new DescentWindow()); windows.Add(new DescentHudWindow()); windows.Add(new DescentOfferWindow()); windows.Add(new DescentShopWindow());
+            windows.Add(new RiftAtlasWindow()); windows.Add(new WaystoneAtlasWindow());
+            windows.Add(new InvasionWindow()); windows.Add(new InvasionHudWindow());
+            windows.Add(new SiegeWindow()); windows.Add(new SiegeHudWindow());
+            windows.Add(new ArenaWindow()); windows.Add(new ArenaHudWindow());
+            windows.Add(new BattlegroundWindow()); windows.Add(new BattlegroundHudWindow()); windows.Add(new BattlegroundBoardWindow());
+            windows.Add(new PvpZoneWindow()); windows.Add(new PvpZoneConfirmWindow()); windows.Add(new PvpZoneHudWindow());
+            windows.Add(new BountyWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>

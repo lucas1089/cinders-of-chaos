@@ -756,3 +756,33 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
   boss, party finder filters and post input, group queue rules and the ready check countdown, inspect parts, leaderboard boards and records, link parsing and chips, factions, Conquest rows).
 - Not done: the Modifiers filter of the market (Browse and buy orders) and the price history chart, dragging an item onto the Sell slot, the read-only passive tree view of Inspect, the faction emblems,
   the party finder menu badge and slot boxes, short numbers on the leaderboards, the guild hall's crafting bench window, the Ctrl compare of item tooltips. Nothing here ran against a live server.
+## Endgame activities (O433 phase 4, track L)
+
+Eleven activities of the main client, each a pure model in `Core/` and windows in `Unity/Windows/EndgameWindows[ABC].cs`. All open from the Adventure menu
+(`Core/TopMenu.cs`, the menu texts are the keys of the server's level unlocks, so a locked one shows grey with its level) or by the server. None has a Ctrl hotkey.
+`GameSession.Endgame` (`Core/GameEndgame.cs`) owns the models, asks for the first state 2.2 s after the login and is rebuilt with every session.
+
+| Activity | Opcode | Model | Windows |
+|---|---|---|---|
+| Infinity Tower | 214 (flat JSON) | `TowerState` | `TowerWindow`, `TowerPanelWindow` (Ctrl+Shift+N skips, Auto box in `chaos.towerAutoSkip`) |
+| Dungeons | 109 | `DungeonsState`, `DungeonsView` | `DungeonsWindow`, `DungeonCounterWindow` |
+| Ashen Sepulchre raid | 213 | `RaidState`, `RaidView` | `RaidWindow`, `RaidHudWindow`, `RaidCalloutWindow` |
+| Ember Descent | 205 | `DescentState`, `DescentView` | `DescentWindow`, `DescentHudWindow`, `DescentOfferWindow`, `DescentShopWindow` |
+| Rift Atlas, Waystone Atlas | 210, 159 | `AtlasState`, `AtlasView` | `RiftAtlasWindow`, `WaystoneAtlasWindow` |
+| Invasions | 251 | `InvasionState`, `InvasionView` | `InvasionHudWindow`, `InvasionWindow` (calendar) |
+| Guild siege | 233 | `SiegeState`, `SiegeView` | `SiegeWindow`, `SiegeHudWindow` |
+| Arena | 236 | `ArenaState`, `ArenaText` | `ArenaWindow`, `ArenaHudWindow` |
+| Battleground | 200 | `BattlegroundState`, `BgView` | `BattlegroundWindow`, `BattlegroundHudWindow`, `BattlegroundBoardWindow` |
+| Scorched Marches | 193 | `PvpZoneState`, `PvpZoneView` | `PvpZoneWindow`, `PvpZoneConfirmWindow`, `PvpZoneHudWindow` |
+| Bounty board | 223 | `BountyState`, `BountyView` | `BountyWindow` |
+
+- The view classes hold the main client's rules (`*view.lua`, `*math.lua`, `arenatext.lua`, `towerskip.lua`) with the same fields and defaults. The state classes read the
+  server's messages and send the same actions. The tower is flat JSON, all the others are `{action, data}`. The atlas tree may come in parts; `ExtChunks` joins it.
+- A HUD is an `EgHudWindow`: it opens when its activity starts, closes when it ends, and the x hides it for that run. Windows follow their state's `Visible` flag (`WindowSync`),
+  and Show sets the flag at once and asks the server, as the bank does.
+- Arena, battleground and the Marches turn the secure mode off for the fight and back on after it (`EndgameBridge`), the arena and the battleground also cancel the attack at the end.
+  Server refusals and battleground alerts go to the text log through `Notice` and `Alert`.
+- Texts: `Core/LocEndgame.cs` (pt-BR, merged in the `LocStrings` constructor, a key of the main table wins). Tests: `Core.Tests/EndgameTests.cs` feeds each module the servers' payloads
+  and checks the requests, the view text, the timers on a fake clock, the Adventure menu entries and the pt-BR placeholders.
+- Not done: the dungeon boss outfit and item finder, tier emblems and node art of the atlases, boon icons of the Descent, minimap flags for the Marches, saved HUD positions,
+  the "how it works" cards. None of it ran against a live server.

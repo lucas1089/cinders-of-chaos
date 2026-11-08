@@ -594,6 +594,7 @@ namespace Chaos.Core
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
             InitItems();
             InitSocial();   // Core/GameSocial.cs
+            InitEndgame();
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
         }
@@ -681,6 +682,7 @@ namespace Chaos.Core
             if (parser.LoggedIn && enteredAt < 0) enteredAt = Now;
             ChatPoll();
             ItemsPoll();
+            EndgamePoll();
             // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
             if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
             // the party frames: watch a moment after the login (the main client waits 400 ms)
