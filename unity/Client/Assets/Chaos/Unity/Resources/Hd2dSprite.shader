@@ -79,7 +79,7 @@ Shader "Chaos/Hd2dSprite"
                     float rimv = 1.0 - min(min(cl.a, cr.a), min(cd.a, cu.a));
                     float4 fxc = FxApply(IN.uv2_MainTex.x, IN.uv2_MainTex.y, c, uv / tx, cellUv, rimv, IN.color, _Time.y);
                     c = fixed4(fxc);
-                    fxEmit = fxm == FX_SOLID ? c.rgb : max(0, c.rgb - c0) * 0.8;
+                    fxEmit = (fxm == FX_SOLID || fxm == FX_ITEMGLOW) ? c.rgb : max(0, c.rgb - c0) * 0.8;
                 }
             }
 
@@ -98,7 +98,7 @@ Shader "Chaos/Hd2dSprite"
             half lum = max(c.r, max(c.g, c.b));
             o.Emission = c.rgb * saturate((lum - 0.8) * 5.0);
             o.Emission += fxEmit;
-            if (fxm == FX_SOLID) o.Albedo = 0;
+            if (fxm == FX_SOLID || fxm == FX_ITEMGLOW) o.Albedo = 0;
 
             // ground bounce / occlusion: darker near the floor (world height), not for floor quads
             float foot = smoothstep(0.0, _FootHeight, IN.worldPos.y);

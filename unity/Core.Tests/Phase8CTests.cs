@@ -292,7 +292,7 @@ namespace Chaos.Core.Tests
             {
                 { "HAZE", FxMode.Haze }, { "WAVES", FxMode.Waves }, { "PULSE", FxMode.Pulse }, { "SPARKS", FxMode.Sparks }, { "EMBER", FxMode.Ember }, { "FROST", FxMode.Frost },
                 { "VOID", FxMode.Void }, { "HOLY", FxMode.Holy }, { "BLOOD", FxMode.Blood }, { "GHOST", FxMode.Ghost }, { "ASH", FxMode.Ash }, { "CROWN", FxMode.Crown },
-                { "HITWHITE", FxMode.HitWhite }, { "HITRED", FxMode.HitRed }, { "SOLID", FxMode.Solid }, { "WATER", FxMode.Water }, { "LAVA", FxMode.Lava },
+                { "HITWHITE", FxMode.HitWhite }, { "HITRED", FxMode.HitRed }, { "SOLID", FxMode.Solid }, { "ITEMGLOW", FxMode.ItemGlow }, { "METAL", FxMode.Metal }, { "WATER", FxMode.Water }, { "LAVA", FxMode.Lava },
             };
             check(defs.Count == want.Count && want.All(kv => defs.TryGetValue(kv.Key, out int v) && v == kv.Value), "shader sources: the FX_ defines of ChaosFx.cginc are the FxMode numbers");
             // the effects the Chaos outfit shaders have in the include: one branch each

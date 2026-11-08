@@ -19,6 +19,8 @@
 #define FX_HITWHITE 20
 #define FX_HITRED 21
 #define FX_SOLID 22
+#define FX_ITEMGLOW 23
+#define FX_METAL 24
 #define FX_WATER 30
 #define FX_LAVA 31
 
@@ -195,6 +197,28 @@ float4 FxApply(float mode, float strength, float4 c, float2 px, float2 cellUv, f
         return float4(lerp(c.rgb, float3(1.0, 0.16, 0.12) * (0.80 + 0.35 * l), 0.62 * strength), c.a);
     }
     if (m == FX_SOLID) return float4(tint.rgb, c.a * tint.a);
+    // phase 9, track D. The rarity glow of an item: the silhouette in the rarity colour. strength 0 is steady; above 0 it is the pulse period in 4 s units (0.55 = 2.2 s),
+    // the colour breathing between half and full. Views that cut out by alpha get the falloff in the colour (tint already dimmed), the classic view in tint.a.
+    if (m == FX_ITEMGLOW)
+    {
+        float k = 1.0;
+        if (strength > 0.001)
+        {
+            float period = max(0.2, strength * 4.0);
+            k = 0.5 + 0.5 * (0.5 - 0.5 * cos(6.2831853 * frac(t / period)));
+        }
+        return float4(tint.rgb * k, c.a * tint.a);
+    }
+    // The Divine metal look (game_itemrarity metal style: tint #22e5ff, strength 0.5): the sprite's own colours turned to a moving metal in the tint, strength says how far,
+    // and a thin bright band sweeps across it. The store family "haze" is the metal of the main client's own shader families.
+    if (m == FX_METAL)
+    {
+        float4 f = FxFamily(FX_HAZE, c, cellUv, tint, t);
+        float sw = sin((cellUv.x + cellUv.y) * 7.0 - t * 2.4);
+        float3 col = lerp(c.rgb, f.rgb, saturate(strength));
+        col += float3(0.8, 1.0, 1.0) * smoothstep(0.92, 1.0, sw) * saturate(strength);
+        return float4(min(col, float3(1.0, 1.0, 1.0)), c.a);
+    }
     return c;
 }
 

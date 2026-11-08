@@ -78,11 +78,24 @@ namespace Chaos.Client
             public MeshRenderer Renderer;
             public readonly List<Vector3> V = new List<Vector3>(), N = new List<Vector3>();
             public readonly List<Vector2> UV = new List<Vector2>();
+            public readonly List<Vector2> UV2 = new List<Vector2>();   // phase 9 track D: x the FxMode of the quad, y its strength (Hd2dSprite.shader uv2_MainTex); one entry per vertex
+            public readonly List<Color32> Col = new List<Color32>();   // the colour of an outline silhouette or of the metal look; one entry per vertex
             public readonly List<int> T = new List<int>();
         }
 
         Batch upright, flat;
         Material spriteMat;
+        // phase 9 track D: the rarity outline of items (silhouette behind the sprite) and the Divine metal; the material must be Chaos/Hd2dSprite
+        bool fxShaderOk, glowBuilt = true;
+        int fxMode; float fxStrength = 1f;
+        Color32 fxTint = new Color32(255, 255, 255, 255);
+        Vector3 fxOff;
+        /// <summary>The rarity outline of items on the map is wanted (Options > Visual).</summary>
+        public bool ItemOutlines = true;
+        /// <summary>The sprite shader draws the outline; when false the ground ring of ChaosApp.DrawItemRings stands in.</summary>
+        public bool ItemGlowReal => ItemOutlines && fxShaderOk;
+        /// <summary>The spell lights of this moment, added to the frame's lights before the nearest layout lights are picked.</summary>
+        public Action<List<FaLight>> FrameLights;
         Vector3 camNormal;
         int atlasGen;
         float spriteNext;
@@ -177,6 +190,7 @@ namespace Chaos.Client
         {
             var sh = Hd2dPost.SpriteMaterial(Atlas != null ? Atlas.Texture : null);
             spriteMat = Own(sh);
+            fxShaderOk = sh != null && sh.shader != null && sh.shader.name == Hd2dPost.SpriteShaderName;
             upright = NewBatch("sprites", ShadowCastingMode.TwoSided);
             flat = NewBatch("flat sprites", ShadowCastingMode.Off);
         }
@@ -414,7 +428,7 @@ namespace Chaos.Client
             if (reanchor) { Anchor = new Pos(c.X, c.Y, 0); anchored = true; Layout = null; camSnap = true; }
             int hash = FrontLive.ViewHash(World, options);
             if (Layout == null || hash != Layout.Hash || Layout.Floor != c.Z) Rebuild();
-            else if (Layout.Animated && Time.realtimeSinceStartup >= spriteNext) { BuildSprites(); }
+            else if ((Layout.Animated && Time.realtimeSinceStartup >= spriteNext) || glowBuilt != ItemGlowReal) { BuildSprites(); }
         }
 
         void Rebuild()
@@ -494,6 +508,7 @@ namespace Chaos.Client
         void BuildSprites()
         {
             int gen = Atlas.Generation;
+            glowBuilt = ItemGlowReal;
             AddSprites();
             if (Atlas.Generation != gen) AddSprites();   // the atlas filled up and was cleared while building
             Atlas.Upload();
@@ -509,7 +524,7 @@ namespace Chaos.Client
             Upload(upright); Upload(flat);
         }
 
-        static void Clear(Batch b) { b.V.Clear(); b.N.Clear(); b.UV.Clear(); b.T.Clear(); }
+        static void Clear(Batch b) { b.V.Clear(); b.N.Clear(); b.UV.Clear(); b.UV2.Clear(); b.Col.Clear(); b.T.Clear(); }
 
         static void Upload(Batch b)
         {
@@ -517,6 +532,7 @@ namespace Chaos.Client
             b.Mesh.SetVertices(b.V);
             b.Mesh.SetNormals(b.N);
             b.Mesh.SetUVs(0, b.UV);
+            if (b.UV2.Count == b.V.Count && b.V.Count > 0) { b.Mesh.SetUVs(1, b.UV2); b.Mesh.SetColors(b.Col); }
             b.Mesh.SetTriangles(b.T, 0);
             b.Mesh.RecalculateBounds();
         }
@@ -542,10 +558,31 @@ namespace Chaos.Client
             else if ((t.Fluid || t.Splash) && g.PatternX * g.PatternY > 1) { int s = it.Count % (g.PatternX * g.PatternY); px = s % g.PatternX; py = s / g.PatternX; pz = 0; }
             else { px = Mod(pos.X, g.PatternX); py = Mod(pos.Y, g.PatternY); pz = Mod(pos.Z, g.PatternZ); }
             int phase = Phase(g, 0);
+            // phase 9, track D: the soft rarity outline behind the sprite and the Divine metal (upright sprites; a thing lying flat keeps the ground ring)
+            var glow = ItemGlowReal && !piece.Flat ? ItemGlowFx.For(it) : null;
+            if (glow != null)
+            {
+                float up = 1f / Mathf.Max(0.3f, Mathf.Sin((90f - FrontArtCamera.Pitch) * Mathf.Deg2Rad));
+                fxMode = FxMode.ItemGlow; fxStrength = ItemGlowFx.PulseParam(glow.PulseMs);
+                foreach (var st in ItemGlowFx.Steps(ItemGlowFx.Width))
+                {
+                    float k = glow.A * st.Fall;
+                    fxTint = new Color(glow.R * k, glow.G * k, glow.B * k, 1f);
+                    fxOff = new Vector3(st.Dx / 32f, st.Dy / 32f * up, 0.004f);
+                    for (int layer = 0; layer < g.Layers; layer++)
+                        for (int hh = 0; hh < g.Height; hh++)
+                            for (int ww = 0; ww < g.Width; ww++)
+                                Quad(piece, ww, hh, Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), layer);
+                }
+                fxOff = Vector3.zero;
+                fxMode = 0; fxStrength = 1f; fxTint = new Color32(255, 255, 255, 255);
+                if (glow.Metal) { fxMode = FxMode.Metal; fxStrength = glow.MetalStrength; fxTint = new Color(glow.MetalR, glow.MetalG, glow.MetalB, 1f); }
+            }
             for (int layer = 0; layer < g.Layers; layer++)
                 for (int hh = 0; hh < g.Height; hh++)
                     for (int ww = 0; ww < g.Width; ww++)
                         Quad(piece, ww, hh, Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), layer);
+            fxMode = 0; fxStrength = 1f; fxTint = new Color32(255, 255, 255, 255);
         }
 
         void Quad(Hd2dPiece piece, int ww, int hh, int slot, int layer)
@@ -553,7 +590,7 @@ namespace Chaos.Client
             if (slot == 0) return;
             var b = piece.Flat ? flat : upright;
             var normal = piece.Flat ? Vector3.up : camNormal;
-            Vector3 bias = piece.Flat ? new Vector3(0, 0.0004f * layer, 0) : new Vector3(0, 0, -0.0004f * layer);
+            Vector3 bias = (piece.Flat ? new Vector3(0, 0.0004f * layer, 0) : new Vector3(0, 0, -0.0004f * layer)) + fxOff;
             var r = Atlas.Uv(slot);
             // an upright cell with a lean profile is drawn in strips, each moved by the profile (the art straightened)
             int n = !piece.Flat && piece.Lean != null ? Hd2d.Strips : 1;
@@ -562,7 +599,7 @@ namespace Chaos.Client
                 var c = n == 1 ? piece.Cell(ww, hh) : piece.Strip(ww, hh, k, n);
                 float v0 = r.yMin + (r.yMax - r.yMin) * k / n, v1 = r.yMin + (r.yMax - r.yMin) * (k + 1) / n;
                 int i = b.V.Count;
-                for (int q = 0; q < 4; q++) { b.V.Add(new Vector3(c[q].X, c[q].Y, c[q].Z) + bias); b.N.Add(normal); }
+                for (int q = 0; q < 4; q++) { b.V.Add(new Vector3(c[q].X, c[q].Y, c[q].Z) + bias); b.N.Add(normal); b.UV2.Add(new Vector2(fxMode, fxStrength)); b.Col.Add(fxTint); }
                 b.UV.Add(new Vector2(r.xMin, v0));
                 b.UV.Add(new Vector2(r.xMax, v0));
                 b.UV.Add(new Vector2(r.xMax, v1));
@@ -631,6 +668,7 @@ namespace Chaos.Client
             picked.Clear();
             var focus = new Vec3(camTarget.x, camTarget.y, camTarget.z);
             int max = MaxLights;
+            FrameLights?.Invoke(extra);   // phase 9 track D: the spell lights
             if (me != null && me.LightLevel > 0) picked.Add(CreatureLight(me));
             foreach (var l in extra) if (picked.Count < max) picked.Add(l);
             var all = Layout.Lights;

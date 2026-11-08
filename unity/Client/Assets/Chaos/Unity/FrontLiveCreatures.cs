@@ -29,6 +29,9 @@ namespace Chaos.Client
         public Func<Creature, float> CreatureScale;
         /// <summary>The shadow of a figure and the blob; off on phones.</summary>
         public bool Silhouettes = true;
+        /// <summary>Phase 9 track D: the creature sprite shader is Chaos/FrontArtSprite, which draws the hit flash modes and the outline silhouette (_FxMode 22). False: the soft disc
+        /// and the glow picture of ChaosApp stand in. Known after the first tick.</summary>
+        public bool FxShaderOk => spriteShader != null && spriteShader.name == "Chaos/FrontArtSprite";
 
         FrontLiveView view;
         bool subscribed;
@@ -66,7 +69,8 @@ namespace Chaos.Client
             public uint Id;
             public GameObject Root;
             public Transform Quad, Proxy, Blob, Label;
-            public Material Mat, ShadowMat;
+            public Material Mat, ShadowMat, OutMat;
+            public Transform[] Ring;           // the eight copies of the outline (phase 9 track D), made when the creature first wears one
             public readonly Mesh[] Cast = new Mesh[2];
             public readonly Material[] CastMat = new Material[2];
             public MeshRenderer LabelR;
@@ -179,6 +183,7 @@ namespace Chaos.Client
         void Release(Slot s)
         {
             s.Root.SetActive(false);
+            SetRing(s, false);
             s.State = null; s.Look = null; s.LookKey = 0; s.Set = null; s.Frame = -1; s.PicKey = -1; s.HitShown = -1f; s.Outfit = null; s.LabelKey = int.MinValue;
             free.Push(s);
         }
@@ -379,22 +384,74 @@ namespace Chaos.Client
             }
             else { s.Proxy.gameObject.SetActive(false); s.Blob.gameObject.SetActive(false); s.Cast[0].Clear(); s.Cast[1].Clear(); }
             if (Mathf.Abs(st.Flinch - s.HitShown) > 1e-3f) { s.HitShown = st.Flinch; s.Mat.SetFloat("_Hit", st.Flinch); }
-            ApplyFx(s, c);
+            var fxLook = ApplyFx(s, c);
+            ApplyOutline(s, fxLook, pos, face, scale);
             DrawLabel(s, c, feet, scale.y, cam: view.Cam);
             return true;
         }
 
-        /// <summary>The outfit shader of the creature's look on its material (only when it changes).</summary>
-        void ApplyFx(Slot s, Creature c)
+        /// <summary>The outfit shader or hit flash of the creature's look on its material (only when it changes). Returns the look (null: plain) for its outline.</summary>
+        MapFxLook ApplyFx(Slot s, Creature c)
         {
             var look = CreatureFx != null ? CreatureFx(c) : null;
             int mode = look != null ? look.Mode : 0;
             float str = look != null ? look.Strength : 1f;
-            if (mode == s.FxMode && Mathf.Abs(str - s.FxStrength) < 1e-3f) return;
+            if (mode == s.FxMode && Mathf.Abs(str - s.FxStrength) < 1e-3f) return look;
             s.FxMode = mode; s.FxStrength = str;
             s.Mat.SetFloat("_FxMode", mode);
             s.Mat.SetFloat("_FxStrength", str);
             if (look != null) s.Mat.SetColor("_FxTint", look.Tint);
+            return look;
+        }
+
+        /// <summary>Phase 9 track D: the silhouette outline of the creature (the attacked, the followed, the one under the mouse, a bought one) as eight copies of its picture behind it,
+        /// one colour, unlit (FrontArtSprite.shader FX_SOLID). The colour carries the pulse and the alpha: the scene cuts out by alpha, so a dimmer colour stands for a fainter line.</summary>
+        void ApplyOutline(Slot s, MapFxLook look, Vector3 pos, Quaternion face, Vector3 scale)
+        {
+            var ol = look != null ? look.Outline : null;
+            if (ol == null || !FxShaderOk) { SetRing(s, false); return; }
+            if (s.Ring == null) MakeRing(s);
+            SetRing(s, true);
+            var m = s.OutMat;
+            m.mainTexture = s.Mat.mainTexture;
+            m.mainTextureScale = s.Mat.mainTextureScale; m.mainTextureOffset = s.Mat.mainTextureOffset;
+            OutlineRules.Dim(ol, look.OutlineAlpha, 0f, out float r, out float g, out float b);
+            m.SetFloat("_FxMode", FxMode.Solid);
+            m.SetColor("_FxTint", new Color(r, g, b, 1f));
+            if (ol.Gradient)
+            {
+                OutlineRules.Dim(ol, look.OutlineAlpha, 1f, out float tr, out float tg, out float tb);
+                m.SetColor("_FxTop", new Color(tr, tg, tb, 1f));
+            }
+            else m.SetColor("_FxTop", new Color(0f, 0f, 0f, 0f));
+            float w = Mathf.Max(1f, ol.WidthPx) / 32f;
+            for (int k = 0; k < 8; k++)
+            {
+                var d = OutlineFx.Ring[k];
+                s.Ring[k].SetPositionAndRotation(pos + face * new Vector3(d[0] * w, d[1] * w, 0.03f), face);
+                s.Ring[k].localScale = scale;
+            }
+        }
+
+        void MakeRing(Slot s)
+        {
+            s.OutMat = Own(new Material(spriteShader) { name = "front-live-outline" });
+            s.OutMat.SetFloat("_NormalAmount", 0f);
+            s.OutMat.SetFloat("_EmitAmount", 0f);
+            s.OutMat.SetColor("_Tint", Color.white);
+            s.Ring = new Transform[8];
+            for (int k = 0; k < 8; k++)
+            {
+                s.Ring[k] = FrontArtSprites.MakeSpriteObject(s.Root.transform, quad, "outline " + k, s.OutMat, ShadowCastingMode.Off);
+                s.Ring[k].GetComponent<MeshRenderer>().receiveShadows = false;
+                s.Ring[k].gameObject.SetActive(false);
+            }
+        }
+
+        static void SetRing(Slot s, bool on)
+        {
+            if (s.Ring == null) return;
+            foreach (var t in s.Ring) if (t != null && t.gameObject.activeSelf != on) t.gameObject.SetActive(on);
         }
 
         // hero pictures: one of 8 directions

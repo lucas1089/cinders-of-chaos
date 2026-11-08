@@ -284,6 +284,7 @@ namespace Chaos.Client
             DrawGlows(v, map, scale, now);
             DrawBeams(v, map, scale, now);
             DrawFlashes(v, map, scale, now);
+            DrawPhase9D(v, map, scale, now);   // ChaosApp.Phase9D.cs: spell effects of the art file and the spell light (classic view)
             DrawWings(v, map, scale, now, fxA);
         }
 
@@ -401,7 +402,7 @@ namespace Chaos.Client
                 if (c.Type != 0 || !v.Cosmetic.Looks.TryGetValue(c.Name, out var look) || look.Glow == null) continue;
                 bool mine = c.Id == world.PlayerId;
                 if (!v.Cosmetic.Allowed(false, mine) || c.Position.Z != world.Center.Z) continue;
-                if (ShaderMapOn && OutlineFx.Cosmetic(look.Glow, look.Pulse) != null) continue;   // the shader draws it as an outline (Phase8CLook)
+                if ((ShaderMapOn || LiveFxOn) && OutlineFx.Cosmetic(look.Glow, look.Pulse) != null) continue;   // the shader draws it as an outline (Phase8CLook)
                 if (!CreatureCenter(c, map, scale, out Vector2 at, out float tile)) continue;
                 var tex = OverlayTex("game_cosmeticfx/images/glows/" + look.Glow + ".png");
                 if (tex == null) continue;
@@ -455,7 +456,7 @@ namespace Chaos.Client
 
         void DrawFlashes(VisualEffects v, Rect map, float scale, double now)
         {
-            if (!VisualPrefs.Fx.HitFlash || ShaderMapOn) return;   // the classic mesh flashes the outfit itself (Chaos/MapFx hit modes)
+            if (!VisualPrefs.Fx.HitFlash || ShaderMapOn || LiveFxOn) return;   // the classic mesh and the live view's sprites flash the outfit itself (hit modes of the shaders)
             foreach (var f in v.Flashes)
             {
                 float k = HitFlasher.Strength(now, f.Start, f.Ms);
