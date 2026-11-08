@@ -515,6 +515,9 @@ player's own process (`Core/DemoTour.cs`, `FakeGameServer`), logs in to it throu
 game port with the guard challenge: the key, the RSA modulus and the Extended wire reach the app through the same environment variables it
 always reads), switches on the F8 front-art live view and plays about 23 seconds. No real server data and no accounts: the art is the
 real pair's outdoor ids when found (`-chaosPair`, `CHAOS_PAIR_DIR`, `things/`), else its temple floors, else the synthetic art.
+The fake server has a login port and a game port of its own, so a slow login (software GL) is never taken for a game client.
+The player keeps running without focus (`Application.runInBackground`, set in `ChaosApp.Awake`): the tour's resize drops the focus under
+xvfb, and a player in another window must keep its session (reads, pings) alive.
 - Server timeline (`FakeGameServer`, times in `TourPlan`): a skeleton and a ghoul walk in, an archer shoots, the hero fights (0x83 effects,
   0x85 missiles, 0xB4 numbers, 0x8C and 0xA0 health), casts a fire spell and a heal (0xAA spell words, 0xA4 and 0xA5 cooldowns), loot lines,
   an NPC greets and opens its shop (0x7A, 0x7B), toasts (79: journey, achievement, party invite, season pass), a buff added (234), a party

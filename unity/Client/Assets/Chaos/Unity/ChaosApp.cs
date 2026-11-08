@@ -55,6 +55,9 @@ namespace Chaos.Client
         void Awake()
         {
             Application.targetFrameRate = 60;
+            // keep running when the window loses focus: the session must keep reading, walking and answering pings while the player is in another
+            // window (the project has no ProjectSettings, so the player default is to pause). The demo tour's resize also drops the focus under xvfb.
+            Application.runInBackground = true;
             Loc.Set(Loc.Choose(PlayerPrefs.GetString("chaos.lang", ""), Application.systemLanguage.ToString()));
             pairDir = PlayerPrefs.GetString("chaos.pair", DefaultPairDir());
             host = PlayerPrefs.GetString("chaos.host", host);
