@@ -17,7 +17,16 @@ namespace Chaos.Core.LiveCheck
             if (why != null) Console.Error.WriteLine(why);
             Console.Error.WriteLine("usage: Core.LiveCheck HOST LOGIN_PORT ACCOUNT [CHARACTER|-] [--seconds N] [--report FILE] [--identity extended|chaos]");
             Console.Error.WriteLine("                      [--otb items.otb | --pair DIR] [--no-ext]   (password: environment variable CHAOS_LIVE_PASSWORD)");
+            Console.Error.WriteLine("                      [--scenario stairs,npc,party,death,rift,tooltip|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
+            Console.Error.WriteLine("                      [--killer MONSTER] [--rift-key-id N] [--scenario-seconds N] [--aware WxH]   (second account: CHAOS_LIVE_ACCOUNT2, CHAOS_LIVE_PASSWORD2, CHAOS_LIVE_CHARACTER2)");
             return 2;
+        }
+
+        static Pos ParsePos(string t)
+        {
+            var parts = t.Split(',');
+            if (parts.Length != 3) throw new ArgumentException("a position is X,Y,Z: " + t);
+            return new Pos(int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]));
         }
 
         static int Main(string[] args)
@@ -38,6 +47,28 @@ namespace Chaos.Core.LiveCheck
                         case "--otb": o.OtbFile = Next(); break;
                         case "--pair": o.PairDir = Next(); break;
                         case "--no-ext": o.SkipExt = true; break;
+                        case "--scenario":
+                            foreach (string n in Next().Split(',', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                string name = n.Trim().ToLowerInvariant();
+                                if (name != "all" && Array.IndexOf(LiveRun.AllScenarios, name) < 0) return Usage("unknown scenario " + name + " (" + string.Join(", ", LiveRun.AllScenarios) + ", all)");
+                                if (!o.Scenarios.Contains(name)) o.Scenarios.Add(name);
+                            }
+                            break;
+                        case "--items-xml": o.ItemsXml = Next(); break;
+                        case "--npc": o.NpcName = Next(); break;
+                        case "--npc-at": o.NpcAt = ParsePos(Next()); break;
+                        case "--stairs-at": o.StairsAt = ParsePos(Next()); break;
+                        case "--killer": o.Killer = Next(); break;
+                        case "--rift-key-id": o.RiftKeyServerId = int.Parse(Next()); break;
+                        case "--scenario-seconds": o.ScenarioMs = Math.Max(5, int.Parse(Next())) * 1000; break;
+                        case "--aware":
+                        {
+                            var wh = Next().Split('x');
+                            if (wh.Length != 2) return Usage("--aware needs WxH, for example 29x21");
+                            o.AwareWidth = int.Parse(wh[0]); o.AwareHeight = int.Parse(wh[1]);
+                            break;
+                        }
                         default:
                             if (a.StartsWith("--", StringComparison.Ordinal)) return Usage("unknown option " + a);
                             switch (pos++)
@@ -54,6 +85,10 @@ namespace Chaos.Core.LiveCheck
                 catch (Exception e) when (e is FormatException || e is ArgumentException || e is OverflowException) { return Usage(e.Message); }
             }
             if (pos < 3) return Usage(null);
+            o.Account2 = Environment.GetEnvironmentVariable("CHAOS_LIVE_ACCOUNT2");
+            o.Password2 = Environment.GetEnvironmentVariable("CHAOS_LIVE_PASSWORD2");
+            o.Character2 = Environment.GetEnvironmentVariable("CHAOS_LIVE_CHARACTER2");
+            if (string.IsNullOrEmpty(o.Character2)) o.Character2 = null;
             o.Password = Environment.GetEnvironmentVariable("CHAOS_LIVE_PASSWORD");
             if (string.IsNullOrEmpty(o.Password)) return Usage("set CHAOS_LIVE_PASSWORD");
             string keyText = Environment.GetEnvironmentVariable("CHAOS_CLIENT_KEY");

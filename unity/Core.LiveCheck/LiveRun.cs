@@ -17,6 +17,24 @@ namespace Chaos.Core.LiveCheck
         public int WarmMs = 4500, ReplyWaitMs = 1500, SettleMs = 120;
         public byte[] GuardKey = ClientGuard.DevKey;
         public string Rsa = Protocol.OpenRsaModulus;
+        // ---- play scenarios (LiveScenarios.cs), phase 21
+        /// <summary>The scenarios to run: stairs, npc, party, death, rift, tooltip (empty: none).</summary>
+        public readonly List<string> Scenarios = new List<string>();
+        /// <summary>The second account of the party and death scenarios (environment CHAOS_LIVE_ACCOUNT2, CHAOS_LIVE_PASSWORD2, CHAOS_LIVE_CHARACTER2).</summary>
+        public string Account2, Password2, Character2;
+        /// <summary>items.xml of the server (floor changes of stairs and holes); by default the one beside items.otb.</summary>
+        public string ItemsXml;
+        /// <summary>The NPC the npc scenario talks to and trades with, and where to walk to find it when it is out of view.</summary>
+        public string NpcName = "Tesenna";
+        public Pos? NpcAt, StairsAt;
+        /// <summary>The monster the partner summons to kill the primary character in the death scenario.</summary>
+        public string Killer = "Demon";
+        /// <summary>Server item id of the Rift Key (rift_config.lua key.itemId) the rift scenario asks the staff command for.</summary>
+        public int RiftKeyServerId = 10155;
+        /// <summary>The aware range asked for after the login (Chaos identity only), 0 asks for nothing.</summary>
+        public int AwareWidth, AwareHeight;
+        /// <summary>Time limit of one scenario in ms (the death and rift ones take their own, longer, limits from it).</summary>
+        public int ScenarioMs = 60000;
     }
 
     /// <summary>What happened on one extended opcode.</summary>
@@ -57,13 +75,14 @@ namespace Chaos.Core.LiveCheck
         public int WalksSent;
     }
 
-    public sealed class LiveRun
+    public sealed partial class LiveRun
     {
         readonly LiveOptions o;
         readonly DatFile dat;
         readonly string datSource;
-        readonly World world;
+        World world;
         GameSession s;
+        LiveClient me, partner;
         readonly Dictionary<byte, OpStat> ops = new Dictionary<byte, OpStat>();
         readonly SortedDictionary<byte, OpStat> other = new SortedDictionary<byte, OpStat>();
         readonly List<OpPlan> plan = LiveOps.Plan();
@@ -74,6 +93,7 @@ namespace Chaos.Core.LiveCheck
         string loginError, closed;
         bool loginOk, enterOk;
         double enterMs = -1, loginMs;
+        Pos enterPos;
         int tilesMax, creaturesMax;
         string[] features = new string[0];
         double startedAt;
@@ -106,7 +126,9 @@ namespace Chaos.Core.LiveCheck
             {
                 Host = ch.Host, Port = ch.Port, Account = o.Account, Password = o.Password, SessionKey = res.SessionKey, Character = ch.Name,
                 GuardKey = o.GuardKey, RsaModulus = o.Rsa, Identity = o.Chaos ? ClientIdentity.Chaos(30) : ClientIdentity.Extended,
+                AwareWidth = o.Chaos ? o.AwareWidth : 0, AwareHeight = o.Chaos ? o.AwareHeight : 0,
             });
+            me = new LiveClient(world, s, ch.Name);
             Hook();
             s.Log += m =>
             {
@@ -120,21 +142,31 @@ namespace Chaos.Core.LiveCheck
             Pump(15000, () => s.Parser.LoggedIn && world.Player != null && world.Tiles.Count > 0 || s.Closed != null);
             enterOk = s.Parser.LoggedIn && world.Player != null && world.Tiles.Count > 0;
             enterMs = s.Now - startedAt;
+            if (world.Player != null) enterPos = world.Player.Position;
             double enteredAt = s.Now;
             if (!enterOk) { closed = s.Closed; return 1; }
 
             Pump(o.WarmMs, () => s.Closed != null);   // the session's own hellos and prefetches (spells at 3 s, progression at 1.8 s)
             if (s.Closed == null) WalkAll();
             if (s.Closed == null && !o.SkipExt) Sweep();
+            if (s.Closed == null && o.Scenarios.Count > 0) RunScenarios();
             Pump(Math.Max(0, o.Seconds * 1000 - (int)(s.Now - enteredAt)), () => s.Closed != null);
 
             closed = s.Closed;
+            if (partner != null)
+            {
+                partnerStats = "parse failures " + partner.S.Parser.FailureCount + ", exceptions " + partner.Thrown.Count + ", packets " + partner.S.Packets;
+                partnerBad = partner.S.Parser.FailureCount > 0 || partner.Thrown.Count > 0;
+                foreach (var f in partner.S.Parser.Failures.Take(5)) partnerStats += " [" + f + "]";
+                partner.Close();
+                partner = null;
+            }
             features = s.Parser.Features.All.OrderBy(f => f).Select(f => f.ToString(CultureInfo.InvariantCulture)).ToArray();
             s.Logout();
             Pump(300, () => false);
             s.Dispose();
             bool walkOk = walks.Count > 0 && walks.All(w => w.Confirmed || w.Cancelled) && walks.Any(w => w.Confirmed && w.PositionOk);
-            return enterOk && walkOk && s.Parser.FailureCount == 0 && thrown.Count == 0 && closed == null ? 0 : 1;
+            return enterOk && walkOk && s.Parser.FailureCount == 0 && thrown.Count == 0 && closed == null && !ScenariosFailed ? 0 : 1;
         }
 
         /// <summary>Counts what the session sends and receives on the extended opcodes, without changing either.</summary>
@@ -197,7 +229,8 @@ namespace Chaos.Core.LiveCheck
                     if (m.Action.Length > 0 && !st.Actions.Contains(m.Action) && st.Actions.Count < 12) st.Actions.Add(m.Action);
                 });
             }
-            s.Parser.WalkCancelled = d => cancels++;
+            var prevCancel = s.Parser.WalkCancelled;
+            s.Parser.WalkCancelled = d => { cancels++; prevCancel(d); };
         }
 
         OpStat Stat(byte op)
@@ -218,6 +251,7 @@ namespace Chaos.Core.LiveCheck
                 {
                     if (thrown.Count < 50) thrown.Add(e.GetType().Name + ": " + e.Message);
                 }
+                partner?.Poll();
                 tilesMax = Math.Max(tilesMax, world.Tiles.Count);
                 creaturesMax = Math.Max(creaturesMax, world.Creatures.Count);
                 if (until()) return;
@@ -327,6 +361,8 @@ namespace Chaos.Core.LiveCheck
                       { "deflatedPackets", s?.Inflater.PacketsIn ?? 0 }, { "deflatedBytesIn", s?.Inflater.BytesIn ?? 0 }, { "deflatedBytesOut", s?.Inflater.BytesOut ?? 0 },
                       { "extReceived", s?.Ext.Received ?? 0 }, { "extSent", s?.Ext.Sent ?? 0 }, { "chunkedPackets", chunkedReplies } } },
                 { "packetTypes", seen },
+                { "scenarios", ScenarioRows() },
+                { "partner", partnerStats ?? "" },
                 { "parse", new Dictionary<string, object>
                     { { "errors", s?.Parser.FailureCount ?? 0 }, { "unknownPacketTypes", unknown }, { "thrown", thrown }, { "items", errs }, { "logged", logged } } },
                 { "walk", new Dictionary<string, object>
@@ -349,7 +385,7 @@ namespace Chaos.Core.LiveCheck
             sb.AppendLine("login: " + (loginOk ? "ok, " + characters + " characters, " + Math.Round(loginMs) + " ms" : "FAILED: " + loginError));
             if (s != null)
             {
-                sb.AppendLine("enter: " + (enterOk ? "ok" : "FAILED") + " after " + Math.Round(enterMs) + " ms, guard answered " + s.GuardAnswered + ", level " + level + ", vocation " + vocation +
+                sb.AppendLine("enter: " + (enterOk ? "ok" : "FAILED") + " after " + Math.Round(enterMs) + " ms, guard answered " + s.GuardAnswered + ", level " + level + ", vocation " + vocation + ", entered at " + enterPos.X + "," + enterPos.Y + "," + enterPos.Z +
                               (closed != null ? ", closed: " + closed : ""));
                 sb.AppendLine("features: " + (features.Length > 0 ? string.Join(",", features) : "none announced"));
                 sb.AppendLine("session: " + o.Seconds + " s, " + s.Packets + " packets, " + s.Bytes + " bytes, tiles " + tilesMax + ", creatures " + creaturesMax +
@@ -364,6 +400,7 @@ namespace Chaos.Core.LiveCheck
                 foreach (var w in walks)
                     sb.AppendLine("  " + w.Dir.PadRight(10) + (w.Sent ? (w.Confirmed ? "confirmed" : w.Cancelled ? "refused" : "no answer") : "not sent") + ", moved " + w.Dx + "," + w.Dy +
                                   " expected " + w.ExpectedDx + "," + w.ExpectedDy + (w.Ms >= 0 ? ", " + Math.Round(w.Ms) + " ms" : "") + ", packets [" + w.Packets + "]");
+                ScenarioText(sb);
                 sb.AppendLine("extended opcodes (" + plan.Count + " in the table): requests ok " + Count("ok") + ", no reply " + Count("no_reply") + ", parse error " + Count("parse_error") +
                               ", not sent " + Count("not_sent") + "; session asked ok " + Count("session_ok") + " no reply " + Count("session_no_reply") +
                               "; pushes seen " + Count("push_seen") + " not seen " + Count("push_not_seen"));

@@ -589,7 +589,7 @@ It logs in, enters, takes four steps and prints the opcodes it read. The guard k
 ```
 cd unity/Core.LiveCheck && dotnet build -c Release
 CHAOS_LIVE_PASSWORD=... CHAOS_CLIENT_KEY=64hex dotnet bin/Release/net8.0/Core.LiveCheck.dll HOST LOGIN_PORT ACCOUNT [CHARACTER|-] \
-    --otb SERVER/data/items/items.otb [--identity extended|chaos] [--seconds 45] [--report out.json]
+    --otb SERVER/data/items/items.otb [--identity extended|chaos] [--seconds 45] [--report out.json] [--scenario stairs,npc,party,death,rift,tooltip|all]
 ```
 
 - The password is read from `CHAOS_LIVE_PASSWORD`, never from the arguments. `CHAOS_CLIENT_KEY` is the guard key (needed when the server runs the guard in `enforce`), `CHAOS_RSA_PUBLIC` the server's RSA modulus in decimal. The same variables the Unity client reads. Without a character name the first one is taken.
@@ -598,7 +598,7 @@ CHAOS_LIVE_PASSWORD=... CHAOS_CLIENT_KEY=64hex dotnet bin/Release/net8.0/Core.Li
 - Per opcode the report has: request sent, reply received (complete messages, chunk parts joined), JSON valid, handler exception (a Core handler that threw is logged by `ExtOpcodes`), the actions seen, the milliseconds to the first reply. Status: `ok`, `no_reply`, `parse_error` for requests; `session_ok` / `session_no_reply` for what `GameSession` asks on its own; `push_seen` / `push_not_seen` for the rest. A silent opcode with a known reason carries a note (rift outside a rift, the Waystone Atlas below level 1100, the admin panel for players, the name shaders without a server script).
 - Packets: every packet type parsed with its count, and every failure with the packet type, the offset it began at and where the reader stopped (`GameParser.Failures`, capped at 200, `FailureCount` is not). An unknown type is marked as such. Exceptions that are not a `ProtocolException` are counted separately.
 - `--report FILE` writes JSON, and the text next to it with `.txt`. No account name, character name or password is in either. `CHAOS_LIVE_DEBUG=1` prints the first bytes of packets outside the table to stderr, for a look at what an unlisted opcode carries.
-- Exit 0: login and entry ok, steps confirmed, no parse failure, the connection stayed open. Exit 1 otherwise, 2 for a usage error.
+- Exit 0: login and entry ok, steps confirmed, no parse failure, the connection stayed open, no scenario failed (a skip does not count). Exit 1 otherwise, 2 for a usage error. The play scenarios of phase 21 are described below.
 - `Core.Tests/LiveCheckTests.cs` tests the tool (the otb reader, the table, the status rules, a whole run on the demo tour's fake server, no names in the report) and the fixes it found.
 
 Run 2026-11-08 against a local server installed 2026-11-03 (packet compression and wide spell ids switched on for the whole run; the guard key and the character are local test data, nothing of them is committed), character level 1200:
@@ -615,11 +615,51 @@ Run 2026-11-08 against a local server installed 2026-11-03 (packet compression a
 | deflated packets | none (the server deflates for Chaos only) | 133, 179369 bytes in, 751047 out |
 
 The two silent requests are 96 (no server script on that server) and 120 (staff only). Features announced to the Chaos identity: 30, 80, 104, 106, 126, 152, 155.
-Not covered, because it needs the situation: death, party play, NPC trade, a staircase or hole (0x4B in a real change of level), a rift, the item tooltip (needs an item identity), and the base modules outside the table (opcodes 89, 92, 99, 106, 181: tasks, faction coins, stats, upgrade points; Unity ignores them, see `docs/UNITY_PARITY.md`).
+Not covered by that first run (phase 21 below covers them): death, party play, NPC trade, a staircase or hole, a rift, the item tooltip. Also outside the table: the base modules (opcodes 89, 92, 99, 106, 181: tasks, faction coins, stats, upgrade points; Unity ignores them, see `docs/UNITY_PARITY.md`).
 The server was five days older than the repo (no `groupqueue.lua`: its three files were copied in for the run, nothing else). Run it again against a fresh install before shipping.
 
 Found and fixed:
 1. 0xF5 (server `ProtocolGame::sendItems`, right after the login's 0x17: u16 count, then u16 client id, u8 0, u16 1 each) was an unknown opcode. The parser stopped at it and lost the rest of the login packet. Now read (`GameParser.ItemList`, `ItemListCount`).
+
+### Play scenarios (phase 21, 2026-11-08)
+
+Opt-in by flag, each one a pass, fail or skip row with its reason (report: `scenarios`, text and JSON; a fail makes the exit code 1, a skip does not):
+
+```
+--scenario stairs,npc,party,death,rift,tooltip | all   [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z] [--killer MONSTER]
+                                                       [--rift-key-id N] [--scenario-seconds N] [--aware WxH]
+second account (party, death): CHAOS_LIVE_ACCOUNT2, CHAOS_LIVE_PASSWORD2, [CHAOS_LIVE_CHARACTER2]
+```
+
+- Order inside `all`: tooltip, stairs, npc, party, rift, death. Each has a time limit, closes what it opened (shop, party, rift) and a skip names what the server or account lacks.
+- Walking (`WalkTo`): A* over the tiles in view (`PathFinder`, `WalkMap`); the item types come from `items.otb` block flags (`OtbDat`: solid, path, missile, ground speed). A goal out of view is approached through the reachable tile nearest to it (flood fill), a failure lists what walls the area in. `--items-xml` (default: beside `items.otb`) and the otb flag bits 8 to 12 give the floor changes by client id (`OtbDat.FloorChanges`). A stair blocks the server's own path finding, so a step onto it is allowed for the scenario.
+- `tooltip`: the stock item tooltip. Asks 0x9F for a worn item (kind 1) and for a sprite id (kind 0), the server answers 0x9E (`Core/BaseTooltip.cs`, `GameSession.RequestTooltip`, `GameParser.LastTooltip`). Pass: both answered, a name entry, no parse failure.
+- `stairs`: walks to the nearest stair, ramp or hole in view (or to `--stairs-at`), takes it, checks: floor +-1, landing within 2 tiles of the stair, the view centred on the player, the player on his tile, at least a third of the tiles round the landing known, no parse failure and no unmatched 0x6D (`GameParser.MoveUnmatched`: a move whose creature was not where the message said). Then the way back the same way, then one plain step (the server's 0x6D must name the tile the client believes).
+- `npc`: walks within 2 tiles of `--npc` (default Tesenna, the post office; `--npc-at` where to look), says hi (talk line from the NPC), trade (0x7A, 0x7B read, items, money), buys the cheapest buyable good, and checks money fell by the price and the inventory moved (container add, slot or capacity packet, open bag item count), then closes and says bye.
+- `party`: the second account logs in, both characters meet (the partner walks to the primary if they do not see each other, else a skip), the primary invites (0xA3), the partner joins (0xA4): checks the invite text, the shields on both sides, the party frames (opcode 235) on both sides, the shared experience switch (0xA8), then leave and that the party and the shields are gone.
+- `death`: needs the second account to be staff (group God and account type God in the local db, and not a tester: `Chaos.isTester` refuses staff). The primary goes down the stairs out of the protection zone, the partner `/goto`s it and summons `--killer` (default Demon) with `/m`. Pass: 0x28 read (type, penalty), the dead character logs out and in again (a new connection takes over the run), comes back alive and takes a step.
+- `rift`: needs the primary to be staff (the same rights): `/rift key 1` gives a Rift Key (`--rift-key-id`, rift_config.lua key.itemId), it is used from the backpack in a protection zone, opcode 228 must send `start`, answer a `query` inside the rift, then `/rift fail` closes it. Skips with the server's own words when no key arrives or no rift slot is ready.
+
+Run 2026-11-08, Extended and Chaos identity, local server brought up to date first (see below), characters level 1200 (primary) and 96 (partner), both on the local db, restored from a dump afterwards:
+
+| scenario | Extended | Chaos |
+|---|---|---|
+| tooltip | pass: worn item (4 entries) and sprite id (2 entries), 0x9E parsed | pass |
+| stairs | pass: down stair 32931,32077,7 to floor 8 (landing 32931,32078,8) and back up; packets 0x64 and the slices, no 0xBE or 0xBF (this server sends a full map on a change of level); 0x4B for Chaos | pass |
+| npc | pass: hi, trade (3 goods), bought 1 x label for 1 gold, money -1, container +1 item | pass |
+| party | pass: invite, join, frames 2 / 2, shields 1/2 then 4/3, XP switch, leave | pass |
+| death | pass: 0x28 type 0 penalty 100, logged in again (level 1200 to 1193), alive, step confirmed | pass |
+| rift | pass: 228 start (tier 1, 216 monsters), query answered, `/rift fail` closed it | pass |
+
+0 parse failures and 0 exceptions on the primary and the partner in all runs. The local setup (not committed, local data only): the two characters placed in the local db (primary near the temple stair, then in the temple building next to the partner, whose login always lands at the town temple), staff rights for the partner (death) or the primary (rift) set in the local db and taken back, tester storage row removed for them. NPC trade needed capacity: the primary's `cap` in the db was 0 and the server answered "There is not enough room" (nothing to fix in Core).
+
+Found and fixed in phase 21:
+2. 0x9E (stock item tooltip data, answer to 0x9F) was an unknown opcode: the parser stopped there. Now read (`BaseTooltip.Read`, test `Tooltip` in `Core.Tests/LiveCheckTests.cs`).
+3. `PartyShield.InvitedYou` and `InvitedByYou` were swapped. The server shows the inviting leader to the invited player with shield 1 (white and yellow) and the invited player to the leader with shield 2 (white and blue) (`Player::getPartyShield`). The right-click menu offered Join on white and blue, so a real invite never showed it, and Revoke on white and yellow. Fixed in `Core/Party.cs`, regression `PartyShields`.
+Also new: `GameParser.MoveUnmatched` counts the 0x6D messages dropped because the creature was not where the message said (before, silent).
+
+Not covered: 0xBE and 0xBF (no stock stair of this server sends them: the change comes as 0x64 or 0x4B plus slices, so the two floor change cases of `FloorUp` and `FloorDown` stay tested on synthetic packets only), the base market 0xF6 to 0xF9 (unused), NPC modal windows, selling to an NPC, a party shared kill, a rift boss or its reward chest, PvP death.
+Install: the local server was installed 2026-11-03; `install_all.py` ran whole (708 s, every step ok, 140 files, 2 new tables). Engine src-patches 0088 (attack speed) and 0089 (loot bag) need an engine build (4 cores, whole tree): not built, so the local engine lacks them (corpse_bag.lua logs that and monsters keep bodies); nothing in these runs depends on them.
 
 ## NPC talk and trade
 

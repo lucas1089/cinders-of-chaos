@@ -6,15 +6,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Chaos.Core.LiveCheck
 {
     public static class OtbDat
     {
-        const uint FlagStackable = 1u << 7, FlagAlwaysOnTop = 1u << 13, FlagAnimation = 1u << 24;
+        const uint FlagBlockSolid = 1u << 0, FlagBlockProjectile = 1u << 1, FlagBlockPathfind = 1u << 2, FlagStackable = 1u << 7, FlagAlwaysOnTop = 1u << 13, FlagAnimation = 1u << 24;
         const int GroupGround = 1, GroupSplash = 11, GroupFluid = 12;
 
-        public sealed class Node { public int Server, Client, Group, TopOrder; public uint Flags; }
+        public sealed class Node { public int Server, Client, Group, TopOrder, Speed; public uint Flags; }
 
         /// <summary>The item nodes of an items.otb (those with a server id and a client id).</summary>
         public static List<Node> ReadNodes(byte[] data)
@@ -32,7 +33,7 @@ namespace Chaos.Core.LiveCheck
                 var pl = payload.ToArray();
                 if (pl.Length < 4) return;
                 uint flags = BitConverter.ToUInt32(pl, 0);
-                int k = 4, sid = 0, cid = 0, top = 0;
+                int k = 4, sid = 0, cid = 0, top = 0, speed = 0;
                 while (k + 3 <= pl.Length)
                 {
                     byte at = pl[k];
@@ -42,9 +43,10 @@ namespace Chaos.Core.LiveCheck
                     if (at == 0x10 && ln == 2) sid = pl[k] | pl[k + 1] << 8;
                     else if (at == 0x11 && ln == 2) cid = pl[k] | pl[k + 1] << 8;
                     else if (at == 0x2B && ln == 1) top = pl[k];
+                    else if (at == 0x14 && ln == 2) speed = pl[k] | pl[k + 1] << 8;
                     k += ln;
                 }
-                if (sid != 0 && cid != 0) nodes.Add(new Node { Server = sid, Client = cid, Group = type, Flags = flags, TopOrder = top });
+                if (sid != 0 && cid != 0) nodes.Add(new Node { Server = sid, Client = cid, Group = type, Flags = flags, TopOrder = top, Speed = speed });
             }
             while (i < data.Length)
             {
@@ -67,6 +69,46 @@ namespace Chaos.Core.LiveCheck
             return nodes;
         }
 
+        /// <summary>The floor changes of items.xml by client id (the otb node of the server id gives the client id): "down", "north", ... (the first value of an item's
+        /// floorchange attribute, lower case; the floor change bits of the otb flags count too). Stairs, ramps, holes and trapdoors have one; ladders and ropes that need a use have none.</summary>
+        public static Dictionary<int, string> FloorChanges(string itemsXml, byte[] otb)
+        {
+            var byServer = new Dictionary<int, int>();
+            var result = new Dictionary<int, string>();
+            string[] otbKinds = { "down", "north", "east", "south", "west" };   // item flag bits 8 to 12 of items.otb
+            foreach (var n in ReadNodes(otb))
+            {
+                byServer[n.Server] = n.Client;
+                for (int bit = 0; bit < otbKinds.Length; bit++)
+                    if ((n.Flags & (1u << (8 + bit))) != 0 && !result.ContainsKey(n.Client)) result[n.Client] = otbKinds[bit];
+            }
+            foreach (Match m in Regex.Matches(itemsXml, @"<item\b([^>]*?)(/?)>"))
+            {
+                if (m.Groups[2].Value.Length > 0) continue;
+                int bodyStart = m.Index + m.Length;
+                int end = itemsXml.IndexOf("</item>", bodyStart, StringComparison.Ordinal);
+                string body = itemsXml.Substring(bodyStart, (end >= 0 ? end : bodyStart) - bodyStart);
+                var fc = Regex.Match(body, "key=\"floorchange\"\\s+value=\"(\\w+)\"");
+                if (!fc.Success) continue;
+                string val = fc.Groups[1].Value.ToLowerInvariant();
+                int from = -1, to = -1;
+                foreach (Match a in Regex.Matches(m.Groups[1].Value, "(\\w+)=\"([^\"]*)\""))
+                {
+                    int.TryParse(a.Groups[2].Value, out int v);
+                    switch (a.Groups[1].Value)
+                    {
+                        case "id": from = to = v; break;
+                        case "fromid": from = v; break;
+                        case "toid": to = v; break;
+                    }
+                }
+                if (from < 0 || to < from || to - from > 5000) continue;
+                for (int id = from; id <= to; id++)
+                    if (byServer.TryGetValue(id, out int cid) && !result.ContainsKey(cid)) result[cid] = val;
+            }
+            return result;
+        }
+
         public static DatFile Build(byte[] otb)
         {
             var nodes = ReadNodes(otb);
@@ -85,6 +127,11 @@ namespace Chaos.Core.LiveCheck
                     };
                 }
                 if ((n.Flags & FlagStackable) != 0) t.Stackable = true;
+                // what walking needs (the live scenarios path over the tiles they see): the server's block flags, and the ground's speed for the step time
+                if ((n.Flags & FlagBlockSolid) != 0) t.NotWalkable = true;
+                if ((n.Flags & FlagBlockPathfind) != 0) t.BlockPath = true;
+                if ((n.Flags & FlagBlockProjectile) != 0) t.BlockMissile = true;
+                if (n.Group == GroupGround && n.Speed > 0) t.GroundSpeed = n.Speed;
                 if (n.Group == GroupSplash) t.Splash = true;
                 if (n.Group == GroupFluid) t.Fluid = true;
                 if (n.Group == GroupGround) t.Ground = true;
