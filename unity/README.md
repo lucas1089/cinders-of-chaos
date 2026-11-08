@@ -508,6 +508,27 @@ Not run in a Unity editor or player in the session that wrote it: it compiles in
 - Options window (Ctrl+L): language (PlayerPrefs `chaos.lang`, hello on 157), keep attacking while moving (186), right-click equips (188), buff bar, the display scale the server reports (157). The two options and the language go out once after the login (`HudState.Hello`).
 - Not done: icon art for buffs and toasts, frame art for the monster bar, the Town Portal bar, in-world tier labels, monster scaling by tier, catacomb Start protection zone check.
 
+## Demo tour video
+
+The owner's video of the client running the game, not a test scene. `ChaosUnity -chaosDemoTour OUT_DIR` starts a fake game server in the
+player's own process (`Core/DemoTour.cs`, `FakeGameServer`), logs in to it through the normal `ChaosApp` flow (login port, character list,
+game port with the guard challenge: the key, the RSA modulus and the Extended wire reach the app through the same environment variables it
+always reads), switches on the F8 front-art live view and plays about 23 seconds. No real server data and no accounts: the art is the
+real pair's outdoor ids when found (`-chaosPair`, `CHAOS_PAIR_DIR`, `things/`), else its temple floors, else the synthetic art.
+- Server timeline (`FakeGameServer`, times in `TourPlan`): a skeleton and a ghoul walk in, an archer shoots, the hero fights (0x83 effects,
+  0x85 missiles, 0xB4 numbers, 0x8C and 0xA0 health), casts a fire spell and a heal (0xAA spell words, 0xA4 and 0xA5 cooldowns), loot lines,
+  an NPC greets and opens its shop (0x7A, 0x7B), toasts (79: journey, achievement, party invite, season pass), a buff added (234), a party
+  forms (235). The map is a function of the tile (`TourMap`), so the strips of the hero's walk match the first view.
+- Player side (`Unity/ChaosApp.Tour.cs`, `TourDirector`): walks five steps, attacks, casts, talks to the NPC and trades, then opens and closes
+  the spellbook, party frames, passive tree and skills windows in turn and two top-menu drop-downs, with the HUD on.
+- Deterministic: `Time.captureFramerate = 60`, the game clock (`GameSession.TestClock`) is the frame count and the script runs on that clock,
+  never the wall clock. One PNG per frame, `OUT_DIR/demo_tour_0000.png ...`, 1280x720, 1381 frames. Exit code 0 when all were written.
+- With `-chaosHd2dShot` too, the screenshots run first and `Hd2dShot` hands the process over to the tour. Log lines: `chaos demo tour:`.
+- CI (`unity-prototype.yml`, Linux target): one player run with both flags under xvfb, a second run with the tour alone if no frames came,
+  then `ffmpeg -framerate 60 -i demo_tour_%04d.png -vf scale=1280:720,format=yuv420p -c:v libx264 -crf 20` writes `demo_tour.mp4` into the
+  `hd2d-shots` artifact. The PNG frames are deleted after encoding; `demo_tour_still_1..4.png` stay.
+- Test: `Core.Tests/TourTests.cs` (the server against a real `GameSession`, no Unity).
+
 ## Tests
 
 ```
@@ -529,6 +550,7 @@ The checks cover:
 - the front-art creatures (`FrontLooksTests.cs`): the name rules over every monster name of the server, the 21 classes, the outfit composer, the label, the state machine (steps, facing, swings, flinch);
 - NPC talk and trade (`NpcTests.cs`): byte-level 0x7A, 0x7B, 0x7C in and the buy, sell, look, close and NPC speech packets out, lists, search, quantity bounds (money, capacity, stock, 100), totals, currency (opcode 113), {keywords}, the talk log and its channel rule, NPC speech in the parser;
 - the front-art live effects (`FrontFxTests.cs`): byte-level packets of 0x83, 0x84, 0x85, 0x86 and 0xB4, every effect and missile id of the server's Lua files has an element, palettes and missile arts, number text, the melee rule, timing and the director's rules;
+- the demo tour server (`TourTests.cs`): a real session logs in through the login and the game port and plays the whole script on a simulated 60 fps clock (steps, fights, spells, shop, party, toasts, buffs);
 - the 3D character mapping (`CharsTests.cs`): the 21 classes against the vocation files, the monster rules over every monster name of the server
   (it prints the share per model), size, hand bones, idle clips, the label font and the line-up. The fetch script: `python3 -I unity/tools/fetch_3d_assets_test.py`.
 
