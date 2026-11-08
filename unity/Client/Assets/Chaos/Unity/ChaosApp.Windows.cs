@@ -9,6 +9,8 @@ namespace Chaos.Client
         public abstract string Title { get; }
         /// <summary>Ctrl + this key opens and closes the window (None: no hotkey).</summary>
         public virtual KeyCode Hotkey => KeyCode.None;
+        /// <summary>False for a window that opens by itself and has no place in the Windows list of the top menu (a HUD).</summary>
+        public virtual bool InMenu => true;
         public bool Open;
         /// <summary>Where the window is, in UI units (720 px of height is scale 1). Set a default in Place.</summary>
         public Rect Area;
@@ -57,6 +59,12 @@ namespace Chaos.Client
             windows.Add(new EquipmentWindow());
             windows.Add(new ContainersWindow());
             windows.Add(new SkillsWindow());
+            windows.Add(new PassiveTreeWindow());
+            windows.Add(new GoalsWindow());
+            windows.Add(new GoalTrackerWindow());
+            windows.Add(new HuntWindow());
+            windows.Add(new RiftWindow());
+            windows.Add(new InfoWindow());
             windows.Add(new BattleListWindow());
             windows.Add(new MinimapWindow());
             windows.Add(new HotkeyBarWindow());
@@ -66,6 +74,14 @@ namespace Chaos.Client
             windows.Add(new PartyFramesWindow());
             windows.Add(new ChannelsWindow());
             windows.Add(new FightWindow());
+            windows.Add(new OptionsWindow());
+            windows.Add(new OutfitWindow());
+            windows.Add(new BankWindow());
+            windows.Add(new StashWindow());
+            windows.Add(new StoreWindow());
+            windows.Add(new HelperWindow());
+            windows.Add(new DeathRecapWindow());
+            windows.Add(new LootWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>
@@ -81,16 +97,8 @@ namespace Chaos.Client
         void DrawWindows(float w, float h, float scale)
         {
             if (windows.Count == 0) MakeWindows();
-            // toolbar: one button per window, left of Log out
-            float x = w - 104 - 76 * windows.Count;
-            for (int i = 0; i < windows.Count; i++)
-            {
-                var b = new Rect(x + 76 * i, 8, 72, 30);
-                uiRects.Add(Scaled(b, scale));
-                var win = windows[i];
-                win.Tick(this);
-                if (GUI.Toggle(b, win.Open, win.Title, GUI.skin.button) != win.Open) win.Open = !win.Open;
-            }
+            foreach (var win in windows) win.Tick(this);
+            TopbarGui(w, h, scale);   // ChaosApp.Progression.cs: category buttons, drop-downs, new unlocks
             for (int i = 0; i < windows.Count; i++)
             {
                 var win = windows[i];

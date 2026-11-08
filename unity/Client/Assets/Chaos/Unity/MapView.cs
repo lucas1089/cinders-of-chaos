@@ -21,6 +21,8 @@ namespace Chaos.Client
         readonly List<int> tris = new List<int>();
         public readonly List<(Creature c, Vector2 at)> Labels = new List<(Creature, Vector2)>();
         Vector2 cam;   // the player's drawn position in tiles (walk offset included)
+        /// <summary>The player's drawn position in tiles (the loot labels place themselves with it).</summary>
+        public Vector2 CamTiles => cam;
 
         void Awake()
         {

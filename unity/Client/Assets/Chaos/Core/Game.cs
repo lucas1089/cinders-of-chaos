@@ -40,6 +40,8 @@ namespace Chaos.Core
         /// <summary>The creature we attack (0 none). Set by GameSession.Attack, cleared by the server's 0xA3.</summary>
         public uint AttackTarget;
         public int Health, MaxHealth, Mana, MaxMana, Level;
+        /// <summary>0xA2: the status icon bits (1 poison, 2 burning, 4 energy, 8 drunk, 16 mana shield, 32 paralyzed, 64 haste, 16384 protection zone ...). The helper reads haste and the zone.</summary>
+        public int PlayerStates;
         // more of 0xA0 (player stats)
         public uint FreeCap, TotalCap;
         public ulong Experience;
@@ -195,8 +197,9 @@ namespace Chaos.Core
                     }
                     break;
                 }
-                case 0x78: { int slot = r.U8(); var it = ReadItem(r, r.U16()); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = it; break; }
-                case 0x79: { int slot = r.U8(); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = null; break; }
+                case 0x78: { int slot = r.U8(); var it = ReadItem(r, r.U16()); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = it; InventoryChanged(); break; }
+                case 0x79: { int slot = r.U8(); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = null; InventoryChanged(); break; }
+                case 0x96: case 0x97: case 0xC8: case 0xFA: ItemsMessage(op, r); break;   // text windows, outfit window, modal windows (GameItems.cs)
                 case 0x7A: Trade.ReadShop(r, Clock()); break;
                 case 0x7B: Trade.ReadGoods(r); break;
                 case 0x7C: Trade.Close(); break;
@@ -230,7 +233,7 @@ namespace Chaos.Core
                     for (int i = 0; i < Skills.Length; i++) Skills[i] = new SkillValue { Level = r.U16(), Base = r.U16(), Percent = r.U8() };
                     r.Skip(14 * 5 + 6 * 4 - Skills.Length * 5);   // the rest: more skills, special skills
                     break;
-                case 0xA2: r.U16(); break;
+                case 0xA2: PlayerStates = r.U16(); break;
                 case 0xA3: r.U32(); AttackTarget = 0; break;   // cancel target
                 case 0xA4: { int id = Features.Has(ClientFeatures.ExtendedSpellIds) ? r.U16() : r.U8(); SpellCooldown(id, r.U32()); break; }
                 case 0xA5: { int g = r.U8(); GroupCooldown(g, r.U32()); break; }
@@ -562,7 +565,12 @@ namespace Chaos.Core
         public readonly SpellBook Spells;
         /// <summary>The party frames (opcode 235) and the party packets.</summary>
         public readonly PartyFrames Party;
-        bool featuresLogged, spellsAsked, partyOpened;
+        /// <summary>The HUD models (toasts, buff bar, cast bar, shield, chi, monster bar, anti-bot, options): Core/Hud.cs.</summary>
+        public readonly HudState Hud;
+        int hudAskedLevel;
+        bool featuresLogged, spellsAsked, partyOpened, progressStarted;
+        /// <summary>The progression windows' state: passive tree, skill stats, goals, hunt tracker, rift HUD, info pages, menu unlocks.</summary>
+        public readonly Progression Progress;
         double enteredAt = -1;
 
         public GameSession(World w, Options o)
@@ -574,6 +582,8 @@ namespace Chaos.Core
             Ext.Log = m => Log(m);
             Spells = new SpellBook(Ext) { Clock = () => Now, Say = Say, LevelNow = () => parser.Level, MagicLevelNow = () => parser.MagicLevel };
             Party = new PartyFrames(Ext) { Clock = () => Now, Packet = payload => conn?.Send(payload) };
+            Hud = new HudState(Ext, () => Now, () => world.PlayerVocation);
+            Progress = new Progression(Ext, () => Now);
             parser.SpellCooldown = (id, ms) => Spells.OnSpellCooldown(id, ms);
             parser.GroupCooldown = (g, ms) => Spells.OnGroupCooldown(g, ms);
             parser.ExtendedOpcode = OnExtended;
@@ -582,6 +592,7 @@ namespace Chaos.Core
             parser.Disconnected = reason => Closed = reason;
             Ext.On(NpcTradeState.OpcodeCurrency, m => parser.Trade.ReceiveCurrency(NpcTradeState.ParseCurrency(m), Now));
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
+            InitItems();
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
         }
@@ -668,10 +679,17 @@ namespace Chaos.Core
             }
             if (parser.LoggedIn && enteredAt < 0) enteredAt = Now;
             ChatPoll();
+            ItemsPoll();
             // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
             if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
             // the party frames: watch a moment after the login (the main client waits 400 ms)
             if (!partyOpened && enteredAt >= 0 && Now - enteredAt > 600) { partyOpened = true; Party.Open(); }
+            // the HUD: the options and the language go out a moment after the login; the timers run every frame
+            if (enteredAt >= 0 && Now - enteredAt > 800) Hud.Hello(Loc.Language);
+            if (Hud.Options.LevelChanged(parser.Level) && parser.Level != hudAskedLevel) { hudAskedLevel = parser.Level; Hud.Options.SendHello(Loc.Language); }
+            Hud.Tick(Now);
+            // the progression requests (menu unlocks hello, combat stats, rift query, goal tracker): the main client waits 1.8 s
+            if (!progressStarted && enteredAt >= 0 && Now - enteredAt > 1800) { progressStarted = true; Progress.Start(); }
             if (conn.Closed && Closed == null) Closed = conn.Error ?? "The server closed the connection.";
             if (stepSent >= 0 && Now - stepSent > 1500) stepSent = -1;   // no answer to a step: let the next one go
         }

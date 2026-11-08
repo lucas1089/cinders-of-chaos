@@ -58,8 +58,12 @@ namespace Chaos.Core.Tests
             FrontLooksTests.Run,
             FrontFxTests.Run,
             NpcTests.Run,
+            ProgressionTests.Run,
             PartyTests.Run,
             ChatTests.Run,
+            HudTests.Run,
+            ItemTests.Run,
+            HelperTests.Run,
         };
 
         static void CryptoChecks()

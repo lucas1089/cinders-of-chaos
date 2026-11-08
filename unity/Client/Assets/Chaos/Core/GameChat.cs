@@ -74,11 +74,15 @@ namespace Chaos.Core
             byte kind = r.U8();
             Pos at = default; uint v1 = 0, v2 = 0; byte c1 = 0, c2 = 0;
             int channel = -1;
+            int percent = 0, impact = 0; uint owner = 0;
+            bool typed = false;
             if (kind >= 23 && kind <= 29)
             {
                 at = ReadPos(r);
                 v1 = r.U32(); c1 = r.U8();
                 if (kind == 23 || kind == 24 || kind == 27) { v2 = r.U32(); c2 = r.U8(); }
+                // typed impact numbers (src-patch 0051, feature 155, capability bit 7): u16 percent x100, u8 type, u32 creature id
+                if (Features.Has(ClientFeatures.ImpactText)) { percent = r.U16(); impact = r.U8(); owner = r.U32(); typed = true; }
             }
             else if (kind >= 33 && kind <= 35) channel = r.U16();
             string text = r.Str();
@@ -88,7 +92,8 @@ namespace Chaos.Core
                 Talks.OnText(kind, channel, text);
                 Text(text); Chat("", text, 0);
             }
-            else if (W.Fx.Enabled) W.Fx.Push(FxEvent.Number(kind, at, v1, c1, v2, c2, text));   // damage, heal and experience numbers
+            else if (W.Fx.Enabled)   // damage, heal and experience numbers
+                W.Fx.Push(typed ? FxEvent.TypedNumber(kind, at, v1, c1, v2, c2, text, percent, impact, owner) : FxEvent.Number(kind, at, v1, c1, v2, c2, text));
         }
 
         void ChannelList(ByteReader r)

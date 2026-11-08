@@ -498,6 +498,16 @@ Not run in a Unity editor or player in the session that wrote it: it compiles in
 - Character plate (`Core/Plate.cs`, `Unity/ChaosApp.Plate.cs`): outfit portrait, name, level, health and mana bars (right-click for percent, kept per character) and the experience line with the percent to the next level, all from 0xA0. The main client's plate uses no extended opcode.
 - `ChaosApp.DrawOutfit(rect, outfit)` draws a standing outfit in a GUI rectangle; `ChaosApp.ShowMenu(at, items)` is a small popup menu any window can use.
 
+## HUD: toasts, buffs, bars, anti-bot, options (O433 phase 3, track H)
+
+- Models in `Core/Hud.cs` (one `HudState` per session, `session.Hud`), tests `Core.Tests/HudTests.cs`, pt-BR texts in `Core/HudStrings.cs` (merged into `LocStrings.PtBr`).
+- Toasts (opcode 79, flat `{action, message}`): `ToastCenter`, 21 types with the main client's colours and times, three shown, queue of 12, Accept and Decline on 151 and 152 (plain text), danger line for hunt warnings.
+- Under the plate: energy shield (224, text `es:cur:max`), Monk chi (247, text `chi:chi:max:decay`), buff squares (234, `sync` then `full` and `diff`). No icon art: initials on a colour.
+- Monster bar (125): `query {cid}` on every new target, `info` gives tier, role, level and modifiers, `mech` is the boss cast bar. Cast bars (231) over the caster, click on your own cancels.
+- Anti-bot (211): modal check with the item pictures and a countdown, report dialog (`OpenReport(name)`; "Report Player" is in the player right-click menu).
+- Options window (Ctrl+L): language (PlayerPrefs `chaos.lang`, hello on 157), keep attacking while moving (186), right-click equips (188), buff bar, the display scale the server reports (157). The two options and the language go out once after the login (`HudState.Hello`).
+- Not done: icon art for buffs and toasts, frame art for the monster bar, the Town Portal bar, in-world tier labels, monster scaling by tier, catacomb Start protection zone check.
+
 ## Tests
 
 ```
@@ -539,6 +549,16 @@ It logs in, enters, takes four steps and prints the opcodes it read. The guard k
   Requests: buy 0x7A (id, sub type, u8 amount, ignore capacity, in backpacks), sell 0x7B (id, sub type, u8 amount, ignore equipped).
   An NPC that trades for another currency says so on opcode 113 first (`NpcTradeState.ReceiveCurrency`).
 - Not done: buy in backpacks, the speech bubble over the NPC, walking up to an NPC on a click, NPC modal windows. Not tried on a live server.
+
+## Progression: passive tree, skills, goals, hunt, rift, info, top menu (phase 3, track K)
+
+Same server messages as the main client. Pure code in `Core/PassiveTree.cs`, `Core/BuildCode.cs`, `Core/Progression.cs`, `Core/TopMenu.cs` (one `Progression` hub on `GameSession.Progress`), tests in `Core.Tests/ProgressionTests.cs`.
+- Passive tree, Ctrl+N (`PassiveTreeWindow`, opcode 65). The server sends only the allocation, so the layout is a file: `Resources/PassiveTree.json`, written by `luajit unity/tools/gen_tree_data.lua` from `client/overlay/modules/game_passivetree/treedata` (positions, links, names, stat lines per class; CI runs `--check`). Run it again when the main client's tree changes.
+  Drag pans, the wheel zooms round the pointer, Fit shows all. Hover shows the tooltip (stats, description, mastery effects, "Requires", the cost of the path). A click plans the path to the node (green), a click on a planned node takes it and what hangs on it out, `<` and `>` undo and redo, Apply sends one `planApply`. A mastery asks for its effect. Right-click on a saved node refunds it, Reset resets the tree, both at the server's price. Search frames matches in orange (Enter and Shift+Enter step). Build Code exports the tree code, the full CC1 code (class, level, tree, gear), previews a pasted code on the tree and applies it; the server decides.
+  Not done: node icons, curved links, Paragon, trials, totals, auto build, other characters' trees, loadouts.
+- Skills (Ctrl+K): Melee (the best of sword, club and axe), Ranged, Magic / Wand, Shielding, Fishing, Fist for the Monk line, then the combat stat rows (opcode 119: damage, attack, defense, armor, mitigation).
+- Next Goals (Ctrl+Y, opcode 178) and the goal tracker (opens by itself when the server sends rows; the welcome path has a Skip button that asks twice). Hunt Tracker (Ctrl+I, opcode 241): session clock, pause, reset, restock, four lists. Rift HUD (opcode 228): opens on the server's start. Info and Services (opcode 237): pages from the Adventure, Character, Economy and System menus.
+- The top menu replaces the flat toolbar: Character, Hunt, Adventure, Economy, Social, System and Windows. Entries are sorted by text and follow the level unlocks of opcode 115 (hidden, grey with the level, a New badge, an on-screen text and a Go box). Windows lists every window no entry names. To put a new window in a category, add a line to `TopMenu.Categories` with `win:ClassName`; without one it shows under Windows.
 
 ## Running it
 
@@ -669,3 +689,51 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
   Lifetime 60 ms per character, 3 to 12 s, at most 3 lines stack per creature.
 - Death (0x28): a modal window with the penalty. OK logs out and goes to the character list.
 - Fight modes (`FightWindow`): offensive / balanced / defensive, stand / chase, secure mode. Saved in PlayerPrefs (`chaos.fight`), sent after the login and at each change (0xA0).
+
+## Items and economy (O433 phase 3, track J)
+
+- Rarity and tooltips: `Core/ItemInfo.cs` (`ItemRarity`, `TipLines`, `ItemTips`), `ItemSlots.Frame` and `ChaosApp.Items.cs`. Slots of the equipment and container windows,
+  the text window and the stash list get a frame in the rarity colour (unique colour first, a gold corner for a locked item). Rarity needs the item attributes, so identity Chaos.
+  Hovering an item for 60 ms asks opcode 242 (`get {items: [{pos, iid, cid, n}]}`, the slot on the page the window shows for a container), the tooltip is cached by per-item id and version
+  (30 s for a plain item) and drawn at the pointer. An answer for another item (the slots shifted) is dropped and asked again at most twice.
+- Outfit window (Ctrl+U, `OutfitWindow`, `Core/Dialogs.cs` `OutfitWindowState`): 0xD2 asks, 0xC8 lists outfits with addons, mounts and, on identity Chaos, wings, auras and shaders; colours by
+  the 19 x 7 palette; Ok sends 0xD3 (wings, aura and shader only with the markers). Wire layouts follow TFS 1.4.2 `sendOutfitWindow` and `parseSetOutfit`. The base server tree is not in this repo, so
+  the extras are read from the OTCv8 layout: ids of wings and auras are 16 bits, a shader's id a byte, with the other width as the fallback; the set packet ends with wings, aura, shader name.
+  Check both on a live run (log in with `CHAOS_UNITY_IDENTITY=chaos`, open the window).
+- Modal windows (0xFA, 0xF9) and text windows (0x96 books and signs, 0x89 write, 0x97 door lists, 0x8D answer) are server-driven overlays without a toolbar button (`ChaosApp.Items.cs`).
+  A text window is writable when its max length is above its text length (the server sends the text length as the length of a read-only one). Escape answers a modal with its escape button.
+- Bank (Ctrl+J, `Core/Bank.cs`, `BankWindow`, opcode 60), stash (Ctrl+H, `Core/Stash.cs`, `StashWindow`, opcode 110: tabs, items in batches, take out, drop a bag item on the window,
+  stow everything, collect inbox) and store (Ctrl+T, `Core/Store.cs`, `StoreWindow`, opcode 218: tree, pages, search, history, buy). The store takes Chaos Coins the account has; nothing
+  about payment is in the client (`pay_*` messages are ignored, the buy URL is never opened).
+- Texts of these windows are in `Core/LocItems.cs`, merged into `LocStrings.PtBr` (a key that another file also has is not an error).
+- Tests: `Core.Tests/ItemTests.cs` (rarity, tooltip lines, request and cache rules, the four packet layouts with the plain and the Chaos wire, bank, stash, store).
+- Not done: rarity frame and glow on items on the map, tooltip compare (Ctrl) and Alt help, tooltips on stash, shop and trade rows, gifts and try-on in the store, the stash block list and
+  Find my item, the rarity names of old items by description tag. The toolbar holds one button per window and is already wider than 960 px: the new windows are reached by their keys.
+## Combat helper, typed numbers, death recap, loot (O433 phase 3, track I)
+
+- Helper (`Ctrl+R`, `HelperWindow`, loop in `Core/HelperEngine.cs`, rules in `Core/HelperLogic.cs`, settings in `Core/HelperConfig.cs`, Auto setup in `Core/HelperRotation.cs`).
+  A port of the main client's `game_helper` and `game_helperrotation`. It runs every frame whether the window is open or not (the window ticks it once a frame) and does
+  nothing until "Helper on". Tabs: Healing (3 spell rows, 3 potion rows, mana training, Auto Haste), Shooter (5 slots: spell, mana percent, monsters to cast on; Auto turn; Auto setup),
+  Target (Auto Target, modes A..H). Saved per character in PlayerPrefs (`chaos.helper.-/<name>`, JSON, every number clamped on load).
+- Pacing, as the main client's: a pass every 50 ms; heal every 250 ms, mana training 100, haste 500, Auto Target 250, shooter 100. Every cast goes through `HelperTimers` (per channel
+  heal / attack / support at most 4, 4, 3 casts a second, the same words not within 500 ms; a potion at most every 600 ms) and `HelperCasts` (a cast waits for the server's cooldown packet
+  0xA4 / 0xA5; no answer in 1.2 s or 3 round trips means refused and the spell backs off 2, 4, 8, 16 s; the group of a cast is held for two round trips; cast-time spells block other attacks).
+  One shooter cast per pass. A hit taken heals at once (at most every 100 ms). Nothing is sent for 1.5 s after the server went quiet for 2.5 s. Paused in a protection zone (0xA2 bit 14).
+  Potions are used on yourself (0x84 with your creature id) from the equipment or an open bag.
+- Auto setup: `HelperRotation.Select` picks the class preset for the level, replaces spells the character cannot cast, tops up to 5, puts area spells first and the class ultimate
+  (level 1200) in front. `Core/HelperRotationData.cs` is generated from `client/overlay/modules/game_helperrotation/autorotation_data.lua` by
+  `luajit unity/tools/gen_helper_rotation_data.lua` (`--check` in the `core` job).
+- Not ported: runes, party and friend heals, Follow, Auto sell, food, exercise, Everfull "follow the carried flask", the potion gate for closed backpacks, shooter profiles, the line-of-sight
+  check (every monster in the 7 x 5 window counts), the Auto Target engine and guard (summons are skipped by creature type), the helper HUD, helper timers window, support spells tab.
+- Typed damage numbers: with the Chaos identity the login now sends capability bit 7 (`0xC0` with wide spell ids). `GameParser.TextMessage` reads u16 percent, u8 type, u32 creature after
+  the value pairs when feature 155 is on, and `FxEvent.TypedNumber` carries them. In the live view (`FrontFxDirector`, `FrontLiveFx`) a critical hit is bigger and slower, a condition tick smaller,
+  mana drain and mana gain are water coloured, an energy shield hit is energy coloured, every number is scattered by `DamageScatter` (the main client's rolls: shift, speed, drift, the texts of one hit
+  share a roll) and follows its creature.
+- Death recap (`DeathRecapWindow`, `Core/DeathRecap.cs`, opcode 154): the server stores a recap at the death and sends it at the next login (auto), the window opens by itself unless
+  "Open after a death" is off (`chaos.deathrecap.auto`). The toolbar button "Recap" opens the history of the last deaths.
+- Loot (`LootWindow`, Ctrl+D): Loot (the loot channel, opcode 238: a click takes an item, Shift one), Filter (what glows and dims, presets, categories), Labels (ground labels, opcode 230,
+  settings per character in `chaos.groundlabels.<name>`). Ground labels (`ChaosApp.Loot.cs`) are drawn over the map in the classic and the live view: the scan looks at the 17 x 13 tiles round you every
+  400 ms (60 ms after a step), asks the server for the tiles whose candidate items changed (at most 30 a request, asked again after 3 s), and lays the labels out so none overlaps.
+  Click on a corpse label opens the corpse. Hold Alt to show every item.
+- Tests: `Core.Tests/HelperTests.cs` mirrors `helper_logic_test.lua`, `rotation_test.lua`, `helper_potions_test.lua`, `helpertimers_test.lua`, `autorotation_test.lua`, `scatterlogic_test.lua`,
+  `deathrecaplogic_test.lua`, `lootfilter_test.lua` and `groundlabels_test.lua`, drives the engine with a fake game and a fake clock, and reads typed 0xB4 packets.

@@ -14,6 +14,42 @@ namespace Chaos.Client
         static int srcCount;
         static GUIStyle faintStyle;
 
+        /// <summary>The item under the pointer this frame (set by Slot on a repaint), for the tooltip drawn over the windows.</summary>
+        public static Item HoverItem;
+        public static Pos HoverPos;
+        public static int HoverFrame = -1;
+
+        /// <summary>A rarity frame (the unique colour for a unique), and a gold corner mark for a locked item. Draws nothing for a plain item.</summary>
+        public static void Frame(Rect r, Item it)
+        {
+            string hex = ItemRarity.FrameColor(it);
+            if (hex != null) Frame(r, hex);
+            if (ItemRarity.IsLocked(it)) ChaosApp.Fill(new Rect(r.xMax - 7, r.y + 1, 6, 6), new Color(0.91f, 0.72f, 0.29f, 0.95f));
+        }
+
+        public static void Frame(Rect r, string hex)
+        {
+            if (hex == null || !ColorUtility.TryParseHtmlString(hex, out var c)) return;
+            c.a = 0.95f;
+            ChaosApp.Fill(new Rect(r.x, r.y, r.width, 2), c);
+            ChaosApp.Fill(new Rect(r.x, r.yMax - 2, r.width, 2), c);
+            ChaosApp.Fill(new Rect(r.x, r.y + 2, 2, r.height - 4), c);
+            ChaosApp.Fill(new Rect(r.xMax - 2, r.y + 2, 2, r.height - 4), c);
+        }
+
+        /// <summary>A drop target: a left release over r with an item being dragged hands the item to take and ends the drag. True when it did.</summary>
+        public static bool Drop(Rect r, System.Action<Pos, ushort, byte, int> take)
+        {
+            var e = Event.current;
+            if (!dragging || e.type != EventType.MouseUp || e.button != 0 || !r.Contains(e.mousePosition)) return false;
+            dragging = false;
+            take(srcPos, srcId, srcStack, srcCount);
+            e.Use();
+            return true;
+        }
+
+        public static bool Dragging => dragging;
+
         public static void Cancel() { dragging = false; }
 
         /// <summary>The lowest container id the server is not using, for opening a bag.</summary>
@@ -36,6 +72,8 @@ namespace Chaos.Client
                 ChaosApp.Fill(new Rect(r.x - 1, r.y - 1, r.width + 2, r.height + 2), new Color(0f, 0f, 0f, 0.8f));
                 ChaosApp.Fill(r, over && dragging ? new Color(0.30f, 0.22f, 0.12f, 1f) : new Color(0.11f, 0.09f, 0.12f, 1f));
                 if (it != null) app.DrawItem(new Rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2), (ushort)it.Id, it.Count);
+                if (it != null) Frame(new Rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2), it);
+                if (it != null && over && !dragging) { HoverItem = it; HoverPos = where; HoverFrame = Time.frameCount; }
                 else if (!string.IsNullOrEmpty(faint))
                 {
                     if (faintStyle == null)
