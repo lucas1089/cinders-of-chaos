@@ -11,6 +11,8 @@
 #   base_ref  / CHAOS_BASE_CLIENT_REF    branch, tag or commit to build; pin the commit the patches were made against
 #                                        (a moving branch can make client/base-patches/*.patch stop applying)
 # For a private base repository add a secret BASE_CLIENT_TOKEN (a read-only token for that repository).
+# Neither set: the base client archive of the branch windows-assets (client/base-client.tar.xz.part*, checked against
+# SHA256SUMS.parts), the same source windows-package.yml builds from, so a run is a compile check of client/base-patches.
 # Client guard (client/BASE.md "Client guard"): the repository secret CHAOS_CLIENT_KEY (64 hex digits, the game server's
 # CHAOS_CLIENT_KEY) is built into the client; without it the client gets the public development key (a warning).
 # The input client_build is the build number the client sends at login (the server's clientGuardBuilds).
@@ -66,14 +68,13 @@ jobs:
         shell: bash
         run: |
           if [ -z "$BASE_REPO" ]; then
-            echo "::error::No base client repository: give the base_repo input or set the repository variable CHAOS_BASE_CLIENT_REPO (owner/name, see client/BASE.md)."
-            exit 1
+            echo "Base client: the archive on the branch windows-assets (no base_repo input, no CHAOS_BASE_CLIENT_REPO variable)"
           fi
           if [ -n "$SERVER_HOST" ] && ! [[ "$SERVER_HOST" =~ ^[A-Za-z0-9.-]+$ ]]; then
             echo "::error::server_host must be a host name or an IPv4 address"
             exit 1
           fi
-          echo "Base client: $BASE_REPO @ ${BASE_REF:-<default branch>}"
+          [ -z "$BASE_REPO" ] || echo "Base client: $BASE_REPO @ ${BASE_REF:-<default branch>}"
 
       # the patches are plain unified diffs with LF line endings; a CRLF checkout would make them fail to apply
       - name: Keep line endings as they are
@@ -86,6 +87,7 @@ jobs:
           path: chaos
 
       - name: Check out the base client
+        if: env.BASE_REPO != ''
         uses: actions/checkout@v4
         with:
           repository: ${{ env.BASE_REPO }}
@@ -93,12 +95,34 @@ jobs:
           token: ${{ secrets.BASE_CLIENT_TOKEN || github.token }}
           path: base
 
+      - name: Check out the base client archive (windows-assets)
+        if: env.BASE_REPO == ''
+        uses: actions/checkout@v4
+        with:
+          ref: windows-assets
+          path: assets
+          sparse-checkout: |
+            client
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Unpack the base client archive
+        if: env.BASE_REPO == ''
+        shell: bash
+        run: |
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir unpack
+          cat assets/client/base-client.tar.xz.part* | xz -d -T0 | tar -xf - -C unpack
+          mv unpack/*/ base  # the archive holds one folder: the base client
+          rm -rf assets unpack
+
       - name: Assemble the Cinders of Chaos client (base + client/base-patches + client/overlay)
         shell: bash
         run: |
           patch --version | head -n 1
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base" "$GITHUB_WORKSPACE/game"
-          echo "base client commit: $(git -C base rev-parse HEAD)" | tee game/BUILD_INFO.txt
+          if [ -d base/.git ]; then src="commit $(git -C base rev-parse HEAD)"; else src="archive of windows-assets"; fi
+          echo "base client: $src" | tee game/BUILD_INFO.txt
           echo "chaos commit: $GITHUB_SHA" | tee -a game/BUILD_INFO.txt
           # the server entry and the login-screen URLs of init.lua (client/base-patches/0001-init.patch) point at 127.0.0.1
           if [ -n "$SERVER_HOST" ]; then
