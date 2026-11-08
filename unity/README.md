@@ -737,3 +737,23 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
   Click on a corpse label opens the corpse. Hold Alt to show every item.
 - Tests: `Core.Tests/HelperTests.cs` mirrors `helper_logic_test.lua`, `rotation_test.lua`, `helper_potions_test.lua`, `helpertimers_test.lua`, `autorotation_test.lua`, `scatterlogic_test.lua`,
   `deathrecaplogic_test.lua`, `lootfilter_test.lua` and `groundlabels_test.lua`, drives the engine with a fake game and a fake clock, and reads typed 0xB4 packets.
+
+## World, map and item utilities (O433 phase 4, track O)
+
+Twenty one more modules of the main client, each a pure model in `Core/` (`WorldMarks.cs`, `WorldTravel.cs`, `WorldTiles.cs`, `WorldItems.cs`, `WorldItems2.cs`), made once in `WorldUtils` (`Core/GameWorld.cs`, `GameSession.Utils`)
+and driven through the extended opcode layer. Drawing: `Unity/ChaosApp.World.cs` (map group, both map views through `TileScreenPx`, plus the Candlemarks counter, the Hideout placing bar and a small tooltip),
+windows: `Unity/Windows/WorldWindows.cs` and `ItemWindows.cs`. No window has a hotkey: the top menu opens them (same menu texts and level unlocks as the main client) or the server does
+(Waystone, Gambler, Unveil, Osric, the banker style NPCs). Texts: `Core/LocWorld.cs` (pt-BR, merged in `LocStrings`).
+- Map: `MapMarkState` (opcode 153: party pins that glide, points of interest by category on the Minimap window, quest goals, the gold ! and ? over NPC heads, arrows for members out of view),
+  `MapOverlayState` (245: the explored map see-through over the game view, opacity, zoom, pan, corner box, strip, rift squares), `MinimapSyncLogic`, `TileOverlays` (156: seconds over timed fields from a
+  scan of the world four times a second, the server's bars), `WeatherState` (114: rain, embers, motes, dust, area colour mood, drawn in code), `NameplateState` (248, plain text: title, guild, frame).
+- Places: `NpcTravel` (121), `WaystoneState` (202, raw JSON without the data wrapper), `TownPortalState` (239) and `LoadoutsState` (206) put their casts on the HUD cast bar, `HideoutState` (192: catalogue,
+  placement check, the ghost on the map).
+- Items: `AutoLootState` (216), `PouchesState` with the Auto Seller (226), `OrbExchangeState` (209), `GambleState` (199), `EmberCacheState` (174), `UnveilState` (196), `ItemFinderState` (155),
+  `SpellSupportsState` (243, joins `part` messages), `PactState` (222, a loaded build previews in the passive tree), `CandlemarksState` (176).
+- Settings of the markers and the overlay are kept in PlayerPrefs (`chaos.mm.*`, `chaos.mo.*`).
+- Not done: icon art for marks and plates (coloured squares and a bordered box), the Tab hotkey and Shift + arrow pan of the overlay, drag and drop of runes, pips on the hotbar and the spellbook line
+  (`SpellSupportsState.BookLine`), the action bar profile of a loadout, right-click menu entries (Where to find, Add to Loot List, Pouch settings), the Orb Exchange chart, the remembered minimap over a relog.
+  Nothing here was run against a live server.
+- Tests: `Core.Tests/WorldTests.cs` drives every model with the messages of the server scripts and reads back what it sends (about 400 checks): the placement check of the hideout, field timers on a
+  synthetic world, rain fades, plate batches and retries, order forms, crate cells, part joining, and that every text has a pt-BR entry.

@@ -93,6 +93,7 @@ namespace Chaos.Client
                 Build(mem, p);
             var map = new Rect(inner.x, inner.y, Size, Size);
             GUI.DrawTexture(map, tex, ScaleMode.StretchToFill, false);
+            app.DrawMinimapMarks(map, p, floor, Zooms[zoom], Size);   // points of interest and party pins (ChaosApp.World.cs)
 
             float y = map.yMax + 6;
             if (GUI.Button(new Rect(inner.x, y, 30, 24), "^") && floor > 0) floor--;

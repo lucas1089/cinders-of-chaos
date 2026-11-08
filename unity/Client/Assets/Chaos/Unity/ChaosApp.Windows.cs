@@ -82,6 +82,12 @@ namespace Chaos.Client
             windows.Add(new HelperWindow());
             windows.Add(new DeathRecapWindow());
             windows.Add(new LootWindow());
+            // world, map and item utilities (track O): Windows/WorldWindows.cs and ItemWindows.cs
+            windows.Add(new MapMarkersWindow()); windows.Add(new MapOverlayWindow()); windows.Add(new GoToNpcWindow()); windows.Add(new WaystoneWindow());
+            windows.Add(new TownPortalWindow()); windows.Add(new HideoutWindow()); windows.Add(new AutoLootWindow()); windows.Add(new PouchesWindow());
+            windows.Add(new AutoSellerWindow()); windows.Add(new OrbExchangeWindow()); windows.Add(new GambleWindow()); windows.Add(new EmberCacheWindow());
+            windows.Add(new UnveilWindow()); windows.Add(new ItemFinderWindow()); windows.Add(new LoadoutsWindow()); windows.Add(new SpellSupportsWindow());
+            windows.Add(new PactWindow()); windows.Add(new CandlemarksWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>

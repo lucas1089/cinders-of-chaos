@@ -521,6 +521,7 @@ namespace Chaos.Client
                     bool hidden = false;
                     foreach (var r in covers) if (r.Overlaps(onScreen)) { hidden = true; break; }
                     if (hidden) continue;
+                    DrawNameplate(c, x, nr);   // ChaosApp.World.cs: frame, guild and title of a player
                     nameStyle.normal.textColor = Color.black;
                     GUI.Label(new Rect(nr.x + 1, nr.y + 1, nr.width, nr.height), c.Name, nameStyle);
                     nameStyle.normal.textColor = col;
@@ -531,6 +532,7 @@ namespace Chaos.Client
                     Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
                 }
                 DrawGroundLabels(map, scale);
+                DrawWorldOverlays(map, scale);   // ChaosApp.World.cs: tile overlays, NPC marks, map overlay, weather
                 DrawAttackFrame(map, scale);
                 GUI.EndGroup();
             }
@@ -552,6 +554,7 @@ namespace Chaos.Client
             HudGui(w, h, scale);     // toasts, buffs, monster and cast bars, anti-bot (ChaosApp.Hud.cs)
             PartyGui(w, h, scale);   // the right-click menu and the party invitation, over the windows
             ItemsGui(w, h, scale);   // the item tooltip, the modal window and the text window (ChaosApp.Items.cs)
+            WorldGui(w, h, scale);   // the Candlemarks counter, the Hideout placing bar and the small tooltip (ChaosApp.World.cs)
         }
 
         public static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);

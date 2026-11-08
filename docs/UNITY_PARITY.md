@@ -5,7 +5,7 @@ This file lists every module of the main client (`client/overlay/modules/`, 169 
 It also lists the base protocol opcodes the Unity parser lacks and a plan in three phases.
 Edit the module rows by hand when a status changes. A module row changes in the same commit as its Unity window.
 
-Counts: 19 done, 28 partial, 107 missing, 15 not applicable.
+Counts: 30 done, 37 partial, 87 missing, 15 not applicable.
 By priority: 13 P0 core loop, 30 P1 needed to play, 83 P2 systems, 28 P3 polish, 15 N/A.
 
 ## Who Unity is on the server
@@ -67,7 +67,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_antibot` | 211 | Presence check modal (click the picture of the word, countdown, another picture, answer) and the report dialog (reasons from the server, name, note), from the player right-click menu and Options. `Core/Hud.cs` Antibot, `ChaosApp.Hud.cs`. Items drawn from client ids. | done | P1 | S |
 | `game_bank` | 60 | Bank window (Ctrl+J): balances, deposit, withdraw, transfer with amount box and slider, deposit all, withdraw all, the banker NPC opens it. `Core/Bank.cs`, `BankWindow`. Gold only. Not run on a live server. | done | P1 | M |
 | `game_buffbar` | 234 | Buff and debuff squares (initials, colour by key, red for debuffs) with timers, stacks and Alt tooltip under the plate. `Core/Hud.cs` BuffBar. No icon art. | partial | P1 | M |
-| `game_castbar` | 231 | Own cast bar (click cancels) and bars over other casters. `Core/Hud.cs` CastBar. The Town Portal hand-off is not ported. | done | P1 | S |
+| `game_castbar` | 231 | Own cast bar (click cancels) and bars over other casters. `Core/Hud.cs` CastBar. The Town Portal and loadout casts use it (`Core/GameWorld.cs`). | done | P1 | S |
 | `game_chaosinfo` | 237 | Info and Services window. | done | P1 | M |
 | `game_chaosnotify` | 79 | Toasts: 21 types with colours and times, three at once, queue of 12, wrapped height, Accept and Decline or Start on opcodes 151 and 152, danger line. `Core/Hud.cs` ToastCenter. No icons or monster look in the toast; catacomb Start sends without the protection zone check. | partial | P1 | M |
 | `game_chaosscale` | 157 | Factor kept from the scale message and hello on login and level change; the server scales its own numbers. Shown in Options (read only). | done | P1 | S |
@@ -98,20 +98,20 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `client_chaos_theme` | none | Dark fantasy UI theme. Unity windows use one flat dark style. | partial | P2 | M |
 | `game_achievements` | 250 | Achievements window. | missing | P2 | M |
 | `game_arena` | 236 | Ranked PvP arena queue and HUD. | missing | P2 | M |
-| `game_autoloot` | 216 | Auto loot lists. | missing | P2 | M |
+| `game_autoloot` | 216 | Auto Loot window (`AutoLootState`, `AutoLootWindow`): add by name or client id, remove, clear, slots; the item-menu add and remove are in the model, no item right-click menu in Unity. | done | P2 | M |
 | `game_autotarget` | none | Auto Target choice rules of the helper. | missing | P2 | M |
 | `game_badgeslot` | none | Badge slot 13 in the equipment. Unity equipment draws 10 slots. | missing | P2 | S |
 | `game_battleground` | 200 | Battleground queue, HUD and scoreboard. | missing | P2 | L |
 | `game_battlepass` | 227 | Season pass window. | missing | P2 | M |
 | `game_bestiary` | 253 | Bestiary, kill tasks and tracker. | missing | P2 | M |
 | `game_bounty` | 223 | Bounty board. | missing | P2 | M |
-| `game_candlemarks` | 176 | Candlemarks counter and shop. | missing | P2 | M |
+| `game_candlemarks` | 176 | Candlemarks (`CandlemarksState`, `CandlemarksWindow`): the counter next to the menu bar (balance, minutes to the next, why paused), the shop with the offers, weekly use and Buy; Osric opens it. | done | P2 | M |
 | `game_chaoslayout` | none | Saved window layout per character. | missing | P2 | M |
 | `game_chaosshaders` | none | Outfit shaders. The shader name is parsed in Chaos identity, nothing draws it. | partial | P2 | L |
 | `game_chaossound` | none | Game sounds. | missing | P2 | M |
 | `game_chaosuiscale` | none | Interface scale. Unity scales with the window height. | partial | P2 | S |
 | `game_chaosview` | none | Map zoom and the largest map area. Unity shows 15 x 11 tiles. | missing | P2 | S |
-| `game_chaosweather` | 114 | Rain and ambient particles. | missing | P2 | M |
+| `game_chaosweather` | 114 | Rain (3 layers, levels 1 to 3, fade, faster fade under a roof), ambient specks (embers, motes, dust) and the area colour mood over the game view, drawn in code (`WeatherState`, `ChaosApp.World.cs`), not the art strips. No option to switch it off yet, none in HD-2D. | partial | P2 | M |
 | `game_charms` | 198 | Charms grid. | missing | P2 | M |
 | `game_chatlinks` | 249 | Item links in chat. | missing | P2 | M |
 | `game_codex` | none | Codex encyclopedia, static data from the server tools. | missing | P2 | L |
@@ -125,9 +125,9 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_descent` | 205 | Ember Descent trial HUD and boons. | missing | P2 | L |
 | `game_dpsmeter` | 204 | DPS meter and combat log. | missing | P2 | M |
 | `game_dungeons` | 109 | Dungeon finder. | missing | P2 | M |
-| `game_embercache` | 174 | Ember Cache and day book. | missing | P2 | M |
+| `game_embercache` | 174 | Ember Cache (`EmberCacheState`, `EmberCacheWindow`): week points and milestones, today and the Daily Spark, the day book, how to earn points, Offer junk orbs with the quote box. | done | P2 | M |
 | `game_factions` | 215 | Factions window. | missing | P2 | M |
-| `game_gamble` | 199 | The Gambler window. | missing | P2 | M |
+| `game_gamble` | 199 | The Gambler (`GambleState`, `GambleWindow`): sealed crates with price and Buy, Fresh Crates, odds, the reveal line, the countdown; the Gambler NPC opens it. The item look is drawn from the client id. | done | P2 | M |
 | `game_groundfx` | none | Spell effects under creatures. | missing | P2 | M |
 | `game_groupqueue` | 160 | Group queue and ready check. | missing | P2 | M |
 | `game_guild` | 252 | Guild window. | missing | P2 | L |
@@ -136,29 +136,29 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_helpersupport` | none | Helper support spell tab. | missing | P2 | M |
 | `game_helpertimers` | none | Helper cooldown channels. | missing | P2 | M |
 | `game_helpsearch` | none | Help search over How it works, unlocks and Codex. | missing | P2 | M |
-| `game_hideout` | 192 | Hideout decoration and visits. | missing | P2 | L |
+| `game_hideout` | 192 | Hideout (`HideoutState`, `HideoutWindow`): Decorate (catalogue with category, source and search filters, lock reasons, placed list, Move, Put away), Hideout (theme, who may visit, Enter, Leave, Kick, Like), Visit. Placing on the map with a green and red ghost, wheel to turn, the main client's placement check ported (`Check`, `ReachOk`). Works in both map views. Not run on a live server. | done | P2 | L |
 | `game_howitworks` | none | How it works cards. | missing | P2 | S |
 | `game_hudmove` | none | Movable HUD panels. | missing | P2 | S |
 | `game_infinitytower` | 214 | Infinity Tower window. | missing | P2 | M |
 | `game_invasion` | 251 | Invasion HUD and event list. | missing | P2 | M |
-| `game_itemfinder` | 155 | Item finder. | missing | P2 | M |
+| `game_itemfinder` | 155 | Item Finder (`ItemFinderState`, `ItemFinderWindow`): type-ahead search with resend, results with pages, the item with its sections and pages, history and Back; `WhereToFind(clientId)` is ready. No right-click Where to find entries, no Codex button. | partial | P2 | M |
 | `game_leaderboard` | 229 | Leaderboards. | missing | P2 | M |
-| `game_loadouts` | 206 | Loadouts (Armory). | missing | P2 | M |
+| `game_loadouts` | 206 | Loadouts (`LoadoutsState`, `LoadoutsWindow`): slots with tags, details, Save, Load, Rename, Delete (two clicks), icon, the switch hint and cooldown; a switch with a cast shows on the cast bar. The action bar profile per slot is only a callback (not wired to the hotkey bar). | partial | P2 | M |
 | `game_lookpreview` | none | Look preview panel. | missing | P2 | M |
 | `game_lootscreen` | none | Hides the loot line on the game screen. | missing | P2 | S |
-| `game_mapmarkers` | 153 | Party and point markers on the minimap, NPC quest marks. | missing | P2 | M |
-| `game_mapoverlay` | 245 | Explored map overlay on the game view. | missing | P2 | M |
+| `game_mapmarkers` | 153 | Party pins with colour slots and a glide, points of interest by category, reveals, quest goals and the gold ! / ? over NPC heads (`Core/WorldMarks.cs` MapMarkState, `ChaosApp.World.cs`), arrows with distance on the game view for members out of view, the settings window (Map Markers, saved in PlayerPrefs). Pins and points are coloured squares on the Minimap window (hover text), not the icon art. | partial | P2 | M |
+| `game_mapoverlay` | 245 | Explored map drawn see-through over the game view (opacity 20 to 100, zoom x1 to x16, centred or a corner box), marks of opcode 245, the control strip, Shift + wheel zoom, Ctrl + wheel opacity, Shift + middle drag pan, rift squares cleared. `MapOverlayState`, `MapOverlayWindow`. No hotkey (Tab), no Shift + arrow pan, no reopen after a death, marks are coloured squares. | partial | P2 | M |
 | `game_market` | 221 | Player market. | missing | P2 | L |
-| `game_minimapsync` | none | Minimap after death or teleport. Unity has a minimap window; no marker sync. | partial | P2 | S |
-| `game_nameplate` | 248 | Name plates with titles and frames. | missing | P2 | S |
-| `game_npctravel` | 121 | Go to NPC button. | missing | P2 | S |
-| `game_orbexchange` | 209 | Orb Exchange. | missing | P2 | M |
+| `game_minimapsync` | none | The plan after a death or teleport (`MinimapSyncLogic`, tested). The Unity minimap window keeps its open state through a relog and recentres on the floor of the player; the explored map memory is per session (not kept over a relog). No side panels or full map view in Unity. | partial | P2 | S |
+| `game_nameplate` | 248 | Plates of players: title line in its colour, {guild} (red for a war enemy) and a frame in the accent of one of 23 frames, asked in batches of 30 with retries (`NameplateState`). A bordered box, not the 9-slice art. Try-on for store frames is in the model, not wired to a store window. | partial | P2 | S |
+| `game_npctravel` | 121 | Go to NPC (`NpcTravel`, `GoToNpcWindow`): travel {k} for the 19 keys, one request a second. A list window, not a button inside each service panel. | partial | P2 | S |
+| `game_orbexchange` | 209 | Orb Exchange (`OrbExchangeState`, `OrbExchangeWindow`): the order book with depth bars, last and change, buy and sell form with limits, fees and preview, my orders with Cancel, recent fills, refresh every 5 s. No price chart. | partial | P2 | M |
 | `game_outfitextras` | none | Customise Character window. | missing | P2 | L |
-| `game_pact` | 222 | Chaos Pact window. | missing | P2 | M |
+| `game_pact` | 222 | Chaos Pact (`PactState`, `PactWindow`): status, Claim, Pact Marks shelf, limits table, special tabs, saved builds (Load, Save, Rename, Delete with a second click); Load opens the preview in the passive tree. | done | P2 | M |
 | `game_partyfinder` | 208 | Party finder. | missing | P2 | M |
 | `game_pets` | 254 | Pets window. | missing | P2 | M |
 | `game_playerinspect` | 240 | Inspect player. | missing | P2 | M |
-| `game_pouches` | 226 | Loot bag rules and auto seller. | missing | P2 | M |
+| `game_pouches` | 226 | Loot Bag rules window (flags, minimum rarity) and the Auto Seller window (rarities, sell every, list, Sell all with its cooldown, notices) on opcode 226 (`PouchesState`, `PouchesWindow`, `AutoSellerWindow`). No right-click Pouch settings entry. | done | P2 | M |
 | `game_professions` | 195 | Professions. | missing | P2 | M |
 | `game_proficiencycatalog` | none | Weapon list of the proficiency window, built on the client. | missing | P2 | S |
 | `game_pvpzone` | 193 | Scorched Marches zone. | missing | P2 | M |
@@ -166,14 +166,14 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_riftatlas` | 159, 210 | Rift Atlas and Waystone Atlas. | missing | P2 | L |
 | `game_season` | 246 | Seasons window. | missing | P2 | M |
 | `game_siege` | 233 | Guild siege HUD. | missing | P2 | M |
-| `game_spellsupports` | 243 | Spell supports and action bar pips. | missing | P2 | M |
+| `game_spellsupports` | 243 | Spell Supports (`SpellSupportsState`, `SpellSupportsWindow`): spells with pips, sockets (Socket, Remove, Shatter with a second click, Open), runes with Combine 3, the parts of a big answer joined. No drag and drop, no pips on the hotbar, no line in the spellbook (`BookLine` is ready). | partial | P2 | M |
 | `game_targetguard` | none | Which creatures Auto Target may pick. | missing | P2 | S |
-| `game_tileoverlays` | 156 | Timers over fields and server bars on map tiles. | missing | P2 | S |
-| `game_townportal` | 239 | Town Portal cast bar and style window. | missing | P2 | S |
+| `game_tileoverlays` | 156 | Seconds over magic walls and the 15 timed fields (the world is scanned 4 times a second: a field on a tile already known starts its timer, one that came with its tile shows ~) and the server's labelled bars over positions (progress or countdown, stacked). Both map views. `TileOverlays`. | done | P2 | S |
+| `game_townportal` | 239 | Town Portal window (`TownPortalState`, `TownPortalWindow`): styles with route and lock reasons, Cast, Use this style, the cooldown; the cast shows on the cast bar of the HUD. No ground circle (fx 744), no store link. | done | P2 | S |
 | `game_transmog` | 212 | Transmog. | missing | P2 | M |
 | `game_unlocks` | 225 | Owned and locked lists. | missing | P2 | S |
-| `game_unveil` | 196 | Unveil window. | missing | P2 | S |
-| `game_waystone` | 202 | Waystone device window. | missing | P2 | M |
+| `game_unveil` | 196 | Unveil (`UnveilState`, `UnveilWindow`): three cards with tier, range and hook, Unveil sends choose {path, id, sig, choice}, the result line. Opened by the server. | done | P2 | S |
+| `game_waystone` | 202 | Waystone device window (`WaystoneState`, `WaystoneWindow`): 15 tiers with level and count, where a tier drops, Open portals, the portal look choice. Opened by the server. Raw JSON of opcode 202 without the data wrapper. | done | P2 | M |
 | `game_weeklychest` | 117 | Weekly Chest. | missing | P2 | M |
 | `client_chaos_credits` | none | Credits window from docs/CREDITS.md. | missing | P3 | S |
 | `client_chaos_perf` | none | Performance overlay. | missing | P3 | S |
