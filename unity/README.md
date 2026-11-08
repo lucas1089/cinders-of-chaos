@@ -877,7 +877,7 @@ connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds,
 - Files: the sounds and the music are the main client's own ogg files (`client/overlay/modules/game_chaossound/sounds`, `game_chaosmusic/music`, built by `client/tools/gen_music.py`), and the aura, decal and print
   pictures are its png files. Nothing is copied into the Unity project. The player looks in `CHAOS_OVERLAY_DIR`, `StreamingAssets/overlay/modules`, `overlay/modules` beside the executable, then the repository's
   `client/overlay/modules` (`OverlayFiles`). A build that ships the game folder copies the module folders `game_chaossound`, `game_chaosmusic`, `game_chestaura`, `game_combatdecals` and `game_cosmeticfx` to
-  `StreamingAssets/overlay/modules`; the CI build does this (its ogg and png files only, `unity-prototype.yml`). Without the files the game is silent and has no pictures for auras, decals and prints (drawn stand-ins for the rest); Options > Sound says so.
+  `StreamingAssets/overlay/modules`; the CI build does this (its ogg and png files only, `unity-prototype.yml`; track U adds `game_shaderfx`, the toast icons and `overlay/data`, see "Art of the main client's modules"). Without the files the game is silent and has no pictures for auras, decals and prints (drawn stand-ins for the rest); Options > Sound says so.
 - Drawing: `Unity/ChaosApp.Visual.cs` draws in the map group through `TileScreenPx`, so the classic view and the front-art live view (F8) share it: ground rings (the 223 ground effect ids), decals, footprints, chest and
   Templar auras (the range frame as a nine-slice), cosmetic glows, loot beams, hit flashes and level-up wings. The HD-2D scene draws none of it. `Unity/ChaosApp.Audio.cs` plays the cues (8 voices) and cross-fades two
   music sources. The own name wears the picked name shader (`NameShadersWindow`, opcode 96).
@@ -956,3 +956,26 @@ streamer and cinema mode, performance record, automatic screenshots, Customise C
   the changelog, card borders, drop feed, credits, streamer masks through the chat model, the performance record (60 samples, CSV, report), screenshot rules, the extras plan, and that every text has a pt-BR entry.
 - Not done: Boss Defeated screenshots, the window title and login fields of streamer mode, the Customise Character look preview and colour palette, boss pictures and stage icons, a Nemesis tab in the Bestiary window.
   `game_event` is N/A (no server system behind it). Not run against a live server (as the other tracks).
+
+## Art of the main client's modules (O433 phase 6, track U)
+
+Icons, globes and the monster bar frame come from the main client's own png files, read the way the sounds are (`OverlayFiles`: `CHAOS_OVERLAY_DIR`, `StreamingAssets/overlay/modules`, beside the executable, the repository).
+Which file and which part is `Core/OverlayArt.cs`, the loading and drawing `Unity/ChaosApp.Art.cs`. Every drawing keeps its older stand-in, so a run without the files looks as before (one line in the log names the missing folder).
+- Files: the pictures of `client/overlay/data` are named `../data/...` under the modules folder, so the CI step copies them to `StreamingAssets/overlay/data` (`images/game/spells`, `images/game/buffs`,
+  `images/chaos/monsterbar`, `images/chaos/topbutton_ranking.png`) and `game_shaderfx` and `game_chaosnotify/images/toast` to `overlay/modules` (about 2 MB, gitignored). A game folder that ships the overlay needs the same two folders.
+- Spell icons: the three sheets have 20 columns, cell n at column (n - 1) % 20, row (n - 1) / 20. The Unity client draws the 32 px sheet. `SpellIcons.Cell(words, id)` maps a spell to its cell from `Core/SpellIconData.cs`, generated from
+  `game_chaosspells/spelldata.lua` by `python3 -I unity/tools/gen_spell_icon_data.py` (`--check` in CI). The spellbook rows and details, and the hotbar slots, draw the cell; a rune entry draws the rune's sprite; a stock spell has no cell
+  in the repository (the base client's own table) and keeps its element colour square. The painted icons option is not ported.
+- Buff icons: `BuffIcons.OwnName(spec, key)` is the rule of `buffmath.lua` (`buff:name`, else the key, else `spellbuff`), 26 px pictures, drawn in a thin gold (buff) or red (debuff) frame with the timer under them; a buff without a file keeps the coloured square.
+- Toast icons: the 48 px picture of each of the 21 types (`ToastIcons`, same rows as `notifications.lua`, checked by the tests) at the left, the text beside it.
+- Globes: `OrbArt` is the plain globe of `shaderfxlogic.lua`: a white mask cut to the fill from the bottom, tinted `#d8262c` or `#2f6ef0`, under the painted ring (art size 76, drawn 96 px), the number in the middle. They stand left and right of the hotkey bar
+  (the bottom centre while it is closed). Option: Options > Visuals > "Health and mana globes" (`chaos.globes`). The liquid shader and slosh are not ported; the character plate keeps its bars.
+- Monster bar: the 420 x 58 frame, the 344 x 16 fill and trail in its socket, the nine-slice name plate and level plate, and the modifier chip pictures (`MonsterBarArt`, numbers from `monsterbar.otui`). Without a picture the drawn bar of before.
+- Hotbar item and rune slots (`Core/HotbarSlots.cs`, `HotkeyBarWindow`): a slot is a line to say (as before), or an item. Drop an item from the equipment or a bag on a slot, or use "Add to hotbar" in the item menu (first empty slot; not for worn items, bags or map items).
+  The slot shows the sprite and how many you carry in the equipment and open bags (dimmed at 0). A press of the key or a left click uses it by its mode: Use (0x82), Use on yourself and Use on target (0x84 with your id or the attacked monster; nothing is sent without a target, as the base
+  action bar), Use with ... (the crosshair of `ChaosApp.Play.cs`, then 0x83 or 0x84 on the click). A rune or any multi-use item starts as Use with ..., others as Use. Right click on an item slot: the four modes and Remove from hotbar.
+  Saved with the other slots (`chaos.hotkey.<name>.<n>`): a line as before, an item as `item:<client id>:<mode>`, so an older save loads.
+- Not done: item hotbar slots on the base client's Q and E side slots, drag from slot to slot, equip mode, the ornate hotbar frame, slot count and scale options; the monster look in toasts, toast plate and button art; the liquid shader of the globes.
+  Nothing here was run in a Unity player or against a live server (the drawing compiles in `unity/Client.Check`).
+- Tests: `Core.Tests/ArtTests.cs`: the cell maths and the table against `spelldata.lua` and the three sheets' sizes, buff names and file sizes, toast rows against `notifications.lua`, orb sizes and colours against `shaderfxlogic.lua`, monster bar geometry
+  against `monsterbar.otui`, the slot model (parse, save, load, modes), the press rules on a fake host, the menu entry and the texts in pt-BR.

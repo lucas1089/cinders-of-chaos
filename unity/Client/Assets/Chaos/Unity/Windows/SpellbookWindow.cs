@@ -174,11 +174,16 @@ namespace Chaos.Client
             bool ready = st == SpellStatus.Ready;
             int cd = book.CooldownSeconds(sp);
             ChaosApp.Fill(r, sp == selected ? new Color(0.45f, 0.3f, 0.12f, 0.9f) : new Color(1f, 1f, 1f, 0.06f));
-            var c = ElementColor(sp.Element);
-            if (!ready) c.a = 0.35f;
-            ChaosApp.Fill(new Rect(r.x + 3, r.y + 4, 24, r.height - 8), c);
             var tint = GUI.color;
             GUI.color = ready ? Color.white : new Color(1f, 1f, 1f, 0.5f);
+            // the spell's icon cell (or its rune's sprite); without the picture files the element colour square of before
+            var iconRect = new Rect(r.x + 3, r.y + 2, 28, 28);
+            if (!app.DrawSpellEntryIcon(iconRect, sp))
+            {
+                var c = ElementColor(sp.Element);
+                if (!ready) c.a = 0.35f;
+                ChaosApp.Fill(new Rect(r.x + 3, r.y + 4, 24, r.height - 8), c);
+            }
             GUI.Label(new Rect(r.x + 32, r.y + 1, r.width - 100, 16), sp.Name, nameStyle);
             GUI.Label(new Rect(r.x + 32, r.y + 16, r.width - 100, 14), sp.Words, wordsStyle);
             GUI.Label(new Rect(r.xMax - 66, r.y + 1, 62, 16), Loc.T("Level {0}", sp.Level), rightStyle);
@@ -186,8 +191,8 @@ namespace Chaos.Client
             GUI.color = tint;
             if (cd > 0)
             {
-                ChaosApp.Fill(new Rect(r.x + 3, r.y + 4, 24, r.height - 8), new Color(0f, 0f, 0f, 0.7f));
-                GUI.Label(new Rect(r.x + 3, r.y + 8, 24, 16), cd.ToString(), new GUIStyle(rightStyle) { alignment = TextAnchor.MiddleCenter });
+                ChaosApp.Fill(new Rect(r.x + 3, r.y + 2, 28, 28), new Color(0f, 0f, 0f, 0.7f));
+                GUI.Label(new Rect(r.x + 3, r.y + 8, 28, 16), cd.ToString(), new GUIStyle(rightStyle) { alignment = TextAnchor.MiddleCenter });
             }
             if (e.type == EventType.MouseDown && r.Contains(e.mousePosition))
             {
@@ -211,9 +216,10 @@ namespace Chaos.Client
             }
             var sp = selected;
             ChaosApp.Fill(r, new Color(0f, 0f, 0f, 0.35f));
-            GUI.Label(new Rect(r.x + 6, r.y + 2, r.width - 12, 18), sp.Name + "  (" + Loc.T("Words: {0}", sp.Words) + ")", app.SmallStyle);
+            bool bigIcon = app.DrawSpellEntryIcon(new Rect(r.xMax - 38, r.y + 4, 32, 32), sp);
+            GUI.Label(new Rect(r.x + 6, r.y + 2, r.width - (bigIcon ? 46 : 12), 18), sp.Name + "  (" + Loc.T("Words: {0}", sp.Words) + ")", app.SmallStyle);
             var line = Loc.T("Level {0}", sp.Level) + "   " + Loc.T("Magic level {0}", sp.MagicLevel) + "   " + Loc.T("Mana {0}", sp.Mana) + "   " + Loc.T("Cooldown {0}s", (sp.Cooldown / 1000f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture));
-            GUI.Label(new Rect(r.x + 6, r.y + 20, r.width - 12, 16), line, wordsStyle);
+            GUI.Label(new Rect(r.x + 6, r.y + 20, r.width - (bigIcon ? 46 : 12), 16), line, wordsStyle);
             string status = StatusText(book.Status(sp));
             GUI.Label(new Rect(r.x + 6, r.y + 36, r.width - 12, 36), status.Length > 0 ? status : sp.Description, hintStyle);
             // F1 to F12: a right-click selected the spell; these put it on a hotkey slot

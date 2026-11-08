@@ -93,7 +93,7 @@ namespace Chaos.Core.Tests
             var backpack = new ItemRef(bag, 2, It(2854, t => { t.Container = true; t.Pickupable = true; }));
             check(acts(backpack, ctx) == "Open,Look,|,WhereToFind", "menu: a bag in a bag: Open, Look, Where to find (" + acts(backpack, ctx) + ")");
             var tool = new ItemRef(bag, 0, It(3003, t => { t.MultiUse = true; t.Pickupable = true; t.Usable = true; }));
-            check(acts(tool, ctx) == "Use,UseWith,Look,|,WhereToFind,LootAdd", "menu: a rope: Use, Use with, Look + hooks (" + acts(tool, ctx) + ")");
+            check(acts(tool, ctx) == "Use,UseWith,Look,AddToHotbar,|,WhereToFind,LootAdd", "menu: a rope: Use, Use with, Look + hooks (" + acts(tool, ctx) + ")");
             ctx.OnLootList = true;
             check(acts(tool, ctx).EndsWith("LootRemove"), "menu: an item on the loot list offers Remove");
             ctx.OnLootList = false;
