@@ -18,7 +18,7 @@ namespace Chaos.Core.LiveCheck
         public byte[] GuardKey = ClientGuard.DevKey;
         public string Rsa = Protocol.OpenRsaModulus;
         // ---- play scenarios (LiveScenarios.cs), phase 21
-        /// <summary>The scenarios to run: stairs, npc, party, death, rift, tooltip (empty: none).</summary>
+        /// <summary>The scenarios to run: tooltip, stairs, floorchange, npc, sell, market, party, sharedkill, rift, death, pvpdeath (empty: none).</summary>
         public readonly List<string> Scenarios = new List<string>();
         /// <summary>The second account of the party and death scenarios (environment CHAOS_LIVE_ACCOUNT2, CHAOS_LIVE_PASSWORD2, CHAOS_LIVE_CHARACTER2).</summary>
         public string Account2, Password2, Character2;
@@ -29,6 +29,8 @@ namespace Chaos.Core.LiveCheck
         public Pos? NpcAt, StairsAt;
         /// <summary>The monster the partner summons to kill the primary character in the death scenario.</summary>
         public string Killer = "Demon";
+        /// <summary>The weak monster the partner summons for the shared kill (sharedkill scenario).</summary>
+        public string Weak = "Rat";
         /// <summary>Server item id of the Rift Key (rift_config.lua key.itemId) the rift scenario asks the staff command for.</summary>
         public int RiftKeyServerId = 10155;
         /// <summary>The aware range asked for after the login (Chaos identity only), 0 asks for nothing.</summary>
@@ -67,6 +69,8 @@ namespace Chaos.Core.LiveCheck
     {
         public string Dir = "";
         public bool Sent, Confirmed, Cancelled, PositionOk;
+        /// <summary>Not tried: the target tile holds a stair, ramp or hole, and a step onto it changes the floor (phase 22; the sweep checks the plain step on the same floor).</summary>
+        public bool Skipped;
         public int Dx, Dy;               // what the player moved
         public int ExpectedDx, ExpectedDy;
         public double Ms = -1;
@@ -147,6 +151,7 @@ namespace Chaos.Core.LiveCheck
             if (!enterOk) { closed = s.Closed; return 1; }
 
             Pump(o.WarmMs, () => s.Closed != null);   // the session's own hellos and prefetches (spells at 3 s, progression at 1.8 s)
+            if (o.OtbFile != null && floorChanges == null) PrepareScenarioData();   // the floor changes, so the walk does not step onto a stair
             if (s.Closed == null) WalkAll();
             if (s.Closed == null && !o.SkipExt) Sweep();
             if (s.Closed == null && o.Scenarios.Count > 0) RunScenarios();
@@ -165,7 +170,8 @@ namespace Chaos.Core.LiveCheck
             s.Logout();
             Pump(300, () => false);
             s.Dispose();
-            bool walkOk = walks.Count > 0 && walks.All(w => w.Confirmed || w.Cancelled) && walks.Any(w => w.Confirmed && w.PositionOk);
+            var tried = walks.Where(w => !w.Skipped).ToList();
+            bool walkOk = tried.Count > 0 && tried.All(w => w.Confirmed || w.Cancelled) && tried.Any(w => w.Confirmed && w.PositionOk);
             return enterOk && walkOk && s.Parser.FailureCount == 0 && thrown.Count == 0 && closed == null && !ScenariosFailed ? 0 : 1;
         }
 
@@ -276,6 +282,7 @@ namespace Chaos.Core.LiveCheck
                 var me = world.Player;
                 if (me == null || !s.CanWalk) continue;
                 var before = me.Position;
+                if (StepsOntoFloorChange(world, floorChanges, before, d)) { r.Skipped = true; continue; }
                 int moves0 = s.Parser.PlayerMoves, cancel0 = cancels, sent0 = s.WalksSent;
                 var seen0 = new Dictionary<byte, int>(s.Parser.Seen);
                 double t = s.Now;
@@ -293,6 +300,18 @@ namespace Chaos.Core.LiveCheck
                 r.PositionOk = r.Confirmed && after.Z == before.Z && r.Dx == r.ExpectedDx && r.Dy == r.ExpectedDy;
                 Pump(150, () => false);
             }
+        }
+
+        /// <summary>True when the tile one step from `from` in direction `d` holds a floor change item (a stair, ramp or hole by client id): stepping there changes the floor.
+        /// Without floor change data (no items.otb) nothing is known and the answer is false.</summary>
+        public static bool StepsOntoFloorChange(World w, Dictionary<int, string> floorChanges, Pos from, Dir d)
+        {
+            if (floorChanges == null || floorChanges.Count == 0) return false;
+            var t = w.Get(WalkDirs.Step(from, d));
+            if (t == null) return false;
+            foreach (var th in t.Things)
+                if (!th.IsCreature && th.Item != null && floorChanges.ContainsKey(th.Item.Id)) return true;
+            return false;
         }
 
         // ------------------------------------------------------------------------------------ the extended opcode requests
@@ -344,7 +363,7 @@ namespace Chaos.Core.LiveCheck
             foreach (var g in s.Parser.Failures.Where(f => f.Unknown).GroupBy(f => f.Op)) unknown["0x" + g.Key.ToString("X2")] = g.Count();
             var walkRows = walks.Select(w => (object)new Dictionary<string, object>
             {
-                { "dir", w.Dir }, { "sent", w.Sent }, { "confirmed", w.Confirmed }, { "cancelled", w.Cancelled }, { "positionOk", w.PositionOk },
+                { "dir", w.Dir }, { "skipped", w.Skipped }, { "sent", w.Sent }, { "confirmed", w.Confirmed }, { "cancelled", w.Cancelled }, { "positionOk", w.PositionOk },
                 { "moved", new[] { w.Dx, w.Dy } }, { "expected", new[] { w.ExpectedDx, w.ExpectedDy } }, { "ms", Math.Round(w.Ms) }, { "packets", w.Packets },
             }).ToList();
             return new Dictionary<string, object>
@@ -366,7 +385,7 @@ namespace Chaos.Core.LiveCheck
                 { "parse", new Dictionary<string, object>
                     { { "errors", s?.Parser.FailureCount ?? 0 }, { "unknownPacketTypes", unknown }, { "thrown", thrown }, { "items", errs }, { "logged", logged } } },
                 { "walk", new Dictionary<string, object>
-                    { { "directions", walks.Count }, { "confirmed", walks.Count(w => w.Confirmed) }, { "positionOk", walks.Count(w => w.PositionOk) },
+                    { { "directions", walks.Count }, { "skipped", walks.Count(w => w.Skipped) }, { "confirmed", walks.Count(w => w.Confirmed) }, { "positionOk", walks.Count(w => w.PositionOk) },
                       { "cancelled", walks.Count(w => w.Cancelled) }, { "results", walkRows } } },
                 { "extended", new Dictionary<string, object>
                     { { "table", plan.Count }, { "requestOk", Count("ok") }, { "requestNoReply", Count("no_reply") }, { "requestParseError", Count("parse_error") },
@@ -395,10 +414,10 @@ namespace Chaos.Core.LiveCheck
                 sb.AppendLine("parse errors: " + s.Parser.FailureCount + ", unknown packet types: " + s.Parser.Failures.Count(f => f.Unknown) + ", exceptions out of Poll: " + thrown.Count);
                 foreach (var f in s.Parser.Failures.Take(20)) sb.AppendLine("  " + f);
                 foreach (var t in thrown.Take(10)) sb.AppendLine("  thrown " + t);
-                sb.AppendLine("walk: " + walks.Count(w => w.Confirmed) + " of " + walks.Count + " steps confirmed by the server, " + walks.Count(w => w.PositionOk) + " at the right tile, " +
-                              walks.Count(w => w.Cancelled) + " refused");
+                sb.AppendLine("walk: " + walks.Count(w => w.Confirmed) + " of " + walks.Count(w => !w.Skipped) + " steps confirmed by the server, " + walks.Count(w => w.PositionOk) + " at the right tile, " +
+                              walks.Count(w => w.Cancelled) + " refused" + (walks.Any(w => w.Skipped) ? ", " + walks.Count(w => w.Skipped) + " not tried (a stair, ramp or hole on that tile)" : ""));
                 foreach (var w in walks)
-                    sb.AppendLine("  " + w.Dir.PadRight(10) + (w.Sent ? (w.Confirmed ? "confirmed" : w.Cancelled ? "refused" : "no answer") : "not sent") + ", moved " + w.Dx + "," + w.Dy +
+                    sb.AppendLine("  " + w.Dir.PadRight(10) + (w.Skipped ? "not tried (floor change tile)" : w.Sent ? (w.Confirmed ? "confirmed" : w.Cancelled ? "refused" : "no answer") : "not sent") + ", moved " + w.Dx + "," + w.Dy +
                                   " expected " + w.ExpectedDx + "," + w.ExpectedDy + (w.Ms >= 0 ? ", " + Math.Round(w.Ms) + " ms" : "") + ", packets [" + w.Packets + "]");
                 ScenarioText(sb);
                 sb.AppendLine("extended opcodes (" + plan.Count + " in the table): requests ok " + Count("ok") + ", no reply " + Count("no_reply") + ", parse error " + Count("parse_error") +

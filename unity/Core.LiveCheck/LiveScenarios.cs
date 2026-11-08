@@ -25,7 +25,7 @@ namespace Chaos.Core.LiveCheck
 
     public sealed partial class LiveRun
     {
-        public static readonly string[] AllScenarios = { "tooltip", "stairs", "npc", "party", "rift", "death" };
+        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "party", "sharedkill", "rift", "death", "pvpdeath" };
 
         readonly List<ScenarioResult> scenarios = new List<ScenarioResult>();
         Dictionary<int, string> floorChanges;
@@ -49,7 +49,12 @@ namespace Chaos.Core.LiveCheck
                     {
                         case "tooltip": ScTooltip(r); break;
                         case "stairs": ScStairs(r); break;
+                        case "floorchange": ScFloorChange(r); break;
                         case "npc": ScNpc(r); break;
+                        case "sell": ScSell(r); break;
+                        case "market": ScMarket(r); break;
+                        case "sharedkill": ScSharedKill(r); break;
+                        case "pvpdeath": ScPvpDeath(r); break;
                         case "party": ScParty(r); break;
                         case "rift": ScRift(r); break;
                         case "death": ScDeath(r); break;
@@ -397,29 +402,29 @@ namespace Chaos.Core.LiveCheck
 
         int Seen(byte op) => s.Parser.Seen.TryGetValue(op, out int n) ? n : 0;
 
-        void ScNpc(ScenarioResult r)
+        /// <summary>Walks to the NPC, greets it and opens its trade window (the first half of the npc and sell scenarios). True when the window is open; else the
+        /// scenario is set to skip or fail and false comes back.</summary>
+        bool OpenShop(ScenarioResult r)
         {
             var p = s.Parser;
             var npc = FindNpc(o.NpcName);
             if (npc == null && o.NpcAt.HasValue)
             {
                 var hint = o.NpcAt.Value;
-                if (hint.Z != me.Pos.Z) { r.Skip("no NPC '" + o.NpcName + "' in view and the --npc-at hint is on floor " + hint.Z + ", the player on " + me.Pos.Z); return; }
+                if (hint.Z != me.Pos.Z) { r.Skip("no NPC '" + o.NpcName + "' in view and the --npc-at hint is on floor " + hint.Z + ", the player on " + me.Pos.Z); return false; }
                 WalkTo(me, hint, 2, o.ScenarioMs, false, out string approach);
                 r.Note("approach to the hint " + P(hint) + ": " + (approach.Length == 0 ? "arrived" : approach));
                 npc = FindNpc(o.NpcName);
             }
-            if (npc == null) { r.Skip("NPC '" + o.NpcName + "' is not in view of " + P(me.Pos) + " (--npc NAME, --npc-at X,Y,Z)"); return; }
-            if (!WalkTo(me, npc.Position, 2, o.ScenarioMs, false, out string why)) { r.Fail("could not walk to " + o.NpcName + ": " + why); return; }
+            if (npc == null) { r.Skip("NPC '" + o.NpcName + "' is not in view of " + P(me.Pos) + " (--npc NAME, --npc-at X,Y,Z)"); return false; }
+            if (!WalkTo(me, npc.Position, 2, o.ScenarioMs, false, out string why)) { r.Fail("could not walk to " + o.NpcName + ": " + why); return false; }
             Pump(500, () => false);
-            var mark = Mark.Of(me);
-            var problems = new StringBuilder();
             int lines0 = p.NpcTalk.Lines.Count;
             s.SayToNpc("hi");
             if (!WaitFor(6000, () => p.NpcTalk.Lines.Skip(lines0).Any(l => l.FromNpc)))
             {
                 r.Fail("the NPC did not answer 'hi' (distance " + PathFinder.Cheb(npc.Position, me.Pos) + ")");
-                return;
+                return false;
             }
             r.Note("NPC greeting: " + p.NpcTalk.Lines.Skip(lines0).Count(l => l.FromNpc) + " line(s), focused " + p.NpcTalk.Focused(s.Now));
             int shops0 = Seen(0x7A);
@@ -427,10 +432,19 @@ namespace Chaos.Core.LiveCheck
             if (!WaitFor(6000, () => p.Trade.Open && p.Trade.Items.Count > 0 && Seen(0x7B) > 0 && Seen(0x7A) > shops0))
             {
                 r.Fail("no trade window after 'trade' (0x7A seen " + (Seen(0x7A) - shops0) + " time(s), 0x7B " + Seen(0x7B) + ")");
-                return;
+                return false;
             }
             Pump(300, () => false);
             r.Note("trade window: " + p.Trade.Items.Count + " goods, " + p.Trade.Items.Count(i => i.Buyable) + " buyable, money " + p.Trade.Money + ", " + p.Trade.Goods.Count + " sellable kinds");
+            return true;
+        }
+
+        void ScNpc(ScenarioResult r)
+        {
+            var p = s.Parser;
+            var mark = Mark.Of(me);
+            var problems = new StringBuilder();
+            if (!OpenShop(r)) return;
             var pick = p.Trade.Items.Where(i => i.Buyable && i.Buy > 0 && i.Buy <= p.Trade.Balance).OrderBy(i => i.Buy).FirstOrDefault();
             if (pick == null)
             {
@@ -632,6 +646,28 @@ namespace Chaos.Core.LiveCheck
         bool PathFarFromRift(Pos before) => PathFinder.Cheb(me.Pos, before) > 30 || me.Pos.Z != before.Z;
 
         // ------------------------------------------------------------------------------------ death
+        /// <summary>Takes a client out of the protection zone (bit 16384 of the player states) by the nearest way down. True when it stands outside one; else the
+        /// scenario is set to fail or skip and false comes back.</summary>
+        bool LeavePz(LiveClient a, ScenarioResult r)
+        {
+            var p = a.S.Parser;
+            if ((p.PlayerStates & 16384) != 0)
+            {
+                var found = FindFloorChange(a, 0);
+                if (found == null && o.StairsAt.HasValue) { WalkTo(a, o.StairsAt.Value, 3, o.ScenarioMs, false, out _); found = FindFloorChange(a, 0); }
+                if (found != null)
+                {
+                    var down = FindFloorChange(a, 1) ?? found;
+                    var tmp = new StringBuilder();
+                    if (!TakeStairs(a, down.Value.tile, down.Value.kind, r, "to unprotected ground", tmp)) { r.Fail("could not leave the protection zone: " + tmp); return false; }
+                    if (tmp.Length > 0) r.Note("stairs: " + tmp);
+                }
+                Pump(800, () => false);
+            }
+            if ((p.PlayerStates & 16384) != 0) { r.Skip("the character stands in a protection zone and no way out was found (start it outside one, or give --stairs-at)"); return false; }
+            return true;
+        }
+
         void ScDeath(ScenarioResult r)
         {
             string err = EnsurePartner();
@@ -641,20 +677,7 @@ namespace Chaos.Core.LiveCheck
             var problems = new StringBuilder();
             string victimName = me.Character;
             // outside the protection zone: a monster does not attack in one (bit 16384 of the player states)
-            if ((p.PlayerStates & 16384) != 0)
-            {
-                var found = FindFloorChange(me, 0);
-                if (found == null && o.StairsAt.HasValue) { WalkTo(me, o.StairsAt.Value, 3, o.ScenarioMs, false, out _); found = FindFloorChange(me, 0); }
-                if (found != null)
-                {
-                    var down = FindFloorChange(me, 1) ?? found;
-                    var tmp = new StringBuilder();
-                    if (!TakeStairs(me, down.Value.tile, down.Value.kind, r, "to unprotected ground", tmp)) { r.Fail("could not leave the protection zone: " + tmp); return; }
-                    if (tmp.Length > 0) r.Note("stairs: " + tmp);
-                }
-                Pump(800, () => false);
-            }
-            if ((p.PlayerStates & 16384) != 0) { r.Skip("the character stands in a protection zone and no way out was found (start it outside one, or give --stairs-at)"); return; }
+            if (!LeavePz(me, r)) return;
             // the partner (staff) comes to the victim and summons the killer
             int pSay = partner.Said.Count;
             partner.S.Say("/goto " + victimName);
@@ -726,10 +749,29 @@ namespace Chaos.Core.LiveCheck
         }
 
         // ------------------------------------------------------------------------------------ reports
+        /// <summary>Replaces every account and character name the run knows with "&lt;name&gt;" (case does not matter): server lines quoted in a scenario ("The murder of X was not
+        /// justified") must not put a name into a report. Names shorter than 3 characters are left (they would eat ordinary words).</summary>
+        public static string Scrub(string text, IEnumerable<string> names)
+        {
+            if (string.IsNullOrEmpty(text)) return text ?? "";
+            foreach (string n in names.Where(x => !string.IsNullOrEmpty(x) && x.Length >= 3).Distinct().OrderByDescending(x => x.Length))
+            {
+                int at = 0;
+                while ((at = text.IndexOf(n, at, StringComparison.OrdinalIgnoreCase)) >= 0)
+                {
+                    text = text.Substring(0, at) + "<name>" + text.Substring(at + n.Length);
+                    at += "<name>".Length;
+                }
+            }
+            return text;
+        }
+
+        IEnumerable<string> SecretNames() => new[] { o.Account, o.Account2, o.Character, o.Character2, me?.Character, partner?.Character }.Where(x => !string.IsNullOrEmpty(x));
+
         public List<object> ScenarioRows() =>
             scenarios.Select(x => (object)new Dictionary<string, object>
             {
-                { "name", x.Name }, { "status", x.Status }, { "reason", x.Reason }, { "ms", Math.Round(x.Ms) }, { "notes", x.Notes },
+                { "name", x.Name }, { "status", x.Status }, { "reason", Scrub(x.Reason, SecretNames()) }, { "ms", Math.Round(x.Ms) }, { "notes", x.Notes.Select(n => Scrub(n, SecretNames())).ToList() },
             }).ToList();
 
         void ScenarioText(StringBuilder sb)
@@ -738,8 +780,8 @@ namespace Chaos.Core.LiveCheck
             sb.AppendLine("scenarios: " + scenarios.Count(x => x.Status == "pass") + " pass, " + scenarios.Count(x => x.Status == "fail") + " fail, " + scenarios.Count(x => x.Status == "skip") + " skip");
             foreach (var x in scenarios)
             {
-                sb.AppendLine("  " + x.Name.PadRight(8) + x.Status.ToUpperInvariant().PadRight(6) + Math.Round(x.Ms / 1000, 1).ToString("0.0", CultureInfo.InvariantCulture) + " s  " + x.Reason);
-                foreach (var n in x.Notes) sb.AppendLine("      " + n);
+                sb.AppendLine("  " + x.Name.PadRight(8) + x.Status.ToUpperInvariant().PadRight(6) + Math.Round(x.Ms / 1000, 1).ToString("0.0", CultureInfo.InvariantCulture) + " s  " + Scrub(x.Reason, SecretNames()));
+                foreach (var n in x.Notes) sb.AppendLine("      " + Scrub(n, SecretNames()));
             }
             if (partnerStats != null) sb.AppendLine("partner connection: " + partnerStats);
         }

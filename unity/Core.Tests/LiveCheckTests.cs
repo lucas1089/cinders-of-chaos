@@ -26,6 +26,9 @@ namespace Chaos.Core.Tests
             Tooltip(check);
             PartyShields(check);
             FloorChanges(check);
+            Market(check);
+            ExperienceTexts(check);
+            WalkSkipsStairs(check);
             Failures(check);
             Otb(check);
             Plan(check);
@@ -147,6 +150,119 @@ namespace Chaos.Core.Tests
             var dat = OtbDat.Build(otb);
             check(dat.Item(403).NotWalkable && !dat.Item(403).BlockPath && dat.Item(404).BlockPath && !dat.Item(404).NotWalkable && dat.Item(405).BlockMissile && !dat.Item(402).NotWalkable,
                   "otb: the block flags set NotWalkable, BlockPath and BlockMissile");
+        }
+
+        // ------------------------------------------------------------------------------------------------ the stock market, 0xF6 to 0xF9 (phase 22)
+        // The server never sends them (patch_market.py), but an unknown opcode costs the rest of the packet, so the four are read. The layouts are the writers of
+        // ProtocolGame::sendMarketEnter, sendMarketLeave, sendMarketDetail, sendMarketBrowseItem, sendMarketAcceptOffer, sendMarketBrowseOwnOffers, sendMarketBrowseOwnHistory.
+        static ByteWriter U64(ByteWriter w, ulong v) => w.Raw(BitConverter.GetBytes(v));
+
+        static void Market(Action<bool, string> check)
+        {
+            // 0xF6: u64 bank balance, u8 own offers, u16 count, then u16 ware id and u16 amount each
+            var w = U64(new ByteWriter().U8(0xF6), 123456789012UL).U8(3).U16(2).U16(2160).U16(40).U16(2148).U16(7);
+            w.U8(0x1D);
+            var p = NewParser();
+            int pings = 0;
+            p.Pinged = () => pings++;
+            p.Parse(w.ToArray());
+            var m = p.Market;
+            check(m.Open && m.Balance == 123456789012UL && m.OwnOfferCount == 3 && m.Depot.Count == 2 && m.Depot[2160] == 40 && m.Depot[2148] == 7, "0xF6: the balance, the offer count and the depot goods are read");
+            check(pings == 1 && p.FailureCount == 0, "0xF6: the packet after it is read, no failure");
+            p.Parse(new ByteWriter().U8(0xF7).U8(0x1D).ToArray());
+            check(!m.Open && m.Left == 1 && pings == 2, "0xF7: leaving closes the market and the next packet is read");
+
+            // 0xF9, one ware: u16 id, u32 buy count, each u32 timestamp, u16 counter, u16 amount, u32 price, string; the same for the sell offers
+            var b = new ByteWriter().U8(0xF9).U16(2160).U32(2);
+            b.U32(1000).U16(1).U16(5).U32(900).Str("Alice");
+            b.U32(1001).U16(2).U16(9).U32(850).Str("Bob");
+            b.U32(1);
+            b.U32(1002).U16(0).U16(3).U32(1200).Str("Carol");
+            b.U8(0x1D);
+            p.Parse(b.ToArray());
+            check(m.BrowseItem == 2160 && m.Buy.Count == 2 && m.Sell.Count == 1 && m.Buy[1].Player == "Bob" && m.Buy[1].Price == 850 && m.Sell[0].Amount == 3 && m.Sell[0].ItemId == 2160, "0xF9: a ware's buy and sell offers");
+            check(pings == 3 && p.FailureCount == 0, "0xF9: browse, the packet after it is read");
+
+            // the accept answer (sendMarketAcceptOffer): the same layout with one offer on one side and none on the other
+            var acc = new ByteWriter().U8(0xF9).U16(2160).U32(1).U32(1003).U16(4).U16(2).U32(700).Str("Dan").U32(0).U8(0x1D);
+            p.Parse(acc.ToArray());
+            check(m.Buy.Count == 1 && m.Sell.Count == 0 && m.Buy[0].Player == "Dan", "0xF9: an accepted buy offer");
+
+            // own offers (sendMarketBrowseOwnOffers, also sendMarketCancelOffer): u16 0xFFFE, u32 count, each u32 timestamp, u16 counter, u16 ware, u16 amount, u32 price
+            var own = new ByteWriter().U8(0xF9).U16(0xFFFE).U32(1).U32(2000).U16(3).U16(2148).U16(10).U32(5).U32(2).U32(2001).U16(0).U16(2160).U16(1).U32(99).U32(2002).U16(1).U16(2152).U16(20).U32(100).U8(0x1D);
+            p.Parse(own.ToArray());
+            check(m.OwnKind == 0xFFFE && m.OwnBuy.Count == 1 && m.OwnSell.Count == 2 && m.OwnSell[1].ItemId == 2152 && m.OwnSell[1].Price == 100 && m.OwnBuy[0].ItemId == 2148, "0xF9: own offers (0xFFFE)");
+
+            // history (sendMarketBrowseOwnHistory): each entry also has a u8 state
+            var hist = new ByteWriter().U8(0xF9).U16(0xFFFF).U32(1).U32(3000).U16(0).U16(2148).U16(2).U32(8).U8(1).U32(1).U32(3001).U16(1).U16(2160).U16(1).U32(9).U8(2).U8(0x1D);
+            p.Parse(hist.ToArray());
+            check(m.OwnKind == 0xFFFF && m.OwnBuy[0].State == 1 && m.OwnSell[0].State == 2 && m.OwnSell[0].ItemId == 2160, "0xF9: own history (0xFFFF) with the state byte");
+
+            // 0xF8 detail (sendMarketDetail): u16 id, 15 strings (an empty one is a u16 0), then two blocks of u8 flag and four u32 when 1
+            var d = new ByteWriter().U8(0xF8).U16(2160);
+            for (int i = 0; i < BaseMarket.DetailLines; i++) { if (i == 0) d.Str("12"); else if (i == 14) d.Str("1.20 oz"); else d.U16(0); }
+            d.U8(1).U32(4).U32(4000).U32(1200).U32(800).U8(0).U8(0x1D);
+            p.Parse(d.ToArray());
+            check(m.Detail != null && m.Detail.ItemId == 2160 && m.Detail.Lines[0] == "12" && m.Detail.Lines[1] == "" && m.Detail.Lines[14] == "1.20 oz", "0xF8: the 15 text lines");
+            check(m.Detail.Purchases != null && m.Detail.Purchases[0] == 4 && m.Detail.Purchases[3] == 800 && m.Detail.Sales == null, "0xF8: the purchase statistics, none for the sales");
+            check(p.FailureCount == 0 && pings == 7, "0xF8: no failure, the packets after every market packet are read (" + pings + ")");
+
+            // a cut packet throws with the opcode named
+            var cut = NewParser();
+            check(Throws<ProtocolException>(() => cut.Parse(new ByteWriter().U8(0x1D).U8(0xF9).U16(2160).U32(2).U32(1).ToArray())), "0xF9: a cut offer list throws");
+            check(cut.Failures.Count == 1 && cut.Failures[0].Op == 0xF9 && !cut.Failures[0].Unknown, "0xF9: the failure names the opcode and is not marked unknown");
+
+            // the client packets (server parseMarketLeave, parseMarketBrowse, parseMarketCreateOffer, parseMarketCancelOffer, parseMarketAcceptOffer)
+            check(BaseMarket.LeaveRequest().Length == 1 && BaseMarket.LeaveRequest()[0] == 0xF4, "0xF4: leave");
+            var br = BaseMarket.BrowseRequest(BaseMarket.OwnOffers);
+            check(br.Length == 3 && br[0] == 0xF5 && br[1] == 0xFE && br[2] == 0xFF, "0xF5: browse own offers");
+            var cr = BaseMarket.CreateRequest(true, 2160, 5, 0x01020304, true);
+            check(cr.Length == 11 && cr[0] == 0xF6 && cr[1] == 1 && cr[2] == 0x70 && cr[3] == 0x08 && cr[4] == 5 && cr[5] == 0 && cr[6] == 4 && cr[7] == 3 && cr[8] == 2 && cr[9] == 1 && cr[10] == 1, "0xF6: type, ware, amount, price, anonymous");
+            var cn = BaseMarket.CancelRequest(0xAABBCCDD, 7);
+            check(cn.Length == 7 && cn[0] == 0xF7 && cn[1] == 0xDD && cn[4] == 0xAA && cn[5] == 7, "0xF7: timestamp and counter");
+            var ac = BaseMarket.AcceptRequest(1, 2, 3);
+            check(ac.Length == 9 && ac[0] == 0xF8 && ac[1] == 1 && ac[5] == 2 && ac[7] == 3, "0xF8: timestamp, counter, amount");
+        }
+
+        // ------------------------------------------------------------------------------------------------ experience texts (phase 22, shared kill)
+        static void ExperienceTexts(Action<bool, string> check)
+        {
+            check(ExperienceText.TryParse("You gained 150 experience points.", out long n) && n == 150, "experience text: the plural");
+            check(ExperienceText.TryParse("You gained 1 experience point.", out n) && n == 1, "experience text: the singular");
+            check(!ExperienceText.TryParse("You gained 15.3k experience points.", out _) && !ExperienceText.TryParse("You lost 5 experience points.", out _) && !ExperienceText.TryParse("You gained x experience points.", out _) && !ExperienceText.TryParse(null, out _), "experience text: other texts give false");
+            // the server's text message with a position and the amount (kind 26): counted, and the amount kept; a damage number of the same shape is only counted
+            var w = new ByteWriter().U8(0xB4).U8(26).U16(100).U16(100).U8(7).U32(150).U8(215).Str("You gained 150 experience points.");
+            w.U8(0xB4).U8(23).U16(100).U16(100).U8(7).U32(30).U8(180).U32(0).U8(0).Str("");
+            w.U8(0x1D);
+            var p = NewParser();
+            int pings = 0;
+            p.Pinged = () => pings++;
+            p.Parse(w.ToArray());
+            check(p.NumberMessages == 2 && p.ExpGainTexts == 1 && p.LastExpGain == 150 && pings == 1 && p.FailureCount == 0, "experience text: a kind 26 message is counted with its amount, a damage message only counted (" + p.NumberMessages + "/" + p.ExpGainTexts + ")");
+        }
+
+        // ------------------------------------------------------------------------------------------------ the walk sweep and stairs (phase 22)
+        // found 2026-11-08 (phase 22): the 8 step sweep of a run that starts beside a stair stepped onto it and ended on another floor, so the step counted as
+        // wrong. A direction whose target tile holds a floor change item is not tried now.
+        static void WalkSkipsStairs(Action<bool, string> check)
+        {
+            var w = new World(DatFile.Parse(Program.SyntheticDat()));
+            var fc = new Dictionary<int, string> { { 400, "down" }, { 401, "north" } };
+            w.AddThing(new Pos(101, 100, 7), new Thing { Item = new Item { Id = 400 } });                         // east of the start: a stair
+            w.AddThing(new Pos(100, 99, 7), new Thing { Item = new Item { Id = 100 } });                          // north: plain ground
+            w.AddThing(new Pos(100, 99, 7), new Thing { Item = new Item { Id = 401 } });                          // ... with a ramp on it (the second thing of the tile counts too)
+            w.AddThing(new Pos(99, 101, 7), new Thing { Item = new Item { Id = 100 } });                          // south west: plain ground only
+            var from = new Pos(100, 100, 7);
+            check(LiveRun.StepsOntoFloorChange(w, fc, from, Dir.East), "walk sweep: a stair east of the start is not stepped on");
+            check(LiveRun.StepsOntoFloorChange(w, fc, from, Dir.North), "walk sweep: a ramp among the things of the north tile counts");
+            check(!LiveRun.StepsOntoFloorChange(w, fc, from, Dir.SouthWest), "walk sweep: plain ground is walked");
+            check(!LiveRun.StepsOntoFloorChange(w, fc, from, Dir.West), "walk sweep: a tile not in view is not a stair");
+            check(!LiveRun.StepsOntoFloorChange(w, null, from, Dir.East) && !LiveRun.StepsOntoFloorChange(w, new Dictionary<int, string>(), from, Dir.East), "walk sweep: without floor change data every direction is walked");
+            check(Array.IndexOf(LiveRun.AllScenarios, "sell") >= 0 && Array.IndexOf(LiveRun.AllScenarios, "market") >= 0 && Array.IndexOf(LiveRun.AllScenarios, "floorchange") >= 0 &&
+                  Array.IndexOf(LiveRun.AllScenarios, "sharedkill") >= 0 && Array.IndexOf(LiveRun.AllScenarios, "pvpdeath") >= 0 && LiveRun.AllScenarios.Distinct().Count() == LiveRun.AllScenarios.Length, "scenarios: the phase 22 names are listed once");
+            // a server line quoted in a scenario must not put a character or account name into a report (the pvp scenario quotes "The murder of X was not justified")
+            string scrubbed = LiveRun.Scrub("Warning! The murder of Aldric Voss was not justified. aldric voss, ALDRIC again; ab is short", new[] { "Aldric Voss", "ALDRIC", "ab", null, "" });
+            check(scrubbed == "Warning! The murder of <name> was not justified. <name>, <name> again; ab is short", "scrub: names (any case, longest first) go, names under 3 characters stay (" + scrubbed + ")");
         }
 
         // ------------------------------------------------------------------------------------------------ the failure record

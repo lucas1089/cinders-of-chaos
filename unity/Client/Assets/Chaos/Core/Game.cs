@@ -315,6 +315,7 @@ namespace Chaos.Core
                 case 0x7D: case 0x7E: case 0x7F: case 0xD2: case 0xD3: case 0xD4: case 0xF0: case 0xF1: PlayMessage(op, r); break;   // player trade, VIP list, quest log (GamePlay.cs)
                 case 0xDC: r.U8(); break;
                 case BaseTooltip.ServerOpcode: { var tip = BaseTooltip.Read(r); LastTooltip = tip; TooltipCount++; TooltipRead(tip); break; }   // stock item tooltip data (Core/BaseTooltip.cs)
+                case BaseMarket.Enter: case BaseMarket.Leave: case BaseMarket.DetailOp: case BaseMarket.Browse: BaseMarket.Read(op, r, Market); break;   // the stock market (Core/BaseMarket.cs): a Chaos server never sends it
                 case 0xF5: ItemList(r); break;   // the list of items the player may own (Player::onCreatureAppear sendItems, right after the login's 0x17)
                 case 0xDD: ReadPos(r); r.U8(); r.Str(); break;
                 case 0xF3: r.U16(); r.Str(); r.U8(); break;
@@ -340,6 +341,9 @@ namespace Chaos.Core
 
         /// <summary>How many entries the last 0xF5 listed (the 11 slot types and the inventory item ids of the server's items.xml).</summary>
         public int ItemListCount;
+
+        /// <summary>The stock market's state (0xF6 to 0xF9, Core/BaseMarket.cs). A Chaos server does not send them.</summary>
+        public readonly BaseMarketState Market = new BaseMarketState();
 
         /// <summary>The entries of the last 0x9E (the stock item tooltip, Core/BaseTooltip.cs) and how many came in all.</summary>
         public List<TooltipEntry> LastTooltip;

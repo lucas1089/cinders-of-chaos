@@ -69,6 +69,11 @@ namespace Chaos.Core
             return bestD <= 2 ? best : 0;
         }
 
+        /// <summary>Text messages that came with a position and numbers (kinds 23 to 29: damage, healing, experience), and of these the "You gained N experience points."
+        /// ones (a share of a party's experience comes the same way) with the last amount. The live check reads them.</summary>
+        public int NumberMessages, ExpGainTexts;
+        public long LastExpGain;
+
         void TextMessage(ByteReader r)
         {
             byte kind = r.U8();
@@ -94,7 +99,12 @@ namespace Chaos.Core
                 if (LootScreen.OnScreen(kind)) Text(text);   // game_lootscreen: the loot line stays off the screen, the chat tabs still get it
                 Chat("", text, 0);
             }
-            else if (W.Fx.Enabled)   // damage, heal and experience numbers
+            else
+            {
+                NumberMessages++;
+                if (ExperienceText.TryParse(text, out long gain)) { ExpGainTexts++; LastExpGain = gain; }
+            }
+            if (kind >= 23 && kind <= 29 && W.Fx.Enabled)   // damage, heal and experience numbers
                 W.Fx.Push(typed ? FxEvent.TypedNumber(kind, at, v1, c1, v2, c2, text, percent, impact, owner) : FxEvent.Number(kind, at, v1, c1, v2, c2, text));
         }
 

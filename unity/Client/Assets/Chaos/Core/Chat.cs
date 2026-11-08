@@ -393,7 +393,10 @@ namespace Chaos.Core
         public bool Chase;
         public bool Secure = true;
 
-        public byte[] Packet() => new byte[] { 0xA0, Fight, (byte)(Chase ? 1 : 0), (byte)(Secure ? 0 : 1), 0 };
+        /// <summary>0xA0: fight, chase and secure mode bytes (and a pvp mode byte the server ignores). The secure byte is 1 when secure mode is ON: the server keeps it as
+        /// Player::secureMode and refuses an attack on an unmarked player while it is set (checked live 2026-11-08, O433 phase 22: a 1 got "Turn secure mode off ...").
+        /// It was written the other way round before.</summary>
+        public byte[] Packet() => new byte[] { 0xA0, Fight, (byte)(Chase ? 1 : 0), (byte)(Secure ? 1 : 0), 0 };
         public string Encode() => Fight + "," + (Chase ? 1 : 0) + "," + (Secure ? 1 : 0);
 
         public static FightModes Decode(string s)

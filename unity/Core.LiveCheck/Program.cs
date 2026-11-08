@@ -17,8 +17,8 @@ namespace Chaos.Core.LiveCheck
             if (why != null) Console.Error.WriteLine(why);
             Console.Error.WriteLine("usage: Core.LiveCheck HOST LOGIN_PORT ACCOUNT [CHARACTER|-] [--seconds N] [--report FILE] [--identity extended|chaos]");
             Console.Error.WriteLine("                      [--otb items.otb | --pair DIR] [--no-ext]   (password: environment variable CHAOS_LIVE_PASSWORD)");
-            Console.Error.WriteLine("                      [--scenario stairs,npc,party,death,rift,tooltip|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
-            Console.Error.WriteLine("                      [--killer MONSTER] [--rift-key-id N] [--scenario-seconds N] [--aware WxH]   (second account: CHAOS_LIVE_ACCOUNT2, CHAOS_LIVE_PASSWORD2, CHAOS_LIVE_CHARACTER2)");
+            Console.Error.WriteLine("                      [--scenario tooltip,stairs,floorchange,npc,sell,market,party,sharedkill,rift,death,pvpdeath|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
+            Console.Error.WriteLine("                      [--killer MONSTER] [--weak MONSTER] [--rift-key-id N] [--scenario-seconds N] [--aware WxH]   (second account: CHAOS_LIVE_ACCOUNT2, CHAOS_LIVE_PASSWORD2, CHAOS_LIVE_CHARACTER2)");
             return 2;
         }
 
@@ -60,6 +60,7 @@ namespace Chaos.Core.LiveCheck
                         case "--npc-at": o.NpcAt = ParsePos(Next()); break;
                         case "--stairs-at": o.StairsAt = ParsePos(Next()); break;
                         case "--killer": o.Killer = Next(); break;
+                        case "--weak": o.Weak = Next(); break;
                         case "--rift-key-id": o.RiftKeyServerId = int.Parse(Next()); break;
                         case "--scenario-seconds": o.ScenarioMs = Math.Max(5, int.Parse(Next())) * 1000; break;
                         case "--aware":
