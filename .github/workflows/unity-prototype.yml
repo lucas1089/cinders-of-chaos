@@ -269,6 +269,9 @@ jobs:
               print("  %s (%d frames)%s" % (w["name"], w["frames"], ": " + ", ".join(flags) if flags else ""))
               for x in w["exceptions"]:
                   print("    [%s x%d] %s | %s" % (x["kind"], x["count"], x["message"], x["stack"]))
+          for w in d["windows"]:
+              if w.get("context"):
+                  print("  context only: %s: %s" % (w["name"], w["context"]))
           for x in d.get("background", []):
               print("  (between windows) [%s x%d] %s | %s" % (x["kind"], x["count"], x["message"], x["stack"]))
           if s["withErrors"]:

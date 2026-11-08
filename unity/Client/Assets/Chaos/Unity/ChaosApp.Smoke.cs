@@ -4,8 +4,9 @@
 // Per step it records the exceptions and IMGUI layout errors Unity logged (Application.logMessageReceived), a try/catch around the open, and whether the window's rect
 // is empty or off the 1280x720 screen. It writes OUT_DIR/window_smoke.json, contact sheets OUT_DIR/window_smoke_sheet_N.png (24 crops per sheet, labelled) and logs
 // "chaos window smoke: N windows, M with errors". The pure parts (order, classification, rect checks, sheet maths, json) are Core/Phase10F.cs.
-// Windows that wait for a server reply draw their empty state: the fake server only answers what the demo tour needs. A report, not a gate: the exit code is 0 unless the
-// run itself broke (login failed, no screenshot at all, over time), then 1.
+// The fake server answers the requests of the Chaos windows with sample messages (Core/FakeModules.cs, switched on here only: FakeGameServer.ModuleResponder), the context HUDs
+// (raid, arena, rift ...) get their server push before their step and lose it after (FakeModules.Context), and every How it works card counts as seen so the window itself is
+// captured. What nothing answers draws its empty state. A report, not a gate: the exit code is 0 unless the run itself broke (login failed, no screenshot at all, over time), then 1.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -38,6 +39,8 @@ namespace Chaos.Client
             sealed class Tile { public string Name; public Texture2D Tex; public bool Problem; public string Flags = ""; }
 
             const int DrawFrames = 4;   // frames each step stays open: the placement frame, then three more
+            const int MaxFrames = 60;   // a step that waits for a server answer or a context push ends here at the latest
+            const int QuietFrames = 3;  // no new extended message for this many frames: the answers are in
 
             ChaosApp app;
             string dir;
@@ -52,6 +55,8 @@ namespace Chaos.Client
             readonly SmokeReport report = new SmokeReport();
             readonly List<Tile> tiles = new List<Tile>();
             bool logHooked;
+            FakeContext ctx;             // the context of the open step (a HUD the server pushes open), null for the rest
+            int quiet, lastReceived;
 
             public void Begin(string outDir)
             {
@@ -158,6 +163,7 @@ namespace Chaos.Client
             void BeginLogin()
             {
                 server = TourStartServer(app);
+                server.ModuleResponder = true;   // only the smoke run: the demo tour keeps the server it had
                 phase = Phase.Login;
             }
 
@@ -171,6 +177,7 @@ namespace Chaos.Client
             void BeginGameSteps()
             {
                 if (app.windows.Count == 0) app.MakeWindows();
+                app.FindWindow<HowItWorksWindow>()?.MarkAllSeen(app);   // the first-open card would cover the window of every step
                 int count = TopMenuAdmin.ButtonCount(TopMenu.Categories.Length, app.StaffMenu());
                 var menus = new List<string>();
                 var more = new List<int>();
@@ -214,6 +221,8 @@ namespace Chaos.Client
                 }
                 current = pending.Dequeue();
                 framesInStep = 0;
+                quiet = 0; lastReceived = app.session != null ? app.session.Ext.Received : 0;
+                ctx = null;
                 CloseAll();
                 rec = report.Begin(current.Name, current.Kind);
                 try { Prepare(current); }
@@ -241,8 +250,11 @@ namespace Chaos.Client
                     case WindowSmokePlan.Window:
                         {
                             var win = app.WindowNamed(s.Id);
-                            if (win == null) SmokeReport.AddIssue(rec, SmokeIssueKind.Error, "no window of class " + s.Id, "");
-                            else win.Open = true;
+                            if (win == null) { SmokeReport.AddIssue(rec, SmokeIssueKind.Error, "no window of class " + s.Id, ""); break; }
+                            ctx = FakeModules.Context(s.Id);
+                            if (ctx != null && !ctx.Drivable) { rec.Context = ctx.Reason; win.Open = true; break; }   // classified "context": no push opens it
+                            if (ctx != null && server != null && !server.Push(ctx.Pushes)) rec.Context = "the fake server had nobody to push to";
+                            win.Open = true;   // a window with a module asks its server module in its own Tick; the answer arrives while the step stays open
                             break;
                         }
                     case WindowSmokePlan.Info:
@@ -289,6 +301,7 @@ namespace Chaos.Client
                     rec.OffScreen = SmokeRect.OffScreen(r.x, r.y, r.width, r.height, uw, uh);
                     crop = SmokeSheet.Crop(r.x * scale, r.y * scale, r.width * scale, r.height * scale, 8f, UnityEngine.Screen.width, UnityEngine.Screen.height);
                 }
+                if (ctx != null && ctx.Drivable && rec.Context.Length == 0 && !open) rec.Context = "the push did not open it: " + ctx.Source;
                 var tile = new Tile { Name = s.Name };
                 var shot = ScreenCapture.CaptureScreenshotAsTexture();
                 if (shot == null) SmokeReport.AddIssue(rec, SmokeIssueKind.Error, "ScreenCapture gave no texture", "");
@@ -304,7 +317,36 @@ namespace Chaos.Client
                 tile.Problem = rec.Problem;
                 tile.Flags = Flags(rec);
                 if (rec.Problem) Debug.Log("chaos window smoke: problem in " + s.Name + ": " + tile.Flags);
+                if (rec.Context.Length > 0) Debug.Log("chaos window smoke: context only: " + s.Name + ": " + rec.Context);
+                EndContext();
                 current = null; rec = null;
+            }
+
+            /// <summary>The step has drawn its frames and the server's answers are in. A context HUD also waits for its window to open (the push arrives some frames after the request).</summary>
+            bool StepReady()
+            {
+                if (framesInStep < DrawFrames) return false;
+                if (framesInStep >= MaxFrames) return true;
+                if (ctx != null && ctx.Drivable && rec.Context.Length == 0)
+                {
+                    var w = app.WindowNamed(current.Id);
+                    if (w == null || !w.Open) return false;
+                }
+                return quiet >= QuietFrames;
+            }
+
+            /// <summary>After a context step: the server's end messages, then the player-side state of every context HUD goes (a push cannot be taken back otherwise).</summary>
+            void EndContext()
+            {
+                if (ctx == null) return;
+                try
+                {
+                    if (server != null && ctx.Close.Count > 0) server.Push(ctx.Close);
+                    var s = app.session;
+                    if (s != null) { s.Endgame?.Clear(); s.Progress?.Rift?.Hide(); }
+                }
+                catch (Exception e) { Debug.LogWarning("chaos window smoke: ending the context of " + current.Name + ": " + e.Message); }
+                ctx = null;
             }
 
             static string Flags(SmokeRecord r)
@@ -316,7 +358,8 @@ namespace Chaos.Client
                 if (g > 0) f += "ERR" + g + " ";
                 if (r.ZeroSize) f += "ZERO ";
                 if (r.OffScreen) f += "OFF ";
-                if (!r.OpenAtEnd) f += "SHUT ";
+                if (!r.OpenAtEnd && r.Context.Length == 0) f += "SHUT ";
+                if (r.Context.Length > 0) f += "CTX ";
                 return f.TrimEnd();
             }
 
@@ -377,7 +420,9 @@ namespace Chaos.Client
                     if (phase == Phase.Steps && current != null)
                     {
                         framesInStep++;
-                        if (framesInStep >= DrawFrames)
+                        int received = app.session != null ? app.session.Ext.Received : 0;
+                        if (received != lastReceived) { lastReceived = received; quiet = 0; } else quiet++;
+                        if (StepReady())
                         {
                             try { FinishStep(); }
                             catch (Exception e) { Fail("finishing " + current.Name + ": " + e); yield break; }
