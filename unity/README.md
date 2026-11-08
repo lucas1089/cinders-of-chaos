@@ -1114,3 +1114,28 @@ Gaps of the P2 gameplay system rows of `docs/UNITY_PARITY.md`. Models are pure (
 - Crafting table: the tooltip of opcode 91 is the rich item tooltip on the row and the detail header.
 - Transmog: a 64 px live preview of the equipped item drawn as the picked look.
 - Not done: Market Modifiers filter (typeahead over the Codex), per-shape charm slot art, the helper's Support tab timer section and buff duration (there is no buff bar rule in Unity), the Codex search in pt-BR. Nothing here ran in a Unity player or against a live server (the drawing compiles in `unity/Client.Check`).
+
+## Phase 8, track C: shaders of the visual effect rows
+
+The effect rows of `docs/UNITY_PARITY.md` (game_chaosshaders, game_nameshaders, game_levelwings, game_lootbeams, game_cosmeticfx, game_visualfx) now draw with shaders.
+The GLSL of `client/overlay/data/shaders` is ported to built-in pipeline shaders in `Assets/Chaos/Resources/Shaders`:
+- `ChaosFx.cginc`: one HLSL function per effect family, shared by the three views: the store families (haze, waves, pulse, sparks), the eight Chaos outfit shaders,
+  hit white and hit red, the one colour silhouette of an outline, the water and lava ripple. The mode numbers are `FxMode` in `Core/Phase8CFx.cs`
+  (`Phase8CTests` reads the defines and fails when they differ).
+- `ChaosMapFx.shader` (`Chaos/MapFx`): a drop-in for `Sprites/Default` on the classic map mesh. The second UV channel carries mode, strength and the cell corner,
+  mode 0 is the plain sprite. `MapView` sets it per quad: a creature's outfit shader or flash, the silhouette ring of an outline, a water or lava ground.
+- `ChaosGrade.shader` (`Chaos/MapGrade`): colour grade, vignette, area mood and soft glow (bright pass, two blurs, screen blend) as an image effect, `MapGradePost`
+  on the classic camera. While it draws, the weather's flat mood tint stays off.
+- `Hd2dSprite.shader` and `FrontArtSprite.shader` call the same function: the HD-2D batches carry mode and colour per vertex (`Hd2dView`), the live view's
+  creature materials carry `_FxMode`, `_FxStrength`, `_FxTint` (`FrontLiveCreatures`).
+- The numbers (colours of the 26 outfit shaders, the grade and bloom values, the liquid ground ids, the outline colours of the 13 bought arts, the pulse of the cooldown flash)
+  live in `Core/Phase8CFx.cs` and are tested against the Lua files; the Unity glue is `Unity/Phase8CFx.cs` (`FxShaders`, `MapFxLook`, `Phase8CPrefs`, `MapGradePost`)
+  and `Unity/ChaosApp.Phase8C.cs` (what each creature asks for, the pack effects, the cooldown pulse).
+- Level-up wings and loot beams are the effects of the client pair (ids 4047 and 4090 to 4101) drawn from the dat frame by frame (`PackFx`); the corpse beams also come
+  from the loot filter's `beam` message (opcode 238). Without these effects in the pair the old drawn wings and beams stay.
+- Options (Options > Visuals): Colour grade and vignette, Soft glow (off by default), Living water and lava, Outfit shaders on characters.
+- Fallbacks: every shader is looked up by `FxShaders` (Resources, then `Shader.Find`; `CHAOS_NO_FX_SHADERS=1` turns them off). When one is null the view draws as before:
+  the plain sprite, the soft disc for a hit, the glow picture for an outline, no grade.
+- The shaders are compiled only by the CI Unity build. `Client.Check` and `Core.Tests` do not see them; `Phase8CTests` checks their text (braces, includes, no GLSL left, names, defines).
+- Left (see the rows): the other players' name shaders (the wire is not in this repo), the spell light and glowing spell effects (the classic view draws no spell effects from the dat),
+  the hover outline, outlines and the flash shader in the live view.

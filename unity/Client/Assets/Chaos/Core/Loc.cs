@@ -73,6 +73,7 @@ namespace Chaos.Core
             foreach (var kv in LocPhase7Y.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
             foreach (var kv in LocPhase7X.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
             foreach (var kv in LocPhase7Z.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
+            foreach (var kv in LocPhase8C.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
         }
 
         public static readonly Dictionary<string, string> PtBr = new Dictionary<string, string>

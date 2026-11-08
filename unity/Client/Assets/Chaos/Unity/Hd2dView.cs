@@ -29,6 +29,13 @@ namespace Chaos.Client
         public Func<Hd2dPiece, bool> Skip;
         /// <summary>Creatures this returns true for are not drawn as sprites (a 3D character takes their place: Hd2dChars3d). Their name label stays.</summary>
         public Func<Creature, bool> SkipCreature;
+        /// <summary>Phase 8 track C: the outfit shader, hit flash and outline of a creature (null: plain), and whether water and lava grounds shimmer (Hd2dSprite.shader fx modes).</summary>
+        public Func<Creature, MapFxLook> CreatureFx;
+        public bool LiquidFx = true;
+        int fxMode; float fxStrength = 1f;
+        bool fxShaderOk;   // the material is Chaos/Hd2dSprite, which reads the fx modes
+        Color32 fxTint = new Color32(255, 255, 255, 255);
+        Vector3 fxOff;
         public static bool LowQuality => Application.isMobilePlatform || PlayerPrefs.GetInt("chaos.hd2d.low", 0) == 1;
         public int MaxLights => LowQuality ? 4 : 8;
         public int MaxShadowLights => LowQuality ? 0 : 2;
@@ -38,15 +45,19 @@ namespace Chaos.Client
             public readonly Mesh Mesh = new Mesh { name = "chaos-hd2d" };
             public readonly List<Vector3> V = new List<Vector3>(), N = new List<Vector3>();
             public readonly List<Vector2> UV = new List<Vector2>();
+            public readonly List<Vector2> UV2 = new List<Vector2>();   // phase 8 track C: x the FxMode of the quad, y its strength (Hd2dSprite.shader uv2_MainTex)
+            public readonly List<Color32> Col = new List<Color32>();   // the colour of an outline silhouette or of an outfit shader family
             public readonly List<int> T = new List<int>();
             public MeshRenderer Renderer;
-            public void Clear() { V.Clear(); N.Clear(); UV.Clear(); T.Clear(); }
+            public void Clear() { V.Clear(); N.Clear(); UV.Clear(); UV2.Clear(); Col.Clear(); T.Clear(); }
             public void Upload()
             {
                 Mesh.Clear();
                 Mesh.SetVertices(V);
                 Mesh.SetNormals(N);
                 Mesh.SetUVs(0, UV);
+                Mesh.SetUVs(1, UV2);
+                Mesh.SetColors(Col);
                 Mesh.SetTriangles(T, 0);
             }
         }
@@ -84,6 +95,7 @@ namespace Chaos.Client
             if (shader == null) shader = Shader.Find("Legacy Shaders/Transparent/Cutout/Diffuse");
             if (shader == null) shader = Shader.Find("Sprites/Default");
             material = new Material(shader) { name = "chaos-hd2d" };
+            fxShaderOk = shader != null && shader.name == Hd2dPost.SpriteShaderName;
             material.SetFloat("_Cutoff", 0.5f);
             flat = NewBatch("floor", false);
             upright = NewBatch("upright", true);
@@ -267,11 +279,15 @@ namespace Chaos.Client
             else if ((t.Fluid || t.Splash) && g.PatternX * g.PatternY > 1) { int s = it.Count % (g.PatternX * g.PatternY); px = s % g.PatternX; py = s / g.PatternX; pz = 0; }
             else { px = Mod(pos.X, g.PatternX); py = Mod(pos.Y, g.PatternY); pz = Mod(pos.Z, g.PatternZ); }
             int phase = Phase(g, 0);
+            fxMode = fxShaderOk && LiquidFx && t.Ground ? LiquidGrounds.ModeOf(t.Id) : 0;
             for (int layer = 0; layer < g.Layers; layer++)
                 for (int hh = 0; hh < g.Height; hh++)
                     for (int ww = 0; ww < g.Width; ww++)
                         Quad(piece, ww, hh, Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), layer);
+            fxMode = 0;
         }
+
+        readonly List<(int slot, int ww, int hh, int addon)> fxCells = new List<(int, int, int, int)>();
 
         void AddCreature(Hd2dPiece piece)
         {
@@ -296,6 +312,7 @@ namespace Chaos.Client
             int phase;
             if (walking && g.Phases > 1) phase = 1 + (int)(progress * (g.Phases - 1)) % (g.Phases - 1);
             else phase = g.Phases > 1 && !walking && t.Groups.Length > 1 ? Phase(g, c.Id) : 0;
+            fxCells.Clear();
             for (int addon = 0; addon < g.PatternY; addon++)
             {
                 if (addon > 0 && (o.Addons & (1 << (addon - 1))) == 0) continue;
@@ -317,9 +334,30 @@ namespace Chaos.Client
                                 return rgba;
                             });
                         }
-                        Quad(piece, ww, hh, slot, addon);
+                        fxCells.Add((slot, ww, hh, addon));
                     }
             }
+            var look = fxShaderOk && CreatureFx != null ? CreatureFx(c) : null;
+            if (look != null && look.Outline != null && !piece.Flat)
+            {
+                // the silhouette ring behind the creature (game_visualfx target and follow, game_cosmeticfx), one colour, unlit
+                var ol = look.Outline;
+                float w = Math.Max(1f, ol.WidthPx) / 32f;
+                float up = 1f / Mathf.Max(0.3f, Mathf.Cos(Pitch * Mathf.Deg2Rad));
+                fxMode = FxMode.Solid;
+                foreach (var d in OutlineFx.Ring)
+                    foreach (var cell in fxCells)
+                    {
+                        OutlineFx.ColorAt(ol, (cell.hh + 0.5f) / Math.Max(1, g.Height), out float cr, out float cg, out float cb);
+                        fxTint = new Color(cr, cg, cb, 1f);
+                        fxOff = new Vector3(d[0] * w, d[1] * w * up, 0.004f);
+                        Quad(piece, cell.ww, cell.hh, cell.slot, cell.addon);
+                    }
+                fxOff = Vector3.zero; fxMode = 0; fxTint = new Color32(255, 255, 255, 255);
+            }
+            if (look != null && look.Mode != FxMode.None) { fxMode = look.Mode; fxStrength = look.Strength; fxTint = look.Tint; }
+            foreach (var cell in fxCells) Quad(piece, cell.ww, cell.hh, cell.slot, cell.addon);
+            fxMode = 0; fxStrength = 1f; fxTint = new Color32(255, 255, 255, 255);
             AddLabel(piece);
         }
 
@@ -342,7 +380,7 @@ namespace Chaos.Client
             if (slot == 0) return;
             var b = piece.Flat ? flat : upright;
             var normal = piece.Flat ? upNormal : camNormal;
-            Vector3 bias = piece.Flat ? new Vector3(0, 0.0004f * layer, 0) : new Vector3(0, 0, -0.0004f * layer);
+            Vector3 bias = (piece.Flat ? new Vector3(0, 0.0004f * layer, 0) : new Vector3(0, 0, -0.0004f * layer)) + fxOff;
             var r = Atlas.Uv(slot);
             // an upright cell with a lean profile is drawn in strips, each moved by the profile (the art straightened)
             int n = !piece.Flat && piece.Lean != null ? Hd2d.Strips : 1;
@@ -351,7 +389,7 @@ namespace Chaos.Client
                 var c = n == 1 ? piece.Cell(ww, hh) : piece.Strip(ww, hh, k, n);
                 float v0 = r.yMin + (r.yMax - r.yMin) * k / n, v1 = r.yMin + (r.yMax - r.yMin) * (k + 1) / n;
                 int i = b.V.Count;
-                for (int q = 0; q < 4; q++) { b.V.Add(new Vector3(c[q].X, c[q].Y, c[q].Z) + bias); b.N.Add(normal); }
+                for (int q = 0; q < 4; q++) { b.V.Add(new Vector3(c[q].X, c[q].Y, c[q].Z) + bias); b.N.Add(normal); b.UV2.Add(new Vector2(fxMode, fxStrength)); b.Col.Add(fxTint); }
                 b.UV.Add(new Vector2(r.xMin, v0));
                 b.UV.Add(new Vector2(r.xMax, v0));
                 b.UV.Add(new Vector2(r.xMax, v1));

@@ -60,6 +60,7 @@ namespace Chaos.Client
             Phase7QUpdate();
             ApplyViewRows(VisualPrefs.ViewRows);
             Phase7YUpdate();   // ChaosApp.Phase7Y.cs: monster sizes, item outlines, fonts
+            Phase8CUpdate();   // ChaosApp.Phase8C.cs: shader callbacks of the views, the grade post
             AwareUpdate();
             AudioUpdate(v);
             if (v == null) return;
@@ -385,6 +386,7 @@ namespace Chaos.Client
                 if (c.Type != 0 || !v.Cosmetic.Looks.TryGetValue(c.Name, out var look) || look.Glow == null) continue;
                 bool mine = c.Id == world.PlayerId;
                 if (!v.Cosmetic.Allowed(false, mine) || c.Position.Z != world.Center.Z) continue;
+                if (ShaderMapOn && OutlineFx.Cosmetic(look.Glow, look.Pulse) != null) continue;   // the shader draws it as an outline (Phase8CLook)
                 if (!CreatureCenter(c, map, scale, out Vector2 at, out float tile)) continue;
                 var tex = OverlayTex("game_cosmeticfx/images/glows/" + look.Glow + ".png");
                 if (tex == null) continue;
@@ -405,6 +407,13 @@ namespace Chaos.Client
                 beamsAt = now;
                 var all = new List<KeyValuePair<Pos, BeamLook>>();
                 var seen = new HashSet<Pos>();
+                // corpses the server named (opcode 238 "beam"): they come first, the ground labels fill in the rest
+                foreach (var sb in loot.Filter.Beams.Values)
+                {
+                    if (sb.Pos.Z != world.Player.Position.Z || !seen.Add(sb.Pos)) continue;
+                    var look = LootBeams.BeamOf(sb.Items, loot.Filter.Settings, s);
+                    if (look != null) all.Add(new KeyValuePair<Pos, BeamLook>(sb.Pos, look));
+                }
                 foreach (var l in loot.Ground.Labels(world.Player.Position, loot.Filter.Settings, false))
                 {
                     if (!seen.Add(l.Tile) || l.Row == null) continue;
@@ -420,6 +429,7 @@ namespace Chaos.Client
             {
                 if (!TileGeom(kv.Key, map, scale, out Vector2 at, out float tile)) continue;
                 var look = kv.Value;
+                if (DrawBeamPack(kv.Key, look, map, scale, now)) continue;   // the pair's own beam effect (pair 36)
                 var c = HexColor(look.Color, Color.white);
                 float pulse = 0.88f + 0.12f * Mathf.Sin((float)now / 260f + kv.Key.X * 1.7f);
                 float h = tile * look.Height, w = tile * 0.24f;
@@ -430,7 +440,7 @@ namespace Chaos.Client
 
         void DrawFlashes(VisualEffects v, Rect map, float scale, double now)
         {
-            if (!VisualPrefs.Fx.HitFlash) return;
+            if (!VisualPrefs.Fx.HitFlash || ShaderMapOn) return;   // the classic mesh flashes the outfit itself (Chaos/MapFx hit modes)
             foreach (var f in v.Flashes)
             {
                 float k = HitFlasher.Strength(now, f.Start, f.Ms);
@@ -445,7 +455,9 @@ namespace Chaos.Client
             foreach (var p in v.Wings.Active)
             {
                 float t = LevelWingsState.Progress(now, p.Start);
-                if (t < 0 || !world.Creatures.TryGetValue(p.Creature, out var c) || !CreatureCenter(c, map, scale, out Vector2 at, out float tile)) continue;
+                if (t < 0 || !world.Creatures.TryGetValue(p.Creature, out var c)) continue;
+                if (DrawWingsPack(p, c, map, scale, now, fxA)) continue;   // the pair's level-up effect (pair 36)
+                if (!CreatureCenter(c, map, scale, out Vector2 at, out float tile)) continue;
                 float open = 1f - (1f - Mathf.Min(1f, t * 2.2f)) * (1f - Mathf.Min(1f, t * 2.2f));
                 float a = Mathf.Sin(t * Mathf.PI) * fxA;
                 var rise = new Vector2(at.x, at.y - tile * (0.15f + 0.45f * t));

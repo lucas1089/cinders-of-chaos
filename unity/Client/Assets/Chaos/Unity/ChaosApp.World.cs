@@ -185,7 +185,7 @@ namespace Chaos.Client
             var w = u.Weather;
             w.OptionOn = Phase7Prefs.WeatherOn;   // Options > Visuals: Weather and ambient effects
             w.MoodTint(out float mr, out float mg, out float mb, out float ma);
-            if (ma > 0.004f) Fill(r, new Color(mr, mg, mb, ma));
+            if (ma > 0.004f && !GradePostActive) Fill(r, new Color(mr, mg, mb, ma));   // with the grade image effect the mood goes in there (ChaosApp.Phase8C.cs)
             // ambient specks: embers, motes, dust drift in the view
             foreach (var l in WeatherState.AmbientLayers)
             {
