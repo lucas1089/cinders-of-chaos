@@ -604,7 +604,9 @@ namespace Chaos.Core
             parser.PlayerMoved = _ => stepSent = -1;
         }
 
-        public double Now => clock.Elapsed.TotalMilliseconds;
+        /// <summary>When set, the session's clock (Now) is this, not the wall clock: the demo tour feeds its fixed 60 fps frame clock (Core/DemoTour.cs).</summary>
+        public static Func<double> TestClock;
+        public double Now => TestClock != null ? TestClock() : clock.Elapsed.TotalMilliseconds;
         public GameParser Parser => parser;
         public string Stats => "hp " + parser.Health + "/" + parser.MaxHealth + "  mana " + parser.Mana + "/" + parser.MaxMana +
                                "  level " + parser.Level + "  " + Packets + " packets";

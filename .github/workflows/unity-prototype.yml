@@ -62,7 +62,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     needs: core
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - name: Unity license present?
         id: lic
@@ -159,7 +159,7 @@ jobs:
           sudo chmod -R a+rX build
           sudo chmod a+x "$exe"
           sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 libglu1-mesa
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 libglu1-mesa ffmpeg
           pair=""
           if ls assets/things/things-1098.tar.xz.part* >/dev/null 2>&1; then
             (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts) && mkdir -p pair \
@@ -169,12 +169,42 @@ jobs:
           if [ -n "$pair" ]; then echo "real pair: $pair"; else echo "::notice::no sprite pair: the demo room uses synthetic sprites"; fi
           set +e
           if [ -n "$pair" ]; then export CHAOS_PAIR_DIR="$pair"; fi
-          LIBGL_ALWAYS_SOFTWARE=1 timeout 600 xvfb-run -a -s "-screen 0 1280x960x24" "$exe" \
-            -force-glcore -screen-width 1280 -screen-height 960 -screen-fullscreen 0 \
-            -logFile "$out/player.log" -chaosHd2dShot "$out"
+          # the screenshots, then (same process, Hd2dShot hands over) the demo tour: the app logs in to a fake server inside the player
+          # and every frame goes to demo_tour_0000.png at 60 a second (unity/README.md "Demo tour video"). The window is 1280x720.
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 2400 xvfb-run -a -s "-screen 0 1280x720x24" "$exe" \
+            -force-glcore -screen-width 1280 -screen-height 720 -screen-fullscreen 0 \
+            -logFile "$out/player.log" -chaosHd2dShot "$out" -chaosDemoTour "$out"
           rc=$?
+          # no tour frames (the screenshots failed before the hand-over): the tour on its own
+          if ! ls "$out"/demo_tour_0000.png >/dev/null 2>&1; then
+            echo "::warning::no demo tour frames after the screenshot run (exit $rc); running the tour on its own"
+            LIBGL_ALWAYS_SOFTWARE=1 timeout 1800 xvfb-run -a -s "-screen 0 1280x720x24" "$exe" \
+              -force-glcore -screen-width 1280 -screen-height 720 -screen-fullscreen 0 \
+              -logFile "$out/player_tour.log" -chaosDemoTour "$out"
+            rc_tour=$?
+            echo "demo tour exit code: $rc_tour"
+          fi
           set -e
           echo "player exit code: $rc"
+          grep "chaos demo tour" "$out/player.log" "$out/player_tour.log" 2>/dev/null || true
+          # the video: libx264, yuv420p, crf 20, 60 fps. The PNG frames (about 1400, large) are deleted after encoding; four stills stay.
+          n=$(ls "$out"/demo_tour_[0-9][0-9][0-9][0-9].png 2>/dev/null | wc -l)
+          echo "demo tour frames: $n"
+          if [ "$n" -gt 0 ]; then
+            if ffmpeg -y -loglevel error -framerate 60 -i "$out/demo_tour_%04d.png" \
+                 -vf "scale=1280:720:flags=lanczos,format=yuv420p" -c:v libx264 -preset medium -crf 20 -movflags +faststart "$out/demo_tour.mp4"; then
+              ls -l "$out/demo_tour.mp4"
+              for k in 1 2 3 4; do
+                f=$(printf "%s/demo_tour_%04d.png" "$out" $(( n * k / 5 )))
+                [ -f "$f" ] && cp "$f" "$out/demo_tour_still_$k.png"
+              done
+              rm -f "$out"/demo_tour_[0-9][0-9][0-9][0-9].png
+            else
+              echo "::warning::ffmpeg could not encode the demo tour; the PNG frames stay in the artifact"
+            fi
+          else
+            echo "::warning::no demo tour frames: the log lines 'chaos demo tour' above say why"
+          fi
           if [ ! -s "$out/classic.png" ] || [ ! -s "$out/hd2d.png" ]; then
             echo "::warning::HD-2D screenshots failed (exit $rc); last lines of the player log follow"
             tail -n 60 "$out/player.log" || true
