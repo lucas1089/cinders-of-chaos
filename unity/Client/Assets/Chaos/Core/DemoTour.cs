@@ -152,6 +152,11 @@ namespace Chaos.Core
         public uint AttackTarget;
         public string LastSay = "", Problem;
         public readonly Dictionary<byte, int> ExtRequests = new Dictionary<byte, int>();
+        /// <summary>The window smoke run switches this on: the server then also answers what the Chaos windows ask on opening (Core/FakeModules.cs) and the channel list. Off for the demo tour.</summary>
+        public bool ModuleResponder;
+        /// <summary>Messages the responder sent for requests, and requests it had no answer for (a window then keeps its empty state).</summary>
+        public int Answered, Unanswered;
+        public readonly List<string> UnansweredList = new List<string>();
 
         sealed class Mob
         {
@@ -369,9 +374,52 @@ namespace Chaos.Core
                         byte eo = r.U8();
                         ExtRequests.TryGetValue(eo, out int n);
                         ExtRequests[eo] = n + 1;
+                        if (ModuleResponder) Respond(c, eo, r);
                         break;
                     }
+                    case 0x97:
+                        if (ModuleResponder)
+                        {
+                            // the channel list (engine protocolgame.cpp sendChannelsDialog: 0xAB, u8 count, u16 id + string name per channel)
+                            var w = new ByteWriter().U8(0xAB).U8(3);
+                            w.U16(0x0003).Str("Party").U16(0x0004).Str("Guild").U16(0x0009).Str("Trade");
+                            c.Send(w.ToArray());
+                            Answered++;
+                        }
+                        break;
                 }
+            }
+        }
+
+        /// <summary>Answers one extended request with the sample messages of Core/FakeModules.cs. Called with the gate held.</summary>
+        void Respond(Conn c, byte op, ByteReader r)
+        {
+            object request = null;
+            try { request = Json.TryParse(ExtOpcodes.FromWire(r.Str())); } catch (Exception) { }
+            var answers = request == null ? new List<FakeMsg>() : FakeModules.Answer(op, request);
+            if (answers.Count == 0)
+            {
+                Unanswered++;
+                string key = op + ":" + Json.Text(request, "action");
+                if (!UnansweredList.Contains(key)) UnansweredList.Add(key);
+                return;
+            }
+            var o = new Out(this);
+            foreach (var m in answers) o.Ext(m.Op, m.Root);
+            o.Flush(c);
+            Answered += answers.Count;
+        }
+
+        /// <summary>Sends server messages the player did not ask for (the smoke run's context pushes). Thread safe; false when nobody is in the game.</summary>
+        public bool Push(IEnumerable<FakeMsg> messages)
+        {
+            lock (gate)
+            {
+                if (cur == null || !cur.Entered) return false;
+                var o = new Out(this);
+                foreach (var m in messages) o.Ext(m.Op, m.Root);
+                o.Flush(cur);
+                return true;
             }
         }
 

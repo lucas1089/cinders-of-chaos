@@ -174,6 +174,8 @@ namespace Chaos.Core
         public int Frames;
         public bool OffScreen, ZeroSize, HasRect, OpenAtEnd = true;
         public SmokeBox Rect;
+        /// <summary>Phase 11, track G: why a context HUD could not be shown (no server push drives it). Not an error: the step is classified "context".</summary>
+        public string Context = "";
         public readonly List<SmokeIssue> Issues = new List<SmokeIssue>();
 
         public int Count(SmokeIssueKind k) { int n = 0; foreach (var i in Issues) if (i.Kind == k) n += i.Count; return n; }
@@ -218,6 +220,8 @@ namespace Chaos.Core
 
         public int WithProblems { get { int n = 0; foreach (var r in records) if (r.Problem) n++; return n; } }
         public int Total(SmokeIssueKind k) { int n = 0; foreach (var r in records) n += r.Count(k); return n; }
+        /// <summary>Steps classified "context" (a HUD that no server push opens), not counted as problems.</summary>
+        public int ContextCount { get { int n = 0; foreach (var r in records) if (r.Context.Length > 0) n++; return n; } }
         public int OffScreenCount { get { int n = 0; foreach (var r in records) if (r.OffScreen || r.ZeroSize) n++; return n; } }
 
         /// <summary>The line the CI step greps for.</summary>
@@ -225,7 +229,7 @@ namespace Chaos.Core
 
         /// <summary>The detail line under it.</summary>
         public string DetailLine() => "chaos window smoke: " + Total(SmokeIssueKind.Exception) + " exceptions, " + Total(SmokeIssueKind.Layout) + " layout errors, "
-            + Total(SmokeIssueKind.Error) + " logged errors, " + OffScreenCount + " off screen or empty, " + background.Issues.Count + " in the background";
+            + Total(SmokeIssueKind.Error) + " logged errors, " + OffScreenCount + " off screen or empty, " + background.Issues.Count + " in the background, " + ContextCount + " context only";
 
         // ------------------------------------------------------------------------------------ json
         static string Q(string s)
@@ -274,13 +278,14 @@ namespace Chaos.Core
              .Append(",\"exceptions\":").Append(Total(SmokeIssueKind.Exception))
              .Append(",\"layoutErrors\":").Append(Total(SmokeIssueKind.Layout))
              .Append(",\"loggedErrors\":").Append(Total(SmokeIssueKind.Error))
-             .Append(",\"offScreen\":").Append(OffScreenCount).Append("},\n \"windows\":[");
+             .Append(",\"offScreen\":").Append(OffScreenCount).Append(",\"context\":").Append(ContextCount).Append("},\n \"windows\":[");
             for (int i = 0; i < records.Count; i++)
             {
                 var r = records[i];
                 b.Append(i == 0 ? "" : ",").Append("\n  {\"name\":").Append(Q(r.Name)).Append(",\"kind\":").Append(Q(r.Kind)).Append(",\"frames\":").Append(r.Frames)
                  .Append(",\"offScreen\":").Append(r.OffScreen ? "true" : "false").Append(",\"zeroSize\":").Append(r.ZeroSize ? "true" : "false")
                  .Append(",\"openAtEnd\":").Append(r.OpenAtEnd ? "true" : "false");
+                if (r.Context.Length > 0) b.Append(",\"context\":").Append(Q(r.Context));
                 if (r.HasRect) b.Append(",\"rect\":[").Append(N(r.Rect.X)).Append(',').Append(N(r.Rect.Y)).Append(',').Append(N(r.Rect.W)).Append(',').Append(N(r.Rect.H)).Append(']');
                 b.Append(",\"exceptions\":");
                 WriteIssues(b, r, "  ");

@@ -633,6 +633,18 @@ namespace Chaos.Client
 
         public override void Tick(ChaosApp app) { if (app.Session != null) app.HowCheck(this); }
 
+        /// <summary>The window smoke run (phase 11, track G): every card counts as seen for the current character, in memory only (nothing is saved), so no first-open card covers the window of a step.</summary>
+        public void MarkAllSeen(ChaosApp app)
+        {
+            string name = app.World?.Player?.Name;
+            if (name == null) return;
+            string ck = HowItWorks.CharKey(name);
+            var set = new HashSet<string>(HowItWorks.UnityWindows.Values);
+            if (InfoStore.How != null) foreach (var c in InfoStore.How.Cards) set.Add(c.Key);
+            seenFor = ck;
+            seen[ck] = set;
+        }
+
         /// <summary>Opens the card of a feature; false when there is none.</summary>
         public bool Show(string key)
         {
