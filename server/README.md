@@ -29153,12 +29153,16 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   neither, so the labels and loot beams skipped the 191 import monsters already. `GroundLabelsLogic.CORPSE_BAG_ID` (6068, compared with the
   config by the test) makes the bag a corpse. The container window title is the item name.
 * **Kept by id, on purpose (`keepIds`).** The four Elemental Overlord corpses (8934, 8967, 8968, 8969: `movements/.../summonOverlord.lua`
-  summons the boss when the body is moved onto the altar) and the two Father's Burden bodies (12545, 12546). **Stock skinning**
-  (`actions/.../skinning.lua`, an obsidian knife on dead minotaurs, dragons, ...) works on corpse ids and stops with the bag; the
-  Professions' Flaying (obsidian knife on a beast or reptile corpse, tag based) replaces it. Add ids to `keepIds` to bring a body back.
+  summons the boss when the body is moved onto the altar) and the two Father's Burden bodies (12545, 12546). Add ids to
+  `keepIds` to bring a body back.
+* **Stock skinning off** (owner 2026-11-08: "o esfolar nem é usado. pode remover"). The stock skinning script (the one `actions.xml` names
+  for the obsidian knife 5908; an obsidian knife on dead minotaurs, dragons, ...) works by corpse id. Step `lootbag` puts one marked
+  `do return false end` at the top of its onUse, after the professions hook when there is one, so the Professions' Flaying (obsidian knife
+  on a beast or reptile corpse, tag based) still runs and the stock code never does. Everything else in the script (its other items in
+  `actions.xml`, if any) is off with it.
 * **Not changed.** Player deaths (corpse, `death_keep.lua`, `deathrecap.lua`). The store Loot Bag item is another thing. Spawns, loot
   tables and XML files stay as they are; `fix_monster_xml.py` keeps giving imports 6068.
 * **Apply.** `patch -p1 < 0089-monster-loot-bag.patch` in the server source after 0001-0088, rebuild, then `install_all.py` (step
   `lootbag`) and a restart. Tests: `tests/corpse_bag_test.lua`, `tools/patch_monster_corpses_test.py`, `tools/chaoslootbag_test.cpp`
-  (CI builds the header cut out of the patch). **Not tested:** a build with the patch (the three hunks dry-run on the base tree up to
-  0044 only), a kill in a game, decay and loot timing, the look of the bag, the client labels on a live corpse.
+  (CI builds the header cut out of the patch). The patch applies on top of 0079-0087 of an already patched tree (luascript.cpp with
+  fuzz 2). **Not tested:** a full build with the patch, a kill in a game, decay and loot timing, the look of the bag, the client labels on a live corpse.

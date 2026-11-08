@@ -174,6 +174,48 @@ check(any('player' in p for p in guard(fake)), 'self-test: a patch that touches 
 fake2 = text.replace('ChaosLootBag::corpseOf(ChaosLootBag::current(), mType->info.lookcorpse)', 'mType->info.lookcorpse')
 check(guard(fake2), 'self-test: a patch whose Monster::getLookCorpse does not ask the table is caught')
 
+# stock skinning off: the marked line after onUse, after the professions hook, idempotent, CRLF kept, Lua still parses
+import shutil, subprocess, tempfile
+import install_professions as IP
+SKIN = 'local skins = {}\r\nfunction onUse(player, item, fromPosition, target, toPosition, isHotkey)\r\n\tlocal skin = skins[target.itemid]\r\n\treturn skin ~= nil\r\nend\r\n'
+new, ch = P.patch_skinning(SKIN)
+check(ch and new.count(P.SKIN_MARK) == 1, 'skinning: marked line added once')
+check(new.splitlines()[2].startswith('\tdo return false end'), 'skinning: right after the onUse line')
+check('\r\n' + P.SKIN_LINE + '\r\n' in new and '\n' not in new.replace('\r\n', ''), 'skinning: CRLF kept')
+check(P.patch_skinning(new) == (new, False), 'skinning: second run changes nothing')
+hooked, _ = IP.patch_hook(SKIN.replace('\r\n', '\n'), 'tool')
+both, _ = P.patch_skinning(hooked)
+ls = both.splitlines()
+check(IP.MARK in ls[2] and P.SKIN_MARK in ls[3], 'skinning: after the professions hook (professions first)')
+late, _ = IP.patch_hook(P.patch_skinning(SKIN.replace('\r\n', '\n'))[0], 'tool')
+ls = late.splitlines()
+check(IP.MARK in ls[2] and P.SKIN_MARK in ls[3], 'skinning: professions run later still puts its hook first')
+try:
+    P.patch_skinning('local x = 1\n')
+    check(False, 'skinning: no onUse raises')
+except ValueError:
+    pass
+for lua in ('luajit', 'lua5.3'):
+    if shutil.which(lua):
+        with tempfile.NamedTemporaryFile('w', suffix='.lua', delete=False) as f:
+            f.write(both + 'assert(onUse(nil, nil, nil, {itemid = 1}, nil) == false)\n')
+        r = subprocess.run([lua, f.name], capture_output=True, text=True,
+                           env={'PATH': os.environ.get('PATH', '')})
+        os.unlink(f.name)
+        check(r.returncode == 0, 'skinning: %s runs the patched script (%s)' % (lua, r.stderr.strip()))
+d = tempfile.mkdtemp()
+try:
+    os.makedirs(os.path.join(d, 'actions', 'scripts', 'tools'))
+    open(os.path.join(d, 'actions', 'actions.xml'), 'w').write('<actions>\n\t<action itemid="5908" script="tools/skinning.lua" />\n</actions>\n')
+    sp = os.path.join(d, 'actions', 'scripts', 'tools', 'skinning.lua')
+    open(sp, 'wb').write(SKIN.encode())
+    check('(changed)' in P.skinning_off(d, True) and open(sp, 'rb').read() == SKIN.encode(), 'skinning: dry run writes nothing')
+    check('(changed)' in P.skinning_off(d, False) and P.SKIN_MARK.encode() in open(sp, 'rb').read(), 'skinning: written')
+    check('(already off)' in P.skinning_off(d, False), 'skinning: second run reports already off')
+    check('nothing to do' in P.skinning_off(tempfile.gettempdir() + '/no_such_dir_x', False), 'skinning: no actions.xml is fine')
+finally:
+    shutil.rmtree(d)
+
 if fails:
     sys.exit('%d check(s) failed' % fails)
 print('patch_monster_corpses_test: ok')

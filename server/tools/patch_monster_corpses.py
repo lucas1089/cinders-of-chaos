@@ -11,6 +11,13 @@ holds 60), `decayTo 0` (the bag vanishes with what is left in it, no body remain
 corpseType attribute stays (every script that asks ItemType:isCorpse keeps working); other attributes of the entry
 stay. Nothing else in items.xml and no monster file is touched: the rule that picks the bag is in the engine, so the
 base monsters need no rewrite. A second run changes nothing. --check only compares (exit 1 when the file differs).
+
+Stock skinning off (owner 2026-11-08: "o esfolar nem é usado. pode remover"): the stock skinning script (the one
+actions.xml names for the obsidian knife 5908) works by corpse id and has nothing left to skin once every monster leaves
+the bag. Its onUse gets one marked line `do return false end` (marker SKIN_MARK) right after the line that opens it, or
+after the professions hook line when install_professions.py put one there, so the professions' Flaying (that hook) still
+runs and the stock body never does. A professions run after this one puts its hook first, which is the same order. No
+such script or no onUse: reported, nothing written. The file keeps its line ends.
 """
 import os
 import re
@@ -63,6 +70,59 @@ def patch_text(text, conf):
     return out, out != text
 
 
+SKIN_MARK = '-- Chaos: stock skinning off, monsters leave the loot bag (patch_monster_corpses.py)'
+SKIN_LINE = '\tdo return false end ' + SKIN_MARK
+KNIFE = 5908
+PROF_MARK = '-- Chaos professions (tools/install_professions.py)'
+
+
+def skinning_script(data_dir):
+    """path of the script actions.xml names for the obsidian knife, or None"""
+    path = os.path.join(data_dir, 'actions', 'actions.xml')
+    if not os.path.isfile(path):
+        return None
+    for tag in re.findall(r'<action\s[^>]*>', open(path, encoding='utf-8', errors='replace').read()):
+        iid = re.search(r'\bitemid="(\d+)"', tag)
+        script = re.search(r'\bscript="([^"]+)"', tag)
+        if iid and script and int(iid.group(1)) == KNIFE:
+            return os.path.join(data_dir, 'actions', 'scripts', script.group(1))
+    return None
+
+
+def patch_skinning(text):
+    """returns (new text, changed); raises ValueError without an onUse"""
+    if SKIN_MARK in text:
+        return text, False
+    nl = '\r\n' if '\r\n' in text else '\n'
+    lines = text.splitlines(True)
+    at = None
+    for i, l in enumerate(lines):
+        if re.match(r'\s*function\s+onUse\s*\(', l):
+            at = i + 1
+            break
+    if at is None:
+        raise ValueError('no onUse in the skinning script')
+    if at < len(lines) and PROF_MARK in lines[at]:
+        at += 1
+    lines.insert(at, SKIN_LINE + nl)
+    return ''.join(lines), True
+
+
+def skinning_off(data_dir, dry):
+    path = skinning_script(data_dir)
+    if not path or not os.path.isfile(path):
+        return 'stock skinning: no script for item %d in actions.xml, nothing to do' % KNIFE
+    raw = open(path, 'rb').read().decode('latin-1')
+    try:
+        new, changed = patch_skinning(raw)
+    except ValueError as e:
+        return 'stock skinning: %s, skipped' % e
+    if changed and not dry:
+        open(path, 'wb').write(new.encode('latin-1'))
+    return 'stock skinning: off in %s%s' % (os.path.basename(path), (' (changed)' if changed else ' (already off)')
+                                            + (' (dry run)' if dry and changed else ''))
+
+
 def main(argv):
     args = [a for a in argv if not a.startswith('--')]
     dry = '--dry-run' in argv
@@ -93,6 +153,7 @@ def main(argv):
     print('loot bag: item %d is "%s", %d slots, lasts %d s, no remains%s'
           % (conf['bagId'], conf['name'], conf['slots'], conf['seconds'],
              ' (changed)' if changed else ' (already set)') + (' (dry run)' if dry and changed else ''))
+    print(skinning_off(args[0], dry))
     return 0
 
 
