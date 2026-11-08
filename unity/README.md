@@ -745,8 +745,8 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
 - Auto setup: `HelperRotation.Select` picks the class preset for the level, replaces spells the character cannot cast, tops up to 5, puts area spells first and the class ultimate
   (level 1200) in front. `Core/HelperRotationData.cs` is generated from `client/overlay/modules/game_helperrotation/autorotation_data.lua` by
   `luajit unity/tools/gen_helper_rotation_data.lua` (`--check` in the `core` job).
-- Not ported: runes, party and friend heals, Follow, Auto sell, food, exercise, Everfull "follow the carried flask", the potion gate for closed backpacks, shooter profiles, the line-of-sight
-  check (every monster in the 7 x 5 window counts), the Auto Target engine and guard (summons are skipped by creature type), the helper HUD, helper timers window, support spells tab.
+- Not ported (phase 5 track Q added runes, ally heals, food, Everfull held, presets, the Support tab and the HUD: see "Helper extras" below): Follow, Auto sell, exercise, the potion gate for closed backpacks,
+  the line-of-sight check (every monster in the 7 x 5 window counts), the Auto Target engine and guard (summons are skipped by creature type).
 - Typed damage numbers: with the Chaos identity the login now sends capability bit 7 (`0xC0` with wide spell ids). `GameParser.TextMessage` reads u16 percent, u8 type, u32 creature after
   the value pairs when feature 155 is on, and `FxEvent.TypedNumber` carries them. In the live view (`FrontFxDirector`, `FrontLiveFx`) a critical hit is bigger and slower, a condition tick smaller,
   mana drain and mana gain are water coloured, an energy shield hit is energy coloured, every number is scattered by `DamageScatter` (the main client's rolls: shift, speed, drift, the texts of one hit
@@ -887,3 +887,49 @@ connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds,
   the container, panel and size parts of game_chaoslayout; name shaders of other players. The audio and picture loading and the drawing compile (`unity/Client.Check`) but were not run in a Unity player or against a live server.
 - Tests: `Core.Tests/VisualTests.cs` (about 190 checks): the mixer rules and files against `soundlogic.lua` and the module folder, the music rules and hysteresis with the files, the cursed and foot aura messages and
   the strip sizes, decal colours, beams, prints, ground ids against `groundfx_data.lua`, the layout rules, and a session fed with the combat events (cue, flash, stain, shake, ring, wings, kill, chest, footprint).
+## Helper extras and the info windows (O433 phase 5, track Q)
+
+Helper extras (all in the helper window, Ctrl+R; tabs Healing, Shooter, Target, Runes, Allies, Support, More). Rules: `Core/HelperExtras.cs` and `Core/HelperSupport.cs`, loop parts:
+`Core/HelperEngineExtras.cs`, settings: `Core/HelperConfig.cs` (new fields are read with defaults, an older saved text still loads). Same pacing as the main client: the new parts run every 250 ms
+(allies, attack runes, Support) or 1000 ms (food); a rune waits one second per kind (`HelperTimers` channels healRune, attackRune, food); an ally heal has a gap per target (1.2 s) and a budget of
+8 in 10 s; nothing runs in a protection zone and every cast goes through `HelperCasts`.
+- Runes: 2 healing rows on yourself (percent) and 3 attack rows per preset (monsters to hit, health range of the monsters, priority). An attack rune goes on the target while the spell rotation is on,
+  when the monsters in its area reach the count. The rune must be in the equipment or an open bag (the main client's gate for closed backpacks is not ported).
+- Allies: party members below a percent and a list of 5 friends below another; a single-target spell by name (the name is cleaned and quoted), a group spell by count, a healing rune. Your own healing
+  comes first. Players come from the map (`IHelperHostExt.Players`, party shield from the creature).
+- Food: eats a carried food every two minutes. The 10.98 state word has no hungry bit, so only the gap rules.
+- Everfull held (`EverfullHeld`, opcode 116 `held`, `sync` sent when the helper starts): a Health or Mana Potion row follows the carried flask of its slot.
+- Shooter presets: up to 20 named presets of the five slots, the attack rune rows and the Auto Target mode (`HelperConfig.AddProfile`, `SelectProfile`, `RenameProfile`, `DeleteProfile`); the live
+  `Shooter`, `RuneAttack` and `AutoTargetMode` are the selected preset's. Buttons < and > cycle them. The main client's hotkey that cycles presets is not ported.
+- Support: up to 8 support spells (shields, summons, fight buffs, vigils) cast by priority when off cooldown and while the effect is not on. A port of `supportspells.lua`. Unity has no buff bar, so the rule
+  the main client uses when the bar cannot tell applies to every spell: the spell's own duration since our last cast, else at least a minute (or its cooldown). A vigil (a switch) is never cast blind, so
+  it stays unused. A capped summon is cast only below the summon cap, counted from your summons on the map. "Fill from my class" is Auto setup's plan; the Auto setup button of the Shooter tab also fills an
+  empty section. No timer section (the main client's Support absorbed it).
+- Bot HUD (`HelperHudWindow`, no menu entry): a movable window with the rows of the ticked sections (combat, healing, support, player), on while "Show Bot HUD" is ticked in the More tab.
+- helper timers (`game_helpertimers`) is the pure `HelperTimers` class that was already there: no window in the main client either.
+- Not ported: Follow, Auto sell (needs the pouches window of the main client), exercise weapons, the potion gate for closed backpacks, the line-of-sight check, the preset hotkey.
+
+Info windows (none has a hotkey; the top menu opens them: Hunt > DPS Meter, Economy > Codex, System > Help Search; `Unity/Windows/InfoDataWindows.cs`, `Unity/ChaosApp.Info.cs`):
+- DPS meter (`DpsMeterWindow`, `Core/DpsMeter.cs`, opcode 204): bars per skill with total, per second and share; tabs Damage / Healing / Taken / Received; the current fight, the session or one of the last
+  10 fights (< >); party mode; the Combat log switch shows the detail table (hits, crits, average, max, overhealing, element split); Copy puts the summary on the clipboard, To chat writes one line into the chat
+  input; Reset asks twice. The server starts pushing on `open` and stops on `close`, so the window only asks while it is open. Settings per character in PlayerPrefs `chaos.dpsmeter.<name>`.
+- Short numbers (`Core/InfoNumbers.cs`, `ShortNumbers`): `Short`, `Exact` and `In` (the conservative text rule of `client_chaos_numbers`: ids, coordinates, years and times stay as they are). Server text of the
+  kinds 17, 18, 19, 21 and 22 (status, event advance, look) is shortened in `GameParser.TextMessage`; `ShortNumbers.Enabled` turns it off.
+- Names over tall looks (`Core/InfoLift.cs`, table `Core/InfoLiftData.cs`): the name and health bar of a player or an NPC wearing a tall look go up by the lift of its look type, in the classic view.
+  Monsters keep the classic place, as in the main client. The 3D live view places its labels from the figure and is not changed.
+- Data (`unity/tools/gen_info_data.lua`, `--check` in CI, run with luajit or lua5.3): `Resources/Codex.json` (from `codex_data.lua`), `HowItWorks.json`, `HelpSearch.json` and `Core/InfoLiftData.cs`.
+  Rerun it after `server/tools/gen_codex_data.lua`, `gen_howitworks_data.lua`, `gen_guide_data.lua` or a new pair's `gen_info_lift.py`.
+- Codex (`CodexWindow`, `Core/Codex.cs`): 11 tabs, filters (a click on a filter goes to the next option, right-click back), search (every word starts a word of the name or the page), the list and the page
+  (tables with the tier rows that roll at the chosen item level marked, shared sections, links with Back, "Where to find" opens the item finder). The texts are English: the main client translates them
+  through its own key table (`CodexText`), which Unity does not have. The crafting bench's right-click on a modifier calls `ChaosApp.OpenCodex(id)` (`CodexView.IdForMod`).
+- How it works (`HowItWorksWindow`, `Core/HowItWorks.cs`): the card of a feature in en or pt-BR. A `?` button in the title bar of every feature window that has a card (`GameWindow.HowKey`, the table
+  `HowItWorks.UnityWindows`); the first time a character opens such a window the card opens by itself (PlayerPrefs `chaos.howitworks.seen.<name>`, off with the box below the card `chaos.howitworks.auto`).
+- Help search (`HelpSearchWindow`, `Core/HelpSearch.cs`): offline ranking over the cards, the unlock entries and the Codex, the first steps before the player types, snippets in the language chosen. A click
+  opens a card or a Codex entry.
+- Weapon list (`ProficiencyWindow`, `Core/ProficiencyCatalog.cs`): every dat item with a weapon market category and a name, by category with a search. The dat has no weapon type (the main client uses it for
+  items without market data), the perk trees and weapon experience are not in Unity. No menu entry (the main client has none either); it is in the Windows list.
+- Texts: `Core/LocInfo.cs` (pt-BR, merged in `LocStrings`).
+- Tests: `Core.Tests/InfoTests.cs` mirrors the Lua tests of the helper extras, `dpsmath_test.lua`, `numbers_test.lua`, `infolift_core_test.lua`, `howcore_test.lua`, `helpcore_test.lua`, `codexview_test.lua` and
+  `catalogcore_test.lua`, reads the real JSON files, and drives the engine with a fake game (about 300 checks).
+- Not done: the Codex pt-BR texts, the DPS meter's icons, drag and resize of the panel (the window frame moves; size and position are not kept), the 3D label lift, Follow and Auto sell, the buff bar the
+  Support section would read. Nothing here ran against a live server.

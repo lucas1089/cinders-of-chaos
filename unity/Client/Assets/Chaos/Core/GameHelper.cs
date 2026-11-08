@@ -36,6 +36,29 @@ namespace Chaos.Core
             return false;
         }
 
+        /// <summary>Uses a carried item by itself (0x82: food) from the equipment or an open bag. False when no such item is at hand.</summary>
+        public bool UseCarriedItem(int clientId)
+        {
+            if (conn == null) return false;
+            for (int slot = 1; slot < parser.Inventory.Length; slot++)
+            {
+                var it = parser.Inventory[slot];
+                if (it != null && it.Id == clientId) { UseItem(InventoryPos(slot), (ushort)clientId, 0); return true; }
+            }
+            foreach (var kv in parser.Containers)
+            {
+                var c = kv.Value;
+                for (int i = 0; i < c.Items.Count; i++)
+                {
+                    if (c.Items[i] == null || c.Items[i].Id != clientId) continue;
+                    int slot = c.FirstIndex + i;
+                    UseItem(ContainerPos(c.Id, slot), (ushort)clientId, (byte)slot, (byte)c.Id);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>How many of the item are in the equipment and the open bags (a non-stackable item counts one each).</summary>
         public int CountItem(int clientId)
         {
@@ -52,7 +75,7 @@ namespace Chaos.Core
     }
 
     /// <summary>IHelperHost over a GameSession: the stats, the creatures around and the actions of the main client's helper.</summary>
-    public sealed class SessionHelperHost : IHelperHost
+    public sealed class SessionHelperHost : IHelperHost, IHelperHostExt
     {
         public const int StateHaste = 64, StateProtectionZone = 16384;
         readonly GameSession s;
@@ -103,5 +126,29 @@ namespace Chaos.Core
         public void Turn(Dir d) { s.Turn(d); }
         public int ItemCount(int clientId) => s.CountItem(clientId);
         public void UseOnSelf(int clientId) { s.UseItemOnCreature(clientId, P.W.PlayerId); }
+
+        // ---- IHelperHostExt (track Q): allies, runes on a creature, food, summons
+        public int Vocation => s.Spells.Vocation != 0 ? s.Spells.Vocation : P.W.PlayerVocation;
+        public bool Hungry => false;   // the 10.98 state word (0xA2) has no hungry bit: food goes by the gap between meals
+        public bool UseOnCreature(int clientId, uint creature) => s.UseItemOnCreature(clientId, creature);
+        public bool UseItem(int clientId) => s.UseCarriedItem(clientId);
+
+        public IList<HelperPlayer> Players()
+        {
+            var o = new List<HelperPlayer>();
+            foreach (var c in P.W.Creatures.Values)
+            {
+                if (c.Type != 0 || c.HealthPercent <= 0) continue;
+                o.Add(new HelperPlayer { Id = c.Id, Name = c.Name, Health = c.HealthPercent, Position = c.Position, Shield = c.Shield, IsSelf = c.Id == P.W.PlayerId });
+            }
+            return o;
+        }
+
+        public IList<string> OwnSummons()
+        {
+            var o = new List<string>();
+            foreach (var c in P.W.Creatures.Values) if (c.Type == 3 && c.HealthPercent > 0) o.Add(c.Name);
+            return o;
+        }
     }
 }

@@ -518,6 +518,7 @@ namespace Chaos.Client
                     if (x < map.x || x > map.xMax || y < map.y || y > map.yMax + tile * 0.5f) continue;
                     x -= map.x;
                     y -= map.y;
+                    y -= InfoLift.Scaled(c, tile);   // names over tall looks (Core/InfoLift.cs)
                     var col = c.Type == 1 ? new Color(1f, 0.6f, 0.6f) : c.Type == 2 ? new Color(0.6f, 0.9f, 1f) : new Color(0.6f, 1f, 0.6f);
                     var hp = c.HealthPercent > 50 ? new Color(0.2f, 0.85f, 0.2f) : c.HealthPercent > 20 ? new Color(0.95f, 0.8f, 0.1f) : new Color(0.9f, 0.15f, 0.1f);
                     Rect nr = new Rect(x - 100, y - barH - 22, 200, 18);

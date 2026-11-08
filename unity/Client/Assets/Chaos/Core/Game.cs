@@ -596,6 +596,7 @@ namespace Chaos.Core
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
             InitItems();
             InitSocial();   // Core/GameSocial.cs
+            InitInfo();   // Core/GameInfo.cs
             InitEndgame();
             InitCollect();
             InitWorldUtils();

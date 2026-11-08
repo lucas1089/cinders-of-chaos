@@ -118,6 +118,7 @@ cd server && luajit tools/gen_guide_data.lua                  # -> client game_h
 cd server && lua5.3 tools/gen_guide_data.lua --check
 python3 -I server/tools/weapon_sim.py --power --check             # -> data/scripts/chaos/weapon_power_config.lua (--power --write)
 luajit unity/tools/gen_tree_data.lua                          # -> unity/Client/Assets/Chaos/Resources/PassiveTree.json (Unity passive tree layout from client treedata; --check in CI)
+luajit unity/tools/gen_info_data.lua                          # -> unity/Client/Assets/Chaos/Resources/Codex.json, HowItWorks.json, HelpSearch.json and Core/InfoLiftData.cs (Unity info windows from the client data files; --check in CI, also lua5.3)
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
 python3 -I website/tools/gen_streamer_kit.py                  # -> website plugins/chaos/assets/streamer: OBS overlays, Twitch panels, banners, Discord icon (--check in CI with the fx venv; O320)
 python3 -I website/tools/gen_promo_kit.py                     # -> website plugins/chaos/assets/promo: beta and launch posts, story, class cards, forum banners (texts and dates: website/tools/promo_source.json; --check in CI with the fx venv)

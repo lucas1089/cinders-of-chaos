@@ -6,8 +6,8 @@
 // shooter 100 ms); every cast goes through HelperTimers (per channel at most 4 casts a second, the same words not within 500 ms; a potion at
 // most every 600 ms) and HelperCasts (a cast waits for the server's cooldown packet, a refused one backs off). One shooter cast per tick.
 // A hit taken heals at once (OnHealthChanged), at most every 100 ms. When the server sent nothing for 2.5 s nothing is sent until it is back.
-// Not ported (see unity/README.md "Combat helper"): runes, party and friend heals, Follow, Auto sell, food, exercise, the Everfull
-// "follow the carried flask", the potion gate for closed backpacks, the helper HUD, shooter profiles, the line-of-sight check.
+// Track Q added runes, party and friend heals, food, the Everfull held flask, the Support section and shooter profiles (HelperEngineExtras.cs).
+// Not ported (see unity/README.md "Combat helper"): Follow, Auto sell, exercise, the potion gate for closed backpacks, the line-of-sight check.
 using System;
 using System.Collections.Generic;
 
@@ -44,7 +44,7 @@ namespace Chaos.Core
         void UseOnSelf(int clientId);
     }
 
-    public sealed class HelperEngine
+    public sealed partial class HelperEngine
     {
         public const double TickMs = 50, FreezeMs = 2500, FreezeResumeMs = 1500, SummonsRadius = 6;
         public const double EveryHeal = 250, EveryMana = 100, EveryHaste = 500, EveryTarget = 250, EveryShooter = 100, QuickHealGapMs = 100;
@@ -108,8 +108,9 @@ namespace Chaos.Core
             int id = HelperLogic.PickHeal(Config.Heals, hp, sid => Ready(Book.ById(sid), false));
             if (id > 0) { var s = Book.ById(id); if (s != null) Cast(s, HelperTimers.Heal); }
             string kind;
-            int potion = HelperPotions.Pick(Config.Potions, hp, mp, pid => PotionAvailable(pid), out kind);
+            int potion = HelperPotions.Pick(Config.Potions, hp, mp, pid => PotionAvailable(pid), out kind, Held != null ? (Func<int, int>)(pid => Held.Resolve(pid, Host.Level)) : null);
             if (potion > 0) UsePotion(potion);
+            RuneHealTick(hp);
         }
 
         bool PotionAvailable(int id)
@@ -295,10 +296,14 @@ namespace Chaos.Core
             if (Due("heal", EveryHeal)) HealTick();
             if (Due("mana", EveryMana)) TrainingTick();
             if (Due("haste", EveryHaste)) HasteTick(pz);
+            if (Due("ally", EveryAlly)) AllyTick(pz);
+            if (Due("routine", EveryRoutine)) FoodTick();
+            if (Due("support", EverySupport)) SupportTick(pz);
             if (Why == null)
             {
                 if (Due("target", EveryTarget)) TargetTick();
                 if (Due("shooter", EveryShooter)) ShooterTick();
+                if (Due("runes", EveryRunes)) RunesTick();
             }
         }
 
@@ -353,6 +358,7 @@ namespace Chaos.Core
             LockedTarget = 0;
             lastTick = -1; frozenUntil = 0; pzWas = false;
             lastRun.Clear();
+            ResetExtras();
         }
     }
 
