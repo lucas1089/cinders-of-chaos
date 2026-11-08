@@ -39,10 +39,11 @@ namespace Chaos.Core
         public static bool InParty(int s) => IsLeader(s) || IsMember(s);
         /// <summary>The leader switched shared experience on (it works, or a member does not meet its rules yet).</summary>
         public static bool SharedEnabled(int s) => s == BlueShared || s == YellowShared || s == BlueNoSharedBlink || s == YellowNoSharedBlink;
-        /// <summary>This creature invited you (white and blue): joining is possible.</summary>
-        public static bool InvitedYou(int s) => s == WhiteBlue;
-        /// <summary>You invited this creature (white and yellow): the invitation can be revoked.</summary>
-        public static bool InvitedByYou(int s) => s == WhiteYellow;
+        /// <summary>This creature invited you: joining is possible. The server (Player::getPartyShield, `player->isInviting(this)`) shows the inviting leader to the
+        /// invited player as white and yellow. Found by the live check (O433 phase 21): the first version had the two the other way round.</summary>
+        public static bool InvitedYou(int s) => s == WhiteYellow;
+        /// <summary>You invited this creature: the invitation can be revoked. The server shows the invited player to the leader as white and blue (`isInviting(player)`).</summary>
+        public static bool InvitedByYou(int s) => s == WhiteBlue;
     }
 
     public enum PartyAction { Invite, Join, Revoke, PassLeadership, Leave, ShareOn, ShareOff }

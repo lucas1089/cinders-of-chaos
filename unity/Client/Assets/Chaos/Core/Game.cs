@@ -314,6 +314,7 @@ namespace Chaos.Core
                 case 0xBF: FloorDown(r); break;
                 case 0x7D: case 0x7E: case 0x7F: case 0xD2: case 0xD3: case 0xD4: case 0xF0: case 0xF1: PlayMessage(op, r); break;   // player trade, VIP list, quest log (GamePlay.cs)
                 case 0xDC: r.U8(); break;
+                case BaseTooltip.ServerOpcode: { var tip = BaseTooltip.Read(r); LastTooltip = tip; TooltipCount++; TooltipRead(tip); break; }   // stock item tooltip data (Core/BaseTooltip.cs)
                 case 0xF5: ItemList(r); break;   // the list of items the player may own (Player::onCreatureAppear sendItems, right after the login's 0x17)
                 case 0xDD: ReadPos(r); r.U8(); r.Str(); break;
                 case 0xF3: r.U16(); r.Str(); r.U8(); break;
@@ -339,6 +340,11 @@ namespace Chaos.Core
 
         /// <summary>How many entries the last 0xF5 listed (the 11 slot types and the inventory item ids of the server's items.xml).</summary>
         public int ItemListCount;
+
+        /// <summary>The entries of the last 0x9E (the stock item tooltip, Core/BaseTooltip.cs) and how many came in all.</summary>
+        public List<TooltipEntry> LastTooltip;
+        public int TooltipCount;
+        public Action<List<TooltipEntry>> TooltipRead = delegate { };
 
         /// <summary>0xF5 (server ProtocolGame::sendItems): u16 count, then per entry u16 client id, u8 0, u16 1. Nothing in Unity uses it (the market and the
         /// stash are the Chaos modules); it is read so the rest of the login packet is not lost: before this the parser stopped at it with "unknown opcode".</summary>
@@ -366,11 +372,15 @@ namespace Chaos.Core
             return (cr != null ? cr.Position : default, -1, cr);
         }
 
+        /// <summary>0x6D messages whose creature was not where the message says it came from (stack position or creature id unknown): the move is dropped.
+        /// A walk or a floor change that left the client's idea of the player's tile wrong shows here (the live check's scenarios read it).</summary>
+        public int MoveUnmatched;
+
         void MoveCreature(ByteReader r)
         {
             var (from, sp, c) = Mapped(r);
             var to = ReadPos(r);
-            if (c == null) return;
+            if (c == null) { MoveUnmatched++; return; }
             W.RemoveCreature(c);
             from = c.Position;
             W.AddThing(to, new Thing { Creature = c });
@@ -864,6 +874,13 @@ namespace Chaos.Core
             var r = AwareRange.Clamp(width, height);
             conn.Send(WirePackets.ChangeAwareRange(r.Width, r.Height));
             return r;
+        }
+
+        /// <summary>Asks the server for the stock tooltip of an item we see (0x9F kind 1) or, with a null position, of a sprite id and count (kind 0). The
+        /// answer is 0x9E (GameParser.LastTooltip, TooltipRead).</summary>
+        public void RequestTooltip(Pos? p, ushort spriteId, ushort count, byte stackPos = 0)
+        {
+            conn?.Send(p.HasValue ? BaseTooltip.RequestItem(p.Value, spriteId, stackPos) : BaseTooltip.RequestVirtual(spriteId, count));
         }
 
         public void Turn(Dir d)

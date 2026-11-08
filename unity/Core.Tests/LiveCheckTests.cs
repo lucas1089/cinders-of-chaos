@@ -23,6 +23,9 @@ namespace Chaos.Core.Tests
         public static void Run(Action<bool, string> check)
         {
             ItemList(check);
+            Tooltip(check);
+            PartyShields(check);
+            FloorChanges(check);
             Failures(check);
             Otb(check);
             Plan(check);
@@ -57,6 +60,93 @@ namespace Chaos.Core.Tests
             var cut = new ByteWriter().U8(0x1D).U8(0xF5).U16(2).U16(2001).U8(0).ToArray();   // the second entry is missing
             check(Throws<ProtocolException>(() => p3.Parse(cut)), "0xF5: a cut list throws");
             check(p3.Failures.Count == 1 && p3.Failures[0].Op == 0xF5 && p3.Failures[0].Start == 1 && !p3.Failures[0].Unknown, "0xF5: the failure names the opcode and its offset");
+        }
+
+        // ------------------------------------------------------------------------------------------------ 0x9E
+        static void Tooltip(Action<bool, string> check)
+        {
+            // server ProtocolGame::sendTooltipData: 0x9E, u8 count, per entry u8 id, u8 1 + u8 negative + u32 abs + u32 type, or u8 0 + string
+            var w = new ByteWriter().U8(0x9E).U8(4);
+            w.U8(3).U8(0).Str("test blade");                                  // name (text)
+            w.U8(18).U8(1).U8(0).U32(1).U32(0xFFFFFFFF);                      // count (number, no type)
+            w.U8(1).U8(1).U8(0).U32(35).U32(0xFFFFFFFF);                      // attack 35
+            w.U8(14).U8(1).U8(1).U32(2).U32(5);                               // a skill entry, negative, type 5
+            w.U8(0x1D).U8(0x15).Str("after the tooltip");                     // more messages in the same packet
+            var p = NewParser();
+            string text = null;
+            int pings = 0, got = 0;
+            p.Text = t => text = t;
+            p.Pinged = () => pings++;
+            p.TooltipRead = l => got = l.Count;
+            bool threw = false;
+            try { p.Parse(w.ToArray()); } catch (ProtocolException) { threw = true; }
+            check(!threw && p.FailureCount == 0, "0x9E: the tooltip data is read");
+            var t0 = p.LastTooltip;
+            check(t0 != null && t0.Count == 4 && got == 4 && p.TooltipCount == 1, "0x9E: four entries, the callback ran");
+            check(t0 != null && BaseTooltip.Name(t0) == "test blade" && !t0[0].IsNumber, "0x9E: the name is a text entry");
+            check(t0 != null && t0[1].IsNumber && t0[1].Value == 1 && t0[1].Type == -1, "0x9E: a number without a type reads as -1");
+            check(t0 != null && t0[2].Value == 35 && t0[3].Value == -2 && t0[3].Type == 5, "0x9E: the negative flag and the type are kept");
+            check(pings == 1 && text == "after the tooltip", "0x9E: the messages after it in the same packet are read");
+
+            // an empty list, a cut list, a bad entry kind
+            var p2 = NewParser();
+            p2.Parse(new ByteWriter().U8(0x9E).U8(0).ToArray());
+            check(p2.LastTooltip != null && p2.LastTooltip.Count == 0 && p2.FailureCount == 0, "0x9E: an empty list");
+            var p3 = NewParser();
+            check(Throws<ProtocolException>(() => p3.Parse(new ByteWriter().U8(0x1D).U8(0x9E).U8(2).U8(3).U8(0).Str("one").ToArray())), "0x9E: a cut list throws");
+            check(p3.Failures.Count == 1 && p3.Failures[0].Op == 0x9E && p3.Failures[0].Start == 1 && !p3.Failures[0].Unknown, "0x9E: the failure names the opcode and its offset");
+            var p4 = NewParser();
+            check(Throws<ProtocolException>(() => p4.Parse(new ByteWriter().U8(0x9E).U8(1).U8(3).U8(7).ToArray())), "0x9E: an entry kind that is neither number nor text throws");
+
+            // the requests (server parseTooltip)
+            var rv = BaseTooltip.RequestVirtual(2160, 3);
+            check(rv.Length == 6 && rv[0] == 0x9F && rv[1] == 0 && rv[2] == 0x70 && rv[3] == 0x08 && rv[4] == 3, "0x9F kind 0: sprite id and count");
+            var ri = BaseTooltip.RequestItem(new Pos(0xFFFF, 3, 0), 2160, 1);
+            check(ri.Length == 10 && ri[0] == 0x9F && ri[1] == 1 && ri[2] == 0xFF && ri[3] == 0xFF && ri[4] == 3 && ri[5] == 0 && ri[6] == 0 && ri[7] == 0x70 && ri[8] == 0x08 && ri[9] == 1,
+                  "0x9F kind 1: position, sprite id, stack position");
+        }
+
+        // ------------------------------------------------------------------------------------------------ party shields
+        // found 2026-11-08 (phase 21, a real party on a local server): the server shows the inviting leader to the invited player as white and yellow (1) and the
+        // invited player to the leader as white and blue (2) (Player::getPartyShield); the menu rules had them the other way round, so Join never showed.
+        static void PartyShields(Action<bool, string> check)
+        {
+            var p = NewParser();
+            var w = p.W;
+            var leader = new Creature { Id = 0x10000001, Name = "Leader", Type = 0 };
+            w.AddThing(new Pos(100, 100, 7), new Thing { Creature = leader });
+            w.Creatures[leader.Id] = leader;
+            p.Parse(new ByteWriter().U8(0x91).U32(leader.Id).U8(1).ToArray());   // what the invited player is sent for the leader
+            check(leader.Shield == 1, "0x91: the shield byte is kept (" + leader.Shield + ")");
+            check(PartyShield.InvitedYou(leader.Shield) && !PartyShield.InvitedByYou(leader.Shield), "party shield 1 (white and yellow) means the creature invited us");
+            check(PartyMenu.For(PartyShield.None, 1).Contains(PartyAction.Join), "party menu: the leader's white and yellow shield offers Join");
+            check(PartyMenu.For(PartyShield.Yellow, 2).Contains(PartyAction.Revoke) && !PartyMenu.For(PartyShield.Yellow, 2).Contains(PartyAction.Join), "party menu: the invited player's white and blue shield offers Revoke to the leader");
+            check(!PartyMenu.For(PartyShield.None, 2).Contains(PartyAction.Join), "party menu: white and blue does not offer Join");
+        }
+
+        // ------------------------------------------------------------------------------------------------ floor changes and block flags of items.otb
+        static void FloorChanges(Action<bool, string> check)
+        {
+            var o = new List<byte> { 0, 0, 0, 0 };
+            o.Add(0xFE); o.Add(0);
+            o.AddRange(new byte[] { 0, 0, 0, 0, 1, 4, 0, 1, 0, 0, 0 });
+            Node(o, 1, 0, 300, 400);                 // a stair the xml names (floorchange down)
+            Node(o, 1, 1u << 9, 301, 401);           // a stair by the otb flag (north)
+            Node(o, 1, 0, 302, 402);                 // a plain floor
+            Node(o, 5, 1u << 0, 303, 403);           // blocks solid
+            Node(o, 5, 1u << 2, 304, 404);           // blocks path finding only
+            Node(o, 5, 1u << 1, 305, 405);           // blocks missiles
+            o.Add(0xFF);
+            var otb = o.ToArray();
+            string xml = "<items>\n<item id=\"300\" name=\"stairs\">\n<attribute key=\"floorchange\" value=\"Down\" />\n</item>\n<item id=\"302\" name=\"floor\" />\n" +
+                         "<item fromid=\"310\" toid=\"312\" name=\"ramp\"><attribute key=\"floorchange\" value=\"south\" /></item>\n</items>";
+            var fc = OtbDat.FloorChanges(xml, otb);
+            check(fc.TryGetValue(400, out string v) && v == "down", "floor changes: the xml value, lower case, by client id");
+            check(fc.TryGetValue(401, out v) && v == "north", "floor changes: the otb flag bits count");
+            check(!fc.ContainsKey(402) && !fc.ContainsKey(310), "floor changes: a plain item, and an id range the otb lacks, give none");
+            var dat = OtbDat.Build(otb);
+            check(dat.Item(403).NotWalkable && !dat.Item(403).BlockPath && dat.Item(404).BlockPath && !dat.Item(404).NotWalkable && dat.Item(405).BlockMissile && !dat.Item(402).NotWalkable,
+                  "otb: the block flags set NotWalkable, BlockPath and BlockMissile");
         }
 
         // ------------------------------------------------------------------------------------------------ the failure record

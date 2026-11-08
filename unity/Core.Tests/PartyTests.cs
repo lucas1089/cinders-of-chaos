@@ -47,11 +47,11 @@ namespace Chaos.Core.Tests
             // right-click rules of the main client
             Func<int, int, string> menu = (mine, target) => string.Join(",", PartyMenu.For(mine, target));
             check(menu(PartyShield.None, PartyShield.None) == "Invite", "party menu: no party, a free player: invite");
-            check(menu(PartyShield.None, PartyShield.WhiteBlue) == "Join", "party menu: a player who invited us: join");
+            check(menu(PartyShield.None, PartyShield.WhiteYellow) == "Join", "party menu: a player who invited us: join");
             check(menu(PartyShield.None, PartyShield.Blue) == "", "party menu: not in a party, another party's member: nothing");
             check(menu(PartyShield.Yellow, PartyShield.None) == "Invite,ShareOn,Leave", "party menu: leader, free player: invite, shared exp on, leave");
             check(menu(PartyShield.YellowShared, PartyShield.Blue) == "PassLeadership,ShareOff,Leave", "party menu: leader, member: pass leadership");
-            check(menu(PartyShield.Yellow, PartyShield.WhiteYellow) == "Revoke,ShareOn,Leave", "party menu: leader, invited player: revoke");
+            check(menu(PartyShield.Yellow, PartyShield.WhiteBlue) == "Revoke,ShareOn,Leave", "party menu: leader, invited player: revoke");
             check(menu(PartyShield.Blue, PartyShield.None) == "Leave", "party menu: plain member can only leave");
             check(PartyMenu.Label(PartyAction.Leave) == "Leave Party", "party menu: labels are the Loc keys");
         }
