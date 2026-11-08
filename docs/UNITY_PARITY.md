@@ -5,7 +5,7 @@ This file lists every module of the main client (`client/overlay/modules/`, 169 
 It also lists the base protocol opcodes the Unity parser lacks and a plan in three phases.
 Edit the module rows by hand when a status changes. A module row changes in the same commit as its Unity window.
 
-Counts: 152 done, 1 partial, 0 missing, 16 not applicable.
+Counts: 153 done, 0 partial, 0 missing, 16 not applicable.
 By priority: 13 P0 core loop, 30 P1 needed to play, 83 P2 systems, 27 P3 polish, 16 N/A.
 
 ## Who Unity is on the server
