@@ -107,6 +107,7 @@ namespace Chaos.Client
             }
             items.Add(new KeyValuePair<string, Action>("", null));
             string name = c.Name;
+            if (Antibot.CanReport(true, c.Id == (world?.Player?.Id ?? 0))) items.Add(new KeyValuePair<string, Action>(Loc.T("Report Player"), () => OpenReport(name)));
             items.Add(new KeyValuePair<string, Action>(Loc.T("Copy Name"), () => GUIUtility.systemCopyBuffer = name));
             ShowMenu(MouseUi(), items);
         }

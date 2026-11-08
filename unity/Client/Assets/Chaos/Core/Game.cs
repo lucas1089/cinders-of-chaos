@@ -562,6 +562,9 @@ namespace Chaos.Core
         public readonly SpellBook Spells;
         /// <summary>The party frames (opcode 235) and the party packets.</summary>
         public readonly PartyFrames Party;
+        /// <summary>The HUD models (toasts, buff bar, cast bar, shield, chi, monster bar, anti-bot, options): Core/Hud.cs.</summary>
+        public readonly HudState Hud;
+        int hudAskedLevel;
         bool featuresLogged, spellsAsked, partyOpened;
         double enteredAt = -1;
 
@@ -574,6 +577,7 @@ namespace Chaos.Core
             Ext.Log = m => Log(m);
             Spells = new SpellBook(Ext) { Clock = () => Now, Say = Say, LevelNow = () => parser.Level, MagicLevelNow = () => parser.MagicLevel };
             Party = new PartyFrames(Ext) { Clock = () => Now, Packet = payload => conn?.Send(payload) };
+            Hud = new HudState(Ext, () => Now, () => world.PlayerVocation);
             parser.SpellCooldown = (id, ms) => Spells.OnSpellCooldown(id, ms);
             parser.GroupCooldown = (g, ms) => Spells.OnGroupCooldown(g, ms);
             parser.ExtendedOpcode = OnExtended;
@@ -672,6 +676,10 @@ namespace Chaos.Core
             if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
             // the party frames: watch a moment after the login (the main client waits 400 ms)
             if (!partyOpened && enteredAt >= 0 && Now - enteredAt > 600) { partyOpened = true; Party.Open(); }
+            // the HUD: the options and the language go out a moment after the login; the timers run every frame
+            if (enteredAt >= 0 && Now - enteredAt > 800) Hud.Hello(Loc.Language);
+            if (Hud.Options.LevelChanged(parser.Level) && parser.Level != hudAskedLevel) { hudAskedLevel = parser.Level; Hud.Options.SendHello(Loc.Language); }
+            Hud.Tick(Now);
             if (conn.Closed && Closed == null) Closed = conn.Error ?? "The server closed the connection.";
             if (stepSent >= 0 && Now - stepSent > 1500) stepSent = -1;   // no answer to a step: let the next one go
         }

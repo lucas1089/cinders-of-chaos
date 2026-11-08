@@ -548,6 +548,7 @@ namespace Chaos.Client
             Rect outR = LogoutRect(w);
             uiRects.Add(Scaled(outR, scale));
             if (GUI.Button(outR, "Log out")) { session?.Logout(); Leave("Logged out."); }
+            HudGui(w, h, scale);     // toasts, buffs, monster and cast bars, anti-bot (ChaosApp.Hud.cs)
             PartyGui(w, h, scale);   // the right-click menu and the party invitation, over the windows
         }
 
