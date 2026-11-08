@@ -84,6 +84,28 @@ namespace Chaos.Client
             return TourArt.FromDemo(DemoIds.Synthetic()).Probe(dat);
         }
 
+        /// <summary>Starts the fake game server on the real art and logs the app in to it (shared by the demo tour and the window smoke run).</summary>
+        static FakeGameServer TourStartServer(ChaosApp app)
+        {
+            var art = TourChooseArt(out app.dat, out app.spr, out app.atlas, out string source);
+            Debug.Log("chaos demo tour: art " + source);
+            var server = new FakeGameServer(art);
+            server.Begin();
+            // the app reads the server's key, RSA modulus and wire from the environment (GuardKey, RsaModulus, IdentityChoice)
+            var hex = new StringBuilder();
+            foreach (byte b in server.GuardKey) hex.Append(b.ToString("x2"));
+            Environment.SetEnvironmentVariable("CHAOS_CLIENT_KEY", hex.ToString());
+            Environment.SetEnvironmentVariable("CHAOS_RSA_PUBLIC", server.RsaModulus);
+            Environment.SetEnvironmentVariable("CHAOS_UNITY_IDENTITY", "extended");
+            app.host = "127.0.0.1";
+            app.port = server.Port.ToString();
+            app.account = "demo";
+            app.password = "demo";
+            Debug.Log("chaos demo tour: fake server on port " + server.Port + ", logging in");
+            app.DoLogin();
+            return server;
+        }
+
         sealed class TourDirector : MonoBehaviour
         {
             enum Phase { Start, Login, Entering, Settle, Record, Done }
@@ -182,22 +204,7 @@ namespace Chaos.Client
                 Time.captureFramerate = TourFps;
                 UnityEngine.Screen.SetResolution(TourWidth, TourHeight, false);
                 GameSession.TestClock = () => Clock;
-                var art = TourChooseArt(out app.dat, out app.spr, out app.atlas, out string source);
-                Debug.Log("chaos demo tour: art " + source);
-                server = new FakeGameServer(art);
-                server.Begin();
-                // the app reads the server's key, RSA modulus and wire from the environment (GuardKey, RsaModulus, IdentityChoice)
-                var hex = new StringBuilder();
-                foreach (byte b in server.GuardKey) hex.Append(b.ToString("x2"));
-                Environment.SetEnvironmentVariable("CHAOS_CLIENT_KEY", hex.ToString());
-                Environment.SetEnvironmentVariable("CHAOS_RSA_PUBLIC", server.RsaModulus);
-                Environment.SetEnvironmentVariable("CHAOS_UNITY_IDENTITY", "extended");
-                app.host = "127.0.0.1";
-                app.port = server.Port.ToString();
-                app.account = "demo";
-                app.password = "demo";
-                Debug.Log("chaos demo tour: fake server on port " + server.Port + ", logging in");
-                app.DoLogin();
+                server = TourStartServer(app);
                 phase = Phase.Login;
             }
 

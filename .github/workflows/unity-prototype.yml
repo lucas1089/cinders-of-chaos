@@ -219,6 +219,14 @@ jobs:
             rc_tour=$?
             echo "demo tour exit code: $rc_tour"
           fi
+          # the window smoke run (unity/README.md "Window smoke run"): a second, short player run in its own process (a crash there cannot touch the tour
+          # video). It logs in to the same fake server, opens every window one at a time and writes window_smoke.json and window_smoke_sheet_N.png.
+          # A report, not a gate: its exit code is only printed.
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" "$exe" \
+            -force-glcore -screen-width 1280 -screen-height 720 -screen-fullscreen 0 \
+            -logFile "$out/player_smoke.log" -chaosWindowSmoke "$out"
+          rc_smoke=$?
+          echo "window smoke exit code: $rc_smoke"
           set -e
           echo "player exit code: $rc"
           grep "chaos demo tour" "$out/player.log" "$out/player_tour.log" 2>/dev/null || true
@@ -239,6 +247,37 @@ jobs:
             fi
           else
             echo "::warning::no demo tour frames: the log lines 'chaos demo tour' above say why"
+          fi
+          # the window smoke report: the summary line of the player, then every window with a problem (exception, IMGUI layout error, logged error, empty or
+          # off-screen rect). It never fails the job; the json and the sheets go into the hd2d-shots artifact.
+          grep "chaos window smoke" "$out/player_smoke.log" 2>/dev/null || true
+          if [ -s "$out/window_smoke.json" ]; then
+            python3 -I - "$out/window_smoke.json" <<'PY' || true
+          import json, sys
+          d = json.load(open(sys.argv[1]))
+          s = d["summary"]
+          print("window smoke: %d windows, %d with problems (%d exceptions, %d layout errors, %d logged errors, %d off screen or empty)"
+                % (s["windows"], s["withErrors"], s["exceptions"], s["layoutErrors"], s["loggedErrors"], s["offScreen"]))
+          for w in d["windows"]:
+              flags = []
+              if w["offScreen"]:
+                  flags.append("off screen")
+              if w["zeroSize"]:
+                  flags.append("empty rect")
+              if not w["exceptions"] and not flags:
+                  continue
+              print("  %s (%d frames)%s" % (w["name"], w["frames"], ": " + ", ".join(flags) if flags else ""))
+              for x in w["exceptions"]:
+                  print("    [%s x%d] %s | %s" % (x["kind"], x["count"], x["message"], x["stack"]))
+          for x in d.get("background", []):
+              print("  (between windows) [%s x%d] %s | %s" % (x["kind"], x["count"], x["message"], x["stack"]))
+          if s["withErrors"]:
+              print("::warning::window smoke: %d of %d windows have problems (a report, not a gate; see the step log and window_smoke.json in hd2d-shots)" % (s["withErrors"], s["windows"]))
+          PY
+            ls "$out"/window_smoke_sheet_*.png 2>/dev/null | wc -l | xargs echo "window smoke sheets:"
+          else
+            echo "::warning::no window_smoke.json: the log lines 'chaos window smoke' above say why"
+            tail -n 40 "$out/player_smoke.log" 2>/dev/null || true
           fi
           if [ ! -s "$out/classic.png" ] || [ ! -s "$out/hd2d.png" ]; then
             echo "::warning::HD-2D screenshots failed (exit $rc); last lines of the player log follow"

@@ -16,6 +16,8 @@ namespace Chaos.Client
         public override KeyCode Hotkey => KeyCode.L;
         protected override Rect Place(float w, float h) => new Rect(w / 2 - 170, Mathf.Max(8f, h / 2 - 280), 340, 560);
         public override void Reset() { loaded = false; }
+        /// <summary>Opens the window on a page (the window smoke run, ChaosApp.Smoke.cs).</summary>
+        public void ShowPage(int p) { page = p; Open = true; }
 
         public override void Tick(ChaosApp app)
         {
