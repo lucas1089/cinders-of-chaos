@@ -80,6 +80,7 @@ namespace Chaos.Core.Tests
             Phase6VTests.Run,
             Phase7XTests.Run,
             WireAuditTests.Run,
+            LiveCheckTests.Run,
             Phase7YTests.Run,
             Phase7QTests.Run,
             Phase7ZTests.Run,

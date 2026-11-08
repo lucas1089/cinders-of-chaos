@@ -16,7 +16,7 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
   `server/tools/loadtest.py` proves it: OS 10 and no markers, and the Chaos modules talk to its bots.
 - Markers `u16 0` (identity Extended, the default): plain 10.98 wire. No feature list, plain outfits, one 0x64 map, no item attributes, no compression.
 - Markers of the main client (identity Chaos, `CHAOS_UNITY_IDENTITY=chaos`): feature list 0x43, outfits with wings, aura and shader, 0x4B floors, item attributes (feature 126), 16-bit spell ids (feature 152).
-  Parsed and tested on a fake server. Not yet run against a live server.
+  Parsed and tested on a fake server. Run against a live local server on 2026-11-08 (`unity/README.md` "Live check (O433)"): feature list, 0x4B floors and deflated packets read with no error.
   The server may deflate packets for this identity (config `packetCompression`, src-patch 0069): `Core/Inflate.cs` inflates them, with the size cap of base patch 0131.
   The aware range of 0x42 (default 17 x 13, up to 29 x 21) is read by every map message. Wire audit: `unity/README.md` "Wire audit".
 - Client version word `0x4343 << 16 | build`, the guard handshake on 189 and the hello on 190 are done. The real guard key is never embedded by default.
@@ -227,6 +227,8 @@ Built from the 10.98 opcode table the main client parses. The engine source is n
 `GameSession` logs `parse: unknown opcode 0xNN` for every opcode it cannot read and the rest of that packet is lost.
 Track B adds 0x83, 0x84, 0x85 and 0xB4 detail in parallel. They are not listed as missing here.
 
+Live check 2026-11-08 (`unity/Core.LiveCheck`, both identities, a local server): login, entry and 8 of 8 steps in 8 directions confirmed by the server; every packet the server sent in 30 s parsed (23 types Extended, 24 Chaos, 0 failures); 61 of the 63 extended opcode requests answered with JSON the Core handlers read (96: no server script, 120: staff only), 11 of 12 session requests answered (228 answers only inside a rift), 0 handler exceptions. One real gap found and fixed: 0xF5 (sendItems, after the login) was unknown and cut the login packet short. Server opcodes without a case in the parser after the fix: 0x9E (item tooltip, sent on request only, Unity uses opcode 242) and 0xF6 to 0xF9 (base market, unused). Base module opcodes the server pushes that Unity ignores: 89, 92, 99, 106, 181. Left open: death, party play, NPC trade, stairs and holes, rifts and the item tooltip were not exercised.
+
 Server to client, not read by `GameParser`:
 
 | Opcode | Meaning | Needed for | Prio |
@@ -237,6 +239,7 @@ Server to client, not read by `GameParser`:
 | 0xB6 | walk wait | smoother walking on slow ground | P2 |
 | 0xB7, 0xB8 | unjustified points, PvP situation | PvP skull display | P2 |
 | 0xF6 to 0xF9 | base market | none (Chaos market uses opcode 221) | P3 |
+| 0x9E | tooltip data, sent only when the client asks | none (Unity asks opcode 242) | P3 |
 | 0xDF, 0xEE | coin and resource balance | base store, resources | P2 |
 
 Inside packets Unity reads, it skips or ignores: 0x9F spell list body (the class byte is read, base patch 0016), 0xDD map flags (read, not shown), 0x8D to 0x95 creature fields beyond the ones in `Creature`.

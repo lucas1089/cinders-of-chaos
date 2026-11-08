@@ -50,6 +50,7 @@ It does not replace the client in `client/`.
   - `Assets/Chaos/Editor/ChaosBuild.cs` is the batch build.
 - `tools/` holds Python tools: `hd2d_preview.py` (offline HD-2D pictures) and `fetch_3d_assets.py` (the KayKit characters, see "3D characters"), each with a test.
 - `Core.Tests/` is a .NET 8 console project. It compiles `Core/` and runs the checks.
+- `Core.LiveCheck/` is a .NET 8 console project that runs `Core/` against a real server and writes a report (section "Live check (O433)").
 - `Client.Check/` compiles the Unity scripts (`Core/` and `Unity/`) against the engine's reference assemblies from NuGet,
   so a C# error shows on every PR without a Unity license: `cd unity/Client.Check && dotnet build`.
 
@@ -576,9 +577,49 @@ The checks cover:
 
 On the real pair: `dotnet run -c Release -- probe DAT SPR OUTDIR [outfit ids...]` draws outfits.png and items.png.
 
-Against a server: `dotnet run -c Release -- live PAIR_DIR HOST ACCOUNT PASSWORD [CHARACTER] [RSA_MODULUS_FILE]`.
+The broad run against a server, with a report: "Live check (O433)" (`unity/Core.LiveCheck`).
+A short one: `dotnet run -c Release -- live PAIR_DIR HOST ACCOUNT PASSWORD [CHARACTER] [RSA_MODULUS_FILE]`.
 It logs in, enters, takes four steps and prints the opcodes it read. The guard key is read from `CHAOS_CLIENT_KEY`
 (64 hex digits). Without it the dev key is used, which the live server refuses in mode "enforce".
+
+## Live check (O433)
+
+`unity/Core.LiveCheck` runs the pure C# core against a real server. It links the Core sources like `Core.Tests`, has no UnityEngine and is only built in CI (`ci.yml`), never run there.
+
+```
+cd unity/Core.LiveCheck && dotnet build -c Release
+CHAOS_LIVE_PASSWORD=... CHAOS_CLIENT_KEY=64hex dotnet bin/Release/net8.0/Core.LiveCheck.dll HOST LOGIN_PORT ACCOUNT [CHARACTER|-] \
+    --otb SERVER/data/items/items.otb [--identity extended|chaos] [--seconds 45] [--report out.json]
+```
+
+- The password is read from `CHAOS_LIVE_PASSWORD`, never from the arguments. `CHAOS_CLIENT_KEY` is the guard key (needed when the server runs the guard in `enforce`), `CHAOS_RSA_PUBLIC` the server's RSA modulus in decimal. The same variables the Unity client reads. Without a character name the first one is taken.
+- The parser needs the item types. Without the real `Tibia.dat` (the pair is not in the repo) `--otb` builds them from the server's `items.otb` (`OtbDat.cs`: stackable, fluid and splash nodes get a count byte, `FLAG_ANIMATION` a phase byte, the top order gives the stack order). The server writes the same bytes from that file, `check_item_wire.py` keeps dat and otb in step. `--pair DIR` reads a real `Tibia.dat` instead.
+- Steps: login server and character list, game login and guard handshake, 4.5 s for the session's own hellos, a walk in the 8 directions (north, south, east, west, then the diagonals, each checked against the server's 0x6D and 0xB5: confirmed, right tile, refused), then the open request of every extended opcode Unity handles, one after the other (`LiveOps.cs`: the first request of the fake module catalog, a few with data, the rest pushes the session only listens to), then idle to `--seconds`, logout.
+- Per opcode the report has: request sent, reply received (complete messages, chunk parts joined), JSON valid, handler exception (a Core handler that threw is logged by `ExtOpcodes`), the actions seen, the milliseconds to the first reply. Status: `ok`, `no_reply`, `parse_error` for requests; `session_ok` / `session_no_reply` for what `GameSession` asks on its own; `push_seen` / `push_not_seen` for the rest. A silent opcode with a known reason carries a note (rift outside a rift, the Waystone Atlas below level 1100, the admin panel for players, the name shaders without a server script).
+- Packets: every packet type parsed with its count, and every failure with the packet type, the offset it began at and where the reader stopped (`GameParser.Failures`, capped at 200, `FailureCount` is not). An unknown type is marked as such. Exceptions that are not a `ProtocolException` are counted separately.
+- `--report FILE` writes JSON, and the text next to it with `.txt`. No account name, character name or password is in either. `CHAOS_LIVE_DEBUG=1` prints the first bytes of packets outside the table to stderr, for a look at what an unlisted opcode carries.
+- Exit 0: login and entry ok, steps confirmed, no parse failure, the connection stayed open. Exit 1 otherwise, 2 for a usage error.
+- `Core.Tests/LiveCheckTests.cs` tests the tool (the otb reader, the table, the status rules, a whole run on the demo tour's fake server, no names in the report) and the fixes it found.
+
+Run 2026-11-08 against a local server installed 2026-11-03 (packet compression and wide spell ids switched on for the whole run; the guard key and the character are local test data, nothing of them is committed), character level 1200:
+
+| | Extended | Chaos |
+|---|---|---|
+| login, entry | ok, 0.2 s | ok, 0.2 s |
+| packet types parsed | 23 | 24 (0x43 feature list, 0x4B floors) |
+| parse failures, unknown types | 0, 0 (before the fix: 1 unknown, 0xF5) | 0, 0 |
+| walk | 8 of 8 confirmed at the right tile | 8 of 8 |
+| extended opcodes, table of 98 | requests 61 ok, 2 no reply, 0 parse error | same |
+| session asked | 11 ok, 1 silent (228, outside a rift) | same |
+| pushes | 8 seen, 15 not seen (event driven) | same |
+| deflated packets | none (the server deflates for Chaos only) | 133, 179369 bytes in, 751047 out |
+
+The two silent requests are 96 (no server script on that server) and 120 (staff only). Features announced to the Chaos identity: 30, 80, 104, 106, 126, 152, 155.
+Not covered, because it needs the situation: death, party play, NPC trade, a staircase or hole (0x4B in a real change of level), a rift, the item tooltip (needs an item identity), and the base modules outside the table (opcodes 89, 92, 99, 106, 181: tasks, faction coins, stats, upgrade points; Unity ignores them, see `docs/UNITY_PARITY.md`).
+The server was five days older than the repo (no `groupqueue.lua`: its three files were copied in for the run, nothing else). Run it again against a fresh install before shipping.
+
+Found and fixed:
+1. 0xF5 (server `ProtocolGame::sendItems`, right after the login's 0x17: u16 count, then u16 client id, u8 0, u16 1 each) was an unknown opcode. The parser stopped at it and lost the rest of the login packet. Now read (`GameParser.ItemList`, `ItemListCount`).
 
 ## NPC talk and trade
 
@@ -786,11 +827,11 @@ OS 21 was always an extended opcode client, so the earlier note that Unity gets 
 No server change was needed.
 
 Choosing the identity: the setting `chaos.identity` (PlayerPrefs) or the environment variable `CHAOS_UNITY_IDENTITY` takes `extended` or `chaos`.
-Chaos is parsed and tested on a fake server only. Before it becomes the default:
+Chaos is parsed and tested on a fake server, and run once against a live local server ("Live check (O433)": features, 0x4B, compression, no parse failure). Before it becomes the default:
 1. log in with `CHAOS_UNITY_IDENTITY=chaos` and read the log line `Server features: ...`. The full list is in the base engine, not in this repo.
    A feature that changes a wire width the parser does not know (an effect id of 16 bits, for example) must be handled by the effect parser of track B through `GameParser.Features`.
 2. walk through a staircase and a hole (0x4B floors), open a bag with a rarity item, see a creature with wings or a shader.
-3. `packetCompression` may be on: Unity inflates (`Core/Inflate.cs`, wire audit below). Not yet seen on a live server.
+3. `packetCompression` may be on: Unity inflates (`Core/Inflate.cs`, wire audit below). Seen live 2026-11-08: 133 packets deflated and read, no error ("Live check (O433)").
 4. leave capability bit 7 off until the 0xB4 parser reads the three extra fields (percent, type, creature id). `ClientIdentity.Capabilities` holds the bits.
 
 UI text: the English text is the key, `Loc.T("text", args)` looks it up in `LocStrings.PtBr` (`Core/Loc.cs`). Arguments are `{0}`. The language is `chaos.lang` or the system language.

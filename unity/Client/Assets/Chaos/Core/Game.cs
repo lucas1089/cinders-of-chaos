@@ -79,11 +79,40 @@ namespace Chaos.Core
             var r = new ByteReader(payload);
             while (!r.AtEnd)
             {
+                int at = r.Pos;
                 byte op = r.U8();
                 Seen.TryGetValue(op, out int n);
                 Seen[op] = n + 1;
-                Message(op, r);
+                try { Message(op, r); }
+                catch (Exception e) { NoteFailure(op, at, r.Pos, e); throw; }
             }
+        }
+
+        /// <summary>One message the parser could not read: its opcode, where it started in the payload, where the reader stopped, and why.</summary>
+        public sealed class ParseFailure
+        {
+            public byte Op;
+            public int Start, Stop;
+            /// <summary>The opcode itself is not known (the message ended the packet).</summary>
+            public bool Unknown;
+            public string Message = "";
+            public override string ToString() => "0x" + Op.ToString("X2") + " at " + Start + ": " + Message;
+        }
+
+        /// <summary>The first MaxFailures failures of this connection (the live check reads them), and how many there were in all.</summary>
+        public const int MaxFailures = 200;
+        public readonly List<ParseFailure> Failures = new List<ParseFailure>();
+        public int FailureCount;
+
+        void NoteFailure(byte op, int start, int stop, Exception e)
+        {
+            FailureCount++;
+            if (Failures.Count >= MaxFailures) return;
+            Failures.Add(new ParseFailure
+            {
+                Op = op, Start = start, Stop = stop, Message = e.GetType().Name + ": " + e.Message,
+                Unknown = e is ProtocolException && e.Message.StartsWith("unknown opcode", StringComparison.Ordinal),
+            });
         }
 
         void Message(byte op, ByteReader r)
@@ -285,6 +314,7 @@ namespace Chaos.Core
                 case 0xBF: FloorDown(r); break;
                 case 0x7D: case 0x7E: case 0x7F: case 0xD2: case 0xD3: case 0xD4: case 0xF0: case 0xF1: PlayMessage(op, r); break;   // player trade, VIP list, quest log (GamePlay.cs)
                 case 0xDC: r.U8(); break;
+                case 0xF5: ItemList(r); break;   // the list of items the player may own (Player::onCreatureAppear sendItems, right after the login's 0x17)
                 case 0xDD: ReadPos(r); r.U8(); r.Str(); break;
                 case 0xF3: r.U16(); r.Str(); r.U8(); break;
                 default:
@@ -305,6 +335,18 @@ namespace Chaos.Core
         {
             W.Center = p;
             W.ForgetOutside(p);
+        }
+
+        /// <summary>How many entries the last 0xF5 listed (the 11 slot types and the inventory item ids of the server's items.xml).</summary>
+        public int ItemListCount;
+
+        /// <summary>0xF5 (server ProtocolGame::sendItems): u16 count, then per entry u16 client id, u8 0, u16 1. Nothing in Unity uses it (the market and the
+        /// stash are the Chaos modules); it is read so the rest of the login packet is not lost: before this the parser stopped at it with "unknown opcode".</summary>
+        void ItemList(ByteReader r)
+        {
+            int n = r.U16();
+            for (int i = 0; i < n; i++) { r.U16(); r.U8(); r.U16(); }
+            ItemListCount = n;
         }
 
         Creature Find(uint id) { W.Creatures.TryGetValue(id, out var c); return c; }
