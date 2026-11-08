@@ -49,10 +49,14 @@ namespace Chaos.Core
     public sealed class FxFeed
     {
         public const int Max = 512;
-        public bool Enabled;
+        bool enabledFlag;
+        /// <summary>A second reader (Core/GameVisual.cs: sounds, decals, flashes) that sees every event whether or not the live view drains the queue.</summary>
+        public Action<FxEvent> Tap;
+        /// <summary>True while the live view wants the events or a tap listens (the parser pushes only then).</summary>
+        public bool Enabled { get { return enabledFlag || Tap != null; } set { enabledFlag = value; } }
         readonly Queue<FxEvent> q = new Queue<FxEvent>();
         public int Count { get { return q.Count; } }
-        public void Push(FxEvent e) { if (!Enabled) return; if (q.Count >= Max) q.Dequeue(); q.Enqueue(e); }
+        public void Push(FxEvent e) { if (Tap != null) Tap(e); if (!enabledFlag) return; if (q.Count >= Max) q.Dequeue(); q.Enqueue(e); }
         public bool TryDequeue(out FxEvent e)
         {
             if (q.Count == 0) { e = default(FxEvent); return false; }

@@ -5,7 +5,7 @@ This file lists every module of the main client (`client/overlay/modules/`, 169 
 It also lists the base protocol opcodes the Unity parser lacks and a plan in three phases.
 Edit the module rows by hand when a status changes. A module row changes in the same commit as its Unity window.
 
-Counts: 52 done, 51 partial, 51 missing, 15 not applicable.
+Counts: 61 done, 60 partial, 33 missing, 15 not applicable.
 By priority: 13 P0 core loop, 30 P1 needed to play, 83 P2 systems, 28 P3 polish, 15 N/A.
 
 ## Who Unity is on the server
@@ -94,7 +94,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_stash` | 110 | Supply Stash (Ctrl+H): tabs, search, sort, item grid with rarity frames, take out (row or stack with an amount), drop an item of a bag on the window, Stow everything with its report, Collect inbox, Slots opens the store. No never-stash list, no Find my item. `Core/Stash.cs`, `StashWindow`. | partial | P1 | M |
 | `client_chaos_infolift` | none | Name and bar lift for tall looks. | missing | P2 | S |
 | `client_chaos_numbers` | none | Short numbers (1k, 2.45M). | missing | P2 | S |
-| `client_chaos_screenfit` | none | Windows taller than the screen scroll. Unity clamps the title bar only. | missing | P2 | S |
+| `client_chaos_screenfit` | none | Windows taller than the screen scroll by the mouse wheel and can be dragged until every part shows; they open at their title. `Core/Layout.cs` ScreenFit, `GameWindow.Draw`. | done | P2 | S |
 | `client_chaos_theme` | none | Dark fantasy UI theme. Unity windows use one flat dark style. | partial | P2 | M |
 | `game_achievements` | 250 | `AchievementsWindow` (top menu Character, opcode 250, `Core/CollectAchievements.cs`): categories, All and Recently unlocked, the reward track with its strip, progress rows, the title chooser (auto, none, a title). Not here: the unlock toast of `game_chaosshots`. | done | P2 | M |
 | `game_arena` | 236 | Ranked PvP arena queue and HUD. Unity: `ArenaWindow` (mode cards with season line and rating, queue and leave, status, recent matches), `ArenaHudWindow` (both sides with health bars, countdown, result with rating and season change); secure mode off for the match and restored. Not run on a live server. | done | P2 | M |
@@ -106,11 +106,11 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_bestiary` | 253 | `BestiaryWindow` (top menu Hunt, opcode 253, `Core/CollectBestiary.cs`): categories, search, known only, pages of 60, the entry (stage bar, elements, areas, loot, uniques, bonus, take task) and the Kill Tasks board (accept, abandon, reroll, limits, timer). Not here: the on-screen task tracker (the tracker rows are read, not drawn), the Kill Tasks and Task Tracker menu entries (the window has the tab). | partial | P2 | M |
 | `game_bounty` | 223 | Bounty board. Unity: `BountyWindow` (band tabs, contracts with task, reward, progress, Accept, Abandon, Reroll, weekly chest, refresh timer). No creature outfit preview. | partial | P2 | M |
 | `game_candlemarks` | 176 | Candlemarks (`CandlemarksState`, `CandlemarksWindow`): the counter next to the menu bar (balance, minutes to the next, why paused), the shop with the offers, weekly use and Buy; Osric opens it. | done | P2 | M |
-| `game_chaoslayout` | none | Saved window layout per character. | missing | P2 | M |
+| `game_chaoslayout` | none | Window places per character in PlayerPrefs (`WindowLayout`), and the open state of the minimap, battle list, equipment and containers. No side panels, container slots or sizes. Option "Remember window places". | partial | P2 | M |
 | `game_chaosshaders` | none | Outfit shaders. The shader name is parsed in Chaos identity, nothing draws it. | partial | P2 | L |
-| `game_chaossound` | none | Game sounds. | missing | P2 | M |
+| `game_chaossound` | none | Combat, spell, level, loot, goal and window sounds with the gap, burst, cap and distance rules of the main client, volume and group options. Reads the module ogg files from the overlay folder (`CHAOS_OVERLAY_DIR`). `Core/Audio.cs`, `Unity/ChaosApp.Audio.cs`. | done | P2 | M |
 | `game_chaosuiscale` | none | Interface scale. Unity scales with the window height. | partial | P2 | S |
-| `game_chaosview` | none | Map zoom and the largest map area. Unity shows 15 x 11 tiles. | missing | P2 | S |
+| `game_chaosview` | none | Map zoom by whole rows, 7 to 11, by Ctrl and the wheel or the Layout page of Options; both views follow it. A larger area than 11 rows needs the aware range change (0x33 and 0x42 other sizes), not sent yet. `ViewZoom`. | partial | P2 | S |
 | `game_chaosweather` | 114 | Rain (3 layers, levels 1 to 3, fade, faster fade under a roof), ambient specks (embers, motes, dust) and the area colour mood over the game view, drawn in code (`WeatherState`, `ChaosApp.World.cs`), not the art strips. No option to switch it off yet, none in HD-2D. | partial | P2 | M |
 | `game_charms` | 198 | `CharmsWindow` (top menu Character, opcode 198, `Core/CollectCharms.cs`): the cell grid, drag a charm of the list onto a cell (preview green or red), move a placed charm, drop it on the list to take it out, salvage, reforge, totals and unlock groups. Not here: dropping a charm item from a backpack onto the grid (the `place` with a map position), the per-shape slot art. | partial | P2 | M |
 | `game_chatlinks` | 249 | Item links in chat: Shift+click on an item of the equipment or a bag asks the server for a link (register), the name goes into the chat line as a chip and is written out as [Name]{<r><id>} when the line is sent (up to 3, 250 characters, no links to NPCs, the Help channel needs the tutor right); a line with links shows the names in the rarity colour and the tooltip of the link under the pointer (get, 10 minute snapshots, expired answers). Core/ChatLinks.cs, ChaosApp.Social.cs. No Ctrl compare. | done | P2 | M |
@@ -128,7 +128,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_embercache` | 174 | Ember Cache (`EmberCacheState`, `EmberCacheWindow`): week points and milestones, today and the Daily Spark, the day book, how to earn points, Offer junk orbs with the quote box. | done | P2 | M |
 | `game_factions` | 215 | Factions (opcode 215): faction tabs with rank bars, lore, rival, week cap, tokens with Turn in, Go to NPC (opcode 121), contracts with Deliver, quartermaster offers (Buy, Craft), opened by the faction NPCs. FactionsWindow, Core/Factions.cs. No emblem art. | done | P2 | M |
 | `game_gamble` | 199 | The Gambler (`GambleState`, `GambleWindow`): sealed crates with price and Buy, Fresh Crates, odds, the reveal line, the countdown; the Gambler NPC opens it. The item look is drawn from the client id. | done | P2 | M |
-| `game_groundfx` | none | Spell effects under creatures. | missing | P2 | M |
+| `game_groundfx` | none | A flat ring and glow on the tile for the effect ids of the ground table (223 ids), in both views. Drawn in the map group, so it is over the creatures, not under them. `GroundFx`. | partial | P2 | M |
 | `game_groupqueue` | 160 | Group queue (opcode 160): arena by party size, battleground, dungeon with difficulty, join and leave, raid check, Find a group, and the ready check box with its countdown (Accept, Decline). GroupQueueWindow, ReadyCheckWindow, Core/PartyFinder.cs. | done | P2 | M |
 | `game_guild` | 252 | Guild window (opcode 252): overview with the XP bar, perks, bank deposit and withdraw, scroll and log; members; guild hall (buy, rent, upgrades, hub); guild stash (take); top guilds. GuildWindow, Core/Guild.cs. The hall bench module is not opened (a line says so). | done | P2 | L |
 | `game_guildwar` | 197 | Guild wars (opcode 197): offers (accept, decline, take back), running wars (surrender with a second click, kill log), declare form, war board, weekly guild boss (fuel bar, summon, gold and material feeding, banner, spoils, board). GuildWarWindow, Core/Guild.cs. | done | P2 | L |
@@ -138,7 +138,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_helpsearch` | none | Help search over How it works, unlocks and Codex. | missing | P2 | M |
 | `game_hideout` | 192 | Hideout (`HideoutState`, `HideoutWindow`): Decorate (catalogue with category, source and search filters, lock reasons, placed list, Move, Put away), Hideout (theme, who may visit, Enter, Leave, Kick, Like), Visit. Placing on the map with a green and red ghost, wheel to turn, the main client's placement check ported (`Check`, `ReachOk`). Works in both map views. Not run on a live server. | done | P2 | L |
 | `game_howitworks` | none | How it works cards. | missing | P2 | S |
-| `game_hudmove` | none | Movable HUD panels. | missing | P2 | S |
+| `game_hudmove` | none | The character plate, the log out button, the chat and the top menu move by drag in an edit mode (Options > Layout), saved per character, double click puts one back, always fully on screen. Windows move by their title as before. `HudLayout`. | done | P2 | S |
 | `game_infinitytower` | 214 | Infinity Tower window. Unity: `TowerWindow` (season, points bar with claimable milestones, podium, ranking, Enter and Leave), `TowerPanelWindow` (floor, monsters, timers, Next floor now with Ctrl+Shift+N, Auto, Leave). Not run on a live server. | done | P2 | M |
 | `game_invasion` | 251 | Invasion HUD and event list. Unity: `InvasionHudWindow` (waves, breach, sides, top defenders, fold) and `InvasionWindow` (calendar), in the Adventure menu as Invasions. Not run on a live server. | done | P2 | M |
 | `game_itemfinder` | 155 | Item Finder (`ItemFinderState`, `ItemFinderWindow`): type-ahead search with resend, results with pages, the item with its sections and pages, history and Back; `WhereToFind(clientId)` is ready. No right-click Where to find entries, no Codex button. | partial | P2 | M |
@@ -178,31 +178,31 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `client_chaos_credits` | none | Credits window from docs/CREDITS.md. | missing | P3 | S |
 | `client_chaos_perf` | none | Performance overlay. | missing | P3 | S |
 | `client_chaos_streamer` | none | Streamer and cinema mode. | missing | P3 | S |
-| `client_chaos_uifade` | none | Window fade in and out. | missing | P3 | S |
+| `client_chaos_uifade` | none | Windows fade in over 140 ms and out over 100 ms, a turn round starts from the opacity it has; small popups do not fade. Option "Fade windows in and out". `UiFade`. | done | P3 | S |
 | `game_admin` | 120 | Server driven admin panel. The admin app covers the owner. | missing | P3 | L |
-| `game_bossanimate` | none | Idle animation for bosses with walk frames only. | missing | P3 | S |
+| `game_bossanimate` | none | Skaldra (look 1534) beats its wings while it stands, and Gravewarden Ulthar (2127) is shifted onto its tile, in the classic view. The live view animates 1534 but does not shift 2127. `BossAnimate`. | partial | P3 | S |
 | `game_bossspawns` | 217 | Boss spawn list. | missing | P3 | M |
 | `game_cardborder` | 172 | Card border in deck windows. | missing | P3 | S |
-| `game_chaosmusic` | none | Region music. | missing | P3 | M |
+| `game_chaosmusic` | none | Region music (login, town, hunt, dungeon, boss, arena) from the module ogg files, 2.5 s cross-fade, the hysteresis of the main client, volume and background options. `MusicLogic`, `Unity/ChaosApp.Audio.cs`. Needs the files from the overlay folder. | done | P3 | M |
 | `game_chaosshots` | none | Automatic screenshots. | missing | P3 | S |
 | `game_chaossurvey` | 122 | New player survey. | missing | P3 | S |
-| `game_chestaura` | 118 | Auras under chests and Templar sigils. | missing | P3 | M |
+| `game_chestaura` | 118 | Chest auras (reward, cursed, coffer), the cursed monsters' smoke, the Templar line foot aura and its range frame, from the module png strips, in both views. `ChestAuraState`. | done | P3 | M |
 | `game_chronicle` | 171 | Ashen Chronicle and memorial. | missing | P3 | M |
-| `game_combatdecals` | none | Stains on the ground after combat. | missing | P3 | M |
+| `game_combatdecals` | none | Blood where a creature dies, scorch, frost and poison stains by the colour of the damage number, 24 at most, 20 to 30 s, from the module pictures. `CombatDecals`. | done | P3 | M |
 | `game_community` | 203 | Community goal window. | missing | P3 | M |
-| `game_cosmeticfx` | 225 | Footprints and outlines. | missing | P3 | M |
+| `game_cosmeticfx` | 225 | Footprints of bought prints on each step (own and others, options) and the glow picture of an outline with the pulse. The outline shader is an engine feature and is not drawn. `CosmeticFxState`. | partial | P3 | M |
 | `game_dropfeed` | 229 | Drop feed option. | missing | P3 | S |
-| `game_effectopacity` | none | Spell effect opacity option. | missing | P3 | S |
-| `game_errorcolor` | none | Error messages in their own colour. | missing | P3 | S |
+| `game_effectopacity` | none | Spell effect opacity 25 to 100 percent in steps of 5 (Options > Visuals): the live view's effect quads, ground rings and wings follow it. `EffectOpacity`. | done | P3 | S |
+| `game_errorcolor` | none | The server's error lines (status small, kind 21) in the error colour in the chat log. Option on by default. `ErrorColor`. | done | P3 | S |
 | `game_event` | none | Event manager. | missing | P3 | S |
-| `game_levelwings` | 191 | Level up effect. | missing | P3 | S |
-| `game_lootbeams` | none | Beams over loot corpses. | missing | P3 | S |
+| `game_levelwings` | 191 | Opcode 191 play message: golden wings and a glow on the creature, with the level sound, own and others options. Drawn in code, not the pack effect of the pair. `LevelWingsState`. | partial | P3 | S |
+| `game_lootbeams` | none | A beam over each corpse and ground item the loot filter makes glow, four rarity colours, unique and orb, height and light options, 24 at most. Built from the ground labels, drawn in code. The pack effect strips and the server's beam message are not used. `LootBeams`. | partial | P3 | S |
 | `game_mentor` | 194 | Mentors. | missing | P3 | M |
-| `game_nameshaders` | none | Name shaders (needs engine work in the main client too). | missing | P3 | M |
+| `game_nameshaders` | none | `NameShadersWindow` (opcode 96): list, search, equip, unlock notices. The own name is drawn with a moving two colour gradient. Other players' shaders are not known to the client. | partial | P3 | M |
 | `game_nemesis` | 163 | Nemesis tab. | missing | P3 | S |
 | `game_patchnotes` | 244 | Patch notes window. | missing | P3 | S |
 | `game_referral` | 220 | Referral. | missing | P3 | S |
-| `game_visualfx` | none | Hit flash, shake and other map effects. | missing | P3 | M |
+| `game_visualfx` | none | Hit flash (white, red on the player) and screen shake of big hits, options for both. The grade, bloom, spell light, liquid shimmer, outlines and cooldown pulse are not done. `HitFlasher`, `ScreenShake`. | partial | P3 | M |
 | `client_chaos_firststart` | none | Android first start: downloads game data. Unity gets its data from the build. | N/A | N/A | S |
 | `client_chaos_phonetest` | none | Android emulator smoke test. | N/A | N/A | S |
 | `client_chaos_rmlform` | none | RmlUi form layer of the main client. Unity has its own UI. | N/A | N/A | L |

@@ -279,6 +279,7 @@ namespace Chaos.Core
         {
             var g = walking ? t.Moving : t.Idle;
             phase = walking && g.Phases > 1 ? 1 + (int)(Math.Max(0f, Math.Min(0.999f, progress)) * (g.Phases - 1)) % (g.Phases - 1) : 0;
+            if (!walking && g.Phases > 1 && BossAnimate.Animates(t.Id)) phase = BossAnimate.Phase(BossAnimate.NowMs(), g.Phases);   // game_bossanimate
             return g;
         }
 
