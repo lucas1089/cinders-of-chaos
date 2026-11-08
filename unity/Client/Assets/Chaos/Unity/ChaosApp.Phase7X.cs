@@ -13,15 +13,15 @@ namespace Chaos.Client
         // ------------------------------------------------------------------------------------ outfit with wings, aura and shader
         /// <summary>Draws an outfit like DrawOutfit and adds what the website knows: the aura under it (a ring on the ground only: tall ones hide the body),
         /// the wings at the body's place with the body lifted 6 pixels, and the shader as a pulsing tint. Without any of them it is DrawOutfit.</summary>
-        public void DrawOutfitFx(Rect r, Outfit o, bool smallAurasOnly = true)
+        public void DrawOutfitFx(Rect r, Outfit o, bool smallAurasOnly = true, Dir facing = Dir.South)
         {
             if (o == null || dat == null || atlas == null) return;
-            if (o.LookType == 0 || (o.Wings == 0 && o.Aura == 0 && string.IsNullOrEmpty(o.Shader))) { DrawOutfit(r, o); return; }
+            if (o.LookType == 0 || (o.Wings == 0 && o.Aura == 0 && o.Mount == 0 && string.IsNullOrEmpty(o.Shader))) { DrawOutfit(r, o, facing); return; }
             var layers = OutfitLayers.Plan(o, id =>
             {
                 var t = dat.Outfit(id);
                 return t == null ? new KeyValuePair<int, int>(0, 0) : new KeyValuePair<int, int>(t.Idle.Width, t.Idle.Height);
-            }, smallAurasOnly);
+            }, smallAurasOnly, id => { var t = dat.Outfit(id); return t == null ? new KeyValuePair<float, float>(0f, 0f) : new KeyValuePair<float, float>(t.DisplacementX, t.DisplacementY); });
             int n = 1;
             foreach (var l in layers)
             {
@@ -36,21 +36,21 @@ namespace Chaos.Client
             {
                 bool shaded = !tint.None && l.Kind != OutfitLayer.Role.Aura;
                 GUI.color = shaded ? Color.Lerp(Color.white, new Color(tint.R, tint.G, tint.B, 1f), tint.Strength(Time.unscaledTime)) : Color.white;
-                DrawLayer(anchor + new Vector2(l.DX * cell, l.DY * cell), cell, o, l);
+                DrawLayer(anchor + new Vector2(l.DX * cell, l.DY * cell), cell, o, l, facing);
             }
             GUI.color = old;
         }
 
-        void DrawLayer(Vector2 at, float cell, Outfit o, OutfitLayer l)
+        void DrawLayer(Vector2 at, float cell, Outfit o, OutfitLayer l, Dir facing = Dir.South)
         {
             var t = dat.Outfit(l.LookType);
             if (t == null) return;
             var g = t.Idle;
-            int dir = (int)Dir.South;
+            int dir = (int)facing;
             if (g.PatternX < 8 && dir > 3) dir = 2;
             dir %= Mathf.Max(1, g.PatternX);
             // wings and auras move when their thing has frames; the body stands
-            int phase = l.Kind != OutfitLayer.Role.Body && g.Phases > 1 ? (int)(Time.unscaledTime * 6f) % g.Phases : 0;
+            int phase = l.Kind != OutfitLayer.Role.Body && l.Kind != OutfitLayer.Role.Mount && g.Phases > 1 ? (int)(Time.unscaledTime * 6f) % g.Phases : 0;
             bool body = l.Kind == OutfitLayer.Role.Body;
             for (int addon = 0; addon < g.PatternY; addon++)
             {

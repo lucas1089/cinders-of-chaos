@@ -10,7 +10,7 @@ namespace Chaos.Core
     /// <summary>One picture of a drawn outfit: the aura under it, the wings at the body's place and the body itself.</summary>
     public struct OutfitLayer
     {
-        public enum Role { Aura, Wings, Body }
+        public enum Role { Aura, Wings, Body, Mount }   // Mount: phase 8 B (the look preview draws the mount under the rider)
         public Role Kind;
         public int LookType;
         /// <summary>Offset in tiles (32 sprite pixels) added to the layer's place: +x right, +y down.</summary>
@@ -29,7 +29,7 @@ namespace Chaos.Core
 
         /// <summary>The layers, back to front. size(id) = the thing's width and height in tiles, or (0, 0) when unknown.
         /// A big aura is moved by (w - 1) * 16 and (h - 1) * 16 pixels (GameBigAurasCenter); a winged body sits WingLift up and left.</summary>
-        public static List<OutfitLayer> Plan(Outfit o, Func<int, KeyValuePair<int, int>> size, bool smallAurasOnly)
+        public static List<OutfitLayer> Plan(Outfit o, Func<int, KeyValuePair<int, int>> size, bool smallAurasOnly, Func<int, KeyValuePair<float, float>> displacement = null)
         {
             var list = new List<OutfitLayer>();
             if (o == null || o.LookType == 0) return list;
@@ -39,6 +39,18 @@ namespace Chaos.Core
                 if (s.Key > 0 && s.Value > 0 && (!smallAurasOnly || SmallAura(s.Key, s.Value)))
                     list.Add(new OutfitLayer { Kind = OutfitLayer.Role.Aura, LookType = o.Aura, DX = (s.Key - 1) * 16f / 32f, DY = (s.Value - 1) * 16f / 32f });
             }
+            // phase 8 B: the mount stands under the rider, who rides up by the mount's displacement (Outfit::draw moves the origin by it)
+            float liftX = 0f, liftY = 0f;
+            if (o.Mount > 0)
+            {
+                var ms = size != null ? size(o.Mount) : new KeyValuePair<int, int>(0, 0);
+                if (ms.Key > 0 && ms.Value > 0)
+                {
+                    list.Add(new OutfitLayer { Kind = OutfitLayer.Role.Mount, LookType = o.Mount });
+                    var d = displacement != null ? displacement(o.Mount) : new KeyValuePair<float, float>(0f, 0f);
+                    liftX = d.Key / 32f; liftY = d.Value / 32f;
+                }
+            }
             bool winged = false;
             if (o.Wings > 0)
             {
@@ -46,7 +58,7 @@ namespace Chaos.Core
                 if (s.Key > 0 && s.Value > 0) { list.Add(new OutfitLayer { Kind = OutfitLayer.Role.Wings, LookType = o.Wings }); winged = true; }
             }
             float lift = winged ? WingLift / 32f : 0f;
-            list.Add(new OutfitLayer { Kind = OutfitLayer.Role.Body, LookType = o.LookType, DX = -lift, DY = -lift });
+            list.Add(new OutfitLayer { Kind = OutfitLayer.Role.Body, LookType = o.LookType, DX = -lift - liftX, DY = -lift - liftY });
             return list;
         }
     }

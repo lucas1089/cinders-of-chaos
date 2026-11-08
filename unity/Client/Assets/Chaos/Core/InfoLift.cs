@@ -47,6 +47,10 @@ namespace Chaos.Core
         /// <summary>The lift in UI units for a map drawn tile pixels tall (a tile is 32 sprite pixels).</summary>
         public static float Scaled(Creature c, float tile) => For(c) * tile / 32f;
 
+        /// <summary>Phase 8 B: the lift for the view in use. The HD-2D and live views put a name at the top of the figure they draw (Hd2dView.Label.Head), so the look's table must not
+        /// lift it again; the classic view places names from the dat alone and needs it.</summary>
+        public static float ForView(Creature c, float tile, bool headFromFigure) => headFromFigure ? 0f : Scaled(c, tile);
+
         public static int Count => Map.Count;
     }
 }

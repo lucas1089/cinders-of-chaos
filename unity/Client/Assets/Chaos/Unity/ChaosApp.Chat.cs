@@ -55,8 +55,8 @@ namespace Chaos.Client
             var e = Event.current;
             bool ctrl = e.control || e.command;
             bool enter = e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter);
-            // chat keys: Tab works with the line focused or not (not while another text field is being edited)
-            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Tab && (chatFocused || !TextEditing))
+            // chat keys: Tab steps the channel with the line focused, Ctrl+Tab at any time (plain Tab elsewhere is the map overlay's, as in the main client)
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Tab && OverlayKeys.ChatTab(chatFocused, ctrl, TextEditing))
             {
                 m.Step(e.shift ? -1 : 1);
                 e.Use();

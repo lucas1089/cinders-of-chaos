@@ -16,6 +16,9 @@ namespace Chaos.Client
         /// <summary>Phase 7 track Y: the draw size of a creature (monster bar: bosses bigger, oversized monsters smaller; 1 when null) and the rarity outline of items on the map.</summary>
         public Func<Creature, float> CreatureScale;
         public bool ItemOutlines = true;
+        /// <summary>Phase 8 B (game_groundfx): flat ring and glow quads, drawn in a tile's turn after its items and before its creatures, so a ring lies under the feet.</summary>
+        public readonly List<FlatMark> Flats = new List<FlatMark>();
+        public struct FlatMark { public Pos Pos; public float W, H, Alpha; public bool Ring; public Color Tint; }
         Color32 tint = new Color32(255, 255, 255, 255);
         float quadScale = 1f, pivotX, pivotY;
 
@@ -152,6 +155,7 @@ namespace Chaos.Client
                 var th = things[i];
                 if (!th.IsCreature && World.StackPriority(th) == 5) DrawItem(th.Item, p, tx, ty, ref elevation);
             }
+            if (Flats.Count > 0) DrawFlats(p, tx, ty);
             foreach (var th in things)
             {
                 if (!th.IsCreature) continue;
@@ -167,6 +171,34 @@ namespace Chaos.Client
                 int none = 0;
                 DrawItem(th.Item, p, tx, ty, ref none);
             }
+        }
+
+        void DrawFlats(Pos p, float tx, float ty)
+        {
+            foreach (var m in Flats)
+            {
+                if (m.Pos != p) continue;
+                bool ring = m.Ring;
+                int slot = Atlas.Composed(ring ? 0x7f000001UL : 0x7f000002UL, () => GroundRing.Rgba(ring));
+                var c = m.Tint; c.a = m.Alpha;
+                tint = c;
+                float cx = tx + 0.5f, cy = ty - 0.5f - GroundRing.FootDrop;
+                Span(slot, cx - m.W / 2f, cy - m.H / 2f, cx + m.W / 2f, cy + m.H / 2f);
+                tint = new Color32(255, 255, 255, 255);
+            }
+        }
+
+        /// <summary>A quad over (x0, y0) to (x1, y1) in tiles, y up.</summary>
+        void Span(int slot, float x0, float y0, float x1, float y1)
+        {
+            if (slot == 0) return;
+            var r = Atlas.Uv(slot);
+            int i = verts.Count;
+            verts.Add(new Vector3(x0, y0, 0)); verts.Add(new Vector3(x1, y0, 0)); verts.Add(new Vector3(x1, y1, 0)); verts.Add(new Vector3(x0, y1, 0));
+            uvs.Add(new Vector2(r.xMin, r.yMin)); uvs.Add(new Vector2(r.xMax, r.yMin)); uvs.Add(new Vector2(r.xMax, r.yMax)); uvs.Add(new Vector2(r.xMin, r.yMax));
+            for (int k = 0; k < 4; k++) cols.Add(tint);
+            tris.Add(i); tris.Add(i + 2); tris.Add(i + 1);
+            tris.Add(i); tris.Add(i + 3); tris.Add(i + 2);
         }
 
         internal static int StackIndex(int count)

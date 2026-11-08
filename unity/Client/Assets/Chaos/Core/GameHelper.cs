@@ -99,7 +99,7 @@ namespace Chaos.Core
     }
 
     /// <summary>IHelperHost over a GameSession: the stats, the creatures around and the actions of the main client's helper.</summary>
-    public sealed class SessionHelperHost : IHelperHost, IHelperHostExt, IHelperHostP7
+    public sealed class SessionHelperHost : IHelperHost, IHelperHostExt, IHelperHostP7, IHelperHostBuffs
     {
         public const int StateHaste = 64, StateProtectionZone = 16384;
         readonly GameSession s;
@@ -213,6 +213,8 @@ namespace Chaos.Core
             }
             return o;
         }
+
+        public HashSet<string> ActiveBuffs() => s.Hud.Buffs.ActiveNames(s.Now);
 
         public IList<string> OwnSummons()
         {

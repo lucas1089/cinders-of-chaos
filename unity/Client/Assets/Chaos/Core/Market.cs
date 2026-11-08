@@ -7,7 +7,7 @@
 //                     | orderFind | fillable
 // Tabs: Browse (search, filters, sort, pages, hover tooltip, Buy with a confirmation), Sell (pick a backpack item, prices, days, the fee), My Offers
 // (Cancel), History, Buy Orders (the open orders with Sell to fill them, your own with Cancel, a form to post one).
-// Not ported: the Modifiers section of the Browse filter and of an order (typeahead over the Codex). The price history (action "prices") and the drop on the Sell tab are in Phase7ZMarket.cs.
+// The Modifiers section of the Browse filter and of an order (typeahead over the Codex) is Phase8BMarket.cs. The price history (action "prices") and the drop on the Sell tab are in Phase7ZMarket.cs.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -72,7 +72,7 @@ namespace Chaos.Core
 
         /// <summary>The order form: the orderPost request, the total and the fee. Null and a reason when it is not valid.</summary>
         public static Dictionary<string, object> CheckOrder(object meta, long sid, string qtyText, string priceText, string cur, int days, int rarity, string ilvlText,
-            out long total, out long fee, out string why)
+            out long total, out long fee, out string why, Dictionary<string, object> mods = null)
         {
             total = 0; fee = 0; why = "";
             if (sid <= 0) { why = Loc.T("Choose the item you want: search for it first."); return null; }
@@ -99,6 +99,7 @@ namespace Chaos.Core
             var filter = new Dictionary<string, object>();
             if (rarity > 0) filter["rarity"] = rarity;
             if (ilvl > 0) filter["ilvl"] = ilvl;
+            if (mods != null) foreach (var kv in mods) if (kv.Key != "mods" || ((List<object>)kv.Value).Count > 0) filter[kv.Key] = kv.Value;
             return SFmt.Map("sid", sid, "quantity", qty, "price", price, "cur", cur, "days", days, "filter", filter);
         }
 
@@ -176,15 +177,15 @@ namespace Chaos.Core
         public static string PageText(int page, int pages, int total) =>
             Loc.T(total == 1 ? "Page {0} / {1}  ({2} offer)" : "Page {0} / {1}  ({2} offers)", page, Math.Max(1, pages), total);
 
-        public static string OrderSubLine(object row)
+        public static string OrderSubLine(object row, Func<string, string> modName = null)
         {
             var p = new List<string> { Loc.T("{0}/{1} bought", SFmt.Money(Json.Number(row, "filled")), SFmt.Money(Json.Number(row, "qty"))) };
             if (Json.Text(row, "buyer").Length > 0 && !Json.Bool(row, "mine")) p.Add(Loc.T("by {0}", Json.Text(row, "buyer")));
             string state = Json.Text(row, "state");
             p.Add(state == "active" ? Loc.T("{0} left", TimeLeft(Json.Number(row, "left"))) : Loc.T(state));
             object f = Json.Get(row, "filter");
-            if (Json.Int(f, "rarity") > 0) p.Add((RarityName(Json.Int(f, "rarity")) ?? "") + "+");
-            if (Json.Int(f, "ilvl") > 0) p.Add(Loc.T("iLvl {0}", Json.Int(f, "ilvl")) + "+");
+            string ft = MarketMods.FilterText(f, modName);
+            if (ft != Loc.T("Any")) p.Add(ft);
             return string.Join(" - ", p);
         }
 
@@ -251,6 +252,13 @@ namespace Chaos.Core
         public object Selected;   // the Sell item chosen
         public object ChosenKind; // the order form's item kind
         public object FillOrder, FillChosen;
+        /// <summary>Phase 8 B: the Modifiers section of Browse (rows are read from the Form keys mq/mc/mm/mt + row number, mmode, mneed, msock, mqual), the codex it searches, the
+        /// modifiers a buy order takes from it and the filter of the last Browse request (the matched lines of a tooltip).</summary>
+        public readonly ModForm Mods = new ModForm();
+        public bool ModsOpen;
+        public Func<CodexData> CodexSource;
+        public Dictionary<string, object> OrderMods, LastFilter;
+        ModCatalog catalog;
 
         public MarketPanel(ExtOpcodes e)
         {
@@ -278,6 +286,91 @@ namespace Chaos.Core
             PriceOffer = PriceData = SellPriceData = SellPriceFor = null; PriceCur = "gold";
             ConfirmBuyOffer = ConfirmCancelOffer = ConfirmOrderCancel = null;
             PageNo = Pages = 1; Total = 0;
+            Mods.Rows.Clear(); Mods.Count = Mods.FreeP = Mods.FreeS = Mods.Power = Mods.Bound = false; Mods.Need = Mods.Sockets = Mods.Quality = ""; ModsOpen = false;
+            OrderMods = LastFilter = null;
+        }
+
+        // ------------------------------------------------------------------------------------ the Modifiers section
+        public ModCatalog Catalog
+        {
+            get
+            {
+                if (catalog == null || catalog.List.Count == 0) { var cd = CodexSource != null ? CodexSource() : null; catalog = ModCatalog.Build(cd); }
+                return catalog;
+            }
+        }
+
+        public MarketMods.Limits ModLimits => MarketMods.LimitsOf(Meta);
+
+        /// <summary>Reads the section's Form keys into Mods.</summary>
+        public void SyncMods()
+        {
+            for (int i = 0; i < Mods.Rows.Count; i++)
+            {
+                var r = Mods.Rows[i];
+                r.Search = Text("mq" + i); r.Min = Text("mm" + i); r.Tier = Index("mt" + i);
+                var ch = Catalog.Choices(r.Search, out _);
+                int ci = Index("mc" + i);
+                r.Key = ci >= 0 && ci < ch.Count ? ch[ci].Key : "";
+            }
+            Mods.Count = Index("mmode") == 1; Mods.Need = Text("mneed"); Mods.Sockets = Text("msock"); Mods.Quality = Text("mqual");
+        }
+
+        /// <summary>The Modifiers section as filter fields, null and why when invalid.</summary>
+        public Dictionary<string, object> ModsRequest(out string why) { SyncMods(); return MarketMods.Request(Mods, ModLimits, out why); }
+
+        public void AddModRow()
+        {
+            if (Mods.Rows.Count >= ModLimits.MaxRows) { Say(Loc.T("At most {0} modifiers per search.", ModLimits.MaxRows), false); return; }
+            SyncMods();
+            int i = Mods.Rows.Count;
+            Mods.Rows.Add(new ModRow());
+            Form["mq" + i] = ""; Form["mm" + i] = ""; Form["mt" + i] = "0"; Form["mc" + i] = "0";
+            Changed();
+        }
+
+        public void RemoveModRow(int index)
+        {
+            SyncMods();
+            if (index < 0 || index >= Mods.Rows.Count) return;
+            int n = Mods.Rows.Count;
+            for (int j = index; j < n - 1; j++) foreach (string k in new[] { "mq", "mm", "mt", "mc" }) Form[k + j] = Text(k + (j + 1));
+            foreach (string k in new[] { "mq", "mm", "mt", "mc" }) Form.Remove(k + (n - 1));
+            Mods.Rows.RemoveAt(index);
+            Search();
+            Changed();
+        }
+
+        public void ToggleMods() { ModsOpen = !ModsOpen; if (ModsOpen && Mods.Rows.Count == 0) AddModRow(); Changed(); }
+
+        public void ClearMods()
+        {
+            Mods.Rows.Clear();
+            foreach (string k in new List<string>(Form.Keys)) if (k.Length > 2 && (k.StartsWith("mq") || k.StartsWith("mm") || k.StartsWith("mt") || k.StartsWith("mc")) && char.IsDigit(k[2])) Form.Remove(k);
+            Form.Remove("mmode"); Form.Remove("mneed"); Form.Remove("msock"); Form.Remove("mqual");
+            Mods.FreeP = Mods.FreeS = Mods.Power = Mods.Bound = false;
+            if (ModsOpen) AddModRow();
+            Search();
+        }
+
+        /// <summary>The count on the section's toggle button.</summary>
+        public int ModsActive { get { var r = ModsRequest(out _); return MarketMods.Count(r); } }
+
+        static bool IsModKey(string key) => key.Length > 1 && key[0] == 'm' && key != "mine" && (key.StartsWith("mq") || key.StartsWith("mm") || key.StartsWith("mt") || key.StartsWith("mc") || key == "mmode" || key == "mneed" || key == "msock" || key == "mqual");
+
+        /// <summary>The text boxes of the section wait for the Search button (like the item name); the combos search at once.</summary>
+        static bool IsModBox(string key) => key.StartsWith("mq") || key.StartsWith("mm") || key == "mneed" || key == "msock" || key == "mqual";
+
+        void ModFormChanged(string key)
+        {
+            if (key.StartsWith("mq") && key.Length > 2 && char.IsDigit(key[2]))
+            {
+                // the typed words narrow the combo: it takes the first match (a search that matches nothing chooses nothing)
+                var ch = Catalog.Choices(Text(key), out string first);
+                int idx = 0;
+                if (Text(key).Trim().Length > 0) for (int i = 0; i < ch.Count; i++) if (ch[i].Key.Length > 0 && ch[i].Key == first) { idx = i; break; }
+                Form["mc" + key.Substring(2)] = idx.ToString(CultureInfo.InvariantCulture);
+            }
         }
 
         // ------------------------------------------------------------------------------------ messages
@@ -379,6 +472,8 @@ namespace Chaos.Core
         /// <summary>The browse filter of the form (the page given).</summary>
         public Dictionary<string, object> BrowseFilter(int page)
         {
+            var mods = ModsRequest(out string why);
+            if (mods == null) { Say(why, false); return null; }
             int cat = Index("cat"), rar = Index("rarity"), cur = Index("cur"), sort = Index("sort");
             var f = new Dictionary<string, object>
             {
@@ -391,15 +486,19 @@ namespace Chaos.Core
             };
             f["ilvlMin"] = Math.Max(0, SFmt.ParseAmount(Text("ilvlMin"))); f["ilvlMax"] = Math.Max(0, SFmt.ParseAmount(Text("ilvlMax")));
             f["priceMin"] = Math.Max(0, SFmt.ParseAmount(Text("priceMin"))); f["priceMax"] = Math.Max(0, SFmt.ParseAmount(Text("priceMax")));
+            foreach (var kv in mods) if (kv.Key != "mods" || ((List<object>)kv.Value).Count > 0) f[kv.Key] = kv.Value;
             return f;
         }
 
-        public void AskBrowse(int page = 0) { Send("browse", BrowseFilter(page > 0 ? page : PageNo)); }
-        public void Search() { PageNo = 1; Send("browse", BrowseFilter(1)); }
-        public void Page(int delta) { int t = PageNo + delta; if (t >= 1 && t <= Pages) Send("browse", BrowseFilter(t)); }
+        void AskPage(int page) { var f = BrowseFilter(page); if (f == null) return; LastFilter = f; Send("browse", f); }
+        public void AskBrowse(int page = 0) { AskPage(page > 0 ? page : PageNo); }
+        public void Search() { PageNo = 1; AskPage(1); }
+        public void Page(int delta) { int t = PageNo + delta; if (t >= 1 && t <= Pages) AskPage(t); }
 
         public override void OnForm(string key)
         {
+            ModFormChanged(key);
+            if (Tab == "browse" && IsModKey(key)) { if (!IsModBox(key)) Search(); else Changed(); return; }
             if (Tab == "browse" && key != "q" && !key.StartsWith("ilvl") && !key.StartsWith("price")) Search();
             if (Tab == "orders" && (key == "ocur" || key == "osort")) AskOrders(1);
         }
@@ -551,7 +650,7 @@ namespace Chaos.Core
             int di = Index("ordays", -1);
             int days = di >= 0 && di < durations.Count && durations[di] is double dd ? (int)dd : (SFmt.Has(Meta, "defaultDuration") ? Json.Int(Meta, "defaultDuration") : 3);
             return MarketMath.CheckOrder(Meta, ChosenKind == null ? 0 : (long)Json.Number(ChosenKind, "sid"), Text("qty"), Text("oprice"), pay[CoinsOk ? pi : 0], days,
-                ri > 0 && ri <= MarketMath.RarityIds.Length ? MarketMath.RarityIds[ri - 1] : 0, Text("oilvl"), out total, out fee, out why);
+                ri > 0 && ri <= MarketMath.RarityIds.Length ? MarketMath.RarityIds[ri - 1] : 0, Text("oilvl"), out total, out fee, out why, OrderMods);
         }
 
         public void PostOrder()
@@ -607,6 +706,15 @@ namespace Chaos.Core
             if (mode == "browse")
             {
                 var o = offer;
+                if (Tips.TryGetValue(key, out var tip2))
+                {
+                    var matched = MarketMods.MatchedMods(tip2, LastFilter);
+                    if (matched.Count > 0)
+                    {
+                        r.TipExtra = new List<TipLine>();
+                        for (int mi = 0; mi < matched.Count; mi++) r.TipExtra.Add(new TipLine { Text = matched[mi], Color = "#7fdc7f", Sep = mi == 0 });
+                    }
+                }
                 r.Hover = () => AskTip(Json.Get(o, "id"));
                 r.Btn(Loc.T("Prices"), true, () => ShowPrices(o), MarketPrices.RowTypical(o) ?? "");
                 if (!Json.Bool(offer, "mine")) r.Btn(Loc.T("Buy"), true, () => { ConfirmBuyOffer = o; Changed(); });
@@ -673,11 +781,56 @@ namespace Chaos.Core
             l.Combo(Loc.T("Sort"), "sort", SortOptions());
             l.Input(Loc.T("Item level from"), "ilvlMin"); l.Input(Loc.T("Item level to"), "ilvlMax");
             l.Input(Loc.T("Price from"), "priceMin"); l.Input(Loc.T("Price to"), "priceMax");
+            ModRows(l);
             l.Row(MarketMath.PageText(PageNo, Pages, Total), "", "dim").Btn("<", PageNo > 1, () => Page(-1)).Btn(">", PageNo < Pages, () => Page(1));
             var rows = SFmt.Rows(PageData, "rows");
             if (PageData != null && rows.Count == 0) l.Text(Loc.T("No offers match."), "dim");
             if (PriceOffer != null) PriceRows(l);
             foreach (var o in rows) OfferRow(l, o, "browse");
+        }
+
+        void ModRows(RowList l)
+        {
+            int n = ModsActive;
+            l.Row(n > 0 ? Loc.T("Modifiers ({0})", n) : Loc.T("Modifiers"), n > 0 && !ModsOpen ? Loc.T("Modifier filters active") : "", n > 0 ? "good" : "dim")
+                .Btn(ModsOpen ? Loc.T("Hide") : Loc.T("Show"), true, ToggleMods);
+            if (!ModsOpen) return;
+            var lim = ModLimits;
+            for (int i = 0; i < Mods.Rows.Count; i++)
+            {
+                int row = i;
+                l.Input(Loc.T("Modifier {0}", i + 1), "mq" + i, Loc.T("type to find one"));
+                var ch = Catalog.Choices(Text("mq" + i), out _);
+                var names = new List<string>(); foreach (var c in ch) names.Add(c.Text);
+                l.Combo("", "mc" + i, names);
+                l.Input(Loc.T("Lowest value"), "mm" + i, "0");
+                l.Combo(Loc.T("Lowest tier"), "mt" + i, MarketMods.TierOptions(lim.MaxTier));
+                l.Row("").Btn(Loc.T("Remove"), true, () => RemoveModRow(row));
+            }
+            var ctl = l.Row("").Btn(Loc.T("Add modifier"), Mods.Rows.Count < lim.MaxRows, AddModRow);
+            ctl.Btn(Loc.T("Clear modifiers"), true, ClearMods);
+            l.Combo(Loc.T("Match"), "mmode", new List<string> { Loc.T("All of them"), Loc.T("At least N of them") });
+            if (Index("mmode") == 1) l.Input(Loc.T("At least"), "mneed", "1");
+            l.Input(Loc.T("Sockets"), "msock", "0"); l.Input(Loc.T("Quality"), "mqual", "0");
+            l.Row("").Btn(Mods.FreeP ? Loc.T("Free prefix: yes") : Loc.T("Free prefix: any"), true, () => { Mods.FreeP = !Mods.FreeP; Search(); })
+                .Btn(Mods.FreeS ? Loc.T("Free suffix: yes") : Loc.T("Free suffix: any"), true, () => { Mods.FreeS = !Mods.FreeS; Search(); });
+            l.Row("").Btn(Mods.Power ? Loc.T("Legendary power: yes") : Loc.T("Legendary power: any"), true, () => { Mods.Power = !Mods.Power; Search(); })
+                .Btn(Mods.Bound ? Loc.T("Bound modifier: yes") : Loc.T("Bound modifier: any"), true, () => { Mods.Bound = !Mods.Bound; Search(); });
+            l.Text(Loc.T("Up to {0} modifiers. Type in the box to find one, the list narrows to what matches. Tiers: T1 is the lowest, T8 the best (T5+ = T5 or better). Press Search after typing.", lim.MaxRows), "dim");
+        }
+
+        void OrderModRows(RowList l)
+        {
+            l.Text(OrderMods != null ? Loc.T("Modifiers: {0}", MarketMods.FilterText(OrderMods, Catalog.NameOf)) : Loc.T("Modifiers: any. Set rows in the Browse tab's Modifiers section, then press Use Browse modifiers."), "dim");
+            l.Row("").Btn(Loc.T("Use Browse modifiers"), true, OrderModsFromBrowse).Btn(Loc.T("Clear"), OrderMods != null, () => { OrderMods = null; Changed(); });
+        }
+
+        public void OrderModsFromBrowse()
+        {
+            var req = ModsRequest(out string why);
+            if (req == null) { Say(why, false); return; }
+            if (MarketMods.Count(req) == 0) { Say(Loc.T("The Browse tab's Modifiers section is empty: add rows there first."), false); return; }
+            OrderMods = req; Changed();
         }
 
         void PriceRows(RowList l)
@@ -764,7 +917,7 @@ namespace Chaos.Core
             string cur = Json.Text(o, "cur") == "coins" ? Loc.T("coins") : Loc.T("gold");
             string right = Loc.T("{0} {1} each", SFmt.Money(Json.Number(o, "price")), cur);
             var r = l.Row(Json.Text(o, "name", "?"), right, Json.Text(o, "cur") == "coins" ? "coins" : "gold");
-            r.Sub = MarketMath.OrderSubLine(o);
+            r.Sub = MarketMath.OrderSubLine(o, Catalog.NameOf);
             r.Item((int)Json.Number(o, "item"));
             var order = o;
             if (Json.Text(o, "state") == "active")
@@ -844,6 +997,7 @@ namespace Chaos.Core
             l.Combo(Loc.T("Duration"), "ordays", DaysOptions());
             l.Combo(Loc.T("Lowest rarity"), "orarity", RarityOptions());
             l.Input(Loc.T("Lowest item level"), "oilvl");
+            OrderModRows(l);
             var req = OrderRequest(out string why, out long total, out long fee);
             l.Text(req != null ? MarketMath.OrderCostText(Meta, req, total, fee) : why, req != null ? "text" : "dim");
             l.Row("").Btn(Loc.T("Post order"), req != null, PostOrder);

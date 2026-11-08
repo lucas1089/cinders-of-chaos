@@ -3,6 +3,8 @@
 // buff bar whether a buff is on; Unity has no buff bar yet, so the rule that file uses when the bar cannot tell applies to every spell: the spell's
 // own duration since our last cast, else at least a minute (or its cooldown) since the last cast. A vigil (a switch: a second cast turns it off) is
 // never cast blind, so with no bar it stays unused. A capped summon needs the count of own summons (IHelperHostExt.OwnSummons).
+// Phase 8 track B: the buff bar (Core/Hud.cs BuffBar.ActiveNames) decides when it has data (SupportContext.BuffActive, IHelperHostBuffs), as in the main client: a vigil
+// the bar showed on that goes off by hand stays off (UserOff, TakeUserOff), a haste shows in the player state, and Auto setup plans the Timer rules too (AutoPlanFull).
 // Tests: Core.Tests/InfoTests.cs (mirrors supportspells_test.lua for the parts that port).
 using System;
 using System.Collections.Generic;
@@ -16,7 +18,12 @@ namespace Chaos.Core
         public bool Enabled = true;
         public int Reserve = HelperSupport.DefaultReserve;
         public readonly List<SupportSlot> Slots = new List<SupportSlot>();
+        /// <summary>The Timer rules (the stock helper's timer section): words cast every Cooldown seconds while attacking a monster, outside a protection zone.</summary>
+        public readonly List<SupportTimerRule> Timers = new List<SupportTimerRule>();
     }
+
+    /// <summary>One Timer rule Auto setup writes (autosetup.lua timerRule: type words, cooldown in seconds, not in a protection zone, only while attacking a monster).</summary>
+    public sealed class SupportTimerRule { public int Id; public string Words = "", Name = ""; public int Cooldown = 30; public bool Enabled = true; }
 
     /// <summary>What a support spell is: its kind and the numbers of the cycle (supportspells.lua H.KINDS).</summary>
     public sealed class SupportKind
@@ -36,6 +43,8 @@ namespace Chaos.Core
         public string Kind = "buff";
         public string Auto;
         public bool Fight, Haste, ExpectBar, Capped, Known;
+        /// <summary>The lower-case names the buff bar may show it under: the kind's own, then the spell's name.</summary>
+        public string[] Bar = new string[0];
         public int Dur, Rank;
         public string Minion;
         public string[] Minions;
@@ -47,8 +56,13 @@ namespace Chaos.Core
         public readonly Dictionary<int, double> CastAt = new Dictionary<int, double>(), SettleUntil = new Dictionary<int, double>();
         public readonly Dictionary<int, string> Status = new Dictionary<int, string>();
         public readonly Dictionary<int, int> Misses = new Dictionary<int, int>();
+        /// <summary>The buff bar showed this spell's buff once (so "not shown" counts), whether it showed on after the last cast, the last state of a vigil, the ms a vigil was seen switched off.</summary>
+        public readonly HashSet<int> Seen = new HashSet<int>(), SawSince = new HashSet<int>();
+        public readonly Dictionary<int, bool> BarOn = new Dictionary<int, bool>();
+        public readonly Dictionary<int, double> UserOff = new Dictionary<int, double>();
+        public double ClearAt = double.NaN, GraceUntil;
         public int Casts;
-        public void Reset() { CastAt.Clear(); SettleUntil.Clear(); Status.Clear(); Misses.Clear(); Casts = 0; }
+        public void Reset() { CastAt.Clear(); SettleUntil.Clear(); Status.Clear(); Misses.Clear(); Seen.Clear(); SawSince.Clear(); BarOn.Clear(); UserOff.Clear(); ClearAt = double.NaN; GraceUntil = 0; Casts = 0; }
     }
 
     /// <summary>What the pick needs from the game; every member may be left null.</summary>
@@ -61,6 +75,10 @@ namespace Chaos.Core
         public Func<Spell, bool> Castable, OnCooldown, Allowed, InParty;
         public Func<Spell, string> Blocked;
         public Func<Spell, int> Refusals;
+        /// <summary>The buff bar: is any of the lower-case names on? null when it cannot tell (no data yet).</summary>
+        public Func<string[], bool?> BuffActive;
+        /// <summary>The player's own haste state; null when unknown.</summary>
+        public Func<bool?> Hasted;
         /// <summary>All own summons and those of the names; null when the client cannot tell.</summary>
         public Func<string[], KeyValuePair<int, int>?> SummonCount;
         public Func<int> SummonCap;
@@ -137,9 +155,12 @@ namespace Chaos.Core
             SupportKind k;
             bool known = Kinds.TryGetValue(s.Id, out k);
             if (!known) k = new SupportKind();
+            var bar = new List<string>();
+            if (k.Bar != null) foreach (var n in k.Bar) bar.Add(n.ToLowerInvariant());
+            bar.Add((s.Name ?? "").ToLowerInvariant());
             return new SupportInfo
             {
-                Kind = k.Kind, Auto = k.Auto, Fight = k.Fight, Dur = k.Dur, Haste = k.Haste, ExpectBar = k.ExpectBar, Capped = k.Capped, Minion = k.Minion,
+                Bar = bar.ToArray(), Kind = k.Kind, Auto = k.Auto, Fight = k.Fight, Dur = k.Dur, Haste = k.Haste, ExpectBar = k.ExpectBar, Capped = k.Capped, Minion = k.Minion,
                 Minions = k.Minions, Keep = k.Keep, Rank = k.Rank != 0 ? k.Rank : DefaultRank(k.Kind), Known = known,
             };
         }
@@ -203,6 +224,52 @@ namespace Chaos.Core
             return support;
         }
 
+        /// <summary>What Auto setup puts where (autoPlan): the Support ids and the Timer rules. A fight buff that finds no free Support row (a Bone Lord's army fills the section) stays a Timer rule,
+        /// so no buff is lost; the rule's cooldown is the longer of the spell's cooldown and its effect, plus one second. At most TimerMax rules.</summary>
+        public static List<int> AutoPlanFull(IEnumerable<Spell> spells, Func<int, bool> canCast, out List<SupportTimerRule> timers)
+        {
+            var support = new List<int>();
+            var buffs = new List<Candidate>();
+            var rules = new List<SupportTimerRule>();
+            Action<Candidate> addTimer = c =>
+            {
+                if (rules.Count >= TimerMax) return;
+                int cd = Math.Max((int)Math.Ceiling(c.Spell.Cooldown / 1000.0), c.Info.Dur) + 1;
+                rules.Add(new SupportTimerRule { Id = c.Spell.Id, Words = c.Spell.Words, Name = c.Spell.Name, Cooldown = cd });
+            };
+            foreach (var c in Candidates(spells, canCast))
+            {
+                string slot = AutoSlot(c);
+                if (slot == "timer") addTimer(c);
+                else if (slot == "support" && c.Info.Fight && c.Info.Kind == "buff") buffs.Add(c);
+                else if (slot == "support" && support.Count < SupportMax) support.Add(c.Spell.Id);
+            }
+            foreach (var c in buffs) { if (support.Count < SupportMax) support.Add(c.Spell.Id); else addTimer(c); }
+            timers = rules;
+            return support;
+        }
+
+        /// <summary>The Timer rules after the plan: replace drops the player's; else the player's stay and the planned ones whose words are not there yet are added.</summary>
+        public static List<SupportTimerRule> MergeTimers(IList<SupportTimerRule> current, IList<SupportTimerRule> planned, bool replace)
+        {
+            var o = new List<SupportTimerRule>();
+            var words = new HashSet<string>();
+            if (!replace) foreach (var r in current) { o.Add(r); words.Add(r.Words.ToLowerInvariant()); }
+            foreach (var r in planned) if (o.Count < TimerMax && words.Add(r.Words.ToLowerInvariant())) o.Add(r);
+            return o;
+        }
+
+        /// <summary>Is this Timer rule due? Enabled, attacking a monster, outside a protection zone, its cooldown over since the last cast, and the first casts of the rules a stagger apart
+        /// (the support spells share the support group's 2 s cooldown on the server).</summary>
+        public static bool TimerDue(SupportTimerRule r, double lastCastMs, double now, bool attacking, bool pz, double lastAnyMs)
+        {
+            if (!r.Enabled || !attacking || pz || r.Words.Length == 0) return false;
+            if (!double.IsNaN(lastCastMs) && now - lastCastMs < r.Cooldown * 1000.0) return false;
+            if (double.IsNaN(lastCastMs) && !double.IsNaN(lastAnyMs) && now - lastAnyMs < TimerStaggerMs) return false;
+            return true;
+        }
+        public const double TimerStaggerMs = 2500;
+
         /// <summary>The list after Auto setup. replace: the plan's ids; else the player's rows stay and new ids go below (up to 8).</summary>
         public static List<SupportSlot> MergeSlots(IList<SupportSlot> current, IList<int> planned, bool replace)
         {
@@ -241,16 +308,71 @@ namespace Chaos.Core
 
         /// <summary>Is the effect on us? true / false, or null when nothing tells (never cast, or a vigil: never cast blind). No buff bar: the spell's
         /// own duration, else at least a minute (or its cooldown) since our last cast.</summary>
-        static bool? Active(SupportState st, SupportInfo info, Spell s, double now)
+        static bool? Active(SupportState st, SupportInfo info, Spell s, SupportContext ctx, double now)
         {
-            if (info.Kind == "switch") return null;
+            bool? fromBar = ctx.BuffActive != null ? ctx.BuffActive(info.Bar) : null;
+            if (info.Kind == "switch")
+            {
+                // a vigil the bar showed on goes off without a cast of ours settling: the player switched it off. The helper leaves it off (TakeUserOff unticks the row)
+                // and not within the grace of a death, a login or a teleport (NoteClear): the buffs go and come back then.
+                bool was;
+                bool hadState = st.BarOn.TryGetValue(s.Id, out was);
+                if (fromBar != null) st.BarOn[s.Id] = fromBar.Value;
+                double settle;
+                st.SettleUntil.TryGetValue(s.Id, out settle);
+                if (fromBar == false && hadState && was && settle <= now && st.GraceUntil <= now) st.UserOff[s.Id] = now;
+                else if (fromBar == true) st.UserOff.Remove(s.Id);
+            }
+            if (info.Haste && ctx.Hasted != null && ctx.Hasted() == true) fromBar = true;   // a haste shows in the player's own state even where the bar has no entry
+            if (fromBar == true)
+            {
+                st.Seen.Add(s.Id); st.SawSince.Add(s.Id); st.Misses[s.Id] = 0;
+                return true;
+            }
+            if (info.Kind == "switch" && fromBar == null) return null;   // a vigil is never cast blind
             double at;
-            if (!st.CastAt.TryGetValue(s.Id, out at)) return null;
+            bool cast = st.CastAt.TryGetValue(s.Id, out at);
+            if (fromBar == false && (st.Seen.Contains(s.Id) || !cast)) return false;
+            if (!cast) return null;
             if (info.Dur > 0) return now < at + info.Dur * 1000.0;
             return now < at + Math.Max(RecastMinMs, s.Cooldown);
         }
 
-        public static int Unanswered(SupportState st, int id) { int n; st.Misses.TryGetValue(id, out n); return n + (st.CastAt.ContainsKey(id) ? 1 : 0); }
+        /// <summary>How many casts of this spell in a row were not followed by its buff (the last one counts once the wait is over).</summary>
+        public static int Unanswered(SupportState st, int id)
+        {
+            int n; st.Misses.TryGetValue(id, out n);
+            if (st.CastAt.ContainsKey(id) && !st.SawSince.Contains(id)) n++;
+            return n;
+        }
+
+        public const double UserOffConfirmMs = 2000, SessionGraceMs = 10000;
+
+        /// <summary>The vigils the player switched off by hand: their rows are unticked, so the helper does not switch them on again until the player ticks the row. Returns the ids.
+        /// A drop of two or more vigils in one tick (a death, a cleanse) or one close to a death, login or teleport (NoteClear) is not the player's. now NaN: every mark.</summary>
+        public static List<int> TakeUserOff(SupportState st, HelperSupportConfig cfg, double now)
+        {
+            var o = new List<int>();
+            if (st == null || cfg == null || st.UserOff.Count == 0) return o;
+            var same = new Dictionary<double, int>();
+            foreach (var at in st.UserOff.Values) { same.TryGetValue(at, out int n); same[at] = n + 1; }
+            foreach (var id in new List<int>(st.UserOff.Keys))
+            {
+                double at = st.UserOff[id];
+                bool near = !double.IsNaN(st.ClearAt) && at >= st.ClearAt - UserOffConfirmMs && at <= Math.Max(st.ClearAt + UserOffConfirmMs, st.GraceUntil);
+                if (same[at] > 1 || near) st.UserOff.Remove(id);
+            }
+            foreach (var slot in cfg.Slots)
+            {
+                if (!st.UserOff.TryGetValue(slot.Id, out double at)) continue;
+                bool due = double.IsNaN(now) || now - at >= UserOffConfirmMs;
+                if (due && slot.Enabled) { slot.Enabled = false; o.Add(slot.Id); }
+            }
+            return o;
+        }
+
+        /// <summary>A death, a login or a teleport now: a vigil drop close to it is not the player's. graceMs: how long a bar drop is not read as the player's.</summary>
+        public static void NoteClear(SupportState st, double now, double graceMs = UserOffConfirmMs) { st.ClearAt = now; st.GraceUntil = now + graceMs; }
 
         /// <summary>Why this spell may not be cast now (null: it may). Consumes nothing.</summary>
         public static string Why(SupportState st, HelperSupportConfig cfg, SupportSlot slot, SupportContext ctx)
@@ -292,9 +414,10 @@ namespace Chaos.Core
             }
             if (!counted)
             {
-                bool? active = Active(st, info, spell, now);
+                bool? active = Active(st, info, spell, ctx, now);
                 if (active == true) return "active";
-                if (info.Kind == "switch") return "nobar";
+                if (info.Kind == "switch" && st.UserOff.ContainsKey(spell.Id)) return "useroff";
+                if (info.Kind == "switch" && active == null) return "nobar";
             }
             if (info.ExpectBar && cast)
             {
@@ -341,7 +464,7 @@ namespace Chaos.Core
         public static void NoteCast(SupportState st, Spell s, double now)
         {
             var info = Info(s);
-            if (info.ExpectBar) st.Misses[s.Id] = st.CastAt.ContainsKey(s.Id) ? Unanswered(st, s.Id) : 0;
+            if (info.ExpectBar) { st.Misses[s.Id] = st.CastAt.ContainsKey(s.Id) ? Unanswered(st, s.Id) : 0; st.SawSince.Remove(s.Id); }
             st.CastAt[s.Id] = now;
             st.SettleUntil[s.Id] = now + (info.Kind == "switch" ? SwitchSettleMs : SettleMs);
             st.Casts++;
@@ -369,6 +492,7 @@ namespace Chaos.Core
                 case "full": return Loc.T("Summon limit");
                 case "nocount": return Loc.T("Cannot count summons");
                 case "nobar": return Loc.T("Needs the buff bar");
+                case "useroff": return Loc.T("Switched off by you");
                 case "noparty": return Loc.T("Needs a party");
                 case "utility": return Loc.T("Utility, never cast");
                 case "unknown": return Loc.T("Unknown spell");

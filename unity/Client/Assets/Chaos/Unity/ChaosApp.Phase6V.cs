@@ -365,7 +365,7 @@ namespace Chaos.Client
                     chips.Add(k); cx += cw + 4;
                 }
                 float height = NpcBubble.Pad * 2 + 18 + lines.Count * NpcBubble.LineH + (chips.Count > 0 ? 26 : 0);
-                float nameTop = y - InfoLift.Scaled(c, tile) - Mathf.Max(3f, Mathf.Round(tile / 14f)) - 22;
+                float nameTop = y - InfoLift.ForView(c, tile, HdLabelsOn) - Mathf.Max(3f, Mathf.Round(tile / 14f)) - 22;
                 var place = NpcBubble.Place(width, height, x, nameTop, x, y + tile * 0.5f, 0, 0, map.width, map.height);
                 var box = new Rect(place.X, place.Y, width, height);
                 uiRects.Add(Scaled(new Rect(map.x + box.x, map.y + box.y, box.width, box.height), scale));

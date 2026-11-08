@@ -29,6 +29,8 @@ namespace Chaos.Core
         public int Count = 1;
         public string Frame;
         public object ItemTip;
+        /// <summary>Lines added under the item tooltip while the pointer is over the row (the market's matched modifiers).</summary>
+        public List<TipLine> TipExtra;
         /// <summary>RowKind.Chart: the points (price chart) and the width of the axis in units.</summary>
         public List<ChartPoint> Points;
         public int Units = 30;
