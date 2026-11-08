@@ -611,30 +611,37 @@ namespace Chaos.Client
     public sealed class PvpZoneConfirmWindow : EgHudWindow
     {
         bool accept, hcAccept;
+        Vector2 scroll;
+        const float BarH = 32f;   // the Enter and Cancel buttons stay in view whatever the rules text takes
         public override string Title => Loc.T("Enter the Marches");
-        protected override Rect Place(float w, float h) => new Rect(w / 2 - 250, 110, 500, 380);
+        // phase 12, track H: at most the screen, however many rules the server sends (the text and the ticks scroll, the buttons do not)
+        protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 250), 110, Mathf.Min(500, w - 16), Mathf.Min(380, h - 118));
         protected override bool Wanted(ChaosApp app) => app.Session.Endgame.PvpZone.ConfirmAsked;
-        public override void Reset() { base.Reset(); accept = hcAccept = false; }
+        public override void Reset() { base.Reset(); accept = hcAccept = false; scroll = Vector2.zero; }
 
         protected override void Body(ChaosApp app, Rect inner)
         {
             var z = app.Session?.Endgame?.PvpZone;
             if (z == null) return;
-            float x = inner.x + 6, w = inner.width - 12, y = inner.y + 4;
-            y += Eu.Wrap(app, x, y, w, PvpZoneView.RiskText(z.State), Eu.Text, 12);
-            y += 6;
-            accept = GUI.Toggle(new Rect(x, y, w, 22), accept, " " + Loc.T("I understand the risk."));
-            y += 24;
             var hc = Json.Get(z.State, "hc");
-            if (Json.Bool(hc, "isHc") && Json.Bool(hc, "allow"))
-            {
-                hcAccept = GUI.Toggle(new Rect(x, y, w, 22), hcAccept, " " + Loc.T("I accept that a defeat may end my Hardcore run."));
-                y += 24;
-            }
+            bool showHc = Json.Bool(hc, "isHc") && Json.Bool(hc, "allow");
+            var view = new Rect(inner.x + 2, inner.y + 2, inner.width - 4, WindowFit.ViewHeight(inner.height - 2, BarH, 4));
+            float tw = view.width - 24;
+            string risk = PvpZoneView.RiskText(z.State);
+            float textH = string.IsNullOrEmpty(risk) ? 0f : Eu.Height(app, risk, tw, 12) + 3;
+            float content = 4 + textH + 6 + 24 + (showHc ? 24 : 0);
+            scroll = GUI.BeginScrollView(view, scroll, new Rect(0, 0, view.width - 18, WindowFit.ScrollContent(content, view.height)));
+            float y = 4;
+            y += Eu.Wrap(app, 4, y, tw, risk, Eu.Text, 12);
             y += 6;
+            accept = GUI.Toggle(new Rect(4, y, tw, 22), accept, " " + Loc.T("I understand the risk."));
+            y += 24;
+            if (showHc) hcAccept = GUI.Toggle(new Rect(4, y, tw, 22), hcAccept, " " + Loc.T("I accept that a defeat may end my Hardcore run."));
+            GUI.EndScrollView();
+            float x = inner.x + 6, w = inner.width - 12, by = inner.yMax - BarH + 2;
             bool ok = PvpZoneView.CanConfirm(z.State, accept, hcAccept) && Json.Get(z.State, "canEnter") as bool? != false;
-            if (Eu.Button(new Rect(x, y, w / 2 - 4, 28), Loc.T("Enter"), ok)) { z.Enter(accept, hcAccept); accept = hcAccept = false; }
-            if (GUI.Button(new Rect(x + w / 2 + 4, y, w / 2 - 4, 28), Loc.T("Cancel"))) { z.CancelConfirm(); accept = hcAccept = false; }
+            if (Eu.Button(new Rect(x, by, w / 2 - 4, 28), Loc.T("Enter"), ok)) { z.Enter(accept, hcAccept); accept = hcAccept = false; }
+            if (GUI.Button(new Rect(x + w / 2 + 4, by, w / 2 - 4, 28), Loc.T("Cancel"))) { z.CancelConfirm(); accept = hcAccept = false; }
         }
     }
 

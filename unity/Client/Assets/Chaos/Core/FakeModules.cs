@@ -38,7 +38,7 @@ namespace Chaos.Core
         public bool Drivable => Reason.Length == 0;
     }
 
-    public static class FakeModules
+    public static partial class FakeModules
     {
         /// <summary>Single quotes stand for double quotes in the samples below (no apostrophes in the texts).</summary>
         static object J(string text) => Json.Parse(text.Replace('\'', '"'));
@@ -56,7 +56,7 @@ namespace Chaos.Core
         const string Sc = "server/data/scripts/chaos/";
 
         // ------------------------------------------------------------------------------------ what is covered
-        public static readonly IList<FakeModule> Catalog = new List<FakeModule>
+        static readonly IList<FakeModule> BaseModules = new List<FakeModule>
         {
             Mod("achievements", AchievementsState.OpcodeId, "achievements.lua", "AchievementsWindow", "open", "get"),
             Mod("bestiary", BestiaryState.OpcodeId, "bestiary.lua", "BestiaryWindow", "open", "list", "summary", "entry", "board", "query"),
@@ -79,6 +79,16 @@ namespace Chaos.Core
             Mod("groupqueue", GroupQueuePanel.Opcode, "groupqueue.lua", "GroupQueueWindow", "open", "query"),
             Mod("tower", TowerState.Opcode, "infinitytower.lua", "TowerWindow", "request", "state"),
         };
+
+        /// <summary>The covered modules: the phase 11 list and the phase 12 track H one (Core/FakeModulesP12.cs).</summary>
+        public static readonly IList<FakeModule> Catalog = BuildCatalog();
+
+        static IList<FakeModule> BuildCatalog()
+        {
+            var all = new List<FakeModule>(BaseModules);
+            all.AddRange(Phase12Modules());
+            return all;
+        }
 
         static FakeModule Mod(string name, byte op, string file, string window, params string[] requests) =>
             new FakeModule { Name = name, Op = op, Source = file.StartsWith("tests/", StringComparison.Ordinal) ? "server/" + file : Sc + file, Windows = new[] { window }, Requests = requests };
@@ -149,6 +159,7 @@ namespace Chaos.Core
                 if (action == "request") o.Add(TowerOpen());
                 if (action == "state") o.Add(Flat(TowerState.Opcode, "{'action':'state','inRun':false,'canSkip':false,'floor':0,'nextBoss':false}", Sc + "infinitytower_run.lua (sendState)"));
             }
+            if (o.Count == 0) o.AddRange(Answer12(op, action, data));   // phase 12, track H: Core/FakeModulesP12.cs
             return o;
         }
 
@@ -409,6 +420,7 @@ namespace Chaos.Core
             Ctx(d, "TaskTrackerWindow", Sc + "bestiary.lua", BestTracker(true));
             d["TaskTrackerWindow"].Close.Add(BestTracker(false));
             // no server push opens it: the Bot HUD follows the helper's own client setting (HelperConfig Hud.Enabled), saved in the player
+            AddContexts12(d);
             d["HelperHudWindow"] = new FakeContext { Window = "HelperHudWindow", Source = "client setting", Reason = "the Bot HUD opens from the helper's own setting (Hud.Enabled), no server message drives it" };
             return d;
         }

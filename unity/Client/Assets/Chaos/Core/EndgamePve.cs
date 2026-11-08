@@ -585,6 +585,14 @@ namespace Chaos.Core
 
         static readonly string[] Rarity = { "", "Common", "Uncommon", "Magic", "Rare", "Legendary" };
 
+        /// <summary>The vendor's stock rows of an info message. The server sends vendor = {marks, stock = [rows]} (raid.lua vendorView); the window read vendor as the list itself and
+        /// so showed an empty Vendor tab (phase 12, track H). A plain list is still accepted.</summary>
+        public static List<object> VendorStock(object info)
+        {
+            object v = Json.Get(info, "vendor");
+            return v is List<object> ? Eg.Objects(info, "vendor") : Eg.Objects(v, "stock");
+        }
+
         public static RaidVendorRow VendorRow(object e, double marks)
         {
             string sub;

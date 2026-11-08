@@ -299,6 +299,8 @@ namespace Chaos.Client
                     rec.Rect = new SmokeBox(r.x, r.y, r.width, r.height);
                     rec.ZeroSize = SmokeRect.Zero(r.width, r.height);
                     rec.OffScreen = SmokeRect.OffScreen(r.x, r.y, r.width, r.height, uw, uh);
+                    rec.Oversize = SmokeRect.Oversize(r.width, r.height, uw, uh);   // phase 12, track H
+                    if (s.Kind != WindowSmokePlan.Login) rec.Thin = open && SmokeBody.Thin(r.height);
                     crop = SmokeSheet.Crop(r.x * scale, r.y * scale, r.width * scale, r.height * scale, 8f, UnityEngine.Screen.width, UnityEngine.Screen.height);
                 }
                 if (ctx != null && ctx.Drivable && rec.Context.Length == 0 && !open) rec.Context = "the push did not open it: " + ctx.Source;
@@ -309,6 +311,7 @@ namespace Chaos.Client
                 {
                     try { tile.Tex = MakeTile(shot, crop); }
                     catch (Exception e) { SmokeReport.AddIssue(rec, SmokeIssueKind.Exception, "tile: " + e.GetType().Name + ": " + e.Message, e.StackTrace); }
+                    if (hasRect && open && s.Kind != WindowSmokePlan.Login) MeasureBody(shot, rec, scale);
                     Destroy(shot);
                 }
                 tiles.Add(tile);
@@ -320,6 +323,23 @@ namespace Chaos.Client
                 if (rec.Context.Length > 0) Debug.Log("chaos window smoke: context only: " + s.Name + ": " + rec.Context);
                 EndContext();
                 current = null; rec = null;
+            }
+
+            /// <summary>Phase 12, track H: the ink share of the window's body in the screenshot (pixels unlike the body's main colour). A window with none drew no text, icon or bar.</summary>
+            void MeasureBody(Texture2D shot, SmokeRecord r, float scale)
+            {
+                try
+                {
+                    var f = shot.format;
+                    if (f != TextureFormat.RGBA32 && f != TextureFormat.ARGB32 && f != TextureFormat.BGRA32) return;
+                    var box = SmokeBody.Inner(r.Rect, scale, shot.width, shot.height);
+                    byte[] px = shot.GetRawTextureData();
+                    float ink = SmokeBody.Ink(px, shot.width, shot.height, box, true, out int samples);
+                    if (samples < SmokeBody.MinSamples) return;
+                    r.Ink = ink;
+                    r.EmptyBody = SmokeBody.Empty(ink, samples);
+                }
+                catch (Exception e) { Debug.LogWarning("chaos window smoke: body check: " + e.Message); }
             }
 
             /// <summary>The step has drawn its frames and the server's answers are in. A context HUD also waits for its window to open (the push arrives some frames after the request).</summary>
@@ -343,7 +363,7 @@ namespace Chaos.Client
                 {
                     if (server != null && ctx.Close.Count > 0) server.Push(ctx.Close);
                     var s = app.session;
-                    if (s != null) { s.Endgame?.Clear(); s.Progress?.Rift?.Hide(); }
+                    if (s != null) { s.Endgame?.Clear(); s.Progress?.Rift?.Hide(); s.Utils?.Waystone?.Clear(); }
                 }
                 catch (Exception e) { Debug.LogWarning("chaos window smoke: ending the context of " + current.Name + ": " + e.Message); }
                 ctx = null;
@@ -358,6 +378,9 @@ namespace Chaos.Client
                 if (g > 0) f += "ERR" + g + " ";
                 if (r.ZeroSize) f += "ZERO ";
                 if (r.OffScreen) f += "OFF ";
+                if (r.Oversize) f += "OVER ";
+                if (r.Thin) f += "THIN ";
+                if (r.EmptyBody) f += "EMPTY ";
                 if (!r.OpenAtEnd && r.Context.Length == 0) f += "SHUT ";
                 if (r.Context.Length > 0) f += "CTX ";
                 return f.TrimEnd();

@@ -419,7 +419,7 @@ namespace Chaos.Client
                 if (r.Info == null) { text(Loc.T("Asking the server..."), Eu.Dim, 12, false); return y; }
                 double marks = Json.Number(r.Info, "marks");
                 text(Loc.T("Sepulchre Marks: {0}", Eg.Number(marks)), Eu.Bright, 13, true);
-                foreach (object e in Eg.Objects(r.Info, "vendor"))
+                foreach (object e in RaidView.VendorStock(r.Info))
                 {
                     var v = RaidView.VendorRow(e, marks);
                     float sh = Eu.Height(app, v.Sub, w - 150, 11);
@@ -479,7 +479,10 @@ namespace Chaos.Client
     {
         public override string Title => Loc.T("Raid");
         public override bool InMenu => false;
-        protected override Rect Place(float w, float h) => new Rect(w / 2 - 260, 96, 520, 40);
+        public override bool ClampToScreen => true;
+        // the body is the window less 32 (title bar and frame): 40 left a 8 high body and a label 4 high, so only the title bar showed (phase 12, track H). 28 for the line, 32 for the bar and frame.
+        public override bool Resizable => false;
+        protected override Rect Place(float w, float h) => new Rect(w / 2 - 260, 96, 520, 32 + 30);
 
         public override void Tick(ChaosApp app)
         {

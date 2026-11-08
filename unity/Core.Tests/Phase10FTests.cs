@@ -137,7 +137,7 @@ namespace Chaos.Core.Tests
             check(r1.Problem && r2.Problem && !r3.Problem && !r4.Problem, "smoke report: problem flags");
             check(rep.WithProblems == 2 && rep.OffScreenCount == 1, "smoke report: counts");
             check(rep.SummaryLine() == "chaos window smoke: 4 windows, 2 with errors", "smoke report: summary line: " + rep.SummaryLine());
-            check(rep.DetailLine() == "chaos window smoke: 2 exceptions, 1 layout errors, 0 logged errors, 1 off screen or empty, 1 in the background, 0 context only", "smoke report: detail line: " + rep.DetailLine());
+            check(rep.DetailLine() == "chaos window smoke: 2 exceptions, 1 layout errors, 0 logged errors, 1 off screen or empty, 1 in the background, 0 context only, 0 oversize, 0 thin or empty body", "smoke report: detail line: " + rep.DetailLine());
 
             string json = rep.ToJson(1280, 720);
             var root = Json.TryParse(json) as Dictionary<string, object>;
