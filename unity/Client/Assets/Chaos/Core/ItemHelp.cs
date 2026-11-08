@@ -103,7 +103,7 @@ namespace Chaos.Core
             Action<string> add = line => { if (line != null) outl.Add(line); };
             object unique = Json.Get(tip, "unique");
             bool uniqueTip = unique is Dictionary<string, object>;
-            if (uniqueTip && Json.Get(unique, "set") != null && !(Json.Get(unique, "set") is bool sb0 && !sb0)) add(Loc.T("Set: wear more pieces of the set for extra bonuses."));
+            if (uniqueTip && Json.Get(unique, "set") != null && Json.Truthy(unique, "set", true)) add(Loc.T("Set: wear more pieces of the set for extra bonuses."));
             else if (uniqueTip) add(Loc.T("Unique: a named item with fixed modifiers, often with a power of its own."));
             else if (Json.Get(tip, "rarityName") is string rn) add(Loc.T("{0}: the rarity. Rarer items roll more modifiers.", Loc.T(rn)));
             if (Json.Get(tip, "set") != null && !uniqueTip) add(Loc.T("Set: wear more pieces of the set for extra bonuses."));
@@ -126,11 +126,11 @@ namespace Chaos.Core
                 int tier = (int)Json.Number(m, "tr");
                 if (tier > 0 && tier > best) best = tier;
                 if (Json.Get(m, "lo") != null && Json.Get(m, "hi") != null) range = true;
-                if (Json.Get(m, "bd") != null && !(Json.Get(m, "bd") is bool bd && !bd)) bound = true;
+                if (Json.Get(m, "bd") != null && Json.Truthy(m, "bd", true)) bound = true;
                 string sd = Json.Text(m, "sd");
                 if (sd == "p" || sd == "s") sides = true;
                 if (sd == "i") implicit_ = true;
-                if (Json.Get(m, "pw") != null && !(Json.Get(m, "pw") is bool pw && !pw)) power = true;
+                if (Json.Get(m, "pw") != null && Json.Truthy(m, "pw", true)) power = true;
             }
             if (best > 0) add(Loc.T("T{0}: the tier, T1 weak to T8 best.", best));
             if (range) add(Loc.T("[low-high]: the range this modifier can roll in."));

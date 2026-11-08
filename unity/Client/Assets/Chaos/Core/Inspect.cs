@@ -64,7 +64,7 @@ namespace Chaos.Core
             string voc = Json.Text(d, "voc").Length > 0 ? Json.Text(d, "voc") : Loc.T("No vocation");
             o.Add(new KeyValuePair<string, string>(Json.Text(d, "name"), "gold"));
             o.Add(new KeyValuePair<string, string>(Loc.T("Level {0} {1}", Json.Int(d, "level"), voc), "text"));
-            if (Json.Bool(d, "ascended")) o.Add(new KeyValuePair<string, string>(Loc.T("Ascended class"), "gold"));
+            if (Json.Truthy(d, "ascended")) o.Add(new KeyValuePair<string, string>(Loc.T("Ascended class"), "gold"));
             if (Json.Text(d, "title").Length > 0) o.Add(new KeyValuePair<string, string>(Json.Text(d, "title"), "#7fc4d6"));
             object g = Json.Get(d, "guild");
             o.Add(SFmt.IsMap(g) && Json.Text(g, "name").Length > 0
@@ -225,7 +225,7 @@ namespace Chaos.Core
                     Data = d; Tips.Clear(); TreeData = null; Records = null; PartsExpected = Json.Int(d, "parts"); PartsGot = 0; Denied = "";
                     Visible = true;
                     Header1 = Json.Text(d, "name");
-                    Status = Json.Bool(d, "self") ? Loc.T("This is you.") : ""; StatusTone = "dim";
+                    Status = Json.Truthy(d, "self") ? Loc.T("This is you.") : ""; StatusTone = "dim";
                     if (Tab == "combat" && InspectMath.CombatStats(d).Count == 0) Tab = "gear";
                     break;
                 case "equip":
@@ -252,7 +252,7 @@ namespace Chaos.Core
                     Denied = Json.Text(d, "text", Loc.T("Nothing to show."));
                     Status = Denied; StatusTone = "bad"; Visible = true; Header1 = "";
                     break;
-                case "privacy": AllowMe = Json.Bool(d, "allow"); PrivacyKnown = true; Form["privacy"] = AllowMe ? "1" : "0"; break;
+                case "privacy": AllowMe = Json.Truthy(d, "allow"); PrivacyKnown = true; Form["privacy"] = AllowMe ? "1" : "0"; break;
             }
             Changed();
         }
@@ -299,7 +299,7 @@ namespace Chaos.Core
                 var r = l.Row(Loc.T(InspectMath.SlotName(slot)), tip != null ? Json.Text(tip, "name") : "", "dim");
                 if (tip != null)
                 {
-                    int rarity = Json.Int(tip, "rarity"); bool unique = Json.Bool(tip, "unique");
+                    int rarity = Json.Int(tip, "rarity"); bool unique = Json.Truthy(tip, "unique");
                     r.Right = Json.Text(tip, "name");
                     r.Tone = rarity > 0 || unique ? SFmt.RarityTone(rarity, unique) : "text";
                     r.Item(InspectMath.TipItem(tip), Json.Int(tip, "count", 1), rarity > 0 || unique ? SFmt.RarityTone(rarity, unique) : null, tip);

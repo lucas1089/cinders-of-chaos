@@ -103,7 +103,7 @@ namespace Chaos.Core
                 if (action == "open")
                 {
                     bool rift = op == AtlasState.RiftOpcode;
-                    if (Json.Bool(data, "tree", true)) o.Add(AtlasTree(rift));   // the server sends the tree only when the client has none; the smoke run's client has none
+                    if (Json.Truthy(data, "tree", true)) o.Add(AtlasTree(rift));   // the server sends the tree only when the client has none; the smoke run's client has none
                     o.Add(AtlasStateMsg(rift));
                 }
             }

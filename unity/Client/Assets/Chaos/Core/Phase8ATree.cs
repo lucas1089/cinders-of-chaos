@@ -75,30 +75,30 @@ namespace Chaos.Core
         {
             if (!(data is Dictionary<string, object>)) return;
             Known = true;
-            Supported = Json.Bool(data, "supported");
+            Supported = Json.Truthy(data, "supported");
             Trial = Json.Text(data, "trial"); Story = Json.Text(data, "story");
             Level = Json.Int(data, "level"); Cleared = Json.Int(data, "tier");
             Tokens = Json.Int(data, "tokens"); MaxTokens = Json.Int(data, "maxTokens", 10);
             SwitchGold = (long)Json.Number(data, "switchGold");
-            Running = Json.Bool(data, "running");
+            Running = Json.Truthy(data, "running");
             Tiers.Clear(); Pairs.Clear();
             foreach (object t in Json.List(data, "tiers"))
             {
-                var tier = new TrialTier { Name = Json.Text(t, "name"), MinLevel = Json.Int(t, "minLevel"), Cleared = Json.Bool(t, "cleared"), Problem = Json.Text(t, "problem"), Time = Json.Int(t, "time"), Lives = Json.Int(t, "lives"), BossHealth = Json.Number(t, "bossHealth") };
+                var tier = new TrialTier { Name = Json.Text(t, "name"), MinLevel = Json.Int(t, "minLevel"), Cleared = Json.Truthy(t, "cleared"), Problem = Json.Text(t, "problem"), Time = Json.Int(t, "time"), Lives = Json.Int(t, "lives"), BossHealth = Json.Number(t, "bossHealth") };
                 Tiers.Add(tier);
             }
             int n = 0;
             foreach (object p in Json.List(data, "pairs"))
             {
-                var pair = new TrialPair { Number = ++n, Tier = Json.Text(p, "tier"), Locked = Json.Bool(p, "locked"), Held = Json.Int(p, "held") };
+                var pair = new TrialPair { Number = ++n, Tier = Json.Text(p, "tier"), Locked = Json.Truthy(p, "locked"), Held = Json.Int(p, "held") };
                 object clear = Json.Get(p, "clear");
-                pair.ClearCan = !(clear is Dictionary<string, object>) || Json.Bool(clear, "can");
+                pair.ClearCan = !(clear is Dictionary<string, object>) || Json.Truthy(clear, "can");
                 int i = 0;
                 foreach (object nd in Json.List(p, "nodes"))
                 {
                     if (i >= 2) break;
-                    var node = new TrialNode { Name = Json.Text(nd, "name"), Lore = Json.Text(nd, "lore"), Can = Json.Bool(nd, "can"), Why = Json.Text(nd, "why"), Switch = Json.Bool(nd, "switch"), NeedsSpellEvents = Json.Bool(nd, "needsSpellEvents") };
-                    foreach (object l in Json.List(nd, "lines")) node.Lines.Add(new KeyValuePair<string, bool>(Json.Text(l, "text"), Json.Bool(l, "good")));
+                    var node = new TrialNode { Name = Json.Text(nd, "name"), Lore = Json.Text(nd, "lore"), Can = Json.Truthy(nd, "can"), Why = Json.Text(nd, "why"), Switch = Json.Truthy(nd, "switch"), NeedsSpellEvents = Json.Truthy(nd, "needsSpellEvents") };
+                    foreach (object l in Json.List(nd, "lines")) node.Lines.Add(new KeyValuePair<string, bool>(Json.Text(l, "text"), Json.Truthy(l, "good")));
                     pair.Nodes[i++] = node;
                 }
                 Pairs.Add(pair);
@@ -529,7 +529,7 @@ namespace Chaos.Core
             if (pendingBuild.Length == 0) return "ignore";
             string build = Json.Text(data, "build");
             if (build.Length > 0 && build != pendingBuild) return "ignore";
-            if (Json.Bool(data, "retry") && pendingTries < MaxTries) return "retry";
+            if (Json.Truthy(data, "retry") && pendingTries < MaxTries) return "retry";
             return "fail";
         }
     }

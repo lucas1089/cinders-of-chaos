@@ -147,11 +147,11 @@ namespace Chaos.Core
                     var act = new Act
                     {
                         Id = Cm.Str(a, "id"), Name = Cm.Str(a, "name", Cm.Str(a, "id")), Description = Cm.Str(a, "description"), Category = cat.Id,
-                        Dangerous = Json.Bool(a, "dangerous"), Confirm = Json.Bool(a, "confirm"),
+                        Dangerous = Json.Truthy(a, "dangerous"), Confirm = Json.Truthy(a, "confirm"),
                     };
                     foreach (var p in SFmt.Rows(a, "params"))
                     {
-                        var pr = new Param { Name = Cm.Str(p, "name"), Label = Cm.Str(p, "label", Cm.Str(p, "name")), Type = Cm.Str(p, "type", "text"), Hint = Cm.Str(p, "hint"), Required = Json.Bool(p, "required"), Default = Json.Get(p, "default") };
+                        var pr = new Param { Name = Cm.Str(p, "name"), Label = Cm.Str(p, "label", Cm.Str(p, "name")), Type = Cm.Str(p, "type", "text"), Hint = Cm.Str(p, "hint"), Required = Json.Truthy(p, "required"), Default = Json.Get(p, "default") };
                         foreach (object o in Json.List(p, "options"))
                         {
                             if (o is Dictionary<string, object>) pr.Options.Add(new KeyValuePair<string, object>(Cm.Str(o, "label", Cm.Str(o, "value")), Json.Get(o, "value")));
@@ -185,7 +185,7 @@ namespace Chaos.Core
             if (!pending.TryGetValue(rid, out name)) name = Cm.Str(data, "id", "?");
             pending.Remove(rid);
             Busy = false;
-            AddResult("[" + name + "] " + Cm.Str(data, "message"), Json.Bool(data, "ok") ? "good" : "bad");
+            AddResult("[" + name + "] " + Cm.Str(data, "message"), Json.Truthy(data, "ok") ? "good" : "bad");
             foreach (object l in Json.List(data, "lines")) AddResult("  " + (l is string s ? s : Json.Serialize(l)), "text");
         }
 
@@ -220,7 +220,7 @@ namespace Chaos.Core
             {
                 string key = "p_" + p.Name;
                 object value;
-                if (p.Type == "bool") value = Form.TryGetValue(key, out var b) ? b == "1" : p.Default is bool db && db;
+                if (p.Type == "bool") value = Form.TryGetValue(key, out var b) ? b == "1" : Json.Truthy(p.Default);
                 else if (p.Type == "select")
                 {
                     int idx = Form.ContainsKey(key) ? Index(key) : DefaultIndex(p);
@@ -313,7 +313,7 @@ namespace Chaos.Core
                     string label = p.Label + (p.Required ? " *" : "");
                     if (p.Type == "bool")
                     {
-                        if (!Form.ContainsKey(key)) Form[key] = p.Default is bool db && db ? "1" : "0";
+                        if (!Form.ContainsKey(key)) Form[key] = Json.Truthy(p.Default) ? "1" : "0";
                         l.Combo(label, key, new[] { Loc.T("No"), Loc.T("Yes") });
                     }
                     else if (p.Type == "select")
@@ -726,7 +726,7 @@ namespace Chaos.Core
         {
             var l = new RowList();
             var s = State ?? new Dictionary<string, object>();
-            bool has = Json.Bool(s, "has");
+            bool has = Json.Truthy(s, "has");
             if (!has)
             {
                 Header1 = Loc.T("No Nemesis hunts you");
@@ -775,8 +775,8 @@ namespace Chaos.Core
 
         protected override void Handle(string action, object data)
         {
-            if (action == "status") { StatusData = data; if (Json.Bool(data, "open")) { Visible = true; Status = ""; } }
-            else if (action == "message") { Status = Json.Text(data, "text"); StatusTone = Json.Bool(data, "error") ? "bad" : "good"; }
+            if (action == "status") { StatusData = data; if (Json.Truthy(data, "open")) { Visible = true; Status = ""; } }
+            else if (action == "message") { Status = Json.Text(data, "text"); StatusTone = Json.Truthy(data, "error") ? "bad" : "good"; }
         }
 
         public static string LeftText(double seconds)
@@ -799,7 +799,7 @@ namespace Chaos.Core
             foreach (var m in SFmt.Rows(s, "milestones")) parts.Add(Loc.T("level {0}: {1}", Json.Int(m, "level"), Json.Text(m, "reward")));
             if (parts.Count > 0) lines.Add(Loc.T("You get, when your friend's first character reaches {0}.", string.Join("; ", parts)));
             var tiers = new List<string>();
-            foreach (var t in SFmt.Rows(s, "tiers")) tiers.Add(Loc.T("{0} friends: {1}{2}", Json.Int(t, "count"), Json.Text(t, "reward"), Json.Bool(t, "reached") ? " " + Loc.T("(yours)") : ""));
+            foreach (var t in SFmt.Rows(s, "tiers")) tiers.Add(Loc.T("{0} friends: {1}{2}", Json.Int(t, "count"), Json.Text(t, "reward"), Json.Truthy(t, "reached") ? " " + Loc.T("(yours)") : ""));
             if (tiers.Count > 0) lines.Add(Loc.T("And with friends at level {0} ({1} so far): {2}.", Json.Int(s, "qualifyLevel"), Json.Int(s, "qualified"), string.Join("; ", tiers)));
             return string.Join("\n", lines);
         }
@@ -812,10 +812,10 @@ namespace Chaos.Core
             if (Json.Text(s, "referrer").Length > 0)
             {
                 string text = Loc.T("You were referred by {0}.", Json.Text(s, "referrer"));
-                if (Json.Text(s, "linkStatus") == "active") text += Json.Bool(s, "giftGiven") ? Loc.T(" Your welcome gift was given.") : Loc.T(" Your welcome gift comes at your next login.");
+                if (Json.Text(s, "linkStatus") == "active") text += Json.Truthy(s, "giftGiven") ? Loc.T(" Your welcome gift was given.") : Loc.T(" Your welcome gift comes at your next login.");
                 return text;
             }
-            if (Json.Bool(s, "canEnter"))
+            if (Json.Truthy(s, "canEnter"))
             {
                 box = true;
                 string left = LeftText(Json.Number(s, "enterLeft"));
@@ -845,7 +845,7 @@ namespace Chaos.Core
             Header2 = "";
             if (s == null) { l.Text(Loc.T("Loading..."), "dim"); return l.Rows; }
             l.Section(Loc.T("Your code"));
-            if (!Json.Bool(s, "enabled")) { l.Text(Loc.T("The referral program is off."), "dim"); return l.Rows; }
+            if (!Json.Truthy(s, "enabled")) { l.Text(Loc.T("The referral program is off."), "dim"); return l.Rows; }
             string code = Json.Text(s, "code");
             if (code.Length == 0) l.Text(Json.Text(s, "codeNote", "-"), "dim");
             else

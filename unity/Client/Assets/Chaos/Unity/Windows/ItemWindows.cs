@@ -671,13 +671,13 @@ namespace Chaos.Client
             GUI.EndScrollView();
             float x = inner.x + lw + 6, w = inner.width - lw - 8, y = inner.y;
             var slot = l.SlotOf(l.Selected);
-            if (nameFor != l.Selected) { nameFor = l.Selected; nameEdit = slot != null && !Json.Bool(slot, "empty") ? Json.Text(slot, "name") : ""; }
+            if (nameFor != l.Selected) { nameFor = l.Selected; nameEdit = slot != null && !Json.Truthy(slot, "empty") ? Json.Text(slot, "name") : ""; }
             GUI.Label(new Rect(x, y, w, 22), l.SlotRow(slot).Title, st); y += 24;
             string hint = l.SwitchHint(now, out string hc);
             y = Ui.Para(hint, small, x, y, w, hc);
             float sh = inner.yMax - y - 100;
             string who = app.World?.Player?.Name;
-            var lines = l.Summary(slot, profiles != null && who != null && slot != null && !Json.Bool(slot, "empty") ? profiles.ProfileOf(who, Json.Int(slot, "slot")) : "");
+            var lines = l.Summary(slot, profiles != null && who != null && slot != null && !Json.Truthy(slot, "empty") ? profiles.ProfileOf(who, Json.Int(slot, "slot")) : "");
             float th = 0; foreach (var ln in lines) th += Ui.Height(ln.Text, small, w - 20) + 2;
             scrollDetail = GUI.BeginScrollView(new Rect(x, y, w, sh), scrollDetail, new Rect(0, 0, w - 18, th + 4));
             float cy = 0;

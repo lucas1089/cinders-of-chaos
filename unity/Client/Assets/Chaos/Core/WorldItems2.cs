@@ -62,7 +62,7 @@ namespace Chaos.Core
                 o.Add(new UnveilCard
                 {
                     I = Json.Int(c, "i"), Key = Json.Text(c, "key"), Name = Json.Text(c, "name"), Text = Json.Text(c, "text"), Lines = WorldText.Wrap(Json.Text(c, "text"), Wrap),
-                    TierText = Loc.T("Veiled tier {0}", tn), TierColor = TierColor(Json.Int(c, "tier")), RangeText = range, HookText = Json.Bool(c, "hook") ? Loc.T("Effect of its own") : "",
+                    TierText = Loc.T("Veiled tier {0}", tn), TierColor = TierColor(Json.Int(c, "tier")), RangeText = range, HookText = Json.Truthy(c, "hook") ? Loc.T("Effect of its own") : "",
                 });
             }
             return o;
@@ -86,7 +86,7 @@ namespace Chaos.Core
         public static string ResultTextOf(object res, out string color)
         {
             if (!(res is Dictionary<string, object>)) { color = "#8c8070"; return ""; }
-            if (Json.Bool(res, "ok"))
+            if (Json.Truthy(res, "ok"))
             {
                 color = "#7fe0a0";
                 var v = Json.Get(res, "veil");
@@ -114,7 +114,7 @@ namespace Chaos.Core
             else if (action == "result")
             {
                 Result = ResultTextOf(d, out string c); ResultColor = c;
-                if (Json.Bool(d, "ok")) Done = true;
+                if (Json.Truthy(d, "ok")) Done = true;
                 Changed();
             }
         }
@@ -216,7 +216,7 @@ namespace Chaos.Core
             foreach (object r in l)
             {
                 if (!(r is Dictionary<string, object>) || Json.Get(r, "n") == null || !(Json.Get(r, "n") is string)) continue;
-                var row = new ItemFinderRow { N = Json.Text(r, "n"), D = Json.Text(r, "d"), V = Json.Text(r, "v"), C = Json.Text(r, "c"), I = Json.Int(r, "i"), L = Json.Int(r, "l"), B = Json.Bool(r, "b") };
+                var row = new ItemFinderRow { N = Json.Text(r, "n"), D = Json.Text(r, "d"), V = Json.Text(r, "v"), C = Json.Text(r, "c"), I = Json.Int(r, "i"), L = Json.Int(r, "l"), B = Json.Truthy(r, "b") };
                 foreach (object m in Json.List(r, "m")) if (m is Dictionary<string, object>) row.Materials.Add(new KeyValuePair<string, int>(Json.Text(m, "n"), Json.Get(m, "c") is double c ? (int)c : 1));
                 o.Add(row);
             }
@@ -246,7 +246,7 @@ namespace Chaos.Core
         public static ItemFinderItem ParseItem(object d)
         {
             if (!(d is Dictionary<string, object>)) return null;
-            var o = new ItemFinderItem { Id = Json.Int(d, "id"), Cid = Json.Int(d, "cid"), Name = Json.Text(d, "name"), Total = Json.Int(d, "total"), None = Json.Bool(d, "none") };
+            var o = new ItemFinderItem { Id = Json.Int(d, "id"), Cid = Json.Int(d, "cid"), Name = Json.Text(d, "name"), Total = Json.Int(d, "total"), None = Json.Truthy(d, "none") };
             foreach (object s in Json.List(d, "secs")) { var c = CleanSection(s); if (c != null) o.Secs.Add(c); }
             o.Secs.Sort((a, b) => SectionIndex(a.K).CompareTo(SectionIndex(b.K)));
             return o;
@@ -392,7 +392,7 @@ namespace Chaos.Core
         {
             var row = new LoadoutRow { Icon = IconPath(Json.Text(slot, "icon")) };
             if (slot == null) { row.Title = "?"; return row; }
-            bool empty = Json.Bool(slot, "empty"), locked = Json.Bool(slot, "locked");
+            bool empty = Json.Truthy(slot, "empty"), locked = Json.Truthy(slot, "locked");
             if (locked && empty)
             {
                 int lvl = UnlockLevel(Json.Int(slot, "slot"));
@@ -407,7 +407,7 @@ namespace Chaos.Core
             var g = Json.Get(slot, "gear");
             if (Json.Int(g, "total") > 0) parts.Add(Loc.T("gear {0}/{1}", Json.Int(g, "ready"), Json.Int(g, "total")));
             row.Sub = string.Join(" | ", parts);
-            if (Json.Bool(slot, "active")) { row.Tag = "ACTIVE"; row.TagColor = Active; }
+            if (Json.Truthy(slot, "active")) { row.Tag = "ACTIVE"; row.TagColor = Active; }
             else if (locked) { row.Tag = "LOCKED"; row.TagColor = Dim; }
             else if (Json.List(slot, "warnings").Count > 0 || Json.List(g, "missing").Count > 0) { row.Tag = "CHECK"; row.TagColor = Warn; }
             return row;
@@ -426,9 +426,9 @@ namespace Chaos.Core
             var o = new List<LoadoutLine>();
             void Add(string t, string c = Text) => o.Add(new LoadoutLine { Text = t, Color = c });
             if (slot == null) return o;
-            if (Json.Bool(slot, "empty"))
+            if (Json.Truthy(slot, "empty"))
             {
-                if (Json.Bool(slot, "locked"))
+                if (Json.Truthy(slot, "locked"))
                 {
                     int lvl = UnlockLevel(Json.Int(slot, "slot"));
                     Add(lvl > 0 ? Loc.T("This slot opens at level {0}. Extra slots are earned by levelling, never sold.", lvl) : Loc.T("This slot is locked."), Dim);
@@ -471,7 +471,7 @@ namespace Chaos.Core
             }
             if (!string.IsNullOrEmpty(profile)) Add(Loc.T("Action bar: {0}", profile), Dim);
             foreach (object w in Json.List(slot, "warnings")) if (w is string ws) Add(ws, Warn);
-            if (Json.Bool(slot, "active")) Add(Loc.T("Active: this is your current build. Edit it in the passive tree window."), Active);
+            if (Json.Truthy(slot, "active")) Add(Loc.T("Active: this is your current build. Edit it in the passive tree window."), Active);
             return o;
         }
 
@@ -482,11 +482,11 @@ namespace Chaos.Core
             color = Dim;
             if (State == null) return "";
             if (Json.Int(State, "level") < Json.Int(State, "minLevel")) return Loc.T("Loadouts open at level {0}.", Json.Int(State, "minLevel"));
-            if (Json.Bool(State, "casting")) { color = Active; return Loc.T("Switching... stand still."); }
+            if (Json.Truthy(State, "casting")) { color = Active; return Loc.T("Switching... stand still."); }
             if (Json.Get(State, "busy") is string busy && busy.Length > 0) { color = Bad; return Loc.T("No switching inside {0}.", busy); }
             int left = CooldownLeft(now);
             if (left > 0) { color = Warn; return Loc.T("Next switch in {0} s.", left); }
-            if (Json.Bool(State, "inPz")) { color = Good; return Loc.T("Protection zone: switching is instant and free."); }
+            if (Json.Truthy(State, "inPz")) { color = Good; return Loc.T("Protection zone: switching is instant and free."); }
             color = Text;
             return Loc.T("Switching takes {0} s here (stand still). Free.", (Num(State, "castMs") / 1000).ToString("0.0", CultureInfo.InvariantCulture));
         }
@@ -495,12 +495,12 @@ namespace Chaos.Core
         {
             var b = new LoadoutButtons();
             if (State == null || slot == null) return b;
-            bool empty = Json.Bool(slot, "empty"), locked = Json.Bool(slot, "locked");
+            bool empty = Json.Truthy(slot, "empty"), locked = Json.Truthy(slot, "locked");
             bool usable = !locked && Json.Int(State, "level") >= Json.Int(State, "minLevel");
             bool busy = Json.Get(State, "busy") is string bs && bs.Length > 0;
             b.Save = usable; b.Rename = !empty; b.Delete = !empty;
-            b.Load = usable && !empty && !Json.Bool(slot, "active") && !Json.Bool(State, "casting") && !busy && CooldownLeft(now) == 0;
-            b.SaveText = empty ? Loc.T("Save here") : Json.Bool(slot, "active") ? "Save" : "Overwrite";
+            b.Load = usable && !empty && !Json.Truthy(slot, "active") && !Json.Truthy(State, "casting") && !busy && CooldownLeft(now) == 0;
+            b.SaveText = empty ? Loc.T("Save here") : Json.Truthy(slot, "active") ? "Save" : "Overwrite";
             return b;
         }
 
@@ -527,7 +527,7 @@ namespace Chaos.Core
             var slots = Json.List(State, "slots");
             if (slots.Count == 0) return 0;
             foreach (object s in slots) if (Json.Int(s, "slot") == current) return current;
-            foreach (object s in slots) if (Json.Bool(s, "active")) return Json.Int(s, "slot");
+            foreach (object s in slots) if (Json.Truthy(s, "active")) return Json.Int(s, "slot");
             return Json.Int(slots[0], "slot");
         }
 
@@ -536,7 +536,7 @@ namespace Chaos.Core
             if (Selected != n) ConfirmDelete = 0;
             Selected = n;
             var s = SlotOf(n);
-            if (s != null && !Json.Bool(s, "empty")) IconChoice = Json.Text(s, "icon", IconChoice);
+            if (s != null && !Json.Truthy(s, "empty")) IconChoice = Json.Text(s, "icon", IconChoice);
             else { var ic = Icons(); IconChoice = ic.Count > 0 ? ic[0] : "skills"; }
         }
         public void CycleIcon() { IconChoice = NextIcon(Icons(), IconChoice); }
@@ -569,10 +569,10 @@ namespace Chaos.Core
             if (!(d is Dictionary<string, object>)) return;
             switch (action)
             {
-                case "state": State = d; StateAt = Clock(); Selected = PickSelection(Selected); var cs = SlotOf(Selected); if (cs != null && !Json.Bool(cs, "empty")) IconChoice = Json.Text(cs, "icon", IconChoice); else { var ic = Icons(); if (ic.Count > 0) IconChoice = ic[0]; } break;
+                case "state": State = d; StateAt = Clock(); Selected = PickSelection(Selected); var cs = SlotOf(Selected); if (cs != null && !Json.Truthy(cs, "empty")) IconChoice = Json.Text(cs, "icon", IconChoice); else { var ic = Icons(); if (ic.Count > 0) IconChoice = ic[0]; } break;
                 case "result":
-                    Status = ResultTextOf(d); StatusColor = Json.Bool(d, "ok") ? Good : Bad;
-                    if (Json.Bool(d, "ok") && PendingAction.Length > 0)
+                    Status = ResultTextOf(d); StatusColor = Json.Truthy(d, "ok") ? Good : Bad;
+                    if (Json.Truthy(d, "ok") && PendingAction.Length > 0)
                     {
                         if (PendingAction == "save") ProfileSaved(PendingSlot); else if (PendingAction == "load") ProfileLoaded(PendingSlot);
                     }
@@ -644,7 +644,7 @@ namespace Chaos.Core
             if (r != null)
             {
                 v.HasRune = true; v.Rune = r; v.Open = true;
-                v.Name = Json.Text(r, "name") + (Json.Bool(r, "inactive") ? Loc.T(" (socket closed)") : "");
+                v.Name = Json.Text(r, "name") + (Json.Truthy(r, "inactive") ? Loc.T(" (socket closed)") : "");
                 v.Text = Json.Text(r, "text");
                 v.Button1 = Loc.T("Remove") + " (" + GoldText(Json.Number(r, "cost")) + ")"; v.Button1On = true;
                 bool armed = ShatterSpell == Json.Int(spell, "id") && ShatterSlot == slot && ShatterUntil > now;
@@ -655,12 +655,12 @@ namespace Chaos.Core
                 v.Open = true; v.Name = Loc.T("Empty socket"); v.Text = Loc.T("Select a rune below and press Socket, or drag a rune here.");
                 v.Button1 = Loc.T("Socket"); v.Button1On = SelectedRune >= 0;
             }
-            else if (slot == 3 && !Json.Bool(spell, "opened"))
+            else if (slot == 3 && !Json.Truthy(spell, "opened"))
             {
                 int need = Json.Get(State, "orbsNeeded") is double on ? (int)on : 2, have = Json.Int(State, "orbCount");
                 v.Name = Loc.T("Locked socket");
                 v.Text = Loc.T("Opens with {0} {1} (you have {2}). Needs level {3}.", need, Loc.T("Orbs of Sockets"), have, Json.Int(spell, "thirdLevel"));
-                v.Button1 = Loc.T("Open"); v.Button1On = Json.Bool(spell, "canOpen") && have >= need;
+                v.Button1 = Loc.T("Open"); v.Button1On = Json.Truthy(spell, "canOpen") && have >= need;
             }
             else
             {
@@ -671,7 +671,7 @@ namespace Chaos.Core
         }
 
         public string RuneInfo(object r) => Loc.T("{0} (x{1}): {2}. Fits {3} spells.", Json.Text(r, "name"), Json.Int(r, "count"), Json.Text(r, "text"), Json.Text(r, "fits"));
-        public bool CanCombine(object r) => r != null && Json.Bool(r, "combine") && Json.Int(r, "count") >= 3;
+        public bool CanCombine(object r) => r != null && Json.Truthy(r, "combine") && Json.Int(r, "count") >= 3;
 
         // ---- requests
         public void Open() { Visible = true; Send("open"); }
@@ -743,7 +743,7 @@ namespace Chaos.Core
                     Bar = Json.Get(d, "spells") as Dictionary<string, object> ?? new Dictionary<string, object>();
                     BarWords = Json.Get(d, "words") as Dictionary<string, object> ?? new Dictionary<string, object>();
                     break;
-                case "result": Result = Json.Text(d, "text"); ResultOk = Json.Bool(d, "ok", true); break;
+                case "result": Result = Json.Text(d, "text"); ResultOk = Json.Truthy(d, "ok", true); break;
                 default: return;
             }
             Changed();
@@ -781,7 +781,7 @@ namespace Chaos.Core
         public string StatusTitle(out string line)
         {
             if (Status == null) { line = ""; return Loc.T("Loading..."); }
-            if (Json.Bool(Status, "active"))
+            if (Json.Truthy(Status, "active"))
             {
                 string title = Json.Text(Status, "title"); if (title.Length == 0) title = Json.Text(Status, "titleText");
                 line = Loc.T("Until {0} ({1} left). Title: {2}.", Json.Text(Status, "ends", "?"), Plural(N(Status, "daysLeft"), "day"), title);
@@ -795,8 +795,8 @@ namespace Chaos.Core
         public string ClaimText(out bool enabled)
         {
             enabled = false;
-            if (Status == null || !Json.Bool(Status, "active")) return Loc.T("Daily Pact Marks");
-            if (Json.Bool(Status, "canClaim")) { enabled = true; return Loc.T("Claim {0} Pact Marks", N(Status, "dailyMarks")); }
+            if (Status == null || !Json.Truthy(Status, "active")) return Loc.T("Daily Pact Marks");
+            if (Json.Truthy(Status, "canClaim")) { enabled = true; return Loc.T("Claim {0} Pact Marks", N(Status, "dailyMarks")); }
             return Loc.T("Claimed today");
         }
 
@@ -818,7 +818,7 @@ namespace Chaos.Core
             foreach (object it in Json.List(Status, "shelf"))
             {
                 int price = N(it, "marks");
-                bool owned = Json.Bool(it, "owned"), monthly = Json.Bool(it, "monthly");
+                bool owned = Json.Truthy(it, "owned"), monthly = Json.Truthy(it, "monthly");
                 string name = Json.Text(it, "name", Json.Text(it, "key"));
                 if (monthly) name = Loc.T("{0} (this month)", name);
                 o.Add(new PactShelfRow { Key = Json.Text(it, "key"), Name = name, Marks = price, Owned = owned, CanBuy = !owned && have >= price, Button = owned ? Loc.T("Owned") : Loc.T("Buy"), Price = Loc.T("{0} Marks", price), Monthly = monthly });
@@ -830,7 +830,7 @@ namespace Chaos.Core
         public string[] LimitRow(object r)
         {
             string pact = N(r, "pact") > 0 ? "+" + N(r, "pact") : "-";
-            if (N(r, "pact") > 0 && !Json.Bool(r, "pactActive")) pact += " (off)";
+            if (N(r, "pact") > 0 && !Json.Truthy(r, "pactActive")) pact += " (off)";
             string bought = N(r, "maxExtra") > 0 || N(r, "extra") > 0 ? N(r, "extra") + " / " + N(r, "maxExtra") : "-";
             return new[] { Json.Text(r, "label", Json.Text(r, "key", "?")), N(r, "free").ToString(), pact, bought, N(r, "total").ToString() };
         }
@@ -841,7 +841,7 @@ namespace Chaos.Core
             foreach (object r in Json.List(Status, "limits"))
             {
                 var row = LimitRow(r);
-                if (Json.Bool(r, "pactActive") && !Json.Bool(Status, "active") && N(r, "pact") > 0) row[2] += " (premium)";
+                if (Json.Truthy(r, "pactActive") && !Json.Truthy(Status, "active") && N(r, "pact") > 0) row[2] += " (premium)";
                 o.Add(row);
             }
             return o;
@@ -850,7 +850,7 @@ namespace Chaos.Core
         public string SpecialText()
         {
             var parts = new List<string>();
-            foreach (object t in Json.List(Status, "special")) parts.Add(Loc.T(Json.Text(t, "name")) + (Json.Bool(t, "owned") ? Loc.T(" (owned)") : Loc.T(" (store)")));
+            foreach (object t in Json.List(Status, "special")) parts.Add(Loc.T(Json.Text(t, "name")) + (Json.Truthy(t, "owned") ? Loc.T(" (owned)") : Loc.T(" (store)")));
             return parts.Count == 0 ? "" : Loc.T("Affinity stash tabs: {0}. The free stash tab holds {1} entries; Slot Expansions make it bigger.", string.Join(", ", parts), N(Status, "tabSize"));
         }
 
@@ -901,9 +901,9 @@ namespace Chaos.Core
             if (!(d is Dictionary<string, object>)) return;
             switch (action)
             {
-                case "status": Status = d; ArmedDelete = 0; if (Json.Bool(d, "open")) Visible = true; break;
+                case "status": Status = d; ArmedDelete = 0; if (Json.Truthy(d, "open")) Visible = true; break;
                 case "buildCode": BuildCode(N(d, "slot"), Json.Text(d, "code")); break;
-                case "message": Note = Json.Text(d, "text"); NoteColor = Json.Bool(d, "error") ? "#e07060" : "#80c070"; break;
+                case "message": Note = Json.Text(d, "text"); NoteColor = Json.Truthy(d, "error") ? "#e07060" : "#80c070"; break;
                 default: return;
             }
             Changed();
@@ -946,7 +946,7 @@ namespace Chaos.Core
         {
             balance = Math.Max(0, Any(h, "b", "balance"));
             int block = Math.Max(60, Any(h, "n", "block")), progress = Math.Max(0, Any(h, "p", "progress"));
-            earning = Json.Bool(h, "e") || Json.Bool(h, "earning");
+            earning = Json.Truthy(h, "e") || Json.Truthy(h, "earning");
             left = block - progress;
             if (earning) left -= (int)Math.Max(0, sinceSec);
             left = Math.Max(0, Math.Min(block, left));
@@ -991,7 +991,7 @@ namespace Chaos.Core
                 var c = new CandleOffer
                 {
                     Key = k, Name = Str(Json.Get(r, "n"), k), Boss = Str(Json.Get(r, "b"), ""), Desc = Str(Json.Get(r, "d"), ""), Price = Math.Max(0, I(r, "p")), Weekly = Math.Max(0, I(r, "w")),
-                    Used = Math.Max(0, I(r, "u")), Level = Math.Max(0, I(r, "l")), Kind = Json.Text(r, "kind", "item"), Owned = Json.Bool(r, "own"),
+                    Used = Math.Max(0, I(r, "u")), Level = Math.Max(0, I(r, "l")), Kind = Json.Text(r, "kind", "item"), Owned = Json.Truthy(r, "own"),
                 };
                 int cid = I(r, "c");
                 c.Cid = cid >= 1 && cid <= 65535 ? cid : 0;
@@ -999,7 +999,7 @@ namespace Chaos.Core
                 else if (c.Weekly > 0 && c.Used >= c.Weekly) c.Why = Loc.T("Weekly limit reached");
                 else if (level < c.Level) c.Why = Loc.T("Level {0}", c.Level);
                 else if (balance < c.Price) c.Why = Loc.T("Not enough Candlemarks");
-                if (c.Why.Length == 0 && Json.Get(State, "near") is bool nb && !nb) c.Why = Loc.T(Visit);
+                if (c.Why.Length == 0 && Json.Get(State, "near") != null && !Json.Truthy(State, "near", true)) c.Why = Loc.T(Visit);
                 c.CanBuy = c.Why.Length == 0;
                 o.Add(c);
                 if (o.Count >= MaxOffers) break;
@@ -1022,7 +1022,7 @@ namespace Chaos.Core
             int days = (int)Math.Floor(Math.Max(0, Json.Number(State, "weekEnds") - Math.Max(0, (Clock() - StateAt) / 1000)) / 86400);
             return days >= 1 ? Loc.T("Weekly limits reset in {0} days", days) : Loc.T("Weekly limits reset within a day");
         }
-        public string HeaderShop() => Json.Get(State, "near") is bool nb && !nb ? Loc.T(Visit) : Loc.T("Osric the Chandler is here: you can buy.");
+        public string HeaderShop() => Json.Get(State, "near") != null && !Json.Truthy(State, "near", true) ? Loc.T(Visit) : Loc.T("Osric the Chandler is here: you can buy.");
 
         public void Open() { Visible = true; Send("open"); }
         public void Toggle() { if (Visible) Visible = false; else Open(); }
@@ -1041,7 +1041,7 @@ namespace Chaos.Core
             {
                 case "hud": Hud = d; HudAt = Clock(); break;
                 case "state": State = d; StateAt = Clock(); Buying = false; break;
-                case "result": Buying = false; Result = Json.Text(d, "text"); ResultColor = Json.Bool(d, "ok") ? "#70d070" : "#e05040"; break;
+                case "result": Buying = false; Result = Json.Text(d, "text"); ResultColor = Json.Truthy(d, "ok") ? "#70d070" : "#e05040"; break;
                 case "npc": Open(); break;
                 default: return;
             }

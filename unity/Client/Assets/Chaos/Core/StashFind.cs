@@ -69,14 +69,14 @@ namespace Chaos.Core
             Answered = true;
             Error = Json.Text(d, "error");
             Page = Math.Max(1, Json.Int(d, "page", 1)); Pages = Math.Max(1, Json.Int(d, "pages", 1));
-            Total = Json.Int(d, "total"); Shown = Json.Int(d, "shown"); Capped = Json.Bool(d, "capped");
+            Total = Json.Int(d, "total"); Shown = Json.Int(d, "shown"); Capped = Json.Truthy(d, "capped");
             Results.Clear();
             foreach (object r in Json.List(d, "items"))
                 Results.Add(new FindResult
                 {
                     Loc = Json.Text(r, "loc"), Name = Json.Text(r, "name"), Count = Json.Int(r, "count", 1), Cid = Json.Int(r, "cid"), Rarity = Json.Int(r, "rarity"),
-                    Unique = Json.Bool(r, "unique"), Slot = Json.Int(r, "slot"), Where = Json.Text(r, "where"), Tab = Json.Int(r, "tab"), TabName = Json.Text(r, "tabName"),
-                    Old = Json.Bool(r, "old"), Row = Json.Get(r, "row") is double row ? (int)row : -1, Item = Json.Int(r, "item"),
+                    Unique = Json.Truthy(r, "unique"), Slot = Json.Int(r, "slot"), Where = Json.Text(r, "where"), Tab = Json.Int(r, "tab"), TabName = Json.Text(r, "tabName"),
+                    Old = Json.Truthy(r, "old"), Row = Json.Get(r, "row") is double row ? (int)row : -1, Item = Json.Int(r, "item"),
                 });
             Changed();
         }

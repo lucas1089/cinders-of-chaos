@@ -99,7 +99,7 @@ namespace Chaos.Core
             {
                 Type = Json.Text(e, "type"), Title = Json.Text(e, "title"), Description = Json.Text(e, "description"), Id = IdText(Json.Get(e, "id")),
                 Item = Json.Int(e, "item"), Count = Json.Int(e, "count", 1), Outfit = ReadOutfit(Json.Get(e, "outfit")),
-                Cost = Json.Number(e, "cost"), OldCost = Json.Number(e, "oldCost"), Gift = Json.Bool(e, "gift"), Owned = Json.Bool(e, "owned"),
+                Cost = Json.Number(e, "cost"), OldCost = Json.Number(e, "oldCost"), Gift = Json.Truthy(e, "gift"), Owned = Json.Truthy(e, "owned"),
                 Category = category, Page = page, Row = row,
             };
             o.LookIcon = StoreLookIcon.Plan(Json.Get(e, "look"));
@@ -107,7 +107,7 @@ namespace Chaos.Core
             object pv = Json.Get(e, "preview");
             if (pv is Dictionary<string, object>)
             {
-                o.PreviewEffect = Json.Bool(pv, "effect");
+                o.PreviewEffect = Json.Truthy(pv, "effect");
                 o.PreviewColor = StoreTryOn.HexOrEmpty(Json.Text(pv, "color"), false);
                 o.PreviewAccent = StoreTryOn.HexOrEmpty(Json.Text(pv, "accent"), true);
             }

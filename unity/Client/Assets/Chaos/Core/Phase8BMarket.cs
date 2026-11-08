@@ -217,10 +217,10 @@ namespace Chaos.Core
                 parts.Add(SFmt.Has(f, "need") && Json.Int(f, "need") < mods.Count ? Loc.T("{0} of: {1}", Json.Int(f, "need"), string.Join(", ", mods)) : string.Join(", ", mods));
             if (Json.Int(f, "sockets") > 0) parts.Add(Loc.T(Json.Int(f, "sockets") > 1 ? "{0}+ sockets" : "{0}+ socket", Json.Int(f, "sockets")));
             if (Json.Int(f, "quality") > 0) parts.Add(Loc.T("quality {0}%+", Json.Int(f, "quality")));
-            if (Json.Bool(f, "freeP")) parts.Add(Loc.T("free prefix"));
-            if (Json.Bool(f, "freeS")) parts.Add(Loc.T("free suffix"));
-            if (Json.Bool(f, "power")) parts.Add(Loc.T("legendary power"));
-            if (Json.Bool(f, "bound")) parts.Add(Loc.T("bound modifier"));
+            if (Json.Truthy(f, "freeP")) parts.Add(Loc.T("free prefix"));
+            if (Json.Truthy(f, "freeS")) parts.Add(Loc.T("free suffix"));
+            if (Json.Truthy(f, "power")) parts.Add(Loc.T("legendary power"));
+            if (Json.Truthy(f, "bound")) parts.Add(Loc.T("bound modifier"));
             return parts.Count == 0 ? Loc.T("Any") : string.Join(" - ", parts);
         }
     }

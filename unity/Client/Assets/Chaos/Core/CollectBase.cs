@@ -60,7 +60,7 @@ namespace Chaos.Core
         public static int Int(object o) => (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, Num(o)));
         public static long Long(object o) => (long)Num(o);
         public static string Str(object o, string fallback = "") => o is string s ? s : o is double d ? d.ToString("0.##", CultureInfo.InvariantCulture) : fallback;
-        public static bool On(object o) => o is bool b ? b : o is double d && d != 0;
+        public static bool On(object o) => Json.Truthy(o);
 
         /// <summary>The entries of a list that are tables (the main client's list()).</summary>
         public static List<Dictionary<string, object>> Rows(object o)

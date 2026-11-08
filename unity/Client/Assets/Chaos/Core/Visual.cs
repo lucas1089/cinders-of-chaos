@@ -408,7 +408,7 @@ namespace Chaos.Core
         public void Merge(object data)
         {
             if (!(data is Dictionary<string, object>)) return;
-            if (Json.Bool(data, "full")) Looks.Clear();
+            if (Json.Truthy(data, "full")) Looks.Clear();
             if (Json.Get(data, "names") is Dictionary<string, object> names)
                 foreach (var kv in names)
                 {

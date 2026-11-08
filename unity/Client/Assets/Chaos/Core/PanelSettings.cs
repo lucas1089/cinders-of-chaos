@@ -89,12 +89,12 @@ namespace Chaos.Core
             if (!(o is Dictionary<string, object>)) return s;
             double scale = Json.Number(o, "scale", double.NaN);
             if (!double.IsNaN(scale)) s.Scale = Clamp((int)(Math.Floor(scale / ScaleStep + 0.5) * ScaleStep), ScaleMin, ScaleMax);
-            s.Locked = Json.Bool(o, "locked", s.Locked);
-            s.Shown = Json.Bool(o, "shown", s.Shown);
-            s.ShowSelf = Json.Bool(o, "showSelf", s.ShowSelf);
-            s.ShowBuffs = Json.Bool(o, "showBuffs", s.ShowBuffs);
-            s.ShowNumbers = Json.Bool(o, "showNumbers", s.ShowNumbers);
-            s.Follow = Json.Bool(o, "follow", s.Follow);
+            s.Locked = Json.Truthy(o, "locked", s.Locked);
+            s.Shown = Json.Truthy(o, "shown", s.Shown);
+            s.ShowSelf = Json.Truthy(o, "showSelf", s.ShowSelf);
+            s.ShowBuffs = Json.Truthy(o, "showBuffs", s.ShowBuffs);
+            s.ShowNumbers = Json.Truthy(o, "showNumbers", s.ShowNumbers);
+            s.Follow = Json.Truthy(o, "follow", s.Follow);
             return s;
         }
 

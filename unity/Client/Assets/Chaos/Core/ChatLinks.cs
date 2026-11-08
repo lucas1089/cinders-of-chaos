@@ -259,10 +259,10 @@ namespace Chaos.Core
                 case "link":
                     string id = Json.Text(d, "id");
                     if (!ChatLinksMath.ValidId(id)) return;
-                    if (Json.Bool(d, "gone") || !SFmt.IsMap(Json.Get(d, "tip"))) Put(id, new Entry { Gone = true });
+                    if (Json.Truthy(d, "gone") || !SFmt.IsMap(Json.Get(d, "tip"))) Put(id, new Entry { Gone = true });
                     else Put(id, new Entry { Tip = Json.Get(d, "tip"), Owner = Json.Text(d, "owner"), Left = SFmt.Has(d, "left") ? Json.Number(d, "left") : ChatLinksMath.Ttl });
                     break;
-                case "caps": HelpAllowed = Json.Bool(d, "help"); break;
+                case "caps": HelpAllowed = Json.Truthy(d, "help"); break;
             }
         }
 

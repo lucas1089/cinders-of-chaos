@@ -390,7 +390,7 @@ namespace Chaos.Core
             else if (kind == "swatch")
             {
                 string c = StoreTryOn.HexOrEmpty(Json.Text(look, "color"), true);
-                if (c.Length > 0) { p.Mode = Swatch; p.Color = c; p.Accent = Json.Bool(look, "accent"); }
+                if (c.Length > 0) { p.Mode = Swatch; p.Color = c; p.Accent = Json.Truthy(look, "accent"); }
             }
             return p;
         }

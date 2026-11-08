@@ -47,7 +47,7 @@ namespace Chaos.Core
                     if (CF.G(data, "kind") is string kind) LooksByKind[kind] = CF.Rows(CF.G(data, "rows"));
                     break;
                 case "result":
-                    StatusText = CF.T(data, "text"); StatusOk = CF.G(data, "ok") is bool b ? b : false;
+                    StatusText = CF.T(data, "text"); StatusOk = CF.B(data, "ok");
                     if (StatusOk) SelectedLook = null;
                     break;
             }

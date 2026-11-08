@@ -59,7 +59,7 @@ namespace Chaos.Core
                 Color = CF.G(r, "color") as string, Accent = CF.G(r, "accent") as string, Art = CF.G(r, "art") as string, Pulse = CF.N(r, "pulse"), Preview = CF.B(r, "preview"),
                 Source = CF.T(r, "source"), LineName = CF.G(r, "lineName") as string, Play = CF.G(r, "play") as List<object>,
             };
-            if (CF.G(r, "locked") is bool l) row.Locked = l;
+            if (CF.G(r, "locked") != null) row.Locked = CF.B(r, "locked");
             return row;
         }
 
@@ -319,7 +319,7 @@ namespace Chaos.Core
                 {
                     bool shader = kind == "shader";
                     if (shader ? !(CF.G(c, "n") is string) : CF.N(c, "l") <= 0) continue;
-                    bool owned = CF.G(c, "o") is bool b ? b : CF.N(c, "o") == 1;
+                    bool owned = CF.B(c, "o");
                     list.Add(new WardrobeEntry { Look = CF.I(c, "l"), Name = CF.G(c, "n") as string ?? "", Owned = owned, Add = CF.G(c, "a"), Source = CF.G(c, "s") as string });
                 }
                 w[kind] = list;

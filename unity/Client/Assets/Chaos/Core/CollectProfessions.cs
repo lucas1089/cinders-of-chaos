@@ -128,7 +128,7 @@ namespace Chaos.Core
                 string k = CF.T(pk, "k");
                 double pct = k == "channel" ? (1 - CF.N(pk, "v")) * 100 : CF.N(pk, "v") * 100;
                 string what = string.Format(CultureInfo.InvariantCulture, Loc.T(PerkKinds.TryGetValue(k, out var f) ? f : "{0}"), FmtPct(Math.Floor(pct * 10 + 0.5) / 10));
-                o.Add(new KeyValuePair<string, bool>(Loc.T("Level {0}, {1}: {2}", CF.I(pk, "lv"), Loc.T(CF.T(pk, "n")), what), CF.G(pk, "on") is bool b && b));
+                o.Add(new KeyValuePair<string, bool>(Loc.T("Level {0}, {1}: {2}", CF.I(pk, "lv"), Loc.T(CF.T(pk, "n")), what), CF.B(pk, "on")));
             }
             return o;
         }
