@@ -550,6 +550,7 @@ namespace Chaos.Client
             if (GUI.Button(outR, "Log out")) { session?.Logout(); Leave("Logged out."); }
             HudGui(w, h, scale);     // toasts, buffs, monster and cast bars, anti-bot (ChaosApp.Hud.cs)
             PartyGui(w, h, scale);   // the right-click menu and the party invitation, over the windows
+            ItemsGui(w, h, scale);   // the item tooltip, the modal window and the text window (ChaosApp.Items.cs)
         }
 
         public static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);

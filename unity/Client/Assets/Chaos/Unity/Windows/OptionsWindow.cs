@@ -12,7 +12,7 @@ namespace Chaos.Client
         bool loaded;
 
         public override string Title => Loc.T("Options");
-        public override KeyCode Hotkey => KeyCode.U;
+        public override KeyCode Hotkey => KeyCode.L;
         protected override Rect Place(float w, float h) => new Rect(w / 2 - 150, h / 2 - 140, 300, 262);
         public override void Reset() { loaded = false; }
 

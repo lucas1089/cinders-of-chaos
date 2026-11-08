@@ -53,7 +53,12 @@ namespace Chaos.Core
     /// <summary>pt-BR texts of the Unity windows: English key -> Brazilian Portuguese.</summary>
     public static class LocStrings
     {
-        static LocStrings() { foreach (var kv in HudStrings.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value; }   // track H: Core/HudStrings.cs
+        // track H texts (Core/HudStrings.cs) and the items and economy texts (Core/LocItems.cs) merge in; a key the main table has wins
+        static LocStrings()
+        {
+            foreach (var kv in HudStrings.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
+            foreach (var kv in LocItems.PtBr) if (!PtBr.ContainsKey(kv.Key)) PtBr[kv.Key] = kv.Value;
+        }
 
         public static readonly Dictionary<string, string> PtBr = new Dictionary<string, string>
         {

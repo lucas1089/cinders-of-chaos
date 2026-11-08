@@ -195,8 +195,9 @@ namespace Chaos.Core
                     }
                     break;
                 }
-                case 0x78: { int slot = r.U8(); var it = ReadItem(r, r.U16()); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = it; break; }
-                case 0x79: { int slot = r.U8(); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = null; break; }
+                case 0x78: { int slot = r.U8(); var it = ReadItem(r, r.U16()); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = it; InventoryChanged(); break; }
+                case 0x79: { int slot = r.U8(); if (slot >= 1 && slot < Inventory.Length) Inventory[slot] = null; InventoryChanged(); break; }
+                case 0x96: case 0x97: case 0xC8: case 0xFA: ItemsMessage(op, r); break;   // text windows, outfit window, modal windows (GameItems.cs)
                 case 0x7A: Trade.ReadShop(r, Clock()); break;
                 case 0x7B: Trade.ReadGoods(r); break;
                 case 0x7C: Trade.Close(); break;
@@ -586,6 +587,7 @@ namespace Chaos.Core
             parser.Disconnected = reason => Closed = reason;
             Ext.On(NpcTradeState.OpcodeCurrency, m => parser.Trade.ReceiveCurrency(NpcTradeState.ParseCurrency(m), Now));
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
+            InitItems();
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
         }
@@ -672,6 +674,7 @@ namespace Chaos.Core
             }
             if (parser.LoggedIn && enteredAt < 0) enteredAt = Now;
             ChatPoll();
+            ItemsPoll();
             // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
             if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
             // the party frames: watch a moment after the login (the main client waits 400 ms)
