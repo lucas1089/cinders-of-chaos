@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 66,
   "out": 38,
-  "passive": 95,
+  "passive": 96,
   "place": 15,
   "staff": 17
  },
@@ -9785,6 +9785,15 @@
   "cooldown_channels": {
    "files": [
     "cooldown_channels.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "corpse": {
+   "files": [
+    "corpse_bag.lua"
    ],
    "kind": "passive",
    "opcodes": [],
