@@ -12,6 +12,7 @@ namespace Chaos.Client
         static ushort srcId;
         static byte srcStack;
         static int srcCount;
+        static bool srcStackable;
         static GUIStyle faintStyle;
 
         /// <summary>The item under the pointer this frame (set by Slot on a repaint), for the tooltip drawn over the windows.</summary>
@@ -113,12 +114,16 @@ namespace Chaos.Client
             }
             else if (e.type == EventType.MouseDown && e.button == 0 && it != null)
             {
-                dragging = true; srcPos = where; srcId = (ushort)it.Id; srcStack = stackPos; srcCount = it.Count;
+                dragging = true; srcPos = where; srcId = (ushort)it.Id; srcStack = stackPos; srcCount = it.Count; srcStackable = it.Type != null && it.Type.Stackable;
             }
             else if (e.type == EventType.MouseUp && e.button == 0 && dragging)
             {
                 if (srcPos != where)
-                    app.Session?.MoveItem(srcPos, srcId, srcStack, where, (byte)Mathf.Clamp(srcCount, 1, 100));
+                {
+                    // a stackable with more than one asks how many (the split stack dialog); Ctrl at the drop moves the whole stack
+                    if (SplitStackModel.Asks(srcStackable, srcCount, e.control)) app.AskSplit(srcPos, srcId, srcStack, where, srcCount);
+                    else app.Session?.MoveItem(srcPos, srcId, srcStack, where, SplitStackModel.Whole(srcCount));
+                }
                 dragging = false;
                 e.Use();
             }

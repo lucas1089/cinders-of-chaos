@@ -92,6 +92,7 @@ namespace Chaos.Client
         void OnCreatureRightClick(Creature c)
         {
             if (c == null || session == null || PlayUsedClick) return;
+            if (c.Type == 2) { NpcMenu(c); return; }   // an NPC: Talk, Look (ChaosApp.Phase6V.cs)
             if (c.Type != 0) { session.Attack(c.Id); return; }
             var items = new List<KeyValuePair<string, Action>>();
             uint id = c.Id;

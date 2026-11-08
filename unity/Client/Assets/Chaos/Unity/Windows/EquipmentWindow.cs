@@ -1,9 +1,12 @@
+using System.Collections.Generic;
 using Chaos.Core;
 using UnityEngine;
 
 namespace Chaos.Client
 {
-    /// <summary>The ten equipment slots (the badge slot 13 in place of ammo) as a paper doll, plus capacity and soul. Right-click uses an item (a bag opens).</summary>
+    /// <summary>The ten equipment slots (the badge slot 13 in place of ammo) as a paper doll, plus capacity and soul. Right-click uses an item (a bag opens).
+    /// Phase 6 (the bag panel of the main client, game_bagpanel): a tab row on top (Equip, Quest, Stats, Shop open their windows), the coins of the open bags
+    /// (gold, platinum, crystal and the total) and the Chaos Coins, and the character's outfit beside the numbers.</summary>
     public sealed class EquipmentWindow : GameWindow
     {
         public override string Title => "Equipment";
@@ -18,17 +21,27 @@ namespace Chaos.Client
             { 0, 8, 0 },
         };
         static readonly string[] Names = { "", "Head", "Neck", "Bag", "Armor", "Right", "Left", "Legs", "Feet", "Ring", "", "", "", "Badge" };
-        const float SlotSize = 38, Gap = 6;
+        const float SlotSize = 38, Gap = 6, TabH = 22;
+        /// <summary>The height of the window: containers are placed under it (ContainersWindow).</summary>
+        public const float Height = 348;
 
-        protected override Rect Place(float w, float h) => new Rect(w - 178, 48, 168, 270);
+        GUIStyle tabStyle, tinyStyle;
+
+        protected override Rect Place(float w, float h) => new Rect(w - 178, 48, 168, Height);
 
         protected override void Body(ChaosApp app, Rect inner)
         {
             var s = app.Session;
             if (s == null) return;
+            if (tabStyle == null)
+            {
+                tabStyle = new GUIStyle(GUI.skin.button) { fontSize = 11 };
+                tinyStyle = new GUIStyle(app.SmallStyle) { fontSize = 12 };
+            }
             var inv = s.Parser.Inventory;
+            Tabs(app, inner);
             float gridW = 3 * SlotSize + 2 * Gap;
-            float x0 = inner.x + (inner.width - gridW) / 2, y0 = inner.y + 4;
+            float x0 = inner.x + (inner.width - gridW) / 2, y0 = inner.y + TabH + 8;
             for (int row = 0; row < 4; row++)
                 for (int col = 0; col < 3; col++)
                 {
@@ -38,9 +51,51 @@ namespace Chaos.Client
                     ItemSlots.Slot(app, r, inv[slot], GameSession.InventoryPos(slot), (byte)slot, BadgeSlot.SlotTooltip(slot, inv[slot] != null) ?? Names[slot]);
                 }
             float y = y0 + 4 * (SlotSize + Gap) + 2;
-            GUI.Label(new Rect(inner.x + 6, y, inner.width - 12, 20), "Cap: " + (s.Parser.FreeCap / 100u), app.SmallStyle);
-            GUI.Label(new Rect(inner.x + 6, y + 20, inner.width - 12, 20), "Soul: " + s.Parser.Soul, app.SmallStyle);
+            // the numbers on the left, the character on the right
+            float figure = 64;
+            var pic = new Rect(inner.xMax - figure - 4, y, figure, figure);
+            ChaosApp.Fill(pic, new Color(0f, 0f, 0f, 0.45f));
+            var me = app.Session?.Parser != null ? app.World?.Player : null;
+            if (me != null) app.DrawOutfit(new Rect(pic.x + 4, pic.y + 4, pic.width - 8, pic.height - 8), me.Outfit);
+            float lw = inner.width - figure - 14;
+            GUI.Label(new Rect(inner.x + 6, y, lw, 18), Loc.T("Cap: {0}", s.Parser.FreeCap / 100u), tinyStyle);
+            GUI.Label(new Rect(inner.x + 6, y + 16, lw, 18), Loc.T("Soul: {0}", s.Parser.Soul), tinyStyle);
+            long gold = BagPanel.Gold(OpenCoins(s));
+            var goldRect = new Rect(inner.x + 6, y + 32, lw, 18);
+            GUI.Label(goldRect, Loc.T("Gold: {0}", Plate.Short(gold)), tinyStyle);
+            var counts = BagPanel.CoinCounts(OpenCoins(s));
+            GUI.Label(new Rect(inner.x + 6, y + 48, inner.width - 12, 18), Loc.T("{0} gold, {1} platinum, {2} crystal", counts[0], counts[1], counts[2]), tinyStyle);
+            double coins = s.Store != null ? s.Store.Coins : -1;
+            if (coins >= 0) GUI.Label(new Rect(inner.x + 6, y + 64, inner.width - 12, 18), Loc.T("Chaos Coins: {0}", Plate.Short(coins)), tinyStyle);
             ItemSlots.Ghost(app, new Rect(0, 0, Area.width, Area.height));
+        }
+
+        /// <summary>Gold, platinum and crystal coins in the open containers, as (client id, count) pairs.</summary>
+        static IEnumerable<KeyValuePair<int, int>> OpenCoins(GameSession s)
+        {
+            foreach (var c in s.Parser.Containers.Values)
+                foreach (var it in c.Items)
+                    if (it != null && BagPanel.Coins.ContainsKey(it.Id)) yield return new KeyValuePair<int, int>(it.Id, it.Count);
+        }
+
+        /// <summary>The tab row: Equip is this window; the others open the window of the same name (shown only when the client has it).</summary>
+        void Tabs(ChaosApp app, Rect inner)
+        {
+            var tabs = BagPanel.Tabs(app.HasWindowNamed);
+            var texts = new float[tabs.Count];
+            for (int i = 0; i < tabs.Count; i++) texts[i] = tabStyle.CalcSize(new GUIContent(Loc.T(tabs[i].Text))).x;
+            var widths = BagPanel.TabWidths(texts, inner.width);
+            float x = inner.x;
+            for (int i = 0; i < tabs.Count; i++)
+            {
+                var r = new Rect(x, inner.y, widths[i], TabH);
+                bool equip = tabs[i].Id == "equip";
+                var old = GUI.color;
+                if (equip) GUI.color = new Color(1f, 0.9f, 0.6f);
+                if (GUI.Button(r, Loc.T(tabs[i].Text), tabStyle) && !equip) app.ToggleWindowNamed(tabs[i].Window);
+                GUI.color = old;
+                x += widths[i] + 1;
+            }
         }
     }
 }
