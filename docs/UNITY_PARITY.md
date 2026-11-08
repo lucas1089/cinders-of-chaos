@@ -27,12 +27,12 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 | Game login, guard handshake, pings | done | `GameSession`. |
 | Map, floors, 8 directions, light | done | 18 x 14 tiles read, 15 x 11 shown. Another aware range is refused. |
 | Walk by keys and by click | done | No auto-walk to a clicked tile (0x64 from the client), no stop. |
-| Attack, follow, cancel, battle list | done | `BattleListWindow`. Fight modes (0xA0) and safe mode are not sent. |
+| Attack, follow, cancel, battle list | done | `BattleListWindow`. Fight modes and secure mode (0xA0) are sent at the login and on change (`FightWindow`, saved in PlayerPrefs). |
 | Spells, hotbar, cooldowns | partial | This track: spellbook, 12 hotbar slots with cooldown numbers. No item or rune slots, no icons. |
-| Chat | partial | One window, say on the default channel. No channels, no private messages, no yell or whisper keys. |
+| Chat | done | Tabs (Default, Server Log, channels, private), channel list, `*name* text`, `#y` and `#w`, unread counts, floating speech. No item links, no channel creation or invites. |
 | Containers, equipment, use, move | partial | Open, close, up, use, drag. No split stack dialog, no use-with, no look. |
 | NPC trade, NPC talk | done | `NpcTalkWindow`, `NpcTradeWindow`, `Core/NpcTrade.cs`. 0x7A, 0x7B, 0x7C in, 0x79, 0x7A, 0x7B, 0x7C out, NPC speech, currency (opcode 113). Not tried on the live server. No buy-in-backpacks fee, no modal windows. |
-| Death | missing | 0x28 is read. No death screen and no recap. |
+| Death | partial | 0x28 shows a death window with the penalty; OK goes to the character list. No recap window. |
 | Party | done | `PartyFramesWindow` (Ctrl+G, opcode 235), right-click menu on a player (invite, join, revoke, pass leadership, leave, shared experience: 0xA3 to 0xA8), invitation box with Accept and Decline. Not run against a live server. |
 | Outfit window | missing | 0xC8 and the set outfit request. Chaos identity brings wings, aura and shader fields. |
 | Skills, stats | partial | `SkillsWindow` reads 0xA0 and 0xA1. |
@@ -54,8 +54,8 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_chaosguard` | 190 | Client guard hello (opcode 190) and the 189 handshake in Core/ClientGuard.cs. | done | P0 | S |
 | `game_chaoshud` | none | Character plate: outfit portrait, name, level, health and mana bars (right-click: percent), experience line with the percent to the next level (0xA0). No opcode in the main client either. No eased bars, not movable. | partial | P0 | M |
 | `game_chaosspells` | 219 | Chaos spells in the spell list and action bar. Unity takes the list from opcode 219; no icon sheets. | partial | P0 | S |
-| `game_chatpanel` | none | Chat panel. Unity has one chat window with Enter to talk; no channels, no private messages. | partial | P0 | M |
-| `game_floatchat` | none | Floating chat over the map. Unity chat window is fixed at the bottom left. | partial | P0 | M |
+| `game_chatpanel` | none | Chat panel. Unity: tabs, Ctrl+O channel list (chat line focused), Ctrl+E close tab, Tab / Shift+Tab, private tabs, history cap, unread counts. No custom channel creation, no layout modes. | done | P0 | M |
+| `game_floatchat` | none | Floating chat over the map: lines float over the speaker in the classic and the front-art live view, 60 ms per character (3 to 12 s), 3 stacked. | done | P0 | M |
 | `game_hotbar` | none | Central hotbar. Unity has 12 F-key slots that say a line or a spell, saved per character, with cooldown numbers; no ornate frame, no globes, no item or rune slots. | partial | P0 | M |
 | `game_npctalk` | none | NPC dialogue: private NPC speech (0xAA type 10), words to the NPC (0x96 type 12), quick words, {keyword} chips. No speech bubble over the NPC, no walk-up on Talk. | partial | P0 | M |
 | `game_npctradewindow` | 113 | NPC buy and sell list: tabs, search, amount slider, total, currency of opcode 113. No buy-in-backpacks option. | done | P0 | L |
@@ -71,7 +71,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_chaosnotify` | 79 | Toasts. Many systems report through it. | missing | P1 | M |
 | `game_chaosscale` | 157 | Display scale factor for numbers. | missing | P1 | S |
 | `game_damagescatter` | none | Typed damage numbers. Needs the 0xB4 fields (capability bit 7); the text parser is track B. | missing | P1 | M |
-| `game_deathrecap` | 154 | Death recap window. Death itself (0x28) is read; there is no death screen. | missing | P1 | M |
+| `game_deathrecap` | 154 | Death recap window. Unity shows a death window (0x28); no recap data (opcode 154). | missing | P1 | M |
 | `game_energyshield` | 224 | Energy shield bar. The server sends plain text es:cur:max. | missing | P1 | S |
 | `game_goals` | 178 | Next Goals window and tracker. | missing | P1 | M |
 | `game_groundlabels` | 230 | Loot labels on the ground. | missing | P1 | M |
@@ -245,10 +245,11 @@ Server to client, not read by `GameParser`:
 | 0xFA | modal window | modal dialogs of base scripts | P1 |
 | 0xDF, 0xEE | coin and resource balance | base store, resources | P2 |
 
-Inside packets Unity reads, it skips or ignores: 0x9F spell list body, 0xAB channel list names, 0xB2 and 0xB3 private channel events (read, not shown), 0xDD map flags (read, not shown), 0x8D to 0x95 creature fields beyond the ones in `Creature`.
+Inside packets Unity reads, it skips or ignores: 0x9F spell list body, 0xDD map flags (read, not shown), 0x8D to 0x95 creature fields beyond the ones in `Creature`.
 
 Client to server packets Unity sends: walk and turn, say, use, move, close, up, attack, follow, party (0xA3 invite, 0xA4 join, 0xA5 revoke, 0xA6 pass leadership, 0xA7 leave, 0xA8 shared experience), pong, logout, extended opcodes, NPC shop (0x79 to 0x7C), words to an NPC (0x96 type 12).
-Not sent yet: fight modes (0xA0), use with (0x83), use on creature (0x84), look (0x8C), rotate (0x85), channels (0x97 to 0x9A), outfit (0xD2, 0xD3, 0xD4), auto-walk (0x64), stop (0xBE), VIP (0xDC to 0xDE), quest log (0xF0, 0xF1), equip hotkey (0x77).
+Sent by the chat track: talk with type, channel or receiver (0x96), channels (0x97 to 0x9A), NPC channel close (0x9E), fight modes (0xA0). Read by it: 0xAA all 10.98 talk types (position for 1, 2, 3, 9, 10, 36, 37; channel id for 6, 7, 8, 14; none for 4, 13, 15), 0xAB to 0xB3, 0xB4 console kinds by tab, 0x28 with death type and penalty (the main client enables both features). 0xA7 is not a fight mode echo in 10.98 (it stays read and ignored). The NPC channel tab is a chat tab named NPCs; trade is the NPC track's.
+Not sent yet: use with (0x83), use on creature (0x84), look (0x8C), rotate (0x85), outfit (0xD2, 0xD3, 0xD4), auto-walk (0x64), stop (0xBE), VIP (0xDC to 0xDE), quest log (0xF0, 0xF1), equip hotkey (0x77).
 
 ## Migration plan
 
