@@ -32,8 +32,12 @@ namespace Chaos.Core
         /// <summary>The 0x43 feature list (only on an Identity.Chaos connection). Item attributes (126) and the width of the
         /// spell id of 0xA4 (152) depend on it; the effect and text parsers read the rest from it.</summary>
         public readonly ClientFeatures Features = new ClientFeatures();
-        /// <summary>The aware range of the last 0x42: the view is 18 x 14 tiles (17 x 13 plus one), the only size read.</summary>
+        /// <summary>The aware range of the last 0x42 (default 17 x 13: the view is 18 x 14 tiles). The map reads (0x64, 0x65 to 0x68, 0x4B, 0xBE,
+        /// 0xBF) use it through World.Range; `AwareChanged` runs when it changes (the view may follow).</summary>
         public int AwareW = 17, AwareH = 13;
+        public Action<AwareRange> AwareChanged = delegate { };
+        /// <summary>0x9F: the class byte of the Chaos wire (feature 154: base slot, +10 / +20 for the ascended classes) and the vocation id it stands for (0 until read).</summary>
+        public int ClassByte, VocationId;
         /// <summary>0xA4: spell id (u8, or u16 with feature 152) and the cooldown in ms. 0xA5: group id and ms.</summary>
         public Action<int, uint> SpellCooldown = delegate { };
         public Action<int, uint> GroupCooldown = delegate { };
@@ -94,12 +98,16 @@ namespace Chaos.Core
                 case 0x1E: break;
                 case 0x1F: r.U32(); r.U8(); break;
                 case 0x28: Death(r); break;
-                case 0x32: ExtendedOpcode(r.U8(), r.Str()); break;
+                case 0x32: ExtendedOpcode(r.U8(), r.StrRaw()); break;   // bytes as they are: ExtOpcodes decodes the UTF-8 itself
                 case 0x42:
                 {
-                    AwareW = r.U8(); AwareH = r.U8();
-                    if (AwareW + 1 != World.ViewW || AwareH + 1 != World.ViewH)
-                        throw new ProtocolException("aware range " + AwareW + "x" + AwareH + ": only " + (World.ViewW - 1) + "x" + (World.ViewH - 1) + " is read");
+                    int aw = r.U8(), ah = r.U8();
+                    if (!AwareRange.Valid(aw, ah)) throw new ProtocolException("aware range " + aw + "x" + ah + ": only odd sizes make a window");
+                    AwareW = aw; AwareH = ah;
+                    var range = new AwareRange(aw, ah);
+                    bool changed = range.Width != W.Range.Width || range.Height != W.Range.Height;
+                    W.Range = range;
+                    if (changed) { W.ForgetOutside(W.Center); AwareChanged(range); }
                     break;
                 }
                 case 0x43: Features.Read(r); break;
@@ -110,7 +118,7 @@ namespace Chaos.Core
                     int floor = r.U8();
                     if (floor > 15) throw new ProtocolException("floor " + floor);
                     if (p.Z == floor) SetCenter(p);
-                    FloorDescription(r, p.X - World.RangeLeft, p.Y - World.RangeTop, floor, World.ViewW, World.ViewH, p.Z - floor, 0);
+                    FloorDescription(r, p.X - W.Range.Left, p.Y - W.Range.Top, floor, W.Range.Horizontal, W.Range.Vertical, p.Z - floor, 0);
                     break;
                 }
                 case 0x64:
@@ -118,13 +126,13 @@ namespace Chaos.Core
                     var p = ReadPos(r);
                     SetCenter(p);
                     W.Tiles.Clear();
-                    MapDescription(r, p.X - World.RangeLeft, p.Y - World.RangeTop, p.Z, World.ViewW, World.ViewH);
+                    MapDescription(r, p.X - W.Range.Left, p.Y - W.Range.Top, p.Z, W.Range.Horizontal, W.Range.Vertical);
                     break;
                 }
-                case 0x65: { var c = W.Center; c.Y--; MapDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, c.Z, World.ViewW, 1); SetCenter(c); break; }
-                case 0x66: { var c = W.Center; c.X++; MapDescription(r, c.X + World.RangeRight, c.Y - World.RangeTop, c.Z, 1, World.ViewH); SetCenter(c); break; }
-                case 0x67: { var c = W.Center; c.Y++; MapDescription(r, c.X - World.RangeLeft, c.Y + World.RangeBottom, c.Z, World.ViewW, 1); SetCenter(c); break; }
-                case 0x68: { var c = W.Center; c.X--; MapDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, c.Z, 1, World.ViewH); SetCenter(c); break; }
+                case 0x65: { var c = W.Center; c.Y--; MapDescription(r, c.X - W.Range.Left, c.Y - W.Range.Top, c.Z, W.Range.Horizontal, 1); SetCenter(c); break; }
+                case 0x66: { var c = W.Center; c.X++; MapDescription(r, c.X + W.Range.Right, c.Y - W.Range.Top, c.Z, 1, W.Range.Vertical); SetCenter(c); break; }
+                case 0x67: { var c = W.Center; c.Y++; MapDescription(r, c.X - W.Range.Left, c.Y + W.Range.Bottom, c.Z, W.Range.Horizontal, 1); SetCenter(c); break; }
+                case 0x68: { var c = W.Center; c.X--; MapDescription(r, c.X - W.Range.Left, c.Y - W.Range.Top, c.Z, 1, W.Range.Vertical); SetCenter(c); break; }
                 case 0x69: { var p = ReadPos(r); TileDescription(r, p); break; }
                 case 0x6A:
                 {
@@ -217,16 +225,25 @@ namespace Chaos.Core
                 case 0x90: { var c = Find(r.U32()); byte v = r.U8(); if (c != null) c.Skull = v; break; }
                 case 0x91: { var c = Find(r.U32()); byte v = r.U8(); if (c != null) c.Shield = v; break; }
                 case 0x92: { var c = Find(r.U32()); byte v = r.U8(); if (c != null) c.Walkthrough = v == 0; break; }
-                case 0x93: r.U32(); r.U8(); r.U8(); break;
+                case 0x93: { uint cid = r.U32(); r.U8(); byte col = r.U8(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Square(cid, col)); break; }   // the 10.98 server's creature square: id, 1, colour
                 case 0x94: r.U32(); r.U16(); break;
                 case 0x95: { var c = Find(r.U32()); byte v = r.U8(); if (c != null) c.Type = v; break; }
-                case 0x9F: r.U8(); r.U32(); r.U8(); r.Skip(r.U16()); break;
+                case 0x9F:
+                {
+                    // basic data: premium u8, premium end u32, the class byte (feature 154, base patch 0016), the known spells (u16 count, a byte each on 10.98)
+                    r.U8(); r.U32();
+                    ClassByte = r.U8();
+                    VocationId = ChaosVocation.FromWire(ClassByte);
+                    if (VocationId != 0) W.PlayerVocation = VocationId;   // also after an ascension: the server sends 0x9F again (ascension.lua)
+                    r.Skip(r.U16());
+                    break;
+                }
                 case 0xA0:
-                    Health = (int)r.U32(); MaxHealth = (int)r.U32();
+                    FitInt(r.U32(), r.U32(), out Health, out MaxHealth);   // u32 on the wire (display scale, 0037): kept in range, proportions kept
                     FreeCap = r.U32(); TotalCap = r.U32(); Experience = r.U64();
                     Level = r.U16(); LevelPercent = r.U8();
                     r.Skip(10);   // xp display, bonuses (5 x u16)
-                    Mana = (int)r.U32(); MaxMana = (int)r.U32();
+                    FitInt(r.U32(), r.U32(), out Mana, out MaxMana);
                     MagicLevel = r.U8(); BaseMagicLevel = r.U8(); MagicPercent = r.U8();
                     Soul = r.U8(); Stamina = r.U16(); Speed = r.U16();
                     r.Skip(2 + 2 + 2 + 1);   // regen, offline training, store xp boost, flag
@@ -265,6 +282,15 @@ namespace Chaos.Core
                 default:
                     throw new ProtocolException("unknown opcode 0x" + op.ToString("X2") + " at " + (r.Pos - 1));
             }
+        }
+
+        /// <summary>A current and a maximum that came as u32 (the display scale of src-patch 0037 clamps to the u32 range, 0085 made the internal values
+        /// int32): kept as ints. Above 2^31 both are scaled down by the same factor, so the bar stays right.</summary>
+        static void FitInt(uint cur, uint max, out int c, out int m)
+        {
+            if (cur <= int.MaxValue && max <= int.MaxValue) { c = (int)cur; m = (int)max; return; }
+            double k = (double)int.MaxValue / Math.Max(cur, max);
+            c = (int)Math.Floor(cur * k); m = (int)Math.Floor(max * k);
         }
 
         void SetCenter(Pos p)
@@ -495,10 +521,10 @@ namespace Chaos.Core
                 int skip = 0;
                 if (!Identity.Markers)   // an OTCv8 client got these floors as 0x4B messages just before
                     for (int i = 5; i >= 0; i--)
-                        skip = FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, i, World.ViewW, World.ViewH, 8 - i, skip);
+                        skip = FloorDescription(r, c.X - W.Range.Left, c.Y - W.Range.Top, i, W.Range.Horizontal, W.Range.Vertical, 8 - i, skip);
             }
             else if (z > 7)
-                FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, z - 2, World.ViewW, World.ViewH, 3, 0);
+                FloorDescription(r, c.X - W.Range.Left, c.Y - W.Range.Top, z - 2, W.Range.Horizontal, W.Range.Vertical, 3, 0);
             SetCenter(nc);
         }
 
@@ -512,10 +538,10 @@ namespace Chaos.Core
                 int skip = 0, j = -1;
                 if (!Identity.Markers)
                     for (int i = z; i <= z + 2; i++, j--)
-                        skip = FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, i, World.ViewW, World.ViewH, j, skip);
+                        skip = FloorDescription(r, c.X - W.Range.Left, c.Y - W.Range.Top, i, W.Range.Horizontal, W.Range.Vertical, j, skip);
             }
             else if (z > 8 && z < 14)
-                FloorDescription(r, c.X - World.RangeLeft, c.Y - World.RangeTop, z + 2, World.ViewW, World.ViewH, -3, 0);
+                FloorDescription(r, c.X - W.Range.Left, c.Y - W.Range.Top, z + 2, W.Range.Horizontal, W.Range.Vertical, -3, 0);
             SetCenter(nc);
         }
     }
@@ -548,6 +574,9 @@ namespace Chaos.Core
             public ClientIdentity Identity = ClientIdentity.Extended;
             /// <summary>Streamer mode shared with the app (character list names); a session makes its own when null.</summary>
             public StreamerState Streamer;
+            /// <summary>The aware range to ask the server for after the login (0x33, game_chaosview asks for 29 x 21). 0 asks for nothing. Only an
+            /// Identity.Chaos connection can: the server tells the range to OTCv8 clients only.</summary>
+            public int AwareWidth, AwareHeight;
         }
 
         readonly World world;
@@ -556,6 +585,10 @@ namespace Chaos.Core
         readonly Stopwatch clock = Stopwatch.StartNew();
         Connection conn;
         uint[] key;
+        /// <summary>The inflate side of this connection's deflate stream (src-patch 0069): packets whose checksum word is 0.</summary>
+        readonly RawInflater inflater = new RawInflater();
+        public RawInflater Inflater => inflater;
+        bool awareAsked;
         bool started;
         public bool GuardAnswered { get; private set; }
         double stepSent = -1;
@@ -677,7 +710,13 @@ namespace Chaos.Core
                 Bytes += body.Length + 2;
                 try
                 {
-                    parser.Parse(Protocol.Decrypt(body, key));
+                    parser.Parse(Protocol.Decrypt(body, key, inflater));
+                }
+                catch (CompressionException e)
+                {
+                    // the deflate stream is out of step for good: the main client closes the connection too (base patch 0131)
+                    Closed = "The server's compressed packets cannot be read: " + e.Message;
+                    return;
                 }
                 catch (ProtocolException e)
                 {
@@ -692,6 +731,7 @@ namespace Chaos.Core
                 Log("Server features: " + string.Join(",", parser.Features.All.OrderBy(f => f)));
             }
             if (parser.LoggedIn && enteredAt < 0) enteredAt = Now;
+            if (!awareAsked && parser.LoggedIn && opt.AwareWidth > 0) { awareAsked = true; RequestAwareRange(opt.AwareWidth, opt.AwareHeight); }
             ChatPoll();
             ItemsPoll();
             EndgamePoll();
@@ -733,6 +773,17 @@ namespace Chaos.Core
             if (!CanWalk) return;
             stepSent = Now;
             conn.Send(new[] { WalkOps[(int)d] });
+        }
+
+        /// <summary>Asks the server for a larger or smaller map area (0x33, as game_chaosview does at the game start). The server answers with 0x42
+        /// and the map; the parser then reads the new range. Only an Identity.Chaos connection gets the range changes; returns the range asked
+        /// (odd, 3 up to 29 x 21), or the current one when this connection cannot.</summary>
+        public AwareRange RequestAwareRange(int width, int height)
+        {
+            if (conn == null || !opt.Identity.Markers) return world.Range;
+            var r = AwareRange.Clamp(width, height);
+            conn.Send(WirePackets.ChangeAwareRange(r.Width, r.Height));
+            return r;
         }
 
         public void Turn(Dir d)
