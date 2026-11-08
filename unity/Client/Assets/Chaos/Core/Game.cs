@@ -48,6 +48,8 @@ namespace Chaos.Core
         public int LevelPercent, MagicLevel, BaseMagicLevel, MagicPercent, Soul, Stamina, Speed;
         /// <summary>0xA1: fist, club, sword, axe, distance, shielding, fishing.</summary>
         public readonly SkillValue[] Skills = new SkillValue[7];
+        /// <summary>0xA1, the seven skills after fishing: crafting, woodcutting, mining, herbalist, armorsmith, weaponsmith, jewelsmith (Chaos wire).</summary>
+        public readonly SkillValue[] CraftSkills = new SkillValue[7];
         /// <summary>Equipment slots 1..10 (0 unused). Null when empty.</summary>
         public readonly Item[] Inventory = new Item[11];
         /// <summary>Open containers by server container id.</summary>
@@ -231,7 +233,8 @@ namespace Chaos.Core
                     break;
                 case 0xA1:
                     for (int i = 0; i < Skills.Length; i++) Skills[i] = new SkillValue { Level = r.U16(), Base = r.U16(), Percent = r.U8() };
-                    r.Skip(14 * 5 + 6 * 4 - Skills.Length * 5);   // the rest: more skills, special skills
+                    for (int i = 0; i < CraftSkills.Length; i++) CraftSkills[i] = new SkillValue { Level = r.U16(), Base = r.U16(), Percent = r.U8() };
+                    r.Skip(6 * 4);   // the special skills
                     break;
                 case 0xA2: PlayerStates = r.U16(); break;
                 case 0xA3: r.U32(); AttackTarget = 0; break;   // cancel target
@@ -593,6 +596,7 @@ namespace Chaos.Core
             Ext.On(NpcTradeState.OpcodeCurrency, m => parser.Trade.ReceiveCurrency(NpcTradeState.ParseCurrency(m), Now));
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
             InitItems();
+            InitCollect();
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
         }
@@ -680,6 +684,7 @@ namespace Chaos.Core
             if (parser.LoggedIn && enteredAt < 0) enteredAt = Now;
             ChatPoll();
             ItemsPoll();
+            CollectPoll();
             // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
             if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
             // the party frames: watch a moment after the login (the main client waits 400 ms)
