@@ -57,6 +57,8 @@ jobs:
         run: python3 -I tools/ci/check_unity_opcodes.py && python3 -I tools/ci/check_unity_opcodes_test.py
       - name: Credits data is current (docs/CREDITS.md to the Unity Credits window)
         run: python3 -I unity/tools/gen_unity_credits.py --check && python3 -I unity/tools/gen_unity_credits_test.py
+      - name: Spell icon cells are current (spelldata.lua to C#)
+        run: python3 -I unity/tools/gen_spell_icon_data.py --check
       - name: Core tests
         working-directory: unity/Core.Tests
         run: dotnet run -c Release
@@ -124,15 +126,25 @@ jobs:
             printf '%s' "$CHAOS_CLIENT_KEY" > "$res/chaos_client_key.txt"
             echo "::warning::The client guard key is inside this build: do not share the artifact."
           fi
-      - name: Copy the sound, music and picture files of the main client modules into StreamingAssets
+      - name: Copy the sound, music and picture files of the main client modules and data into StreamingAssets
         if: steps.lic.outputs.ok == '1'
         run: |
           dst=unity/Client/Assets/StreamingAssets/overlay/modules
-          for m in game_chaossound game_chaosmusic game_chestaura game_combatdecals game_cosmeticfx; do
+          for m in game_chaossound game_chaosmusic game_chestaura game_combatdecals game_cosmeticfx game_shaderfx; do
             (cd client/overlay/modules && find "$m" -type f \( -name '*.ogg' -o -name '*.png' \) -print0) |
               while IFS= read -r -d '' f; do mkdir -p "$dst/$(dirname "$f")"; cp "client/overlay/modules/$f" "$dst/$f"; done
           done
-          echo "copied $(find "$dst" -type f | wc -l) files to $dst"
+          # toast icons only (the rest of game_chaosnotify is the window skin)
+          (cd client/overlay/modules && find game_chaosnotify/images/toast -type f -name '*.png' -print0) |
+            while IFS= read -r -d '' f; do mkdir -p "$dst/$(dirname "$f")"; cp "client/overlay/modules/$f" "$dst/$f"; done
+          # pictures of client/overlay/data (spell icon sheets, buff icons, monster bar art, the achievement toast icon): the player reads them as ../data
+          ddst=unity/Client/Assets/StreamingAssets/overlay/data
+          for d in images/game/spells images/game/buffs images/chaos/monsterbar; do
+            (cd client/overlay/data && find "$d" -type f -name '*.png' -print0) |
+              while IFS= read -r -d '' f; do mkdir -p "$ddst/$(dirname "$f")"; cp "client/overlay/data/$f" "$ddst/$f"; done
+          done
+          mkdir -p "$ddst/images/chaos" && cp client/overlay/data/images/chaos/topbutton_ranking.png "$ddst/images/chaos/"
+          echo "copied $(find "$dst" "$ddst" -type f | wc -l) files to $dst and $ddst"
       - name: Build
         if: steps.lic.outputs.ok == '1'
         uses: game-ci/unity-builder@v4

@@ -169,6 +169,7 @@ namespace Chaos.Client
                 case ItemAction.Use: case ItemAction.Open: s.UseItem(r.Pos, r.Id, r.Stack, ItemSlots.FreeContainerId(this)); break;
                 case ItemAction.UseWith: Crosshair.Start(CrosshairState.Kind.UseWith, r); break;
                 case ItemAction.Rotate: s.Rotate(r); break;
+                case ItemAction.AddToHotbar: AddToHotbar(r); break;
                 case ItemAction.Trade: Crosshair.Start(CrosshairState.Kind.Trade, r); break;
                 case ItemAction.WhereToFind: u?.Finder.WhereToFind(r.Id); break;
                 case ItemAction.LootAdd: u?.AutoLoot.AddItem(r.Id); break;
