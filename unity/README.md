@@ -597,6 +597,27 @@ Same server messages as the main client; pure code in Core, tests in `Core.Tests
 - Options > General: damage number spread on or off and its strength. Skills: bar tooltips and boosted levels in green.
 - Not done: map outlines for items, beams, rule sounds, tooltip card layout, in-world tier labels and oversized monsters of the monster bar, Helper follow, auto sell, exercise weapons.
 
+## Phase 7, track Y: P1 systems (passive tree, monster bar, rarity, tooltips, loot filter, labels, toasts, damage numbers, store)
+
+Pure code in `Core/Phase7Y.cs` and `Core/Phase7YTree.cs`, tests in `Core.Tests/Phase7YTests.cs`, texts in `Core/LocPhase7Y.cs`, glue in `Unity/ChaosApp.Phase7Y.cs`.
+- Passive tree: the Paragon panel (button Paragon, `ParagonPanel`: paragonState, + and - with Shift for five, Apply sends the absolute allocation, Reset asks first and shows the server's price)
+  and another character's tree read-only (Inspect Player > View tree sends the inspect packet to `PassiveTree.ShowOther`; banner, Back to my tree; planning, Apply, Reset, refunds and build import are off while it shows;
+  a sync of the own tree ends the view). The main client enables one loadout slot only, so loadouts have nothing to port.
+- Monster bar world side: a tiered monster's name in its tier colour with the tier word and the modifier lines over it (`MonsterWorld`, two modifiers to a line, in every view that draws names).
+  The draw size in the classic map view (`MapView.CreatureScale`): boss and omen guardian 1.5, any other body over 68 px tall or 96 px wide shrunk to fit, never below 0.5,
+  the body measured from the sprites' opaque pixels (`BodyBox`, a stand-in for the main client's outfit anchors) and the tier asked for at once.
+- Items on the map: a rarity outline (Uncommon and up, unique colour first; Legendary and Divine pulse), the sprite drawn again tinted one pixel to each side behind itself. Options > Visual switches it.
+- Tooltips: with Ctrl the worn items of the same kind are plates beside the main one (`TooltipPlates`). Ground label tooltips: hover asks the server (opcode 230 `tip`), cache per tile, stack, id and count.
+- Loot filter: the rule sound of a kill plays from `game_lootfilter/sounds/*.ogg` (`LootRuleSounds`), a play button per rule, the rare-drop cue stays silent for that kill;
+  the rule counters head the Hunt Tracker's Chaos Drops tab while the option is on.
+- Ground labels: tooltip, right click opens the item menu, the loot label accent cosmetic sits behind highlighted labels.
+- Toasts: the creature of task, bounty, bestiary and battle pass toasts over the icon, the module's plate, Accept and Decline from the four-state strips.
+- Damage numbers: critical and condition numbers in the bitmap fonts `chaos-display-16px` and `chaos-outline-11px` (`BitmapFont` reads the .otfont text and its sheet; the stock numbers when the files are missing).
+- Store: an offer's footprint print, plate frame or colour sample is its icon (`StoreLookIcon`).
+- Files: CI copies `game_lootfilter`, `game_nameplate`, the toast plate and the two fonts into StreamingAssets (unity-prototype.yml). The art is the main client's own, nothing is committed to the Unity project.
+- Not done: node icons, curved links, Paragon masteries, trials and auto build of the tree; the draw size and the outline in the live and HD-2D views; the tooltip card layout; the store's look preview try-on panel;
+  the catacomb Start protection zone check. Not run in a real player build: the drawing glue is checked by `Client.Check` only.
+
 ## Running it
 
 1. Open `unity/Client` in Unity 2022.3 LTS and press Play.

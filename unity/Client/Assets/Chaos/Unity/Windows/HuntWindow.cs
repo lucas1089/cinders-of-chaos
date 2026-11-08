@@ -2,6 +2,7 @@
 // next level, loot, supplies, profit, damage, healing and kills, and four lists (Kills, Loot, Supplies, Chaos Drops). The server counts
 // everything and pushes a state every 2 seconds while the window is open; the clock ticks here in between. Restock asks the server
 // for a price first. Core: Core/Progression.cs (HuntTracker).
+using System.Collections.Generic;
 using Chaos.Core;
 using UnityEngine;
 
@@ -96,7 +97,9 @@ namespace Chaos.Client
         void DrawList(ChaosApp app, HuntTracker h, Rect r)
         {
             ChaosApp.Fill(r, new Color(0f, 0f, 0f, 0.3f));
-            int count = tab == 0 ? h.Kills.Count : tab == 1 ? h.Loot.Count : tab == 2 ? h.Supplies.Count : h.Drops.Count;
+            // the loot filter's rule counters head the Chaos Drops tab while its option is on (phase 7 track Y)
+            var rules = tab == 3 ? LootHuntRows.Rows(app.FindWindow<LootWindow>()?.Filter) : new List<HuntRuleRow>();
+            int count = tab == 0 ? h.Kills.Count : tab == 1 ? h.Loot.Count : tab == 2 ? h.Supplies.Count : h.Drops.Count + rules.Count;
             const float rowH = 28f;
             scroll = GUI.BeginScrollView(r, scroll, new Rect(0, 0, r.width - 18, Mathf.Max(r.height, count * rowH)));
             float w = r.width - 22;
@@ -115,10 +118,18 @@ namespace Chaos.Client
             else
             {
                 var list = tab == 1 ? h.Loot : tab == 2 ? h.Supplies : h.Drops;
+                for (int i = 0; i < rules.Count; i++)
+                {
+                    var rr = rules[i];
+                    var rs = new GUIStyle(tiny);
+                    rs.normal.textColor = Hex(rr.Color);
+                    GUI.Label(new Rect(6, i * rowH + 4, w - 120, 20), new GUIContent(rr.Text, rr.Tip), rs);
+                    GUI.Label(new Rect(w - 116, i * rowH + 4, 112, 20), Loc.T("session") + "  " + LootRules.Number(rr.Session), new GUIStyle(right));
+                }
                 for (int i = 0; i < list.Count; i++)
                 {
                     var it = list[i];
-                    float y = i * rowH;
+                    float y = (i + rules.Count) * rowH;
                     var icon = new Rect(2, y + 1, 26, 26);
                     app.DrawItem(icon, (ushort)it.Id, it.Count);
                     string color;

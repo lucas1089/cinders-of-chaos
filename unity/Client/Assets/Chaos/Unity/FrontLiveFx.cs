@@ -21,7 +21,7 @@ namespace Chaos.Client
         public const int MaxLights = 6;
         public const float MissileFps = 14f;
         public const float TexelTiles = 0.06f;        // a font texel, in tiles
-        const int NumberSlotW = 80, NumberSlotH = 16;  // 12 characters of the font and the margin fit
+        const int NumberSlotW = 128, NumberSlotH = 32;  // 12 characters of the stock font fit, and a line of a bitmap font (data/fonts/chaos, ScatterFonts)
 
         FrontLiveView view;
         readonly FrontFxDirector director = new FrontFxDirector();
@@ -48,6 +48,7 @@ namespace Chaos.Client
         readonly List<Texture2D> numberTex = new List<Texture2D>();
         readonly List<int> numberItem = new List<int>();
         readonly List<int> numberW = new List<int>(), numberH = new List<int>();
+        readonly List<bool> numberFont = new List<bool>();   // the slot's picture is a bitmap font line (it is drawn at the font's own size)
         readonly List<Light> lights = new List<Light>();
 
         // ---- setup ----
@@ -321,20 +322,24 @@ namespace Chaos.Client
             if (slot < 0)
             {
                 slot = numberItem.Count;
-                numberItem.Add(0); numberW.Add(0); numberH.Add(0);
+                numberItem.Add(0); numberW.Add(0); numberH.Add(0); numberFont.Add(false);
                 var t = Own(new Texture2D(NumberSlotW, NumberSlotH, TextureFormat.RGBA32, false) { name = "fx-number-" + slot });
                 numberTex.Add(Point(t));
             }
             var p = FrontFx.Palette(item.El);
             float k = 0.45f;   // the fill leans to the hot colour so a small number stays readable
             int pw, ph;
-            var px = FrontFxArt.NumberPixels(item.Text, Mathf.Lerp(p.BR, p.CR, k), Mathf.Lerp(p.BG, p.CG, k), Mathf.Lerp(p.BB, p.CB, k), p.RR * 0.4f, p.RG * 0.4f, p.RB * 0.4f, out pw, out ph);
+            byte[] px;
+            // a critical hit and a condition tick in the main client's own bitmap fonts (game_damagescatter scatterlogic.lua L.FONTS), the fill colour as the tint
+            var font = item.Type != 0 ? Phase7YFonts.Get(ScatterFonts.FontFor(item.Type)) : null;
+            if (font != null) px = font.Render(item.Text, Mathf.Lerp(p.BR, p.CR, k) * 1.15f, Mathf.Lerp(p.BG, p.CG, k) * 1.15f, Mathf.Lerp(p.BB, p.CB, k) * 1.15f, out pw, out ph);
+            else px = FrontFxArt.NumberPixels(item.Text, Mathf.Lerp(p.BR, p.CR, k), Mathf.Lerp(p.BG, p.CG, k), Mathf.Lerp(p.BB, p.CB, k), p.RR * 0.4f, p.RG * 0.4f, p.RB * 0.4f, out pw, out ph);
             int w = Mathf.Min(pw, NumberSlotW), h = Mathf.Min(ph, NumberSlotH);
             var full = new byte[NumberSlotW * NumberSlotH * 4];
             for (int y = 0; y < h; y++) Buffer.BlockCopy(px, y * pw * 4, full, y * NumberSlotW * 4, w * 4);
             numberTex[slot].LoadRawTextureData(full);
             numberTex[slot].Apply(false, false);
-            numberItem[slot] = item.Id; numberW[slot] = w; numberH[slot] = h;
+            numberItem[slot] = item.Id; numberW[slot] = w; numberH[slot] = h; numberFont[slot] = font != null;
             return slot;
         }
 
@@ -362,7 +367,8 @@ namespace Chaos.Client
                     rise += -item.Dy / 32f + (-item.Sy - 48f) / 32f * FrontFxTiming.Clamp01(u);
                 }
                 var at = Where(spot, 0f) + Vector3.up * (rise * tile) + right * (side * tile);
-                float scale = FrontFxTiming.NumberScale(u) * item.Size * TexelTiles * tile;
+                bool fontLine = numberFont[slot];
+                float scale = FrontFxTiming.NumberScale(u) * (fontLine ? item.Size / ScatterFonts.SizeFactor(item.Type) * ScatterFonts.TilesPerPixel : item.Size * TexelTiles) * tile;
                 float w = numberW[slot], h = numberH[slot];
                 Set(q, MatFor(numberTex[slot]), at, face, new Vector2(w * scale, h * scale),
                     new Vector4(w / NumberSlotW, h / NumberSlotH, 0f, 0f), new Color(1f, 1f, 1f, FrontFxTiming.NumberAlpha(u)));

@@ -292,6 +292,7 @@ namespace Chaos.Client
                 uiRects.Add(Scaled(box, scale));
                 Fill(new Rect(box.x - 2, box.y - 2, box.width + 4, box.height + 4), HexColor(t.Style.BorderColor, Color.gray));
                 Fill(box, new Color(0.05f, 0.04f, 0.06f, 0.96f));
+                if (Event.current.type == EventType.Repaint) DrawToastPlate(box);   // the module's own plate over the dark fill when the picture is there (Phase7Y)
                 var ts = new GUIStyle(small) { fontSize = 12, fontStyle = FontStyle.Bold };
                 ts.normal.textColor = HexColor(t.Style.TitleColor, Color.white);
                 GUI.Label(new Rect(box.x + 8, box.y + 3, box.width - 40, 20), Loc.T(t.Style.Title), ts);
@@ -301,13 +302,17 @@ namespace Chaos.Client
                 // the toast type's own 48 px icon at the left (game_chaosnotify); the text moves right of it when the picture is there
                 float iconY = box.y + ToastKinds.TextTop + Mathf.Max(0f, Mathf.Floor((box.height - ToastKinds.TextTop - textBottom - ToastIcons.Size) / 2f));
                 float textX = ToastHasIcon(t) && DrawToastIcon(new Rect(box.x + 8, iconY, ToastIcons.Size, ToastIcons.Size), t.Type) ? ToastIconIndent : 0f;
+                DrawToastMonster(new Rect(box.x + 8, iconY, ToastIcons.Size, ToastIcons.Size), t);   // the creature of a task, bounty or bestiary toast over the icon
                 var tr = new Rect(box.x + 8 + textX, box.y + ToastKinds.TextTop, box.width - 16 - textX, box.height - ToastKinds.TextTop - textBottom);
                 GUI.Label(tr, t.Message, toastText);
                 if (buttons)
                 {
                     string yes = t.Type == "CATACOMB_FREE" ? Loc.T("Start") : Loc.T("Accept");
-                    if (GUI.Button(new Rect(box.x + 8, box.yMax - 66, 150, 26), yes)) accept = t;
-                    if (GUI.Button(new Rect(box.x + 170, box.yMax - 66, 150, 26), Loc.T("Decline"))) decline = t;
+                    bool clickedYes, clickedNo;
+                    if (DrawToastButton(new Rect(box.x + 8, box.yMax - 66, ToastArt.ButtonW, ToastArt.ButtonH + 2), yes, true, true, out clickedYes)) { if (clickedYes) accept = t; }
+                    else if (GUI.Button(new Rect(box.x + 8, box.yMax - 66, 150, 26), yes)) accept = t;
+                    if (DrawToastButton(new Rect(box.x + 170, box.yMax - 66, ToastArt.ButtonW, ToastArt.ButtonH + 2), Loc.T("Decline"), false, true, out clickedNo)) { if (clickedNo) decline = t; }
+                    else if (GUI.Button(new Rect(box.x + 170, box.yMax - 66, 150, 26), Loc.T("Decline"))) decline = t;
                 }
                 // timer bar and the seconds left
                 var bar = new Rect(box.x + 8, box.yMax - 16, box.width - 44, 8);

@@ -10,7 +10,7 @@
 //                     raise {p, s, id, c, iid}   put an item lower in a pile on top (then it is moved as usual)
 //                     raised {p, id[, err]}      answer to raise: err far | sight | gone | fixed
 // A left click on an item label picks it up (GroundPick, GroundLabelsModel.Activate): the top of a pile moves into the backpack at once
-// (0xFFFF, slot 3), an item lower down is raised by the server first. Not ported: the tooltips (tip), the label accent cosmetic. A click
+// (0xFFFF, slot 3), an item lower down is raised by the server first. Phase 7 track Y: the tooltips (tip), the label accent cosmetic. A click
 // on a corpse label opens the corpse (Unity side). Tests: Core.Tests/HelperTests.cs (mirrors groundlabels_test.lua).
 using System;
 using System.Collections.Generic;
@@ -256,10 +256,11 @@ namespace Chaos.Core
         }
 
         /// <summary>The text, border and background of a label.</summary>
-        public static void Style(GroundDecision d, string color, out string text, out string border, out string background)
+        public static void Style(GroundDecision d, string color, out string text, out string border, out string background, string accent = null)
         {
             text = color;
-            if (d.Highlight) { border = color; background = HighlightBackground; }
+            // the loot label accent cosmetic sits behind the labels the loot filter highlights; the rarity colour stays (groundlabelslogic.lua GL.style)
+            if (d.Highlight) { border = color; background = accent ?? HighlightBackground; }
             else { border = "#3a3230"; background = PlainBackground; }
         }
 
@@ -367,6 +368,10 @@ namespace Chaos.Core
         public Action<Pos, ushort, byte, byte> MoveToBackpack = delegate { };
         public Action<string> Notice = delegate { };
         public Func<bool> HasBackpack = () => true;
+        /// <summary>The loot label accent cosmetic ("#rrggbb" or "#rrggbbaa"), null for the default background (phase 7 track Y).</summary>
+        public string Accent;
+        readonly Dictionary<string, object> tipCache = new Dictionary<string, object>();
+        readonly Dictionary<string, double> tipPending = new Dictionary<string, double>();
         World lastWorld;
         sealed class PendingPick { public Pos Tile; public GroundRow Row; public double At; }
         PendingPick pending;
@@ -475,9 +480,47 @@ namespace Chaos.Core
             else Notice(GroundPick.ErrorText("gone"));
         }
 
+        // ---- the rich tooltip of a ground item (action tip {p, s, id} -> tip {p, s, id, tip | gone}; the cache key holds the tile, the stack index, the id and the count)
+        public static string TipKey(GroundLabel l) => "gl:" + l.Tile.X + "," + l.Tile.Y + "," + l.Tile.Z + ":" + l.Row.Info.S + ":" + l.Row.Info.Id + ":" + l.Row.Info.C;
+
+        /// <summary>The cached tooltip (a tip table) of an item label, or null; asks the server once per RetrySeconds while it is not there. Corpses have none.</summary>
+        public object Tip(GroundLabel l)
+        {
+            if (l == null || l.Row == null || l.Row.Corpse) return null;
+            string key = TipKey(l);
+            object tip;
+            if (tipCache.TryGetValue(key, out tip)) return tip;
+            double now = Clock();
+            double at;
+            if (tipPending.TryGetValue(key, out at) && now - at <= GroundLabelRules.RetrySeconds) return null;
+            tipPending[key] = now;
+            ext.Send(Opcode, "tip", new Dictionary<string, object>
+            {
+                { "p", new List<object> { l.Tile.X, l.Tile.Y, l.Tile.Z } }, { "s", l.Row.Info.S }, { "id", l.Row.Info.Id },
+            });
+            return null;
+        }
+
+        void OnTip(object data)
+        {
+            var p = Json.List(data, "p");
+            if (p.Count < 3 || !(p[0] is double) || !(p[1] is double) || !(p[2] is double)) return;
+            string prefix = "gl:" + (int)(double)p[0] + "," + (int)(double)p[1] + "," + (int)(double)p[2] + ":" + Json.Int(data, "s", -1) + ":";
+            object tip = Json.Get(data, "tip");
+            var keys = new List<string>(tipPending.Keys);
+            foreach (string k in keys)
+            {
+                if (!k.StartsWith(prefix, StringComparison.Ordinal)) continue;
+                tipPending.Remove(k);
+                if (tip is Dictionary<string, object>) tipCache[k] = tip;
+            }
+            if (tipCache.Count > 200) tipCache.Clear();
+        }
+
         void OnMessage(ExtMessage m)
         {
             if (m.Action == "raised") { OnRaised(m.Data); return; }
+            if (m.Action == "tip") { OnTip(m.Data); return; }
             if (m.Action != "tiles") return;
             double now = Clock();
             foreach (object entry in Json.List(m.Data, "t"))
@@ -525,13 +568,25 @@ namespace Chaos.Core
                     var l = new GroundLabel { Tile = kv.Key, Row = row, Decision = d, Prio = GroundLabelRules.Priority(row, d), Order = ++order,
                         Dist = Math.Max(Math.Abs(kv.Key.X - player.X), Math.Abs(kv.Key.Y - player.Y)), Timer = GroundLabelRules.ShowTimer(row, d, Settings) };
                     l.Text = GroundLabelRules.Text(row, d, Settings, now);
-                    GroundLabelRules.Style(d, GroundLabelRules.Color(row, d), out l.Color, out l.Border, out l.Background);
+                    GroundLabelRules.Style(d, GroundLabelRules.Color(row, d), out l.Color, out l.Border, out l.Background, Accent);
                     entries.Add(l);
                 }
             }
             return GroundLabelRules.Select(entries);
         }
 
-        public void Reset() { tiles.Clear(); Dirty = true; Asked = Answered = 0; }
+        /// <summary>The tooltip of a corpse label (groundlabelslogic.lua GL.corpseTooltip): its items one to a line, then the click hint.</summary>
+        public static List<string> CorpseTip(GroundRow row)
+        {
+            var lines = new List<string>();
+            foreach (var info in row.Inside)
+                lines.Add((info.C > 1 ? info.C + "x " : "") + LootFilterRules.Label(new LootInfo { U = info.U, R = info.R, Nm = GroundLabelRules.TitleCase(info.Nm) }));
+            int n = row.Items > 0 ? row.Items : lines.Count;
+            if (n > lines.Count) lines.Add(Loc.T("... and {0} more", n - lines.Count));
+            lines.Add(Loc.T("Click: open the corpse"));
+            return lines;
+        }
+
+        public void Reset() { tiles.Clear(); Dirty = true; Asked = Answered = 0; tipCache.Clear(); tipPending.Clear(); }
     }
 }
