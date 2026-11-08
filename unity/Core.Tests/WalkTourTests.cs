@@ -130,7 +130,11 @@ namespace Chaos.Core.Tests
         static void EndToEnd(Action<bool, string> check)
         {
             var demo = Hd2dDemo.Synthetic();
-            var art = TourArt.FromDemo(DemoIds.Synthetic()).Probe(demo.Dat);
+            // the real pair's meadow grass is ground speed 150 (straight 300 ms, diagonal 420 ms, WalkTourPlan.StraightMs): the synthetic floors take it too
+            var ids = DemoIds.Synthetic();
+            demo.Dat.Item(ids.Floor).GroundSpeed = 150;
+            demo.Dat.Item(ids.Checker).GroundSpeed = 150;
+            var art = TourArt.FromDemo(ids).Probe(demo.Dat);
             using (var server = new FakeGameServer(art))
             {
                 server.UseWalkTour();
@@ -149,6 +153,8 @@ namespace Chaos.Core.Tests
                         Host = "127.0.0.1", Port = server.GamePort, Account = "demo", Password = "demo", SessionKey = res.SessionKey, Character = FakeGameServer.HeroName,
                         GuardKey = server.GuardKey, Build = 30, RsaModulus = server.RsaModulus, Identity = ClientIdentity.Extended,
                     });
+                    // as ChaosApp sets it: a step onto a tile the client thinks blocked is held back and not drawn (the 150 ms standstills of a not walkable meadow)
+                    session.Walkable = p => WalkMap.Walkable(world, p, world.PlayerId);
                     session.Start();
                     var wall = DateTime.UtcNow.AddSeconds(20);
                     while (DateTime.UtcNow < wall && !server.InGame) { session.Poll(); Thread.Sleep(5); }
@@ -227,6 +233,7 @@ namespace Chaos.Core.Tests
                     var enteredAt = new Dictionary<uint, double>();
                     var stillRun = new Dictionary<uint, int>();
                     int longestStill = 0;
+                    double mobStepMs = WalkTiming.StepMs(FakeGameServer.MobSpeed, 150, false, false);
                     Dir faced = Dir.North;
                     var firstSent = new List<Dir>();
                     while (!conductor.Done && frames < 60 * 60 && session.Closed == null)
@@ -249,7 +256,7 @@ namespace Chaos.Core.Tests
                         }
                         if (atEnd.Count < conductor.Reports.Count) { atEnd.Add(world.Player.Position); if (conductor.Reports.Count == 1) faced = world.Player.Direction; }
                         // the creatures: gliding in nearly every frame while they are on the map; one that comes into view by the hero's step stands until its next move (it was out
-                        // of sight for the last one), so it is counted from 400 ms after it came
+                        // of sight for the last one), so it is counted from one monster step (and a frame) after it came
                         if (clock - rec0 > 2500)
                             foreach (uint id in new[] { FakeGameServer.SkeletonId, FakeGameServer.GhoulId })
                             {
@@ -258,12 +265,13 @@ namespace Chaos.Core.Tests
                                 {
                                     var tile = world.Get(mob.Position);
                                     var me = world.Player.Position;
-                                    bool inWindow = mob.Position.X >= me.X - World.RangeLeft && mob.Position.X <= me.X + World.RangeRight && mob.Position.Y >= me.Y - World.RangeTop && mob.Position.Y <= me.Y + World.RangeBottom;
+                                    // the 15 x 11 tiles on screen: on the hidden border rows of World.Range* a creature leaves and comes back by the map strips, standing, as the engine sends it
+                                    bool inWindow = Math.Abs(mob.Position.X - me.X) <= 7 && Math.Abs(mob.Position.Y - me.Y) <= 5;
                                     drawn = inWindow && tile != null && tile.Things.Any(th => th.Creature == mob);
                                     if (drawn)
                                     {
                                         if (!enteredAt.TryGetValue(id, out double since) || since < 0) enteredAt[id] = since = clock;
-                                        if (clock - since >= 400)
+                                        if (clock - since >= mobStepMs + 1000.0 / 60)
                                         {
                                             WalkMath.Between(mob, session.Now, out Pos from, out Pos to, out float u);
                                             glideTotal++;

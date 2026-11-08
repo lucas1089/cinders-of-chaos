@@ -274,6 +274,12 @@ namespace Chaos.Core.Tests
             var bare = MakeArt();
             bare.Dat.Items[Tree] = null;
             check(Hd2dDemo.PickOutdoor(bare.Dat, bare.Sprite) == null && Hd2dDemo.Outdoor(bare.Dat, bare.Sprite) == null, "world3d: a pair without a tree gives no outdoor demo");
+            // the real pair has a plain grass ground flagged not walkable: the walking video's meadow on it made WalkMap refuse every step (150 ms standstills)
+            var unwalkable = MakeArt();
+            unwalkable.Dat.Items[Grass].NotWalkable = true;
+            unwalkable.Dat.Items[Dirt].BlockPath = true;
+            var uids = Hd2dDemo.PickOutdoor(unwalkable.Dat, unwalkable.Sprite);
+            check(uids != null && uids.Grass == NoisyGrass && uids.Dirt == NoisyGrass, "world3d: the pick skips a grass or dirt ground the dat calls not walkable (" + uids + ")");
         }
 
         static bool WorldIsDead(SpriteClassifier sc, Art a, int id) => Hd2dWorld3d.IsDeadTree(sc.Info(a.Dat.Items[id]));

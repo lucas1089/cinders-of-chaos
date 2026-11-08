@@ -74,8 +74,10 @@ namespace Chaos.Core
                     if (g.Width != 1 || g.Height != 1 || t.GroundBorder) continue;
                     var i = cls.Info(t);
                     if (i.Stats.Alpha < 0.95f) continue;
-                    if (i.Class == GroundClass.Grass && g.Phases == 1 && i.Stats.Spread < grassSpread) { grassSpread = i.Stats.Spread; ids.Grass = id; }
-                    else if (i.Class == GroundClass.Dirt && g.Phases == 1 && i.Stats.Spread < dirtSpread) { dirtSpread = i.Stats.Spread; ids.Dirt = id; }
+                    // the hero walks on grass and dirt: a ground the dat calls not walkable (the client's WalkMap would refuse every step) is no meadow
+                    bool walk = !t.NotWalkable && !t.BlockPath;
+                    if (walk && i.Class == GroundClass.Grass && g.Phases == 1 && i.Stats.Spread < grassSpread) { grassSpread = i.Stats.Spread; ids.Grass = id; }
+                    else if (walk && i.Class == GroundClass.Dirt && g.Phases == 1 && i.Stats.Spread < dirtSpread) { dirtSpread = i.Stats.Spread; ids.Dirt = id; }
                     else if (i.Class == GroundClass.Water && g.Phases > waterPhases) { waterPhases = g.Phases; ids.Water = id; }
                     continue;
                 }
