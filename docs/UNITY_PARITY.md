@@ -35,7 +35,7 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 | Death | partial | 0x28 shows a death window with the penalty; OK goes to the character list. No recap window. |
 | Party | done | `PartyFramesWindow` (Ctrl+G, opcode 235), right-click menu on a player (invite, join, revoke, pass leadership, leave, shared experience: 0xA3 to 0xA8), invitation box with Accept and Decline. Not run against a live server. |
 | Outfit window | missing | 0xC8 and the set outfit request. Chaos identity brings wings, aura and shader fields. |
-| Skills, stats | partial | `SkillsWindow` reads 0xA0 and 0xA1. |
+| Skills, stats | done | `SkillsWindow` reads 0xA0 and 0xA1, the simple skill list (Melee, Ranged, Shielding, Fishing, Fist for the Monk line) and the combat stat rows (opcode 119). |
 | Text windows (books, signs), house windows | missing | 0x96, 0x97. |
 | Look, use with, use on creature | missing | Needed for runes, tools, doors with keys. |
 | VIP list, quest log | missing | |
@@ -62,34 +62,34 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_partyframes` | 235 | Party member frames. `Core/Party.cs`, `PartyFramesWindow`: outfit, class colour, level, leader mark, health and mana bars, state, distance, shared experience bonus, invite box. No buff icons, no settings window, not movable as a panel. | partial | P0 | M |
 | `game_spellbook` | 219 | Spellbook. Unity has the list, filters, search, cast by click, hotkey assignment; no area preview, no icons. | partial | P0 | M |
 | `client_chaos_locale` | 157 | English and pt-BR texts. Core/Loc.cs does it for Unity windows; no language option in a menu yet. | partial | P1 | S |
-| `client_chaos_topbar` | 115 | Top menu with unlocks by level. Unity has a flat toolbar of windows. | missing | P1 | L |
+| `client_chaos_topbar` | 115 | Top menu with unlocks by level. | partial | P1 | L |
 | `game_antibot` | 211 | Presence check modal and report dialog (antibot.lua). Unity cannot answer a check yet. | missing | P1 | S |
 | `game_bank` | 60 | Bank window. | missing | P1 | M |
 | `game_buffbar` | 234 | Buff and debuff icons with timers. | missing | P1 | M |
 | `game_castbar` | 231 | Cast bar for cast time spells. | missing | P1 | S |
-| `game_chaosinfo` | 237 | Info and Services window. | missing | P1 | M |
+| `game_chaosinfo` | 237 | Info and Services window. | done | P1 | M |
 | `game_chaosnotify` | 79 | Toasts. Many systems report through it. | missing | P1 | M |
 | `game_chaosscale` | 157 | Display scale factor for numbers. | missing | P1 | S |
 | `game_damagescatter` | none | Typed damage numbers. Needs the 0xB4 fields (capability bit 7); the text parser is track B. | missing | P1 | M |
 | `game_deathrecap` | 154 | Death recap window. Unity shows a death window (0x28); no recap data (opcode 154). | missing | P1 | M |
 | `game_energyshield` | 224 | Energy shield bar. The server sends plain text es:cur:max. | missing | P1 | S |
-| `game_goals` | 178 | Next Goals window and tracker. | missing | P1 | M |
+| `game_goals` | 178 | Next Goals window and tracker. | done | P1 | M |
 | `game_groundlabels` | 230 | Loot labels on the ground. | missing | P1 | M |
 | `game_helper` | none | The helper: heals, potions, rotation, auto target. A large part of the play loop for many players. | missing | P1 | L |
 | `game_helperrotation` | 116 | Helper cast bookkeeping and Auto rotation; Everfull potions on 116. | missing | P1 | M |
-| `game_hunt` | 241 | Hunt tracker. | missing | P1 | M |
+| `game_hunt` | 241 | Hunt tracker. | done | P1 | M |
 | `game_itemrarity` | 126 (feature) | Item rarity. Item attributes are parsed in Chaos identity (Item.Attr); nothing draws a rarity frame yet. | partial | P1 | M |
 | `game_itemtooltip` | 242 | Rich item tooltips. | missing | P1 | L |
 | `game_kitewalk` | 186 | Option: keep attacking while moving. One message on opcode 186. | missing | P1 | S |
 | `game_lootfilter` | 238 | Loot filter and loot channel. | missing | P1 | M |
 | `game_monkchi` | 247 | Monk chi pips. Server text chi:chi:max:decay. | missing | P1 | S |
 | `game_monsterbar` | 125 | Tiered monster health bar. | missing | P1 | M |
-| `game_passivetree` | 65 | Passive tree. Opcode 65. Large JSON in chunks. | missing | P1 | L |
-| `game_rift` | 228 | Rift run HUD. | missing | P1 | M |
+| `game_passivetree` | 65 | Passive tree. Opcode 65. | partial | P1 | L |
+| `game_rift` | 228 | Rift run HUD. | done | P1 | M |
 | `game_rightclickequip` | 188 | Option: right-click equips. One message on opcode 188. | missing | P1 | S |
 | `game_shop` | 218 | Chaos store. | missing | P1 | L |
-| `game_simpleskills` | none | Melee, Ranged, Magic, Shielding rows. Unity lists the seven weapon skills. | partial | P1 | S |
-| `game_skillstats` | 119 | Combat stat rows in the skills window. | missing | P1 | S |
+| `game_simpleskills` | none | Melee, Ranged, Magic, Shielding rows. | done | P1 | S |
+| `game_skillstats` | 119 | Combat stat rows in the skills window. | done | P1 | S |
 | `game_stash` | 110 | Supply Stash. | missing | P1 | M |
 | `client_chaos_infolift` | none | Name and bar lift for tall looks. | missing | P2 | S |
 | `client_chaos_numbers` | none | Short numbers (1k, 2.45M). | missing | P2 | S |
@@ -250,6 +250,18 @@ Inside packets Unity reads, it skips or ignores: 0x9F spell list body, 0xDD map 
 Client to server packets Unity sends: walk and turn, say, use, move, close, up, attack, follow, party (0xA3 invite, 0xA4 join, 0xA5 revoke, 0xA6 pass leadership, 0xA7 leave, 0xA8 shared experience), pong, logout, extended opcodes, NPC shop (0x79 to 0x7C), words to an NPC (0x96 type 12).
 Sent by the chat track: talk with type, channel or receiver (0x96), channels (0x97 to 0x9A), NPC channel close (0x9E), fight modes (0xA0). Read by it: 0xAA all 10.98 talk types (position for 1, 2, 3, 9, 10, 36, 37; channel id for 6, 7, 8, 14; none for 4, 13, 15), 0xAB to 0xB3, 0xB4 console kinds by tab, 0x28 with death type and penalty (the main client enables both features). 0xA7 is not a fight mode echo in 10.98 (it stays read and ignored). The NPC channel tab is a chat tab named NPCs; trade is the NPC track's.
 Not sent yet: use with (0x83), use on creature (0x84), look (0x8C), rotate (0x85), outfit (0xD2, 0xD3, 0xD4), auto-walk (0x64), stop (0xBE), VIP (0xDC to 0xDE), quest log (0xF0, 0xF1), equip hotkey (0x77).
+
+## Progression track (phase 3, track K)
+
+Built on the same server messages as the main client. Pure parts in `Core/Progression.cs`, `Core/PassiveTree.cs`, `Core/BuildCode.cs`, `Core/TopMenu.cs`, tests in `Core.Tests/ProgressionTests.cs`.
+- Passive tree (`PassiveTreeWindow`, Ctrl+T, opcode 65): pannable and zoomable node graph with tooltips, planner (a click plans the path, a click on a planned node takes it out, undo and redo, Apply sends planApply), masteries with their effect choice (planned and saved), refund by right-click and Reset with the server's prices (respecInfo), boss points, search with Prev and Next, build codes (export, full CC1 export, preview, apply, cancel; decode and encode checked on `docs/build_code_vectors.txt`).
+  The layout is `Resources/PassiveTree.json`, made by `unity/tools/gen_tree_data.lua` from the main client's tree data (CI `--check`).
+  Missing: node icons (nodes are coloured discs by type), curved links inside an orbit (links are straight), the Paragon track, trials, the stat totals panel and trends, the auto build helper, the tree of another character, loadouts. Stat lines are English (the main client translates them from its own table).
+- Skills window: Melee, Ranged, Magic / Wand, Shielding, Fishing, Fist (Monk line) and the combat stat rows. Not here: crafting skill rows (`game_craftskills`).
+- Next Goals (`GoalsWindow`, Ctrl+J) and the tracker (`GoalTrackerWindow`, opens by itself), Hunt Tracker (`HuntWindow`, Ctrl+H, restock), Rift HUD (`RiftWindow`, opens on the server's start), Info and Services (`InfoWindow`: character, services, house, rift keys, events, Ancestral Store, server info).
+  The "where" buttons open Unity windows and Info pages; a map mark, the Bestiary, Kill Tasks and the Item Finder say "That window is not available" until those windows exist.
+- Top menu: category buttons Character, Hunt, Adventure, Economy, Social, System and Windows, with drop-downs sorted by text, entries hidden or grey by level (opcode 115), the New badge, the on-screen text and the Go box. The Windows category lists every window no entry names, so a new window is always reachable. Entries of main client modules that have no Unity window yet are not shown. No Alt hotkeys (the Ctrl keys of the windows stay) and no locked-entry message on a hotkey.
+- Not run against a live server (as the other tracks).
 
 ## Migration plan
 
