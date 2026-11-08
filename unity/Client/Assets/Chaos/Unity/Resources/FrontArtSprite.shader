@@ -24,6 +24,7 @@ Shader "Chaos/FrontArtSprite"
         _FxStrength ("Outfit shader strength", Range(0, 1)) = 1
         _FxTint ("Outfit shader colour", Color) = (1, 1, 1, 1)
         _FxTop ("Outline colour at the top (a > 0.5: a gradient)", Color) = (0, 0, 0, 0)
+        _FxCell ("Frame of the picture: xy scale, zw offset (FrontArtSprites.SetFrame)", Vector) = (1, 1, 0, 0)
     }
     SubShader
     {
@@ -37,7 +38,8 @@ Shader "Chaos/FrontArtSprite"
         half _NormalAmount, _EmitAmount;
         half _Wrap, _Bend, _Fill, _PointScale, _Hit;
         fixed4 _Tint;
-        float4 _MainTex_ST, _MainTex_TexelSize;
+        float4 _MainTex_TexelSize;
+        float4 _FxCell;   // not the texture ST: the surface shader declares that one itself for uv_MainTex (a second one does not compile)
         half _FxMode, _FxStrength;
         fixed4 _FxTint, _FxTop;
 
@@ -66,7 +68,7 @@ Shader "Chaos/FrontArtSprite"
                 float2 uv0 = IN.uv_MainTex;
                 float rimv = 1.0 - min(min(tex2Dlod(_MainTex, float4(uv0 + float2(t.x, 0), 0, 0)).a, tex2Dlod(_MainTex, float4(uv0 - float2(t.x, 0), 0, 0)).a),
                                        min(tex2Dlod(_MainTex, float4(uv0 + float2(0, t.y), 0, 0)).a, tex2Dlod(_MainTex, float4(uv0 - float2(0, t.y), 0, 0)).a));
-                float2 raw = saturate((uv0 - _MainTex_ST.zw) / _MainTex_ST.xy);
+                float2 raw = saturate((uv0 - _FxCell.zw) / max(_FxCell.xy, 1e-4));
                 fixed3 c0 = c.rgb;
                 float4 fxc = FxApply(_FxMode, _FxStrength, c, uv0 / t, raw, rimv, _FxTint, _Time.y);
                 c = fixed4(fxc);

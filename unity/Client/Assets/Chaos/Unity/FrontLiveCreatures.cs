@@ -415,6 +415,7 @@ namespace Chaos.Client
             var m = s.OutMat;
             m.mainTexture = s.Mat.mainTexture;
             m.mainTextureScale = s.Mat.mainTextureScale; m.mainTextureOffset = s.Mat.mainTextureOffset;
+            if (s.Mat.HasProperty("_FxCell")) m.SetVector("_FxCell", s.Mat.GetVector("_FxCell"));
             OutlineRules.Dim(ol, look.OutlineAlpha, 0f, out float r, out float g, out float b);
             m.SetFloat("_FxMode", FxMode.Solid);
             m.SetColor("_FxTint", new Color(r, g, b, 1f));

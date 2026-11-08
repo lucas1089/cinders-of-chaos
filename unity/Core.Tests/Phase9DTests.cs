@@ -182,6 +182,15 @@ namespace Chaos.Core.Tests
             string app = File.ReadAllText(Path.Combine(chaos, "Unity", "ChaosApp.Phase8A.cs"));
             check(app.Contains("if (ItemGlowRealOn) return;"), "phase 9d sources: the ground ring stands down when the shader draws the outline");
             check(File.ReadAllText(Path.Combine(chaos, "Unity", "ChaosApp.Phase8C.cs")).Contains("OutlineRules.Of("), "phase 9d sources: the creature outline asks the rules with the hover kind");
+
+            // a surface shader with `uv_X` in its Input gets `X_ST` from Unity: declaring it again does not compile and the sprites vanish in the player (the phase 8 build)
+            foreach (string sh in Directory.GetFiles(chaos, "*.shader", SearchOption.AllDirectories))
+            {
+                string text = File.ReadAllText(sh);
+                if (!text.Contains("#pragma surface")) continue;
+                foreach (Match m in Regex.Matches(text, @"\buv_(\w+)"))
+                    check(!Regex.IsMatch(text, @"^\s*(float|half|fixed)4\s[^;]*\b_" + m.Groups[1].Value + @"_ST\b", RegexOptions.Multiline), "shader sources: " + Path.GetFileName(sh) + " leaves " + m.Groups[1].Value + "_ST to the surface shader");
+            }
         }
 
         static void LocChecks(Action<bool, string> check)

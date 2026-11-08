@@ -33,6 +33,7 @@ namespace Chaos.Client
         {
             m.mainTextureScale = new Vector2(1f / frames, 1f);
             m.mainTextureOffset = new Vector2((float)frame / frames, 0f);
+            m.SetVector("_FxCell", new Vector4(1f / frames, 1f, (float)frame / frames, 0f));   // the fx modes of FrontArtSprite.shader read the frame here
         }
 
         public static void SetPic(Material m, Texture2D t)
