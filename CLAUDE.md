@@ -96,6 +96,7 @@ python3 -I client/tools/rml_window_audit.py && python3 -I client/tools/rml_windo
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I mapeditor/tools/run_profile_test.py && python3 -I mapeditor/tools/upstream_test.py   # our map editor (O382): profile table, upstream pin; build and profile: mapeditor-build.yml, patches: mapeditor/tools/check_patches.sh UPSTREAM_CLONE
 cd unity/Core.Tests && dotnet run -c Release   # Unity prototype core (O405): protocol, map, dat/spr, a fake-server game login; unity/README.md
+cd unity/Core.LiveCheck && dotnet build -c Release   # live check of that core against a real server (O433): CI only builds it; the run needs a server, README "Live check (O433)" in unity/
 python3 -I unity/tools/hd2d_preview_test.py   # HD-2D offline preview (O432): classification rule, light colour index, camera framing, shadows, depth of field; the pictures: python3 -I unity/tools/hd2d_preview.py DAT SPR OUT_DIR (needs the real pair)
 python3 -I unity/tools/fetch_3d_assets_test.py   # Unity 3D characters (KayKit packs, CC0, pinned commits, per-file sha256, not committed): the fetch script's pure parts on a fake archive; run python3 -I unity/tools/fetch_3d_assets.py (--check) to get the files; the class and monster mapping is in the Core.Tests run (unity/README.md "3D characters")
 python3 -I unity/tools/gen_front_art_emission.py --check   # Unity front-art scene: emission masks <dir>_e.png of the test sprites (staff flame, eyes) from the glow rule (CI uses the fx venv)

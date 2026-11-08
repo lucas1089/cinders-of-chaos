@@ -1,0 +1,90 @@
+// dotnet run -c Release --project unity/Core.LiveCheck -- HOST LOGIN_PORT ACCOUNT [CHARACTER|-] [--seconds N] [--report FILE]
+//                                                           [--identity extended|chaos] [--otb items.otb | --pair DIR] [--no-ext]
+// The password comes from the environment variable CHAOS_LIVE_PASSWORD, never from the arguments. Keys: CHAOS_CLIENT_KEY (guard key, 64 hex
+// digits) and CHAOS_RSA_PUBLIC (the server's RSA modulus in decimal), both optional, the same variables the Unity client reads.
+// Logs in, enters the game, parses every packet for N seconds with the Core parser, walks in 8 directions, sends the open request of every
+// extended opcode Unity handles and writes a JSON and a text report (unity/README.md "Live check (O433)"). Exit 0 when the login, the entry and
+// the walk worked and the parser had no error; 1 otherwise; 2 on a usage error.
+using System;
+using System.IO;
+
+namespace Chaos.Core.LiveCheck
+{
+    static class Program
+    {
+        static int Usage(string why)
+        {
+            if (why != null) Console.Error.WriteLine(why);
+            Console.Error.WriteLine("usage: Core.LiveCheck HOST LOGIN_PORT ACCOUNT [CHARACTER|-] [--seconds N] [--report FILE] [--identity extended|chaos]");
+            Console.Error.WriteLine("                      [--otb items.otb | --pair DIR] [--no-ext]   (password: environment variable CHAOS_LIVE_PASSWORD)");
+            return 2;
+        }
+
+        static int Main(string[] args)
+        {
+            var o = new LiveOptions();
+            int pos = 0;
+            for (int i = 0; i < args.Length; i++)
+            {
+                string a = args[i];
+                string Next() => i + 1 < args.Length ? args[++i] : throw new ArgumentException(a + " needs a value");
+                try
+                {
+                    switch (a)
+                    {
+                        case "--seconds": o.Seconds = Math.Max(1, int.Parse(Next())); break;
+                        case "--report": o.Report = Next(); break;
+                        case "--identity": o.Chaos = Next().Equals("chaos", StringComparison.OrdinalIgnoreCase); break;
+                        case "--otb": o.OtbFile = Next(); break;
+                        case "--pair": o.PairDir = Next(); break;
+                        case "--no-ext": o.SkipExt = true; break;
+                        default:
+                            if (a.StartsWith("--", StringComparison.Ordinal)) return Usage("unknown option " + a);
+                            switch (pos++)
+                            {
+                                case 0: o.Host = a; break;
+                                case 1: o.Port = int.Parse(a); break;
+                                case 2: o.Account = a; break;
+                                case 3: o.Character = a == "-" ? null : a; break;
+                                default: return Usage("too many arguments");
+                            }
+                            break;
+                    }
+                }
+                catch (Exception e) when (e is FormatException || e is ArgumentException || e is OverflowException) { return Usage(e.Message); }
+            }
+            if (pos < 3) return Usage(null);
+            o.Password = Environment.GetEnvironmentVariable("CHAOS_LIVE_PASSWORD");
+            if (string.IsNullOrEmpty(o.Password)) return Usage("set CHAOS_LIVE_PASSWORD");
+            string keyText = Environment.GetEnvironmentVariable("CHAOS_CLIENT_KEY");
+            if (!string.IsNullOrEmpty(keyText))
+            {
+                o.GuardKey = ClientGuard.ParseKey(keyText);
+                if (o.GuardKey == null) return Usage("CHAOS_CLIENT_KEY must be 64 hex digits");
+            }
+            string rsa = Environment.GetEnvironmentVariable("CHAOS_RSA_PUBLIC");
+            if (!string.IsNullOrEmpty(rsa)) o.Rsa = rsa.Trim();
+
+            DatFile dat;
+            string datSource;
+            try
+            {
+                if (o.PairDir != null) { dat = DatFile.Load(Path.Combine(o.PairDir, "Tibia.dat")); datSource = "pair"; }
+                else if (o.OtbFile != null) { dat = OtbDat.Build(File.ReadAllBytes(o.OtbFile)); datSource = "otb"; }
+                else return Usage("give --otb items.otb (server) or --pair DIR (Tibia.dat): the parser needs the item types");
+            }
+            catch (Exception e) when (e is IOException || e is ProtocolException || e is InvalidDataException) { return Usage("item types: " + e.Message); }
+
+            var run = new LiveRun(o, dat, datSource);
+            int code = run.Execute();
+            Console.WriteLine(run.TextReport());
+            if (o.Report != null)
+            {
+                File.WriteAllText(o.Report, Json.Serialize(run.JsonReport()) + "\n");
+                File.WriteAllText(Path.ChangeExtension(o.Report, ".txt"), run.TextReport());
+                Console.WriteLine("report: " + o.Report + " and " + Path.ChangeExtension(o.Report, ".txt"));
+            }
+            return code;
+        }
+    }
+}
