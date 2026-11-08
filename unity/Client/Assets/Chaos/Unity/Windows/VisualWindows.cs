@@ -174,6 +174,7 @@ namespace Chaos.Client
             Phase8CPrefs.Liquid = Check(ref y, inner, Phase8CPrefs.Liquid, Loc.T("Living water and lava"), app);
             Phase8CPrefs.OutfitShaders = Check(ref y, inner, Phase8CPrefs.OutfitShaders, Loc.T("Outfit shaders on characters"), app);
             if (g8 != Phase8CPrefs.Grade || b8 != Phase8CPrefs.Bloom || l8 != Phase8CPrefs.Liquid || o8 != Phase8CPrefs.OutfitShaders) Phase8CPrefs.Save();
+            VisualPrefs.Painted = Check(ref y, inner, VisualPrefs.Painted, Loc.T("Painted icons (bar, spellbook, passive tree)"), app);
             VisualPrefs.WingsOwn = Check(ref y, inner, VisualPrefs.WingsOwn, Loc.T("Level-up wings on my character"), app);
             VisualPrefs.WingsOthers = Check(ref y, inner, VisualPrefs.WingsOthers, Loc.T("Level-up wings on other characters"), app);
             VisualPrefs.PrintsOthers = Check(ref y, inner, VisualPrefs.PrintsOthers, Loc.T("Footprints of other characters"), app);

@@ -14,6 +14,8 @@ namespace Chaos.Client
         ExtraPick extraPick;
         int extraIndex;
         string presetName = "";
+        string presetKey = "";   // phase 8 track A: the key that cycles the presets (HelperPresetKey), "" none
+        bool settingPresetKey;
         readonly string[] nameEdit = { null, null, null, null, null };
         Vector2 supportScroll;
 
@@ -58,7 +60,44 @@ namespace Chaos.Client
                 message = cfg.DeleteProfile() ? Loc.T("Preset deleted.") : Loc.T("The last preset stays.");
                 dirty = true;
             }
+            // the preset key (helper.lua toggleShooterPreset on a hotkey): one press goes to the next preset; no default key
+            string keyLabel = settingPresetKey ? Loc.T("Press a key...") : Loc.T("Key: {0}", HelperPresetKey.Label(presetKey));
+            if (GUI.Button(new Rect(x + 308, y, Mathf.Max(60f, w - 308f), 22), keyLabel)) { settingPresetKey = !settingPresetKey; }
+            if (settingPresetKey) CapturePresetKey();
             return 56f;
+        }
+
+        /// <summary>While the button waits for a key: the next key press is the preset key (Escape cancels, Backspace clears it).</summary>
+        void CapturePresetKey()
+        {
+            var e = Event.current;
+            if (e.type != EventType.KeyDown || e.keyCode == KeyCode.None) return;
+            if (e.keyCode == KeyCode.Escape) { settingPresetKey = false; e.Use(); return; }
+            if (e.keyCode == KeyCode.Backspace) { SavePresetKey(""); settingPresetKey = false; e.Use(); return; }
+            string name = e.keyCode.ToString();
+            if (!HelperPresetKey.Valid(name)) { message = Loc.T("That key is used by the game."); e.Use(); return; }
+            SavePresetKey(name);
+            settingPresetKey = false;
+            e.Use();
+        }
+
+        void SavePresetKey(string name)
+        {
+            presetKey = name;
+            if (loadedFor == null) return;
+            PlayerPrefs.SetString(HelperPresetKey.PrefKey(loadedFor), name);
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>Once per frame: the preset key cycles to the next preset and tells which (the main client's "Preset: Name").</summary>
+        void PresetKeyTick(ChaosApp app)
+        {
+            if (presetKey.Length == 0 || engine == null || app.TypingNow || settingPresetKey) return;
+            if (!System.Enum.TryParse(presetKey, out KeyCode code) || !Input.GetKeyDown(code)) return;
+            string msg = HelperPresetKey.Cycle(engine.Config);
+            if (msg == null) return;
+            dirty = true;
+            app.PostLine(msg);
         }
 
         static string Neighbour(List<string> names, string current, int step)

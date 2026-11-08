@@ -192,6 +192,16 @@ namespace Chaos.Client
             w.Open = true;
         }
 
+        /// <summary>The store's TRY ON for a worn look: the panel shows the option on your character until the session time `until`, then goes back (game_shop tryon.lua).</summary>
+        public void TryLookPreview(PreviewOption option, double until)
+        {
+            var w = FindWindow<LookPreviewWindow>();
+            if (w == null) return;
+            w.Option = option;
+            w.TryUntil = until;
+            w.Open = true;
+        }
+
         // ------------------------------------------------------------------------------------ the crosshair hint
         void PlayGui(float w, float h, float scale)
         {
