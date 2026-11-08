@@ -176,14 +176,22 @@ namespace Chaos.Core.Tests
 
         sealed class MemFs : IPairFiles
         {
-            public readonly Dictionary<string, byte[]> Files = new Dictionary<string, byte[]>();
+            public readonly Dictionary<string, byte[]> Files = new Dictionary<string, byte[]>(new SlashComparer());
             public int Opens;
             public bool Exists(string path) => Files.ContainsKey(path);
             public long Length(string path) => Files[path].Length;
             public Stream Open(string path) { Opens++; return new MemoryStream(Files[path], false); }
         }
 
-        static string J(params string[] p) => Path.Combine(p);
+        // the locator joins with Path.Combine, which uses '\' on Windows; the fixtures are written with '/'
+        sealed class SlashComparer : IEqualityComparer<string>
+        {
+            public bool Equals(string a, string b) => N(a) == N(b);
+            public int GetHashCode(string s) => N(s).GetHashCode();
+        }
+
+        static string N(string p) => p?.Replace('\\', '/');
+        static string J(params string[] p) => N(Path.Combine(p));
 
         // ------------------------------------------------------------------------------------------------ the suite
 
@@ -472,7 +480,7 @@ namespace Chaos.Core.Tests
             // order: flag, loose, blobs, main pack
             var fs1 = make(true, true, true);
             var r = PairLocator.Find(new PairRequest { InstallDir = unity, LooseDir = things, Key = key, FlagDir = things }, fs1);
-            check(r.Ok && r.Origin == PairOrigin.Flag && r.Where == things, "locator: -chaosThings first");
+            check(r.Ok && r.Origin == PairOrigin.Flag && N(r.Where) == things, "locator: -chaosThings first");
             fs1.Files[J("/elsewhere", "Tibia.dat")] = dat;
             r = PairLocator.Find(new PairRequest { InstallDir = unity, LooseDir = things, Key = key, FlagDir = "/elsewhere" }, fs1);
             check(!r.Ok && r.Origin == PairOrigin.None && r.Error.Contains("-chaosThings /elsewhere") && r.Error.Contains("Tibia.spr"), "locator: a wrong -chaosThings folder is an error, not a fall back (" + r.Error + ")");
@@ -480,18 +488,18 @@ namespace Chaos.Core.Tests
             check(r.Ok && r.Origin == PairOrigin.Loose && drawsAll(r.Spr) && r.Dat.Item(100).Ground, "locator: loose files in things/ beat blobs and the pack, and draw the pair");
             var fs2 = make(false, true, true);
             r = PairLocator.Find(req(), fs2);
-            check(r.Ok && r.Origin == PairOrigin.Blobs && r.Where == enc && drawsAll(r.Spr) && r.Dat.Item(100).Ground, "locator: encrypted blobs of the install beat the main client's pack, and draw the pair");
+            check(r.Ok && r.Origin == PairOrigin.Blobs && N(r.Where) == enc && drawsAll(r.Spr) && r.Dat.Item(100).Ground, "locator: encrypted blobs of the install beat the main client's pack, and draw the pair");
             var fs3 = make(false, false, true);
             r = PairLocator.Find(req(), fs3);
-            check(r.Ok && r.Origin == PairOrigin.MainPack && r.Where == J(root, "chaos.pack") && drawsAll(r.Spr) && r.Dat.Item(100).Ground, "locator: the main client's chaos.pack above the player's folder, and draw the pair");
+            check(r.Ok && r.Origin == PairOrigin.MainPack && N(r.Where) == J(root, "chaos.pack") && drawsAll(r.Spr) && r.Dat.Item(100).Ground, "locator: the main client's chaos.pack above the player's folder, and draw the pair");
             var fs3b = new MemFs(); fs3b.Files[J(unity, "chaos.pack")] = fs3.Files[J(root, "chaos.pack")];
             r = PairLocator.Find(req(), fs3b);
-            check(r.Ok && r.Origin == PairOrigin.MainPack && r.Where == J(unity, "chaos.pack"), "locator: a chaos.pack beside the player is found too");
+            check(r.Ok && r.Origin == PairOrigin.MainPack && N(r.Where) == J(unity, "chaos.pack"), "locator: a chaos.pack beside the player is found too");
             var fs3c = new MemFs(); fs3c.Files["/anywhere/main.pack"] = fs3.Files[J(root, "chaos.pack")];
             r = PairLocator.Find(new PairRequest { InstallDir = unity, Key = key, PackFile = "/anywhere/main.pack" }, fs3c);
-            check(r.Ok && r.Origin == PairOrigin.MainPack && r.Where == "/anywhere/main.pack", "locator: -chaosPack FILE");
+            check(r.Ok && r.Origin == PairOrigin.MainPack && N(r.Where) == "/anywhere/main.pack", "locator: -chaosPack FILE");
             var cands = PairLocator.PackCandidates(new PairRequest { InstallDir = unity + "/", PackFile = "/p.pack" });
-            check(cands.Count == 3 && cands[0] == "/p.pack" && cands[1] == J(root, "chaos.pack") && cands[2] == J(unity, "chaos.pack"), "locator: the pack is looked for in the flag, above the player, then beside it");
+            check(cands.Count == 3 && N(cands[0]) == "/p.pack" && N(cands[1]) == J(root, "chaos.pack") && N(cands[2]) == J(unity, "chaos.pack"), "locator: the pack is looked for in the flag, above the player, then beside it");
 
             // a missing things/ folder is normal; nothing at all is an error that says where it looked
             r = PairLocator.Find(req(), new MemFs());
