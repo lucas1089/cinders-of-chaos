@@ -114,6 +114,14 @@ namespace Chaos.Core
             return skin == "classic" ? ArtPaths.Data("images/chaos/skin/" + name + ".png") : ArtPaths.Data("skins/" + skin + "/images/chaos/skin/" + name + ".png");
         }
 
+        // the button sheet skin/button.png: four states stacked from the top (normal, hover, pressed, disabled), 64 x 24 each, border 5; the text field picture is 32 x 22, border 4
+        public const int SheetW = 64, StateH = 24, SheetStates = 4, ButtonBorder = 5, FieldW = 32, FieldH = 22, FieldBorder = 4;
+        public static readonly string[] ButtonStates = { "normal", "hover", "pressed", "disabled" };
+        public static string ButtonSheet(string skin) => Art(skin, "button");
+        public static string FieldPicture(bool focus) => ArtPaths.Data("images/chaos/" + (focus ? "textedit_focus" : "textedit") + ".png");
+        /// <summary>The bottom row (texture rows count from the bottom) of a state of the sheet: the first state sits at the top.</summary>
+        public static int StateRow(int sheetHeight, int state) => sheetHeight - StateH * (Math.Max(0, Math.Min(SheetStates - 1, state)) + 1);
+
         public static readonly List<string> Corners = new List<string> { "tl", "tr", "bl", "br" };
         public static string Window(string skin) => Art(skin, "window");
         public static string Corner(string skin, string which) => Art(skin, "orn_corner_" + (Corners.Contains(which) ? which : "tl"));
@@ -295,6 +303,97 @@ namespace Chaos.Core
 
         /// <summary>True when the windows of this note should open now for this character.</summary>
         public bool Reopens(string name, double nowMs) => Any && MapOverlayState.ReopenAfterDeath(Name, AtMs, name, nowMs);
+    }
+
+    // ============================================================================================================ name plate try-on
+    /// <summary>The TRY ON of a store name plate (game_shop tryon.lua plateFrame): the frame an offer shows on the own plate for ten seconds, on this client only.</summary>
+    public static class PlateTry
+    {
+        /// <summary>The frame of a name plate offer, or of the plate part of a bundle; null for any other look.</summary>
+        public static string Frame(PreviewOption o)
+        {
+            if (o == null) return null;
+            if (o.Kind == "nameplate") return NameplateState.KnownFrame(o.Frame) && !string.IsNullOrEmpty(o.Frame) ? o.Frame : null;
+            if (o.Kind == "bundle" && o.Parts != null)
+                foreach (var p in o.Parts)
+                {
+                    string f = p != null && p.Kind == "nameplate" ? Frame(p) : null;
+                    if (f != null) return f;
+                }
+            return null;
+        }
+    }
+
+    // ============================================================================================================ boss defeated picture
+    /// <summary>Boss Defeated of game_chaosshots (shots_core.lua isBossKill): a boss-tier monster you attacked within two minutes drops to 0 percent. Unity reads the health of the bosses
+    /// in view every frame: a boss that reaches 0, or that leaves the view at 10 percent or less, counts as dead.</summary>
+    public sealed class BossKillWatch
+    {
+        public const double EngagedMs = 120000;
+        public const int GoneBelow = 10;
+        readonly Dictionary<uint, double> engaged = new Dictionary<uint, double>();
+        readonly Dictionary<uint, int> last = new Dictionary<uint, int>();
+        readonly HashSet<uint> counted = new HashSet<uint>();   // killed and still in view at 0 percent: counted once
+
+        /// <summary>One frame: target is the creature you attack (0 for none), bosses the boss-tier monsters in view with their health percent. Returns how many bosses of yours died.</summary>
+        public int Step(double now, uint target, IEnumerable<KeyValuePair<uint, int>> bosses)
+        {
+            if (target != 0) engaged[target] = now;
+            var seen = new HashSet<uint>();
+            int dead = 0;
+            foreach (var kv in bosses)
+            {
+                seen.Add(kv.Key);
+                if (kv.Value > 0) counted.Remove(kv.Key);
+                if (counted.Contains(kv.Key)) continue;
+                last[kv.Key] = kv.Value;
+                if (kv.Value <= 0 && Mine(kv.Key, now)) { dead++; counted.Add(kv.Key); engaged.Remove(kv.Key); last.Remove(kv.Key); }
+            }
+            var gone = new List<uint>();
+            foreach (var kv in last) if (!seen.Contains(kv.Key)) gone.Add(kv.Key);
+            foreach (uint id in gone)
+            {
+                int hp = last[id];
+                last.Remove(id);
+                if (hp <= GoneBelow && Mine(id, now)) { dead++; engaged.Remove(id); }
+            }
+            counted.RemoveWhere(id => !seen.Contains(id));
+            var old = new List<uint>();
+            foreach (var kv in engaged) if (now - kv.Value > EngagedMs) old.Add(kv.Key);
+            foreach (uint id in old) engaged.Remove(id);
+            return dead;
+        }
+
+        bool Mine(uint id, double now) => engaged.TryGetValue(id, out double at) && now - at <= EngagedMs;
+        public void Clear() { engaged.Clear(); last.Clear(); counted.Clear(); }
+    }
+
+    // ============================================================================================================ chat name colour
+    /// <summary>The chat colour cosmetic (game_cosmetics 225 "colors", cosmeticslogic.lua colorLine): the speaker's name in a chat line takes the colour the server sent for it.</summary>
+    public static class ChatTint
+    {
+        /// <summary>The name of a speaker as "Name [level]" gives it.</summary>
+        public static string SpeakerName(string speaker)
+        {
+            if (string.IsNullOrEmpty(speaker)) return "";
+            int i = speaker.IndexOf(" [", StringComparison.Ordinal);
+            return i > 0 ? speaker.Substring(0, i) : speaker;
+        }
+
+        static string Escape(string t) => (t ?? "").Replace("<", "<​");
+
+        /// <summary>The line (stamp, space, display) as rich text with the speaker's name in its colour and the rest in baseHex; null when the speaker has no colour or the name is not found.</summary>
+        public static string Rich(string stamp, string display, string speaker, IDictionary<string, string> colors, string baseHex)
+        {
+            if (colors == null || colors.Count == 0) return null;
+            string name = SpeakerName(speaker);
+            if (name.Length == 0 || !colors.TryGetValue(name, out string col) || !CosmeticsLogic.ValidColor(col)) return null;
+            string full = (stamp ?? "") + " " + display;
+            if (!CosmeticsLogic.NameRange(full, name, out int first, out int last)) return null;
+            string a = full.Substring(0, first - 1), n = full.Substring(first - 1, last - first + 1), b = full.Substring(last);
+            string c = col.Length == 9 ? col.Substring(0, 7) : col;   // #rrggbbaa: the alpha has no meaning in text
+            return "<color=" + baseHex + ">" + Escape(a) + "</color><color=" + c + ">" + Escape(n) + "</color><color=" + baseHex + ">" + Escape(b) + "</color>";
+        }
     }
 
     // ============================================================================================================ tiled weather art

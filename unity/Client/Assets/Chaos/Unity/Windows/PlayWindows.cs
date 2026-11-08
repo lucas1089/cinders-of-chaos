@@ -262,7 +262,9 @@ namespace Chaos.Client
             var o = LookPreview.Compose(Simple, me.Outfit, Option, null, out string note);
             var stage = new Rect(inner.x + 20, inner.y + 4, inner.width - 40, inner.width - 40);
             ChaosApp.Fill(stage, new Color(0.07f, 0.06f, 0.08f, 1f));
+            app.DrawPreviewUnder(Option, stage);   // outline glow and footprints (ChaosApp.Phase7Q.cs)
             app.DrawOutfit(new Rect(stage.x + 8, stage.y + 8, stage.width - 16, stage.height - 16), o, (Dir)facing);
+            app.DrawPreviewOver(Option, stage, me.Name);   // the name plate frame
             float y = stage.yMax + 6;
             if (GUI.Button(new Rect(inner.x + 6, y, 34, 24), "<")) facing = LookPreview.Turn(facing, -1);
             if (GUI.Button(new Rect(inner.x + 44, y, 34, 24), ">")) facing = LookPreview.Turn(facing, 1);

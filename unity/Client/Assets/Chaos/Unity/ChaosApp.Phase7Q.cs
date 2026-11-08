@@ -163,6 +163,67 @@ namespace Chaos.Client
             return true;
         }
 
+        // ---- the controls: buttons and text fields take the skin's pictures
+        string controlSkin = "";
+        struct StyleBackup { public Texture2D N, H, A, F, ON, OH, OA, OF; public RectOffset Border; public Color Text; }
+        StyleBackup buttonBackup, fieldBackup;
+        bool controlBackedUp;
+
+        static Texture2D Cut(Texture2D sheet, int state)
+        {
+            var t = new Texture2D(UiTheme.SheetW, UiTheme.StateH, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            t.SetPixels(sheet.GetPixels(0, UiTheme.StateRow(sheet.height, state), UiTheme.SheetW, UiTheme.StateH));
+            t.Apply(false);
+            return t;
+        }
+
+        static StyleBackup Backup(GUIStyle s) => new StyleBackup { N = s.normal.background, H = s.hover.background, A = s.active.background, F = s.focused.background, ON = s.onNormal.background, OH = s.onHover.background, OA = s.onActive.background, OF = s.onFocused.background, Border = new RectOffset(s.border.left, s.border.right, s.border.top, s.border.bottom), Text = s.normal.textColor };
+
+        static void Restore(GUIStyle s, StyleBackup b)
+        {
+            s.normal.background = b.N; s.hover.background = b.H; s.active.background = b.A; s.focused.background = b.F;
+            s.onNormal.background = b.ON; s.onHover.background = b.OH; s.onActive.background = b.OA; s.onFocused.background = b.OF;
+            s.border = b.Border;
+            s.normal.textColor = s.hover.textColor = s.active.textColor = s.focused.textColor = b.Text;
+            s.onNormal.textColor = s.onHover.textColor = s.onActive.textColor = s.onFocused.textColor = b.Text;
+        }
+
+        /// <summary>Gives the IMGUI buttons and text fields the pictures of the chosen skin (and puts the stock look back when the theme is off). Runs every OnGUI, acts on a change.</summary>
+        void ApplyControlSkin()
+        {
+            Phase7Prefs.Load();
+            string want = Phase7Prefs.ThemeOn ? Phase7Prefs.Skin : "";
+            if (want == controlSkin) return;
+            if (!controlBackedUp) { buttonBackup = Backup(GUI.skin.button); fieldBackup = Backup(GUI.skin.textField); controlBackedUp = true; }
+            controlSkin = want;
+            if (want == "") { Restore(GUI.skin.button, buttonBackup); Restore(GUI.skin.textField, fieldBackup); return; }
+            var pal = UiTheme.PaletteOf(want);
+            var sheet = ArtTexture(UiTheme.ButtonSheet(want), true) ?? ArtTexture(UiTheme.ButtonSheet("classic"), true);
+            if (sheet != null && sheet.width >= UiTheme.SheetW && sheet.height >= UiTheme.StateH * UiTheme.SheetStates)
+            {
+                var b = GUI.skin.button;
+                var n = Cut(sheet, 0); var h = Cut(sheet, 1); var p = Cut(sheet, 2);
+                b.normal.background = n; b.hover.background = h; b.active.background = p; b.focused.background = n;
+                b.onNormal.background = p; b.onHover.background = p; b.onActive.background = p; b.onFocused.background = p;
+                int e = UiTheme.ButtonBorder;
+                b.border = new RectOffset(e, e, e, e);
+                var text = HexColor(pal.Text);
+                b.normal.textColor = text; b.hover.textColor = HexColor(pal.GoldBright); b.active.textColor = HexColor(pal.Gold); b.focused.textColor = text;
+                b.onNormal.textColor = b.onHover.textColor = b.onActive.textColor = b.onFocused.textColor = HexColor(pal.Gold);
+            }
+            var field = ArtTexture(UiTheme.FieldPicture(false), true);
+            var focus = ArtTexture(UiTheme.FieldPicture(true), true);
+            if (field != null)
+            {
+                var f = GUI.skin.textField;
+                f.normal.background = field; f.hover.background = field; f.active.background = focus ?? field; f.focused.background = focus ?? field;
+                f.onNormal.background = field; f.onHover.background = field; f.onActive.background = focus ?? field; f.onFocused.background = focus ?? field;
+                int e = UiTheme.FieldBorder;
+                f.border = new RectOffset(e, e, e, e);
+                f.normal.textColor = f.hover.textColor = f.active.textColor = f.focused.textColor = HexColor(pal.Text);
+            }
+        }
+
         // ------------------------------------------------------------------------------------------------ name plate picture
         /// <summary>The plate of a player's name: the frame picture cut in nine (game_nameplate); false without the picture, the bordered box is drawn instead.</summary>
         bool DrawPlatePicture(string frame, Rect box)
@@ -173,6 +234,89 @@ namespace Chaos.Client
             float ux = PlateArt.Border / (float)PlateArt.Width, uy = PlateArt.Border / (float)PlateArt.Height;
             NineSliceEdges(tex, box, e, e, e, e, ux, uy, ux, uy, Color.white);
             return true;
+        }
+
+        // ------------------------------------------------------------------------------------------------ look preview extras
+        static void FlattenPreview(PreviewOption o, List<PreviewOption> into)
+        {
+            if (o == null || into.Count > 12) return;
+            if (o.Kind == "bundle" && o.Parts != null) { foreach (var p in o.Parts) FlattenPreview(p, into); return; }
+            into.Add(o);
+        }
+
+        /// <summary>What sits under the figure of the look preview: the outline glow and the footprints behind it (game_lookpreview draws them in its effect stage).</summary>
+        public void DrawPreviewUnder(PreviewOption opt, Rect stage)
+        {
+            if (opt == null || Event.current.type != EventType.Repaint) return;
+            var all = new List<PreviewOption>();
+            FlattenPreview(opt, all);
+            double now = Time.realtimeSinceStartupAsDouble * 1000.0;
+            foreach (var o in all)
+            {
+                if (o.Kind == "outline" && !string.IsNullOrEmpty(o.Art))
+                {
+                    var tex = OverlayTex("game_cosmeticfx/images/glows/" + o.Art + ".png");
+                    float a = o.Pulse ? CosmeticFxState.PulseOpacity(now) : 1f;
+                    if (tex != null) Pic(tex, new Rect(stage.x, stage.y, stage.width, stage.height), new Color(1f, 1f, 1f, 0.85f * a));
+                    else Pic(texSoft ?? (texSoft = MakeTex(64, 64, (u, v) => { float d = Mathf.Sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.5f) * (v - 0.5f)) * 2f; return 1f - d * d; })), new Rect(stage.x, stage.y, stage.width, stage.height), new Color(1f, 0.8f, 0.4f, 0.4f * a));
+                }
+                else if (o.Kind == "footprint" && !string.IsNullOrEmpty(o.Art))
+                {
+                    var tex = OverlayTex("game_cosmeticfx/images/prints/" + o.Art + ".png");
+                    if (tex == null) continue;
+                    float s = stage.width * 0.16f;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        // a trail going down and to the left, older prints fainter, left and right feet alternating
+                        float x = stage.center.x + (i % 2 == 0 ? -s * 0.6f : s * 0.6f) - i * s * 0.25f, y = stage.yMax - s * 0.7f - i * s * 0.55f;
+                        var m = GUI.matrix;
+                        GUIUtility.RotateAroundPivot(-12f + i * 6f, new Vector2(x, y));
+                        Pic(tex, new Rect(x - s / 2, y - s / 2, s, s), new Color(1f, 1f, 1f, 0.9f - i * 0.2f));
+                        GUI.matrix = m;
+                    }
+                }
+            }
+        }
+
+        /// <summary>What sits over the figure: a name plate frame with the character's name.</summary>
+        public void DrawPreviewOver(PreviewOption opt, Rect stage, string name)
+        {
+            if (opt == null || Event.current.type != EventType.Repaint) return;
+            var all = new List<PreviewOption>();
+            FlattenPreview(opt, all);
+            foreach (var o in all)
+            {
+                if (o.Kind != "nameplate" || string.IsNullOrEmpty(o.Frame)) continue;
+                var st = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter, fontSize = 12, fontStyle = FontStyle.Bold };
+                float w = Mathf.Min(stage.width - 8, st.CalcSize(new GUIContent(name)).x + 18);
+                var box = new Rect(stage.center.x - w / 2, stage.y + 4, w, 19);
+                if (!DrawPlatePicture(o.Frame, box)) { Fill(box, new Color(0.05f, 0.04f, 0.06f, 0.8f)); Ui.Frame(box, HexColor(NameplateState.FrameColor(o.Frame))); }
+                st.normal.textColor = HexColor(NameplateState.NameColor);
+                GUI.Label(box, name, st);
+            }
+        }
+
+        /// <summary>Shows a store name plate frame on the own plate for ten seconds (NameplateState.BeginTry); false when the plates are not ready.</summary>
+        public bool TryPlateFrame(string frame)
+        {
+            var u = Utils;
+            return u != null && world != null && world.PlayerId != 0 && u.Plates.BeginTry(world.PlayerId, frame, session.Now);
+        }
+
+        // ------------------------------------------------------------------------------------------------ streamer badge
+        /// <summary>The small STREAMER badge (client_chaos_topbar setBadge 'streamer'): beside the top menu in the game, in the top right corner elsewhere. Gone in cinema mode.</summary>
+        void StreamerBadgeGui(float w, float h)
+        {
+            if (!streamer.Streamer || streamer.Cinema) return;
+            string text = Loc.T("STREAMER");
+            var st = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter, fontSize = 11, fontStyle = FontStyle.Bold };
+            st.normal.textColor = Color.white;
+            float bw = st.CalcSize(new GUIContent(text)).x + 14;
+            var r = screen == Screen.Game ? new Rect(Mathf.Max(4f, topBarRect.x - bw - 6f), topBarRect.y + 4f, bw, 20f) : new Rect(w - bw - 8f, 8f, bw, 20f);
+            Fill(r, new Color(0.62f, 0.08f, 0.06f, 0.92f));
+            Fill(new Rect(r.x, r.y, r.width, 1f), new Color(0.9f, 0.4f, 0.3f, 0.9f));
+            GUI.Label(r, text, st);
+            if (r.Contains(Event.current.mousePosition)) GUI.Label(new Rect(Mathf.Max(4f, r.xMax - 260f), r.yMax + 2f, 260f, 20f), Loc.T("Streamer mode is on (Ctrl+Shift+S). Options > Misc."), small);
         }
 
         // ------------------------------------------------------------------------------------------------ the explored map and the death note

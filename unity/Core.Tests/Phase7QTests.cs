@@ -19,6 +19,8 @@ namespace Chaos.Core.Tests
             MapFile(check);
             Death(check);
             Tiled(check);
+            Boss(check);
+            Chat(check);
             Texts(check);
         }
 
@@ -57,6 +59,7 @@ namespace Chaos.Core.Tests
             check(UiTheme.Next("classic") == "forge" && UiTheme.Next("abyss") == "classic" && UiTheme.Next("zzz") == "forge", "q theme: the button cycles the skins");
             check(UiTheme.Window("classic") == "../data/images/chaos/skin/window.png" && UiTheme.Window("forge") == "../data/skins/forge/images/chaos/skin/window.png", "q theme: window picture of the skin");
             check(UiTheme.Corner("abyss", "br").EndsWith("orn_corner_br.png") && UiTheme.Corner("abyss", "zz").EndsWith("orn_corner_tl.png") && UiTheme.Crest("classic").EndsWith("orn_crest.png"), "q theme: corner pieces and crest");
+            check(UiTheme.StateRow(96, 0) == 72 && UiTheme.StateRow(96, 3) == 0 && UiTheme.StateRow(96, 9) == 0 && UiTheme.ButtonSheet("abyss").EndsWith("skins/abyss/images/chaos/skin/button.png") && UiTheme.FieldPicture(true).EndsWith("textedit_focus.png"), "q theme: the button sheet cuts into four states from the top");
             check(UiTheme.PaletteOf("forge").Gold == "#ff7a1a" && UiTheme.PaletteOf("nope").Title == "#e8c477", "q theme: palette of the skin");
             check(UiTheme.ShowCrest(200) && !UiTheme.ShowCrest(160) && UiTheme.ShowCorners(300, 200) && !UiTheme.ShowCorners(80, 200) && !UiTheme.ShowCorners(300, 60), "q theme: small windows lose the ornaments");
             string data = Path.Combine(Repo(), "client", "overlay", "data");
@@ -64,7 +67,7 @@ namespace Chaos.Core.Tests
             var missing = new List<string>();
             foreach (string skin in UiTheme.Skins)
             {
-                var files = new List<string> { UiTheme.Window(skin), UiTheme.Crest(skin) };
+                var files = new List<string> { UiTheme.Window(skin), UiTheme.Crest(skin), UiTheme.ButtonSheet(skin) };
                 foreach (string c in UiTheme.Corners) files.Add(UiTheme.Corner(skin, c));
                 foreach (string f in files) if (!File.Exists(Path.Combine(data, f.Substring("../data/".Length)))) missing.Add(f);
             }
@@ -83,6 +86,8 @@ namespace Chaos.Core.Tests
             var overlayMissing = MapOverlayState.Category.Keys.Where(k => MarkArt.Overlay(k) == null).ToList();
             check(overlayMissing.Count == 0, "q marks: every overlay kind has a picture; missing: " + string.Join(", ", overlayMissing));
             check(NameplateState.Frames.All(f => PlateArt.Path(f) == "game_nameplate/images/plate_" + f + ".png") && PlateArt.Path("zz").EndsWith("plate_default.png"), "q plate: a picture for each of the 23 frames");
+            var bundle = new PreviewOption { Kind = "bundle", Parts = new List<PreviewOption> { PreviewOption.Of("mount", 5), new PreviewOption { Kind = "nameplate", Frame = "frost" } } };
+            check(PlateTry.Frame(new PreviewOption { Kind = "nameplate", Frame = "gold" }) == "gold" && PlateTry.Frame(bundle) == "frost" && PlateTry.Frame(new PreviewOption { Kind = "nameplate", Frame = "zz" }) == null && PlateTry.Frame(PreviewOption.Of("wings", 1)) == null && PlateTry.Frame(null) == null, "q plate: the frame a store offer would show on the own plate");
             check(PlateArt.Edge(60, 17) == 6f && PlateArt.Edge(8, 8) == 3f && PlateArt.Edge(1, 1) == 1f, "q plate: the border shrinks on a tiny box");
             string mods = Path.Combine(Repo(), "client", "overlay", "modules"), data = Path.Combine(Repo(), "client", "overlay", "data");
             if (Directory.Exists(mods))
@@ -149,13 +154,58 @@ namespace Chaos.Core.Tests
             }
         }
 
+        static IEnumerable<KeyValuePair<uint, int>> B(params int[] idHp)
+        {
+            for (int i = 0; i < idHp.Length; i += 2) yield return new KeyValuePair<uint, int>((uint)idHp[i], idHp[i + 1]);
+        }
+
+        static void Boss(Action<bool, string> check)
+        {
+            var w = new BossKillWatch();
+            check(w.Step(0, 7, B(7, 100)) == 0 && w.Step(1000, 7, B(7, 40)) == 0 && w.Step(2000, 7, B(7, 0)) == 1, "q boss: a boss you attacked that reaches 0 is a kill");
+            check(w.Step(3000, 7, B(7, 0)) == 0, "q boss: the same kill is not counted twice");
+            var w2 = new BossKillWatch();
+            check(w2.Step(0, 0, B(9, 50)) == 0 && w2.Step(500, 0, B(9, 0)) == 0, "q boss: a boss you never attacked does not count");
+            var w3 = new BossKillWatch();
+            w3.Step(0, 5, B(5, 30)); w3.Step(100, 5, B(5, 4));
+            check(w3.Step(200, 5, B()) == 1, "q boss: a boss that leaves the view at 4 percent counts as dead");
+            var w4 = new BossKillWatch();
+            w4.Step(0, 5, B(5, 80));
+            check(w4.Step(100, 5, B()) == 0, "q boss: a boss that walks out of view at 80 percent is not dead");
+            var w5 = new BossKillWatch();
+            w5.Step(0, 5, B(5, 60));
+            check(w5.Step(BossKillWatch.EngagedMs + 10, 0, B(5, 0)) == 0, "q boss: an attack longer than two minutes ago is not yours");
+            // the screenshot model asks for the picture when the option is on
+            var ext = new ExtOpcodes();
+            var shots = new ShotsState(ext) { Clock = 0 };
+            shots.SetOption("shots_boss", true);
+            shots.TargetNow = () => 3u;
+            int step = 0;
+            shots.BossesNow = () => step++ == 0 ? B(3, 50) : B(3, 0);
+            shots.LevelNow = () => 100;
+            shots.Poll(1000, true);
+            shots.Poll(1100, true);
+            check(shots.Pending == "boss", "q boss: Boss Defeated asks for a picture");
+        }
+
+        static void Chat(Action<bool, string> check)
+        {
+            var colors = new Dictionary<string, string> { { "Ana", "#ff8800" }, { "Bob", "bad" } };
+            string rich = ChatTint.Rich("12:00", "Ana [30]: hello <b>", "Ana [30]", colors, "#f0f000");
+            check(rich == "<color=#f0f000>12:00 </color><color=#ff8800>Ana</color><color=#f0f000> [30]: hello <\u200bb></color>", "q chat: the speaker's name takes its colour: " + rich);
+            check(ChatTint.Rich("12:00", "Bob [30]: hi", "Bob [30]", colors, "#fff") == null && ChatTint.Rich("12:00", "Cy [3]: hi", "Cy [3]", colors, "#fff") == null && ChatTint.Rich("12:00", "hi", "", colors, "#fff") == null, "q chat: no colour, a bad colour or no speaker leave the line alone");
+            check(ChatTint.Rich("1", "Ana: x", "Ana", new Dictionary<string, string> { { "Ana", "#11223344" } }, "#fff").Contains("<color=#112233>Ana"), "q chat: the alpha of an eight digit colour is dropped");
+            check(ChatTint.Rich("1", "Ana: Ana wins", "Ana", colors, "#fff").Contains("<color=#ff8800>Ana</color><color=#fff>: Ana wins"), "q chat: only the speaker's own name is coloured, not the same word in the text");
+            check(ChatTint.SpeakerName("Ana Maria [12]") == "Ana Maria" && ChatTint.SpeakerName("Zed") == "Zed" && ChatTint.SpeakerName(null) == "", "q chat: the name of a speaker");
+        }
+
         static void Texts(Action<bool, string> check)
         {
             string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Client", "Assets", "Chaos"));
             if (!Directory.Exists(root)) { check(true, "q texts: sources not found, skipped"); return; }
             var keys = new HashSet<string>();
             var pat = new Regex("Loc\\.T\\(\\s*(\"(?:[^\"\\\\]|\\\\.)*\")");
-            foreach (string f in new[] { "Unity/ChaosApp.Phase7Q.cs", "Unity/Windows/VisualWindows.cs" })
+            foreach (string f in new[] { "Unity/ChaosApp.Phase7Q.cs", "Unity/Windows/VisualWindows.cs", "Unity/Windows/StoreWindow.cs" })
                 foreach (Match m in pat.Matches(File.ReadAllText(Path.Combine(root, f))))
                     keys.Add(m.Groups[1].Value.Substring(1, m.Groups[1].Value.Length - 2).Replace("\\\"", "\""));
             foreach (string s in UiTheme.SkinNames.Values) keys.Add(s);

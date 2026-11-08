@@ -15,6 +15,8 @@ namespace Chaos.Core
             { "Window skin: {0}", "Aparência das janelas: {0}" },
             { "Classic", "Clássica" }, { "Forge and Embers", "Forja e Brasas" }, { "Abyssal Arcane", "Arcano Abissal" },
             { "Rain, embers and area colours", "Chuva, brasas e cores da área" },
+            { "STREAMER", "STREAMER" },
+            { "Streamer mode is on (Ctrl+Shift+S). Options > Misc.", "Modo streamer ligado (Ctrl+Shift+S). Opções > Diversos." },
         };
     }
 }

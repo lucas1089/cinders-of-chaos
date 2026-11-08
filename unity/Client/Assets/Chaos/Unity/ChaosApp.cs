@@ -467,6 +467,7 @@ namespace Chaos.Client
                 GUI.skin.textField.fontSize = 14;
                 GUI.skin.label.fontSize = 14;
             }
+            ApplyControlSkin();   // ChaosApp.Phase7Q.cs: buttons and text fields in the skin's pictures
             // the UI is laid out for 720 px of height and grows with the window (and with dense phone screens)
             float scale = UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi);
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1));
@@ -477,6 +478,7 @@ namespace Chaos.Client
                 case Screen.Characters: CharactersGui(w, h); break;
                 case Screen.Game: GameGui(w, h, scale); break;
             }
+            StreamerBadgeGui(w, h);   // ChaosApp.Phase7Q.cs: the STREAMER badge while streamer mode is on
         }
 
         Texture2D logo;
@@ -498,11 +500,12 @@ namespace Chaos.Client
             GUILayout.Label("Cinders of Chaos - Unity prototype");
             GUILayout.Label("Server");
             GUILayout.BeginHorizontal();
-            host = GUILayout.TextField(host, GUILayout.Width(240));
+            // streamer mode hides the text of the server address and the account (client_chaos_streamer)
+            host = streamer.Streamer ? GUILayout.PasswordField(host, '*', GUILayout.Width(240)) : GUILayout.TextField(host, GUILayout.Width(240));
             port = GUILayout.TextField(port);
             GUILayout.EndHorizontal();
             GUILayout.Label("Account");
-            account = GUILayout.TextField(account);
+            account = streamer.Streamer ? GUILayout.PasswordField(account, '*') : GUILayout.TextField(account);
             GUILayout.Label("Password");
             password = GUILayout.PasswordField(password, '*');
             GUILayout.Label("Folder with Tibia.dat and Tibia.spr");

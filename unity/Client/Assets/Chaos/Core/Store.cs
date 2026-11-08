@@ -78,6 +78,8 @@ namespace Chaos.Core
         /// <summary>preview.effect: the server can play the cosmetic round the character (the TRY ON button); Color tints the title, Accent sits behind it.</summary>
         public bool PreviewEffect;
         public string PreviewColor = "", PreviewAccent = "";
+        /// <summary>The look of the offer (server shop_core.lua lookOf) for the shared look preview; null for an offer that is not worn.</summary>
+        public PreviewOption Look;
         public readonly List<string> Tags = new List<string>(), Path = new List<string>();
         public bool Buyable => Category > 0 && Page > 0 && Row > 0;
 
@@ -98,6 +100,7 @@ namespace Chaos.Core
                 Cost = Json.Number(e, "cost"), OldCost = Json.Number(e, "oldCost"), Gift = Json.Bool(e, "gift"), Owned = Json.Bool(e, "owned"),
                 Category = category, Page = page, Row = row,
             };
+            o.Look = LookPreview.FromStoreLook(Json.Get(e, "look"));
             object pv = Json.Get(e, "preview");
             if (pv is Dictionary<string, object>)
             {
