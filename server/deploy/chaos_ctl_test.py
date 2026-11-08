@@ -49,6 +49,14 @@ from the example (mode 640), the line replaced in place, the payer salt made onc
 URLs, masks e-mails and tokens in log lines; test sends the secrets to curl on its stdin, calls the env's PayPal host
 and the webhook pages (401 = ok); enable installs the unit with the real paths.
 
+Engine rebuild (engine-build status | start | log, engine-build-token-set, O436): a fake curl plays the GitHub API. The token
+only on stdin, one line, a real shape, checked at GitHub before it is kept (401 and 404 save nothing), mode 600, never in any
+output and never on a command line (curl gets it as a config line on its stdin); start dispatches windows-package.yml on the
+branch with the live client build and allow_dev_key false, finds the run, refuses while one is queued or in progress;
+status parses state, jobs, failed step, release and newer-than-installed; the client build rule (never backwards, the same
+number only while the client program is unchanged since the live client's commit, a new number with a note, the pending
+number becoming the baseline once live); API errors.
+
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
 import json
@@ -656,6 +664,7 @@ def main():
     test_discord()
     test_discord_bot()
     test_pay()
+    test_engine_build()
     test_server_user()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
@@ -2123,6 +2132,367 @@ exit 0
         check(out.get('mock') == 'yes' and out.get('pix_provider') == 'mock', 'pay-status: mock shows')
 
         check(not any(s in t for t in seen for s in secrets + (salt.group(1),)), 'no output of any pay command holds a secret')
+
+def test_engine_build():
+    """engine-build status | start | log and engine-build-token-set (O436): a fake curl plays the GitHub API"""
+    token = 'github_pat_11ABCDEFG0aBcDeFgHiJkL_mNoPqRsTuVwXyZ0123456789aBcDeFgHiJkLmNoPqRsTuVwXyZ01234'
+    # curl: records its arguments and its stdin (the config line), answers like the GitHub API from files of $STUB
+    curl = '''#!/usr/bin/env python3
+import json, os, re, sys
+stub = os.environ['STUB']
+args = sys.argv[1:]
+cfg = sys.stdin.read() if '-K' in args else ''
+open(os.path.join(stub, 'calls'), 'a').write('curl ' + ' '.join(args) + '\\n')
+open(os.path.join(stub, 'curl.stdin'), 'a').write(cfg + '\\n--\\n')
+out = args[args.index('-o') + 1] if '-o' in args else None
+data = args[args.index('-d') + 1] if '-d' in args else None
+url = re.search(r'url = "([^"]+)"', cfg).group(1)
+def read(name, default=''):
+    p = os.path.join(stub, name)
+    return open(p).read() if os.path.exists(p) else default
+def answer(code, body=''):
+    if out:
+        open(out, 'w').write(body)
+    sys.stdout.write(str(code))
+    sys.exit(0)
+if re.search(r'/actions/workflows/windows-package\\.yml/dispatches$', url) and data is not None:
+    open(os.path.join(stub, 'dispatch.json'), 'a').write(data + '\\n')
+    code = read('dispatch.code', '204').strip()
+    if code == '204':
+        runs = json.loads(read('runs.json', '{"workflow_runs": []}'))['workflow_runs']
+        n = max([r['id'] for r in runs] + [100]) + 1
+        runs.append({'id': n, 'run_number': n - 900, 'status': 'queued', 'conclusion': None, 'created_at': '2026-11-08T10:00:00Z',
+                     'updated_at': '2026-11-08T10:00:00Z', 'head_sha': 'a1b2c3d4e5f6', 'html_url': 'https://github.com/o/r/actions/runs/%d' % n})
+        open(os.path.join(stub, 'runs.json'), 'w').write(json.dumps({'workflow_runs': runs}))
+    answer(code)
+if re.search(r'/actions/workflows/windows-package\\.yml$', url):
+    answer(read('token.code', '200').strip(), '{}')
+if '/actions/workflows/windows-package.yml/runs?' in url:
+    answer(read('runs.code', '200').strip(), read('runs.json', '{"workflow_runs": []}'))
+if re.search(r'/actions/runs/\\d+/jobs', url):
+    answer(200, read('jobs.json', '{"jobs": []}'))
+if '/releases/tags/' in url:
+    p = os.path.join(stub, 'release.json')
+    answer(200 if os.path.exists(p) else 404, read('release.json', '{}'))
+answer(404)
+'''
+    git_env = dict(os.environ, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@example.org', GIT_COMMITTER_NAME='t',
+                   GIT_COMMITTER_EMAIL='t@example.org', GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_SYSTEM='/dev/null')
+
+    def git(cwd, *a):
+        r = subprocess.run(['git', '-C', cwd] + list(a), env=git_env, capture_output=True, text=True)
+        assert r.returncode == 0, (a, r.stderr)
+        return r.stdout.strip()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        os.makedirs(stub)
+        p = os.path.join(stub, 'curl')
+        with open(p, 'w') as f:
+            f.write(curl)
+        os.chmod(p, 0o755)
+        # the checkout and its origin: the client program under client/base-patches, the server under server/src-patches
+        origin = os.path.join(tmp, 'origin.git')
+        work = os.path.join(tmp, 'work')
+        repo = os.path.join(tmp, 'repo')
+        subprocess.run(['git', 'init', '-q', '--bare', '-b', 'main', origin], env=git_env, check=True)
+        os.makedirs(os.path.join(work, 'client', 'base-patches'))
+        os.makedirs(os.path.join(work, 'server', 'src-patches'))
+        subprocess.run(['git', 'init', '-q', '-b', 'main', work], env=git_env, check=True)
+        open(os.path.join(work, 'client', 'base-patches', '0001-a.patch'), 'w').write('a\n')
+        open(os.path.join(work, 'server', 'src-patches', '0089-loot.patch'), 'w').write('a\n')
+        git(work, 'add', '-A')
+        git(work, 'commit', '-q', '-m', 'one')
+        git(work, 'remote', 'add', 'origin', origin)
+        git(work, 'push', '-q', 'origin', 'main')
+        base = git(work, 'rev-parse', 'HEAD')
+        subprocess.run(['git', 'clone', '-q', origin, repo], env=git_env, check=True)
+        kstate = os.path.join(tmp, 'kit-state')
+        site = os.path.join(tmp, 'site')
+        os.makedirs(kstate)
+        os.makedirs(os.path.join(site, 'updates', 'live'))
+        tfile = os.path.join(tmp, 'etc', 'engine-build.token')
+
+        def write_state(release=100, commit=base):
+            with open(os.path.join(kstate, 'state'), 'w') as f:
+                f.write('installed_release=%d\ndeployed_commit=%s\n' % (release, commit))
+
+        def write_manifest(min_package):
+            with open(os.path.join(site, 'updates', 'live', 'manifest.json'), 'w') as f:
+                json.dump({'payload': json.dumps({'version': 90, 'min_package': min_package})}, f)
+
+        def put(name, text):
+            with open(os.path.join(stub, name), 'w') as f:
+                f.write(text)
+
+        def drop(name):
+            if os.path.exists(os.path.join(stub, name)):
+                os.remove(os.path.join(stub, name))
+
+        def set_run(status, conclusion=None, run_id=101, number=101, created='2026-11-08T10:00:00Z', updated='2026-11-08T10:40:00Z'):
+            put('runs.json', json.dumps({'workflow_runs': [{
+                'id': run_id, 'run_number': number, 'status': status, 'conclusion': conclusion, 'created_at': created,
+                'updated_at': updated, 'head_sha': 'a1b2c3d4e5f6', 'html_url': 'https://github.com/o/r/actions/runs/%d' % run_id}]}))
+
+        write_state()
+        write_manifest(30)
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=os.path.join(tmp, 'chaos.env'),
+                   CHAOS_REPO=repo, CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_KIT_STATE=kstate,
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'),
+                   CHAOS_SITE_DIR=site, CHAOS_ENGINE_TOKEN_FILE=tfile, CHAOS_EB_WAIT='0',
+                   GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_SYSTEM='/dev/null')
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'CHAOS_BACKUP_DIR',
+                  'CHAOS_UPDATE_BRANCH', 'CHAOS_RELEASE_REPO'):
+            env.pop(k, None)
+        seen = []
+
+        def run(*args, stdin=None):
+            r = subprocess.run(['bash', SCRIPT] + list(args), env=env, input=stdin, capture_output=True, text=True)
+            seen.append(r.stdout + r.stderr)
+            return r
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def dispatches():
+            p = os.path.join(stub, 'dispatch.json')
+            return [json.loads(x) for x in open(p).read().splitlines()] if os.path.exists(p) else []
+
+        def kv(out):
+            d = {}
+            for line in out.splitlines():
+                if line.startswith('@'):
+                    break
+                if '=' in line:
+                    k, v = line.split('=', 1)
+                    d.setdefault(k, v)
+            return d
+
+        # no token yet: start is refused before GitHub is asked anything, status reads the public runs
+        r = run('engine-build', 'start')
+        check(r.returncode != 0 and 'token-missing' in r.stderr and not dispatches(), 'start without a token: ' + r.stderr)
+        st = kv(run('engine-build').stdout)
+        check(st.get('token') == 'no' and st.get('state') == 'none' and st.get('client_build') == '30'
+              and st.get('installed_release') == '100' and st.get('release_newer') == 'no', 'status without runs: %s' % st)
+
+        # engine-build-token-set: one line on stdin, a real shape, checked at GitHub, kept mode 600, never echoed
+        for bad in ('ghp_short', 'not a token', token + '$(id)', 'github_pat_' + 'x' * 5):
+            r = run('engine-build-token-set', stdin=bad + '\n')
+            check(r.returncode != 0 and not os.path.exists(tfile), 'token-set refuses %r' % bad)
+            check(bad not in r.stdout + r.stderr or len(bad) < 12, 'token-set: a refused value is not echoed')
+        r = run('engine-build-token-set', stdin=token + '\nsecond\n')
+        check(r.returncode != 0 and not os.path.exists(tfile), 'token-set: a second line is refused')
+        check(run('engine-build-token-set', token).returncode != 0 and not os.path.exists(tfile),
+              'token-set: a value on the command line is no input')
+        put('token.code', '401')
+        r = run('engine-build-token-set', stdin=token + '\n')
+        check(r.returncode != 0 and 'token-refused' in r.stderr and not os.path.exists(tfile), 'token-set: GitHub 401 saves nothing: ' + r.stderr)
+        put('token.code', '404')
+        r = run('engine-build-token-set', stdin=token + '\n')
+        check(r.returncode != 0 and 'no-access' in r.stderr and not os.path.exists(tfile), 'token-set: GitHub 404 saves nothing')
+        drop('token.code')
+        r = run('engine-build-token-set', stdin='  ' + token + '  \r\n')
+        check(r.returncode == 0 and 'saved' in r.stdout and open(tfile).read() == token + '\n', 'token-set saves: ' + r.stdout + r.stderr)
+        check(stat.S_IMODE(os.stat(tfile).st_mode) == 0o600, 'token file is mode 600: %o' % os.stat(tfile).st_mode)
+        check(not [n for n in os.listdir(os.path.dirname(tfile)) if n != 'engine-build.token'], 'token-set: no temp file left')
+        check('Authorization: Bearer ' + token in open(os.path.join(stub, 'curl.stdin')).read(), 'the token reaches curl on its stdin')
+        check(kv(run('engine-build').stdout).get('token') == 'yes', 'status: token=yes')
+
+        # start: the dispatch body, the client build rule, the run found
+        r = run('engine-build', 'start')
+        kvs = kv(r.stdout)
+        check(r.returncode == 0 and kvs.get('started') == 'yes' and kvs.get('client_build') == '30'
+              and kvs.get('run_id') == '101' and kvs.get('commit') == base[:7], 'start: ' + r.stdout + r.stderr)
+        check(dispatches() == [{'ref': 'main', 'inputs': {'client_build': '30', 'allow_dev_key': 'false'}}],
+              'start: ref main, client_build the live 30, allow_dev_key false: %s' % dispatches())
+        check('start branch=main commit=%s client_build=30 run=101' % base[:7] in open(os.path.join(kstate, 'engine-build', 'log')).read(), 'start: logged')
+        # a second start while the run is queued or running: refused, nothing dispatched again
+        for state in ('queued', 'in_progress'):
+            set_run(state, run_id=101)
+            r = run('engine-build', 'start')
+            check(r.returncode != 0 and 'build-running' in r.stderr and len(dispatches()) == 1, 'second start refused (%s): %s' % (state, r.stderr))
+
+        # status of a running build, with its jobs
+        put('jobs.json', json.dumps({'jobs': [
+            {'name': 'server', 'status': 'completed', 'conclusion': 'success', 'steps': []},
+            {'name': 'engine-linux', 'status': 'in_progress', 'conclusion': None,
+             'steps': [{'name': 'Build the engine', 'status': 'in_progress', 'conclusion': None}]},
+            {'name': 'publish', 'status': 'queued', 'conclusion': None, 'steps': []}]}))
+        set_run('in_progress', created='2026-11-08T10:00:00Z')
+        st = kv(run('engine-build').stdout)
+        check(st.get('state') == 'in_progress' and st.get('run_id') == '101' and st.get('run_number') == '101'
+              and st.get('job') == 'engine-linux' and st.get('step') == 'Build the engine' and st.get('jobs_done') == '1/3'
+              and st.get('release_newer') == 'no' and int(st.get('elapsed_s', '0')) > 0 and st.get('url', '').startswith('https://github.com/'),
+              'status in progress: %s' % st)
+
+        # success: the release exists with the engine and is newer than the installed one
+        put('release.json', json.dumps({'assets': [{'name': 'CindersOfChaos-Server-Linux.tar.gz'}]}))
+        set_run('completed', 'success')
+        st = kv(run('engine-build').stdout)
+        check(st.get('state') == 'success' and st.get('release_tag') == 'winpkg-101' and st.get('release_ready') == 'yes'
+              and st.get('release_newer') == 'yes' and st.get('finished') == '2026-11-08T10:40:00Z' and st.get('elapsed_s') == '2400',
+              'status success: %s' % st)
+        check(st.get('client_next') == '31' and st.get('client_changed') == 'no', 'status: client_next 31, the client program unchanged: %s' % st)
+        write_state(release=101)
+        check(kv(run('engine-build').stdout).get('release_newer') == 'no', 'status: the installed release is this one: not newer')
+        write_state(release=100)
+        put('release.json', json.dumps({'assets': [{'name': 'other.zip'}]}))
+        st = kv(run('engine-build').stdout)
+        check(st.get('release_ready') == 'no' and st.get('release_newer') == 'no', 'status: a release without the engine is not ready')
+        drop('release.json')
+        st = kv(run('engine-build').stdout)
+        check(st.get('release_ready') == 'no' and st.get('release_newer') == 'no', 'status: no release yet')
+
+        # failure and cancelled: the failed job and step
+        put('jobs.json', json.dumps({'jobs': [
+            {'name': 'engine-linux', 'status': 'completed', 'conclusion': 'failure',
+             'steps': [{'name': 'Checkout', 'status': 'completed', 'conclusion': 'success'},
+                       {'name': 'Compile the engine', 'status': 'completed', 'conclusion': 'failure'}]}]}))
+        set_run('completed', 'failure')
+        out = run('engine-build', 'log').stdout
+        st = kv(out)
+        check(st.get('state') == 'failure' and st.get('failed_job') == 'engine-linux' and st.get('failed_step') == 'Compile the engine'
+              and st.get('release_newer') == 'no', 'status failure: %s' % st)
+        check('@jobs' in out and 'engine-linux: failure' in out and 'step Compile the engine: failure' in out and '@history' in out
+              and 'client_build=30' in out, 'log: jobs, failed step, history: ' + out)
+        set_run('completed', 'cancelled')
+        check(kv(run('engine-build').stdout).get('state') == 'failure', 'status: cancelled counts as failure (conclusion shows it)')
+        check(kv(run('engine-build').stdout).get('conclusion') == 'cancelled', 'status: conclusion cancelled')
+
+        # API trouble: state unknown, an error line, exit 1; refused start
+        put('runs.code', '401')
+        r = run('engine-build')
+        check(r.returncode == 1 and kv(r.stdout).get('state') == 'unknown' and 'token-refused' in r.stdout, 'status 401: ' + r.stdout)
+        put('runs.code', '500')
+        r = run('engine-build', 'start')
+        check(r.returncode != 0 and 'github-unreachable' in r.stderr and len(dispatches()) == 1, 'start with GitHub down: ' + r.stderr)
+        drop('runs.code')
+
+        # the client build rule
+        n0 = len(dispatches())
+        r = run('engine-build', 'start', '--client-build', '29')
+        check(r.returncode != 0 and 'client-build-backwards' in r.stderr and len(dispatches()) == n0, 'a build number never goes backwards: ' + r.stderr)
+        check(run('engine-build', 'start', '--client-build', '0').returncode != 0 and run('engine-build', 'start', '--client-build', '70000').returncode != 0
+              and len(dispatches()) == n0, 'client build out of range refused')
+        check(run('engine-build', 'start', '--client-build', 'x').returncode != 0 and run('engine-build', 'start', 'now').returncode != 0
+              and len(dispatches()) == n0, 'bad start arguments refused')
+        # a server-only change since the live client: the same number is fine
+        open(os.path.join(work, 'server', 'src-patches', '0090-more.patch'), 'w').write('b\n')
+        git(work, 'add', '-A')
+        git(work, 'commit', '-q', '-m', 'server patch')
+        git(work, 'push', '-q', 'origin', 'main')
+        set_run('completed', 'success')
+        r = run('engine-build', 'start')
+        check(r.returncode == 0 and dispatches()[-1]['inputs']['client_build'] == '30', 'a server-only change keeps the live number: ' + r.stdout + r.stderr)
+        # a client program change since the live client: the same number is refused, nothing dispatched
+        open(os.path.join(work, 'client', 'base-patches', '0002-b.patch'), 'w').write('c\n')
+        git(work, 'add', '-A')
+        git(work, 'commit', '-q', '-m', 'client patch')
+        git(work, 'push', '-q', 'origin', 'main')
+        client_head = git(work, 'rev-parse', 'HEAD')
+        set_run('completed', 'success', run_id=102, number=102)
+        n0 = len(dispatches())
+        r = run('engine-build', 'start')
+        check(r.returncode != 0 and 'client-changed' in r.stderr and '--new-client' in r.stderr and len(dispatches()) == n0,
+              'a changed client program refuses the live number: ' + r.stderr)
+        st = kv(run('engine-build').stdout)
+        check(st.get('client_changed') == 'yes' and st.get('client_next') == '31', 'status says the client program changed and the next number: %s' % st)
+        # a running build is not asked about the client (no fetch while the app polls)
+        set_run('in_progress', run_id=102, number=102)
+        st = kv(run('engine-build').stdout)
+        check('client_changed' not in st and st.get('client_next') == '31', 'status while running: client_next only: %s' % st)
+        set_run('completed', 'success', run_id=102, number=102)
+        # the new number with --new-client: live + 1, built, and put into clientGuardBuilds (old builds stay)
+        os.makedirs(os.path.join(tmp, 'server'))
+        cfg = os.path.join(tmp, 'server', 'config.lua')
+        with open(cfg, 'w') as f:
+            f.write('ip = "x"\nclientGuardMode = "enforce"\nclientGuardBuilds = "29, 30"\nclientGuardManifest = ""\n')
+        # the kit update running: refused, nothing dispatched, nothing edited
+        os.makedirs(kstate, exist_ok=True)
+        import fcntl
+        lockf = open(os.path.join(kstate, '.lock'), 'w')
+        fcntl.flock(lockf, fcntl.LOCK_EX)
+        r = run('engine-build', 'start', '--new-client')
+        check(r.returncode != 0 and 'update-running' in r.stderr and len(dispatches()) == n0 and '31' not in open(cfg).read(),
+              'a new number waits for a running kit update: ' + r.stderr)
+        fcntl.flock(lockf, fcntl.LOCK_UN)
+        lockf.close()
+        check(run('engine-build', 'start', '--new-client', '--client-build', '31').returncode != 0 and len(dispatches()) == n0,
+              '--new-client and --client-build together are refused')
+        r = run('engine-build', 'start', '--new-client')
+        check(r.returncode == 0 and dispatches()[-1]['inputs']['client_build'] == '31' and 'new_client=yes' in r.stdout
+              and 'guard=added' in r.stdout and 'APK' in r.stdout, 'new client: ' + r.stdout + r.stderr)
+        check('clientGuardBuilds = "29, 30, 31"' in open(cfg).read() and 'clientGuardMode = "enforce"' in open(cfg).read()
+              and [n for n in os.listdir(os.path.dirname(cfg)) if n.startswith('config.lua.before-guard-')],
+              'the guard list got 31, old builds stay, a backup was kept: ' + open(cfg).read())
+        set_run('completed', 'success', run_id=103, number=103)
+        n0 = len(dispatches())
+        r = run('engine-build', 'start', '--client-build', '31')
+        check(r.returncode == 0 and 'guard=present' in r.stdout and open(cfg).read().count('31') == 1,
+              'a second start of 31 changes nothing in the list: ' + r.stdout + r.stderr)
+        # an empty list accepts every build; a missing line is told
+        with open(cfg, 'w') as f:
+            f.write('clientGuardBuilds = ""\n')
+        set_run('completed', 'success', run_id=104, number=104)
+        check('guard=any' in run('engine-build', 'start', '--client-build', '31').stdout, 'an empty guard list is left alone')
+        with open(cfg, 'w') as f:
+            f.write('ip = "x"\n')
+        set_run('completed', 'success', run_id=105, number=105)
+        r = run('engine-build', 'start', '--client-build', '31')
+        check('guard=missing' in r.stdout and 'by hand' in r.stdout and r.returncode == 0, 'no guard line: told to add it by hand: ' + r.stdout)
+        os.remove(cfg)
+        set_run('completed', 'success', run_id=106, number=106)
+        check('guard=missing' in run('engine-build', 'start', '--client-build', '31').stdout, 'no config.lua: told')
+        n0 = len(dispatches())
+        set_run('completed', 'success', run_id=103, number=103)
+        pend = os.path.join(kstate, 'engine-build', 'pending_client')
+        check(open(pend).read().split() == ['31', client_head], 'the new number waits as pending until it is live')
+        set_run('completed', 'success', run_id=103, number=103)
+        r = run('engine-build', 'start')
+        check(r.returncode != 0 and 'client-changed' in r.stderr, 'while 31 is not live the baseline stays: ' + r.stderr)
+        check(open(pend).read().split()[0] == '31', 'the pending number is still 31')
+        write_manifest(31)
+        r = run('engine-build', 'start')
+        check(r.returncode == 0 and dispatches()[-1]['inputs']['client_build'] == '31' and not os.path.exists(pend)
+              and open(os.path.join(kstate, 'engine-build', 'client_exe_commit')).read().strip() == client_head,
+              '31 live: the pending commit is the new baseline, the same number is fine again: ' + r.stdout + r.stderr)
+        # no live client update: the number must be given
+        os.remove(os.path.join(site, 'updates', 'live', 'manifest.json'))
+        set_run('completed', 'success', run_id=104, number=104)
+        n0 = len(dispatches())
+        r = run('engine-build', 'start')
+        check(r.returncode != 0 and 'client-build-unknown' in r.stderr and len(dispatches()) == n0, 'no live client: the number is required: ' + r.stderr)
+        # no commit to compare with
+        write_manifest(31)
+        os.remove(os.path.join(kstate, 'state'))
+        os.remove(os.path.join(kstate, 'engine-build', 'client_exe_commit'))
+        r = run('engine-build', 'start')
+        check(r.returncode != 0 and 'client-check-failed' in r.stderr and len(dispatches()) == n0, 'no baseline commit refuses: ' + r.stderr)
+        write_state(commit=client_head)
+        # GitHub refuses the dispatch
+        for code, word in (('403', 'no-access'), ('422', 'workflow-refused'), ('401', 'token-refused'), ('500', 'dispatch-failed')):
+            put('dispatch.code', code)
+            r = run('engine-build', 'start')
+            check(r.returncode != 0 and word in r.stderr and len(dispatches()) == n0 + (['403', '422', '401', '500'].index(code) + 1),
+                  'dispatch %s -> %s: %s' % (code, word, r.stderr))
+        drop('dispatch.code')
+        # a hand-edited token file that is no token is never sent
+        with open(tfile, 'w') as f:
+            f.write('x"\nheader = "Evil: 1\n')
+        r = run('engine-build', 'start')
+        check(r.returncode != 0 and 'token-missing' in r.stderr, 'a file that is no token counts as no token: ' + r.stderr)
+        check('Evil' not in open(os.path.join(stub, 'curl.stdin')).read(), 'its text never reached curl')
+        # removing the token
+        r = run('engine-build-token-set', stdin='\n')
+        check(r.returncode == 0 and not os.path.exists(tfile) and 'removed' in r.stdout, 'token-set with nothing removes the file')
+
+        # the token is in no output and in no process argument, ever
+        check(not any(token in t or token[11:] in t for t in seen), 'no output of any engine-build command holds the token')
+        check(token[11:] not in calls() and 'Bearer' not in calls() and 'github_pat' not in calls(), 'the token is never on a command line')
+        check(run('engine-build', 'frobnicate').returncode != 0, 'engine-build: an unknown subcommand is refused')
+
 
 def test_discord_bot():
     """discord-bot install | set | start | stop | restart | status | logs | patchnotes (server/deploy/discord_bot/)"""

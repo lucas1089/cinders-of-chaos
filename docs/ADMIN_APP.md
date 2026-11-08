@@ -9,7 +9,7 @@ Visual escuro e quente, a mesma rampa de cinzas do app do PC (`desktop/src/theme
 
 | Aba | Para quê |
 |---|---|
-| Painel | Estado do servidor em texto colorido (no ar, parado, falhou, ligando, sem serviço; no ar leva o ponto brasa), há quanto tempo está no ar, jogadores (toque: quem está online, com a classe), erros desde o último início (toque: abre os erros), memória e disco com barra, carga, último backup. Puxe para baixo para atualizar; atualiza sozinho a cada 30 s (muda em Config). Botões grandes: Ligar, Desligar, Salvar, Reiniciar, Reiniciar em… (1 a 15 min, com aviso aos jogadores), Backup. Os perigosos pedem confirmação; a resposta aparece num cartão, em português, com os detalhes escondidos e os botões **Copiar** e **Compartilhar** (uma resposta grande, como o log dos testers, vai como arquivo .txt para salvar ou anexar). Cartão **Atualizar servidor** (abaixo) |
+| Painel | Estado do servidor em texto colorido (no ar, parado, falhou, ligando, sem serviço; no ar leva o ponto brasa), há quanto tempo está no ar, jogadores (toque: quem está online, com a classe), erros desde o último início (toque: abre os erros), memória e disco com barra, carga, último backup. Puxe para baixo para atualizar; atualiza sozinho a cada 30 s (muda em Config). Botões grandes: Ligar, Desligar, Salvar, Reiniciar, Reiniciar em… (1 a 15 min, com aviso aos jogadores), Backup. Os perigosos pedem confirmação; a resposta aparece num cartão, em português, com os detalhes escondidos e os botões **Copiar** e **Compartilhar** (uma resposta grande, como o log dos testers, vai como arquivo .txt para salvar ou anexar). Cartões **Atualizar servidor** e **Recompilar engine** (abaixo) |
 | Comandos | Ações rápidas: aviso para todos, expulsar, abrir e fechar o login, versão por tag (layout padrão), **Taxa de XP**, **Par do cliente**, **Contas** (criar, trocar senha), **Saúde e espaço** (verificar, limpar sobras, ver backups), **Servidor como usuário chaos** (Ver, Corrigir, Corrigir e reiniciar, Log do reinício), **Testers** (iniciar, parar, status, relatório, log das ações, apagar), **Site e update do client** (reinstalar o site, publicar o update de uma release). Painel do jogo: todos os comandos do painel de admin, por categoria, com busca e formulário (Chaos Coins: Store > Give Chaos Coins; grupo/GM: Players > Set group) |
 | Logs | Console, Erros, Updates (servidor, publicação do client, instalação do site), GM e Terminal. GM: os logs de comando do staff (`data/logs/<nome> commands.log`, mais novo primeiro) e o registro do painel de admin (tabela `chaos_admin_log`), de todos ou de um membro do staff. Fonte monoespaçada, 50 a 500 linhas, Acompanhar (recarrega a cada 5 s), copiar. Erros: só desde o último início do servidor, linhas iguais juntas com a contagem (×56); "Incluir inícios anteriores" mostra os antigos, cada um com a data do início. "Limpar lista" (`errors clear`) zera a lista e o contador do Painel: só contam os erros novos; o log do servidor não é apagado. Terminal: qualquer comando na VPS, a pasta é guardada, botão `sudo -n` |
 | Config | Endereço, porta, usuário, caminho do chaos-ctl.sh, personagem admin, intervalo do painel. Chave: gerar, mostrar, copiar, compartilhar, copiar o comando de instalação. Impressão digital da VPS com o botão Esquecer. Testar conexão |
@@ -79,6 +79,93 @@ Configuração em `/etc/chaos/ctl.conf` (veja `server/deploy/ctl.conf.trial.exam
 `CHAOS_UPDATE_BRANCH`, `CHAOS_RELEASE_REPO`, `CHAOS_DL_DIR`, `CHAOS_SITE_DIR`, `CHAOS_SITE_ENV`, `CHAOS_BOOT_TIMEOUT`,
 `CHAOS_KIT_STATE` (estado: `/var/lib/chaos/kit-update/state`, com a release instalada). Na primeira vez a release
 instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual ao instalado, só anota o número.
+
+## Recompilar engine (Painel)
+
+O pedido do dono (2026-11-08): "Pode montar o botão de recompilar no app". O engine do servidor (o `tfs`, com todos os
+patches de `server/src-patches/`, hoje até o 0089, o saco de loot) é compilado no GitHub Actions pelo workflow manual
+`windows-package.yml`, que publica a prerelease `winpkg-N` com o `CindersOfChaos-Server-Linux.tar.gz`. Antes, alguém tinha
+de abrir a página do workflow e rodá-lo. Agora o cartão **Recompilar engine** (Painel no app do celular; Atualizações >
+Recompilar engine no app do PC), logo abaixo de Atualizar servidor, faz isso e acompanha.
+
+O caminho inteiro, sem terminal:
+
+1. **Recompilar** (confirmação: leva de 20 a 60 minutos no GitHub, a primeira vez ou depois de uma mudança grande pode
+   passar de uma hora; o jogo segue no ar e nada é trocado no servidor). A VPS pede ao GitHub o workflow na branch
+   `CHAOS_UPDATE_BRANCH` (`chaos-ctl.sh engine-build start`).
+2. O cartão mostra o estado e se atualiza sozinho a cada 20 s enquanto a rodada está na fila ou rodando: na fila, compilando
+   há N min (com o job e o passo), pronto, falhou (com o job e o passo que falharam) ou cancelada. Pode fechar o app: a
+   compilação continua no GitHub e o cartão retoma ao abrir. **Atualizar estado** pergunta na hora; **Ver passos** mostra os
+   jobs da rodada, os passos que falharam e o histórico das partidas (o log completo fica na página da rodada no GitHub).
+3. Terminou e a release é mais nova que a instalada: o cartão diz "Pronto: winpkg-N tem o engine novo" e aponta para
+   **Atualizar servidor**. Lá, Verificar mostra `Servidor (engine): winpkg-A → winpkg-N` e Aplicar e reiniciar instala o
+   engine com backup, reinicia e confere, como sempre. O botão Recompilar nunca troca nada no servidor.
+
+Só uma rodada por vez: com uma na fila ou rodando, Recompilar é recusado (também quando a rodada foi aberta na página do
+GitHub). Se uma rodada falhar, nada mudou; corrija o motivo (o job e o passo estão no cartão) e rode de novo.
+
+### Token do GitHub (uma vez)
+
+A VPS precisa de um token para pedir a compilação. Crie um que só serve para isto:
+
+1. GitHub > sua foto > Settings > Developer settings > Personal access tokens > **Fine-grained tokens** > Generate new token.
+2. Nome: `cinders-recompilar`. Expiração: a que preferir (90 dias, por exemplo; ao vencer o cartão diz "O GitHub recusou o
+   token" e basta definir outro). Resource owner: a conta dona do repositório.
+3. Repository access: **Only select repositories** e escolha só `lucas1089/cinders-of-chaos`.
+4. Repository permissions: **Actions: Read and write**. Nenhuma outra (o Metadata de leitura vem sozinho; o repositório é
+   público, então ler as releases não pede mais nada).
+5. Generate token e copie o `github_pat_...` (ele só aparece uma vez).
+6. No app: Painel > Recompilar engine > **Definir token do GitHub**, cole e **Salvar token** (no app do PC: Atualizações >
+   Recompilar engine > Definir token do GitHub). Campo vazio apaga o token.
+
+O token vai pelo SSH no stdin do `chaos-ctl.sh engine-build-token-set`, nunca numa linha de comando. A VPS confere o formato,
+pergunta ao GitHub se ele alcança o repositório (um token recusado não é guardado), guarda em
+`/etc/chaos/engine-build.token` (só root, modo 600, `CHAOS_ENGINE_TOKEN_FILE` no `ctl.conf` muda o caminho) e nunca o mostra:
+nem na saída, nem no log, nem na lista de processos (o `curl` lê o cabeçalho de um arquivo de configuração no stdin). O app
+mostra só "token: sim ou não". Esse token não lê nem escreve código, só roda e lê workflows deste repositório.
+
+### O número do client (`client_build`)
+
+O workflow tem o input `client_build` (o número que o executável do client carrega e que o servidor confere; também é o
+`Services.update.package`). Regra do botão, pensada para o número nunca voltar nem apontar para dois executáveis:
+
+- O padrão é o **número do client publicado**: o `min_package` do manifesto assinado ao vivo
+  (`$CHAOS_SITE_DIR/updates/live/manifest.json`), o mesmo que `publish_client_update.sh` usa. Os outros inputs ficam no padrão
+  do workflow e `allow_dev_key` é sempre `false` (sem os segredos `CHAOS_CLIENT_KEY` e `CHAOS_RSA_PUBLIC` do repositório a
+  rodada falha, e é o certo).
+- Com o mesmo número, o executável só é o mesmo se o programa do client não mudou. A VPS compara, com o próprio checkout, o
+  commit do client publicado (guardado pelo botão; antes disso, o último commit instalado por Atualizar servidor) com a
+  ponta da branch, nos caminhos `client/base-patches`, `client/overlay/src`, `client/tools/chaos_hardening.cmake` e
+  `launcher`. Mudou: **recusa** (`client-changed`) e nada é pedido ao GitHub. Mudar só Lua, dados, servidor ou site não
+  conta, porque esses vão pelo update assinado e não pelo executável.
+- Número menor que o publicado: recusado (`client-build-backwards`). Sem update de client publicado e sem número dado:
+  recusado (`client-build-unknown`).
+- Programa do client mudou de verdade (é o caso quando o `main` mexeu em `client/base-patches`): o estado traz
+  `client_changed=yes` e `client_next=N` (publicado + 1), e o cartão mostra o segundo botão **Recompilar com client
+  novo (build N)** (no app do PC: o botão de mesmo nome; `chaos-ctl.sh engine-build start --new-client`). A confirmação
+  explica: sai um client novo com o build N, os jogadores o recebem pelo atualizador depois de Atualizar servidor, e o APK
+  do Android precisa acompanhar (`android-client.yml` com `client_build` N), senão os celulares ficam sem poder jogar.
+  O servidor aceita o N sozinho: ao começar, a VPS põe N na lista `clientGuardBuilds` do `config.lua` (`eb_guard_add`,
+  backup `config.lua.before-guard-DATA`, os builds antigos ficam; lista vazia já aceita qualquer build; sem a linha ou sem
+  o arquivo, o app avisa para pôr N à mão). Adiantar é inofensivo, porque os antigos continuam aceitos; o servidor lê o
+  `config.lua` no próximo início, que o Atualizar servidor faz, e o manifesto publicado no passo 8 (`min_package` N) só
+  passa a recusar os builds abaixo de N depois disso. Nada é removido neste passo: tirar os builds antigos da lista é
+  decisão sua, depois que os jogadores atualizaram. Recusa `update-running` se uma atualização está rodando (para não
+  editar o `config.lua` no meio da instalação). `--client-build N` continua existindo para outro número.
+- Com o mesmo número, Atualizar servidor publica o client novo como uma versão nova do manifesto (a versão é o número da
+  rodada, sempre maior) com o mesmo `min_package`: ninguém precisa baixar o client de novo, os módulos novos chegam pelo
+  update assinado, e `publish_client_update.sh` recusa republicar uma versão que não é maior que a publicada.
+
+### Erros que o cartão traduz
+
+`token-missing` (sem token), `token-refused` (401: vencido ou apagado), `no-access` (o token não alcança o repositório ou
+falta Actions leitura e escrita), `build-running`, `client-changed`, `client-build-backwards`, `client-build-unknown`,
+`client-check-failed` (sem commit para comparar: rode Atualizar servidor uma vez), `fetch-failed`, `workflow-refused`
+(422: a branch não tem o workflow manual), `dispatch-failed` e `github-unreachable`.
+
+Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]` e `chaos-ctl.sh engine-build-token-set`
+(token no stdin). Testes: `server/deploy/chaos_ctl_test.py` (`test_engine_build`, com um `curl` falso no lugar do GitHub),
+`android/.../EngineBuildInfoTest.java` e `desktop/src/engine.rs`.
 
 ## Comandos frequentes (Ações rápidas)
 
@@ -251,7 +338,7 @@ Windows podem ter cada um a sua chave. Rodar de novo com a mesma chave não dupl
 `gm-logs [n] [NOME]`, `metrics [--json]`, `testers start [N] [MINUTOS] [--restart SEGUNDOS] [--keystones] | stop | status | report | log [N] | cleanup [--yes]` (bots de teste, server/README.md "Tester bots"), `errors clear`, `vps [info] | upgrade | upgrade-log [N] | reboot MIN | reboot-cancel`, `services`, `service NOME start|stop|restart`, `service-log NOME [N]`, `players`, `vocations`, `broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`,
 `panel NOME ACAO JSON`, `reload-files`, `reload-file NOME [CONFIG]` (uma tabela `*_config.lua` no jogo sem /reload, grupo 6), `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
-`update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
+`update-rollback`, `update-log`, `engine-build [status | start [--client-build N] | log [N]]` e `engine-build-token-set` (token no stdin; recompila o engine no GitHub, O436), `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
 update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `xp-rate`, `client-pair [show | set N]`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
 `account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `discord-bot status | install | set NOME | start | stop | restart | logs [N] | patchnotes`, `pay-status`, `pay-set NOME` (valor no stdin), `pay-test`, `pay-enable`, `pay-disable`, `newplayer-funnel`, `survey`, `game-health [--days N] [--kv | --json] [--pt]`, `balance-report [--days N | --season ID|current] [--pt] [--json] [--save] [--dm] | last | auto | timer on|off|status`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`

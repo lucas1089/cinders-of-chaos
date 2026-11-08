@@ -22268,7 +22268,33 @@ script re-runs itself with `sudo -n`, which drops the environment.
   table and `rateExp`, `rateSkill`, `rateLoot`, `rateMagic`, `rateSpawn`). Then the client update, the client
   downloads of the site (`CHAOS_DL_DIR`: `.prev`, `.sha256`, `downloads.json` read by the downloads page) and
   `website/install_site.sh`. Details: docs/ADMIN_APP.md "Atualizar servidor", docs/LAUNCH.md "Updating the kit server".
-  New ctl.conf keys: `CHAOS_KIT_DIR`, `CHAOS_UPDATE_BRANCH` (main), `CHAOS_RELEASE_REPO`, `CHAOS_KIT_STATE`,
+  A new engine comes from a new `winpkg-N` release, so the update has a step before it, the engine rebuild (O436):
+  `chaos-ctl.sh engine-build [status | start [--client-build N] | log [N]]` dispatches `windows-package.yml` on
+  `CHAOS_UPDATE_BRANCH` through the GitHub REST API (`POST /repos/{repo}/actions/workflows/windows-package.yml/dispatches`)
+  with the token of `engine-build-token-set` (stdin only; a fine-grained token for this repository, Actions read and write;
+  checked at GitHub before it is kept; `CHAOS_ENGINE_TOKEN_FILE`, default `/etc/chaos/engine-build.token`, root only, mode
+  600; never printed, never on a command line: curl reads its `Authorization` header from a config line on stdin). `start`
+  refuses while the newest run of the workflow on the branch is queued or in progress (also one started on GitHub's
+  page), sends only `client_build` and `allow_dev_key=false` (every other input keeps the workflow's default), and waits up
+  to 30 s for the run to appear. `status` prints key=value lines (`state` none | queued | in_progress | success | failure |
+  unknown, `run_id`, `run_number`, `started`, `finished`, `elapsed_s`, `commit`, `job`, `step`, `jobs_done`, `failed_job`,
+  `failed_step`, `release_tag`, `release_ready` (the release has the Linux server package), `installed_release`,
+  `release_newer`, `client_build`, `token`); `release_newer=yes` is what `update-check` then reports as `needs_engine=yes`.
+  The client build rule: the number is the live client update's `min_package` (the signed manifest of `CHAOS_SITE_DIR`),
+  never lower; with the same number the client program must be unchanged since the live client's commit
+  (`client/base-patches`, `client/overlay/src`, `client/tools/chaos_hardening.cmake`, `launcher`; the commit is kept in
+  `CHAOS_KIT_STATE/engine-build/client_exe_commit`, else `deployed_commit` of the kit state), because the workflow's
+  compiled-client cache key is exactly that source plus the number: same inputs, byte-identical exe, so the number stays
+  true. A changed client program is refused (`client-changed`); `status` says so before (`client_changed=yes|no|unknown`, not while a
+  build runs, and `client_next` = live + 1) and `start --new-client` (or `--client-build N`) builds the new number: the commit
+  waits in `pending_client` (baseline once the manifest shows it) and `eb_guard_add` puts N into `clientGuardBuilds` of
+  `SERVER/config.lua` (backup `config.lua.before-guard-TIME`, old builds stay, an empty list is left alone, a missing line is
+  told in the output `guard=missing`); refused with `update-running` while the kit update holds its lock. The update step 8 then publishes the new release as a manifest version above the live one with the same
+  `min_package`, which `publish_client_update.sh` already requires to be higher. Admin app: Painel > Recompilar engine
+  (desktop: Atualizacoes > Recompilar engine); docs/ADMIN_APP.md "Recompilar engine". Test: `chaos_ctl_test.py`
+  `test_engine_build` (a fake curl plays the API: dispatch body, refusal while running, status parsing, the rule, the
+  token never in an output or an argument).
+  New ctl.conf keys: `CHAOS_KIT_DIR`, `CHAOS_UPDATE_BRANCH` (main), `CHAOS_RELEASE_REPO`, `CHAOS_KIT_STATE`, `CHAOS_ENGINE_TOKEN_FILE`,
   `CHAOS_BOOT_TIMEOUT`, `CHAOS_STAGING`, `CHAOS_CACHE_DIR`, `CHAOS_DL_DIR`, `CHAOS_SITE_ENV`, `CHAOS_SITE_LOG`. With `CHAOS_KIT_DIR` set, `CHAOS_ROOT`,
   `CHAOS_ENV` and `CHAOS_LOG` default to the kit's (`KIT`, `KIT/chaos.env`, `KIT/logs/server.log`).
 - Frequent commands (2026-10-21): `xp-rate [show | set N | reset] [restart]` (the release's stages x N, 1..100, backup

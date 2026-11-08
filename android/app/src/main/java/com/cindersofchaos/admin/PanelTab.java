@@ -40,6 +40,7 @@ final class PanelTab {
     private final Tile errors;
     private final MainActivity.ResultCard result;
     private final UpdateCard update;
+    private final EngineBuildCard engine;
     private final MetricsCard metrics;
     private final FeedbackCard feedback;
     private final NewPlayerCard newPlayers;
@@ -191,6 +192,9 @@ final class PanelTab {
         update = new UpdateCard(a);
         page.addView(update.card, ui.gap(12));
 
+        engine = new EngineBuildCard(a); // O436
+        page.addView(engine.card, ui.gap(12));
+
         metrics = new MetricsCard(a);
         page.addView(metrics.card, ui.gap(12));
         page.addView(metrics.funnelCard, ui.gap(12)); // O258
@@ -252,6 +256,7 @@ final class PanelTab {
             if (!updateSeen || manual) {
                 updateSeen = true;
                 update.shown();
+                engine.shown();
             }
         });
     }

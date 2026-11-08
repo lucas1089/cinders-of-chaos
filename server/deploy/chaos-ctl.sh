@@ -102,6 +102,23 @@
 #                               update; nothing changes when the downloads are the newest release's (--force replaces)
 #   update-status               the kit: running, status, result and time of the last update-apply / update-rollback
 #   update-rollback             the kit: chaos_kit_update.sh rollback in the background (update-log)
+#   engine-build [status | start [--client-build N | --new-client] | log [N]]
+#                               rebuilds the server engine in GitHub Actions (O436): start dispatches windows-package.yml
+#                               on CHAOS_UPDATE_BRANCH through the GitHub API (token of engine-build-token-set) with
+#                               client_build = the live client update's min_package (a lower number is refused; the
+#                               same number only while client/base-patches, client/overlay/src and launcher are unchanged
+#                               since the live client's commit, else client-changed; --new-client uses live+1 and puts it into
+#                               clientGuardBuilds of config.lua, old builds stay; --client-build N names another new number)
+#                               and allow_dev_key false, refuses while a run is queued or in progress, waits up to 30 s
+#                               for the run. status: key=value lines (token yes|no, state none|queued|in_progress|success|
+#                               failure|unknown, run_id, run_number, started, finished, elapsed_s, commit, step, jobs_done,
+#                               failed_job, failed_step, release_tag, release_ready, installed_release, release_newer,
+#                               client_build, url); release_newer=yes means update-apply installs a newer engine.
+#                               client_next (live build + 1) and client_changed yes|no|unknown (not while a build runs) log: the
+#                               jobs and failed steps of the run, then the start history. The game keeps running.
+#   engine-build-token-set      the GitHub token (a fine-grained token for this repository only, Actions read and write) on
+#                               stdin, one line, empty removes it: checked against GitHub, kept in CHAOS_ENGINE_TOKEN_FILE
+#                               (/etc/chaos/engine-build.token, mode 600), never printed, never on a command line
 #   xp-rate [show | set N | reset] [restart]
 #                               the XP multiplier of config.lua (experienceStages = the release's stages x N, N 1..100);
 #                               set / reset keep a backup and apply at the next restart, or at once with "restart".
@@ -310,7 +327,9 @@
 # lucas1089/cinders-of-chaos, CHAOS_KIT_STATE /var/lib/chaos/kit-update, CHAOS_BOOT_TIMEOUT 900, CHAOS_STAGING 1 (0: the
 # update installs with the server stopped), CHAOS_CACHE_DIR $CHAOS_KIT_STATE/cache (install_all.py's plan compile cache), CHAOS_DL_DIR
 # $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log. For areas-publish:
-# CHAOS_AREAS_STATE /var/lib/chaos/areas (the token file), CHAOS_DL_DIR, CHAOS_SITE_ENV (CHAOS_SITE_URL). For testers:
+# CHAOS_AREAS_STATE /var/lib/chaos/areas (the token file), CHAOS_DL_DIR, CHAOS_SITE_ENV (CHAOS_SITE_URL). For engine-build:
+# CHAOS_ENGINE_TOKEN_FILE /etc/chaos/engine-build.token (root only), CHAOS_RELEASE_REPO, CHAOS_UPDATE_BRANCH, CHAOS_SITE_DIR (the live
+# manifest), CHAOS_KIT_STATE. For testers:
 # CHAOS_TESTER_KEY /etc/chaos/tester-client-key, CHAOS_TESTER_STATE /var/lib/chaos/testers, CHAOS_TESTER_LOG
 # /var/log/chaos/testers.log. For balance-report: CHAOS_BALANCE_DIR /var/lib/chaos/balance. For vps: CHAOS_VPS_LOG
 # /var/log/chaos/vps-upgrade.log. For spectate: CHAOS_SPECTATE_PAIR
@@ -345,7 +364,8 @@ CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPEC
 CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STAGING CHAOS_CACHE_DIR \
 CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE \
 CHAOS_SERVER_USER_STATE CHAOS_SERVER_USER_LOG CHAOS_BOT_USER CHAOS_BOT_ENV CHAOS_BOT_DIR CHAOS_BOT_DATA CHAOS_BOT_LOG \
-CHAOS_BOT_PYTHON CHAOS_BALANCE_DIR CHAOS_PAY_ENV CHAOS_PAY_USER CHAOS_PAY_GROUP CHAOS_PAYWORKER_LOG "
+CHAOS_BOT_PYTHON CHAOS_BALANCE_DIR CHAOS_PAY_ENV CHAOS_PAY_USER CHAOS_PAY_GROUP CHAOS_PAYWORKER_LOG \
+CHAOS_ENGINE_TOKEN_FILE "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -1808,6 +1828,411 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     for k in status result time installed_release deployed_commit dl_release; do
       echo "$k=$( [ -f "$st" ] && sed -n "s/^$k=//p" "$st" | tail -n 1)"
     done
+    ;;
+  engine-build|engine-build-token-set)
+    # Rebuild the server engine in GitHub Actions (windows-package.yml, manual) from the admin app, O436. The token (a
+    # fine-grained GitHub token for this repository only, Actions read and write) lives in a root-only file, comes in on
+    # stdin, is never printed, and reaches curl as a config line on its stdin: it never shows in ps.
+    EB_STATE="$KSTATE/engine-build"
+    EB_TOKEN=$(setting CHAOS_ENGINE_TOKEN_FILE /etc/chaos/engine-build.token)
+    EB_REPO=$(setting CHAOS_RELEASE_REPO lucas1089/cinders-of-chaos)
+    EB_BRANCH=$(setting CHAOS_UPDATE_BRANCH main)
+    EB_SITE=$(setting CHAOS_SITE_DIR /var/www/chaos)
+    EB_WF=windows-package.yml
+    EB_BODY=""
+    [[ $EB_REPO =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "CHAOS_RELEASE_REPO must be OWNER/REPO"
+    { [[ $EB_BRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] && [[ $EB_BRANCH != *..* ]]; } || die "bad CHAOS_UPDATE_BRANCH"
+    command -v curl >/dev/null 2>&1 || die "curl-not-found: install curl"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found: install python3"
+    EB_TOKEN_RE='^(github_pat_[A-Za-z0-9_]{20,250}|gh[pousr]_[A-Za-z0-9]{30,250})$'
+    # the token from its file, or nothing when the file is missing or holds no token
+    eb_token() {
+      local t=""
+      [ -r "$EB_TOKEN" ] && t=$(head -c 400 "$EB_TOKEN" 2>/dev/null | tr -d '[:space:]')
+      [[ $t =~ $EB_TOKEN_RE ]] && printf '%s' "$t"
+      return 0
+    }
+    # eb_api METHOD PATH [JSON]: prints the HTTP code, the answer is in the file $EB_BODY. The config line with the token
+    # goes to curl on stdin (printf is a builtin: no process shows it); the JSON body holds no secret.
+    eb_api() {
+      local m=$1 p=$2 data=${3:-} tok cfg code
+      local -a ca=(-K - -sS --proto '=https' -o "$EB_BODY" -w '%{http_code}' --max-time 30)
+      tok=$(eb_token)
+      cfg=$(printf 'url = "https://api.github.com%s"\nheader = "Accept: application/vnd.github+json"\nheader = "X-GitHub-Api-Version: 2022-11-28"\nheader = "User-Agent: chaos-ctl"' "$p")
+      [ -z "$tok" ] || cfg=$cfg$'\n'$(printf 'header = "Authorization: Bearer %s"' "$tok")
+      unset tok
+      if [ "$m" = POST ]; then ca+=(-H 'Content-Type: application/json' -d "$data"); fi
+      : > "$EB_BODY"
+      code=$(printf '%s\n' "$cfg" | curl "${ca[@]}" 2>/dev/null) || code=${code:-000}
+      unset cfg
+      printf '%s' "${code:-000}"
+    }
+    # eb_py runs|jobs|release FILE [all]: reads GitHub's JSON, prints tab separated fields made only of safe characters
+    eb_py() {
+      python3 -I - "$@" <<'PY'
+import json, re, sys, time
+from datetime import datetime, timezone
+kind, path = sys.argv[1], sys.argv[2]
+try:
+    data = json.load(open(path, encoding='utf-8'))
+except Exception:
+    sys.exit(2)
+def clean(s, n=80):
+    return re.sub(r'[^A-Za-z0-9 ._:()/+-]', '', str(s))[:n]
+def ts(s):
+    try:
+        return datetime.strptime(str(s), '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc).timestamp()
+    except Exception:
+        return None
+if kind == 'runs':
+    runs = [r for r in data.get('workflow_runs') or [] if isinstance(r.get('id'), int)]
+    if not runs:
+        print('none')
+        sys.exit(0)
+    r = max(runs, key=lambda x: x['id'])
+    status, concl = str(r.get('status')), str(r.get('conclusion') or '')
+    if status == 'completed':
+        state = 'success' if concl == 'success' else 'failure'
+    elif status == 'in_progress':
+        state = 'in_progress'
+    else:
+        state = 'queued'
+    done = state in ('success', 'failure')
+    created, updated = str(r.get('created_at') or ''), str(r.get('updated_at') or '')
+    a = ts(created)
+    b = ts(updated) if done else time.time()
+    elapsed = int(max(0, b - a)) if a and b else 0
+    sha = re.sub(r'[^0-9a-f]', '', str(r.get('head_sha') or ''))[:7]
+    url = str(r.get('html_url') or '')
+    if not re.fullmatch(r'https://github\.com/[A-Za-z0-9_./-]{1,200}', url):
+        url = ''
+    print('\t'.join([state, str(r['id']), str(int(r.get('run_number') or 0)), clean(created, 30) or '-',
+                     (clean(updated, 30) if done else '') or '-', concl or '-', sha or '-', str(elapsed), url or '-']))
+elif kind == 'jobs':
+    jobs = data.get('jobs') or []
+    total = len(jobs)
+    done = sum(1 for j in jobs if j.get('status') == 'completed')
+    cur = next((j for j in jobs if j.get('status') == 'in_progress'), None)
+    cur_step = ''
+    if cur:
+        st = next((s for s in cur.get('steps') or [] if s.get('status') == 'in_progress'), None)
+        cur_step = clean(st.get('name')) if st else ''
+    bad = next((j for j in jobs if j.get('status') == 'completed' and j.get('conclusion') in ('failure', 'cancelled', 'timed_out')), None)
+    bad_step = ''
+    if bad:
+        st = next((s for s in bad.get('steps') or [] if s.get('conclusion') in ('failure', 'cancelled', 'timed_out')), None)
+        bad_step = clean(st.get('name')) if st else ''
+    print('\t'.join([clean(cur.get('name')) if cur else '-', cur_step or '-', '%d/%d' % (done, total),
+                     clean(bad.get('name')) if bad else '-', bad_step or '-']))
+    if len(sys.argv) > 3 and sys.argv[3] == 'all':
+        for j in jobs:
+            print('J\t%s\t%s' % (clean(j.get('name')), clean(j.get('conclusion') or j.get('status'))))
+            for s in j.get('steps') or []:
+                if s.get('conclusion') not in (None, 'success', 'skipped'):
+                    print('S\t%s\t%s' % (clean(s.get('name')), clean(s.get('conclusion') or s.get('status'))))
+elif kind == 'release':
+    names = {a.get('name') for a in data.get('assets') or []}
+    print('yes' if 'CindersOfChaos-Server-Linux.tar.gz' in names else 'no')
+PY
+    }
+    # the newest run of the workflow on the branch: sets EB_* (EB_STATE_NOW none|queued|in_progress|success|failure|unknown)
+    eb_load() {
+      local code line
+      EB_ERR="" EB_RUN="" EB_NUM="" EB_STARTED="" EB_FINISHED="" EB_CONCL="" EB_SHA="" EB_ELAPSED=0 EB_URL=""
+      code=$(eb_api GET "/repos/$EB_REPO/actions/workflows/$EB_WF/runs?event=workflow_dispatch&branch=$EB_BRANCH&per_page=10")
+      case $code in
+        200) ;;
+        401) EB_STATE_NOW=unknown; EB_ERR="token-refused: GitHub refused the token (401): save a new one with engine-build-token-set"; return 1 ;;
+        403|404) EB_STATE_NOW=unknown; EB_ERR="no-access: GitHub says $code: the token needs Actions read and write on $EB_REPO (engine-build-token-set)"; return 1 ;;
+        *) EB_STATE_NOW=unknown; EB_ERR="github-unreachable: HTTP $code from api.github.com"; return 1 ;;
+      esac
+      line=$(eb_py runs "$EB_BODY") || { EB_STATE_NOW=unknown; EB_ERR="bad-answer: GitHub's answer was not understood"; return 1; }
+      if [ "$line" = none ]; then EB_STATE_NOW=none; return 0; fi
+      IFS=$'\t' read -r EB_STATE_NOW EB_RUN EB_NUM EB_STARTED EB_FINISHED EB_CONCL EB_SHA EB_ELAPSED EB_URL <<< "$line"
+      [ "$EB_FINISHED" != - ] || EB_FINISHED=""
+      return 0
+    }
+    # the client build of the live client update (min_package of the signed manifest), empty when none
+    eb_live_client() {
+      python3 -I - "$EB_SITE/updates/live/manifest.json" <<'PY' 2>/dev/null
+import json, sys
+n = int(json.loads(json.load(open(sys.argv[1]))['payload'])['min_package'])
+print(n if 1 <= n <= 65535 else '')
+PY
+    }
+    eb_kit_state() { [ -f "$KSTATE/state" ] && sed -n "s/^$1=//p" "$KSTATE/state" | tail -n 1; }
+    eb_git() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+    # Is the client program changed since the live client's commit? Needs $live (the live min_package, may be empty).
+    # Sets EB_CC no|yes|unknown, EB_CC_WHY (an error word and text when unknown), EB_HEAD (the branch head), EB_BASE.
+    eb_client_check() {
+      EB_CC=unknown EB_CC_WHY="" EB_HEAD="" EB_BASE=""
+      command -v git >/dev/null 2>&1 || { EB_CC_WHY="git-not-found: install git"; return 0; }
+      { [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; } || { EB_CC_WHY="no repository checkout at $REPO (update-apply first)"; return 0; }
+      eb_git fetch -q origin "$EB_BRANCH" 2>/dev/null || { EB_CC_WHY="fetch-failed: cannot fetch $EB_BRANCH from origin in $REPO"; return 0; }
+      EB_HEAD=$(eb_git rev-parse FETCH_HEAD 2>/dev/null) || { EB_CC_WHY="fetch-failed: no FETCH_HEAD"; return 0; }
+      # a number published after an earlier engine-build with a new number: its commit is now the baseline
+      if [ -f "$EB_STATE/pending_client" ]; then
+        local pn pc
+        read -r pn pc < "$EB_STATE/pending_client" || true
+        if num "${pn:-}" && [ -n "$live" ] && [ "$live" -ge "$pn" ] && [[ ${pc:-} =~ ^[0-9a-f]{40}$ ]]; then
+          printf '%s\n' "$pc" > "$EB_STATE/client_exe_commit"
+          rm -f "$EB_STATE/pending_client"
+        fi
+      fi
+      [ -f "$EB_STATE/client_exe_commit" ] && EB_BASE=$(head -c 40 "$EB_STATE/client_exe_commit" | tr -dc 0-9a-f)
+      [ -n "$EB_BASE" ] || EB_BASE=$(eb_kit_state deployed_commit | tr -dc 0-9a-f)
+      [ -n "$EB_BASE" ] || { EB_CC_WHY="client-check-failed: no commit to compare the client program with (run update-apply once, or use --new-client)"; return 0; }
+      eb_git cat-file -e "$EB_BASE^{commit}" 2>/dev/null \
+        || { EB_CC_WHY="client-check-failed: commit ${EB_BASE:0:7} is not in the checkout $REPO; use --new-client if the client program changed"; return 0; }
+      eb_git diff --quiet "$EB_BASE" "$EB_HEAD" -- client/base-patches client/overlay/src client/tools/chaos_hardening.cmake launcher
+      case $? in
+        0) EB_CC=no ;;
+        1) EB_CC=yes ;;
+        *) EB_CC_WHY="client-check-failed: git diff failed" ;;
+      esac
+      return 0
+    }
+    # eb_guard_add N: puts build N into clientGuardBuilds of config.lua (old builds stay). Prints added | present | any
+    # (the list is empty: every build is accepted) | missing (no file or no such line). A backup is kept when it changes.
+    eb_guard_add() {
+      python3 -I - "$SERVER/config.lua" "$1" <<'PY'
+import re, shutil, sys, time
+p, n = sys.argv[1], sys.argv[2]
+try:
+    t = open(p, encoding='utf-8').read()
+except OSError:
+    print('missing')
+    sys.exit(0)
+m = re.search(r'^(\s*clientGuardBuilds\s*=\s*)"([^"\n]*)"', t, re.M)
+if not m:
+    print('missing')
+    sys.exit(0)
+vals = [x for x in re.split(r'[\s,;]+', m.group(2)) if x]
+if not vals:
+    print('any')
+elif n in vals:
+    print('present')
+else:
+    shutil.copy2(p, p + '.before-guard-' + time.strftime('%Y%m%d-%H%M%S'))
+    t = t[:m.start()] + m.group(1) + '"' + ', '.join(vals + [n]) + '"' + t[m.end():]
+    open(p, 'w', encoding='utf-8').write(t)
+    print('added')
+PY
+    }
+    case $cmd in
+      engine-build-token-set)
+        [ $# -eq 0 ] || die "engine-build-token-set (no arguments; the GitHub token on stdin, one line, empty removes it)"
+        etok=""
+        IFS= read -r -t 30 -n 400 etok; erc=$?
+        [ "$erc" -le 128 ] || die "no token on stdin (timed out)"
+        etok=${etok%$'\r'}
+        ex=""
+        if IFS= read -r -t 2 -n 1 ex && [ -n "$ex" ]; then unset etok; die "one line only on stdin; nothing changed"; fi
+        etok=${etok#"${etok%%[![:space:]]*}"}
+        etok=${etok%"${etok##*[![:space:]]}"}
+        if [ -z "$etok" ]; then
+          rm -f -- "$EB_TOKEN"
+          echo "engine-build-token-set: token removed"
+          exit 0
+        fi
+        if ! [[ $etok =~ $EB_TOKEN_RE ]]; then
+          unset etok
+          die "that is not a GitHub token (github_pat_... of a fine-grained token); nothing changed"
+        fi
+        EB_BODY=$(mktemp) || die "mktemp failed"
+        trap 'rm -f "$EB_BODY"' EXIT
+        # the token is checked against GitHub before it is kept: a refused one is never saved
+        ecode=$(printf 'url = "https://api.github.com/repos/%s/actions/workflows/%s"\nheader = "Accept: application/vnd.github+json"\nheader = "User-Agent: chaos-ctl"\nheader = "Authorization: Bearer %s"\n' \
+          "$EB_REPO" "$EB_WF" "$etok" | curl -K - -sS --proto '=https' -o "$EB_BODY" -w '%{http_code}' --max-time 30 2>/dev/null) || ecode=${ecode:-000}
+        case $ecode in
+          200) emsg="GitHub accepted it (read access to $EB_REPO; write access is only proven by the first Recompilar)" ;;
+          401) unset etok; die "token-refused: GitHub refused the token (401); nothing changed" ;;
+          403|404) unset etok; die "no-access: GitHub says $ecode: the token does not reach $EB_REPO (repository access, Actions read and write); nothing changed" ;;
+          *) emsg="GitHub could not be asked (HTTP ${ecode:-000}); the token was kept without a check" ;;
+        esac
+        install -d -m 0755 "$(dirname -- "$EB_TOKEN")" || die "cannot create $(dirname -- "$EB_TOKEN")"
+        ereal=$(readlink -m -- "$EB_TOKEN")
+        etmp=$(mktemp "$ereal.XXXXXX") || die "cannot write next to $EB_TOKEN"
+        chmod 0600 "$etmp"
+        printf '%s\n' "$etok" > "$etmp" || { rm -f "$etmp"; die "cannot write $EB_TOKEN"; }
+        unset etok
+        mv -f -- "$etmp" "$ereal" || { rm -f "$etmp"; die "cannot replace $EB_TOKEN"; }
+        echo "engine-build-token-set: saved in $EB_TOKEN (mode 600). $emsg"
+        ;;
+      engine-build)
+        sub=${1:-status}
+        [ $# -eq 0 ] || shift
+        EB_BODY=$(mktemp) || die "mktemp failed"
+        trap 'rm -f "$EB_BODY"' EXIT
+        mkdir -p "$EB_STATE" || die "cannot create $EB_STATE"
+        case $sub in
+          status|log)
+            if [ "$sub" = status ]; then [ $# -eq 0 ] || die "engine-build status"; fi
+            if [ "$sub" = log ]; then [ $# -le 1 ] || die "engine-build log [N]"; fi
+            if [ -n "$(eb_token)" ]; then echo "token=yes"; else echo "token=no"; fi
+            echo "repo=$EB_REPO"
+            echo "branch=$EB_BRANCH"
+            if ! eb_load; then
+              echo "state=unknown"
+              echo "error=$EB_ERR"
+              exit 1
+            fi
+            echo "state=$EB_STATE_NOW"
+            lc=$(eb_live_client)
+            echo "client_build=${lc:-unknown}"
+            inst=$(eb_kit_state installed_release)
+            num "$inst" || inst=unknown
+            echo "installed_release=$inst"
+            if [ -n "$lc" ]; then
+              echo "client_next=$((lc + 1))"
+              # the check fetches the branch: not while a build runs (the app asks every 20 s then)
+              if [ "$EB_STATE_NOW" = queued ] || [ "$EB_STATE_NOW" = in_progress ]; then :; else
+                live=$lc
+                eb_client_check
+                echo "client_changed=$EB_CC"
+              fi
+            fi
+            jline=""
+            if [ "$EB_STATE_NOW" = none ]; then
+              echo "release_newer=no"
+            else
+              echo "run_id=$EB_RUN"
+              echo "run_number=$EB_NUM"
+              echo "started=$EB_STARTED"
+              echo "finished=$EB_FINISHED"
+              echo "elapsed_s=$EB_ELAPSED"
+              echo "commit=$EB_SHA"
+              echo "conclusion=$EB_CONCL"
+              echo "url=$EB_URL"
+              ready=unknown
+              newer=no
+              if [ "$EB_STATE_NOW" = success ]; then
+                echo "release_tag=winpkg-$EB_NUM"
+                rcode=$(eb_api GET "/repos/$EB_REPO/releases/tags/winpkg-$EB_NUM")
+                if [ "$rcode" = 200 ]; then ready=$(eb_py release "$EB_BODY" || echo unknown)
+                elif [ "$rcode" = 404 ]; then ready=no; fi
+                if [ "$ready" = yes ] && { [ "$inst" = unknown ] || [ "$EB_NUM" -gt "$inst" ]; }; then newer=yes; fi
+                echo "release_ready=$ready"
+              fi
+              echo "release_newer=$newer"
+              if [ "$EB_STATE_NOW" != queued ]; then
+                jall=""; [ "$sub" = log ] && jall=all
+                jcode=$(eb_api GET "/repos/$EB_REPO/actions/runs/$EB_RUN/jobs?per_page=100")
+                [ "$jcode" = 200 ] && jline=$(eb_py jobs "$EB_BODY" "$jall")
+              fi
+              if [ -n "$jline" ]; then
+                IFS=$'\t' read -r jcur jstep jdone jbad jbadstep <<< "$(head -n 1 <<< "$jline")"
+                echo "job=$jcur"
+                echo "step=$jstep"
+                echo "jobs_done=$jdone"
+                echo "failed_job=$jbad"
+                echo "failed_step=$jbadstep"
+              fi
+            fi
+            if [ "$sub" = log ]; then
+              echo "@jobs"
+              if [ -n "$jline" ]; then
+                tail -n +2 <<< "$jline" | while IFS=$'\t' read -r jk jn jv; do
+                  if [ "$jk" = J ]; then echo "$jn: $jv"; else echo "  step $jn: $jv"; fi
+                done
+              else
+                echo "(no jobs yet)"
+              fi
+              echo "@history"
+              if [ -f "$EB_STATE/log" ]; then tail -n "$(lines_arg "${1:-20}")" "$EB_STATE/log"; else echo "(no engine-build start yet)"; fi
+            fi
+            ;;
+          start)
+            ecb="" enew=0
+            while [ $# -gt 0 ]; do
+              case $1 in
+                --client-build) num "${2:-}" || die "engine-build start [--client-build N | --new-client]"; ecb=$((10#$2)); shift 2 ;;
+                --new-client) enew=1; shift ;;
+                *) die "engine-build start [--client-build N | --new-client]" ;;
+              esac
+            done
+            [ -n "$(eb_token)" ] || die "token-missing: no GitHub token saved ($EB_TOKEN); save one first: engine-build-token-set (app: Painel > Recompilar engine > Definir token do GitHub)"
+            command -v git >/dev/null 2>&1 || die "git-not-found: install git"
+            { [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; } || die "no repository checkout at $REPO (update-apply first)"
+            exec 8>"$EB_STATE/.lock"
+            flock -n 8 || die "build-running: another engine-build start is running; try again in a moment"
+            eb_load || die "${EB_ERR:-cannot read the runs}"
+            case $EB_STATE_NOW in
+              queued|in_progress) die "build-running: run $EB_RUN is $EB_STATE_NOW on GitHub (engine-build status); wait for it" ;;
+            esac
+            before=${EB_RUN:-0}
+            # the client build rule (docs/ADMIN_APP.md "Recompilar engine"): never below the live client update's
+            # min_package, and the live number only while the client program is unchanged
+            live=$(eb_live_client)
+            if [ "$enew" = 1 ]; then
+              [ -n "$live" ] || die "client-build-unknown: no live client update ($EB_SITE/updates/live/manifest.json) to count from; give the number: engine-build start --client-build N"
+              [ -z "$ecb" ] || die "engine-build start takes --client-build N or --new-client, not both"
+              cb=$((live + 1))
+            elif [ -z "$live" ]; then
+              [ -n "$ecb" ] || die "client-build-unknown: no live client update ($EB_SITE/updates/live/manifest.json); give the number: engine-build start --client-build N"
+              cb=$ecb
+            else
+              cb=${ecb:-$live}
+              [ "$cb" -ge "$live" ] || die "client-build-backwards: $cb is below the live client build $live; a build never goes backwards"
+            fi
+            { [ "$cb" -ge 1 ] && [ "$cb" -le 65535 ]; } || die "client-build must be 1..65535"
+            eb_client_check
+            newnum=0
+            if [ -n "$live" ] && [ "$cb" -gt "$live" ]; then newnum=1; fi
+            if [ "$newnum" = 1 ]; then
+              # a new number: only the branch head is needed; the guard list is edited with the kit update stopped
+              [ -n "$EB_HEAD" ] || die "${EB_CC_WHY:-fetch-failed}"
+              if [ -f "$KSTATE/.lock" ] && ! flock -n "$KSTATE/.lock" true; then
+                die "update-running: an update or rollback is running (chaos-ctl.sh update-log); start the build when it ends"
+              fi
+            else
+              [ "$EB_CC" != unknown ] || die "${EB_CC_WHY:-client-check-failed}"
+              [ "$EB_CC" = no ] || die "client-changed: the client program (client/base-patches, client/overlay/src, launcher) changed since ${EB_BASE:0:7}; build number $cb would name two different exes. Use a new client number: engine-build start --new-client (build $((${live:-$cb} + 1)); the app has the button Recompilar com client novo)"
+            fi
+            head=$EB_HEAD
+            body=$(printf '{"ref":"%s","inputs":{"client_build":"%s","allow_dev_key":"false"}}' "$EB_BRANCH" "$cb")
+            dcode=$(eb_api POST "/repos/$EB_REPO/actions/workflows/$EB_WF/dispatches" "$body")
+            case $dcode in
+              204) ;;
+              401) die "token-refused: GitHub refused the token (401); save a new one with engine-build-token-set" ;;
+              403|404) die "no-access: GitHub says $dcode: the token needs Actions read and write on $EB_REPO (and the workflow must exist on $EB_BRANCH)" ;;
+              422) die "workflow-refused: GitHub says 422: the workflow $EB_WF has no workflow_dispatch on $EB_BRANCH, or an input was refused" ;;
+              *) die "dispatch-failed: HTTP ${dcode:-000} from api.github.com" ;;
+            esac
+            guard=""
+            if [ "$newnum" = 1 ]; then
+              printf '%s %s\n' "$cb" "$head" > "$EB_STATE/pending_client"
+              guard=$(eb_guard_add "$cb")
+            fi
+            # the dispatch answers 204 without the run: look for the one newer than before (about 30 s at most)
+            nrun=""
+            for _ in 1 2 3 4 5 6 7 8 9 10; do
+              sleep "${CHAOS_EB_WAIT:-3}"
+              if eb_load && [ "${EB_RUN:-0}" -gt "$before" ] 2>/dev/null; then nrun=$EB_RUN; break; fi
+            done
+            printf '[%s] start branch=%s commit=%s client_build=%s run=%s\n' "$(date '+%F %T')" "$EB_BRANCH" "${head:0:7}" "$cb" "${nrun:-unknown}" >> "$EB_STATE/log"
+            echo "started=yes"
+            echo "run_id=${nrun:-unknown}"
+            echo "branch=$EB_BRANCH"
+            echo "commit=${head:0:7}"
+            echo "client_build=$cb"
+            if [ "$newnum" = 1 ]; then
+              echo "new_client=yes"
+              echo "guard=$guard"
+              case $guard in
+                added) echo "note: build $cb added to clientGuardBuilds of $SERVER/config.lua (older builds stay; the engine reads it at its next start, which update-apply does)" ;;
+                present) echo "note: build $cb was already in clientGuardBuilds" ;;
+                any) echo "note: clientGuardBuilds is empty, so every build is accepted; nothing to add" ;;
+                *) echo "note: could not edit clientGuardBuilds in $SERVER/config.lua: add $cb to it by hand before update-apply" ;;
+              esac
+              echo "note: players get the new client (build $cb) through the updater after update-apply; build and publish an Android APK of code $cb (android-client.yml) so the phones can play"
+            fi
+            echo "next: chaos-ctl.sh engine-build status; when it says success, update-apply installs the new engine"
+            ;;
+          *) die "engine-build [status | start [--client-build N | --new-client] | log [N]]" ;;
+        esac
+        ;;
+    esac
     ;;
   xp-rate)
     tool="$REPO/server/deploy/chaos_config_rates.py"

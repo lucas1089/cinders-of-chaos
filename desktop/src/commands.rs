@@ -269,6 +269,7 @@ const SECS_P: &[Param] = &[int("secs", "Segundos de aviso", 30, 900, "300")];
 const MINS_P: &[Param] = &[int("mins", "Minutos", 1, 60, "5")];
 const XP_P: &[Param] = &[int("n", "Multiplicador (1 a 100)", 1, 100, "1")];
 const PAIR_P: &[Param] = &[int("n", "Par do cliente", 1, 9999, "1")];
+const ENGINE_TOKEN_P: &[Param] = &[secret("token", "Token do GitHub (vazio apaga)")];
 const TESTERS_P: &[Param] = &[int("n", "Bots", 1, 150, "100"), int("m", "Minutos", 1, 1440, "60")];
 const ACC_P: &[Param] = &[text("name", "Conta"), secret("password", "Senha (6 a 64 caracteres)")];
 const UNIT_P: &[Param] = &[text("unit", "Unidade (ex.: chaos-helpai)")];
@@ -394,6 +395,11 @@ pub static ACTIONS: &[Action] = &[
     act(Updates, "Atualizar servidor", "Aplicar e reiniciar", "update-apply").ask().live(Live::Restarts).t(60).h("Roda em segundo plano; acompanhe em Atualizações > Logs das atualizações."),
     act(Updates, "Atualizar servidor", "Voltar à versão anterior", "update-rollback").ask().live(Live::Restarts).t(60),
     act(Updates, "Atualizar servidor", "Estado da última atualização", "update-status"),
+    act(Updates, "Recompilar engine", "Recompilar", "engine-build start").ask().t(120).h("O GitHub compila o engine do servidor com todos os patches do código novo. Leva de 20 a 60 minutos (a primeira vez, ou depois de uma mudança grande, pode passar de uma hora). O jogo segue no ar e nada é trocado no servidor agora. Quando terminar, use Atualizar servidor para instalar."),
+    act(Updates, "Recompilar engine", "Recompilar com client novo", "engine-build start --new-client").ask().t(120).h("Use quando o cartão disser que o programa do client mudou. O GitHub compila o engine e um client novo, com o número de build seguinte ao publicado (o atual continua aceito pelo servidor). O número entra sozinho na lista clientGuardBuilds do config.lua. Leva de 20 a 60 minutos (a primeira vez, ou depois de uma mudança grande, pode passar de uma hora). O jogo segue no ar. Depois, em Atualizar servidor, o client novo é publicado e os jogadores o recebem pelo atualizador; o APK do Android precisa acompanhar (android-client.yml com o mesmo client_build), senão os celulares ficam sem poder jogar."),
+    act(Updates, "Recompilar engine", "Atualizar estado", "engine-build status").t(90).h("Pergunta ao GitHub como está a última recompilação. Enquanto ela roda, a janela pergunta sozinha a cada 20 segundos."),
+    act(Updates, "Recompilar engine", "Ver passos", "engine-build log 20").t(90).h("Os jobs da rodada, o passo que falhou e o histórico das partidas."),
+    act(Updates, "Recompilar engine", "Definir token do GitHub", "engine-build-token-set").p(ENGINE_TOKEN_P).t(60).h("Token fine-grained só deste repositório, com Actions leitura e escrita. Vai pelo stdin e só fica na VPS (/etc/chaos/engine-build.token, modo 600). Vazio apaga. docs/ADMIN_APP.md"),
     act(Updates, "Versão específica", "Atualizar para uma versão", "update {tag} {mode}").p(&[text("tag", "Tag da release (ex.: winpkg-123)"), choice("mode", "Quando", &["now", "at-save"])]).ask().live(Live::Restarts).h("Layout padrão com repositório."),
     act(Updates, "Versão específica", "Voltar versão", "rollback now").ask().live(Live::Restarts).t(30),
     act(Updates, "Site e update do client", "Reinstalar o site", "site-install").ask().t(30),
@@ -605,6 +611,38 @@ mod tests {
         assert_eq!(build(x, &["10".into()]).unwrap().0, "xp-rate set '10'");
         assert!(build(x, &["101".into()]).is_err());
         assert!(build(x, &["a".into()]).is_err());
+    }
+
+    #[test]
+    fn engine_build_card_commands() {
+        let find = |t: &str| {
+            ACTIONS
+                .iter()
+                .find(|a| a.template == t)
+                .unwrap_or_else(|| panic!("{t}"))
+        };
+        let start = find("engine-build start");
+        assert!(start.confirm, "Recompilar asks first");
+        assert_eq!(start.group, "Recompilar engine");
+        assert!(start.hint.contains("20 a 60 minutos") && start.hint.contains("Atualizar servidor"));
+        assert!(crate::engine::DURATION.contains("20 a 60 minutos"));
+        let nc = find("engine-build start --new-client");
+        assert!(
+            nc.confirm
+                && nc.hint.contains("clientGuardBuilds")
+                && nc.hint.contains("APK")
+                && nc.hint.contains("20 a 60 minutos")
+        );
+        assert!(!find("engine-build status").confirm && !find("engine-build log 20").confirm);
+        let tok = find("engine-build-token-set");
+        let (line, stdin) = build(tok, &["github_pat_x".into()]).unwrap();
+        assert_eq!(line, "engine-build-token-set", "the token is never on the command line");
+        assert_eq!(stdin.as_deref(), Some("github_pat_x\n"));
+        assert_eq!(
+            build(tok, &["".into()]).unwrap().1.as_deref(),
+            Some("\n"),
+            "empty removes the token"
+        );
     }
 
     #[test]

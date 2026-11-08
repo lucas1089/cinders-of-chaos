@@ -56,6 +56,10 @@ server/README.md "Map master") replaces the base map first when the branch has o
    Patch 0068 adds the hardening flags (stack protector, FORTIFY_SOURCE, PIE, full RELRO) to a Release build; the
    optimisation level and the allocator are unchanged (mimalloc is an opt-in experiment, off; `server/README.md` "Build
    flags and allocator (O201)"). `tools/linux/check_engine_hardening.sh` checks the binary.
+   On the Linux kit you do not build it by hand: the admin app's Painel > Recompilar engine > Recompilar (desktop app:
+   Atualizacoes > Recompilar engine) has GitHub Actions run `windows-package.yml` with every patch of `server/src-patches/`
+   (shell fallback: `chaos-ctl.sh engine-build start`; the card follows the run, and its token is set once, docs/ADMIN_APP.md
+   "Recompilar engine"). When it says the release is ready, Painel > Atualizar servidor installs the new engine.
 2. Put the binary into the server folder as `/opt/chaos/server/tfs` (the path the service file uses).
 
 ## 2. Database
@@ -1291,6 +1295,7 @@ login-screen services too (the web server still has to forward `/clientservices`
 hand, as root:
 
 ```
+/opt/chaos/repo/server/deploy/chaos-ctl.sh engine-build start      # a new engine: GitHub Actions builds winpkg-N (token: engine-build-token-set; follow it: engine-build status)
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-check            # what is new: commits, releases, client, downloads
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-apply            # in the background; --no-client --no-downloads --no-site --no-map
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-log 100          # progress: STEP n/10 lines, the last line RESULT ...

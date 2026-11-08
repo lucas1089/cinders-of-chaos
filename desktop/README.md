@@ -49,6 +49,17 @@ Moves: Ações rápidas > Atualizar para uma versão and Voltar versão became A
 Updates became Atualizações > Logs das atualizações; Logs > Unidades > Log de uma unidade joined VPS e manutenção >
 Unidades chaos-*.
 
+## Recompilar engine (O436)
+
+Atualizações > Recompilar engine, under Atualizar servidor: **Recompilar** (`engine-build start`, with a confirmation: GitHub
+compiles the server engine with every `server/src-patches/` patch, 20 to 60 minutes, the game keeps running), **Atualizar
+estado** (`engine-build status`), **Ver passos** (`engine-build log 20`) and **Definir token do GitHub**
+(`engine-build-token-set`, the token as a secret field on stdin, empty removes it). The card under the buttons shows the state
+(queued, job and step, done, failed job and step, cancelled); while a build is queued or running the window asks the status
+every 20 s on its own (`src/engine.rs`, `Poller::every`), without writing to the output pane. When the build is done and its
+release is newer than the installed one, the card points to Atualizar servidor, which installs the engine. The token steps and
+the client build rule: `docs/ADMIN_APP.md` "Recompilar engine".
+
 ## Live view (Ao vivo)
 
 A page that refreshes by itself while it is open: the server state (badge, uptime, players, errors, memory, load, disk),

@@ -1397,6 +1397,8 @@ jobs:
           java -cp /tmp/appjava com.cindersofchaos.admin.GameHealthInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/PayInfo.java android/app/src/test/java/com/cindersofchaos/admin/PayInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.PayInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/EngineBuildInfo.java android/app/src/test/java/com/cindersofchaos/admin/EngineBuildInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.EngineBuildInfoTest
 
       - name: Kit server update (chaos_kit_update.sh with a fake repo, releases, systemctl and database; rates, rollback)
         run: |
