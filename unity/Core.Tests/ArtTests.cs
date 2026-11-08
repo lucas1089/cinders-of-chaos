@@ -205,7 +205,7 @@ namespace Chaos.Core.Tests
             check(bar[0].Kind == HotKind.Text && bar[1].IsEmpty && bar[2].ItemId == 2268 && bar[3].Mode == ItemMode.OnSelf && bar[4].Text == "hello world" && bar[11].IsEmpty && bar[-1].IsEmpty && bar[12].IsEmpty, "hotbar: load reads every slot");
             check(bar.FirstEmpty() == 1, "hotbar: the first empty slot");
             check(bar.SetItem(1, 3160, true) && bar[1].Mode == ItemMode.WithCrosshair && bar.SetItem(5, 3003, false) && bar[5].Mode == ItemMode.Use, "hotbar: a multi-use item starts a use with, other items are used");
-            check(!bar.SetItem(-1, 5, false) && !bar.SetItem(12, 5, false) && !bar.SetItem(6, 0, false) && !bar.SetItem(6, 65536, false) && bar[6].IsEmpty, "hotbar: bad slot or item id changes nothing");
+            check(!bar.SetItem(-1, 5, false) && !bar.SetItem(14, 5, false) && !bar.SetItem(6, 0, false) && !bar.SetItem(6, 65536, false) && bar[6].IsEmpty, "hotbar: bad slot or item id changes nothing");
             check(bar.SetMode(5, ItemMode.OnTarget) && bar[5].Mode == ItemMode.OnTarget && !bar.SetMode(0, ItemMode.OnSelf) && bar[0].Kind == HotKind.Text, "hotbar: a mode only applies to an item slot");
             bar.SetText(5, "utani hur");
             check(bar[5].Kind == HotKind.Text && bar[5].ItemId == 0 && bar.Saved(5) == "utani hur", "hotbar: a line over an item replaces it");

@@ -74,10 +74,26 @@ namespace Chaos.Client
             public Action Run;
             public int LockedLevel;
             public bool IsNew;
+            public bool Separator;
+            /// <summary>The entries of a "More" sub-menu (phase 7 track X).</summary>
+            public List<MenuItem> Subs;
+            /// <summary>The window's shortcut, "Ctrl+P" (empty: none).</summary>
+            public string Hotkey = "";
         }
 
         MenuItem Resolve(MenuEntry e, bool windowsCategory = false)
         {
+            if (e.Separator) return new MenuItem { Entry = e, Text = "", Separator = true };
+            if (e.Sub != null)
+            {
+                var subs = new List<MenuItem>();
+                foreach (var se in TopMenu.Sorted(e.Sub, x => Loc.T(x.Text)))
+                {
+                    var si = Resolve(se);
+                    if (si != null) subs.Add(si);
+                }
+                return subs.Count == 0 ? null : new MenuItem { Entry = e, Text = Loc.T(e.Text), Subs = subs };
+            }
             var prog = session?.Progress;
             string text = windowsCategory ? e.Text : Loc.T(e.Text);
             int level = 0;
@@ -88,7 +104,8 @@ namespace Chaos.Client
             if (t.StartsWith("win:", StringComparison.Ordinal))
             {
                 var win = WindowNamed(t.Substring(4));
-                if (win == null) return null;
+                if (win == null || (win is AdminWindow && !win.InMenu)) return null;   // the admin panel shows only to staff (the server sends the catalog to them alone)
+                item.Hotkey = TopMenu.HotkeyText(win.Hotkey == KeyCode.None ? "" : win.Hotkey.ToString());
                 item.Run = () => win.Open = !win.Open;
             }
             else if (t.StartsWith("info:", StringComparison.Ordinal))
@@ -96,6 +113,15 @@ namespace Chaos.Client
                 string page = t.Substring(5);
                 if (prog != null && !prog.Info.IsPageOffered(page)) return null;
                 item.Run = () => OpenInfoPage(page);
+            }
+            else if (t == "act:discord")
+            {
+                // the main client has no invite link set yet either (ChaosTopBar.COMMUNITY_URL): it says so
+                item.Run = () => PostLine(Loc.T("The community link is not available yet."));
+            }
+            else if (t == "act:exit")
+            {
+                item.Run = () => { session?.Logout(); Application.Quit(); };
             }
             else if (t == "act:logout")
             {
@@ -120,7 +146,7 @@ namespace Chaos.Client
             // Windows: everything no entry names, sorted by title
             var named = new HashSet<string>();
             foreach (var c in TopMenu.Categories)
-                foreach (var e in c.Entries)
+                foreach (var e in TopMenu.Leaves(c))
                     if (e.Target.StartsWith("win:", StringComparison.Ordinal)) named.Add(e.Target.Substring(4));
             var extras = new List<MenuEntry>();
             foreach (var win in windows)
@@ -160,6 +186,7 @@ namespace Chaos.Client
                 if (GUI.Toggle(b, on, CategoryText(i), GUI.skin.button) != on)
                 {
                     topMenuOpen = on ? -1 : i;
+                    topSubOpen = -1;
                     topMenuFrame = Time.frameCount;
                 }
             }
@@ -169,15 +196,17 @@ namespace Chaos.Client
                 var items = CategoryItems(topMenuOpen);
                 float rowH = TopRowH;
                 var cell = cells[topMenuOpen];
-                var box = new Rect(cell.X + tbShift.x + cell.W / 2f - TopMenuW / 2f, 8 + cell.Row * 32 + 32 + tbShift.y, TopMenuW, 6 + rowH * Mathf.Max(1, items.Count));
+                var box = new Rect(cell.X + tbShift.x + cell.W / 2f - TopMenuW / 2f, 8 + cell.Row * 32 + 32 + tbShift.y, TopMenuW, MenuHeight(items, rowH));
                 box.x = Mathf.Clamp(box.x, 4, Mathf.Max(4, w - box.width - 4));
                 uiRects.Add(Scaled(box, scale));
                 // a click outside closes it (not the click that opened it)
-                if (e.type == EventType.MouseDown && Time.frameCount != topMenuFrame && !box.Contains(e.mousePosition))
+                var subBox = topSubOpen >= 0 && topSubOpen < items.Count && items[topSubOpen].Subs != null ? SubMenuRect(box, items, topSubOpen, rowH, w) : default(Rect);
+                if (subBox.width > 0) uiRects.Add(Scaled(subBox, scale));
+                if (e.type == EventType.MouseDown && Time.frameCount != topMenuFrame && !box.Contains(e.mousePosition) && !(subBox.width > 0 && subBox.Contains(e.mousePosition)))
                 {
-                    if (!bar.Contains(e.mousePosition)) topMenuOpen = -1;
+                    if (!bar.Contains(e.mousePosition)) { topMenuOpen = -1; topSubOpen = -1; }
                 }
-                if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape) { topMenuOpen = -1; e.Use(); }
+                if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape) { topMenuOpen = -1; topSubOpen = -1; e.Use(); }
                 if (topMenuOpen >= 0)
                 {
                     // a window of its own, so it sits over the game windows (as the party menu does)
@@ -187,27 +216,81 @@ namespace Chaos.Client
                         ChaosApp.Fill(new Rect(0, 0, box.width, box.height), new Color(0.05f, 0.04f, 0.06f, 0.97f));
                         ChaosApp.Fill(new Rect(0, 0, box.width, 1), new Color(0.6f, 0.5f, 0.3f));
                         if (snapshot.Count == 0) GUI.Label(new Rect(8, 3, box.width - 16, rowH), Loc.T("Nothing here yet."), small);
+                        float ry = 3f;
                         for (int i = 0; i < snapshot.Count; i++)
                         {
                             var it = snapshot[i];
-                            var r = new Rect(3, 3 + i * rowH, box.width - 6, rowH - 1);
-                            string text = it.Text + (it.LockedLevel > 0 ? "  " + Loc.T("Level {0}", it.LockedLevel) : it.IsNew ? "  " + Loc.T("New") : "");
-                            var old = GUI.color;
-                            if (it.LockedLevel > 0) GUI.color = new Color(1f, 1f, 1f, 0.45f);
-                            bool open = it.Entry.Target.StartsWith("win:", StringComparison.Ordinal) && WindowNamed(it.Entry.Target.Substring(4))?.Open == true;
-                            if (GUI.Button(r, (open ? "> " : "") + text) && it.LockedLevel == 0)
-                            {
-                                it.Run();
-                                session?.Progress?.Unlocks.MarkSeen(it.Entry.Text);
-                                topMenuOpen = -1;
-                            }
-                            GUI.color = old;
+                            ry += MenuRow(it, ry, box.width, rowH, i, false);
                         }
                     }, GUIContent.none, GUIStyle.none);
                     GUI.BringWindowToFront(MenuWindowId + 10);
+                    if (subBox.width > 0)
+                    {
+                        // the "More" sub-menu beside the drop-down (phase 7 track X)
+                        var subs = items[topSubOpen].Subs;
+                        GUI.Window(MenuWindowId + 12, subBox, _ =>
+                        {
+                            ChaosApp.Fill(new Rect(0, 0, subBox.width, subBox.height), new Color(0.05f, 0.04f, 0.06f, 0.97f));
+                            ChaosApp.Fill(new Rect(0, 0, subBox.width, 1), new Color(0.6f, 0.5f, 0.3f));
+                            float sy = 3f;
+                            for (int i = 0; i < subs.Count; i++) sy += MenuRow(subs[i], sy, subBox.width, rowH, i, true);
+                        }, GUIContent.none, GUIStyle.none);
+                        GUI.BringWindowToFront(MenuWindowId + 12);
+                    }
                 }
             }
             UnlockGui(w, h, scale);
+        }
+
+        int topSubOpen = -1;
+        const float TopSepH = 8f;
+
+        static float MenuHeight(List<MenuItem> items, float rowH)
+        {
+            float h = 6f;
+            foreach (var it in items) h += it.Separator ? TopSepH : rowH;
+            return items.Count == 0 ? 6f + rowH : h;
+        }
+
+        /// <summary>The sub-menu's box: beside the drop-down, level with its "More" row, kept on the screen.</summary>
+        Rect SubMenuRect(Rect box, List<MenuItem> items, int index, float rowH, float screenW)
+        {
+            float y = box.y + 3f;
+            for (int i = 0; i < index; i++) y += items[i].Separator ? TopSepH : rowH;
+            var subs = items[index].Subs;
+            float x = box.xMax + 2f;
+            if (x + TopMenuW > screenW - 4f) x = box.x - TopMenuW - 2f;
+            return new Rect(x, y, TopMenuW, MenuHeight(subs, rowH));
+        }
+
+        /// <summary>One row of a drop-down: a separator, a "More" row that opens its sub-menu, or an entry with its level, New badge and hotkey. Returns the row's height.</summary>
+        float MenuRow(MenuItem it, float y, float width, float rowH, int index, bool inSub)
+        {
+            if (it.Separator)
+            {
+                ChaosApp.Fill(new Rect(6, y + TopSepH / 2f, width - 12, 1), new Color(0.6f, 0.5f, 0.3f, 0.5f));
+                return TopSepH;
+            }
+            var r = new Rect(3, y, width - 6, rowH - 1);
+            if (it.Subs != null)
+            {
+                bool opened = topSubOpen == index;
+                if (GUI.Button(r, it.Text + "  >")) topSubOpen = opened ? -1 : index;
+                return rowH;
+            }
+            string text = it.Text + (it.LockedLevel > 0 ? "  " + Loc.T("Level {0}", it.LockedLevel) : it.IsNew ? "  " + Loc.T("New") : "");
+            var old = GUI.color;
+            if (it.LockedLevel > 0) GUI.color = new Color(1f, 1f, 1f, 0.45f);
+            bool open = it.Entry.Target.StartsWith("win:", StringComparison.Ordinal) && WindowNamed(it.Entry.Target.Substring(4))?.Open == true;
+            if (GUI.Button(r, (open ? "> " : "") + text) && it.LockedLevel == 0)
+            {
+                it.Run();
+                session?.Progress?.Unlocks.MarkSeen(it.Entry.Text);
+                topMenuOpen = -1; topSubOpen = -1;
+            }
+            if (it.Hotkey.Length > 0) GUI.Label(new Rect(r.x + r.width - 62, r.y + 3, 58, r.height - 4), it.Hotkey, new GUIStyle(small) { alignment = TextAnchor.MiddleRight, fontSize = 10 });
+            GUI.color = old;
+            return rowH;
         }
 
         /// <summary>A new unlock: a big text on the screen for a few seconds and a small box with Go and Close for 30 seconds.</summary>

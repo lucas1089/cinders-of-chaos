@@ -40,11 +40,14 @@ namespace Chaos.Core
 
     public sealed class HotbarModel
     {
+        /// <summary>The slots of the main row (F1 to F12); the options show 6, 8, 10 or 12 of them.</summary>
         public const int Count = 12;
+        /// <summary>The main row and the two round side slots of the main client's hotbar: Q (potion, slot 12) and E (utility, slot 13).</summary>
+        public const int Total = 14, SideQ = 12, SideE = 13;
         public const string ItemPrefix = "item:";
-        readonly HotSlot[] slots = new HotSlot[Count];
+        readonly HotSlot[] slots = new HotSlot[Total];
 
-        public HotSlot this[int i] => i >= 0 && i < Count ? slots[i] : default(HotSlot);
+        public HotSlot this[int i] => i >= 0 && i < Total ? slots[i] : default(HotSlot);
 
         /// <summary>The slot a saved string means: empty, a line to say, or an item with its mode ("item:3160:2"; a mode out of range or missing is Use).</summary>
         public static HotSlot Parse(string s)
@@ -77,14 +80,14 @@ namespace Chaos.Core
 
         public void Load(Func<int, string> get)
         {
-            for (int i = 0; i < Count; i++) slots[i] = Parse(get(i));
+            for (int i = 0; i < Total; i++) slots[i] = Parse(get(i));
         }
 
-        public void Clear() { for (int i = 0; i < Count; i++) slots[i] = default(HotSlot); }
+        public void Clear() { for (int i = 0; i < Total; i++) slots[i] = default(HotSlot); }
 
         public bool SetText(int i, string text)
         {
-            if (i < 0 || i >= Count) return false;
+            if (i < 0 || i >= Total) return false;
             slots[i] = Parse(text ?? "");
             // text typed by hand that looks like an item slot stays a line to say: only SetItem makes an item
             if (slots[i].Kind == HotKind.Item) slots[i] = new HotSlot { Kind = HotKind.Text, Text = text };
@@ -93,21 +96,30 @@ namespace Chaos.Core
 
         public bool SetItem(int i, int clientId, bool multiUse)
         {
-            if (i < 0 || i >= Count || clientId <= 0 || clientId > 65535) return false;
+            if (i < 0 || i >= Total || clientId <= 0 || clientId > 65535) return false;
             slots[i] = new HotSlot { Kind = HotKind.Item, ItemId = clientId, Mode = DefaultMode(multiUse), Text = "" };
             return true;
         }
 
         public bool SetMode(int i, ItemMode mode)
         {
-            if (i < 0 || i >= Count || slots[i].Kind != HotKind.Item) return false;
+            if (i < 0 || i >= Total || slots[i].Kind != HotKind.Item) return false;
             slots[i].Mode = mode;
             return true;
         }
 
-        public void ClearSlot(int i) { if (i >= 0 && i < Count) slots[i] = default(HotSlot); }
+        public void ClearSlot(int i) { if (i >= 0 && i < Total) slots[i] = default(HotSlot); }
 
-        /// <summary>The first empty slot, -1 when all twelve are taken.</summary>
+        /// <summary>Drag from slot to slot: the dropped slot takes the dragged one and the dragged one takes what was there (an empty target moves it).
+        /// Returns false for the same slot or a slot out of range. The slots keep their item mode.</summary>
+        public bool Swap(int from, int to)
+        {
+            if (from == to || from < 0 || to < 0 || from >= Total || to >= Total) return false;
+            var t = slots[from]; slots[from] = slots[to]; slots[to] = t;
+            return true;
+        }
+
+        /// <summary>The first empty slot of the main row, -1 when all twelve are taken (the side slots are filled by hand).</summary>
         public int FirstEmpty()
         {
             for (int i = 0; i < Count; i++) if (slots[i].IsEmpty) return i;

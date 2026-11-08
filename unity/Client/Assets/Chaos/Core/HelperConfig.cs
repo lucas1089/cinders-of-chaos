@@ -39,6 +39,12 @@ namespace Chaos.Core
         public HelperHudSettings Hud = new HelperHudSettings();
         public readonly Dictionary<string, HelperProfile> Profiles = new Dictionary<string, HelperProfile>();
         public string SelectedProfile = "Default";
+        // phase 7 track X (Phase7XHelper.cs): Follow, Auto sell, the exercise weapon, and the level-up notice's switch and ignored spells
+        public HelperFollowCfg Follow = new HelperFollowCfg();
+        public HelperSellCfg Sell = new HelperSellCfg();
+        public HelperExerciseCfg Exercise = new HelperExerciseCfg();
+        public bool AutoUpdateSpells;
+        public readonly HashSet<int> IgnoredSpells = new HashSet<int>();
 
         public HelperConfig()
         {
@@ -162,8 +168,21 @@ namespace Chaos.Core
                 { "hud", new Dictionary<string, object> { { "enabled", Hud.Enabled }, { "size", Hud.Size }, { "showTargeting", Hud.ShowTargeting }, { "showHaste", Hud.ShowHaste },
                     { "showPlayer", Hud.ShowPlayer }, { "showHealing", Hud.ShowHealing } } },
                 { "profile", SelectedProfile }, { "profiles", ProfilesJson() },
+                { "follow", new Dictionary<string, object> { { "enabled", Follow.Enabled }, { "mode", Follow.Mode }, { "name", Follow.Name }, { "distance", Follow.Distance } } },
+                { "autoSell", new Dictionary<string, object> { { "enabled", Sell.Enabled }, { "minutes", Sell.Interval }, { "belowCap", Sell.BelowCap }, { "capacity", Sell.Capacity } } },
+                { "exercise", new Dictionary<string, object> { { "enabled", Exercise.Enabled }, { "id", Exercise.Id } } },
+                { "autoUpdateSpells", AutoUpdateSpells }, { "ignoredSpells", IgnoredJson() },
             };
             return Json.Serialize(root);
+        }
+
+        List<object> IgnoredJson()
+        {
+            var ids = new List<int>(IgnoredSpells);
+            ids.Sort();
+            var o = new List<object>();
+            foreach (int id in ids) o.Add(id);
+            return o;
         }
 
         List<object> RuneHealJson()
@@ -283,6 +302,27 @@ namespace Chaos.Core
         void ReadExtras(object root)
         {
             AutoEat = Bool(root, "autoEat", false);
+            var fo = Json.Get(root, "follow");
+            if (fo is Dictionary<string, object>)
+            {
+                Follow.Enabled = Bool(fo, "enabled", false);
+                Follow.Mode = Json.Text(fo, "mode") == "leader" ? "leader" : "name";
+                Follow.Name = HelperAlly.CleanName(Json.Text(fo, "name")) ?? "";
+                Follow.Distance = Int(fo, "distance", 1, HelperFollowCfg.DistanceMax, 1);
+            }
+            var se = Json.Get(root, "autoSell");
+            if (se is Dictionary<string, object>)
+            {
+                Sell.Enabled = Bool(se, "enabled", false);
+                int m = Json.Get(se, "minutes") is double md ? HelperSellCfg.MinutesOf(md) : -1;
+                Sell.Interval = m > 0 ? m : 30;
+                Sell.BelowCap = Bool(se, "belowCap", false);
+                Sell.Capacity = Int(se, "capacity", 0, HelperSellCfg.CapacityMax, 100);
+            }
+            var ex = Json.Get(root, "exercise");
+            if (ex is Dictionary<string, object>) { Exercise.Enabled = Bool(ex, "enabled", false); Exercise.Id = Int(ex, "id", 0, IdMax, 0); }
+            AutoUpdateSpells = Bool(root, "autoUpdateSpells", false);
+            foreach (object o in Json.List(root, "ignoredSpells")) if (o is double d && IgnoredSpells.Count < 500) IgnoredSpells.Add(Clamp(d, 0, IdMax, 0));
             var rh = Json.List(root, "runeHeal");
             int[] healDefaults = { 60, 40 };
             for (int i = 0; i < RuneHealRows && i < rh.Count; i++)

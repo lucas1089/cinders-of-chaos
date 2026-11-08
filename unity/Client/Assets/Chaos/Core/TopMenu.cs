@@ -27,6 +27,25 @@ namespace Chaos.Core
     public static class TopMenu
     {
         static MenuEntry E(string text, string target) => new MenuEntry { Text = text, Target = target };
+        /// <summary>The "More" sub-menu at the end of a drop-down: the rarely used entries (the main client's layout).</summary>
+        static MenuEntry More(params MenuEntry[] entries) => new MenuEntry { Text = "More", Sub = entries };
+
+        /// <summary>The key of a window's shortcut for the menu row ("Ctrl+P"); empty when it has none.</summary>
+        public static string HotkeyText(string keyName) => string.IsNullOrEmpty(keyName) || keyName == "None" ? "" : "Ctrl+" + keyName;
+
+        /// <summary>The "More" entry of a category, null when it has none.</summary>
+        public static MenuEntry MoreOf(MenuCategory c) { foreach (var e in c.Entries) if (e.Sub != null) return e; return null; }
+
+        /// <summary>Every leaf entry of a category, the sub-menus opened.</summary>
+        public static IEnumerable<MenuEntry> Leaves(MenuCategory c)
+        {
+            foreach (var e in c.Entries)
+            {
+                if (e.Separator) continue;
+                if (e.Sub != null) { foreach (var s in e.Sub) yield return s; }
+                else yield return e;
+            }
+        }
 
         public const string WindowsId = "windows";
 
@@ -38,7 +57,9 @@ namespace Chaos.Core
             {
                 E("Skills", "win:SkillsWindow"), E("Spellbook", "win:SpellbookWindow"), E("Passive Tree", "win:PassiveTreeWindow"),
                 E("Character Info", "info:character"), E("Services", "info:services"),
-                E("Inventory", "win:EquipmentWindow"), E("Containers", "win:ContainersWindow"),
+                E("Containers", "win:ContainersWindow"),
+                // the main client's "More" sub-menu of Character (phase 7 track X)
+                More(E("Inventory", "win:EquipmentWindow"), E("Outfit", "win:OutfitWindow")),
                 E("Achievements", "win:AchievementsWindow"), E("Pets", "win:PetsWindow"), E("Transmog", "win:TransmogWindow"), E("Cosmetics", "win:CosmeticsWindow"),
                 E("Charms", "win:CharmsWindow"),
                 E("Spell Supports", "win:SpellSupportsWindow"), E("Chaos Pact", "win:PactWindow"), E("Loadouts", "win:LoadoutsWindow"),
@@ -50,7 +71,8 @@ namespace Chaos.Core
                 E("Battle List", "win:BattleListWindow"), E("Party Frames", "win:PartyFramesWindow"), E("Hunt Tracker", "win:HuntWindow"), E("DPS Meter", "win:DpsMeterWindow"),
                 E("Minimap", "win:MinimapWindow"), E("Fight", "win:FightWindow"),
                 E("Bestiary", "win:BestiaryWindow"),
-                E("Map Overlay", "win:MapOverlayWindow"), E("Map Markers", "win:MapMarkersWindow"), E("Auto Loot", "win:AutoLootWindow"),
+                E("Map Overlay", "win:MapOverlayWindow"), E("Auto Loot", "win:AutoLootWindow"),
+                More(E("Map Markers", "win:MapMarkersWindow")),
                 E("Nemesis", "win:NemesisWindow"), E("Boss Spawns", "win:BossSpawnsWindow"),
             } },
             new MenuCategory { Id = "adventure", Text = Lk.N("Adventure"), Entries = new[]
@@ -68,7 +90,7 @@ namespace Chaos.Core
             } },
             new MenuCategory { Id = "economy", Text = Lk.N("Economy"), Entries = new[]
             {
-                E("House", "info:house"), E("Ancestral Store", "info:ancestral"),
+                More(E("House", "info:house"), E("Ancestral Store", "info:ancestral")),
                 E("Market", "win:MarketWindow"),
                 E("Crafting Bench", "win:CraftingWindow"), E("Professions", "win:ProfessionsWindow"), E("Crafting Tables", "win:CraftTableWindow"),
                 E("Codex", "win:CodexWindow"), E("Item Finder", "win:ItemFinderWindow"), E("Orb Exchange", "win:OrbExchangeWindow"), E("Candlemarks", "win:CandlemarksWindow"), E("Auto Seller", "win:AutoSellerWindow"),
@@ -85,6 +107,9 @@ namespace Chaos.Core
                 E("Hotkeys", "win:HotkeyBarWindow"), E("Help Search", "win:HelpSearchWindow"), E("Server Info", "info:server"),
                 E("Drop Feed", "win:DropFeedWindow"), E("Credits", "win:CreditsWindow"), E("Streamer and cinema mode", "win:StreamerWindow"),
                 E("Performance", "win:PerfWindow"), E("Screenshots", "win:ShotsWindow"),
+                // the main client's System entries (phase 7 track X): Options, Helper, the community link, Logout and Exit; Admin Panel only for staff (the server's catalog)
+                E("Options", "win:OptionsWindow"), E("Helper", "win:HelperWindow"), E("Admin Panel", "win:AdminWindow"), E("Join Discord", "act:discord"),
+                new MenuEntry { Separator = true }, E("Logout", "act:logout"), E("Exit", "act:exit"),
             } },
         };
 

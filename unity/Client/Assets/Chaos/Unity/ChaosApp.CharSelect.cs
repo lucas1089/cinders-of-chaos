@@ -20,8 +20,10 @@ namespace Chaos.Client
                 charModelFor = login;
                 charModel = CharSelectModel.Build(login.Characters, PlayerPrefs.GetString("chaos.lastchar", ""));
                 charScroll = Vector2.zero;
+                creating = false;
                 AccountStart();   // ChaosApp.Phase6V.cs: the website's looks, last login and slots
             }
+            if (creating) { CharCreateGui(w, h); return; }   // ChaosApp.Phase7X.cs: the in-client create window
             float bw = Mathf.Min(w - 24, 480f), bh = Mathf.Min(h - 24, 440f);
             Logo(w, h / 2 - bh / 2);
             var box = new Rect(w / 2 - bw / 2, h / 2 - bh / 2, bw, bh);
@@ -68,7 +70,7 @@ namespace Chaos.Client
                     var pic = new Rect(row.x + 8, row.y + 6, 46, 46);
                     Fill(pic, new Color(0f, 0f, 0f, 0.5f));
                     var look = LookOf(c.Name);
-                    DrawOutfit(pic, CharCardText.Merge(c.Outfit, look));
+                    DrawOutfitFx(pic, CharCardText.Merge(c.Outfit, look));   // wings, aura and shader too (Phase7X)
                     GUI.Label(new Rect(row.x + 62, row.y + 4, row.width - 130, 22), streamer.ListName(c.Name, sel), titleStyle);
                     CardBadge(row, c, look);
                     var cs = new GUIStyle(small) { fontSize = 12 };
@@ -92,8 +94,9 @@ namespace Chaos.Client
             if (GUILayout.Button(Loc.T("Enter game"), GUILayout.Height(30))) EnterCard(charModel.Current);
             GUI.enabled = true;
             string url = CharSelectModel.CreateUrl(host);
-            GUI.enabled = url != null;
-            if (GUILayout.Button(Loc.T("Create character"), GUILayout.Height(30))) Application.OpenURL(url);
+            bool inClient = CreateInfo != null && CreateInfo.Classes.Count > 0;   // the website's API answered: the window; else its page
+            GUI.enabled = url != null || inClient;
+            if (GUILayout.Button(Loc.T("Create character"), GUILayout.Height(30))) { if (inClient) BeginCreate(); else Application.OpenURL(url); }
             GUI.enabled = true;
             if (GUILayout.Button(Loc.T("Back"), GUILayout.Height(30))) { AccountEnd(); screen = Screen.Login; status = ""; }
             GUILayout.EndHorizontal();

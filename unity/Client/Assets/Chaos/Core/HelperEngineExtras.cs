@@ -29,7 +29,7 @@ namespace Chaos.Core
         }
 
         // ------------------------------------------------------------------------------------ runes
-        bool RuneReady(int id, string channel) => Timers.UseReady(channel, Host.Now) && Host.ItemCount(id) > 0;
+        bool RuneReady(int id, string channel) => Timers.UseReady(channel, Host.Now) && Probeable(id, Host.ItemCount(id));   // a rune in a closed backpack is probed by id
 
         bool RuneClassOk(HelperRuneInfo rune)
         {
@@ -43,9 +43,21 @@ namespace Chaos.Core
             if (!RuneReady(id, channel)) return false;
             bool sent;
             var ext = HostExt;
-            if (creature == 0) { Host.UseOnSelf(id); sent = true; }
-            else sent = ext != null && ext.UseOnCreature(id, creature);
+            int have = Host.ItemCount(id);
+            if (have > 0)
+            {
+                if (creature == 0) { Host.UseOnSelf(id); sent = true; }
+                else sent = ext != null && ext.UseOnCreature(id, creature);
+            }
+            else
+            {
+                // not counted: the use by id may find it in a closed backpack, and the server's answer tells the gate (Phase7XHelper.cs)
+                var p7 = HostP7;
+                sent = p7 != null && p7.UseByIdOnCreature(id, creature);
+                if (sent) GateProbes++;
+            }
             if (!sent) return false;
+            Gate.Used(id, Host.Now, have);
             Timers.Used(channel, Host.Now);
             RunesUsed++;
             return true;
@@ -68,7 +80,7 @@ namespace Chaos.Core
             HelperCreature tc;
             if (!InList(list, target, out tc)) return;
             var row = HelperRunes.PickAttack(Config.RuneAttack, true, tc.Position, tc.Health, pos, list,
-                p => p.Z == pos.Z && HelperLogic.InReach(pos, p),
+                p => p.Z == pos.Z && HelperLogic.InReach(pos, p) && (Sight == null || Sight(pos, p)),
                 id => { var info = HelperRunes.Info(id); return info != null && RuneClassOk(info) && RuneReady(id, HelperTimers.AttackRune); });
             if (row != null) UseRune(row.Id, target, HelperTimers.AttackRune);
         }
@@ -101,7 +113,7 @@ namespace Chaos.Core
             double hp = Pct(Host.Health, Host.MaxHealth);
             if (HelperAlly.SelfFirst(Config, hp)) return;
             var pos = Host.Position;
-            var cands = HelperAlly.Candidates(cfg, ext.Players(), pos);
+            var cands = HelperAlly.Candidates(cfg, ext.Players(), pos, Sight);
             if (cands.Count == 0) return;
             var pick = HelperAlly.Pick(cfg, pos, cands, false, Pct(Host.Mana, Host.MaxMana), AllySpell, s => Ready(s, false),
                 id => { var info = HelperRunes.Info(id); return info != null && RuneClassOk(info) && RuneReady(id, HelperTimers.HealRune); });
