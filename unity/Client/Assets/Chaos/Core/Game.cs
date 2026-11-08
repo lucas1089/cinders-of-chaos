@@ -40,6 +40,8 @@ namespace Chaos.Core
         /// <summary>The creature we attack (0 none). Set by GameSession.Attack, cleared by the server's 0xA3.</summary>
         public uint AttackTarget;
         public int Health, MaxHealth, Mana, MaxMana, Level;
+        /// <summary>0xA2: the status icon bits (1 poison, 2 burning, 4 energy, 8 drunk, 16 mana shield, 32 paralyzed, 64 haste, 16384 protection zone ...). The helper reads haste and the zone.</summary>
+        public int PlayerStates;
         // more of 0xA0 (player stats)
         public uint FreeCap, TotalCap;
         public ulong Experience;
@@ -231,7 +233,7 @@ namespace Chaos.Core
                     for (int i = 0; i < Skills.Length; i++) Skills[i] = new SkillValue { Level = r.U16(), Base = r.U16(), Percent = r.U8() };
                     r.Skip(14 * 5 + 6 * 4 - Skills.Length * 5);   // the rest: more skills, special skills
                     break;
-                case 0xA2: r.U16(); break;
+                case 0xA2: PlayerStates = r.U16(); break;
                 case 0xA3: r.U32(); AttackTarget = 0; break;   // cancel target
                 case 0xA4: { int id = Features.Has(ClientFeatures.ExtendedSpellIds) ? r.U16() : r.U8(); SpellCooldown(id, r.U32()); break; }
                 case 0xA5: { int g = r.U8(); GroupCooldown(g, r.U32()); break; }

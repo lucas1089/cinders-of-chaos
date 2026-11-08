@@ -5,7 +5,7 @@ This file lists every module of the main client (`client/overlay/modules/`, 169 
 It also lists the base protocol opcodes the Unity parser lacks and a plan in three phases.
 Edit the module rows by hand when a status changes. A module row changes in the same commit as its Unity window.
 
-Counts: 18 done, 23 partial, 113 missing, 15 not applicable.
+Counts: 19 done, 28 partial, 107 missing, 15 not applicable.
 By priority: 13 P0 core loop, 30 P1 needed to play, 83 P2 systems, 28 P3 polish, 15 N/A.
 
 ## Who Unity is on the server
@@ -31,8 +31,8 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 | Spells, hotbar, cooldowns | partial | This track: spellbook, 12 hotbar slots with cooldown numbers. No item or rune slots, no icons. |
 | Chat | done | Tabs (Default, Server Log, channels, private), channel list, `*name* text`, `#y` and `#w`, unread counts, floating speech. No item links, no channel creation or invites. |
 | Containers, equipment, use, move | partial | Open, close, up, use, drag. No split stack dialog, no use-with, no look. |
-| NPC trade, NPC talk | done | `NpcTalkWindow`, `NpcTradeWindow`, `Core/NpcTrade.cs`. 0x7A, 0x7B, 0x7C in, 0x79, 0x7A, 0x7B, 0x7C out, NPC speech, currency (opcode 113). Not tried on the live server. No buy-in-backpacks fee. |
-| Death | partial | 0x28 shows a death window with the penalty; OK goes to the character list. No recap window. |
+| NPC trade, NPC talk | done | `NpcTalkWindow`, `NpcTradeWindow`, `Core/NpcTrade.cs`. 0x7A, 0x7B, 0x7C in, 0x79, 0x7A, 0x7B, 0x7C out, NPC speech, currency (opcode 113). Not tried on the live server. No buy-in-backpacks fee, no modal windows. |
+| Death | done | 0x28 shows a death window with the penalty; OK goes to the character list. The recap window (opcode 154) opens at the next login. |
 | Party | done | `PartyFramesWindow` (Ctrl+G, opcode 235), right-click menu on a player (invite, join, revoke, pass leadership, leave, shared experience: 0xA3 to 0xA8), invitation box with Accept and Decline. Not run against a live server. |
 | Outfit window | partial | `OutfitWindow` (Ctrl+U), `OutfitWindowState` in `Core/Dialogs.cs`: 0xD2 request, 0xC8 lists (outfits with addons, mounts; on identity Chaos wings, auras, shaders), colours, 0xD3 set. The Chaos ids' widths and the set packet's tail are read from the OTCv8 layout, not from this repo: check on a live run. No preview of wings, aura or shader. |
 | Skills, stats | done | `SkillsWindow` reads 0xA0 and 0xA1, the simple skill list (Melee, Ranged, Shielding, Fishing, Fist for the Monk line) and the combat stat rows (opcode 119). |
@@ -71,18 +71,18 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_chaosinfo` | 237 | Info and Services window. | done | P1 | M |
 | `game_chaosnotify` | 79 | Toasts: 21 types with colours and times, three at once, queue of 12, wrapped height, Accept and Decline or Start on opcodes 151 and 152, danger line. `Core/Hud.cs` ToastCenter. No icons or monster look in the toast; catacomb Start sends without the protection zone check. | partial | P1 | M |
 | `game_chaosscale` | 157 | Factor kept from the scale message and hello on login and level change; the server scales its own numbers. Shown in Options (read only). | done | P1 | S |
-| `game_damagescatter` | none | Typed damage numbers. Needs the 0xB4 fields (capability bit 7); the text parser is track B. | missing | P1 | M |
-| `game_deathrecap` | 154 | Death recap window. Unity shows a death window (0x28); no recap data (opcode 154). | missing | P1 | M |
+| `game_damagescatter` | none | Typed damage numbers. `GameParser.TextMessage` reads the 0xB4 fields (percent, type, creature) with feature 155; capability bit 7 is on; the live view scatters, sizes (critical bigger, condition smaller) and colours them and numbers follow their creature (`Core/DamageScatter.cs`). No option to turn the scatter off or set its level yet; no type fonts. | partial | P1 | M |
+| `game_deathrecap` | 154 | `DeathRecapWindow` (`Core/DeathRecap.cs`): history, attackers with element bars, killing blow, loss, last hits, tips. Opens by itself on the server's auto recap (next login) unless "Open after a death" is off. No outfit icons on the rows. | done | P1 | M |
 | `game_energyshield` | 224 | Shield bar under the plate, eased over 900 ms, hello after login. `Core/Hud.cs` EnergyShield. | done | P1 | S |
 | `game_goals` | 178 | Next Goals window and tracker. | done | P1 | M |
-| `game_groundlabels` | 230 | Loot labels on the ground. | missing | P1 | M |
-| `game_helper` | none | The helper: heals, potions, rotation, auto target. A large part of the play loop for many players. | missing | P1 | L |
-| `game_helperrotation` | 116 | Helper cast bookkeeping and Auto rotation; Everfull potions on 116. | missing | P1 | M |
+| `game_groundlabels` | 230 | Loot labels over ground items in the classic and the live view (`Core/GroundLabels.cs`, `ChaosApp.Loot.cs`, settings in `LootWindow`). Click on a corpse label opens the corpse. No tooltips, no click to pick up an item (raise), no accent cosmetic, none in HD-2D. | partial | P1 | M |
+| `game_helper` | none | `HelperWindow` (Ctrl+R) over `Core/HelperEngine.cs`: heals by threshold (spells, potions), mana training, Auto Haste, five-slot spell rotation with auto turn, Auto Target modes A..H, saved per character. Not ported: runes, party and friend heals, Follow, Auto sell, food, exercise, Everfull follow, potion gate, shooter profiles, line of sight, the HUD. | partial | P1 | L |
+| `game_helperrotation` | 116 | Cast bookkeeping (a cast waits for the cooldown packet, refused casts back off), per-channel rate guard, Auto setup from the class presets (`Core/HelperRotation.cs`, data generated from `autorotation_data.lua`). No level-up notice, no Everfull potions message (116). | partial | P1 | M |
 | `game_hunt` | 241 | Hunt tracker. | done | P1 | M |
 | `game_itemrarity` | 126 (feature) | Item rarity. Frame in the rarity colour (unique colour first) and a gold mark for a locked item on the equipment and container slots, the text window item and the stash list. Needs identity Chaos (the attributes). No frame or outline on items on the map, no shader glow, no loot filter frame. `Core/ItemInfo.cs` `ItemRarity`, `ItemSlots.Frame`. | partial | P1 | M |
 | `game_itemtooltip` | 242 | Rich item tooltips on hover of an equipment or container slot: kind, level, quality, base stats, prefixes and suffixes with tier and range, veiled slot, sockets, set block, requirements (red above the level), passive, flavour, charges, weight; cache by per-item id and version, hover delay, answer matched to the item. No compare view (Ctrl), no Alt help, no source lines, no card layout. `Core/ItemInfo.cs` `ItemTips`, `TipLines`. | partial | P1 | L |
 | `game_kitewalk` | 186 | Option in the Options window, saved in PlayerPrefs, sent at login and at change as {on}. | done | P1 | S |
-| `game_lootfilter` | 238 | Loot filter and loot channel. | missing | P1 | M |
+| `game_lootfilter` | 238 | Loot channel (kills with items, click takes, Shift one), filter settings and presets in `LootWindow` (`Core/LootFilter.cs`). No rarity frames on open bags (peek), no beams, no rule counters or sounds, no autoloot sections. | partial | P1 | M |
 | `game_monkchi` | 247 | Chi pips under the plate that empty at the decay time, hidden for other classes. `Core/Hud.cs` MonkChi. | done | P1 | S |
 | `game_monsterbar` | 125 | Tiered target bar: tier colour, label, role, level, percent, damage trail, modifier chips with tips, boss mechanic cast bar. `Core/Hud.cs` MonsterBar. No frame art, no oversized monster scaling, no in-world tier labels. | partial | P1 | M |
 | `game_passivetree` | 65 | Passive tree. Opcode 65. | partial | P1 | L |

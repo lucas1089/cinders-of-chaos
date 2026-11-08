@@ -200,8 +200,8 @@ namespace Chaos.Core.Tests
             expect.AddRange(Encoding.ASCII.GetBytes("OTCv8"));
             expect.AddRange(new byte[] { 0x05, 0x01, 13, 0 });
             expect.AddRange(Encoding.ASCII.GetBytes("OTCv8TierByte"));
-            expect.AddRange(new byte[] { 1, 0, (byte)'A', 0x34, 0x12, 0, 0, 1, 0, (byte)'C', 0x40 });
-            check(w.ToArray().SequenceEqual(expect), "identity: Chaos sends OTCv8 261, OTCv8TierByte, A, signature, C, capabilities 0x40");
+            expect.AddRange(new byte[] { 1, 0, (byte)'A', 0x34, 0x12, 0, 0, 1, 0, (byte)'C', 0xC0 });
+            check(w.ToArray().SequenceEqual(expect), "identity: Chaos sends OTCv8 261, OTCv8TierByte, A, signature, C, capabilities 0xC0 (wide spell ids, typed impact numbers)");
             check(ClientIdentity.Extended.Os == 21 && ClientIdentity.Extended.Os >= 10 && !ClientIdentity.Extended.Markers, "identity: OS 21 is an extended opcode client (the engine's limit is 10)");
             check(ClientIdentity.Parse("chaos", 5).Markers && !ClientIdentity.Parse("", 5).Markers && !ClientIdentity.Parse("nonsense", 5).Markers, "identity: named by text");
 

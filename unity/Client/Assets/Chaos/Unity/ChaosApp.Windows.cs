@@ -79,6 +79,9 @@ namespace Chaos.Client
             windows.Add(new BankWindow());
             windows.Add(new StashWindow());
             windows.Add(new StoreWindow());
+            windows.Add(new HelperWindow());
+            windows.Add(new DeathRecapWindow());
+            windows.Add(new LootWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>

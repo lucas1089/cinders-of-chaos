@@ -40,7 +40,14 @@ namespace Chaos.Core
         public FxElement El;
         public float T0, Size = 1f;
         public int Stack;                   // 0 for the first on a tile, then 1, 2, ... (each rises a step higher and swings to a side)
-        public float U(float now) { return (now - T0) / FrontFxTiming.NumberLife; }
+        /// <summary>Typed numbers (DamageScatter.cs): the creature the number follows (0: its tile), the scatter shift in pixels, the speed scale
+        /// (the life is NumberLife / Speed) and the drift over the life in pixels (Sy up is negative; the stock rise is 48 pixels).</summary>
+        public uint Creature;
+        public int Dx, Dy, Sx, Sy;
+        public float Speed = 1f;
+        public bool Scattered;
+        public float Life { get { return FrontFxTiming.NumberLife / (Speed > 0.05f ? Speed : 1f); } }
+        public float U(float now) { return (now - T0) / Life; }
     }
 
     public sealed class FxSlashItem
@@ -68,6 +75,8 @@ namespace Chaos.Core
         public const float SlashGap = 0.25f;        // the same attacker slashes again no sooner than this
 
         public float Now;
+        /// <summary>Typed damage numbers: the scatter of every number (on by default, level 2, as the main client).</summary>
+        public readonly DamageScatter Scatter = new DamageScatter(1);
         public readonly List<FxMissileItem> Missiles = new List<FxMissileItem>();
         public readonly List<FxBurstItem> Bursts = new List<FxBurstItem>();
         public readonly List<FxNumberItem> Numbers = new List<FxNumberItem>();
@@ -127,12 +136,17 @@ namespace Chaos.Core
             Missiles.Add(new FxMissileItem { Id = nextId++, Shot = e.Id, From = e.Pos, To = e.To, El = FrontFx.ElementOfMissile(e.Id), T0 = Now, Tiles = tiles, Dur = FrontFxTiming.Flight(tiles) });
         }
 
-        FxNumberItem MakeNumber(Pos at, string text, FxElement el, float t0, float size)
+        FxNumberItem MakeNumber(Pos at, string text, FxElement el, float t0, float size, int type = 0, bool experience = false, uint creature = 0)
         {
             int stack = 0;
             foreach (var n in Numbers) if (n.At == at && Math.Abs(n.T0 - t0) < 0.5f) stack++;
             Cap(Numbers, MaxNumbers);
-            var item = new FxNumberItem { Id = nextId++, At = at, Text = text, El = el, T0 = t0, Size = size, Stack = stack };
+            var item = new FxNumberItem { Id = nextId++, At = at, Text = text, El = el, T0 = t0, Size = size, Stack = stack, Creature = creature };
+            ScatterRoll roll;
+            if (Scatter.Pick(at, Now * 1000.0, type, experience, out roll))
+            {
+                item.Dx = roll.Dx; item.Dy = roll.Dy; item.Sx = roll.Sx; item.Sy = roll.Sy; item.Speed = roll.Speed; item.Scattered = true;
+            }
             Numbers.Add(item);
             return item;
         }
@@ -142,21 +156,35 @@ namespace Chaos.Core
             int type = e.Id;
             float t0 = Now + LandingDelay(e.Pos);
             float size = type == 24 ? 1.25f : (type == 27 || type == 28 || type == 29 ? 0.8f : 1f);
+            int impact = e.Typed ? e.Impact : ImpactType.Normal;
+            if (impact == ImpactType.Critical) size *= ImpactType.CritSize;
+            else if (impact == ImpactType.Condition) size *= ImpactType.ConditionSize;
             if (type == 23 || type == 24 || type == 27)
             {
                 bool physical = false;
-                if (e.Value > 0) { var el = FrontFx.ElementOfTextColor(e.Color); physical |= FrontFx.IsPhysical(el); MakeNumber(e.Pos, FrontFx.Format(e.Value), el, t0, size); }
-                if (e.Value2 > 0) { var el = FrontFx.ElementOfTextColor(e.Color2); physical |= FrontFx.IsPhysical(el); MakeNumber(e.Pos, FrontFx.Format(e.Value2), el, t0, size); }
+                if (e.Value > 0) { var el = TypedElement(e, e.Color); physical |= FrontFx.IsPhysical(el); MakeNumber(e.Pos, FrontFx.Format(e.Value), el, t0, size, impact, false, e.Creature); }
+                if (e.Value2 > 0) { var el = TypedElement(e, e.Color2); physical |= FrontFx.IsPhysical(el); MakeNumber(e.Pos, FrontFx.Format(e.Value2), el, t0, size, impact, false, e.Creature); }
                 if (physical && !MissileTo(e.Pos)) AddSlash(w, e);
             }
             else if (type == 25 || type == 28)
             {
-                if (e.Value > 0) MakeNumber(e.Pos, FrontFx.Format(e.Value), FxElement.Heal, t0, size);
+                if (e.Value > 0) MakeNumber(e.Pos, (e.Typed && impact == ImpactType.ManaGain ? "+" : "") + FrontFx.Format(e.Value), e.Typed && impact == ImpactType.ManaGain ? FxElement.Water : FxElement.Heal, t0, size, impact, false, e.Creature);
             }
             else if (type == 26 || type == 29)
             {
-                if (e.Value > 0) MakeNumber(e.Pos, "+" + FrontFx.Format(e.Value), FxElement.Holy, t0, size * 0.8f);
+                if (e.Value > 0) MakeNumber(e.Pos, "+" + FrontFx.Format(e.Value), FxElement.Holy, t0, size * 0.8f, impact, true, e.Creature);
             }
+        }
+
+        /// <summary>The element of a damage number: the text colour says it, except the types that name their own look (mana drain: water, energy shield: energy).</summary>
+        static FxElement TypedElement(FxEvent e, byte color)
+        {
+            if (e.Typed)
+            {
+                if (e.Impact == ImpactType.ManaDrain) return FxElement.Water;
+                if (e.Impact == ImpactType.EnergyShield) return FxElement.Energy;
+            }
+            return FrontFx.ElementOfTextColor(color);
         }
 
         void AddSlash(World w, FxEvent e)
@@ -183,7 +211,7 @@ namespace Chaos.Core
             Now = now;
             Missiles.RemoveAll(m => now > m.T0 + m.Dur);
             Bursts.RemoveAll(b => now > b.T0 + FrontFxTiming.BurstTime);
-            Numbers.RemoveAll(n => now > n.T0 + FrontFxTiming.NumberLife);
+            Numbers.RemoveAll(n => now > n.T0 + n.Life);
             Slashes.RemoveAll(s => now > s.T0 + FrontFxTiming.SlashTime);
             if (lastSlash.Count > 64) lastSlash.Clear();
         }

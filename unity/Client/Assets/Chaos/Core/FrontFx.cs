@@ -22,7 +22,10 @@ namespace Chaos.Core
         public int Id;               // effect or missile id; a Number's message type (23 dealt, 24 received, 25 healed, 26 experience, 27 damage of others, 28 heal of others, 29 experience of others)
         public uint Value, Value2;   // Number: the first and the second damage value
         public byte Color, Color2;   // text colours (TFS TextColor_t) of the two values; Square: the colour
-        public uint Creature;        // Square: the creature id
+        public uint Creature;        // Square: the creature id. Number: the creature the number belongs to (typed numbers, 0: its tile)
+        public bool Typed;           // Number: read with capability bit 7, so Percent, Impact and Creature are set
+        public int Percent;          // Number (typed): the value as a share of the target's maximum, x100 (10000 = 100 percent)
+        public int Impact;           // Number (typed): ImpactType (0 normal, 1 critical, 2 condition tick, 3 mana drain, 4 mana gain, 5 energy shield)
         public string Text;           // Number: the sentence ("A rat loses 5 hitpoints due to your attack."); AnimText: the text
 
         public static FxEvent Effect(Pos p, int id) { return new FxEvent { Kind = FxKind.Effect, Pos = p, Id = id }; }
@@ -32,6 +35,13 @@ namespace Chaos.Core
         public static FxEvent Number(int type, Pos p, uint v1, byte c1, uint v2, byte c2, string text)
         {
             return new FxEvent { Kind = FxKind.Number, Id = type, Pos = p, Value = v1, Color = c1, Value2 = v2, Color2 = c2, Text = text ?? "" };
+        }
+        /// <summary>A number of a typed message (capability bit 7): the percent, the impact type and the creature it belongs to.</summary>
+        public static FxEvent TypedNumber(int type, Pos p, uint v1, byte c1, uint v2, byte c2, string text, int percent, int impact, uint creature)
+        {
+            var e = Number(type, p, v1, c1, v2, c2, text);
+            e.Typed = true; e.Percent = percent; e.Impact = impact; e.Creature = creature;
+            return e;
         }
     }
 

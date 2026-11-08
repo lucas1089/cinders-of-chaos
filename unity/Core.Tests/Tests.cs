@@ -63,6 +63,7 @@ namespace Chaos.Core.Tests
             ChatTests.Run,
             HudTests.Run,
             ItemTests.Run,
+            HelperTests.Run,
         };
 
         static void CryptoChecks()

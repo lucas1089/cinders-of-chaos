@@ -530,6 +530,7 @@ namespace Chaos.Client
                     Fill(new Rect(bar.x - 1, bar.y - 1, bar.width + 2, bar.height + 2), new Color(0f, 0f, 0f, 0.85f));
                     Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
                 }
+                DrawGroundLabels(map, scale);
                 DrawAttackFrame(map, scale);
                 GUI.EndGroup();
             }

@@ -30,8 +30,8 @@ namespace Chaos.Core
         public ushort V8Version = 261;
         /// <summary>The u32 after "A": the engine skips it.</summary>
         public uint Signature;
-        /// <summary>Bit 6 wide spell ids, bit 7 typed impact numbers. Only set a bit when the parser reads what it turns on.</summary>
-        public byte Capabilities = CapWideSpellIds;
+        /// <summary>Bit 6 wide spell ids, bit 7 typed impact numbers (GameParser.TextMessage reads the three extra fields; DamageScatter.cs). Only set a bit when the parser reads what it turns on.</summary>
+        public byte Capabilities = CapWideSpellIds | CapImpactText;
 
         public const byte CapWideSpellIds = 1 << 6;
         public const byte CapImpactText = 1 << 7;
