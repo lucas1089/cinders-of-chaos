@@ -32,6 +32,12 @@ namespace Chaos.Client
         /// <summary>Phase 8 track C: the outfit shader, hit flash and outline of a creature (null: plain), and whether water and lava grounds shimmer (Hd2dSprite.shader fx modes).</summary>
         public Func<Creature, MapFxLook> CreatureFx;
         public bool LiquidFx = true;
+        /// <summary>Phase 9 track D: the rarity outline of items on the map is drawn as a silhouette behind the sprite (Hd2dSprite.shader FX_ITEMGLOW) and a Divine item in metal
+        /// (FX_METAL). ItemGlowReal says whether the shader is there: the ground ring of ChaosApp.DrawItemRings stands in when it is not.</summary>
+        public bool ItemOutlines = true;
+        public bool ItemGlowReal => ItemOutlines && fxShaderOk;
+        /// <summary>The spell lights now (tiles to world positions relative to the origin tile): they go in front of the scene's own lights, within MaxLights.</summary>
+        public Func<Pos, List<Hd2dLight>> SpellLights;
         int fxMode; float fxStrength = 1f;
         bool fxShaderOk;   // the material is Chaos/Hd2dSprite, which reads the fx modes
         Color32 fxTint = new Color32(255, 255, 255, 255);
@@ -216,6 +222,12 @@ namespace Chaos.Client
             // never pitch black: the HD-2D look keeps a warm dusk under the torches
             RenderSettings.ambientLight = Color.Lerp(new Color(0.20f, 0.18f, 0.24f), new Color(0.50f, 0.48f, 0.52f), day);
             var lightList = Hd2d.Lights(pieces, pose.Target, MaxLights);
+            var spell = SpellLights != null ? SpellLights(origin) : null;
+            if (spell != null && spell.Count > 0)
+            {
+                lightList.InsertRange(0, spell);
+                if (lightList.Count > MaxLights) lightList.RemoveRange(MaxLights, lightList.Count - MaxLights);
+            }
             SetLights(lightList);
             if (Particles != null) Particles.SetLights(lightList, pose.Target);
             // light shafts toward the strongest lights (Hd2dPost)
@@ -283,12 +295,32 @@ namespace Chaos.Client
             else if ((t.Fluid || t.Splash) && g.PatternX * g.PatternY > 1) { int s = it.Count % (g.PatternX * g.PatternY); px = s % g.PatternX; py = s / g.PatternX; pz = 0; }
             else { px = Mod(pos.X, g.PatternX); py = Mod(pos.Y, g.PatternY); pz = Mod(pos.Z, g.PatternZ); }
             int phase = Phase(g, 0);
-            fxMode = fxShaderOk && LiquidFx && t.Ground ? LiquidGrounds.ModeOf(t.Id) : 0;
+            // phase 9, track D: the soft rarity outline behind the sprite and the Divine metal (upright sprites; a thing lying flat keeps the ground ring)
+            var glow = ItemGlowReal && !piece.Flat ? ItemGlowFx.For(it) : null;
+            if (glow != null)
+            {
+                float up = 1f / Mathf.Max(0.3f, Mathf.Cos(Pitch * Mathf.Deg2Rad));
+                fxMode = FxMode.ItemGlow; fxStrength = ItemGlowFx.PulseParam(glow.PulseMs);
+                foreach (var st in ItemGlowFx.Steps(ItemGlowFx.Width))
+                {
+                    float k = glow.A * st.Fall;
+                    fxTint = new Color(glow.R * k, glow.G * k, glow.B * k, 1f);
+                    fxOff = new Vector3(st.Dx / 32f, st.Dy / 32f * up, 0.004f);
+                    for (int layer = 0; layer < g.Layers; layer++)
+                        for (int hh = 0; hh < g.Height; hh++)
+                            for (int ww = 0; ww < g.Width; ww++)
+                                Quad(piece, ww, hh, Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), layer);
+                }
+                fxOff = Vector3.zero;
+                fxMode = 0; fxStrength = 1f; fxTint = new Color32(255, 255, 255, 255);
+                if (glow.Metal) { fxMode = FxMode.Metal; fxStrength = glow.MetalStrength; fxTint = new Color(glow.MetalR, glow.MetalG, glow.MetalB, 1f); }
+            }
+            else fxMode = fxShaderOk && LiquidFx && t.Ground ? LiquidGrounds.ModeOf(t.Id) : 0;
             for (int layer = 0; layer < g.Layers; layer++)
                 for (int hh = 0; hh < g.Height; hh++)
                     for (int ww = 0; ww < g.Width; ww++)
                         Quad(piece, ww, hh, Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), layer);
-            fxMode = 0;
+            fxMode = 0; fxStrength = 1f; fxTint = new Color32(255, 255, 255, 255);
         }
 
         readonly List<(int slot, int ww, int hh, int addon)> fxCells = new List<(int, int, int, int)>();

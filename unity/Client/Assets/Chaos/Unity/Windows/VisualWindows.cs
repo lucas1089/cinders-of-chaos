@@ -152,6 +152,8 @@ namespace Chaos.Client
             var fx = VisualPrefs.Fx;
             fx.HitFlash = Check(ref y, inner, fx.HitFlash, Loc.T("Hit flash"), app);
             fx.ScreenShake = Check(ref y, inner, fx.ScreenShake, Loc.T("Screen shake on big hits"), app);
+            fx.HoverOutline = Check(ref y, inner, fx.HoverOutline, Loc.T("Faint outline on the creature under the mouse"), app);
+            fx.SpellLight = Check(ref y, inner, fx.SpellLight, Loc.T("Light around spell effects"), app);
             VisualPrefs.Decals = Check(ref y, inner, VisualPrefs.Decals, Loc.T("Stains on the ground after combat"), app);
             VisualPrefs.Globes = Check(ref y, inner, VisualPrefs.Globes, Loc.T("Health and mana globes"), app);
             var b = VisualPrefs.Beams;

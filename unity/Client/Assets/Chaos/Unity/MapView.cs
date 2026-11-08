@@ -255,7 +255,25 @@ namespace Chaos.Client
             float ox = tx - (elevation + t.DisplacementX) / 32f, oy = ty + (elevation + t.DisplacementY) / 32f;
             // the rarity outline: the sprite again, tinted with the rarity colour, one pixel to each side, behind itself (game_itemrarity, world shader)
             string outline = ItemOutlines ? MapItemOutline.Color(it) : null;
-            if (outline != null && ColorUtility.TryParseHtmlString(outline, out Color oc))
+            // phase 9, track D: with the map shader the outline is the silhouette in rings out to the reach with a falloff (the engine's soft glow), and a Divine item is drawn in metal
+            var glow = FxOn && outline != null ? ItemGlowFx.For(it) : null;
+            if (glow != null)
+            {
+                float pulse = ItemGlowFx.PulseAlpha(Now, glow.PulseMs);
+                fxMode = FxMode.Solid; fxStrength = 1f;
+                foreach (var st in ItemGlowFx.Steps(ItemGlowFx.Width))
+                {
+                    tint = new Color(glow.R, glow.G, glow.B, glow.A * st.Fall * pulse);
+                    for (int layer = 0; layer < g.Layers; layer++)
+                        for (int hh = 0; hh < g.Height; hh++)
+                            for (int ww = 0; ww < g.Width; ww++)
+                                Quad(Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), ox - ww + st.Dx / MapItemOutline.PixelsPerTile, oy + hh + st.Dy / MapItemOutline.PixelsPerTile);
+                }
+                fxMode = 0;
+                tint = new Color32(255, 255, 255, 255);
+                if (glow.Metal) { fxMode = FxMode.Metal; fxStrength = glow.MetalStrength; tint = new Color(glow.MetalR, glow.MetalG, glow.MetalB, 1f); }
+            }
+            else if (outline != null && ColorUtility.TryParseHtmlString(outline, out Color oc))
             {
                 oc.a = MapItemOutline.Alpha(it, Now);
                 tint = oc;
@@ -271,7 +289,8 @@ namespace Chaos.Client
                 for (int hh = 0; hh < g.Height; hh++)
                     for (int ww = 0; ww < g.Width; ww++)
                         Quad(Atlas.Sprite(g.Sprite(ww, hh, layer, px, py, pz, phase)), ox - ww, oy + hh);
-            fxMode = 0;
+            fxMode = 0; fxStrength = 1f;
+            tint = new Color32(255, 255, 255, 255);
             if (t.Elevation > 0) elevation = Math.Min(24, elevation + t.Elevation);
         }
 

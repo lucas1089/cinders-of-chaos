@@ -250,6 +250,7 @@ namespace Chaos.Client
         void DrawItemRings(Rect map, float scale)
         {
             if (!(LiveOn || (hd2d && hd2dView != null)) || !VisualPrefs.ItemOutlines || world?.Player == null || Event.current.type != EventType.Repaint) return;
+            if (ItemGlowRealOn) return;   // phase 9 track D: the sprite shader draws the real outline; the ring is the fallback
             float tile = map.height / ViewTilesH;
             var me = world.Player.Position;
             double now = session != null ? session.Now : Time.realtimeSinceStartup * 1000.0;

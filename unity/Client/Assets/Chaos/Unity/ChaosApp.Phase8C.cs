@@ -38,8 +38,9 @@ namespace Chaos.Client
             if (frontLive != null)
             {
                 var fc = frontLive.GetComponent<FrontLiveCreatures>();
-                if (fc != null) fc.CreatureFx = c => Phase8CLook(c, false, false);
+                if (fc != null) { bool ok = fc.FxShaderOk; fc.CreatureFx = c => Phase8CLook(c, ok, ok); }   // phase 9 track D: flash and outlines in the live view when its sprite shader is there
             }
+            Phase9DUpdate();   // ChaosApp.Phase9D.cs: item outline option, hover, spell lights
             bool want = ClassicView && cam != null && FxShaders.Grade != null && (Phase8CPrefs.Grade || Phase8CPrefs.Bloom);
             if (want && gradePost == null) gradePost = cam.GetComponent<MapGradePost>() ?? cam.gameObject.AddComponent<MapGradePost>();
             if (gradePost != null)
@@ -76,7 +77,7 @@ namespace Chaos.Client
                 bool mine = c.Id == world.PlayerId;
                 if (c.Type == 0 && v.Cosmetic.Looks.TryGetValue(c.Name, out var cl) && cl.Glow != null && v.Cosmetic.Allowed(false, mine))
                     bought = OutlineFx.Cosmetic(cl.Glow, cl.Pulse);
-                ol = OutlineFx.Of(c.Id, world.PlayerId, session.AttackTarget, session.Parser.FollowTarget, VisualPrefs.Fx.TargetOutline, bought);
+                ol = OutlineRules.Of(c.Id, world.PlayerId, session.AttackTarget, session.Parser.FollowTarget, hoverCreature, VisualPrefs.Fx.TargetOutline, VisualPrefs.Fx.HoverOutline, bought);
             }
             if (look == null && Phase8CPrefs.OutfitShaders)
             {

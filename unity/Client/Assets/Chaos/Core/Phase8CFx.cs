@@ -16,11 +16,13 @@ namespace Chaos.Core
         public const int Ember = 10, Frost = 11, Void = 12, Holy = 13, Blood = 14, Ghost = 15, Ash = 16, Crown = 17;
         // flashes and silhouettes
         public const int HitWhite = 20, HitRed = 21, Solid = 22;
+        // phase 9, track D: the soft rarity glow of an item (a silhouette that pulses by itself) and the Divine metal look
+        public const int ItemGlow = 23, Metal = 24;
         // living ground (chaos_liquid_*.frag)
         public const int Water = 30, Lava = 31;
 
         public static bool IsOutfit(int m) => m >= Haze && m <= Crown && !(m > Sparks && m < Ember);
-        public static bool IsKnown(int m) => m == None || IsOutfit(m) || m == HitWhite || m == HitRed || m == Solid || m == Water || m == Lava;
+        public static bool IsKnown(int m) => m == None || IsOutfit(m) || m == HitWhite || m == HitRed || m == Solid || m == ItemGlow || m == Metal || m == Water || m == Lava;
     }
 
     /// <summary>One outfit shader as the shader sees it: a mode and the colour of its family (0..1).</summary>

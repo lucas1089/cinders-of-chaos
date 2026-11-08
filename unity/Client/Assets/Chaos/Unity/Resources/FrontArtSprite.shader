@@ -23,6 +23,7 @@ Shader "Chaos/FrontArtSprite"
         _FxMode ("Outfit shader mode (Core/Phase8CFx.cs FxMode)", Float) = 0
         _FxStrength ("Outfit shader strength", Range(0, 1)) = 1
         _FxTint ("Outfit shader colour", Color) = (1, 1, 1, 1)
+        _FxTop ("Outline colour at the top (a > 0.5: a gradient)", Color) = (0, 0, 0, 0)
     }
     SubShader
     {
@@ -38,7 +39,7 @@ Shader "Chaos/FrontArtSprite"
         fixed4 _Tint;
         float4 _MainTex_ST, _MainTex_TexelSize;
         half _FxMode, _FxStrength;
-        fixed4 _FxTint;
+        fixed4 _FxTint, _FxTop;
 
         struct SurfaceOutputFS
         {
@@ -69,6 +70,8 @@ Shader "Chaos/FrontArtSprite"
                 fixed3 c0 = c.rgb;
                 float4 fxc = FxApply(_FxMode, _FxStrength, c, uv0 / t, raw, rimv, _FxTint, _Time.y);
                 c = fixed4(fxc);
+                // phase 9, track D: a gradient outline (a bought cosmetic) runs from the feet colour to the top colour over the picture
+                if (_FxTop.a > 0.5 && _FxMode > 21.5 && _FxMode < 22.5) c.rgb = lerp(_FxTint.rgb, _FxTop.rgb, saturate(raw.y));
                 fxEmit = max(0, c.rgb - c0) * 0.8;
             }
             o.Albedo = c.rgb;
@@ -90,6 +93,8 @@ Shader "Chaos/FrontArtSprite"
             o.Emission += fxEmit;
             // struck by a melee blow (FrontArtMelee.Flinch): a red-white flash over the picture
             o.Emission = lerp(o.Emission, (0.35 + c.rgb) * half3(2.0, 0.55, 0.45), _Hit * 0.7);
+            // phase 9, track D: an outline silhouette (FX_SOLID, FX_ITEMGLOW) is one flat colour, unlit
+            if (_FxMode > 21.5 && _FxMode < 23.5) { o.Albedo = 0; o.Emission = c.rgb; }
         }
 
         half4 LightingFrontSprite (SurfaceOutputFS s, half3 lightDir, half atten)
