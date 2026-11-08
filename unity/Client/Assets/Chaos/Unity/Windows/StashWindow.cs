@@ -10,6 +10,7 @@ namespace Chaos.Client
     public sealed class StashWindow : GameWindow
     {
         public override string Title => Loc.T("Stash");
+        public override string TravelKey => "stash";
         public override KeyCode Hotkey => KeyCode.H;
         protected override Rect Place(float w, float h) => new Rect(w / 2 - 250, 60, 500, 470);
 

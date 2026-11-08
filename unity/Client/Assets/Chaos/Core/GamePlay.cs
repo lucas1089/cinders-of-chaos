@@ -63,6 +63,29 @@ namespace Chaos.Core
             }
         }
 
+        ReachCache autoReach;
+
+        /// <summary>game_autotarget reach rule: a path of at most AutoTargetCore.MaxSteps steps on the known tiles (other monsters do not wall one off), or a clear shot for
+        /// the ranged lines (SightLine over BlockMissile tiles).</summary>
+        public ReachCache AutoTargetReach
+        {
+            get
+            {
+                if (autoReach != null) return autoReach;
+                autoReach = new ReachCache
+                {
+                    Steps = (from, to) =>
+                    {
+                        uint self = world.PlayerId;
+                        var path = PathFinder.Find(from, to, p => WalkMap.Walkable(world, p, self, true), 1, 800);
+                        return path == null ? -1 : path.Count + (from == to ? 0 : 1);
+                    },
+                    Sight = (from, to) => SightLine.Clear(from, to, p => WalkMap.BlocksMissile(world, p)),
+                };
+                return autoReach;
+            }
+        }
+
         /// <summary>The Auto Target class of a creature (1 loot goblin, 2 boss, 3 special, 4 normal): its name and the tier the monster bar heard. Asks the server about a
         /// creature it has not named (at most once in 30 s per creature).</summary>
         public int AutoTargetRank(uint id)

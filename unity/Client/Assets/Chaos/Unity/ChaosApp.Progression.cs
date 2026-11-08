@@ -97,6 +97,16 @@ namespace Chaos.Client
                 if (prog != null && !prog.Info.IsPageOffered(page)) return null;
                 item.Run = () => OpenInfoPage(page);
             }
+            else if (t == "act:killtasks")
+            {
+                if (session?.Bestiary == null) return null;
+                item.Run = () => { session.Bestiary.ShowTasks(); var w = FindWindow<BestiaryWindow>(); if (w != null) w.Open = true; };
+            }
+            else if (t == "act:tracker")
+            {
+                if (session?.Bestiary == null) return null;
+                item.Run = () => session.Bestiary.Tracker.Toggle(Chaos.Core.TaskTrackerState.Rows(session.Bestiary.TrackerRows).Count);
+            }
             else if (t == "act:logout")
             {
                 item.Run = () => { session?.Logout(); Leave("Logged out."); };

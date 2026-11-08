@@ -91,6 +91,17 @@ namespace Chaos.Client
             lines.AddRange(c.UnlockLines());
             sideScroll = CU.Rows(side, sideScroll, lines.Count, 20, (i, r) => { if (lines[i].Value != null) CU.Label(app, r, lines[i].Key, lines[i].Value, false); });
 
+            // an item of a bag or a container dropped on the grid is placed where it falls (game_charms onDropItem)
+            if (drag == null && ItemSlots.Dragging)
+                ItemSlots.Drop(gridRect, (pos, id, stack, count) =>
+                {
+                    var it = MarketDrop.BagItem(app.Session?.Parser.Containers, pos);
+                    var act = c.ItemDropAction(pos, it != null ? it.Attr(ItemAttr.Id) : 0UL, mouse.x - gridRect.x, mouse.y - gridRect.y, out string why);
+                    if (act != null) c.Send(act);
+                    else if (why != null) { c.StatusText = why; c.StatusColor = CharmsState.ColorBad; }
+                });
+            if (drag == null) ItemSlots.Ghost(app, new Rect(0, 0, Area.width, Area.height));
+
             // the drag
             if (drag != null)
             {

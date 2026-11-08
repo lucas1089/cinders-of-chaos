@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Chaos.Core
 {
-    public enum RowKind { Section, Text, Row, Input, Combo, Bar }
+    public enum RowKind { Section, Text, Row, Input, Combo, Bar, Chart }
 
     public sealed class SocialButton
     {
@@ -29,6 +29,9 @@ namespace Chaos.Core
         public int Count = 1;
         public string Frame;
         public object ItemTip;
+        /// <summary>RowKind.Chart: the points (price chart) and the width of the axis in units.</summary>
+        public List<ChartPoint> Points;
+        public int Units = 30;
         /// <summary>Called by the window while the pointer is over the row (a panel asks the server for a tooltip).</summary>
         public Action Hover;
         public List<SocialButton> Buttons = new List<SocialButton>();
@@ -53,6 +56,9 @@ namespace Chaos.Core
             Rows.Add(r);
             return r;
         }
+
+        /// <summary>A price chart row (Phase7ZMarket.cs PriceChart): Text is the caption.</summary>
+        public SocialRow Chart(string text, List<ChartPoint> points, int units) { var r = new SocialRow { Kind = RowKind.Chart, Text = text, Points = points, Units = units }; Rows.Add(r); return r; }
 
         public SocialRow Add(SocialRow r) { Rows.Add(r); return r; }
     }

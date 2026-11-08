@@ -60,6 +60,23 @@ namespace Chaos.Client
             PlayerPrefs.Save();
         }
 
+        /// <summary>The 12 slots as they are saved (a loadout keeps them as its action bar profile).</summary>
+        public string[] SnapshotBar()
+        {
+            var o = new string[Slots];
+            for (int i = 0; i < Slots; i++) o[i] = bar.Saved(i);
+            return o;
+        }
+
+        /// <summary>Puts a saved bar back (loading a loadout) and saves it.</summary>
+        public void ApplyBar(string[] saved)
+        {
+            if (saved == null || loadedFor == null) return;
+            bar.Load(i => i < saved.Length ? saved[i] : "");
+            editing = -1;
+            for (int i = 0; i < Slots; i++) Save(i);
+        }
+
         /// <summary>Puts a line on a slot (the spellbook does it for a spell).</summary>
         public void Assign(int slot, string words)
         {
@@ -208,6 +225,19 @@ namespace Chaos.Client
                     if (!icon) GUI.Label(new Rect(r.x + 2, r.y + 14, r.width - 2, r.height - 14), s.Text, textStyle);
                 }
                 GUI.Label(new Rect(r.x + 2, r.y, r.width - 2, 14), "F" + (i + 1), keyStyle);
+                // game_spellsupports: a small pip per socketed rune, and the supports in the tooltip
+                if (spell != null)
+                {
+                    var sup = app.Session?.Utils?.Supports;
+                    var pips = SupportPips.Colors(sup, spell.Id);
+                    float px = r.xMax - 3 - SupportPips.Width(pips.Count);
+                    foreach (var pc in pips)
+                    {
+                        ChaosApp.Fill(new Rect(px, r.y + 3, SupportPips.PipSize, SupportPips.PipSize), CU.Hex(pc, Color.white));
+                        px += SupportPips.PipSize + SupportPips.PipGap;
+                    }
+                    if (pips.Count > 0 && r.Contains(e.mousePosition)) app.SetTip(SupportPips.Tip(sup, spell.Id, spell.Name));
+                }
                 int cd = spell != null ? app.Session.Spells.CooldownSeconds(spell) : 0;
                 if (cd > 0)
                 {

@@ -91,6 +91,14 @@ namespace Chaos.Client
                     ChaosApp.Fill(new Rect(dx + 50, body.y, 44, 44), new Color(0.11f, 0.09f, 0.12f, 1f));
                     app.DrawItem(new Rect(dx + 56, body.y + 6, 32, 32), (ushort)CF.I(look, "cid"), 1);
                 }
+                // the live preview (game_transmog previewItem): the equipped item drawn as the picked look, big; without a pick, as it looks now
+                if (dw >= 170)
+                {
+                    var pv = new Rect(dx + dw - 68, body.y, 68, 68);
+                    ChaosApp.Fill(pv, new Color(0.11f, 0.09f, 0.12f, 1f));
+                    int pcid = look != null ? CF.I(look, "cid") : CF.I(item2, "cid");
+                    if (pcid > 0) app.DrawItem(new Rect(pv.x + 2, pv.y + 2, 64, 64), (ushort)pcid, 1);
+                }
                 GUI.Label(new Rect(dx, body.y + 48, dw, 20), CF.T(item2, "name"), app.TitleStyle);
                 string lt = t.SelectedLook != null ? Loc.T("Preview: {0}", CF.T(t.SelectedLook, "name")) : CF.G(item2, "look") is Dictionary<string, object> own ? Loc.T("Looks like: {0}", CF.T(own, "name")) : Loc.T("Shows its own look");
                 GUI.Label(new Rect(dx, body.y + 68, dw, 20), lt, app.SmallStyle);

@@ -15,7 +15,8 @@ namespace Chaos.Client
         const float Row = 34;
         GUIStyle right;
 
-        protected override Rect Place(float w, float h) => new Rect(w - 178 - 232, 48, 228, 560);
+        bool showCraft;
+        protected override Rect Place(float w, float h) => new Rect(w - 178 - 232, 48, 228, Mathf.Min(h - 56, showCraft ? 840 : 560));
 
         static void Bar(Rect r, int percent, Color fill)
         {
@@ -72,6 +73,26 @@ namespace Chaos.Client
             y += Row;
             Skill(app, x, y, w, Loc.T("Fishing"), p.Skills[SkillStats.Fishing]);
             y += Row;
+            // game_craftskills: the seven profession skills of the 0xA1 packet under a separator and a title
+            showCraft = CraftSkillRows.Any(p.CraftSkills);
+            if (showCraft)
+            {
+                ChaosApp.Fill(new Rect(x, y + 2, w, 1), new Color(1f, 1f, 1f, 0.15f));
+                var title = new GUIStyle(app.SmallStyle);
+                title.normal.textColor = new Color(0.91f, 0.72f, 0.29f);
+                GUI.Label(new Rect(x, y + 6, w, 20), Loc.T("Professions"), title);
+                y += 28;
+                foreach (var cr in CraftSkillRows.Build(p.CraftSkills))
+                {
+                    var vs = new GUIStyle(right ?? app.SmallStyle) { alignment = TextAnchor.UpperRight };
+                    vs.normal.textColor = cr.Boosted ? new Color(0.27f, 0.68f, 0.15f) : new Color(0.75f, 0.75f, 0.75f);
+                    GUI.Label(new Rect(x, y, w * 0.62f, 20), cr.Name, app.SmallStyle);
+                    GUI.Label(new Rect(x + w * 0.5f, y, w * 0.5f, 20), cr.Value, vs);
+                    Bar(new Rect(x, y + 20, w, 8), cr.Percent, new Color(0.35f, 0.7f, 0.3f, 1f));
+                    if (new Rect(x, y, w, 30).Contains(Event.current.mousePosition)) app.SetTip(cr.Tip);
+                    y += Row;
+                }
+            }
             // the combat stat rows: "-" until the server's numbers arrive, damage and attack hidden for a wand or bare hands
             var rows = SkillStats.Build(s.Progress?.Stats.Last);
             string[] names = { Loc.T("Damage/Healing"), Loc.T("Attack Value"), Loc.T("Defense Value"), Loc.T("Armor Value"), Loc.T("Mitigation") };

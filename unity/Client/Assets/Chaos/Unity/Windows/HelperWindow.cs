@@ -50,6 +50,7 @@ namespace Chaos.Client
                 engine = new HelperEngine(s.Spells, host);
                 engineFor = s; loadedFor = name;
                 engine.Config = HelperConfig.FromJson(PlayerPrefs.GetString(HelperConfig.PrefsKey("-", name), ""));
+                engine.Reach = s.AutoTargetReach;   // game_autotarget "Only reachable" (Core/Phase7Z.cs)
                 engine.RankOf = s.AutoTargetRank;   // game_autotarget: goblins, bosses and special monsters first (Core/PlayGuards.cs)
                 engine.Held = new EverfullHeld(s.Ext);
                 engine.Held.Ask();
@@ -243,6 +244,12 @@ namespace Chaos.Client
             y += 30;
             GUI.Label(new Rect(x, y, w, 34), Loc.T("Attacks a monster within 7 x 5 tiles by the rule below and keeps it until it is gone."), hint);
             y += 40;
+            bool pr = GUI.Toggle(new Rect(x, y, w, 24), cfg.AutoTargetPriority, new GUIContent(Loc.T("Priority targets"), Loc.T("Loot goblins, bosses and special monsters first.")));
+            if (pr != cfg.AutoTargetPriority) { cfg.AutoTargetPriority = pr; dirty = true; }
+            y += 26;
+            bool rc = GUI.Toggle(new Rect(x, y, w, 24), cfg.AutoTargetReachable, new GUIContent(Loc.T("Only reachable"), Loc.T("Never a monster the character cannot get to or shoot.")));
+            if (rc != cfg.AutoTargetReachable) { cfg.AutoTargetReachable = rc; dirty = true; }
+            y += 30;
             for (int i = 0; i < ModeText.Length; i++, y += 28)
             {
                 bool sel = cfg.AutoTargetMode == i + 1;

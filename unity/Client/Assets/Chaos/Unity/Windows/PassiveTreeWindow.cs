@@ -64,6 +64,17 @@ namespace Chaos.Client
             if (Open && tree.BoxText.Length > 0 && tree.BoxText != lastBox) { lastBox = tree.BoxText; panel = Panel.Box; }
         }
 
+        /// <summary>The tree data of the build (Resources/PassiveTree), loaded once; null when the file is missing. The inspect window draws from it.</summary>
+        public static TreeData LoadData()
+        {
+            if (cache == null)
+            {
+                var asset = Resources.Load<TextAsset>("PassiveTree");
+                if (asset != null) { try { cache = TreeData.Parse(asset.text); } catch (Exception) { cache = null; } }
+            }
+            return cache;
+        }
+
         static void EnsureData(PassiveTree tree)
         {
             if (tree.Ready) return;

@@ -182,7 +182,16 @@ namespace Chaos.Core
     /// standing there. The player's own tile is never asked.</summary>
     public static class WalkMap
     {
-        public static bool Walkable(World w, Pos p, uint selfId)
+        /// <summary>A tile whose items stop a shot (BlockMissile): for the Auto Target line of sight.</summary>
+        public static bool BlocksMissile(World w, Pos p)
+        {
+            if (w == null || !w.Tiles.TryGetValue(p, out var tile)) return false;
+            foreach (var t in tile.Things) if (!t.IsCreature && t.Item?.Type != null && t.Item.Type.BlockMissile) return true;
+            return false;
+        }
+
+
+        public static bool Walkable(World w, Pos p, uint selfId, bool ignoreCreatures = false)
         {
             if (w == null || !w.Tiles.TryGetValue(p, out var tile)) return false;
             bool ground = false;
@@ -191,7 +200,7 @@ namespace Chaos.Core
                 if (t.IsCreature)
                 {
                     var c = t.Creature;
-                    if (c != null && c.Id != selfId && !c.Walkthrough) return false;
+                    if (!ignoreCreatures && c != null && c.Id != selfId && !c.Walkthrough) return false;
                     continue;
                 }
                 var type = t.Item?.Type;

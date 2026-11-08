@@ -22,6 +22,8 @@ namespace Chaos.Core
         public bool Enabled;
         public bool MagicShooter, AutoTarget, AutoTurn = true;
         public int AutoTargetMode = HelperLogic.ModeDefault;
+        /// <summary>game_autotarget options (both on by default): loot goblins, bosses and special monsters first; never a monster that cannot be reached or shot.</summary>
+        public bool AutoTargetPriority = true, AutoTargetReachable = true;
         public readonly List<HelperHealRow> Heals = new List<HelperHealRow>();
         public readonly List<HelperPotionRow> Potions = new List<HelperPotionRow>();
         public HelperTrainRow Training = new HelperTrainRow();
@@ -154,7 +156,7 @@ namespace Chaos.Core
             var root = new Dictionary<string, object>
             {
                 { "version", Version }, { "enabled", Enabled }, { "magicShooter", MagicShooter }, { "autoTarget", AutoTarget }, { "autoTurn", AutoTurn },
-                { "autoTargetMode", AutoTargetMode }, { "heals", heals }, { "potions", potions }, { "slots", slots },
+                { "autoTargetMode", AutoTargetMode }, { "autoTargetPriority", AutoTargetPriority }, { "autoTargetReachable", AutoTargetReachable }, { "heals", heals }, { "potions", potions }, { "slots", slots },
                 { "training", new Dictionary<string, object> { { "id", Training.Id }, { "percent", Training.Percent }, { "enabled", Training.Enabled } } },
                 { "haste", new Dictionary<string, object> { { "id", Haste.Id }, { "enabled", Haste.Enabled }, { "safecast", Haste.SafeCast } } },
                 { "autoMarker", new List<int>(AutoMarker) },
@@ -231,6 +233,8 @@ namespace Chaos.Core
             c.AutoTarget = Bool(root, "autoTarget", false);
             c.AutoTurn = Bool(root, "autoTurn", true);
             c.AutoTargetMode = Int(root, "autoTargetMode", 1, HelperLogic.ModeMax, HelperLogic.ModeDefault);
+            c.AutoTargetPriority = Bool(root, "autoTargetPriority", true);
+            c.AutoTargetReachable = Bool(root, "autoTargetReachable", true);
             var heals = Json.List(root, "heals");
             for (int i = 0; i < HealRows && i < heals.Count; i++)
             {

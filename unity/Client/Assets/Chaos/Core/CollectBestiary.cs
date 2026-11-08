@@ -36,6 +36,8 @@ namespace Chaos.Core
         public bool KnownOnly;
         public int Page = 1, SelectedId;
         public List<object> TrackerRows = new List<object>();
+        /// <summary>The on-screen task tracker (Phase7ZBestiary.cs): on, folded, opened from the menu.</summary>
+        public readonly TaskTrackerState Tracker = new TaskTrackerState();
         public bool Visible;
         public double BoardAt;
 
@@ -116,7 +118,7 @@ namespace Chaos.Core
         public void Clear()
         {
             Summary = null; Detail = null; Board = null; Rows = new List<BestiaryRow>(); ById.Clear(); ListComplete = false; ListAsked = false;
-            SelectedId = 0; TrackerRows = new List<object>(); Visible = false; SelectedCat = All; Page = 1;
+            SelectedId = 0; TrackerRows = new List<object>(); Visible = false; SelectedCat = All; Page = 1; Tracker.Opened = false;
         }
 
         IEnumerable<string> CatKeys() { yield return All; foreach (var c in CF.Rows(CF.G(Summary, "cats"))) yield return CF.Str(CF.G(c, "key")); }

@@ -17,8 +17,12 @@ namespace Chaos.Client
         string loadedKey, hover = "";
 
         public override string Title => Loc.T("DPS Meter");
-        protected override Rect Place(float w, float h) => new Rect(8f, 176f, 440f, 380f);
-        public override void Reset() { forSession = null; wasOpen = false; loadedKey = null; confirmReset = false; }
+        Rect? saved;   // the position and size of the last session (settings x, y, w, h), used when the window is first placed
+        bool resizing;
+        Vector2 dragged;   // the corner drag so far, in UI units (a mouse delta is already scaled)
+        int startW, startH;
+        protected override Rect Place(float w, float h) => saved ?? new Rect(8f, 176f, 440f, 380f);
+        public override void Reset() { forSession = null; wasOpen = false; loadedKey = null; confirmReset = false; saved = null; resizing = false; }
 
         void Save(DpsMeter m) { if (loadedKey != null) { PlayerPrefs.SetString(loadedKey, m.Settings.ToJson()); PlayerPrefs.Save(); } }
 
@@ -35,6 +39,17 @@ namespace Chaos.Client
                 m.Forget();
                 m.Settings = DpsMath.Sanitize(Json.TryParse(PlayerPrefs.GetString(loadedKey, "")));
                 m.SegSel = m.Settings.Seg;
+                // the panel keeps its own position and size (settings x, y, w, h)
+                var st = m.Settings;
+                bool sized = st.W != DpsMath.DefaultW || st.H != DpsMath.DefaultH;
+                if (st.X.HasValue && st.Y.HasValue || sized)
+                {
+                    float rw = sized ? st.W : 440f, rh = sized ? st.H : 380f;
+                    float rx = st.X ?? 8, ry = st.Y ?? 176;
+                    DpsPanel.ClampPosition(ref rx, ref ry, rw, rh, Screen.width, Screen.height);
+                    saved = new Rect(rx, ry, rw, rh);
+                    if (Area.width > 0) Area = saved.Value;
+                }
                 wasOpen = false;
                 Open = m.Settings.Shown;
             }
@@ -98,7 +113,8 @@ namespace Chaos.Client
             var area = new Rect(x, y, w, inner.yMax - y - 30);
             if (set.Party && m.Party != null && !details) DrawParty(area, m, tab);
             else if (details) DrawDetails(area, view, tab, rows);
-            else DrawBars(area, rows, tab);
+            else DrawBars(app, area, rows, tab);
+            PanelFrame(m);
 
             // footer
             float fy = inner.yMax - 26;
@@ -112,7 +128,23 @@ namespace Chaos.Client
             }
         }
 
-        void DrawBars(Rect area, List<DpsRow> rows, DpsTab tab)
+        // the source icon of a bar (dpsmath.lua iconSpec): the spell's cell, the rune's sprite, else a coloured glyph for the pictures only the main client has
+        void DrawIcon(ChaosApp app, Rect r, DpsRow row, DpsTab tab)
+        {
+            var spec = DpsIcons.Spec(row.Kind, row.Icon);
+            if (spec.Kind == "spell")
+            {
+                var sp = app.Session?.Spells?.ByWords(spec.Words);
+                if (app.DrawSpellIcon(r, spec.Words, sp != null ? sp.Id : 0)) return;
+            }
+            else if (spec.Kind == "item" && app.Dat?.Item((ushort)spec.ItemId) != null) { app.DrawItem(r, (ushort)spec.ItemId, 1); return; }
+            var col = Hex(DpsMath.BarColor(row.Kind, tab.Idx)); col.a = 0.9f;
+            ChaosApp.Fill(r, col);
+            var g = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter, fontSize = 10 };
+            GUI.Label(r, spec.Glyph, g);
+        }
+
+        void DrawBars(ChaosApp app, Rect area, List<DpsRow> rows, DpsTab tab)
         {
             if (rows.Count == 0) { GUI.Label(area, Loc.T("Nothing in this tab yet."), hint); return; }
             const float Row = 22f;
@@ -125,7 +157,8 @@ namespace Chaos.Client
                 ChaosApp.Fill(rr, new Color(1f, 1f, 1f, 0.05f));
                 var col = Hex(DpsMath.BarColor(r.Kind, tab.Idx)); col.a = 0.75f;
                 ChaosApp.Fill(new Rect(rr.x, rr.y, Mathf.Max(1f, rr.width * (float)r.Frac), rr.height), col);
-                GUI.Label(new Rect(rr.x + 4, rr.y + 2, rr.width - 190, 18), r.Name, small);
+                DrawIcon(app, new Rect(rr.x + 3, rr.y + 3, 16, 16), r, tab);
+                GUI.Label(new Rect(rr.x + 24, rr.y + 2, rr.width - 214, 18), r.Name, small);
                 GUI.Label(new Rect(rr.xMax - 188, rr.y + 2, 184, 18), DpsMath.Short(r.Total) + "  " + DpsMath.Short(r.Rate) + "/s  " + r.Pct.ToString("0.#") + "%", right);
                 if (rr.Contains(Event.current.mousePosition))
                     hover = r.Name + "\n" + DpsMath.Exact(r.Total) + " / " + DpsMath.Exact(r.Rate) + "/s, " + r.Pct.ToString("0.#") + "%\n"
@@ -139,6 +172,39 @@ namespace Chaos.Client
                 var tr = new Rect(Mathf.Min(mp.x + 12, Area.width - 270f), Mathf.Min(mp.y + 16, Area.height - 90f), 260f, 84f);
                 ChaosApp.Fill(tr, new Color(0f, 0f, 0f, 0.92f));
                 GUI.Label(tr, hover, hint);
+            }
+        }
+
+        // the position and size of the panel are kept in the settings: the corner handle resizes, a moved panel is saved when the button is up
+        void PanelFrame(DpsMeter m)
+        {
+            var set = m.Settings;
+            var ev = Event.current;
+            var handle = new Rect(Area.width - 16, Area.height - 16, 14, 14);
+            ChaosApp.Fill(new Rect(handle.x + 8, handle.y + 3, 2, 10), new Color(1f, 1f, 1f, 0.35f));
+            ChaosApp.Fill(new Rect(handle.x + 3, handle.y + 8, 10, 2), new Color(1f, 1f, 1f, 0.35f));
+            if (ev.type == EventType.MouseDown && ev.button == 0 && handle.Contains(ev.mousePosition))
+            {
+                resizing = true; dragged = Vector2.zero; startW = (int)Area.width; startH = (int)Area.height; ev.Use();
+            }
+            else if (resizing && ev.type == EventType.MouseDrag)
+            {
+                dragged += ev.delta;
+                DpsPanel.Resize(startW, startH, dragged.x, dragged.y, out int nw, out int nh);
+                Area.width = nw; Area.height = nh;
+                ev.Use();
+            }
+            else if (resizing && (ev.type == EventType.MouseUp || ev.rawType == EventType.MouseUp))
+            {
+                resizing = false;
+                set.W = (int)Area.width; set.H = (int)Area.height;
+                set.X = (int)Area.x; set.Y = (int)Area.y;
+                Save(m);
+            }
+            else if (!resizing && ev.type == EventType.Repaint && !Input.GetMouseButton(0) && (set.X != (int)Area.x || set.Y != (int)Area.y))
+            {
+                set.X = (int)Area.x; set.Y = (int)Area.y;
+                Save(m);
             }
         }
 
@@ -248,6 +314,9 @@ namespace Chaos.Client
             return true;
         }
 
+        /// <summary>A tab, filter or option text: the Codex table first (pt-BR), then the client's own texts.</summary>
+        static string Cx(string text) { string s = CodexText.T(text); return s != text ? s : Loc.T(text); }
+
         void Styles(ChaosApp app)
         {
             if (small != null) return;
@@ -266,7 +335,7 @@ namespace Chaos.Client
             float x = inner.x + 4, w = inner.width - 8, y = inner.y + 2;
             if (!data.Ready) { GUI.Label(new Rect(x, y, w, 40), Loc.T("The Codex data is missing from this build."), hint); return; }
             var names = new string[data.Tabs.Count];
-            for (int i = 0; i < names.Length; i++) names[i] = Loc.T(data.Tabs[i].Name);
+            for (int i = 0; i < names.Length; i++) names[i] = Cx(data.Tabs[i].Name);
             int t = GUI.SelectionGrid(new Rect(x, y, w, 50), tabIndex, names, 6);
             if (t != tabIndex) { tabIndex = t; shownKey = null; listScroll = pageScroll = Vector2.zero; history.Clear(); }
             y += 54;
@@ -281,7 +350,7 @@ namespace Chaos.Client
                 string cur;
                 vals.TryGetValue(f.Key, out cur);
                 int oi = Mathf.Max(0, f.Options.FindIndex(o => o.Value == (cur ?? "")));
-                if (GUI.Button(new Rect(fx, y, fw, 22), Loc.T(f.Options[oi].Text)))
+                if (GUI.Button(new Rect(fx, y, fw, 22), new GUIContent(Cx(f.Options[oi].Text), Cx(f.Label))))
                 {
                     oi = (oi + (Event.current.button == 1 ? f.Options.Count - 1 : 1)) % f.Options.Count;
                     vals[f.Key] = f.Options[oi].Value;
@@ -364,8 +433,8 @@ namespace Chaos.Client
             {
                 var s = CodexView.Section(raw, data);
                 if (s == null) continue;
-                if (s.H.Length > 0) y = Ui.Para(s.H, head, 0, y + 4, w, "#f6cf72");
-                foreach (var p in s.Paragraphs) y = Ui.Para(p, para, 0, y, w);
+                if (s.H.Length > 0) y = Ui.Para(CodexText.T(s.H), head, 0, y + 4, w, "#f6cf72");
+                foreach (var p in s.Paragraphs) y = Ui.Para(CodexText.T(p), para, 0, y, w);
                 if (s.Rows != null)
                 {
                     y = Table(app, s, w, y, level, data, draw);
@@ -422,7 +491,7 @@ namespace Chaos.Client
                 int dataIndex = ri - headRows;
                 string link = !head && s.Links != null && dataIndex < s.Links.Count ? s.Links[dataIndex] : "";
                 float rh = 18f;
-                for (int c = 0; c < cells.Count && c < widths.Length; c++) rh = Mathf.Max(rh, Ui.Height(cells[c], para, widths[c]) + 2f);
+                for (int c = 0; c < cells.Count && c < widths.Length; c++) rh = Mathf.Max(rh, Ui.Height(CodexText.T(cells[c]), para, widths[c]) + 2f);
                 var rr = new Rect(0, y, w, rh);
                 if (draw)
                 {
@@ -432,7 +501,7 @@ namespace Chaos.Client
                     for (int c = 0; c < cells.Count && c < widths.Length; c++)
                     {
                         string hex = head ? "#c8a85a" : (c == 0 && link.Length > 0) ? "#7fa8ff" : mark ? "#f6cf72" : null;
-                        Ui.Text(new Rect(cx, y + 1, widths[c], rh), cells[c], para, hex);
+                        Ui.Text(new Rect(cx, y + 1, widths[c], rh), CodexText.T(cells[c]), para, hex);
                         cx += widths[c] + 8;
                     }
                     if (link.Length > 0 && GUI.Button(rr, GUIContent.none, GUIStyle.none)) { history.Add(selected[Tab.Id]); GoTo(link); }

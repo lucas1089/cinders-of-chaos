@@ -220,6 +220,21 @@ namespace Chaos.Client
             if (o.Tab == 0 && Time.realtimeSinceStartupAsDouble > nextRefresh) { nextRefresh = Time.realtimeSinceStartupAsDouble + OrbExchangeState.RefreshSeconds; o.RequestBook(); }
         }
 
+        void PriceChartBox(OrbExchangeState o, Rect r)
+        {
+            int hours = Json.Int(o.Book, "hours", 24);
+            var pts = PriceChart.Points(Json.Get(o.Book, "points"));
+            GUI.Label(new Rect(r.x, r.y, r.width, 16), Loc.T("Average price per hour, last {0} hours", hours), small);
+            var box = new Rect(r.x, r.y + 18, r.width, r.height - 18);
+            ChaosApp.Fill(box, new Color(0.08f, 0.07f, 0.09f, 1f));
+            var rects = PriceChart.Rects(pts, hours, (int)box.width - 4, (int)box.height - 4);
+            if (rects.Count == 0) { GUI.Label(box, Loc.T("No trades yet"), small); return; }
+            foreach (var cr in rects)
+                ChaosApp.Fill(new Rect(box.x + 2 + cr.X, box.y + 2 + cr.Y, cr.W, cr.H), cr.Line ? new Color(0.91f, 0.72f, 0.29f, 1f) : new Color(0.23f, 0.2f, 0.22f, 1f));
+            if (Json.Get(o.Book, "high") is double hi && Json.Get(o.Book, "low") is double lo)
+                GUI.Label(new Rect(box.x + 4, box.y + 1, box.width - 8, 16), Loc.T("High {0}  Low {1}", OrbExchangeState.PriceText(hi), OrbExchangeState.PriceText(lo)), small);
+        }
+
         void Book(ChaosApp app, OrbExchangeState o, Rect b)
         {
             float lw = b.width * 0.5f;
@@ -230,7 +245,10 @@ namespace Chaos.Client
                 Ui.Text(new Rect(b.x, b.y, lw, 20), Loc.T("Last") + " " + (Json.Get(o.Book, "last") is double l ? OrbExchangeState.PriceText(l) : "-") + "   " + ch, small, col);
             }
             float y = b.y + 22;
-            scrollBook = GUI.BeginScrollView(new Rect(b.x, y, lw, b.yMax - y), scrollBook, new Rect(0, 0, lw - 18, rows.Count * 22 + 2));
+            // the price chart of the book (game_orbexchange statsFrame): the average price per hour and the volume, at the bottom of the left column
+            float chartH = o.Book != null && b.height > 260 ? 104f : 0f;
+            if (chartH > 0) PriceChartBox(o, new Rect(b.x, b.yMax - chartH, lw - 4, chartH));
+            scrollBook = GUI.BeginScrollView(new Rect(b.x, y, lw, b.yMax - y - (chartH > 0 ? chartH + 4 : 0)), scrollBook, new Rect(0, 0, lw - 18, rows.Count * 22 + 2));
             for (int i = 0; i < rows.Count; i++)
             {
                 var r = rows[i];
@@ -314,6 +332,7 @@ namespace Chaos.Client
     public sealed class GambleWindow : SyncedWindow
     {
         public override string Title => Loc.T("The Gambler");
+        public override string TravelKey => "gambler";
         protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 300), 60, Mathf.Min(600, w - 16), Mathf.Min(480, h - 70));
         Vector2 scroll;
 
@@ -545,6 +564,9 @@ namespace Chaos.Client
             if (it.Cid > 0) app.DrawItem(new Rect(0, y, 32, 32), (ushort)it.Cid, 1);
             GUI.Label(new Rect(40, y, w - 40, 20), WorldText.Cap(it.Name), st);
             GUI.Label(new Rect(40, y + 18, w - 40, 18), it.None ? Loc.T("No known source.") : ItemFinderState.TotalText(it.Total), small);
+            // the item's Codex page when the Codex has one (game_itemfinder codexButton)
+            string codexId = it.None ? null : CodexLinks.ForItem(InfoStore.Codex, it.Id);
+            if (codexId != null && GUI.Button(new Rect(w - 88, y, 88, 24), new GUIContent(Loc.T("Codex"), Loc.T("Open its page in the Codex.")))) app.OpenCodex(codexId);
             y += 42;
             foreach (var s in it.Secs)
             {
@@ -589,7 +611,35 @@ namespace Chaos.Client
         int nameFor = -1;
         Vector2 scrollList, scrollDetail;
 
-        protected override void OnReset() { nameEdit = ""; nameFor = -1; }
+        GameSession wiredFor;
+        HotbarProfiles profiles;
+
+        protected override void OnReset() { nameEdit = ""; nameFor = -1; wiredFor = null; }
+
+        // the action bar profile of a slot: saving a loadout keeps the hotkey bar, loading it puts the bar back (game_loadouts)
+        public override void Tick(ChaosApp app)
+        {
+            base.Tick(app);
+            var s = app.Session;
+            var l = s?.Utils?.Loadouts;
+            if (l == null || wiredFor == s) return;
+            wiredFor = s;
+            profiles = new HotbarProfiles(k => { try { return PlayerPrefs.GetString(k, ""); } catch { return ""; } }, (k, v) => { try { PlayerPrefs.SetString(k, v); PlayerPrefs.Save(); } catch { } });
+            l.ProfileSaved = slot =>
+            {
+                var bar = app.FindWindow<HotkeyBarWindow>();
+                string who = app.World?.Player?.Name;
+                if (bar != null && who != null) profiles.Remember(who, slot, bar.SnapshotBar());
+            };
+            l.ProfileLoaded = slot =>
+            {
+                var bar = app.FindWindow<HotkeyBarWindow>();
+                string who = app.World?.Player?.Name;
+                var saved = who != null ? profiles.Recall(who, slot, 12) : null;
+                if (bar != null && saved != null) bar.ApplyBar(saved);
+            };
+        }
+
         protected override bool Visible(ChaosApp app, out System.Action show, out System.Action hide)
         {
             var l = app.Session?.Utils?.Loadouts; show = null; hide = null; if (l == null) return false; show = l.Open; hide = () => l.Visible = false; return true;
@@ -626,7 +676,8 @@ namespace Chaos.Client
             string hint = l.SwitchHint(now, out string hc);
             y = Ui.Para(hint, small, x, y, w, hc);
             float sh = inner.yMax - y - 100;
-            var lines = l.Summary(slot, "");
+            string who = app.World?.Player?.Name;
+            var lines = l.Summary(slot, profiles != null && who != null && slot != null && !Json.Bool(slot, "empty") ? profiles.ProfileOf(who, Json.Int(slot, "slot")) : "");
             float th = 0; foreach (var ln in lines) th += Ui.Height(ln.Text, small, w - 20) + 2;
             scrollDetail = GUI.BeginScrollView(new Rect(x, y, w, sh), scrollDetail, new Rect(0, 0, w - 18, th + 4));
             float cy = 0;
@@ -656,6 +707,8 @@ namespace Chaos.Client
         public override string Title => Loc.T("Spell Supports");
         protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 340), 50, Mathf.Min(680, w - 16), Mathf.Min(560, h - 60));
         Vector2 scrollSpells, scrollDetail, scrollRunes;
+        double dragRune = -1;   // a rune picked up from the list, dropped on a free socket
+        readonly System.Collections.Generic.List<SocketTarget> sockets = new System.Collections.Generic.List<SocketTarget>();
 
         protected override bool Visible(ChaosApp app, out System.Action show, out System.Action hide)
         {
@@ -697,6 +750,7 @@ namespace Chaos.Client
             var spell = s.SpellById(s.SelectedSpell);
             var detail = new Rect(dx, y, dw, inner.height - runesH - 10);
             scrollDetail = GUI.BeginScrollView(detail, scrollDetail, new Rect(0, 0, dw - 18, 420));
+            sockets.Clear();
             float cy = 0;
             if (spell == null) GUI.Label(new Rect(0, 0, dw, 22), Loc.T("Pick a spell on the left."), small);
             else
@@ -709,6 +763,8 @@ namespace Chaos.Client
                 {
                     var v = s.Socket(spell, slot, now);
                     var rr = new Rect(0, cy, dw - 20, 66);
+                    // a free socket takes a rune dragged from the list or an item dragged from a bag (window coordinates)
+                    sockets.Add(new SocketTarget { X = detail.x + rr.x - scrollDetail.x, Y = detail.y + rr.y - scrollDetail.y, W = rr.width, H = rr.height, Spell = spellId, Slot = slot, Free = v.Open && !v.HasRune });
                     ChaosApp.Fill(rr, new Color(1f, 1f, 1f, 0.05f));
                     Ui.Text(new Rect(rr.x + 6, rr.y + 2, rr.width - 140, 18), v.Name, st, v.HasRune ? Json.Text(v.Rune, "color", "#d6c9ae") : "#d6c9ae");
                     GUI.Label(new Rect(rr.x + 6, rr.y + 20, rr.width - 140, 44), v.Text, Ui.Wrap(app, 11));
@@ -745,9 +801,39 @@ namespace Chaos.Client
                 GUI.Label(new Rect(rr.x + 2, rr.y + 2, 32, 32), Json.Text(r, "name").Length > 0 ? Json.Text(r, "name").Substring(0, 1) : "?", st);
                 if (Json.Int(r, "count") > 1) GUI.Label(new Rect(rr.x + 20, rr.y + 20, 16, 16), Json.Int(r, "count").ToString(), small);
                 if (Ui.Row(rr, false)) s.SelectedRune = Json.Number(r, "id");
-                if (rr.Contains(Event.current.mousePosition)) app.SetTip(SpellSupportsState.RuneTip(r));
+                if (rr.Contains(Event.current.mousePosition))
+                {
+                    app.SetTip(SpellSupportsState.RuneTip(r));
+                    if (Event.current.type == EventType.MouseDrag && Event.current.button == 0 && dragRune < 0) { dragRune = Json.Number(r, "id"); s.SelectedRune = dragRune; }
+                }
             }
             GUI.EndScrollView();
+            // drag and drop: a rune of the list (or an item of a bag) dropped on a free socket of the selected spell
+            var ev = Event.current;
+            if (dragRune >= 0)
+            {
+                if (ev.type == EventType.Repaint)
+                {
+                    var dr = s.RuneById(dragRune);
+                    ChaosApp.Fill(new Rect(ev.mousePosition.x - 14, ev.mousePosition.y - 14, 28, 28), Ui.Hex(dr != null ? Json.Text(dr, "color", "#d6c9ae") : "#d6c9ae") * new Color(1f, 1f, 1f, 0.8f));
+                }
+                if (ev.type == EventType.MouseUp && ev.button == 0)
+                {
+                    int hit = SupportDrop.Hit(sockets, ev.mousePosition.x, ev.mousePosition.y, detail.y, detail.yMax);
+                    if (hit >= 0) s.SocketRune(sockets[hit].Spell, sockets[hit].Slot, (int)dragRune);
+                    dragRune = -1;
+                    ev.Use();
+                }
+                else if (ev.type == EventType.MouseUp || (ev.rawType == EventType.MouseUp)) dragRune = -1;
+            }
+            else
+                foreach (var tgt in sockets)
+                    if (tgt.Free && tgt.Y >= detail.y - tgt.H && tgt.Y <= detail.yMax)
+                    {
+                        var t2 = tgt;
+                        ItemSlots.Drop(new Rect(tgt.X, Mathf.Max(tgt.Y, detail.y), tgt.W, Mathf.Min(tgt.Y + tgt.H, detail.yMax) - Mathf.Max(tgt.Y, detail.y)), (pos, id, stack, count) => s.SocketItem(t2.Spell, t2.Slot, pos, id));
+                    }
+            ItemSlots.Ghost(app, new Rect(0, 0, Area.width, Area.height));
             var sel = s.RuneById(s.SelectedRune);
             float fy = inner.yMax - 28;
             if (sel != null) Ui.Text(new Rect(dx, fy - 22, dw, 20), s.RuneInfo(sel), small, Json.Text(sel, "color", "#d6c9ae"));
@@ -850,6 +936,7 @@ namespace Chaos.Client
     public sealed class CandlemarksWindow : SyncedWindow
     {
         public override string Title => Loc.T("Candlemarks");
+        public override string TravelKey => "candlemarks";
         protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 280), 60, Mathf.Min(560, w - 16), Mathf.Min(520, h - 70));
         Vector2 scroll;
 
