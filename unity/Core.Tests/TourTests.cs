@@ -31,9 +31,15 @@ namespace Chaos.Core.Tests
                 check(server.ScriptEvents > 30, "tour script: " + server.ScriptEvents + " events");
 
                 server.Begin();
+                // a slow login client (a player under software GL) must not be taken for a game client: the login port never sends the game challenge
+                using (var slow = new System.Net.Sockets.TcpClient("127.0.0.1", server.Port))
+                {
+                    System.Threading.Thread.Sleep(1200);
+                    check(slow.Available == 0 && server.GamePort != server.Port, "tour server: a login client silent for 1.2 s gets no game challenge");
+                }
                 var res = LoginClient.Login("127.0.0.1", server.Port, "demo", "demo", server.RsaModulus, 30).GetAwaiter().GetResult();
                 check(res.Error == null && res.SessionKey == "demo\ndemo\n\n0" && res.Characters.Count == 1 && res.Characters[0].Name == FakeGameServer.HeroName &&
-                      res.Characters[0].Vocation == FakeGameServer.HeroVocation && res.Characters[0].Port == server.Port, "tour server: login port answers with one character (" + res.Error + ")");
+                      res.Characters[0].Vocation == FakeGameServer.HeroVocation && res.Characters[0].Port == server.GamePort, "tour server: login port answers with one character (" + res.Error + ")");
                 if (res.Error != null || res.Characters.Count == 0) return;
 
                 double clock = 0;
@@ -44,7 +50,7 @@ namespace Chaos.Core.Tests
                     world.Fx.Enabled = true;
                     var session = new GameSession(world, new GameSession.Options
                     {
-                        Host = "127.0.0.1", Port = server.Port, Account = "demo", Password = "demo", SessionKey = res.SessionKey, Character = FakeGameServer.HeroName,
+                        Host = "127.0.0.1", Port = server.GamePort, Account = "demo", Password = "demo", SessionKey = res.SessionKey, Character = FakeGameServer.HeroName,
                         GuardKey = server.GuardKey, Build = 30, RsaModulus = server.RsaModulus, Identity = ClientIdentity.Extended,
                     });
                     session.Start();

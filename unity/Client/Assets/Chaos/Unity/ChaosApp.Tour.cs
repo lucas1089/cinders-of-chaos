@@ -137,7 +137,7 @@ namespace Chaos.Client
                     if (app == null) return;
                 }
                 float wall = Time.realtimeSinceStartup - startedAt;
-                if (phase != Phase.Record && wall > 300f) { Fail("no recording after 300 s (phase " + phase + ", status '" + app.status + "')"); return; }
+                if (phase != Phase.Record && wall > 300f) { Fail("no recording after 300 s (phase " + phase + ", status '" + app.status + "', server problem '" + (server?.Problem ?? "") + "', logins " + (server?.Logins ?? 0) + ")"); return; }
                 if (wall > 2400f) { Fail("the tour ran over 2400 s"); return; }
                 switch (phase)
                 {

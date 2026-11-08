@@ -131,12 +131,15 @@ namespace Chaos.Core
         public readonly string RsaModulus;
         public readonly TourMap Map;
         public readonly Pos Start;
+        /// <summary>The login port (what the client dials first).</summary>
         public int Port { get; private set; }
+        /// <summary>The game port the character list names. Its own listener, so the server never has to guess a connection's kind from timing.</summary>
+        public int GamePort { get; private set; }
 
         readonly TourArt art;
         readonly Rsa rsa;
         readonly BigInteger d;
-        TcpListener listener;
+        TcpListener listener, gameListener;
         volatile bool stop;
         readonly object gate = new object();
         Conn cur;
@@ -204,23 +207,27 @@ namespace Chaos.Core
         public int ScriptEvents => script.Count;
 
         // ------------------------------------------------------------------------------------ sockets
-        /// <summary>Starts listening on a free localhost port (Port).</summary>
+        /// <summary>Starts listening on two free localhost ports: login (Port) and game (GamePort).</summary>
         public void Begin()
         {
             listener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();
             Port = ((IPEndPoint)listener.LocalEndpoint).Port;
-            new Thread(AcceptLoop) { IsBackground = true, Name = "demo-server" }.Start();
+            gameListener = new TcpListener(IPAddress.Loopback, 0);
+            gameListener.Start();
+            GamePort = ((IPEndPoint)gameListener.LocalEndpoint).Port;
+            new Thread(() => AcceptLoop(listener, false)) { IsBackground = true, Name = "demo-server-login" }.Start();
+            new Thread(() => AcceptLoop(gameListener, true)) { IsBackground = true, Name = "demo-server-game" }.Start();
         }
 
-        void AcceptLoop()
+        void AcceptLoop(TcpListener l, bool game)
         {
             while (!stop)
             {
                 TcpClient c;
-                try { c = listener.AcceptTcpClient(); }
+                try { c = l.AcceptTcpClient(); }
                 catch (Exception) { return; }
-                new Thread(() => Serve(c)) { IsBackground = true, Name = "demo-server-conn" }.Start();
+                new Thread(() => Serve(c, game)) { IsBackground = true, Name = "demo-server-conn" }.Start();
             }
         }
 
@@ -228,17 +235,18 @@ namespace Chaos.Core
         {
             stop = true;
             try { listener?.Stop(); } catch (Exception) { }
+            try { gameListener?.Stop(); } catch (Exception) { }
             lock (gate) { try { cur?.S.Close(); } catch (Exception) { } cur = null; }
         }
 
-        void Serve(TcpClient cl)
+        void Serve(TcpClient cl, bool game)
         {
             try
             {
                 cl.NoDelay = true;
                 var s = cl.GetStream();
-                // a login client talks first, a game client waits for the challenge
-                if (cl.Client.Poll(400000, SelectMode.SelectRead)) ServeLogin(s); else ServeGame(s);
+                // one port per kind: a slow client (a player under software GL takes more than a second to send its login) is never taken for a game client
+                if (game) ServeGame(s); else ServeLogin(s);
             }
             catch (Exception e)
             {
@@ -281,7 +289,7 @@ namespace Chaos.Core
             var w = new ByteWriter();
             w.U8(0x14).Str("1\nDemo tour: a fake server on this computer.");
             w.U8(0x28).Str(account + "\n" + password + "\n\n0");
-            w.U8(0x64).U8(1).U8(0).Str("Demo").Str("127.0.0.1").U16((ushort)Port).U8(0);
+            w.U8(0x64).U8(1).U8(0).Str("Demo").Str("127.0.0.1").U16((ushort)GamePort).U8(0);
             w.U8(1).U8(0).Str(HeroName).U32(HeroLevel).U16(HeroVocation).U16((ushort)art.OutfitHero).U8(78).U8(69).U8(58).U8(76).U8(0).U16(0);
             w.U8(0).U8(1).U32(0);
             var p = Protocol.Encrypt(w.ToArray(), key);
