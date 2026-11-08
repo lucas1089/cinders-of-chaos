@@ -179,7 +179,8 @@ namespace Chaos.Client
             int slot = HotbarLayout.SlotOfKey(e.keyCode.ToString());
             if (slot < 0) return;
             // the bare Q and E belong to the side slots only when they hold something
-            if (slot >= HotbarModel.Count && (bar[slot].IsEmpty || e.shift)) return;
+            // and never while any text field (search, NPC line, create window) has the keyboard
+            if (slot >= HotbarModel.Count && (bar[slot].IsEmpty || e.shift || GUIUtility.keyboardControl != 0)) return;
             if (!bar[slot].IsEmpty) Press(app, slot);
             e.Use();
         }
