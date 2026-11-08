@@ -84,7 +84,7 @@ namespace Chaos.Client
         // The server sends the 15 x 11 view plus one tile left and top and two right and bottom (World.Range*). A wider
         // view showed unknown tiles at the sides, black, and they flashed while walking. The map keeps the 15 x 11 shape
         // and is centred; the rest of the screen is the backdrop.
-        public const float ViewTilesW = 15f, ViewTilesH = 11f;
+        public static float ViewTilesW = 15f, ViewTilesH = 11f;   // 15 x 11 unless the map zoom (Core/Layout.cs ViewZoom) shows fewer rows
         public static float UiScale(float screenW, float screenH, float dpi)
         {
             float byHeight = Mathf.Min(screenH / 720f, screenW / 960f);
@@ -273,6 +273,7 @@ namespace Chaos.Client
 
         void Update()
         {
+            VisualUpdate();   // ChaosApp.Visual.cs: options, sounds, music, zoom, layout
             if (Input.GetKeyDown(KeyCode.F11) && !chatFocused) ToggleFrontArt();
             if (screen != Screen.Game || session == null) return;
             session.Poll();
@@ -497,8 +498,9 @@ namespace Chaos.Client
         void GameGui(float w, float h, float scale)
         {
             uiRects.Clear();
+            HudLayoutUpdate(w, h);   // ChaosApp.Visual.cs
             // the windows, in UI units: names under them are not drawn
-            var covers = new List<Rect> { StatusRect(), ChatRect(w, h), LogoutRect(w), ToolbarRect(w) };
+            var covers = new List<Rect> { StatusRect(), ChatRect(w, h), LogoutRect(w), HudPlace("toolbar", ToolbarRect(w)) };
             foreach (var win in windows) if (win.Open) covers.Add(win.Area);
             if (view != null)
             {
@@ -526,6 +528,7 @@ namespace Chaos.Client
                     DrawNameplate(c, x, nr);   // ChaosApp.World.cs: frame, guild and title of a player
                     nameStyle.normal.textColor = Color.black;
                     GUI.Label(new Rect(nr.x + 1, nr.y + 1, nr.width, nr.height), c.Name, nameStyle);
+                    col = VisualNameColor(c, col);   // the own name shader
                     nameStyle.normal.textColor = col;
                     GUI.Label(nr, c.Name, nameStyle);
                     DrawBubbles(c, x, nr.y);
@@ -535,6 +538,7 @@ namespace Chaos.Client
                 }
                 DrawGroundLabels(map, scale);
                 DrawWorldOverlays(map, scale);   // ChaosApp.World.cs: tile overlays, NPC marks, map overlay, weather
+                DrawVisualOverlays(map, scale);  // ChaosApp.Visual.cs: ground rings, decals, auras, beams, flashes, wings
                 DrawAttackFrame(map, scale);
                 GUI.EndGroup();
             }
@@ -557,15 +561,17 @@ namespace Chaos.Client
             PartyGui(w, h, scale);   // the right-click menu and the party invitation, over the windows
             PlayGui(w, h, scale);    // the use with / trade crosshair hint (ChaosApp.Play.cs)
             ItemsGui(w, h, scale);   // the item tooltip, the modal window and the text window (ChaosApp.Items.cs)
+            HudEditGui(w, h, scale); // ChaosApp.Visual.cs: the HUD piece frames of the edit mode
             WorldGui(w, h, scale);   // the Candlemarks counter, the Hideout placing bar and the small tooltip (ChaosApp.World.cs)
         }
 
         public static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);
         static Rect Scaled(Rect r, float s) => new Rect(r.x * s, r.y * s, r.width * s, r.height * s);
 
-        static Rect StatusRect() => new Rect(8, 8, 248, 92);
-        static Rect LogoutRect(float w) => new Rect(w - 96, 8, 88, 30);
-        Rect ChatRect(float w, float h)
+        static Rect StatusRect() => HudPlace("status", new Rect(8, 8, 248, 92));
+        static Rect LogoutRect(float w) => HudPlace("logout", new Rect(w - 96, 8, 88, 30));
+        Rect ChatRect(float w, float h) => HudPlace("chat", ChatDefault(w, h));
+        Rect ChatDefault(float w, float h)
         {
             if (!chatOpen) return new Rect(8, h - 38, 90, 30);
             float ch = Mathf.Min(240f, h * 0.36f);

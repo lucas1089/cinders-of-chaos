@@ -10,10 +10,11 @@ namespace Chaos.Client
     public sealed class OptionsWindow : GameWindow
     {
         bool loaded;
+        int page;   // 0 General, then the pages of VisualOptionsUi (sound, visuals, layout)
 
         public override string Title => Loc.T("Options");
         public override KeyCode Hotkey => KeyCode.L;
-        protected override Rect Place(float w, float h) => new Rect(w / 2 - 150, h / 2 - 140, 300, 262);
+        protected override Rect Place(float w, float h) => new Rect(w / 2 - 170, Mathf.Max(8f, h / 2 - 250), 340, 500);
         public override void Reset() { loaded = false; }
 
         public override void Tick(ChaosApp app)
@@ -32,7 +33,12 @@ namespace Chaos.Client
             var hud = app.Session?.Hud;
             if (hud == null) return;
             var o = hud.Options;
-            float y = inner.y;
+            // the pages: General (below), Sound, Visuals and Layout (Windows/VisualWindows.cs)
+            float tw = (inner.width - 4) / VisualOptionsUi.Pages.Length;
+            for (int i = 0; i < VisualOptionsUi.Pages.Length; i++)
+                if (GUI.Toggle(new Rect(inner.x + 2 + i * tw, inner.y, tw - 3, 24), page == i, Loc.T(VisualOptionsUi.Pages[i]), GUI.skin.button) && page != i) page = i;
+            if (page > 0) { VisualOptionsUi.Page(app, page, inner); return; }
+            float y = inner.y + 30;
             GUI.Label(new Rect(inner.x + 2, y, inner.width, 20), Loc.T("Language"), app.TitleStyle);
             y += 22;
             float bw = (inner.width - 8) / HudOptions.LanguageChoices.Length;

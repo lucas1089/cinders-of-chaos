@@ -844,3 +844,24 @@ Wire layouts are TFS 1.4.2 `protocolgame.cpp` for 10.98 (the base tree is not in
 - Not done: map picking in the HD-2D scene (creatures only there), the reach rule of Auto Target (no pathfinder or line of sight in the Unity world) and its two options, the mount, wings, aura and shader drawn on the look preview and the effect stage, a call of `ShowLookPreview` from the Outfit, Cosmetics and Store windows,
   split stack dialog on drag, the equip hotkey (0x77), "Browse field", the rules of the quest log tracker, a Rift Key name check for the lock entry (the client has no item names). Nothing here was run against a live server.
 - Tests: `Core.Tests/PlayTests.cs` (byte-level packets out and in, tile picking, menu entries, crosshair, trade, VIP, quest log, guards, Auto Target order and the engine with it, badge slot, look preview, texts).
+## Visuals, audio and layout (O433 phase 5, track R)
+
+Eighteen more modules of the main client. The rules are the Lua logic files without engine calls: `Core/Audio.cs` (sound mixer, region music, the overlay file finder), `Core/Visual.cs` (opacity, error colour, wings, loot beams,
+decals, auras, cosmetic prints, ground ids, boss looks, hit flash, shake, name shaders), `Core/Layout.cs` (map zoom, movable HUD, screen fit, window fade, saved layout). `Core/GameVisual.cs` (`GameSession.Visual`)
+connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds, decals and flashes see every damage number and magic effect whether or not the live view runs.
+- Files: the sounds and the music are the main client's own ogg files (`client/overlay/modules/game_chaossound/sounds`, `game_chaosmusic/music`, built by `client/tools/gen_music.py`), and the aura, decal and print
+  pictures are its png files. Nothing is copied into the Unity project. The player looks in `CHAOS_OVERLAY_DIR`, `StreamingAssets/overlay/modules`, `overlay/modules` beside the executable, then the repository's
+  `client/overlay/modules` (`OverlayFiles`). A build that ships the game folder copies the module folders `game_chaossound`, `game_chaosmusic`, `game_chestaura`, `game_combatdecals` and `game_cosmeticfx` to
+  `StreamingAssets/overlay/modules` (the build script does not do it yet). Without the files the game is silent and has no pictures for auras, decals and prints (drawn stand-ins for the rest); Options > Sound says so.
+- Drawing: `Unity/ChaosApp.Visual.cs` draws in the map group through `TileScreenPx`, so the classic view and the front-art live view (F8) share it: ground rings (the 223 ground effect ids), decals, footprints, chest and
+  Templar auras (the range frame as a nine-slice), cosmetic glows, loot beams, hit flashes and level-up wings. The HD-2D scene draws none of it. `Unity/ChaosApp.Audio.cs` plays the cues (8 voices) and cross-fades two
+  music sources. The own name wears the picked name shader (`NameShadersWindow`, opcode 96).
+- Layout: the map zoom (7 to 11 rows, Ctrl and the wheel, `ChaosApp.ViewTilesW/H` are no longer constants), the camera shake, the movable HUD pieces (plate, log out, chat, top menu; edit mode and reset in Options > Layout,
+  saved per character in `chaos.hudpos.<name>`), windows taller than the screen (wheel scroll), the window fade, and the saved window places (`chaos.layout.<name>`, plus the open state of the minimap, battle list, equipment and containers).
+- Options: the existing options window got four pages (General, Sound, Visuals, Layout), `Unity/Windows/VisualWindows.cs`; every option is in PlayerPrefs (`VisualPrefs`: `chaos.sound`, `chaos.music`, `chaos.lootbeams`,
+  `chaos.visualfx`, `chaos.effectopacity` and flags). Texts: `Core/LocVisual.cs` (pt-BR).
+- Not done: a larger map area than 11 rows (needs the aware range change, opcodes 0x33 and 0x42 of other sizes); effects drawn under creatures (they are over them, IMGUI); the pack effect strips of the loot beams and wings
+  (drawn in code instead); the outline shader of cosmetics; the grade, bloom, spell light, liquid shimmer, target and hover outlines and cooldown pulse of game_visualfx; the shift of Gravewarden Ulthar in the live view;
+  the container, panel and size parts of game_chaoslayout; name shaders of other players. The audio and picture loading and the drawing compile (`unity/Client.Check`) but were not run in a Unity player or against a live server.
+- Tests: `Core.Tests/VisualTests.cs` (about 190 checks): the mixer rules and files against `soundlogic.lua` and the module folder, the music rules and hysteresis with the files, the cursed and foot aura messages and
+  the strip sizes, decal colours, beams, prints, ground ids against `groundfx_data.lua`, the layout rules, and a session fed with the combat events (cue, flash, stain, shake, ring, wings, kill, chest, footprint).

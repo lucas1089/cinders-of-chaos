@@ -12,6 +12,10 @@ namespace Chaos.Client
         /// <summary>False for a window that opens by itself and has no place in the Windows list of the top menu (a HUD).</summary>
         public virtual bool InMenu => true;
         public bool Open;
+        /// <summary>0..1: the window fade (client_chaos_uifade); 1 when no fade runs.</summary>
+        public float Alpha = 1f;
+        /// <summary>Called once when a window is placed for the first time (the saved layout moves it).</summary>
+        public static System.Action<GameWindow> Placed;
         /// <summary>Where the window is, in UI units (720 px of height is scale 1). Set a default in Place.</summary>
         public Rect Area;
         bool placed;
@@ -27,10 +31,20 @@ namespace Chaos.Client
 
         internal void Draw(ChaosApp app, int id, float w, float h)
         {
-            if (!placed) { Area = Place(w, h); placed = true; }
-            // keep the title bar on screen
-            Area.x = Mathf.Clamp(Area.x, 0, Mathf.Max(0, w - Area.width));
-            Area.y = Mathf.Clamp(Area.y, 0, Mathf.Max(0, h - 24));
+            if (!placed)
+            {
+                Area = Place(w, h); placed = true;
+                Placed?.Invoke(this);
+                Area.x = Chaos.Core.ScreenFit.OpenStart(Area.x, Area.width, 0, w); Area.y = Chaos.Core.ScreenFit.OpenStart(Area.y, Area.height, 0, h);
+            }
+            // keep the title bar on screen; a window taller or wider than the screen moves only so far that it still covers it (client_chaos_screenfit)
+            bool tall = Chaos.Core.ScreenFit.Overflows(Area.height, h), wide = Chaos.Core.ScreenFit.Overflows(Area.width, w);
+            var ev = Event.current;
+            if (tall && ev.type == EventType.ScrollWheel && Area.Contains(ev.mousePosition)) { Area.y = Chaos.Core.ScreenFit.Wheel(Area.y, Area.height, 0, h, ev.delta.y < 0); ev.Use(); }
+            Area.x = wide ? Chaos.Core.ScreenFit.Clamp(Area.x, Area.width, 0, w) : Mathf.Clamp(Area.x, 0, Mathf.Max(0, w - Area.width));
+            Area.y = tall ? Chaos.Core.ScreenFit.Clamp(Area.y, Area.height, 0, h) : Mathf.Clamp(Area.y, 0, Mathf.Max(0, h - 24));
+            var oldColor = GUI.color;
+            if (Alpha < 0.999f) GUI.color = new Color(1f, 1f, 1f, Alpha);
             Area = GUI.Window(id, Area, _ =>
             {
                 ChaosApp.Fill(new Rect(0, 0, Area.width, Area.height), new Color(0.04f, 0.03f, 0.05f, 0.92f));
@@ -40,6 +54,7 @@ namespace Chaos.Client
                 Body(app, new Rect(4, 28, Area.width - 8, Area.height - 32));
                 GUI.DragWindow(new Rect(0, 0, Area.width - 30, 24));
             }, GUIContent.none, GUIStyle.none);
+            GUI.color = oldColor;
         }
     }
 
@@ -107,6 +122,7 @@ namespace Chaos.Client
             windows.Add(new AutoSellerWindow()); windows.Add(new OrbExchangeWindow()); windows.Add(new GambleWindow()); windows.Add(new EmberCacheWindow());
             windows.Add(new UnveilWindow()); windows.Add(new ItemFinderWindow()); windows.Add(new LoadoutsWindow()); windows.Add(new SpellSupportsWindow());
             windows.Add(new PactWindow()); windows.Add(new CandlemarksWindow());
+            windows.Add(new NameShadersWindow());   // phase 5, track R: Windows/VisualWindows.cs
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>
@@ -117,7 +133,7 @@ namespace Chaos.Client
             return null;
         }
 
-        static Rect ToolbarRect(float w) => new Rect(w - 104 - 76 * 7, 8, 76 * 7, 30);
+        static Rect ToolbarRect(float w) => new Rect(w - 104 - 76 * 7, 8, 76 * 7, 30);   // the default place; the menu itself moves by HudShift
 
         void DrawWindows(float w, float h, float scale)
         {
@@ -127,9 +143,9 @@ namespace Chaos.Client
             for (int i = 0; i < windows.Count; i++)
             {
                 var win = windows[i];
-                if (!win.Open) continue;
+                if (!WindowShown(win)) continue;   // ChaosApp.Visual.cs: fade in and out
                 win.Draw(this, 1000 + i, w, h);
-                uiRects.Add(Scaled(win.Area, scale));
+                if (win.Open) uiRects.Add(Scaled(win.Area, scale));
             }
         }
 

@@ -279,6 +279,7 @@ namespace Chaos.Core
             switch (kind)
             {
                 case 4: return 0x5FF7F7;
+                case 21: return ErrorColor.Tint(21, 0xFFFFFF);   // the server's error lines (game_errorcolor)
                 case 13: case 18: return 0xF55E5E;
                 case 19: case 20: case 30: return 0xFE6500;
                 case 22: case 31: return 0x00EB00;

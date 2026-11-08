@@ -209,7 +209,7 @@ namespace Chaos.Client
             q.R.sharedMaterial = m;
             block.Clear();
             block.SetVector("_MainTex_ST", st);
-            block.SetColor("_Tint", tint);
+            block.SetColor("_Tint", tint * VisualRuntime.EffectAlpha);   // the spell effect opacity option (game_effectopacity)
             q.R.SetPropertyBlock(block);
             q.R.enabled = true;
         }
