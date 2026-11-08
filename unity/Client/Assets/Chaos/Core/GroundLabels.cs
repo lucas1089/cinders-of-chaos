@@ -30,8 +30,8 @@ namespace Chaos.Core
         {
             var o = new GroundLabelSettings();
             if (!(t is Dictionary<string, object>)) return o;
-            o.Enabled = Json.Bool(t, "enabled", true); o.RarePlus = Json.Bool(t, "rarePlus", true); o.AltAll = Json.Bool(t, "altAll", true);
-            o.Corpses = Json.Bool(t, "corpses", true); o.Timers = Json.Bool(t, "timers", true);
+            o.Enabled = Json.Truthy(t, "enabled", true); o.RarePlus = Json.Truthy(t, "rarePlus", true); o.AltAll = Json.Truthy(t, "altAll", true);
+            o.Corpses = Json.Truthy(t, "corpses", true); o.Timers = Json.Truthy(t, "timers", true);
             string size = Json.Text(t, "size", "normal");
             o.Size = size == "small" || size == "large" ? size : "normal";
             return o;

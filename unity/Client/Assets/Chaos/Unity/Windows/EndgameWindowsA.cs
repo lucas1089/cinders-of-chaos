@@ -245,7 +245,7 @@ namespace Chaos.Client
                 if (weeklyTitle != null) { cy += Eu.Wrap(app, dx, cy, dw, weeklyTitle, Eu.Bright, 12, true); cy += Eu.Wrap(app, dx + 8, cy, dw - 8, DungeonsView.WeeklyText(Json.Get(sel0.Data, "weekly")), Eu.Dim, 11); }
                 foreach (object c in chs)
                 {
-                    bool done = Json.Bool(c, "completed");
+                    bool done = Json.Truthy(c, "completed");
                     string head = (done ? "[x] " : "[ ] ") + Loc.T("{0} ({1} Points)", Json.Text(c, "title"), Fmt.Short(Json.Number(c, "points")));
                     cy += Eu.Wrap(app, dx, cy, dw, head, done ? Eu.Good : Eu.Text, 12, true);
                     cy += Eu.Wrap(app, dx + 8, cy, dw - 8, Json.Text(c, "desc"), Eu.Dim, 11);
@@ -355,7 +355,7 @@ namespace Chaos.Client
             Eu.Label(app, new Rect(x, by, w, 18), r.Message, r.MessageOk ? Eu.Good : Eu.Bright, 12);
             RaidView.StartState(r.Info, out string why);
             bool can = RaidView.StartState(r.Info, out _);
-            if (Eu.Button(new Rect(x, by + 20, 180, 28), Json.Bool(r.Info, "inRaid") ? Loc.T("In a raid") : Loc.T("Open New Raid"), can)) r.Start();
+            if (Eu.Button(new Rect(x, by + 20, 180, 28), Json.Truthy(r.Info, "inRaid") ? Loc.T("In a raid") : Loc.T("Open New Raid"), can)) r.Start();
             if (why.Length > 0) Eu.Label(app, new Rect(x + 188, by + 20, w - 188, 30), why, Eu.Dim, 11, false, TextAnchor.UpperLeft, true);
         }
 
@@ -457,7 +457,7 @@ namespace Chaos.Client
             if (Json.Text(d, "state") == "fight")
             {
                 double hp = Json.Get(d, "hp") is double h ? h : 100;
-                Eu.Bar(app, new Rect(x, y, w, 14), hp, Json.Bool(d, "enraged") ? "#c01010" : "#8a1010", (int)hp + "%");
+                Eu.Bar(app, new Rect(x, y, w, 14), hp, Json.Truthy(d, "enraged") ? "#c01010" : "#8a1010", (int)hp + "%");
                 y += 18;
             }
             string phase = RaidView.PhaseLine(d);

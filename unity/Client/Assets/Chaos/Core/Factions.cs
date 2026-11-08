@@ -48,7 +48,7 @@ namespace Chaos.Core
         {
             if (f == null) return "";
             string rn = Json.Text(f, "rn"), rep = SFmt.Money(Json.Number(f, "rep"));
-            if (Json.Bool(f, "ex") && Json.Number(f, "rep") >= Json.Number(f, "hi")) return rn + "  " + rep;
+            if (Json.Truthy(f, "ex") && Json.Number(f, "rep") >= Json.Number(f, "hi")) return rn + "  " + rep;
             if (!SFmt.Has(f, "nx") || Json.Get(f, "nx") is bool b && !b) return rn + "  " + rep;
             return rn + "  " + rep + " / " + SFmt.Money(Json.Number(f, "hi"));
         }
@@ -89,8 +89,8 @@ namespace Chaos.Core
             if (f == null) return false;
             string tn = Json.Text(f, "tn", Loc.T("tokens")), npc = Json.Text(f, "npc", Loc.T("the faction NPC"));
             if (Json.Int(f, "tok") <= 0) { tip = Loc.T("Bring {0} from {1} content.", tn, Json.Text(f, "s", Json.Text(f, "n"))); return false; }
-            if (!Json.Bool(f, "near")) { tip = Loc.T("Speak with {0} to turn them in.", npc); return false; }
-            if (Capped(f, cap) || (Json.Bool(f, "ex") && Json.Number(f, "rep") >= Json.Number(f, "hi"))) { tip = Loc.T("No more reputation this week: keep them."); return false; }
+            if (!Json.Truthy(f, "near")) { tip = Loc.T("Speak with {0} to turn them in.", npc); return false; }
+            if (Capped(f, cap) || (Json.Truthy(f, "ex") && Json.Number(f, "rep") >= Json.Number(f, "hi"))) { tip = Loc.T("No more reputation this week: keep them."); return false; }
             tip = Loc.T("Give every {0} to {1}.", tn, npc);
             return true;
         }
@@ -99,7 +99,7 @@ namespace Chaos.Core
         {
             if (f == null) return "";
             string tn = Json.Text(f, "tn", Loc.T("tokens")), npc = Json.Text(f, "npc", Loc.T("the faction NPC"));
-            if (Json.Bool(f, "near")) return Loc.T("{0} is listening: turn in your {1} and deliveries here.", npc, tn);
+            if (Json.Truthy(f, "near")) return Loc.T("{0} is listening: turn in your {1} and deliveries here.", npc, tn);
             return Loc.T("Hand in {0} and deliveries to {1}. Use Go to NPC to be taken there.", tn, Json.Text(f, "at", npc));
         }
 
@@ -108,7 +108,7 @@ namespace Chaos.Core
             tip = "";
             if (f == null) return false;
             string npc = Json.Text(f, "npc", Loc.T("the faction NPC"));
-            if (Json.Bool(f, "near")) { tip = Loc.T("You are already next to {0}.", npc); return false; }
+            if (Json.Truthy(f, "near")) { tip = Loc.T("You are already next to {0}.", npc); return false; }
             tip = Loc.T("Takes you in front of {0}. Not in combat; a short wait between two trips.", npc);
             return true;
         }
@@ -122,7 +122,7 @@ namespace Chaos.Core
             {
                 bool da = Json.Text(a, "per") == "d", db = Json.Text(b, "per") == "d";
                 if (da != db) return da ? -1 : 1;
-                bool xa = Json.Bool(a, "done"), xb = Json.Bool(b, "done");
+                bool xa = Json.Truthy(a, "done"), xb = Json.Truthy(b, "done");
                 if (xa != xb) return xa ? 1 : -1;
                 return string.CompareOrdinal(Json.Text(a, "key"), Json.Text(b, "key"));
             });
@@ -131,14 +131,14 @@ namespace Chaos.Core
 
         public static string ProgressText(object c)
         {
-            if (Json.Bool(c, "done")) return Loc.T("Done");
+            if (Json.Truthy(c, "done")) return Loc.T("Done");
             if (Json.Text(c, "kind") == "deliver") return Loc.T("Bring it to the NPC");
             return SFmt.Money(Json.Number(c, "p")) + " / " + SFmt.Money(Json.Number(c, "n"));
         }
 
         public static int ProgressPercent(object c)
         {
-            if (Json.Bool(c, "done")) return 100;
+            if (Json.Truthy(c, "done")) return 100;
             double n = Json.Number(c, "n");
             return n <= 0 ? 0 : (int)Math.Max(0, Math.Min(100, Math.Floor(Json.Number(c, "p") * 100 / n)));
         }
@@ -147,8 +147,8 @@ namespace Chaos.Core
         public static bool DeliverButton(object c, object f, out bool enabled, out string tip)
         {
             enabled = false; tip = "";
-            if (Json.Text(c, "kind") != "deliver" || Json.Bool(c, "done")) return false;
-            if (!Json.Bool(f, "near")) { tip = Loc.T("Speak with {0} to deliver.", Json.Text(f, "npc", Loc.T("the NPC"))); return true; }
+            if (Json.Text(c, "kind") != "deliver" || Json.Truthy(c, "done")) return false;
+            if (!Json.Truthy(f, "near")) { tip = Loc.T("Speak with {0} to deliver.", Json.Text(f, "npc", Loc.T("the NPC"))); return true; }
             enabled = true; tip = Loc.T("Hand over the materials and the gold.");
             return true;
         }
@@ -178,7 +178,7 @@ namespace Chaos.Core
         /// <summary>The offer's button: text, enabled, tone of the state line and the tooltip.</summary>
         public static string OfferButton(object o, object f, out bool enabled, out string tone, out string tip)
         {
-            bool near = Json.Bool(f, "near");
+            bool near = Json.Truthy(f, "near");
             string who = Json.Text(f, "npc", Loc.T("the quartermaster"));
             string st = Json.Text(o, "st");
             if (st == "locked") { enabled = false; tone = "dim"; tip = Json.Text(o, "why"); return Loc.T("Locked"); }
@@ -242,7 +242,7 @@ namespace Chaos.Core
                     foreach (var f in SFmt.Rows(d, "factions")) Tabs.Add(new KeyValuePair<string, string>(Json.Text(f, "k"), FactionsMath.CardName(f)));
                     Tab = Selected;
                     break;
-                case "msg": Status = Json.Text(d, "text"); StatusTone = Json.Bool(d, "ok") ? "good" : "bad"; break;
+                case "msg": Status = Json.Text(d, "text"); StatusTone = Json.Truthy(d, "ok") ? "good" : "bad"; break;
                 case "npc":
                     string f2 = Json.Get(d, "f") as string;
                     if (!string.IsNullOrEmpty(f2)) { Selected = f2; Tab = f2; }
@@ -267,7 +267,7 @@ namespace Chaos.Core
             {
                 var r = l.Row(FactionsMath.CardName(x) + (Json.Text(x, "k") == Selected ? "  <" : ""), FactionsMath.BarText(x), Json.Text(x, "c").Length > 0 ? Json.Text(x, "c") : "text");
                 r.Tip = FactionsMath.NextText(x) + "\n" + FactionsMath.WeekText(x, cap);
-                if (Json.Bool(x, "near")) r.Text += "  (" + Loc.T("{0} is here", Json.Text(x, "npc")) + ")";
+                if (Json.Truthy(x, "near")) r.Text += "  (" + Loc.T("{0} is here", Json.Text(x, "npc")) + ")";
             }
             if (f == null) return l.Rows;
             l.Section(Json.Text(f, "n", Json.Text(f, "k")));
@@ -280,11 +280,11 @@ namespace Chaos.Core
             l.Text(FactionsMath.DrText(f), "dim");
             bool turn = FactionsMath.TokenButton(f, cap, out string turnTip);
             l.Row(FactionsMath.TokenText(f)).Item(Json.Int(f, "tid")).Btn(Loc.T("Turn in"), turn, TurnIn, turnTip);
-            l.Text(FactionsMath.HandInText(f), Json.Bool(f, "near") ? "good" : "text");
+            l.Text(FactionsMath.HandInText(f), Json.Truthy(f, "near") ? "good" : "text");
             bool go = FactionsMath.GoButton(f, out string goTip);
             l.Row("").Btn(Loc.T("Go to NPC"), go, GoToNpc, goTip);
             var contracts = FactionsMath.ContractsFor(Data, Selected);
-            int open = 0; foreach (var c in contracts) if (!Json.Bool(c, "done")) open++;
+            int open = 0; foreach (var c in contracts) if (!Json.Truthy(c, "done")) open++;
             l.Row("")
                 .Btn(open > 0 ? Loc.T("Contracts ({0})", open) : Loc.T("Contracts"), true, () => { OffersTab = false; Changed(); })
                 .Btn(Loc.T("Offers"), true, () => { OffersTab = true; Changed(); });
@@ -296,7 +296,7 @@ namespace Chaos.Core
                 {
                     string key = Json.Text(c, "key");
                     bool daily = Json.Text(c, "per") != "w";
-                    var row = l.Row((daily ? Loc.T("Daily") : Loc.T("Weekly")) + "  " + Json.Text(c, "label"), FactionsMath.ProgressText(c) + "  +" + Json.Int(c, "rep"), Json.Bool(c, "done") ? "good" : daily ? "#e8b84a" : "#b98ae8");
+                    var row = l.Row((daily ? Loc.T("Daily") : Loc.T("Weekly")) + "  " + Json.Text(c, "label"), FactionsMath.ProgressText(c) + "  +" + Json.Int(c, "rep"), Json.Truthy(c, "done") ? "good" : daily ? "#e8b84a" : "#b98ae8");
                     row.Tip = Json.Text(c, "label");
                     if (FactionsMath.DeliverButton(c, f, out bool en, out string tip)) row.Btn(Loc.T("Deliver"), en, () => Send("deliver", SFmt.Map("key", key)), tip);
                     else l.Bar(FactionsMath.ProgressText(c), FactionsMath.ProgressPercent(c));
@@ -347,7 +347,7 @@ namespace Chaos.Core
         {
             tone = "dim";
             if (!SFmt.IsMap(s)) return "";
-            if (Json.Bool(s, "pz")) { tone = "good"; return Loc.T("You may buy here."); }
+            if (Json.Truthy(s, "pz")) { tone = "good"; return Loc.T("You may buy here."); }
             tone = "bad";
             return Loc.T("Buy from a protection zone or next to Iselde Varrow.");
         }
@@ -364,8 +364,8 @@ namespace Chaos.Core
         static ConquestRow Row(object s, string key, double clientId, string name, string sub, double price, bool hasPrice, bool ok, string why, string tone)
         {
             bool afford = Json.Number(s, "bal") >= price;
-            bool can = ok && afford && Json.Bool(s, "pz");
-            string tip = !string.IsNullOrEmpty(why) ? why : (!afford && hasPrice ? Loc.T("You need {0} Conquest Tokens.", SFmt.Money(price)) : (!Json.Bool(s, "pz") ? Loc.T("Buy from a protection zone or next to Iselde Varrow.") : ""));
+            bool can = ok && afford && Json.Truthy(s, "pz");
+            string tip = !string.IsNullOrEmpty(why) ? why : (!afford && hasPrice ? Loc.T("You need {0} Conquest Tokens.", SFmt.Money(price)) : (!Json.Truthy(s, "pz") ? Loc.T("Buy from a protection zone or next to Iselde Varrow.") : ""));
             int id = clientId >= 1 && clientId <= 65535 && clientId == Math.Floor(clientId) ? (int)clientId : 0;
             return new ConquestRow { Key = key, ClientId = id, Name = name, Sub = sub, PriceText = hasPrice ? Loc.T("{0} tokens", SFmt.Money(price)) : "", Tip = tip, Tone = tone, CanBuy = can, Locked = !ok, PriceBad = !(ok && afford) };
         }
@@ -382,7 +382,7 @@ namespace Chaos.Core
                     if (!InTab(tab, g)) continue;
                     string sub = Loc.T("{0}, level {1}", GroupName(s, g), Json.Int(x, "l"));
                     if (Json.Text(x, "set").Length > 0) sub += " - " + Json.Text(x, "set");
-                    bool ok = Json.Bool(x, "ok");
+                    bool ok = Json.Truthy(x, "ok");
                     o.Add(Row(s, Json.Text(x, "k"), Json.Number(x, "c"), Json.Text(x, "n"), sub, Json.Number(x, "p"), true, ok, Json.Text(x, "why"), ok ? (g == "set" ? "#58c878" : "#ff9a40") : "locked"));
                 }
             }
@@ -393,7 +393,7 @@ namespace Chaos.Core
                 foreach (var k in SFmt.Rows(c, "omens"))
                 {
                     o.Add(Row(s, "omen:" + Json.Text(k, "k"), 0, Loc.T("Omen Key: {0}", Json.Text(k, "n")), Loc.T("An Omen Key of this kind"), Json.Number(c, "omenKey"), true, true, "", "#ff9a40"));
-                    bool hasKey = Json.Bool(c, "hasKey");
+                    bool hasKey = Json.Truthy(c, "hasKey");
                     o.Add(Row(s, "attune:" + Json.Text(k, "k"), 0, Loc.T("Attune your Omen Key: {0}", Json.Text(k, "n")), Loc.T("The Omen Key you carry takes this kind"), Json.Number(c, "attune"), true, hasKey,
                         hasKey ? "" : Loc.T("Carry an Omen Key to attune it."), "text"));
                 }
@@ -418,7 +418,7 @@ namespace Chaos.Core
             {
                 foreach (var r in SFmt.Rows(s, "refine"))
                     o.Add(Row(s, "refine:" + Json.Int(r, "slot"), Json.Number(r, "c"), Json.Text(r, "n"), Loc.T("{0} to {1}: keeps every modifier, adds one", Json.Text(r, "rn"), Json.Text(r, "to")),
-                        Json.Number(r, "p"), SFmt.Has(r, "p"), Json.Bool(r, "ok"), Json.Text(r, "why"), "text"));
+                        Json.Number(r, "p"), SFmt.Has(r, "p"), Json.Truthy(r, "ok"), Json.Text(r, "why"), "text"));
             }
             return o;
         }
@@ -469,7 +469,7 @@ namespace Chaos.Core
             switch (m.Action)
             {
                 case "state": State = d; Buying = false; break;
-                case "result": Buying = false; Status = Json.Text(d, "text"); StatusTone = Json.Bool(d, "ok") ? "good" : "bad"; break;
+                case "result": Buying = false; Status = Json.Text(d, "text"); StatusTone = Json.Truthy(d, "ok") ? "good" : "bad"; break;
                 case "npc": Show(); break;
             }
             Changed();

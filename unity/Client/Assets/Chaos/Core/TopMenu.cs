@@ -224,7 +224,7 @@ namespace Chaos.Core
             object nx = Json.Get(data, "next");
             NextKey = nx is Dictionary<string, object> ? Json.Text(nx, "key") : "";
             NextLevel = nx is Dictionary<string, object> ? Json.Int(nx, "level") : 0;
-            All = Json.Bool(data, "all");
+            All = Json.Truthy(data, "all");
             Loaded = true;
             Changed();
         }

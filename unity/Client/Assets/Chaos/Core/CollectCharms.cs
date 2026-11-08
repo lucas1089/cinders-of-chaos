@@ -199,7 +199,7 @@ namespace Chaos.Core
             lines.Add(Loc.T("{0}, item level {1}, {2}x{3}", CF.T(c, "rarity", "?"), CF.I(c, "ilvl"), CF.I(c, "w"), CF.I(c, "h")));
             foreach (var m in CF.Rows(CF.G(c, "mods"))) lines.Add("  " + (CF.G(m, "t") != null ? CF.T(m, "t") : CF.Str(CF.G(m, "k")) + " " + CF.Str(CF.G(m, "v"))));
             if (CF.G(c, "signature") != null) lines.Add(CF.T(c, "signature"));
-            if (placed && CF.G(c, "active") is bool a && !a) lines.Add(Loc.T("Inactive: it covers a cell that is locked again."));
+            if (placed && CF.G(c, "active") != null && !CF.B(c, "active")) lines.Add(Loc.T("Inactive: it covers a cell that is locked again."));
             if (placed) lines.Add(Loc.T("Drag it to move it; drag it onto your charms list to take it out."));
             else
             {

@@ -380,7 +380,7 @@ namespace Chaos.Core
             string line = Json.Text(x, "line");
             if (look < 0 || tier < 0 || level < 0 || (line != "health" && line != "mana" && line != "spirit")) return null;
             if ((slot == "mana") != (line == "mana")) return null;
-            return new EverfullSlot { Look = look, Tier = tier, Level = level, Line = line, Ready = Json.Bool(x, "ready") };
+            return new EverfullSlot { Look = look, Tier = tier, Level = level, Line = line, Ready = Json.Truthy(x, "ready") };
         }
 
         public bool Apply(object data)

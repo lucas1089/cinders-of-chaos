@@ -249,7 +249,7 @@ namespace Chaos.Core
         public int Apply(object data)
         {
             if (!(data is Dictionary<string, object>)) return state.Count;
-            if (Json.Bool(data, "full")) state.Clear();
+            if (Json.Truthy(data, "full")) state.Clear();
             foreach (object n in Json.List(data, "clear")) if (n is string s && s.Length > 0) state.Remove(s.ToLowerInvariant());
             foreach (object e in Json.List(data, "set"))
             {

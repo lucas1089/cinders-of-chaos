@@ -202,7 +202,7 @@ namespace Chaos.Core
             var a = new AccountAnswer();
             object root = Json.TryParse(body);
             if (!(root is Dictionary<string, object>)) { a.Error = "no answer"; return a; }
-            a.Ok = Json.Bool(root, "ok");
+            a.Ok = Json.Truthy(root, "ok");
             if (!a.Ok)
             {
                 a.Error = Json.Text(root, "message");

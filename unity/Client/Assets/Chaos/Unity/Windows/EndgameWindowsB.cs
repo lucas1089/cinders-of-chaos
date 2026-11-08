@@ -78,7 +78,7 @@ namespace Chaos.Client
             double now = app.Session.Now;
             float x = inner.x + 6, w = inner.width - 12, y = inner.y + 2;
             string theme = Json.Text(h, "theme");
-            Eu.Label(app, new Rect(x, y, w, 18), Json.Bool(h, "weekly") ? Loc.T("The Ember Descent (weekly)") : Loc.T("The Ember Descent"), Eu.Bright, 14, true);
+            Eu.Label(app, new Rect(x, y, w, 18), Json.Truthy(h, "weekly") ? Loc.T("The Ember Descent (weekly)") : Loc.T("The Ember Descent"), Eu.Bright, 14, true);
             y += 20;
             y += Eu.Wrap(app, x, y, w, DescentView.RoomLine(h) + (theme.Length > 0 ? "\n" + theme : ""), DescentView.RoomColor(Json.Text(h, "type")), 12, true);
             double left = d.TimeLeft(now);
@@ -113,9 +113,9 @@ namespace Chaos.Client
             }
             var party = Json.List(h, "party");
             if (party.Count > 1)
-                foreach (object p in party) { Eu.Label(app, new Rect(x, y, w, 15), DescentView.PartyLine(p), Json.Bool(p, "alive") ? Eu.Text : Eu.Dim, 11); y += 15; }
+                foreach (object p in party) { Eu.Label(app, new Rect(x, y, w, 15), DescentView.PartyLine(p), Json.Truthy(p, "alive") ? Eu.Text : Eu.Dim, 11); y += 15; }
             y += 4;
-            if (Json.Text(h, "state") == "rest" && Eu.Button(new Rect(x, y, w * 0.5f, 24), Loc.T("Continue"), !Json.Bool(h, "ready"))) d.Ready();
+            if (Json.Text(h, "state") == "rest" && Eu.Button(new Rect(x, y, w * 0.5f, 24), Loc.T("Continue"), !Json.Truthy(h, "ready"))) d.Ready();
             if (GUI.Button(new Rect(x + w * 0.5f + 6, y, w * 0.5f - 6, 24), Loc.T("Leave"))) d.Leave();
         }
     }

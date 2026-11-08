@@ -700,11 +700,11 @@ namespace Chaos.Core
             foreach (var r in SFmt.Rows(state, "rows"))
             {
                 if (Json.Text(r, "kind") != kind || (kind == "spellskin" && Json.Text(r, "line") != Json.Text(state, "line"))) continue;
-                if (Json.Bool(r, "owned"))
+                if (Json.Truthy(r, "owned"))
                 {
                     var cr = CosmeticsLogic.FromServer((Dictionary<string, object>)r);
                     row.Options.Add(new Option { Text = Json.Text(r, "name", Json.Text(r, "key", Json.Text(r, "id"))), Value = Json.Text(r, "id", Json.Int(r, "id").ToString(CultureInfo.InvariantCulture)), Row = cr });
-                    if (Json.Bool(r, "selected")) row.Current = row.Options[row.Options.Count - 1].Value;
+                    if (Json.Truthy(r, "selected")) row.Current = row.Options[row.Options.Count - 1].Value;
                 }
                 else row.Locked++;
             }
@@ -740,7 +740,7 @@ namespace Chaos.Core
             }
             string active = Json.Text(state, "active");
             row.Current = known.Contains(active) ? active : "";
-            foreach (var c in SFmt.Rows(state, "catalog")) if (!Json.Bool(c, "owned") && !known.Contains(Json.Text(c, "key"))) row.Locked++;
+            foreach (var c in SFmt.Rows(state, "catalog")) if (!Json.Truthy(c, "owned") && !known.Contains(Json.Text(c, "key"))) row.Locked++;
             return row;
         }
 

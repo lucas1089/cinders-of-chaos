@@ -44,21 +44,21 @@ namespace Chaos.Client
             if (guild.Length > 0)
             {
                 int members = Json.Int(info, "members");
-                Eu.Label(app, new Rect(0, y, w, 18), Loc.T(members == 1 ? "{0} - {1} member{2}" : "{0} - {1} members{2}", guild, members, Json.Bool(info, "signed") ? Loc.T(", signed up") : ""), Eu.Text, 13, true);
+                Eu.Label(app, new Rect(0, y, w, 18), Loc.T(members == 1 ? "{0} - {1} member{2}" : "{0} - {1} members{2}", guild, members, Json.Truthy(info, "signed") ? Loc.T(", signed up") : ""), Eu.Text, 13, true);
             }
             else Eu.Label(app, new Rect(0, y, w, 18), Loc.T("You are not in a guild."), Eu.Dim, 13);
             y += 20;
-            bool canJoin = Json.Bool(info, "canJoin"), signed = Json.Bool(info, "signed");
+            bool canJoin = Json.Truthy(info, "canJoin"), signed = Json.Truthy(info, "signed");
             string reason = (!canJoin && !signed) ? Json.Text(info, "joinReason") : (signed ? Loc.T("Members enter through the portals next to the temples when it starts.") : "");
             y += Eu.Wrap(app, 0, y, w, reason, Eu.Dim, 11);
             if (Eu.Button(new Rect(0, y, 140, 26), Loc.T("Sign up"), canJoin)) s.Join();
-            if (Eu.Button(new Rect(148, y, 140, 26), Loc.T("Withdraw"), Json.Bool(info, "canLeave"))) s.Leave();
+            if (Eu.Button(new Rect(148, y, 140, 26), Loc.T("Withdraw"), Json.Truthy(info, "canLeave"))) s.Leave();
             y += 36;
             var signups = Eg.Objects(info, "signups");
             Eu.Label(app, new Rect(0, y, w, 18), Loc.T("Signed up ({0} / {1})", signups.Count, Json.Int(info, "capacity")), Eu.Gold, 13, true);
             y += 20;
             if (signups.Count == 0) { Eu.Label(app, new Rect(4, y, w, 16), Loc.T("No guild yet."), Eu.Dim, 12); y += 17; }
-            for (int i = 0; i < signups.Count; i++) { Eu.Label(app, new Rect(4, y, w, 16), (i + 1) + ". " + Json.Text(signups[i], "name"), Json.Bool(signups[i], "own") ? "#ffe7a6" : Eu.Text, 12); y += 16; }
+            for (int i = 0; i < signups.Count; i++) { Eu.Label(app, new Rect(4, y, w, 16), (i + 1) + ". " + Json.Text(signups[i], "name"), Json.Truthy(signups[i], "own") ? "#ffe7a6" : Eu.Text, 12); y += 16; }
             y += 6;
             Eu.Label(app, new Rect(0, y, w, 18), Loc.T("Champions"), Eu.Gold, 13, true);
             y += 20;
@@ -96,7 +96,7 @@ namespace Chaos.Client
             {
                 ChaosApp.Fill(new Rect(x, y + 2, 10, 12), Eu.Hex(Json.Text(t, "color"), "#8c8070"));
                 int mem = Json.Int(t, "members");
-                Eu.Label(app, new Rect(x + 16, y, w - 110, 16), Json.Text(t, "name", "?") + (mem > 0 ? " (" + mem + ")" : ""), Json.Bool(t, "own") ? "#ffe7a6" : "#e8dcc2", 12);
+                Eu.Label(app, new Rect(x + 16, y, w - 110, 16), Json.Text(t, "name", "?") + (mem > 0 ? " (" + mem + ")" : ""), Json.Truthy(t, "own") ? "#ffe7a6" : "#e8dcc2", 12);
                 Eu.Label(app, new Rect(x + w - 94, y, 36, 16), Json.Int(t, "kills") + " K", Eu.Dim, 11, false, TextAnchor.UpperRight);
                 Eu.Label(app, new Rect(x + w - 54, y, 54, 16), Fmt.Short(Json.Number(t, "score")), Eu.Text, 12, true, TextAnchor.UpperRight);
                 y += 17;
@@ -195,9 +195,9 @@ namespace Chaos.Client
             float y = area.y;
             foreach (object p in players)
             {
-                Eu.Label(app, new Rect(area.x, y, area.width, 14), Json.Text(p, "name", "?"), Json.Bool(p, "defeated") ? "#6b6258" : (mine ? Eu.Bright : "#e03a1e"), 11, true);
+                Eu.Label(app, new Rect(area.x, y, area.width, 14), Json.Text(p, "name", "?"), Json.Truthy(p, "defeated") ? "#6b6258" : (mine ? Eu.Bright : "#e03a1e"), 11, true);
                 double hp = Json.Number(p, "hp");
-                if (Json.Bool(p, "defeated")) Eu.Bar(app, new Rect(area.x, y + 14, area.width, 12), 0, "#000000", Loc.T("defeated"), 10);
+                if (Json.Truthy(p, "defeated")) Eu.Bar(app, new Rect(area.x, y + 14, area.width, 12), 0, "#000000", Loc.T("defeated"), 10);
                 else Eu.Bar(app, new Rect(area.x, y + 14, area.width, 12), hp, ArenaText.HpColor(hp), (int)hp + "%", 10);
                 y += 30;
             }
@@ -214,11 +214,11 @@ namespace Chaos.Client
                 var res = a.Result;
                 string rc;
                 Eu.Label(app, new Rect(x, y + 10, w, 34), ArenaText.Result(Json.Text(res, "result"), out rc), rc, 28, true, TextAnchor.UpperCenter);
-                string rating = Json.Get(res, "rated") is bool rated && !rated ? Loc.T("Not rated") : ArenaText.RatingLine(Json.Number(res, "before"), Json.Number(res, "after"), Json.Number(res, "delta"));
+                string rating = Json.Get(res, "rated") != null && !Json.Truthy(res, "rated", true) ? Loc.T("Not rated") : ArenaText.RatingLine(Json.Number(res, "before"), Json.Number(res, "after"), Json.Number(res, "delta"));
                 Eu.Label(app, new Rect(x, y + 50, w, 18), rating, Eu.Text, 14, false, TextAnchor.UpperCenter);
-                string reward = Json.Text(res, "reward").Length > 0 ? Loc.T("Reward: {0}", Json.Text(res, "reward")) + (Json.Bool(res, "firstWin") ? Loc.T(" (first win today)") : "") : "";
+                string reward = Json.Text(res, "reward").Length > 0 ? Loc.T("Reward: {0}", Json.Text(res, "reward")) + (Json.Truthy(res, "firstWin") ? Loc.T(" (first win today)") : "") : "";
                 var se = Json.Get(res, "season");
-                if (se is Dictionary<string, object> && !(Json.Get(res, "rated") is bool r2 && !r2)) reward = (reward.Length > 0 ? reward + "   " : "") + ArenaText.SeasonDelta(se);
+                if (se is Dictionary<string, object> && !(Json.Get(res, "rated") != null && !Json.Truthy(res, "rated", true))) reward = (reward.Length > 0 ? reward + "   " : "") + ArenaText.SeasonDelta(se);
                 Eu.Label(app, new Rect(x, y + 72, w, 36), reward, Eu.Bright, 12, false, TextAnchor.UpperCenter, true);
                 return;
             }
@@ -562,7 +562,7 @@ namespace Chaos.Client
                 (Json.Get(mon, "hp") is double hp ? hp : 1).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture), (Json.Get(mon, "damage") is double dm ? dm : 1).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
                 (Json.Get(mon, "exp") is double ex ? ex : 1).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture), (Json.Get(mon, "loot") is double lt ? lt : 1).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)), "#b8ab92", 11, false);
             var hc = Json.Get(s, "hc");
-            if (Json.Bool(hc, "isHc")) text(Json.Bool(hc, "allow") ? Loc.T("Hardcore: a defeat here may end your Hardcore run.") : Loc.T("Hardcore characters cannot enter the Marches: a Hardcore life is not staked in open PvP."), "#ff5a5a", 12, false);
+            if (Json.Truthy(hc, "isHc")) text(Json.Truthy(hc, "allow") ? Loc.T("Hardcore: a defeat here may end your Hardcore run.") : Loc.T("Hardcore characters cannot enter the Marches: a Hardcore life is not staked in open PvP."), "#ff5a5a", 12, false);
             text(Loc.T("The Cinder Shrine"), Eu.Gold, 13, true);
             var contest = Json.Get(s, "contest");
             text(PvpZoneView.ContestLine(contest, Json.Number(contest, "left"), out string cc), cc, 12, false);
@@ -625,7 +625,7 @@ namespace Chaos.Client
             var z = app.Session?.Endgame?.PvpZone;
             if (z == null) return;
             var hc = Json.Get(z.State, "hc");
-            bool showHc = Json.Bool(hc, "isHc") && Json.Bool(hc, "allow");
+            bool showHc = Json.Truthy(hc, "isHc") && Json.Truthy(hc, "allow");
             var view = new Rect(inner.x + 2, inner.y + 2, inner.width - 4, WindowFit.ViewHeight(inner.height - 2, BarH, 4));
             float tw = view.width - 24;
             string risk = PvpZoneView.RiskText(z.State);
@@ -640,7 +640,7 @@ namespace Chaos.Client
             if (showHc) hcAccept = GUI.Toggle(new Rect(4, y, tw, 22), hcAccept, " " + Loc.T("I accept that a defeat may end my Hardcore run."));
             GUI.EndScrollView();
             float x = inner.x + 6, w = inner.width - 12, by = inner.yMax - BarH + 2;
-            bool ok = PvpZoneView.CanConfirm(z.State, accept, hcAccept) && Json.Get(z.State, "canEnter") as bool? != false;
+            bool ok = PvpZoneView.CanConfirm(z.State, accept, hcAccept) && Json.Truthy(z.State, "canEnter", true);
             if (Eu.Button(new Rect(x, by, w / 2 - 4, 28), Loc.T("Enter"), ok)) { z.Enter(accept, hcAccept); accept = hcAccept = false; }
             if (GUI.Button(new Rect(x + w / 2 + 4, by, w / 2 - 4, 28), Loc.T("Cancel"))) { z.CancelConfirm(); accept = hcAccept = false; }
         }

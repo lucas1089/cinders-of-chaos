@@ -40,7 +40,7 @@ namespace Chaos.Core
         {
             if (!(data is Dictionary<string, object>)) return;
             Known = true;
-            Unlocked = Json.Bool(data, "unlocked");
+            Unlocked = Json.Truthy(data, "unlocked");
             Level = Json.Int(data, "level"); StartLevel = Json.Int(data, "startLevel", 1000);
             Total = Json.Int(data, "total"); Spent = Json.Int(data, "spent"); FreePoints = Json.Int(data, "free");
             ResetCost = (long)Json.Number(data, "resetCost");

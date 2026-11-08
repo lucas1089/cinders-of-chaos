@@ -76,7 +76,7 @@ namespace Chaos.Core
             Action<object, double> push = (s, d) =>
             {
                 if (d == 0) return;
-                bool low = Json.Bool(s, "low");
+                bool low = Json.Truthy(s, "low");
                 rows.Add(new DiffRow { Key = Json.Text(s, "k"), Label = Json.Text(s, "l"), Fmt = Json.Text(s, "fmt"), D = d, Better = low ? d < 0 : d > 0 });
             };
             foreach (object s in Json.List(a, "stats"))

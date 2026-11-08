@@ -128,7 +128,7 @@ namespace Chaos.Core.Tests
             {
                 "TowerPanelWindow", "DungeonCounterWindow", "RaidHudWindow", "RaidCalloutWindow", "DescentHudWindow", "DescentOfferWindow", "DescentShopWindow", "InvasionHudWindow",
                 "SiegeHudWindow", "ArenaHudWindow", "BattlegroundHudWindow", "BattlegroundBoardWindow", "PvpZoneConfirmWindow", "PvpZoneHudWindow", "RiftWindow", "ReadyCheckWindow",
-                "TaskTrackerWindow", "HelperHudWindow", "WaystoneWindow",
+                "TaskTrackerWindow", "HelperHudWindow", "WaystoneWindow", "SurveyWindow",
             };
             check(expected.All(w => FakeModules.Context(w) != null) && FakeModules.ContextWindows.Count() == expected.Length, "fake contexts: the " + expected.Length + " context HUDs");
             check(FakeModules.Context("HelperHudWindow") != null && !FakeModules.Context("HelperHudWindow").Drivable && FakeModules.Context("HelperHudWindow").Reason.Length > 10, "fake contexts: the Bot HUD says why no push opens it");
@@ -149,12 +149,13 @@ namespace Chaos.Core.Tests
                 { "SiegeHudWindow", () => s.Endgame.Siege.Hud != null },
                 { "ArenaHudWindow", () => s.Endgame.Arena.HudShown(now) && s.Endgame.Arena.Side(true).Count == 2 },
                 { "BattlegroundHudWindow", () => s.Endgame.Battleground.Hud != null },
-                { "BattlegroundBoardWindow", () => s.Endgame.Battleground.BoardVisible && s.Endgame.Battleground.BoardData != null },
+                { "BattlegroundBoardWindow", () => s.Endgame.Battleground.InMatch && s.Endgame.Battleground.BoardData != null },   // phase 14: the live board of a running match
                 { "PvpZoneConfirmWindow", () => s.Endgame.PvpZone.ConfirmAsked },
                 { "PvpZoneHudWindow", () => s.Endgame.PvpZone.Inside },
                 { "RiftWindow", () => s.Progress.Rift.Active },
                 { "ReadyCheckWindow", () => s.Social.GroupQueue.CheckOpen },
                 { "TaskTrackerWindow", () => TaskTrackerState.Rows(s.Bestiary.TrackerRows).Count == 2 },
+                { "SurveyWindow", () => s.Community.Survey.Visible && s.Community.Survey.Stage == SurveyPanel.SourceStage },
                 { "WaystoneWindow", () => s.Utils.Waystone.Visible && s.Utils.Waystone.Rows.Count >= 6 && s.Utils.Waystone.Rows[0].Count == 5 },
             };
             foreach (var kv in wanted)

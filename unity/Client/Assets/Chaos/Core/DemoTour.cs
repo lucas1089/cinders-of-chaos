@@ -423,6 +423,17 @@ namespace Chaos.Core
             }
         }
 
+        /// <summary>Phase 14, track H (the smoke run): a text message the server sends on its own, 0xB4 with a message type (the drop feed line, FakeModules.DropFeedLine). Thread safe; false when nobody is in the game.</summary>
+        public bool PushText(byte kind, string text)
+        {
+            lock (gate)
+            {
+                if (cur == null || !cur.Entered) return false;
+                cur.Send(new ByteWriter().U8(0xB4).U8(kind).Str(text).ToArray());
+                return true;
+            }
+        }
+
         /// <summary>Phase 13, track G (the smoke run): a player trade with a partner, as the server opens one: 0x7D your offer, 0x7E theirs (FakeModules.TradePacket). The items are ids the client knows
         /// (the tour's ground and tree ids), since the wire form of an item depends on the client's dat. Thread safe; false when nobody is in the game.</summary>
         public bool PushTrade(string partner)

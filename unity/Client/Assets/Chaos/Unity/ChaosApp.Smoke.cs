@@ -281,6 +281,9 @@ namespace Chaos.Client
                     case "InspectWindow":
                         app.Session?.Social?.Inspect?.InspectName(FakeModules.InspectName);
                         break;
+                    case "DropFeedWindow":   // phase 14, track H: the line the server posts for a rare drop (no module message exists for it)
+                        if (server != null && !server.PushText(FakeModules.DropFeedTextType, FakeModules.DropFeedLine())) rec.Context = "the fake server had nobody to push the drop line to";
+                        break;
                     case "TradeWindow":
                         if (server != null && !server.PushTrade(FakeModules.TradePartner)) rec.Context = "the fake server had nobody to push the trade to";
                         break;

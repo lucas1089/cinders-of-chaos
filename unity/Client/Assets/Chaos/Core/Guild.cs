@@ -38,14 +38,14 @@ namespace Chaos.Core
             if (Json.Number(p, "loot") > 0) parts.Add("+" + Json.Int(p, "loot") + Loc.T("% loot"));
             if (Json.Number(p, "respec") > 0) parts.Add(Loc.T("respec -{0}%", Json.Int(p, "respec")));
             if (Json.Number(p, "depotSlots") > 0) parts.Add(Loc.T("+{0} stash slots", Json.Int(p, "depotSlots")));
-            if (Json.Bool(p, "scroll")) parts.Add(Loc.T("daily hall scroll"));
-            if (Json.Bool(p, "aura")) parts.Add(Loc.T("guild aura"));
+            if (Json.Truthy(p, "scroll")) parts.Add(Loc.T("daily hall scroll"));
+            if (Json.Truthy(p, "aura")) parts.Add(Loc.T("guild aura"));
             return parts.Count == 0 ? Loc.T("No perks yet: they start at guild level 2.") : string.Join(", ", parts);
         }
 
         public static string RentText(object h)
         {
-            if (!Json.Bool(h, "owned")) return Loc.T("Your guild owns no guild hall.");
+            if (!Json.Truthy(h, "owned")) return Loc.T("Your guild owns no guild hall.");
             string rent = Loc.T("{0} gold a week", SFmt.Money(Json.Number(h, "rent")));
             string st = Json.Text(h, "rentState");
             if (st == "paid") return Loc.T("Rent {0}, paid until {1} ({2} left).", rent, Json.Text(h, "paidUntil", "?"), SFmt.Duration(Json.Number(h, "rentLeft")));
@@ -64,7 +64,7 @@ namespace Chaos.Core
             int tier = Json.Int(u, "tier"), max = SFmt.Has(u, "max") ? Json.Int(u, "max") : 1;
             string tiers = max > 1 ? " " + tier + "/" + max : "";
             string state;
-            if (tier >= max) state = Json.Bool(u, "active") ? Loc.T("owned") : Loc.T("owned, locked");
+            if (tier >= max) state = Json.Truthy(u, "active") ? Loc.T("owned") : Loc.T("owned, locked");
             else if (tier > 0) state = Loc.T("next: {0} gold, level {1}", SFmt.Money(Json.Number(u, "cost")), Json.Int(u, "level"));
             else state = Loc.T("{0} gold, guild level {1}", SFmt.Money(Json.Number(u, "cost")), Json.Int(u, "level"));
             return Json.Text(u, "name", "?") + tiers + " - " + state;
@@ -118,20 +118,20 @@ namespace Chaos.Core
                 case "state":
                     State = d; NoGuild = false;
                     string tab = Json.Text(d, "tab");
-                    if (Json.Bool(d, "open") && Array.IndexOf(TabKeys, tab) >= 0) Tab = tab;
+                    if (Json.Truthy(d, "open") && Array.IndexOf(TabKeys, tab) >= 0) Tab = tab;
                     var g = Json.Get(d, "guild");
                     Header1 = Json.Text(g, "name") + "   " + GuildMath.LevelText(g);
                     Header2 = Loc.T("You: {0}. This week: {1} GXP{2}.", Json.Text(g, "rankName"), SFmt.Money(Json.Number(g, "weekPoints")),
                         Json.Int(g, "weekRank") > 0 ? Loc.T(", rank {0} of the guilds", Json.Int(g, "weekRank")) : "");
-                    if (Json.Bool(d, "open")) Visible = true;
+                    if (Json.Truthy(d, "open")) Visible = true;
                     break;
                 case "none":
                     State = null; NoGuild = true;
                     Header1 = Loc.T("No guild"); Header2 = "";
                     Status = Json.Text(d, "text"); StatusTone = "dim";
-                    if (Json.Bool(d, "open")) Visible = true;
+                    if (Json.Truthy(d, "open")) Visible = true;
                     break;
-                case "message": Status = Json.Text(d, "text"); StatusTone = Json.Bool(d, "ok") ? "good" : "bad"; break;
+                case "message": Status = Json.Text(d, "text"); StatusTone = Json.Truthy(d, "ok") ? "good" : "bad"; break;
                 case "openModule": if (Json.Text(d, "name").Length > 0) OpenModule(Json.Text(d, "name")); break;
             }
             Changed();
@@ -158,13 +158,13 @@ namespace Chaos.Core
             l.Bar(GuildMath.XpText(g), GuildMath.Percent(g));
             l.Section(Loc.T("Perks for online members"));
             l.Text(GuildMath.PerksNow(Json.Get(perks, "now")), "good");
-            foreach (var p in SFmt.Rows(perks, "list")) l.Text(Loc.T("Level") + " " + Json.Int(p, "level") + ": " + Json.Text(p, "text"), Json.Bool(p, "active") ? "text" : "locked");
-            if (Json.Bool(g, "scroll"))
-                l.Row(Loc.T("Guild hall scroll (one a day)"), Json.Bool(g, "scrollTaken") ? Loc.T("taken today") : "").Btn(Loc.T("Take"), !Json.Bool(g, "scrollTaken"), () => Send("scroll"));
+            foreach (var p in SFmt.Rows(perks, "list")) l.Text(Loc.T("Level") + " " + Json.Int(p, "level") + ": " + Json.Text(p, "text"), Json.Truthy(p, "active") ? "text" : "locked");
+            if (Json.Truthy(g, "scroll"))
+                l.Row(Loc.T("Guild hall scroll (one a day)"), Json.Truthy(g, "scrollTaken") ? Loc.T("taken today") : "").Btn(Loc.T("Take"), !Json.Truthy(g, "scrollTaken"), () => Send("scroll"));
             l.Section(Loc.T("Guild bank: {0} gold", SFmt.Money(Json.Number(g, "bank"))));
             l.Input(Loc.T("Amount"), "amount", "5k, 2.5m")
                 .Btn(Loc.T("Deposit"), true, () => Amount("deposit"))
-                .Btn(Loc.T("Withdraw"), Json.Bool(g, "canWithdraw"), () => Amount("withdraw"), Json.Bool(g, "canWithdraw") ? "" : Loc.T("Only the guild leader can withdraw."));
+                .Btn(Loc.T("Withdraw"), Json.Truthy(g, "canWithdraw"), () => Amount("withdraw"), Json.Truthy(g, "canWithdraw") ? "" : Loc.T("Only the guild leader can withdraw."));
             l.Text(Loc.T("Deposits come from your carried gold, then your bank balance (at least {0}). Withdrawals go to the leader's bank balance.", SFmt.Money(Json.Number(g, "minDeposit"))), "dim");
             l.Row(Loc.T("Guild wars and the weekly guild boss")).Btn(Loc.T("Open"), true, () => OpenWars());
             l.Section(Loc.T("Guild log"));
@@ -186,35 +186,35 @@ namespace Chaos.Core
             l.Section(Loc.T("Contribution (guild XP)"));
             var members = SFmt.Rows(State, "members");
             if (members.Count == 0) l.Text(Loc.T("No members."), "dim");
-            foreach (var m in members) l.Row(GuildMath.MemberText(m), GuildMath.MemberPoints(m), Json.Bool(m, "online") ? "good" : "");
+            foreach (var m in members) l.Row(GuildMath.MemberText(m), GuildMath.MemberPoints(m), Json.Truthy(m, "online") ? "good" : "");
             l.Text(Loc.T("Guild XP comes from experience (a 1 percent share, capped per day), bounties, rifts, world bosses, invasions and the guild siege."), "dim");
         }
 
         void Hall(RowList l)
         {
             object h = Json.Get(State, "hall");
-            if (!Json.Bool(h, "owned"))
+            if (!Json.Truthy(h, "owned"))
             {
                 l.Section(Loc.T("Guild hall"));
                 l.Text(Loc.T("A guild hall costs {0} gold and needs guild level {1}. The guild leader buys it.", SFmt.Money(Json.Number(h, "cost")), Json.Int(h, "level")));
-                l.Row(Loc.T("Pay from the guild bank")).Btn(Loc.T("Buy"), Json.Bool(h, "canBuyBank"), () => Send("buyHall", SFmt.Map("from", "bank")), Json.Text(h, "reason"));
-                l.Row(Loc.T("Pay with your own gold")).Btn(Loc.T("Buy"), Json.Bool(h, "canBuySelf"), () => Send("buyHall", SFmt.Map("from", "self")), Json.Text(h, "reasonSelf"));
+                l.Row(Loc.T("Pay from the guild bank")).Btn(Loc.T("Buy"), Json.Truthy(h, "canBuyBank"), () => Send("buyHall", SFmt.Map("from", "bank")), Json.Text(h, "reason"));
+                l.Row(Loc.T("Pay with your own gold")).Btn(Loc.T("Buy"), Json.Truthy(h, "canBuySelf"), () => Send("buyHall", SFmt.Map("from", "self")), Json.Text(h, "reasonSelf"));
                 if (Json.Text(h, "reason").Length > 0) l.Text(Json.Text(h, "reason"), "dim");
                 return;
             }
             l.Section(Loc.T("Guild hall (slot {0})", Json.Int(h, "slot")));
             l.Text(GuildMath.RentText(h), GuildMath.RentTone(h));
             l.Row(Loc.T("Weekly rent from the guild bank"), SFmt.Money(Json.Number(h, "rent")) + " " + Loc.T("gold"))
-                .Btn(Loc.T("Pay rent"), Json.Bool(h, "canManage"), () => Send("payRent"), Json.Bool(h, "canManage") ? "" : Loc.T("Leader and vice-leaders only."));
+                .Btn(Loc.T("Pay rent"), Json.Truthy(h, "canManage"), () => Send("payRent"), Json.Truthy(h, "canManage") ? "" : Loc.T("Leader and vice-leaders only."));
             l.Text(Loc.T("Enter through the portal next to the temple. Unpaid rent locks the upgrades; nothing is deleted."), "dim");
             l.Section(Loc.T("Upgrades"));
             foreach (var u in SFmt.Rows(h, "upgrades"))
             {
                 bool maxed = Json.Int(u, "tier") >= (SFmt.Has(u, "max") ? Json.Int(u, "max") : 1);
                 string key = Json.Text(u, "key");
-                var row = l.Row(GuildMath.UpgradeText(u), "", maxed ? (Json.Bool(u, "active") ? "good" : "bad") : "");
+                var row = l.Row(GuildMath.UpgradeText(u), "", maxed ? (Json.Truthy(u, "active") ? "good" : "bad") : "");
                 row.Tip = Json.Text(u, "info");
-                if (!maxed) row.Btn(Loc.T("Buy"), Json.Bool(h, "canManage") && Json.Bool(u, "canBuy"), () => Send("upgrade", SFmt.Map("key", key)), Json.Text(u, "reason"));
+                if (!maxed) row.Btn(Loc.T("Buy"), Json.Truthy(h, "canManage") && Json.Truthy(u, "canBuy"), () => Send("upgrade", SFmt.Map("key", key)), Json.Text(u, "reason"));
             }
             var hub = Json.List(h, "hub");
             if (hub.Count > 0)
@@ -229,13 +229,13 @@ namespace Chaos.Core
         void Depot(RowList l)
         {
             object dep = Json.Get(State, "depot");
-            if (!Json.Bool(dep, "owned"))
+            if (!Json.Truthy(dep, "owned"))
             {
                 l.Section(Loc.T("Guild Stash"));
                 l.Text(Loc.T("Your guild hall has no Guild Stash yet (a hall upgrade)."), "dim");
                 return;
             }
-            bool active = Json.Bool(dep, "active");
+            bool active = Json.Truthy(dep, "active");
             l.Section(Loc.T("Guild Stash ({0} / {1})", Json.Int(dep, "used"), Json.Int(dep, "capacity")) + (active ? "" : Loc.T(" - LOCKED")));
             l.Text(Loc.T("Drop an item on the large trunk in your guild hall to store it. Take items back here (in the hall)."), "dim");
             var items = SFmt.Rows(dep, "items");
@@ -258,7 +258,7 @@ namespace Chaos.Core
             l.Section(Loc.T("Top guilds this week (resets in {0})", SFmt.Duration(Json.Number(top, "resetIn"))));
             var rows = SFmt.Rows(top, "rows");
             if (rows.Count == 0) l.Text(Loc.T("No guild earned guild XP this week yet."), "dim");
-            foreach (var t in rows) l.Row(GuildMath.TopText(t), SFmt.Money(Json.Number(t, "points")) + " GXP", Json.Bool(t, "own") ? "#ffe7a6" : "");
+            foreach (var t in rows) l.Row(GuildMath.TopText(t), SFmt.Money(Json.Number(t, "points")) + " GXP", Json.Truthy(t, "own") ? "#ffe7a6" : "");
             if (Json.Text(top, "lastWinner").Length > 0) l.Text(Loc.T("Top guild of last week: {0}", Json.Text(top, "lastWinner")), "gold");
         }
     }
@@ -306,7 +306,7 @@ namespace Chaos.Core
         {
             string st = Json.Text(w, "status");
             if (st == "pending")
-                return Json.Bool(w, "incoming") ? Loc.T("Declared on you: answer within {0}", SFmt.Duration(Json.Number(w, "left"))) : Loc.T("Offer sent: waiting {0} for the answer", SFmt.Duration(Json.Number(w, "left")));
+                return Json.Truthy(w, "incoming") ? Loc.T("Declared on you: answer within {0}", SFmt.Duration(Json.Number(w, "left"))) : Loc.T("Offer sent: waiting {0} for the answer", SFmt.Duration(Json.Number(w, "left")));
             if (st == "active") return Loc.T("{0} (first to {1}), ends in {2}", Score(w), Json.Int(w, "fragLimit"), SFmt.Duration(Json.Number(w, "left")));
             string r = Json.Text(w, "result", st);
             string word;
@@ -317,7 +317,7 @@ namespace Chaos.Core
         public static string Tone(object w)
         {
             string st = Json.Text(w, "status"), res = Json.Text(w, "result");
-            if (st == "pending") return Json.Bool(w, "incoming") ? "warn" : "text";
+            if (st == "pending") return Json.Truthy(w, "incoming") ? "warn" : "text";
             if (st == "active") return "bad";
             if (res == "won") return "good";
             if (res == "lost") return "bad";
@@ -333,7 +333,7 @@ namespace Chaos.Core
 
         public static string KillLine(object k) =>
             Loc.T("{0} {1} killed {2} (level {3})", Json.Text(k, "at"), Json.Text(k, "killer", "?"), Json.Text(k, "victim", "?"), Json.Int(k, "level"))
-            + (Json.Bool(k, "counted") ? "" : Loc.T(" - not counted: {0}", Json.Text(k, "reason")));
+            + (Json.Truthy(k, "counted") ? "" : Loc.T(" - not counted: {0}", Json.Text(k, "reason")));
 
         public static int FuelPercent(object b)
         {
@@ -345,10 +345,10 @@ namespace Chaos.Core
 
         public static string BossState(object b, out string tone)
         {
-            if (!SFmt.Has(b, "guild") || Json.Get(b, "guild") == null || (Json.Get(b, "guild") is bool gb && !gb)) { tone = "dim"; return Loc.T("Join a guild to fight the guild boss."); }
-            if (Json.Bool(b, "killed")) { tone = "good"; return Loc.T("Slain this week in {0}. The stone rests until the reset ({1}).", SFmt.Clock(Json.Number(b, "bestSeconds")), SFmt.Duration(Json.Number(b, "resetIn"))); }
-            if (Json.Bool(b, "running")) { tone = "warn"; return Loc.T("Your guild is fighting the guild boss now."); }
-            if (Json.Bool(b, "canSummon")) { tone = "warn"; return Loc.T("The stone is full: summon the guild boss."); }
+            if (!SFmt.Has(b, "guild") || Json.Get(b, "guild") == null || !Json.Truthy(b, "guild", true)) { tone = "dim"; return Loc.T("Join a guild to fight the guild boss."); }
+            if (Json.Truthy(b, "killed")) { tone = "good"; return Loc.T("Slain this week in {0}. The stone rests until the reset ({1}).", SFmt.Clock(Json.Number(b, "bestSeconds")), SFmt.Duration(Json.Number(b, "resetIn"))); }
+            if (Json.Truthy(b, "running")) { tone = "warn"; return Loc.T("Your guild is fighting the guild boss now."); }
+            if (Json.Truthy(b, "canSummon")) { tone = "warn"; return Loc.T("The stone is full: summon the guild boss."); }
             tone = "dim";
             return Json.Text(b, "reason");
         }
@@ -363,7 +363,7 @@ namespace Chaos.Core
         }
 
         public static string BossBoardLine(object r) =>
-            Json.Bool(r, "killed") ? Loc.T("{0}. {1} - slain in {2} by {3}", Json.Int(r, "rank"), Json.Text(r, "name", "?"), SFmt.Clock(Json.Number(r, "seconds")), Json.Int(r, "players"))
+            Json.Truthy(r, "killed") ? Loc.T("{0}. {1} - slain in {2} by {3}", Json.Int(r, "rank"), Json.Text(r, "name", "?"), SFmt.Clock(Json.Number(r, "seconds")), Json.Int(r, "players"))
                 : Loc.T("{0}. {1} - {2} damage", Json.Int(r, "rank"), Json.Text(r, "name", "?"), SFmt.Money(Json.Number(r, "damage")));
 
         public static string SpoilsLine(object sp, double pool)
@@ -414,7 +414,7 @@ namespace Chaos.Core
             {
                 case "state":
                     State = d;
-                    if (Json.Bool(d, "open") && Array.IndexOf(TabKeys, Json.Text(d, "tab")) >= 0) Tab = Json.Text(d, "tab");
+                    if (Json.Truthy(d, "open") && Array.IndexOf(TabKeys, Json.Text(d, "tab")) >= 0) Tab = Json.Text(d, "tab");
                     var g = Json.Get(d, "guild");
                     if (SFmt.IsMap(g))
                     {
@@ -422,9 +422,9 @@ namespace Chaos.Core
                         Header2 = Loc.T("{0} of {1} wars and offers. Guild bank: {2} gold.", Json.Int(g, "wars"), Json.Int(Json.Get(d, "options"), "maxWars"), SFmt.Money(Json.Number(g, "bank")));
                     }
                     else { Header1 = Loc.T("Guild Wars"); Header2 = ""; }
-                    if (Json.Bool(d, "open")) Visible = true;
+                    if (Json.Truthy(d, "open")) Visible = true;
                     break;
-                case "message": Status = Json.Text(d, "text"); StatusTone = Json.Bool(d, "ok") ? "good" : "bad"; break;
+                case "message": Status = Json.Text(d, "text"); StatusTone = Json.Truthy(d, "ok") ? "good" : "bad"; break;
                 case "log": Log = d; break;
             }
             Changed();
@@ -458,7 +458,7 @@ namespace Chaos.Core
         {
             var g = G;
             if (g == null) { l.Text(Loc.T("You are not in a guild. The War Board shows the wars of the server."), "dim"); return; }
-            bool can = Json.Bool(g, "canDeclare");
+            bool can = Json.Truthy(g, "canDeclare");
             object wars = Json.Get(State, "wars");
             var pending = SFmt.Rows(wars, "pending"); var active = SFmt.Rows(wars, "active");
             l.Section(Loc.T("Offers"));
@@ -467,9 +467,9 @@ namespace Chaos.Core
             {
                 object id = Json.Get(w, "id");
                 var row = WarRow(l, w);
-                if (Json.Bool(w, "incoming"))
+                if (Json.Truthy(w, "incoming"))
                 {
-                    bool needLeader = Json.Number(w, "stake") > 0 && !Json.Bool(g, "canStake");
+                    bool needLeader = Json.Number(w, "stake") > 0 && !Json.Truthy(g, "canStake");
                     row.Btn(Loc.T("Accept"), can && !needLeader, () => Send("accept", SFmt.Map("id", id)), needLeader ? Loc.T("A war with gold at stake is accepted by the guild leader.") : "");
                     row.Btn(Loc.T("Decline"), can, () => Send("decline", SFmt.Map("id", id)));
                 }
@@ -491,7 +491,7 @@ namespace Chaos.Core
                 l.Section(Loc.T("Kill log: {0} ({1})", Json.Text(Log, "title"), Json.Text(Log, "score")));
                 var lines = SFmt.Rows(Log, "lines");
                 if (lines.Count == 0) l.Text(Loc.T("No kills yet."), "dim");
-                foreach (var k in lines) l.Text(GuildWarMath.KillLine(k), Json.Bool(k, "counted") ? "text" : "dim");
+                foreach (var k in lines) l.Text(GuildWarMath.KillLine(k), Json.Truthy(k, "counted") ? "text" : "dim");
             }
             l.Section(Loc.T("History"));
             var hist = SFmt.Rows(wars, "history");
@@ -523,22 +523,22 @@ namespace Chaos.Core
             var g = G; object o = Json.Get(State, "options");
             if (g == null) { l.Text(Loc.T("You are not in a guild."), "dim"); return; }
             l.Section(Loc.T("Declare war"));
-            if (!Json.Bool(g, "canDeclare")) l.Text(Loc.T("Only the guild leader and the vice-leaders declare war."), "bad");
+            if (!Json.Truthy(g, "canDeclare")) l.Text(Loc.T("Only the guild leader and the vice-leaders declare war."), "bad");
             l.Input(Loc.T("Guild"), "target");
             var frags = new List<string>(); foreach (object n in Json.List(o, "fragLimits")) frags.Add(Loc.T("{0} kills", n is double dd ? (long)dd : 0));
             l.Combo(Loc.T("Frag limit"), "frag", frags);
             var hrs = new List<string>(); foreach (object n in Json.List(o, "durations")) hrs.Add(GuildWarMath.HoursText(n is double dd ? dd : 0));
             l.Combo(Loc.T("Duration"), "hours", hrs);
-            if (Json.Bool(g, "canStake"))
+            if (Json.Truthy(g, "canStake"))
             {
                 l.Input(Loc.T("Gold stake per side"), "stake", "500k, 2m");
                 l.Text(Loc.T("Optional (empty = none): {0} to {1} gold from the guild bank ({2} gold). The winner gets both stakes minus {3}%.",
                     SFmt.Money(Json.Number(o, "stakeMin")), SFmt.Money(Json.Number(o, "stakeMax")), SFmt.Money(Json.Number(g, "bank")), Json.Int(o, "fee")), "dim");
             }
             else l.Text(Loc.T("Only the guild leader can put gold at stake."), "dim");
-            l.Row(Loc.T("The other guild accepts or declines in game within {0} hours.", Json.Int(o, "offerHours"))).Btn(Loc.T("Declare war"), Json.Bool(g, "canDeclare"), () => Declare());
+            l.Row(Loc.T("The other guild accepts or declines in game within {0} hours.", Json.Int(o, "offerHours"))).Btn(Loc.T("Declare war"), Json.Truthy(g, "canDeclare"), () => Declare());
             l.Text(Loc.T("Wars use the guild war emblems: kills between the two guilds give no skull. They end at the frag limit, when the time is up (more kills wins, a tie is a draw) or by surrender. Season characters fight only guilds of their own realm."), "dim");
-            if (SFmt.Has(o, "emblemsLive") && !Json.Bool(o, "emblemsLive", true)) l.Text(Loc.T("The war emblems show after the next login."), "dim");
+            if (SFmt.Has(o, "emblemsLive") && !Json.Truthy(o, "emblemsLive", true)) l.Text(Loc.T("The war emblems show after the next login."), "dim");
         }
 
         void Board(RowList l)
@@ -561,27 +561,27 @@ namespace Chaos.Core
             l.Section(Loc.T("{0}, the weekly guild boss", Json.Text(b, "boss", "?")));
             string tone;
             string stateText = GuildWarMath.BossState(b, out tone);
-            bool inGuild = Json.Get(b, "guild") != null && !(Json.Get(b, "guild") is bool gb && !gb);
+            bool inGuild = Json.Get(b, "guild") != null && Json.Truthy(b, "guild", true);
             if (!inGuild) { l.Text(stateText, tone); }
             else
             {
                 l.Bar(GuildWarMath.FuelText(b), GuildWarMath.FuelPercent(b));
                 l.Text(stateText, tone);
                 l.Text(Loc.T("Summons this week: {0} of {1}", Json.Int(b, "attempts"), Json.Int(b, "maxAttempts")) + Loc.T(" - week resets in {0}", SFmt.Duration(Json.Number(b, "resetIn"))), "dim");
-                l.Row(Loc.T("{0} in the hall now", Json.Int(b, "players"))).Btn(Loc.T("Summon"), Json.Bool(b, "canSummon"), () => Send("bossSummon"));
+                l.Row(Loc.T("{0} in the hall now", Json.Int(b, "players"))).Btn(Loc.T("Summon"), Json.Truthy(b, "canSummon"), () => Send("bossSummon"));
                 l.Text(Loc.T("The leader or a vice-leader summons it in the guild hall: you alone or every member in the hall (level {0}+, up to {1}) comes along.", Json.Int(b, "minLevel"), Json.Int(b, "maxPlayers")), "dim");
                 l.Section(Loc.T("Feed the Summoning Stone"));
                 object gold = Json.Get(b, "gold");
                 double per = Json.Number(gold, "perEmber");
                 long typed = SFmt.ParseAmount(Text("bossGold"));
                 l.Input(Loc.T("Gold"), "bossGold", Loc.T("{0} gold = 1 ember (at least {1})", SFmt.Money(per), SFmt.Money(Json.Number(gold, "min"))))
-                    .Btn(Loc.T("Feed"), !Json.Bool(b, "killed") && typed > 0, () => { long n = SFmt.ParseAmount(Text("bossGold")); if (n > 0) Send("bossGold", SFmt.Map("amount", n)); });
+                    .Btn(Loc.T("Feed"), !Json.Truthy(b, "killed") && typed > 0, () => { long n = SFmt.ParseAmount(Text("bossGold")); if (n > 0) Send("bossGold", SFmt.Map("amount", n)); });
                 if (typed > 0 && per > 0) l.Text(Loc.T("{0} embers", (long)Math.Floor(typed / per)), "dim");
                 foreach (var m in SFmt.Rows(b, "materials"))
                 {
                     string key = Json.Text(m, "key");
                     l.Row(Loc.T("{0}: {1} embers each (you carry {2})", Json.Text(m, "name", "?"), Json.Int(m, "embers"), Json.Int(m, "have"))).Item(Json.Int(m, "clientId"))
-                        .Btn(Loc.T("Feed all"), Json.Int(m, "have") > 0 && !Json.Bool(b, "killed"), () => Send("bossItem", SFmt.Map("key", key)));
+                        .Btn(Loc.T("Feed all"), Json.Int(m, "have") > 0 && !Json.Truthy(b, "killed"), () => Send("bossItem", SFmt.Map("key", key)));
                 }
                 l.Section(Loc.T("Guild banner"));
                 l.Text(GuildWarMath.BannerText(Json.Get(b, "banner")));
@@ -599,7 +599,7 @@ namespace Chaos.Core
             l.Section(Loc.T("Guild boss board this week"));
             var board = SFmt.Rows(b, "board");
             if (board.Count == 0) l.Text(Loc.T("No guild has fought it this week."), "dim");
-            foreach (var r in board) l.Text(GuildWarMath.BossBoardLine(r), Json.Bool(r, "own") ? "#ffe7a6" : "");
+            foreach (var r in board) l.Text(GuildWarMath.BossBoardLine(r), Json.Truthy(r, "own") ? "#ffe7a6" : "");
         }
     }
 }

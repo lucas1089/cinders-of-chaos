@@ -190,7 +190,7 @@ namespace Chaos.Core
         internal static string ChargesText(object ch)
         {
             if (!(ch is Dictionary<string, object>)) return null;
-            if (Json.Bool(ch, "unlimited")) return Loc.T("Charges: unlimited");
+            if (Json.Truthy(ch, "unlimited")) return Loc.T("Charges: unlimited");
             if (!Has(ch, "n")) return null;
             double n = Num(ch, "n"), max = Has(ch, "max") ? Num(ch, "max") : double.NaN;
             if (!double.IsNaN(max) && max > n) return Loc.T("Charges: {0} of {1}", Int(n), Int(max));
@@ -222,14 +222,14 @@ namespace Chaos.Core
                 string text = "  " + Json.Text(p, "n", "?");
                 if (Json.Number(p, "h", 1) > 1) text += Loc.T(" (counts {0})", (int)Json.Number(p, "h"));
                 string color = Empty;
-                if (Json.Bool(p, "eq")) color = SetOn;
-                else if (Json.Bool(p, "low")) { text += Loc.T(" (level {0})", (int)Json.Number(p, "lv")); color = SetLow; }
+                if (Json.Truthy(p, "eq")) color = SetOn;
+                else if (Json.Truthy(p, "low")) { text += Loc.T(" (level {0})", (int)Json.Number(p, "lv")); color = SetLow; }
                 o.Add(text, color);
             }
             bool first = true;
             foreach (object b in Json.List(set, "bonuses"))
             {
-                string color = Json.Bool(b, "on") ? SetOn : Dim;
+                string color = Json.Truthy(b, "on") ? SetOn : Dim;
                 int j = 0;
                 foreach (string line in WrapText("(" + (int)Json.Number(b, "n") + ") " + Json.Text(b, "t"), Wrap))
                     o.Add((j++ > 0 ? "    " : "") + line, color, first && j == 1);
@@ -270,13 +270,13 @@ namespace Chaos.Core
             object quality = Json.Get(tip, "quality");
             if (quality is Dictionary<string, object> && Json.Number(quality, "q") > 0)
                 o.Add(Loc.T("Quality +{0}%  (up to {1}%)", (int)Json.Number(quality, "q"), (int)Json.Number(quality, "cap", 20)), Quality);
-            if (Json.Bool(tip, "ruined")) o.Add(Loc.T("Ruined: no orb can change this item"), Red);
-            if (Json.Bool(tip, "corrupted")) o.Add(Loc.T("Corrupted: no orb can change this item"), Corrupted);
+            if (Json.Truthy(tip, "ruined")) o.Add(Loc.T("Ruined: no orb can change this item"), Red);
+            if (Json.Truthy(tip, "corrupted")) o.Add(Loc.T("Corrupted: no orb can change this item"), Corrupted);
 
             bool first = true;
             foreach (object b in Json.List(tip, "base"))
             {
-                bool imp = Json.Bool(b, "imp");
+                bool imp = Json.Truthy(b, "imp");
                 string key = Json.Text(b, "k");
                 bool signed = imp || (Json.Text(b, "fmt") == "pct" && key.StartsWith("protect", StringComparison.Ordinal));
                 o.Add(Json.Text(b, "l") + ": " + BaseValue(b, signed), imp ? Chaos : Text, first);
@@ -303,14 +303,14 @@ namespace Chaos.Core
                     first = false;
                 }
                 string g = Json.Text(m, "g");
-                string color = sd == "i" ? Corrupted : Json.Bool(m, "pw") ? Power : g == "chaos" ? Chaos : g == "element" ? Element : Mod;
+                string color = sd == "i" ? Corrupted : Json.Truthy(m, "pw") ? Power : g == "chaos" ? Chaos : g == "element" ? Element : Mod;
                 string range = Range(m);
                 string t = Json.Text(m, "t");
                 if (Has(m, "tr"))
                 {
                     int tr = (int)Json.Number(m, "tr");
                     string tag = "T" + tr + " ";
-                    bool bound = Json.Bool(m, "bd");
+                    bool bound = Json.Truthy(m, "bd");
                     var parts = new List<string> { tag, TierColor(tr), t, color, range, Dim };
                     if (bound) { parts.Add(" " + Loc.T("[bound]")); parts.Add(Bound); }
                     o.Add(tag + t + range + (bound ? " " + Loc.T("[bound]") : ""), color, first, parts.ToArray());
@@ -382,7 +382,7 @@ namespace Chaos.Core
                 o.Add(Json.Text(passive, "name"), PassiveC, true);
                 foreach (string line in WrapText(Json.Text(passive, "text"), Wrap)) o.Add(line, PassiveText);
             }
-            bool locked = Json.Bool(tip, "locked");
+            bool locked = Json.Truthy(tip, "locked");
             if (locked) o.Add(Loc.T("Locked"), Gold, true);
             object look = Json.Get(tip, "look");
             if (look is Dictionary<string, object> && Json.Text(look, "name").Length > 0) o.Add(Loc.T("Appearance: {0}", Json.Text(look, "name")), Mod, !locked);

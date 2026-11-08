@@ -14,7 +14,7 @@
 --
 -- Protocol (JSON {action, data}):
 --   client -> server  open | close | get
---   server -> client  state {open = 1 | nil, ...} (weeklychest_core.lua K.view)
+--   server -> client  state {shown = 1 | nil, open = count of activities, ...} (weeklychest_core.lua K.view; shown = 1 after the player's open)
 -- Assumed engine API (TFS 1.4): Player storages, getBankBalance/setBankBalance, addItem, getInbox,
 -- CreatureEvent login/logout/extendedopcode, GlobalEvent startup/think. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 

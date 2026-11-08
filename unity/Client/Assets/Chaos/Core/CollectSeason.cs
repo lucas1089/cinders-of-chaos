@@ -29,7 +29,7 @@ namespace Chaos.Core
             {
                 string key = CF.G(m, "key") as string;
                 if (string.IsNullOrEmpty(key) || !seen.Add(key)) continue;
-                o.Add(new SeasonMode { Key = key, Name = CF.T(m, "name", key), Short = CF.T(m, "short", CF.T(m, "name", key)), Warning = CF.T(m, "warning"), Ssf = CF.G(m, "ssf") is bool s && s, Hc = CF.G(m, "hc") is bool h && h });
+                o.Add(new SeasonMode { Key = key, Name = CF.T(m, "name", key), Short = CF.T(m, "short", CF.T(m, "name", key)), Warning = CF.T(m, "warning"), Ssf = CF.B(m, "ssf"), Hc = CF.B(m, "hc") });
             }
             if (!seen.Contains(Default)) o.Insert(0, new SeasonMode { Key = Default, Name = "Standard", Short = "Standard" });
             return o;
@@ -54,7 +54,7 @@ namespace Chaos.Core
         /// <summary>Seconds between beats while a Hardcore character is online, else 0.</summary>
         public static double Heartbeat(object mine)
         {
-            if (!(mine is Dictionary<string, object>) || !(CF.G(mine, "hc") is bool hc) || !hc) return 0;
+            if (!(mine is Dictionary<string, object>) || !CF.B(mine, "hc")) return 0;
             double s = CF.N(mine, "heartbeat");
             return s < 1 ? 0 : s;
         }
@@ -188,7 +188,7 @@ namespace Chaos.Core
             return line != null ? text + " " + line : text;
         }
 
-        public bool CanJoin => Season != null && CF.G(Mine, "eligible") is bool b && b;
+        public bool CanJoin => Season != null && CF.B(Mine, "eligible");
 
         public List<Dictionary<string, object>> Track => CF.Rows(CF.G(State, "track"));
 

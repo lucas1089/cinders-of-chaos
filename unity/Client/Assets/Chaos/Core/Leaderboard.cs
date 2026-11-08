@@ -94,7 +94,7 @@ namespace Chaos.Core
             var r = new Dictionary<string, object> { { "board", Json.Text(board, "key") }, { "period", period } };
             if (Json.List(board, "variants").Count > 0) r["variant"] = variant;
             if (Json.List(board, "sizes").Count > 0) r["size"] = size;
-            if (Json.Bool(board, "byClass") && group.Length > 0) r["group"] = group;
+            if (Json.Truthy(board, "byClass") && group.Length > 0) r["group"] = group;
             return r;
         }
     }
@@ -145,10 +145,10 @@ namespace Chaos.Core
             {
                 case "meta":
                     Meta = d;
-                    if (Json.Bool(d, "open")) { Visible = true; if (Tab == "records") { Tab = "boards"; } }
-                    if (Json.Bool(d, "open") || Selected.Length == 0)
+                    if (Json.Truthy(d, "open")) { Visible = true; if (Tab == "records") { Tab = "boards"; } }
+                    if (Json.Truthy(d, "open") || Selected.Length == 0)
                     {
-                        if (Json.Bool(d, "open")) { Form.Remove("season"); Form.Remove("mode"); }
+                        if (Json.Truthy(d, "open")) { Form.Remove("season"); Form.Remove("mode"); }
                         Selected = LeaderboardMath.Resolve(LeaderboardMath.Options(d), Selected.Length > 0 ? Selected : SavedBoard()) ?? "";
                         if (!Form.ContainsKey("group") && Json.Get(d, "ownGroup") != null) SetGroupByKey(Json.Get(d, "ownGroup"));
                         if (Selected.Length > 0) AskBoard();
@@ -194,7 +194,7 @@ namespace Chaos.Core
         {
             var g = SFmt.Rows(Meta, "groups");
             object b = BoardMeta(Selected);
-            if (Json.Bool(b, "weekly") && Json.Bool(b, "byClass")) g.Insert(0, SFmt.Map("key", "all", "name", Loc.T("All classes")));
+            if (Json.Truthy(b, "weekly") && Json.Truthy(b, "byClass")) g.Insert(0, SFmt.Map("key", "all", "name", Loc.T("All classes")));
             return g;
         }
 
@@ -221,7 +221,7 @@ namespace Chaos.Core
             var req = new Dictionary<string, object> { { "board", Selected } };
             object g = GroupKey();
             object b = BoardMeta(Selected);
-            if (g != null && (!Json.Bool(b, "weekly") || Json.Bool(b, "byClass"))) req["group"] = g;
+            if (g != null && (!Json.Truthy(b, "weekly") || Json.Truthy(b, "byClass"))) req["group"] = g;
             if (Index("season") == 1) { req["season"] = true; var modes = Json.List(Json.Get(Meta, "season"), "modes"); int mi = Index("mode"); if (mi > 0 && mi < modes.Count + 1) req["mode"] = Json.Text(modes[mi - 1], "key"); }
             Send("get", req);
         }
@@ -289,7 +289,7 @@ namespace Chaos.Core
             l.Combo(Loc.T("Board"), "board", names);
             object b = BoardMeta(Selected);
             if (Json.Text(b, "info").Length > 0) l.Text(Json.Text(b, "info"), "dim");
-            bool weekly = Json.Bool(b, "weekly"), byClass = Json.Bool(b, "byClass");
+            bool weekly = Json.Truthy(b, "weekly"), byClass = Json.Truthy(b, "byClass");
             if (!weekly || byClass)
             {
                 var gn = new List<string>(); foreach (var g in Groups()) gn.Add(Json.Text(g, "name", "?"));
@@ -307,8 +307,8 @@ namespace Chaos.Core
             {
                 l.Text(LeaderboardMath.ResetText(Json.Number(Current, "resetIn") - (Clock() - boardAt) / 1000.0), "dim");
                 var champs = SFmt.Rows(Current, "champions");
-                l.Section(Json.Bool(b, "classAwards") ? Loc.T("Last week's podium (the top 3 of every class get Conquest Tokens)") : Loc.T("{0}: the title holders this week (last week's top 3)", Json.Text(b, "title")));
-                if (champs.Count == 0) l.Text(Json.Bool(b, "classAwards") ? Loc.T("Nobody yet: the podium of every class is rewarded on Monday.") : Loc.T("Nobody yet: the top 3 of this week get the title on Monday."), "dim");
+                l.Section(Json.Truthy(b, "classAwards") ? Loc.T("Last week's podium (the top 3 of every class get Conquest Tokens)") : Loc.T("{0}: the title holders this week (last week's top 3)", Json.Text(b, "title")));
+                if (champs.Count == 0) l.Text(Json.Truthy(b, "classAwards") ? Loc.T("Nobody yet: the podium of every class is rewarded on Monday.") : Loc.T("Nobody yet: the top 3 of this week get the title on Monday."), "dim");
                 foreach (var c in champs) l.Text((Json.Text(c, "rankName").Length > 0 ? Json.Text(c, "rankName") : LeaderboardMath.Ordinal(Json.Int(c, "rank"))) + " " + Json.Text(c, "name", "?") + "  -  " + LeaderboardMath.ValueText(Json.Number(c, "value"), Json.Text(b, "format")));
             }
             else l.Text(Loc.T("Every class of the line counts. Updated every few minutes."), "dim");
@@ -353,17 +353,17 @@ namespace Chaos.Core
                 if (vn.Count > 0) l.Combo(Loc.T("Variant"), "variant", vn);
                 var sn = new List<string>(); foreach (var v in SFmt.Rows(board, "sizes")) sn.Add(Json.Text(v, "name", Json.Text(v, "key")));
                 if (sn.Count > 0) l.Combo(Loc.T("Size"), "size", sn);
-                if (Json.Bool(board, "byClass")) { var gn = new List<string> { Loc.T("All classes") }; foreach (var g in SFmt.Rows(RMeta, "groups")) gn.Add(Json.Text(g, "name", "?")); l.Combo(Loc.T("Class"), "rgroup", gn); }
+                if (Json.Truthy(board, "byClass")) { var gn = new List<string> { Loc.T("All classes") }; foreach (var g in SFmt.Rows(RMeta, "groups")) gn.Add(Json.Text(g, "name", "?")); l.Combo(Loc.T("Class"), "rgroup", gn); }
             }
             if (RCurrent == null) { l.Text(Loc.T("Loading..."), "dim"); return; }
             var rows = SFmt.Rows(RCurrent, "rows");
-            if (Json.Bool(RCurrent, "isMine"))
+            if (Json.Truthy(RCurrent, "isMine"))
             {
                 l.Section(Loc.T("My Records"));
                 foreach (var r in rows) l.Row(Json.Text(r, "name"), Json.Get(r, "value") is double dv ? SFmt.Money(dv) : Json.Text(r, "value"));
                 if (rows.Count == 0) l.Text(Loc.T("No records yet."), "dim");
             }
-            else if (Json.Bool(RCurrent, "isFirsts"))
+            else if (Json.Truthy(RCurrent, "isFirsts"))
             {
                 l.Section(Loc.T("Realm firsts of {0}", Json.Text(RCurrent, "seasonName")));
                 foreach (var r in rows)

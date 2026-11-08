@@ -109,7 +109,7 @@ namespace Chaos.Core
             double amount = Json.Number(m.Data, "amount", -1);
             if (amount < 0) return null;
             int item = Json.Int(m.Data, "item");
-            return new NpcCurrency { Name = TitleCase(name), Item = item > 0 ? item : 0, Amount = (ulong)amount, Again = Json.Bool(m.Data, "again") };
+            return new NpcCurrency { Name = TitleCase(name), Item = item > 0 ? item : 0, Amount = (ulong)amount, Again = Json.Truthy(m.Data, "again") };
         }
 
         public static string TitleCase(string s)
