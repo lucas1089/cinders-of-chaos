@@ -247,12 +247,17 @@ namespace Chaos.Core
             return l;
         }
 
+        /// <summary>Streamer mode (Core/CommunityExtras.cs): hides private messages and addresses before a line is stored. ServerText sees every server text (automatic screenshots).</summary>
+        public StreamerState Streamer;
+        public Action<string> ServerText = delegate { };
+
         public bool IsIgnored(string name) => !string.IsNullOrEmpty(name) && Ignored.Contains(name);
 
         /// <summary>A 0xAA line. Public speech goes to Default, private messages to a tab of the sender, channel lines to the
         /// channel's tab, a broadcast to Default. Ignored players (not monsters or NPCs) are dropped. Returns the line, or null.</summary>
         public ChatLine OnTalk(string speaker, int level, byte type, int channel, string text)
         {
+            if (Streamer != null) Streamer.MaskTalk(type, ref speaker, ref text);
             bool fromPlayer = type != TalkType.MonsterSay && type != TalkType.MonsterYell && type != TalkType.NpcFrom && type != TalkType.Broadcast;
             if (fromPlayer && IsIgnored(speaker)) return null;
             uint col = TalkType.Color(type);
@@ -267,6 +272,8 @@ namespace Chaos.Core
         /// <summary>A server text message (0xB4 of a console kind). Guild and party kinds go to their channel tab when it is open.</summary>
         public ChatLine OnText(byte kind, int channel, string text)
         {
+            if (Streamer != null) text = Streamer.MaskIps(text);
+            ServerText(text);
             ChatTab tab = LogTab;
             if (channel >= 0 && (kind == 33 || kind == 34 || kind == 35)) tab = FindChannel(channel) ?? LogTab;
             else if (kind == 4 || kind == 13) tab = DefaultTab;   // the console blue and red messages

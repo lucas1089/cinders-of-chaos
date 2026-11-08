@@ -78,6 +78,7 @@ namespace Chaos.Client
                     int slot = c.FirstIndex + i;
                     var it = i < c.Items.Count ? c.Items[i] : null;
                     ItemSlots.Slot(app, r, it, GameSession.ContainerPos(c.Id, slot), (byte)(slot & 0xFF), null);
+                    if (it != null) ItemSlots.Frame(r, app.CardBorderColor(c.ItemId, it.Id));   // game_cardborder: a card in a deck bag
                 }
                 y += Rows(c) * (SlotSize + Gap) + Between;
             }

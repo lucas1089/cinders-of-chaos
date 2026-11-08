@@ -57,6 +57,7 @@ namespace Chaos.Client
         void MakeWindows()
         {
             AddSocialWindows();   // ChaosApp.Social.cs
+            AddCommunityWindows();   // ChaosApp.Community.cs
             windows.Add(new EquipmentWindow());
             windows.Add(new ContainersWindow());
             windows.Add(new SkillsWindow());

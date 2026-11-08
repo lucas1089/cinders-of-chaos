@@ -207,10 +207,12 @@ namespace Chaos.Client
                 Build = ClientBuild(),
                 RsaModulus = RsaModulus(),
                 Identity = IdentityChoice(),
+                Streamer = streamer,
             });
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
             ChatEntered();
             SocialEntered();   // ChaosApp.Social.cs
+            CommunityEntered();   // ChaosApp.Community.cs
             session.Start();
             var go = new GameObject("Map");
             go.transform.SetParent(transform);
@@ -319,6 +321,7 @@ namespace Chaos.Client
                 foreach (var win in windows)
                     if (win.Hotkey != KeyCode.None && Input.GetKeyDown(win.Hotkey) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
                         win.Open = !win.Open;
+            CommunityUpdate();   // ChaosApp.Community.cs
             CombatUpdate();
             HandleWalk();
         }
@@ -513,6 +516,7 @@ namespace Chaos.Client
                     // above the creature's tile, left-shifted by its outfit's displacement
                     float x = sp.x / scale, y = (UnityEngine.Screen.height - sp.y) / scale;
                     if (x < map.x || x > map.xMax || y < map.y || y > map.yMax + tile * 0.5f) continue;
+                    if (CommunityHidesName(c)) continue;   // streamer / cinema mode (ChaosApp.Community.cs)
                     x -= map.x;
                     y -= map.y;
                     var col = c.Type == 1 ? new Color(1f, 0.6f, 0.6f) : c.Type == 2 ? new Color(0.6f, 0.9f, 1f) : new Color(0.6f, 1f, 0.6f);
@@ -537,6 +541,7 @@ namespace Chaos.Client
                 DrawAttackFrame(map, scale);
                 GUI.EndGroup();
             }
+            if (streamer.Cinema) return;   // cinema mode: the map alone (ChaosApp.Community.cs)
             StatusPanel(scale);
             ChatWindow(w, h, scale);
             DrawWindows(w, h, scale);

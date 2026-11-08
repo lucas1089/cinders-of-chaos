@@ -1,0 +1,11 @@
+# Client-facing extended opcodes the Unity client does not handle, each with its reason (tools/ci/check_unity_opcodes.py).
+# Format: NUMBER | reason. A reason that starts with "not ported yet" is open work; every other reason is final.
+# The list can only shrink: an entry whose opcode Unity handles now, or that no client or server file names any more, fails the check.
+# Remove a line in the same commit that ports its module (and say so in docs/UNITY_PARITY.md).
+
+96 | N/A platform: game_nameshaders needs engine work (outfit shader lists) in the main client too, no server side yet
+111 | retired by O316: the depot tabs window is gone, nothing sends or reads opcode 111, the number stays reserved
+116 | not ported yet: Everfull potions held per slot for the helper (game_helperrotation everfullheld.lua); Unity has the helper but no held-potion list
+118 | not ported yet: Templar aura strips on the character (game_chestaura); a visual of the main client's engine
+191 | not ported yet: level up wings effect (game_levelwings); a visual of the main client's engine
+204 | not ported yet: DPS meter and combat log (game_dpsmeter), parity row P2

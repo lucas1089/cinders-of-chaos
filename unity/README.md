@@ -823,3 +823,24 @@ windows: `Unity/Windows/WorldWindows.cs` and `ItemWindows.cs`. No window has a h
   Nothing here was run against a live server.
 - Tests: `Core.Tests/WorldTests.cs` drives every model with the messages of the server scripts and reads back what it sends (about 400 checks): the placement check of the hideout, field timers on a
   synthetic world, rain fades, plate batches and retries, order forms, crate cells, part joining, and that every text has a pt-BR entry.
+
+## Community, credits and tools (O433 phase 5, track S)
+
+Sixteen more modules of the main client and a check that no opcode is forgotten. Models in `Core/Community.cs` (admin panel 120, boss spawns 217, survey 122, nemesis 163, referral 220),
+`Core/CommunityGoal.cs` (community goal and Brazier 203, chronicle and Memorial 171, mentors 194, patch notes 244) and `Core/CommunityExtras.cs` (card borders 172, drop feed 229, credits,
+streamer and cinema mode, performance record, automatic screenshots, Customise Character extras); the session part is `Core/GameCommunity.cs` (`GameSession.Community`), the windows
+`Unity/Windows/CommunityWindows.cs` (all on the list-window framework: `SocialPanel` rows), the app glue `Unity/ChaosApp.Community.cs`. No window has a hotkey: the top menu opens them
+(`Core/TopMenu.cs`) or the server does (survey at level 20 and 50, the Brazier, the pocket boss NPC, the mentor offer, the patch notes at the login). Texts: `Core/LocCommunity.cs`.
+- Opcode coverage: `python3 -I tools/ci/check_unity_opcodes.py` (CI job `core`). Every `ChaosOpcodes` number of the server and every opcode a main client module registers must be handled in Unity or
+  be in `tools/ci/unity_opcodes_allowlist.txt` with a reason ("not ported yet" is open work). The list can only shrink; `--list` prints the table. The test builds a made-up tree.
+- Admin Panel: the same gate as the main client. The client asks for the catalog 600 ms after the login; only staff accounts get an answer, and the window is in the menu only then. The server re-checks every action.
+- Credits: `python3 -I unity/tools/gen_unity_credits.py` writes `Core/CreditsData.cs` from docs/CREDITS.md with the parser of `client/tools/gen_credits.py` (`--check` in CI).
+- Streamer mode (Ctrl+Shift+S): `ChatModel.Streamer` hides private message text (and the sender, with the sub-option) before a line is stored and masks IP addresses in server texts; the character list masks the
+  other characters; the own name is not drawn. Cinema mode (Ctrl+Shift+H) draws the map alone. Options in PlayerPrefs (`chaos.streamerMode` ...).
+- Screenshots: `ScreenCapture` into `screenshots/` of `Application.persistentDataPath`, 300 ms after the event (level up, valuable loot, achievement, new record line). Performance: `PerfCore` is perf_core.lua
+  ported (stats, record, verdict, CSV, report); Record 60 s writes `chaos-perf-<time>.csv` and `.txt` next to the screenshots folder.
+- Tests: `Core.Tests/CommunityTests.cs` drives every model with the server's messages and reads back what it sends (about 270 checks): the admin gate and confirm press, boss countdowns and pocket buttons,
+  survey answers, nemesis times, referral rows, goal stages and Brazier limits, chronicle languages and memset, mentor pages and offer, patch notes in parts and the login wait for the Daily Reward window,
+  the changelog, card borders, drop feed, credits, streamer masks through the chat model, the performance record (60 samples, CSV, report), screenshot rules, the extras plan, and that every text has a pt-BR entry.
+- Not done: Boss Defeated screenshots, the window title and login fields of streamer mode, the Customise Character look preview and colour palette, boss pictures and stage icons, a Nemesis tab in the Bestiary window.
+  `game_event` is N/A (no server system behind it). Not run against a live server (as the other tracks).
