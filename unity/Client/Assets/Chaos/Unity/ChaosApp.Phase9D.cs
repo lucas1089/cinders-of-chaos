@@ -111,16 +111,18 @@ namespace Chaos.Client
         {
             if (!ClassicView) return;
             DrawSpellFx(v, map, scale, now);
-            DrawSpellLightDiscs(v, map, scale, now);
+            if (!VisualPrefs.Fx.SpellLight || !DrawSpellLightAdd(v, map, scale, now)) DrawSpellLightDiscs(v, map, scale, now);   // phase 15 track B: light added to the map, the faint tint when the additive shader is missing
         }
 
         /// <summary>The magic effects of the client pair, frame by frame at their tile (the classic view drew none from the art file before). An effect the pair does not have is
-        /// forgotten. Not additive: the immediate-mode GUI has no additive blend, so the glowing themes are drawn like the others.</summary>
+        /// forgotten. The glowing themes (AddFx.Glows, option spellLight) are drawn added (phase 15 track B, ChaosApp.Phase15B.cs), the others and every effect without the
+        /// additive shader with the normal blend.</summary>
         void DrawSpellFx(VisualEffects v, Rect map, float scale, double now)
         {
             float a = VisualRuntime.EffectAlpha;
             if (a <= 0.01f || v.SpellFx.Marks.Count == 0 || world?.Dat == null) return;
             int floor = world.Center.Z;
+            bool glowOn = VisualPrefs.Fx.SpellLight && AddOn;
             spellFxTmp.Clear();
             spellFxTmp.AddRange(v.SpellFx.Marks);
             foreach (var m in spellFxTmp)
@@ -130,7 +132,7 @@ namespace Chaos.Client
                 double el = now - m.Born;
                 if (el > PackFx.Length(t.Idle) + 50) { v.SpellFx.Remove(m); continue; }
                 if (m.Pos.Z != floor) continue;
-                DrawPackEffect(m.Id, m.Pos, el, false, map, scale, a);
+                DrawPackEffect(m.Id, m.Pos, el, false, map, scale, a, glowOn && AddFx.Glows(m.Id));
             }
         }
 
