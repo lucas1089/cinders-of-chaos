@@ -13,10 +13,12 @@ namespace Chaos.Client
         // ------------------------------------------------------------------------------------ outfit with wings, aura and shader
         /// <summary>Draws an outfit like DrawOutfit and adds what the website knows: the aura under it (a ring on the ground only: tall ones hide the body),
         /// the wings at the body's place with the body lifted 6 pixels, and the shader as a pulsing tint. Without any of them it is DrawOutfit.</summary>
-        public void DrawOutfitFx(Rect r, Outfit o, bool smallAurasOnly = true, Dir facing = Dir.South)
+        public void DrawOutfitFx(Rect r, Outfit o, bool smallAurasOnly = true, Dir facing = Dir.South, float fixedCell = 0f)
         {
             if (o == null || dat == null || atlas == null) return;
-            if (o.LookType == 0 || (o.Wings == 0 && o.Aura == 0 && o.Mount == 0 && string.IsNullOrEmpty(o.Shader))) { DrawOutfit(r, o, facing); return; }
+            // fixedCell (phase 9, track E): the tile size in pixels, the creature square r (2 tiles) as the engine's UICreature: the effect stage and the list cards draw every look at one scale
+            if (fixedCell <= 0f && (o.LookType == 0 || (o.Wings == 0 && o.Aura == 0 && o.Mount == 0 && string.IsNullOrEmpty(o.Shader)))) { DrawOutfit(r, o, facing); return; }
+            if (o.LookType == 0) return;
             var layers = OutfitLayers.Plan(o, id =>
             {
                 var t = dat.Outfit(id);
@@ -28,7 +30,7 @@ namespace Chaos.Client
                 var t = dat.Outfit(l.LookType);
                 if (t != null) n = Mathf.Max(n, Mathf.Max(t.Idle.Width, t.Idle.Height));
             }
-            float cell = r.width / n;
+            float cell = fixedCell > 0f ? fixedCell : r.width / n;
             var anchor = new Vector2(r.xMax - cell, r.yMax - cell);   // the bottom right cell of every layer: the tile the character stands on
             var tint = OutfitShaderTint.Of(o.Shader);
             var old = GUI.color;

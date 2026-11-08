@@ -480,6 +480,7 @@ namespace Chaos.Client
                 case Screen.Characters: CharactersGui(w, h); break;
                 case Screen.Game: GameGui(w, h, scale); break;
             }
+            if (LoginMenu.Visible(screen == Screen.Game)) LoginBarGui(w, h);   // ChaosApp.Phase9E.cs: the System drop-down before the login
             StreamerBadgeGui(w, h);   // ChaosApp.Phase7Q.cs: the STREAMER badge while streamer mode is on
         }
 

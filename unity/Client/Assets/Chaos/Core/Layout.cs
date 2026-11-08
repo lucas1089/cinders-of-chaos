@@ -227,12 +227,12 @@ namespace Chaos.Core
     }
 
     // ============================================================================================================ saved window layout
-    /// <summary>The saved layout per character (game_chaoslayout): where each window is, and whether the windows that come back open were open. PlayerPrefs "chaos.layout.name", JSON {id: [x, y, open]}.</summary>
+    /// <summary>The saved layout per character (game_chaoslayout): where each window is, and whether the windows that come back open were open. PlayerPrefs "chaos.layout.name", JSON {id: [x, y, open, w, h]}; w and h (phase 9, track E) only for a window the player resized with its grip.</summary>
     public sealed class WindowLayout
     {
         public const string Pref = "chaos.layout.";
         public const int MaxWindows = 120;
-        public sealed class Slot { public float X, Y; public bool Open; }
+        public sealed class Slot { public float X, Y, W, H; public bool Open; }
         readonly Dictionary<string, Slot> slots = new Dictionary<string, Slot>();
         public bool Dirty;
 
@@ -260,10 +260,25 @@ namespace Chaos.Core
             Dirty = true;
         }
 
+        /// <summary>Notes the size a player gave a window (0, 0 forgets it: the window is back to its own size); Dirty is set on a change.</summary>
+        public void NoteSize(string id, float w, float h)
+        {
+            if (!Remembered(id) || !slots.TryGetValue(id, out var s)) return;
+            if (!WindowSize.Valid(w, h)) { w = 0; h = 0; }
+            if (Math.Abs(s.W - w) < 0.5f && Math.Abs(s.H - h) < 0.5f) return;
+            s.W = w; s.H = h;
+            Dirty = true;
+        }
+
         public string ToJson()
         {
             var d = new Dictionary<string, object>();
-            foreach (var kv in slots) d[kv.Key] = new List<object> { Math.Round(kv.Value.X), Math.Round(kv.Value.Y), kv.Value.Open };
+            foreach (var kv in slots)
+            {
+                var a = new List<object> { Math.Round(kv.Value.X), Math.Round(kv.Value.Y), kv.Value.Open };
+                if (kv.Value.W > 0 && kv.Value.H > 0) { a.Add(Math.Round(kv.Value.W)); a.Add(Math.Round(kv.Value.H)); }
+                d[kv.Key] = a;
+            }
             Dirty = false;
             return Json.Serialize(d);
         }
@@ -276,7 +291,9 @@ namespace Chaos.Core
             {
                 if (l.slots.Count >= MaxWindows || !Remembered(kv.Key) || !(kv.Value is List<object> a) || a.Count < 2 || !(a[0] is double x) || !(a[1] is double y)) continue;
                 if (double.IsNaN(x) || double.IsNaN(y) || Math.Abs(x) > 20000 || Math.Abs(y) > 20000) continue;
-                l.slots[kv.Key] = new Slot { X = (float)x, Y = (float)y, Open = a.Count > 2 && a[2] is bool b && b };
+                var slot = new Slot { X = (float)x, Y = (float)y, Open = a.Count > 2 && a[2] is bool b && b };
+                if (a.Count > 4 && a[3] is double sw && a[4] is double sh && WindowSize.Valid((float)sw, (float)sh)) { slot.W = (float)sw; slot.H = (float)sh; }
+                l.slots[kv.Key] = slot;
             }
             return l;
         }

@@ -42,7 +42,7 @@ namespace Chaos.Core
 
         /// <summary>What an option draws on the look preview: an outline glow or footprints (its art), a plate frame (the name plate); null for the rest (a spell effect or a chat colour is not
         /// drawn on the figure).</summary>
-        public static PreviewOption Preview(OutfitExtrasPanel.ExtraRow row, int index)
+        public static PreviewOption Preview(OutfitExtrasPanel.ExtraRow row, int index, bool hover = false)
         {
             if (row == null || index < 0 || index >= row.Options.Count) return null;
             var opt = row.Options[index];
@@ -52,6 +52,8 @@ namespace Chaos.Core
                 return new PreviewOption { Kind = row.Key, Art = opt.Row.Art, Pulse = opt.Row.Pulse > 0 };
             }
             if (row.Key == "frame") return opt.Value.Length == 0 ? null : new PreviewOption { Kind = "nameplate", Frame = opt.Value };
+            // phase 9, track E: a spell skin or kill effect plays on the preview stage, but only for the card under the pointer (customisecore.lua hoverOption)
+            if (hover && (row.Key == "spellskin" || row.Key == "killfx") && opt.Row != null) return PreviewStage.FromPlayRow(row.Key, opt.Row.Play);
             return null;
         }
 
@@ -61,7 +63,7 @@ namespace Chaos.Core
             var parts = new List<PreviewOption>();
             foreach (var row in rows)
             {
-                var p = Preview(row, row.Key == hoverKey ? hoverIndex : chosen(row.Key));
+                var p = Preview(row, row.Key == hoverKey ? hoverIndex : chosen(row.Key), row.Key == hoverKey);
                 if (p != null) parts.Add(p);
             }
             return parts.Count == 0 ? null : new PreviewOption { Kind = "bundle", Parts = parts };

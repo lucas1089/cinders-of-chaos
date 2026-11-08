@@ -13,6 +13,7 @@ namespace Chaos.Client
 {
     public sealed class HotkeyBarWindow : GameWindow
     {
+        public override bool Resizable => false;   // sets its own size (phase 9, track E)
         const float ExtraH = 76f;   // under the slots: the hint lines or the options
 
         readonly HotbarModel bar = new HotbarModel();
