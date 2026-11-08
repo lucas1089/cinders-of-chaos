@@ -593,6 +593,7 @@ namespace Chaos.Core
             Ext.On(NpcTradeState.OpcodeCurrency, m => parser.Trade.ReceiveCurrency(NpcTradeState.ParseCurrency(m), Now));
             parser.Pinged = () => conn?.Send(new byte[] { 0x1E });
             InitItems();
+            InitSocial();   // Core/GameSocial.cs
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
         }

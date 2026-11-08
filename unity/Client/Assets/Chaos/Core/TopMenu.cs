@@ -48,14 +48,18 @@ namespace Chaos.Core
             new MenuCategory { Id = "adventure", Text = Lk.N("Adventure"), Entries = new[]
             {
                 E("Next Goals", "win:GoalsWindow"), E("Goal Tracker", "win:GoalTrackerWindow"), E("Rifts", "info:rift"), E("Events", "info:events"),
+                E("Group Queue", "win:GroupQueueWindow"),
             } },
             new MenuCategory { Id = "economy", Text = Lk.N("Economy"), Entries = new[]
             {
                 E("House", "info:house"), E("Ancestral Store", "info:ancestral"),
+                E("Market", "win:MarketWindow"),
             } },
             new MenuCategory { Id = "social", Text = Lk.N("Social"), Entries = new[]
             {
                 E("Channels", "win:ChannelsWindow"),
+                E("Guild", "win:GuildWindow"), E("Guild Wars", "win:GuildWarWindow"), E("Party Finder", "win:PartyFinderWindow"),
+                E("Leaderboards", "win:LeaderboardWindow"), E("Inspect Player", "win:InspectWindow"),
             } },
             new MenuCategory { Id = "system", Text = Lk.N("System"), Entries = new[]
             {

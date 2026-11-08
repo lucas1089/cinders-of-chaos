@@ -210,6 +210,7 @@ namespace Chaos.Client
             });
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
             ChatEntered();
+            SocialEntered();   // ChaosApp.Social.cs
             session.Start();
             var go = new GameObject("Map");
             go.transform.SetParent(transform);
