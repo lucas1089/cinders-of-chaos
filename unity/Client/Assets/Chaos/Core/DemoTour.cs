@@ -28,6 +28,11 @@ namespace Chaos.Core
         public string Source = "";
         /// <summary>Ids whose item carries a phase byte (animated) or a count byte on the wire; filled by Probe from the dat.</summary>
         public readonly HashSet<int> Phased = new HashSet<int>(), Counted = new HashSet<int>();
+        /// <summary>The ground speed of the ids the map uses as ground, from the dat (the walking video's fake server times its steps with it, as the client does).</summary>
+        public readonly Dictionary<int, int> GroundSpeeds = new Dictionary<int, int>();
+
+        /// <summary>What the client takes for a tile's ground speed: the dat's value for a ground item, else 150 (GameSession.StepMs).</summary>
+        public int GroundSpeedOf(int id) { return GroundSpeeds.TryGetValue(id, out int v) ? v : 150; }
 
         /// <summary>The synthetic art (Hd2dDemo.Synthetic) or the temple tileset of the real pair: floors, pillars for trees, a wall, torches.</summary>
         public static TourArt FromDemo(DemoIds d)
@@ -60,6 +65,7 @@ namespace Chaos.Core
                 if (t == null) continue;
                 if (t.HasPhaseByte) Phased.Add(id);
                 if (t.HasSubType) Counted.Add(id);
+                if (t.Ground) GroundSpeeds[id] = Math.Max(1, t.GroundSpeed);
             }
             return this;
         }
@@ -152,6 +158,17 @@ namespace Chaos.Core
         public uint AttackTarget;
         public string LastSay = "", Problem;
         public readonly Dictionary<byte, int> ExtRequests = new Dictionary<byte, int>();
+
+        // ---- the walking video (UseWalkTour, Core/WalkTour.cs): the hero's steps are answered after a simulated round trip, all 8 directions, turns and auto-walk
+        // paths are understood, and two creatures glide along their own diagonal paths
+        public const int HeroSpeed = 220, MobSpeed = 150;
+        bool walkTour;
+        double simNow, lastExec = -1e9, lastDur;
+        Pos tip;
+        sealed class Pending { public double At; public bool Turn, Auto; public Dir Dir; }
+        readonly List<Pending> pending = new List<Pending>();
+        /// <summary>Walking video counters: turns answered, auto-walk requests (0x64), cancels sent (0xB5).</summary>
+        public int Turns, AutoRequests, Cancels;
         /// <summary>The window smoke run switches this on: the server then also answers what the Chaos windows ask on opening (Core/FakeModules.cs) and the channel list. Off for the demo tour.</summary>
         public bool ModuleResponder;
         /// <summary>Messages the responder sent for requests, and requests it had no answer for (a window then keeps its empty state).</summary>
@@ -194,6 +211,13 @@ namespace Chaos.Core
             hero = Start;
             health = MaxHealth; mana = MaxMana;
             mobs.Clear();
+            pending.Clear(); lastExec = -1e9; lastDur = 0; tip = Start; simNow = 0;
+            if (walkTour)
+            {
+                foreach (var c in WalkTourPlan.Creatures) AddMob(c.Id, c.Name, 1, c.Tiles[0], art.OutfitMonster);
+                next = 0;
+                return;
+            }
             int cx = Map.Center.X, cy = Map.Center.Y;
             AddMob(SkeletonId, "Skeleton", 1, new Pos(cx + 8, cy - 1, 7), art.OutfitMonster);
             AddMob(GhoulId, "Ghoul", 1, new Pos(cx - 5, cy - 1, 7), art.OutfitMonster);
@@ -360,6 +384,7 @@ namespace Chaos.Core
             byte op = r.U8();
             lock (gate)
             {
+                if (walkTour && WalkOp(op, r)) return;
                 switch (op)
                 {
                     case 0x1D: Pings++; c.Send(new byte[] { 0x1E }); break;
@@ -487,7 +512,7 @@ namespace Chaos.Core
             Item(w, Map.Ground(x, y));
             int item = Map.Item(x, y);
             if (item != 0) Item(w, item);
-            if (hero.X == x && hero.Y == y) Creature(w, HeroId, HeroName, 0, art.OutfitHero, 100, 220, 3, 215, HeroVocation);
+            if (hero.X == x && hero.Y == y) Creature(w, HeroId, HeroName, 0, art.OutfitHero, 100, HeroSpeed, 3, 215, HeroVocation);
             foreach (var m in mobs.Values)
                 if (m.At.X == x && m.At.Y == y) Creature(w, m.Id, m.Name, m.Type, m.Look, m.Hp, m.Type == 2 ? 100 : 150, m.Light, 0, 0);
         }
@@ -538,11 +563,138 @@ namespace Chaos.Core
         {
             lock (gate)
             {
+                simNow = ms;
                 if (cur == null || !cur.Entered) return;
                 var o = new Out(this);
                 while (next < script.Count && script[next].Key <= ms) script[next++].Value(o);
+                if (walkTour) RunPending(ms, o);
                 o.Flush(cur);
             }
+        }
+
+        // ------------------------------------------------------------------------------------ the walking video
+        /// <summary>Switches this server to the walking video (call before Begin): the creatures of WalkTourPlan.Creatures glide along their paths, every step the hero
+        /// asks for is answered WalkTourPlan.RoundTripMs after it was sent (half each way) and not before the step before has run its time, as the real server queues a
+        /// walking player's steps (src-patch 0018 step times, WalkTiming.StepMs). Thread safe by the gate.</summary>
+        public void UseWalkTour()
+        {
+            lock (gate)
+            {
+                walkTour = true;
+                Reset();
+                BuildWalkScript();
+            }
+        }
+
+        /// <summary>True when the hero's map window (World.Range*) holds the tile. Called with the gate held.</summary>
+        bool CanSee(Pos p)
+        {
+            return p.X >= hero.X - World.RangeLeft && p.X <= hero.X + World.RangeRight && p.Y >= hero.Y - World.RangeTop && p.Y <= hero.Y + World.RangeBottom;
+        }
+
+        static Dir DirOfWalkCode(int code)
+        {
+            foreach (var d in WalkDirs.All) if (WalkDirs.Code(d) == code) return d;
+            return Dir.North;
+        }
+
+        /// <summary>The walking video's packets: the 8 step opcodes (0x65-0x68, 0x6A-0x6D), the 4 turns (0x6F-0x72), an auto-walk path (0x64) and its stop (0xBE). Called with the gate held.</summary>
+        bool WalkOp(byte op, ByteReader r)
+        {
+            switch (op)
+            {
+                case 0x65: QueueStep(Dir.North, false); return true;
+                case 0x66: QueueStep(Dir.East, false); return true;
+                case 0x67: QueueStep(Dir.South, false); return true;
+                case 0x68: QueueStep(Dir.West, false); return true;
+                case 0x6A: QueueStep(Dir.NorthEast, false); return true;
+                case 0x6B: QueueStep(Dir.SouthEast, false); return true;
+                case 0x6C: QueueStep(Dir.SouthWest, false); return true;
+                case 0x6D: QueueStep(Dir.NorthWest, false); return true;
+                case 0x6F: case 0x70: case 0x71: case 0x72:
+                    Insert(new Pending { At = simNow + WalkTourPlan.RoundTripMs, Turn = true, Dir = (Dir)(op - 0x6F) });
+                    return true;
+                case 0x64:
+                {
+                    int n = r.U8();
+                    AutoRequests++;
+                    for (int i = 0; i < n; i++) QueueStep(DirOfWalkCode(r.U8()), true);
+                    return true;
+                }
+                case 0xBE:
+                    pending.RemoveAll(p => p.Auto);
+                    tip = hero;
+                    foreach (var p in pending) if (!p.Turn) tip = WalkDirs.Step(tip, p.Dir);
+                    return true;
+            }
+            return false;
+        }
+
+        void Insert(Pending p)
+        {
+            int i = pending.Count;
+            while (i > 0 && pending[i - 1].At > p.At) i--;
+            pending.Insert(i, p);
+        }
+
+        /// <summary>A step arrives half a round trip after it was sent, runs when the step before it is over, and its answer takes the other half back.</summary>
+        void QueueStep(Dir d, bool auto)
+        {
+            var to = WalkDirs.Step(tip, d);
+            double dur = WalkTiming.StepMs(HeroSpeed, art.GroundSpeedOf(Map.Ground(to.X, to.Y)), WalkDirs.Diagonal(d), true);
+            double exec = Math.Max(simNow + WalkTourPlan.OneWayMs, lastExec + lastDur);
+            lastExec = exec; lastDur = dur; tip = to;
+            Insert(new Pending { At = exec + WalkTourPlan.OneWayMs, Dir = d, Auto = auto });
+        }
+
+        /// <summary>Plays the answers due at `ms` into `o`. Called with the gate held.</summary>
+        void RunPending(double ms, Out o)
+        {
+            while (pending.Count > 0 && pending[0].At <= ms)
+            {
+                var p = pending[0];
+                pending.RemoveAt(0);
+                if (p.Turn) { Turns++; o.Turn(HeroId, p.Dir); continue; }
+                var from = hero;
+                var to = WalkDirs.Step(from, p.Dir);
+                bool taken = false;
+                foreach (var m in mobs.Values) if (m.At == to) taken = true;
+                if (!Map.Walkable(to.X, to.Y) || taken)
+                {
+                    Blocked++; Cancels++;
+                    pending.Clear(); tip = hero; lastExec = -1e9; lastDur = 0;
+                    o.Cancel(p.Dir);
+                    continue;
+                }
+                Steps++;
+                hero = to;
+                o.HeroMove(from, to);
+            }
+        }
+
+        /// <summary>The creatures of the walking video move along their paths and back, one tile every step time of a monster (the client's own number, so each glide
+        /// starts as the one before ends).</summary>
+        void BuildWalkScript()
+        {
+            script.Clear();
+            foreach (var c in WalkTourPlan.Creatures)
+            {
+                var creature = c;
+                int i = 0, dir = 1;
+                double t = creature.StartMs;
+                while (t < WalkTourPlan.ScriptMs)
+                {
+                    var from = creature.Tiles[i];
+                    var to = creature.Tiles[i + dir];
+                    bool diag = to.X != from.X && to.Y != from.Y;
+                    double dur = WalkTiming.StepMs(MobSpeed, art.GroundSpeedOf(Map.Ground(to.X, to.Y)), diag, false);
+                    At(t, o => o.Move(creature.Id, to));
+                    t += dur;
+                    i += dir;
+                    if (i == creature.Tiles.Length - 1 || i == 0) dir = -dir;
+                }
+            }
+            script.Sort((a, b) => a.Key.CompareTo(b.Key));
         }
 
         public bool Finished { get { lock (gate) return next >= script.Count; } }
@@ -672,10 +824,38 @@ namespace Chaos.Core
             public void Move(uint id, Pos to)
             {
                 if (!s.mobs.TryGetValue(id, out var m)) return;
+                var old = m.At;
                 m.At = to;
+                if (s.walkTour)
+                {
+                    // the walking video: the hero's view moves, so a creature walks in and out of it as the engine tells it (sendMoveCreature): a move inside the view,
+                    // a removal when it leaves, an add when it comes in, nothing while it is out of sight
+                    bool was = s.CanSee(old), now = s.CanSee(to);
+                    if (was && now) { w.U8(0x6D).U16(0xFFFF).U32(id); PosW(w, to); }
+                    else if (was) w.U8(0x6C).U16(0xFFFF).U32(id);
+                    else if (now) { PosW(w.U8(0x6A), to).U8(1); Creature(w, m.Id, m.Name, m.Type, m.Look, m.Hp, m.Type == 2 ? 100 : 150, m.Light, 0, 0); }
+                    return;
+                }
                 w.U8(0x6D).U16(0xFFFF).U32(id);
                 PosW(w, to);
             }
+
+            /// <summary>The hero's move as the server answers a step: 0x6D from tile to tile, then the strips of map the step uncovers (north or south, east or west;
+            /// two for a diagonal, in the engine's order).</summary>
+            public void HeroMove(Pos from, Pos to)
+            {
+                w.U8(0x6D).U16((ushort)from.X).U16((ushort)from.Y).U8(7).U8(1).U16((ushort)to.X).U16((ushort)to.Y).U8(7);
+                if (to.Y < from.Y) { w.U8(0x65); s.Floors(w, from.X - World.RangeLeft, to.Y - World.RangeTop, 7, World.ViewW, 1); }
+                else if (to.Y > from.Y) { w.U8(0x67); s.Floors(w, from.X - World.RangeLeft, to.Y + World.RangeBottom, 7, World.ViewW, 1); }
+                if (to.X > from.X) { w.U8(0x66); s.Floors(w, to.X + World.RangeRight, to.Y - World.RangeTop, 7, 1, World.ViewH); }
+                else if (to.X < from.X) { w.U8(0x68); s.Floors(w, to.X - World.RangeLeft, to.Y - World.RangeTop, 7, 1, World.ViewH); }
+            }
+
+            /// <summary>0x6B on a creature id: it turns on the spot (the thing is the "known creature" 0x63 with the new direction).</summary>
+            public void Turn(uint id, Dir d) { w.U8(0x6B).U16(0xFFFF).U32(id).U16(0x63).U32(id).U8((byte)d).U8(1); }
+
+            /// <summary>0xB5: the server refused the step.</summary>
+            public void Cancel(Dir d) { w.U8(0xB5).U8((byte)d); }
 
             public void Remove(uint id)
             {

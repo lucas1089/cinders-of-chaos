@@ -236,6 +236,15 @@ jobs:
             -logFile "$out/player_smoke.log" -chaosWindowSmoke "$out"
           rc_smoke=$?
           echo "window smoke exit code: $rc_smoke"
+          # the walking video (unity/README.md "Walking video"): a third player run in its own process, so a crash in it touches neither the tour nor the smoke.
+          # It logs in to the same kind of fake server (answers after a 120 ms round trip), walks the 8-direction loop through the player's key path in the classic,
+          # HD-2D, live front-art and (when the models are in the build) 3D views with a pt-BR caption, and writes walk_tour_0000.png at 60 a second. Per segment it
+          # logs steps sent, steps confirmed and the longest standstill with a key held; over 50 ms the player exits with 1 (after the last frame).
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 2100 xvfb-run -a -s "-screen 0 1280x720x24" "$exe" \
+            -force-glcore -screen-width 1280 -screen-height 720 -screen-fullscreen 0 \
+            -logFile "$out/player_walk.log" -chaosWalkTour "$out"
+          rc_walk=$?
+          echo "walk tour exit code: $rc_walk"
           set -e
           echo "player exit code: $rc"
           grep "chaos demo tour" "$out/player.log" "$out/player_tour.log" 2>/dev/null || true
@@ -256,6 +265,30 @@ jobs:
             fi
           else
             echo "::warning::no demo tour frames: the log lines 'chaos demo tour' above say why"
+          fi
+          # the walking video: the player's own lines first (a line per segment: steps sent, steps confirmed, longest standstill with a key held), then the same
+          # encode as the demo tour, four stills, and the frames go.
+          grep "chaos walk tour" "$out/player_walk.log" 2>/dev/null || true
+          nw=$(ls "$out"/walk_tour_[0-9][0-9][0-9][0-9].png 2>/dev/null | wc -l)
+          echo "walk tour frames: $nw"
+          if [ "$nw" -gt 0 ]; then
+            if ffmpeg -y -loglevel error -framerate 60 -i "$out/walk_tour_%04d.png" \
+                 -vf "scale=1280:720:flags=lanczos,format=yuv420p" -c:v libx264 -preset medium -crf 20 -movflags +faststart "$out/walk_tour.mp4"; then
+              ls -l "$out/walk_tour.mp4"
+              for k in 1 2 3 4; do
+                f=$(printf "%s/walk_tour_%04d.png" "$out" $(( nw * k / 5 )))
+                [ -f "$f" ] && cp "$f" "$out/walk_tour_still_$k.png"
+              done
+              rm -f "$out"/walk_tour_[0-9][0-9][0-9][0-9].png
+            else
+              echo "::warning::ffmpeg could not encode the walking video; the PNG frames stay in the artifact"
+            fi
+          else
+            echo "::warning::no walking video frames: the log lines 'chaos walk tour' above say why"
+            tail -n 40 "$out/player_walk.log" 2>/dev/null || true
+          fi
+          if [ "$rc_walk" -ne 0 ]; then
+            echo "::error::walking video: the player exited with $rc_walk (a standstill over 50 ms with a key held, steps not confirmed, a refused step or a crash); the 'chaos walk tour: failed' lines above say which"
           fi
           # the window smoke report: the summary line of the player, then every window with a problem (exception, IMGUI layout error, logged error, empty or
           # off-screen rect). It never fails the job; the json and the sheets go into the hd2d-shots artifact.
@@ -304,6 +337,8 @@ jobs:
           fi
           grep "chaos hd2d shot" "$out/player.log" || true
           grep "chaos front art" "$out/player.log" || true
+          # the walking video fails the step (the artifact below is uploaded all the same, with the video and the log)
+          if [ "$rc_walk" -ne 0 ]; then exit 1; fi
       - uses: actions/upload-artifact@v4
         if: always() && steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneLinux64'
         with:

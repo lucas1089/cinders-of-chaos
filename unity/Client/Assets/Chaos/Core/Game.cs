@@ -24,6 +24,8 @@ namespace Chaos.Core
         public Action<Dir> WalkCancelled = delegate { };
         /// <summary>The local player's steps sent and not confirmed (Core/SmoothWalk.cs).</summary>
         public readonly StepPredictor Steps = new StepPredictor();
+        /// <summary>Moves of the local player the server confirmed (one tile each); the walking video's log counts them.</summary>
+        public int PlayerMoves;
         public Action<Creature> PlayerMoved = delegate { };
         public bool LoggedIn;
         /// <summary>The NPC shop of 0x7A, 0x7B and 0x7C, and the NPC conversation (Core/NpcTrade.cs).</summary>
@@ -337,6 +339,7 @@ namespace Chaos.Core
                 c.Direction = DirOf(dx, dy, c.Direction);
                 double ms = StepMs(c, to, dx != 0 && dy != 0);
                 double now = Clock();
+                if (me) PlayerMoves++;
                 var pred = me ? Steps.Confirm(c, from, to) : null;
                 // a predicted step already glides: keep its start. Any other move joins the glide before it (Core/SmoothWalk.cs WalkChain)
                 double start = pred != null ? pred.Start : WalkChain.Start(WalkChain.EndOf(c), now, ms);
@@ -367,10 +370,7 @@ namespace Chaos.Core
             if (t != null && t.Things.Count > 0 && !t.Things[0].IsCreature && t.Things[0].Item.Type != null && t.Things[0].Item.Type.Ground)
                 ground = Math.Max(1, t.Things[0].Item.Type.GroundSpeed);
             bool player = c.Id == W.PlayerId || WalkTiming.IsPlayerId(c.Id);   // 0018: every player steps by its rules, monsters and NPCs by stock
-            double calc = Math.Floor(857.36 * Math.Log(Math.Max(0, c.Speed) + 261.29) - 4795.01 + 0.5);
-            calc = Math.Max(1, calc);
-            long ms = (long)(1000 * ground / calc);
-            return WalkTiming.Scale(ms, diagonal, player);
+            return WalkTiming.StepMs(c.Speed, ground, diagonal, player);
         }
 
         void MapDescription(ByteReader r, int x, int y, int z, int w, int h)
@@ -779,6 +779,21 @@ namespace Chaos.Core
             }
         }
 
+        /// <summary>Steps this session sent by Walk (not the auto-walk's path), for the walking video's log.</summary>
+        public int WalksSent { get; private set; }
+
+        /// <summary>True when the player stands: no step in flight and no glide going (the walking video waits for it before a turn or a click path).</summary>
+        public bool WalkIdle
+        {
+            get
+            {
+                var me = world.Player;
+                if (me == null || parser.Steps.Count > 0) return false;
+                double end = WalkChain.EndOf(me);
+                return end < 0 || end <= Now;
+            }
+        }
+
         static readonly byte[] WalkOps = { 0x65, 0x66, 0x67, 0x68, 0x6A, 0x6B, 0x6C, 0x6D };
 
         public void Walk(Dir d)
@@ -795,6 +810,7 @@ namespace Chaos.Core
             me.Direction = d;
             steps.Add(me, d, Now, ms, ok);
             conn.Send(new[] { WalkOps[(int)d] });
+            WalksSent++;
         }
 
         /// <summary>Asks the server for a larger or smaller map area (0x33, as game_chaosview does at the game start). The server answers with 0x42

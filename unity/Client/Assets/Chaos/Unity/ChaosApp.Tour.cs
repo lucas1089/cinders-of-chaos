@@ -85,11 +85,12 @@ namespace Chaos.Client
         }
 
         /// <summary>Starts the fake game server on the real art and logs the app in to it (shared by the demo tour and the window smoke run).</summary>
-        static FakeGameServer TourStartServer(ChaosApp app)
+        static FakeGameServer TourStartServer(ChaosApp app, bool walkTour = false)
         {
             var art = TourChooseArt(out app.dat, out app.spr, out app.atlas, out string source);
             Debug.Log("chaos demo tour: art " + source);
             var server = new FakeGameServer(art);
+            if (walkTour) server.UseWalkTour();   // the walking video (ChaosApp.WalkTour.cs): answers after a round trip, 8 directions, gliding creatures
             server.Begin();
             // the app reads the server's key, RSA modulus and wire from the environment (GuardKey, RsaModulus, IdentityChoice)
             var hex = new StringBuilder();
