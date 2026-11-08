@@ -39,23 +39,42 @@ namespace Chaos.Core
                 E("Skills", "win:SkillsWindow"), E("Spellbook", "win:SpellbookWindow"), E("Passive Tree", "win:PassiveTreeWindow"),
                 E("Character Info", "info:character"), E("Services", "info:services"),
                 E("Inventory", "win:EquipmentWindow"), E("Containers", "win:ContainersWindow"),
+                E("Achievements", "win:AchievementsWindow"), E("Pets", "win:PetsWindow"), E("Transmog", "win:TransmogWindow"), E("Cosmetics", "win:CosmeticsWindow"),
+                E("Charms", "win:CharmsWindow"),
+                E("Spell Supports", "win:SpellSupportsWindow"), E("Chaos Pact", "win:PactWindow"), E("Loadouts", "win:LoadoutsWindow"),
+                E("Town Portal", "win:TownPortalWindow"), E("Hideout", "win:HideoutWindow"),
             } },
             new MenuCategory { Id = "hunt", Text = Lk.N("Hunt"), Entries = new[]
             {
                 E("Battle List", "win:BattleListWindow"), E("Party Frames", "win:PartyFramesWindow"), E("Hunt Tracker", "win:HuntWindow"),
                 E("Minimap", "win:MinimapWindow"), E("Fight", "win:FightWindow"),
+                E("Bestiary", "win:BestiaryWindow"),
+                E("Map Overlay", "win:MapOverlayWindow"), E("Map Markers", "win:MapMarkersWindow"), E("Auto Loot", "win:AutoLootWindow"),
             } },
             new MenuCategory { Id = "adventure", Text = Lk.N("Adventure"), Entries = new[]
             {
                 E("Next Goals", "win:GoalsWindow"), E("Goal Tracker", "win:GoalTrackerWindow"), E("Rifts", "info:rift"), E("Events", "info:events"),
+                E("Group Queue", "win:GroupQueueWindow"),
+                // endgame activities (track L); the menu texts are the keys of the server's level unlocks (unlocks_config.lua)
+                E("Dungeons", "win:DungeonsWindow"), E("Infinity Tower", "win:TowerWindow"), E("Bounty Board", "win:BountyWindow"),
+                E("Arena", "win:ArenaWindow"), E("Guild Siege", "win:SiegeWindow"), E("Ember Descent", "win:DescentWindow"),
+                E("Rift Atlas", "win:RiftAtlasWindow"), E("Waystone Atlas", "win:WaystoneAtlasWindow"), E("Raid: Ashen Sepulchre", "win:RaidWindow"),
+                E("Scorched Marches", "win:PvpZoneWindow"), E("Battleground", "win:BattlegroundWindow"), E("Invasions", "win:InvasionWindow"),
+                E("Daily Reward", "win:DailyWindow"), E("Season", "win:SeasonWindow"), E("Season Pass", "win:PassWindow"), E("Weekly Chest", "win:WeeklyChestWindow"),
+                E("Ember Cache", "win:EmberCacheWindow"),
             } },
             new MenuCategory { Id = "economy", Text = Lk.N("Economy"), Entries = new[]
             {
                 E("House", "info:house"), E("Ancestral Store", "info:ancestral"),
+                E("Market", "win:MarketWindow"),
+                E("Crafting Bench", "win:CraftingWindow"), E("Professions", "win:ProfessionsWindow"), E("Crafting Tables", "win:CraftTableWindow"),
+                E("Item Finder", "win:ItemFinderWindow"), E("Orb Exchange", "win:OrbExchangeWindow"), E("Candlemarks", "win:CandlemarksWindow"), E("Auto Seller", "win:AutoSellerWindow"),
             } },
             new MenuCategory { Id = "social", Text = Lk.N("Social"), Entries = new[]
             {
                 E("Channels", "win:ChannelsWindow"),
+                E("Guild", "win:GuildWindow"), E("Guild Wars", "win:GuildWarWindow"), E("Party Finder", "win:PartyFinderWindow"),
+                E("Leaderboards", "win:LeaderboardWindow"), E("Inspect Player", "win:InspectWindow"),
             } },
             new MenuCategory { Id = "system", Text = Lk.N("System"), Entries = new[]
             {

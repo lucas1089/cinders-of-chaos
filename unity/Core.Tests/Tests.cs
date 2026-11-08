@@ -64,6 +64,10 @@ namespace Chaos.Core.Tests
             HudTests.Run,
             ItemTests.Run,
             HelperTests.Run,
+            SocialTests.Run,
+            EndgameTests.Run,
+            CollectTests.Run,
+            WorldTests.Run,
         };
 
         static void CryptoChecks()

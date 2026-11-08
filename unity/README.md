@@ -737,3 +737,89 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
   Click on a corpse label opens the corpse. Hold Alt to show every item.
 - Tests: `Core.Tests/HelperTests.cs` mirrors `helper_logic_test.lua`, `rotation_test.lua`, `helper_potions_test.lua`, `helpertimers_test.lua`, `autorotation_test.lua`, `scatterlogic_test.lua`,
   `deathrecaplogic_test.lua`, `lootfilter_test.lua` and `groundlabels_test.lua`, drives the engine with a fake game and a fake clock, and reads typed 0xB4 packets.
+
+## Social and market (O433 phase 4, track M)
+
+- One model for the list-style windows: `Core/Social.cs` (`SocialPanel`, `RowList`, `SocialRow`: section, text, row with up to 3 buttons, input, combo, bar) and one window class for all of them
+  (`Unity/Windows/SocialWindow.cs`, the concrete windows in `SocialWindows.cs`). A panel turns the server's last message into rows, the window draws them (scroll, tabs, two header lines, status line,
+  item icon with rarity frame, hover tooltip). An input row is a text field, a combo row a button that cycles the options (right-click goes back). No window has a Ctrl hotkey: the top menu opens them
+  (`TopMenu` entries named like the unlock menu texts of opcode 115: Market, Guild Wars; Guild, Party Finder, Leaderboards, Inspect Player under Social; Group Queue under Adventure), or the server does
+  (NPCs, a depot market item, the guild hall stone). Factions and the Conquest vendor are NPC-only like the main client, they are in the Windows list.
+- Panels (all in `GameSession.Social`, `Core/GameSocial.cs`): `Market` (`Core/Market.cs`, opcode 221), `Guild` and `GuildWar` (`Core/Guild.cs`, 252 and 197), `PartyFinder` and `GroupQueue`
+  (`Core/PartyFinder.cs`, 208 and 160, the ready check box is `ReadyCheckWindow`), `Inspect` (`Core/Inspect.cs`, 240), `Leaderboard` (`Core/Leaderboard.cs`, 229), `Links` (`Core/ChatLinks.cs`, 249),
+  `Factions` and `Conquest` (`Core/Factions.cs`, 215 and 167; Go to NPC uses opcode 121). Requests carry what the main client sends (the guild and war windows add `tab` to every request).
+- Item links (`ChaosApp.Social.cs`): Shift+click on an item of the equipment or a bag asks opcode 249 `register` and puts "[Name] " in the chat line; Enter writes the chips out as `[Name]{<r><id>}`; a chat
+  line with links shows the names in the rarity colour and the tooltip of the link under the pointer. `ChaosApp.ShowTip(tip, extra, note)` is the one call a window makes to get the item tooltip box.
+- Right-click "Inspect Player" on a player of the map (`ChaosApp.Party.cs`) asks opcode 240 by creature id.
+- Texts: `Core/LocSocial.cs` (merged in `LocStrings`). `SocialTests` also checks that every `Loc.T` key of the social Core files, the tab names and the menu entries have a pt-BR text.
+- Tests: `Core.Tests/SocialTests.cs` drives each panel with the server's messages and reads the requests back from the packets (market flow with the fee and tax maths, guild tabs, war offers and the
+  boss, party finder filters and post input, group queue rules and the ready check countdown, inspect parts, leaderboard boards and records, link parsing and chips, factions, Conquest rows).
+- Not done: the Modifiers filter of the market (Browse and buy orders) and the price history chart, dragging an item onto the Sell slot, the read-only passive tree view of Inspect, the faction emblems,
+  the party finder menu badge and slot boxes, short numbers on the leaderboards, the guild hall's crafting bench window, the Ctrl compare of item tooltips. Nothing here ran against a live server.
+## Endgame activities (O433 phase 4, track L)
+
+Eleven activities of the main client, each a pure model in `Core/` and windows in `Unity/Windows/EndgameWindows[ABC].cs`. All open from the Adventure menu
+(`Core/TopMenu.cs`, the menu texts are the keys of the server's level unlocks, so a locked one shows grey with its level) or by the server. None has a Ctrl hotkey.
+`GameSession.Endgame` (`Core/GameEndgame.cs`) owns the models, asks for the first state 2.2 s after the login and is rebuilt with every session.
+
+| Activity | Opcode | Model | Windows |
+|---|---|---|---|
+| Infinity Tower | 214 (flat JSON) | `TowerState` | `TowerWindow`, `TowerPanelWindow` (Ctrl+Shift+N skips, Auto box in `chaos.towerAutoSkip`) |
+| Dungeons | 109 | `DungeonsState`, `DungeonsView` | `DungeonsWindow`, `DungeonCounterWindow` |
+| Ashen Sepulchre raid | 213 | `RaidState`, `RaidView` | `RaidWindow`, `RaidHudWindow`, `RaidCalloutWindow` |
+| Ember Descent | 205 | `DescentState`, `DescentView` | `DescentWindow`, `DescentHudWindow`, `DescentOfferWindow`, `DescentShopWindow` |
+| Rift Atlas, Waystone Atlas | 210, 159 | `AtlasState`, `AtlasView` | `RiftAtlasWindow`, `WaystoneAtlasWindow` |
+| Invasions | 251 | `InvasionState`, `InvasionView` | `InvasionHudWindow`, `InvasionWindow` (calendar) |
+| Guild siege | 233 | `SiegeState`, `SiegeView` | `SiegeWindow`, `SiegeHudWindow` |
+| Arena | 236 | `ArenaState`, `ArenaText` | `ArenaWindow`, `ArenaHudWindow` |
+| Battleground | 200 | `BattlegroundState`, `BgView` | `BattlegroundWindow`, `BattlegroundHudWindow`, `BattlegroundBoardWindow` |
+| Scorched Marches | 193 | `PvpZoneState`, `PvpZoneView` | `PvpZoneWindow`, `PvpZoneConfirmWindow`, `PvpZoneHudWindow` |
+| Bounty board | 223 | `BountyState`, `BountyView` | `BountyWindow` |
+
+- The view classes hold the main client's rules (`*view.lua`, `*math.lua`, `arenatext.lua`, `towerskip.lua`) with the same fields and defaults. The state classes read the
+  server's messages and send the same actions. The tower is flat JSON, all the others are `{action, data}`. The atlas tree may come in parts; `ExtChunks` joins it.
+- A HUD is an `EgHudWindow`: it opens when its activity starts, closes when it ends, and the x hides it for that run. Windows follow their state's `Visible` flag (`WindowSync`),
+  and Show sets the flag at once and asks the server, as the bank does.
+- Arena, battleground and the Marches turn the secure mode off for the fight and back on after it (`EndgameBridge`), the arena and the battleground also cancel the attack at the end.
+  Server refusals and battleground alerts go to the text log through `Notice` and `Alert`.
+- Texts: `Core/LocEndgame.cs` (pt-BR, merged in the `LocStrings` constructor, a key of the main table wins). Tests: `Core.Tests/EndgameTests.cs` feeds each module the servers' payloads
+  and checks the requests, the view text, the timers on a fake clock, the Adventure menu entries and the pt-BR placeholders.
+- Not done: the dungeon boss outfit and item finder, tier emblems and node art of the atlases, boon icons of the Descent, minimap flags for the Marches, saved HUD positions,
+  the "how it works" cards. None of it ran against a live server.
+## Collections, seasons and crafting (O433 phase 4, track N)
+
+Thirteen windows, each a pure model in `Core/Collect*.cs` (the wire layout of its opcode is at the top of the file) and a window in `Unity/Windows/`. All models are built in `Core/GameCollect.cs`
+(`GameSession.Achievements`, `Bestiary`, `Charms`, `Pass`, `Seasons`, `Daily`, `Weekly`, `Cosmetics`, `Transmog`, `Pets`, `Professions`, `Crafting`, `CraftTable`); a model owns its opcode and
+a `Visible` flag, `ModelWindow` (`Unity/Windows/CollectUi.cs`) opens the window when the server sets it and asks the server when the player opens it. No Ctrl hotkeys: the windows are in the top menu
+(Character: Achievements, Charms, Cosmetics, Pets, Transmog. Hunt: Bestiary. Adventure: Daily Reward, Season, Season Pass, Weekly Chest. Economy: Crafting Bench, Professions, Crafting Tables) with the
+main client's level unlocks, or the server opens them (daily reward at the login, season pass and weekly chest, broker NPC, crafting tables).
+- Opcodes: achievements 250, bestiary 253, charms 198, season pass 227, seasons 246, daily 207, weekly chest 117, cosmetics and unlocks 225, transmog 212, pets 254, professions 195,
+  crafting bench 232, crafting tables 91. Crafting skills are in the 0xA1 skills packet (`GameParser.CraftSkills`, the seven skills after fishing) and drawn in the Professions window.
+- Faithful to the main client's actions and fields: the same packets (`open`, `claim`, `calim` with a bare server day number, `place` / `move` / `take`, `apply` with the aimed modifier, `giftPrice`
+  round trip, `salvageBatch` with its signature, `fetch` / `craft` with chunked replies), the same rules (stage percent, tier track, grid fit, quote with the daily cap, craft checks and pacing).
+- Seasons send the Hardcore heartbeat (`beat`) every `heartbeat` seconds without the window open; the pets window asks again every 3 seconds while open; a craft repeats with the main client's pacing
+  (860 ms craft, 1000 ms cooldown, 5 s without an answer stops it).
+- Texts: `Core/LocCollect.cs`, merged into `LocStrings.PtBr` (a key the main table has wins).
+- Tests: `Core.Tests/CollectTests.cs` (every model on the messages of the Lua tests and the server scripts, packets compared as text).
+- Not done: the on-screen kill task tracker, the chat name colour and label accent (read, not applied), look and effect previews (cosmetics, pets, transmog, footprints, outlines), the item right-click
+  entries (Transmog, Lock item), a charm item dropped from a backpack, rich item tooltips in the crafting tables, the gem guide table and the Codex link of the bench, the unlock toast of achievements,
+  the daily window waiting for other login windows. Not run against a live server (as the other tracks).
+## World, map and item utilities (O433 phase 4, track O)
+
+Twenty one more modules of the main client, each a pure model in `Core/` (`WorldMarks.cs`, `WorldTravel.cs`, `WorldTiles.cs`, `WorldItems.cs`, `WorldItems2.cs`), made once in `WorldUtils` (`Core/GameWorld.cs`, `GameSession.Utils`)
+and driven through the extended opcode layer. Drawing: `Unity/ChaosApp.World.cs` (map group, both map views through `TileScreenPx`, plus the Candlemarks counter, the Hideout placing bar and a small tooltip),
+windows: `Unity/Windows/WorldWindows.cs` and `ItemWindows.cs`. No window has a hotkey: the top menu opens them (same menu texts and level unlocks as the main client) or the server does
+(Waystone, Gambler, Unveil, Osric, the banker style NPCs). Texts: `Core/LocWorld.cs` (pt-BR, merged in `LocStrings`).
+- Map: `MapMarkState` (opcode 153: party pins that glide, points of interest by category on the Minimap window, quest goals, the gold ! and ? over NPC heads, arrows for members out of view),
+  `MapOverlayState` (245: the explored map see-through over the game view, opacity, zoom, pan, corner box, strip, rift squares), `MinimapSyncLogic`, `TileOverlays` (156: seconds over timed fields from a
+  scan of the world four times a second, the server's bars), `WeatherState` (114: rain, embers, motes, dust, area colour mood, drawn in code), `NameplateState` (248, plain text: title, guild, frame).
+- Places: `NpcTravel` (121), `WaystoneState` (202, raw JSON without the data wrapper), `TownPortalState` (239) and `LoadoutsState` (206) put their casts on the HUD cast bar, `HideoutState` (192: catalogue,
+  placement check, the ghost on the map).
+- Items: `AutoLootState` (216), `PouchesState` with the Auto Seller (226), `OrbExchangeState` (209), `GambleState` (199), `EmberCacheState` (174), `UnveilState` (196), `ItemFinderState` (155),
+  `SpellSupportsState` (243, joins `part` messages), `PactState` (222, a loaded build previews in the passive tree), `CandlemarksState` (176).
+- Settings of the markers and the overlay are kept in PlayerPrefs (`chaos.mm.*`, `chaos.mo.*`).
+- Not done: icon art for marks and plates (coloured squares and a bordered box), the Tab hotkey and Shift + arrow pan of the overlay, drag and drop of runes, pips on the hotbar and the spellbook line
+  (`SpellSupportsState.BookLine`), the action bar profile of a loadout, right-click menu entries (Where to find, Add to Loot List, Pouch settings), the Orb Exchange chart, the remembered minimap over a relog.
+  Nothing here was run against a live server.
+- Tests: `Core.Tests/WorldTests.cs` drives every model with the messages of the server scripts and reads back what it sends (about 400 checks): the placement check of the hideout, field timers on a
+  synthetic world, rain fades, plate batches and retries, order forms, crate cells, part joining, and that every text has a pt-BR entry.

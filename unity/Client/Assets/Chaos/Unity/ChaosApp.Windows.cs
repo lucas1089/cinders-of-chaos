@@ -56,6 +56,7 @@ namespace Chaos.Client
         /// <summary>Every game window, in toolbar order. Add a new window here (one line).</summary>
         void MakeWindows()
         {
+            AddSocialWindows();   // ChaosApp.Social.cs
             windows.Add(new EquipmentWindow());
             windows.Add(new ContainersWindow());
             windows.Add(new SkillsWindow());
@@ -82,6 +83,29 @@ namespace Chaos.Client
             windows.Add(new HelperWindow());
             windows.Add(new DeathRecapWindow());
             windows.Add(new LootWindow());
+            // endgame activities (track L): Core/Endgame*.cs, Windows/EndgameWindows[ABC].cs
+            windows.Add(new TowerWindow()); windows.Add(new TowerPanelWindow());
+            windows.Add(new DungeonsWindow()); windows.Add(new DungeonCounterWindow());
+            windows.Add(new RaidWindow()); windows.Add(new RaidHudWindow()); windows.Add(new RaidCalloutWindow());
+            windows.Add(new DescentWindow()); windows.Add(new DescentHudWindow()); windows.Add(new DescentOfferWindow()); windows.Add(new DescentShopWindow());
+            windows.Add(new RiftAtlasWindow()); windows.Add(new WaystoneAtlasWindow());
+            windows.Add(new InvasionWindow()); windows.Add(new InvasionHudWindow());
+            windows.Add(new SiegeWindow()); windows.Add(new SiegeHudWindow());
+            windows.Add(new ArenaWindow()); windows.Add(new ArenaHudWindow());
+            windows.Add(new BattlegroundWindow()); windows.Add(new BattlegroundHudWindow()); windows.Add(new BattlegroundBoardWindow());
+            windows.Add(new PvpZoneWindow()); windows.Add(new PvpZoneConfirmWindow()); windows.Add(new PvpZoneHudWindow());
+            windows.Add(new BountyWindow());
+            // track N: collections, seasons and crafting (Core/Collect*.cs)
+            windows.Add(new AchievementsWindow()); windows.Add(new BestiaryWindow()); windows.Add(new CharmsWindow()); windows.Add(new PassWindow());
+            windows.Add(new SeasonWindow()); windows.Add(new DailyWindow()); windows.Add(new WeeklyChestWindow()); windows.Add(new CosmeticsWindow());
+            windows.Add(new TransmogWindow()); windows.Add(new PetsWindow()); windows.Add(new ProfessionsWindow()); windows.Add(new CraftingWindow());
+            windows.Add(new CraftTableWindow());
+            // world, map and item utilities (track O): Windows/WorldWindows.cs and ItemWindows.cs
+            windows.Add(new MapMarkersWindow()); windows.Add(new MapOverlayWindow()); windows.Add(new GoToNpcWindow()); windows.Add(new WaystoneWindow());
+            windows.Add(new TownPortalWindow()); windows.Add(new HideoutWindow()); windows.Add(new AutoLootWindow()); windows.Add(new PouchesWindow());
+            windows.Add(new AutoSellerWindow()); windows.Add(new OrbExchangeWindow()); windows.Add(new GambleWindow()); windows.Add(new EmberCacheWindow());
+            windows.Add(new UnveilWindow()); windows.Add(new ItemFinderWindow()); windows.Add(new LoadoutsWindow()); windows.Add(new SpellSupportsWindow());
+            windows.Add(new PactWindow()); windows.Add(new CandlemarksWindow());
         }
 
         /// <summary>The window of that class (made on first use), for windows that work together.</summary>

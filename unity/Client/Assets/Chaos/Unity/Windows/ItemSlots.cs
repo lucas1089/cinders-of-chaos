@@ -93,6 +93,7 @@ namespace Chaos.Client
                 app.Session?.UseItem(where, (ushort)it.Id, stackPos, FreeContainerId(app));
                 e.Use();
             }
+            else if (e.type == EventType.MouseDown && e.button == 0 && it != null && e.shift && !e.control && app.LinkItem(it, where)) e.Use();   // item link in the chat
             else if (e.type == EventType.MouseDown && e.button == 0 && it != null)
             {
                 dragging = true; srcPos = where; srcId = (ushort)it.Id; srcStack = stackPos; srcCount = it.Count;

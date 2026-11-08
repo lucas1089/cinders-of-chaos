@@ -98,6 +98,8 @@ namespace Chaos.Client
             bool attacked = session.AttackTarget == id;
             items.Add(new KeyValuePair<string, Action>(attacked ? Loc.T("Stop Attack") : Loc.T("Attack"), () => { if (attacked) session.CancelAttack(); else session.Attack(id); }));
             items.Add(new KeyValuePair<string, Action>(Loc.T("Follow"), () => session.Follow(id)));
+            string inspectName = c.Name;
+            items.Add(new KeyValuePair<string, Action>(Loc.T("Inspect Player"), () => InspectPlayer(id, inspectName)));
             var party = PartyMenu.For(MyShield, c.Shield);
             if (party.Count > 0) items.Add(new KeyValuePair<string, Action>("", null));
             foreach (var a in party)
